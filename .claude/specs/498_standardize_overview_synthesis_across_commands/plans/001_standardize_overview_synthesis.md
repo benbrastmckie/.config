@@ -294,19 +294,19 @@ ls -la ~/.config/.claude/specs/*/plans/*.md
 
 ---
 
-### Phase 4: Update /coordinate Command
+### Phase 4: Update /coordinate Command [COMPLETED]
 **Objective**: Apply same fixes as /supervise to /coordinate command
 **Complexity**: Medium
 
 Tasks:
-- [ ] Source `.claude/lib/overview-synthesis.sh` in /coordinate command
-- [ ] Define `RESEARCH_SUBDIR` variable (currently missing)
-- [ ] Replace inline overview decision with `should_synthesize_overview()` call
-- [ ] Update overview path from `${TOPIC_NUM}_overview.md` to `OVERVIEW.md` (ALL CAPS)
-- [ ] Update conditional verification logic (only verify if overview created)
-- [ ] Update checkpoint JSON to conditionally include overview_path
-- [ ] Update Phase 2 planning context to conditionally include overview
-- [ ] Update context pruning logic (only prune overview if it exists)
+- [x] Source `.claude/lib/overview-synthesis.sh` in /coordinate command
+- [x] Define `RESEARCH_SUBDIR` variable (currently missing)
+- [x] Replace inline overview decision with `should_synthesize_overview()` call
+- [x] Update overview path from `${TOPIC_NUM}_overview.md` to `OVERVIEW.md` (ALL CAPS)
+- [x] Update conditional verification logic (only verify if overview created)
+- [x] Update checkpoint JSON to conditionally include overview_path
+- [x] Update Phase 2 planning context to conditionally include overview
+- [x] Update context pruning logic (only prune overview if it exists)
 
 Code Changes:
 ```bash
