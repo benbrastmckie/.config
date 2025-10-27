@@ -150,8 +150,8 @@ test -f .claude/docs/guides/model-rollback-guide.md
 **Phase 1 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(484): complete Phase 1 - Pre-Migration Setup and Baseline Collection`
-- [ ] Checkpoint saved (if complex phase)
+- [x] Git commit created: `feat(484): complete Phase 1 - Pre-Migration Setup and Baseline Collection`
+- [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
 ### Phase 2: Haiku Migration - High-Frequency Agents (git-commit-helper, spec-updater)
