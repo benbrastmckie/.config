@@ -803,6 +803,14 @@ else
   echo "ERROR: detect-project-dir.sh not found"
   exit 1
 fi
+
+if [ -f "$SCRIPT_DIR/../lib/overview-synthesis.sh" ]; then
+  source "$SCRIPT_DIR/../lib/overview-synthesis.sh"
+else
+  echo "ERROR: overview-synthesis.sh not found"
+  echo "This library provides standardized overview synthesis decision logic."
+  exit 1
+fi
 ```
 
 STEP 4: Calculate location metadata
@@ -949,7 +957,13 @@ REPORT_PATHS=()
 for i in 1 2 3 4; do
   REPORT_PATHS+=("${TOPIC_PATH}/reports/$(printf '%03d' $i)_topic${i}.md")
 done
-OVERVIEW_PATH="${TOPIC_PATH}/reports/${TOPIC_NUM}_overview.md"
+
+# Define research subdirectory for overview synthesis
+RESEARCH_SUBDIR="${TOPIC_PATH}/reports"
+
+# Overview path will be calculated conditionally based on workflow scope
+# (see Phase 1: Research Overview section for actual path calculation)
+OVERVIEW_PATH=""  # Initialized empty, set conditionally during research phase
 
 # Planning phase paths
 PLAN_PATH="${TOPIC_PATH}/plans/001_${TOPIC_NAME}_plan.md"
@@ -1205,14 +1219,23 @@ echo "Verification checkpoint passed - proceeding to research overview"
 echo ""
 ```
 
-### Research Overview (Optional Synthesis)
+### Research Overview (Conditional Synthesis)
 
-STEP 4: Create overview report synthesizing all research findings
+STEP 4: Conditionally create overview report based on workflow scope
+
+**DECISION LOGIC**: Overview synthesis only occurs for research-only workflows.
+When planning follows (research-and-plan, full-implementation), the plan-architect
+agent will synthesize research reports, making OVERVIEW.md redundant.
 
 ```bash
-# Only create overview if multiple reports
-if [ $SUCCESSFUL_REPORT_COUNT -ge 2 ]; then
+# Determine if overview synthesis should occur
+# Uses shared library function: should_synthesize_overview()
+if should_synthesize_overview "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT"; then
+  # Calculate overview path using standardized function (ALL CAPS format)
+  OVERVIEW_PATH=$(calculate_overview_path "$RESEARCH_SUBDIR")
+
   echo "Creating research overview to synthesize findings..."
+  echo "  Path: $OVERVIEW_PATH"
 
   # Build report list for overview agent
   REPORT_LIST=""
@@ -1241,6 +1264,12 @@ if [ $SUCCESSFUL_REPORT_COUNT -ge 2 ]; then
 
   # Verify overview created
   verify_file_created "$OVERVIEW_PATH" "Research Overview" "$AGENT_OUTPUT"
+else
+  # Overview synthesis skipped - plan-architect will synthesize reports
+  SKIP_REASON=$(get_synthesis_skip_reason "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT")
+  echo "⏭️  Skipping overview synthesis"
+  echo "  Reason: $SKIP_REASON"
+  echo ""
 fi
 
 echo "Phase 1 Complete: Research artifacts verified"
@@ -1250,7 +1279,7 @@ echo ""
 ARTIFACT_PATHS_JSON=$(cat <<EOF
 {
   "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
-  $([ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'"' || echo '')
+  $([ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'"' || echo '')
 }
 EOF
 )
@@ -1303,8 +1332,8 @@ for report in "${SUCCESSFUL_REPORT_PATHS[@]}"; do
   RESEARCH_REPORTS_LIST+="- $report\n"
 done
 
-# Include overview if created
-if [ -f "$OVERVIEW_PATH" ]; then
+# Include overview if created (only for research-only workflows)
+if [ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ]; then
   RESEARCH_REPORTS_LIST+="- $OVERVIEW_PATH (synthesis)\n"
 fi
 
@@ -1456,7 +1485,7 @@ echo ""
 ARTIFACT_PATHS_JSON=$(cat <<EOF
 {
   "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
-  $([ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
+  $([ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
   "plan_path": "$PLAN_PATH"
 }
 EOF
@@ -1493,7 +1522,7 @@ should_run_phase 3 || {
   for report in "${SUCCESSFUL_REPORT_PATHS[@]}"; do
     echo "      - $(basename $report)"
   done
-  if [ -f "$OVERVIEW_PATH" ]; then
+  if [ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ]; then
     echo "  ✓ Research Overview: $(basename $OVERVIEW_PATH)"
   fi
   echo "  ✓ Implementation Plan: $(basename $PLAN_PATH)"
@@ -1707,7 +1736,7 @@ echo ""
 ARTIFACT_PATHS_JSON=$(cat <<EOF
 {
   "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
-  $([ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
+  $([ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
   "plan_path": "$PLAN_PATH",
   "impl_artifacts": "$IMPL_ARTIFACTS",
   "wave_execution": {
@@ -1838,7 +1867,7 @@ echo ""
 ARTIFACT_PATHS_JSON=$(cat <<EOF
 {
   "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
-  $([ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
+  $([ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
   "plan_path": "$PLAN_PATH",
   "impl_artifacts": "$IMPL_ARTIFACTS",
   "test_status": "$TEST_STATUS"
