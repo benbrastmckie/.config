@@ -188,7 +188,7 @@ grep -n "examples/correct-agent-invocation\|examples/behavioral-injection\|examp
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 4: Condense Historical Commentary in CLAUDE.md
+### Phase 4: Condense Historical Commentary in CLAUDE.md [COMPLETED]
 dependencies: [2]
 
 **Objective**: Replace detailed cleanup section with condensed reference per writing standards
@@ -196,10 +196,10 @@ dependencies: [2]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Read current CLAUDE.md "Recent Cleanup" section (lines 425-434)
-- [ ] Replace 10-line section with single-line reference to archive documentation
-- [ ] Preserve /report → /research migration note in commands section (line 328)
-- [ ] Verify writing standards compliance (no temporal markers like "Recent", dated references)
+- [x] Read current CLAUDE.md "Recent Cleanup" section (lines 425-434)
+- [x] Replace 10-line section with single-line reference to archive documentation
+- [x] Preserve /report → /research migration note in commands section (line 328)
+- [x] Verify writing standards compliance (no temporal markers like "Recent", dated references)
 
 **Testing**:
 ```bash
