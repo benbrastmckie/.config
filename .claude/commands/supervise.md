@@ -274,6 +274,81 @@ else
   exit 1
 fi
 
+# Define display_brief_summary function inline
+# (Must be defined before function verification checks below)
+display_brief_summary() {
+  echo ""
+  echo "✓ Workflow complete: $WORKFLOW_SCOPE"
+
+  case "$WORKFLOW_SCOPE" in
+    research-only)
+      local report_count=${#REPORT_PATHS[@]}
+      echo "Created $report_count research reports in: $TOPIC_PATH/reports/"
+      echo "→ Review artifacts: ls -la $TOPIC_PATH/reports/"
+      ;;
+    research-and-plan)
+      local report_count=${#REPORT_PATHS[@]}
+      echo "Created $report_count reports + 1 plan in: $TOPIC_PATH/"
+      echo "→ Run: /implement $PLAN_PATH"
+      ;;
+    full-implementation)
+      echo "Implementation complete. Summary: $SUMMARY_PATH"
+      echo "→ Review summary for next steps"
+      ;;
+    debug-only)
+      echo "Debug analysis complete: $DEBUG_REPORT"
+      echo "→ Review findings and apply fixes"
+      ;;
+    *)
+      echo "Workflow artifacts available in: $TOPIC_PATH"
+      echo "→ Review directory for outputs"
+      ;;
+  esac
+  echo ""
+}
+
+# Verify critical functions are defined after library sourcing
+# This prevents "command not found" errors at runtime
+REQUIRED_FUNCTIONS=(
+  "detect_workflow_scope"
+  "should_run_phase"
+  "emit_progress"
+  "save_phase_checkpoint"
+  "load_phase_checkpoint"
+  "retry_with_backoff"
+)
+
+MISSING_FUNCTIONS=()
+for func in "${REQUIRED_FUNCTIONS[@]}"; do
+  if ! command -v "$func" >/dev/null 2>&1; then
+    MISSING_FUNCTIONS+=("$func")
+  fi
+done
+
+if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
+  echo "ERROR: Required functions not defined after library sourcing:"
+  for func in "${MISSING_FUNCTIONS[@]}"; do
+    echo "  - $func()"
+  done
+  echo ""
+  echo "This is a bug in the /supervise command. Please report this issue with:"
+  echo "  - The workflow description you used"
+  echo "  - This error message"
+  echo "  - Output of: ls -la $SCRIPT_DIR/../lib/"
+  echo ""
+  echo "Issue tracker: https://github.com/anthropics/claude-code/issues"
+  exit 1
+fi
+
+# Note: display_brief_summary is defined inline (not in a library)
+# Verify it exists
+if ! command -v display_brief_summary >/dev/null 2>&1; then
+  echo "ERROR: display_brief_summary() function not defined"
+  echo "This is a critical bug in the /supervise command."
+  echo "Please report this issue at: https://github.com/anthropics/claude-code/issues"
+  exit 1
+fi
+
 **Verification**: All required functions available via sourced libraries.
 
 **Note on Design Decisions** (Phase 1B):
@@ -444,48 +519,6 @@ emit_progress "2" "Planning phase started"
 **Critical**: ALL paths MUST be calculated before Phase 1 begins.
 
 ### Implementation
-
-### Brief Summary Function
-
-Display concise workflow completion summary (≤5 lines) to save user time and focus attention on key artifacts.
-
-**Design Goal**: Brief, focused output that directs users to next steps without verbose details.
-
-```bash
-# Display brief workflow completion summary
-# Outputs ≤5 lines total: header + artifact info + next step
-# Required variables: WORKFLOW_SCOPE, TOPIC_PATH, REPORT_PATHS[], PLAN_PATH, SUMMARY_PATH, DEBUG_REPORT
-display_brief_summary() {
-  echo ""
-  echo "✓ Workflow complete: $WORKFLOW_SCOPE"
-
-  case "$WORKFLOW_SCOPE" in
-    research-only)
-      local report_count=${#REPORT_PATHS[@]}
-      echo "Created $report_count research reports in: $TOPIC_PATH/reports/"
-      echo "→ Review artifacts: ls -la $TOPIC_PATH/reports/"
-      ;;
-    research-and-plan)
-      local report_count=${#REPORT_PATHS[@]}
-      echo "Created $report_count reports + 1 plan in: $TOPIC_PATH/"
-      echo "→ Run: /implement $PLAN_PATH"
-      ;;
-    full-implementation)
-      echo "Implementation complete. Summary: $SUMMARY_PATH"
-      echo "→ Review summary for next steps"
-      ;;
-    debug-only)
-      echo "Debug analysis complete: $DEBUG_REPORT"
-      echo "→ Review findings and apply fixes"
-      ;;
-    *)
-      echo "Workflow artifacts available in: $TOPIC_PATH"
-      echo "→ Review directory for outputs"
-      ;;
-  esac
-  echo ""
-}
-```
 
 STEP 1: Parse workflow description from command arguments
 

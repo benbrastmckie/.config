@@ -206,12 +206,12 @@ dependencies: [1]
 **Priority**: HIGH - Prevents future undefined function bugs
 
 Tasks:
-- [ ] Add function existence check block after line 276 (after all library sourcing) in supervise.md
-- [ ] Check for `display_brief_summary` function existence using `command -v`
-- [ ] Check for other critical functions: `detect_workflow_scope`, `should_run_phase`, `handle_partial_research_failure`
-- [ ] Provide clear error message with bug report instructions on failure
-- [ ] Use exit code 1 for function verification failures
-- [ ] Add comments explaining purpose of verification checks
+- [x] Add function existence check block after line 276 (after all library sourcing) in supervise.md
+- [x] Check for `display_brief_summary` function existence using `command -v`
+- [x] Check for other critical functions: `detect_workflow_scope`, `should_run_phase`, `emit_progress`, `save_phase_checkpoint`, `load_phase_checkpoint`, `retry_with_backoff`
+- [x] Provide clear error message with bug report instructions on failure
+- [x] Use exit code 1 for function verification failures
+- [x] Add comments explaining purpose of verification checks
 
 Testing:
 ```bash
@@ -225,8 +225,8 @@ grep -A 5 "function.*not defined" .claude/commands/supervise.md
 **Expected Duration**: 30 minutes
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (verification checks work correctly)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (verification checks work correctly)
 - [ ] Git commit created: `feat(supervise): add function existence verification checks`
 - [ ] Update this plan file with phase completion status
 
