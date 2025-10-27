@@ -44,7 +44,7 @@ This CLAUDE.md serves as the central configuration and standards index for this 
 <!-- SECTION: directory_protocols -->
 ### Directory Protocols
 
-[Used by: /report, /plan, /implement, /list-plans, /list-reports, /list-summaries]
+[Used by: /research, /plan, /implement, /list-plans, /list-reports, /list-summaries]
 
 The specifications directory uses a topic-based structure (`specs/{NNN_topic}/`) with artifact subdirectories (plans/, reports/, summaries/, debug/). Plans use progressive organization (Level 0 → Level 1 → Level 2) and support phase dependencies for wave-based parallel execution.
 
@@ -325,8 +325,7 @@ See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_a
 Located in `.claude/commands/`:
 - `/orchestrate <workflow>` - Multi-agent workflow coordination (research → plan → implement → debug → document)
 - `/implement [plan-file]` - Execute implementation plans phase-by-phase with testing and commits
-- `/report <topic>` - Generate research documentation in specs/reports/
-- `/research <topic>` - Hierarchical multi-agent research with automatic decomposition (improved /report)
+- `/research <topic>` - Hierarchical multi-agent research with automatic decomposition (replaces archived /report)
 - `/plan <feature>` - Create implementation plans in specs/plans/
 - `/plan-from-template <name>` - Generate plans from reusable templates (11 categories)
 - `/plan-wizard` - Interactive plan creation with guided prompts
@@ -422,4 +421,15 @@ This CLAUDE.md was automatically configured with the `/setup` command.
 For updates or improvements, run `/setup` again or edit manually following the established patterns.
 
 Standards sections are marked with `[Used by: commands]` metadata for discoverability.
+
+### Recent Cleanup (2025-10-26)
+The .claude/ directory was cleaned up to improve maintainability:
+- **Commands removed**: 3 (example-with-agent, migrate-specs, report) → Use `/research` instead of `/report`
+- **Agents removed**: 1 (location-specialist) → Functionality in lib/unified-location-detection.sh
+- **Directories removed**: utils/ (compatibility shims), examples/ (demonstration code)
+- **Libraries archived**: 2 legacy files (artifact-operations-legacy.sh, migrate-specs-utils.sh)
+- **Total space saved**: ~266KB
+- **Unified codebase**: All code now sources lib/ directly (no compatibility layers)
+
+All removed files archived in .claude/archive/ for potential recovery.
 
