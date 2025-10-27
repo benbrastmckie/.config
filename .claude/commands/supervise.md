@@ -526,8 +526,20 @@ STEP 1: Parse workflow description from command arguments
 WORKFLOW_DESCRIPTION="$1"
 
 if [ -z "$WORKFLOW_DESCRIPTION" ]; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "DIAGNOSTIC INFO: Missing Workflow Description"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
   echo "ERROR: Workflow description required"
+  echo ""
   echo "Usage: /supervise \"<workflow description>\""
+  echo ""
+  echo "Examples:"
+  echo "  /supervise \"research API authentication patterns\""
+  echo "  /supervise \"plan user profile feature\""
+  echo "  /supervise \"implement and test authentication system\""
+  echo "  /supervise \"debug login failure issue\""
+  echo ""
   exit 1
 fi
 
@@ -576,8 +588,41 @@ esac
 
 export WORKFLOW_SCOPE PHASES_TO_EXECUTE SKIP_PHASES
 
-echo "Detected Workflow Scope: $WORKFLOW_SCOPE"
-echo "Phases to Execute: $PHASES_TO_EXECUTE"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "Workflow Scope Detection"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Description: \"$WORKFLOW_DESCRIPTION\""
+echo "Detected Scope: $WORKFLOW_SCOPE"
+echo ""
+echo "Phase Execution Plan:"
+echo "  Execute: Phases $PHASES_TO_EXECUTE"
+if [ -n "$SKIP_PHASES" ]; then
+  echo "  Skip: Phases $SKIP_PHASES"
+fi
+echo ""
+echo "Scope Behavior:"
+case "$WORKFLOW_SCOPE" in
+  research-only)
+    echo "  - Research topic in parallel (2-4 agents)"
+    echo "  - Create overview document"
+    echo "  - Exit after Phase 1"
+    ;;
+  research-and-plan)
+    echo "  - Research topic in parallel (2-4 agents)"
+    echo "  - Generate implementation plan"
+    echo "  - Exit after Phase 2"
+    ;;
+  full-implementation)
+    echo "  - Research → Plan → Implement → Test → Document"
+    echo "  - Full end-to-end workflow"
+    ;;
+  debug-only)
+    echo "  - Research root cause"
+    echo "  - Generate debug report"
+    echo "  - Exit after Phase 5"
+    ;;
+esac
 echo ""
 ```
 
@@ -615,7 +660,19 @@ Use utility functions to determine project root, specs directory, topic number, 
 # Get project root (from detect-project-dir.sh)
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR}"
 if [ -z "$PROJECT_ROOT" ]; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "DIAGNOSTIC INFO: Project Root Detection Failed"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
   echo "ERROR: Could not determine project root"
+  echo ""
+  echo "Environment:"
+  echo "  CLAUDE_PROJECT_DIR: '${CLAUDE_PROJECT_DIR:-<not set>}'"
+  echo "  Current directory: $(pwd)"
+  echo "  Git repo: $(git rev-parse --show-toplevel 2>/dev/null || echo '<not a git repo>')"
+  echo ""
+  echo "Expected: CLAUDE_PROJECT_DIR should be set by detect-project-dir.sh"
+  echo ""
   exit 1
 fi
 
@@ -639,10 +696,25 @@ LOCATION="$PROJECT_ROOT"
 
 # Validate required fields
 if [ -z "$LOCATION" ] || [ -z "$TOPIC_NUM" ] || [ -z "$TOPIC_NAME" ]; then
-  echo "❌ ERROR: Failed to calculate location metadata"
-  echo "   LOCATION: $LOCATION"
-  echo "   TOPIC_NUM: $TOPIC_NUM"
-  echo "   TOPIC_NAME: $TOPIC_NAME"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "DIAGNOSTIC INFO: Location Metadata Calculation Failed"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "ERROR: Failed to calculate location metadata"
+  echo ""
+  echo "Calculated Values:"
+  echo "  LOCATION: '${LOCATION:-<empty>}'"
+  echo "  TOPIC_NUM: '${TOPIC_NUM:-<empty>}'"
+  echo "  TOPIC_NAME: '${TOPIC_NAME:-<empty>}'"
+  echo ""
+  echo "Source Values:"
+  echo "  PROJECT_ROOT: '${PROJECT_ROOT:-<empty>}'"
+  echo "  SPECS_ROOT: '${SPECS_ROOT:-<empty>}'"
+  echo "  WORKFLOW_DESCRIPTION: '${WORKFLOW_DESCRIPTION:-<empty>}'"
+  echo ""
+  echo "Functions Used:"
+  echo "  get_next_topic_number() - from topic-utils.sh"
+  echo "  sanitize_topic_name() - from topic-utils.sh"
   echo ""
   echo "Workflow TERMINATED."
   exit 1
@@ -679,7 +751,35 @@ if ! create_topic_structure "$TOPIC_PATH"; then
 
   # Re-verification
   if [ ! -d "$TOPIC_PATH" ]; then
-    echo "❌ FATAL: Fallback failed - directory creation impossible"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "DIAGNOSTIC INFO: Directory Creation Failed"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "FATAL: Fallback failed - directory creation impossible"
+    echo ""
+    echo "Attempted Paths:"
+    echo "  TOPIC_PATH: $TOPIC_PATH"
+    echo "  Parent directory: $(dirname "$TOPIC_PATH")"
+    echo ""
+    echo "Parent Directory Status:"
+    if [ -d "$(dirname "$TOPIC_PATH")" ]; then
+      echo "  Exists: Yes"
+      echo "  Permissions: $(ls -ld "$(dirname "$TOPIC_PATH")" 2>/dev/null | awk '{print $1}')"
+      echo "  Owner: $(ls -ld "$(dirname "$TOPIC_PATH")" 2>/dev/null | awk '{print $3":"$4}')"
+    else
+      echo "  Exists: No"
+      echo "  Issue: Parent directory does not exist"
+    fi
+    echo ""
+    echo "Fallback Attempt:"
+    echo "  Command: mkdir -p \"$TOPIC_PATH\""
+    echo "  Result: Failed"
+    echo ""
+    echo "Possible Causes:"
+    echo "  - Insufficient permissions"
+    echo "  - Read-only filesystem"
+    echo "  - Disk full"
+    echo "  - Path contains invalid characters"
     echo ""
     echo "Workflow TERMINATED."
     exit 1
