@@ -1,8 +1,8 @@
 ---
 allowed-tools: Read, Bash, Task
 description: Orchestrates wave-based parallel phase execution with dependency analysis
-model: sonnet-4.5
-model-justification: Wave orchestration, state management, parallel subagent coordination
+model: haiku-4.5
+model-justification: Deterministic wave orchestration and state tracking, mechanical subagent coordination following explicit algorithm
 fallback-model: sonnet-4.5
 ---
 
