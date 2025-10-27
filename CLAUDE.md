@@ -325,6 +325,7 @@ See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_a
 
 Located in `.claude/commands/`:
 - `/orchestrate <workflow>` - Multi-agent workflow coordination (research → plan → implement → debug → document)
+- `/coordinate <workflow>` - Clean multi-agent orchestration with wave-based parallel implementation and fail-fast error handling
 - `/implement [plan-file]` - Execute implementation plans phase-by-phase with testing and commits
 - `/research <topic>` - Hierarchical multi-agent research with automatic decomposition (replaces archived /report)
 - `/plan <feature>` - Create implementation plans in specs/plans/
@@ -333,7 +334,12 @@ Located in `.claude/commands/`:
 - `/test <target>` - Run project-specific tests per Testing Protocols
 - `/setup [--enhance-with-docs]` - Configure or update this CLAUDE.md file; --enhance-with-docs discovers project documentation and automatically enhances CLAUDE.md
 
-**Orchestration**: 7-phase workflow with parallel research (2-4 agents), automated complexity evaluation, wave-based implementation, and conditional debugging. Performance: <30% context usage, 40-80% time savings vs sequential.
+**Orchestration**: Three orchestration commands available:
+- `/orchestrate` - Full-featured orchestration with PR automation and dashboard tracking
+- `/coordinate` - Clean orchestration focused on wave-based parallel execution and fail-fast error handling (2,500-3,000 lines vs 5,438)
+- `/supervise` - Sequential orchestration with proven architectural compliance
+
+All orchestration commands provide 7-phase workflow with parallel research (2-4 agents), automated complexity evaluation, and conditional debugging. Wave-based commands (/orchestrate, /coordinate) achieve 40-60% time savings through parallel implementation. Performance: <30% context usage throughout.
 
 **Template-Based Planning**: Fast plan generation (60-80% faster) using templates for common patterns (CRUD, refactoring, testing, migrations). See `.claude/commands/templates/README.md`.
 

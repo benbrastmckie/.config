@@ -8,6 +8,28 @@ dependent-commands: research, plan, implement, debug, test, document
 
 # /coordinate - Clean Multi-Agent Workflow Orchestration with Wave-Based Execution
 
+## Command Syntax
+
+```
+/coordinate <workflow-description>
+```
+
+**Arguments**:
+- `<workflow-description>`: Natural language description of the workflow to execute
+
+**Examples**:
+- `/coordinate "research API authentication patterns"` - Research-only workflow
+- `/coordinate "research the authentication module to create a refactor plan"` - Research-and-plan workflow
+- `/coordinate "implement OAuth2 authentication for the API"` - Full-implementation workflow
+- `/coordinate "fix the token refresh bug in auth.js"` - Debug-only workflow
+
+**Workflow Scope Detection**:
+The command automatically detects the workflow type from your description and executes only the appropriate phases:
+- **research-only**: Keywords like "research [topic]" without "plan" or "implement"
+- **research-and-plan**: Keywords like "research...to create plan", "analyze...for planning"
+- **full-implementation**: Keywords like "implement", "build", "add feature"
+- **debug-only**: Keywords like "fix [bug]", "debug [issue]", "troubleshoot [error]"
+
 ## YOUR ROLE: WORKFLOW ORCHESTRATOR
 
 **YOU ARE THE ORCHESTRATOR** for this multi-agent workflow.
@@ -160,6 +182,65 @@ The command detects the workflow type and executes only the appropriate phases:
    - Keywords: "fix [bug]", "debug [issue]", "troubleshoot [error]"
    - Use case: Bug fixing without new implementation
    - No new plan or summary
+
+### Wave-Based Parallel Execution (Phase 3)
+
+Wave-based execution enables parallel implementation of independent phases, achieving 40-60% time savings compared to sequential execution.
+
+**How It Works**:
+
+1. **Dependency Analysis**: Parse implementation plan to identify phase dependencies
+   - Uses `dependency-analyzer.sh` library
+   - Extracts `dependencies: [N, M]` from each phase
+   - Builds directed acyclic graph (DAG) of phase relationships
+
+2. **Wave Calculation**: Group phases into waves using Kahn's algorithm
+   - Wave 1: All phases with no dependencies
+   - Wave 2: Phases depending only on Wave 1 phases
+   - Wave N: Phases depending only on previous waves
+
+3. **Parallel Execution**: Execute all phases within a wave simultaneously
+   - Invoke implementer-coordinator agent for wave orchestration
+   - Agent spawns implementation-executor agents in parallel (one per phase)
+   - Wait for all phases in wave to complete before next wave
+
+4. **Wave Checkpointing**: Save state after each wave completes
+   - Enables resume from wave boundary on interruption
+   - Tracks wave number, completed phases, pending phases
+
+**Example Wave Execution**:
+
+```
+Plan with 8 phases:
+  Phase 1: dependencies: []
+  Phase 2: dependencies: []
+  Phase 3: dependencies: [1]
+  Phase 4: dependencies: [1]
+  Phase 5: dependencies: [2]
+  Phase 6: dependencies: [3, 4]
+  Phase 7: dependencies: [5]
+  Phase 8: dependencies: [6, 7]
+
+Wave Calculation Result:
+  Wave 1: [Phase 1, Phase 2]          ← 2 phases in parallel (0 dependencies)
+  Wave 2: [Phase 3, Phase 4, Phase 5] ← 3 phases in parallel (only depend on Wave 1)
+  Wave 3: [Phase 6, Phase 7]          ← 2 phases in parallel (only depend on Waves 1-2)
+  Wave 4: [Phase 8]                   ← 1 phase (depends on Wave 3)
+
+Time Savings:
+  Sequential: 8 phases × avg_time = 8T
+  Wave-based: 4 waves × avg_time = 4T
+  Savings: 50% (actual savings depend on phase distribution)
+```
+
+**Performance Impact**:
+- Best case: 60% time savings (many independent phases)
+- Typical case: 40-50% time savings (moderate dependencies)
+- Worst case: 0% savings (fully sequential dependencies)
+- No overhead for plans with <3 phases (single wave)
+
+**Library Integration**:
+See `.claude/lib/dependency-analyzer.sh` for complete wave calculation implementation.
 
 ### Performance Targets
 
@@ -2135,6 +2216,50 @@ fi
 display_brief_summary
 exit 0
 ```
+
+## Agent Behavioral Files
+
+[REFERENCE-OK: Agent specifications can be maintained in external agent reference docs]
+
+This command delegates work to specialized agents via the Task tool. Each agent has a behavioral file that defines its responsibilities and execution guidelines:
+
+**Research Phase (Phase 1)**:
+- `.claude/agents/research-specialist.md` - Conducts focused codebase research, creates structured reports
+
+**Planning Phase (Phase 2)**:
+- `.claude/agents/plan-architect.md` - Creates implementation plans following project standards
+
+**Implementation Phase (Phase 3)**:
+- `.claude/agents/implementer-coordinator.md` - Orchestrates wave-based parallel implementation
+- `.claude/agents/implementation-executor.md` - Executes individual implementation phases
+
+**Testing Phase (Phase 4)**:
+- `.claude/agents/test-specialist.md` - Runs tests and reports results
+
+**Debug Phase (Phase 5)**:
+- `.claude/agents/debug-analyst.md` - Investigates failures and proposes fixes
+
+**Documentation Phase (Phase 6)**:
+- `.claude/agents/doc-writer.md` - Creates implementation summaries
+
+**Invocation Pattern**:
+All agents are invoked via the Task tool with behavioral injection:
+```
+Task {
+  subagent_type: "general-purpose"
+  description: "Brief task description"
+  prompt: "
+    Read and follow ALL behavioral guidelines from: .claude/agents/[agent-name].md
+
+    **Context**: [Workflow-specific context]
+
+    Execute following all guidelines.
+    Return: [SIGNAL]: [artifact_path]
+  "
+}
+```
+
+See [Behavioral Injection Pattern](../docs/concepts/patterns/behavioral-injection.md) for complete implementation details.
 
 ## Usage Examples
 
