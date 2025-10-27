@@ -422,14 +422,4 @@ For updates or improvements, run `/setup` again or edit manually following the e
 
 Standards sections are marked with `[Used by: commands]` metadata for discoverability.
 
-### Recent Cleanup (2025-10-26)
-The .claude/ directory was cleaned up to improve maintainability:
-- **Commands removed**: 3 (example-with-agent, migrate-specs, report) → Use `/research` instead of `/report`
-- **Agents removed**: 1 (location-specialist) → Functionality in lib/unified-location-detection.sh
-- **Directories removed**: utils/ (compatibility shims), examples/ (demonstration code)
-- **Libraries archived**: 2 legacy files (artifact-operations-legacy.sh, migrate-specs-utils.sh)
-- **Total space saved**: ~266KB
-- **Unified codebase**: All code now sources lib/ directly (no compatibility layers)
-
-All removed files archived in .claude/archive/ for potential recovery.
 
