@@ -1,6 +1,8 @@
 # Shared Utility Libraries
 
-This directory contains 59 modular utility libraries used across Claude Code commands, organized by domain and responsibility following the clean-break refactor of 2025-10-14.
+This directory contains 42 modular utility libraries used across Claude Code commands, organized by domain and responsibility following the clean-break refactor of 2025-10-14.
+
+**Recent Cleanup (October 2025)**: 25 unused scripts archived to `.claude/archive/lib/cleanup-2025-10-26/` (see [Archive Manifest](../archive/lib/cleanup-2025-10-26/README.md) for details). Library size reduced by ~13%.
 
 **Note**: This README documents **sourced utility libraries** (functions that are sourced into other scripts). For documentation of **standalone utility scripts** (executable scripts), see [UTILS_README.md](UTILS_README.md).
 
@@ -36,18 +38,16 @@ Extracting common functionality to shared libraries:
 
 After the refactor, the library is organized into functional domains:
 
-### Parsing & Plans (4 modules)
+### Parsing & Plans (3 modules)
 - `parse-plan-core.sh` - Core plan parsing (phases, stages)
 - `plan-structure-utils.sh` - Structure operations (expansion, collapse)
 - `plan-metadata-utils.sh` - Metadata extraction and manipulation
-- `progressive-planning-utils.sh` - Progressive structure management
 
 ### Artifact Management (1 module)
 - `artifact-operations.sh` - Unified artifact registry and operations
 
-### Error Handling & Validation (2 modules)
+### Error Handling & Validation (1 module)
 - `error-handling.sh` - Error classification, recovery, retry logic
-- `validation-utils.sh` - Input validation and parameter checking
 
 ### Document Conversion (5 modules)
 - `convert-core.sh` - Conversion orchestration
@@ -61,15 +61,13 @@ After the refactor, the library is organized into functional domains:
 - `checkpoint-utils.sh` - Checkpoint management for workflow resume
 - `complexity-utils.sh` - Complexity analysis and threshold detection
 
-### Agent Coordination (4 modules)
+### Agent Coordination (3 modules)
 - `agent-registry-utils.sh` - Agent registry operations
 - `agent-invocation.sh` - Agent coordination and invocation
-- `parallel-orchestration-utils.sh` - Parallel agent workflow management
 - `workflow-detection.sh` - Workflow scope detection and phase execution logic
 
-### Analysis & Metrics (3 modules)
+### Analysis & Metrics (2 modules)
 - `analysis-pattern.sh` - Common phase/stage analysis patterns
-- `structure-eval-utils.sh` - Plan structure evaluation
 - `analyze-metrics.sh` - Performance and workflow metrics
 
 ### Template System (3 modules)
@@ -272,7 +270,15 @@ merge_phase_into_plan "$PLAN_FILE" 3 "$PHASE_FILE"
 
 ---
 
-#### progressive-planning-utils.sh (490 lines)
+## Archived Scripts (October 2025)
+
+The following script documentation sections remain in this file for reference, but the scripts have been archived to `.claude/archive/lib/cleanup-2025-10-26/`. See the [Archive Manifest](../archive/lib/cleanup-2025-10-26/README.md) for restoration instructions.
+
+**Archived scripts**: progressive-planning-utils.sh, validation-utils.sh, parallel-orchestration-utils.sh, structure-eval-utils.sh (and 21 others)
+
+---
+
+#### progressive-planning-utils.sh (490 lines) - ARCHIVED
 
 Progressive plan structure management for adaptive expansion and collapse operations.
 
@@ -434,7 +440,7 @@ format_orchestrate_agent_failure "code-writer" "Phase 3" "Syntax error in genera
 
 ---
 
-#### validation-utils.sh (298 lines)
+#### validation-utils.sh (298 lines) - ARCHIVED
 
 Input validation and parameter checking utilities.
 
@@ -840,7 +846,7 @@ invoke_agent "code-writer" "$PROMPT" "$CONTEXT"
 
 ---
 
-#### parallel-orchestration-utils.sh (400 lines)
+#### parallel-orchestration-utils.sh (400 lines) - ARCHIVED
 
 Parallel agent workflow management for orchestrated operations.
 
@@ -924,7 +930,7 @@ fi
 
 ---
 
-#### structure-eval-utils.sh (299 lines)
+#### structure-eval-utils.sh (299 lines) - ARCHIVED
 
 Plan structure evaluation for revision and optimization recommendations.
 
