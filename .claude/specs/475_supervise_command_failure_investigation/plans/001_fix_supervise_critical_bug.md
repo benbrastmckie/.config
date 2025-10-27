@@ -403,14 +403,14 @@ dependencies: [5]
 **Priority**: LOW - Housekeeping
 
 Tasks:
-- [ ] Check current status of `.claude/specs/TODO.md` (marked as deleted in git status)
-- [ ] Verify file is removed from working tree
-- [ ] If file still exists, determine if content should be archived or deleted
-- [ ] Update `.gitignore` to prevent future TODO.md files in specs root:
+- [x] Check current status of `.claude/specs/TODO.md` (marked as deleted in git status)
+- [x] Verify file is removed from working tree
+- [x] If file still exists, determine if content should be archived or deleted
+- [x] Update `.gitignore` to prevent future TODO.md files in specs root:
   - Add `.claude/specs/TODO.md` entry
   - Add `.claude/specs/TODO*.md` pattern
-- [ ] Commit gitignore changes
-- [ ] Document cleanup in commit message
+- [x] Commit gitignore changes
+- [x] Document cleanup in commit message
 
 Testing:
 ```bash
@@ -429,8 +429,8 @@ rm .claude/specs/TODO_test.md
 **Expected Duration**: 15 minutes
 
 **Phase 6 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (gitignore pattern works correctly)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (gitignore pattern works correctly)
 - [ ] Git commit created: `chore(supervise): cleanup TODO.md and update gitignore`
 - [ ] Update this plan file with phase completion status
 
