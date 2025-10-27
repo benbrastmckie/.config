@@ -48,15 +48,21 @@ Guides should cross-reference these authoritative sources rather than duplicatin
 docs/
 ├── README.md                    Main documentation index (this file)
 │
-├── reference/                   Information-oriented quick lookup (5 files)
+├── reference/                   Information-oriented quick lookup (11 files)
 │   ├── README.md                Reference documentation index
 │   ├── command-reference.md     Complete command catalog
 │   ├── agent-reference.md       Complete agent catalog
 │   ├── claude-md-section-schema.md  CLAUDE.md section format specification
 │   ├── command_architecture_standards.md  Command/agent architecture standards
-│   └── phase_dependencies.md    Wave-based parallel execution syntax
+│   ├── phase_dependencies.md    Wave-based parallel execution syntax
+│   ├── debug-structure.md       Debug report template structure
+│   ├── refactor-structure.md    Refactor report template structure
+│   ├── report-structure.md      Research report template structure
+│   ├── orchestration-patterns.md  Orchestration agent templates and patterns
+│   ├── orchestration-alternatives.md  Alternative orchestration workflow patterns
+│   └── workflow-phases.md       Detailed workflow phase descriptions
 │
-├── guides/                      Task-focused how-to guides (15 files)
+├── guides/                      Task-focused how-to guides (17 files)
 │   ├── README.md                How-to guides index
 │   ├── creating-commands.md     Command development guide
 │   ├── creating-agents.md       Agent creation guide
@@ -66,7 +72,9 @@ docs/
 │   ├── command-patterns.md      Command pattern catalog
 │   ├── command-examples.md      Reusable command patterns
 │   ├── logging-patterns.md      Standardized logging formats
-│   ├── setup-command-guide.md   /setup command usage patterns
+│   ├── setup-command-guide.md   /setup command usage patterns (enhanced with cleanup content)
+│   ├── implementation-guide.md  Phase execution and implementation workflows
+│   ├── revision-guide.md        Revise auto-mode and revision types
 │   ├── efficiency-guide.md      Performance optimization
 │   ├── error-enhancement-guide.md Error handling patterns
 │   ├── data-management.md       Data handling and persistence

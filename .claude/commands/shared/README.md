@@ -1,59 +1,85 @@
 # Shared Command Documentation
 
-## Purpose
+## Status: Directory Archived
 
-This directory contains reusable documentation sections referenced by multiple commands. It follows the proven reference-based composition pattern from `agents/shared/`, which reduced agent files by 28% while maintaining clarity.
+**Date**: 2025-10-27
+**Action**: Cleanup completed as part of spec 496
 
-## Usage Pattern
+This directory previously contained 37 files (400KB) of reusable documentation and template files. After comprehensive analysis and cleanup:
 
-Commands reference shared sections using relative markdown links:
+**Final State**: Empty (README.md only)
 
-```markdown
-For detailed workflow phase descriptions, see [Workflow Phases](shared/workflow-phases.md).
-```
+## What Happened
 
-When Claude processes a command, it automatically reads referenced files, making this pattern zero-overhead.
+All files have been relocated to more appropriate locations:
 
-## Shared Sections
+### Command-Specific Templates → `.claude/docs/reference/`
+- `orchestration-patterns.md` (70K) - Orchestration agent templates
+- `orchestration-alternatives.md` (24K) - Orchestration workflow patterns
+- `debug-structure.md` (11K) - Debug report template
+- `refactor-structure.md` (12K) - Refactor report template
+- `report-structure.md` (7.7K) - Research report template
+- `workflow-phases.md` (60K) - Detailed phase descriptions
 
-### High Priority (orchestrate.md)
-- `workflow-phases.md` - Detailed phase descriptions ✓
-- `orchestrate-enhancements.md` - Complexity evaluation, expansion, wave-based patterns ✓
-- `orchestrate-alternatives.md` - Alternative workflow patterns ✓
+### Documentation Guides → `.claude/docs/guides/`
+- **implementation-guide.md** - Phase execution + implementation workflows
+- **revision-guide.md** - Revise auto-mode + revision types
+- **setup-command-guide.md** - Setup modes + bloat detection + extraction strategies + standards analysis
 
-### Medium Priority (implement.md, setup.md, revise.md)
-- `phase-execution.md` - Phase execution protocol ✓
-- `setup-modes.md` - Setup command modes ✓
-- `bloat-detection.md` - Bloat detection algorithms ✓
-- `extraction-strategies.md` - Extraction preferences ✓
-- `revise-auto-mode.md` - Auto-mode specification ✓
-- `revision-types.md` - Revision type descriptions ✓
-- `implementation-workflow.md` - Implementation patterns ✓
-- `standards-analysis.md` - Standards analysis patterns ✓
+### Removed Files
+- **4 placeholder files** (empty stubs)
+- **9 small orphaned files** (<100 lines, no references)
+- **6 large orphaned files** (>100 lines, no active usage)
 
-### Template Reference Files (migrated from .claude/templates/)
-- `debug-structure.md` - Debug report structure
-- `orchestration-patterns.md` - Orchestration workflow patterns
-- `refactor-structure.md` - Refactor report structure
-- `report-structure.md` - Research report structure
+**Total cleanup**: 36 files removed or relocated (97% reduction)
 
-## Cross-Reference Index
+## Why This Happened
 
-| Shared Section | Referenced By | Lines Saved |
-|----------------|---------------|-------------|
-| _(to be populated)_ | _(during extraction)_ | _(after extraction)_ |
+Research showed:
+- 67% of files were orphaned or single-use
+- Only 1 file (README.md) showed true shared usage pattern (4+ refs)
+- 6 large files (6,210 lines) were command-specific, not shared
+- Most "shared" files were only used by one command
 
-## Maintenance
+The shared/ pattern works well for `agents/shared/` (100% active usage) but was misused for command documentation.
 
-When adding new shared sections:
-1. Extract focused, cohesive documentation (200-400 lines ideal)
-2. Update this README with new section
-3. Add cross-references to index
-4. Validate all links with `test_command_references.sh`
+## Where to Find Things Now
+
+### For Command Templates
+See `.claude/docs/reference/` for:
+- Debug report structure
+- Refactor report structure
+- Research report structure
+- Orchestration patterns and templates
+- Workflow phase descriptions
+
+### For Implementation Guides
+See `.claude/docs/guides/` for:
+- Implementation workflows
+- Revision procedures
+- Setup command operations
+
+### For Agent Behavioral Guidelines
+See `.claude/agents/shared/` (unchanged, 100% active usage)
+
+## Lessons Learned
+
+1. **Shared pattern requires 3+ active users** - Single-use files don't belong in shared/
+2. **Command-specific ≠ shared** - Even if multiple commands exist, one-to-one files aren't shared
+3. **Documentation belongs in docs/** - Not in commands/shared/
+4. **Placeholder files accumulate** - Regular cleanup prevents bloat
+
+## Future Guidelines
+
+If considering adding files to shared/:
+1. Verify at least 3 commands will reference it
+2. Confirm it's truly shared content (not command-specific)
+3. Consider `.claude/docs/` for documentation instead
+4. Keep template files in `.claude/docs/reference/`
 
 ## Navigation
 
 - [← Parent Directory](../README.md)
-- [agents/shared/](../../agents/shared/) - Agent behavioral guidelines
-- [lib/](../../lib/) - Bash utility functions
-- [templates/](../templates/) - Plan templates (YAML)
+- [Command Reference Documentation](../../docs/reference/) - Template structures
+- [Command Guides](../../docs/guides/) - Implementation guides
+- [Agent Shared Guidelines](../../agents/shared/) - Active shared pattern
