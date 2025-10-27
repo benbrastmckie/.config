@@ -52,6 +52,7 @@ source .claude/lib/topic-decomposition.sh
 source .claude/lib/artifact-creation.sh
 source .claude/lib/template-integration.sh
 source .claude/lib/metadata-extraction.sh
+source .claude/lib/overview-synthesis.sh
 
 # Determine number of subtopics based on topic complexity
 SUBTOPIC_COUNT=$(calculate_subtopic_count "$RESEARCH_TOPIC")
@@ -383,16 +384,31 @@ echo ""
 **After all subtopic reports verified**, invoke research-synthesizer agent:
 
 ```bash
-# Calculate overview report path (ALL CAPS, not numbered)
-OVERVIEW_PATH="${RESEARCH_SUBDIR}/OVERVIEW.md"
+# Determine if overview synthesis should occur
+# /research is always research-only workflow (no planning phase follows)
+WORKFLOW_SCOPE="research-only"
 
-echo "Creating overview report at: $OVERVIEW_PATH"
+# Check if overview should be synthesized
+if should_synthesize_overview "$WORKFLOW_SCOPE" "$REPORT_COUNT"; then
+  # Calculate overview report path using standardized function (ALL CAPS, not numbered)
+  OVERVIEW_PATH=$(calculate_overview_path "$RESEARCH_SUBDIR")
 
-# Prepare subtopic paths array for agent
-SUBTOPIC_PATHS_ARRAY=()
-for subtopic in "${!VERIFIED_PATHS[@]}"; do
-  SUBTOPIC_PATHS_ARRAY+=("${VERIFIED_PATHS[$subtopic]}")
-done
+  echo "Creating overview report at: $OVERVIEW_PATH"
+
+  # Prepare subtopic paths array for agent
+  SUBTOPIC_PATHS_ARRAY=()
+  for subtopic in "${!VERIFIED_PATHS[@]}"; do
+    SUBTOPIC_PATHS_ARRAY+=("${VERIFIED_PATHS[$subtopic]}")
+  done
+else
+  # This should never happen for research-only workflow, but handle gracefully
+  SKIP_REASON=$(get_synthesis_skip_reason "$WORKFLOW_SCOPE" "$REPORT_COUNT")
+  echo "⏭️  Skipping overview synthesis"
+  echo "  Reason: $SKIP_REASON"
+  echo ""
+  echo "✓ Research reports created successfully (no overview synthesis required)"
+  exit 0
+fi
 
 # NOTE: Metadata has been extracted for context reduction
 # - research-synthesizer still reads full reports for synthesis
@@ -486,6 +502,9 @@ EOF
   fi
 else
   echo "✓ VERIFIED: Overview report exists at $OVERVIEW_PATH"
+fi
+
+# End of should_synthesize_overview conditional
 fi
 ```
 
