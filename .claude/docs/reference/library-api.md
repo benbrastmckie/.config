@@ -27,6 +27,7 @@ For task-focused guides on when and how to use libraries, see [Using Utility Lib
 - [unified-logger.sh](#unified-loggersh) - Structured logging with rotation
 - [error-handling.sh](#error-handlingsh) - Standardized error handling patterns
 - [context-pruning.sh](#context-pruningsh) - Context window optimization
+- [overview-synthesis.sh](#overview-synthesissh) - Standardized overview synthesis decision logic
 
 **Analysis and Validation**:
 - [complexity-thresholds.sh](#complexity-thresholdssh) - Complexity scoring for plans
@@ -661,6 +662,109 @@ Apply automatic pruning by workflow type.
 **Returns**: Nothing
 
 **Exit Codes**: `0` (always succeeds)
+
+---
+
+### overview-synthesis.sh
+
+Standardized overview synthesis decision logic for orchestration commands.
+
+**Purpose**: Provides uniform decision logic for when OVERVIEW.md synthesis should occur across `/research`, `/supervise`, and `/coordinate` commands.
+
+**Commands using this library**: `/research`, `/supervise`, `/coordinate`
+
+**Key Principle**: Overview synthesis only occurs when workflows conclude with research (no planning follows). When planning phase follows research, the plan-architect agent synthesizes reports, making OVERVIEW.md redundant.
+
+#### Core Functions
+
+##### `should_synthesize_overview(workflow_scope, report_count)`
+
+Determines if overview synthesis should occur based on workflow scope and report count.
+
+**Arguments**:
+- `workflow_scope` (string): Workflow type (research-only | research-and-plan | full-implementation | debug-only)
+- `report_count` (integer): Number of successful research reports created
+
+**Returns**: Nothing (uses exit code to indicate decision)
+
+**Exit Codes**:
+- `0` (true): Overview should be synthesized
+- `1` (false): Overview should NOT be synthesized
+
+**Decision Logic**:
+- Requires ≥2 reports for synthesis (can't synthesize 1 report into overview)
+- `research-only`: Returns `0` (workflow ends with research)
+- `research-and-plan`: Returns `1` (plan-architect will synthesize)
+- `full-implementation`: Returns `1` (plan-architect will synthesize)
+- `debug-only`: Returns `1` (debug doesn't produce research reports)
+- Unknown scope: Returns `1` (conservative default)
+
+**Usage Example**:
+```bash
+# /research is always research-only workflow
+WORKFLOW_SCOPE="research-only"
+
+if should_synthesize_overview "$WORKFLOW_SCOPE" "$REPORT_COUNT"; then
+  # Create OVERVIEW.md
+  OVERVIEW_PATH=$(calculate_overview_path "$RESEARCH_SUBDIR")
+  echo "Creating overview at: $OVERVIEW_PATH"
+else
+  # Skip synthesis - plan will synthesize reports
+  SKIP_REASON=$(get_synthesis_skip_reason "$WORKFLOW_SCOPE" "$REPORT_COUNT")
+  echo "Skipping overview: $SKIP_REASON"
+fi
+```
+
+##### `calculate_overview_path(research_subdir)`
+
+Calculates the standardized path for OVERVIEW.md synthesis report.
+
+**Arguments**:
+- `research_subdir` (string): Directory containing research reports (e.g., `specs/042_auth/reports/001_auth_research`)
+
+**Returns**: Prints standardized overview path to stdout
+
+**Exit Codes**:
+- `0`: Success
+- `1`: Error (empty research_subdir argument)
+
+**Path Format**: `${research_subdir}/OVERVIEW.md`
+
+**Rationale**: ALL CAPS distinguishes synthesis from numbered subtopic reports, consistent with industry convention (README, LICENSE, OVERVIEW).
+
+**Usage Example**:
+```bash
+RESEARCH_SUBDIR="${TOPIC_PATH}/reports"
+OVERVIEW_PATH=$(calculate_overview_path "$RESEARCH_SUBDIR")
+# Result: /path/to/specs/042_topic/reports/OVERVIEW.md
+```
+
+##### `get_synthesis_skip_reason(workflow_scope, report_count)`
+
+Returns human-readable explanation of why overview synthesis was skipped.
+
+**Arguments**:
+- `workflow_scope` (string): Workflow type
+- `report_count` (integer): Number of successful research reports
+
+**Returns**: Prints skip reason to stdout
+
+**Exit Codes**: `0` (always succeeds)
+
+**Usage Example**:
+```bash
+if ! should_synthesize_overview "$WORKFLOW_SCOPE" "$REPORT_COUNT"; then
+  REASON=$(get_synthesis_skip_reason "$WORKFLOW_SCOPE" "$REPORT_COUNT")
+  echo "⏭️  Skipping overview synthesis"
+  echo "  Reason: $REASON"
+fi
+```
+
+**Skip Reasons**:
+- Insufficient reports: "Insufficient reports for synthesis (need ≥2, have N)"
+- research-and-plan/full-implementation: "Reports will be synthesized by plan-architect in Phase 2 (Planning)"
+- debug-only: "Debug workflow does not produce research reports requiring synthesis"
+- Unknown scope: "Unknown workflow scope: <scope> (defaulting to no synthesis)"
 
 ---
 
