@@ -19,6 +19,7 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 - [/analyze](#analyze)
 - [/collapse](#collapse)
 - [/convert-docs](#convert-docs)
+- [/coordinate](#coordinate)
 - [/debug](#debug)
 - [/document](#document)
 - [/example-with-agent](#example-with-agent)
@@ -99,6 +100,54 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 **Output**: Converted document files
 
 **See**: [convert-docs.md](../commands/convert-docs.md)
+
+---
+
+### /coordinate
+**Purpose**: Clean multi-agent workflow orchestration with wave-based parallel implementation
+
+**Usage**: `/coordinate <workflow-description>`
+
+**Type**: primary
+
+**Arguments**:
+- `workflow-description`: Natural language description of workflow to execute
+
+**Workflow Scope Detection**:
+Automatically detects workflow type and executes appropriate phases:
+- **research-only**: Phases 0-1 (keywords: "research [topic]" without "plan" or "implement")
+- **research-and-plan**: Phases 0-2 (keywords: "research...to create plan", most common)
+- **full-implementation**: Phases 0-4, 6 (keywords: "implement", "build", "add feature")
+- **debug-only**: Phases 0, 1, 5 (keywords: "fix [bug]", "debug [issue]")
+
+**Key Features**:
+- **Wave-Based Execution**: 40-60% time savings through parallel implementation of independent phases
+- **Fail-Fast Error Handling**: Clear diagnostics, single execution path, no retries
+- **Context Reduction**: <30% context usage via metadata extraction and aggressive pruning
+- **Checkpoint Resume**: Auto-resume from phase boundaries after interruption
+
+**Agents Used**:
+- research-specialist (Phase 1)
+- plan-architect (Phase 2)
+- implementer-coordinator, implementation-executor (Phase 3)
+- test-specialist (Phase 4)
+- debug-analyst (Phase 5, conditional)
+- doc-writer (Phase 6, conditional)
+
+**Output**:
+- Research reports (specs/reports/)
+- Implementation plan (specs/plans/)
+- Code changes (Phase 3)
+- Test results (Phase 4)
+- Debug reports (Phase 5, if needed)
+- Implementation summary (specs/summaries/)
+
+**Performance**:
+- File size: 2,500-3,000 lines (vs 5,438 for /orchestrate)
+- Context usage: <30% throughout workflow
+- Time savings: 40-60% (wave-based execution)
+
+**See**: [coordinate.md](../commands/coordinate.md)
 
 ---
 
