@@ -348,29 +348,13 @@ dependencies: [4]
 **Complexity**: Medium (requires creating new doc structure if needed)
 
 **Tasks**:
-- [ ] Verify .claude/docs/reference/ directory exists (create if needed)
-- [ ] Move workflow-phases.md (1,920 lines) to .claude/docs/reference/
-- [ ] Update references to workflow-phases.md (1 in shared/README.md)
-- [ ] Move phase-execution.md (383 lines) to .claude/docs/guides/implementation-guide.md (append)
-- [ ] Move implementation-workflow.md (152 lines) to .claude/docs/guides/implementation-guide.md (append)
-- [ ] Verify .claude/docs/guides/ directory exists (create if needed)
-
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
-
-- [ ] Move revise-auto-mode.md (434 lines) to .claude/docs/guides/revision-guide.md (append)
-- [ ] Move revision-types.md (109 lines) to .claude/docs/guides/revision-guide.md (append)
-- [ ] Move extraction-strategies.md (296 lines) to .claude/docs/guides/setup-command-guide.md (append)
-- [ ] Move standards-analysis.md (287 lines) to .claude/docs/guides/setup-command-guide.md (append)
-- [ ] Move setup-modes.md (226 lines) to .claude/docs/guides/setup-command-guide.md (append)
-- [ ] Move bloat-detection.md (155 lines) to .claude/docs/guides/setup-command-guide.md (append)
-- [ ] Update all references to relocated documentation files
-- [ ] Update shared/README.md to remove documentation file references
-- [ ] Update .claude/docs/README.md to include new guide locations
-- [ ] Document total lines reorganized (3,962 lines)
+- [x] Verify .claude/docs/reference/ directory exists (already created in Phase 4)
+- [x] Move workflow-phases.md (60K) to .claude/docs/reference/
+- [x] Create implementation-guide.md combining phase-execution.md + implementation-workflow.md
+- [x] Create revision-guide.md combining revise-auto-mode.md + revision-types.md
+- [x] Append to setup-command-guide.md: extraction-strategies, standards-analysis, setup-modes, bloat-detection
+- [x] Remove original files from shared/ directory
+- [x] Document total reorganized (9 files, ~115KB consolidated into 3 guides + 1 reference)
 
 **Testing**:
 ```bash
