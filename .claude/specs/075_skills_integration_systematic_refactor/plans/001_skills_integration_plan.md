@@ -4,603 +4,490 @@
 - **Plan ID**: 001_skills_integration_plan
 - **Topic**: 075_skills_integration_systematic_refactor
 - **Created**: 2025-10-23
+- **Revised**: 2025-10-27
 - **Status**: Active
-- **Complexity**: 6.5/10
-- **Estimated Duration**: 6-9 weeks
+- **Complexity**: 4.0/10 (reduced from 6.5/10 based on research findings)
+- **Estimated Duration**: 3-5 weeks (reduced from 6-9 weeks)
 
 ## Objective
-Integrate Claude Code skills system into existing .claude/ configuration while maintaining compliance with .claude/docs/ standards and creating systematic documentation for the new skill implementation.
+Integrate official Claude Code skills system into existing .claude/ configuration following the model-invoked automatic activation pattern. Skills provide expertise capsules (context-on-demand) while preserving the existing agent orchestration layer for workflow execution. This integration adopts battle-tested external skills before minimal custom development.
 
 ## Research Reports
 - [Skills System Architecture](../reports/001_skills_system_architecture.md)
 - [Claude Config Compliance](../reports/002_claude_config_compliance.md)
 - [Documentation Standards](../reports/003_documentation_standards.md)
 - [Integration Patterns](../reports/004_integration_patterns.md)
+- [Claude Code Skills Documentation Analysis](../../488_research_https_docs_claude_com_en_docs_claude-code_skills_to_see_how_best_to_imp/reports/001_claude_code_skills_analysis.md) - **Official documentation alignment (2025-10-27)**
 
 ## Success Criteria
-- Skills system integrated with existing .claude/ architecture
-- Documentation standards applied to all skill files
-- Context management patterns implemented for skills
-- Skills registry system operational
-- All 4 research reports integrated into implementation
+- Official skill format (YAML frontmatter) adopted for all skills
+- External skills installed and tested (obra/superpowers, Anthropic document skills)
+- 2 custom expertise skills created (code-standards-guidance, testing-protocols-guidance)
+- Skills activate automatically via model-invoked pattern (no manual invocation infrastructure)
+- Existing agent orchestration layer preserved and functional
+- Documentation updated with skills-vs-agents distinction
+- Context usage <30% maintained
+- All 5 research reports integrated into implementation
 - User can review progress at each stage before proceeding
 
 ## Risk Assessment
-- **Low Risk**: Adopting pre-built skills from obra/superpowers (battle-tested, community-validated)
-- **Medium Risk**: Creating custom meta-level enforcement skills (new pattern, requires testing)
-- **Low Risk**: Documentation infrastructure (extends existing patterns)
-- **Medium Risk**: Integration with current behavioral injection architecture (requires careful coordination)
+- **Low Risk**: Adopting external skills (obra/superpowers, Anthropic) - battle-tested, zero integration complexity
+- **Low Risk**: Official skill format adoption - standard YAML frontmatter pattern
+- **Medium Risk**: Skill activation accuracy - depends on description quality and trigger keywords
+- **Low Risk**: Context window utilization - progressive disclosure handles this automatically
+- **Medium Risk**: Custom skill quality - activation rates depend on well-crafted descriptions
 
 ## Complexity Assessment
-**Overall Complexity**: 6.5/10
+**Overall Complexity**: 4.0/10
 
-- Multi-phase refactor with 6 distinct stages
-- Integration across multiple system layers (commands, agents, utilities, documentation)
-- Balance between preservation (orchestration) and innovation (skills)
-- Requires user review checkpoints at each stage
-- **Efficiency Factors**: Extends agent-registry-utils.sh (90% code overlap), uses unified-location-detection.sh (85% token reduction, 36x speedup), leverages 9 documented architectural patterns
+**Complexity Reduction Factors**:
+- Eliminated invocation infrastructure (skills activate automatically via model)
+- Removed registry system extensions (filesystem discovery suffices)
+- Simplified custom skills to expertise-only (no procedural operations)
+- No command integration needed (automatic activation)
+- Adopts external skills first (zero development time)
 
-**Estimated Duration**: 6-9 weeks
+**Estimated Duration**: 3-5 weeks
 
-**Phase Duration Breakdown**:
-- Phase 0: 1 week (documentation foundation)
-- Phase 1: 1 week (extend existing registry infrastructure)
-- Phase 2: 1-2 weeks (obra/superpowers integration)
-- Phase 3: 1 week (Anthropic document skills)
-- Phase 4: 1-2 weeks (custom guidance skills, pre-commit hooks)
-- Phase 5: 2-3 weeks (command integration and agent migration)
-- Phase 6: 1 week (validation and optimization with existing documentation)
+**Revised Phase Duration Breakdown**:
+- Phase 0: 1 week (official skill template, validation, CLAUDE.md section)
+- Phase 1: 1 week (install obra/superpowers + Anthropic, test activation)
+- Phase 2: 1 week (create 2 custom expertise skills)
+- Phase 3: 1 week (validation, description tuning, metrics)
 
-**Existing Infrastructure**:
-- **agent-registry-utils.sh**: Registry patterns, frontmatter parsing, metadata extraction, caching
-- **unified-location-detection.sh**: Location detection, directory creation, topic numbering (85% token reduction, 36x speedup)
-- **artifact-creation.sh**: Lazy directory creation (`ensure_artifact_directory()`), artifact path calculation
-- **Documented Patterns** (9 files): behavioral-injection, metadata-extraction, verification-fallback, checkpoint-recovery, context-management, forward-message, hierarchical-supervision, parallel-execution, README
-- **Clean Infrastructure**: 266KB library consolidation, 25 scripts archived, /research command provides hierarchical multi-agent research
+**Key Architectural Decisions**:
+- **Skills**: Expertise capsules with YAML frontmatter, automatic model-invoked activation
+- **Agents**: Workflow orchestrators with behavioral markdown, manual Task tool invocation
+- **Separation**: Skills provide knowledge on-demand, agents execute procedures
+- **Integration**: Zero-complexity (no command modifications, no invocation wrappers)
 
 ## Implementation Phases
 
-### Phase 0: Planning and Documentation Foundation
+### Phase 0: Official Skill Format and Documentation
 **Status**: Pending
-**Objective**: Create documentation infrastructure and skill definition standards
-**Complexity**: 4/10
+**Objective**: Create official skill definition template aligned with Claude Code documentation
+**Complexity**: 3/10
 **Duration**: 1 week
 
 #### Tasks
-1. Create skill definition template in `.claude/templates/skill-definition-template.md`
-   - Follow agent definition format with frontmatter
-   - Include sections: Core Capabilities, Standards Compliance, Behavioral Guidelines, Expected Input/Output
-   - Apply enforcement patterns (YOU MUST, EXECUTE NOW, MANDATORY VERIFICATION)
-   - Ensure metadata extraction compatibility
+1. Create official skill definition template in `.claude/templates/skill-definition-template.md`
+   - **File Structure**: Directory with `SKILL.md` (required YAML frontmatter)
+   - **Required Fields**: `name` (lowercase-with-hyphens), `description` (capability + triggers, max 1024 chars)
+   - **Optional Fields**: `allowed-tools` (tool restrictions for security)
+   - **Content Type**: Expertise and knowledge (NOT procedural steps)
+   - **Sections**: Overview, Expertise Areas, Activation Context, Knowledge Base (patterns/examples/anti-patterns), References
+   - **Critical Distinction**: Skills contain descriptive expertise, NOT imperative procedures (no "YOU MUST", "EXECUTE NOW", "STEP 1/2/3")
+   - Include comparison table (Skills vs Agents vs Utilities) from research report
 
 2. Create skills README in `.claude/skills/README.md`
-   - Document purpose of skills directory
-   - Explain relationship to agents (specialized capabilities vs orchestration)
-   - Link to command_architecture_standards.md
-   - Provide tool access patterns documentation
-   - Include invocation patterns (behavioral injection)
-   - Add quality checklist for skills development
+   - Document purpose: Expertise capsules for automatic context injection
+   - Explain relationship to agents: Skills = knowledge (passive), Agents = workflow execution (active)
+   - Activation model: Model-invoked automatic (description-driven triggers)
+   - File structure: Flat directory `.claude/skills/{skill-name}/SKILL.md`
+   - Tool access: `allowed-tools` restricts what Claude can do WHEN skill is active
+   - Link to skills-vs-subagents decision guide
 
-3. Document skills integration in `.claude/docs/guides/skills-integration-guide.md`
-   - Explain hybrid architecture (skills for expertise, subagents for workflows)
-   - Reference existing skills-vs-subagents decision guide (`.claude/docs/guides/skills-vs-subagents-decision.md`)
-   - Extend with integration examples with commands
-   - Document context management for skills
-   - Reference all 4 research reports
-   - Reference documented architectural patterns (`.claude/docs/concepts/patterns/README.md`)
+3. Update skills-vs-subagents decision guide (`.claude/docs/guides/skills-vs-subagents-decision.md`)
+   - Add "Skills Format and Activation (Official Claude Code)" section
+   - Document SKILL.md format (YAML frontmatter + markdown content)
+   - Explain model-invoked activation vs manual invocation
+   - Add decision criteria: temporal orchestration → agents, expertise on-demand → skills, deterministic logic → utilities
+   - Include example skill vs agent distinction
 
-4. Add skills section to CLAUDE.md template
-   - Define skills section with markers (<!-- SECTION: skills_system -->)
-   - Include [Used by: commands] metadata
-   - Document enabled skills and their purposes
+4. Add skills section to CLAUDE.md
+   - Define `<!-- SECTION: skills_system -->` with `[Used by: all commands, automatic activation]` metadata
+   - List enabled skills by category (Code Quality, Collaboration, Documentation)
+   - Explain automatic activation model (no explicit invocation)
    - Link to skills-integration-guide.md
 
-5. Extend pre-commit validation for skills
-   - Add skill file validation (≥200 lines minimum)
-   - Verify frontmatter completeness (allowed-tools, description)
-   - Check required sections (Core Capabilities, Standards Compliance, etc.)
-   - Scan for temporal markers (timeless writing policy)
+5. Create skill file validation script (`.claude/lib/validate-skill.sh`)
+   - Validate YAML frontmatter presence
+   - Check required fields: `name`, `description`
+   - Verify name format (lowercase-with-hyphens, max 64 chars)
+   - Check description length (<1024 chars)
+   - Verify SKILL.md filename (not arbitrary markdown files)
+   - Extend pre-commit hook to run validation on `.claude/skills/` changes
 
 #### Testing
-- Validate template against command_architecture_standards.md
+- Validate template produces valid SKILL.md files
+- Test validation script with compliant and non-compliant samples
 - Verify README navigation links work correctly
-- Test pre-commit hook with sample skill file
-- Run timeless writing validation on all new documentation
+- Test pre-commit hook rejects invalid skills
 
 #### Success Criteria
-- All documentation templates created and validated
-- Pre-commit hook extends to skills directory
-- Cross-references complete and tested
-- **USER REVIEW CHECKPOINT**: Review documentation standards before proceeding
+- Official skill template created following Claude Code standards
+- Validation script enforces YAML frontmatter requirements
+- Documentation clearly distinguishes skills from agents
+- Pre-commit hook validates skill format
+- **USER REVIEW CHECKPOINT**: Review official format adoption before proceeding
 
 #### Artifacts Created
-- `.claude/templates/skill-definition-template.md`
-- `.claude/skills/README.md`
-- `.claude/docs/guides/skills-integration-guide.md`
-- `.git/hooks/pre-commit` (extended with skills validation)
+- `.claude/templates/skill-definition-template.md` (official YAML format)
+- `.claude/skills/README.md` (activation model, file structure)
+- `.claude/docs/guides/skills-vs-subagents-decision.md` (extended with official format section)
+- `.claude/lib/validate-skill.sh` (YAML frontmatter validation)
+- `CLAUDE.md` (skills_system section with automatic activation documentation)
 
 ---
 
-### Phase 1: Skills Registry Infrastructure
+### Phase 1: External Skills Installation and Testing
 **Status**: Pending
-**Objective**: Build skill discovery, registration, and invocation infrastructure
-**Complexity**: 5/10
+**Objective**: Install obra/superpowers and Anthropic document skills, test automatic activation
+**Complexity**: 3/10
 **Duration**: 1 week
 
 #### Dependencies
 - Phase 0 must be complete
-- User approval of documentation standards required
+- User approval of official skill format required
 
-#### Existing Infrastructure
-- **agent-registry-utils.sh** provides registry patterns with 90% code overlap (frontmatter parsing, metadata extraction, caching)
-- **unified-location-detection.sh** provides directory creation utilities (85% token reduction, 36x speedup vs agent-based approach)
-- **artifact-creation.sh** provides lazy directory creation pattern (`ensure_artifact_directory()`)
+#### Rationale for Phase Restructure
+Original plan proposed building invocation infrastructure (registry, metadata extraction, invocation wrappers) that contradicts official skills architecture. Skills activate automatically via model-invoked pattern based on description keywords. No manual invocation infrastructure needed. Phase 1 now focuses on adopting battle-tested external skills first.
 
 #### Tasks
-1. Extend skills registry system in `.claude/lib/agent-registry-utils.sh` to support skills
-   - Add `list_skills()` - List all available skills (reuse `list_agents()` pattern)
-   - Add `validate_skill(skill_name)` - Verify skill exists and is valid (reuse `validate_agent()` pattern)
-   - Add `get_skill_info(skill_name)` - Extract metadata from frontmatter (reuse `get_agent_info()` pattern)
-   - Add `get_skill_capabilities(skill_name)` - Parse capabilities section (new function)
-   - Add `find_skills_by_capability(pattern)` - Capability-based search (new function)
-   - Add `load_skill_behavioral_prompt(skill_name)` - Reuse agent loading pattern
-   - Extend existing caching for performance (project skills override global skills)
-   - **Effort saved**: ~5KB code, 1 week development time by extending existing registry instead of creating parallel system
-
-2. Create `.claude/skills/` directory structure using existing infrastructure
-   - Use `ensure_artifact_directory()` pattern from artifact-creation.sh for lazy directory creation
-   - Main directories: `converters/`, `analyzers/`, `enforcers/`, `integrations/`
-   - Each skill in subdirectory: `skill-name/SKILL.md`
-   - Support for optional files: `reference.md`, `scripts/`, `templates/`
-   - Leverage unified-location-detection.sh for directory path resolution (85% token reduction benefit)
-
-3. Extend metadata extraction utilities for skills
-   - Implement `extract_skill_metadata()` in `.claude/lib/metadata-extraction.sh` (extends existing utility)
-   - Extract title, description, capabilities, allowed-tools
-   - Support 95-99% context reduction pattern (see `.claude/docs/concepts/patterns/metadata-extraction.md`)
-   - Return metadata-only format compatible with existing patterns
-   - Follow verification-fallback pattern (see `.claude/docs/concepts/patterns/verification-fallback.md`) for 100% file creation rate
-
-4. Integrate skills with context management
-   - Add skills pruning to `.claude/lib/context-pruning.sh`
-   - Implement `prune_skill_output()` - Clear full outputs after metadata extraction
-   - Add skills to layered context architecture documentation
-   - Ensure <30% context usage target maintained
-
-5. Create skill invocation wrapper utilities
-   - Add `invoke_skill()` function in `.claude/lib/skills-invocation.sh`
-   - Support behavioral injection pattern (see `.claude/docs/concepts/patterns/behavioral-injection.md`)
-   - Follow imperative agent invocation pattern per Standard 11 (see `.claude/docs/reference/command_architecture_standards.md`)
-   - Pre-calculate artifact paths before invocation
-   - Verify skill outputs with mandatory verification checkpoints (verification-fallback pattern)
-   - Implement fallback recovery mechanisms (checkpoint-recovery pattern: `.claude/docs/concepts/patterns/checkpoint-recovery.md`)
-
-#### Testing
-- Test skill discovery with sample skills across all capability directories
-- Validate metadata extraction produces expected format
-- Verify context pruning reduces token usage
-- Test skill invocation wrapper with mock skill files
-- Run performance benchmarks (caching, discovery time)
-
-#### Success Criteria
-- All registry functions operational
-- Skills directory structure created with documentation
-- Metadata extraction compatible with existing patterns
-- Context management integration complete
-- **USER REVIEW CHECKPOINT**: Review infrastructure before installing external skills
-
-#### Artifacts Created
-- `.claude/lib/agent-registry-utils.sh` (extended with skills support: list_skills(), validate_skill(), get_skill_info())
-- `.claude/lib/skills-invocation.sh`
-- `.claude/lib/metadata-extraction.sh` (extended with `extract_skill_metadata()`)
-- `.claude/lib/context-pruning.sh` (extended with `prune_skill_output()`)
-- `.claude/skills/README.md` (complete directory structure documentation)
-
----
-
-### Phase 2: obra/superpowers Integration
-**Status**: Pending
-**Objective**: Install and configure obra/superpowers community skills (20+ battle-tested skills)
-**Complexity**: 5/10
-**Duration**: 1-2 weeks
-
-#### Dependencies
-- Phase 1 must be complete
-- User approval of registry infrastructure required
-
-#### Tasks
-1. Install obra/superpowers plugin
+1. Install obra/superpowers community skills
    - Run `/plugin marketplace add obra/superpowers-marketplace`
    - Run `/plugin install superpowers@superpowers-marketplace`
-   - Verify installation with `/plugin list`
+   - Verify installation: `/plugin list` and `ls ~/.claude/skills/`
+   - Document installed skills (20+ available)
 
-2. Identify skills to enable
-   - **Collaboration**: dispatching-parallel-agents, requesting-code-review, receiving-code-review, using-git-worktrees, finishing-a-development-branch, subagent-driven-development
+2. Select skills to enable from obra/superpowers
+   - **Collaboration**: dispatching-parallel-agents, requesting-code-review, receiving-code-review, using-git-worktrees, subagent-driven-development
    - **Testing**: test-driven-development, condition-based-waiting, testing-anti-patterns
-   - **Debugging**: systematic-debugging, root-cause-tracing, verification-before-completion, defense-in-depth
-   - **Meta**: writing-skills, sharing-skills, testing-skills-with-subagents, using-superpowers
-   - **Skip**: brainstorming, writing-plans, executing-plans (conflict with /plan and /implement)
+   - **Debugging**: systematic-debugging, root-cause-tracing, verification-before-completion
+   - **Meta**: writing-skills, sharing-skills, using-superpowers
+   - **Skip**: brainstorming, writing-plans, executing-plans (conflict with /plan and /implement commands)
 
-3. Update CLAUDE.md with enabled skills
-   - Add <!-- SECTION: skills_system --> with enabled skills list
-   - Document each skill's purpose and when it activates
-   - Reference skills-integration-guide.md for details
-   - Include [Used by: commands] metadata
+3. Install Anthropic document skills
+   - Run `/plugin install document-skills@anthropic-agent-skills`
+   - Verify installation: `/plugin list`
+   - Test skills available: docx, pdf, pptx, xlsx
 
-4. Test skills in isolated workflows
-   - **Document generation**: Test with sample markdown → PDF conversion
-   - **Testing**: Verify test-driven-development activates during test writing
-   - **Debugging**: Validate systematic-debugging provides 4-phase investigation
-   - **Collaboration**: Test dispatching-parallel-agents with /orchestrate
+4. Test automatic activation
+   - **Code editing test**: Edit .lua file → expect code-related skills to activate
+   - **Multi-agent test**: Invoke /orchestrate → expect dispatching-parallel-agents to activate
+   - **Document test**: Request PDF conversion → expect pdf skill to activate
+   - **Debugging test**: Invoke /debug → expect systematic-debugging to activate
+   - Measure dormant token usage (30-50 tokens per skill expected)
+   - Measure activated token usage (500-2000 tokens per skill expected)
 
-5. Measure baseline performance
-   - Capture token usage before skills (baseline)
-   - Capture token usage with skills enabled
-   - Measure workflow execution time (parallel vs sequential)
-   - Validate <30% context usage maintained
+5. Update CLAUDE.md with enabled skills
+   - Add `<!-- SECTION: skills_system -->` section
+   - List enabled skills by category (Collaboration, Testing, Debugging, Documentation)
+   - Document activation triggers for each skill
+   - Explain automatic model-invoked pattern (no manual invocation)
+   - Link to `.claude/docs/guides/skills-integration-guide.md`
+
+6. Measure baseline performance
+   - Baseline context usage with 0 skills installed
+   - Context usage with 25+ skills installed (dormant state)
+   - Context usage with 1-3 skills activated
+   - Verify <30% context usage maintained
+   - Document token savings vs manual standards injection
 
 #### Testing
 - Test each skill category independently
-- Verify no conflicts with existing commands/agents
-- Validate skills activate in appropriate contexts
-- Measure token reduction and performance gains
-- Test git worktrees workflow (40-60% productivity gain expected)
-- Test parallel agents coordination (50-70% time reduction expected)
+- Verify skills activate based on description keywords
+- Validate no conflicts with existing commands/agents
+- Measure token usage (dormant vs activated)
+- Test progressive disclosure (supporting files load on-demand)
 
 #### Success Criteria
-- All selected skills installed and verified
+- Obra/superpowers and Anthropic skills installed successfully
+- Automatic activation verified for 5+ skills
 - CLAUDE.md updated with skills documentation
-- Performance baselines captured
-- No conflicts with existing architecture
-- **USER REVIEW CHECKPOINT**: Review performance metrics and skill activation before custom skills
+- Context usage <30% maintained with all skills installed
+- **USER REVIEW CHECKPOINT**: Review activation behavior and performance before custom skills
 
 #### Artifacts Created
-- `CLAUDE.md` (skills section with enabled skills list)
-- Performance baseline metrics (`.claude/data/metrics/skills-baseline.json`)
+- `CLAUDE.md` (skills_system section with 25+ enabled skills)
+- Performance baseline metrics (token usage, activation accuracy)
 - Skills activation test results
 
 ---
 
-### Phase 3: Anthropic Document Skills Integration
+### Phase 2: Custom Expertise Skills
 **Status**: Pending
-**Objective**: Install and configure Anthropic official document skills (docx, pdf, pptx, xlsx)
+**Objective**: Create 2 project-specific expertise skills (code-standards-guidance, testing-protocols-guidance)
 **Complexity**: 4/10
 **Duration**: 1 week
 
 #### Dependencies
-- Phase 2 must be complete
-- User approval of obra/superpowers integration required
+- Phase 1 must be complete
+- User approval of external skills integration required
+
+#### Rationale: Pure Expertise, Not Procedures
+Original plan proposed skills with procedural operations ("Read CLAUDE.md", "Detect file type", "Extract standards"). This conflicts with official skills architecture where skills provide knowledge on-demand, not execute operations. Revised approach: Skills contain language-specific patterns, conventions, and examples directly in SKILL.md content.
 
 #### Tasks
-1. Install Anthropic document skills plugin
-   - Run `/plugin install document-skills@anthropic-agent-skills`
-   - Verify installation with `/plugin list`
-   - List available skills with skills registry
+1. Create code-standards-guidance skill (`.claude/skills/code-standards-guidance/SKILL.md`)
+   - **YAML frontmatter**:
+     - `name: code-standards-guidance`
+     - `description`: "Provides language-specific code quality guidance aligned with project CLAUDE.md standards. Use when writing or reviewing code, checking naming conventions, error handling patterns, or code organization. Activates for .lua, .py, .js, .sh files and code review tasks."
+     - `allowed-tools: Read` (read-only access to CLAUDE.md for standards lookup)
 
-2. Test document conversion skills
-   - Test docx: Markdown → Word document conversion
-   - Test pdf: Markdown → PDF with formatting preservation
-   - Test pptx: Outline → PowerPoint presentation
-   - Test xlsx: CSV/data → Excel spreadsheet with formulas
+   - **Content sections**:
+     - **Overview**: Purpose and scope of code guidance
+     - **Expertise Areas**: General principles (indentation, line length, naming, error handling)
+     - **Lua Standards**: Module organization, function naming, error handling (pcall), documentation
+     - **Bash Standards**: ShellCheck compliance, quoting, error handling (bash -e)
+     - **Python Standards**: PEP 8, type hints, docstrings, black formatting
+     - **Activation Context**: When skill activates (file editing, code review, naming discussions)
+     - **Anti-Patterns**: Common mistakes (emojis, mixing tabs/spaces, unquoted variables)
+     - **References**: Links to CLAUDE.md, PEP 8, ShellCheck
 
-3. Update /convert-docs command integration
-   - Replace custom doc-converter agent references with skills
-   - Update command to rely on automatic skill activation
-   - Add skills availability check at command start
-   - Document expected token savings (98% reduction baseline)
+2. Create testing-protocols-guidance skill (`.claude/skills/testing-protocols-guidance/SKILL.md`)
+   - **YAML frontmatter**:
+     - `name: testing-protocols-guidance`
+     - `description`: "Provides testing strategy guidance aligned with project CLAUDE.md testing protocols. Use when writing tests, planning test coverage, selecting test frameworks, or debugging test failures. Activates for *_spec.lua, test_*.sh, and test planning discussions."
+     - `allowed-tools: Read, Bash` (read CLAUDE.md, run tests for demonstration)
 
-4. Test deterministic vs token generation
-   - Validate binary format handling quality (DOCX structure, PDF layout)
-   - Compare output quality: skills vs previous token generation
-   - Verify formula evaluation in xlsx skill
-   - Test edge cases (complex formatting, large files)
+   - **Content sections**:
+     - **Overview**: Purpose and scope of testing guidance
+     - **Expertise Areas**: Claude Code testing (location, runner, patterns, coverage), Neovim testing (commands, patterns, linting, formatting)
+     - **Test Coverage Guidelines**: >80% for new code, public API requirements, critical paths, regression tests
+     - **Activation Context**: When skill activates (test writing, coverage planning, debugging failures)
+     - **Testing Patterns**: Unit test structure (Lua example), integration test pattern (Bash example)
+     - **Anti-Patterns**: Testing implementation details, brittle tests, missing edge cases, no regression tests
+     - **References**: Links to CLAUDE.md ## Testing Protocols, .claude/tests/ examples
 
-5. Update documentation
-   - Add document skills to CLAUDE.md skills section
-   - Update /convert-docs command documentation
-   - Reference Anthropic skills documentation
-   - Document when skills activate vs manual conversion
+3. Update CLAUDE.md with skills references
+   - Extend `<!-- SECTION: skills_system -->` with custom skills
+   - Add Code Quality section listing code-standards-guidance
+   - Add Testing section listing testing-protocols-guidance
+   - Document activation triggers and use cases
+   - Note that systematic-debugging comes from obra/superpowers (no custom debugging skill)
+
+4. Test automatic activation
+   - **Code editing test**: Edit .lua file → code-standards-guidance activates with Lua standards
+   - **Code review test**: Review Python code → code-standards-guidance activates with PEP 8 guidance
+   - **Test writing test**: Create test_*.sh file → testing-protocols-guidance activates
+   - **Test planning test**: Discuss coverage strategy → testing-protocols-guidance activates
+   - Verify descriptions trigger activation accurately
+
+5. Validate skill portability
+   - Test code-standards-guidance on different project (different CLAUDE.md)
+   - Verify skill reads project-specific standards dynamically
+   - Validate guidance adapts to project standards
+   - Confirm no hard-coded project assumptions
 
 #### Testing
-- Test all 4 document skills independently
-- Validate format preservation and quality
-- Test integration with /convert-docs command
-- Measure token usage reduction (before/after)
-- Verify binary output correctness
+- Test each expertise skill independently
+- Validate activation accuracy (precision/recall)
+- Verify content is expertise (patterns, examples) not procedures (STEP 1/2/3)
+- Test skill portability across projects
+- Measure token usage (dormant vs activated)
 
 #### Success Criteria
-- All 4 document skills operational
-- /convert-docs command updated and tested
-- Documentation complete
-- Token reduction validated (≥90% expected)
-- **USER REVIEW CHECKPOINT**: Review document conversion quality before custom skills
+- 2 custom expertise skills created with official YAML format
+- Skills contain knowledge content (NOT procedural operations)
+- Automatic activation verified for both skills
+- Skills portable to other projects with different CLAUDE.md
+- CLAUDE.md updated with custom skills references
+- **USER REVIEW CHECKPOINT**: Review expertise content quality before validation phase
 
 #### Artifacts Created
-- `.claude/commands/convert-docs.md` (integrated with Anthropic document skills)
-- `CLAUDE.md` (document skills section)
-- Document conversion test results
+- `.claude/skills/code-standards-guidance/SKILL.md` (expertise on code quality, naming, error handling)
+- `.claude/skills/testing-protocols-guidance/SKILL.md` (expertise on test strategy, patterns, coverage)
+- `CLAUDE.md` (extended skills_system section with custom skills)
 
 ---
 
-### Phase 4: Custom Meta-Level Enforcement Skills
+### Phase 3: Validation, Optimization, and Documentation
 **Status**: Pending
-**Objective**: Create project-specific skills that provide guidance and enforce testable standards from CLAUDE.md
-**Complexity**: 6/10
-**Duration**: 1-2 weeks
-
-#### Dependencies
-- Phase 3 must be complete
-- User approval of document skills integration required
-
-#### Rationale: Skills vs Libraries for Enforcement
-Skills excel at providing guidance and making context-aware decisions, not enforcing deterministic rules. Deterministic enforcement (indentation, line length, timeless writing) belongs in unified libraries and pre-commit hooks. Skills should focus on subjective judgment (code quality, test completeness, debugging strategies).
-
-#### Tasks
-1. Create code-standards-guidance skill
-   - Location: `.claude/skills/enforcers/code-standards-guidance/SKILL.md`
-   - Read CLAUDE.md ## Code Standards section
-   - Detect file type from extension
-   - Extract language-specific standards
-   - Provide guidance on code organization, naming conventions, error handling patterns
-   - Focus on subjective quality (not deterministic rules like indentation)
-   - Use allowed-tools: Read, Edit (restrict Write for safety)
-   - Note: Deterministic checks (indentation, line length) handled by pre-commit hooks
-
-2. Create testing-protocols-guidance skill
-   - Location: `.claude/skills/enforcers/testing-protocols-guidance/SKILL.md`
-   - Read CLAUDE.md ## Testing Protocols section
-   - Provide guidance on test coverage strategies
-   - Suggest test patterns for edge cases
-   - Recommend integration vs unit test approaches
-   - Use allowed-tools: Read, Bash (for test execution)
-   - Note: Coverage thresholds enforced by test runners, skill provides strategic guidance
-
-3. Reference systematic-debugging skill from obra/superpowers (no custom skill needed)
-   - obra/superpowers provides systematic-debugging and root-cause-tracing skills
-   - These provide 4-phase investigation methodology
-   - No need to create custom debugging skill, leverage community-validated patterns
-
-4. Update CLAUDE.md sections with links
-   - Add file path references in ## Code Standards
-   - Add file path references in ## Testing Protocols
-   - Document where standards are defined (links to detailed files)
-   - Note: ## Documentation Policy enforcement handled by pre-commit hooks (no skill needed)
-
-5. Test automatic activation
-   - Edit .lua file → code-standards-guidance activates
-   - Run /test-all → testing-protocols-guidance activates
-   - Invoke /debug → systematic-debugging skill (obra/superpowers) activates
-   - Verify standards read from CLAUDE.md correctly
-
-6. Measure token reduction
-   - Baseline: Commands load standards sections directly (~6000 tokens)
-   - With skills: Skills dormant (90 tokens), activate on demand (6000 tokens first time, cached)
-   - Expected savings: 96% reduction baseline, standards cached across phases
-
-#### Testing
-- Test each guidance skill independently
-- Validate standards discovery across project types
-- Verify guidance quality (subjective vs deterministic)
-- Test skill portability (same skill, different project with different standards)
-- Measure token usage before/after
-- Verify pre-commit hooks handle deterministic enforcement
-
-#### Success Criteria
-- 2 custom guidance skills created and tested (code, testing)
-- obra/superpowers debugging skills integrated
-- CLAUDE.md updated with file path references
-- Automatic activation verified
-- Token reduction validated (≥90% expected)
-- Skills portable across projects
-- Deterministic enforcement delegated to pre-commit hooks
-- **USER REVIEW CHECKPOINT**: Review guidance behavior before command integration
-
-#### Artifacts Created
-- `.claude/skills/enforcers/code-standards-guidance/SKILL.md`
-- `.claude/skills/enforcers/testing-protocols-guidance/SKILL.md`
-- `CLAUDE.md` (file path references in Code Standards and Testing Protocols sections)
-- Note: Documentation standards enforcement delegated to pre-commit hooks
-
----
-
-### Phase 5: Command Integration and Agent Migration
-**Status**: Pending
-**Objective**: Update commands to leverage skills, migrate simple agents to skills where appropriate
-**Complexity**: 7/10
-**Duration**: 2-3 weeks
-
-#### Dependencies
-- Phase 4 must be complete
-- User approval of custom enforcement skills required
-
-#### Tasks
-1. Update /implement command integration
-   - Add skills availability notation in behavioral prompts
-   - Document which skills auto-activate during implementation
-   - Remove redundant standards injection (handled by enforcement skills)
-   - Test adaptive planning with skills active
-   - Verify checkpoint recovery compatible with skills
-
-2. Update /orchestrate command integration
-   - Add skills coordination for parallel workflows
-   - Reference dispatching-parallel-agents skill
-   - Update multi-agent workflow documentation
-   - Test hierarchical supervision with skills
-   - Verify context management (<30% usage maintained)
-
-3. Update /test-all command integration
-   - Reference test-driven-development skill
-   - Reference testing-protocols-enforcement skill
-   - Remove inline testing methodology (handled by skills)
-   - Verify coverage thresholds enforced by skill
-
-4. Update /debug command integration
-   - Reference systematic-debugging skill
-   - Reference root-cause-tracing skill
-   - Update debug workflow to leverage skills
-   - Test parallel hypothesis investigation
-
-5. Migrate simple agents to skills (where appropriate)
-   - **doc-converter**: Replace with Anthropic document skills (already done in Phase 3)
-   - **github-specialist**: Evaluate for migration to github-operations skill
-   - **metrics-specialist**: Evaluate for migration to performance-metrics skill
-   - **Preserve**: Keep orchestration agents (spec-updater, plan-architect, implementation-executor, plan-structure-manager)
-   - **plan-structure-manager**: Created 2025-10-26, handles Phase/Stage expansion operations (integrates with /expand and /collapse commands)
-   - **Potential skills opportunity**: "when to expand phases" decision-making skill during /plan creation (provides complexity threshold guidance, complements plan-structure-manager execution)
-
-6. Update agent behavioral prompts
-   - Add "Skills Available (auto-activate)" section
-   - List expected skills for each workflow type
-   - Remove redundant standards injection
-   - Verify behavioral injection pattern maintained
-
-#### Testing
-- Test each command with skills integration
-- Verify skills activate automatically in appropriate contexts
-- Test agent migration paths (document conversion quality)
-- Validate context usage remains <30%
-- Measure end-to-end workflow performance
-- Test checkpoint recovery with skills active
-
-#### Success Criteria
-- All commands updated and tested
-- Agent migration complete where appropriate
-- Behavioral prompts optimized
-- Context usage target maintained (<30%)
-- **USER REVIEW CHECKPOINT**: Review command integration before validation phase
-
-#### Artifacts Created
-- `.claude/commands/implement.md` (integrated with skills availability notation)
-- `.claude/commands/orchestrate.md` (integrated with skills coordination)
-- `.claude/commands/test-all.md` (integrated with testing-protocols-guidance skill)
-- `.claude/commands/debug.md` (integrated with systematic-debugging skill)
-- Agent behavioral prompts (extended with "Skills Available" sections)
-- Migration documentation for converted agents
-
----
-
-### Phase 6: Validation, Optimization, and Documentation
-**Status**: Pending
-**Objective**: Validate complete integration, optimize activation, document patterns, capture metrics
-**Complexity**: 5/10
+**Objective**: Optimize skill descriptions, validate integration, document patterns, capture final metrics
+**Complexity**: 3/10
 **Duration**: 1 week
 
 #### Dependencies
-- Phase 5 must be complete
-- User approval of command integration required
+- Phase 2 must be complete
+- User approval of custom expertise skills required
+
+#### Rationale for Phase Simplification
+Original plan proposed extensive command integration (updating /implement, /orchestrate, /test-all, /debug) and agent migration. This is unnecessary because skills activate automatically based on context. Commands require ZERO modifications - skills provide supplemental expertise passively when relevant. Phase 3 now focuses solely on validation and documentation.
 
 #### Tasks
-1. Collect comprehensive metrics
-   - Token usage: Before skills baseline vs after skills
-   - Context utilization: Verify <30% maintained (target <23%)
-   - Workflow execution time: Sequential vs parallel with skills
-   - Skills activation frequency and accuracy
-   - Context window consumption across full workflows
+1. Optimize skill activation descriptions
+   - **Tune descriptions**: Adjust trigger keywords based on observed activation patterns
+   - **Add specificity**: Ensure descriptions mention specific file types, use cases, contexts
+   - **Test edge cases**: Verify skills don't activate in inappropriate contexts
+   - **Measure accuracy**: Calculate activation precision (relevant activations / total activations) and recall (activations / should-activate scenarios)
+   - **Target**: ≥70% activation accuracy for all skills
 
-2. Optimize skill activation
-   - Tune skill descriptions for better relevance matching
-   - Add anti-patterns where skills should NOT activate
-   - Test edge cases and adjust descriptions
-   - Validate activation accuracy (precision/recall)
+2. Collect comprehensive performance metrics
+   - **Baseline (0 skills)**: Token usage for typical workflows
+   - **Dormant state (25+ skills)**: Token overhead when skills inactive
+   - **Activated state (1-3 skills)**: Token usage when skills provide expertise
+   - **Context utilization**: Verify <30% maintained across workflows
+   - **Activation frequency**: Track how often each skill activates
+   - **Expected findings**: 30-50 tokens per dormant skill, 500-2000 tokens when activated
 
-3. Update .claude/docs/ with skills architecture
-   - Extend `.claude/docs/concepts/patterns/README.md` with skills integration section (not standalone skills-architecture.md)
-   - Document hybrid architecture (skills + subagents) integration with existing patterns
-   - Include integration patterns and examples
-   - Reference existing skills-vs-subagents decision guide (`.claude/docs/guides/skills-vs-subagents-decision.md`)
-   - Reference all 4 research reports
-   - Cross-reference existing architectural patterns (behavioral-injection, metadata-extraction, verification-fallback, etc.)
+3. Update skills-vs-subagents decision guide
+   - Extend `.claude/docs/guides/skills-vs-subagents-decision.md` with official format section (completed in Phase 0, verify completeness)
+   - Add example scenarios: code-standards-guidance (skill) vs implementation-executor (agent) vs topic-utils.sh (utility)
+   - Document decision tree: temporal orchestration → agent, expertise on-demand → skill, deterministic logic → utility
+   - Include activation model comparison table
 
-4. Create skills migration guide
-   - Document when to create new skills
-   - Provide migration checklist (agent → skill)
-   - Include template usage instructions
-   - Add troubleshooting section
+4. Create skills integration guide
+   - Document: `.claude/docs/guides/skills-integration-guide.md`
+   - **Section 1**: Hybrid architecture (skills for expertise, agents for orchestration)
+   - **Section 2**: When to create skills (expertise capsules, standards guidance, methodology knowledge)
+   - **Section 3**: Official skill format (YAML frontmatter, description guidelines, content structure)
+   - **Section 4**: Activation optimization (description specificity, trigger keywords, anti-patterns)
+   - **Section 5**: Testing and validation (activation accuracy, portability testing)
+   - Reference all 5 research reports
 
-5. Update command and agent reference documentation
-   - Add skills references to `.claude/docs/reference/command-reference.md`
-   - Update `.claude/docs/reference/agent-reference.md` with migrated agents
-   - Document skills integration in `.claude/docs/guides/command-development-guide.md`
-   - Update `.claude/docs/guides/agent-development-guide.md` with skills decision tree
+5. Run validation suite
+   - **Pre-commit validation**: Test skill file validation script with compliant/non-compliant samples
+   - **Timeless writing validation**: Scan all new documentation for temporal markers
+   - **Activation validation**: Test all 27+ skills (25 external + 2 custom) activate correctly
+   - **Portability validation**: Test custom skills on different project with different CLAUDE.md
 
-6. Run complete validation suite
-   - Pre-commit validation on all skills
-   - Timeless writing validation on documentation
-   - Skills registry validation
-   - Command integration tests
-   - End-to-end workflow tests
-
-7. Capture final performance comparison
-   - Token reduction: Total savings per workflow type
-   - Context usage: Final percentage vs target
-   - Workflow efficiency: Time savings for parallelizable tasks
-   - Standards compliance: Automatic enforcement vs manual
+6. Document final integration state
+   - Update `.claude/docs/concepts/patterns/README.md` with skills integration summary (1 paragraph linking to skills-integration-guide.md)
+   - Update `CLAUDE.md` with final enabled skills list (25+ external, 2 custom)
+   - Document preservation of agent orchestration layer (no agents replaced, skills augment)
+   - Note zero command modifications required (automatic activation)
 
 #### Testing
-- Run complete test suite across all workflows
-- Validate metrics accuracy and reproducibility
-- Test documentation navigation and completeness
-- Verify all cross-references valid
-- Test skills activation across diverse scenarios
+- Test all skills activate correctly based on descriptions
+- Validate custom skills portable across projects
+- Verify documentation completeness and navigation
+- Measure final performance metrics
+- Test pre-commit validation rejects invalid skills
 
 #### Success Criteria
-- Metrics validated and documented
-- Skill activation optimized
-- Complete documentation architecture in place
-- Migration guide operational
-- Validation suite passes completely
-- Performance targets achieved:
-  - Token reduction: ≥33,000 per workflow (42% additional reduction)
-  - Context usage: ≤23% (vs baseline <30%)
-  - Workflow efficiency: 40-70% improvement for parallelizable tasks
-  - Standards compliance: Automatic enforcement without degradation
-- **FINAL USER REVIEW CHECKPOINT**: Review complete integration and approve for production
+- Skill activation accuracy ≥70% for all skills
+- Context usage <30% maintained with all skills installed
+- Custom skills portable to other projects
+- Complete documentation (integration guide, decision guide updates)
+- Validation suite passes (pre-commit, activation, portability)
+- Performance metrics captured (baseline, dormant, activated)
+- **FINAL USER REVIEW CHECKPOINT**: Review complete integration and metrics before production
 
 #### Artifacts Created
-- `.claude/docs/concepts/patterns/README.md` (extended with skills integration section)
-- `.claude/docs/guides/skills-migration-guide.md`
-- `.claude/docs/reference/command-reference.md` (extended with skills references)
-- `.claude/docs/reference/agent-reference.md` (extended with migrated agents)
-- Performance metrics report (`.claude/data/metrics/skills-integration-final.json`)
-- Validation test results
+- `.claude/docs/guides/skills-integration-guide.md` (complete integration documentation)
+- `.claude/docs/guides/skills-vs-subagents-decision.md` (extended with examples and decision tree)
+- `.claude/docs/concepts/patterns/README.md` (skills integration summary paragraph)
+- `CLAUDE.md` (final skills_system section with 27+ enabled skills)
+- Performance metrics report (token usage, activation accuracy, context utilization)
+- Validation test results (activation tests, portability tests)
 
 ---
 
 ## Implementation Notes
 
 ### Preservation Strategy
-- **PRESERVE**: Orchestration layer (commands, behavioral injection, hierarchical agents)
-- **PRESERVE**: Progressive plan structures (L0 → L1 → L2 expansion)
+- **PRESERVE**: All orchestration infrastructure (commands, agents, utilities, behavioral injection)
+- **PRESERVE**: Progressive plan structures (L0 → L1 → L2 expansion via plan-structure-manager)
 - **PRESERVE**: Adaptive planning (complexity-based replanning)
 - **PRESERVE**: Checkpoint recovery (resumable workflows)
-- **ADOPT**: Skills for standards enforcement, methodologies, quality gates
-- **ADOPT**: obra/superpowers collaboration patterns
-- **REPLACE**: Custom doc-converter with Anthropic document skills
+- **ADOPT**: External skills (obra/superpowers, Anthropic document skills)
+- **CREATE**: 2 custom expertise skills (code-standards-guidance, testing-protocols-guidance)
+- **NO REPLACEMENTS**: No agent migration (skills augment, not replace)
 
-### Rollback Mechanisms
-- Each phase has user review checkpoint
-- Git tags at each phase completion for rollback points
-- Performance baselines captured for comparison
-- Validation suite ensures no regressions
-- Incremental migration allows partial rollback
+### Zero-Integration Complexity
+- **Commands**: No modifications required (skills activate automatically)
+- **Agents**: No modifications required (skills provide supplemental expertise)
+- **Utilities**: No modifications required (skills are passive)
+- **Infrastructure**: No invocation wrappers, no registry extensions, no metadata extraction for skills
+- **Activation**: Model-invoked automatic based on description keywords
 
 ### Context Management Strategy
-- Skills dormant: 30-50 tokens per skill
-- Skills activated: 500-2000 tokens typical
-- Metadata-only returns after execution: 95-99% reduction
-- Context pruning after skill completion
-- Target maintained: <30% context usage (stretch goal: <23%)
+- **Dormant skills**: 30-50 tokens per skill (25+ skills = 750-1250 tokens = 0.4-0.6%)
+- **Activated skills**: 500-2000 tokens per skill (progressive disclosure)
+- **Progressive disclosure**: Supporting files (reference.md, examples.md) load only when needed
+- **Target maintained**: <30% context usage
+- **No manual pruning**: Context efficiency handled automatically by Claude's model
 
 ### Risk Mitigation
-- Start with low-risk ecosystem skills (obra/superpowers, Anthropic)
-- Test in isolated workflows before full integration
-- Measure performance at each phase
-- User review checkpoints prevent runaway changes
-- Preserve orchestration layer (no migration of critical paths)
+- **Low-risk external skills first**: Obra/superpowers and Anthropic are battle-tested
+- **Minimal custom development**: Only 2 custom skills created
+- **User review checkpoints**: 3 checkpoints (Phase 0, Phase 1, Phase 2)
+- **Validation testing**: Activation accuracy, portability, performance metrics
+- **Rollback strategy**: Uninstall plugins (`/plugin uninstall`), remove `.claude/skills/` directory
+
+### Rollback Strategy
+- **Phase 0 rollback**: Remove skill template, validation script, CLAUDE.md section (1 week development time)
+- **Phase 1 rollback**: Uninstall external plugins via `/plugin uninstall` (10 minutes)
+- **Phase 2 rollback**: Remove custom skill directories (5 minutes)
+- **Phase 3 rollback**: Not applicable (validation and documentation only)
+- **Full rollback time**: <2 hours to restore pre-skills state
 
 ---
 
 ## Revision History
+
+### 2025-10-27 - Official Skills Format Alignment
+**Changes**: Comprehensive revision based on official Claude Code skills documentation analysis
+**Reason**: Original plan conflated skills (expertise capsules) with agents (workflow orchestrators), proposed invocation infrastructure incompatible with official skills architecture
+**Research Report**: [Claude Code Skills Documentation Analysis](../../488_research_https_docs_claude_com_en_docs_claude-code_skills_to_see_how_best_to_imp/reports/001_claude_code_skills_analysis.md)
+
+**Critical Misalignments Resolved**:
+
+1. **Activation Model** (CRITICAL):
+   - **Before**: Manual invocation via `invoke_skill()` wrapper, behavioral injection pattern
+   - **After**: Automatic model-invoked activation based on `description` field keywords
+   - **Impact**: Eliminated entire Phase 1 invocation infrastructure (skills-invocation.sh, registry extensions)
+
+2. **File Format** (CRITICAL):
+   - **Before**: Agent-style behavioral markdown with enforcement patterns (YOU MUST, EXECUTE NOW, STEP 1/2/3)
+   - **After**: Official YAML frontmatter (`name`, `description`, `allowed-tools`) + descriptive expertise content
+   - **Impact**: Phase 0 template completely rewritten for official format
+
+3. **Skills vs Agents Distinction** (HIGH):
+   - **Before**: Skills described as procedural operations ("Read CLAUDE.md", "Detect file type", "Extract standards")
+   - **After**: Skills contain pure expertise (patterns, conventions, examples) - NO procedural operations
+   - **Impact**: Phase 2 (formerly Phase 4) custom skills simplified to knowledge-only content
+
+4. **Integration Complexity** (HIGH):
+   - **Before**: Extensive command integration (Phase 5), agent migration, behavioral prompt updates
+   - **After**: Zero command modifications (automatic activation), zero agent migration
+   - **Impact**: Phases 5-6 consolidated into single Phase 3 (validation only)
+
+**Structural Changes**:
+
+1. **Phase Count**: 6 phases → 3 phases
+   - **Phase 0**: Documentation foundation → Official skill format and documentation
+   - **Phase 1**: Skills registry infrastructure → External skills installation and testing (combined old Phases 1-3)
+   - **Phase 2**: Custom meta-level enforcement skills → Custom expertise skills (former Phase 4, revised)
+   - **Phase 3**: Validation, optimization, documentation (former Phases 5-6 consolidated, simplified)
+   - **Removed**: Phases 2-3 (now part of Phase 1), Phase 5 (command integration unnecessary)
+
+2. **Complexity and Duration**:
+   - **Complexity**: 6.5/10 → 4.0/10 (38% reduction)
+   - **Duration**: 6-9 weeks → 3-5 weeks (44% reduction)
+   - **Rationale**: Eliminated invocation infrastructure, removed command integration, simplified custom skills
+
+3. **Infrastructure Simplification**:
+   - **Removed**: skills-invocation.sh, registry extensions, metadata extraction for skills, context pruning for skills
+   - **Kept**: validate-skill.sh (YAML format validation only)
+   - **Rationale**: Official skills use filesystem discovery and automatic progressive disclosure
+
+**Documentation Updates**:
+
+1. **Objective**: Rewritten to emphasize model-invoked activation and expertise capsules
+2. **Success Criteria**: Updated to focus on official format adoption, automatic activation, zero integration complexity
+3. **Risk Assessment**: Revised to reflect official skills architecture risks (activation accuracy, skill quality)
+4. **Preservation Strategy**: Clarified NO agent migration (skills augment, not replace)
+5. **Implementation Notes**: Added "Zero-Integration Complexity" section
+
+**Research Integration**:
+
+- All 5 recommendations from research report implemented
+- Official documentation patterns adopted (YAML frontmatter, description-driven activation)
+- Skills-vs-agents distinction clarified throughout
+- External skills adoption prioritized over custom development
+- Skill portability emphasized (project-agnostic expertise)
+
+**No Changes To**:
+
+- Project goals (integrate skills system)
+- Preservation strategy (orchestration layer maintained)
+- External skills selection (obra/superpowers, Anthropic)
+- Validation approach (activation testing, performance metrics)
+- User review checkpoints (maintained at each phase boundary)
+
+---
 
 ### 2025-10-26 - Compliance Revision
 **Changes**: Updated plan to comply with .claude/docs/ writing standards
