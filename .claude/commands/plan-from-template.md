@@ -245,7 +245,7 @@ Use `/plan-from-template --list-categories` to see all templates organized by ca
 Use `/plan-from-template --category <category>` to see templates in a specific category.
 
 11 standard templates available in categories: backend, feature, debugging, documentation, testing, migration, research, refactoring.
-Custom templates can be placed in `.claude/templates/custom/`.
+Custom templates can be placed in `.claude/commands/templates/custom/`.
 
 ## Example Usage
 
@@ -275,5 +275,5 @@ Common errors and their resolution:
 
 ## References
 
-- Template documentation: `.claude/templates/README.md`
+- Template documentation: `.claude/commands/templates/README.md`
 - Related commands: `/plan`, `/plan-wizard`, `/implement`, `/revise`
