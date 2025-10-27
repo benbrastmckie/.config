@@ -300,7 +300,7 @@ echo "Context reduction: ${REDUCTION}%"
 
 **Run context reduction validator**:
 ```bash
-.claude/scripts/validate_context_reduction.sh
+.claude/lib/validate-context-reduction.sh
 # Expected: All tests passing with ≥90% reduction
 ```
 

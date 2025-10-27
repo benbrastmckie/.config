@@ -1212,7 +1212,7 @@ tail -50 .claude/data/logs/phase-handoffs.log
 **Context Reduction Validation**:
 ```bash
 # Run validation script
-.claude/scripts/validate_context_reduction.sh
+.claude/lib/validate-context-reduction.sh
 
 # Expected output:
 # Total tests: 6
