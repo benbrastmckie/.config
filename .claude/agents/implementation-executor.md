@@ -178,11 +178,11 @@ After all tasks complete:
 
 #### Create Git Commit
 
-**CRITICAL**: Use git-commit-helper for standardized commit message generation.
+**CRITICAL**: Use git-commit-utils.sh library for standardized commit message generation.
 
 **Phase Completion Workflow**:
 
-**STEP 1: Generate Commit Message Using git-commit-helper**
+**STEP 1: Generate Commit Message Using git-commit-utils.sh**
 
 ```bash
 # Extract topic number from topic_path
@@ -195,26 +195,26 @@ if [[ "$phase_file" == */stage_*.md ]]; then
   stage_num=$(basename "$phase_file" | sed -E 's/stage_([0-9]+).*/\1/')
   stage_name=$(grep "^#" "$phase_file" | head -1 | sed 's/^#\+\s*//')
 
-  # Load git-utils.sh for helper function
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/git-utils.sh" || {
-    echo "ERROR: git-utils.sh not found" >&2
+  # Load git-commit-utils.sh library
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/git-commit-utils.sh" || {
+    echo "ERROR: git-commit-utils.sh not found" >&2
     exit 1
   }
 
-  # Generate commit message
+  # Generate commit message using library function
   commit_msg=$(generate_commit_message "$topic_num" "$completion_type" "$phase_number" "$stage_num" "$stage_name" "")
 else
   # Level 1: Phase completion
   completion_type="phase"
   phase_name=$(grep "^#" "$phase_file" | head -1 | sed 's/^#\+\s*//')
 
-  # Load git-utils.sh
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/git-utils.sh" || {
-    echo "ERROR: git-utils.sh not found" >&2
+  # Load git-commit-utils.sh library
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/git-commit-utils.sh" || {
+    echo "ERROR: git-commit-utils.sh not found" >&2
     exit 1
   }
 
-  # Generate commit message
+  # Generate commit message using library function
   commit_msg=$(generate_commit_message "$topic_num" "$completion_type" "$phase_number" "" "$phase_name" "")
 fi
 

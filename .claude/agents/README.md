@@ -10,8 +10,8 @@ Specialized AI agent definitions for Claude Code. Each agent is a focused assist
 Added 5 missing agents to registry for complete tracking:
 
 **Agents Added to Registry**:
-- `doc-converter-usage.md` → Documentation file (not an agent, to be moved in Phase 2)
-- `git-commit-helper.md` → Specialized (to be refactored to library in Phase 5)
+- `doc-converter-usage.md` → Documentation file (moved to docs/ in Phase 2)
+- `git-commit-helper.md` → Specialized (refactored to .claude/lib/git-commit-utils.sh in Phase 5)
 - `implementation-executor.md` → Hierarchical implementation agent
 - `implementer-coordinator.md` → Hierarchical coordinator agent
 - `research-synthesizer.md` → Specialized research agent
