@@ -128,6 +128,7 @@ Commands should check CLAUDE.md in priority order:
 ### Development Guides
 - [Command Development Guide](.claude/docs/guides/command-development-guide.md) - Complete guide to creating and maintaining slash commands
 - [Agent Development Guide](.claude/docs/guides/agent-development-guide.md) - Complete guide to creating and maintaining specialized agents
+- [Model Selection Guide](.claude/docs/guides/model-selection-guide.md) - Guide to choosing Claude model tiers (Haiku/Sonnet/Opus) for agents with cost/quality optimization
 <!-- END_SECTION: code_standards -->
 
 <!-- SECTION: development_philosophy -->
