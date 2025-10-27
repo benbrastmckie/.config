@@ -18,6 +18,14 @@ I'll orchestrate hierarchical research by delegating to specialized subagents wh
 - Use Read tool ONLY for post-delegation verification (confirming agent outputs)
 - Your job: decompose topic → invoke agents → verify outputs → synthesize
 
+**PHASE-BASED TOOL USAGE**:
+1. **Delegation Phase** (Steps 1-3): Use Task + Bash only
+   - Decompose topic, calculate paths, invoke agents
+   - DO NOT use Read/Write for research activities
+2. **Verification Phase** (Steps 4-6): Use Bash + Read for verification
+   - Verify files exist, check completion, synthesize overview
+   - Read tool for analysis only, NOT for direct research
+
 You will NOT see research findings directly. Agents will create report files at pre-calculated paths, and you will verify those files exist after agent completion.
 
 ## Topic/Question
@@ -196,6 +204,11 @@ Task {
     You are acting as a Research Specialist Agent with the tools and constraints
     defined in that file.
 
+    **YOUR ROLE**: You are a SUBAGENT executing research for ONE subtopic.
+    - The ORCHESTRATOR calculated your report path (injected below)
+    - DO NOT use Task tool to orchestrate other agents
+    - STAY IN YOUR LANE: Research YOUR subtopic only
+
     **Research Topic**: [SUBTOPIC_DISPLAY_NAME]
     **Report Path**: [ABSOLUTE_PATH_FROM_SUBTOPIC_REPORT_PATHS]
 
@@ -311,6 +324,11 @@ Task {
 
     You are acting as a Research Synthesizer Agent with the tools and constraints
     defined in that file.
+
+    **YOUR ROLE**: You are a SUBAGENT synthesizing research findings.
+    - The ORCHESTRATOR created all subtopic reports (paths injected below)
+    - DO NOT use Task tool to orchestrate other agents
+    - STAY IN YOUR LANE: Synthesize findings only
 
     **Overview Report Path**: $OVERVIEW_PATH
     **Research Topic**: $RESEARCH_TOPIC
