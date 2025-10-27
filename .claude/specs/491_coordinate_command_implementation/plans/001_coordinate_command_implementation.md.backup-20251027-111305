@@ -534,65 +534,62 @@ bash .claude/tests/test_coordinate_all.sh
   - `test_coordinate_standards.sh` (47 tests)
   - `test_coordinate_all.sh` (master test runner)
 
-### Phase 7: Documentation and Command Reference
+### Phase 7: Documentation and Migration Guide
 dependencies: [6]
 
-**Objective**: Complete comprehensive documentation for /coordinate command as a standalone workflow orchestrator
+**Objective**: Complete documentation and provide migration path from /supervise
 
 **Complexity**: Low
 
 **Tasks**:
-- [ ] **Command Documentation**: Enhance `.claude/commands/coordinate.md` header
+- [ ] **Command Documentation**: Update `.claude/commands/coordinate.md` header
   - [ ] Usage examples (all 4 workflow types)
-  - [ ] Wave-based execution explanation with ASCII diagrams
-  - [ ] Fail-fast error handling philosophy
+  - [ ] Wave-based execution explanation with diagrams
+  - [ ] Multi-template retry behavior documentation
   - [ ] Performance targets and metrics
   - [ ] Library dependencies reference
   - [ ] Agent behavioral files reference
-  - [ ] Clear argument syntax and options
+- [ ] **Migration Guide**: Create `.claude/docs/migrations/supervise-to-coordinate.md`
+  - [ ] Feature comparison table (supervise vs coordinate)
+  - [ ] Syntax differences (if any)
+  - [ ] Performance improvements (wave-based execution, retry strategy)
+  - [ ] Migration timeline recommendation
+  - [ ] Common migration issues and solutions
 - [ ] **Update CLAUDE.md**: Add /coordinate to project commands section
-  - [ ] Add /coordinate entry alongside existing orchestration commands
+  - [ ] Replace /supervise reference with /coordinate (or mark /supervise deprecated)
   - [ ] Document wave-based execution capability
-  - [ ] Include usage examples in workflow orchestration section
-  - [ ] Note relationship to /orchestrate and /supervise (available alternatives, not replacements)
-- [ ] **Create Usage Examples**: Add example workflows to command documentation
-  - [ ] Example 1: Research-only workflow (Phases 0-1)
-  - [ ] Example 2: Research-and-plan workflow (Phases 0-2) - most common
-  - [ ] Example 3: Full-implementation workflow with wave execution (Phases 0-6)
-  - [ ] Example 4: Debug-only workflow (Phases 0, 1, 5)
-  - [ ] Include expected outputs and phase transitions for each example
-- [ ] **Performance Documentation**: Document benchmarks and capabilities
+  - [ ] Update workflow orchestration examples
+- [ ] **Create Usage Examples**: Add example workflows to documentation
+  - [ ] Example 1: Research-only workflow
+  - [ ] Example 2: Research-and-plan workflow (most common)
+  - [ ] Example 3: Full-implementation workflow with wave execution
+  - [ ] Example 4: Debug-only workflow
+- [ ] **Performance Documentation**: Document benchmarks and improvements
   - [ ] Context reduction: <30% usage (from metadata extraction + pruning)
   - [ ] Time savings: 40-60% (from wave-based parallel execution)
-  - [ ] Fail-fast error handling with clear diagnostics
-  - [ ] Wave-based parallel execution for independent phases
-  - [ ] Note: No retry mechanisms (single execution path for debuggability)
+  - [ ] Success rate: 95-98% (from multi-template retry)
+  - [ ] File creation rate: 100% (from verification-fallback pattern)
 - [ ] **Update Command Reference**: Update `.claude/docs/reference/command-reference.md`
   - [ ] Add /coordinate entry with full syntax and capabilities
-  - [ ] Include workflow scope detection (research-only, research-and-plan, full-implementation, debug-only)
-  - [ ] Document key differentiators: wave-based execution, fail-fast error handling
-  - [ ] List all supported agents and their invocation phases
+  - [ ] Mark /supervise as deprecated (if applicable)
 
 **Testing**:
 ```bash
 # Verify documentation completeness
 grep -q "/coordinate" .claude/docs/reference/command-reference.md
+grep -q "supervise-to-coordinate.md" .claude/docs/migrations/
 grep -q "/coordinate" /home/benjamin/.config/CLAUDE.md
 
-# Verify examples present in command file
-grep -c "Example [0-9]:" .claude/commands/coordinate.md  # Should be ≥4
-
-# Verify performance documentation
-grep -q "40-60%" .claude/commands/coordinate.md
-grep -q "<30%" .claude/commands/coordinate.md
+# Verify examples present
+grep -c "Example [0-9]:" .claude/docs/migrations/supervise-to-coordinate.md  # Should be ≥4
 ```
 
-**Expected Duration**: 3-4 hours
+**Expected Duration**: 4-6 hours
 
 **Phase 7 Completion Requirements**:
 - [ ] All phase tasks marked [x]
-- [ ] Tests passing (documentation complete, CLAUDE.md updated, examples present)
-- [ ] Git commit created: `feat(491): complete Phase 7 - Documentation and Command Reference`
+- [ ] Tests passing (documentation complete, migration guide exists, CLAUDE.md updated)
+- [ ] Git commit created: `feat(491): complete Phase 7 - Documentation and Migration Guide`
 - [ ] Checkpoint saved (implementation complete)
 - [ ] Update this plan file with phase completion status
 
@@ -823,38 +820,3 @@ All phases use sequential dependencies ([1], [2], [3], etc.) because this is arc
 - Smaller codebase (100 fewer lines, more room in budget)
 
 **Reports Used**: None (user-driven revision based on experience with retry/fallback complexity)
-
-### 2025-10-27 - Revision 2
-
-**Changes**: Removed migration-focused elements from Phase 7, repositioned /coordinate as a standalone command alongside existing orchestration commands
-
-**Reason**: User preference to maintain /coordinate as an additional orchestration option without assuming deprecation or replacement of /orchestrate and /supervise. Future decisions about command consolidation are deferred.
-
-**Specific Modifications**:
-1. **Phase 7 Title**: "Documentation and Migration Guide" → "Documentation and Command Reference"
-2. **Phase 7 Objective**: Changed from "provide migration path from /supervise" to "complete comprehensive documentation for /coordinate command as a standalone workflow orchestrator"
-3. **Removed Tasks**:
-   - Migration guide creation (`.claude/docs/migrations/supervise-to-coordinate.md`)
-   - Feature comparison tables between commands
-   - Migration timeline recommendations
-   - Migration issue troubleshooting
-   - Deprecation markers for /supervise
-4. **Updated Tasks**:
-   - CLAUDE.md updates now position /coordinate alongside existing commands as "available alternatives, not replacements"
-   - Command reference entry focuses on /coordinate capabilities without comparison
-   - Performance documentation notes "no retry mechanisms" for clarity
-5. **Testing Updates**:
-   - Removed migration guide verification tests
-   - Simplified to documentation completeness checks only
-6. **Duration Updated**: Phase 7 reduced from 4-6 hours to 3-4 hours (no migration guide needed)
-
-**Benefits**:
-- Clearer positioning as an additional tool in the orchestration toolkit
-- No premature decisions about command lifecycle
-- Flexibility to evaluate /coordinate alongside /orchestrate and /supervise
-- Simpler documentation scope (1-2 hours saved)
-- Maintains compatibility with all existing workflows
-
-**Modified Phases**: Phase 7 only
-
-**Reports Used**: None (user-driven scope adjustment)
