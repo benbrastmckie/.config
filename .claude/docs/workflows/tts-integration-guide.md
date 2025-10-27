@@ -105,7 +105,7 @@ TTS_PERMISSION_ENABLED=true
 
 ## Unsupported Categories
 
-The following categories were removed in the simplified TTS system:
+The following categories are not supported:
 
 - **Progress Updates** (SubagentStop) - Not supported
 - **Error Notifications** - Not supported (all Stop events use same message)
@@ -177,7 +177,7 @@ TTS_SILENT_COMMANDS="/clear /help /version /status /list /list-plans /list-repor
 TTS_DEBUG=true
 ```
 
-**Note**: Message verbosity settings and state file support were removed in the simplified TTS system. All messages use the uniform "directory, branch" format.
+**Note**: Message verbosity settings and state file support are not available. All messages use the uniform "directory, branch" format.
 
 ## Installation
 

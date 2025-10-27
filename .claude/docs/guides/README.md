@@ -257,11 +257,6 @@ guides/
 └── migration-testing.md              Testing procedures for migrations
 ```
 
-**Note**: The following guides were consolidated into `execution-enforcement-guide.md` (2025-10-21):
-- `execution-enforcement-migration-guide.md` (migration process)
-- `enforcement-patterns.md` (pattern library)
-- `migration-validation.md` (validation techniques)
-- `audit-execution-enforcement.md` (audit process)
 
 ## Related Documentation
 
