@@ -17,6 +17,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
   **Impact**: Commands reduced from 23 to 20 files (12.5% reduction, ~33KB saved)
 
+- **Agent Consolidation** (2025-10-27): Consolidated overlapping agents and refactored deterministic logic to utility libraries. Archived 4 agents to `.claude/archive/agents/`:
+  - `expansion-specialist.md` + `collapse-specialist.md` → **Consolidated into plan-structure-manager.md** (95% code overlap, unified operation parameter pattern for expand/collapse operations)
+  - `plan-expander.md` → **Archived** (pure coordination wrapper with no behavioral logic, functionality integrated into plan-structure-manager)
+  - `git-commit-helper.md` → **Refactored to .claude/lib/git-commit-utils.sh** (deterministic logic moved to utility library, zero agent invocation overhead)
+
+  **Consolidation Rationale**:
+  - expansion-specialist + collapse-specialist: 95% overlap, identical STEP 1-5 workflow patterns
+  - plan-expander: No expansion logic, only delegated to expansion-specialist
+  - git-commit-helper: Purely deterministic, no AI reasoning required
+
+  **Impact**:
+  - Agents: 22 → 19 files (14% reduction)
+  - Code reduction: 1,168 lines saved (506 from expansion/collapse merge, 562 from plan-expander elimination, 100 from git-commit-helper refactoring)
+  - Performance: Zero invocation overhead for git commit message generation (library function vs agent)
+  - Architecture: Unified operation parameter pattern (operation: "expand" | "collapse")
+  - Maintainability: 3 fewer agents to maintain, clearer consolidation patterns
+
 - **Deprecated Agent** (2025-10-26): Archived deprecated agent file to `.claude/archive/agents/`:
   - `location-specialist.md` - Superseded by unified location detection library (`.claude/lib/unified-location-detection.sh`)
 

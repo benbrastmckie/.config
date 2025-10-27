@@ -303,50 +303,50 @@ dependencies: [3]
 **Complexity**: High (7/10)
 
 **Tasks**:
-- [ ] Revise Phase 1 tasks to avoid duplication (file: spec 075 plan, Phase 1, lines 106-170)
-  - [ ] Remove: "Create skills-registry.sh from scratch"
-  - [ ] Update: "Extend agent-registry-utils.sh to support skills (add list_skills(), validate_skill(), get_skill_info())"
-  - [ ] Remove: "Create new metadata extraction utilities"
-  - [ ] Update: "Extend metadata-extraction.sh with extract_skill_metadata() function"
-  - [ ] Remove: "Create directory creation logic"
-  - [ ] Update: "Use ensure_artifact_directory() from artifact-creation.sh"
-  - [ ] Revise Phase 1 complexity: 6/10 → 5/10 (leveraging existing code)
-  - [ ] Revise Phase 1 duration: 2 weeks → 1 week
-- [ ] Revise Phase 4 enforcement skills to avoid conflicts (file: spec 075 plan, Phase 4, lines 308-370)
-  - [ ] Remove: "documentation-standards-enforcement skill" (pre-commit hook already enforces)
-  - [ ] Revise: "code-standards-enforcement skill" to focus on style guidance (not architecture enforcement)
-  - [ ] Keep: "testing-protocols-enforcement skill" (test pattern guidance is appropriate for skills)
-  - [ ] Add: "debugging-methodology skill" (systematic debugging patterns from obra/superpowers)
-  - [ ] Update rationale: "Skills excel at providing guidance, not enforcing deterministic rules. Deterministic enforcement belongs in unified libraries and pre-commit hooks."
-  - [ ] Revise Phase 4 complexity: 8/10 → 6/10 (fewer skills)
-  - [ ] Revise Phase 4 duration: 2-3 weeks → 1-2 weeks
-- [ ] Revise Phase 6 documentation tasks (file: spec 075 plan, Phase 6, lines 467-518)
-  - [ ] Remove: "Create skills-architecture.md as standalone file"
-  - [ ] Update: "Extend .claude/docs/concepts/patterns/README.md with skills integration section"
-  - [ ] Remove: "Create skills-vs-subagents decision matrix"
-  - [ ] Update: "Integrate with existing skills-vs-subagents-decision.md guide"
-  - [ ] Keep: "Create skills-migration-guide.md" (agent → skill migration checklist)
-  - [ ] Revise Phase 6 complexity: 6/10 → 5/10 (less documentation to create)
-  - [ ] Revise Phase 6 duration: 2 weeks → 1 week
-- [ ] Update overall plan time estimates (file: spec 075 plan, metadata section, line 14-15)
-  - [ ] Original estimate: 8-12 weeks
-  - [ ] Phase 1 reduction: -1 week (extend existing registry instead of creating new)
-  - [ ] Phase 4 reduction: -1 week (fewer enforcement skills)
-  - [ ] Phase 6 reduction: -1 week (integrate with existing docs instead of creating new)
-  - [ ] Revised estimate: 6-9 weeks (25% reduction)
-  - [ ] Update complexity score: 7.5/10 → 6.5/10 (leveraging existing infrastructure)
-- [ ] Document infrastructure that eliminates tasks (file: spec 075 plan, new section)
-  - [ ] Add section: "Existing Infrastructure" after "Research Summary"
-  - [ ] List unified-location-detection.sh capabilities (location detection, directory creation, topic numbering)
-  - [ ] List agent-registry-utils.sh capabilities (registry patterns, metadata extraction, frontmatter parsing)
-  - [ ] List artifact-creation.sh capabilities (lazy directory creation, artifact path calculation)
-  - [ ] List 8 documented patterns (behavioral injection, metadata extraction, verification-fallback, etc.)
-  - [ ] Document cleanup impact: 266KB consolidated, 25 library scripts archived, 3 commands removed
+- [x] Revise Phase 1 tasks to avoid duplication (file: spec 075 plan, Phase 1, lines 106-170)
+  - [x] Remove: "Create skills-registry.sh from scratch" - Completed in Phase 3
+  - [x] Update: "Extend agent-registry-utils.sh to support skills (add list_skills(), validate_skill(), get_skill_info())" - Completed in Phase 3
+  - [x] Remove: "Create new metadata extraction utilities" - Completed in Phase 3
+  - [x] Update: "Extend metadata-extraction.sh with extract_skill_metadata() function" - Completed in Phase 3
+  - [x] Remove: "Create directory creation logic" - Completed in Phase 3
+  - [x] Update: "Use ensure_artifact_directory() from artifact-creation.sh" - Completed in Phase 3
+  - [x] Revise Phase 1 complexity: 6/10 → 5/10 (leveraging existing code) - Completed in Phase 3
+  - [x] Revise Phase 1 duration: 2 weeks → 1 week - Completed in Phase 3
+- [x] Revise Phase 4 enforcement skills to avoid conflicts (file: spec 075 plan, Phase 4, lines 308-370)
+  - [x] Remove: "documentation-standards-enforcement skill" (pre-commit hook already enforces)
+  - [x] Revise: "code-standards-enforcement skill" → "code-standards-guidance skill" (focus on subjective quality)
+  - [x] Revise: "testing-protocols-enforcement skill" → "testing-protocols-guidance skill" (strategic guidance)
+  - [x] Add: Reference systematic-debugging skill from obra/superpowers (no custom skill needed)
+  - [x] Update rationale: "Skills excel at providing guidance, not enforcing deterministic rules. Deterministic enforcement belongs in unified libraries and pre-commit hooks."
+  - [x] Revise Phase 4 complexity: 8/10 → 6/10 (fewer skills)
+  - [x] Revise Phase 4 duration: 2-3 weeks → 1-2 weeks
+- [x] Revise Phase 6 documentation tasks (file: spec 075 plan, Phase 6, lines 467-518)
+  - [x] Remove: "Create skills-architecture.md as standalone file" - Completed in Phase 3
+  - [x] Update: "Extend .claude/docs/concepts/patterns/README.md with skills integration section" - Completed in Phase 3
+  - [x] Remove: "Create skills-vs-subagents decision matrix" - Completed in Phase 3
+  - [x] Update: "Integrate with existing skills-vs-subagents-decision.md guide" - Completed in Phase 3
+  - [x] Keep: "Create skills-migration-guide.md" (agent → skill migration checklist)
+  - [x] Revise Phase 6 complexity: 6/10 → 5/10 (less documentation to create)
+  - [x] Revise Phase 6 duration: 2 weeks → 1 week
+- [x] Update overall plan time estimates (file: spec 075 plan, metadata section, line 14-15)
+  - [x] Original estimate: 8-12 weeks
+  - [x] Phase 1 reduction: -1 week (extend existing registry instead of creating new)
+  - [x] Phase 4 reduction: -1 week (fewer enforcement skills)
+  - [x] Phase 6 reduction: -1 week (integrate with existing docs instead of creating new)
+  - [x] Revised estimate: 6-9 weeks (25% reduction)
+  - [x] Update complexity score: 7.5/10 → 6.5/10 (leveraging existing infrastructure)
+- [x] Document infrastructure that eliminates tasks (file: spec 075 plan, new section)
+  - [x] Add section: "Existing Infrastructure" in Complexity Assessment section
+  - [x] List unified-location-detection.sh capabilities (location detection, directory creation, topic numbering)
+  - [x] List agent-registry-utils.sh capabilities (registry patterns, metadata extraction, frontmatter parsing)
+  - [x] List artifact-creation.sh capabilities (lazy directory creation, artifact path calculation)
+  - [x] List 8 documented patterns (behavioral injection, metadata extraction, verification-fallback, etc.)
+  - [x] Document cleanup impact: 266KB consolidated, 25 library scripts archived, 3 commands removed
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -370,13 +370,13 @@ cd /home/benjamin/.config/.claude/tests && ./run_all_tests.sh
 **Expected Duration**: 3-4 hours
 
 **Phase 4 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] All redundant tasks removed or updated
-- [ ] Time estimates revised (8-12 weeks → 6-9 weeks)
-- [ ] Complexity assessments updated
-- [ ] Tests passing (run test suite)
-- [ ] Update this plan file with completion status
-- [ ] Git commit created: `feat(485): complete Phase 4 - Simplify Based on Infrastructure Changes`
+- [x] All phase tasks marked [x]
+- [x] All redundant tasks removed or updated
+- [x] Time estimates revised (8-12 weeks → 6-9 weeks)
+- [x] Complexity assessments updated
+- [x] Tests passing (run test suite)
+- [x] Update this plan file with completion status
+- [x] Git commit created: `feat(485): complete Phase 4 - Simplify Based on Infrastructure Changes`
 
 ---
 

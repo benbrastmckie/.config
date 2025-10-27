@@ -86,27 +86,6 @@
       "dependencies": [],
       "behavioral_file": ".claude/agents/code-writer.md"
     },
-    "collapse-specialist": {
-      "type": "hierarchical",
-      "category": "analysis",
-      "description": "You are a Collapse Specialist responsible for merging expanded phases or stages back into parent plans. Your role is focused and procedural: execute collapse operations with precision and save structu",
-      "tools": [
-        "Bash",
-        "Edit",
-        "Read",
-        "Task",
-        "Write"
-      ],
-      "metrics": {
-        "total_invocations": 0,
-        "successful_invocations": 0,
-        "failed_invocations": 0,
-        "average_duration_seconds": 0.0,
-        "last_invocation": null
-      },
-      "dependencies": [],
-      "behavioral_file": ".claude/agents/collapse-specialist.md"
-    },
     "complexity-estimator": {
       "type": "specialized",
       "category": "analysis",
@@ -186,27 +165,6 @@
       },
       "dependencies": [],
       "behavioral_file": ".claude/agents/doc-writer.md"
-    },
-    "expansion-specialist": {
-      "type": "hierarchical",
-      "category": "analysis",
-      "description": "You are an Expansion Specialist responsible for extracting complex phases or stages from implementation plans into separate files. Your role is focused and procedural: execute expansion operations wit",
-      "tools": [
-        "Bash",
-        "Edit",
-        "Read",
-        "Task",
-        "Write"
-      ],
-      "metrics": {
-        "total_invocations": 0,
-        "successful_invocations": 0,
-        "failed_invocations": 0,
-        "average_duration_seconds": 0.0,
-        "last_invocation": null
-      },
-      "dependencies": [],
-      "behavioral_file": ".claude/agents/expansion-specialist.md"
     },
     "github-specialist": {
       "type": "specialized",
@@ -289,16 +247,15 @@
       "dependencies": [],
       "behavioral_file": ".claude/agents/plan-architect.md"
     },
-    "plan-expander": {
-      "type": "specialized",
+    "plan-structure-manager": {
+      "type": "hierarchical",
       "category": "planning",
-      "description": "Coordinates plan expansion based on complexity analysis",
+      "description": "Unified agent for expanding/collapsing phases and stages in implementation plans",
       "tools": [
-        "Bash",
-        "Edit",
         "Read",
-        "Task",
-        "Write"
+        "Write",
+        "Edit",
+        "Bash"
       ],
       "metrics": {
         "total_invocations": 0,
@@ -308,7 +265,7 @@
         "last_invocation": null
       },
       "dependencies": [],
-      "behavioral_file": ".claude/agents/plan-expander.md"
+      "behavioral_file": ".claude/agents/plan-structure-manager.md"
     },
     "research-specialist": {
       "type": "specialized",
@@ -365,24 +322,6 @@
       },
       "dependencies": [],
       "behavioral_file": ".claude/agents/doc-converter-usage.md"
-    },
-    "git-commit-helper": {
-      "type": "specialized",
-      "category": "implementation",
-      "description": "Generates standardized git commit messages following project conventions",
-      "tools": [
-        "Read",
-        "Bash"
-      ],
-      "metrics": {
-        "total_invocations": 0,
-        "successful_invocations": 0,
-        "failed_invocations": 0,
-        "average_duration_seconds": 0.0,
-        "last_invocation": null
-      },
-      "dependencies": [],
-      "behavioral_file": ".claude/agents/git-commit-helper.md"
     },
     "implementation-executor": {
       "type": "hierarchical",
