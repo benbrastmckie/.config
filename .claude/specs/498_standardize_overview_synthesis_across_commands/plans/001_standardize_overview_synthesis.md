@@ -220,18 +220,18 @@ ls -la ~/.config/.claude/specs/*/reports/*/OVERVIEW.md
 
 ---
 
-### Phase 3: Update /supervise Command
+### Phase 3: Update /supervise Command [COMPLETED]
 **Objective**: Fix /supervise to skip overview synthesis for research-and-plan workflows
 **Complexity**: Medium
 
 Tasks:
-- [ ] Source `.claude/lib/overview-synthesis.sh` in /supervise command
-- [ ] Define `RESEARCH_SUBDIR` variable (currently missing)
-- [ ] Replace inline overview decision with `should_synthesize_overview()` call
-- [ ] Update overview path from `${TOPIC_NUM}_overview.md` to `OVERVIEW.md` (ALL CAPS)
-- [ ] Update conditional verification logic (only verify if overview created)
-- [ ] Update checkpoint JSON to conditionally include overview_path
-- [ ] Update Phase 2 planning context to conditionally include overview
+- [x] Source `.claude/lib/overview-synthesis.sh` in /supervise command
+- [x] Define `RESEARCH_SUBDIR` variable (currently missing)
+- [x] Replace inline overview decision with `should_synthesize_overview()` call
+- [x] Update overview path from `${TOPIC_NUM}_overview.md` to `OVERVIEW.md` (ALL CAPS)
+- [x] Update conditional verification logic (only verify if overview created)
+- [x] Update checkpoint JSON to conditionally include overview_path
+- [x] Update Phase 2 planning context to conditionally include overview
 
 Code Changes:
 ```bash
