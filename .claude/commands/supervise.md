@@ -685,9 +685,8 @@ if [ -f "$SCRIPT_DIR/../lib/topic-utils.sh" ]; then
   source "$SCRIPT_DIR/../lib/topic-utils.sh"
 else
   echo "ERROR: topic-utils.sh not found"
-  echo "Falling back to location-specialist agent..."
-  # Fallback to agent-based detection (for graceful degradation)
-  # (Fallback implementation would go here if needed)
+  echo "This is a required library file for workflow operation."
+  echo "Please ensure .claude/lib/topic-utils.sh exists."
   exit 1
 fi
 
