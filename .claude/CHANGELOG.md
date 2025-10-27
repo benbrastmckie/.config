@@ -6,6 +6,63 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- **Deprecated Commands** (2025-10-26): Archived 3 redundant/deprecated command files to `.claude/archive/commands/`:
+  - `example-with-agent.md` - Template command for agent invocation (moved to documentation)
+  - `migrate-specs.md` - One-time migration utility (migration completed)
+  - `report.md` - Superseded by `/research` command with hierarchical multi-agent pattern
+
+  **Migration**: Use `/research` instead of `/report` for all research tasks. All command references updated in orchestrate.md, plan.md, refactor.md, debug.md, implement.md, and README.md.
+
+  **Impact**: Commands reduced from 23 to 20 files (12.5% reduction, ~33KB saved)
+
+- **Deprecated Agent** (2025-10-26): Archived deprecated agent file to `.claude/archive/agents/`:
+  - `location-specialist.md` - Superseded by unified location detection library (`.claude/lib/unified-location-detection.sh`)
+
+  **Impact**: Agents reduced from 27 to 26 files (3.7% reduction, ~14KB saved)
+
+- **Legacy Library Files** (2025-10-26): Archived legacy library files to `.claude/archive/lib/`:
+  - `artifact-operations-legacy.sh` (84KB) - Superseded by modular artifact utilities
+  - `migrate-specs-utils.sh` (17KB) - One-time migration completed, no longer needed
+
+  **Function Migration**: Extracted `create_artifact_directory()` from artifact-operations-legacy.sh to artifact-registry.sh before archival. Updated auto-analysis-utils.sh to source artifact-registry.sh instead.
+
+  **Impact**: Library files reduced from 67 to 65 files (3% reduction, ~101KB saved)
+
+- **Compatibility Shims (utils/ directory)** (2025-10-26): Removed entire utils/ directory containing compatibility shims. All functionality available directly in lib/.
+  - `utils/parse-adaptive-plan.sh` - Compatibility shim sourcing lib/plan-core-bundle.sh and lib/progressive-planning-utils.sh
+  - `utils/show-agent-metrics.sh` - Utility script (archived, can be moved to scripts/ if needed)
+  - `utils/README.md` - Directory documentation
+
+  **Migration**: All code now sources lib/ directly. No active references to utils/ found in commands/, lib/, or tests/ (verified during Phase 1). Created unified codebase with single source of truth.
+
+  **Function Mapping**:
+  - All parse-adaptive-plan.sh functions → `lib/plan-core-bundle.sh` and `lib/progressive-planning-utils.sh`
+
+  **Impact**: Directory removed, ~10KB saved, eliminated compatibility layer, improved maintainability
+
+- **Examples Directory** (2025-10-26): Removed examples/ directory containing demonstration code only. All files archived to `.claude/archive/examples/`:
+  - `artifact_creation_workflow.sh` - Demonstration of artifact utilities (not essential for operation)
+  - `README.md` - Examples documentation
+
+  **Impact**: Directory removed, ~10KB saved, cleaner directory structure
+
+### Changed
+
+- **Backup File Organization** (2025-10-26): Consolidated 30 backup files from scattered locations in specs/ to centralized location:
+  - **New Location**: `.claude/data/backups/specs/`
+  - **Files Moved**: All `*.md.backup*` files from specs/ subdirectories
+  - **Impact**: Better organization, easier backup management
+
+- **Directory Structure** (2025-10-26): Cleaned up .claude/ directory structure:
+  - **Removed**: examples/, utils/
+  - **Kept**: tts/ (user requested, active TTS notification system)
+  - **Consolidated**: Backup files to data/backups/specs/
+  - **Archived**: All removed files to archive/ subdirectories (reversible via git)
+
+  **Total Space Saved**: ~266KB (commands: 33KB, agents: 14KB, libraries: 101KB, utils: 10KB, examples: 10KB)
+
 ### Fixed
 
 - **System-wide Agent Delegation Anti-Pattern** (#002_report_creation): Fixed critical anti-pattern where agents were instructed to invoke slash commands instead of creating artifacts directly. This violated the behavioral injection pattern and prevented proper context management.

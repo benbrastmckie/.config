@@ -2,9 +2,20 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 11 specialized agents
+**Current Agent Count**: 21 specialized agents (reduced from 22 after cleanup)
 
 ## Recent Changes
+
+### Agent Cleanup (2025-10-26)
+Removed deprecated agent to improve maintainability:
+
+**Agent Removed**:
+- `location-specialist.md` → **Archived** (superseded by unified location detection library)
+
+**Impact**:
+- Agents: 22 → 21 files (4.5% reduction, ~14KB saved)
+- Functionality preserved in `.claude/lib/unified-location-detection.sh`
+- Unified codebase with library-based location detection
 
 ### Orchestration Integration (2025-10-12)
 Agents enhanced for comprehensive multi-phase workflow orchestration:

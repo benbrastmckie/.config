@@ -54,7 +54,7 @@ LIB_DIR=$(cd "$SCRIPT_DIR/../lib" && pwd)
 
 # Source utilities
 source "$LIB_DIR/checkpoint-utils.sh"
-source "$LIB_DIR/complexity-utils.sh"
+source "$LIB_DIR/complexity-thresholds.sh"
 source "$LIB_DIR/unified-logger.sh"
 
 # Create test environment
