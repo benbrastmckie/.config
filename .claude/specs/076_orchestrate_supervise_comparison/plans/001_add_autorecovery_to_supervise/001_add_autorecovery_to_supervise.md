@@ -15,6 +15,11 @@
 - **Research Reports**:
   - ../reports/001_research/OVERVIEW.md
   - ../reports/001_research/003_error_handling_state_management_and_recovery.md
+  - ../../reports/004_autorecovery_cost_benefit/OVERVIEW.md
+  - ../../reports/004_autorecovery_cost_benefit/001_skipped_optional_tasks_inventory.md
+  - ../../reports/004_autorecovery_cost_benefit/002_implementation_benefits_quantification.md
+  - ../../reports/004_autorecovery_cost_benefit/003_overhead_complexity_cost_analysis.md
+  - ../../reports/004_autorecovery_cost_benefit/004_decision_framework_recommendations.md
 
 ## Overview
 
