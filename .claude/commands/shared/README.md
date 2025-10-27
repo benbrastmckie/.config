@@ -40,6 +40,18 @@ When Claude processes a command, it automatically reads referenced files, making
 - `error-handling.md` - Common error patterns ✓
 - `testing-patterns.md` - Testing protocols ✓
 
+### Template Reference Files (migrated from .claude/templates/)
+- `agent-invocation-patterns.md` - Agent coordination patterns
+- `agent-tool-descriptions.md` - Tool usage documentation
+- `audit-checklist.md` - Command quality checklist
+- `command-frontmatter.md` - Command metadata structure
+- `debug-structure.md` - Debug report structure
+- `orchestration-patterns.md` - Orchestration workflow patterns
+- `output-patterns.md` - Command output formatting
+- `readme-template.md` - Directory README template
+- `refactor-structure.md` - Refactor report structure
+- `report-structure.md` - Research report structure
+
 ## Cross-Reference Index
 
 | Shared Section | Referenced By | Lines Saved |
@@ -59,4 +71,4 @@ When adding new shared sections:
 - [← Parent Directory](../README.md)
 - [agents/shared/](../../agents/shared/) - Agent behavioral guidelines
 - [lib/](../../lib/) - Bash utility functions
-- [templates/](../../templates/) - Plan templates
+- [templates/](../templates/) - Plan templates (YAML)

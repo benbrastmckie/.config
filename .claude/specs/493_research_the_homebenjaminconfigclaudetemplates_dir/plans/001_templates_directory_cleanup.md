@@ -197,20 +197,20 @@ Files to move:
 9. research-report.yaml
 10. test-suite.yaml
 
-### Phase 4: Relocate Markdown Reference Templates
+### Phase 4: Relocate Markdown Reference Templates [COMPLETED]
 **Objective**: Move markdown templates to `.claude/commands/shared/`
 **Complexity**: Medium
 
 Tasks:
-- [ ] Copy markdown files to `.claude/commands/shared/` (see list below)
-- [ ] Update `.claude/commands/shared/README.md` with new file descriptions
-- [ ] Update command references: `/debug` command (debug-structure.md)
-- [ ] Update command references: `/refactor` command (refactor-structure.md)
-- [ ] Update command references: `/research` command (report-structure.md)
-- [ ] Update command references: `/orchestrate` command (orchestration-patterns.md, agent-invocation-patterns.md, output-patterns.md)
-- [ ] Update command references: Any commands referencing command-frontmatter.md
-- [ ] Update command references: Any commands referencing agent-tool-descriptions.md
-- [ ] Verify all references updated with comprehensive grep
+- [x] Copy markdown files to `.claude/commands/shared/` (see list below)
+- [x] Update `.claude/commands/shared/README.md` with new file descriptions
+- [x] Update command references: `/debug` command (debug-structure.md)
+- [x] Update command references: `/refactor` command (refactor-structure.md)
+- [x] Update command references: `/research` command (report-structure.md)
+- [x] Update command references: `/orchestrate` command (orchestration-patterns.md, agent-invocation-patterns.md, output-patterns.md)
+- [x] Update command references: Any commands referencing command-frontmatter.md
+- [x] Update command references: Any commands referencing agent-tool-descriptions.md
+- [x] Verify all references updated with comprehensive grep
 
 Testing:
 ```bash

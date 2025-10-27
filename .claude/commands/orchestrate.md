@@ -76,7 +76,7 @@ Each phase MUST verify that agents created required files BEFORE marking phase c
 
 This command uses standardized patterns defined in external reference files:
 
-- **Agent Templates**: `.claude/templates/orchestration-patterns.md`
+- **Agent Templates**: `.claude/commands/shared/orchestration-patterns.md`
   - Complete agent prompt templates for all 5 agents
   - Phase coordination patterns (parallel, sequential, adaptive, conditional)
   - Checkpoint structure and operations
@@ -270,7 +270,7 @@ These utilities ensure workflow state is preserved across interruptions and agen
 
 ## Error Handling Strategy
 
-**See comprehensive patterns in**: `.claude/templates/orchestration-patterns.md#error-recovery-patterns`
+**See comprehensive patterns in**: `.claude/commands/shared/orchestration-patterns.md#error-recovery-patterns`
 
 ### Error Handling Principles
 
@@ -296,7 +296,7 @@ error_recovery:
   5. Escalate to user if unrecoverable
 ```
 
-See `.claude/templates/orchestration-patterns.md` for detailed implementation examples.
+See `.claude/commands/shared/orchestration-patterns.md` for detailed implementation examples.
 
 ## Progress Streaming
 
