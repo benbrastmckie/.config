@@ -322,6 +322,100 @@ description: Specialized in writing and modifying code following project standar
 - Mention key differentiator
 - Use active voice
 
+#### model (required)
+
+Specifies which Claude model tier to use for this agent.
+
+```yaml
+model: haiku-4.5  # or sonnet-4.5 or opus-4.1
+```
+
+**Available Model Tiers**:
+
+| Model | Cost (per 1K tokens) | Use Case |
+|-------|---------------------|----------|
+| haiku-4.5 | $0.003 | Deterministic tasks, tool orchestration |
+| sonnet-4.5 | $0.015 | Complex reasoning, code generation (default) |
+| opus-4.1 | $0.075 | Architectural decisions, critical debugging |
+
+**Model Selection Guidelines**:
+
+**Use Haiku when**:
+- Task follows explicit rules or templates
+- Mechanical operations (file updates, state tracking)
+- External tool orchestration (minimal AI reasoning)
+- High invocation frequency (cost savings significant)
+
+**Use Sonnet when**:
+- Code generation or modification required
+- Research synthesis or documentation writing
+- Complex reasoning with contextual understanding
+- Standard agent tasks (default choice)
+
+**Use Opus when**:
+- Architectural design or system-wide decisions
+- Critical debugging (high-stakes correctness)
+- Multi-hypothesis analysis with deep reasoning
+- Low frequency, high-impact operations
+
+See [Model Selection Guide](model-selection-guide.md) for complete decision matrix and migration case studies.
+
+#### model-justification (required)
+
+Explains why this model tier is appropriate for the agent's tasks.
+
+```yaml
+model-justification: "Code generation with 30 completion criteria, requires contextual understanding of project standards"
+```
+
+**Requirements**:
+- Describe task type (deterministic, reasoning, architectural)
+- State complexity level (low, medium, high)
+- Explain key capability requirements
+- Justify model tier selection
+
+**Good Examples**:
+
+```yaml
+# Haiku example (deterministic)
+model: haiku-4.5
+model-justification: "Template-based commit message generation following conventional commit standards, deterministic text formatting"
+
+# Sonnet example (reasoning)
+model: sonnet-4.5
+model-justification: "Research synthesis across multiple sources with quality analysis, requires understanding of technical concepts and documentation standards"
+
+# Opus example (architectural)
+model: opus-4.1
+model-justification: "Complex causal reasoning and multi-hypothesis debugging for critical production issues, high-stakes root cause identification with 38 completion criteria"
+```
+
+**Poor Examples** (avoid):
+
+```yaml
+# Too vague
+model-justification: "Complex tasks"
+
+# No complexity assessment
+model-justification: "Handles code"
+
+# Missing rationale
+model-justification: "Uses Sonnet"
+```
+
+#### fallback-model (optional)
+
+Alternative model to use if primary model is unavailable.
+
+```yaml
+fallback-model: sonnet-4.5
+```
+
+**Best Practices**:
+- Typically fallback to Sonnet (balanced capability)
+- Only specify if different from default fallback
+- Consider compatibility when downgrading from Opus
+
 ### System Prompt Structure
 
 #### 1. Introduction
