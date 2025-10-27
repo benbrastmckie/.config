@@ -158,16 +158,16 @@ test ! -f /home/benjamin/.config/.claude/templates/spec-updater-test.yaml || ech
 grep -r "artifact_research_invocation\|spec-updater-test" /home/benjamin/.config/.claude/commands/
 ```
 
-### Phase 3: Relocate YAML Templates
+### Phase 3: Relocate YAML Templates [COMPLETED]
 **Objective**: Move all YAML plan templates to `.claude/commands/templates/`
 **Complexity**: Medium
 
 Tasks:
-- [ ] Copy all YAML files from `.claude/templates/*.yaml` to `.claude/commands/templates/`
-- [ ] Create `.claude/commands/templates/README.md` with usage documentation
-- [ ] Update `/plan-from-template` command references (OLD: `.claude/templates/`, NEW: `.claude/commands/templates/`)
-- [ ] Update any other commands referencing YAML templates
-- [ ] Verify all YAML files accessible by testing `/plan-from-template --list-categories`
+- [x] Copy all YAML files from `.claude/templates/*.yaml` to `.claude/commands/templates/`
+- [x] Create `.claude/commands/templates/README.md` with usage documentation
+- [x] Update `/plan-from-template` command references (OLD: `.claude/templates/`, NEW: `.claude/commands/templates/`)
+- [x] Update any other commands referencing YAML templates
+- [x] Verify all YAML files accessible by testing `/plan-from-template --list-categories`
 
 Testing:
 ```bash
