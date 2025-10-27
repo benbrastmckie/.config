@@ -137,16 +137,16 @@ test -d /home/benjamin/.config/.claude/commands/shared || echo "FAIL: shared dir
 test -f /tmp/template-references.txt || echo "FAIL: reference catalog not created"
 ```
 
-### Phase 2: Remove Obsolete Templates
+### Phase 2: Remove Obsolete Templates [COMPLETED]
 **Objective**: Delete files with no active references
 **Complexity**: Low
 
 Tasks:
-- [ ] Validate zero references: `grep -r "artifact_research_invocation" .claude/commands/`
-- [ ] Validate zero references: `grep -r "spec-updater-test" .claude/commands/`
-- [ ] Remove `.claude/templates/artifact_research_invocation.md`
-- [ ] Remove `.claude/templates/spec-updater-test.yaml`
-- [ ] Document removal in `.claude/TODO.md` or changelog
+- [x] Validate zero references: `grep -r "artifact_research_invocation" .claude/commands/`
+- [x] Validate zero references: `grep -r "spec-updater-test" .claude/commands/`
+- [x] Remove `.claude/templates/artifact_research_invocation.md`
+- [x] Remove `.claude/templates/spec-updater-test.yaml`
+- [x] Document removal in `.claude/TODO.md` or changelog
 
 Testing:
 ```bash
