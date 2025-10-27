@@ -19,9 +19,14 @@ When Claude processes a command, it automatically reads referenced files, making
 ### High Priority (orchestrate.md)
 - `workflow-phases.md` - Detailed phase descriptions ✓
 - `orchestrate-enhancements.md` - Complexity evaluation, expansion, wave-based patterns ✓
-- `orchestrate-alternatives.md` - Alternative workflow patterns ✓
+- `error-recovery.md` - Error handling patterns ✓
+- `context-management.md` - Context optimization guide ✓
+- `agent-coordination.md` - Agent invocation patterns ✓
+- `orchestrate-examples.md` - Usage examples ✓
 
 ### Medium Priority (implement.md, setup.md, revise.md)
+- `adaptive-planning.md` - Adaptive planning guide ✓
+- `progressive-structure.md` - L0->L1->L2 documentation ✓
 - `phase-execution.md` - Phase execution protocol ✓
 - `setup-modes.md` - Setup command modes ✓
 - `bloat-detection.md` - Bloat detection algorithms ✓
@@ -30,6 +35,10 @@ When Claude processes a command, it automatically reads referenced files, making
 - `revision-types.md` - Revision type descriptions ✓
 - `implementation-workflow.md` - Implementation patterns ✓
 - `standards-analysis.md` - Standards analysis patterns ✓
+
+### Low Priority (multiple commands)
+- `error-handling.md` - Common error patterns ✓
+- `testing-patterns.md` - Testing protocols ✓
 
 ### Template Reference Files (migrated from .claude/templates/)
 - `agent-invocation-patterns.md` - Agent coordination patterns
