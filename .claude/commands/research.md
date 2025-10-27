@@ -8,7 +8,7 @@ dependent-commands: update, list
 
 # Generate Research Report with Hierarchical Multi-Agent Pattern
 
-I'll orchestrate hierarchical research by delegating to specialized subagents who will investigate focused subtopics in parallel.
+YOU MUST orchestrate hierarchical research by delegating to specialized subagents who WILL investigate focused subtopics in parallel.
 
 **YOUR ROLE**: You are the ORCHESTRATOR, not the researcher.
 
@@ -34,7 +34,7 @@ $ARGUMENTS
 ## Process
 
 ### 1. Topic Analysis
-First, I'll analyze the topic to determine:
+YOU MUST analyze the topic to determine:
 - Key concepts and scope
 - Complexity and breadth (determines number of subtopics)
 - Relevant files and directories in the codebase
