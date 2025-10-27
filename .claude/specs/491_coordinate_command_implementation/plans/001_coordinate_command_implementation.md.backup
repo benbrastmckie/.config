@@ -2,13 +2,12 @@
 
 ## Metadata
 - **Date**: 2025-10-27
-- **Last Revised**: 2025-10-27 (Revision 1: Removed retry/fallback complexity)
 - **Feature**: New /coordinate command - Clean, economical multi-agent workflow orchestrator
-- **Scope**: Create improved alternative to /supervise and /orchestrate with wave-based implementation, fail-fast error handling, and all standards compliance
+- **Scope**: Create improved alternative to /supervise and /orchestrate with wave-based implementation, economical design, and all standards compliance
 - **Estimated Phases**: 7
-- **Estimated Hours**: 28-35 hours (reduced from 32-40 after removing retry complexity)
+- **Estimated Hours**: 32-40 hours
 - **Structure Level**: 0
-- **Complexity Score**: 64.0 (reduced from 68.0 due to simpler error handling)
+- **Complexity Score**: 68.0
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - [Claude Code Subagents Documentation](/home/benjamin/.config/.claude/specs/489_research_claude_code_subagents_documentation_for_improvement_opportunities/reports/489_overview.md)
@@ -24,9 +23,10 @@ The command will orchestrate end-to-end development workflows (research → plan
 
 **From Report 489 (Claude Code Subagents Documentation)**:
 - Code-fenced Task examples cause 0% agent delegation due to priming effect
+- Multi-template retry strategy improves success rate from 70-80% to 95-98%
 - Hierarchical agent architecture achieves 92-97% context reduction through metadata extraction
 - Behavioral injection pattern critical for agent delegation (imperative language required)
-- Clear error messages and debugging more valuable than complex retry mechanisms
+- Verification-fallback pattern achieves 100% file creation rate
 
 **From Report 490 (/supervise Command Analysis)**:
 - /supervise has 95% architectural compliance but lacks wave-based parallel execution (40-60% performance gap)
@@ -36,19 +36,19 @@ The command will orchestrate end-to-end development workflows (research → plan
 - Wave-based implementation is the critical missing feature
 
 **Recommended Approach**:
-Start from /supervise's proven architecture, add wave-based implementation for Phase 3 only, fix three violations, use clear error messages for debuggability, maintain economical design without /orchestrate's heaviness (PR automation, dashboard, extensive dry-run) or complex retry mechanisms.
+Start from /supervise's proven architecture, add wave-based implementation for Phase 3 only, fix three violations, implement multi-template retry, maintain economical design without /orchestrate's heaviness (PR automation, dashboard, extensive dry-run).
 
 ## Success Criteria
 - [ ] Command file exists at `.claude/commands/coordinate.md` with 2,500-3,000 lines (not 5,438 like /orchestrate)
 - [ ] Zero code-fenced Task invocation examples (prevents 0% delegation rate)
 - [ ] All agent invocations use imperative pattern with unwrapped Task blocks
 - [ ] Wave-based implementation integrated for Phase 3 using dependency-analyzer.sh
-- [ ] Clear verification checkpoints with actionable error messages (for debuggability)
+- [ ] Multi-template retry strategy implemented (95-98% success rate)
+- [ ] Verification-fallback pattern for 100% file creation rate
 - [ ] Context pruning between phases maintains <30% context usage
 - [ ] Checkpoint save/resume for interruption recovery
 - [ ] All tests passing with >80% coverage of agent invocation patterns
 - [ ] Documentation complete with usage examples and migration guide from /supervise
-- [ ] Single high-functioning workflow - no complex retry mechanisms or fallbacks
 
 ## Technical Design
 
@@ -75,8 +75,8 @@ Start from /supervise's proven architecture, add wave-based implementation for P
 ┌─────────────────────────────────────────────────────────────┐
 │ Phase 2: Planning                                           │
 │ - Enhanced context injection (THINKING_MODE, reports list)  │
-│ - Verification checkpoint with clear error messages         │
-│ - Fail-fast with actionable diagnostics                     │
+│ - Multi-template retry (standard → ultra-explicit → steps)  │
+│ - Verification checkpoint with fallback                     │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -130,10 +130,9 @@ Start from /supervise's proven architecture, add wave-based implementation for P
 - Explicit completion signals (e.g., `PLAN_CREATED:`, `REPORT_CREATED:`)
 - Behavioral content in agent files, not inline (Standard 12 compliance)
 
-**4. Reliability Through Clarity**
-- Clear verification checkpoints: mandatory checks after each file creation
-- Fail-fast with detailed error messages: immediate feedback for debugging
-- No complex retry mechanisms: single execution path that can be debugged and improved
+**4. Reliability Improvements**
+- Multi-template retry: standard → ultra-explicit → step-by-step (95-98% success)
+- Verification-fallback pattern: mandatory checkpoints after each file creation
 - Context pruning between phases: 80-90% reduction for completed phases
 - Checkpoint save/resume: state preservation for interruption recovery
 
@@ -159,7 +158,7 @@ Start from /supervise's proven architecture, add wave-based implementation for P
 
 ## Implementation Phases
 
-### Phase 1: Foundation and Baseline [COMPLETED]
+### Phase 1: Foundation and Baseline
 dependencies: []
 
 **Objective**: Copy /supervise as baseline and establish project structure
@@ -167,13 +166,13 @@ dependencies: []
 **Complexity**: Low
 
 **Tasks**:
-- [x] Copy `/home/benjamin/.config/.claude/commands/supervise.md` to `/home/benjamin/.config/.claude/commands/coordinate.md`
-- [x] Update command metadata (description, allowed-tools, argument-hint)
-- [x] Update command header documentation to reference /coordinate (not /supervise)
-- [x] Create test file `.claude/tests/test_coordinate_basic.sh` for baseline tests
-- [x] Verify command is discoverable via `/coordinate --help` or similar
-- [x] Document baseline metrics: file size (2,180 lines), Phase 3 sequential execution
-- [x] Create tracking document for size budget (target: 2,500-3,000 lines)
+- [ ] Copy `/home/benjamin/.config/.claude/commands/supervise.md` to `/home/benjamin/.config/.claude/commands/coordinate.md`
+- [ ] Update command metadata (description, allowed-tools, argument-hint)
+- [ ] Update command header documentation to reference /coordinate (not /supervise)
+- [ ] Create test file `.claude/tests/test_coordinate_basic.sh` for baseline tests
+- [ ] Verify command is discoverable via `/coordinate --help` or similar
+- [ ] Document baseline metrics: file size (2,177 lines), Phase 3 sequential execution
+- [ ] Create tracking document for size budget (target: 2,500-3,000 lines)
 
 **Testing**:
 ```bash
@@ -185,19 +184,13 @@ wc -l .claude/commands/coordinate.md  # Should be ~2,177 initially
 **Expected Duration**: 1-2 hours
 
 **Phase 1 Completion Requirements**:
-- [x] All phase tasks marked [x]
-- [x] Tests passing (command file parseable, metadata correct)
-- [x] Git commit created: `feat(491): complete Phase 1 - Foundation and Baseline`
-- [x] Checkpoint saved (initial baseline)
-- [x] Update this plan file with phase completion status
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (command file parseable, metadata correct)
+- [ ] Git commit created: `feat(491): complete Phase 1 - Foundation and Baseline`
+- [ ] Checkpoint saved (initial baseline)
+- [ ] Update this plan file with phase completion status
 
-**Completion Notes**:
-- Baseline file created: 2,180 lines (3 lines added for enhanced metadata)
-- All /supervise references updated to /coordinate
-- Test suite created with 6 baseline tests
-- Size tracking document created at SIZE_TRACKING.md
-
-### Phase 2: Standards Compliance Fixes [IN PROGRESS]
+### Phase 2: Standards Compliance Fixes
 dependencies: [1]
 
 **Objective**: Fix three violations identified in Report 490
@@ -208,7 +201,7 @@ dependencies: [1]
 - [ ] **Violation 1 - Missing Imperative Markers**: Add "EXECUTE NOW" markers within 5 lines preceding Task invocations at:
   - [ ] Lines 1135-1155 (debug-analyst invocation)
   - [ ] Lines 1667-1677 (code-writer Phase 5 invocation)
-- [x] **Violation 2 - Code-Fenced Anti-Pattern**: Remove markdown code fence from YAML example at lines 49-54 (unwrap Task invocation) - COMPLETED: Changed to plain text format
+- [ ] **Violation 2 - Code-Fenced Anti-Pattern**: Remove markdown code fence from YAML example at lines 49-54 (unwrap Task invocation)
 - [ ] **Violation 3 - Behavioral Content Duplication**: Extract ~250 lines of inline behavioral content to agent files:
   - [ ] Extract debug-analyst STEP 1-4 sequence to `.claude/agents/debug-analyst.md` (verify file exists first)
   - [ ] Extract code-writer STEP 1-4 sequence to `.claude/agents/code-writer.md` (verify file exists first)
@@ -288,56 +281,56 @@ grep -q "implementer-coordinator.md" .claude/commands/coordinate.md
 - [ ] Checkpoint saved (wave execution capability)
 - [ ] Update this plan file with phase completion status
 
-### Phase 4: Clear Error Handling and Diagnostics
+### Phase 4: Multi-Template Retry Strategy
 dependencies: [3]
 
-**Objective**: Implement clear error messages and fail-fast behavior for easy debugging
+**Objective**: Implement three-level template escalation for agent reliability
 
-**Complexity**: Low
+**Complexity**: Medium
 
 **Tasks**:
-- [ ] **Verification Checkpoints**: Add clear verification after each agent invocation:
-  - [ ] File creation verification (file exists check with clear path display)
-  - [ ] Content verification (file size >0, required sections present with specific failures noted)
-  - [ ] On failure: Display EXACTLY what was expected vs what was found
-- [ ] **Error Message Standards**: Create comprehensive error messages for all failure modes:
-  - [ ] Agent invocation failures: Show agent name, expected output path, actual result
-  - [ ] File creation failures: Show expected path, parent directory status, permissions check
-  - [ ] Verification failures: Show specific check that failed, file content summary
-  - [ ] Include suggested debugging steps in every error message
-- [ ] **Fail-Fast Implementation**: NO retries, NO fallbacks - fail immediately with clear diagnostics:
-  - [ ] Replace any retry logic from /supervise with fail-fast + diagnostics
-  - [ ] Remove fallback directory creation (if library fails, show why and exit)
-  - [ ] Remove retry_with_backoff calls (fail once with full error context)
-- [ ] **Diagnostic Information**: On any failure, display:
-  - [ ] What command was attempting (phase, agent, expected outcome)
-  - [ ] What actually happened (error message, file system state)
-  - [ ] What to check next (permissions, library availability, agent file existence)
-  - [ ] Exact commands to debug (ls, cat, grep examples with actual paths)
-- [ ] Document error handling philosophy: "One clear execution path, fail fast with full context"
+- [ ] **Template Repository**: Create template structure for escalating agent prompts:
+  - [ ] Define standard template (normal enforcement language)
+  - [ ] Define ultra-explicit template (enhanced imperative markers, bold enforcement)
+  - [ ] Define step-by-step template (numbered steps, maximum enforcement, completion checklists)
+- [ ] **Retry Logic Integration**: Add retry wrapper for all agent invocations:
+  - [ ] Attempt 1: Standard template
+  - [ ] Attempt 2 (if verification fails): Ultra-explicit template with stronger markers
+  - [ ] Attempt 3 (if verification fails): Step-by-step template with completion checklist
+  - [ ] Max 3 attempts total, escalate to user if all fail
+- [ ] **Template Application**: Apply multi-template retry to all 7 agents:
+  - [ ] Research-specialist (Phase 1)
+  - [ ] Plan-architect (Phase 2)
+  - [ ] Implementer-coordinator (Phase 3)
+  - [ ] Test-specialist (Phase 4)
+  - [ ] Debug-analyst (Phase 5)
+  - [ ] Doc-writer (Phase 6)
+- [ ] **Verification Checkpoints**: After each agent invocation, verify expected output:
+  - [ ] File creation verification (file exists check)
+  - [ ] Content verification (file size >0, required sections present)
+  - [ ] If verification fails, retry with next template level
+- [ ] Document retry strategy in command header (expected 95-98% success rate)
+- [ ] Add retry metrics tracking to workflow state
 
 **Testing**:
 ```bash
-# Test 1: No retry logic present
-! grep -q "retry.*template\|retry_with_backoff\|for attempt in" .claude/commands/coordinate.md
+# Test 1: Template definitions present
+grep -c "TEMPLATE_LEVEL.*standard\|ultra-explicit\|step-by-step" .claude/commands/coordinate.md  # Should be 3+
 
-# Test 2: No fallback mechanisms
-! grep -q "FALLBACK\|fallback" .claude/commands/coordinate.md
+# Test 2: Retry logic present
+grep -q "retry.*template\|escalate.*template" .claude/commands/coordinate.md
 
-# Test 3: Clear error messages for all verification points
-grep -c "ERROR:.*expected.*found\|What to check\|Diagnostic" .claude/commands/coordinate.md  # Should be ≥7
-
-# Test 4: Verification checkpoints present for all agents
-grep -c "Verification checkpoint\|MANDATORY VERIFICATION" .claude/commands/coordinate.md  # Should be ≥7
+# Test 3: Verification checkpoints present for all agents
+grep -c "Verification checkpoint" .claude/commands/coordinate.md  # Should be ≥7
 ```
 
-**Expected Duration**: 2-3 hours
+**Expected Duration**: 6-8 hours
 
 **Phase 4 Completion Requirements**:
 - [ ] All phase tasks marked [x]
-- [ ] Tests passing (no retry logic, no fallbacks, clear error messages, verification checkpoints for all agents)
-- [ ] Git commit created: `feat(491): complete Phase 4 - Clear Error Handling and Diagnostics`
-- [ ] Checkpoint saved (debuggable implementation)
+- [ ] Tests passing (templates defined, retry logic present, verification checkpoints for all agents)
+- [ ] Git commit created: `feat(491): complete Phase 4 - Multi-Template Retry Strategy`
+- [ ] Checkpoint saved (reliability enhancements)
 - [ ] Update this plan file with phase completion status
 
 ### Phase 5: Context Reduction and Optimization
@@ -355,9 +348,10 @@ dependencies: [4]
   - [ ] After Phase 4: Prune test output (keep pass/fail status only)
   - [ ] Target: 80-90% context reduction for completed phases
 - [ ] **Size Optimization**: Review file size and reduce non-critical verbosity:
-  - [ ] Current baseline: ~2,177 lines (from /supervise) + Phase 3 additions (~200 lines) - retry/fallback removal (~100 lines) = ~2,277 lines
+  - [ ] Current baseline: ~2,177 lines (from /supervise) + Phase 3 additions (~200 lines) + retry logic (~150 lines) = ~2,527 lines
   - [ ] Target: 2,500-3,000 lines (stay within budget)
   - [ ] Identify opportunities for library extraction (if approaching 3,000 line limit)
+  - [ ] Consider extracting retry templates to shared file if needed
 - [ ] **Metadata Extraction**: Ensure forward message pattern for all agents:
   - [ ] Extract title + 50-word summary from research reports
   - [ ] Extract complexity + phase count from plans
@@ -419,10 +413,10 @@ dependencies: [5]
   - [ ] Test workflow: research-and-plan (Phases 0-2)
   - [ ] Test workflow: full-implementation (Phases 0-6)
   - [ ] Test workflow: debug-only (Phases 0, 1, 5)
-- [ ] **Reliability Tests**: Test verification checkpoints and error messages
-  - [ ] Simulate agent failure (expect clear error with debugging steps)
-  - [ ] Simulate file creation failure (expect detailed diagnostic information)
-  - [ ] Verify no retry attempts (fail-fast behavior)
+- [ ] **Reliability Tests**: Test multi-template retry and verification-fallback
+  - [ ] Simulate agent failure (expect retry with next template)
+  - [ ] Simulate file creation failure (expect verification retry)
+  - [ ] Verify 95-98% success rate with retry strategy
 - [ ] **Performance Benchmarks**: Measure context usage and time savings
   - [ ] Context usage at each phase boundary (target: <30%)
   - [ ] Wave-based time savings vs sequential (expect 40-60%)
@@ -537,15 +531,15 @@ grep -c "Example [0-9]:" .claude/docs/migrations/supervise-to-coordinate.md  # S
 - Debug-only workflow (Phases 0, 1, 5)
 
 **5. Reliability Tests** (Priority: MEDIUM)
-- Verification checkpoint accuracy (all expected files detected)
-- Clear error message quality (all failures have debugging info)
-- Fail-fast behavior (no retries, immediate exit with diagnostics)
+- Multi-template retry success rate (95-98%)
+- Verification-fallback pattern (100% file creation)
+- Partial failure handling (research phase ≥50% success)
 - Checkpoint recovery from interruption
 
 **6. Performance Tests** (Priority: LOW)
 - Context usage at phase boundaries (<30%)
 - Wave-based time savings (40-60%)
-- Error message overhead (negligible - fail-fast design)
+- Retry overhead (<5%)
 - File size within budget (2,500-3,000 lines)
 
 ### Test Execution
@@ -577,7 +571,7 @@ time /coordinate "Implement feature X" --parallel
 ### Command Documentation
 - Update `.claude/commands/coordinate.md` header with comprehensive usage guide
 - Include wave-based execution explanation with ASCII diagrams
-- Document fail-fast error handling philosophy and debugging workflow
+- Document multi-template retry strategy and expected success rates
 - Reference all library dependencies and agent behavioral files
 
 ### Migration Documentation
@@ -675,9 +669,9 @@ All phases use sequential dependencies ([1], [2], [3], etc.) because this is arc
 - Baseline: 2,177 lines (from /supervise)
 - Phase 2 reduction: -200 lines (behavioral extraction)
 - Phase 3 addition: +200 lines (wave execution)
-- Phase 4: -100 lines (remove retry/fallback logic from /supervise, add clear errors: net reduction)
+- Phase 4 addition: +150 lines (retry logic)
 - Phase 5 optimization: -50 lines (pruning references)
-- **Estimated Final**: 2,027 lines (well within 2,500-3,000 target, room for additions)
+- **Estimated Final**: 2,277 lines (well within 2,500-3,000 target)
 
 ### Key Differences from /orchestrate
 **NOT Including** (keeps file economical):
@@ -688,50 +682,12 @@ All phases use sequential dependencies ([1], [2], [3], etc.) because this is arc
 
 **Including from /orchestrate**:
 - Wave-based implementation (core feature, 200 lines)
+- Multi-template retry (proven pattern, 150 lines)
 - Checkpoint save/resume (essential, already in /supervise)
 
 ### Critical Success Factors
 1. Zero code-fenced Task examples (prevents 0% delegation)
 2. Wave execution for 40-60% time savings
-3. Clear error messages and fail-fast behavior (debuggable, improvable)
+3. Multi-template retry for 95-98% success rate
 4. File size within 2,500-3,000 lines (not 5,438)
 5. All standards violations fixed (100% compliance)
-6. Single high-functioning workflow - no retry complexity
-
-## Revision History
-
-### 2025-10-27 - Revision 1
-
-**Changes**: Removed multi-template retry strategy and fallback mechanisms in favor of fail-fast error handling with clear diagnostics
-
-**Reason**: User feedback indicated retry mechanisms add needless complexity and unpredictable behavior. A single high-functioning workflow that can be debugged and improved is preferable.
-
-**Specific Modifications**:
-1. **Phase 4 Renamed**: "Multi-Template Retry Strategy" → "Clear Error Handling and Diagnostics"
-2. **Phase 4 Approach Changed**:
-   - Removed: Three-level template escalation (standard → ultra-explicit → step-by-step)
-   - Removed: Retry wrapper logic for all agent invocations
-   - Removed: Fallback mechanisms (directory creation, file verification retries)
-   - Added: Clear verification checkpoints with actionable error messages
-   - Added: Fail-fast implementation (NO retries, immediate exit with diagnostics)
-   - Added: Comprehensive diagnostic information on every failure
-3. **Duration Updated**: Phase 4 reduced from 6-8 hours to 2-3 hours (simpler implementation)
-4. **Success Criteria Updated**:
-   - Removed: "Multi-template retry strategy implemented (95-98% success rate)"
-   - Removed: "Verification-fallback pattern for 100% file creation rate"
-   - Added: "Clear verification checkpoints with actionable error messages (for debuggability)"
-   - Added: "Single high-functioning workflow - no complex retry mechanisms or fallbacks"
-5. **Size Budget Updated**:
-   - Original estimate: 2,277 lines (with retry logic)
-   - Revised estimate: 2,027 lines (without retry/fallback, net -100 lines from Phase 4)
-6. **Testing Updated**: Tests now verify absence of retry logic and fallbacks, presence of clear error messages
-7. **Philosophy Shift**: From "defense-in-depth with retries" to "fail-fast with full diagnostics"
-
-**Benefits**:
-- Simpler implementation (4-5 hours saved in Phase 4)
-- More predictable behavior (single execution path)
-- Easier to debug (clear error messages show exactly what failed and why)
-- Easier to improve (no complex retry state to manage)
-- Smaller codebase (100 fewer lines, more room in budget)
-
-**Reports Used**: None (user-driven revision based on experience with retry/fallback complexity)

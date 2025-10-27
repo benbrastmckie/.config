@@ -50,12 +50,9 @@ dependent-commands: research, plan, implement, debug, test, document
 ### Why This Matters
 
 **Wrong Pattern - Command Chaining** (causes context bloat and broken behavioral injection):
-```yaml
-# ❌ INCORRECT - Do NOT do this
-SlashCommand {
-  command: "/plan create auth feature"
-}
-```
+
+❌ INCORRECT - Do NOT do this:
+SlashCommand with command: "/plan create auth feature"
 
 **Problems with command chaining**:
 1. **Context Bloat**: Entire /plan command prompt injected into your context (~2000 lines)
