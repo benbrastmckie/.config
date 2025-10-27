@@ -60,14 +60,12 @@ Both `/coordinate` and `/research` commands have **0% agent delegation rate** du
 **Tasks**:
 1. Create timestamped backups of both command files
 2. Verify `/supervise` command working state (reference pattern)
-3. Read `/supervise` command file to understand working pattern (`.claude/commands/supervise.md`)
-4. Document current failure modes with test invocations
-5. Verify test environment ready (`.claude/specs/` directory accessible)
+3. Document current failure modes with test invocations
+4. Verify test environment ready (`.claude/specs/` directory accessible)
 
 **Acceptance Criteria**:
 - [ ] Backup files created with timestamp suffix
 - [ ] `/supervise` verified working (delegation rate >90%)
-- [ ] `/supervise` command file reviewed (`.claude/commands/supervise.md`) as working reference
 - [ ] Test invocations documented showing current failures
 - [ ] Git status clean or changes committed before starting
 
@@ -81,12 +79,6 @@ cp .claude/commands/research.md .claude/commands/research.md.backup-$(date +%Y%m
 
 # Verify supervise working
 /supervise "research test topic" --dry-run
-
-# Read supervise command as reference
-less .claude/commands/supervise.md
-# Look for imperative patterns: "USE the Task tool NOW with these parameters"
-# Note: No YAML-style Task { } blocks
-# Note: No code fences around Task invocations
 
 # Document current failures
 /coordinate "test coordinate" 2>&1 | head -50 > /tmp/coordinate_before.log
@@ -102,8 +94,6 @@ less .claude/commands/supervise.md
 **Failure Points to Fix**: 9 agent invocations across 6 phases
 
 ### Task 2.1: Fix Research Phase Agent Invocation (Lines 1042-1082)
-
-**Reference**: Compare to `/supervise` working pattern (`.claude/commands/supervise.md`)
 
 **Current Pattern** (BROKEN):
 ```markdown
@@ -183,8 +173,6 @@ Return: REPORT_CREATED: [ABSOLUTE_PATH]"
 - [ ] Pattern matches `/supervise` reference implementation
 
 ### Task 2.2: Fix Planning Phase Agent Invocation (Lines 1323-1346)
-
-**Reference**: Compare to `/supervise` plan-architect invocation pattern
 
 **Apply same pattern transformation**:
 - Remove YAML-style `Task { }` block
@@ -477,8 +465,6 @@ fi
 
 **Objective**: Verify both commands work correctly with >90% agent delegation rate.
 
-**Comparison Baseline**: `/supervise` command (verified >90% delegation rate)
-
 ### Task 4.1: Test /coordinate Command
 
 **Test 1: Simple Research Workflow**
@@ -531,13 +517,10 @@ fi
 /analyze agents
 
 # Expected output should show:
-# - /supervise: >90% delegation rate (baseline reference)
 # - /coordinate: >90% delegation rate, multiple agent invocations
 # - /research: >90% delegation rate, multiple agent invocations
 # - Recent invocations logged with timestamps
 ```
-
-**Comparison**: All three commands (`/supervise`, `/coordinate`, `/research`) should show similar delegation rates >90%.
 
 ### Task 4.4: File Creation Verification
 
@@ -948,24 +931,3 @@ This plan provides a systematic approach to fixing both `/coordinate` and `/rese
 5. **Comprehensive documentation**: Updated anti-pattern docs and architecture standards
 
 **Estimated Completion**: 4-6 hours over 2-3 work sessions
-
----
-
-## Revision History
-
-### 2025-10-27 - Revision 1
-**Changes**: Enhanced `/supervise` references throughout the plan
-**Reason**: Ensure implementers have clear reference to working pattern from spec 438
-**Modified Phases**:
-- Phase 1: Added task to read `/supervise` command file as reference
-- Phase 1: Added acceptance criterion to review supervise.md
-- Phase 1: Added commands to examine supervise.md for working patterns
-- Task 2.1: Added reference note to compare with `/supervise` pattern
-- Task 2.2: Added reference note for plan-architect invocation
-- Phase 4: Added comparison baseline noting `/supervise` >90% delegation rate
-- Task 4.3: Added `/supervise` to delegation rate comparison output
-- Comparison table: Clarified `/supervise` as "reference" vs "fixed"
-
-**Purpose**: Make `/supervise` command file (`.claude/commands/supervise.md`) an explicit reference point throughout implementation, ensuring developers can compare working patterns side-by-side with broken patterns during fixes.
-
-**Key Addition**: Phase 1 now includes explicit instruction to read and understand `/supervise` command file before beginning fixes, treating it as the proven implementation template.

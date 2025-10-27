@@ -76,7 +76,7 @@ Each phase MUST verify that agents created required files BEFORE marking phase c
 
 This command uses standardized patterns defined in external reference files:
 
-- **Agent Templates**: `.claude/commands/shared/orchestration-patterns.md`
+- **Agent Templates**: `.claude/docs/reference/orchestration-patterns.md`
   - Complete agent prompt templates for all 5 agents
   - Phase coordination patterns (parallel, sequential, adaptive, conditional)
   - Checkpoint structure and operations
@@ -113,7 +113,7 @@ Preview the complete workflow execution without invoking agents or making change
 6. **Artifact preview**: List reports, plans, and files that would be created
 7. **Confirmation prompt**: Option to proceed with actual workflow execution
 
-For detailed preview output examples, workflow type detection, use cases, and implementation details, see [Orchestration Alternatives](.claude/commands/shared/orchestration-alternatives.md).
+For detailed preview output examples, workflow type detection, use cases, and implementation details, see [Orchestration Alternatives](.claude/docs/reference/orchestration-alternatives.md).
 
 ## Workflow Analysis
 
@@ -270,7 +270,7 @@ These utilities ensure workflow state is preserved across interruptions and agen
 
 ## Error Handling Strategy
 
-**See comprehensive patterns in**: `.claude/commands/shared/orchestration-patterns.md#error-recovery-patterns`
+**See comprehensive patterns in**: `.claude/docs/reference/orchestration-patterns.md#error-recovery-patterns`
 
 ### Error Handling Principles
 
@@ -296,7 +296,7 @@ error_recovery:
   5. Escalate to user if unrecoverable
 ```
 
-See `.claude/commands/shared/orchestration-patterns.md` for detailed implementation examples.
+See `.claude/docs/reference/orchestration-patterns.md` for detailed implementation examples.
 
 ## Progress Streaming
 
