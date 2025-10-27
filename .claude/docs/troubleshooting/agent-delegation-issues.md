@@ -4,10 +4,10 @@ This guide covers common issues encountered when commands invoke agents using th
 
 **Related Documentation**:
 - [Command Not Delegating to Agents](command-not-delegating-to-agents.md) - **NEW**: When commands execute tasks directly instead of using agents
-- [Agent Authoring Guide](../guides/agent-authoring-guide.md) - Creating agent behavioral files
-- [Command Authoring Guide](../guides/command-authoring-guide.md) - Invoking agents from commands
+- [Agent Development Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
+- [Command Development Guide](../guides/command-development-guide.md) - Invoking agents from commands
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Overall system architecture
-- [Examples Directory](../examples/) - Working implementations
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Working agent invocation pattern
 
 **Common Issues Quick Links**:
 - [Command executes task directly (no agents invoked)](command-not-delegating-to-agents.md) ← **Start here if no Task tool invocations**
@@ -106,7 +106,7 @@ grep -n "create_topic_artifact.*plans" .claude/commands/COMMAND_NAME.md
 
 ### References
 - [Agent Authoring Guide: What Agents Should NOT Do](../guides/agent-authoring-guide.md#what-agents-should-not-do)
-- [Correct Agent Invocation Examples](../examples/correct-agent-invocation.md)
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md)
 
 ---
 
@@ -204,7 +204,7 @@ ls -R specs/042_feature/
 
 ### References
 - [Command Authoring Guide: Topic-Based Artifact Paths](../guides/command-authoring-guide.md#topic-based-artifact-paths)
-- [Behavioral Injection Workflow](../examples/behavioral-injection-workflow.md)
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md)
 
 ---
 
@@ -404,7 +404,7 @@ grep -c "/implement\|/plan\|/report" .claude/agents/AGENT_NAME.md
 
 ### References
 - [Agent Authoring Guide: Recursion Anti-Pattern](../guides/agent-authoring-guide.md#anti-pattern-recursion)
-- [Correct Agent Invocation: Anti-Patterns](../examples/correct-agent-invocation.md#anti-pattern-examples)
+- [Behavioral Injection Anti-Patterns](../concepts/patterns/behavioral-injection.md#anti-patterns)
 
 ---
 
@@ -631,9 +631,7 @@ find specs -name "*.md" | head -20
 
 ## See Also
 
-- [Agent Authoring Guide](../guides/agent-authoring-guide.md) - Creating agent behavioral files
-- [Command Authoring Guide](../guides/command-authoring-guide.md) - Invoking agents from commands
-- [Behavioral Injection Workflow](../examples/behavioral-injection-workflow.md) - Complete workflow example
-- [Correct Agent Invocation](../examples/correct-agent-invocation.md) - Task tool examples
-- [Reference Implementations](../examples/reference-implementations.md) - Working command examples
+- [Agent Development Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
+- [Command Development Guide](../guides/command-development-guide.md) - Invoking agents from commands and working examples
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Complete workflow example and Task tool invocations
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Overall system architecture

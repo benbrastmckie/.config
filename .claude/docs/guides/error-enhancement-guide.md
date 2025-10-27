@@ -30,7 +30,7 @@ When a command encounters an error:
 
 The core error analysis is performed by:
 ```bash
-.claude/utils/analyze-error.sh "<error-output>"
+.claude/lib/analyze-error.sh "<error-output>"
 ```
 
 This utility is automatically called by `/implement`, `/test`, and agents when errors occur.
@@ -268,7 +268,7 @@ On error during multi-phase implementation:
 command_that_fails 2>&1 | tee error.log
 
 # Analyze manually
-.claude/utils/analyze-error.sh "$(cat error.log)"
+.claude/lib/analyze-error.sh "$(cat error.log)"
 ```
 
 ### Custom Error Analysis
@@ -277,10 +277,10 @@ For errors not automatically enhanced:
 
 ```bash
 # From file
-.claude/utils/analyze-error.sh "$(cat error_output.txt)"
+.claude/lib/analyze-error.sh "$(cat error_output.txt)"
 
 # From string
-.claude/utils/analyze-error.sh "Error: undefined method 'foo' for nil:NilClass"
+.claude/lib/analyze-error.sh "Error: undefined method 'foo' for nil:NilClass"
 ```
 
 ## Debug Command Integration
@@ -353,7 +353,7 @@ Skip automated suggestions when:
 
 ### Adjust Error Patterns
 
-Edit `.claude/utils/analyze-error.sh` to add custom error patterns:
+Edit `.claude/lib/analyze-error.sh` to add custom error patterns:
 
 ```bash
 # Add custom error type
@@ -406,7 +406,7 @@ export CLAUDE_DISABLE_ERROR_ENHANCEMENT=1
 **Problem**: Errors shown but no enhancement
 
 **Solutions**:
-1. Check `analyze-error.sh` is executable: `chmod +x .claude/utils/analyze-error.sh`
+1. Check `analyze-error.sh` is executable: `chmod +x .claude/lib/analyze-error.sh`
 2. Verify jq installed (optional but recommended): `which jq`
 3. Check error output format matches patterns
 4. Run analysis manually to debug

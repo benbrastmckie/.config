@@ -297,13 +297,6 @@ The /setup command provides comprehensive CLAUDE.md generation and includes clea
 
 Use /setup for initial setup and major updates. Use utilities for targeted maintenance and analysis.
 
-## Examples
-
-See `.claude/examples/setup/` for complete examples:
-- `example_01_optimization.md` - Optimizing bloated CLAUDE.md
-- `example_02_testing_detection.md` - Generating testing protocols
-- `example_03_readme_coverage.md` - Systematic documentation
-
 ## See Also
 
 - [CLAUDE.md](../CLAUDE.md) - Project standards file

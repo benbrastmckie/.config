@@ -581,7 +581,7 @@ find .claude/data/registry -name "*.json" -mtime +30 -delete
 
 ```bash
 # Clean all data/ subdirectories
-.claude/utils/cleanup-data.sh
+.claude/lib/cleanup-data.sh
 
 # Or clean individually:
 
