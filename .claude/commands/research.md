@@ -688,7 +688,7 @@ Synthesizes all subtopic findings:
 
 **Note**: The overview file is always named OVERVIEW.md (ALL CAPS) to distinguish it as the final synthesis report, not another numbered subtopic report.
 
-For complete report structure and section guidelines, see `.claude/commands/shared/report-structure.md`
+For complete report structure and section guidelines, see `.claude/docs/reference/report-structure.md`
 
 ### 8. Report Metadata
 

@@ -184,7 +184,7 @@ echo "✓ VERIFIED: Report path ready: $REPORT_PATH"
 
 #### Report Structure
 
-**CRITICAL**: Refactoring reports MUST follow the standard structure defined in `.claude/commands/shared/refactor-structure.md`.
+**CRITICAL**: Refactoring reports MUST follow the standard structure defined in `.claude/docs/reference/refactor-structure.md`.
 
 Key sections (ALL REQUIRED):
 - **Executive Summary**: High-level findings and overall assessment
@@ -195,7 +195,7 @@ Key sections (ALL REQUIRED):
 - **Migration Path**: Step-by-step guide for applying refactorings
 - **Metrics**: Files analyzed, issues found, effort estimates
 
-For complete refactoring report structure and analysis guidelines, see `.claude/commands/shared/refactor-structure.md`
+For complete refactoring report structure and analysis guidelines, see `.claude/docs/reference/refactor-structure.md`
 
 #### File Creation Enforcement
 

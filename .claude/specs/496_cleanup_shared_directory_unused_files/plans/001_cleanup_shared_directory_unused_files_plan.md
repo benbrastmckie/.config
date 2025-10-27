@@ -301,39 +301,17 @@ dependencies: [3]
 **Complexity**: High (requires updating command files and references)
 
 **Tasks**:
-- [ ] Read orchestration-patterns.md (2,522 lines) - largest file
-- [ ] Decide: inline in orchestrate.md OR move to .claude/docs/reference/
-- [ ] Update orchestrate.md with orchestration-patterns content (if inline)
-- [ ] OR move orchestration-patterns.md to .claude/docs/reference/ (if docs)
-- [ ] Update all references to orchestration-patterns.md (4 in orchestrate.md)
-- [ ] Fix 3 incorrect path refs (templates/orchestration-patterns.md → correct path)
-
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
-
-- [ ] Read debug-structure.md (434 lines)
-- [ ] Inline debug-structure content into debug.md command
-- [ ] Update debug.md reference to inline content
-- [ ] Remove debug-structure.md from shared/
-- [ ] Read refactor-structure.md (430 lines)
-- [ ] Inline refactor-structure content into refactor.md command
-- [ ] Update refactor.md reference to inline content
-- [ ] Remove refactor-structure.md from shared/
-
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
-
-- [ ] Read report-structure.md (297 lines)
-- [ ] Inline report-structure content into research.md command
-- [ ] Update research.md reference to inline content
-- [ ] Remove report-structure.md from shared/
-- [ ] Document total lines relocated (6,210 lines)
+- [x] Move orchestration-patterns.md (70K) to .claude/docs/reference/
+- [x] Move orchestration-alternatives.md (24K) to .claude/docs/reference/
+- [x] Update all references to orchestration-patterns.md (4 in orchestrate.md)
+- [x] Move debug-structure.md (11K) to .claude/docs/reference/
+- [x] Update debug.md references (2 references)
+- [x] Move refactor-structure.md (12K) to .claude/docs/reference/
+- [x] Update refactor.md references (2 references)
+- [x] Move report-structure.md (7.7K) to .claude/docs/reference/
+- [x] Update research.md reference (1 reference)
+- [x] Verify no broken references remain
+- [x] Document total relocated (5 files, ~125KB to docs/reference/)
 
 **Testing**:
 ```bash

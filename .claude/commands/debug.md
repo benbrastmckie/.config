@@ -577,7 +577,7 @@ Standalone debug report created:
 
 ## Report Structure
 
-Debug reports follow the standard structure defined in `.claude/commands/shared/debug-structure.md`.
+Debug reports follow the standard structure defined in `.claude/docs/reference/debug-structure.md`.
 
 Key sections include:
 - **Problem Statement**: Detailed description of reported vs expected behavior
@@ -588,7 +588,7 @@ Key sections include:
 - **Testing Strategy**: How to validate fixes and prevent regressions
 - **Resolution Status**: Tracking for when the issue is fixed
 
-For complete debug report structure and investigation guidelines, see `.claude/commands/shared/debug-structure.md`
+For complete debug report structure and investigation guidelines, see `.claude/docs/reference/debug-structure.md`
 
 ## Investigation Techniques
 
