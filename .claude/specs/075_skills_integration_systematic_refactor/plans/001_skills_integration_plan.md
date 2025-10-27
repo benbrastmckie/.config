@@ -66,10 +66,11 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 
 3. Document skills integration in `.claude/docs/guides/skills-integration-guide.md`
    - Explain hybrid architecture (skills for expertise, subagents for workflows)
-   - Provide skills vs subagents decision matrix
-   - Include integration examples with commands
+   - Reference existing skills-vs-subagents decision guide (`.claude/docs/guides/skills-vs-subagents-decision.md`)
+   - Extend with integration examples with commands
    - Document context management for skills
    - Reference all 4 research reports
+   - Reference documented architectural patterns (`.claude/docs/concepts/patterns/README.md`)
 
 4. Add skills section to CLAUDE.md template
    - Define skills section with markers (<!-- SECTION: skills_system -->)
@@ -106,33 +107,42 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 ### Phase 1: Skills Registry Infrastructure
 **Status**: Pending
 **Objective**: Build skill discovery, registration, and invocation infrastructure
-**Complexity**: 6/10
-**Duration**: 2 weeks
+**Complexity**: 5/10 (reduced from 6/10 - leveraging existing registry infrastructure)
+**Duration**: 1 week (reduced from 2 weeks - 90% code overlap with agent-registry-utils.sh)
 
 #### Dependencies
 - Phase 0 must be complete
 - User approval of documentation standards required
 
-#### Tasks
-1. Create skills registry system in `.claude/lib/skills-registry.sh`
-   - Implement `list_skills()` - List all available skills
-   - Implement `validate_skill(skill_name)` - Verify skill exists and is valid
-   - Implement `get_skill_info(skill_name)` - Extract metadata from frontmatter
-   - Implement `get_skill_capabilities(skill_name)` - Parse capabilities section
-   - Implement `find_skills_by_capability(pattern)` - Capability-based search
-   - Implement `load_skill_behavioral_prompt(skill_name)` - Similar to agent loading
-   - Add caching for performance (project skills override global skills)
+#### Existing Infrastructure
+- **agent-registry-utils.sh** provides registry patterns with 90% code overlap (frontmatter parsing, metadata extraction, caching)
+- **unified-location-detection.sh** provides directory creation utilities (85% token reduction, 36x speedup vs agent-based approach)
+- **artifact-creation.sh** provides lazy directory creation pattern (`ensure_artifact_directory()`)
 
-2. Create `.claude/skills/` directory structure
+#### Tasks
+1. Extend skills registry system in `.claude/lib/agent-registry-utils.sh` to support skills
+   - Add `list_skills()` - List all available skills (reuse `list_agents()` pattern)
+   - Add `validate_skill(skill_name)` - Verify skill exists and is valid (reuse `validate_agent()` pattern)
+   - Add `get_skill_info(skill_name)` - Extract metadata from frontmatter (reuse `get_agent_info()` pattern)
+   - Add `get_skill_capabilities(skill_name)` - Parse capabilities section (new function)
+   - Add `find_skills_by_capability(pattern)` - Capability-based search (new function)
+   - Add `load_skill_behavioral_prompt(skill_name)` - Reuse agent loading pattern
+   - Extend existing caching for performance (project skills override global skills)
+   - **Effort saved**: ~5KB code, 1 week development time by extending existing registry instead of creating parallel system
+
+2. Create `.claude/skills/` directory structure using existing infrastructure
+   - Use `ensure_artifact_directory()` pattern from artifact-creation.sh for lazy directory creation
    - Main directories: `converters/`, `analyzers/`, `enforcers/`, `integrations/`
    - Each skill in subdirectory: `skill-name/SKILL.md`
    - Support for optional files: `reference.md`, `scripts/`, `templates/`
+   - Leverage unified-location-detection.sh for directory path resolution (85% token reduction benefit)
 
-3. Create metadata extraction utilities for skills
-   - Implement `extract_skill_metadata()` in `.claude/lib/metadata-extraction.sh`
+3. Extend metadata extraction utilities for skills
+   - Implement `extract_skill_metadata()` in `.claude/lib/metadata-extraction.sh` (extends existing utility)
    - Extract title, description, capabilities, allowed-tools
-   - Support 95-99% context reduction pattern
+   - Support 95-99% context reduction pattern (see `.claude/docs/concepts/patterns/metadata-extraction.md`)
    - Return metadata-only format compatible with existing patterns
+   - Follow verification-fallback pattern (see `.claude/docs/concepts/patterns/verification-fallback.md`) for 100% file creation rate
 
 4. Integrate skills with context management
    - Add skills pruning to `.claude/lib/context-pruning.sh`
@@ -142,10 +152,11 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 
 5. Create skill invocation wrapper utilities
    - Add `invoke_skill()` function in `.claude/lib/skills-invocation.sh`
-   - Support behavioral injection pattern (read from SKILL.md)
+   - Support behavioral injection pattern (see `.claude/docs/concepts/patterns/behavioral-injection.md`)
+   - Follow imperative agent invocation pattern per Standard 11 (see `.claude/docs/reference/command_architecture_standards.md`)
    - Pre-calculate artifact paths before invocation
-   - Verify skill outputs with mandatory verification checkpoints
-   - Implement fallback recovery mechanisms
+   - Verify skill outputs with mandatory verification checkpoints (verification-fallback pattern)
+   - Implement fallback recovery mechanisms (checkpoint-recovery pattern: `.claude/docs/concepts/patterns/checkpoint-recovery.md`)
 
 #### Testing
 - Test skill discovery with sample skills across all capability directories
@@ -162,10 +173,10 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 - **USER REVIEW CHECKPOINT**: Review infrastructure before installing external skills
 
 #### Artifacts Created
-- `.claude/lib/skills-registry.sh`
+- Updated `.claude/lib/agent-registry-utils.sh` (extended with skills support - no separate skills-registry.sh needed)
 - `.claude/lib/skills-invocation.sh`
-- Updated `.claude/lib/metadata-extraction.sh`
-- Updated `.claude/lib/context-pruning.sh`
+- Updated `.claude/lib/metadata-extraction.sh` (extended with `extract_skill_metadata()`)
+- Updated `.claude/lib/context-pruning.sh` (extended with `prune_skill_output()`)
 - `.claude/skills/README.md` (updated with structure)
 
 ---
@@ -411,7 +422,9 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
    - **doc-converter**: Replace with Anthropic document skills (already done in Phase 3)
    - **github-specialist**: Evaluate for migration to github-operations skill
    - **metrics-specialist**: Evaluate for migration to performance-metrics skill
-   - **Preserve**: Keep orchestration agents (spec-updater, plan-architect, implementation-executor)
+   - **Preserve**: Keep orchestration agents (spec-updater, plan-architect, implementation-executor, plan-structure-manager)
+   - **plan-structure-manager**: Created 2025-10-26, handles Phase/Stage expansion operations (integrates with /expand and /collapse commands)
+   - **Potential skills opportunity**: "when to expand phases" decision-making skill during /plan creation (provides complexity threshold guidance, complements plan-structure-manager execution)
 
 6. Update agent behavioral prompts
    - Add "Skills Available (auto-activate)" section
@@ -466,11 +479,12 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
    - Validate activation accuracy (precision/recall)
 
 3. Update .claude/docs/ with skills architecture
-   - Create `.claude/docs/concepts/skills-architecture.md`
-   - Document hybrid architecture (skills + subagents)
+   - Extend `.claude/docs/concepts/patterns/README.md` with skills integration section (not standalone skills-architecture.md)
+   - Document hybrid architecture (skills + subagents) integration with existing patterns
    - Include integration patterns and examples
-   - Add decision matrix (when to use skills vs subagents)
+   - Reference existing skills-vs-subagents decision guide (`.claude/docs/guides/skills-vs-subagents-decision.md`)
    - Reference all 4 research reports
+   - Cross-reference existing architectural patterns (behavioral-injection, metadata-extraction, verification-fallback, etc.)
 
 4. Create skills migration guide
    - Document when to create new skills
