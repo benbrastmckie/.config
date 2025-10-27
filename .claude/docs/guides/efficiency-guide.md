@@ -100,11 +100,11 @@ Phase 4: Tests (detected) → test-specialist
 
 ### Configuration
 
-The complexity scoring is implemented in `.claude/utils/analyze-phase-complexity.sh`:
+The complexity scoring is implemented in `.claude/lib/analyze-phase-complexity.sh`:
 
 ```bash
 # Analyze phase complexity
-.claude/utils/analyze-phase-complexity.sh "Phase Name" "task1|task2|task3"
+.claude/lib/analyze-phase-complexity.sh "Phase Name" "task1|task2|task3"
 
 # Output: complexity score (0-10)
 ```
@@ -412,11 +412,11 @@ dependencies: [2, 3, 4]
 
 ### Dependency Parser
 
-The dependency parser is implemented in `.claude/utils/parse-phase-dependencies.sh`:
+The dependency parser is implemented in `.claude/lib/parse-phase-dependencies.sh`:
 
 ```bash
 # Parse dependencies and generate execution waves
-.claude/utils/parse-phase-dependencies.sh plan_file.md
+.claude/lib/parse-phase-dependencies.sh plan_file.md
 
 # Output: execution waves in JSON format
 {
@@ -653,7 +653,7 @@ Track efficiency improvements with these metrics:
 **Solution**:
 1. Check phase name keywords
 2. Verify task descriptions
-3. Adjust complexity scoring weights in `.claude/utils/analyze-phase-complexity.sh`
+3. Adjust complexity scoring weights in `.claude/lib/analyze-phase-complexity.sh`
 
 ### Progress Not Showing
 
@@ -669,7 +669,7 @@ Track efficiency improvements with these metrics:
 **Problem**: Circular dependency or execution hangs
 
 **Solution**:
-1. Validate dependency graph: `.claude/utils/parse-phase-dependencies.sh plan.md`
+1. Validate dependency graph: `.claude/lib/parse-phase-dependencies.sh plan.md`
 2. Check for circular references
 3. Ensure all dependency phase numbers exist
 4. Review concurrent limit (max 3)
@@ -690,8 +690,8 @@ Track efficiency improvements with these metrics:
 - `.claude/commands/orchestrate.md` - Progress monitoring
 - `.claude/commands/plan-wizard.md` - Interactive wizard
 - `.claude/agents/*.md` - Progress streaming in agents
-- `.claude/utils/analyze-phase-complexity.sh` - Complexity scoring
-- `.claude/utils/parse-phase-dependencies.sh` - Dependency parser
+- `.claude/lib/analyze-phase-complexity.sh` - Complexity scoring
+- `.claude/lib/parse-phase-dependencies.sh` - Dependency parser
 
 ### Documentation
 - `.claude/docs/orchestration-guide.md` - Example parallel plan

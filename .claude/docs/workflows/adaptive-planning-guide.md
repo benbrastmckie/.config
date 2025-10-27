@@ -257,8 +257,8 @@ Choice [r/s/v/d]:
 
 **List Active Checkpoints**:
 ```bash
-.claude/utils/list-checkpoints.sh
-.claude/utils/list-checkpoints.sh orchestrate  # Filter by type
+.claude/lib/list-checkpoints.sh
+.claude/lib/list-checkpoints.sh orchestrate  # Filter by type
 ```
 
 **Manual Deletion**:
@@ -270,7 +270,7 @@ rm .claude/data/checkpoints/orchestrate_auth_system_*.json
 - Checkpoint deleted when workflow completes successfully
 - Failed checkpoints moved to `checkpoints/failed/` (kept 30 days)
 - Checkpoints older than 7 days automatically deleted
-- Run cleanup: `.claude/utils/cleanup-checkpoints.sh [days]`
+- Run cleanup: `.claude/lib/cleanup-checkpoints.sh [days]`
 
 ## Integrating Structures and Checkpoints
 
@@ -351,9 +351,9 @@ Plans can migrate between tiers as complexity changes.
 ### Utilities
 - `.claude/lib/checkpoint-utils.sh` - Checkpoint management functions
 - `.claude/lib/complexity-utils.sh` - Complexity calculation
-- `.claude/utils/parse-adaptive-plan.sh` - Parse any tier structure
-- `.claude/utils/list-checkpoints.sh` - List active checkpoints
-- `.claude/utils/cleanup-checkpoints.sh [days]` - Clean old checkpoints
+- `.claude/lib/parse-adaptive-plan.sh` - Parse any tier structure
+- `.claude/lib/list-checkpoints.sh` - List active checkpoints
+- `.claude/lib/cleanup-checkpoints.sh [days]` - Clean old checkpoints
 
 ## Troubleshooting
 
@@ -401,26 +401,26 @@ rm .claude/data/checkpoints/checkpoint.json
 
 **Detect Tier**:
 ```bash
-.claude/utils/parse-adaptive-plan.sh detect_tier <plan-path>
+.claude/lib/parse-adaptive-plan.sh detect_tier <plan-path>
 # Output: 1, 2, or 3
 ```
 
 **List All Phases**:
 ```bash
-.claude/utils/parse-adaptive-plan.sh list_phases <plan-path>
+.claude/lib/parse-adaptive-plan.sh list_phases <plan-path>
 # Output: Phase 1: Name
 #         Phase 2: Name
 ```
 
 **Get Tasks for Phase**:
 ```bash
-.claude/utils/parse-adaptive-plan.sh get_tasks <plan-path> 2
+.claude/lib/parse-adaptive-plan.sh get_tasks <plan-path> 2
 # Output: all tasks for phase 2
 ```
 
 **Mark Task Complete**:
 ```bash
-.claude/utils/parse-adaptive-plan.sh mark_complete <plan-path> 2 3
+.claude/lib/parse-adaptive-plan.sh mark_complete <plan-path> 2 3
 # Marks task 3 in phase 2 as [x]
 ```
 

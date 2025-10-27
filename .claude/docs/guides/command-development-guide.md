@@ -865,7 +865,7 @@ echo "Summary: $SUMMARY"
 echo "Findings: $KEY_FINDINGS"
 ```
 
-See [Correct Agent Invocation Examples](../examples/correct-agent-invocation.md) for complete invocation templates.
+See [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) for complete invocation templates and examples.
 
 ---
 

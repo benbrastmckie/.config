@@ -133,7 +133,7 @@ Commands orchestrate specialized subagents through structured workflows:
 - Debug loop: debug-specialist (max 3 iterations) when tests fail
 - Context: 98% reduction through aggressive pruning
 
-**`/report`**: Research with parallel subagents (2-4 agents concurrently)
+**`/research`**: Research with parallel subagents (2-4 agents concurrently)
 - Context: 95% reduction (5000 tokens → 250 tokens per report)
 
 **`/document`**: Documentation updates

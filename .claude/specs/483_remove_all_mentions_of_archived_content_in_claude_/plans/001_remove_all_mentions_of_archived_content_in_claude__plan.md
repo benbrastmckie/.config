@@ -144,7 +144,7 @@ grep "artifact-operations-legacy\|migrate-specs-utils" .claude/docs/**/*.md
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 3: Update Broken Directory References
+### Phase 3: Update Broken Directory References [COMPLETED]
 dependencies: [1]
 
 **Objective**: Replace references to removed utils/ and examples/ directories with current equivalents
@@ -152,23 +152,23 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Update adaptive-planning-guide.md - replace .claude/utils/ references with lib/ equivalents (10 occurrences)
-- [ ] Update efficiency-guide.md - replace .claude/utils/ references with lib/ equivalents (8 occurrences)
-- [ ] Update data-management.md - replace .claude/utils/ references with lib/ equivalents (1 occurrence)
-- [ ] Update error-enhancement-guide.md - replace .claude/utils/ references with lib/ equivalents (6 occurrences)
-- [ ] Update migration-guide-adaptive-plans.md - replace .claude/utils/ references with lib/ equivalents (4 occurrences)
+- [x] Update adaptive-planning-guide.md - replace .claude/utils/ references with lib/ equivalents (10 occurrences)
+- [x] Update efficiency-guide.md - replace .claude/utils/ references with lib/ equivalents (8 occurrences)
+- [x] Update data-management.md - replace .claude/utils/ references with lib/ equivalents (1 occurrence)
+- [x] Update error-enhancement-guide.md - replace .claude/utils/ references with lib/ equivalents (6 occurrences)
+- [x] Update migration-guide-adaptive-plans.md - SKIPPED (file is in archive, preserve as-is)
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [ ] Update agent-delegation-issues.md - remove or redirect examples/ references (8 occurrences)
-- [ ] Update setup-command-guide.md - remove or redirect examples/ references (1 occurrence)
-- [ ] Update command-development-guide.md - remove or redirect examples/ references (1 occurrence)
-- [ ] Update docs/README.md line 136 - change /report to /research or add "(archived)" note
-- [ ] Verify all utils/ and examples/ references updated via grep search
+- [x] Update agent-delegation-issues.md - remove or redirect examples/ references (8 occurrences)
+- [x] Update setup-command-guide.md - remove or redirect examples/ references (1 occurrence)
+- [x] Update command-development-guide.md - remove or redirect examples/ references (1 occurrence)
+- [x] Update docs/README.md line 136 - change /report to /research or add "(archived)" note
+- [x] Verify all utils/ and examples/ references updated via grep search
 
 **Testing**:
 ```bash
