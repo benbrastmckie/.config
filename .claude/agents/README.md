@@ -2,9 +2,24 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 21 specialized agents (reduced from 22 after cleanup)
+**Current Agent Count**: 22 specialized agents + 1 documentation file
 
 ## Recent Changes
+
+### Registry Update (2025-10-27)
+Added 5 missing agents to registry for complete tracking:
+
+**Agents Added to Registry**:
+- `doc-converter-usage.md` → Documentation file (not an agent, to be moved in Phase 2)
+- `git-commit-helper.md` → Specialized (to be refactored to library in Phase 5)
+- `implementation-executor.md` → Hierarchical implementation agent
+- `implementer-coordinator.md` → Hierarchical coordinator agent
+- `research-synthesizer.md` → Specialized research agent
+
+**Impact**:
+- Registry: 17 → 22 entries (100% coverage)
+- Agent discovery improved
+- Metrics tracking enabled for all agents
 
 ### Agent Cleanup (2025-10-26)
 Removed deprecated agent to improve maintainability:
