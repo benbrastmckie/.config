@@ -175,23 +175,8 @@ Commands provide structured, repeatable workflows for:
 
 ---
 
-#### /report
-**Purpose**: Research topics and create comprehensive reports
-
-**Usage**: `/report <topic or question>`
-
-**Features**:
-- Web research integration
-- Technology investigation
-- Best practices analysis
-- Structured markdown output
-
-**Output**: `specs/reports/NNN_report_name.md`
-
----
-
 #### /research
-**Purpose**: Research topics using hierarchical multi-agent pattern (improved /report)
+**Purpose**: Research topics using hierarchical multi-agent pattern
 
 **Usage**: `/research <topic or question>`
 
@@ -202,12 +187,14 @@ Commands provide structured, repeatable workflows for:
 - Comprehensive OVERVIEW.md synthesis report (ALL CAPS)
 - Cross-references between all reports
 - Better organization with grouped subdirectories
+- Web research integration
+- Technology investigation
+- Best practices analysis
+- Structured markdown output
 
 **Output**: `specs/{NNN_topic}/reports/{NNN_research}/` directory containing:
 - Individual subtopic reports: `001_subtopic.md`, `002_subtopic.md`, etc.
 - Final synthesis: `OVERVIEW.md` (ALL CAPS, not numbered)
-
-**Note**: Improved alternative to `/report` with automatic hierarchical research. The existing `/report` command remains available as a fallback option.
 
 ---
 
@@ -540,7 +527,7 @@ What the command produces
 
 ### Primary Commands
 Main workflow drivers that users invoke frequently:
-- `/implement`, `/plan`, `/report`, `/test`, `/orchestrate`
+- `/implement`, `/plan`, `/research`, `/test`, `/orchestrate`
 
 ### Support Commands
 Helper commands for specific tasks:
@@ -855,7 +842,7 @@ description: Brief description shown in picker
 ### Research and Plan
 ```bash
 # Research the topic
-/report "TTS engine comparison for Linux"
+/research "TTS engine comparison for Linux"
 
 # Create plan using research (creates Level 0 plan)
 /plan "Integrate TTS notifications" specs/reports/020_tts_engines.md
