@@ -184,7 +184,7 @@ grep -r -E "\b(previously|was removed|were removed|now creates|now supports)\b" 
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
-### Phase 3: Moderate Files - Version/Migration Cleanup
+### Phase 3: Moderate Files - Version/Migration Cleanup [COMPLETED]
 dependencies: [1]
 
 **Objective**: Simplify version markers, migration notes, and spec references
@@ -192,13 +192,13 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Clean up remaining version markers: "(New)", "(Updated)", "(v1.X+)"
-- [ ] Simplify deprecated command warnings in `reference/command-reference.md`
-- [ ] Review and clean up "Legacy Compatibility" sections (remove if functions gone, simplify if remain)
-- [ ] Depersonalize spec number references (remove from narrative, optionally move to footnotes)
-- [ ] Remove consolidation/migration announcements from guides
-- [ ] Clean up remaining files from moderate priority list (files 9-44 from research report)
-- [ ] Run validation grep on all modified files
+- [x] Clean up remaining version markers: "(New)", "(Updated)", "(v1.X+)"
+- [x] Simplify deprecated command warnings in `reference/command-reference.md`
+- [x] Review and clean up "Legacy Compatibility" sections (remove if functions gone, simplify if remain)
+- [x] Depersonalize spec number references (remove from narrative, optionally move to footnotes)
+- [x] Remove consolidation/migration announcements from guides
+- [x] Clean up remaining files from moderate priority list (files 9-44 from research report)
+- [x] Run validation grep on all modified files
 
 **Testing**:
 ```bash
@@ -214,11 +214,11 @@ grep -r -E "\b(spec [0-9]{3,4}|Spec [0-9]{3,4})\b" \
 **Expected Duration**: 2 hours
 
 **Phase 3 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(482): complete Phase 3 - Version/Migration Cleanup`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(482): complete Phase 3 - Version/Migration Cleanup`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 4: Validation and Quality Assurance
 dependencies: [1, 2, 3]

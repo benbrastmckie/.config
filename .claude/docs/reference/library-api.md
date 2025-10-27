@@ -320,7 +320,7 @@ Convert JSON output to legacy YAML format for backward compatibility.
 
 **Returns**: YAML-formatted location context (legacy format)
 
-**Note**: Maintained for 2 release cycles, then deprecated. New code should use JSON output directly.
+**Note**: Provided for backward compatibility. New code should use JSON output directly.
 
 **Exit Codes**: `0` (always succeeds)
 
