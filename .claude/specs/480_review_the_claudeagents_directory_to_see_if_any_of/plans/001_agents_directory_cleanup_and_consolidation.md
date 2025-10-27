@@ -308,18 +308,18 @@ dependencies: [3]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read /expand command: .claude/commands/expand.md
-- [ ] Update /expand to invoke plan-structure-manager with operation=expand
-- [ ] Remove plan-expander invocation from /expand (if present)
-- [ ] Update Task invocation to use .claude/agents/plan-structure-manager.md
-- [ ] Add operation parameter to invocation: `operation: expand`
-- [ ] Read /collapse command: .claude/commands/collapse.md
-- [ ] Update /collapse to invoke plan-structure-manager with operation=collapse
-- [ ] Remove collapse-specialist invocation from /collapse (if present)
-- [ ] Update Task invocation to use .claude/agents/plan-structure-manager.md
-- [ ] Add operation parameter to invocation: `operation: collapse`
-- [ ] Update /orchestrate command if it invokes plan-expander (file: .claude/commands/orchestrate.md)
-- [ ] Replace plan-expander with direct plan-structure-manager invocation
+- [x] Read /expand command: .claude/commands/expand.md
+- [x] Update /expand to invoke plan-structure-manager with operation=expand
+- [x] Remove plan-expander invocation from /expand (if present) - Updated integration section to reference plan-structure-manager
+- [x] Update Task invocation to use .claude/agents/plan-structure-manager.md
+- [x] Add operation parameter to invocation: `operation: expand`
+- [x] Read /collapse command: .claude/commands/collapse.md
+- [x] Update /collapse to invoke plan-structure-manager with operation=collapse
+- [x] Remove collapse-specialist invocation from /collapse (if present) - No removal needed, updated references
+- [x] Update Task invocation to use .claude/agents/plan-structure-manager.md
+- [x] Add operation parameter to invocation: `operation: collapse`
+- [x] Update /orchestrate command if it invokes plan-expander (file: .claude/commands/orchestrate.md) - No updates needed, no references found
+- [x] Replace plan-expander with direct plan-structure-manager invocation - N/A, /orchestrate has no plan-expander references
 
 **Testing**:
 ```bash
