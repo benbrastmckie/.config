@@ -357,17 +357,17 @@ dependencies: [2]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Read git-commit-helper.md behavioral logic (file: /home/benjamin/.config/.claude/agents/git-commit-helper.md)
-- [ ] Create .claude/lib/git-commit-utils.sh with bash function structure
-- [ ] Implement generate_commit_message() function with 6 parameters (topic_number, completion_type, phase_number, stage_number, name, feature_name)
-- [ ] Add input validation: topic_number 3-digit format (001-999)
-- [ ] Add input validation: completion_type must be phase|stage|plan
-- [ ] Implement stage completion format: `feat(NNN): complete Phase N Stage M - [Name]`
-- [ ] Implement phase completion format: `feat(NNN): complete Phase N - [Name]`
-- [ ] Implement plan completion format: `feat(NNN): complete [feature name]`
-- [ ] Add error handling for missing required inputs
-- [ ] Add unit tests in .claude/tests/test_git_commit_utils.sh
-- [ ] Test all three completion types (stage, phase, plan)
+- [x] Read git-commit-helper.md behavioral logic (file: /home/benjamin/.config/.claude/agents/git-commit-helper.md)
+- [x] Create .claude/lib/git-commit-utils.sh with bash function structure
+- [x] Implement generate_commit_message() function with 6 parameters (topic_number, completion_type, phase_number, stage_number, name, feature_name)
+- [x] Add input validation: topic_number 3-digit format (001-999)
+- [x] Add input validation: completion_type must be phase|stage|plan
+- [x] Implement stage completion format: `feat(NNN): complete Phase N Stage M - [Name]`
+- [x] Implement phase completion format: `feat(NNN): complete Phase N - [Name]`
+- [x] Implement plan completion format: `feat(NNN): complete [feature name]`
+- [x] Add error handling for missing required inputs
+- [x] Add unit tests in .claude/tests/test_git_commit_utils.sh - 34 tests, all passing
+- [x] Test all three completion types (stage, phase, plan)
 
 **Testing**:
 ```bash
