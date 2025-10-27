@@ -1,8 +1,8 @@
 ---
 allowed-tools: Read, Bash, Grep, Glob, WebSearch, Write
 description: Specialized in root cause analysis and diagnostic investigations
-model: sonnet-4.5
-model-justification: Investigation and fixing combined, comprehensive root cause analysis
+model: opus-4.1
+model-justification: Complex causal reasoning and multi-hypothesis debugging for critical production issues, high-stakes root cause identification with 38 completion criteria
 fallback-model: sonnet-4.5
 ---
 
