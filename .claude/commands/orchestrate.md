@@ -394,16 +394,15 @@ The location determination phase establishes the foundation for artifact organiz
 **When to Execute Phase 0**:
 - **ALL workflows** - This phase is mandatory for proper artifact organization
 - Executes BEFORE research phase
-- Single location-specialist agent execution
+- Uses unified location detection library
 
 **Quick Overview**:
-1. Invoke location-specialist agent with workflow description
-2. Agent analyzes request to identify affected components
-3. Agent determines next topic number in specs/ directory
-4. Agent creates topic directory structure: `specs/NNN_topic/{reports,plans,summaries,debug,scripts,outputs}/`
-5. Extract location context from agent response
-6. Store location context in workflow state for injection into all subsequent phases
-7. Verify directory structure created successfully
+1. Source unified location detection library
+2. Library analyzes workflow description to identify affected components
+3. Library determines next topic number in specs/ directory
+4. Library creates topic directory structure: `specs/NNN_topic/{reports,plans,summaries,debug,scripts,outputs}/`
+5. Store location context in workflow variables for injection into all subsequent phases
+6. Verify directory structure created successfully
 
 **Artifact Organization**:
 - **Purpose**: Ensure all workflow artifacts organized in single topic directory
