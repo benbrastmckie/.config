@@ -237,8 +237,8 @@ grep -c "Read and follow ALL behavioral guidelines from:" .claude/commands/coord
 **Phase 2 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (no code fences, imperative markers present, behavioral extraction complete)
-- [ ] Git commit created: `feat(491): complete Phase 2 - Standards Compliance Fixes`
-- [ ] Checkpoint saved (standards-compliant baseline)
+- [x] Git commit created: `feat(491): complete Phase 2 - Standards Compliance Fixes`
+- [x] Checkpoint saved (standards-compliant baseline)
 - [x] Update this plan file with phase completion status
 
 **Completion Notes**:
