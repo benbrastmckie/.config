@@ -2,30 +2,9 @@
 
 Custom slash command definitions for Claude Code. Each command extends Claude's capabilities with specialized workflows for development, documentation, testing, and project management.
 
-**Current Command Count**: 20 active commands (reduced from 29 through consolidation and cleanup)
+**Current Command Count**: 20 active commands
 
-## Recent Changes
-
-### Directory Cleanup (2025-10-26)
-Removed redundant and deprecated elements to improve maintainability:
-
-**Commands Removed**:
-- `/example-with-agent` → **Archived** (template moved to documentation)
-- `/migrate-specs` → **Archived** (one-time migration completed)
-- `/report` → **Archived** (use `/research` instead)
-
-**Impact**:
-- Commands: 23 → 20 files (12.5% reduction, ~33KB saved)
-- Agents: 27 → 26 files (location-specialist archived)
-- Libraries: 67 → 65 files (legacy files archived)
-- Directories removed: examples/, utils/ (compatibility shims)
-- Total space saved: ~266KB
-- Unified codebase: All code now sources lib/ directly (no compatibility layers)
-
-**Migration**: Use `/research` for all research tasks. All command references have been updated.
-
-### Orchestration Enhancement (2025-10-12)
-Complete multi-agent workflow coordination with enhanced capabilities:
+## Command Highlights
 
 **/orchestrate**:
 - Research phase creates persistent report files in `specs/reports/{topic}/`
