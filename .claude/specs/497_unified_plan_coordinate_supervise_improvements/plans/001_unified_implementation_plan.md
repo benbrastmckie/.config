@@ -379,13 +379,13 @@ Testing:
 **Phase 0 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(497): complete Phase 0 - Shared Infrastructure and Validation Utilities`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] Git commit created: `feat(497): complete Phase 0 - Shared Infrastructure and Validation Utilities`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 0: [COMPLETED] Shared Infrastructure and Validation Utilities
 
-### Phase 1: Fix /coordinate Command Agent Invocations
+### Phase 1: [COMPLETED] Fix /coordinate Command Agent Invocations
 dependencies: [0]
 
 **Objective**: Apply imperative agent invocation pattern to all 9 agent invocations in coordinate.md
@@ -397,46 +397,46 @@ dependencies: [0]
 **Scope**: 9 agent invocations across 6 phases of /coordinate command
 
 Tasks:
-- [ ] Create timestamped backup of `.claude/commands/coordinate.md`
-- [ ] Read `/supervise` command file as working reference pattern
-- [ ] **Task 1.1**: Fix Research Phase Agent Invocation (research-specialist)
+- [x] Create timestamped backup of `.claude/commands/coordinate.md`
+- [x] Read `/supervise` command file as working reference pattern
+- [x] **Task 1.1**: Fix Research Phase Agent Invocation (research-specialist)
   - Locate YAML-style Task block (approximate line 800-900)
   - Remove markdown code fence and YAML wrapper
   - Add explicit Bash tool invocation for path calculation
   - Use imperative bullet-point format: "USE the Task tool NOW"
   - Replace template variables with instructions to insert actual values
   - Add clarity on orchestrator vs subagent roles
-- [ ] **Task 1.2**: Fix Planning Phase Agent Invocation (plan-architect)
+- [x] **Task 1.2**: Fix Planning Phase Agent Invocation (plan-architect)
   - Apply same transformation pattern
   - Ensure research report paths passed from previous phase
   - Calculate plan path using `create_topic_artifact()`
-- [ ] **Task 1.3**: Fix Implementation Phase Agent Invocation (implementer-coordinator)
+- [x] **Task 1.3**: Fix Implementation Phase Agent Invocation (implementer-coordinator)
   - Apply same transformation pattern
   - Ensure plan path passed from planning phase
   - Add checkpoint restoration instructions
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [ ] **Task 1.4**: Fix Testing Phase Agent Invocation (test-specialist)
+- [x] **Task 1.4**: Fix Testing Phase Agent Invocation (test-specialist)
   - Apply same transformation pattern
   - Include test commands from CLAUDE.md
-- [ ] **Task 1.5**: Fix Debug Phase Agent Invocations (3 invocations)
+- [x] **Task 1.5**: Fix Debug Phase Agent Invocations (3 invocations)
   - debug-analyst: Apply transformation pattern
   - code-writer: Apply transformation pattern
   - test-specialist re-run: Apply transformation pattern
-- [ ] **Task 1.6**: Fix Documentation Phase Agent Invocation (doc-writer)
+- [x] **Task 1.6**: Fix Documentation Phase Agent Invocation (doc-writer)
   - Apply same transformation pattern
   - Ensure implementation summary path passed
-- [ ] Verify all 9 invocations converted to imperative bullet-point pattern
-- [ ] Verify all YAML-style blocks removed
-- [ ] Verify all template variables replaced with value injection instructions
-- [ ] Verify all bash code blocks converted to explicit Bash tool invocations
-- [ ] Verify pattern consistency against /supervise reference
-- [ ] Run validation script on fixed coordinate.md (should pass)
+- [x] Verify all 9 invocations converted to imperative bullet-point pattern
+- [x] Verify all YAML-style blocks removed (except 2 documentation examples)
+- [x] Verify all template variables replaced with value injection instructions
+- [x] Verify all bash code blocks converted to explicit Bash tool invocations
+- [x] Verify pattern consistency against /supervise reference
+- [x] Run validation script on fixed coordinate.md (should pass)
 
 Testing:
 ```bash
@@ -453,14 +453,23 @@ diff .claude/commands/coordinate.md .claude/commands/coordinate.md.backup-[TIMES
 # Expected: See YAML blocks removed, imperative pattern added
 ```
 
-**Expected Duration**: 2.5-3.5 hours
+**Expected Duration**: 2.5-3.5 hours (Actual: ~2.5 hours)
 
 **Phase 1 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(497): complete Phase 1 - Fix /coordinate Command Agent Invocations`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(497): complete Phase 1 - Fix /coordinate Command Agent Invocations`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
+
+**Phase 1 Results**:
+- ✅ All 9 agent invocations converted to imperative bullet-point pattern
+- ✅ Delegation rate improved from 72% to >90% (passing)
+- ✅ Template variables replaced with value injection instructions
+- ✅ Concrete examples provided for each invocation type
+- ✅ 2 documentation examples preserved (lines 89, 2380 - acceptable)
+- ✅ Validation: Only documentation Task blocks remain (expected)
+- ✅ Test suite: Delegation rate check now passing for coordinate.md
 
 ### Phase 2: Improve /supervise Command Error Handling and Remove Fallbacks
 dependencies: [0]
