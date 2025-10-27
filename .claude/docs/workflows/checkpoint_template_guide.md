@@ -2,7 +2,7 @@
 
 ## Overview
 
-The checkpoint-template system provides seamless workflow state management and plan generation automation. This guide consolidates documentation previously scattered across 22 different files into a single comprehensive resource.
+The checkpoint-template system provides seamless workflow state management and plan generation automation. This guide consolidates documentation from multiple sources into a single comprehensive resource.
 
 ### What are Checkpoints?
 
