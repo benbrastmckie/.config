@@ -470,7 +470,7 @@ When reviewing others' documentation:
 
 ### Grep Validation Script
 
-Create `.claude/scripts/validate_docs_timeless.sh`:
+Create `.claude/lib/validate_docs_timeless.sh`:
 
 ```bash
 #!/bin/bash
@@ -523,7 +523,7 @@ DOC_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(md|mar
 
 if [ -n "$DOC_FILES" ]; then
     echo "Validating documentation for timeless writing..."
-    if ! .claude/scripts/validate_docs_timeless.sh; then
+    if ! .claude/lib/validate_docs_timeless.sh; then
         echo ""
         echo "Documentation validation failed."
         echo "Please remove temporal references before committing."

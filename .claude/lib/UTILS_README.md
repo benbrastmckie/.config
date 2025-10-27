@@ -203,6 +203,36 @@ Utilities provide:
 }
 ```
 
+---
+
+### Context Validation
+
+#### validate-context-reduction.sh
+**Purpose**: Validate context reduction across hierarchical agent workflows
+
+**Usage**: `./validate-context-reduction.sh [--verbose] [--output FILE] [--threshold N] [--target N]`
+
+**Functionality**:
+- Validates context usage <30% throughout workflows
+- Verifies context reduction ≥60% vs direct implementation
+- Tests metadata-only passing mechanisms
+- Ensures no loss of functionality
+
+**Parameters**:
+- `--verbose`: Show detailed validation output
+- `--output FILE`: Write report to FILE (markdown format)
+- `--threshold N`: Set context usage threshold (default: 30%)
+- `--target N`: Set reduction target (default: 60%)
+- `--help`: Show help message
+
+**Example**:
+```bash
+./validate-context-reduction.sh --verbose --output report.md
+./validate-context-reduction.sh --threshold 25 --target 70
+```
+
+**Note**: Migrated from deprecated scripts/ directory (spec 492)
+
 ## Integration Points
 
 ### Commands Using Utilities
@@ -299,6 +329,7 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 - [parse-adaptive-plan.sh](parse-adaptive-plan.sh) - Progressive plan structure parsing
 - [parse-template.sh](parse-template.sh) - Template validation and parsing
 - [substitute-variables.sh](substitute-variables.sh) - Variable substitution engine
+- [validate-context-reduction.sh](validate-context-reduction.sh) - Context reduction validation suite
 
 ### Related
 - [← Parent Directory](../README.md)
