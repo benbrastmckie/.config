@@ -270,11 +270,11 @@ merge_phase_into_plan "$PLAN_FILE" 3 "$PHASE_FILE"
 
 ---
 
-## Archived Scripts (October 2025)
+## Archived Scripts
 
-The following script documentation sections remain in this file for reference, but the scripts have been archived to `.claude/archive/lib/cleanup-2025-10-26/`. See the [Archive Manifest](../archive/lib/cleanup-2025-10-26/README.md) for restoration instructions.
+These scripts are archived in `.claude/archive/lib/cleanup-2025-10-26/`. See the [Archive Manifest](../archive/lib/cleanup-2025-10-26/README.md) for restoration instructions.
 
-**Archived scripts**: progressive-planning-utils.sh, validation-utils.sh, parallel-orchestration-utils.sh, structure-eval-utils.sh (and 21 others)
+**Archived**: progressive-planning-utils.sh, validation-utils.sh, parallel-orchestration-utils.sh, structure-eval-utils.sh (and 21 others)
 
 ---
 
