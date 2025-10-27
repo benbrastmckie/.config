@@ -192,6 +192,26 @@ Failed operations receive enhanced diagnostics via error-handling.sh:
 
 Research phase (Phase 1) continues if ≥50% of parallel agents succeed. Workflow logs failures and continues with partial results.
 
+## Library Fallback Behavior
+
+**Graceful Degradation**: If workflow-detection.sh library is missing, the command provides fallback implementations for critical functions.
+
+**Fallback Functions**:
+- `detect_workflow_scope()` - Simple keyword-based detection (limited vs full library)
+- `should_run_phase()` - Phase execution check based on PHASES_TO_EXECUTE variable
+
+**Limitations**:
+- Fallback uses basic pattern matching (less sophisticated than library)
+- Defaults to "full-implementation" when uncertain
+- Warning message displayed when fallback mode activated
+
+**Critical Libraries** (no fallback - hard exit on missing):
+- error-handling.sh - Essential for error classification and recovery
+- checkpoint-utils.sh - Essential for workflow resume capability
+- unified-logger.sh - Essential for progress tracking
+
+**Rationale**: workflow-detection.sh provides convenience but has simple logic that can be replicated inline. Critical libraries contain complex state management that cannot be safely replicated.
+
 ## Checkpoint Resume
 
 Checkpoints saved after Phases 1-4. Auto-resumes from last completed phase on startup.
@@ -222,8 +242,35 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/../lib/workflow-detection.sh" ]; then
   source "$SCRIPT_DIR/../lib/workflow-detection.sh"
 else
-  echo "ERROR: workflow-detection.sh not found"
-  exit 1
+  echo "WARNING: workflow-detection.sh not found - using fallback implementations"
+  echo ""
+
+  # Fallback: Simple detect_workflow_scope that defaults to full-implementation
+  detect_workflow_scope() {
+    local description="$1"
+    # Simple keyword-based detection (limited functionality)
+    if echo "$description" | grep -qi "research.*only\|just.*research\|only.*research"; then
+      echo "research-only"
+    elif echo "$description" | grep -qi "plan\|planning" && ! echo "$description" | grep -qi "implement"; then
+      echo "research-and-plan"
+    elif echo "$description" | grep -qi "debug\|investigate\|diagnose"; then
+      echo "debug-only"
+    else
+      # Default to full-implementation for safety
+      echo "full-implementation"
+    fi
+  }
+
+  # Fallback: Simple should_run_phase based on PHASES_TO_EXECUTE
+  should_run_phase() {
+    local phase=$1
+    echo "$PHASES_TO_EXECUTE" | grep -q "\<$phase\>"
+    return $?
+  }
+
+  echo "Fallback functions loaded: detect_workflow_scope(), should_run_phase()"
+  echo "Note: Functionality is limited compared to full library"
+  echo ""
 fi
 
 # Source error handling utilities

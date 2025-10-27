@@ -295,14 +295,14 @@ dependencies: [2]
 **Priority**: MEDIUM - Improves resilience
 
 Tasks:
-- [ ] Analyze which libraries can have fallback implementations (workflow-detection.sh has simple fallback)
-- [ ] Implement fallback for workflow-detection.sh sourcing failure
+- [x] Analyze which libraries can have fallback implementations (workflow-detection.sh has simple fallback)
+- [x] Implement fallback for workflow-detection.sh sourcing failure
   - Provide simple `detect_workflow_scope()` fallback that returns "full-implementation"
   - Log warning about missing library and fallback usage
-- [ ] Keep hard exits for critical libraries (error-handling.sh, checkpoint-utils.sh)
-- [ ] Add comments explaining fallback strategy and limitations
-- [ ] Document fallback behavior in command header
-- [ ] Test that fallback mode works for basic workflows
+- [x] Keep hard exits for critical libraries (error-handling.sh, checkpoint-utils.sh)
+- [x] Add comments explaining fallback strategy and limitations
+- [x] Document fallback behavior in command header
+- [x] Test that fallback mode works for basic workflows
 
 Testing:
 ```bash
@@ -319,8 +319,8 @@ mv .claude/lib/workflow-detection.sh.backup .claude/lib/workflow-detection.sh
 **Expected Duration**: 1 hour
 
 **Phase 4 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (fallback mode works correctly)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (fallback mode works correctly)
 - [ ] Git commit created: `feat(supervise): add graceful degradation for library sourcing`
 - [ ] Update this plan file with phase completion status
 
