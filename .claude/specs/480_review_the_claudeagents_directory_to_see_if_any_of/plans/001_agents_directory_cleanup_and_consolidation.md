@@ -196,7 +196,7 @@ jq '.agents | keys' agent-registry.json | sort | uniq -d
 
 ---
 
-### Phase 2: Orphaned Agents Investigation
+### Phase 2: Orphaned Agents Investigation [COMPLETED]
 dependencies: [1]
 
 **Objective**: Investigate 5 orphaned agents to determine if they should be archived, documented, or retained
@@ -204,21 +204,21 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Search codebase for collapse-specialist references: `grep -r "collapse-specialist" .claude/commands/`
-- [ ] Verify /collapse command implementation (inline logic vs agent invocation)
-- [ ] Search codebase for metrics-specialist references: `grep -r "metrics-specialist" .claude/commands/`
-- [ ] Verify /analyze command integration with metrics-specialist
-- [ ] Search codebase for debug-specialist references: `grep -r "debug-specialist" .claude/commands/`
-- [ ] Compare debug-specialist vs debug-analyst usage patterns (line-by-line if needed)
-- [ ] Verify doc-converter-usage.md is documentation (not executable agent)
-- [ ] Move doc-converter-usage.md to .claude/docs/ if confirmed documentation
-- [ ] Document investigation findings in specs/480_*/investigation_findings.md
-- [ ] Create disposition list: [archive | retain | document-usage] for each orphaned agent
+- [x] Search codebase for collapse-specialist references: `grep -r "collapse-specialist" .claude/commands/` - Found 4 references in /collapse command
+- [x] Verify /collapse command implementation (inline logic vs agent invocation) - Uses Task tool to invoke collapse-specialist agent
+- [x] Search codebase for metrics-specialist references: `grep -r "metrics-specialist" .claude/commands/` - Found 0 references
+- [x] Verify /analyze command integration with metrics-specialist - No integration, /analyze uses inline logic
+- [x] Search codebase for debug-specialist references: `grep -r "debug-specialist" .claude/commands/` - Found 23 references (heavily used)
+- [x] Compare debug-specialist vs debug-analyst usage patterns (line-by-line if needed) - debug-specialist actively used in /debug, /orchestrate, /implement
+- [x] Verify doc-converter-usage.md is documentation (not executable agent) - Confirmed: documentation file
+- [x] Move doc-converter-usage.md to .claude/docs/ if confirmed documentation - Moved successfully ✓
+- [x] Document investigation findings in specs/480_*/investigation_findings.md - Created comprehensive findings document
+- [x] Create disposition list: [archive | retain | document-usage] for each orphaned agent - See investigation_findings.md
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
