@@ -783,10 +783,8 @@ Validate that topic directory has all 6 required subdirectories.
 - `base-utils.sh` - Base utility functions
 - `deps-utils.sh` - Dependency checking
 
-### Legacy and Migration
-- `artifact-operations-legacy.sh` - Legacy artifact operations
+### Migration Scripts
 - `migrate-checkpoint-v1.3.sh` - Checkpoint migration
-- `migrate-specs-utils.sh` - Specs directory migration
 - `migrate-agent-registry.sh` - Agent registry migration
 
 ---

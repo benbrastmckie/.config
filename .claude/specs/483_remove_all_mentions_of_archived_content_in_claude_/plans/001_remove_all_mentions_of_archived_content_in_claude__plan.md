@@ -115,7 +115,7 @@ grep -n "fallback.*agent" .claude/commands/*.md
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 2: Fix Broken Plan and Library References
+### Phase 2: Fix Broken Plan and Library References [COMPLETED]
 dependencies: [1]
 
 **Objective**: Update or remove references to non-existent plans and archived library files
@@ -123,9 +123,9 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Update analyze.md line 295 - remove "(see Plan 034)" or replace with accurate context
-- [ ] Update library-api.md lines 787-789 - mark artifact-operations-legacy.sh and migrate-specs-utils.sh as archived
-- [ ] Verify no other broken plan references exist via grep pattern search
+- [x] Update analyze.md line 295 - remove "(see Plan 034)" or replace with accurate context
+- [x] Update library-api.md lines 787-789 - mark artifact-operations-legacy.sh and migrate-specs-utils.sh as archived
+- [x] Verify no other broken plan references exist via grep pattern search
 
 **Testing**:
 ```bash
