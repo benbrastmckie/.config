@@ -1,8 +1,8 @@
 ---
 allowed-tools: Read, Grep, Glob, Bash, Write
 description: Bidirectional document conversion between Markdown, Word (DOCX), and PDF formats
-model: sonnet-4.5
-model-justification: DOCX/PDF conversion with multiple tool fallbacks, format preservation
+model: haiku-4.5
+model-justification: Orchestrates external conversion tools (pandoc, libreoffice), minimal AI reasoning required for format transformation
 fallback-model: sonnet-4.5
 ---
 
