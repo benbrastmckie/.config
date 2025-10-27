@@ -77,6 +77,8 @@ Signal
 !.claude/
 !.claude/commands/
 !.claude/commands/*.md
+# Archive directory (local only, not tracked)
+.claude/archive/
 # Topic-based specs organization (added by /migrate-specs)
 # Gitignore all specs subdirectories
 specs/*/*
