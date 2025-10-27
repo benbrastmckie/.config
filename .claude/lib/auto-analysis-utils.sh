@@ -15,7 +15,6 @@ source "$SCRIPT_DIR/error-handling.sh" 2>/dev/null || true
 source "$SCRIPT_DIR/agent-invocation.sh"
 source "$SCRIPT_DIR/analysis-pattern.sh"
 source "$SCRIPT_DIR/artifact-registry.sh"
-source "$SCRIPT_DIR/artifact-operations-legacy.sh"
 
 # ============================================================================
 # Parallel Execution Functions

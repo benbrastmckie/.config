@@ -373,6 +373,29 @@ validate_operation_artifacts() {
   fi
 }
 
+# create_artifact_directory: Create artifact directory from plan path
+# Usage: create_artifact_directory <plan-path>
+# Returns: artifact_dir path
+# Example: create_artifact_directory "specs/plans/001_feature.md"
+create_artifact_directory() {
+  local plan_path="${1:-}"
+
+  if [ -z "$plan_path" ]; then
+    echo "Usage: create_artifact_directory <plan-path>" >&2
+    return 1
+  fi
+
+  # Extract plan name from path
+  local plan_name
+  plan_name=$(basename "$plan_path" .md)
+
+  # Create artifact directory
+  local artifact_dir="${CLAUDE_PROJECT_DIR}/specs/artifacts/${plan_name}"
+  mkdir -p "$artifact_dir"
+
+  echo "$artifact_dir"
+}
+
 # Export functions
 export -f register_artifact
 export -f query_artifacts
@@ -384,3 +407,4 @@ export -f get_artifact_path_by_id
 export -f register_operation_artifact
 export -f get_artifact_path
 export -f validate_operation_artifacts
+export -f create_artifact_directory
