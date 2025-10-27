@@ -2,9 +2,24 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 22 specialized agents + 1 documentation file
+**Current Agent Count**: 19 specialized agents (22 - 4 archived + 1 new)
 
 ## Recent Changes
+
+### Agent Consolidation (2025-10-27)
+Consolidated overlapping agents and refactored deterministic logic to utility libraries:
+
+**Agents Consolidated**:
+- `expansion-specialist.md` + `collapse-specialist.md` → **plan-structure-manager.md** (95% overlap eliminated, 506 lines saved)
+- `plan-expander.md` → **Archived** (pure coordination wrapper with no behavioral logic, 562 lines saved)
+- `git-commit-helper.md` → **Refactored to .claude/lib/git-commit-utils.sh** (deterministic logic moved to library, 100 lines saved, zero agent invocation overhead)
+
+**Impact**:
+- Agents: 22 → 19 (14% reduction)
+- Code reduction: 1,168 lines saved
+- Performance: Zero invocation overhead for git commit message generation (now library function)
+- Architecture: Unified operation parameter pattern (expand/collapse)
+- Maintainability: 3 fewer agents to maintain, clearer patterns
 
 ### Registry Update (2025-10-27)
 Added 5 missing agents to registry for complete tracking:

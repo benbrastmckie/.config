@@ -32,14 +32,27 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 - **Medium Risk**: Integration with current behavioral injection architecture (requires careful coordination)
 
 ## Complexity Assessment
-**Overall Complexity**: 7.5/10
+**Overall Complexity**: 6.5/10 (revised from 7.5/10 - leveraging existing infrastructure)
 
 - Multi-phase refactor with 6 distinct stages
 - Integration across multiple system layers (commands, agents, utilities, documentation)
 - Balance between preservation (orchestration) and innovation (skills)
 - Requires user review checkpoints at each stage
+- **Reduced complexity**: Extends agent-registry-utils.sh (90% code overlap), uses unified-location-detection.sh (85% token reduction), leverages 8 documented patterns
 
-**Estimated Duration**: 8-12 weeks (with user review time)
+**Estimated Duration**: 6-9 weeks (revised from 8-12 weeks - 25% reduction)
+
+**Time Reductions**:
+- Phase 1: 2 weeks → 1 week (extend existing registry instead of creating new)
+- Phase 4: 2-3 weeks → 1-2 weeks (fewer enforcement skills, leverage pre-commit hooks)
+- Phase 6: 2 weeks → 1 week (integrate with existing docs instead of creating new)
+
+**Existing Infrastructure** (discovered 2025-10-26):
+- **agent-registry-utils.sh**: Registry patterns, frontmatter parsing, metadata extraction, caching
+- **unified-location-detection.sh**: Location detection, directory creation, topic numbering (85% token reduction, 36x speedup)
+- **artifact-creation.sh**: Lazy directory creation (`ensure_artifact_directory()`), artifact path calculation
+- **Documented Patterns** (8 files): behavioral-injection, metadata-extraction, verification-fallback, checkpoint-recovery, context-management, forward-message, hierarchical-supervision, parallel-execution
+- **Cleanup Impact**: 266KB consolidated, 25 library scripts archived, 3 commands removed (/report → /research)
 
 ## Implementation Phases
 
@@ -307,50 +320,52 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 
 ### Phase 4: Custom Meta-Level Enforcement Skills
 **Status**: Pending
-**Objective**: Create project-specific skills that read and enforce standards from CLAUDE.md
-**Complexity**: 8/10
-**Duration**: 2-3 weeks
+**Objective**: Create project-specific skills that provide guidance and enforce testable standards from CLAUDE.md
+**Complexity**: 6/10 (reduced from 8/10 - fewer skills, leverage existing enforcement infrastructure)
+**Duration**: 1-2 weeks (reduced from 2-3 weeks)
 
 #### Dependencies
 - Phase 3 must be complete
 - User approval of document skills integration required
 
+#### Rationale: Skills vs Libraries for Enforcement
+Skills excel at providing guidance and making context-aware decisions, not enforcing deterministic rules. Deterministic enforcement (indentation, line length, timeless writing) belongs in unified libraries and pre-commit hooks. Skills should focus on subjective judgment (code quality, test completeness, debugging strategies).
+
 #### Tasks
-1. Create code-standards-enforcement skill
-   - Location: `.claude/skills/enforcers/code-standards-enforcement/SKILL.md`
+1. Create code-standards-guidance skill (revised from enforcement)
+   - Location: `.claude/skills/enforcers/code-standards-guidance/SKILL.md`
    - Read CLAUDE.md ## Code Standards section
    - Detect file type from extension
    - Extract language-specific standards
-   - Apply enforcement during code editing
+   - Provide guidance on code organization, naming conventions, error handling patterns
+   - Focus on subjective quality (not deterministic rules like indentation)
    - Use allowed-tools: Read, Edit (restrict Write for safety)
+   - Note: Deterministic checks (indentation, line length) handled by pre-commit hooks
 
-2. Create documentation-standards-enforcement skill
-   - Location: `.claude/skills/enforcers/documentation-standards-enforcement/SKILL.md`
-   - Read CLAUDE.md ## Documentation Policy section
-   - Enforce README requirements
-   - Apply timeless writing principles
-   - Validate CommonMark compliance
-   - Check for temporal markers
-   - Use allowed-tools: Read, Edit
-
-3. Create testing-protocols-enforcement skill
-   - Location: `.claude/skills/enforcers/testing-protocols-enforcement/SKILL.md`
+2. Create testing-protocols-guidance skill (revised from enforcement)
+   - Location: `.claude/skills/enforcers/testing-protocols-guidance/SKILL.md`
    - Read CLAUDE.md ## Testing Protocols section
-   - Enforce coverage thresholds (≥80% modified, ≥60% baseline)
-   - Validate test discovery patterns
-   - Ensure regression tests for bug fixes
+   - Provide guidance on test coverage strategies
+   - Suggest test patterns for edge cases
+   - Recommend integration vs unit test approaches
    - Use allowed-tools: Read, Bash (for test execution)
+   - Note: Coverage thresholds enforced by test runners, skill provides strategic guidance
+
+3. Reference systematic-debugging skill from obra/superpowers (no custom skill needed)
+   - obra/superpowers provides systematic-debugging and root-cause-tracing skills
+   - These provide 4-phase investigation methodology
+   - No need to create custom debugging skill, leverage community-validated patterns
 
 4. Update CLAUDE.md sections with links
    - Add file path references in ## Code Standards
-   - Add file path references in ## Documentation Policy
    - Add file path references in ## Testing Protocols
    - Document where standards are defined (links to detailed files)
+   - Note: ## Documentation Policy enforcement handled by pre-commit hooks (no skill needed)
 
 5. Test automatic activation
-   - Edit .lua file → code-standards-enforcement activates
-   - Create README.md → documentation-standards-enforcement activates
-   - Run /test-all → testing-protocols-enforcement activates
+   - Edit .lua file → code-standards-guidance activates
+   - Run /test-all → testing-protocols-guidance activates
+   - Invoke /debug → systematic-debugging skill (obra/superpowers) activates
    - Verify standards read from CLAUDE.md correctly
 
 6. Measure token reduction
@@ -359,25 +374,28 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
    - Expected savings: 96% reduction baseline, standards cached across phases
 
 #### Testing
-- Test each enforcement skill independently
+- Test each guidance skill independently
 - Validate standards discovery across project types
-- Verify enforcement applied correctly
+- Verify guidance quality (subjective vs deterministic)
 - Test skill portability (same skill, different project with different standards)
 - Measure token usage before/after
+- Verify pre-commit hooks handle deterministic enforcement
 
 #### Success Criteria
-- All 3 enforcement skills created and tested
+- 2 custom guidance skills created and tested (code, testing)
+- obra/superpowers debugging skills integrated
 - CLAUDE.md updated with file path references
 - Automatic activation verified
 - Token reduction validated (≥90% expected)
 - Skills portable across projects
-- **USER REVIEW CHECKPOINT**: Review enforcement behavior before command integration
+- Deterministic enforcement delegated to pre-commit hooks
+- **USER REVIEW CHECKPOINT**: Review guidance behavior before command integration
 
 #### Artifacts Created
-- `.claude/skills/enforcers/code-standards-enforcement/SKILL.md`
-- `.claude/skills/enforcers/documentation-standards-enforcement/SKILL.md`
-- `.claude/skills/enforcers/testing-protocols-enforcement/SKILL.md`
+- `.claude/skills/enforcers/code-standards-guidance/SKILL.md`
+- `.claude/skills/enforcers/testing-protocols-guidance/SKILL.md`
 - Updated `CLAUDE.md` (file path references)
+- Note: No documentation-standards-enforcement skill (pre-commit handles this)
 
 ---
 
@@ -457,8 +475,8 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 ### Phase 6: Validation, Optimization, and Documentation
 **Status**: Pending
 **Objective**: Validate complete integration, optimize activation, document patterns, capture metrics
-**Complexity**: 6/10
-**Duration**: 2 weeks
+**Complexity**: 5/10 (reduced from 6/10 - integrate with existing docs instead of creating new)
+**Duration**: 1 week (reduced from 2 weeks)
 
 #### Dependencies
 - Phase 5 must be complete
