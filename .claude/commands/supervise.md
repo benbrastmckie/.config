@@ -445,6 +445,48 @@ emit_progress "2" "Planning phase started"
 
 ### Implementation
 
+### Brief Summary Function
+
+Display concise workflow completion summary (≤5 lines) to save user time and focus attention on key artifacts.
+
+**Design Goal**: Brief, focused output that directs users to next steps without verbose details.
+
+```bash
+# Display brief workflow completion summary
+# Outputs ≤5 lines total: header + artifact info + next step
+# Required variables: WORKFLOW_SCOPE, TOPIC_PATH, REPORT_PATHS[], PLAN_PATH, SUMMARY_PATH, DEBUG_REPORT
+display_brief_summary() {
+  echo ""
+  echo "✓ Workflow complete: $WORKFLOW_SCOPE"
+
+  case "$WORKFLOW_SCOPE" in
+    research-only)
+      local report_count=${#REPORT_PATHS[@]}
+      echo "Created $report_count research reports in: $TOPIC_PATH/reports/"
+      echo "→ Review artifacts: ls -la $TOPIC_PATH/reports/"
+      ;;
+    research-and-plan)
+      local report_count=${#REPORT_PATHS[@]}
+      echo "Created $report_count reports + 1 plan in: $TOPIC_PATH/"
+      echo "→ Run: /implement $PLAN_PATH"
+      ;;
+    full-implementation)
+      echo "Implementation complete. Summary: $SUMMARY_PATH"
+      echo "→ Review summary for next steps"
+      ;;
+    debug-only)
+      echo "Debug analysis complete: $DEBUG_REPORT"
+      echo "→ Review findings and apply fixes"
+      ;;
+    *)
+      echo "Workflow artifacts available in: $TOPIC_PATH"
+      echo "→ Review directory for outputs"
+      ;;
+  esac
+  echo ""
+}
+```
+
 STEP 1: Parse workflow description from command arguments
 
 ```bash
@@ -690,7 +732,7 @@ should_run_phase 1 || {
   echo "⏭️  Skipping Phase 1 (Research)"
   echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
   echo ""
-  display_completion_summary
+  display_brief_summary
   exit 0
 }
 ```
@@ -964,7 +1006,7 @@ should_run_phase 2 || {
   echo "⏭️  Skipping Phase 2 (Planning)"
   echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
   echo ""
-  display_completion_summary
+  display_brief_summary
   exit 0
 }
 ```
@@ -1761,7 +1803,7 @@ else
   echo "  Reason: No implementation to document (scope: $WORKFLOW_SCOPE)"
   echo ""
   # Skip to completion summary
-  display_completion_summary
+  display_brief_summary
   exit 0
 fi
 ```
@@ -1843,7 +1885,7 @@ if [ -f "$CHECKPOINT_FILE" ]; then
   echo ""
 fi
 
-display_completion_summary
+display_brief_summary
 exit 0
 ```
 
