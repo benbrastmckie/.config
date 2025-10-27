@@ -1,8 +1,8 @@
 ---
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 description: Manages spec artifacts in topic-based directory structure with proper placement and cross-references
-model: sonnet-4.5
-model-justification: Artifact management, cross-reference verification, directory structure maintenance
+model: haiku-4.5
+model-justification: Mechanical file operations (checkbox updates, cross-reference creation, path validation), deterministic artifact management
 fallback-model: sonnet-4.5
 ---
 

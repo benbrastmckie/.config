@@ -173,8 +173,12 @@ done
 validate_commit_message() {
   local message="$1"
 
-  # Pattern: feat(NNN): complete Phase N - Name
-  if [[ "$message" =~ ^feat\([0-9]{3}\):\ complete\ (Phase\ [0-9]+|[a-z\ ]+)(-\ [A-Z].*)?$ ]]; then
+  # Pattern: feat(NNN): complete Phase N [Stage M] - Name OR feat(NNN): complete feature name
+  # Valid formats:
+  #   - feat(042): complete Phase 3 Stage 2 - API Endpoints
+  #   - feat(027): complete Phase 5 - Testing and Validation
+  #   - feat(080): complete orchestrate command enhancement
+  if [[ "$message" =~ ^feat\([0-9]{3}\):\ complete\ (Phase\ [0-9]+(\ Stage\ [0-9]+)?\ -\ .*|.*)$ ]]; then
     return 0
   else
     return 1
