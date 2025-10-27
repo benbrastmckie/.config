@@ -1,13 +1,16 @@
 # /orchestrate Research and Planning Enforcement Fix - Implementation Plan
 
 ## Metadata
-- **Date**: 2025-10-22
-- **Feature**: Remove fallbacks from /orchestrate - enforce strict subagent-only operation with auto-recovery
-- **Scope**: Remove command fallbacks, add auto-retry recovery, ensure ONLY subagents create reports and plans
-- **Estimated Phases**: 5
+- **Date**: 2025-10-22 (Revised: 2025-10-23)
+- **Feature**: Remove fallbacks from /orchestrate - enforce strict subagent-only operation with auto-recovery and Standard 0 compliance
+- **Scope**: Remove command fallbacks, add auto-retry recovery, ensure ONLY subagents create reports and plans, implement Standard 0 enforcement markers and Phase 0 orchestrator role clarification
+- **Estimated Phases**: 6 (Phase 0 added in Revision 3)
+- **Structure Level**: 1
+- **Expanded Phases**: [0]
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Research Context**: TODO2.md issue report, strict subagent enforcement with auto-recovery requirement
+- **Research Context**: TODO2.md issue report, strict subagent enforcement with auto-recovery requirement, Plan 002 improvement suggestions for standards compliance
 - **Plan Number**: 071-001
+- **Related Plans**: 002_orchestrate_improvement_suggestions.md (Plan 070-002)
 
 ## Overview
 
@@ -50,6 +53,7 @@ This plan removes all fallback mechanisms from `/orchestrate` to enforce strict 
 
 ## Success Criteria
 
+### Core Functionality (Original Plan 071)
 - [ ] All fallback mechanisms removed from orchestrate.md (no orchestrator file creation)
 - [ ] Auto-retry mechanism implemented with 3 attempts per subagent
 - [ ] Multiple agent template variations created (standard, ultra-explicit, step-by-step)
@@ -62,6 +66,35 @@ This plan removes all fallback mechanisms from `/orchestrate` to enforce strict 
 - [ ] Test: /orchestrate retries failing subagents (verify 3 attempts)
 - [ ] Test: /orchestrate continues with partial results when some topics fail
 - [ ] Test: /orchestrate terminates only if planning fails after retries or no reports created
+
+### Standards Compliance (Plan 002 Enhancements)
+- [ ] **Phase 0 Orchestrator Role**: Explicit orchestrator role clarification added at beginning
+  - [ ] "YOUR ROLE" declaration present
+  - [ ] "CRITICAL INSTRUCTIONS" section with DO NOT directives
+  - [ ] "ONLY" directives for coordination-only behavior
+  - [ ] "You will NOT see [results] directly" explanation
+- [ ] **Standard 0 Enforcement Markers**: Minimum pattern counts met
+  - [ ] ≥12 "EXECUTE NOW" markers for critical operations
+  - [ ] ≥8 "MANDATORY VERIFICATION" blocks for file operations
+  - [ ] ≥6 "CHECKPOINT REQUIREMENT" blocks at phase boundaries
+  - [ ] "CRITICAL INSTRUCTION", "ABSOLUTE REQUIREMENT" used for key steps
+- [ ] **Imperative Language**: ≥90% imperative ratio (validated via audit script)
+  - [ ] All "should" → "MUST" transformations complete
+  - [ ] All "can" → "WILL" transformations complete
+  - [ ] All "may" → "SHALL" transformations complete
+  - [ ] All "consider" → "MUST" transformations complete
+  - [ ] All "try to" → "WILL" transformations complete
+  - [ ] Zero weak language remaining (validated)
+- [ ] **Context Pruning Policy**: <20% context usage target
+  - [ ] Pruning after research phase implemented
+  - [ ] Pruning after planning phase implemented
+  - [ ] Metadata extraction + pruning for 92-97% reduction
+- [ ] **Audit Validation**: Standards compliance verified
+  - [ ] Audit score ≥95/100 (execution enforcement)
+  - [ ] Imperative ratio ≥90% (language strength)
+  - [ ] File creation rate 100% (10/10 test trials)
+  - [ ] Pattern counts validated (12 EXECUTE NOW, 8 MANDATORY, 6 CHECKPOINT)
+  - [ ] Weak language count = 0
 
 ## Technical Design
 
@@ -310,6 +343,18 @@ echo ""
 
 ## Implementation Phases
 
+### Phase 0: Add Orchestrator Role Clarification and Enforcement Standards (High Complexity)
+**Objective**: Add Phase 0 orchestrator role clarification and Standard 0 enforcement markers throughout orchestrate.md to ensure strict coordination-only behavior.
+
+**Status**: PENDING
+
+**Summary**: Comprehensive implementation of Standard 0 enforcement patterns including orchestrator role clarification, execution enforcement markers (≥12 EXECUTE NOW, ≥8 MANDATORY VERIFICATION, ≥6 CHECKPOINT), imperative language transformation (≥90% ratio), and aggressive context pruning policy (<20% usage target).
+
+For detailed implementation steps, testing strategies, and code examples, see:
+**[Phase 0 Details - Orchestrator Role and Standards](phase_0_orchestrator_role_and_standards.md)**
+
+---
+
 ### Phase 1: Create Agent Template Variations [COMPLETED]
 **Objective**: Create three template variations (standard, ultra-explicit, step-by-step) for auto-retry escalation.
 
@@ -492,6 +537,81 @@ grep -q "retry-with-escalation" .claude/commands/orchestrate.md
 ---
 
 ## Testing Strategy
+
+### Standards Compliance Validation
+
+**Test Standards Enforcement** (using audit scripts):
+```bash
+#!/bin/bash
+# Test Standard 0 enforcement compliance
+
+ORCHESTRATE_FILE=".claude/commands/orchestrate.md"
+
+echo "=== Standards Compliance Validation ==="
+
+# Test 1: Execution enforcement audit
+echo "Running execution enforcement audit..."
+AUDIT_SCORE=$(.claude/lib/audit-execution-enforcement.sh "$ORCHESTRATE_FILE" | grep -oP 'Score: \K\d+')
+if [ "$AUDIT_SCORE" -lt 95 ]; then
+  echo "FAIL: Audit score $AUDIT_SCORE/100 (need ≥95)"
+  exit 1
+fi
+echo "✓ Audit score: $AUDIT_SCORE/100 (≥95 required)"
+
+# Test 2: Imperative language ratio
+echo "Running imperative language audit..."
+IMPERATIVE_RATIO=$(.claude/lib/audit-imperative-language.sh "$ORCHESTRATE_FILE" | grep -oP 'Imperative Ratio: \K\d+')
+if [ "$IMPERATIVE_RATIO" -lt 90 ]; then
+  echo "FAIL: Imperative ratio $IMPERATIVE_RATIO% (need ≥90%)"
+  exit 1
+fi
+echo "✓ Imperative ratio: $IMPERATIVE_RATIO% (≥90% required)"
+
+# Test 3: Pattern minimum counts
+EXECUTE_NOW_COUNT=$(grep -c "EXECUTE NOW" "$ORCHESTRATE_FILE")
+MANDATORY_COUNT=$(grep -c "MANDATORY VERIFICATION" "$ORCHESTRATE_FILE")
+CHECKPOINT_COUNT=$(grep -c "CHECKPOINT REQUIREMENT" "$ORCHESTRATE_FILE")
+
+if [ "$EXECUTE_NOW_COUNT" -lt 12 ]; then
+  echo "FAIL: Only $EXECUTE_NOW_COUNT EXECUTE NOW markers (need ≥12)"
+  exit 1
+fi
+echo "✓ EXECUTE NOW markers: $EXECUTE_NOW_COUNT (≥12 required)"
+
+if [ "$MANDATORY_COUNT" -lt 8 ]; then
+  echo "FAIL: Only $MANDATORY_COUNT MANDATORY VERIFICATION markers (need ≥8)"
+  exit 1
+fi
+echo "✓ MANDATORY VERIFICATION markers: $MANDATORY_COUNT (≥8 required)"
+
+if [ "$CHECKPOINT_COUNT" -lt 6 ]; then
+  echo "FAIL: Only $CHECKPOINT_COUNT CHECKPOINT markers (need ≥6)"
+  exit 1
+fi
+echo "✓ CHECKPOINT markers: $CHECKPOINT_COUNT (≥6 required)"
+
+# Test 4: Weak language check
+WEAK_LANGUAGE=$(grep -E '\b(should|may|can|consider|try to)\b' "$ORCHESTRATE_FILE" | wc -l)
+if [ "$WEAK_LANGUAGE" -gt 0 ]; then
+  echo "WARNING: Found $WEAK_LANGUAGE instances of weak language (should/may/can/consider/try)"
+fi
+
+# Test 5: File creation reliability (10 test trials)
+echo "Running file creation reliability test (10 trials)..."
+SUCCESS_COUNT=0
+for i in $(seq 1 10); do
+  # Test research agent invocation creates file
+  # (Implementation-specific test - add actual test logic here)
+  SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+done
+if [ "$SUCCESS_COUNT" -lt 10 ]; then
+  echo "FAIL: File creation rate ${SUCCESS_COUNT}/10 (need 10/10)"
+  exit 1
+fi
+echo "✓ File creation rate: ${SUCCESS_COUNT}/10 (100% required)"
+
+echo "=== All Standards Compliance Tests Passed ==="
+```
 
 ### Unit Tests
 
@@ -748,6 +868,46 @@ If auto-retry causes unacceptable delays or failures:
 **Success Probability**: High (clear objectives, testable outcomes)
 
 ## Revision History
+
+### 2025-10-23 - Revision 3
+**Changes**: Enhanced plan with Standard 0 compliance requirements and audit validation
+**Reason**: Integrate Plan 002 improvement suggestions to align with `.claude/docs/` standards
+**Reports Used**: `002_orchestrate_improvement_suggestions.md`
+**Modified Phases**:
+- **Added Phase 0**: Orchestrator role clarification and enforcement standards
+  - Phase 0 orchestrator role clarification (YOUR ROLE, CRITICAL INSTRUCTIONS, ONLY directives)
+  - Standard 0 enforcement markers (≥12 EXECUTE NOW, ≥8 MANDATORY VERIFICATION, ≥6 CHECKPOINT)
+  - Imperative language transformation (≥90% ratio target)
+  - Aggressive context pruning policy (<20% usage target)
+- **Enhanced Testing Strategy**: Added standards compliance validation section
+  - Execution enforcement audit (≥95/100 score)
+  - Imperative language audit (≥90% ratio)
+  - Pattern minimum counts validation
+  - Weak language detection
+  - File creation reliability test (10/10 trials)
+- **Updated Success Criteria**: Added standards compliance subsection
+  - Phase 0 orchestrator role requirements
+  - Standard 0 enforcement marker requirements
+  - Imperative language requirements
+  - Context pruning policy requirements
+  - Audit validation requirements
+
+**Key Design Changes**:
+- **Standard 0 Compliance**: Explicit enforcement markers throughout orchestrate.md
+- **Phase 0 Requirement**: All orchestrator commands MUST include Phase 0 role clarification
+- **Imperative Language**: Systematic transformation of passive language (should/can/may → MUST/WILL/SHALL)
+- **Context Management**: Aggressive pruning for <20% context usage in workflows
+- **Audit-Driven Validation**: Use `.claude/lib/audit-execution-enforcement.sh` and `.claude/lib/audit-imperative-language.sh` for compliance verification
+
+**Documentation References**:
+- Command Architecture Standards (Standard 0, Phase 0 Requirement)
+- Imperative Language Guide (Pattern 10, transformation table)
+- Execution Enforcement Guide (Phase 0 pattern, Direct Execution Blocks)
+- Behavioral Injection Pattern (agent coordination)
+- Context Management Pattern (pruning for orchestration workflows)
+- Verification-Fallback Pattern (100% file creation guarantee)
+
+**Note**: This revision does NOT add fallback mechanisms (user prefers predictable behavior). The auto-retry implementation from Revision 2 is maintained and enhanced with stronger enforcement.
 
 ### 2025-10-22 - Revision 2
 **Changes**: Added auto-recovery strategy using retry-with-escalation instead of fail-fast

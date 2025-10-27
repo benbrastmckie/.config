@@ -322,23 +322,31 @@ CHECKPOINT: [Step] complete
 
 ### STEP 2 (REQUIRED AFTER STEP 1) - [Second Step]
 
-**AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications)**
+**AGENT INVOCATION - Reference Behavioral File, Inject Context Only**
 
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "[Brief description]"
+  description: "[Brief description with mandatory file creation]"
   prompt: "
-    Read and follow: .claude/agents/[agent-name].md
+    Read and follow ALL behavioral guidelines from:
+    .claude/agents/[agent-name].md
 
-    **ABSOLUTE REQUIREMENT**: [Primary task] is your PRIMARY obligation.
+    **Workflow-Specific Context**:
+    - [Context Parameter 1]: [value]
+    - [Context Parameter 2]: [value]
+    - [Output Path]: [absolute path, pre-calculated]
 
-    [Context and parameters for agent]
-
-    Return ONLY: [Expected return format]
+    Execute per behavioral guidelines. Return: [SIGNAL]: [path]
   "
 }
 ```
+
+**Pattern Notes**:
+- Agent behavioral file (e.g., research-specialist.md) contains complete step-by-step instructions
+- Command prompt injects ONLY workflow-specific context (paths, parameters, requirements)
+- No duplication: all behavioral guidelines in agent file, not inline
+- Reduction: ~150 lines → ~15 lines per invocation (90% reduction)
 ```
 
 ---
