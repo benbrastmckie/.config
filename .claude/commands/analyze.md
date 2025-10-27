@@ -292,7 +292,7 @@ generate_metrics_report 30 "specs/reports/${REPORT_NUM}_metrics_analysis.md"
 
 **Status**: Not Implemented
 
-This feature was planned for analyzing workflow patterns from historical learning data, but the learning system was removed (see Plan 034) due to:
+This feature was planned for analyzing workflow patterns from historical learning data, but the learning system was removed due to:
 - Limited value in single-user environment
 - High maintenance complexity
 - Cold start problem (requires months of data)
