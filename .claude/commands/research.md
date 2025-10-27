@@ -44,7 +44,7 @@ YOU MUST analyze the topic to determine:
 
 **EXECUTE NOW - Decompose Research Topic Into Subtopics**
 
-**Decompose research topic into focused subtopics**:
+**EXECUTE NOW**: USE the Bash tool to source libraries and decompose topic:
 
 ```bash
 # Source required libraries
@@ -59,21 +59,25 @@ SUBTOPIC_COUNT=$(calculate_subtopic_count "$RESEARCH_TOPIC")
 
 # Get decomposition prompt
 DECOMP_PROMPT=$(decompose_research_topic "$RESEARCH_TOPIC" 2 "$SUBTOPIC_COUNT")
+
+echo "SUBTOPIC_COUNT: $SUBTOPIC_COUNT"
+echo "DECOMP_PROMPT ready for Task tool invocation"
 ```
 
-**Use Task tool** to execute decomposition:
+**Verification**: Confirm SUBTOPIC_COUNT is set (2-4 expected range)
 
-Task invocation:
+**EXECUTE NOW**: USE the Task tool to execute decomposition:
+
 - subagent_type: general-purpose
 - description: "Decompose research topic into subtopics"
-- prompt: [Use DECOMP_PROMPT from above]
+- prompt: [insert DECOMP_PROMPT value from above]
 
-**Validation**:
+**After Task completes**, validate output:
 - Verify each subtopic is snake_case
 - Verify count is between 2-4
 - Store in SUBTOPICS array
 
-Example:
+Example output:
 ```bash
 # Input: "Authentication patterns and security best practices"
 # Output:
@@ -90,6 +94,9 @@ SUBTOPICS=(
 **EXECUTE NOW - Calculate Absolute Paths for All Subtopic Reports**
 
 **Step 1: Get or Create Main Topic Directory**
+
+**EXECUTE NOW**: USE the Bash tool to calculate topic directory:
+
 ```bash
 # Source unified location detection utilities
 source .claude/lib/topic-utils.sh
@@ -120,6 +127,13 @@ TOPIC_DIR="${SPECS_ROOT}/${TOPIC_NUM}_${TOPIC_NAME}"
 # Create topic root directory
 mkdir -p "$TOPIC_DIR"
 
+echo "TOPIC_DIR: $TOPIC_DIR"
+echo "TOPIC_NUM: $TOPIC_NUM"
+echo "TOPIC_NAME: $TOPIC_NAME"
+```
+
+**Verification**: Confirm TOPIC_DIR is set and directory exists
+
 # MANDATORY VERIFICATION checkpoint
 if [ ! -d "$TOPIC_DIR" ]; then
   echo "ERROR: Topic directory creation failed: $TOPIC_DIR"
@@ -135,6 +149,8 @@ echo "Main topic directory: $TOPIC_DIR"
 **ABSOLUTE REQUIREMENT**: You MUST calculate all subtopic report paths BEFORE invoking research agents.
 
 **WHY THIS MATTERS**: Research-specialist agents require EXACT absolute paths to create files in correct locations. Skipping this step causes path mismatch errors.
+
+**EXECUTE NOW**: USE the Bash tool to calculate subtopic report paths:
 
 ```bash
 # MANDATORY: Calculate absolute paths for each subtopic
@@ -179,7 +195,7 @@ for subtopic in "${SUBTOPICS[@]}"; do
 done
 ```
 
-**MANDATORY VERIFICATION - Path Pre-Calculation Complete**:
+**EXECUTE NOW**: USE the Bash tool to verify path pre-calculation:
 
 ```bash
 # Verify all paths are absolute
@@ -208,28 +224,24 @@ CHECKPOINT: Path pre-calculation complete
 
 **EXECUTE NOW - Invoke All Research-Specialist Agents in Parallel**
 
-**AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications)**
+**AGENT INVOCATION INSTRUCTIONS**
 
-**CRITICAL INSTRUCTION**: The agent prompt below is NOT an example. It is the EXACT template you MUST use when invoking research agents.
+**CRITICAL**: You MUST invoke research agents in parallel (multiple Task calls in single message).
 
-**Invoke all research agents in parallel** (multiple Task calls in single message):
+For EACH subtopic in SUBTOPICS array, you will invoke the research-specialist agent.
 
-For EACH subtopic in SUBTOPICS array, invoke research-specialist agent:
+**EXECUTE NOW**: USE the Task tool for each subtopic with these parameters:
 
-**NOTE**: All STEP sequences (STEP 1-4) are defined in the agent behavioral file (.claude/agents/research-specialist.md). This prompt only provides workflow-specific context.
-
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Research [SUBTOPIC] with mandatory artifact creation"
-  timeout: 300000  # 5 minutes per research agent
-  prompt: "
+- subagent_type: "general-purpose"
+- description: "Research [insert actual subtopic name] with mandatory artifact creation"
+- timeout: 300000  # 5 minutes per research agent
+- prompt: |
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/research-specialist.md
 
     **Workflow-Specific Context**:
-    - Research Topic: [SUBTOPIC_DISPLAY_NAME]
-    - Report Path: [ABSOLUTE_PATH_FROM_SUBTOPIC_REPORT_PATHS]
+    - Research Topic: [insert display-friendly subtopic name]
+    - Report Path: [insert absolute path from SUBTOPIC_REPORT_PATHS array for this subtopic]
     - Project Standards: /home/benjamin/.config/CLAUDE.md
 
     **YOUR ROLE**: You are a SUBAGENT executing research for ONE subtopic.
@@ -241,14 +253,37 @@ Task {
 
     Execute research following all guidelines in behavioral file.
     Return: REPORT_CREATED: [EXACT_ABSOLUTE_PATH]
-  "
-}
-```
 
-**Monitor agent execution**:
-- Watch for PROGRESS: markers from each agent
+**Concrete Example** (for subtopic "jwt_implementation_patterns"):
+- subagent_type: "general-purpose"
+- description: "Research jwt_implementation_patterns with mandatory artifact creation"
+- timeout: 300000
+- prompt: |
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: JWT Implementation Patterns
+    - Report Path: /home/benjamin/.config/.claude/specs/042_authentication/reports/001_jwt_implementation_patterns.md
+    - Project Standards: /home/benjamin/.config/CLAUDE.md
+
+    **YOUR ROLE**: You are a SUBAGENT executing research for ONE subtopic.
+    - The ORCHESTRATOR calculated your report path (injected above)
+    - DO NOT use Task tool to orchestrate other agents
+    - STAY IN YOUR LANE: Research YOUR subtopic only
+
+    **CRITICAL**: Create report file at EXACT path provided above.
+
+    Execute research following all guidelines in behavioral file.
+    Return: REPORT_CREATED: /home/benjamin/.config/.claude/specs/042_authentication/reports/001_jwt_implementation_patterns.md
+
+**Your Orchestrator Responsibilities**:
+- Invoke ALL subtopics in parallel (one Task call per subtopic in a single message)
+- Monitor for PROGRESS: markers from each agent
 - Collect REPORT_CREATED: paths when agents complete
 - Verify paths match pre-calculated paths
+
+**NOTE**: All STEP sequences (STEP 1-4) are defined in the agent behavioral file. This prompt only provides workflow-specific context.
 
 ### STEP 4 (REQUIRED BEFORE STEP 5) - Verify Report Creation
 
@@ -417,26 +452,22 @@ fi
 # - Future optimization: synthesizer could use metadata instead of full reports
 ```
 
-**AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications)**
+**AGENT INVOCATION INSTRUCTIONS**
 
-**Invoke research-synthesizer** using Task tool:
+**EXECUTE NOW**: USE the Task tool to invoke the research-synthesizer agent with these parameters:
 
-**NOTE**: All STEP sequences (STEP 1-5) are defined in the agent behavioral file (.claude/agents/research-synthesizer.md). This prompt only provides workflow-specific context.
-
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Synthesize research findings into overview report"
-  timeout: 180000  # 3 minutes
-  prompt: "
+- subagent_type: "general-purpose"
+- description: "Synthesize research findings into overview report"
+- timeout: 180000  # 3 minutes
+- prompt: |
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/research-synthesizer.md
 
     **Workflow-Specific Context**:
-    - Overview Report Path: $OVERVIEW_PATH
-    - Research Topic: $RESEARCH_TOPIC
+    - Overview Report Path: [insert $OVERVIEW_PATH value]
+    - Research Topic: [insert $RESEARCH_TOPIC value]
     - Subtopic Report Paths:
-$(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "    - $path"; done)
+      [insert list of verified report paths from VERIFIED_PATHS array]
 
     **YOUR ROLE**: You are a SUBAGENT synthesizing research findings.
     - The ORCHESTRATOR created all subtopic reports (paths injected above)
@@ -449,14 +480,42 @@ $(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "    - $path"; done)
     Return: OVERVIEW_CREATED: [path]
            OVERVIEW_SUMMARY: [100-word summary]
            METADATA: [structured metadata]
-  "
-}
-```
 
-**Monitor synthesis execution**:
-- Watch for PROGRESS: markers
+**Concrete Example**:
+- subagent_type: "general-purpose"
+- description: "Synthesize research findings into overview report"
+- timeout: 180000
+- prompt: |
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-synthesizer.md
+
+    **Workflow-Specific Context**:
+    - Overview Report Path: /home/benjamin/.config/.claude/specs/042_authentication/reports/001_authentication_security/OVERVIEW.md
+    - Research Topic: Authentication patterns and security best practices
+    - Subtopic Report Paths:
+      - /home/benjamin/.config/.claude/specs/042_authentication/reports/001_jwt_implementation_patterns.md
+      - /home/benjamin/.config/.claude/specs/042_authentication/reports/002_oauth2_flows_and_providers.md
+      - /home/benjamin/.config/.claude/specs/042_authentication/reports/003_session_management_strategies.md
+      - /home/benjamin/.config/.claude/specs/042_authentication/reports/004_security_best_practices.md
+
+    **YOUR ROLE**: You are a SUBAGENT synthesizing research findings.
+    - The ORCHESTRATOR created all subtopic reports (paths injected above)
+    - DO NOT use Task tool to orchestrate other agents
+    - STAY IN YOUR LANE: Synthesize findings only
+
+    **IMPORTANT**: Create overview file with filename OVERVIEW.md (ALL CAPS).
+
+    Execute synthesis following all guidelines in behavioral file.
+    Return: OVERVIEW_CREATED: /home/benjamin/.config/.claude/specs/042_authentication/reports/001_authentication_security/OVERVIEW.md
+           OVERVIEW_SUMMARY: [100-word summary]
+           METADATA: [structured metadata]
+
+**Your Orchestrator Responsibilities**:
+- Monitor for PROGRESS: markers
 - Collect OVERVIEW_CREATED: path when complete
 - Verify overview exists at expected path
+
+**NOTE**: All STEP sequences (STEP 1-5) are defined in the agent behavioral file. This prompt only provides workflow-specific context.
 
 **MANDATORY VERIFICATION - Overview Report Creation**:
 
@@ -516,26 +575,22 @@ fi
 
 #### Step 6.1: Invoke Spec-Updater Agent
 
-**AGENT INVOCATION - Use THIS EXACT TEMPLATE (No modifications)**
+**AGENT INVOCATION INSTRUCTIONS**
 
-Use the Task tool to invoke the spec-updater agent:
+**EXECUTE NOW**: USE the Task tool to invoke the spec-updater agent with these parameters:
 
-**NOTE**: All STEP sequences are defined in the agent behavioral file (.claude/agents/spec-updater.md). This prompt only provides workflow-specific context.
-
-```yaml
-Task {
-  subagent_type: "general-purpose"
-  description: "Update cross-references for hierarchical research reports"
-  prompt: "
+- subagent_type: "general-purpose"
+- description: "Update cross-references for hierarchical research reports"
+- prompt: |
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/spec-updater.md
 
     **Workflow-Specific Context**:
     - Operation: LINK (hierarchical_report_creation)
-    - Overview report: $OVERVIEW_PATH
+    - Overview report: [insert $OVERVIEW_PATH value]
     - Subtopic reports:
-$(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "      - $path"; done)
-    - Topic directory: $TOPIC_DIR
+      [insert list of verified report paths from VERIFIED_PATHS array]
+    - Topic directory: [insert $TOPIC_DIR value]
     - Related plan: [check topic's plans/ subdirectory]
 
     **Cross-Reference Requirements**:
@@ -546,9 +601,35 @@ $(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "      - $path"; done)
 
     Execute cross-reference updates following all guidelines in behavioral file.
     Return: Update status, files modified, verification results
-  "
-}
-```
+
+**Concrete Example**:
+- subagent_type: "general-purpose"
+- description: "Update cross-references for hierarchical research reports"
+- prompt: |
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/spec-updater.md
+
+    **Workflow-Specific Context**:
+    - Operation: LINK (hierarchical_report_creation)
+    - Overview report: /home/benjamin/.config/.claude/specs/042_authentication/reports/001_authentication_security/OVERVIEW.md
+    - Subtopic reports:
+      - /home/benjamin/.config/.claude/specs/042_authentication/reports/001_jwt_implementation_patterns.md
+      - /home/benjamin/.config/.claude/specs/042_authentication/reports/002_oauth2_flows_and_providers.md
+      - /home/benjamin/.config/.claude/specs/042_authentication/reports/003_session_management_strategies.md
+      - /home/benjamin/.config/.claude/specs/042_authentication/reports/004_security_best_practices.md
+    - Topic directory: /home/benjamin/.config/.claude/specs/042_authentication
+    - Related plan: [check topic's plans/ subdirectory]
+
+    **Cross-Reference Requirements**:
+    1. Bidirectional links: Overview ↔ Subtopics
+    2. Plan references (if plan exists): Overview → Plan, Plan → Overview
+    3. Relative paths for all links
+    4. Verify all links functional
+
+    Execute cross-reference updates following all guidelines in behavioral file.
+    Return: Update status, files modified, verification results
+
+**NOTE**: All STEP sequences are defined in the agent behavioral file. This prompt only provides workflow-specific context.
 
 #### Step 6.2: Handle Spec-Updater Response
 
