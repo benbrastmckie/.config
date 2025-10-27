@@ -19,6 +19,7 @@ Comprehensive guide for creating and maintaining custom Claude Code agents using
 6. [Anti-Patterns and Why They're Wrong](#6-anti-patterns-and-why-theyre-wrong)
 7. [Best Practices and Examples](#7-best-practices-and-examples)
 8. [Testing and Validation](#8-testing-and-validation)
+9. [Agent Consolidation and Refactoring Patterns](#9-agent-consolidation-and-refactoring-patterns)
 
 ---
 
@@ -987,6 +988,171 @@ Before committing a new agent:
 ---
 
 ## Cross-References
+
+## 9. Agent Consolidation and Refactoring Patterns
+
+### 9.1 When to Consolidate Agents
+
+Consider consolidating agents when:
+
+1. **High Code Overlap** (>90%):
+   - Similar STEP-by-STEP workflows
+   - Nearly identical validation logic
+   - Shared metadata update patterns
+
+   **Example**: expansion-specialist + collapse-specialist (95% overlap) → plan-structure-manager
+
+2. **Pure Coordination Wrappers**:
+   - No behavioral logic
+   - Only delegates to another agent
+   - No value-add processing
+
+   **Example**: plan-expander (only delegated to expansion-specialist) → Archived
+
+3. **Deterministic Logic**:
+   - No AI reasoning required
+   - Purely algorithmic transformations
+   - Can be implemented as library function
+
+   **Example**: git-commit-helper (purely deterministic) → .claude/lib/git-commit-utils.sh
+
+### 9.2 Operation Parameter Pattern
+
+When consolidating similar agents into a unified agent, use operation parameters to dispatch behavior:
+
+**Pattern**:
+```yaml
+# Agent frontmatter
+description: Unified agent for expanding/collapsing phases and stages in implementation plans
+
+# Invocation from command
+Task {
+  subagent_type: "general-purpose"
+  description: "Expand phase 2"
+  prompt: |
+    Read and follow behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-structure-manager.md
+
+    Operation: expand  # or "collapse"
+
+    Plan Path: /path/to/plan.md
+    Phase Number: 2
+}
+```
+
+**Benefits**:
+- Single agent file vs multiple similar files
+- Shared validation, error handling, artifact creation logic
+- Clearer architectural pattern (operation parameter = behavior selector)
+
+**Implementation**:
+```markdown
+## Behavioral Guidelines
+
+### Operation Modes
+
+**STEP 1: Validate Operation Request**
+- Check operation parameter: "expand" | "collapse"
+- Validate inputs based on operation type
+
+**STEP 2: Execute Operation**
+- IF operation = "expand": Extract content to separate file
+- IF operation = "collapse": Merge content back into parent plan
+
+**STEP 3: Update Parent Plan**
+- IF operation = "expand": Add marker + summary
+- IF operation = "collapse": Replace marker with inline content
+```
+
+### 9.3 Agent-to-Library Refactoring Pattern
+
+When agent logic is purely deterministic, refactor to utility library:
+
+**Decision Criteria**:
+- No AI reasoning required?
+- Purely algorithmic transformations?
+- Fixed input → fixed output mapping?
+- No context-dependent decisions?
+
+**Refactoring Process**:
+
+1. **Identify Deterministic Logic**:
+   ```markdown
+   # git-commit-helper.md (BEFORE)
+   Generate commit message:
+   - Stage completion: "feat(NNN): complete Phase N Stage M - Name"
+   - Phase completion: "feat(NNN): complete Phase N - Name"
+   - Plan completion: "feat(NNN): complete Feature Name"
+   ```
+
+2. **Extract to Library Function**:
+   ```bash
+   # .claude/lib/git-commit-utils.sh (AFTER)
+   generate_commit_message() {
+     local topic_number="$1"
+     local completion_type="$2"  # phase|stage|plan
+     local phase_number="$3"
+     local stage_number="$4"
+     local name="$5"
+     local feature_name="$6"
+
+     case "$completion_type" in
+       stage)
+         echo "feat($topic_number): complete Phase $phase_number Stage $stage_number - $name"
+         ;;
+       phase)
+         echo "feat($topic_number): complete Phase $phase_number - $name"
+         ;;
+       plan)
+         echo "feat($topic_number): complete $feature_name"
+         ;;
+     esac
+   }
+   ```
+
+3. **Update Callers**:
+   ```markdown
+   # implementation-executor.md (UPDATED)
+   ## Create Git Commit
+
+   **STEP 1: Generate Commit Message Using git-commit-utils.sh**
+
+   ```bash
+   # Load git-commit-utils.sh library
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/git-commit-utils.sh"
+
+   # Generate commit message using library function
+   commit_msg=$(generate_commit_message "$topic_num" "phase" "$phase_number" "" "$phase_name" "")
+   ```
+
+4. **Archive Agent**:
+   ```bash
+   mv .claude/agents/git-commit-helper.md .claude/archive/agents/
+   ```
+
+**Benefits**:
+- Zero agent invocation overhead
+- Faster execution (library function vs agent Task)
+- Easier testing (unit tests vs integration tests)
+- Clearer separation of concerns (algorithms in lib/, AI reasoning in agents/)
+
+### 9.4 Consolidation Impact Metrics
+
+Track consolidation benefits:
+
+**Code Reduction**:
+- Lines saved: Old agents total - New unified agent
+- Example: expansion-specialist (25KB) + collapse-specialist (21KB) = 46KB → plan-structure-manager (36KB) = 10KB saved (21% reduction)
+
+**Performance**:
+- Agent invocation overhead eliminated (agent-to-library refactoring)
+- Example: git-commit-helper (agent Task ~500ms) → library function (~5ms) = 99% faster
+
+**Maintainability**:
+- Agents to maintain: Old count - Archived count
+- Example: 22 agents → 19 agents = 14% reduction
+
+---
 
 ### Architectural Patterns
 

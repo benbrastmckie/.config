@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test agent behavior file validation
-# Tests expansion-specialist and collapse-specialist agent files
+# Tests plan-structure-manager agent file (consolidated from expansion-specialist and collapse-specialist)
 
 set -euo pipefail
 
@@ -107,32 +107,18 @@ main() {
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
 
-  # Test expansion-specialist
-  echo "Testing expansion-specialist agent:"
-  test_case "Agent file exists" validate_agent_file_exists "expansion-specialist"
-  test_case "Has role section" validate_agent_has_role "expansion-specialist"
-  test_case "Has behavioral guidelines" validate_agent_has_guidelines "expansion-specialist"
-  test_case "Has workflow documentation" validate_agent_has_workflow "expansion-specialist"
-  test_case "Has tools specification" validate_agent_has_tools "expansion-specialist"
-  test_case "Has constraints" validate_agent_has_constraints "expansion-specialist"
-  test_case "Has artifact format" validate_agent_has_artifact_format "expansion-specialist"
-  test_case "Has error handling" validate_agent_has_error_handling "expansion-specialist"
-  test_case "Has success criteria" validate_agent_has_success_criteria "expansion-specialist"
-  test_case "Has examples" validate_agent_has_examples "expansion-specialist"
-  echo ""
-
-  # Test collapse-specialist
-  echo "Testing collapse-specialist agent:"
-  test_case "Agent file exists" validate_agent_file_exists "collapse-specialist"
-  test_case "Has role section" validate_agent_has_role "collapse-specialist"
-  test_case "Has behavioral guidelines" validate_agent_has_guidelines "collapse-specialist"
-  test_case "Has workflow documentation" validate_agent_has_workflow "collapse-specialist"
-  test_case "Has tools specification" validate_agent_has_tools "collapse-specialist"
-  test_case "Has constraints" validate_agent_has_constraints "collapse-specialist"
-  test_case "Has artifact format" validate_agent_has_artifact_format "collapse-specialist"
-  test_case "Has error handling" validate_agent_has_error_handling "collapse-specialist"
-  test_case "Has success criteria" validate_agent_has_success_criteria "collapse-specialist"
-  test_case "Has examples" validate_agent_has_examples "collapse-specialist"
+  # Test plan-structure-manager (consolidated from expansion-specialist and collapse-specialist)
+  echo "Testing plan-structure-manager agent:"
+  test_case "Agent file exists" validate_agent_file_exists "plan-structure-manager"
+  test_case "Has role section" validate_agent_has_role "plan-structure-manager"
+  test_case "Has behavioral guidelines" validate_agent_has_guidelines "plan-structure-manager"
+  test_case "Has workflow documentation" validate_agent_has_workflow "plan-structure-manager"
+  test_case "Has tools specification" validate_agent_has_tools "plan-structure-manager"
+  test_case "Has constraints" validate_agent_has_constraints "plan-structure-manager"
+  test_case "Has artifact format" validate_agent_has_artifact_format "plan-structure-manager"
+  test_case "Has error handling" validate_agent_has_error_handling "plan-structure-manager"
+  test_case "Has success criteria" validate_agent_has_success_criteria "plan-structure-manager"
+  test_case "Has examples" validate_agent_has_examples "plan-structure-manager"
   echo ""
 
   # Summary

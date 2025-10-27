@@ -5,8 +5,8 @@
 - **Topic**: 075_skills_integration_systematic_refactor
 - **Created**: 2025-10-23
 - **Status**: Active
-- **Complexity**: TBD
-- **Estimated Duration**: TBD
+- **Complexity**: 6.5/10
+- **Estimated Duration**: 6-9 weeks
 
 ## Objective
 Integrate Claude Code skills system into existing .claude/ configuration while maintaining compliance with .claude/docs/ standards and creating systematic documentation for the new skill implementation.
@@ -32,27 +32,31 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 - **Medium Risk**: Integration with current behavioral injection architecture (requires careful coordination)
 
 ## Complexity Assessment
-**Overall Complexity**: 6.5/10 (revised from 7.5/10 - leveraging existing infrastructure)
+**Overall Complexity**: 6.5/10
 
 - Multi-phase refactor with 6 distinct stages
 - Integration across multiple system layers (commands, agents, utilities, documentation)
 - Balance between preservation (orchestration) and innovation (skills)
 - Requires user review checkpoints at each stage
-- **Reduced complexity**: Extends agent-registry-utils.sh (90% code overlap), uses unified-location-detection.sh (85% token reduction), leverages 8 documented patterns
+- **Efficiency Factors**: Extends agent-registry-utils.sh (90% code overlap), uses unified-location-detection.sh (85% token reduction, 36x speedup), leverages 9 documented architectural patterns
 
-**Estimated Duration**: 6-9 weeks (revised from 8-12 weeks - 25% reduction)
+**Estimated Duration**: 6-9 weeks
 
-**Time Reductions**:
-- Phase 1: 2 weeks → 1 week (extend existing registry instead of creating new)
-- Phase 4: 2-3 weeks → 1-2 weeks (fewer enforcement skills, leverage pre-commit hooks)
-- Phase 6: 2 weeks → 1 week (integrate with existing docs instead of creating new)
+**Phase Duration Breakdown**:
+- Phase 0: 1 week (documentation foundation)
+- Phase 1: 1 week (extend existing registry infrastructure)
+- Phase 2: 1-2 weeks (obra/superpowers integration)
+- Phase 3: 1 week (Anthropic document skills)
+- Phase 4: 1-2 weeks (custom guidance skills, pre-commit hooks)
+- Phase 5: 2-3 weeks (command integration and agent migration)
+- Phase 6: 1 week (validation and optimization with existing documentation)
 
-**Existing Infrastructure** (discovered 2025-10-26):
+**Existing Infrastructure**:
 - **agent-registry-utils.sh**: Registry patterns, frontmatter parsing, metadata extraction, caching
 - **unified-location-detection.sh**: Location detection, directory creation, topic numbering (85% token reduction, 36x speedup)
 - **artifact-creation.sh**: Lazy directory creation (`ensure_artifact_directory()`), artifact path calculation
-- **Documented Patterns** (8 files): behavioral-injection, metadata-extraction, verification-fallback, checkpoint-recovery, context-management, forward-message, hierarchical-supervision, parallel-execution
-- **Cleanup Impact**: 266KB consolidated, 25 library scripts archived, 3 commands removed (/report → /research)
+- **Documented Patterns** (9 files): behavioral-injection, metadata-extraction, verification-fallback, checkpoint-recovery, context-management, forward-message, hierarchical-supervision, parallel-execution, README
+- **Clean Infrastructure**: 266KB library consolidation, 25 scripts archived, /research command provides hierarchical multi-agent research
 
 ## Implementation Phases
 
@@ -113,15 +117,15 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 - `.claude/templates/skill-definition-template.md`
 - `.claude/skills/README.md`
 - `.claude/docs/guides/skills-integration-guide.md`
-- Updated `.git/hooks/pre-commit`
+- `.git/hooks/pre-commit` (extended with skills validation)
 
 ---
 
 ### Phase 1: Skills Registry Infrastructure
 **Status**: Pending
 **Objective**: Build skill discovery, registration, and invocation infrastructure
-**Complexity**: 5/10 (reduced from 6/10 - leveraging existing registry infrastructure)
-**Duration**: 1 week (reduced from 2 weeks - 90% code overlap with agent-registry-utils.sh)
+**Complexity**: 5/10
+**Duration**: 1 week
 
 #### Dependencies
 - Phase 0 must be complete
@@ -186,11 +190,11 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 - **USER REVIEW CHECKPOINT**: Review infrastructure before installing external skills
 
 #### Artifacts Created
-- Updated `.claude/lib/agent-registry-utils.sh` (extended with skills support - no separate skills-registry.sh needed)
+- `.claude/lib/agent-registry-utils.sh` (extended with skills support: list_skills(), validate_skill(), get_skill_info())
 - `.claude/lib/skills-invocation.sh`
-- Updated `.claude/lib/metadata-extraction.sh` (extended with `extract_skill_metadata()`)
-- Updated `.claude/lib/context-pruning.sh` (extended with `prune_skill_output()`)
-- `.claude/skills/README.md` (updated with structure)
+- `.claude/lib/metadata-extraction.sh` (extended with `extract_skill_metadata()`)
+- `.claude/lib/context-pruning.sh` (extended with `prune_skill_output()`)
+- `.claude/skills/README.md` (complete directory structure documentation)
 
 ---
 
@@ -251,7 +255,7 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 - **USER REVIEW CHECKPOINT**: Review performance metrics and skill activation before custom skills
 
 #### Artifacts Created
-- Updated `CLAUDE.md` (skills section)
+- `CLAUDE.md` (skills section with enabled skills list)
 - Performance baseline metrics (`.claude/data/metrics/skills-baseline.json`)
 - Skills activation test results
 
@@ -312,8 +316,8 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 - **USER REVIEW CHECKPOINT**: Review document conversion quality before custom skills
 
 #### Artifacts Created
-- Updated `.claude/commands/convert-docs.md`
-- Updated `CLAUDE.md` (document skills)
+- `.claude/commands/convert-docs.md` (integrated with Anthropic document skills)
+- `CLAUDE.md` (document skills section)
 - Document conversion test results
 
 ---
@@ -321,8 +325,8 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 ### Phase 4: Custom Meta-Level Enforcement Skills
 **Status**: Pending
 **Objective**: Create project-specific skills that provide guidance and enforce testable standards from CLAUDE.md
-**Complexity**: 6/10 (reduced from 8/10 - fewer skills, leverage existing enforcement infrastructure)
-**Duration**: 1-2 weeks (reduced from 2-3 weeks)
+**Complexity**: 6/10
+**Duration**: 1-2 weeks
 
 #### Dependencies
 - Phase 3 must be complete
@@ -332,7 +336,7 @@ Integrate Claude Code skills system into existing .claude/ configuration while m
 Skills excel at providing guidance and making context-aware decisions, not enforcing deterministic rules. Deterministic enforcement (indentation, line length, timeless writing) belongs in unified libraries and pre-commit hooks. Skills should focus on subjective judgment (code quality, test completeness, debugging strategies).
 
 #### Tasks
-1. Create code-standards-guidance skill (revised from enforcement)
+1. Create code-standards-guidance skill
    - Location: `.claude/skills/enforcers/code-standards-guidance/SKILL.md`
    - Read CLAUDE.md ## Code Standards section
    - Detect file type from extension
@@ -342,7 +346,7 @@ Skills excel at providing guidance and making context-aware decisions, not enfor
    - Use allowed-tools: Read, Edit (restrict Write for safety)
    - Note: Deterministic checks (indentation, line length) handled by pre-commit hooks
 
-2. Create testing-protocols-guidance skill (revised from enforcement)
+2. Create testing-protocols-guidance skill
    - Location: `.claude/skills/enforcers/testing-protocols-guidance/SKILL.md`
    - Read CLAUDE.md ## Testing Protocols section
    - Provide guidance on test coverage strategies
@@ -394,8 +398,8 @@ Skills excel at providing guidance and making context-aware decisions, not enfor
 #### Artifacts Created
 - `.claude/skills/enforcers/code-standards-guidance/SKILL.md`
 - `.claude/skills/enforcers/testing-protocols-guidance/SKILL.md`
-- Updated `CLAUDE.md` (file path references)
-- Note: No documentation-standards-enforcement skill (pre-commit handles this)
+- `CLAUDE.md` (file path references in Code Standards and Testing Protocols sections)
+- Note: Documentation standards enforcement delegated to pre-commit hooks
 
 ---
 
@@ -466,8 +470,11 @@ Skills excel at providing guidance and making context-aware decisions, not enfor
 - **USER REVIEW CHECKPOINT**: Review command integration before validation phase
 
 #### Artifacts Created
-- Updated command files (implement.md, orchestrate.md, test-all.md, debug.md)
-- Updated agent behavioral prompts
+- `.claude/commands/implement.md` (integrated with skills availability notation)
+- `.claude/commands/orchestrate.md` (integrated with skills coordination)
+- `.claude/commands/test-all.md` (integrated with testing-protocols-guidance skill)
+- `.claude/commands/debug.md` (integrated with systematic-debugging skill)
+- Agent behavioral prompts (extended with "Skills Available" sections)
 - Migration documentation for converted agents
 
 ---
@@ -475,8 +482,8 @@ Skills excel at providing guidance and making context-aware decisions, not enfor
 ### Phase 6: Validation, Optimization, and Documentation
 **Status**: Pending
 **Objective**: Validate complete integration, optimize activation, document patterns, capture metrics
-**Complexity**: 5/10 (reduced from 6/10 - integrate with existing docs instead of creating new)
-**Duration**: 1 week (reduced from 2 weeks)
+**Complexity**: 5/10
+**Duration**: 1 week
 
 #### Dependencies
 - Phase 5 must be complete
@@ -511,10 +518,10 @@ Skills excel at providing guidance and making context-aware decisions, not enfor
    - Add troubleshooting section
 
 5. Update command and agent reference documentation
-   - Add skills references to command-reference.md
-   - Update agent-reference.md with migrated agents
-   - Document skills integration in command-development-guide.md
-   - Update agent-development-guide.md with skills decision tree
+   - Add skills references to `.claude/docs/reference/command-reference.md`
+   - Update `.claude/docs/reference/agent-reference.md` with migrated agents
+   - Document skills integration in `.claude/docs/guides/command-development-guide.md`
+   - Update `.claude/docs/guides/agent-development-guide.md` with skills decision tree
 
 6. Run complete validation suite
    - Pre-commit validation on all skills
@@ -550,10 +557,10 @@ Skills excel at providing guidance and making context-aware decisions, not enfor
 - **FINAL USER REVIEW CHECKPOINT**: Review complete integration and approve for production
 
 #### Artifacts Created
-- `.claude/docs/concepts/skills-architecture.md`
+- `.claude/docs/concepts/patterns/README.md` (extended with skills integration section)
 - `.claude/docs/guides/skills-migration-guide.md`
-- Updated `.claude/docs/reference/command-reference.md`
-- Updated `.claude/docs/reference/agent-reference.md`
+- `.claude/docs/reference/command-reference.md` (extended with skills references)
+- `.claude/docs/reference/agent-reference.md` (extended with migrated agents)
 - Performance metrics report (`.claude/data/metrics/skills-integration-final.json`)
 - Validation test results
 
