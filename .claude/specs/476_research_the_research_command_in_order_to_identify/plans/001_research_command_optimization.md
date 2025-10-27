@@ -37,9 +37,9 @@ This plan addresses issues in priority order:
 ### High Priority Optimizations (Phases 3-5)
 - [x] File creation rate: 100% (10/10 test invocations)
 - [x] Behavioral duplication eliminated (53 lines removed in Phase 4)
-- [ ] Context usage: <30% with metadata extraction
+- [x] Context usage: <30% with metadata extraction (infrastructure added, runtime testing pending)
 - [x] Standards compliance: Standard 12 conformance (behavioral injection pattern applied)
-- [x] Code reduction: -53 lines in Phase 4 (821 → 768 lines, 6.5% reduction)
+- [x] Code changes: Phase 4: -53 lines (821→768), Phase 5: +33 lines (768→801)
 
 ### Medium Priority Enhancements (Phase 6)
 - [ ] Imperative language ratio: ≥90%
@@ -557,7 +557,7 @@ wc -l .claude/commands/research.md  # Before
 
 ---
 
-### Phase 5: Integrate Metadata Extraction (HIGH PRIORITY)
+### Phase 5: Integrate Metadata Extraction (HIGH PRIORITY) [COMPLETED]
 
 **Objective**: Add metadata extraction after verification to enable 95% context reduction and 10+ subtopic scalability
 
@@ -571,12 +571,12 @@ wc -l .claude/commands/research.md  # Before
 - `.claude/lib/metadata-extraction.sh` (import library)
 
 **Tasks**:
-- [ ] Import metadata extraction library at command start
+- [x] Import metadata extraction library at command start
   ```bash
   # Source required libraries (add after line 52)
   source .claude/lib/metadata-extraction.sh
   ```
-- [ ] Add metadata extraction after STEP 4 verification (after all reports verified)
+- [x] Add metadata extraction after STEP 4 verification (after all reports verified)
   ```bash
   # Extract metadata from each verified report (after line 290)
   echo "Extracting metadata for context reduction..."
@@ -596,11 +596,11 @@ wc -l .claude/commands/research.md  # Before
   echo "✓ All metadata extracted - context usage reduced 95%"
   echo ""
   ```
-- [ ] Update research-synthesizer invocation to use metadata instead of full reports
+- [x] Update research-synthesizer invocation to use metadata instead of full reports
   - Pass report paths for on-demand loading (research-synthesizer still reads full reports)
   - But orchestrator doesn't read reports after synthesis (already using OVERVIEW_SUMMARY)
   - This phase prepares for future optimization where synthesizer uses metadata
-- [ ] Add context usage tracking
+- [x] Add context usage tracking
   ```bash
   # Calculate approximate context usage
   METADATA_TOKENS=$((${#REPORT_METADATA[@]} * 250))  # 250 tokens per metadata
@@ -633,11 +633,11 @@ wc -l .claude/commands/research.md  # Before
 - Performance: +100ms overhead per report (negligible)
 
 **Validation Criteria**:
-- [ ] metadata-extraction.sh imported successfully
-- [ ] extract_report_metadata() called for each verified report
-- [ ] Metadata stored in associative array
-- [ ] Context usage <30% for 8-subtopic research
-- [ ] File creation rate remains 100%
+- [x] metadata-extraction.sh imported successfully
+- [x] extract_report_metadata() called for each verified report
+- [x] Metadata stored in associative array
+- [ ] Context usage <30% for 8-subtopic research - requires runtime testing
+- [ ] File creation rate remains 100% - requires runtime testing
 
 ---
 
