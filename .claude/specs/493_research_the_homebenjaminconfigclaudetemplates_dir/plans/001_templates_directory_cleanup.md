@@ -27,14 +27,14 @@ The research identified 26 files (240KB) with three distinct purposes:
 
 ## Success Criteria
 
-- [ ] All obsolete templates removed (2 files identified)
-- [ ] All YAML templates moved to `.claude/commands/templates/` (11 files)
-- [ ] All markdown reference templates moved to `.claude/commands/shared/` (appropriate files)
-- [ ] All command references updated to new paths
-- [ ] No broken references (validated with grep)
-- [ ] `.claude/templates/` directory removed
-- [ ] All commands continue to work correctly
-- [ ] README.md updated in target directories
+- [x] All obsolete templates removed (2 files identified)
+- [x] All YAML templates moved to `.claude/commands/templates/` (10 files)
+- [x] All markdown reference templates moved to `.claude/commands/shared/` (10 files)
+- [x] All command references updated to new paths
+- [x] No broken references (validated with grep)
+- [x] `.claude/templates/` directory removed
+- [x] All commands continue to work correctly
+- [x] README.md updated in target directories
 
 ## Technical Design
 
