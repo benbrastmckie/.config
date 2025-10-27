@@ -463,10 +463,6 @@ if [ "$USE_UNIFIED_LOCATION" = "true" ]; then
   echo "  Topic: $TOPIC_PATH"
   echo "  Number: $TOPIC_NUMBER"
   echo "  Name: $TOPIC_NAME"
-else
-  # Legacy fallback: Use location-specialist agent
-  echo "⚠ Using legacy location-specialist agent (feature flag USE_UNIFIED_LOCATION=false)"
-  # [Legacy agent invocation code would go here if needed for rollback]
 fi
 ```
 
