@@ -251,19 +251,19 @@ Command references to update (minimum):
 - `/plan-from-template` → command-frontmatter.md (if referenced)
 - Multiple commands → agent-invocation-patterns.md (17+ references according to research)
 
-### Phase 5: Cleanup and Validation
+### Phase 5: Cleanup and Validation [COMPLETED]
 **Objective**: Remove old directory and verify system integrity
 **Complexity**: Low
 
 Tasks:
-- [ ] Run comprehensive validation: `grep -r "\.claude/templates" .claude/commands/` (should find only `.claude/commands/templates/`)
-- [ ] Verify all commands load successfully (syntax check)
-- [ ] Remove remaining files from `.claude/templates/` (README.md, sub_supervisor_pattern.md if still there)
-- [ ] Remove `.claude/templates/` directory
-- [ ] Update CLAUDE.md references (if any) to point to new locations
-- [ ] Update `.claude/commands/README.md` to document new template locations
-- [ ] Run smoke test: `/plan-from-template --list-categories`
-- [ ] Run smoke test: Load `/orchestrate`, `/debug`, `/refactor`, `/research` commands
+- [x] Run comprehensive validation: `grep -r "\.claude/templates" .claude/commands/` (should find only `.claude/commands/templates/`)
+- [x] Verify all commands load successfully (syntax check)
+- [x] Remove remaining files from `.claude/templates/` (README.md, sub_supervisor_pattern.md if still there)
+- [x] Remove `.claude/templates/` directory
+- [x] Update CLAUDE.md references (if any) to point to new locations
+- [x] Update `.claude/commands/README.md` to document new template locations
+- [x] Run smoke test: `/plan-from-template --list-categories`
+- [x] Run smoke test: Load `/orchestrate`, `/debug`, `/refactor`, `/research` commands
 
 Testing:
 ```bash
