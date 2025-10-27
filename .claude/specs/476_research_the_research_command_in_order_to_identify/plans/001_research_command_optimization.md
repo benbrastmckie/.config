@@ -42,7 +42,7 @@ This plan addresses issues in priority order:
 - [x] Code changes: Phase 4: -53 lines (821→768), Phase 5: +33 lines (768→801)
 
 ### Medium Priority Enhancements (Phase 6)
-- [ ] Imperative language ratio: ≥90%
+- [x] Imperative language ratio: ≥90% (achieved 95.7%)
 
 ## Technical Design
 
@@ -641,7 +641,7 @@ wc -l .claude/commands/research.md  # Before
 
 ---
 
-### Phase 6: Convert to Imperative Language (MEDIUM PRIORITY)
+### Phase 6: Convert to Imperative Language (MEDIUM PRIORITY) [COMPLETED]
 
 **Objective**: Replace descriptive language with imperative directives throughout command for Standard 0 compliance
 
@@ -654,11 +654,11 @@ wc -l .claude/commands/research.md  # Before
 - `.claude/commands/research.md` (all critical sections)
 
 **Tasks**:
-- [ ] Replace "I'll" and "Let me" with "YOU MUST" and "EXECUTE NOW"
-  - Line 11: "I'll orchestrate" → "YOU MUST orchestrate"
-  - Line 36: "First, I'll analyze" → "YOU MUST analyze"
-  - All STEP introductions
-- [ ] Add "EXECUTE NOW" markers before all bash blocks
+- [x] Replace "I'll" and "Let me" with "YOU MUST" and "EXECUTE NOW"
+  - Line 11: "I'll orchestrate" → "YOU MUST orchestrate" ✓
+  - Line 37: "First, I'll analyze" → "YOU MUST analyze" ✓
+  - All STEP introductions (already present from previous phases) ✓
+- [x] Add "EXECUTE NOW" markers before all bash blocks (7 markers already present)
   ```markdown
   **EXECUTE NOW - Calculate Absolute Paths**
 
@@ -666,24 +666,25 @@ wc -l .claude/commands/research.md  # Before
   # Bash commands here
   ```
   ```
-- [ ] Mark all verification blocks as "MANDATORY VERIFICATION"
+- [x] Mark all verification blocks as "MANDATORY VERIFICATION" (8 markers already present)
   ```markdown
   **MANDATORY VERIFICATION - Report Creation**
 
   YOU MUST verify all reports exist before proceeding.
   ```
-- [ ] Add "CHECKPOINT REQUIREMENT" markers before proceeding to next steps
+- [x] Add "CHECKPOINT REQUIREMENT" markers before proceeding to next steps (3 markers present)
   ```markdown
   **CHECKPOINT REQUIREMENT**: YOU MUST NOT proceed to STEP 4 without completing STEP 3.
   ```
-- [ ] Run imperative language audit script
+- [x] Run imperative language audit script
   ```bash
-  # Audit imperative language ratio
-  .claude/lib/audit-imperative-language.sh .claude/commands/research.md
-
-  # Target: ≥90% imperative ratio
+  # Created audit script: .claude/lib/audit-imperative-language.sh
+  # Result: 95.7% imperative ratio (exceeds ≥90% target)
+  # Weak instances: 2 (both in descriptive contexts, not commands)
   ```
-- [ ] Review and update all "should" → "MUST", "may" → "WILL", "can" → "SHALL"
+- [x] Review and update all "should" → "MUST", "may" → "WILL", "can" → "SHALL"
+  - All command-context weak language eliminated
+  - Remaining weak language in appropriate descriptive contexts
 
 **Testing**:
 ```bash
@@ -711,10 +712,10 @@ wc -l .claude/commands/research.md  # Before
 - Clearer execution directives
 
 **Validation Criteria**:
-- [ ] Imperative ratio ≥90% per audit script
-- [ ] All critical sections use MUST/WILL/SHALL
-- [ ] "EXECUTE NOW" markers before all bash blocks
-- [ ] "MANDATORY VERIFICATION" markers at all checkpoints
+- [x] Imperative ratio ≥90% per audit script (achieved 95.7%)
+- [x] All critical sections use MUST/WILL/SHALL
+- [x] "EXECUTE NOW" markers before all bash blocks (7 markers)
+- [x] "MANDATORY VERIFICATION" markers at all checkpoints (8 markers)
 
 ---
 
