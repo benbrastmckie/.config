@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0.0",
-  "last_updated": "2025-10-19T07:54:46Z",
+  "last_updated": "2025-10-27T03:23:49Z",
   "agents": {
     "doc-converter": {
       "type": "specialized",
@@ -350,6 +350,97 @@
       },
       "dependencies": [],
       "behavioral_file": ".claude/agents/test-specialist.md"
+    },
+    "doc-converter-usage": {
+      "type": "documentation",
+      "category": "documentation",
+      "description": "Quick start guide for doc-converter agent (note: this is documentation, not an agent)",
+      "tools": [],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/doc-converter-usage.md"
+    },
+    "git-commit-helper": {
+      "type": "specialized",
+      "category": "implementation",
+      "description": "Generates standardized git commit messages following project conventions",
+      "tools": [
+        "Read",
+        "Bash"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/git-commit-helper.md"
+    },
+    "implementation-executor": {
+      "type": "hierarchical",
+      "category": "implementation",
+      "description": "Executes single phase/stage of implementation plan with progress tracking",
+      "tools": [
+        "Read",
+        "Write",
+        "Edit",
+        "Bash",
+        "TodoWrite"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/implementation-executor.md"
+    },
+    "implementer-coordinator": {
+      "type": "hierarchical",
+      "category": "implementation",
+      "description": "Orchestrates wave-based parallel phase execution with dependency analysis",
+      "tools": [
+        "Read",
+        "Bash",
+        "Task"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/implementer-coordinator.md"
+    },
+    "research-synthesizer": {
+      "type": "specialized",
+      "category": "research",
+      "description": "Synthesizes multiple individual research reports into comprehensive overview report with cross-references",
+      "tools": [
+        "Read",
+        "Write"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/research-synthesizer.md"
     }
   }
 }
