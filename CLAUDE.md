@@ -279,7 +279,7 @@ Multi-level agent coordination system that minimizes context window consumption 
   - Investigates potential root causes in parallel
   - Returns structured findings + proposed fixes
   - Enables parallel hypothesis testing
-- **Sub-Supervisor** (`.claude/templates/sub_supervisor_pattern.md`)
+- **Sub-Supervisor** (`.claude/docs/patterns/hierarchical-supervision.md`)
   - Manages 2-3 specialized subagents per domain
   - Returns aggregated metadata only to parent
   - Enables 10+ research topics (vs 4 without recursion)
@@ -335,7 +335,7 @@ Located in `.claude/commands/`:
 
 **Orchestration**: 7-phase workflow with parallel research (2-4 agents), automated complexity evaluation, wave-based implementation, and conditional debugging. Performance: <30% context usage, 40-80% time savings vs sequential.
 
-**Template-Based Planning**: Fast plan generation (60-80% faster) using templates for common patterns (CRUD, refactoring, testing, migrations). See `.claude/templates/README.md`.
+**Template-Based Planning**: Fast plan generation (60-80% faster) using templates for common patterns (CRUD, refactoring, testing, migrations). See `.claude/commands/templates/README.md`.
 
 **Unified Location Detection**: All workflow commands use standardized location detection library (85% token reduction, 25x speedup vs agent-based detection). See [Library API Reference](.claude/docs/reference/library-api.md) for implementation details.
 
