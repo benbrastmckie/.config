@@ -404,7 +404,7 @@ bash /home/benjamin/.config/.claude/tests/test_git_commit_utils.sh
 
 ---
 
-### Phase 6: Update Commands to Use git-commit-utils Library
+### Phase 6: Update Commands to Use git-commit-utils Library [COMPLETED]
 dependencies: [5]
 
 **Objective**: Update all commands that previously invoked git-commit-helper to source git-commit-utils.sh library
@@ -412,15 +412,15 @@ dependencies: [5]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Search for git-commit-helper invocations: `grep -r "git-commit-helper" .claude/commands/`
-- [ ] Read implementation-executor.md (if it invokes git-commit-helper)
-- [ ] Update implementation-executor to source git-commit-utils.sh
-- [ ] Replace agent invocation with direct function call: `generate_commit_message()`
-- [ ] Update /implement command if it invokes git-commit-helper directly (file: .claude/commands/implement.md)
-- [ ] Update /orchestrate command if it invokes git-commit-helper directly (file: .claude/commands/orchestrate.md)
-- [ ] Update /commit-phase command if it invokes git-commit-helper directly (file: .claude/commands/commit-phase.md)
-- [ ] Verify all git commit operations now use library function
-- [ ] Remove any remaining git-commit-helper Task invocations
+- [x] Search for git-commit-helper invocations: `grep -r "git-commit-helper" .claude/commands/` - No references found in commands
+- [x] Read implementation-executor.md (if it invokes git-commit-helper) - Found references to git-commit-helper
+- [x] Update implementation-executor to source git-commit-utils.sh - Updated successfully
+- [x] Replace agent invocation with direct function call: `generate_commit_message()` - Updated both stage and phase completion paths
+- [x] Update /implement command if it invokes git-commit-helper directly (file: .claude/commands/implement.md) - No updates needed, no references found
+- [x] Update /orchestrate command if it invokes git-commit-helper directly (file: .claude/commands/orchestrate.md) - No updates needed, no references found
+- [x] Update /commit-phase command if it invokes git-commit-helper directly (file: .claude/commands/commit-phase.md) - No updates needed, no references found
+- [x] Verify all git commit operations now use library function - Verified, all references removed except git-commit-helper.md itself
+- [x] Remove any remaining git-commit-helper Task invocations - All invocations removed
 
 **Testing**:
 ```bash
@@ -438,11 +438,11 @@ grep -r "source.*git-commit-utils.sh" /home/benjamin/.config/.claude/agents/
 **Expected Duration**: 2-3 hours
 
 **Phase 6 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md) - 34/34 tests passing
 - [ ] Git commit created: `feat(480): complete Phase 6 - Update Commands to Use git-commit-utils Library`
 - [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] Update this plan file with phase completion status
 
 ---
 
