@@ -1939,7 +1939,7 @@ Check for completion markers in appropriate files:
 ### Standards Flow
 This command is part of the standards enforcement pipeline:
 
-1. `/report` - Researches topic (no standards needed)
+1. `/research` - Researches topic (no standards needed)
 2. `/plan` - Discovers and captures standards in plan metadata
 3. `/implement` - **Applies standards during code generation** (← YOU ARE HERE)
 4. `/test` - Verifies implementation using standards-defined test commands

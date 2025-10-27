@@ -4,9 +4,15 @@ argument-hint: <topic or question>
 description: Research a topic and create a comprehensive report in the appropriate specs/reports/ directory
 command-type: primary
 dependent-commands: update, list
+deprecated: true
+deprecated-replacement: /research
 ---
 
 # Generate Research Report
+
+> **⚠️ DEPRECATED**: This command has been superseded by `/research` which provides improved hierarchical multi-agent research patterns. Please use `/research` instead. This command will be archived in a future release.
+
+**Migration Note**: `/research` provides the same functionality with better organization, parallel execution, and hierarchical structure. Simply replace `/report` with `/research` in your workflows.
 
 I'll orchestrate hierarchical research by delegating to specialized subagents who will investigate focused subtopics in parallel.
 
