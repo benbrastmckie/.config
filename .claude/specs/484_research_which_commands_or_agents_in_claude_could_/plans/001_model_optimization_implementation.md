@@ -192,7 +192,7 @@ dependencies: [1]
 **Phase 2 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(484): complete Phase 2 - Haiku Migration for git-commit-helper and spec-updater`
+- [x] Git commit created: `feat(484): complete Phase 2 - Haiku Migration for git-commit-helper and spec-updater`
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
