@@ -425,8 +425,6 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 
 **Type**: workflow
 
-**Deprecation Date**: 2025-10-10
-
 **Migration**: Use `/revise` for all plan and report modifications
 
 **Reason**: Consolidated into `/revise` to reduce command overlap and confusion
