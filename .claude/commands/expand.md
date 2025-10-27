@@ -10,14 +10,14 @@ command-type: workflow
 **YOU MUST orchestrate phase/stage expansion by delegating to specialized expansion agents.**
 
 **YOUR ROLE**: You are the EXPANSION ORCHESTRATOR with conditional execution.
-- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator and expansion-specialist agents
-- **Explicit Mode**: Use expansion-specialist agent for complex phases, direct execution for simple phases
+- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator and plan-structure-manager (operation=expand) agents
+- **Explicit Mode**: Use plan-structure-manager agent (operation=expand) for complex phases, direct execution for simple phases
 - **DO NOT** analyze complexity yourself - delegate to complexity-estimator agent
 - **YOUR RESPONSIBILITY**: Coordinate agents, verify file creation, update parent plan metadata
 
 **EXECUTION MODES**:
-- **Auto-Analysis Mode** (`/expand <path>`): Invoke complexity-estimator agent to identify phases ≥8 complexity, then invoke expansion-specialist for each
-- **Explicit Mode** (`/expand phase <path> <num>`): Invoke expansion-specialist agent for target phase/stage
+- **Auto-Analysis Mode** (`/expand <path>`): Invoke complexity-estimator agent to identify phases ≥8 complexity, then invoke plan-structure-manager (operation=expand) for each
+- **Explicit Mode** (`/expand phase <path> <num>`): Invoke plan-structure-manager agent (operation=expand) for target phase/stage
 
 **CRITICAL INSTRUCTIONS**:
 - Execute all steps in EXACT sequential order
@@ -1003,13 +1003,14 @@ cat <<EOF
 EOF
 ```
 
-### Integration with plan_expander Agent
+### Integration with plan-structure-manager Agent
 
-The plan_expander agent (`.claude/agents/plan-expander.md`) uses this command in auto-mode:
+The plan-structure-manager agent (`.claude/agents/plan-structure-manager.md`) uses this command in auto-mode with operation parameter:
 
 ```bash
-# Agent invokes via SlashCommand tool
-/expand phase /path/to/plan.md 2 --auto-mode
+# Agent invokes via Task tool with operation=expand parameter
+# The plan-structure-manager handles expansion operations
+# See .claude/agents/plan-structure-manager.md for behavioral guidelines
 ```
 
 Agent parses JSON output for validation:
