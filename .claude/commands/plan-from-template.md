@@ -43,7 +43,7 @@ I'll first check what argument was provided and handle accordingly:
 **If `--list-categories` provided**:
 - Use Bash to list all unique categories from templates:
   ```bash
-  grep -h "^category:" .claude/templates/*.yaml 2>/dev/null | \
+  grep -h "^category:" .claude/commands/templates/*.yaml 2>/dev/null | \
     sed 's/category: "\(.*\)"/\1/' | sort -u
   ```
 - For each category, count templates and display in format:
@@ -67,8 +67,8 @@ I'll first check what argument was provided and handle accordingly:
 - Stop execution after displaying templates
 
 **If template name provided**:
-- Check if template exists in `.claude/templates/<name>.yaml`
-- If not found, check `.claude/templates/custom/<name>.yaml`
+- Check if template exists in `.claude/commands/templates/<name>.yaml`
+- If not found, check `.claude/commands/templates/custom/<name>.yaml`
 - If still not found, display error with list of available templates
 - Once found, validate template structure using:
   ```bash

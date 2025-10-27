@@ -301,8 +301,8 @@ Commands provide structured, repeatable workflows for:
 **Output**: `specs/plans/NNN_plan_name.md`
 
 **Custom Templates**:
-Add custom templates directly to `.claude/templates/` directory as `.yaml` files.
-See `.claude/templates/example-feature.yaml` for template structure.
+Add custom templates directly to `.claude/commands/templates/` directory as `.yaml` files.
+See `.claude/commands/templates/example-feature.yaml` for template structure.
 
 ---
 
