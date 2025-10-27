@@ -192,25 +192,26 @@ Failed operations receive enhanced diagnostics via error-handling.sh:
 
 Research phase (Phase 1) continues if ≥50% of parallel agents succeed. Workflow logs failures and continues with partial results.
 
-## Library Fallback Behavior
+## Fail-Fast Error Handling
 
-**Graceful Degradation**: If workflow-detection.sh library is missing, the command provides fallback implementations for critical functions.
+**Design Philosophy**: All library dependencies are required - no fallback mechanisms.
 
-**Fallback Functions**:
-- `detect_workflow_scope()` - Simple keyword-based detection (limited vs full library)
-- `should_run_phase()` - Phase execution check based on PHASES_TO_EXECUTE variable
+**Required Libraries** (hard exit on missing):
+- workflow-detection.sh - Workflow scope detection and phase execution control
+- error-handling.sh - Error classification and recovery
+- checkpoint-utils.sh - Workflow resume capability
+- unified-logger.sh - Progress tracking
+- unified-location-detection.sh - Project structure location detection
+- metadata-extraction.sh - Artifact metadata extraction
+- context-pruning.sh - Context management
 
-**Limitations**:
-- Fallback uses basic pattern matching (less sophisticated than library)
-- Defaults to "full-implementation" when uncertain
-- Warning message displayed when fallback mode activated
+**Rationale**: Fallback mechanisms hide configuration errors and make debugging harder. Explicit errors force proper setup and enable consistent behavior across environments.
 
-**Critical Libraries** (no fallback - hard exit on missing):
-- error-handling.sh - Essential for error classification and recovery
-- checkpoint-utils.sh - Essential for workflow resume capability
-- unified-logger.sh - Essential for progress tracking
-
-**Rationale**: workflow-detection.sh provides convenience but has simple logic that can be replicated inline. Critical libraries contain complex state management that cannot be safely replicated.
+**Error Handling**:
+- Clear, actionable error messages showing which library failed
+- Diagnostic commands included in error output
+- Function-to-library mapping shown when functions missing
+- Immediate exit (no silent degradation)
 
 ## Checkpoint Resume
 
@@ -242,42 +243,40 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/../lib/workflow-detection.sh" ]; then
   source "$SCRIPT_DIR/../lib/workflow-detection.sh"
 else
-  echo "WARNING: workflow-detection.sh not found - using fallback implementations"
+  echo "ERROR: Required library not found: workflow-detection.sh"
   echo ""
-
-  # Fallback: Simple detect_workflow_scope that defaults to full-implementation
-  detect_workflow_scope() {
-    local description="$1"
-    # Simple keyword-based detection (limited functionality)
-    if echo "$description" | grep -qi "research.*only\|just.*research\|only.*research"; then
-      echo "research-only"
-    elif echo "$description" | grep -qi "plan\|planning" && ! echo "$description" | grep -qi "implement"; then
-      echo "research-and-plan"
-    elif echo "$description" | grep -qi "debug\|investigate\|diagnose"; then
-      echo "debug-only"
-    else
-      # Default to full-implementation for safety
-      echo "full-implementation"
-    fi
-  }
-
-  # Fallback: Simple should_run_phase based on PHASES_TO_EXECUTE
-  should_run_phase() {
-    local phase=$1
-    echo "$PHASES_TO_EXECUTE" | grep -q "\<$phase\>"
-    return $?
-  }
-
-  echo "Fallback functions loaded: detect_workflow_scope(), should_run_phase()"
-  echo "Note: Functionality is limited compared to full library"
+  echo "Expected location: $SCRIPT_DIR/../lib/workflow-detection.sh"
   echo ""
+  echo "This library provides critical workflow detection functions:"
+  echo "  - detect_workflow_scope()"
+  echo "  - should_run_phase()"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la $SCRIPT_DIR/../lib/ | grep workflow-detection"
+  echo "  cat $SCRIPT_DIR/../lib/workflow-detection.sh"
+  echo ""
+  echo "Please ensure the library file exists and is readable."
+  exit 1
 fi
 
 # Source error handling utilities
 if [ -f "$SCRIPT_DIR/../lib/error-handling.sh" ]; then
   source "$SCRIPT_DIR/../lib/error-handling.sh"
 else
-  echo "ERROR: error-handling.sh not found"
+  echo "ERROR: Required library not found: error-handling.sh"
+  echo ""
+  echo "Expected location: $SCRIPT_DIR/../lib/error-handling.sh"
+  echo ""
+  echo "This library provides critical error handling functions:"
+  echo "  - classify_error()"
+  echo "  - suggest_recovery()"
+  echo "  - retry_with_backoff()"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la $SCRIPT_DIR/../lib/ | grep error-handling"
+  echo "  cat $SCRIPT_DIR/../lib/error-handling.sh"
+  echo ""
+  echo "Please ensure the library file exists and is readable."
   exit 1
 fi
 
@@ -285,7 +284,21 @@ fi
 if [ -f "$SCRIPT_DIR/../lib/checkpoint-utils.sh" ]; then
   source "$SCRIPT_DIR/../lib/checkpoint-utils.sh"
 else
-  echo "ERROR: checkpoint-utils.sh not found"
+  echo "ERROR: Required library not found: checkpoint-utils.sh"
+  echo ""
+  echo "Expected location: $SCRIPT_DIR/../lib/checkpoint-utils.sh"
+  echo ""
+  echo "This library provides critical checkpoint management functions:"
+  echo "  - save_checkpoint()"
+  echo "  - restore_checkpoint()"
+  echo "  - checkpoint_get_field()"
+  echo "  - checkpoint_set_field()"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la $SCRIPT_DIR/../lib/ | grep checkpoint-utils"
+  echo "  cat $SCRIPT_DIR/../lib/checkpoint-utils.sh"
+  echo ""
+  echo "Please ensure the library file exists and is readable."
   exit 1
 fi
 
@@ -293,7 +306,18 @@ fi
 if [ -f "$SCRIPT_DIR/../lib/unified-logger.sh" ]; then
   source "$SCRIPT_DIR/../lib/unified-logger.sh"
 else
-  echo "ERROR: unified-logger.sh not found"
+  echo "ERROR: Required library not found: unified-logger.sh"
+  echo ""
+  echo "Expected location: $SCRIPT_DIR/../lib/unified-logger.sh"
+  echo ""
+  echo "This library provides critical progress logging functions:"
+  echo "  - emit_progress()"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la $SCRIPT_DIR/../lib/ | grep unified-logger"
+  echo "  cat $SCRIPT_DIR/../lib/unified-logger.sh"
+  echo ""
+  echo "Please ensure the library file exists and is readable."
   exit 1
 fi
 
@@ -301,7 +325,17 @@ fi
 if [ -f "$SCRIPT_DIR/../lib/unified-location-detection.sh" ]; then
   source "$SCRIPT_DIR/../lib/unified-location-detection.sh"
 else
-  echo "ERROR: unified-location-detection.sh not found"
+  echo "ERROR: Required library not found: unified-location-detection.sh"
+  echo ""
+  echo "Expected location: $SCRIPT_DIR/../lib/unified-location-detection.sh"
+  echo ""
+  echo "This library provides location detection functions for project structure."
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la $SCRIPT_DIR/../lib/ | grep unified-location-detection"
+  echo "  cat $SCRIPT_DIR/../lib/unified-location-detection.sh"
+  echo ""
+  echo "Please ensure the library file exists and is readable."
   exit 1
 fi
 
@@ -309,7 +343,17 @@ fi
 if [ -f "$SCRIPT_DIR/../lib/metadata-extraction.sh" ]; then
   source "$SCRIPT_DIR/../lib/metadata-extraction.sh"
 else
-  echo "ERROR: metadata-extraction.sh not found"
+  echo "ERROR: Required library not found: metadata-extraction.sh"
+  echo ""
+  echo "Expected location: $SCRIPT_DIR/../lib/metadata-extraction.sh"
+  echo ""
+  echo "This library provides metadata extraction functions for artifacts."
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la $SCRIPT_DIR/../lib/ | grep metadata-extraction"
+  echo "  cat $SCRIPT_DIR/../lib/metadata-extraction.sh"
+  echo ""
+  echo "Please ensure the library file exists and is readable."
   exit 1
 fi
 
@@ -317,7 +361,17 @@ fi
 if [ -f "$SCRIPT_DIR/../lib/context-pruning.sh" ]; then
   source "$SCRIPT_DIR/../lib/context-pruning.sh"
 else
-  echo "ERROR: context-pruning.sh not found"
+  echo "ERROR: Required library not found: context-pruning.sh"
+  echo ""
+  echo "Expected location: $SCRIPT_DIR/../lib/context-pruning.sh"
+  echo ""
+  echo "This library provides context management functions for workflow optimization."
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la $SCRIPT_DIR/../lib/ | grep context-pruning"
+  echo "  cat $SCRIPT_DIR/../lib/context-pruning.sh"
+  echo ""
+  echo "Please ensure the library file exists and is readable."
   exit 1
 fi
 
@@ -374,16 +428,43 @@ done
 
 if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
   echo "ERROR: Required functions not defined after library sourcing:"
+  echo ""
   for func in "${MISSING_FUNCTIONS[@]}"; do
     echo "  - $func()"
+    # Show which library should provide this function
+    case "$func" in
+      detect_workflow_scope|should_run_phase)
+        echo "    → Should be provided by: workflow-detection.sh"
+        ;;
+      classify_error|suggest_recovery|retry_with_backoff|detect_error_type|extract_location|generate_suggestions)
+        echo "    → Should be provided by: error-handling.sh"
+        ;;
+      save_checkpoint|restore_checkpoint|checkpoint_get_field|checkpoint_set_field)
+        echo "    → Should be provided by: checkpoint-utils.sh"
+        ;;
+      emit_progress)
+        echo "    → Should be provided by: unified-logger.sh"
+        ;;
+      *)
+        echo "    → Library unknown - check documentation"
+        ;;
+    esac
   done
   echo ""
-  echo "This is a bug in the /supervise command. Please report this issue with:"
-  echo "  - The workflow description you used"
-  echo "  - This error message"
-  echo "  - Output of: ls -la $SCRIPT_DIR/../lib/"
+  echo "Diagnostic commands to investigate:"
+  echo "  # Check if library files exist"
+  echo "  ls -la $SCRIPT_DIR/../lib/"
   echo ""
-  echo "Issue tracker: https://github.com/anthropics/claude-code/issues"
+  echo "  # Check if functions are defined in current shell"
+  echo "  declare -F | grep -E '(${MISSING_FUNCTIONS[0]})'"
+  echo ""
+  echo "  # Verify library can be sourced manually"
+  echo "  bash -c 'source $SCRIPT_DIR/../lib/workflow-detection.sh && declare -F'"
+  echo ""
+  echo "This indicates a library configuration issue. Please verify:"
+  echo "  1. All required library files exist in $SCRIPT_DIR/../lib/"
+  echo "  2. Library files are readable (check permissions)"
+  echo "  3. Library files contain the expected function definitions"
   exit 1
 fi
 
@@ -803,48 +884,40 @@ echo ""
 
 # Create topic structure using utility function (creates only root directory)
 if ! create_topic_structure "$TOPIC_PATH"; then
-  echo "❌ CRITICAL ERROR: Topic root directory not created at $TOPIC_PATH"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "CRITICAL ERROR: Topic root directory creation failed"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
-  echo "FALLBACK MECHANISM: Attempting manual directory creation..."
-  mkdir -p "$TOPIC_PATH"
-
-  # Re-verification
-  if [ ! -d "$TOPIC_PATH" ]; then
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "DIAGNOSTIC INFO: Directory Creation Failed"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "FATAL: Fallback failed - directory creation impossible"
-    echo ""
-    echo "Attempted Paths:"
-    echo "  TOPIC_PATH: $TOPIC_PATH"
-    echo "  Parent directory: $(dirname "$TOPIC_PATH")"
-    echo ""
-    echo "Parent Directory Status:"
-    if [ -d "$(dirname "$TOPIC_PATH")" ]; then
-      echo "  Exists: Yes"
-      echo "  Permissions: $(ls -ld "$(dirname "$TOPIC_PATH")" 2>/dev/null | awk '{print $1}')"
-      echo "  Owner: $(ls -ld "$(dirname "$TOPIC_PATH")" 2>/dev/null | awk '{print $3":"$4}')"
-    else
-      echo "  Exists: No"
-      echo "  Issue: Parent directory does not exist"
-    fi
-    echo ""
-    echo "Fallback Attempt:"
-    echo "  Command: mkdir -p \"$TOPIC_PATH\""
-    echo "  Result: Failed"
-    echo ""
-    echo "Possible Causes:"
-    echo "  - Insufficient permissions"
-    echo "  - Read-only filesystem"
-    echo "  - Disk full"
-    echo "  - Path contains invalid characters"
-    echo ""
-    echo "Workflow TERMINATED."
-    exit 1
+  echo "Attempted Path: $TOPIC_PATH"
+  echo ""
+  echo "Parent Directory Status:"
+  if [ -d "$(dirname "$TOPIC_PATH")" ]; then
+    echo "  Exists: Yes"
+    echo "  Permissions: $(ls -ld "$(dirname "$TOPIC_PATH")" 2>/dev/null | awk '{print $1}')"
+    echo "  Owner: $(ls -ld "$(dirname "$TOPIC_PATH")" 2>/dev/null | awk '{print $3":"$4}')"
+  else
+    echo "  Exists: No"
+    echo "  Issue: Parent directory does not exist"
   fi
-
-  echo "✅ FALLBACK SUCCESSFUL: Topic root directory created manually"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  # Check parent directory"
+  echo "  ls -ld \"$(dirname "$TOPIC_PATH")\""
+  echo ""
+  echo "  # Check permissions"
+  echo "  touch \"$(dirname "$TOPIC_PATH")/test.tmp\" && rm \"$(dirname "$TOPIC_PATH")/test.tmp\""
+  echo ""
+  echo "  # Check disk space"
+  echo "  df -h \"$(dirname "$TOPIC_PATH")\""
+  echo ""
+  echo "Possible causes:"
+  echo "  - Insufficient permissions to create directory"
+  echo "  - Read-only filesystem"
+  echo "  - Disk full"
+  echo "  - Path contains invalid characters"
+  echo ""
+  echo "Workflow TERMINATED (fail-fast: no fallback mechanisms)"
+  exit 1
 fi
 
 echo "✅ VERIFIED: Topic root directory exists at $TOPIC_PATH"
@@ -1510,21 +1583,29 @@ echo ""
 
 # Check if implementation directory exists
 if [ ! -d "$IMPL_ARTIFACTS" ]; then
-  echo "⚠️  WARNING: Implementation artifacts directory not created"
-  echo "   Expected: $IMPL_ARTIFACTS"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "CRITICAL ERROR: Implementation artifacts directory not created"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
-  echo "FALLBACK MECHANISM: Creating artifacts directory..."
-  mkdir -p "$IMPL_ARTIFACTS"
-
-  # Re-verification
-  if [ ! -d "$IMPL_ARTIFACTS" ]; then
-    echo "❌ FATAL: Fallback failed - cannot create artifacts directory"
-    echo "Workflow TERMINATED."
-    exit 1
-  fi
-
-  echo "✅ FALLBACK SUCCESSFUL: Artifacts directory created"
+  echo "Expected directory: $IMPL_ARTIFACTS"
   echo ""
+  echo "This directory should have been created by the implementer-coordinator agent"
+  echo "during Phase 3 execution."
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  # Check if parent directory exists"
+  echo "  ls -ld \"$(dirname "$IMPL_ARTIFACTS")\""
+  echo ""
+  echo "  # Check what was created in topic directory"
+  echo "  find \"$TOPIC_PATH\" -type d"
+  echo ""
+  echo "Possible causes:"
+  echo "  - Agent did not execute successfully"
+  echo "  - Agent output did not create expected directory structure"
+  echo "  - Path mismatch between orchestrator and agent"
+  echo ""
+  echo "Workflow TERMINATED (fail-fast: agent must create required directories)"
+  exit 1
 else
   ARTIFACT_COUNT=$(find "$IMPL_ARTIFACTS" -type f | wc -l)
   echo "✅ VERIFIED: Implementation artifacts directory exists ($ARTIFACT_COUNT files)"
