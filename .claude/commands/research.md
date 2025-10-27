@@ -89,25 +89,38 @@ SUBTOPICS=(
 
 **Step 1: Get or Create Main Topic Directory**
 ```bash
-# Source unified location detection library
-source "${CLAUDE_CONFIG:-${HOME}/.config}/.claude/lib/unified-location-detection.sh"
+# Source unified location detection utilities
+source .claude/lib/topic-utils.sh
+source .claude/lib/detect-project-dir.sh
 
-# Perform location detection using unified library
-LOCATION_JSON=$(perform_location_detection "$RESEARCH_TOPIC" "false")
-
-# Extract topic path from JSON output
-if command -v jq &>/dev/null; then
-  TOPIC_DIR=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
-  TOPIC_NAME=$(echo "$LOCATION_JSON" | jq -r '.topic_name')
-else
-  # Fallback without jq
-  TOPIC_DIR=$(echo "$LOCATION_JSON" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
-  TOPIC_NAME=$(echo "$LOCATION_JSON" | grep -o '"topic_name": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+# Get project root (from environment or git)
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR}"
+if [ -z "$PROJECT_ROOT" ]; then
+  echo "ERROR: CLAUDE_PROJECT_DIR not set"
+  exit 1
 fi
+
+# Determine specs directory
+if [ -d "${PROJECT_ROOT}/.claude/specs" ]; then
+  SPECS_ROOT="${PROJECT_ROOT}/.claude/specs"
+elif [ -d "${PROJECT_ROOT}/specs" ]; then
+  SPECS_ROOT="${PROJECT_ROOT}/specs"
+else
+  SPECS_ROOT="${PROJECT_ROOT}/.claude/specs"
+  mkdir -p "$SPECS_ROOT"
+fi
+
+# Calculate topic metadata
+TOPIC_NUM=$(get_next_topic_number "$SPECS_ROOT")
+TOPIC_NAME=$(sanitize_topic_name "$RESEARCH_TOPIC")
+TOPIC_DIR="${SPECS_ROOT}/${TOPIC_NUM}_${TOPIC_NAME}"
+
+# Create topic root directory
+mkdir -p "$TOPIC_DIR"
 
 # MANDATORY VERIFICATION checkpoint
 if [ ! -d "$TOPIC_DIR" ]; then
-  echo "ERROR: Location detection failed - directory not created: $TOPIC_DIR"
+  echo "ERROR: Topic directory creation failed: $TOPIC_DIR"
   exit 1
 fi
 
@@ -125,8 +138,19 @@ echo "Main topic directory: $TOPIC_DIR"
 # MANDATORY: Calculate absolute paths for each subtopic
 declare -A SUBTOPIC_REPORT_PATHS
 
-# Create subdirectory for this research task using unified library function
-RESEARCH_SUBDIR=$(create_research_subdirectory "$TOPIC_DIR" "${TOPIC_NAME}_research")
+# Create reports subdirectory
+mkdir -p "${TOPIC_DIR}/reports"
+
+# Get next research number
+RESEARCH_NUM=1
+if [ -d "${TOPIC_DIR}/reports" ]; then
+  EXISTING_COUNT=$(find "${TOPIC_DIR}/reports" -mindepth 1 -maxdepth 1 -type d | wc -l)
+  RESEARCH_NUM=$((EXISTING_COUNT + 1))
+fi
+
+# Create research subdirectory
+RESEARCH_SUBDIR="${TOPIC_DIR}/reports/$(printf "%03d" "$RESEARCH_NUM")_${TOPIC_NAME}"
+mkdir -p "$RESEARCH_SUBDIR"
 
 # MANDATORY VERIFICATION - research subdirectory creation
 if [ ! -d "$RESEARCH_SUBDIR" ]; then
@@ -250,42 +274,46 @@ Task {
 **After all agents complete**, verify reports exist at expected paths:
 
 ```bash
-# Track verification results
-declare -A VERIFIED_PATHS
-declare -a FAILED_AGENTS
-VERIFICATION_ERRORS=0
+# Simplified verification (replaces complex loops)
+echo "════════════════════════════════════════════════════════"
+echo "  MANDATORY VERIFICATION - Subtopic Reports"
+echo "════════════════════════════════════════════════════════"
+echo ""
 
-echo "Verifying subtopic reports..."
+echo "Verifying reports in: $RESEARCH_SUBDIR"
+ls -lh "$RESEARCH_SUBDIR"/*.md 2>/dev/null || echo "No reports found"
 
-for subtopic in "${!SUBTOPIC_REPORT_PATHS[@]}"; do
-  EXPECTED_PATH="${SUBTOPIC_REPORT_PATHS[$subtopic]}"
+# Count reports
+REPORT_COUNT=$(ls -1 "$RESEARCH_SUBDIR"/*.md 2>/dev/null | wc -l)
+EXPECTED_COUNT=${#SUBTOPICS[@]}
 
-  if [ -f "$EXPECTED_PATH" ]; then
-    echo "✓ Verified: $subtopic at $EXPECTED_PATH"
-    VERIFIED_PATHS["$subtopic"]="$EXPECTED_PATH"
-  else
-    echo "⚠ Warning: Report not found at expected path: $EXPECTED_PATH"
+if [ "$REPORT_COUNT" -eq "$EXPECTED_COUNT" ]; then
+  echo "✓ All $EXPECTED_COUNT reports verified"
+  echo ""
+else
+  echo "⚠ Warning: Found $REPORT_COUNT reports, expected $EXPECTED_COUNT"
+  echo ""
 
-    # Search for report in research subdirectory
-    FOUND_PATH=$(find "$RESEARCH_SUBDIR" -name "*${subtopic}*.md" -type f | head -n 1)
-
-    if [ -n "$FOUND_PATH" ]; then
-      echo "  → Found at alternate location: $FOUND_PATH"
-      VERIFIED_PATHS["$subtopic"]="$FOUND_PATH"
-    else
-      echo "  ❌ ERROR: Report not found: $EXPECTED_PATH"
-      echo "  Agent did not create file. Review .claude/agents/research-specialist.md"
-      VERIFICATION_ERRORS=$((VERIFICATION_ERRORS + 1))
-      FAILED_AGENTS+=("$subtopic")
-    fi
+  # List what was created
+  if [ "$REPORT_COUNT" -gt 0 ]; then
+    echo "Created reports:"
+    ls -1 "$RESEARCH_SUBDIR"/*.md
+    echo ""
   fi
-done
 
-if [ "$VERIFICATION_ERRORS" -gt 0 ]; then
-  echo "⚠ Warning: $VERIFICATION_ERRORS subtopic reports required fallback creation"
+  # Proceed with partial results if ≥50% success
+  HALF_COUNT=$((EXPECTED_COUNT / 2))
+  if [ "$REPORT_COUNT" -ge "$HALF_COUNT" ]; then
+    echo "✓ PARTIAL SUCCESS: Continuing with $REPORT_COUNT/$EXPECTED_COUNT reports"
+  else
+    echo "✗ ERROR: Insufficient reports created ($REPORT_COUNT/$EXPECTED_COUNT)"
+    echo "Workflow TERMINATED"
+    exit 1
+  fi
 fi
 
-echo "✓ All subtopic reports verified (${#VERIFIED_PATHS[@]}/${#SUBTOPICS[@]})"
+echo "Verification checkpoint passed - proceeding to overview synthesis"
+echo ""
 ```
 
 ### STEP 5 (REQUIRED BEFORE STEP 6) - Synthesize Overview Report
@@ -444,6 +472,59 @@ Cross-references updated:
 ✓ All links validated
 ```
 
+### STEP 7 (REQUIRED) - Display Research Summary to User
+
+**EXECUTE NOW - Parse and Display Research-Synthesizer Output**
+
+**After research-synthesizer completes**, extract metadata from agent output and display to user.
+
+#### Step 7.1: Parse Agent Output
+
+The research-synthesizer agent returns structured metadata. Extract it:
+
+```bash
+# Parse overview path (already captured earlier)
+OVERVIEW_PATH="${RESEARCH_SUBDIR}/OVERVIEW.md"
+
+# Extract summary from agent output (research-synthesizer returns this)
+# Agent output format:
+# OVERVIEW_CREATED: /path
+#
+# OVERVIEW_SUMMARY:
+# [100-word summary]
+#
+# METADATA:
+# - Reports Synthesized: N
+# - Cross-Report Patterns: M
+# ...
+
+# The OVERVIEW_SUMMARY is already in agent output - no need to read file
+```
+
+#### Step 7.2: Display Summary to User
+
+**CRITICAL**: DO NOT read OVERVIEW.md file. The research-synthesizer already provided the summary.
+
+Display to user:
+```
+✓ Research Complete!
+
+Research artifacts created in: $TOPIC_DIR/reports/001_[research_name]/
+
+Overview Report: OVERVIEW.md
+- [Display OVERVIEW_SUMMARY from agent output]
+
+Subtopic Reports: [N] reports
+- [List from VERIFIED_PATHS]
+
+Next Steps:
+- Review OVERVIEW.md for complete synthesis
+- Use individual reports for detailed findings
+- Create implementation plan: /plan [feature] --reports [OVERVIEW_PATH]
+```
+
+**RETURN_FORMAT_SPECIFIED**: Display summary, paths, and next steps. DO NOT read any report files.
+
 ### 7. Report Structure
 
 **Hierarchical Multi-Agent Pattern** creates two types of reports:
@@ -580,5 +661,3 @@ Task {
 
 ### Alignment with /orchestrate
 The `/orchestrate` command's research phase uses the SAME hierarchical multi-agent pattern. This ensures consistency across all research workflows in the .claude/ system.
-
-Let me begin researching your topic using the hierarchical multi-agent pattern.
