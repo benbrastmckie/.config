@@ -1,0 +1,505 @@
+# /supervise Command Robustness Improvements - Implementation Plan
+
+## Metadata
+- **Date**: 2025-10-27
+- **Last Revised**: 2025-10-27 (after diagnostic testing)
+- **Feature**: Fix /supervise command bootstrap failure and improve robustness
+- **Scope**: .claude/commands/supervise.md (no library changes required)
+- **Estimated Phases**: 5 (added Phase 0 for critical bug fix)
+- **Standards File**: /home/benjamin/.config/CLAUDE.md
+- **Research Reports**:
+  - /home/benjamin/.config/.claude/specs/057_supervise_command_failure_analysis/reports/001_supervise_command_failure_analysis/OVERVIEW.md
+  - /home/benjamin/.config/.claude/specs/057_supervise_command_failure_analysis/reports/001_supervise_command_failure_analysis/001_supervise_command_structure_analysis.md
+  - /home/benjamin/.config/.claude/specs/057_supervise_command_failure_analysis/reports/001_supervise_command_failure_analysis/002_todo_output_forensics.md
+  - /home/benjamin/.config/.claude/specs/057_supervise_command_failure_analysis/reports/001_supervise_command_failure_analysis/003_expected_vs_actual_behavior.md
+  - /home/benjamin/.config/.claude/specs/057_supervise_command_failure_analysis/reports/001_supervise_command_failure_analysis/004_architectural_pattern_compliance.md
+
+## Overview
+
+The research revealed a **bootstrap failure** where the /supervise command showed perfect architectural compliance (100% Standard 11 compliance) but failed to execute at runtime. **Diagnostic testing has now confirmed the exact root cause: function name mismatch between supervise.md and checkpoint-utils.sh library.**
+
+### Root Cause CONFIRMED by Diagnostics (2025-10-27)
+
+**CRITICAL FINDING**: Function name mismatch causing bootstrap failure
+
+The supervise.md file requires these checkpoint functions (lines 359-366):
+- `save_phase_checkpoint`
+- `load_phase_checkpoint`
+
+But checkpoint-utils.sh library only provides:
+- `save_checkpoint` (generic function, line 58)
+- `save_parallel_operation_checkpoint` (parallel-specific, line 507)
+
+**Result**: Function verification check (lines 375-387) detects missing functions and exits with error before Phase 0 starts, causing Claude to default to conversational mode.
+
+### Diagnostic Results Summary
+
+✅ **All 7 library files exist** with proper permissions
+✅ **No bash syntax errors** in supervise.md
+✅ **SCRIPT_DIR calculation works** correctly
+❌ **Function name mismatch** - `save_phase_checkpoint` and `load_phase_checkpoint` do not exist
+
+### Key Research Findings
+
+1. **Perfect Compliance, Zero Execution Paradox**: Command structure is architecturally perfect but operationally inactive
+2. **Bootstrap Failure**: Function verification fails before Phase 0, preventing initialization
+3. **Library API Mismatch**: supervise.md expects phase-specific checkpoint functions that don't exist in library
+4. **Recent lib/ Changes**: User confirmed recent changes to lib/ directory may have introduced API breaking changes
+
+### Design Philosophy: Fail-Fast, No Fallbacks
+
+Per user requirements:
+- **NO FALLBACKS**: Remove existing fallback mechanisms
+- **FAIL-FAST**: Use explicit errors to identify issues immediately
+- **CLEAR DIAGNOSTICS**: Enhanced error messages showing exactly what failed and why
+- **RELIABLE PERFORMANCE**: Consistent behavior through strict validation
+
+## Success Criteria
+
+- [ ] /supervise command starts execution reliably (100% bootstrap rate)
+- [ ] All library sourcing failures produce clear error messages with diagnostics
+- [ ] SCRIPT_DIR calculation validated and tested across execution contexts
+- [ ] Startup marker emitted immediately upon successful initialization
+- [ ] All fallback mechanisms removed (no workflow-detection fallback, no directory creation fallbacks)
+- [ ] Function verification checks comprehensive and informative
+- [ ] Command fails fast with actionable diagnostics on any initialization error
+- [ ] Integration test added to verify orchestrator execution vs conversational mode
+
+## Technical Design
+
+### Architecture Pattern: Fail-Fast Initialization
+
+```
+┌─────────────────────────────────────┐
+│   Startup Marker (immediate)       │
+├─────────────────────────────────────┤
+│   SCRIPT_DIR Calculation            │
+│   ├─ Validate path exists           │
+│   └─ Error: Show calculation steps  │
+├─────────────────────────────────────┤
+│   Library Sourcing (6 critical)     │
+│   ├─ Validate each file exists      │
+│   ├─ Source with error capture      │
+│   └─ Error: Show which lib failed   │
+├─────────────────────────────────────┤
+│   Function Verification             │
+│   ├─ Check all required functions   │
+│   └─ Error: Show missing functions  │
+├─────────────────────────────────────┤
+│   Workflow Initialization           │
+│   └─ Parse arguments and proceed    │
+└─────────────────────────────────────┘
+```
+
+### Error Message Design
+
+All errors must include:
+1. **What failed**: Specific operation that failed
+2. **Why it failed**: Exact error message or condition
+3. **Context**: Relevant paths, variables, environment state
+4. **Diagnostic commands**: Exact commands user can run to investigate
+5. **Exit code**: Non-zero exit to signal failure
+
+### Removal of Fallback Mechanisms
+
+Current fallbacks to remove:
+1. **Lines 242-274**: workflow-detection.sh fallback functions
+2. **Lines 796-835**: Topic directory creation fallback (mkdir -p)
+3. **Lines 1482-1493**: Implementation artifacts directory fallback
+
+Replacement strategy: Validate preconditions, fail-fast with diagnostics if not met
+
+## Implementation Phases
+
+### Phase 0: Fix Function Name Mismatch (CRITICAL - BLOCKING BUG)
+**Objective**: Fix the function name mismatch causing bootstrap failure
+**Complexity**: Low
+**Estimated Time**: 15-30 minutes
+**Priority**: BLOCKING - Must complete before other phases
+
+**ROOT CAUSE**: supervise.md calls `save_phase_checkpoint()` and `load_phase_checkpoint()` but these functions don't exist in checkpoint-utils.sh
+
+**Solution Options**:
+1. **Option A (Recommended)**: Update supervise.md to use existing library functions
+2. **Option B**: Add wrapper functions to checkpoint-utils.sh library
+
+**Chosen Solution**: Option A (simpler, no library changes needed)
+
+Tasks:
+- [ ] Update REQUIRED_FUNCTIONS array (lines 359-366):
+  - Change `save_phase_checkpoint` → `save_checkpoint`
+  - Change `load_phase_checkpoint` → `restore_checkpoint` (verify actual name in library)
+- [ ] Update all calls to save_phase_checkpoint in supervise.md:
+  - Line 1169: `save_phase_checkpoint 1 ...` → `save_checkpoint "supervise" "project" ...`
+  - Line 1366: `save_phase_checkpoint 2 ...` → `save_checkpoint "supervise" "project" ...`
+  - Line 1527: `save_phase_checkpoint 3 ...` → `save_checkpoint "supervise" "project" ...`
+  - Line 1635: `save_phase_checkpoint 4 ...` → `save_checkpoint "supervise" "project" ...`
+- [ ] Update all calls to load_phase_checkpoint in supervise.md:
+  - Line 594: `load_phase_checkpoint` → `restore_checkpoint "supervise" "project"`
+- [ ] Verify function signatures match library API:
+  - Read checkpoint-utils.sh to confirm exact function signatures
+  - Ensure all parameters passed correctly
+
+Testing:
+```bash
+# Test 1: Function names resolve correctly
+source .claude/lib/checkpoint-utils.sh
+command -v save_checkpoint && echo "✓ save_checkpoint exists"
+command -v restore_checkpoint && echo "✓ restore_checkpoint exists"
+
+# Test 2: Function verification passes
+/supervise "test" 2>&1 | grep -v "ERROR.*Required functions not defined"
+
+# Test 3: Checkpoint save works
+/supervise "research test" 2>&1 | grep "checkpoint" || echo "No checkpoint errors"
+```
+
+### Phase 1: Diagnostic Infrastructure
+**Objective**: Add comprehensive startup diagnostics and remove fallback patterns
+**Complexity**: Medium
+**Estimated Time**: 1-2 hours
+**Depends On**: Phase 0 (function name fix)
+
+Tasks:
+- [ ] Add startup marker at line 3 (immediately after frontmatter): `echo "ORCHESTRATOR_ACTIVE: /supervise v2.0"`
+- [ ] Add SCRIPT_DIR validation after calculation (line 239):
+  - Verify SCRIPT_DIR is absolute path
+  - Verify SCRIPT_DIR/supervise.md exists
+  - Error with diagnostic info if validation fails
+- [ ] Remove workflow-detection.sh fallback functions (lines 242-274):
+  - Delete fallback detect_workflow_scope() function
+  - Delete fallback should_run_phase() function
+  - Delete all echo statements in fallback block
+  - Make workflow-detection.sh a REQUIRED library (fail if missing)
+- [ ] Add library file existence pre-check before sourcing (lines 275-322):
+  - Check all 6 library files exist BEFORE attempting to source
+  - Show which libraries are missing if any not found
+  - Fail-fast with diagnostic showing ls output of lib/ directory
+- [ ] Enhance function verification error message (lines 375-387):
+  - Show which specific library should have provided each missing function
+  - Add diagnostic command: `grep -n "^function\|^.*() {" $SCRIPT_DIR/../lib/*.sh | grep "function_name"`
+  - Show actual functions available: `declare -F | grep -E "detect|should|emit|save|load|retry"`
+  - Add note: "Recent finding: save_phase_checkpoint/load_phase_checkpoint were causing this error - fixed in Phase 0"
+
+Testing:
+```bash
+# Test 1: Verify startup marker appears
+output=$(/supervise "test workflow" 2>&1 | head -5)
+echo "$output" | grep -q "ORCHESTRATOR_ACTIVE: /supervise v2.0" || echo "FAIL: No startup marker"
+
+# Test 2: Verify SCRIPT_DIR validation
+SCRIPT_DIR="/nonexistent" && source .claude/commands/supervise.md 2>&1 | grep -q "ERROR.*SCRIPT_DIR"
+
+# Test 3: Verify library pre-check
+mv .claude/lib/workflow-detection.sh /tmp/ && \
+  /supervise "test" 2>&1 | grep -q "ERROR.*workflow-detection.sh not found"
+
+# Test 4: Verify no fallback functions active
+/supervise "test" 2>&1 | grep -q "Fallback functions loaded" && echo "FAIL: Fallback still active"
+```
+
+### Phase 2: Enhanced Library Sourcing with Error Capture
+**Objective**: Improve library sourcing to capture and report exact errors
+**Complexity**: Medium
+**Estimated Time**: 1-2 hours
+**Depends On**: Phase 1 (diagnostic infrastructure)
+
+Tasks:
+- [ ] Refactor library sourcing pattern (lines 276-322) to capture errors:
+  - Use `output=$(source "file" 2>&1)` to capture stderr
+  - Check `$?` return code after each source attempt
+  - If non-zero, show captured error output and fail-fast
+- [ ] Add diagnostic box-drawing around library sourcing errors:
+  - Use `━━━` horizontal lines for visual separation
+  - Show: library file path, error message, file permissions, file size
+  - Add command: `bash -n "$LIBRARY_FILE"` to check syntax
+- [ ] Remove all fallback `else` blocks that create functions inline
+- [ ] Replace checkpoint-utils.sh check (line 285-290) with fail-fast only:
+  - Remove fallback echo, change to `exit 1` if missing
+  - Add diagnostic showing checkpoint operations that will fail
+- [ ] Verify all 6 critical libraries have consistent error handling:
+  - workflow-detection.sh (REQUIRED, no fallback)
+  - error-handling.sh (REQUIRED)
+  - checkpoint-utils.sh (REQUIRED)
+  - unified-logger.sh (REQUIRED)
+  - unified-location-detection.sh (REQUIRED)
+  - metadata-extraction.sh (REQUIRED)
+  - context-pruning.sh (REQUIRED)
+
+Testing:
+```bash
+# Test 1: Syntax error in library file
+echo "function bad() { echo 'missing closing brace'" >> .claude/lib/workflow-detection.sh
+/supervise "test" 2>&1 | grep -q "syntax error"
+
+# Test 2: Library file not readable
+chmod 000 .claude/lib/error-handling.sh
+/supervise "test" 2>&1 | grep -q "Permission denied"
+
+# Test 3: Library file empty
+> .claude/lib/unified-logger.sh
+/supervise "test" 2>&1 | grep -q "ERROR.*unified-logger.sh"
+
+# Test 4: All libraries load successfully
+/supervise "research test" 2>&1 | grep -q "ORCHESTRATOR_ACTIVE"
+```
+
+### Phase 3: Remove Directory Creation Fallbacks
+**Objective**: Remove all fallback directory creation, require agents to create parent directories
+**Complexity**: Low
+**Estimated Time**: 30-60 minutes
+**Depends On**: Phase 2 (library sourcing)
+
+Tasks:
+- [ ] Remove topic directory creation fallback (lines 796-835):
+  - Delete entire FALLBACK MECHANISM block with manual mkdir -p
+  - Keep only the initial verification that uses `create_topic_structure()`
+  - If create_topic_structure() fails, fail-fast with diagnostic:
+    - Show: TOPIC_PATH value, parent directory state, permissions
+    - Command: `ls -ld "$(dirname "$TOPIC_PATH")"`
+    - Note: Likely indicates topic-utils.sh library issue
+- [ ] Remove implementation artifacts fallback (lines 1482-1493):
+  - Delete entire FALLBACK MECHANISM block
+  - Fail-fast if IMPL_ARTIFACTS directory not created by agent
+  - Diagnostic: "Agent failed to create directory before writing files"
+- [ ] Update agent invocation prompts to emphasize directory creation:
+  - Research agents (line 975): Keep existing `mkdir -p` instruction
+  - Plan-architect (line 1246): Keep existing `mkdir -p` instruction
+  - Code-writer (line 1446): Keep existing `mkdir -p` instruction
+  - Test-specialist (line 1569): Keep existing `mkdir -p` instruction
+  - Doc-writer (line 2011): Keep existing `mkdir -p` instruction
+- [ ] Add validation that agents created parent directories:
+  - After each verification checkpoint, check parent directory exists
+  - If missing, fail-fast: "Agent failed to create parent directory: <path>"
+
+Testing:
+```bash
+# Test 1: Topic structure creation without fallback
+TOPIC_PATH="/tmp/nonexistent/specs/001_test" && \
+  create_topic_structure "$TOPIC_PATH" || echo "PASS: No fallback executed"
+
+# Test 2: Agent must create parent directories
+# (Simulated by checking agent output includes mkdir -p command)
+/supervise "research test" 2>&1 | grep -q "mkdir -p.*reports"
+
+# Test 3: Missing parent directory fails fast
+# (Would require modifying agent to skip mkdir -p, then verify error)
+```
+
+### Phase 4: Integration Testing and Documentation
+**Objective**: Add integration tests and update documentation
+**Complexity**: Medium
+**Estimated Time**: 1-2 hours
+**Depends On**: Phase 3 (fallback removal)
+
+Tasks:
+- [ ] Create integration test: .claude/tests/test_supervise_bootstrap.sh
+  - Test: Startup marker appears in first 10 lines of output
+  - Test: Library sourcing completes without errors
+  - Test: Function verification passes
+  - Test: Command executes in orchestrator mode (not conversational)
+  - Test: Invalid library path fails with diagnostic
+  - Test: Missing library fails with diagnostic
+  - Test: Syntax error in library fails with diagnostic
+- [ ] Add test to CI/CD: Update run_all_tests.sh to include new test
+- [ ] Document fail-fast philosophy in command file (replace Optimization Note):
+  - Explain: No fallbacks, fail-fast with diagnostics
+  - List: All critical libraries and their validation points
+  - Show: Example error messages and diagnostic output
+- [ ] Update CLAUDE.md section on /supervise (lines 340-352):
+  - Add note about fail-fast error handling
+  - Mention startup marker for execution verification
+  - Link to integration test for usage examples
+- [ ] Create troubleshooting guide: .claude/docs/guides/supervise-troubleshooting.md
+  - Common errors: Library not found, SCRIPT_DIR invalid, function missing
+  - Diagnostic procedures: Check library files, validate syntax, check permissions
+  - Recovery steps: Restore library files, check git status, verify installation
+
+Testing:
+```bash
+# Run integration test suite
+.claude/tests/test_supervise_bootstrap.sh
+
+# Verify all tests pass
+test_count=$(grep -c "^test_" .claude/tests/test_supervise_bootstrap.sh)
+pass_count=$(bash .claude/tests/test_supervise_bootstrap.sh | grep -c "✓ PASS")
+[ "$test_count" -eq "$pass_count" ] && echo "All tests passing"
+
+# Verify documentation updated
+grep -q "fail-fast" .claude/commands/supervise.md
+grep -q "startup marker" /home/benjamin/.config/CLAUDE.md
+[ -f .claude/docs/guides/supervise-troubleshooting.md ]
+```
+
+## Testing Strategy
+
+### Unit Tests (Per Phase)
+- Each phase includes inline testing commands
+- Tests verify both positive cases (expected behavior) and negative cases (error handling)
+- All tests must pass before proceeding to next phase
+
+### Integration Tests (Phase 4)
+- End-to-end bootstrap sequence validation
+- Error injection tests (simulate library failures)
+- Cross-context execution tests (different working directories)
+
+### Regression Tests
+- Verify existing functionality not broken:
+  - Research-only workflow still works
+  - Research-and-plan workflow still works
+  - Full-implementation workflow still works
+  - Debug-only workflow still works
+
+### Manual Verification
+After implementation complete:
+```bash
+# Test 1: Basic execution with startup marker
+/supervise "research API patterns" 2>&1 | head -20 | grep "ORCHESTRATOR_ACTIVE"
+
+# Test 2: Library sourcing error handling
+chmod 000 .claude/lib/workflow-detection.sh
+/supervise "test" 2>&1 | grep -E "ERROR.*workflow-detection.*Permission denied"
+chmod 644 .claude/lib/workflow-detection.sh
+
+# Test 3: Function verification
+# (Would require patching library to remove a function, verify error message)
+
+# Test 4: No fallback mechanisms active
+/supervise "test" 2>&1 | grep -i "fallback" && echo "FAIL: Fallback still present"
+```
+
+## Risk Assessment
+
+### High Risk: Breaking Existing Workflows
+**Mitigation**:
+- Test all 4 workflow types after each phase
+- Keep git branch for easy rollback
+- Document breaking changes clearly
+
+### Medium Risk: Library Dependencies Unknown
+**Mitigation**:
+- Map all function dependencies before modifying library sourcing
+- Create comprehensive function inventory (declare -F output)
+- Test each library independently
+
+### Low Risk: Error Message Verbosity
+**Mitigation**:
+- Use box-drawing to visually separate error diagnostics from workflow output
+- Keep error messages concise but comprehensive
+- Include "Run X command for details" pattern
+
+## Dependencies
+
+### External Dependencies
+- All 6 critical library files must exist in .claude/lib/
+- Libraries must have valid bash syntax (bash -n passes)
+- Libraries must export all required functions
+
+### Internal Dependencies
+- topic-utils.sh for create_topic_structure()
+- detect-project-dir.sh for CLAUDE_PROJECT_DIR
+
+### Testing Dependencies
+- Bash 4.0+ for declare -F support
+- Git for status checking in tests
+- Write access to .claude/tests/ for new test files
+
+## Notes
+
+### User Requirements
+- **NO FALLBACKS**: Remove all fallback mechanisms for reliable and consistent performance
+- **FAIL-FAST**: Use errors instead of attempting recovery
+- **RECENT CHANGES**: lib/ directory has recent changes, need careful analysis of dependencies
+
+### Design Decisions
+1. **Startup marker first**: Emit marker before any operations to detect bootstrap failures
+2. **Library pre-check**: Validate all libraries exist before attempting to source
+3. **Error capture**: Use `2>&1` to capture stderr for diagnostic display
+4. **Box-drawing**: Use Unicode box characters for visual separation of errors
+5. **Fail-fast everywhere**: No try-catch, no retries, no fallbacks—just fail with diagnostics
+
+### Architectural Compliance
+- Maintains 100% Standard 11 compliance (no changes to agent invocations)
+- Preserves behavioral injection pattern
+- Keeps verification checkpoints (but removes fallback recovery)
+- Aligns with fail-fast philosophy from CLAUDE.md
+
+### Post-Implementation Validation
+After completing all phases, run comprehensive validation:
+```bash
+# 1. Bootstrap validation
+/supervise "research test" 2>&1 | head -1 | grep -q "ORCHESTRATOR_ACTIVE"
+
+# 2. All workflows execute
+for workflow in "research test" "research X to plan Y" "implement Z" "fix bug A"; do
+  /supervise "$workflow" 2>&1 | grep -q "Phase 0 Complete" || echo "FAIL: $workflow"
+done
+
+# 3. Error handling works
+chmod 000 .claude/lib/workflow-detection.sh
+/supervise "test" 2>&1 | grep -q "ERROR.*Permission denied"
+chmod 644 .claude/lib/workflow-detection.sh
+
+# 4. No fallbacks remain
+grep -n "FALLBACK" .claude/commands/supervise.md && echo "FAIL: Fallbacks still present"
+
+# 5. Integration tests pass
+.claude/tests/test_supervise_bootstrap.sh | grep -c "✓ PASS"
+```
+
+## Appendix: Research Report Insights
+
+### Bootstrap Failure Pattern
+From OVERVIEW.md:
+> "The /supervise command failure stems from a bootstrap failure, not architectural problems. The command shows perfect Standard 11 compliance (100% across 9 agent invocations) but never executes."
+
+This confirms the issue is environmental/initialization, not architectural.
+
+### Library Sourcing as Root Cause
+From 003_expected_vs_actual_behavior.md (Hypothesis 1):
+> "MOST LIKELY: Library sourcing failure prevents Phase 0 from starting, causing Claude to default to conversational mode"
+
+This justifies focusing Phase 1-2 on library sourcing robustness.
+
+### Fallback Anti-Pattern
+From user requirements:
+> "I do not want fallbacks to be added, using errors instead to improve the /supervise command"
+
+This confirms removing existing fallbacks (lines 242-274, 796-835, 1482-1493) is the correct approach.
+
+### Historical Context
+From 004_architectural_pattern_compliance.md:
+> "Spec 438 (2025-10-24) documented successful refactor with 6/6 regression tests passing, yet current execution fails completely. Something changed between 2025-10-24 and 2025-10-27 (3 days)"
+
+User confirmed recent lib/ directory changes—validates focusing on library validation.
+
+## Revision History
+
+### 2025-10-27 - Revision 1: Diagnostic Testing Results
+**Changes Made**:
+- Added Phase 0 (critical bug fix for function name mismatch)
+- Updated Overview with confirmed root cause from diagnostic testing
+- Added dependency chain between phases (Phase 0 must complete first)
+- Updated total phase count from 4 to 5
+- Modified function verification enhancement task with actual diagnostic finding
+
+**Diagnostic Results Incorporated**:
+1. All 7 libraries exist with proper permissions (✅)
+2. No bash syntax errors in supervise.md (✅)
+3. SCRIPT_DIR calculation works correctly (✅)
+4. **Function name mismatch identified** (❌ CRITICAL):
+   - `save_phase_checkpoint` → does not exist, should be `save_checkpoint`
+   - `load_phase_checkpoint` → does not exist, should be `restore_checkpoint`
+
+**Reason for Revision**:
+Ran diagnostic steps from OVERVIEW.md (lines 154-177) which revealed the exact root cause was not library sourcing failure but function name mismatch. The supervise.md file was calling checkpoint functions that were renamed or removed in recent lib/ directory changes.
+
+**Impact**:
+- Phase 0 is now blocking for all other phases
+- Estimated total time increased from 4-7 hours to 4.25-7.5 hours (adds 15-30 minutes)
+- Solution is simpler than expected (function name updates only, no library changes)
+- High confidence this will resolve the bootstrap failure
+
+**Modified Phases**: Added Phase 0, updated Phase 1 task descriptions
+
+**Reports Used**: OVERVIEW.md diagnostic recommendations (lines 154-210)

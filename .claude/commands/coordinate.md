@@ -463,8 +463,8 @@ REQUIRED_FUNCTIONS=(
   "detect_workflow_scope"
   "should_run_phase"
   "emit_progress"
-  "save_phase_checkpoint"
-  "load_phase_checkpoint"
+  "save_checkpoint"
+  "restore_checkpoint"
 )
 
 MISSING_FUNCTIONS=()
@@ -693,7 +693,12 @@ if [ -z "$WORKFLOW_DESCRIPTION" ]; then
 fi
 
 # Check for existing checkpoint (auto-resume capability)
-RESUME_PHASE=$(load_phase_checkpoint)
+RESUME_DATA=$(restore_checkpoint "coordinate" 2>/dev/null || echo "")
+if [ -n "$RESUME_DATA" ]; then
+  RESUME_PHASE=$(echo "$RESUME_DATA" | jq -r '.current_phase // empty')
+else
+  RESUME_PHASE=""
+fi
 
 if [ -n "$RESUME_PHASE" ]; then
   echo "════════════════════════════════════════════════════════"
@@ -1249,7 +1254,7 @@ ARTIFACT_PATHS_JSON=$(cat <<EOF
 }
 EOF
 )
-save_phase_checkpoint 1 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
+save_checkpoint "coordinate" "phase_1" "$ARTIFACT_PATHS_JSON"
 
 # Context pruning after Phase 1
 # Store minimal phase metadata for Phase 1 (artifact paths only)
@@ -1456,7 +1461,7 @@ ARTIFACT_PATHS_JSON=$(cat <<EOF
 }
 EOF
 )
-save_phase_checkpoint 2 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
+save_checkpoint "coordinate" "phase_2" "$ARTIFACT_PATHS_JSON"
 
 # Context pruning after Phase 2
 # Store minimal phase metadata for Phase 2 (plan path only, keep research for implementation)
@@ -1717,7 +1722,7 @@ ARTIFACT_PATHS_JSON=$(cat <<EOF
 }
 EOF
 )
-save_phase_checkpoint 3 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
+save_checkpoint "coordinate" "phase_3" "$ARTIFACT_PATHS_JSON"
 
 # Context pruning after Phase 3 - Aggressive pruning of wave metadata
 # Store minimal phase metadata for Phase 3 (implementation status only)
@@ -1840,7 +1845,7 @@ ARTIFACT_PATHS_JSON=$(cat <<EOF
 }
 EOF
 )
-save_phase_checkpoint 4 "$WORKFLOW_SCOPE" "$TOPIC_PATH" "$ARTIFACT_PATHS_JSON"
+save_checkpoint "coordinate" "phase_4" "$ARTIFACT_PATHS_JSON"
 
 # Context pruning after Phase 4
 # Store minimal phase metadata for Phase 4 (test status only, pass/fail)
