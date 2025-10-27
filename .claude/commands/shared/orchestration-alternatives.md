@@ -7,7 +7,7 @@ Last Updated: 2025-10-23
 ---
 
 [Content will be added during Phase 2, 3, and 5]
-2. Invoke expansion-specialist agent with recursive expansion
+2. Invoke plan-structure-manager agent with recursive expansion (operation: expand)
 3. Extract expansion results (files created, structure level)
 4. Validate expansion artifacts created
 5. Update workflow state with hierarchical plan information
@@ -49,7 +49,7 @@ echo ""
 
 **EXECUTE NOW - Recursive Plan Expansion**:
 
-Use the Task tool to invoke expansion-specialist with behavioral injection:
+Use the Task tool to invoke plan-structure-manager with behavioral injection (operation: expand):
 
 ```yaml
 subagent_type: general-purpose
@@ -60,7 +60,9 @@ timeout: 180000  # 3 minutes for expansion operations
 
 prompt: |
   Read and follow the behavioral guidelines from:
-  ${CLAUDE_PROJECT_DIR}/.claude/agents/expansion-specialist.md
+  ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-structure-manager.md
+
+  Operation: expand
 
   You are acting as an Expansion Specialist Agent.
 
@@ -177,9 +179,9 @@ prompt: |
 **MANDATORY VERIFICATION CHECKPOINT**:
 
 ```bash
-# Verify expansion-specialist produced valid output
-if [ -z "$EXPANSION_SPECIALIST_OUTPUT" ]; then
-  echo "ERROR: expansion-specialist agent returned empty output"
+# Verify plan-structure-manager produced valid output
+if [ -z "$PLAN_STRUCTURE_MANAGER_OUTPUT" ]; then
+  echo "ERROR: plan-structure-manager agent returned empty output"
   echo "FALLBACK: Creating minimal expansion summary"
 
   # Fallback: Create minimal expansion summary
@@ -206,7 +208,7 @@ fi
 
 # Verify output contains required fields
 if ! echo "$EXPANSION_SPECIALIST_OUTPUT" | grep -q "expansion_summary:"; then
-  echo "ERROR: expansion-specialist output missing 'expansion_summary:' field"
+  echo "ERROR: plan-structure-manager output missing 'expansion_summary:' field"
   echo "Output received:"
   echo "$EXPANSION_SPECIALIST_OUTPUT"
   echo ""
@@ -357,7 +359,7 @@ if [ "$EXPANSION_FAILED" = true ]; then
   echo "⚠ WARNING: Expansion encountered errors"
   echo "   Review expansion summary for details: $EXPANSION_SUMMARY_PATH"
   echo "   Manual expansion may be required using /expand command"
-2. Invoke expansion-specialist agent with recursive expansion
+2. Invoke plan-structure-manager agent with recursive expansion (operation: expand)
 3. Extract expansion results (files created, structure level)
 4. Validate expansion artifacts created
 5. Update workflow state with hierarchical plan information

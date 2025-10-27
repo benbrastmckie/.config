@@ -133,7 +133,9 @@ Task {
   subagent_type: "general-purpose"
   description: "Expand phase 2"
   prompt: "Read and follow behavioral guidelines from:
-          /home/benjamin/.config/.claude/agents/plan-expander.md
+          /home/benjamin/.config/.claude/agents/plan-structure-manager.md
+
+          Operation: expand
 
           Task: Expand phase 2 of implementation plan
           Plan Path: [ABSOLUTE_PLAN_PATH]
