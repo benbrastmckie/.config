@@ -402,23 +402,36 @@ dependencies: [4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] **Context Pruning Integration**: Add context-pruning.sh utilities after each phase:
-  - [ ] After Phase 1: Prune research agent full outputs (keep metadata only)
-  - [ ] After Phase 2: Prune plan content (keep path + summary only)
-  - [ ] After Phase 3: Aggressive pruning of completed wave metadata
-  - [ ] After Phase 4: Prune test output (keep pass/fail status only)
-  - [ ] Target: 80-90% context reduction for completed phases
-- [ ] **Size Optimization**: Review file size and reduce non-critical verbosity:
-  - [ ] Current baseline: ~2,177 lines (from /supervise) + Phase 3 additions (~200 lines) - retry/fallback removal (~100 lines) = ~2,277 lines
-  - [ ] Target: 2,500-3,000 lines (stay within budget)
-  - [ ] Identify opportunities for library extraction (if approaching 3,000 line limit)
-- [ ] **Metadata Extraction**: Ensure forward message pattern for all agents:
-  - [ ] Extract title + 50-word summary from research reports
-  - [ ] Extract complexity + phase count from plans
-  - [ ] Extract pass/fail + error count from test results
-  - [ ] Do NOT pass full content between phases
-- [ ] **Progress Streaming**: Add progress markers at phase boundaries (silent PROGRESS: markers)
-- [ ] Document context reduction achievements (target: <30% context usage)
+- [x] **Context Pruning Integration**: Add context-pruning.sh utilities after each phase:
+  - [x] After Phase 1: Prune research agent full outputs (keep metadata only)
+  - [x] After Phase 2: Prune plan content (keep path + summary only)
+  - [x] After Phase 3: Aggressive pruning of completed wave metadata
+  - [x] After Phase 4: Prune test output (keep pass/fail status only)
+  - [x] After Phase 5: Prune test output after debugging complete
+  - [x] After Phase 6: Final workflow pruning
+  - [x] Target: 80-90% context reduction for completed phases
+- [x] **Size Optimization**: Review file size and reduce non-critical verbosity:
+  - [x] Current size: 2,244 lines (well within 2,500-3,000 budget)
+  - [x] Previous: 2,163 lines → Current: 2,244 lines (+81 lines for context pruning)
+  - [x] Target: 2,500-3,000 lines (stay within budget) ✓ ACHIEVED
+  - [x] No library extraction needed (256 lines of headroom)
+- [x] **Metadata Extraction**: Ensure forward message pattern for all agents:
+  - [x] Extract title + 50-word summary from research reports (already implemented)
+  - [x] Extract complexity + phase count from plans (already implemented)
+  - [x] Extract pass/fail + error count from test results (already implemented)
+  - [x] Do NOT pass full content between phases (already implemented via Return: signals)
+  - [x] Verified: All agents use REPORT_CREATED/PLAN_CREATED/etc. signals
+- [x] **Progress Streaming**: Add progress markers at phase boundaries (silent PROGRESS: markers)
+  - [x] Phase 0: Location pre-calculation complete
+  - [x] Phase 1: Research complete
+  - [x] Phase 2: Planning complete
+  - [x] Phase 3: Implementation complete
+  - [x] Phase 4: Testing complete
+  - [x] Phase 5: Debug complete
+  - [x] Phase 6: Documentation complete
+- [x] Document context reduction achievements (target: <30% context usage)
+  - [x] Updated Performance Targets section with phase-by-phase reduction
+  - [x] Documented progress streaming format
 
 **Testing**:
 ```bash
@@ -436,11 +449,22 @@ LINE_COUNT=$(wc -l < .claude/commands/coordinate.md)
 **Expected Duration**: 4-6 hours
 
 **Phase 5 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (context pruning integrated, metadata extraction for all agents, file size within budget)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (context pruning integrated, metadata extraction for all agents, file size within budget)
 - [ ] Git commit created: `feat(491): complete Phase 5 - Context Reduction and Optimization`
 - [ ] Checkpoint saved (optimized implementation)
-- [ ] Update this plan file with phase completion status
+- [x] Update this plan file with phase completion status
+
+**Completion Notes**:
+- File size: 2,244 lines (increased by 81 lines from Phase 4 due to context pruning and progress markers)
+- All 3 tests passing:
+  - ✓ Test 1: context-pruning.sh sourced
+  - ✓ Test 2: 10 metadata extraction instances (target ≥7)
+  - ✓ Test 3: File size within budget (2,244 lines, 256 lines of headroom)
+- Context pruning calls added after all 6 phases (Phases 1-6)
+- Progress markers added at all 7 phase boundaries (Phases 0-6)
+- Performance Targets section enhanced with context reduction details
+- Forward message pattern already implemented (all agents use structured signals)
 
 ### Phase 6: Integration Testing and Validation
 dependencies: [5]
