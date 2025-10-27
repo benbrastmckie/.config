@@ -3,15 +3,16 @@
 ## Metadata
 - **Date**: 2025-10-27
 - **Feature**: Unified improvements for /coordinate and /supervise orchestration commands
-- **Scope**: Error handling, robustness, anti-pattern fixes, documentation, and testing
+- **Scope**: Error handling, robustness, anti-pattern fixes, file creation verification, documentation, and testing
 - **Estimated Phases**: 6
-- **Estimated Hours**: 10-16 hours
+- **Estimated Hours**: 11.5-18 hours (includes +2-3 hours for MANDATORY VERIFICATION checkpoints)
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Structure Level**: 0
-- **Complexity Score**: 142.0
+- **Complexity Score**: 92.0
 - **Research Reports**:
-  - [/coordinate Command Analysis](/home/benjamin/.config/.claude/specs/497_unified_plan_coordinate_supervise_improvements/reports/001_coordinate_command_analysis.md)
-  - [/supervise Command Analysis](/home/benjamin/.config/.claude/specs/497_unified_plan_coordinate_supervise_improvements/reports/002_supervise_command_analysis.md)
+  - [/coordinate Command Analysis](../reports/001_coordinate_command_analysis.md)
+  - [/supervise Command Analysis](../reports/002_supervise_command_analysis.md)
+- **Compliance Review**: [Plan 497 Compliance Review](../../499_plan_497_compliance_review/reports/001_plan_497_compliance_review/OVERVIEW.md) - Identified CRITICAL GAP in file creation verification (Revision 3)
 
 ## Overview
 
@@ -26,7 +27,7 @@ Both plans target the same fundamental issues in orchestration commands but addr
 The unified plan sequences improvements to minimize rework:
 - **Phase 0**: Shared infrastructure (validation utilities, testing frameworks)
 - **Phase 1**: /coordinate command agent invocation fixes (9 locations)
-- **Phase 2**: /supervise command robustness improvements (diagnostics, error handling)
+- **Phase 2**: /supervise command error handling and fallback removal (fail-fast debugging)
 - **Phase 3**: /research command fixes (3 agent invocations + bash code blocks)
 - **Phase 4**: Integration testing and validation
 - **Phase 5**: Comprehensive documentation and prevention measures
@@ -57,12 +58,11 @@ The unified plan sequences improvements to minimize rework:
 - Function verification check detected missing functions and exited before Phase 0
 - /coordinate also affected (6 function calls)
 
-**Solution**: Fail-fast design philosophy with enhanced diagnostics
-- Add startup marker for orchestrator mode detection
-- Validate SCRIPT_DIR calculation and library file existence
-- Enhanced error messages with diagnostic commands
-- Remove all fallback mechanisms (force explicit errors)
-- Consistent error handling across 7 critical libraries
+**Solution**: Fail-fast design with fallback removal for effective debugging
+- Enhanced error messages showing which library failed
+- Better function verification diagnostics
+- Remove all fallback mechanisms (workflow-detection.sh, directory creation)
+- Explicit errors enable consistent debugging
 
 **Impact**: Affects both /supervise and /coordinate commands (12 checkpoint calls total)
 
@@ -83,25 +83,30 @@ The unified plan sequences improvements to minimize rework:
 
 ### Unique to /supervise Plan (Spec 057)
 
-- Bootstrap sequence validation (startup marker, SCRIPT_DIR, library sourcing)
 - Function name mismatch resolution (already completed in Phase 0)
-- Fail-fast philosophy adoption (remove all fallbacks)
-- Library sourcing error capture with stderr output
+- Enhanced error messages for library sourcing failures
+- Improved function verification diagnostics
+- Fallback mechanism removal for fail-fast debugging
 - Checkpoint function API alignment
 
 ## Success Criteria
 
 - [ ] All agent invocations use imperative bullet-point pattern (no YAML blocks)
 - [ ] Agent delegation rate >90% for /coordinate, /research, and /supervise
-- [ ] /supervise and /coordinate bootstrap reliably (100% success rate)
-- [ ] Startup markers emitted by orchestration commands
-- [ ] All fallback mechanisms removed from orchestration commands
-- [ ] Library sourcing failures produce clear error messages with diagnostics
+- [ ] MANDATORY VERIFICATION checkpoints added after all agent file creation operations
+- [ ] File creation reliability 100% (up from 70% baseline)
+- [ ] All verification checkpoints include file existence and size validation
+- [ ] Fallback file creation mechanisms present for transient tool failures
+- [ ] /supervise implements fail-fast error handling (no silent bootstrap fallbacks)
+- [ ] Library sourcing failures produce clear, actionable error messages
+- [ ] Function verification errors show which library provides missing functions
+- [ ] Bootstrap fallbacks removed from /supervise (workflow-detection.sh, directory creation)
+- [ ] File creation verification fallbacks preserved in all commands
 - [ ] Files created in correct locations (`.claude/specs/NNN_topic/`)
 - [ ] No TODO output files created by any orchestration command
 - [ ] Validation script detects anti-patterns in command files
 - [ ] Integration test suite covers all orchestration commands
-- [ ] Comprehensive documentation updated (anti-patterns, troubleshooting, standards)
+- [ ] Comprehensive documentation updated (anti-patterns, troubleshooting, standards, fallback philosophy)
 
 ## Technical Design
 
@@ -109,12 +114,11 @@ The unified plan sequences improvements to minimize rework:
 
 The unified plan addresses three layers of orchestration command reliability:
 
-**Layer 1: Initialization and Bootstrap** (/supervise focus)
-- Startup marker emission for orchestrator mode detection
-- SCRIPT_DIR validation with diagnostic output
-- Library existence pre-checks before sourcing
-- Enhanced library sourcing with stderr capture
-- Function verification with comprehensive error messages
+**Layer 1: Fail-Fast Error Handling** (/supervise focus)
+- Clear error messages when library sourcing fails
+- Function verification with helpful diagnostics showing which library provides each function
+- Remove all fallback mechanisms (workflow-detection.sh, directory creation)
+- Explicit errors enable consistent debugging
 
 **Layer 2: Agent Invocation Pattern** (/coordinate focus)
 - Imperative bullet-point format for all Task invocations
@@ -123,12 +127,10 @@ The unified plan addresses three layers of orchestration command reliability:
 - No YAML-style blocks or markdown code fences
 - Clear orchestrator vs subagent role definitions
 
-**Layer 3: Error Handling and Validation** (shared)
-- Fail-fast on errors with actionable diagnostics
-- No fallback mechanisms (explicit errors only)
-- Automated anti-pattern detection
+**Layer 3: Validation and Testing** (shared)
+- Automated anti-pattern detection for agent invocations
 - Integration testing with delegation rate analysis
-- Comprehensive documentation and prevention
+- Comprehensive documentation and prevention measures
 
 ### Component Interactions
 
@@ -136,11 +138,9 @@ The unified plan addresses three layers of orchestration command reliability:
 ┌─────────────────────────────────────────────────────────────┐
 │ Orchestration Command Startup                               │
 │                                                              │
-│  1. Emit Startup Marker: ORCHESTRATOR_ACTIVE: /command vN   │
-│  2. Validate SCRIPT_DIR (absolute path, directory exists)   │
-│  3. Pre-check Libraries (7 files, existence + syntax)       │
-│  4. Source Libraries with Error Capture (stderr to output)  │
-│  5. Verify Functions (comprehensive diagnostics on fail)    │
+│  1. Source Required Libraries                               │
+│  2. Verify Functions (clear diagnostics on fail)            │
+│  3. Detect Workflow Scope                                   │
 │                                                              │
 │  ──────────────── BOOTSTRAP COMPLETE ─────────────────────  │
 └─────────────────────────────────────────────────────────────┘
@@ -167,17 +167,90 @@ The unified plan addresses three layers of orchestration command reliability:
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Validation and Error Handling                               │
+│ MANDATORY VERIFICATION - File Creation (CRITICAL)           │
 │                                                              │
-│  • Verify agent created expected files                      │
+│  **EXECUTE NOW** (REQUIRED BEFORE NEXT STEP):               │
+│                                                              │
+│  1. Verify file exists:                                     │
+│     ls -la "$EXPECTED_PATH"                                 │
+│     [ -f "$EXPECTED_PATH" ] || echo "ERROR: File missing"  │
+│                                                              │
+│  2. Verify file size > 500 bytes:                           │
+│     FILE_SIZE=$(wc -c < "$EXPECTED_PATH")                   │
+│     [ "$FILE_SIZE" -ge 500 ] || echo "WARNING: Too small"  │
+│                                                              │
+│  3. Results:                                                │
+│     IF VERIFICATION PASSES: ✓ Proceed to next step         │
+│     IF VERIFICATION FAILS: ⚡ Execute FALLBACK MECHANISM    │
+│                                                              │
+│  ──────────────── VERIFICATION COMPLETE ─────────────────   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ FALLBACK MECHANISM - Create File (if verification failed)   │
+│                                                              │
+│  TRIGGER: Verification failed for $EXPECTED_PATH            │
+│                                                              │
+│  EXECUTE IMMEDIATELY:                                       │
+│  1. Extract content from agent response                     │
+│  2. Create file using Write tool                            │
+│  3. MANDATORY RE-VERIFICATION: ls -la "$EXPECTED_PATH"      │
+│  4. If re-verification succeeds: ✓ Continue                 │
+│     If re-verification fails: ❌ Escalate to user           │
+│                                                              │
+│  ──────────────── FALLBACK COMPLETE ─────────────────────   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Metadata Extraction and State Management                    │
+│                                                              │
 │  • Parse agent output for completion signals                │
 │  • Extract metadata from artifacts                          │
-│  • No fallback creation (fail-fast if missing)              │
 │  • Checkpoint workflow state                                │
 │                                                              │
 │  ──────────────── PHASE COMPLETE ────────────────────────   │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### Fallback Philosophy: Critical Distinction
+
+**IMPORTANT**: This plan applies fail-fast philosophy but distinguishes between TWO types of fallback mechanisms with different treatment:
+
+#### Bootstrap/Infrastructure Fallbacks (REMOVE - Hide Configuration Errors)
+
+These fallbacks mask environment and configuration problems that MUST be exposed:
+
+- **Silent function definitions** when library files missing
+- **Automatic directory creation** masking agent delegation failures
+- **Fallback workflow detection** when required libraries unavailable
+- **Default value substitution** for missing required variables
+
+**Rationale**: Configuration errors indicate broken setup that MUST be fixed before workflow execution. Hiding them with fallbacks prevents proper diagnosis and creates inconsistent behavior across environments.
+
+**Action in This Plan**: Phase 2 removes all bootstrap fallbacks from /supervise and /coordinate
+
+#### File Creation Verification Fallbacks (PRESERVE - Detect Tool Failures)
+
+These verification checkpoints detect and correct transient Write tool failures:
+
+- **MANDATORY VERIFICATION** after each agent file creation operation
+- **File existence checks** (ls -la, [ -f "$PATH" ])
+- **File size validation** (minimum 500 bytes for content verification)
+- **Fallback file creation** when agent succeeded but file missing (tool failure)
+- **Re-verification** after fallback creation to confirm correction
+
+**Rationale**: File creation verification does NOT hide configuration errors. It detects transient tool failures where the agent successfully generated content but the Write tool failed to persist it. These failures are orthogonal to configuration issues and occur even in correctly configured environments.
+
+**Action in This Plan**: Phases 1-3 ADD mandatory verification checkpoints to all agent invocations
+
+**Performance Impact**:
+- Without verification: 70% file creation reliability (7/10 files created)
+- With verification: 100% file creation reliability (10/10 files created)
+- Improvement: +43% reliability, +2-3 hours implementation time
+
+**Critical Insight**: Fail-fast means "fail immediately on configuration errors" NOT "fail silently on transient tool errors." Verification fallbacks enable fail-fast by converting silent tool failures into explicit, diagnosed, and corrected errors.
 
 ### Shared Infrastructure Components
 
@@ -250,34 +323,34 @@ dependencies: []
 **Estimated Time**: 2-3 hours
 
 Tasks:
-- [ ] Create validation script: `.claude/lib/validate-agent-invocation-pattern.sh`
+- [x] Create validation script: `.claude/lib/validate-agent-invocation-pattern.sh`
   - Detect YAML-style Task blocks in command files
   - Detect markdown code fences (` ```yaml `, ` ```bash `) around Task invocations
   - Detect template variables in agent prompts (`${VAR}`)
   - Report violations with line numbers and context
   - Exit code 0 for pass, 1 for violations found
-- [ ] Create unified test suite: `.claude/tests/test_orchestration_commands.sh`
+- [x] Create unified test suite: `.claude/tests/test_orchestration_commands.sh`
   - Test helper functions: `test_agent_invocation_pattern()`, `test_bootstrap_sequence()`, `test_delegation_rate()`
   - Shared test fixtures for orchestration commands
   - Integration with existing test infrastructure
-- [ ] Create backup utility: `.claude/lib/backup-command-file.sh`
+- [x] Create backup utility: `.claude/lib/backup-command-file.sh`
   - Automatically create timestamped backups before edits
   - Verify backup integrity
   - Provide rollback function
   - Log all backup/rollback operations
-- [ ] Test validation script on all orchestration commands
+- [x] Test validation script on all orchestration commands
   - Run validation against /coordinate, /research, /supervise, /orchestrate
   - Document current violations (expected failures before fixes)
   - Establish baseline metrics
-- [ ] Integrate validation into CI/CD
+- [x] Integrate validation into CI/CD
   - Add validation script to `.claude/tests/run_all_tests.sh`
   - Set up pre-commit hook (optional)
   - Document validation workflow
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 Testing:
@@ -304,11 +377,13 @@ Testing:
 **Expected Duration**: 2-3 hours
 
 **Phase 0 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
 - [ ] Git commit created: `feat(497): complete Phase 0 - Shared Infrastructure and Validation Utilities`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
+
+### Phase 0: [COMPLETED] Shared Infrastructure and Validation Utilities
 
 ### Phase 1: Fix /coordinate Command Agent Invocations
 dependencies: [0]
@@ -387,33 +462,37 @@ diff .claude/commands/coordinate.md .claude/commands/coordinate.md.backup-[TIMES
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 2: Improve /supervise Command Robustness
+### Phase 2: Improve /supervise Command Error Handling and Remove Fallbacks
 dependencies: [0]
 
-**Objective**: Add fail-fast diagnostics and remove fallback mechanisms in supervise.md
+**Objective**: Add fail-fast error handling and remove fallback mechanisms to enable effective debugging
 
 **Complexity**: Medium
 
-**Estimated Time**: 2-3 hours
+**Estimated Time**: 1.5-2 hours
 
-**Note**: Phase 0 of original spec 057 plan (function name mismatch) was already completed. This phase implements remaining robustness improvements.
+**Note**: Phase 0 of original spec 057 plan (function name mismatch) was already completed. This phase implements fail-fast philosophy for consistent debugging.
+
+**Design Rationale**: Remove fallback mechanisms to enable effective debugging when commands don't work consistently:
+- Clear, explicit error messages when library sourcing fails
+- Better diagnostics for missing functions
+- Remove fallback functions (force explicit library dependencies)
+- Remove directory creation fallbacks (agents must create directories)
+- NO startup marker (uncertain value for orchestrator mode detection)
+- Fail-fast approach: explicit errors are easier to debug than silent fallbacks
 
 Tasks:
 - [ ] Create timestamped backup of `.claude/commands/supervise.md`
-- [ ] **Task 2.1**: Add Diagnostic Infrastructure
-  - Add startup marker at line 3: `echo "ORCHESTRATOR_ACTIVE: /supervise v2.0"`
-  - Add SCRIPT_DIR validation with diagnostic output
-  - Show SCRIPT_DIR calculation on error (parent of .claude directory)
-  - Verify SCRIPT_DIR is absolute path and directory exists
+- [ ] **Task 2.1**: Enhance Library Sourcing Error Messages
+  - Improve error message clarity when library files missing
+  - Show which specific library file failed to source
+  - Include the expected path in error message
+  - Add diagnostic output showing library search path
 - [ ] **Task 2.2**: Remove Fallback Functions
-  - Remove workflow-detection.sh fallback functions (lines 242-274)
+  - Remove workflow-detection.sh fallback functions (lines 242-274 in original)
   - Remove inline function definitions (no fallback creation)
   - Force explicit error if library sourcing fails
-- [ ] **Task 2.3**: Add Library Pre-Check
-  - Before sourcing each library, check file exists and is readable
-  - Validate bash syntax: `bash -n "$library_file"`
-  - Report specific library file causing failure
-  - List all 7 required libraries with status check
+  - Update error message to suggest installing missing library
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -421,51 +500,39 @@ After completing the above tasks:
 - [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [ ] **Task 2.4**: Enhance Library Sourcing Error Capture
-  - Refactor library sourcing to capture stderr output
-  - Check return codes and fail-fast on errors
-  - Add diagnostic box-drawing for visual error separation
-  - Remove all fallback `else` blocks creating inline functions
-  - Apply to 7 critical libraries: workflow-detection.sh, error-handling.sh, checkpoint-utils.sh, unified-logger.sh, unified-location-detection.sh, metadata-extraction.sh, context-pruning.sh
-- [ ] **Task 2.5**: Enhance Function Verification Diagnostics
-  - Update function verification error messages
-  - Show which functions are missing
-  - Show which library should provide each function
+- [ ] **Task 2.3**: Improve Function Verification Diagnostics
+  - Enhance error message when required functions are missing
+  - Show which function is missing and which library should provide it
+  - Add example: "Missing detect_workflow_scope() - should be in workflow-detection.sh"
   - Include diagnostic command: `declare -F | grep function_name`
   - Exit immediately on verification failure (no fallback)
-- [ ] **Task 2.6**: Remove Directory Creation Fallbacks
-  - Remove topic directory creation fallback (lines 796-835)
-  - Remove implementation artifacts directory fallback (lines 1482-1493)
-  - Keep agent invocation `mkdir -p` instructions
-  - Add validation that agents created directories
+- [ ] **Task 2.4**: Remove Directory Creation Fallbacks
+  - Remove topic directory creation fallback (manual mkdir after agent failure)
+  - Remove implementation artifacts directory fallback
+  - Keep agent invocation `mkdir -p` instructions (agents responsible)
+  - Add validation that agents created expected directories
   - Fail-fast if directories missing after agent execution
-- [ ] Verify all fallback mechanisms removed from supervise.md
-- [ ] Verify startup marker emits immediately upon execution
-- [ ] Verify library sourcing failures produce clear error messages
+- [ ] Test error messages by simulating library failure
+- [ ] Verify error messages are clear and actionable
+- [ ] Verify fallback mechanisms removed
 
 Testing:
 ```bash
-# Test startup marker
-/supervise "test workflow" --dry-run 2>&1 | head -5
-# Expected: First line should be "ORCHESTRATOR_ACTIVE: /supervise v2.0"
-
 # Test library sourcing error (simulate failure)
-# Temporarily rename a library to trigger error
 mv .claude/lib/workflow-detection.sh .claude/lib/workflow-detection.sh.bak
 /supervise "test workflow" 2>&1
-# Expected: Clear error message showing which library failed, diagnostic commands
+# Expected: Clear error message, immediate exit, NO fallback function creation
 mv .claude/lib/workflow-detection.sh.bak .claude/lib/workflow-detection.sh
-
-# Test SCRIPT_DIR validation (simulate wrong directory)
-cd /tmp && /supervise "test workflow" 2>&1
-# Expected: Clear error about SCRIPT_DIR validation failure with diagnostic output
-cd - > /dev/null
 
 # Test function verification diagnostics
 # Expected: Clear message if functions missing, showing which library provides them
+
+# Test directory creation (expect agent to create, no fallback)
+/supervise "research test topic"
+# Expected: Agent creates directories OR clear error if agent fails
 ```
 
-**Expected Duration**: 2-3 hours
+**Expected Duration**: 1.5-2 hours
 
 **Phase 2 Completion Requirements**:
 - [ ] All phase tasks marked [x]
@@ -795,6 +862,17 @@ grep -r "orchestration-commands-quick-reference.md" .claude/
 - Verify artifacts created in correct locations
 - Verify NO TODO*.md output files
 - Verify topic-based directory structure
+- **MANDATORY VERIFICATION checkpoints test**:
+  - Test file existence verification after each agent invocation
+  - Test file size validation (>500 bytes)
+  - Test fallback file creation when Write tool fails
+  - Test re-verification after fallback creation
+  - Verify 100% file creation reliability (up from 70% baseline)
+- **File Creation Reliability Measurement**:
+  - Run 10 sequential agent file creation operations
+  - Measure success rate with verification checkpoints
+  - Expected: 10/10 files created (100% reliability)
+  - Compare to baseline without verification: 7/10 (70% reliability)
 
 **Bootstrap Validation**:
 - Test from different working directories
@@ -1097,10 +1175,10 @@ If only one command has issues:
 - Test /coordinate after fixes
 - Run validation script
 
-**Session 3: /supervise Improvements** (2-3 hours)
-- Phase 2: Improve /supervise Command (2-3 hours)
-- Test /supervise bootstrap sequence
-- Verify fail-fast behavior
+**Session 3: /supervise Fail-Fast Improvements** (1.5-2 hours)
+- Phase 2: /supervise Error Handling and Fallback Removal (1.5-2 hours)
+- Test error message clarity
+- Verify fallback mechanisms removed
 
 **Session 4: /research Fixes** (1.5-2.5 hours)
 - Phase 3: Fix /research Command (1.5-2.5 hours)
@@ -1113,7 +1191,7 @@ If only one command has issues:
 - Full regression test suite
 - Create summary report
 
-**Total Estimated Time**: 10-16 hours across 5 sessions
+**Total Estimated Time**: 9.5-15 hours across 5 sessions
 
 ### Parallel Execution Opportunities
 
@@ -1258,17 +1336,17 @@ Placing documentation in Phase 5 (not earlier) because:
 Score = (tasks × 1.0) + (phases × 5.0) + (hours × 0.5) + (dependencies × 2.0)
 
 Where:
-- Tasks: 52 (total tasks across all phases)
+- Tasks: 46 (total tasks across all phases, restored fallback removal adds 4 tasks)
 - Phases: 6
-- Hours: 13 (midpoint of 10-16 estimate)
+- Hours: 12.25 (midpoint of 9.5-15 estimate)
 - Dependencies: 5 (Phase 1→0, Phase 2→0, Phase 3→0, Phase 4→1+2+3, Phase 5→4)
 
-Score = (52 × 1.0) + (6 × 5.0) + (13 × 0.5) + (5 × 2.0)
-Score = 52 + 30 + 6.5 + 10
-Score = 98.5
+Score = (46 × 1.0) + (6 × 5.0) + (12.25 × 0.5) + (5 × 2.0)
+Score = 46 + 30 + 6.125 + 10
+Score = 92.125 ≈ 92.0
 
-Complexity Category: Medium-High (50-200 range)
-Tier: 1 (Single File) - appropriate for 6 phases, 52 tasks
+Complexity Category: Medium (50-200 range)
+Tier: 1 (Single File) - appropriate for 6 phases, 46 tasks
 ```
 
 ### Historical Context
@@ -1296,3 +1374,92 @@ Tier: 1 (Single File) - appropriate for 6 phases, 52 tasks
 - Applies proven patterns consistently across all orchestration commands
 - Adds comprehensive validation and testing infrastructure
 - Creates prevention measures to avoid future regression
+
+## Revision History
+
+### 2025-10-27 - Revision 1: Simplification of Phase 2
+
+**Changes Made**:
+- Reduced Phase 2 scope from comprehensive robustness improvements to essential error handling only
+- Removed startup marker implementation (uncertain value for orchestrator mode detection)
+- Removed excessive fallback removal tasks (preserve working functionality)
+- Removed complex SCRIPT_DIR validation (keep it simple)
+- Kept only essential improvements: clear error messages and better function verification diagnostics
+
+**Reason for Revision**:
+User feedback: "/supervise command is working well and so I want to be careful not to over complicate it. I do want to avoid fallbacks with consistent error handling but less sure about how useful the startup marker will be for orchestrator mode detection."
+
+**Impact**:
+- Phase 2 time reduced from 2-3 hours to 1-1.5 hours (saves 1-1.5 hours)
+- Total plan time reduced from 10-16 hours to 9-14 hours
+- Complexity score reduced from 98.5 to 88.0
+- Task count reduced from 52 to 42 tasks
+- Preserved /supervise working functionality while adding essential error handling improvements
+
+**Modified Phases**:
+- Phase 2: Simplified from 6 subtasks to 2 subtasks, focusing only on error message clarity
+
+### 2025-10-27 - Revision 2: Restore Fallback Removal for Effective Debugging
+
+**Changes Made**:
+- Restored fallback mechanism removal tasks to Phase 2
+- Increased Phase 2 scope from 2 subtasks to 4 subtasks
+- Added Task 2.2: Remove fallback functions (workflow-detection.sh)
+- Added Task 2.4: Remove directory creation fallbacks
+- Kept startup marker removed (still uncertain value)
+- Updated rationale to emphasize fail-fast debugging
+
+**Reason for Revision**:
+User feedback: "I do want to remove fallback mechanisms in order to both simplify and effectively debug commands that are not working consistently"
+
+**Impact**:
+- Phase 2 time increased from 1-1.5 hours to 1.5-2 hours (adds 0.5 hours)
+- Total plan time increased from 9-14 hours to 9.5-15 hours
+- Complexity score increased from 88.0 to 92.0
+- Task count increased from 42 to 46 tasks
+- Fail-fast philosophy: explicit errors easier to debug than silent fallbacks
+
+**Modified Phases**:
+- Phase 2: Expanded from 2 subtasks to 4 subtasks, adding fallback removal tasks
+
+**Rationale Update**:
+Changed from "preserve working functionality" to "enable effective debugging through fail-fast error handling". Fallback mechanisms hide errors, making inconsistent behavior harder to diagnose.
+
+### 2025-10-27 - Revision 3: Add MANDATORY VERIFICATION Checkpoints (Compliance Review)
+
+**Changes Made**:
+- Added MANDATORY VERIFICATION checkpoint pattern to Component Interactions diagram
+- Added new section "Fallback Philosophy: Critical Distinction" distinguishing bootstrap fallbacks (remove) from file creation verification (preserve)
+- Updated Success Criteria with 6 new items related to file creation verification
+- Expanded File Creation Verification section in Testing Strategy
+- Added verification checkpoint testing requirements (file existence, size validation, fallback creation, re-verification)
+- Added file creation reliability measurement targets (70% → 100%)
+
+**Reason for Revision**:
+Compliance review (spec 499) identified CRITICAL GAP: Plan achieves 90% delegation rate but lacks MANDATORY VERIFICATION checkpoints for file creation operations, resulting in only 70% file creation reliability instead of 100%. The plan correctly removes bootstrap fallbacks (configuration errors) but incorrectly omits file creation verification (transient tool failures).
+
+**Key Insight from Compliance Review**:
+Fail-fast means "fail immediately on configuration errors" NOT "fail silently on transient tool errors." File creation verification fallbacks enable fail-fast by converting silent Write tool failures into explicit, diagnosed, and corrected errors.
+
+**Impact**:
+- File creation reliability: 70% → 100% (+43% improvement)
+- Time estimate increase: +2-3 hours for verification checkpoint implementation
+- No change to phase count (6 phases) or core task structure
+- Complexity score unchanged (92.0) - verification checkpoints add requirements to existing agent invocations, not new phases
+
+**Performance Metrics** (from compliance review):
+- Without verification: 7/10 files created (70% reliability)
+- With verification: 10/10 files created (100% reliability)
+- Workflow failure rate: 30% → 0%
+- Diagnostic time: 10-20 minutes → immediate
+
+**References**:
+- Compliance review: `../../499_plan_497_compliance_review/reports/001_plan_497_compliance_review/OVERVIEW.md`
+- Verification-Fallback Pattern: `.claude/docs/concepts/patterns/verification-fallback.md`
+- Command Architecture Standards: `.claude/docs/reference/command_architecture_standards.md` (Standard 0)
+
+**Modified Sections**:
+- Technical Design → Component Interactions (added MANDATORY VERIFICATION and FALLBACK MECHANISM boxes)
+- Technical Design → New subsection "Fallback Philosophy: Critical Distinction"
+- Success Criteria (6 new items for file creation verification)
+- Testing Strategy → File Creation Verification (added checkpoint testing requirements)
