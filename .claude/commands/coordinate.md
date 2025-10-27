@@ -1673,102 +1673,25 @@ for iteration in 1 2 3; do
   echo ""
 
   # Invoke debug-analyst agent
+  **EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent.
+
   Task {
     subagent_type: "general-purpose"
     description: "Analyze test failures - iteration $iteration"
     prompt: "
-      Read behavioral guidelines: .claude/agents/debug-analyst.md
+      Read and follow ALL behavioral guidelines from: .claude/agents/debug-analyst.md
 
-      **PRIMARY OBLIGATION - Debug Report File**
+      **Workflow-Specific Context**:
+      - Debug Report Path: ${DEBUG_REPORT} (absolute path, pre-calculated)
+      - Test Results: ${TOPIC_PATH}/outputs/test_results.md
+      - Project Standards: ${STANDARDS_FILE}
+      - Iteration Number: $iteration
 
-      **ABSOLUTE REQUIREMENT**: Creating debug report is MANDATORY.
+      **CRITICAL**: Before writing debug report file, ensure parent directory exists:
+      Use Bash tool: mkdir -p \"\$(dirname \\\"${DEBUG_REPORT}\\\")\"
 
-      **WHY THIS MATTERS**:
-      - Fix application depends on debug report existing
-      - Root cause analysis must be documented for review
-      - Iteration tracking requires file artifacts
-      - Cannot apply fixes without documented analysis
-
-      ---
-
-      **STEP 1 (REQUIRED BEFORE STEP 2) - Create Debug Report**
-
-      **EXECUTE NOW**
-
-      First, ensure parent directory exists:
-      ```bash
-      mkdir -p "$(dirname "${DEBUG_REPORT}")"
-      ```
-
-      Then create: ${DEBUG_REPORT}
-
-      Template:
-      ```markdown
-      # Debug Analysis - Iteration $iteration
-
-      ## Test Failures Summary
-      [To be populated in STEP 2]
-
-      ## Root Cause Analysis
-      [To be populated in STEP 3]
-
-      ## Proposed Fixes
-      [To be populated in STEP 3]
-      ```
-
-      ---
-
-      **STEP 2 (REQUIRED BEFORE STEP 3) - Analyze Failures**
-
-      Read: ${TOPIC_PATH}/outputs/test_results.md
-
-      **EXTRACT**:
-      - Each failing test name
-      - Error messages
-      - Stack traces
-      - File locations
-
-      ---
-
-      **STEP 3 (REQUIRED BEFORE STEP 4) - Determine Root Causes**
-
-      For EACH failing test:
-      1. Identify root cause
-      2. Determine affected files
-      3. Propose specific fix with code
-      4. Assign priority
-
-      **POPULATE REPORT** using Edit tool
-
-      ---
-
-      **STEP 4 (MANDATORY VERIFICATION)**
-
-      **VERIFY**:
-      ```bash
-      test -f \"${DEBUG_REPORT}\"
-      grep -q \"^## Root Cause Analysis\" \"${DEBUG_REPORT}\"
-      ```
-
-      **COMPLETION CRITERIA - ALL REQUIRED**:
-      - [x] Debug report exists at ${DEBUG_REPORT}
-      - [x] Report contains Test Failures Summary
-      - [x] Report contains Root Cause Analysis
-      - [x] Report contains Proposed Fixes
-      - [x] Return confirmation in exact format
-
-      **RETURN**: DEBUG_ANALYSIS_COMPLETE: ${DEBUG_REPORT}
-
-      **DO NOT** return full analysis text. Return ONLY confirmation above.
-
-      ---
-
-      **ORCHESTRATOR VERIFICATION**:
-      1. Verify debug report exists
-      2. Extract proposed fixes
-      3. Pass to code-writer for fix application
-
-      **REMINDER**: You are the EXECUTOR. Use exact path provided.
+      Execute debug analysis following all guidelines in behavioral file.
+      Return: DEBUG_ANALYSIS_COMPLETE: ${DEBUG_REPORT}
     "
   }
 
@@ -1795,91 +1718,23 @@ for iteration in 1 2 3; do
   echo ""
 
   # Invoke code-writer to apply fixes
+  **EXECUTE NOW**: USE the Task tool to invoke the code-writer agent to apply fixes.
+
   Task {
     subagent_type: "general-purpose"
     description: "Apply debug fixes - iteration $iteration"
     prompt: "
-      Read behavioral guidelines: .claude/agents/code-writer.md
+      Read and follow ALL behavioral guidelines from: .claude/agents/code-writer.md
 
-      **PRIMARY OBLIGATION - Apply All Fixes**
+      **Workflow-Specific Context**:
+      - Debug Analysis: ${DEBUG_REPORT} (read this file for proposed fixes)
+      - Project Standards: ${STANDARDS_FILE}
+      - Iteration Number: $iteration
+      - Task Type: Apply debug fixes
 
-      **ABSOLUTE REQUIREMENT**: Applying all proposed fixes is MANDATORY.
-
-      **WHY THIS MATTERS**:
-      - Test re-run depends on fixes being applied
-      - Partial fix application may not resolve failures
-      - Iteration success requires complete fix implementation
-
-      ---
-
-      **STEP 1 (REQUIRED BEFORE STEP 2) - Read Debug Analysis**
-
-      YOU MUST read debug analysis: ${DEBUG_REPORT}
-
-      **ANALYSIS REQUIREMENTS**:
-      - Review all proposed fixes
-      - Understand priority order
-      - Note file locations and line numbers
-
-      ---
-
-      **STEP 2 (REQUIRED BEFORE STEP 3) - Apply Recommended Fixes**
-
-      **EXECUTE NOW - Use Edit Tool**
-
-      For each fix:
-      - Locate the file and line number
-      - Apply the exact code change recommended
-      - Preserve code style and formatting
-      - Do NOT skip any fixes
-
-      **CHECKPOINT**: After EACH fix applied:
-      ```
-      PROGRESS: Fix N applied to [file]
-      ```
-
-      ---
-
-      **STEP 3 (REQUIRED BEFORE STEP 4) - Verify Fixes Applied**
-
-      YOU MUST verify all changes were successfully made:
-
-      ```bash
-      # Count modified files
-      git status --short | wc -l
-      ```
-
-      **VERIFICATION REQUIREMENTS**:
-      - Check that all changes were successfully made
-      - Count the number of files modified
-      - Verify no syntax errors introduced
-
-      ---
-
-      **STEP 4 (MANDATORY) - Return Fix Status**
-
-      **RETURN FORMAT**:
-      ```
-      FIXES_APPLIED: {count}
-      FILES_MODIFIED: {list of file paths}
-      ```
-
-      **DO NOT** return full diff or code listings.
-      Return ONLY status metadata above.
-
-      ---
-
-      **ORCHESTRATOR VERIFICATION**:
-      1. Parse fixes applied count
-      2. Prepare for test re-run
-      3. Determine if fixes resolved failures
-
-      **STANDARDS COMPLIANCE**:
-      - Follow code standards from: ${STANDARDS_FILE}
-      - Maintain existing indentation and style
-      - Add comments for complex fixes if needed
-
-      **REMINDER**: You are the EXECUTOR. Apply all fixes methodically.
+      Execute fix application following all guidelines in behavioral file.
+      Return: FIXES_APPLIED: {count}
+              FILES_MODIFIED: {list of file paths}
     "
   }
 
@@ -1892,30 +1747,25 @@ for iteration in 1 2 3; do
   echo "Re-running tests to verify fixes..."
   echo ""
 
+  **EXECUTE NOW**: USE the Task tool to invoke the test-specialist agent.
+
   Task {
     subagent_type: "general-purpose"
-    description: "Re-run tests after fixes"
+    description: "Re-run tests after fixes - iteration $iteration"
     prompt: "
-      Read behavioral guidelines: .claude/agents/test-specialist.md
+      Read and follow ALL behavioral guidelines from: .claude/agents/test-specialist.md
 
-      **EXECUTE NOW - RE-RUN TESTS**
+      **Workflow-Specific Context**:
+      - Test Results Path: ${TOPIC_PATH}/outputs/test_results.md (append to this file)
+      - Project Standards: ${STANDARDS_FILE}
+      - Iteration Number: $iteration (note this in results)
+      - Task Type: Re-run tests after fixes
 
-      STEP 1: Discover test commands from standards: ${STANDARDS_FILE}
-
-      STEP 2: Run project test suite
-              Execute the same tests that were run in Phase 4
-
-      STEP 3: Update test results report: ${TOPIC_PATH}/outputs/test_results.md
-              Append results from this iteration
-              Note which iteration this is (iteration $iteration)
-
-      STEP 4: Return test status:
-              TEST_STATUS: {passing|failing}
+      Execute tests following all guidelines in behavioral file.
+      Return: TEST_STATUS: {passing|failing}
               TESTS_TOTAL: {N}
               TESTS_PASSED: {M}
               TESTS_FAILED: {K}
-
-      **REMINDER**: You are the EXECUTOR. Run the tests now.
     "
   }
 
