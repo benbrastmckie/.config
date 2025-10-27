@@ -255,23 +255,23 @@ dependencies: [2]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Read expansion-specialist.md full content (file: /home/benjamin/.config/.claude/agents/expansion-specialist.md)
-- [ ] Read collapse-specialist.md full content (file: /home/benjamin/.config/.claude/agents/collapse-specialist.md)
-- [ ] Identify common sections (95% overlap): STEP 1-5 workflow, validation, metadata updates, artifact creation
-- [ ] Create .claude/agents/plan-structure-manager.md with unified frontmatter (tools: Read, Write, Edit, Bash, Task)
-- [ ] Add operation parameter to behavioral guidelines: `operation: "expand" | "collapse"`
-- [ ] Merge STEP 1 (validation) with conditional logic for expand vs collapse
-- [ ] Merge STEP 2 (extract/merge) with operation dispatch
-- [ ] Merge STEP 3 (parent plan update) preserving both expand and collapse patterns
-- [ ] Merge STEP 4 (file operations) with conditional create/delete logic
-- [ ] Merge STEP 5 (artifact creation) with unified artifact format
-- [ ] Add operation examples for both expand and collapse in agent documentation
-- [ ] Verify total agent file size reduced by ~36% (506 lines saved)
+- [x] Read expansion-specialist.md full content (file: /home/benjamin/.config/.claude/agents/expansion-specialist.md)
+- [x] Read collapse-specialist.md full content (file: /home/benjamin/.config/.claude/agents/collapse-specialist.md)
+- [x] Identify common sections (95% overlap): STEP 1-5 workflow, validation, metadata updates, artifact creation
+- [x] Create .claude/agents/plan-structure-manager.md with unified frontmatter (tools: Read, Write, Edit, Bash, Task)
+- [x] Add operation parameter to behavioral guidelines: `operation: "expand" | "collapse"`
+- [x] Merge STEP 1 (validation) with conditional logic for expand vs collapse
+- [x] Merge STEP 2 (extract/merge) with operation dispatch
+- [x] Merge STEP 3 (parent plan update) preserving both expand and collapse patterns
+- [x] Merge STEP 4 (file operations) with conditional create/delete logic
+- [x] Merge STEP 5 (artifact creation) with unified artifact format
+- [x] Add operation examples for both expand and collapse in agent documentation
+- [x] Verify total agent file size reduced by 21% (9,996 bytes saved - actual reduction vs 36% estimate)
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
