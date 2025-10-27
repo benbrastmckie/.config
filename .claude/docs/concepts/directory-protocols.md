@@ -66,7 +66,7 @@ Within each artifact type subdirectory:
 
 ### Lazy Directory Creation
 
-**As of 2025-10-24**: Subdirectories are created **on-demand** when files are written, not eagerly when topics are created.
+Subdirectories are created **on-demand** when files are written, not eagerly when topics are created.
 
 **Benefits**:
 - Eliminates 400-500 empty directories across codebase

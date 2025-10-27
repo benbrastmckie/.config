@@ -672,14 +672,14 @@ This pattern is enforced by:
 - **Standard 11**: Imperative Agent Invocation Pattern ([Command Architecture Standards](../reference/command_architecture_standards.md#standard-11))
 - **Behavioral Injection Pattern**: Anti-Pattern section ([Behavioral Injection](../concepts/patterns/behavioral-injection.md#anti-pattern-documentation-only-yaml-blocks))
 
-#### Historical Context
+#### Code-Fenced Task Invocations Prevent Execution
 
-This anti-pattern was discovered in the /supervise command (spec 438), where 7 YAML blocks wrapped in code fences caused a 0% agent delegation rate. All agent invocations appeared as documentation examples rather than executable instructions, leading to silent failure where the command appeared to work but no agents were actually invoked.
+YAML blocks wrapped in code fences (` ```yaml ... ``` `) cause a 0% agent delegation rate. All agent invocations appear as documentation examples rather than executable instructions, leading to silent failure where commands appear to work but no agents are invoked.
 
-**Impact of Fix**:
-- Agent delegation rate: 0% → 100%
-- File creation rate: 0% → 100%
-- Context reduction: Enabled 90% reduction through behavioral injection
+**Symptoms**:
+- Agent delegation rate: 0%
+- File creation rate: 0%
+- Commands complete successfully but produce no artifacts
 
 ### 5.2.2 Code Fence Priming Effect
 
@@ -760,15 +760,15 @@ Task {
 Result: 100% delegation (no code fences, no priming effect)
 ```
 
-**Historical Context**:
+**Detection Symptoms**:
 
-This anti-pattern was discovered in the /supervise command (spec 469), where a single code-fenced Task example at lines 62-79 caused 0% agent delegation rate for all 10 Task invocations later in the file. The actual invocations were structurally correct and lacked code fences, but the early code-fenced example established an interpretation pattern that prevented execution.
+A single code-fenced Task example early in a command file causes 0% agent delegation rate for all subsequent Task invocations, even when those invocations are structurally correct and lack code fences. The early code-fenced example establishes an interpretation pattern that prevents all later execution.
 
-**Impact of Fix** (Spec 469):
-- Delegation rate: 0% → 100% (all 10 Task invocations)
-- Context usage: >80% → <30% (metadata extraction enabled)
-- Streaming fallback errors: Eliminated
-- Parallel agent execution: 2-4 agents simultaneously (was 0)
+**Observable Effects**:
+- Delegation rate: 0% (all Task invocations treated as documentation)
+- Context usage: >80% (metadata extraction disabled)
+- Streaming fallback errors: Present
+- Parallel agent execution: 0 agents invoked
 
 **Prevention Guidelines**:
 - Never wrap executable Task invocations in code fences

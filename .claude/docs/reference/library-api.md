@@ -223,7 +223,7 @@ Create topic root directory using lazy subdirectory creation.
 - `0`: Success (topic root created)
 - `1`: Failure (directory creation failed)
 
-**Behavior Change**: Previously created all 6 subdirectories eagerly. Now creates only the topic root, eliminating empty subdirectories.
+**Behavior**: Creates only the topic root directory. Subdirectories are created on-demand when files are written to them.
 
 **Usage Example**:
 ```bash

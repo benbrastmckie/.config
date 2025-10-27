@@ -519,7 +519,7 @@ echo "Detailed info available: $([ -n "$DETAILED_INFO" ] && echo 'Yes' || echo '
 
 **Scenario**: Replace agent-based location detection with utility library across workflow commands
 
-**Background**: The `/orchestrate` command previously used `location-specialist` agent for Phase 0 location detection, consuming significant tokens and time.
+**Context**: Comparing agent-based location detection versus utility library implementation in Phase 0.
 
 **Measurement**:
 

@@ -467,41 +467,38 @@ Run detection commands monthly:
 - Check for PRIMARY OBLIGATION in command files
 - Identify large agent invocations (>50 lines)
 
-## Real-World Example: /supervise Command Refactor
+## Troubleshooting Pattern: Search Pattern Mismatch
 
-### Background
+### Problem Symptoms
 
-The `/supervise` command orchestrates multi-agent workflows with 5 specialized agents (research, planning, implementation, testing, documentation). Originally, the command contained 7 YAML code blocks (~915 lines total) with extensive behavioral duplication. A refactor plan (spec 438) was created but became blocked due to a search pattern mismatch.
+**Symptom**: Implementation plan searches for a pattern that doesn't exist in target files.
 
-### Problem Discovered
+**Observable Impact**:
+- Edit tool finds 0 matches when attempting replacements
+- Regression tests give false passes (searching for non-existent patterns)
+- Implementation effort wasted trying to replace patterns that aren't present
 
-**Issue**: Refactor plan (spec 438/001) searched for pattern `Example agent invocation:` followed by ` ```yaml`, but this pattern never existed in supervise.md.
+**Root Cause**: Plan assumes patterns based on analysis rather than verifying actual strings with Grep tool.
 
-**Impact**:
-- Phase 1 implementation could not proceed (Edit tool found 0 matches)
-- Regression test gave false pass (searched for non-existent pattern)
-- Wasted implementation effort trying to replace patterns that weren't there
+### Diagnostic Steps
 
-**Root Cause**: Plan assumed a pattern based on analysis rather than verifying actual strings with Grep tool.
+**Step 1: Pattern Verification**
+- Use Grep to find actual patterns in target file
+- Compare discovered patterns against plan's search strings
+- Identify any mismatches between expected and actual patterns
+- Verify regression tests search for correct patterns
 
-### Solution Process
+**Step 2: Classification of Duplicated Content**
+- For each code block or template, classify as:
+  - **Structural**: Documentation examples (retain)
+  - **Mixed**: Contains both documentation and duplication (refactor selectively)
+  - **Behavioral**: Pure duplication (remove/extract)
 
-**Step 1: Diagnostic Analysis** (spec 444/001/OVERVIEW.md)
-- Used Grep to find actual patterns in supervise.md
-- Discovered 7 ` ```yaml` blocks at lines 49, 63, 682, 1082, 1440, 1721, 2246
-- Confirmed "Example agent invocation:" pattern had 0 occurrences
-- Identified regression test was searching for wrong pattern
-
-**Step 2: Classification** (Task 2.1 - supervise_yaml_classification.md)
-- Classified all 7 YAML blocks as structural vs behavioral
-- **Block 1** (line 49): Structural (documentation example) - KEEP
-- **Block 2** (line 63): Mixed (structural + behavioral duplication) - REFACTOR
-- **Blocks 3-7** (lines 682-2246): Behavioral duplication (~885 lines) - REMOVE
-
-**Step 3: Corrected Refactor Plan** (Task 2.2 - 001_supervise_refactor_corrected.md)
-- Added Phase 0: Pattern verification (prevents future mismatches)
-- Updated search patterns to use actual ` ```yaml` + `Task {` patterns
-- Clarified target state: 2 blocks retained (documentation), 5 removed (agent templates)
+**Step 3: Corrected Implementation Strategy**
+- Add pattern verification phase before making edits
+- Update search patterns to match actual file content
+- Test Edit tool on sample patterns before full implementation
+- Clarify target state with explicit line numbers and examples
 - Fixed regression test to detect actual patterns
 
 **Step 4: Pattern Verification Guards**

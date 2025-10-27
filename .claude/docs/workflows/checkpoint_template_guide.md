@@ -57,7 +57,7 @@ Template → Plan Generation → Checkpoint Creation → Implementation → Auto
 
 ### Schema v1.3 Reference
 
-Current schema version: **1.3** (as of 2025-10-17)
+Current schema version: **1.3**
 
 **Core Fields:**
 - `schema_version` (string): Checkpoint format version
@@ -181,20 +181,17 @@ else
 fi
 ```
 
-### Migration Path
+### Schema Migration
 
-**v1.0 → v1.1** (Adaptive Planning)
-- Adds: `replanning_count`, `last_replan_reason`, `replan_phase_counts`, `replan_history`
-- Automatic migration via `migrate_checkpoint_format()`
+Checkpoints support automatic migration between schema versions using `migrate_checkpoint_format()` or the standalone migration script.
 
-**v1.1 → v1.2** (Debug Integration)
-- Adds: `debug_report_path`, `user_last_choice`, `debug_iteration_count`
-- Automatic migration via `migrate_checkpoint_format()`
+**Migration command**: `.claude/lib/migrate-checkpoint-v1.3.sh <checkpoint-file> [--dry-run]`
 
-**v1.2 → v1.3** (Full Integration)
-- Adds: Topic organization, context preservation, template integration, spec maintenance fields
-- Automatic migration via `migrate_checkpoint_format()` or standalone script
-- **Migration command**: `.claude/lib/migrate-checkpoint-v1.3.sh <checkpoint-file> [--dry-run]`
+**Schema Versions**:
+- **v1.0**: Base checkpoint system
+- **v1.1**: Adaptive planning fields (`replanning_count`, `replan_history`)
+- **v1.2**: Debug integration (`debug_report_path`, `debug_iteration_count`)
+- **v1.3**: Full integration (topic organization, context preservation, template support, spec maintenance)
 
 **Migration Example:**
 ```bash
