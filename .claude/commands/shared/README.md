@@ -32,14 +32,8 @@ When Claude processes a command, it automatically reads referenced files, making
 - `standards-analysis.md` - Standards analysis patterns ✓
 
 ### Template Reference Files (migrated from .claude/templates/)
-- `agent-invocation-patterns.md` - Agent coordination patterns
-- `agent-tool-descriptions.md` - Tool usage documentation
-- `audit-checklist.md` - Command quality checklist
-- `command-frontmatter.md` - Command metadata structure
 - `debug-structure.md` - Debug report structure
 - `orchestration-patterns.md` - Orchestration workflow patterns
-- `output-patterns.md` - Command output formatting
-- `readme-template.md` - Directory README template
 - `refactor-structure.md` - Refactor report structure
 - `report-structure.md` - Research report structure
 
