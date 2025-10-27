@@ -214,50 +214,31 @@ CHECKPOINT: Path pre-calculation complete
 
 For EACH subtopic in SUBTOPICS array, invoke research-specialist agent:
 
+**NOTE**: All STEP sequences (STEP 1-4) are defined in the agent behavioral file (.claude/agents/research-specialist.md). This prompt only provides workflow-specific context.
+
 ```yaml
 Task {
   subagent_type: "general-purpose"
   description: "Research [SUBTOPIC] with mandatory artifact creation"
   timeout: 300000  # 5 minutes per research agent
   prompt: "
-    **ABSOLUTE REQUIREMENT - File Creation is Your Primary Task**
-
-    Read and follow the behavioral guidelines from:
+    Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/research-specialist.md
 
-    You are acting as a Research Specialist Agent with the tools and constraints
-    defined in that file.
+    **Workflow-Specific Context**:
+    - Research Topic: [SUBTOPIC_DISPLAY_NAME]
+    - Report Path: [ABSOLUTE_PATH_FROM_SUBTOPIC_REPORT_PATHS]
+    - Project Standards: /home/benjamin/.config/CLAUDE.md
 
     **YOUR ROLE**: You are a SUBAGENT executing research for ONE subtopic.
-    - The ORCHESTRATOR calculated your report path (injected below)
+    - The ORCHESTRATOR calculated your report path (injected above)
     - DO NOT use Task tool to orchestrate other agents
     - STAY IN YOUR LANE: Research YOUR subtopic only
 
-    **Research Topic**: [SUBTOPIC_DISPLAY_NAME]
-    **Report Path**: [ABSOLUTE_PATH_FROM_SUBTOPIC_REPORT_PATHS]
+    **CRITICAL**: Create report file at EXACT path provided above.
 
-    **STEP 1 (MANDATORY)**: Verify you received the absolute report path above.
-    If path is not absolute (starts with /), STOP and report error.
-
-    **STEP 2 (EXECUTE NOW)**: Create report file at EXACT path using Write tool.
-    Create with initial structure BEFORE conducting research.
-
-    **STEP 3 (REQUIRED)**: Conduct research and update report file:
-    - Use Grep/Glob to search codebase for relevant patterns
-    - Use WebSearch/WebFetch for best practices (if applicable)
-    - Use Edit tool to update report incrementally
-    - Include file references with line numbers
-    - Add at least 3 specific recommendations
-
-    **STEP 4 (ABSOLUTE REQUIREMENT)**: Verify file exists and return:
-    REPORT_CREATED: [EXACT_ABSOLUTE_PATH]
-
-    **EMIT PROGRESS MARKERS** during research:
-    - PROGRESS: Creating report file
-    - PROGRESS: Searching codebase
-    - PROGRESS: Analyzing findings
-    - PROGRESS: Updating report
-    - PROGRESS: Research complete
+    Execute research following all guidelines in behavioral file.
+    Return: REPORT_CREATED: [EXACT_ABSOLUTE_PATH]
   "
 }
 ```
@@ -391,45 +372,34 @@ done
 
 **Invoke research-synthesizer** using Task tool:
 
+**NOTE**: All STEP sequences (STEP 1-5) are defined in the agent behavioral file (.claude/agents/research-synthesizer.md). This prompt only provides workflow-specific context.
+
 ```yaml
 Task {
   subagent_type: "general-purpose"
   description: "Synthesize research findings into overview report"
   timeout: 180000  # 3 minutes
   prompt: "
-    **ABSOLUTE REQUIREMENT - Overview Creation is Your Primary Task**
-
-    Read and follow the behavioral guidelines from:
+    Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/research-synthesizer.md
 
-    You are acting as a Research Synthesizer Agent with the tools and constraints
-    defined in that file.
+    **Workflow-Specific Context**:
+    - Overview Report Path: $OVERVIEW_PATH
+    - Research Topic: $RESEARCH_TOPIC
+    - Subtopic Report Paths:
+$(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "    - $path"; done)
 
     **YOUR ROLE**: You are a SUBAGENT synthesizing research findings.
-    - The ORCHESTRATOR created all subtopic reports (paths injected below)
+    - The ORCHESTRATOR created all subtopic reports (paths injected above)
     - DO NOT use Task tool to orchestrate other agents
     - STAY IN YOUR LANE: Synthesize findings only
 
-    **Overview Report Path**: $OVERVIEW_PATH
-    **Research Topic**: $RESEARCH_TOPIC
-    **Subtopic Report Paths**:
-$(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "    - $path"; done)
+    **IMPORTANT**: Create overview file with filename OVERVIEW.md (ALL CAPS).
 
-    **IMPORTANT**: Create the overview file with filename OVERVIEW.md (ALL CAPS).
-    This is NOT the standard numbered format. The overview file is always named
-    OVERVIEW.md to distinguish it as the final synthesis report.
-
-    **STEP 1**: Verify you received absolute overview path and subtopic paths.
-    **STEP 2**: Read ALL subtopic reports using Read tool.
-    **STEP 3**: Create overview file at EXACT path using Write tool (filename: OVERVIEW.md).
-    **STEP 4**: Synthesize findings and update overview using Edit tool.
-    **STEP 5**: Verify file exists and return: OVERVIEW_CREATED: [path]
-
-    **EMIT PROGRESS MARKERS**:
-    - PROGRESS: Reading [N] subtopic reports
-    - PROGRESS: Creating overview file
-    - PROGRESS: Synthesizing findings
-    - PROGRESS: Synthesis complete
+    Execute synthesis following all guidelines in behavioral file.
+    Return: OVERVIEW_CREATED: [path]
+           OVERVIEW_SUMMARY: [100-word summary]
+           METADATA: [structured metadata]
   "
 }
 ```
@@ -498,55 +468,32 @@ fi
 
 Use the Task tool to invoke the spec-updater agent:
 
+**NOTE**: All STEP sequences are defined in the agent behavioral file (.claude/agents/spec-updater.md). This prompt only provides workflow-specific context.
+
 ```yaml
 Task {
   subagent_type: "general-purpose"
   description: "Update cross-references for hierarchical research reports"
   prompt: "
-    **ABSOLUTE REQUIREMENT - Cross-Reference Updates Are Mandatory**
-
-    Read and follow the behavioral guidelines from:
+    Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/spec-updater.md
 
-    You are acting as a Spec Updater Agent.
-
-    Context:
-    - Overview report created at: $OVERVIEW_PATH
-    - Subtopic reports created at:
+    **Workflow-Specific Context**:
+    - Operation: LINK (hierarchical_report_creation)
+    - Overview report: $OVERVIEW_PATH
+    - Subtopic reports:
 $(for path in "${SUBTOPIC_PATHS_ARRAY[@]}"; do echo "      - $path"; done)
     - Topic directory: $TOPIC_DIR
-    - Related plan (if exists): [check topic's plans/ subdirectory]
-    - Operation: hierarchical_report_creation
+    - Related plan: [check topic's plans/ subdirectory]
 
-    **REQUIRED TASKS (ALL MUST BE COMPLETED)**:
-    1. Check if a plan exists in the topic's plans/ subdirectory
+    **Cross-Reference Requirements**:
+    1. Bidirectional links: Overview ↔ Subtopics
+    2. Plan references (if plan exists): Overview → Plan, Plan → Overview
+    3. Relative paths for all links
+    4. Verify all links functional
 
-    2. If related plan exists:
-       - Add overview report reference to plan metadata
-       - Add individual subtopic reports to plan's 'Research Reports' section
-       - Use relative paths (e.g., ../reports/001_research/OVERVIEW.md)
-
-    3. For each subtopic report:
-       - Add link to overview report in 'Related Reports' section
-       - Use relative path (e.g., ./OVERVIEW.md)
-
-    4. For overview report:
-       - Verify links to all subtopic reports are relative and correct
-       - Add link to related plan (if applicable)
-
-    5. Verify all cross-references are bidirectional:
-       - Overview ↔ Subtopics (already present from synthesis)
-       - Overview → Plan (if applicable)
-       - Plan → Overview (if applicable)
-
-    6. Verify topic subdirectories are present
-
-    Return:
-    - Cross-reference update status
-    - Plan files modified (if any)
-    - Number of subtopic reports cross-referenced
-    - Confirmation that all reports are ready for use
-    - Any warnings or issues encountered
+    Execute cross-reference updates following all guidelines in behavioral file.
+    Return: Update status, files modified, verification results
   "
 }
 ```
