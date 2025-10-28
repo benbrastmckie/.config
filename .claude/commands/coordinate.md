@@ -854,7 +854,7 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
     SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
   else
     # Failure path - provide clear diagnostics
-    echo "  ❌ ERROR: Report file verification failed"
+    echo "  ❌ ERROR [Phase 1, Research]: Report file verification failed"
     echo "     Expected: File exists and has content"
     if [ ! -f "$REPORT_PATH" ]; then
       echo "     Found: File does not exist"
@@ -865,31 +865,33 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
     echo "  DIAGNOSTIC INFORMATION:"
     echo "    - Expected path: $REPORT_PATH"
     echo "    - Directory: $(dirname "$REPORT_PATH")"
-    echo "    - Agent: research-specialist (agent $i)"
+    echo "    - Agent: research-specialist (agent $i/$RESEARCH_COMPLEXITY)"
     echo ""
     echo "  Directory Status:"
     if [ -d "$(dirname "$REPORT_PATH")" ]; then
-      echo "    ✓ Reports directory exists"
-      echo "    Files present: $(ls -1 "$(dirname "$REPORT_PATH")" 2>/dev/null | wc -l)"
-      if [ "$(ls -1 "$(dirname "$REPORT_PATH")" 2>/dev/null | wc -l)" -gt 0 ]; then
-        echo "    Listing:"
-        ls -lh "$(dirname "$REPORT_PATH")" | tail -5
+      FILE_COUNT=$(ls -1 "$(dirname "$REPORT_PATH")" 2>/dev/null | wc -l)
+      echo "    ✓ Reports directory exists ($FILE_COUNT files)"
+      if [ "$FILE_COUNT" -gt 0 ]; then
+        echo "    Recent files:"
+        ls -lht "$(dirname "$REPORT_PATH")" | head -6
       fi
     else
       echo "    ✗ Reports directory does not exist"
+      echo "    Run: mkdir -p $(dirname "$REPORT_PATH")"
     fi
     echo ""
-    echo "  Possible Causes:"
-    echo "    - Agent did not complete successfully"
-    echo "    - Agent wrote to wrong path"
-    echo "    - Permission error preventing file creation"
-    echo "    - Agent crashed or timed out"
+    echo "  Diagnostic Commands:"
+    echo "    # Check directory and permissions"
+    echo "    ls -la $(dirname "$REPORT_PATH")"
+    echo "    # Check agent behavioral file"
+    echo "    cat .claude/agents/research-specialist.md | head -50"
+    echo "    # Review task invocation"
+    echo "    grep -A10 'subagent_type.*research' /tmp/coordinate_*"
     echo ""
-    echo "  What to check next:"
-    echo "    1. Check if reports directory exists: ls -la $(dirname "$REPORT_PATH")"
-    echo "    2. Check agent output for errors (above)"
-    echo "    3. Verify path format matches agent expectations"
-    echo "    4. Review research-specialist behavioral file"
+    echo "  Most Likely Causes:"
+    echo "    1. Agent failed to write file (check agent output above for errors)"
+    echo "    2. Path mismatch (agent used different path than expected)"
+    echo "    3. Permission denied (run diagnostic commands to verify)"
     echo ""
 
     FAILED_AGENTS+=("agent_$i")
@@ -1096,7 +1098,7 @@ if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
   fi
 else
   # Failure path - provide clear diagnostics
-  echo "❌ ERROR: Plan file verification failed"
+  echo "❌ ERROR [Phase 2, Planning]: Plan file verification failed"
   echo "   Expected: File exists at $PLAN_PATH with content"
   if [ ! -f "$PLAN_PATH" ]; then
     echo "   Found: File does not exist"
@@ -1108,30 +1110,33 @@ else
   echo "  - Agent: plan-architect"
   echo "  - Expected path: $PLAN_PATH"
   echo "  - Directory: $(dirname "$PLAN_PATH")"
+  echo "  - Research inputs: ${#SUCCESSFUL_REPORT_PATHS[@]} reports"
   echo ""
   echo "Directory Status:"
   if [ -d "$(dirname "$PLAN_PATH")" ]; then
-    echo "  ✓ Plans directory exists"
-    echo "  Files present: $(ls -1 "$(dirname "$PLAN_PATH")" 2>/dev/null | wc -l)"
-    if [ "$(ls -1 "$(dirname "$PLAN_PATH")" 2>/dev/null | wc -l)" -gt 0 ]; then
-      echo "  Listing:"
-      ls -lh "$(dirname "$PLAN_PATH")"
+    FILE_COUNT=$(ls -1 "$(dirname "$PLAN_PATH")" 2>/dev/null | wc -l)
+    echo "  ✓ Plans directory exists ($FILE_COUNT files)"
+    if [ "$FILE_COUNT" -gt 0 ]; then
+      echo "  Existing plans:"
+      ls -lht "$(dirname "$PLAN_PATH")"
     fi
   else
     echo "  ✗ Plans directory does not exist"
+    echo "  Run: mkdir -p $(dirname "$PLAN_PATH")"
   fi
   echo ""
-  echo "Possible Causes:"
-  echo "  - Plan-architect agent did not complete successfully"
-  echo "  - Agent wrote to wrong path"
-  echo "  - Permission error preventing file creation"
-  echo "  - Agent crashed during planning"
+  echo "Diagnostic Commands:"
+  echo "  # Verify research reports available"
+  echo "  ls -la $TOPIC_PATH/reports/"
+  echo "  # Check plan-architect agent behavioral file"
+  echo "  cat .claude/agents/plan-architect.md | head -50"
+  echo "  # Verify project standards accessible"
+  echo "  cat $STANDARDS_FILE | head -20"
   echo ""
-  echo "What to check next:"
-  echo "  1. Check plans directory: ls -la $(dirname "$PLAN_PATH")"
-  echo "  2. Review plan-architect agent output (above)"
-  echo "  3. Verify plan-architect behavioral file: cat .claude/agents/plan-architect.md"
-  echo "  4. Check research reports used for planning: ls -la $TOPIC_PATH/reports/"
+  echo "Most Likely Causes:"
+  echo "  1. Plan-architect agent failed (check output above for errors)"
+  echo "  2. Insufficient research reports (need ≥1 report)"
+  echo "  3. Path mismatch or permission issue"
   echo ""
   echo "Workflow TERMINATED."
   exit 1
@@ -1345,18 +1350,29 @@ IMPL_SECONDS=$((IMPL_DURATION % 60))
 
 # Check if implementation directory exists
 if [ ! -d "$IMPL_ARTIFACTS" ]; then
-  echo "❌ ERROR: Implementation artifacts directory not created"
+  echo "❌ ERROR [Phase 3, Implementation]: Artifacts directory not created"
   echo "   Expected: $IMPL_ARTIFACTS"
+  echo "   Status: $IMPL_STATUS (waves: $WAVES_COMPLETED/$WAVE_COUNT)"
   echo ""
   echo "DIAGNOSTIC INFORMATION:"
-  echo "  - Check that implementer-coordinator agent created the directory"
-  echo "  - Verify parent directory permissions: ls -la $(dirname "$IMPL_ARTIFACTS")"
-  echo "  - Check agent output for error messages"
+  echo "  - Agent: implementation-coordinator"
+  echo "  - Duration: ${IMPL_MINUTES}m${IMPL_SECONDS}s"
+  echo "  - Plan: $PLAN_PATH"
   echo ""
-  echo "What to check next:"
-  echo "  1. Verify agent invocation completed: echo \"\$AGENT_OUTPUT\""
-  echo "  2. Check parent directory: ls -la $(dirname "$IMPL_ARTIFACTS")"
-  echo "  3. Review implementation-coordinator behavioral file"
+  echo "Diagnostic Commands:"
+  echo "  # Check parent directory and permissions"
+  echo "  ls -la $(dirname "$IMPL_ARTIFACTS")"
+  echo "  # Verify plan file readable"
+  echo "  cat $PLAN_PATH | head -50"
+  echo "  # Check implementation-coordinator agent"
+  echo "  cat .claude/agents/implementation-coordinator.md | head -50"
+  echo "  # Check wave execution logs"
+  echo "  ls -la $TOPIC_PATH/artifacts/ 2>/dev/null || echo 'No artifacts directory'"
+  echo ""
+  echo "Most Likely Causes:"
+  echo "  1. Implementation-coordinator agent failed (check output above)"
+  echo "  2. Permission denied creating directory"
+  echo "  3. Wave execution error (check IMPL_STATUS=$IMPL_STATUS)"
   echo ""
   exit 1
 else
@@ -1584,42 +1600,39 @@ for iteration in 1 2 3; do
 
   **Your Responsibility**: Substitute actual values from loop variables.
 
-  # Verify debug report created
-  echo "════════════════════════════════════════════════════════"
-  echo "  MANDATORY VERIFICATION - Debug Report"
-  echo "════════════════════════════════════════════════════════"
-  echo ""
-
   # VERIFICATION REQUIRED: Debug report must exist before applying fixes (fail-fast)
   if [ ! -f "$DEBUG_REPORT" ]; then
-    echo "❌ ERROR: Debug report not created"
+    echo "❌ ERROR [Phase 5, Debug - Iteration $iteration]: Debug report not created"
     echo "   Expected: File exists at $DEBUG_REPORT"
     echo "   Found: File does not exist"
     echo ""
     echo "DIAGNOSTIC INFORMATION:"
     echo "  - Agent: debug-analyst"
-    echo "  - Expected path: $DEBUG_REPORT"
-    echo "  - Directory: $(dirname "$DEBUG_REPORT")"
+    echo "  - Iteration: $iteration of $MAX_DEBUG_ITERATIONS"
+    echo "  - Test results: $TOPIC_PATH/outputs/test_results.md"
+    echo "  - Plan: $PLAN_PATH"
     echo ""
     echo "Directory Status:"
     if [ -d "$(dirname "$DEBUG_REPORT")" ]; then
-      echo "  ✓ Debug directory exists"
-      echo "  Files present: $(ls -1 "$(dirname "$DEBUG_REPORT")" 2>/dev/null | wc -l)"
+      FILE_COUNT=$(ls -1 "$(dirname "$DEBUG_REPORT")" 2>/dev/null | wc -l)
+      echo "  ✓ Debug directory exists ($FILE_COUNT files)"
     else
       echo "  ✗ Debug directory does not exist"
+      echo "  Run: mkdir -p $(dirname "$DEBUG_REPORT")"
     fi
     echo ""
-    echo "Possible Causes:"
-    echo "  - Debug-analyst agent did not complete successfully"
-    echo "  - Agent wrote to wrong path"
-    echo "  - Permission error preventing file creation"
-    echo "  - Agent crashed during analysis"
+    echo "Diagnostic Commands:"
+    echo "  # Check test results from Phase 4"
+    echo "  cat $TOPIC_PATH/outputs/test_results.md | tail -50"
+    echo "  # Verify debug-analyst agent behavioral file"
+    echo "  cat .claude/agents/debug-analyst.md | head -50"
+    echo "  # Check debug directory"
+    echo "  ls -la $(dirname "$DEBUG_REPORT")"
     echo ""
-    echo "What to check next:"
-    echo "  1. Check debug directory: ls -la $(dirname "$DEBUG_REPORT")"
-    echo "  2. Review debug-analyst agent output (above)"
-    echo "  3. Verify debug-analyst behavioral file: cat .claude/agents/debug-analyst.md"
-    echo "  4. Check test failure details from Phase 4"
+    echo "Most Likely Causes:"
+    echo "  1. Debug-analyst failed to analyze test failures (check output above)"
+    echo "  2. No test results available for analysis"
+    echo "  3. Path mismatch or permission issue"
     echo ""
     echo "Workflow TERMINATED."
     exit 1
@@ -1801,14 +1814,9 @@ STEP 1: Invoke doc-writer agent to create summary
 STEP 2: Verify summary file created
 
 ```bash
-echo "════════════════════════════════════════════════════════"
-echo "  MANDATORY VERIFICATION - Workflow Summary"
-echo "════════════════════════════════════════════════════════"
-echo ""
-
 # Check if summary file exists and has content (fail-fast)
 if [ ! -f "$SUMMARY_PATH" ] || [ ! -s "$SUMMARY_PATH" ]; then
-  echo "❌ ERROR: Summary file not created"
+  echo "❌ ERROR [Phase 6, Documentation]: Summary file not created"
   echo "   Expected: File exists at $SUMMARY_PATH with content"
   if [ ! -f "$SUMMARY_PATH" ]; then
     echo "   Found: File does not exist"
@@ -1818,28 +1826,31 @@ if [ ! -f "$SUMMARY_PATH" ] || [ ! -s "$SUMMARY_PATH" ]; then
   echo ""
   echo "DIAGNOSTIC INFORMATION:"
   echo "  - Agent: doc-writer"
-  echo "  - Expected path: $SUMMARY_PATH"
-  echo "  - Directory: $(dirname "$SUMMARY_PATH")"
+  echo "  - Workflow: $WORKFLOW_SCOPE"
+  echo "  - Test status: $TEST_STATUS"
+  echo "  - Artifacts: $IMPL_ARTIFACTS"
   echo ""
   echo "Directory Status:"
   if [ -d "$(dirname "$SUMMARY_PATH")" ]; then
-    echo "  ✓ Summaries directory exists"
-    echo "  Files present: $(ls -1 "$(dirname "$SUMMARY_PATH")" 2>/dev/null | wc -l)"
+    FILE_COUNT=$(ls -1 "$(dirname "$SUMMARY_PATH")" 2>/dev/null | wc -l)
+    echo "  ✓ Summaries directory exists ($FILE_COUNT files)"
   else
     echo "  ✗ Summaries directory does not exist"
+    echo "  Run: mkdir -p $(dirname "$SUMMARY_PATH")"
   fi
   echo ""
-  echo "Possible Causes:"
-  echo "  - Doc-writer agent did not complete successfully"
-  echo "  - Agent wrote to wrong path"
-  echo "  - Permission error preventing file creation"
-  echo "  - Agent crashed during summary generation"
+  echo "Diagnostic Commands:"
+  echo "  # Check implementation artifacts available"
+  echo "  ls -la $IMPL_ARTIFACTS"
+  echo "  # Verify doc-writer agent behavioral file"
+  echo "  cat .claude/agents/doc-writer.md | head -50"
+  echo "  # Check all workflow artifacts"
+  echo "  find $TOPIC_PATH -type f -name '*.md' | head -20"
   echo ""
-  echo "What to check next:"
-  echo "  1. Check summaries directory: ls -la $(dirname "$SUMMARY_PATH")"
-  echo "  2. Review doc-writer agent output (above)"
-  echo "  3. Verify doc-writer behavioral file: cat .claude/agents/doc-writer.md"
-  echo "  4. Check implementation artifacts: ls -la $IMPL_ARTIFACTS"
+  echo "Most Likely Causes:"
+  echo "  1. Doc-writer agent failed (check output above for errors)"
+  echo "  2. Missing implementation artifacts to document"
+  echo "  3. Path mismatch or permission issue"
   echo ""
   echo "Workflow TERMINATED."
   exit 1
