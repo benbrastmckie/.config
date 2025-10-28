@@ -200,8 +200,10 @@ done
 ```bash
 # Verify all paths are absolute
 for subtopic in "${!SUBTOPIC_REPORT_PATHS[@]}"; do
-  if [[ ! "${SUBTOPIC_REPORT_PATHS[$subtopic]}" =~ ^/ ]]; then
-    echo "CRITICAL ERROR: Path for '$subtopic' is not absolute: ${SUBTOPIC_REPORT_PATHS[$subtopic]}"
+  # Use string comparison instead of negated regex to avoid bash eval issues
+  path="${SUBTOPIC_REPORT_PATHS[$subtopic]}"
+  if [ "${path:0:1}" != "/" ]; then
+    echo "CRITICAL ERROR: Path for '$subtopic' is not absolute: $path"
     exit 1
   fi
 done
