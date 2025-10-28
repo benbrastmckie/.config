@@ -361,6 +361,8 @@ Located in `.claude/commands/`:
 - `/orchestrate` - Full-featured orchestration with PR automation and dashboard tracking
 - `/coordinate` - Clean orchestration focused on wave-based parallel execution and fail-fast error handling (2,500-3,000 lines vs 5,438)
 - `/supervise` - Sequential orchestration with proven architectural compliance
+  - **Usage Guide**: [/supervise Usage Guide](.claude/docs/guides/supervise-guide.md) - Examples and common patterns
+  - **Phase Reference**: [/supervise Phase Reference](.claude/docs/reference/supervise-phases.md) - Detailed phase documentation
 
 All orchestration commands provide 7-phase workflow with parallel research (2-4 agents), automated complexity evaluation, and conditional debugging. Wave-based commands (/orchestrate, /coordinate) achieve 40-60% time savings through parallel implementation. Performance: <30% context usage throughout.
 
