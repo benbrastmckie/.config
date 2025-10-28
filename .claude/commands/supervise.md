@@ -590,6 +590,11 @@ fi
 # Reconstruct REPORT_PATHS array from exported variables
 # (Bash arrays cannot be directly exported, so we use a helper function)
 reconstruct_report_paths_array
+
+# Emit dual-mode progress reporting after Phase 0
+emit_progress "0" "Phase 0 complete - paths calculated"
+echo "✓ Phase 0 complete: Paths calculated, directory structure ready"
+echo ""
 ```
 
 ## Phase 1: Research
@@ -700,22 +705,23 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
   # Emit progress marker
   emit_progress "1" "Verifying research report $i/$RESEARCH_COMPLEXITY"
 
-  echo "Verifying Report $i: $(basename $REPORT_PATH)"
-
   # Check if file exists and has content (with retry for transient failures)
   if retry_with_backoff 2 1000 test -f "$REPORT_PATH" -a -s "$REPORT_PATH"; then
-    # Success path - perform quality checks
+    # Success path - concise output with file size
     FILE_SIZE=$(wc -c < "$REPORT_PATH")
+    FILE_SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $FILE_SIZE/1024}")
+    LINE_COUNT=$(wc -l < "$REPORT_PATH")
 
+    # Quality checks (silent unless warning needed)
+    WARNINGS=""
     if [ "$FILE_SIZE" -lt 200 ]; then
-      echo "  ⚠️  WARNING: File is very small ($FILE_SIZE bytes)"
+      WARNINGS=" ⚠️  very small"
     fi
-
     if ! grep -q "^# " "$REPORT_PATH"; then
-      echo "  ⚠️  WARNING: Missing markdown header"
+      WARNINGS="${WARNINGS}${WARNINGS:+ |}  ⚠️  missing header"
     fi
 
-    echo "  ✅ PASSED: Report created successfully ($FILE_SIZE bytes)"
+    echo "  ✅ VERIFIED: Report $i created (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines)${WARNINGS}"
     SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
   else
     # Failure path - extract error info and attempt recovery
@@ -822,7 +828,7 @@ echo "✓ All metadata extracted - context usage reduced 95%"
 echo ""
 
 # Log context reduction metrics
-if [ -n "${SUCCESSFUL_REPORT_PATHS[0]}" ]; then
+if [ "${#SUCCESSFUL_REPORT_PATHS[@]}" -gt 0 ]; then
   # Estimate token counts (rough: 1 token ≈ 4 chars)
   FULL_REPORT_SIZE=$(wc -c < "${SUCCESSFUL_REPORT_PATHS[0]}" 2>/dev/null || echo "5000")
   FULL_TOKENS=$((FULL_REPORT_SIZE / 4))
@@ -907,6 +913,11 @@ ARTIFACT_PATHS_JSON=$(cat <<EOF
 EOF
 )
 save_checkpoint "supervise" "phase_1" "$ARTIFACT_PATHS_JSON"
+
+# Emit dual-mode progress reporting after Phase 1
+emit_progress "1" "Phase 1 complete - research finished"
+echo "✓ Phase 1 complete: Research finished ($SUCCESSFUL_REPORT_COUNT reports)"
+echo ""
 ```
 
 ## Phase 2: Planning
@@ -1015,24 +1026,22 @@ emit_progress "2" "Verifying implementation plan"
 
 # Check if file exists and has content (with retry for transient failures)
 if retry_with_backoff 2 1000 test -f "$PLAN_PATH" -a -s "$PLAN_PATH"; then
-  # Success path - perform quality checks
+  # Success path - concise output with key metrics
   PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
+  FILE_SIZE=$(wc -c < "$PLAN_PATH")
+  FILE_SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $FILE_SIZE/1024}")
+  LINE_COUNT=$(wc -l < "$PLAN_PATH")
 
+  # Quality checks (silent unless warning needed)
+  WARNINGS=""
   if [ "$PHASE_COUNT" -lt 3 ]; then
-    echo "⚠️  WARNING: Plan has only $PHASE_COUNT phases"
-    echo "   Expected at least 3 phases for proper structure."
+    WARNINGS=" ⚠️  only $PHASE_COUNT phases"
   fi
-
   if ! grep -q "^## Metadata" "$PLAN_PATH"; then
-    echo "⚠️  WARNING: Plan missing metadata section"
+    WARNINGS="${WARNINGS}${WARNINGS:+ |}  ⚠️  missing metadata"
   fi
 
-  echo "✅ VERIFICATION PASSED: Plan created with $PHASE_COUNT phases"
-  echo "   Path: $PLAN_PATH"
-  echo ""
-
-  # VERIFICATION REQUIREMENT: YOU MUST NOT proceed without plan file
-  echo "Verification checkpoint passed - proceeding to plan metadata extraction"
+  echo "✅ VERIFIED: Plan created (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines, $PHASE_COUNT phases)${WARNINGS}"
   echo ""
 else
   # Failure path - extract error info and attempt recovery
@@ -1143,8 +1152,17 @@ should_run_phase 3 || {
   echo "Next Steps:"
   echo "  The plan is ready for execution"
   echo ""
+  # Emit dual-mode progress reporting for research-and-plan completion
+  emit_progress "2" "Phase 2 complete - planning finished (research-and-plan workflow)"
+  echo "✓ Phase 2 complete: Planning finished"
+  echo ""
   exit 0
 }
+
+# Emit dual-mode progress reporting after Phase 2 (for full-implementation workflow)
+emit_progress "2" "Phase 2 complete - planning finished"
+echo "✓ Phase 2 complete: Planning finished"
+echo ""
 ```
 
 ## Phase 3: Implementation
@@ -1275,6 +1293,11 @@ ARTIFACT_PATHS_JSON=$(cat <<EOF
 EOF
 )
 save_checkpoint "supervise" "phase_3" "$ARTIFACT_PATHS_JSON"
+
+# Emit dual-mode progress reporting after Phase 3
+emit_progress "3" "Phase 3 complete - implementation finished"
+echo "✓ Phase 3 complete: Implementation finished (status: $IMPL_STATUS)"
+echo ""
 ```
 
 ## Phase 4: Testing
@@ -1380,6 +1403,11 @@ ARTIFACT_PATHS_JSON=$(cat <<EOF
 EOF
 )
 save_checkpoint "supervise" "phase_4" "$ARTIFACT_PATHS_JSON"
+
+# Emit dual-mode progress reporting after Phase 4
+emit_progress "4" "Phase 4 complete - testing finished"
+echo "✓ Phase 4 complete: Testing finished (status: $TEST_STATUS)"
+echo ""
 ```
 
 ## Phase 5: Debug (Conditional)
@@ -1706,6 +1734,11 @@ fi
 
 echo "Phase 5 Complete: Debug cycle finished"
 echo ""
+
+# Emit dual-mode progress reporting after Phase 5
+emit_progress "5" "Phase 5 complete - debugging finished"
+echo "✓ Phase 5 complete: Debugging finished"
+echo ""
 ```
 
 ## Phase 6: Documentation (Conditional)
@@ -1793,6 +1826,11 @@ echo "Verification checkpoint passed - workflow complete"
 echo ""
 
 echo "Phase 6 Complete: Documentation finished"
+echo ""
+
+# Emit dual-mode progress reporting after Phase 6
+emit_progress "6" "Phase 6 complete - documentation finished"
+echo "✓ Phase 6 complete: Documentation finished"
 echo ""
 ```
 
