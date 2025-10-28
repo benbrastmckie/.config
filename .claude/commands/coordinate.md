@@ -1069,52 +1069,25 @@ emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 echo ""
 ```
 
-**EXECUTE NOW**: USE the Task tool NOW to invoke the research-specialist agent.
+**EXECUTE NOW**: USE the Task tool for each research topic (1 to $RESEARCH_COMPLEXITY) with these parameters:
 
-**CRITICAL**: You MUST invoke the research-specialist agent 2-4 times in parallel (one invocation per subtopic) in a SINGLE message with multiple Task tool calls.
-
-For each subtopic, use these parameters:
-
-- **subagent_type**: `"general-purpose"`
-- **description**: `"Research [subtopic name] for [workflow description]"`
-- **prompt**:
-  ```
-  Read and follow ALL behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/research-specialist.md
-
-  **Workflow-Specific Context**:
-  - Research Topic: [insert specific subtopic from decomposition]
-  - Report Path: [insert absolute path from $REPORT_PATHS array calculated earlier]
-  - Project Standards: /home/benjamin/.config/CLAUDE.md
-  - Complexity Level: [insert $RESEARCH_COMPLEXITY value]
-
-  **CRITICAL**: Before writing report file, ensure parent directory exists:
-  Use Bash tool: mkdir -p "$(dirname "[report path]")"
-
-  Execute research following all guidelines in behavioral file.
-  Return: REPORT_CREATED: [absolute report path]
-  ```
-
-**Example** (for first subtopic):
 - subagent_type: "general-purpose"
-- description: "Research authentication patterns for REST API security"
+- description: "Research [insert topic name] with mandatory artifact creation"
+- timeout: 300000  # 5 minutes per research agent
 - prompt: |
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/research-specialist.md
 
     **Workflow-Specific Context**:
-    - Research Topic: Authentication patterns for REST API security
-    - Report Path: /home/benjamin/.config/.claude/specs/123_api_auth/reports/001_auth_patterns.md
+    - Research Topic: [insert display-friendly topic name]
+    - Report Path: [insert absolute path from REPORT_PATHS array]
     - Project Standards: /home/benjamin/.config/CLAUDE.md
-    - Complexity Level: 3
+    - Complexity Level: $RESEARCH_COMPLEXITY
 
-    **CRITICAL**: Before writing report file, ensure parent directory exists:
-    Use Bash tool: mkdir -p "$(dirname "/home/benjamin/.config/.claude/specs/123_api_auth/reports/001_auth_patterns.md")"
+    **CRITICAL**: Create report file at EXACT path provided above.
 
     Execute research following all guidelines in behavioral file.
-    Return: REPORT_CREATED: /home/benjamin/.config/.claude/specs/123_api_auth/reports/001_auth_patterns.md
-
-**Your Responsibility**: Repeat the Task tool invocation for each subtopic (typically 2-4 times) in a SINGLE message for parallel execution. Substitute actual values from variables calculated in STEP 1.
+    Return: REPORT_CREATED: [EXACT_ABSOLUTE_PATH]
 
 ```bash
 # Emit progress marker after agent invocations complete
@@ -1379,53 +1352,25 @@ echo ""
 
 STEP 2: Invoke plan-architect agent via Task tool
 
-**EXECUTE NOW**: USE the Task tool NOW to invoke the plan-architect agent with these parameters:
+**EXECUTE NOW**: USE the Task tool with these parameters:
 
-- **subagent_type**: `"general-purpose"`
-- **description**: `"Create implementation plan for [workflow description]"`
-- **prompt**:
-  ```
-  Read and follow ALL behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/plan-architect.md
-
-  **Workflow-Specific Context**:
-  - Workflow Description: [insert $WORKFLOW_DESCRIPTION from context]
-  - Plan File Path: [insert $PLAN_PATH calculated in STEP 1]
-  - Project Standards: [insert $STANDARDS_FILE discovered above]
-  - Research Reports: [insert $RESEARCH_REPORTS_LIST from above]
-  - Research Report Count: [insert $SUCCESSFUL_REPORT_COUNT]
-
-  **CRITICAL**: Before writing plan file, ensure parent directory exists:
-  Use Bash tool: mkdir -p "$(dirname "[plan path]")"
-
-  Execute planning following all guidelines in behavioral file.
-  Return: PLAN_CREATED: [absolute plan path]
-  ```
-
-**Example**:
 - subagent_type: "general-purpose"
-- description: "Create implementation plan for REST API authentication system"
+- description: "Create implementation plan with mandatory file creation"
 - prompt: |
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/plan-architect.md
 
     **Workflow-Specific Context**:
-    - Workflow Description: REST API authentication system with OAuth2 and JWT support
-    - Plan File Path: /home/benjamin/.config/.claude/specs/123_api_auth/plans/001_implementation_plan.md
-    - Project Standards: /home/benjamin/.config/CLAUDE.md
-    - Research Reports:
-      - /home/benjamin/.config/.claude/specs/123_api_auth/reports/001_auth_patterns.md
-      - /home/benjamin/.config/.claude/specs/123_api_auth/reports/002_oauth2_impl.md
-      - /home/benjamin/.config/.claude/specs/123_api_auth/reports/003_jwt_best_practices.md
-    - Research Report Count: 3
+    - Workflow Description: $WORKFLOW_DESCRIPTION
+    - Plan File Path: $PLAN_PATH (absolute path, pre-calculated)
+    - Project Standards: $STANDARDS_FILE
+    - Research Reports: $RESEARCH_REPORTS_LIST
+    - Research Report Count: $SUCCESSFUL_REPORT_COUNT
 
-    **CRITICAL**: Before writing plan file, ensure parent directory exists:
-    Use Bash tool: mkdir -p "$(dirname "/home/benjamin/.config/.claude/specs/123_api_auth/plans/001_implementation_plan.md")"
+    **CRITICAL**: Create plan file at EXACT path provided above.
 
     Execute planning following all guidelines in behavioral file.
-    Return: PLAN_CREATED: /home/benjamin/.config/.claude/specs/123_api_auth/plans/001_implementation_plan.md
-
-**Your Responsibility**: Substitute actual values from variables calculated in previous steps.
+    Return: PLAN_CREATED: [EXACT_ABSOLUTE_PATH]
 
 ### Mandatory Verification - Plan Creation
 
@@ -1660,48 +1605,8 @@ echo ""
 
 ### Step 2: Implementer-Coordinator Agent Invocation
 
-**EXECUTE NOW**: USE the Task tool NOW to invoke the implementer-coordinator agent with these parameters:
+**EXECUTE NOW**: USE the Task tool with these parameters:
 
-- **subagent_type**: `"general-purpose"`
-- **description**: `"Orchestrate wave-based implementation with parallel execution"`
-- **prompt**:
-  ```
-  Read and follow ALL behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/implementer-coordinator.md
-
-  **Workflow-Specific Context**:
-  - Plan File Path: [insert $PLAN_PATH from earlier]
-  - Implementation Artifacts Directory: [insert $IMPL_ARTIFACTS]
-  - Project Standards: [insert $STANDARDS_FILE]
-  - Workflow Type: [insert $WORKFLOW_SCOPE]
-
-  **Wave Execution Context**:
-  - Total Waves: [insert $WAVE_COUNT]
-  - Wave Structure: [insert $WAVES JSON]
-  - Dependency Graph: [insert dependency_graph from $DEPENDENCY_ANALYSIS]
-
-  **CRITICAL INSTRUCTIONS**:
-  1. Execute phases wave-by-wave in the order specified
-  2. Within each wave, execute phases in parallel if can_parallel is true
-  3. Wait for all phases in a wave to complete before proceeding to next wave
-  4. For each phase, delegate to implementation-executor agent with phase-specific context
-  5. Track wave completion and save checkpoints after each wave
-  6. Before writing any artifact files, ensure parent directories exist:
-     Use Bash tool: mkdir -p "$(dirname "<file_path>")" before each file creation
-
-  **Expected Output Format**:
-  IMPLEMENTATION_STATUS: {complete|partial|failed}
-  WAVES_COMPLETED: {N}
-  WAVES_TOTAL: {M}
-  PHASES_COMPLETED: {X}
-  PHASES_TOTAL: {Y}
-  PARALLEL_PHASES_EXECUTED: {Z}
-  TIME_SAVED_PERCENTAGE: {P}
-
-  Execute wave-based implementation following all guidelines in behavioral file.
-  ```
-
-**Example**:
 - subagent_type: "general-purpose"
 - description: "Orchestrate wave-based implementation with parallel execution"
 - prompt: |
@@ -1709,37 +1614,20 @@ echo ""
     /home/benjamin/.config/.claude/agents/implementer-coordinator.md
 
     **Workflow-Specific Context**:
-    - Plan File Path: /home/benjamin/.config/.claude/specs/123_api_auth/plans/001_implementation_plan.md
-    - Implementation Artifacts Directory: /home/benjamin/.config/.claude/specs/123_api_auth/artifacts/
-    - Project Standards: /home/benjamin/.config/CLAUDE.md
-    - Workflow Type: full-implementation
+    - Plan File Path: $PLAN_PATH
+    - Implementation Artifacts Directory: $IMPL_ARTIFACTS
+    - Project Standards: $STANDARDS_FILE
+    - Workflow Type: $WORKFLOW_SCOPE
 
     **Wave Execution Context**:
-    - Total Waves: 3
-    - Wave Structure: [{"wave": 1, "phases": [1, 2], "can_parallel": true}, {"wave": 2, "phases": [3, 4], "can_parallel": true}, {"wave": 3, "phases": [5], "can_parallel": false}]
-    - Dependency Graph: {"nodes": [1, 2, 3, 4, 5], "edges": [[1, 3], [2, 4], [3, 5], [4, 5]]}
+    - Total Waves: $WAVE_COUNT
+    - Wave Structure: $WAVES
+    - Dependency Graph: [insert dependency_graph from analysis]
 
-    **CRITICAL INSTRUCTIONS**:
-    1. Execute phases wave-by-wave in the order specified
-    2. Within each wave, execute phases in parallel if can_parallel is true
-    3. Wait for all phases in a wave to complete before proceeding to next wave
-    4. For each phase, delegate to implementation-executor agent with phase-specific context
-    5. Track wave completion and save checkpoints after each wave
-    6. Before writing any artifact files, ensure parent directories exist:
-       Use Bash tool: mkdir -p "$(dirname "<file_path>")" before each file creation
-
-    **Expected Output Format**:
-    IMPLEMENTATION_STATUS: complete
-    WAVES_COMPLETED: 3
-    WAVES_TOTAL: 3
-    PHASES_COMPLETED: 5
-    PHASES_TOTAL: 5
-    PARALLEL_PHASES_EXECUTED: 4
-    TIME_SAVED_PERCENTAGE: 45
+    **CRITICAL**: Execute phases wave-by-wave, parallel within waves when possible.
 
     Execute wave-based implementation following all guidelines in behavioral file.
-
-**Your Responsibility**: Substitute actual values from variables calculated in previous steps.
+    Return: IMPLEMENTATION_STATUS: {complete|partial|failed}
 
 ### Step 3: Mandatory Verification - Implementation Completion
 
@@ -1882,32 +1770,27 @@ should_run_phase 4 || {
 
 STEP 1: Invoke test-specialist agent
 
-**EXECUTE NOW**: USE the Task tool NOW to invoke the test-specialist agent with these parameters:
+**EXECUTE NOW**: USE the Task tool with these parameters:
 
-- **subagent_type**: `"general-purpose"`
-- **description**: `"Execute comprehensive tests for [workflow description]"`
-- **prompt**:
-  ```
-  Read and follow ALL behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/test-specialist.md
+- subagent_type: "general-purpose"
+- description: "Execute comprehensive tests with mandatory results file"
+- prompt: |
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/test-specialist.md
 
-  **Workflow-Specific Context**:
-  - Test Results Path: [insert $TOPIC_PATH]/outputs/test_results.md
-  - Project Standards: [insert $STANDARDS_FILE]
-  - Plan File: [insert $PLAN_PATH]
-  - Implementation Artifacts: [insert $IMPL_ARTIFACTS]
+    **Workflow-Specific Context**:
+    - Test Results Path: $TOPIC_PATH/outputs/test_results.md
+    - Project Standards: $STANDARDS_FILE
+    - Plan File: $PLAN_PATH
+    - Implementation Artifacts: $IMPL_ARTIFACTS
 
-  **CRITICAL**: Before writing test results file, ensure parent directory exists:
-  Use Bash tool: mkdir -p "[insert $TOPIC_PATH]/outputs"
+    **CRITICAL**: Create test results file at path provided above.
 
-  Execute testing following all guidelines in behavioral file.
-  Return: TEST_STATUS: {passing|failing}
-  TESTS_TOTAL: {N}
-  TESTS_PASSED: {M}
-  TESTS_FAILED: {K}
-  ```
-
-**Your Responsibility**: Substitute actual values from context variables.
+    Execute testing following all guidelines in behavioral file.
+    Return: TEST_STATUS: {passing|failing}
+    TESTS_TOTAL: {N}
+    TESTS_PASSED: {M}
+    TESTS_FAILED: {K}
 
 ### Test Results Verification
 
@@ -2226,31 +2109,26 @@ fi
 
 STEP 1: Invoke doc-writer agent to create summary
 
-**EXECUTE NOW**: USE the Task tool NOW to invoke the doc-writer agent with these parameters:
+**EXECUTE NOW**: USE the Task tool with these parameters:
 
-- **subagent_type**: `"general-purpose"`
-- **description**: `"Create workflow summary for [workflow description]"`
-- **prompt**:
-  ```
-  Read and follow ALL behavioral guidelines from:
-  /home/benjamin/.config/.claude/agents/doc-writer.md
+- subagent_type: "general-purpose"
+- description: "Create workflow summary with mandatory file creation"
+- prompt: |
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/doc-writer.md
 
-  **Workflow-Specific Context**:
-  - Summary Path: [insert $SUMMARY_PATH]
-  - Plan File: [insert $PLAN_PATH]
-  - Research Reports: [insert $RESEARCH_REPORTS_LIST]
-  - Implementation Artifacts: [insert $IMPL_ARTIFACTS]
-  - Test Status: [insert $TEST_STATUS]
-  - Workflow Description: [insert $WORKFLOW_DESCRIPTION]
+    **Workflow-Specific Context**:
+    - Summary Path: $SUMMARY_PATH
+    - Plan File: $PLAN_PATH
+    - Research Reports: $RESEARCH_REPORTS_LIST
+    - Implementation Artifacts: $IMPL_ARTIFACTS
+    - Test Status: $TEST_STATUS
+    - Workflow Description: $WORKFLOW_DESCRIPTION
 
-  **CRITICAL**: Before writing summary file, ensure parent directory exists:
-  Use Bash tool: mkdir -p "$(dirname "[summary path]")"
+    **CRITICAL**: Create summary file at path provided above.
 
-  Execute documentation following all guidelines in behavioral file.
-  Return: SUMMARY_CREATED: [absolute summary path]
-  ```
-
-**Your Responsibility**: Substitute actual values from context variables.
+    Execute documentation following all guidelines in behavioral file.
+    Return: SUMMARY_CREATED: [EXACT_ABSOLUTE_PATH]
 
 ### Mandatory Verification - Summary Creation
 
