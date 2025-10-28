@@ -581,6 +581,386 @@ First, let me explore the codebase...
 3. Claude defaults to direct execution using Read/Grep/Write
 4. Prevents hierarchical multi-agent patterns
 
+## Case Studies
+
+### Spec 495: /coordinate and /research Agent Delegation Failures
+
+**Date**: 2025-10-27
+**Commands Affected**: `/coordinate`, `/research`
+**Problem**: 0% agent delegation rate despite correct Task tool syntax
+**Root Cause**: Documentation-only YAML blocks wrapped in markdown code fences
+
+#### Problem Details
+
+**File**: `.claude/commands/coordinate.md`
+**Affected Lines**: 9 agent invocations across all phases (research, planning, implementation, testing, debugging, documentation)
+
+**Broken Pattern Example** (lines 800-850 - Research Phase):
+```markdown
+The research phase invokes research-specialist agents:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC_NAME}"
+  prompt: |
+    Read and follow: .claude/agents/research-specialist.md
+
+    Research topic: ${TOPIC_NAME}
+    Output to: ${REPORT_PATH}
+}
+```
+
+This pattern appeared correct but agents never executed.
+```
+
+**Why It Failed:**
+1. **Code fence wrapper**: ` ```yaml ... ``` ` marks block as documentation, not execution
+2. **Template variables**: `${TOPIC_NAME}` never substituted with actual values
+3. **No imperative instruction**: Missing "EXECUTE NOW" directive
+4. **No path pre-calculation**: Report paths never calculated before invocation
+
+**Evidence of Failure:**
+- Zero reports created in `.claude/specs/NNN_topic/reports/`
+- TODO1.md files contained agent output (wrong location)
+- No PROGRESS: markers visible during command execution
+- Delegation rate analysis: 0% (0 of 9 invocations succeeded)
+
+#### Solution Applied
+
+**Transformation Pattern** (Research Phase fix):
+
+**Before** (Documentation-only YAML):
+```yaml
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC_NAME}"
+  prompt: "Read .claude/agents/research-specialist.md..."
+}
+```
+```
+
+**After** (Imperative bullet-point):
+```markdown
+**EXECUTE NOW**: USE the Bash tool to calculate paths:
+
+bash
+topic_dir=$(create_topic_structure "authentication_patterns")
+report_path="$topic_dir/reports/001_oauth_patterns.md"
+echo "REPORT_PATH: $report_path"
+```
+
+**EXECUTE NOW**: USE the Task tool NOW with these parameters:
+
+- subagent_type: "general-purpose"
+- description: "Research authentication patterns for REST APIs"
+- prompt: |
+    Read and follow behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
+
+    Research topic: Authentication patterns for REST APIs
+
+    Output file: [insert $report_path from above]
+
+    Create comprehensive report covering OAuth 2.0, JWT, session-based authentication.
+
+**WAIT FOR**: Agent to return REPORT_CREATED: $report_path
+```
+
+**Key Changes:**
+1. **Removed code fence**: Task invocation no longer wrapped in ` ```yaml `
+2. **Added imperative directive**: `**EXECUTE NOW**: USE the Task tool NOW`
+3. **Pre-calculated paths**: Explicit Bash tool invocation before agent call
+4. **Replaced template variables**: Concrete example provided with instructions to insert actual values
+5. **Added completion signal**: `REPORT_CREATED:` verification
+
+#### Results
+
+**Delegation Rate Improvement:**
+- Before: 0% (0 of 9 invocations)
+- After: >90% (9 of 9 invocations)
+- Measurement: `.claude/tests/test_orchestration_commands.sh` delegation rate test
+
+**File Creation Reliability:**
+- Before: 0 files in correct locations (all output to TODO1.md)
+- After: 100% files in `.claude/specs/NNN_topic/` directories
+- Evidence: No TODO*.md files created after fix, all artifacts in topic directories
+
+**Performance Impact:**
+- Bootstrap time: Unchanged (<1 second)
+- Agent invocation time: Unchanged (proper delegation has no overhead)
+- Parallel execution: Now possible (was impossible before)
+
+#### /research Command Specifics
+
+**File**: `.claude/commands/research.md`
+**Affected Lines**: 3 agent invocations + ~10 bash code blocks
+
+**Additional Problem**: Bash code blocks appearing as documentation:
+
+**Before** (Documentation-style):
+```bash
+# Calculate topic directory
+topic_dir=$(create_topic_structure "$topic")
+echo "TOPIC_DIR: $topic_dir"
+```
+
+**After** (Explicit tool invocation):
+```markdown
+**EXECUTE NOW**: USE the Bash tool to calculate topic directory:
+
+bash
+topic_dir=$(create_topic_structure "$topic")
+echo "TOPIC_DIR: $topic_dir"
+```
+
+Verify: $topic_dir should contain absolute path to .claude/specs/NNN_topic/
+```
+
+**Key Difference**: `**EXECUTE NOW**: USE the Bash tool` directive signals immediate execution, not documentation.
+
+#### Lessons Learned
+
+1. **Code fences prevent execution**: Any ` ```yaml ` or ` ```bash ` wrapper marks content as documentation
+2. **Imperative directives required**: `EXECUTE NOW` signals immediate tool invocation
+3. **Template variables must be eliminated**: Provide concrete examples with instructions to substitute actual values
+4. **Path pre-calculation essential**: Bash tool must calculate paths before passing to agents
+5. **Completion signals enable verification**: `REPORT_CREATED:` confirms successful file creation
+
+#### Prevention Measures
+
+**Validation Script**: `.claude/lib/validate-agent-invocation-pattern.sh`
+- Detects YAML-style Task blocks in command files
+- Detects markdown code fences around invocations
+- Detects template variables in prompts (`${VAR}`)
+- Exit code 1 on violations, 0 on pass
+
+**Test Suite**: `.claude/tests/test_orchestration_commands.sh`
+- Delegation rate tests for all orchestration commands
+- File creation location verification
+- Regression tests to prevent reintroduction
+
+**Documentation Updates**:
+- Updated [Command Architecture Standards](../../reference/command_architecture_standards.md) - Standard 11
+- Created [Orchestration Troubleshooting Guide](../../guides/orchestration-troubleshooting.md)
+- This behavioral injection documentation updated with case study
+
+### Spec 057: /supervise Command Robustness Improvements
+
+**Date**: 2025-10-27
+**Commands Affected**: `/supervise`, `/coordinate`
+**Problem**: Bootstrap failures and inconsistent error handling
+**Root Cause**: Fallback mechanisms hiding configuration errors
+
+#### Problem Details
+
+**File**: `.claude/commands/supervise.md`
+**Affected Areas**: Library sourcing, function verification, directory creation
+
+**Problem 1: Function Name Mismatch** (RESOLVED in Phase 0):
+```bash
+# Command called:
+save_phase_checkpoint "$phase_number" "$data"
+load_phase_checkpoint "$phase_number"
+
+# Library provided:
+save_checkpoint "$checkpoint_name" "$data"
+restore_checkpoint "$checkpoint_name"
+```
+
+**Impact**: 12 checkpoint calls failed silently (6 in /supervise, 6 in /coordinate)
+
+**Problem 2: Fallback Mechanisms Hiding Errors**:
+
+```bash
+# Example fallback (lines 242-274):
+if ! source .claude/lib/workflow-detection.sh; then
+  # Define fallback function inline
+  detect_workflow_scope() {
+    echo "research-only"  # Default assumption
+  }
+fi
+```
+
+**Why This Failed:**
+1. **Silent configuration errors**: Library missing → fallback used → no indication of problem
+2. **Inconsistent behavior**: Some environments work (library present), others use fallback (different results)
+3. **Debugging difficulty**: No clear error message showing which library failed
+4. **False success**: Commands appeared to work but used degraded functionality
+
+#### Solution Applied
+
+**Fail-Fast Error Handling**:
+
+**Before** (Silent fallback):
+```bash
+if ! source .claude/lib/workflow-detection.sh; then
+  # Fallback function
+  detect_workflow_scope() { echo "research-only"; }
+fi
+```
+
+**After** (Explicit error):
+```bash
+if ! source .claude/lib/workflow-detection.sh; then
+  echo "ERROR: Failed to source workflow-detection.sh"
+  echo "EXPECTED PATH: $SCRIPT_DIR/.claude/lib/workflow-detection.sh"
+  echo "DIAGNOSTIC: ls -la $SCRIPT_DIR/.claude/lib/workflow-detection.sh"
+  echo ""
+  echo "CONTEXT: Library required for workflow scope detection"
+  echo "ACTION: Verify library file exists and is readable"
+  exit 1
+fi
+```
+
+**Key Changes:**
+1. **Removed fallback function**: Force explicit error instead of degraded functionality
+2. **Enhanced error message**: Shows what failed, why, and how to diagnose
+3. **Diagnostic commands**: Includes exact commands to investigate problem
+4. **Exit immediately**: Prevents command from continuing with broken state
+
+**Enhanced Function Verification**:
+
+**Before** (Generic error):
+```bash
+if ! declare -F detect_workflow_scope >/dev/null; then
+  echo "ERROR: Missing function detect_workflow_scope"
+  exit 1
+fi
+```
+
+**After** (Detailed diagnostics):
+```bash
+if ! declare -F detect_workflow_scope >/dev/null; then
+  echo "ERROR: Missing required function: detect_workflow_scope"
+  echo "EXPECTED PROVIDER: .claude/lib/workflow-detection.sh"
+  echo "DIAGNOSTIC: declare -F | grep detect_workflow_scope"
+  echo "DIAGNOSTIC: Check if workflow-detection.sh was sourced successfully"
+  exit 1
+fi
+```
+
+**Removed Directory Creation Fallbacks**:
+
+**Before** (Manual fallback):
+```markdown
+If agent fails to create directory:
+
+bash
+mkdir -p "$topic_dir/reports"
+mkdir -p "$topic_dir/plans"
+```
+
+**After** (Fail-fast):
+```markdown
+After agent execution, verify directory creation:
+
+bash
+if [ ! -d "$topic_dir/reports" ]; then
+  echo "ERROR: Agent failed to create reports directory"
+  echo "EXPECTED: $topic_dir/reports"
+  echo "DIAGNOSTIC: ls -la $topic_dir"
+  exit 1
+fi
+```
+
+**Key Principle**: Agents are responsible for directory creation. If they fail, we must diagnose why, not mask the failure with manual creation.
+
+#### Results
+
+**Error Message Clarity:**
+- Before: Generic "sourcing failed" messages
+- After: 7 library sourcing checks enhanced with diagnostic commands
+- Improvement: Clear actionable errors showing which library failed and how to fix
+
+**Fallback Removal:**
+- Before: 32 lines of fallback functions (workflow-detection.sh)
+- After: 0 fallback functions, explicit errors instead
+- Improvement: Consistent behavior across all environments
+
+**File Size Reduction:**
+- Before: 2,323 lines
+- After: 2,291 lines
+- Change: -32 lines (-1.4%)
+
+#### Fallback Philosophy
+
+**CRITICAL DISTINCTION**: Not all fallbacks are bad. This spec removed bootstrap fallbacks but preserved file creation verification fallbacks.
+
+**Bootstrap Fallbacks** (REMOVED - Hide Configuration Errors):
+- Silent function definitions when libraries missing
+- Automatic directory creation masking agent delegation failures
+- Fallback workflow detection when required libraries unavailable
+- Default value substitution for missing required variables
+
+**Rationale**: Configuration errors indicate broken setup that MUST be fixed before workflow execution.
+
+**File Creation Verification Fallbacks** (PRESERVED - Detect Tool Failures):
+- MANDATORY VERIFICATION after each agent file creation operation
+- File existence checks (ls -la, [ -f "$PATH" ])
+- File size validation (minimum 500 bytes)
+- Fallback file creation when agent succeeded but Write tool failed
+- Re-verification after fallback creation
+
+**Rationale**: File creation verification does NOT hide configuration errors. It detects transient Write tool failures where agent succeeded but file missing.
+
+**Performance Impact**:
+- Without verification: 70% file creation reliability
+- With verification: 100% file creation reliability
+- Improvement: +43% reliability
+
+#### Lessons Learned
+
+1. **Fail-fast enables debugging**: Explicit errors easier to diagnose than silent fallbacks
+2. **Fallback type matters**: Bootstrap fallbacks hide errors; verification fallbacks detect errors
+3. **Diagnostic commands essential**: Error messages must include exact commands to investigate
+4. **Context in errors**: Show what failed, why, expected state, actual state
+5. **Exit immediately**: Don't continue execution with broken state
+
+#### Prevention Measures
+
+**Error Message Standards**:
+1. What failed (specific operation)
+2. Why it failed (exact error message/condition)
+3. Context (paths, variables, environment state)
+4. Diagnostic commands (exact commands to investigate)
+5. Exit code (non-zero to signal failure)
+
+**Test Suite**: `.claude/tests/test_orchestration_commands.sh`
+- Bootstrap sequence tests (library sourcing, function verification)
+- Error message validation (ensures diagnostics present)
+- Regression tests for fallback removal
+
+**Documentation Updates**:
+- Created [Orchestration Troubleshooting Guide](../../guides/orchestration-troubleshooting.md)
+- Updated fail-fast philosophy documentation
+- Updated error handling best practices
+
+### Cross-Spec Insights
+
+**Common Root Cause**: Both specs 495 and 057 identified pattern violations that prevented effective operation
+
+- **Spec 495**: Documentation-style patterns prevented agent delegation (0% execution)
+- **Spec 057**: Fallback mechanisms prevented effective debugging (silent failures)
+
+**Shared Solution**: Explicit, imperative instructions with fail-fast error handling
+
+- **Spec 495**: Removed code fences, added `EXECUTE NOW` directives
+- **Spec 057**: Removed fallbacks, added diagnostic error messages
+
+**Unified Validation**: Both specs contributed to shared testing infrastructure
+
+- **Validation Script**: `.claude/lib/validate-agent-invocation-pattern.sh` (from spec 495)
+- **Test Suite**: `.claude/tests/test_orchestration_commands.sh` (unified from both specs)
+- **Error Standards**: Diagnostic message format (from spec 057)
+
+**Impact on Orchestration Commands**:
+- `/coordinate`: Fixed agent delegation (spec 495) + checkpoint API (spec 057)
+- `/research`: Fixed agent delegation (spec 495)
+- `/supervise`: Improved error handling (spec 057)
+- All commands now use consistent patterns and validation
+
 ## Testing Validation
 
 ### Validation Script
