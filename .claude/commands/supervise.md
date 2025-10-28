@@ -169,14 +169,15 @@ The command detects the workflow type and executes only the appropriate phases:
   - Error type categorization accuracy: >85%
   - Error reporting overhead: <30ms per error (negligible)
 
-## Auto-Recovery
+## Fail-Fast Error Handling
 
-This command implements verification-fallback pattern with single-retry for transient errors.
+This command implements fail-fast pattern with structured diagnostics for immediate error detection.
 
 **Key Behaviors**:
-- Transient errors (timeouts, file locks): Single retry after 1s delay
-- Permanent errors (syntax, dependencies): Fail-fast with diagnostics
+- Verification failures: Immediate error with 5-section diagnostic template
+- File creation errors: Structured diagnostics (Expected/Found/Diagnostic/Commands/Causes)
 - Partial research failure: Continue if ≥50% agents succeed
+- No retry overhead: Errors detected and reported immediately
 
 **See**: [Verification-Fallback Pattern](../docs/concepts/patterns/verification-fallback.md)
 **See**: [Error Handling Library](../lib/error-handling.sh) - Implementation details
@@ -312,7 +313,6 @@ REQUIRED_FUNCTIONS=(
   "emit_progress"
   "save_checkpoint"
   "restore_checkpoint"
-  "retry_with_backoff"
 )
 
 MISSING_FUNCTIONS=()
@@ -332,7 +332,7 @@ if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
       detect_workflow_scope|should_run_phase)
         echo "    → Should be provided by: workflow-detection.sh"
         ;;
-      classify_error|suggest_recovery|retry_with_backoff|detect_error_type|extract_location|generate_suggestions)
+      classify_error|suggest_recovery|detect_error_type|extract_location|generate_suggestions)
         echo "    → Should be provided by: error-handling.sh"
         ;;
       save_checkpoint|restore_checkpoint|checkpoint_get_field|checkpoint_set_field)
@@ -378,7 +378,7 @@ fi
 **Note on Design Decisions** (Phase 1B):
 - **Metadata extraction** not implemented: supervise uses path-based context passing (not full content), so the 95% context reduction claim doesn't apply
 - **Context pruning** not implemented: bash variables naturally scope, no evidence of context bloat in current architecture
-- **retry_with_backoff** implemented: 6 verification points wrapped for resilience against transient failures (ZERO overhead in success case)
+- **Fail-fast error handling** implemented: All 7 verification points use immediate error detection with structured diagnostics (no retry overhead)
 
 ## Available Utility Functions
 
@@ -402,7 +402,6 @@ All utility functions are now sourced from library files. This table documents t
 | `detect_error_type()` | error-handling.sh | Detect specific error category | `TYPE=$(detect_error_type "$ERROR")` |
 | `extract_location()` | error-handling.sh | Extract file:line from error message | `LOC=$(extract_location "$ERROR")` |
 | `generate_suggestions()` | error-handling.sh | Generate error-specific suggestions | `generate_suggestions "$TYPE" "$MSG" "$LOC"` |
-| `retry_with_backoff()` | error-handling.sh | Retry command with exponential backoff | `retry_with_backoff 3 500 curl "$URL"` |
 
 ### Checkpoint Management Functions
 
@@ -422,11 +421,11 @@ All utility functions are now sourced from library files. This table documents t
 ### Function Categories Summary
 
 - **Workflow Management**: 2 functions (scope detection, phase execution)
-- **Error Handling**: 6 functions (classification, recovery, suggestions)
+- **Error Handling**: 5 functions (classification, recovery, suggestions)
 - **Checkpoint Management**: 4 functions (save, restore, get/set fields)
 - **Progress Logging**: 1 function (progress markers)
 
-**Total Functions Available**: 13 core utilities
+**Total Functions Available**: 12 core utilities
 
 ## Documentation References
 
@@ -683,11 +682,11 @@ emit_progress "1" "All research agents invoked - awaiting completion"
 echo ""
 ```
 
-### Mandatory Verification - Research Reports with Auto-Recovery
+### Mandatory Verification - Research Reports (Fail-Fast)
 
 **VERIFICATION REQUIRED**: All research report files must exist before continuing to Phase 2
 
-STEP 3: Verify ALL research reports created successfully (with single-retry for transient failures)
+STEP 3: Verify ALL research reports created successfully (fail-fast, no retries)
 
 ```bash
 echo "════════════════════════════════════════════════════════"
@@ -705,8 +704,8 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
   # Emit progress marker
   emit_progress "1" "Verifying research report $i/$RESEARCH_COMPLEXITY"
 
-  # Check if file exists and has content (with retry for transient failures)
-  if retry_with_backoff 2 1000 test -f "$REPORT_PATH" -a -s "$REPORT_PATH"; then
+  # Check if file exists and has content (fail-fast, no retries)
+  if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
     # Success path - concise output with file size
     FILE_SIZE=$(wc -c < "$REPORT_PATH")
     FILE_SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $FILE_SIZE/1024}")
@@ -724,58 +723,48 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
     echo "  ✅ VERIFIED: Report $i created (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines)${WARNINGS}"
     SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
   else
-    # Failure path - extract error info and attempt recovery
-    ERROR_MSG="Report file missing or empty: $REPORT_PATH"
-    ERROR_LOCATION=$(extract_error_location "$ERROR_MSG")
-    ERROR_TYPE=$(detect_specific_error_type "$ERROR_MSG")
-
-    # Classify error for retry decision
-    RETRY_DECISION=$(classify_and_retry "$ERROR_MSG")
-
-    if [ "$RETRY_DECISION" == "retry" ]; then
-      echo "  ⚠️  TRANSIENT ERROR: Retrying once..."
-
-      # Note: In actual execution, retry would re-invoke the agent
-      # For now, just re-check the file after a short delay
-      sleep 1
-
-      if retry_with_backoff 2 1000 test -f "$REPORT_PATH" -a -s "$REPORT_PATH"; then
-        FILE_SIZE=$(wc -c < "$REPORT_PATH")
-        echo "  ✅ RETRY SUCCESSFUL: Report created ($FILE_SIZE bytes)"
-        SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
-      else
-        # Retry failed - update error info and mark as failed
-        ERROR_TYPE=$(detect_specific_error_type "Retry failed: $ERROR_MSG")
-        ERROR_LOCATION=$(extract_error_location "$REPORT_PATH")
-
-        echo "  ❌ RETRY FAILED: Report still missing"
-        echo ""
-        echo "ERROR: $ERROR_TYPE"
-        if [ -n "$ERROR_LOCATION" ]; then
-          echo "   at $ERROR_LOCATION"
-        fi
-        echo ""
-        echo "Recovery suggestions:"
-        suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
-        echo ""
-
-        FAILED_AGENTS+=("agent_$i")
-        VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+    # Failure path - provide clear diagnostics (fail-fast pattern)
+    echo "  ❌ ERROR [Phase 1, Research]: Report file verification failed"
+    echo "     Expected: File exists and has content"
+    if [ ! -f "$REPORT_PATH" ]; then
+      echo "     Found: File does not exist"
+    elif [ ! -s "$REPORT_PATH" ]; then
+      echo "     Found: File exists but is empty"
+    fi
+    echo ""
+    echo "  DIAGNOSTIC INFORMATION:"
+    echo "    - Expected path: $REPORT_PATH"
+    echo "    - Directory: $(dirname "$REPORT_PATH")"
+    echo "    - Agent: research-specialist (agent $i/$RESEARCH_COMPLEXITY)"
+    echo ""
+    echo "  Directory Status:"
+    if [ -d "$(dirname "$REPORT_PATH")" ]; then
+      FILE_COUNT=$(ls -1 "$(dirname "$REPORT_PATH")" 2>/dev/null | wc -l)
+      echo "    ✓ Reports directory exists ($FILE_COUNT files)"
+      if [ "$FILE_COUNT" -gt 0 ]; then
+        echo "    Recent files:"
+        ls -lht "$(dirname "$REPORT_PATH")" | head -6
       fi
     else
-      # Permanent error - no retry
-      echo "  ❌ PERMANENT ERROR: $ERROR_TYPE"
-      if [ -n "$ERROR_LOCATION" ]; then
-        echo "     at $ERROR_LOCATION"
-      fi
-      echo ""
-      echo "Recovery suggestions:"
-      suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
-      echo ""
-
-      FAILED_AGENTS+=("agent_$i")
-      VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+      echo "    ✗ Reports directory does not exist"
+      echo "    Run: mkdir -p $(dirname "$REPORT_PATH")"
     fi
+    echo ""
+    echo "  Diagnostic Commands:"
+    echo "    # Check directory and permissions"
+    echo "    ls -la $(dirname "$REPORT_PATH")"
+    echo "    # Check agent behavioral file"
+    echo "    cat .claude/agents/research-specialist.md | head -50"
+    echo "    # Review agent invocation above for errors"
+    echo ""
+    echo "  Most Likely Causes:"
+    echo "    1. Agent failed to write file (check agent output above for errors)"
+    echo "    2. Path mismatch (agent used different path than expected)"
+    echo "    3. Permission denied (run diagnostic commands to verify)"
+    echo ""
+
+    FAILED_AGENTS+=("agent_$i")
+    VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
   fi
 done
 
@@ -1024,8 +1013,8 @@ echo ""
 # Emit progress marker
 emit_progress "2" "Verifying implementation plan"
 
-# Check if file exists and has content (with retry for transient failures)
-if retry_with_backoff 2 1000 test -f "$PLAN_PATH" -a -s "$PLAN_PATH"; then
+# Check if file exists and has content (fail-fast, no retries)
+if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
   # Success path - concise output with key metrics
   PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
   FILE_SIZE=$(wc -c < "$PLAN_PATH")
@@ -1044,48 +1033,47 @@ if retry_with_backoff 2 1000 test -f "$PLAN_PATH" -a -s "$PLAN_PATH"; then
   echo "✅ VERIFIED: Plan created (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines, $PHASE_COUNT phases)${WARNINGS}"
   echo ""
 else
-  # Failure path - extract error info and attempt recovery
-  ERROR_MSG="Plan file missing or empty: $PLAN_PATH"
-  ERROR_LOCATION=$(extract_error_location "$ERROR_MSG")
-  ERROR_TYPE=$(detect_specific_error_type "$ERROR_MSG")
-
-  # Classify error for retry decision
-  RETRY_DECISION=$(classify_and_retry "$ERROR_MSG")
-
-  if [ "$RETRY_DECISION" == "retry" ]; then
-    echo "⚠️  TRANSIENT ERROR: Retrying once..."
-    sleep 1
-
-    if retry_with_backoff 2 1000 test -f "$PLAN_PATH" -a -s "$PLAN_PATH"; then
-      PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
-      echo "✅ RETRY SUCCESSFUL: Plan created with $PHASE_COUNT phases"
-    else
-      echo "❌ RETRY FAILED: Plan still missing"
-      echo ""
-      echo "ERROR: $ERROR_TYPE"
-      if [ -n "$ERROR_LOCATION" ]; then
-        echo "   at $ERROR_LOCATION"
-      fi
-      echo ""
-      echo "Recovery suggestions:"
-      suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
-      echo ""
-      echo "Workflow TERMINATED."
-      exit 1
+  # Failure path - provide clear diagnostics (fail-fast pattern)
+  echo "❌ ERROR [Phase 2, Planning]: Plan file verification failed"
+  echo "   Expected: File exists and has content"
+  if [ ! -f "$PLAN_PATH" ]; then
+    echo "   Found: File does not exist"
+  elif [ ! -s "$PLAN_PATH" ]; then
+    echo "   Found: File exists but is empty"
+  fi
+  echo ""
+  echo "DIAGNOSTIC INFORMATION:"
+  echo "  - Expected path: $PLAN_PATH"
+  echo "  - Directory: $(dirname "$PLAN_PATH")"
+  echo "  - Agent: plan-architect"
+  echo ""
+  echo "Directory Status:"
+  if [ -d "$(dirname "$PLAN_PATH")" ]; then
+    FILE_COUNT=$(ls -1 "$(dirname "$PLAN_PATH")" 2>/dev/null | wc -l)
+    echo "  ✓ Plans directory exists ($FILE_COUNT files)"
+    if [ "$FILE_COUNT" -gt 0 ]; then
+      echo "  Recent files:"
+      ls -lht "$(dirname "$PLAN_PATH")" | head -6
     fi
   else
-    # Permanent error - fail fast
-    echo "❌ PERMANENT ERROR: $ERROR_TYPE"
-    if [ -n "$ERROR_LOCATION" ]; then
-      echo "   at $ERROR_LOCATION"
-    fi
-    echo ""
-    echo "Recovery suggestions:"
-    suggest_recovery_actions "$ERROR_TYPE" "$ERROR_LOCATION" "$ERROR_MSG"
-    echo ""
-    echo "Workflow TERMINATED."
-    exit 1
+    echo "  ✗ Plans directory does not exist"
+    echo "  Run: mkdir -p $(dirname "$PLAN_PATH")"
   fi
+  echo ""
+  echo "Diagnostic Commands:"
+  echo "  # Check directory and permissions"
+  echo "  ls -la $(dirname "$PLAN_PATH")"
+  echo "  # Check agent behavioral file"
+  echo "  cat .claude/agents/plan-architect.md | head -50"
+  echo "  # Review agent invocation above for errors"
+  echo ""
+  echo "Most Likely Causes:"
+  echo "  1. Agent failed to write file (check agent output above for errors)"
+  echo "  2. Path mismatch (agent used different path than expected)"
+  echo "  3. Permission denied (run diagnostic commands to verify)"
+  echo ""
+  echo "Workflow TERMINATED."
+  exit 1
 fi
 ```
 
@@ -1553,17 +1541,54 @@ for iteration in 1 2 3; do
   echo "════════════════════════════════════════════════════════"
   echo ""
 
-  # VERIFICATION REQUIRED: Debug report must exist before applying fixes (with retry)
-  if ! retry_with_backoff 2 1000 test -f "$DEBUG_REPORT"; then
-    echo "❌ CRITICAL ERROR: Debug report not created after retries at $DEBUG_REPORT"
+  # VERIFICATION REQUIRED: Debug report must exist before applying fixes (fail-fast)
+  if [ -f "$DEBUG_REPORT" ] && [ -s "$DEBUG_REPORT" ]; then
+    echo "✅ VERIFIED: Debug report exists at $DEBUG_REPORT"
     echo ""
-    echo "FALLBACK MECHANISM: Cannot continue without debug analysis"
+  else
+    # Failure path - provide clear diagnostics (fail-fast pattern)
+    echo "❌ ERROR [Phase 5, Debug]: Debug report verification failed"
+    echo "   Expected: File exists and has content"
+    if [ ! -f "$DEBUG_REPORT" ]; then
+      echo "   Found: File does not exist"
+    elif [ ! -s "$DEBUG_REPORT" ]; then
+      echo "   Found: File exists but is empty"
+    fi
+    echo ""
+    echo "DIAGNOSTIC INFORMATION:"
+    echo "  - Expected path: $DEBUG_REPORT"
+    echo "  - Directory: $(dirname "$DEBUG_REPORT")"
+    echo "  - Agent: debug-analyst"
+    echo "  - Debug iteration: $iteration"
+    echo ""
+    echo "Directory Status:"
+    if [ -d "$(dirname "$DEBUG_REPORT")" ]; then
+      FILE_COUNT=$(ls -1 "$(dirname "$DEBUG_REPORT")" 2>/dev/null | wc -l)
+      echo "  ✓ Debug directory exists ($FILE_COUNT files)"
+      if [ "$FILE_COUNT" -gt 0 ]; then
+        echo "  Recent files:"
+        ls -lht "$(dirname "$DEBUG_REPORT")" | head -6
+      fi
+    else
+      echo "  ✗ Debug directory does not exist"
+      echo "  Run: mkdir -p $(dirname "$DEBUG_REPORT")"
+    fi
+    echo ""
+    echo "Diagnostic Commands:"
+    echo "  # Check directory and permissions"
+    echo "  ls -la $(dirname "$DEBUG_REPORT")"
+    echo "  # Check agent behavioral file"
+    echo "  cat .claude/agents/debug-analyst.md | head -50"
+    echo "  # Review agent invocation above for errors"
+    echo ""
+    echo "Most Likely Causes:"
+    echo "  1. Agent failed to write file (check agent output above for errors)"
+    echo "  2. Path mismatch (agent used different path than expected)"
+    echo "  3. Permission denied (run diagnostic commands to verify)"
+    echo ""
     echo "Workflow TERMINATED."
     exit 1
   fi
-
-  echo "✅ VERIFIED: Debug report exists at $DEBUG_REPORT"
-  echo ""
 
   # VERIFICATION REQUIREMENT: YOU MUST NOT apply fixes without debug analysis
   echo "Verification checkpoint passed - proceeding to fix application"
@@ -1807,19 +1832,56 @@ echo "  MANDATORY VERIFICATION - Workflow Summary"
 echo "════════════════════════════════════════════════════════"
 echo ""
 
-# Check if summary file exists and has content (with retry for transient failures)
-if ! retry_with_backoff 2 1000 test -f "$SUMMARY_PATH" -a -s "$SUMMARY_PATH"; then
-  echo "❌ CRITICAL ERROR: Summary file not created after retries at $SUMMARY_PATH"
+# Check if summary file exists and has content (fail-fast, no retries)
+if [ -f "$SUMMARY_PATH" ] && [ -s "$SUMMARY_PATH" ]; then
+  FILE_SIZE=$(wc -c < "$SUMMARY_PATH")
+  FILE_SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $FILE_SIZE/1024}")
+  LINE_COUNT=$(wc -l < "$SUMMARY_PATH")
+  echo "✅ VERIFIED: Summary file exists (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines)"
   echo ""
-  echo "FALLBACK MECHANISM: Cannot create summary without agent - workflow incomplete"
+else
+  # Failure path - provide clear diagnostics (fail-fast pattern)
+  echo "❌ ERROR [Phase 6, Documentation]: Summary file verification failed"
+  echo "   Expected: File exists and has content"
+  if [ ! -f "$SUMMARY_PATH" ]; then
+    echo "   Found: File does not exist"
+  elif [ ! -s "$SUMMARY_PATH" ]; then
+    echo "   Found: File exists but is empty"
+  fi
+  echo ""
+  echo "DIAGNOSTIC INFORMATION:"
+  echo "  - Expected path: $SUMMARY_PATH"
+  echo "  - Directory: $(dirname "$SUMMARY_PATH")"
+  echo "  - Agent: doc-writer"
+  echo ""
+  echo "Directory Status:"
+  if [ -d "$(dirname "$SUMMARY_PATH")" ]; then
+    FILE_COUNT=$(ls -1 "$(dirname "$SUMMARY_PATH")" 2>/dev/null | wc -l)
+    echo "  ✓ Summaries directory exists ($FILE_COUNT files)"
+    if [ "$FILE_COUNT" -gt 0 ]; then
+      echo "  Recent files:"
+      ls -lht "$(dirname "$SUMMARY_PATH")" | head -6
+    fi
+  else
+    echo "  ✗ Summaries directory does not exist"
+    echo "  Run: mkdir -p $(dirname "$SUMMARY_PATH")"
+  fi
+  echo ""
+  echo "Diagnostic Commands:"
+  echo "  # Check directory and permissions"
+  echo "  ls -la $(dirname "$SUMMARY_PATH")"
+  echo "  # Check agent behavioral file"
+  echo "  cat .claude/agents/doc-writer.md | head -50"
+  echo "  # Review agent invocation above for errors"
+  echo ""
+  echo "Most Likely Causes:"
+  echo "  1. Agent failed to write file (check agent output above for errors)"
+  echo "  2. Path mismatch (agent used different path than expected)"
+  echo "  3. Permission denied (run diagnostic commands to verify)"
+  echo ""
   echo "Workflow TERMINATED."
   exit 1
 fi
-
-echo "✅ VERIFIED: Summary file exists at $SUMMARY_PATH"
-FILE_SIZE=$(wc -c < "$SUMMARY_PATH")
-echo "   File size: $FILE_SIZE bytes"
-echo ""
 
 # VERIFICATION REQUIREMENT: YOU MUST NOT complete workflow without summary
 echo "Verification checkpoint passed - workflow complete"
