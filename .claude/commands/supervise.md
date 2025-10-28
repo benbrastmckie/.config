@@ -239,141 +239,35 @@ Example: `PROGRESS: [Phase 1] - Research complete (4/4 succeeded)`
 # Determine script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source workflow detection utilities
-if [ -f "$SCRIPT_DIR/../lib/workflow-detection.sh" ]; then
-  source "$SCRIPT_DIR/../lib/workflow-detection.sh"
+# Load required libraries using consolidated function
+echo "Loading required libraries..."
+
+# Source library-sourcing utilities first
+if [ -f "$SCRIPT_DIR/../lib/library-sourcing.sh" ]; then
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/../lib/library-sourcing.sh"
 else
-  echo "ERROR: Required library not found: workflow-detection.sh"
+  echo "ERROR: Required library not found: library-sourcing.sh"
   echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/workflow-detection.sh"
+  echo "Expected location: $SCRIPT_DIR/../lib/library-sourcing.sh"
   echo ""
-  echo "This library provides critical workflow detection functions:"
-  echo "  - detect_workflow_scope()"
-  echo "  - should_run_phase()"
+  echo "This library provides consolidated library sourcing functions."
   echo ""
   echo "Diagnostic commands:"
-  echo "  ls -la $SCRIPT_DIR/../lib/ | grep workflow-detection"
-  echo "  cat $SCRIPT_DIR/../lib/workflow-detection.sh"
+  echo "  ls -la $SCRIPT_DIR/../lib/ | grep library-sourcing"
+  echo "  cat $SCRIPT_DIR/../lib/library-sourcing.sh"
   echo ""
   echo "Please ensure the library file exists and is readable."
   exit 1
 fi
 
-# Source error handling utilities
-if [ -f "$SCRIPT_DIR/../lib/error-handling.sh" ]; then
-  source "$SCRIPT_DIR/../lib/error-handling.sh"
-else
-  echo "ERROR: Required library not found: error-handling.sh"
-  echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/error-handling.sh"
-  echo ""
-  echo "This library provides critical error handling functions:"
-  echo "  - classify_error()"
-  echo "  - suggest_recovery()"
-  echo "  - retry_with_backoff()"
-  echo ""
-  echo "Diagnostic commands:"
-  echo "  ls -la $SCRIPT_DIR/../lib/ | grep error-handling"
-  echo "  cat $SCRIPT_DIR/../lib/error-handling.sh"
-  echo ""
-  echo "Please ensure the library file exists and is readable."
+# Source all required libraries using consolidated function
+if ! source_required_libraries; then
+  # Error already reported by source_required_libraries()
   exit 1
 fi
 
-# Source checkpoint utilities
-if [ -f "$SCRIPT_DIR/../lib/checkpoint-utils.sh" ]; then
-  source "$SCRIPT_DIR/../lib/checkpoint-utils.sh"
-else
-  echo "ERROR: Required library not found: checkpoint-utils.sh"
-  echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/checkpoint-utils.sh"
-  echo ""
-  echo "This library provides critical checkpoint management functions:"
-  echo "  - save_checkpoint()"
-  echo "  - restore_checkpoint()"
-  echo "  - checkpoint_get_field()"
-  echo "  - checkpoint_set_field()"
-  echo ""
-  echo "Diagnostic commands:"
-  echo "  ls -la $SCRIPT_DIR/../lib/ | grep checkpoint-utils"
-  echo "  cat $SCRIPT_DIR/../lib/checkpoint-utils.sh"
-  echo ""
-  echo "Please ensure the library file exists and is readable."
-  exit 1
-fi
-
-# Source unified logger
-if [ -f "$SCRIPT_DIR/../lib/unified-logger.sh" ]; then
-  source "$SCRIPT_DIR/../lib/unified-logger.sh"
-else
-  echo "ERROR: Required library not found: unified-logger.sh"
-  echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/unified-logger.sh"
-  echo ""
-  echo "This library provides critical progress logging functions:"
-  echo "  - emit_progress()"
-  echo ""
-  echo "Diagnostic commands:"
-  echo "  ls -la $SCRIPT_DIR/../lib/ | grep unified-logger"
-  echo "  cat $SCRIPT_DIR/../lib/unified-logger.sh"
-  echo ""
-  echo "Please ensure the library file exists and is readable."
-  exit 1
-fi
-
-# Source unified location detection (85% token reduction, 25x speedup)
-if [ -f "$SCRIPT_DIR/../lib/unified-location-detection.sh" ]; then
-  source "$SCRIPT_DIR/../lib/unified-location-detection.sh"
-else
-  echo "ERROR: Required library not found: unified-location-detection.sh"
-  echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/unified-location-detection.sh"
-  echo ""
-  echo "This library provides location detection functions for project structure."
-  echo ""
-  echo "Diagnostic commands:"
-  echo "  ls -la $SCRIPT_DIR/../lib/ | grep unified-location-detection"
-  echo "  cat $SCRIPT_DIR/../lib/unified-location-detection.sh"
-  echo ""
-  echo "Please ensure the library file exists and is readable."
-  exit 1
-fi
-
-# Source metadata extraction utilities (95% context reduction per artifact)
-if [ -f "$SCRIPT_DIR/../lib/metadata-extraction.sh" ]; then
-  source "$SCRIPT_DIR/../lib/metadata-extraction.sh"
-else
-  echo "ERROR: Required library not found: metadata-extraction.sh"
-  echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/metadata-extraction.sh"
-  echo ""
-  echo "This library provides metadata extraction functions for artifacts."
-  echo ""
-  echo "Diagnostic commands:"
-  echo "  ls -la $SCRIPT_DIR/../lib/ | grep metadata-extraction"
-  echo "  cat $SCRIPT_DIR/../lib/metadata-extraction.sh"
-  echo ""
-  echo "Please ensure the library file exists and is readable."
-  exit 1
-fi
-
-# Source context pruning utilities (<30% context usage target)
-if [ -f "$SCRIPT_DIR/../lib/context-pruning.sh" ]; then
-  source "$SCRIPT_DIR/../lib/context-pruning.sh"
-else
-  echo "ERROR: Required library not found: context-pruning.sh"
-  echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/context-pruning.sh"
-  echo ""
-  echo "This library provides context management functions for workflow optimization."
-  echo ""
-  echo "Diagnostic commands:"
-  echo "  ls -la $SCRIPT_DIR/../lib/ | grep context-pruning"
-  echo "  cat $SCRIPT_DIR/../lib/context-pruning.sh"
-  echo ""
-  echo "Please ensure the library file exists and is readable."
-  exit 1
-fi
+echo "✓ All libraries loaded successfully"
 
 # Define display_brief_summary function inline
 # (Must be defined before function verification checks below)
