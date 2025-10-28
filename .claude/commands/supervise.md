@@ -1047,29 +1047,24 @@ emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 echo ""
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+**EXECUTE NOW**: USE the Task tool for each research topic (1 to $RESEARCH_COMPLEXITY) with these parameters:
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Research ${TOPIC_NAME} with mandatory file creation"
-  prompt: "
+- subagent_type: "general-purpose"
+- description: "Research [insert topic name] with mandatory file creation"
+- prompt: |
     Read and follow ALL behavioral guidelines from: .claude/agents/research-specialist.md
 
     **Workflow-Specific Context**:
-    - Research Topic: ${WORKFLOW_DESCRIPTION}
-    - Report Path: ${REPORT_PATHS[i]} (absolute path, pre-calculated by orchestrator)
+    - Research Topic: [insert workflow description for this topic]
+    - Report Path: [insert absolute path from REPORT_PATHS array]
     - Project Standards: /home/benjamin/.config/CLAUDE.md
-    - Complexity Level: ${RESEARCH_COMPLEXITY}
+    - Complexity Level: $RESEARCH_COMPLEXITY
 
     **CRITICAL**: Before writing report file, ensure parent directory exists:
-    Use Bash tool: mkdir -p \"\$(dirname \\\"${REPORT_PATHS[i]}\\\")\"
+    Use Bash tool: mkdir -p "$(dirname "[insert report path]")"
 
     Execute research following all guidelines in behavioral file.
-    Return: REPORT_CREATED: ${REPORT_PATHS[i]}
-  "
-}
-
-**Note**: The actual implementation will generate N Task calls based on RESEARCH_COMPLEXITY.
+    Return: REPORT_CREATED: [insert exact absolute path]
 
 ```bash
 # Emit progress marker after agent invocations complete
@@ -1334,28 +1329,25 @@ echo ""
 
 STEP 2: Invoke plan-architect agent via Task tool
 
-**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
+**EXECUTE NOW**: USE the Task tool with these parameters:
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Create implementation plan with mandatory file creation"
-  prompt: "
+- subagent_type: "general-purpose"
+- description: "Create implementation plan with mandatory file creation"
+- prompt: |
     Read and follow ALL behavioral guidelines from: .claude/agents/plan-architect.md
 
     **Workflow-Specific Context**:
-    - Workflow Description: ${WORKFLOW_DESCRIPTION}
-    - Plan File Path: ${PLAN_PATH} (absolute path, pre-calculated by orchestrator)
-    - Project Standards: ${STANDARDS_FILE}
-    - Research Reports: ${RESEARCH_REPORTS_LIST}
-    - Research Report Count: ${SUCCESSFUL_REPORT_COUNT}
+    - Workflow Description: $WORKFLOW_DESCRIPTION
+    - Plan File Path: $PLAN_PATH (absolute path, pre-calculated by orchestrator)
+    - Project Standards: $STANDARDS_FILE
+    - Research Reports: $RESEARCH_REPORTS_LIST
+    - Research Report Count: $SUCCESSFUL_REPORT_COUNT
 
     **CRITICAL**: Before writing plan file, ensure parent directory exists:
-    Use Bash tool: mkdir -p \"\$(dirname \\\"${PLAN_PATH}\\\")\"
+    Use Bash tool: mkdir -p "$(dirname "$PLAN_PATH")"
 
     Execute planning following all guidelines in behavioral file.
-    Return: PLAN_CREATED: ${PLAN_PATH}
-  "
-}
+    Return: PLAN_CREATED: $PLAN_PATH
 
 ### Mandatory Verification - Plan Creation
 
@@ -1533,29 +1525,26 @@ should_run_phase 3 || {
 
 STEP 1: Invoke code-writer agent with plan context
 
-**EXECUTE NOW**: USE the Task tool to invoke the code-writer agent.
+**EXECUTE NOW**: USE the Task tool with these parameters:
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Execute implementation plan with mandatory artifact creation"
-  prompt: "
+- subagent_type: "general-purpose"
+- description: "Execute implementation plan with mandatory artifact creation"
+- prompt: |
     Read and follow ALL behavioral guidelines from: .claude/agents/code-writer.md
 
     **Workflow-Specific Context**:
-    - Plan File Path: ${PLAN_PATH} (absolute path, pre-calculated by orchestrator)
-    - Implementation Artifacts Directory: ${IMPL_ARTIFACTS}
-    - Project Standards: ${STANDARDS_FILE}
-    - Workflow Type: ${WORKFLOW_SCOPE}
+    - Plan File Path: $PLAN_PATH (absolute path, pre-calculated by orchestrator)
+    - Implementation Artifacts Directory: $IMPL_ARTIFACTS
+    - Project Standards: $STANDARDS_FILE
+    - Workflow Type: $WORKFLOW_SCOPE
 
     **CRITICAL**: Before writing any artifact files, ensure parent directories exist:
-    Use Bash tool: mkdir -p \"\$(dirname \\\"<file_path>\\\")\" before each file creation
+    Use Bash tool: mkdir -p "$(dirname "<file_path>")" before each file creation
 
     Execute implementation following all guidelines in behavioral file.
     Return: IMPLEMENTATION_STATUS: {complete|partial|failed}
     PHASES_COMPLETED: {N}
     PHASES_TOTAL: {M}
-  "
-}
 ```
 
 ### Mandatory Verification - Implementation Completion
@@ -1666,30 +1655,27 @@ should_run_phase 4 || {
 
 STEP 1: Invoke test-specialist agent
 
-**EXECUTE NOW**: USE the Task tool to invoke the test-specialist agent.
+**EXECUTE NOW**: USE the Task tool with these parameters:
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Execute comprehensive tests with mandatory results file"
-  prompt: "
+- subagent_type: "general-purpose"
+- description: "Execute comprehensive tests with mandatory results file"
+- prompt: |
     Read and follow ALL behavioral guidelines from: .claude/agents/test-specialist.md
 
     **Workflow-Specific Context**:
-    - Test Results Path: ${TOPIC_PATH}/outputs/test_results.md (absolute path, pre-calculated)
-    - Project Standards: ${STANDARDS_FILE}
-    - Plan File: ${PLAN_PATH}
-    - Implementation Artifacts: ${IMPL_ARTIFACTS}
+    - Test Results Path: $TOPIC_PATH/outputs/test_results.md (absolute path, pre-calculated)
+    - Project Standards: $STANDARDS_FILE
+    - Plan File: $PLAN_PATH
+    - Implementation Artifacts: $IMPL_ARTIFACTS
 
     **CRITICAL**: Before writing test results file, ensure parent directory exists:
-    Use Bash tool: mkdir -p \"${TOPIC_PATH}/outputs\"
+    Use Bash tool: mkdir -p "$TOPIC_PATH/outputs"
 
     Execute testing following all guidelines in behavioral file.
     Return: TEST_STATUS: {passing|failing}
     TESTS_TOTAL: {N}
     TESTS_PASSED: {M}
     TESTS_FAILED: {K}
-  "
-}
 
 ### Test Results Verification
 
@@ -2106,29 +2092,26 @@ fi
 
 STEP 1: Invoke doc-writer agent to create summary
 
-**EXECUTE NOW**: USE the Task tool to invoke the doc-writer agent.
+**EXECUTE NOW**: USE the Task tool with these parameters:
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Create workflow summary with mandatory file creation"
-  prompt: "
+- subagent_type: "general-purpose"
+- description: "Create workflow summary with mandatory file creation"
+- prompt: |
     Read and follow ALL behavioral guidelines from: .claude/agents/doc-writer.md
 
     **Workflow-Specific Context**:
-    - Summary Path: ${SUMMARY_PATH} (absolute path, pre-calculated)
-    - Plan File: ${PLAN_PATH}
-    - Research Reports: ${RESEARCH_REPORTS_LIST}
-    - Implementation Artifacts: ${IMPL_ARTIFACTS}
-    - Test Status: ${TEST_STATUS}
-    - Workflow Description: ${WORKFLOW_DESCRIPTION}
+    - Summary Path: $SUMMARY_PATH (absolute path, pre-calculated)
+    - Plan File: $PLAN_PATH
+    - Research Reports: $RESEARCH_REPORTS_LIST
+    - Implementation Artifacts: $IMPL_ARTIFACTS
+    - Test Status: $TEST_STATUS
+    - Workflow Description: $WORKFLOW_DESCRIPTION
 
     **CRITICAL**: Before writing summary file, ensure parent directory exists:
-    Use Bash tool: mkdir -p \"\$(dirname \\\"${SUMMARY_PATH}\\\")\"
+    Use Bash tool: mkdir -p "$(dirname "$SUMMARY_PATH")"
 
     Execute documentation following all guidelines in behavioral file.
-    Return: SUMMARY_CREATED: ${SUMMARY_PATH}
-  "
-}
+    Return: SUMMARY_CREATED: $SUMMARY_PATH
 
 ### Mandatory Verification - Summary Creation
 
