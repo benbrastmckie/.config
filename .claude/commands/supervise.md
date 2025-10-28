@@ -110,7 +110,9 @@ If you find yourself wanting to invoke /plan, /implement, /debug, or /document:
 
 ## Workflow Overview
 
-[REFERENCE-OK: Can be supplemented with external orchestration pattern docs]
+**DOCUMENTATION**: For complete usage guide, see [/supervise Usage Guide](../docs/guides/supervise-guide.md)
+
+**PHASE REFERENCE**: For detailed phase documentation, see [/supervise Phase Reference](../docs/reference/supervise-phases.md)
 
 This command coordinates multi-agent workflows through 7 phases:
 
@@ -426,105 +428,12 @@ All utility functions are now sourced from library files. This table documents t
 
 **Total Functions Available**: 13 core utilities
 
-## Retained Usage Examples
+## Documentation References
 
-[REFERENCE-OK: Examples can be moved to library documentation if needed]
+**For Usage Examples and Common Patterns**: See [/supervise Usage Guide](../docs/guides/supervise-guide.md)
 
-The following examples demonstrate common usage patterns for sourced utilities:
+**For Detailed Phase Documentation**: See [/supervise Phase Reference](../docs/reference/supervise-phases.md)
 
-### Example 1: Workflow Scope Detection
-
-```bash
-# Detect workflow scope and configure phases
-WORKFLOW_DESCRIPTION="research authentication patterns to create implementation plan"
-WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
-
-# Map scope to phase execution list
-case "$WORKFLOW_SCOPE" in
-  research-only)
-    PHASES_TO_EXECUTE="0,1"
-    ;;
-  research-and-plan)
-    PHASES_TO_EXECUTE="0,1,2"
-    ;;
-  full-implementation)
-    PHASES_TO_EXECUTE="0,1,2,3,4,6"
-    ;;
-  debug-only)
-    PHASES_TO_EXECUTE="0,1,5"
-    ;;
-esac
-
-export WORKFLOW_SCOPE PHASES_TO_EXECUTE
-```
-
-### Example 2: Conditional Phase Execution
-
-```bash
-# Check if phase should run
-should_run_phase 3 || {
-  echo "⏭️  Skipping Phase 3 (Implementation)"
-  echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
-  exit 0
-}
-
-echo "Executing Phase 3: Implementation"
-```
-
-### Example 3: Error Handling with Recovery
-
-```bash
-# Classify error and determine recovery
-ERROR_MSG="Connection timeout after 30 seconds"
-ERROR_TYPE=$(classify_error "$ERROR_MSG")
-
-if [ "$ERROR_TYPE" == "transient" ]; then
-  echo "Transient error detected, retrying..."
-  retry_with_backoff 3 1000 curl "https://api.example.com"
-else
-  echo "Permanent error:"
-  suggest_recovery "$ERROR_TYPE" "$ERROR_MSG"
-  exit 1
-fi
-```
-
-### Example 4: Progress Markers
-
-```bash
-# Emit progress markers at phase transitions
-emit_progress "1" "Invoking 4 research agents in parallel"
-# ... agent invocations ...
-emit_progress "1" "All research agents completed"
-emit_progress "2" "Planning phase started"
-```
-```
-
-## Optimization Note: Integration Approach
-
-**Context**: This command was refactored using an "integrate, not build" approach after discovering that 70-80% of the planned infrastructure already existed in production-ready form.
-
-**Original Plan**:
-- 6 phases (Pattern Verification, Template Removal, Library Building, Standards Documentation, Integration Testing, Summary)
-- 12-15 days estimated duration
-- Build new libraries for location detection, metadata extraction, context pruning
-- Extract agent behavioral templates from scratch
-
-**Optimized Approach**:
-- 3 phases (Pattern Verification + Template Removal, Standards Documentation, Integration Testing)
-- 8-11 days actual duration (40-50% reduction)
-- Integrated existing libraries instead of rebuilding
-- Referenced existing agent behavioral files in `.claude/agents/` instead of extracting
-
-**Key Insights**:
-1. **Infrastructure maturity eliminates redundant work**: 100% coverage on location detection, metadata extraction, context pruning, error handling, and all 6 agent behavioral files
-2. **Single-pass editing**: Consolidated 6 phases into 3 by combining related edits
-3. **Git provides version control**: Eliminated unnecessary backup file creation (saves 0.5 days, removes stale backup risk)
-4. **Realistic targets**: Adjusted file size target from 1,600 lines (unrealistic 37% reduction) to 2,000 lines (realistic 21% reduction based on /orchestrate at 5,443 lines)
-
-**Impact**:
-- Time savings: 4-5 days (40-50% reduction)
-- Quality improvement: 100% consistency with existing infrastructure
-- Maintenance burden: Eliminated (no template duplication to synchronize)
 
 **Reference**: For complete analysis, see [Research Report Overview](/home/benjamin/.config/.claude/specs/438_analysis_of_supervise_command_refactor_plan_for_re/reports/001_analysis_of_supervise_command_refactor_plan_for_re_research/OVERVIEW.md)
 
@@ -1904,109 +1813,6 @@ display_brief_summary
 exit 0
 ```
 
-## Usage Examples
+**For Usage Examples**: See [/supervise Usage Guide](../docs/guides/supervise-guide.md)
 
-[REFERENCE-OK: Examples can be moved to external usage guide]
-
-### Example 1: Research-only workflow
-
-```bash
-/supervise "research API authentication patterns"
-
-# Expected behavior:
-# - Scope detected: research-only
-# - Phases executed: 0, 1
-# - Artifacts: 2-3 research reports
-# - No plan, no implementation, no summary
-```
-
-### Example 2: Research-and-plan workflow (MOST COMMON)
-
-```bash
-/supervise "research the authentication module to create a refactor plan"
-
-# Expected behavior:
-# - Scope detected: research-and-plan
-# - Phases executed: 0, 1, 2
-# - Artifacts: 4 research reports + 1 implementation plan
-# - No implementation, no summary (per standards)
-# - Plan ready for execution
-```
-
-### Example 3: Full-implementation workflow
-
-```bash
-/supervise "implement OAuth2 authentication for the API"
-
-# Expected behavior:
-# - Scope detected: full-implementation
-# - Phases executed: 0, 1, 2, 3, 4, 6
-# - Phase 5 conditional on test failures
-# - Artifacts: reports + plan + implementation + summary
-```
-
-### Example 4: Debug-only workflow
-
-```bash
-/supervise "fix the token refresh bug in auth.js"
-
-# Expected behavior:
-# - Scope detected: debug-only
-# - Phases executed: 0, 1, 5
-# - Artifacts: research reports + debug report
-# - No new plan or implementation (fixes existing code)
-```
-
-## Performance Metrics
-
-[REFERENCE-OK: Metrics can be tracked in external documentation]
-
-Expected performance targets:
-
-- **File Creation Rate**: 100% (strong enforcement, first attempt)
-- **Context Usage**: <25% cumulative across all phases
-- **Zero Fallbacks**: Single working path, fail-fast on errors
-
-## Success Criteria
-
-[REFERENCE-OK: Success criteria can be maintained in external validation docs]
-
-### Architectural Excellence
-- [ ] Pure orchestration: Zero SlashCommand tool invocations
-- [ ] Phase 0 role clarification: Explicit orchestrator vs executor separation
-- [ ] Workflow scope detection: Correctly identifies 4 workflow patterns
-- [ ] Conditional phase execution: Skips inappropriate phases based on scope
-- [ ] Single working path: No fallback file creation mechanisms
-- [ ] Fail-fast behavior: Clear error messages, immediate termination on failure
-
-### Enforcement Standards
-- [ ] Imperative language ratio ≥95%: MUST/WILL/SHALL for all required actions
-- [ ] Step-by-step enforcement: STEP 1/2/3 pattern in all agent templates
-- [ ] Mandatory verification: Explicit checkpoints after every file operation
-- [ ] 100% file creation rate with auto-recovery: Single retry for transient failures
-- [ ] Minimal retry infrastructure: Single-retry strategy (not multi-attempt loops)
-
-### Performance Targets
-- [ ] File size: 2,500-3,000 lines (achieved)
-- [ ] Context usage: <25% throughout workflow
-- [ ] Time efficiency: 15-25% faster for non-implementation workflows
-- [ ] Code coverage: ≥80% test coverage for scope detection logic
-- [ ] Recovery rate: >95% for transient errors (timeouts, file locks)
-- [ ] Performance overhead: <5% for recovery infrastructure
-- [ ] Checkpoint resume: Seamless auto-resume from phase boundaries
-
-### Auto-Recovery Features
-- [ ] Transient error auto-recovery: Single retry for timeouts and file locks
-- [ ] Permanent error fail-fast: Immediate termination with enhanced error reporting
-- [ ] Error location extraction: Parse file:line from error messages
-- [ ] Specific error type detection: Categorize into 4 types (timeout, syntax, dependency, unknown)
-- [ ] Recovery suggestions: Context-specific actionable guidance on failures
-- [ ] Partial research failure handling: ≥50% success threshold allows continuation
-- [ ] Progress markers: PROGRESS: [Phase N] emitted at phase transitions
-- [ ] Checkpoint save/resume: Phase-boundary checkpoints with auto-resume
-
-### Deficiency Resolution
-- [ ] ✓ Research agents create files on first attempt (vs inline summaries)
-- [ ] ✓ Zero SlashCommand usage for planning/implementation (pure Task tool)
-- [ ] ✓ Summaries only created when implementation occurs (not for research-only)
-- [ ] ✓ Correct phases execute for each workflow type (research, plan, implement, debug)
+**For Performance Metrics and Success Criteria**: See [/supervise Phase Reference](../docs/reference/supervise-phases.md)
