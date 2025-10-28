@@ -519,6 +519,55 @@ Consider adding cross-references to related documents.
 **FORBIDDEN**: Reports without examples or cross-references are UNACCEPTABLE.
 ```
 
+### Pitfall 5: Undermining Disclaimers
+
+**Problem**: Following imperative directives with disclaimers that suggest template or future generation, creating confusion about whether to execute now.
+
+**Bad Example**:
+```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC_NAME}"
+  prompt: "..."
+}
+
+**Note**: The actual implementation will generate N Task calls based on complexity.
+```
+
+**Why This Fails**: The "**Note**" disclaimer contradicts the "**EXECUTE NOW**" directive, making the AI treat the Task block as a template example rather than an executable instruction. This causes 0% agent delegation rates.
+
+**Good Example**:
+```markdown
+**EXECUTE NOW**: USE the Task tool for each research topic (1 to $RESEARCH_COMPLEXITY) with these parameters:
+
+- subagent_type: "general-purpose"
+- description: "Research [insert topic name] with mandatory artifact creation"
+- prompt: |
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: [insert display-friendly topic name]
+    - Report Path: [insert absolute path from REPORT_PATHS array]
+
+    Execute research following all guidelines in behavioral file.
+    Return: REPORT_CREATED: [EXACT_ABSOLUTE_PATH]
+```
+
+**Key Principles**:
+- **No disclaimers** after imperative directives
+- **Use "for each [item]"** phrasing to indicate loops
+- **Use `[insert value]` placeholders** to signal substitution
+- **Bullet-point parameters** that look like instructions, not code
+
+**Detection**:
+```bash
+# Find undermining disclaimers
+grep -A 25 "\*\*EXECUTE NOW\*\*" command.md | grep -i "note.*generate\|template\|example only"
+```
+
 ---
 
 ## Quick Reference
@@ -537,6 +586,7 @@ Before finalizing a command or agent file, verify:
 - [ ] Descriptive text is separated from execution instructions
 - [ ] Agent invocation templates use "THIS EXACT TEMPLATE"
 - [ ] Role clarifications use "YOU are the ORCHESTRATOR/EXECUTOR"
+- [ ] No template disclaimers after imperative directives (Pitfall 5)
 
 ### Language Strength Hierarchy
 

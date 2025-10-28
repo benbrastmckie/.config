@@ -273,19 +273,19 @@ Expected Outcome:
 **Focus**: Education and clear examples over enforcement tooling.
 
 Tasks:
-- [ ] Update `.claude/docs/guides/imperative-language-guide.md`
+- [x] Update `.claude/docs/guides/imperative-language-guide.md`
   - Add new section: "### Pitfall 5: Undermining Disclaimers" after Pitfall 4 (~line 505)
   - **Bad example**: Show EXECUTE NOW followed by "**Note**: will generate"
   - **Good example**: Show EXECUTE NOW with bullet-point parameters, no disclaimer
   - **Explanation**: Why disclaimers create template assumption
   - **Detection**: Simple grep command to find the pattern
   - Add to Quick Reference checklist: "[ ] No template disclaimers after imperative directives"
-- [ ] Update `.claude/docs/concepts/patterns/behavioral-injection.md`
+- [x] Update `.claude/docs/concepts/patterns/behavioral-injection.md`
   - Add "Undermined Imperative Pattern" to anti-patterns section
   - Include concrete before/after example from `/supervise` fix
   - Reference Spec 502 root cause analysis for details
   - Emphasize simplicity: "The fix is removing the undermining text, not adding validation"
-- [ ] Update `.claude/docs/guides/orchestration-troubleshooting.md`
+- [x] Update `.claude/docs/guides/orchestration-troubleshooting.md`
   - Add troubleshooting entry: "Agents not being invoked → Check for template disclaimers"
   - Include simple grep command: `grep -A 25 "EXECUTE NOW" command.md | grep "Note"`
   - Explain what to look for: future tense, template language, disclaimers

@@ -523,6 +523,96 @@ bash .claude/tests/test_supervise_agent_delegation.sh
 - Test delegation rate after adding any Task examples
 - Follow [Command Development Guide](../../guides/command-development-guide.md) patterns
 
+### Anti-Pattern: Undermined Imperative Pattern
+
+**Pattern Definition**: Following imperative directives (e.g., `**EXECUTE NOW**`) with disclaimers that suggest template or future generation, creating confusion about whether to execute immediately. This causes the AI to treat the directive as documentation rather than an instruction.
+
+**Root Cause**: Disclaimers like "**Note**: The actual implementation will generate N calls" contradict the imperative directive, making the AI interpret the Task block as a template example rather than executable code. This creates template assumption that results in 0% agent delegation rates.
+
+**Detection Rule**: Search for "**Note**:" or similar disclaimers within 25 lines after "**EXECUTE NOW**" directives that reference "generate", "template", or "example only".
+
+**Real-World Example** (from /supervise before fix, spec 502):
+
+```markdown
+❌ INCORRECT - Undermining disclaimer:
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC_NAME}"
+  prompt: "..."
+}
+
+**Note**: The actual implementation will generate N Task calls based on RESEARCH_COMPLEXITY.
+```
+
+**Why This Fails:**
+1. **Imperative contradicted**: "**EXECUTE NOW**" says act immediately, but "**Note**" says it's a template
+2. **Template assumption**: The disclaimer signals that Task block is documentation, not executable
+3. **Zero delegation**: AI skips invocation entirely, treating it as reference material
+4. **Confusing phrasing**: "actual implementation will generate" implies current context is not the actual implementation
+
+**Correct Pattern** - Clean imperative without disclaimers:
+
+```markdown
+✅ GOOD - No undermining disclaimers:
+
+**EXECUTE NOW**: USE the Task tool for each research topic (1 to $RESEARCH_COMPLEXITY) with these parameters:
+
+- subagent_type: "general-purpose"
+- description: "Research [insert topic name] with mandatory artifact creation"
+- prompt: |
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: [insert display-friendly topic name]
+    - Report Path: [insert absolute path from REPORT_PATHS array]
+
+    Execute research following all guidelines in behavioral file.
+    Return: REPORT_CREATED: [EXACT_ABSOLUTE_PATH]
+```
+
+**Key Fixes:**
+1. **Remove disclaimers**: No "**Note**:" or similar after imperative directives
+2. **Use "for each [item]"**: Indicates loop expectation without disclaimers
+3. **Use `[insert value]` placeholders**: Signals substitution clearly
+4. **Bullet-point format**: Looks like instructions, not code templates
+
+**How to Detect This Anti-Pattern:**
+
+```bash
+# Find undermining disclaimers after EXECUTE NOW directives
+grep -A 25 "\*\*EXECUTE NOW\*\*" .claude/commands/*.md | \
+  grep -B 5 -i "note.*generate\|template\|example only\|actual implementation"
+```
+
+**Verification After Fix:**
+
+```bash
+# Verify no undermining disclaimers remain
+grep -A 25 "\*\*EXECUTE NOW\*\*" .claude/commands/supervise.md | \
+  grep -i "note.*generate" || echo "✓ No undermining disclaimers found"
+
+# Verify bullet-point pattern used
+grep -c "^- subagent_type" .claude/commands/supervise.md
+# Should match number of agent invocations
+```
+
+**Related Issues:**
+- Spec 438: YAML blocks wrapped in markdown code fences (different anti-pattern)
+- Spec 495: /coordinate and /research delegation failures (multiple anti-patterns)
+- Spec 502: Undermined imperative pattern discovery and fix
+- Root cause analysis: `.claude/specs/502_supervise_research_delegation_failure/reports/001_root_cause_analysis.md`
+
+**Prevention Guidelines:**
+- Never add disclaimers after imperative directives
+- Use "for each [item]" phrasing to indicate loops
+- Use `[insert value]` placeholder syntax for substitution
+- Keep imperatives clean and unambiguous
+- Test delegation rate after any changes to agent invocations
+
 ### Example Violation 1: Command-to-Command Invocation
 
 ```markdown
