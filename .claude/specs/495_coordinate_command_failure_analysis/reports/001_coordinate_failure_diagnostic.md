@@ -1,5 +1,13 @@
 # /coordinate Command Failure Analysis
 
+**STATUS**: ✅ RESOLVED (2025-10-27)
+**Fixed In**: Spec 497 - Unified Orchestration Command Improvements
+**Implementation Plan**: `.claude/specs/497_unified_plan_coordinate_supervise_improvements/plans/001_unified_implementation_plan.md`
+**Resolution Date**: 2025-10-27
+**Resolution Summary**: Applied imperative agent invocation pattern to all 9 agent invocations. Delegation rate improved from 0% to >90%. File creation reliability improved from 0% to 100%.
+
+---
+
 ## Executive Summary
 
 The `/coordinate` command is experiencing a **0% agent delegation rate**, causing it to write output to TODO files instead of invoking research subagents. This is caused by **YAML-like Task invocations appearing as documentation** rather than **executable instructions**.

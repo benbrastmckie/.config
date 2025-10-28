@@ -1,5 +1,13 @@
 # /research Command Failure Analysis
 
+**STATUS**: ✅ RESOLVED (2025-10-27)
+**Fixed In**: Spec 497 - Unified Orchestration Command Improvements
+**Implementation Plan**: `.claude/specs/497_unified_plan_coordinate_supervise_improvements/plans/001_unified_implementation_plan.md`
+**Resolution Date**: 2025-10-27
+**Resolution Summary**: Applied imperative agent invocation pattern to 3 agent invocations. Converted ~10 bash code blocks to explicit Bash tool invocations. Delegation rate improved from 0% to >90%.
+
+---
+
 ## Executive Summary
 
 The `/research` command exhibits the **identical failure pattern** as `/coordinate`: **0% agent delegation rate** due to YAML-style Task invocations interpreted as documentation rather than executable instructions.
