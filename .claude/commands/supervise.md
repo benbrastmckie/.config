@@ -653,231 +653,34 @@ esac
 echo ""
 ```
 
-STEP 3: Determine location using utility functions
+STEP 3: Initialize workflow paths using consolidated function
 
-Source the required utility libraries for deterministic location detection.
+Use the workflow-initialization.sh library for unified path calculation and directory creation.
 
 ```bash
-# Source utility libraries
+# Source workflow initialization library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ -f "$SCRIPT_DIR/../lib/topic-utils.sh" ]; then
-  source "$SCRIPT_DIR/../lib/topic-utils.sh"
+if [ -f "$SCRIPT_DIR/../lib/workflow-initialization.sh" ]; then
+  source "$SCRIPT_DIR/../lib/workflow-initialization.sh"
 else
-  echo "ERROR: topic-utils.sh not found"
+  echo "ERROR: workflow-initialization.sh not found"
   echo "This is a required library file for workflow operation."
-  echo "Please ensure .claude/lib/topic-utils.sh exists."
+  echo "Please ensure .claude/lib/workflow-initialization.sh exists."
   exit 1
 fi
 
-if [ -f "$SCRIPT_DIR/../lib/detect-project-dir.sh" ]; then
-  source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
-else
-  echo "ERROR: detect-project-dir.sh not found"
+# Call unified initialization function
+# This consolidates STEPS 3-7 (225+ lines → ~10 lines)
+# Implements 3-step pattern: scope detection → path pre-calculation → directory creation
+if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
+  echo "ERROR: Workflow initialization failed"
   exit 1
 fi
 
-if [ -f "$SCRIPT_DIR/../lib/overview-synthesis.sh" ]; then
-  source "$SCRIPT_DIR/../lib/overview-synthesis.sh"
-else
-  echo "ERROR: overview-synthesis.sh not found"
-  echo "This library provides standardized overview synthesis decision logic."
-  exit 1
-fi
-```
-
-STEP 4: Calculate location metadata
-
-Use utility functions to determine project root, specs directory, topic number, and topic name.
-
-```bash
-# Get project root (from detect-project-dir.sh)
-PROJECT_ROOT="${CLAUDE_PROJECT_DIR}"
-if [ -z "$PROJECT_ROOT" ]; then
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "DIAGNOSTIC INFO: Project Root Detection Failed"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "ERROR: Could not determine project root"
-  echo ""
-  echo "Environment:"
-  echo "  CLAUDE_PROJECT_DIR: '${CLAUDE_PROJECT_DIR:-<not set>}'"
-  echo "  Current directory: $(pwd)"
-  echo "  Git repo: $(git rev-parse --show-toplevel 2>/dev/null || echo '<not a git repo>')"
-  echo ""
-  echo "Expected: CLAUDE_PROJECT_DIR should be set by detect-project-dir.sh"
-  echo ""
-  exit 1
-fi
-
-# Determine specs directory
-if [ -d "${PROJECT_ROOT}/.claude/specs" ]; then
-  SPECS_ROOT="${PROJECT_ROOT}/.claude/specs"
-elif [ -d "${PROJECT_ROOT}/specs" ]; then
-  SPECS_ROOT="${PROJECT_ROOT}/specs"
-else
-  # Default to .claude/specs and create it
-  SPECS_ROOT="${PROJECT_ROOT}/.claude/specs"
-  mkdir -p "$SPECS_ROOT"
-fi
-
-# Calculate topic metadata using utility functions
-TOPIC_NUM=$(get_next_topic_number "$SPECS_ROOT")
-TOPIC_NAME=$(sanitize_topic_name "$WORKFLOW_DESCRIPTION")
-
-# Set location for backward compatibility
-LOCATION="$PROJECT_ROOT"
-
-# Validate required fields
-if [ -z "$LOCATION" ] || [ -z "$TOPIC_NUM" ] || [ -z "$TOPIC_NAME" ]; then
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "DIAGNOSTIC INFO: Location Metadata Calculation Failed"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "ERROR: Failed to calculate location metadata"
-  echo ""
-  echo "Calculated Values:"
-  echo "  LOCATION: '${LOCATION:-<empty>}'"
-  echo "  TOPIC_NUM: '${TOPIC_NUM:-<empty>}'"
-  echo "  TOPIC_NAME: '${TOPIC_NAME:-<empty>}'"
-  echo ""
-  echo "Source Values:"
-  echo "  PROJECT_ROOT: '${PROJECT_ROOT:-<empty>}'"
-  echo "  SPECS_ROOT: '${SPECS_ROOT:-<empty>}'"
-  echo "  WORKFLOW_DESCRIPTION: '${WORKFLOW_DESCRIPTION:-<empty>}'"
-  echo ""
-  echo "Functions Used:"
-  echo "  get_next_topic_number() - from topic-utils.sh"
-  echo "  sanitize_topic_name() - from topic-utils.sh"
-  echo ""
-  echo "Workflow TERMINATED."
-  exit 1
-fi
-
-echo "Project Location: $LOCATION"
-echo "Specs Root: $SPECS_ROOT"
-echo "Topic Number: $TOPIC_NUM"
-echo "Topic Name: $TOPIC_NAME"
-echo ""
-```
-
-STEP 5: Create topic directory structure
-
-Create only the topic root directory. Subdirectories (reports/, plans/, summaries/, debug/, scripts/, outputs/) are created on-demand when agents write files.
-
-```bash
-TOPIC_PATH="${SPECS_ROOT}/${TOPIC_NUM}_${TOPIC_NAME}"
-
-echo "════════════════════════════════════════════════════════"
-echo "  MANDATORY VERIFICATION - Topic Directory Creation"
-echo "════════════════════════════════════════════════════════"
-echo ""
-echo "Creating topic root directory at: $TOPIC_PATH"
-echo "   (Subdirectories created on-demand when files written)"
-echo ""
-
-# Create topic structure using utility function (creates only root directory)
-if ! create_topic_structure "$TOPIC_PATH"; then
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "CRITICAL ERROR: Topic root directory creation failed"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "Attempted Path: $TOPIC_PATH"
-  echo ""
-  echo "Parent Directory Status:"
-  if [ -d "$(dirname "$TOPIC_PATH")" ]; then
-    echo "  Exists: Yes"
-    echo "  Permissions: $(ls -ld "$(dirname "$TOPIC_PATH")" 2>/dev/null | awk '{print $1}')"
-    echo "  Owner: $(ls -ld "$(dirname "$TOPIC_PATH")" 2>/dev/null | awk '{print $3":"$4}')"
-  else
-    echo "  Exists: No"
-    echo "  Issue: Parent directory does not exist"
-  fi
-  echo ""
-  echo "Diagnostic commands:"
-  echo "  # Check parent directory"
-  echo "  ls -ld \"$(dirname "$TOPIC_PATH")\""
-  echo ""
-  echo "  # Check permissions"
-  echo "  touch \"$(dirname "$TOPIC_PATH")/test.tmp\" && rm \"$(dirname "$TOPIC_PATH")/test.tmp\""
-  echo ""
-  echo "  # Check disk space"
-  echo "  df -h \"$(dirname "$TOPIC_PATH")\""
-  echo ""
-  echo "Possible causes:"
-  echo "  - Insufficient permissions to create directory"
-  echo "  - Read-only filesystem"
-  echo "  - Disk full"
-  echo "  - Path contains invalid characters"
-  echo ""
-  echo "Workflow TERMINATED (fail-fast: no fallback mechanisms)"
-  exit 1
-fi
-
-echo "✅ VERIFIED: Topic root directory exists at $TOPIC_PATH"
-echo ""
-
-# VERIFICATION REQUIREMENT: YOU MUST NOT proceed until verification passes
-echo "Verification checkpoint passed - proceeding to artifact path calculation"
-echo ""
-```
-
-STEP 6: Pre-calculate ALL artifact paths
-
-```bash
-# Research phase paths (calculate for max 4 topics)
-REPORT_PATHS=()
-for i in 1 2 3 4; do
-  REPORT_PATHS+=("${TOPIC_PATH}/reports/$(printf '%03d' $i)_topic${i}.md")
-done
-
-# Define research subdirectory for overview synthesis
-RESEARCH_SUBDIR="${TOPIC_PATH}/reports"
-
-# Overview path will be calculated conditionally based on workflow scope
-# (see Phase 1: Research Overview section for actual path calculation)
-OVERVIEW_PATH=""  # Initialized empty, set conditionally during research phase
-
-# Planning phase paths
-PLAN_PATH="${TOPIC_PATH}/plans/001_${TOPIC_NAME}_plan.md"
-
-# Implementation phase paths
-IMPL_ARTIFACTS="${TOPIC_PATH}/artifacts/"
-
-# Debug phase paths
-DEBUG_REPORT="${TOPIC_PATH}/debug/001_debug_analysis.md"
-
-# Documentation phase paths
-SUMMARY_PATH="${TOPIC_PATH}/summaries/${TOPIC_NUM}_${TOPIC_NAME}_summary.md"
-
-# Export all paths for use in subsequent phases
-export TOPIC_PATH TOPIC_NUM TOPIC_NAME
-export OVERVIEW_PATH PLAN_PATH
-export IMPL_ARTIFACTS DEBUG_REPORT SUMMARY_PATH
-
-echo "Pre-calculated Artifact Paths:"
-echo "  Research Reports: ${#REPORT_PATHS[@]} paths"
-echo "  Overview: $OVERVIEW_PATH"
-echo "  Plan: $PLAN_PATH"
-echo "  Implementation: $IMPL_ARTIFACTS"
-echo "  Debug: $DEBUG_REPORT"
-echo "  Summary: $SUMMARY_PATH"
-echo ""
-```
-
-STEP 7: Initialize tracking arrays
-
-```bash
-# Track successful report paths for Phase 1
-SUCCESSFUL_REPORT_PATHS=()
-SUCCESSFUL_REPORT_COUNT=0
-
-# Track phase status
-TESTS_PASSING="unknown"
-IMPLEMENTATION_OCCURRED="false"
-
-echo "Phase 0 Complete: Ready for Phase 1 (Research)"
-echo ""
+# Reconstruct REPORT_PATHS array from exported variables
+# (Bash arrays cannot be directly exported, so we use a helper function)
+reconstruct_report_paths_array
 ```
 
 ## Phase 1: Research
