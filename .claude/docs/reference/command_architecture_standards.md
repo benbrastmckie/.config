@@ -1199,12 +1199,42 @@ Task {
 The code block wrapper prevents execution.
 ```
 
+**Additional Requirement - No Undermining Disclaimers**:
+
+Imperative directives MUST NOT be followed by disclaimers suggesting template usage or future generation.
+
+❌ **FORBIDDEN**:
+```markdown
+**EXECUTE NOW**: USE the Task tool...
+
+Task {
+  ...
+}
+
+**Note**: The actual implementation will generate N Task calls based on complexity.
+```
+
+The disclaimer contradicts the imperative directive, causing Claude to interpret the Task block as a template example rather than executable instruction. This results in 0% agent delegation rate.
+
+✅ **CORRECT**:
+```markdown
+**EXECUTE NOW**: USE the Task tool for each topic (1 to $RESEARCH_COMPLEXITY) with these parameters:
+
+- subagent_type: "general-purpose"
+- description: "Research [insert topic name] with mandatory artifact creation"
+- prompt: |
+    ...
+```
+
+Use "for each [item]" phrasing and `[insert value]` placeholders to indicate loops and substitution without undermining the imperative.
+
 **Rationale**:
 
 1. **Execution Clarity**: Imperative instructions make it explicit that this is an action to execute, not a reference example
 2. **0% Delegation Prevention**: Removes ambiguity that causes Claude to skip agent invocations
 3. **Behavioral Injection**: References agent behavioral files instead of duplicating guidelines inline
 4. **Verification Enablement**: Completion signals allow command-level validation
+5. **No Contradictions**: Clean imperatives without disclaimers prevent template assumption
 
 **Enforcement**:
 

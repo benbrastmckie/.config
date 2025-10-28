@@ -246,6 +246,72 @@ grep 'report_path=' .claude/commands/command-name.md
 
 **Prevention**: Validation script detects template variables in agent prompts.
 
+### Symptom: Agents Not Invoked Despite Proper Pattern
+
+**Error Pattern**:
+- Imperative directive (**EXECUTE NOW**) present
+- Task invocation structurally correct
+- Still 0% delegation rate
+- No PROGRESS: markers visible
+
+**Root Cause**: Undermining disclaimers after imperative directives (anti-pattern).
+
+**Diagnostic Commands**:
+```bash
+# Check for undermining disclaimers
+grep -A 25 "\*\*EXECUTE NOW\*\*" .claude/commands/command-name.md | \
+  grep -i "note.*generate\|template\|example only"
+
+# Check for template disclaimers
+grep -A 10 "Task {" .claude/commands/command-name.md | grep "Note:"
+```
+
+**Solution**:
+
+**Anti-Pattern** (Undermining disclaimer):
+```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC_NAME}"
+  prompt: "..."
+}
+
+**Note**: The actual implementation will generate N Task calls based on complexity.
+```
+
+**Correct Pattern** (Clean imperative):
+```markdown
+**EXECUTE NOW**: USE the Task tool for each research topic (1 to $RESEARCH_COMPLEXITY) with these parameters:
+
+- subagent_type: "general-purpose"
+- description: "Research [insert topic name] with mandatory artifact creation"
+- prompt: |
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: [insert display-friendly topic name]
+    - Report Path: [insert absolute path from REPORT_PATHS array]
+
+    Execute research following all guidelines in behavioral file.
+    Return: REPORT_CREATED: [EXACT_ABSOLUTE_PATH]
+```
+
+**Transformation Steps**:
+1. Remove all disclaimers following imperative directives
+2. Use "for each [item]" phrasing to indicate loops
+3. Use `[insert value]` placeholder syntax
+4. Use bullet-point format, not YAML blocks
+5. Keep imperatives clean and unambiguous
+
+**Prevention**:
+- Never add disclaimers after **EXECUTE NOW** directives
+- Avoid phrases like "will generate", "template", "example only"
+- Test delegation rate after changes
+- See [Imperative Language Guide - Pitfall 5](./imperative-language-guide.md#pitfall-5-undermining-disclaimers)
+
 ### Symptom: Bash Code Blocks Not Executing
 
 **Error Pattern**:
