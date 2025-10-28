@@ -356,73 +356,36 @@ Example: `PROGRESS: [Phase 1] - Research complete (4/4 succeeded)`
 # Determine script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Source workflow detection utilities
-if [ -f "$SCRIPT_DIR/../lib/workflow-detection.sh" ]; then
-  source "$SCRIPT_DIR/../lib/workflow-detection.sh"
+# Load required libraries using consolidated function
+echo "Loading required libraries..."
+
+# Source library-sourcing utilities first
+if [ -f "$SCRIPT_DIR/../lib/library-sourcing.sh" ]; then
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/../lib/library-sourcing.sh"
 else
-  echo "ERROR: workflow-detection.sh not found"
-  echo "Expected: $SCRIPT_DIR/../lib/workflow-detection.sh"
+  echo "ERROR: Required library not found: library-sourcing.sh"
   echo ""
-  echo "This library is required for workflow scope detection."
-  echo "Cannot continue without it."
+  echo "Expected location: $SCRIPT_DIR/../lib/library-sourcing.sh"
+  echo ""
+  echo "This library provides consolidated library sourcing functions."
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la $SCRIPT_DIR/../lib/ | grep library-sourcing"
+  echo "  cat $SCRIPT_DIR/../lib/library-sourcing.sh"
+  echo ""
+  echo "Please ensure the library file exists and is readable."
   exit 1
 fi
 
-# Source error handling utilities
-if [ -f "$SCRIPT_DIR/../lib/error-handling.sh" ]; then
-  source "$SCRIPT_DIR/../lib/error-handling.sh"
-else
-  echo "ERROR: error-handling.sh not found"
+# Source all required libraries using consolidated function
+# /coordinate requires dependency-analyzer.sh in addition to core libraries
+if ! source_required_libraries "dependency-analyzer.sh"; then
+  # Error already reported by source_required_libraries()
   exit 1
 fi
 
-# Source checkpoint utilities
-if [ -f "$SCRIPT_DIR/../lib/checkpoint-utils.sh" ]; then
-  source "$SCRIPT_DIR/../lib/checkpoint-utils.sh"
-else
-  echo "ERROR: checkpoint-utils.sh not found"
-  exit 1
-fi
-
-# Source unified logger
-if [ -f "$SCRIPT_DIR/../lib/unified-logger.sh" ]; then
-  source "$SCRIPT_DIR/../lib/unified-logger.sh"
-else
-  echo "ERROR: unified-logger.sh not found"
-  exit 1
-fi
-
-# Source unified location detection (85% token reduction, 25x speedup)
-if [ -f "$SCRIPT_DIR/../lib/unified-location-detection.sh" ]; then
-  source "$SCRIPT_DIR/../lib/unified-location-detection.sh"
-else
-  echo "ERROR: unified-location-detection.sh not found"
-  exit 1
-fi
-
-# Source metadata extraction utilities (95% context reduction per artifact)
-if [ -f "$SCRIPT_DIR/../lib/metadata-extraction.sh" ]; then
-  source "$SCRIPT_DIR/../lib/metadata-extraction.sh"
-else
-  echo "ERROR: metadata-extraction.sh not found"
-  exit 1
-fi
-
-# Source context pruning utilities (<30% context usage target)
-if [ -f "$SCRIPT_DIR/../lib/context-pruning.sh" ]; then
-  source "$SCRIPT_DIR/../lib/context-pruning.sh"
-else
-  echo "ERROR: context-pruning.sh not found"
-  exit 1
-fi
-
-# Source dependency analyzer for wave-based execution (40-60% time savings)
-if [ -f "$SCRIPT_DIR/../lib/dependency-analyzer.sh" ]; then
-  source "$SCRIPT_DIR/../lib/dependency-analyzer.sh"
-else
-  echo "ERROR: dependency-analyzer.sh not found"
-  exit 1
-fi
+echo "✓ All libraries loaded successfully"
 
 # Define display_brief_summary function inline
 # (Must be defined before function verification checks below)
