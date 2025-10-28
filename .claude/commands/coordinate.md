@@ -788,19 +788,14 @@ if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^(fix|update|modify).*(one|single|s
 fi
 
 echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics"
-echo ""
 ```
 
 ### Parallel Research Agent Invocation
 
 STEP 2: Invoke 2-4 research agents in parallel (single message, multiple Task calls)
 
-**CRITICAL**: All agents invoked in a single message for parallel execution.
-
 ```bash
-# Emit progress marker before agent invocations
 emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
-echo ""
 ```
 
 **EXECUTE NOW**: USE the Task tool for each research topic (1 to $RESEARCH_COMPLEXITY) with these parameters:
@@ -824,9 +819,7 @@ echo ""
     Return: REPORT_CREATED: [EXACT_ABSOLUTE_PATH]
 
 ```bash
-# Emit progress marker after agent invocations complete
 emit_progress "1" "All research agents invoked - awaiting completion"
-echo ""
 ```
 
 ### Mandatory Verification - Research Reports with Auto-Recovery
@@ -844,56 +837,33 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
   REPORT_PATH="${REPORT_PATHS[$i-1]}"
   emit_progress "1" "Verifying research report $i/$RESEARCH_COMPLEXITY"
 
-  # Check if file exists and has content (fail-fast, no retries)
   if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
-    # Success path - silent unless warnings
     FILE_SIZE=$(wc -c < "$REPORT_PATH")
-    if [ "$FILE_SIZE" -lt 200 ] || ! grep -q "^# " "$REPORT_PATH"; then
-      echo "⚠️  Report $i: $(basename $REPORT_PATH) - warnings detected"
-    fi
+    [ "$FILE_SIZE" -lt 200 ] || ! grep -q "^# " "$REPORT_PATH" && echo "⚠️  Report $i: $(basename $REPORT_PATH) - warnings detected"
     SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
   else
-    # Failure path - provide clear diagnostics
     echo "  ❌ ERROR [Phase 1, Research]: Report file verification failed"
     echo "     Expected: File exists and has content"
-    if [ ! -f "$REPORT_PATH" ]; then
-      echo "     Found: File does not exist"
-    elif [ ! -s "$REPORT_PATH" ]; then
-      echo "     Found: File exists but is empty"
-    fi
+    [ ! -f "$REPORT_PATH" ] && echo "     Found: File does not exist" || echo "     Found: File exists but is empty"
     echo ""
     echo "  DIAGNOSTIC INFORMATION:"
     echo "    - Expected path: $REPORT_PATH"
-    echo "    - Directory: $(dirname "$REPORT_PATH")"
     echo "    - Agent: research-specialist (agent $i/$RESEARCH_COMPLEXITY)"
     echo ""
-    echo "  Directory Status:"
-    if [ -d "$(dirname "$REPORT_PATH")" ]; then
-      FILE_COUNT=$(ls -1 "$(dirname "$REPORT_PATH")" 2>/dev/null | wc -l)
-      echo "    ✓ Reports directory exists ($FILE_COUNT files)"
-      if [ "$FILE_COUNT" -gt 0 ]; then
-        echo "    Recent files:"
-        ls -lht "$(dirname "$REPORT_PATH")" | head -6
-      fi
+    DIR="$(dirname "$REPORT_PATH")"
+    if [ -d "$DIR" ]; then
+      FILE_COUNT=$(ls -1 "$DIR" 2>/dev/null | wc -l)
+      echo "  Directory Status: ✓ Exists ($FILE_COUNT files)"
+      [ "$FILE_COUNT" -gt 0 ] && ls -lht "$DIR" | head -6
     else
-      echo "    ✗ Reports directory does not exist"
-      echo "    Run: mkdir -p $(dirname "$REPORT_PATH")"
+      echo "  Directory Status: ✗ Does not exist"
+      echo "  Fix: mkdir -p $DIR"
     fi
     echo ""
     echo "  Diagnostic Commands:"
-    echo "    # Check directory and permissions"
-    echo "    ls -la $(dirname "$REPORT_PATH")"
-    echo "    # Check agent behavioral file"
+    echo "    ls -la $DIR"
     echo "    cat .claude/agents/research-specialist.md | head -50"
-    echo "    # Review task invocation"
-    echo "    grep -A10 'subagent_type.*research' /tmp/coordinate_*"
     echo ""
-    echo "  Most Likely Causes:"
-    echo "    1. Agent failed to write file (check agent output above for errors)"
-    echo "    2. Path mismatch (agent used different path than expected)"
-    echo "    3. Permission denied (run diagnostic commands to verify)"
-    echo ""
-
     FAILED_AGENTS+=("agent_$i")
     VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
   fi
@@ -1046,10 +1016,7 @@ if [ ! -f "$STANDARDS_FILE" ]; then
   STANDARDS_FILE="(none found)"
 fi
 
-echo "Planning Context:"
-echo "  Research Reports: $SUCCESSFUL_REPORT_COUNT files"
-echo "  Standards File: $STANDARDS_FILE"
-echo ""
+echo "Planning Context: $SUCCESSFUL_REPORT_COUNT reports, standards: $STANDARDS_FILE"
 ```
 
 ### Plan-Architect Agent Invocation
@@ -1087,9 +1054,7 @@ STEP 3: Verify plan file created successfully (with auto-recovery)
 ```bash
 emit_progress "2" "Verifying implementation plan"
 
-# Check if file exists and has content (fail-fast)
 if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
-  # Success path - silent unless warnings
   PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
   if [ "$PHASE_COUNT" -lt 3 ] || ! grep -q "^## Metadata" "$PLAN_PATH"; then
     echo "⚠️  Plan: $PHASE_COUNT phases (warnings detected)"
@@ -1097,46 +1062,27 @@ if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
     echo "✓ Verified: Implementation plan ($PHASE_COUNT phases)"
   fi
 else
-  # Failure path - provide clear diagnostics
   echo "❌ ERROR [Phase 2, Planning]: Plan file verification failed"
   echo "   Expected: File exists at $PLAN_PATH with content"
-  if [ ! -f "$PLAN_PATH" ]; then
-    echo "   Found: File does not exist"
-  elif [ ! -s "$PLAN_PATH" ]; then
-    echo "   Found: File exists but is empty"
-  fi
+  [ ! -f "$PLAN_PATH" ] && echo "   Found: File does not exist" || echo "   Found: File exists but is empty"
   echo ""
   echo "DIAGNOSTIC INFORMATION:"
   echo "  - Agent: plan-architect"
-  echo "  - Expected path: $PLAN_PATH"
-  echo "  - Directory: $(dirname "$PLAN_PATH")"
   echo "  - Research inputs: ${#SUCCESSFUL_REPORT_PATHS[@]} reports"
   echo ""
-  echo "Directory Status:"
-  if [ -d "$(dirname "$PLAN_PATH")" ]; then
-    FILE_COUNT=$(ls -1 "$(dirname "$PLAN_PATH")" 2>/dev/null | wc -l)
-    echo "  ✓ Plans directory exists ($FILE_COUNT files)"
-    if [ "$FILE_COUNT" -gt 0 ]; then
-      echo "  Existing plans:"
-      ls -lht "$(dirname "$PLAN_PATH")"
-    fi
+  DIR="$(dirname "$PLAN_PATH")"
+  if [ -d "$DIR" ]; then
+    FILE_COUNT=$(ls -1 "$DIR" 2>/dev/null | wc -l)
+    echo "  Directory Status: ✓ Exists ($FILE_COUNT files)"
+    [ "$FILE_COUNT" -gt 0 ] && ls -lht "$DIR"
   else
-    echo "  ✗ Plans directory does not exist"
-    echo "  Run: mkdir -p $(dirname "$PLAN_PATH")"
+    echo "  Directory Status: ✗ Does not exist"
+    echo "  Fix: mkdir -p $DIR"
   fi
   echo ""
   echo "Diagnostic Commands:"
-  echo "  # Verify research reports available"
   echo "  ls -la $TOPIC_PATH/reports/"
-  echo "  # Check plan-architect agent behavioral file"
   echo "  cat .claude/agents/plan-architect.md | head -50"
-  echo "  # Verify project standards accessible"
-  echo "  cat $STANDARDS_FILE | head -20"
-  echo ""
-  echo "Most Likely Causes:"
-  echo "  1. Plan-architect agent failed (check output above for errors)"
-  echo "  2. Insufficient research reports (need ≥1 report)"
-  echo "  3. Path mismatch or permission issue"
   echo ""
   echo "Workflow TERMINATED."
   exit 1
@@ -1154,14 +1100,8 @@ PLAN_COMPLEXITY=$(grep "Complexity:" "$PLAN_PATH" | head -1 | cut -d: -f2 | xarg
 # Extract estimated time
 PLAN_EST_TIME=$(grep "Estimated Total Time:" "$PLAN_PATH" | cut -d: -f2 | xargs || echo "unknown")
 
-echo "Plan Metadata:"
-echo "  Phases: $PHASE_COUNT"
-echo "  Complexity: $PLAN_COMPLEXITY"
-echo "  Est. Time: $PLAN_EST_TIME"
-echo ""
-
-echo "Phase 2 Complete: Implementation plan created"
-echo ""
+echo "Plan: $PHASE_COUNT phases, complexity: $PLAN_COMPLEXITY, est. time: $PLAN_EST_TIME"
+echo "Phase 2 Complete"
 
 # Save checkpoint after Phase 2
 ARTIFACT_PATHS_JSON=$(cat <<EOF
@@ -1338,41 +1278,25 @@ PHASES_TOTAL=$(echo "$AGENT_OUTPUT" | grep "PHASES_TOTAL:" | cut -d: -f2 | xargs
 PARALLEL_PHASES=$(echo "$AGENT_OUTPUT" | grep "PARALLEL_PHASES_EXECUTED:" | cut -d: -f2 | xargs)
 TIME_SAVED=$(echo "$AGENT_OUTPUT" | grep "TIME_SAVED_PERCENTAGE:" | cut -d: -f2 | xargs)
 
-echo "Implementation Status: $IMPL_STATUS"
-echo "Waves Completed: $WAVES_COMPLETED / $WAVE_COUNT"
-echo "Phases Completed: $PHASES_COMPLETED / $PHASES_TOTAL"
-echo "Parallel Phases Executed: $PARALLEL_PHASES"
+echo "Implementation Status: $IMPL_STATUS (waves: $WAVES_COMPLETED/$WAVE_COUNT, phases: $PHASES_COMPLETED/$PHASES_TOTAL, parallel: $PARALLEL_PHASES)"
 # Calculate actual implementation time
 IMPL_END_TIME=$(date +%s)
 IMPL_DURATION=$((IMPL_END_TIME - IMPL_START_TIME))
 IMPL_MINUTES=$((IMPL_DURATION / 60))
 IMPL_SECONDS=$((IMPL_DURATION % 60))
 
-# Check if implementation directory exists
 if [ ! -d "$IMPL_ARTIFACTS" ]; then
   echo "❌ ERROR [Phase 3, Implementation]: Artifacts directory not created"
   echo "   Expected: $IMPL_ARTIFACTS"
-  echo "   Status: $IMPL_STATUS (waves: $WAVES_COMPLETED/$WAVE_COUNT)"
+  echo "   Status: $IMPL_STATUS (waves: $WAVES_COMPLETED/$WAVE_COUNT, duration: ${IMPL_MINUTES}m${IMPL_SECONDS}s)"
   echo ""
   echo "DIAGNOSTIC INFORMATION:"
   echo "  - Agent: implementation-coordinator"
-  echo "  - Duration: ${IMPL_MINUTES}m${IMPL_SECONDS}s"
-  echo "  - Plan: $PLAN_PATH"
   echo ""
   echo "Diagnostic Commands:"
-  echo "  # Check parent directory and permissions"
   echo "  ls -la $(dirname "$IMPL_ARTIFACTS")"
-  echo "  # Verify plan file readable"
   echo "  cat $PLAN_PATH | head -50"
-  echo "  # Check implementation-coordinator agent"
   echo "  cat .claude/agents/implementation-coordinator.md | head -50"
-  echo "  # Check wave execution logs"
-  echo "  ls -la $TOPIC_PATH/artifacts/ 2>/dev/null || echo 'No artifacts directory'"
-  echo ""
-  echo "Most Likely Causes:"
-  echo "  1. Implementation-coordinator agent failed (check output above)"
-  echo "  2. Permission denied creating directory"
-  echo "  3. Wave execution error (check IMPL_STATUS=$IMPL_STATUS)"
   echo ""
   exit 1
 else
@@ -1490,29 +1414,17 @@ TESTS_TOTAL=$(echo "$AGENT_OUTPUT" | grep "TESTS_TOTAL:" | cut -d: -f2 | xargs)
 TESTS_PASSED=$(echo "$AGENT_OUTPUT" | grep "TESTS_PASSED:" | cut -d: -f2 | xargs)
 TESTS_FAILED=$(echo "$AGENT_OUTPUT" | grep "TESTS_FAILED:" | cut -d: -f2 | xargs)
 
-echo "Test Status: $TEST_STATUS"
-echo "Tests Run: $TESTS_TOTAL"
-echo "Tests Passed: $TESTS_PASSED"
-echo "Tests Failed: $TESTS_FAILED"
-echo ""
+echo "Test Status: $TEST_STATUS ($TESTS_PASSED/$TESTS_TOTAL passed)"
 
-# Set flag for Phase 5 (debug)
 if [ "$TEST_STATUS" == "passing" ]; then
   TESTS_PASSING="true"
-  echo "✅ VERIFIED: All tests passing - no debugging needed"
+  echo "✅ All tests passing - no debugging needed"
 else
   TESTS_PASSING="false"
-  echo "❌ VERIFIED: Tests failing - debugging required (Phase 5)"
+  echo "❌ Tests failing - debugging required (Phase 5)"
 fi
 
-echo ""
-
-# VERIFICATION REQUIREMENT: YOU MUST NOT skip Phase 5 if tests failed
-echo "Verification checkpoint passed - test status recorded"
-echo ""
-
-echo "Phase 4 Complete: Testing finished"
-echo ""
+echo "Phase 4 Complete"
 
 # Save checkpoint after Phase 4
 ARTIFACT_PATHS_JSON=$(cat <<EOF
@@ -1600,50 +1512,25 @@ for iteration in 1 2 3; do
 
   **Your Responsibility**: Substitute actual values from loop variables.
 
-  # VERIFICATION REQUIRED: Debug report must exist before applying fixes (fail-fast)
   if [ ! -f "$DEBUG_REPORT" ]; then
     echo "❌ ERROR [Phase 5, Debug - Iteration $iteration]: Debug report not created"
     echo "   Expected: File exists at $DEBUG_REPORT"
-    echo "   Found: File does not exist"
     echo ""
     echo "DIAGNOSTIC INFORMATION:"
-    echo "  - Agent: debug-analyst"
-    echo "  - Iteration: $iteration of $MAX_DEBUG_ITERATIONS"
-    echo "  - Test results: $TOPIC_PATH/outputs/test_results.md"
-    echo "  - Plan: $PLAN_PATH"
+    echo "  - Agent: debug-analyst (iteration $iteration)"
     echo ""
-    echo "Directory Status:"
-    if [ -d "$(dirname "$DEBUG_REPORT")" ]; then
-      FILE_COUNT=$(ls -1 "$(dirname "$DEBUG_REPORT")" 2>/dev/null | wc -l)
-      echo "  ✓ Debug directory exists ($FILE_COUNT files)"
-    else
-      echo "  ✗ Debug directory does not exist"
-      echo "  Run: mkdir -p $(dirname "$DEBUG_REPORT")"
-    fi
+    DIR="$(dirname "$DEBUG_REPORT")"
+    [ -d "$DIR" ] && echo "  Directory Status: ✓ Exists" || echo "  Directory Status: ✗ Does not exist (fix: mkdir -p $DIR)"
     echo ""
     echo "Diagnostic Commands:"
-    echo "  # Check test results from Phase 4"
     echo "  cat $TOPIC_PATH/outputs/test_results.md | tail -50"
-    echo "  # Verify debug-analyst agent behavioral file"
     echo "  cat .claude/agents/debug-analyst.md | head -50"
-    echo "  # Check debug directory"
-    echo "  ls -la $(dirname "$DEBUG_REPORT")"
-    echo ""
-    echo "Most Likely Causes:"
-    echo "  1. Debug-analyst failed to analyze test failures (check output above)"
-    echo "  2. No test results available for analysis"
-    echo "  3. Path mismatch or permission issue"
     echo ""
     echo "Workflow TERMINATED."
     exit 1
   fi
 
-  echo "✅ VERIFIED: Debug report exists at $DEBUG_REPORT"
-  echo ""
-
-  # VERIFICATION REQUIREMENT: YOU MUST NOT apply fixes without debug analysis
-  echo "Verification checkpoint passed - proceeding to fix application"
-  echo ""
+  echo "✅ Debug report exists"
 
   # Invoke code-writer to apply fixes
   **EXECUTE NOW**: USE the Task tool NOW to invoke the code-writer agent with these parameters:
@@ -1668,14 +1555,9 @@ for iteration in 1 2 3; do
 
   **Your Responsibility**: Substitute actual values from loop variables.
 
-  # Parse fixes applied
   FIXES_APPLIED=$(echo "$AGENT_OUTPUT" | grep "FIXES_APPLIED:" | cut -d: -f2 | xargs)
   echo "Fixes Applied: $FIXES_APPLIED"
-  echo ""
-
-  # Re-run tests (invoke test-specialist again)
-  echo "Re-running tests to verify fixes..."
-  echo ""
+  echo "Re-running tests..."
 
   **EXECUTE NOW**: USE the Task tool NOW to invoke the test-specialist agent with these parameters:
 
@@ -1714,33 +1596,19 @@ for iteration in 1 2 3; do
     TESTS_PASSING="false"
   fi
 
-  echo "Updated Test Status: $TEST_STATUS"
-  echo "Tests: $TESTS_PASSED / $TESTS_TOTAL passed"
-  echo ""
+  echo "Updated Test Status: $TEST_STATUS ($TESTS_PASSED/$TESTS_TOTAL passed)"
 
-  # Check if tests now passing
   if [ "$TESTS_PASSING" == "true" ]; then
     echo "✅ Tests passing after $iteration debug iteration(s)"
-    echo ""
     break
   fi
 
-  echo "Tests still failing, continuing to next iteration..."
-  echo ""
+  echo "Tests still failing, continuing..."
 done
 
-# Escalate if still failing after 3 iterations
-if [ "$TESTS_PASSING" == "false" ]; then
-  echo "⚠️  WARNING: Tests still failing after 3 debug iterations"
-  echo "   Manual intervention required."
-  echo "   Debug report: $DEBUG_REPORT"
-  echo ""
-  echo "Workflow continuing to Phase 6 (Documentation)..."
-  echo ""
-fi
+[ "$TESTS_PASSING" == "false" ] && echo "⚠️  WARNING: Tests still failing after 3 iterations (manual intervention required)"
 
-echo "Phase 5 Complete: Debug cycle finished"
-echo ""
+echo "Phase 5 Complete"
 
 # Context pruning after Phase 5
 # Store minimal phase metadata for Phase 5 (debug status and final test status)
@@ -1814,50 +1682,27 @@ STEP 1: Invoke doc-writer agent to create summary
 STEP 2: Verify summary file created
 
 ```bash
-# Check if summary file exists and has content (fail-fast)
 if [ ! -f "$SUMMARY_PATH" ] || [ ! -s "$SUMMARY_PATH" ]; then
   echo "❌ ERROR [Phase 6, Documentation]: Summary file not created"
   echo "   Expected: File exists at $SUMMARY_PATH with content"
-  if [ ! -f "$SUMMARY_PATH" ]; then
-    echo "   Found: File does not exist"
-  else
-    echo "   Found: File exists but is empty"
-  fi
+  [ ! -f "$SUMMARY_PATH" ] && echo "   Found: File does not exist" || echo "   Found: File exists but is empty"
   echo ""
   echo "DIAGNOSTIC INFORMATION:"
   echo "  - Agent: doc-writer"
   echo "  - Workflow: $WORKFLOW_SCOPE"
-  echo "  - Test status: $TEST_STATUS"
-  echo "  - Artifacts: $IMPL_ARTIFACTS"
   echo ""
-  echo "Directory Status:"
-  if [ -d "$(dirname "$SUMMARY_PATH")" ]; then
-    FILE_COUNT=$(ls -1 "$(dirname "$SUMMARY_PATH")" 2>/dev/null | wc -l)
-    echo "  ✓ Summaries directory exists ($FILE_COUNT files)"
-  else
-    echo "  ✗ Summaries directory does not exist"
-    echo "  Run: mkdir -p $(dirname "$SUMMARY_PATH")"
-  fi
+  DIR="$(dirname "$SUMMARY_PATH")"
+  [ -d "$DIR" ] && echo "  Directory Status: ✓ Exists" || echo "  Directory Status: ✗ Does not exist (fix: mkdir -p $DIR)"
   echo ""
   echo "Diagnostic Commands:"
-  echo "  # Check implementation artifacts available"
   echo "  ls -la $IMPL_ARTIFACTS"
-  echo "  # Verify doc-writer agent behavioral file"
   echo "  cat .claude/agents/doc-writer.md | head -50"
-  echo "  # Check all workflow artifacts"
-  echo "  find $TOPIC_PATH -type f -name '*.md' | head -20"
-  echo ""
-  echo "Most Likely Causes:"
-  echo "  1. Doc-writer agent failed (check output above for errors)"
-  echo "  2. Missing implementation artifacts to document"
-  echo "  3. Path mismatch or permission issue"
   echo ""
   echo "Workflow TERMINATED."
   exit 1
 fi
 
-FILE_SIZE=$(wc -c < "$SUMMARY_PATH")
-echo "✓ Verified: Summary created ($FILE_SIZE bytes)"
+echo "✓ Verified: Summary created ($(wc -c < "$SUMMARY_PATH") bytes)"
 
 # Context pruning after Phase 6 (final cleanup)
 store_phase_metadata "phase_6" "complete" "$SUMMARY_PATH"
