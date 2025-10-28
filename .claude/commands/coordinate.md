@@ -705,42 +705,7 @@ esac
 
 export WORKFLOW_SCOPE PHASES_TO_EXECUTE SKIP_PHASES
 
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "Workflow Scope Detection"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-echo "Description: \"$WORKFLOW_DESCRIPTION\""
-echo "Detected Scope: $WORKFLOW_SCOPE"
-echo ""
-echo "Phase Execution Plan:"
-echo "  Execute: Phases $PHASES_TO_EXECUTE"
-if [ -n "$SKIP_PHASES" ]; then
-  echo "  Skip: Phases $SKIP_PHASES"
-fi
-echo ""
-echo "Scope Behavior:"
-case "$WORKFLOW_SCOPE" in
-  research-only)
-    echo "  - Research topic in parallel (2-4 agents)"
-    echo "  - Create overview document"
-    echo "  - Exit after Phase 1"
-    ;;
-  research-and-plan)
-    echo "  - Research topic in parallel (2-4 agents)"
-    echo "  - Generate implementation plan"
-    echo "  - Exit after Phase 2"
-    ;;
-  full-implementation)
-    echo "  - Research → Plan → Implement → Test → Document"
-    echo "  - Full end-to-end workflow"
-    ;;
-  debug-only)
-    echo "  - Research root cause"
-    echo "  - Generate debug report"
-    echo "  - Exit after Phase 5"
-    ;;
-esac
-echo ""
+echo "Workflow: $WORKFLOW_SCOPE → Phases $PHASES_TO_EXECUTE"
 ```
 
 STEP 3: Initialize workflow paths using consolidated function
@@ -871,37 +836,21 @@ echo ""
 STEP 3: Verify ALL research reports created successfully (with single-retry for transient failures)
 
 ```bash
-echo "════════════════════════════════════════════════════════"
-echo "  MANDATORY VERIFICATION - Research Reports"
-echo "════════════════════════════════════════════════════════"
-echo ""
-
 VERIFICATION_FAILURES=0
 SUCCESSFUL_REPORT_PATHS=()
 FAILED_AGENTS=()
 
 for i in $(seq 1 $RESEARCH_COMPLEXITY); do
   REPORT_PATH="${REPORT_PATHS[$i-1]}"
-
-  # Emit progress marker
   emit_progress "1" "Verifying research report $i/$RESEARCH_COMPLEXITY"
-
-  echo "Verifying Report $i: $(basename $REPORT_PATH)"
 
   # Check if file exists and has content (fail-fast, no retries)
   if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
-    # Success path - perform quality checks
+    # Success path - silent unless warnings
     FILE_SIZE=$(wc -c < "$REPORT_PATH")
-
-    if [ "$FILE_SIZE" -lt 200 ]; then
-      echo "  ⚠️  WARNING: File is very small ($FILE_SIZE bytes)"
+    if [ "$FILE_SIZE" -lt 200 ] || ! grep -q "^# " "$REPORT_PATH"; then
+      echo "⚠️  Report $i: $(basename $REPORT_PATH) - warnings detected"
     fi
-
-    if ! grep -q "^# " "$REPORT_PATH"; then
-      echo "  ⚠️  WARNING: Missing markdown header"
-    fi
-
-    echo "  ✅ PASSED: Report created successfully ($FILE_SIZE bytes)"
     SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
   else
     # Failure path - provide clear diagnostics
@@ -950,33 +899,17 @@ done
 
 SUCCESSFUL_REPORT_COUNT=${#SUCCESSFUL_REPORT_PATHS[@]}
 
-echo ""
-echo "Verification Summary:"
-echo "  Total Reports Expected: $RESEARCH_COMPLEXITY"
-echo "  Reports Created: $SUCCESSFUL_REPORT_COUNT"
-echo "  Verification Failures: $VERIFICATION_FAILURES"
-echo ""
-
 # Partial failure handling - allow continuation if ≥50% success
 if [ $VERIFICATION_FAILURES -gt 0 ]; then
   DECISION=$(handle_partial_research_failure $RESEARCH_COMPLEXITY $SUCCESSFUL_REPORT_COUNT "${FAILED_AGENTS[*]}")
-
   if [ "$DECISION" == "terminate" ]; then
-    echo "Workflow TERMINATED. Fix research issues and retry."
+    echo "❌ Workflow terminated: Fix research issues and retry"
     exit 1
   fi
-
-  # Continue with partial results
-  echo "⚠️  Continuing workflow with partial research results"
-  echo ""
-fi
-
-if [ $VERIFICATION_FAILURES -eq 0 ]; then
-  echo "✅ ALL RESEARCH REPORTS VERIFIED SUCCESSFULLY"
+  echo "⚠️  Continuing with $SUCCESSFUL_REPORT_COUNT/$RESEARCH_COMPLEXITY reports"
 else
-  echo "✅ PARTIAL SUCCESS - Continuing with available research"
+  echo "✓ Verified: $SUCCESSFUL_REPORT_COUNT/$RESEARCH_COMPLEXITY research reports"
 fi
-echo ""
 
 # VERIFICATION REQUIREMENT: YOU MUST NOT proceed to Phase 2 without at least 50% success
 # This requirement is enforced by handle_partial_research_failure() above
@@ -1150,35 +1083,17 @@ STEP 2: Invoke plan-architect agent via Task tool
 STEP 3: Verify plan file created successfully (with auto-recovery)
 
 ```bash
-echo "════════════════════════════════════════════════════════"
-echo "  MANDATORY VERIFICATION - Implementation Plan"
-echo "════════════════════════════════════════════════════════"
-echo ""
-
-# Emit progress marker
 emit_progress "2" "Verifying implementation plan"
 
 # Check if file exists and has content (fail-fast)
 if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
-  # Success path - perform quality checks
+  # Success path - silent unless warnings
   PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
-
-  if [ "$PHASE_COUNT" -lt 3 ]; then
-    echo "⚠️  WARNING: Plan has only $PHASE_COUNT phases"
-    echo "   Expected at least 3 phases for proper structure."
+  if [ "$PHASE_COUNT" -lt 3 ] || ! grep -q "^## Metadata" "$PLAN_PATH"; then
+    echo "⚠️  Plan: $PHASE_COUNT phases (warnings detected)"
+  else
+    echo "✓ Verified: Implementation plan ($PHASE_COUNT phases)"
   fi
-
-  if ! grep -q "^## Metadata" "$PLAN_PATH"; then
-    echo "⚠️  WARNING: Plan missing metadata section"
-  fi
-
-  echo "✅ VERIFICATION PASSED: Plan created with $PHASE_COUNT phases"
-  echo "   Path: $PLAN_PATH"
-  echo ""
-
-  # VERIFICATION REQUIREMENT: YOU MUST NOT proceed without plan file
-  echo "Verification checkpoint passed - proceeding to plan metadata extraction"
-  echo ""
 else
   # Failure path - provide clear diagnostics
   echo "❌ ERROR: Plan file verification failed"
@@ -1422,16 +1337,11 @@ echo "Implementation Status: $IMPL_STATUS"
 echo "Waves Completed: $WAVES_COMPLETED / $WAVE_COUNT"
 echo "Phases Completed: $PHASES_COMPLETED / $PHASES_TOTAL"
 echo "Parallel Phases Executed: $PARALLEL_PHASES"
-echo "Estimated Time Savings: ${TIME_SAVED}%"
-echo ""
-
 # Calculate actual implementation time
 IMPL_END_TIME=$(date +%s)
 IMPL_DURATION=$((IMPL_END_TIME - IMPL_START_TIME))
 IMPL_MINUTES=$((IMPL_DURATION / 60))
 IMPL_SECONDS=$((IMPL_DURATION % 60))
-echo "Total implementation time: ${IMPL_MINUTES}m ${IMPL_SECONDS}s"
-echo ""
 
 # Check if implementation directory exists
 if [ ! -d "$IMPL_ARTIFACTS" ]; then
@@ -1451,31 +1361,14 @@ if [ ! -d "$IMPL_ARTIFACTS" ]; then
   exit 1
 else
   ARTIFACT_COUNT=$(find "$IMPL_ARTIFACTS" -type f 2>/dev/null | wc -l)
-  echo "✅ VERIFIED: Implementation artifacts directory exists ($ARTIFACT_COUNT files)"
+  COMPLETED_PHASES_IN_PLAN=$(grep -c "\[COMPLETED\]" "$PLAN_PATH" 2>/dev/null || echo "0")
+  echo "✓ Verified: Implementation complete - ${IMPL_MINUTES}m${IMPL_SECONDS}s (${TIME_SAVED}% savings), $ARTIFACT_COUNT files, $COMPLETED_PHASES_IN_PLAN phases"
 fi
-
-# Verify plan updated with completion markers
-COMPLETED_PHASES_IN_PLAN=$(grep -c "\[COMPLETED\]" "$PLAN_PATH" 2>/dev/null || echo "0")
-echo "Plan completion markers: $COMPLETED_PHASES_IN_PLAN phases marked complete"
-echo ""
-
-# Verify wave checkpoints exist
-WAVE_CHECKPOINT_COUNT=$(find "$IMPL_ARTIFACTS" -name "wave_*.checkpoint" 2>/dev/null | wc -l)
-echo "Wave checkpoints: $WAVE_CHECKPOINT_COUNT saved"
-echo ""
 
 # Set flag for Phase 6 (documentation)
 if [ "$IMPL_STATUS" == "complete" ] || [ "$IMPL_STATUS" == "partial" ]; then
   IMPLEMENTATION_OCCURRED="true"
 fi
-
-# VERIFICATION REQUIREMENT: YOU MUST NOT proceed to Phase 4 without artifacts directory
-echo "Verification checkpoint passed - proceeding to Phase 4 (Testing)"
-echo ""
-
-echo "Phase 3 Complete: Wave-based implementation finished"
-echo "  Performance gain: ${TIME_SAVED}% time savings from parallel execution"
-echo ""
 
 # Save checkpoint after Phase 3 with wave execution metrics
 ARTIFACT_PATHS_JSON=$(cat <<EOF
@@ -1952,30 +1845,12 @@ if [ ! -f "$SUMMARY_PATH" ] || [ ! -s "$SUMMARY_PATH" ]; then
   exit 1
 fi
 
-echo "✅ VERIFIED: Summary file exists at $SUMMARY_PATH"
 FILE_SIZE=$(wc -c < "$SUMMARY_PATH")
-echo "   File size: $FILE_SIZE bytes"
-echo ""
-
-# VERIFICATION REQUIREMENT: YOU MUST NOT complete workflow without summary
-echo "Verification checkpoint passed - workflow complete"
-echo ""
-
-echo "Phase 6 Complete: Documentation finished"
-echo ""
+echo "✓ Verified: Summary created ($FILE_SIZE bytes)"
 
 # Context pruning after Phase 6 (final cleanup)
-# Store minimal phase metadata for Phase 6 (summary path only)
 store_phase_metadata "phase_6" "complete" "$SUMMARY_PATH"
-
-# Prune all workflow metadata (workflow complete)
 prune_workflow_metadata "coordinate_workflow" "true"  # keep_artifacts=true
-
-# Report final context savings
-CONTEXT_FINAL=$(get_current_context_size)
-echo "All phases complete - final context size: $CONTEXT_FINAL chars (<30% target achieved)"
-
-# Emit progress marker
 emit_progress "6" "Documentation complete (summary created)"
 ```
 
@@ -1986,11 +1861,7 @@ Display final workflow summary and artifact locations.
 ```bash
 # Clean up checkpoint on successful completion
 CHECKPOINT_FILE=".claude/data/checkpoints/coordinate_latest.json"
-if [ -f "$CHECKPOINT_FILE" ]; then
-  rm -f "$CHECKPOINT_FILE"
-  echo "✓ Checkpoint cleaned up"
-  echo ""
-fi
+[ -f "$CHECKPOINT_FILE" ] && rm -f "$CHECKPOINT_FILE"
 
 display_brief_summary
 exit 0
