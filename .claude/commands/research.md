@@ -105,7 +105,16 @@ source .claude/lib/detect-project-dir.sh
 # Get project root (from environment or git)
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR}"
 if [ -z "$PROJECT_ROOT" ]; then
-  echo "ERROR: CLAUDE_PROJECT_DIR not set"
+  echo ""
+  echo "✗ ERROR: Environment variable not set"
+  echo "   Expected: CLAUDE_PROJECT_DIR='[absolute path]'"
+  echo "   Found: CLAUDE_PROJECT_DIR=''"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  echo \$CLAUDE_PROJECT_DIR"
+  echo "  pwd"
+  echo ""
+  echo "Workflow terminated"
   exit 1
 fi
 
@@ -130,18 +139,23 @@ mkdir -p "$TOPIC_DIR"
 echo "TOPIC_DIR: $TOPIC_DIR"
 echo "TOPIC_NUM: $TOPIC_NUM"
 echo "TOPIC_NAME: $TOPIC_NAME"
-```
-
-**Verification**: Confirm TOPIC_DIR is set and directory exists
 
 # MANDATORY VERIFICATION checkpoint
 if [ ! -d "$TOPIC_DIR" ]; then
-  echo "ERROR: Topic directory creation failed: $TOPIC_DIR"
+  echo ""
+  echo "✗ ERROR: Directory creation failed"
+  echo "   Expected: Directory at $TOPIC_DIR"
+  echo "   Found: Directory does not exist"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la \$(dirname \"$TOPIC_DIR\")"
+  echo "  mkdir -p \"$TOPIC_DIR\""
+  echo ""
+  echo "Workflow terminated"
   exit 1
 fi
 
 echo "✓ VERIFIED: Topic directory created at $TOPIC_DIR"
-echo "Main topic directory: $TOPIC_DIR"
 ```
 
 **Step 2: EXECUTE NOW - Calculate Subtopic Report Paths**
@@ -172,7 +186,16 @@ mkdir -p "$RESEARCH_SUBDIR"
 
 # MANDATORY VERIFICATION - research subdirectory creation
 if [ ! -d "$RESEARCH_SUBDIR" ]; then
-  echo "CRITICAL ERROR: Research subdirectory creation failed: $RESEARCH_SUBDIR"
+  echo ""
+  echo "✗ ERROR: Research subdirectory creation failed"
+  echo "   Expected: Directory at $RESEARCH_SUBDIR"
+  echo "   Found: Directory does not exist"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la \"$TOPIC_DIR/reports\""
+  echo "  mkdir -p \"$RESEARCH_SUBDIR\""
+  echo ""
+  echo "Workflow terminated"
   exit 1
 fi
 
@@ -604,7 +627,16 @@ EOF
   if [ -f "$OVERVIEW_PATH" ]; then
     echo "✓ Fallback overview created at $OVERVIEW_PATH"
   else
+    echo ""
     echo "✗ CRITICAL ERROR: Failed to create overview report"
+    echo "   Expected: File at $OVERVIEW_PATH"
+    echo "   Found: File does not exist after fallback"
+    echo ""
+    echo "Diagnostic commands:"
+    echo "  ls -la \$(dirname \"$OVERVIEW_PATH\")"
+    echo "  cat \"$OVERVIEW_PATH\""
+    echo ""
+    echo "Workflow terminated"
     exit 1
   fi
 else
@@ -799,12 +831,20 @@ echo "✓ OVERVIEW_SUMMARY ready for display (from agent output)"
 # Final check
 if $COMPLETION_CHECKS_PASSED; then
   echo ""
-  echo "✓ ALL COMPLETION CRITERIA MET - Proceeding to STEP 7 (display summary)"
+  echo "✓ All completion criteria met"
   echo ""
 else
   echo ""
-  echo "✗ COMPLETION CRITERIA FAILED - Cannot display summary"
-  echo "Please review errors above and fix before continuing"
+  echo "✗ ERROR: Completion criteria failed"
+  echo "   Expected: All 5 criteria passing"
+  echo "   Found: One or more criteria failed (see above)"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la \"$TOPIC_DIR\""
+  echo "  ls -la \"$RESEARCH_SUBDIR\""
+  echo "  echo \${#VERIFIED_PATHS[@]}"
+  echo ""
+  echo "Workflow terminated"
   exit 1
 fi
 ```
