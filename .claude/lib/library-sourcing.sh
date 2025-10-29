@@ -28,6 +28,13 @@
 # Optional Libraries:
 #   - dependency-analyzer.sh - Wave-based execution analysis (for /coordinate)
 #
+# Deduplication:
+#   - Automatically removes duplicate library names before sourcing
+#   - Preserves first occurrence order for unique libraries
+#   - Debug output shows count of removed duplicates (if any)
+#   - Trade-off: Not idempotent across multiple function calls (acceptable
+#     because commands run in isolated processes)
+#
 # Error Handling:
 #   - Fail-fast on any missing library
 #   - Detailed error message includes library name and expected path
@@ -50,6 +57,28 @@ source_required_libraries() {
   if [[ $# -gt 0 ]]; then
     libraries+=("$@")
   fi
+
+  # Deduplicate library list to prevent re-sourcing
+  # Algorithm: O(n²) string matching (acceptable for n≈10 libraries)
+  # Trade-off: Not idempotent across multiple calls (acceptable since commands
+  # run in isolated processes and don't call source_required_libraries repeatedly)
+  local unique_libs=()
+  local seen=" "
+  for lib in "${libraries[@]}"; do
+    if [[ ! "$seen" =~ " $lib " ]]; then
+      unique_libs+=("$lib")
+      seen+="$lib "
+    fi
+  done
+
+  # Debug logging: show deduplication results
+  if [[ ${#libraries[@]} -ne ${#unique_libs[@]} ]]; then
+    local removed_count=$((${#libraries[@]} - ${#unique_libs[@]}))
+    echo "DEBUG: Library deduplication: ${#libraries[@]} input libraries -> ${#unique_libs[@]} unique libraries ($removed_count duplicates removed)" >&2
+  fi
+
+  # Use deduplicated list for sourcing
+  libraries=("${unique_libs[@]}")
 
   local failed_libraries=()
 
