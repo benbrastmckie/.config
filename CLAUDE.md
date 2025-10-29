@@ -339,14 +339,17 @@ Located in `.claude/commands/`:
 - `/test <target>` - Run project-specific tests per Testing Protocols
 - `/setup [--enhance-with-docs]` - Configure or update this CLAUDE.md file; --enhance-with-docs discovers project documentation and automatically enhances CLAUDE.md
 
-**Orchestration**: Three orchestration commands available:
-- `/orchestrate` - Full-featured orchestration with PR automation and dashboard tracking
-- `/coordinate` - Clean orchestration focused on wave-based parallel execution and fail-fast error handling (2,500-3,000 lines vs 5,438)
-- `/supervise` - Sequential orchestration with proven architectural compliance
+**Orchestration**: Three orchestration commands available (**Use /coordinate for production workflows**):
+
+- `/coordinate` - **Production-Ready** - Wave-based parallel execution and fail-fast error handling (2,500-3,000 lines, recommended default)
+- `/orchestrate` - **In Development** - Full-featured orchestration with PR automation and dashboard tracking (5,438 lines, experimental features may have inconsistent behavior)
+- `/supervise` - **In Development** - Sequential orchestration with proven architectural compliance (1,939 lines, minimal reference being stabilized)
   - **Usage Guide**: [/supervise Usage Guide](.claude/docs/guides/supervise-guide.md) - Examples and common patterns
   - **Phase Reference**: [/supervise Phase Reference](.claude/docs/reference/supervise-phases.md) - Detailed phase documentation
 
-All orchestration commands provide 7-phase workflow with parallel research (2-4 agents), automated complexity evaluation, and conditional debugging. Wave-based commands (/orchestrate, /coordinate) achieve 40-60% time savings through parallel implementation. Performance: <30% context usage throughout.
+All orchestration commands provide 7-phase workflow with parallel research (2-4 agents), automated complexity evaluation, and conditional debugging. /coordinate provides wave-based parallel implementation achieving 40-60% time savings. Performance: <30% context usage throughout.
+
+**Command Selection**: See [Command Selection Guide](.claude/docs/guides/orchestration-best-practices.md#command-selection) for detailed comparison, decision tree, and maturity status of each command.
 
 **Best Practices**: See [Orchestration Best Practices Guide](.claude/docs/guides/orchestration-best-practices.md) for unified framework covering Phase 0-7, context budget management, and library integration.
 
