@@ -1161,27 +1161,52 @@ STEP 5: Check if workflow should continue to implementation
 should_run_phase 3 || {
   emit_progress "Complete" "/coordinate workflow complete"
   echo ""
-  echo "Workflow Type: $WORKFLOW_SCOPE"
-  echo "Phases Executed: Phase 0-2 (Location, Research, Planning)"
+  echo "Workflow complete: $WORKFLOW_SCOPE"
   echo ""
-  echo "Artifacts Created:"
-  echo "  ✓ Research Reports: $SUCCESSFUL_REPORT_COUNT files"
-  for report in "${SUCCESSFUL_REPORT_PATHS[@]}"; do
-    echo "      - $(basename $report)"
-  done
-  if [ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ]; then
-    echo "  ✓ Research Overview: $(basename $OVERVIEW_PATH)"
+  echo "Artifacts:"
+  echo "  ✓ $SUCCESSFUL_REPORT_COUNT research reports"
+  if [ -n "$PLAN_PATH" ] && [ -f "$PLAN_PATH" ]; then
+    PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
+    PLAN_EST=$(grep "Estimated Total Time:" "$PLAN_PATH" | head -1 | cut -d: -f2 | xargs || echo "unknown")
+    echo "  ✓ 1 implementation plan ($PHASE_COUNT phases, $PLAN_EST estimated)"
   fi
-  echo "  ✓ Implementation Plan: $(basename $PLAN_PATH)"
+  if [ -n "$SUMMARY_PATH" ] && [ -f "$SUMMARY_PATH" ]; then
+    echo "  ✓ 1 implementation summary"
+  fi
   echo ""
-  echo "Standards Compliance:"
-  echo "  ✓ Reports in specs/reports/ (not inline summaries)"
-  echo "  ✓ Plan created via Task tool (not SlashCommand)"
-  echo "  ✓ Summary NOT created (per standards - no implementation)"
+  echo "Next: /implement $PLAN_PATH"
   echo ""
-  echo "Next Steps:"
-  echo "  The plan is ready for execution"
-  echo ""
+
+  # Optional: Display detailed summary if COORDINATE_VERBOSE=true
+  if [ "${COORDINATE_VERBOSE:-false}" = "true" ]; then
+    echo "Detailed Summary:"
+    echo ""
+    echo "Research Reports:"
+    for report in "${SUCCESSFUL_REPORT_PATHS[@]}"; do
+      FILE_SIZE=$(wc -c < "$report" 2>/dev/null | numfmt --to=iec 2>/dev/null || echo "unknown")
+      echo "  - $(basename $report) ($FILE_SIZE)"
+    done
+    if [ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ]; then
+      echo "  - $(basename $OVERVIEW_PATH)"
+    fi
+    echo ""
+
+    if [ -n "$PLAN_PATH" ] && [ -f "$PLAN_PATH" ]; then
+      echo "Plan Metadata:"
+      PLAN_COMPLEXITY=$(grep "Complexity:" "$PLAN_PATH" | head -1 | cut -d: -f2 | xargs || echo "unknown")
+      echo "  - Complexity: $PLAN_COMPLEXITY"
+      echo "  - Estimated Time: $PLAN_EST"
+      echo "  - Phases: $PHASE_COUNT"
+      echo ""
+    fi
+
+    echo "Standards Compliance:"
+    echo "  ✓ Reports in specs/reports/ (not inline summaries)"
+    echo "  ✓ Plan created via Task tool (not SlashCommand)"
+    echo "  ✓ Summary NOT created (per standards - no implementation)"
+    echo ""
+  fi
+
   exit 0
 }
 ```
