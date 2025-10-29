@@ -9,6 +9,13 @@ This directory contains 42 modular utility libraries used across Claude Code com
 ## Table of Contents
 
 - [Purpose](#purpose)
+- [Library Classification](#library-classification)
+  - [Core Libraries](#core-libraries-required-by-all-commands)
+  - [Workflow Libraries](#workflow-libraries-orchestration-commands)
+  - [Specialized Libraries](#specialized-libraries-single-command-use-cases)
+  - [Optional Libraries](#optional-libraries-can-be-disabled)
+  - [Sourcing Best Practices](#sourcing-best-practices)
+  - [Array Deduplication Implementation](#array-deduplication-implementation)
 - [Module Organization](#module-organization)
 - [Core Modules](#core-modules)
   - [Parsing & Plans](#parsing--plans)
@@ -33,6 +40,97 @@ Extracting common functionality to shared libraries:
 - **Increases testability** (utilities can be unit tested independently)
 - **Ensures consistency** (same logic used by all commands)
 - **Single responsibility** (each module focused on one domain)
+
+## Library Classification
+
+Libraries are classified by usage pattern to help commands source only what they need:
+
+### Core Libraries (Required by All Commands)
+Essential utilities sourced automatically by all orchestration commands via `library-sourcing.sh`:
+
+- **unified-location-detection.sh** - Standard path resolution (85% token reduction, 25x speedup vs agent-based detection)
+- **error-handling.sh** - Fail-fast error handling, retry logic, and logging
+- **checkpoint-utils.sh** - State preservation for resumable workflows
+- **unified-logger.sh** - Progress logging utilities with structured output
+- **workflow-detection.sh** - Workflow scope detection functions
+- **metadata-extraction.sh** - 99% context reduction through metadata-only passing
+- **context-pruning.sh** - Context management utilities for budget control
+
+### Workflow Libraries (Orchestration Commands)
+Used by `/orchestrate`, `/coordinate`, `/supervise`, `/implement`:
+
+- **parallel-execution.sh** - Wave-based parallel implementation (40-60% time savings)
+- **dependency-analyzer.sh** - Wave-based execution analysis
+- **complexity-utils.sh** - Complexity analysis and threshold detection
+- **adaptive-planning-logger.sh** - Structured logging for adaptive events
+- **plan-core-bundle.sh** - Core plan parsing functions (phases, stages, metadata)
+- **progress-dashboard.sh** - Real-time progress tracking visualization
+
+### Specialized Libraries (Single-Command Use Cases)
+Command-specific utilities with narrow scope:
+
+- **convert-*.sh** (convert-core.sh, convert-docx.sh, convert-pdf.sh, convert-markdown.sh) - Document conversion (only /convert-docs)
+- **analyze-metrics.sh** - Performance and workflow metrics analysis (only /analyze)
+- **template-*.sh** (parse-template.sh, substitute-variables.sh, template-integration.sh) - Template system (only /plan-from-template, /plan-wizard)
+- **agent-*.sh** (agent-registry-utils.sh, agent-invocation.sh) - Agent management (only orchestration commands)
+
+### Optional Libraries (Can Be Disabled)
+Feature-specific utilities that can be excluded without breaking core functionality:
+
+- **auto-analysis-utils.sh** - Automatic complexity analysis (can use manual complexity evaluation instead)
+- **timestamp-utils.sh** - Timestamp formatting (can use raw date commands)
+- **json-utils.sh** - JSON processing (can use direct jq calls)
+
+### Sourcing Best Practices
+
+**Use `source_required_libraries()` when:**
+- Building orchestration commands that need core + workflow libraries
+- Adding optional libraries via function parameters
+- Benefits from automatic deduplication (prevents re-sourcing duplicates)
+
+**Use direct sourcing when:**
+- Command only needs 1-2 specific libraries
+- Library is specialized/command-specific
+- Avoids loading unnecessary core libraries
+
+**Example Usage:**
+```bash
+# Orchestration command (uses library-sourcing.sh)
+source .claude/lib/library-sourcing.sh
+source_required_libraries "dependency-analyzer.sh" || exit 1
+
+# Specialized command (direct sourcing)
+source .claude/lib/convert-core.sh
+source .claude/lib/conversion-logger.sh
+```
+
+### Array Deduplication Implementation
+
+**Problem Solved**: The `/coordinate` timeout was caused by passing 6 duplicate library names to `source_required_libraries()`, which blindly re-sourced them, causing excessive loading time (>120s).
+
+**Solution**: 20-line array deduplication removes duplicates before sourcing, directly solving the parameter duplication problem.
+
+**Algorithm**:
+```bash
+# O(n²) string matching (acceptable for n≈10 libraries)
+local unique_libs=()
+local seen=" "
+for lib in "${libraries[@]}"; do
+  if [[ ! "$seen" =~ " $lib " ]]; then
+    unique_libs+=("$lib")
+    seen+="$lib "
+  fi
+done
+```
+
+**Trade-offs**:
+- **Benefits**: Directly solves duplicate parameter problem, no global state management, 93% less code than memoization (20 lines vs 310)
+- **Limitations**: Not idempotent across multiple function calls (acceptable since commands run in isolated processes where multiple calls don't occur)
+- **Performance**: <0.01ms overhead, preserves first occurrence order
+
+**Why Not Memoization?**: Research showed memoization (310 lines, global state, 10 tests) was over-engineered for the problem. The root cause was duplicate parameters, not repeated function calls across the session. Deduplication solves it directly with 93% less code.
+
+**Decision Rationale**: "Cross-call persistence value is theoretical (commands don't call source_required_libraries multiple times)" - Memoization optimizes scenarios that don't occur in practice.
 
 ## Module Organization
 
