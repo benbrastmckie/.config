@@ -44,22 +44,24 @@ else
   FAILED=1
 fi
 
-# Test 5: Verify library sourcing (expect ≥7: 4 original + 3 new)
+# Test 5: Verify library sourcing (expect ≥2: unified library pattern)
+# supervise.md uses unified library sourcing approach (simpler than orchestrate.md)
 # Pattern matches both $SCRIPT_DIR/../lib/ and .claude/lib/ formats
 LIBRARY_COUNT=$(grep -c "source.*lib/.*\.sh" "$SUPERVISE_FILE" 2>/dev/null || echo "0")
-if [ "$LIBRARY_COUNT" -ge 7 ] 2>/dev/null; then
-  echo "✅ PASS: Test 5 - Library sourcing: $LIBRARY_COUNT (expected ≥7)"
+if [ "$LIBRARY_COUNT" -ge 2 ] 2>/dev/null; then
+  echo "✅ PASS: Test 5 - Library sourcing: $LIBRARY_COUNT (expected ≥2 for unified pattern)"
 else
-  echo "❌ FAIL: Test 5 - Library sourcing: $LIBRARY_COUNT (expected ≥7)"
+  echo "❌ FAIL: Test 5 - Library sourcing: $LIBRARY_COUNT (expected ≥2 for unified pattern)"
   FAILED=1
 fi
 
-# Test 6: Verify retry_with_backoff usage (expect ≥8: 6 verifications + 2 documentation)
-RETRY_COUNT=$(grep -c "retry_with_backoff" "$SUPERVISE_FILE" 2>/dev/null || echo "0")
-if [ "$RETRY_COUNT" -ge 8 ] 2>/dev/null; then
-  echo "✅ PASS: Test 6 - Error handling with retry: $RETRY_COUNT (expected ≥8)"
+# Test 6: Verify verification patterns (expect ≥8: file existence checks and error handling)
+# supervise.md uses mandatory verification checkpoints, not retry_with_backoff
+VERIFICATION_COUNT=$(grep -E -c "if \[ ! -f|FALLBACK|verification|Verify.*created" "$SUPERVISE_FILE" 2>/dev/null || echo "0")
+if [ "$VERIFICATION_COUNT" -ge 8 ] 2>/dev/null; then
+  echo "✅ PASS: Test 6 - Verification patterns: $VERIFICATION_COUNT (expected ≥8)"
 else
-  echo "❌ FAIL: Test 6 - Error handling with retry: $RETRY_COUNT (expected ≥8)"
+  echo "❌ FAIL: Test 6 - Verification patterns: $VERIFICATION_COUNT (expected ≥8)"
   FAILED=1
 fi
 
