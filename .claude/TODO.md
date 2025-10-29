@@ -2,7 +2,6 @@
 
 ## Implementation Plans
 
-- /home/benjamin/.config/.claude/specs/516_fix_broken_links_and_failing_tests/plans/001_fix_all_broken_links_and_failing_tests.md
 
 ## Research
 
