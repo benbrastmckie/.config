@@ -4,6 +4,13 @@
 
 set -e
 
+# Get script directory and source libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/../lib"
+
+# Source required libraries
+source "$LIB_DIR/plan-core-bundle.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -17,7 +24,6 @@ TESTS_FAILED=0
 
 # Test directory
 TEST_DIR="/tmp/progressive_expansion_tests_$$"
-UTILS_DIR="$(dirname "$0")/../utils"
 
 # Setup test environment
 setup() {
@@ -149,7 +155,7 @@ EOF
 test_detect_level_0() {
   local plan_file=$(create_test_plan)
 
-  local level=$($UTILS_DIR/parse-adaptive-plan.sh detect_structure_level "$plan_file")
+  local level=$(detect_structure_level "$plan_file")
 
   if [[ "$level" == "0" ]]; then
     pass "Detect Level 0 structure"
@@ -162,7 +168,7 @@ test_detect_level_0() {
 test_plan_not_expanded() {
   local plan_file=$(create_test_plan)
 
-  local expanded=$($UTILS_DIR/parse-adaptive-plan.sh is_plan_expanded "$plan_file")
+  local expanded=$(is_plan_expanded "$plan_file")
 
   if [[ "$expanded" == "false" ]]; then
     pass "Plan not expanded initially"
@@ -175,7 +181,7 @@ test_plan_not_expanded() {
 test_extract_phase_name() {
   local plan_file=$(create_test_plan)
 
-  local name=$($UTILS_DIR/parse-adaptive-plan.sh extract_phase_name "$plan_file" 2)
+  local name=$(extract_phase_name "$plan_file" 2)
 
   if [[ "$name" == "implementation" ]]; then
     pass "Extract phase name"
@@ -188,7 +194,7 @@ test_extract_phase_name() {
 test_extract_phase_content() {
   local plan_file=$(create_test_plan)
 
-  local content=$($UTILS_DIR/parse-adaptive-plan.sh extract_phase_content "$plan_file" 2)
+  local content=$(extract_phase_content "$plan_file" 2)
 
   if echo "$content" | grep -q "### Phase 2: Implementation"; then
     pass "Extract phase content (heading)"
@@ -214,7 +220,7 @@ test_extract_phase_content() {
 test_extract_stage_name() {
   local plan_file=$(create_test_plan)
 
-  local name=$($UTILS_DIR/parse-adaptive-plan.sh extract_stage_name "$plan_file" 1)
+  local name=$(extract_stage_name "$plan_file" 1)
 
   if [[ "$name" == "backend_setup" ]]; then
     pass "Extract stage name"
@@ -227,7 +233,7 @@ test_extract_stage_name() {
 test_extract_stage_content() {
   local plan_file=$(create_test_plan)
 
-  local content=$($UTILS_DIR/parse-adaptive-plan.sh extract_stage_content "$plan_file" 1)
+  local content=$(extract_stage_content "$plan_file" 1)
 
   if echo "$content" | grep -q "#### Stage 1: Backend Setup"; then
     pass "Extract stage content (heading)"
@@ -259,25 +265,25 @@ test_first_phase_expansion() {
   plan_file="$plan_dir/$(basename "$plan_file")"
 
   # Extract phase content
-  local phase_content=$($UTILS_DIR/parse-adaptive-plan.sh extract_phase_content "$plan_file" $phase_num)
-  local phase_name=$($UTILS_DIR/parse-adaptive-plan.sh extract_phase_name "$plan_file" $phase_num)
+  local phase_content=$(extract_phase_content "$plan_file" $phase_num)
+  local phase_name=$(extract_phase_name "$plan_file" $phase_num)
   local phase_file="$plan_dir/phase_${phase_num}_${phase_name}.md"
 
   # Create phase file
   echo "$phase_content" > "$phase_file"
 
   # Add metadata
-  $UTILS_DIR/parse-adaptive-plan.sh add_phase_metadata "$phase_file" $phase_num "$(basename "$plan_file")"
+  add_phase_metadata "$phase_file" $phase_num "$(basename "$plan_file")"
 
   # Add update reminder
-  $UTILS_DIR/parse-adaptive-plan.sh add_update_reminder "$phase_file" "Phase $phase_num" "$(basename "$plan_file")"
+  add_update_reminder "$phase_file" "Phase $phase_num" "$(basename "$plan_file")"
 
   # Revise main plan
-  $UTILS_DIR/parse-adaptive-plan.sh revise_main_plan_for_phase "$plan_file" $phase_num "$(basename "$phase_file")"
+  revise_main_plan_for_phase "$plan_file" $phase_num "$(basename "$phase_file")"
 
   # Update metadata
-  $UTILS_DIR/parse-adaptive-plan.sh update_structure_level "$plan_file" 1
-  $UTILS_DIR/parse-adaptive-plan.sh update_expanded_phases "$plan_file" $phase_num
+  update_structure_level "$plan_file" 1
+  update_expanded_phases "$plan_file" $phase_num
 
   # Verify directory structure
   if [[ -d "$plan_dir" ]]; then
@@ -328,7 +334,7 @@ test_first_phase_expansion() {
   fi
 
   # Detect new structure level
-  local new_level=$($UTILS_DIR/parse-adaptive-plan.sh detect_structure_level "$plan_dir")
+  local new_level=$(detect_structure_level "$plan_dir")
   if [[ "$new_level" == "1" ]]; then
     pass "Detect Level 1 after expansion"
   else
@@ -336,7 +342,7 @@ test_first_phase_expansion() {
   fi
 
   # Check if plan is now expanded
-  local is_expanded=$($UTILS_DIR/parse-adaptive-plan.sh is_plan_expanded "$plan_dir")
+  local is_expanded=$(is_plan_expanded "$plan_dir")
   if [[ "$is_expanded" == "true" ]]; then
     pass "Plan detected as expanded"
   else
@@ -344,7 +350,7 @@ test_first_phase_expansion() {
   fi
 
   # Check if phase is expanded
-  local phase_expanded=$($UTILS_DIR/parse-adaptive-plan.sh is_phase_expanded "$plan_dir" 2)
+  local phase_expanded=$(is_phase_expanded "$plan_dir" 2)
   if [[ "$phase_expanded" == "true" ]]; then
     pass "Phase 2 detected as expanded"
   else
@@ -352,7 +358,7 @@ test_first_phase_expansion() {
   fi
 
   # List expanded phases
-  local expanded_list=$($UTILS_DIR/parse-adaptive-plan.sh list_expanded_phases "$plan_dir")
+  local expanded_list=$(list_expanded_phases "$plan_dir")
   if [[ "$expanded_list" == "2" ]]; then
     pass "List expanded phases returns [2]"
   else

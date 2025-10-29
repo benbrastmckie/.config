@@ -2,8 +2,6 @@
 
 ## Implementation Plans
 
-- /home/benjamin/.config/.claude/specs/515_research_what_minimal_changes_can_be_made_to_the_c/plans/001_minimal_documentation_changes_for_coordinate_forma.md
-- /home/benjamin/.config/.claude/specs/513_compare_orchestrate_supervise_and_coordinate_in_or/plans/001_orchestration_documentation_clarity_improvements.md
 - /home/benjamin/.config/.claude/specs/516_fix_broken_links_and_failing_tests/plans/001_fix_all_broken_links_and_failing_tests.md
 
 ## Research

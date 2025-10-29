@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 # Test suite for parsing utilities
-# Tests parse-adaptive-plan.sh parsing functions
+# Tests plan-core-bundle.sh parsing functions
 
 set -e
+
+# Get script directory and source libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/../lib"
+
+# Source required libraries
+source "$LIB_DIR/plan-core-bundle.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -17,12 +24,6 @@ TESTS_FAILED=0
 
 # Test directory
 TEST_DIR="/tmp/parsing_utilities_tests_$$"
-UTILS_DIR="$(dirname "$0")/../utils"
-
-# Source parsing utilities if available (optional for these tests)
-if [ -f "$UTILS_DIR/parse-adaptive-plan.sh" ]; then
-  source "$UTILS_DIR/parse-adaptive-plan.sh" 2>/dev/null || true
-fi
 
 # Setup test environment
 setup() {
