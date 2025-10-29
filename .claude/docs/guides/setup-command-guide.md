@@ -299,7 +299,7 @@ Use /setup for initial setup and major updates. Use utilities for targeted maint
 
 ## See Also
 
-- [CLAUDE.md](../CLAUDE.md) - Project standards file
+- [CLAUDE.md](../../../CLAUDE.md) - Project standards file
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Command design patterns
 - [Development Workflow](../concepts/development-workflow.md) - Spec updater integration
 
@@ -313,7 +313,7 @@ Use /setup for initial setup and major updates. Use utilities for targeted maint
 
 This document describes the smart extraction system used by /setup to optimize CLAUDE.md by moving detailed content to auxiliary files.
 
-**Referenced by**: [setup.md](../setup.md)
+**Referenced by**: [setup.md](../../commands/setup.md)
 
 **Contents**:
 - Smart Section Extraction
@@ -430,14 +430,14 @@ Control extraction behavior across all modes that use extraction functionality.
 **Link Style Examples**:
 ```markdown
 # With descriptions (default)
-See [Testing Standards](docs/TESTING.md) for test configuration, commands, and CI/CD.
+See [Testing Standards](../../../TESTING.md) for test configuration, commands, and CI/CD.
 
 # Minimal
-See [Testing Standards](docs/TESTING.md).
+See [Testing Standards](../../../TESTING.md).
 
 # With quick reference (default)
 Quick reference: Run tests with `npm test`
-See [Testing Standards](docs/TESTING.md) for complete documentation.
+See [Testing Standards](../../../TESTING.md) for complete documentation.
 ```
 
 ### Applying Preferences
@@ -612,7 +612,7 @@ This CLAUDE.md serves as the central configuration and standards index.
 
 This document provides comprehensive documentation for the standards analysis and report application features in the /setup command.
 
-**Referenced by**: [setup.md](../setup.md)
+**Referenced by**: [setup.md](../../commands/setup.md)
 
 **Contents**:
 - Analysis Mode Workflow
@@ -902,7 +902,7 @@ git reset --hard HEAD                 # Revert if needed
 
 This document provides comprehensive documentation for all command modes available in the /setup command, including detailed workflows and usage patterns.
 
-**Referenced by**: [setup.md](../setup.md)
+**Referenced by**: [setup.md](../../commands/setup.md)
 
 **Contents**:
 - Command Modes Overview
@@ -1131,7 +1131,7 @@ When multiple flags are provided, modes are applied in this order:
 
 This document describes the automatic bloat detection system used in Standard Mode to identify when CLAUDE.md optimization is beneficial.
 
-**Referenced by**: [setup.md](../setup.md)
+**Referenced by**: [setup.md](../../commands/setup.md)
 
 **Contents**:
 - Detection Thresholds

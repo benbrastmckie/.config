@@ -165,7 +165,7 @@ Agent output: REPORT_CREATED: /path/to/report.md
 
 #### Related Resources
 
-- [Execution Enforcement Migration Guide](../guides/execution-enforcement-migration-guide.md)
+- [Execution Enforcement Migration Guide](../guides/execution-enforcement-guide.md)
 - [Command Development Guide](../guides/command-development-guide.md)
 
 ---
@@ -1192,7 +1192,7 @@ I'll orchestrate hierarchical research by delegating to specialized subagents.
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Complete pattern documentation
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 11: Imperative Agent Invocation
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Overall system architecture
-- [Execution Enforcement Migration Guide](../guides/execution-enforcement-migration-guide.md) - Complete migration process
+- [Execution Enforcement Migration Guide](../guides/execution-enforcement-guide.md) - Complete migration process
 
 ---
 

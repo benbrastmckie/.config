@@ -1,0 +1,8 @@
+/troubleshooting/agent-delegation-failure.md
+/troubleshooting/agent-delegation-issues.md
+/troubleshooting/command-not-delegating-to-agents.md
+/reference/orchestration-commands-quick-reference.md
+/reference/orchestration-alternatives.md
+/reference/supervise-phases.md
+/guides/using-agents.md
+/guides/command-examples.md

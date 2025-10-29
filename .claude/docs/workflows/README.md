@@ -100,7 +100,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - When converting entire directories of documentation
 - To troubleshoot conversion quality or tool installation issues
 
-**See Also**: [Creating Commands](../guides/creating-commands.md), [Command Reference](../reference/command-reference.md)
+**See Also**: [Creating Commands](../guides/command-development-guide.md), [Command Reference](../reference/command-reference.md)
 
 ---
 

@@ -2,7 +2,7 @@
 
 This document provides comprehensive documentation for all workflow phases in the /orchestrate command, including detailed execution procedures, agent invocation patterns, and checkpoint management.
 
-**Referenced by**: [orchestrate.md](../orchestrate.md)
+**Referenced by**: [orchestrate.md](../../commands/orchestrate.md)
 
 **Contents**:
 - Research Phase (Parallel Execution)

@@ -877,7 +877,7 @@ This creates 3 execution waves:
 - Wave 2: Phases 2 and 3 (parallel execution)
 - Wave 3: Phase 4
 
-See [phase_dependencies.md](phase_dependencies.md) for detailed dependency syntax and examples.
+See [phase_dependencies.md](../reference/phase_dependencies.md) for detailed dependency syntax and examples.
 
 ---
 

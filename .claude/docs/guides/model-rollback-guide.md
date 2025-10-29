@@ -383,8 +383,8 @@ Monitor these metrics after rollback to confirm restoration:
 
 ## Related Documentation
 
-- [Model Selection Guide](.claude/docs/guides/model-selection-guide.md) - Criteria for model selection
-- [Agent Development Guide](.claude/docs/guides/agent-development-guide.md) - Agent frontmatter format
+- [Model Selection Guide](model-selection-guide.md) - Criteria for model selection
+- [Agent Development Guide](agent-development-guide.md) - Agent frontmatter format
 - [Model Optimization Plan](../../specs/484_research_which_commands_or_agents_in_claude_could_/plans/001_model_optimization_implementation.md) - Original implementation plan
 
 ## Revision History

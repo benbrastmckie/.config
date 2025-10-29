@@ -318,7 +318,7 @@ pytest -v -s  # -s shows print statements
 
 ### References
 
-- [Testing Protocols](../../CLAUDE.md#testing_protocols) - Project test standards
+- [Testing Protocols](../../../CLAUDE.md#testing_protocols) - Project test standards
 - [Test Patterns Guide](../guides/testing-patterns.md) - Testing best practices
 
 ## [D] Command Syntax / Configuration Errors
@@ -511,7 +511,7 @@ echo "Context: 150K/200K tokens (75%)"
 ## Related Documentation
 
 - [Agent Delegation Troubleshooting](../troubleshooting/agent-delegation-troubleshooting.md) - Complete guide
-- [Orchestration Troubleshooting](../troubleshooting/orchestration-troubleshooting.md) - Workflow debugging
+- [Orchestration Troubleshooting](../guides/orchestration-troubleshooting.md) - Workflow debugging
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Architecture requirements
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Correct invocation
 - [Verification-Fallback Pattern](../concepts/patterns/verification-fallback.md) - Checkpoint pattern

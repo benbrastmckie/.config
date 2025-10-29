@@ -13,7 +13,7 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 
 ## Documents in This Section
 
-### [Command Quick Reference](command-reference.md)
+### [Command Quick Reference](../reference/command-reference.md)
 **Purpose**: Alphabetical listing of all Claude Code slash commands with usage syntax, arguments, agents used, and output descriptions.
 
 **Use Cases**:
@@ -22,7 +22,7 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 - To find the right command for a specific development task
 - When building new commands that need to reference existing commands
 
-**See Also**: [Creating Commands](../guides/creating-commands.md), [Command Patterns](../guides/command-patterns.md)
+**See Also**: [Creating Commands](../guides/command-development-guide.md), [Command Patterns](../guides/command-patterns.md)
 
 ---
 
@@ -35,11 +35,11 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 - To discover which commands use a particular agent
 - When designing multi-agent workflows and need to understand agent specializations
 
-**See Also**: [Creating Agents](../guides/creating-agents.md), [Using Agents](../guides/agent-development-guide.md)
+**See Also**: [Creating Agents](../guides/agent-development-guide.md), [Using Agents](../guides/agent-development-guide.md)
 
 ---
 
-### [CLAUDE.md Section Schema](claude-md-section-schema.md)
+### [CLAUDE.md Section Schema](../reference/claude-md-section-schema.md)
 **Purpose**: Standard format specification for CLAUDE.md sections ensuring machine-parseable standards discovery.
 
 **Use Cases**:
@@ -61,11 +61,11 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 - To understand why certain patterns are required in command files
 - When debugging command execution failures or context issues
 
-**See Also**: [Creating Commands](../guides/creating-commands.md), [Creating Agents](../guides/creating-agents.md), [Command Patterns](../guides/command-patterns.md)
+**See Also**: [Creating Commands](../guides/command-development-guide.md), [Creating Agents](../guides/agent-development-guide.md), [Command Patterns](../guides/command-patterns.md)
 
 ---
 
-### [Phase Dependencies Guide](phase_dependencies.md)
+### [Phase Dependencies Guide](../reference/phase_dependencies.md)
 **Purpose**: Complete specification for dependency syntax, wave calculation algorithms, and parallel execution patterns in implementation plans.
 
 **Use Cases**:

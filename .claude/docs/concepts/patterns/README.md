@@ -114,14 +114,14 @@ These patterns have demonstrated:
 
 ## Related Documentation
 
-- [Hierarchical Agents Guide](../hierarchical-agents.md) - Complete agent architecture
-- [Creating Commands Guide](../../guides/creating-commands.md) - Command development
-- [Creating Agents Guide](../../guides/creating-agents.md) - Agent development
+- [Hierarchical Agents Guide](../hierarchical_agents.md) - Complete agent architecture
+- [Creating Commands Guide](../../guides/command-development-guide.md) - Command development
+- [Creating Agents Guide](../../guides/agent-development-guide.md) - Agent development
 - [Testing Patterns Guide](../../guides/testing-patterns.md) - Validation approaches
 - [Performance Measurement Guide](../../guides/performance-optimization.md) - Metrics and benchmarks
 
 ## See Also
 
-- [Command Architecture Standards](../../reference/command-architecture-standards.md)
+- [Command Architecture Standards](../../reference/command_architecture_standards.md)
 - [Orchestration Guide](../../workflows/orchestration-guide.md)
 - [Development Workflow](../development-workflow.md)

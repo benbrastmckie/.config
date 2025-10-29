@@ -1987,7 +1987,7 @@ This document should be read in conjunction with:
 - [Command Patterns](../guides/command-patterns.md): Common execution patterns across commands
 - [Agent Patterns](../guides/agent-patterns.md): Agent invocation and coordination patterns
 - [Testing Standards](../guides/testing-standards.md): Validation and testing requirements
-- [Documentation Standards](../CLAUDE.md#documentation-policy): General documentation guidelines
+- [Documentation Standards](../../../CLAUDE.md#documentation-policy): General documentation guidelines
 
 ---
 

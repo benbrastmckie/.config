@@ -1473,12 +1473,12 @@ See [Command Architecture Standards](../reference/command_architecture_standards
 
 ### Pattern Usage
 
-For comprehensive command development guidance, see [Creating Commands](creating-commands.md).
+For comprehensive command development guidance, see [Creating Commands](command-development-guide.md).
 
 Commands should reference these patterns using relative links:
 
 ```markdown
-For agent invocation examples, see [Agent Invocation Patterns](../docs/command-patterns.md#agent-invocation-patterns).
+For agent invocation examples, see [Agent Invocation Patterns](command-patterns.md#agent-invocation-patterns).
 ```
 
 ### Pattern Maintenance

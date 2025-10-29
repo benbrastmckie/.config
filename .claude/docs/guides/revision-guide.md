@@ -13,7 +13,7 @@ This guide covers plan revision workflows, revision types, and auto-mode operati
 
 This document provides comprehensive documentation for the automated revision mode (`--auto-mode`) in the /revise command, designed for programmatic integration with /implement.
 
-**Referenced by**: [revise.md](../revise.md)
+**Referenced by**: [revise.md](../../commands/revise.md)
 
 **Contents**:
 - Context JSON Structure
@@ -450,7 +450,7 @@ Parse JSON response
 
 This document describes the different operation modes and revision types supported by the /revise command.
 
-**Referenced by**: [revise.md](../revise.md)
+**Referenced by**: [revise.md](../../commands/revise.md)
 
 **Contents**:
 - Interactive Mode vs Auto-Mode

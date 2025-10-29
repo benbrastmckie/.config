@@ -730,7 +730,7 @@ This command follows:
 
 - [command_architecture_standards.md](../reference/command_architecture_standards.md) - Command file structure standards (Standards 1-11)
 - [CLAUDE.md Section Schema](../reference/claude-md-section-schema.md) - Project CLAUDE.md format
-- [Creating Commands](creating-commands.md) - Command development guide integrating both standard types
+- [Creating Commands](command-development-guide.md) - Command development guide integrating both standard types
 
 ---
 
@@ -891,8 +891,8 @@ fi
 
 ## References
 
-- [CLAUDE.md Section Schema](claude-md-section-schema.md) - Section format specification
+- [CLAUDE.md Section Schema](../reference/claude-md-section-schema.md) - Section format specification
 - [Command Patterns](command-patterns.md) - Command development patterns
-- [Command Reference](command-reference.md) - Full command documentation
+- [Command Reference](../reference/command-reference.md) - Full command documentation
 - Root CLAUDE.md - Live standards example
 - nvim/CLAUDE.md - Subdirectory standards example

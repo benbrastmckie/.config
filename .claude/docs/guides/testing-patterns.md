@@ -443,7 +443,7 @@ calculate_score() {
 
 ## Related Documentation
 
-- [CLAUDE.md Testing Protocols](../../CLAUDE.md#testing-protocols) - Test commands and coverage targets
+- [CLAUDE.md Testing Protocols](../../../CLAUDE.md#testing-protocols) - Test commands and coverage targets
 - [Verification and Fallback Pattern](../concepts/patterns/verification-fallback.md) - Testing verification checkpoints
 - [Migration Validation Guide](./migration-validation.md) - Validating enforcement migrations
-- [Test Suite Documentation](.claude/tests/README.md) - Complete test suite reference
+- [Test Suite Documentation](../../tests/README.md) - Complete test suite reference

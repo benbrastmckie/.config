@@ -15,7 +15,7 @@ This guide covers implementation workflows, phase execution, and best practices 
 
 This document provides comprehensive documentation for the phase execution protocol used by the /implement command.
 
-**Referenced by**: [implement.md](../implement.md)
+**Referenced by**: [implement.md](../../commands/implement.md)
 
 **Contents**:
 - Step-by-Step Phase Execution
@@ -44,7 +44,7 @@ Execute phases either sequentially (traditional) or in parallel waves (with depe
 5. **Delegation**: Invoke agent via Task tool with behavioral injection, monitor PROGRESS markers
 6. **Testing and Commit**: Execute for all phases in wave (see subsequent sections)
 
-**Pattern Details**: See [Single Agent with Behavioral Injection](../docs/command-patterns.md#pattern-single-agent-with-behavioral-injection) for delegation patterns.
+**Pattern Details**: See [Single Agent with Behavioral Injection](command-patterns.md#pattern-single-agent-with-behavioral-injection) for delegation patterns.
 
 ### 1.4. Check Expansion Status
 
@@ -159,7 +159,7 @@ Before implementation, evaluate if phase should be expanded using agent-based ju
 
 ### 1.6. Parallel Wave Execution
 
-For parallel agent invocation patterns, see [Parallel Agent Invocation](../docs/command-patterns.md#pattern-parallel-agent-invocation).
+For parallel agent invocation patterns, see [Parallel Agent Invocation](command-patterns.md#pattern-parallel-agent-invocation).
 
 **Single Phase Wave**: Execute normally (agent delegation or direct), wait, proceed to testing
 
@@ -198,7 +198,7 @@ Run tests by:
 5. Present user choices: (r)evise, (c)ontinue, (s)kip, (a)bort
 6. Execute chosen action and update plan with debugging notes
 
-**Pattern Details**: See [Error Recovery Patterns](../docs/command-patterns.md#error-recovery-patterns) for complete tiered recovery workflow.
+**Pattern Details**: See [Error Recovery Patterns](command-patterns.md#error-recovery-patterns) for complete tiered recovery workflow.
 
 **Key Execution Requirements**:
 
@@ -306,7 +306,7 @@ esac
 #### Debugging Notes
 - **Date**: 2025-10-03
 - **Issue**: Phase failed with null pointer
-- **Debug Report**: [../reports/026_debug.md](../reports/026_debug.md)
+- **Debug Report**: [../reports/026_debug.md](../../specs/reports/026_debug.md)
 - **Root Cause**: Missing null check
 - **Resolution**: Applied
 - **Fix Applied In**: abc1234
@@ -401,7 +401,7 @@ Create or update partial summary after each phase completion to track implementa
 
 This document describes the complete workflow for implementing plans using the /implement command.
 
-**Referenced by**: [implement.md](../implement.md)
+**Referenced by**: [implement.md](../../commands/implement.md)
 
 **Contents**:
 - Plan Discovery and Validation
@@ -429,7 +429,7 @@ Initialize required utilities for consistent error handling, state management, a
 3. Initialize adaptive planning logger
 4. Initialize progress dashboard if enabled (terminal capability detection)
 
-**Pattern Details**: See [Standard Logger Setup](../docs/command-patterns.md#pattern-standard-logger-setup) for logger initialization patterns.
+**Pattern Details**: See [Standard Logger Setup](command-patterns.md#pattern-standard-logger-setup) for logger initialization patterns.
 
 **Key Execution Requirements**:
 

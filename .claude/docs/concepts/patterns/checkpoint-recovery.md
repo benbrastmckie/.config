@@ -310,7 +310,7 @@ WITH checkpoints:
 
 ## See Also
 
-- [Creating Commands Guide](../../guides/creating-commands.md) - Checkpoint integration
+- [Creating Commands Guide](../../guides/command-development-guide.md) - Checkpoint integration
 - `.claude/lib/checkpoint-utils.sh` - Checkpoint management utilities
 - `.claude/lib/unified-logger.sh` - Logging with checkpoint integration
 - `.claude/data/checkpoints/` - Checkpoint storage directory
