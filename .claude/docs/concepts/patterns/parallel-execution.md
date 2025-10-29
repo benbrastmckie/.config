@@ -1,5 +1,7 @@
 # Parallel Execution Pattern
 
+**Path**: docs → concepts → patterns → parallel-execution.md
+
 [Used by: /orchestrate, /implement, multi-agent workflows with independent tasks]
 
 Wave-based and concurrent agent execution achieves 40-60% time savings through parallel processing of independent tasks.

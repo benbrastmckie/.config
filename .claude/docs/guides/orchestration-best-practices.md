@@ -1,6 +1,6 @@
 # Orchestration Best Practices Guide
 
-**Path**: `.claude/docs/guides/orchestration-best-practices.md` → Home: [../README.md](../README.md)
+**Path**: docs → guides → orchestration-best-practices.md
 
 [Used by: /orchestrate, /coordinate, /supervise, all workflow orchestration commands]
 

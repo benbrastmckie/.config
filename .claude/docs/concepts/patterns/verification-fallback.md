@@ -1,5 +1,7 @@
 # Verification and Fallback Pattern
 
+**Path**: docs → concepts → patterns → verification-fallback.md
+
 [Used by: /implement, /orchestrate, /plan, /report, all file creation commands and agents]
 
 MANDATORY VERIFICATION checkpoints with fallback file creation mechanisms achieve 100% file creation rates.

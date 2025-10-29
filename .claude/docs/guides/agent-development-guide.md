@@ -1,5 +1,7 @@
 # Agent Development Guide
 
+**Path**: docs → guides → agent-development-guide.md
+
 Comprehensive guide for creating, invoking, and maintaining custom Claude Code agents using the behavioral injection pattern.
 
 **Target Audience**: Developers creating new agent behavioral files, modifying existing agents, or integrating agents into commands.

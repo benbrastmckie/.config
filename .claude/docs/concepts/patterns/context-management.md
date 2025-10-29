@@ -1,5 +1,7 @@
 # Context Management Pattern
 
+**Path**: docs → concepts → patterns → context-management.md
+
 [Used by: /orchestrate, /implement, all commands, agents, and multi-phase workflows]
 
 Techniques for maintaining <30% context usage throughout workflows through aggressive pruning, layered context, and metadata-only passing.

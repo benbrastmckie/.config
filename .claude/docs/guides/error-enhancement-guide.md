@@ -1,5 +1,7 @@
 # Error Enhancement Guide
 
+**Path**: docs → guides → error-enhancement-guide.md
+
 Complete guide to enhanced error messages and intelligent fix suggestions in Claude Code workflows.
 
 ## Overview

@@ -1,6 +1,6 @@
 # Workflow Scope Detection Pattern
 
-**Path**: `.claude/docs/concepts/patterns/workflow-scope-detection.md` → Home: [../../README.md](../../README.md) | Patterns: [README.md](README.md)
+**Path**: docs → concepts → patterns → workflow-scope-detection.md
 
 [Used by: /orchestrate, /coordinate, /supervise, all workflow orchestration commands]
 

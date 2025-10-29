@@ -1,5 +1,7 @@
 # Workflow Efficiency Guide
 
+**Path**: docs → guides → efficiency-guide.md
+
 This guide documents the efficiency enhancements implemented in Phase 4 of the agentic workflow system, including dynamic agent selection, progress streaming, intelligent parallelization, and the interactive plan wizard.
 
 ## Overview

@@ -1,5 +1,7 @@
 # Metadata Extraction Pattern
 
+**Path**: docs → concepts → patterns → metadata-extraction.md
+
 [Used by: /orchestrate, /implement, /plan, research-specialist, planner-specialist, all hierarchical agents]
 
 Extract title + 50-word summary + paths from reports and plans for 95-99% context reduction in multi-agent workflows.

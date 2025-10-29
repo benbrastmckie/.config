@@ -1,5 +1,7 @@
 # Command Implementation Patterns
 
+**Path**: docs → guides → command-patterns.md
+
 This document provides reusable patterns and examples for implementing Claude Code commands. Commands should reference these patterns rather than duplicating documentation inline.
 
 For command architecture standards and design principles, see [Command Architecture Standards](../reference/command_architecture_standards.md).

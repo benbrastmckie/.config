@@ -1,5 +1,7 @@
 # Hierarchical Supervision Pattern
 
+**Path**: docs → concepts → patterns → hierarchical-supervision.md
+
 [Used by: /orchestrate, /plan, /debug, multi-agent workflows coordinating 5+ agents]
 
 Multi-level agent coordination with recursive supervision enables coordination of 10+ agents across 3 hierarchical levels.

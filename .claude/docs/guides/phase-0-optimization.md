@@ -1,6 +1,6 @@
 # Phase 0 Optimization Guide
 
-**Path**: `.claude/docs/guides/phase-0-optimization.md` → Home: [../README.md](../README.md) | Guides: [README.md](README.md)
+**Path**: docs → guides → phase-0-optimization.md
 
 [Used by: /orchestrate, /coordinate, /supervise, /research, /plan, all workflow commands]
 

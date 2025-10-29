@@ -336,29 +336,25 @@ grep -q "workflow-scope-detection.md" .claude/docs/guides/orchestration-best-pra
 
 ---
 
-### Phase 5: Quick-Start and Example Enhancements
+### Phase 5: Navigation and Usability Enhancements [COMPLETED]
 dependencies: [3, 4]
 
-**Objective**: Add quick-start sections and common-case examples to all major guides, improving onboarding from hours to minutes
+**Objective**: Improve documentation navigation and discoverability through decision trees, breadcrumbs, and task-based entry points (Quick-Start sections removed to reduce clutter)
 
-**Complexity**: Medium
+**Complexity**: Low-Medium
 
 **Tasks**:
-- [ ] Add "Quick Start: Your First Command" to command-development-guide.md (50-100 lines, working hello.md example)
-- [ ] Add "Quick Start: Your First Agent" to agent-development-guide.md (already added in Phase 3, verify)
-- [ ] Add "I Want To..." section to main docs/README.md with 10 common tasks
-- [ ] Add "Basic Examples" section to patterns/README.md with 5 common-case examples (single agent, simple verification, structured metadata)
-- [ ] Create decision tree in quick-reference/command-vs-agent-flowchart.md
-- [ ] Create decision tree in quick-reference/agent-selection-flowchart.md
-- [ ] Create decision tree in quick-reference/error-handling-flowchart.md
-- [ ] Add breadcrumb navigation to all pattern files (8 files)
-- [ ] Add breadcrumb navigation to all major guides (10 files)
-- [ ] Add "Common Mistakes and Solutions" section to command-development-guide.md
+- [x] Add "I Want To..." section to main docs/README.md with 10 common tasks
+- [x] Create decision tree in quick-reference/command-vs-agent-flowchart.md
+- [x] Create decision tree in quick-reference/agent-selection-flowchart.md
+- [x] Create decision tree in quick-reference/error-handling-flowchart.md
+- [x] Add breadcrumb navigation to all pattern files (8 files)
+- [x] Add breadcrumb navigation to all major guides (10 files)
+- [x] Add "Common Mistakes and Solutions" section to command-development-guide.md
 
 **Testing**:
 ```bash
-# Verify quick-start sections present
-grep -q "## Quick Start:" .claude/docs/guides/command-development-guide.md
+# Verify "I Want To..." navigation section
 grep -q "## I Want To" .claude/docs/README.md
 
 # Verify decision trees created
@@ -371,16 +367,25 @@ grep -q "**Path**:" .claude/docs/concepts/patterns/behavioral-injection.md
 
 # Verify common mistakes section
 grep -q "## Common Mistakes and Solutions" .claude/docs/guides/command-development-guide.md
+
+# Verify NO Quick-Start sections added (removed from scope)
+! grep -q "## Quick Start: Your First Command" .claude/docs/guides/command-development-guide.md
 ```
 
-**Expected Duration**: 4-5 hours
+**Expected Duration**: 3-4 hours (reduced from 4-5 hours)
 
 **Phase 5 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (quick-starts added, decision trees created, breadcrumbs present)
-- [ ] Git commit created: `feat(509): Complete Phase 5 - Quick-Start and Example Enhancements`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (decision trees created, breadcrumbs present, navigation improved)
+- [ ] Git commit created: `feat(509): Complete Phase 5 - Navigation and Usability Enhancements`
+- [ ] Checkpoint saved (if complex phase) - N/A (low-medium complexity)
+- [x] Update this plan file with phase completion status
+
+**Revision Notes**:
+- **Removed**: Quick-Start sections for commands and agents (clutter without sufficient value)
+- **Removed**: "Basic Examples" section in patterns/README.md (existing examples in command-development-guide.md Section 7 are sufficient)
+- **Kept**: Navigation improvements (I Want To, decision trees, breadcrumbs, common mistakes)
+- **Rationale**: Quick-starts tend to become outdated and add maintenance burden without proportional benefit. Task-based navigation and decision trees provide better discoverability.
 
 ---
 
@@ -392,12 +397,24 @@ dependencies: [1, 2, 3]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Consolidate command-examples.md into command-development-guide.md (examples integrated throughout)
-- [ ] Merge supervise-phases.md into workflow-phases.md as Section 2 subsection
-- [ ] Merge execution-enforcement-guide.md and imperative-language-guide.md (50% overlap)
+- [x] Consolidate command-examples.md into command-development-guide.md (examples integrated throughout)
+  - Added 6 subsections (7.4-7.9): dry-run, dashboards, checkpoints, testing, git commits, context preservation
+  - command-development-guide.md: 1,303 → ~1,650 lines
+- [x] Merge supervise-phases.md into workflow-phases.md as Section 2 subsection
+  - Added complete "/supervise Specific Phase Reference" section
+  - Documented all 7 phases (0-6) with comparison table to /orchestrate phases
+  - workflow-phases.md: 1,920 → ~2,170 lines
+- [x] Merge execution-enforcement-guide.md and imperative-language-guide.md (50% overlap)
+  - Added "Imperative Language Rules" section with transformation tables
+  - Updated table of contents
+  - execution-enforcement-guide.md: 1,500 → ~1,600 lines
 - [ ] Merge performance-measurement.md and efficiency-guide.md into performance-optimization.md (60% overlap)
 - [ ] Add table of contents to all files >800 lines (orchestration-reference.md, command-development-guide.md, agent-development-guide.md)
-- [ ] Archive all eliminated files with redirect READMEs
+- [x] Archive eliminated files with redirect READMEs (partial - 3 of 8 files completed)
+  - command-examples.md → archived with redirect
+  - supervise-phases.md → archived with redirect
+  - imperative-language-guide.md → archived with redirect
+  - Remaining: command-examples.md, supervise-phases.md, execution-enforcement-guide.md (needs merge first), performance-measurement.md, efficiency-guide.md
 - [ ] Update cross-references throughout documentation
 - [ ] Run comprehensive link validation across all 70+ files
 - [ ] Update all README.md navigation files with new structure
@@ -430,6 +447,14 @@ find .claude/docs -name "*.md" -type f -exec grep -H '\[.*\](.*\.md)' {} \; | \
 - [ ] Git commit created: `feat(509): Complete Phase 6 - Additional Consolidations and Cleanup`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
+
+**Progress Note (2025-10-28)**:
+- **Status**: Partial completion - 4/9 tasks completed
+- **Completed**: 3 major consolidations (command-examples, supervise-phases, imperative-language) + archiving
+- **Files consolidated**: 1,303 + 1,920 + 1,500 + 684 = 5,407 lines → 3 files (~5,420 lines total)
+- **Reduction**: 3 source files eliminated, 3 redirect READMEs created
+- **Context usage**: 101K/200K tokens (51%) - recommend fresh session for remaining tasks
+- **Next session**: Complete performance merge, add TOCs, update cross-references, validate links, update navigation
 
 ---
 
@@ -596,3 +621,26 @@ find .claude/docs -name "*.md" -exec wc -l {} + | tail -1
 
 ### Risk: Incomplete Consolidation
 **Mitigation**: Detailed success criteria, comprehensive testing in Phase 7
+
+---
+
+## Revision History
+
+### 2025-10-28 - Revision 1: Remove Quick-Start Sections from Phase 5
+
+**Changes Made**:
+- Renamed Phase 5 from "Quick-Start and Example Enhancements" to "Navigation and Usability Enhancements"
+- Removed task: Add "Quick Start: Your First Command" to command-development-guide.md
+- Removed task: Add "Quick Start: Your First Agent" to agent-development-guide.md
+- Removed task: Add "Basic Examples" section to patterns/README.md
+- Reduced expected duration from 4-5 hours to 3-4 hours
+- Reduced complexity from Medium to Low-Medium
+- Updated testing criteria to verify Quick-Start sections are NOT added
+
+**Reason**: Quick-Start sections tend to clutter documentation without providing proportional value. They become outdated quickly and add maintenance burden. Task-based navigation ("I Want To..." sections) and decision trees provide better discoverability.
+
+**Modified Phases**: Phase 5
+
+**Reports Used**: None (user-directed revision)
+
+**Impact on Success Criteria**: No impact - Phase 5 still delivers navigation improvements and usability enhancements through decision trees, breadcrumbs, and task-based entry points.
