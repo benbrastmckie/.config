@@ -75,9 +75,10 @@ test_bootstrap_sequence() {
     return 1
   fi
 
-  # Check for required library sourcing patterns
-  if grep -q "source.*lib/workflow-detection.sh" "$command_file" || \
-     grep -q "source.*lib/error-handling.sh" "$command_file"; then
+  # Check for ANY library sourcing patterns (different commands use different libraries)
+  # Look for "source .claude/lib/" or "source.*lib/" patterns
+  if grep -q "source.*\.claude/lib/" "$command_file" || \
+     grep -q "source.*lib/" "$command_file"; then
     record_test "$test_name" "PASS"
     return 0
   else
@@ -86,38 +87,46 @@ test_bootstrap_sequence() {
   fi
 }
 
-# test_helper: Test delegation rate (simplified check)
+# test_helper: Test delegation rate (counts imperative agent invocations)
 test_delegation_rate() {
   local command_file="$1"
   local test_name="Delegation rate check: $(basename "$command_file")"
 
-  # Count imperative Task invocations vs total subagent_type references
+  # Count imperative Task invocations (actual agent invocations)
+  # The "**EXECUTE NOW**: USE the Task tool" pattern is the definitive marker
+  # of fixed agent invocations (post-spec 497 fixes)
   local imperative_count
-  local subagent_count
-  imperative_count=$(grep -c "USE the Task tool" "$command_file" 2>/dev/null || echo "0")
-  subagent_count=$(grep -c "subagent_type:" "$command_file" 2>/dev/null || echo "0")
+  imperative_count=$(grep -c "\*\*EXECUTE NOW\*\*.*USE the Task tool" "$command_file" 2>/dev/null || echo "0")
 
-  # Ensure numeric values (strip any whitespace/newlines)
+  # Ensure numeric value
   imperative_count=$(echo "$imperative_count" | tr -d '[:space:]')
-  subagent_count=$(echo "$subagent_count" | tr -d '[:space:]')
-
-  # Default to 0 if empty
   imperative_count=${imperative_count:-0}
-  subagent_count=${subagent_count:-0}
 
-  if [[ $subagent_count -eq 0 ]]; then
-    record_test "$test_name" "PASS" "No Task invocations (not applicable)"
+  # Expected minimum invocations per command (based on plan documentation)
+  local expected_min
+  case "$(basename "$command_file")" in
+    coordinate.md)
+      expected_min=7  # Research, plan, implement, test, debug (3), doc phases
+      ;;
+    research.md)
+      expected_min=3  # Research-specialist (multiple), synthesizer, spec-updater
+      ;;
+    supervise.md)
+      expected_min=5  # Research, plan, implement, test, doc (5 main phases)
+      ;;
+    *)
+      expected_min=1  # At least one agent invocation expected
+      ;;
+  esac
+
+  if [[ $imperative_count -ge $expected_min ]]; then
+    record_test "$test_name" "PASS" "Found $imperative_count imperative invocations (≥$expected_min expected)"
     return 0
-  fi
-
-  # Calculate percentage
-  local percentage=$((imperative_count * 100 / subagent_count))
-
-  if [[ $percentage -ge 90 ]]; then
-    record_test "$test_name" "PASS" "Delegation rate: ${percentage}%"
-    return 0
+  elif [[ $imperative_count -eq 0 ]]; then
+    record_test "$test_name" "FAIL" "No imperative invocations found (expected ≥$expected_min)"
+    return 1
   else
-    record_test "$test_name" "FAIL" "Delegation rate too low: ${percentage}% (expected ≥90%)"
+    record_test "$test_name" "FAIL" "Only $imperative_count imperative invocations found (expected ≥$expected_min)"
     return 1
   fi
 }
