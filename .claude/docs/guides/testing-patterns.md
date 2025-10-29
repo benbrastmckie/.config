@@ -1,5 +1,7 @@
 # Testing Patterns Guide
 
+**Path**: docs → guides → testing-patterns.md
+
 ## Purpose
 
 This guide demonstrates how to organize tests, create fixtures, write assertions, and measure coverage in the Claude Code testing framework. Following these patterns ensures consistent, reliable test execution and maintainable test suites.

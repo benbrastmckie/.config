@@ -1,5 +1,7 @@
 # Forward Message Pattern
 
+**Path**: docs → concepts → patterns → forward-message.md
+
 [Used by: /orchestrate, /implement, /plan, all supervisor agents coordinating subagents]
 
 Direct subagent response passing without paraphrasing preserves detail and eliminates re-summarization overhead.

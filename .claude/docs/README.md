@@ -13,6 +13,50 @@ This directory provides structured documentation following the [Diataxis framewo
 
 This organization ensures developers can quickly find the right documentation based on their immediate need: looking up syntax, solving a specific problem, understanding a concept, or learning a new workflow.
 
+## I Want To...
+
+Common tasks and where to find guidance:
+
+1. **Create a new slash command**
+   → [Command Development Guide](guides/command-development-guide.md)
+   → [Command Architecture Standards](reference/command_architecture_standards.md)
+
+2. **Build a specialized agent**
+   → [Agent Development Guide](guides/agent-development-guide.md)
+   → [Agent Reference](reference/agent-reference.md)
+
+3. **Run multi-phase workflows**
+   → [Orchestration Best Practices](guides/orchestration-best-practices.md)
+   → [Orchestration Guide](workflows/orchestration-guide.md)
+
+4. **Debug agent delegation failures**
+   → [Agent Delegation Troubleshooting](troubleshooting/agent-delegation-troubleshooting.md)
+   → [Orchestration Reference](reference/orchestration-reference.md)
+
+5. **Optimize context usage**
+   → [Context Budget Management](workflows/context-budget-management.md)
+   → [Phase 0 Optimization Guide](guides/phase-0-optimization.md)
+
+6. **Add standards to my project**
+   → [Setup Command Guide](guides/setup-command-guide.md)
+   → [CLAUDE.md Section Schema](reference/claude-md-section-schema.md)
+
+7. **Understand architectural patterns**
+   → [Patterns Catalog](concepts/patterns/README.md)
+   → [Hierarchical Agents](concepts/hierarchical_agents.md)
+
+8. **Implement wave-based parallel execution**
+   → [Parallel Execution Pattern](concepts/patterns/parallel-execution.md)
+   → [Phase Dependencies Reference](reference/phase_dependencies.md)
+
+9. **Create implementation plans**
+   → [Adaptive Planning Guide](workflows/adaptive-planning-guide.md)
+   → [Directory Protocols](concepts/directory-protocols.md)
+
+10. **Fix broken orchestration workflows**
+    → [Orchestration Troubleshooting Guide](troubleshooting/orchestration-troubleshooting.md)
+    → [Error Handling Flowchart](quick-reference/error-handling-flowchart.md)
+
 ## Quick Navigation for Agents
 
 Looking to work on a specific area? Use these quick-start paths:

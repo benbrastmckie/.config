@@ -1,5 +1,7 @@
 # Behavioral Injection Pattern
 
+**Path**: docs → concepts → patterns → behavioral-injection.md
+
 [Used by: /orchestrate, /implement, /plan, /report, /debug, all coordinating commands]
 
 Commands inject context into agents via file reads instead of SlashCommand tool invocations, enabling hierarchical multi-agent patterns and preventing direct execution.

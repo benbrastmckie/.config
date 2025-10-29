@@ -1,5 +1,7 @@
 # Checkpoint Recovery Pattern
 
+**Path**: docs → concepts → patterns → checkpoint-recovery.md
+
 [Used by: /implement, /orchestrate, /plan, long-running multi-phase workflows]
 
 State preservation and restoration enables resilient workflows that can resume after failures or interruptions.

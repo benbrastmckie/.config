@@ -1,5 +1,7 @@
 # Implementation Guide
 
+**Path**: docs → guides → implementation-guide.md
+
 This guide covers implementation workflows, phase execution, and best practices for executing implementation plans.
 
 ## Contents

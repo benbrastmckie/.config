@@ -1,5 +1,7 @@
 # Standards Integration Guide
 
+**Path**: docs → guides → standards-integration.md
+
 Comprehensive guide for discovering, parsing, and applying project standards from CLAUDE.md files in slash commands.
 
 ## Overview
