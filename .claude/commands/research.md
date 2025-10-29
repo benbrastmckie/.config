@@ -319,17 +319,15 @@ For EACH subtopic in SUBTOPICS array, you will invoke the research-specialist ag
 
 ```bash
 # MANDATORY VERIFICATION with fallback creation
-echo "════════════════════════════════════════════════════════"
-echo "  MANDATORY VERIFICATION - Subtopic Reports"
-echo "════════════════════════════════════════════════════════"
-echo ""
-
-# First pass: Check which reports exist
 declare -A VERIFIED_PATHS
 MISSING_REPORTS=()
+i=1
 
 for subtopic in "${!SUBTOPIC_REPORT_PATHS[@]}"; do
   EXPECTED_PATH="${SUBTOPIC_REPORT_PATHS[$subtopic]}"
+
+  # Concise verification format (single line on success)
+  echo -n "Verifying report ${i}/${#SUBTOPIC_REPORT_PATHS[@]}: "
 
   # Retry logic: check up to 3 times with 500ms delay
   FOUND=false
@@ -344,20 +342,30 @@ for subtopic in "${!SUBTOPIC_REPORT_PATHS[@]}"; do
     fi
   done
 
-  if ! $FOUND; then
+  if $FOUND; then
+    FILE_SIZE=$(wc -c < "$EXPECTED_PATH")
+    FILE_SIZE_KB=$((FILE_SIZE / 1024))
+    echo "✓ (${FILE_SIZE_KB}KB)"
+  else
+    echo ""
+    echo "✗ VERIFICATION FAILED: Report missing at $EXPECTED_PATH"
+    echo "   Proceeding to FALLBACK MECHANISM..."
     MISSING_REPORTS+=("$subtopic")
   fi
+
+  i=$((i + 1))
 done
+
+echo ""
 
 # Fallback creation for missing reports
 if [ ${#MISSING_REPORTS[@]} -gt 0 ]; then
-  echo "⚠ Warning: ${#MISSING_REPORTS[@]} reports missing, creating fallback reports"
+  echo "Creating ${#MISSING_REPORTS[@]} fallback reports..."
 
   for subtopic in "${MISSING_REPORTS[@]}"; do
     EXPECTED_PATH="${SUBTOPIC_REPORT_PATHS[$subtopic]}"
-    echo "  Creating fallback report for: $subtopic"
 
-    # Create minimal report as fallback
+    # FALLBACK MECHANISM - Create report from agent output
     mkdir -p "$(dirname "$EXPECTED_PATH")"
     cat > "$EXPECTED_PATH" <<EOF
 # Research Report: ${subtopic}
@@ -374,41 +382,55 @@ This minimal report was auto-generated to maintain workflow continuity.
 - Check agent logs for failure details
 EOF
 
-    if [ -f "$EXPECTED_PATH" ]; then
-      echo "  ✓ Fallback report created at $EXPECTED_PATH"
+    # RE-VERIFICATION - Confirm fallback successful
+    if [ -f "$EXPECTED_PATH" ] && [ -s "$EXPECTED_PATH" ]; then
+      FILE_SIZE=$(wc -c < "$EXPECTED_PATH")
+      FILE_SIZE_KB=$((FILE_SIZE / 1024))
+      echo "  ✓ Fallback created for $subtopic (${FILE_SIZE_KB}KB)"
       VERIFIED_PATHS["$subtopic"]="$EXPECTED_PATH"
+    else
+      echo ""
+      echo "✗ CRITICAL ERROR: Fallback creation failed"
+      echo "   Expected: File exists at $EXPECTED_PATH"
+      echo "   Found: File still missing after fallback"
+      echo ""
+      echo "Diagnostic commands:"
+      echo "  ls -la \$(dirname \"$EXPECTED_PATH\")"
+      echo "  cat \"$EXPECTED_PATH\""
+      echo ""
+      echo "Workflow terminated"
+      exit 1
     fi
   done
+  echo ""
 fi
 
 # Final count verification
 REPORT_COUNT=${#VERIFIED_PATHS[@]}
 EXPECTED_COUNT=${#SUBTOPICS[@]}
 
-echo ""
-echo "Verifying reports in: $RESEARCH_SUBDIR"
-ls -lh "$RESEARCH_SUBDIR"/*.md 2>/dev/null || echo "No reports found"
-echo ""
-
 if [ "$REPORT_COUNT" -eq "$EXPECTED_COUNT" ]; then
   echo "✓ All $EXPECTED_COUNT reports verified"
-  echo ""
 else
-  echo "⚠ Warning: Found $REPORT_COUNT reports, expected $EXPECTED_COUNT"
-  echo ""
-
   # Proceed with partial results if ≥50% success
   HALF_COUNT=$((EXPECTED_COUNT / 2))
   if [ "$REPORT_COUNT" -ge "$HALF_COUNT" ]; then
-    echo "✓ PARTIAL SUCCESS: Continuing with $REPORT_COUNT/$EXPECTED_COUNT reports"
+    echo "✓ Partial success: $REPORT_COUNT/$EXPECTED_COUNT reports created"
   else
-    echo "✗ ERROR: Insufficient reports created ($REPORT_COUNT/$EXPECTED_COUNT)"
-    echo "Workflow TERMINATED"
+    echo ""
+    echo "✗ ERROR: Insufficient reports created"
+    echo "   Expected: At least $HALF_COUNT reports"
+    echo "   Found: $REPORT_COUNT reports"
+    echo ""
+    echo "Diagnostic commands:"
+    echo "  ls -lh \"$RESEARCH_SUBDIR\"/*.md"
+    echo "  echo \${#VERIFIED_PATHS[@]}"
+    echo ""
+    echo "Workflow terminated"
     exit 1
   fi
 fi
 
-echo "✓ VERIFICATION CHECKPOINT PASSED - proceeding to metadata extraction"
 echo ""
 
 # Extract metadata from each verified report (95% context reduction)
