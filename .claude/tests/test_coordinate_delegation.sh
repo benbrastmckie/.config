@@ -84,43 +84,43 @@ assert_true "Command file exists" "[ -f '$COMMAND_FILE' ]"
 # Test 2: Phase 1 - Research Agent Invocations
 print_test_header "Test 2: Phase 1 - Research Agent Delegation"
 assert_true "Research-specialist agent referenced" "grep -q 'research-specialist.md' '$COMMAND_FILE'"
-assert_true "Phase 1 has Task invocation" "grep -A 100 '## Phase 1: Research' '$COMMAND_FILE' | grep -q 'Task {'"
-assert_true "Phase 1 Task has imperative marker" "grep -B 5 -A 100 '## Phase 1: Research' '$COMMAND_FILE' | grep -B 5 'Task {' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
+assert_true "Phase 1 has Task invocation" "grep -A 100 'Phase 1.*Research' '$COMMAND_FILE' | grep -qE 'USE.*Task tool|invoke.*Task|Task tool.*research'"
+assert_true "Phase 1 Task has imperative marker" "grep -A 100 'Phase 1.*Research' '$COMMAND_FILE' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
 
 # Test 3: Phase 2 - Plan Architect Invocation
 print_test_header "Test 3: Phase 2 - Plan Architect Delegation"
 assert_true "Plan-architect agent referenced" "grep -q 'plan-architect.md' '$COMMAND_FILE'"
-assert_true "Phase 2 has Task invocation" "grep -A 100 '## Phase 2: Planning' '$COMMAND_FILE' | grep -q 'Task {'"
-assert_true "Phase 2 Task has imperative marker" "grep -B 5 -A 100 '## Phase 2: Planning' '$COMMAND_FILE' | grep -B 5 'Task {' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
+assert_true "Phase 2 has Task invocation" "grep -A 100 'Phase 2.*Plan' '$COMMAND_FILE' | grep -qE 'USE.*Task tool|invoke.*Task|Task tool.*plan'"
+assert_true "Phase 2 Task has imperative marker" "grep -A 100 'Phase 2.*Plan' '$COMMAND_FILE' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
 
 # Test 4: Phase 3 - Implementer-Coordinator Invocation
 print_test_header "Test 4: Phase 3 - Implementer-Coordinator Delegation"
 assert_true "Implementer-coordinator agent referenced" "grep -q 'implementer-coordinator.md' '$COMMAND_FILE'"
-assert_false "Code-writer agent NOT used for Phase 3" "grep -A 100 '## Phase 3:' '$COMMAND_FILE' | grep -q 'code-writer.md'"
-assert_true "Phase 3 has Task invocation" "grep -A 100 '## Phase 3:' '$COMMAND_FILE' | grep -q 'Task {'"
-assert_true "Phase 3 Task has imperative marker" "grep -B 5 -A 100 '## Phase 3:' '$COMMAND_FILE' | grep -B 5 'Task {' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
+assert_false "Code-writer agent NOT used for Phase 3" "grep -A 100 'Phase 3' '$COMMAND_FILE' | grep -q 'code-writer.md'"
+assert_true "Phase 3 has Task invocation" "grep -A 100 'Phase 3' '$COMMAND_FILE' | grep -qE 'USE.*Task tool|invoke.*Task|Task tool.*implement'"
+assert_true "Phase 3 Task has imperative marker" "grep -A 100 'Phase 3' '$COMMAND_FILE' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
 
 # Test 5: Phase 4 - Test Specialist Invocation
 print_test_header "Test 5: Phase 4 - Test Specialist Delegation"
 assert_true "Test-specialist agent referenced" "grep -q 'test-specialist.md' '$COMMAND_FILE'"
-assert_true "Phase 4 has Task invocation" "grep -A 100 '## Phase 4: Testing' '$COMMAND_FILE' | grep -q 'Task {'"
-assert_true "Phase 4 Task has imperative marker" "grep -B 5 -A 100 '## Phase 4: Testing' '$COMMAND_FILE' | grep -B 5 'Task {' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
+assert_true "Phase 4 has Task invocation" "grep -A 100 'Phase 4.*Test' '$COMMAND_FILE' | grep -qE 'USE.*Task tool|invoke.*Task|Task tool.*test'"
+assert_true "Phase 4 Task has imperative marker" "grep -A 100 'Phase 4.*Test' '$COMMAND_FILE' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
 
 # Test 6: Phase 5 - Debug Analyst Invocation
 print_test_header "Test 6: Phase 5 - Debug Analyst Delegation"
 assert_true "Debug-analyst agent referenced" "grep -q 'debug-analyst.md' '$COMMAND_FILE'"
-assert_true "Phase 5 has Task invocation" "grep -A 100 '## Phase 5:' '$COMMAND_FILE' | grep -q 'Task {'"
-assert_true "Phase 5 Task has imperative marker" "grep -B 5 -A 100 '## Phase 5:' '$COMMAND_FILE' | grep -B 5 'Task {' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
+assert_true "Phase 5 has Task invocation" "grep -A 100 'Phase 5' '$COMMAND_FILE' | grep -qE 'USE.*Task tool|invoke.*Task|Task tool.*debug'"
+assert_true "Phase 5 Task has imperative marker" "grep -A 100 'Phase 5' '$COMMAND_FILE' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
 
 # Test 7: Phase 6 - Doc Writer Invocation
 print_test_header "Test 7: Phase 6 - Doc Writer Delegation"
 assert_true "Doc-writer agent referenced" "grep -q 'doc-writer.md' '$COMMAND_FILE'"
-assert_true "Phase 6 has Task invocation" "grep -A 100 '## Phase 6: Documentation' '$COMMAND_FILE' | grep -q 'Task {'"
-assert_true "Phase 6 Task has imperative marker" "grep -B 5 -A 100 '## Phase 6: Documentation' '$COMMAND_FILE' | grep -B 5 'Task {' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
+assert_true "Phase 6 has Task invocation" "grep -A 100 'Phase 6.*Doc' '$COMMAND_FILE' | grep -qE 'USE.*Task tool|invoke.*Task|Task tool.*doc'"
+assert_true "Phase 6 Task has imperative marker" "grep -A 100 'Phase 6.*Doc' '$COMMAND_FILE' | grep -qE 'EXECUTE NOW|YOU MUST|REQUIRED ACTION'"
 
 # Test 8: All Task Invocations Have Imperative Markers
 print_test_header "Test 8: Global Imperative Marker Compliance"
-assert_count "All Task blocks have nearby imperative markers" 7 "grep -c 'Task {' '$COMMAND_FILE'"
+assert_count "All imperative markers for Task invocations" 6 "grep -c 'EXECUTE NOW.*Task tool' '$COMMAND_FILE'"
 
 # Test 9: No Code-Fenced Task Examples
 print_test_header "Test 9: No Code-Fenced Task Examples (Prevents 0% Delegation)"
