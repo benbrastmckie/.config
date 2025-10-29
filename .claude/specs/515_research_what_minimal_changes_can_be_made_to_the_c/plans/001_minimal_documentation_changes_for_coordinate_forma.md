@@ -164,7 +164,7 @@ done
 - [x] Git commit created: `feat(515): complete Phase 1 - Document formatting features in orchestration-best-practices.md`
 - [x] Update this plan file with phase completion status
 
-### Phase 2: Remove Historical Language from Key Files
+### Phase 2: Remove Historical Language from Key Files [COMPLETED]
 dependencies: [0, 1]
 
 **Objective**: Convert historical/temporal language to timeless present-tense descriptions in 3 high-impact files (Diataxis structure)
@@ -172,19 +172,19 @@ dependencies: [0, 1]
 **Complexity**: Low (search-replace pattern, minimal risk)
 
 **Tasks**:
-- [ ] Read writing-standards.md for conversion patterns (file: /home/benjamin/.config/.claude/docs/concepts/writing-standards.md)
-- [ ] Apply conversions to guides/orchestration-best-practices.md:
-  - [ ] Search for "previously X, now Y" → replace with "Y"
-  - [ ] Search for "the new approach" → replace with "the approach"
-  - [ ] Search for "recently added" → replace with "available"
-  - [ ] Estimate ~12 conversions based on Report 002 findings (may be fewer post-spec 509)
-- [ ] Apply conversions to workflows/orchestration-guide.md:
-  - [ ] Same pattern as orchestration-best-practices.md
-  - [ ] Estimate ~18 conversions based on Report 002 findings (may be fewer post-spec 509)
-- [ ] Apply conversions to commands/coordinate.md:
-  - [ ] Remove any remaining "Optimization Note" sections if present (historical commentary)
-  - [ ] Convert remaining temporal markers (~8 instances, may be fewer post-spec 509)
-- [ ] Verify no functional content removed (only temporal markers/historical commentary)
+- [x] Read writing-standards.md for conversion patterns (file: /home/benjamin/.config/.claude/docs/concepts/writing-standards.md)
+- [x] Apply conversions to guides/orchestration-best-practices.md:
+  - [x] Search for "previously X, now Y" → replace with "Y"
+  - [x] Search for "the new approach" → replace with "the approach"
+  - [x] Search for "recently added" → replace with "available"
+  - [x] Estimate ~12 conversions based on Report 002 findings (may be fewer post-spec 509) - NOTE: Found 0 instances, already clean post-spec 509
+- [x] Apply conversions to workflows/orchestration-guide.md:
+  - [x] Same pattern as orchestration-best-practices.md
+  - [x] Estimate ~18 conversions based on Report 002 findings (may be fewer post-spec 509) - NOTE: Found 0 problematic instances, functional uses only
+- [x] Apply conversions to commands/coordinate.md:
+  - [x] Remove any remaining "Optimization Note" sections if present (historical commentary) - NOTE: None found
+  - [x] Convert remaining temporal markers (~8 instances, may be fewer post-spec 509) - NOTE: Found 3 instances, converted
+- [x] Verify no functional content removed (only temporal markers/historical commentary)
 
 **Note**: Spec 509 may have already removed some historical language during Diataxis reorganization. Verify current state before applying changes.
 
@@ -207,10 +207,10 @@ wc -l /home/benjamin/.config/.claude/commands/coordinate.md  # Should be ~1891 l
 **Expected Duration**: 1-2 hours
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (no historical language, line counts reasonable)
-- [ ] Git commit created: `feat(515): complete Phase 2 - Remove historical language from orchestration docs`
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (no historical language, line counts reasonable)
+- [x] Git commit created: `feat(515): complete Phase 2 - Remove historical language from orchestration docs`
+- [x] Update this plan file with phase completion status
 
 ### Phase 3: Consolidate Progress Marker Documentation
 dependencies: [0, 1]
