@@ -637,13 +637,8 @@ else
 fi
 
 if [ -n "$RESUME_PHASE" ]; then
-  echo "════════════════════════════════════════════════════════"
-  echo "  CHECKPOINT DETECTED - RESUMING WORKFLOW"
-  echo "════════════════════════════════════════════════════════"
-  echo ""
+  emit_progress "Resume" "Checkpoint detected - resuming from Phase $RESUME_PHASE"
   emit_progress "Resume" "Skipping completed phases 0-$((RESUME_PHASE - 1))"
-  echo ""
-  echo "Resuming from Phase $RESUME_PHASE..."
   echo ""
 
   # Skip to the resume phase
@@ -698,13 +693,48 @@ else
   exit 1
 fi
 
-# Call unified initialization function
+# Call unified initialization function (now silent)
 # This consolidates STEPS 3-7 (225+ lines → ~10 lines)
 # Implements 3-step pattern: scope detection → path pre-calculation → directory creation
 if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
   echo "ERROR: Workflow initialization failed"
   exit 1
 fi
+
+# Display simple workflow scope report
+echo "Workflow Scope: $WORKFLOW_SCOPE"
+echo "Topic: $TOPIC_PATH"
+echo ""
+echo "Phases to Execute:"
+case "$WORKFLOW_SCOPE" in
+  research-only)
+    echo "  ✓ Phase 0: Initialization"
+    echo "  ✓ Phase 1: Research (parallel agents)"
+    echo "  ✗ Phase 2: Planning (skipped)"
+    echo "  ✗ Phase 3: Implementation (skipped)"
+    ;;
+  research-and-plan)
+    echo "  ✓ Phase 0: Initialization"
+    echo "  ✓ Phase 1: Research (parallel agents)"
+    echo "  ✓ Phase 2: Planning"
+    echo "  ✗ Phase 3: Implementation (skipped)"
+    ;;
+  full-implementation)
+    echo "  ✓ Phase 0: Initialization"
+    echo "  ✓ Phase 1: Research (parallel agents)"
+    echo "  ✓ Phase 2: Planning"
+    echo "  ✓ Phase 3: Implementation"
+    echo "  ✓ Phase 4: Testing"
+    echo "  ✓ Phase 6: Documentation"
+    ;;
+  debug-only)
+    echo "  ✓ Phase 0: Initialization"
+    echo "  ✓ Phase 1: Research root cause"
+    echo "  ✓ Phase 5: Debug analysis"
+    echo "  ✗ Phase 2-4,6: (skipped)"
+    ;;
+esac
+echo ""
 
 # Reconstruct REPORT_PATHS array from exported variables
 # (Bash arrays cannot be directly exported, so we use a helper function)
@@ -955,7 +985,7 @@ else
   echo ""
 fi
 
-echo "Phase 1 Complete: Research artifacts verified"
+emit_progress "1" "Research complete: $SUCCESSFUL_REPORT_COUNT reports verified"
 echo ""
 
 # Save checkpoint after Phase 1
@@ -1097,7 +1127,8 @@ PLAN_COMPLEXITY=$(grep "Complexity:" "$PLAN_PATH" | head -1 | cut -d: -f2 | xarg
 PLAN_EST_TIME=$(grep "Estimated Total Time:" "$PLAN_PATH" | cut -d: -f2 | xargs || echo "unknown")
 
 echo "Plan: $PHASE_COUNT phases, complexity: $PLAN_COMPLEXITY, est. time: $PLAN_EST_TIME"
-echo "Phase 2 Complete"
+emit_progress "2" "Planning complete: $PHASE_COUNT phases, $PLAN_EST_TIME estimated"
+echo ""
 
 # Save checkpoint after Phase 2
 ARTIFACT_PATHS_JSON=$(cat <<EOF
@@ -1128,9 +1159,7 @@ STEP 5: Check if workflow should continue to implementation
 
 ```bash
 should_run_phase 3 || {
-  echo "════════════════════════════════════════════════════════"
-  echo "         /coordinate WORKFLOW COMPLETE"
-  echo "════════════════════════════════════════════════════════"
+  emit_progress "Complete" "/coordinate workflow complete"
   echo ""
   echo "Workflow Type: $WORKFLOW_SCOPE"
   echo "Phases Executed: Phase 0-2 (Location, Research, Planning)"
@@ -1409,7 +1438,8 @@ else
   echo "❌ Tests failing - debugging required (Phase 5)"
 fi
 
-echo "Phase 4 Complete"
+emit_progress "4" "Testing complete: $TESTS_PASSING"
+echo ""
 
 # Save checkpoint after Phase 4
 ARTIFACT_PATHS_JSON=$(cat <<EOF
@@ -1579,7 +1609,8 @@ done
 
 [ "$TESTS_PASSING" == "false" ] && echo "⚠️  WARNING: Tests still failing after 3 iterations (manual intervention required)"
 
-echo "Phase 5 Complete"
+emit_progress "5" "Debug complete: tests=$TESTS_PASSING"
+echo ""
 
 # Context pruning after Phase 5
 # Store minimal phase metadata for Phase 5 (debug status and final test status)
