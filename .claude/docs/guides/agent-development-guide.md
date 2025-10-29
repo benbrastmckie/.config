@@ -1,29 +1,115 @@
 # Agent Development Guide
 
-Comprehensive guide for creating and maintaining custom Claude Code agents using the behavioral injection pattern.
+Comprehensive guide for creating, invoking, and maintaining custom Claude Code agents using the behavioral injection pattern.
 
-**Target Audience**: Developers creating new agent behavioral files or modifying existing ones.
+**Target Audience**: Developers creating new agent behavioral files, modifying existing agents, or integrating agents into commands.
 
 **Related Documentation**:
 - [Command Development Guide](command-development-guide.md) - How commands invoke agents
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Overall architecture
 - [Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) - Common issues
 
-## Table of Contents
+## Quick Start: Your First Agent
 
-1. [Agent Behavioral Files Overview](#1-agent-behavioral-files-overview)
-2. [The Behavioral Injection Pattern](#2-the-behavioral-injection-pattern)
-3. [Agent File Structure](#3-agent-file-structure)
-4. [Creating a New Agent](#4-creating-a-new-agent)
-5. [Agent Responsibilities and Boundaries](#5-agent-responsibilities-and-boundaries)
-6. [Anti-Patterns and Why They're Wrong](#6-anti-patterns-and-why-theyre-wrong)
-7. [Best Practices and Examples](#7-best-practices-and-examples)
-8. [Testing and Validation](#8-testing-and-validation)
-9. [Agent Consolidation and Refactoring Patterns](#9-agent-consolidation-and-refactoring-patterns)
+**Goal**: Create a simple agent and invoke it from a command in under 10 minutes.
+
+### Step 1: Create Agent File (2 minutes)
+
+Create `.claude/agents/hello-agent.md`:
+
+```markdown
+---
+allowed-tools: Read, Write
+description: Simple demonstration agent that creates greeting files
+model: haiku-4.5
+model-justification: "Deterministic file creation with template, no complex reasoning required"
+---
+
+# Hello Agent
+
+I am a demonstration agent that creates greeting files.
+
+## Core Capabilities
+- Create greeting files at specified paths
+- Use simple template-based content
+
+## Expected Input
+- **Output Path**: Absolute path where greeting file should be created
+- **Name**: Name to include in greeting
+
+## Expected Output
+- Greeting file created at exact path
+- Confirmation message with file path
+```
+
+### Step 2: Invoke from Command (3 minutes)
+
+In any command file, invoke the agent:
+
+```markdown
+**EXECUTE NOW**: USE the Task tool to invoke hello-agent:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Create greeting using hello-agent protocol"
+  prompt: |
+    Read and follow behavioral guidelines from:
+    .claude/agents/hello-agent.md
+
+    Output Path: /tmp/greeting.txt
+    Name: Claude
+}
+```
+
+### Step 3: Verify (1 minute)
+
+Check that `/tmp/greeting.txt` was created with greeting content.
+
+### Next Steps
+
+- **Part 1**: Learn detailed agent file structure and frontmatter fields
+- **Part 2**: Master agent invocation patterns (single, parallel, sequential, loop, optional)
+- **Part 3**: Understand context architecture for minimizing token usage
+- **Part 4**: Advanced patterns (consolidation, refactoring, metrics)
 
 ---
 
-## 1. Agent Behavioral Files Overview
+## Table of Contents
+
+**Part 1: Creating Agents**
+1. [Agent Behavioral Files Overview](#part-1-creating-agents)
+2. [The Behavioral Injection Pattern](#12-the-behavioral-injection-pattern)
+3. [Agent Files as Single Source of Truth](#13-agent-files-as-single-source-of-truth)
+4. [Agent File Structure](#14-agent-file-structure)
+5. [Creating a New Agent](#15-creating-a-new-agent)
+
+**Part 2: Invoking Agents**
+6. [Agent Invocation Pattern](#part-2-invoking-agents)
+7. [Agent Directory](#22-agent-directory)
+8. [Integration Patterns](#23-integration-patterns)
+9. [Command-Agent Matrix](#24-command-agent-matrix)
+
+**Part 3: Context Architecture**
+10. [Layered Context Architecture](#part-3-context-architecture)
+11. [Context Preservation Patterns](#32-context-preservation-patterns)
+12. [Agent Invocation Best Practices](#33-agent-invocation-best-practices)
+
+**Part 4: Advanced Patterns**
+13. [Agent Responsibilities and Boundaries](#part-4-advanced-patterns)
+14. [Anti-Patterns and Why They're Wrong](#42-anti-patterns-and-why-theyre-wrong)
+15. [Agent Consolidation and Refactoring](#43-agent-consolidation-and-refactoring-patterns)
+16. [Testing and Validation](#44-testing-and-validation)
+17. [Command-Specific Patterns](#45-command-specific-agent-patterns)
+18. [Metrics Integration](#46-metrics-integration)
+19. [Troubleshooting](#47-troubleshooting)
+
+---
+
+# Part 1: Creating Agents
+
+---
+
+## 1.1. Agent Behavioral Files Overview
 
 ### What Are Agent Behavioral Files?
 
@@ -59,7 +145,7 @@ Examples:
 
 ---
 
-## 2. The Behavioral Injection Pattern
+## 1.2. The Behavioral Injection Pattern
 
 ### Pattern Overview
 
@@ -120,7 +206,7 @@ The behavioral injection pattern separates concerns:
 
 ---
 
-## 2.5. Agent Files as Single Source of Truth
+## 1.3. Agent Files as Single Source of Truth
 
 ### Principle: Agent Behavioral Files Contain ALL Execution Procedures
 
@@ -249,7 +335,7 @@ For detailed guidance, see [Template vs Behavioral Distinction](../reference/tem
 
 ---
 
-## 3. Agent File Structure
+## 1.4. Agent File Structure
 
 ### File Format
 
@@ -592,7 +678,7 @@ See [Hierarchical Agents Guide](../concepts/hierarchical_agents.md#metadata-extr
 
 ---
 
-## 4. Creating a New Agent
+## 1.5. Creating a New Agent
 
 ### Step 1: Choose Agent Purpose
 
@@ -678,7 +764,505 @@ print('Task config: ' .. vim.inspect(task_config))
 
 ---
 
-## 5. Agent Responsibilities and Boundaries
+# Part 2: Invoking Agents
+
+This part covers how to integrate agents into commands and workflows.
+
+## IMPORTANT: Required Reading for All Command Development
+
+The patterns documented in this part are the ONLY correct patterns for agent invocation. Any command that uses agents MUST follow these patterns.
+
+---
+
+## 2.1. Agent Invocation Pattern
+
+**Available Agent Types** (via Task tool):
+- `general-purpose` - General-purpose agent for all specialized behaviors
+- `statusline-setup` - Configure statusline settings
+- `output-style-setup` - Create output styles
+
+**Specialized Agent Behaviors** (via behavioral injection):
+- `research-specialist`, `code-writer`, `test-specialist`, `plan-architect`, `doc-writer`, `code-reviewer`, `debug-specialist`, `metrics-specialist`, `github-specialist`, `complexity_estimator`
+
+**Correct Invocation Pattern**:
+```yaml
+Task {
+  subagent_type: "general-purpose"  # Always use general-purpose
+  description: "Create plan using plan-architect protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/plan-architect.md
+
+    You are acting as a Plan Architect with the constraints and capabilities
+    defined in that file.
+
+    [Your actual task description here]
+}
+```
+
+**Incorrect Pattern** (will cause errors):
+```yaml
+Task {
+  subagent_type: "plan-architect"  # ERROR: Not a valid agent type
+  ...
+}
+```
+
+---
+
+## 2.2. Agent Directory
+
+### Core Agents (Phase 1)
+
+#### 1. research-specialist
+- **Purpose**: Read-only research and codebase analysis
+- **Tools**: Read, Grep, Glob, WebSearch, WebFetch
+- **Use Cases**: Codebase pattern discovery, best practices research, alternative approaches
+- **Output**: Concise summaries (max 150-200 words)
+- **Invoked By**: /orchestrate (research phase), /plan (optional), /report (optional)
+
+#### 2. code-writer
+- **Purpose**: Code generation and modification following project standards
+- **Tools**: Read, Write, Edit, Bash, TodoWrite
+- **Use Cases**: Implementation, applying fixes, code generation
+- **Standards**: Discovers and applies CLAUDE.md standards automatically
+- **Invoked By**: /orchestrate (implementation phase), /orchestrate (fix application)
+
+#### 3. test-specialist
+- **Purpose**: Test execution and failure analysis
+- **Tools**: Bash, Read, Grep
+- **Use Cases**: Running tests, analyzing failures, coverage reporting
+- **Frameworks**: Multi-framework support (Jest, pytest, Neovim tests, etc.)
+- **Invoked By**: /test (optional), /test-all (optional), /orchestrate (validation)
+
+#### 4. plan-architect
+- **Purpose**: Phased implementation plan generation
+- **Tools**: Read, Write, Grep, Glob, WebSearch
+- **Use Cases**: Creating structured plans from research, /implement compatibility
+- **Output**: specs/plans/NNN_*.md files
+- **Invoked By**: /plan, /orchestrate (planning phase)
+
+### Specialized Agents (Phase 2)
+
+#### 5. doc-writer
+- **Purpose**: Documentation creation and maintenance
+- **Tools**: Read, Write, Edit, Grep, Glob
+- **Use Cases**: README updates, documentation sync, cross-referencing
+- **Standards**: Unicode box-drawing, no emojis, CommonMark compliance
+- **Invoked By**: /document, /orchestrate (documentation phase)
+
+#### 6. code-reviewer
+- **Purpose**: Standards compliance and quality review
+- **Tools**: Read, Grep, Glob, Bash
+- **Use Cases**: Refactoring analysis, standards enforcement, code quality
+- **Output**: Structured reports with severity levels (Blocking/Warning/Suggestion)
+- **Invoked By**: /refactor, /orchestrate (optional pre-commit checks)
+
+#### 7. debug-specialist
+- **Purpose**: Root cause analysis and diagnostic investigations
+- **Tools**: Read, Bash, Grep, Glob, WebSearch
+- **Use Cases**: Issue investigation, evidence gathering, solution proposals
+- **Output**: Debug reports with multiple solution options
+- **Invoked By**: /debug, /orchestrate (debugging loop)
+
+#### 8. metrics-specialist
+- **Purpose**: Performance analysis and optimization recommendations
+- **Tools**: Read, Bash, Grep
+- **Use Cases**: Analyzing metrics from .claude/data/metrics/, identifying bottlenecks
+- **Output**: Statistical analysis with optimization suggestions
+- **Dependencies**: Requires metrics infrastructure (hooks)
+- **Invoked By**: Custom performance analysis commands (future)
+
+#### 9. github-specialist
+- **Purpose**: GitHub operations including PRs, issues, and CI/CD monitoring
+- **Tools**: Read, Grep, Glob, Bash
+- **Use Cases**: PR creation with metadata, issue management, CI workflow monitoring
+- **Primary Tool**: gh CLI via Bash (MCP server optional supplement)
+- **Output**: PR/issue URLs, CI status reports
+- **Invoked By**: /implement (--create-pr), /orchestrate (workflow PRs)
+
+#### 10. complexity_estimator
+- **Purpose**: Context-aware complexity analysis for plan expansion/collapse decisions
+- **Tools**: Read, Grep, Glob
+- **Use Cases**: Auto-analysis mode in /expand and /collapse commands
+- **Analysis Factors**: Architectural significance, integration complexity, risk, testing needs
+- **Output**: JSON recommendations with 1-10 complexity scores and reasoning
+- **Invoked By**: /expand (auto-analysis mode), /collapse (auto-analysis mode)
+
+---
+
+## 2.3. Integration Patterns
+
+### Pattern 1: Single Agent Delegation
+
+Simple command delegates single task to specialized agent using behavioral injection:
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Investigate [issue] using debug-specialist protocol"
+  prompt: "
+    Read and follow the behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/debug-specialist.md
+
+    You are acting as a Debug Specialist with the tools and constraints
+    defined in that file.
+
+    Debug Task: [Detailed investigation instructions]
+
+    Context:
+    - Issue description: [from user]
+    - Project standards: CLAUDE.md
+
+    Requirements:
+    - Gather evidence
+    - Identify root cause
+    - Propose solutions
+
+    Output: Debug report with findings
+  "
+}
+```
+
+**Used By**: /debug, /document, /refactor
+
+### Pattern 2: Parallel Multi-Agent
+
+Multiple agents of same type work on different topics simultaneously using behavioral injection:
+
+```yaml
+# Research Phase in /orchestrate - all in single message for parallel execution
+Task {
+  subagent_type: "general-purpose"
+  description: "Research Topic 1 using research-specialist protocol"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/research-specialist.md
+    You are acting as a Research Specialist.
+    [Topic 1 research task]
+}
+Task {
+  subagent_type: "general-purpose"
+  description: "Research Topic 2 using research-specialist protocol"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/research-specialist.md
+    You are acting as a Research Specialist.
+    [Topic 2 research task]
+}
+Task {
+  subagent_type: "general-purpose"
+  description: "Research Topic 3 using research-specialist protocol"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/research-specialist.md
+    You are acting as a Research Specialist.
+    [Topic 3 research task]
+}
+```
+
+**Benefits**: Significant time savings (2-3x faster than sequential)
+
+**Used By**: /orchestrate (research phase)
+
+### Pattern 3: Sequential Pipeline
+
+Output of one agent feeds into next agent in sequence using behavioral injection:
+
+```yaml
+# Planning Pipeline
+# Step 1: Research using research-specialist behavior
+Task {
+  subagent_type: "general-purpose"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/research-specialist.md
+    [Research task that generates summary]
+}
+# Extract research summary from output
+
+# Step 2: Planning using plan-architect behavior
+Task {
+  subagent_type: "general-purpose"
+  prompt: |
+    Read and follow: /home/benjamin/.config/.claude/agents/plan-architect.md
+    You are acting as a Plan Architect.
+
+    Research findings: [summary from step 1]
+    [Planning task]
+}
+```
+
+**Used By**: /orchestrate (research → planning), /plan (optional research then planning)
+
+### Pattern 4: Conditional Agent Loop
+
+Agent invoked repeatedly until condition met or max iterations using behavioral injection:
+
+```yaml
+# Debugging Loop (max 3 iterations)
+while tests_failing and iteration < 3:
+  # 1. Debug using debug-specialist behavior
+  Task {
+    subagent_type: "general-purpose"
+    prompt: |
+      Read and follow: /home/benjamin/.config/.claude/agents/debug-specialist.md
+      [Debug task]
+  }
+
+  # 2. Fix using code-writer behavior
+  Task {
+    subagent_type: "general-purpose"
+    prompt: |
+      Read and follow: /home/benjamin/.config/.claude/agents/code-writer.md
+      [Apply fixes]
+  }
+
+  # 3. Test using test-specialist behavior
+  Task {
+    subagent_type: "general-purpose"
+    prompt: |
+      Read and follow: /home/benjamin/.config/.claude/agents/test-specialist.md
+      [Validate fixes]
+  }
+
+  if tests_pass:
+    break
+```
+
+**Used By**: /orchestrate (debugging loop)
+
+### Pattern 5: Optional Agent Enhancement
+
+Command works independently but can delegate to agent for better results using behavioral injection:
+
+```yaml
+# Direct execution for simple cases
+if simple_task:
+  execute_directly()
+else:
+  # Delegate to agent for complex cases
+  Task {
+    subagent_type: "general-purpose"
+    prompt: |
+      Read and follow: /home/benjamin/.config/.claude/agents/test-specialist.md
+      [Test execution task]
+  }
+```
+
+**Used By**: /test, /test-all, /implement (potential)
+
+---
+
+## 2.4. Command-Agent Matrix
+
+| Command | Primary Agent | Secondary Agents | Pattern |
+|---------|---------------|------------------|---------|
+| /orchestrate | Varies by phase | All 10 agents | Pipeline + Parallel |
+| /implement | None (direct) | Potential: code-writer, test-specialist, github-specialist | Direct execution |
+| /expand | complexity_estimator (auto-mode) | None | Single delegation |
+| /collapse | complexity_estimator (auto-mode) | None | Single delegation |
+| /debug | debug-specialist | None | Single delegation |
+| /plan | plan-architect | Optional: research-specialist | Sequential pipeline |
+| /document | doc-writer | None | Single delegation |
+| /refactor | code-reviewer | None | Single delegation |
+| /test | test-specialist (optional) | None | Optional enhancement |
+| /test-all | test-specialist (optional) | None | Optional enhancement |
+| /report | research-specialist (optional) | None | Optional enhancement |
+
+---
+
+# Part 3: Context Architecture
+
+This part explains how to structure agent invocations to minimize context consumption while preserving necessary information.
+
+---
+
+## 3.1. Layered Context Architecture
+
+Agent invocations use a layered context model to separate concerns and minimize context consumption.
+
+**Quick Overview**: For a concise summary of layered context architecture, see [README: Layered Context Architecture](../README.md#layered-context-architecture).
+
+### Five Context Layers
+
+**1. Meta-Context (Behavioral Injection)**:
+- Agent behavior definition (read from `.claude/agents/[agent-name].md`)
+- Tool restrictions and allowed operations
+- Output format requirements
+- Passed via: `Read and follow: .claude/agents/[agent-name].md`
+- Size: ~0 tokens (agent reads file directly, not passed inline)
+
+**2. Operational Context (Task Instructions)**:
+- Specific task description and objectives
+- Step-by-step execution requirements
+- Success criteria and validation steps
+- Passed via: Task `prompt` parameter
+- Size: 200-500 tokens typical
+
+**3. Domain Context (Project Standards)**:
+- Project-specific coding standards (CLAUDE.md)
+- Language conventions and style guides
+- Testing protocols and coverage requirements
+- Passed via: Reference to CLAUDE.md + key constraints
+- Size: 50-100 tokens (reference + highlights, not full content)
+
+**4. Historical Context (Prior Phase Results)**:
+- Results from completed workflow phases
+- Artifacts created in previous steps
+- Key findings and recommendations
+- Passed via: Metadata only (path + 50-word summary)
+- Size: 250 tokens per artifact (vs 5000 tokens for full content)
+
+**5. Environmental Context (Workflow State)**:
+- Current phase in workflow
+- Checkpoint data and resume information
+- Progress tracking and completion status
+- Passed via: Minimal state JSON
+- Size: 100-200 tokens
+
+### Practical Example
+
+**Traditional Invocation** (bloated context):
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  prompt: |
+    You are a Research Specialist. Your role is to analyze codebases and
+    gather implementation guidance... [500-word agent definition inline]
+
+    Research Topic: Authentication patterns
+
+    Project Standards: [Full CLAUDE.md content - 5000 tokens]
+
+    Prior Research: [Full report 1 content - 3000 tokens]
+                    [Full report 2 content - 2500 tokens]
+
+    Current Workflow State: [Detailed state - 500 tokens]
+}
+# Total: ~11,500 tokens
+```
+
+**Layered Invocation** (optimized):
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research authentication patterns using research-specialist protocol"
+  prompt: |
+    # Layer 1: Meta-Context (0 tokens - file read)
+    Read and follow: .claude/agents/research-specialist.md
+
+    # Layer 2: Operational Context (300 tokens)
+    Research Topic: Authentication patterns in Lua applications
+
+    Requirements:
+    - Search codebase for existing auth implementations
+    - Research JWT vs sessions best practices
+    - Identify security considerations
+
+    Output: Create report at specs/042_auth/reports/001_patterns.md
+
+    # Layer 3: Domain Context (50 tokens)
+    Project Standards: CLAUDE.md
+    - Lua style: 2-space indent, snake_case
+    - Security: HTTPS only, no credentials in code
+
+    # Layer 4: Historical Context (250 tokens)
+    Prior Research:
+    - specs/041_api/reports/001_rest_patterns.md: "REST API patterns with OpenResty. Recommends JWT for stateless auth."
+
+    # Layer 5: Environmental Context (100 tokens)
+    Workflow Phase: research (1/5)
+    Thinking Mode: think hard
+}
+# Total: ~700 tokens (94% reduction)
+```
+
+### Benefits
+
+- **Context Reduction**: 90-95% reduction through metadata-only historical context
+- **Clarity**: Separation of concerns makes agent invocations easier to debug
+- **Reusability**: Meta-context (agent behaviors) shared across invocations
+- **Scalability**: Enables 10+ parallel agents without context exhaustion
+
+**See Also**:
+- [Command Architecture Standards](../reference/command_architecture_standards.md#layered-context-architecture) for complete layered context guidelines
+- [Hierarchical Agents Guide](../concepts/hierarchical_agents.md#metadata-extraction) for metadata extraction patterns
+
+---
+
+## 3.2. Context Preservation Patterns
+
+When integrating agents into multi-phase workflows, use metadata-based context preservation to minimize token consumption. For complete documentation on context preservation patterns, metadata extraction utilities, forward message patterns, and context pruning strategies, see [Hierarchical Agents Guide](../concepts/hierarchical_agents.md).
+
+**Key Patterns** (detailed in hierarchical_agents.md):
+- **Metadata-Only Passing**: Extract path + 50-word summary instead of full content (95-99% reduction)
+- **Forward Message**: Pass subagent responses without re-summarization (eliminates 200-300 token overhead)
+- **Context Pruning**: Prune completed phase data, retain only references (80-90% reduction)
+
+**Target**: <30% context usage throughout multi-phase workflows
+
+**See Also**: [Command Architecture Standards](../reference/command_architecture_standards.md#context-preservation-standards) for Standards 6-8 requirements
+
+---
+
+## 3.3. Agent Invocation Best Practices
+
+### 1. Prompt Construction
+
+**DO**:
+- Provide complete task description with objective
+- Include necessary context from prior phases (summaries only)
+- Reference CLAUDE.md for project standards
+- Specify explicit success criteria
+- Define expected output format
+
+**DON'T**:
+- Include orchestration routing logic
+- Pass information about other parallel agents
+- Provide excessive context (keep summaries <200 words)
+- Use vague instructions without specifics
+
+### 2. Context Management
+
+**Supervisor (Command) Context**: Minimal
+- Current workflow state
+- High-level summaries only
+- File paths (not contents)
+- Checkpoint data
+
+**Agent Context**: Comprehensive for their task
+- Complete task description
+- Relevant prior phase summaries
+- Project standards reference
+- Explicit requirements
+
+### 3. Error Handling
+
+All agent invocations should handle:
+- **Timeout**: Retry with extended timeout or split task
+- **Tool Access Errors**: Retry with fallback tools
+- **Validation Failures**: Clarify prompt and retry
+- **Max Retries**: Escalate to user with context
+
+### 4. Agent Selection
+
+Choose agent based on primary task:
+- **Research/Analysis**: research-specialist
+- **Code Generation**: code-writer
+- **Testing**: test-specialist
+- **Planning**: plan-architect
+- **Documentation**: doc-writer
+- **Code Review**: code-reviewer
+- **Debugging**: debug-specialist
+- **Performance**: metrics-specialist
+- **Complexity Analysis**: complexity_estimator
+
+---
+
+# Part 4: Advanced Patterns
+
+This part covers advanced topics including anti-patterns, consolidation strategies, testing, and troubleshooting.
+
+---
+
+## 4.1. Agent Responsibilities and Boundaries
 
 ### Agents SHOULD
 
@@ -754,7 +1338,7 @@ Need to execute command?
 
 ---
 
-## 6. Anti-Patterns and Why They're Wrong
+## 4.2. Anti-Patterns and Why They're Wrong
 
 ### Anti-Pattern 1: Agent Invokes Slash Command
 
@@ -830,7 +1414,7 @@ Create report at: specs/reports/${TOPIC}.md
 
 ---
 
-## 7. Best Practices and Examples
+## 4.3. Best Practices and Examples
 
 ### DO
 
@@ -1023,7 +1607,7 @@ Write {
 
 ---
 
-## 8. Testing and Validation
+## 4.4. Testing and Validation
 
 ### Agent Loading Tests
 
@@ -1081,11 +1665,156 @@ Before committing a new agent:
 
 ---
 
-## Cross-References
+## 4.5. Command-Specific Agent Patterns
 
-## 9. Agent Consolidation and Refactoring Patterns
+### /expand-phase Agent Integration
 
-### 9.1 When to Consolidate Agents
+**Purpose**: Use agents to research complex phases before generating detailed 300-500+ line specifications.
+
+**Agent Selection Logic**:
+```bash
+# Complexity indicators
+if [[ $task_count > 5 ]] || [[ $file_count >= 10 ]] || [[ $unique_dirs > 2 ]]; then
+  is_complex=true
+  # Select appropriate agent behavior
+fi
+```
+
+**Invocation Pattern**:
+
+`/expand-phase` uses **general-purpose agents** with **behavioral injection**:
+
+```markdown
+Task tool:
+  subagent_type: general-purpose  # Only valid agent type
+  description: "Research phase context using research-specialist protocol"
+  prompt: |
+    Read and follow the behavioral guidelines from:
+    /path/to/.claude/agents/research-specialist.md
+
+    You are acting as a Research Specialist with constraints:
+    - Read-only operations (tools: Read, Glob, Grep only)
+    - Concise summaries (200-250 words max)
+    - Specific file references with line numbers
+    - Evidence-based findings only
+
+    Research Task: [Phase objective]
+
+    Phase Tasks:
+    [List all tasks from phase]
+
+    Requirements:
+    1. Search codebase for files mentioned in tasks
+    2. Identify existing patterns and implementations
+    3. Find dependencies and integration points
+    4. Assess current state vs target state
+
+    Output Format:
+    ## Current State
+    - [File:line references]
+
+    ## Patterns Found
+    - [Concrete patterns]
+
+    ## Recommendations
+    - [Specific approaches]
+
+    ## Challenges
+    - [Potential issues]
+
+    Word limit: 250 words
+```
+
+**Behavior Selection**:
+
+- **research-specialist**: Default for codebase analysis (most complex phases)
+- **code-reviewer**: For refactor/consolidate phases (standards compliance)
+- **plan-architect**: For very complex phases (structure recommendations)
+
+**Synthesis Process**:
+
+After agent returns 200-250 word research:
+
+1. Extract key findings (file:line refs, patterns, recommendations, challenges)
+2. Map findings to each task in phase
+3. Generate code examples based on patterns found
+4. Create testing strategy covering current → target transition
+5. Write implementation steps using actual file paths discovered
+
+**Output**: 300-500+ line detailed specification with concrete details
+
+**Performance**:
+- Simple phases (direct expansion): <2 minutes
+- Complex phases (agent-assisted): 3-5 minutes (acceptable for quality gain)
+
+**Benefits**:
+- Agent discovers actual file locations and patterns
+- Specifications use concrete file:line references
+- Testing strategy based on current codebase state
+- Implementation steps reference real structures
+- Reduces generic placeholder content
+
+---
+
+## 4.6. Metrics Integration
+
+Agents work with hooks for metrics collection:
+
+**post-command-metrics.sh**: Collects agent invocation data
+- Operation: agent name
+- Duration: execution time
+- Status: success/failure
+
+**Metrics Location**: `.claude/data/metrics/YYYY-MM.jsonl`
+
+**Analysis**: Use metrics-specialist to analyze agent performance
+
+---
+
+## 4.7. Troubleshooting
+
+### Agent Not Found
+
+**Symptom**: Task tool reports "unknown subagent type"
+
+**Solutions**:
+1. Verify agent file exists in `.claude/agents/`
+2. Check frontmatter has `description:` field
+3. Ensure filename matches `subagent_type` value
+
+### Agent Access Denied
+
+**Symptom**: Agent reports tool permission errors
+
+**Solutions**:
+1. Check `allowed-tools:` in agent frontmatter
+2. Verify tool name spelling matches exactly
+3. Ensure tool is available in Claude Code
+
+### Agent Timeout
+
+**Symptom**: Agent execution exceeds time limits
+
+**Solutions**:
+1. Increase timeout parameter in Task invocation
+2. Split task into smaller subtasks
+3. Reduce agent workload (less context, focused scope)
+
+### Poor Agent Output
+
+**Symptom**: Agent returns low-quality or incorrect results
+
+**Solutions**:
+1. Improve prompt clarity and specificity
+2. Provide better context (but keep concise)
+3. Add explicit success criteria
+4. Show example of expected output format
+
+---
+
+## 4.8. Agent Consolidation and Refactoring
+
+### 4.8.1 When to Consolidate Agents
 
 Consider consolidating agents when:
 
@@ -1110,7 +1839,7 @@ Consider consolidating agents when:
 
    **Example**: git-commit-helper (purely deterministic) → .claude/lib/git-commit-utils.sh
 
-### 9.2 Operation Parameter Pattern
+### 4.8.2 Operation Parameter Pattern
 
 When consolidating similar agents into a unified agent, use operation parameters to dispatch behavior:
 
@@ -1158,7 +1887,7 @@ Task {
 - IF operation = "collapse": Replace marker with inline content
 ```
 
-### 9.3 Agent-to-Library Refactoring Pattern
+### 4.8.3 Agent-to-Library Refactoring Pattern
 
 When agent logic is purely deterministic, refactor to utility library:
 
@@ -1230,7 +1959,7 @@ When agent logic is purely deterministic, refactor to utility library:
 - Easier testing (unit tests vs integration tests)
 - Clearer separation of concerns (algorithms in lib/, AI reasoning in agents/)
 
-### 9.4 Consolidation Impact Metrics
+### 4.8.4 Consolidation Impact Metrics
 
 Track consolidation benefits:
 
@@ -1261,9 +1990,9 @@ Agents should implement these patterns from the [Patterns Catalog](../concepts/p
 ### Related Guides
 
 - [Command Development Guide](command-development-guide.md) - How commands invoke agents
-- [Using Agents](using-agents.md) - Agent invocation and coordination patterns
 - [Testing Patterns](testing-patterns.md) - Validation and quality assurance
 - [Standards Integration](standards-integration.md) - CLAUDE.md standards discovery
+- [Orchestration Troubleshooting Guide](../troubleshooting/orchestration-troubleshooting.md) - Debugging orchestration workflows
 
 ### Reference Documentation
 

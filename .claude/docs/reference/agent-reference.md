@@ -307,7 +307,7 @@ Quick reference for which tools each agent can use:
 
 **Tool Restrictions**: Agents can ONLY use tools listed in their allowed-tools. Attempting to use unlisted tools will result in permission errors.
 
-**Invocation Pattern**: Always use `general-purpose` agent type with behavioral injection. See [Using Agents](../guides/using-agents.md) for complete pattern.
+**Invocation Pattern**: Always use `general-purpose` agent type with behavioral injection. See [Using Agents](../guides/agent-development-guide.md) for complete pattern.
 
 ## Context Preservation Requirements
 
@@ -366,7 +366,7 @@ Task {
 
 ## Related Documentation
 
-- [Using Agents](../guides/using-agents.md) - Comprehensive agent integration guide with invocation patterns
+- [Using Agents](../guides/agent-development-guide.md) - Comprehensive agent integration guide with invocation patterns
 - [Creating Agents](../guides/creating-agents.md) - Guide for developing custom agents
 - [Command Patterns](../guides/command-patterns.md) - Command development best practices
 - [Orchestration Guide](../workflows/orchestration-guide.md) - Multi-agent workflows

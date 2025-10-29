@@ -7,7 +7,7 @@ The hierarchical agent architecture enables multi-level agent coordination that 
 **Quick Overview**: For a concise summary of the hierarchical agent workflow system, see [README: Hierarchical Agent Workflow System](../README.md#hierarchical-agent-workflow-system).
 
 **Related Documentation**:
-- [Using Agents](../guides/using-agents.md) - Agent invocation patterns and behavioral injection
+- [Using Agents](../guides/agent-development-guide.md) - Agent invocation patterns and behavioral injection
 - [Command Architecture Standards](../reference/command_architecture_standards.md#context-preservation-standards) - Standards 1, 6-8
 - [Tutorial Walkthrough](#tutorial-walkthrough) - Step-by-step practical workflow examples
 
