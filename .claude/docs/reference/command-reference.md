@@ -106,6 +106,10 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 ### /coordinate
 **Purpose**: Clean multi-agent workflow orchestration with wave-based parallel implementation
 
+**Status**: **Production-Ready** ✓ - Stable, tested, recommended for all workflows
+
+**Complexity**: 2,500-3,000 lines (medium, well-optimized)
+
 **Usage**: `/coordinate <workflow-description>`
 
 **Type**: primary
@@ -125,6 +129,7 @@ Automatically detects workflow type and executes appropriate phases:
 - **Fail-Fast Error Handling**: Clear diagnostics, single execution path, no retries
 - **Context Reduction**: <30% context usage via metadata extraction and aggressive pruning
 - **Checkpoint Resume**: Auto-resume from phase boundaries after interruption
+- **Production-Ready**: Stable, reliable, recommended default orchestration command
 
 **Agents Used**:
 - research-specialist (Phase 1)
@@ -147,7 +152,9 @@ Automatically detects workflow type and executes appropriate phases:
 - Context usage: <30% throughout workflow
 - Time savings: 40-60% (wave-based execution)
 
-**See**: [coordinate.md](../../commands/coordinate.md)
+**See Also**:
+- [Command Selection Guide](../guides/orchestration-best-practices.md#command-selection) - Compare all orchestration commands
+- [coordinate.md](../../commands/coordinate.md) - Command documentation
 
 ---
 
@@ -273,21 +280,34 @@ Automatically detects workflow type and executes appropriate phases:
 ### /orchestrate
 **Purpose**: Coordinate subagents through end-to-end development workflows
 
+**Status**: **In Development** ⚠️ - Experimental PR automation features, may have inconsistent behavior
+
+**Complexity**: 5,438 lines (heaviest, includes PR automation and dashboard tracking)
+
 **Usage**: `/orchestrate <workflow-description> [--parallel] [--sequential] [--create-pr]`
 
 **Type**: primary
+
+**Warning**: Not recommended for production use until stabilized. Use **/coordinate** instead for reliable workflows.
 
 **Arguments**:
 - `workflow-description`: Feature or workflow to implement
 - `--parallel`: Run independent phases in parallel
 - `--sequential`: Force sequential execution
-- `--create-pr`: Create GitHub PR on completion
+- `--create-pr`: Create GitHub PR on completion (experimental)
+
+**Experimental Features**:
+- PR automation with github-specialist agent
+- Interactive progress dashboard
+- Comprehensive metrics tracking
 
 **Agents Used**: All agents (research-specialist, plan-architect, code-writer, test-specialist, debug-specialist, doc-writer, github-specialist)
 
-**Output**: Research reports, implementation plan, code changes, tests, documentation, optional PR
+**Output**: Research reports, implementation plan, code changes, tests, documentation, optional PR (experimental)
 
-**See**: [orchestrate.md](../../commands/orchestrate.md)
+**See Also**:
+- [Command Selection Guide](../guides/orchestration-best-practices.md#command-selection) - Compare all orchestration commands
+- [orchestrate.md](../../commands/orchestrate.md) - Command documentation
 
 ---
 

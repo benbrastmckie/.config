@@ -205,33 +205,30 @@ wc -l .claude/docs/reference/orchestration-reference.md  # Should remain ~990-1,
 
 Expected: orchestration-reference.md has clear link to command selection section in orchestration-best-practices.md, no redundant comparison content, minimal size increase
 
-### Phase 4: Update Individual Command Entries and Final Validation [REVISED]
+### Phase 4: Update Individual Command Entries and Final Validation [COMPLETED]
 **Objective**: Add cross-references in command-reference.md and validate all changes
 **Complexity**: Low
 
 **Note**: Phase 5 merged into Phase 4 to reduce total phases from 5 to 4
 
 Tasks:
-- [ ] Update /orchestrate entry in command-reference.md
+- [x] Update /orchestrate entry in command-reference.md
   - Add "Heaviest (5,438 lines), includes PR automation and dashboards"
   - Add maturity status: "**Status**: In Development - experimental features, may have inconsistent behavior"
   - Link to orchestration-best-practices.md command selection section
-- [ ] Update /coordinate entry in command-reference.md
+- [x] Update /coordinate entry in command-reference.md
   - Add "Middle ground (2,500-3,000 lines), wave-based parallel execution"
   - Add maturity status: "**Status**: Production-Ready - stable, tested, recommended for all workflows"
   - Mark as default/recommended choice
   - Link to orchestration-best-practices.md command selection section
-- [ ] Update /supervise entry in command-reference.md (if exists)
-  - Add "Lightest (1,939 lines), proven minimal reference"
-  - Add maturity status: "**Status**: In Development - minimal reference being stabilized"
-  - Link to orchestration-best-practices.md command selection section
-  - Verify links to supervise-guide.md still work
-- [ ] Verify "Use Case" fields emphasize /coordinate as default, others as experimental
-- [ ] Search for redundant feature comparisons in other docs and remove/update
-- [ ] Validate all cross-reference links work
-- [ ] Ensure no documentation contradicts maturity status or research findings
-- [ ] Update orchestration-troubleshooting.md if it contains comparison info (defer to best practices guide)
-- [ ] Run timeless documentation validation (no historical markers)
+- [x] Update /supervise entry in command-reference.md (if exists)
+  - /supervise not present in command-reference.md (verified, no action needed)
+- [x] Verify "Use Case" fields emphasize /coordinate as default, others as experimental
+- [x] Search for redundant feature comparisons in other docs and remove/update
+- [x] Validate all cross-reference links work
+- [x] Ensure no documentation contradicts maturity status or research findings
+- [x] Update orchestration-troubleshooting.md if it contains comparison info (defer to best practices guide)
+- [x] Run timeless documentation validation (no historical markers)
 
 Testing:
 ```bash
