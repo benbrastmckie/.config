@@ -52,17 +52,18 @@ Research identified three critical issues requiring minimal documentation change
 
 ### Architecture: Consolidation Strategy
 
-**Principle**: Update existing files to reflect current state, remove historical markers, avoid creating new files.
+**Principle**: Remove verbose mode first, then update existing files to reflect current state, remove historical markers, avoid creating new files.
 
-**Three-Phase Approach**:
+**Four-Phase Approach**:
 
-1. **Phase 1**: Update orchestration-best-practices.md to document formatting features (add 1 section ~100 lines)
-2. **Phase 2**: Remove historical language from 5 files (search-replace pattern, ~30-50 edits total)
+0. **Phase 0**: Remove COORDINATE_VERBOSE optional verbose mode from /coordinate command (~30min-1hr)
+1. **Phase 1**: Update orchestration-best-practices.md to document formatting features (add 1 section ~80-100 lines)
+2. **Phase 2**: Remove historical language from 3 files (search-replace pattern, ~30-50 edits total)
 3. **Phase 3**: Consolidate progress marker documentation (move scattered mentions to centralized section)
 
-**Files Modified** (3 total, all paths updated for Diataxis structure):
+**Files Modified** (4 total, all paths updated for Diataxis structure):
+- `.claude/commands/coordinate.md` (remove COORDINATE_VERBOSE verbose mode, remove historical language, reference guides/orchestration-best-practices.md)
 - `.claude/docs/guides/orchestration-best-practices.md` (add formatting section, remove historical language)
-- `.claude/commands/coordinate.md` (remove historical language, reference guides/orchestration-best-practices.md)
 - `.claude/docs/workflows/orchestration-guide.md` (remove historical language)
 
 **Files NOT Modified**:
@@ -77,8 +78,49 @@ Research identified three critical issues requiring minimal documentation change
 
 ## Implementation Phases
 
-### Phase 1: Document Formatting Features in orchestration-best-practices.md
+### Phase 0: Remove Verbose Mode from /coordinate Command [COMPLETED]
 dependencies: []
+
+**Objective**: Remove COORDINATE_VERBOSE optional verbose mode to ensure clean, economical implementation
+
+**Complexity**: Low (simple deletion of conditional block)
+
+**Tasks**:
+- [x] Read coordinate.md to locate verbose mode implementation (file: /home/benjamin/.config/.claude/commands/coordinate.md, lines ~1180-1205)
+- [x] Remove the conditional verbose summary block:
+  - [x] Delete `if [ "${COORDINATE_VERBOSE:-false}" = "true" ]; then` condition
+  - [x] Delete detailed summary code (research reports file sizes, plan metadata, standards compliance)
+  - [x] Delete closing `fi` statement
+  - [x] Estimate ~25-30 lines to remove
+- [x] Verify no other references to COORDINATE_VERBOSE in coordinate.md
+- [x] Keep only the concise 8-line summary (already present before verbose block)
+- [x] Verify code syntax correct (no unmatched conditionals)
+
+**Testing**:
+```bash
+# Verify verbose mode code removed
+grep -n "COORDINATE_VERBOSE" /home/benjamin/.config/.claude/commands/coordinate.md
+# Should return no results
+
+# Verify no syntax errors (check for unmatched if/fi)
+bash -n /home/benjamin/.config/.claude/commands/coordinate.md 2>&1 | grep -i "syntax\|unexpected"
+# Should return no errors
+
+# Verify concise summary still present (lines before deletion point)
+grep -A 10 "Workflow complete:" /home/benjamin/.config/.claude/commands/coordinate.md
+# Should show 8-line summary format
+```
+
+**Expected Duration**: 30 minutes - 1 hour
+
+**Phase 0 Completion Requirements**:
+- [x] All phase tasks marked [x]
+- [x] Tests passing (no COORDINATE_VERBOSE references, no syntax errors, concise summary present)
+- [x] Git commit created: `feat(515): complete Phase 0 - Remove verbose mode from /coordinate`
+- [x] Update this plan file with phase completion status
+
+### Phase 1: Document Formatting Features in orchestration-best-practices.md
+dependencies: [0]
 
 **Objective**: Add comprehensive formatting section to orchestration-best-practices.md documenting all Plan 002 features
 
@@ -123,7 +165,7 @@ done
 - [ ] Update this plan file with phase completion status
 
 ### Phase 2: Remove Historical Language from Key Files
-dependencies: [1]
+dependencies: [0, 1]
 
 **Objective**: Convert historical/temporal language to timeless present-tense descriptions in 3 high-impact files (Diataxis structure)
 
@@ -171,7 +213,7 @@ wc -l /home/benjamin/.config/.claude/commands/coordinate.md  # Should be ~1891 l
 - [ ] Update this plan file with phase completion status
 
 ### Phase 3: Consolidate Progress Marker Documentation
-dependencies: [1]
+dependencies: [0, 1]
 
 **Objective**: Move scattered progress marker documentation into single authoritative section in orchestration-best-practices.md
 
@@ -428,6 +470,25 @@ Adjusted Score (documentation overhead): 32.5 × 1.1 = 35.75
 - Final: Run complete regression test suite
 
 ## Revision History
+
+### 2025-10-29 - Revision 3: Add Phase 0 for Verbose Mode Removal
+
+**Changes**: Added new Phase 0 to remove COORDINATE_VERBOSE verbose mode from /coordinate command before documenting
+**Reason**: User requested verbose mode removal from command implementation to ensure clean, economical workflow
+**Modified Sections**:
+- Metadata: Updated phases from 3 to 4, hours from 4-5 to 5-6, scope to include verbose mode removal
+- Overview: Added implementation strategy noting Phase 0 removes verbose mode first
+- Success Criteria: Added two criteria for verbose mode removal and concise summary verification
+- Technical Design: Changed from "Three-Phase" to "Four-Phase Approach", updated files modified count
+- Implementation Phases: Added comprehensive Phase 0 with tasks, testing, and completion requirements
+- Phase Dependencies: Phase 1 now depends on Phase 0, Phases 2-3 depend on Phases 0 and 1
+
+**Phase 0 Details**:
+- Objective: Remove COORDINATE_VERBOSE optional verbose mode (lines ~1180-1205)
+- Duration: 30 minutes - 1 hour
+- Testing: Verify no COORDINATE_VERBOSE references, syntax checks, concise summary validation
+
+**Impact**: Plan now begins with code cleanup (remove verbose mode) before documentation updates, ensuring implementation matches documentation. Total estimated time increased by 1 hour.
 
 ### 2025-10-29 - Revision 2: Remove Optional Verbose Mode
 

@@ -1177,35 +1177,6 @@ should_run_phase 3 || {
   echo "Next: /implement $PLAN_PATH"
   echo ""
 
-  # Optional: Display detailed summary if COORDINATE_VERBOSE=true
-  if [ "${COORDINATE_VERBOSE:-false}" = "true" ]; then
-    echo "Detailed Summary:"
-    echo ""
-    echo "Research Reports:"
-    for report in "${SUCCESSFUL_REPORT_PATHS[@]}"; do
-      FILE_SIZE=$(wc -c < "$report" 2>/dev/null | numfmt --to=iec 2>/dev/null || echo "unknown")
-      echo "  - $(basename $report) ($FILE_SIZE)"
-    done
-    if [ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ]; then
-      echo "  - $(basename $OVERVIEW_PATH)"
-    fi
-    echo ""
-
-    if [ -n "$PLAN_PATH" ] && [ -f "$PLAN_PATH" ]; then
-      echo "Plan Metadata:"
-      PLAN_COMPLEXITY=$(grep "Complexity:" "$PLAN_PATH" | head -1 | cut -d: -f2 | xargs || echo "unknown")
-      echo "  - Complexity: $PLAN_COMPLEXITY"
-      echo "  - Estimated Time: $PLAN_EST"
-      echo "  - Phases: $PHASE_COUNT"
-      echo ""
-    fi
-
-    echo "Standards Compliance:"
-    echo "  ✓ Reports in specs/reports/ (not inline summaries)"
-    echo "  ✓ Plan created via Task tool (not SlashCommand)"
-    echo "  ✓ Summary NOT created (per standards - no implementation)"
-    echo ""
-  fi
 
   exit 0
 }
