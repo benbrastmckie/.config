@@ -64,8 +64,8 @@ docs/
 ├── guides/                      Task-focused how-to guides (17 files)
 │   ├── README.md                How-to guides index
 │   ├── creating-commands.md     Command development guide
-│   ├── creating-agents.md       Agent creation guide
-│   ├── using-agents.md          Agent integration patterns
+│   ├── agent-development-guide.md  Complete agent guide (create, invoke, context, advanced)
+│   ├── using-agents.md          → Redirects to agent-development-guide.md (archived)
 │   ├── standards-integration.md Standards discovery and application
 │   ├── imperative-language-guide.md  MUST/WILL/SHALL usage for required actions
 │   ├── command-patterns.md      Command pattern catalog
@@ -165,7 +165,7 @@ Agent invocations use five context layers to minimize token consumption while ma
 
 **Example**: Traditional invocation (11,500 tokens) → Layered invocation (700 tokens) = 94% reduction
 
-**For Complete Details**: See [Layered Context Architecture](guides/using-agents.md#layered-context-architecture)
+**For Complete Details**: See [Layered Context Architecture](guides/agent-development-guide.md#layered-context-architecture)
 
 ### Artifact Organization
 
@@ -293,7 +293,7 @@ Task-focused guides for accomplishing specific goals. Use when you have a concre
 **Key Documents**:
 - [Creating Commands](guides/creating-commands.md) - Complete command development guide
 - [Creating Agents](guides/creating-agents.md) - Agent creation and design guide
-- [Using Agents](guides/using-agents.md) - Agent invocation and coordination patterns
+- [Using Agents](guides/agent-development-guide.md) - Agent invocation and coordination patterns
 - [Standards Integration](guides/standards-integration.md) - Implementing CLAUDE.md standards discovery
 - [Command Patterns](guides/command-patterns.md) - Reusable command design patterns
 - [Efficiency Guide](guides/efficiency-guide.md) - Performance optimization techniques
@@ -333,11 +333,11 @@ Learning-oriented step-by-step tutorials. Use when you're learning a new feature
 1. [Creating Commands](guides/creating-commands.md) - Complete development guide
 2. [Standards Integration](guides/standards-integration.md) - Using CLAUDE.md standards
 3. [Command Patterns](guides/command-patterns.md) - Reusable patterns
-4. [Using Agents](guides/using-agents.md) - Integrate agents in commands
+4. [Using Agents](guides/agent-development-guide.md) - Integrate agents in commands
 
 ### For Agent Developers
 1. [Creating Agents](guides/creating-agents.md) - Agent development guide
-2. [Using Agents](guides/using-agents.md) - Agent invocation patterns
+2. [Using Agents](guides/agent-development-guide.md) - Agent invocation patterns
 3. [Agent Reference](reference/agent-reference.md) - Existing agent catalog
 
 ### For Contributors
@@ -486,7 +486,7 @@ Before committing:
 **How-To Guides**:
 - [Creating Commands](guides/creating-commands.md) - Command development
 - [Creating Agents](guides/creating-agents.md) - Agent creation
-- [Using Agents](guides/using-agents.md) - Agent integration
+- [Using Agents](guides/agent-development-guide.md) - Agent integration
 - [Standards Integration](guides/standards-integration.md) - Standards usage
 - [Command Patterns](guides/command-patterns.md) - Pattern catalog
 - [Command Examples](guides/command-examples.md) - Command examples
@@ -532,7 +532,7 @@ Before committing:
 
 **Agents**:
 - [Creating Agents](guides/creating-agents.md)
-- [Using Agents](guides/using-agents.md)
+- [Using Agents](guides/agent-development-guide.md)
 - [Agent Reference](reference/agent-reference.md)
 - [Hierarchical Agents](concepts/hierarchical_agents.md)
 
@@ -601,7 +601,7 @@ command-type: primary
 ```
 
 ### Agent Usage
-See: [Using Agents](guides/using-agents.md)
+See: [Using Agents](guides/agent-development-guide.md)
 
 ```yaml
 Task {
@@ -633,7 +633,7 @@ See: [Standards Integration](guides/standards-integration.md)
 ### Orchestration and Workflows
 - [Orchestration Guide](workflows/orchestration-guide.md)
 - [Agent Reference](reference/agent-reference.md)
-- [Using Agents](guides/using-agents.md)
+- [Using Agents](guides/agent-development-guide.md)
 - [Command Reference](reference/command-reference.md)
 
 ### Implementation Planning
@@ -651,7 +651,7 @@ See: [Standards Integration](guides/standards-integration.md)
 
 ### Agent System
 - [Creating Agents](guides/creating-agents.md)
-- [Using Agents](guides/using-agents.md)
+- [Using Agents](guides/agent-development-guide.md)
 - [Agent Reference](reference/agent-reference.md)
 - [Hierarchical Agents](concepts/hierarchical_agents.md)
 - [../agents/README.md](../agents/README.md)

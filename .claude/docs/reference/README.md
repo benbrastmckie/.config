@@ -35,7 +35,7 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 - To discover which commands use a particular agent
 - When designing multi-agent workflows and need to understand agent specializations
 
-**See Also**: [Creating Agents](../guides/creating-agents.md), [Using Agents](../guides/using-agents.md)
+**See Also**: [Creating Agents](../guides/creating-agents.md), [Using Agents](../guides/agent-development-guide.md)
 
 ---
 

@@ -35,7 +35,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - /plan with research integration tutorial
 - Checkpoint recovery tutorial
 
-**See Also**: [Orchestration Guide](orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Using Agents](../guides/using-agents.md), [Development Workflow](../concepts/development-workflow.md)
+**See Also**: [Orchestration Guide](orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Using Agents](../guides/agent-development-guide.md), [Development Workflow](../concepts/development-workflow.md)
 
 ---
 

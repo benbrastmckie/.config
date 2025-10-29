@@ -41,7 +41,7 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ---
 
-### [Using Agents in Commands](using-agents.md)
+### [Using Agents in Commands](agent-development-guide.md)
 **Purpose**: Comprehensive guide for integrating and using specialized agents in the Claude Code workflow system with layered context architecture.
 
 **Use Cases**:
@@ -209,7 +209,7 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ### Integrate an Agent
 1. Review [Agent Reference](../reference/agent-reference.md) for available agents
-2. Follow [Using Agents](using-agents.md) for correct invocation pattern
+2. Follow [Using Agents](agent-development-guide.md) for correct invocation pattern
 3. Reference [Command Patterns](command-patterns.md) for agent chains
 4. Optimize with [Hierarchical Agents](../concepts/hierarchical_agents.md)
 
@@ -243,7 +243,7 @@ guides/
 ├── README.md                         (this file)
 ├── command-development-guide.md      Comprehensive command development (consolidated)
 ├── agent-development-guide.md        Comprehensive agent development (consolidated)
-├── using-agents.md                   Agent integration patterns
+├── agent-development-guide.md                   Agent integration patterns
 ├── using-utility-libraries.md        Utility library usage patterns
 ├── standards-integration.md          CLAUDE.md standards discovery
 ├── command-patterns.md               Reusable implementation patterns
