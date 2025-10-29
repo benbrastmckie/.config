@@ -1,161 +1,119 @@
 # /supervise Phase Reference
 
-## Overview
+This document provides detailed technical documentation for each phase of the `/supervise` workflow orchestration command.
 
-This document provides detailed documentation for each phase in the `/supervise` orchestration workflow. The command executes phases conditionally based on detected workflow scope.
+## Phase Overview
 
-## Phase Transition Diagram
+| Phase | Name | Conditional | Agent | Purpose |
+|-------|------|------------|-------|---------|
+| 0 | Location & Paths | No | None | Pre-calculate artifact paths |
+| 1 | Research | No | research-specialist | Gather information (2-4 parallel agents) |
+| 2 | Planning | Yes | plan-architect | Create implementation plan |
+| 3 | Implementation | Yes | code-writer | Execute implementation |
+| 4 | Testing | Yes | test-runner | Run tests |
+| 5 | Debug | Yes | debug-analyst | Fix test failures |
+| 6 | Documentation | Yes | doc-writer | Create workflow summary |
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                     Phase 0: Initialization                   │
-│  • Detect workflow scope (research/plan/implement/debug)     │
-│  • Calculate all artifact paths                              │
-│  • Create topic directory structure                          │
-└──────────────┬───────────────────────────────────────────────┘
-               │
-               ↓
-┌──────────────────────────────────────────────────────────────┐
-│              Phase 1: Research (2-4 parallel agents)          │
-│  • Invoke specialized research agents                        │
-│  • Mandatory verification: Check files created               │
-│  • Extract metadata for context reduction (95%)              │
-└──────────────┬───────────────────────────────────────────────┘
-               │
-               ↓ (Conditional: research-and-plan or full-implementation)
-┌──────────────────────────────────────────────────────────────┐
-│              Phase 2: Planning (conditional)                  │
-│  • Create implementation plan from research                  │
-│  • Mandatory verification: Plan file exists                  │
-│  • Auto-complexity evaluation for adaptive planning          │
-└──────────────┬───────────────────────────────────────────────┘
-               │
-               ↓ (Conditional: full-implementation only)
-┌──────────────────────────────────────────────────────────────┐
-│          Phase 3: Implementation (conditional)                │
-│  • Execute implementation plan phase-by-phase                │
-│  • Checkpoint recovery between phases                        │
-│  • Wave-based parallel execution (40-60% time savings)       │
-└──────────────┬───────────────────────────────────────────────┘
-               │
-               ↓ (Conditional: full-implementation only)
-┌──────────────────────────────────────────────────────────────┐
-│              Phase 4: Testing (conditional)                   │
-│  • Run project test suite per CLAUDE.md                      │
-│  • Enhanced error reporting for failures                     │
-│  • Triggers Phase 5 if tests fail                            │
-└──────────────┬───────────────────────────────────────────────┘
-               │
-               ├→ (Tests Pass) → Phase 6
-               │
-               ↓ (Tests Fail) → Phase 5
-┌──────────────────────────────────────────────────────────────┐
-│         Phase 5: Debug (conditional on test failure)          │
-│  • Root cause analysis with parallel agents                  │
-│  • Create debug report with findings                         │
-│  • Suggest fixes (does not auto-apply)                       │
-└──────────────┬───────────────────────────────────────────────┘
-               │
-               ↓
-┌──────────────────────────────────────────────────────────────┐
-│       Phase 6: Documentation (conditional on implementation)  │
-│  • Update relevant documentation                             │
-│  • Create implementation summary                             │
-│  • Link all artifacts (reports, plan, summary)               │
-└──────────────────────────────────────────────────────────────┘
-```
+## Phase 0: Location and Path Pre-Calculation
 
-## Phase 0: Project Location and Path Pre-Calculation
+### Purpose
 
-### Objective
+Establish topic directory structure and pre-calculate all artifact paths before any agent invocations.
 
-Establish topic directory structure and calculate all artifact paths before any agent invocations.
+### Execution Condition
 
-### Pattern
+**Always executes** - Required for all workflow scopes
 
-Utility-based location detection → directory creation → path export
+### Implementation Pattern
 
-### Key Features
+1. Parse workflow description from command arguments
+2. Detect workflow scope (research-only, research-and-plan, full-implementation, debug-only)
+3. Source required utility libraries
+4. Calculate topic directory path
+5. Create directory structure
+6. Calculate and export all artifact paths
 
-- **Optimization**: Uses deterministic bash utilities (topic-utils.sh, detect-project-dir.sh) for 85-95% token reduction and 20x+ speedup compared to agent-based detection
-- **Critical Requirement**: ALL paths MUST be calculated before Phase 1 begins
-- **Checkpoint Resume**: Checks for existing checkpoint and auto-resumes from last completed phase
+### Key Functions Used
 
-### Steps
-
-**STEP 1**: Parse workflow description from command arguments
-- Validate workflow description provided
-- Check for existing checkpoint (auto-resume capability)
-- Display resume information if checkpoint found
-
-**STEP 2**: Detect workflow scope
-- Analyze description to determine: research-only, research-and-plan, full-implementation, or debug-only
-- Map scope to phase execution list
-- Export scope and phase list for conditional execution
-
-**STEP 3**: Initialize workflow paths using consolidated function
-- Use workflow-initialization.sh library for unified path calculation
-- Implements 3-step pattern: scope detection → path pre-calculation → directory creation
-- Consolidates 225+ lines to ~10 lines
+- `detect_workflow_scope()` - Determine workflow type from description
+- `calculate_topic_dir()` - Generate topic directory path
+- `calculate_report_path()` - Generate research report paths
+- `calculate_plan_path()` - Generate implementation plan path
+- `calculate_summary_path()` - Generate workflow summary path
 
 ### Success Criteria
 
-- Workflow scope correctly detected (4 possible scopes)
-- All artifact paths calculated and exported
-- Topic directory created
-- Phase execution plan established
-- Checkpoint resume working (if applicable)
+- Topic directory created successfully
+- All required paths calculated and exported
+- Workflow scope correctly detected
+
+### Path Variables Exported
+
+```bash
+TOPIC_PATH           # specs/{NNN_topic}/
+RESEARCH_SUBDIR      # specs/{NNN_topic}/reports/
+PLANS_SUBDIR         # specs/{NNN_topic}/plans/
+SUMMARIES_SUBDIR     # specs/{NNN_topic}/summaries/
+DEBUG_SUBDIR         # specs/{NNN_topic}/debug/
+
+REPORT_PATHS[]       # Array of research report paths
+PLAN_PATH            # Implementation plan path
+SUMMARY_PATH         # Workflow summary path
+```
 
 ## Phase 1: Research
 
-### Objective
+### Purpose
 
-Invoke 2-4 specialized research agents in parallel to gather information on the workflow topic.
+Gather information through parallel research agents (2-4 agents based on complexity).
 
-### Pattern
+### Execution Condition
 
-Parallel agent invocation → mandatory verification → metadata extraction
+**Always executes** - Required for all workflow scopes
 
-### Key Features
+### Implementation Pattern
 
-- **Parallelization**: 2-4 research agents run simultaneously (40-60% time savings)
-- **Mandatory Verification**: Check that all agents create expected files
-- **Metadata Extraction**: Extract title + 50-word summary for 95% context reduction
-- **Partial Failure Handling**: Continue if ≥50% of agents succeed
-- **Auto-Recovery**: Single retry for transient failures (timeouts, file locks)
+1. Determine research complexity (2-4 based on workflow description)
+2. Generate research topic questions
+3. Calculate report paths for each research agent
+4. Invoke research agents in parallel via Task tool
+5. Verify all research reports created
+6. Extract metadata from reports (optional overview synthesis for research-only workflows)
 
-### Agent Invocation Pattern
+### Agent Used
 
-**CRITICAL**: Use Task tool with behavioral injection, NOT SlashCommand
+**research-specialist** (`.claude/agents/research-specialist.md`)
+
+### Agent Invocation
 
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Research [subtopic]"
+  description: "Research topic N of M"
   prompt: "
-    Read and follow ALL behavioral guidelines from: .claude/agents/research-specialist.md
-
-    **Workflow-Specific Context**:
-    - Report Path: ${REPORT_PATH} (absolute path, pre-calculated)
-    - Research Topic: [specific subtopic]
-    - Project Context: [path to CLAUDE.md]
-
-    Execute research following all guidelines in behavioral file.
-    Return: REPORT_CREATED: ${REPORT_PATH}
+    Read behavioral guidelines: .claude/agents/research-specialist.md
+    
+    Research topic: [specific question]
+    Output path: [pre-calculated path]
+    
+    Create comprehensive research report.
+    Return: REPORT_CREATED: [path]
   "
 }
 ```
 
 ### Verification Checkpoint
 
+**MANDATORY**: All research report files must exist before continuing to Phase 2
+
+**Verification pattern** (fail-fast):
 ```bash
-# Mandatory verification after all agents complete
-for report_path in "${REPORT_PATHS[@]}"; do
-  if [ ! -f "$report_path" ]; then
-    # Enhanced error reporting with location and recovery suggestions
-    echo "ERROR: Research agent failed to create expected file"
-    echo "Expected: $report_path"
-    suggest_recovery "missing_file" "$report_path"
+for i in $(seq 1 $RESEARCH_COMPLEXITY); do
+  REPORT_PATH="${REPORT_PATHS[$i-1]}"
+  if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
+    # Success - report exists
+  else
+    # Failure - structured 5-section diagnostic
     exit 1
   fi
 done
@@ -163,316 +121,447 @@ done
 
 ### Success Criteria
 
-- All research agents invoked in parallel
-- File creation rate: 100% (with single retry for transient failures)
-- Metadata extracted from all reports (95% context reduction)
-- Partial failure handling: ≥50% success threshold
-- Progress markers emitted at phase transitions
+- All research reports created successfully
+- Reports contain valid content (>200 bytes, markdown header present)
+- At least 50% of research agents succeeded (partial failure handling)
 
-## Phase 2: Planning (Conditional)
+### Conditional Behavior
 
-### Objective
+**research-only workflow**: Creates OVERVIEW.md to synthesize findings
+
+**All other workflows**: No overview (planning agent will synthesize)
+
+## Phase 2: Planning
+
+### Purpose
 
 Create implementation plan based on research findings.
 
-### Pattern
-
-Metadata-based planning → mandatory verification → complexity evaluation
-
 ### Execution Condition
 
-Runs only for: research-and-plan, full-implementation workflows
+**Conditional** - Executes if:
+- Workflow scope is `research-and-plan` OR
+- Workflow scope is `full-implementation`
 
-### Key Features
+**Skips if**:
+- Workflow scope is `research-only`
+- Workflow scope is `debug-only`
 
-- **Metadata-Based Context**: Uses extracted metadata (250 tokens) instead of full reports (5,000 tokens)
-- **Adaptive Planning**: Auto-evaluates plan complexity (expansion threshold: 8.0)
-- **Mandatory Verification**: Check that plan file created
-- **Complexity Tracking**: Log complexity score for adaptive replanning
+### Implementation Pattern
 
-### Agent Invocation Pattern
+1. Check execution condition
+2. Prepare planning context (research report paths)
+3. Invoke plan-architect agent with context
+4. Verify plan file created
+5. Extract plan metadata (complexity, phase count)
 
-```yaml
-Task {
-  subagent_type: "Plan"
-  description: "Create implementation plan"
-  prompt: "
-    Read and follow ALL behavioral guidelines from: .claude/agents/plan-architect.md
+### Agent Used
 
-    **Workflow-Specific Context**:
-    - Plan Path: ${PLAN_PATH} (absolute path, pre-calculated)
-    - Research Reports: [array of report metadata]
-    - Project Standards: [path to CLAUDE.md]
+**plan-architect** (`.claude/agents/plan-architect.md`)
 
-    Execute planning following all guidelines in behavioral file.
-    Return: PLAN_CREATED: ${PLAN_PATH}
-  "
-}
-```
-
-### Success Criteria
-
-- Plan agent invoked with metadata context (not full reports)
-- Plan file created and verified
-- Complexity score calculated
-- Auto-expansion triggered if complexity > 8.0
-- Ready for /implement execution
-
-## Phase 3: Implementation (Conditional)
-
-### Objective
-
-Execute implementation plan phase-by-phase with checkpoint recovery.
-
-### Pattern
-
-Wave-based parallel execution → checkpoint after each phase → testing between phases
-
-### Execution Condition
-
-Runs only for: full-implementation workflows
-
-### Key Features
-
-- **Wave-Based Execution**: Parallel implementation of independent phases (40-60% time savings)
-- **Checkpoint Recovery**: Save state after each phase, resume on failure
-- **Adaptive Replanning**: Automatic plan revision if complexity/failures detected
-- **Phase Dependencies**: Respect phase dependencies for correct execution order
-
-### Agent Invocation Pattern
+### Agent Invocation
 
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Implement Phase N"
+  description: "Create implementation plan"
   prompt: "
-    Read and follow ALL behavioral guidelines from: .claude/agents/implementation-executor.md
-
-    **Workflow-Specific Context**:
-    - Plan Path: ${PLAN_PATH}
-    - Phase Number: ${PHASE_NUM}
-    - Phase Name: ${PHASE_NAME}
-    - Working Directory: [project root]
-
-    Execute implementation following all guidelines in behavioral file.
-    Return: PHASE_COMPLETED: ${PHASE_NUM}
+    Read behavioral guidelines: .claude/agents/plan-architect.md
+    
+    Plan path: [pre-calculated path]
+    Research reports: [list of paths]
+    Project standards: [CLAUDE.md path]
+    
+    Create implementation plan following project standards.
+    Return: PLAN_CREATED: [path]
   "
 }
 ```
 
-### Success Criteria
+### Verification Checkpoint
 
-- All plan phases executed in wave-based parallel manner
-- Checkpoints saved after each phase
-- Adaptive replanning triggered if needed (max 2 replans per phase)
-- All tests passed before marking phase complete
-- Implementation summary created
+**MANDATORY**: Plan file must exist before continuing to Phase 3
 
-## Phase 4: Testing (Conditional)
-
-### Objective
-
-Run project test suite according to CLAUDE.md testing protocols.
-
-### Pattern
-
-Test discovery → test execution → enhanced error reporting
-
-### Execution Condition
-
-Runs only for: full-implementation workflows
-
-### Key Features
-
-- **Standards-Based**: Uses test commands from CLAUDE.md
-- **Enhanced Error Reporting**: Extract error location, categorize error type
-- **Conditional Debug**: Triggers Phase 5 if tests fail
-- **Auto-Recovery**: Single retry for transient test failures
-
-### Test Execution Pattern
-
+**Verification pattern** (fail-fast):
 ```bash
-# Discover test command from CLAUDE.md
-TEST_COMMAND=$(discover_test_command)
-
-# Execute with enhanced error reporting
-if ! retry_with_backoff 1 1000 $TEST_COMMAND; then
-  # Extract error details
-  ERROR_TYPE=$(detect_error_type "$TEST_OUTPUT")
-  ERROR_LOCATION=$(extract_location "$TEST_OUTPUT")
-
-  # Generate recovery suggestions
-  suggest_recovery "$ERROR_TYPE" "$TEST_OUTPUT"
-
-  # Trigger Phase 5 (Debug)
-  TRIGGER_DEBUG=true
-  emit_progress "4" "Tests failed - triggering debug phase"
+if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
+  # Success - plan exists
 else
-  emit_progress "4" "All tests passed"
+  # Failure - structured 5-section diagnostic
+  exit 1
 fi
 ```
 
 ### Success Criteria
 
-- Test command discovered from CLAUDE.md
-- Tests executed with retry for transient failures
-- Enhanced error reporting on failures (location, type, suggestions)
-- Phase 5 triggered conditionally on test failure
-- Progress markers emitted
+- Plan file created successfully
+- Plan contains metadata section
+- Plan contains at least 3 phases
+- Plan complexity score calculated
+
+## Phase 3: Implementation
+
+### Purpose
+
+Execute implementation plan phase-by-phase.
+
+### Execution Condition
+
+**Conditional** - Executes if:
+- Workflow scope is `full-implementation`
+
+**Skips if**:
+- Workflow scope is `research-only`
+- Workflow scope is `research-and-plan`
+- Workflow scope is `debug-only`
+
+### Implementation Pattern
+
+1. Check execution condition
+2. Invoke code-writer agent with plan and context
+3. Verify implementation artifacts directory created
+4. Check plan completion markers
+5. Extract implementation status
+
+### Agent Used
+
+**code-writer** (`.claude/agents/code-writer.md`)
+
+### Agent Invocation
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Execute implementation plan"
+  prompt: "
+    Read behavioral guidelines: .claude/agents/code-writer.md
+    
+    Plan file: [path]
+    Implementation artifacts: [directory path]
+    
+    Execute implementation following plan phases.
+    Return: IMPLEMENTATION_STATUS: [complete|partial]
+  "
+}
+```
+
+### Verification Checkpoint
+
+**MANDATORY**: Implementation artifacts directory must exist
+
+**Verification pattern** (fail-fast):
+```bash
+if [ ! -d "$IMPL_ARTIFACTS" ]; then
+  # Failure - directory not created
+  exit 1
+else
+  # Success - directory exists
+fi
+```
+
+### Success Criteria
+
+- Implementation artifacts directory exists
+- Plan updated with completion markers
+- Implementation status reported (complete or partial)
+
+## Phase 4: Testing
+
+### Purpose
+
+Run project tests to verify implementation.
+
+### Execution Condition
+
+**Conditional** - Executes if:
+- Workflow scope is `full-implementation`
+
+**Skips if**:
+- Workflow scope is `research-only`
+- Workflow scope is `research-and-plan`
+- Workflow scope is `debug-only`
+
+### Implementation Pattern
+
+1. Check execution condition
+2. Invoke test-runner agent
+3. Parse test results (status, total, passed, failed)
+4. Set flag for Phase 5 based on test status
+
+### Agent Used
+
+**test-runner** (`.claude/agents/test-runner.md`)
+
+### Agent Invocation
+
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Run project tests"
+  prompt: "
+    Read behavioral guidelines: .claude/agents/test-runner.md
+    
+    Test command: [from CLAUDE.md or auto-detect]
+    
+    Run tests and report results.
+    Return: TEST_STATUS: [passing|failing]
+  "
+}
+```
+
+### Verification Checkpoint
+
+**OPTIONAL**: Test status recorded for Phase 5 decision
+
+**Behavior**:
+- Tests passing → Skip Phase 5
+- Tests failing → Execute Phase 5
+
+### Success Criteria
+
+- Test status determined (passing or failing)
+- Test metrics captured (total, passed, failed)
 
 ## Phase 5: Debug (Conditional)
 
-### Objective
+### Purpose
 
-Perform root cause analysis for test failures or reported bugs.
-
-### Pattern
-
-Parallel hypothesis testing → debug report generation → fix suggestions
+Analyze test failures and apply fixes iteratively.
 
 ### Execution Condition
 
-Runs for:
-- debug-only workflows
-- full-implementation workflows with test failures
+**Conditional** - Executes if:
+- Tests failed in Phase 4 OR
+- Workflow scope is `debug-only`
 
-### Key Features
+**Skips if**:
+- Tests passing in Phase 4
+- No implementation occurred
 
-- **Parallel Analysis**: 2-3 debug agents investigate different hypotheses
-- **Structured Output**: Debug report with findings, root cause, suggested fixes
-- **Non-Destructive**: Suggests fixes but does not auto-apply
-- **Integration**: Links to test failure output and implementation artifacts
+### Implementation Pattern
 
-### Agent Invocation Pattern
+1. Check execution condition
+2. Iterate debug cycle (max 3 iterations):
+   a. Invoke debug-analyst to analyze failures
+   b. Verify debug report created
+   c. Invoke code-writer to apply fixes
+   d. Re-run tests
+   e. Check if tests now passing
+3. Exit loop if tests pass or max iterations reached
+
+### Agents Used
+
+**debug-analyst** (`.claude/agents/debug-analyst.md`)
+**code-writer** (`.claude/agents/code-writer.md`)
+**test-runner** (`.claude/agents/test-runner.md`)
+
+### Agent Invocation (Debug Analysis)
 
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Debug root cause analysis"
+  description: "Analyze test failures"
   prompt: "
-    Read and follow ALL behavioral guidelines from: .claude/agents/debug-analyst.md
-
-    **Workflow-Specific Context**:
-    - Debug Report Path: ${DEBUG_REPORT_PATH} (absolute path, pre-calculated)
-    - Error Description: ${ERROR_MSG}
-    - Test Output: ${TEST_OUTPUT}
-    - Implementation Files: [modified files]
-
-    Execute debug analysis following all guidelines in behavioral file.
-    Return: DEBUG_REPORT_CREATED: ${DEBUG_REPORT_PATH}
+    Read behavioral guidelines: .claude/agents/debug-analyst.md
+    
+    Test output: [test results]
+    Debug report path: [pre-calculated path]
+    
+    Analyze failures and propose fixes.
+    Return: DEBUG_REPORT_CREATED: [path]
   "
 }
 ```
 
+### Verification Checkpoint
+
+**MANDATORY**: Debug report must exist before applying fixes
+
+**Verification pattern** (fail-fast):
+```bash
+if [ -f "$DEBUG_REPORT" ] && [ -s "$DEBUG_REPORT" ]; then
+  # Success - debug report exists
+else
+  # Failure - structured 5-section diagnostic
+  exit 1
+fi
+```
+
 ### Success Criteria
 
-- Debug agents invoked with error context
-- Root cause analysis completed
-- Debug report created with structured findings
-- Fix suggestions provided (not auto-applied)
-- Manual review required before applying fixes
+- Debug report created for each iteration
+- Fixes applied successfully
+- Tests eventually pass (or max iterations reached)
 
-## Phase 6: Documentation (Conditional)
+### Iteration Limits
 
-### Objective
+- **Maximum iterations**: 3
+- **Exit conditions**: Tests pass OR max iterations reached
 
-Update project documentation and create implementation summary.
+## Phase 6: Documentation
 
-### Pattern
+### Purpose
 
-Documentation agent → summary generation → artifact linking
+Create workflow summary documenting all artifacts and results.
 
 ### Execution Condition
 
-Runs only for: full-implementation workflows (only if implementation occurred)
+**Conditional** - Executes if:
+- Implementation occurred in Phase 3
 
-### Key Features
+**Skips if**:
+- Workflow scope is `research-only`
+- Workflow scope is `research-and-plan`
+- No implementation in Phase 3
 
-- **Selective Updates**: Only updates relevant documentation
-- **Summary Generation**: Links all artifacts (reports, plan, implementation)
-- **Cross-Referencing**: Updates reports with implementation notes
-- **Standards-Based**: Follows documentation standards from CLAUDE.md
+### Implementation Pattern
 
-### Agent Invocation Pattern
+1. Check execution condition (implementation occurred)
+2. Prepare summary context (all artifact paths, statuses)
+3. Invoke doc-writer agent
+4. Verify summary file created
+
+### Agent Used
+
+**doc-writer** (`.claude/agents/doc-writer.md`)
+
+### Agent Invocation
 
 ```yaml
 Task {
   subagent_type: "general-purpose"
-  description: "Update documentation"
+  description: "Create workflow summary"
   prompt: "
-    Read and follow ALL behavioral guidelines from: .claude/agents/documentation-specialist.md
-
-    **Workflow-Specific Context**:
-    - Summary Path: ${SUMMARY_PATH} (absolute path, pre-calculated)
-    - Plan Path: ${PLAN_PATH}
-    - Report Paths: [array of report paths]
-    - Modified Files: [implementation changes]
-
-    Execute documentation update following all guidelines in behavioral file.
-    Return: SUMMARY_CREATED: ${SUMMARY_PATH}
+    Read behavioral guidelines: .claude/agents/doc-writer.md
+    
+    Summary path: [pre-calculated path]
+    Plan file: [path]
+    Research reports: [list]
+    Implementation artifacts: [directory]
+    Test status: [passing|failing]
+    
+    Create workflow summary linking all artifacts.
+    Return: SUMMARY_CREATED: [path]
   "
 }
 ```
 
+### Verification Checkpoint
+
+**MANDATORY**: Summary file must exist to complete workflow
+
+**Verification pattern** (fail-fast):
+```bash
+if [ -f "$SUMMARY_PATH" ] && [ -s "$SUMMARY_PATH" ]; then
+  # Success - summary exists
+else
+  # Failure - structured 5-section diagnostic
+  exit 1
+fi
+```
+
 ### Success Criteria
 
-- Documentation updated per CLAUDE.md standards
-- Implementation summary created
-- All artifacts cross-referenced (reports ← summary → plan)
-- Summary includes: implementation overview, test results, lessons learned
-- Ready for review and potential PR creation
+- Summary file created successfully
+- Summary links all workflow artifacts
+- Summary documents implementation results
 
-## Success Criteria (Workflow-Level)
+## Fail-Fast Error Handling
 
-### Architectural Excellence
+All verification checkpoints use the **fail-fast pattern** with structured diagnostics:
 
-- Pure orchestration: Zero SlashCommand tool invocations
-- Phase 0 role clarification: Explicit orchestrator vs executor separation
-- Workflow scope detection: Correctly identifies 4 workflow patterns
-- Conditional phase execution: Skips inappropriate phases based on scope
-- Single working path: No fallback file creation mechanisms
-- Fail-fast behavior: Clear error messages, immediate termination on failure
+### 5-Section Diagnostic Format
 
-### Enforcement Standards
+1. **ERROR**: Clear description of what failed
+2. **Expected/Found**: What was supposed to happen vs what actually happened
+3. **DIAGNOSTIC INFORMATION**: Paths, directory status, agent details
+4. **Diagnostic Commands**: Example commands to debug the issue
+5. **Most Likely Causes**: Common reasons for this failure
 
-- Imperative language ratio ≥95%: MUST/WILL/SHALL for all required actions
-- Step-by-step enforcement: STEP 1/2/3 pattern in all agent templates
-- Mandatory verification: Explicit checkpoints after every file operation
-- 100% file creation rate with auto-recovery: Single retry for transient failures
-- Minimal retry infrastructure: Single-retry strategy (not multi-attempt loops)
+### Example Diagnostic Output
 
-### Performance Targets
+```
+❌ ERROR [Phase 1, Research]: Report file verification failed
+   Expected: File exists and has content
+   Found: File does not exist
 
-- File size: 2,000-2,500 lines (achieved)
-- Context usage: <25% throughout workflow
-- Time efficiency: 15-25% faster for non-implementation workflows
-- Code coverage: ≥80% test coverage for scope detection logic
-- Recovery rate: >95% for transient errors (timeouts, file locks)
-- Performance overhead: <5% for recovery infrastructure
-- Checkpoint resume: Seamless auto-resume from phase boundaries
+DIAGNOSTIC INFORMATION:
+  - Expected path: /path/to/report.md
+  - Directory: /path/to/reports/
+  - Agent: research-specialist (agent 1/3)
 
-### Auto-Recovery Features
+Directory Status:
+  ✓ Reports directory exists (2 files)
+  Recent files:
+    -rw-r--r-- 1 user user 4.2K Oct 28 10:30 001_report.md
 
-- Transient error auto-recovery: Single retry for timeouts and file locks
-- Permanent error fail-fast: Immediate termination with enhanced error reporting
-- Error location extraction: Parse file:line from error messages
-- Specific error type detection: Categorize into 4 types (timeout, syntax, dependency, unknown)
-- Recovery suggestions: Context-specific actionable guidance on failures
-- Partial research failure handling: ≥50% success threshold allows continuation
-- Progress markers: PROGRESS: [Phase N] emitted at phase transitions
-- Checkpoint save/resume: Phase-boundary checkpoints with auto-resume
+Diagnostic Commands:
+  # Check directory and permissions
+  ls -la /path/to/reports/
+  # Check agent behavioral file
+  cat .claude/agents/research-specialist.md | head -50
+  # Review agent invocation above for errors
 
-### Deficiency Resolution
+Most Likely Causes:
+  1. Agent failed to write file (check agent output above for errors)
+  2. Path mismatch (agent used different path than expected)
+  3. Permission denied (run diagnostic commands to verify)
+```
 
-- Research agents create files on first attempt (vs inline summaries)
-- Zero SlashCommand usage for planning/implementation (pure Task tool)
-- Summaries only created when implementation occurs (not for research-only)
+## Partial Failure Handling
 
-## Related Documentation
+**Phase 1 (Research) Only**: Allows continuation if ≥50% of parallel agents succeed
+
+**All Other Phases**: Require 100% success (fail-fast on any error)
+
+### Research Partial Failure Logic
+
+```bash
+if [ $VERIFICATION_FAILURES -gt 0 ]; then
+  DECISION=$(handle_partial_research_failure $RESEARCH_COMPLEXITY $SUCCESSFUL_REPORT_COUNT)
+  if [ "$DECISION" == "terminate" ]; then
+    exit 1
+  fi
+  # Continue with partial results
+fi
+```
+
+**Termination Condition**: Less than 50% of research agents succeeded
+
+**Continuation Condition**: At least 50% of research agents succeeded
+
+## Checkpoint Recovery
+
+The command supports resumable workflows via checkpoints:
+
+### Checkpoint Saves
+
+- After Phase 1: Research complete
+- After Phase 2: Planning complete
+- After Phase 3: Implementation complete
+- After Phase 4: Testing complete
+- After Phase 5: Debug complete
+
+### Checkpoint Data
+
+```json
+{
+  "workflow_scope": "full-implementation",
+  "current_phase": "3",
+  "research_reports": ["path1", "path2"],
+  "plan_path": "path/to/plan.md",
+  "impl_artifacts": "path/to/artifacts/",
+  "test_status": "passing"
+}
+```
+
+### Resume Behavior
+
+Currently, checkpoints are saved but automatic resume is not yet implemented. Checkpoints are cleaned up on successful workflow completion.
+
+## See Also
 
 - [/supervise Usage Guide](../guides/supervise-guide.md) - Usage patterns and examples
-- [Command Reference](command-reference.md) - All available commands
-- [Orchestration Troubleshooting](../guides/orchestration-troubleshooting.md) - Advanced debugging
-- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Agent invocation pattern
-- [Verification-Fallback Pattern](../concepts/patterns/verification-fallback.md) - Auto-recovery pattern
-- [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md) - Resume capability
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Agent invocation details
+- [Verification-Fallback Pattern](../concepts/patterns/verification-fallback.md) - Fail-fast error handling
+- [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md) - State preservation

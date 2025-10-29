@@ -132,42 +132,7 @@ Phase 5: Debug (conditional - only if tests fail)
 Phase 6: Documentation (conditional - only if implementation occurred)
 ```
 
-### Workflow Scope Types
-
-The command detects the workflow type and executes only the appropriate phases:
-
-1. **research-only**: Phases 0-1 only
-   - Keywords: "research [topic]" without "plan" or "implement"
-   - Use case: Pure exploratory research
-   - No plan created, no summary
-
-2. **research-and-plan**: Phases 0-2 only (MOST COMMON)
-   - Keywords: "research...to create plan", "analyze...for planning"
-   - Use case: Research to inform planning
-   - Creates research reports + implementation plan
-   - No summary (no implementation)
-
-3. **full-implementation**: Phases 0-4, 6
-   - Keywords: "implement", "build", "add feature"
-   - Use case: Complete feature development
-   - Phase 5 conditional on test failures
-   - Creates all artifacts including summary
-
-4. **debug-only**: Phases 0, 1, 5 only
-   - Keywords: "fix [bug]", "debug [issue]", "troubleshoot [error]"
-   - Use case: Bug fixing without new implementation
-   - No new plan or summary
-
-### Performance Targets
-
-- **Context Usage**: <25% throughout workflow
-- **File Creation Rate**: 100% with auto-recovery (single retry for transient failures)
-- **Recovery Rate**: >95% for transient errors (timeouts, file locks)
-- **Performance Overhead**: <5% for recovery infrastructure
-- **Enhanced Error Reporting**:
-  - Error location extraction accuracy: >90%
-  - Error type categorization accuracy: >85%
-  - Error reporting overhead: <30ms per error (negligible)
+**For workflow scope types, performance targets, and usage examples, see the guides referenced above.**
 
 ## Fail-Fast Error Handling
 
