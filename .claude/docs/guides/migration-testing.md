@@ -490,7 +490,7 @@ Store all test logs in `/tmp/` with descriptive names:
 - [Execution Enforcement Guide](./execution-enforcement-guide.md) - Complete migration process, enforcement patterns, validation techniques
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 0 and 0.5 definitions
 - [Agent Reference](../../agents/README.md) - Agent catalog and usage
-- [Command Reference](../.claude/commands/README.md) - Command catalog and usage
+- [Command Reference](../../commands/README.md) - Command catalog and usage
 
 ---
 

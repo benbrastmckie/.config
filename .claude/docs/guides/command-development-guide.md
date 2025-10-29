@@ -1985,7 +1985,7 @@ Commands should implement these patterns from the [Patterns Catalog](../concepts
 - [Command Quick Reference](../reference/command-reference.md) - Quick lookup for all commands
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Architecture standards for commands/agents
 - [Agent Reference](../reference/agent-reference.md) - Quick agent reference
-- [Commands README](../.claude/commands/README.md) - Complete command list and navigation
+- [Commands README](../../commands/README.md) - Complete command list and navigation
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Multi-agent coordination
 
 ---

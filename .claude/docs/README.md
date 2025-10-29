@@ -599,7 +599,7 @@ Before committing:
 
 - [← Parent Directory](../README.md)
 - [agents/](../agents/README.md) - Agent definitions
-- [commands/](../.claude/commands/README.md) - Command definitions
+- [commands/](../../commands/README.md) - Command definitions
 - [tts/](../tts/README.md) - TTS implementation
 - [hooks/](../hooks/README.md) - Hook scripts
 - [lib/](../lib/README.md) - Shared utilities
@@ -708,7 +708,7 @@ See: [Standards Integration](guides/standards-integration.md)
 - [Creating Commands](guides/command-development-guide.md)
 - [Command Reference](reference/command-reference.md)
 - [Command Patterns](guides/command-patterns.md)
-- [../commands/README.md](../.claude/commands/README.md)
+- [../commands/README.md](../../commands/README.md)
 
 ### TTS System
 - [TTS Integration Guide](workflows/tts-integration-guide.md)

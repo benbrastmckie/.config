@@ -1822,7 +1822,7 @@ Task {
 }
 ```
 
-**For Extended Research Methodologies**: See [Agent Patterns](../docs/agent-patterns.md#research-specialist-advanced) for advanced techniques.
+**For Extended Research Methodologies**: See [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) for advanced techniques.
 ```
 
 ---
@@ -1985,7 +1985,7 @@ This section demonstrates correct execution-critical content:
 
 This document should be read in conjunction with:
 - [Command Patterns](../guides/command-patterns.md): Common execution patterns across commands
-- [Agent Patterns](../guides/agent-patterns.md): Agent invocation and coordination patterns
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md): Agent invocation and coordination patterns
 - [Testing Standards](../guides/testing-standards.md): Validation and testing requirements
 - [Documentation Standards](../../../CLAUDE.md#documentation-policy): General documentation guidelines
 

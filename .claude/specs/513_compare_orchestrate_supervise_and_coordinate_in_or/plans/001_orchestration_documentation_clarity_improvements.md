@@ -4,10 +4,12 @@
 - **Date**: 2025-10-28
 - **Feature**: Improve orchestration command documentation clarity
 - **Scope**: .claude/docs/ documentation updates for /orchestrate, /supervise, and /coordinate
-- **Estimated Phases**: 5
+- **Estimated Phases**: 4 (reduced from 5)
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - /home/benjamin/.config/.claude/specs/513_compare_orchestrate_supervise_and_coordinate_in_or/reports/001_compare_orchestrate_supervise_and_coordinate_in_or/OVERVIEW.md
+- **Aligned With**:
+  - /home/benjamin/.config/.claude/specs/509_use_homebenjaminconfigclaudespecs508_research_best/plans/001_use_homebenjaminconfigclaudespecs508_research_best_plan.md (documentation refactor principles)
 
 ## Overview
 
@@ -17,167 +19,215 @@ This plan improves the documentation in `.claude/docs/` to clearly communicate t
 
 ## Success Criteria
 - [ ] Clear command selection guidance added to appropriate locations
-- [ ] Redundant or conflicting information removed
+- [ ] Redundant or conflicting information removed (target: eliminate redundancy in 3-5 files)
 - [ ] Simple decision tree for users to choose the right command
 - [ ] File size complexities accurately communicated
 - [ ] Unique features of each command clearly documented
 - [ ] CLAUDE.md orchestration section updated for clarity
 - [ ] All documentation cross-references validated
+- [ ] Selection guide integrated with orchestration-best-practices.md (created in Plan 509)
+- [ ] Timeless documentation maintained (no historical markers or date references)
+- [ ] All archived content includes redirect READMEs
 
 ## Technical Design
 
-### Current State Analysis
+### Current State Analysis (Updated 2025-10-29)
 1. **CLAUDE.md** (lines 360-373): Has basic command descriptions but lacks clear selection guidance
-2. **orchestration-reference.md** (990 lines): Comprehensive but may contain outdated comparison data
-3. **command-reference.md** (586 lines): Has individual command entries but no comparison
-4. **orchestration-troubleshooting.md** (832 lines): Focuses on troubleshooting, mentions all three commands
+2. **orchestration-reference.md** (~990 lines): CONSOLIDATED in Plan 509 Phase 2 (originally ~1,800 lines in plan, actual result ~990)
+3. **orchestration-best-practices.md** (1,113 lines): CREATED in Plan 509 Phase 4, documents unified 7-phase workflow but does NOT yet include command selection section
+4. **command-reference.md** (~586 lines): Has individual command entries but no command comparison
+5. **orchestration-troubleshooting.md** (~832 lines): Focuses on troubleshooting, mentions all three commands
+
+**Impact of Plan 509 Refactor** (Completed):
+- Phase 2 consolidated orchestration reference docs with significant size reduction
+- Phase 4 created unified best practices guide (1,113 lines) with 7-phase workflow documentation
+- Phase 5 added "I Want To..." navigation and decision trees throughout docs
+- Phase 7 completed all validation and documentation updates
+- **This plan (513) builds on those foundations**: No command selection section exists yet in any file
 
 ### Documentation Strategy
 **Core Principle**: Single source of truth for comparison → Reference it, don't duplicate
 
-**Proposed Structure**:
-1. **Quick Selection Guide** (NEW): `.claude/docs/quick-reference/orchestration-command-selection.md`
-   - ~150-200 lines
-   - Decision tree visual
-   - Feature comparison matrix
-   - Use case recommendations
+**Proposed Structure** [REVISED 2025-10-29]:
+1. **orchestration-best-practices.md Updates** (Phase 1): Add command selection section to existing unified guide
+   - Current: 1,113 lines with 7-phase workflow documentation
+   - Add: ~200-250 lines for command selection section
+   - Content: Decision tree, feature comparison matrix, use case recommendations
+   - Position: Early in document (after Overview, before detailed phase documentation)
+   - Target: ~1,300-1,350 lines total
 
-2. **CLAUDE.md Updates**: Add cross-reference to selection guide, simplify inline descriptions
+2. **CLAUDE.md Updates** (Phase 2): Add cross-reference to orchestration-best-practices.md command selection section
+   - Simplify inline orchestration command descriptions
+   - Add prominent link to command selection section
 
-3. **orchestration-reference.md**: Add command comparison section at top, reference research findings
+3. **orchestration-reference.md Updates** (Phase 3): Ensure single cross-reference to command selection section
+   - Current: ~990 lines (consolidated in Plan 509)
+   - Add: Prominent link to orchestration-best-practices.md command selection section
+   - Verify: No redundant comparison content remains
 
-4. **command-reference.md**: Add "see also" links to selection guide for each orchestration command
+4. **command-reference.md Updates** (Phase 4): Add "see also" links to orchestration-best-practices.md command selection
+   - Update /orchestrate, /coordinate, /supervise entries
+   - Add file size information for each command
+
+**Rationale**: Plan 509 created orchestration-best-practices.md as the comprehensive orchestration guide. Integrate command selection there (not in a separate file) for single source of truth. This follows Plan 509's consolidation principles.
 
 ### Avoiding Redundancy
 - **Don't repeat** feature lists in multiple places
-- **Do provide** contextualized links (e.g., "need PR automation? see /orchestrate in selection guide")
-- **Extract** detailed comparisons to dedicated selection guide
-- **Keep** CLAUDE.md minimal with link to detailed guide
+- **Do provide** contextualized links (e.g., "need PR automation? see command selection in orchestration-best-practices.md")
+- **Centralize** detailed comparisons in orchestration-best-practices.md command selection section
+- **Keep** CLAUDE.md minimal with link to detailed command selection section
 
 ## Implementation Phases
 
-### Phase 1: Create Orchestration Command Selection Guide
-**Objective**: Create new dedicated guide for command selection decisions
+### Phase 1: Add Command Selection to orchestration-best-practices.md [REVISED]
+**Objective**: Integrate command selection guidance into existing unified orchestration guide
 **Complexity**: Medium
 
+**Rationale**: Plan 509 created orchestration-best-practices.md (currently 1,113 lines) as the authoritative orchestration guide. Adding command selection there creates a single comprehensive resource rather than fragmenting guidance across multiple files.
+
+**Current State**: orchestration-best-practices.md exists at 1,113 lines and documents the unified 7-phase framework, but does not yet include command selection guidance.
+
 Tasks:
-- [ ] Create `.claude/docs/quick-reference/orchestration-command-selection.md`
-- [ ] Add decision tree (ASCII art for terminal compatibility)
-- [ ] Add feature comparison matrix (table format)
-- [ ] Document file size differences (5,438 vs 1,939 vs 2,500-3,000 lines)
-- [ ] Add use case recommendations from research report
-- [ ] Include interoperability examples (switching commands mid-workflow)
-- [ ] Reference research report findings
+- [ ] Read orchestration-best-practices.md to understand current structure
+- [ ] Add "Command Selection" section early in document (after Overview, before detailed phase documentation)
+- [ ] Add decision tree (ASCII art using Unicode box-drawing for terminal compatibility)
+- [ ] Add feature comparison matrix (markdown table format)
+- [ ] Document file size hierarchy clearly:
+  - /orchestrate: 5,438 lines (heaviest, PR automation + dashboards)
+  - /coordinate: 2,500-3,000 lines (middle, wave-based parallel execution)
+  - /supervise: 1,939 lines (lightest, proven minimal reference)
+- [ ] Add use case recommendations from Spec 513 research report
+- [ ] Include interoperability note (commands are 100% architecturally compatible)
+- [ ] Reference Spec 513 research report OVERVIEW.md for detailed findings
+- [ ] Add navigation breadcrumb at top if not present
 
 Testing:
 ```bash
-# Verify file created and properly formatted
-cat .claude/docs/quick-reference/orchestration-command-selection.md
-wc -l .claude/docs/quick-reference/orchestration-command-selection.md  # Should be 150-250 lines
+# Verify section added to orchestration-best-practices.md
+grep -q "Command Selection" .claude/docs/guides/orchestration-best-practices.md
+grep -q "Decision Tree\|Feature Comparison" .claude/docs/guides/orchestration-best-practices.md
+
+# Verify file size increased appropriately
+wc -l .claude/docs/guides/orchestration-best-practices.md  # Should be ~1,300-1,350 lines (1,113 + 200-250)
+
+# Verify no historical markers added
+! grep -E "\(NEW\)|\(Updated.*\)|Recently|Previously" .claude/docs/guides/orchestration-best-practices.md
+
+# Verify section is before Phase 0 details
+grep -n "Command Selection\|Phase 0: Path Pre-Calculation" .claude/docs/guides/orchestration-best-practices.md | head -5
 ```
 
-Expected: New file with clear decision tree, matrix, and recommendations
+Expected: orchestration-best-practices.md enhanced with command selection section (~200-250 lines added), positioned before detailed phase documentation
 
-### Phase 2: Update CLAUDE.md Orchestration Section
-**Objective**: Simplify CLAUDE.md and add cross-reference to selection guide
+### Phase 2: Update CLAUDE.md Orchestration Section [REVISED]
+**Objective**: Simplify CLAUDE.md and add cross-reference to orchestration-best-practices.md
 **Complexity**: Low
 
 Tasks:
 - [ ] Update lines 360-373 in CLAUDE.md (orchestration commands section)
 - [ ] Clarify file size hierarchy (/orchestrate: 5,438 lines (heaviest), /coordinate: 2,500-3,000 lines (middle), /supervise: 1,939 lines (lightest))
-- [ ] Add prominent link to orchestration command selection guide
+- [ ] Add prominent link to orchestration-best-practices.md command selection section
 - [ ] Remove redundant feature descriptions
 - [ ] Keep one-line summary per command
 - [ ] Ensure "three orchestration commands available" statement is clear
+- [ ] Follow timeless documentation principles from Plan 509 (no historical markers)
 
 Testing:
 ```bash
 # Verify CLAUDE.md section updated
 grep -A 20 "Orchestration:" CLAUDE.md
+grep -q "orchestration-best-practices.md" CLAUDE.md
+
 # Check line count didn't bloat
 wc -l CLAUDE.md
+
+# Verify no historical markers added
+! grep -E "\(NEW\)|\(Updated.*\)|Recently|Previously" CLAUDE.md
 ```
 
-Expected: Simplified section with clear link to detailed selection guide
+Expected: Simplified section with clear link to orchestration-best-practices.md, timeless language
 
-### Phase 3: Enhance orchestration-reference.md
-**Objective**: Add command comparison section and update outdated information
-**Complexity**: Medium
+### Phase 3: Update orchestration-reference.md Cross-References [REVISED]
+**Objective**: Ensure orchestration-reference.md properly links to orchestration-best-practices.md command selection section
+**Complexity**: Low
+
+**Rationale**: orchestration-reference.md (consolidated in Plan 509 Phase 2 to 990 lines) should have a single prominent cross-reference to the command selection section in orchestration-best-practices.md, avoiding duplication.
+
+**Current State**: orchestration-reference.md exists and has been consolidated, but needs to reference the new command selection section.
 
 Tasks:
-- [ ] Read current orchestration-reference.md in full
-- [ ] Add "Command Selection" section near top (after Quick Reference)
-- [ ] Include simplified comparison matrix
-- [ ] Link to detailed selection guide for full decision tree
-- [ ] Update any file size references to match research (5,438 / 2,500-3,000 / 1,939)
-- [ ] Verify wave-based execution is only mentioned for /coordinate (not /orchestrate)
-- [ ] Add note that /supervise lacks wave-based execution (sequential only)
-- [ ] Ensure PR automation is clearly /orchestrate-only feature
+- [ ] Read orchestration-reference.md to find appropriate location for cross-reference
+- [ ] Add prominent "Command Selection" section or note near the top linking to orchestration-best-practices.md
+- [ ] Ensure no redundant command comparison content exists in orchestration-reference.md
+- [ ] Validate unique features are clearly attributed to correct commands:
+  - Wave-based execution: /coordinate only
+  - PR automation: /orchestrate only
+  - External documentation ecosystem: /supervise only
+- [ ] Verify timeless language (no historical markers)
 
 Testing:
 ```bash
-# Verify updates made
-grep -n "Command Selection\|5,438\|1,939\|2,500-3,000" .claude/docs/reference/orchestration-reference.md
-# Check file size didn't grow excessively
-wc -l .claude/docs/reference/orchestration-reference.md  # Should stay around 1000-1100 lines
+# Verify orchestration-reference.md references command selection in best practices guide
+grep -q "orchestration-best-practices.*[Cc]ommand.*[Ss]election\|[Cc]ommand.*[Ss]election.*orchestration-best-practices" .claude/docs/reference/orchestration-reference.md
+
+# Ensure no redundant comparison content remains
+! grep -i "decision tree\|comparison matrix\|which command to use" .claude/docs/reference/orchestration-reference.md || echo "WARNING: Possible duplication"
+
+# Verify no historical markers
+! grep -E "\(NEW\)|\(Updated.*\)|Recently|Previously" .claude/docs/reference/orchestration-reference.md
+
+# Check file size didn't grow significantly
+wc -l .claude/docs/reference/orchestration-reference.md  # Should remain ~990-1,010 lines
 ```
 
-Expected: Enhanced reference with accurate comparisons and selection guidance
+Expected: orchestration-reference.md has clear link to command selection section in orchestration-best-practices.md, no redundant comparison content, minimal size increase
 
-### Phase 4: Update Individual Command Entries
-**Objective**: Add cross-references in command-reference.md
+### Phase 4: Update Individual Command Entries and Final Validation [REVISED]
+**Objective**: Add cross-references in command-reference.md and validate all changes
 **Complexity**: Low
+
+**Note**: Phase 5 merged into Phase 4 to reduce total phases from 5 to 4
 
 Tasks:
 - [ ] Update /orchestrate entry in command-reference.md
   - Add "Heaviest (5,438 lines), includes PR automation and dashboards"
-  - Link to selection guide
+  - Link to orchestration-best-practices.md command selection section
 - [ ] Update /coordinate entry in command-reference.md
   - Add "Middle ground (2,500-3,000 lines), wave-based parallel execution"
-  - Link to selection guide
+  - Link to orchestration-best-practices.md command selection section
 - [ ] Update /supervise entry in command-reference.md (if exists)
   - Add "Lightest (1,939 lines), proven minimal reference"
-  - Link to selection guide
-  - Add links to supervise-guide.md and supervise-phases.md
+  - Link to orchestration-best-practices.md command selection section
+  - Verify links to supervise-guide.md still work
 - [ ] Verify "Use Case" fields mention appropriate scenarios
-
-Testing:
-```bash
-# Verify all three commands have selection guide links
-grep -A 10 "^### /orchestrate\|^### /coordinate\|^### /supervise" .claude/docs/reference/command-reference.md | grep "selection"
-```
-
-Expected: All three orchestration commands reference the selection guide
-
-### Phase 5: Documentation Validation and Cleanup
-**Objective**: Ensure consistency and remove redundant content
-**Complexity**: Low
-
-Tasks:
-- [ ] Search for redundant feature comparisons in other docs
-  ```bash
-  grep -r "orchestrate.*coordinate.*supervise" .claude/docs/ --include="*.md"
-  ```
-- [ ] Check for outdated file size references
-  ```bash
-  grep -r "5438\|2500\|3000\|1939" .claude/docs/ --include="*.md"
-  ```
+- [ ] Search for redundant feature comparisons in other docs and remove/update
 - [ ] Validate all cross-reference links work
 - [ ] Ensure no documentation contradicts research findings
-- [ ] Update orchestration-troubleshooting.md if it contains comparison info (should defer to selection guide)
-- [ ] Verify README files in docs/ subdirectories link to selection guide if mentioning orchestration
+- [ ] Update orchestration-troubleshooting.md if it contains comparison info (defer to best practices guide)
+- [ ] Run timeless documentation validation (no historical markers)
 
 Testing:
 ```bash
+# Verify all three commands have best practices guide links
+grep -A 10 "^### /orchestrate\|^### /coordinate\|^### /supervise" .claude/docs/reference/command-reference.md | grep "orchestration-best-practices"
+
 # Comprehensive validation
-.claude/tests/test_orchestration_commands.sh  # If exists
-# Manual link checking
-grep -r "\[.*\](.*orchestration.*selection" .claude/docs/ --include="*.md"
-# Verify no "TODO" or incomplete sections
-grep -i "TODO\|FIXME\|TBD" .claude/docs/**/orchestr*.md .claude/docs/quick-reference/orchestration-command-selection.md
+grep -r "orchestration.*selection" .claude/docs/ --include="*.md" | grep -v archive
+
+# Verify no historical language
+! grep -rE "\(NEW\)|\(Updated\)|Recently added|Previously" .claude/docs/guides/orchestration-best-practices.md .claude/docs/reference/command-reference.md CLAUDE.md
+
+# Verify file size consistency
+grep -r "5,438\|5438" .claude/docs/ --include="*.md" | grep -v archive
+grep -r "1,939\|1939" .claude/docs/ --include="*.md" | grep -v archive
+
+# Check for broken links
+find .claude/docs -name "*.md" -type f -exec grep -l "orchestration-command-selection.md" {} \; && echo "ERROR: Old selection guide references remain"
 ```
 
-Expected: Clean, consistent documentation with no redundancy or broken links
+Expected: All three orchestration commands reference orchestration-best-practices.md, no broken links, timeless language throughout
+
+**[PHASE 5 REMOVED]**: Merged into Phase 4 to consolidate validation tasks and reduce total phases from 5 to 4
 
 ## Testing Strategy
 
@@ -188,67 +238,75 @@ Each phase includes specific validation commands to verify changes are correct a
 After all phases complete:
 
 ```bash
-# 1. Verify new selection guide exists and is properly sized
-test -f .claude/docs/quick-reference/orchestration-command-selection.md
-wc -l .claude/docs/quick-reference/orchestration-command-selection.md  # 150-250 lines
+# 1. Verify command selection section exists in orchestration-best-practices.md
+grep -q "Command Selection" .claude/docs/guides/orchestration-best-practices.md
+wc -l .claude/docs/guides/orchestration-best-practices.md  # Should be ~1,300-1,350 lines
 
-# 2. Verify CLAUDE.md references selection guide
-grep "orchestration.*selection" CLAUDE.md
+# 2. Verify CLAUDE.md references orchestration-best-practices.md
+grep -q "orchestration-best-practices" CLAUDE.md
 
 # 3. Check no file grew excessively
-wc -l .claude/docs/reference/orchestration-reference.md  # ~1000-1100 lines
-wc -l .claude/docs/reference/command-reference.md  # ~600-650 lines
+wc -l .claude/docs/reference/orchestration-reference.md  # Should remain ~990-1,010 lines
+wc -l .claude/docs/reference/command-reference.md  # Should be ~600-650 lines
 wc -l CLAUDE.md  # Should not increase significantly
 
 # 4. Validate file size consistency across docs
-grep -r "5,438\|5438" .claude/docs/ --include="*.md"  # All should say 5,438 lines for /orchestrate
-grep -r "1,939\|1939" .claude/docs/ --include="*.md"  # All should say 1,939 lines for /supervise
-grep -r "2,500\|2500\|3,000\|3000" .claude/docs/ --include="*.md"  # All should say 2,500-3,000 for /coordinate
+grep -r "5,438\|5438" .claude/docs/ --include="*.md" | grep -v archive  # All should say 5,438 lines for /orchestrate
+grep -r "1,939\|1939" .claude/docs/ --include="*.md" | grep -v archive  # All should say 1,939 lines for /supervise
+grep -r "2,500\|2500\|3,000\|3000" .claude/docs/ --include="*.md" | grep -v archive  # All should say 2,500-3,000 for /coordinate
 
 # 5. Check for redundancy
-# Should find comparison content primarily in selection guide, not scattered
-grep -l "orchestrate.*coordinate.*supervise" .claude/docs/**/*.md | wc -l  # Should be small number
+# Should find comparison content primarily in orchestration-best-practices.md, not scattered
+grep -l "orchestrate.*coordinate.*supervise" .claude/docs/**/*.md | wc -l  # Should be small number (2-3 files max)
+
+# 6. Verify all cross-references work
+grep -r "orchestration-best-practices.md" .claude/docs/ --include="*.md" CLAUDE.md
+
+# 7. Verify no historical markers added
+! grep -rE "\(NEW\)|\(Updated.*\)|Recently|Previously" .claude/docs/guides/orchestration-best-practices.md .claude/docs/reference/command-reference.md CLAUDE.md
 ```
 
 ### Manual Review Checklist
-- [ ] Read selection guide - is decision tree clear?
-- [ ] Read CLAUDE.md orchestration section - is it concise?
-- [ ] Read orchestration-reference.md - does it link to selection guide?
+- [ ] Read command selection section in orchestration-best-practices.md - is decision tree clear?
+- [ ] Read CLAUDE.md orchestration section - is it concise with proper link?
+- [ ] Read orchestration-reference.md - does it link to command selection section?
 - [ ] Check command-reference.md entries - do they cross-reference appropriately?
 - [ ] Verify no contradictions between documents
+- [ ] Confirm timeless language throughout (no historical markers)
 
 ## Documentation Requirements
 
-### Files to Create
-1. `.claude/docs/quick-reference/orchestration-command-selection.md` (~200 lines)
-   - Decision tree
-   - Feature comparison matrix
-   - Use case recommendations
-   - Interoperability examples
+### Files to Create [REVISED]
+No new files - integrate content into existing orchestration-best-practices.md created in Plan 509
 
-### Files to Update
-1. `CLAUDE.md` (lines 360-373)
+### Files to Update [REVISED]
+1. `.claude/docs/guides/orchestration-best-practices.md` (created in Plan 509 Phase 4)
+   - Add command selection section at top (~200 lines)
+   - Include decision tree, comparison matrix, use case recommendations
+
+2. `CLAUDE.md` (lines 360-373)
    - Simplify orchestration section
-   - Add selection guide link
+   - Add orchestration-best-practices.md link
    - Clarify file size hierarchy
+   - Follow timeless documentation principles
 
-2. `.claude/docs/reference/orchestration-reference.md`
-   - Add command selection section
-   - Update file size references
+3. `.claude/docs/reference/orchestration-reference.md`
+   - Ensure single cross-reference to orchestration-best-practices.md
+   - Remove any redundant comparison content
    - Clarify unique features per command
 
-3. `.claude/docs/reference/command-reference.md`
+4. `.claude/docs/reference/command-reference.md`
    - Update /orchestrate, /coordinate, /supervise entries
-   - Add selection guide cross-references
+   - Add orchestration-best-practices.md cross-references
 
-4. Any other files with redundant comparison content (identified in Phase 5)
+5. Any other files with redundant comparison content (identified in Phase 4)
 
-### Cross-References to Validate
-- [ ] CLAUDE.md → orchestration-command-selection.md
-- [ ] orchestration-reference.md → orchestration-command-selection.md
-- [ ] command-reference.md → orchestration-command-selection.md
-- [ ] Selection guide → research report (Spec 513)
-- [ ] Selection guide → command files (.claude/commands/*.md)
+### Cross-References to Validate [REVISED]
+- [ ] CLAUDE.md → orchestration-best-practices.md (command selection section)
+- [ ] orchestration-reference.md → orchestration-best-practices.md
+- [ ] command-reference.md → orchestration-best-practices.md
+- [ ] orchestration-best-practices.md → research report (Spec 513)
+- [ ] orchestration-best-practices.md → command files (.claude/commands/*.md)
 
 ## Dependencies
 
@@ -274,6 +332,60 @@ grep -l "orchestrate.*coordinate.*supervise" .claude/docs/**/*.md | wc -l  # Sho
 - Use Unicode box-drawing for diagrams (terminal-compatible)
 - Present-focused, timeless documentation (no "new" or historical markers)
 - Clarity and coherence over backward compatibility
+
+## Revision History
+
+### 2025-10-29 - Revision 2: Update for Post-Plan-509 Reality
+
+**Changes Made**:
+- **Updated Phase 1**: Clarified current state of orchestration-best-practices.md (1,113 lines, not 1,200)
+- **Updated Phase 1 testing**: Adjusted expected line count from ~1,400 to ~1,300-1,350 lines
+- **Updated Phase 3**: Complete rewrite to focus on orchestration-reference.md cross-reference updates (not creation of new content)
+- **Updated Phase 3 title**: Changed from "Link Selection Guide to orchestration-best-practices.md" to "Update orchestration-reference.md Cross-References"
+- **Updated integration testing**: Removed references to non-existent `/quick-reference/orchestration-command-selection.md` file
+- **Updated integration testing**: Changed to verify command selection section exists within orchestration-best-practices.md
+- **Updated manual review checklist**: Changed "Read selection guide" to "Read command selection section in orchestration-best-practices.md"
+- **Updated all validation commands**: Removed checks for separate selection guide file, added checks for section within best practices guide
+
+**Reason**: Plan 509 has been completed, and the current state of documentation is now different from what was anticipated in Revision 1. The orchestration-best-practices.md file exists at 1,113 lines (not the ~1,200 estimated), and no command selection section has been added yet. This revision updates the plan to reflect the actual current state and ensures all references to creating a separate selection guide file have been replaced with references to adding a section within the existing orchestration-best-practices.md.
+
+**Modified Phases**: Phases 1, 3, and integration testing
+
+**Key Changes from Revision 1**:
+1. Phase 1 now explicitly notes the current 1,113-line size of orchestration-best-practices.md
+2. Phase 3 completely rewritten to focus on cross-reference updates in orchestration-reference.md rather than duplicating Phase 1's work
+3. All testing sections updated to check for section within orchestration-best-practices.md, not separate file
+4. Removed all references to `.claude/docs/quick-reference/orchestration-command-selection.md` (does not exist)
+
+### 2025-10-28 - Revision 1: Align with Plan 509 Documentation Refactor
+
+**Changes Made**:
+- **Reduced phases from 5 to 4**: Merged Phase 5 validation tasks into Phase 4
+- **Changed target from new file to existing file**: Instead of creating `.claude/docs/quick-reference/orchestration-command-selection.md`, integrate command selection into existing `orchestration-best-practices.md` (created in Plan 509 Phase 4)
+- **Updated Phase 1**: "Create Orchestration Command Selection Guide" → "Add Command Selection to orchestration-best-practices.md"
+- **Updated Phase 2**: Link to orchestration-best-practices.md instead of separate selection guide
+- **Updated Phase 3**: Changed from "Enhance orchestration-reference.md" to "Link Selection Guide to orchestration-best-practices.md" with reduced scope
+- **Updated Phase 4**: Merged Phase 5 validation tasks, renamed to "Update Individual Command Entries and Final Validation"
+- **Added timeless documentation validation**: All phases now check for historical markers
+- **Updated success criteria**: Added alignment with Plan 509, timeless documentation, redirect READMEs
+- **Updated documentation requirements**: No new files to create, focus on enhancing orchestration-best-practices.md
+
+**Reason**: Plan 509 Phase 4 already created orchestration-best-practices.md (~1,200 lines) as the comprehensive orchestration guide. Creating a separate selection guide would violate Plan 509's "single source of truth" principle that successfully eliminated 8 redundant files and achieved 30-40% documentation size reduction. By integrating command selection into the existing best practices guide, we follow the same consolidation strategy.
+
+**Reports Used**:
+- Plan 509 completion report (all 7 phases completed)
+- Plan 509's consolidation principles (single source of truth, 30-40% reduction targets, archive-with-redirect pattern)
+
+**Modified Phases**: All phases (1-4)
+
+**Impact on Success Criteria**: Enhanced - now explicitly requires integration with orchestration-best-practices.md and timeless documentation compliance
+
+**Key Alignment Points with Plan 509**:
+1. **Single Source of Truth**: Integrate into orchestration-best-practices.md rather than create separate file
+2. **Consolidation over Creation**: Enhance existing comprehensive guide rather than fragment
+3. **Timeless Documentation**: No historical markers, present-focused language
+4. **Archive Pattern**: If eliminating any files, use redirect READMEs
+5. **Validation**: Comprehensive link validation and consistency checks
 
 ## Notes
 
