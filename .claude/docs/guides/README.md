@@ -37,7 +37,7 @@ Task-focused how-to guides for specific development activities. Use this section
 - When designing agents compatible with metadata extraction utilities
 - To ensure agents never invoke slash commands for artifact creation
 
-**See Also**: [Agent Reference](../reference/agent-reference.md), [Command Development Guide](command-development-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Troubleshooting](../troubleshooting/agent-delegation-issues.md)
+**See Also**: [Agent Reference](../reference/agent-reference.md), [Command Development Guide](command-development-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Troubleshooting](../troubleshooting/agent-delegation-troubleshooting.md)
 
 ---
 

@@ -1302,7 +1302,7 @@ specs/027_user_authentication/
 - [Agent Development Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
 - [Command Development Guide](../guides/command-development-guide.md) - Invoking agents from commands
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Pattern details
-- [Troubleshooting Guide](../troubleshooting/agent-delegation-issues.md) - Common issues and solutions
+- [Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) - Common issues and solutions
 
 ## Advanced Features
 

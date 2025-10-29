@@ -7,7 +7,7 @@ Comprehensive guide for creating and maintaining custom Claude Code agents using
 **Related Documentation**:
 - [Command Development Guide](command-development-guide.md) - How commands invoke agents
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Overall architecture
-- [Troubleshooting Guide](../troubleshooting/agent-delegation-issues.md) - Common issues
+- [Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) - Common issues
 
 ## Table of Contents
 
@@ -1270,7 +1270,7 @@ Agents should implement these patterns from the [Patterns Catalog](../concepts/p
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Multi-agent coordination
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Architecture standards
 - [Agent Reference](../reference/agent-reference.md) - Quick agent reference
-- [Troubleshooting Guide](../troubleshooting/agent-delegation-issues.md) - Common issues
+- [Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) - Common issues
 
 ---
 
