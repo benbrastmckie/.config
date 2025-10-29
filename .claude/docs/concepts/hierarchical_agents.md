@@ -1749,7 +1749,7 @@ extract_debug_metadata(debug_path)
 
 ### Troubleshooting
 
-See [Agent Delegation Troubleshooting Guide](../troubleshooting/agent-delegation-issues.md) for common issues:
+See [Agent Delegation Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) for common issues:
 - Agent invokes slash command instead of creating artifact
 - Artifact not found at expected path
 - Context reduction not achieved
