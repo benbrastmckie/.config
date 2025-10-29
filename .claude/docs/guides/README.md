@@ -119,7 +119,7 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ---
 
-### [Workflow Efficiency Guide](efficiency-guide.md)
+### [Workflow Efficiency Guide](performance-optimization.md)
 **Purpose**: Documentation of efficiency enhancements including dynamic agent selection, progress streaming, intelligent parallelization, and plan wizard.
 
 **Use Cases**:
@@ -195,7 +195,7 @@ Task-focused how-to guides for specific development activities. Use this section
 - To optimize context window usage (0 tokens vs 15k-75k for agents)
 - When handling jq dependency for JSON parsing with fallback
 
-**See Also**: [Library API Reference](../reference/library-api.md), [Command Development Guide](command-development-guide.md), [Performance Measurement](performance-measurement.md)
+**See Also**: [Library API Reference](../reference/library-api.md), [Command Development Guide](command-development-guide.md), [Performance Measurement](performance-optimization.md)
 
 ---
 
@@ -250,7 +250,7 @@ guides/
 ├── command-examples.md               Example command patterns
 ├── logging-patterns.md               Structured logging standards
 ├── setup-command-guide.md            /setup utilities documentation
-├── efficiency-guide.md               Performance optimization features
+├── performance-optimization.md               Performance optimization features
 ├── error-enhancement-guide.md        Error analysis and suggestions
 ├── data-management.md                .claude/data/ ecosystem guide
 ├── execution-enforcement-guide.md    Execution enforcement (Standards 0 & 0.5)

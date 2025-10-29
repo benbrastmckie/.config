@@ -12,12 +12,13 @@
 
 1. [Overview](#overview)
 2. [Standards 0 and 0.5](#standards-0-and-0-5)
-3. [Enforcement Patterns](#enforcement-patterns)
-4. [Migration Process](#migration-process)
-5. [Validation and Audit](#validation-and-audit)
-6. [Common Migration Patterns](#common-migration-patterns)
-7. [Troubleshooting](#troubleshooting)
-8. [Quick Reference](#quick-reference)
+3. [Imperative Language Rules](#imperative-language-rules)
+4. [Enforcement Patterns](#enforcement-patterns)
+5. [Migration Process](#migration-process)
+6. [Validation and Audit](#validation-and-audit)
+7. [Common Migration Patterns](#common-migration-patterns)
+8. [Troubleshooting](#troubleshooting)
+9. [Quick Reference](#quick-reference)
 
 ---
 
@@ -152,6 +153,89 @@ See [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md)
 - Utility commands (/list-plans, /list-reports)
 - Read-only agents
 - Simple single-step commands
+
+---
+
+## Imperative Language Rules
+
+### Why Imperative Language Matters
+
+Weak language (should, may, can) allows Claude to interpret requirements as optional, leading to incomplete execution and file creation failures. **Required actions use MUST/WILL/SHALL**. Optional actions use MAY.
+
+**The Problem: Weak Language Creates Optional Behavior**
+
+```markdown
+❌ BAD:
+- You should create a report file in the topic directory
+- Links should be verified after creating the file
+- You may add additional sections as needed
+- Consider including code examples for clarity
+- Try to use current best practices
+```
+
+**Result**: Claude may skip file creation, verification, or examples because "should" and "may" suggest optionality.
+
+**The Solution: Imperative Language Enforces Requirements**
+
+```markdown
+✅ GOOD:
+- **YOU MUST create** a report file at the exact path specified
+- **YOU WILL verify** all links after creating the file using this command: [...]
+- **YOU SHALL include** these exact sections (additional sections are FORBIDDEN)
+- **YOU MUST add** concrete code examples using this template: [...]
+- **YOU WILL use** 2025 best practices (earlier practices are UNACCEPTABLE)
+```
+
+**Result**: Claude recognizes these as non-negotiable requirements and executes all steps.
+
+### Transformation Rules
+
+#### Prohibited Words → Required Replacements
+
+| Weak Language | Strength | Imperative Replacement | When to Use |
+|---------------|----------|------------------------|-------------|
+| should | Suggestive | **MUST** | Absolute requirements |
+| may | Permissive | **WILL** or **SHALL** | Conditional requirements |
+| can | Enabling | **MUST** or **SHALL** | Capability requirements |
+| could | Possibility | **WILL** or **MAY** | Conditional actions |
+| consider | Reflective | **MUST** or **SHALL** | Required evaluation |
+| try to | Aspirational | **WILL** | Required attempt |
+| might | Uncertainty | **WILL** if required, **MAY** if optional | Based on context |
+
+#### Imperative Verbs by Requirement Level
+
+**Absolute Requirements** (no exceptions):
+- **MUST**: Mandatory action, no alternatives
+- **SHALL**: Formal requirement, specification-level
+- **WILL**: Definite future action, guaranteed execution
+
+**Conditional Requirements** (context-dependent):
+- **WILL** (when condition met): "If tests fail, YOU WILL invoke debug loop"
+- **SHALL** (when specified): "Phase files SHALL include complexity metadata"
+
+**Optional Actions** (user choice):
+- **MAY**: Permitted but not required
+- Example: "You MAY add custom sections after required sections"
+
+**Prohibited Actions** (explicitly forbidden):
+- **MUST NOT**: Absolute prohibition
+- **SHALL NOT**: Formal prohibition
+- **FORBIDDEN**: Explicit constraint
+- Example: "You MUST NOT modify files outside the topic directory"
+
+### Application Guidelines
+
+**For Commands** (`.claude/commands/*.md`):
+- Use "EXECUTE NOW" for critical operations
+- Use "MANDATORY VERIFICATION" for checkpoints
+- Use "THIS EXACT TEMPLATE" for agent invocations
+- Use "YOU WILL" for orchestrator responsibilities
+
+**For Agents** (`.claude/agents/*.md`):
+- Use "YOU MUST" for all required steps
+- Use "REQUIRED BEFORE" for step dependencies
+- Use "PRIMARY OBLIGATION" for file creation
+- Use "FORBIDDEN" for prohibited actions
 
 ---
 

@@ -87,7 +87,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - To customize TTS categories, voice parameters, and message formats
 - When troubleshooting TTS integration or audio output issues
 
-**See Also**: [Orchestration Guide](orchestration-guide.md), [Efficiency Guide](../guides/efficiency-guide.md)
+**See Also**: [Orchestration Guide](orchestration-guide.md), [Efficiency Guide](../guides/performance-optimization.md)
 
 ---
 

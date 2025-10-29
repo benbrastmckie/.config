@@ -336,7 +336,7 @@ grep -q "workflow-scope-detection.md" .claude/docs/guides/orchestration-best-pra
 
 ---
 
-### Phase 5: Navigation and Usability Enhancements [COMPLETED]
+### Phase 5: Navigation and Usability Enhancements
 dependencies: [3, 4]
 
 **Objective**: Improve documentation navigation and discoverability through decision trees, breadcrumbs, and task-based entry points (Quick-Start sections removed to reduce clutter)
@@ -344,13 +344,13 @@ dependencies: [3, 4]
 **Complexity**: Low-Medium
 
 **Tasks**:
-- [x] Add "I Want To..." section to main docs/README.md with 10 common tasks
-- [x] Create decision tree in quick-reference/command-vs-agent-flowchart.md
-- [x] Create decision tree in quick-reference/agent-selection-flowchart.md
-- [x] Create decision tree in quick-reference/error-handling-flowchart.md
-- [x] Add breadcrumb navigation to all pattern files (8 files)
-- [x] Add breadcrumb navigation to all major guides (10 files)
-- [x] Add "Common Mistakes and Solutions" section to command-development-guide.md
+- [ ] Add "I Want To..." section to main docs/README.md with 10 common tasks
+- [ ] Create decision tree in quick-reference/command-vs-agent-flowchart.md
+- [ ] Create decision tree in quick-reference/agent-selection-flowchart.md
+- [ ] Create decision tree in quick-reference/error-handling-flowchart.md
+- [ ] Add breadcrumb navigation to all pattern files (8 files)
+- [ ] Add breadcrumb navigation to all major guides (10 files)
+- [ ] Add "Common Mistakes and Solutions" section to command-development-guide.md
 
 **Testing**:
 ```bash
@@ -375,11 +375,11 @@ grep -q "## Common Mistakes and Solutions" .claude/docs/guides/command-developme
 **Expected Duration**: 3-4 hours (reduced from 4-5 hours)
 
 **Phase 5 Completion Requirements**:
-- [x] All phase tasks marked [x]
-- [x] Tests passing (decision trees created, breadcrumbs present, navigation improved)
-- [x] Git commit created: `feat(509): Complete Phase 5 - Navigation and Usability Enhancements` (fbe2924d)
-- [x] Checkpoint saved (if complex phase) - N/A (low-medium complexity)
-- [x] Update this plan file with phase completion status
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (decision trees created, breadcrumbs present, navigation improved)
+- [ ] Git commit created: `feat(509): Complete Phase 5 - Navigation and Usability Enhancements`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
 
 **Revision Notes**:
 - **Removed**: Quick-Start sections for commands and agents (clutter without sufficient value)
@@ -389,7 +389,7 @@ grep -q "## Common Mistakes and Solutions" .claude/docs/guides/command-developme
 
 ---
 
-### Phase 6: Additional Consolidations and Cleanup [COMPLETED]
+### Phase 6: Additional Consolidations and Cleanup
 dependencies: [1, 2, 3]
 
 **Objective**: Complete medium-priority consolidations (command development, workflow phases, performance guides)
@@ -408,34 +408,16 @@ dependencies: [1, 2, 3]
   - Added "Imperative Language Rules" section with transformation tables
   - Updated table of contents
   - execution-enforcement-guide.md: 1,500 → ~1,600 lines
-- [x] Merge performance-measurement.md and efficiency-guide.md into performance-optimization.md (30% overlap)
-  - Created 1,319-line consolidated guide with 7 parts
-  - Part 1: Performance Measurement (context reduction, benchmarking, validation)
-  - Part 2: Workflow Efficiency Enhancements (agent selection, progress streaming, parallelization)
-  - Part 3: Best Practices
-  - Part 4-7: Troubleshooting, Metrics, Examples, References
-  - performance-measurement.md (718 lines) + efficiency-guide.md (707 lines) → performance-optimization.md (1,319 lines)
-- [x] Add table of contents to all files >800 lines (orchestration-reference.md, command-development-guide.md, agent-development-guide.md)
-  - All three files already had TOCs (Quick Navigation or Table of Contents sections)
-  - Verified: orchestration-reference.md (Quick Navigation), command-development-guide.md (TOC), agent-development-guide.md (TOC)
-- [x] Archive eliminated files with redirect READMEs
+- [ ] Merge performance-measurement.md and efficiency-guide.md into performance-optimization.md (60% overlap)
+- [ ] Add table of contents to all files >800 lines (orchestration-reference.md, command-development-guide.md, agent-development-guide.md)
+- [x] Archive eliminated files with redirect READMEs (partial - 3 of 8 files completed)
   - command-examples.md → archived with redirect
   - supervise-phases.md → archived with redirect
   - imperative-language-guide.md → archived with redirect
-  - performance-measurement.md → archived with redirect (performance-measurement-README.md)
-  - efficiency-guide.md → archived with redirect (efficiency-guide-README.md)
-- [x] Update cross-references throughout documentation
-  - Batch updated all references from performance-measurement.md → performance-optimization.md
-  - Batch updated all references from efficiency-guide.md → performance-optimization.md
-  - Verified: 10+ files updated with correct references
-- [x] Run comprehensive link validation across all 70+ files
-  - Verified performance-optimization.md file exists
-  - Verified all updated references point to existing file
-  - No broken links found
-- [x] Update all README.md navigation files with new structure
-  - guides/README.md references updated automatically via batch replacement
-  - main docs/README.md references updated automatically via batch replacement
-  - All 5 references now point to performance-optimization.md
+  - Remaining: command-examples.md, supervise-phases.md, execution-enforcement-guide.md (needs merge first), performance-measurement.md, efficiency-guide.md
+- [ ] Update cross-references throughout documentation
+- [ ] Run comprehensive link validation across all 70+ files
+- [ ] Update all README.md navigation files with new structure
 
 **Testing**:
 ```bash
@@ -460,21 +442,19 @@ find .claude/docs -name "*.md" -type f -exec grep -H '\[.*\](.*\.md)' {} \; | \
 **Expected Duration**: 4-5 hours
 
 **Phase 6 Completion Requirements**:
-- [x] All phase tasks marked [x]
-- [x] Tests passing (consolidations complete, TOCs added, no broken links)
-- [x] Git commit created: `feat(509): Complete Phase 6 - Additional Consolidations and Cleanup`
-- [x] Checkpoint saved (if complex phase)
-- [x] Update this plan file with phase completion status
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (consolidations complete, TOCs added, no broken links)
+- [ ] Git commit created: `feat(509): Complete Phase 6 - Additional Consolidations and Cleanup`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
 
-**Progress Note (2025-10-28 - Final)**:
-- **Status**: COMPLETED - All 9/9 tasks completed
-- **Completed**: 4 major consolidations (command-examples, supervise-phases, imperative-language, performance-optimization)
-- **Files consolidated**:
-  - Session 1: command-examples, supervise-phases, imperative-language (3 files → 3 targets)
-  - Session 2: performance-measurement + efficiency-guide → performance-optimization.md (2 files → 1 target, 1,425 → 1,319 lines)
-- **Total reduction**: 5 source files eliminated, 5 redirect READMEs created
-- **Context usage**: 84K/200K tokens (42%) across two sessions
-- **Phase duration**: ~3.5 hours actual (vs 4-5 hours estimated)
+**Progress Note (2025-10-28)**:
+- **Status**: Partial completion - 4/9 tasks completed
+- **Completed**: 3 major consolidations (command-examples, supervise-phases, imperative-language) + archiving
+- **Files consolidated**: 1,303 + 1,920 + 1,500 + 684 = 5,407 lines → 3 files (~5,420 lines total)
+- **Reduction**: 3 source files eliminated, 3 redirect READMEs created
+- **Context usage**: 101K/200K tokens (51%) - recommend fresh session for remaining tasks
+- **Next session**: Complete performance merge, add TOCs, update cross-references, validate links, update navigation
 
 ---
 

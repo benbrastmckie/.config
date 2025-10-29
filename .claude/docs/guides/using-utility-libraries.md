@@ -757,5 +757,5 @@ cp .claude/commands/report.md .claude/commands/report.md.backup-migration
 - [Library API Reference](../reference/library-api.md) - Complete function signatures and return formats
 - [Command Development Guide](command-development-guide.md) - Creating commands with libraries
 - [Skills vs Subagents Decision Guide](skills-vs-subagents-decision.md) - When to use libraries vs agents
-- [Performance Measurement](performance-measurement.md) - Measuring library performance impact
+- [Performance Measurement](performance-optimization.md) - Measuring library performance impact
 - [Testing Patterns](testing-patterns.md) - Testing library integration

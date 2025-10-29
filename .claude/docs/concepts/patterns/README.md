@@ -118,7 +118,7 @@ These patterns have demonstrated:
 - [Creating Commands Guide](../../guides/creating-commands.md) - Command development
 - [Creating Agents Guide](../../guides/creating-agents.md) - Agent development
 - [Testing Patterns Guide](../../guides/testing-patterns.md) - Validation approaches
-- [Performance Measurement Guide](../../guides/performance-measurement.md) - Metrics and benchmarks
+- [Performance Measurement Guide](../../guides/performance-optimization.md) - Metrics and benchmarks
 
 ## See Also
 
