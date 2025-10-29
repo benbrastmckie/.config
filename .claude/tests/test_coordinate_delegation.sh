@@ -140,7 +140,7 @@ assert_true "Phase completion signals documented" "grep -qE 'DEBUG_ANALYSIS_COMP
 
 # Test 12: Agent Invocations Count
 print_test_header "Test 12: Total Agent Invocation Count"
-assert_count "Task invocations present" 7 "grep -c 'Task {' '$COMMAND_FILE'"
+assert_count "Task invocations present" 7 "grep -c 'USE.*Task tool' '$COMMAND_FILE'"
 
 # Summary
 print_test_header "Test Summary"
