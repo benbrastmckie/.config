@@ -1016,7 +1016,7 @@ PROGRESS: [Agent 1/2: existing_patterns] Analyzing codebase...
 PROGRESS: [Agent 2/2: security_practices] Searching best practices...
 ```
 
-**For Extended Examples**: See [Orchestration Patterns](../templates/orchestration-patterns.md#research-phase-examples) for additional scenarios and troubleshooting.
+**For Extended Examples**: See [Orchestration Patterns](orchestration-reference.md#section-3-pattern-library#research-phase-examples) for additional scenarios and troubleshooting.
 ```
 
 **❌ INCORRECT Pattern** (Reference only, no inline instructions):
@@ -1025,7 +1025,7 @@ PROGRESS: [Agent 2/2: security_practices] Searching best practices...
 
 The research phase coordinates multiple agents in parallel.
 
-**See**: [Orchestration Patterns](../templates/orchestration-patterns.md#research-phase) for comprehensive execution details.
+**See**: [Orchestration Patterns](orchestration-reference.md#section-3-pattern-library#research-phase) for comprehensive execution details.
 
 **Quick Reference**: Calculate complexity → Launch agents → Monitor execution
 ```
@@ -1685,7 +1685,6 @@ Task { ... agent 3 ... }
 │   ├── plan-architect.md
 │   └── *.md
 ├── templates/            # Reusable templates (REFERENCE-OK)
-│   ├── orchestration-patterns.md
 │   └── *.md
 └── docs/                 # Standards and architecture (REFERENCE-OK)
     ├── command_architecture_standards.md  # This file
@@ -1978,7 +1977,7 @@ This section demonstrates correct execution-critical content:
 - ✅ Progress monitoring patterns
 - ✅ Report verification procedures
 - ✅ Error recovery workflows
-- ✅ References to orchestration-patterns.md for ADDITIONAL context
+- ✅ References to orchestration-reference.md for ADDITIONAL context
 
 ---
 

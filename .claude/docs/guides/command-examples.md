@@ -1079,4 +1079,4 @@ When updating examples:
 - `.claude/commands/orchestrate.md`
 - `.claude/commands/implement.md`
 - `.claude/lib/checkpoint-utils.sh`
-- `.claude/templates/orchestration-patterns.md`
+- `.claude/docs/reference/orchestration-reference.md`

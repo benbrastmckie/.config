@@ -31,7 +31,7 @@ The research phase coordinates multiple specialized agents to investigate differ
 5. Verify reports exist at expected paths (with automatic path mismatch recovery)
 6. Save checkpoint with research outputs
 
-**Pattern Details**: See [Orchestration Patterns - Research Phase](../templates/orchestration-patterns.md#research-phase-parallel-execution) for:
+**Pattern Details**: See [Orchestration Patterns - Research Phase](orchestration-reference.md#section-3-pattern-library#research-phase-parallel-execution) for:
 - Complete step-by-step execution procedure (7 detailed steps)
 - Complexity score calculation algorithm
 - Thinking mode determination matrix
@@ -156,7 +156,7 @@ The planning phase synthesizes research findings into a structured implementatio
 5. Save checkpoint with plan path and metadata
 6. Display completion status and proceed to implementation
 
-**Pattern Details**: See [Orchestration Patterns - Planning Phase](../templates/orchestration-patterns.md#planning-phase-sequential-execution) for:
+**Pattern Details**: See [Orchestration Patterns - Planning Phase](orchestration-reference.md#section-3-pattern-library#planning-phase-sequential-execution) for:
 - Complete context extraction procedure
 - Planning agent prompt template with all placeholders
 - Plan validation checklist and bash verification commands
@@ -299,7 +299,7 @@ The implementation phase executes the plan using /implement command, runs tests 
 5. Run tests again → Pass: exit loop OR Fail: continue
 6. Iteration control → Iteration < 3: retry OR Iteration ≥ 3: escalate to user
 
-**Pattern Details**: See [Orchestration Patterns - Implementation Phase](../templates/orchestration-patterns.md#implementation-phase-adaptive-execution) for:
+**Pattern Details**: See [Orchestration Patterns - Implementation Phase](orchestration-reference.md#section-3-pattern-library#implementation-phase-adaptive-execution) for:
 - Complete 7-step implementation execution procedure
 - Complete 7-step debugging loop procedure
 - Code-writer agent prompt template
