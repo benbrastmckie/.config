@@ -945,6 +945,126 @@ fi
 
 See [Library API Reference](../reference/library-api.md) for complete function signatures and [Using Utility Libraries](using-utility-libraries.md) for detailed patterns and examples.
 
+### Library Sourcing Patterns
+
+Commands should choose the appropriate sourcing pattern based on their needs:
+
+#### Pattern 1: Orchestration Commands (Core + Workflow Libraries)
+
+Use `library-sourcing.sh` for orchestration commands that need core libraries plus optional workflow utilities:
+
+```bash
+#!/usr/bin/env bash
+# Source library-sourcing.sh for automatic core library loading
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/library-sourcing.sh"
+
+# Load core libraries (7) + additional workflow libraries
+# Automatic deduplication prevents re-sourcing duplicates
+source_required_libraries "dependency-analyzer.sh" "complexity-utils.sh" || exit 1
+
+# All libraries now available:
+# - Core: error-handling, checkpoint-utils, unified-logger, etc.
+# - Workflow: dependency-analyzer, complexity-utils
+```
+
+**Benefits:**
+- Automatic loading of 7 core libraries (error-handling, checkpoint-utils, unified-logger, unified-location-detection, metadata-extraction, context-pruning, workflow-detection)
+- Deduplication prevents re-sourcing if library names appear in both core and parameter list
+- Consistent library set across all orchestration commands
+- Single function call instead of multiple source statements
+
+**When to use:**
+- Orchestration commands: `/orchestrate`, `/coordinate`, `/implement`, `/supervise`
+- Commands requiring workflow utilities (checkpoints, complexity analysis, parallel execution)
+- Commands that need the standard orchestration infrastructure
+
+#### Pattern 2: Specialized Commands (Direct Sourcing)
+
+Use direct sourcing for specialized commands with narrow library needs:
+
+```bash
+#!/usr/bin/env bash
+# Source only the specific libraries needed
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+source "${SCRIPT_DIR}/../lib/convert-core.sh"
+source "${SCRIPT_DIR}/../lib/conversion-logger.sh"
+
+# Call specialized conversion functions
+convert_file "$INPUT" "$OUTPUT"
+```
+
+**Benefits:**
+- Avoids loading unnecessary core libraries
+- Faster startup (fewer files sourced)
+- Clear dependencies (explicitly lists what's needed)
+- Appropriate for single-purpose commands
+
+**When to use:**
+- Document conversion commands
+- Analysis commands
+- Template-based commands
+- Any command with 1-3 specific library dependencies
+
+#### Pattern 3: Simple Commands (No Libraries)
+
+Simple commands may not need any libraries:
+
+```bash
+#!/usr/bin/env bash
+# No library dependencies - direct implementation
+
+echo "Simple command executing..."
+# Direct implementation without utility functions
+```
+
+**When to use:**
+- Commands with trivial logic
+- Commands that only invoke other commands/tools
+- Commands where utilities would add unnecessary complexity
+
+#### Deduplication Behavior
+
+The `source_required_libraries()` function automatically deduplicates library names to prevent re-sourcing:
+
+```bash
+# Example: Duplicate library names
+source_required_libraries \
+  "dependency-analyzer.sh" \       # NEW (only this sourced)
+  "checkpoint-utils.sh" \          # Already in core 7 (skipped)
+  "error-handling.sh" \            # Already in core 7 (skipped)
+  "metadata-extraction.sh"         # Already in core 7 (skipped)
+
+# Debug output shows:
+# DEBUG: Library deduplication: 11 input libraries -> 8 unique libraries (3 duplicates removed)
+```
+
+**How it works:**
+- Combines core 7 libraries + your additional parameters into single array
+- Removes duplicates using O(n²) string matching (acceptable for n≈10 libraries)
+- Preserves first occurrence order for unique libraries
+- Sources each unique library exactly once
+
+**Performance:**
+- Overhead: <0.01ms (negligible)
+- Prevents duplicate sourcing that caused /coordinate timeout (>120s → <90s)
+- 93% less code than memoization alternative (20 lines vs 310 lines)
+
+#### Migration from Deprecated Libraries
+
+**artifact-operations.sh** has been split into `artifact-creation.sh` and `artifact-registry.sh`. Update commands using the old reference:
+
+```bash
+# OLD (deprecated, will be removed 2026-01-01)
+source .claude/lib/artifact-operations.sh
+
+# NEW (recommended)
+source .claude/lib/artifact-creation.sh
+source .claude/lib/artifact-registry.sh
+```
+
+A backward-compatible shim exists temporarily. See [Library Classification](../../lib/README.md#library-classification) for migration timeline and complete details.
+
 ### 5.6 Path Calculation Best Practices
 
 **CRITICAL**: Calculate paths in parent command scope, NOT in agent prompts.
