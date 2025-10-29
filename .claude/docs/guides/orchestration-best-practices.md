@@ -22,6 +22,122 @@ Orchestration commands coordinate multi-phase workflows through hierarchical age
 - Agent delegation rate: >90%
 - Time savings (parallel execution): 40-60%
 
+---
+
+## Command Selection
+
+### Maturity Status
+
+**Use /coordinate for production workflows** - it is the stable, tested, and recommended orchestration command.
+
+| Command | Status | Recommendation |
+|---------|--------|----------------|
+| **/coordinate** | **Production-Ready** | Stable, tested, recommended for all workflows. Use this by default. |
+| **/orchestrate** | **In Development** | Experimental PR automation features may have inconsistent behavior. |
+| **/supervise** | **In Development** | Minimal reference implementation being stabilized. |
+
+### Quick Decision Tree
+
+```
+Need orchestration workflow?
+│
+├─ Production use or general workflow? ──→ Use /coordinate (recommended)
+│
+├─ Experimenting with PR automation? ──→ Try /orchestrate (unstable)
+│
+└─ Need minimal reference example? ──→ Try /supervise (unstable)
+```
+
+### Feature Comparison Matrix
+
+| Feature | /coordinate | /orchestrate | /supervise | Maturity Status |
+|---------|-------------|--------------|------------|-----------------|
+| **File Size** | 2,500-3,000 lines | 5,438 lines | 1,939 lines | Stable / Dev / Dev |
+| **Wave-Based Parallel Execution** | ✓ (40-60% time savings) | ✗ | ✗ | Production-ready |
+| **Workflow Scope Auto-Detection** | ✓ | ✗ | ✗ | Production-ready |
+| **PR Automation & GitHub Integration** | ✗ | ✓ | ✗ | Experimental |
+| **Interactive Progress Dashboard** | ✗ | ✓ | ✗ | Experimental |
+| **Comprehensive Metrics Tracking** | ✗ | ✓ | ✗ | Experimental |
+| **External Documentation Ecosystem** | ✗ | ✗ | ✓ | In development |
+| **Proven Architectural Compliance** | ✓ | In progress | ✓ | Production / Dev / Dev |
+| **7-Phase Workflow** | ✓ | ✓ | ✓ | All commands |
+| **Behavioral Injection Pattern** | ✓ | ✓ | ✓ | All commands |
+| **Fail-Fast Error Handling** | ✓ | ✓ | ✓ | All commands |
+| **Checkpoint Recovery** | ✓ | ✓ | ✓ | All commands |
+| **Context Management (<30%)** | ✓ | ✓ | ✓ | All commands |
+
+### Command-Specific Capabilities
+
+#### /coordinate (Production-Ready)
+- **Complexity**: 2,500-3,000 lines (medium)
+- **Unique Features**:
+  - Wave-based parallel implementation (40-60% time savings)
+  - Workflow scope auto-detection (4 workflow types)
+  - Concise verification formatting (90% token reduction)
+  - Pure orchestration architecture (no command chaining)
+- **Best For**: All production workflows, default choice
+- **Stability**: Stable, tested, recommended
+
+#### /orchestrate (In Development)
+- **Complexity**: 5,438 lines (heaviest)
+- **Unique Features**:
+  - PR automation with github-specialist agent (574 lines)
+  - Interactive progress dashboard (ANSI terminal, 351-line library)
+  - Comprehensive metrics tracking and performance reporting
+- **Best For**: Experimenting with PR automation features
+- **Stability**: Experimental, may have inconsistent behavior
+- **Warning**: Not recommended for production use until stabilized
+
+#### /supervise (In Development)
+- **Complexity**: 1,939 lines (lightest)
+- **Unique Features**:
+  - Comprehensive external documentation (usage guide + phase reference)
+  - Proven architectural compliance through Spec 507 refactoring
+  - Partial failure handling (≥50% success in Phase 1)
+  - Sequential execution validation
+- **Best For**: Reference implementation, architectural study
+- **Stability**: Being stabilized, not yet production-ready
+- **Warning**: Use /coordinate instead for reliable workflows
+
+### Use Case Recommendations
+
+**Default Choice**: Use **/coordinate** for all standard orchestration workflows:
+- Research + planning workflows
+- Full implementation workflows (research → plan → implement → test)
+- Debug-only workflows
+- Documentation generation workflows
+
+**Experimental Features**: Try **/orchestrate** if you need:
+- Automatic pull request creation and GitHub integration
+- Real-time progress dashboards for complex workflows
+- Comprehensive workflow metrics and performance analysis
+- **Note**: Expect potential instability and inconsistent behavior
+
+**Reference Study**: Use **/supervise** if you want:
+- Minimal reference implementation for learning
+- Sequential execution without wave-based parallelization
+- External documentation ecosystem patterns
+- **Note**: Not yet stable for production workflows
+
+### Architectural Compatibility
+
+All three commands share 100% architectural compatibility:
+
+- **7-Phase Workflow**: Phase 0 (location) → Phase 1 (research) → Phase 2 (planning) → Phase 3 (implementation) → Phase 4 (testing) → Phase 5 (debug) → Phase 6 (documentation) → Phase 7 (summary)
+- **Behavioral Injection**: Direct agent invocation via Task tool with pre-calculated paths
+- **Fail-Fast Error Handling**: Zero retries, comprehensive diagnostics, immediate termination
+- **Checkpoint Recovery**: Auto-resume from last completed phase
+- **Shared Infrastructure**: Identical library dependencies and agent behavioral files
+
+**Interoperability**: Commands can be used interchangeably within workflows based on specific needs, though /coordinate is recommended as the default.
+
+### Research Reference
+
+For detailed comparative analysis, see:
+- [Spec 513 Research Report](../../specs/513_compare_orchestrate_supervise_and_coordinate_in_or/reports/001_compare_orchestrate_supervise_and_coordinate_in_or/OVERVIEW.md)
+
+---
+
 ## The Unified 7-Phase Framework
 
 All orchestration commands follow this structure:

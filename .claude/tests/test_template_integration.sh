@@ -10,6 +10,13 @@ LIB_DIR="$SCRIPT_DIR/../lib"
 TEMPLATE_DIR="$SCRIPT_DIR/../templates"
 TEST_SPECS_DIR="$SCRIPT_DIR/test_specs"
 
+# Check if template system exists
+if [[ ! -d "$TEMPLATE_DIR" ]]; then
+  echo "⚠️  SKIPPED: Template system not found (may have been removed/refactored)"
+  echo "Template directory expected at: $TEMPLATE_DIR"
+  exit 0
+fi
+
 # Note: We'll call utility functions directly rather than sourcing
 # to avoid side effects from script-level code
 

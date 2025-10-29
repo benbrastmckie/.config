@@ -17,17 +17,21 @@ This plan improves the documentation in `.claude/docs/` to clearly communicate t
 
 **Key Insight**: /orchestrate is the heaviest (5,438 lines, PR automation + dashboards), /supervise is the lightest (1,939 lines, proven minimal reference), and /coordinate is the middle ground (2,500-3,000 lines, wave-based parallel execution).
 
+**IMPORTANT NOTE**: /orchestrate and /supervise are currently under active development and do not yet provide consistent, production-ready functionality. /coordinate is the stable, production-ready orchestration command. Documentation should clearly communicate this maturity difference to guide users toward /coordinate for reliable workflows.
+
 ## Success Criteria
 - [ ] Clear command selection guidance added to appropriate locations
+- [ ] Maturity status prominently displayed for each command (/coordinate = production-ready, others = in development)
 - [ ] Redundant or conflicting information removed (target: eliminate redundancy in 3-5 files)
-- [ ] Simple decision tree for users to choose the right command
-- [ ] File size complexities accurately communicated
-- [ ] Unique features of each command clearly documented
-- [ ] CLAUDE.md orchestration section updated for clarity
+- [ ] Simple decision tree for users to choose the right command (default: /coordinate)
+- [ ] File size complexities accurately communicated with maturity notes
+- [ ] Unique features of each command clearly documented with stability warnings
+- [ ] CLAUDE.md orchestration section updated for clarity with /coordinate as recommended default
 - [ ] All documentation cross-references validated
 - [ ] Selection guide integrated with orchestration-best-practices.md (created in Plan 509)
 - [ ] Timeless documentation maintained (no historical markers or date references)
 - [ ] All archived content includes redirect READMEs
+- [ ] Clear guidance steering users to /coordinate for production use
 
 ## Technical Design
 
@@ -52,13 +56,15 @@ This plan improves the documentation in `.claude/docs/` to clearly communicate t
 1. **orchestration-best-practices.md Updates** (Phase 1): Add command selection section to existing unified guide
    - Current: 1,113 lines with 7-phase workflow documentation
    - Add: ~200-250 lines for command selection section
-   - Content: Decision tree, feature comparison matrix, use case recommendations
+   - Content: **Maturity status**, decision tree (default: /coordinate), feature comparison matrix with maturity column, use case recommendations
    - Position: Early in document (after Overview, before detailed phase documentation)
    - Target: ~1,300-1,350 lines total
+   - **Key message**: /coordinate is production-ready default; /orchestrate and /supervise are experimental
 
 2. **CLAUDE.md Updates** (Phase 2): Add cross-reference to orchestration-best-practices.md command selection section
    - Simplify inline orchestration command descriptions
    - Add prominent link to command selection section
+   - **Add maturity status** for each command with /coordinate as recommended default
 
 3. **orchestration-reference.md Updates** (Phase 3): Ensure single cross-reference to command selection section
    - Current: ~990 lines (consolidated in Plan 509)
@@ -68,8 +74,9 @@ This plan improves the documentation in `.claude/docs/` to clearly communicate t
 4. **command-reference.md Updates** (Phase 4): Add "see also" links to orchestration-best-practices.md command selection
    - Update /orchestrate, /coordinate, /supervise entries
    - Add file size information for each command
+   - **Add maturity status** for each command entry
 
-**Rationale**: Plan 509 created orchestration-best-practices.md as the comprehensive orchestration guide. Integrate command selection there (not in a separate file) for single source of truth. This follows Plan 509's consolidation principles.
+**Rationale**: Plan 509 created orchestration-best-practices.md as the comprehensive orchestration guide. Integrate command selection there (not in a separate file) for single source of truth. This follows Plan 509's consolidation principles. **Added consideration**: Clearly communicate that /coordinate is the production-ready default to prevent users from choosing unstable alternatives.
 
 ### Avoiding Redundancy
 - **Don't repeat** feature lists in multiple places
@@ -90,13 +97,21 @@ This plan improves the documentation in `.claude/docs/` to clearly communicate t
 Tasks:
 - [ ] Read orchestration-best-practices.md to understand current structure
 - [ ] Add "Command Selection" section early in document (after Overview, before detailed phase documentation)
+- [ ] Add maturity/stability section prominently at the top:
+  - /coordinate: **Production-ready** - stable, tested, recommended for all workflows
+  - /orchestrate: **In Development** - PR automation features being refined, may have inconsistent behavior
+  - /supervise: **In Development** - minimal reference implementation being stabilized
 - [ ] Add decision tree (ASCII art using Unicode box-drawing for terminal compatibility)
+  - Default recommendation: Use /coordinate unless you need specific experimental features
 - [ ] Add feature comparison matrix (markdown table format)
+  - Include "Maturity Status" column
 - [ ] Document file size hierarchy clearly:
-  - /orchestrate: 5,438 lines (heaviest, PR automation + dashboards)
-  - /coordinate: 2,500-3,000 lines (middle, wave-based parallel execution)
-  - /supervise: 1,939 lines (lightest, proven minimal reference)
+  - /orchestrate: 5,438 lines (heaviest, PR automation + dashboards, **in development**)
+  - /coordinate: 2,500-3,000 lines (middle, wave-based parallel execution, **production-ready**)
+  - /supervise: 1,939 lines (lightest, proven minimal reference, **in development**)
 - [ ] Add use case recommendations from Spec 513 research report
+  - Emphasize /coordinate as default choice
+  - Note /orchestrate and /supervise as experimental alternatives
 - [ ] Include interoperability note (commands are 100% architecturally compatible)
 - [ ] Reference Spec 513 research report OVERVIEW.md for detailed findings
 - [ ] Add navigation breadcrumb at top if not present
@@ -125,11 +140,19 @@ Expected: orchestration-best-practices.md enhanced with command selection sectio
 
 Tasks:
 - [ ] Update lines 360-373 in CLAUDE.md (orchestration commands section)
-- [ ] Clarify file size hierarchy (/orchestrate: 5,438 lines (heaviest), /coordinate: 2,500-3,000 lines (middle), /supervise: 1,939 lines (lightest))
+- [ ] Add maturity status to each command:
+  - /coordinate: Production-ready, recommended for all workflows
+  - /orchestrate: In development, experimental PR automation features
+  - /supervise: In development, minimal reference being stabilized
+- [ ] Clarify file size hierarchy with maturity notes:
+  - /orchestrate: 5,438 lines (heaviest, **in development**)
+  - /coordinate: 2,500-3,000 lines (middle, **production-ready**)
+  - /supervise: 1,939 lines (lightest, **in development**)
 - [ ] Add prominent link to orchestration-best-practices.md command selection section
+- [ ] Include clear recommendation: "Use /coordinate for reliable production workflows"
 - [ ] Remove redundant feature descriptions
-- [ ] Keep one-line summary per command
-- [ ] Ensure "three orchestration commands available" statement is clear
+- [ ] Keep one-line summary per command with maturity status
+- [ ] Ensure "three orchestration commands available" statement mentions /coordinate as production-ready default
 - [ ] Follow timeless documentation principles from Plan 509 (no historical markers)
 
 Testing:
@@ -191,18 +214,22 @@ Expected: orchestration-reference.md has clear link to command selection section
 Tasks:
 - [ ] Update /orchestrate entry in command-reference.md
   - Add "Heaviest (5,438 lines), includes PR automation and dashboards"
+  - Add maturity status: "**Status**: In Development - experimental features, may have inconsistent behavior"
   - Link to orchestration-best-practices.md command selection section
 - [ ] Update /coordinate entry in command-reference.md
   - Add "Middle ground (2,500-3,000 lines), wave-based parallel execution"
+  - Add maturity status: "**Status**: Production-Ready - stable, tested, recommended for all workflows"
+  - Mark as default/recommended choice
   - Link to orchestration-best-practices.md command selection section
 - [ ] Update /supervise entry in command-reference.md (if exists)
   - Add "Lightest (1,939 lines), proven minimal reference"
+  - Add maturity status: "**Status**: In Development - minimal reference being stabilized"
   - Link to orchestration-best-practices.md command selection section
   - Verify links to supervise-guide.md still work
-- [ ] Verify "Use Case" fields mention appropriate scenarios
+- [ ] Verify "Use Case" fields emphasize /coordinate as default, others as experimental
 - [ ] Search for redundant feature comparisons in other docs and remove/update
 - [ ] Validate all cross-reference links work
-- [ ] Ensure no documentation contradicts research findings
+- [ ] Ensure no documentation contradicts maturity status or research findings
 - [ ] Update orchestration-troubleshooting.md if it contains comparison info (defer to best practices guide)
 - [ ] Run timeless documentation validation (no historical markers)
 
@@ -335,6 +362,28 @@ No new files - integrate content into existing orchestration-best-practices.md c
 
 ## Revision History
 
+### 2025-10-29 - Revision 3: Add Maturity Status for Orchestration Commands
+
+**Changes Made**:
+- **Updated Overview**: Added IMPORTANT NOTE stating /orchestrate and /supervise are in development, /coordinate is production-ready
+- **Updated Success Criteria**: Added maturity status display requirement and clear guidance steering users to /coordinate
+- **Updated Documentation Strategy**: Added maturity status messaging throughout all planned updates
+- **Updated Phase 1 tasks**: Added maturity/stability section as first task, updated decision tree to default to /coordinate, added maturity status column to feature comparison matrix
+- **Updated Phase 2 tasks**: Added maturity status for each command, clear recommendation for /coordinate, updated CLAUDE.md text to mention /coordinate as production-ready default
+- **Updated Phase 4 tasks**: Added maturity status to all command entries in command-reference.md, marked /coordinate as default/recommended choice
+- **Updated Notes section**: Added maturity status to unique features highlights
+
+**Reason**: /orchestrate and /supervise are currently under active development and do not provide consistent, production-ready functionality. Users should be clearly guided toward /coordinate as the stable, recommended orchestration command. Documentation must prominently communicate this maturity difference to prevent users from encountering unstable behavior in production workflows.
+
+**Modified Phases**: All phases (1-4), Overview, Success Criteria, Documentation Strategy, Notes section
+
+**Key Messaging**:
+- /coordinate: **Production-ready** - stable, tested, recommended for all workflows
+- /orchestrate: **In Development** - experimental PR automation features, may have inconsistent behavior
+- /supervise: **In Development** - minimal reference implementation being stabilized
+
+**Impact on Implementation**: Each phase now includes tasks to add maturity status indicators throughout documentation. Decision tree and recommendation text will default to /coordinate as the production-ready choice.
+
 ### 2025-10-29 - Revision 2: Update for Post-Plan-509 Reality
 
 **Changes Made**:
@@ -403,9 +452,9 @@ Always present file sizes in this order and format:
 - `/supervise`: 1,939 lines (lightest)
 
 ### Unique Features to Highlight
-- `/orchestrate only`: PR automation, interactive dashboards, comprehensive metrics
-- `/supervise only`: Minimal reference, extensive external docs, proven compliance
-- `/coordinate only`: Wave-based parallel execution (40-60% time savings), workflow auto-detection
+- `/orchestrate only`: PR automation, interactive dashboards, comprehensive metrics (**experimental, in development**)
+- `/supervise only`: Minimal reference, extensive external docs, proven compliance (**in development, being stabilized**)
+- `/coordinate only`: Wave-based parallel execution (40-60% time savings), workflow auto-detection (**production-ready, recommended**)
 
 ### Risk Mitigation
 - **Risk**: Making docs too long or complex

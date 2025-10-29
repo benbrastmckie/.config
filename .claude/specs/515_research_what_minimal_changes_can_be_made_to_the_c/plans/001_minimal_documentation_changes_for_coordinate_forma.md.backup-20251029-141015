@@ -3,10 +3,10 @@
 ## Metadata
 
 - **Date**: 2025-10-29
-- **Feature**: Remove verbose mode and update documentation reflecting Plan 002 formatting improvements
-- **Scope**: Remove COORDINATE_VERBOSE from /coordinate, minimal documentation changes
-- **Estimated Phases**: 4
-- **Estimated Hours**: 5-6 hours
+- **Feature**: Documentation updates reflecting Plan 002 formatting improvements
+- **Scope**: Minimal changes to existing documentation only
+- **Estimated Phases**: 3
+- **Estimated Hours**: 4-5 hours
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - [Analysis of Plan 002 Formatting Changes](../reports/001_analysis_of_plan_002_formatting_changes_and_their.md)
@@ -16,11 +16,9 @@
 
 ## Overview
 
-Plan 002 implemented significant formatting improvements to /coordinate command (50-60% context reduction). Following the spec 509 Diataxis reorganization (completed 2025-10-28), documentation is now structured into reference/, guides/, concepts/, and workflows/ directories. This plan begins by removing the optional verbose mode (COORDINATE_VERBOSE) from /coordinate to ensure a clean, economical implementation, then implements MINIMAL documentation changes to reflect Plan 002 formatting features: update orchestration-best-practices.md (guides/) with formatting section, remove historical language from key files, and consolidate scattered progress marker documentation. No new files created.
+Plan 002 implemented significant formatting improvements to /coordinate command (50-60% context reduction). Following the spec 509 Diataxis reorganization (completed 2025-10-28), documentation is now structured into reference/, guides/, concepts/, and workflows/ directories. This plan implements MINIMAL changes to reflect Plan 002 formatting features: update orchestration-best-practices.md (guides/) with formatting section, remove historical language from key files, and consolidate scattered progress marker documentation. No new files created.
 
 **Key Constraint**: Work with existing files in Diataxis structure, avoid creating new documentation, remove redundancy through consolidation not expansion.
-
-**Implementation Strategy**: Phase 0 removes verbose mode from command first, ensuring implementation matches documentation written in subsequent phases.
 
 **Note**: Spec 509 reorganization completed before this plan execution. All file paths now reflect Diataxis structure.
 
@@ -38,8 +36,6 @@ Research identified three critical issues requiring minimal documentation change
 
 ## Success Criteria
 
-- [ ] COORDINATE_VERBOSE optional verbose mode removed from /coordinate command
-- [ ] /coordinate produces only concise 8-line summary (no verbose option)
 - [ ] orchestration-best-practices.md documents all Plan 002 formatting features
 - [ ] Historical language removed from 5 key files (coordinate.md, orchestration-best-practices.md, orchestration-guide.md, behavioral-injection.md, command_architecture_standards.md)
 - [ ] Progress markers consolidated into single authoritative section (orchestration-best-practices.md)

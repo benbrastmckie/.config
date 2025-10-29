@@ -3,10 +3,10 @@
 ## Metadata
 
 - **Date**: 2025-10-29
-- **Feature**: Remove verbose mode and update documentation reflecting Plan 002 formatting improvements
-- **Scope**: Remove COORDINATE_VERBOSE from /coordinate, minimal documentation changes
-- **Estimated Phases**: 4
-- **Estimated Hours**: 5-6 hours
+- **Feature**: Documentation updates reflecting Plan 002 formatting improvements
+- **Scope**: Minimal changes to existing documentation only
+- **Estimated Phases**: 3
+- **Estimated Hours**: 4-5 hours
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - [Analysis of Plan 002 Formatting Changes](../reports/001_analysis_of_plan_002_formatting_changes_and_their.md)
@@ -16,11 +16,9 @@
 
 ## Overview
 
-Plan 002 implemented significant formatting improvements to /coordinate command (50-60% context reduction). Following the spec 509 Diataxis reorganization (completed 2025-10-28), documentation is now structured into reference/, guides/, concepts/, and workflows/ directories. This plan begins by removing the optional verbose mode (COORDINATE_VERBOSE) from /coordinate to ensure a clean, economical implementation, then implements MINIMAL documentation changes to reflect Plan 002 formatting features: update orchestration-best-practices.md (guides/) with formatting section, remove historical language from key files, and consolidate scattered progress marker documentation. No new files created.
+Plan 002 implemented significant formatting improvements to /coordinate command (50-60% context reduction). Following the spec 509 Diataxis reorganization (completed 2025-10-28), documentation is now structured into reference/, guides/, concepts/, and workflows/ directories. This plan implements MINIMAL changes to reflect Plan 002 formatting features: update orchestration-best-practices.md (guides/) with formatting section, remove historical language from key files, and consolidate scattered progress marker documentation. No new files created.
 
 **Key Constraint**: Work with existing files in Diataxis structure, avoid creating new documentation, remove redundancy through consolidation not expansion.
-
-**Implementation Strategy**: Phase 0 removes verbose mode from command first, ensuring implementation matches documentation written in subsequent phases.
 
 **Note**: Spec 509 reorganization completed before this plan execution. All file paths now reflect Diataxis structure.
 
@@ -32,14 +30,12 @@ Research identified three critical issues requiring minimal documentation change
 
 2. **Documentation Scatter** (Report 002): /coordinate features documented in 11 files with 60-70% overlap. Progress markers mentioned in 25+ files without single authoritative reference. Historical language in 85+ files creates confusion about current vs past state.
 
-3. **Key Formatting Features** (Report 001): Workflow scope detection (71→10 lines), silent library operation (30+→0 lines), fail-fast verification with diagnostics, consistent PROGRESS markers, simplified completion summaries (53→8 lines).
+3. **Key Formatting Features** (Report 001): Workflow scope detection (71→10 lines), silent library operation (30+→0 lines), fail-fast verification with diagnostics, consistent PROGRESS markers, optional verbose mode (COORDINATE_VERBOSE=true).
 
 **Recommended Approach**: Update orchestration-best-practices.md formatting section, remove historical language from 5 high-impact files, consolidate progress marker documentation into existing files (not new).
 
 ## Success Criteria
 
-- [ ] COORDINATE_VERBOSE optional verbose mode removed from /coordinate command
-- [ ] /coordinate produces only concise 8-line summary (no verbose option)
 - [ ] orchestration-best-practices.md documents all Plan 002 formatting features
 - [ ] Historical language removed from 5 key files (coordinate.md, orchestration-best-practices.md, orchestration-guide.md, behavioral-injection.md, command_architecture_standards.md)
 - [ ] Progress markers consolidated into single authoritative section (orchestration-best-practices.md)
@@ -87,13 +83,13 @@ dependencies: []
 **Tasks**:
 - [ ] Read orchestration-best-practices.md current structure (file: /home/benjamin/.config/.claude/docs/guides/orchestration-best-practices.md)
 - [ ] Identify insertion point (after Phase 0-7 descriptions in Diataxis structure, likely after Phase 7 section)
-- [ ] Add "Output Formatting and Context Management" section (~80-100 lines) documenting:
+- [ ] Add "Output Formatting and Context Management" section (~100-120 lines) documenting:
   - [ ] Library silence architecture (libraries calculate, commands communicate)
   - [ ] Workflow scope detection format (✓/✗ phase indicators, 8-12 lines)
-  - [ ] Concise verification pattern (1-2 lines on success, detailed diagnostics on failure)
+  - [ ] Concise verification pattern (1-2 lines on success, verbose on failure)
   - [ ] Fail-fast philosophy (no fallbacks, diagnostic output, >95% success via proper invocation)
   - [ ] Progress markers (PROGRESS: [Phase N] format, parseable by external tools)
-  - [ ] Simplified completion summaries (53→8 lines, 85% reduction)
+  - [ ] Two-tier summary (8-line default, detailed via COORDINATE_VERBOSE=true)
   - [ ] Context reduction metrics (50-60% overall, specific reductions by component)
 - [ ] Add cross-references to pattern files using Diataxis paths (../concepts/patterns/workflow-scope-detection.md, ../concepts/patterns/verification-fallback.md)
 - [ ] Use present-tense timeless language throughout (no "new", "now", "previously")
@@ -231,7 +227,7 @@ features=(
   "concise verification"
   "fail-fast"
   "progress markers"
-  "simplified completion"
+  "two-tier summary"
   "context reduction"
 )
 
@@ -257,7 +253,7 @@ grep -r "emit_progress\|PROGRESS:" /home/benjamin/.config/.claude/docs/ | wc -l
 ```
 
 **Success Criteria**:
-- [ ] All 7 formatting features documented in orchestration-best-practices.md (library silence, workflow scope detection, concise verification, fail-fast, progress markers, simplified completion, context reduction)
+- [ ] All 7 formatting features documented in orchestration-best-practices.md
 - [ ] Zero historical language markers in 3 key files
 - [ ] Progress marker mentions reduced from 25+ to <5
 
@@ -428,18 +424,6 @@ Adjusted Score (documentation overhead): 32.5 × 1.1 = 35.75
 - Final: Run complete regression test suite
 
 ## Revision History
-
-### 2025-10-29 - Revision 2: Remove Optional Verbose Mode
-
-**Changes**: Removed all references to optional verbose mode (COORDINATE_VERBOSE=true) from plan
-**Reason**: User explicitly requested no optional verbose mode for any commands
-**Modified Sections**:
-- Research Summary: Replaced "optional verbose mode" with "simplified completion summaries"
-- Phase 1 Tasks: Removed "two-tier summary" feature, replaced with "simplified completion summaries"
-- Testing: Updated feature list from "two-tier summary" to "simplified completion"
-- Success Criteria: Clarified the 7 features being documented
-
-**Impact**: Plan now focuses on documenting the simplified completion summary feature (53→8 lines) without mentioning any optional verbose mode. Section size estimate reduced from ~100-120 lines to ~80-100 lines.
 
 ### 2025-10-29 - Revision 1: Diataxis Structure Update
 
