@@ -1,271 +1,276 @@
-# /supervise Command Usage Guide
+# /supervise Usage Guide
 
 ## Overview
 
-The `/supervise` command provides clean multi-agent workflow orchestration through a standardized 7-phase process. It automatically detects workflow scope, delegates to specialized agents, and manages artifact creation with enhanced error handling and checkpoint recovery.
+The `/supervise` command is a clean multi-agent workflow orchestrator that coordinates research, planning, implementation, testing, debugging, and documentation through a 7-phase workflow.
+
+## Quick Start
+
+### Basic Usage
+
+```bash
+# Research only
+/supervise "research authentication patterns"
+
+# Research and plan (most common)
+/supervise "research auth patterns for planning"
+
+# Full implementation
+/supervise "implement user authentication feature"
+
+# Debug existing code
+/supervise "fix login timeout bug"
+```
 
 ## Workflow Scope Types
 
 The command automatically detects the workflow type from your description and executes only the appropriate phases:
 
-### 1. Research-Only Workflow
+###
+
+ 1. Research-Only
+
+**When to use**: Pure exploratory research without planning or implementation
 
 **Keywords**: "research [topic]" without "plan" or "implement"
 
-**Use Case**: Pure exploratory research
+**Phases executed**: 0-1 only
 
-**Phases Executed**: 0-1 only
+**Output**:
+- Research reports in `specs/{NNN_topic}/reports/`
+- No plan created
+- No summary generated
 
-**Artifacts Created**: 2-4 research reports
-
-**No plan created, no summary**
-
-Example:
+**Example**:
 ```bash
-/supervise "research API authentication patterns"
-
-# Expected behavior:
-# - Scope detected: research-only
-# - Phases executed: 0, 1
-# - Artifacts: 2-3 research reports
-# - No plan, no implementation, no summary
+/supervise "research best practices for error handling in bash scripts"
 ```
 
-### 2. Research-and-Plan Workflow (MOST COMMON)
+### 2. Research-and-Plan (MOST COMMON)
+
+**When to use**: Research to inform implementation planning
 
 **Keywords**: "research...to create plan", "analyze...for planning"
 
-**Use Case**: Research to inform planning
+**Phases executed**: 0-2 only
 
-**Phases Executed**: 0-2 only
+**Output**:
+- Research reports in `specs/{NNN_topic}/reports/`
+- Implementation plan in `specs/{NNN_topic}/plans/`
+- No summary (no implementation occurred)
 
-**Artifacts Created**: Research reports + implementation plan
-
-**No summary** (no implementation occurred)
-
-Example:
+**Example**:
 ```bash
-/supervise "research the authentication module to create a refactor plan"
-
-# Expected behavior:
-# - Scope detected: research-and-plan
-# - Phases executed: 0, 1, 2
-# - Artifacts: 4 research reports + 1 implementation plan
-# - No implementation, no summary (per standards)
-# - Plan ready for execution with /implement
+/supervise "research authentication patterns for planning JWT implementation"
 ```
 
-### 3. Full-Implementation Workflow
+### 3. Full-Implementation
+
+**When to use**: Complete feature development from research through documentation
 
 **Keywords**: "implement", "build", "add feature"
 
-**Use Case**: Complete feature development
+**Phases executed**: 0-4, 6 (Phase 5 conditional on test failures)
 
-**Phases Executed**: 0-4, 6
+**Output**:
+- Research reports
+- Implementation plan
+- Implementation artifacts
+- Test results
+- Debug reports (if tests failed)
+- Workflow summary
 
-**Phase 5 Conditional**: Only runs on test failures
-
-**Artifacts Created**: Reports + plan + implementation + summary
-
-Example:
+**Example**:
 ```bash
-/supervise "implement OAuth2 authentication for the API"
-
-# Expected behavior:
-# - Scope detected: full-implementation
-# - Phases executed: 0, 1, 2, 3, 4, 6
-# - Phase 5 conditional on test failures
-# - Artifacts: reports + plan + implementation + summary
+/supervise "implement user authentication with JWT tokens"
 ```
 
-### 4. Debug-Only Workflow
+### 4. Debug-Only
+
+**When to use**: Bug fixing without new implementation
 
 **Keywords**: "fix [bug]", "debug [issue]", "troubleshoot [error]"
 
-**Use Case**: Bug fixing without new implementation
+**Phases executed**: 0, 1, 5 only
 
-**Phases Executed**: 0, 1, 5 only
+**Output**:
+- Research reports (root cause analysis)
+- Debug reports
+- No new plan or summary
 
-**Artifacts Created**: Research reports + debug report
-
-**No new plan or summary**
-
-Example:
+**Example**:
 ```bash
-/supervise "fix the token refresh bug in auth.js"
-
-# Expected behavior:
-# - Scope detected: debug-only
-# - Phases executed: 0, 1, 5
-# - Artifacts: research reports + debug report
-# - No new plan or implementation (fixes existing code)
+/supervise "debug and fix the login timeout issue in auth module"
 ```
 
-## Common Usage Patterns
+## Workflow Phases
 
-### Pattern 1: Workflow Scope Detection
-
-```bash
-# Detect workflow scope and configure phases
-WORKFLOW_DESCRIPTION="research authentication patterns to create implementation plan"
-WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
-
-# Map scope to phase execution list
-case "$WORKFLOW_SCOPE" in
-  research-only)
-    PHASES_TO_EXECUTE="0,1"
-    ;;
-  research-and-plan)
-    PHASES_TO_EXECUTE="0,1,2"
-    ;;
-  full-implementation)
-    PHASES_TO_EXECUTE="0,1,2,3,4,6"
-    ;;
-  debug-only)
-    PHASES_TO_EXECUTE="0,1,5"
-    ;;
-esac
-
-export WORKFLOW_SCOPE PHASES_TO_EXECUTE
 ```
-
-### Pattern 2: Conditional Phase Execution
-
-```bash
-# Check if phase should run
-should_run_phase 3 || {
-  echo "⏭️  Skipping Phase 3 (Implementation)"
-  echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
-  exit 0
-}
-
-echo "Executing Phase 3: Implementation"
-```
-
-### Pattern 3: Error Handling with Recovery
-
-```bash
-# Classify error and determine recovery
-ERROR_MSG="Connection timeout after 30 seconds"
-ERROR_TYPE=$(classify_error "$ERROR_MSG")
-
-if [ "$ERROR_TYPE" == "transient" ]; then
-  echo "Transient error detected, retrying..."
-  retry_with_backoff 3 1000 curl "https://api.example.com"
-else
-  echo "Permanent error:"
-  suggest_recovery "$ERROR_TYPE" "$ERROR_MSG"
-  exit 1
-fi
-```
-
-### Pattern 4: Progress Markers
-
-```bash
-# Emit progress markers at phase transitions
-emit_progress "1" "Invoking 4 research agents in parallel"
-# ... agent invocations ...
-emit_progress "1" "All research agents completed"
-emit_progress "2" "Planning phase started"
+Phase 0: Location and Path Pre-Calculation
+  ↓
+Phase 1: Research (2-4 parallel agents)
+  ↓
+Phase 2: Planning (conditional)
+  ↓
+Phase 3: Implementation (conditional)
+  ↓
+Phase 4: Testing (conditional)
+  ↓
+Phase 5: Debug (conditional - only if tests fail)
+  ↓
+Phase 6: Documentation (conditional - only if implementation occurred)
 ```
 
 ## Performance Targets
 
-Expected performance characteristics:
-
 - **Context Usage**: <25% throughout workflow
-- **File Creation Rate**: 100% with auto-recovery (single retry for transient failures)
-- **Recovery Rate**: >95% for transient errors (timeouts, file locks)
-- **Performance Overhead**: <5% for recovery infrastructure
+- **File Creation Rate**: 100% with fail-fast error handling
+- **Error Feedback**: Immediate (<1s) with structured diagnostics
 - **Enhanced Error Reporting**:
   - Error location extraction accuracy: >90%
   - Error type categorization accuracy: >85%
   - Error reporting overhead: <30ms per error (negligible)
 
-## Auto-Recovery Features
+## Common Patterns
 
-The command implements verification-fallback pattern with single-retry for transient errors.
+### Pattern 1: Exploratory Research
 
-**Key Behaviors**:
-- Transient errors (timeouts, file locks): Single retry after 1s delay
-- Permanent errors (syntax, dependencies): Fail-fast with diagnostics
-- Partial research failure: Continue if ≥50% agents succeed
+Use when you need to understand a topic without committing to implementation:
 
-**See**: [Verification-Fallback Pattern](../concepts/patterns/verification-fallback.md)
+```bash
+/supervise "research state management patterns in React applications"
+```
 
-## Enhanced Error Reporting
+**Output**: Research reports only
 
-Failed operations receive enhanced diagnostics via error-handling.sh:
-- Error location extraction (file:line parsing)
-- Error type categorization (timeout, syntax, dependency, unknown)
-- Context-specific recovery suggestions
+**Next steps**: Review reports, decide if planning is needed
 
-**See**: [Error Handling Library](../../lib/error-handling.sh)
+### Pattern 2: Research-Driven Planning
 
-## Checkpoint Resume
+Use when you want research to inform a detailed implementation plan:
 
-Checkpoints saved after Phases 1-4. Auto-resumes from last completed phase on startup.
+```bash
+/supervise "research API authentication methods for planning secure REST API"
+```
 
-**Behavior**: Validates checkpoint → Skips completed phases → Resumes seamlessly
+**Output**: Research reports + Implementation plan
 
-**See**: [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md)
+**Next steps**: Review plan, run `/implement` when ready
 
-## Available Utility Functions
+### Pattern 3: End-to-End Feature Development
 
-All utility functions are sourced from library files. This table documents the complete API:
+Use when you want complete automation from research through testing:
 
-### Workflow Detection Functions
+```bash
+/supervise "implement rate limiting for API endpoints with Redis backend"
+```
 
-| Function | Library | Purpose | Usage Example |
-|----------|---------|---------|---------------|
-| `detect_workflow_scope()` | workflow-detection.sh | Determine workflow type from description | `SCOPE=$(detect_workflow_scope "$DESC")` |
-| `should_run_phase()` | workflow-detection.sh | Check if phase executes for current scope | `should_run_phase 3 \|\| exit 0` |
+**Output**: Complete artifact set (research, plan, implementation, tests, summary)
 
-### Error Handling Functions
+**Next steps**: Review summary, address any test failures
 
-| Function | Library | Purpose | Usage Example |
-|----------|---------|---------|---------------|
-| `classify_error()` | error-handling.sh | Classify error type (transient/permanent/fatal) | `TYPE=$(classify_error "$ERROR_MSG")` |
-| `suggest_recovery()` | error-handling.sh | Suggest recovery action based on error type | `suggest_recovery "$ERROR_TYPE" "$MSG"` |
-| `retry_with_backoff()` | error-handling.sh | Retry operation with exponential backoff | `retry_with_backoff 3 1000 operation` |
+### Pattern 4: Bug Investigation and Fix
 
-### Checkpoint Functions
+Use when debugging existing code:
 
-| Function | Library | Purpose | Usage Example |
-|----------|---------|---------|---------------|
-| `save_checkpoint()` | checkpoint-utils.sh | Save workflow state | `save_checkpoint "$PHASE" "$STATE"` |
-| `restore_checkpoint()` | checkpoint-utils.sh | Restore workflow state | `restore_checkpoint` |
+```bash
+/supervise "fix memory leak in background job processor"
+```
 
-### Progress Tracking Functions
+**Output**: Root cause analysis + Debug report
 
-| Function | Library | Purpose | Usage Example |
-|----------|---------|---------|---------------|
-| `emit_progress()` | unified-logger.sh | Emit progress marker | `emit_progress "1" "Research complete"` |
+**Next steps**: Review fixes, verify solution
+
+## Tips and Best Practices
+
+### 1. Be Specific in Your Description
+
+**Good**:
+```bash
+/supervise "research OAuth 2.0 flows for planning secure third-party integrations"
+```
+
+**Less effective**:
+```bash
+/supervise "research security"
+```
+
+### 2. Use Appropriate Keywords
+
+- **"research"** - Triggers research-only or research-and-plan
+- **"for planning"** - Ensures plan is created
+- **"implement"** - Triggers full implementation workflow
+- **"fix"/"debug"** - Triggers debug-only workflow
+
+### 3. Leverage Automatic Scope Detection
+
+The command automatically determines workflow scope, so you don't need to specify phases manually. Just describe your goal naturally.
+
+### 4. Check Output Locations
+
+All artifacts are organized in topic-based directories:
+
+```
+specs/
+  NNN_topic_name/
+    reports/        # Research reports
+    plans/          # Implementation plans
+    summaries/      # Workflow summaries
+    debug/          # Debug reports (if applicable)
+```
+
+### 5. Use Fail-Fast Diagnostics
+
+When errors occur, the command provides structured 5-section diagnostics:
+
+1. **ERROR**: What failed
+2. **Expected/Found**: What was supposed to happen vs what actually happened
+3. **DIAGNOSTIC INFORMATION**: Paths, directory status, agent details
+4. **Diagnostic Commands**: Example commands to debug
+5. **Most Likely Causes**: Common failure reasons
+
+Review these diagnostics to quickly identify and resolve issues.
 
 ## Troubleshooting
 
-### Common Issues
+### Agent Failed to Create File
 
-**Issue**: Workflow scope not detected correctly
+**Symptom**: Verification checkpoint fails with "File does not exist"
 
-**Solution**: Ensure your description includes clear keywords:
-- For research-only: "research [topic]"
-- For planning: "research...to create plan"
-- For implementation: "implement [feature]"
-- For debugging: "fix [bug]" or "debug [issue]"
+**Diagnosis**: Check the diagnostic output for:
+- Expected path
+- Directory status
+- Agent output above verification checkpoint
 
-**Issue**: Phase skipped unexpectedly
+**Common causes**:
+1. Agent encountered error during execution
+2. Path mismatch (agent used different path)
+3. Permission denied
 
-**Solution**: Check the detected workflow scope. Use `should_run_phase N` to verify phase execution logic.
+**Solution**: Run the diagnostic commands provided in the error output
 
-**Issue**: Checkpoint resume failing
+### Workflow Scope Incorrect
 
-**Solution**: Verify checkpoint file exists and is readable. See [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md) for migration details.
+**Symptom**: Wrong phases executed (e.g., plan created when you wanted research-only)
 
-## Related Documentation
+**Diagnosis**: Review your workflow description
+
+**Solution**: Adjust keywords:
+- Add "for planning" to trigger plan creation
+- Remove "implement" to avoid full workflow
+- Use "research" alone for research-only
+
+### Tests Failing
+
+**Symptom**: Phase 5 (Debug) executes automatically
+
+**Behavior**: This is expected - Phase 5 only runs if tests fail
+
+**Solution**: Review debug report for proposed fixes, or run `/implement` to apply fixes iteratively
+
+## See Also
 
 - [/supervise Phase Reference](../reference/supervise-phases.md) - Detailed phase documentation
-- [Command Reference](../reference/command-reference.md) - All available commands
-- [Orchestration Troubleshooting](orchestration-troubleshooting.md) - Advanced debugging
-- [Verification-Fallback Pattern](../concepts/patterns/verification-fallback.md) - Auto-recovery pattern
-- [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md) - Resume capability
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - How agents are invoked
+- [Verification-Fallback Pattern](../concepts/patterns/verification-fallback.md) - Fail-fast error handling
+- [Directory Protocols](../concepts/directory-protocols.md) - Artifact organization structure
