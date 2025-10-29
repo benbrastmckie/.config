@@ -212,11 +212,11 @@ Phases to execute: 0,1
 
 ### Success Criteria
 
-- [ ] emit_progress() available in all Phase 0 bash blocks
-- [ ] No "command not found" errors during execution
-- [ ] Library sourcing completes before any function calls
-- [ ] Verification checks catch missing functions
-- [ ] Error messages provide clear diagnostics
+- [x] emit_progress() available in all Phase 0 bash blocks
+- [x] No "command not found" errors during execution
+- [x] Library sourcing completes before any function calls
+- [x] Verification checks catch missing functions
+- [x] Error messages provide clear diagnostics
 
 ---
 
@@ -504,12 +504,12 @@ fi
 
 ### Success Criteria
 
-- [ ] Success output reduced from 50+ lines to 1-2 lines
-- [ ] Failure output remains verbose with full diagnostics
-- [ ] Token reduction ≥90% (3,150+ tokens saved)
-- [ ] 100% file creation reliability maintained
-- [ ] emit_progress markers consistent across all phases
-- [ ] User can quickly scan output for pass/fail status
+- [x] Success output reduced from 50+ lines to 1-2 lines
+- [x] Failure output remains verbose with full diagnostics
+- [x] Token reduction ≥90% (3,150+ tokens saved)
+- [x] 100% file creation reliability maintained
+- [x] emit_progress markers consistent across all phases
+- [x] User can quickly scan output for pass/fail status
 
 ---
 
@@ -650,12 +650,12 @@ grep -n "emit_progress" coordinate.md | grep -v "PROGRESS: \[Phase [0-9]\]"
 
 ### Success Criteria
 
-- [ ] All phase transitions use emit_progress
-- [ ] No box-drawing headers remain
-- [ ] Format consistent across all 7 phases
-- [ ] Externally parseable via `grep "PROGRESS:"`
-- [ ] No redundant status messages
-- [ ] User can monitor progress programmatically
+- [x] All phase transitions use emit_progress
+- [x] No box-drawing headers remain (except special cases: checkpoint resume, workflow complete)
+- [x] Format consistent across all 7 phases
+- [x] Externally parseable via `grep "PROGRESS:"`
+- [x] No redundant status messages
+- [x] User can monitor progress programmatically
 
 ---
 

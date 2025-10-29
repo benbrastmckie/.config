@@ -957,4 +957,4 @@ RESULT=$(some_library_function "arg") || {
 - [Using Utility Libraries](../guides/using-utility-libraries.md) - Task-focused guide for library usage
 - [Command Development Guide](../guides/command-development-guide.md) - Creating commands that use libraries
 - [Agent Development Guide](../guides/agent-development-guide.md) - Creating agents that use libraries
-- [Performance Measurement](../guides/performance-measurement.md) - Measuring library performance impact
+- [Performance Measurement](../guides/performance-optimization.md) - Measuring library performance impact

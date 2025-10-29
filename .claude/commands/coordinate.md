@@ -347,128 +347,18 @@ PROGRESS: [Phase N] - [action]
 
 Example: `PROGRESS: [Phase 1] - Research complete (4/4 succeeded)`
 
-## Shared Utility Functions
+## Available Utility Functions
 
-[EXECUTION-CRITICAL: Source statements for required libraries - cannot be moved to external files]
+[Library sourcing is now implemented in Phase 0 STEP 0]
 
-**EXECUTE NOW - Source Required Libraries**
+See Phase 0 STEP 0 for library sourcing implementation. All required libraries are sourced at the beginning of the workflow before any bash blocks execute.
 
-# Determine script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Load required libraries using consolidated function
-echo "Loading required libraries..."
-
-# Source library-sourcing utilities first
-if [ -f "$SCRIPT_DIR/../lib/library-sourcing.sh" ]; then
-  # shellcheck disable=SC1091
-  source "$SCRIPT_DIR/../lib/library-sourcing.sh"
-else
-  echo "ERROR: Required library not found: library-sourcing.sh"
-  echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/library-sourcing.sh"
-  echo ""
-  echo "This library provides consolidated library sourcing functions."
-  echo ""
-  echo "Diagnostic commands:"
-  echo "  ls -la $SCRIPT_DIR/../lib/ | grep library-sourcing"
-  echo "  cat $SCRIPT_DIR/../lib/library-sourcing.sh"
-  echo ""
-  echo "Please ensure the library file exists and is readable."
-  exit 1
-fi
-
-# Source all required libraries using consolidated function
-# /coordinate requires dependency-analyzer.sh in addition to core libraries
-if ! source_required_libraries "dependency-analyzer.sh"; then
-  # Error already reported by source_required_libraries()
-  exit 1
-fi
-
-echo "✓ All libraries loaded successfully"
-
-# Define display_brief_summary function inline
-# (Must be defined before function verification checks below)
-display_brief_summary() {
-  echo ""
-  echo "✓ Workflow complete: $WORKFLOW_SCOPE"
-
-  case "$WORKFLOW_SCOPE" in
-    research-only)
-      local report_count=${#REPORT_PATHS[@]}
-      echo "Created $report_count research reports in: $TOPIC_PATH/reports/"
-      echo "→ Review artifacts: ls -la $TOPIC_PATH/reports/"
-      ;;
-    research-and-plan)
-      local report_count=${#REPORT_PATHS[@]}
-      echo "Created $report_count reports + 1 plan in: $TOPIC_PATH/"
-      echo "→ Run: /implement $PLAN_PATH"
-      ;;
-    full-implementation)
-      echo "Implementation complete. Summary: $SUMMARY_PATH"
-      echo "→ Review summary for next steps"
-      ;;
-    debug-only)
-      echo "Debug analysis complete: $DEBUG_REPORT"
-      echo "→ Review findings and apply fixes"
-      ;;
-    *)
-      echo "Workflow artifacts available in: $TOPIC_PATH"
-      echo "→ Review directory for outputs"
-      ;;
-  esac
-  echo ""
-}
-
-# Verify critical functions are defined after library sourcing
-# This prevents "command not found" errors at runtime
-REQUIRED_FUNCTIONS=(
-  "detect_workflow_scope"
-  "should_run_phase"
-  "emit_progress"
-  "save_checkpoint"
-  "restore_checkpoint"
-)
-
-MISSING_FUNCTIONS=()
-for func in "${REQUIRED_FUNCTIONS[@]}"; do
-  if ! command -v "$func" >/dev/null 2>&1; then
-    MISSING_FUNCTIONS+=("$func")
-  fi
-done
-
-if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
-  echo "ERROR: Required functions not defined after library sourcing:"
-  for func in "${MISSING_FUNCTIONS[@]}"; do
-    echo "  - $func()"
-  done
-  echo ""
-  echo "This is a bug in the /coordinate command. Please report this issue with:"
-  echo "  - The workflow description you used"
-  echo "  - This error message"
-  echo "  - Output of: ls -la $SCRIPT_DIR/../lib/"
-  echo ""
-  echo "Issue tracker: https://github.com/anthropics/claude-code/issues"
-  exit 1
-fi
-
-# Note: display_brief_summary is defined inline (not in a library)
-# Verify it exists
-if ! command -v display_brief_summary >/dev/null 2>&1; then
-  echo "ERROR: display_brief_summary() function not defined"
-  echo "This is a critical bug in the /coordinate command."
-  echo "Please report this issue at: https://github.com/anthropics/claude-code/issues"
-  exit 1
-fi
-
-**Verification**: All required functions available via sourced libraries.
+**Verification**: All required functions available via sourced libraries (verified in Phase 0 STEP 0).
 
 **Note on Design Decisions**:
 - **Metadata extraction**: Uses path-based context passing (not full content) for efficient context management
 - **Context pruning**: Bash variables naturally scope, preventing context bloat
 - **Fail-fast error handling**: Single execution attempt with comprehensive diagnostics for easy debugging
-
-## Available Utility Functions
 
 [REFERENCE-OK: Can be supplemented with external library documentation]
 
@@ -620,17 +510,100 @@ emit_progress "2" "Planning phase started"
 
 ## Phase 0: Project Location and Path Pre-Calculation
 
-[EXECUTION-CRITICAL: Path calculation before agent invocations - inline bash required]
+[EXECUTION-CRITICAL: Library sourcing MUST occur before any function calls]
 
-**Objective**: Establish topic directory structure and calculate all artifact paths.
+**Objective**: Source required libraries, then establish topic directory structure and calculate all artifact paths.
 
-**Pattern**: utility-based location detection → directory creation → path export
+**Pattern**: Library sourcing → utility-based location detection → directory creation → path export
 
 **Optimization**: Uses deterministic bash utilities (topic-utils.sh, detect-project-dir.sh) for 85-95% token reduction and 20x+ speedup compared to agent-based detection.
 
-**Critical**: ALL paths MUST be calculated before Phase 1 begins.
+**Critical**: ALL libraries MUST be sourced before any function calls, and ALL paths MUST be calculated before Phase 1 begins.
 
 ### Implementation
+
+STEP 0: Source Required Libraries (MUST BE FIRST)
+
+```bash
+# Determine script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source library-sourcing utilities first
+if [ -f "$SCRIPT_DIR/../lib/library-sourcing.sh" ]; then
+  source "$SCRIPT_DIR/../lib/library-sourcing.sh"
+else
+  echo "ERROR: Required library not found: library-sourcing.sh"
+  echo ""
+  echo "Expected location: $SCRIPT_DIR/../lib/library-sourcing.sh"
+  exit 1
+fi
+
+# Source all required libraries
+if ! source_required_libraries "dependency-analyzer.sh"; then
+  exit 1
+fi
+
+echo "✓ All libraries loaded successfully"
+
+# Verify critical functions are defined
+REQUIRED_FUNCTIONS=(
+  "detect_workflow_scope"
+  "should_run_phase"
+  "emit_progress"
+  "save_checkpoint"
+  "restore_checkpoint"
+)
+
+MISSING_FUNCTIONS=()
+for func in "${REQUIRED_FUNCTIONS[@]}"; do
+  if ! command -v "$func" >/dev/null 2>&1; then
+    MISSING_FUNCTIONS+=("$func")
+  fi
+done
+
+if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
+  echo "ERROR: Required functions not defined after library sourcing:"
+  for func in "${MISSING_FUNCTIONS[@]}"; do
+    echo "  - $func()"
+  done
+  exit 1
+fi
+
+# Define display_brief_summary function inline
+# (Must be defined after library sourcing but before any phase can call it)
+display_brief_summary() {
+  echo ""
+  echo "✓ Workflow complete: $WORKFLOW_SCOPE"
+
+  case "$WORKFLOW_SCOPE" in
+    research-only)
+      local report_count=${#REPORT_PATHS[@]}
+      echo "Created $report_count research reports in: $TOPIC_PATH/reports/"
+      echo "→ Review artifacts: ls -la $TOPIC_PATH/reports/"
+      ;;
+    research-and-plan)
+      local report_count=${#REPORT_PATHS[@]}
+      echo "Created $report_count reports + 1 plan in: $TOPIC_PATH/"
+      echo "→ Run: /implement $PLAN_PATH"
+      ;;
+    full-implementation)
+      echo "Implementation complete. Summary: $SUMMARY_PATH"
+      echo "→ Review summary for next steps"
+      ;;
+    debug-only)
+      echo "Debug analysis complete: $DEBUG_REPORT"
+      echo "→ Review findings and apply fixes"
+      ;;
+    *)
+      echo "Workflow artifacts available in: $TOPIC_PATH"
+      echo "→ Review directory for outputs"
+      ;;
+  esac
+  echo ""
+}
+
+emit_progress "0" "Libraries loaded and verified"
+```
 
 STEP 1: Parse workflow description from command arguments
 
@@ -742,6 +715,72 @@ emit_progress "0" "Location pre-calculation complete (topic: $TOPIC_PATH)"
 echo ""
 ```
 
+## Verification Helper Functions
+
+[EXECUTION-CRITICAL: Helper functions for concise verification - defined inline for immediate availability]
+
+The following helper functions implement concise verification with silent success and verbose failure patterns.
+
+```bash
+# verify_file_created - Concise file verification with optional verbose failure
+#
+# Arguments:
+#   $1 - file_path (absolute path to verify)
+#   $2 - item_description (e.g., "Research report 1/4")
+#   $3 - phase_name (e.g., "Phase 1")
+#
+# Returns:
+#   0 - File exists and has content (prints single ✓ character)
+#   1 - File missing or empty (prints verbose diagnostic)
+#
+# Output:
+#   Success: Single character "✓" (no newline)
+#   Failure: Multi-line diagnostic with suggested actions
+#
+verify_file_created() {
+  local file_path="$1"
+  local item_desc="$2"
+  local phase_name="$3"
+
+  if [ -f "$file_path" ] && [ -s "$file_path" ]; then
+    echo -n "✓"  # Success - single character, no newline
+    return 0
+  else
+    # Failure - verbose diagnostic
+    echo ""
+    echo "✗ ERROR [$phase_name]: $item_desc verification failed"
+    echo "   Expected: File exists at $file_path"
+    [ ! -f "$file_path" ] && echo "   Found: File does not exist" || echo "   Found: File empty (0 bytes)"
+    echo ""
+    echo "DIAGNOSTIC INFORMATION:"
+    echo "  - Expected path: $file_path"
+    echo "  - Parent directory: $(dirname "$file_path")"
+
+    local dir="$(dirname "$file_path")"
+    if [ -d "$dir" ]; then
+      local file_count
+      file_count=$(ls -1 "$dir" 2>/dev/null | wc -l)
+      echo "  - Directory status: ✓ Exists ($file_count files)"
+      if [ "$file_count" -gt 0 ]; then
+        echo "  - Recent files:"
+        ls -lht "$dir" | head -4
+      fi
+    else
+      echo "  - Directory status: ✗ Does not exist"
+      echo "  - Fix: mkdir -p $dir"
+    fi
+    echo ""
+    echo "Diagnostic commands:"
+    echo "  ls -la $dir"
+    echo "  cat .claude/agents/[agent-name].md | head -50"
+    echo ""
+    return 1
+  fi
+}
+
+export -f verify_file_created
+```
+
 ## Phase 1: Research
 
 [EXECUTION-CRITICAL: Agent invocation patterns and verification - templates must be inline]
@@ -762,6 +801,8 @@ should_run_phase 1 || {
   display_brief_summary
   exit 0
 }
+
+emit_progress "1" "Phase 1: Research (parallel agent invocation)"
 ```
 
 ### Complexity-Based Research Topics
@@ -826,65 +867,37 @@ emit_progress "1" "All research agents invoked - awaiting completion"
 
 **VERIFICATION REQUIRED**: All research report files must exist before continuing to Phase 2
 
-STEP 3: Verify ALL research reports created successfully (with single-retry for transient failures)
+STEP 3: Verify ALL research reports created successfully (concise format with fail-fast)
 
 ```bash
+# Concise verification with inline status indicators
+echo -n "Verifying research reports ($RESEARCH_COMPLEXITY): "
+
 VERIFICATION_FAILURES=0
 SUCCESSFUL_REPORT_PATHS=()
-FAILED_AGENTS=()
 
 for i in $(seq 1 $RESEARCH_COMPLEXITY); do
   REPORT_PATH="${REPORT_PATHS[$i-1]}"
-  emit_progress "1" "Verifying research report $i/$RESEARCH_COMPLEXITY"
-
-  if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
-    FILE_SIZE=$(wc -c < "$REPORT_PATH")
-    [ "$FILE_SIZE" -lt 200 ] || ! grep -q "^# " "$REPORT_PATH" && echo "⚠️  Report $i: $(basename $REPORT_PATH) - warnings detected"
-    SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
-  else
-    echo "  ❌ ERROR [Phase 1, Research]: Report file verification failed"
-    echo "     Expected: File exists and has content"
-    [ ! -f "$REPORT_PATH" ] && echo "     Found: File does not exist" || echo "     Found: File exists but is empty"
-    echo ""
-    echo "  DIAGNOSTIC INFORMATION:"
-    echo "    - Expected path: $REPORT_PATH"
-    echo "    - Agent: research-specialist (agent $i/$RESEARCH_COMPLEXITY)"
-    echo ""
-    DIR="$(dirname "$REPORT_PATH")"
-    if [ -d "$DIR" ]; then
-      FILE_COUNT=$(ls -1 "$DIR" 2>/dev/null | wc -l)
-      echo "  Directory Status: ✓ Exists ($FILE_COUNT files)"
-      [ "$FILE_COUNT" -gt 0 ] && ls -lht "$DIR" | head -6
-    else
-      echo "  Directory Status: ✗ Does not exist"
-      echo "  Fix: mkdir -p $DIR"
-    fi
-    echo ""
-    echo "  Diagnostic Commands:"
-    echo "    ls -la $DIR"
-    echo "    cat .claude/agents/research-specialist.md | head -50"
-    echo ""
-    FAILED_AGENTS+=("agent_$i")
+  if ! verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Phase 1"; then
     VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+  else
+    SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
   fi
 done
 
 SUCCESSFUL_REPORT_COUNT=${#SUCCESSFUL_REPORT_PATHS[@]}
 
-# Partial failure handling - allow continuation if ≥50% success
-if [ $VERIFICATION_FAILURES -gt 0 ]; then
-  DECISION=$(handle_partial_research_failure $RESEARCH_COMPLEXITY $SUCCESSFUL_REPORT_COUNT "${FAILED_AGENTS[*]}")
-  if [ "$DECISION" == "terminate" ]; then
-    echo "❌ Workflow terminated: Fix research issues and retry"
-    exit 1
-  fi
-  echo "⚠️  Continuing with $SUCCESSFUL_REPORT_COUNT/$RESEARCH_COMPLEXITY reports"
+# Final summary
+if [ $VERIFICATION_FAILURES -eq 0 ]; then
+  echo " (all passed)"  # Completes the "Verifying..." line
+  emit_progress "1" "Verified: $SUCCESSFUL_REPORT_COUNT/$RESEARCH_COMPLEXITY research reports"
 else
-  echo "✓ Verified: $SUCCESSFUL_REPORT_COUNT/$RESEARCH_COMPLEXITY research reports"
+  echo ""
+  echo "Workflow TERMINATED: Fix verification failures and retry"
+  exit 1
 fi
 
-# VERIFICATION REQUIREMENT: YOU MUST NOT proceed to Phase 2 without at least 50% success
-# This requirement is enforced by handle_partial_research_failure() above
+# VERIFICATION REQUIREMENT: Must not proceed without verification
 echo "Verification checkpoint passed - proceeding to research overview"
 echo ""
 ```
@@ -987,6 +1000,8 @@ should_run_phase 2 || {
   display_brief_summary
   exit 0
 }
+
+emit_progress "2" "Phase 2: Planning (plan-architect invocation)"
 ```
 
 ### Planning Context Preparation
@@ -1049,42 +1064,23 @@ STEP 2: Invoke plan-architect agent via Task tool
 
 **GUARANTEE REQUIRED**: Plan contains minimum 3 phases with standard structure
 
-STEP 3: Verify plan file created successfully (with auto-recovery)
+STEP 3: Verify plan file created successfully (concise format)
 
 ```bash
-emit_progress "2" "Verifying implementation plan"
+echo -n "Verifying implementation plan: "
 
-if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
+if verify_file_created "$PLAN_PATH" "Implementation plan" "Phase 2"; then
   PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
   if [ "$PHASE_COUNT" -lt 3 ] || ! grep -q "^## Metadata" "$PLAN_PATH"; then
-    echo "⚠️  Plan: $PHASE_COUNT phases (warnings detected)"
+    echo " (structure warnings)"
+    echo "⚠️  Plan: $PHASE_COUNT phases (expected ≥3)"
   else
-    echo "✓ Verified: Implementation plan ($PHASE_COUNT phases)"
+    echo " ($PHASE_COUNT phases)"
   fi
+  emit_progress "2" "Verified: Implementation plan ($PHASE_COUNT phases)"
 else
-  echo "❌ ERROR [Phase 2, Planning]: Plan file verification failed"
-  echo "   Expected: File exists at $PLAN_PATH with content"
-  [ ! -f "$PLAN_PATH" ] && echo "   Found: File does not exist" || echo "   Found: File exists but is empty"
   echo ""
-  echo "DIAGNOSTIC INFORMATION:"
-  echo "  - Agent: plan-architect"
-  echo "  - Research inputs: ${#SUCCESSFUL_REPORT_PATHS[@]} reports"
-  echo ""
-  DIR="$(dirname "$PLAN_PATH")"
-  if [ -d "$DIR" ]; then
-    FILE_COUNT=$(ls -1 "$DIR" 2>/dev/null | wc -l)
-    echo "  Directory Status: ✓ Exists ($FILE_COUNT files)"
-    [ "$FILE_COUNT" -gt 0 ] && ls -lht "$DIR"
-  else
-    echo "  Directory Status: ✗ Does not exist"
-    echo "  Fix: mkdir -p $DIR"
-  fi
-  echo ""
-  echo "Diagnostic Commands:"
-  echo "  ls -la $TOPIC_PATH/reports/"
-  echo "  cat .claude/agents/plan-architect.md | head -50"
-  echo ""
-  echo "Workflow TERMINATED."
+  echo "Workflow TERMINATED: Fix plan creation and retry"
   exit 1
 fi
 ```
@@ -1185,10 +1181,7 @@ should_run_phase 3 || {
 ### Step 1: Dependency Analysis and Wave Calculation
 
 ```bash
-echo "════════════════════════════════════════════════════════"
-echo "  Phase 3: Wave-Based Implementation"
-echo "════════════════════════════════════════════════════════"
-echo ""
+emit_progress "3" "Phase 3: Wave-based implementation"
 
 # Track performance metrics
 IMPL_START_TIME=$(date +%s)
@@ -1265,11 +1258,6 @@ echo ""
 **CHECKPOINT REQUIREMENT**: Report implementation status and wave execution metrics
 
 ```bash
-echo "════════════════════════════════════════════════════════"
-echo "  MANDATORY VERIFICATION - Wave-Based Implementation"
-echo "════════════════════════════════════════════════════════"
-echo ""
-
 # Parse implementation status from agent output
 IMPL_STATUS=$(echo "$AGENT_OUTPUT" | grep "IMPLEMENTATION_STATUS:" | cut -d: -f2 | xargs)
 WAVES_COMPLETED=$(echo "$AGENT_OUTPUT" | grep "WAVES_COMPLETED:" | cut -d: -f2 | xargs)
@@ -1278,31 +1266,29 @@ PHASES_TOTAL=$(echo "$AGENT_OUTPUT" | grep "PHASES_TOTAL:" | cut -d: -f2 | xargs
 PARALLEL_PHASES=$(echo "$AGENT_OUTPUT" | grep "PARALLEL_PHASES_EXECUTED:" | cut -d: -f2 | xargs)
 TIME_SAVED=$(echo "$AGENT_OUTPUT" | grep "TIME_SAVED_PERCENTAGE:" | cut -d: -f2 | xargs)
 
-echo "Implementation Status: $IMPL_STATUS (waves: $WAVES_COMPLETED/$WAVE_COUNT, phases: $PHASES_COMPLETED/$PHASES_TOTAL, parallel: $PARALLEL_PHASES)"
 # Calculate actual implementation time
 IMPL_END_TIME=$(date +%s)
 IMPL_DURATION=$((IMPL_END_TIME - IMPL_START_TIME))
 IMPL_MINUTES=$((IMPL_DURATION / 60))
 IMPL_SECONDS=$((IMPL_DURATION % 60))
 
-if [ ! -d "$IMPL_ARTIFACTS" ]; then
-  echo "❌ ERROR [Phase 3, Implementation]: Artifacts directory not created"
-  echo "   Expected: $IMPL_ARTIFACTS"
-  echo "   Status: $IMPL_STATUS (waves: $WAVES_COMPLETED/$WAVE_COUNT, duration: ${IMPL_MINUTES}m${IMPL_SECONDS}s)"
+echo -n "Verifying implementation artifacts: "
+
+if [ -d "$IMPL_ARTIFACTS" ]; then
+  ARTIFACT_COUNT=$(find "$IMPL_ARTIFACTS" -type f 2>/dev/null | wc -l)
+  echo "✓ ($ARTIFACT_COUNT files)"
+  emit_progress "3" "Verified: Implementation artifacts ($ARTIFACT_COUNT files)"
+else
+  echo ""
+  echo "✗ ERROR [Phase 3]: Implementation artifacts directory not created"
+  echo "   Expected: Directory exists at $IMPL_ARTIFACTS"
   echo ""
   echo "DIAGNOSTIC INFORMATION:"
-  echo "  - Agent: implementation-coordinator"
+  echo "  - Status: $IMPL_STATUS (waves: $WAVES_COMPLETED/$WAVE_COUNT)"
+  echo "  - Duration: ${IMPL_MINUTES}m${IMPL_SECONDS}s"
   echo ""
-  echo "Diagnostic Commands:"
-  echo "  ls -la $(dirname "$IMPL_ARTIFACTS")"
-  echo "  cat $PLAN_PATH | head -50"
-  echo "  cat .claude/agents/implementation-coordinator.md | head -50"
-  echo ""
+  echo "Workflow TERMINATED."
   exit 1
-else
-  ARTIFACT_COUNT=$(find "$IMPL_ARTIFACTS" -type f 2>/dev/null | wc -l)
-  COMPLETED_PHASES_IN_PLAN=$(grep -c "\[COMPLETED\]" "$PLAN_PATH" 2>/dev/null || echo "0")
-  echo "✓ Verified: Implementation complete - ${IMPL_MINUTES}m${IMPL_SECONDS}s (${TIME_SAVED}% savings), $ARTIFACT_COUNT files, $COMPLETED_PHASES_IN_PLAN phases"
 fi
 
 # Set flag for Phase 6 (documentation)
@@ -1366,6 +1352,8 @@ should_run_phase 4 || {
   echo ""
   # Continue to next phase check or completion
 }
+
+emit_progress "4" "Phase 4: Testing (test-specialist invocation)"
 ```
 
 ### Test-Specialist Agent Invocation
@@ -1403,16 +1391,13 @@ STEP 1: Invoke test-specialist agent
 STEP 2: Parse and verify test results
 
 ```bash
-echo "════════════════════════════════════════════════════════"
-echo "  MANDATORY VERIFICATION - Test Results"
-echo "════════════════════════════════════════════════════════"
-echo ""
-
 # Parse test status from agent output
 TEST_STATUS=$(echo "$AGENT_OUTPUT" | grep "TEST_STATUS:" | cut -d: -f2 | xargs)
 TESTS_TOTAL=$(echo "$AGENT_OUTPUT" | grep "TESTS_TOTAL:" | cut -d: -f2 | xargs)
 TESTS_PASSED=$(echo "$AGENT_OUTPUT" | grep "TESTS_PASSED:" | cut -d: -f2 | xargs)
 TESTS_FAILED=$(echo "$AGENT_OUTPUT" | grep "TESTS_FAILED:" | cut -d: -f2 | xargs)
+
+emit_progress "4" "Test results: $TESTS_PASSED/$TESTS_TOTAL passed"
 
 echo "Test Status: $TEST_STATUS ($TESTS_PASSED/$TESTS_TOTAL passed)"
 
@@ -1465,8 +1450,7 @@ emit_progress "4" "Testing complete (status: $TEST_STATUS)"
 ```bash
 # Phase 5 only executes if tests failed OR workflow is debug-only
 if [ "$TESTS_PASSING" == "false" ] || [ "$WORKFLOW_SCOPE" == "debug-only" ]; then
-  echo "Executing Phase 5: Debug"
-  echo ""
+  emit_progress "5" "Phase 5: Debug (conditional execution)"
 else
   echo "⏭️  Skipping Phase 5 (Debug)"
   echo "  Reason: Tests passing, no debugging needed"
@@ -1482,10 +1466,7 @@ STEP 1: Iterate debug cycle (max 3 iterations)
 ```bash
 # Maximum 3 debug iterations
 for iteration in 1 2 3; do
-  echo "════════════════════════════════════════════════════════"
-  echo "  DEBUG ITERATION $iteration / 3"
-  echo "════════════════════════════════════════════════════════"
-  echo ""
+  emit_progress "5" "Debug iteration $iteration/3"
 
   # Invoke debug-analyst agent
   **EXECUTE NOW**: USE the Task tool NOW to invoke the debug-analyst agent with these parameters:
@@ -1512,25 +1493,15 @@ for iteration in 1 2 3; do
 
   **Your Responsibility**: Substitute actual values from loop variables.
 
-  if [ ! -f "$DEBUG_REPORT" ]; then
-    echo "❌ ERROR [Phase 5, Debug - Iteration $iteration]: Debug report not created"
-    echo "   Expected: File exists at $DEBUG_REPORT"
+  echo -n "Verifying debug report (iteration $iteration): "
+
+  if verify_file_created "$DEBUG_REPORT" "Debug report" "Phase 5"; then
     echo ""
-    echo "DIAGNOSTIC INFORMATION:"
-    echo "  - Agent: debug-analyst (iteration $iteration)"
+  else
     echo ""
-    DIR="$(dirname "$DEBUG_REPORT")"
-    [ -d "$DIR" ] && echo "  Directory Status: ✓ Exists" || echo "  Directory Status: ✗ Does not exist (fix: mkdir -p $DIR)"
-    echo ""
-    echo "Diagnostic Commands:"
-    echo "  cat $TOPIC_PATH/outputs/test_results.md | tail -50"
-    echo "  cat .claude/agents/debug-analyst.md | head -50"
-    echo ""
-    echo "Workflow TERMINATED."
+    echo "Workflow TERMINATED: Fix debug report creation and retry"
     exit 1
   fi
-
-  echo "✅ Debug report exists"
 
   # Invoke code-writer to apply fixes
   **EXECUTE NOW**: USE the Task tool NOW to invoke the code-writer agent with these parameters:
@@ -1636,8 +1607,7 @@ emit_progress "5" "Debug complete (final test status: $TESTS_PASSING)"
 ```bash
 # Phase 6 only executes if implementation occurred
 if [ "$IMPLEMENTATION_OCCURRED" == "true" ]; then
-  echo "Executing Phase 6: Documentation"
-  echo ""
+  emit_progress "6" "Phase 6: Documentation (summary creation)"
 else
   echo "⏭️  Skipping Phase 6 (Documentation)"
   echo "  Reason: No implementation to document (scope: $WORKFLOW_SCOPE)"
@@ -1682,27 +1652,17 @@ STEP 1: Invoke doc-writer agent to create summary
 STEP 2: Verify summary file created
 
 ```bash
-if [ ! -f "$SUMMARY_PATH" ] || [ ! -s "$SUMMARY_PATH" ]; then
-  echo "❌ ERROR [Phase 6, Documentation]: Summary file not created"
-  echo "   Expected: File exists at $SUMMARY_PATH with content"
-  [ ! -f "$SUMMARY_PATH" ] && echo "   Found: File does not exist" || echo "   Found: File exists but is empty"
+echo -n "Verifying workflow summary: "
+
+if verify_file_created "$SUMMARY_PATH" "Workflow summary" "Phase 6"; then
+  FILE_SIZE=$(wc -c < "$SUMMARY_PATH")
+  echo " (${FILE_SIZE} bytes)"
+  emit_progress "6" "Verified: Workflow summary created"
+else
   echo ""
-  echo "DIAGNOSTIC INFORMATION:"
-  echo "  - Agent: doc-writer"
-  echo "  - Workflow: $WORKFLOW_SCOPE"
-  echo ""
-  DIR="$(dirname "$SUMMARY_PATH")"
-  [ -d "$DIR" ] && echo "  Directory Status: ✓ Exists" || echo "  Directory Status: ✗ Does not exist (fix: mkdir -p $DIR)"
-  echo ""
-  echo "Diagnostic Commands:"
-  echo "  ls -la $IMPL_ARTIFACTS"
-  echo "  cat .claude/agents/doc-writer.md | head -50"
-  echo ""
-  echo "Workflow TERMINATED."
+  echo "Workflow TERMINATED: Fix summary creation and retry"
   exit 1
 fi
-
-echo "✓ Verified: Summary created ($(wc -c < "$SUMMARY_PATH") bytes)"
 
 # Context pruning after Phase 6 (final cleanup)
 store_phase_metadata "phase_6" "complete" "$SUMMARY_PATH"

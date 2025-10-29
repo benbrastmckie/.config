@@ -1566,6 +1566,262 @@ elif workflow_status == "error":
 - [ ] Completion logged
 - [ ] Failed checkpoints archived (if applicable)
 
+---
+
+## /supervise Specific Phase Reference
+
+This section provides detailed technical documentation for each phase of the `/supervise` workflow orchestration command, which uses a 7-phase structure (Phase 0-6) compared to the 4-phase structure (Research, Planning, Implementation, Documentation) described above.
+
+### Phase Overview
+
+| Phase | Name | Conditional | Agent | Purpose |
+|-------|------|------------|-------|---------|
+| 0 | Location & Paths | No | None | Pre-calculate artifact paths |
+| 1 | Research | No | research-specialist | Gather information (2-4 parallel agents) |
+| 2 | Planning | Yes | plan-architect | Create implementation plan |
+| 3 | Implementation | Yes | code-writer | Execute implementation |
+| 4 | Testing | Yes | test-runner | Run tests |
+| 5 | Debug | Yes | debug-analyst | Fix test failures |
+| 6 | Documentation | Yes | doc-writer | Create workflow summary |
+
+### Phase 0: Location and Path Pre-Calculation
+
+**Purpose**: Establish topic directory structure and pre-calculate all artifact paths before any agent invocations.
+
+**Execution Condition**: Always executes - Required for all workflow scopes
+
+**Implementation Pattern**:
+1. Parse workflow description from command arguments
+2. Detect workflow scope (research-only, research-and-plan, full-implementation, debug-only)
+3. Source required utility libraries
+4. Calculate topic directory path
+5. Create directory structure
+6. Calculate and export all artifact paths
+
+**Key Functions Used**:
+- `detect_workflow_scope()` - Determine workflow type from description
+- `calculate_topic_dir()` - Generate topic directory path
+- `calculate_report_path()` - Generate research report paths
+- `calculate_plan_path()` - Generate implementation plan path
+- `calculate_summary_path()` - Generate workflow summary path
+
+**Success Criteria**:
+- Topic directory created successfully
+- All required paths calculated and exported
+- Workflow scope correctly detected
+
+**Path Variables Exported**:
+```bash
+TOPIC_PATH           # specs/{NNN_topic}/
+RESEARCH_SUBDIR      # specs/{NNN_topic}/reports/
+PLANS_SUBDIR         # specs/{NNN_topic}/plans/
+SUMMARIES_SUBDIR     # specs/{NNN_topic}/summaries/
+DEBUG_SUBDIR         # specs/{NNN_topic}/debug/
+
+REPORT_PATHS[]       # Array of research report paths
+PLAN_PATH            # Implementation plan path
+SUMMARY_PATH         # Workflow summary path
+```
+
+### Phase 1: Research (/supervise)
+
+**Purpose**: Gather information through parallel research agents (2-4 agents based on complexity).
+
+**Execution Condition**: Always executes - Required for all workflow scopes
+
+**Implementation Pattern**:
+1. Determine research complexity (2-4 based on workflow description)
+2. Generate research topic questions
+3. Calculate report paths for each research agent
+4. Invoke research agents in parallel via Task tool
+5. Verify all research reports created
+6. Extract metadata from reports (optional overview synthesis for research-only workflows)
+
+**Agent Used**: research-specialist (`.claude/agents/research-specialist.md`)
+
+**Agent Invocation**:
+```yaml
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic N of M"
+  prompt: "
+    Read behavioral guidelines: .claude/agents/research-specialist.md
+
+    Research topic: [specific question]
+    Output path: [pre-calculated path]
+
+    Create comprehensive research report.
+    Return: REPORT_CREATED: [path]
+  "
+}
+```
+
+**Verification Checkpoint (MANDATORY)**: All research report files must exist before continuing to Phase 2
+
+**Verification pattern** (fail-fast):
+```bash
+for i in $(seq 1 $RESEARCH_COMPLEXITY); do
+  REPORT_PATH="${REPORT_PATHS[$i-1]}"
+  if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
+    # Success - report exists
+  else
+    # Failure - structured 5-section diagnostic
+    exit 1
+  fi
+done
+```
+
+**Success Criteria**:
+- All research reports created successfully
+- Reports contain valid content (>200 bytes, markdown header present)
+- At least 50% of research agents succeeded (partial failure handling)
+
+**Conditional Behavior**:
+- **research-only workflow**: Creates OVERVIEW.md to synthesize findings
+- **All other workflows**: No overview (planning agent will synthesize)
+
+### Phase 2: Planning (/supervise)
+
+**Purpose**: Create implementation plan based on research findings.
+
+**Execution Condition**:
+- **Conditional** - Executes if:
+  - Workflow scope is `research-and-plan` OR
+  - Workflow scope is `full-implementation`
+- **Skips if**:
+  - Workflow scope is `research-only`
+  - Workflow scope is `debug-only`
+
+**Implementation Pattern**:
+1. Load research report paths from Phase 1 checkpoint
+2. Pass report paths (not full content) to planning agent
+3. Invoke plan-architect agent via Task tool
+4. Verify plan file created at expected path
+5. Parse plan to extract phases and complexity
+6. Save checkpoint with plan metadata
+
+**Agent Used**: plan-architect (`.claude/agents/plan-architect.md`)
+
+**Success Criteria**:
+- Plan file created successfully
+- Plan contains required sections (Overview, Phases, Technical Design)
+- Plan references all research reports
+- Complexity score calculated correctly
+
+### Phase 3: Implementation (/supervise)
+
+**Purpose**: Execute implementation plan phase-by-phase.
+
+**Execution Condition**:
+- **Conditional** - Executes if workflow scope is `full-implementation`
+- **Skips if**: research-only, research-and-plan, or debug-only
+
+**Implementation Pattern**:
+1. Load plan path from Phase 2 checkpoint
+2. Parse plan to identify phases and tasks
+3. For each phase:
+   - Execute tasks according to plan
+   - Run tests after phase completion
+   - Create git commit if tests pass
+   - Update plan file with completion markers
+4. Save checkpoint after each phase
+5. Proceed to Phase 4 (Testing) or Phase 5 (Debug) based on results
+
+**Agent Used**: code-writer (`.claude/agents/code-writer.md`) or direct /implement
+
+**Success Criteria**:
+- All implementation phases completed
+- Tests passing for each phase
+- Git commits created
+- Plan file updated with completion markers
+
+### Phase 4: Testing (/supervise)
+
+**Purpose**: Run project test suite to verify implementation.
+
+**Execution Condition**:
+- **Conditional** - Executes after Phase 3 (Implementation) completes
+- **Skips if**: Implementation phase not executed
+
+**Implementation Pattern**:
+1. Discover test framework from CLAUDE.md Testing Protocols
+2. Run complete test suite
+3. Capture test results (pass/fail counts, error messages)
+4. If tests fail, proceed to Phase 5 (Debug)
+5. If tests pass, proceed to Phase 6 (Documentation)
+
+**Success Criteria**:
+- Test suite executed successfully
+- Results captured and logged
+- Decision made (proceed to debug or documentation)
+
+### Phase 5: Debug (/supervise)
+
+**Purpose**: Investigate and fix test failures from Phase 4.
+
+**Execution Condition**:
+- **Conditional** - Executes only if Phase 4 tests failed
+- **Skips if**: Tests passed
+
+**Implementation Pattern**:
+1. Analyze test failure output
+2. Invoke debug-analyst agent to investigate root causes
+3. Apply fixes based on debug recommendations
+4. Re-run tests (return to Phase 4)
+5. Max 3 debug iterations before user escalation
+
+**Agent Used**: debug-analyst (`.claude/agents/debug-analyst.md`)
+
+**Success Criteria**:
+- Root causes identified
+- Fixes applied
+- Tests passing after debug
+- Debug report created (if enabled)
+
+### Phase 6: Documentation (/supervise)
+
+**Purpose**: Create workflow summary and update project documentation.
+
+**Execution Condition**:
+- **Always executes** (final phase for all workflow scopes)
+
+**Implementation Pattern**:
+1. Gather all workflow artifacts (research reports, plan, implementation status)
+2. Calculate performance metrics
+3. Invoke doc-writer agent to create workflow summary
+4. Verify summary file created
+5. Update project documentation (README, ARCHITECTURE, etc.)
+6. Save final checkpoint
+7. Clean up temporary checkpoints
+
+**Agent Used**: doc-writer (`.claude/agents/doc-writer.md`)
+
+**Success Criteria**:
+- Workflow summary created successfully
+- All artifacts cross-referenced
+- Project documentation updated
+- Final checkpoint saved
+- Temporary checkpoints cleaned up
+
+### /supervise Phase Comparison
+
+The `/supervise` command uses a 7-phase structure (0-6) compared to the 4-phase structure (Research, Planning, Implementation, Documentation) used by `/orchestrate` and `/coordinate`. Here's the mapping:
+
+| /orchestrate Phase | /supervise Phases | Key Difference |
+|-------------------|------------------|----------------|
+| Research | Phase 0 + Phase 1 | /supervise adds explicit path pre-calculation (Phase 0) |
+| Planning | Phase 2 | Same purpose |
+| Implementation | Phase 3 + Phase 4 + Phase 5 | /supervise separates testing (Phase 4) and debugging (Phase 5) |
+| Documentation | Phase 6 | Same purpose |
+
+**When to use /supervise vs /orchestrate**:
+- **Use /supervise**: When you need explicit control over testing and debugging phases, or when following a stricter sequential workflow
+- **Use /orchestrate**: When you want more flexibility, dashboard tracking, and PR automation
+
+For more details on the general orchestration phases, see the sections above (Research Phase, Planning Phase, Implementation Phase, Documentation Phase).
+
+---
+
 #### Workflow Summary Template (Reference)
 
 The complete workflow summary template is inlined in Step 3 (doc-writer agent prompt) above. This reference section is provided for documentation purposes only.

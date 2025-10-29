@@ -285,7 +285,7 @@ Cannot selectively prune - must keep everything or lose critical context
 
 ## See Also
 
-- [Performance Measurement Guide](../../guides/performance-measurement.md) - Measuring context usage
+- [Performance Measurement Guide](../../guides/performance-optimization.md) - Measuring context usage
 - [Hierarchical Agents Guide](../hierarchical-agents.md) - Multi-agent context strategies
 - `.claude/lib/context-pruning.sh` - Pruning utilities
 - `.claude/lib/unified-logger.sh` - Efficient logging with minimal context impact

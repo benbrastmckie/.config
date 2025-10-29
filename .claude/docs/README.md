@@ -120,12 +120,12 @@ docs/
 │   ├── setup-command-guide.md   /setup command usage patterns (enhanced with cleanup content)
 │   ├── implementation-guide.md  Phase execution and implementation workflows
 │   ├── revision-guide.md        Revise auto-mode and revision types
-│   ├── efficiency-guide.md      Performance optimization
+│   ├── performance-optimization.md      Performance optimization
 │   ├── error-enhancement-guide.md Error handling patterns
 │   ├── data-management.md       Data handling and persistence
 │   ├── testing-patterns.md      Test organization and coverage
 │   ├── migration-validation.md  Enforcement migration verification
-│   └── performance-measurement.md Context reduction and time savings
+│   └── performance-optimization.md Context reduction and time savings
 │
 ├── concepts/                    Understanding-oriented explanations (4 files + patterns)
 │   ├── README.md                Concepts documentation index
@@ -344,7 +344,7 @@ Task-focused guides for accomplishing specific goals. Use when you have a concre
 - [Using Agents](guides/agent-development-guide.md) - Agent invocation and coordination patterns
 - [Standards Integration](guides/standards-integration.md) - Implementing CLAUDE.md standards discovery
 - [Command Patterns](guides/command-patterns.md) - Reusable command design patterns
-- [Efficiency Guide](guides/efficiency-guide.md) - Performance optimization techniques
+- [Efficiency Guide](guides/performance-optimization.md) - Performance optimization techniques
 
 ### [Concepts](concepts/README.md)
 Understanding-oriented explanations of architecture and design. Use when you need to understand the "why" and "how it works" behind system components.
@@ -539,7 +539,7 @@ Before committing:
 - [Command Patterns](guides/command-patterns.md) - Pattern catalog
 - [Command Examples](guides/command-examples.md) - Command examples
 - [Logging Patterns](guides/logging-patterns.md) - Logging standards
-- [Efficiency Guide](guides/efficiency-guide.md) - Performance optimization
+- [Efficiency Guide](guides/performance-optimization.md) - Performance optimization
 - [Error Enhancement Guide](guides/error-enhancement-guide.md) - Error handling
 
 **Concepts**:
@@ -721,7 +721,7 @@ See: [Standards Integration](guides/standards-integration.md)
 - [../commands/convert-docs.md](../commands/convert-docs.md)
 
 ### Performance and Optimization
-- [Efficiency Guide](guides/efficiency-guide.md)
+- [Efficiency Guide](guides/performance-optimization.md)
 - [Error Enhancement Guide](guides/error-enhancement-guide.md)
 - [Orchestration Guide](workflows/orchestration-guide.md#troubleshooting)
 
