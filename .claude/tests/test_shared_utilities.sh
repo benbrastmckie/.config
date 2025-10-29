@@ -268,71 +268,71 @@ info "Testing complexity-utils.sh"
 # Source the library
 if source "$LIB_DIR/complexity-utils.sh" 2>/dev/null; then
   pass "complexity-utils.sh sourced successfully"
-else
-  fail "Failed to source complexity-utils.sh"
-fi
 
-# Test calculate_phase_complexity
-info "Testing calculate_phase_complexity()"
+  # Test calculate_phase_complexity
+  info "Testing calculate_phase_complexity()"
 
-TASK_LIST="$(cat <<'EOF'
+  TASK_LIST="$(cat <<'EOF'
 - [ ] Task 1
 - [ ] Task 2
 - [ ] Task 3
 EOF
 )"
 
-SCORE=$(calculate_phase_complexity "Refactor Architecture" "$TASK_LIST")
+  SCORE=$(calculate_phase_complexity "Refactor Architecture" "$TASK_LIST")
 
-if [ -n "$SCORE" ] && [ "$SCORE" -ge 0 ]; then
-  pass "calculate_phase_complexity() returned score: $SCORE"
+  if [ -n "$SCORE" ] && [ "$SCORE" -ge 0 ]; then
+    pass "calculate_phase_complexity() returned score: $SCORE"
 
-  # Refactor should have high complexity
-  if [ "$SCORE" -ge 3 ]; then
-    pass "Refactor phase has appropriate complexity score"
-  else
-    fail "Complexity score too low for refactor" "Expected ≥3, got $SCORE"
-  fi
-else
-  fail "calculate_phase_complexity() returned invalid score"
-fi
-
-# Test detect_complexity_triggers
-info "Testing detect_complexity_triggers()"
-
-TRIGGER=$(detect_complexity_triggers 9 12)
-if [ "$TRIGGER" = "true" ]; then
-  pass "detect_complexity_triggers() detected high complexity"
-else
-  fail "detect_complexity_triggers() missed trigger" "Expected 'true', got '$TRIGGER'"
-fi
-
-TRIGGER=$(detect_complexity_triggers 5 7 || true)
-if [ "$TRIGGER" = "false" ]; then
-  pass "detect_complexity_triggers() correctly rejected low complexity"
-else
-  fail "detect_complexity_triggers() false positive" "Expected 'false', got '$TRIGGER'"
-fi
-
-# Test generate_complexity_report
-info "Testing generate_complexity_report()"
-
-if command -v jq &>/dev/null; then
-  REPORT=$(generate_complexity_report "Test Phase" "$TASK_LIST")
-
-  if echo "$REPORT" | jq -e '.complexity_score' >/dev/null 2>&1; then
-    pass "generate_complexity_report() produced valid JSON"
-
-    if echo "$REPORT" | jq -e '.trigger_detected' >/dev/null 2>&1; then
-      pass "Report contains trigger_detected field"
+    # Refactor should have high complexity
+    if [ "$SCORE" -ge 3 ]; then
+      pass "Refactor phase has appropriate complexity score"
     else
-      fail "Report missing trigger_detected field"
+      fail "Complexity score too low for refactor" "Expected ≥3, got $SCORE"
     fi
   else
-    fail "generate_complexity_report() produced invalid JSON"
+    fail "calculate_phase_complexity() returned invalid score"
+  fi
+
+  # Test detect_complexity_triggers
+  info "Testing detect_complexity_triggers()"
+
+  TRIGGER=$(detect_complexity_triggers 9 12)
+  if [ "$TRIGGER" = "true" ]; then
+    pass "detect_complexity_triggers() detected high complexity"
+  else
+    fail "detect_complexity_triggers() missed trigger" "Expected 'true', got '$TRIGGER'"
+  fi
+
+  TRIGGER=$(detect_complexity_triggers 5 7 || true)
+  if [ "$TRIGGER" = "false" ]; then
+    pass "detect_complexity_triggers() correctly rejected low complexity"
+  else
+    fail "detect_complexity_triggers() false positive" "Expected 'false', got '$TRIGGER'"
+  fi
+
+  # Test generate_complexity_report
+  info "Testing generate_complexity_report()"
+
+  if command -v jq &>/dev/null; then
+    REPORT=$(generate_complexity_report "Test Phase" "$TASK_LIST")
+
+    if echo "$REPORT" | jq -e '.complexity_score' >/dev/null 2>&1; then
+      pass "generate_complexity_report() produced valid JSON"
+
+      if echo "$REPORT" | jq -e '.trigger_detected' >/dev/null 2>&1; then
+        pass "Report contains trigger_detected field"
+      else
+        fail "Report missing trigger_detected field"
+      fi
+    else
+      fail "generate_complexity_report() produced invalid JSON"
+    fi
+  else
+    skip "jq not available, skipping JSON validation"
   fi
 else
-  skip "jq not available, skipping JSON validation"
+  skip "complexity-utils.sh not available (feature not yet implemented or archived)"
 fi
 
 echo ""

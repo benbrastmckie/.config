@@ -4,6 +4,13 @@
 
 set -e
 
+# Get script directory and source libraries
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/../lib"
+
+# Source required libraries
+source "$LIB_DIR/plan-core-bundle.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -17,7 +24,6 @@ TESTS_FAILED=0
 
 # Test directory
 TEST_DIR="/tmp/progressive_collapse_tests_$$"
-UTILS_DIR="$(dirname "$0")/../utils"
 
 # Setup test environment
 setup() {
@@ -143,7 +149,7 @@ test_merge_phase() {
   local plan_dir="$TEST_DIR/specs/plans/001_test"
 
   # Merge phase 2
-  $UTILS_DIR/parse-adaptive-plan.sh merge_phase_into_plan \
+  merge_phase_into_plan \
     "$plan_dir/001_test.md" \
     "$plan_dir/phase_2_implementation.md" \
     2
@@ -177,7 +183,7 @@ test_remove_expanded_phase() {
   local plan_dir="$TEST_DIR/specs/plans/001_test"
 
   # Remove phase 2 from expanded list
-  $UTILS_DIR/parse-adaptive-plan.sh remove_expanded_phase \
+  remove_expanded_phase \
     "$plan_dir/001_test.md" \
     2
 
@@ -195,7 +201,7 @@ test_has_remaining_phases() {
   local plan_dir="$TEST_DIR/specs/plans/001_test"
 
   # Should have remaining phases
-  local has_remaining=$($UTILS_DIR/parse-adaptive-plan.sh has_remaining_phases "$plan_dir")
+  local has_remaining=$(has_remaining_phases "$plan_dir")
 
   if [[ "$has_remaining" == "true" ]]; then
     pass "Detect remaining phases"
@@ -208,7 +214,7 @@ test_has_remaining_phases() {
   rm "$plan_dir/phase_3_deployment.md"
 
   # Should have no remaining phases
-  has_remaining=$($UTILS_DIR/parse-adaptive-plan.sh has_remaining_phases "$plan_dir")
+  has_remaining=$(has_remaining_phases "$plan_dir")
 
   if [[ "$has_remaining" == "false" ]]; then
     pass "Detect no remaining phases"
@@ -227,7 +233,7 @@ test_cleanup_plan_directory() {
   rm "$plan_dir/phase_3_deployment.md"
 
   # Cleanup directory
-  local new_path=$($UTILS_DIR/parse-adaptive-plan.sh cleanup_plan_directory "$plan_dir")
+  local new_path=$(cleanup_plan_directory "$plan_dir")
 
   # Check that plan was moved to parent
   if [[ -f "$new_path" ]]; then
@@ -260,13 +266,13 @@ test_full_collapse_non_last() {
   info "Testing full collapse workflow (non-last phase)"
 
   # Merge phase 2
-  $UTILS_DIR/parse-adaptive-plan.sh merge_phase_into_plan \
+  merge_phase_into_plan \
     "$plan_dir/001_test.md" \
     "$plan_dir/phase_2_implementation.md" \
     2
 
   # Remove from metadata
-  $UTILS_DIR/parse-adaptive-plan.sh remove_expanded_phase \
+  remove_expanded_phase \
     "$plan_dir/001_test.md" \
     2
 
@@ -307,13 +313,13 @@ test_full_collapse_last() {
   rm "$plan_dir/phase_2_implementation.md"
 
   # Merge phase 3
-  $UTILS_DIR/parse-adaptive-plan.sh merge_phase_into_plan \
+  merge_phase_into_plan \
     "$plan_dir/001_test.md" \
     "$plan_dir/phase_3_deployment.md" \
     3
 
   # Remove from metadata
-  $UTILS_DIR/parse-adaptive-plan.sh remove_expanded_phase \
+  remove_expanded_phase \
     "$plan_dir/001_test.md" \
     3
 
@@ -321,12 +327,12 @@ test_full_collapse_last() {
   rm "$plan_dir/phase_3_deployment.md"
 
   # Update structure level
-  $UTILS_DIR/parse-adaptive-plan.sh update_structure_level \
+  update_structure_level \
     "$plan_dir/001_test.md" \
     0
 
   # Cleanup directory
-  local new_path=$($UTILS_DIR/parse-adaptive-plan.sh cleanup_plan_directory "$plan_dir")
+  local new_path=$(cleanup_plan_directory "$plan_dir")
 
   # Verify file moved
   if [[ -f "$new_path" ]]; then
