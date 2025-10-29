@@ -340,12 +340,9 @@ Checkpoints saved after Phases 1-4. Auto-resumes from last completed phase on st
 
 ## Progress Markers
 
-Emit silent progress markers at phase boundaries:
-```
-PROGRESS: [Phase N] - [action]
-```
+Silent progress markers emitted at phase boundaries enable external monitoring. Format: `PROGRESS: [Phase N] - [action]`
 
-Example: `PROGRESS: [Phase 1] - Research complete (4/4 succeeded)`
+**Complete Documentation**: See [Output Formatting and Context Management → Standardized Progress Markers](../docs/guides/orchestration-best-practices.md#standardized-progress-markers) for format specification, implementation details, parsing examples, and external tool integration.
 
 ## Available Utility Functions
 
