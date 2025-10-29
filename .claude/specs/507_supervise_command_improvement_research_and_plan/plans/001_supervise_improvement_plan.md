@@ -499,9 +499,14 @@ grep "context-pruning.sh" .claude/commands/supervise.md
 **Phase 4 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing: 11/12 tests pass, 1 known issue (YAML invocation patterns in Phase 5 - not part of Phase 4 scope)
-- [ ] Git commit created: `feat(507): complete Phase 4 - Context Pruning Integration`
+- [x] Git commit created: `feat(507): complete Phase 4 - Context Pruning Integration` (commit da42c7d7)
 - [x] Checkpoint saved: Not needed (straightforward integration)
-- [ ] Update this plan file with phase completion status
+- [x] Update this plan file with phase completion status
+
+**[COMPLETED]** - Phase 4 implementation finished on 2025-10-28
+
+**Phase 4 Summary**:
+Implemented comprehensive context pruning integration across all 7 phases of /supervise workflow. Added 6 pruning calls (2 with store_phase_metadata for Phases 1 & 4, 4 with apply_pruning_policy for Phases 2, 3, 5, 6) with context reduction reporting. Updated design decisions note. Result: Enhanced context management to achieve <30% usage target. File size: 1,941 lines (+58 lines for pruning infrastructure). Tests: 11/12 passing (same as baseline).
 
 ### Phase 5: Consolidate Library Sourcing
 dependencies: [2]
