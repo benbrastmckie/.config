@@ -1428,7 +1428,7 @@ done
 
 ### Issue: Migration Breaks Existing Functionality
 
-**Symptoms**: Previously working command now fails
+**Symptoms**: Command fails after migration
 
 **Diagnosis**:
 1. Run regression tests

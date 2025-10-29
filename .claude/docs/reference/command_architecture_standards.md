@@ -48,7 +48,7 @@ When Claude executes a command:
 
 ## Core Standards
 
-### Standard 0: Execution Enforcement (NEW)
+### Standard 0: Execution Enforcement
 
 **Problem**: Command files contain behavioral instructions that Claude may interpret loosely, skip steps, or simplify critical procedures, leading to incomplete execution.
 
@@ -1286,17 +1286,17 @@ This standard was first applied after discovering a 0% agent delegation rate in 
 - Updated documentation: Command Architecture Standards, Behavioral Injection Pattern
 - Result: All orchestration commands now validated and consistent
 
-**Verified Orchestration Commands** (as of 2025-10-27):
-- `/supervise`: >90% delegation rate (spec 438), fail-fast error handling (spec 057)
-- `/coordinate`: >90% delegation rate (spec 495), checkpoint API fixed (spec 057)
-- `/research`: >90% delegation rate (spec 495)
-- `/orchestrate`: Validated via unified test suite (no fixes required)
+**Verified Orchestration Commands**:
+- `/supervise`: >90% delegation rate, fail-fast error handling
+- `/coordinate`: >90% delegation rate, checkpoint API integration
+- `/research`: >90% delegation rate
+- `/orchestrate`: Validated via unified test suite
 
-**Metrics When Properly Applied**:
-- Agent delegation rate: 0% → >90% (all invocations execute)
-- File creation rate: 0-70% → 100% (agents create artifacts at expected paths)
+**Performance Metrics**:
+- Agent delegation rate: >90% (all invocations execute)
+- File creation rate: 100% (agents create artifacts at expected paths)
 - Context reduction: 90% per invocation (behavioral injection vs inline duplication)
-- Parallel execution: Enabled (was impossible with 0% delegation)
+- Parallel execution: Enabled for independent operations
 - Bootstrap reliability: 100% (fail-fast exposes configuration errors immediately)
 - File creation verification: 100% reliability (70% → 100% with MANDATORY VERIFICATION checkpoints)
 
@@ -1532,7 +1532,7 @@ grep -n "**See**:" .claude/commands/commandname.md
 
 The implementation phase executes the plan with testing and commits.
 
-**See**: [Implementation Workflow](shared/implementation-workflow.md) for complete execution steps.
+**See**: [Implementation Workflow](../workflows/development-workflow.md) for complete execution steps.
 
 **Quick Reference**: Execute phases → Test → Commit → Update checkpoint
 ```
@@ -1570,7 +1570,7 @@ if [ $TEST_EXIT_CODE -ne 0 ]; then
 fi
 ```
 
-**For Extended Examples**: See [Implementation Workflow](shared/implementation-workflow.md) for additional scenarios and edge cases.
+**For Extended Examples**: See [Implementation Workflow](../workflows/development-workflow.md) for additional scenarios and edge cases.
 ```
 
 ### Anti-Pattern 2: Truncated Templates
@@ -1833,11 +1833,11 @@ Use this checklist when reviewing pull requests that modify command or agent fil
 
 ### Command File Changes
 
-- [ ] **Execution Enforcement (NEW)**: Are critical steps marked with "EXECUTE NOW", "YOU MUST", or "MANDATORY"?
-- [ ] **Verification Checkpoints (NEW)**: Are verification steps explicit with "if [ ! -f ]" checks?
-- [ ] **Fallback Mechanisms (NEW)**: Do agent-dependent operations include fallback creation?
-- [ ] **Agent Template Enforcement (NEW)**: Are agent prompts marked "THIS EXACT TEMPLATE (No modifications)"?
-- [ ] **Checkpoint Reporting (NEW)**: Do major steps include explicit completion reporting?
+- [ ] **Execution Enforcement**: Are critical steps marked with "EXECUTE NOW", "YOU MUST", or "MANDATORY"?
+- [ ] **Verification Checkpoints**: Are verification steps explicit with "if [ ! -f ]" checks?
+- [ ] **Fallback Mechanisms**: Do agent-dependent operations include fallback creation?
+- [ ] **Agent Template Enforcement**: Are agent prompts marked "THIS EXACT TEMPLATE (No modifications)"?
+- [ ] **Checkpoint Reporting**: Do major steps include explicit completion reporting?
 - [ ] **Execution Steps**: Are numbered steps still present and complete?
 - [ ] **Tool Examples**: Are tool invocation examples still inline and copy-paste ready?
 - [ ] **Critical Warnings**: Are CRITICAL/IMPORTANT/NEVER statements still present?

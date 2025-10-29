@@ -30,7 +30,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /refactor, /orchestrate (optional pre-commit)
 
-**Definition**: [.claude/agents/code-reviewer.md](../agents/code-reviewer.md)
+**Definition**: [.claude/agents/code-reviewer.md](../../agents/code-reviewer.md)
 
 ---
 
@@ -47,7 +47,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /orchestrate (implementation phase), /orchestrate (fix application)
 
-**Definition**: [.claude/agents/code-writer.md](../agents/code-writer.md)
+**Definition**: [.claude/agents/code-writer.md](../../agents/code-writer.md)
 
 ---
 
@@ -63,7 +63,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /collapse (auto-analysis mode)
 
-**Definition**: [.claude/agents/collapse_specialist.md](../agents/collapse_specialist.md)
+**Definition**: [.claude/agents/collapse_specialist.md](../../agents/plan-structure-manager.md)
 
 ---
 
@@ -80,7 +80,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /expand (auto-analysis mode), /collapse (auto-analysis mode)
 
-**Definition**: [.claude/agents/complexity_estimator.md](../agents/complexity_estimator.md)
+**Definition**: [.claude/agents/complexity_estimator.md](../../agents/complexity-estimator.md)
 
 ---
 
@@ -96,7 +96,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /debug, /orchestrate (debugging loop)
 
-**Definition**: [.claude/agents/debug-specialist.md](../agents/debug-specialist.md)
+**Definition**: [.claude/agents/debug-specialist.md](../../agents/debug-specialist.md)
 
 ---
 
@@ -113,7 +113,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /convert-docs
 
-**Definition**: [.claude/agents/doc-converter.md](../agents/doc-converter.md)
+**Definition**: [.claude/agents/doc-converter.md](../../agents/doc-converter.md)
 
 ---
 
@@ -129,7 +129,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /convert-docs (update mode)
 
-**Definition**: [.claude/agents/doc-converter-update.md](../agents/doc-converter-update.md)
+**Definition**: [.claude/agents/doc-converter-update.md](../../agents/doc-converter.md)
 
 ---
 
@@ -145,7 +145,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: Internal documentation and examples
 
-**Definition**: [.claude/agents/doc-converter-usage.md](../agents/doc-converter-usage.md)
+**Definition**: [.claude/agents/doc-converter-usage.md](../../agents/doc-converter.md)
 
 ---
 
@@ -162,7 +162,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /document, /orchestrate (documentation phase)
 
-**Definition**: [.claude/agents/doc-writer.md](../agents/doc-writer.md)
+**Definition**: [.claude/agents/doc-writer.md](../../agents/doc-writer.md)
 
 ---
 
@@ -178,7 +178,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /expand (auto-analysis mode)
 
-**Definition**: [.claude/agents/expansion_specialist.md](../agents/expansion_specialist.md)
+**Definition**: [.claude/agents/expansion_specialist.md](../../agents/plan-structure-manager.md)
 
 ---
 
@@ -195,7 +195,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /implement (--create-pr), /orchestrate (workflow PRs)
 
-**Definition**: [.claude/agents/github-specialist.md](../agents/github-specialist.md)
+**Definition**: [.claude/agents/github-specialist.md](../../agents/github-specialist.md)
 
 ---
 
@@ -212,7 +212,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: Custom performance analysis commands (future)
 
-**Definition**: [.claude/agents/metrics-specialist.md](../agents/metrics-specialist.md)
+**Definition**: [.claude/agents/metrics-specialist.md](../../agents/metrics-specialist.md)
 
 ---
 
@@ -228,7 +228,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /plan, /orchestrate (planning phase)
 
-**Definition**: [.claude/agents/plan-architect.md](../agents/plan-architect.md)
+**Definition**: [.claude/agents/plan-architect.md](../../agents/plan-architect.md)
 
 ---
 
@@ -245,7 +245,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /orchestrate (research phase), /plan (optional), /report (optional)
 
-**Definition**: [.claude/agents/research-specialist.md](../agents/research-specialist.md)
+**Definition**: [.claude/agents/research-specialist.md](../../agents/implementation-researcher.md)
 
 ---
 
@@ -262,7 +262,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /test (optional), /test-all (optional), /orchestrate (validation)
 
-**Definition**: [.claude/agents/test-specialist.md](../agents/test-specialist.md)
+**Definition**: [.claude/agents/test-specialist.md](../../agents/debug-specialist.md)
 
 ---
 

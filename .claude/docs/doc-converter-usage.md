@@ -267,7 +267,7 @@ Or use the slash command directly:
 
 ## Further Reading
 
-- [doc-converter.md](doc-converter.md) - Full agent documentation
+- [doc-converter.md](../../agents/doc-converter.md) - Full agent documentation
 - [Document Conversion Research Report](../../specs/reports/037_document_conversion_to_markdown.md) - Detailed tool comparison
 - [Pandoc Manual](https://pandoc.org/MANUAL.html) - Pandoc documentation
 - [marker-pdf GitHub](https://github.com/datalab-to/marker) - marker-pdf documentation
@@ -275,7 +275,7 @@ Or use the slash command directly:
 ## Questions?
 
 If you need help:
-1. Check the [doc-converter.md](doc-converter.md) agent documentation
+1. Check the [doc-converter.md](../../agents/doc-converter.md) agent documentation
 2. Review the research report for tool details
 3. Ask the agent for clarification during conversion
 

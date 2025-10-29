@@ -959,7 +959,7 @@ See [Library API Reference](../reference/library-api.md) for complete function s
 - After: Fail-fast exposed errors immediately with diagnostics
 - Removed 32 lines of misleading fallback logic
 
-See [Orchestration Performance Metrics Reference](../reference/orchestration-performance-metrics.md) (if created) for comprehensive metrics catalog.
+See [Orchestration Performance Metrics Reference](../reference/orchestration-reference.md#performance-metrics) (if created) for comprehensive metrics catalog.
 
 ---
 

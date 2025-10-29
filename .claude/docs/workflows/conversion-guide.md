@@ -864,8 +864,8 @@ cp ./converted_output/user-guide.* ~/shared/
 ## Navigation
 
 ### Related Documentation
-- [Command Reference](../commands/convert-docs.md) - `/convert-docs` command specification
-- [Agent Definition](../agents/doc-converter.md) - `doc-converter` agent details
+- [Command Reference](../../commands/convert-docs.md) - `/convert-docs` command specification
+- [Agent Definition](../../agents/doc-converter.md) - `doc-converter` agent details
 - [Script Implementation](../../lib/convert-core.sh) - Core conversion engine
 
 ### Tool Documentation
