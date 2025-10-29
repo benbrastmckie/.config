@@ -712,4 +712,4 @@ When updating logging patterns:
 - `.claude/agents/research-specialist.md`
 - `.claude/agents/plan-architect.md`
 - `.claude/agents/doc-converter.md`
-- `.claude/templates/orchestration-patterns.md`
+- `.claude/docs/reference/orchestration-reference.md`

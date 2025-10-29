@@ -58,8 +58,7 @@ docs/
 │   ├── debug-structure.md       Debug report template structure
 │   ├── refactor-structure.md    Refactor report template structure
 │   ├── report-structure.md      Research report template structure
-│   ├── orchestration-patterns.md  Orchestration agent templates and patterns
-│   ├── orchestration-alternatives.md  Alternative orchestration workflow patterns
+│   ├── orchestration-reference.md  Unified orchestration reference (commands, patterns, metrics)
 │   └── workflow-phases.md       Detailed workflow phase descriptions
 │
 ├── guides/                      Task-focused how-to guides (17 files)

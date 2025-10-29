@@ -743,7 +743,7 @@ detect_circular_dependencies <plan_file>
 - **Dependency Analysis Library**: `.claude/lib/dependency-analysis.sh`
 - **Wave Execution Tests**: `.claude/tests/test_wave_execution.sh`
 - **Plan Template**: `.claude/commands/plan.md`
-- **Orchestration Patterns**: `.claude/templates/orchestration-patterns.md`
+- **Orchestration Patterns**: `.claude/docs/reference/orchestration-reference.md`
 - **Adaptive Planning**: CLAUDE.md (Adaptive Planning Configuration section)
 
 ---
