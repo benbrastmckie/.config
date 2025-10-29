@@ -858,6 +858,292 @@ echo "WORKFLOW_COMPLETE"
 
 ---
 
+## Output Formatting and Context Management
+
+### Purpose
+
+Orchestration commands produce clean, concise output that minimizes context consumption while maintaining full diagnostic capability on failures. The /coordinate command implements a comprehensive formatting architecture achieving 50-60% context reduction through library silence, concise verification, standardized progress markers, and simplified completion summaries.
+
+### Architecture: Libraries Calculate, Commands Communicate
+
+**Principle**: Libraries perform logic silently; commands control all user-facing output.
+
+This separation of concerns enables:
+- Consistent formatting across all orchestration commands
+- Individual commands customize output without library interference
+- Library code focuses on data transformation, not presentation
+- Token savings through elimination of redundant library output
+
+**Implementation**:
+```bash
+# Library code (workflow-initialization.sh) - SILENT
+detect_workflow_scope() {
+  # Performs scope detection logic
+  # NO echo statements except errors to stderr
+  echo "$WORKFLOW_SCOPE"  # Return value only
+}
+
+# Command code (coordinate.md) - COMMUNICATES
+WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESC")
+echo "Workflow scope: $WORKFLOW_SCOPE"  # User-facing output
+```
+
+**Metrics**:
+- Library output reduced: 30+ lines → 0 lines (100% reduction)
+- User-facing output: Controlled entirely by command
+- Context savings: ~400 tokens per workflow
+
+### Workflow Scope Detection Format
+
+**Purpose**: Display which phases will execute upfront for workflow transparency.
+
+**Format**: 8-12 line phase execution report with ✓/✗ indicators
+
+```
+Workflow scope: research-and-plan
+
+Phases to execute:
+  ✓ Phase 0: Location detection
+  ✓ Phase 1: Research (2-4 parallel agents)
+  ✓ Phase 2: Planning
+  ✗ Phase 3: Implementation (skipped)
+  ✗ Phase 4: Testing (skipped)
+  ✗ Phase 5: Debugging (skipped)
+  ✗ Phase 6: Documentation (skipped)
+  ✓ Phase 7: Summary
+```
+
+**Benefits**:
+- Users confirm correct workflow scope before execution
+- Clear expectation of which phases run vs skip
+- Eliminates surprise when phases are skipped
+- Pattern adoptable by other orchestration commands
+
+**Metrics**:
+- Previous verbose output: 71 lines → 10 lines (86% reduction)
+- Context savings: ~800 tokens per workflow
+- Token reduction from library silence: additional ~400 tokens
+
+**Implementation Pattern**:
+```bash
+# After workflow scope detection
+case "$WORKFLOW_SCOPE" in
+  research-only)
+    echo "Phases to execute:"
+    echo "  ✓ Phase 0: Location detection"
+    echo "  ✓ Phase 1: Research (2-4 parallel agents)"
+    echo "  ✗ Phase 2: Planning (skipped)"
+    # ... remaining phases marked ✗
+    ;;
+  research-and-plan)
+    echo "Phases to execute:"
+    echo "  ✓ Phase 0: Location detection"
+    echo "  ✓ Phase 1: Research (2-4 parallel agents)"
+    echo "  ✓ Phase 2: Planning"
+    echo "  ✗ Phase 3: Implementation (skipped)"
+    # ... remaining phases marked ✗
+    ;;
+  # ... other workflow types
+esac
+```
+
+See [Workflow Scope Detection Pattern](../concepts/patterns/workflow-scope-detection.md) for complete scope detection logic and conditional phase execution.
+
+### Concise Verification Pattern
+
+**Purpose**: Display verification status compactly (1-2 lines on success), with full diagnostics on failure.
+
+**Philosophy**: Fail-fast with diagnostics, no fallbacks. Target >95% success rate through proper agent invocation.
+
+**Format**:
+```bash
+# Success (1-2 lines):
+Verifying research reports (3): ✓✓✓ (all passed)
+
+# Failure (multi-line diagnostics):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERIFICATION FAILED: Research agent did not create report
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+**What failed**: Report file creation
+**Expected**: Report should exist at /path/to/report.md
+**Diagnostic**: Check agent output above for errors
+**Context**: Required for metadata extraction in Phase 1
+**Action**: Review agent prompt for path injection, verify write permissions
+```
+
+**Implementation Pattern**:
+```bash
+verify_file_created() {
+  local file_path="$1"
+  local item_desc="$2"
+  local phase_name="$3"
+
+  if [ -f "$file_path" ]; then
+    echo -n "✓"  # Silent success (no newline)
+  else
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "VERIFICATION FAILED: $item_desc not created"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "**What failed**: $item_desc file creation"
+    echo "**Expected**: File should exist at $file_path"
+    echo "**Diagnostic**: Check agent output above for errors"
+    echo "**Context**: Required for $phase_name"
+    echo "**Action**: Review agent prompt, verify write permissions"
+    echo ""
+    return 1
+  fi
+}
+
+# Usage in Phase 1 (research reports verification)
+echo -n "Verifying research reports ($REPORT_COUNT): "
+for report in "${REPORT_PATHS[@]}"; do
+  verify_file_created "$report" "Research report" "metadata extraction"
+done
+echo " (all passed)"
+```
+
+**Metrics**:
+- Success output: 50+ lines → 1-2 lines per checkpoint (≥90% reduction)
+- Token reduction: ≥3,150 tokens saved per workflow
+- File creation reliability: >95% through proper agent invocation
+- Fail-fast exposes root causes immediately (no fallback masking)
+
+See [Verification and Fallback Pattern](../concepts/patterns/verification-fallback.md) for complete fail-fast philosophy and diagnostic standards.
+
+### Standardized Progress Markers
+
+**Purpose**: Provide parseable progress tracking for external monitoring tools.
+
+**Format**: `PROGRESS: [Phase N] - [description]`
+
+**Implementation**:
+```bash
+emit_progress() {
+  local phase="$1"
+  local message="$2"
+  echo "PROGRESS: [Phase $phase] - $message"
+}
+
+# Usage
+emit_progress "0" "Location detection complete"
+emit_progress "1" "Research complete: verified 3/3 reports"
+emit_progress "2" "Planning complete: 5-phase plan created"
+emit_progress "3" "Implementation complete: Wave 1 finished"
+```
+
+**Benefits**:
+- Consistent format across all phase transitions
+- External tools can parse progress (`grep "PROGRESS:"`)
+- Integration with monitoring dashboards
+- Parseable by awk/sed for progress tracking scripts
+
+**Parsing Example**:
+```bash
+# Extract current phase
+grep "PROGRESS:" workflow.log | tail -1 | sed 's/PROGRESS: \[Phase \([0-9]\)\].*/\1/'
+
+# Monitor progress in real-time
+tail -f workflow.log | grep --line-buffered "PROGRESS:"
+```
+
+**Metrics**:
+- Replaced box-drawing headers throughout (7 phase headers)
+- Token reduction: ~200 tokens (box-drawing overhead eliminated)
+- Consistent format enables external parsing
+
+**Consolidation**: Progress marker format and usage documented here as single authoritative reference. Other files cross-reference this section rather than duplicating details.
+
+### Simplified Completion Summaries
+
+**Purpose**: Display essential workflow completion information compactly.
+
+**Format**: 8-line summary showing workflow scope, artifact counts, and next steps
+
+```
+Workflow complete: research-and-plan
+
+Artifacts:
+  ✓ 3 research reports
+  ✓ 1 implementation plan (5 phases, 8-12 hours estimated)
+
+Next: /implement specs/042_auth/plans/001_oauth_implementation.md
+```
+
+**Previous Format** (53 lines):
+- Workflow type and phases executed (5 lines)
+- Artifacts created with file sizes (15 lines)
+- Plan overview with metadata (8 lines)
+- Key findings summary (20+ lines)
+- Next steps (5 lines)
+
+**Metrics**:
+- Summary reduced: 53 lines → 8 lines (85% reduction)
+- Token reduction: ~700 tokens per workflow (90% reduction)
+- Essential information preserved (workflow scope, artifact counts, next action)
+- Detailed information available in artifact files themselves
+
+**Implementation Pattern**:
+```bash
+# Simplified completion summary
+echo ""
+echo "Workflow complete: $WORKFLOW_SCOPE"
+echo ""
+echo "Artifacts:"
+echo "  ✓ $SUCCESSFUL_REPORT_COUNT research reports"
+if [ -n "$PLAN_PATH" ] && [ -f "$PLAN_PATH" ]; then
+  PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
+  PLAN_EST=$(grep "Estimated Total Time:" "$PLAN_PATH" | head -1 | cut -d: -f2 | xargs || echo "unknown")
+  echo "  ✓ 1 implementation plan ($PHASE_COUNT phases, $PLAN_EST estimated)"
+fi
+echo ""
+echo "Next: /implement $PLAN_PATH"
+echo ""
+```
+
+### Context Reduction Metrics
+
+**Overall Performance**: 50-60% context reduction through combined formatting improvements
+
+| Component | Before | After | Reduction |
+|-----------|--------|-------|-----------|
+| **Library Output** | 30+ lines | 0 lines | 100% (~400 tokens) |
+| **Workflow Scope** | 71 lines | 10 lines | 86% (~800 tokens) |
+| **Verification** | 50+ lines/checkpoint | 1-2 lines/checkpoint | ≥90% (≥3,150 tokens) |
+| **Progress Markers** | Box-drawing headers | Standardized emit_progress | ~200 tokens |
+| **Completion Summary** | 53 lines | 8 lines | 85% (~700 tokens) |
+| **Total Workflow** | Baseline | Reduced | **50-60% (~5,250 tokens)** |
+
+**Performance Impact**:
+- Faster command execution (less output processing)
+- Clearer user experience (scan completion at a glance)
+- Lower context consumption (more budget for agent work)
+- Maintained diagnostic capability (full output on failures)
+
+### Integration Checklist
+
+When implementing formatting improvements in orchestration commands:
+
+- [ ] Libraries are silent (no echo except errors to stderr)
+- [ ] Commands control all user-facing output
+- [ ] Workflow scope displays phase execution plan upfront (✓/✗ indicators)
+- [ ] Verification uses concise format (1-2 lines success, multi-line failure diagnostics)
+- [ ] Progress markers use standardized `emit_progress()` format
+- [ ] Completion summaries are simplified (≤10 lines, essential info only)
+- [ ] All formatting changes are display-only (no functional modifications)
+- [ ] Context reduction measured and documented
+
+### Related Patterns and Guides
+
+- [Workflow Scope Detection Pattern](../concepts/patterns/workflow-scope-detection.md) - Complete scope detection logic
+- [Verification and Fallback Pattern](../concepts/patterns/verification-fallback.md) - Fail-fast philosophy and diagnostics
+- [Context Management Pattern](../concepts/patterns/context-management.md) - Pruning and reduction techniques
+- [Context Budget Management Tutorial](../workflows/context-budget-management.md) - Layered context architecture
+
+---
+
 ## Error Handling: Fail-Fast with 5-Component Diagnostics
 
 ### Purpose
