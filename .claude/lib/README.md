@@ -307,7 +307,39 @@ collapse_phase_to_plan "$PLAN_FILE" 3
 
 ### Artifact Management
 
-#### artifact-operations.sh (1585 lines)
+#### artifact-operations.sh - DEPRECATED SHIM
+
+**Migration Status:** DEPRECATED as of 2025-10-29
+
+This library has been split into two focused modules:
+- **artifact-creation.sh** - Functions for creating new artifacts
+- **artifact-registry.sh** - Functions for tracking and querying artifacts
+
+**Backward Compatibility:** A temporary shim exists at artifact-operations.sh that sources both split libraries. Commands using the old reference will continue to work but should migrate to direct imports.
+
+**Migration Timeline:**
+- **2025-10-29**: Shim created for backward compatibility
+- **2025-12-01**: Target date for updating all 77 command references
+- **2026-01-01**: Shim removal scheduled (1-2 releases after creation)
+
+**Migration Steps:**
+1. Update command to source both libraries directly:
+   ```bash
+   # Old way (DEPRECATED)
+   source .claude/lib/artifact-operations.sh
+
+   # New way (RECOMMENDED)
+   source .claude/lib/artifact-creation.sh
+   source .claude/lib/artifact-registry.sh
+   ```
+2. Test command executes successfully
+3. Remove old import once migration complete
+
+**Affected Commands:** 77 commands reference artifact-operations.sh and need migration.
+
+---
+
+#### artifact-creation.sh and artifact-registry.sh (1585 lines combined)
 
 Unified artifact registry, operations, metadata extraction, and report generation. Consolidates artifact-utils.sh and artifact-management.sh.
 
