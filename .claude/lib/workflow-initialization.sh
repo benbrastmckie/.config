@@ -92,36 +92,13 @@ initialize_workflow_paths() {
   fi
 
   # ============================================================================
-  # STEP 1: Scope Detection
+  # STEP 1: Scope Detection (Silent - coordinate.md displays summary)
   # ============================================================================
 
-  echo "Detecting workflow scope..."
-  echo ""
-
-  # Display workflow scope information
+  # Validate workflow scope (silent - only errors to stderr)
   case "$workflow_scope" in
-    research-only)
-      echo "Workflow Scope: Research Only"
-      echo "  - Research topic in parallel (2-4 agents)"
-      echo "  - Generate overview synthesis"
-      echo "  - Exit after Phase 1"
-      ;;
-    research-and-plan)
-      echo "Workflow Scope: Research + Planning"
-      echo "  - Research topic in parallel (2-4 agents)"
-      echo "  - Generate implementation plan"
-      echo "  - Exit after Phase 2"
-      ;;
-    full-implementation)
-      echo "Workflow Scope: Full Implementation"
-      echo "  - Research → Plan → Implement → Test → Document"
-      echo "  - Full end-to-end workflow"
-      ;;
-    debug-only)
-      echo "Workflow Scope: Debug Analysis"
-      echo "  - Research root cause"
-      echo "  - Generate debug report"
-      echo "  - Exit after Phase 5"
+    research-only|research-and-plan|full-implementation|debug-only)
+      # Valid scope - no output
       ;;
     *)
       echo "ERROR: Unknown workflow scope: $workflow_scope" >&2
@@ -129,14 +106,10 @@ initialize_workflow_paths() {
       return 1
       ;;
   esac
-  echo ""
 
   # ============================================================================
-  # STEP 2: Path Pre-Calculation
+  # STEP 2: Path Pre-Calculation (Silent - coordinate.md displays summary)
   # ============================================================================
-
-  echo "Pre-calculating artifact paths..."
-  echo ""
 
   # Get project root (from detect-project-dir.sh)
   local project_root="${CLAUDE_PROJECT_DIR}"
@@ -199,28 +172,14 @@ initialize_workflow_paths() {
     return 1
   fi
 
-  echo "Project Location: $project_root"
-  echo "Specs Root: $specs_root"
-  echo "Topic Number: $topic_num"
-  echo "Topic Name: $topic_name"
-  echo ""
+  # Path calculation silent - coordinate.md will display summary
 
   # Calculate topic path
   local topic_path="${specs_root}/${topic_num}_${topic_name}"
 
   # ============================================================================
-  # STEP 3: Directory Structure Creation (Lazy Creation)
+  # STEP 3: Directory Structure Creation (Silent - verification occurs, no output)
   # ============================================================================
-
-  echo "Creating topic directory structure..."
-  echo ""
-  echo "════════════════════════════════════════════════════════"
-  echo "  MANDATORY VERIFICATION - Topic Directory Creation"
-  echo "════════════════════════════════════════════════════════"
-  echo ""
-  echo "Creating topic root directory at: $topic_path"
-  echo "   (Subdirectories created on-demand when files written)"
-  echo ""
 
   # Create topic structure using utility function (creates only root directory)
   if ! create_topic_structure "$topic_path"; then
@@ -260,12 +219,7 @@ initialize_workflow_paths() {
     return 1
   fi
 
-  echo "✅ VERIFIED: Topic root directory exists at $topic_path"
-  echo ""
-
-  # VERIFICATION REQUIREMENT: Confirm before proceeding
-  echo "Verification checkpoint passed - proceeding to artifact path calculation"
-  echo ""
+  # Verification checkpoint silent - errors go to stderr
 
   # ============================================================================
   # Pre-calculate ALL artifact paths (exported to calling script)
@@ -296,14 +250,7 @@ initialize_workflow_paths() {
   # Documentation phase paths
   local summary_path="${topic_path}/summaries/${topic_num}_${topic_name}_summary.md"
 
-  echo "Pre-calculated Artifact Paths:"
-  echo "  Research Reports: ${#report_paths[@]} paths"
-  echo "  Overview: $overview_path"
-  echo "  Plan: $plan_path"
-  echo "  Implementation: $impl_artifacts"
-  echo "  Debug: $debug_report"
-  echo "  Summary: $summary_path"
-  echo ""
+  # Artifact paths calculated silently - coordinate.md will display summary
 
   # ============================================================================
   # Initialize tracking arrays
@@ -348,8 +295,7 @@ initialize_workflow_paths() {
   export TESTS_PASSING="$tests_passing"
   export IMPLEMENTATION_OCCURRED="$implementation_occurred"
 
-  echo "Phase 0 Complete: Ready for Phase 1 (Research)"
-  echo ""
+  # Silent completion - coordinate.md displays user-facing output
 
   return 0
 }
