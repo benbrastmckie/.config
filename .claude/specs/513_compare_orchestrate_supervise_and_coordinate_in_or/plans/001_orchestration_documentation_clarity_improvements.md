@@ -86,7 +86,7 @@ This plan improves the documentation in `.claude/docs/` to clearly communicate t
 
 ## Implementation Phases
 
-### Phase 1: Add Command Selection to orchestration-best-practices.md [REVISED]
+### Phase 1: Add Command Selection to orchestration-best-practices.md [COMPLETED]
 **Objective**: Integrate command selection guidance into existing unified orchestration guide
 **Complexity**: Medium
 
@@ -95,26 +95,26 @@ This plan improves the documentation in `.claude/docs/` to clearly communicate t
 **Current State**: orchestration-best-practices.md exists at 1,113 lines and documents the unified 7-phase framework, but does not yet include command selection guidance.
 
 Tasks:
-- [ ] Read orchestration-best-practices.md to understand current structure
-- [ ] Add "Command Selection" section early in document (after Overview, before detailed phase documentation)
-- [ ] Add maturity/stability section prominently at the top:
+- [x] Read orchestration-best-practices.md to understand current structure
+- [x] Add "Command Selection" section early in document (after Overview, before detailed phase documentation)
+- [x] Add maturity/stability section prominently at the top:
   - /coordinate: **Production-ready** - stable, tested, recommended for all workflows
   - /orchestrate: **In Development** - PR automation features being refined, may have inconsistent behavior
   - /supervise: **In Development** - minimal reference implementation being stabilized
-- [ ] Add decision tree (ASCII art using Unicode box-drawing for terminal compatibility)
+- [x] Add decision tree (ASCII art using Unicode box-drawing for terminal compatibility)
   - Default recommendation: Use /coordinate unless you need specific experimental features
-- [ ] Add feature comparison matrix (markdown table format)
+- [x] Add feature comparison matrix (markdown table format)
   - Include "Maturity Status" column
-- [ ] Document file size hierarchy clearly:
+- [x] Document file size hierarchy clearly:
   - /orchestrate: 5,438 lines (heaviest, PR automation + dashboards, **in development**)
   - /coordinate: 2,500-3,000 lines (middle, wave-based parallel execution, **production-ready**)
   - /supervise: 1,939 lines (lightest, proven minimal reference, **in development**)
-- [ ] Add use case recommendations from Spec 513 research report
+- [x] Add use case recommendations from Spec 513 research report
   - Emphasize /coordinate as default choice
   - Note /orchestrate and /supervise as experimental alternatives
-- [ ] Include interoperability note (commands are 100% architecturally compatible)
-- [ ] Reference Spec 513 research report OVERVIEW.md for detailed findings
-- [ ] Add navigation breadcrumb at top if not present
+- [x] Include interoperability note (commands are 100% architecturally compatible)
+- [x] Reference Spec 513 research report OVERVIEW.md for detailed findings
+- [x] Add navigation breadcrumb at top if not present
 
 Testing:
 ```bash
