@@ -349,7 +349,7 @@ Example: `PROGRESS: [Phase 1] - Research complete (4/4 succeeded)`
 
 ## Available Utility Functions
 
-[Library sourcing is now implemented in Phase 0 STEP 0]
+[Library sourcing is implemented in Phase 0 STEP 0]
 
 See Phase 0 STEP 0 for library sourcing implementation. All required libraries are sourced at the beginning of the workflow before any bash blocks execute.
 
@@ -362,7 +362,7 @@ See Phase 0 STEP 0 for library sourcing implementation. All required libraries a
 
 [REFERENCE-OK: Can be supplemented with external library documentation]
 
-All utility functions are now sourced from library files. This table documents the complete API:
+All utility functions are sourced from library files. This table documents the complete API:
 
 ### Workflow Detection Functions
 
@@ -693,7 +693,7 @@ else
   exit 1
 fi
 
-# Call unified initialization function (now silent)
+# Call unified initialization function (silent)
 # This consolidates STEPS 3-7 (225+ lines → ~10 lines)
 # Implements 3-step pattern: scope detection → path pre-calculation → directory creation
 if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
