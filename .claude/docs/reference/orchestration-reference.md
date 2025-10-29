@@ -752,7 +752,7 @@ Orchestration commands use these thresholds for adaptive planning:
 | File References | >10 | Increase complexity score |
 | Replan Limit | 2 | Maximum replans per phase |
 
-**Configuration**: See [Adaptive Planning Configuration](../../CLAUDE.md#adaptive_planning_config)
+**Configuration**: See [Adaptive Planning Configuration](../../../CLAUDE.md#adaptive_planning_config)
 
 ### Benchmark Results
 

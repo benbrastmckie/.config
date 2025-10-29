@@ -388,7 +388,7 @@ echo "Scalability improvement: ${max_agents_with_metadata}x" # Expected: 20x
 
 ## See Also
 
-- [Hierarchical Agents Guide](../hierarchical-agents.md) - Complete agent coordination architecture
+- [Hierarchical Agents Guide](../hierarchical_agents.md) - Complete agent coordination architecture
 - [Performance Measurement Guide](../../guides/performance-optimization.md) - How to measure context reduction
-- [Creating Agents Guide](../../guides/creating-agents.md) - Agent development best practices
+- [Creating Agents Guide](../../guides/agent-development-guide.md) - Agent development best practices
 - `.claude/lib/metadata-extraction.sh` - Utility functions for metadata extraction

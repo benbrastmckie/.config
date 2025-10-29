@@ -54,7 +54,7 @@ Common tasks and where to find guidance:
    → [Directory Protocols](concepts/directory-protocols.md)
 
 10. **Fix broken orchestration workflows**
-    → [Orchestration Troubleshooting Guide](troubleshooting/orchestration-troubleshooting.md)
+    → [Orchestration Troubleshooting Guide](guides/orchestration-troubleshooting.md)
     → [Error Handling Flowchart](quick-reference/error-handling-flowchart.md)
 
 ## Quick Navigation for Agents
@@ -339,8 +339,8 @@ Quick lookup for commands, agents, schemas, and syntax. Use when you know what y
 Task-focused guides for accomplishing specific goals. Use when you have a concrete task and need step-by-step instructions.
 
 **Key Documents**:
-- [Creating Commands](guides/creating-commands.md) - Complete command development guide
-- [Creating Agents](guides/creating-agents.md) - Agent creation and design guide
+- [Creating Commands](guides/command-development-guide.md) - Complete command development guide
+- [Creating Agents](guides/agent-development-guide.md) - Agent creation and design guide
 - [Using Agents](guides/agent-development-guide.md) - Agent invocation and coordination patterns
 - [Standards Integration](guides/standards-integration.md) - Implementing CLAUDE.md standards discovery
 - [Command Patterns](guides/command-patterns.md) - Reusable command design patterns
@@ -378,13 +378,13 @@ Learning-oriented step-by-step tutorials. Use when you're learning a new feature
 3. [Agent Reference](reference/agent-reference.md) - See what agents can do
 
 ### For Command Developers
-1. [Creating Commands](guides/creating-commands.md) - Complete development guide
+1. [Creating Commands](guides/command-development-guide.md) - Complete development guide
 2. [Standards Integration](guides/standards-integration.md) - Using CLAUDE.md standards
 3. [Command Patterns](guides/command-patterns.md) - Reusable patterns
 4. [Using Agents](guides/agent-development-guide.md) - Integrate agents in commands
 
 ### For Agent Developers
-1. [Creating Agents](guides/creating-agents.md) - Agent development guide
+1. [Creating Agents](guides/agent-development-guide.md) - Agent development guide
 2. [Using Agents](guides/agent-development-guide.md) - Agent invocation patterns
 3. [Agent Reference](reference/agent-reference.md) - Existing agent catalog
 
@@ -532,8 +532,8 @@ Before committing:
 - [Phase Dependencies](reference/phase_dependencies.md) - Wave-based execution
 
 **How-To Guides**:
-- [Creating Commands](guides/creating-commands.md) - Command development
-- [Creating Agents](guides/creating-agents.md) - Agent creation
+- [Creating Commands](guides/command-development-guide.md) - Command development
+- [Creating Agents](guides/agent-development-guide.md) - Agent creation
 - [Using Agents](guides/agent-development-guide.md) - Agent integration
 - [Standards Integration](guides/standards-integration.md) - Standards usage
 - [Command Patterns](guides/command-patterns.md) - Pattern catalog
@@ -566,7 +566,7 @@ Before committing:
 **Planning**:
 - [Adaptive Planning Guide](workflows/adaptive-planning-guide.md)
 - [Template System Guide](workflows/checkpoint_template_guide.md)
-- [Creating Commands](guides/creating-commands.md)
+- [Creating Commands](guides/command-development-guide.md)
 
 **Standards**:
 - [Standards Integration](guides/standards-integration.md)
@@ -575,17 +575,17 @@ Before committing:
 - [Writing Standards](concepts/writing-standards.md)
 
 **Testing**:
-- [Creating Commands](guides/creating-commands.md#testing)
+- [Creating Commands](guides/command-development-guide.md#testing)
 - [Orchestration Guide](workflows/orchestration-guide.md#validation)
 
 **Agents**:
-- [Creating Agents](guides/creating-agents.md)
+- [Creating Agents](guides/agent-development-guide.md)
 - [Using Agents](guides/agent-development-guide.md)
 - [Agent Reference](reference/agent-reference.md)
 - [Hierarchical Agents](concepts/hierarchical_agents.md)
 
 **Commands**:
-- [Creating Commands](guides/creating-commands.md)
+- [Creating Commands](guides/command-development-guide.md)
 - [Command Reference](reference/command-reference.md)
 - [Command Patterns](guides/command-patterns.md)
 
@@ -599,7 +599,7 @@ Before committing:
 
 - [← Parent Directory](../README.md)
 - [agents/](../agents/README.md) - Agent definitions
-- [commands/](../commands/README.md) - Command definitions
+- [commands/](../../commands/README.md) - Command definitions
 - [tts/](../tts/README.md) - TTS implementation
 - [hooks/](../hooks/README.md) - Hook scripts
 - [lib/](../lib/README.md) - Shared utilities
@@ -633,7 +633,7 @@ See: [Orchestration Guide](workflows/orchestration-guide.md)
 ```
 
 ### Command Development
-See: [Creating Commands](guides/creating-commands.md)
+See: [Creating Commands](guides/command-development-guide.md)
 
 ```markdown
 ---
@@ -687,28 +687,28 @@ See: [Standards Integration](guides/standards-integration.md)
 ### Implementation Planning
 - [Adaptive Planning Guide](workflows/adaptive-planning-guide.md)
 - [Template System Guide](workflows/checkpoint_template_guide.md)
-- [Creating Commands](guides/creating-commands.md)
+- [Creating Commands](guides/command-development-guide.md)
 
 ### Standards and Quality
 - [Command Architecture Standards](reference/command_architecture_standards.md)
 - [Standards Integration](guides/standards-integration.md)
 - [CLAUDE.md Section Schema](reference/claude-md-section-schema.md)
 - [Writing Standards](concepts/writing-standards.md)
-- [Creating Commands](guides/creating-commands.md#quality-checklist)
+- [Creating Commands](guides/command-development-guide.md#quality-checklist)
 - [Command Patterns](guides/command-patterns.md)
 
 ### Agent System
-- [Creating Agents](guides/creating-agents.md)
+- [Creating Agents](guides/agent-development-guide.md)
 - [Using Agents](guides/agent-development-guide.md)
 - [Agent Reference](reference/agent-reference.md)
 - [Hierarchical Agents](concepts/hierarchical_agents.md)
 - [../agents/README.md](../agents/README.md)
 
 ### Command System
-- [Creating Commands](guides/creating-commands.md)
+- [Creating Commands](guides/command-development-guide.md)
 - [Command Reference](reference/command-reference.md)
 - [Command Patterns](guides/command-patterns.md)
-- [../commands/README.md](../commands/README.md)
+- [../commands/README.md](../../commands/README.md)
 
 ### TTS System
 - [TTS Integration Guide](workflows/tts-integration-guide.md)

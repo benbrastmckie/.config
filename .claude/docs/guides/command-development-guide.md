@@ -1955,7 +1955,7 @@ When command isn't working as expected, check:
 ### Troubleshooting Resources
 
 - [Agent Delegation Troubleshooting](../troubleshooting/agent-delegation-troubleshooting.md) - Complete delegation debug guide
-- [Orchestration Troubleshooting](../troubleshooting/orchestration-troubleshooting.md) - Workflow debugging
+- [Orchestration Troubleshooting](../guides/orchestration-troubleshooting.md) - Workflow debugging
 - [Error Handling Flowchart](../quick-reference/error-handling-flowchart.md) - Quick error diagnosis
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - All 11 standards
 

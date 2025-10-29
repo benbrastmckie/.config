@@ -367,6 +367,6 @@ Task {
 ## Related Documentation
 
 - [Using Agents](../guides/agent-development-guide.md) - Comprehensive agent integration guide with invocation patterns
-- [Creating Agents](../guides/creating-agents.md) - Guide for developing custom agents
+- [Creating Agents](../guides/agent-development-guide.md) - Guide for developing custom agents
 - [Command Patterns](../guides/command-patterns.md) - Command development best practices
 - [Orchestration Guide](../workflows/orchestration-guide.md) - Multi-agent workflows

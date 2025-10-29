@@ -36,7 +36,7 @@ Understanding-oriented explanations of system architecture and principles. Use t
 - To learn which patterns are banned (temporal markers like "New", "Updated") and why
 - When deciding whether to preserve historical context or create clean documentation
 
-**See Also**: [Development Workflow](development-workflow.md), [Documentation Policy in CLAUDE.md](../../CLAUDE.md#documentation_policy)
+**See Also**: [Development Workflow](development-workflow.md), [Documentation Policy in CLAUDE.md](../../../CLAUDE.md#documentation_policy)
 
 ---
 

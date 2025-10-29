@@ -50,7 +50,7 @@ Task-focused how-to guides for specific development activities. Use this section
 - When optimizing multi-agent workflows for context efficiency
 - To debug agent invocation failures or context consumption issues
 
-**See Also**: [Creating Agents](creating-agents.md), [Agent Reference](../reference/agent-reference.md), [Hierarchical Agents](../concepts/hierarchical_agents.md)
+**See Also**: [Creating Agents](agent-development-guide.md), [Agent Reference](../reference/agent-reference.md), [Hierarchical Agents](../concepts/hierarchical_agents.md)
 
 ---
 
@@ -76,7 +76,7 @@ Task-focused how-to guides for specific development activities. Use this section
 - When integrating testing, logging, or progress streaming in commands
 - To ensure consistent implementation across related commands
 
-**See Also**: [Command Examples](command-examples.md), [Creating Commands](creating-commands.md), [Logging Patterns](logging-patterns.md)
+**See Also**: [Command Examples](command-examples.md), [Creating Commands](command-development-guide.md), [Logging Patterns](logging-patterns.md)
 
 ---
 
@@ -203,7 +203,7 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ### Create Your First Command
 1. Review [Command Architecture Standards](../reference/command_architecture_standards.md)
-2. Follow [Creating Commands](creating-commands.md) guide
+2. Follow [Creating Commands](command-development-guide.md) guide
 3. Reference [Command Patterns](command-patterns.md) for implementation
 4. Test with examples from [Command Examples](command-examples.md)
 

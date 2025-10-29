@@ -1994,7 +1994,7 @@ Agents should implement these patterns from the [Patterns Catalog](../concepts/p
 - [Command Development Guide](command-development-guide.md) - How commands invoke agents
 - [Testing Patterns](testing-patterns.md) - Validation and quality assurance
 - [Standards Integration](standards-integration.md) - CLAUDE.md standards discovery
-- [Orchestration Troubleshooting Guide](../troubleshooting/orchestration-troubleshooting.md) - Debugging orchestration workflows
+- [Orchestration Troubleshooting Guide](../guides/orchestration-troubleshooting.md) - Debugging orchestration workflows
 
 ### Reference Documentation
 

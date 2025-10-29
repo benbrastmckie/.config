@@ -1451,8 +1451,8 @@ OVERVIEW_PATH="$RESEARCH_SUBDIR/OVERVIEW.md"  # ALL CAPS, not numbered
 This section documents the correct patterns for invoking agents from commands, with emphasis on the **behavioral injection pattern** that enables metadata-based context reduction and topic-based artifact organization.
 
 **Related Documentation**:
-- [Agent Authoring Guide](../guides/agent-authoring-guide.md) - Creating agent behavioral files
-- [Command Authoring Guide](../guides/command-authoring-guide.md) - Invoking agents from commands
+- [Agent Authoring Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
+- [Command Authoring Guide](../guides/command-development-guide.md) - Invoking agents from commands
 
 ### The Behavioral Injection Pattern
 
