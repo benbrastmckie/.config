@@ -31,6 +31,7 @@ This directory documents the core architectural patterns that enable reliable, e
 ### Performance Patterns
 
 8. **[Parallel Execution](./parallel-execution.md)** - Wave-based and concurrent agent execution for 40-60% time savings
+9. **[Workflow Scope Detection](./workflow-scope-detection.md)** - Conditional phase execution based on workflow type for context savings
 
 ## Anti-Patterns
 
@@ -100,6 +101,7 @@ When designing multi-phase workflows:
 | Command coordinating 10+ agents | + Hierarchical Supervision (3 levels, recursive) |
 | Long-running workflow (>5 phases) | + Checkpoint Recovery, Context Management |
 | Independent parallel tasks | + Parallel Execution |
+| Multi-scope orchestration (research/plan/implement) | + Workflow Scope Detection |
 
 ## Performance Metrics
 
