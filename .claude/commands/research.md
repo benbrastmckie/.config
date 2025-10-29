@@ -150,7 +150,7 @@ echo "Main topic directory: $TOPIC_DIR"
 
 **WHY THIS MATTERS**: Research-specialist agents require EXACT absolute paths to create files in correct locations. Skipping this step causes path mismatch errors.
 
-**EXECUTE NOW**: USE the Bash tool to calculate subtopic report paths:
+**EXECUTE NOW**: USE the Bash tool to calculate report paths:
 
 ```bash
 # MANDATORY: Calculate absolute paths for each subtopic
@@ -195,7 +195,7 @@ for subtopic in "${SUBTOPICS[@]}"; do
 done
 ```
 
-**EXECUTE NOW**: USE the Bash tool to verify path pre-calculation:
+**EXECUTE NOW**: USE the Bash tool to verify all paths:
 
 ```bash
 # Verify all paths are absolute
@@ -203,10 +203,34 @@ for subtopic in "${!SUBTOPIC_REPORT_PATHS[@]}"; do
   # Use string comparison instead of negated regex to avoid bash eval issues
   path="${SUBTOPIC_REPORT_PATHS[$subtopic]}"
   if [ "${path:0:1}" != "/" ]; then
-    echo "CRITICAL ERROR: Path for '$subtopic' is not absolute: $path"
+    echo ""
+    echo "✗ ERROR: Path not absolute"
+    echo "   Expected: Path starting with '/'"
+    echo "   Found: $path"
+    echo ""
+    echo "Diagnostic commands:"
+    echo "  echo \$SUBTOPIC_REPORT_PATHS"
+    echo "  pwd"
+    echo ""
+    echo "Workflow terminated"
     exit 1
   fi
 done
+
+# Verify research subdirectory exists
+if [ ! -d "$RESEARCH_SUBDIR" ]; then
+  echo ""
+  echo "✗ ERROR: Directory missing"
+  echo "   Expected: Directory at $RESEARCH_SUBDIR"
+  echo "   Found: Directory does not exist"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la \$(dirname \"$RESEARCH_SUBDIR\")"
+  echo "  echo \$RESEARCH_SUBDIR"
+  echo ""
+  echo "Workflow terminated"
+  exit 1
+fi
 
 echo "✓ VERIFIED: All paths are absolute"
 echo "✓ VERIFIED: ${#SUBTOPIC_REPORT_PATHS[@]} report paths calculated"
