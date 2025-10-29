@@ -382,8 +382,6 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Dependent Commands**: plan
 
-**See**: [report.md](../../commands/report.md)
-
 ---
 
 ### /revise
@@ -478,7 +476,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Reason**: Consolidated into `/revise` to reduce command overlap and confusion
 
-**See**: [update.md](../../commands/update.md), [Command Selection Guide](../guides/command-development-guide.md)
+**See**: [Command Selection Guide](../guides/command-development-guide.md)
 
 ---
 
@@ -574,7 +572,7 @@ Code quality analysis:
 - **[Command Patterns](../guides/command-patterns.md)** - Reusable implementation patterns
 - **[Agent Reference](agent-reference.md)** - Quick agent reference (Phase 4)
 - **[Command Selection Guide](../guides/command-development-guide.md)** - Decision tree for choosing commands
-- **[Commands README](../.claude/commands/README.md)** - Complete command documentation
+- **[Commands README](../../commands/README.md)** - Complete command documentation
 
 ---
 
