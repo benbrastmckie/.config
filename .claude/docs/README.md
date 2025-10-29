@@ -61,10 +61,12 @@ docs/
 │   ├── orchestration-reference.md  Unified orchestration reference (commands, patterns, metrics)
 │   └── workflow-phases.md       Detailed workflow phase descriptions
 │
-├── guides/                      Task-focused how-to guides (17 files)
+├── guides/                      Task-focused how-to guides (19 files)
 │   ├── README.md                How-to guides index
 │   ├── creating-commands.md     Command development guide
 │   ├── agent-development-guide.md  Complete agent guide (create, invoke, context, advanced)
+│   ├── orchestration-best-practices.md  Unified 7-phase orchestration framework (Spec 508)
+│   ├── phase-0-optimization.md  Phase 0 breakthrough (85% reduction, 25x speedup)
 │   ├── using-agents.md          → Redirects to agent-development-guide.md (archived)
 │   ├── standards-integration.md Standards discovery and application
 │   ├── imperative-language-guide.md  MUST/WILL/SHALL usage for required actions
@@ -87,7 +89,7 @@ docs/
 │   ├── writing-standards.md     Development philosophy and documentation
 │   ├── directory-protocols.md   Topic-based artifact organization
 │   ├── development-workflow.md  Development workflow patterns
-│   └── patterns/                Architectural patterns catalog (8 patterns)
+│   └── patterns/                Architectural patterns catalog (9 patterns)
 │       ├── README.md            Patterns catalog index
 │       ├── behavioral-injection.md      Commands inject context into agents
 │       ├── hierarchical-supervision.md  Multi-level agent coordination
@@ -96,11 +98,13 @@ docs/
 │       ├── context-management.md        <30% context usage techniques
 │       ├── verification-fallback.md     100% file creation via checkpoints
 │       ├── checkpoint-recovery.md       State preservation and restoration
-│       └── parallel-execution.md        Wave-based concurrent execution
+│       ├── parallel-execution.md        Wave-based concurrent execution
+│       └── workflow-scope-detection.md  Conditional phase execution by scope
 │
-├── workflows/                   Learning-oriented step-by-step tutorials (6 files)
+├── workflows/                   Learning-oriented step-by-step tutorials (7 files)
 │   ├── README.md                Workflow tutorials index
 │   ├── orchestration-guide.md   Multi-agent workflow tutorial (includes behavioral injection example)
+│   ├── context-budget-management.md  Layered context architecture tutorial (21% target)
 │   ├── adaptive-planning-guide.md Progressive plan structures
 │   ├── checkpoint_template_guide.md Template-based planning
 │   ├── spec_updater_guide.md    Spec updater agent usage
