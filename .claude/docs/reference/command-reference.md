@@ -57,7 +57,7 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 
 **Output**: Console analysis report with rankings and recommendations
 
-**See**: [analyze.md](../commands/analyze.md)
+**See**: [analyze.md](../../commands/analyze.md)
 
 ---
 
@@ -79,7 +79,7 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 
 **Output**: Merged content in parent file, directory cleanup
 
-**See**: [collapse.md](../commands/collapse.md)
+**See**: [collapse.md](../../commands/collapse.md)
 
 ---
 
@@ -99,7 +99,7 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 
 **Output**: Converted document files
 
-**See**: [convert-docs.md](../commands/convert-docs.md)
+**See**: [convert-docs.md](../../commands/convert-docs.md)
 
 ---
 
@@ -147,7 +147,7 @@ Automatically detects workflow type and executes appropriate phases:
 - Context usage: <30% throughout workflow
 - Time savings: 40-60% (wave-based execution)
 
-**See**: [coordinate.md](../commands/coordinate.md)
+**See**: [coordinate.md](../../commands/coordinate.md)
 
 ---
 
@@ -166,7 +166,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Diagnostic report in `debug/{topic}/NNN_description.md`
 
-**See**: [debug.md](../commands/debug.md)
+**See**: [debug.md](../../commands/debug.md)
 
 ---
 
@@ -185,7 +185,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Updated README files and documentation
 
-**See**: [document.md](../commands/document.md)
+**See**: [document.md](../../commands/document.md)
 
 ---
 
@@ -202,7 +202,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Example demonstration
 
-**See**: [example-with-agent.md](../commands/example-with-agent.md)
+**See**: [example-with-agent.md](../../commands/example-with-agent.md)
 
 ---
 
@@ -224,7 +224,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Extracted phase/stage file, updated main plan
 
-**See**: [expand.md](../commands/expand.md)
+**See**: [expand.md](../../commands/expand.md)
 
 ---
 
@@ -245,7 +245,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Dependent Commands**: list, revise, debug, document
 
-**See**: [implement.md](../commands/implement.md)
+**See**: [implement.md](../../commands/implement.md)
 
 ---
 
@@ -266,7 +266,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Formatted list with metadata
 
-**See**: [list.md](../commands/list.md)
+**See**: [list.md](../../commands/list.md)
 
 ---
 
@@ -287,7 +287,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Research reports, implementation plan, code changes, tests, documentation, optional PR
 
-**See**: [orchestrate.md](../commands/orchestrate.md)
+**See**: [orchestrate.md](../../commands/orchestrate.md)
 
 ---
 
@@ -308,7 +308,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Dependent Commands**: report, implement, revise
 
-**See**: [plan.md](../commands/plan.md)
+**See**: [plan.md](../../commands/plan.md)
 
 ---
 
@@ -326,7 +326,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Implementation plan from template in `specs/plans/NNN_plan_name.md`
 
-**See**: [plan-from-template.md](../commands/plan-from-template.md)
+**See**: [plan-from-template.md](../../commands/plan-from-template.md)
 
 ---
 
@@ -343,7 +343,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Implementation plan in `specs/plans/NNN_plan_name.md`
 
-**See**: [plan-wizard.md](../commands/plan-wizard.md)
+**See**: [plan-wizard.md](../../commands/plan-wizard.md)
 
 ---
 
@@ -362,7 +362,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Refactoring report in `specs/reports/refactoring/NNN_analysis.md`
 
-**See**: [refactor.md](../commands/refactor.md)
+**See**: [refactor.md](../../commands/refactor.md)
 
 ---
 
@@ -382,7 +382,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Dependent Commands**: plan
 
-**See**: [report.md](../commands/report.md)
+**See**: [report.md](../../commands/report.md)
 
 ---
 
@@ -404,7 +404,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Updated plan or report with modifications
 
-**See**: [revise.md](../commands/revise.md)
+**See**: [revise.md](../../commands/revise.md)
 
 ---
 
@@ -426,7 +426,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Created/updated CLAUDE.md file
 
-**See**: [setup.md](../commands/setup.md)
+**See**: [setup.md](../../commands/setup.md)
 
 ---
 
@@ -445,7 +445,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Test results and analysis
 
-**See**: [test.md](../commands/test.md)
+**See**: [test.md](../../commands/test.md)
 
 ---
 
@@ -463,7 +463,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Full test suite results and coverage
 
-**See**: [test-all.md](../commands/test-all.md)
+**See**: [test-all.md](../../commands/test-all.md)
 
 ---
 
@@ -478,7 +478,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Reason**: Consolidated into `/revise` to reduce command overlap and confusion
 
-**See**: [update.md](../commands/update.md), [Command Selection Guide](../guides/command-development-guide.md)
+**See**: [update.md](../../commands/update.md), [Command Selection Guide](../guides/command-development-guide.md)
 
 ---
 
@@ -574,7 +574,7 @@ Code quality analysis:
 - **[Command Patterns](../guides/command-patterns.md)** - Reusable implementation patterns
 - **[Agent Reference](agent-reference.md)** - Quick agent reference (Phase 4)
 - **[Command Selection Guide](../guides/command-development-guide.md)** - Decision tree for choosing commands
-- **[Commands README](../../commands/README.md)** - Complete command documentation
+- **[Commands README](../.claude/commands/README.md)** - Complete command documentation
 
 ---
 

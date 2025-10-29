@@ -470,7 +470,7 @@ cat .claude/data/checkpoints/orchestrate_*.json | jq '.current_phase'
 ## References
 
 - [Command Reference](../reference/command-reference.md) - Full command documentation
-- [Implementation Command](../commands/implement.md) - Implementation details
+- [Implementation Command](../../commands/implement.md) - Implementation details
 - [Orchestration Guide](orchestration-guide.md) - Multi-agent workflows
-- [Plan Command](../commands/plan.md) - Plan creation details
+- [Plan Command](../../commands/plan.md) - Plan creation details
 - [Phase Dependencies](../reference/phase_dependencies.md) - Wave-based parallel execution

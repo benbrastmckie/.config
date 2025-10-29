@@ -1937,7 +1937,7 @@ When agent logic is purely deterministic, refactor to utility library:
 
 3. **Update Callers**:
    ```markdown
-   # implementation-executor.md (UPDATED)
+   # implementation-executor.md
    ## Create Git Commit
 
    **STEP 1: Generate Commit Message Using git-commit-utils.sh**

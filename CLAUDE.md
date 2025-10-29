@@ -247,9 +247,11 @@ Multi-level agent coordination system that minimizes context window consumption 
 - **Metadata Extraction**: Extract title + 50-word summary from reports/plans (99% context reduction) - See [Metadata Extraction Pattern](.claude/docs/concepts/patterns/metadata-extraction.md)
 - **Forward Message Pattern**: Pass subagent responses directly without re-summarization - See [Forward Message Pattern](.claude/docs/concepts/patterns/forward-message.md)
 - **Recursive Supervision**: Supervisors can manage sub-supervisors for complex workflows - See [Hierarchical Supervision Pattern](.claude/docs/concepts/patterns/hierarchical-supervision.md)
-- **Context Pruning**: Aggressive cleanup of completed phase data - See [Context Management Pattern](.claude/docs/concepts/patterns/context-management.md)
+- **Context Pruning**: Aggressive cleanup of completed phase data - See [Context Management Pattern](.claude/docs/concepts/patterns/context-management.md) and [Context Budget Management Tutorial](.claude/docs/workflows/context-budget-management.md)
 - **Subagent Delegation**: Commands can delegate complex tasks to specialized subagents - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
 - **Imperative Agent Invocation**: All agent invocations use imperative pattern (not documentation-only YAML blocks) - See [Standard 11](.claude/docs/reference/command_architecture_standards.md#standard-11) and [Anti-Pattern Documentation](.claude/docs/concepts/patterns/behavioral-injection.md#anti-pattern-documentation-only-yaml-blocks)
+- **Workflow Scope Detection**: Automatic detection of workflow requirements - See [Workflow Scope Detection Pattern](.claude/docs/concepts/patterns/workflow-scope-detection.md)
+- **Phase 0 Optimization**: Pre-calculation of paths for 85% token reduction - See [Phase 0 Optimization Guide](.claude/docs/guides/phase-0-optimization.md)
 
 ### Context Reduction Metrics
 - **Target**: <30% context usage throughout workflows
@@ -291,42 +293,22 @@ Multi-level agent coordination system that minimizes context window consumption 
 - **`/orchestrate`**: Supports recursive supervision for large-scale workflows (10+ topics)
 - **`/supervise`**: Multi-phase workflow orchestration (research → plan → implement → test → debug → document)
 
-### Anti-Pattern Resolution
+### Validation and Troubleshooting
 
-**Historical Context**: Anti-patterns discovered and fixed across multiple orchestration commands (specs 438, 495, 057):
-
-**Spec 438** (2025-10-24): `/supervise` agent delegation fix
-- Problem: 7 YAML blocks wrapped in markdown code fences causing 0% delegation rate
-- Result: 0% → >90% delegation rate after applying imperative pattern
-- Pattern established: /supervise became reference for other commands
-
-**Spec 495** (2025-10-27): `/coordinate` and `/research` agent delegation failures
-- Problem: 9 invocations in /coordinate, 3 in /research using documentation-only YAML pattern
-- Evidence: Zero files in correct locations, all output to TODO1.md files
-- Result: 0% → >90% delegation rate, 100% file creation reliability
-- Additional: ~10 bash code blocks converted to explicit tool invocations
-
-**Spec 057** (2025-10-27): `/supervise` robustness improvements
-- Problem: Bootstrap fallback mechanisms hiding configuration errors
-- Result: Removed 32 lines of fallbacks, enhanced 7 library error messages
-- Distinction: Bootstrap fallbacks removed (hide errors), file verification preserved (detect errors)
-
-**Unified Resolution** (Spec 497): All orchestration commands now enforce [Standard 11 (Imperative Agent Invocation Pattern)](.claude/docs/reference/command_architecture_standards.md#standard-11), which requires:
+All orchestration commands enforce [Standard 11 (Imperative Agent Invocation Pattern)](.claude/docs/reference/command_architecture_standards.md#standard-11), which requires:
 - Imperative instructions (`**EXECUTE NOW**: USE the Task tool...`)
 - No code block wrappers around Task invocations
 - Direct reference to agent behavioral files (`.claude/agents/*.md`)
 - Explicit completion signals (e.g., `REPORT_CREATED:`)
 - Fail-fast error handling with diagnostic commands
 
-**Verified Commands** (as of 2025-10-27):
-- `/supervise`: >90% delegation rate, fail-fast error handling
-- `/coordinate`: >90% delegation rate, checkpoint API fixed
-- `/research`: >90% delegation rate, bash blocks fixed
-- `/orchestrate`: Validated via unified test suite
+**Validation Tools**:
+- `.claude/lib/validate-agent-invocation-pattern.sh` - Detect anti-patterns
+- `.claude/tests/test_orchestration_commands.sh` - Comprehensive testing
 
-**Validation**: Run `.claude/lib/validate-agent-invocation-pattern.sh` to detect anti-patterns. Run `.claude/tests/test_orchestration_commands.sh` for comprehensive testing.
-
-**Best Practices**: See [Behavioral Injection Pattern - Anti-Pattern Documentation](.claude/docs/concepts/patterns/behavioral-injection.md) for complete case studies and [Orchestration Troubleshooting Guide](.claude/docs/guides/orchestration-troubleshooting.md) for debugging procedures.
+**Resources**:
+- [Behavioral Injection Pattern - Anti-Pattern Documentation](.claude/docs/concepts/patterns/behavioral-injection.md) - Complete case studies
+- [Orchestration Troubleshooting Guide](.claude/docs/guides/orchestration-troubleshooting.md) - Debugging procedures
 
 ### Usage Example
 ```bash
@@ -366,7 +348,9 @@ Located in `.claude/commands/`:
 
 All orchestration commands provide 7-phase workflow with parallel research (2-4 agents), automated complexity evaluation, and conditional debugging. Wave-based commands (/orchestrate, /coordinate) achieve 40-60% time savings through parallel implementation. Performance: <30% context usage throughout.
 
-**Reliability** (Spec 497 - Unified improvements):
+**Best Practices**: See [Orchestration Best Practices Guide](.claude/docs/guides/orchestration-best-practices.md) for unified framework covering Phase 0-7, context budget management, and library integration.
+
+**Reliability**:
 - Agent delegation rate: >90% (all orchestration commands verified)
 - File creation reliability: 100% (mandatory verification checkpoints)
 - Bootstrap reliability: 100% (fail-fast exposes configuration errors immediately)

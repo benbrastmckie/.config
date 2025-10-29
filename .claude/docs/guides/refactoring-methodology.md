@@ -376,7 +376,7 @@ Complexity is calculated using the following formula:
 Complexity score determines when plans should be expanded. The formula considers phase count, task count, and file references.
 
 For extended details including formula derivation, threshold tuning, and edge case handling:
-See [Orchestration Complexity Details](.claude/commands/shared/orchestrate-complexity-details.md)
+See [Orchestration Complexity Details](../../.claude/lib/complexity-utils.sh)
 ```
 
 4. **Validate extraction quality**:

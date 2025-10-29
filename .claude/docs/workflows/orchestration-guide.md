@@ -1364,8 +1364,8 @@ Proceed with these operations? (y/n):
 
 ## Related Documentation
 
-- [/orchestrate Command](../commands/orchestrate.md) - Full command documentation
-- [/expand Command](../commands/expand.md) - Phase expansion details
-- [/collapse Command](../commands/collapse.md) - Phase collapse details
+- [/orchestrate Command](../../commands/orchestrate.md) - Full command documentation
+- [/expand Command](../../commands/expand.md) - Phase expansion details
+- [/collapse Command](../../commands/collapse.md) - Phase collapse details
 - [Agent Development Guide](../guides/agent-development-guide.md) - Creating specialized agents
 - [Adaptive Planning Guide](adaptive-planning-guide.md) - Progressive plan structures
