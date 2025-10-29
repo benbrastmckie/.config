@@ -4,8 +4,12 @@
 
 set -e
 
+# Find project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 TEST_NAME="supervise_agent_delegation"
-TEST_OUTPUT_DIR=".claude/tests/fixtures/supervise_delegation_test"
+TEST_OUTPUT_DIR="${PROJECT_ROOT}/tests/fixtures/supervise_delegation_test"
 RESULTS_FILE="${TEST_OUTPUT_DIR}/results.log"
 
 # Setup
@@ -18,7 +22,7 @@ rm -f "$RESULTS_FILE"
 
 # Test 1: Code Fence Removal Verification
 echo "Test 1: Verifying no code fences around Task invocations..."
-CODE_FENCE_COUNT=$(grep -n '```yaml' .claude/commands/supervise.md | wc -l)
+CODE_FENCE_COUNT=$(grep -n '```yaml' "${PROJECT_ROOT}/commands/supervise.md" | wc -l)
 
 if [ "$CODE_FENCE_COUNT" -eq 1 ]; then
   echo "✓ PASS: Only 1 code-fenced YAML block (anti-pattern example)"
@@ -34,14 +38,12 @@ echo ""
 echo "Test 2: Verifying Bash in all agent allowed-tools..."
 MISSING_BASH=0
 
-cd .claude/agents
 for agent in research-specialist.md plan-architect.md code-writer.md test-specialist.md debug-analyst.md doc-writer.md; do
-  if ! grep -q "allowed-tools:.*Bash" "$agent"; then
+  if ! grep -q "allowed-tools:.*Bash" "${PROJECT_ROOT}/agents/$agent"; then
     echo "✗ FAIL: Bash missing in $agent"
     MISSING_BASH=$((MISSING_BASH + 1))
   fi
 done
-cd - > /dev/null
 
 if [ "$MISSING_BASH" -eq 0 ]; then
   echo "✓ PASS: All 6 agent files have Bash in allowed-tools"
@@ -56,7 +58,7 @@ fi
 echo ""
 echo "Test 3: Verifying library sourcing bash blocks unwrapped..."
 # Check if the library sourcing region (around line 217) has code fences
-LIBRARY_REGION_FENCES=$(sed -n '210,280p' .claude/commands/supervise.md | grep -c '```bash' || true)
+LIBRARY_REGION_FENCES=$(sed -n '210,280p' "${PROJECT_ROOT}/commands/supervise.md" | grep -c '```bash' || true)
 
 if [ "$LIBRARY_REGION_FENCES" -eq 0 ]; then
   echo "✓ PASS: Library sourcing region unwrapped (no code fences in lines 210-280)"
@@ -70,7 +72,7 @@ fi
 # Test 4: Imperative Instruction Markers Present
 echo ""
 echo "Test 4: Verifying imperative instruction markers..."
-if grep -q "EXECUTE NOW" .claude/commands/supervise.md; then
+if grep -q "EXECUTE NOW" "${PROJECT_ROOT}/commands/supervise.md"; then
   echo "✓ PASS: EXECUTE NOW marker present"
   echo "PASS: Imperative markers present" >> "$RESULTS_FILE"
 else

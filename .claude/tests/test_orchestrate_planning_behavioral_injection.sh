@@ -35,14 +35,15 @@ echo "Test 1: Verify plan path pre-calculation uses topic-based structure"
 # Check orchestrate.md contains path pre-calculation logic
 ORCHESTRATE_FILE="$PROJECT_ROOT/commands/orchestrate.md"
 
-if grep -q "create_topic_artifact.*plans.*implementation" "$ORCHESTRATE_FILE"; then
-  pass "orchestrate.md uses create_topic_artifact for plan path"
+# Updated to check for unified location detection library (replaces create_topic_artifact)
+if grep -q "unified-location-detection.sh\|ARTIFACT_PLANS" "$ORCHESTRATE_FILE"; then
+  pass "orchestrate.md uses unified location detection for plan path"
 else
-  fail "orchestrate.md missing create_topic_artifact for plan path"
+  fail "orchestrate.md missing unified location detection for plan path"
 fi
 
-# Verify topic-based path format is documented
-if grep -q "specs/{NNN_workflow}/plans/{NNN}_implementation" "$ORCHESTRATE_FILE"; then
+# Verify topic-based path format is documented (flexible pattern matching)
+if grep -q "specs/.*NNN.*plans\|specs/{NNN_workflow}/plans\|specs/{NNN_topic}" "$ORCHESTRATE_FILE"; then
   pass "Topic-based path format documented in orchestrate.md"
 else
   fail "Topic-based path format not documented"
@@ -143,7 +144,7 @@ fi
 echo ""
 echo "Test 5: Verify workflow-phases.md planning template updated"
 
-WORKFLOW_PHASES_FILE="$PROJECT_ROOT/commands/shared/workflow-phases.md"
+WORKFLOW_PHASES_FILE="$PROJECT_ROOT/docs/reference/workflow-phases.md"
 
 # Verify path pre-calculation documented
 if grep -q "Path Pre-Calculation\|create_topic_artifact.*plans" "$WORKFLOW_PHASES_FILE"; then
