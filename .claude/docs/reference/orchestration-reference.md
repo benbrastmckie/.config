@@ -219,20 +219,25 @@ source .claude/lib/library-name.sh
 
 ## Section 2: Command Comparison
 
+**📖 For detailed command selection guidance with maturity status, see [Command Selection Guide](../guides/orchestration-best-practices.md#command-selection)**
+
+**Quick Recommendation**: Use **/coordinate** for production workflows - it is stable, tested, and production-ready. /orchestrate and /supervise are currently in development.
+
 ### Decision Matrix
 
 Use this matrix to choose the right orchestration command for your workflow:
 
-| Criteria | /research | /supervise | /coordinate | /orchestrate |
-|----------|-----------|------------|-------------|--------------|
-| **Primary Use** | Investigation | Sequential workflow | Parallel workflow | Full automation |
+| Criteria | /research | /coordinate | /supervise | /orchestrate |
+|----------|-----------|-------------|------------|--------------|
+| **Primary Use** | Investigation | Parallel workflow | Sequential workflow | Full automation (experimental) |
+| **Maturity** | Production | **Production-Ready** | In Development | In Development |
 | **Phases** | 4 (research-focused) | 7 (all phases) | 7 (all phases) | 7 (all phases) |
-| **Parallelization** | Research only | Sequential | Wave-based | Wave-based |
-| **Time Savings** | N/A | Baseline | 40-60% | 40-60% |
-| **PR Automation** | No | No | Optional | Yes |
-| **Dashboard** | No | No | No | Yes |
-| **Complexity** | Simple | Medium | Medium-High | High |
-| **Best For** | Deep research | Learning/verification | Fast delivery | Production workflows |
+| **Parallelization** | Research only | Wave-based | Sequential | Wave-based |
+| **Time Savings** | N/A | 40-60% | Baseline | 40-60% (when stable) |
+| **PR Automation** | No | No | No | Yes (experimental) |
+| **Dashboard** | No | No | No | Yes (experimental) |
+| **Complexity** | Simple | Medium | Medium | High |
+| **Best For** | Deep research | **Production workflows (recommended)** | Learning/reference | Experimenting with PR features |
 
 ### When to Use Each Command
 
@@ -251,48 +256,53 @@ Use this matrix to choose the right orchestration command for your workflow:
 
 **Output**: 2-4 research reports + overview in `specs/NNN_topic/reports/`
 
-#### /supervise
+#### /coordinate (Production-Ready ✓)
+
+**Status**: Stable, tested, production-ready. **Recommended for all workflows.**
 
 **Use When**:
-- Learning orchestration patterns
-- Verifying command compliance
-- Sequential execution required
-- Debugging orchestration issues
-
-**Don't Use When**:
-- Speed is critical (use /coordinate)
-- Want PR automation (use /orchestrate)
-
-**Output**: Full 7-phase workflow with reports, plan, implementation, tests, docs
-
-#### /coordinate
-
-**Use When**:
+- Any production workflow (default choice)
 - Fast delivery is priority
 - Implementation has independent phases
 - Want wave-based parallelization
 - Standard workflow sufficient
 
 **Don't Use When**:
-- Need PR automation (use /orchestrate)
-- Need dashboard tracking (use /orchestrate)
-- Phases have complex dependencies
+- Need experimental PR automation features (try /orchestrate, expect instability)
+- Need experimental dashboard tracking (try /orchestrate, expect instability)
 
-**Output**: Same as /supervise but 40-60% faster via parallel execution
+**Output**: Full 7-phase workflow with 40-60% time savings via parallel execution
 
-#### /orchestrate
+#### /supervise (In Development ⚠️)
+
+**Status**: Being stabilized, not yet production-ready. Use /coordinate instead for reliable workflows.
 
 **Use When**:
-- Production workflow with PR creation
-- Want dashboard progress tracking
-- Need all automation features
-- Complex multi-phase project
+- Studying minimal reference implementation
+- Learning orchestration patterns
+- Architectural reference needed
 
 **Don't Use When**:
-- Simple research task (use /research)
-- Learning/verification (use /supervise)
+- Production workflows (use /coordinate)
+- Speed is critical (use /coordinate)
 
-**Output**: Full workflow + PR + dashboard + metrics
+**Output**: Full 7-phase workflow with reports, plan, implementation, tests, docs
+
+#### /orchestrate (In Development ⚠️)
+
+**Status**: Experimental features may have inconsistent behavior. Not recommended for production use until stabilized.
+
+**Use When**:
+- Experimenting with PR automation features
+- Testing dashboard progress tracking
+- Evaluating comprehensive metrics collection
+
+**Don't Use When**:
+- Production workflows (use /coordinate)
+- Reliable delivery required (use /coordinate)
+- Simple workflows (use /coordinate or /research)
+
+**Output**: Full workflow + PR (experimental) + dashboard (experimental) + metrics (experimental)
 
 ### Feature Comparison
 
