@@ -1437,10 +1437,11 @@ for iteration in 1 2 3; do
   echo ""
 
   # Invoke debug-analyst agent
-  Task {
-    subagent_type: "general-purpose"
-    description: "Analyze test failures - iteration $iteration"
-    prompt: "
+  **EXECUTE NOW**: USE the Task tool with these parameters:
+
+  - subagent_type: "general-purpose"
+  - description: "Analyze test failures - iteration $iteration"
+  - prompt: |
       Read behavioral guidelines: .claude/agents/debug-analyst.md
 
       **PRIMARY OBLIGATION - Debug Report File**
@@ -1533,8 +1534,6 @@ for iteration in 1 2 3; do
       3. Pass to code-writer for fix application
 
       **REMINDER**: You are the EXECUTOR. Use exact path provided.
-    "
-  }
 
   # Verify debug report created
   echo "════════════════════════════════════════════════════════"
@@ -1596,10 +1595,11 @@ for iteration in 1 2 3; do
   echo ""
 
   # Invoke code-writer to apply fixes
-  Task {
-    subagent_type: "general-purpose"
-    description: "Apply debug fixes - iteration $iteration"
-    prompt: "
+  **EXECUTE NOW**: USE the Task tool with these parameters:
+
+  - subagent_type: "general-purpose"
+  - description: "Apply debug fixes - iteration $iteration"
+  - prompt: |
       Read behavioral guidelines: .claude/agents/code-writer.md
 
       **PRIMARY OBLIGATION - Apply All Fixes**
@@ -1681,8 +1681,6 @@ for iteration in 1 2 3; do
       - Add comments for complex fixes if needed
 
       **REMINDER**: You are the EXECUTOR. Apply all fixes methodically.
-    "
-  }
 
   # Parse fixes applied
   FIXES_APPLIED=$(echo "$AGENT_OUTPUT" | grep "FIXES_APPLIED:" | cut -d: -f2 | xargs)
@@ -1693,10 +1691,11 @@ for iteration in 1 2 3; do
   echo "Re-running tests to verify fixes..."
   echo ""
 
-  Task {
-    subagent_type: "general-purpose"
-    description: "Re-run tests after fixes"
-    prompt: "
+  **EXECUTE NOW**: USE the Task tool with these parameters:
+
+  - subagent_type: "general-purpose"
+  - description: "Re-run tests after fixes"
+  - prompt: |
       Read behavioral guidelines: .claude/agents/test-specialist.md
 
       **EXECUTE NOW - RE-RUN TESTS**
@@ -1717,8 +1716,6 @@ for iteration in 1 2 3; do
               TESTS_FAILED: {K}
 
       **REMINDER**: You are the EXECUTOR. Run the tests now.
-    "
-  }
 
   # Parse updated test status
   TEST_STATUS=$(echo "$AGENT_OUTPUT" | grep "TEST_STATUS:" | cut -d: -f2 | xargs)
