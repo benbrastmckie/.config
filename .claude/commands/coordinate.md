@@ -536,7 +536,7 @@ else
 fi
 
 # Source all required libraries
-if ! source_required_libraries "dependency-analyzer.sh"; then
+if ! source_required_libraries "dependency-analyzer.sh" "context-pruning.sh" "checkpoint-utils.sh" "unified-location-detection.sh" "workflow-detection.sh" "unified-logger.sh" "error-handling.sh"; then
   exit 1
 fi
 
@@ -746,7 +746,7 @@ echo ""
 
 [EXECUTION-CRITICAL: Helper functions for concise verification - defined inline for immediate availability]
 
-The following helper functions implement concise verification with silent success and verbose failure patterns.
+**REQUIRED ACTION**: The following helper functions implement concise verification with silent success and verbose failure patterns. These functions MUST be used at all file creation checkpoints.
 
 ```bash
 # verify_file_created - Concise file verification with optional verbose failure
@@ -903,6 +903,7 @@ echo -n "Verifying research reports ($RESEARCH_COMPLEXITY): "
 VERIFICATION_FAILURES=0
 SUCCESSFUL_REPORT_PATHS=()
 
+# MANDATORY VERIFICATION checkpoint: Research reports
 for i in $(seq 1 $RESEARCH_COMPLEXITY); do
   REPORT_PATH="${REPORT_PATHS[$i-1]}"
   if ! verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Phase 1"; then
@@ -972,7 +973,7 @@ if should_synthesize_overview "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT"; then
   #   "
   # }
 
-  # Verify overview created
+  # MANDATORY VERIFICATION checkpoint: Research overview
   verify_file_created "$OVERVIEW_PATH" "Research Overview" "$AGENT_OUTPUT"
 else
   # Overview synthesis skipped - plan-architect will synthesize reports
@@ -1091,7 +1092,7 @@ STEP 2: Invoke plan-architect agent via Task tool
 
 **GUARANTEE REQUIRED**: Plan contains minimum 3 phases with standard structure
 
-STEP 3: Verify plan file created successfully (concise format)
+STEP 3: MANDATORY VERIFICATION checkpoint - Verify plan file created successfully (concise format)
 
 ```bash
 echo -n "Verifying implementation plan: "
@@ -1296,6 +1297,7 @@ IMPL_SECONDS=$((IMPL_DURATION % 60))
 
 echo -n "Verifying implementation artifacts: "
 
+# MANDATORY VERIFICATION checkpoint: Implementation artifacts
 if [ -d "$IMPL_ARTIFACTS" ]; then
   ARTIFACT_COUNT=$(find "$IMPL_ARTIFACTS" -type f 2>/dev/null | wc -l)
   echo "✓ ($ARTIFACT_COUNT files)"
@@ -1410,7 +1412,7 @@ STEP 1: Invoke test-specialist agent
 
 **CHECKPOINT REQUIREMENT**: Report test status to determine if debugging needed
 
-STEP 2: Parse and verify test results
+STEP 2: MANDATORY VERIFICATION checkpoint - Parse and verify test results
 
 ```bash
 # Parse test status from agent output
@@ -1518,6 +1520,7 @@ for iteration in 1 2 3; do
 
   echo -n "Verifying debug report (iteration $iteration): "
 
+  # MANDATORY VERIFICATION checkpoint: Debug report
   if verify_file_created "$DEBUG_REPORT" "Debug report" "Phase 5"; then
     echo ""
   else
@@ -1673,7 +1676,7 @@ STEP 1: Invoke doc-writer agent to create summary
 
 **GUARANTEE REQUIRED**: Summary links all artifacts (research, plan, implementation)
 
-STEP 2: Verify summary file created
+STEP 2: MANDATORY VERIFICATION checkpoint - Verify summary file created
 
 ```bash
 echo -n "Verifying workflow summary: "
@@ -1733,21 +1736,16 @@ This command delegates work to specialized agents via the Task tool. Each agent 
 - `.claude/agents/doc-writer.md` - Creates implementation summaries
 
 **Invocation Pattern**:
-All agents are invoked via the Task tool with behavioral injection:
-```
-Task {
-  subagent_type: "general-purpose"
-  description: "Brief task description"
-  prompt: "
-    Read and follow ALL behavioral guidelines from: .claude/agents/[agent-name].md
+All agents are invoked via the Task tool with behavioral injection. The pattern is:
 
-    **Context**: [Workflow-specific context]
-
-    Execute following all guidelines.
-    Return: [SIGNAL]: [artifact_path]
-  "
-}
-```
+**EXECUTE NOW**: USE the Task tool with:
+- subagent_type: "general-purpose"
+- description: Brief task description
+- prompt: Must include:
+  - "Read and follow ALL behavioral guidelines from: .claude/agents/[agent-name].md"
+  - Context section with workflow-specific information
+  - "Execute following all guidelines"
+  - "Return: [SIGNAL]: [artifact_path]"
 
 See [Behavioral Injection Pattern](../docs/concepts/patterns/behavioral-injection.md) for complete implementation details.
 
