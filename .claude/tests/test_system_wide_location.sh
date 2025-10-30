@@ -340,11 +340,23 @@ test_report_5_topic_numbering() {
   local report_path
   report_path=$(simulate_report_command "$topic" "real")
 
-  # Extract topic number from path
-  local new_num=$(echo "$report_path" | grep -o '/[0-9][0-9][0-9]_' | tr -d '/_')
+  # Extract topic number from path (e.g., /path/to/specs/015_topic/... -> 015)
+  local new_num=$(echo "$report_path" | sed 's|.*/\([0-9][0-9][0-9]\)_[^/]*/.*|\1|')
+
+  # Debug: if extraction fails, the number will be the full path
+  if [ -z "$new_num" ] || [ "$new_num" = "$report_path" ]; then
+    # Path doesn't match expected format, try simpler extraction
+    new_num=$(basename "$(dirname "$report_path")" | grep -o '^[0-9][0-9][0-9]')
+  fi
+
   # Strip leading zeros to avoid octal interpretation
   new_num=$((10#$new_num))
-  max_num=$((10#$max_num))
+  # Handle empty max_num (first topic)
+  if [ -z "$max_num" ]; then
+    max_num=0
+  else
+    max_num=$((10#$max_num))
+  fi
   local expected=$((max_num + 1))
 
   # Verify sequential numbering
@@ -353,6 +365,7 @@ test_report_5_topic_numbering() {
   else
     report_test "Report 1.5: Sequential topic numbering" "FAIL" "GROUP1"
     echo "  Expected: $expected, Got: $new_num"
+    echo "  Max: $max_num, Path: $report_path"
   fi
 }
 
@@ -377,19 +390,14 @@ test_report_7_subdirectory_completeness() {
 
   local topic_dir=$(dirname "$(dirname "$report_path")")
 
-  # Verify all 6 subdirectories exist
-  local all_exist=true
-  for subdir in reports plans summaries debug scripts outputs; do
-    if [ ! -d "${topic_dir}/${subdir}" ]; then
-      all_exist=false
-      echo "  Missing: $subdir"
-    fi
-  done
-
-  if [ "$all_exist" = true ]; then
-    report_test "Report 1.7: All 6 subdirectories created" "PASS" "GROUP1"
+  # With lazy creation, only the topic root and reports/ should exist
+  # (reports/ was created because we wrote a report file)
+  if [ -d "$topic_dir" ] && [ -d "${topic_dir}/reports" ]; then
+    report_test "Report 1.7: Lazy creation - topic root and reports/ exist" "PASS" "GROUP1"
   else
-    report_test "Report 1.7: All 6 subdirectories created" "FAIL" "GROUP1"
+    report_test "Report 1.7: Lazy creation - topic root and reports/ exist" "FAIL" "GROUP1"
+    echo "  Topic dir exists: $([ -d "$topic_dir" ] && echo 'yes' || echo 'no')"
+    echo "  Reports dir exists: $([ -d "${topic_dir}/reports" ] && echo 'yes' || echo 'no')"
   fi
 }
 
@@ -418,8 +426,8 @@ test_report_9_jq_fallback() {
   local reports_dir
   reports_dir=$(echo "$location_json" | grep -o '"reports": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
 
-  # Verify fallback extraction worked
-  if [[ "$reports_dir" == *"/reports" ]] && [ -d "$reports_dir" ]; then
+  # Verify fallback extraction worked (path format, not existence - lazy creation)
+  if [[ "$reports_dir" == *"/reports" ]]; then
     report_test "Report 1.9: Fallback without jq works" "PASS" "GROUP1"
   else
     report_test "Report 1.9: Fallback without jq works" "FAIL" "GROUP1"
@@ -516,16 +524,30 @@ test_plan_5_topic_numbering() {
   local plan_path
   plan_path=$(simulate_plan_command "$feature" "real")
 
-  local new_num=$(echo "$plan_path" | grep -o '/[0-9][0-9][0-9]_' | tr -d '/_')
+  # Extract topic number from path (e.g., /path/to/specs/015_topic/... -> 015)
+  local new_num=$(echo "$plan_path" | sed 's|.*/\([0-9][0-9][0-9]\)_[^/]*/.*|\1|')
+
+  # Debug: if extraction fails, try simpler extraction
+  if [ -z "$new_num" ] || [ "$new_num" = "$plan_path" ]; then
+    new_num=$(basename "$(dirname "$plan_path")" | grep -o '^[0-9][0-9][0-9]')
+  fi
+
   # Strip leading zeros to avoid octal interpretation
   new_num=$((10#$new_num))
-  max_num=$((10#$max_num))
+  # Handle empty max_num (first topic)
+  if [ -z "$max_num" ]; then
+    max_num=0
+  else
+    max_num=$((10#$max_num))
+  fi
   local expected=$((max_num + 1))
 
   if [ "$new_num" -eq "$expected" ]; then
     report_test "Plan 1.5: Sequential topic numbering" "PASS" "GROUP1"
   else
     report_test "Plan 1.5: Sequential topic numbering" "FAIL" "GROUP1"
+    echo "  Expected: $expected, Got: $new_num"
+    echo "  Max: $max_num, Path: $plan_path"
   fi
 }
 
@@ -738,8 +760,13 @@ test_chain_1_report_invocation() {
     reports_dir=$(echo "$location_json" | grep -o '"reports": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
   fi
 
-  # Verify reports directory exists (created by Phase 0)
-  assert_dir_exists "$reports_dir" "Chain 2.1: Reports dir created for research phase" "GROUP2"
+  # With lazy creation, reports directory path should be in JSON but not created yet
+  if [[ "$reports_dir" == *"/reports" ]]; then
+    report_test "Chain 2.1: Reports path available for research phase" "PASS" "GROUP2"
+  else
+    report_test "Chain 2.1: Reports path available for research phase" "FAIL" "GROUP2"
+    echo "  Got: $reports_dir"
+  fi
 }
 
 test_chain_2_report_path_propagation() {
@@ -758,6 +785,9 @@ test_chain_2_report_path_propagation() {
 
   local report1="${reports_dir}/001_oauth_flows.md"
   local report2="${reports_dir}/002_jwt_implementation.md"
+
+  # Create reports directory (lazy creation)
+  mkdir -p "$reports_dir"
 
   echo "# OAuth Flows" > "$report1"
   echo "# JWT Implementation" > "$report2"
@@ -782,6 +812,9 @@ test_chain_3_research_to_planning_handoff() {
 
   local reports_dir="${topic_path}/reports"
   local plans_dir="${topic_path}/plans"
+
+  # Create directories (lazy creation)
+  mkdir -p "$reports_dir" "$plans_dir"
 
   # Create mock research report
   local report="${reports_dir}/001_oauth_research.md"
@@ -990,6 +1023,9 @@ test_chain_10_workflow_completion() {
   else
     topic_path=$(echo "$location_json" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
   fi
+
+  # Create directories (lazy creation)
+  mkdir -p "${topic_path}/reports" "${topic_path}/plans" "${topic_path}/summaries"
 
   # Simulate all workflow phases
   echo "# Research" > "${topic_path}/reports/001_research.md"
