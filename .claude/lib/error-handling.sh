@@ -729,15 +729,6 @@ EOF
 }
 
 # Export functions for use in other scripts
-# ==============================================================================
-# Aliases for Backward Compatibility
-# ==============================================================================
-
-# Aliases for /supervise command compatibility
-detect_specific_error_type() { detect_error_type "$@"; }
-extract_error_location() { extract_location "$@"; }
-suggest_recovery_actions() { generate_suggestions "$@"; }
-
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f classify_error
   export -f suggest_recovery
@@ -757,9 +748,4 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f format_orchestrate_agent_failure
   export -f format_orchestrate_test_failure
   export -f format_orchestrate_phase_context
-
-  # Export backward compatibility aliases
-  export -f detect_specific_error_type
-  export -f extract_error_location
-  export -f suggest_recovery_actions
 fi

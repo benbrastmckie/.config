@@ -606,7 +606,8 @@ BEFORE invoking research agents, calculate absolute report paths for each resear
 
 ```bash
 # Source required utilities
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-registry.sh"
 
 # Identify research topics from workflow description
 # Number of topics based on complexity:

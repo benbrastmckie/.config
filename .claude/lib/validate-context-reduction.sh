@@ -119,9 +119,9 @@ validate_metadata_extraction() {
   local test_report=""
 
   # Source utilities
-  if [ ! -f "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh" ]; then
-    log_error "artifact-operations.sh not found"
-    test_report+="FAIL: Missing artifact-operations.sh\n"
+  if [ ! -f "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-creation.sh" ] || [ ! -f "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-registry.sh" ]; then
+    log_error "artifact-creation.sh or artifact-registry.sh not found"
+    test_report+="FAIL: Missing artifact libraries\n"
     test_passed=false
   else
     source "$CLAUDE_PROJECT_DIR/.claude/lib/metadata-extraction.sh"
@@ -164,9 +164,9 @@ validate_forward_message() {
   local test_report=""
 
   # Source utilities
-  if [ ! -f "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-operations.sh" ]; then
-    log_error "artifact-operations.sh not found"
-    test_report+="FAIL: Missing artifact-operations.sh\n"
+  if [ ! -f "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-creation.sh" ] || [ ! -f "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-registry.sh" ]; then
+    log_error "artifact-creation.sh or artifact-registry.sh not found"
+    test_report+="FAIL: Missing artifact libraries\n"
     return 1
   fi
 

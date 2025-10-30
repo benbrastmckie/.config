@@ -140,6 +140,30 @@ This project prioritizes clean, coherent systems over backward compatibility. Re
 
 Core values: clarity, quality, coherence, maintainability.
 
+### Clean-Break and Fail-Fast Approach
+
+This configuration maintains a **clean-break, fail-fast evolution philosophy**:
+
+**Clean Break**:
+- Delete obsolete code immediately after migration
+- No deprecation warnings, compatibility shims, or transition periods
+- No archives beyond git history
+- Configuration and code describe what they are, not what they were
+
+**Fail Fast**:
+- Missing files produce immediate, obvious bash errors
+- Tests pass or fail immediately (no monitoring periods)
+- Breaking changes break loudly with clear error messages
+- No silent fallbacks or graceful degradation
+
+**Avoid Cruft**:
+- No historical commentary in active files
+- No backward compatibility layers
+- No migration tracking spreadsheets (use git commits)
+- No "what changed" documentation (use git log)
+
+**Rationale**: Configuration should focus on being what it is without extra commentary on top. Clear, immediate failures are better than hidden complexity masking problems.
+
 See [Writing Standards](.claude/docs/concepts/writing-standards.md) for complete refactoring principles and documentation standards.
 <!-- END_SECTION: development_philosophy -->
 

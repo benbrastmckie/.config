@@ -90,7 +90,7 @@ validate_agent_has_error_handling() {
 validate_agent_has_success_criteria() {
   local agent_name="$1"
   local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
-  grep -q "Success Criteria" "$agent_file"
+  grep -q -E "Success Criteria|COMPLETION CRITERIA" "$agent_file"
 }
 
 validate_agent_has_examples() {

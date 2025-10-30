@@ -141,7 +141,8 @@ When triggers met, perform research delegation:
 
 **Step 1: Source Context Preservation Utilities**
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-registry.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
 ```
 
@@ -461,7 +462,8 @@ I'll determine the topic directory location using the uniform structure:
 
 **Step 1: Source Required Utilities**
 ```bash
-source .claude/lib/artifact-operations.sh
+source .claude/lib/artifact-creation.sh
+source .claude/lib/artifact-registry.sh
 source .claude/lib/template-integration.sh
 source .claude/lib/unified-location-detection.sh
 ```
@@ -545,7 +547,8 @@ Create the plan using `create_topic_artifact()`:
 **Step 1: Get Next Plan Number Within Topic**
 ```bash
 # Source artifact utilities
-source .claude/lib/artifact-operations.sh
+source .claude/lib/artifact-creation.sh
+source .claude/lib/artifact-registry.sh
 
 # Get next number in topic's plans/ subdirectory
 NEXT_NUM=$(get_next_artifact_number "${TOPIC_DIR}/plans")

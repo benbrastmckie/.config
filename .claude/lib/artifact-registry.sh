@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Artifact Registry
-# Extracted from artifact-operations.sh
+# Artifact tracking and querying
 
 set -euo pipefail
 

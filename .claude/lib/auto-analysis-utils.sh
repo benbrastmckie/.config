@@ -39,7 +39,7 @@ invoke_expansion_agents_parallel() {
   local plan_name
   plan_name=$(basename "$plan_path" .md)
 
-  # Create artifact directory (function now available from artifact-operations.sh sourced at top)
+  # Create artifact directory (function now available from artifact-creation.sh sourced at top)
   local artifact_dir
   artifact_dir=$(create_artifact_directory "$plan_path")
 
@@ -326,7 +326,7 @@ invoke_collapse_agents_parallel() {
     plan_name=$(basename "$plan_path" .md)
   fi
 
-  # Create artifact directory (function now available from artifact-operations.sh sourced at top)
+  # Create artifact directory (function now available from artifact-creation.sh sourced at top)
   local artifact_dir
   artifact_dir=$(create_artifact_directory "$plan_path")
 

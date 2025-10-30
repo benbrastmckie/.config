@@ -962,7 +962,8 @@ YOU MUST use THIS EXACT TEMPLATE (No modifications, no paraphrasing):
 
 ```bash
 # Source context preservation utilities
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-registry.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
 
 # Track context before research
@@ -1095,7 +1096,8 @@ if [ "$RESEARCH_NEEDED" = "true" ]; then
   # Returns: {"artifact_path": "specs/042_auth/artifacts/phase_3_exploration.md", "metadata": {...}}
 
   # Extract metadata using forward_message
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-registry.sh"
   RESEARCH_RESULT=$(forward_message "$SUBAGENT_OUTPUT" "phase_3_research")
   ARTIFACT_PATH=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].path')
   RESEARCH_SUMMARY=$(echo "$RESEARCH_RESULT" | jq -r '.artifacts[0].metadata.summary')
@@ -1119,7 +1121,7 @@ fi
 
 **Integration Points**:
 - **Agent template**: `.claude/agents/implementation-researcher.md`
-- **Utilities**: `artifact-operations.sh` (forward_message, cache_metadata), `context-metrics.sh` (tracking)
+- **Utilities**: `artifact-creation.sh` and `artifact-registry.sh` (forward_message, cache_metadata), `context-metrics.sh` (tracking)
 - **Output artifact**: `specs/{topic}/artifacts/phase_{N}_exploration.md`
 
 **Error Handling**:

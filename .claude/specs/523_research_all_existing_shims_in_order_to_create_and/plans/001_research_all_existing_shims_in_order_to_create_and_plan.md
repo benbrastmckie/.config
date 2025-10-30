@@ -178,39 +178,45 @@ cd .claude/tests && ./run_all_tests.sh
 
 ---
 
-### Phase 2: Document Permanent Compatibility Layers
+### Phase 2: Remove Permanent Compatibility Layers
 dependencies: [1]
 
-**Objective**: Clarify which compatibility layers are permanent vs temporary, no code removal
+**Objective**: Remove ALL compatibility layers (no permanent shims allowed)
 
-**Complexity**: Low
+**Complexity**: Medium
 
 **Tasks**:
-- [ ] Create SHIMS.md manifest at .claude/lib/SHIMS.md
-- [ ] Document error-handling.sh function aliases (permanent, for /supervise compatibility)
-- [ ] Document unified-logger.sh rotation wrappers (permanent, minimal overhead)
-- [ ] Document artifact-operations.sh (temporary, scheduled removal 2026-01-01)
-- [ ] Add "Compatibility Layers" section to .claude/lib/README.md
-- [ ] Distinguish temporary shims vs permanent compatibility layers
-- [ ] Update command-development-guide.md with shim lifecycle policy
-- [ ] Git commit: `docs: Document compatibility layer types and lifecycle policy`
+- [ ] Remove error-handling.sh function aliases (lines 733-765)
+- [ ] Update /supervise command to use canonical function names
+- [ ] Remove unified-logger.sh rotation wrappers (lines 96-105)
+- [ ] Update commands using rotate_log_if_needed() to use rotate_log_file()
+- [ ] Update commands using rotate_conversion_log_if_needed() to use rotate_log_file()
+- [ ] Run full test suite to verify no breakage
+- [ ] Git commit: `refactor: Remove all compatibility layer wrappers`
 
 **Testing**:
 ```bash
-# Verify documentation completeness
-test -f .claude/lib/SHIMS.md || echo "ERROR: SHIMS.md not created"
-grep -q "Compatibility Layers" .claude/lib/README.md || echo "ERROR: README section missing"
+# Verify no compatibility wrappers remain
+grep -n "detect_specific_error_type\|extract_error_location\|suggest_recovery_actions" .claude/lib/error-handling.sh
+# Expected: No results (aliases removed)
 
-# No functional tests needed (documentation only)
+grep -n "rotate_log_if_needed\|rotate_conversion_log_if_needed" .claude/lib/unified-logger.sh
+# Expected: No results (wrappers removed)
+
+# Run test suite
+cd .claude/tests && ./run_all_tests.sh
+# Expected: All tests pass
 ```
 
-**Expected Duration**: 2 hours
+**Expected Duration**: 3 hours
 
 **Phase 2 Completion Requirements**:
 - [ ] All phase tasks marked [x]
-- [ ] SHIMS.md manifest created and complete
-- [ ] README.md updated with compatibility layers section
-- [ ] Git commit created: `docs: Document compatibility layer types and lifecycle policy`
+- [ ] All compatibility layer code removed from library files
+- [ ] /supervise command updated to use canonical functions
+- [ ] Commands updated to use canonical rotation functions
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `refactor: Remove all compatibility layer wrappers`
 - [ ] Update this plan file with phase completion status
 
 ---
