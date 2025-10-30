@@ -27,10 +27,10 @@ result=$?
 set -e
 if [ $result -eq 0 ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 0, got $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo "Test: research-only with 3 reports"
@@ -40,10 +40,10 @@ result=$?
 set -e
 if [ $result -eq 0 ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 0, got $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 # Test 2: research-only workflow with insufficient reports (should NOT synthesize)
@@ -54,10 +54,10 @@ result=$?
 set -e
 if [ $result -eq 1 ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 1, got $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 # Test 3: research-and-plan workflow (should NEVER synthesize)
@@ -68,10 +68,10 @@ result=$?
 set -e
 if [ $result -eq 1 ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 1, got $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo "Test: research-and-plan with 5 reports"
@@ -81,10 +81,10 @@ result=$?
 set -e
 if [ $result -eq 1 ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 1, got $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 # Test 4: full-implementation workflow (should NEVER synthesize)
@@ -95,10 +95,10 @@ result=$?
 set -e
 if [ $result -eq 1 ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 1, got $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 # Test 5: debug-only workflow (should NEVER synthesize)
@@ -109,10 +109,10 @@ result=$?
 set -e
 if [ $result -eq 1 ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 1, got $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 # Test 6: unknown workflow scope (should default to no synthesis)
@@ -123,10 +123,10 @@ result=$?
 set -e
 if [ $result -eq 1 ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 1, got $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo
@@ -144,10 +144,10 @@ set -e
 expected_path="/path/to/specs/042_auth/reports/001_auth_research/OVERVIEW.md"
 if [ $result -eq 0 ] && [ "$actual_path" = "$expected_path" ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected '$expected_path', got '$actual_path', exit code: $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo "Test: Relative path"
@@ -158,10 +158,10 @@ set -e
 expected_path="./specs/042_auth/reports/001_auth_research/OVERVIEW.md"
 if [ $result -eq 0 ] && [ "$actual_path" = "$expected_path" ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected '$expected_path', got '$actual_path', exit code: $result)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 # Test empty path (should fail gracefully)
@@ -172,10 +172,10 @@ result=$?
 set -e
 if [ $result -ne 0 ]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (empty path should return non-zero exit code)"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo
@@ -191,10 +191,10 @@ reason=$(get_synthesis_skip_reason "research-only" 1)
 set -e
 if [[ "$reason" == *"Insufficient reports"* ]]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 'Insufficient reports', got '$reason')"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo "Test: Research-and-plan message"
@@ -203,10 +203,10 @@ reason=$(get_synthesis_skip_reason "research-and-plan" 3)
 set -e
 if [[ "$reason" == *"plan-architect"* ]]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 'plan-architect', got '$reason')"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo "Test: Full-implementation message"
@@ -215,10 +215,10 @@ reason=$(get_synthesis_skip_reason "full-implementation" 3)
 set -e
 if [[ "$reason" == *"plan-architect"* ]]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 'plan-architect', got '$reason')"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo "Test: Debug-only message"
@@ -227,10 +227,10 @@ reason=$(get_synthesis_skip_reason "debug-only" 3)
 set -e
 if [[ "$reason" == *"Debug workflow"* ]]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 'Debug workflow', got '$reason')"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo "Test: Unknown scope message"
@@ -239,10 +239,10 @@ reason=$(get_synthesis_skip_reason "unknown-scope" 3)
 set -e
 if [[ "$reason" == *"Unknown workflow scope"* ]]; then
   echo "✓ PASS"
-  ((TESTS_PASSED++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
 else
   echo "✗ FAIL (expected 'Unknown workflow scope', got '$reason')"
-  ((TESTS_FAILED++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo

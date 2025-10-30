@@ -24,13 +24,13 @@ FAILED=0
 
 test_pass() {
   echo "✓ $1"
-  ((PASSED++))
+  PASSED=$((PASSED + 1))
 }
 
 test_fail() {
   echo "✗ $1"
   echo "  $2"
-  ((FAILED++))
+  FAILED=$((FAILED + 1))
 }
 
 echo "Unified Location Detection - Core Function Tests"

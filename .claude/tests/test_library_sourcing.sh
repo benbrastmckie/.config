@@ -22,15 +22,15 @@ NC='\033[0m' # No Color
 # Test utilities
 pass() {
   echo -e "${GREEN}✓ PASS${NC}: $1"
-  ((TESTS_PASSED++))
-  ((TESTS_RUN++))
+  TESTS_PASSED=$((TESTS_PASSED + 1))
+  TESTS_RUN=$((TESTS_RUN + 1))
 }
 
 fail() {
   echo -e "${RED}✗ FAIL${NC}: $1"
   echo "  Reason: $2"
-  ((TESTS_FAILED++))
-  ((TESTS_RUN++))
+  TESTS_FAILED=$((TESTS_FAILED + 1))
+  TESTS_RUN=$((TESTS_RUN + 1))
 }
 
 # Setup test environment
@@ -92,7 +92,7 @@ test_missing_library_error() {
               metadata-extraction.sh overview-synthesis.sh checkpoint-utils.sh; do
     if [[ -f "${CLAUDE_ROOT}/lib/${lib}" ]]; then
       cp "${CLAUDE_ROOT}/lib/${lib}" "$TEST_DIR/lib/"
-      ((copied++))
+      copied=$((copied + 1))
     fi
   done
   # Intentionally skip error-handling.sh to test missing library
