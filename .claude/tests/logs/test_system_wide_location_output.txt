@@ -1,0 +1,64 @@
+==========================================
+System-Wide Integration Test Suite
+==========================================
+
+✓ Prerequisites satisfied
+✓ Unified library sourced
+
+Group 1: Isolated Command Execution
+------------------------------------
+Test environment initialized: /tmp/claude-test-specs-0gd8sb
+✓ Report 1.1: Simple topic - file created
+✓ Report 1.1: Reports subdir exists
+✗ Report 1.1: Plans subdir exists
+  Directory does not exist: /tmp/claude-test-specs-0gd8sb/001_authentication_patterns/plans
+✗ Report 1.1: Summaries subdir exists
+  Directory does not exist: /tmp/claude-test-specs-0gd8sb/001_authentication_patterns/summaries
+✓ Report 1.2: Special chars sanitized
+✓ Report 1.2: No special chars in path
+✓ Report 1.3: Long description truncated (≤50)
+✓ Report 1.4: Minimal topic - file created
+test_system_wide_location.sh: line 346: 10#005
+001: syntax error in expression (error token is "001")
+✓ Report 1.6: Absolute path returned
+  Missing: plans
+  Missing: summaries
+  Missing: debug
+  Missing: scripts
+  Missing: outputs
+✗ Report 1.7: All 6 subdirectories created
+✓ Report 1.8: JSON contains topic_number
+✓ Report 1.8: JSON contains topic_path
+✓ Report 1.8: JSON contains artifact_paths
+✗ Report 1.9: Fallback without jq works
+  Got: /tmp/claude-test-specs-0gd8sb/009_jq_fallback_test/reports
+✓ Report 1.10: No regression in format
+
+✓ Plan 1.1: Simple feature - file created
+✓ Plan 1.1: /implement compatibility - absolute path
+✓ Plan 1.2: Complex feature - file created
+✓ Plan 1.2: Feature name sanitized correctly
+✓ Plan 1.3: Refactoring - file created
+✓ Plan 1.4: Bug fix - file created
+test_system_wide_location.sh: line 521: 10#015
+001: syntax error in expression (error token is "001")
+✓ Plan 1.6: Plans subdirectory exists
+✓ Plan 1.7: Absolute path returned
+✓ Plan 1.8: Plan format correct
+✓ Plan 1.9: No topic number collision
+✓ Plan 1.10: Fast execution (<2s)
+
+✓ Orchestrate 1.1: Phase 0 - topic_path exists
+✓ Orchestrate 1.1: Phase 0 - reports path exists
+✓ Orchestrate 1.1: Phase 0 - plans path exists
+✓ Orchestrate 1.2: Topic directory created
+✓ Orchestrate 1.3: All artifact paths present
+✓ Orchestrate 1.4: Fast Phase 0 (<1s, no agent)
+✓ Orchestrate 1.5: Workflow description sanitized
+
+Group 2: Command Chaining
+-------------------------
+✗ Chain 2.1: Reports dir created for research phase
+  Directory does not exist: /tmp/claude-test-specs-0gd8sb/027_research_oauth_patterns/reports
+test_system_wide_location.sh: line 762: /tmp/claude-test-specs-0gd8sb/028_research_and_plan_authentication/reports/001_oauth_flows.md: No such file or directory
+Test environment cleaned up: /tmp/claude-test-specs-0gd8sb

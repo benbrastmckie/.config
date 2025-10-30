@@ -1,0 +1,38 @@
+════════════════════════════════════════════════
+Shared Utilities Test Suite
+════════════════════════════════════════════════
+
+Test environment: /tmp/shared_utils_tests_VLSqBS
+[0;34mℹ INFO[0m: Testing checkpoint-utils.sh
+[0;32m✓ PASS[0m: checkpoint-utils.sh sourced successfully
+Info: Testing save_checkpoint()
+[0;32m✓ PASS[0m: save_checkpoint() created checkpoint file
+[0;32m✓ PASS[0m: Checkpoint contains workflow type
+[0;32m✓ PASS[0m: Checkpoint contains project name
+[0;32m✓ PASS[0m: Checkpoint schema version is 1.3
+[0;32m✓ PASS[0m: Checkpoint has replanning_count field
+[0;32m✓ PASS[0m: Checkpoint has replan_phase_counts field
+Info: Testing restore_checkpoint()
+[0;32m✓ PASS[0m: restore_checkpoint() returned data
+[0;32m✓ PASS[0m: Restored checkpoint contains workflow type
+Info: Testing checkpoint_increment_replan()
+[0;32m✓ PASS[0m: checkpoint_increment_replan() incremented counter
+[0;32m✓ PASS[0m: checkpoint_increment_replan() incremented phase counter
+
+Info: Testing error-handling.sh
+[0;32m✓ PASS[0m: error-handling.sh sourced successfully
+Info: Testing classify_error()
+[0;32m✓ PASS[0m: classify_error() correctly identified transient error
+[0;32m✓ PASS[0m: classify_error() correctly identified permanent error
+[0;32m✓ PASS[0m: classify_error() correctly identified fatal error
+Info: Testing retry_with_backoff()
+[0;32m✓ PASS[0m: retry_with_backoff() succeeded after retry
+[0;32m✓ PASS[0m: retry_with_backoff() attempted correct number of times
+Info: Testing log_error_context()
+[0;32m✓ PASS[0m: log_error_context() created log file
+[0;32m✓ PASS[0m: Log file contains error type
+
+Info: Testing complexity-utils.sh
+[0;32m✓ PASS[0m: complexity-utils.sh sourced successfully
+Info: Testing calculate_phase_complexity()
+0
