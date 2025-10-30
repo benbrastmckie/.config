@@ -7,11 +7,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Source utilities
-source "$CLAUDE_ROOT/lib/artifact-operations.sh" 2>/dev/null || {
-  echo "WARNING: artifact-operations.sh not found, using mock functions"
+source "$CLAUDE_ROOT/lib/artifact-creation.sh" 2>/dev/null || {
+  echo "WARNING: artifact-creation.sh not found, using mock functions"
   get_or_create_topic_dir() { echo "/tmp/test_topic_dir"; }
   get_next_artifact_number() { echo "1"; }
 }
+source "$CLAUDE_ROOT/lib/artifact-registry.sh" 2>/dev/null || true
 source "$CLAUDE_ROOT/lib/topic-decomposition.sh"
 
 # Test data

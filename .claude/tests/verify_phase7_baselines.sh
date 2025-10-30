@@ -88,7 +88,9 @@ check_dir_size() {
 echo "Checking Command Files..."
 check_file_lines "$CLAUDE_DIR/commands/orchestrate.md" 2720 "orchestrate.md"
 check_file_lines "$CLAUDE_DIR/commands/implement.md" 987 "implement.md"
-check_file_lines "$CLAUDE_DIR/lib/artifact-operations.sh" 1585 "artifact-operations.sh"
+# artifact-operations.sh split into artifact-creation.sh (267 lines) and artifact-registry.sh (410 lines)
+check_file_lines "$CLAUDE_DIR/lib/artifact-creation.sh" 267 "artifact-creation.sh"
+check_file_lines "$CLAUDE_DIR/lib/artifact-registry.sh" 410 "artifact-registry.sh"
 
 echo ""
 echo "Checking Directory Counts..."

@@ -53,7 +53,7 @@ echo
 
 # Test 3: Verify standalone utilities still exist
 echo "Test 3: Verify standalone utilities exist"
-STANDALONE=("complexity-utils.sh" "checkpoint-utils.sh" "error-handling.sh" "artifact-operations.sh")
+STANDALONE=("complexity-utils.sh" "checkpoint-utils.sh" "error-handling.sh" "artifact-creation.sh" "artifact-registry.sh")
 PASS=0
 FAIL=0
 
