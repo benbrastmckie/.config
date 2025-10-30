@@ -609,7 +609,7 @@ test_metadata_extraction() {
   info "Testing metadata extraction from reports"
 
   # Source metadata extraction utilities
-  if [ -f ".claude/lib/artifact-operations.sh" ]; then
+  if [ -f ".claude/lib/artifact-creation.sh" ]; then
     source .claude/lib/metadata-extraction.sh 2>/dev/null || true
     source .claude/lib/hierarchical-agent-support.sh 2>/dev/null || true
   fi
@@ -681,7 +681,7 @@ test_recursive_supervision_depth() {
   info "Testing recursive supervision depth tracking"
 
   # Source supervision utilities
-  if [ -f ".claude/lib/artifact-operations.sh" ]; then
+  if [ -f ".claude/lib/artifact-creation.sh" ]; then
     source .claude/lib/metadata-extraction.sh 2>/dev/null || true
     source .claude/lib/hierarchical-agent-support.sh 2>/dev/null || true
   fi
@@ -702,7 +702,7 @@ test_recursive_supervision_depth() {
     fi
   else
     # Fallback: verify MAX_SUPERVISION_DEPTH is defined
-    if grep -q "MAX_SUPERVISION_DEPTH" .claude/lib/artifact-operations.sh 2>/dev/null; then
+    if grep -q "MAX_SUPERVISION_DEPTH" .claude/lib/hierarchical-agent-support.sh 2>/dev/null; then
       pass "MAX_SUPERVISION_DEPTH constant defined"
     else
       # Still pass if we're testing in isolation

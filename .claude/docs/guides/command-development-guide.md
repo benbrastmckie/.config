@@ -1050,20 +1050,19 @@ source_required_libraries \
 - Prevents duplicate sourcing that caused /coordinate timeout (>120s → <90s)
 - 93% less code than memoization alternative (20 lines vs 310 lines)
 
-#### Migration from Deprecated Libraries
+#### Artifact Management Libraries
 
-**artifact-operations.sh** has been split into `artifact-creation.sh` and `artifact-registry.sh`. Update commands using the old reference:
+Artifact operations are split across two focused libraries:
 
 ```bash
-# OLD (deprecated, will be removed 2026-01-01)
-source .claude/lib/artifact-operations.sh
-
-# NEW (recommended)
+# Artifact file creation and directory management
 source .claude/lib/artifact-creation.sh
+
+# Artifact tracking, querying, and validation
 source .claude/lib/artifact-registry.sh
 ```
 
-A backward-compatible shim exists temporarily. See [Library Classification](../../lib/README.md#library-classification) for migration timeline and complete details.
+See [Library Classification](../../lib/README.md#library-classification) for complete details on available functions.
 
 ### 5.6 Path Calculation Best Practices
 
