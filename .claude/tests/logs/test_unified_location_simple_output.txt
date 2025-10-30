@@ -1,0 +1,5 @@
+Unified Location Detection - Core Function Tests
+=================================================
+
+Test 1: Topic Name Sanitization
+✓ Sanitization: spaces and special chars
