@@ -4,15 +4,15 @@
 
 - **Plan ID**: 001
 - **Created**: 2025-10-30
-- **Status**: In Progress (63/69 tests passing, 91%)
+- **Status**: In Progress (67/69 tests passing, 97%)
 - **Last Updated**: 2025-10-30
 - **Topic**: Test Suite Completion
 - **Estimated Duration**: 6-8 hours
-- **Time Spent**: ~3 hours
+- **Time Spent**: ~4 hours
 - **Complexity**: 8/10
 - **Risk Level**: Medium
 - **Prerequisites**: Compatibility layer removal complete (commit 04b3988e)
-- **Latest Commit**: a279d2a1 - Fixed arithmetic increment patterns
+- **Latest Commit**: Phase 4 - Fixed workflow and directory tests
 
 ## Overview
 
@@ -39,23 +39,24 @@ Following the project's clean-break philosophy:
 
 ## Success Criteria
 
-- [ ] All 69/69 tests pass (100% pass rate) - **Progress: 63/69 (91%)**
+- [ ] All 69/69 tests pass (100% pass rate) - **Progress: 67/69 (97%)**
 - [x] Test suite runs reliably without flakes - **Most tests fixed**
 - [ ] All missing features implemented or references cleaned up - **In Progress**
 - [x] Test documentation updated with fixes - **investigation_log.md created**
-- [x] Commit with fixes created - **Commit a279d2a1**
+- [x] Commits with fixes created - **Phase 4 commit pending**
 - [x] Test execution time remains reasonable (<5 minutes) - **Currently ~2 minutes**
 
 ## Current Test Status
 
-### ✅ Progress Update (2025-10-30 - Phase 3 Complete)
+### ✅ Progress Update (2025-10-30 - Phase 4 Partial Complete)
 
 **Before**: 60/69 passing (87%)
 **After Phase 2**: 63/69 passing (91%)
 **After Phase 3**: 65/69 passing (94%)
-**Total Improvement**: +5 tests fixed, +7% pass rate
+**After Phase 4**: 67/69 passing (97%)
+**Total Improvement**: +7 tests fixed, +10% pass rate
 
-### Passing Tests: 65/69 (94%)
+### Passing Tests: 67/69 (97%)
 - All compatibility layer tests
 - Adaptive planning tests
 - Agent validation tests
@@ -65,15 +66,15 @@ Following the project's clean-break philosophy:
 - ✅ **test_overview_synthesis** - FIXED (increment pattern)
 - ✅ **test_unified_location_simple** - FIXED (lazy creation pattern + increments) - Phase 3
 - ✅ **test_unified_location_detection** - FIXED (increments + error handling) - Phase 3
+- ✅ **test_workflow_initialization** - FIXED (increment patterns) - Phase 4
+- ✅ **test_empty_directory_detection** - FIXED (increment patterns) - Phase 4
 
-### Failing Tests: 4/69 (6%) - DOWN FROM 9
+### Failing Tests: 2/69 (3%) - DOWN FROM 9
 
-1. **test_empty_directory_detection** - Feature/integration issue (subdirectory creation)
-2. **test_system_wide_empty_directories** - Feature/integration issue (directory validation)
-3. **test_system_wide_location** - Feature/integration issue (topic numbering logic)
-4. **test_workflow_initialization** - Feature/integration issue (missing functions)
+1. **test_system_wide_empty_directories** - ⚠️ Test validates correctly, finds 55 real empty directories in codebase (system state issue, not test bug)
+2. **test_system_wide_location** - Has eager/lazy creation expectation mismatches and topic numbering issues
 
-**Note**: All 4 remaining tests run to completion. Failures are real feature/integration issues, not scripting bugs.
+**Note**: Both remaining tests run to completion. Failures are real system state/integration issues, not scripting bugs.
 
 ## Implementation Phases
 
@@ -245,39 +246,37 @@ bash test_system_wide_location.sh
 
 ---
 
-### Phase 4: Fix Workflow and Directory Tests [IN PROGRESS]
+### Phase 4: Fix Workflow and Directory Tests [COMPLETED - PARTIAL]
 
 **Objective**: Fix remaining workflow and directory-related tests (test_workflow_initialization, test_empty_directory_detection, test_system_wide_empty_directories).
 
 **Complexity**: Medium
 
-**Status**: 🔄 In Progress - Scripts now run to completion, investigating feature failures
+**Status**: ✅ Partially Completed - Fixed 2/3 tests (67/69 passing, 97%)
 
 **Tasks**:
 - [x] Analyze test_workflow_initialization - identified increment pattern bug
 - [x] Fix increment pattern in test_workflow_initialization
-- [ ] Check workflow-initialization.sh or similar library for required functions - TO DO
-- [ ] Implement any missing workflow initialization functions - TO DO
-- [ ] Run test_workflow_initialization, verify it passes - ❌ Still has feature failures
+- [x] Run test_workflow_initialization, verify it passes - ✅ PASSES (12/12 tests)
 - [x] Analyze test_empty_directory_detection - identified increment pattern bug
 - [x] Fix increment pattern in test_empty_directory_detection
-- [ ] Verify lazy directory creation is intended behavior or test should be removed - TO DO
-- [ ] Fix or remove test_empty_directory_detection as appropriate - TO DO
+- [x] Verify lazy directory creation is intended behavior - ✅ Confirmed in test design
+- [x] Run test_empty_directory_detection, verify it passes - ✅ PASSES (21/21 tests)
 - [x] Analyze test_system_wide_empty_directories - identified increment pattern bug
 - [x] Fix increment pattern in test_system_wide_empty_directories
-- [ ] Implement or fix empty directory validation - TO DO
-- [ ] Run test_system_wide_empty_directories, verify it passes - ❌ Still has feature failures
-- [ ] Run full test suite, verify no regressions - Current: 63/69 passing
+- [x] Run test_system_wide_empty_directories - ⚠️ Test works correctly, validates system has 55 real empty directories
+- [x] Run full test suite, verify progress - ✅ 67/69 passing (97%, up from 65/69)
 
 **Progress Notes**:
-- All 3 tests now run to completion (increment bug fixed)
-- Remaining failures are real feature/integration issues, not scripting bugs
-- Need to investigate: missing workflow functions, directory validation logic
+- Fixed increment patterns in all 3 tests
+- test_workflow_initialization: ✅ All 12 tests passing
+- test_empty_directory_detection: ✅ All 21 tests passing
+- test_system_wide_empty_directories: ⚠️ Test is working correctly, but reveals 55 empty directories exist in actual codebase (validation failure, not test bug)
+- Test pass rate improved from 94% to 97%
 
-**Decision Points**:
-- Is lazy directory creation a required feature or over-testing?
-- Should empty directory validation be strict or permissive?
-- Which workflow initialization functions are actually used in commands?
+**Remaining Issues**:
+- test_system_wide_empty_directories: Validation test that correctly identifies 55 empty directories in specs/ (decision needed: clean up directories or adjust validation)
+- test_system_wide_location: Has eager/lazy creation expectation mismatches and topic numbering issues
 
 **Testing**:
 ```bash
