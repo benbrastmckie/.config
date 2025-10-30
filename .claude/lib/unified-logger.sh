@@ -93,17 +93,6 @@ rotate_log_file() {
   fi
 }
 
-# Specific rotation functions for backward compatibility
-rotate_log_if_needed() {
-  rotate_log_file "$AP_LOG_FILE"
-}
-
-rotate_conversion_log_if_needed() {
-  if [[ -n "$CONVERSION_LOG_FILE" ]]; then
-    rotate_log_file "$CONVERSION_LOG_FILE" "$CONVERSION_LOG_MAX_SIZE" "$CONVERSION_LOG_MAX_FILES"
-  fi
-}
-
 # ============================================================================
 # ADAPTIVE PLANNING LOGGING
 # ============================================================================
@@ -123,7 +112,7 @@ write_log_entry() {
   local message="$3"
   local data="${4:-}"
 
-  rotate_log_if_needed
+  rotate_log_file "$AP_LOG_FILE"
 
   local timestamp
   timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -484,7 +473,7 @@ log_conversion_start() {
   local input_file="$1"
   local target_format="$2"
 
-  rotate_conversion_log_if_needed
+  rotate_log_file "$CONVERSION_LOG_FILE"
 
   local timestamp
   timestamp=$(date '+%Y-%m-%d %H:%M:%S')
@@ -507,7 +496,7 @@ log_conversion_success() {
   local tool_used="$3"
   local duration_ms="${4:-0}"
 
-  rotate_conversion_log_if_needed
+  rotate_log_file "$CONVERSION_LOG_FILE"
 
   local timestamp
   timestamp=$(date '+%Y-%m-%d %H:%M:%S')
@@ -542,7 +531,7 @@ log_conversion_failure() {
   local error_message="$2"
   local tool_attempted="${3:-unknown}"
 
-  rotate_conversion_log_if_needed
+  rotate_log_file "$CONVERSION_LOG_FILE"
 
   local timestamp
   timestamp=$(date '+%Y-%m-%d %H:%M:%S')
@@ -568,7 +557,7 @@ log_conversion_fallback() {
   local primary_tool="$2"
   local fallback_tool="$3"
 
-  rotate_conversion_log_if_needed
+  rotate_log_file "$CONVERSION_LOG_FILE"
 
   local timestamp
   timestamp=$(date '+%Y-%m-%d %H:%M:%S')
@@ -589,7 +578,7 @@ log_tool_detection() {
   local available="$2"
   local version="${3:-unknown}"
 
-  rotate_conversion_log_if_needed
+  rotate_log_file "$CONVERSION_LOG_FILE"
 
   if [[ "$available" == "true" ]]; then
     echo "TOOL DETECTION: $tool_name - AVAILABLE ($version)" >> "$CONVERSION_LOG_FILE"
@@ -607,7 +596,7 @@ log_tool_detection() {
 log_phase_start() {
   local phase_name="$1"
 
-  rotate_conversion_log_if_needed
+  rotate_log_file "$CONVERSION_LOG_FILE"
 
   cat >> "$CONVERSION_LOG_FILE" <<EOF
 
@@ -627,7 +616,7 @@ EOF
 log_phase_end() {
   local phase_name="$1"
 
-  rotate_conversion_log_if_needed
+  rotate_log_file "$CONVERSION_LOG_FILE"
 
   cat >> "$CONVERSION_LOG_FILE" <<EOF
 ========================================
@@ -652,7 +641,7 @@ log_validation_check() {
   local result="$3"
   local details="$4"
 
-  rotate_conversion_log_if_needed
+  rotate_log_file "$CONVERSION_LOG_FILE"
 
   local symbol
   case "$result" in
@@ -680,7 +669,7 @@ log_summary() {
   local failures="$3"
   local validation_failures="${4:-0}"
 
-  rotate_conversion_log_if_needed
+  rotate_log_file "$CONVERSION_LOG_FILE"
 
   cat >> "$CONVERSION_LOG_FILE" <<EOF
 
@@ -720,8 +709,6 @@ emit_progress() {
 
 # Export all functions for use in other scripts
 export -f rotate_log_file
-export -f rotate_log_if_needed
-export -f rotate_conversion_log_if_needed
 export -f write_log_entry
 export -f log_trigger_evaluation
 export -f log_complexity_check

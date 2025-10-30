@@ -141,8 +141,9 @@ After the refactor, the library is organized into functional domains:
 - `plan-structure-utils.sh` - Structure operations (expansion, collapse)
 - `plan-metadata-utils.sh` - Metadata extraction and manipulation
 
-### Artifact Management (1 module)
-- `artifact-operations.sh` - Unified artifact registry and operations
+### Artifact Management (2 modules)
+- `artifact-creation.sh` - Artifact creation and workflow integration
+- `artifact-registry.sh` - Artifact tracking and querying
 
 ### Error Handling & Validation (1 module)
 - `error-handling.sh` - Error classification, recovery, retry logic
@@ -218,7 +219,7 @@ Unified logging interface for all operation types. The original logger files now
 **Key Functions:** All functions from both loggers
 - Adaptive planning events (log_complexity_check, log_replan_invocation, log_loop_prevention)
 - Conversion operations (log_conversion_start, log_conversion_success, log_tool_detection)
-- Common logging (init_log, rotate_log_if_needed, query_log)
+- Common logging (init_log, rotate_log_file, query_log)
 
 **Usage Example:**
 ```bash
@@ -405,38 +406,6 @@ collapse_phase_to_plan "$PLAN_FILE" 3
 
 ### Artifact Management
 
-#### artifact-operations.sh - DEPRECATED SHIM
-
-**Migration Status:** DEPRECATED as of 2025-10-29
-
-This library has been split into two focused modules:
-- **artifact-creation.sh** - Functions for creating new artifacts
-- **artifact-registry.sh** - Functions for tracking and querying artifacts
-
-**Backward Compatibility:** A temporary shim exists at artifact-operations.sh that sources both split libraries. Commands using the old reference will continue to work but should migrate to direct imports.
-
-**Migration Timeline:**
-- **2025-10-29**: Shim created for backward compatibility
-- **2025-12-01**: Target date for updating all 77 command references
-- **2026-01-01**: Shim removal scheduled (1-2 releases after creation)
-
-**Migration Steps:**
-1. Update command to source both libraries directly:
-   ```bash
-   # Old way (DEPRECATED)
-   source .claude/lib/artifact-operations.sh
-
-   # New way (RECOMMENDED)
-   source .claude/lib/artifact-creation.sh
-   source .claude/lib/artifact-registry.sh
-   ```
-2. Test command executes successfully
-3. Remove old import once migration complete
-
-**Affected Commands:** 77 commands reference artifact-operations.sh and need migration.
-
----
-
 #### artifact-creation.sh and artifact-registry.sh (1585 lines combined)
 
 Unified artifact registry, operations, metadata extraction, and report generation. Consolidates artifact-utils.sh and artifact-management.sh.
@@ -478,7 +447,8 @@ Unified artifact registry, operations, metadata extraction, and report generatio
 
 **Usage Example:**
 ```bash
-source .claude/lib/artifact-operations.sh
+source .claude/lib/artifact-creation.sh
+source .claude/lib/artifact-registry.sh
 
 # Register a plan
 PLAN_ID=$(register_artifact "plan" "specs/plans/025.md" '{"status":"in_progress"}')
@@ -764,7 +734,7 @@ Structured logging for document conversion operations with validation and statis
 - `log_phase_end()` - Log end of conversion phase
 - `log_validation_check()` - Log validation check result
 - `log_summary()` - Log conversion summary statistics
-- `rotate_conversion_log_if_needed()` - Rotate log files automatically
+- `rotate_log_file()` - Rotate log files automatically
 
 **Usage Example:**
 ```bash
@@ -1337,7 +1307,7 @@ json_validate "$JSON" || echo "Invalid JSON"
 
 **Dependencies:** `jq`, `deps-utils.sh`
 
-**Used By:** artifact-operations.sh, checkpoint-utils.sh, agent-registry-utils.sh
+**Used By:** artifact-creation.sh, artifact-registry.sh, checkpoint-utils.sh, agent-registry-utils.sh
 
 ---
 
@@ -1412,7 +1382,8 @@ Parsing & Structure:
 └─ progressive-planning-utils.sh → plan-structure-utils.sh, plan-metadata-utils.sh
 
 Artifacts:
-└─ artifact-operations.sh → json-utils.sh, timestamp-utils.sh
+├─ artifact-creation.sh → json-utils.sh, timestamp-utils.sh
+└─ artifact-registry.sh → json-utils.sh, timestamp-utils.sh
 
 Error Handling:
 └─ error-handling.sh → timestamp-utils.sh
@@ -1446,7 +1417,7 @@ Conversion:
 
 High-Level:
 ├─ progress-dashboard.sh → timestamp-utils.sh
-└─ auto-analysis-utils.sh → complexity-utils.sh, artifact-operations.sh, error-handling.sh
+└─ auto-analysis-utils.sh → complexity-utils.sh, artifact-creation.sh, artifact-registry.sh, error-handling.sh
 ```
 
 ### Sourcing Order
@@ -1456,7 +1427,7 @@ When sourcing multiple modules, follow this order to satisfy dependencies:
 1. Infrastructure: timestamp-utils.sh, deps-utils.sh, detect-project-dir.sh
 2. JSON & Validation: json-utils.sh, validation-utils.sh
 3. Parsing: parse-plan-core.sh, plan-structure-utils.sh, plan-metadata-utils.sh
-4. Error & Artifacts: error-handling.sh, artifact-operations.sh
+4. Error & Artifacts: error-handling.sh, artifact-creation.sh, artifact-registry.sh
 5. Analysis: analysis-pattern.sh, complexity-utils.sh, structure-eval-utils.sh
 6. Specialized: checkpoint-utils.sh, agents, conversion, templates
 7. High-level: auto-analysis-utils.sh, progress-dashboard.sh
@@ -1628,13 +1599,13 @@ Utility library files are integrated with the Neovim artifact picker for easy br
 - Split parse-adaptive-plan.sh (1298 lines) → 3 modules (parse-plan-core.sh, plan-structure-utils.sh, plan-metadata-utils.sh)
 - Split error-utils.sh (809 lines) → error-handling.sh + enhanced validation-utils.sh
 - Split convert-docs.sh (1502 lines) → 4 modules (convert-core.sh, convert-docx.sh, convert-pdf.sh, convert-markdown.sh)
-- Consolidated artifact-utils.sh + artifact-management.sh → artifact-operations.sh (1585 lines)
+- Consolidated artifact-utils.sh + artifact-management.sh → artifact-creation.sh + artifact-registry.sh (1585 lines combined)
 - Merged phase-analysis.sh + stage-analysis.sh → analysis-pattern.sh (90% duplicate code eliminated)
 - Removed 3 dead scripts (analyze-plan-requirements.sh, parse-phase-dependencies.sh, workflow-metrics.sh)
 - Scripts reduced: 30 → 27 (10% reduction from refactor start)
 
 **Function Name Resolutions:**
-- artifact-operations.sh: Resolved 2 duplicate function name conflicts
+- artifact-creation.sh and artifact-registry.sh: Resolved 2 duplicate function name conflicts
   - create_artifact_directory() (plan-based) vs create_artifact_directory_with_workflow() (workflow-based)
   - get_artifact_path() (operation tracking) vs get_artifact_path_by_id() (registry lookup)
 

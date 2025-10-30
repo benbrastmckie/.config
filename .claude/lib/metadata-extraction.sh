@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Metadata Extraction
-# Extracted from artifact-operations.sh
+# Metadata extraction from artifacts
 
 set -euo pipefail
 

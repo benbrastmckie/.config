@@ -200,7 +200,8 @@ YOU MUST use THIS EXACT TEMPLATE for each hypothesis (No modifications, no parap
 
 ```bash
 # Source context preservation utilities
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-operations.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-registry.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-metrics.sh"
 
 # Track context before parallel investigation
@@ -358,7 +359,7 @@ FULL_INVESTIGATION=$(load_metadata_on_demand "$CONFIRMED_PATH")
 
 **Integration Points**:
 - **Agent template**: `.claude/agents/debug-analyst.md`
-- **Utilities**: `artifact-operations.sh` (forward_message, load_metadata_on_demand), `context-metrics.sh` (tracking)
+- **Utilities**: `artifact-creation.sh` and `artifact-registry.sh` (forward_message, load_metadata_on_demand), `context-metrics.sh` (tracking)
 - **Output artifacts**: `specs/{topic}/debug/NNN_investigation_*.md` (one per hypothesis)
 - **Consolidated report**: `specs/{topic}/debug/NNN_debug_[issue_name].md` (synthesized findings)
 
@@ -378,7 +379,8 @@ FULL_INVESTIGATION=$(load_metadata_on_demand "$CONFIRMED_PATH")
 
 **EXECUTE NOW - Source Required Utilities**:
 ```bash
-source .claude/lib/artifact-operations.sh
+source .claude/lib/artifact-creation.sh
+source .claude/lib/artifact-registry.sh
 source .claude/lib/template-integration.sh
 ```
 

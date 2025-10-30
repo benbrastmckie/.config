@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Artifact Creation
-# Extracted from artifact-operations.sh
+# Artifact creation and workflow integration
 
 set -euo pipefail
 
