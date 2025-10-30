@@ -279,11 +279,10 @@ test_report_1_simple_topic() {
 
   assert_file_exists "$report_path" "Report 1.1: Simple topic - file created" "GROUP1"
 
-  # Verify directory structure
+  # Verify directory structure (lazy creation - only reports/ should exist)
   local topic_dir=$(dirname "$(dirname "$report_path")")
   assert_dir_exists "${topic_dir}/reports" "Report 1.1: Reports subdir exists" "GROUP1"
-  assert_dir_exists "${topic_dir}/plans" "Report 1.1: Plans subdir exists" "GROUP1"
-  assert_dir_exists "${topic_dir}/summaries" "Report 1.1: Summaries subdir exists" "GROUP1"
+  # Note: plans/ and summaries/ NOT created by lazy creation (only created when files written)
 }
 
 test_report_2_special_chars() {
@@ -329,8 +328,8 @@ test_report_4_minimal_description() {
 }
 
 test_report_5_topic_numbering() {
-  # Get max existing topic number
-  local specs_dir="${PROJECT_ROOT}/.claude/specs"
+  # Get max existing topic number from test environment (not real specs)
+  local specs_dir="${TEST_SPECS_ROOT}"
   local max_num=$(ls -1d "${specs_dir}"/[0-9][0-9][0-9]_* 2>/dev/null | \
     sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
     sort -n | tail -1)
@@ -514,8 +513,8 @@ test_plan_4_bug_fix() {
 }
 
 test_plan_5_topic_numbering() {
-  # Similar to report test - verify sequential numbering
-  local specs_dir="${PROJECT_ROOT}/.claude/specs"
+  # Similar to report test - verify sequential numbering in test environment
+  local specs_dir="${TEST_SPECS_ROOT}"
   local max_num=$(ls -1d "${specs_dir}"/[0-9][0-9][0-9]_* 2>/dev/null | \
     sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
     sort -n | tail -1)
@@ -910,7 +909,13 @@ test_chain_6_plan_invocation() {
     plans_dir=$(echo "$location_json" | grep -o '"plans": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
   fi
 
-  assert_dir_exists "$plans_dir" "Chain 2.6: Plans dir created for planning phase" "GROUP2"
+  # With lazy creation, directory doesn't exist yet - just verify path is valid
+  if [[ "$plans_dir" == *"/plans"* ]] && [[ -n "$plans_dir" ]]; then
+    report_test "Chain 2.6: Plans path returned for planning phase" "PASS" "GROUP2"
+  else
+    report_test "Chain 2.6: Plans path returned for planning phase" "FAIL" "GROUP2"
+    echo "  Plans dir: $plans_dir"
+  fi
 }
 
 test_chain_7_plan_receives_reports() {
@@ -928,13 +933,15 @@ test_chain_7_plan_receives_reports() {
     plans_dir=$(echo "$location_json" | grep -o '"plans": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
   fi
 
-  # Create mock research reports
+  # Create mock research reports (ensure directory exists for lazy creation)
+  mkdir -p "$reports_dir"
   local report1="${reports_dir}/001_research.md"
   local report2="${reports_dir}/002_analysis.md"
   echo "# Research" > "$report1"
   echo "# Analysis" > "$report2"
 
-  # Simulate planning phase receiving report paths
+  # Simulate planning phase receiving report paths (ensure directory exists)
+  mkdir -p "$plans_dir"
   local plan="${plans_dir}/001_implementation.md"
   echo "# Plan
 Reports: $report1, $report2" > "$plan"
@@ -960,6 +967,8 @@ test_chain_8_implement_receives_plan() {
     plans_dir=$(echo "$location_json" | grep -o '"plans": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
   fi
 
+  # Ensure plans directory exists for lazy creation
+  mkdir -p "$plans_dir"
   local plan="${plans_dir}/001_implementation.md"
   echo "# Implementation Plan" > "$plan"
 
@@ -988,6 +997,9 @@ test_chain_9_cross_phase_references() {
   local report="${topic_path}/reports/001_research.md"
   local plan="${topic_path}/plans/001_implementation.md"
   local summary="${topic_path}/summaries/001_workflow_summary.md"
+
+  # Ensure directories exist for lazy creation
+  mkdir -p "${topic_path}/reports" "${topic_path}/plans" "${topic_path}/summaries"
 
   echo "# Research" > "$report"
   echo "# Plan
@@ -1244,8 +1256,8 @@ echo "Group 4: Backward Compatibility"
 echo "--------------------------------"
 
 test_compat_1_existing_specs_dir() {
-  # Verify new topics numbered correctly after existing ones
-  local specs_dir="${PROJECT_ROOT}/.claude/specs"
+  # Verify new topics numbered correctly after existing ones in test environment
+  local specs_dir="${TEST_SPECS_ROOT}"
 
   # Get current max topic number
   local max_before=$(ls -1d "${specs_dir}"/[0-9][0-9][0-9]_* 2>/dev/null | \
@@ -1272,8 +1284,8 @@ test_compat_1_existing_specs_dir() {
 }
 
 test_compat_2_no_disruption() {
-  # Verify existing topic directories untouched
-  local specs_dir="${PROJECT_ROOT}/.claude/specs"
+  # Verify existing topic directories untouched in test environment
+  local specs_dir="${TEST_SPECS_ROOT}"
 
   # Create snapshot of existing topics
   local existing_topics=$(ls -1d "${specs_dir}"/[0-9][0-9][0-9]_* 2>/dev/null | wc -l)
@@ -1300,11 +1312,12 @@ test_compat_3_git_paths_unchanged() {
   if command -v jq &>/dev/null; then
     local topic_path=$(echo "$location_json" | jq -r '.topic_path')
 
-    # Verify path format matches git conventions
-    if [[ "$topic_path" =~ /.claude/specs/[0-9]{3}_.* ]]; then
+    # Verify path format has NNN_name structure (works in both real and test environments)
+    if [[ "$topic_path" =~ /[0-9]{3}_[a-z0-9_]+$ ]]; then
       report_test "Compat 4.3: Git commit paths unchanged" "PASS" "GROUP4"
     else
       report_test "Compat 4.3: Git commit paths unchanged" "FAIL" "GROUP4"
+      echo "  Got path: $topic_path"
     fi
   else
     report_test "Compat 4.3: Git commit paths unchanged (skipped - no jq)" "PASS" "GROUP4"
@@ -1334,8 +1347,17 @@ test_compat_6_specs_vs_claude_specs() {
   local test_root="/tmp/compat_legacy_$$"
   mkdir -p "$test_root/specs"
 
+  # Temporarily unset CLAUDE_SPECS_ROOT to test detection
+  local saved_specs_root="${CLAUDE_SPECS_ROOT:-}"
+  unset CLAUDE_SPECS_ROOT
+
   local specs_dir
   specs_dir=$(detect_specs_directory "$test_root")
+
+  # Restore CLAUDE_SPECS_ROOT
+  if [ -n "$saved_specs_root" ]; then
+    export CLAUDE_SPECS_ROOT="$saved_specs_root"
+  fi
 
   rm -rf "$test_root"
 
@@ -1343,6 +1365,7 @@ test_compat_6_specs_vs_claude_specs() {
     report_test "Compat 4.6: Legacy specs/ directory supported" "PASS" "GROUP4"
   else
     report_test "Compat 4.6: Legacy specs/ directory supported" "FAIL" "GROUP4"
+    echo "  Expected: $test_root/specs, Got: $specs_dir"
   fi
 }
 
@@ -1375,6 +1398,8 @@ test_compat_8_implement_integration() {
 
   if command -v jq &>/dev/null; then
     local plans_dir=$(echo "$location_json" | jq -r '.artifact_paths.plans')
+    # Ensure plans directory exists for lazy creation
+    mkdir -p "$plans_dir"
     local plan="${plans_dir}/001_test.md"
     echo "# Test Plan" > "$plan"
 
@@ -1398,13 +1423,15 @@ test_compat_9_no_user_visible_changes() {
   if command -v jq &>/dev/null; then
     local topic_path=$(echo "$location_json" | jq -r '.topic_path')
 
-    # Verify directory structure looks identical to before
+    # Verify directory structure: with lazy creation, topic root exists but no subdirs yet
     local subdir_count=$(ls -1 "$topic_path" 2>/dev/null | wc -l)
 
-    if [ "$subdir_count" -eq 6 ]; then
-      report_test "Compat 4.9: No user-visible changes" "PASS" "GROUP4"
+    # With lazy creation, subdirectories are created on-demand (0 initially)
+    if [ "$subdir_count" -eq 0 ]; then
+      report_test "Compat 4.9: No user-visible changes (lazy creation)" "PASS" "GROUP4"
     else
-      report_test "Compat 4.9: No user-visible changes" "FAIL" "GROUP4"
+      report_test "Compat 4.9: No user-visible changes (lazy creation)" "FAIL" "GROUP4"
+      echo "  Expected 0 subdirs (lazy creation), got: $subdir_count"
     fi
   else
     report_test "Compat 4.9: No user-visible changes (skipped - no jq)" "PASS" "GROUP4"
@@ -1420,11 +1447,12 @@ test_compat_10_documentation_paths() {
   if command -v jq &>/dev/null; then
     local topic_path=$(echo "$location_json" | jq -r '.topic_path')
 
-    # Verify path matches documentation examples
-    if [[ "$topic_path" =~ /.claude/specs/[0-9]{3}_[a-z0-9_]+ ]]; then
+    # Verify path has documented structure (works in both real and test environments)
+    if [[ "$topic_path" =~ /[0-9]{3}_[a-z0-9_]+$ ]]; then
       report_test "Compat 4.10: Documentation paths valid" "PASS" "GROUP4"
     else
       report_test "Compat 4.10: Documentation paths valid" "FAIL" "GROUP4"
+      echo "  Got path: $topic_path"
     fi
   else
     report_test "Compat 4.10: Documentation paths valid (skipped - no jq)" "PASS" "GROUP4"
