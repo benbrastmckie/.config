@@ -169,19 +169,19 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Update `perform_location_detection()` (lines 330-387) to call `allocate_and_create_topic()`
-- [ ] Pass `specs_root` and sanitized `topic_name` to new function
-- [ ] Parse pipe-delimited output: `IFS='|' read -r topic_number topic_path <<< "$result"`
-- [ ] Remove old `get_next_topic_number()` call (line 360-365)
-- [ ] Remove `create_topic_structure()` call (line 367) - now handled inside allocation
-- [ ] Preserve all JSON output formatting (lines 369-386)
-- [ ] Verify backward compatibility: same JSON output format
-- [ ] Add comment explaining why directory creation happens in allocation function
+- [x] Update `perform_location_detection()` (lines 330-387) to call `allocate_and_create_topic()`
+- [x] Pass `specs_root` and sanitized `topic_name` to new function
+- [x] Parse pipe-delimited output: `IFS='|' read -r topic_number topic_path <<< "$result"`
+- [x] Remove old `get_next_topic_number()` call (line 360-365)
+- [x] Remove `create_topic_structure()` call (line 367) - now handled inside allocation
+- [x] Preserve all JSON output formatting (lines 369-386)
+- [x] Verify backward compatibility: same JSON output format
+- [x] Add comment explaining why directory creation happens in allocation function
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -204,11 +204,11 @@ topic_path=$(echo "$result" | jq -r '.topic_path')
 **Expected Duration**: 1 hour
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(540): complete Phase 2 - Update Location Detection to Use Atomic Function`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(540): complete Phase 2 - Update Location Detection to Use Atomic Function`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ---
 
