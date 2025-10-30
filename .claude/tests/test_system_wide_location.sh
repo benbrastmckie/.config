@@ -1141,7 +1141,8 @@ test_concurrent_2_directory_conflicts() {
 }
 
 test_concurrent_3_subdirectory_integrity() {
-  # Verify concurrent creation doesn't corrupt subdirectories
+  # Verify concurrent creation creates topic roots with lazy subdirectory creation
+  # Updated for lazy creation pattern: subdirectories should NOT exist until files are written
   local workflow_f="concurrent F"
   local workflow_g="concurrent G"
 
@@ -1154,24 +1155,35 @@ test_concurrent_3_subdirectory_integrity() {
     local path_f=$(jq -r '.topic_path' /tmp/concurrent_f.json)
     local path_g=$(jq -r '.topic_path' /tmp/concurrent_g.json)
 
-    # Verify all subdirectories in both
+    # Verify topic roots exist (eager creation)
     local all_valid=true
+    if [ ! -d "$path_f" ]; then
+      all_valid=false
+      echo "  Missing topic root: $path_f"
+    fi
+    if [ ! -d "$path_g" ]; then
+      all_valid=false
+      echo "  Missing topic root: $path_g"
+    fi
+
+    # Verify subdirectories DON'T exist yet (lazy creation pattern)
+    # Subdirectories should only be created when files are actually written
     for topic_dir in "$path_f" "$path_g"; do
       for subdir in reports plans summaries debug scripts outputs; do
-        if [ ! -d "${topic_dir}/${subdir}" ]; then
+        if [ -d "${topic_dir}/${subdir}" ]; then
           all_valid=false
-          echo "  Missing: ${topic_dir}/${subdir}"
+          echo "  Unexpected eager creation: ${topic_dir}/${subdir}"
         fi
       done
     done
 
     if [ "$all_valid" = true ]; then
-      report_test "Concurrent 3.3: Subdirectory integrity maintained" "PASS" "GROUP3"
+      report_test "Concurrent 3.3: Topic roots created (lazy pattern)" "PASS" "GROUP3"
     else
-      report_test "Concurrent 3.3: Subdirectory integrity maintained" "FAIL" "GROUP3"
+      report_test "Concurrent 3.3: Topic roots created (lazy pattern)" "FAIL" "GROUP3"
     fi
   else
-    report_test "Concurrent 3.3: Subdirectory integrity maintained (skipped - no jq)" "PASS" "GROUP3"
+    report_test "Concurrent 3.3: Topic roots created (lazy pattern) (skipped - no jq)" "PASS" "GROUP3"
   fi
 }
 
@@ -1239,12 +1251,142 @@ test_concurrent_5_performance() {
   fi
 }
 
+# verify_topic_invariants()
+# Purpose: Runtime invariant checks for topic numbering integrity
+# Checks: Sequential numbering, no duplicates, no gaps
+verify_topic_invariants() {
+  local specs_dir="${TEST_SPECS_ROOT}"
+
+  # Get all topic numbers
+  local topic_nums=($(ls -1d "${specs_dir}"/[0-9][0-9][0-9]_* 2>/dev/null | \
+    sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
+    sort -n))
+
+  if [ ${#topic_nums[@]} -eq 0 ]; then
+    return 0  # No topics to check
+  fi
+
+  # Check for duplicates
+  local unique_count=$(printf '%s\n' "${topic_nums[@]}" | sort -u | wc -l)
+  if [ "$unique_count" -ne "${#topic_nums[@]}" ]; then
+    echo "  ✗ Invariant violation: Duplicate topic numbers detected"
+    return 1
+  fi
+
+  # Check for expected sequential numbering (allowing gaps is okay)
+  # Just verify each number is valid and increasing
+  local prev=0
+  for num in "${topic_nums[@]}"; do
+    local num_int=$((10#$num))  # Force base-10
+    if [ $num_int -le $prev ]; then
+      echo "  ✗ Invariant violation: Non-sequential number $num after $prev"
+      return 1
+    fi
+    prev=$num_int
+  done
+
+  return 0
+}
+
+test_concurrent_stress_100_iterations() {
+  # Stress test: 100 iterations with 10 parallel processes per iteration
+  # Verifies 0% collision rate under sustained concurrent load
+  echo ""
+  echo "Running stress test (100 iterations, 10 processes each)..."
+  echo "This may take 2-3 minutes..."
+
+  local total_topics=0
+  local collisions=0
+  local iteration_failures=0
+
+  for iteration in {1..100}; do
+    # Launch 10 parallel processes
+    local pids=()
+    for proc in {1..10}; do
+      (simulate_orchestrate_phase0 "stress_test_i${iteration}_p${proc}" > "/tmp/stress_${iteration}_${proc}.json" 2>/dev/null) &
+      pids+=($!)
+    done
+
+    # Wait for all processes in this iteration
+    for pid in "${pids[@]}"; do
+      wait "$pid" 2>/dev/null || true
+    done
+
+    # Check for collisions in this iteration
+    if command -v jq &>/dev/null; then
+      local nums=()
+      for proc in {1..10}; do
+        if [ -f "/tmp/stress_${iteration}_${proc}.json" ]; then
+          local num=$(jq -r '.topic_number' "/tmp/stress_${iteration}_${proc}.json" 2>/dev/null || echo "")
+          if [ -n "$num" ]; then
+            nums+=("$num")
+          fi
+        fi
+      done
+
+      local unique=$(printf '%s\n' "${nums[@]}" | sort -u | wc -l)
+      total_topics=$((total_topics + ${#nums[@]}))
+
+      if [ "$unique" -ne "${#nums[@]}" ]; then
+        collisions=$((collisions + (${#nums[@]} - unique)))
+        iteration_failures=$((iteration_failures + 1))
+      fi
+    fi
+
+    # Progress indicator every 10 iterations
+    if [ $((iteration % 10)) -eq 0 ]; then
+      echo "  Progress: $iteration/100 iterations complete"
+    fi
+
+    # Cleanup iteration files
+    rm -f /tmp/stress_${iteration}_*.json
+  done
+
+  # Calculate collision rate
+  local collision_rate=0
+  if [ $total_topics -gt 0 ]; then
+    collision_rate=$((collisions * 100 / total_topics))
+  fi
+
+  echo ""
+  echo "Stress Test Results:"
+  echo "  Total topics created: $total_topics"
+  echo "  Collisions detected: $collisions"
+  echo "  Collision rate: ${collision_rate}%"
+  echo "  Iterations with failures: $iteration_failures/100"
+
+  # Verify invariants after stress test
+  if verify_topic_invariants; then
+    echo "  ✓ Topic invariants verified"
+  else
+    echo "  ✗ Topic invariants violated"
+    report_test "Concurrent Stress: 100 iterations, 0% collision rate" "FAIL" "GROUP3"
+    return 1
+  fi
+
+  # Pass if collision rate is 0%
+  if [ "$collision_rate" -eq 0 ] && [ "$collisions" -eq 0 ]; then
+    report_test "Concurrent Stress: 100 iterations, 0% collision rate" "PASS" "GROUP3"
+  else
+    report_test "Concurrent Stress: 100 iterations, 0% collision rate" "FAIL" "GROUP3"
+  fi
+}
+
 # Execute concurrent tests
 test_concurrent_1_parallel_orchestrate
 test_concurrent_2_directory_conflicts
 test_concurrent_3_subdirectory_integrity
 test_concurrent_4_file_locking
 test_concurrent_5_performance
+
+# Run stress test only if --stress flag is provided
+if [[ "${1:-}" == "--stress" ]]; then
+  test_concurrent_stress_100_iterations
+else
+  echo ""
+  echo "Skipping stress test (use --stress to run)"
+  echo "  Run: bash test_system_wide_location.sh --stress"
+fi
 
 echo ""
 

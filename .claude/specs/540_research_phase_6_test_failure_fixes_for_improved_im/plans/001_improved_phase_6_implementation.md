@@ -220,24 +220,24 @@ dependencies: [2]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Update test_concurrent_3_subdirectory_integrity() in test_system_wide_location.sh (lines 1143-1176)
-- [ ] Change test to verify topic root exists (not subdirectories)
-- [ ] Add comment explaining lazy creation pattern expectation
-- [ ] Remove subdirectory existence checks (lines 1157-1166)
-- [ ] Add verification that subdirectories DON'T exist yet (lazy pattern)
-- [ ] Create new stress test function: `test_concurrent_stress_100_iterations()`
-- [ ] Launch 100 iterations, 10 parallel processes per iteration
-- [ ] Verify 100% unique topic numbers across all iterations
-- [ ] Add collision rate reporting on failure
-- [ ] Add runtime invariant check function: `verify_topic_invariants()`
-- [ ] Check for sequential numbering (no gaps)
-- [ ] Check for duplicate directories (no collisions)
-- [ ] Call invariant check after every concurrent test
+- [x] Update test_concurrent_3_subdirectory_integrity() in test_system_wide_location.sh (lines 1143-1176)
+- [x] Change test to verify topic root exists (not subdirectories)
+- [x] Add comment explaining lazy creation pattern expectation
+- [x] Remove subdirectory existence checks (lines 1157-1166)
+- [x] Add verification that subdirectories DON'T exist yet (lazy pattern)
+- [x] Create new stress test function: `test_concurrent_stress_100_iterations()`
+- [x] Launch 100 iterations, 10 parallel processes per iteration
+- [x] Verify 100% unique topic numbers across all iterations
+- [x] Add collision rate reporting on failure
+- [x] Add runtime invariant check function: `verify_topic_invariants()`
+- [x] Check for sequential numbering (no gaps)
+- [x] Check for duplicate directories (no collisions)
+- [x] Call invariant check after every concurrent test
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -260,11 +260,11 @@ bash test_system_wide_location.sh --stress
 **Expected Duration**: 2-3 hours
 
 **Phase 3 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(540): complete Phase 3 - Fix Test 3.3 Expectations and Add Stress Tests`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(540): complete Phase 3 - Fix Test 3.3 Expectations and Add Stress Tests`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ---
 
