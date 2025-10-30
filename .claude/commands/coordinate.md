@@ -519,6 +519,8 @@ emit_progress "2" "Planning phase started"
 
 ### Implementation
 
+**EXECUTE NOW**: USE the Bash tool to execute the following Phase 0 setup:
+
 STEP 0: Source Required Libraries (MUST BE FIRST)
 
 ```bash
@@ -745,6 +747,8 @@ echo ""
 ## Verification Helper Functions
 
 [EXECUTION-CRITICAL: Helper functions for concise verification - defined inline for immediate availability]
+
+**EXECUTE NOW**: USE the Bash tool to define the following helper functions:
 
 **REQUIRED ACTION**: The following helper functions implement concise verification with silent success and verbose failure patterns. These functions MUST be used at all file creation checkpoints.
 
