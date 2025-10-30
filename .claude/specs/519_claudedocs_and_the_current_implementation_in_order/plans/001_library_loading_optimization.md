@@ -405,52 +405,86 @@ Array deduplication was chosen over memoization to solve the /coordinate timeout
 
 ---
 
-### Phase 5: Base Utilities Consolidation (OPTIONAL)
-**Objective**: Merge base-utils, timestamp-utils, json-utils into single core-utils.sh
+### Phase 5: Base Utilities Consolidation (OPTIONAL - DEFERRED)
+**Objective**: Merge base-utils, timestamp-utils, json-utils into single core-utils.sh WITHOUT creating new shims
 **Complexity**: MEDIUM
-**Time Estimate**: 2 hours
+**Time Estimate**: 4-5 hours (batch migration required)
+**Status**: DEFERRED - Not required for primary objectives
+
+**Rationale for No-Shim Approach**:
+Based on [Shim Removal Research](../../523_research_all_existing_shims_in_order_to_create_and/plans/001_research_all_existing_shims_in_order_to_create_and_plan.md), creating new backward-compatibility shims conflicts with project goal of eliminating technical debt. The research demonstrates:
+- artifact-operations.sh shim requires 77 reference updates across 8 weeks
+- Shims add maintenance overhead and delay technical debt resolution
+- Direct migration is cleaner and avoids future shim removal work
+
+**Alternative Approach: Batch Migration Without Shims**
 
 Tasks:
 - [ ] Create core-utils.sh merging all three libraries (.claude/lib/core-utils.sh:1-416)
 - [ ] Verify all function signatures preserved (no breaking changes)
 - [ ] Update library-sourcing.sh to include core-utils in core 7 libraries
-- [ ] Create backward-compatibility shims for deprecated libraries
-- [ ] Test consolidated library with sample commands
-- [ ] Document migration strategy in README.md
-- [ ] Plan gradual command updates (track progress in issue)
+- [ ] **Identify all command references to base-utils, timestamp-utils, json-utils (grep-based audit)**
+- [ ] **Batch migrate commands directly to core-utils.sh (5 batches, 10-15 commands each)**
+- [ ] **Delete deprecated libraries immediately after migration (no shim period)**
+- [ ] Test consolidated library with all migrated commands
+- [ ] Document completed migration in README.md
 
 Testing:
 ```bash
+# Audit all references to deprecated libraries
+grep -rn "base-utils.sh\|timestamp-utils.sh\|json-utils.sh" .claude/commands/ .claude/tests/ | wc -l
+
 # Test core-utils.sh sources successfully
 source .claude/lib/core-utils.sh
 declare -F | grep -E "(log_|get_timestamp|parse_json)"
 
 # Expected: All functions from 3 original libraries available
 
-# Test backward-compatibility shims
-source .claude/lib/base-utils.sh
-declare -F | grep "log_"
+# Test batch migration (after each batch)
+cd .claude/tests && ./run_all_tests.sh
 
-# Expected: Functions available via shim
+# Expected: All tests passing after each batch
 
-# Test with sample command
-.claude/commands/plan.md "test feature"
+# Verify no references to deprecated libraries remain
+grep -rn "base-utils.sh\|timestamp-utils.sh\|json-utils.sh" .claude/ | grep -v ".git" | grep -v "archive"
 
-# Expected: Command executes successfully with consolidated library
+# Expected: 0 references (except in archived documentation)
 ```
 
 **Validation Criteria**:
 - core-utils.sh contains all 416 lines from 3 libraries
 - All function signatures preserved
-- Backward-compatibility shims work
-- At least 3 commands tested successfully with new structure
+- **NO backward-compatibility shims created**
+- All command references migrated to core-utils.sh
+- Deprecated libraries deleted (archived in .claude/archive/lib/)
+- All tests passing (58/77 baseline maintained)
 
-**Migration Strategy**:
-1. Create core-utils.sh (this phase)
+**Migration Strategy (No-Shim Approach)**:
+1. Create core-utils.sh (merge all 3 libraries)
 2. Add core-utils to library-sourcing.sh core 7
-3. Create shims for base-utils.sh, timestamp-utils.sh, json-utils.sh
-4. Update commands incrementally (track in GitHub issue)
-5. Remove shims after all commands migrated (1-2 releases)
+3. Audit all references (grep search across .claude/)
+4. **Batch migrate commands** (5 batches):
+   - Batch 1: High-priority commands (orchestrate, implement, plan)
+   - Batch 2: Workflow commands (coordinate, supervise)
+   - Batch 3: Test files
+   - Batch 4: Remaining commands
+   - Batch 5: Documentation updates
+5. Delete deprecated libraries immediately after batch 5
+6. Archive to .claude/archive/lib/ for historical reference
+
+**Time Breakdown**:
+- Library creation and audit: 1 hour
+- Batch migration (5 batches @ 30 min each): 2.5 hours
+- Testing and validation: 1 hour
+- Documentation updates: 30 minutes
+- **Total**: 4-5 hours (vs 2 hours with shims, but cleaner long-term)
+
+**Why This Phase is Deferred**:
+- Primary objectives achieved (timeout fix, artifact shim, tests, documentation)
+- Secondary objective (library organization) achieved
+- Base utilities consolidation is a "nice to have" optimization
+- Requires significant migration effort (4-5 hours) for modest benefit (67% import reduction)
+- Should be tackled in separate focused effort when time permits
 
 ---
 
@@ -550,10 +584,10 @@ The research identified a critical problem-solution mismatch:
 3. Testing and Validation (3-4 hours - includes fixing 19 existing test failures)
 4. Documentation and Organization (45 min)
 
-**Optional Phase** (2 hours):
-5. Base Utilities Consolidation
+**Optional Phase** (4-5 hours):
+5. Base Utilities Consolidation (NO-SHIM batch migration approach)
 
-**Total Time**: 5-8 hours (with/without optional consolidation)
+**Total Time**: 5-6 hours required, 9-11 hours with optional consolidation
 
 ### Success Metrics
 
@@ -653,3 +687,48 @@ For each of the 19 failing tests:
 4. Apply appropriate fix (code or test)
 5. Verify fix doesn't break other tests
 6. Document fix with root cause in commit message
+
+---
+
+### 2025-10-29 - Revision 3: No-Shim Migration Strategy for Phase 5
+
+**Changes**: Revised Phase 5 to eliminate backward-compatibility shim creation
+
+**Reason**: Align with project-wide shim removal initiative documented in [Shim Removal Research](../../523_research_all_existing_shims_in_order_to_create_and/plans/001_research_all_existing_shims_in_order_to_create_and_plan.md)
+
+**Reports Used**:
+- [Shim Removal Implementation Plan](../../523_research_all_existing_shims_in_order_to_create_and/plans/001_research_all_existing_shims_in_order_to_create_and_plan.md)
+
+**Modified Phases**:
+- **Phase 5 (Base Utilities Consolidation)**:
+  - **Removed**: Backward-compatibility shim creation strategy
+  - **Added**: Batch migration approach (5 batches, no shims)
+  - **Added**: Direct migration of all command references
+  - **Added**: Immediate deletion of deprecated libraries post-migration
+  - **Updated Time Estimate**: 2 hours → 4-5 hours (reflects batch migration effort)
+  - **Added Rationale**: Explains why shims conflict with technical debt elimination goals
+
+**Key Changes**:
+1. **Migration Strategy**: Changed from "create shims → gradual update → remove shims" to "audit → batch migrate → delete immediately"
+2. **Validation Criteria**: Added "NO backward-compatibility shims created" as explicit requirement
+3. **Time Estimate**: Increased from 2 hours to 4-5 hours to account for batch migration without shim safety net
+4. **Phase Status**: Emphasized DEFERRED status with clear rationale (primary objectives already met)
+
+**Benefits of No-Shim Approach**:
+- Avoids creating technical debt that requires future removal work
+- Cleaner migration path (one-time batch update vs prolonged shim lifecycle)
+- Aligns with research findings showing 8-week shim removal timeline for artifact-operations.sh
+- Reduces maintenance overhead (no shim deprecation warnings, no gradual migration tracking)
+
+**Trade-offs**:
+- Requires more upfront migration effort (4-5 hours vs 2 hours)
+- No safety net during migration (must batch migrate correctly first time)
+- Higher complexity (5 batches with testing between each)
+
+**Implementation Guidance**:
+When Phase 5 is eventually executed, follow batch migration pattern from shim removal research:
+1. Create consolidated library first
+2. Audit all references comprehensively
+3. Migrate in small batches with testing after each
+4. Delete deprecated libraries only after 100% migration
+5. Archive for historical reference

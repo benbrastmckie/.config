@@ -2,6 +2,8 @@
 
 ## Implementation Plans
 
+- /home/benjamin/.config/.claude/specs/524_review_coordinate_output_to_identify_improvements_/plans/001_review_coordinate_output_to_identify_improvements__plan.md
+- /home/benjamin/.config/.claude/specs/523_research_all_existing_shims_in_order_to_create_and/plans/001_research_all_existing_shims_in_order_to_create_and_plan.md
 
 ## Research
 
