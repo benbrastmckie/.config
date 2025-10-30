@@ -35,13 +35,13 @@ NC='\033[0m'
 report_test() {
   local test_name="$1"
   local result="$2"
-  ((TOTAL_TESTS++))
+  TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
   if [ "$result" = "PASS" ]; then
-    ((PASSED_TESTS++))
+    PASSED_TESTS=$((PASSED_TESTS + 1))
     echo -e "${GREEN}✓${NC} $test_name"
   else
-    ((FAILED_TESTS++))
+    FAILED_TESTS=$((FAILED_TESTS + 1))
     echo -e "${RED}✗${NC} $test_name"
   fi
 }
@@ -292,10 +292,10 @@ test_6() {
 
   # Check reports/ and plans/ are not empty
   if [ -z "$(ls -A "${test_topic}/reports" 2>/dev/null)" ]; then
-    ((empty_in_used_dirs++))
+    empty_in_used_dirs=$((empty_in_used_dirs + 1))
   fi
   if [ -z "$(ls -A "${test_topic}/plans" 2>/dev/null)" ]; then
-    ((empty_in_used_dirs++))
+    empty_in_used_dirs=$((empty_in_used_dirs + 1))
   fi
 
   if [ "$empty_in_used_dirs" -eq 0 ]; then
@@ -307,10 +307,10 @@ test_6() {
 
   # Verify unused directories were NOT created
   local unused_created=0
-  [ -d "${test_topic}/summaries" ] && ((unused_created++))
-  [ -d "${test_topic}/debug" ] && ((unused_created++))
-  [ -d "${test_topic}/scripts" ] && ((unused_created++))
-  [ -d "${test_topic}/outputs" ] && ((unused_created++))
+  [ -d "${test_topic}/summaries" ] && unused_created=$((unused_created + 1))
+  [ -d "${test_topic}/debug" ] && unused_created=$((unused_created + 1))
+  [ -d "${test_topic}/scripts" ] && unused_created=$((unused_created + 1))
+  [ -d "${test_topic}/outputs" ] && unused_created=$((unused_created + 1))
 
   if [ "$unused_created" -eq 0 ]; then
     report_test "Test 6.2: Unused directories not created" "PASS"

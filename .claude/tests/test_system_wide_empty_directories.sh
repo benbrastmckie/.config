@@ -46,7 +46,7 @@ for topic_dir in "$SPECS_DIR"/[0-9][0-9][0-9]_*; do
   # Skip if no matching directories found
   [ -d "$topic_dir" ] || continue
 
-  ((TOPIC_COUNT++))
+  TOPIC_COUNT=$((TOPIC_COUNT + 1))
   topic_name=$(basename "$topic_dir")
 
   # Check standard subdirectories
@@ -56,7 +56,7 @@ for topic_dir in "$SPECS_DIR"/[0-9][0-9][0-9]_*; do
     # Skip if subdirectory doesn't exist
     [ -d "$subdir_path" ] || continue
 
-    ((CHECKED_DIR_COUNT++))
+    CHECKED_DIR_COUNT=$((CHECKED_DIR_COUNT + 1))
 
     # Check if directory is empty (excluding .gitkeep and .artifact-registry)
     # Use find to check for files/dirs excluding hidden files
@@ -67,7 +67,7 @@ for topic_dir in "$SPECS_DIR"/[0-9][0-9][0-9]_*; do
       2>/dev/null | wc -l)
 
     if [ "$file_count" -eq 0 ]; then
-      ((EMPTY_DIR_COUNT++))
+      EMPTY_DIR_COUNT=$((EMPTY_DIR_COUNT + 1))
       echo -e "${RED}✗${NC} Empty directory: ${topic_name}/${subdir_name}"
     fi
   done
