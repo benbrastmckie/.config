@@ -140,7 +140,7 @@ Each phase includes:
 
 ## Implementation Phases
 
-### Phase 1: Remove Unused Legacy Functions
+### Phase 1: Remove Unused Legacy Functions [COMPLETED]
 dependencies: []
 
 **Objective**: Remove zero-risk legacy compatibility functions with no active callers
@@ -148,12 +148,13 @@ dependencies: []
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Verify zero callers for generate_legacy_location_context() (grep search)
-- [ ] Create backup of unified-location-detection.sh
-- [ ] Remove lines 381-416 from unified-location-detection.sh (legacy YAML converter)
-- [ ] Update library documentation (line count, function list)
-- [ ] Run full test suite to verify no breakage
-- [ ] Git commit: `refactor: Remove unused legacy YAML converter from unified-location-detection.sh`
+- [x] Verify zero callers for generate_legacy_location_context() (grep search)
+- [x] Create backup of unified-location-detection.sh
+- [x] Remove lines 381-427 from unified-location-detection.sh (legacy YAML converter)
+- [x] Remove legacy tests from test files (test_unified_location_simple.sh, test_unified_location_detection.sh, test_system_wide_location.sh)
+- [x] Update library documentation (removed legacy compatibility section from library-api.md)
+- [x] Run full test suite to verify no breakage (58/77 passing, baseline maintained)
+- [x] Git commit: `refactor: Remove unused legacy YAML converter from unified-location-detection.sh`
 - [ ] Monitor for 48 hours for any issues
 
 **Testing**:
