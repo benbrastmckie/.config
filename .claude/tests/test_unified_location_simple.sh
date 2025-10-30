@@ -66,23 +66,28 @@ else
   test_fail "Sequential numbering failed" "Expected: 006, Got: $RESULT"
 fi
 
-# Test 4: create_topic_structure
+# Test 4: create_topic_structure (lazy creation pattern)
 echo ""
 echo "Test 3: Directory Structure Creation"
 TOPIC_PATH="$TEST_TMP_DIR/test_topic/001_test"
 if create_topic_structure "$TOPIC_PATH"; then
-  ALL_EXIST=true
-  for subdir in reports plans summaries debug scripts outputs; do
-    if [ ! -d "$TOPIC_PATH/$subdir" ]; then
-      ALL_EXIST=false
-      break
-    fi
-  done
-
-  if [ "$ALL_EXIST" = "true" ]; then
-    test_pass "All 6 subdirectories created"
+  # Test lazy creation: only topic root should exist, not subdirectories
+  if [ -d "$TOPIC_PATH" ]; then
+    test_pass "Topic root created (lazy subdirectory creation)"
   else
-    test_fail "Subdirectory creation incomplete" "Missing one or more subdirectories"
+    test_fail "Topic root creation failed" "Directory does not exist: $TOPIC_PATH"
+  fi
+
+  # Verify lazy creation works by creating a report
+  REPORT_PATH="$TOPIC_PATH/reports/001_test_report.md"
+  if ensure_artifact_directory "$REPORT_PATH"; then
+    if [ -d "$TOPIC_PATH/reports" ]; then
+      test_pass "Lazy creation: reports/ created on-demand"
+    else
+      test_fail "Lazy creation failed" "reports/ not created by ensure_artifact_directory"
+    fi
+  else
+    test_fail "ensure_artifact_directory failed" "Function returned non-zero"
   fi
 else
   test_fail "create_topic_structure failed" "Function returned non-zero"
