@@ -310,21 +310,6 @@ Search for existing topic matching name pattern (optional reuse).
 
 **Exit Codes**: `0` (always succeeds, whether found or not)
 
-#### Legacy Compatibility
-
-##### `generate_legacy_location_context(location_json)`
-
-Convert JSON output to legacy YAML format for backward compatibility.
-
-**Arguments**:
-- `location_json` (string): JSON output from `perform_location_detection()`
-
-**Returns**: YAML-formatted location context (legacy format)
-
-**Note**: Provided for backward compatibility. New code should use JSON output directly.
-
-**Exit Codes**: `0` (always succeeds)
-
 ---
 
 ### plan-core-bundle.sh

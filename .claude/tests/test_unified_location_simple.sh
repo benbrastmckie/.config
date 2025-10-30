@@ -135,25 +135,6 @@ else
 fi
 unset CLAUDE_PROJECT_DIR
 
-# Test 8: generate_legacy_location_context
-echo ""
-echo "Test 7: Legacy YAML Generation"
-JSON_INPUT='{
-  "topic_number": "042",
-  "topic_name": "test_topic",
-  "topic_path": "/tmp/042_test_topic"
-}'
-RESULT=$(generate_legacy_location_context "$JSON_INPUT")
-if echo "$RESULT" | grep -q "topic_number: 042"; then
-  if echo "$RESULT" | grep -q "topic_name: test_topic"; then
-    test_pass "Legacy YAML format conversion"
-  else
-    test_fail "YAML missing topic_name" "Output: $RESULT"
-  fi
-else
-  test_fail "YAML missing topic_number" "Output: $RESULT"
-fi
-
 # Summary
 echo ""
 echo "================================================="

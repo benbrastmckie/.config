@@ -1275,25 +1275,6 @@ test_compat_3_git_paths_unchanged() {
   fi
 }
 
-test_compat_4_legacy_yaml_support() {
-  # Verify legacy YAML compatibility function works
-  local workflow="yaml compat test"
-  local location_json
-  location_json=$(perform_location_detection "$workflow" "true")
-
-  # Convert to legacy YAML
-  local legacy_yaml
-  legacy_yaml=$(generate_legacy_location_context "$location_json")
-
-  # Verify YAML contains expected fields
-  if echo "$legacy_yaml" | grep -q "topic_number:" && \
-     echo "$legacy_yaml" | grep -q "topic_path:"; then
-    report_test "Compat 4.4: Legacy YAML format supported" "PASS" "GROUP4"
-  else
-    report_test "Compat 4.4: Legacy YAML format supported" "FAIL" "GROUP4"
-  fi
-}
-
 test_compat_5_env_var_override() {
   # Verify CLAUDE_PROJECT_DIR override still works
   export CLAUDE_PROJECT_DIR="/tmp/compat_test_$$"
@@ -1418,7 +1399,6 @@ test_compat_10_documentation_paths() {
 test_compat_1_existing_specs_dir
 test_compat_2_no_disruption
 test_compat_3_git_paths_unchanged
-test_compat_4_legacy_yaml_support
 test_compat_5_env_var_override
 test_compat_6_specs_vs_claude_specs
 test_compat_7_no_format_regression

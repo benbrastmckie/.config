@@ -532,65 +532,6 @@ test_6_3
 echo ""
 
 # ============================================================================
-# SECTION 7: Legacy Compatibility Tests
-# ============================================================================
-
-echo "Section 7: Legacy Compatibility"
-echo "--------------------------------"
-
-# Test 7.1: JSON to YAML conversion
-test_7_1() {
-  local json_input='{
-  "topic_number": "042",
-  "topic_name": "test_topic",
-  "topic_path": "/path/to/042_test_topic",
-  "artifact_paths": {
-    "reports": "/path/to/042_test_topic/reports"
-  }
-}'
-
-  local result
-  result=$(generate_legacy_location_context "$json_input")
-
-  assert_contains "$result" "topic_number: 042" "Test 7.1: YAML contains topic_number"
-  assert_contains "$result" "topic_name: test_topic" "Test 7.1b: YAML contains topic_name"
-  assert_contains "$result" "topic_path:" "Test 7.1c: YAML contains topic_path"
-}
-test_7_1
-
-# Test 7.2: Fallback without jq
-test_7_2() {
-  # Temporarily hide jq if available
-  local jq_path
-  jq_path=$(command -v jq || echo "")
-
-  if [ -n "$jq_path" ]; then
-    # Create temporary PATH without jq directory
-    local old_path="$PATH"
-    export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v "$(dirname "$jq_path")" | tr '\n' ':')
-  fi
-
-  local json_input='{
-  "topic_number": "050",
-  "topic_name": "fallback_test",
-  "topic_path": "/tmp/050_fallback_test"
-}'
-
-  local result
-  result=$(generate_legacy_location_context "$json_input")
-
-  # Restore PATH
-  if [ -n "$jq_path" ]; then
-    export PATH="$old_path"
-  fi
-
-  assert_contains "$result" "topic_number: 050" "Test 7.2: Fallback without jq works"
-}
-test_7_2
-
-echo ""
-
-# ============================================================================
 # EDGE CASE TESTS
 # ============================================================================
 

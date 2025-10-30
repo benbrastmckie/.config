@@ -378,55 +378,6 @@ EOF
 }
 
 # ============================================================================
-# SECTION 7: Legacy Compatibility Functions
-# ============================================================================
-
-# generate_legacy_location_context(location_json)
-# Purpose: Convert JSON output to legacy YAML format for backward compatibility
-# Arguments:
-#   $1: location_json - JSON output from perform_location_detection()
-# Returns: YAML-formatted location context (legacy format)
-# Note: Maintained for 2 release cycles, then deprecated
-#
-# Usage:
-#   LOCATION_YAML=$(generate_legacy_location_context "$LOCATION_JSON")
-#
-# Exit Codes:
-#   0: Success
-generate_legacy_location_context() {
-  local location_json="$1"
-
-  # Extract fields from JSON (fallback if jq not available)
-  local topic_number topic_name topic_path
-  if command -v jq &>/dev/null; then
-    topic_number=$(echo "$location_json" | jq -r '.topic_number')
-    topic_name=$(echo "$location_json" | jq -r '.topic_name')
-    topic_path=$(echo "$location_json" | jq -r '.topic_path')
-  else
-    # Fallback: simple grep/sed extraction (less robust)
-    topic_number=$(echo "$location_json" | grep -o '"topic_number": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
-    topic_name=$(echo "$location_json" | grep -o '"topic_name": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
-    topic_path=$(echo "$location_json" | grep -o '"topic_path": *"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
-  fi
-
-  # Generate YAML format (legacy)
-  cat <<EOF
-topic_number: $topic_number
-topic_name: $topic_name
-topic_path: $topic_path
-artifact_paths:
-  reports: $topic_path/reports
-  plans: $topic_path/plans
-  summaries: $topic_path/summaries
-  debug: $topic_path/debug
-  scripts: $topic_path/scripts
-  outputs: $topic_path/outputs
-EOF
-
-  return 0
-}
-
-# ============================================================================
 # SECTION 8: Research Subdirectory Support
 # ============================================================================
 
