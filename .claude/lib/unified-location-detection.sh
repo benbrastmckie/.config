@@ -156,6 +156,79 @@ get_next_topic_number() {
   # Lock automatically released when block exits
 }
 
+# allocate_and_create_topic(specs_root, topic_name)
+# Purpose: Atomically allocate topic number AND create directory (eliminates race condition)
+# Arguments:
+#   $1: specs_root - Absolute path to specs directory
+#   $2: topic_name - Sanitized topic name (snake_case)
+# Returns: Pipe-delimited string "topic_number|topic_path"
+# Logic: Hold exclusive lock through BOTH number calculation and directory creation
+#
+# Atomic Operation Guarantee:
+#   This function eliminates the race condition between get_next_topic_number()
+#   and create_topic_structure() by holding the file lock through both operations.
+#
+#   Race Condition (OLD):
+#     Process A: get_next_topic_number() -> 042 [lock released]
+#     Process B: get_next_topic_number() -> 042 [lock released]
+#     Process A: mkdir 042_workflow_a
+#     Process B: mkdir 042_workflow_b (collision!)
+#
+#   Atomic Operation (NEW):
+#     Process A: [lock acquired] -> calculate 042 -> mkdir 042_a [lock released]
+#     Process B: [lock acquired] -> calculate 043 -> mkdir 043_b [lock released]
+#
+# Usage:
+#   RESULT=$(allocate_and_create_topic "$SPECS_ROOT" "workflow_name")
+#   TOPIC_NUM="${RESULT%|*}"
+#   TOPIC_PATH="${RESULT#*|}"
+#
+# Exit Codes:
+#   0: Success (directory created, number allocated)
+#   1: Failure (lock acquisition or mkdir failed)
+allocate_and_create_topic() {
+  local specs_root="$1"
+  local topic_name="$2"
+  local lockfile="${specs_root}/.topic_number.lock"
+
+  # Create specs root if it doesn't exist (for lock file)
+  mkdir -p "$specs_root"
+
+  # ATOMIC OPERATION: Hold lock through number calculation AND directory creation
+  {
+    flock -x 200 || return 1
+
+    # Find maximum existing topic number (same logic as get_next_topic_number)
+    local max_num
+    max_num=$(ls -1d "${specs_root}"/[0-9][0-9][0-9]_* 2>/dev/null | \
+      sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
+      sort -n | tail -1)
+
+    # Handle empty directory (first topic)
+    local topic_number
+    if [ -z "$max_num" ]; then
+      topic_number="001"
+    else
+      # Increment and format with leading zeros
+      topic_number=$(printf "%03d" $((10#$max_num + 1)))
+    fi
+
+    # Construct topic path
+    local topic_path="${specs_root}/${topic_number}_${topic_name}"
+
+    # Create topic directory INSIDE LOCK (atomic operation)
+    mkdir -p "$topic_path" || {
+      echo "ERROR: Failed to create topic directory: $topic_path" >&2
+      return 1
+    }
+
+    # Return pipe-delimited result for parsing
+    echo "${topic_number}|${topic_path}"
+
+  } 200>"$lockfile"
+  # Lock automatically released when block exits
+}
+
 # find_existing_topic(specs_root, topic_name_pattern)
 # Purpose: Search for existing topic matching name pattern (optional reuse)
 # Arguments:
