@@ -417,27 +417,17 @@ perform_location_detection() {
   topic_name=$(sanitize_topic_name "$workflow_description")
 
   # Step 4: Check for existing topic (optional reuse)
-  local topic_number
-  if [ "$force_new_topic" = "false" ]; then
-    local existing_topic
-    existing_topic=$(find_existing_topic "$specs_root" "$topic_name")
+  # Note: For now, always create new topic (reuse is future enhancement)
 
-    if [ -n "$existing_topic" ]; then
-      # Existing topic found - could prompt user for reuse
-      # For now, always create new topic (future enhancement)
-      topic_number=$(get_next_topic_number "$specs_root")
-    else
-      topic_number=$(get_next_topic_number "$specs_root")
-    fi
-  else
-    topic_number=$(get_next_topic_number "$specs_root")
-  fi
+  # Step 5: Atomically allocate topic number AND create directory
+  # This eliminates the race condition between number allocation and directory creation
+  # by holding the file lock through both operations (see allocate_and_create_topic for details)
+  local allocation_result
+  allocation_result=$(allocate_and_create_topic "$specs_root" "$topic_name") || return 1
 
-  # Step 5: Construct topic path
-  local topic_path="${specs_root}/${topic_number}_${topic_name}"
-
-  # Step 6: Create directory structure
-  create_topic_structure "$topic_path" || return 1
+  # Parse pipe-delimited result
+  local topic_number="${allocation_result%|*}"
+  local topic_path="${allocation_result#*|}"
 
   # Step 7: Generate JSON output
   cat <<EOF
