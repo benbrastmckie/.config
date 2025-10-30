@@ -128,23 +128,32 @@ detect_specs_directory() {
 #   0: Success
 get_next_topic_number() {
   local specs_root="$1"
+  local lockfile="${specs_root}/.topic_number.lock"
 
-  # Find maximum existing topic number
-  local max_num
-  max_num=$(ls -1d "${specs_root}"/[0-9][0-9][0-9]_* 2>/dev/null | \
-    sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
-    sort -n | tail -1)
+  # Create specs root if it doesn't exist (for lock file)
+  mkdir -p "$specs_root"
 
-  # Handle empty directory (first topic)
-  if [ -z "$max_num" ]; then
-    echo "001"
-    return 0
-  fi
+  # Use flock in a subshell with proper file descriptor isolation
+  {
+    flock -x 200 || return 1
 
-  # Increment and format with leading zeros
-  # Note: 10#$max_num forces base-10 interpretation (avoids octal issues)
-  printf "%03d" $((10#$max_num + 1))
-  return 0
+    # Find maximum existing topic number
+    local max_num
+    max_num=$(ls -1d "${specs_root}"/[0-9][0-9][0-9]_* 2>/dev/null | \
+      sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
+      sort -n | tail -1)
+
+    # Handle empty directory (first topic)
+    if [ -z "$max_num" ]; then
+      echo "001"
+    else
+      # Increment and format with leading zeros
+      # Note: 10#$max_num forces base-10 interpretation (avoids octal issues)
+      printf "%03d" $((10#$max_num + 1))
+    fi
+
+  } 200>"$lockfile"
+  # Lock automatically released when block exits
 }
 
 # find_existing_topic(specs_root, topic_name_pattern)
