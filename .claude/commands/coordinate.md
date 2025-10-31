@@ -870,25 +870,30 @@ STEP 2: Invoke 2-4 research agents in parallel (single message, multiple Task ca
 emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 ```
 
-**EXECUTE NOW**: USE the Task tool for each research topic (1 to $RESEARCH_COMPLEXITY) with these parameters:
+**EXECUTE NOW**: USE the Task tool NOW to invoke the research-specialist agent for EACH research topic.
 
-- subagent_type: "general-purpose"
-- description: "Research [insert topic name] with mandatory artifact creation"
-- timeout: 300000  # 5 minutes per research agent
-- prompt: |
+**YOUR RESPONSIBILITY**: Make N Task tool invocations (one per topic from 1 to $RESEARCH_COMPLEXITY) by substituting actual values for placeholders below.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research [substitute actual topic name] with mandatory artifact creation"
+  timeout: 300000
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/research-specialist.md
 
     **Workflow-Specific Context**:
-    - Research Topic: [insert display-friendly topic name]
-    - Report Path: [insert absolute path from REPORT_PATHS array]
+    - Research Topic: [substitute actual topic name from research topics list]
+    - Report Path: [substitute REPORT_PATHS[$i-1] for this topic where $i is 1 to $RESEARCH_COMPLEXITY]
     - Project Standards: /home/benjamin/.config/CLAUDE.md
-    - Complexity Level: $RESEARCH_COMPLEXITY
+    - Complexity Level: [substitute $RESEARCH_COMPLEXITY value]
 
     **CRITICAL**: Create report file at EXACT path provided above.
 
     Execute research following all guidelines in behavioral file.
-    Return: REPORT_CREATED: [EXACT_ABSOLUTE_PATH]
+    Return: REPORT_CREATED: [exact absolute path to report file]
+  "
+}
 
 ```bash
 emit_progress "1" "All research agents invoked - awaiting completion"
@@ -958,27 +963,45 @@ if should_synthesize_overview "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT"; then
     REPORT_LIST+="- $report\n"
   done
 
-  # Invoke overview synthesizer agent
-  # Task {
-  #   subagent_type: "general-purpose"
-  #   description: "Synthesize research findings"
-  #   prompt: "
-  #     Read: .claude/agents/research-specialist.md
-  #
-  #     STEP 1: Use Write tool to create: $OVERVIEW_PATH
-  #     STEP 2: Read all research reports and synthesize:
-  #             ${REPORT_LIST}
-  #     STEP 3: Write 400-500 word overview with:
-  #             - Common themes across reports
-  #             - Conflicting findings (if any)
-  #             - Prioritized recommendations
-  #             - Cross-references between reports
-  #     STEP 4: Return ONLY: OVERVIEW_CREATED: $OVERVIEW_PATH
-  #   "
-  # }
+  echo "Invoking research synthesizer agent..."
 
+**EXECUTE NOW**: USE the Task tool NOW to invoke the research-synthesizer agent.
+
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Synthesize research findings into comprehensive overview"
+  timeout: 300000
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-synthesizer.md
+
+    **Workflow-Specific Context**:
+    - Overview Path: [substitute $OVERVIEW_PATH value]
+    - Research Reports to Synthesize: [substitute report list - one path per line from SUCCESSFUL_REPORT_PATHS array]
+    - Total Reports: [substitute $SUCCESSFUL_REPORT_COUNT value]
+    - Project Standards: /home/benjamin/.config/CLAUDE.md
+
+    **CRITICAL**: Create overview file at EXACT path provided above.
+
+    STEP 1: Use Write tool to create overview file at specified path
+    STEP 2: Read all research reports from the list
+    STEP 3: Write 400-500 word overview synthesizing:
+            - Common themes across reports
+            - Conflicting findings (if any)
+            - Prioritized recommendations
+            - Cross-references between reports
+
+    Execute synthesis following all guidelines in behavioral file.
+    Return: OVERVIEW_CREATED: [exact absolute path to overview file]
+  "
+}
+
+```bash
   # MANDATORY VERIFICATION checkpoint: Research overview
-  verify_file_created "$OVERVIEW_PATH" "Research Overview" "$AGENT_OUTPUT"
+  verify_file_created "$OVERVIEW_PATH" "Research Overview" "Phase 1"
+```
 else
   # Overview synthesis skipped - plan-architect will synthesize reports
   SKIP_REASON=$(get_synthesis_skip_reason "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT")
@@ -1070,25 +1093,31 @@ echo "Planning Context: $SUCCESSFUL_REPORT_COUNT reports, standards: $STANDARDS_
 
 STEP 2: Invoke plan-architect agent via Task tool
 
-**EXECUTE NOW**: USE the Task tool with these parameters:
+**EXECUTE NOW**: USE the Task tool NOW to invoke the plan-architect agent.
 
-- subagent_type: "general-purpose"
-- description: "Create implementation plan with mandatory file creation"
-- prompt: |
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan with mandatory file creation"
+  timeout: 300000
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/plan-architect.md
 
     **Workflow-Specific Context**:
-    - Workflow Description: $WORKFLOW_DESCRIPTION
-    - Plan File Path: $PLAN_PATH (absolute path, pre-calculated)
-    - Project Standards: $STANDARDS_FILE
-    - Research Reports: $RESEARCH_REPORTS_LIST
-    - Research Report Count: $SUCCESSFUL_REPORT_COUNT
+    - Workflow Description: [substitute $WORKFLOW_DESCRIPTION value]
+    - Plan File Path: [substitute $PLAN_PATH - absolute path pre-calculated]
+    - Project Standards: [substitute $STANDARDS_FILE path]
+    - Research Reports: [substitute $RESEARCH_REPORTS_LIST - formatted list]
+    - Research Report Count: [substitute $SUCCESSFUL_REPORT_COUNT value]
 
     **CRITICAL**: Create plan file at EXACT path provided above.
 
     Execute planning following all guidelines in behavioral file.
-    Return: PLAN_CREATED: [EXACT_ABSOLUTE_PATH]
+    Return: PLAN_CREATED: [exact absolute path to plan file]
+  "
+}
 
 ### Mandatory Verification - Plan Creation
 
@@ -1254,29 +1283,40 @@ echo ""
 
 ### Step 2: Implementer-Coordinator Agent Invocation
 
-**EXECUTE NOW**: USE the Task tool with these parameters:
+**EXECUTE NOW**: USE the Task tool NOW to invoke the implementer-coordinator agent.
 
-- subagent_type: "general-purpose"
-- description: "Orchestrate wave-based implementation with parallel execution"
-- prompt: |
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Orchestrate wave-based implementation with parallel execution"
+  timeout: 600000
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/implementer-coordinator.md
 
     **Workflow-Specific Context**:
-    - Plan File Path: $PLAN_PATH
-    - Implementation Artifacts Directory: $IMPL_ARTIFACTS
-    - Project Standards: $STANDARDS_FILE
-    - Workflow Type: $WORKFLOW_SCOPE
+    - Plan File Path: [substitute $PLAN_PATH value]
+    - Implementation Artifacts Directory: [substitute $IMPL_ARTIFACTS path]
+    - Project Standards: [substitute $STANDARDS_FILE path]
+    - Workflow Type: [substitute $WORKFLOW_SCOPE value]
 
     **Wave Execution Context**:
-    - Total Waves: $WAVE_COUNT
-    - Wave Structure: $WAVES
-    - Dependency Graph: [insert dependency_graph from analysis]
+    - Total Waves: [substitute $WAVE_COUNT value]
+    - Wave Structure: [substitute $WAVES JSON structure from dependency analysis]
+    - Dependency Graph: [substitute dependency_graph from $DEPENDENCY_ANALYSIS]
 
     **CRITICAL**: Execute phases wave-by-wave, parallel within waves when possible.
 
     Execute wave-based implementation following all guidelines in behavioral file.
     Return: IMPLEMENTATION_STATUS: {complete|partial|failed}
+    Return: WAVES_COMPLETED: [number]
+    Return: PHASES_COMPLETED: [number]
+    Return: PHASES_TOTAL: [number]
+    Return: PARALLEL_PHASES_EXECUTED: [number]
+    Return: TIME_SAVED_PERCENTAGE: [number]
+  "
+}
 
 ### Step 3: Mandatory Verification - Implementation Completion
 
@@ -1388,27 +1428,33 @@ emit_progress "4" "Phase 4: Testing (test-specialist invocation)"
 
 STEP 1: Invoke test-specialist agent
 
-**EXECUTE NOW**: USE the Task tool with these parameters:
+**EXECUTE NOW**: USE the Task tool NOW to invoke the test-specialist agent.
 
-- subagent_type: "general-purpose"
-- description: "Execute comprehensive tests with mandatory results file"
-- prompt: |
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Execute comprehensive tests with mandatory results file"
+  timeout: 300000
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/test-specialist.md
 
     **Workflow-Specific Context**:
-    - Test Results Path: $TOPIC_PATH/outputs/test_results.md
-    - Project Standards: $STANDARDS_FILE
-    - Plan File: $PLAN_PATH
-    - Implementation Artifacts: $IMPL_ARTIFACTS
+    - Test Results Path: [substitute $TOPIC_PATH/outputs/test_results.md]
+    - Project Standards: [substitute $STANDARDS_FILE path]
+    - Plan File: [substitute $PLAN_PATH value]
+    - Implementation Artifacts: [substitute $IMPL_ARTIFACTS path]
 
     **CRITICAL**: Create test results file at path provided above.
 
     Execute testing following all guidelines in behavioral file.
     Return: TEST_STATUS: {passing|failing}
-    TESTS_TOTAL: {N}
-    TESTS_PASSED: {M}
-    TESTS_FAILED: {K}
+    Return: TESTS_TOTAL: [number]
+    Return: TESTS_PASSED: [number]
+    Return: TESTS_FAILED: [number]
+  "
+}
 
 ### Test Results Verification
 
@@ -1496,32 +1542,37 @@ STEP 1: Iterate debug cycle (max 3 iterations)
 # Maximum 3 debug iterations
 for iteration in 1 2 3; do
   emit_progress "5" "Debug iteration $iteration/3"
+```
 
-  # Invoke debug-analyst agent
-  **EXECUTE NOW**: USE the Task tool NOW to invoke the debug-analyst agent with these parameters:
+### Debug-Analyst Agent Invocation (Iteration Loop)
 
-  - **subagent_type**: `"general-purpose"`
-  - **description**: `"Analyze test failures - iteration [insert $iteration]"`
-  - **prompt**:
-    ```
+**EXECUTE NOW**: USE the Task tool NOW to invoke the debug-analyst agent FOR EACH debug iteration.
+
+**YOUR RESPONSIBILITY**: Make UP TO 3 Task tool invocations (one per iteration 1 to 3) by substituting actual values for placeholders. Stop if tests pass.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Analyze test failures - iteration [substitute $iteration value]"
+  timeout: 300000
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/debug-analyst.md
 
     **Workflow-Specific Context**:
-    - Debug Report Path: [insert $DEBUG_REPORT]
-    - Test Results: [insert $TOPIC_PATH]/outputs/test_results.md
-    - Project Standards: [insert $STANDARDS_FILE]
-    - Iteration Number: [insert $iteration]
+    - Debug Report Path: [substitute $DEBUG_REPORT path for this iteration]
+    - Test Results: [substitute $TOPIC_PATH/outputs/test_results.md path]
+    - Project Standards: [substitute $STANDARDS_FILE path]
+    - Iteration Number: [substitute $iteration value - 1, 2, or 3]
 
     **CRITICAL**: Before writing debug report file, ensure parent directory exists:
-    Use Bash tool: mkdir -p "$(dirname "[debug report path]")"
+    Use Bash tool: mkdir -p \"\$(dirname \\\"[debug report path]\\\")\"
 
     Execute debug analysis following all guidelines in behavioral file.
-    Return: DEBUG_ANALYSIS_COMPLETE: [absolute debug report path]
-    ```
+    Return: DEBUG_ANALYSIS_COMPLETE: [exact absolute path to debug report]
+  "
+}
 
-  **Your Responsibility**: Substitute actual values from loop variables.
-
+```bash
   echo -n "Verifying debug report (iteration $iteration): "
 
   # MANDATORY VERIFICATION checkpoint: Debug report
@@ -1532,57 +1583,69 @@ for iteration in 1 2 3; do
     echo "Workflow TERMINATED: Fix debug report creation and retry"
     exit 1
   fi
+```
 
-  # Invoke code-writer to apply fixes
-  **EXECUTE NOW**: USE the Task tool NOW to invoke the code-writer agent with these parameters:
+### Code-Writer Agent Invocation (Apply Fixes)
 
-  - **subagent_type**: `"general-purpose"`
-  - **description**: `"Apply debug fixes - iteration [insert $iteration]"`
-  - **prompt**:
-    ```
+**EXECUTE NOW**: USE the Task tool NOW to invoke the code-writer agent to apply fixes FOR EACH debug iteration.
+
+**YOUR RESPONSIBILITY**: Make UP TO 3 Task tool invocations (one per iteration after debug analysis) by substituting actual values.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Apply debug fixes - iteration [substitute $iteration value]"
+  timeout: 300000
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/code-writer.md
 
     **Workflow-Specific Context**:
-    - Debug Analysis: [insert $DEBUG_REPORT] (read this file for proposed fixes)
-    - Project Standards: [insert $STANDARDS_FILE]
-    - Iteration Number: [insert $iteration]
+    - Debug Analysis: [substitute $DEBUG_REPORT path - read this file for proposed fixes]
+    - Project Standards: [substitute $STANDARDS_FILE path]
+    - Iteration Number: [substitute $iteration value]
     - Task Type: Apply debug fixes
 
     Execute fix application following all guidelines in behavioral file.
-    Return: FIXES_APPLIED: {count}
-            FILES_MODIFIED: {list of file paths}
-    ```
+    Return: FIXES_APPLIED: [number of fixes applied]
+    Return: FILES_MODIFIED: [comma-separated list of file paths]
+  "
+}
 
-  **Your Responsibility**: Substitute actual values from loop variables.
-
+```bash
   FIXES_APPLIED=$(echo "$AGENT_OUTPUT" | grep "FIXES_APPLIED:" | cut -d: -f2 | xargs)
   echo "Fixes Applied: $FIXES_APPLIED"
   echo "Re-running tests..."
+```
 
-  **EXECUTE NOW**: USE the Task tool NOW to invoke the test-specialist agent with these parameters:
+### Test-Specialist Agent Re-invocation (After Fixes)
 
-  - **subagent_type**: `"general-purpose"`
-  - **description**: `"Re-run tests after fixes - iteration [insert $iteration]"`
-  - **prompt**:
-    ```
+**EXECUTE NOW**: USE the Task tool NOW to invoke the test-specialist agent to re-run tests FOR EACH debug iteration.
+
+**YOUR RESPONSIBILITY**: Make UP TO 3 Task tool invocations (one per iteration after fixes) by substituting actual values.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Re-run tests after fixes - iteration [substitute $iteration value]"
+  timeout: 300000
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/test-specialist.md
 
     **Workflow-Specific Context**:
-    - Test Results Path: [insert $TOPIC_PATH]/outputs/test_results.md (append to this file)
-    - Project Standards: [insert $STANDARDS_FILE]
-    - Iteration Number: [insert $iteration] (note this in results)
+    - Test Results Path: [substitute $TOPIC_PATH/outputs/test_results.md - append to this file]
+    - Project Standards: [substitute $STANDARDS_FILE path]
+    - Iteration Number: [substitute $iteration value - note this in results]
     - Task Type: Re-run tests after fixes
 
     Execute tests following all guidelines in behavioral file.
     Return: TEST_STATUS: {passing|failing}
-            TESTS_TOTAL: {N}
-            TESTS_PASSED: {M}
-            TESTS_FAILED: {K}
-    ```
+    Return: TESTS_TOTAL: [number]
+    Return: TESTS_PASSED: [number]
+    Return: TESTS_FAILED: [number]
+  "
+}
 
-  **Your Responsibility**: Substitute actual values from loop variables.
+```bash
 
   # Parse updated test status
   TEST_STATUS=$(echo "$AGENT_OUTPUT" | grep "TEST_STATUS:" | cut -d: -f2 | xargs)
@@ -1653,26 +1716,32 @@ fi
 
 STEP 1: Invoke doc-writer agent to create summary
 
-**EXECUTE NOW**: USE the Task tool with these parameters:
+**EXECUTE NOW**: USE the Task tool NOW to invoke the doc-writer agent.
 
-- subagent_type: "general-purpose"
-- description: "Create workflow summary with mandatory file creation"
-- prompt: |
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Create workflow summary with mandatory file creation"
+  timeout: 300000
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/doc-writer.md
 
     **Workflow-Specific Context**:
-    - Summary Path: $SUMMARY_PATH
-    - Plan File: $PLAN_PATH
-    - Research Reports: $RESEARCH_REPORTS_LIST
-    - Implementation Artifacts: $IMPL_ARTIFACTS
-    - Test Status: $TEST_STATUS
-    - Workflow Description: $WORKFLOW_DESCRIPTION
+    - Summary Path: [substitute $SUMMARY_PATH value]
+    - Plan File: [substitute $PLAN_PATH value]
+    - Research Reports: [substitute $RESEARCH_REPORTS_LIST - formatted list]
+    - Implementation Artifacts: [substitute $IMPL_ARTIFACTS path]
+    - Test Status: [substitute $TEST_STATUS value]
+    - Workflow Description: [substitute $WORKFLOW_DESCRIPTION value]
 
     **CRITICAL**: Create summary file at path provided above.
 
     Execute documentation following all guidelines in behavioral file.
-    Return: SUMMARY_CREATED: [EXACT_ABSOLUTE_PATH]
+    Return: SUMMARY_CREATED: [exact absolute path to summary file]
+  "
+}
 
 ### Mandatory Verification - Summary Creation
 
