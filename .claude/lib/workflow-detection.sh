@@ -46,6 +46,15 @@ set -euo pipefail
 detect_workflow_scope() {
   local workflow_desc="$1"
 
+  # Pattern 0: Compound workflow (all three keywords present)
+  # Keywords: "research...plan...implement" or "research...create...plan...implement"
+  # This must be checked FIRST before individual patterns
+  # Phases: 0 → 1 (Research) → 2 (Planning) → 3 (Implementation) → 4 (Testing) → 6 (Documentation)
+  if echo "$workflow_desc" | grep -Eiq "research.*(plan|planning|create.*plan).*(implement|build)"; then
+    echo "full-implementation"
+    return
+  fi
+
   # Pattern 1: Research-only (no planning or implementation)
   # Keywords: "research [topic]" without "plan" or "implement"
   # Phases: 0 (Location) → 1 (Research) → STOP
@@ -86,6 +95,7 @@ detect_workflow_scope() {
 # Test Examples:
 # - detect_workflow_scope "research API patterns" → research-only
 # - detect_workflow_scope "research auth to create plan" → research-and-plan
+# - detect_workflow_scope "research auth to create plan to implement feature" → full-implementation (compound)
 # - detect_workflow_scope "implement OAuth2 authentication" → full-implementation
 # - detect_workflow_scope "fix token refresh bug" → debug-only
 
