@@ -537,7 +537,7 @@ else
 fi
 
 # Source all required libraries
-if ! source_required_libraries "dependency-analyzer.sh" "context-pruning.sh" "checkpoint-utils.sh" "unified-location-detection.sh" "workflow-detection.sh" "unified-logger.sh" "error-handling.sh"; then
+if ! source_required_libraries "dependency-analyzer.sh" "context-pruning.sh" "checkpoint-utils.sh" "unified-location-detection.sh" "workflow-detection.sh" "unified-logger.sh" "error-handling.sh" "overview-synthesis.sh" "workflow-initialization.sh"; then
   exit 1
 fi
 
@@ -545,11 +545,16 @@ echo "✓ All libraries loaded successfully"
 
 # Verify critical functions are defined
 REQUIRED_FUNCTIONS=(
+  # Library functions (from sourced libraries)
   "detect_workflow_scope"
   "should_run_phase"
   "emit_progress"
   "save_checkpoint"
   "restore_checkpoint"
+  "calculate_overview_path"
+  "should_synthesize_overview"
+  "get_synthesis_skip_reason"
+  "reconstruct_report_paths_array"
 )
 
 MISSING_FUNCTIONS=()
