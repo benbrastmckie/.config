@@ -978,27 +978,35 @@ STEP 2: Invoke 2-4 research agents in parallel (single message, multiple Task ca
 
 emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 
-**EXECUTE NOW**: USE the Task tool NOW to invoke the research-specialist agent for EACH research topic.
+**EXECUTE NOW**: USE the Bash tool to generate fully-expanded Task invocations, then execute each one:
 
-**YOUR RESPONSIBILITY**: Make N Task tool invocations (one per topic from 1 to $RESEARCH_COMPLEXITY) by inserting topic-specific values into the pre-formatted template.
+# Generate Task invocation templates with all variables expanded
+for i in $(seq 1 $RESEARCH_COMPLEXITY); do
+  TOPIC="${RESEARCH_TOPICS[$i-1]}"
+  REPORT_PATH="${REPORT_PATHS[$i-1]}"
 
-**Note**: $RESEARCH_CONTEXT_TEMPLATE is pre-formatted with static values. You only need to add:
-1. Research Topic
-2. Report Path
-3. Return statement
+  echo "=== Research Agent $i/$RESEARCH_COMPLEXITY ==="
+  echo "Topic: $TOPIC"
+  echo "Report: $REPORT_PATH"
+  echo ""
+  echo "**EXECUTE NOW**: USE the Task tool with this exact configuration:"
+  echo ""
+  echo "Task {"
+  echo "  subagent_type: \"general-purpose\""
+  echo "  description: \"Research $TOPIC with mandatory artifact creation\""
+  echo "  timeout: 300000"
+  echo "  prompt: \""
+  echo "    $RESEARCH_CONTEXT_TEMPLATE"
+  echo ""
+  echo "    **Topic-Specific Values**:"
+  echo "    - Research Topic: $TOPIC"
+  echo "    - Report Path: $REPORT_PATH"
+  echo "  \""
+  echo "}"
+  echo ""
+done
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Research [topic name] with mandatory artifact creation"
-  timeout: 300000
-  prompt: "
-    $RESEARCH_CONTEXT_TEMPLATE
-
-    **Topic-Specific Values** (insert before CRITICAL line):
-    - Research Topic: [insert actual topic name]
-    - Report Path: [insert REPORT_PATHS[$i-1]]
-  "
-}
+**YOUR RESPONSIBILITY**: Execute the Task tool invocations shown above (bash has already expanded all variables)
 
 **EXECUTE NOW**: USE the Bash tool to emit progress after agent invocations:
 
@@ -1073,25 +1081,34 @@ if should_synthesize_overview "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT"; then
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the research-synthesizer agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by adding synthesis-specific values to the pre-formatted context.
+**EXECUTE NOW**: USE the Bash tool to generate fully-expanded Task invocation:
 
-**Note**: $OVERVIEW_SYNTHESIS_CONTEXT is pre-formatted with standards and synthesis steps. You only need to add report-specific values.
+# Build report list
+REPORT_LIST=""
+for report in "${SUCCESSFUL_REPORT_PATHS[@]}"; do
+  REPORT_LIST="${REPORT_LIST}  - $report"$'\n'
+done
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Synthesize research findings into comprehensive overview"
-  timeout: 300000
-  prompt: "
-    $OVERVIEW_SYNTHESIS_CONTEXT
+echo "**EXECUTE NOW**: USE the Task tool with this exact configuration:"
+echo ""
+echo "Task {"
+echo "  subagent_type: \"general-purpose\""
+echo "  description: \"Synthesize research findings into comprehensive overview\""
+echo "  timeout: 300000"
+echo "  prompt: \""
+echo "    $OVERVIEW_SYNTHESIS_CONTEXT"
+echo ""
+echo "    **Synthesis-Specific Context**:"
+echo "    - Overview Path: $OVERVIEW_PATH"
+echo "    - Research Reports to Synthesize:"
+echo "$REPORT_LIST"
+echo "    - Total Reports: $SUCCESSFUL_REPORT_COUNT"
+echo ""
+echo "    Return: OVERVIEW_CREATED: $OVERVIEW_PATH"
+echo "  \""
+echo "}"
 
-    **Synthesis-Specific Context** (insert at beginning):
-    - Overview Path: [insert $OVERVIEW_PATH]
-    - Research Reports to Synthesize: [insert report list from SUCCESSFUL_REPORT_PATHS]
-    - Total Reports: [insert $SUCCESSFUL_REPORT_COUNT]
-
-    Return: OVERVIEW_CREATED: [exact absolute path to overview file]
-  "
-}
+**YOUR RESPONSIBILITY**: Execute the Task tool invocation shown above (bash has already expanded all variables)
 
 **EXECUTE NOW**: USE the Bash tool to verify overview creation and complete conditional logic:
 
@@ -1191,28 +1208,27 @@ STEP 2: Invoke plan-architect agent via Task tool
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the plan-architect agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by adding dynamic values to the pre-formatted context.
+**EXECUTE NOW**: USE the Bash tool to generate fully-expanded Task invocation:
 
-**Note**: $PLAN_CONTEXT is pre-formatted with static values (Plan Path, Standards, Workflow Type). You only need to add:
-1. Workflow Description
-2. Research Reports list
-3. Research Report Count
+echo "**EXECUTE NOW**: USE the Task tool with this exact configuration:"
+echo ""
+echo "Task {"
+echo "  subagent_type: \"general-purpose\""
+echo "  description: \"Create implementation plan with mandatory file creation\""
+echo "  timeout: 300000"
+echo "  prompt: \""
+echo "    $PLAN_CONTEXT"
+echo ""
+echo "    **Additional Context**:"
+echo "    - Workflow Description: $WORKFLOW_DESCRIPTION"
+echo "    - Research Reports: $RESEARCH_REPORTS_LIST"
+echo "    - Research Report Count: $SUCCESSFUL_REPORT_COUNT"
+echo ""
+echo "    **CRITICAL**: Create plan file at EXACT path provided above.
+echo "  \""
+echo "}"
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Create implementation plan with mandatory file creation"
-  timeout: 300000
-  prompt: "
-    $PLAN_CONTEXT
-
-    **Additional Context** (insert before Execute planning line):
-    - Workflow Description: [insert $WORKFLOW_DESCRIPTION]
-    - Research Reports: [insert $RESEARCH_REPORTS_LIST]
-    - Research Report Count: [insert $SUCCESSFUL_REPORT_COUNT]
-
-    **CRITICAL**: Create plan file at EXACT path provided above.
-  "
-}
+**YOUR RESPONSIBILITY**: Execute the Task tool invocation shown above (bash has already expanded all variables)
 
 ### Mandatory Verification - Plan Creation
 
@@ -1382,32 +1398,34 @@ echo ""
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the implementer-coordinator agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by adding wave-specific context to the pre-formatted template.
+**EXECUTE NOW**: USE the Bash tool to generate fully-expanded Task invocation:
 
-**Note**: $IMPL_CONTEXT is pre-formatted with static values (Plan Path, Artifacts Dir, Standards, Workflow Type). You only need to add wave execution details.
+echo "**EXECUTE NOW**: USE the Task tool with this exact configuration:"
+echo ""
+echo "Task {"
+echo "  subagent_type: \"general-purpose\""
+echo "  description: \"Orchestrate wave-based implementation with parallel execution\""
+echo "  timeout: 600000"
+echo "  prompt: \""
+echo "    $IMPL_CONTEXT"
+echo ""
+echo "    **Wave Execution Context**:"
+echo "    - Total Waves: $WAVE_COUNT"
+echo "    - Wave Structure: $WAVES"
+echo "    - Dependency Graph: $(echo "$DEPENDENCY_ANALYSIS" | jq -c .dependency_graph)"
+echo ""
+echo "    **CRITICAL**: Execute phases wave-by-wave, parallel within waves when possible."
+echo ""
+echo "    Return: IMPLEMENTATION_STATUS: {complete|partial|failed}"
+echo "    Return: WAVES_COMPLETED: [number]"
+echo "    Return: PHASES_COMPLETED: [number]"
+echo "    Return: PHASES_TOTAL: [number]"
+echo "    Return: PARALLEL_PHASES_EXECUTED: [number]"
+echo "    Return: TIME_SAVED_PERCENTAGE: [number]"
+echo "  \""
+echo "}"
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Orchestrate wave-based implementation with parallel execution"
-  timeout: 600000
-  prompt: "
-    $IMPL_CONTEXT
-
-    **Wave Execution Context** (insert before Execute implementation line):
-    - Total Waves: [insert $WAVE_COUNT]
-    - Wave Structure: [insert $WAVES JSON]
-    - Dependency Graph: [insert $DEPENDENCY_ANALYSIS dependency_graph]
-
-    **CRITICAL**: Execute phases wave-by-wave, parallel within waves when possible.
-
-    Return: IMPLEMENTATION_STATUS: {complete|partial|failed}
-    Return: WAVES_COMPLETED: [number]
-    Return: PHASES_COMPLETED: [number]
-    Return: PHASES_TOTAL: [number]
-    Return: PARALLEL_PHASES_EXECUTED: [number]
-    Return: TIME_SAVED_PERCENTAGE: [number]
-  "
-}
+**YOUR RESPONSIBILITY**: Execute the Task tool invocation shown above (bash has already expanded all variables)
 
 ### Step 3: Mandatory Verification - Implementation Completion
 
@@ -1521,25 +1539,27 @@ STEP 1: Invoke test-specialist agent
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the test-specialist agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation using the pre-formatted context.
+**EXECUTE NOW**: USE the Bash tool to generate fully-expanded Task invocation:
 
-**Note**: $TEST_CONTEXT is pre-formatted with all necessary values. No additional substitutions needed.
+echo "**EXECUTE NOW**: USE the Task tool with this exact configuration:"
+echo ""
+echo "Task {"
+echo "  subagent_type: \"general-purpose\""
+echo "  description: \"Execute comprehensive tests with mandatory results file\""
+echo "  timeout: 300000"
+echo "  prompt: \""
+echo "    $TEST_CONTEXT"
+echo ""
+echo "    **CRITICAL**: Create test results file at path provided above."
+echo ""
+echo "    Return: TEST_STATUS: {passing|failing}"
+echo "    Return: TESTS_TOTAL: [number]"
+echo "    Return: TESTS_PASSED: [number]"
+echo "    Return: TESTS_FAILED: [number]"
+echo "  \""
+echo "}"
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Execute comprehensive tests with mandatory results file"
-  timeout: 300000
-  prompt: "
-    $TEST_CONTEXT
-
-    **CRITICAL**: Create test results file at path provided above.
-
-    Return: TEST_STATUS: {passing|failing}
-    Return: TESTS_TOTAL: [number]
-    Return: TESTS_PASSED: [number]
-    Return: TESTS_FAILED: [number]
-  "
-}
+**YOUR RESPONSIBILITY**: Execute the Task tool invocation shown above (bash has already expanded all variables)
 
 ### Test Results Verification
 
@@ -1627,27 +1647,35 @@ for iteration in 1 2 3; do
 
 ### Debug-Analyst Agent Invocation (Iteration Loop)
 
-**EXECUTE NOW**: USE the Task tool NOW to invoke the debug-analyst agent FOR EACH debug iteration.
+**EXECUTE NOW**: USE the Bash tool to generate fully-expanded Task invocations for each debug iteration:
 
-**YOUR RESPONSIBILITY**: Make UP TO 3 Task tool invocations (one per iteration 1 to 3) by substituting actual values for placeholders. Stop if tests pass.
+for iteration in 1 2 3; do
+  DEBUG_REPORT="$TOPIC_PATH/debug/iteration_${iteration}_analysis.md"
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Analyze test failures - iteration [iteration number]"
-  timeout: 300000
-  prompt: "
-    $DEBUG_CONTEXT
+  echo "=== Debug Iteration $iteration ==="
+  echo "**EXECUTE NOW**: USE the Task tool with this exact configuration:"
+  echo ""
+  echo "Task {"
+  echo "  subagent_type: \"general-purpose\""
+  echo "  description: \"Analyze test failures - iteration $iteration\""
+  echo "  timeout: 300000"
+  echo "  prompt: \""
+  echo "    $DEBUG_CONTEXT"
+  echo ""
+  echo "    **Iteration-Specific Context**:"
+  echo "    - Debug Report Path: $DEBUG_REPORT"
+  echo "    - Iteration Number: $iteration"
+  echo ""
+  echo "    **CRITICAL**: Before writing debug report file, ensure parent directory exists:"
+  echo "    Use Bash tool: mkdir -p \\\"\\\$(dirname \\\\\\\"$DEBUG_REPORT\\\\\\\")\\\"\""
+  echo ""
+  echo "    Return: DEBUG_ANALYSIS_COMPLETE: $DEBUG_REPORT"
+  echo "  \""
+  echo "}"
+  echo ""
+done
 
-    **Iteration-Specific Context** (insert before Execute debug analysis line):
-    - Debug Report Path: [insert $DEBUG_REPORT path]
-    - Iteration Number: [insert $iteration value]
-
-    **CRITICAL**: Before writing debug report file, ensure parent directory exists:
-    Use Bash tool: mkdir -p \"\$(dirname \\\"[debug report path]\\\")\"
-
-    Return: DEBUG_ANALYSIS_COMPLETE: [exact absolute path to debug report]
-  "
-}
+**YOUR RESPONSIBILITY**: Execute the Task tool invocations shown above for each iteration (bash has already expanded all variables). Stop after tests pass.
 
   echo -n "Verifying debug report (iteration $iteration): "
 
@@ -1662,26 +1690,34 @@ Task {
 
 ### Code-Writer Agent Invocation (Apply Fixes)
 
-**EXECUTE NOW**: USE the Task tool NOW to invoke the code-writer agent to apply fixes FOR EACH debug iteration.
+**EXECUTE NOW**: USE the Bash tool to generate fully-expanded Task invocations for code fixes:
 
-**YOUR RESPONSIBILITY**: Make UP TO 3 Task tool invocations (one per iteration after debug analysis) by substituting actual values.
+for iteration in 1 2 3; do
+  DEBUG_REPORT="$TOPIC_PATH/debug/iteration_${iteration}_analysis.md"
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Apply debug fixes - iteration [iteration number]"
-  timeout: 300000
-  prompt: "
-    $CODE_WRITER_CONTEXT
+  echo "=== Code Fixes Iteration $iteration ==="
+  echo "**EXECUTE NOW**: USE the Task tool with this exact configuration:"
+  echo ""
+  echo "Task {"
+  echo "  subagent_type: \"general-purpose\""
+  echo "  description: \"Apply debug fixes - iteration $iteration\""
+  echo "  timeout: 300000"
+  echo "  prompt: \""
+  echo "    $CODE_WRITER_CONTEXT"
+  echo ""
+  echo "    **Task-Specific Context**:"
+  echo "    - Debug Analysis: $DEBUG_REPORT"
+  echo "    - Iteration Number: $iteration"
+  echo "    - Task Type: Apply debug fixes"
+  echo ""
+  echo "    Return: FIXES_APPLIED: [number of fixes applied]"
+  echo "    Return: FILES_MODIFIED: [comma-separated list of file paths]"
+  echo "  \""
+  echo "}"
+  echo ""
+done
 
-    **Task-Specific Context** (insert before Execute code modifications line):
-    - Debug Analysis: [insert $DEBUG_REPORT path]
-    - Iteration Number: [insert $iteration value]
-    - Task Type: Apply debug fixes
-
-    Return: FIXES_APPLIED: [number of fixes applied]
-    Return: FILES_MODIFIED: [comma-separated list of file paths]
-  "
-}
+**YOUR RESPONSIBILITY**: Execute the Task tool invocations shown above for each iteration (bash has already expanded all variables)
 
   FIXES_APPLIED=$(echo "$AGENT_OUTPUT" | grep "FIXES_APPLIED:" | cut -d: -f2 | xargs)
   echo "Fixes Applied: $FIXES_APPLIED"
@@ -1689,23 +1725,25 @@ Task {
 
 ### Test-Specialist Agent Re-invocation (After Fixes)
 
-**EXECUTE NOW**: USE the Task tool NOW to invoke the test-specialist agent to re-run tests FOR EACH debug iteration.
+**EXECUTE NOW**: USE the Bash tool to generate fully-expanded Task invocations for test re-runs:
 
-**YOUR RESPONSIBILITY**: Make UP TO 3 Task tool invocations (one per iteration after fixes) by substituting actual values.
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Re-run tests after fixes - iteration [iteration number]"
-  timeout: 300000
-  prompt: "
-    $TEST_CONTEXT
-
-    **Task-Specific Context** (insert before Execute testing line):
-    - Iteration Number: [insert $iteration value]
-    - Task Type: Re-run tests after fixes (append to test results file)
-
-    Return: TEST_STATUS: {passing|failing}
-    Return: TESTS_TOTAL: [number]
+for iteration in 1 2 3; do
+  echo "=== Test Re-Run Iteration $iteration ==="
+  echo "**EXECUTE NOW**: USE the Task tool with this exact configuration:"
+  echo ""
+  echo "Task {"
+  echo "  subagent_type: \"general-purpose\""
+  echo "  description: \"Re-run tests after fixes - iteration $iteration\""
+  echo "  timeout: 300000"
+  echo "  prompt: \""
+  echo "    $TEST_CONTEXT"
+  echo ""
+  echo "    **Task-Specific Context**:"
+  echo "    - Iteration Number: $iteration"
+  echo "    - Task Type: Re-run tests after fixes (append to test results file)"
+  echo ""
+  echo "    Return: TEST_STATUS: {passing|failing}"
+  echo "    Return: TESTS_TOTAL: [number]"
     Return: TESTS_PASSED: [number]
     Return: TESTS_FAILED: [number]
   "
@@ -1782,28 +1820,30 @@ STEP 1: Invoke doc-writer agent to create summary
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the doc-writer agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by adding dynamic values to the pre-formatted context.
+**EXECUTE NOW**: USE the Bash tool to generate fully-expanded Task invocation:
 
-**Note**: $DOC_CONTEXT is pre-formatted with static values (Plan File, Artifacts, Standards). You only need to add summary-specific values.
+echo "**EXECUTE NOW**: USE the Task tool with this exact configuration:"
+echo ""
+echo "Task {"
+echo "  subagent_type: \"general-purpose\""
+echo "  description: \"Create workflow summary with mandatory file creation\""
+echo "  timeout: 300000"
+echo "  prompt: \""
+echo "    $DOC_CONTEXT"
+echo ""
+echo "    **Summary-Specific Context**:"
+echo "    - Summary Path: $SUMMARY_PATH"
+echo "    - Research Reports: $RESEARCH_REPORTS_LIST"
+echo "    - Test Status: $TEST_STATUS"
+echo "    - Workflow Description: $WORKFLOW_DESCRIPTION"
+echo ""
+echo "    **CRITICAL**: Create summary file at path provided above."
+echo ""
+echo "    Return: SUMMARY_CREATED: $SUMMARY_PATH"
+echo "  \""
+echo "}"
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Create workflow summary with mandatory file creation"
-  timeout: 300000
-  prompt: "
-    $DOC_CONTEXT
-
-    **Summary-Specific Context** (insert before Execute documentation line):
-    - Summary Path: [insert $SUMMARY_PATH]
-    - Research Reports: [insert $RESEARCH_REPORTS_LIST]
-    - Test Status: [insert $TEST_STATUS]
-    - Workflow Description: [insert $WORKFLOW_DESCRIPTION]
-
-    **CRITICAL**: Create summary file at path provided above.
-
-    Return: SUMMARY_CREATED: [exact absolute path to summary file]
-  "
-}
+**YOUR RESPONSIBILITY**: Execute the Task tool invocation shown above (bash has already expanded all variables)
 
 ### Mandatory Verification - Summary Creation
 
