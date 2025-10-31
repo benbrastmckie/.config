@@ -10,6 +10,9 @@ For a quick reference of all available commands, see [Command Quick Reference](.
 
 1. [Introduction](#1-introduction)
 2. [Command Architecture](#2-command-architecture)
+   - 2.1 [Command Definition Format](#21-command-definition-format)
+   - 2.2 [Metadata Fields](#22-metadata-fields)
+   - 2.3 [Bash Block Formatting Standards](#23-bash-block-formatting-standards)
 3. [Command Development Workflow](#3-command-development-workflow)
 4. [Standards Integration](#4-standards-integration)
 5. [Agent Integration](#5-agent-integration)
@@ -196,6 +199,132 @@ Testing          | Read, Bash, TodoWrite
 Documentation    | Read, Edit, Write
 Orchestration    | Read, Write, Bash, Task, TodoWrite
 ```
+
+### 2.3 Bash Block Formatting Standards
+
+**Critical Pattern**: Code fences prime Claude for documentation mode, not execution mode.
+
+#### The Problem
+
+When bash code is wrapped in code fences (```bash), Claude's language model treats it as documentation to display, not commands to execute. This creates a fundamental mismatch between the author's intent (execution) and Claude's interpretation (presentation).
+
+**Example of incorrect pattern**:
+```markdown
+STEP 1: Calculate paths
+
+```bash
+TOPIC_DIR="/path/to/topic"
+PLAN_PATH="$TOPIC_DIR/plan.md"
+```
+```
+
+Claude sees this as: "Here's an example of bash code for documentation purposes"
+Claude does NOT automatically execute this code.
+
+#### The Solution: "EXECUTE NOW" Markers
+
+For execution-critical bash blocks, use the "EXECUTE NOW" pattern:
+
+**Correct pattern for execution**:
+```markdown
+STEP 1: Calculate paths
+
+**EXECUTE NOW**: USE the Bash tool to calculate artifact paths:
+
+TOPIC_DIR="/path/to/topic"
+PLAN_PATH="$TOPIC_DIR/plan.md"
+echo "Plan path: $PLAN_PATH"
+```
+
+This pattern:
+- ✅ Removes code fences (no ```bash wrapper)
+- ✅ Adds explicit execution marker with imperative language
+- ✅ Describes what the bash block does
+- ✅ Makes execution intent unambiguous
+
+#### When to Use Each Pattern
+
+| Scenario | Pattern | Rationale |
+|----------|---------|-----------|
+| Command execution instructions | **EXECUTE NOW** marker, no fences | Must execute, not display |
+| Phase/STEP implementation | **EXECUTE NOW** marker, no fences | Critical workflow execution |
+| Verification checkpoints | **EXECUTE NOW** marker, no fences | File/state validation |
+| Documentation examples | Code fences (```bash) | Illustrative, not executable |
+| Usage examples | Code fences (```bash) | Show syntax, not execute |
+| Pattern illustrations | Code fences (```bash) | Teaching/reference |
+
+#### Complete Example
+
+**Documentation section** (keep code fences):
+```markdown
+### Example 1: Workflow Scope Detection
+
+```bash
+# Detect workflow scope and configure phases
+WORKFLOW_DESCRIPTION="research authentication patterns"
+WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+```
+
+This example shows how to use the `detect_workflow_scope` function.
+```
+
+**Execution section** (use EXECUTE NOW, no fences):
+```markdown
+### Phase 0 Implementation
+
+**EXECUTE NOW**: USE the Bash tool to execute the following Phase 0 setup:
+
+STEP 0: Source Required Libraries (MUST BE FIRST)
+
+# Determine script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source library-sourcing utilities first
+if [ -f "$SCRIPT_DIR/../lib/library-sourcing.sh" ]; then
+  source "$SCRIPT_DIR/../lib/library-sourcing.sh"
+else
+  echo "ERROR: Required library not found: library-sourcing.sh"
+  exit 1
+fi
+
+echo "✓ All libraries loaded successfully"
+```
+
+#### Formatting Checklist
+
+When writing command files, verify:
+
+- [ ] All execution-critical bash blocks have "**EXECUTE NOW**" markers
+- [ ] All execution-critical bash blocks have NO code fences (```bash removed)
+- [ ] All "EXECUTE NOW" markers describe what the block does
+- [ ] Documentation examples (in usage/patterns sections) keep code fences
+- [ ] No ambiguity between "show this" vs "execute this"
+
+#### Migration Pattern
+
+If updating an existing command with code-fenced execution blocks:
+
+1. **Identify execution-critical blocks**: Search for ```bash in Phase/STEP sections
+2. **Add EXECUTE NOW markers**: Before each execution block
+3. **Remove code fences**: Delete ```bash and closing ```
+4. **Preserve documentation**: Keep fences in example/usage sections (before Phase 0)
+5. **Test**: Verify ≥30 EXECUTE NOW markers, <5 code-fenced blocks
+
+**Metrics for /coordinate command** (after Phase 2 refactor):
+- 30 EXECUTE NOW markers (covers all execution points)
+- 4 code-fenced bash blocks (all in documentation section)
+- 100% separation between execution and documentation
+
+#### Why This Matters
+
+The bash block formatting pattern is critical because:
+
+1. **Execution reliability**: Removes ambiguity about Claude's expected behavior
+2. **Fail-fast detection**: Missing EXECUTE NOW markers cause execution failures (good!)
+3. **Maintainability**: Clear separation between code-to-run and code-to-show
+4. **Standards compliance**: Aligns with imperative language requirements (Standard 0)
+
+See [Command Architecture Standards](../reference/command_architecture_standards.md) for related standards on imperative language and agent invocation patterns.
 
 ---
 

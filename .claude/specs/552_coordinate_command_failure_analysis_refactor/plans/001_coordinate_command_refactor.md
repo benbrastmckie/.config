@@ -309,10 +309,13 @@ Task {
   - Kept 4 code-fenced blocks in "Retained Usage Examples" section
   - All execution blocks now have no code fences
 
-- [ ] **2.5** Update command development guide to document this pattern:
-  - Add to `.claude/docs/guides/command-development-guide.md`
-  - Section: "Bash Block Formatting Standards"
-  - Explain: Code fences prime Claude for documentation mode, not execution
+- [x] **2.5** Update command development guide to document this pattern:
+  - Added section 2.3 "Bash Block Formatting Standards" to command-development-guide.md
+  - Updated table of contents with new section
+  - Documented: Code fences vs EXECUTE NOW pattern
+  - Included: When to use each pattern (table), complete examples, formatting checklist
+  - Provided: Migration pattern for updating existing commands
+  - Referenced: /coordinate metrics (30 markers, 4 fences) as working example
 
 - [x] **2.6** Test all phases execute correctly with updated formatting
   - Test 1: ✅ 30 EXECUTE NOW markers (target: ≥30)
@@ -344,10 +347,54 @@ grep -c '```bash' /home/benjamin/.config/.claude/commands/coordinate.md
 - `/home/benjamin/.config/.claude/docs/guides/command-development-guide.md` (new section)
 
 #### Success Criteria
-- ✅ ≥30 "EXECUTE NOW" markers added
-- ✅ <5 code-fenced bash blocks remaining
+- ✅ ≥30 "EXECUTE NOW" markers added (achieved: 30)
+- ✅ <5 code-fenced bash blocks remaining (achieved: 4, all documentation)
 - ✅ All execution-critical blocks format correctly
-- ✅ Documentation updated with formatting standards
+- ✅ Documentation updated with formatting standards (section 2.3 added)
+
+#### Implementation Notes
+
+**Completion Date**: 2025-10-30
+
+**Changes Made**:
+1. Used sed to efficiently remove all ```bash and ``` markers from line 508 onwards (execution section)
+2. Added 30 "EXECUTE NOW" markers covering:
+   - Phase 0: Library sourcing (1), workflow detection (1), path initialization (1)
+   - Phase 1: Execution check (1), complexity scoring (1), progress markers (2), verification (1), checkpointing (1)
+   - Phase 2: Execution check (1), context prep (1), verification (1), metadata extraction (1), checkpointing (1)
+   - Phase 3-6: Execution checks (4), key operations (varied per phase)
+3. Preserved 4 code-fenced blocks in "Retained Usage Examples" section (lines 405-507)
+4. Added comprehensive section 2.3 to command-development-guide.md covering:
+   - Problem explanation (code fences = documentation mode)
+   - Solution pattern (EXECUTE NOW markers)
+   - When to use each pattern (decision table)
+   - Complete examples (documentation vs execution)
+   - Formatting checklist
+   - Migration pattern for existing commands
+
+**Files Modified**:
+- `.claude/commands/coordinate.md` (removed 33 code fence pairs, added 19 new EXECUTE NOW markers)
+- `.claude/docs/guides/command-development-guide.md` (~125 lines added for section 2.3)
+- `.claude/specs/552_coordinate_command_failure_analysis_refactor/plans/001_coordinate_command_refactor.md` (progress tracking)
+
+**Git Commit**: `401e87b2` - feat(coordinate): Phase 2 - Standardize bash block formatting
+
+**Key Insight**: Code fences create a priming effect where Claude treats bash blocks as documentation to display rather than commands to execute. The EXECUTE NOW pattern combined with removal of code fences eliminates this ambiguity and ensures reliable bash tool invocation.
+
+**Verification**:
+```bash
+# Test 1: EXECUTE NOW markers
+grep -c "EXECUTE NOW" coordinate.md
+# Result: 30 (target: ≥30) ✅
+
+# Test 2: Code-fenced blocks
+grep -c '```bash' coordinate.md
+# Result: 4 (target: <5) ✅
+
+# Test 3: All fences in documentation only
+sed -n '508,$p' coordinate.md | grep -c '```bash'
+# Result: 0 (no fences in execution section) ✅
+```
 
 ---
 
@@ -1367,10 +1414,12 @@ High-risk areas and mitigations:
 
 ### Sprint 1 Complete
 - [x] Phase 1: Function definitions wrapped in heredoc, exported, verified (COMPLETED 2025-10-30)
-- [ ] Phase 2: Bash blocks standardized (≥30 EXECUTE NOW, <5 code fences) (IN PROGRESS)
+- [x] Phase 2: Bash blocks standardized (30 EXECUTE NOW, 4 code fences) (COMPLETED 2025-10-30)
 - [ ] Phase 3: Workflow messaging improved with clear warnings
 - [ ] Sprint 1 integration tests passing
 - [x] No eval syntax errors in any phase (COMPLETED via Phase 1)
+- [x] All execution-critical blocks formatted correctly (COMPLETED via Phase 2)
+- [x] Documentation updated with formatting standards (COMPLETED via Phase 2)
 
 ### Sprint 2 Complete
 - [ ] Phase 4: Context blocks pre-formatted, <20 substitutions
