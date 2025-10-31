@@ -582,7 +582,11 @@ display_brief_summary() {
     research-and-plan)
       local report_count=${#REPORT_PATHS[@]}
       echo "Created $report_count reports + 1 plan in: $TOPIC_PATH/"
-      echo "→ Run: /implement $PLAN_PATH"
+      echo ""
+      echo "⚠️  NOTE: Implementation was NOT executed (workflow: research-and-plan)"
+      echo "  Reason: Workflow type requires explicit /implement invocation"
+      echo ""
+      echo "→ To implement: /implement $PLAN_PATH"
       ;;
     full-implementation)
       echo "Implementation complete. Summary: $SUMMARY_PATH"
@@ -1190,7 +1194,9 @@ should_run_phase 3 || {
     echo "  ✓ 1 implementation summary"
   fi
   echo ""
-  echo "Next: /implement $PLAN_PATH"
+  echo "⚠️  NOTE: To execute implementation, either:"
+  echo "    1. Use workflow description: 'implement [feature]'"
+  echo "    2. Run separately: /implement $PLAN_PATH"
   echo ""
 
 
