@@ -798,6 +798,128 @@ reconstruct_report_paths_array
 emit_progress "0" "Location pre-calculation complete (topic: $TOPIC_PATH)"
 echo ""
 
+STEP 3B: Pre-format agent invocation context blocks
+
+**EXECUTE NOW**: USE the Bash tool to pre-calculate context blocks for all agent types:
+
+# Pre-format context blocks to reduce placeholder substitution overhead
+# Strategy: Pre-fill static values, Claude only substitutes dynamic values
+# Reduces 8 substitutions per agent → 3 substitutions per agent (62.5% reduction)
+
+# Note: Using direct variable assignment (not heredoc) because we want bash
+# to expand variables NOW, and Claude can read the exported values later
+
+# Research agent context template (complexity pre-filled)
+RESEARCH_CONTEXT_TEMPLATE="Read and follow ALL behavioral guidelines from:
+/home/benjamin/.config/.claude/agents/research-specialist.md
+
+**Workflow-Specific Context**:
+- Project Standards: /home/benjamin/.config/CLAUDE.md
+- Complexity Level: $RESEARCH_COMPLEXITY
+
+**CRITICAL**: Create report file at EXACT path provided above.
+
+Execute research following all guidelines in behavioral file.
+Return: REPORT_CREATED: [report file path]"
+
+# Plan architect context (all static values pre-filled)
+PLAN_CONTEXT="Read and follow ALL behavioral guidelines from:
+/home/benjamin/.config/.claude/agents/plan-architect.md
+
+**Workflow-Specific Context**:
+- Plan File Path: $PLAN_PATH
+- Project Standards: /home/benjamin/.config/CLAUDE.md
+- Workflow Type: $WORKFLOW_SCOPE
+
+Execute planning following all guidelines in behavioral file.
+Return: PLAN_CREATED: $PLAN_PATH"
+
+# Implementation coordinator context (all static values pre-filled)
+IMPL_CONTEXT="Read and follow ALL behavioral guidelines from:
+/home/benjamin/.config/.claude/agents/implementer-coordinator.md
+
+**Workflow-Specific Context**:
+- Plan File Path: $PLAN_PATH
+- Implementation Artifacts Directory: $IMPL_ARTIFACTS
+- Project Standards: /home/benjamin/.config/CLAUDE.md
+- Workflow Type: $WORKFLOW_SCOPE
+
+Execute implementation following all guidelines in behavioral file."
+
+# Test executor context (static values pre-filled)
+TEST_CONTEXT="Read and follow ALL behavioral guidelines from:
+/home/benjamin/.config/.claude/agents/test-executor.md
+
+**Workflow-Specific Context**:
+- Test Results Path: $TOPIC_PATH/outputs/test_results.md
+- Project Standards: /home/benjamin/.config/CLAUDE.md
+- Plan File: $PLAN_PATH
+- Implementation Artifacts: $IMPL_ARTIFACTS
+
+Execute testing following all guidelines in behavioral file."
+
+# Debug analyst context (static values pre-filled)
+DEBUG_CONTEXT="Read and follow ALL behavioral guidelines from:
+/home/benjamin/.config/.claude/agents/debug-analyst.md
+
+**Workflow-Specific Context**:
+- Test Results: $TOPIC_PATH/outputs/test_results.md
+- Project Standards: /home/benjamin/.config/CLAUDE.md
+
+Execute debug analysis following all guidelines in behavioral file."
+
+# Documentation specialist context (static values pre-filled)
+DOC_CONTEXT="Read and follow ALL behavioral guidelines from:
+/home/benjamin/.config/.claude/agents/documentation-specialist.md
+
+**Workflow-Specific Context**:
+- Plan File: $PLAN_PATH
+- Implementation Artifacts: $IMPL_ARTIFACTS
+- Project Standards: /home/benjamin/.config/CLAUDE.md
+
+Execute documentation following all guidelines in behavioral file."
+
+# Code writer context (static values pre-filled)
+CODE_WRITER_CONTEXT="Read and follow ALL behavioral guidelines from:
+/home/benjamin/.config/.claude/agents/code-writer.md
+
+**Workflow-Specific Context**:
+- Project Standards: /home/benjamin/.config/CLAUDE.md
+
+Execute code modifications following all guidelines in behavioral file."
+
+# Research synthesizer context (static values pre-filled)
+OVERVIEW_SYNTHESIS_CONTEXT="Read and follow ALL behavioral guidelines from:
+/home/benjamin/.config/.claude/agents/research-synthesizer.md
+
+**Workflow-Specific Context**:
+- Project Standards: /home/benjamin/.config/CLAUDE.md
+
+**CRITICAL**: Create overview file at EXACT path provided above.
+
+STEP 1: Use Write tool to create overview file at specified path
+STEP 2: Read all research reports from the list
+STEP 3: Write 400-500 word overview synthesizing:
+        - Common themes across reports
+        - Conflicting findings (if any)
+        - Prioritized recommendations
+        - Cross-references between reports
+
+Execute synthesis following all guidelines in behavioral file."
+
+# Export for use in later phases
+export RESEARCH_CONTEXT_TEMPLATE
+export PLAN_CONTEXT
+export IMPL_CONTEXT
+export TEST_CONTEXT
+export DEBUG_CONTEXT
+export DOC_CONTEXT
+export CODE_WRITER_CONTEXT
+export OVERVIEW_SYNTHESIS_CONTEXT
+
+emit_progress "0" "Context blocks pre-formatted"
+echo ""
+
 ## Phase 1: Research
 
 [EXECUTION-CRITICAL: Agent invocation patterns and verification - templates must be inline]
@@ -858,26 +980,23 @@ emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the research-specialist agent for EACH research topic.
 
-**YOUR RESPONSIBILITY**: Make N Task tool invocations (one per topic from 1 to $RESEARCH_COMPLEXITY) by substituting actual values for placeholders below.
+**YOUR RESPONSIBILITY**: Make N Task tool invocations (one per topic from 1 to $RESEARCH_COMPLEXITY) by inserting topic-specific values into the pre-formatted template.
+
+**Note**: $RESEARCH_CONTEXT_TEMPLATE is pre-formatted with static values. You only need to add:
+1. Research Topic
+2. Report Path
+3. Return statement
 
 Task {
   subagent_type: "general-purpose"
-  description: "Research [substitute actual topic name] with mandatory artifact creation"
+  description: "Research [topic name] with mandatory artifact creation"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/research-specialist.md
+    $RESEARCH_CONTEXT_TEMPLATE
 
-    **Workflow-Specific Context**:
-    - Research Topic: [substitute actual topic name from research topics list]
-    - Report Path: [substitute REPORT_PATHS[$i-1] for this topic where $i is 1 to $RESEARCH_COMPLEXITY]
-    - Project Standards: /home/benjamin/.config/CLAUDE.md
-    - Complexity Level: [substitute $RESEARCH_COMPLEXITY value]
-
-    **CRITICAL**: Create report file at EXACT path provided above.
-
-    Execute research following all guidelines in behavioral file.
-    Return: REPORT_CREATED: [exact absolute path to report file]
+    **Topic-Specific Values** (insert before CRITICAL line):
+    - Research Topic: [insert actual topic name]
+    - Report Path: [insert REPORT_PATHS[$i-1]]
   "
 }
 
@@ -954,33 +1073,22 @@ if should_synthesize_overview "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT"; then
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the research-synthesizer agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by adding synthesis-specific values to the pre-formatted context.
+
+**Note**: $OVERVIEW_SYNTHESIS_CONTEXT is pre-formatted with standards and synthesis steps. You only need to add report-specific values.
 
 Task {
   subagent_type: "general-purpose"
   description: "Synthesize research findings into comprehensive overview"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/research-synthesizer.md
+    $OVERVIEW_SYNTHESIS_CONTEXT
 
-    **Workflow-Specific Context**:
-    - Overview Path: [substitute $OVERVIEW_PATH value]
-    - Research Reports to Synthesize: [substitute report list - one path per line from SUCCESSFUL_REPORT_PATHS array]
-    - Total Reports: [substitute $SUCCESSFUL_REPORT_COUNT value]
-    - Project Standards: /home/benjamin/.config/CLAUDE.md
+    **Synthesis-Specific Context** (insert at beginning):
+    - Overview Path: [insert $OVERVIEW_PATH]
+    - Research Reports to Synthesize: [insert report list from SUCCESSFUL_REPORT_PATHS]
+    - Total Reports: [insert $SUCCESSFUL_REPORT_COUNT]
 
-    **CRITICAL**: Create overview file at EXACT path provided above.
-
-    STEP 1: Use Write tool to create overview file at specified path
-    STEP 2: Read all research reports from the list
-    STEP 3: Write 400-500 word overview synthesizing:
-            - Common themes across reports
-            - Conflicting findings (if any)
-            - Prioritized recommendations
-            - Cross-references between reports
-
-    Execute synthesis following all guidelines in behavioral file.
     Return: OVERVIEW_CREATED: [exact absolute path to overview file]
   "
 }
@@ -1083,27 +1191,26 @@ STEP 2: Invoke plan-architect agent via Task tool
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the plan-architect agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by adding dynamic values to the pre-formatted context.
+
+**Note**: $PLAN_CONTEXT is pre-formatted with static values (Plan Path, Standards, Workflow Type). You only need to add:
+1. Workflow Description
+2. Research Reports list
+3. Research Report Count
 
 Task {
   subagent_type: "general-purpose"
   description: "Create implementation plan with mandatory file creation"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/plan-architect.md
+    $PLAN_CONTEXT
 
-    **Workflow-Specific Context**:
-    - Workflow Description: [substitute $WORKFLOW_DESCRIPTION value]
-    - Plan File Path: [substitute $PLAN_PATH - absolute path pre-calculated]
-    - Project Standards: [substitute $STANDARDS_FILE path]
-    - Research Reports: [substitute $RESEARCH_REPORTS_LIST - formatted list]
-    - Research Report Count: [substitute $SUCCESSFUL_REPORT_COUNT value]
+    **Additional Context** (insert before Execute planning line):
+    - Workflow Description: [insert $WORKFLOW_DESCRIPTION]
+    - Research Reports: [insert $RESEARCH_REPORTS_LIST]
+    - Research Report Count: [insert $SUCCESSFUL_REPORT_COUNT]
 
     **CRITICAL**: Create plan file at EXACT path provided above.
-
-    Execute planning following all guidelines in behavioral file.
-    Return: PLAN_CREATED: [exact absolute path to plan file]
   "
 }
 
@@ -1275,30 +1382,24 @@ echo ""
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the implementer-coordinator agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by adding wave-specific context to the pre-formatted template.
+
+**Note**: $IMPL_CONTEXT is pre-formatted with static values (Plan Path, Artifacts Dir, Standards, Workflow Type). You only need to add wave execution details.
 
 Task {
   subagent_type: "general-purpose"
   description: "Orchestrate wave-based implementation with parallel execution"
   timeout: 600000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/implementer-coordinator.md
+    $IMPL_CONTEXT
 
-    **Workflow-Specific Context**:
-    - Plan File Path: [substitute $PLAN_PATH value]
-    - Implementation Artifacts Directory: [substitute $IMPL_ARTIFACTS path]
-    - Project Standards: [substitute $STANDARDS_FILE path]
-    - Workflow Type: [substitute $WORKFLOW_SCOPE value]
-
-    **Wave Execution Context**:
-    - Total Waves: [substitute $WAVE_COUNT value]
-    - Wave Structure: [substitute $WAVES JSON structure from dependency analysis]
-    - Dependency Graph: [substitute dependency_graph from $DEPENDENCY_ANALYSIS]
+    **Wave Execution Context** (insert before Execute implementation line):
+    - Total Waves: [insert $WAVE_COUNT]
+    - Wave Structure: [insert $WAVES JSON]
+    - Dependency Graph: [insert $DEPENDENCY_ANALYSIS dependency_graph]
 
     **CRITICAL**: Execute phases wave-by-wave, parallel within waves when possible.
 
-    Execute wave-based implementation following all guidelines in behavioral file.
     Return: IMPLEMENTATION_STATUS: {complete|partial|failed}
     Return: WAVES_COMPLETED: [number]
     Return: PHASES_COMPLETED: [number]
@@ -1420,25 +1521,19 @@ STEP 1: Invoke test-specialist agent
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the test-specialist agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation using the pre-formatted context.
+
+**Note**: $TEST_CONTEXT is pre-formatted with all necessary values. No additional substitutions needed.
 
 Task {
   subagent_type: "general-purpose"
   description: "Execute comprehensive tests with mandatory results file"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/test-specialist.md
-
-    **Workflow-Specific Context**:
-    - Test Results Path: [substitute $TOPIC_PATH/outputs/test_results.md]
-    - Project Standards: [substitute $STANDARDS_FILE path]
-    - Plan File: [substitute $PLAN_PATH value]
-    - Implementation Artifacts: [substitute $IMPL_ARTIFACTS path]
+    $TEST_CONTEXT
 
     **CRITICAL**: Create test results file at path provided above.
 
-    Execute testing following all guidelines in behavioral file.
     Return: TEST_STATUS: {passing|failing}
     Return: TESTS_TOTAL: [number]
     Return: TESTS_PASSED: [number]
@@ -1538,22 +1633,18 @@ for iteration in 1 2 3; do
 
 Task {
   subagent_type: "general-purpose"
-  description: "Analyze test failures - iteration [substitute $iteration value]"
+  description: "Analyze test failures - iteration [iteration number]"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/debug-analyst.md
+    $DEBUG_CONTEXT
 
-    **Workflow-Specific Context**:
-    - Debug Report Path: [substitute $DEBUG_REPORT path for this iteration]
-    - Test Results: [substitute $TOPIC_PATH/outputs/test_results.md path]
-    - Project Standards: [substitute $STANDARDS_FILE path]
-    - Iteration Number: [substitute $iteration value - 1, 2, or 3]
+    **Iteration-Specific Context** (insert before Execute debug analysis line):
+    - Debug Report Path: [insert $DEBUG_REPORT path]
+    - Iteration Number: [insert $iteration value]
 
     **CRITICAL**: Before writing debug report file, ensure parent directory exists:
     Use Bash tool: mkdir -p \"\$(dirname \\\"[debug report path]\\\")\"
 
-    Execute debug analysis following all guidelines in behavioral file.
     Return: DEBUG_ANALYSIS_COMPLETE: [exact absolute path to debug report]
   "
 }
@@ -1577,19 +1668,16 @@ Task {
 
 Task {
   subagent_type: "general-purpose"
-  description: "Apply debug fixes - iteration [substitute $iteration value]"
+  description: "Apply debug fixes - iteration [iteration number]"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/code-writer.md
+    $CODE_WRITER_CONTEXT
 
-    **Workflow-Specific Context**:
-    - Debug Analysis: [substitute $DEBUG_REPORT path - read this file for proposed fixes]
-    - Project Standards: [substitute $STANDARDS_FILE path]
-    - Iteration Number: [substitute $iteration value]
+    **Task-Specific Context** (insert before Execute code modifications line):
+    - Debug Analysis: [insert $DEBUG_REPORT path]
+    - Iteration Number: [insert $iteration value]
     - Task Type: Apply debug fixes
 
-    Execute fix application following all guidelines in behavioral file.
     Return: FIXES_APPLIED: [number of fixes applied]
     Return: FILES_MODIFIED: [comma-separated list of file paths]
   "
@@ -1607,19 +1695,15 @@ Task {
 
 Task {
   subagent_type: "general-purpose"
-  description: "Re-run tests after fixes - iteration [substitute $iteration value]"
+  description: "Re-run tests after fixes - iteration [iteration number]"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/test-specialist.md
+    $TEST_CONTEXT
 
-    **Workflow-Specific Context**:
-    - Test Results Path: [substitute $TOPIC_PATH/outputs/test_results.md - append to this file]
-    - Project Standards: [substitute $STANDARDS_FILE path]
-    - Iteration Number: [substitute $iteration value - note this in results]
-    - Task Type: Re-run tests after fixes
+    **Task-Specific Context** (insert before Execute testing line):
+    - Iteration Number: [insert $iteration value]
+    - Task Type: Re-run tests after fixes (append to test results file)
 
-    Execute tests following all guidelines in behavioral file.
     Return: TEST_STATUS: {passing|failing}
     Return: TESTS_TOTAL: [number]
     Return: TESTS_PASSED: [number]
@@ -1698,27 +1782,25 @@ STEP 1: Invoke doc-writer agent to create summary
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the doc-writer agent.
 
-**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by substituting actual values for placeholders below.
+**YOUR RESPONSIBILITY**: Make ONE Task tool invocation by adding dynamic values to the pre-formatted context.
+
+**Note**: $DOC_CONTEXT is pre-formatted with static values (Plan File, Artifacts, Standards). You only need to add summary-specific values.
 
 Task {
   subagent_type: "general-purpose"
   description: "Create workflow summary with mandatory file creation"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/doc-writer.md
+    $DOC_CONTEXT
 
-    **Workflow-Specific Context**:
-    - Summary Path: [substitute $SUMMARY_PATH value]
-    - Plan File: [substitute $PLAN_PATH value]
-    - Research Reports: [substitute $RESEARCH_REPORTS_LIST - formatted list]
-    - Implementation Artifacts: [substitute $IMPL_ARTIFACTS path]
-    - Test Status: [substitute $TEST_STATUS value]
-    - Workflow Description: [substitute $WORKFLOW_DESCRIPTION value]
+    **Summary-Specific Context** (insert before Execute documentation line):
+    - Summary Path: [insert $SUMMARY_PATH]
+    - Research Reports: [insert $RESEARCH_REPORTS_LIST]
+    - Test Status: [insert $TEST_STATUS]
+    - Workflow Description: [insert $WORKFLOW_DESCRIPTION]
 
     **CRITICAL**: Create summary file at path provided above.
 
-    Execute documentation following all guidelines in behavioral file.
     Return: SUMMARY_CREATED: [exact absolute path to summary file]
   "
 }
