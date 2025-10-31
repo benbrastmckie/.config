@@ -523,7 +523,6 @@ emit_progress "2" "Planning phase started"
 
 STEP 0: Source Required Libraries (MUST BE FIRST)
 
-```bash
 # Determine script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -660,11 +659,9 @@ for func in "${REQUIRED_INLINE_FUNCTIONS[@]}"; do
 done
 
 emit_progress "0" "Libraries loaded and verified"
-```
 
 STEP 1: Parse workflow description from command arguments
 
-```bash
 WORKFLOW_DESCRIPTION="$1"
 
 if [ -z "$WORKFLOW_DESCRIPTION" ]; then
@@ -701,11 +698,9 @@ if [ -n "$RESUME_PHASE" ]; then
   # Skip to the resume phase
   # (Implementation note: In actual execution, this would jump to the appropriate phase section)
 fi
-```
 
 STEP 2: Detect workflow scope
 
-```bash
 WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
 
 # Map scope to phase execution list
@@ -731,13 +726,11 @@ esac
 export WORKFLOW_SCOPE PHASES_TO_EXECUTE SKIP_PHASES
 
 echo "Workflow: $WORKFLOW_SCOPE → Phases $PHASES_TO_EXECUTE"
-```
 
 STEP 3: Initialize workflow paths using consolidated function
 
 Use the workflow-initialization.sh library for unified path calculation and directory creation.
 
-```bash
 # Source workflow initialization library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -800,7 +793,6 @@ reconstruct_report_paths_array
 # Emit progress marker
 emit_progress "0" "Location pre-calculation complete (topic: $TOPIC_PATH)"
 echo ""
-```
 
 ## Phase 1: Research
 
@@ -814,7 +806,8 @@ echo ""
 
 ### Phase 1 Execution Check
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to check if Phase 1 should execute:
+
 should_run_phase 1 || {
   echo "⏭️  Skipping Phase 1 (Research)"
   echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
@@ -824,13 +817,13 @@ should_run_phase 1 || {
 }
 
 emit_progress "1" "Phase 1: Research (parallel agent invocation)"
-```
 
 ### Complexity-Based Research Topics
 
 STEP 1: Determine research complexity (1-4 topics based on workflow)
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to determine research complexity:
+
 # Simple keyword-based complexity scoring
 RESEARCH_COMPLEXITY=2  # Default: 2 research topics
 
@@ -850,15 +843,14 @@ if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^(fix|update|modify).*(one|single|s
 fi
 
 echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics"
-```
 
 ### Parallel Research Agent Invocation
 
 STEP 2: Invoke 2-4 research agents in parallel (single message, multiple Task calls)
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to emit progress marker:
+
 emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
-```
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the research-specialist agent for EACH research topic.
 
@@ -885,9 +877,9 @@ Task {
   "
 }
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to emit progress after agent invocations:
+
 emit_progress "1" "All research agents invoked - awaiting completion"
-```
 
 ### Mandatory Verification - Research Reports with Auto-Recovery
 
@@ -895,7 +887,8 @@ emit_progress "1" "All research agents invoked - awaiting completion"
 
 STEP 3: Verify ALL research reports created successfully (concise format with fail-fast)
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to verify all research reports:
+
 # Concise verification with inline status indicators
 echo -n "Verifying research reports ($RESEARCH_COMPLEXITY): "
 
@@ -927,7 +920,6 @@ fi
 # VERIFICATION REQUIREMENT: Must not proceed without verification
 echo "Verification checkpoint passed - proceeding to research overview"
 echo ""
-```
 
 ### Research Overview (Conditional Synthesis)
 
@@ -937,7 +929,8 @@ STEP 4: Conditionally create overview report based on workflow scope
 When planning follows (research-and-plan, full-implementation), the plan-architect
 agent will synthesize research reports, making OVERVIEW.md redundant.
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to conditionally create research overview:
+
 # Determine if overview synthesis should occur
 # Uses shared library function: should_synthesize_overview()
 if should_synthesize_overview "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT"; then
@@ -988,10 +981,10 @@ Task {
   "
 }
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to verify overview creation and complete conditional logic:
+
   # MANDATORY VERIFICATION checkpoint: Research overview
   verify_file_created "$OVERVIEW_PATH" "Research Overview" "Phase 1"
-```
 else
   # Overview synthesis skipped - plan-architect will synthesize reports
   SKIP_REASON=$(get_synthesis_skip_reason "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT")
@@ -1002,6 +995,8 @@ fi
 
 emit_progress "1" "Research complete: $SUCCESSFUL_REPORT_COUNT reports verified"
 echo ""
+
+**EXECUTE NOW**: USE the Bash tool to save Phase 1 checkpoint and apply context pruning:
 
 # Save checkpoint after Phase 1
 ARTIFACT_PATHS_JSON=$(cat <<EOF
@@ -1023,7 +1018,6 @@ echo "Phase 1 metadata stored (context reduction: 80-90%)"
 
 # Emit progress marker
 emit_progress "1" "Research complete ($SUCCESSFUL_REPORT_COUNT reports created)"
-```
 
 ## Phase 2: Planning
 
@@ -1037,7 +1031,8 @@ emit_progress "1" "Research complete ($SUCCESSFUL_REPORT_COUNT reports created)"
 
 ### Phase 2 Execution Check
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to check if Phase 2 should execute:
+
 should_run_phase 2 || {
   echo "⏭️  Skipping Phase 2 (Planning)"
   echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
@@ -1047,13 +1042,13 @@ should_run_phase 2 || {
 }
 
 emit_progress "2" "Phase 2: Planning (plan-architect invocation)"
-```
 
 ### Planning Context Preparation
 
 STEP 1: Prepare planning context with research reports
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to prepare planning context:
+
 echo "Preparing planning context..."
 
 # Build research reports list for injection
@@ -1077,7 +1072,6 @@ if [ ! -f "$STANDARDS_FILE" ]; then
 fi
 
 echo "Planning Context: $SUCCESSFUL_REPORT_COUNT reports, standards: $STANDARDS_FILE"
-```
 
 ### Plan-Architect Agent Invocation
 
@@ -1117,7 +1111,8 @@ Task {
 
 STEP 3: MANDATORY VERIFICATION checkpoint - Verify plan file created successfully (concise format)
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to verify plan creation:
+
 echo -n "Verifying implementation plan: "
 
 if verify_file_created "$PLAN_PATH" "Implementation plan" "Phase 2"; then
@@ -1134,13 +1129,13 @@ else
   echo "Workflow TERMINATED: Fix plan creation and retry"
   exit 1
 fi
-```
 
 ### Plan Metadata Extraction
 
+**EXECUTE NOW**: USE the Bash tool to extract plan metadata:
+
 STEP 4: Extract plan metadata for reporting
 
-```bash
 # Extract complexity from plan
 PLAN_COMPLEXITY=$(grep "Complexity:" "$PLAN_PATH" | head -1 | cut -d: -f2 | xargs || echo "unknown")
 
@@ -1172,13 +1167,13 @@ echo "Phase 2 metadata stored (context reduction: 80-90%)"
 
 # Emit progress marker
 emit_progress "2" "Planning complete (plan created with $PHASE_COUNT phases)"
-```
 
 ### Workflow Completion Check (After Phase 2)
 
+**EXECUTE NOW**: USE the Bash tool to save Phase 2 checkpoint:
+
 STEP 5: Check if workflow should continue to implementation
 
-```bash
 should_run_phase 3 || {
   emit_progress "Complete" "/coordinate workflow complete"
   echo ""
@@ -1201,7 +1196,6 @@ should_run_phase 3 || {
 
   exit 0
 }
-```
 
 ## Phase 3: Wave-Based Implementation
 
@@ -1215,18 +1209,19 @@ should_run_phase 3 || {
 
 ### Phase 3 Execution Check
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to check if Phase 3 should execute:
+
 should_run_phase 3 || {
   echo "⏭️  Skipping Phase 3 (Implementation)"
   echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
   echo ""
   # Continue to next phase check or completion
 }
-```
 
 ### Step 1: Dependency Analysis and Wave Calculation
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to analyze dependencies and calculate waves:
+
 emit_progress "3" "Phase 3: Wave-based implementation"
 
 # Track performance metrics
@@ -1269,7 +1264,6 @@ for ((wave_num=1; wave_num<=WAVE_COUNT; wave_num++)); do
   done
 done
 echo ""
-```
 
 ### Step 2: Implementer-Coordinator Agent Invocation
 
@@ -1310,11 +1304,12 @@ Task {
 
 ### Step 3: Mandatory Verification - Implementation Completion
 
+**EXECUTE NOW**: USE the Bash tool to verify implementation and save checkpoint:
+
 **VERIFICATION REQUIRED**: Implementation artifacts directory must exist and contain phase outputs
 
 **CHECKPOINT REQUIREMENT**: Report implementation status and wave execution metrics
 
-```bash
 # Parse implementation status from agent output
 IMPL_STATUS=$(echo "$AGENT_OUTPUT" | grep "IMPLEMENTATION_STATUS:" | cut -d: -f2 | xargs)
 WAVES_COMPLETED=$(echo "$AGENT_OUTPUT" | grep "WAVES_COMPLETED:" | cut -d: -f2 | xargs)
@@ -1389,7 +1384,6 @@ echo "Context reduction: 80-90% (target: <30% usage achieved)"
 
 # Emit progress marker
 emit_progress "3" "Implementation complete ($PARALLEL_PHASES phases in parallel, $TIME_SAVED% time saved)"
-```
 
 ## Phase 4: Testing
 
@@ -1403,7 +1397,8 @@ emit_progress "3" "Implementation complete ($PARALLEL_PHASES phases in parallel,
 
 ### Phase 4 Execution Check
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to check if Phase 4 should execute:
+
 should_run_phase 4 || {
   echo "⏭️  Skipping Phase 4 (Testing)"
   echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
@@ -1412,7 +1407,6 @@ should_run_phase 4 || {
 }
 
 emit_progress "4" "Phase 4: Testing (test-specialist invocation)"
-```
 
 ### Test-Specialist Agent Invocation
 
@@ -1454,7 +1448,6 @@ Task {
 
 STEP 2: MANDATORY VERIFICATION checkpoint - Parse and verify test results
 
-```bash
 # Parse test status from agent output
 TEST_STATUS=$(echo "$AGENT_OUTPUT" | grep "TEST_STATUS:" | cut -d: -f2 | xargs)
 TESTS_TOTAL=$(echo "$AGENT_OUTPUT" | grep "TESTS_TOTAL:" | cut -d: -f2 | xargs)
@@ -1498,7 +1491,6 @@ echo "Phase 4 metadata stored (test output retained for potential debugging)"
 
 # Emit progress marker
 emit_progress "4" "Testing complete (status: $TEST_STATUS)"
-```
 
 ## Phase 5: Debug (Conditional)
 
@@ -1512,7 +1504,8 @@ emit_progress "4" "Testing complete (status: $TEST_STATUS)"
 
 ### Phase 5 Execution Check
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to check if Phase 5 should execute:
+
 # Phase 5 only executes if tests failed OR workflow is debug-only
 if [ "$TESTS_PASSING" == "false" ] || [ "$WORKFLOW_SCOPE" == "debug-only" ]; then
   emit_progress "5" "Phase 5: Debug (conditional execution)"
@@ -1522,17 +1515,14 @@ else
   echo ""
   # Continue to Phase 6
 fi
-```
 
 ### Debug Iteration Loop
 
 STEP 1: Iterate debug cycle (max 3 iterations)
 
-```bash
 # Maximum 3 debug iterations
 for iteration in 1 2 3; do
   emit_progress "5" "Debug iteration $iteration/3"
-```
 
 ### Debug-Analyst Agent Invocation (Iteration Loop)
 
@@ -1562,7 +1552,6 @@ Task {
   "
 }
 
-```bash
   echo -n "Verifying debug report (iteration $iteration): "
 
   # MANDATORY VERIFICATION checkpoint: Debug report
@@ -1573,7 +1562,6 @@ Task {
     echo "Workflow TERMINATED: Fix debug report creation and retry"
     exit 1
   fi
-```
 
 ### Code-Writer Agent Invocation (Apply Fixes)
 
@@ -1601,11 +1589,9 @@ Task {
   "
 }
 
-```bash
   FIXES_APPLIED=$(echo "$AGENT_OUTPUT" | grep "FIXES_APPLIED:" | cut -d: -f2 | xargs)
   echo "Fixes Applied: $FIXES_APPLIED"
   echo "Re-running tests..."
-```
 
 ### Test-Specialist Agent Re-invocation (After Fixes)
 
@@ -1635,7 +1621,6 @@ Task {
   "
 }
 
-```bash
 
   # Parse updated test status
   TEST_STATUS=$(echo "$AGENT_OUTPUT" | grep "TEST_STATUS:" | cut -d: -f2 | xargs)
@@ -1674,7 +1659,6 @@ echo "Phase 5 metadata stored (test output pruned, debug complete)"
 
 # Emit progress marker
 emit_progress "5" "Debug complete (final test status: $TESTS_PASSING)"
-```
 
 ## Phase 6: Documentation (Conditional)
 
@@ -1688,7 +1672,8 @@ emit_progress "5" "Debug complete (final test status: $TESTS_PASSING)"
 
 ### Phase 6 Execution Check
 
-```bash
+**EXECUTE NOW**: USE the Bash tool to check if Phase 6 should execute:
+
 # Phase 6 only executes if implementation occurred
 if [ "$IMPLEMENTATION_OCCURRED" == "true" ]; then
   emit_progress "6" "Phase 6: Documentation (summary creation)"
@@ -1700,7 +1685,6 @@ else
   display_brief_summary
   exit 0
 fi
-```
 
 ### Doc-Writer Agent Invocation
 
@@ -1741,7 +1725,6 @@ Task {
 
 STEP 2: MANDATORY VERIFICATION checkpoint - Verify summary file created
 
-```bash
 echo -n "Verifying workflow summary: "
 
 if verify_file_created "$SUMMARY_PATH" "Workflow summary" "Phase 6"; then
@@ -1758,20 +1741,17 @@ fi
 store_phase_metadata "phase_6" "complete" "$SUMMARY_PATH"
 prune_workflow_metadata "coordinate_workflow" "true"  # keep_artifacts=true
 emit_progress "6" "Documentation complete (summary created)"
-```
 
 ## Workflow Completion
 
 Display final workflow summary and artifact locations.
 
-```bash
 # Clean up checkpoint on successful completion
 CHECKPOINT_FILE=".claude/data/checkpoints/coordinate_latest.json"
 [ -f "$CHECKPOINT_FILE" ] && rm -f "$CHECKPOINT_FILE"
 
 display_brief_summary
 exit 0
-```
 
 ## Agent Behavioral Files
 
@@ -1818,7 +1798,6 @@ See [Behavioral Injection Pattern](../docs/concepts/patterns/behavioral-injectio
 
 ### Example 1: Research-only workflow
 
-```bash
 /coordinate "research API authentication patterns"
 
 # Expected behavior:
@@ -1826,11 +1805,9 @@ See [Behavioral Injection Pattern](../docs/concepts/patterns/behavioral-injectio
 # - Phases executed: 0, 1
 # - Artifacts: 2-3 research reports
 # - No plan, no implementation, no summary
-```
 
 ### Example 2: Research-and-plan workflow (MOST COMMON)
 
-```bash
 /coordinate "research the authentication module to create a refactor plan"
 
 # Expected behavior:
@@ -1839,11 +1816,9 @@ See [Behavioral Injection Pattern](../docs/concepts/patterns/behavioral-injectio
 # - Artifacts: 4 research reports + 1 implementation plan
 # - No implementation, no summary (per standards)
 # - Plan ready for execution
-```
 
 ### Example 3: Full-implementation workflow
 
-```bash
 /coordinate "implement OAuth2 authentication for the API"
 
 # Expected behavior:
@@ -1851,11 +1826,9 @@ See [Behavioral Injection Pattern](../docs/concepts/patterns/behavioral-injectio
 # - Phases executed: 0, 1, 2, 3, 4, 6
 # - Phase 5 conditional on test failures
 # - Artifacts: reports + plan + implementation + summary
-```
 
 ### Example 4: Debug-only workflow
 
-```bash
 /coordinate "fix the token refresh bug in auth.js"
 
 # Expected behavior:
@@ -1863,7 +1836,6 @@ See [Behavioral Injection Pattern](../docs/concepts/patterns/behavioral-injectio
 # - Phases executed: 0, 1, 5
 # - Artifacts: research reports + debug report
 # - No new plan or implementation (fixes existing code)
-```
 
 ## Performance Metrics
 
