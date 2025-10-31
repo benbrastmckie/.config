@@ -568,8 +568,8 @@ if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
   exit 1
 fi
 
-# Define display_brief_summary function inline
-# (Must be defined after library sourcing but before any phase can call it)
+# Define inline helper functions using heredoc pattern to avoid eval escaping issues
+cat <<'INLINE_FUNCTIONS' | bash
 display_brief_summary() {
   echo ""
   echo "✓ Workflow complete: $WORKFLOW_SCOPE"
@@ -600,6 +600,64 @@ display_brief_summary() {
   esac
   echo ""
 }
+
+verify_file_created() {
+  local file_path="$1"
+  local item_desc="$2"
+  local phase_name="$3"
+
+  if [ -f "$file_path" ] && [ -s "$file_path" ]; then
+    echo -n "✓"  # Success - single character, no newline
+    return 0
+  else
+    # Failure - verbose diagnostic
+    echo ""
+    echo "✗ ERROR [$phase_name]: $item_desc verification failed"
+    echo "   Expected: File exists at $file_path"
+    [ ! -f "$file_path" ] && echo "   Found: File does not exist" || echo "   Found: File empty (0 bytes)"
+    echo ""
+    echo "DIAGNOSTIC INFORMATION:"
+    echo "  - Expected path: $file_path"
+    echo "  - Parent directory: $(dirname "$file_path")"
+
+    local dir="$(dirname "$file_path")"
+    if [ -d "$dir" ]; then
+      local file_count
+      file_count=$(ls -1 "$dir" 2>/dev/null | wc -l)
+      echo "  - Directory status: ✓ Exists ($file_count files)"
+      if [ "$file_count" -gt 0 ]; then
+        echo "  - Recent files:"
+        ls -lht "$dir" | head -4
+      fi
+    else
+      echo "  - Directory status: ✗ Does not exist"
+      echo "  - Fix: mkdir -p $dir"
+    fi
+    echo ""
+    echo "Diagnostic commands:"
+    echo "  ls -la $dir"
+    echo "  cat .claude/agents/[agent-name].md | head -50"
+    echo ""
+    return 1
+  fi
+}
+
+export -f display_brief_summary
+export -f verify_file_created
+INLINE_FUNCTIONS
+
+# Verify inline functions are defined
+REQUIRED_INLINE_FUNCTIONS=(
+  "display_brief_summary"
+  "verify_file_created"
+)
+
+for func in "${REQUIRED_INLINE_FUNCTIONS[@]}"; do
+  if ! command -v "$func" >/dev/null 2>&1; then
+    echo "ERROR: Inline function not defined: $func"
+    exit 1
+  fi
+done
 
 emit_progress "0" "Libraries loaded and verified"
 ```
@@ -742,74 +800,6 @@ reconstruct_report_paths_array
 # Emit progress marker
 emit_progress "0" "Location pre-calculation complete (topic: $TOPIC_PATH)"
 echo ""
-```
-
-## Verification Helper Functions
-
-[EXECUTION-CRITICAL: Helper functions for concise verification - defined inline for immediate availability]
-
-**EXECUTE NOW**: USE the Bash tool to define the following helper functions:
-
-**REQUIRED ACTION**: The following helper functions implement concise verification with silent success and verbose failure patterns. These functions MUST be used at all file creation checkpoints.
-
-```bash
-# verify_file_created - Concise file verification with optional verbose failure
-#
-# Arguments:
-#   $1 - file_path (absolute path to verify)
-#   $2 - item_description (e.g., "Research report 1/4")
-#   $3 - phase_name (e.g., "Phase 1")
-#
-# Returns:
-#   0 - File exists and has content (prints single ✓ character)
-#   1 - File missing or empty (prints verbose diagnostic)
-#
-# Output:
-#   Success: Single character "✓" (no newline)
-#   Failure: Multi-line diagnostic with suggested actions
-#
-verify_file_created() {
-  local file_path="$1"
-  local item_desc="$2"
-  local phase_name="$3"
-
-  if [ -f "$file_path" ] && [ -s "$file_path" ]; then
-    echo -n "✓"  # Success - single character, no newline
-    return 0
-  else
-    # Failure - verbose diagnostic
-    echo ""
-    echo "✗ ERROR [$phase_name]: $item_desc verification failed"
-    echo "   Expected: File exists at $file_path"
-    [ ! -f "$file_path" ] && echo "   Found: File does not exist" || echo "   Found: File empty (0 bytes)"
-    echo ""
-    echo "DIAGNOSTIC INFORMATION:"
-    echo "  - Expected path: $file_path"
-    echo "  - Parent directory: $(dirname "$file_path")"
-
-    local dir="$(dirname "$file_path")"
-    if [ -d "$dir" ]; then
-      local file_count
-      file_count=$(ls -1 "$dir" 2>/dev/null | wc -l)
-      echo "  - Directory status: ✓ Exists ($file_count files)"
-      if [ "$file_count" -gt 0 ]; then
-        echo "  - Recent files:"
-        ls -lht "$dir" | head -4
-      fi
-    else
-      echo "  - Directory status: ✗ Does not exist"
-      echo "  - Fix: mkdir -p $dir"
-    fi
-    echo ""
-    echo "Diagnostic commands:"
-    echo "  ls -la $dir"
-    echo "  cat .claude/agents/[agent-name].md | head -50"
-    echo ""
-    return 1
-  fi
-}
-
-export -f verify_file_created
 ```
 
 ## Phase 1: Research
