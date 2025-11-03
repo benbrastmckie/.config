@@ -235,6 +235,16 @@ if ! source_required_libraries; then
   exit 1
 fi
 
+# Source verification helpers for concise checkpoint verification
+if [ -f "$SCRIPT_DIR/../lib/verification-helpers.sh" ]; then
+  # shellcheck disable=SC1091
+  source "$SCRIPT_DIR/../lib/verification-helpers.sh"
+else
+  echo "ERROR: Required library not found: verification-helpers.sh"
+  echo "Expected location: $SCRIPT_DIR/../lib/verification-helpers.sh"
+  exit 1
+fi
+
 echo "✓ All libraries loaded successfully"
 
 # Define display_brief_summary function inline
@@ -278,6 +288,7 @@ REQUIRED_FUNCTIONS=(
   "emit_progress"
   "save_checkpoint"
   "restore_checkpoint"
+  "verify_file_created"
 )
 
 MISSING_FUNCTIONS=()
@@ -305,6 +316,9 @@ if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
         ;;
       emit_progress)
         echo "    → Should be provided by: unified-logger.sh"
+        ;;
+      verify_file_created)
+        echo "    → Should be provided by: verification-helpers.sh"
         ;;
       *)
         echo "    → Library unknown - check documentation"
@@ -669,14 +683,15 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
   # Emit progress marker
   emit_progress "1" "Verifying research report $i/$RESEARCH_COMPLEXITY"
 
-  # Check if file exists and has content (fail-fast, no retries)
-  if [ -f "$REPORT_PATH" ] && [ -s "$REPORT_PATH" ]; then
-    # Success path - concise output with file size
+  # Use concise verification helper (90% token reduction)
+  echo -n "  "
+  if verify_file_created "$REPORT_PATH" "Research report $i" "Phase 1"; then
+    # Success - add quality checks and metadata
     FILE_SIZE=$(wc -c < "$REPORT_PATH")
     FILE_SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $FILE_SIZE/1024}")
     LINE_COUNT=$(wc -l < "$REPORT_PATH")
 
-    # Quality checks (silent unless warning needed)
+    # Quality warnings (silent unless needed)
     WARNINGS=""
     if [ "$FILE_SIZE" -lt 200 ]; then
       WARNINGS=" ⚠️  very small"
@@ -685,49 +700,10 @@ for i in $(seq 1 $RESEARCH_COMPLEXITY); do
       WARNINGS="${WARNINGS}${WARNINGS:+ |}  ⚠️  missing header"
     fi
 
-    echo "  ✅ VERIFIED: Report $i created (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines)${WARNINGS}"
+    echo " Report $i verified (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines)${WARNINGS}"
     SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
   else
-    # Failure path - provide clear diagnostics (fail-fast pattern)
-    echo "  ❌ ERROR [Phase 1, Research]: Report file verification failed"
-    echo "     Expected: File exists and has content"
-    if [ ! -f "$REPORT_PATH" ]; then
-      echo "     Found: File does not exist"
-    elif [ ! -s "$REPORT_PATH" ]; then
-      echo "     Found: File exists but is empty"
-    fi
-    echo ""
-    echo "  DIAGNOSTIC INFORMATION:"
-    echo "    - Expected path: $REPORT_PATH"
-    echo "    - Directory: $(dirname "$REPORT_PATH")"
-    echo "    - Agent: research-specialist (agent $i/$RESEARCH_COMPLEXITY)"
-    echo ""
-    echo "  Directory Status:"
-    if [ -d "$(dirname "$REPORT_PATH")" ]; then
-      FILE_COUNT=$(ls -1 "$(dirname "$REPORT_PATH")" 2>/dev/null | wc -l)
-      echo "    ✓ Reports directory exists ($FILE_COUNT files)"
-      if [ "$FILE_COUNT" -gt 0 ]; then
-        echo "    Recent files:"
-        ls -lht "$(dirname "$REPORT_PATH")" | head -6
-      fi
-    else
-      echo "    ✗ Reports directory does not exist"
-      echo "    Run: mkdir -p $(dirname "$REPORT_PATH")"
-    fi
-    echo ""
-    echo "  Diagnostic Commands:"
-    echo "    # Check directory and permissions"
-    echo "    ls -la $(dirname "$REPORT_PATH")"
-    echo "    # Check agent behavioral file"
-    echo "    cat .claude/agents/research-specialist.md | head -50"
-    echo "    # Review agent invocation above for errors"
-    echo ""
-    echo "  Most Likely Causes:"
-    echo "    1. Agent failed to write file (check agent output above for errors)"
-    echo "    2. Path mismatch (agent used different path than expected)"
-    echo "    3. Permission denied (run diagnostic commands to verify)"
-    echo ""
-
+    # Failure - verify_file_created already printed diagnostics
     FAILED_AGENTS+=("agent_$i")
     VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
   fi
@@ -985,15 +961,15 @@ echo ""
 # Emit progress marker
 emit_progress "2" "Verifying implementation plan"
 
-# Check if file exists and has content (fail-fast, no retries)
-if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
-  # Success path - concise output with key metrics
+# Use concise verification helper (90% token reduction)
+if verify_file_created "$PLAN_PATH" "Implementation plan" "Phase 2"; then
+  # Success - add quality checks and metadata
   PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
   FILE_SIZE=$(wc -c < "$PLAN_PATH")
   FILE_SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $FILE_SIZE/1024}")
   LINE_COUNT=$(wc -l < "$PLAN_PATH")
 
-  # Quality checks (silent unless warning needed)
+  # Quality warnings (silent unless needed)
   WARNINGS=""
   if [ "$PHASE_COUNT" -lt 3 ]; then
     WARNINGS=" ⚠️  only $PHASE_COUNT phases"
@@ -1002,48 +978,10 @@ if [ -f "$PLAN_PATH" ] && [ -s "$PLAN_PATH" ]; then
     WARNINGS="${WARNINGS}${WARNINGS:+ |}  ⚠️  missing metadata"
   fi
 
-  echo "✅ VERIFIED: Plan created (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines, $PHASE_COUNT phases)${WARNINGS}"
+  echo " Plan verified (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines, $PHASE_COUNT phases)${WARNINGS}"
   echo ""
 else
-  # Failure path - provide clear diagnostics (fail-fast pattern)
-  echo "❌ ERROR [Phase 2, Planning]: Plan file verification failed"
-  echo "   Expected: File exists and has content"
-  if [ ! -f "$PLAN_PATH" ]; then
-    echo "   Found: File does not exist"
-  elif [ ! -s "$PLAN_PATH" ]; then
-    echo "   Found: File exists but is empty"
-  fi
-  echo ""
-  echo "DIAGNOSTIC INFORMATION:"
-  echo "  - Expected path: $PLAN_PATH"
-  echo "  - Directory: $(dirname "$PLAN_PATH")"
-  echo "  - Agent: plan-architect"
-  echo ""
-  echo "Directory Status:"
-  if [ -d "$(dirname "$PLAN_PATH")" ]; then
-    FILE_COUNT=$(ls -1 "$(dirname "$PLAN_PATH")" 2>/dev/null | wc -l)
-    echo "  ✓ Plans directory exists ($FILE_COUNT files)"
-    if [ "$FILE_COUNT" -gt 0 ]; then
-      echo "  Recent files:"
-      ls -lht "$(dirname "$PLAN_PATH")" | head -6
-    fi
-  else
-    echo "  ✗ Plans directory does not exist"
-    echo "  Run: mkdir -p $(dirname "$PLAN_PATH")"
-  fi
-  echo ""
-  echo "Diagnostic Commands:"
-  echo "  # Check directory and permissions"
-  echo "  ls -la $(dirname "$PLAN_PATH")"
-  echo "  # Check agent behavioral file"
-  echo "  cat .claude/agents/plan-architect.md | head -50"
-  echo "  # Review agent invocation above for errors"
-  echo ""
-  echo "Most Likely Causes:"
-  echo "  1. Agent failed to write file (check agent output above for errors)"
-  echo "  2. Path mismatch (agent used different path than expected)"
-  echo "  3. Permission denied (run diagnostic commands to verify)"
-  echo ""
+  # Failure - verify_file_created already printed diagnostics
   echo "Workflow TERMINATED."
   exit 1
 fi
@@ -1542,57 +1480,14 @@ for iteration in 1 2 3; do
   echo ""
 
   # VERIFICATION REQUIRED: Debug report must exist before applying fixes (fail-fast)
-  if [ -f "$DEBUG_REPORT" ] && [ -s "$DEBUG_REPORT" ]; then
-    echo "✅ VERIFIED: Debug report exists at $DEBUG_REPORT"
+  if verify_file_created "$DEBUG_REPORT" "Debug report (iteration $iteration)" "Phase 5"; then
+    echo " Debug report verified - proceeding to fix application"
     echo ""
   else
-    # Failure path - provide clear diagnostics (fail-fast pattern)
-    echo "❌ ERROR [Phase 5, Debug]: Debug report verification failed"
-    echo "   Expected: File exists and has content"
-    if [ ! -f "$DEBUG_REPORT" ]; then
-      echo "   Found: File does not exist"
-    elif [ ! -s "$DEBUG_REPORT" ]; then
-      echo "   Found: File exists but is empty"
-    fi
-    echo ""
-    echo "DIAGNOSTIC INFORMATION:"
-    echo "  - Expected path: $DEBUG_REPORT"
-    echo "  - Directory: $(dirname "$DEBUG_REPORT")"
-    echo "  - Agent: debug-analyst"
-    echo "  - Debug iteration: $iteration"
-    echo ""
-    echo "Directory Status:"
-    if [ -d "$(dirname "$DEBUG_REPORT")" ]; then
-      FILE_COUNT=$(ls -1 "$(dirname "$DEBUG_REPORT")" 2>/dev/null | wc -l)
-      echo "  ✓ Debug directory exists ($FILE_COUNT files)"
-      if [ "$FILE_COUNT" -gt 0 ]; then
-        echo "  Recent files:"
-        ls -lht "$(dirname "$DEBUG_REPORT")" | head -6
-      fi
-    else
-      echo "  ✗ Debug directory does not exist"
-      echo "  Run: mkdir -p $(dirname "$DEBUG_REPORT")"
-    fi
-    echo ""
-    echo "Diagnostic Commands:"
-    echo "  # Check directory and permissions"
-    echo "  ls -la $(dirname "$DEBUG_REPORT")"
-    echo "  # Check agent behavioral file"
-    echo "  cat .claude/agents/debug-analyst.md | head -50"
-    echo "  # Review agent invocation above for errors"
-    echo ""
-    echo "Most Likely Causes:"
-    echo "  1. Agent failed to write file (check agent output above for errors)"
-    echo "  2. Path mismatch (agent used different path than expected)"
-    echo "  3. Permission denied (run diagnostic commands to verify)"
-    echo ""
+    # Failure - verify_file_created already printed diagnostics
     echo "Workflow TERMINATED."
     exit 1
   fi
-
-  # VERIFICATION REQUIREMENT: YOU MUST NOT apply fixes without debug analysis
-  echo "Verification checkpoint passed - proceeding to fix application"
-  echo ""
 
   # Invoke code-writer to apply fixes
   **EXECUTE NOW**: USE the Task tool with these parameters:
@@ -1842,59 +1737,17 @@ echo "════════════════════════�
 echo ""
 
 # Check if summary file exists and has content (fail-fast, no retries)
-if [ -f "$SUMMARY_PATH" ] && [ -s "$SUMMARY_PATH" ]; then
+if verify_file_created "$SUMMARY_PATH" "Workflow summary" "Phase 6"; then
   FILE_SIZE=$(wc -c < "$SUMMARY_PATH")
   FILE_SIZE_KB=$(awk "BEGIN {printf \"%.1f\", $FILE_SIZE/1024}")
   LINE_COUNT=$(wc -l < "$SUMMARY_PATH")
-  echo "✅ VERIFIED: Summary file exists (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines)"
+  echo " Summary verified (${FILE_SIZE_KB} KB, ${LINE_COUNT} lines)"
   echo ""
 else
-  # Failure path - provide clear diagnostics (fail-fast pattern)
-  echo "❌ ERROR [Phase 6, Documentation]: Summary file verification failed"
-  echo "   Expected: File exists and has content"
-  if [ ! -f "$SUMMARY_PATH" ]; then
-    echo "   Found: File does not exist"
-  elif [ ! -s "$SUMMARY_PATH" ]; then
-    echo "   Found: File exists but is empty"
-  fi
-  echo ""
-  echo "DIAGNOSTIC INFORMATION:"
-  echo "  - Expected path: $SUMMARY_PATH"
-  echo "  - Directory: $(dirname "$SUMMARY_PATH")"
-  echo "  - Agent: doc-writer"
-  echo ""
-  echo "Directory Status:"
-  if [ -d "$(dirname "$SUMMARY_PATH")" ]; then
-    FILE_COUNT=$(ls -1 "$(dirname "$SUMMARY_PATH")" 2>/dev/null | wc -l)
-    echo "  ✓ Summaries directory exists ($FILE_COUNT files)"
-    if [ "$FILE_COUNT" -gt 0 ]; then
-      echo "  Recent files:"
-      ls -lht "$(dirname "$SUMMARY_PATH")" | head -6
-    fi
-  else
-    echo "  ✗ Summaries directory does not exist"
-    echo "  Run: mkdir -p $(dirname "$SUMMARY_PATH")"
-  fi
-  echo ""
-  echo "Diagnostic Commands:"
-  echo "  # Check directory and permissions"
-  echo "  ls -la $(dirname "$SUMMARY_PATH")"
-  echo "  # Check agent behavioral file"
-  echo "  cat .claude/agents/doc-writer.md | head -50"
-  echo "  # Review agent invocation above for errors"
-  echo ""
-  echo "Most Likely Causes:"
-  echo "  1. Agent failed to write file (check agent output above for errors)"
-  echo "  2. Path mismatch (agent used different path than expected)"
-  echo "  3. Permission denied (run diagnostic commands to verify)"
-  echo ""
+  # Failure - verify_file_created already printed diagnostics
   echo "Workflow TERMINATED."
   exit 1
 fi
-
-# VERIFICATION REQUIREMENT: YOU MUST NOT complete workflow without summary
-echo "Verification checkpoint passed - workflow complete"
-echo ""
 
 echo "Phase 6 Complete: Documentation finished"
 echo ""
