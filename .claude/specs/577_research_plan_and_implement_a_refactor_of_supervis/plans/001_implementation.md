@@ -294,16 +294,16 @@ dependencies: [2]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Add pruning call after Phase 2 planning: `apply_pruning_policy "planning" "$WORKFLOW_SCOPE"`
-- [ ] Add context size logging before/after pruning (optional, for metrics)
-- [ ] Add pruning call after Phase 3 implementation: `apply_pruning_policy "implementation" "supervise"`
-- [ ] Add context size logging before/after pruning (optional)
-- [ ] Add pruning call after Phase 5 debugging (test output cleanup)
-- [ ] Remove defensive checks for `store_phase_metadata` (make unconditional)
-- [ ] Update Phase 1 metadata storage to unconditional call
-- [ ] Update Phase 2 metadata storage to unconditional call
-- [ ] Update Phase 3 metadata storage to unconditional call
-- [ ] Test context reduction metrics (compare before/after sizes)
+- [x] Add pruning call after Phase 2 planning: `apply_pruning_policy "planning" "$WORKFLOW_SCOPE"`
+- [x] Add context size logging before/after pruning (optional, for metrics)
+- [x] Add pruning call after Phase 3 implementation: `apply_pruning_policy "implementation" "supervise"`
+- [x] Add context size logging before/after pruning (optional)
+- [x] Add pruning call after Phase 5 debugging (test output cleanup)
+- [x] Remove defensive checks for `store_phase_metadata` (make unconditional)
+- [x] Update Phase 1 metadata storage to unconditional call
+- [x] Update Phase 2 metadata storage to unconditional call
+- [x] Update Phase 3 metadata storage to unconditional call
+- [x] Test context reduction metrics (compare before/after sizes)
 
 **Testing**:
 ```bash
