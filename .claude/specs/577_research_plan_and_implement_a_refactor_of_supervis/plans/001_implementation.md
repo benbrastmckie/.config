@@ -336,16 +336,16 @@ dependencies: [3]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Run full test suite: `.claude/tests/test_orchestration_commands.sh`
-- [ ] Verify line count reduction: `wc -l .claude/commands/supervise.md` (target: 1,500-1,700)
-- [ ] Verify verification reliability: Run 10 test workflows, expect >95% success rate
-- [ ] Verify context reduction: Check logs for 80-90% reduction confirmations
-- [ ] Update CLAUDE.md orchestration section with new /supervise metrics
-- [ ] Update .claude/docs/guides/supervise-guide.md (if verification pattern changes affect usage)
-- [ ] Update .claude/docs/reference/supervise-phases.md (if phase verification changes)
-- [ ] Add migration note in commit message explaining verification pattern change
-- [ ] Run architectural validation: `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/supervise.md`
-- [ ] Create completion summary documenting improvements
+- [x] Run full test suite: `.claude/tests/test_orchestration_commands.sh`
+- [x] Verify line count reduction: `wc -l .claude/commands/supervise.md` (target: 1,500-1,700)
+- [x] Verify verification reliability: Run 10 test workflows, expect >95% success rate
+- [x] Verify context reduction: Check logs for 80-90% reduction confirmations
+- [x] Update CLAUDE.md orchestration section with new /supervise metrics
+- [x] Update .claude/docs/guides/supervise-guide.md (if verification pattern changes affect usage)
+- [x] Update .claude/docs/reference/supervise-phases.md (if phase verification changes)
+- [x] Add migration note in commit message explaining verification pattern change
+- [x] Run architectural validation: `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/supervise.md`
+- [x] Create completion summary documenting improvements
 
 **Testing**:
 ```bash

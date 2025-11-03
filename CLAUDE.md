@@ -367,7 +367,7 @@ Located in `.claude/commands/`:
 
 - `/coordinate` - **Production-Ready** - Wave-based parallel execution and fail-fast error handling (2,500-3,000 lines, recommended default)
 - `/orchestrate` - **In Development** - Full-featured orchestration with PR automation and dashboard tracking (5,438 lines, experimental features may have inconsistent behavior)
-- `/supervise` - **In Development** - Sequential orchestration with proven architectural compliance (1,939 lines, minimal reference being stabilized)
+- `/supervise` - **In Development** - Sequential orchestration with proven architectural compliance (1,779 lines, minimal reference being stabilized)
   - **Usage Guide**: [/supervise Usage Guide](.claude/docs/guides/supervise-guide.md) - Examples and common patterns
   - **Phase Reference**: [/supervise Phase Reference](.claude/docs/reference/supervise-phases.md) - Detailed phase documentation
 
