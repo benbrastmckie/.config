@@ -849,12 +849,10 @@ emit_progress "1" "Phase 1 complete - research finished"
 echo "✓ Phase 1 complete: Research finished ($SUCCESSFUL_REPORT_COUNT reports)"
 echo ""
 
-# Store Phase 1 metadata for context management
-if type store_phase_metadata &>/dev/null; then
-  PHASE_1_ARTIFACTS="${SUCCESSFUL_REPORT_PATHS[@]:-}"
-  store_phase_metadata "phase_1" "complete" "$PHASE_1_ARTIFACTS" >/dev/null 2>&1
-  echo "  Context: Phase 1 metadata stored for planning phase"
-fi
+# Store Phase 1 metadata for context management (fail-fast)
+PHASE_1_ARTIFACTS="${SUCCESSFUL_REPORT_PATHS[@]:-}"
+store_phase_metadata "phase_1" "complete" "$PHASE_1_ARTIFACTS"
+echo "  Context: Phase 1 metadata stored for planning phase"
 ```
 
 ## Phase 2: Planning
@@ -1062,15 +1060,13 @@ emit_progress "2" "Phase 2 complete - planning finished"
 echo "✓ Phase 2 complete: Planning finished"
 echo ""
 
-# Apply context pruning after Phase 2 (planning complete)
-if type apply_pruning_policy &>/dev/null; then
-  BEFORE_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
-  apply_pruning_policy "planning" "${WORKFLOW_SCOPE:-orchestrate}" >/dev/null 2>&1
-  AFTER_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
-  if [ "$BEFORE_SIZE" != "0" ] && [ "$AFTER_SIZE" != "0" ]; then
-    REDUCTION=$(( (BEFORE_SIZE - AFTER_SIZE) * 100 / BEFORE_SIZE ))
-    echo "  Context: Pruned planning phase ($REDUCTION% reduction)"
-  fi
+# Apply context pruning after Phase 2 (planning complete, fail-fast)
+BEFORE_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
+apply_pruning_policy "planning" "$WORKFLOW_SCOPE"
+AFTER_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
+if [ "$BEFORE_SIZE" != "0" ] && [ "$AFTER_SIZE" != "0" ]; then
+  REDUCTION=$(( (BEFORE_SIZE - AFTER_SIZE) * 100 / BEFORE_SIZE ))
+  echo "  Context: Pruned planning phase ($REDUCTION% reduction)"
 fi
 ```
 
@@ -1208,15 +1204,13 @@ emit_progress "3" "Phase 3 complete - implementation finished"
 echo "✓ Phase 3 complete: Implementation finished (status: $IMPL_STATUS)"
 echo ""
 
-# Apply context pruning after Phase 3 (implementation complete)
-if type apply_pruning_policy &>/dev/null; then
-  BEFORE_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
-  apply_pruning_policy "implementation" "${WORKFLOW_SCOPE:-orchestrate}" >/dev/null 2>&1
-  AFTER_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
-  if [ "$BEFORE_SIZE" != "0" ] && [ "$AFTER_SIZE" != "0" ]; then
-    REDUCTION=$(( (BEFORE_SIZE - AFTER_SIZE) * 100 / BEFORE_SIZE ))
-    echo "  Context: Pruned implementation phase ($REDUCTION% reduction)"
-  fi
+# Apply context pruning after Phase 3 (implementation complete, fail-fast)
+BEFORE_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
+apply_pruning_policy "implementation" "supervise"
+AFTER_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
+if [ "$BEFORE_SIZE" != "0" ] && [ "$AFTER_SIZE" != "0" ]; then
+  REDUCTION=$(( (BEFORE_SIZE - AFTER_SIZE) * 100 / BEFORE_SIZE ))
+  echo "  Context: Pruned implementation phase ($REDUCTION% reduction)"
 fi
 ```
 
@@ -1329,12 +1323,10 @@ emit_progress "4" "Phase 4 complete - testing finished"
 echo "✓ Phase 4 complete: Testing finished (status: $TEST_STATUS)"
 echo ""
 
-# Store Phase 4 metadata (test results) for potential debugging
-if type store_phase_metadata &>/dev/null; then
-  PHASE_4_ARTIFACTS="$TEST_RESULTS_PATH"
-  store_phase_metadata "phase_4" "complete" "$PHASE_4_ARTIFACTS" >/dev/null 2>&1
-  echo "  Context: Phase 4 test metadata stored"
-fi
+# Store Phase 4 metadata (test results) for potential debugging (fail-fast)
+PHASE_4_ARTIFACTS="$TEST_RESULTS_PATH"
+store_phase_metadata "phase_4" "complete" "$PHASE_4_ARTIFACTS"
+echo "  Context: Phase 4 test metadata stored"
 ```
 
 ## Phase 5: Debug (Conditional)
@@ -1658,15 +1650,13 @@ emit_progress "5" "Phase 5 complete - debugging finished"
 echo "✓ Phase 5 complete: Debugging finished"
 echo ""
 
-# Apply context pruning after Phase 5 (debugging complete)
-if type apply_pruning_policy &>/dev/null; then
-  BEFORE_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
-  apply_pruning_policy "debug" "${WORKFLOW_SCOPE:-orchestrate}" >/dev/null 2>&1
-  AFTER_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
-  if [ "$BEFORE_SIZE" != "0" ] && [ "$AFTER_SIZE" != "0" ]; then
-    REDUCTION=$(( (BEFORE_SIZE - AFTER_SIZE) * 100 / BEFORE_SIZE ))
-    echo "  Context: Pruned debug phase ($REDUCTION% reduction)"
-  fi
+# Apply context pruning after Phase 5 (debugging complete, fail-fast)
+BEFORE_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
+apply_pruning_policy "debug" "supervise"
+AFTER_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
+if [ "$BEFORE_SIZE" != "0" ] && [ "$AFTER_SIZE" != "0" ]; then
+  REDUCTION=$(( (BEFORE_SIZE - AFTER_SIZE) * 100 / BEFORE_SIZE ))
+  echo "  Context: Pruned debug phase ($REDUCTION% reduction)"
 fi
 ```
 
@@ -1757,15 +1747,13 @@ emit_progress "6" "Phase 6 complete - documentation finished"
 echo "✓ Phase 6 complete: Documentation finished"
 echo ""
 
-# Apply final context pruning after Phase 6 (workflow complete)
-if type apply_pruning_policy &>/dev/null; then
-  BEFORE_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
-  apply_pruning_policy "final" "${WORKFLOW_SCOPE:-orchestrate}" >/dev/null 2>&1
-  AFTER_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
-  if [ "$BEFORE_SIZE" != "0" ] && [ "$AFTER_SIZE" != "0" ]; then
-    REDUCTION=$(( (BEFORE_SIZE - AFTER_SIZE) * 100 / BEFORE_SIZE ))
-    echo "  Context: Final pruning complete ($REDUCTION% reduction)"
-  fi
+# Apply final context pruning after Phase 6 (workflow complete, fail-fast)
+BEFORE_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
+apply_pruning_policy "final" "$WORKFLOW_SCOPE"
+AFTER_SIZE=$(get_current_context_size 2>/dev/null || echo "0")
+if [ "$BEFORE_SIZE" != "0" ] && [ "$AFTER_SIZE" != "0" ]; then
+  REDUCTION=$(( (BEFORE_SIZE - AFTER_SIZE) * 100 / BEFORE_SIZE ))
+  echo "  Context: Final pruning complete ($REDUCTION% reduction)"
 fi
 ```
 
