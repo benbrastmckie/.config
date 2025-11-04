@@ -519,15 +519,17 @@ emit_progress "2" "Planning phase started"
 
 ### Implementation
 
-**EXECUTE NOW**: USE the Bash tool to execute the following Phase 0 setup (consolidated):
+**EXECUTE NOW - Step 1: Project Detection and Library Sourcing**
+
+USE the Bash tool to execute the following Phase 0 setup (Step 1 of 3):
 
 ```bash
 # ════════════════════════════════════════════════════════════════════
-# Phase 0: Initialization (Consolidated)
+# Phase 0: Initialization (Split into 3 blocks to prevent code transformation)
 # ════════════════════════════════════════════════════════════════════
-# This consolidates STEP 0-3 into a single bash block to eliminate
-# subprocess creation/destruction overhead and redundant library sourcing.
-# Saves 3 subprocess cycles + 2-3 library sourcing operations (250-400ms).
+# Split from single 402-line block into 3 smaller blocks to avoid bash code
+# transformation issues with large markdown bash blocks. State propagates
+# between blocks via exported variables.
 
 echo "Phase 0: Initialization started"
 
@@ -549,6 +551,7 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
 fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+export LIB_DIR
 
 # ────────────────────────────────────────────────────────────────────
 # STEP 0.2: Parse Workflow Description (Before Library Loading)
@@ -573,6 +576,8 @@ if [ -z "$WORKFLOW_DESCRIPTION" ]; then
   echo ""
   exit 1
 fi
+
+export WORKFLOW_DESCRIPTION
 
 # ────────────────────────────────────────────────────────────────────
 # STEP 0.3: Inline Scope Detection (No Library Dependencies)
@@ -693,6 +698,16 @@ if ! source_required_libraries "${REQUIRED_LIBS[@]}"; then
 fi
 
 echo "  ✓ Libraries loaded (${#REQUIRED_LIBS[@]} for $WORKFLOW_SCOPE)"
+```
+
+**EXECUTE NOW - Step 2: Function Verification and Definitions**
+
+USE the Bash tool to execute the following Phase 0 setup (Step 2 of 3):
+
+```bash
+# ────────────────────────────────────────────────────────────────────
+# STEP 0.4.1: Verify Critical Functions Based on Scope
+# ────────────────────────────────────────────────────────────────────
 
 # Verify critical functions are defined based on scope
 # Different scopes require different functions based on loaded libraries
@@ -734,6 +749,10 @@ if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
   exit 1
 fi
 
+# ────────────────────────────────────────────────────────────────────
+# STEP 0.4.2: Define Inline Helper Functions
+# ────────────────────────────────────────────────────────────────────
+
 # Define display_brief_summary function inline
 # (Must be defined after library sourcing but before any phase can call it)
 display_brief_summary() {
@@ -766,6 +785,7 @@ display_brief_summary() {
   esac
   echo ""
 }
+export -f display_brief_summary
 
 # Define transition_to_phase helper function
 # Consolidates phase transition operations to eliminate duplicate progress markers
@@ -824,6 +844,7 @@ transition_to_phase() {
     PHASE_START_TIME=$(date +%s%N)
   fi
 }
+export -f transition_to_phase
 
 # ────────────────────────────────────────────────────────────────────
 # STEP 0.5: Check for Checkpoint Resume (If Supported by Scope)
@@ -847,9 +868,16 @@ else
   # research-only workflows don't support checkpointing
   RESUME_PHASE=""
 fi
+export RESUME_PHASE
 
 echo "  ✓ Workflow scope detected: $WORKFLOW_SCOPE"
+```
 
+**EXECUTE NOW - Step 3: Path Initialization and Completion**
+
+USE the Bash tool to execute the following Phase 0 setup (Step 3 of 3):
+
+```bash
 # ────────────────────────────────────────────────────────────────────
 # STEP 0.6: Initialize Workflow Paths
 # ────────────────────────────────────────────────────────────────────
@@ -920,6 +948,7 @@ if [[ "${DEBUG_PERFORMANCE:-0}" == "1" ]]; then
   PHASE_START_TIME=$(date +%s%N)
   echo "PERF: Performance timing enabled" >&2
 fi
+export PHASE_START_TIME
 
 # Emit final progress marker
 emit_progress "0" "Phase 0 complete (topic: $TOPIC_PATH)"
