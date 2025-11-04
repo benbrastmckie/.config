@@ -524,6 +524,11 @@ emit_progress "2" "Planning phase started"
 STEP 0: Source Required Libraries (MUST BE FIRST)
 
 ```bash
+# Project directory detection (Standard 13)
+# Uses CLAUDE_PROJECT_DIR instead of ${BASH_SOURCE[0]} because SlashCommand
+# execution context does not provide BASH_SOURCE. Git-based detection handles
+# worktrees correctly and matches the pattern used in .claude/lib/detect-project-dir.sh
+#
 # Detect project directory if not already set
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
   if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
