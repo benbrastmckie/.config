@@ -93,16 +93,18 @@ detect_workflow_scope() {
   fi
 
   # Pattern 2: Research-and-plan
-  # Keywords: "research...to create plan", "analyze...for planning"
+  # Keywords: "research...to create plan", "analyze...for planning", "create...plan"
   # Phases: {0, 1, 2}
-  if echo "$workflow_desc" | grep -Eiq "(research|analyze|investigate).*(to |and |for ).*(plan|planning)"; then
+  if echo "$workflow_desc" | grep -Eiq "(research|analyze|investigate).*(to |and |for ).*(plan|planning)" || \
+     echo "$workflow_desc" | grep -Eiq "create.*(implementation|refactor|migration|feature).*plan"; then
     match_research_plan=1
   fi
 
   # Pattern 3: Full-implementation
   # Keywords: "implement", "build", "add feature", "create [code component]"
   # Phases: {0, 1, 2, 3, 4, 6} + conditional {5}
-  if echo "$workflow_desc" | grep -Eiq "implement|build|add.*(feature|functionality)|create.*(code|component|module)"; then
+  # Note: Must check AFTER plan patterns to avoid matching "implementation plan"
+  if echo "$workflow_desc" | grep -Eiq "\bimplement\b|\bbuild\b|add.*(feature|functionality)|create.*(code|component|module|system)"; then
     match_implementation=1
   fi
 

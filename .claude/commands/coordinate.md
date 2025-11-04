@@ -582,15 +582,16 @@ fi
 
 WORKFLOW_SCOPE="research-and-plan"  # Default fallback
 
+# Order matters: check more specific patterns first
 if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^research.*" && \
    ! echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|implement|fix|debug|create|add|build)"; then
   WORKFLOW_SCOPE="research-only"
-elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(implement|build|add|create).*feature"; then
-  WORKFLOW_SCOPE="full-implementation"
-elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(fix|debug|troubleshoot)"; then
-  WORKFLOW_SCOPE="debug-only"
 elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|create.*plan|design)"; then
   WORKFLOW_SCOPE="research-and-plan"
+elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(fix|debug|troubleshoot)"; then
+  WORKFLOW_SCOPE="debug-only"
+elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(implement|build|add|create).*feature"; then
+  WORKFLOW_SCOPE="full-implementation"
 fi
 
 # Map scope to phase execution list
