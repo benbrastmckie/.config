@@ -96,28 +96,20 @@ return {
         return
       end
 
-      -- Helper function to evaluate terminal codes
-      local function t(str)
-        return vim.api.nvim_replace_termcodes(str, true, true, true)
-      end
-
       -- Map CR to handle both completion and autopairs
+      -- Uses autopairs_cr() API for proper context detection and indentation
       vim.keymap.set('i', '<CR>', function()
         if blink.is_visible() then
           -- Accept completion when menu is visible
           blink.accept()
-          return t('<Ignore>')
+          return ''  -- Return empty string, not <Ignore>
         else
-          -- Check if we're between brackets for autopairs behavior
+          -- Use official autopairs_cr() API for smart CR behavior
+          -- This respects all rules, treesitter context, and indentation logic
           local npairs = require('nvim-autopairs')
-          if npairs.check_break_line_char() then
-            -- Manually create the indented newline pattern
-            return t('<CR><C-o>O')
-          else
-            return t('<CR>')
-          end
+          return npairs.autopairs_cr()
         end
-      end, { expr = true, silent = true, noremap = true, replace_keycodes = false, desc = "Accept completion or autopairs CR" })
+      end, { expr = true, silent = true, noremap = true, replace_keycodes = false, desc = "Accept completion or smart autopairs CR" })
     end
 
     -- Initialize blink.cmp integration
