@@ -143,17 +143,19 @@ assert_false "No fallback mechanisms" "grep -qE 'FALLBACK.*MECHANISM|fallback.*i
 
 # Test 8: Checkpoint Recovery Pattern
 print_test_header "Test 8: Checkpoint Recovery Pattern"
-assert_true "Checkpoint-utils.sh library sourced" "grep -q 'source.*checkpoint-utils.sh' '$COMMAND_FILE'"
+# Updated to support conditional library loading (REQUIRED_LIBS arrays) in addition to direct source
+assert_true "Checkpoint-utils.sh library referenced" "grep -q 'checkpoint-utils.sh' '$COMMAND_FILE'"
 assert_count "Checkpoint operations" 2 "grep -c 'save_checkpoint\|checkpoint.*save\|restore_checkpoint\|checkpoint.*restore' '$COMMAND_FILE'"
 assert_true "Wave checkpoint tracking" "grep -qE 'WAVE_COUNT|wave_num|waves_total' '$COMMAND_FILE'"
 
 # Test 9: Library Dependencies
 print_test_header "Test 9: Required Library Dependencies"
-assert_true "unified-location-detection.sh sourced" "grep -q 'source.*unified-location-detection.sh' '$COMMAND_FILE'"
-assert_true "dependency-analyzer.sh sourced" "grep -q 'source.*dependency-analyzer.sh' '$COMMAND_FILE'"
-assert_true "workflow-detection.sh sourced" "grep -q 'source.*workflow-detection.sh' '$COMMAND_FILE'"
-assert_true "unified-logger.sh sourced" "grep -q 'source.*unified-logger.sh' '$COMMAND_FILE'"
-assert_true "error-handling.sh sourced" "grep -q 'source.*error-handling.sh' '$COMMAND_FILE'"
+# Updated to support conditional library loading (REQUIRED_LIBS arrays) in addition to direct source
+assert_true "unified-location-detection.sh referenced" "grep -q 'unified-location-detection.sh' '$COMMAND_FILE'"
+assert_true "dependency-analyzer.sh referenced" "grep -q 'dependency-analyzer.sh' '$COMMAND_FILE'"
+assert_true "workflow-detection.sh referenced" "grep -q 'workflow-detection.sh' '$COMMAND_FILE'"
+assert_true "unified-logger.sh referenced" "grep -q 'unified-logger.sh' '$COMMAND_FILE'"
+assert_true "error-handling.sh referenced" "grep -q 'error-handling.sh' '$COMMAND_FILE'"
 
 # Test 10: Agent Behavioral Files
 print_test_header "Test 10: Agent Behavioral File References"
