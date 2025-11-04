@@ -519,17 +519,26 @@ emit_progress "2" "Planning phase started"
 
 ### Implementation
 
-**EXECUTE NOW**: USE the Bash tool to execute the following Phase 0 setup:
-
-STEP 0: Source Required Libraries (MUST BE FIRST)
+**EXECUTE NOW**: USE the Bash tool to execute the following Phase 0 setup (consolidated):
 
 ```bash
+# ════════════════════════════════════════════════════════════════════
+# Phase 0: Initialization (Consolidated)
+# ════════════════════════════════════════════════════════════════════
+# This consolidates STEP 0-3 into a single bash block to eliminate
+# subprocess creation/destruction overhead and redundant library sourcing.
+# Saves 3 subprocess cycles + 2-3 library sourcing operations (250-400ms).
+
+echo "Phase 0: Initialization started"
+
+# ────────────────────────────────────────────────────────────────────
+# STEP 0: Project Directory Detection and Library Sourcing
+# ────────────────────────────────────────────────────────────────────
+
 # Project directory detection (Standard 13)
 # Uses CLAUDE_PROJECT_DIR instead of ${BASH_SOURCE[0]} because SlashCommand
 # execution context does not provide BASH_SOURCE. Git-based detection handles
 # worktrees correctly and matches the pattern used in .claude/lib/detect-project-dir.sh
-#
-# Detect project directory if not already set
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
   if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
     CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -541,6 +550,7 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
+# Source library-sourcing.sh
 if [ -f "$LIB_DIR/library-sourcing.sh" ]; then
   source "$LIB_DIR/library-sourcing.sh"
 else
@@ -561,8 +571,7 @@ if ! source_required_libraries "dependency-analyzer.sh"; then
   exit 1
 fi
 
-echo "✓ All libraries loaded successfully (in this bash block)"
-echo "NOTE: Each bash block runs in isolated subprocess - libraries re-sourced as needed"
+echo "  ✓ Libraries loaded"
 
 # Verify critical functions are defined
 REQUIRED_FUNCTIONS=(
@@ -621,12 +630,10 @@ display_brief_summary() {
   echo ""
 }
 
-emit_progress "0" "Libraries loaded and verified"
-```
+# ────────────────────────────────────────────────────────────────────
+# STEP 1: Parse Workflow Description
+# ────────────────────────────────────────────────────────────────────
 
-STEP 1: Parse workflow description from command arguments
-
-```bash
 WORKFLOW_DESCRIPTION="$1"
 
 if [ -z "$WORKFLOW_DESCRIPTION" ]; then
@@ -659,28 +666,11 @@ if [ -n "$RESUME_PHASE" ]; then
   emit_progress "Resume" "Checkpoint detected - resuming from Phase $RESUME_PHASE"
   emit_progress "Resume" "Skipping completed phases 0-$((RESUME_PHASE - 1))"
   echo ""
-
-  # Skip to the resume phase
-  # (Implementation note: In actual execution, this would jump to the appropriate phase section)
-fi
-```
-
-STEP 2: Detect workflow scope
-
-```bash
-# Source required libraries for this bash block
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    CLAUDE_PROJECT_DIR="$(pwd)"
-  fi
-  export CLAUDE_PROJECT_DIR
 fi
 
-LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
-source "$LIB_DIR/library-sourcing.sh"
-source_required_libraries || exit 1
+# ────────────────────────────────────────────────────────────────────
+# STEP 2: Detect Workflow Scope
+# ────────────────────────────────────────────────────────────────────
 
 WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
 
@@ -706,14 +696,12 @@ esac
 
 export WORKFLOW_SCOPE PHASES_TO_EXECUTE SKIP_PHASES
 
-echo "Workflow: $WORKFLOW_SCOPE → Phases $PHASES_TO_EXECUTE"
-```
+echo "  ✓ Workflow scope detected: $WORKFLOW_SCOPE"
 
-STEP 3: Initialize workflow paths using consolidated function
+# ────────────────────────────────────────────────────────────────────
+# STEP 3: Initialize Workflow Paths
+# ────────────────────────────────────────────────────────────────────
 
-Use the workflow-initialization.sh library for unified path calculation and directory creation.
-
-```bash
 # Source workflow initialization library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -727,14 +715,16 @@ else
 fi
 
 # Call unified initialization function (silent)
-# This consolidates STEPS 3-7 (225+ lines → ~10 lines)
 # Implements 3-step pattern: scope detection → path pre-calculation → directory creation
 if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
   echo "ERROR: Workflow initialization failed"
   exit 1
 fi
 
-# Display simple workflow scope report
+echo "  ✓ Paths pre-calculated"
+
+# Display workflow scope report
+echo ""
 echo "Workflow Scope: $WORKFLOW_SCOPE"
 echo "Topic: $TOPIC_PATH"
 echo ""
@@ -773,8 +763,8 @@ echo ""
 # (Bash arrays cannot be directly exported, so we use a helper function)
 reconstruct_report_paths_array
 
-# Emit progress marker
-emit_progress "0" "Location pre-calculation complete (topic: $TOPIC_PATH)"
+# Emit final progress marker
+emit_progress "0" "Phase 0 complete (topic: $TOPIC_PATH)"
 echo ""
 ```
 
