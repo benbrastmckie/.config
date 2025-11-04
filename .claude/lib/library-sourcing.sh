@@ -40,6 +40,8 @@
 #   - Detailed error message includes library name and expected path
 #   - Returns 1 on any failure (caller should exit)
 source_required_libraries() {
+  local start_time=$(date +%s%N)
+
   local claude_root
   claude_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -104,6 +106,13 @@ source_required_libraries() {
     echo "" >&2
     echo "Please ensure all required libraries exist in: ${claude_root}/lib/" >&2
     return 1
+  fi
+
+  # Performance timing (if enabled)
+  if [[ "${DEBUG_PERFORMANCE:-0}" == "1" ]]; then
+    local end_time=$(date +%s%N)
+    local duration_ms=$(( (end_time - start_time) / 1000000 ))
+    echo "PERF: Library sourcing completed in ${duration_ms}ms (${#libraries[@]} libraries)" >&2
   fi
 
   return 0
