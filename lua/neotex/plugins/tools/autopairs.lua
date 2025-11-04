@@ -87,6 +87,11 @@ return {
     end)
 
     -- blink.cmp integration for Enter key with autopairs
+    -- Uses autopairs_cr() API for proper bracket expansion that respects:
+    -- - All autopairs rules and :with_cr() conditions
+    -- - Treesitter context (no expansion in strings/comments)
+    -- - Custom rules (LaTeX $$ pairs, Lean unicode, etc.)
+    -- Strategy: Check completion menu first, then delegate to autopairs_cr()
     local function setup_blink_integration()
       local ok, blink = pcall(require, 'blink.cmp')
       if not ok then return end
@@ -97,15 +102,15 @@ return {
       end
 
       -- Map CR to handle both completion and autopairs
-      -- Uses autopairs_cr() API for proper context detection and indentation
+      -- Note: blink-cmp.lua does NOT map CR to avoid conflicts with this integration
       vim.keymap.set('i', '<CR>', function()
         if blink.is_visible() then
           -- Accept completion when menu is visible
           blink.accept()
-          return ''  -- Return empty string, not <Ignore>
+          return ''  -- Return empty string (not <Ignore>) to avoid extra newlines
         else
           -- Use official autopairs_cr() API for smart CR behavior
-          -- This respects all rules, treesitter context, and indentation logic
+          -- This automatically handles context detection, indentation, and all rule conditions
           local npairs = require('nvim-autopairs')
           return npairs.autopairs_cr()
         end
