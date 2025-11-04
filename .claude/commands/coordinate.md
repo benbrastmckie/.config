@@ -766,6 +766,64 @@ display_brief_summary() {
   echo ""
 }
 
+# Define transition_to_phase helper function
+# Consolidates phase transition operations to eliminate duplicate progress markers
+# and optimize checkpoint save/metadata operations
+transition_to_phase() {
+  local from_phase="$1"
+  local to_phase="$2"
+  local artifacts_json="${3:-{}}"
+
+  # Performance timing (if enabled)
+  if [[ "${DEBUG_PERFORMANCE:-0}" == "1" ]] && [ -n "${PHASE_START_TIME:-}" ]; then
+    local phase_end_time=$(date +%s%N)
+    local phase_duration=$(( (phase_end_time - PHASE_START_TIME) / 1000000 ))
+    echo "PERF: Phase $from_phase completed in ${phase_duration}ms" >&2
+
+    # Log to file if logging enabled
+    local log_file="${CLAUDE_PROJECT_DIR}/.claude/data/logs/coordinate-performance.log"
+    if [ -d "$(dirname "$log_file")" ]; then
+      echo "$(date -Iseconds),phase_${from_phase},${phase_duration}ms" >> "$log_file"
+    fi
+  fi
+
+  # Single progress marker (eliminate duplicates)
+  if command -v emit_progress >/dev/null 2>&1; then
+    emit_progress "$from_phase" "Phase $from_phase complete, transitioning to Phase $to_phase"
+  fi
+
+  # Background checkpoint save (non-blocking) - only if function exists
+  if command -v save_checkpoint >/dev/null 2>&1; then
+    save_checkpoint "coordinate" "phase_${from_phase}" "$artifacts_json" &
+    local checkpoint_pid=$!
+  fi
+
+  # Store metadata synchronously (if function exists)
+  if command -v store_phase_metadata >/dev/null 2>&1; then
+    store_phase_metadata "phase_${from_phase}" "complete" "$artifacts_json"
+  fi
+
+  # Apply pruning policy based on workflow type (if function exists)
+  if command -v apply_pruning_policy >/dev/null 2>&1; then
+    apply_pruning_policy "phase_${from_phase}" "$WORKFLOW_SCOPE"
+  fi
+
+  # Wait for checkpoint to complete (if it was started)
+  if [ -n "${checkpoint_pid:-}" ]; then
+    wait $checkpoint_pid 2>/dev/null || true
+  fi
+
+  # Emit transition complete marker and start next phase timer
+  if command -v emit_progress >/dev/null 2>&1; then
+    emit_progress "$to_phase" "Phase $to_phase starting"
+  fi
+
+  # Reset phase timer for next phase (if performance timing enabled)
+  if [[ "${DEBUG_PERFORMANCE:-0}" == "1" ]]; then
+    PHASE_START_TIME=$(date +%s%N)
+  fi
+}
+
 # ────────────────────────────────────────────────────────────────────
 # STEP 0.5: Check for Checkpoint Resume (If Supported by Scope)
 # ────────────────────────────────────────────────────────────────────
@@ -855,6 +913,12 @@ echo ""
 # Reconstruct REPORT_PATHS array from exported variables
 # (Bash arrays cannot be directly exported, so we use a helper function)
 reconstruct_report_paths_array
+
+# Initialize performance timing for Phase 1 (if enabled)
+if [[ "${DEBUG_PERFORMANCE:-0}" == "1" ]]; then
+  PHASE_START_TIME=$(date +%s%N)
+  echo "PERF: Performance timing enabled" >&2
+fi
 
 # Emit final progress marker
 emit_progress "0" "Phase 0 complete (topic: $TOPIC_PATH)"
