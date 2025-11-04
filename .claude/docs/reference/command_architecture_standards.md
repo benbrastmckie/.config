@@ -1397,6 +1397,84 @@ If behavioral content duplication is detected:
 
 ---
 
+### Standard 13: Project Directory Detection
+
+**Pattern**: Commands MUST use `CLAUDE_PROJECT_DIR` for project-relative paths
+
+**Rationale**:
+- `${BASH_SOURCE[0]}` is unavailable in SlashCommand execution context
+- Git-based detection handles worktrees correctly
+- Consistent with library implementation patterns
+- Eliminates library sourcing failures that require AI-driven recovery
+
+**Implementation**:
+
+```bash
+# Detect project directory if not already set
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+```
+
+**Anti-Pattern**:
+
+```bash
+# ❌ INCORRECT - Fails in SlashCommand context
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/../lib"
+```
+
+**When `${BASH_SOURCE[0]}` IS Appropriate**:
+- Standalone test scripts (`.claude/tests/*.sh`)
+- Utility scripts executed directly (not via SlashCommand)
+- Library files that are sourced (not executed)
+
+**Context Awareness**:
+
+Commands and scripts have fundamentally different execution contexts:
+
+| Context | Path Detection | Reliability | Use Case |
+|---------|---------------|-------------|----------|
+| SlashCommand | `CLAUDE_PROJECT_DIR` (git/pwd) | 100% | All command files |
+| Standalone Script | `${BASH_SOURCE[0]}` | 100% | Test files, utilities |
+| Sourced Library | `${BASH_SOURCE[0]}` | 100% | Library files |
+
+**Key Insight**: Execution context determines appropriate pattern choice.
+
+**Error Diagnostics**:
+
+When library sourcing fails, provide enhanced diagnostics:
+
+```bash
+if [ -f "$LIB_DIR/library-sourcing.sh" ]; then
+  source "$LIB_DIR/library-sourcing.sh"
+else
+  echo "ERROR: Required library not found: library-sourcing.sh"
+  echo ""
+  echo "Expected location: $LIB_DIR/library-sourcing.sh"
+  echo ""
+  echo "Diagnostic information:"
+  echo "  CLAUDE_PROJECT_DIR: ${CLAUDE_PROJECT_DIR}"
+  echo "  LIB_DIR: ${LIB_DIR}"
+  echo "  Current directory: $(pwd)"
+  echo ""
+  exit 1
+fi
+```
+
+**See Also**:
+- `.claude/lib/detect-project-dir.sh` - Centralized detection utility
+- `.claude/commands/coordinate.md:527-552` - Reference implementation
+
+---
+
 ## Refactoring Guidelines
 
 ### When to Extract Content
