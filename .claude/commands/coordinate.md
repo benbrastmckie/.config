@@ -532,7 +532,7 @@ emit_progress "2" "Planning phase started"
 echo "Phase 0: Initialization started"
 
 # ────────────────────────────────────────────────────────────────────
-# STEP 0: Project Directory Detection and Library Sourcing
+# STEP 0.1: Project Directory Detection (Minimal Bootstrap)
 # ────────────────────────────────────────────────────────────────────
 
 # Project directory detection (Standard 13)
@@ -550,7 +550,76 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Source library-sourcing.sh
+# ────────────────────────────────────────────────────────────────────
+# STEP 0.2: Parse Workflow Description (Before Library Loading)
+# ────────────────────────────────────────────────────────────────────
+
+WORKFLOW_DESCRIPTION="$1"
+
+if [ -z "$WORKFLOW_DESCRIPTION" ]; then
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "DIAGNOSTIC INFO: Missing Workflow Description"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "ERROR: Workflow description required"
+  echo ""
+  echo "Usage: /coordinate \"<workflow description>\""
+  echo ""
+  echo "Examples:"
+  echo "  /coordinate \"research API authentication patterns\""
+  echo "  /coordinate \"plan user profile feature\""
+  echo "  /coordinate \"implement and test authentication system\""
+  echo "  /coordinate \"debug login failure issue\""
+  echo ""
+  exit 1
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# STEP 0.3: Inline Scope Detection (No Library Dependencies)
+# ────────────────────────────────────────────────────────────────────
+# Lightweight scope detection to determine which libraries to load.
+# This must run before library sourcing to enable conditional loading.
+
+WORKFLOW_SCOPE="research-and-plan"  # Default fallback
+
+if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^research.*" && \
+   ! echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|implement|fix|debug|create|add|build)"; then
+  WORKFLOW_SCOPE="research-only"
+elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(implement|build|add|create).*feature"; then
+  WORKFLOW_SCOPE="full-implementation"
+elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(fix|debug|troubleshoot)"; then
+  WORKFLOW_SCOPE="debug-only"
+elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|create.*plan|design)"; then
+  WORKFLOW_SCOPE="research-and-plan"
+fi
+
+# Map scope to phase execution list
+case "$WORKFLOW_SCOPE" in
+  research-only)
+    PHASES_TO_EXECUTE="0,1"
+    SKIP_PHASES="2,3,4,5,6"
+    ;;
+  research-and-plan)
+    PHASES_TO_EXECUTE="0,1,2"
+    SKIP_PHASES="3,4,5,6"
+    ;;
+  full-implementation)
+    PHASES_TO_EXECUTE="0,1,2,3,4"
+    SKIP_PHASES=""  # Phase 5 conditional on test failures, Phase 6 always
+    ;;
+  debug-only)
+    PHASES_TO_EXECUTE="0,1,5"
+    SKIP_PHASES="2,3,4,6"
+    ;;
+esac
+
+export WORKFLOW_SCOPE PHASES_TO_EXECUTE SKIP_PHASES
+
+# ────────────────────────────────────────────────────────────────────
+# STEP 0.4: Conditional Library Loading Based on Scope
+# ────────────────────────────────────────────────────────────────────
+
+# Source library-sourcing.sh first
 if [ -f "$LIB_DIR/library-sourcing.sh" ]; then
   source "$LIB_DIR/library-sourcing.sh"
 else
@@ -566,21 +635,85 @@ else
   exit 1
 fi
 
-# Source all required libraries
-if ! source_required_libraries "dependency-analyzer.sh"; then
-  exit 1
+# Define required libraries based on scope
+case "$WORKFLOW_SCOPE" in
+  research-only)
+    # Minimal set: 3 libraries for simple research workflows
+    REQUIRED_LIBS=(
+      "workflow-detection.sh"
+      "unified-logger.sh"
+      "unified-location-detection.sh"
+    )
+    ;;
+  research-and-plan)
+    # Moderate set: 5 libraries for research + planning
+    REQUIRED_LIBS=(
+      "workflow-detection.sh"
+      "unified-logger.sh"
+      "unified-location-detection.sh"
+      "metadata-extraction.sh"
+      "checkpoint-utils.sh"
+    )
+    ;;
+  full-implementation)
+    # Full set: 8 libraries for complete workflows
+    REQUIRED_LIBS=(
+      "workflow-detection.sh"
+      "unified-logger.sh"
+      "unified-location-detection.sh"
+      "metadata-extraction.sh"
+      "checkpoint-utils.sh"
+      "dependency-analyzer.sh"
+      "context-pruning.sh"
+      "error-handling.sh"
+    )
+    ;;
+  debug-only)
+    # Debug set: 6 libraries for debugging workflows
+    REQUIRED_LIBS=(
+      "workflow-detection.sh"
+      "unified-logger.sh"
+      "unified-location-detection.sh"
+      "metadata-extraction.sh"
+      "checkpoint-utils.sh"
+      "error-handling.sh"
+    )
+    ;;
+esac
+
+# Source only required libraries for this scope
+if ! source_required_libraries "${REQUIRED_LIBS[@]}"; then
+  echo "WARNING: Conditional library loading failed for scope: $WORKFLOW_SCOPE"
+  echo "Falling back to full library set..."
+  # Fallback to full set on errors
+  if ! source_required_libraries "dependency-analyzer.sh" "context-pruning.sh" "error-handling.sh"; then
+    exit 1
+  fi
 fi
 
-echo "  ✓ Libraries loaded"
+echo "  ✓ Libraries loaded (${#REQUIRED_LIBS[@]} for $WORKFLOW_SCOPE)"
 
-# Verify critical functions are defined
-REQUIRED_FUNCTIONS=(
-  "detect_workflow_scope"
-  "should_run_phase"
-  "emit_progress"
-  "save_checkpoint"
-  "restore_checkpoint"
-)
+# Verify critical functions are defined based on scope
+# Different scopes require different functions based on loaded libraries
+case "$WORKFLOW_SCOPE" in
+  research-only)
+    # Minimal function set for research-only workflows
+    REQUIRED_FUNCTIONS=(
+      "detect_workflow_scope"
+      "emit_progress"
+    )
+    ;;
+  research-and-plan|debug-only|full-implementation)
+    # Full function set for workflows with checkpointing
+    REQUIRED_FUNCTIONS=(
+      "detect_workflow_scope"
+      "should_run_phase"
+      "emit_progress"
+      "save_checkpoint"
+      "restore_checkpoint"
+    )
+    ;;
+esac
 
 MISSING_FUNCTIONS=()
 for func in "${REQUIRED_FUNCTIONS[@]}"; do
@@ -594,6 +727,9 @@ if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
   for func in "${MISSING_FUNCTIONS[@]}"; do
     echo "  - $func()"
   done
+  echo ""
+  echo "Scope: $WORKFLOW_SCOPE"
+  echo "Libraries loaded: ${#REQUIRED_LIBS[@]}"
   exit 1
 fi
 
@@ -631,75 +767,32 @@ display_brief_summary() {
 }
 
 # ────────────────────────────────────────────────────────────────────
-# STEP 1: Parse Workflow Description
+# STEP 0.5: Check for Checkpoint Resume (If Supported by Scope)
 # ────────────────────────────────────────────────────────────────────
 
-WORKFLOW_DESCRIPTION="$1"
+# Check for existing checkpoint (only if checkpoint-utils.sh is loaded)
+if command -v restore_checkpoint >/dev/null 2>&1; then
+  RESUME_DATA=$(restore_checkpoint "coordinate" 2>/dev/null || echo "")
+  if [ -n "$RESUME_DATA" ]; then
+    RESUME_PHASE=$(echo "$RESUME_DATA" | jq -r '.current_phase // empty')
+  else
+    RESUME_PHASE=""
+  fi
 
-if [ -z "$WORKFLOW_DESCRIPTION" ]; then
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "DIAGNOSTIC INFO: Missing Workflow Description"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo ""
-  echo "ERROR: Workflow description required"
-  echo ""
-  echo "Usage: /coordinate \"<workflow description>\""
-  echo ""
-  echo "Examples:"
-  echo "  /coordinate \"research API authentication patterns\""
-  echo "  /coordinate \"plan user profile feature\""
-  echo "  /coordinate \"implement and test authentication system\""
-  echo "  /coordinate \"debug login failure issue\""
-  echo ""
-  exit 1
-fi
-
-# Check for existing checkpoint (auto-resume capability)
-RESUME_DATA=$(restore_checkpoint "coordinate" 2>/dev/null || echo "")
-if [ -n "$RESUME_DATA" ]; then
-  RESUME_PHASE=$(echo "$RESUME_DATA" | jq -r '.current_phase // empty')
+  if [ -n "$RESUME_PHASE" ]; then
+    emit_progress "Resume" "Checkpoint detected - resuming from Phase $RESUME_PHASE"
+    emit_progress "Resume" "Skipping completed phases 0-$((RESUME_PHASE - 1))"
+    echo ""
+  fi
 else
+  # research-only workflows don't support checkpointing
   RESUME_PHASE=""
 fi
-
-if [ -n "$RESUME_PHASE" ]; then
-  emit_progress "Resume" "Checkpoint detected - resuming from Phase $RESUME_PHASE"
-  emit_progress "Resume" "Skipping completed phases 0-$((RESUME_PHASE - 1))"
-  echo ""
-fi
-
-# ────────────────────────────────────────────────────────────────────
-# STEP 2: Detect Workflow Scope
-# ────────────────────────────────────────────────────────────────────
-
-WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
-
-# Map scope to phase execution list
-case "$WORKFLOW_SCOPE" in
-  research-only)
-    PHASES_TO_EXECUTE="0,1"
-    SKIP_PHASES="2,3,4,5,6"
-    ;;
-  research-and-plan)
-    PHASES_TO_EXECUTE="0,1,2"
-    SKIP_PHASES="3,4,5,6"
-    ;;
-  full-implementation)
-    PHASES_TO_EXECUTE="0,1,2,3,4"
-    SKIP_PHASES=""  # Phase 5 conditional on test failures, Phase 6 always
-    ;;
-  debug-only)
-    PHASES_TO_EXECUTE="0,1,5"
-    SKIP_PHASES="2,3,4,6"
-    ;;
-esac
-
-export WORKFLOW_SCOPE PHASES_TO_EXECUTE SKIP_PHASES
 
 echo "  ✓ Workflow scope detected: $WORKFLOW_SCOPE"
 
 # ────────────────────────────────────────────────────────────────────
-# STEP 3: Initialize Workflow Paths
+# STEP 0.6: Initialize Workflow Paths
 # ────────────────────────────────────────────────────────────────────
 
 # Source workflow initialization library
