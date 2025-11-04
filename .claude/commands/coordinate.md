@@ -561,7 +561,8 @@ if ! source_required_libraries "dependency-analyzer.sh" "context-pruning.sh" "ch
   exit 1
 fi
 
-echo "✓ All libraries loaded successfully"
+echo "✓ All libraries loaded successfully (in this bash block)"
+echo "NOTE: Each bash block runs in isolated subprocess - libraries re-sourced as needed"
 
 # Verify critical functions are defined
 REQUIRED_FUNCTIONS=(
@@ -667,6 +668,20 @@ fi
 STEP 2: Detect workflow scope
 
 ```bash
+# Source required libraries for this bash block
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+source "$LIB_DIR/library-sourcing.sh"
+source_required_libraries "workflow-detection.sh" || exit 1
+
 WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
 
 # Map scope to phase execution list
@@ -886,6 +901,20 @@ echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics"
 STEP 2: Invoke 2-4 research agents in parallel (single message, multiple Task calls)
 
 ```bash
+# Source required libraries for this bash block
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+source "$LIB_DIR/library-sourcing.sh"
+source_required_libraries "unified-logger.sh" || exit 1
+
 emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 ```
 

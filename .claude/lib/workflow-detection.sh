@@ -10,10 +10,35 @@
 set -euo pipefail
 
 # ==============================================================================
-# Workflow Scope Detection
+# Workflow Scope Detection (Smart Pattern Matching)
 # ==============================================================================
 #
-# The /supervise command supports 4 workflow types:
+# The /coordinate and /supervise commands support 4 workflow types.
+#
+# Detection Algorithm:
+#   1. Test ALL patterns against the prompt simultaneously
+#   2. Collect phase requirements from all matching patterns
+#   3. Compute union of required phases
+#   4. Select minimal workflow type that includes all required phases
+#
+# Pattern Phase Mappings:
+#   - research-only:       phases {0, 1}
+#   - research-and-plan:   phases {0, 1, 2}
+#   - full-implementation: phases {0, 1, 2, 3, 4, 6} + conditional {5}
+#   - debug-only:          phases {0, 1, 5}
+#
+# Selection Priority (by phase requirements):
+#   1. If phases include {3} → full-implementation (largest workflow)
+#   2. If phases include {5} but not {3} → debug-only
+#   3. If phases include {2} → research-and-plan
+#   4. If phases include only {0, 1} → research-only
+#
+# Conditional Phases (runtime logic, not detection):
+#   - Phase 5 (Debug): Runs only if Phase 4 (Testing) fails
+#   - Phase 4 (Testing): Always runs if Phase 3 (Implementation) runs
+#   - Phase 6 (Documentation): Runs only if 100% of tests pass
+#
+# Workflow type descriptions:
 #
 # 1. research-only
 #    - Keywords: "research [topic]" without "plan" or "implement"
@@ -26,9 +51,8 @@ set -euo pipefail
 #    - Creates research reports + implementation plan
 #
 # 3. full-implementation
-#    - Keywords: "implement", "build", "add feature"
-#    - Phases: 0 → 1 → 2 → 3 (Implementation) → 4 (Testing) → 6 (Documentation)
-#    - Phase 5 conditional on test failures
+#    - Keywords: "implement", "build", "add feature", "create [code component]"
+#    - Phases: 0 → 1 → 2 → 3 (Implementation) → 4 (Testing) → 5 (Debug if needed) → 6 (Documentation)
 #
 # 4. debug-only
 #    - Keywords: "fix [bug]", "debug [issue]", "troubleshoot [error]"
@@ -46,40 +70,90 @@ set -euo pipefail
 detect_workflow_scope() {
   local workflow_desc="$1"
 
-  # Pattern 1: Research-only (no planning or implementation)
+  # ==============================================================================
+  # Smart Pattern Matching Algorithm
+  # ==============================================================================
+  # 1. Test all patterns simultaneously
+  # 2. Collect phase requirements from all matches
+  # 3. Compute union of required phases
+  # 4. Select minimal workflow containing all phases
+
+  # Initialize match flags
+  local match_research_only=0
+  local match_research_plan=0
+  local match_implementation=0
+  local match_debug=0
+
+  # Pattern 1: Research-only
   # Keywords: "research [topic]" without "plan" or "implement"
-  # Phases: 0 (Location) → 1 (Research) → STOP
+  # Phases: {0, 1}
   if echo "$workflow_desc" | grep -Eiq "^research" && \
      ! echo "$workflow_desc" | grep -Eiq "plan|implement"; then
-    echo "research-only"
-    return
+    match_research_only=1
   fi
 
-  # Pattern 2: Research-and-plan (most common case)
+  # Pattern 2: Research-and-plan
   # Keywords: "research...to create plan", "analyze...for planning"
-  # Phases: 0 → 1 (Research) → 2 (Planning) → STOP
+  # Phases: {0, 1, 2}
   if echo "$workflow_desc" | grep -Eiq "(research|analyze|investigate).*(to |and |for ).*(plan|planning)"; then
-    echo "research-and-plan"
-    return
+    match_research_plan=1
   fi
 
   # Pattern 3: Full-implementation
   # Keywords: "implement", "build", "add feature", "create [code component]"
-  # Phases: 0 → 1 → 2 → 3 (Implementation) → 4 (Testing) → 5 (Debug if needed) → 6 (Documentation)
+  # Phases: {0, 1, 2, 3, 4, 6} + conditional {5}
   if echo "$workflow_desc" | grep -Eiq "implement|build|add.*(feature|functionality)|create.*(code|component|module)"; then
+    match_implementation=1
+  fi
+
+  # Pattern 4: Debug-only
+  # Keywords: "fix [bug]", "debug [issue]", "troubleshoot [error]"
+  # Phases: {0, 1, 5}
+  if echo "$workflow_desc" | grep -Eiq "^(fix|debug|troubleshoot).*(bug|issue|error|failure)"; then
+    match_debug=1
+  fi
+
+  # ==============================================================================
+  # Phase Union Computation and Workflow Selection
+  # ==============================================================================
+
+  # Compute required phases based on matches
+  local needs_implementation=0
+  local needs_planning=0
+  local needs_debug=0
+
+  [ $match_implementation -eq 1 ] && needs_implementation=1
+  [ $match_research_plan -eq 1 ] && needs_planning=1
+  [ $match_debug -eq 1 ] && needs_debug=1
+
+  # Selection Logic: Choose minimal workflow containing all required phases
+
+  # If implementation needed → full-implementation (includes phases 0,1,2,3,4,6)
+  # This is the largest workflow and supersedes all others
+  if [ $needs_implementation -eq 1 ]; then
     echo "full-implementation"
     return
   fi
 
-  # Pattern 4: Debug-only (fix existing code)
-  # Keywords: "fix [bug]", "debug [issue]", "troubleshoot [error]"
-  # Phases: 0 → 1 (Research) → 5 (Debug) → STOP (no new implementation)
-  if echo "$workflow_desc" | grep -Eiq "^(fix|debug|troubleshoot).*(bug|issue|error|failure)"; then
+  # If debug needed but no implementation → debug-only (includes phases 0,1,5)
+  if [ $needs_debug -eq 1 ]; then
     echo "debug-only"
     return
   fi
 
-  # Default: Conservative fallback to research-and-plan (safest for ambiguous cases)
+  # If planning needed → research-and-plan (includes phases 0,1,2)
+  if [ $needs_planning -eq 1 ]; then
+    echo "research-and-plan"
+    return
+  fi
+
+  # If only research-only matched → research-only (includes phases 0,1)
+  if [ $match_research_only -eq 1 ]; then
+    echo "research-only"
+    return
+  fi
+
+  # Default: Conservative fallback to research-and-plan
   echo "research-and-plan"
 }
 

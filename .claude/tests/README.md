@@ -82,6 +82,17 @@ This directory contains the comprehensive test suite for the Claude Code agentia
     - Edge cases (missing files, empty phases, special characters)
     - **Coverage**: 16/16 tests passing (100%)
 
+11. **test_workflow_detection.sh** - Tests for workflow scope detection (12 tests)
+    - Pattern 1: Research-only detection
+    - Pattern 2: Research-and-plan detection
+    - Pattern 3: Full-implementation detection
+    - Pattern 4: Debug-only detection
+    - Edge cases: Multi-intent prompts (research + plan + implement)
+    - Smart matching algorithm validation
+    - User-reported bug case (implement a plan → full-implementation)
+    - **Coverage**: 12/12 tests passing (100%)
+    - **Purpose**: Regression prevention for workflow detection algorithm
+
 ## Running Tests
 
 ### Run Individual Test Suites
@@ -114,6 +125,9 @@ cd /home/benjamin/.config/.claude/tests
 
 # Run hierarchy updates tests for all levels
 ./test_hierarchy_updates.sh --all-levels
+
+# Run workflow detection tests
+./test_workflow_detection.sh
 ```
 
 ### Run All Tests
