@@ -524,16 +524,30 @@ emit_progress "2" "Planning phase started"
 STEP 0: Source Required Libraries (MUST BE FIRST)
 
 ```bash
-# Determine script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Detect project directory if not already set
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
 
-# Source library-sourcing utilities first
-if [ -f "$SCRIPT_DIR/../lib/library-sourcing.sh" ]; then
-  source "$SCRIPT_DIR/../lib/library-sourcing.sh"
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+if [ -f "$LIB_DIR/library-sourcing.sh" ]; then
+  source "$LIB_DIR/library-sourcing.sh"
 else
   echo "ERROR: Required library not found: library-sourcing.sh"
   echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/library-sourcing.sh"
+  echo "Expected location: $LIB_DIR/library-sourcing.sh"
+  echo ""
+  echo "Diagnostic information:"
+  echo "  CLAUDE_PROJECT_DIR: ${CLAUDE_PROJECT_DIR}"
+  echo "  LIB_DIR: ${LIB_DIR}"
+  echo "  Current directory: $(pwd)"
+  echo ""
   exit 1
 fi
 
