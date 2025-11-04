@@ -71,8 +71,8 @@ source_required_libraries() {
     fi
   done
 
-  # Debug logging: show deduplication results
-  if [[ ${#libraries[@]} -ne ${#unique_libs[@]} ]]; then
+  # Debug logging: show deduplication results (only when DEBUG=1)
+  if [[ ${#libraries[@]} -ne ${#unique_libs[@]} ]] && [[ "${DEBUG:-0}" == "1" ]]; then
     local removed_count=$((${#libraries[@]} - ${#unique_libs[@]}))
     echo "DEBUG: Library deduplication: ${#libraries[@]} input libraries -> ${#unique_libs[@]} unique libraries ($removed_count duplicates removed)" >&2
   fi

@@ -557,7 +557,7 @@ else
 fi
 
 # Source all required libraries
-if ! source_required_libraries "dependency-analyzer.sh" "context-pruning.sh" "checkpoint-utils.sh" "unified-location-detection.sh" "workflow-detection.sh" "unified-logger.sh" "error-handling.sh"; then
+if ! source_required_libraries "dependency-analyzer.sh"; then
   exit 1
 fi
 
@@ -680,7 +680,7 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 source "$LIB_DIR/library-sourcing.sh"
-source_required_libraries "workflow-detection.sh" || exit 1
+source_required_libraries || exit 1
 
 WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
 
@@ -913,7 +913,7 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 source "$LIB_DIR/library-sourcing.sh"
-source_required_libraries "unified-logger.sh" || exit 1
+source_required_libraries || exit 1
 
 emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 ```
