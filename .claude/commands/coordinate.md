@@ -901,6 +901,50 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
   export CLAUDE_PROJECT_DIR
 fi
 
+# ────────────────────────────────────────────────────────────────────
+# Re-initialize workflow variables (Bash tool isolation GitHub #334, #2508)
+# Exports from Block 1 don't persist. Apply stateless recalculation pattern.
+# ────────────────────────────────────────────────────────────────────
+
+# Parse workflow description (duplicate from Block 1 line 553)
+WORKFLOW_DESCRIPTION="$1"
+
+# Inline scope detection (duplicate from Block 1 lines 581-604)
+# Note: Code duplication accepted per spec 585 recommendation
+WORKFLOW_SCOPE="research-and-plan"  # Default fallback
+
+# Check for research-only pattern
+if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^research.*"; then
+  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|implement|fix|debug|create|add|build)"; then
+    # Has action keywords - not research-only, will be classified below
+    :
+  else
+    # Pure research with no action keywords
+    WORKFLOW_SCOPE="research-only"
+  fi
+fi
+
+# Check other patterns if not already set to research-only
+if [ "$WORKFLOW_SCOPE" != "research-only" ]; then
+  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|create.*plan|design)"; then
+    WORKFLOW_SCOPE="research-and-plan"
+  elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(fix|debug|troubleshoot)"; then
+    WORKFLOW_SCOPE="debug-only"
+  elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(implement|build|add|create).*feature"; then
+    WORKFLOW_SCOPE="full-implementation"
+  fi
+fi
+
+# Defensive validation
+if [ -z "${WORKFLOW_DESCRIPTION:-}" ]; then
+  echo "ERROR: WORKFLOW_DESCRIPTION not set (pass as argument to /coordinate)"
+  exit 1
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# Source workflow-initialization.sh (now all variables available)
+# ────────────────────────────────────────────────────────────────────
+
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
   source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
 else
@@ -910,7 +954,7 @@ else
   exit 1
 fi
 
-# Call unified initialization function (silent)
+# Call unified initialization function (now variables are defined)
 # Implements 3-step pattern: scope detection → path pre-calculation → directory creation
 if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
   echo "ERROR: Workflow initialization failed"
