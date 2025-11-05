@@ -17,6 +17,17 @@
 - **Related Implementations**:
   - /home/benjamin/.config/.claude/specs/581_coordinate_command_performance_optimization/plans/001_coordinate_performance_optimization.md (COMPLETED 2025-11-04)
 
+## Checkpoint Protocol
+
+Track phase completion using `.claude/lib/checkpoint-580.sh`:
+
+```bash
+source .claude/lib/checkpoint-580.sh
+record_phase_completion <phase_number> "<phase_name>"
+```
+
+All phases reference this protocol for completion tracking. Checkpoints saved to `/tmp/merge_checkpoints.txt`.
+
 ## Overview
 
 This plan addresses the reconciliation of critical bug fixes and beneficial improvements between the save_coo and spec_org branches. The save_coo branch contains three essential bug fixes that make /coordinate functional (path detection, workflow detection, verification helpers), while spec_org contains valuable documentation and architectural improvements. The implementation follows a fail-fast, test-driven approach with rollback capability at each phase.
@@ -85,7 +96,7 @@ dependencies: []
 - [ ] Run workflow detection test suite on save_coo baseline: .claude/tests/test_workflow_detection.sh (expect 12/12 pass)
 - [ ] Run workflow detection test suite on spec_org worktree: cd /tmp/spec_org_worktree && .claude/tests/test_workflow_detection.sh (expect failures)
 - [ ] Document baseline test results in /tmp/baseline_test_results.txt
-- [ ] Create checkpoint file tracking phase completion: /tmp/merge_checkpoints.txt
+- [ ] Record phase completion: source .claude/lib/checkpoint-580.sh && record_phase_completion 1 "Preparation and Environment Setup"
 
 **Testing**:
 ```bash
@@ -128,12 +139,6 @@ dependencies: [1]
 - [ ] Apply fix to spec_org unified-logger.sh: Replace git-based SCRIPT_DIR detection (lines 24-39) with relative path pattern
 - [ ] Verify library sourcing works: bash -c 'source .claude/lib/library-sourcing.sh && echo "SUCCESS"'
 - [ ] Run coordinate command basic test: echo "test" | grep -q "test" (smoke test before full test suite)
-
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
 ```bash
@@ -183,12 +188,6 @@ dependencies: [2]
 - [ ] Test user's bug case: bash -c 'source .claude/lib/workflow-detection.sh && detect_workflow_scope "research auth to create and implement plan"' (expect "full-implementation")
 - [ ] Test multi-intent prompt: bash -c 'source .claude/lib/workflow-detection.sh && detect_workflow_scope "research X, plan Y, implement Z"' (expect "full-implementation")
 - [ ] Document test results in /tmp/workflow_detection_tests.txt
-
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
 ```bash
@@ -293,11 +292,6 @@ dependencies: [4]
 - [ ] Document validation results in /tmp/spec_org_validation_results.txt
 - [ ] If any tests fail: Roll back to checkpoint, analyze failure, retry with fixes
 
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
 ```bash
@@ -357,11 +351,6 @@ dependencies: [5]
 - [ ] Measure Phase 0 performance: time bash -c 'source .claude/lib/library-sourcing.sh && source .claude/lib/workflow-detection.sh'
 - [ ] Compare to baseline from Phase 1: Expected <150ms vs baseline 250-300ms
 
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
 ```bash
@@ -421,11 +410,6 @@ dependencies: [6]
 - [ ] Verify coordinate.md still parses correctly: bash -c 'grep -q "CRITICAL" .claude/commands/coordinate.md && echo "PASS"'
 - [ ] Test coordinate command not broken: bash -c 'grep -c "Phase [0-9]" .claude/commands/coordinate.md' (expect >6)
 
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
 ```bash
@@ -521,11 +505,6 @@ dependencies: [8]
 - [ ] Remove spec_org worktree: git worktree remove /tmp/spec_org_worktree
 - [ ] Create final summary commit on save_coo: git commit --allow-empty -m "chore(580): branch merge complete - summary in merge_summary.txt"
 
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
 ```bash
