@@ -314,12 +314,12 @@ mv .claude/lib/library-sourcing.sh.bak .claude/lib/library-sourcing.sh
 **Dependencies**: [1, 2]
 
 **Tasks**:
-- [ ] Add "Bash Tool Limitations" section to coordinate.md or separate doc
-- [ ] Explain export persistence limitation (GitHub #334, #2508)
-- [ ] Explain array export limitation and REPORT_PATH_N pattern
-- [ ] Explain why recalculation is necessary (not a workaround, but correct approach)
-- [ ] Link to Standard 13 for CLAUDE_PROJECT_DIR pattern
-- [ ] Link to workflow-initialization.sh for array handling
+- [x] Add "Bash Tool Limitations" section to coordinate.md
+- [x] Explain export persistence limitation (GitHub #334, #2508)
+- [x] Explain array export limitation and REPORT_PATH_N pattern
+- [x] Explain why recalculation is necessary (not a workaround, but correct approach)
+- [x] Link to Standard 13 for CLAUDE_PROJECT_DIR pattern
+- [x] Link to workflow-initialization.sh for array handling
 
 **Documentation Structure**:
 ```markdown
