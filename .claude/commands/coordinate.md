@@ -1057,7 +1057,12 @@ should_run_phase 1 || {
   exit 0
 }
 
-emit_progress "1" "Phase 1: Research (parallel agent invocation)"
+# Emit progress with fallback if function unavailable
+if command -v emit_progress &>/dev/null; then
+  emit_progress "1" "Phase 1: Research (parallel agent invocation)"
+else
+  echo "PROGRESS: [Phase 1] - Phase 1: Research (parallel agent invocation)"
+fi
 ```
 
 ### Complexity-Based Research Topics
@@ -1105,7 +1110,12 @@ LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 source "$LIB_DIR/library-sourcing.sh"
 source_required_libraries || exit 1
 
-emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
+# Emit progress with fallback if function unavailable
+if command -v emit_progress &>/dev/null; then
+  emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
+else
+  echo "PROGRESS: [Phase 1] - Invoking $RESEARCH_COMPLEXITY research agents in parallel"
+fi
 ```
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the research-specialist agent for EACH research topic.
@@ -1313,7 +1323,12 @@ should_run_phase 2 || {
   exit 0
 }
 
-emit_progress "2" "Phase 2: Planning (plan-architect invocation)"
+# Emit progress with fallback if function unavailable
+if command -v emit_progress &>/dev/null; then
+  emit_progress "2" "Phase 2: Planning (plan-architect invocation)"
+else
+  echo "PROGRESS: [Phase 2] - Phase 2: Planning (plan-architect invocation)"
+fi
 ```
 
 ### Planning Context Preparation
@@ -1494,7 +1509,12 @@ should_run_phase 3 || {
 ### Step 1: Dependency Analysis and Wave Calculation
 
 ```bash
-emit_progress "3" "Phase 3: Wave-based implementation"
+# Emit progress with fallback if function unavailable
+if command -v emit_progress &>/dev/null; then
+  emit_progress "3" "Phase 3: Wave-based implementation"
+else
+  echo "PROGRESS: [Phase 3] - Phase 3: Wave-based implementation"
+fi
 
 # Track performance metrics
 IMPL_START_TIME=$(date +%s)
@@ -1678,7 +1698,12 @@ should_run_phase 4 || {
   # Continue to next phase check or completion
 }
 
-emit_progress "4" "Phase 4: Testing (test-specialist invocation)"
+# Emit progress with fallback if function unavailable
+if command -v emit_progress &>/dev/null; then
+  emit_progress "4" "Phase 4: Testing (test-specialist invocation)"
+else
+  echo "PROGRESS: [Phase 4] - Phase 4: Testing (test-specialist invocation)"
+fi
 ```
 
 ### Test-Specialist Agent Invocation
