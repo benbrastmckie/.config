@@ -353,6 +353,63 @@ Verify: $topic_dir should contain absolute path to .claude/specs/NNN_topic/
 
 **Prevention**: Add "EXECUTE NOW" directive before all bash blocks that should run.
 
+### Symptom: Bash Syntax Errors in Large Blocks
+
+**Error Pattern**:
+- `bash: ${\\!varname}: bad substitution` errors
+- `bash: !: command not found` despite `set +H`
+- Errors only occur with large bash blocks (400+ lines)
+- Same code works in small blocks (<200 lines)
+
+**Root Cause**: Claude AI transforms bash code when extracting large (400+ line) bash blocks from markdown, escaping special characters like `!` in `${!var}` patterns.
+
+**Diagnostic Commands**:
+```bash
+# Measure bash block size
+awk '/^```bash$/,/^```$/ {if (NR>1 && !/^```/) count++} /^```$/ {if (count>0) {print count, "lines"; count=0}}' .claude/commands/command-name.md
+
+# Test small block equivalent
+bash <<'EOF'
+TEST_VAR="hello"
+result="${!TEST_VAR}"
+echo "$result"
+EOF
+# Expected: Works correctly (proves syntax is valid)
+```
+
+**Solution**: Split large bash blocks into chunks of <200 lines each:
+
+```markdown
+**EXECUTE NOW - Step 1: Project Setup** (176 lines)
+
+\```bash
+# Block 1: Project detection and library loading
+WORKFLOW_SCOPE="research-only"
+export WORKFLOW_SCOPE  # Export for next block
+\```
+
+**EXECUTE NOW - Step 2: Function Definitions** (168 lines)
+
+\```bash
+# Block 2: Function verification
+# WORKFLOW_SCOPE available from previous block
+result="${!WORKFLOW_SCOPE}"  # Works in small block
+\```
+```
+
+**Key Points**:
+- Export variables between blocks: `export VAR_NAME`
+- Export functions: `export -f function_name`
+- Aim for <200 lines per block (buffer below 400-line threshold)
+- Choose logical split boundaries
+
+**Real Example**: `/coordinate` Phase 0 (commit 3d8e49df)
+- Before: 402-line block, 3-5 transformation errors
+- After: 3 blocks (176, 168, 77 lines), 0 errors
+- See [Bash Tool Limitations - Large Bash Block Transformation](../troubleshooting/bash-tool-limitations.md#large-bash-block-transformation) for detailed guide
+
+**Prevention**: Monitor bash block sizes during development, split proactively at 300 lines.
+
 ## Section 3: File Creation Problems
 
 ### Symptom: Files Created in Wrong Location

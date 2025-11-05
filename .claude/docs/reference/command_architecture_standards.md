@@ -1924,6 +1924,7 @@ Use this checklist when reviewing pull requests that modify command or agent fil
 - [ ] **Error Handling**: Are recovery procedures specific with actions?
 - [ ] **References**: Do external references supplement (not replace) inline instructions?
 - [ ] **File Size**: Is file size >300 lines? (Flag if <300)
+- [ ] **Bash Block Size**: Are bash blocks <300 lines each? (Split if >300, transform errors at ~400)
 - [ ] **Annotations**: Are structural annotations present ([EXECUTION-CRITICAL], etc.)?
 - [ ] **Testing**: Has the command been executed successfully after changes?
 
@@ -2066,6 +2067,7 @@ This document should be read in conjunction with:
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md): Agent invocation and coordination patterns
 - [Testing Standards](../guides/testing-standards.md): Validation and testing requirements
 - [Documentation Standards](../../../CLAUDE.md#documentation-policy): General documentation guidelines
+- [Bash Tool Limitations](../troubleshooting/bash-tool-limitations.md): Command substitution escaping and bash block size limits
 
 ---
 
