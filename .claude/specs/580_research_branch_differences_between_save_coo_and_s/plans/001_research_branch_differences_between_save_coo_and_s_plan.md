@@ -130,15 +130,23 @@ dependencies: [1]
 
 **Complexity**: Medium
 
-**Tasks**:
-- [ ] Switch to spec_org worktree: cd /tmp/spec_org_worktree
-- [ ] Create checkpoint commit: git commit --allow-empty -m "checkpoint: before library sourcing fix"
-- [ ] Identify save_coo commit with library sourcing fix: git log save_coo --oneline --grep="library sourcing" (commit f198f2c5)
-- [ ] Review commit changes: git show f198f2c5 (file: .claude/lib/library-sourcing.sh, .claude/lib/unified-logger.sh)
-- [ ] Apply fix to spec_org library-sourcing.sh: Replace git-based path detection (lines 43-60) with CLAUDE_PROJECT_DIR pattern
-- [ ] Apply fix to spec_org unified-logger.sh: Replace git-based SCRIPT_DIR detection (lines 24-39) with relative path pattern
-- [ ] Verify library sourcing works: bash -c 'source .claude/lib/library-sourcing.sh && echo "SUCCESS"'
-- [ ] Run coordinate command basic test: echo "test" | grep -q "test" (smoke test before full test suite)
+**EXECUTE NOW - Library Sourcing Fix Application**:
+
+**STEP 1 (REQUIRED BEFORE STEP 2)**: Switch to spec_org worktree and create checkpoint
+- [ ] YOU MUST switch to spec_org worktree: cd /tmp/spec_org_worktree
+- [ ] MANDATORY: Create checkpoint commit: git commit --allow-empty -m "checkpoint: before library sourcing fix"
+
+**STEP 2 (REQUIRED BEFORE STEP 3)**: Identify and review library sourcing fix
+- [ ] EXECUTE: Identify save_coo commit: git log save_coo --oneline --grep="library sourcing" (commit f198f2c5)
+- [ ] EXECUTE: Review commit changes: git show f198f2c5
+
+**STEP 3 (REQUIRED BEFORE STEP 4)**: Apply library sourcing fixes
+- [ ] YOU MUST apply fix to library-sourcing.sh: Replace git-based path detection (lines 43-60) with CLAUDE_PROJECT_DIR pattern
+- [ ] YOU MUST apply fix to unified-logger.sh: Replace git-based SCRIPT_DIR detection (lines 24-39) with relative path pattern
+
+**STEP 4 (MANDATORY VERIFICATION)**: Verify library sourcing functionality
+- [ ] EXECUTE: Verify library sourcing: bash -c 'source .claude/lib/library-sourcing.sh && echo "SUCCESS"'
+- [ ] EXECUTE: Run basic smoke test: echo "test" | grep -q "test"
 
 **Testing**:
 ```bash
@@ -178,16 +186,22 @@ dependencies: [2]
 
 **Complexity**: High
 
-**Tasks**:
-- [ ] Review workflow detection differences: git diff save_coo spec_org -- .claude/lib/workflow-detection.sh
-- [ ] Identify save_coo commit with workflow detection fix: git log save_coo --oneline --grep="workflow detection" (commit 496d5118)
-- [ ] Review commit details: git show 496d5118 .claude/lib/workflow-detection.sh
-- [ ] Replace spec_org workflow-detection.sh with save_coo version: git checkout save_coo -- .claude/lib/workflow-detection.sh
-- [ ] Verify function signature unchanged: grep "detect_workflow_scope" .claude/lib/workflow-detection.sh
-- [ ] Run workflow detection unit tests: .claude/tests/test_workflow_detection.sh (expect 12/12 pass)
-- [ ] Test user's bug case: bash -c 'source .claude/lib/workflow-detection.sh && detect_workflow_scope "research auth to create and implement plan"' (expect "full-implementation")
-- [ ] Test multi-intent prompt: bash -c 'source .claude/lib/workflow-detection.sh && detect_workflow_scope "research X, plan Y, implement Z"' (expect "full-implementation")
-- [ ] Document test results in /tmp/workflow_detection_tests.txt
+**EXECUTE NOW - Workflow Detection Fix Application**:
+
+**STEP 1 (REQUIRED BEFORE STEP 2)**: Review workflow detection differences
+- [ ] EXECUTE: Review differences: git diff save_coo spec_org -- .claude/lib/workflow-detection.sh
+- [ ] EXECUTE: Identify fix commit: git log save_coo --oneline --grep="workflow detection" (commit 496d5118)
+- [ ] EXECUTE: Review commit details: git show 496d5118 .claude/lib/workflow-detection.sh
+
+**STEP 2 (REQUIRED BEFORE STEP 3)**: Replace workflow detection file
+- [ ] YOU MUST replace workflow-detection.sh: git checkout save_coo -- .claude/lib/workflow-detection.sh
+- [ ] MANDATORY: Verify function signature: grep "detect_workflow_scope" .claude/lib/workflow-detection.sh
+
+**STEP 3 (MANDATORY VERIFICATION)**: Run comprehensive workflow detection tests
+- [ ] YOU MUST run unit tests: .claude/tests/test_workflow_detection.sh (REQUIRED: 12/12 pass)
+- [ ] EXECUTE: Test user bug case: detect_workflow_scope "research auth to create and implement plan" (MUST return "full-implementation")
+- [ ] EXECUTE: Test multi-intent: detect_workflow_scope "research X, plan Y, implement Z" (MUST return "full-implementation")
+- [ ] MANDATORY: Document results in /tmp/workflow_detection_tests.txt
 
 **Testing**:
 ```bash
@@ -233,13 +247,18 @@ dependencies: [3]
 
 **Complexity**: Low
 
-**Tasks**:
-- [ ] Copy verification-helpers.sh to spec_org: cp ~/.config/.claude/lib/verification-helpers.sh /tmp/spec_org_worktree/.claude/lib/
-- [ ] Verify file copied successfully: test -f /tmp/spec_org_worktree/.claude/lib/verification-helpers.sh
-- [ ] Test verify_file_created function: bash -c 'source .claude/lib/verification-helpers.sh && touch /tmp/test.txt && verify_file_created /tmp/test.txt "test" "Phase 4"'
-- [ ] Update spec_org coordinate.md to source verification-helpers.sh: Add to library list at line 560
-- [ ] Replace verbose verification patterns in coordinate.md with verify_file_created calls (optional: document pattern, implement in Phase 6)
-- [ ] Smoke test coordinate command with new helpers: bash -c 'grep -q "verification-helpers.sh" .claude/commands/coordinate.md && echo "PASS"'
+**EXECUTE NOW - Verification Helpers Integration**:
+
+**STEP 1 (REQUIRED BEFORE STEP 2)**: Copy and verify verification helpers
+- [ ] YOU MUST copy verification-helpers.sh: cp ~/.config/.claude/lib/verification-helpers.sh /tmp/spec_org_worktree/.claude/lib/
+- [ ] MANDATORY: Verify file exists: test -f /tmp/spec_org_worktree/.claude/lib/verification-helpers.sh
+
+**STEP 2 (MANDATORY VERIFICATION)**: Test verification helper functionality
+- [ ] EXECUTE: Test verify_file_created function: bash -c 'source .claude/lib/verification-helpers.sh && touch /tmp/test.txt && verify_file_created /tmp/test.txt "test" "Phase 4"'
+
+**STEP 3 (REQUIRED BEFORE COMPLETION)**: Integrate with coordinate command
+- [ ] YOU MUST update coordinate.md: Add verification-helpers.sh to library list at line 560
+- [ ] EXECUTE: Smoke test: grep -q "verification-helpers.sh" .claude/commands/coordinate.md && echo "PASS"
 
 **Testing**:
 ```bash
@@ -282,15 +301,23 @@ dependencies: [4]
 
 **Complexity**: Medium
 
-**Tasks**:
-- [ ] Run workflow detection test suite: .claude/tests/test_workflow_detection.sh (expect 12/12 pass)
-- [ ] Test /coordinate with simple workflow: Create test prompt "research authentication patterns" in /tmp/test_coordinate.txt
-- [ ] Execute coordinate command test (dry-run): bash -c 'grep -q "research" /tmp/test_coordinate.txt && echo "Prompt validation: PASS"'
-- [ ] Verify library sourcing works in all coordinate bash blocks: grep -n "source.*library-sourcing.sh" .claude/commands/coordinate.md
-- [ ] Test library functions available: bash -c 'source .claude/lib/library-sourcing.sh && source_required_libraries "workflow-detection.sh" && command -v detect_workflow_scope && echo "Functions available: PASS"'
-- [ ] Compare spec_org test results to save_coo baseline from /tmp/baseline_test_results.txt
-- [ ] Document validation results in /tmp/spec_org_validation_results.txt
-- [ ] If any tests fail: Roll back to checkpoint, analyze failure, retry with fixes
+**EXECUTE NOW - Comprehensive Validation**:
+
+**STEP 1 (MANDATORY VERIFICATION)**: Run complete test suite
+- [ ] YOU MUST run workflow detection tests: .claude/tests/test_workflow_detection.sh (REQUIRED: 12/12 pass)
+
+**STEP 2 (REQUIRED BEFORE STEP 3)**: Test /coordinate functionality
+- [ ] EXECUTE: Create test prompt: echo "research authentication patterns" > /tmp/test_coordinate.txt
+- [ ] EXECUTE: Validate prompt: bash -c 'grep -q "research" /tmp/test_coordinate.txt && echo "PASS"'
+
+**STEP 3 (MANDATORY VERIFICATION)**: Verify library integration
+- [ ] YOU MUST verify library sourcing: grep -n "source.*library-sourcing.sh" .claude/commands/coordinate.md
+- [ ] EXECUTE: Test function availability: source .claude/lib/library-sourcing.sh && command -v detect_workflow_scope
+
+**STEP 4 (REQUIRED BEFORE COMPLETION)**: Compare and document results
+- [ ] MANDATORY: Compare to baseline: diff /tmp/baseline_test_results.txt current results
+- [ ] YOU MUST document validation: Save results to /tmp/spec_org_validation_results.txt
+- [ ] IF TESTS FAIL: Roll back to checkpoint, analyze, retry
 
 
 **Testing**:
@@ -331,25 +358,27 @@ dependencies: [5]
 
 **Complexity**: Medium-High
 
-**Tasks**:
-- [ ] Verify current position in spec_org worktree: cd /tmp/spec_org_worktree
-- [ ] Create checkpoint commit: git commit --allow-empty -m "checkpoint: before performance optimizations"
-- [ ] Identify performance optimization commits from save_coo: git log save_coo --oneline | grep -E "(e508ec1d|3090590c|08159958|01938154)"
-- [ ] Review commit e508ec1d (Phase 1: redundant library arguments removal): git show e508ec1d
-- [ ] Cherry-pick commit e508ec1d: git cherry-pick e508ec1d
-- [ ] Test library sourcing after Phase 1: bash -c 'source .claude/lib/library-sourcing.sh && echo "Phase 1: PASS"'
-- [ ] Review commit 3090590c (Phase 2: Phase 0 consolidation): git show 3090590c
-- [ ] Cherry-pick commit 3090590c: git cherry-pick 3090590c
-- [ ] Test Phase 0 consolidation: grep -c "Phase 0" .claude/commands/coordinate.md
-- [ ] Review commit 08159958 (Phase 3: conditional library loading): git show 08159958
-- [ ] Cherry-pick commit 08159958: git cherry-pick 08159958
-- [ ] Test conditional loading: bash -c 'grep -q "REQUIRED_LIBS" .claude/commands/coordinate.md && echo "Phase 3: PASS"'
-- [ ] Review commit 01938154 (Phase 4: transition helper and metrics): git show 01938154
-- [ ] Cherry-pick commit 01938154: git cherry-pick 01938154
-- [ ] Test transition helper: bash -c 'grep -q "transition_to_phase" .claude/commands/coordinate.md && echo "Phase 4: PASS"'
-- [ ] Resolve any merge conflicts manually (document in /tmp/merge_conflicts.txt)
-- [ ] Measure Phase 0 performance: time bash -c 'source .claude/lib/library-sourcing.sh && source .claude/lib/workflow-detection.sh'
-- [ ] Compare to baseline from Phase 1: Expected <150ms vs baseline 250-300ms
+**EXECUTE NOW - Performance Optimization Application**:
+
+**STEP 1 (REQUIRED BEFORE STEP 2)**: Prepare for optimization cherry-picks
+- [ ] EXECUTE: Navigate to spec_org: cd /tmp/spec_org_worktree
+- [ ] MANDATORY: Create checkpoint: git commit --allow-empty -m "checkpoint: before performance optimizations"
+- [ ] EXECUTE: Identify optimization commits: git log save_coo --oneline | grep -E "(e508ec1d|3090590c|08159958|01938154)"
+
+**STEP 2 (REQUIRED BEFORE STEP 3)**: Apply all 4 performance optimizations in sequence
+- [ ] YOU MUST review commit e508ec1d: git show e508ec1d
+- [ ] YOU MUST cherry-pick e508ec1d: git cherry-pick e508ec1d
+- [ ] YOU MUST review commit 3090590c: git show 3090590c
+- [ ] YOU MUST cherry-pick 3090590c: git cherry-pick 3090590c
+- [ ] YOU MUST review commit 08159958: git show 08159958
+- [ ] YOU MUST cherry-pick 08159958: git cherry-pick 08159958
+- [ ] YOU MUST review commit 01938154: git show 01938154
+- [ ] YOU MUST cherry-pick 01938154: git cherry-pick 01938154
+- [ ] IF CONFLICTS: Resolve manually and document in /tmp/merge_conflicts.txt
+
+**STEP 3 (MANDATORY VERIFICATION)**: Measure performance improvement
+- [ ] EXECUTE: Measure Phase 0 performance: time bash -c 'source .claude/lib/library-sourcing.sh && source .claude/lib/workflow-detection.sh'
+- [ ] MANDATORY: Verify <150ms (baseline 250-300ms = 40-60% improvement)
 
 
 **Testing**:
