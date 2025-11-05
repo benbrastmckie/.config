@@ -985,8 +985,20 @@ if [[ "${DEBUG_PERFORMANCE:-0}" == "1" ]]; then
 fi
 export PHASE_START_TIME
 
+# Source unified-logger.sh for emit_progress function
+# Note: Exports don't persist between Bash invocations (GitHub #334, #2508)
+# Solution: Re-source library before using emit_progress
+if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh" ]; then
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh"
+fi
+
 # Emit final progress marker
-emit_progress "0" "Phase 0 complete (topic: $TOPIC_PATH)"
+# Fallback to echo if emit_progress is unavailable
+if command -v emit_progress &>/dev/null; then
+  emit_progress "0" "Phase 0 complete (topic: $TOPIC_PATH)"
+else
+  echo "PROGRESS: [Phase 0] - Phase 0 complete (topic: $TOPIC_PATH)"
+fi
 echo ""
 ```
 
