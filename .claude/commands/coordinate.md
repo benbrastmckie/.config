@@ -706,6 +706,20 @@ USE the Bash tool to execute the following Phase 0 setup (Step 2 of 3):
 
 ```bash
 # ────────────────────────────────────────────────────────────────────
+# STEP 0.4.0: Recalculate CLAUDE_PROJECT_DIR (Exports don't persist)
+# ────────────────────────────────────────────────────────────────────
+# Bash tool limitation (GitHub #334, #2508): exports from Block 1 don't
+# persist to Block 2. Recalculate using same git-based detection pattern.
+
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+fi
+
+# ────────────────────────────────────────────────────────────────────
 # STEP 0.4.1: Verify Critical Functions Based on Scope
 # ────────────────────────────────────────────────────────────────────
 
@@ -883,8 +897,18 @@ USE the Bash tool to execute the following Phase 0 setup (Step 3 of 3):
 # ────────────────────────────────────────────────────────────────────
 
 # Source workflow initialization library
-# Note: BASH_SOURCE not available in SlashCommand context (markdown code extraction)
-# Use CLAUDE_PROJECT_DIR exported from Block 1 (line 550)
+# Note 1: BASH_SOURCE not available in SlashCommand context (Plan 583 finding)
+# Note 2: Exports don't persist between Bash invocations (GitHub #334, #2508)
+# Solution: Recalculate CLAUDE_PROJECT_DIR in each block independently
+
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+fi
+
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
   source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
 else
@@ -964,63 +988,29 @@ echo ""
 **REQUIRED ACTION**: The following helper functions implement concise verification with silent success and verbose failure patterns. These functions MUST be used at all file creation checkpoints.
 
 ```bash
-# verify_file_created - Concise file verification with optional verbose failure
-#
-# Arguments:
-#   $1 - file_path (absolute path to verify)
-#   $2 - item_description (e.g., "Research report 1/4")
-#   $3 - phase_name (e.g., "Phase 1")
-#
-# Returns:
-#   0 - File exists and has content (prints single ✓ character)
-#   1 - File missing or empty (prints verbose diagnostic)
-#
-# Output:
-#   Success: Single character "✓" (no newline)
-#   Failure: Multi-line diagnostic with suggested actions
-#
-verify_file_created() {
-  local file_path="$1"
-  local item_desc="$2"
-  local phase_name="$3"
+# Source verification helpers library
+# Note: Export -f doesn't persist between Bash invocations (GitHub #334, #2508)
+# Solution: Source library in blocks that need it (this block and Phase 1)
 
-  if [ -f "$file_path" ] && [ -s "$file_path" ]; then
-    echo -n "✓"  # Success - single character, no newline
-    return 0
+# Recalculate CLAUDE_PROJECT_DIR (exports don't persist from Block 3)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
   else
-    # Failure - verbose diagnostic
-    echo ""
-    echo "✗ ERROR [$phase_name]: $item_desc verification failed"
-    echo "   Expected: File exists at $file_path"
-    [ ! -f "$file_path" ] && echo "   Found: File does not exist" || echo "   Found: File empty (0 bytes)"
-    echo ""
-    echo "DIAGNOSTIC INFORMATION:"
-    echo "  - Expected path: $file_path"
-    echo "  - Parent directory: $(dirname "$file_path")"
-
-    local dir="$(dirname "$file_path")"
-    if [ -d "$dir" ]; then
-      local file_count
-      file_count=$(ls -1 "$dir" 2>/dev/null | wc -l)
-      echo "  - Directory status: ✓ Exists ($file_count files)"
-      if [ "$file_count" -gt 0 ]; then
-        echo "  - Recent files:"
-        ls -lht "$dir" | head -4
-      fi
-    else
-      echo "  - Directory status: ✗ Does not exist"
-      echo "  - Fix: mkdir -p $dir"
-    fi
-    echo ""
-    echo "Diagnostic commands:"
-    echo "  ls -la $dir"
-    echo "  cat .claude/agents/[agent-name].md | head -50"
-    echo ""
-    return 1
+    CLAUDE_PROJECT_DIR="$(pwd)"
   fi
-}
+fi
 
-export -f verify_file_created
+# Source verification helpers library (provides verify_file_created function)
+if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
+else
+  echo "ERROR: verification-helpers.sh not found"
+  echo "Required for verify_file_created function"
+  exit 1
+fi
+
+# No export -f needed - Phase 1 will source the library itself
 ```
 
 ## Phase 1: Research
@@ -1131,6 +1121,25 @@ emit_progress "1" "All research agents invoked - awaiting completion"
 STEP 3: Verify ALL research reports created successfully (concise format with fail-fast)
 
 ```bash
+# Recalculate CLAUDE_PROJECT_DIR (exports don't persist from previous blocks)
+# Required to source verification-helpers.sh library
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+fi
+
+# Source verification helpers for verify_file_created function
+# Note: export -f from Block 4 doesn't persist (GitHub #334, #2508)
+if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
+else
+  echo "ERROR: verification-helpers.sh not found (needed for verify_file_created)"
+  exit 1
+fi
+
 # Concise verification with inline status indicators
 echo -n "Verifying research reports ($RESEARCH_COMPLEXITY): "
 
