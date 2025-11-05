@@ -336,7 +336,7 @@ After completing the above tasks:
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
-### Phase 4: Dependency Installation and Validation
+### Phase 4: Dependency Installation and Validation [COMPLETED]
 dependencies: [3]
 
 **Objective**: Create comprehensive dependency installation section with Claude Code-assisted automation, platform-specific commands, and verification procedures.
@@ -344,20 +344,20 @@ dependencies: [3]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Write "Install Dependencies" section with automated checking overview (file: CLAUDE_CODE_INSTALL.md)
-- [ ] Create dependency checking script template for Claude Code to execute (file: nvim/scripts/check-dependencies.sh, new file)
-- [ ] Document core dependencies with links to platform guides (Neovim, Git, Node.js, Python, Nerd Fonts) (file: CLAUDE_CODE_INSTALL.md)
-- [ ] Document recommended tools (ripgrep, fd, lazygit, fzf) (file: CLAUDE_CODE_INSTALL.md)
-- [ ] Reference platform-specific installation commands from docs/platform/ guides (file: CLAUDE_CODE_INSTALL.md)
-- [ ] Write Claude Code prompt template for dependency installation assistance (file: CLAUDE_CODE_INSTALL.md)
-- [ ] Add verification section with version check commands for each dependency (file: CLAUDE_CODE_INSTALL.md)
-- [ ] Document optional dependencies for advanced features (LaTeX, Lean 4, Jupyter) with links to ADVANCED_SETUP.md (file: CLAUDE_CODE_INSTALL.md)
-- [ ] Create troubleshooting subsection for common dependency issues per platform (file: CLAUDE_CODE_INSTALL.md)
+- [x] Write "Install Dependencies" section with automated checking overview (file: CLAUDE_CODE_INSTALL.md)
+- [x] Create dependency checking script template for Claude Code to execute (file: nvim/scripts/check-dependencies.sh, new file)
+- [x] Document core dependencies with links to platform guides (Neovim, Git, Node.js, Python, Nerd Fonts) (file: CLAUDE_CODE_INSTALL.md)
+- [x] Document recommended tools (ripgrep, fd, lazygit, fzf) (file: CLAUDE_CODE_INSTALL.md)
+- [x] Reference platform-specific installation commands from docs/platform/ guides (file: CLAUDE_CODE_INSTALL.md)
+- [x] Write Claude Code prompt template for dependency installation assistance (file: CLAUDE_CODE_INSTALL.md)
+- [x] Add verification section with version check commands for each dependency (file: CLAUDE_CODE_INSTALL.md)
+- [x] Document optional dependencies for advanced features (LaTeX, Lean 4, Jupyter) with links to ADVANCED_SETUP.md (file: CLAUDE_CODE_INSTALL.md)
+- [x] Create troubleshooting subsection for common dependency issues per platform (file: CLAUDE_CODE_INSTALL.md)
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -371,11 +371,11 @@ bash nvim/scripts/check-dependencies.sh
 **Expected Duration**: 3-4 hours
 
 **Phase 4 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(584): complete Phase 4 - Dependency Installation and Validation`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(584): complete Phase 4 - Dependency Installation and Validation`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 5: First Launch and Configuration Validation
 dependencies: [4]
