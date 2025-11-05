@@ -2128,6 +2128,88 @@ Expected performance targets:
 - **Context Usage**: <25% cumulative across all phases
 - **Zero Fallbacks**: Single working path, fail-fast on errors
 
+## Bash Tool Limitations
+
+[REFERENCE-OK: Implementation details can reference this section]
+
+This section documents accepted trade-offs due to inherent Bash tool limitations in Claude Code's architecture.
+
+### Export Persistence (GitHub #334, #2508)
+
+**Limitation**: Exports from one Bash tool invocation don't persist to the next invocation.
+
+**Impact**: `CLAUDE_PROJECT_DIR` and other environment variables must be recalculated in each bash block.
+
+**Solution**: Use Standard 13 pattern (4 lines per block). This is **not a workaround** — it's the correct approach given the tool's execution model:
+
+```bash
+# Standard 13: CLAUDE_PROJECT_DIR detection for SlashCommand context
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+```
+
+**Rationale**: Each bash block runs in an isolated process. Recalculation ensures correctness across all execution contexts.
+
+### Array Export
+
+**Limitation**: Bash arrays cannot be exported across process boundaries.
+
+**Impact**: Multi-value data (e.g., research report paths) cannot be passed as arrays.
+
+**Solution**: `workflow-initialization.sh` exports arrays using indexed variables (`REPORT_PATH_1`, `REPORT_PATH_2`, etc.). Use `reconstruct_report_paths_array()` to rebuild arrays in subsequent blocks:
+
+```bash
+# Export pattern (in Phase 0)
+export REPORT_PATH_COUNT=3
+export REPORT_PATH_1="/path/to/report1.md"
+export REPORT_PATH_2="/path/to/report2.md"
+export REPORT_PATH_3="/path/to/report3.md"
+
+# Reconstruction pattern (in Phase 2+)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
+reconstruct_report_paths_array  # Rebuilds $REPORT_PATHS array
+```
+
+**Rationale**: Indexed variable pattern is the standard Bash approach for exporting array-like data.
+
+### Performance Impact
+
+Overhead from these patterns is negligible:
+
+- **CLAUDE_PROJECT_DIR detection**: <1ms per block (git command cached)
+- **Library sourcing**: ~5ms per block (bash source operation)
+- **Array reconstruction**: <1ms (simple loop over indexed variables)
+- **Total per-block overhead**: ~6ms
+- **Total workflow overhead**: ~50ms for 8 bash blocks
+
+**Accepted**: Small overhead is acceptable for correct, fail-fast operation across all workflow types.
+
+### Design Decision: No State Files
+
+**Considered Alternative**: Write state to temporary file, read in each block.
+
+**Rejected Because**:
+- Introduces file I/O overhead (>10ms per block)
+- Requires cleanup logic (additional failure mode)
+- Complicates error recovery (partial writes)
+- Violates fail-fast principle (silent fallback to stale state)
+- Adds 50+ lines of state management code
+
+**Current Approach Benefits**:
+- Zero I/O overhead
+- Zero cleanup logic
+- Immediate failure visibility
+- Simpler codebase
+- Idempotent (no stale state possible)
+
+### References
+
+- Standard 13: See `.claude/docs/reference/command_architecture_standards.md`
+- Workflow initialization: See `.claude/lib/workflow-initialization.sh`
+- GitHub issues: #334 (export persistence), #2508 (function export)
+
 ## Success Criteria
 
 [REFERENCE-OK: Success criteria can be maintained in external validation docs]
