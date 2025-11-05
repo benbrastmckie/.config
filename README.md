@@ -10,6 +10,8 @@ Every subdirectory includes a `README.md` file which documents the modules conta
 
 **Recommended**: See the [Claude Code-Assisted Installation Guide](docs/CLAUDE_CODE_INSTALL.md) for AI-powered setup assistance that automates dependency checking, troubleshooting, and configuration validation.
 
+**Migrating from Existing Config**: See the [Migration Guide](docs/MIGRATION_GUIDE.md) for systematic instructions on moving from your current Neovim setup while preserving your customizations, keybindings, and preferences.
+
 **Traditional Setup**: See the [Installation Guide](docs/INSTALLATION.md) for manual step-by-step setup instructions, including how to fork the repository, install dependencies, and run health checks.
 
 **Want to customize notifications?** See the [Notification System Documentation](docs/NOTIFICATIONS.md) for configuring notification behavior across all modules and plugins.

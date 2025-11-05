@@ -16,6 +16,8 @@
 
 ## Introduction
 
+**Already have a Neovim configuration?** If you're migrating from an existing setup and want to preserve your customizations, see the [Migration Guide](MIGRATION_GUIDE.md) instead. This guide is for fresh installations.
+
 ### What is Claude Code
 
 Claude Code is an AI-powered command-line interface tool developed by Anthropic that provides intelligent assistance for software development tasks. It acts as an AI pair programmer that can:

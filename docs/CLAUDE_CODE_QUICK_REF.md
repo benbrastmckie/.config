@@ -2,6 +2,34 @@
 
 Quick reference for common Claude Code prompts during Neovim configuration installation and maintenance.
 
+## Migration Prompts
+
+### Inventory Current Configuration
+```
+I want to migrate to a new Neovim configuration while preserving my customizations.
+Please analyze my current configuration and create a comprehensive inventory report.
+```
+
+### Extract Keybindings
+```
+Extract all my custom keybindings from [backup path] and create a personal_keymaps.lua file using vim.keymap.set() format.
+```
+
+### Extract Functions
+```
+Extract my custom functions from the old configuration at [path] and create a personal_functions.lua file with documentation.
+```
+
+### Identify Conflicts
+```
+Based on my inventory, identify potential conflicts with the new configuration. Suggest resolution strategies for keybinding conflicts and incompatible settings.
+```
+
+### Test Migration
+```
+Generate a testing checklist for all my personal keybindings and functions to verify the migration was successful.
+```
+
 ## Installation Phase Prompts
 
 ### Phase 1: Claude Code Installation
