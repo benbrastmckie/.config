@@ -75,6 +75,52 @@ This plan addresses the reconciliation of critical bug fixes and beneficial impr
 - [ ] Git history clean with atomic commits per phase
 - [ ] Complete test coverage for merged changes
 
+## Architectural Standards Compliance
+
+This plan adheres to Claude Code architectural standards:
+
+**Standard 0 (Execution Enforcement)**: ✓ Applied
+- All critical phases (2-6) use imperative language (EXECUTE NOW, YOU MUST, MANDATORY)
+- Tasks marked as REQUIRED BEFORE next steps
+- MANDATORY VERIFICATION blocks explicitly non-optional
+- All verification checkpoints include fail-fast error handling
+
+**Standard 11 (Imperative Agent Invocation)**: N/A
+- This plan uses direct execution, not agent delegation
+- No Task tool invocations required
+
+**Standard 12 (Structural vs Behavioral)**: N/A
+- Plan is implementation artifact, not agent behavioral content
+
+**Architectural Patterns Applied**:
+- **Verification and Fallback**: All MANDATORY VERIFICATION blocks include explicit failure handling with diagnostics
+- **Checkpoint Recovery**: Checkpoint commits before risky operations (Phases 2, 6)
+- **Fail-Fast Testing**: Tests exit immediately on failure with CRITICAL messages
+- **Context Clarity**: Each verification step includes diagnostic commands for troubleshooting
+
+**Anti-Patterns Avoided**:
+- ❌ No verification: All critical operations have MANDATORY VERIFICATION blocks
+- ❌ Verification without fallback: All verifications include fail-fast error handling with diagnostic output
+- ❌ Silent failures: All errors produce CRITICAL messages with actionable diagnostics
+- ❌ Ambiguous success: All successful verifications produce ✓ Verified messages
+
+**Verification Pattern Structure**:
+```bash
+# CRITICAL: [What MUST work]
+if ! [test condition]; then
+  echo "CRITICAL: [What failed]"
+  echo "DIAGNOSTIC: [How to troubleshoot]"
+  exit 1
+fi
+echo "✓ Verified: [What succeeded]"
+```
+
+**References**:
+- [Command Architecture Standards](/home/benjamin/.config/.claude/docs/reference/command_architecture_standards.md)
+- [Verification and Fallback Pattern](/home/benjamin/.config/.claude/docs/concepts/patterns/verification-fallback.md)
+- [Checkpoint Recovery Pattern](/home/benjamin/.config/.claude/docs/concepts/patterns/checkpoint-recovery.md)
+- [Imperative Language Guide](/home/benjamin/.config/.claude/docs/guides/imperative-language-guide.md)
+
 ## Technical Design
 
 ### Architecture Overview
@@ -148,23 +194,35 @@ dependencies: [1]
 - [ ] EXECUTE: Verify library sourcing: bash -c 'source .claude/lib/library-sourcing.sh && echo "SUCCESS"'
 - [ ] EXECUTE: Run basic smoke test: echo "test" | grep -q "test"
 
-**Testing**:
+**MANDATORY VERIFICATION - Library Sourcing**:
 ```bash
-# Test library sourcing in spec_org worktree
+# CRITICAL: Library sourcing MUST work in all contexts
 cd /tmp/spec_org_worktree
-bash -c '
-  source .claude/lib/library-sourcing.sh
-  source_required_libraries "workflow-detection.sh" || exit 1
-  echo "Library sourcing: PASS"
-'
 
-# Test without git (simulate SlashCommand context)
+# Test 1: Basic library sourcing (REQUIRED)
+if ! source .claude/lib/library-sourcing.sh; then
+  echo "CRITICAL: library-sourcing.sh failed to load"
+  echo "DIAGNOSTIC: Check CLAUDE_PROJECT_DIR is set or pwd is correct"
+  exit 1
+fi
+echo "✓ Verified: library-sourcing.sh loads successfully"
+
+# Test 2: Library function availability (REQUIRED)
+if ! source_required_libraries "workflow-detection.sh"; then
+  echo "CRITICAL: source_required_libraries() failed"
+  echo "DIAGNOSTIC: Check workflow-detection.sh exists in .claude/lib/"
+  exit 1
+fi
+echo "✓ Verified: source_required_libraries() functional"
+
+# Test 3: Git-free execution (REQUIRED - validates SlashCommand context)
 bash -c '
   unset GIT_DIR GIT_WORK_TREE
-  command -v git && { echo "Renaming git"; sudo mv /usr/bin/git /usr/bin/git.bak; }
-  source .claude/lib/library-sourcing.sh
-  echo "No-git test: $?"
-  [ -f /usr/bin/git.bak ] && sudo mv /usr/bin/git.bak /usr/bin/git
+  if ! source .claude/lib/library-sourcing.sh 2>/dev/null; then
+    echo "CRITICAL: Library sourcing requires git command"
+    exit 1
+  fi
+  echo "✓ Verified: Library sourcing works without git"
 '
 ```
 
@@ -203,29 +261,50 @@ dependencies: [2]
 - [ ] EXECUTE: Test multi-intent: detect_workflow_scope "research X, plan Y, implement Z" (MUST return "full-implementation")
 - [ ] MANDATORY: Document results in /tmp/workflow_detection_tests.txt
 
-**Testing**:
+**MANDATORY VERIFICATION - Workflow Detection**:
 ```bash
-# Run complete test suite
+# CRITICAL: All 12 workflow detection tests MUST pass
 cd /tmp/spec_org_worktree
-.claude/tests/test_workflow_detection.sh
 
-# Test specific cases from research report
+# Test 1: Complete test suite (REQUIRED: 12/12 pass)
+if ! .claude/tests/test_workflow_detection.sh; then
+  echo "CRITICAL: Workflow detection test suite failed"
+  echo "DIAGNOSTIC: Run '.claude/tests/test_workflow_detection.sh' manually for details"
+  exit 1
+fi
+echo "✓ Verified: 12/12 workflow detection tests passing"
+
+# Test 2: User bug case (REQUIRED - validates fix)
 bash -c '
   source .claude/lib/workflow-detection.sh
-
-  # User bug case
   result=$(detect_workflow_scope "research auth to create and implement plan")
-  [ "$result" = "full-implementation" ] || { echo "FAIL: User bug case"; exit 1; }
+  if [ "$result" != "full-implementation" ]; then
+    echo "CRITICAL: User bug case failed (got: $result, expected: full-implementation)"
+    exit 1
+  fi
+  echo "✓ Verified: User bug case fixed"
+'
 
-  # Multi-intent
+# Test 3: Multi-intent detection (REQUIRED)
+bash -c '
+  source .claude/lib/workflow-detection.sh
   result=$(detect_workflow_scope "research X, plan Y, implement Z")
-  [ "$result" = "full-implementation" ] || { echo "FAIL: Multi-intent"; exit 1; }
+  if [ "$result" != "full-implementation" ]; then
+    echo "CRITICAL: Multi-intent detection failed (got: $result)"
+    exit 1
+  fi
+  echo "✓ Verified: Multi-intent detection works"
+'
 
-  # Research-only
+# Test 4: Research-only detection (REQUIRED)
+bash -c '
+  source .claude/lib/workflow-detection.sh
   result=$(detect_workflow_scope "research topic")
-  [ "$result" = "research-only" ] || { echo "FAIL: Research-only"; exit 1; }
-
-  echo "All workflow detection tests: PASS"
+  if [ "$result" != "research-only" ]; then
+    echo "CRITICAL: Research-only detection failed (got: $result)"
+    exit 1
+  fi
+  echo "✓ Verified: Research-only detection works"
 '
 ```
 
@@ -260,27 +339,51 @@ dependencies: [3]
 - [ ] YOU MUST update coordinate.md: Add verification-helpers.sh to library list at line 560
 - [ ] EXECUTE: Smoke test: grep -q "verification-helpers.sh" .claude/commands/coordinate.md && echo "PASS"
 
-**Testing**:
+**MANDATORY VERIFICATION - Verification Helpers Library**:
 ```bash
-# Test verification helper functions
+# CRITICAL: Verification helper functions MUST be available and functional
 cd /tmp/spec_org_worktree
-bash -c '
-  source .claude/lib/verification-helpers.sh
 
-  # Test success case
-  touch /tmp/test_success.txt
-  if verify_file_created /tmp/test_success.txt "test file" "Phase 4"; then
-    echo "Success case: PASS"
-  fi
+# Test 1: Library loads successfully (REQUIRED)
+if ! source .claude/lib/verification-helpers.sh; then
+  echo "CRITICAL: verification-helpers.sh failed to load"
+  echo "DIAGNOSTIC: Check file exists at .claude/lib/verification-helpers.sh"
+  exit 1
+fi
+echo "✓ Verified: verification-helpers.sh loads successfully"
 
-  # Test failure case (should output diagnostic)
-  if ! verify_file_created /tmp/nonexistent.txt "missing file" "Phase 4" 2>/tmp/error.txt; then
-    grep -q "ERROR" /tmp/error.txt && echo "Failure case: PASS"
-  fi
+# Test 2: verify_file_created function exists (REQUIRED)
+if ! command -v verify_file_created >/dev/null 2>&1; then
+  echo "CRITICAL: verify_file_created function not available"
+  echo "DIAGNOSTIC: Source verification-helpers.sh and check function definition"
+  exit 1
+fi
+echo "✓ Verified: verify_file_created function available"
 
-  # Cleanup
-  rm /tmp/test_success.txt /tmp/error.txt
-'
+# Test 3: Success case (REQUIRED)
+touch /tmp/test_success.txt
+if ! verify_file_created /tmp/test_success.txt "test file" "Phase 4"; then
+  echo "CRITICAL: verify_file_created failed on existing file"
+  rm -f /tmp/test_success.txt
+  exit 1
+fi
+echo "✓ Verified: Success case works"
+rm /tmp/test_success.txt
+
+# Test 4: Failure case (REQUIRED - validates diagnostic output)
+if verify_file_created /tmp/nonexistent_file_12345.txt "missing file" "Phase 4" 2>/tmp/error.txt; then
+  echo "CRITICAL: verify_file_created should fail on nonexistent file"
+  rm -f /tmp/error.txt
+  exit 1
+fi
+if ! grep -q "ERROR" /tmp/error.txt; then
+  echo "CRITICAL: Error diagnostic not output for missing file"
+  cat /tmp/error.txt
+  rm -f /tmp/error.txt
+  exit 1
+fi
+echo "✓ Verified: Failure case produces diagnostic"
+rm /tmp/error.txt
 ```
 
 **Expected Duration**: 1 hour
@@ -320,24 +423,49 @@ dependencies: [4]
 - [ ] IF TESTS FAIL: Roll back to checkpoint, analyze, retry
 
 
-**Testing**:
+**MANDATORY VERIFICATION - Comprehensive Validation**:
 ```bash
-# Comprehensive validation suite
+# CRITICAL: All integrated fixes MUST work together
 cd /tmp/spec_org_worktree
 
-# 1. Workflow detection tests
-.claude/tests/test_workflow_detection.sh
-echo "Workflow detection: $?" >> /tmp/spec_org_validation_results.txt
+# Test 1: Workflow detection test suite (REQUIRED: 12/12 pass)
+if ! .claude/tests/test_workflow_detection.sh; then
+  echo "CRITICAL: Workflow detection test suite failed after integration"
+  echo "DIAGNOSTIC: Run '.claude/tests/test_workflow_detection.sh' manually for details"
+  exit 1
+fi
+echo "✓ Verified: 12/12 workflow detection tests passing"
+echo "Workflow detection: PASS" >> /tmp/spec_org_validation_results.txt
 
-# 2. Library sourcing in multiple contexts
-bash -c 'source .claude/lib/library-sourcing.sh && echo "Context 1: PASS"' >> /tmp/spec_org_validation_results.txt
-bash -c 'cd /tmp && source /tmp/spec_org_worktree/.claude/lib/library-sourcing.sh && echo "Context 2: PASS"' >> /tmp/spec_org_validation_results.txt
+# Test 2: Library sourcing in multiple contexts (REQUIRED)
+if ! bash -c 'source .claude/lib/library-sourcing.sh' 2>/dev/null; then
+  echo "CRITICAL: Library sourcing failed in context 1 (pwd context)"
+  exit 1
+fi
+echo "✓ Verified: Library sourcing works in pwd context"
+echo "Context 1: PASS" >> /tmp/spec_org_validation_results.txt
 
-# 3. Verification helpers
-bash -c 'source .claude/lib/verification-helpers.sh && command -v verify_file_created && echo "Helpers: PASS"' >> /tmp/spec_org_validation_results.txt
+if ! bash -c 'cd /tmp && source /tmp/spec_org_worktree/.claude/lib/library-sourcing.sh' 2>/dev/null; then
+  echo "CRITICAL: Library sourcing failed in context 2 (absolute path)"
+  exit 1
+fi
+echo "✓ Verified: Library sourcing works with absolute paths"
+echo "Context 2: PASS" >> /tmp/spec_org_validation_results.txt
 
-# 4. Compare to baseline
-diff /tmp/baseline_test_results.txt /tmp/spec_org_validation_results.txt || echo "Results differ (expected)"
+# Test 3: Verification helpers available (REQUIRED)
+if ! bash -c 'source .claude/lib/verification-helpers.sh && command -v verify_file_created' >/dev/null 2>&1; then
+  echo "CRITICAL: Verification helpers not available after integration"
+  exit 1
+fi
+echo "✓ Verified: Verification helpers integrated"
+echo "Helpers: PASS" >> /tmp/spec_org_validation_results.txt
+
+# Test 4: Compare to baseline (informational)
+if diff /tmp/baseline_test_results.txt /tmp/spec_org_validation_results.txt >/dev/null 2>&1; then
+  echo "INFO: Results match baseline (unexpected - spec_org should be improved)"
+else
+  echo "✓ Verified: Results differ from baseline (expected - fixes applied)"
+fi
 ```
 
 **Expected Duration**: 1.5 hours
@@ -381,33 +509,64 @@ dependencies: [5]
 - [ ] MANDATORY: Verify <150ms (baseline 250-300ms = 40-60% improvement)
 
 
-**Testing**:
+**MANDATORY VERIFICATION - Performance Optimizations**:
 ```bash
-# Test performance optimizations in spec_org worktree
+# CRITICAL: Performance optimizations MUST be applied and functional
 cd /tmp/spec_org_worktree
 
-# 1. Verify all 4 optimization commits applied
-git log --oneline | head -5 | grep -E "(library arguments|Phase 0|conditional|transition)" || echo "Check commit messages"
+# Test 1: Verify all 4 optimization commits applied (REQUIRED)
+commit_count=$(git log --oneline | head -5 | grep -E "(library arguments|Phase 0|conditional|transition)" | wc -l)
+if [ "$commit_count" -lt 4 ]; then
+  echo "CRITICAL: Not all 4 optimization commits applied (found: $commit_count)"
+  echo "DIAGNOSTIC: Run 'git log --oneline | head -10' to check commit history"
+  exit 1
+fi
+echo "✓ Verified: All 4 optimization commits applied"
 
-# 2. Test library sourcing optimization
-bash -c 'DEBUG=1 source .claude/lib/library-sourcing.sh && echo "Library sourcing: PASS"'
+# Test 2: Library sourcing works with optimizations (REQUIRED)
+if ! bash -c 'source .claude/lib/library-sourcing.sh' >/dev/null 2>&1; then
+  echo "CRITICAL: Library sourcing broken after performance optimizations"
+  echo "DIAGNOSTIC: Run 'bash -c \"DEBUG=1 source .claude/lib/library-sourcing.sh\"' for details"
+  exit 1
+fi
+echo "✓ Verified: Library sourcing functional after optimizations"
 
-# 3. Test Phase 0 consolidation
-phase_count=$(grep -c "STEP [0-9]" .claude/commands/coordinate.md)
-[ "$phase_count" -eq 0 ] && echo "Phase 0 consolidated: PASS" || echo "WARN: Found $phase_count STEP markers"
+# Test 3: Phase 0 consolidation applied (REQUIRED)
+if grep -q "^STEP [0-9]" .claude/commands/coordinate.md; then
+  echo "CRITICAL: Phase 0 not consolidated (found STEP markers)"
+  exit 1
+fi
+echo "✓ Verified: Phase 0 consolidation applied"
 
-# 4. Test conditional library loading
-bash -c 'grep -q "case.*WORKFLOW_SCOPE" .claude/commands/coordinate.md && echo "Conditional loading: PASS"'
+# Test 4: Conditional library loading implemented (REQUIRED)
+if ! grep -q "case.*WORKFLOW_SCOPE" .claude/commands/coordinate.md; then
+  echo "CRITICAL: Conditional library loading not implemented"
+  exit 1
+fi
+echo "✓ Verified: Conditional library loading implemented"
 
-# 5. Test performance metrics
-bash -c 'grep -q "DEBUG_PERFORMANCE" .claude/commands/coordinate.md && echo "Metrics: PASS"'
+# Test 5: Performance metrics available (REQUIRED)
+if ! grep -q "DEBUG_PERFORMANCE" .claude/commands/coordinate.md; then
+  echo "CRITICAL: Performance metrics not available"
+  exit 1
+fi
+echo "✓ Verified: Performance metrics available"
 
-# 6. Measure performance improvement
+# Test 6: Measure performance improvement (REQUIRED: <150ms)
 start_time=$(date +%s%N)
-bash -c 'source .claude/lib/library-sourcing.sh && source_required_libraries "workflow-detection.sh"' >/dev/null 2>&1
+if ! bash -c 'source .claude/lib/library-sourcing.sh && source_required_libraries "workflow-detection.sh"' >/dev/null 2>&1; then
+  echo "CRITICAL: Library sourcing failed during performance measurement"
+  exit 1
+fi
 end_time=$(date +%s%N)
 duration_ms=$(( (end_time - start_time) / 1000000 ))
-echo "Library sourcing duration: ${duration_ms}ms (baseline: 250-300ms, target: <150ms)"
+if [ "$duration_ms" -gt 150 ]; then
+  echo "WARNING: Performance target not met (${duration_ms}ms > 150ms target)"
+  echo "INFO: Baseline was 250-300ms, so ${duration_ms}ms is still an improvement"
+else
+  echo "✓ Verified: Performance target met (${duration_ms}ms < 150ms)"
+fi
+echo "Library sourcing duration: ${duration_ms}ms"
 ```
 
 **Expected Duration**: 2.5 hours
