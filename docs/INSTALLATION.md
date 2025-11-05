@@ -13,6 +13,8 @@ This guide will help you install a modern, feature-rich Neovim configuration wit
 
 See the [Technical Glossary](GLOSSARY.md) for definitions of unfamiliar terms.
 
+**Alternative**: For AI-powered installation assistance with automated dependency checking and troubleshooting, see the [Claude Code-Assisted Installation Guide](CLAUDE_CODE_INSTALL.md).
+
 ## Quick Start
 
 New users start here for the fastest installation path.
