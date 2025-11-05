@@ -1230,6 +1230,445 @@ source ~/.bashrc
 
 With all dependencies installed, proceed to [Phase 4: Launch Neovim and Bootstrap](#phase-4-launch-neovim-and-bootstrap) for first-time setup.
 
+## Phase 4: Launch Neovim and Bootstrap
+
+With dependencies installed and the repository cloned, you're ready to launch Neovim for the first time. The configuration includes an automatic bootstrap process that will install and configure all plugins.
+
+### First Launch
+
+Simply launch Neovim:
+
+```bash
+cd ~/.config/nvim
+nvim
+```
+
+### What Happens During Bootstrap
+
+The bootstrap process (defined in `lua/neotex/bootstrap.lua`) automatically:
+
+1. **Cleans Up**: Removes any temporary tree-sitter build directories
+2. **Installs lazy.nvim**: Downloads the plugin manager if not present
+3. **Validates Lock File**: Checks and fixes `lazy-lock.json` if corrupted
+4. **Sets Up Plugins**: Initializes lazy.nvim with all plugin specifications
+5. **Downloads Plugins**: Fetches and installs all configured plugins (2-5 minutes)
+6. **Configures LSP Servers**: Sets up Mason for language server management
+
+**Expected Timeline**:
+- Initial lazy.nvim install: 5-10 seconds
+- Plugin downloads: 2-5 minutes (depends on internet speed)
+- First complete launch: 3-6 minutes total
+
+**What You'll See**:
+- A popup window showing plugin installation progress
+- Download progress bars for each plugin
+- Status messages as plugins are compiled and configured
+- Some plugins may show brief notifications during first load
+
+**Tip**: Don't close Neovim until all plugins show as installed in the lazy.nvim UI.
+
+### Health Check and Validation
+
+After the first successful launch and all plugins are installed:
+
+1. **Run Health Check**:
+   ```vim
+   :checkhealth
+   ```
+
+2. **What to Look For**:
+
+   **Green (OK)** - Everything is working:
+   ```
+   - OK: Neovim version 0.10.0
+   - OK: Node.js version v20.11.0
+   - OK: Python 3.11.6
+   - OK: Git version 2.43.0
+   ```
+
+   **Yellow (WARNING)** - Recommended features missing:
+   ```
+   - WARNING: ripgrep not found (fast search will be unavailable)
+   - WARNING: fd not found (fast file finding unavailable)
+   ```
+   These are non-critical; install them later if desired.
+
+   **Red (ERROR)** - Critical issues:
+   ```
+   - ERROR: Node.js not found (LSP servers will not work)
+   - ERROR: Python provider not found
+   ```
+   These must be fixed. See troubleshooting below.
+
+### Common First-Launch Issues
+
+**Issue: "Error executing vim.schedule lua callback"**
+
+**Cause**: Plugin dependency issues or corrupted lockfile
+
+**Solution**:
+```vim
+:Lazy clear
+:Lazy sync
+```
+
+Then restart Neovim.
+
+**Issue: LSP servers not starting**
+
+**Cause**: Mason hasn't installed language servers yet
+
+**Solution**:
+1. Open Mason: `:Mason`
+2. Press `i` on desired language servers to install
+3. Wait for installation to complete
+4. Restart Neovim
+
+**Issue: Tree-sitter parser errors**
+
+**Cause**: Parser compilation issues
+
+**Solution**:
+```vim
+:TSUpdate
+```
+
+Wait for parsers to rebuild, then restart Neovim.
+
+**Issue: Icons showing as boxes or question marks**
+
+**Cause**: Nerd Font not configured in terminal
+
+**Solution**:
+1. Verify font installed: `fc-list | grep -i nerd`
+2. Configure terminal emulator to use Nerd Font
+3. Restart terminal
+4. Restart Neovim
+
+**Issue: Slow startup or high CPU usage**
+
+**Cause**: Plugin indexing on first launch
+
+**Solution**: This is normal for first launch. Subsequent starts will be much faster (typically under 100ms).
+
+### Using Claude Code for Troubleshooting
+
+If you encounter errors during first launch, Claude Code can help diagnose and fix issues:
+
+```bash
+# In a separate terminal (keep Neovim running or save the error)
+cd ~/.config/nvim
+claude
+```
+
+**Example prompts**:
+
+**For health check issues:**
+```
+I ran :checkhealth in Neovim and got these errors: [paste output]
+Can you help me fix them?
+```
+
+**For LSP errors:**
+```
+I'm getting "LSP[X] client has shut down" errors. Can you check my LSP configuration and help me fix it?
+```
+
+**For plugin errors:**
+```
+Plugin installation failed with: [paste error]
+Can you help me troubleshoot and fix this?
+```
+
+Claude Code will:
+- Parse the error messages
+- Identify the root cause
+- Suggest specific fixes
+- Execute commands to resolve issues (with your approval)
+
+### Testing Core Functionality
+
+After successful launch and health check, test core features:
+
+**1. File Navigation:**
+```vim
+" Open file finder
+<Space>ff
+
+" Should show Telescope file picker with fuzzy search
+```
+
+**2. LSP (if in a code file):**
+```vim
+" Open a code file, e.g., init.lua
+:e lua/neotex/init.lua
+
+" Trigger completion
+i (insert mode) + <Ctrl-Space>
+
+" Should show completion suggestions
+```
+
+**3. Git Integration:**
+```vim
+" Open lazy git UI (if lazygit installed)
+<Space>gg
+
+" Should show lazygit terminal UI
+```
+
+**4. Tree-sitter Syntax:**
+- Open any source file
+- Syntax highlighting should be accurate and colorful
+- Code folding should work with `za`
+
+### Next: Customization and Configuration
+
+With Neovim successfully installed and validated, proceed to [Phase 5: Customization and Configuration](#phase-5-customization-and-configuration) to learn how to personalize your setup.
+
+## Phase 5: Customization and Configuration
+
+Now that your Neovim configuration is working, you can add personal customizations while maintaining the ability to pull updates from upstream.
+
+### Feature Branch Strategy
+
+**Golden Rule**: Never commit personal customizations directly to the main branch.
+
+Create feature branches for all personal changes:
+
+```bash
+cd ~/.config/nvim
+
+# Ensure main is up-to-date
+git checkout main
+git pull upstream main
+
+# Create feature branch for your customization
+git checkout -b feature-my-custom-theme
+
+# Make changes, then commit
+git add .
+git commit -m "Add personal theme customization"
+
+# Push to your fork
+git push origin feature-my-custom-theme
+```
+
+### Recommended Branch Naming Conventions
+
+- `feature-<description>`: New features or additions
+  - Example: `feature-custom-keybindings`
+  - Example: `feature-golang-setup`
+- `config-<description>`: Configuration changes
+  - Example: `config-theme-nord`
+  - Example: `config-lsp-settings`
+- `fix-<description>`: Bug fixes
+  - Example: `fix-telescope-lag`
+
+### Types of Customizations
+
+#### 1. Personal Keybindings
+
+Create a personal keymap file:
+
+```bash
+# Create personal config file
+nvim lua/neotex/personal_keymaps.lua
+```
+
+Add your keymaps:
+
+```lua
+local map = vim.keymap.set
+
+-- Personal keybindings
+map("n", "<leader>p", ":MyCustomCommand<CR>", { desc = "My custom command" })
+map("n", "<C-s>", ":w<CR>", { desc = "Quick save" })
+
+-- Override defaults if needed
+map("n", "<leader>ff", ":Telescope find_files hidden=true<CR>", { desc = "Find files including hidden" })
+```
+
+Load it in `init.lua`:
+
+```lua
+-- Add to lua/neotex/init.lua
+require("neotex.personal_keymaps")
+```
+
+#### 2. Theme Customization
+
+Create personal theme overrides:
+
+```bash
+nvim lua/neotex/personal_theme.lua
+```
+
+```lua
+-- Personal theme customization
+vim.cmd([[
+  highlight Normal guibg=#1a1a1a
+  highlight Comment gui=italic
+  highlight Function gui=bold
+]])
+```
+
+#### 3. Plugin Additions
+
+To add new plugins, create a personal plugin file:
+
+```bash
+nvim lua/neotex/plugins/personal.lua
+```
+
+```lua
+return {
+  {
+    "your-username/your-plugin",
+    config = function()
+      require("your-plugin").setup({
+        -- plugin configuration
+      })
+    end,
+  },
+}
+```
+
+Lazy.nvim automatically loads all files in the `plugins/` directory.
+
+#### 4. LSP Server Additions
+
+To add language servers for your specific languages:
+
+```vim
+:Mason
+```
+
+Press `i` on the server you want to install. The configuration will be automatically loaded via Mason's integration.
+
+### Staying Synchronized with Upstream
+
+Regularly pull updates from the original repository:
+
+```bash
+# Fetch latest changes from upstream
+git fetch upstream
+
+# Switch to main branch
+git checkout main
+
+# Merge upstream changes
+git merge upstream/main
+
+# Push updated main to your fork
+git push origin main
+```
+
+**Best Practice**: Do this weekly or monthly to stay current with improvements and bug fixes.
+
+### Merging Upstream Updates into Feature Branches
+
+When upstream has updates and you have feature branches:
+
+```bash
+# Update main first
+git checkout main
+git pull upstream main
+git push origin main
+
+# Update your feature branch
+git checkout feature-my-custom-theme
+git merge main
+
+# If conflicts occur, resolve them
+# Git will mark conflict areas in files
+nvim <conflicted-file>
+
+# After resolving
+git add <resolved-files>
+git commit -m "Merge upstream updates"
+git push origin feature-my-custom-theme
+```
+
+### Using Claude Code for Merge Conflicts
+
+Claude Code can help resolve merge conflicts:
+
+```bash
+cd ~/.config/nvim
+claude
+```
+
+**Prompt**:
+```
+I have merge conflicts after pulling upstream updates. The conflicts are in [file names]. Can you help me understand the conflicts and resolve them while preserving my customizations?
+```
+
+Claude Code will:
+- Read the conflicted files
+- Explain what each side changed
+- Suggest resolution strategies
+- Help you merge changes appropriately
+
+### Contributing Back to Upstream
+
+If you create a useful improvement that others might benefit from:
+
+1. **Create a clean feature branch from main:**
+   ```bash
+   git checkout main
+   git pull upstream main
+   git checkout -b feature-useful-improvement
+   ```
+
+2. **Make focused changes** (one feature per branch)
+
+3. **Commit with clear messages**
+
+4. **Push to your fork:**
+   ```bash
+   git push origin feature-useful-improvement
+   ```
+
+5. **Create pull request:**
+   ```bash
+   gh pr create --base main --head feature-useful-improvement
+   ```
+   Or use GitHub web UI to create PR from your fork
+
+### Backup and Recovery
+
+**Backup your customizations:**
+
+```bash
+# Your personal changes are in your fork on GitHub
+# To backup locally as well:
+git bundle create nvim-config-backup.bundle --all
+
+# Store nvim-config-backup.bundle somewhere safe
+```
+
+**Restore from backup:**
+
+```bash
+# Clone from bundle
+git clone nvim-config-backup.bundle ~/.config/nvim
+
+# Re-add remotes
+cd ~/.config/nvim
+git remote add origin https://github.com/YOUR-USERNAME/neovim-config.git
+git remote add upstream https://github.com/ORIGINAL-OWNER/neovim-config.git
+```
+
+### Next Steps
+
+You now have a fully functional, personalized Neovim configuration! To learn more:
+
+- Explore [Keybindings Reference](../README.md#keybindings)
+- Set up advanced features in [Advanced Setup](ADVANCED_SETUP.md)
+- Read about the [Architecture](ARCHITECTURE.md)
+- Check the [Glossary](GLOSSARY.md) for technical terms
+
 ## Navigation
 
 - **Parent Guide**: [Main README](../README.md)
