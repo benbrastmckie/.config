@@ -487,6 +487,286 @@ If you encounter issues not covered here:
 
 Once Claude Code is installed and working, proceed to [Phase 2: Fork and Clone Repository](#phase-2-fork-and-clone-repository) to set up your Neovim configuration.
 
+## Phase 2: Fork and Clone Repository
+
+Now that Claude Code is installed, you will fork this Neovim configuration repository to your GitHub account and clone it to your local machine.
+
+### Why Fork Instead of Clone Directly
+
+Forking creates your own copy of the repository on GitHub, which allows you to:
+
+- Make personal customizations without affecting the original repository
+- Keep your modifications under version control
+- Stay synchronized with upstream updates from the original repository
+- Contribute improvements back to the upstream project if desired
+- Maintain your configuration across multiple machines
+
+**Important**: For configuration repositories, you should keep your main branch clean (tracking upstream) and make all personal customizations in feature branches.
+
+### Option 1: GitHub CLI Method (Recommended)
+
+The GitHub CLI provides the most streamlined workflow for forking and cloning in a single command.
+
+#### Prerequisites
+
+Install GitHub CLI if you haven't already:
+
+**macOS:**
+```bash
+brew install gh
+```
+
+**Linux (Debian/Ubuntu):**
+```bash
+# Add GitHub CLI repository
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+sudo apt update
+sudo apt install gh
+```
+
+**Arch Linux:**
+```bash
+sudo pacman -S github-cli
+```
+
+**Windows:**
+```powershell
+winget install GitHub.cli
+```
+
+#### Authenticate with GitHub
+
+```bash
+gh auth login
+```
+
+Follow the prompts to authenticate via browser.
+
+#### Fork and Clone with One Command
+
+Replace `ORIGINAL-OWNER/neovim-config` with the actual repository you're forking:
+
+```bash
+# Fork and clone to ~/.config/nvim
+gh repo fork ORIGINAL-OWNER/neovim-config --clone ~/.config/nvim
+```
+
+This single command:
+1. Creates a fork in your GitHub account
+2. Clones your fork to `~/.config/nvim`
+3. Sets your fork as the `origin` remote
+4. Automatically adds the original repository as the `upstream` remote
+
+**Verify the remotes:**
+```bash
+cd ~/.config/nvim
+git remote -v
+```
+
+You should see:
+```
+origin    https://github.com/YOUR-USERNAME/neovim-config.git (fetch)
+origin    https://github.com/YOUR-USERNAME/neovim-config.git (push)
+upstream  https://github.com/ORIGINAL-OWNER/neovim-config.git (fetch)
+upstream  https://github.com/ORIGINAL-OWNER/neovim-config.git (push)
+```
+
+### Option 2: Manual Fork and Clone
+
+If you prefer not to use GitHub CLI or need more control over the process:
+
+#### Step 1: Fork via Web UI
+
+1. Navigate to the repository on GitHub
+2. Click the "Fork" button in the upper-right corner
+3. Select your account as the destination
+4. Click "Create fork"
+
+#### Step 2: Clone Your Fork
+
+```bash
+# Clone to ~/.config/nvim
+git clone https://github.com/YOUR-USERNAME/neovim-config.git ~/.config/nvim
+cd ~/.config/nvim
+```
+
+#### Step 3: Add Upstream Remote
+
+```bash
+# Add the original repository as upstream
+git remote add upstream https://github.com/ORIGINAL-OWNER/neovim-config.git
+
+# Verify remotes
+git remote -v
+```
+
+### Configure Main Branch to Track Upstream
+
+This is a critical step that keeps your main branch synchronized with the original project:
+
+```bash
+# Switch to main branch (if not already there)
+git checkout main
+
+# Set upstream/main as the tracking branch
+git branch -u upstream/main
+
+# Verify tracking
+git branch -vv
+```
+
+**Result**: Now `git pull` will pull from upstream (the original repository), not your fork. This keeps your main branch clean and synchronized with the source project.
+
+### Workflow Diagram
+
+Here's how the fork, clone, and upstream relationship works:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│              GitHub: Original Repository                    │
+│         (ORIGINAL-OWNER/neovim-config)                      │
+│                    [upstream]                               │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       │ (fork via web or gh CLI)
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│             GitHub: Your Fork                               │
+│          (YOUR-USERNAME/neovim-config)                      │
+│                    [origin]                                 │
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+                       │ (clone)
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────┐
+│         Local Machine: ~/.config/nvim                       │
+│                                                             │
+│  • main branch tracks upstream/main                         │
+│  • Feature branches for personal customizations            │
+│  • Fetch from upstream, push to origin                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Verify the Setup
+
+Let's confirm everything is configured correctly:
+
+1. **Check current directory:**
+   ```bash
+   pwd
+   # Should output: /home/YOUR-USERNAME/.config/nvim
+   ```
+
+2. **Verify remotes:**
+   ```bash
+   git remote -v
+   # Should show both origin (your fork) and upstream (original repo)
+   ```
+
+3. **Check branch tracking:**
+   ```bash
+   git branch -vv
+   # Main branch should show it tracks upstream/main
+   ```
+
+4. **Test fetching from upstream:**
+   ```bash
+   git fetch upstream
+   # Should successfully fetch from the original repository
+   ```
+
+### Security Best Practices
+
+Before making any commits to your fork, set up `.gitignore` to prevent accidentally committing sensitive information:
+
+1. **Verify `.gitignore` exists:**
+   ```bash
+   cat ~/.config/nvim/.gitignore
+   ```
+
+2. **Ensure these patterns are included:**
+   ```gitignore
+   # Secrets and credentials
+   .ssh/
+   *.key
+   *.pem
+   *_token
+   credentials.json
+   secrets/
+
+   # Personal configuration
+   local_config.lua
+   personal_settings.lua
+
+   # System files
+   .DS_Store
+   Thumbs.db
+
+   # Editor artifacts
+   *.swp
+   *.swo
+   *~
+   ```
+
+3. **If you need to add patterns, edit .gitignore:**
+   ```bash
+   # You can ask Claude Code to help with this!
+   claude
+   ```
+   Then in Claude Code:
+   ```
+   Can you help me review and update my .gitignore file to ensure no sensitive files are tracked?
+   ```
+
+### Common Issues and Solutions
+
+**Problem: Target directory already exists**
+
+If `~/.config/nvim` already contains files:
+```bash
+# Backup existing configuration
+mv ~/.config/nvim ~/.config/nvim.backup
+
+# Then proceed with fork and clone
+gh repo fork ORIGINAL-OWNER/neovim-config --clone ~/.config/nvim
+```
+
+**Problem: Permission denied (publickey)**
+
+Your SSH keys may not be configured:
+```bash
+# Check for existing SSH keys
+ls -la ~/.ssh
+
+# If no keys exist, generate new SSH key
+ssh-keygen -t ed25519 -C "your_email@example.com"
+
+# Add to SSH agent
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+
+# Add public key to GitHub
+gh ssh-key add ~/.ssh/id_ed25519.pub --title "$(hostname)"
+```
+
+**Problem: Upstream remote already exists**
+
+If you get an error that upstream already exists:
+```bash
+# Remove existing upstream
+git remote remove upstream
+
+# Re-add with correct URL
+git remote add upstream https://github.com/ORIGINAL-OWNER/neovim-config.git
+```
+
+### Next: Install Dependencies
+
+With your repository forked and cloned, proceed to [Phase 3: Install Dependencies](#phase-3-install-dependencies) to set up all required software.
+
 ## Navigation
 
 - **Parent Guide**: [Main README](../README.md)
