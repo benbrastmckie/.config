@@ -68,7 +68,47 @@ This plan addresses the reconciliation of critical bug fixes and beneficial impr
 
 ### Architecture Overview
 
-Two-way merge: (1) Apply critical fixes save_coo → spec_org, (2) Cherry-pick improvements spec_org → save_coo, (3) Validate both branches. Uses git cherry-pick with checkpoint commits for rollback capability.
+**Two-way merge strategy**:
+1. **Critical fixes (save_coo → spec_org)**: Apply essential bug fixes first to restore spec_org functionality
+2. **Quality improvements (spec_org → save_coo)**: Cherry-pick documentation and structural improvements that don't break working code
+3. **Validation at each step**: Test suite execution after every merge to catch regressions immediately
+
+**Merge Approach**:
+- Use git cherry-pick for targeted commit selection
+- Create separate merge commits for each category (fixes vs improvements)
+- Maintain bidirectional traceability (which fixes/improvements came from which branch)
+- Test on both branches after each phase
+
+**Rollback Strategy**:
+- Each phase creates checkpoint commit before changes
+- Failed phases revert to checkpoint using git reset --hard
+- Test failures block progression to next phase
+- Maximum 2 retry attempts per phase before escalation
+
+### Component Interactions
+
+```
+save_coo Branch (Working)          spec_org Branch (Broken)
+─────────────────────              ────────────────────────
+├─ library-sourcing.sh             ├─ library-sourcing.sh
+│  (CLAUDE_PROJECT_DIR pattern)    │  (git-based, BROKEN)
+│                                   │
+├─ workflow-detection.sh           ├─ workflow-detection.sh
+│  (smart matching)                │  (sequential, BROKEN)
+│                                   │
+├─ verification-helpers.sh         ├─ [MISSING]
+│  (90% token reduction)           │
+│                                   │
+└─ coordinate.md                   └─ coordinate.md
+   (streamlined, 1978 lines)          (verbose, 2593 lines)
+                                      (anti-pattern docs)
+
+Phase 1-4: Apply fixes ────────────>
+           (restore functionality)
+
+Phase 5-7: Cherry-pick improvements <────────
+           (documentation, structure)
+```
 
 ## Implementation Phases
 
@@ -570,12 +610,40 @@ bash -c '
 
 ## Testing Strategy
 
-See [Testing Protocols](/home/benjamin/.config/CLAUDE.md#testing_protocols) for complete testing standards.
+### Test Levels
 
-**Plan-Specific Requirements**:
+**Unit Tests**:
+- Library sourcing functionality (.claude/lib/library-sourcing.sh)
+- Workflow detection algorithm (.claude/lib/workflow-detection.sh)
+- Verification helper functions (.claude/lib/verification-helpers.sh)
+
+**Integration Tests**:
+- Complete workflow detection test suite (.claude/tests/test_workflow_detection.sh)
+- Library sourcing in multiple execution contexts
+- /coordinate command end-to-end validation
+
+**Regression Tests**:
+- User bug case: "research auth to create and implement plan" → "full-implementation"
+- Multi-intent prompts
+- Research-only, debug-only workflows
+- Comparison to baseline test results from Phase 1
+
+### Test Execution Pattern
+
+Each phase follows this pattern:
+1. Run relevant unit tests before changes
+2. Apply changes
+3. Run unit tests after changes (expect same results)
+4. Run integration tests
+5. Document results
+6. If failure: rollback to checkpoint, analyze, retry (max 2 attempts)
+
+### Coverage Requirements
+
+- All modified libraries must pass unit tests
 - Workflow detection: 12/12 test pass rate (100%)
 - Integration tests: 100% pass rate on both branches
-- No regressions compared to baseline (documented in Phase 1)
+- No regressions compared to baseline
 
 ## Documentation Requirements
 
@@ -602,15 +670,59 @@ See [Testing Protocols](/home/benjamin/.config/CLAUDE.md#testing_protocols) for 
 
 ## Dependencies
 
-**External**: Git 2.x, Bash 4.x+, .claude/tests/test_workflow_detection.sh
+### External Dependencies
 
-**Branch-Specific**: save_coo (commits f198f2c5, 496d5118, verification-helpers.sh) → spec_org; spec_org (orchestration-anti-patterns.md) → save_coo
+- Git 2.x (for worktree support)
+- Bash 4.x+ (for associative arrays)
+- Test suite: .claude/tests/test_workflow_detection.sh
+
+### Branch Dependencies
+
+**save_coo branch**:
+- Commit f198f2c5: library sourcing fix
+- Commit 496d5118: workflow detection fix
+- verification-helpers.sh (present in save_coo)
+
+**spec_org branch**:
+- orchestration-anti-patterns.md (present in spec_org)
+- Enhanced error messages (present in spec_org)
+- Research topic generator (present in spec_org, optional)
+
+### File Dependencies
+
+**Modified in spec_org** (Phases 2-4):
+- .claude/lib/library-sourcing.sh
+- .claude/lib/unified-logger.sh
+- .claude/lib/workflow-detection.sh
+- .claude/lib/verification-helpers.sh (new)
+
+**Modified in save_coo** (Phases 6-7):
+- .claude/docs/reference/orchestration-anti-patterns.md (new)
+- .claude/commands/coordinate.md (documentation sections)
 
 ## Rollback Strategy
 
-See [Checkpoint Recovery Pattern](/home/benjamin/.config/.claude/docs/concepts/patterns/checkpoint-recovery.md) for complete rollback procedures.
+### Per-Phase Checkpoints
 
-**Per-Phase**: Checkpoint commit before changes, git reset --hard on failure, max 2 retries before escalation.
+Each phase creates a checkpoint commit before making changes:
+```bash
+git commit --allow-empty -m "checkpoint: before [phase description]"
+```
+
+### Rollback Procedure
+
+If phase fails after 2 retry attempts:
+1. Identify checkpoint commit: `git log --oneline | grep "checkpoint: before"`
+2. Reset to checkpoint: `git reset --hard <checkpoint-sha>`
+3. Document failure in /tmp/merge_checkpoints.txt
+4. Escalate to manual review
+
+### Retry Logic
+
+- Maximum 2 retry attempts per phase
+- Between retries: analyze test output, review diffs, check for typos
+- If retry 1 fails: consider partial rollback (keep successful changes)
+- If retry 2 fails: full rollback and escalation
 
 ## Risk Assessment
 
@@ -673,3 +785,37 @@ See [Checkpoint Recovery Pattern](/home/benjamin/.config/.claude/docs/concepts/p
 - **Rollback Philosophy**: Checkpoint before every risky change, max 2 retries before escalation
 - **Documentation Philosophy**: Document all decisions, especially skipped improvements
 
+---
+
+## Revision History
+
+### 2025-11-04 - Revision 1: Performance Optimizations Integration
+
+**Changes Made**:
+- Added Phase 6: Apply Performance Optimizations to spec_org
+- Renumbered subsequent phases (old Phase 6-8 → new Phase 7-9)
+- Updated phase dependencies to reflect new structure
+- Increased total phase count from 8 to 9
+- Increased estimated time from 12-14 hours to 14-17 hours
+
+**Reason for Revision**:
+Plan 581 (/coordinate Command Performance Optimization) was successfully completed on 2025-11-04, implementing 4 phases of performance optimizations in save_coo branch:
+- Phase 1 (e508ec1d): Remove redundant library arguments (5-10ms improvement)
+- Phase 2 (3090590c): Consolidate Phase 0 (250-400ms improvement, 60% faster)
+- Phase 3 (08159958): Conditional library loading (25-40% faster for simple workflows)
+- Phase 4 (01938154): Phase transition helper and performance metrics
+
+These optimizations achieve 475-1010ms improvement (15-30% faster) per workflow and should be carried forward to spec_org as part of this merge plan.
+
+**Reports/Plans Used**:
+- /home/benjamin/.config/.claude/specs/581_coordinate_command_performance_optimization/plans/001_coordinate_performance_optimization.md (COMPLETED)
+
+**Modified Phases**:
+- Phase 6: NEW - Apply Performance Optimizations to spec_org
+- Phase 7: RENUMBERED from Phase 6 - Cherry-Pick spec_org Documentation Improvements to save_coo
+- Phase 8: RENUMBERED from Phase 7 - Evaluate and Apply Optional spec_org Improvements to save_coo
+- Phase 9: RENUMBERED from Phase 8 - Final Validation and Cleanup
+
+**Testing Impact**:
+- Phase 6 includes performance measurement to validate 15-30% improvement in spec_org
+- Phase 9 (final validation) now tests both functionality AND performance on both branches
