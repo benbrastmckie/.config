@@ -172,16 +172,16 @@ dependencies: [2]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Transform Phase 2 tasks to imperative pattern: Replace "Tasks:" header with "EXECUTE NOW - Library Sourcing Fix Application"
-- [ ] Convert Phase 2 task list to STEP N (REQUIRED BEFORE STEP N+1) format with imperative language
-- [ ] Add verification checkpoints to Phase 2 with fail-fast error handling
-- [ ] Transform Phase 3 tasks to imperative pattern: "EXECUTE NOW - Workflow Detection Fix Application"
-- [ ] Convert Phase 3 task list to STEP N format with explicit requirement markers
-- [ ] Add verification checkpoints to Phase 3
-- [ ] Transform Phase 4 tasks to imperative pattern: "EXECUTE NOW - Verification Helpers Integration"
-- [ ] Transform Phase 5 tasks to imperative pattern: "EXECUTE NOW - Comprehensive Validation"
-- [ ] Transform Phase 6 tasks to imperative pattern: "EXECUTE NOW - Performance Optimization Application"
-- [ ] Verify imperative language density: grep -c "EXECUTE NOW\|YOU MUST\|MANDATORY" Plan_580.md (expect ≥20)
+- [x] Transform Phase 2 tasks to imperative pattern: Replace "Tasks:" header with "EXECUTE NOW - Library Sourcing Fix Application"
+- [x] Convert Phase 2 task list to STEP N (REQUIRED BEFORE STEP N+1) format with imperative language
+- [x] Add verification checkpoints to Phase 2 with fail-fast error handling
+- [x] Transform Phase 3 tasks to imperative pattern: "EXECUTE NOW - Workflow Detection Fix Application"
+- [x] Convert Phase 3 task list to STEP N format with explicit requirement markers
+- [x] Add verification checkpoints to Phase 3
+- [x] Transform Phase 4 tasks to imperative pattern: "EXECUTE NOW - Verification Helpers Integration"
+- [x] Transform Phase 5 tasks to imperative pattern: "EXECUTE NOW - Comprehensive Validation"
+- [x] Transform Phase 6 tasks to imperative pattern: "EXECUTE NOW - Performance Optimization Application"
+- [x] Verify imperative language density: grep -c "EXECUTE NOW\|YOU MUST\|MANDATORY" Plan_580.md (expect ≥20)
 
 **Testing**:
 ```bash
@@ -201,8 +201,8 @@ phase_count=$(grep -c "^### Phase [0-9]" Plan_580.md)
 **Expected Duration**: 2.5 hours
 
 **Phase 3 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (imperative language verified)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (imperative language verified)
 - [ ] Git commit created: `feat(583): add imperative language enforcement to Plan 580 critical phases`
 - [ ] Update this plan file with phase completion status
 
