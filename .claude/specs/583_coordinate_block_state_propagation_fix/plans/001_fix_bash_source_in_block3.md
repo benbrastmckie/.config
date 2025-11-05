@@ -2,18 +2,27 @@
 
 ## Metadata
 - **Date**: 2025-11-04
+- **Last Revised**: 2025-11-04 (comprehensive review)
 - **Feature**: Fix /coordinate Phase 0 Block 3 state propagation failure
 - **Type**: Bug Fix
-- **Complexity**: 1/10 (Trivial - 1 line change)
-- **Estimated Time**: 15 minutes
+- **Complexity**: 1/10 (Trivial - 2 line change)
+- **Estimated Time**: 10 minutes
 - **Estimated Phases**: 1
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - `../reports/001_state_propagation_analysis.md`
+- **Related Infrastructure**:
+  - `.claude/lib/detect-project-dir.sh` - Project detection pattern
+  - `.claude/lib/checkpoint-utils.sh` - Uses BASH_SOURCE correctly in library context
+  - `.claude/docs/troubleshooting/bash-tool-limitations.md` - Current documentation
 
 ## Overview
 
 Fix the state propagation failure in `/coordinate` Phase 0 Block 3 where `${BASH_SOURCE[0]}` returns empty string in SlashCommand context, causing library sourcing to fail. Replace with the already-exported `CLAUDE_PROJECT_DIR` from Block 1.
+
+**Root Cause**: When bash code is extracted from markdown by Claude's SlashCommand processing, the `BASH_SOURCE` array is not populated because the code is not being executed as a traditional script file. This is a limitation of how markdown code blocks are processed and executed.
+
+**Solution**: Use the `CLAUDE_PROJECT_DIR` variable that was already calculated in Block 1 (line 546) using git-based detection and exported (line 550). This follows the established pattern where Block 1 handles all path calculations and subsequent blocks reuse the exported values.
 
 ## Success Criteria
 - [x] Root cause identified (BASH_SOURCE doesn't work in split blocks)
@@ -41,29 +50,36 @@ Fix the state propagation failure in `/coordinate` Phase 0 Block 3 where `${BASH
 **Implementation**:
 
 File: `.claude/commands/coordinate.md`
-Lines: 885-888
+Lines: 885-889 (Block 3, inside Step 3 bash block at lines 880-956)
 
-```diff
- # ────────────────────────────────────────────────────────────────────
- # STEP 0.6: Initialize Workflow Paths
- # ────────────────────────────────────────────────────────────────────
+**Current Code** (lines 885-889):
+```bash
+# Source workflow initialization library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
--# Source workflow initialization library
--SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
--
--if [ -f "$SCRIPT_DIR/../lib/workflow-initialization.sh" ]; then
--  source "$SCRIPT_DIR/../lib/workflow-initialization.sh"
-+# Source workflow initialization library
-+# Use CLAUDE_PROJECT_DIR exported from Block 1 (BASH_SOURCE not available in split blocks)
-+if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
-+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
- else
-   echo "ERROR: workflow-initialization.sh not found"
-   echo "This is a required library file for workflow operation."
-   echo "Please ensure .claude/lib/workflow-initialization.sh exists."
-   exit 1
- fi
+if [ -f "$SCRIPT_DIR/../lib/workflow-initialization.sh" ]; then
+  source "$SCRIPT_DIR/../lib/workflow-initialization.sh"
 ```
+
+**Fixed Code**:
+```bash
+# Source workflow initialization library
+# Note: BASH_SOURCE not available in SlashCommand context (markdown code extraction)
+# Use CLAUDE_PROJECT_DIR exported from Block 1 (line 550)
+if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
+```
+
+**Changes**:
+1. Remove lines 886-887 (SCRIPT_DIR calculation using BASH_SOURCE)
+2. Update comment to explain why BASH_SOURCE cannot be used in this context
+3. Change path from `$SCRIPT_DIR/../lib/` to `${CLAUDE_PROJECT_DIR}/.claude/lib/`
+
+**Rationale**:
+- CLAUDE_PROJECT_DIR is calculated in Block 1 using `git rev-parse --show-toplevel` (line 546)
+- Exported explicitly in Block 1 (line 550) making it available to all subsequent blocks
+- Direct path construction is simpler and more reliable than BASH_SOURCE calculation
+- Matches the pattern used by other libraries (e.g., library-sourcing.sh uses same approach)
 
 **Testing**:
 ```bash
@@ -201,25 +217,106 @@ If fix fails:
 
 ## Documentation Requirements
 
-### No Documentation Files to Update
-This is a bug fix, not a new pattern. Documentation already covers:
-- ✓ Bash block splitting (bash-tool-limitations.md)
-- ✓ State propagation via export (bash-tool-limitations.md)
-- ✓ BASH_SOURCE limitation (will add after this fix validates approach)
+### Current Documentation Coverage
+This is a bug fix that validates and extends existing patterns:
+- ✓ Bash block splitting (bash-tool-limitations.md lines 138-296)
+- ✓ State propagation via export (bash-tool-limitations.md lines 233-250)
+- ⚠ BASH_SOURCE limitation partially documented but needs SlashCommand context specifics
 
-### Documentation Updates (Post-Fix)
-After fix is validated, add to bash-tool-limitations.md:
+### Documentation Updates Required (Post-Fix)
 
-**New Section**: "BASH_SOURCE Limitations in Split Blocks"
+#### 1. bash-tool-limitations.md Enhancement
+Location: After "Key Implementation Details" section (around line 250)
+
+Add detailed section on BASH_SOURCE limitations:
+
 ```markdown
-**Problem**: ${BASH_SOURCE[0]} returns empty in SlashCommand context
+**BASH_SOURCE in Command vs Library Context**:
 
-**Solution**: Calculate paths in Block 1, export, reuse in later blocks
+The `${BASH_SOURCE[0]}` array behaves differently depending on execution context:
 
-**Example**: /coordinate fix (commit TBD)
+| Context | BASH_SOURCE Value | Reason |
+|---------|-------------------|--------|
+| Sourced library file | File path | File exists on filesystem |
+| Command markdown block | Empty string | Code extracted inline, no file |
+| Direct script execution | Script path | Running as file |
+| Process substitution | `/dev/fd/N` | Virtual file descriptor |
+
+**Command Markdown Blocks** (SlashCommand context):
+- Code extracted from markdown by Claude's processor
+- Executed via Bash tool without intermediate file
+- BASH_SOURCE[0] returns empty string
+- **Solution**: Use git-based detection in Block 1, export for later blocks
+
+**Library Files** (Sourced context):
+- Executed as actual files via `source` command
+- BASH_SOURCE[0] contains filesystem path
+- **Pattern**: `SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"`
+- This is correct for libraries, incorrect for command blocks
+
+**Example - Correct Usage**:
+```bash
+# Block 1 of command markdown (coordinate.md:544-550)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"  # NOT BASH_SOURCE
+  export CLAUDE_PROJECT_DIR
+fi
+
+# Block 3 of command markdown (coordinate.md:888)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"  # Uses export
+
+# Library file (checkpoint-utils.sh:16)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"  # This IS correct
+source "$SCRIPT_DIR/detect-project-dir.sh"
 ```
 
-Location: After "Key Implementation Details" section
+**Real-World Case Study**: /coordinate fix (commit TBD)
+- Issue: Block 3 tried to use BASH_SOURCE after block split
+- Result: Empty SCRIPT_DIR, library sourcing failed
+- Fix: Use exported CLAUDE_PROJECT_DIR from Block 1
+- See: specs/583_coordinate_block_state_propagation_fix/
+```
+
+#### 2. command-development-guide.md Update
+Location: In "Bash Blocks Best Practices" section
+
+Add to checklist:
+```markdown
+- [ ] Path calculation uses git/pwd, never BASH_SOURCE in Block 1
+- [ ] All paths calculated in Block 1 are exported
+- [ ] Later blocks use exported paths, no recalculation
+- [ ] Export chain verified with defensive checks: `[ -z "${VAR:-}" ]`
+```
+
+#### 3. command_architecture_standards.md Addition
+Location: Standard 13 (Project Directory Detection)
+
+Enhance existing standard:
+```markdown
+**Standard 13: Project Directory Detection**
+
+MUST use git-based detection for CLAUDE_PROJECT_DIR, never rely on BASH_SOURCE in command markdown blocks.
+
+**Correct Pattern** (for commands):
+```bash
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+```
+
+**Incorrect Pattern** (for commands):
+```bash
+# ❌ DON'T: BASH_SOURCE is empty in SlashCommand context
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+```
+
+**Note**: Libraries (sourced .sh files) CAN use BASH_SOURCE as they run in file context.
+```
 
 ---
 
@@ -307,6 +404,36 @@ Implementation successful when:
 4. **Simpler**: Removes subprocess execution for dirname/cd
 5. **Faster**: No calculation overhead (~5ms saved)
 
+### Technical Deep Dive: BASH_SOURCE Behavior
+
+**When BASH_SOURCE works**:
+- Traditional bash scripts executed directly: `bash script.sh`
+- Sourced libraries: `source /path/to/library.sh`
+- Context: Running as actual file with filesystem path
+
+**When BASH_SOURCE fails**:
+- Markdown code blocks extracted and executed by SlashCommand processor
+- Process substitution: `bash <(echo 'commands')`
+- Heredoc execution: `bash <<EOF ... EOF`
+- Context: Code not associated with physical file
+
+**coordinate.md execution context**:
+```
+User types: /coordinate "research topic"
+Claude reads: .claude/commands/coordinate.md
+Claude extracts: Bash code blocks from markdown
+Claude executes: Code via Bash tool (not as script file)
+Result: BASH_SOURCE[0] is empty string
+```
+
+**Verification in checkpoint-utils.sh** (line 16):
+```bash
+# This works because checkpoint-utils.sh IS a sourced file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/detect-project-dir.sh"
+```
+The key difference: checkpoint-utils.sh is sourced as a file, coordinate.md blocks are extracted and executed inline.
+
 ### Alternative Approaches Considered
 
 **Alternative 1: Calculate SCRIPT_DIR in Block 1**
@@ -329,20 +456,118 @@ Implementation successful when:
 
 ### Lessons for Future Split Blocks
 
-When splitting bash blocks:
-1. **Calculate ALL paths in Block 1** using git/pwd
+When splitting bash blocks in command markdown files:
+
+1. **Calculate ALL paths in Block 1** using git/pwd (not BASH_SOURCE)
+   - Use: `git rev-parse --show-toplevel` for project root
+   - Use: `pwd` for current directory fallback
+   - Never: `dirname "${BASH_SOURCE[0]}"` in Block 1
+
 2. **Export ALL calculated values** for later blocks
-3. **Never use BASH_SOURCE in Block 2+**
-4. **Document exports** at end of Block 1
+   - Required exports: CLAUDE_PROJECT_DIR, LIB_DIR, WORKFLOW_SCOPE
+   - Optional exports: Function definitions with `export -f function_name`
+   - Document what's exported at end of Block 1 with comments
+
+3. **Never use BASH_SOURCE in Block 2+** (or Block 1 in commands)
+   - Libraries can use BASH_SOURCE (they're sourced files)
+   - Command markdown blocks cannot (code extracted inline)
+   - Use exported CLAUDE_PROJECT_DIR instead
+
+4. **Maintain export chain** across blocks
+   - Block 1: Calculate and export
+   - Block 2: Use exported values (no recalculation)
+   - Block 3: Continue using exported values
+   - Verify exports with: `[ -z "${VAR:-}" ] && echo "ERROR: VAR not set" && exit 1`
+
 5. **Test end-to-end** after splitting
+   - Not just standards tests (may not catch export failures)
+   - Run actual command with real workflow
+   - Verify all blocks execute successfully
+   - Check exports persist: `echo "DEBUG: VAR=${VAR}"`
+
+6. **Follow coordinate.md export pattern** (lines 550, 554, 580, 622, 788, 847, 871)
+   - Consistent naming: UPPERCASE_WITH_UNDERSCORES
+   - Explicit export statements after assignment
+   - Group related exports on same line when appropriate
 
 ---
 
 ## References
 
+### Primary References
 - **Error Output**: `/home/benjamin/.config/.claude/specs/coordinate_output.md`
 - **Research Report**: `../reports/001_state_propagation_analysis.md`
-- **Original Split**: Commit 3d8e49df - Split bash blocks to fix transformation
-- **Documentation**: Commit af61133d - Document bash block size limits
-- **Command File**: `.claude/commands/coordinate.md` lines 880-895
+- **Command File**: `.claude/commands/coordinate.md`
+  - Block 1 (lines 526-701): Project detection, exports CLAUDE_PROJECT_DIR (line 550)
+  - Block 2 (lines 707-874): Function verification
+  - Block 3 (lines 880-956): Path initialization (fix location: lines 885-889)
+
+### Infrastructure References
+- **Library Pattern**: `.claude/lib/checkpoint-utils.sh` line 16 (BASH_SOURCE works here)
+- **Detection Library**: `.claude/lib/detect-project-dir.sh` (git-based detection)
+- **Library Sourcing**: `.claude/lib/library-sourcing.sh` line 46 (uses BASH_SOURCE correctly)
+
+### Documentation References
 - **Standards**: `.claude/docs/troubleshooting/bash-tool-limitations.md`
+- **Command Standards**: `.claude/docs/reference/command_architecture_standards.md` (Standard 13)
+- **Development Guide**: `.claude/docs/guides/command-development-guide.md`
+
+### Git History
+- **Commit 3d8e49df**: Split bash blocks to fix transformation (created this issue)
+- **Commit 78901908**: Research report on state propagation
+- **Commit af61133d**: Document bash block size limits
+
+### External Research
+- **Stack Overflow**: Best practices for multi-file bash scripts (sourcing vs execution)
+- **Bash Programming Guide**: Subshells and variable scoping
+- **Markdown Processing**: mdsh project (bash code extraction from markdown)
+
+---
+
+## Revision History
+
+### 2025-11-04 - Revision 1: Comprehensive Analysis and Enhancement
+**Changes Made**:
+1. Enhanced metadata with related infrastructure references
+2. Added technical deep dive on BASH_SOURCE behavior differences
+3. Expanded "Lessons for Future Split Blocks" with 6 detailed best practices
+4. Added comprehensive documentation requirements (3 files to update)
+5. Improved Implementation section with clearer before/after code
+6. Added table showing BASH_SOURCE behavior across contexts
+7. Enhanced References section with categorization
+
+**Reason for Revision**:
+Rigorous study of plan, existing infrastructure (.claude/lib/*), and online best practices revealed:
+- Need for deeper technical explanation of why BASH_SOURCE fails
+- Missing distinction between command vs library contexts
+- Opportunity to document pattern for future command development
+- Several related files (checkpoint-utils.sh, detect-project-dir.sh) demonstrate correct patterns
+
+**Analysis Performed**:
+- Reviewed coordinate.md structure (2155 lines, 12 export statements)
+- Analyzed bash-tool-limitations.md (297 lines, partial BASH_SOURCE coverage)
+- Studied checkpoint-utils.sh (824 lines, correct BASH_SOURCE usage)
+- Researched bash best practices (export scoping, multi-file scripts)
+- Verified Block 1 export pattern matches detect-project-dir.sh
+
+**Key Insights Added**:
+1. Distinction between SlashCommand context (markdown extraction) vs sourced files
+2. Why checkpoint-utils.sh can use BASH_SOURCE but coordinate.md cannot
+3. Export chain pattern across 3 blocks with verification
+4. Comprehensive documentation strategy for 3 different files
+5. Real-world verification examples from existing infrastructure
+
+**Modified Sections**:
+- Metadata: Added Related Infrastructure
+- Overview: Added Root Cause and Solution detail
+- Implementation: Clearer before/after with line numbers and rationale
+- Notes: Added "Technical Deep Dive" subsection
+- Lessons: Expanded from 5 to 6 detailed best practices
+- Documentation: Changed from basic to comprehensive 3-file update strategy
+- References: Categorized and expanded with infrastructure examples
+
+**Reports Used**:
+- `../reports/001_state_propagation_analysis.md` (original analysis)
+- Web research on bash export patterns and markdown code execution
+
+**Implementation Impact**: None - plan improvements only, no code changes yet
