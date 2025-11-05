@@ -614,7 +614,7 @@ case "$WORKFLOW_SCOPE" in
     SKIP_PHASES="3,4,5,6"
     ;;
   full-implementation)
-    PHASES_TO_EXECUTE="0,1,2,3,4"
+    PHASES_TO_EXECUTE="0,1,2,3,4,6"  # CORRECTED: includes phase 6 (Documentation)
     SKIP_PHASES=""  # Phase 5 conditional on test failures, Phase 6 always
     ;;
   debug-only)
@@ -648,29 +648,32 @@ fi
 # Define required libraries based on scope
 case "$WORKFLOW_SCOPE" in
   research-only)
-    # Minimal set: 3 libraries for simple research workflows
+    # Minimal set: 4 libraries for simple research workflows
     REQUIRED_LIBS=(
       "workflow-detection.sh"
       "unified-logger.sh"
       "unified-location-detection.sh"
+      "overview-synthesis.sh"
     )
     ;;
   research-and-plan)
-    # Moderate set: 5 libraries for research + planning
+    # Moderate set: 6 libraries for research + planning
     REQUIRED_LIBS=(
       "workflow-detection.sh"
       "unified-logger.sh"
       "unified-location-detection.sh"
+      "overview-synthesis.sh"
       "metadata-extraction.sh"
       "checkpoint-utils.sh"
     )
     ;;
   full-implementation)
-    # Full set: 8 libraries for complete workflows
+    # Full set: 9 libraries for complete workflows
     REQUIRED_LIBS=(
       "workflow-detection.sh"
       "unified-logger.sh"
       "unified-location-detection.sh"
+      "overview-synthesis.sh"
       "metadata-extraction.sh"
       "checkpoint-utils.sh"
       "dependency-analyzer.sh"
@@ -679,11 +682,12 @@ case "$WORKFLOW_SCOPE" in
     )
     ;;
   debug-only)
-    # Debug set: 6 libraries for debugging workflows
+    # Debug set: 7 libraries for debugging workflows
     REQUIRED_LIBS=(
       "workflow-detection.sh"
       "unified-logger.sh"
       "unified-location-detection.sh"
+      "overview-synthesis.sh"
       "metadata-extraction.sh"
       "checkpoint-utils.sh"
       "error-handling.sh"
@@ -938,6 +942,41 @@ fi
 # Defensive validation
 if [ -z "${WORKFLOW_DESCRIPTION:-}" ]; then
   echo "ERROR: WORKFLOW_DESCRIPTION not set (pass as argument to /coordinate)"
+  exit 1
+fi
+
+# ────────────────────────────────────────────────────────────────────
+# Re-calculate PHASES_TO_EXECUTE (Bash tool isolation GitHub #334, #2508)
+# Exports from Block 1 don't persist. Apply stateless recalculation pattern.
+# This mapping MUST stay synchronized with Block 1 lines 607-626.
+# ────────────────────────────────────────────────────────────────────
+
+# Map scope to phase execution list (duplicate from Block 1)
+case "$WORKFLOW_SCOPE" in
+  research-only)
+    PHASES_TO_EXECUTE="0,1"
+    SKIP_PHASES="2,3,4,5,6"
+    ;;
+  research-and-plan)
+    PHASES_TO_EXECUTE="0,1,2"
+    SKIP_PHASES="3,4,5,6"
+    ;;
+  full-implementation)
+    PHASES_TO_EXECUTE="0,1,2,3,4,6"  # CORRECTED: includes phase 6
+    SKIP_PHASES=""  # Phase 5 conditional on test failures
+    ;;
+  debug-only)
+    PHASES_TO_EXECUTE="0,1,5"
+    SKIP_PHASES="2,3,4,6"
+    ;;
+esac
+
+export PHASES_TO_EXECUTE SKIP_PHASES
+
+# Defensive validation
+if [ -z "${PHASES_TO_EXECUTE:-}" ]; then
+  echo "ERROR: PHASES_TO_EXECUTE not set after scope detection"
+  echo "  WORKFLOW_SCOPE: $WORKFLOW_SCOPE"
   exit 1
 fi
 
