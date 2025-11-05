@@ -10,7 +10,7 @@
 #   create_topic_structure(topic_path)    - Create 6 subdirectories with verification
 #   find_matching_topic(topic_desc)       - Search for existing related topics (optional)
 
-set -euo pipefail
+set -eo pipefail  # Match workflow-initialization.sh: removed -u for defensive variable refs
 
 # Get the next sequential topic number in the specs directory
 # Usage: get_next_topic_number "/path/to/specs"
@@ -30,6 +30,30 @@ get_next_topic_number() {
   else
     # Increment the max number (use 10# to force decimal interpretation)
     printf "%03d" $((10#$max_num + 1))
+  fi
+}
+
+# Get topic number for a given topic name (idempotent - reuses existing if found)
+# Usage: get_or_create_topic_number "/path/to/specs" "research_auth_patterns"
+# Returns: Existing topic number if topic with matching name exists, otherwise next number
+#
+# This function solves the topic inconsistency issue where multiple bash blocks
+# would increment the topic number on each invocation. Now it checks for existing
+# topics first and reuses them if found.
+get_or_create_topic_number() {
+  local specs_root="$1"
+  local topic_name="$2"
+
+  # Check for existing topic with exact name match (pattern: NNN_topicname)
+  local existing
+  existing=$(ls -1d "${specs_root}"/[0-9][0-9][0-9]_"${topic_name}" 2>/dev/null | head -1 || echo "")
+
+  if [ -n "$existing" ]; then
+    # Extract and return the existing topic number
+    basename "$existing" | sed 's/^\([0-9][0-9][0-9]\)_.*/\1/'
+  else
+    # No existing topic found - get next number
+    get_next_topic_number "$specs_root"
   fi
 }
 
