@@ -1077,16 +1077,10 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
   export CLAUDE_PROJECT_DIR
 fi
 
-LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
-source "$LIB_DIR/library-sourcing.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-sourcing.sh"
 source_required_libraries || exit 1
 
-# Emit progress with fallback if function unavailable
-if command -v emit_progress &>/dev/null; then
-  emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
-else
-  echo "PROGRESS: [Phase 1] - Invoking $RESEARCH_COMPLEXITY research agents in parallel"
-fi
+emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 ```
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the research-specialist agent for EACH research topic.
