@@ -767,6 +767,469 @@ git remote add upstream https://github.com/ORIGINAL-OWNER/neovim-config.git
 
 With your repository forked and cloned, proceed to [Phase 3: Install Dependencies](#phase-3-install-dependencies) to set up all required software.
 
+## Phase 3: Install Dependencies
+
+This Neovim configuration requires several dependencies to function properly. Claude Code can help automate the dependency checking and provide platform-specific installation commands.
+
+### Automated Dependency Checking with Claude Code
+
+The repository includes a dependency checking script that Claude Code can execute for you:
+
+**Option 1: Let Claude Code run the check**
+
+Launch Claude Code in your Neovim configuration directory:
+```bash
+cd ~/.config/nvim
+claude
+```
+
+Then ask:
+```
+Can you run the dependency checking script (scripts/check-dependencies.sh) and help me install any missing dependencies for my platform?
+```
+
+Claude Code will:
+1. Execute the dependency checking script
+2. Identify missing dependencies
+3. Detect your platform (Arch, Debian/Ubuntu, macOS, Windows)
+4. Provide exact installation commands for your system
+5. Verify successful installation
+
+**Option 2: Run the script manually**
+
+```bash
+cd ~/.config/nvim
+bash scripts/check-dependencies.sh
+```
+
+The script will show which dependencies are installed and which are missing.
+
+### Core Dependencies
+
+These dependencies are required for basic Neovim functionality:
+
+#### Neovim >= 0.9.0
+
+**Purpose**: Modern text editor with LSP and plugin support
+
+**Check version:**
+```bash
+nvim --version
+```
+
+**Installation:**
+
+**Arch Linux:**
+```bash
+sudo pacman -S neovim
+```
+
+**Debian/Ubuntu:**
+```bash
+# Ubuntu 22.04+ has recent Neovim
+sudo apt update
+sudo apt install neovim
+
+# For older versions, use PPA or AppImage
+sudo add-apt-repository ppa:neovim-ppa/unstable
+sudo apt update
+sudo apt install neovim
+```
+
+**macOS:**
+```bash
+brew install neovim
+```
+
+**Windows:**
+```powershell
+winget install Neovim.Neovim
+# Or via Scoop
+scoop install neovim
+```
+
+#### Git
+
+**Purpose**: Version control for configuration management
+
+**Check version:**
+```bash
+git --version
+```
+
+**Installation:**
+
+**Arch Linux:**
+```bash
+sudo pacman -S git
+```
+
+**Debian/Ubuntu:**
+```bash
+sudo apt install git
+```
+
+**macOS:**
+```bash
+brew install git
+```
+
+**Windows:**
+```powershell
+winget install Git.Git
+```
+
+#### Node.js >= 18.0
+
+**Purpose**: Required by many LSP servers and plugins
+
+**Check version:**
+```bash
+node --version
+```
+
+**Installation:**
+
+**Arch Linux:**
+```bash
+sudo pacman -S nodejs npm
+```
+
+**Debian/Ubuntu:**
+```bash
+# Using NodeSource repository for recent versions
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+**macOS:**
+```bash
+brew install node
+```
+
+**Windows:**
+```powershell
+winget install OpenJS.NodeJS.LTS
+```
+
+#### Python 3 and pip3
+
+**Purpose**: Required for Python-based plugins and tools
+
+**Check version:**
+```bash
+python3 --version
+pip3 --version
+```
+
+**Installation:**
+
+**Arch Linux:**
+```bash
+sudo pacman -S python python-pip
+```
+
+**Debian/Ubuntu:**
+```bash
+sudo apt install python3 python3-pip
+```
+
+**macOS:**
+```bash
+brew install python3
+```
+
+**Windows:**
+```powershell
+winget install Python.Python.3.12
+```
+
+#### Nerd Font
+
+**Purpose**: Display icons and glyphs in Neovim UI
+
+**Recommended**: RobotoMono Nerd Font
+
+**Installation:**
+
+**Arch Linux:**
+```bash
+sudo pacman -S ttf-roboto-mono-nerd
+```
+
+**Debian/Ubuntu:**
+```bash
+# Manual installation
+mkdir -p ~/.local/share/fonts
+cd ~/.local/share/fonts
+wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.0.2/RobotoMono.zip
+unzip RobotoMono.zip
+rm RobotoMono.zip
+fc-cache -fv
+```
+
+**macOS:**
+```bash
+brew tap homebrew/cask-fonts
+brew install --cask font-roboto-mono-nerd-font
+```
+
+**Windows:**
+```powershell
+# Download from https://www.nerdfonts.com/font-downloads
+# Install RobotoMono NF and configure terminal to use it
+```
+
+After installation, configure your terminal to use the Nerd Font.
+
+### Recommended Tools
+
+These tools enhance the Neovim experience but are not strictly required:
+
+#### ripgrep (rg)
+
+**Purpose**: Extremely fast text search (used by Telescope and grep)
+
+**Installation:**
+
+**Arch Linux:**
+```bash
+sudo pacman -S ripgrep
+```
+
+**Debian/Ubuntu:**
+```bash
+sudo apt install ripgrep
+```
+
+**macOS:**
+```bash
+brew install ripgrep
+```
+
+**Windows:**
+```powershell
+winget install BurntSushi.ripgrep.MSVC
+```
+
+#### fd
+
+**Purpose**: Fast file finding (alternative to `find`)
+
+**Installation:**
+
+**Arch Linux:**
+```bash
+sudo pacman -S fd
+```
+
+**Debian/Ubuntu:**
+```bash
+sudo apt install fd-find
+# On Ubuntu, create symlink
+sudo ln -s $(which fdfind) /usr/local/bin/fd
+```
+
+**macOS:**
+```bash
+brew install fd
+```
+
+**Windows:**
+```powershell
+winget install sharkdp.fd
+```
+
+#### lazygit
+
+**Purpose**: Terminal UI for Git operations
+
+**Installation:**
+
+**Arch Linux:**
+```bash
+sudo pacman -S lazygit
+```
+
+**Debian/Ubuntu:**
+```bash
+# Add PPA
+sudo add-apt-repository ppa:lazygit-team/release
+sudo apt update
+sudo apt install lazygit
+```
+
+**macOS:**
+```bash
+brew install lazygit
+```
+
+**Windows:**
+```powershell
+winget install JesseDuffield.lazygit
+```
+
+#### fzf
+
+**Purpose**: Fuzzy finder for files and text
+
+**Installation:**
+
+**Arch Linux:**
+```bash
+sudo pacman -S fzf
+```
+
+**Debian/Ubuntu:**
+```bash
+sudo apt install fzf
+```
+
+**macOS:**
+```bash
+brew install fzf
+```
+
+**Windows:**
+```powershell
+winget install junegunn.fzf
+```
+
+### Using Claude Code for Installation
+
+Instead of running individual commands, you can ask Claude Code to install everything:
+
+```bash
+cd ~/.config/nvim
+claude
+```
+
+**Example prompts:**
+
+**For Arch Linux:**
+```
+I'm on Arch Linux. Can you help me install all required and recommended dependencies for this Neovim configuration? Run the dependency checker first, then install what's missing.
+```
+
+**For Debian/Ubuntu:**
+```
+I'm on Ubuntu 22.04. Please check my dependencies and install any missing packages needed for this Neovim setup.
+```
+
+**For macOS:**
+```
+I'm on macOS. Can you verify I have Homebrew, then install all dependencies for this Neovim configuration?
+```
+
+Claude Code will:
+1. Detect your platform
+2. Run the dependency checker
+3. Show you what's missing
+4. Provide and execute installation commands (with your approval)
+5. Verify each installation succeeded
+
+### Verification
+
+After installing dependencies, verify everything is ready:
+
+**Run the dependency checker:**
+```bash
+bash ~/.config/nvim/scripts/check-dependencies.sh
+```
+
+**Expected output (all dependencies met):**
+```
+Checking Neovim Configuration Dependencies...
+==============================================
+
+Core Dependencies:
+------------------
+✓ Neovim >= 0.9.0: 0.10.0
+✓ Git: 2.43.0
+✓ Node.js >= 18.0: 20.11.0
+✓ Python 3: 3.11.6
+✓ pip3 (Python package manager): 23.3.1
+
+Recommended Tools:
+------------------
+✓ ripgrep (fast search): installed (recommended)
+✓ fd (fast file finding): installed (recommended)
+✓ lazygit (Git UI): installed (recommended)
+✓ fzf (fuzzy finder): installed (recommended)
+
+Font Check:
+-----------
+✓ Nerd Font detected
+
+==============================================
+Summary:
+✓ All core dependencies met
+✓ All recommended tools installed
+
+Ready to proceed with Neovim installation!
+```
+
+### Optional Dependencies (Advanced Features)
+
+For specialized features, you may need additional dependencies. See [Advanced Setup](ADVANCED_SETUP.md) for:
+
+- **LaTeX Support**: TeX Live, latexmk, PDF viewers
+- **Lean 4 Support**: Lean theorem prover, elan version manager
+- **Jupyter Support**: Jupyter notebook, ipykernel
+- **Email Integration**: mbsync, cyrus-sasl-xoauth2
+
+### Troubleshooting Dependency Issues
+
+**Problem: Python not found or wrong version**
+
+Make sure Python 3 is installed and aliased correctly:
+```bash
+# Check if python3 works
+python3 --version
+
+# On some systems, add alias to shell config
+echo 'alias python=python3' >> ~/.bashrc
+echo 'alias pip=pip3' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Problem: Node.js version too old**
+
+Use nvm (Node Version Manager) to install a newer version:
+```bash
+# Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc
+
+# Install and use Node 20
+nvm install 20
+nvm use 20
+nvm alias default 20
+```
+
+**Problem: Nerd Font icons not displaying**
+
+1. Verify font is installed: `fc-list | grep -i nerd`
+2. Configure terminal to use the Nerd Font
+3. Restart terminal
+4. Test in Neovim: `:echo ""` (should show a folder icon)
+
+**Problem: Command not found after installation**
+
+The PATH may need updating:
+```bash
+# Check where the command was installed
+which <command>
+
+# Add to PATH if needed (example for user-local binaries)
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Next: Launch Neovim and Bootstrap
+
+With all dependencies installed, proceed to [Phase 4: Launch Neovim and Bootstrap](#phase-4-launch-neovim-and-bootstrap) for first-time setup.
+
 ## Navigation
 
 - **Parent Guide**: [Main README](../README.md)
