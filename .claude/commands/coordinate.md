@@ -588,15 +588,26 @@ export WORKFLOW_DESCRIPTION
 WORKFLOW_SCOPE="research-and-plan"  # Default fallback
 
 # Order matters: check more specific patterns first
-if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^research.*" && \
-   ! echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|implement|fix|debug|create|add|build)"; then
-  WORKFLOW_SCOPE="research-only"
-elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|create.*plan|design)"; then
-  WORKFLOW_SCOPE="research-and-plan"
-elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(fix|debug|troubleshoot)"; then
-  WORKFLOW_SCOPE="debug-only"
-elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(implement|build|add|create).*feature"; then
-  WORKFLOW_SCOPE="full-implementation"
+# Check for research-only pattern (avoids ! in compound condition to prevent history expansion)
+if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^research.*"; then
+  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|implement|fix|debug|create|add|build)"; then
+    # Has action keywords - not research-only, will be classified below
+    :
+  else
+    # Pure research with no action keywords
+    WORKFLOW_SCOPE="research-only"
+  fi
+fi
+
+# Check other patterns if not already set to research-only
+if [ "$WORKFLOW_SCOPE" != "research-only" ]; then
+  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|create.*plan|design)"; then
+    WORKFLOW_SCOPE="research-and-plan"
+  elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(fix|debug|troubleshoot)"; then
+    WORKFLOW_SCOPE="debug-only"
+  elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(implement|build|add|create).*feature"; then
+    WORKFLOW_SCOPE="full-implementation"
+  fi
 fi
 
 # Map scope to phase execution list

@@ -12,7 +12,7 @@
 #   initialize_workflow_paths "$WORKFLOW_DESC" "$WORKFLOW_TYPE"
 #   # Returns: Exports all path variables (TOPIC_DIR, PLANS_DIR, etc.)
 
-set -euo pipefail
+set -eo pipefail  # Removed -u flag to allow ${VAR:-} pattern in sourcing scripts
 
 # Detect project directory dynamically
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -143,10 +143,12 @@ initialize_workflow_paths() {
   fi
 
   # Calculate topic metadata using utility functions
+  # Note: Calculate topic_name first, then use get_or_create_topic_number for idempotency
+  # This prevents topic number incrementing on each bash block invocation
   local topic_num
   local topic_name
-  topic_num=$(get_next_topic_number "$specs_root")
   topic_name=$(sanitize_topic_name "$workflow_description")
+  topic_num=$(get_or_create_topic_number "$specs_root" "$topic_name")
 
   # Validate required fields
   if [ -z "$project_root" ] || [ -z "$topic_num" ] || [ -z "$topic_name" ]; then
@@ -166,7 +168,7 @@ initialize_workflow_paths() {
     echo "  WORKFLOW_DESCRIPTION: '${workflow_description:-<empty>}'" >&2
     echo "" >&2
     echo "Functions Used:" >&2
-    echo "  get_next_topic_number() - from topic-utils.sh" >&2
+    echo "  get_or_create_topic_number() - from topic-utils.sh (idempotent)" >&2
     echo "  sanitize_topic_name() - from topic-utils.sh" >&2
     echo "" >&2
     return 1
