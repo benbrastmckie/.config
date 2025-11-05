@@ -316,6 +316,8 @@ reconstruct_report_paths_array() {
   REPORT_PATHS=()
   for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
     local var_name="REPORT_PATH_$i"
-    REPORT_PATHS+=("${!var_name}")
+    # Use nameref (bash 4.3+ pattern to avoid history expansion)
+    local -n path_ref="$var_name"
+    REPORT_PATHS+=("$path_ref")
   done
 }

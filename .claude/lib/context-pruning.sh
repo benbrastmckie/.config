@@ -51,8 +51,9 @@ prune_subagent_output() {
     return 1
   fi
 
-  # Get full output via indirect reference
-  local full_output="${!output_var_name}"
+  # Get full output via nameref (bash 4.3+ pattern to avoid history expansion)
+  local -n output_ref="$output_var_name"
+  local full_output="$output_ref"
 
   # Extract artifact paths (regex: specs/.*/.*\.md or .claude/specs/.*/.*\.md)
   local artifact_paths=$(echo "$full_output" | grep -oE '(\.claude/)?specs/[^/]+/[^/]+/[^ ]+\.md' | head -5)
