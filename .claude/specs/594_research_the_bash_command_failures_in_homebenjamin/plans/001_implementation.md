@@ -286,9 +286,11 @@ sanitize_topic_name "fix the token refresh bug"
 **Phase 4 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(594): complete Phase 4 - Implement Improved Topic Naming Algorithm`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] Git commit created: `feat(594): complete Phase 4 - Implement Improved Topic Naming Algorithm`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
+
+### Phase 4: Implement Improved Topic Naming Algorithm [COMPLETED]
 
 ### Phase 5: Create Comprehensive Test Suite
 dependencies: [2, 4]
@@ -298,25 +300,25 @@ dependencies: [2, 4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create `.claude/tests/test_bash_command_fixes.sh`
-- [ ] Test 1: Verify no history expansion errors in coordinate Phase 0
-- [ ] Test 2: Verify emit_progress function available in Phase 0 Block 3
-- [ ] Test 3: Verify checkpoint creation without $! exposure
-- [ ] Test 4: Verify defensive checks provide graceful degradation
-- [ ] Create `.claude/tests/test_topic_naming.sh`
-- [ ] Test 5: Verify path extraction from full file paths
-- [ ] Test 6: Verify stopword removal
-- [ ] Test 7: Verify action verb preservation
-- [ ] Test 8: Verify intelligent truncation (whole words preserved)
-- [ ] Test 9: Verify idempotency with get_or_create_topic_number()
-- [ ] Test 10: Verify backward compatibility (existing topics unaffected)
-- [ ] Add tests to `.claude/tests/run_all_tests.sh`
-- [ ] Run full test suite to verify no regressions
+- [x] Create `.claude/tests/test_bash_command_fixes.sh`
+- [x] Test 1: Verify no history expansion errors in coordinate Phase 0
+- [x] Test 2: Verify emit_progress function available in Phase 0 Block 3
+- [x] Test 3: Verify checkpoint creation without $! exposure
+- [x] Test 4: Verify defensive checks provide graceful degradation
+- [x] Create `.claude/tests/test_topic_naming.sh`
+- [x] Test 5: Verify path extraction from full file paths
+- [x] Test 6: Verify stopword removal
+- [x] Test 7: Verify action verb preservation
+- [x] Test 8: Verify intelligent truncation (whole words preserved)
+- [x] Test 9: Verify idempotency with get_or_create_topic_number()
+- [x] Test 10: Verify backward compatibility (existing topics unaffected)
+- [x] Add tests to `.claude/tests/run_all_tests.sh`
+- [x] Run full test suite to verify no regressions
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -332,8 +334,8 @@ cd .claude/tests && ./run_all_tests.sh
 **Expected Duration**: 3 hours
 
 **Phase 5 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
 - [ ] Git commit created: `feat(594): complete Phase 5 - Create Comprehensive Test Suite`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
