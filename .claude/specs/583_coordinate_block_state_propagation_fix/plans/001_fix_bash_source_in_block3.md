@@ -25,18 +25,18 @@ Fix the state propagation failure in `/coordinate` Phase 0 Block 3 where `${BASH
 
 ## Implementation Phases
 
-### Phase 1: Apply Minimal Fix to coordinate.md [COMPLETED]
+### Phase 1: Apply Minimal Fix to coordinate.md
 **Objective**: Replace BASH_SOURCE calculation with exported CLAUDE_PROJECT_DIR
 **Complexity**: Trivial
 **Estimated Time**: 5 minutes
 
 **Tasks**:
-- [x] Read current coordinate.md Block 3 section: `coordinate.md:880-895`
-- [x] Replace SCRIPT_DIR calculation with direct CLAUDE_PROJECT_DIR usage
-- [x] Add comment explaining why BASH_SOURCE cannot be used
-- [x] Test /coordinate Phase 0 completion
-- [x] Run coordinate standards tests
-- [x] Commit fix with detailed message
+- [ ] Read current coordinate.md Block 3 section: `coordinate.md:880-895`
+- [ ] Replace SCRIPT_DIR calculation with direct CLAUDE_PROJECT_DIR usage
+- [ ] Add comment explaining why BASH_SOURCE cannot be used
+- [ ] Test /coordinate Phase 0 completion
+- [ ] Run coordinate standards tests
+- [ ] Commit fix with detailed message
 
 **Implementation**:
 
