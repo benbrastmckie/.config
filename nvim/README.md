@@ -8,7 +8,9 @@ Every subdirectory includes a `README.md` file which documents the modules conta
 
 ## Installation
 
-**New to this configuration?** See the [Installation Guide](docs/INSTALLATION.md) for step-by-step setup instructions, including how to fork the repository, install dependencies, and run health checks.
+**Recommended**: See the [Claude Code-Assisted Installation Guide](docs/CLAUDE_CODE_INSTALL.md) for AI-powered setup assistance that automates dependency checking, troubleshooting, and configuration validation.
+
+**Traditional Setup**: See the [Installation Guide](docs/INSTALLATION.md) for manual step-by-step setup instructions, including how to fork the repository, install dependencies, and run health checks.
 
 **Want to customize notifications?** See the [Notification System Documentation](docs/NOTIFICATIONS.md) for configuring notification behavior across all modules and plugins.
 
