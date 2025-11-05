@@ -537,16 +537,9 @@ echo "Phase 0: Initialization started"
 # STEP 0.1: Project Directory Detection (Minimal Bootstrap)
 # ────────────────────────────────────────────────────────────────────
 
-# Project directory detection (Standard 13)
-# Uses CLAUDE_PROJECT_DIR instead of ${BASH_SOURCE[0]} because SlashCommand
-# execution context does not provide BASH_SOURCE. Git-based detection handles
-# worktrees correctly and matches the pattern used in .claude/lib/detect-project-dir.sh
+# Standard 13: CLAUDE_PROJECT_DIR detection for SlashCommand context
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    CLAUDE_PROJECT_DIR="$(pwd)"
-  fi
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -719,15 +712,10 @@ USE the Bash tool to execute the following Phase 0 setup (Step 2 of 3):
 # ────────────────────────────────────────────────────────────────────
 # STEP 0.4.0: Recalculate CLAUDE_PROJECT_DIR (Exports don't persist)
 # ────────────────────────────────────────────────────────────────────
-# Bash tool limitation (GitHub #334, #2508): exports from Block 1 don't
-# persist to Block 2. Recalculate using same git-based detection pattern.
-
+# Standard 13: CLAUDE_PROJECT_DIR detection (Bash tool limitation GitHub #334, #2508)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    CLAUDE_PROJECT_DIR="$(pwd)"
-  fi
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
 fi
 
 # ────────────────────────────────────────────────────────────────────
@@ -907,17 +895,10 @@ USE the Bash tool to execute the following Phase 0 setup (Step 3 of 3):
 # STEP 0.6: Initialize Workflow Paths
 # ────────────────────────────────────────────────────────────────────
 
-# Source workflow initialization library
-# Note 1: BASH_SOURCE not available in SlashCommand context (Plan 583 finding)
-# Note 2: Exports don't persist between Bash invocations (GitHub #334, #2508)
-# Solution: Recalculate CLAUDE_PROJECT_DIR in each block independently
-
+# Standard 13: CLAUDE_PROJECT_DIR detection (Bash tool limitation GitHub #334, #2508)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    CLAUDE_PROJECT_DIR="$(pwd)"
-  fi
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
 fi
 
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
@@ -1012,16 +993,10 @@ echo ""
 
 ```bash
 # Source verification helpers library
-# Note: Export -f doesn't persist between Bash invocations (GitHub #334, #2508)
-# Solution: Source library in blocks that need it (this block and Phase 1)
-
-# Recalculate CLAUDE_PROJECT_DIR (exports don't persist from Block 3)
+# Standard 13: CLAUDE_PROJECT_DIR detection (Bash tool limitation GitHub #334, #2508)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    CLAUDE_PROJECT_DIR="$(pwd)"
-  fi
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
 fi
 
 # Source verification helpers library (provides verify_file_created function)
@@ -1096,13 +1071,9 @@ echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics"
 STEP 2: Invoke 2-4 research agents in parallel (single message, multiple Task calls)
 
 ```bash
-# Source required libraries for this bash block
+# Standard 13: CLAUDE_PROJECT_DIR detection (Bash tool limitation GitHub #334, #2508)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    CLAUDE_PROJECT_DIR="$(pwd)"
-  fi
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1154,14 +1125,10 @@ emit_progress "1" "All research agents invoked - awaiting completion"
 STEP 3: Verify ALL research reports created successfully (concise format with fail-fast)
 
 ```bash
-# Recalculate CLAUDE_PROJECT_DIR (exports don't persist from previous blocks)
-# Required to source verification-helpers.sh library
+# Standard 13: CLAUDE_PROJECT_DIR detection (Bash tool limitation GitHub #334, #2508)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    CLAUDE_PROJECT_DIR="$(pwd)"
-  fi
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
 fi
 
 # Source verification helpers for verify_file_created function

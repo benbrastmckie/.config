@@ -198,11 +198,11 @@ These limitations are **inherent to Bash tool** and cannot be eliminated:
 **Dependencies**: []
 
 **Tasks**:
-- [ ] Identify all CLAUDE_PROJECT_DIR detection blocks in coordinate.md (expected: 3 blocks)
-- [ ] Replace each 30-line detection block with 10-line Standard 13 pattern
-- [ ] Verify `export CLAUDE_PROJECT_DIR` is present in each block
-- [ ] Test phase transitions work correctly (exports don't persist, but recalculation works)
-- [ ] Validate all 4 workflow types complete successfully
+- [x] Identify all CLAUDE_PROJECT_DIR detection blocks in coordinate.md (found: 6 blocks)
+- [x] Replace each verbose detection block with Standard 13 pattern
+- [x] Verify `export CLAUDE_PROJECT_DIR` is present in each block
+- [x] Test phase transitions work correctly (exports don't persist, but recalculation works)
+- [x] Validate all 4 workflow types complete successfully
 
 **Pattern**:
 ```bash
