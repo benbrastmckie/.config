@@ -91,7 +91,7 @@ This plan focuses on four critical phases that provide the highest value while m
 
 ## Implementation Phases
 
-### Phase 1: Extract Scope Detection to Library
+### Phase 1: Extract Scope Detection to Library [COMPLETED]
 **Dependencies**: []
 **Complexity**: Low (2/10)
 **Duration**: 2-3 hours
@@ -129,7 +129,7 @@ fi
 
 #### Implementation Tasks
 
-- [ ] **Task 1.1**: Create library file `.claude/lib/workflow-scope-detection.sh`
+- [x] **Task 1.1**: Create library file `.claude/lib/workflow-scope-detection.sh`
   - File structure:
     ```bash
     #!/bin/bash
@@ -150,7 +150,7 @@ fi
   - Add header comments explaining purpose and usage
   - Add validation for empty workflow_description parameter
 
-- [ ] **Task 1.2**: Update Block 1 to use library function (coordinate.md:573-597)
+- [x] **Task 1.2**: Update Block 1 to use library function (coordinate.md:573-597)
   - Replace inline scope detection with library call:
     ```bash
     WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
@@ -158,26 +158,26 @@ fi
   - Verify library sourced in REQUIRED_LIBS arrays (should be in all 4)
   - Add defensive validation after library call
 
-- [ ] **Task 1.3**: Update Block 3 to use library function (coordinate.md:923-944)
+- [x] **Task 1.3**: Update Block 3 to use library function (coordinate.md:923-944)
   - Replace inline scope detection with library call (same as Block 1)
   - Remove synchronization warning comment (library eliminates need)
   - Add defensive validation after library call
 
-- [ ] **Task 1.4**: Add library to REQUIRED_LIBS arrays
+- [x] **Task 1.4**: Add library to REQUIRED_LIBS arrays
   - research-only array (line 656)
   - research-and-plan array (line 665)
   - full-implementation array (line 676)
   - debug-only array (line 690)
   - Update count comments (4→5, 6→7, 9→10, 7→8)
 
-- [ ] **Task 1.5**: Create unit tests for scope detection function
+- [x] **Task 1.5**: Create unit tests for scope detection function
   - Test 1: research-only scope detection
   - Test 2: research-and-plan scope detection
   - Test 3: full-implementation scope detection
   - Test 4: debug-only scope detection
   - Test 5: Edge case - empty workflow description
 
-- [ ] **Task 1.6**: Run integration tests
+- [x] **Task 1.6**: Run integration tests
   - Execute `.claude/tests/test_coordinate_integration.sh`
   - Verify all 16 existing tests pass
   - Verify all 4 workflow scopes execute correctly

@@ -573,34 +573,28 @@ fi
 export WORKFLOW_DESCRIPTION
 
 # ────────────────────────────────────────────────────────────────────
-# STEP 0.3: Inline Scope Detection (No Library Dependencies)
+# STEP 0.3: Scope Detection Using Library
 # ────────────────────────────────────────────────────────────────────
 # Lightweight scope detection to determine which libraries to load.
-# This must run before library sourcing to enable conditional loading.
+# This must run before conditional library loading.
 
-WORKFLOW_SCOPE="research-and-plan"  # Default fallback
-
-# Order matters: check more specific patterns first
-# Check for research-only pattern (avoids ! in compound condition to prevent history expansion)
-if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^research.*"; then
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|implement|fix|debug|create|add|build)"; then
-    # Has action keywords - not research-only, will be classified below
-    :
-  else
-    # Pure research with no action keywords
-    WORKFLOW_SCOPE="research-only"
-  fi
+# Source scope detection library
+if [ -f "${LIB_DIR}/workflow-scope-detection.sh" ]; then
+  source "${LIB_DIR}/workflow-scope-detection.sh"
+else
+  echo "ERROR: Required library not found: workflow-scope-detection.sh"
+  echo "Expected location: ${LIB_DIR}/workflow-scope-detection.sh"
+  exit 1
 fi
 
-# Check other patterns if not already set to research-only
-if [ "$WORKFLOW_SCOPE" != "research-only" ]; then
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|create.*plan|design)"; then
-    WORKFLOW_SCOPE="research-and-plan"
-  elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(fix|debug|troubleshoot)"; then
-    WORKFLOW_SCOPE="debug-only"
-  elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(implement|build|add|create).*feature"; then
-    WORKFLOW_SCOPE="full-implementation"
-  fi
+# Detect workflow scope using library function
+WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+
+# Defensive validation
+if [ -z "${WORKFLOW_SCOPE:-}" ]; then
+  echo "ERROR: detect_workflow_scope returned empty result"
+  echo "WORKFLOW_DESCRIPTION: ${WORKFLOW_DESCRIPTION}"
+  exit 1
 fi
 
 # Map scope to phase execution list
@@ -648,18 +642,20 @@ fi
 # Define required libraries based on scope
 case "$WORKFLOW_SCOPE" in
   research-only)
-    # Minimal set: 4 libraries for simple research workflows
+    # Minimal set: 5 libraries for simple research workflows
     REQUIRED_LIBS=(
       "workflow-detection.sh"
+      "workflow-scope-detection.sh"
       "unified-logger.sh"
       "unified-location-detection.sh"
       "overview-synthesis.sh"
     )
     ;;
   research-and-plan)
-    # Moderate set: 6 libraries for research + planning
+    # Moderate set: 7 libraries for research + planning
     REQUIRED_LIBS=(
       "workflow-detection.sh"
+      "workflow-scope-detection.sh"
       "unified-logger.sh"
       "unified-location-detection.sh"
       "overview-synthesis.sh"
@@ -668,9 +664,10 @@ case "$WORKFLOW_SCOPE" in
     )
     ;;
   full-implementation)
-    # Full set: 9 libraries for complete workflows
+    # Full set: 10 libraries for complete workflows
     REQUIRED_LIBS=(
       "workflow-detection.sh"
+      "workflow-scope-detection.sh"
       "unified-logger.sh"
       "unified-location-detection.sh"
       "overview-synthesis.sh"
@@ -682,9 +679,10 @@ case "$WORKFLOW_SCOPE" in
     )
     ;;
   debug-only)
-    # Debug set: 7 libraries for debugging workflows
+    # Debug set: 8 libraries for debugging workflows
     REQUIRED_LIBS=(
       "workflow-detection.sh"
+      "workflow-scope-detection.sh"
       "unified-logger.sh"
       "unified-location-detection.sh"
       "overview-synthesis.sh"
@@ -910,38 +908,31 @@ fi
 # Exports from Block 1 don't persist. Apply stateless recalculation pattern.
 # ────────────────────────────────────────────────────────────────────
 
-# Parse workflow description (duplicate from Block 1 line 553)
+# Parse workflow description
 WORKFLOW_DESCRIPTION="$1"
-
-# Inline scope detection (duplicate from Block 1 lines 581-604)
-# Note: Code duplication accepted per spec 585 recommendation
-WORKFLOW_SCOPE="research-and-plan"  # Default fallback
-
-# Check for research-only pattern
-if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^research.*"; then
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|implement|fix|debug|create|add|build)"; then
-    # Has action keywords - not research-only, will be classified below
-    :
-  else
-    # Pure research with no action keywords
-    WORKFLOW_SCOPE="research-only"
-  fi
-fi
-
-# Check other patterns if not already set to research-only
-if [ "$WORKFLOW_SCOPE" != "research-only" ]; then
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(plan|create.*plan|design)"; then
-    WORKFLOW_SCOPE="research-and-plan"
-  elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(fix|debug|troubleshoot)"; then
-    WORKFLOW_SCOPE="debug-only"
-  elif echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "(implement|build|add|create).*feature"; then
-    WORKFLOW_SCOPE="full-implementation"
-  fi
-fi
 
 # Defensive validation
 if [ -z "${WORKFLOW_DESCRIPTION:-}" ]; then
   echo "ERROR: WORKFLOW_DESCRIPTION not set (pass as argument to /coordinate)"
+  exit 1
+fi
+
+# Detect workflow scope using library
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+if [ -f "${LIB_DIR}/workflow-scope-detection.sh" ]; then
+  source "${LIB_DIR}/workflow-scope-detection.sh"
+else
+  echo "ERROR: Required library not found: workflow-scope-detection.sh"
+  echo "Expected location: ${LIB_DIR}/workflow-scope-detection.sh"
+  exit 1
+fi
+
+WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+
+# Defensive validation
+if [ -z "${WORKFLOW_SCOPE:-}" ]; then
+  echo "ERROR: detect_workflow_scope returned empty result"
+  echo "WORKFLOW_DESCRIPTION: ${WORKFLOW_DESCRIPTION}"
   exit 1
 fi
 
