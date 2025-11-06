@@ -73,6 +73,18 @@ end
 -- Override the global synmaxcol=200 setting for better LaTeX support
 vim.opt_local.synmaxcol = 0  -- 0 means no limit
 
+-- Helper function for bibexport
+local function run_bibexport()
+  local filedir = vim.fn.expand('%:p:h')
+  local filename = vim.fn.expand('%:t:r')
+  local output_bib = filename .. '.bib'
+  local aux_file = 'build/' .. filename .. '.aux'
+
+  -- Build the command to run in terminal
+  local cmd = string.format('cd "%s" && bibexport -o "%s" "%s"', filedir, output_bib, aux_file)
+  vim.cmd('terminal ' .. cmd)
+end
+
 -- Register LaTeX-specific which-key mappings for this buffer
 local ok_wk, wk = pcall(require, "which-key")
 if ok_wk then
@@ -80,7 +92,7 @@ if ok_wk then
   wk.add({
     { "<leader>l", group = "latex", icon = "󰙩", buffer = 0 },
     { "<leader>la", "<cmd>lua PdfAnnots()<CR>", desc = "annotate", icon = "󰏪", buffer = 0 },
-    { "<leader>lb", "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<CR>", desc = "bib export", icon = "󰈝", buffer = 0 },
+    { "<leader>lb", function() run_bibexport() end, desc = "bib export", icon = "󰈝", buffer = 0 },
     { "<leader>lc", "<cmd>VimtexCompile<CR>", desc = "compile", icon = "󰖷", buffer = 0 },
     { "<leader>ld", "<cmd>terminal LATEXMK_DRAFT_MODE=1 latexmk -pdf -e '$draft_mode=1' %:p<CR>", desc = "draft mode", icon = "󰌶", buffer = 0 },
     { "<leader>le", "<cmd>VimtexErrors<CR>", desc = "errors", icon = "󰅚", buffer = 0 },

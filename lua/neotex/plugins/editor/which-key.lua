@@ -212,6 +212,19 @@ return {
       return vim.bo.filetype == "himalaya-email"
     end
 
+    -- Helper function for bibexport
+    local function run_bibexport()
+      local filepath = vim.fn.expand('%:p')
+      local filedir = vim.fn.expand('%:p:h')
+      local filename = vim.fn.expand('%:t:r')
+      local output_bib = filename .. '.bib'
+      local aux_file = 'build/' .. filename .. '.aux'
+
+      -- Build the command to run in terminal
+      local cmd = string.format('cd "%s" && bibexport -o "%s" "%s"', filedir, output_bib, aux_file)
+      vim.cmd('terminal ' .. cmd)
+    end
+
     -- ============================================================================
     -- TOP-LEVEL SINGLE KEY MAPPINGS
     -- ============================================================================
@@ -498,7 +511,7 @@ return {
 
       -- LaTeX-specific mappings
       { "<leader>la", "<cmd>lua PdfAnnots()<CR>", desc = "annotate", icon = "󰏪", cond = is_latex },
-      { "<leader>lb", "<cmd>terminal bibexport -o %:p:r.bib %:p:r.aux<CR>", desc = "bib export", icon = "󰈝", cond = is_latex },
+      { "<leader>lb", function() run_bibexport() end, desc = "bib export", icon = "󰈝", cond = is_latex },
       { "<leader>lc", "<cmd>VimtexCompile<CR>", desc = "compile", icon = "󰖷", cond = is_latex },
       { "<leader>le", "<cmd>VimtexErrors<CR>", desc = "errors", icon = "󰅚", cond = is_latex },
       { "<leader>lf", "<cmd>terminal latexindent -w %:p:r.tex<CR>", desc = "format", icon = "󰉣", cond = is_latex },

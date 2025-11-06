@@ -20,6 +20,8 @@ return {
     vim.g.vimtex_compiler_method = 'latexmk'       -- Explicit compiler backend selection
     vim.g.vimtex_compiler_latexmk = {              -- latexmk configuration
       build_dir = 'build',                         -- Build artifacts directory
+      out_dir = 'build',                           -- Output directory for PDF and aux files
+      aux_dir = 'build',                           -- Auxiliary files directory
       options = {
         '-xelatex',                                -- Use XeLaTeX engine
         '-interaction=nonstopmode',                -- Don't stop on errors
