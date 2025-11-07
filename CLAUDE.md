@@ -360,6 +360,9 @@ Located in `.claude/commands/`:
   - **Usage Guide**: [/implement Command Guide](.claude/docs/guides/implement-command-guide.md) - Complete usage, adaptive planning, and agent delegation
 - `/research <topic>` - Hierarchical multi-agent research with automatic decomposition (replaces archived /report)
 - `/plan <feature>` - Create implementation plans in specs/plans/
+  - **Usage Guide**: [/plan Command Guide](.claude/docs/guides/plan-command-guide.md) - Research delegation, complexity analysis, standards integration
+- `/debug <issue>` - Investigate issues and create diagnostic reports without code changes
+  - **Usage Guide**: [/debug Command Guide](.claude/docs/guides/debug-command-guide.md) - Parallel hypothesis testing, root cause analysis
 - `/plan-from-template <name>` - Generate plans from reusable templates (11 categories)
 - `/plan-wizard` - Interactive plan creation with guided prompts
 - `/test <target>` - Run project-specific tests per Testing Protocols
