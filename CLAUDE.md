@@ -388,6 +388,13 @@ All orchestration commands provide 7-phase workflow with parallel research (2-4 
 
 **Unified Location Detection**: All workflow commands use standardized location detection library (85% token reduction, 25x speedup vs agent-based detection). See [Library API Reference](.claude/docs/reference/library-api.md) for implementation details.
 
+**Command Documentation Pattern**: Commands follow executable/documentation separation:
+- **Executable files** (`.claude/commands/*.md`): Lean execution scripts (<250 lines)
+- **Command guides** (`.claude/docs/guides/*-command-guide.md`): Comprehensive documentation
+- **Templates**: See [Executable Template](.claude/docs/guides/_template-executable-command.md) and [Guide Template](.claude/docs/guides/_template-command-guide.md)
+- **Benefits**: Eliminates meta-confusion loops, improves maintainability
+- **Details**: See [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern)
+
 For detailed usage, see `.claude/commands/README.md` and individual command files in `.claude/commands/`.
 <!-- END_SECTION: project_commands -->
 

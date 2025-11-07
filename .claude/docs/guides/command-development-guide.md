@@ -210,6 +210,95 @@ Documentation    | Read, Edit, Write
 Orchestration    | Read, Write, Bash, Task, TodoWrite
 ```
 
+### 2.4 Executable/Documentation Separation Pattern
+
+**Architecture Principle**: Separate execution logic from comprehensive documentation to eliminate meta-confusion loops and maintain lean, obviously-executable command files.
+
+#### Problem Statement
+
+Mixed-purpose command files (executable code + extensive documentation) suffer from:
+- **Meta-confusion loops**: Claude misinterprets documentation as conversational instructions
+- **Recursive invocation bugs**: Attempts to "invoke /command" instead of executing as command
+- **Context bloat**: Hundreds of lines of documentation loaded before first executable instruction
+- **Maintenance burden**: Changes to docs or logic affect each other
+
+#### Solution Architecture
+
+**Two-file pattern aligned with Diataxis framework**:
+
+1. **Executable Command** (`.claude/commands/command-name.md`)
+   - **Purpose**: Lean execution script (target: <250 lines)
+   - **Content**: Bash blocks, minimal inline comments, phase structure
+   - **Documentation**: One-line link to guide file only
+
+2. **Command Guide** (`.claude/docs/guides/command-name-command-guide.md`)
+   - **Purpose**: Complete task-focused documentation (unlimited length)
+   - **Content**: Architecture, examples, troubleshooting, design decisions
+   - **Audience**: Developers and maintainers
+
+#### Templates
+
+Use these templates for creating new commands:
+
+**Executable Template**: `.claude/docs/guides/_template-executable-command.md`
+**Guide Template**: `.claude/docs/guides/_template-command-guide.md`
+
+#### Migration Checklist
+
+When splitting an existing command:
+
+- [ ] Backup original file
+- [ ] Identify executable sections (bash blocks + minimal context)
+- [ ] Identify documentation sections (architecture, examples, design decisions)
+- [ ] Create new lean executable (<250 lines)
+- [ ] Extract documentation to guide file
+- [ ] Add cross-references (executable → guide, guide → executable)
+- [ ] Update CLAUDE.md with guide link
+- [ ] Test execution (verify no meta-confusion loops)
+- [ ] Verify all phases execute correctly
+- [ ] Delete backup (clean-break approach)
+
+#### File Size Guidelines
+
+| File Type | Target Size | Maximum | Rationale |
+|-----------|------------|---------|-----------|
+| Executable | <200 lines | 250 lines | Obviously executable, minimal context |
+| Guide | Unlimited | N/A | Documentation can grow without bloating executable |
+| Template | <100 lines | 150 lines | Quick-start reference only |
+
+#### Cross-Reference Convention
+
+**In Executable File**:
+```markdown
+# /command-name - Brief Title
+
+YOU ARE EXECUTING AS the [command-name] command.
+
+**Documentation**: See `.claude/docs/guides/command-name-command-guide.md`
+```
+
+**In Guide File**:
+```markdown
+# /command-name Command - Complete Guide
+
+**Executable**: `.claude/commands/command-name.md`
+```
+
+#### Benefits
+
+✅ **Eliminates Meta-Confusion**: Execution files obviously executable
+✅ **Maintainability**: Change logic or docs independently
+✅ **Scalability**: Documentation grows without bloating executables
+✅ **Fail-Fast**: Commands execute or error immediately
+✅ **Clean Architecture**: Clear separation of concerns
+
+#### Validation
+
+Use `.claude/tests/validate_executable_doc_separation.sh` to verify:
+- All command files under 250 lines
+- All guides exist and are referenced
+- Cross-references valid both directions
+
 ---
 
 ## 3. Command Development Workflow

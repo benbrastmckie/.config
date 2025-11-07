@@ -199,6 +199,24 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ---
 
+## Command Guides
+
+Comprehensive task-focused documentation for specific slash commands. Each command guide contains complete usage examples, architecture details, and troubleshooting information separated from the executable command file.
+
+**Pattern**: Each command (`.claude/commands/command-name.md`) has a corresponding guide (`.claude/docs/guides/command-name-command-guide.md`)
+
+**Templates**:
+- [Executable Command Template](_template-executable-command.md) - For creating lean command files
+- [Command Guide Template](_template-command-guide.md) - For creating comprehensive documentation
+
+**Why Separated?**: The executable/documentation separation pattern eliminates meta-confusion loops where Claude misinterprets extensive documentation as conversational instructions. See [Command Development Guide - Section 2.4](command-development-guide.md#24-executabledocumentation-separation-pattern).
+
+### Available Command Guides
+
+Currently, command guides are being created following the new separation pattern. Check this section for links to comprehensive guides as they become available.
+
+---
+
 ## Quick Start
 
 ### Create Your First Command
