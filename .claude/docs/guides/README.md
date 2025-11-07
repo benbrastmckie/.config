@@ -227,6 +227,19 @@ Currently, command guides are being created following the new separation pattern
 
 **See Also**: [/coordinate executable](../../commands/coordinate.md), [Orchestration Best Practices](./orchestration-best-practices.md)
 
+#### [/orchestrate Command Guide](orchestrate-command-guide.md)
+**Purpose**: Complete guide to the /orchestrate multi-agent workflow orchestration command with 7-phase development lifecycle.
+
+**Use Cases**:
+- Complete feature development from research through documentation
+- Understanding 7-phase lifecycle (location → research → plan → implement → test → debug → document)
+- Wave-based parallel implementation (40-60% time savings)
+- Checkpoint recovery and workflow resumption
+- Dry-run mode for workflow preview
+- Pull request automation with --create-pr flag
+
+**See Also**: [/orchestrate executable](../../commands/orchestrate.md), [Orchestration Best Practices](./orchestration-best-practices.md)
+
 ---
 
 ## Quick Start
