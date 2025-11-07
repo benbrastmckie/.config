@@ -707,14 +707,16 @@ check_safe_resume_conditions() {
     return 1
   fi
 
-  # Condition 4: Checkpoint age must be < 7 days
+  # Condition 4: Checkpoint age must be <= 7 days (within 7 day window)
   if [ -n "$created_at" ]; then
     local checkpoint_timestamp=$(date -d "$created_at" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$created_at" +%s 2>/dev/null || echo "0")
     local current_timestamp=$(date +%s)
     local age_seconds=$((current_timestamp - checkpoint_timestamp))
     local seven_days_seconds=$((7 * 24 * 60 * 60))
+    # Add 1-hour buffer to handle timing precision and timezone edge cases
+    local max_age_seconds=$((seven_days_seconds + 3600))
 
-    if [ "$age_seconds" -gt "$seven_days_seconds" ]; then
+    if [ "$age_seconds" -gt "$max_age_seconds" ]; then
       return 1
     fi
   fi
@@ -783,8 +785,10 @@ get_skip_reason() {
     local current_timestamp=$(date +%s)
     local age_seconds=$((current_timestamp - checkpoint_timestamp))
     local seven_days_seconds=$((7 * 24 * 60 * 60))
+    # Add 1-hour buffer to match check_safe_resume_conditions logic
+    local max_age_seconds=$((seven_days_seconds + 3600))
 
-    if [ "$age_seconds" -gt "$seven_days_seconds" ]; then
+    if [ "$age_seconds" -gt "$max_age_seconds" ]; then
       local age_days=$((age_seconds / 86400))
       echo "Checkpoint $age_days days old (max: 7 days)"
       return 0
