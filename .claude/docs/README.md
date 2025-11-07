@@ -50,10 +50,32 @@ Common tasks and where to find guidance:
    → [Phase Dependencies Reference](reference/phase_dependencies.md)
 
 9. **Create implementation plans**
+   → [/plan Command Guide](guides/plan-command-guide.md)
    → [Adaptive Planning Guide](workflows/adaptive-planning-guide.md)
    → [Directory Protocols](concepts/directory-protocols.md)
 
-10. **Fix broken orchestration workflows**
+10. **Execute implementation plans**
+    → [/implement Command Guide](guides/implement-command-guide.md)
+    → [Checkpoint Recovery Pattern](concepts/patterns/checkpoint-recovery.md)
+
+11. **Debug issues and create diagnostic reports**
+    → [/debug Command Guide](guides/debug-command-guide.md)
+    → [Error Enhancement Guide](guides/error-enhancement-guide.md)
+
+12. **Run tests across multiple frameworks**
+    → [/test Command Guide](guides/test-command-guide.md)
+    → [Testing Protocols](reference/claude-md-section-schema.md#testing-protocols)
+
+13. **Update project documentation**
+    → [/document Command Guide](guides/document-command-guide.md)
+    → [Documentation Standards](reference/claude-md-section-schema.md#documentation-policy)
+
+14. **Orchestrate complete workflows**
+    → [/coordinate Command Guide](guides/coordinate-command-guide.md)
+    → [/orchestrate Command Guide](guides/orchestrate-command-guide.md)
+    → [Orchestration Best Practices](guides/orchestration-best-practices.md)
+
+15. **Fix broken orchestration workflows**
     → [Orchestration Troubleshooting Guide](guides/orchestration-troubleshooting.md)
     → [Error Handling Flowchart](quick-reference/error-handling-flowchart.md)
 
