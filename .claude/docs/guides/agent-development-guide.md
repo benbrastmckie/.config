@@ -766,6 +766,172 @@ print('Task config: ' .. vim.inspect(task_config))
 
 ---
 
+## 1.6. Agent Behavioral/Usage Separation Pattern
+
+### Overview
+
+Similar to the executable/documentation separation pattern for commands (Standard 14), agents benefit from separating lean behavioral files from comprehensive usage guides to maintain clarity and enable independent documentation growth.
+
+### Problem Statement
+
+Agent files mixing behavioral guidelines with extensive usage examples experience similar issues to command files:
+
+**Symptoms**:
+- Agent files growing beyond 400 lines with extensive usage documentation
+- Behavioral guidelines buried in usage examples and invocation patterns
+- Multiple invocation patterns documented inline (>100 lines)
+- Difficulty maintaining behavioral guidelines independently from usage examples
+
+**Example**: `research-specialist.md` at 671 lines contains ~200 lines of extractable usage examples, invocation patterns, and integration guidance that could move to a separate usage guide.
+
+### Solution Architecture
+
+**Two-File Pattern** (parallel to command pattern, adjusted for agent complexity):
+
+**1. Agent Behavioral File** (`.claude/agents/agent-name.md`)
+- **Purpose**: Lean behavioral guidelines for agent execution
+- **Size**: Target <400 lines (agents are more complex than commands, threshold adjusted accordingly)
+- **Content**: System prompt, core capabilities, behavioral guidelines, STEP sequences, verification procedures
+- **Documentation**: Single-line reference to usage guide
+- **Audience**: AI executor (Claude when executing as agent)
+
+**2. Agent Usage Guide** (`.claude/docs/guides/agent-name-agent-guide.md`)
+- **Purpose**: Comprehensive usage documentation for command developers
+- **Size**: Unlimited (typically 200-1,000 lines)
+- **Content**: Invocation patterns, integration examples, parameter guidelines, troubleshooting
+- **Cross-reference**: Links back to behavioral file
+- **Audience**: Command developers integrating the agent
+
+### When to Split
+
+Consider splitting agent files when:
+
+- **File size** exceeds 400 lines (behavioral + usage documentation combined)
+- **Usage examples** are extensive (>100 lines of invocation patterns and integration examples)
+- **Multiple invocation patterns** documented (e.g., research with different scopes, plans with different complexity levels)
+- **Integration guidance** detailed (>50 lines explaining how to use agent in different contexts)
+
+### Pattern Comparison
+
+| Aspect | Commands | Agents |
+|--------|----------|--------|
+| **Size Threshold** | 250 lines | 400 lines |
+| **Rationale** | Simple execution scripts | More complex behavioral guidelines |
+| **Behavioral File** | `.claude/commands/*.md` | `.claude/agents/*.md` |
+| **Guide File** | `.claude/docs/guides/*-command-guide.md` | `.claude/docs/guides/*-agent-guide.md` |
+| **Content Split** | Bash blocks vs documentation | Behavioral guidelines vs usage |
+
+### Example: Research Specialist
+
+**Current State** (`research-specialist.md`, 671 lines):
+- Lines 1-450: Behavioral guidelines (system prompt, capabilities, STEP sequences)
+- Lines 451-671: Usage examples (invocation patterns, integration examples, parameter guidelines)
+
+**Proposed Split**:
+
+**`research-specialist.md`** (450 lines):
+```markdown
+---
+allowed-tools: Read, Grep, Write
+description: Specialized research agent for comprehensive topic investigation
+---
+
+# Research Specialist Agent
+
+**Usage Guide**: See `.claude/docs/guides/research-specialist-agent-guide.md`
+
+## System Prompt
+
+You are a specialized research agent...
+
+## Core Capabilities
+[Behavioral guidelines only]
+
+## STEP Sequences
+[Execution procedures only]
+```
+
+**`research-specialist-agent-guide.md`** (220 lines):
+```markdown
+# Research Specialist Agent - Usage Guide
+
+**Behavioral File**: `.claude/agents/research-specialist.md`
+
+## Overview
+### When to Use This Agent
+[Usage guidance]
+
+## Invocation Patterns
+### Basic Research
+[Example with context injection]
+
+### Complex Multi-Topic Research
+[Example with parameters]
+
+## Integration Examples
+[How to use in different workflows]
+
+## Troubleshooting
+[Common issues and solutions]
+```
+
+### Template Requirements
+
+**Note**: Agent templates for this pattern are planned for future work:
+
+- `_template-agent-behavioral.md` (to be created) - Lean behavioral guidelines template
+- `_template-agent-usage-guide.md` (to be created) - Comprehensive usage guide template
+
+These templates will follow the same structure as command templates but adjusted for agent-specific needs (higher complexity, behavioral focus).
+
+### Cross-References
+
+**Related Patterns**:
+- [Executable/Documentation Separation Pattern](../concepts/patterns/executable-documentation-separation.md) - Parent pattern for commands
+- [Command Development Guide - Section 2.4](./command-development-guide.md#24-executabledocumentation-separation-pattern) - Parallel implementation for commands
+
+**Standards**:
+- [Standard 14: Executable/Documentation File Separation](../reference/command_architecture_standards.md#standard-14-executabledocumentation-file-separation) - Formal architectural requirement (commands)
+- [Standard 12: Structural vs Behavioral Content Separation](../reference/command_architecture_standards.md#standard-12-structural-vs-behavioral-content-separation) - Behavioral content must be in agent files
+
+### Benefits
+
+Applying this pattern to agents provides similar benefits to command separation:
+
+1. **Behavioral Clarity**: Agent behavioral files focused exclusively on execution guidelines
+2. **Independent Documentation Growth**: Usage guides can expand without bloating behavioral files
+3. **Easier Maintenance**: Behavioral updates don't touch usage docs, usage examples don't risk breaking behavior
+4. **Better Discoverability**: Developers can find comprehensive usage guidance without reading behavioral internals
+
+### Migration Checklist
+
+When splitting existing agent files:
+
+1. [ ] Backup original agent file (optional, will be deleted per clean-break)
+2. [ ] Identify behavioral sections (system prompt, capabilities, STEP sequences, verification)
+3. [ ] Identify usage sections (invocation patterns, integration examples, parameter guides)
+4. [ ] Create new lean behavioral file (<400 lines target)
+5. [ ] Extract usage documentation to guide file
+6. [ ] Add cross-references (bidirectional)
+7. [ ] Test agent execution (verify behavioral guidelines still accessible)
+8. [ ] Validate usage guide completeness (all invocation patterns documented)
+9. [ ] Delete backup (clean-break approach)
+
+### Current Status
+
+**Pattern Status**: Documented (agents not yet migrated)
+
+**Candidate for Migration**:
+- `research-specialist.md` (671 lines, ~200 lines extractable)
+- Any agent file exceeding 400 lines
+
+**Future Work**:
+- Create agent behavioral and usage guide templates
+- Migrate research-specialist as proof-of-concept
+- Establish validation script for agent pattern compliance
+
+---
+
 # Part 2: Invoking Agents
 
 This part covers how to integrate agents into commands and workflows.
