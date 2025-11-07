@@ -80,6 +80,8 @@ Commands should check CLAUDE.md in priority order:
   - `test_shared_utilities.sh` - Utility library functions
   - `test_adaptive_planning.sh` - Adaptive planning integration (16 tests)
   - `test_revise_automode.sh` - /revise auto-mode integration (18 tests)
+- **Validation Scripts**:
+  - `validate_executable_doc_separation.sh` - Verifies executable/documentation separation pattern compliance (file size, guide existence, cross-references)
 
 ### Neovim Testing
 - **Test Commands**: `:TestNearest`, `:TestFile`, `:TestSuite`, `:TestLast`
@@ -125,6 +127,25 @@ Commands should check CLAUDE.md in priority order:
 - **Verification and Fallback**: All file creation operations require MANDATORY VERIFICATION checkpoints - See [Verification and Fallback Pattern](.claude/docs/concepts/patterns/verification-fallback.md)
 - See [Command Architecture Standards](.claude/docs/reference/command_architecture_standards.md) for complete guidelines
 
+### Architectural Separation
+
+**Executable/Documentation Separation Pattern**: Commands and agents separate lean executable logic from comprehensive documentation to eliminate meta-confusion loops and enable independent evolution.
+
+**Pattern**:
+- **Executable Files** (`.claude/commands/*.md`, `.claude/agents/*.md`): Lean execution scripts (<250 lines for commands, <400 lines for agents) containing bash blocks, phase markers, and minimal inline comments (WHAT not WHY)
+- **Guide Files** (`.claude/docs/guides/*-command-guide.md`): Comprehensive task-focused documentation (unlimited length) with architecture, examples, troubleshooting, and design decisions
+
+**Templates**:
+- New Command: Start with [_template-executable-command.md](.claude/docs/guides/_template-executable-command.md)
+- Command Guide: Use [_template-command-guide.md](.claude/docs/guides/_template-command-guide.md)
+
+**Complete Pattern Documentation**:
+- [Executable/Documentation Separation Pattern](.claude/docs/concepts/patterns/executable-documentation-separation.md) - Complete pattern with case studies and metrics
+- [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern) - Practical implementation instructions
+- [Standard 14](.claude/docs/reference/command_architecture_standards.md#standard-14-executabledocumentation-file-separation) - Formal architectural requirement
+
+**Benefits**: 70% average reduction in executable file size, zero meta-confusion incidents, independent documentation growth, fail-fast execution
+
 ### Development Guides
 - [Command Development Guide](.claude/docs/guides/command-development-guide.md) - Complete guide to creating and maintaining slash commands
 - [Agent Development Guide](.claude/docs/guides/agent-development-guide.md) - Complete guide to creating and maintaining specialized agents
@@ -139,6 +160,13 @@ Commands should check CLAUDE.md in priority order:
 This project prioritizes clean, coherent systems over backward compatibility. Refactors should create well-designed interfaces without legacy burden. Documentation should be present-focused and timeless, avoiding historical markers like "(New)" or "previously".
 
 Core values: clarity, quality, coherence, maintainability.
+
+### Architectural Principles
+
+- **Clean separation between executable logic and documentation**: Commands and agents use two-file pattern (lean executable + comprehensive guide) enabling fail-fast execution and independent documentation growth without context bloat
+- **Single source of truth**: Each piece of information exists in exactly one authoritative location
+- **Progressive disclosure**: Information revealed when needed, not all upfront
+- **Context window optimization**: Minimize context consumption through metadata extraction and aggressive pruning
 
 ### Clean-Break and Fail-Fast Approach
 
@@ -400,7 +428,9 @@ All orchestration commands provide 7-phase workflow with parallel research (2-4 
 - **Command guides** (`.claude/docs/guides/*-command-guide.md`): Comprehensive documentation
 - **Templates**: See [Executable Template](.claude/docs/guides/_template-executable-command.md) and [Guide Template](.claude/docs/guides/_template-command-guide.md)
 - **Benefits**: Eliminates meta-confusion loops, improves maintainability
-- **Details**: See [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern)
+- **Pattern Documentation**: [Executable/Documentation Separation Pattern](.claude/docs/concepts/patterns/executable-documentation-separation.md) - Complete pattern with case studies and metrics
+- **Implementation Guide**: [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern)
+- **Standard**: [Standard 14](.claude/docs/reference/command_architecture_standards.md#standard-14-executabledocumentation-file-separation) - Formal architectural requirement
 
 For detailed usage, see `.claude/commands/README.md` and individual command files in `.claude/commands/`.
 <!-- END_SECTION: project_commands -->
@@ -425,6 +455,12 @@ See [Setup Guide](.claude/docs/guides/setup-command-guide.md) for detailed usage
 ### Command and Agent Reference
 - [Command Reference](.claude/docs/reference/command-reference.md) - Complete catalog of all slash commands with syntax and examples
 - [Agent Reference](.claude/docs/reference/agent-reference.md) - Complete catalog of all specialized agents with capabilities and usage
+
+### Command Development
+- **New Command**: Start with [_template-executable-command.md](.claude/docs/guides/_template-executable-command.md)
+- **Command Guide**: Use [_template-command-guide.md](.claude/docs/guides/_template-command-guide.md)
+- **Pattern Guide**: [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern) for complete separation pattern details
+- **Validation**: Run `.claude/tests/validate_executable_doc_separation.sh` to verify pattern compliance
 
 ### Navigation
 - [Neovim Configuration](nvim/)
