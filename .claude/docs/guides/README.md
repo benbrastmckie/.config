@@ -215,6 +215,18 @@ Comprehensive task-focused documentation for specific slash commands. Each comma
 
 Currently, command guides are being created following the new separation pattern. Check this section for links to comprehensive guides as they become available.
 
+#### [/coordinate Command Guide](coordinate-command-guide.md)
+**Purpose**: Complete guide to the /coordinate multi-agent workflow orchestration command with wave-based parallel execution.
+
+**Use Cases**:
+- Understanding workflow scope types (research-only, research-and-plan, full-implementation, debug-only)
+- Learning wave-based parallel execution patterns (40-60% time savings)
+- Troubleshooting workflow failures and verification checkpoint issues
+- Optimizing context usage and performance
+- Understanding fail-fast error handling patterns
+
+**See Also**: [/coordinate executable](../../commands/coordinate.md), [Orchestration Best Practices](./orchestration-best-practices.md)
+
 ---
 
 ## Quick Start
