@@ -33,6 +33,10 @@ This directory documents the core architectural patterns that enable reliable, e
 8. **[Parallel Execution](./parallel-execution.md)** - Wave-based and concurrent agent execution for 40-60% time savings
 9. **[Workflow Scope Detection](./workflow-scope-detection.md)** - Conditional phase execution based on workflow type for context savings
 
+### File Organization Patterns
+
+10. **[Executable/Documentation Separation](./executable-documentation-separation.md)** - Separate lean executable logic (<250 lines) from comprehensive documentation (unlimited) to eliminate meta-confusion loops and enable independent evolution
+
 ## Anti-Patterns
 
 ### [Inline Template Duplication](../../troubleshooting/inline-template-duplication.md)
@@ -70,11 +74,12 @@ Performance Layer:
 
 ### For Command Development
 When creating or updating commands:
-1. Use **Behavioral Injection** to invoke agents (not SlashCommand tool)
-2. Add **Verification and Fallback** for file creation operations
-3. Implement **Metadata Extraction** when passing reports/plans between agents
-4. Use **Checkpoint Recovery** for long-running workflows
-5. Apply **Parallel Execution** for independent tasks
+1. Use **Executable/Documentation Separation** to create lean command files (<250 lines) with comprehensive guides
+2. Use **Behavioral Injection** to invoke agents (not SlashCommand tool)
+3. Add **Verification and Fallback** for file creation operations
+4. Implement **Metadata Extraction** when passing reports/plans between agents
+5. Use **Checkpoint Recovery** for long-running workflows
+6. Apply **Parallel Execution** for independent tasks
 
 ### For Agent Development
 When creating or updating agents:
@@ -102,6 +107,7 @@ When designing multi-phase workflows:
 | Long-running workflow (>5 phases) | + Checkpoint Recovery, Context Management |
 | Independent parallel tasks | + Parallel Execution |
 | Multi-scope orchestration (research/plan/implement) | + Workflow Scope Detection |
+| All commands/agents | Executable/Documentation Separation (always apply) |
 
 ## Performance Metrics
 
