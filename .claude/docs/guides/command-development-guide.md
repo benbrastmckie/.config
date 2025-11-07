@@ -13,9 +13,22 @@ For a quick reference of all available commands, see [Command Quick Reference](.
 3. [Command Development Workflow](#3-command-development-workflow)
 4. [Standards Integration](#4-standards-integration)
 5. [Agent Integration](#5-agent-integration)
-6. [Testing and Validation](#6-testing-and-validation)
-7. [Common Patterns and Examples](#7-common-patterns-and-examples)
-8. [References](#references)
+6. [State Management Patterns](#6-state-management-patterns)
+   - 6.1 [Introduction - Why State Management Matters](#61-introduction---why-state-management-matters)
+   - 6.2 [Pattern Catalog](#62-pattern-catalog)
+     - 6.2.1 [Pattern 1: Stateless Recalculation](#621-pattern-1-stateless-recalculation)
+     - 6.2.2 [Pattern 2: Checkpoint Files](#622-pattern-2-checkpoint-files)
+     - 6.2.3 [Pattern 3: File-based State](#623-pattern-3-file-based-state)
+     - 6.2.4 [Pattern 4: Single Large Block](#624-pattern-4-single-large-block)
+   - 6.3 [Decision Framework](#63-decision-framework)
+     - 6.3.1 [Decision Criteria Table](#631-decision-criteria)
+     - 6.3.2 [Decision Tree Diagram](#632-decision-tree)
+   - 6.4 [Anti-Patterns](#64-anti-patterns)
+   - 6.5 [Case Studies](#65-case-studies)
+   - 6.6 [Cross-References](#66-cross-references)
+7. [Testing and Validation](#7-testing-and-validation)
+8. [Common Patterns and Examples](#8-common-patterns-and-examples)
+9. [References](#9-references)
 
 ---
 
@@ -1153,9 +1166,1739 @@ This pattern maintains optimal performance:
 
 ---
 
-## 6. Testing and Validation
+## 6. State Management Patterns
 
-### 6.1 Testing Standards Integration
+### 6.1 Introduction - Why State Management Matters
+
+Multi-block commands in Claude Code face a fundamental architectural constraint: **bash blocks execute in separate subprocesses**. This means variable exports and environment changes don't persist between blocks.
+
+#### The Subprocess Isolation Constraint
+
+When Claude executes bash code blocks via the Bash tool, each block runs in a completely separate subprocess, not a subshell. This architectural decision (GitHub issues #334, #2508) has critical implications:
+
+```bash
+# Block 1
+export WORKFLOW_SCOPE="research-only"
+export PHASES="1 2 3"
+
+# Block 2 (separate subprocess - exports are gone!)
+echo "$WORKFLOW_SCOPE"  # Empty!
+echo "$PHASES"          # Empty!
+```
+
+**Why this matters**:
+- Orchestration commands often span 5-7 bash blocks (one per phase)
+- Variables like `WORKFLOW_SCOPE`, `PHASES_TO_EXECUTE`, `CLAUDE_PROJECT_DIR` needed across blocks
+- Traditional shell programming patterns (export, source, eval) don't work
+- State management becomes an explicit design decision
+
+#### Available Patterns Overview
+
+This guide documents 4 proven state management patterns, each optimized for different scenarios:
+
+1. **Pattern 1: Stateless Recalculation** - Recalculate variables in every block (<1ms overhead)
+2. **Pattern 2: Checkpoint Files** - Serialize state to `.claude/data/checkpoints/` for resumability
+3. **Pattern 3: File-based State** - Cache expensive computation results (>1s operations)
+4. **Pattern 4: Single Large Block** - Avoid state management by keeping all logic in one block
+
+Each pattern has clear trade-offs in performance, complexity, and reliability. The decision framework in section 6.3 guides pattern selection based on command requirements.
+
+---
+
+### 6.2 Pattern Catalog
+
+#### 6.2.1 Pattern 1: Stateless Recalculation
+
+**Core Concept**: Every bash block recalculates all variables it needs from scratch. No reliance on previous blocks for state persistence.
+
+**When to Use**:
+- Multi-block orchestration commands
+- <10 variables requiring persistence
+- Recalculation cost <100ms per block
+- Single-invocation workflows (no resumability needed)
+- Commands invoking subagents via Task tool
+
+**Pattern Definition**:
+
+Stateless recalculation embraces subprocess isolation rather than fighting it. Variables are deterministically recomputed in every bash block using the same input data (`$WORKFLOW_DESCRIPTION`, command arguments, file contents).
+
+**Key Principle**: Accept code duplication as an intentional trade-off for simplicity and reliability.
+
+**Implementation Example** (from /coordinate):
+
+```bash
+# Block 1 - Phase 0 Initialization
+# Standard 13: CLAUDE_PROJECT_DIR detection
+CLAUDE_PROJECT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
+
+# Detect workflow scope
+WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+
+# Calculate phases to execute
+case "$WORKFLOW_SCOPE" in
+  "research-only")
+    PHASES_TO_EXECUTE="1"
+    ;;
+  "research-and-plan")
+    PHASES_TO_EXECUTE="1 2"
+    ;;
+  "full-implementation")
+    PHASES_TO_EXECUTE="1 2 3 4 5 6"
+    ;;
+  "debug-only")
+    PHASES_TO_EXECUTE="4"
+    ;;
+  *)
+    echo "ERROR: Unknown workflow scope: $WORKFLOW_SCOPE"
+    exit 1
+    ;;
+esac
+
+# Defensive validation
+if [ -z "$PHASES_TO_EXECUTE" ]; then
+  echo "ERROR: PHASES_TO_EXECUTE not set (WORKFLOW_SCOPE=$WORKFLOW_SCOPE)"
+  exit 1
+fi
+```
+
+```bash
+# Block 2 - Phase 1 Research (different subprocess)
+# MUST recalculate everything - exports from Block 1 didn't persist
+
+# Recalculate CLAUDE_PROJECT_DIR (same logic as Block 1)
+CLAUDE_PROJECT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
+
+# Recalculate workflow scope (same function call as Block 1)
+WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+
+# Recalculate phases to execute (same case statement as Block 1)
+case "$WORKFLOW_SCOPE" in
+  "research-only")
+    PHASES_TO_EXECUTE="1"
+    ;;
+  "research-and-plan")
+    PHASES_TO_EXECUTE="1 2"
+    ;;
+  "full-implementation")
+    PHASES_TO_EXECUTE="1 2 3 4 5 6"
+    ;;
+  "debug-only")
+    PHASES_TO_EXECUTE="4"
+    ;;
+  *)
+    echo "ERROR: Unknown workflow scope: $WORKFLOW_SCOPE"
+    exit 1
+    ;;
+esac
+
+# Defensive validation (repeated for reliability)
+if [ -z "$PHASES_TO_EXECUTE" ]; then
+  echo "ERROR: PHASES_TO_EXECUTE not set (WORKFLOW_SCOPE=$WORKFLOW_SCOPE)"
+  exit 1
+fi
+
+# Now use PHASES_TO_EXECUTE to determine if Phase 1 should execute
+if echo "$PHASES_TO_EXECUTE" | grep -q "1"; then
+  # Execute Phase 1 research logic
+  echo "Executing Phase 1: Research"
+fi
+```
+
+**Code Duplication Strategy**:
+
+Notice the CLAUDE_PROJECT_DIR detection, WORKFLOW_SCOPE calculation, and PHASES_TO_EXECUTE mapping are **identical** across blocks. This is intentional:
+
+- **Overhead**: <1ms per variable recalculation
+- **Total overhead**: 6 blocks × 3 variables × <1ms = <20ms
+- **Alternative** (file-based state): 30ms I/O × 6 blocks = 180ms (9x slower!)
+- **Benefit**: Zero I/O operations, deterministic, no synchronization issues
+
+**Library Extraction Strategy**:
+
+For complex calculations (>20 lines), extract to shared library function:
+
+```bash
+# .claude/lib/workflow-scope-detection.sh
+detect_workflow_scope() {
+  local workflow_description="$1"
+  local scope=""
+
+  if echo "$workflow_description" | grep -qiE 'research.*\(report|investigate|analyze'; then
+    if echo "$workflow_description" | grep -qiE '\(plan|implement|design\)'; then
+      scope="full-implementation"
+    elif echo "$workflow_description" | grep -qiE 'create.*plan'; then
+      scope="research-and-plan"
+    else
+      scope="research-only"
+    fi
+  elif echo "$workflow_description" | grep -qiE '\(debug|fix|troubleshoot\)'; then
+    scope="debug-only"
+  else
+    scope="full-implementation"
+  fi
+
+  echo "$scope"
+}
+
+export -f detect_workflow_scope
+```
+
+Then every block sources the library and calls the function:
+
+```bash
+# Every block
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-scope-detection.sh"
+WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+```
+
+**Trade-off Analysis**:
+
+| Aspect | Advantage | Disadvantage |
+|--------|-----------|--------------|
+| **Performance** | <1ms overhead per variable | 50-80 lines code duplication |
+| **Complexity** | Low (straightforward recalculation) | Synchronization burden (multiple copies) |
+| **Reliability** | Deterministic (no I/O failures) | Manual updates required across blocks |
+| **Maintainability** | No cleanup logic needed | Changes require multi-location updates |
+| **I/O Operations** | None (pure computation) | N/A |
+| **State Capacity** | Limited to fast-to-compute variables | Cannot handle expensive operations |
+
+**Performance Characteristics**:
+
+- **Per-variable overhead**: <1ms (measured for /coordinate)
+- **Memory usage**: Negligible (variables recreated each block)
+- **I/O operations**: Zero (pure computation)
+- **Benchmark**: /coordinate with 6 blocks, 10 variables → <20ms total overhead
+- **Scalability**: Linear (O(blocks × variables))
+
+**Example Commands Using This Pattern**:
+
+- `/coordinate` - Primary example (6 blocks, 10+ variables, <20ms overhead)
+- `/orchestrate` - Similar multi-block workflow coordination
+- Custom orchestration commands requiring subagent invocation
+
+**Advantages**:
+
+- ✓ **Simplicity**: No files to manage, no cleanup logic, straightforward mental model
+- ✓ **Reliability**: Deterministic behavior, no cache staleness, no I/O failures
+- ✓ **Performance**: <1ms per variable beats file I/O (30ms) for simple calculations
+- ✓ **Debugging**: Self-contained blocks, no state synchronization issues
+- ✓ **Testability**: Each block independently testable
+
+**Disadvantages**:
+
+- ✗ **Code Duplication**: 50-80 lines duplicated across blocks
+- ✗ **Synchronization Burden**: Changes require updates across multiple blocks
+- ✗ **Limited Applicability**: Cannot handle expensive computation (>100ms recalculation)
+- ✗ **No Resumability**: State lost on process termination
+
+**When NOT to Use**:
+
+- Computation cost >100ms per block (consider Pattern 3: File-based State)
+- Need resumability after interruptions (use Pattern 2: Checkpoint Files)
+- >20 variables requiring persistence (complexity threshold)
+- Resumable multi-phase workflows (use Pattern 2)
+
+**Defensive Validation Pattern**:
+
+Always validate critical variables after recalculation:
+
+```bash
+# Recalculate
+PHASES_TO_EXECUTE=$(calculate_phases "$WORKFLOW_SCOPE")
+
+# Defensive validation
+if [ -z "$PHASES_TO_EXECUTE" ]; then
+  echo "ERROR: PHASES_TO_EXECUTE not set (WORKFLOW_SCOPE=$WORKFLOW_SCOPE)"
+  echo "DEBUG: Input was: $WORKFLOW_DESCRIPTION"
+  exit 1
+fi
+```
+
+**Mitigation for Code Duplication**:
+
+1. **Extract to Library**: Functions >20 lines go to `.claude/lib/*.sh`
+2. **Automated Testing**: Synchronization validation tests (see section 6.6)
+3. **Comments**: Mark synchronization points with warnings
+4. **Documentation**: Architecture docs explain duplication rationale
+
+**See Also**:
+- [Coordinate State Management Architecture](../architecture/coordinate-state-management.md) - Technical deep-dive
+- Case Study 1: /coordinate Success Story (section 6.5)
+- Anti-Pattern 2: Premature Optimization (section 6.4)
+
+---
+
+#### 6.2.2 Pattern 2: Checkpoint Files
+
+**Core Concept**: Multi-phase workflows persist state to `.claude/data/checkpoints/` directory for resumability after interruptions.
+
+**When to Use**:
+- Multi-phase implementation workflows (>5 phases)
+- Commands requiring >10 minutes execution time
+- Workflows that may be interrupted (network failures, manual stops)
+- Commands needing audit trail (checkpoint history)
+- Resumable operations (restart from phase N)
+
+**Pattern Definition**:
+
+Checkpoint files serialize workflow state to JSON at phase boundaries, enabling full state restoration after process termination or interruption.
+
+**Implementation Example** (from /implement):
+
+```bash
+# Source checkpoint utilities
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
+
+# After Phase 1 completion
+CHECKPOINT_DATA=$(cat <<EOF
+{
+  "command": "implement",
+  "plan_path": "$PLAN_PATH",
+  "current_phase": 1,
+  "completed_phases": [1],
+  "tests_passing": true,
+  "files_modified": ["file1.lua", "file2.lua"],
+  "git_commits": ["a3f8c2e"],
+  "timestamp": "$(date -Iseconds)"
+}
+EOF
+)
+
+save_checkpoint "implement_${PROJECT_NAME}" "$CHECKPOINT_DATA"
+echo "Checkpoint saved: Phase 1 complete"
+
+# After Phase 2 completion
+CHECKPOINT_DATA=$(cat <<EOF
+{
+  "command": "implement",
+  "plan_path": "$PLAN_PATH",
+  "current_phase": 2,
+  "completed_phases": [1, 2],
+  "tests_passing": true,
+  "files_modified": ["file1.lua", "file2.lua", "file3.lua"],
+  "git_commits": ["a3f8c2e", "b7d4e1f"],
+  "timestamp": "$(date -Iseconds)"
+}
+EOF
+)
+
+save_checkpoint "implement_${PROJECT_NAME}" "$CHECKPOINT_DATA"
+```
+
+```bash
+# Later invocation (after interruption) - restore state
+CHECKPOINT_FILE=".claude/data/checkpoints/implement_${PROJECT_NAME}_latest.json"
+
+if [ -f "$CHECKPOINT_FILE" ]; then
+  echo "Found checkpoint - resuming workflow"
+
+  # Restore state from checkpoint
+  PLAN_PATH=$(jq -r '.plan_path' "$CHECKPOINT_FILE")
+  CURRENT_PHASE=$(jq -r '.current_phase' "$CHECKPOINT_FILE")
+  COMPLETED_PHASES=$(jq -r '.completed_phases[]' "$CHECKPOINT_FILE" | tr '\n' ' ')
+  TESTS_PASSING=$(jq -r '.tests_passing' "$CHECKPOINT_FILE")
+
+  # Calculate next phase to execute
+  START_PHASE=$((CURRENT_PHASE + 1))
+
+  echo "Resuming from Phase $START_PHASE"
+  echo "Completed phases: $COMPLETED_PHASES"
+  echo "Tests passing: $TESTS_PASSING"
+else
+  echo "No checkpoint found - starting from Phase 1"
+  START_PHASE=1
+fi
+```
+
+**Checkpoint File Structure**:
+
+```
+.claude/data/checkpoints/
+├── implement_myproject_latest.json         # Current state
+├── implement_myproject_001.json            # Historical checkpoint 1
+├── implement_myproject_002.json            # Historical checkpoint 2
+└── implement_myproject_003.json            # Historical checkpoint 3
+```
+
+**Checkpoint JSON Schema**:
+
+```json
+{
+  "command": "implement",
+  "plan_path": "/absolute/path/to/plan.md",
+  "current_phase": 2,
+  "completed_phases": [1, 2],
+  "tests_passing": true,
+  "files_modified": ["file1.lua", "file2.lua", "file3.lua"],
+  "git_commits": ["a3f8c2e", "b7d4e1f"],
+  "timestamp": "2025-11-05T15:23:45-05:00",
+  "metadata": {
+    "plan_complexity": 7.5,
+    "total_phases": 5,
+    "replan_count": 0
+  }
+}
+```
+
+**Checkpoint Lifecycle**:
+
+1. **Creation**: After each phase completes successfully
+2. **Update**: `_latest.json` always contains most recent state
+3. **Rotation**: Historical checkpoints saved as `_NNN.json` (configurable retention)
+4. **Restoration**: Read `_latest.json` on workflow restart
+5. **Cleanup**: Delete checkpoints on successful workflow completion (optional)
+
+**Trade-off Analysis**:
+
+| Aspect | Advantage | Disadvantage |
+|--------|-----------|--------------|
+| **Resumability** | Full state restoration after interruption | 50-100ms I/O overhead per checkpoint |
+| **Complexity** | Medium (checkpoint-utils.sh library) | Cleanup logic required |
+| **Reliability** | Survives process termination | File I/O can fail (disk full, permissions) |
+| **State Capacity** | Any size (JSON serialization) | Synchronization between checkpoint and reality |
+| **Audit Trail** | Complete workflow history | Storage overhead (50-200KB per checkpoint) |
+| **I/O Operations** | 2 per checkpoint (read + write) | N/A |
+
+**Performance Characteristics**:
+
+- **Checkpoint save**: 30-50ms (JSON serialization + file write)
+- **Checkpoint load**: 20-30ms (file read + JSON parsing)
+- **Total overhead**: 50-100ms per checkpoint
+- **Acceptable for**: Hour-long workflows (0.1% overhead)
+- **Not acceptable for**: Sub-minute workflows (10%+ overhead)
+
+**Checkpoint Utilities Library**:
+
+The `.claude/lib/checkpoint-utils.sh` library provides:
+
+```bash
+# Save checkpoint with automatic rotation
+save_checkpoint() {
+  local checkpoint_name="$1"
+  local checkpoint_data="$2"
+  local checkpoint_dir=".claude/data/checkpoints"
+
+  mkdir -p "$checkpoint_dir"
+
+  # Save as latest
+  echo "$checkpoint_data" > "${checkpoint_dir}/${checkpoint_name}_latest.json"
+
+  # Rotate to historical (optional)
+  local count=$(ls "${checkpoint_dir}/${checkpoint_name}_"*.json 2>/dev/null | wc -l)
+  cp "${checkpoint_dir}/${checkpoint_name}_latest.json" \
+     "${checkpoint_dir}/${checkpoint_name}_$(printf '%03d' $count).json"
+}
+
+# Load most recent checkpoint
+load_checkpoint() {
+  local checkpoint_name="$1"
+  local checkpoint_file=".claude/data/checkpoints/${checkpoint_name}_latest.json"
+
+  if [ -f "$checkpoint_file" ]; then
+    cat "$checkpoint_file"
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Clean up checkpoints on successful completion
+cleanup_checkpoints() {
+  local checkpoint_name="$1"
+  local checkpoint_dir=".claude/data/checkpoints"
+
+  rm -f "${checkpoint_dir}/${checkpoint_name}"_*.json
+  echo "Checkpoints cleaned up for: $checkpoint_name"
+}
+```
+
+**Cleanup Considerations**:
+
+**Retention Policy Options**:
+
+1. **Keep Latest Only**: Delete historical checkpoints after each save
+2. **Keep N Historical**: Retain last N checkpoints (e.g., N=5)
+3. **Keep All Until Completion**: Delete all checkpoints only when workflow succeeds
+4. **Keep Indefinitely**: Never delete (for audit trail)
+
+**Recommended Policy** (for `/implement`):
+
+```bash
+# Keep latest + 3 historical checkpoints
+CHECKPOINT_RETENTION=3
+
+save_checkpoint_with_rotation() {
+  local name="$1"
+  local data="$2"
+  local dir=".claude/data/checkpoints"
+
+  # Save latest
+  echo "$data" > "${dir}/${name}_latest.json"
+
+  # Count existing historical checkpoints
+  local count=$(ls "${dir}/${name}_"[0-9]*.json 2>/dev/null | wc -l)
+
+  # Save new historical checkpoint
+  cp "${dir}/${name}_latest.json" "${dir}/${name}_$(printf '%03d' $((count + 1))).json"
+
+  # Clean old checkpoints if exceeds retention limit
+  if [ $count -ge $CHECKPOINT_RETENTION ]; then
+    ls -t "${dir}/${name}_"[0-9]*.json | tail -n +$((CHECKPOINT_RETENTION + 1)) | xargs rm -f
+  fi
+}
+```
+
+**Cleanup on Success**:
+
+```bash
+# After all phases complete successfully
+cleanup_checkpoints "implement_${PROJECT_NAME}"
+echo "Implementation complete - checkpoints cleaned up"
+```
+
+**Synchronization Validation**:
+
+Critical: Checkpoint must accurately reflect reality.
+
+```bash
+# After phase completion
+run_tests
+TEST_STATUS=$?
+
+if [ $TEST_STATUS -eq 0 ]; then
+  TESTS_PASSING=true
+
+  # Create git commit
+  git add .
+  git commit -m "feat: complete Phase $PHASE_NUMBER"
+  COMMIT_HASH=$(git rev-parse HEAD)
+
+  # Save checkpoint AFTER commit succeeds
+  save_checkpoint "implement_${PROJECT_NAME}" "$(cat <<EOF
+{
+  "current_phase": $PHASE_NUMBER,
+  "tests_passing": true,
+  "git_commits": ["$COMMIT_HASH"]
+}
+EOF
+  )"
+else
+  echo "ERROR: Tests failed - NOT saving checkpoint"
+  exit 1
+fi
+```
+
+**Example Commands Using This Pattern**:
+
+- `/implement` - Primary example (multi-phase implementation with resumability)
+- `/revise --auto-mode` - Iterative plan revision with checkpoints
+- Long-running orchestration workflows (>10 minutes)
+
+**Advantages**:
+
+- ✓ **Resumability**: Full workflow restoration after any interruption
+- ✓ **Audit Trail**: Complete history of workflow progression
+- ✓ **State Capacity**: Unlimited (JSON can hold any data structure)
+- ✓ **Flexibility**: Schema can evolve without breaking existing checkpoints
+
+**Disadvantages**:
+
+- ✗ **I/O Overhead**: 50-100ms per checkpoint (significant for fast workflows)
+- ✗ **Complexity**: Requires checkpoint library, cleanup logic, rotation policy
+- ✗ **Synchronization Risk**: Checkpoint may not reflect actual file system state
+- ✗ **Failure Modes**: Disk full, permissions errors, JSON parsing failures
+
+**When NOT to Use**:
+
+- Single-invocation workflows (<10 minutes) - overhead not justified
+- Simple commands (<5 phases) - resumability not needed
+- Fast workflows (<1 minute) - overhead >10% of execution time
+
+**See Also**:
+- [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md) - Detailed implementation
+- `.claude/lib/checkpoint-utils.sh` - Checkpoint utilities library
+- Case Study 2: /implement Success Story (section 6.5)
+
+---
+
+#### 6.2.3 Pattern 3: File-based State
+
+**Core Concept**: Heavy computation results cached to files to avoid re-execution on subsequent invocations.
+
+**When to Use**:
+- Computation cost >1 second per invocation
+- Results reused across multiple command invocations
+- Caching justifies 30ms I/O overhead
+- Cache invalidation logic manageable
+
+**Pattern Definition**:
+
+File-based state caches expensive computation results (codebase analysis, dependency graphs, large dataset preprocessing) to files, avoiding re-computation on subsequent command invocations.
+
+**Difference from Pattern 2**:
+- Pattern 2 (Checkpoints): Intra-workflow state for resumability
+- Pattern 3 (File-based): Inter-invocation caching for performance
+
+**Implementation Example**:
+
+```bash
+# Expensive codebase analysis (5+ seconds)
+ANALYSIS_CACHE=".claude/cache/codebase_analysis_${PROJECT_HASH}.json"
+
+if [ -f "$ANALYSIS_CACHE" ]; then
+  # Check cache freshness (modified in last 24 hours?)
+  if [ "$(uname)" = "Darwin" ]; then
+    CACHE_AGE=$(( $(date +%s) - $(stat -f%m "$ANALYSIS_CACHE") ))
+  else
+    CACHE_AGE=$(( $(date +%s) - $(stat -c%Y "$ANALYSIS_CACHE") ))
+  fi
+
+  if [ $CACHE_AGE -lt 86400 ]; then
+    # Cache is fresh - use it
+    ANALYSIS_RESULT=$(cat "$ANALYSIS_CACHE")
+    echo "Using cached analysis (age: ${CACHE_AGE}s)"
+  else
+    # Cache is stale - regenerate
+    echo "Cache expired (age: ${CACHE_AGE}s) - regenerating analysis..."
+    ANALYSIS_RESULT=$(perform_expensive_analysis)
+    echo "$ANALYSIS_RESULT" > "$ANALYSIS_CACHE"
+  fi
+else
+  # No cache - compute and save
+  echo "No cache found - running expensive analysis (5-10s)..."
+  ANALYSIS_RESULT=$(perform_expensive_analysis)
+  echo "$ANALYSIS_RESULT" > "$ANALYSIS_CACHE"
+fi
+
+# Use ANALYSIS_RESULT in command logic
+echo "Analysis complete: $(echo "$ANALYSIS_RESULT" | jq -r '.summary')"
+```
+
+**Cache Invalidation Strategies**:
+
+**1. Time-based Invalidation**:
+
+```bash
+# Cache expires after 24 hours
+MAX_CACHE_AGE=86400  # seconds
+
+if [ -f "$CACHE_FILE" ]; then
+  CACHE_AGE=$(( $(date +%s) - $(stat -c%Y "$CACHE_FILE" 2>/dev/null || stat -f%m "$CACHE_FILE") ))
+
+  if [ $CACHE_AGE -gt $MAX_CACHE_AGE ]; then
+    echo "Cache expired - regenerating"
+    rm "$CACHE_FILE"
+  fi
+fi
+```
+
+**2. Content-based Invalidation**:
+
+```bash
+# Cache invalidated when input files change
+INPUT_FILES=("file1.lua" "file2.lua" "file3.lua")
+INPUT_HASH=$(cat "${INPUT_FILES[@]}" | md5sum | cut -d' ' -f1)
+
+CACHE_FILE=".claude/cache/analysis_${INPUT_HASH}.json"
+
+if [ ! -f "$CACHE_FILE" ]; then
+  echo "Input files changed - cache invalidated"
+  RESULT=$(expensive_analysis "${INPUT_FILES[@]}")
+  echo "$RESULT" > "$CACHE_FILE"
+fi
+```
+
+**3. Manual Invalidation**:
+
+```bash
+# User flag to bypass cache
+if [ "$NO_CACHE" = "true" ]; then
+  echo "Cache bypass requested - running fresh analysis"
+  RESULT=$(expensive_analysis)
+else
+  # Use cache if available
+  if [ -f "$CACHE_FILE" ]; then
+    RESULT=$(cat "$CACHE_FILE")
+  else
+    RESULT=$(expensive_analysis)
+    echo "$RESULT" > "$CACHE_FILE"
+  fi
+fi
+```
+
+**4. Automatic File Modification Detection**:
+
+```bash
+# Invalidate cache if any source file modified since cache created
+if [ -f "$CACHE_FILE" ]; then
+  # Find newest source file
+  NEWEST_SOURCE=$(find . -name "*.lua" -type f -exec stat -f%m {} \; | sort -rn | head -1)
+  CACHE_MTIME=$(stat -f%m "$CACHE_FILE")
+
+  if [ $NEWEST_SOURCE -gt $CACHE_MTIME ]; then
+    echo "Source files modified - cache invalidated"
+    rm "$CACHE_FILE"
+  fi
+fi
+```
+
+**Trade-off Analysis**:
+
+| Aspect | Advantage | Disadvantage |
+|--------|-----------|--------------|
+| **Performance** | Avoid 1s+ re-computation | 30ms I/O overhead per cache access |
+| **Complexity** | High (cache invalidation logic) | Staleness detection required |
+| **Reliability** | Reduces computation load | Cache/reality synchronization issues |
+| **Maintainability** | Cleanup logic required | Multiple failure modes (I/O, staleness) |
+| **Storage** | Persistent across invocations | Disk space consumption |
+| **I/O Operations** | 1 read per cache hit | Disk full errors possible |
+
+**Performance Characteristics**:
+
+- **Cache save**: 20-30ms (JSON serialization + file write)
+- **Cache load**: 10-20ms (file read + JSON parsing)
+- **Total overhead**: 30ms per cache operation
+- **Break-even point**: Computation must cost >30ms to justify caching
+- **Recommended threshold**: >1s computation (30x overhead amortization)
+
+**Cache Directory Structure**:
+
+```
+.claude/cache/
+├── codebase_analysis_abc123.json          # Analysis for project hash abc123
+├── codebase_analysis_def456.json          # Analysis for project hash def456
+├── dependency_graph_abc123.json           # Dependency graph cache
+└── metadata.json                          # Cache metadata (creation times, sizes)
+```
+
+**Cleanup Considerations**:
+
+**Cache Size Management**:
+
+```bash
+# Limit cache directory size to 100MB
+MAX_CACHE_SIZE=$((100 * 1024 * 1024))  # bytes
+
+cleanup_old_caches() {
+  local cache_dir=".claude/cache"
+  local current_size=$(du -sb "$cache_dir" 2>/dev/null | cut -f1)
+
+  if [ $current_size -gt $MAX_CACHE_SIZE ]; then
+    echo "Cache size ($current_size bytes) exceeds limit ($MAX_CACHE_SIZE bytes)"
+    echo "Cleaning oldest cache files..."
+
+    # Delete oldest files until under limit
+    ls -t "$cache_dir"/*.json | tail -n +10 | xargs rm -f
+  fi
+}
+```
+
+**Automatic Cleanup on Command Exit**:
+
+```bash
+# Optional: Clean up caches older than 7 days on command exit
+trap 'cleanup_stale_caches' EXIT
+
+cleanup_stale_caches() {
+  find .claude/cache -name "*.json" -mtime +7 -delete
+  echo "Cleaned up caches older than 7 days"
+}
+```
+
+**Example Use Cases**:
+
+- **Codebase Complexity Analysis**: Parse all source files, calculate metrics (5-10s)
+- **Dependency Graph Generation**: Traverse all imports/requires (3-5s)
+- **Documentation Parsing**: Extract API signatures from all files (2-4s)
+- **Cross-Repository Reference Resolution**: Query multiple Git repositories (10-30s)
+
+**Example Commands** (hypothetical):
+
+```bash
+# /analyze-complexity command (hypothetical)
+# Caches complexity metrics to avoid 5s re-computation
+CACHE_FILE=".claude/cache/complexity_$(git rev-parse HEAD).json"
+
+if [ -f "$CACHE_FILE" ]; then
+  METRICS=$(cat "$CACHE_FILE")
+else
+  METRICS=$(analyze_complexity_for_all_files)  # 5-10s
+  echo "$METRICS" > "$CACHE_FILE"
+fi
+```
+
+**Advantages**:
+
+- ✓ **Performance**: Avoid expensive re-computation (1s+ → 30ms)
+- ✓ **Persistent**: Cache survives across command invocations
+- ✓ **Scalable**: Handle large datasets via incremental caching
+
+**Disadvantages**:
+
+- ✗ **Complexity**: Cache invalidation logic required (not trivial)
+- ✗ **Staleness Risk**: Cache may not reflect current state (synchronization issues)
+- ✗ **Storage Overhead**: Disk space consumed by cache files (50-500MB)
+- ✗ **Failure Modes**: Disk full, permissions errors, stale cache bugs
+
+**When NOT to Use**:
+
+- Computation cost <100ms (overhead >30% of computation time)
+- Results change frequently (cache hit rate <50%)
+- Complex invalidation logic (maintenance burden > time savings)
+- Single-invocation workflows (cache not reused)
+
+**Anti-Pattern Warning**:
+
+Do NOT use file-based state for fast variables (<1ms calculation). This is **premature optimization**:
+
+```bash
+# ANTI-PATTERN: File-based state for fast variable
+CACHE_FILE=".claude/cache/workflow_scope.txt"
+if [ -f "$CACHE_FILE" ]; then
+  WORKFLOW_SCOPE=$(cat "$CACHE_FILE")  # 30ms I/O
+else
+  WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # <1ms calculation
+  echo "$WORKFLOW_SCOPE" > "$CACHE_FILE"
+fi
+# Result: 30x SLOWER than recalculation!
+
+# CORRECT: Stateless recalculation (Pattern 1)
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # <1ms, no I/O
+```
+
+**See Also**:
+- Anti-Pattern 2: Premature Optimization (section 6.4)
+- Pattern 1: Stateless Recalculation (for <100ms operations)
+
+---
+
+#### 6.2.4 Pattern 4: Single Large Block
+
+**Core Concept**: All command logic in one bash block, avoiding subprocess boundaries entirely.
+
+**When to Use**:
+- Simple utility commands (<300 lines total)
+- No subagent invocation needed
+- Simple file creation or template expansion operations
+- 0ms overhead required
+
+**Pattern Definition**:
+
+Single large block avoids state management by keeping all logic within a single bash subprocess. Variables persist naturally within the process, eliminating recalculation overhead.
+
+**Key Limitation**: Cannot invoke Task tool for subagent delegation (requires multiple bash blocks).
+
+**Implementation Example**:
+
+```bash
+#!/usr/bin/env bash
+# Simple utility command - all logic in single block
+
+set -e
+
+# Standard 13: CLAUDE_PROJECT_DIR detection
+CLAUDE_PROJECT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
+
+# Parse arguments
+FEATURE_NAME="$1"
+
+if [ -z "$FEATURE_NAME" ]; then
+  echo "ERROR: Feature name required"
+  echo "Usage: /create-spec <feature-name>"
+  exit 1
+fi
+
+# Variable calculations (persist throughout block)
+SANITIZED_NAME=$(echo "$FEATURE_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+TIMESTAMP=$(date -Iseconds)
+SPEC_NUMBER=$(find .claude/specs -maxdepth 1 -type d -name "[0-9]*" | wc -l)
+SPEC_NUMBER=$((SPEC_NUMBER + 1))
+
+# Create directory structure
+TARGET_DIR="${CLAUDE_PROJECT_DIR}/.claude/specs/${SPEC_NUMBER}_${SANITIZED_NAME}"
+mkdir -p "$TARGET_DIR"/{plans,reports,summaries,debug}
+
+# Create README.md
+cat > "${TARGET_DIR}/README.md" <<EOF
+# ${FEATURE_NAME}
+
+**Spec Number**: ${SPEC_NUMBER}
+**Created**: ${TIMESTAMP}
+
+## Overview
+
+[Feature description here]
+
+## Artifacts
+
+- \`plans/\` - Implementation plans
+- \`reports/\` - Research reports
+- \`summaries/\` - Implementation summaries
+- \`debug/\` - Debug reports
+
+## Status
+
+- [ ] Research
+- [ ] Planning
+- [ ] Implementation
+- [ ] Testing
+- [ ] Documentation
+EOF
+
+# Verify creation
+if [ ! -f "${TARGET_DIR}/README.md" ]; then
+  echo "ERROR: File creation failed"
+  exit 1
+fi
+
+# Output result
+echo "✓ Created spec directory:"
+echo "  Path: ${TARGET_DIR}"
+echo "  Number: ${SPEC_NUMBER}"
+echo "  Feature: ${FEATURE_NAME}"
+echo "  Timestamp: ${TIMESTAMP}"
+echo ""
+echo "Next steps:"
+echo "  1. Edit ${TARGET_DIR}/README.md with feature description"
+echo "  2. Run /research <topic> to create initial research report"
+echo "  3. Run /plan <description> to create implementation plan"
+```
+
+**Trade-off Analysis**:
+
+| Aspect | Advantage | Disadvantage |
+|--------|-----------|--------------|
+| **Performance** | 0ms overhead (no recalculation) | Cannot invoke subagents (Task tool) |
+| **Complexity** | Very Low (straightforward script) | Limited to <300 lines (transformation risk) |
+| **Reliability** | No synchronization issues | All logic in single scope |
+| **Maintainability** | Single location for all logic | Cannot leverage agent delegation |
+| **State Management** | Not needed (variables persist) | N/A |
+| **Debugging** | Simple (linear execution) | Large blocks harder to debug |
+
+**Performance Characteristics**:
+
+- **Overhead**: 0ms (no recalculation, no I/O)
+- **Execution time**: Linear with script complexity
+- **Memory**: Minimal (variables in single process)
+
+**Line Count Threshold**:
+
+Bash blocks >400 lines face increased risk of code transformation bugs. Recommended limits:
+
+- **Safe**: <300 lines
+- **Caution**: 300-400 lines
+- **High Risk**: >400 lines (consider splitting)
+
+**Limitations**:
+
+**Cannot Invoke Task Tool**:
+
+The Task tool requires separate bash blocks for agent invocations. Single-block commands cannot:
+
+```bash
+# IMPOSSIBLE in single-block command
+# Task tool invocation requires separate bash block
+USE the Task tool with subagent_type=research-specialist...
+# This syntax is interpreted as instruction to Claude, not bash code
+```
+
+**Multi-block Required for Subagents**:
+
+```bash
+# Block 1: Invoke subagent
+USE the Task tool with subagent_type=research-specialist
+prompt="Research authentication patterns in the codebase"
+
+# Block 2: Process subagent results (separate subprocess)
+echo "Subagent completed research"
+# Read subagent output and continue workflow
+```
+
+**No Phase Boundaries**:
+
+Single-block commands cannot checkpoint progress. If command fails partway through, must restart from beginning.
+
+**Limited Parallelism**:
+
+Cannot launch parallel operations (all execution sequential).
+
+**Use Cases**:
+
+**Perfect For**:
+- File creation utilities
+- Template expansion commands
+- Directory structure initialization
+- Configuration file updates
+- Simple transformations (<300 lines)
+
+**Not Suitable For**:
+- Commands requiring AI reasoning (need subagents)
+- Multi-phase workflows (need checkpoints)
+- Long-running operations (>5 minutes)
+- Complex orchestration (need agent delegation)
+
+**Example Commands** (hypothetical):
+
+- `/create-spec` - Create spec directory structure
+- `/init-command` - Initialize new slash command template
+- `/update-config` - Update configuration file
+- Simple git operations (add, commit, push)
+
+**Advantages**:
+
+- ✓ **Simplicity**: No state management needed
+- ✓ **Performance**: 0ms overhead
+- ✓ **Reliability**: No synchronization issues
+- ✓ **Debugging**: Linear execution, easy to trace
+
+**Disadvantages**:
+
+- ✗ **Cannot Use Task Tool**: No subagent delegation
+- ✗ **Line Count Limit**: >400 lines risks transformation bugs
+- ✗ **No Resumability**: Must restart from beginning on failure
+- ✗ **Limited Complexity**: Cannot handle multi-phase workflows
+
+**When NOT to Use**:
+
+- Command requires subagent invocation (use Pattern 1)
+- Command >300 lines (split into multi-block)
+- Need resumability (use Pattern 2)
+- Complex orchestration workflows (use Pattern 1)
+
+**See Also**:
+- Pattern 1: Stateless Recalculation (for multi-block commands)
+- Anti-Pattern 3: Over-Consolidation (section 6.4)
+
+---
+
+### 6.3 Decision Framework
+
+#### 6.3.1 Decision Criteria
+
+Use this table to evaluate which pattern fits your command requirements:
+
+| Criteria | Pattern 1: Stateless | Pattern 2: Checkpoints | Pattern 3: File-based | Pattern 4: Single Block |
+|----------|---------------------|------------------------|----------------------|------------------------|
+| **Variable Count** | <10 | Any | Any | <10 |
+| **Recalculation Cost** | <100ms | Any | >1s | N/A |
+| **Command Complexity** | Any | >5 phases | Any | <300 lines |
+| **Subagent Invocations** | Yes (required) | Yes | Yes | No (limitation) |
+| **State Persistence** | Single invocation only | Across interruptions | Across invocations | Single invocation only |
+| **Resumability** | No | Yes (checkpoint restore) | No | No |
+| **Overhead** | <1ms per variable | 50-100ms per checkpoint | 30ms I/O per cache | 0ms |
+| **Complexity** | Low | Medium | High | Very Low |
+| **Cleanup Required** | No | Yes (checkpoint rotation) | Yes (cache invalidation) | No |
+| **I/O Operations** | None | Read/write JSON | Read/write cache files | None |
+| **Failure Modes** | Synchronization drift | Checkpoint corruption | Cache staleness | None (simplicity) |
+| **Best For** | Orchestration commands | Long-running workflows | Expensive computation | Simple utilities |
+
+#### 6.3.2 Decision Tree
+
+Use this decision tree to quickly select the appropriate pattern:
+
+```
+                    START: Choose State Management Pattern
+                                    |
+                                    v
+                    Does computation take >1 second?
+                                    |
+                    +---------------+---------------+
+                    |                               |
+                   YES                             NO
+                    |                               |
+                    v                               v
+            Pattern 3:                 Does workflow have >5 phases
+           File-based State               or need resumability?
+         (Cache expensive                          |
+          computation)              +---------------+---------------+
+                                    |                               |
+                                   YES                             NO
+                                    |                               |
+                                    v                               v
+                            Pattern 2:                 Does command invoke
+                          Checkpoint Files                 subagents?
+                       (Multi-phase resumable)                      |
+                                                    +---------------+---------------+
+                                                    |                               |
+                                                   YES                             NO
+                                                    |                               |
+                                                    v                               v
+                                            Pattern 1:                    Is command <300 lines
+                                        Stateless Recalc                     total logic?
+                                     (Multi-block with                               |
+                                      recalculation)                +---------------+---------------+
+                                                                    |                               |
+                                                                   YES                             NO
+                                                                    |                               |
+                                                                    v                               v
+                                                            Pattern 4:                      Pattern 1:
+                                                         Single Large Block              Stateless Recalc
+                                                          (Simple utility)            (Split into blocks)
+```
+
+**ASCII Box Diagram**:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│           State Management Pattern Decision Tree            │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  Q1: Computation cost >1s?                                  │
+│    ├─ YES → Pattern 3 (File-based State)                   │
+│    └─ NO → Continue to Q2                                   │
+│                                                             │
+│  Q2: Multi-phase workflow (>5 phases) or resumable?         │
+│    ├─ YES → Pattern 2 (Checkpoint Files)                   │
+│    └─ NO → Continue to Q3                                   │
+│                                                             │
+│  Q3: Invokes subagents (Task tool)?                         │
+│    ├─ YES → Pattern 1 (Stateless Recalculation)            │
+│    └─ NO → Continue to Q4                                   │
+│                                                             │
+│  Q4: Command <300 lines total?                              │
+│    ├─ YES → Pattern 4 (Single Large Block)                 │
+│    └─ NO → Pattern 1 (Stateless Recalc, split blocks)      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Quick Pattern Selection Reference
+
+**Choose Pattern 1 (Stateless Recalculation)** when:
+- Command invokes subagents via Task tool
+- <10 variables need persistence
+- Recalculation cost <100ms
+- Single invocation (no resumability needed)
+- Example: `/coordinate`, `/orchestrate`
+
+**Choose Pattern 2 (Checkpoint Files)** when:
+- Multi-phase workflow (>5 phases)
+- Resumability required (interruption tolerance)
+- Execution time >10 minutes
+- State audit trail needed
+- Example: `/implement`, long-running orchestration
+
+**Choose Pattern 3 (File-based State)** when:
+- Computation cost >1 second
+- Results reused across invocations
+- Caching justifies 30ms I/O overhead
+- Cache invalidation logic manageable
+- Example: Codebase analysis, dependency graphs
+
+**Choose Pattern 4 (Single Large Block)** when:
+- Command <300 lines total
+- No subagent invocation needed
+- Simple utility operation
+- 0ms overhead required
+- Example: File creation utilities, template expansion
+
+---
+
+### 6.4 Anti-Patterns
+
+#### Anti-Pattern 1: Fighting the Tool Constraints
+
+**Description**: Attempting to make exports work across Bash tool blocks or using workarounds to bypass subprocess isolation.
+
+**Why It Fails**:
+- Bash tool subprocess isolation (GitHub issues #334, #2508)
+- Exports don't persist across tool invocations
+- Workarounds are fragile and violate fail-fast principle
+
+**Technical Explanation**:
+
+The Bash tool launches each code block in a separate subprocess, not a subshell. This means:
+
+```bash
+# Block 1
+export VAR="value"
+export ANOTHER_VAR="data"
+
+# Block 2 (completely separate subprocess)
+echo "$VAR"          # Empty! Export didn't persist
+echo "$ANOTHER_VAR"  # Empty! Export didn't persist
+```
+
+Subprocess boundaries are fundamental to the tool architecture and cannot be bypassed.
+
+**Real Example from Spec 582**:
+
+Early attempts tried global variable exports:
+
+```bash
+# Attempted solution (FAILED)
+export WORKFLOW_SCOPE="research-and-plan"
+export PHASES_TO_EXECUTE="1 2"
+
+# Later block
+if [ -z "$PHASES_TO_EXECUTE" ]; then
+  echo "ERROR: Variable not set"  # This error occurred!
+fi
+```
+
+**Why This Happened**:
+
+Developers assumed bash blocks were subshells (where exports persist), not separate subprocesses (where they don't).
+
+**Attempted Workarounds** (all failed):
+
+1. **Global Environment Variables**: `export` doesn't persist
+2. **eval $(previous_block)**: Previous block output not accessible
+3. **Source Script Files**: Files must be created in separate blocks
+4. **Named Pipes**: Complex, fragile, high failure rate
+
+**What to Do Instead**:
+
+Use Pattern 1 (Stateless Recalculation):
+
+```bash
+# Block 1
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")
+
+# Block 2 (recalculate, don't rely on export)
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")
+```
+
+Or use Pattern 2 (Checkpoint Files) for complex state:
+
+```bash
+# Block 1
+save_checkpoint "workflow" '{"scope": "research-only"}'
+
+# Block 2
+WORKFLOW_SCOPE=$(load_checkpoint "workflow" | jq -r '.scope')
+```
+
+**Lesson Learned**:
+
+Work with tool constraints, not against them. Subprocess isolation is intentional (security, reliability). Accept it and choose appropriate state management pattern.
+
+**Reference**: Specs 582-584 discovery phase
+
+---
+
+#### Anti-Pattern 2: Premature Optimization
+
+**Description**: Using file-based state (Pattern 3) for fast calculations to avoid "code duplication".
+
+**Why It Fails**:
+- Adds 30ms I/O overhead for <1ms operation (30x slower!)
+- Introduces cache invalidation complexity
+- Creates new failure modes (disk full, permissions, staleness)
+- Code is more complex, not simpler
+
+**Technical Explanation**:
+
+File I/O overhead (30ms) exceeds recalculation cost (<1ms) for simple variables:
+
+```bash
+# ANTI-PATTERN: File-based state for simple variable
+VAR_CACHE=".claude/cache/workflow_scope.txt"
+if [ -f "$VAR_CACHE" ]; then
+  WORKFLOW_SCOPE=$(cat "$VAR_CACHE")  # 30ms I/O
+else
+  WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # <1ms calculation
+  echo "$WORKFLOW_SCOPE" > "$VAR_CACHE"
+fi
+# Total time: 30ms cached, 31ms uncached (30x slower than recalculation!)
+
+# CORRECT: Stateless recalculation (Pattern 1)
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # <1ms, no I/O, deterministic
+```
+
+**Performance Comparison**:
+
+| Approach | First Invocation | Cached Invocation | Complexity | Failure Modes |
+|----------|-----------------|-------------------|------------|---------------|
+| **Recalculation** | <1ms | <1ms | Low | None |
+| **File-based Cache** | 31ms (calc+write) | 30ms (read) | High | 4+ modes |
+
+**Real Example from Spec 585**:
+
+Research validation measured performance:
+
+```bash
+# Benchmark: Scope detection recalculation
+time detect_workflow_scope "research authentication patterns"
+# Result: 0.002s (2ms)
+
+# Benchmark: File I/O (read + write)
+time echo "test" > /tmp/bench.txt && cat /tmp/bench.txt
+# Result: 0.031s (31ms)
+
+# Verdict: Recalculation 15x faster than file I/O
+```
+
+**Why Developers Make This Mistake**:
+
+- **Intuition**: "Code duplication is bad, caching is good"
+- **Reality**: Code duplication is <1ms overhead, file caching is 30ms overhead
+- **Lesson**: Measure performance before optimizing
+
+**Additional Complexity Costs**:
+
+```bash
+# File-based state requires:
+# 1. Cache invalidation logic (when to regenerate?)
+# 2. Error handling (file not found, permissions, disk full)
+# 3. Cleanup logic (prevent unbounded cache growth)
+# 4. Testing (cache hit/miss scenarios)
+
+# Stateless recalculation requires:
+# - Nothing! Just call function again.
+```
+
+**What to Do Instead**:
+
+Accept recalculation cost if <100ms. Only use file-based state when computation cost >1 second justifies I/O overhead.
+
+**Decision Rule**:
+
+```
+if computation_cost < 100ms:
+    use Pattern 1 (Stateless Recalculation)
+elif computation_cost < 1s:
+    evaluate trade-off (context-dependent)
+else:  # computation_cost > 1s
+    use Pattern 3 (File-based State) with cache invalidation
+```
+
+**Reference**: Spec 585 research validation
+
+---
+
+#### Anti-Pattern 3: Over-Consolidation
+
+**Description**: Creating >400 line bash blocks to eliminate recalculation overhead.
+
+**Why It Fails**:
+- Code transformation risk at >400 lines (tool limitation)
+- Readability degradation (harder to understand monolithic block)
+- Cannot leverage Task tool for subagent delegation
+- Single point of failure (entire block fails if one operation fails)
+
+**Technical Explanation**:
+
+Large bash blocks increase risk of code transformation bugs. The threshold is approximately 300-400 lines (empirically observed):
+
+```bash
+# ANTI-PATTERN: Monolithic 500-line block
+# Block 1 (500 lines)
+CLAUDE_PROJECT_DIR=$(detect_project_dir)
+# ... 450 lines of logic ...
+# All logic in single block (no recalculation, but risky transformation)
+```
+
+**Why 400 Lines is the Threshold**:
+
+- **Context Window**: Large code blocks consume significant context
+- **Transformation Risk**: Claude may inadvertently modify code during tool invocation
+- **Debugging Difficulty**: Hard to isolate failures in 500-line block
+- **Maintainability**: Large blocks harder to understand and modify
+
+**Real Example from Spec 582**:
+
+Initial attempts consolidated all Phase 0 logic into single block:
+
+**Before Split** (Phase 6 analysis):
+- Block size: 421 lines
+- Risk: Code transformation bugs (threshold exceeded)
+- Performance: 0ms recalculation overhead (but at what cost?)
+
+**After Split** (chosen approach):
+```bash
+# Block 1: Phase 0 initialization (176 lines) ✓ Under threshold
+# Block 2: Research setup (168 lines) ✓ Under threshold
+# Block 3: Planning setup (77 lines) ✓ Under threshold
+# Total recalculation overhead: <10ms
+```
+
+**Performance vs Risk Trade-off**:
+
+| Approach | Overhead | Risk | Maintainability | Subagent Support |
+|----------|----------|------|----------------|------------------|
+| **Single 500-line block** | 0ms | HIGH | Low | No (Task tool blocked) |
+| **3 blocks (<200 lines each)** | <10ms | Low | High | Yes (Task tool works) |
+
+**Verdict**: 10ms overhead acceptable for 3x risk reduction.
+
+**What to Do Instead**:
+
+Split logic into multiple blocks (each <300 lines). Accept recalculation overhead (<10ms total) for safety and maintainability.
+
+**Correct Approach** (from /coordinate after refactor):
+
+```bash
+# Block 1: Phase 0 initialization (176 lines)
+CLAUDE_PROJECT_DIR=$(detect_project_dir)
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")
+PHASES_TO_EXECUTE=$(calculate_phases "$WORKFLOW_SCOPE")
+# ... initialization logic ...
+
+# Block 2: Research setup (168 lines)
+CLAUDE_PROJECT_DIR=$(detect_project_dir)  # Recalculate (deterministic)
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # <1ms overhead
+PHASES_TO_EXECUTE=$(calculate_phases "$WORKFLOW_SCOPE")
+# ... research logic ...
+
+# Block 3: Planning setup (77 lines)
+CLAUDE_PROJECT_DIR=$(detect_project_dir)  # Recalculate
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")
+PHASES_TO_EXECUTE=$(calculate_phases "$WORKFLOW_SCOPE")
+# ... planning logic ...
+
+# Overhead: 3 blocks × 3 variables × <1ms = <10ms
+# Benefit: Risk mitigation + Task tool support
+```
+
+**Block Size Guidelines**:
+
+- **Safe**: <300 lines per block
+- **Caution**: 300-400 lines (watch for issues)
+- **Danger**: >400 lines (high transformation risk)
+
+**When Consolidation is OK**:
+
+If command is simple utility (<300 lines total), use Pattern 4 (Single Large Block):
+
+```bash
+# OK: Simple 250-line utility command
+# Single block is safe and appropriate
+```
+
+**Reference**: Spec 582 discovery, Phase 6 analysis (deferred)
+
+---
+
+#### Anti-Pattern 4: Inconsistent Patterns
+
+**Description**: Mixing state management approaches within same command (e.g., stateless recalculation for some variables, file-based state for others).
+
+**Why It Fails**:
+- Cognitive overhead (developers must track which variables use which pattern)
+- Debugging complexity (is failure from recalculation or cache staleness?)
+- Maintenance burden (multiple patterns to update)
+- No performance benefit (overhead is per-pattern, not reduced by mixing)
+
+**Technical Explanation**:
+
+Mixing patterns creates mental model confusion:
+
+```bash
+# ANTI-PATTERN: Inconsistent patterns
+# Block 1
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # Pattern 1: Recalculate
+PHASES=$(cat .claude/cache/phases.txt)            # Pattern 3: File-based
+CLAUDE_PROJECT_DIR=$(load_checkpoint "state" | jq -r '.project_dir')  # Pattern 2: Checkpoint
+
+# Block 2
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # Pattern 1: Recalculate
+PHASES=$(cat .claude/cache/phases.txt)            # Pattern 3: File-based
+CLAUDE_PROJECT_DIR=$(load_checkpoint "state" | jq -r '.project_dir')  # Pattern 2: Checkpoint
+
+# Developer must remember:
+# - WORKFLOW_SCOPE is recalculated (deterministic)
+# - PHASES is cached (may be stale)
+# - CLAUDE_PROJECT_DIR is checkpointed (may be stale)
+# Which variable failed? Was it stale cache or bad recalculation?
+```
+
+**Debugging Nightmare**:
+
+```bash
+# Bug report: "PHASES_TO_EXECUTE is wrong in Block 3"
+# Possible causes:
+# 1. Recalculation logic wrong? (check detect_workflow_scope)
+# 2. Cache stale? (check .claude/cache/phases.txt modification time)
+# 3. Checkpoint corrupted? (check checkpoint JSON integrity)
+# 4. Wrong pattern used? (check which Block 3 uses)
+# 5. Synchronization issue? (check if Block 1 and Block 3 use same pattern)
+# → 5 failure modes to investigate vs 1 (if consistent pattern)
+```
+
+**Real Example from Specs 583-584**:
+
+Attempted mixing stateless recalculation with checkpoint-style persistence:
+
+```bash
+# Block 1: Initialization
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # Stateless
+save_checkpoint "state" "{\"phases\": \"$PHASES\"}"  # Checkpoint
+
+# Block 2: Research
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # Stateless (consistent)
+PHASES=$(load_checkpoint "state" | jq -r '.phases')  # Checkpoint (consistent)
+
+# Block 3: Planning
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # Stateless (consistent)
+PHASES=$(cat .claude/cache/phases.txt)  # File-based (INCONSISTENT!)
+
+# Bug: Block 3 uses different pattern (file-based cache vs checkpoint)
+# Result: PHASES may be different in Block 3 vs Block 2
+# Debugging: Which is correct? Cache or checkpoint?
+```
+
+**What to Do Instead**:
+
+Choose one pattern and apply consistently throughout command. Exceptions must be clearly documented.
+
+**Correct Approach**:
+
+```bash
+# Pattern 1 applied consistently
+# Block 1
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")
+PHASES=$(calculate_phases "$WORKFLOW_SCOPE")
+CLAUDE_PROJECT_DIR=$(detect_project_dir)
+
+# Block 2
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # Consistent recalculation
+PHASES=$(calculate_phases "$WORKFLOW_SCOPE")      # Consistent recalculation
+CLAUDE_PROJECT_DIR=$(detect_project_dir)          # Consistent recalculation
+
+# Block 3
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # Consistent
+PHASES=$(calculate_phases "$WORKFLOW_SCOPE")      # Consistent
+CLAUDE_PROJECT_DIR=$(detect_project_dir)          # Consistent
+
+# Mental model: "All variables are recalculated in every block"
+# Debugging: If variable wrong, check calculation function
+# Maintenance: Update calculation function once, applies everywhere
+```
+
+**Documented Exceptions** (when necessary):
+
+```bash
+# Block 1
+WORKFLOW_SCOPE=$(detect_workflow_scope "$INPUT")  # Pattern 1: Stateless
+CODEBASE_ANALYSIS=$(cat .claude/cache/analysis.json)  # Pattern 3: File-based
+
+# DOCUMENTED EXCEPTION: CODEBASE_ANALYSIS uses file-based caching because:
+# 1. Computation cost: 5-10 seconds (too expensive to recalculate)
+# 2. Cache invalidation: Content-based (analysis_${PROJECT_HASH}.json)
+# 3. Overhead justified: 5s → 30ms (167x speedup)
+# All other variables use Pattern 1 (Stateless Recalculation)
+```
+
+**Pattern Selection Rule**:
+
+1. Choose primary pattern based on command requirements (see decision framework)
+2. Apply primary pattern to ALL variables
+3. Only deviate for exceptional cases (document WHY)
+
+**Reference**: Specs 583-584, Spec 597 consistency breakthrough
+
+---
+
+### 6.5 Case Studies
+
+#### Case Study 1: /coordinate - Stateless Recalculation Pattern
+
+**Context**: Specs 582-594 explored various approaches to managing state across /coordinate's 6 bash blocks
+
+**Problem**:
+- 6 bash blocks (Phases 0-6) required variable persistence
+- Exports don't work (subprocess isolation)
+- 10+ variables needed across blocks (WORKFLOW_SCOPE, PHASES_TO_EXECUTE, CLAUDE_PROJECT_DIR, etc.)
+- Initial attempts with file-based state added 30ms overhead per block (180ms total)
+
+**Exploration Timeline**:
+
+**Spec 582-584: Discovery Phase** (Fighting tool constraints)
+- **Attempted**: Global exports (failed - subprocess isolation)
+- **Attempted**: Temporary file persistence (worked but slow - 180ms overhead)
+- **Result**: 48-line scope detection duplicated across 2 blocks
+- **Learning**: Exports don't persist across bash tool invocations
+
+**Spec 585: Research Validation**
+- **Measured**: File I/O overhead = 30ms per operation
+- **Measured**: Recalculation overhead = <1ms per variable
+- **Conclusion**: File-based state 30x slower for simple variables
+- **Decision**: Investigate recalculation-based approach
+
+**Spec 593: Problem Mapping**
+- **Identified**: 108 lines of duplicated code across blocks
+- **Identified**: 3 synchronization points (CLAUDE_PROJECT_DIR, scope detection, PHASES_TO_EXECUTE)
+- **Risk**: Synchronization drift between duplicate code locations
+- **Quantified**: 48-line scope detection duplication highest risk
+
+**Spec 597: Breakthrough - Stateless Recalculation**
+- **Key Insight**: Accept code duplication as intentional trade-off
+- **Pattern**: Recalculate all variables in every block (<1ms overhead each)
+- **Benefits**: Deterministic, no I/O, simple mental model
+- **Trade-off**: 50-80 lines duplication vs 180ms file I/O savings
+- **Performance**: <10ms total overhead vs 180ms (18x faster!)
+
+**Spec 598: Extension to Derived Variables**
+- **Extended**: Pattern to PHASES_TO_EXECUTE mapping
+- **Added**: Defensive validation after recalculation
+- **Fixed**: overview-synthesis.sh missing from REQUIRED_LIBS
+- **Result**: 100% reliability, <10ms total overhead
+
+**Solution Implemented**:
+
+```bash
+# Every block recalculates what it needs
+# Block 1 - Phase 0
+CLAUDE_PROJECT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
+WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+PHASES_TO_EXECUTE=$(calculate_phases "$WORKFLOW_SCOPE")
+
+# Block 2 - Phase 1 (different subprocess)
+CLAUDE_PROJECT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)
+WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+PHASES_TO_EXECUTE=$(calculate_phases "$WORKFLOW_SCOPE")
+
+# Overhead: <1ms per block × 6 blocks = <6ms total
+# Alternative (file-based): 30ms × 6 = 180ms (30x slower)
+```
+
+**Outcome**:
+- ✓ 16/16 integration tests passing
+- ✓ <10ms total recalculation overhead
+- ✓ Zero I/O operations (pure computation)
+- ✓ Deterministic behavior (no cache staleness)
+- ✓ Simple mental model (no state synchronization)
+
+**Lessons Learned**:
+
+1. **Accept Duplication**: 50-80 lines duplication is acceptable trade-off for simplicity
+2. **Work With Constraints**: Embrace tool constraints rather than fighting them
+3. **Measure Performance**: Validate assumptions with benchmarks (recalc vs file I/O)
+4. **Validate Pattern**: Extensive testing (16 integration tests) proves reliability
+5. **Document Rationale**: Architecture documentation prevents future misguided refactor attempts
+
+**Applicable To**:
+- Multi-block orchestration commands
+- Commands with <10 variables requiring persistence
+- Workflows with recalculation cost <100ms
+- Commands invoking subagents via Task tool
+
+**References**:
+- Specs: 582-584 (discovery), 585 (validation), 593 (mapping), 597 (breakthrough), 598 (extension)
+- Architecture Doc: `.claude/docs/architecture/coordinate-state-management.md`
+
+---
+
+#### Case Study 2: /implement - Checkpoint Files Pattern
+
+**Context**: Multi-phase implementation workflow requiring resumability after interruptions
+
+**Problem**:
+- 5+ phase implementation plans
+- Execution time: 2-6 hours per plan
+- Interruptions: Network failures, manual stops, system restarts
+- State complexity: Current phase, completed phases, test status, git commits
+
+**Pattern Choice Rationale**:
+
+**Why Not Pattern 1 (Stateless Recalculation)?**
+- Cannot recalculate "current phase" after interruption (state lost on process termination)
+- Cannot determine which phases completed successfully (test results lost)
+- Git commit hashes not recoverable (not deterministic from inputs)
+- Implementation modifications not recalculable (real file system changes)
+
+**Why Not Pattern 3 (File-based State)?**
+- State changes frequently (every phase boundary) → cache churn
+- Cache invalidation complex (which phase checkpoint is valid?)
+- Not caching computation results - persisting workflow progress (different use case)
+
+**Why Pattern 2 (Checkpoint Files)?**
+- ✓ Perfect fit for resumable workflows
+- ✓ Phase boundaries are natural checkpoint locations
+- ✓ State serialization to JSON straightforward
+- ✓ Checkpoint history provides audit trail
+- ✓ 50-100ms overhead negligible for hour-long workflows
+
+**Solution Implemented**:
+
+```bash
+# Source checkpoint utilities
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
+
+# After each phase completion
+CHECKPOINT_DATA=$(cat <<EOF
+{
+  "command": "implement",
+  "plan_path": "$PLAN_PATH",
+  "current_phase": $PHASE_NUMBER,
+  "completed_phases": [1, 2, 3],
+  "tests_passing": true,
+  "files_modified": ["file1.lua", "file2.lua"],
+  "git_commits": ["a3f8c2e", "b7d4e1f", "c9e5a2f"],
+  "timestamp": "$(date -Iseconds)"
+}
+EOF
+)
+
+save_checkpoint "implement_${PROJECT_NAME}" "$CHECKPOINT_DATA"
+
+# On workflow restart (after interruption)
+if [ -f "$CHECKPOINT_FILE" ]; then
+  PLAN_PATH=$(jq -r '.plan_path' "$CHECKPOINT_FILE")
+  START_PHASE=$(($(jq -r '.current_phase' "$CHECKPOINT_FILE") + 1))
+  echo "Resuming from phase $START_PHASE"
+fi
+```
+
+**Outcome**:
+- ✓ Full workflow resumability after interruptions
+- ✓ 50-100ms overhead per checkpoint (acceptable for hour-long workflows)
+- ✓ Audit trail of implementation progress
+- ✓ State synchronized with reality (checkpoints after successful phase completion)
+
+**Lessons Learned**:
+
+1. **Right Tool for Job**: Checkpoint pattern perfect for resumable multi-phase workflows
+2. **Phase Boundaries**: Natural checkpoint locations provide clear state transitions
+3. **Overhead Acceptable**: 50-100ms negligible for hour-long workflows (0.1% overhead)
+4. **JSON Serialization**: Flexible state structure, easy to extend with new fields
+
+**Applicable To**:
+- Long-running implementation workflows
+- Multi-phase operations requiring resumability
+- Commands needing audit trail
+- Workflows with >5 phases
+
+**References**:
+- Implementation: `/implement` command
+- Utilities: `.claude/lib/checkpoint-utils.sh`
+
+---
+
+### 6.6 Cross-References
+
+**Architecture Documentation**:
+- [Coordinate State Management Architecture](../architecture/coordinate-state-management.md) - Complete technical analysis with subprocess isolation explanation, decision matrix, troubleshooting guide
+
+**Related Patterns**:
+- [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md) - Detailed checkpoint implementation patterns
+- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Agent invocation across bash blocks
+
+**Related Specifications**:
+- Spec 597: Stateless Recalculation Breakthrough
+- Spec 598: Extension to Derived Variables
+- Spec 585: Research Validation (performance measurements)
+- Spec 593: Comprehensive Problem Mapping
+
+**Library References**:
+- `.claude/lib/checkpoint-utils.sh` - Checkpoint save/restore utilities
+- `.claude/lib/workflow-detection.sh` - Workflow scope detection
+- `.claude/lib/unified-location-detection.sh` - Path calculation utilities
+
+**Command Examples**:
+- `/coordinate` - Stateless recalculation implementation
+- `/implement` - Checkpoint files implementation
+- `/orchestrate` - Similar multi-block patterns
+
+**Standards**:
+- [CLAUDE.md Development Philosophy](../../CLAUDE.md#development_philosophy) - Clean-break approach, fail-fast principles
+- [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 13 (CLAUDE_PROJECT_DIR detection)
+
+---
+## 7. Testing and Validation
+
+### 7.1 Testing Standards Integration
 
 Commands should discover test commands from CLAUDE.md:
 
@@ -1186,7 +2929,7 @@ else
 fi
 ```
 
-### 6.2 Validation Checklist
+### 7.2 Validation Checklist
 
 Before marking command complete:
 
@@ -1219,9 +2962,9 @@ Before marking command complete:
 
 ---
 
-## 7. Common Patterns and Examples
+## 8. Common Patterns and Examples
 
-### 7.1 Example: Research Command with Agent Delegation
+### 8.1 Example: Research Command with Agent Delegation
 
 ```markdown
 ## Workflow for /report Command
@@ -1305,7 +3048,7 @@ echo "✓ Verified: Report exists at $REPORT_PATH"
 ```
 ```
 
-### 7.2 When to Use Inline Templates
+### 8.2 When to Use Inline Templates
 
 **Structural templates** are command execution patterns that MUST be inline. These are NOT behavioral content and should not be moved to agent files.
 
@@ -1371,7 +3114,7 @@ These belong in `.claude/agents/*.md` files and are referenced via behavioral in
 
 See [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md) for complete decision criteria.
 
-### 7.3 Anti-Patterns to Avoid
+### 8.3 Anti-Patterns to Avoid
 
 | Anti-Pattern | Why It's Wrong | Correct Approach |
 |--------------|---------------|------------------|
@@ -1386,7 +3129,7 @@ See [Template vs Behavioral Distinction](../reference/template-vs-behavioral-dis
 | **Large agent context passing** | Token waste | Use metadata-only passing (path + summary) |
 | **Missing error handling** | Poor user experience on failures | Include retry logic and user escalation |
 
-### 7.4 Dry-Run Mode Examples
+### 8.4 Dry-Run Mode Examples
 
 Dry-run mode allows users to preview command execution without making changes or invoking agents. Commands supporting dry-run include `/orchestrate`, `/implement`, `/revise`, and `/plan`.
 
@@ -1438,7 +3181,7 @@ debug        → Start with debug phase
 investigation → Research-only (skip implementation)
 ```
 
-### 7.5 Dashboard Progress Examples
+### 8.5 Dashboard Progress Examples
 
 Dashboard-style progress tracking provides real-time visibility into long-running operations. Commands using dashboards include `/implement`, `/orchestrate`, and `/test-all`.
 
@@ -1482,7 +3225,7 @@ Dashboard-style progress tracking provides real-time visibility into long-runnin
 ⚠ Warning
 ```
 
-### 7.6 Checkpoint Save/Restore Examples
+### 8.6 Checkpoint Save/Restore Examples
 
 Checkpoints enable resumability for long-running operations that may be interrupted. Commands using checkpoints include `/implement`, `/orchestrate`, and `/revise --auto-mode`.
 
@@ -1546,7 +3289,7 @@ fi
 }
 ```
 
-### 7.7 Test Execution Patterns
+### 8.7 Test Execution Patterns
 
 Consistent test execution patterns across commands for validation. Commands using test execution include `/implement`, `/test`, and `/test-all`.
 
@@ -1609,7 +3352,7 @@ detect_test_framework() {
 }
 ```
 
-### 7.8 Git Commit Patterns
+### 8.8 Git Commit Patterns
 
 Consistent git commit patterns for automated commits during implementation phases. Commands creating commits include `/implement`, `/document`, and `/orchestrate`.
 
@@ -1682,7 +3425,7 @@ pre_commit_validation() {
 }
 ```
 
-### 7.9 Context Preservation Examples
+### 8.9 Context Preservation Examples
 
 **Metadata-Only Passing Example** (Standard 6):
 
