@@ -418,7 +418,7 @@ Lines 16-150:   Phase execution blocks
 
 ---
 
-### Phase 5: Update Remaining Commands
+### Phase 5: Update Remaining Commands [IN PROGRESS]
 
 **Objective**: Apply pattern to simpler commands (plan, debug, test, document)
 
@@ -428,28 +428,72 @@ Lines 16-150:   Phase execution blocks
 
 **Duration**: 2-3 hours total
 
+**Status**: 2/4 commands completed (plan.md, debug.md)
+
 #### Tasks
 
-For each command (plan.md, debug.md, test.md, document.md):
-- [ ] Analyze structure
+**Completed Commands:**
+
+**plan.md:**
+- [x] Analyze structure (1447 lines identified)
+- [x] Create lean executable version (229 lines)
+- [x] Create guide file (plan-command-guide.md, 460 lines)
+- [x] Add cross-references (bidirectional)
+- [x] Test execution (file structure validated)
+- [x] Update CLAUDE.md (guide link added)
+
+**debug.md:**
+- [x] Analyze structure (810 lines identified)
+- [x] Create lean executable version (202 lines)
+- [x] Create guide file (debug-command-guide.md, 375 lines)
+- [x] Add cross-references (bidirectional)
+- [x] Test execution (file structure validated)
+- [x] Update CLAUDE.md (guide link added)
+
+**Remaining Commands:**
+
+**document.md:**
+- [ ] Analyze structure (563 lines)
 - [ ] Create lean executable version
-- [ ] Create guide file (if needed - simpler commands may not need extensive guides)
+- [ ] Create guide file
 - [ ] Add cross-references
 - [ ] Test execution
 - [ ] Update CLAUDE.md
 
+**test.md:**
+- [ ] Analyze structure (200 lines - may not need migration)
+- [ ] Evaluate if migration needed (already lean)
+- [ ] Create guide file (if warranted)
+- [ ] Add cross-references (if needed)
+- [ ] Update CLAUDE.md (if applicable)
+
 #### Deliverables
 
-Per command:
-1. Lean executable file
-2. Guide file (if warranted)
-3. CLAUDE.md updates
+**Completed (2/4 commands):**
+1. plan.md: 229 lines (84.2% reduction from 1447 lines)
+   - plan-command-guide.md: 460 lines (research delegation, complexity analysis)
+   - CLAUDE.md updated with guide link
+2. debug.md: 202 lines (75.1% reduction from 810 lines)
+   - debug-command-guide.md: 375 lines (parallel hypothesis testing, root cause analysis)
+   - CLAUDE.md updated with guide link
+
+**Pending (2/4 commands):**
+1. document.md: 563 lines (needs migration)
+2. test.md: 200 lines (evaluate if migration needed)
 
 #### Success Criteria
 
-- [ ] All commands follow new pattern
+- [x] plan.md and debug.md follow new pattern
+- [x] plan.md and debug.md documentation consistent
+- [x] Cross-references established for completed commands
+- [ ] document.md migration complete
+- [ ] test.md evaluated and processed
 - [ ] All tests pass
-- [ ] Documentation consistent
+- [ ] All documentation consistent
+
+**PARTIAL COMPLETION**: 2025-11-07 - plan.md and debug.md successfully migrated
+**Actual Results**: 84.2% and 75.1% reductions achieved, comprehensive guides created, pattern validated
+**Git Commit**: 12e0e1b9 - "feat: migrate /plan and /debug commands (Phase 5 partial - Plan 002)"
 
 ---
 
