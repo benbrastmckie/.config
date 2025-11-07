@@ -357,6 +357,7 @@ Located in `.claude/commands/`:
 - `/coordinate <workflow>` - Clean multi-agent orchestration with wave-based parallel implementation and fail-fast error handling
   - **Architecture**: [State Management Documentation](.claude/docs/architecture/coordinate-state-management.md) - Subprocess isolation patterns and decision matrix
 - `/implement [plan-file]` - Execute implementation plans phase-by-phase with testing and commits
+  - **Usage Guide**: [/implement Command Guide](.claude/docs/guides/implement-command-guide.md) - Complete usage, adaptive planning, and agent delegation
 - `/research <topic>` - Hierarchical multi-agent research with automatic decomposition (replaces archived /report)
 - `/plan <feature>` - Create implementation plans in specs/plans/
 - `/plan-from-template <name>` - Generate plans from reusable templates (11 categories)
