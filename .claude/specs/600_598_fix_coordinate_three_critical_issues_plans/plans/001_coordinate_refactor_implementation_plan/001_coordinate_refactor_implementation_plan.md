@@ -20,7 +20,7 @@
 
 ## Implementation Progress
 
-**Status**: 50% Complete (2 of 4 phases completed)
+**Status**: 75% Complete (3 of 4 phases completed)
 
 **Completed Phases**:
 - ✅ Phase 1: Extract Scope Detection to Library (2025-11-06)
@@ -30,11 +30,12 @@
 - ✅ Phase 3: Add Automated Synchronization Validation Tests (2025-11-06)
   - Created 6 synchronization validation tests
   - Total test coverage: 128 tests passing
-
-**In Progress**:
-- 🔄 Phase 4: Document Architectural Constraints
-  - Comprehensive architecture documentation
-  - Decision frameworks and troubleshooting guides
+- ✅ Phase 4: Document Architectural Constraints (2025-11-06)
+  - Created comprehensive architecture documentation (37KB)
+  - Documented subprocess isolation, stateless recalculation pattern, rejected alternatives
+  - Added decision matrix, troubleshooting guide, FAQ, and historical context
+  - Updated CLAUDE.md with architecture documentation link
+  - Added inline cross-references in coordinate.md
 
 **Planned**:
 - ⏳ Phase 7: Add Decision Framework to Command Guide
@@ -43,8 +44,8 @@
 
 **Time Investment**:
 - Estimated: 8-12 hours total
-- Completed: ~3 hours (Phases 1 & 3)
-- Remaining: ~5-9 hours (Phases 4 & 7)
+- Completed: ~7 hours (Phases 1, 3 & 4)
+- Remaining: ~2-3 hours (Phase 7)
 
 ## Executive Summary
 

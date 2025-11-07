@@ -355,6 +355,7 @@ See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_a
 Located in `.claude/commands/`:
 - `/orchestrate <workflow>` - Multi-agent workflow coordination (research → plan → implement → debug → document)
 - `/coordinate <workflow>` - Clean multi-agent orchestration with wave-based parallel implementation and fail-fast error handling
+  - **Architecture**: [State Management Documentation](.claude/docs/architecture/coordinate-state-management.md) - Subprocess isolation patterns and decision matrix
 - `/implement [plan-file]` - Execute implementation plans phase-by-phase with testing and commits
 - `/research <topic>` - Hierarchical multi-agent research with automatic decomposition (replaces archived /report)
 - `/plan <feature>` - Create implementation plans in specs/plans/
