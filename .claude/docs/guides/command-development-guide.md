@@ -214,6 +214,8 @@ Orchestration    | Read, Write, Bash, Task, TodoWrite
 
 **Architecture Principle**: Separate execution logic from comprehensive documentation to eliminate meta-confusion loops and maintain lean, obviously-executable command files.
 
+**Complete Pattern Documentation**: [Executable/Documentation Separation Pattern](../concepts/patterns/executable-documentation-separation.md) - Comprehensive documentation with case studies, metrics, anti-patterns, and migration checklists. This section provides practical implementation guidance; see the pattern document for architectural deep-dive.
+
 #### Problem Statement
 
 Mixed-purpose command files (executable code + extensive documentation) suffer from:
