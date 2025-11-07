@@ -538,6 +538,8 @@ echo "Phase 0: Initialization started"
 # ────────────────────────────────────────────────────────────────────
 
 # Standard 13: CLAUDE_PROJECT_DIR detection for SlashCommand context
+# Why needed: Subprocess isolation (GitHub #334, #2508)
+# Architecture: .claude/docs/architecture/coordinate-state-management.md
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
@@ -640,6 +642,8 @@ else
 fi
 
 # Define required libraries based on scope
+# Conditional library loading per workflow (stateless pattern)
+# See: .claude/docs/architecture/coordinate-state-management.md
 case "$WORKFLOW_SCOPE" in
   research-only)
     # Minimal set: 5 libraries for simple research workflows
@@ -2205,6 +2209,8 @@ Expected performance targets:
 ## Bash Tool Limitations
 
 [REFERENCE-OK: Implementation details can reference this section]
+
+**Complete architectural analysis**: See `.claude/docs/architecture/coordinate-state-management.md` for subprocess isolation patterns, decision matrix, troubleshooting guide, and historical context.
 
 This section documents accepted trade-offs due to inherent Bash tool limitations in Claude Code's architecture.
 
