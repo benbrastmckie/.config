@@ -363,9 +363,12 @@ Located in `.claude/commands/`:
   - **Usage Guide**: [/plan Command Guide](.claude/docs/guides/plan-command-guide.md) - Research delegation, complexity analysis, standards integration
 - `/debug <issue>` - Investigate issues and create diagnostic reports without code changes
   - **Usage Guide**: [/debug Command Guide](.claude/docs/guides/debug-command-guide.md) - Parallel hypothesis testing, root cause analysis
+- `/test <target>` - Run project-specific tests per Testing Protocols
+  - **Usage Guide**: [/test Command Guide](.claude/docs/guides/test-command-guide.md) - Multi-framework testing, error analysis, coverage tracking
+- `/document [change-description] [scope]` - Update all relevant documentation based on recent code changes
+  - **Usage Guide**: [/document Command Guide](.claude/docs/guides/document-command-guide.md) - Standards compliance, cross-references, timeless writing
 - `/plan-from-template <name>` - Generate plans from reusable templates (11 categories)
 - `/plan-wizard` - Interactive plan creation with guided prompts
-- `/test <target>` - Run project-specific tests per Testing Protocols
 - `/setup [--enhance-with-docs]` - Configure or update this CLAUDE.md file; --enhance-with-docs discovers project documentation and automatically enhances CLAUDE.md
 
 **Orchestration**: Three orchestration commands available (**Use /coordinate for production workflows**):
