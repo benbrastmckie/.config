@@ -976,7 +976,7 @@ if [ -z "${PHASES_TO_EXECUTE:-}" ]; then
 fi
 
 # ────────────────────────────────────────────────────────────────────
-# Source workflow-initialization.sh (now all variables available)
+# Source required libraries (now all variables available)
 # ────────────────────────────────────────────────────────────────────
 
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
@@ -986,6 +986,12 @@ else
   echo "This is a required library file for workflow operation."
   echo "Please ensure .claude/lib/workflow-initialization.sh exists."
   exit 1
+fi
+
+# Source unified-logger.sh for emit_progress function
+# Note: Exports don't persist between Bash invocations (GitHub #334, #2508)
+if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh" ]; then
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh"
 fi
 
 # Call unified initialization function (now variables are defined)
@@ -1043,13 +1049,6 @@ if [[ "${DEBUG_PERFORMANCE:-0}" == "1" ]]; then
   echo "PERF: Performance timing enabled" >&2
 fi
 export PHASE_START_TIME
-
-# Source unified-logger.sh for emit_progress function
-# Note: Exports don't persist between Bash invocations (GitHub #334, #2508)
-# Solution: Re-source library before using emit_progress
-if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh" ]; then
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh"
-fi
 
 # Emit final progress marker
 # Fallback to echo if emit_progress is unavailable
