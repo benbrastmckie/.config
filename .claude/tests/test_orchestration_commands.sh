@@ -106,7 +106,7 @@ test_delegation_rate() {
   local expected_min
   case "$(basename "$command_file")" in
     coordinate.md)
-      expected_min=7  # Research, plan, implement, test, debug (3), doc phases
+      expected_min=5  # State machine: Research, plan, implement, debug, document
       ;;
     research.md)
       expected_min=3  # Research-specialist (multiple), synthesizer, spec-updater

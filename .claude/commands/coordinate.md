@@ -1,12 +1,12 @@
 ---
 allowed-tools: Task, TodoWrite, Bash, Read
 argument-hint: <workflow-description>
-description: Coordinate multi-agent workflows with wave-based parallel implementation
+description: Coordinate multi-agent workflows with wave-based parallel implementation (state machine architecture)
 command-type: primary
 dependent-commands: research, plan, implement, debug, test, document
 ---
 
-# /coordinate - Multi-Agent Workflow Orchestration
+# /coordinate - Multi-Agent Workflow Orchestration (State Machine)
 
 YOU ARE EXECUTING AS the /coordinate command.
 
@@ -14,23 +14,21 @@ YOU ARE EXECUTING AS the /coordinate command.
 
 ---
 
-## Phase 0: Initialization
+## State Machine Initialization
 
-[EXECUTION-CRITICAL: Library sourcing and path pre-calculation]
+[EXECUTION-CRITICAL: Initialize state machine and workflow state persistence]
 
-USE the Bash tool to execute Phase 0 (Step 1 of 3):
+USE the Bash tool to execute state machine initialization:
 
 ```bash
-echo "Phase 0: Initialization started"
+echo "=== State Machine Workflow Orchestration ==="
+echo ""
 
 # Standard 13: CLAUDE_PROJECT_DIR detection
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
-
-LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
-export LIB_DIR
 
 # Parse workflow description
 WORKFLOW_DESCRIPTION="$1"
@@ -43,51 +41,39 @@ fi
 
 export WORKFLOW_DESCRIPTION
 
-# Source and detect workflow scope
-if [ -f "${LIB_DIR}/workflow-scope-detection.sh" ]; then
-  source "${LIB_DIR}/workflow-scope-detection.sh"
-else
-  echo "ERROR: Required library not found: workflow-scope-detection.sh"
+# Source state machine and state persistence libraries
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+if [ ! -f "${LIB_DIR}/workflow-state-machine.sh" ]; then
+  echo "ERROR: workflow-state-machine.sh not found"
   exit 1
 fi
+source "${LIB_DIR}/workflow-state-machine.sh"
 
-WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
-
-if [ -z "${WORKFLOW_SCOPE:-}" ]; then
-  echo "ERROR: detect_workflow_scope returned empty result"
+if [ ! -f "${LIB_DIR}/state-persistence.sh" ]; then
+  echo "ERROR: state-persistence.sh not found"
   exit 1
 fi
+source "${LIB_DIR}/state-persistence.sh"
 
-# Map scope to phase execution list
-case "$WORKFLOW_SCOPE" in
-  research-only)
-    PHASES_TO_EXECUTE="0,1"
-    SKIP_PHASES="2,3,4,5,6"
-    ;;
-  research-and-plan)
-    PHASES_TO_EXECUTE="0,1,2"
-    SKIP_PHASES="3,4,5,6"
-    ;;
-  full-implementation)
-    PHASES_TO_EXECUTE="0,1,2,3,4,6"
-    SKIP_PHASES=""
-    ;;
-  debug-only)
-    PHASES_TO_EXECUTE="0,1,5"
-    SKIP_PHASES="2,3,4,6"
-    ;;
-esac
+# Initialize workflow state (GitHub Actions pattern)
+STATE_FILE=$(init_workflow_state "coordinate_$$")
+trap "rm -f '$STATE_FILE'" EXIT
 
-export WORKFLOW_SCOPE PHASES_TO_EXECUTE SKIP_PHASES
+# Save workflow ID for subsequent blocks
+append_workflow_state "WORKFLOW_ID" "coordinate_$$"
 
-# Source library-sourcing.sh
-if [ ! -f "$LIB_DIR/library-sourcing.sh" ]; then
-  echo "ERROR: Required library not found: library-sourcing.sh"
-  exit 1
-fi
-source "$LIB_DIR/library-sourcing.sh"
+# Initialize state machine
+sm_init "$WORKFLOW_DESCRIPTION" "coordinate"
 
-# Define required libraries based on scope
+# Save state machine configuration to workflow state
+append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
+append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
+append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
+
+# Source required libraries based on scope
+source "${LIB_DIR}/library-sourcing.sh"
+
 case "$WORKFLOW_SCOPE" in
   research-only)
     REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh")
@@ -103,50 +89,32 @@ case "$WORKFLOW_SCOPE" in
     ;;
 esac
 
-# Source required libraries
 if ! source_required_libraries "${REQUIRED_LIBS[@]}"; then
   echo "ERROR: Failed to source required libraries"
   exit 1
 fi
 
-echo "  ✓ Libraries loaded (${#REQUIRED_LIBS[@]} for $WORKFLOW_SCOPE)"
-```
-
-USE the Bash tool to execute Phase 0 (Step 2 of 3):
-
-```bash
-# Standard 13: CLAUDE_PROJECT_DIR detection
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-  export CLAUDE_PROJECT_DIR
+# Source workflow initialization and initialize paths
+if [ ! -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
+  echo "ERROR: workflow-initialization.sh not found"
+  exit 1
 fi
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
 
-# Verify critical functions
-case "$WORKFLOW_SCOPE" in
-  research-only)
-    REQUIRED_FUNCTIONS=("detect_workflow_scope" "emit_progress")
-    ;;
-  research-and-plan|debug-only|full-implementation)
-    REQUIRED_FUNCTIONS=("detect_workflow_scope" "should_run_phase" "emit_progress" "save_checkpoint" "restore_checkpoint")
-    ;;
-esac
-
-MISSING_FUNCTIONS=()
-for func in "${REQUIRED_FUNCTIONS[@]}"; do
-  if ! command -v "$func" >/dev/null 2>&1; then
-    MISSING_FUNCTIONS+=("$func")
-  fi
-done
-
-if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
-  echo "ERROR: Required functions not defined after library sourcing:"
-  for func in "${MISSING_FUNCTIONS[@]}"; do
-    echo "  - $func()"
-  done
+if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
+  echo "ERROR: Workflow initialization failed"
   exit 1
 fi
 
-# Define inline helper functions
+# Save paths to workflow state
+append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+
+# Source verification helpers
+if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
+fi
+
+# Define completion summary helper
 display_brief_summary() {
   echo ""
   echo "✓ Workflow complete: $WORKFLOW_SCOPE"
@@ -174,181 +142,87 @@ display_brief_summary() {
 }
 export -f display_brief_summary
 
-transition_to_phase() {
-  local from_phase="$1"
-  local to_phase="$2"
-  local artifacts_json="${3:-{}}"
+# Define error handling helper with state context
+handle_state_error() {
+  local error_message="$1"
+  local current_state="${CURRENT_STATE:-unknown}"
+  local exit_code="${2:-1}"
 
-  if command -v emit_progress >/dev/null 2>&1; then
-    emit_progress "$from_phase" "Phase $from_phase complete, transitioning to Phase $to_phase"
-  fi
+  echo ""
+  echo "ERROR in state '$current_state': $error_message"
+  echo ""
+  echo "State Machine Context:"
+  echo "  Workflow: $WORKFLOW_DESCRIPTION"
+  echo "  Scope: $WORKFLOW_SCOPE"
+  echo "  Current State: $current_state"
+  echo "  Terminal State: $TERMINAL_STATE"
+  echo ""
 
-  if command -v save_checkpoint >/dev/null 2>&1; then
-    save_checkpoint "coordinate" "phase_${from_phase}" "$artifacts_json" &
-    local checkpoint_pid=$!
-  fi
+  # Save failed state to workflow state for retry
+  append_workflow_state "FAILED_STATE" "$current_state"
+  append_workflow_state "LAST_ERROR" "$error_message"
 
-  if command -v store_phase_metadata >/dev/null 2>&1; then
-    store_phase_metadata "phase_${from_phase}" "complete" "$artifacts_json"
-  fi
+  # Increment retry counter for this state
+  RETRY_COUNT_VAR="RETRY_COUNT_${current_state}"
+  RETRY_COUNT=${!RETRY_COUNT_VAR:-0}
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+  append_workflow_state "$RETRY_COUNT_VAR" "$RETRY_COUNT"
 
-  if command -v apply_pruning_policy >/dev/null 2>&1; then
-    apply_pruning_policy "phase_${from_phase}" "$WORKFLOW_SCOPE"
-  fi
-
-  [ -n "${checkpoint_pid:-}" ] && wait $checkpoint_pid 2>/dev/null || true
-
-  if command -v emit_progress >/dev/null 2>&1; then
-    emit_progress "$to_phase" "Phase $to_phase starting"
+  if [ $RETRY_COUNT -ge 2 ]; then
+    echo "Max retries (2) reached for state '$current_state'"
+    echo "Workflow cannot proceed automatically"
+    echo ""
+    exit $exit_code
+  else
+    echo "Retry $RETRY_COUNT/2 available for state '$current_state'"
+    echo "Fix the issue and re-run: /coordinate \"$WORKFLOW_DESCRIPTION\""
+    echo ""
+    exit $exit_code
   fi
 }
-export -f transition_to_phase
+export -f handle_state_error
 
-# Check for checkpoint resume
-if command -v restore_checkpoint >/dev/null 2>&1; then
-  RESUME_DATA=$(restore_checkpoint "coordinate" 2>/dev/null || echo "")
-  if [ -n "$RESUME_DATA" ]; then
-    RESUME_PHASE=$(echo "$RESUME_DATA" | jq -r '.current_phase // empty')
-  else
-    RESUME_PHASE=""
-  fi
+# Transition to research state
+sm_transition "$STATE_RESEARCH"
 
-  if [ -n "$RESUME_PHASE" ]; then
-    emit_progress "Resume" "Checkpoint detected - resuming from Phase $RESUME_PHASE"
-  fi
-else
-  RESUME_PHASE=""
-fi
-export RESUME_PHASE
-
-echo "  ✓ Workflow scope detected: $WORKFLOW_SCOPE"
-```
-
-USE the Bash tool to execute Phase 0 (Step 3 of 3):
-
-```bash
-# Standard 13: CLAUDE_PROJECT_DIR detection
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-  export CLAUDE_PROJECT_DIR
-fi
-
-# Re-initialize workflow variables
-WORKFLOW_DESCRIPTION="$1"
-
-if [ -z "${WORKFLOW_DESCRIPTION:-}" ]; then
-  echo "ERROR: WORKFLOW_DESCRIPTION not set"
-  exit 1
-fi
-
-# Detect workflow scope using library
-LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
-if [ -f "${LIB_DIR}/workflow-scope-detection.sh" ]; then
-  source "${LIB_DIR}/workflow-scope-detection.sh"
-else
-  echo "ERROR: Required library not found: workflow-scope-detection.sh"
-  exit 1
-fi
-
-WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
-
-if [ -z "${WORKFLOW_SCOPE:-}" ]; then
-  echo "ERROR: detect_workflow_scope returned empty result"
-  exit 1
-fi
-
-# Re-calculate PHASES_TO_EXECUTE
-case "$WORKFLOW_SCOPE" in
-  research-only) PHASES_TO_EXECUTE="0,1"; SKIP_PHASES="2,3,4,5,6" ;;
-  research-and-plan) PHASES_TO_EXECUTE="0,1,2"; SKIP_PHASES="3,4,5,6" ;;
-  full-implementation) PHASES_TO_EXECUTE="0,1,2,3,4,6"; SKIP_PHASES="" ;;
-  debug-only) PHASES_TO_EXECUTE="0,1,5"; SKIP_PHASES="2,3,4,6" ;;
-esac
-
-export PHASES_TO_EXECUTE SKIP_PHASES
-
-if [ -z "${PHASES_TO_EXECUTE:-}" ]; then
-  echo "ERROR: PHASES_TO_EXECUTE not set after scope detection"
-  exit 1
-fi
-
-# Source workflow initialization
-if [ ! -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
-  echo "ERROR: workflow-initialization.sh not found"
-  exit 1
-fi
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
-
-# Source unified-logger
-if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh" ]; then
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh"
-fi
-
-# Initialize workflow paths
-if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
-  echo "ERROR: Workflow initialization failed"
-  exit 1
-fi
-
-echo "  ✓ Paths pre-calculated"
 echo ""
-echo "Workflow Scope: $WORKFLOW_SCOPE"
-echo "Topic: $TOPIC_PATH"
-echo ""
-
-# Reconstruct REPORT_PATHS array
-reconstruct_report_paths_array
-
-# Emit progress
-if command -v emit_progress &>/dev/null; then
-  emit_progress "0" "Phase 0 complete (topic: $TOPIC_PATH)"
-else
-  echo "PROGRESS: [Phase 0] - Phase 0 complete (topic: $TOPIC_PATH)"
-fi
+echo "State Machine Initialized:"
+echo "  Scope: $WORKFLOW_SCOPE"
+echo "  Current State: $CURRENT_STATE"
+echo "  Terminal State: $TERMINAL_STATE"
+echo "  Topic Path: $TOPIC_PATH"
 echo ""
 ```
 
 ---
 
-## Verification Helpers
-
-[EXECUTION-CRITICAL: Define verification functions]
-
-USE the Bash tool:
-
-```bash
-# Standard 13: CLAUDE_PROJECT_DIR detection
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-  export CLAUDE_PROJECT_DIR
-fi
-
-# Source verification helpers
-if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
-else
-  echo "ERROR: verification-helpers.sh not found"
-  exit 1
-fi
-```
-
----
-
-## Phase 1: Research
+## State Handler: Research Phase
 
 [EXECUTION-CRITICAL: Parallel research agent invocation]
 
+**State Handler Function**: This section executes when `CURRENT_STATE == "research"`
+
 USE the Bash tool:
 
 ```bash
-should_run_phase 1 || {
-  echo "⏭️  Skipping Phase 1 (Research)"
+# Load workflow state
+load_workflow_state "coordinate_$$"
+
+# Check if we should skip this state (already at terminal)
+if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
-}
+fi
+
+# Verify we're in research state
+if [ "$CURRENT_STATE" != "$STATE_RESEARCH" ]; then
+  echo "ERROR: Expected state '$STATE_RESEARCH' but current state is '$CURRENT_STATE'"
+  exit 1
+fi
 
 if command -v emit_progress &>/dev/null; then
-  emit_progress "1" "Phase 1: Research (parallel agent invocation)"
+  emit_progress "1" "State: Research (parallel agent invocation)"
 fi
 
 # Determine research complexity (1-4 topics)
@@ -368,14 +242,8 @@ fi
 
 echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics"
 
-# Standard 13: CLAUDE_PROJECT_DIR detection
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-  export CLAUDE_PROJECT_DIR
-fi
-
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-sourcing.sh"
-source_required_libraries || exit 1
+# Reconstruct REPORT_PATHS array
+reconstruct_report_paths_array
 
 emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 ```
@@ -406,21 +274,9 @@ Task {
 USE the Bash tool:
 
 ```bash
+load_workflow_state "coordinate_$$"
+
 emit_progress "1" "All research agents invoked - awaiting completion"
-
-# Standard 13: CLAUDE_PROJECT_DIR detection
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-  export CLAUDE_PROJECT_DIR
-fi
-
-# Source verification helpers
-if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
-else
-  echo "ERROR: verification-helpers.sh not found"
-  exit 1
-fi
 
 # Verify all research reports created
 echo -n "Verifying research reports ($RESEARCH_COMPLEXITY): "
@@ -430,655 +286,436 @@ SUCCESSFUL_REPORT_PATHS=()
 
 for i in $(seq 1 $RESEARCH_COMPLEXITY); do
   REPORT_PATH="${REPORT_PATHS[$i-1]}"
-  if ! verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Phase 1"; then
+  if ! verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Research"; then
     VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
   else
     SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
   fi
 done
 
-SUCCESSFUL_REPORT_COUNT=${#SUCCESSFUL_REPORT_PATHS[@]}
-
-if [ $VERIFICATION_FAILURES -eq 0 ]; then
-  echo " (all passed)"
-  emit_progress "1" "Verified: $SUCCESSFUL_REPORT_COUNT/$RESEARCH_COMPLEXITY research reports"
-else
-  echo ""
-  echo "Workflow TERMINATED: Fix verification failures and retry"
-  exit 1
+if [ $VERIFICATION_FAILURES -gt 0 ]; then
+  echo "❌ FAILED: $VERIFICATION_FAILURES research reports not created"
+  handle_state_error "Research phase failed verification - $VERIFICATION_FAILURES reports not created" 1
 fi
 
-echo "Verification checkpoint passed - proceeding to research overview"
-echo ""
+echo "✓ All reports verified"
 
-# Conditionally create overview (research-only workflows only)
-if should_synthesize_overview "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT"; then
-  OVERVIEW_PATH=$(calculate_overview_path "$RESEARCH_SUBDIR")
+# Save report paths to workflow state
+append_workflow_state "REPORT_PATHS_JSON" "$(printf '%s\n' "${SUCCESSFUL_REPORT_PATHS[@]}" | jq -R . | jq -s .)"
 
-  echo "Creating research overview to synthesize findings..."
-  echo "  Path: $OVERVIEW_PATH"
+# Determine next state based on workflow scope
+case "$WORKFLOW_SCOPE" in
+  research-only)
+    # Terminal state reached
+    sm_transition "$STATE_COMPLETE"
+    append_workflow_state "CURRENT_STATE" "$STATE_COMPLETE"
+    echo ""
+    echo "✓ Research-only workflow complete"
+    display_brief_summary
+    exit 0
+    ;;
+  research-and-plan|full-implementation|debug-only)
+    # Continue to planning
+    sm_transition "$STATE_PLAN"
+    append_workflow_state "CURRENT_STATE" "$STATE_PLAN"
+    ;;
+  *)
+    echo "ERROR: Unknown workflow scope: $WORKFLOW_SCOPE"
+    exit 1
+    ;;
+esac
 
-  REPORT_LIST=""
-  for report in "${SUCCESSFUL_REPORT_PATHS[@]}"; do
-    REPORT_LIST+="- $report\n"
-  done
-
-  echo "Invoking research synthesizer agent..."
-```
-
-**EXECUTE NOW** (if overview synthesis needed): USE the Task tool to invoke research-synthesizer:
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Synthesize research findings into comprehensive overview"
-  timeout: 300000
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/research-synthesizer.md
-
-    **Workflow-Specific Context**:
-    - Overview Path: [OVERVIEW_PATH value]
-    - Research Reports to Synthesize: [report list from SUCCESSFUL_REPORT_PATHS]
-    - Total Reports: [SUCCESSFUL_REPORT_COUNT value]
-    - Project Standards: /home/benjamin/.config/CLAUDE.md
-
-    **CRITICAL**: Create overview file at EXACT path provided above.
-
-    Execute synthesis following all guidelines in behavioral file.
-    Return: OVERVIEW_CREATED: [exact absolute path to overview file]
-  "
-}
-
-USE the Bash tool:
-
-```bash
-  verify_file_created "$OVERVIEW_PATH" "Research Overview" "Phase 1"
-else
-  SKIP_REASON=$(get_synthesis_skip_reason "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT")
-  echo "⏭️  Skipping overview synthesis"
-  echo "  Reason: $SKIP_REASON"
-  echo ""
-fi
-
-emit_progress "1" "Research complete: $SUCCESSFUL_REPORT_COUNT reports verified"
-echo ""
-
-# Save checkpoint
-ARTIFACT_PATHS_JSON=$(cat <<EOF
-{
-  "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
-  $([ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'"' || echo '')
-}
-EOF
-)
-save_checkpoint "coordinate" "phase_1" "$ARTIFACT_PATHS_JSON"
-
-# Store phase metadata
-PHASE_1_ARTIFACTS="${SUCCESSFUL_REPORT_PATHS[@]}"
-store_phase_metadata "phase_1" "complete" "$PHASE_1_ARTIFACTS"
-
-echo "Phase 1 metadata stored (context reduction: 80-90%)"
-emit_progress "1" "Research complete ($SUCCESSFUL_REPORT_COUNT reports created)"
+emit_progress "2" "Research complete, transitioning to Planning"
 ```
 
 ---
 
-## Phase 2: Planning
+## State Handler: Planning Phase
 
-[EXECUTION-CRITICAL: Plan-architect agent invocation]
+[EXECUTION-CRITICAL: Plan creation with complexity analysis]
+
+**State Handler Function**: This section executes when `CURRENT_STATE == "plan"`
 
 USE the Bash tool:
 
 ```bash
-should_run_phase 2 || {
-  echo "⏭️  Skipping Phase 2 (Planning)"
+load_workflow_state "coordinate_$$"
+
+# Check if we should skip this state
+if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
-}
+fi
+
+# Verify we're in plan state
+if [ "$CURRENT_STATE" != "$STATE_PLAN" ]; then
+  echo "ERROR: Expected state '$STATE_PLAN' but current state is '$CURRENT_STATE'"
+  exit 1
+fi
 
 if command -v emit_progress &>/dev/null; then
-  emit_progress "2" "Phase 2: Planning (plan-architect invocation)"
+  emit_progress "2" "State: Planning (implementation plan creation)"
 fi
 
-echo "Preparing planning context..."
+# Reconstruct report paths from state
+if [ -n "${REPORT_PATHS_JSON:-}" ]; then
+  mapfile -t REPORT_PATHS < <(echo "$REPORT_PATHS_JSON" | jq -r '.[]')
+fi
 
-# Build research reports list
-RESEARCH_REPORTS_LIST=""
-for report in "${SUCCESSFUL_REPORT_PATHS[@]}"; do
-  RESEARCH_REPORTS_LIST+="- $report\n"
+# Build report references for /plan
+REPORT_ARGS=""
+for report in "${REPORT_PATHS[@]}"; do
+  REPORT_ARGS="$REPORT_ARGS \"$report\""
 done
 
-if [ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ]; then
-  RESEARCH_REPORTS_LIST+="- $OVERVIEW_PATH (synthesis)\n"
-fi
-
-# Discover standards file
-STANDARDS_FILE="${LOCATION}/CLAUDE.md"
-if [ ! -f "$STANDARDS_FILE" ]; then
-  STANDARDS_FILE="${LOCATION}/.claude/CLAUDE.md"
-fi
-if [ ! -f "$STANDARDS_FILE" ]; then
-  STANDARDS_FILE="(none found)"
-fi
-
-echo "Planning Context: $SUCCESSFUL_REPORT_COUNT reports, standards: $STANDARDS_FILE"
+echo "Creating implementation plan with ${#REPORT_PATHS[@]} research reports..."
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke plan-architect:
+**EXECUTE NOW**: USE the Task tool to invoke /plan command:
 
 Task {
   subagent_type: "general-purpose"
-  description: "Create implementation plan with mandatory file creation"
+  description: "Create implementation plan guided by research reports"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/plan-architect.md
+    Execute the /plan slash command with the following arguments:
 
-    **Workflow-Specific Context**:
-    - Workflow Description: [WORKFLOW_DESCRIPTION value]
-    - Plan File Path: [PLAN_PATH - absolute path pre-calculated]
-    - Project Standards: [STANDARDS_FILE path]
-    - Research Reports: [RESEARCH_REPORTS_LIST - formatted list]
-    - Research Report Count: [SUCCESSFUL_REPORT_COUNT value]
+    /plan \"$WORKFLOW_DESCRIPTION\" $REPORT_ARGS
 
-    **CRITICAL**: Create plan file at EXACT path provided above.
+    This will create an implementation plan guided by the research reports.
+    The plan will be saved to: $TOPIC_PATH/plans/
 
-    Execute planning following all guidelines in behavioral file.
-    Return: PLAN_CREATED: [exact absolute path to plan file]
+    Return: PLAN_CREATED: [absolute path to plan file]
   "
 }
 
 USE the Bash tool:
 
 ```bash
-echo -n "Verifying implementation plan: "
+load_workflow_state "coordinate_$$"
 
-if verify_file_created "$PLAN_PATH" "Implementation plan" "Phase 2"; then
-  PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
-  if [ "$PHASE_COUNT" -lt 3 ] || ! grep -q "^## Metadata" "$PLAN_PATH"; then
-    echo " (structure warnings)"
-    echo "⚠️  Plan: $PHASE_COUNT phases (expected ≥3)"
-  else
-    echo " ($PHASE_COUNT phases)"
-  fi
-  emit_progress "2" "Verified: Implementation plan ($PHASE_COUNT phases)"
-else
-  echo ""
-  echo "Workflow TERMINATED: Fix plan creation and retry"
-  exit 1
+emit_progress "2" "Plan creation invoked - awaiting completion"
+
+# Verify plan was created
+PLAN_PATH="${TOPIC_PATH}/plans/001_implementation.md"
+
+if ! verify_file_created "$PLAN_PATH" "Implementation plan" "Planning"; then
+  handle_state_error "Plan file not created at expected path: $PLAN_PATH" 1
 fi
 
-# Extract plan metadata
-PLAN_COMPLEXITY=$(grep "Complexity:" "$PLAN_PATH" | head -1 | cut -d: -f2 | xargs || echo "unknown")
-PLAN_EST_TIME=$(grep "Estimated Total Time:" "$PLAN_PATH" | cut -d: -f2 | xargs || echo "unknown")
+echo "✓ Plan verified: $PLAN_PATH"
 
-echo "Plan: $PHASE_COUNT phases, complexity: $PLAN_COMPLEXITY, est. time: $PLAN_EST_TIME"
-emit_progress "2" "Planning complete: $PHASE_COUNT phases, $PLAN_EST_TIME estimated"
-echo ""
+# Save plan path to workflow state
+append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 
-# Save checkpoint
-ARTIFACT_PATHS_JSON=$(cat <<EOF
-{
-  "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
-  $([ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
-  "plan_path": "$PLAN_PATH"
-}
-EOF
-)
-save_checkpoint "coordinate" "phase_2" "$ARTIFACT_PATHS_JSON"
+# Determine next state based on workflow scope
+case "$WORKFLOW_SCOPE" in
+  research-and-plan)
+    # Terminal state reached
+    sm_transition "$STATE_COMPLETE"
+    append_workflow_state "CURRENT_STATE" "$STATE_COMPLETE"
+    echo ""
+    echo "✓ Research-and-plan workflow complete"
+    display_brief_summary
+    exit 0
+    ;;
+  full-implementation)
+    # Continue to implementation
+    sm_transition "$STATE_IMPLEMENT"
+    append_workflow_state "CURRENT_STATE" "$STATE_IMPLEMENT"
+    ;;
+  debug-only)
+    # Skip to debug
+    sm_transition "$STATE_DEBUG"
+    append_workflow_state "CURRENT_STATE" "$STATE_DEBUG"
+    ;;
+  *)
+    echo "ERROR: Unknown workflow scope: $WORKFLOW_SCOPE"
+    exit 1
+    ;;
+esac
 
-# Store phase metadata
-store_phase_metadata "phase_2" "complete" "$PLAN_PATH"
-apply_pruning_policy "planning" "$WORKFLOW_SCOPE"
-echo "Phase 2 metadata stored (context reduction: 80-90%)"
-emit_progress "2" "Planning complete (plan created with $PHASE_COUNT phases)"
-
-# Check if workflow should continue to implementation
-should_run_phase 3 || {
-  emit_progress "Complete" "/coordinate workflow complete"
-  echo ""
-  echo "Workflow complete: $WORKFLOW_SCOPE"
-  echo ""
-  echo "Artifacts:"
-  echo "  ✓ $SUCCESSFUL_REPORT_COUNT research reports"
-  if [ -n "$PLAN_PATH" ] && [ -f "$PLAN_PATH" ]; then
-    echo "  ✓ 1 implementation plan ($PHASE_COUNT phases, $PLAN_EST_TIME estimated)"
-  fi
-  echo ""
-  echo "Next: /implement $PLAN_PATH"
-  echo ""
-  exit 0
-}
+emit_progress "3" "Planning complete, transitioning to Implementation"
 ```
 
 ---
 
-## Phase 3: Wave-Based Implementation
+## State Handler: Implementation Phase
 
-[EXECUTION-CRITICAL: Dependency analysis and parallel wave execution]
+[EXECUTION-CRITICAL: Wave-based parallel implementation]
+
+**State Handler Function**: This section executes when `CURRENT_STATE == "implement"`
 
 USE the Bash tool:
 
 ```bash
-should_run_phase 3 || {
-  echo "⏭️  Skipping Phase 3 (Implementation)"
-  echo ""
-}
+load_workflow_state "coordinate_$$"
 
-if command -v emit_progress &>/dev/null; then
-  emit_progress "3" "Phase 3: Wave-based implementation"
+# Check if we should skip this state
+if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
+  display_brief_summary
+  exit 0
 fi
 
-IMPL_START_TIME=$(date +%s)
-
-echo "Analyzing plan dependencies for wave execution..."
-DEPENDENCY_ANALYSIS=$(analyze_dependencies "$PLAN_PATH")
-
-if [[ $? -ne 0 ]]; then
-  echo "❌ ERROR: Dependency analysis failed"
+# Verify we're in implement state
+if [ "$CURRENT_STATE" != "$STATE_IMPLEMENT" ]; then
+  echo "ERROR: Expected state '$STATE_IMPLEMENT' but current state is '$CURRENT_STATE'"
   exit 1
 fi
 
-WAVES=$(echo "$DEPENDENCY_ANALYSIS" | jq '.waves')
-WAVE_COUNT=$(echo "$WAVES" | jq 'length')
-TOTAL_PHASES=$(echo "$DEPENDENCY_ANALYSIS" | jq '.dependency_graph.nodes | length')
+if command -v emit_progress &>/dev/null; then
+  emit_progress "3" "State: Implementation (wave-based parallel execution)"
+fi
 
-echo "✅ Dependency analysis complete"
-echo "   Total phases: $TOTAL_PHASES"
-echo "   Execution waves: $WAVE_COUNT"
-echo ""
-
-echo "Wave execution plan:"
-for ((wave_num=1; wave_num<=WAVE_COUNT; wave_num++)); do
-  WAVE=$(echo "$WAVES" | jq ".[$((wave_num-1))]")
-  WAVE_PHASES=$(echo "$WAVE" | jq -r '.phases[]')
-  PHASE_COUNT=$(echo "$WAVE" | jq '.phases | length')
-  CAN_PARALLEL=$(echo "$WAVE" | jq -r '.can_parallel')
-
-  echo "  Wave $wave_num: $PHASE_COUNT phase(s) $([ "$CAN_PARALLEL" == "true" ] && echo "[PARALLEL]" || echo "[SEQUENTIAL]")"
-  for phase in $WAVE_PHASES; do
-    echo "    - Phase $phase"
-  done
-done
-echo ""
+echo "Executing implementation plan: $PLAN_PATH"
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke implementer-coordinator:
+**EXECUTE NOW**: USE the Task tool to invoke /implement command:
 
 Task {
   subagent_type: "general-purpose"
-  description: "Orchestrate wave-based implementation with parallel execution"
+  description: "Execute implementation plan with automated testing and commits"
   timeout: 600000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/implementer-coordinator.md
+    Execute the /implement slash command with the following arguments:
 
-    **Workflow-Specific Context**:
-    - Plan File Path: [PLAN_PATH value]
-    - Implementation Artifacts Directory: [IMPL_ARTIFACTS path]
-    - Project Standards: [STANDARDS_FILE path]
-    - Workflow Type: [WORKFLOW_SCOPE value]
+    /implement \"$PLAN_PATH\"
 
-    **Wave Execution Context**:
-    - Total Waves: [WAVE_COUNT value]
-    - Wave Structure: [WAVES JSON structure]
-    - Dependency Graph: [dependency_graph from DEPENDENCY_ANALYSIS]
+    This will execute the implementation plan phase-by-phase with:
+    - Automated testing after each phase
+    - Git commits for completed phases
+    - Progress tracking and checkpoints
 
-    **CRITICAL**: Execute phases wave-by-wave, parallel within waves when possible.
-
-    Execute wave-based implementation following all guidelines in behavioral file.
-    Return: IMPLEMENTATION_STATUS: {complete|partial|failed}
-    Return: WAVES_COMPLETED: [number]
-    Return: PHASES_COMPLETED: [number]
+    Return: IMPLEMENTATION_COMPLETE: [summary or status]
   "
 }
 
 USE the Bash tool:
 
 ```bash
-# Parse implementation status
-IMPL_STATUS=$(echo "$AGENT_OUTPUT" | grep "IMPLEMENTATION_STATUS:" | cut -d: -f2 | xargs)
-WAVES_COMPLETED=$(echo "$AGENT_OUTPUT" | grep "WAVES_COMPLETED:" | cut -d: -f2 | xargs)
-PHASES_COMPLETED=$(echo "$AGENT_OUTPUT" | grep "PHASES_COMPLETED:" | cut -d: -f2 | xargs)
+load_workflow_state "coordinate_$$"
 
-IMPL_END_TIME=$(date +%s)
-IMPL_DURATION=$((IMPL_END_TIME - IMPL_START_TIME))
+emit_progress "3" "Implementation complete - transitioning to Testing"
 
-echo -n "Verifying implementation artifacts: "
+# Transition to testing
+sm_transition "$STATE_TEST"
+append_workflow_state "CURRENT_STATE" "$STATE_TEST"
 
-if [ -d "$IMPL_ARTIFACTS" ]; then
-  ARTIFACT_COUNT=$(find "$IMPL_ARTIFACTS" -type f 2>/dev/null | wc -l)
-  echo "✓ ($ARTIFACT_COUNT files)"
-  emit_progress "3" "Verified: Implementation artifacts ($ARTIFACT_COUNT files)"
-else
-  echo ""
-  echo "✗ ERROR [Phase 3]: Implementation artifacts directory not created"
-  exit 1
-fi
-
-if [ "$IMPL_STATUS" == "complete" ] || [ "$IMPL_STATUS" == "partial" ]; then
-  IMPLEMENTATION_OCCURRED="true"
-fi
-
-# Save checkpoint
-ARTIFACT_PATHS_JSON=$(cat <<EOF
-{
-  "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
-  $([ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
-  "plan_path": "$PLAN_PATH",
-  "impl_artifacts": "$IMPL_ARTIFACTS",
-  "wave_execution": {
-    "waves_completed": $WAVES_COMPLETED,
-    "duration_seconds": $IMPL_DURATION
-  }
-}
-EOF
-)
-save_checkpoint "coordinate" "phase_3" "$ARTIFACT_PATHS_JSON"
-
-store_phase_metadata "phase_3" "complete" "implementation_metrics"
-apply_pruning_policy "implementation" "orchestrate"
-
-echo "Phase 3 metadata pruned (context reduction: 80-90%)"
-emit_progress "3" "Implementation complete"
+emit_progress "4" "Implementation complete, transitioning to Testing"
 ```
 
 ---
 
-## Phase 4: Testing
+## State Handler: Testing Phase
 
-[EXECUTION-CRITICAL: Test execution and result verification]
+[EXECUTION-CRITICAL: Comprehensive test execution]
 
-USE the Bash tool:
-
-```bash
-should_run_phase 4 || {
-  echo "⏭️  Skipping Phase 4 (Testing)"
-  echo ""
-}
-
-if command -v emit_progress &>/dev/null; then
-  emit_progress "4" "Phase 4: Testing (test-specialist invocation)"
-fi
-```
-
-**EXECUTE NOW**: USE the Task tool to invoke test-specialist:
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Execute comprehensive tests with mandatory results file"
-  timeout: 300000
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/test-specialist.md
-
-    **Workflow-Specific Context**:
-    - Test Results Path: [TOPIC_PATH/outputs/test_results.md]
-    - Project Standards: [STANDARDS_FILE path]
-    - Plan File: [PLAN_PATH value]
-    - Implementation Artifacts: [IMPL_ARTIFACTS path]
-
-    **CRITICAL**: Create test results file at path provided above.
-
-    Execute testing following all guidelines in behavioral file.
-    Return: TEST_STATUS: {passing|failing}
-    Return: TESTS_TOTAL: [number]
-    Return: TESTS_PASSED: [number]
-  "
-}
+**State Handler Function**: This section executes when `CURRENT_STATE == "test"`
 
 USE the Bash tool:
 
 ```bash
-# Parse test status
-TEST_STATUS=$(echo "$AGENT_OUTPUT" | grep "TEST_STATUS:" | cut -d: -f2 | xargs)
-TESTS_TOTAL=$(echo "$AGENT_OUTPUT" | grep "TESTS_TOTAL:" | cut -d: -f2 | xargs)
-TESTS_PASSED=$(echo "$AGENT_OUTPUT" | grep "TESTS_PASSED:" | cut -d: -f2 | xargs)
+load_workflow_state "coordinate_$$"
 
-emit_progress "4" "Test results: $TESTS_PASSED/$TESTS_TOTAL passed"
-echo "Test Status: $TEST_STATUS ($TESTS_PASSED/$TESTS_TOTAL passed)"
-
-if [ "$TEST_STATUS" == "passing" ]; then
-  TESTS_PASSING="true"
-  echo "✅ All tests passing - no debugging needed"
-else
-  TESTS_PASSING="false"
-  echo "❌ Tests failing - debugging required (Phase 5)"
-fi
-
-emit_progress "4" "Testing complete: $TESTS_PASSING"
-echo ""
-
-# Save checkpoint
-ARTIFACT_PATHS_JSON=$(cat <<EOF
-{
-  "research_reports": [$(printf '"%s",' "${SUCCESSFUL_REPORT_PATHS[@]}" | sed 's/,$//')]
-  $([ -n "$OVERVIEW_PATH" ] && [ -f "$OVERVIEW_PATH" ] && echo ', "overview_path": "'$OVERVIEW_PATH'",' || echo '')
-  "plan_path": "$PLAN_PATH",
-  "impl_artifacts": "$IMPL_ARTIFACTS",
-  "test_status": "$TEST_STATUS"
-}
-EOF
-)
-save_checkpoint "coordinate" "phase_4" "$ARTIFACT_PATHS_JSON"
-
-store_phase_metadata "phase_4" "complete" "test_status:$TEST_STATUS"
-echo "Phase 4 metadata stored"
-emit_progress "4" "Testing complete (status: $TEST_STATUS)"
-```
-
----
-
-## Phase 5: Debug (Conditional)
-
-[EXECUTION-CRITICAL: Debug analysis - only runs if tests failed]
-
-USE the Bash tool:
-
-```bash
-if [ "$TESTS_PASSING" == "false" ] || [ "$WORKFLOW_SCOPE" == "debug-only" ]; then
-  emit_progress "5" "Phase 5: Debug (conditional execution)"
-else
-  echo "⏭️  Skipping Phase 5 (Debug)"
-  echo "  Reason: Tests passing"
-  echo ""
-fi
-
-# Debug iteration loop (max 3 iterations)
-for iteration in 1 2 3; do
-  emit_progress "5" "Debug iteration $iteration/3"
-```
-
-**EXECUTE NOW** (for each debug iteration): USE Task tool to invoke debug-analyst:
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Analyze test failures - iteration [iteration value]"
-  timeout: 300000
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/debug-analyst.md
-
-    **Workflow-Specific Context**:
-    - Debug Report Path: [DEBUG_REPORT path for iteration]
-    - Test Results: [TOPIC_PATH/outputs/test_results.md]
-    - Project Standards: [STANDARDS_FILE path]
-    - Iteration Number: [iteration value]
-
-    Execute debug analysis following all guidelines in behavioral file.
-    Return: DEBUG_ANALYSIS_COMPLETE: [exact absolute path to debug report]
-  "
-}
-
-USE the Bash tool:
-
-```bash
-  echo -n "Verifying debug report (iteration $iteration): "
-
-  if verify_file_created "$DEBUG_REPORT" "Debug report" "Phase 5"; then
-    echo ""
-  else
-    echo ""
-    echo "Workflow TERMINATED: Fix debug report creation and retry"
-    exit 1
-  fi
-```
-
-**EXECUTE NOW** (for each iteration): USE Task tool to invoke code-writer for fixes:
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Apply debug fixes - iteration [iteration]"
-  timeout: 300000
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/code-writer.md
-
-    **Workflow-Specific Context**:
-    - Debug Analysis: [DEBUG_REPORT path]
-    - Project Standards: [STANDARDS_FILE path]
-    - Iteration Number: [iteration]
-
-    Execute fix application following all guidelines in behavioral file.
-    Return: FIXES_APPLIED: [number]
-  "
-}
-
-USE the Bash tool:
-
-```bash
-  FIXES_APPLIED=$(echo "$AGENT_OUTPUT" | grep "FIXES_APPLIED:" | cut -d: -f2 | xargs)
-  echo "Fixes Applied: $FIXES_APPLIED"
-  echo "Re-running tests..."
-```
-
-**EXECUTE NOW** (for each iteration): USE Task tool to invoke test-specialist for re-test:
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Re-run tests after fixes - iteration [iteration]"
-  timeout: 300000
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/test-specialist.md
-
-    **Workflow-Specific Context**:
-    - Test Results Path: [TOPIC_PATH/outputs/test_results.md]
-    - Project Standards: [STANDARDS_FILE path]
-    - Iteration Number: [iteration]
-
-    Execute tests following all guidelines in behavioral file.
-    Return: TEST_STATUS: {passing|failing}
-    Return: TESTS_TOTAL: [number]
-    Return: TESTS_PASSED: [number]
-  "
-}
-
-USE the Bash tool:
-
-```bash
-  TEST_STATUS=$(echo "$AGENT_OUTPUT" | grep "TEST_STATUS:" | cut -d: -f2 | xargs)
-  TESTS_TOTAL=$(echo "$AGENT_OUTPUT" | grep "TESTS_TOTAL:" | cut -d: -f2 | xargs)
-  TESTS_PASSED=$(echo "$AGENT_OUTPUT" | grep "TESTS_PASSED:" | cut -d: -f2 | xargs)
-
-  if [ "$TEST_STATUS" == "passing" ]; then
-    TESTS_PASSING="true"
-  else
-    TESTS_PASSING="false"
-  fi
-
-  echo "Updated Test Status: $TEST_STATUS ($TESTS_PASSED/$TESTS_TOTAL passed)"
-
-  if [ "$TESTS_PASSING" == "true" ]; then
-    echo "✅ Tests passing after $iteration debug iteration(s)"
-    break
-  fi
-
-  echo "Tests still failing, continuing..."
-done
-
-[ "$TESTS_PASSING" == "false" ] && echo "⚠️  WARNING: Tests still failing after 3 iterations"
-
-emit_progress "5" "Debug complete: tests=$TESTS_PASSING"
-echo ""
-
-store_phase_metadata "phase_5" "complete" "tests_passing:$TESTS_PASSING"
-echo "Phase 5 metadata stored"
-emit_progress "5" "Debug complete (final test status: $TESTS_PASSING)"
-```
-
----
-
-## Phase 6: Documentation (Conditional)
-
-[EXECUTION-CRITICAL: Summary creation - only after implementation]
-
-USE the Bash tool:
-
-```bash
-if [ "$IMPLEMENTATION_OCCURRED" == "true" ]; then
-  emit_progress "6" "Phase 6: Documentation (summary creation)"
-else
-  echo "⏭️  Skipping Phase 6 (Documentation)"
-  echo "  Reason: No implementation to document"
-  echo ""
+# Check if we should skip this state
+if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
 fi
+
+# Verify we're in test state
+if [ "$CURRENT_STATE" != "$STATE_TEST" ]; then
+  echo "ERROR: Expected state '$STATE_TEST' but current state is '$CURRENT_STATE'"
+  exit 1
+fi
+
+if command -v emit_progress &>/dev/null; then
+  emit_progress "4" "State: Testing (comprehensive test suite execution)"
+fi
+
+echo "Running comprehensive test suite..."
+
+# Run test suite
+if command -v run_test_suite &>/dev/null; then
+  TEST_RESULT=$(run_test_suite)
+  TEST_EXIT_CODE=$?
+else
+  # Fallback: use /test-all
+  bash "${CLAUDE_PROJECT_DIR}/.claude/tests/run_all_tests.sh"
+  TEST_EXIT_CODE=$?
+fi
+
+# Save test result to workflow state
+append_workflow_state "TEST_EXIT_CODE" "$TEST_EXIT_CODE"
+
+# Determine next state based on test results
+if [ $TEST_EXIT_CODE -eq 0 ]; then
+  echo "✓ All tests passed"
+
+  # Transition to documentation
+  sm_transition "$STATE_DOCUMENT"
+  append_workflow_state "CURRENT_STATE" "$STATE_DOCUMENT"
+
+  emit_progress "6" "Tests passed, transitioning to Documentation"
+else
+  echo "❌ Tests failed"
+
+  # Transition to debug
+  sm_transition "$STATE_DEBUG"
+  append_workflow_state "CURRENT_STATE" "$STATE_DEBUG"
+
+  emit_progress "5" "Tests failed, transitioning to Debug"
+fi
 ```
 
-**EXECUTE NOW**: USE Task tool to invoke doc-writer:
+---
+
+## State Handler: Debug Phase (Conditional)
+
+[EXECUTION-CRITICAL: Debug test failures]
+
+**State Handler Function**: This section executes when `CURRENT_STATE == "debug"`
+
+USE the Bash tool:
+
+```bash
+load_workflow_state "coordinate_$$"
+
+# Check if we should skip this state
+if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
+  display_brief_summary
+  exit 0
+fi
+
+# Verify we're in debug state
+if [ "$CURRENT_STATE" != "$STATE_DEBUG" ]; then
+  echo "ERROR: Expected state '$STATE_DEBUG' but current state is '$CURRENT_STATE'"
+  exit 1
+fi
+
+if command -v emit_progress &>/dev/null; then
+  emit_progress "5" "State: Debug (analyzing test failures)"
+fi
+
+echo "Analyzing test failures..."
+```
+
+**EXECUTE NOW**: USE the Task tool to invoke /debug command:
 
 Task {
   subagent_type: "general-purpose"
-  description: "Create workflow summary with mandatory file creation"
+  description: "Analyze and debug test failures"
   timeout: 300000
   prompt: "
-    Read and follow ALL behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/doc-writer.md
+    Execute the /debug slash command with the following context:
 
-    **Workflow-Specific Context**:
-    - Summary Path: [SUMMARY_PATH value]
-    - Plan File: [PLAN_PATH value]
-    - Research Reports: [RESEARCH_REPORTS_LIST]
-    - Implementation Artifacts: [IMPL_ARTIFACTS path]
-    - Test Status: [TEST_STATUS value]
-    - Workflow Description: [WORKFLOW_DESCRIPTION value]
+    /debug \"Analyze test failures from implementation of: $WORKFLOW_DESCRIPTION\"
 
-    **CRITICAL**: Create summary file at path provided above.
+    This will create a debug report with root cause analysis and proposed fixes.
 
-    Execute documentation following all guidelines in behavioral file.
-    Return: SUMMARY_CREATED: [exact absolute path to summary file]
+    Return: DEBUG_REPORT_CREATED: [absolute path to debug report]
   "
 }
 
 USE the Bash tool:
 
 ```bash
-echo -n "Verifying workflow summary: "
+load_workflow_state "coordinate_$$"
 
-if verify_file_created "$SUMMARY_PATH" "Workflow summary" "Phase 6"; then
-  FILE_SIZE=$(wc -c < "$SUMMARY_PATH")
-  echo " (${FILE_SIZE} bytes)"
-  emit_progress "6" "Verified: Workflow summary created"
-else
-  echo ""
-  echo "Workflow TERMINATED: Fix summary creation and retry"
-  exit 1
-fi
+emit_progress "5" "Debug analysis complete"
 
-store_phase_metadata "phase_6" "complete" "$SUMMARY_PATH"
-prune_workflow_metadata "coordinate_workflow" "true"
-emit_progress "6" "Documentation complete (summary created)"
+# Save debug report path
+# Note: In a real implementation, this would be extracted from agent response
+append_workflow_state "DEBUG_REPORT" "${TOPIC_PATH}/debug/001_debug_report.md"
 
-# Clean up checkpoint on successful completion
-CHECKPOINT_FILE=".claude/data/checkpoints/coordinate_latest.json"
-[ -f "$CHECKPOINT_FILE" ] && rm -f "$CHECKPOINT_FILE"
+# Transition to complete (user must fix issues manually)
+sm_transition "$STATE_COMPLETE"
+append_workflow_state "CURRENT_STATE" "$STATE_COMPLETE"
 
-display_brief_summary
-exit 0
+echo ""
+echo "✓ Debug analysis complete"
+echo "Debug report: $DEBUG_REPORT"
+echo ""
+echo "NOTE: Please review debug report and fix issues manually"
+echo "Then re-run: /coordinate \"$WORKFLOW_DESCRIPTION\""
+echo ""
 ```
 
 ---
 
-**Troubleshooting**: See `.claude/docs/guides/coordinate-command-guide.md` for common issues and solutions.
+## State Handler: Documentation Phase (Conditional)
+
+[EXECUTION-CRITICAL: Update documentation]
+
+**State Handler Function**: This section executes when `CURRENT_STATE == "document"`
+
+USE the Bash tool:
+
+```bash
+load_workflow_state "coordinate_$$"
+
+# Check if we should skip this state
+if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
+  display_brief_summary
+  exit 0
+fi
+
+# Verify we're in document state
+if [ "$CURRENT_STATE" != "$STATE_DOCUMENT" ]; then
+  echo "ERROR: Expected state '$STATE_DOCUMENT' but current state is '$CURRENT_STATE'"
+  exit 1
+fi
+
+if command -v emit_progress &>/dev/null; then
+  emit_progress "6" "State: Documentation (updating relevant docs)"
+fi
+
+echo "Updating documentation for implementation changes..."
+```
+
+**EXECUTE NOW**: USE the Task tool to invoke /document command:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Update documentation based on implementation changes"
+  timeout: 300000
+  prompt: "
+    Execute the /document slash command with the following context:
+
+    /document \"Update docs for: $WORKFLOW_DESCRIPTION\"
+
+    This will update all relevant documentation files based on the implementation changes.
+
+    Return: DOCUMENTATION_UPDATED: [list of updated files]
+  "
+}
+
+USE the Bash tool:
+
+```bash
+load_workflow_state "coordinate_$$"
+
+emit_progress "6" "Documentation updated"
+
+# Transition to complete
+sm_transition "$STATE_COMPLETE"
+append_workflow_state "CURRENT_STATE" "$STATE_COMPLETE"
+
+echo ""
+echo "✓ Documentation phase complete"
+display_brief_summary
+```
+
+---
+
+## Workflow Completion
+
+This section is reached when the state machine reaches `STATE_COMPLETE`.
+
+The workflow has successfully completed all phases based on the detected scope.
+Summary and artifacts are available via the `display_brief_summary` function.
