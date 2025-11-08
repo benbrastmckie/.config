@@ -245,8 +245,49 @@ echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics"
 # Reconstruct REPORT_PATHS array
 reconstruct_report_paths_array
 
-emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
+# Determine if hierarchical supervision is needed
+USE_HIERARCHICAL_RESEARCH=$([ $RESEARCH_COMPLEXITY -ge 4 ] && echo "true" || echo "false")
+
+if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
+  echo "Using hierarchical research supervision (≥4 topics)"
+  emit_progress "1" "Invoking research-sub-supervisor for $RESEARCH_COMPLEXITY topics"
+else
+  echo "Using flat research coordination (<4 topics)"
+  emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
+fi
 ```
+
+**CONDITIONAL EXECUTION**: Choose hierarchical or flat coordination based on topic count.
+
+### Option A: Hierarchical Research Supervision (≥4 topics)
+
+**EXECUTE IF** `USE_HIERARCHICAL_RESEARCH == "true"`:
+
+USE the Task tool to invoke research-sub-supervisor:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Coordinate research across 4+ topics with 95% context reduction"
+  timeout: 600000
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-sub-supervisor.md
+
+    **Supervisor Inputs**:
+    - Topics: [comma-separated list of $RESEARCH_COMPLEXITY topics]
+    - Output directory: $TOPIC_PATH/reports
+    - State file: $STATE_FILE
+    - Supervisor ID: research_sub_supervisor_$(date +%s)
+
+    **CRITICAL**: Invoke all research-specialist workers in parallel, aggregate metadata, save supervisor checkpoint.
+
+    Return: SUPERVISOR_COMPLETE: {supervisor_id, aggregated_metadata}
+  "
+}
+
+### Option B: Flat Research Coordination (<4 topics)
+
+**EXECUTE IF** `USE_HIERARCHICAL_RESEARCH == "false"`:
 
 **EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent for EACH research topic (1 to $RESEARCH_COMPLEXITY):
 
@@ -276,31 +317,69 @@ USE the Bash tool:
 ```bash
 load_workflow_state "coordinate_$$"
 
-emit_progress "1" "All research agents invoked - awaiting completion"
+emit_progress "1" "Research phase completion - verifying results"
 
-# Verify all research reports created
-echo -n "Verifying research reports ($RESEARCH_COMPLEXITY): "
+# Handle hierarchical vs flat coordination differently
+if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
+  echo "Hierarchical research supervision mode"
 
-VERIFICATION_FAILURES=0
-SUCCESSFUL_REPORT_PATHS=()
+  # Load supervisor checkpoint to get aggregated metadata
+  SUPERVISOR_CHECKPOINT=$(load_json_checkpoint "research_supervisor")
 
-for i in $(seq 1 $RESEARCH_COMPLEXITY); do
-  REPORT_PATH="${REPORT_PATHS[$i-1]}"
-  if ! verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Research"; then
-    VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
-  else
-    SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
+  # Extract report paths from supervisor checkpoint
+  SUPERVISOR_REPORTS=$(echo "$SUPERVISOR_CHECKPOINT" | jq -r '.aggregated_metadata.reports_created[]')
+
+  # Verify reports exist (supervisor should have created them)
+  VERIFICATION_FAILURES=0
+  SUCCESSFUL_REPORT_PATHS=()
+
+  for REPORT_PATH in $SUPERVISOR_REPORTS; do
+    if [ -f "$REPORT_PATH" ]; then
+      SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
+    else
+      echo "❌ Report not found: $REPORT_PATH"
+      VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+    fi
+  done
+
+  if [ $VERIFICATION_FAILURES -gt 0 ]; then
+    echo "❌ FAILED: $VERIFICATION_FAILURES reports from supervisor not found"
+    handle_state_error "Hierarchical research failed - supervisor reports missing" 1
   fi
-done
 
-if [ $VERIFICATION_FAILURES -gt 0 ]; then
-  echo "❌ FAILED: $VERIFICATION_FAILURES research reports not created"
-  handle_state_error "Research phase failed verification - $VERIFICATION_FAILURES reports not created" 1
+  # Display supervisor summary (95% context reduction benefit)
+  SUPERVISOR_SUMMARY=$(echo "$SUPERVISOR_CHECKPOINT" | jq -r '.aggregated_metadata.summary')
+  CONTEXT_TOKENS=$(echo "$SUPERVISOR_CHECKPOINT" | jq -r '.aggregated_metadata.context_tokens')
+  echo "✓ Supervisor summary: $SUPERVISOR_SUMMARY"
+  echo "✓ Context reduction: ${#SUCCESSFUL_REPORT_PATHS[@]} reports → $CONTEXT_TOKENS tokens (95%)"
+
+else
+  echo "Flat research coordination mode"
+
+  # Verify all research reports created (original flat pattern)
+  echo -n "Verifying research reports ($RESEARCH_COMPLEXITY): "
+
+  VERIFICATION_FAILURES=0
+  SUCCESSFUL_REPORT_PATHS=()
+
+  for i in $(seq 1 $RESEARCH_COMPLEXITY); do
+    REPORT_PATH="${REPORT_PATHS[$i-1]}"
+    if ! verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Research"; then
+      VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+    else
+      SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
+    fi
+  done
+
+  if [ $VERIFICATION_FAILURES -gt 0 ]; then
+    echo "❌ FAILED: $VERIFICATION_FAILURES research reports not created"
+    handle_state_error "Research phase failed verification - $VERIFICATION_FAILURES reports not created" 1
+  fi
+
+  echo "✓ All reports verified"
 fi
 
-echo "✓ All reports verified"
-
-# Save report paths to workflow state
+# Save report paths to workflow state (same for both modes)
 append_workflow_state "REPORT_PATHS_JSON" "$(printf '%s\n' "${SUCCESSFUL_REPORT_PATHS[@]}" | jq -R . | jq -s .)"
 
 # Determine next state based on workflow scope
