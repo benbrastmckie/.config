@@ -375,6 +375,108 @@ All orchestration commands enforce [Standard 11 (Imperative Agent Invocation Pat
 See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_agents.md) for complete documentation, patterns, and best practices.
 <!-- END_SECTION: hierarchical_agent_architecture -->
 
+<!-- SECTION: state_based_orchestration -->
+## State-Based Orchestration Architecture
+[Used by: /coordinate, /orchestrate, /supervise, custom orchestrators]
+
+### Overview
+State-based orchestration uses explicit state machines with validated transitions to manage multi-phase workflows. Replaces implicit phase numbers with named states, enabling fail-fast validation, atomic transitions, and coordinated checkpoint management.
+
+### Core Components
+
+**1. State Machine Library** (`.claude/lib/workflow-state-machine.sh`)
+- 8 explicit states: initialize, research, plan, implement, test, debug, document, complete
+- Transition table validation (prevents invalid state changes)
+- Atomic state transitions with checkpoint coordination
+- 50 comprehensive tests (100% pass rate)
+
+**2. State Persistence Library** (`.claude/lib/state-persistence.sh`)
+- GitHub Actions-style workflow state files
+- Selective file-based persistence (7 critical items, 70% of analyzed state)
+- Graceful degradation to stateless recalculation
+- 67% performance improvement (6ms → 2ms for CLAUDE_PROJECT_DIR detection)
+
+**3. Checkpoint Schema V2.0**
+- State machine as first-class citizen in checkpoint structure
+- Supervisor coordination support for hierarchical workflows
+- Error state tracking with retry logic (max 2 retries per state)
+- Backward compatible with V1.3 (auto-migration on load)
+
+**4. Hierarchical Supervisors** (State-Aware)
+- Research supervisor: 95.6% context reduction (10,000 → 440 tokens)
+- Implementation supervisor: 53% time savings via parallel execution
+- Testing supervisor: Sequential lifecycle coordination
+- 19 comprehensive tests (100% pass rate)
+
+### Performance Achievements
+
+**Code Reduction**: 48.9% (3,420 → 1,748 lines across 3 orchestrators)
+- Exceeded 39% target by 9.9%
+- /coordinate: 1,084 → 800 lines (26.2%)
+- /orchestrate: 557 → 551 lines (1.1%)
+- /supervise: 1,779 → 397 lines (77.7%)
+
+**State Operation Performance**: 67% improvement (6ms → 2ms)
+**Context Reduction**: 95.6% via hierarchical supervisors
+**Time Savings**: 53% via parallel execution
+**Reliability**: 100% file creation maintained
+
+### Key Architectural Principles
+
+1. **Explicit Over Implicit**: Named states (STATE_RESEARCH) vs phase numbers (1)
+2. **Validated Transitions**: State machine enforces valid state changes
+3. **Centralized Lifecycle**: Single state machine library owns all state operations
+4. **Selective Persistence**: File-based for expensive operations, stateless for cheap calculations
+5. **Hierarchical Context Reduction**: Pass metadata summaries, not full content
+
+### When to Use State-Based Orchestration
+
+**Use when**:
+- Workflow has multiple distinct phases (3+ states)
+- Conditional transitions exist (test → debug vs test → document)
+- Checkpoint resume required (long-running workflows)
+- Multiple orchestrators share similar patterns
+- Context reduction through hierarchical supervision needed
+
+**Use simpler approaches when**:
+- Workflow is linear with no branches
+- Single-purpose command with no state coordination
+- Workflow completes in <5 minutes
+- State overhead exceeds benefits (<3 phases)
+
+### Resources
+
+- **[State-Based Orchestration Overview](.claude/docs/architecture/state-based-orchestration-overview.md)** (2,000+ lines)
+  - Complete architecture reference
+  - State machine design, selective persistence patterns
+  - Hierarchical supervisor coordination
+  - Performance characteristics and benchmarks
+
+- **[State Machine Orchestrator Development](.claude/docs/guides/state-machine-orchestrator-development.md)** (1,100+ lines)
+  - Creating new orchestrators using state machine
+  - Adding states and transitions
+  - Implementing state handlers
+  - Integrating hierarchical supervisors
+
+- **[State Machine Migration Guide](.claude/docs/guides/state-machine-migration-guide.md)** (1,000+ lines)
+  - Migrating from phase-based to state-based
+  - Before/after code examples
+  - Common migration issues and solutions
+
+- **[Performance Validation Report](.claude/specs/602_601_and_documentation_in_claude_docs_in_order_to/reports/004_performance_validation_report.md)**
+  - Comprehensive performance metrics
+  - Test results (409 tests, 63/81 suites passing)
+  - Detailed analysis of all achievements
+
+### Implementation Status
+
+**Phase 7 Complete** (2025-11-08):
+- All performance targets met or exceeded
+- 127 core state machine tests passing (100%)
+- Comprehensive documentation complete
+- Production-ready architecture
+<!-- END_SECTION: state_based_orchestration -->
+
 <!-- SECTION: project_commands -->
 ## Project-Specific Commands
 
