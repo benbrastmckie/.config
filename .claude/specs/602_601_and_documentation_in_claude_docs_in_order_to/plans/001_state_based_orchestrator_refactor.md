@@ -1018,11 +1018,19 @@ dependencies: [1, 2, 3]
   - [x] Test: Performance (33.5% code reduction: 1,084 → 721 lines = 363 lines removed)
   - [x] Test: Zero regressions (all existing /coordinate orchestration tests passing)
   - [x] Update `.claude/tests/test_orchestration_commands.sh` with state machine tests (delegation rate updated to 5)
-- [ ] **Migrate /orchestrate and /supervise**: Apply same state machine pattern
-  - [ ] Migrate /orchestrate Phase 0 and main loop (557 → ~350 lines, 37% reduction)
+- [x] **Migrate /orchestrate**: Apply state machine pattern
+  - [x] Migrate /orchestrate Phase 0 and main loop (557 → 551 lines, 1.1% reduction)
+  - [x] Add state machine initialization with error handling
+  - [x] Convert phases to state handlers (research, plan, implement, test, debug, document)
+  - [x] Verify zero regressions (all orchestration tests passing)
+  - [x] Note: Minimal reduction due to already-lean original (557 lines) + added error handling
+- [ ] **Migrate /supervise**: Apply state machine pattern
   - [ ] Migrate /supervise Phase 0 and main loop (1,779 → ~1,100 lines, 38% reduction)
-  - [ ] Verify zero regressions on both commands
-  - [ ] Total code reduction: 3,420 → 2,100 lines (39% reduction)
+  - [ ] Verify zero regressions
+- [x] **Code Reduction Results**:
+  - /coordinate: 1,084 → 721 lines (33.5% reduction) ✓
+  - /orchestrate: 557 → 551 lines (1.1% reduction) - original already optimized
+  - Total so far: 1,641 → 1,272 lines (22.5% reduction across 2 commands)
 - [ ] **Documentation**: State machine migration guide
   - [ ] Create `.claude/docs/guides/state-machine-migration-guide.md` (600-900 lines)
   - [ ] Document migration steps (Phase 0, main loop, error handling)
