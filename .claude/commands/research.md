@@ -222,7 +222,9 @@ done
 
 ```bash
 # Verify all paths are absolute
-for subtopic in "${!SUBTOPIC_REPORT_PATHS[@]}"; do
+# Use eval for associative array key expansion (safe: SUBTOPIC_REPORT_PATHS is known constant)
+# Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+for subtopic in $(eval echo "\${!SUBTOPIC_REPORT_PATHS[@]}"); do
   # Use string comparison instead of negated regex to avoid bash eval issues
   path="${SUBTOPIC_REPORT_PATHS[$subtopic]}"
   if [ "${path:0:1}" != "/" ]; then
@@ -346,7 +348,9 @@ declare -A VERIFIED_PATHS
 MISSING_REPORTS=()
 i=1
 
-for subtopic in "${!SUBTOPIC_REPORT_PATHS[@]}"; do
+# Use eval for associative array key expansion (safe: SUBTOPIC_REPORT_PATHS is known constant)
+# Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+for subtopic in $(eval echo "\${!SUBTOPIC_REPORT_PATHS[@]}"); do
   EXPECTED_PATH="${SUBTOPIC_REPORT_PATHS[$subtopic]}"
 
   # Concise verification format (single line on success)
@@ -461,7 +465,9 @@ echo "Extracting metadata for context reduction..."
 
 declare -A REPORT_METADATA
 
-for subtopic in "${!VERIFIED_PATHS[@]}"; do
+# Use eval for associative array key expansion (safe: VERIFIED_PATHS is known constant)
+# Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+for subtopic in $(eval echo "\${!VERIFIED_PATHS[@]}"); do
   REPORT_PATH="${VERIFIED_PATHS[$subtopic]}"
 
   # Extract metadata (95% context reduction: 5,000 → 250 tokens)
@@ -503,7 +509,9 @@ if should_synthesize_overview "$WORKFLOW_SCOPE" "$REPORT_COUNT"; then
 
   # Prepare subtopic paths array for agent
   SUBTOPIC_PATHS_ARRAY=()
-  for subtopic in "${!VERIFIED_PATHS[@]}"; do
+  # Use eval for associative array key expansion (safe: VERIFIED_PATHS is known constant)
+  # Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+  for subtopic in $(eval echo "\${!VERIFIED_PATHS[@]}"); do
     SUBTOPIC_PATHS_ARRAY+=("${VERIFIED_PATHS[$subtopic]}")
   done
 else

@@ -142,7 +142,9 @@ handle_state_error() {
 
   # Increment retry counter
   RETRY_COUNT_VAR="RETRY_COUNT_${current_state}"
-  RETRY_COUNT=${!RETRY_COUNT_VAR:-0}
+  # Use eval for indirect variable expansion (safe: variable name is constructed from known state)
+  # Alternative ${!VAR} syntax fails with history expansion errors
+  RETRY_COUNT=$(eval echo "\${${RETRY_COUNT_VAR}:-0}")
   RETRY_COUNT=$((RETRY_COUNT + 1))
   append_workflow_state "$RETRY_COUNT_VAR" "$RETRY_COUNT"
 
