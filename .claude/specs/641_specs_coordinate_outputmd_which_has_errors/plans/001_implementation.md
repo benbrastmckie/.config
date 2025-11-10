@@ -256,7 +256,7 @@ Testing:
 - [x] Checkpoint saved (if needed)
 - [x] Update this plan file with phase completion status
 
-### Phase 5: Add Regression Tests (Medium Priority)
+### Phase 5: Add Regression Tests (Medium Priority) [COMPLETED]
 dependencies: [1, 2, 3]
 
 **Objective**: Create automated tests to prevent future occurrences of these errors
@@ -264,15 +264,15 @@ dependencies: [1, 2, 3]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Create test_array_serialization.sh (test REPORT_PATHS persistence across blocks)
-- [ ] Create test_history_expansion.sh (test set +H prevents bad substitution)
-- [ ] Create test_cross_block_function_availability.sh (test emit_progress and display_brief_summary)
-- [ ] Add tests to run_all_tests.sh
-- [ ] Create test_coordinate_state_persistence.sh (integration test for full workflow)
-- [ ] Test with 2-topic research workflow (flat structure)
-- [ ] Test with 4-topic research workflow (hierarchical structure)
-- [ ] Document test coverage in test suite README
-- [ ] Verify all tests pass in CI environment
+- [x] Create test_array_serialization.sh (test REPORT_PATHS persistence across blocks)
+- [x] Create test_history_expansion.sh (test set +H prevents bad substitution)
+- [x] Create test_cross_block_function_availability.sh (test emit_progress and display_brief_summary)
+- [x] Add tests to run_all_tests.sh
+- [x] Create test_coordinate_state_persistence.sh (integration test for full workflow)
+- [x] Test with 2-topic research workflow (flat structure)
+- [x] Test with 4-topic research workflow (hierarchical structure)
+- [x] Document test coverage in test suite README
+- [x] Verify all tests pass in CI environment
 
 Testing:
 ```bash
@@ -293,12 +293,12 @@ cd /home/benjamin/.config/.claude/tests
 **Expected Duration**: 2.5 hours
 
 **Phase 5 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] All new tests passing (100% pass rate)
-- [ ] Integration with run_all_tests.sh complete
-- [ ] Git commit created: `test(641): add regression tests for bash block errors`
-- [ ] Checkpoint saved (if needed)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] All new tests passing (100% pass rate)
+- [x] Integration with run_all_tests.sh complete
+- [x] Git commit created: `test(641): add regression tests for bash block errors`
+- [x] Checkpoint saved (if needed)
+- [x] Update this plan file with phase completion status
 
 ## Testing Strategy
 
