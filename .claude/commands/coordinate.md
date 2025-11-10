@@ -102,15 +102,12 @@ fi
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
 
 if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
-  echo "ERROR: Workflow initialization failed"
-  exit 1
+  handle_state_error "Workflow initialization failed" 1
 fi
 
 # Validate TOPIC_PATH was set by initialization
 if [ -z "${TOPIC_PATH:-}" ]; then
-  echo "ERROR: TOPIC_PATH not set after workflow initialization"
-  echo "This indicates a bug in initialize_workflow_paths()"
-  exit 1
+  handle_state_error "TOPIC_PATH not set after workflow initialization (bug in initialize_workflow_paths)" 1
 fi
 
 # Save paths to workflow state
@@ -149,20 +146,64 @@ display_brief_summary() {
 }
 export -f display_brief_summary
 
-# Define error handling helper with state context
+# Define error handling helper with state context (five-component format)
 handle_state_error() {
   local error_message="$1"
   local current_state="${CURRENT_STATE:-unknown}"
   local exit_code="${2:-1}"
 
+  # Five-Component Error Message Format:
+  # 1. What failed
+  # 2. Expected state
+  # 3. Diagnostic commands
+  # 4. Context (workflow phase, state)
+  # 5. Recommended action
+
   echo ""
-  echo "ERROR in state '$current_state': $error_message"
+  echo "✗ ERROR in state '$current_state': $error_message"
   echo ""
-  echo "State Machine Context:"
-  echo "  Workflow: $WORKFLOW_DESCRIPTION"
-  echo "  Scope: $WORKFLOW_SCOPE"
-  echo "  Current State: $current_state"
-  echo "  Terminal State: $TERMINAL_STATE"
+
+  # Component 2: Expected state
+  echo "Expected behavior:"
+  case "$current_state" in
+    research)
+      echo "  - All research agents should complete successfully"
+      echo "  - All report files created in \$TOPIC_PATH/reports/"
+      ;;
+    plan)
+      echo "  - Implementation plan created successfully"
+      echo "  - Plan file created in \$TOPIC_PATH/plans/"
+      ;;
+    implement|test|debug|document)
+      echo "  - State '$current_state' should complete without errors"
+      echo "  - Workflow should transition to next valid state"
+      ;;
+    *)
+      echo "  - Workflow should progress to state: $current_state"
+      ;;
+  esac
+  echo ""
+
+  # Component 3: Diagnostic commands
+  echo "Diagnostic commands:"
+  echo "  # Check workflow state"
+  echo "  cat \"\$STATE_FILE\""
+  echo ""
+  echo "  # Check topic directory"
+  echo "  ls -la \"\${TOPIC_PATH:-<not set>}\""
+  echo ""
+  echo "  # Check library sourcing"
+  echo "  bash -n \"\${LIB_DIR}/workflow-state-machine.sh\""
+  echo "  bash -n \"\${LIB_DIR}/workflow-initialization.sh\""
+  echo ""
+
+  # Component 4: Context (workflow phase, state)
+  echo "Context:"
+  echo "  - Workflow: ${WORKFLOW_DESCRIPTION:-<not set>}"
+  echo "  - Scope: ${WORKFLOW_SCOPE:-<not set>}"
+  echo "  - Current State: $current_state"
+  echo "  - Terminal State: ${TERMINAL_STATE:-<not set>}"
+  echo "  - Topic Path: ${TOPIC_PATH:-<not set>}"
   echo ""
 
   # Save failed state to workflow state for retry
@@ -177,14 +218,22 @@ handle_state_error() {
   RETRY_COUNT=$((RETRY_COUNT + 1))
   append_workflow_state "$RETRY_COUNT_VAR" "$RETRY_COUNT"
 
+  # Component 5: Recommended action
   if [ $RETRY_COUNT -ge 2 ]; then
-    echo "Max retries (2) reached for state '$current_state'"
-    echo "Workflow cannot proceed automatically"
+    echo "Recommended action:"
+    echo "  - Max retries (2) reached for state '$current_state'"
+    echo "  - Review diagnostic output above"
+    echo "  - Fix underlying issue before retrying"
+    echo "  - Check logs: .claude/data/logs/adaptive-planning.log"
+    echo "  - Workflow cannot proceed automatically"
     echo ""
     exit $exit_code
   else
-    echo "Retry $RETRY_COUNT/2 available for state '$current_state'"
-    echo "Fix the issue and re-run: /coordinate \"$WORKFLOW_DESCRIPTION\""
+    echo "Recommended action:"
+    echo "  - Retry $RETRY_COUNT/2 available for state '$current_state'"
+    echo "  - Fix the issue identified in diagnostic output"
+    echo "  - Re-run: /coordinate \"${WORKFLOW_DESCRIPTION}\""
+    echo "  - State machine will resume from failed state"
     echo ""
     exit $exit_code
   fi
