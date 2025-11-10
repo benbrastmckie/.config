@@ -288,7 +288,10 @@ initialize_workflow_paths() {
   # Note: Arrays must be re-declared in calling script
   # Workaround: Use REPORT_PATHS_COUNT and individual REPORT_PATH_N variables
   export REPORT_PATHS_COUNT="${#report_paths[@]}"
-  for i in "${!report_paths[@]}"; do
+  # Use C-style for loop to avoid history expansion errors
+  # The ${!array[@]} syntax triggers "!: command not found" in some bash contexts
+  array_length=${#report_paths[@]}
+  for ((i=0; i<array_length; i++)); do
     export "REPORT_PATH_$i=${report_paths[$i]}"
   done
 
