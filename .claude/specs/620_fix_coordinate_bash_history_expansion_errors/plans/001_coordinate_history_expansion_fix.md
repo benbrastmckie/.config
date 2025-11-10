@@ -1,5 +1,81 @@
 # Fix coordinate.md Bash Execution Failures - Diagnostic & Resolution Plan
 
+## ⚠️ PLAN STATUS UPDATE (2025-11-09)
+
+**ORIGINAL PLAN STATUS**: This plan (001) was marked COMPLETED but **did not actually work in runtime**.
+
+**WHAT HAPPENED**: Plan 001 was completed based on code analysis alone without runtime validation. When `/coordinate` was actually executed, it failed with the exact same errors this plan was supposed to fix.
+
+**ACTUAL RESOLUTION**: Created [Plan 002](002_complete_diagnostic_and_fix.md) which took a diagnostic-first approach and successfully fixed **TWO distinct issues**:
+
+### Issue #1: Bash Tool Preprocessing Bug ✅ FIXED
+**Root Cause**: The Bash tool has a preprocessing limitation with the `!` operator (e.g., `if ! command`, `if [ ! -f file ]`), distinct from bash history expansion.
+
+**Solution Implemented**:
+- Removed ALL `!` operators from bash conditionals
+- Converted to positive conditionals: `if condition; then success else error`
+- Fixed 8 locations total:
+  - `.claude/lib/library-sourcing.sh` (1 location)
+  - `.claude/commands/coordinate.md` (7 locations)
+
+**Status**: ✅ Validated with runtime testing - No more "!: command not found" errors
+
+**Git Commits**: `b2ee1858`, `ed8889fd`
+
+### Issue #2: Argument Passing Problem ✅ FIXED (Architectural Solution)
+**Root Cause**: Bash tool cannot receive positional parameters (`$1`, `$2`). The AI executing the slash command must substitute argument values into the bash code, but instruction-based approaches failed.
+
+**Attempts Made**:
+1. Simple descriptive instruction - ❌ Failed
+2. Step-by-step procedural instruction - ❌ Failed
+3. STOP instruction with forced checkpoint - ❌ Failed (AI captured argument but didn't substitute)
+
+**Solution Implemented**: **Option B - Two-Step Execution Pattern**
+- **Part 1**: Tiny bash block where AI substitutes ONE placeholder
+  ```bash
+  echo "WORKFLOW_DESCRIPTION" > /tmp/coordinate_workflow_$$.txt
+  ```
+- **Part 2**: Main logic reads from file (no positional parameters)
+  ```bash
+  WORKFLOW_DESCRIPTION=$(cat /tmp/coordinate_workflow_$$.txt)
+  ```
+
+**Why This Works**: Architectural solution (file-based state) instead of instruction reliance. Minimal substitution burden, proven pattern.
+
+**Status**: ✅ Implemented, ⏳ Awaiting user validation
+
+**Git Commits**: `69132a53`, `bd2b8cc4`, `ad1d4542`, `5244170f`
+
+### Complete Fix Documentation
+- **Phase 0 Diagnosis**: [003_phase_0_diagnosis_summary.md](../reports/003_phase_0_diagnosis_summary.md)
+- **Phase 1-2 Implementation**: [004_implementation_summary.md](../reports/004_implementation_summary.md)
+- **Complete Fix Summary**: [005_complete_fix_summary.md](../reports/005_complete_fix_summary.md)
+- **Argument Passing Investigation**: [006_argument_passing_investigation.md](../reports/006_argument_passing_investigation.md)
+
+### Files Modified (Actual Implementation)
+1. `.claude/lib/library-sourcing.sh` - Removed `!` operator
+2. `.claude/commands/coordinate.md` - Removed 7 `!` operators, implemented two-step execution
+3. `.claude/commands/orchestrate.md` - Applied argument capture pattern
+4. `.claude/commands/supervise.md` - Applied argument capture pattern
+
+### Verification Status
+- ✅ Issue #1 (bash execution): Runtime tested and working
+- ⏳ Issue #2 (argument passing): Implemented, awaiting final user test
+
+### Key Learnings
+1. **Runtime testing is mandatory** - Code analysis alone is insufficient
+2. **Bash tool has limitations** - The `!` operator triggers preprocessing bugs
+3. **Instructions have limits** - Architectural solutions more reliable than behavioral instructions
+4. **Systematic diagnosis essential** - Testing 4 hypotheses identified actual root cause
+
+---
+
+## ORIGINAL PLAN (Below) - Historical Reference
+
+This plan was the initial approach. See Plan 002 and reports above for what actually worked.
+
+---
+
 ## Metadata
 - **Date**: 2025-11-09
 - **Feature**: Bug Fix - Mysterious "!: command not found" errors in coordinate.md execution
