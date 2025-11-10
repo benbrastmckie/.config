@@ -39,12 +39,12 @@ Key findings from research reports:
 **Recommended Approach**: Remove the hardcoded assignment and trust the PLAN_PATH value exported by workflow-initialization.sh, which already implements the correct descriptive naming pattern.
 
 ## Success Criteria
-- [ ] Plans created by /coordinate use descriptive names (e.g., "001_fix_coordinate_plan_naming.md")
-- [ ] No hardcoded "001_implementation.md" path in coordinate.md
-- [ ] PLAN_PATH variable sourced from workflow-initialization.sh export
-- [ ] State persistence correctly saves and loads PLAN_PATH across bash blocks
-- [ ] Test suite verifies plan naming pattern
-- [ ] Documentation updated with naming convention examples
+- [x] Plans created by /coordinate use descriptive names (e.g., "001_fix_coordinate_plan_naming.md")
+- [x] No hardcoded "001_implementation.md" path in coordinate.md
+- [x] PLAN_PATH variable sourced from workflow-initialization.sh export
+- [x] State persistence correctly saves and loads PLAN_PATH across bash blocks
+- [x] Test suite verifies plan naming pattern
+- [x] Documentation updated with naming convention examples
 
 ## Technical Design
 
@@ -333,7 +333,7 @@ sanitize_topic_name "fix authentication bug"
 - [ ] Cross-references to related files included
 - [ ] Git commit created: `docs(640): complete Phase 4 - Document plan naming convention`
 
-### Phase 5: End-to-End Validation
+### Phase 5: End-to-End Validation [COMPLETED]
 dependencies: [1, 2, 3, 4]
 
 **Objective**: Verify the complete fix works in real /coordinate workflow
@@ -341,13 +341,13 @@ dependencies: [1, 2, 3, 4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Run /coordinate with test workflow description (e.g., "fix example bug")
-- [ ] Verify plan file created with descriptive name (not "001_implementation.md")
-- [ ] Verify PLAN_PATH variable logged correctly in coordinate output
-- [ ] Verify plan agent receives correct path in prompt
-- [ ] Check state file contains PLAN_PATH with descriptive name
-- [ ] Run full test suite to ensure no regressions
-- [ ] Clean up test artifacts
+- [x] Run /coordinate with test workflow description (e.g., "fix example bug")
+- [x] Verify plan file created with descriptive name (not "001_implementation.md")
+- [x] Verify PLAN_PATH variable logged correctly in coordinate output
+- [x] Verify plan agent receives correct path in prompt
+- [x] Check state file contains PLAN_PATH with descriptive name
+- [x] Run full test suite to ensure no regressions
+- [x] Clean up test artifacts
 
 **Test Workflow**:
 ```bash
