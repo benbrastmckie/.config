@@ -20,6 +20,10 @@ YOU ARE THE WORKFLOW ORCHESTRATOR using state machine architecture for clean mul
 
 ## State Machine Initialization
 
+**ARGUMENT CAPTURE**: When you execute the bash block below, you MUST substitute `$1` with the actual workflow description argument that was passed to this /supervise command. The Bash tool cannot receive positional parameters directly, so you must replace all instances of `$1` in the bash code with the quoted argument string before calling the Bash tool.
+
+For example, if the command was `/supervise "implement user auth"`, replace `WORKFLOW_DESCRIPTION="$1"` with `WORKFLOW_DESCRIPTION="implement user auth"` in the bash code.
+
 USE the Bash tool:
 
 ```bash
