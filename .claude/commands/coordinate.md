@@ -106,6 +106,13 @@ if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
   exit 1
 fi
 
+# Validate TOPIC_PATH was set by initialization
+if [ -z "${TOPIC_PATH:-}" ]; then
+  echo "ERROR: TOPIC_PATH not set after workflow initialization"
+  echo "This indicates a bug in initialize_workflow_paths()"
+  exit 1
+fi
+
 # Save paths to workflow state
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
 
@@ -192,7 +199,7 @@ echo "State Machine Initialized:"
 echo "  Scope: $WORKFLOW_SCOPE"
 echo "  Current State: $CURRENT_STATE"
 echo "  Terminal State: $TERMINAL_STATE"
-echo "  Topic Path: $TOPIC_PATH"
+echo "  Topic Path: ${TOPIC_PATH:-<not set>}"
 echo ""
 ```
 
