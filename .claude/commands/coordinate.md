@@ -171,6 +171,7 @@ fi
 
 # Save paths to workflow state
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 
 # Save report paths array metadata to state
 # Bash arrays cannot be exported across subprocesses (subprocess isolation).
@@ -337,7 +338,7 @@ fi
 
 **EXECUTE IF** `USE_HIERARCHICAL_RESEARCH == "true"`:
 
-USE the Task tool to invoke research-sub-supervisor:
+**EXECUTE NOW**: USE the Task tool to invoke research-sub-supervisor:
 
 Task {
   subagent_type: "general-purpose"
@@ -669,21 +670,31 @@ done
 echo "Creating implementation plan with ${#REPORT_PATHS[@]} research reports..."
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke /plan command:
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
 
 Task {
   subagent_type: "general-purpose"
   description: "Create implementation plan guided by research reports"
   timeout: 300000
   prompt: "
-    Execute the /plan slash command with the following arguments:
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/plan-architect.md
 
-    /plan \"$WORKFLOW_DESCRIPTION\" $REPORT_ARGS
+    **Workflow-Specific Context**:
+    - Feature Description: $WORKFLOW_DESCRIPTION
+    - Plan Output Path: $PLAN_PATH (absolute, pre-calculated)
+    - Research Reports: ${REPORT_PATHS[@]}
+    - Project Standards: /home/benjamin/.config/CLAUDE.md
+    - Topic Directory: $TOPIC_PATH
 
-    This will create an implementation plan guided by the research reports.
-    The plan will be saved to: $TOPIC_PATH/plans/
+    **Key Requirements**:
+    1. Review research findings in provided reports
+    2. Create implementation plan following project standards
+    3. Save plan to EXACT path provided above
+    4. Include phase dependencies for parallel execution
 
-    Return: PLAN_CREATED: [absolute path to plan file]
+    Execute planning following all guidelines in behavioral file.
+    Return: PLAN_CREATED: $PLAN_PATH
   "
 }
 
@@ -717,8 +728,8 @@ fi
 
 emit_progress "2" "Plan creation invoked - awaiting completion"
 
-# Verify plan was created
-PLAN_PATH="${TOPIC_PATH}/plans/001_implementation.md"
+# PLAN_PATH should be loaded from workflow state (set by initialize_workflow_paths in bash block 1)
+echo "DEBUG: PLAN_PATH from state: $PLAN_PATH"
 
 # ===== MANDATORY VERIFICATION CHECKPOINT: Planning Phase =====
 echo ""
