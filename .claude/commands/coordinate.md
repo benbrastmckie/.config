@@ -14,41 +14,31 @@ YOU ARE EXECUTING AS the /coordinate command.
 
 ---
 
-## State Machine Initialization
+## State Machine Initialization - Part 1: Capture Workflow Description
 
-[EXECUTION-CRITICAL: Initialize state machine and workflow state persistence]
+[EXECUTION-CRITICAL: Two-step execution pattern to avoid positional parameter issues]
 
-## 🚨 STOP: Capture Workflow Description First
+**STEP 1**: The user invoked `/coordinate "<workflow-description>"`. You need to capture that description.
 
-**DO NOT proceed to the bash block until you complete this step.**
+In the **tiny bash block below**, replace `YOUR_WORKFLOW_DESCRIPTION_HERE` with the actual workflow description (keeping the quotes).
 
-The user invoked this command with a workflow description argument. You MUST identify and store it:
+**Example**: If user ran `/coordinate "research auth patterns"`, change:
+- FROM: `echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > /tmp/coordinate_workflow_$$.txt`
+- TO: `echo "research auth patterns" > /tmp/coordinate_workflow_$$.txt`
 
-**REQUIRED ACTION (do this RIGHT NOW before reading the bash code)**:
-1. Look at the user's command invocation (scroll up if needed)
-2. They ran: `/coordinate "<some workflow description text>"`
-3. Extract everything between the quotes after `/coordinate`
-4. Write it down explicitly: "The workflow description is: [the actual text]"
+Execute this **small** bash block with your substitution:
 
-**For example**: If the user ran `/coordinate "research authentication patterns"`, you must identify and explicitly state: "The workflow description is: research authentication patterns"
+```bash
+# SUBSTITUTE THE WORKFLOW DESCRIPTION IN THE LINE BELOW
+echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > /tmp/coordinate_workflow_$$.txt
+echo "✓ Workflow description captured"
+```
 
 ---
 
-## Now Execute Bash With Substitution
+## State Machine Initialization - Part 2: Main Logic
 
-In the bash block below, you will see this line:
-```bash
-WORKFLOW_DESCRIPTION="$1"
-```
-
-**You MUST replace `"$1"` with the workflow description you identified above** (in quotes).
-
-If the workflow description was "research authentication patterns", the line becomes:
-```bash
-WORKFLOW_DESCRIPTION="research authentication patterns"
-```
-
-Copy the entire bash block below, make this ONE change (replace `"$1"` with the actual description), then call the Bash tool with your modified code:
+Now execute the main initialization (this reads from the file created above):
 
 ```bash
 set +H  # Explicitly disable history expansion (workaround for Bash tool preprocessing issues)
@@ -63,8 +53,8 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
   export CLAUDE_PROJECT_DIR
 fi
 
-# Parse workflow description
-WORKFLOW_DESCRIPTION="$1"
+# Read workflow description from file (written in Part 1)
+WORKFLOW_DESCRIPTION=$(cat /tmp/coordinate_workflow_$$.txt 2>/dev/null || echo "")
 
 if [ -z "$WORKFLOW_DESCRIPTION" ]; then
   echo "ERROR: Workflow description required"
