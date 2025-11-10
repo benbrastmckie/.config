@@ -23,15 +23,17 @@ YOU ARE EXECUTING AS the /coordinate command.
 In the **tiny bash block below**, replace `YOUR_WORKFLOW_DESCRIPTION_HERE` with the actual workflow description (keeping the quotes).
 
 **Example**: If user ran `/coordinate "research auth patterns"`, change:
-- FROM: `echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > /tmp/coordinate_workflow_$$.txt`
-- TO: `echo "research auth patterns" > /tmp/coordinate_workflow_$$.txt`
+- FROM: `echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "${HOME}/.claude/tmp/coordinate_workflow_desc.txt"`
+- TO: `echo "research auth patterns" > "${HOME}/.claude/tmp/coordinate_workflow_desc.txt"`
 
 Execute this **small** bash block with your substitution:
 
 ```bash
 # SUBSTITUTE THE WORKFLOW DESCRIPTION IN THE LINE BELOW
-echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > /tmp/coordinate_workflow_$$.txt
-echo "✓ Workflow description captured"
+# CRITICAL: Replace YOUR_WORKFLOW_DESCRIPTION_HERE with the actual workflow description from the user
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
+echo "✓ Workflow description captured to ${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
 ```
 
 ---
@@ -54,15 +56,29 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
 fi
 
 # Read workflow description from file (written in Part 1)
-WORKFLOW_DESCRIPTION=$(cat /tmp/coordinate_workflow_$$.txt 2>/dev/null || echo "")
+# Use fixed filename (not $$ which changes per bash block)
+COORDINATE_DESC_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
 
-if [ -z "$WORKFLOW_DESCRIPTION" ]; then
-  echo "ERROR: Workflow description required"
+if [ -f "$COORDINATE_DESC_FILE" ]; then
+  WORKFLOW_DESCRIPTION=$(cat "$COORDINATE_DESC_FILE" 2>/dev/null || echo "")
+else
+  echo "ERROR: Workflow description file not found: $COORDINATE_DESC_FILE"
+  echo "This usually means Part 1 (workflow capture) didn't execute."
   echo "Usage: /coordinate \"<workflow description>\""
   exit 1
 fi
 
-export WORKFLOW_DESCRIPTION
+if [ -z "$WORKFLOW_DESCRIPTION" ]; then
+  echo "ERROR: Workflow description is empty"
+  echo "File exists but contains no content: $COORDINATE_DESC_FILE"
+  echo "Usage: /coordinate \"<workflow description>\""
+  exit 1
+fi
+
+# CRITICAL: Save workflow description BEFORE sourcing libraries
+# Libraries pre-initialize WORKFLOW_DESCRIPTION="" which overwrites parent value
+SAVED_WORKFLOW_DESC="$WORKFLOW_DESCRIPTION"
+export SAVED_WORKFLOW_DESC
 
 # Source state machine and state persistence libraries
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
@@ -83,16 +99,25 @@ else
 fi
 source "${LIB_DIR}/state-persistence.sh"
 
+# Generate unique workflow ID (timestamp-based for reproducibility)
+WORKFLOW_ID="coordinate_$(date +%s)"
+
 # Initialize workflow state (GitHub Actions pattern)
-STATE_FILE=$(init_workflow_state "coordinate_$$")
-trap "rm -f '$STATE_FILE'" EXIT
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 
-# Save workflow ID and description for subsequent blocks
-append_workflow_state "WORKFLOW_ID" "coordinate_$$"
-append_workflow_state "WORKFLOW_DESCRIPTION" "$WORKFLOW_DESCRIPTION"
+# Save workflow ID to file for subsequent blocks (use fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
 
-# Initialize state machine
-sm_init "$WORKFLOW_DESCRIPTION" "coordinate"
+# NOTE: NO trap handler here! Files must persist for subsequent bash blocks.
+# Cleanup will happen manually or via external cleanup script.
+
+# Save workflow ID and description to state for subsequent blocks
+append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
+append_workflow_state "WORKFLOW_DESCRIPTION" "$SAVED_WORKFLOW_DESC"
+
+# Initialize state machine (use SAVED value, not overwritten variable)
+sm_init "$SAVED_WORKFLOW_DESC" "coordinate"
 
 # Save state machine configuration to workflow state
 append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
@@ -147,6 +172,20 @@ fi
 # Save paths to workflow state
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
 
+# Save report paths array metadata to state
+# Required by reconstruct_report_paths_array() in subsequent bash blocks
+# (Export doesn't persist across blocks due to subprocess isolation)
+append_workflow_state "REPORT_PATHS_COUNT" "$REPORT_PATHS_COUNT"
+
+# Save individual report path variables
+# Using C-style loop to avoid history expansion issues with array expansion
+for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
+  var_name="REPORT_PATH_$i"
+  append_workflow_state "$var_name" "${!var_name}"
+done
+
+echo "Saved $REPORT_PATHS_COUNT report paths to workflow state"
+
 # Source verification helpers
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
   source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
@@ -177,6 +216,11 @@ display_brief_summary() {
       ;;
   esac
   echo ""
+
+  # Cleanup temp files now that workflow is complete
+  COORDINATE_DESC_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
+  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+  rm -f "$COORDINATE_DESC_FILE" "$COORDINATE_STATE_ID_FILE" 2>/dev/null || true
 }
 export -f display_brief_summary
 
@@ -185,6 +229,7 @@ export -f display_brief_summary
 
 # Transition to research state
 sm_transition "$STATE_RESEARCH"
+append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
 
 echo ""
 echo "State Machine Initialized:"
@@ -221,8 +266,16 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  echo "Cannot restore workflow state. This is a critical error."
+  exit 1
+fi
 
 # Check if we should skip this state (already at terminal)
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -346,7 +399,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 emit_progress "1" "Research phase completion - verifying results"
 
@@ -360,21 +421,45 @@ if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
   # Extract report paths from supervisor checkpoint
   SUPERVISOR_REPORTS=$(echo "$SUPERVISOR_CHECKPOINT" | jq -r '.aggregated_metadata.reports_created[]')
 
-  # Verify reports exist (supervisor should have created them)
+  # ===== MANDATORY VERIFICATION CHECKPOINT: Hierarchical Research =====
+  echo ""
+  echo "MANDATORY VERIFICATION: Hierarchical Research Artifacts"
+  echo "Checking $RESEARCH_COMPLEXITY supervisor-managed reports..."
+  echo ""
+
   VERIFICATION_FAILURES=0
   SUCCESSFUL_REPORT_PATHS=()
+  FAILED_REPORT_PATHS=()
 
   REPORT_INDEX=0
   for REPORT_PATH in $SUPERVISOR_REPORTS; do
     REPORT_INDEX=$((REPORT_INDEX + 1))
+    echo -n "  Report $REPORT_INDEX/$RESEARCH_COMPLEXITY: "
     if verify_file_created "$REPORT_PATH" "Supervisor report $REPORT_INDEX" "Hierarchical Research"; then
       SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
+      FILE_SIZE=$(stat -f%z "$REPORT_PATH" 2>/dev/null || stat -c%s "$REPORT_PATH" 2>/dev/null || echo "unknown")
+      echo " verified ($FILE_SIZE bytes)"
     else
       VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+      FAILED_REPORT_PATHS+=("$REPORT_PATH")
     fi
   done
 
+  echo ""
+  echo "Verification Summary:"
+  echo "  - Success: ${#SUCCESSFUL_REPORT_PATHS[@]}/$RESEARCH_COMPLEXITY reports"
+  echo "  - Failures: $VERIFICATION_FAILURES reports"
+
+  # Track verification metrics in workflow state
+  append_workflow_state "VERIFICATION_FAILURES_RESEARCH" "$VERIFICATION_FAILURES"
+  append_workflow_state "SUCCESSFUL_REPORTS_COUNT" "${#SUCCESSFUL_REPORT_PATHS[@]}"
+
   if [ $VERIFICATION_FAILURES -gt 0 ]; then
+    echo ""
+    echo "❌ CRITICAL: Research artifact verification failed"
+    echo "   $VERIFICATION_FAILURES supervisor reports not created at expected paths"
+    echo ""
+    # Note: Fallback mechanism will be added in Phase 2
     handle_state_error "Hierarchical research failed - $VERIFICATION_FAILURES supervisor reports missing" 1
   fi
 
@@ -387,28 +472,53 @@ if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
 else
   echo "Flat research coordination mode"
 
-  # Verify all research reports created (original flat pattern)
-  echo -n "Verifying research reports ($RESEARCH_COMPLEXITY): "
+  # ===== MANDATORY VERIFICATION CHECKPOINT: Flat Research =====
+  echo ""
+  echo "MANDATORY VERIFICATION: Research Phase Artifacts"
+  echo "Checking $RESEARCH_COMPLEXITY research reports..."
+  echo ""
 
   VERIFICATION_FAILURES=0
   SUCCESSFUL_REPORT_PATHS=()
+  FAILED_REPORT_PATHS=()
 
   for i in $(seq 1 $RESEARCH_COMPLEXITY); do
     REPORT_PATH="${REPORT_PATHS[$i-1]}"
+    echo -n "  Report $i/$RESEARCH_COMPLEXITY: "
     # Avoid ! operator due to Bash tool preprocessing issues
     if verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Research"; then
       SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
+      FILE_SIZE=$(stat -f%z "$REPORT_PATH" 2>/dev/null || stat -c%s "$REPORT_PATH" 2>/dev/null || echo "unknown")
+      echo " verified ($FILE_SIZE bytes)"
     else
       VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+      FAILED_REPORT_PATHS+=("$REPORT_PATH")
     fi
   done
 
+  echo ""
+  echo "Verification Summary:"
+  echo "  - Success: ${#SUCCESSFUL_REPORT_PATHS[@]}/$RESEARCH_COMPLEXITY reports"
+  echo "  - Failures: $VERIFICATION_FAILURES reports"
+
+  # Track verification metrics in workflow state
+  append_workflow_state "VERIFICATION_FAILURES_RESEARCH" "$VERIFICATION_FAILURES"
+  append_workflow_state "SUCCESSFUL_REPORTS_COUNT" "${#SUCCESSFUL_REPORT_PATHS[@]}"
+
   if [ $VERIFICATION_FAILURES -gt 0 ]; then
-    echo "❌ FAILED: $VERIFICATION_FAILURES research reports not created"
+    echo ""
+    echo "❌ CRITICAL: Research artifact verification failed"
+    echo "   $VERIFICATION_FAILURES reports not created at expected paths"
+    echo "   Failed paths:"
+    for FAILED_PATH in "${FAILED_REPORT_PATHS[@]}"; do
+      echo "     - $FAILED_PATH"
+    done
+    echo ""
+    # Note: Fallback mechanism will be added in Phase 2
     handle_state_error "Research phase failed verification - $VERIFICATION_FAILURES reports not created" 1
   fi
 
-  echo "✓ All reports verified"
+  echo "✓ All $RESEARCH_COMPLEXITY research reports verified successfully"
 fi
 
 # Save report paths to workflow state (same for both modes)
@@ -465,7 +575,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -534,7 +652,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 emit_progress "2" "Plan creation invoked - awaiting completion"
 
@@ -607,7 +733,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -667,7 +801,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 emit_progress "3" "Implementation complete - transitioning to Testing"
 
@@ -704,7 +846,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -784,7 +934,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -841,7 +999,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 emit_progress "5" "Debug analysis complete"
 
@@ -888,7 +1054,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -945,7 +1119,15 @@ source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-load_workflow_state "coordinate_$$"
+# Load workflow state (read WORKFLOW_ID from fixed location)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  load_workflow_state "$WORKFLOW_ID"
+else
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
+  exit 1
+fi
 
 emit_progress "6" "Documentation updated"
 
