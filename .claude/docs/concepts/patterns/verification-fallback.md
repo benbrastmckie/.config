@@ -15,6 +15,48 @@ The pattern consists of three components:
 2. **Verification Checkpoints**: MANDATORY VERIFICATION after each file creation
 3. **Fallback Mechanisms**: Create missing files if verification fails
 
+## Relationship to Fail-Fast Policy
+
+This pattern implements fail-fast error detection with agent responsibility enforcement, NOT fail-fast violation through silent error masking.
+
+**Detection (Fail-Fast Component)**:
+- MANDATORY VERIFICATION exposes file creation failures immediately
+- No silent continuation when expected files missing
+- Clear diagnostics showing exactly what failed and where
+- Workflow terminates with troubleshooting guidance
+
+**Agent Responsibility (Fail-Fast Enforcement)**:
+- Agents must create their own artifacts using Write tool
+- Orchestrator verifies existence (detection mechanism)
+- Orchestrator does NOT create placeholder files (would mask agent failures)
+- Missing files indicate agent behavioral issues requiring fixes
+
+**Recovery Through Failure (Fail-Fast Pattern)**:
+- Verification fails → Clear error with diagnostic steps
+- User reviews agent behavioral file and invocation
+- User fixes root cause (agent prompt, file path logic, etc.)
+- User re-runs workflow after fixing
+- Result: Actual problems solved, not masked
+
+**Why This Aligns With Fail-Fast Philosophy**:
+
+Fail-fast prohibits HIDING errors through silent fallbacks. This pattern EXPOSES errors immediately:
+- Agent completes → file missing → CRITICAL error logged
+- Workflow terminates immediately (not after all phases)
+- Clear troubleshooting steps guide user to root cause
+- No placeholder files masking agent failures
+- Result: 100% file creation through proper agent implementation, not orchestrator compensation
+
+**Critical Distinction** (Spec 057):
+- **Bootstrap fallbacks**: Silent function definitions masking configuration errors → PROHIBITED (violate fail-fast)
+- **Verification checkpoints**: Explicit error detection with workflow termination → REQUIRED (implement fail-fast)
+- **Placeholder file creation**: Orchestrator masking agent failures → PROHIBITED (violate fail-fast)
+- **Optimization fallbacks**: Performance cache degradation (state persistence) → ACCEPTABLE (optimization only)
+
+**Best Practice**: Verification checkpoints detect errors; agents fix their implementations. This maintains fail-fast integrity while ensuring complete artifact creation through proper design, not error masking.
+
+See [Fail-Fast Policy Analysis](../../../specs/634_001_coordinate_improvementsmd_implements/reports/001_fail_fast_policy_analysis.md) for complete taxonomy and case studies.
+
 ## Rationale
 
 ### Why This Pattern Matters

@@ -416,6 +416,51 @@ PLAN_METADATA=$(extract_plan_metadata "$PLAN_PATH")
 
 **Cross-Reference**: See [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) for complete implementation details.
 
+#### Relationship to Fail-Fast Policy
+
+Standard 0's Verification and Fallback Pattern implements fail-fast error detection, NOT fail-fast violation. The critical distinction lies in whether fallbacks DETECT errors or HIDE errors.
+
+**How Verification Fallbacks Implement Fail-Fast**:
+
+1. **Error Detection (Fail-Fast)**: MANDATORY VERIFICATION exposes file creation failures immediately
+   - File expected but missing → error detected instantly
+   - Clear diagnostics: "CRITICAL: Report missing at $EXPECTED_PATH"
+   - No silent continuation when files don't exist
+   - Workflow halts with clear troubleshooting guidance
+
+2. **Agent Responsibility**: Agents must create their own artifacts
+   - Orchestrator verifies file existence (detection)
+   - Orchestrator does NOT create placeholder files (masking)
+   - File creation failures expose agent behavioral issues
+   - Clear error messages guide debugging and fixes
+
+3. **Fail-Fast on Verification Failure**: Missing files terminate workflow immediately
+   - Verification detects missing artifacts
+   - Clear diagnostic output with troubleshooting steps
+   - No placeholder or template file creation
+   - User must fix agent or workflow before re-running
+
+**Critical Distinction** (Spec 057):
+- **Bootstrap fallbacks**: HIDE configuration errors → PROHIBITED (fail-fast violation)
+- **Verification fallbacks**: DETECT tool failures → REQUIRED for observability
+- **Orchestrator placeholder creation**: HIDES agent failures → PROHIBITED (fail-fast violation)
+- **Optimization fallbacks**: Performance caches only → ACCEPTABLE (optimization only)
+
+Verification checkpoints detect errors immediately (fail-fast principle). Placeholder file creation by orchestrators hides errors (fail-fast violation). The distinction is critical:
+
+- **Allowed**: `verify_file_created()` → Detect missing file → Fail with diagnostic
+- **Prohibited**: `cat > $MISSING_FILE <<EOF` → Create placeholder → Silent degradation
+
+**Performance Evidence**:
+- File creation rate: Verification ensures 100% agent compliance or immediate failure
+- Bootstrap reliability: 100% (fail-fast exposes configuration errors immediately)
+- Zero silent failures with verification checkpoints
+- Clear error messages reduce debugging time
+
+**Best Practice**: Orchestrators coordinate and verify; agents create artifacts. This separation of concerns maintains fail-fast integrity while ensuring complete artifact creation.
+
+See [Fail-Fast Policy Analysis](../../specs/634_001_coordinate_improvementsmd_implements/reports/001_fail_fast_policy_analysis.md) for complete fallback taxonomy and case studies.
+
 ### Standard 0.5: Subagent Prompt Enforcement
 
 **Extension of Standard 0 for Agent Definition Files**

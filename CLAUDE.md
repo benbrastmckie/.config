@@ -184,6 +184,13 @@ This configuration maintains a **clean-break, fail-fast evolution philosophy**:
 - Breaking changes break loudly with clear error messages
 - No silent fallbacks or graceful degradation
 
+**Critical Distinction - Fallback Types** (Spec 057):
+- **Bootstrap fallbacks**: PROHIBITED (hide configuration errors through silent function definitions)
+- **Verification fallbacks**: REQUIRED (detect tool/agent failures immediately, terminate with diagnostics)
+- **Optimization fallbacks**: ACCEPTABLE (performance caches only, graceful degradation for non-critical features)
+
+Standard 0 (Execution Enforcement) uses verification checkpoints to detect errors immediately, not hide them. Orchestrators verify file creation and fail-fast when agents don't create expected artifacts. See [Fail-Fast Policy Analysis](.claude/specs/634_001_coordinate_improvementsmd_implements/reports/001_fail_fast_policy_analysis.md) for complete taxonomy.
+
 **Avoid Cruft**:
 - No historical commentary in active files
 - No backward compatibility layers
