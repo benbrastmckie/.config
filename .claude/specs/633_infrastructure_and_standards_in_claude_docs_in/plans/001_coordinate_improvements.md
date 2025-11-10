@@ -335,15 +335,15 @@ CHECKPOINT: Planning phase complete
 - `.claude/commands/coordinate.md` (lines 619-626 plan verification, 960-978 debug verification, 1080-1090 document verification)
 
 **Tasks**:
-- [ ] Apply Phase 1 verification pattern to planning phase (after /plan invocation)
-- [ ] Apply Phase 2 fallback pattern to planning phase
-- [ ] Apply Phase 1 verification pattern to debug phase (after /debug invocation)
-- [ ] Apply Phase 2 fallback pattern to debug phase
-- [ ] Apply Phase 1 verification pattern to documentation phase (after /document invocation)
-- [ ] Create phase-specific fallback templates (plan fallback, debug fallback, doc fallback)
-- [ ] Test verification + fallback for each phase independently
-- [ ] Verify no conflicts with existing error handling
-- [ ] Update checkpoint reporting to include verification metrics for all phases
+- [x] Apply Phase 1 verification pattern to planning phase (after /plan invocation)
+- [x] Apply Phase 2 fallback pattern to planning phase
+- [x] Apply Phase 1 verification pattern to debug phase (after /debug invocation)
+- [x] Apply Phase 2 fallback pattern to debug phase
+- [ ] Apply Phase 1 verification pattern to documentation phase (after /document invocation) - Skipped (see notes)
+- [x] Create phase-specific fallback templates (plan fallback, debug fallback)
+- [x] Test verification + fallback for each phase independently
+- [x] Verify no conflicts with existing error handling
+- [ ] Update checkpoint reporting to include verification metrics for all phases - Partial (research + planning have full checkpoints)
 
 **Phase-Specific Fallback Templates**:
 
