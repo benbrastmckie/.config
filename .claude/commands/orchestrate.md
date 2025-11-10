@@ -31,6 +31,12 @@ YOU MUST orchestrate a 7-phase development workflow by delegating to specialized
 
 ## State Machine Initialization
 
+**ARGUMENT CAPTURE**: When you execute the bash block below, you MUST substitute `$1`, `$2`, `$3`, `$4` with the actual arguments passed to this /orchestrate command. The Bash tool cannot receive positional parameters directly, so you must replace all instances in the bash code with the quoted argument strings before calling the Bash tool.
+
+For example, if the command was `/orchestrate "research auth" --parallel`, replace:
+- `WORKFLOW_DESCRIPTION="$1"` with `WORKFLOW_DESCRIPTION="research auth"`
+- `WORKFLOW_OPTIONS="$2 $3 $4"` with `WORKFLOW_OPTIONS="--parallel  "`
+
 USE the Bash tool:
 
 ```bash
