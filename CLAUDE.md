@@ -384,6 +384,13 @@ State-based orchestration uses explicit state machines with validated transition
 
 ### Core Components
 
+**0. Bash Block Execution Model** ([Documentation](.claude/docs/concepts/bash-block-execution-model.md))
+- Subprocess isolation constraint: each bash block runs in separate process
+- Validated patterns for cross-block state management
+- Fixed semantic filenames, save-before-source pattern, library re-sourcing
+- Anti-patterns to avoid ($$-based IDs, export assumptions, premature traps)
+- Discovered and validated through Specs 620/630 (100% test pass rate)
+
 **1. State Machine Library** (`.claude/lib/workflow-state-machine.sh`)
 - 8 explicit states: initialize, research, plan, implement, test, debug, document, complete
 - Transition table validation (prevents invalid state changes)

@@ -421,16 +421,16 @@ research reports and workflow requirements.
 - `.claude/commands/coordinate.md` (optional: consolidate REPORT_PATHS reconstruction)
 
 **Tasks**:
-- [ ] Create `.claude/docs/concepts/bash-block-execution-model.md` with comprehensive documentation
-- [ ] Document subprocess isolation constraint (validation test demonstrating isolation)
-- [ ] Document what persists (files) vs what doesn't (exports, functions, $$)
-- [ ] Document recommended patterns (fixed filenames, state files, timestamp IDs)
-- [ ] Document anti-patterns ($$ for cross-block state, traps in early blocks)
-- [ ] Add cross-reference from Command Development Guide
-- [ ] Add cross-reference from Orchestration Best Practices Guide
-- [ ] Reference from CLAUDE.md (State-Based Orchestration Architecture section)
-- [ ] Optional: Consolidate REPORT_PATHS reconstruction (3 locations → 1 function in workflow-initialization.sh)
-- [ ] Run validation scripts to confirm no regressions
+- [x] Create `.claude/docs/concepts/bash-block-execution-model.md` with comprehensive documentation
+- [x] Document subprocess isolation constraint (validation test demonstrating isolation)
+- [x] Document what persists (files) vs what doesn't (exports, functions, $$)
+- [x] Document recommended patterns (fixed filenames, state files, timestamp IDs)
+- [x] Document anti-patterns ($$ for cross-block state, traps in early blocks)
+- [x] Add cross-reference from Command Development Guide
+- [x] Add cross-reference from Orchestration Best Practices Guide
+- [x] Reference from CLAUDE.md (State-Based Orchestration Architecture section)
+- [ ] Optional: Consolidate REPORT_PATHS reconstruction (3 locations → 1 function in workflow-initialization.sh) - Deferred (not needed for reliability goals)
+- [x] Run validation scripts to confirm no regressions
 
 **Bash Block Execution Model Documentation Structure**:
 ```markdown
