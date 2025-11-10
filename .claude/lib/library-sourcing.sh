@@ -87,14 +87,16 @@ source_required_libraries() {
   for lib in "${libraries[@]}"; do
     local lib_path="${claude_root}/lib/${lib}"
 
-    if [[ ! -f "$lib_path" ]]; then
+    if [[ -f "$lib_path" ]]; then
+      # Avoid '!' operator due to Bash tool preprocessing issues
+      # shellcheck disable=SC1090
+      if source "$lib_path" 2>/dev/null; then
+        : # Success - continue to next library
+      else
+        failed_libraries+=("$lib (source failed)")
+      fi
+    else
       failed_libraries+=("$lib (expected at: $lib_path)")
-      continue
-    fi
-
-    # shellcheck disable=SC1090
-    if ! source "$lib_path" 2>/dev/null; then
-      failed_libraries+=("$lib (source failed)")
     fi
   done
 

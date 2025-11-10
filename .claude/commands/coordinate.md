@@ -21,6 +21,9 @@ YOU ARE EXECUTING AS the /coordinate command.
 USE the Bash tool to execute state machine initialization:
 
 ```bash
+set +H  # Explicitly disable history expansion (workaround for Bash tool preprocessing issues)
+set -euo pipefail  # Fail-fast error handling
+
 echo "=== State Machine Workflow Orchestration ==="
 echo ""
 
