@@ -18,31 +18,37 @@ YOU ARE EXECUTING AS the /coordinate command.
 
 [EXECUTION-CRITICAL: Initialize state machine and workflow state persistence]
 
-## CRITICAL: Argument Substitution Required
+## 🚨 STOP: Capture Workflow Description First
 
-**BEFORE calling the Bash tool**, you MUST perform argument substitution:
+**DO NOT proceed to the bash block until you complete this step.**
 
-**Step 1**: Identify the workflow description argument from the user's command
-- The user invoked: `/coordinate "<workflow-description>"`
-- Extract the `<workflow-description>` text
+The user invoked this command with a workflow description argument. You MUST identify and store it:
 
-**Step 2**: In the bash block below, find this line:
+**REQUIRED ACTION (do this RIGHT NOW before reading the bash code)**:
+1. Look at the user's command invocation (scroll up if needed)
+2. They ran: `/coordinate "<some workflow description text>"`
+3. Extract everything between the quotes after `/coordinate`
+4. Write it down explicitly: "The workflow description is: [the actual text]"
+
+**For example**: If the user ran `/coordinate "research authentication patterns"`, you must identify and explicitly state: "The workflow description is: research authentication patterns"
+
+---
+
+## Now Execute Bash With Substitution
+
+In the bash block below, you will see this line:
 ```bash
 WORKFLOW_DESCRIPTION="$1"
 ```
 
-**Step 3**: Replace `"$1"` with the actual quoted workflow description:
+**You MUST replace `"$1"` with the workflow description you identified above** (in quotes).
+
+If the workflow description was "research authentication patterns", the line becomes:
 ```bash
-WORKFLOW_DESCRIPTION="<actual workflow description goes here>"
+WORKFLOW_DESCRIPTION="research authentication patterns"
 ```
 
-**Example**: If user ran `/coordinate "research authentication patterns"`, change:
-- FROM: `WORKFLOW_DESCRIPTION="$1"`
-- TO: `WORKFLOW_DESCRIPTION="research authentication patterns"`
-
-**Why**: The Bash tool cannot receive positional parameters (`$1`, `$2`, etc.) directly. You must do the text substitution yourself before calling the Bash tool.
-
-**Now execute** the bash block WITH THE SUBSTITUTION APPLIED:
+Copy the entire bash block below, make this ONE change (replace `"$1"` with the actual description), then call the Bash tool with your modified code:
 
 ```bash
 set +H  # Explicitly disable history expansion (workaround for Bash tool preprocessing issues)
