@@ -372,18 +372,18 @@ if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
   VERIFICATION_FAILURES=0
   SUCCESSFUL_REPORT_PATHS=()
 
+  REPORT_INDEX=0
   for REPORT_PATH in $SUPERVISOR_REPORTS; do
-    if [ -f "$REPORT_PATH" ]; then
+    REPORT_INDEX=$((REPORT_INDEX + 1))
+    if verify_file_created "$REPORT_PATH" "Supervisor report $REPORT_INDEX" "Hierarchical Research"; then
       SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
     else
-      echo "❌ Report not found: $REPORT_PATH"
       VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
     fi
   done
 
   if [ $VERIFICATION_FAILURES -gt 0 ]; then
-    echo "❌ FAILED: $VERIFICATION_FAILURES reports from supervisor not found"
-    handle_state_error "Hierarchical research failed - supervisor reports missing" 1
+    handle_state_error "Hierarchical research failed - $VERIFICATION_FAILURES supervisor reports missing" 1
   fi
 
   # Display supervisor summary (95% context reduction benefit)
