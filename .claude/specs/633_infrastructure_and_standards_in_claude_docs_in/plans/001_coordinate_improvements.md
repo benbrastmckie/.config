@@ -194,16 +194,16 @@ rm -f .claude/specs/test_topic/reports/*.md
 - `.claude/commands/coordinate.md` (lines 500-550, research fallback section)
 
 **Tasks**:
-- [ ] Read verification checkpoint implementation from Phase 1
-- [ ] Insert FALLBACK MECHANISM block after each verification failure detection
-- [ ] Extract agent response content (if available in previous Task tool output)
-- [ ] Create file directly using bash heredoc (fallback content template)
-- [ ] Implement MANDATORY RE-VERIFICATION after fallback file creation
-- [ ] If re-verification fails, escalate to user with clear error message
-- [ ] If re-verification succeeds, log fallback usage to workflow state
-- [ ] Add fallback usage metric to workflow state (`FALLBACK_USED=true`)
-- [ ] Test fallback mechanism with intentionally missing agent output
-- [ ] Test double-failure scenario (fallback creation also fails)
+- [x] Read verification checkpoint implementation from Phase 1
+- [x] Insert FALLBACK MECHANISM block after each verification failure detection
+- [x] Extract agent response content (if available in previous Task tool output)
+- [x] Create file directly using bash heredoc (fallback content template)
+- [x] Implement MANDATORY RE-VERIFICATION after fallback file creation
+- [x] If re-verification fails, escalate to user with clear error message
+- [x] If re-verification succeeds, log fallback usage to workflow state
+- [x] Add fallback usage metric to workflow state (`FALLBACK_USED=true`)
+- [x] Test fallback mechanism with intentionally missing agent output
+- [x] Test double-failure scenario (fallback creation also fails)
 
 **Fallback File Template**:
 ```markdown

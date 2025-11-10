@@ -454,13 +454,88 @@ if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
   append_workflow_state "VERIFICATION_FAILURES_RESEARCH" "$VERIFICATION_FAILURES"
   append_workflow_state "SUCCESSFUL_REPORTS_COUNT" "${#SUCCESSFUL_REPORT_PATHS[@]}"
 
+  # ===== FALLBACK MECHANISM: Create Missing Reports =====
   if [ $VERIFICATION_FAILURES -gt 0 ]; then
     echo ""
     echo "❌ CRITICAL: Research artifact verification failed"
     echo "   $VERIFICATION_FAILURES supervisor reports not created at expected paths"
     echo ""
-    # Note: Fallback mechanism will be added in Phase 2
-    handle_state_error "Hierarchical research failed - $VERIFICATION_FAILURES supervisor reports missing" 1
+    echo "--- FALLBACK MECHANISM: Research Report Creation ---"
+    echo "⚠️  Supervisor agents did not create expected files"
+    echo "Creating fallback report files with template content..."
+    echo ""
+
+    FALLBACK_USED=false
+    FALLBACK_FAILURES=0
+
+    for FAILED_PATH in "${FAILED_REPORT_PATHS[@]}"; do
+      echo "Creating fallback report: $FAILED_PATH"
+
+      # Ensure directory exists
+      REPORT_DIR=$(dirname "$FAILED_PATH")
+      mkdir -p "$REPORT_DIR"
+
+      # Create fallback file with template content
+      cat > "$FAILED_PATH" <<'FALLBACK_EOF'
+# Research Report (Fallback Creation)
+
+## Metadata
+- **Created via**: Fallback mechanism (supervisor agent did not create file)
+- **Timestamp**: $(date -Iseconds)
+- **Workflow ID**: ${WORKFLOW_ID}
+- **Expected path**: ${FAILED_PATH}
+
+## Agent Response
+
+[No agent response captured - file was not created by supervisor]
+
+## Notes
+
+This file was created by the /coordinate command's fallback mechanism because
+the research-sub-supervisor agent did not create the expected file.
+
+**Action Required**:
+1. Review supervisor checkpoint data for aggregated metadata
+2. Manually populate research findings if needed
+3. Or re-run research phase with corrected agent behavioral file
+
+## Troubleshooting
+
+The supervisor may have failed to create this file due to:
+- Agent behavioral file issues (check .claude/agents/research-sub-supervisor.md)
+- File path calculation errors
+- Agent did not receive clear file creation instructions
+
+Check coordinator logs and agent output for more details.
+FALLBACK_EOF
+
+      # MANDATORY RE-VERIFICATION
+      echo -n "  Re-verification: "
+      if verify_file_created "$FAILED_PATH" "Fallback report" "Hierarchical Research Fallback"; then
+        echo " success ($FAILED_PATH)"
+        SUCCESSFUL_REPORT_PATHS+=("$FAILED_PATH")
+        FALLBACK_USED=true
+      else
+        echo ""
+        echo "  ❌ FALLBACK FAILURE: Could not create file at $FAILED_PATH"
+        FALLBACK_FAILURES=$((FALLBACK_FAILURES + 1))
+      fi
+    done
+
+    echo ""
+    if [ $FALLBACK_FAILURES -gt 0 ]; then
+      echo "❌ ESCALATION: Fallback mechanism failed for $FALLBACK_FAILURES files"
+      echo "   This indicates a critical filesystem or permissions issue"
+      echo "   Manual intervention required"
+      append_workflow_state "FALLBACK_USED" "failed"
+      append_workflow_state "FALLBACK_FAILURES" "$FALLBACK_FAILURES"
+      handle_state_error "Fallback mechanism failed - cannot create files" 1
+    else
+      echo "✓ Fallback mechanism succeeded: Created ${#FAILED_REPORT_PATHS[@]} fallback reports"
+      echo "⚠️  Note: Fallback reports contain template content only"
+      append_workflow_state "FALLBACK_USED" "true"
+      append_workflow_state "FALLBACK_COUNT" "${#FAILED_REPORT_PATHS[@]}"
+    fi
   fi
 
   # Display supervisor summary (95% context reduction benefit)
@@ -505,6 +580,7 @@ else
   append_workflow_state "VERIFICATION_FAILURES_RESEARCH" "$VERIFICATION_FAILURES"
   append_workflow_state "SUCCESSFUL_REPORTS_COUNT" "${#SUCCESSFUL_REPORT_PATHS[@]}"
 
+  # ===== FALLBACK MECHANISM: Create Missing Reports =====
   if [ $VERIFICATION_FAILURES -gt 0 ]; then
     echo ""
     echo "❌ CRITICAL: Research artifact verification failed"
@@ -514,11 +590,94 @@ else
       echo "     - $FAILED_PATH"
     done
     echo ""
-    # Note: Fallback mechanism will be added in Phase 2
-    handle_state_error "Research phase failed verification - $VERIFICATION_FAILURES reports not created" 1
-  fi
+    echo "--- FALLBACK MECHANISM: Research Report Creation ---"
+    echo "⚠️  Research agents did not create expected files"
+    echo "Creating fallback report files with template content..."
+    echo ""
 
-  echo "✓ All $RESEARCH_COMPLEXITY research reports verified successfully"
+    FALLBACK_USED=false
+    FALLBACK_FAILURES=0
+
+    for FAILED_PATH in "${FAILED_REPORT_PATHS[@]}"; do
+      echo "Creating fallback report: $FAILED_PATH"
+
+      # Ensure directory exists
+      REPORT_DIR=$(dirname "$FAILED_PATH")
+      mkdir -p "$REPORT_DIR"
+
+      # Create fallback file with template content
+      cat > "$FAILED_PATH" <<FALLBACK_EOF
+# Research Report (Fallback Creation)
+
+## Metadata
+- **Created via**: Fallback mechanism (research agent did not create file)
+- **Timestamp**: $(date -Iseconds)
+- **Workflow ID**: ${WORKFLOW_ID}
+- **Expected path**: ${FAILED_PATH}
+- **Workflow Description**: ${WORKFLOW_DESCRIPTION}
+
+## Agent Response
+
+[No agent response captured - file was not created by research-specialist agent]
+
+## Notes
+
+This file was created by the /coordinate command's fallback mechanism because
+the research-specialist agent did not create the expected file.
+
+**Action Required**:
+1. Review agent output logs for error messages
+2. Manually populate research findings based on workflow description
+3. Or re-run research phase with corrected agent behavioral file
+
+## Research Topic
+
+Based on workflow description: "${WORKFLOW_DESCRIPTION}"
+
+[Manual research required - populate findings here]
+
+## Troubleshooting
+
+The research agent may have failed to create this file due to:
+- Agent behavioral file issues (check .claude/agents/research-specialist.md)
+- File path calculation errors
+- Agent did not receive clear file creation instructions
+- Agent invocation timed out or encountered errors
+
+Check coordinator logs and previous agent Task tool outputs for details.
+FALLBACK_EOF
+
+      # MANDATORY RE-VERIFICATION
+      echo -n "  Re-verification: "
+      if verify_file_created "$FAILED_PATH" "Fallback report" "Flat Research Fallback"; then
+        echo " success ($FAILED_PATH)"
+        SUCCESSFUL_REPORT_PATHS+=("$FAILED_PATH")
+        FALLBACK_USED=true
+      else
+        echo ""
+        echo "  ❌ FALLBACK FAILURE: Could not create file at $FAILED_PATH"
+        FALLBACK_FAILURES=$((FALLBACK_FAILURES + 1))
+      fi
+    done
+
+    echo ""
+    if [ $FALLBACK_FAILURES -gt 0 ]; then
+      echo "❌ ESCALATION: Fallback mechanism failed for $FALLBACK_FAILURES files"
+      echo "   This indicates a critical filesystem or permissions issue"
+      echo "   Manual intervention required"
+      append_workflow_state "FALLBACK_USED" "failed"
+      append_workflow_state "FALLBACK_FAILURES" "$FALLBACK_FAILURES"
+      handle_state_error "Fallback mechanism failed - cannot create files" 1
+    else
+      echo "✓ Fallback mechanism succeeded: Created ${#FAILED_REPORT_PATHS[@]} fallback reports"
+      echo "⚠️  Note: Fallback reports contain template content only"
+      echo "⚠️  Manual population of research findings required"
+      append_workflow_state "FALLBACK_USED" "true"
+      append_workflow_state "FALLBACK_COUNT" "${#FAILED_REPORT_PATHS[@]}"
+    fi
+  else
+    echo "✓ All $RESEARCH_COMPLEXITY research reports verified successfully"
+  fi
 fi
 
 # Save report paths to workflow state (same for both modes)
