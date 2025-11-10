@@ -18,6 +18,10 @@ YOU ARE EXECUTING AS the /coordinate command.
 
 [EXECUTION-CRITICAL: Initialize state machine and workflow state persistence]
 
+**ARGUMENT CAPTURE**: When you execute the bash block below, you MUST substitute `$1` with the actual workflow description argument that was passed to this /coordinate command. The Bash tool cannot receive positional parameters directly, so you must replace all instances of `$1` in the bash code with the quoted argument string before calling the Bash tool.
+
+For example, if the command was `/coordinate "research authentication patterns"`, replace `WORKFLOW_DESCRIPTION="$1"` with `WORKFLOW_DESCRIPTION="research authentication patterns"` in the bash code.
+
 USE the Bash tool to execute state machine initialization:
 
 ```bash
