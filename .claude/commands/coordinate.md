@@ -207,7 +207,8 @@ echo ""
 VERIFICATION_FAILURES=0
 
 # Verify REPORT_PATHS_COUNT was saved
-if grep -q "^REPORT_PATHS_COUNT=" "$STATE_FILE" 2>/dev/null; then
+# State file format: "export VAR="value"" (per state-persistence.sh)
+if grep -q "^export REPORT_PATHS_COUNT=" "$STATE_FILE" 2>/dev/null; then
   echo "  ✓ REPORT_PATHS_COUNT variable saved"
 else
   echo "  ❌ REPORT_PATHS_COUNT variable missing"
@@ -215,9 +216,10 @@ else
 fi
 
 # Verify all REPORT_PATH_N variables were saved
+# State file format: "export VAR="value"" (per state-persistence.sh)
 for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
   var_name="REPORT_PATH_$i"
-  if grep -q "^${var_name}=" "$STATE_FILE" 2>/dev/null; then
+  if grep -q "^export ${var_name}=" "$STATE_FILE" 2>/dev/null; then
     echo "  ✓ $var_name saved"
   else
     echo "  ❌ $var_name missing"

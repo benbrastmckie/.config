@@ -801,7 +801,45 @@ Artifacts created:
 
 ### Common Issues
 
-#### Issue 1: Agent Failed to Create Expected File
+#### Issue 1: Verification Checkpoint Failures
+
+**Symptom**: "CRITICAL: State file verification failed - variables not written"
+
+**Root Cause Check**:
+1. Inspect state file: `cat "$STATE_FILE"`
+2. Check if variables present with `export` prefix
+3. If variables exist → grep pattern issue (see Spec 644)
+4. If variables missing → actual write failure
+
+**Fixed Issues**:
+- **Spec 644** (2025-11-10): Grep pattern didn't match export format. Variables were correctly written as `export VAR="value"` but verification checked for `^VAR=` pattern, causing false negatives.
+
+**Solution if variables exist**:
+The variables are correctly written. This is a verification pattern bug. Update grep patterns to include `export` prefix:
+
+```bash
+# Correct pattern
+if grep -q "^export VARIABLE_NAME=" "$STATE_FILE"; then
+  echo "✓ Variable verified"
+fi
+```
+
+**Solution if variables truly missing**:
+```bash
+# Check append_workflow_state function
+source .claude/lib/state-persistence.sh
+type append_workflow_state  # Should show function definition
+
+# Check file permissions
+ls -la "$STATE_FILE"
+df -h "$STATE_FILE"  # Check disk space
+```
+
+See [Verification Checkpoint Pattern](../architecture/coordinate-state-management.md#verification-checkpoint-pattern) for complete documentation.
+
+---
+
+#### Issue 2: Agent Failed to Create Expected File
 
 **Symptoms**:
 - Error message: "Agent failed to create expected file"
