@@ -13,10 +13,12 @@
 3. [Stateless Recalculation Pattern](#stateless-recalculation-pattern)
 4. [Rejected Alternatives](#rejected-alternatives)
 5. [Decision Matrix](#decision-matrix)
-6. [Troubleshooting Guide](#troubleshooting-guide)
-7. [FAQ](#faq)
-8. [Historical Context](#historical-context)
-9. [References](#references)
+6. [Selective State Persistence](#selective-state-persistence)
+7. [Verification Checkpoint Pattern](#verification-checkpoint-pattern)
+8. [Troubleshooting Guide](#troubleshooting-guide)
+9. [FAQ](#faq)
+10. [Historical Context](#historical-context)
+11. [References](#references)
 
 ## Overview
 
@@ -717,6 +719,109 @@ The test suite (`.claude/tests/test_state_persistence.sh`) validates:
 
 **Test Results**: 18/18 tests passing (100% pass rate)
 
+## Verification Checkpoint Pattern
+
+State file verification must account for export format used by `state-persistence.sh`.
+
+### State File Format
+
+The `append_workflow_state()` function writes variables in export format for proper bash sourcing:
+
+```bash
+# From .claude/lib/state-persistence.sh:216
+echo "export ${key}=\"${value}\"" >> "$STATE_FILE"
+```
+
+**Example state file**:
+```bash
+export CLAUDE_PROJECT_DIR="/path/to/project"
+export WORKFLOW_ID="coordinate_1762816945"
+export REPORT_PATHS_COUNT="4"
+export REPORT_PATH_0="/path/to/report1.md"
+```
+
+### Verification Pattern (Correct)
+
+Grep patterns must include the `export` prefix:
+
+```bash
+# State file format: "export VAR="value"" (per state-persistence.sh)
+if grep -q "^export VARIABLE_NAME=" "$STATE_FILE" 2>/dev/null; then
+  echo "✓ Variable verified"
+else
+  echo "✗ Variable missing"
+  exit 1
+fi
+```
+
+### Anti-Pattern (Incorrect)
+
+This pattern will NOT match the export format, causing false negatives:
+
+```bash
+# DON'T: This pattern won't match export format
+if grep -q "^VARIABLE_NAME=" "$STATE_FILE" 2>/dev/null; then
+  echo "✓ Variable verified"  # Will never execute
+fi
+```
+
+**Why it fails**:
+- Pattern expects: `VARIABLE_NAME="value"`
+- Actual format: `export VARIABLE_NAME="value"`
+- The `^` anchor requires match at start of line
+- `export ` prefix prevents match
+
+### Historical Bug
+
+**Spec 644** (2025-11-10): Fixed verification checkpoint in coordinate.md using incorrect pattern.
+
+**Issue**: Grep patterns searched for `^REPORT_PATHS_COUNT=` but state file contained `export REPORT_PATHS_COUNT="4"`, causing verification to fail despite variables being correctly written.
+
+**Impact**: Critical (blocked all coordinate workflows during initialization)
+
+**Fix**: Added `export ` prefix to grep patterns (2 locations in coordinate.md)
+
+**Test Coverage**: Added `.claude/tests/test_coordinate_verification.sh` with 3 unit tests to prevent regression.
+
+### Best Practices
+
+1. **Always include export prefix** in grep patterns when verifying state file variables
+2. **Add clarifying comments** documenting expected format (reference state-persistence.sh)
+3. **Test verification logic** to catch false negatives/positives
+4. **Check actual state file** during debugging (don't trust error messages blindly)
+
+### Example Usage
+
+**Verifying single variable**:
+```bash
+# State file format: "export VAR="value"" (per state-persistence.sh)
+if grep -q "^export WORKFLOW_ID=" "$STATE_FILE" 2>/dev/null; then
+  echo "✓ WORKFLOW_ID verified"
+fi
+```
+
+**Verifying array of variables**:
+```bash
+# State file format: "export VAR="value"" (per state-persistence.sh)
+for ((i=0; i<COUNT; i++)); do
+  var_name="REPORT_PATH_$i"
+  if grep -q "^export ${var_name}=" "$STATE_FILE" 2>/dev/null; then
+    echo "✓ $var_name verified"
+  fi
+done
+```
+
+### Test Suite
+
+Verification checkpoint logic is tested in `.claude/tests/test_coordinate_verification.sh`:
+
+1. **Test 1**: State file format matches `append_workflow_state` output
+2. **Test 2**: Verification pattern matches actual state file
+3. **Test 3**: False negative prevention (regression test for Spec 644 bug)
+4. **Test 4**: Integration test (manual, requires full coordinate workflow)
+
+**Test Results**: 3/3 automated tests passing (100% pass rate)
+
 ## Troubleshooting Guide
 
 ### Common Issues and Solutions
@@ -886,7 +991,96 @@ full-implementation)
 
 ---
 
-#### Issue 4: Code Transformation in Large Blocks
+#### Issue 4: REPORT_PATHS_COUNT Unbound Variable
+
+**Symptom**:
+```bash
+/run/current-system/sw/bin/bash: line 337: REPORT_PATHS_COUNT: unbound variable
+Exit code 127
+```
+
+**Root Cause**: `workflow-initialization.sh` creates individual `REPORT_PATH_0`, `REPORT_PATH_1`, etc. variables but never exports `REPORT_PATHS_COUNT`. The coordinate command tries to use this variable to serialize the array to state, causing an "unbound variable" error with `set -u`.
+
+**Diagnostic Procedure**:
+1. Check if REPORT_PATHS_COUNT is exported in workflow-initialization.sh:
+   ```bash
+   grep "REPORT_PATHS_COUNT" .claude/lib/workflow-initialization.sh
+   # Should show: export REPORT_PATHS_COUNT=4
+   ```
+2. Verify the report paths array initialization (lines 236-249):
+   ```bash
+   sed -n '236,249p' .claude/lib/workflow-initialization.sh
+   # Should export REPORT_PATH_0 through REPORT_PATH_3 AND REPORT_PATHS_COUNT
+   ```
+3. Check coordinate.md usage of REPORT_PATHS_COUNT:
+   ```bash
+   grep -n "REPORT_PATHS_COUNT" .claude/commands/coordinate.md
+   # Shows all locations where variable is used
+   ```
+
+**Solution**: Export REPORT_PATHS_COUNT in `workflow-initialization.sh` along with individual report path variables.
+
+**Example** (Spec 637, Phase 2):
+```bash
+# Before (missing REPORT_PATHS_COUNT export):
+local -a report_paths
+for i in 1 2 3 4; do
+  report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_topic${i}.md")
+done
+
+# After (with REPORT_PATHS_COUNT export):
+local -a report_paths
+for i in 1 2 3 4; do
+  report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_topic${i}.md")
+done
+
+# Export individual report path variables for bash block persistence
+export REPORT_PATH_0="${report_paths[0]}"
+export REPORT_PATH_1="${report_paths[1]}"
+export REPORT_PATH_2="${report_paths[2]}"
+export REPORT_PATH_3="${report_paths[3]}"
+export REPORT_PATHS_COUNT=4
+```
+
+**Additional Defensive Pattern**: Add existence check in `reconstruct_report_paths_array()`:
+```bash
+reconstruct_report_paths_array() {
+  REPORT_PATHS=()
+
+  # Defensive check: ensure REPORT_PATHS_COUNT is set
+  if [ -z "${REPORT_PATHS_COUNT:-}" ]; then
+    echo "WARNING: REPORT_PATHS_COUNT not set, defaulting to 0" >&2
+    REPORT_PATHS_COUNT=0
+    return 0
+  fi
+
+  for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
+    local var_name="REPORT_PATH_$i"
+
+    # Defensive check: verify variable exists before accessing
+    # ${!var_name+x} returns "x" if variable exists, empty if undefined
+    if [ -z "${!var_name+x}" ]; then
+      echo "WARNING: $var_name not set, skipping" >&2
+      continue
+    fi
+
+    # Safe to use indirect expansion now
+    REPORT_PATHS+=("${!var_name}")
+  done
+}
+```
+
+**Prevention**:
+- Always export array count along with individual array elements
+- Add defensive checks before using indirect expansion (`${!var_name}`)
+- Use `${var:-}` pattern to prevent unbound variable errors with `set -u`
+- Test with `set -u` enabled to catch missing exports early
+
+**Reference**: Spec 637 (Fix Coordinate Agent Invocation and Bash Variable Error)
+
+---
+
+#### Issue 5: Code Transformation in Large Blocks
 
 **Symptom**:
 ```bash
