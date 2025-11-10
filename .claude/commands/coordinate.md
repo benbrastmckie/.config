@@ -60,8 +60,9 @@ source "${LIB_DIR}/state-persistence.sh"
 STATE_FILE=$(init_workflow_state "coordinate_$$")
 trap "rm -f '$STATE_FILE'" EXIT
 
-# Save workflow ID for subsequent blocks
+# Save workflow ID and description for subsequent blocks
 append_workflow_state "WORKFLOW_ID" "coordinate_$$"
+append_workflow_state "WORKFLOW_DESCRIPTION" "$WORKFLOW_DESCRIPTION"
 
 # Initialize state machine
 sm_init "$WORKFLOW_DESCRIPTION" "coordinate"
