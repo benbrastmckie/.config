@@ -193,6 +193,66 @@ done
 
 echo "Saved $REPORT_PATHS_COUNT report paths to workflow state"
 
+# ===== MANDATORY VERIFICATION CHECKPOINT: State Persistence =====
+# Verify all REPORT_PATH variables were written to state file
+# Prevents silent failures from bad substitution or write errors
+echo ""
+echo "MANDATORY VERIFICATION: State File Persistence"
+echo "Checking $REPORT_PATHS_COUNT REPORT_PATH variables..."
+echo ""
+
+VERIFICATION_FAILURES=0
+
+# Verify REPORT_PATHS_COUNT was saved
+if grep -q "^REPORT_PATHS_COUNT=" "$STATE_FILE" 2>/dev/null; then
+  echo "  ✓ REPORT_PATHS_COUNT variable saved"
+else
+  echo "  ❌ REPORT_PATHS_COUNT variable missing"
+  VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+fi
+
+# Verify all REPORT_PATH_N variables were saved
+for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
+  var_name="REPORT_PATH_$i"
+  if grep -q "^${var_name}=" "$STATE_FILE" 2>/dev/null; then
+    echo "  ✓ $var_name saved"
+  else
+    echo "  ❌ $var_name missing"
+    VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
+  fi
+done
+
+# Display state file info
+STATE_FILE_SIZE=$(stat -f%z "$STATE_FILE" 2>/dev/null || stat -c%s "$STATE_FILE" 2>/dev/null || echo "unknown")
+echo ""
+echo "State file verification:"
+echo "  - Path: $STATE_FILE"
+echo "  - Size: $STATE_FILE_SIZE bytes"
+echo "  - Variables expected: $((REPORT_PATHS_COUNT + 1))"
+echo "  - Verification failures: $VERIFICATION_FAILURES"
+
+# Fail-fast on verification failure
+if [ $VERIFICATION_FAILURES -gt 0 ]; then
+  echo ""
+  echo "❌ CRITICAL: State file verification failed"
+  echo "   $VERIFICATION_FAILURES variables not written to state file"
+  echo ""
+  echo "TROUBLESHOOTING:"
+  echo "1. Check for bad substitution errors (missing set +H directive)"
+  echo "2. Verify append_workflow_state function works correctly"
+  echo "3. Check file permissions on state file directory"
+  echo "4. Verify disk space available for state file writes"
+  echo "5. Review state-persistence.sh library implementation"
+  echo ""
+  echo "State file contents:"
+  head -20 "$STATE_FILE" 2>/dev/null || echo "  (unable to read state file)"
+  echo ""
+  handle_state_error "State persistence verification failed - critical variables missing" 1
+fi
+
+echo "✓ All $((REPORT_PATHS_COUNT + 1)) variables verified in state file"
+echo ""
+
 # Source verification helpers
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
   source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
