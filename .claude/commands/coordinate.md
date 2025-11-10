@@ -198,41 +198,9 @@ if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
   source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
 fi
 
-# Define completion summary helper
-display_brief_summary() {
-  echo ""
-  echo "✓ Workflow complete: $WORKFLOW_SCOPE"
-  case "$WORKFLOW_SCOPE" in
-    research-only)
-      local report_count=${#REPORT_PATHS[@]}
-      echo "Created $report_count research reports in: $TOPIC_PATH/reports/"
-      ;;
-    research-and-plan)
-      local report_count=${#REPORT_PATHS[@]}
-      echo "Created $report_count reports + 1 plan in: $TOPIC_PATH/"
-      echo "→ Run: /implement $PLAN_PATH"
-      ;;
-    full-implementation)
-      echo "Implementation complete. Summary: $SUMMARY_PATH"
-      ;;
-    debug-only)
-      echo "Debug analysis complete: $DEBUG_REPORT"
-      ;;
-    *)
-      echo "Workflow artifacts available in: $TOPIC_PATH"
-      ;;
-  esac
-  echo ""
-
-  # Cleanup temp files now that workflow is complete
-  COORDINATE_DESC_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
-  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
-  rm -f "$COORDINATE_DESC_FILE" "$COORDINATE_STATE_ID_FILE" 2>/dev/null || true
-}
-export -f display_brief_summary
-
-# Note: handle_state_error() is now defined in .claude/lib/error-handling.sh
-# It will be available via library sourcing in all bash blocks
+# Note: display_brief_summary() now defined in .claude/lib/unified-logger.sh
+# Note: handle_state_error() now defined in .claude/lib/error-handling.sh
+# Both functions available via library sourcing in all bash blocks
 
 # Transition to research state
 sm_transition "$STATE_RESEARCH"
@@ -272,6 +240,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -406,6 +375,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -631,6 +601,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -719,6 +690,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -892,6 +864,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -961,6 +934,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -1033,6 +1007,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -1153,6 +1128,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -1219,6 +1195,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -1338,6 +1315,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
@@ -1404,6 +1382,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Load workflow state (read WORKFLOW_ID from fixed location)
