@@ -31,13 +31,35 @@ YOU MUST orchestrate a 7-phase development workflow by delegating to specialized
 
 ## State Machine Initialization
 
-**ARGUMENT CAPTURE**: When you execute the bash block below, you MUST substitute `$1`, `$2`, `$3`, `$4` with the actual arguments passed to this /orchestrate command. The Bash tool cannot receive positional parameters directly, so you must replace all instances in the bash code with the quoted argument strings before calling the Bash tool.
+## CRITICAL: Argument Substitution Required
 
-For example, if the command was `/orchestrate "research auth" --parallel`, replace:
-- `WORKFLOW_DESCRIPTION="$1"` with `WORKFLOW_DESCRIPTION="research auth"`
-- `WORKFLOW_OPTIONS="$2 $3 $4"` with `WORKFLOW_OPTIONS="--parallel  "`
+**BEFORE calling the Bash tool**, you MUST perform argument substitution:
 
-USE the Bash tool:
+**Step 1**: Identify arguments from the user's command
+- The user invoked: `/orchestrate "<workflow-description>" [options]`
+- Extract the workflow description and any option flags
+
+**Step 2**: In the bash block below, find these lines:
+```bash
+WORKFLOW_DESCRIPTION="$1"
+WORKFLOW_OPTIONS="$2 $3 $4"
+```
+
+**Step 3**: Replace with actual values:
+```bash
+WORKFLOW_DESCRIPTION="<actual description>"
+WORKFLOW_OPTIONS="<actual options or empty>"
+```
+
+**Example**: If user ran `/orchestrate "implement auth" --parallel --create-pr`, change:
+- FROM: `WORKFLOW_DESCRIPTION="$1"`
+- TO: `WORKFLOW_DESCRIPTION="implement auth"`
+- FROM: `WORKFLOW_OPTIONS="$2 $3 $4"`
+- TO: `WORKFLOW_OPTIONS="--parallel --create-pr "`
+
+**Why**: The Bash tool cannot receive positional parameters. You must substitute them yourself.
+
+**Now execute** the bash block WITH THE SUBSTITUTION APPLIED:
 
 ```bash
 echo "=== State Machine Orchestration (Pure Agent Delegation) ==="

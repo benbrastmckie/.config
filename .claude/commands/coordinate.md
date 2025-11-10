@@ -18,11 +18,31 @@ YOU ARE EXECUTING AS the /coordinate command.
 
 [EXECUTION-CRITICAL: Initialize state machine and workflow state persistence]
 
-**ARGUMENT CAPTURE**: When you execute the bash block below, you MUST substitute `$1` with the actual workflow description argument that was passed to this /coordinate command. The Bash tool cannot receive positional parameters directly, so you must replace all instances of `$1` in the bash code with the quoted argument string before calling the Bash tool.
+## CRITICAL: Argument Substitution Required
 
-For example, if the command was `/coordinate "research authentication patterns"`, replace `WORKFLOW_DESCRIPTION="$1"` with `WORKFLOW_DESCRIPTION="research authentication patterns"` in the bash code.
+**BEFORE calling the Bash tool**, you MUST perform argument substitution:
 
-USE the Bash tool to execute state machine initialization:
+**Step 1**: Identify the workflow description argument from the user's command
+- The user invoked: `/coordinate "<workflow-description>"`
+- Extract the `<workflow-description>` text
+
+**Step 2**: In the bash block below, find this line:
+```bash
+WORKFLOW_DESCRIPTION="$1"
+```
+
+**Step 3**: Replace `"$1"` with the actual quoted workflow description:
+```bash
+WORKFLOW_DESCRIPTION="<actual workflow description goes here>"
+```
+
+**Example**: If user ran `/coordinate "research authentication patterns"`, change:
+- FROM: `WORKFLOW_DESCRIPTION="$1"`
+- TO: `WORKFLOW_DESCRIPTION="research authentication patterns"`
+
+**Why**: The Bash tool cannot receive positional parameters (`$1`, `$2`, etc.) directly. You must do the text substitution yourself before calling the Bash tool.
+
+**Now execute** the bash block WITH THE SUBSTITUTION APPLIED:
 
 ```bash
 set +H  # Explicitly disable history expansion (workaround for Bash tool preprocessing issues)
