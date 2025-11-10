@@ -29,6 +29,7 @@ In the **tiny bash block below**, replace `YOUR_WORKFLOW_DESCRIPTION_HERE` with 
 Execute this **small** bash block with your substitution:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # SUBSTITUTE THE WORKFLOW DESCRIPTION IN THE LINE BELOW
 # CRITICAL: Replace YOUR_WORKFLOW_DESCRIPTION_HERE with the actual workflow description from the user
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
@@ -257,9 +258,10 @@ echo ""
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -390,9 +392,10 @@ Task {
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -614,9 +617,10 @@ emit_progress "2" "Research complete, transitioning to Planning"
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -701,9 +705,10 @@ Task {
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -873,9 +878,10 @@ emit_progress "3" "Planning complete, transitioning to Implementation"
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -941,9 +947,10 @@ Task {
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1012,9 +1019,10 @@ emit_progress "4" "Implementation complete, transitioning to Testing"
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1131,9 +1139,10 @@ fi
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1196,9 +1205,10 @@ Task {
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1314,9 +1324,10 @@ echo ""
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1379,9 +1390,10 @@ Task {
 USE the Bash tool:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
