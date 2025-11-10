@@ -255,6 +255,7 @@ append_workflow_state "REPORT_COUNT" "3"
 
 ```bash
 # At start of EVERY bash block:
+set +H  # CRITICAL: Disable history expansion to prevent bad substitution errors
 
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
@@ -268,6 +269,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
 # Library source guards prevent duplicate execution:
@@ -276,6 +278,11 @@ source "${LIB_DIR}/verification-helpers.sh"
 # fi
 # export LIBRARY_NAME_SOURCED=1
 ```
+
+**Critical Requirements**:
+- MUST include `set +H` at the start of every bash block to prevent history expansion from corrupting indirect variable expansion (`${!var_name}`)
+- MUST include unified-logger.sh for emit_progress and display_brief_summary functions
+- Source guards in libraries make multiple sourcing safe and efficient
 
 ### Pattern 5: Cleanup on Completion Only
 
@@ -296,6 +303,59 @@ display_brief_summary() {
   # Trap fires when THIS block exits (workflow end)
 }
 ```
+
+## Critical Libraries for Re-sourcing
+
+Commands using the bash block execution model MUST re-source these libraries in every bash block to ensure function availability across subprocess boundaries:
+
+### Core State Management Libraries
+
+1. **workflow-state-machine.sh**: State machine operations (sm_init, sm_transition, sm_get_state)
+2. **state-persistence.sh**: GitHub Actions-style state file operations (init_workflow_state, append_workflow_state, load_workflow_state)
+3. **workflow-initialization.sh**: Path detection and initialization (initialize_workflow_paths, reconstruct_report_paths_array)
+
+### Error Handling and Logging Libraries
+
+4. **error-handling.sh**: Fail-fast error handling (handle_state_error, error recovery functions)
+5. **unified-logger.sh**: Progress markers and completion summaries (emit_progress, display_brief_summary, log_* functions)
+6. **verification-helpers.sh**: File creation verification (verify_file_created, verification checkpoint helpers)
+
+### Library Requirements by Command Type
+
+**Orchestration Commands** (/coordinate, /orchestrate, /supervise):
+- ALL six libraries required
+- unified-logger.sh provides critical user feedback functions
+- Omitting any library causes "command not found" errors
+
+**Simple Commands** (single bash block):
+- Only libraries needed for specific operations
+- Example: /setup may only need error-handling.sh
+
+**State-Based Commands** (using state machine pattern):
+- workflow-state-machine.sh + state-persistence.sh required
+- workflow-initialization.sh for path management
+- unified-logger.sh for progress feedback
+
+### Common Errors from Missing Libraries
+
+| Missing Library | Error Symptom | Impact |
+|---|---|---|
+| unified-logger.sh | `emit_progress: command not found` | Missing progress markers (degraded UX) |
+| unified-logger.sh | `display_brief_summary: command not found` | Missing completion summary (degraded UX) |
+| error-handling.sh | `handle_state_error: command not found` | Unhandled errors, unclear failure messages |
+| verification-helpers.sh | `verify_file_created: command not found` | Missing verification checkpoints, silent failures |
+| workflow-state-machine.sh | `sm_transition: command not found` | State transitions fail, workflow halts |
+| state-persistence.sh | `load_workflow_state: command not found` | Cannot restore state across blocks |
+
+### Verification Checklist
+
+Before deploying a new command or updating an existing orchestration command, verify:
+
+- [ ] `set +H` appears at start of every bash block
+- [ ] All six libraries sourced in correct order (state → error → log → verify)
+- [ ] Source statements match Pattern 4 template exactly
+- [ ] No `export -f` attempts (ineffective across subprocess boundaries)
+- [ ] Functions from libraries work in manual testing across multiple bash blocks
 
 ## Anti-Patterns
 
