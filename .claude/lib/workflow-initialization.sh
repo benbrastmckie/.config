@@ -290,17 +290,6 @@ initialize_workflow_paths() {
   export DEBUG_REPORT="$debug_report"
   export SUMMARY_PATH="$summary_path"
 
-  # Export arrays (requires bash 4.2+ for declare -g)
-  # Note: Arrays must be re-declared in calling script
-  # Workaround: Use REPORT_PATHS_COUNT and individual REPORT_PATH_N variables
-  export REPORT_PATHS_COUNT="${#report_paths[@]}"
-  # Use C-style for loop to avoid history expansion errors
-  # The ${!array[@]} syntax triggers "!: command not found" in some bash contexts
-  array_length=${#report_paths[@]}
-  for ((i=0; i<array_length; i++)); do
-    export "REPORT_PATH_$i=${report_paths[$i]}"
-  done
-
   # Export tracking variables
   export SUCCESSFUL_REPORT_COUNT="$successful_report_count"
   export TESTS_PASSING="$tests_passing"
@@ -325,8 +314,8 @@ reconstruct_report_paths_array() {
   REPORT_PATHS=()
   for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
     local var_name="REPORT_PATH_$i"
-    # Use nameref (bash 4.3+ pattern to avoid history expansion)
-    local -n path_ref="$var_name"
-    REPORT_PATHS+=("$path_ref")
+    # Use indirect expansion instead of nameref to avoid "unbound variable" with set -u
+    # ${!var_name} expands to the value of the variable whose name is in $var_name
+    REPORT_PATHS+=("${!var_name}")
   done
 }
