@@ -20,11 +20,31 @@ YOU ARE THE WORKFLOW ORCHESTRATOR using state machine architecture for clean mul
 
 ## State Machine Initialization
 
-**ARGUMENT CAPTURE**: When you execute the bash block below, you MUST substitute `$1` with the actual workflow description argument that was passed to this /supervise command. The Bash tool cannot receive positional parameters directly, so you must replace all instances of `$1` in the bash code with the quoted argument string before calling the Bash tool.
+## CRITICAL: Argument Substitution Required
 
-For example, if the command was `/supervise "implement user auth"`, replace `WORKFLOW_DESCRIPTION="$1"` with `WORKFLOW_DESCRIPTION="implement user auth"` in the bash code.
+**BEFORE calling the Bash tool**, you MUST perform argument substitution:
 
-USE the Bash tool:
+**Step 1**: Identify the workflow description argument from the user's command
+- The user invoked: `/supervise "<workflow-description>"`
+- Extract the `<workflow-description>` text
+
+**Step 2**: In the bash block below, find this line:
+```bash
+WORKFLOW_DESCRIPTION="$1"
+```
+
+**Step 3**: Replace `"$1"` with the actual quoted workflow description:
+```bash
+WORKFLOW_DESCRIPTION="<actual workflow description goes here>"
+```
+
+**Example**: If user ran `/supervise "implement user authentication"`, change:
+- FROM: `WORKFLOW_DESCRIPTION="$1"`
+- TO: `WORKFLOW_DESCRIPTION="implement user authentication"`
+
+**Why**: The Bash tool cannot receive positional parameters. You must do the substitution yourself.
+
+**Now execute** the bash block WITH THE SUBSTITUTION APPLIED:
 
 ```bash
 echo "=== State Machine Workflow Orchestration ==="
