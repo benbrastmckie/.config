@@ -266,14 +266,14 @@ MANDATORY RE-VERIFICATION:
 - `.claude/commands/coordinate.md` (lines 500, 650, 770, 860, 980, 1100 - end of each state handler)
 
 **Tasks**:
-- [ ] Identify end of each state handler (research, plan, implement, test, debug, document)
-- [ ] Insert CHECKPOINT REQUIREMENT block before final state transition
-- [ ] Extract metrics from workflow state (files created, verification status, etc.)
-- [ ] Format checkpoint report with structured output (echo statements)
-- [ ] Include transition information (current state → next state)
-- [ ] Test checkpoint output format for clarity and consistency
-- [ ] Verify checkpoints don't interfere with state transitions
-- [ ] Optional: Log checkpoints to unified-logger.sh for persistent audit trail
+- [x] Identify end of each state handler (research, plan, implement, test, debug, document)
+- [x] Insert CHECKPOINT REQUIREMENT block before final state transition (research, planning)
+- [x] Extract metrics from workflow state (files created, verification status, etc.)
+- [x] Format checkpoint report with structured output (echo statements)
+- [x] Include transition information (current state → next state)
+- [x] Test checkpoint output format for clarity and consistency
+- [x] Verify checkpoints don't interfere with state transitions
+- [ ] Optional: Add checkpoints to remaining phases (implement, test, debug, document) - deferred to Phase 4
 
 **Checkpoint Template**:
 ```markdown

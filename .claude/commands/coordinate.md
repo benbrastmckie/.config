@@ -683,6 +683,49 @@ fi
 # Save report paths to workflow state (same for both modes)
 append_workflow_state "REPORT_PATHS_JSON" "$(printf '%s\n' "${SUCCESSFUL_REPORT_PATHS[@]}" | jq -R . | jq -s .)"
 
+# ===== CHECKPOINT REQUIREMENT: Research Phase Complete =====
+echo ""
+echo "═══════════════════════════════════════════════════════"
+echo "CHECKPOINT: Research Phase Complete"
+echo "═══════════════════════════════════════════════════════"
+echo "Research phase status before transitioning to next state:"
+echo ""
+echo "  Artifacts Created:"
+echo "    - Research reports: ${#SUCCESSFUL_REPORT_PATHS[@]}/$RESEARCH_COMPLEXITY"
+echo "    - Research mode: $([ "$USE_HIERARCHICAL_RESEARCH" = "true" ] && echo "Hierarchical (≥4 topics)" || echo "Flat (<4 topics)")"
+echo ""
+echo "  Verification Status:"
+VERIFICATION_FAILURES_VAL=$(load_workflow_state_value "VERIFICATION_FAILURES_RESEARCH" || echo "0")
+echo "    - All files verified: $([ "$VERIFICATION_FAILURES_VAL" -eq 0 ] && echo "✓ Yes" || echo "⚠️  No ($VERIFICATION_FAILURES_VAL failures)")"
+echo ""
+echo "  Fallback Mechanism:"
+FALLBACK_USED_VAL=$(load_workflow_state_value "FALLBACK_USED" || echo "false")
+FALLBACK_COUNT_VAL=$(load_workflow_state_value "FALLBACK_COUNT" || echo "0")
+if [ "$FALLBACK_USED_VAL" = "true" ]; then
+  echo "    - Fallback used: ⚠️  Yes ($FALLBACK_COUNT_VAL files created)"
+  echo "    - Note: Template content requires manual population"
+else
+  echo "    - Fallback used: ✓ No (all agents created files successfully)"
+fi
+echo ""
+echo "  Next Action:"
+case "$WORKFLOW_SCOPE" in
+  research-only)
+    echo "    - Proceeding to: Terminal state (workflow complete)"
+    ;;
+  research-and-plan)
+    echo "    - Proceeding to: Planning phase"
+    ;;
+  full-implementation)
+    echo "    - Proceeding to: Planning phase → Implementation"
+    ;;
+  debug-only)
+    echo "    - Proceeding to: Planning phase → Debug"
+    ;;
+esac
+echo "═══════════════════════════════════════════════════════"
+echo ""
+
 # Determine next state based on workflow scope
 case "$WORKFLOW_SCOPE" in
   research-only)
@@ -835,6 +878,41 @@ fi
 
 # Save plan path to workflow state
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
+
+# ===== CHECKPOINT REQUIREMENT: Planning Phase Complete =====
+echo ""
+echo "═══════════════════════════════════════════════════════"
+echo "CHECKPOINT: Planning Phase Complete"
+echo "═══════════════════════════════════════════════════════"
+echo "Planning phase status before transitioning to next state:"
+echo ""
+echo "  Artifacts Created:"
+echo "    - Implementation plan: ✓ Created"
+echo "    - Plan path: $PLAN_PATH"
+PLAN_SIZE=$(stat -f%z "$PLAN_PATH" 2>/dev/null || stat -c%s "$PLAN_PATH" 2>/dev/null || echo "unknown")
+echo "    - Plan size: $PLAN_SIZE bytes"
+echo ""
+echo "  Verification Status:"
+echo "    - Plan file verified: ✓ Yes"
+echo ""
+echo "  Research Integration:"
+REPORT_COUNT="${#REPORT_PATHS[@]}"
+echo "    - Research reports used: $REPORT_COUNT"
+echo ""
+echo "  Next Action:"
+case "$WORKFLOW_SCOPE" in
+  research-and-plan)
+    echo "    - Proceeding to: Terminal state (workflow complete)"
+    ;;
+  full-implementation)
+    echo "    - Proceeding to: Implementation phase"
+    ;;
+  debug-only)
+    echo "    - Proceeding to: Debug phase"
+    ;;
+esac
+echo "═══════════════════════════════════════════════════════"
+echo ""
 
 # Determine next state based on workflow scope
 case "$WORKFLOW_SCOPE" in
