@@ -11,6 +11,12 @@
   - 617 (Fixed ${!...} patterns in library files - completed and verified working)
   - 613 (Fixed coordinate.md state machine errors)
   - 602 (State-based orchestration refactor)
+- **Related Research**:
+  - [Coordinate Orchestration Best Practices Overview](../../623_coordinate_orchestration_best_practices/reports/001_coordinate_orchestration_best_practices/OVERVIEW.md) - Comprehensive research on bash execution patterns, error handling, state management, and diagnostic tooling supporting this fix
+- **Related Documentation**:
+  - `.claude/docs/guides/orchestration-troubleshooting.md` (existing troubleshooting infrastructure)
+  - `.claude/docs/guides/coordinate-command-guide.md` (coordinate-specific documentation)
+  - `.claude/docs/troubleshooting/` (troubleshooting directory structure)
 
 ## Problem Statement
 
@@ -42,541 +48,925 @@ ERROR: TOPIC_PATH not set after workflow initialization
 - Libraries work fine in isolation
 - Issue is specific to coordinate.md execution through Claude's Bash tool
 
-### Root Cause Hypothesis
+### Root Cause (Confirmed via Research - Spec 623)
 
-The issue likely involves:
-1. How Claude Code's Bash tool processes markdown and extracts bash blocks
-2. Possible preprocessing/templating that introduces problematic characters
-3. Interaction between bash block execution context and library sourcing
-4. Potential line number reporting issues masking the true error location
+**Research-confirmed root cause**: Bash code blocks execute in separate processes in Claude's markdown execution model, causing function unavailability across block boundaries.
+
+**Evidence from [Spec 623 Research](../../623_coordinate_orchestration_best_practices/reports/001_coordinate_orchestration_best_practices/OVERVIEW.md)**:
+1. History expansion is disabled by default in non-interactive shells - NOT the issue
+2. Each markdown bash block runs as a separate bash invocation, losing sourced functions
+3. State persistence implemented for variables but NOT for functions
+4. Subprocess isolation constraint: Sequential bash blocks are sibling processes, not parent-child
+5. Large bash blocks (>400 lines) suffer AI transformation errors during extraction
+
+**Key Insight**: The error "!: command not found" occurs when bash tries to execute a command referencing an unavailable function (like `reconstruct_report_paths_array`), not from history expansion. The exclamation mark in the error message refers to the `${!varname}` syntax inside these unavailable functions.
 
 ## Success Criteria
 
-- [ ] Understand exact mechanism causing "!: command not found" errors
+- [x] Understand exact mechanism causing "!: command not found" errors (COMPLETED via Spec 623 research)
 - [ ] /coordinate executes successfully through complete workflows
 - [ ] TOPIC_PATH and all workflow variables properly initialized
-- [ ] Solution is robust and doesn't break other functionality
-- [ ] Root cause documented to prevent future occurrences
-- [ ] Diagnostic tools created for future troubleshooting
+- [ ] Library functions available in all bash blocks (re-sourcing pattern implemented)
+- [ ] Bash blocks split to <200 lines to prevent AI transformation errors
+- [ ] State-based orchestration enhancements: verification checkpoints, error handling, diagnostic tooling
+- [ ] Solution preserves existing state machine architecture (no redundancy)
+- [ ] Root cause documented per existing troubleshooting infrastructure
+- [ ] Integration with `.claude/docs/guides/orchestration-troubleshooting.md`
 
 ## Implementation Phases
 
-### Phase 1: Comprehensive Diagnostics & Root Cause Identification
-**Objective**: Add extensive logging to understand exact execution flow and error source
-**Complexity**: Medium
-**Priority**: CRITICAL (must understand before fixing)
+### Phase 1: Immediate Fix - Re-source Libraries in Bash Blocks
+**Objective**: Implement research-validated solution for function unavailability
+**Complexity**: Low-Medium
+**Priority**: CRITICAL
+**Status**: Ready to implement (root cause confirmed via Spec 623)
 
 **Tasks:**
 
-- [ ] **Add Debug Wrapper to First Bash Block**: Instrument coordinate.md initialization
+- [ ] **Task 1.1: Add Source Guards to Library Files** (Priority: HIGH)
+
+  Make re-sourcing safe and idempotent:
+
   ```bash
-  # At start of first bash block (after line 23 marker):
-  set -x  # Enable xtrace for detailed execution log
-  echo "DEBUG: Bash version: $BASH_VERSION"
-  echo "DEBUG: Shell options:"
-  set -o | grep -E "history|histexpand|interactive"
-  echo "DEBUG: Starting coordinate initialization..."
-
-  # ... existing code ...
-
-  # At end of first bash block:
-  echo "DEBUG: First bash block completed"
-  set +x
+  # .claude/lib/workflow-initialization.sh
+  if [ -n "${WORKFLOW_INITIALIZATION_SOURCED:-}" ]; then
+    return 0  # Already sourced, skip re-initialization
+  fi
+  export WORKFLOW_INITIALIZATION_SOURCED=1
+  # ... rest of library code ...
   ```
 
-- [ ] **Add Library Sourcing Diagnostics**: Track which libraries are loaded
-  ```bash
-  # Before each 'source' command:
-  echo "DEBUG: Sourcing ${LIB_DIR}/workflow-state-machine.sh"
-  source "${LIB_DIR}/workflow-state-machine.sh"
-  echo "DEBUG: Sourced workflow-state-machine.sh successfully"
+  Apply to all critical libraries:
+  - `workflow-state-machine.sh`
+  - `state-persistence.sh`
+  - `workflow-initialization.sh`
+  - `error-handling.sh`
+  - `verification-helpers.sh`
 
-  # Repeat for each library
+- [ ] **Task 1.2: Identify All Bash Blocks in coordinate.md**
+
+  Audit bash block structure and sizes:
+
+  ```bash
+  # Count bash blocks and their sizes
+  awk '/^```bash$/,/^```$/ {count++} /^```$/ {print "Block " NR ": " count " lines"; count=0}' \
+    .claude/commands/coordinate.md
+
+  # Expected: ~6 bash blocks across Phase 0-7
+  # Flag blocks >200 lines for splitting
   ```
 
-- [ ] **Add Function Call Tracing**: Log all major function invocations
-  ```bash
-  # Before initialize_workflow_paths:
-  echo "DEBUG: Calling initialize_workflow_paths"
-  echo "DEBUG: Args: WORKFLOW_DESCRIPTION='$WORKFLOW_DESCRIPTION', WORKFLOW_SCOPE='$WORKFLOW_SCOPE'"
+- [ ] **Task 1.3: Add Library Re-sourcing to Each Bash Block**
 
-  if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
-    echo "DEBUG: initialize_workflow_paths FAILED with exit code $?"
-    exit 1
+  Add standardized re-sourcing pattern at start of EVERY bash block:
+
+  ```bash
+  # Standardized library re-sourcing pattern
+  # Add to start of each bash block in coordinate.md
+
+  if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    export CLAUDE_PROJECT_DIR
   fi
 
-  echo "DEBUG: initialize_workflow_paths succeeded"
-  echo "DEBUG: TOPIC_PATH='${TOPIC_PATH:-NOT_SET}'"
-  ```
-
-- [ ] **Create Minimal Reproduction Test**: Isolate the issue
-  ```bash
-  # Create standalone test script
-  cat > /tmp/coordinate_minimal_test.sh << 'TESTSCRIPT'
-  #!/usr/bin/env bash
-  set -euo pipefail
-  set -x
-
-  # Simulate coordinate.md first bash block
-  CLAUDE_PROJECT_DIR="/home/benjamin/.config"
-  export CLAUDE_PROJECT_DIR
-
-  WORKFLOW_DESCRIPTION="test workflow"
-  export WORKFLOW_DESCRIPTION
-
-  # Source libraries in same order as coordinate.md
   LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-  echo "Sourcing workflow-state-machine.sh..."
+  # Re-source critical libraries (source guards make this safe)
   source "${LIB_DIR}/workflow-state-machine.sh"
-
-  echo "Sourcing state-persistence.sh..."
   source "${LIB_DIR}/state-persistence.sh"
-
-  # ... continue with initialization steps ...
-
-  echo "Test completed successfully"
-  TESTSCRIPT
-
-  bash /tmp/coordinate_minimal_test.sh
+  source "${LIB_DIR}/workflow-initialization.sh"
+  source "${LIB_DIR}/error-handling.sh"
+  source "${LIB_DIR}/verification-helpers.sh"
   ```
 
-- [ ] **Check for Hidden Characters**: Scan for non-printable characters
-  ```bash
-  # Check coordinate.md for hidden characters around error lines
-  sed -n '245,265p' .claude/commands/coordinate.md | od -c
+  Apply to these bash blocks:
+  - Phase 0 initialization block
+  - Phase 1-2 research orchestration block
+  - Phase 3 planning block (if separate)
+  - Phase 4-7 blocks (if present)
+  - Summary/completion block
 
-  # Check library files
-  sed -n '245,265p' .claude/lib/workflow-initialization.sh | od -c
+- [ ] **Task 1.4: Split Large Bash Blocks (<200 Lines)**
+
+  Prevent AI transformation errors:
+
+  ```bash
+  # If any bash block >200 lines, split at logical boundaries
+  # Common split points:
+  # - After Phase 0 path calculation
+  # - Between research and planning phases
+  # - Between state transitions
+
+  # Export critical variables between split blocks:
+  export TOPIC_PATH TOPIC_DIR RESEARCH_SUBDIR
+  export WORKFLOW_STATE CURRENT_STATE
+  export -f critical_function_name  # If functions need export
   ```
 
-- [ ] **Test with Different Bash Versions**: Rule out version-specific issues
-  ```bash
-  bash --version
-  # Try with explicit bash invocation:
-  /bin/bash /tmp/coordinate_minimal_test.sh
-  /usr/bin/env bash /tmp/coordinate_minimal_test.sh
-  ```
+- [ ] **Task 1.5: Test End-to-End Fix**
 
-- [ ] **Capture Complete Error Context**: Get full error output
-  ```bash
-  # Run coordinate with full error capture
-  /coordinate "test" 2>&1 | tee /tmp/coordinate_full_error.log
+  Verify function availability across all blocks:
 
-  # Analyze the log
-  grep -n "!:" /tmp/coordinate_full_error.log
-  grep -B5 -A5 "command not found" /tmp/coordinate_full_error.log
+  ```bash
+  # Test 1: Simple research workflow
+  /coordinate "Research bash patterns"
+  # Expected: No "!: command not found" errors, TOPIC_PATH set
+
+  # Test 2: Research and plan workflow
+  /coordinate "Research and plan test feature"
+  # Expected: All phases complete, functions available throughout
+
+  # Test 3: Verify specific function calls work
+  # Check that reconstruct_report_paths_array() is accessible
+  # Check that handle_state_error() is accessible
   ```
 
 **Expected Outputs:**
-- Detailed execution trace showing exact failure point
-- Identification of which library/function causes the error
-- Understanding of line number discrepancy
-- Minimal reproduction case that reliably triggers the error
+- Zero "!: command not found" errors in all workflows
+- Library functions available across all bash block boundaries
+- Bash blocks <200 lines (split if necessary)
+- Source guards prevent double-initialization issues
 
 **Files Modified:**
-- `.claude/commands/coordinate.md` (temporary diagnostic additions)
-- Create: `/tmp/coordinate_minimal_test.sh`
-- Create: `.claude/specs/620_fix_coordinate_bash_history_expansion_errors/diagnostics/`
+- `.claude/lib/workflow-state-machine.sh` (add source guard)
+- `.claude/lib/state-persistence.sh` (add source guard)
+- `.claude/lib/workflow-initialization.sh` (add source guard)
+- `.claude/lib/error-handling.sh` (add source guard)
+- `.claude/lib/verification-helpers.sh` (add source guard)
+- `.claude/commands/coordinate.md` (add re-sourcing to all bash blocks, split large blocks)
+
+**Expected Duration**: 60-90 minutes
+
+**Research Validation**: This approach is validated by Spec 623 findings showing 100% resolution with ~2ms overhead per block.
+
+---
+
+### Phase 2: Add Verification Checkpoints (100% File Creation Reliability)
+**Objective**: Integrate verification-helpers.sh to achieve 100% file creation reliability
+**Complexity**: Medium
+**Priority**: HIGH
+**Dependencies**: Phase 1 complete (libraries with source guards available)
+
+**Background** (from Spec 623 Research):
+- Without verification: 70% file creation success
+- With verification: 100% file creation success
+- Token savings: 2,940 tokens per workflow (93% reduction per checkpoint)
+- Time cost: +2-3 seconds per file (acceptable trade-off)
+
+**Tasks:**
+
+- [ ] **Task 2.1: Audit Existing File Creation Points**
+
+  Identify all locations where coordinate.md creates files:
+
+  ```bash
+  # Expected file creation points:
+  # - Research reports (Phase 1-2): 2-4 subtopic reports + OVERVIEW.md
+  # - Implementation plan (Phase 3): 1 plan file
+  # - Checkpoint files: Multiple throughout workflow
+  # - Summary files: 1 summary file at completion
+
+  # Map current verification approach (inline blocks vs verification-helpers.sh)
+  ```
+
+- [ ] **Task 2.2: Replace Inline Verification with verification-helpers.sh**
+
+  Standardize all file verification using library functions:
+
+  ```bash
+  # Before (inline verification):
+  if [ ! -f "$REPORT_PATH" ]; then
+    echo "ERROR: Report not found at $REPORT_PATH"
+    exit 1
+  fi
+
+  # After (verification-helpers.sh):
+  if verify_file_created "$REPORT_PATH" "Research report" "Phase 1"; then
+    echo " Report verified"  # Concise success
+  else
+    # Verbose diagnostic already emitted by verify_file_created()
+    handle_state_error "Report verification failed" 1
+  fi
+  ```
+
+- [ ] **Task 2.3: Add Fallback Mechanisms**
+
+  Implement fallback creation for failed agent delegations:
+
+  ```bash
+  # After agent Task invocation:
+  if ! verify_file_created "$EXPECTED_PATH" "Agent output" "Phase N"; then
+    # FALLBACK MECHANISM
+    echo "  Creating fallback file..."
+    mkdir -p "$(dirname "$EXPECTED_PATH")"
+    cat > "$EXPECTED_PATH" <<EOF
+  # Fallback Report
+
+  Primary agent failed to create this file.
+  Workflow continues with minimal fallback content.
+  EOF
+
+    # RE-VERIFY fallback
+    if ! verify_file_created "$EXPECTED_PATH" "Fallback file" "Phase N"; then
+      echo "CRITICAL: Fallback creation failed"
+      handle_state_error "Cannot recover from verification failure" 1
+    fi
+  fi
+  ```
+
+- [ ] **Task 2.4: Test Verification Reliability**
+
+  Ensure 100% file creation across failure scenarios:
+
+  ```bash
+  # Test 1: Normal operation (agent succeeds)
+  /coordinate "Research test topic"
+  # Expected: 100% file creation, concise success output
+
+  # Test 2: Agent failure simulation
+  # Modify agent to skip file creation
+  # Expected: Fallback mechanism activates, verification succeeds
+
+  # Test 3: Permission errors
+  # Test with read-only directory (if applicable)
+  # Expected: Clear diagnostic, graceful failure
+  ```
+
+**Expected Outputs:**
+- 100% file creation reliability achieved
+- 93% token reduction per checkpoint (concise success, verbose failure)
+- Clear fail-fast diagnostics on verification failures
+- Fallback mechanisms prevent workflow deadlock
+
+**Files Modified:**
+- `.claude/commands/coordinate.md` (replace inline verification, add fallback mechanisms)
+
+**Expected Duration**: 90-120 minutes
+
+**Research Validation**: Spec 623 shows verification pattern achieves 70% → 100% reliability with 2,940 token savings per workflow.
+
+---
+
+### Phase 3: Enhance Error Handling & State Management
+**Objective**: Strengthen state machine architecture and error handling patterns
+**Complexity**: Medium
+**Priority**: MEDIUM
+**Dependencies**: Phases 1-2 complete
+
+**Background** (from Spec 623 Research):
+- State machine provides validated transitions and fail-fast error detection
+- Five-component error messages reduce diagnostic time by 40-60%
+- Checkpoint recovery enables resume from failure points
+- Max 2 retries per state prevents infinite loops
+
+**Tasks:**
+
+- [ ] **Task 3.1: Validate State Machine Integration**
+
+  Verify existing state-based orchestration is correctly implemented:
+
+  ```bash
+  # Check state machine library usage in coordinate.md:
+  # - 8 explicit states: initialize, research, plan, implement, test, debug, document, complete
+  # - Transition table validation enforced
+  # - Atomic state transitions (validation → checkpoint → update)
+  # - Error state tracking with retry limits
+
+  # Verify state persistence:
+  # - Workflow state file created and updated
+  # - Checkpoint schema V2.0 used
+  # - State machine first-class citizen in checkpoint structure
+  ```
+
+- [ ] **Task 3.2: Implement Five-Component Error Messages**
+
+  Standardize error messages across coordinate.md:
+
+  ```bash
+  # Five-component format (from Spec 623):
+  # 1. What failed
+  # 2. Expected state
+  # 3. Diagnostic commands
+  # 4. Context (workflow phase, state)
+  # 5. Recommended action
+
+  # Example implementation:
+  echo ""
+  echo "✗ ERROR: Library sourcing failed"
+  echo "   Expected: workflow-state-machine.sh loaded successfully"
+  echo ""
+  echo "Diagnostic commands:"
+  echo "  ls -la \"\${LIB_DIR}/workflow-state-machine.sh\""
+  echo "  bash -n \"\${LIB_DIR}/workflow-state-machine.sh\""  # Syntax check
+  echo ""
+  echo "Context: Phase 0 initialization, state=initialize"
+  echo "Action: Check file exists and has correct permissions"
+  echo ""
+  exit 1
+  ```
+
+- [ ] **Task 3.3: Add Error State Tracking**
+
+  Integrate with state machine error handling:
+
+  ```bash
+  # Use handle_state_error() for all workflow-level failures:
+  if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
+    handle_state_error "Workflow initialization failed" 1
+  fi
+
+  # Error state tracking enables:
+  # - Checkpoint includes last_error, retry_count, failed_state
+  # - On re-run, resume from failed state
+  # - Max 2 retries per state enforced
+  ```
+
+- [ ] **Task 3.4: Test State Machine Recovery**
+
+  Verify checkpoint-based resume functionality:
+
+  ```bash
+  # Test 1: Simulate Phase 1 failure
+  # - Start workflow: /coordinate "test"
+  # - Artificially fail research phase
+  # - Checkpoint should capture state
+  # - Re-run: /coordinate "test"
+  # - Expected: Resume from Phase 1, not restart from Phase 0
+
+  # Test 2: Verify retry limit enforcement
+  # - Fail same state 3 times
+  # - Expected: User escalation after 2 retries
+
+  # Test 3: Validate state transitions
+  # - Attempt invalid transition (e.g., initialize → complete)
+  # - Expected: Fail-fast with clear error message
+  ```
+
+**Expected Outputs:**
+- State machine correctly manages all workflow transitions
+- Five-component error messages improve diagnostics (40-60% time reduction)
+- Checkpoint recovery working for all failure modes
+- Max 2 retries per state enforced
+
+**Files Modified:**
+- `.claude/commands/coordinate.md` (enhance error messages, validate state machine usage)
+
+**Expected Duration**: 2-3 hours
+
+**Research Validation**: Spec 623 shows state machine architecture achieves <30% context usage and 100% checkpoint reliability.
+
+---
+
+### Phase 4: Comprehensive Testing & Validation
+**Objective**: Verify all fixes work across workflow scenarios
+**Complexity**: Medium
+**Priority**: HIGH
+**Dependencies**: Phases 1-3 complete
+
+**Background**: Testing strategy validates immediate fixes (Phase 1-2) and enhancements (Phase 3) work correctly across all workflow types supported by /coordinate.
+
+**Tasks:**
+
+- [ ] **Task 4.1: Test Minimal Workflows**
+
+  Verify basic functionality with immediate fixes:
+
+  ```bash
+  # Test 1: Simple research workflow (research-only scope)
+  /coordinate "Research bash execution patterns"
+  # Expected: No "!: command not found" errors, TOPIC_PATH set, research completes
+
+  # Test 2: Research and plan workflow (research-and-plan scope)
+  /coordinate "Research and plan simple feature"
+  # Expected: Research completes, plan created, no function availability errors
+  ```
+
+- [ ] **Task 4.2: Test Complex Workflows**
+
+  Verify enhancements work under realistic load:
+
+  ```bash
+  # Test 3: Multi-report research workflow
+  /coordinate "Research authentication, authorization, and session management patterns"
+  # Expected: 3-4 parallel research agents, all reports created, verification 100%
+
+  # Test 4: Full workflow with state transitions
+  # (If /coordinate supports full workflow scope)
+  /coordinate "Research, plan, and implement simple feature"
+  # Expected: All state transitions valid, checkpoint recovery available
+
+  # Test 5: Special characters in description
+  /coordinate "Fix bug: CSS !important rules not working"
+  # Expected: Handles ! in description without bash errors
+  ```
+
+- [ ] **Task 4.3: Test Error Conditions & Recovery**
+
+  Verify fail-fast behavior and error handling:
+
+  ```bash
+  # Test 6: Invalid workflow description
+  /coordinate ""
+  # Expected: Five-component error message, state=initialize
+
+  # Test 7: Missing library dependency
+  mv .claude/lib/workflow-state-machine.sh .claude/lib/workflow-state-machine.sh.bak
+  /coordinate "test"
+  # Expected: Clear bootstrap failure diagnostic
+  mv .claude/lib/workflow-state-machine.sh.bak .claude/lib/workflow-state-machine.sh
+
+  # Test 8: Agent delegation failure simulation
+  # Modify research-specialist agent to skip file creation
+  /coordinate "test research"
+  # Expected: Fallback mechanism activates, verification succeeds, workflow continues
+
+  # Test 9: Checkpoint recovery
+  # Manually kill /coordinate during Phase 2
+  # Re-run: /coordinate "same description"
+  # Expected: Resume from Phase 2, not restart from Phase 0
+  ```
+
+- [ ] **Task 4.4: Performance Validation**
+
+  Ensure enhancements don't degrade performance:
+
+  ```bash
+  # Test 10: Measure execution time
+  time /coordinate "Quick research task"
+  # Expected: <5 minutes for simple research workflow
+
+  # Verify overhead:
+  # - Library re-sourcing: ~2ms per block (negligible)
+  # - Verification: +2-3 seconds per file (acceptable)
+  # - State machine operations: <1ms per transition (negligible)
+  ```
+
+- [ ] **Task 4.5: Regression Testing**
+
+  Ensure no existing functionality broken:
+
+  ```bash
+  # Run existing test suite (if exists)
+  bash .claude/tests/test_coordinate_*.sh 2>/dev/null || echo "No coordinate tests found"
+
+  # Verify no new failures
+  # Check delegation rate maintained >90%
+  # Check context usage remains <30%
+  ```
+
+**Expected Outcomes:**
+- All workflow types complete successfully
+- Zero "!: command not found" errors
+- 100% file creation reliability verified
+- State machine recovery working
+- Performance within acceptable ranges
+- No regressions in existing functionality
+
+**Files Modified:** None (testing only)
+
+**Expected Duration**: 2-3 hours
+
+---
+
+### Phase 5: Documentation Integration & Prevention
+**Objective**: Document findings and prevent similar issues in future
+**Complexity**: Low
+**Priority**: MEDIUM
+**Dependencies**: Phases 1-4 complete
+
+**Documentation Strategy**: Integrate with existing `.claude/docs/` structure, avoid redundancy.
+
+**Tasks:**
+
+- [ ] **Task 5.1: Update Orchestration Troubleshooting Guide**
+
+  Add case study to existing infrastructure:
+
+  **Location**: `.claude/docs/guides/orchestration-troubleshooting.md`
+
+  **New Section**: Section 6: "Bash Execution Context Issues"
+
+  **Content**:
+  ```markdown
+  ## Section 6: Bash Execution Context Issues
+
+  ### Symptom: "!: command not found" During Workflow Execution
+
+  **Error Pattern**:
+  ```
+  /run/current-system/sw/bin/bash: line NNN: !: command not found
+  ERROR: TOPIC_PATH not set after workflow initialization
+  ```
+
+  **Root Cause**: Bash code blocks execute in separate processes in Claude's markdown execution model. Functions sourced in one block are unavailable in subsequent blocks due to subprocess isolation.
+
+  **Why Standard Fixes Failed**:
+  - History expansion already disabled (non-interactive shell default)
+  - No hidden/non-printable characters found
+  - Library code syntactically correct
+  - Problem is execution model, not code correctness
+
+  **Solution** (from Spec 620/623):
+  1. Add source guards to library files for idempotent re-sourcing
+  2. Re-source libraries at start of each bash block
+  3. Split large blocks (<200 lines) to prevent AI transformation errors
+
+  **Prevention**:
+  - Always re-source libraries in orchestration command bash blocks
+  - Monitor bash block sizes (use awk pattern from Spec 623)
+  - Add source guards to all new library files
+  - Reference: Command Development Guide Section "Bash Block Execution"
+  ```
+
+- [ ] **Task 5.2: Create Root Cause Analysis Report**
+
+  Document for future reference:
+
+  **Location**: `.claude/specs/620_fix_coordinate_bash_history_expansion_errors/reports/001_root_cause_analysis.md`
+
+  **Content Outline**:
+  - Initial hypothesis (history expansion) vs actual cause (subprocess isolation)
+  - Research methodology (Spec 623 parallel investigation)
+  - Evidence from four research domains
+  - Solution validation and testing results
+  - Lessons learned
+  - Cross-references to related specs (617, 613, 602, 623)
+
+  **Note**: This is a debug report, should be committed per directory protocols.
+
+- [ ] **Task 5.3: Update Command Development Guide**
+
+  Add bash execution best practices:
+
+  **Location**: `.claude/docs/guides/command-development-guide.md`
+
+  **Section**: Add to existing "Best Practices"
+
+  **Content**:
+  ```markdown
+  ### Bash Block Execution in Orchestration Commands
+
+  Claude's markdown execution model runs bash blocks as separate processes:
+
+  **Required Practices**:
+  - Re-source libraries at start of each bash block
+  - Add source guards to library files (idempotent re-sourcing)
+  - Split blocks >200 lines (prevents AI transformation errors)
+  - Export critical variables between blocks
+
+  **Example Pattern**:
+  ```bash
+  # At start of every bash block:
+  if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    export CLAUDE_PROJECT_DIR
+  fi
+
+  LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+  source "${LIB_DIR}/workflow-state-machine.sh"
+  source "${LIB_DIR}/state-persistence.sh"
+  # ... other libraries ...
+  ```
+
+  **Reference**: See orchestration-troubleshooting.md Section 6 for case study.
+  ```
+
+- [ ] **Task 5.4: Update Coordinate Command Guide**
+
+  Add architecture notes:
+
+  **Location**: `.claude/docs/guides/coordinate-command-guide.md`
+
+  **Section**: Add to architecture or troubleshooting section
+
+  **Content**: Cross-reference to orchestration-troubleshooting.md Section 6, note about bash block execution model.
+
+**Expected Outcomes:**
+- Root cause documented in troubleshooting infrastructure
+- Prevention guidelines in command development guide
+- Case study available for future contributors
+- Cross-references maintain documentation coherence
+
+**Files Modified:**
+- `.claude/docs/guides/orchestration-troubleshooting.md` (add Section 6)
+- `.claude/specs/620_fix_coordinate_bash_history_expansion_errors/reports/001_root_cause_analysis.md` (create)
+- `.claude/docs/guides/command-development-guide.md` (add bash execution notes)
+- `.claude/docs/guides/coordinate-command-guide.md` (add cross-reference)
 
 **Expected Duration**: 90-120 minutes
 
 ---
 
-### Phase 2: Implement Targeted Fix Based on Diagnostics
-**Objective**: Apply specific fix based on Phase 1 findings
-**Complexity**: Medium (depends on root cause)
-**Priority**: CRITICAL
-
-**Conditional Fixes** (apply based on Phase 1 results):
-
-#### Fix Option A: Library Sourcing Order Issue
-**If diagnostics show**: Error occurs during specific library sourcing
-
-```bash
-# Reorder library sourcing
-# Try loading workflow-initialization.sh earlier
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/workflow-state-machine.sh"
-source "${LIB_DIR}/state-persistence.sh"
-```
-
-#### Fix Option B: Variable Expansion Context Issue
-**If diagnostics show**: Error occurs during variable expansion
-
-```bash
-# Add explicit context control
-(
-  # Run initialization in subshell with controlled environment
-  set +H 2>/dev/null || true  # Disable history if enabled
-  shopt -u histexpand 2>/dev/null || true  # Alternative disable method
-
-  initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"
-
-  # Export results back to parent
-  echo "TOPIC_PATH=$TOPIC_PATH"
-) | while IFS='=' read -r var val; do
-  export "$var=$val"
-done
-```
-
-#### Fix Option C: Bash Block Separation Issue
-**If diagnostics show**: Problem with how bash blocks are executed
-
-```bash
-# Add explicit state preservation between blocks
-# At end of first bash block:
-declare -p > /tmp/coordinate_state_block1.sh
-
-# At start of second bash block:
-source /tmp/coordinate_state_block1.sh
-```
-
-#### Fix Option D: Character Encoding Issue
-**If diagnostics show**: Hidden characters causing problems
-
-```bash
-# Re-save coordinate.md with clean encoding
-iconv -f UTF-8 -t UTF-8 -c .claude/commands/coordinate.md > /tmp/coordinate_clean.md
-mv /tmp/coordinate_clean.md .claude/commands/coordinate.md
-```
-
-#### Fix Option E: Function Definition Issue
-**If diagnostics show**: Problem with how functions are exported
-
-```bash
-# Explicitly re-export functions after sourcing
-export -f initialize_workflow_paths
-export -f reconstruct_report_paths_array
-export -f display_brief_summary
-export -f handle_state_error
-```
-
-**Tasks:**
-- [ ] Analyze Phase 1 diagnostic output
-- [ ] Select appropriate fix option(s)
-- [ ] Implement chosen fix
-- [ ] Test with minimal reproduction case
-- [ ] Test with full /coordinate workflow
-- [ ] Document why this fix addresses the root cause
-
-**Files Modified:**
-- `.claude/commands/coordinate.md` (apply fix)
-- Possibly `.claude/lib/*.sh` (if library changes needed)
-
-**Expected Duration**: 45-60 minutes
-
----
-
-### Phase 3: Comprehensive Testing & Validation
-**Objective**: Verify fix works across all scenarios
-**Complexity**: Medium
-**Priority**: HIGH
-
-**Tasks:**
-
-- [ ] **Test Minimal Cases**:
-  ```bash
-  # Test 1: Simple research workflow
-  /coordinate "Research bash execution issues"
-  # Expected: No errors, TOPIC_PATH set
-
-  # Test 2: Research and plan workflow
-  /coordinate "Research and plan a simple feature"
-  # Expected: Research completes, plan created
-  ```
-
-- [ ] **Test Complex Cases**:
-  ```bash
-  # Test 3: Full workflow with multiple reports
-  /coordinate "Research, plan, and implement authentication system"
-  # Expected: All phases complete successfully
-
-  # Test 4: Workflow with special characters in description
-  /coordinate "Fix bug: handle !important CSS rules correctly"
-  # Expected: Handles ! in description without errors
-  ```
-
-- [ ] **Test Error Conditions**:
-  ```bash
-  # Test 5: Invalid workflow description
-  /coordinate ""
-  # Expected: Graceful error message
-
-  # Test 6: Missing dependencies
-  # Temporarily rename a library file
-  mv .claude/lib/workflow-initialization.sh .claude/lib/workflow-initialization.sh.bak
-  /coordinate "test"
-  # Expected: Clear error about missing library
-  mv .claude/lib/workflow-initialization.sh.bak .claude/lib/workflow-initialization.sh
-  ```
-
-- [ ] **Test State Persistence**:
-  ```bash
-  # Test 7: Resume interrupted workflow
-  # Start a workflow and intentionally interrupt it
-  /coordinate "Long running workflow" &
-  COORD_PID=$!
-  sleep 5
-  kill $COORD_PID
-
-  # Verify state was saved
-  ls -la .claude/tmp/workflow_state_*
-  ```
-
-- [ ] **Regression Testing**:
-  ```bash
-  # Run existing test suite
-  bash .claude/tests/test_coordinate_*.sh
-
-  # Verify no new failures
-  ```
-
-- [ ] **Performance Testing**:
-  ```bash
-  # Test 8: Measure execution time
-  time /coordinate "Quick research task"
-  # Compare with historical performance
-  ```
-
-**Expected Outcomes:**
-- All test cases pass
-- No regressions in existing functionality
-- Clear error messages for edge cases
-- Consistent performance
-
-**Files Modified:** None (testing only)
-
-**Expected Duration**: 60-90 minutes
-
----
-
-### Phase 4: Documentation & Prevention
-**Objective**: Document findings and prevent future occurrences
-**Complexity**: Low
-**Priority**: MEDIUM
-
-**Tasks:**
-
-- [ ] **Create Diagnostic Runbook**: Document troubleshooting process
-  - Location: `.claude/docs/troubleshooting/coordinate-execution-errors.md`
-  - Content:
-    - Common error patterns
-    - Diagnostic commands
-    - Step-by-step troubleshooting
-    - Known fixes for each error type
-
-- [ ] **Document Root Cause**: Explain what was wrong and why
-  - Location: `.claude/specs/620_fix_coordinate_bash_history_expansion_errors/reports/001_root_cause_analysis.md`
-  - Content:
-    - Initial hypothesis vs actual cause
-    - Why standard fixes didn't work
-    - Mechanism of failure
-    - How fix addresses root cause
-    - Lessons learned
-
-- [ ] **Update Command Development Guide**:
-  - Location: `.claude/docs/guides/command-development-guide.md`
-  - Add section: "Bash Block Execution Considerations"
-  - Document best practices learned from this issue
-
-- [ ] **Create Prevention Checklist**:
-  ```markdown
-  ## Bash Block Best Practices
-
-  - [ ] Add debug logging for complex initialization
-  - [ ] Test bash blocks in isolation before integration
-  - [ ] Verify library sourcing order
-  - [ ] Check for character encoding issues
-  - [ ] Test with multiple bash versions
-  - [ ] Add error context to all critical operations
-  ```
-
-- [ ] **Update Orchestration Troubleshooting Guide**:
-  - Location: `.claude/docs/guides/orchestration-troubleshooting.md`
-  - Add this case study
-  - Reference diagnostic runbook
-
-- [ ] **Create Diagnostic Utility Script**:
-  ```bash
-  # .claude/scripts/diagnose-coordinate.sh
-  #!/usr/bin/env bash
-  # Quick diagnostic tool for coordinate execution issues
-
-  echo "=== Coordinate Diagnostic Tool ==="
-  echo ""
-
-  echo "Bash Version:"
-  bash --version | head -1
-  echo ""
-
-  echo "Library Files:"
-  ls -lh .claude/lib/*.sh
-  echo ""
-
-  echo "Shell Options:"
-  bash -c "set -o" | grep -E "history|histexpand"
-  echo ""
-
-  echo "Running minimal test..."
-  # Run minimal reproduction case
-  ```
-
-**Files Created/Modified:**
-- `.claude/docs/troubleshooting/coordinate-execution-errors.md` (new)
-- `.claude/specs/620_fix_coordinate_bash_history_expansion_errors/reports/001_root_cause_analysis.md` (new)
-- `.claude/docs/guides/command-development-guide.md` (update)
-- `.claude/docs/guides/orchestration-troubleshooting.md` (update)
-- `.claude/scripts/diagnose-coordinate.sh` (new)
-
-**Expected Duration**: 45-60 minutes
-
----
-
 ## Testing Strategy
 
-### Diagnostic Testing (Phase 1)
-- Capture complete execution traces
-- Test in isolation vs integrated contexts
-- Compare working vs failing scenarios
-- Document all findings
+### Phase 1 Testing: Immediate Fix Validation
+- Verify source guards prevent double-initialization
+- Confirm library functions available across all bash blocks
+- Test with minimal workflow (research-only)
+- Validate bash block splitting if needed
 
-### Fix Validation (Phase 2)
-- Test chosen fix with minimal case
-- Gradually increase complexity
-- Verify no side effects
-- Confirm error is resolved
+### Phase 2 Testing: Verification Checkpoint Validation
+- Test file creation reliability (100% target)
+- Verify fallback mechanisms activate on agent failure
+- Measure token savings from concise success output
+- Validate integration with verification-helpers.sh
 
-### Comprehensive Testing (Phase 3)
-- Unit tests (individual functions)
-- Integration tests (full workflows)
-- Regression tests (existing functionality)
-- Edge case testing
-- Performance validation
+### Phase 3 Testing: State Management & Error Handling
+- Verify state machine transitions working correctly
+- Test checkpoint recovery (resume from failure point)
+- Validate five-component error messages
+- Confirm retry limits enforced (max 2 per state)
+
+### Phase 4 Testing: Comprehensive Integration
+- Test all workflow types (research-only, research-and-plan, full)
+- Verify performance characteristics (<30% context, ~2ms overhead)
+- Test error conditions and recovery scenarios
+- Regression testing (existing test suite if available)
+
+### Phase 5 Testing: Documentation Validation
+- Verify all cross-references functional
+- Check troubleshooting guide integration
+- Validate command development guide examples
+- Confirm prevention guidelines accurate
 
 ## Risk Assessment
 
-### Low Risk
-- Diagnostic additions are temporary and can be removed
-- Testing is non-destructive
-- Changes are localized to coordinate.md
+### Low Risk (Phases 1-2: Immediate Fixes)
+- Solution validated by research (Spec 623)
+- Source guards are idempotent (safe to re-run)
+- Library modifications localized and tested
+- Changes preserve existing state machine architecture
 
-### Medium Risk
-- Fix may require library modifications
-- Potential for introducing new issues
-- May affect other orchestration commands
+### Medium Risk (Phases 3-5: Enhancements)
+- Error handling changes may affect edge cases
+- State machine enhancements require thorough testing
+- Documentation updates need accuracy validation
+- May affect other orchestration commands if libraries shared
 
 ### Mitigation Strategies
-- Keep all diagnostic output for analysis
-- Make atomic commits for easy rollback
-- Test each change incrementally
-- Maintain backup of working code
-- Document all changes thoroughly
+- Implement phases incrementally (1 → 2 → 3 → 4 → 5)
+- Test after each phase before proceeding
+- Use source guards to make changes idempotent
+- Preserve existing state machine architecture (no redundancy)
+- Make atomic commits for easy rollback per phase
+- Follow research-validated patterns (Spec 623)
 
 ### Rollback Plan
 ```bash
-# If fix causes issues:
-git log --oneline --grep="620" | head -5
+# Rollback by phase:
+# Phase 1: Restore library files from git
+git checkout HEAD -- .claude/lib/*.sh
+git checkout HEAD -- .claude/commands/coordinate.md
+
+# Phase 2-5: Revert specific commits
+git log --oneline --grep="620" | head -10
 git revert <commit-hash>
 
-# Or restore from backup:
-cp .claude/commands/coordinate.md.backup .claude/commands/coordinate.md
+# Emergency rollback: Use backup
+ls .claude/specs/620_fix_coordinate_bash_history_expansion_errors/plans/*.backup-*
+# Restore coordinate.md from last known-good state
 ```
 
 ## Dependencies
 
 ### Prerequisites
-- Spec 617 completed (verified working in isolation)
+- Spec 617 completed (${!...} patterns fixed in libraries - verified working)
+- Spec 623 research completed (root cause identified, solution validated)
+- Spec 613, 602 background (state machine architecture context)
 - Access to test /coordinate command
-- Ability to add temporary diagnostic code
 - Bash 4.3+ for testing
 
+### Integration with Existing Infrastructure
+- **Preserves state-based orchestration** (Spec 602) - no redundancy introduced
+- Uses existing `.claude/lib/` directory for source guards
+- Follows `.claude/docs/guides/orchestration-troubleshooting.md` structure
+- Follows `.claude/docs/concepts/directory-protocols.md` for artifact organization
+- Integrates with `.claude/docs/guides/command-development-guide.md` patterns
+- Leverages existing verification-helpers.sh library (Phase 2)
+- Uses existing workflow-state-machine.sh (Phase 3)
+
 ### No Breaking Changes Expected
-- Fixes should be additive or corrective
+- Fixes are additive and corrective
 - No API changes required
-- Library interfaces remain stable
+- Library interfaces remain stable (source guards are transparent)
+- State machine architecture preserved exactly as-is
 
 ## Expected Outcomes
 
-### Phase 1 Outcomes
-- Clear understanding of failure mechanism
-- Identification of exact error source
-- Minimal reproduction case
-- Diagnostic tools for future use
+### Phase 1 Outcomes (Immediate Fix - CRITICAL)
+- Zero "!: command not found" errors in /coordinate
+- Library functions available across all bash blocks
+- Source guards prevent double-initialization issues
+- Bash blocks <200 lines (split if necessary)
+- **Time**: 60-90 minutes
 
-### Phase 2 Outcomes
-- Targeted fix that addresses root cause
-- Verification that fix resolves issue
-- No introduction of new problems
+### Phase 2 Outcomes (Verification Checkpoints - HIGH)
+- 100% file creation reliability achieved
+- 2,940 tokens saved per workflow (93% per checkpoint)
+- Fallback mechanisms prevent workflow deadlock
+- Clear fail-fast diagnostics on verification failures
+- **Time**: 90-120 minutes
 
-### Phase 3 Outcomes
-- Comprehensive test coverage
-- Confidence in fix robustness
-- Performance validation
+### Phase 3 Outcomes (State Management & Error Handling - MEDIUM)
+- State machine validated and enhanced
+- Five-component error messages reduce diagnostic time 40-60%
+- Checkpoint recovery working for all failure modes
+- Max 2 retries per state enforced
+- **Time**: 2-3 hours
 
-### Phase 4 Outcomes
-- Complete documentation of issue and solution
-- Prevention guidelines for future development
-- Improved troubleshooting capabilities
+### Phase 4 Outcomes (Comprehensive Testing - HIGH)
+- All workflow types tested and working
+- Performance within acceptable ranges (<30% context, ~2ms overhead)
+- No regressions in existing functionality
+- Error conditions handled gracefully
+- **Time**: 2-3 hours
+
+### Phase 5 Outcomes (Documentation & Prevention - MEDIUM)
+- Root cause documented in troubleshooting infrastructure
+- Prevention guidelines in command development guide
+- Case study available for future contributors
+- Cross-references maintain documentation coherence
+- **Time**: 90-120 minutes
+
+### Overall Outcomes
+- **Total Time**: 8-12 hours across 5 phases
+- **Priority Path**: Phases 1-2 (immediate fixes) can be implemented first
+- **Enhancement Path**: Phases 3-5 can follow incrementally
+- **No redundancy**: Preserves existing state-based orchestration architecture
 
 ## Notes for Implementation
 
-### Why This Approach is Different
+### Why This Revised Approach Works
 
-**Previous Attempt** (didn't work):
-- Applied `set +H` based on history expansion hypothesis
-- Standard fix for standard problem
+**Original Plan** (diagnostic-first):
+- Applied diagnostic-heavy Phase 1 based on hypothesis
+- Multiple conditional fix options (A-E)
+- Extensive logging and tracing
 
-**This Approach** (diagnostic-first):
-- Acknowledges this is NOT a standard issue
-- Requires understanding before fixing
-- Systematic, evidence-based approach
-- Multiple fix options based on findings
+**Revised Plan** (research-validated):
+- **Root cause confirmed** via Spec 623 parallel research
+- **Solution validated**: Re-source libraries, add source guards, split large blocks
+- **Evidence-based**: 100% resolution with ~2ms overhead proven
+- **Phases reordered**: Immediate fixes first, enhancements follow
+- **Preserves architecture**: No redundancy with existing state-based orchestration
 
-### Key Insights from Research
+### Key Insights from Research (Spec 623)
 
-1. **History expansion is already OFF** - This is not the issue
-2. **Libraries work in isolation** - Problem is integration/context
-3. **Line numbers are mysterious** - Suggests execution context issue
-4. **Standard fixes failed** - Confirms this needs deeper investigation
+1. **Subprocess isolation confirmed** - Bash blocks are sibling processes, not parent-child
+2. **History expansion is NOT the cause** - Disabled by default in non-interactive shells
+3. **Function unavailability** - Functions sourced in block 1 unavailable in block 2
+4. **Large block errors** - AI transformation errors occur in blocks >400 lines
+5. **State machine works** - Existing implementation correct, just needs function availability fix
 
 ### Implementation Philosophy
 
-**Measure twice, cut once:**
-- Phase 1 is diagnostic heavy (intentionally)
-- Don't guess at fixes
-- Let evidence guide the solution
-- Create reusable diagnostic tools
+**Research-driven execution:**
+- Root cause identified before implementation
+- Solution validated by research (Spec 623)
+- Follow proven patterns from successful implementations
+- Measure outcomes against research targets
 
-**Be prepared for surprises:**
-- Root cause may be unexpected
-- May need multiple iterations
-- Document everything learned
-- Build knowledge for future issues
+**Preserve existing architecture:**
+- State-based orchestration (Spec 602) already implemented correctly
+- **No redundancy**: Work with existing state machine, don't replace it
+- **Enhancement, not replacement**: Strengthen what's there
+- Verification, error handling, diagnostics layer on top
+
+**Integrate, don't duplicate:**
+- Leverage existing `.claude/lib/` libraries
+- Use existing verification-helpers.sh, workflow-state-machine.sh
+- Add to existing documentation sections
+- Follow established directory structure
+
+### Critical Success Factors
+
+1. **Phase 1 must execute first** - Without library re-sourcing, nothing else works
+2. **Source guards are essential** - Make re-sourcing idempotent
+3. **Test incrementally** - Validate each phase before proceeding
+4. **Preserve state machine** - Don't introduce redundant orchestration logic
 
 ## Success Metrics
 
-- [ ] `/coordinate` executes without "!: command not found" errors
-- [ ] TOPIC_PATH initialized successfully
-- [ ] All workflow types functional (research-only, research-and-plan, full)
+### Phase 1 Success Criteria
+- [ ] Zero "!: command not found" errors in any workflow
+- [ ] Library functions available across all bash block boundaries
+- [ ] Source guards implemented in all critical libraries
+- [ ] Bash blocks <200 lines (split if necessary)
+
+### Phase 2 Success Criteria
+- [ ] 100% file creation reliability (up from 70% baseline)
+- [ ] Verification-helpers.sh integrated at all creation points
+- [ ] Fallback mechanisms tested and working
+- [ ] Token savings measured (target: 2,940 tokens per workflow)
+
+### Phase 3 Success Criteria
+- [ ] State machine transitions validated
+- [ ] Five-component error messages implemented
+- [ ] Checkpoint recovery tested (resume from failure)
+- [ ] Max 2 retries per state enforced
+
+### Phase 4 Success Criteria
+- [ ] All workflow types tested (research-only, research-and-plan, full)
+- [ ] Performance validated (<30% context, ~2ms overhead)
 - [ ] No regressions in existing functionality
-- [ ] Root cause fully understood and documented
-- [ ] Diagnostic tools created for future troubleshooting
-- [ ] Prevention guidelines established
+- [ ] Error conditions handled gracefully
+
+### Phase 5 Success Criteria
+- [ ] Root cause documented in orchestration-troubleshooting.md Section 6
+- [ ] Prevention guidelines in command-development-guide.md
+- [ ] Root cause analysis report created
+- [ ] All cross-references functional
+
+### Overall Success Metrics
+- [ ] TOPIC_PATH and all workflow variables properly initialized
+- [ ] State-based orchestration architecture preserved (no redundancy)
+- [ ] Delegation rate maintained >90%
+- [ ] Context usage remains <30%
+
+---
+
+## Revision History
+
+### 2025-11-09 - Revision 1 (Original)
+**Changes**: Integrated with existing .claude/docs/ infrastructure
+**Reason**: Avoid redundancy and ensure consistency with established patterns
+**Modified Sections**:
+- Phase 4: Changed from creating new standalone guides to integrating with existing documentation
+- Documentation locations updated to use existing files
+- Added cross-references to orchestration-troubleshooting.md
+- Aligned diagnostic script location with existing .claude/scripts/ directory
+
+### 2025-11-09 - Revision 2 (Research-Validated)
+**Changes**: Complete plan restructuring based on Spec 623 research findings
+**Reason**: Root cause confirmed, solution validated, eliminate diagnostic guesswork
+**Reports Used**: [Spec 623 - Coordinate Orchestration Best Practices](../../623_coordinate_orchestration_best_practices/reports/001_coordinate_orchestration_best_practices/OVERVIEW.md)
+
+**Major Restructuring**:
+- **Root cause section**: Updated from hypothesis to confirmed findings (subprocess isolation)
+- **Phase 1**: Changed from diagnostics to immediate fix (re-source libraries, add source guards)
+- **Phase 2**: New focus on verification checkpoints (100% file creation reliability)
+- **Phase 3**: New focus on state management & error handling enhancements
+- **Phase 4**: Comprehensive testing across all workflow types
+- **Phase 5**: Documentation integration (moved from old Phase 4)
+- **Success criteria**: Expanded to include state machine preservation requirement
+
+**Evidence-Based Changes**:
+- Eliminated diagnostic-heavy Phase 1 (root cause already known)
+- Eliminated conditional fix options A-E (solution identified)
+- Added research-validated metrics (100% resolution, ~2ms overhead, 2,940 token savings)
+- Added explicit preservation of existing state-based orchestration architecture
+- Updated all task descriptions with specific research findings
+
+**Key Additions**:
+- Source guard implementation pattern (Task 1.1)
+- Bash block size auditing (Task 1.2)
+- Standardized library re-sourcing pattern (Task 1.3)
+- Verification checkpoint integration (Phase 2)
+- Five-component error message implementation (Phase 3)
+- State machine validation tasks (Phase 3)
+
+**Philosophy Shift**:
+- From "measure twice, cut once" diagnostic approach
+- To "research-driven execution" with validated solution
+- Emphasis on "preserve existing architecture, no redundancy"
+
+**Estimated Time Update**:
+- Original: 3.5-5 hours across 4 phases
+- Revised: 8-12 hours across 5 phases (includes enhancements, not just fixes)
+- **Priority path**: Phases 1-2 (3-4 hours) resolve immediate issue
+- **Enhancement path**: Phases 3-5 (5-8 hours) strengthen long-term reliability
 
 ---
 
 ## Summary
 
-This plan takes a **diagnostic-first approach** to resolve the mysterious bash execution failures in coordinate.md. Rather than applying standard fixes that have already failed, we systematically:
+This plan implements a **research-validated solution** to resolve bash execution failures in coordinate.md, based on comprehensive investigation conducted in Spec 623.
 
-1. **Diagnose** with extensive logging and testing to understand the true failure mechanism
-2. **Fix** based on evidence from diagnostics, with multiple options prepared
-3. **Validate** comprehensively across all use cases
-4. **Document** to prevent recurrence and enable faster future troubleshooting
+**Root Cause** (confirmed via research):
+- Bash code blocks execute as separate processes in Claude's markdown execution model
+- Functions sourced in one block are unavailable in subsequent blocks
+- The "!: command not found" error refers to `${!varname}` syntax inside unavailable functions
+- NOT related to history expansion (disabled by default in non-interactive shells)
 
-**Estimated Total Time**: 3.5-5 hours across 4 phases
-**Risk Level**: Low-Medium (diagnostic approach minimizes risk)
-**Impact**: Unblocks /coordinate and establishes robust troubleshooting methodology
+**Solution** (5-phase approach):
+1. **Phase 1 (CRITICAL)**: Re-source libraries in each bash block, add source guards, split large blocks
+2. **Phase 2 (HIGH)**: Add verification checkpoints for 100% file creation reliability
+3. **Phase 3 (MEDIUM)**: Enhance error handling and validate state machine integration
+4. **Phase 4 (HIGH)**: Comprehensive testing across all workflow types
+5. **Phase 5 (MEDIUM)**: Document findings and integrate prevention guidelines
 
-**Critical Success Factor**: Phase 1 must reveal the true root cause before proceeding to Phase 2. Do not guess at fixes - let the diagnostics guide the solution.
+**Key Principles**:
+- **Preserve existing architecture**: State-based orchestration (Spec 602) already correct, no redundancy
+- **Evidence-based**: All solutions validated by Spec 623 research
+- **Incremental implementation**: Phases 1-2 resolve immediate issue (3-4 hours), Phases 3-5 add enhancements (5-8 hours)
+- **Integration over duplication**: Work with existing libraries, documentation, and infrastructure
+
+**Expected Impact**:
+- Zero "!: command not found" errors
+- 100% file creation reliability (up from 70%)
+- 2,940 tokens saved per workflow
+- <30% context usage maintained
+- >90% delegation rate preserved
+- State machine architecture enhanced, not replaced
+
+**Total Time**: 8-12 hours across 5 phases (or 3-4 hours for immediate fix only)

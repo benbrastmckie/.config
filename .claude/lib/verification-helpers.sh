@@ -7,6 +7,12 @@
 #   by emitting single-character success indicators (✓) and verbose diagnostics only
 #   on failure.
 #
+# Source guard: Prevent multiple sourcing
+if [ -n "${VERIFICATION_HELPERS_SOURCED:-}" ]; then
+  return 0
+fi
+export VERIFICATION_HELPERS_SOURCED=1
+#
 # FUNCTIONS:
 #   verify_file_created() - Verify file exists and has content
 #

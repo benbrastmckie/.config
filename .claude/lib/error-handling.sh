@@ -2,6 +2,12 @@
 # Error handling and recovery utilities
 # Provides functions for error classification, recovery, retry logic, and escalation
 
+# Source guard: Prevent multiple sourcing
+if [ -n "${ERROR_HANDLING_SOURCED:-}" ]; then
+  return 0
+fi
+export ERROR_HANDLING_SOURCED=1
+
 set -euo pipefail
 
 # ==============================================================================
