@@ -201,21 +201,21 @@ ERROR: TOPIC_PATH not set after workflow initialization
 
 ---
 
-### Phase 2: Add Verification Checkpoints (100% File Creation Reliability)
-**Objective**: Integrate verification-helpers.sh to achieve 100% file creation reliability
-**Complexity**: Medium
+### Phase 2: Standardize Verification Checkpoints (Fail-Fast Reliability)
+**Objective**: Integrate verification-helpers.sh for consistent fail-fast verification across all file creation points
+**Complexity**: Low-Medium
 **Priority**: HIGH
 **Dependencies**: Phase 1 complete (libraries with source guards available)
 
-**Background** (from Spec 623 Research):
-- Without verification: 70% file creation success
-- With verification: 100% file creation success
+**Background** (from Spec 623 Research and Fail-Fast Standards):
+- Verification-helpers.sh provides consistent fail-fast diagnostics
 - Token savings: 2,940 tokens per workflow (93% reduction per checkpoint)
 - Time cost: +2-3 seconds per file (acceptable trade-off)
+- **Fail-Fast Philosophy**: Agent failures should be exposed loudly with clear diagnostics, not hidden by silent fallbacks
 
 **Tasks:**
 
-- [ ] **Task 2.1: Audit Existing File Creation Points**
+- [x] **Task 2.1: Audit Existing File Creation Points**
 
   Identify all locations where coordinate.md creates files:
 
@@ -229,7 +229,12 @@ ERROR: TOPIC_PATH not set after workflow initialization
   # Map current verification approach (inline blocks vs verification-helpers.sh)
   ```
 
-- [ ] **Task 2.2: Replace Inline Verification with verification-helpers.sh**
+  **Result**: Identified 3 file creation points:
+  - Flat research coordination (lines 404-418): ✓ Already uses verification-helpers.sh
+  - Hierarchical research coordination (lines 371-387): ✗ Uses inline verification
+  - Planning phase (lines 548-553): ✓ Already uses verification-helpers.sh
+
+- [x] **Task 2.2: Replace Inline Verification with verification-helpers.sh**
 
   Standardize all file verification using library functions:
 
@@ -249,61 +254,41 @@ ERROR: TOPIC_PATH not set after workflow initialization
   fi
   ```
 
-- [ ] **Task 2.3: Add Fallback Mechanisms**
+  **Changes Made**:
+  - Hierarchical research path (lines 375-383): Replaced inline check with verify_file_created() calls
 
-  Implement fallback creation for failed agent delegations:
+- [ ] **Task 2.3: Test Fail-Fast Verification**
 
-  ```bash
-  # After agent Task invocation:
-  if ! verify_file_created "$EXPECTED_PATH" "Agent output" "Phase N"; then
-    # FALLBACK MECHANISM
-    echo "  Creating fallback file..."
-    mkdir -p "$(dirname "$EXPECTED_PATH")"
-    cat > "$EXPECTED_PATH" <<EOF
-  # Fallback Report
-
-  Primary agent failed to create this file.
-  Workflow continues with minimal fallback content.
-  EOF
-
-    # RE-VERIFY fallback
-    if ! verify_file_created "$EXPECTED_PATH" "Fallback file" "Phase N"; then
-      echo "CRITICAL: Fallback creation failed"
-      handle_state_error "Cannot recover from verification failure" 1
-    fi
-  fi
-  ```
-
-- [ ] **Task 2.4: Test Verification Reliability**
-
-  Ensure 100% file creation across failure scenarios:
+  Verify that failures produce immediate, clear diagnostics:
 
   ```bash
   # Test 1: Normal operation (agent succeeds)
   /coordinate "Research test topic"
-  # Expected: 100% file creation, concise success output
+  # Expected: Concise success output, all reports verified
 
-  # Test 2: Agent failure simulation
-  # Modify agent to skip file creation
-  # Expected: Fallback mechanism activates, verification succeeds
+  # Test 2: Agent failure detection
+  # Simulate agent failure (e.g., permission error, missing directory)
+  # Expected: Immediate failure with clear diagnostic from verify_file_created()
+  # Expected: NO silent fallbacks, NO graceful degradation
+  # Expected: Error message includes file path, expected location, phase context
 
-  # Test 3: Permission errors
-  # Test with read-only directory (if applicable)
-  # Expected: Clear diagnostic, graceful failure
+  # Test 3: Verification consistency
+  # Verify all file creation points use verification-helpers.sh
+  # Expected: Consistent error message format across all phases
   ```
 
 **Expected Outputs:**
-- 100% file creation reliability achieved
+- All file creation points use verification-helpers.sh for consistency
 - 93% token reduction per checkpoint (concise success, verbose failure)
-- Clear fail-fast diagnostics on verification failures
-- Fallback mechanisms prevent workflow deadlock
+- Clear fail-fast diagnostics on verification failures (no silent fallbacks)
+- Agent failures exposed immediately with actionable error messages
 
 **Files Modified:**
-- `.claude/commands/coordinate.md` (replace inline verification, add fallback mechanisms)
+- `.claude/commands/coordinate.md` (standardize inline verification → verification-helpers.sh)
 
-**Expected Duration**: 90-120 minutes
+**Expected Duration**: 45-60 minutes
 
-**Research Validation**: Spec 623 shows verification pattern achieves 70% → 100% reliability with 2,940 token savings per workflow.
+**Research Validation**: Spec 623 shows verification pattern achieves token savings with clear diagnostics. Fail-fast standards require exposing agent failures loudly, not hiding them.
 
 ---
 
@@ -475,10 +460,11 @@ ERROR: TOPIC_PATH not set after workflow initialization
   # Expected: Clear bootstrap failure diagnostic
   mv .claude/lib/workflow-state-machine.sh.bak .claude/lib/workflow-state-machine.sh
 
-  # Test 8: Agent delegation failure simulation
-  # Modify research-specialist agent to skip file creation
+  # Test 8: Agent delegation failure detection (fail-fast)
+  # Simulate agent failure (e.g., permission error, missing directory)
   /coordinate "test research"
-  # Expected: Fallback mechanism activates, verification succeeds, workflow continues
+  # Expected: Immediate failure with clear diagnostic from verify_file_created()
+  # Expected: NO silent fallbacks, workflow halts with actionable error message
 
   # Test 9: Checkpoint recovery
   # Manually kill /coordinate during Phase 2
@@ -760,12 +746,12 @@ ls .claude/specs/620_fix_coordinate_bash_history_expansion_errors/plans/*.backup
 - Bash blocks <200 lines (split if necessary)
 - **Time**: 60-90 minutes
 
-### Phase 2 Outcomes (Verification Checkpoints - HIGH)
-- 100% file creation reliability achieved
+### Phase 2 Outcomes (Verification Standardization - HIGH)
+- All file creation points use verification-helpers.sh consistently
 - 2,940 tokens saved per workflow (93% per checkpoint)
-- Fallback mechanisms prevent workflow deadlock
-- Clear fail-fast diagnostics on verification failures
-- **Time**: 90-120 minutes
+- Clear fail-fast diagnostics on verification failures (no silent fallbacks)
+- Agent failures exposed immediately with actionable error messages
+- **Time**: 45-60 minutes
 
 ### Phase 3 Outcomes (State Management & Error Handling - MEDIUM)
 - State machine validated and enhanced
@@ -854,9 +840,9 @@ ls .claude/specs/620_fix_coordinate_bash_history_expansion_errors/plans/*.backup
 - [ ] Bash blocks <200 lines (split if necessary)
 
 ### Phase 2 Success Criteria
-- [ ] 100% file creation reliability (up from 70% baseline)
-- [ ] Verification-helpers.sh integrated at all creation points
-- [ ] Fallback mechanisms tested and working
+- [x] All file creation points audited and mapped
+- [x] Verification-helpers.sh integrated at all inline verification points
+- [ ] Fail-fast verification tested (no silent fallbacks)
 - [ ] Token savings measured (target: 2,940 tokens per workflow)
 
 ### Phase 3 Success Criteria
@@ -936,6 +922,30 @@ ls .claude/specs/620_fix_coordinate_bash_history_expansion_errors/plans/*.backup
 - **Priority path**: Phases 1-2 (3-4 hours) resolve immediate issue
 - **Enhancement path**: Phases 3-5 (5-8 hours) strengthen long-term reliability
 
+### 2025-11-09 - Revision 3 (Fail-Fast Alignment)
+**Changes**: Remove fallback mechanisms from Phase 2 to align with fail-fast standards
+**Reason**: Fail-fast philosophy requires exposing agent failures loudly, not hiding them with silent fallbacks
+**Modified Sections**:
+- **Phase 2 objective**: Changed from "100% file creation reliability" to "consistent fail-fast verification"
+- **Task 2.3 removed**: Eliminated fallback mechanism implementation entirely
+- **Task 2.4 updated**: Changed to "Test Fail-Fast Verification" without fallback expectations
+- **Phase 2 outcomes**: Removed "fallback mechanisms prevent workflow deadlock", added "no silent fallbacks"
+- **Phase 4 Test 8**: Changed from testing fallback activation to testing fail-fast error detection
+- **Success criteria**: Removed "fallback mechanisms tested and working", added "fail-fast verification tested"
+- **Summary**: Updated key principles to include "fail-fast approach", removed "100% file creation reliability" claim
+
+**Rationale**:
+- Fallback mechanisms violate fail-fast standards from `.claude/docs/concepts/writing-standards.md`
+- Silent fallbacks hide agent failures instead of exposing them for debugging
+- Clear, immediate failures are better than hidden complexity masking problems
+- Verification-helpers.sh already provides excellent fail-fast diagnostics
+- Agent failures should halt workflow with actionable error messages, not continue with degraded content
+
+**Impact on Timeline**:
+- Phase 2 duration reduced: 90-120 minutes → 45-60 minutes (simpler implementation)
+- Total time reduced: 8-12 hours → 7-11 hours
+- Priority path time reduced: 3-4 hours → 2-3 hours
+
 ---
 
 ## Summary
@@ -950,7 +960,7 @@ This plan implements a **research-validated solution** to resolve bash execution
 
 **Solution** (5-phase approach):
 1. **Phase 1 (CRITICAL)**: Re-source libraries in each bash block, add source guards, split large blocks
-2. **Phase 2 (HIGH)**: Add verification checkpoints for 100% file creation reliability
+2. **Phase 2 (HIGH)**: Standardize verification with verification-helpers.sh for consistent fail-fast diagnostics
 3. **Phase 3 (MEDIUM)**: Enhance error handling and validate state machine integration
 4. **Phase 4 (HIGH)**: Comprehensive testing across all workflow types
 5. **Phase 5 (MEDIUM)**: Document findings and integrate prevention guidelines
@@ -958,15 +968,16 @@ This plan implements a **research-validated solution** to resolve bash execution
 **Key Principles**:
 - **Preserve existing architecture**: State-based orchestration (Spec 602) already correct, no redundancy
 - **Evidence-based**: All solutions validated by Spec 623 research
-- **Incremental implementation**: Phases 1-2 resolve immediate issue (3-4 hours), Phases 3-5 add enhancements (5-8 hours)
+- **Fail-fast approach**: Agent failures exposed loudly with clear diagnostics, no silent fallbacks
+- **Incremental implementation**: Phases 1-2 resolve immediate issue (2-3 hours), Phases 3-5 add enhancements (5-8 hours)
 - **Integration over duplication**: Work with existing libraries, documentation, and infrastructure
 
 **Expected Impact**:
 - Zero "!: command not found" errors
-- 100% file creation reliability (up from 70%)
-- 2,940 tokens saved per workflow
+- Consistent fail-fast verification across all file creation points
+- 2,940 tokens saved per workflow (93% reduction per checkpoint)
 - <30% context usage maintained
 - >90% delegation rate preserved
 - State machine architecture enhanced, not replaced
 
-**Total Time**: 8-12 hours across 5 phases (or 3-4 hours for immediate fix only)
+**Total Time**: 7-11 hours across 5 phases (or 2-3 hours for immediate fix only)
