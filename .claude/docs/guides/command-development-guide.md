@@ -1291,6 +1291,8 @@ This pattern maintains optimal performance:
 
 Multi-block commands in Claude Code face a fundamental architectural constraint: **bash blocks execute in separate subprocesses**. This means variable exports and environment changes don't persist between blocks.
 
+**For comprehensive documentation of bash block execution and subprocess isolation patterns, see [Bash Block Execution Model](../concepts/bash-block-execution-model.md)**.
+
 #### The Subprocess Isolation Constraint
 
 When Claude executes bash code blocks via the Bash tool, each block runs in a completely separate subprocess, not a subshell. This architectural decision (GitHub issues #334, #2508) has critical implications:

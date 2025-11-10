@@ -16,6 +16,8 @@ Orchestration commands coordinate multi-phase workflows through hierarchical age
 4. **Wave-Based Parallel Execution**: 40-60% time savings through dependency analysis
 5. **Fail-Fast Error Handling**: Immediate configuration error detection with diagnostic context
 
+**Architectural Foundation**: All orchestration commands are built on the [Bash Block Execution Model](../concepts/bash-block-execution-model.md), which defines subprocess isolation constraints and validated patterns for cross-block state management
+
 **Target Performance**:
 - Context usage: <30% throughout 7-phase workflow
 - File creation reliability: 100%
