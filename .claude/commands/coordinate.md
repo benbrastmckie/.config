@@ -289,7 +289,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -424,7 +424,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -650,7 +650,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -739,7 +739,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -913,7 +913,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -983,7 +983,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1056,7 +1056,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1177,7 +1177,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1244,7 +1244,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1364,7 +1364,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
@@ -1431,7 +1431,7 @@ USE the Bash tool:
 set +H  # Disable history expansion to prevent bad substitution errors
 # Re-source libraries (functions lost across bash block boundaries)
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2)/dev/null || pwd)"
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
   export CLAUDE_PROJECT_DIR
 fi
 
