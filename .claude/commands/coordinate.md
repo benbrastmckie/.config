@@ -47,13 +47,17 @@ export WORKFLOW_DESCRIPTION
 # Source state machine and state persistence libraries
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-if [ ! -f "${LIB_DIR}/workflow-state-machine.sh" ]; then
+# Avoid ! operator due to Bash tool preprocessing issues
+if [ -f "${LIB_DIR}/workflow-state-machine.sh" ]; then
+  source "${LIB_DIR}/workflow-state-machine.sh"
+else
   echo "ERROR: workflow-state-machine.sh not found"
   exit 1
 fi
-source "${LIB_DIR}/workflow-state-machine.sh"
 
-if [ ! -f "${LIB_DIR}/state-persistence.sh" ]; then
+if [ -f "${LIB_DIR}/state-persistence.sh" ]; then
+  : # File exists, continue
+else
   echo "ERROR: state-persistence.sh not found"
   exit 1
 fi
@@ -93,19 +97,25 @@ case "$WORKFLOW_SCOPE" in
     ;;
 esac
 
-if ! source_required_libraries "${REQUIRED_LIBS[@]}"; then
+# Avoid ! operator due to Bash tool preprocessing issues
+if source_required_libraries "${REQUIRED_LIBS[@]}"; then
+  : # Success - libraries loaded
+else
   echo "ERROR: Failed to source required libraries"
   exit 1
 fi
 
 # Source workflow initialization and initialize paths
-if [ ! -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
+if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
+else
   echo "ERROR: workflow-initialization.sh not found"
   exit 1
 fi
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
 
-if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
+if initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
+  : # Success - paths initialized
+else
   handle_state_error "Workflow initialization failed" 1
 fi
 
@@ -365,10 +375,11 @@ else
 
   for i in $(seq 1 $RESEARCH_COMPLEXITY); do
     REPORT_PATH="${REPORT_PATHS[$i-1]}"
-    if ! verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Research"; then
-      VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
-    else
+    # Avoid ! operator due to Bash tool preprocessing issues
+    if verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Research"; then
       SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
+    else
+      VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
     fi
   done
 
@@ -510,11 +521,12 @@ emit_progress "2" "Plan creation invoked - awaiting completion"
 # Verify plan was created
 PLAN_PATH="${TOPIC_PATH}/plans/001_implementation.md"
 
-if ! verify_file_created "$PLAN_PATH" "Implementation plan" "Planning"; then
+# Avoid ! operator due to Bash tool preprocessing issues
+if verify_file_created "$PLAN_PATH" "Implementation plan" "Planning"; then
+  echo "✓ Plan verified: $PLAN_PATH"
+else
   handle_state_error "Plan file not created at expected path: $PLAN_PATH" 1
 fi
-
-echo "✓ Plan verified: $PLAN_PATH"
 
 # Save plan path to workflow state
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
