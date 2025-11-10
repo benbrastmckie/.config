@@ -869,11 +869,112 @@ emit_progress "2" "Plan creation invoked - awaiting completion"
 # Verify plan was created
 PLAN_PATH="${TOPIC_PATH}/plans/001_implementation.md"
 
-# Avoid ! operator due to Bash tool preprocessing issues
+# ===== MANDATORY VERIFICATION CHECKPOINT: Planning Phase =====
+echo ""
+echo "MANDATORY VERIFICATION: Planning Phase Artifacts"
+echo "Checking implementation plan..."
+echo ""
+
+echo -n "  Implementation plan: "
 if verify_file_created "$PLAN_PATH" "Implementation plan" "Planning"; then
-  echo "✓ Plan verified: $PLAN_PATH"
+  PLAN_SIZE=$(stat -f%z "$PLAN_PATH" 2>/dev/null || stat -c%s "$PLAN_PATH" 2>/dev/null || echo "unknown")
+  echo " verified ($PLAN_SIZE bytes)"
+  VERIFICATION_FAILED=false
 else
-  handle_state_error "Plan file not created at expected path: $PLAN_PATH" 1
+  echo ""
+  VERIFICATION_FAILED=true
+fi
+
+# ===== FALLBACK MECHANISM: Create Missing Plan =====
+if [ "$VERIFICATION_FAILED" = "true" ]; then
+  echo ""
+  echo "❌ CRITICAL: Plan file verification failed"
+  echo "   Expected: $PLAN_PATH"
+  echo ""
+  echo "--- FALLBACK MECHANISM: Implementation Plan Creation ---"
+  echo "⚠️  /plan command did not create expected file"
+  echo "Creating fallback plan with template content..."
+  echo ""
+
+  # Ensure directory exists
+  PLAN_DIR=$(dirname "$PLAN_PATH")
+  mkdir -p "$PLAN_DIR"
+
+  # Create fallback file with template content
+  cat > "$PLAN_PATH" <<FALLBACK_EOF
+# Implementation Plan (Fallback Creation)
+
+## Metadata
+- **Created via**: Fallback mechanism (/plan did not create file)
+- **Timestamp**: $(date -Iseconds)
+- **Workflow ID**: ${WORKFLOW_ID}
+- **Expected path**: ${PLAN_PATH}
+- **Workflow Description**: ${WORKFLOW_DESCRIPTION}
+
+## Research Reports Referenced
+
+$(for report in "${REPORT_PATHS[@]}"; do
+  echo "- $report"
+done)
+
+## Overview
+
+This plan was created by fallback mechanism. The /plan command did not create
+the expected implementation plan file.
+
+**Action Required**:
+1. Review /plan command output and error messages
+2. Manually create implementation plan based on research reports
+3. Or re-run /plan command with corrected parameters
+
+## Phases
+
+### Phase 1: [Phase Name]
+
+**Objective**: [Description]
+
+**Tasks**:
+- [ ] Task 1
+- [ ] Task 2
+
+## Notes
+
+Populate phases based on:
+- Workflow description: "${WORKFLOW_DESCRIPTION}"
+- Research findings in ${#REPORT_PATHS[@]} reports above
+
+## Troubleshooting
+
+The /plan command may have failed due to:
+- Command execution errors
+- Agent behavioral issues
+- File path calculation errors
+- Insufficient research data
+
+Check coordinator logs and /plan command output for details.
+FALLBACK_EOF
+
+  # MANDATORY RE-VERIFICATION
+  echo -n "  Re-verification: "
+  if verify_file_created "$PLAN_PATH" "Fallback plan" "Planning Fallback"; then
+    echo " success ($PLAN_PATH)"
+    echo ""
+    echo "✓ Fallback mechanism succeeded: Created placeholder plan"
+    echo "⚠️  Note: Plan contains template content only"
+    echo "⚠️  Manual population of implementation phases required"
+    append_workflow_state "FALLBACK_USED_PLAN" "true"
+  else
+    echo ""
+    echo "  ❌ FALLBACK FAILURE: Could not create file at $PLAN_PATH"
+    echo ""
+    echo "❌ ESCALATION: Fallback mechanism failed"
+    echo "   This indicates a critical filesystem or permissions issue"
+    echo "   Manual intervention required"
+    append_workflow_state "FALLBACK_USED_PLAN" "failed"
+    handle_state_error "Fallback mechanism failed - cannot create plan file" 1
+  fi
+else
+  echo "✓ Plan file verified successfully"
 fi
 
 # Save plan path to workflow state
@@ -1246,11 +1347,119 @@ else
   exit 1
 fi
 
-emit_progress "5" "Debug analysis complete"
+emit_progress "5" "Debug analysis complete - verifying results"
 
-# Save debug report path
-# Note: In a real implementation, this would be extracted from agent response
-append_workflow_state "DEBUG_REPORT" "${TOPIC_PATH}/debug/001_debug_report.md"
+# Define expected debug report path
+DEBUG_REPORT_PATH="${TOPIC_PATH}/debug/001_debug_report.md"
+
+# ===== MANDATORY VERIFICATION CHECKPOINT: Debug Phase =====
+echo ""
+echo "MANDATORY VERIFICATION: Debug Phase Artifacts"
+echo "Checking debug analysis report..."
+echo ""
+
+echo -n "  Debug report: "
+if verify_file_created "$DEBUG_REPORT_PATH" "Debug analysis report" "Debug"; then
+  DEBUG_SIZE=$(stat -f%z "$DEBUG_REPORT_PATH" 2>/dev/null || stat -c%s "$DEBUG_REPORT_PATH" 2>/dev/null || echo "unknown")
+  echo " verified ($DEBUG_SIZE bytes)"
+  VERIFICATION_FAILED=false
+else
+  echo ""
+  VERIFICATION_FAILED=true
+fi
+
+# ===== FALLBACK MECHANISM: Create Missing Debug Report =====
+if [ "$VERIFICATION_FAILED" = "true" ]; then
+  echo ""
+  echo "❌ CRITICAL: Debug report verification failed"
+  echo "   Expected: $DEBUG_REPORT_PATH"
+  echo ""
+  echo "--- FALLBACK MECHANISM: Debug Report Creation ---"
+  echo "⚠️  /debug command did not create expected file"
+  echo "Creating fallback debug report with template content..."
+  echo ""
+
+  # Ensure directory exists
+  DEBUG_DIR=$(dirname "$DEBUG_REPORT_PATH")
+  mkdir -p "$DEBUG_DIR"
+
+  # Get test exit code from workflow state
+  TEST_EXIT_CODE_VAL=$(load_workflow_state_value "TEST_EXIT_CODE" || echo "unknown")
+
+  # Create fallback file with template content
+  cat > "$DEBUG_REPORT_PATH" <<FALLBACK_EOF
+# Debug Analysis Report (Fallback Creation)
+
+## Metadata
+- **Created via**: Fallback mechanism (/debug did not create file)
+- **Timestamp**: $(date -Iseconds)
+- **Workflow ID**: ${WORKFLOW_ID}
+- **Expected path**: ${DEBUG_REPORT_PATH}
+- **Test Exit Code**: ${TEST_EXIT_CODE_VAL}
+
+## Test Failure Summary
+
+[Manual analysis required - /debug command did not create report]
+
+## Root Cause Analysis
+
+**Action Required**:
+1. Review test output logs for failure details
+2. Check .claude/tests/ for test execution logs
+3. Manually investigate test failures
+4. Document findings in this section
+
+## Proposed Fixes
+
+[Manual investigation required]
+
+Steps to resolve:
+1. [Add fix steps here]
+2. [Add fix steps here]
+
+## Troubleshooting
+
+The /debug command may have failed due to:
+- Command execution errors
+- Insufficient test failure data
+- Agent behavioral issues
+- File path calculation errors
+
+Check coordinator logs and test output for details.
+
+## Next Steps
+
+1. Review this report and populate findings
+2. Fix identified issues in codebase
+3. Re-run tests: cd ${CLAUDE_PROJECT_DIR}/.claude/tests && ./run_all_tests.sh
+4. If tests pass, re-run: /coordinate "${WORKFLOW_DESCRIPTION}"
+FALLBACK_EOF
+
+  # MANDATORY RE-VERIFICATION
+  echo -n "  Re-verification: "
+  if verify_file_created "$DEBUG_REPORT_PATH" "Fallback debug report" "Debug Fallback"; then
+    echo " success ($DEBUG_REPORT_PATH)"
+    echo ""
+    echo "✓ Fallback mechanism succeeded: Created placeholder debug report"
+    echo "⚠️  Note: Debug report contains template content only"
+    echo "⚠️  Manual analysis and population required"
+    append_workflow_state "FALLBACK_USED_DEBUG" "true"
+  else
+    echo ""
+    echo "  ❌ FALLBACK FAILURE: Could not create file at $DEBUG_REPORT_PATH"
+    echo ""
+    echo "❌ ESCALATION: Fallback mechanism failed"
+    echo "   This indicates a critical filesystem or permissions issue"
+    echo "   Manual intervention required"
+    append_workflow_state "FALLBACK_USED_DEBUG" "failed"
+    handle_state_error "Fallback mechanism failed - cannot create debug report" 1
+  fi
+else
+  echo "✓ Debug report verified successfully"
+fi
+
+# Save debug report path to workflow state
+append_workflow_state "DEBUG_REPORT" "$DEBUG_REPORT_PATH"
 
 # Transition to complete (user must fix issues manually)
 sm_transition "$STATE_COMPLETE"
@@ -1258,7 +1467,7 @@ append_workflow_state "CURRENT_STATE" "$STATE_COMPLETE"
 
 echo ""
 echo "✓ Debug analysis complete"
-echo "Debug report: $DEBUG_REPORT"
+echo "Debug report: $DEBUG_REPORT_PATH"
 echo ""
 echo "NOTE: Please review debug report and fix issues manually"
 echo "Then re-run: /coordinate \"$WORKFLOW_DESCRIPTION\""
