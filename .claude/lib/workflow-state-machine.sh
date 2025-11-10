@@ -16,6 +16,12 @@
 # - workflow-detection.sh: detect_workflow_scope()
 # - checkpoint-utils.sh: save_checkpoint(), restore_checkpoint()
 
+# Source guard: Prevent multiple sourcing
+if [ -n "${WORKFLOW_STATE_MACHINE_SOURCED:-}" ]; then
+  return 0
+fi
+export WORKFLOW_STATE_MACHINE_SOURCED=1
+
 set -euo pipefail
 
 # Detect project directory dynamically

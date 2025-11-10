@@ -214,6 +214,21 @@ echo ""
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 # Load workflow state
 load_workflow_state "coordinate_$$"
 
@@ -324,6 +339,21 @@ Task {
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 emit_progress "1" "Research phase completion - verifying results"
@@ -427,6 +457,21 @@ emit_progress "2" "Research complete, transitioning to Planning"
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 # Check if we should skip this state
@@ -481,6 +526,21 @@ Task {
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 emit_progress "2" "Plan creation invoked - awaiting completion"
@@ -538,6 +598,21 @@ emit_progress "3" "Planning complete, transitioning to Implementation"
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 # Check if we should skip this state
@@ -583,6 +658,21 @@ Task {
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 emit_progress "3" "Implementation complete - transitioning to Testing"
@@ -605,6 +695,21 @@ emit_progress "4" "Implementation complete, transitioning to Testing"
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 # Check if we should skip this state
@@ -670,6 +775,21 @@ fi
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 # Check if we should skip this state
@@ -712,6 +832,21 @@ Task {
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 emit_progress "5" "Debug analysis complete"
@@ -744,6 +879,21 @@ echo ""
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 # Check if we should skip this state
@@ -786,6 +936,21 @@ Task {
 USE the Bash tool:
 
 ```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
 load_workflow_state "coordinate_$$"
 
 emit_progress "6" "Documentation updated"

@@ -12,6 +12,12 @@
 #   initialize_workflow_paths "$WORKFLOW_DESC" "$WORKFLOW_TYPE"
 #   # Returns: Exports all path variables (TOPIC_DIR, PLANS_DIR, etc.)
 
+# Source guard: Prevent multiple sourcing
+if [ -n "${WORKFLOW_INITIALIZATION_SOURCED:-}" ]; then
+  return 0
+fi
+export WORKFLOW_INITIALIZATION_SOURCED=1
+
 set -eo pipefail  # Removed -u flag to allow ${VAR:-} pattern in sourcing scripts
 
 # Detect project directory dynamically

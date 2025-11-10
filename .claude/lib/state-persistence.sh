@@ -5,6 +5,12 @@
 # pattern ($GITHUB_OUTPUT, $GITHUB_STATE). It provides fast, reliable state management for
 # critical state items where file-based persistence outperforms stateless recalculation.
 #
+# Source guard: Prevent multiple sourcing
+if [ -n "${STATE_PERSISTENCE_SOURCED:-}" ]; then
+  return 0
+fi
+export STATE_PERSISTENCE_SOURCED=1
+#
 # Key Features:
 # - Selective state persistence (7 critical items identified via decision criteria)
 # - GitHub Actions pattern (init_workflow_state, load_workflow_state, append_workflow_state)
