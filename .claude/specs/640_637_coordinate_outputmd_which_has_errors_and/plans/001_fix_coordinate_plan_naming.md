@@ -139,7 +139,7 @@ grep "DEBUG: PLAN_PATH" <coordinate output>
 - [ ] No hardcoded "001_implementation.md" in coordinate.md
 - [ ] Git commit created: `feat(640): complete Phase 1 - Remove hardcoded plan path`
 
-### Phase 2: Add Validation and Fallback Logic
+### Phase 2: Add Validation and Fallback Logic [COMPLETED]
 dependencies: [1]
 
 **Objective**: Add safety checks to ensure PLAN_PATH is always valid before verification
@@ -147,10 +147,10 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Add PLAN_PATH validation check after load_workflow_state() (file: /home/benjamin/.config/.claude/commands/coordinate.md)
-- [ ] Create fallback calculation if PLAN_PATH empty (should never happen, but fail-fast) (file: /home/benjamin/.config/.claude/commands/coordinate.md)
-- [ ] Add error message if PLAN_PATH doesn't contain TOPIC_NAME (file: /home/benjamin/.config/.claude/commands/coordinate.md)
-- [ ] Update verification error message to show expected vs actual paths (file: /home/benjamin/.config/.claude/commands/coordinate.md)
+- [x] Add PLAN_PATH validation check after load_workflow_state() (file: /home/benjamin/.config/.claude/commands/coordinate.md)
+- [x] Create fallback calculation if PLAN_PATH empty (should never happen, but fail-fast) (file: /home/benjamin/.config/.claude/commands/coordinate.md)
+- [x] Add error message if PLAN_PATH doesn't contain TOPIC_NAME (file: /home/benjamin/.config/.claude/commands/coordinate.md)
+- [x] Update verification error message to show expected vs actual paths (file: /home/benjamin/.config/.claude/commands/coordinate.md)
 
 **Validation Logic**:
 ```bash

@@ -726,6 +726,22 @@ else
   exit 1
 fi
 
+# Validate PLAN_PATH was restored from workflow state
+if [ -z "${PLAN_PATH:-}" ]; then
+  echo "ERROR: PLAN_PATH not restored from workflow state"
+  echo "This indicates a bug in state persistence or initialization"
+  echo "Expected PLAN_PATH to be set by initialize_workflow_paths() in bash block 1"
+  handle_state_error "PLAN_PATH missing from workflow state" 1
+fi
+
+# Verify PLAN_PATH contains topic-based naming (sanity check for descriptive names)
+if [[ "$PLAN_PATH" == *"/001_implementation.md" ]]; then
+  echo "WARNING: PLAN_PATH uses generic name '001_implementation.md'"
+  echo "  PLAN_PATH: $PLAN_PATH"
+  echo "This indicates a regression in plan naming. Expected descriptive name."
+  echo "Check workflow-initialization.sh sanitize_topic_name() function."
+fi
+
 emit_progress "2" "Plan creation invoked - awaiting completion"
 
 # PLAN_PATH should be loaded from workflow state (set by initialize_workflow_paths in bash block 1)
@@ -751,14 +767,27 @@ fi
 if [ "$VERIFICATION_FAILED" = "true" ]; then
   echo ""
   echo "❌ CRITICAL: Plan file verification failed"
-  echo "   Expected: $PLAN_PATH"
+  echo "   Expected path: $PLAN_PATH"
+  echo ""
+  echo "Path analysis:"
+  echo "   Topic directory: $TOPIC_PATH"
+  echo "   Expected plan should have descriptive name (not '001_implementation.md')"
+  echo ""
+  # List actual plans created to help diagnose mismatch
+  if [ -d "${TOPIC_PATH}/plans" ]; then
+    echo "Actual files in ${TOPIC_PATH}/plans:"
+    ls -la "${TOPIC_PATH}/plans/" 2>/dev/null || echo "   (directory empty or not readable)"
+  else
+    echo "Plans directory does not exist: ${TOPIC_PATH}/plans"
+  fi
   echo ""
   echo "TROUBLESHOOTING:"
   echo "1. Review /plan command output above for error messages"
   echo "2. Check plan agent behavioral file if used"
-  echo "3. Verify file path calculation logic"
-  echo "4. Ensure research reports contain sufficient information"
-  echo "5. Re-run workflow after fixing issues"
+  echo "3. Verify file path calculation logic in workflow-initialization.sh"
+  echo "4. Check if agent created file at different path than coordinate expects"
+  echo "5. Ensure research reports contain sufficient information"
+  echo "6. Re-run workflow after fixing issues"
   echo ""
   handle_state_error "/plan command failed to create expected plan file" 1
 fi
