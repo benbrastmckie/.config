@@ -185,10 +185,13 @@ append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 append_workflow_state "REPORT_PATHS_COUNT" "$REPORT_PATHS_COUNT"
 
 # Save individual report path variables
-# Using C-style loop to avoid history expansion issues with array expansion
+# Using eval to avoid Bash tool preprocessing interference with indirect expansion
+# The Bash tool preprocesses bash blocks (including history expansion) before
+# sending to bash interpreter, so ${!var_name} gets corrupted even with set +H
 for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
   var_name="REPORT_PATH_$i"
-  append_workflow_state "$var_name" "${!var_name}"
+  eval "value=\$$var_name"
+  append_workflow_state "$var_name" "$value"
 done
 
 echo "Saved $REPORT_PATHS_COUNT report paths to workflow state"
