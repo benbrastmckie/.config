@@ -148,7 +148,9 @@ prune_phase_metadata() {
   fi
 
   # Remove phase-specific entries from pruned metadata cache
-  for key in "${!PRUNED_METADATA_CACHE[@]}"; do
+  # Use eval for associative array key expansion (safe: PRUNED_METADATA_CACHE is known constant)
+  # Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+  for key in $(eval echo "\${!PRUNED_METADATA_CACHE[@]}"); do
     if [[ "$key" == *"$phase_id"* ]]; then
       unset PRUNED_METADATA_CACHE["$key"]
       echo "Pruned metadata for: $key" >&2
@@ -243,14 +245,18 @@ prune_workflow_metadata() {
 
   # If keep_artifacts=false, prune all phase metadata
   if [ "$keep_artifacts" = "false" ]; then
-    for phase_id in "${!PHASE_METADATA_CACHE[@]}"; do
+    # Use eval for associative array key expansion (safe: PHASE_METADATA_CACHE is known constant)
+    # Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+    for phase_id in $(eval echo "\${!PHASE_METADATA_CACHE[@]}"); do
       unset PHASE_METADATA_CACHE["$phase_id"]
       echo "  Pruned phase: $phase_id" >&2
     done
   fi
 
   # Prune workflow-specific pruned metadata
-  for key in "${!PRUNED_METADATA_CACHE[@]}"; do
+  # Use eval for associative array key expansion (safe: PRUNED_METADATA_CACHE is known constant)
+  # Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+  for key in $(eval echo "\${!PRUNED_METADATA_CACHE[@]}"); do
     unset PRUNED_METADATA_CACHE["$key"]
   done
 
@@ -312,19 +318,25 @@ get_current_context_size() {
   local total_size=0
 
   # Size of pruned metadata cache
-  for key in "${!PRUNED_METADATA_CACHE[@]}"; do
+  # Use eval for associative array key expansion (safe: PRUNED_METADATA_CACHE is known constant)
+  # Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+  for key in $(eval echo "\${!PRUNED_METADATA_CACHE[@]}"); do
     local entry_size=${#PRUNED_METADATA_CACHE[$key]}
     total_size=$((total_size + entry_size))
   done
 
   # Size of phase metadata cache
-  for key in "${!PHASE_METADATA_CACHE[@]}"; do
+  # Use eval for associative array key expansion (safe: PHASE_METADATA_CACHE is known constant)
+  # Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+  for key in $(eval echo "\${!PHASE_METADATA_CACHE[@]}"); do
     local entry_size=${#PHASE_METADATA_CACHE[$key]}
     total_size=$((total_size + entry_size))
   done
 
   # Size of workflow metadata cache
-  for key in "${!WORKFLOW_METADATA_CACHE[@]}"; do
+  # Use eval for associative array key expansion (safe: WORKFLOW_METADATA_CACHE is known constant)
+  # Alternative ${!ARRAY[@]} syntax fails with history expansion errors
+  for key in $(eval echo "\${!WORKFLOW_METADATA_CACHE[@]}"); do
     local entry_size=${#WORKFLOW_METADATA_CACHE[$key]}
     total_size=$((total_size + entry_size))
   done

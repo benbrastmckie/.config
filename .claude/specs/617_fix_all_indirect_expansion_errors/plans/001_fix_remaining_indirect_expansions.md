@@ -212,13 +212,13 @@ test_array_export
 
 ---
 
-### Phase 2: Fix context-pruning.sh Associative Array Iterations
+### Phase 2: Fix context-pruning.sh Associative Array Iterations [COMPLETED]
 **Objective**: Replace all associative array key iterations to prevent future errors
 **Complexity**: Low-Medium
 **Priority**: HIGH (prevents context management errors)
 
 **Tasks:**
-- [ ] **Fix PRUNED_METADATA_CACHE Iteration (Line 151)**:
+- [x] **Fix PRUNED_METADATA_CACHE Iteration (Line 151)**:
   ```bash
   # Around line 150-156
 
@@ -239,7 +239,7 @@ test_array_export
   done
   ```
 
-- [ ] **Fix PHASE_METADATA_CACHE Iteration (Line 246)**:
+- [x] **Fix PHASE_METADATA_CACHE Iteration (Line 246)**:
   ```bash
   # Similar pattern, replace with eval-based expansion
   for phase_id in $(eval echo "\${!PHASE_METADATA_CACHE[@]}"); do
@@ -247,7 +247,7 @@ test_array_export
   done
   ```
 
-- [ ] **Fix PRUNED_METADATA_CACHE Iteration (Line 253)**:
+- [x] **Fix PRUNED_METADATA_CACHE Iteration (Line 253)**:
   ```bash
   # Same as line 151
   for key in $(eval echo "\${!PRUNED_METADATA_CACHE[@]}"); do
@@ -255,34 +255,34 @@ test_array_export
   done
   ```
 
-- [ ] **Fix PRUNED_METADATA_CACHE Iteration (Line 315)**:
+- [x] **Fix PRUNED_METADATA_CACHE Iteration (Line 315)**:
   ```bash
   for key in $(eval echo "\${!PRUNED_METADATA_CACHE[@]}"); do
     # existing logic
   done
   ```
 
-- [ ] **Fix PHASE_METADATA_CACHE Iteration (Line 321)**:
+- [x] **Fix PHASE_METADATA_CACHE Iteration (Line 321)**:
   ```bash
   for key in $(eval echo "\${!PHASE_METADATA_CACHE[@]}"); do
     # existing logic
   done
   ```
 
-- [ ] **Fix WORKFLOW_METADATA_CACHE Iteration (Line 327)**:
+- [x] **Fix WORKFLOW_METADATA_CACHE Iteration (Line 327)**:
   ```bash
   for key in $(eval echo "\${!WORKFLOW_METADATA_CACHE[@]}"); do
     # existing logic
   done
   ```
 
-- [ ] **Add Standardized Comments**: Add explanatory comment before each loop
+- [x] **Add Standardized Comments**: Add explanatory comment before each loop
   ```bash
   # Use eval for associative array key expansion (safe: CACHE_NAME is known constant)
   # Alternative ${!ARRAY[@]} syntax fails with history expansion errors
   ```
 
-- [ ] **Verify Associative Array Logic**: Ensure key iteration still works correctly
+- [x] **Verify Associative Array Logic**: Ensure key iteration still works correctly
   - Test with populated associative arrays
   - Verify all keys are iterated
   - Check unset operations work correctly
