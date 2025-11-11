@@ -284,7 +284,102 @@ source "${LIB_DIR}/verification-helpers.sh"
 - MUST include unified-logger.sh for emit_progress and display_brief_summary functions
 - Source guards in libraries make multiple sourcing safe and efficient
 
-### Pattern 5: Cleanup on Completion Only
+### Pattern 5: Conditional Variable Initialization
+
+**Problem**: Library variables are reset when re-sourced across subprocess boundaries, even when values are loaded from state files.
+
+**Solution**: Use conditional initialization with bash parameter expansion to preserve existing values while allowing default initialization for unset variables.
+
+```bash
+# ❌ ANTI-PATTERN: Direct initialization (overwrites loaded values)
+# In .claude/lib/workflow-state-machine.sh:
+WORKFLOW_SCOPE=""
+WORKFLOW_DESCRIPTION=""
+CURRENT_STATE="initialize"
+
+# Problem: These assignments execute EVERY time the library is sourced,
+# even when sourced AFTER loading state from persistence layer.
+# Loaded values are immediately overwritten with defaults.
+
+# ✓ RECOMMENDED: Conditional initialization (preserves loaded values)
+# Use ${VAR:-default} parameter expansion:
+WORKFLOW_SCOPE="${WORKFLOW_SCOPE:-}"
+WORKFLOW_DESCRIPTION="${WORKFLOW_DESCRIPTION:-}"
+CURRENT_STATE="${CURRENT_STATE:-initialize}"
+
+# Benefits:
+# - If variable is already set: preserves existing value
+# - If variable is unset: initializes to default (empty or specified)
+# - Safe with set -u: no "unbound variable" errors
+# - Idiomatic bash pattern (GNU manual, section 3.5.3)
+```
+
+**When to Use**:
+- Variables that must persist across bash block boundaries
+- Integration with Pattern 3 (State Persistence Library) and Pattern 4 (Library Re-sourcing)
+- State variables loaded from persistence layer before library re-sourcing
+- Variables that need different values in different workflow contexts
+
+**When NOT to Use**:
+- Constants (use `readonly` instead)
+- Arrays (parameter expansion syntax not supported: `declare -ga ARRAY=()`)
+- One-time initialization inside source guards (already protected from re-execution)
+- Variables that should always reset to defaults on library sourcing
+
+**Example from workflow-state-machine.sh**:
+
+```bash
+# Lines 66-79 in workflow-state-machine.sh
+# State machine variables preserve values across library re-sourcing
+
+# Current state (with default fallback)
+CURRENT_STATE="${CURRENT_STATE:-${STATE_INITIALIZE}}"
+
+# Terminal state (with default fallback)
+TERMINAL_STATE="${TERMINAL_STATE:-${STATE_COMPLETE}}"
+
+# Workflow configuration (preserve if set, initialize to empty if unset)
+WORKFLOW_SCOPE="${WORKFLOW_SCOPE:-}"
+WORKFLOW_DESCRIPTION="${WORKFLOW_DESCRIPTION:-}"
+COMMAND_NAME="${COMMAND_NAME:-}"
+
+# Arrays cannot use conditional initialization
+declare -ga COMPLETED_STATES=()  # Array syntax incompatible with ${VAR:-}
+
+# Constants should remain readonly
+readonly STATE_INITIALIZE="initialize"  # No conditional initialization needed
+```
+
+**Real-World Use Case (from /coordinate)**:
+
+```bash
+# Bash Block 1: Initialize workflow
+source .claude/lib/workflow-state-machine.sh  # WORKFLOW_SCOPE="" (or "${WORKFLOW_SCOPE:-}")
+sm_init "Research authentication" "coordinate"  # Sets WORKFLOW_SCOPE="research-and-plan"
+append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"  # Save to state file
+
+# Bash Block 2: Research phase (NEW SUBPROCESS)
+load_workflow_state "$WORKFLOW_ID"  # Restores WORKFLOW_SCOPE="research-and-plan"
+source .claude/lib/workflow-state-machine.sh  # With conditional init: WORKFLOW_SCOPE preserved!
+                                               # Without: WORKFLOW_SCOPE="" (BUG!)
+
+# Conditional initialization fixes the bug where WORKFLOW_SCOPE was reset to ""
+# after being loaded from state file, causing workflows to incorrectly proceed
+# to unintended phases (Spec 653).
+```
+
+**Technical Details**:
+
+The `${VAR:-word}` parameter expansion:
+- Tests if VAR is unset OR null (empty string)
+- If true: expands to `word`
+- If false: expands to current value of VAR
+- Assignment form: `VAR="${VAR:-default}"` assigns the expanded value
+- Colon semantics: omitting colon (`${VAR-word}`) only tests for unset, not null
+
+See GNU Bash Manual, section 3.5.3 (Shell Parameter Expansion) for complete specification.
+
+### Pattern 6: Cleanup on Completion Only
 
 **Problem**: Trap handlers in early blocks fire at block exit, not workflow exit.
 

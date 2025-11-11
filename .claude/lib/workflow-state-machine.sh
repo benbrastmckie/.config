@@ -63,18 +63,20 @@ declare -gA STATE_TRANSITIONS=(
 # ==============================================================================
 
 # Current state of the state machine
-CURRENT_STATE="${STATE_INITIALIZE}"
+# Use conditional initialization to preserve values across library re-sourcing
+CURRENT_STATE="${CURRENT_STATE:-${STATE_INITIALIZE}}"
 
 # Array of completed states (state history)
 declare -ga COMPLETED_STATES=()
 
 # Terminal state for this workflow (determined by scope)
-TERMINAL_STATE="${STATE_COMPLETE}"
+TERMINAL_STATE="${TERMINAL_STATE:-${STATE_COMPLETE}}"
 
 # Workflow configuration
-WORKFLOW_SCOPE=""
-WORKFLOW_DESCRIPTION=""
-COMMAND_NAME=""
+# Preserve values across bash subprocess boundaries (Pattern 5)
+WORKFLOW_SCOPE="${WORKFLOW_SCOPE:-}"
+WORKFLOW_DESCRIPTION="${WORKFLOW_DESCRIPTION:-}"
+COMMAND_NAME="${COMMAND_NAME:-}"
 
 # ==============================================================================
 # Core State Machine Functions
