@@ -13,7 +13,8 @@
 # - State history tracking (completed_states array)
 #
 # Dependencies:
-# - workflow-detection.sh: detect_workflow_scope()
+# - workflow-scope-detection.sh: detect_workflow_scope() [primary - supports revision patterns]
+# - workflow-detection.sh: detect_workflow_scope() [fallback - for /supervise compatibility]
 # - checkpoint-utils.sh: save_checkpoint(), restore_checkpoint()
 
 # Source guard: Prevent multiple sourcing
@@ -94,7 +95,13 @@ sm_init() {
   COMMAND_NAME="$command_name"
 
   # Detect workflow scope using existing detection library
-  if [ -f "$SCRIPT_DIR/workflow-detection.sh" ]; then
+  # Note: workflow-scope-detection.sh is for /coordinate (supports revision patterns)
+  #       workflow-detection.sh is for /supervise (older pattern matching)
+  if [ -f "$SCRIPT_DIR/workflow-scope-detection.sh" ]; then
+    source "$SCRIPT_DIR/workflow-scope-detection.sh"
+    WORKFLOW_SCOPE=$(detect_workflow_scope "$workflow_desc")
+  elif [ -f "$SCRIPT_DIR/workflow-detection.sh" ]; then
+    # Fallback to older library if newer one not available
     source "$SCRIPT_DIR/workflow-detection.sh"
     WORKFLOW_SCOPE=$(detect_workflow_scope "$workflow_desc")
   else
