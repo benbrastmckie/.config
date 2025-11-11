@@ -188,9 +188,14 @@ Create `.claude/lib/workflow-llm-classifier.sh` with functions:
 **Reference**: Architecture Section 2.1
 
 **Standards Compliance**:
-- Use Standard 13 (Project Directory Detection) pattern for CLAUDE_PROJECT_DIR
+- Use Standard 13 (Project Directory Detection) pattern for CLAUDE_PROJECT_DIR via detect-project-dir.sh
 - Follow Standard 14 (Executable/Documentation Separation) with separate guide file
 - Apply bash-block-execution-model.md patterns for subprocess isolation
+
+**Spec 672 Integration** (State-based orchestration refactor):
+- Use `source "${CLAUDE_PROJECT_DIR}/.claude/lib/detect-project-dir.sh"` for project directory detection
+- Implement source guard pattern: `if [ -n "${WORKFLOW_LLM_CLASSIFIER_SOURCED:-}" ]; then return 0; fi`
+- Follow library sourcing patterns consistent with state-persistence.sh and workflow-state-machine.sh
 
 **Acceptance Criteria**:
 - [ ] All functions implemented with full error handling
@@ -199,7 +204,8 @@ Create `.claude/lib/workflow-llm-classifier.sh` with functions:
 - [ ] Structured logging integration
 - [ ] Debug logging support
 - [ ] JSDoc-style comments for all functions
-- [ ] CLAUDE_PROJECT_DIR detection following Standard 13 pattern
+- [ ] CLAUDE_PROJECT_DIR detection using detect-project-dir.sh (per Spec 672)
+- [ ] Source guard prevents duplicate sourcing
 
 ---
 
@@ -296,6 +302,7 @@ Completely rewrite `.claude/lib/workflow-scope-detection.sh` with clean hybrid i
 - Preserve function signature: `detect_workflow_scope "$description"` → returns scope string
 - Maintain backward compatibility: callers see no interface changes
 - Log classification method and confidence to structured logs
+- **IMPORTANT**: Preserve source guard pattern (`STATE_PERSISTENCE_SOURCED` pattern per Spec 672)
 
 **Files**:
 - REWRITE `.claude/lib/workflow-scope-detection.sh` (complete file replacement)
@@ -310,6 +317,11 @@ Completely rewrite `.claude/lib/workflow-scope-detection.sh` with clean hybrid i
 - workflow-detection.sh sources the unified library instead of duplicating logic
 - Fail-fast error handling with clear messages
 
+**Spec 672 Integration** (State-based orchestration refactor):
+- Use `source "${CLAUDE_PROJECT_DIR}/.claude/lib/detect-project-dir.sh"` pattern for project directory detection
+- Follow source guard pattern: `if [ -n "${WORKFLOW_SCOPE_DETECTION_SOURCED:-}" ]; then return 0; fi`
+- Ensure compatibility with `workflow-state-machine.sh:16` dependency (library uses detect_workflow_scope)
+
 **Acceptance Criteria**:
 - [ ] Old regex-only code completely removed
 - [ ] Hybrid mode invokes LLM first, falls back to regex on error/timeout/low-confidence
@@ -317,7 +329,8 @@ Completely rewrite `.claude/lib/workflow-scope-detection.sh` with clean hybrid i
 - [ ] Regex-only mode uses embedded fallback logic (simplified from old implementation)
 - [ ] Function signature unchanged: `detect_workflow_scope "$description"` works as before
 - [ ] All existing callers (sm_init, workflow-detection.sh) work without changes
-- [ ] Source guards prevent duplicate sourcing
+- [ ] Source guards prevent duplicate sourcing (per Spec 672 pattern)
+- [ ] Uses detect-project-dir.sh for CLAUDE_PROJECT_DIR (per Spec 672 pattern)
 
 ---
 
@@ -1089,6 +1102,26 @@ result=$(detect_workflow_scope "test")
 ---
 
 ## Revision History
+
+### Revision 3 - 2025-11-11
+- **Date**: 2025-11-11
+- **Type**: integration-update
+- **Triggered By**: Plan 672 implementation (state-based orchestration refactor)
+- **Key Changes**:
+  - Updated Phase 1 Task 1.1: Added Spec 672 integration requirements for workflow-llm-classifier.sh (detect-project-dir.sh sourcing, source guard pattern)
+  - Updated Phase 2 Task 2.1: Added Spec 672 integration requirements for workflow-scope-detection.sh (detect-project-dir.sh sourcing, source guard pattern, state machine compatibility)
+  - Added acceptance criteria for source guards and project directory detection patterns introduced in Spec 672
+- **Rationale**: Plan 672 implemented state-based orchestration refactor that established new library sourcing patterns (source guards, detect-project-dir.sh) across all workflow libraries. Hybrid classification library must follow these patterns for consistency and to prevent duplicate sourcing issues.
+- **Impact**:
+  - Phase 1: 2 additional acceptance criteria (source guard, detect-project-dir.sh)
+  - Phase 2: 2 additional acceptance criteria (source guard, detect-project-dir.sh)
+  - No impact on estimated duration or complexity
+  - No breaking changes to interface or architecture
+- **Referenced Plans**:
+  - `/home/benjamin/.config/.claude/specs/672_claude_specs_coordinate_commandmd_to_research_the/plans/001_coordinate_fixes_implementation_plan.md` (Phases 1-5 complete)
+- **Backup**: `/home/benjamin/.config/.claude/specs/670_workflow_classification_improvement/plans/backups/001_hybrid_classification_implementation_20251111_revision3.md`
+
+---
 
 ### Revision 2 - 2025-11-11
 - **Date**: 2025-11-11
