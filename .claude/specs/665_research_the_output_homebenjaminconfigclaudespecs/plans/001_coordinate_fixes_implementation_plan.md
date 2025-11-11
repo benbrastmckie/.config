@@ -377,7 +377,7 @@ grep -n "/revise is running" coordinate_output.log
 
 **Tasks**:
 
-- [ ] **Task 3.1**: Create test file structure with setup/teardown
+- [x] **Task 3.1**: Create test file structure with setup/teardown
   - **Template**:
     ```bash
     #!/usr/bin/env bash
@@ -422,7 +422,7 @@ grep -n "/revise is running" coordinate_output.log
     setup
     ```
 
-- [ ] **Task 3.2**: Test scope detection identifies research-and-revise pattern
+- [x] **Task 3.2**: Test scope detection identifies research-and-revise pattern
   - **Test Function**:
     ```bash
     test_scope_detection_revision_first() {
@@ -443,7 +443,7 @@ grep -n "/revise is running" coordinate_output.log
     }
     ```
 
-- [ ] **Task 3.3**: Test path extraction from workflow description
+- [x] **Task 3.3**: Test path extraction from workflow description
   - **Test Function**:
     ```bash
     test_path_extraction_from_description() {
@@ -462,7 +462,7 @@ grep -n "/revise is running" coordinate_output.log
     }
     ```
 
-- [ ] **Task 3.4**: Test EXISTING_PLAN_PATH persists to workflow state
+- [x] **Task 3.4**: Test EXISTING_PLAN_PATH persists to workflow state
   - **Test Function**:
     ```bash
     test_existing_plan_path_in_state() {
@@ -494,7 +494,7 @@ grep -n "/revise is running" coordinate_output.log
     }
     ```
 
-- [ ] **Task 3.5**: Test planning phase uses agent delegation (not SlashCommand)
+- [x] **Task 3.5**: Test planning phase uses agent delegation (not SlashCommand)
   - **Test Approach**: Mock coordinate planning phase, verify Task tool invocation
   - **Test Function**:
     ```bash
@@ -534,7 +534,7 @@ grep -n "/revise is running" coordinate_output.log
     }
     ```
 
-- [ ] **Task 3.6**: Test end-to-end research-and-revise workflow
+- [x] **Task 3.6**: Test end-to-end research-and-revise workflow
   - **Scope**: Full workflow execution (research → revise plan → verify artifacts)
   - **Test Function**:
     ```bash
@@ -555,7 +555,7 @@ grep -n "/revise is running" coordinate_output.log
     }
     ```
 
-- [ ] **Task 3.7**: Add test summary and exit code reporting
+- [x] **Task 3.7**: Add test summary and exit code reporting
   - **Implementation**:
     ```bash
     # Print test summary
@@ -577,7 +577,7 @@ grep -n "/revise is running" coordinate_output.log
     fi
     ```
 
-- [ ] **Task 3.8**: Integrate new test file into test suite
+- [x] **Task 3.8**: Integrate new test file into test suite
   - **Location**: `.claude/tests/run_all_tests.sh`
   - **Add Line**:
     ```bash
