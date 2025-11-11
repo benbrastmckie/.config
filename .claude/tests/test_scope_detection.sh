@@ -116,6 +116,36 @@ run_test "Test 13: Case insensitivity (Debug)" \
   "Debug authentication module" \
   "debug-only"
 
+# Test 14: Revision-first pattern - simple form (no "the plan")
+run_test "Test 14: Revision-first (simple form)" \
+  "Revise /path/to/specs/042_auth/plans/001_plan.md to accommodate new requirements" \
+  "research-and-revise"
+
+# Test 15: Revision-first pattern - complex form (with "the plan")
+run_test "Test 15: Revision-first (with 'the plan')" \
+  "Revise the plan /path/to/implementation.md to accommodate changes" \
+  "research-and-revise"
+
+# Test 16: Revision-first pattern - user's exact input from issue #661
+run_test "Test 16: Revision-first (full user input)" \
+  "Revise the plan /home/benjamin/.config/.claude/specs/657_review_tests_coordinate_command_related/plans/001_review_tests_coordinate_command_related_plan.md to accommodate recent changes made to .claude/ by reviewing the git history, making only necessary changes to the plan." \
+  "research-and-revise"
+
+# Test 17: Revision-first pattern - "Update plan based on"
+run_test "Test 17: Revision-first (update plan based on)" \
+  "Update plan based on recent findings" \
+  "research-and-revise"
+
+# Test 18: Revision-first pattern - "Modify implementation for"
+run_test "Test 18: Revision-first (modify implementation for)" \
+  "Modify implementation for new requirements" \
+  "research-and-revise"
+
+# Test 19: Revision-first pattern - with "using" keyword
+run_test "Test 19: Revision-first (using keyword)" \
+  "Revise plan using the new architecture" \
+  "research-and-revise"
+
 echo ""
 echo "========================================"
 echo "Test Results"

@@ -40,6 +40,21 @@ detect_workflow_scope() {
     if echo "$workflow_description" | grep -Eiq "(research|analyze).*(and |then |to ).*(revise|update.*plan|modify.*plan)"; then
       scope="research-and-revise"
     # Check for revision-first pattern (e.g., "Revise X to Y", "Update plan to accommodate Z")
+    # Pattern: ^(revise|update|modify).*(plan|implementation).*(accommodate|based on|using|to|for)
+    #
+    # Regex behavior explained (for maintainers):
+    #   ^(revise|update|modify) - Anchors to start, matches revision verbs
+    #   .*                      - Greedy match: consumes "the plan /long/path.md " etc.
+    #   (plan|implementation)   - Matches "plan" or "implementation" keyword
+    #   .*                      - Greedy match: consumes remaining text before trigger
+    #   (accommodate|...)       - Matches trigger keywords
+    #
+    # Handles both:
+    #   ✓ Simple: "Revise /path/to/plan.md to accommodate..."
+    #   ✓ Complex: "Revise the plan /path/to/plan.md to accommodate..."
+    #
+    # The greedy .* allows flexible matching while still finding required keywords.
+    # Fixed in commit 1984391a (Issue #661) - See test_scope_detection.sh Tests 14-19
     elif echo "$workflow_description" | grep -Eiq "^(revise|update|modify).*(plan|implementation).*(accommodate|based on|using|to|for)"; then
       scope="research-and-revise"
       # If revision-first and a path is provided, extract topic from existing plan path
