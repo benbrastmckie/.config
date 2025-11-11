@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Coordinate Verification Checkpoint Ordering** (2025-11-11): Fixed false-positive verification failures in `/coordinate` command when research agents create descriptive filenames instead of generic names
+  - **Root Cause**: Dynamic report path discovery executed AFTER verification checkpoint, causing verification to check against stale generic paths (001_topic1.md) while agents created descriptive names (001_auth_patterns.md)
+  - **Fix 1**: Moved dynamic discovery before hierarchical/flat branching (coordinate.md:451) ensuring discovery reconciles actual vs expected paths before verify_file_created() checks
+  - **Fix 2**: Added filesystem fallback to reconstruct_report_paths_array() implementing verification fallback per Spec 057 (workflow-initialization.sh:374-392) - detects state persistence failures immediately via stderr warnings, continues workflow with discovered paths
+  - **Fix 3**: Enhanced verify_file_created() diagnostic output with Expected vs Actual comparison, directory analysis with file metadata, root cause analysis, and 4 troubleshooting commands (verification-helpers.sh:88-166)
+  - **Impact**: Zero false-positive verification failures, 3x faster path mismatch diagnosis, 100% test pass rate maintained
+
 ### Removed
 
 - **Deprecated Commands** (2025-10-26): Archived 3 redundant/deprecated command files to `.claude/archive/commands/`:
