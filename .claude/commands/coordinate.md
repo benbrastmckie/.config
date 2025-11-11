@@ -183,20 +183,10 @@ fi
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 
-# Save report paths array metadata to state
-# Bash arrays cannot be exported across subprocesses (subprocess isolation).
-# Instead, serialize array to individual variables (REPORT_PATH_0, REPORT_PATH_1, ...)
-# and save to workflow state file for reconstruction in subsequent bash blocks.
-# See: .claude/docs/concepts/bash-block-execution-model.md for details.
-#
-# Required by reconstruct_report_paths_array() in subsequent bash blocks
-# (Export doesn't persist across blocks due to subprocess isolation)
+# Serialize REPORT_PATHS array to state (subprocess isolation - see bash-block-execution-model.md)
 append_workflow_state "REPORT_PATHS_COUNT" "$REPORT_PATHS_COUNT"
 
-# Save individual report path variables
-# Using eval to avoid Bash tool preprocessing interference with indirect expansion
-# The Bash tool preprocesses bash blocks (including history expansion) before
-# sending to bash interpreter, so ${!var_name} gets corrupted even with set +H
+# Save individual report path variables (using eval to avoid Bash tool preprocessing issues)
 for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
   var_name="REPORT_PATH_$i"
   eval "value=\$$var_name"
@@ -226,10 +216,6 @@ fi
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
   source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
 fi
-
-# Note: display_brief_summary() now defined in .claude/lib/unified-logger.sh
-# Note: handle_state_error() now defined in .claude/lib/error-handling.sh
-# Both functions available via library sourcing in all bash blocks
 
 # Transition to research state
 sm_transition "$STATE_RESEARCH"
