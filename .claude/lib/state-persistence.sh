@@ -144,29 +144,47 @@ EOF
 # Load workflow state (Blocks 2+)
 #
 # Sources the workflow state file to restore exported variables.
-# Implements graceful degradation: if state file missing, falls back to recalculation.
+# Spec 672 Phase 3: Added fail-fast validation mode to distinguish expected
+# vs unexpected missing state files.
+#
+# Behavior:
+# - is_first_block=true: Missing state file is expected, initialize gracefully
+# - is_first_block=false: Missing state file is CRITICAL ERROR, fail-fast
 #
 # Performance:
 # - File read: ~15ms (much faster than git rev-parse at ~50ms)
-# - Fallback recalculation: ~50ms (same as init_workflow_state)
-# - Graceful degradation overhead: <1ms (file existence check)
+# - Fallback recalculation: ~50ms (same as init_workflow_state, first block only)
+# - Fail-fast diagnostic: <1ms (immediate error message and exit)
 #
 # Args:
 #   $1 - workflow_id: Unique identifier for this workflow (default: $$)
+#   $2 - is_first_block: Whether this is first bash block (default: false)
+#                        true = graceful initialization if missing
+#                        false = fail-fast if missing (expose bugs)
 #
 # Returns:
 #   0 if state file loaded successfully
-#   1 if state file missing (fallback to recalculation)
+#   1 if state file missing and is_first_block=true (graceful init)
+#   2 if state file missing and is_first_block=false (CRITICAL ERROR)
 #
 # Side Effects:
 #   - Sources state file (exports all variables)
-#   - If missing, calls init_workflow_state for graceful degradation
+#   - If missing and first block: calls init_workflow_state
+#   - If missing and subsequent block: prints diagnostic and returns error
 #
-# Example:
+# Examples:
+#   # First bash block (Block 1)
+#   load_workflow_state "coordinate_$$" true
+#
+#   # Subsequent bash blocks (Block 2+)
+#   load_workflow_state "coordinate_$$" false
+#   # OR (default is false)
 #   load_workflow_state "coordinate_$$"
-#   echo "$CLAUDE_PROJECT_DIR"  # Variable restored from state file
+#
+# Reference: Spec 672 Phase 3 (fail-fast state validation)
 load_workflow_state() {
   local workflow_id="${1:-$$}"
+  local is_first_block="${2:-false}"  # Spec 672 Phase 3: Fail-fast validation mode
   local state_file="${CLAUDE_PROJECT_DIR:-$HOME}/.claude/tmp/workflow_${workflow_id}.sh"
 
   if [ -f "$state_file" ]; then
@@ -174,10 +192,37 @@ load_workflow_state() {
     source "$state_file"
     return 0
   else
-    # Fallback: recalculate if state file missing (graceful degradation)
-    # This handles edge cases like state file deleted mid-workflow
-    init_workflow_state "$workflow_id" >/dev/null
-    return 1
+    # Spec 672 Phase 3: Distinguish expected vs unexpected missing state files
+    if [ "$is_first_block" = "true" ]; then
+      # Expected case: First bash block of workflow, state file doesn't exist yet
+      # Gracefully initialize new state file
+      init_workflow_state "$workflow_id" >/dev/null
+      return 1
+    else
+      # CRITICAL ERROR: Subsequent bash block, state file should exist but doesn't
+      # This indicates state persistence failure - fail-fast to expose the issue
+      echo "" >&2
+      echo "❌ CRITICAL ERROR: Workflow state file not found" >&2
+      echo "" >&2
+      echo "Context:" >&2
+      echo "  Expected state file: $state_file" >&2
+      echo "  Workflow ID: $workflow_id" >&2
+      echo "  Block type: Subsequent block (is_first_block=false)" >&2
+      echo "" >&2
+      echo "This indicates a state persistence failure. The state file should" >&2
+      echo "have been created by the first bash block but is missing." >&2
+      echo "" >&2
+      echo "TROUBLESHOOTING:" >&2
+      echo "  1. Check if first bash block called init_workflow_state()" >&2
+      echo "  2. Verify state ID file exists: ${HOME}/.claude/tmp/coordinate_state_id.txt" >&2
+      echo "  3. Check tmp directory permissions: ls -la ${CLAUDE_PROJECT_DIR:-$HOME}/.claude/tmp/" >&2
+      echo "  4. Review workflow logs for state file creation" >&2
+      echo "  5. Verify WORKFLOW_ID correctly passed between bash blocks" >&2
+      echo "" >&2
+      echo "Aborting workflow to prevent silent data loss." >&2
+      echo "" >&2
+      return 2  # Exit code 2 = configuration error (distinct from normal failures)
+    fi
   fi
 }
 

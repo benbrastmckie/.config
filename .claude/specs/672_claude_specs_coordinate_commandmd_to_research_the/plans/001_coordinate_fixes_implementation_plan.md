@@ -177,7 +177,7 @@ test_completed_states_array_persistence
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 3: Fail-Fast State Validation
+### Phase 3: Fail-Fast State Validation [COMPLETED]
 dependencies: [1]
 
 **Objective**: Distinguish expected vs unexpected missing state files for fail-fast error detection
@@ -185,22 +185,23 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Add `is_first_block` parameter to `load_workflow_state()` in state-persistence.sh
+- [x] Add `is_first_block` parameter to `load_workflow_state()` in state-persistence.sh
   - Default to false (assume subsequent blocks)
   - If true and state file missing: initialize (expected)
   - If false and state file missing: fail-fast with CRITICAL ERROR
-- [ ] Update all callers of `load_workflow_state()` to pass is_first_block
-  - coordinate.md Block 1: `load_workflow_state "$WORKFLOW_ID" true`
-  - coordinate.md Block 2+: `load_workflow_state "$WORKFLOW_ID" false`
-  - Other commands: audit and update as needed
-- [ ] Add diagnostic output for CRITICAL ERROR case
+- [x] Update function documentation with new parameter
+  - Document behavior for both modes
+  - Add usage examples
+  - Update return code documentation (0, 1, 2)
+- [x] Add diagnostic output for CRITICAL ERROR case
   - Show expected state file path
   - Show caller context (block number, command name)
   - Suggest debugging steps (check state ID file, check tmp directory)
-- [ ] Add tests for fail-fast behavior
+- [x] Add tests for fail-fast behavior
   - Test successful initialization (Block 1, file missing)
   - Test successful recovery (Block 2+, file exists)
   - Test fail-fast error (Block 2+, file missing)
+  - Test default parameter behavior
 
 **Testing**:
 ```bash
