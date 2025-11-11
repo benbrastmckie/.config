@@ -1108,23 +1108,36 @@ fi
 echo "Executing implementation plan: $PLAN_PATH"
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke /implement command:
+**EXECUTE NOW**: USE the Task tool to invoke implementer-coordinator:
 
 Task {
   subagent_type: "general-purpose"
-  description: "Execute implementation plan with automated testing and commits"
+  description: "Execute implementation with wave-based parallel execution"
   timeout: 600000
   prompt: "
-    Execute the /implement slash command with the following arguments:
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md
 
-    /implement \"$PLAN_PATH\"
+    **Workflow-Specific Context**:
+    - Plan File: $PLAN_PATH (absolute path)
+    - Topic Directory: $TOPIC_PATH
+    - Artifact Paths:
+      - Reports: $REPORTS_DIR
+      - Plans: $PLANS_DIR
+      - Summaries: $SUMMARIES_DIR
+      - Debug: $DEBUG_DIR
+      - Outputs: $OUTPUTS_DIR
+      - Checkpoints: $CHECKPOINT_DIR
 
-    This will execute the implementation plan phase-by-phase with:
-    - Automated testing after each phase
+    **Execution Requirements**:
+    - Wave-based parallel execution for independent phases
+    - Automated testing after each wave
     - Git commits for completed phases
-    - Progress tracking and checkpoints
+    - Checkpoint state management
+    - Progress tracking and metrics collection
 
-    Return: IMPLEMENTATION_COMPLETE: [summary or status]
+    Execute implementation following all guidelines in behavioral file.
+    Return: IMPLEMENTATION_COMPLETE: [summary]
   "
 }
 
