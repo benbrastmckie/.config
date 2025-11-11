@@ -635,7 +635,7 @@ bash /home/benjamin/.config/.claude/tests/run_all_tests.sh
 
 **Tasks**:
 
-- [ ] **Task 4.1**: Add research-and-revise workflow example to command guide
+- [x] **Task 4.1**: Add research-and-revise workflow example to command guide
   - **Location**: `coordinate-command-guide.md` (new section after existing examples)
   - **Content**:
     ```markdown
@@ -674,7 +674,7 @@ bash /home/benjamin/.config/.claude/tests/run_all_tests.sh
       - Fix: Verify file exists: `test -f /path/to/plan.md`
     ```
 
-- [ ] **Task 4.2**: Document subprocess isolation constraints
+- [x] **Task 4.2**: Document subprocess isolation constraints
   - **Location**: `coordinate-command-guide.md` (Troubleshooting section)
   - **Content**:
     ```markdown
@@ -703,7 +703,7 @@ bash /home/benjamin/.config/.claude/tests/run_all_tests.sh
     - [State Persistence Pattern](.claude/docs/concepts/patterns/state-persistence.md)
     ```
 
-- [ ] **Task 4.3**: Verify Standard 11 compliance throughout coordinate.md
+- [x] **Task 4.3**: Verify Standard 11 compliance throughout coordinate.md
   - **Standard 11**: Imperative Agent Invocation Pattern
   - **Requirements**:
     - Commands invoke agents via Task tool (NOT SlashCommand)
@@ -728,7 +728,7 @@ bash /home/benjamin/.config/.claude/tests/run_all_tests.sh
     # Expected: research-specialist.md, revision-specialist.md, plan-architect.md, etc.
     ```
 
-- [ ] **Task 4.4**: Update research report with implementation results
+- [x] **Task 4.4**: Update research report with implementation results
   - **Location**: `001_coordinate_error_analysis.md` (add Implementation Results section)
   - **Content**:
     ```markdown
@@ -766,7 +766,7 @@ bash /home/benjamin/.config/.claude/tests/run_all_tests.sh
     **Status**: ✓ Complete
     ```
 
-- [ ] **Task 4.5**: Run architecture compliance validation script
+- [x] **Task 4.5**: Run architecture compliance validation script
   - **Script**: `.claude/lib/validate-agent-invocation-pattern.sh`
   - **Target**: `coordinate.md`
   - **Expected**: No anti-patterns detected
