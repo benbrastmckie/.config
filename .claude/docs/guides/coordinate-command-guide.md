@@ -893,7 +893,153 @@ source .claude/lib/workflow-scope-detection.sh
 detect_workflow_scope "your description here"
 ```
 
-#### Issue 3: Context Budget Exceeded
+---
+
+#### Issue 3: JQ Parse Errors (Empty Report Arrays)
+
+**Symptom**: `jq: parse error: Invalid numeric literal at line 1, column...`
+
+**Cause**: Empty or malformed `REPORT_PATHS_JSON` variable when parsing report paths from state
+
+**When It Occurs**:
+- Research phase produces no reports (edge case)
+- REPORT_PATHS_JSON not initialized
+- Malformed JSON from previous phase
+
+**Solution**: Fixed in Spec 652 (coordinate.md lines 605-611, 727-739)
+
+The coordinate command now:
+- Explicitly handles empty arrays: `REPORT_PATHS_JSON="[]"`
+- Validates JSON before parsing: `jq empty 2>/dev/null`
+- Falls back to empty array on malformed JSON
+- Logs success: "Loaded N report paths from state"
+
+**Verification**:
+```bash
+# Test empty array handling
+SUCCESSFUL_REPORT_PATHS=()
+if [ ${#SUCCESSFUL_REPORT_PATHS[@]} -eq 0 ]; then
+  REPORT_PATHS_JSON="[]"
+fi
+echo "$REPORT_PATHS_JSON" | jq empty && echo "✓ Valid JSON"
+
+# Test malformed JSON recovery
+REPORT_PATHS_JSON="invalid json"
+if echo "$REPORT_PATHS_JSON" | jq empty 2>/dev/null; then
+  echo "Valid JSON"
+else
+  echo "✓ Fallback to empty array triggered"
+  REPORT_PATHS=()
+fi
+```
+
+**Related Tests**: `.claude/tests/test_coordinate_error_fixes.sh` - Tests 1, 2, 4
+
+---
+
+#### Issue 4: Missing State File Errors
+
+**Symptom**: `grep: /path/to/state: No such file or directory`
+
+**Cause**: State file accessed before creation or after premature deletion
+
+**When It Occurs**:
+- State file not initialized in first bash block
+- Workflow ID file missing or corrupted
+- Premature EXIT trap cleanup
+- File system issues
+
+**Solution**: Fixed in Spec 652 (verification-helpers.sh lines 155-167)
+
+The `verify_state_variables()` function now:
+- Checks file existence BEFORE grep operations
+- Provides clear diagnostic error messages
+- Lists expected file path
+- Suggests troubleshooting steps
+
+**Error Message**:
+```
+✗ ERROR: State file does not exist
+   Expected path: /path/to/state/file
+
+TROUBLESHOOTING:
+  1. Verify init_workflow_state() was called in first bash block
+  2. Check STATE_FILE variable was saved to state correctly
+  3. Verify workflow ID file exists and contains valid ID
+  4. Ensure no premature cleanup of state files
+```
+
+**Verification**:
+```bash
+# Test missing file detection
+STATE_FILE="/tmp/nonexistent.state"
+VARS=("VAR1" "VAR2")
+if verify_state_variables "$STATE_FILE" "${VARS[@]}" 2>/dev/null; then
+  echo "ERROR: Should have failed"
+else
+  echo "✓ Missing file detected correctly"
+fi
+```
+
+**Related Tests**: `.claude/tests/test_coordinate_error_fixes.sh` - Test 4
+
+---
+
+#### Issue 5: State Transition Validation Failures
+
+**Symptom**: `ERROR: Expected state 'plan' but current state is 'implement'`
+
+**Cause**: State validation logic out of sync with state machine transitions
+
+**When It Occurs**:
+- sm_transition not called before validation
+- State not persisted to workflow state
+- Subprocess state restoration failure
+- State machine transition error
+
+**Solution**: Fixed in Spec 652 (coordinate.md lines 221-224, 660-663, 1002-1005)
+
+The coordinate command now:
+- Logs state transitions with timestamps
+- Calls `sm_transition()` BEFORE validation
+- Persists state immediately after transition
+- Provides enhanced error diagnostics
+
+**Transition Logging**:
+```bash
+Transitioning from research to plan
+sm_transition "$STATE_PLAN"
+append_workflow_state "CURRENT_STATE" "$STATE_PLAN"
+State transition complete: 2025-11-10 14:30:45
+```
+
+**Enhanced Error Message**:
+```
+ERROR: State transition validation failed
+  Expected: plan
+  Actual: implement
+
+TROUBLESHOOTING:
+  1. Verify sm_transition was called in previous bash block
+  2. Check workflow state file for CURRENT_STATE value
+  3. Verify workflow scope: full-implementation
+  4. Review state machine transition logs above
+```
+
+**Verification**:
+```bash
+# Test state transitions
+source .claude/lib/workflow-state-machine.sh
+sm_init "Test" "coordinate"
+sm_transition "$STATE_RESEARCH"
+[ "$CURRENT_STATE" = "$STATE_RESEARCH" ] && echo "✓ Transition works"
+```
+
+**Related Tests**: `.claude/tests/test_coordinate_error_fixes.sh` - Test 5
+
+---
+
+#### Issue 6: Context Budget Exceeded
 
 **Symptoms**:
 - Token limit warnings

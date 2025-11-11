@@ -218,8 +218,10 @@ else
 fi
 
 # Transition to research state
+echo "Transitioning from initialize to $STATE_RESEARCH"
 sm_transition "$STATE_RESEARCH"
 append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
+echo "State transition complete: $(date '+%Y-%m-%d %H:%M:%S')"
 
 echo ""
 echo "State Machine Initialized:"
@@ -601,7 +603,14 @@ else
 fi
 
 # Save report paths to workflow state (same for both modes)
-append_workflow_state "REPORT_PATHS_JSON" "$(printf '%s\n' "${SUCCESSFUL_REPORT_PATHS[@]}" | jq -R . | jq -s .)"
+# Defensive JSON handling: Handle empty arrays explicitly to prevent jq parse errors
+if [ ${#SUCCESSFUL_REPORT_PATHS[@]} -eq 0 ]; then
+  REPORT_PATHS_JSON="[]"
+else
+  REPORT_PATHS_JSON="$(printf '%s\n' "${SUCCESSFUL_REPORT_PATHS[@]}" | jq -R . | jq -s .)"
+fi
+append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
+echo "Saved ${#SUCCESSFUL_REPORT_PATHS[@]} report paths to JSON state"
 
 # ===== CHECKPOINT REQUIREMENT: Research Phase Complete =====
 echo ""
@@ -648,8 +657,10 @@ case "$WORKFLOW_SCOPE" in
     ;;
   research-and-plan|full-implementation|debug-only)
     # Continue to planning
+    echo "Transitioning from $CURRENT_STATE to $STATE_PLAN"
     sm_transition "$STATE_PLAN"
     append_workflow_state "CURRENT_STATE" "$STATE_PLAN"
+    echo "State transition complete: $(date '+%Y-%m-%d %H:%M:%S')"
     ;;
   *)
     echo "ERROR: Unknown workflow scope: $WORKFLOW_SCOPE"
@@ -707,8 +718,16 @@ fi
 
 # Verify we're in plan state
 if [ "$CURRENT_STATE" != "$STATE_PLAN" ]; then
-  echo "ERROR: Expected state '$STATE_PLAN' but current state is '$CURRENT_STATE'"
-  exit 1
+  echo "ERROR: State transition validation failed"
+  echo "  Expected: $STATE_PLAN"
+  echo "  Actual: $CURRENT_STATE"
+  echo ""
+  echo "TROUBLESHOOTING:"
+  echo "  1. Verify sm_transition was called in previous bash block"
+  echo "  2. Check workflow state file for CURRENT_STATE value"
+  echo "  3. Verify workflow scope: $WORKFLOW_SCOPE"
+  echo "  4. Review state machine transition logs above"
+  handle_state_error "State transition validation failed" 1
 fi
 
 if command -v emit_progress &>/dev/null; then
@@ -716,8 +735,19 @@ if command -v emit_progress &>/dev/null; then
 fi
 
 # Reconstruct report paths from state
+# Defensive JSON handling: Validate JSON before parsing to prevent jq parse errors
 if [ -n "${REPORT_PATHS_JSON:-}" ]; then
-  mapfile -t REPORT_PATHS < <(echo "$REPORT_PATHS_JSON" | jq -r '.[]')
+  # Validate JSON before parsing
+  if echo "$REPORT_PATHS_JSON" | jq empty 2>/dev/null; then
+    mapfile -t REPORT_PATHS < <(echo "$REPORT_PATHS_JSON" | jq -r '.[]')
+    echo "Loaded ${#REPORT_PATHS[@]} report paths from state"
+  else
+    echo "WARNING: Invalid REPORT_PATHS_JSON, using empty array" >&2
+    REPORT_PATHS=()
+  fi
+else
+  echo "WARNING: REPORT_PATHS_JSON not set, using empty array" >&2
+  REPORT_PATHS=()
 fi
 
 # Build report references for /plan
@@ -977,13 +1007,17 @@ case "$WORKFLOW_SCOPE" in
     ;;
   full-implementation)
     # Continue to implementation
+    echo "Transitioning from $CURRENT_STATE to $STATE_IMPLEMENT"
     sm_transition "$STATE_IMPLEMENT"
     append_workflow_state "CURRENT_STATE" "$STATE_IMPLEMENT"
+    echo "State transition complete: $(date '+%Y-%m-%d %H:%M:%S')"
     ;;
   debug-only)
     # Skip to debug
+    echo "Transitioning from $CURRENT_STATE to $STATE_DEBUG"
     sm_transition "$STATE_DEBUG"
     append_workflow_state "CURRENT_STATE" "$STATE_DEBUG"
+    echo "State transition complete: $(date '+%Y-%m-%d %H:%M:%S')"
     ;;
   *)
     echo "ERROR: Unknown workflow scope: $WORKFLOW_SCOPE"

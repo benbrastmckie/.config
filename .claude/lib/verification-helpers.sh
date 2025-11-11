@@ -151,6 +151,21 @@ verify_state_variables() {
   shift
   local var_names=("$@")
 
+  # Defensive check: Verify state file exists before grep operations
+  if [ ! -f "$state_file" ]; then
+    echo ""
+    echo "✗ ERROR: State file does not exist"
+    echo "   Expected path: $state_file"
+    echo ""
+    echo "TROUBLESHOOTING:"
+    echo "  1. Verify init_workflow_state() was called in first bash block"
+    echo "  2. Check STATE_FILE variable was saved to state correctly"
+    echo "  3. Verify workflow ID file exists and contains valid ID"
+    echo "  4. Ensure no premature cleanup of state files"
+    echo ""
+    return 1
+  fi
+
   local missing_vars=()
 
   # Check each variable
