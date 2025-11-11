@@ -448,6 +448,32 @@ fi
 # Reconstruct REPORT_PATHS array from state
 reconstruct_report_paths_array
 
+# CRITICAL: Dynamic discovery MUST execute before verification to reconcile agent-created filenames
+# Dynamic Report Path Discovery:
+# Research agents create descriptive filenames (e.g., 001_auth_patterns.md)
+# but workflow-initialization.sh pre-calculates generic names (001_topic1.md).
+# Discover actual created files and update REPORT_PATHS array.
+REPORTS_DIR="${TOPIC_PATH}/reports"
+if [ -d "$REPORTS_DIR" ]; then
+  # Find all report files matching pattern NNN_*.md (sorted by number)
+  DISCOVERED_REPORTS=()
+  for i in $(seq 1 $RESEARCH_COMPLEXITY); do
+    # Find file matching 00N_*.md pattern
+    PATTERN=$(printf '%03d' $i)
+    FOUND_FILE=$(find "$REPORTS_DIR" -maxdepth 1 -name "${PATTERN}_*.md" -type f | head -1)
+
+    if [ -n "$FOUND_FILE" ]; then
+      DISCOVERED_REPORTS+=("$FOUND_FILE")
+    else
+      # Keep original generic path if no file discovered
+      DISCOVERED_REPORTS+=("${REPORT_PATHS[$i-1]}")
+    fi
+  done
+
+  # Update REPORT_PATHS with discovered paths
+  REPORT_PATHS=("${DISCOVERED_REPORTS[@]}")
+fi
+
 emit_progress "1" "Research phase completion - verifying results"
 
 # Handle hierarchical vs flat coordination differently
@@ -520,32 +546,6 @@ if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
 
 else
   echo "Flat research coordination mode"
-
-  # Dynamic Report Path Discovery:
-  # Research agents create descriptive filenames (e.g., 001_auth_patterns.md)
-  # but workflow-initialization.sh pre-calculates generic names (001_topic1.md).
-  # Discover actual created files and update REPORT_PATHS array.
-
-  REPORTS_DIR="${TOPIC_PATH}/reports"
-  if [ -d "$REPORTS_DIR" ]; then
-    # Find all report files matching pattern NNN_*.md (sorted by number)
-    DISCOVERED_REPORTS=()
-    for i in $(seq 1 $RESEARCH_COMPLEXITY); do
-      # Find file matching 00N_*.md pattern
-      PATTERN=$(printf '%03d' $i)
-      FOUND_FILE=$(find "$REPORTS_DIR" -maxdepth 1 -name "${PATTERN}_*.md" -type f | head -1)
-
-      if [ -n "$FOUND_FILE" ]; then
-        DISCOVERED_REPORTS+=("$FOUND_FILE")
-      else
-        # Keep original generic path if no file discovered
-        DISCOVERED_REPORTS+=("${REPORT_PATHS[$i-1]}")
-      fi
-    done
-
-    # Update REPORT_PATHS with discovered paths
-    REPORT_PATHS=("${DISCOVERED_REPORTS[@]}")
-  fi
 
   # ===== MANDATORY VERIFICATION CHECKPOINT: Flat Research =====
   echo ""
