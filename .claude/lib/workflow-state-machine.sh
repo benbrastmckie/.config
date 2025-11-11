@@ -108,6 +108,9 @@ sm_init() {
     research-and-plan)
       TERMINAL_STATE="$STATE_PLAN"
       ;;
+    research-and-revise)
+      TERMINAL_STATE="$STATE_PLAN"  # Same terminal as research-and-plan
+      ;;
     full-implementation)
       TERMINAL_STATE="$STATE_COMPLETE"
       ;;
