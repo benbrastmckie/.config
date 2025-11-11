@@ -509,9 +509,11 @@ After completing the above tasks:
 **Phase 4 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(651): complete Phase 4 - /coordinate Planning Phase Handler Modification`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] Git commit created: `feat(651): complete Phase 4 - /coordinate Planning Phase Handler Modification`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
+
+[COMPLETED]
 
 ### Phase 5: State Machine Integration and Testing
 dependencies: [4]
@@ -521,19 +523,19 @@ dependencies: [4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read current workflow-state-machine.sh implementation (file: /home/benjamin/.config/.claude/lib/workflow-state-machine.sh, lines 104-121)
-- [ ] Add research-and-revise case to terminal state mapping
-- [ ] Set TERMINAL_STATE="$STATE_PLAN" for research-and-revise (same as research-and-plan)
-- [ ] Verify no new states needed (research-and-revise uses existing state sequence)
-- [ ] Create test file: .claude/tests/test_revision_specialist.sh
-- [ ] Add test cases for workflow scope detection (research-and-revise pattern matching)
-- [ ] Add test cases for plan discovery logic (find most recent plan)
-- [ ] Add test cases for backup creation (timestamped backups in backups/ directory)
-- [ ] Add test cases for revision history updates (date, type, reason present)
-- [ ] Add test cases for completion signal format (REVISION_COMPLETED: <path>)
-- [ ] Add integration test for full /coordinate research-and-revise workflow
-- [ ] Add negative test cases (no existing plan, backup creation failure, invalid research reports)
-- [ ] Run complete test suite and verify 100% pass rate
+- [x] Read current workflow-state-machine.sh implementation (file: /home/benjamin/.config/.claude/lib/workflow-state-machine.sh, lines 104-121)
+- [x] Add research-and-revise case to terminal state mapping
+- [x] Set TERMINAL_STATE="$STATE_PLAN" for research-and-revise (same as research-and-plan)
+- [x] Verify no new states needed (research-and-revise uses existing state sequence)
+- [x] Create test file: .claude/tests/test_revision_specialist.sh
+- [x] Add test cases for workflow scope detection (research-and-revise pattern matching)
+- [x] Add test cases for plan discovery logic (find most recent plan)
+- [x] Add test cases for backup creation (timestamped backups in backups/ directory)
+- [x] Add test cases for revision history updates (date, type, reason present)
+- [x] Add test cases for completion signal format (REVISION_COMPLETED: <path>)
+- [x] Add integration test for full /coordinate research-and-revise workflow
+- [x] Add negative test cases (no existing plan, backup creation failure, invalid research reports)
+- [x] Run complete test suite and verify 100% pass rate
 
 **Testing**:
 ```bash
@@ -555,13 +557,13 @@ dependencies: [4]
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Phase 5 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
 - [ ] Git commit created: `feat(651): complete Phase 5 - State Machine Integration and Testing`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
