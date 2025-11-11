@@ -70,8 +70,74 @@ The `/coordinate` command orchestrates multi-agent workflows for research, plann
 The command automatically detects the workflow type from your description and executes only the appropriate phases:
 - **research-only**: Keywords like "research [topic]" without "plan" or "implement"
 - **research-and-plan**: Keywords like "research...to create plan", "analyze...for planning"
-- **full-implementation**: Keywords like "implement", "build", "add feature"
+- **full-implementation**: Keywords like "implement", "build", "add feature", or plan path pattern (specs/*/plans/*.md)
+- **research-and-revise**: Keywords like "revise [plan]", "update plan", "modify plan" (takes priority over plan path)
 - **debug-only**: Keywords like "fix [bug]", "debug [issue]", "troubleshoot [error]"
+
+**Note**: Scope detection prioritizes patterns in this order: (1) revision patterns, (2) plan paths, (3) research-only, (4) explicit implementation keywords, (5) other patterns. See [workflow-scope-detection.sh](.claude/lib/workflow-scope-detection.sh:25-89) for complete algorithm.
+
+---
+
+## Transcript Files vs Command Implementation
+
+### Important Distinction
+
+**coordinage_*.md files** in `.claude/specs/` are **execution transcripts** (log files), NOT command implementations.
+
+| Type | Location | Purpose | Status |
+|------|----------|---------|--------|
+| **Command Implementation** | `.claude/commands/coordinate.md` | Executable bash blocks that Claude runs | Authoritative source |
+| **Execution Transcript** | `.claude/specs/coordinage_*.md` | Log of actual command execution | Historical record |
+
+### Why This Matters
+
+Transcripts may contain error conditions that were addressed during execution:
+
+**Example**: A transcript showing "scope detected as research-and-plan" when user ran "implement <plan>" indicates a scope detection **bug that existed at execution time**, not the current correct behavior.
+
+### Correct Pattern Reference
+
+When understanding how `/coordinate` works:
+
+✅ **DO**: Read `.claude/commands/coordinate.md` (the actual command)
+✅ **DO**: Review behavioral agent files (`.claude/agents/*.md`)
+✅ **DO**: Check library functions (`.claude/lib/workflow-*.sh`)
+
+❌ **DON'T**: Use transcripts as examples of correct patterns
+❌ **DON'T**: Copy error conditions from transcripts as if they were intended behavior
+❌ **DON'T**: Assume transcript naming means the file contains executable code
+
+### Standard 11 Compliance
+
+The `/coordinate` command is **100% compliant with Standard 11** (Imperative Agent Invocation Pattern):
+
+**Correct Implementation** (coordinate.md:1169-1200):
+```markdown
+**EXECUTE NOW**: USE the Task tool to invoke implementer-coordinator:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Execute implementation with wave-based parallel execution"
+  timeout: 600000
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md
+
+    **Workflow-Specific Context**:
+    - Plan File: $PLAN_PATH (absolute path)
+    - Topic Directory: $TOPIC_PATH
+    ...
+  "
+}
+```
+
+**Incorrect Pattern** (SlashCommand anti-pattern):
+```markdown
+# ❌ NEVER DO THIS in orchestration commands
+SlashCommand("/implement <plan-path>")
+```
+
+See [Standard 11 Documentation](.claude/docs/reference/command_architecture_standards.md#standard-11) for complete requirements.
 
 ---
 
@@ -1002,25 +1068,72 @@ echo $REPORT_PATH
 - Wrong phases execute
 - Expected phases skipped
 - Workflow type mismatch
+- "implement <plan-path>" detected as research-and-plan instead of full-implementation
 
-**Cause**:
-- Ambiguous workflow description
-- Missing keywords for scope detection
-- Library function issue
+**Root Causes**:
+1. **Ambiguous workflow description** - Missing clear keywords
+2. **Plan path not recognized** - Path doesn't match `specs/[0-9]+_*/plans/*.md` pattern
+3. **Revision pattern takes priority** - "revise...plan" keywords override plan path detection
+4. **Outdated scope detection logic** - Bug fixed in Spec 664 (2025-11-11)
 
-**Solution**:
+**Solution - Test Scope Detection**:
 ```bash
-# Be more explicit with keywords
-# Instead of: "look at authentication"
-# Use: "research authentication patterns"
-
-# Check scope detection logic
-cat .claude/lib/workflow-scope-detection.sh
+# Enable debug logging to see detection rationale
+export DEBUG_SCOPE_DETECTION=1
 
 # Test scope detection manually
 source .claude/lib/workflow-scope-detection.sh
-detect_workflow_scope "your description here"
+detect_workflow_scope "implement specs/661_auth/plans/001_implementation.md"
+# Expected output: full-implementation
+
+# Test revision pattern priority
+detect_workflow_scope "revise specs/027_auth/plans/001_plan.md based on feedback"
+# Expected output: research-and-revise
+
+# Check detection algorithm (should see priority order comments)
+cat .claude/lib/workflow-scope-detection.sh | grep -A 5 "PRIORITY"
 ```
+
+**Solution - Be More Explicit**:
+```bash
+# ❌ Ambiguous (will default to research-and-plan)
+/coordinate "look at authentication"
+
+# ✅ Explicit research-only
+/coordinate "research authentication patterns"
+
+# ✅ Explicit full-implementation (keyword)
+/coordinate "implement new authentication feature"
+
+# ✅ Explicit full-implementation (plan path)
+/coordinate "implement specs/042_auth/plans/001_oauth.md"
+
+# ✅ Explicit research-and-revise
+/coordinate "revise the authentication plan based on security review"
+```
+
+**Solution - Check Algorithm Priority**:
+
+Scope detection follows this priority order (as of Spec 664):
+1. **Revision patterns** (`revise|update|modify...plan...`)
+2. **Plan paths** (`specs/*/plans/*.md`)
+3. **Research-only** (`research...` without action keywords)
+4. **Explicit implementation** (`implement|execute` keyword)
+5. **Other patterns** (`plan`, `debug`, `build feature`, etc.)
+
+If detection seems wrong, check which pattern matched first:
+```bash
+# View complete detection function
+cat .claude/lib/workflow-scope-detection.sh
+
+# Run comprehensive test suite
+bash .claude/tests/test_workflow_scope_detection.sh
+```
+
+**Fixed in Spec 664** (2025-11-11):
+- Plan path detection now recognizes absolute/relative paths and explicit "implement" keyword
+- Priority order clarified to handle revision vs implementation correctly
+- 20 comprehensive test cases added to prevent regression
 
 ---
 
