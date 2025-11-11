@@ -990,6 +990,63 @@ Artifacts created:
   - src/auth/tokenRefresh.ts (modified)
 ```
 
+### Example 5: Research-and-Revise Workflow
+
+**Use Case**: Update existing implementation plan based on new research findings
+
+```bash
+/coordinate "Revise the plan /home/benjamin/.config/.claude/specs/042_auth/plans/001_auth_plan.md to accommodate recent security research"
+```
+
+**Expected Output**:
+```
+Phase 0: Initialization complete
+  - Scope detected: research-and-revise
+  - Existing plan: /home/benjamin/.config/.claude/specs/042_auth/plans/001_auth_plan.md
+  - EXISTING_PLAN_PATH saved to workflow state ✓
+
+Phase 1: Research (2 agents in parallel)
+  - Security best practices analysis
+  - Authentication vulnerabilities assessment
+
+Phase 2: Planning (revision-specialist agent invoked)
+  - Backup created: 001_auth_plan.md.backup-20251111-120000 ✓
+  - Plan revised with security findings
+  - Completed phases preserved
+  - Revision history updated
+
+✅ Workflow complete: research-and-revise
+
+Artifacts created:
+  - specs/042_auth/reports/001_security_analysis.md
+  - specs/042_auth/reports/002_vulnerability_assessment.md
+  - specs/042_auth/plans/001_auth_plan.md (updated)
+  - specs/042_auth/plans/001_auth_plan.md.backup-20251111-120000
+```
+
+**Key Differences from Other Workflows**:
+- Uses existing topic directory (doesn't create new)
+- Invokes revision-specialist agent (not plan-architect)
+- Creates timestamped backup before modification
+- Preserves completed phases in plan
+- Updates revision history section
+- Terminal state is "plan" (doesn't proceed to implementation)
+
+**Scope Detection**:
+research-and-revise workflow requires both:
+1. Revision keyword ("revise", "update plan", "modify plan")
+2. Full absolute path to existing plan file
+
+**Path Requirements**:
+- MUST be absolute path (starts with `/`)
+- MUST match pattern `/specs/NNN_topic/plans/NNN_plan.md`
+- Plan file MUST exist before /coordinate is invoked
+
+**Common Errors**:
+- "research-and-revise workflow requires existing plan path" → Missing plan path in workflow description
+- "Extracted plan path does not exist" → Typo in path or file doesn't exist
+- "EXISTING_PLAN_PATH not restored from workflow state" → Bug in Phase 1 (should not occur after Spec 665 fix)
+
 ---
 
 ## Troubleshooting
@@ -1266,6 +1323,61 @@ ls -la .claude/specs/657_topic/
 # Create a new plan instead:
 /coordinate "research topic and create new plan"
 ```
+
+---
+
+#### Issue 2e: EXISTING_PLAN_PATH Not Persisting Across Bash Blocks
+
+**Symptom**: Error "EXISTING_PLAN_PATH not restored from workflow state" during planning phase
+
+**Root Cause**: Subprocess isolation - `export` in library function doesn't persist to parent bash block
+
+**Technical Details**:
+- Each bash block in coordinate.md runs as separate subprocess
+- `export EXISTING_PLAN_PATH` in workflow-scope-detection.sh creates subprocess variable
+- Variable lost when subprocess exits (before next bash block executes)
+- **Solution**: Save to workflow state file immediately after extraction
+
+**How It Was Fixed (Spec 665)**:
+
+In coordinate.md (after sm_init, lines 127-153):
+```bash
+# ADDED: Extract and save EXISTING_PLAN_PATH for research-and-revise workflows
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  # Extract plan path from workflow description
+  if echo "$SAVED_WORKFLOW_DESC" | grep -Eq "/specs/[0-9]+_[^/]+/plans/"; then
+    EXISTING_PLAN_PATH=$(echo "$SAVED_WORKFLOW_DESC" | grep -oE "/[^ ]+\.md" | head -1)
+    export EXISTING_PLAN_PATH
+
+    # CRITICAL: Verify file exists before proceeding
+    if [ ! -f "$EXISTING_PLAN_PATH" ]; then
+      handle_state_error "Extracted plan path does not exist: $EXISTING_PLAN_PATH" 1
+    fi
+
+    echo "✓ Extracted existing plan path: $EXISTING_PLAN_PATH"
+  else
+    handle_state_error "research-and-revise workflow requires plan path in description" 1
+  fi
+fi
+
+# ADDED: Save EXISTING_PLAN_PATH to state for bash block persistence
+if [ -n "${EXISTING_PLAN_PATH:-}" ]; then
+  append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
+fi
+```
+
+**Verification**:
+```bash
+# Check workflow state file contains EXISTING_PLAN_PATH
+cat "${HOME}/.claude/tmp/workflow_coordinate_*.sh" | grep EXISTING_PLAN_PATH
+
+# Expected: export EXISTING_PLAN_PATH="/absolute/path/to/plan.md"
+```
+
+**See Also**:
+- [Bash Block Execution Model](.claude/docs/concepts/bash-block-execution-model.md)
+- [State Persistence Pattern](.claude/docs/concepts/patterns/state-persistence.md)
+- [Spec 665 Implementation Plan](../specs/665_research_the_output_homebenjaminconfigclaudespecs/plans/001_coordinate_fixes_implementation_plan.md)
 
 ---
 
