@@ -523,6 +523,153 @@ test_phase1_missing_indexed_variable
 test_phase1_report_paths_integration
 
 # ==============================================================================
+# Test Suite: Phase 2 - COMPLETED_STATES Array Persistence (Spec 672)
+# ==============================================================================
+
+# Source workflow-state-machine.sh for Phase 2 functions
+source "${PROJECT_ROOT}/.claude/lib/workflow-state-machine.sh"
+
+test_phase2_save_completed_states() {
+  print_test_header "Phase 2.1: Save COMPLETED_STATES to State"
+
+  # Setup: Initialize test state file
+  local test_state_file="/tmp/test_state_$$.txt"
+  export STATE_FILE="$test_state_file"
+
+  # Create minimal append_workflow_state function for testing
+  append_workflow_state() {
+    local key="$1"
+    local value="$2"
+    echo "export ${key}='${value}'" >> "$STATE_FILE"
+  }
+  export -f append_workflow_state
+
+  # Setup COMPLETED_STATES array
+  COMPLETED_STATES=("initialize" "research" "plan")
+
+  # Execute save function
+  save_completed_states_to_state
+
+  # Verify state file contains JSON and count
+  if grep -q 'COMPLETED_STATES_JSON' "$test_state_file" && \
+     grep -q 'COMPLETED_STATES_COUNT' "$test_state_file"; then
+    pass "COMPLETED_STATES saved to state file"
+  else
+    fail "COMPLETED_STATES not saved to state file"
+  fi
+
+  # Verify JSON content
+  if grep -q '["initialize","research","plan"]' "$test_state_file"; then
+    pass "COMPLETED_STATES JSON content correct"
+  else
+    fail "COMPLETED_STATES JSON content incorrect"
+  fi
+
+  # Cleanup
+  rm -f "$test_state_file"
+  unset STATE_FILE append_workflow_state
+  COMPLETED_STATES=()
+}
+
+test_phase2_load_completed_states() {
+  print_test_header "Phase 2.2: Load COMPLETED_STATES from State"
+
+  # Setup: Create test state with COMPLETED_STATES
+  export COMPLETED_STATES_JSON='["initialize","research"]'
+  export COMPLETED_STATES_COUNT=2
+
+  # Clear current array
+  COMPLETED_STATES=()
+
+  # Execute load function
+  load_completed_states_from_state
+
+  # Verify array reconstructed correctly
+  if [ "${#COMPLETED_STATES[@]}" -eq 2 ] && \
+     [ "${COMPLETED_STATES[0]}" = "initialize" ] && \
+     [ "${COMPLETED_STATES[1]}" = "research" ]; then
+    pass "COMPLETED_STATES loaded from state correctly"
+  else
+    fail "COMPLETED_STATES load failed (expected 2 elements: initialize, research)"
+  fi
+
+  # Cleanup
+  unset COMPLETED_STATES_JSON COMPLETED_STATES_COUNT
+  COMPLETED_STATES=()
+}
+
+test_phase2_empty_array_handling() {
+  print_test_header "Phase 2.3: Empty COMPLETED_STATES Array"
+
+  # Setup: Initialize test state file
+  local test_state_file="/tmp/test_state_$$.txt"
+  export STATE_FILE="$test_state_file"
+
+  append_workflow_state() {
+    local key="$1"
+    local value="$2"
+    echo "export ${key}='${value}'" >> "$STATE_FILE"
+  }
+  export -f append_workflow_state
+
+  # Setup empty array
+  COMPLETED_STATES=()
+
+  # Execute save function
+  save_completed_states_to_state
+
+  # Verify empty array JSON
+  if grep -q 'COMPLETED_STATES_JSON=.\[\]' "$test_state_file"; then
+    pass "Empty COMPLETED_STATES array saved as []"
+  else
+    fail "Empty array not saved correctly"
+  fi
+
+  # Cleanup
+  rm -f "$test_state_file"
+  unset STATE_FILE append_workflow_state
+}
+
+test_phase2_state_machine_integration() {
+  print_test_header "Phase 2.4: State Machine Integration"
+
+  # Setup: Initialize minimal state file infrastructure
+  local test_state_file="/tmp/test_state_$$.txt"
+  export STATE_FILE="$test_state_file"
+
+  append_workflow_state() {
+    local key="$1"
+    local value="$2"
+    echo "export ${key}='${value}'" >> "$STATE_FILE"
+  }
+  export -f append_workflow_state
+
+  # Initialize state machine
+  sm_init "test workflow" "coordinate"
+
+  # Perform state transition (should save COMPLETED_STATES)
+  sm_transition "$STATE_RESEARCH"
+
+  # Verify COMPLETED_STATES was saved to state file
+  if grep -q 'COMPLETED_STATES_JSON' "$test_state_file"; then
+    pass "State transition saves COMPLETED_STATES to state"
+  else
+    fail "State transition did not save COMPLETED_STATES"
+  fi
+
+  # Cleanup
+  rm -f "$test_state_file"
+  unset STATE_FILE append_workflow_state
+  COMPLETED_STATES=()
+}
+
+# Run Phase 2 tests
+test_phase2_save_completed_states
+test_phase2_load_completed_states
+test_phase2_empty_array_handling
+test_phase2_state_machine_integration
+
+# ==============================================================================
 # Summary
 # ==============================================================================
 echo ""
