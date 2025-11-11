@@ -1171,6 +1171,18 @@ else
   exit 1
 fi
 
+emit_progress "3" "Implementation phase completion - verifying results"
+
+# Parse agent response for completion signal
+# Note: Agent response stored in previous output, we verify file existence instead
+if [ ! -f "$PLAN_PATH" ]; then
+  handle_state_error "Implementation failed: Plan file not found after agent execution" 1
+fi
+
+# Store implementation completion in state
+append_workflow_state "IMPLEMENTATION_COMPLETED" "true"
+append_workflow_state "IMPLEMENTATION_TIMESTAMP" "$(date '+%Y-%m-%d %H:%M:%S')"
+
 emit_progress "3" "Implementation complete - transitioning to Testing"
 
 # ===== CHECKPOINT REQUIREMENT: Implementation Phase Complete =====
