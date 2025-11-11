@@ -670,6 +670,173 @@ test_phase2_empty_array_handling
 test_phase2_state_machine_integration
 
 # ==============================================================================
+# Test Suite: Phase 3 - Fail-Fast State Validation (Spec 672)
+# ==============================================================================
+
+test_phase3_first_block_graceful_init() {
+  print_test_header "Phase 3.1: First Block - Graceful Initialization"
+
+  # Setup: Ensure CLAUDE_PROJECT_DIR is set
+  if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+    CLAUDE_PROJECT_DIR="${PROJECT_ROOT}"
+    export CLAUDE_PROJECT_DIR
+  fi
+
+  # Create unique workflow ID that doesn't have a state file
+  local test_workflow_id="test_workflow_$$_$(date +%s)"
+  local test_state_file="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${test_workflow_id}.sh"
+
+  # Ensure state file doesn't exist
+  rm -f "$test_state_file"
+
+  # Execute load with is_first_block=true (should gracefully initialize)
+  local exit_code
+  load_workflow_state "$test_workflow_id" true
+  exit_code=$?
+
+  # Verify it returned 1 (initialized new state)
+  if [ "$exit_code" -eq 1 ]; then
+    pass "First block with missing state initializes gracefully (exit code 1)"
+  else
+    fail "First block should return 1, got $exit_code"
+  fi
+
+  # Verify state file was created
+  if [ -f "$test_state_file" ]; then
+    pass "First block created new state file"
+  else
+    fail "State file not created by first block"
+  fi
+
+  # Cleanup
+  rm -f "$test_state_file"
+}
+
+test_phase3_subsequent_block_success() {
+  print_test_header "Phase 3.2: Subsequent Block - Successful Load"
+
+  # Setup: Ensure CLAUDE_PROJECT_DIR is set
+  if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+    CLAUDE_PROJECT_DIR="${PROJECT_ROOT}"
+    export CLAUDE_PROJECT_DIR
+  fi
+
+  # Create workflow with existing state file
+  local test_workflow_id="test_workflow_$$_$(date +%s)"
+  local test_state_file="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${test_workflow_id}.sh"
+
+  # Create state file with test data
+  echo 'export TEST_VAR="test_value"' > "$test_state_file"
+
+  # Execute load with is_first_block=false (should load successfully)
+  local exit_code
+  load_workflow_state "$test_workflow_id" false
+  exit_code=$?
+
+  # Verify it returned 0 (loaded successfully)
+  if [ "$exit_code" -eq 0 ]; then
+    pass "Subsequent block loads existing state successfully (exit code 0)"
+  else
+    fail "Subsequent block should return 0, got $exit_code"
+  fi
+
+  # Verify variable was loaded
+  if [ "${TEST_VAR:-}" = "test_value" ]; then
+    pass "Subsequent block restored variables from state"
+  else
+    fail "Variable not restored from state"
+  fi
+
+  # Cleanup
+  rm -f "$test_state_file"
+  unset TEST_VAR
+}
+
+test_phase3_subsequent_block_fail_fast() {
+  print_test_header "Phase 3.3: Subsequent Block - Fail-Fast on Missing State"
+
+  # Setup: Ensure CLAUDE_PROJECT_DIR is set
+  if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+    CLAUDE_PROJECT_DIR="${PROJECT_ROOT}"
+    export CLAUDE_PROJECT_DIR
+  fi
+
+  # Create unique workflow ID without state file
+  local test_workflow_id="test_workflow_$$_$(date +%s)"
+  local test_state_file="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${test_workflow_id}.sh"
+
+  # Ensure state file doesn't exist
+  rm -f "$test_state_file"
+
+  # Execute load with is_first_block=false (should fail-fast)
+  local exit_code
+  local error_output
+  error_output=$(load_workflow_state "$test_workflow_id" false 2>&1)
+  exit_code=$?
+
+  # Verify it returned 2 (CRITICAL ERROR)
+  if [ "$exit_code" -eq 2 ]; then
+    pass "Subsequent block with missing state returns exit code 2 (CRITICAL ERROR)"
+  else
+    fail "Expected exit code 2, got $exit_code"
+  fi
+
+  # Verify diagnostic output contains key messages
+  if echo "$error_output" | grep -q "CRITICAL ERROR"; then
+    pass "Fail-fast produces CRITICAL ERROR message"
+  else
+    fail "CRITICAL ERROR message not found in output"
+  fi
+
+  if echo "$error_output" | grep -q "TROUBLESHOOTING"; then
+    pass "Fail-fast includes troubleshooting guidance"
+  else
+    fail "Troubleshooting guidance not found in output"
+  fi
+
+  # Cleanup
+  rm -f "$test_state_file"
+}
+
+test_phase3_default_parameter_behavior() {
+  print_test_header "Phase 3.4: Default Parameter (is_first_block=false)"
+
+  # Setup: Ensure CLAUDE_PROJECT_DIR is set
+  if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+    CLAUDE_PROJECT_DIR="${PROJECT_ROOT}"
+    export CLAUDE_PROJECT_DIR
+  fi
+
+  # Create unique workflow ID without state file
+  local test_workflow_id="test_workflow_$$_$(date +%s)"
+  local test_state_file="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${test_workflow_id}.sh"
+
+  # Ensure state file doesn't exist
+  rm -f "$test_state_file"
+
+  # Execute load WITHOUT second parameter (should default to false)
+  local exit_code
+  load_workflow_state "$test_workflow_id" 2>/dev/null
+  exit_code=$?
+
+  # Verify default behavior is fail-fast (exit code 2)
+  if [ "$exit_code" -eq 2 ]; then
+    pass "Default parameter behavior is fail-fast (is_first_block=false)"
+  else
+    fail "Expected default to fail-fast (exit code 2), got $exit_code"
+  fi
+
+  # Cleanup
+  rm -f "$test_state_file"
+}
+
+# Run Phase 3 tests
+test_phase3_first_block_graceful_init
+test_phase3_subsequent_block_success
+test_phase3_subsequent_block_fail_fast
+test_phase3_default_parameter_behavior
+
+# ==============================================================================
 # Summary
 # ==============================================================================
 echo ""
