@@ -476,6 +476,7 @@ reconstruct_report_paths_array
 # but workflow-initialization.sh pre-calculates generic names (001_topic1.md).
 # Discover actual created files and update REPORT_PATHS array.
 REPORTS_DIR="${TOPIC_PATH}/reports"
+DISCOVERY_COUNT=0
 if [ -d "$REPORTS_DIR" ]; then
   # Find all report files matching pattern NNN_*.md (sorted by number)
   DISCOVERED_REPORTS=()
@@ -486,6 +487,7 @@ if [ -d "$REPORTS_DIR" ]; then
 
     if [ -n "$FOUND_FILE" ]; then
       DISCOVERED_REPORTS+=("$FOUND_FILE")
+      DISCOVERY_COUNT=$((DISCOVERY_COUNT + 1))
     else
       # Keep original generic path if no file discovered
       DISCOVERED_REPORTS+=("${REPORT_PATHS[$i-1]}")
@@ -494,6 +496,10 @@ if [ -d "$REPORTS_DIR" ]; then
 
   # Update REPORT_PATHS with discovered paths
   REPORT_PATHS=("${DISCOVERED_REPORTS[@]}")
+
+  # Diagnostic output: show path discovery results
+  echo "Dynamic path discovery complete: $DISCOVERY_COUNT/$RESEARCH_COMPLEXITY files discovered"
+  [ "$DISCOVERY_COUNT" -gt 0 ] && echo "  Updated REPORT_PATHS array with actual agent-created filenames"
 fi
 
 emit_progress "1" "Research phase completion - verifying results"
@@ -1173,15 +1179,71 @@ fi
 
 emit_progress "3" "Implementation phase completion - verifying results"
 
-# Parse agent response for completion signal
-# Note: Agent response stored in previous output, we verify file existence instead
-if [ ! -f "$PLAN_PATH" ]; then
-  handle_state_error "Implementation failed: Plan file not found after agent execution" 1
+# ===== MANDATORY VERIFICATION CHECKPOINT: Implementation Phase =====
+echo ""
+echo "MANDATORY VERIFICATION: Implementation Phase Artifacts"
+echo "Checking implementer-coordinator agent outputs..."
+echo ""
+
+VERIFICATION_FAILURES=0
+
+# Verify plan file exists (required)
+echo -n "  Plan file: "
+if [ -f "$PLAN_PATH" ]; then
+  PLAN_SIZE=$(stat -f%z "$PLAN_PATH" 2>/dev/null || stat -c%s "$PLAN_PATH" 2>/dev/null || echo "unknown")
+  echo " verified ($PLAN_SIZE bytes)"
+else
+  echo " MISSING"
+  VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
 fi
+
+# Check for implementation summary (optional, non-critical)
+SUMMARY_PATTERN="${SUMMARIES_DIR}/[0-9][0-9][0-9]_implementation_summary.md"
+SUMMARY_FILE=$(ls $SUMMARY_PATTERN 2>/dev/null | head -1)
+echo -n "  Implementation summary: "
+if [ -n "$SUMMARY_FILE" ] && [ -f "$SUMMARY_FILE" ]; then
+  SUMMARY_SIZE=$(stat -f%z "$SUMMARY_FILE" 2>/dev/null || stat -c%s "$SUMMARY_FILE" 2>/dev/null || echo "unknown")
+  echo " found ($SUMMARY_SIZE bytes) [optional]"
+else
+  echo " not found [optional, non-critical]"
+fi
+
+echo ""
+echo "Verification Summary:"
+echo "  - Success: Plan file verified"
+echo "  - Failures: $VERIFICATION_FAILURES critical artifacts"
+
+# Fail-fast on verification failure
+if [ $VERIFICATION_FAILURES -gt 0 ]; then
+  echo ""
+  echo "❌ CRITICAL: Implementation artifact verification failed"
+  echo "   $VERIFICATION_FAILURES required artifacts not created"
+  echo ""
+  echo "Expected artifacts:"
+  echo "   - Plan file: $PLAN_PATH"
+  echo ""
+  echo "TROUBLESHOOTING:"
+  echo "1. Review implementer-coordinator agent output above for error messages"
+  echo "2. Check agent behavioral file: ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md"
+  echo "3. Verify all artifact paths were correctly injected:"
+  echo "   REPORTS_DIR=$REPORTS_DIR"
+  echo "   PLANS_DIR=$PLANS_DIR"
+  echo "   SUMMARIES_DIR=$SUMMARIES_DIR"
+  echo "4. Check permissions on artifact directories"
+  echo "5. Verify plan file is readable and not corrupted"
+  echo "6. Re-run workflow after fixing issues"
+  echo ""
+  handle_state_error "Implementation phase failed to create expected artifacts" 1
+fi
+
+echo "✓ Implementation artifacts verified successfully"
 
 # Store implementation completion in state
 append_workflow_state "IMPLEMENTATION_COMPLETED" "true"
 append_workflow_state "IMPLEMENTATION_TIMESTAMP" "$(date '+%Y-%m-%d %H:%M:%S')"
+if [ -n "$SUMMARY_FILE" ]; then
+  append_workflow_state "IMPLEMENTATION_SUMMARY" "$SUMMARY_FILE"
+fi
 
 emit_progress "3" "Implementation complete - transitioning to Testing"
 
