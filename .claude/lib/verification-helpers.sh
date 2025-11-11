@@ -172,6 +172,115 @@ verify_file_created() {
 # Export function for use in subshells
 export -f verify_file_created
 
+# verify_state_variable - Verify single variable exists in state file
+#
+# PURPOSE:
+#   Verifies that a single state variable exists in the workflow state file
+#   with correct export format. Designed for use in verification checkpoints
+#   after state initialization or modifications.
+#
+# PARAMETERS:
+#   $1 - var_name: Variable name to verify (without $ prefix)
+#
+# RETURNS:
+#   0 - Variable exists in state file with correct format (success)
+#   1 - Variable missing or state file unavailable (failure)
+#
+# OUTPUT:
+#   Success: Silent (no output)
+#   Failure: Diagnostic message showing expected format and state file path
+#
+# IMPLEMENTATION:
+#   Uses grep pattern '^export ${var_name}=' matching state-persistence.sh format.
+#   Requires STATE_FILE variable to be set (should be loaded via load_workflow_state()).
+#
+# USAGE EXAMPLES:
+#   # Example 1: Verify WORKFLOW_SCOPE after sm_init
+#   verify_state_variable "WORKFLOW_SCOPE" || exit 1
+#
+#   # Example 2: Verify REPORT_PATHS_COUNT after array export
+#   verify_state_variable "REPORT_PATHS_COUNT" || {
+#     echo "CRITICAL: REPORT_PATHS_COUNT not persisted to state"
+#     exit 1
+#   }
+#
+#   # Example 3: Verify EXISTING_PLAN_PATH for research-and-revise scope
+#   if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+#     verify_state_variable "EXISTING_PLAN_PATH" || exit 1
+#   fi
+#
+# STATE FILE FORMAT DEPENDENCY:
+#   This function expects state file format from state-persistence.sh:
+#     export VAR_NAME="value"
+#
+#   The grep pattern '^export ${var_name}=' matches this exact format.
+#   Changes to state file format require updating this pattern.
+#
+# RELATED:
+#   - Spec 644: Unbound variable bug from incorrect grep pattern
+#   - verify_state_variables(): Multi-variable verification (below)
+#   - state-persistence.sh: Defines state file format
+verify_state_variable() {
+  local var_name="$1"
+
+  # Defensive check: STATE_FILE must be set
+  if [ -z "${STATE_FILE:-}" ]; then
+    echo "ERROR [verify_state_variable]: STATE_FILE not set"
+    echo "  Variable to verify: $var_name"
+    echo ""
+    echo "TROUBLESHOOTING:"
+    echo "  1. Ensure load_workflow_state() was called before verification"
+    echo "  2. Check that STATE_FILE was exported in initialization block"
+    echo "  3. Verify state persistence library is sourced"
+    echo ""
+    return 1
+  fi
+
+  # Defensive check: State file must exist
+  if [ ! -f "$STATE_FILE" ]; then
+    echo "ERROR [verify_state_variable]: State file does not exist"
+    echo "  Expected path: $STATE_FILE"
+    echo "  Variable to verify: $var_name"
+    echo ""
+    echo "TROUBLESHOOTING:"
+    echo "  1. Verify init_workflow_state() was called in first bash block"
+    echo "  2. Check workflow ID file exists and contains valid ID"
+    echo "  3. Ensure no premature cleanup of state files"
+    echo ""
+    return 1
+  fi
+
+  # Main verification: Check for variable in state file with correct export format
+  if grep -q "^export ${var_name}=" "$STATE_FILE" 2>/dev/null; then
+    return 0  # Success: Variable exists with correct format
+  else
+    # Failure: Variable missing or wrong format
+    echo "ERROR [verify_state_variable]: Variable not found in state file"
+    echo "  Variable name: $var_name"
+    echo "  State file: $STATE_FILE"
+    echo ""
+    echo "EXPECTED FORMAT:"
+    echo "  export ${var_name}=\"value\""
+    echo ""
+    echo "TROUBLESHOOTING:"
+    echo "  1. Check append_workflow_state() was called for this variable:"
+    echo "     append_workflow_state \"$var_name\" \"\${$var_name}\""
+    echo ""
+    echo "  2. Verify variable is set before append:"
+    echo "     echo \"\${$var_name:-NOT SET}\""
+    echo ""
+    echo "  3. Check state file contents:"
+    echo "     grep \"$var_name\" \"$STATE_FILE\""
+    echo ""
+    echo "  4. Verify export format (must start with 'export'):"
+    echo "     grep \"^export\" \"$STATE_FILE\" | grep \"$var_name\""
+    echo ""
+    return 1
+  fi
+}
+
+export -f verify_state_variable
+
 # verify_state_variables - Verify multiple variables exist in state file
 #
 # PARAMETERS:
