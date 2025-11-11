@@ -36,8 +36,19 @@ detect_workflow_scope() {
   if [ "$scope" != "research-only" ]; then
     # Check for research-and-revise pattern (specific before general)
     # Matches: "research X and revise Y", "analyze X to update plan", etc.
+    # ALSO matches revision-first patterns: "Revise plan X to accommodate Y"
     if echo "$workflow_description" | grep -Eiq "(research|analyze).*(and |then |to ).*(revise|update.*plan|modify.*plan)"; then
       scope="research-and-revise"
+    # Check for revision-first pattern (e.g., "Revise X to Y", "Update plan to accommodate Z")
+    elif echo "$workflow_description" | grep -Eiq "^(revise|update|modify).*(plan|implementation).*(accommodate|based on|using|to|for)"; then
+      scope="research-and-revise"
+      # If revision-first and a path is provided, extract topic from existing plan path
+      # Pattern: /path/to/specs/NNN_topic/plans/001_plan.md → extract "NNN_topic"
+      if echo "$workflow_description" | grep -Eq "/specs/[0-9]+_[^/]+/plans/"; then
+        # Extract and set EXISTING_PLAN_PATH for coordinate to use
+        EXISTING_PLAN_PATH=$(echo "$workflow_description" | grep -oE "/[^ ]+\.md" | head -1)
+        export EXISTING_PLAN_PATH
+      fi
     elif echo "$workflow_description" | grep -Eiq "(plan|create.*plan|design)"; then
       scope="research-and-plan"
     elif echo "$workflow_description" | grep -Eiq "(fix|debug|troubleshoot)"; then
@@ -45,6 +56,13 @@ detect_workflow_scope() {
     elif echo "$workflow_description" | grep -Eiq "(implement|build|add|create).*feature"; then
       scope="full-implementation"
     fi
+  fi
+
+  # Debug logging (optional, enabled via DEBUG_SCOPE_DETECTION=1)
+  if [ "${DEBUG_SCOPE_DETECTION:-0}" = "1" ]; then
+    echo "[DEBUG] Scope Detection: description='$workflow_description'" >&2
+    echo "[DEBUG] Scope Detection: detected scope='$scope'" >&2
+    [ -n "${EXISTING_PLAN_PATH:-}" ] && echo "[DEBUG] Scope Detection: existing_plan='$EXISTING_PLAN_PATH'" >&2
   fi
 
   echo "$scope"
