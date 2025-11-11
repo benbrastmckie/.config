@@ -201,7 +201,7 @@ grep "EXISTING_PLAN_PATH" "$STATE_FILE"
 
 **Tasks**:
 
-- [ ] **Task 2.1**: Verify template structure is correct (lines 801-828)
+- [x] **Task 2.1**: Verify template structure is correct (lines 801-828)
   - **Current State**: Template shows Task tool invocation with revision-specialist.md
   - **Check**: Confirm template includes all required context injection:
     - `EXISTING_PLAN_PATH` from workflow state
@@ -212,7 +212,7 @@ grep "EXISTING_PLAN_PATH" "$STATE_FILE"
     - Completion signal: `REVISION_COMPLETED: $EXISTING_PLAN_PATH`
   - **Verification**: Read template and compare against behavioral file requirements
 
-- [ ] **Task 2.2**: Add enforcement pattern to ensure Task tool actually invoked
+- [x] **Task 2.2**: Add enforcement pattern to ensure Task tool actually invoked
   - **Problem**: Template exists but execution may skip to `/revise` SlashCommand
   - **Solution**: Add Standard 0 enforcement pattern (Imperative Language)
   - **Location**: Before Task invocation block
@@ -226,7 +226,7 @@ grep "EXISTING_PLAN_PATH" "$STATE_FILE"
     ```
   - **Pattern Reference**: Standard 0 in command_architecture_standards.md
 
-- [ ] **Task 2.3**: Load EXISTING_PLAN_PATH from workflow state
+- [x] **Task 2.3**: Load EXISTING_PLAN_PATH from workflow state
   - **Location**: Planning phase bash block (before agent invocation)
   - **Implementation**:
     ```bash
@@ -244,7 +244,7 @@ grep "EXISTING_PLAN_PATH" "$STATE_FILE"
     ```
   - **Timing**: Must occur before Task invocation
 
-- [ ] **Task 2.4**: Inject context into revision-specialist agent prompt
+- [x] **Task 2.4**: Inject context into revision-specialist agent prompt
   - **Required Context Variables**:
     - `EXISTING_PLAN_PATH`: Absolute path to plan being revised
     - `REPORT_PATHS[@]`: Array of research report paths
@@ -280,7 +280,7 @@ grep "EXISTING_PLAN_PATH" "$STATE_FILE"
     }
     ```
 
-- [ ] **Task 2.5**: Add mandatory verification checkpoint for completion signal
+- [x] **Task 2.5**: Add mandatory verification checkpoint for completion signal
   - **Location**: Immediately after Task invocation returns
   - **Implementation**:
     ```bash
@@ -301,7 +301,7 @@ grep "EXISTING_PLAN_PATH" "$STATE_FILE"
     ```
   - **Pattern Reference**: Verification Fallback Pattern (verification-fallback.md)
 
-- [ ] **Task 2.6**: Add backup verification logic
+- [x] **Task 2.6**: Add backup verification logic
   - **Location**: After revision completion, before state transition
   - **Implementation**:
     ```bash

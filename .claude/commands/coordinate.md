@@ -810,14 +810,23 @@ done
 
 # Determine planning vs revision based on workflow scope
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  # Verify EXISTING_PLAN_PATH loaded for research-and-revise workflows
+  if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
+    echo "ERROR: EXISTING_PLAN_PATH not restored from workflow state"
+    handle_state_error "EXISTING_PLAN_PATH missing from workflow state" 1
+  fi
+
   echo "Revising existing plan with ${#REPORT_PATHS[@]} research reports..."
   echo "Existing plan: $EXISTING_PLAN_PATH"
+  echo "DEBUG: EXISTING_PLAN_PATH from state: $EXISTING_PLAN_PATH"
 else
   echo "Creating implementation plan with ${#REPORT_PATHS[@]} research reports..."
 fi
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the appropriate agent based on workflow scope.
+
+**CRITICAL**: You MUST use Task tool (NOT SlashCommand /revise or /plan). This is a Standard 11 (Imperative Agent Invocation Pattern) requirement.
 
 <!-- Branch based on WORKFLOW_SCOPE: research-and-revise vs other workflows -->
 
