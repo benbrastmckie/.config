@@ -41,6 +41,88 @@ else
 fi
 
 # ==============================================================================
+# Helper Function: extract_topic_from_plan_path
+# ==============================================================================
+
+# extract_topic_from_plan_path: Extract topic directory from plan path
+#
+# Used by research-and-revise workflows to determine which existing topic
+# directory to use (instead of creating a new one).
+#
+# Arguments:
+#   $1 - PLAN_PATH: Absolute path to existing plan (e.g., /path/to/specs/657_topic/plans/001_plan.md)
+#
+# Output:
+#   Topic directory name (e.g., "657_topic") on stdout
+#   Empty string on failure
+#
+# Returns:
+#   0 on success, 1 on failure
+#
+# Expected Path Format:
+#   /path/to/specs/NNN_topic_name/plans/NNN_plan_name.md
+#   └─────────────┘ └────────────┘ └───┘ └──────────────┘
+#   project root    topic dir      plans  plan file
+#
+# Regex Pattern:
+#   /[^ ]+/specs/([0-9]{3}_[^/]+)/plans/[0-9]{3}_[^.]+\.md
+#   Capture group 1: Topic directory (e.g., 657_review_tests_coordinate)
+#
+# Usage:
+#   topic=$(extract_topic_from_plan_path "/home/user/.claude/specs/657_topic/plans/001_plan.md")
+#   if [ -z "$topic" ]; then
+#     echo "ERROR: Could not extract topic from plan path"
+#     return 1
+#   fi
+#
+extract_topic_from_plan_path() {
+  local plan_path="${1:-}"
+
+  # Validate input
+  if [ -z "$plan_path" ]; then
+    echo "ERROR: extract_topic_from_plan_path() requires plan path as argument" >&2
+    return 1
+  fi
+
+  # Check if plan file exists
+  if [ ! -f "$plan_path" ]; then
+    echo "ERROR: Plan file does not exist: $plan_path" >&2
+    return 1
+  fi
+
+  # Validate plan path format using regex
+  # Expected: /path/to/specs/NNN_topic/plans/NNN_plan.md
+  if ! echo "$plan_path" | grep -Eq '/specs/[0-9]{3}_[^/]+/plans/[0-9]{3}_[^.]+\.md$'; then
+    echo "ERROR: Plan path does not match expected format" >&2
+    echo "  Provided: $plan_path" >&2
+    echo "  Expected: /path/to/specs/NNN_topic/plans/NNN_plan.md" >&2
+    return 1
+  fi
+
+  # Extract topic directory using basename/dirname operations
+  # Given: /home/benjamin/.config/.claude/specs/657_topic/plans/001_plan.md
+  # Step 1: dirname → /home/benjamin/.config/.claude/specs/657_topic/plans
+  # Step 2: dirname → /home/benjamin/.config/.claude/specs/657_topic
+  # Step 3: basename → 657_topic
+  local topic_parent
+  topic_parent=$(dirname "$(dirname "$plan_path")")
+
+  local topic_name
+  topic_name=$(basename "$topic_parent")
+
+  # Validate extracted topic name format (NNN_name)
+  if ! echo "$topic_name" | grep -Eq '^[0-9]{3}_[^/]+$'; then
+    echo "ERROR: Extracted topic name does not match expected format (NNN_name)" >&2
+    echo "  Extracted: $topic_name" >&2
+    return 1
+  fi
+
+  # Output topic name to stdout
+  echo "$topic_name"
+  return 0
+}
+
+# ==============================================================================
 # Core Function: initialize_workflow_paths
 # ==============================================================================
 
