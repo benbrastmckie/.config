@@ -377,9 +377,11 @@ After completing the above tasks:
 **Phase 2 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(651): complete Phase 2 - Plan Discovery Logic Implementation`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] Git commit created: `feat(651): complete Phase 2 - Plan Discovery Logic Implementation`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
+
+[COMPLETED]
 
 ### Phase 3: Revision-Specialist Agent Creation
 dependencies: []
@@ -389,23 +391,23 @@ dependencies: []
 **Complexity**: High
 
 **Tasks**:
-- [ ] Create new agent file: .claude/agents/revision-specialist.md
-- [ ] Add frontmatter metadata (allowed-tools: Read, Write, Edit, Bash, Task)
-- [ ] Add agent description and role clarity section
-- [ ] Implement STEP 1: Receive and validate revision parameters (plan path, research reports, revision context)
-- [ ] Implement STEP 1.5: Verify parent directory exists (use ensure_artifact_directory)
-- [ ] Implement STEP 2: Create backup FIRST (mandatory verification checkpoint)
-- [ ] Add backup path calculation logic (backups/<plan-name>_YYYYMMDD_HHMMSS.md)
-- [ ] Add backup verification using Bash tool (test -f check)
-- [ ] Implement STEP 3: Analyze research reports (Read tool to extract findings)
-- [ ] Implement STEP 4: Apply revisions to plan (Edit tool, preserve completed phases)
-- [ ] Add logic to identify sections needing updates (Technical Design, phases, tasks)
-- [ ] Add revision type handling (research-informed, complexity-driven, scope-expansion)
-- [ ] Implement STEP 5: Update revision history section
-- [ ] Add revision history entry template (date, type, research reports, key changes)
-- [ ] Add final verification checkpoint (plan file exists, size increased, parseable)
-- [ ] Add completion criteria section (35+ criteria following research-specialist pattern)
-- [ ] Add return format specification (REVISION_COMPLETED: <absolute-path>)
+- [x] Create new agent file: .claude/agents/revision-specialist.md
+- [x] Add frontmatter metadata (allowed-tools: Read, Write, Edit, Bash, Task)
+- [x] Add agent description and role clarity section
+- [x] Implement STEP 1: Receive and validate revision parameters (plan path, research reports, revision context)
+- [x] Implement STEP 1.5: Verify parent directory exists (use ensure_artifact_directory)
+- [x] Implement STEP 2: Create backup FIRST (mandatory verification checkpoint)
+- [x] Add backup path calculation logic (backups/<plan-name>_YYYYMMDD_HHMMSS.md)
+- [x] Add backup verification using Bash tool (test -f check)
+- [x] Implement STEP 3: Analyze research reports (Read tool to extract findings)
+- [x] Implement STEP 4: Apply revisions to plan (Edit tool, preserve completed phases)
+- [x] Add logic to identify sections needing updates (Technical Design, phases, tasks)
+- [x] Add revision type handling (research-informed, complexity-driven, scope-expansion)
+- [x] Implement STEP 5: Update revision history section
+- [x] Add revision history entry template (date, type, research reports, key changes)
+- [x] Add final verification checkpoint (plan file exists, size increased, parseable)
+- [x] Add completion criteria section (35+ criteria following research-specialist pattern)
+- [x] Add return format specification (REVISION_COMPLETED: <absolute-path>)
 
 **Testing**:
 ```bash
@@ -438,25 +440,25 @@ EOF
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the first 5 tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 <!-- PROGRESS CHECKPOINT -->
 After completing tasks 6-10:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 <!-- PROGRESS CHECKPOINT -->
 After completing tasks 11-15:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Phase 3 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
 - [ ] Git commit created: `feat(651): complete Phase 3 - Revision-Specialist Agent Creation`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
