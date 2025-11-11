@@ -1600,6 +1600,201 @@ export COORDINATE_DEBUG=1
 
 ---
 
+## Phase 4 Improvements: State Variable Verification and Concurrent Workflow Isolation
+
+This section documents improvements implemented in Spec 672 Phase 4 to enhance state management reliability and concurrent workflow support.
+
+### State Variable Verification Checkpoints
+
+**Purpose**: Prevent unbound variable errors by verifying state persistence immediately after critical operations.
+
+**Pattern**: Use `verify_state_variable()` function from `verification-helpers.sh` after state writes.
+
+**Example**:
+```bash
+# After sm_init
+append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
+
+# Verification checkpoint (fail-fast if persistence failed)
+verify_state_variable "WORKFLOW_SCOPE" || {
+  handle_state_error "CRITICAL: WORKFLOW_SCOPE not persisted to state after sm_init" 1
+}
+```
+
+**Verification Points in /coordinate**:
+1. **WORKFLOW_SCOPE** - After sm_init (line 151)
+2. **REPORT_PATHS_COUNT** - After array export (line 233)
+3. **EXISTING_PLAN_PATH** - For research-and-revise workflows (line 160)
+
+**Benefits**:
+- Fail-fast error detection (catches state persistence failures immediately)
+- Comprehensive diagnostics (shows expected format, state file path, troubleshooting steps)
+- Prevents cascading errors (stops workflow before unbound variable errors occur)
+
+**Reference**: See [verify_state_variable() documentation](../lib/verification-helpers.sh)
+
+### Concurrent Workflow Isolation
+
+**Purpose**: Allow multiple `/coordinate` workflows to run simultaneously without state file interference.
+
+**Problem**: Old pattern used fixed location for state ID file, causing concurrent workflows to overwrite each other's state.
+
+**Solution**: Unique timestamp-based state ID files per workflow.
+
+**Old Pattern** (concurrent workflows interfere):
+```bash
+# Fixed location - all workflows use same file
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
+```
+
+**New Pattern** (concurrent workflows isolated):
+```bash
+# Block 1: Create unique state ID file
+TIMESTAMP=$(date +%s%N)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_${TIMESTAMP}.txt"
+echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
+
+# Persist path to workflow state
+append_workflow_state "COORDINATE_STATE_ID_FILE" "$COORDINATE_STATE_ID_FILE"
+
+# Cleanup trap (removes file after workflow completes)
+trap "rm -f '$COORDINATE_STATE_ID_FILE' 2>/dev/null || true" EXIT
+
+# Block 2+: Load with backward compatibility
+COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
+  load_workflow_state "$WORKFLOW_ID"
+
+  # Check if workflow uses new unique pattern
+  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
+    # New pattern: COORDINATE_STATE_ID_FILE from workflow state
+    : # Already set
+  else
+    # Old pattern: Use fixed location (backward compatibility)
+    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
+  fi
+fi
+```
+
+**Benefits**:
+- Concurrent workflow support (2+ workflows can run simultaneously)
+- Backward compatibility (old workflows using fixed location still work)
+- Automatic cleanup (trap removes state ID file when workflow exits)
+- No race conditions (each workflow has isolated state)
+
+**Testing**: See `.claude/tests/test_concurrent_workflows.sh` (5 tests, 100% pass rate)
+
+### Defensive Array Reconstruction Pattern
+
+**Purpose**: Prevent unbound variable errors when reconstructing arrays from workflow state.
+
+**Problem**: Array variables are lost across bash block boundaries (subprocess isolation). When reconstructing arrays from indexed variables, missing variables cause unbound variable errors.
+
+**Solution**: Generic `reconstruct_array_from_indexed_vars()` function with defensive checks.
+
+**Pattern**:
+```bash
+# Generic reconstruction with defensive handling
+reconstruct_array_from_indexed_vars() {
+  local array_name="$1"
+  local count_var_name="$2"
+  local var_prefix="${3:-${array_name%S}}"  # Default: remove trailing 'S'
+
+  # Defensive: Default to 0 if count variable unset
+  local count="${!count_var_name:-0}"
+
+  # Clear target array
+  eval "${array_name}=()"
+
+  # Reconstruct with defensive checks
+  for ((i=0; i<count; i++)); do
+    local var_name="${var_prefix}_${i}"
+
+    # Defensive: Check if indexed variable exists
+    if [ -n "${!var_name+x}" ]; then
+      eval "${array_name}+=(\"${!var_name}\")"
+    else
+      echo "WARNING: $var_name missing from state (expected $count elements, skipping)" >&2
+    fi
+  done
+}
+
+# Usage
+reconstruct_array_from_indexed_vars "REPORT_PATHS" "REPORT_PATHS_COUNT" "REPORT_PATH"
+```
+
+**Key Features**:
+- **Defensive count check**: `${!count_var_name:-0}` prevents errors if count unset
+- **Variable existence check**: `${!var_name+x}` tests if indexed variable exists
+- **Graceful degradation**: Warns about missing variables instead of crashing
+- **Reusable**: Works for any array type (reports, plans, artifacts)
+
+**Reference**: See [workflow-initialization.sh](../lib/workflow-initialization.sh)
+
+### Fail-Fast State Validation
+
+**Purpose**: Distinguish expected vs unexpected missing state files for better error detection.
+
+**Problem**: Missing state files can be expected (first bash block) or unexpected (subsequent blocks after state corruption). Old pattern treated both cases the same.
+
+**Solution**: `is_first_block` parameter to `load_workflow_state()`.
+
+**Pattern**:
+```bash
+# Block 1: Initialize state (missing state file is expected)
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+
+# Block 2+: Load state (missing state file is critical error)
+load_workflow_state "$WORKFLOW_ID" false  # is_first_block=false
+
+# Inside load_workflow_state():
+load_workflow_state() {
+  local workflow_id="$1"
+  local is_first_block="${2:-false}"
+
+  if [ ! -f "$STATE_FILE" ]; then
+    if [ "$is_first_block" = "true" ]; then
+      # Expected: Initialize new state
+      init_workflow_state "$workflow_id"
+      return 0
+    else
+      # Unexpected: Critical error
+      echo "CRITICAL ERROR: Workflow state file missing" >&2
+      echo "  Expected: $STATE_FILE" >&2
+      echo "  Workflow ID: $workflow_id" >&2
+      echo "  This indicates state corruption or premature cleanup" >&2
+      return 2  # Distinct error code for fail-fast errors
+    fi
+  fi
+
+  # Load state
+  source "$STATE_FILE"
+}
+```
+
+**Benefits**:
+- Fail-fast error detection (unexpected missing files cause immediate failure)
+- Clear diagnostics (distinguishes initialization vs corruption)
+- Distinct error codes (0=success, 1=expected init, 2=critical error)
+
+**Reference**: See [state-persistence.sh](../lib/state-persistence.sh)
+
+### Decision Guide for State Variables
+
+When implementing new state variables, use the [State Variable Decision Guide](./state-variable-decision-guide.md) to choose between file-based persistence and stateless recalculation.
+
+**Quick decision**:
+- **File-based persistence**: Expensive to compute (>100ms), non-deterministic, external dependencies, state mutations, arrays
+- **Stateless recalculation**: Cheap (<10ms), deterministic, derived from persisted variables
+
+**Examples**:
+- ✓ Persist: `WORKFLOW_ID`, `REPORT_PATHS`, `COMPLETED_STATES`, `COORDINATE_STATE_ID_FILE`
+- ✗ Don't persist: `REPORTS_DIR="${TOPIC_PATH}/reports"` (derived, <1ms)
+
+---
+
 ## See Also
 
 - [Orchestration Best Practices Guide](./orchestration-best-practices.md) - Unified framework for all orchestration commands
