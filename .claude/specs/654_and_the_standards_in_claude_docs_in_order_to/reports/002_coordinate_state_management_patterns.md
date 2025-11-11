@@ -8,7 +8,18 @@
 
 ## Executive Summary
 
-[Research in progress - comprehensive analysis of subprocess isolation patterns, library re-sourcing, and WORKFLOW_SCOPE persistence across bash block boundaries]
+This research report analyzes state management patterns in the /coordinate command and .claude/ infrastructure, focusing on subprocess isolation constraints, library re-sourcing patterns, and WORKFLOW_SCOPE variable preservation across bash block boundaries.
+
+**Key Findings**:
+1. /coordinate is the ONLY orchestration command correctly implementing multi-bash-block architecture with Pattern 4 (re-source libraries in every block)
+2. Library pre-initialization (workflow-state-machine.sh:75-76) requires save-before-source workaround to preserve WORKFLOW_DESCRIPTION in /coordinate
+3. /supervise uses multi-block architecture but DOES NOT re-source libraries, violating documented best practices
+4. /orchestrate avoids subprocess isolation issues by using single-bash-block architecture with agent delegation
+5. Defensive recalculation pattern (already used for RESEARCH_COMPLEXITY) can be applied to WORKFLOW_SCOPE for graceful degradation
+
+**Impact**: The 14-line library re-sourcing pattern appears 10 times in /coordinate (140 lines, 8.7% of file), creating maintenance burden and code duplication.
+
+**Recommendations** (prioritized): (1) Document WORKFLOW_SCOPE lifecycle patterns, (2) Add defensive restoration for WORKFLOW_SCOPE, (3) Extract re-sourcing logic to shared snippet (130-line reduction), (4) Standardize /supervise re-sourcing, (5) Consider conditional library initialization (medium risk).
 
 ## Findings
 
@@ -198,18 +209,369 @@ export STATE_PERSISTENCE_SOURCED=1
 
 ### 8. Comparison with Other Orchestration Commands
 
-**Research Question**: Do /orchestrate and /supervise face the same challenges?
+**Research Question**: Do /orchestrate and /supervise face the same WORKFLOW_SCOPE preservation challenges?
 
-[TO DO: Examine /orchestrate and /supervise for similar patterns]
+#### /orchestrate Analysis (581 lines total)
+
+**Structure**: Single bash block architecture (orchestrate.md:64-199)
+- Only **ONE bash block** for initialization (no subsequent blocks = no re-sourcing needed)
+- All 7 phase handlers use **Task tool invocations** (not bash blocks)
+- Variables persist throughout single subprocess lifetime
+
+**WORKFLOW_SCOPE Pattern** (orchestrate.md:86-114):
+```bash
+# Source state machine library FIRST
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+
+# Initialize state machine (calculates WORKFLOW_SCOPE)
+sm_init "$WORKFLOW_DESCRIPTION" "orchestrate"
+
+# Save to state file
+append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
+```
+
+**Key Difference**: /orchestrate **does NOT need the save-before-source pattern** because:
+1. All work happens in a **single bash block** (no subprocess boundaries)
+2. Phase handlers are **agent invocations**, not bash blocks
+3. Variables remain in memory for entire command execution
+
+**Error Handling** (orchestrate.md:152-187):
+- Uses `export -f handle_state_error` to make function available to subprocesses
+- This works in /orchestrate's single-block model but **would fail across /coordinate's bash block boundaries** (functions cannot be exported across subprocess boundaries)
+
+#### /supervise Analysis (421 lines total)
+
+**Structure**: Multi-bash-block architecture (similar to /coordinate but simpler)
+- Uses **load_workflow_state()** at start of each state handler (supervise.md:136, 175, 196, 225, 250)
+- No re-sourcing of libraries (missing the Pattern 4 re-sourcing blocks)
+- Relies on state persistence alone
+
+**WORKFLOW_SCOPE Pattern** (supervise.md:67-82):
+```bash
+# Source libraries ONCE in initialization block
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+
+# Initialize state machine
+sm_init "$WORKFLOW_DESCRIPTION" "supervise"
+
+# Save to state
+append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
+```
+
+**Key Observation**: /supervise uses **identical pattern to /coordinate** for WORKFLOW_SCOPE:
+1. Source libraries → calculate WORKFLOW_SCOPE → save to state
+2. Restore from state in subsequent blocks via `load_workflow_state()`
+3. **Does NOT re-source libraries** in subsequent blocks (potential bug)
+
+**Critical Finding**: /supervise **does not re-source libraries** in its state handler blocks (supervise.md:136-250). This means:
+- Functions from libraries are **NOT available** in blocks 2+
+- Relying on `load_workflow_state()` alone (not `sm_transition()`, `handle_state_error()`, etc.)
+- This may work if state handlers don't call library functions, but violates Pattern 4 from bash-block-execution-model.md
+
+**Error Handling** (supervise.md:109-118):
+- Defines `handle_state_error()` in initialization block
+- Uses `export -f handle_state_error` (same as /orchestrate)
+- **This will fail in subsequent bash blocks** (functions cannot be exported across subprocess boundaries)
+
+#### Architecture Comparison Summary
+
+| Command | Bash Blocks | Re-sourcing Pattern | WORKFLOW_SCOPE Pattern | Library Functions Available? |
+|---------|-------------|---------------------|------------------------|------------------------------|
+| /coordinate | 10+ blocks | ✓ Re-source 6 libs every block | Save before source + restore from state | ✓ Yes (via re-sourcing) |
+| /orchestrate | 1 block | N/A (single block) | Standard (source → init → save) | ✓ Yes (single process) |
+| /supervise | 5+ blocks | ✗ No re-sourcing | Save before source + restore from state | ✗ No (likely bug) |
+
+**Key Insight**: /coordinate is the **ONLY command with correct multi-block architecture**:
+- /orchestrate avoids the problem by using single block
+- /supervise has the problem but doesn't re-source libraries (incomplete implementation)
+- /coordinate correctly implements Pattern 4 (re-source libraries in every block)
+
+### 9. Libraries with WORKFLOW_SCOPE Pre-initialization
+
+**Analysis**: Which libraries pre-initialize variables that could cause timing issues?
+
+**Libraries Found** (via grep):
+1. `workflow-state-machine.sh:75-76`:
+   ```bash
+   WORKFLOW_SCOPE=""
+   WORKFLOW_DESCRIPTION=""
+   ```
+
+2. Other libraries referencing WORKFLOW_SCOPE:
+   - `workflow-scope-detection.sh` - Defines `detect_workflow_scope()` function (no pre-initialization)
+   - `overview-synthesis.sh` - Uses WORKFLOW_SCOPE but doesn't initialize
+   - `error-handling.sh` - Uses WORKFLOW_SCOPE but doesn't initialize
+   - `workflow-initialization.sh` - Uses WORKFLOW_SCOPE but doesn't initialize
+   - `unified-logger.sh` - Uses WORKFLOW_SCOPE but doesn't initialize
+
+**Conclusion**: Only **workflow-state-machine.sh** pre-initializes WORKFLOW_SCOPE to empty string, creating the timing issue documented in Finding #3.
+
+### 10. Load Order Optimization Potential
+
+**Current Pattern in /coordinate** (coordinate.md:84-124):
+```bash
+# Step 1: Save workflow description BEFORE sourcing
+SAVED_WORKFLOW_DESC="$WORKFLOW_DESCRIPTION"
+export SAVED_WORKFLOW_DESC
+
+# Step 2: Source libraries (overwrites WORKFLOW_DESCRIPTION to "")
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+
+# Step 3: Initialize state machine with SAVED value
+sm_init "$SAVED_WORKFLOW_DESC" "coordinate"
+
+# Step 4: Save WORKFLOW_SCOPE to state file
+append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
+```
+
+**Alternative Pattern: Conditional Initialization in Library**
+
+If workflow-state-machine.sh changed from:
+```bash
+WORKFLOW_SCOPE=""  # Unconditional pre-initialization
+```
+
+To:
+```bash
+# Only initialize if not already set (defensive pattern)
+WORKFLOW_SCOPE="${WORKFLOW_SCOPE:-}"
+```
+
+Then /coordinate could simplify to:
+```bash
+# Source libraries
+source "${LIB_DIR}/workflow-state-machine.sh"
+
+# Initialize (WORKFLOW_SCOPE calculated here)
+sm_init "$WORKFLOW_DESCRIPTION" "coordinate"
+
+# Save to state
+append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
+```
+
+**Impact**: Eliminates need for `SAVED_WORKFLOW_DESC` workaround (saves 3 lines per command)
+
+**Tradeoff**: Defensive initialization in library vs. explicit save-before-source pattern in command
 
 ## Recommendations
 
-[TO DO: Synthesize findings into actionable recommendations]
+### 1. Adopt Conditional Restoration Pattern for WORKFLOW_SCOPE (Low Risk)
+
+**Problem**: /coordinate uses save-before-source workaround to preserve WORKFLOW_DESCRIPTION across library sourcing.
+
+**Solution**: Apply defensive recalculation pattern (already used for RESEARCH_COMPLEXITY in coordinate.md:422-444) to WORKFLOW_SCOPE in subsequent bash blocks.
+
+**Implementation**:
+```bash
+# After load_workflow_state() in each bash block:
+
+# Defensive: Restore WORKFLOW_SCOPE if not loaded from state
+if [ -z "${WORKFLOW_SCOPE:-}" ]; then
+  # Recalculate using same logic as sm_init()
+  source "${LIB_DIR}/workflow-scope-detection.sh"
+  WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+
+  # Fallback to default if detection fails
+  WORKFLOW_SCOPE="${WORKFLOW_SCOPE:-full-implementation}"
+fi
+```
+
+**Benefits**:
+- Graceful degradation when state persistence fails
+- No change to library files needed
+- Consistent with existing defensive patterns in /coordinate
+- Eliminates dependency on Block 1's save-before-source pattern
+
+**Scope**: ~10 lines added to each of 10 bash blocks in /coordinate (100 lines total)
+
+### 2. Refactor Library Pre-initialization to Conditional Pattern (Medium Risk)
+
+**Problem**: workflow-state-machine.sh unconditionally pre-initializes WORKFLOW_SCOPE="" and WORKFLOW_DESCRIPTION="", overwriting parent process values.
+
+**Solution**: Change library pre-initialization to defensive pattern.
+
+**Implementation** (workflow-state-machine.sh:75-77):
+```bash
+# Change FROM:
+WORKFLOW_SCOPE=""
+WORKFLOW_DESCRIPTION=""
+
+# Change TO:
+# Only initialize if not already set (allows parent to pre-set values)
+WORKFLOW_SCOPE="${WORKFLOW_SCOPE:-}"
+WORKFLOW_DESCRIPTION="${WORKFLOW_DESCRIPTION:-}"
+```
+
+**Benefits**:
+- Eliminates need for save-before-source workaround in all commands
+- Simplifies initialization blocks by ~3 lines per command
+- More intuitive variable lifecycle (set once, persist naturally)
+
+**Risks**:
+- Changes shared library behavior (affects /coordinate, /orchestrate, /supervise)
+- Requires testing all 3 commands to verify no regressions
+- May mask bugs where variables should be unset but aren't
+
+**Scope**: 2-line change in workflow-state-machine.sh, remove workaround from 1 command (/coordinate)
+
+### 3. Standardize Library Re-sourcing Across All Multi-Block Commands (High Priority)
+
+**Problem**: /supervise uses multi-bash-block architecture but does NOT re-source libraries in subsequent blocks, violating Pattern 4 from bash-block-execution-model.md.
+
+**Solution**: Add re-sourcing pattern to /supervise matching /coordinate's implementation.
+
+**Implementation** (supervise.md: add to all state handler blocks):
+```bash
+# Re-source libraries (functions lost across bash block boundaries)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/unified-logger.sh"
+source "${LIB_DIR}/error-handling.sh"
+```
+
+**Benefits**:
+- Fixes potential bugs in /supervise where library functions are called but not available
+- Standardizes pattern across all orchestration commands
+- Aligns with documented best practices in bash-block-execution-model.md
+
+**Risks**:
+- /supervise may work currently because it doesn't call library functions in state handlers
+- Adding re-sourcing increases command file size by ~70 lines (5 blocks × 14 lines each)
+
+**Scope**: ~70 lines added to /supervise
+
+### 4. Extract Re-sourcing Logic to Shared Snippet (Code Reduction)
+
+**Problem**: /coordinate contains 10 identical 14-line library re-sourcing blocks (140 lines total repetitive code).
+
+**Solution**: Extract re-sourcing logic to shared source-able snippet or library function.
+
+**Implementation**: Create `.claude/lib/source-libraries-snippet.sh`:
+```bash
+#!/usr/bin/env bash
+# Shared library re-sourcing pattern for multi-block commands
+# Usage: source "${CLAUDE_PROJECT_DIR}/.claude/lib/source-libraries-snippet.sh"
+
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+```
+
+Then in /coordinate bash blocks:
+```bash
+# FROM (14 lines):
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# TO (1 line):
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/source-libraries-snippet.sh"
+```
+
+**Benefits**:
+- Reduces /coordinate from 1596 → 1466 lines (130-line reduction, 8% smaller)
+- Single source of truth for required libraries
+- Easier to add/remove libraries (change 1 file, not 10 blocks)
+- Could apply to /supervise when adding re-sourcing (Recommendation #3)
+
+**Risks**:
+- Adds one more file to maintain
+- Slight indirection (1 source statement that sources 6 libraries)
+- CLAUDE_PROJECT_DIR detection happens in snippet, not visible in command
+
+**Scope**: Create 1 new file (15 lines), modify 10 blocks in /coordinate (net -130 lines)
+
+**Note**: File `.claude/lib/source-libraries-snippet.sh` already exists (discovered via grep output), could be enhanced or reused.
+
+### 5. Document WORKFLOW_SCOPE Lifecycle in Architecture Docs (Documentation)
+
+**Problem**: The save-before-source pattern is undocumented and non-obvious to future maintainers.
+
+**Solution**: Add WORKFLOW_SCOPE case study to bash-block-execution-model.md
+
+**Implementation**: Add new section to bash-block-execution-model.md:
+
+```markdown
+### Example 3: WORKFLOW_SCOPE Pre-initialization Issue
+
+**Problem**: Library pre-initialization overwrites parent process values.
+
+[... document current pattern, alternatives, tradeoffs ...]
+```
+
+**Benefits**:
+- Future-proof architecture knowledge
+- Helps maintainers understand rationale for save-before-source pattern
+- Informs decision between Recommendation #1 (defensive restoration) vs #2 (library changes)
+
+**Scope**: ~50 lines added to bash-block-execution-model.md
+
+### 6. Prioritized Implementation Order
+
+**Recommended sequence** (balancing risk, impact, and dependencies):
+
+1. **Recommendation #5** (Documentation) - **Immediate, no risk**
+   - Documents current state and architectural decisions
+   - Informs implementation of other recommendations
+
+2. **Recommendation #1** (Defensive Restoration) - **Low risk, immediate benefit**
+   - Improves resilience of /coordinate without library changes
+   - Can be implemented independently
+   - Provides graceful degradation
+
+3. **Recommendation #4** (Extract Re-sourcing Snippet) - **Low risk, code quality benefit**
+   - Reduces code duplication in /coordinate
+   - Simplifies future re-sourcing additions (e.g., for Recommendation #3)
+
+4. **Recommendation #3** (Standardize /supervise) - **Medium risk, completeness benefit**
+   - Fixes potential bugs in /supervise
+   - Standardizes pattern across commands
+   - Easier with Recommendation #4 completed first
+
+5. **Recommendation #2** (Library Conditional Initialization) - **Medium risk, elegance benefit**
+   - Simplifies command code after Recommendations #1-4 prove patterns
+   - Can be deferred if save-before-source + defensive restoration works well
+   - Requires cross-command testing
 
 ## References
 
-- /home/benjamin/.config/.claude/commands/coordinate.md (1596 lines)
+- /home/benjamin/.config/.claude/commands/coordinate.md (1596 lines, 10 bash blocks)
+- /home/benjamin/.config/.claude/commands/orchestrate.md (581 lines, 1 bash block)
+- /home/benjamin/.config/.claude/commands/supervise.md (421 lines, 5+ bash blocks)
 - /home/benjamin/.config/.claude/docs/concepts/bash-block-execution-model.md (642 lines)
 - /home/benjamin/.config/.claude/lib/state-persistence.sh (341 lines)
-- /home/benjamin/.config/.claude/lib/workflow-state-machine.sh (150 lines analyzed)
+- /home/benjamin/.config/.claude/lib/workflow-state-machine.sh (line 75-76: pre-initialization)
+- /home/benjamin/.config/.claude/lib/workflow-scope-detection.sh (54 lines)
 - /home/benjamin/.config/.claude/lib/workflow-initialization.sh (370 lines)
+- /home/benjamin/.config/.claude/lib/unified-logger.sh (references WORKFLOW_SCOPE)
+- /home/benjamin/.config/.claude/lib/error-handling.sh (references WORKFLOW_SCOPE)
+- /home/benjamin/.config/.claude/lib/overview-synthesis.sh (references WORKFLOW_SCOPE)
