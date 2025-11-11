@@ -31,10 +31,10 @@ Recommended approach: Expand scope detection regex, reorder dynamic discovery be
 
 ## Success Criteria
 
-- [ ] Revision workflows correctly detected as "research-and-revise" scope (not "research-and-plan")
-- [ ] Dynamic report path discovery executes before verification checkpoints
-- [ ] Report path mismatches resolved (topic directory calculations correct)
-- [ ] Bash syntax errors eliminated in verification blocks
+- [x] Revision workflows correctly detected as "research-and-revise" scope (not "research-and-plan")
+- [x] Dynamic report path discovery executes before verification checkpoints
+- [x] Report path mismatches resolved (topic directory calculations correct)
+- [x] Bash syntax errors eliminated in verification blocks
 - [ ] All existing coordinate tests pass (zero regression)
 - [ ] Revision workflow integration test added and passing
 
@@ -184,7 +184,7 @@ After completing the above tasks:
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
-### Phase 3: Simplify Revision Verification Bash Commands
+### Phase 3: Simplify Revision Verification Bash Commands [COMPLETED]
 dependencies: [2]
 
 **Objective**: Replace complex multiline bash conditionals with state file pattern to eliminate syntax errors
@@ -229,9 +229,9 @@ After completing the above tasks:
 **Phase 3 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(661): complete Phase 3 - Simplify Revision Verification Bash Commands`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] Git commit created: `feat(661): complete Phase 3 - Simplify Revision Verification Bash Commands`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ## Testing Strategy
 
@@ -338,12 +338,12 @@ git revert <phase-3-commit> <phase-2-commit> <phase-1-commit>
 
 ## Completion Checklist
 
-- [ ] All 3 phases completed (checkboxes marked [x])
-- [ ] All phase tests passing
+- [x] All 3 phases completed (checkboxes marked [x])
+- [x] All phase tests passing
 - [ ] Integration test suite passing (100%)
 - [ ] Regression test suite passing (100%)
 - [ ] Documentation updated (4 files)
-- [ ] Git commits created (3 atomic commits)
+- [x] Git commits created (3 atomic commits)
 - [ ] Rollback plan validated (test git revert on feature branch)
 - [ ] Code review requested (if project uses review process)
 - [ ] Changes merged to main branch (if applicable)
