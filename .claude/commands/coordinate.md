@@ -195,6 +195,28 @@ done
 
 echo "Saved $REPORT_PATHS_COUNT report paths to workflow state"
 
+# Calculate artifact paths for implementer-coordinator agent (Phase 0 optimization)
+# These paths will be injected into the agent during implementation phase
+REPORTS_DIR="${TOPIC_PATH}/reports"
+PLANS_DIR="${TOPIC_PATH}/plans"
+SUMMARIES_DIR="${TOPIC_PATH}/summaries"
+DEBUG_DIR="${TOPIC_PATH}/debug"
+OUTPUTS_DIR="${TOPIC_PATH}/outputs"
+CHECKPOINT_DIR="${HOME}/.claude/data/checkpoints"
+
+# Export for cross-bash-block availability
+export REPORTS_DIR PLANS_DIR SUMMARIES_DIR DEBUG_DIR OUTPUTS_DIR CHECKPOINT_DIR
+
+# Save to workflow state for persistence
+append_workflow_state "REPORTS_DIR" "$REPORTS_DIR"
+append_workflow_state "PLANS_DIR" "$PLANS_DIR"
+append_workflow_state "SUMMARIES_DIR" "$SUMMARIES_DIR"
+append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
+append_workflow_state "OUTPUTS_DIR" "$OUTPUTS_DIR"
+append_workflow_state "CHECKPOINT_DIR" "$CHECKPOINT_DIR"
+
+echo "Artifact paths calculated and saved to workflow state"
+
 # Source verification helpers (must be sourced BEFORE verify_state_variables is called)
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
   source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
