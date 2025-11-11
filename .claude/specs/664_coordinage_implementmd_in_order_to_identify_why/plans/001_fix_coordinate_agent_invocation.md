@@ -43,7 +43,7 @@ The /coordinate command ALREADY correctly uses Task tool with implementer-coordi
 
 ## Success Criteria
 - [x] Workflow scope detection correctly identifies "implement <plan-path>" as full-implementation
-- [ ] All scope detection test cases pass (research-only, research-and-plan, full-implementation, research-and-revise)
+- [x] All scope detection test cases pass (research-only, research-and-plan, full-implementation, research-and-revise, debug-only) - 20/20 tests passing
 - [ ] Documentation clarifies that coordinage_*.md files are transcripts, not implementations
 - [ ] No SlashCommand fallback logic exists in coordinate.md
 - [ ] Verification tests confirm coordinate.md maintains Standard 11 compliance
@@ -119,7 +119,7 @@ bash .claude/lib/workflow-scope-detection.sh "revise specs/027_auth/plans/001_pl
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 2: Add Scope Detection Tests
+### Phase 2: Add Scope Detection Tests [COMPLETED]
 dependencies: [1]
 
 **Objective**: Create comprehensive test suite for workflow scope detection edge cases
@@ -127,15 +127,15 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Create test file: .claude/tests/test_workflow_scope_detection.sh
-- [ ] Test case 1: "implement <plan-path>" → full-implementation
-- [ ] Test case 2: "plan <feature>" → research-and-plan
-- [ ] Test case 3: "research <topic>" → research-only
-- [ ] Test case 4: "revise <plan> with <changes>" → research-and-revise
-- [ ] Test case 5: "debug <issue>" → debug-only
-- [ ] Test case 6: Ambiguous input → default to full-implementation with warning
-- [ ] Add assertions for each test case using existing test framework pattern
-- [ ] Add test to .claude/tests/run_all_tests.sh
+- [x] Create test file: .claude/tests/test_workflow_scope_detection.sh
+- [x] Test case 1: "implement <plan-path>" → full-implementation
+- [x] Test case 2: "plan <feature>" → research-and-plan
+- [x] Test case 3: "research <topic>" → research-only
+- [x] Test case 4: "revise <plan> with <changes>" → research-and-revise
+- [x] Test case 5: "debug <issue>" → debug-only
+- [x] Test case 6: Ambiguous input → default to research-and-plan (not full-implementation)
+- [x] Add assertions for each test case using existing test framework pattern
+- [x] Test automatically discovered by .claude/tests/run_all_tests.sh (20 tests total)
 
 **Testing**:
 ```bash
