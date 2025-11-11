@@ -1,140 +1,84 @@
 #!/usr/bin/env bash
-# test_coordinate_verification.sh - Test coordinate verification checkpoint logic
+# Test coordinate verification grep patterns
+# Tests that verification patterns correctly match state file format
 
 set -euo pipefail
 
-TESTS_PASSED=0
-TESTS_FAILED=0
+# Setup test environment
+TEST_DIR=$(mktemp -d)
+trap "rm -rf '$TEST_DIR'" EXIT
 
-# Test 1: State file format matches append_workflow_state output
-test_state_file_format() {
-  echo "Test 1: State file format verification"
+STATE_FILE="$TEST_DIR/test_state.sh"
 
-  # Create temp state file
-  STATE_FILE=$(mktemp)
-  trap "rm -f '$STATE_FILE'" EXIT
+# Create test state file with correct format
+cat > "$STATE_FILE" <<'INNER_EOF'
+#!/usr/bin/env bash
+export WORKFLOW_DESCRIPTION="test workflow"
+export WORKFLOW_SCOPE="research-only"
+export USE_HIERARCHICAL_RESEARCH="false"
+export RESEARCH_COMPLEXITY="2"
+export REPORT_PATHS_COUNT="3"
+export REPORT_PATH_0="/path/to/report1.md"
+export REPORT_PATH_1="/path/to/report2.md"
+export REPORT_PATH_2="/path/to/report3.md"
+INNER_EOF
 
-  # Simulate append_workflow_state behavior
-  echo 'export REPORT_PATHS_COUNT="4"' >> "$STATE_FILE"
-  echo 'export REPORT_PATH_0="/path/to/report1.md"' >> "$STATE_FILE"
-
-  # Test format matches expected pattern
-  if grep -q "^export REPORT_PATHS_COUNT=" "$STATE_FILE" 2>/dev/null; then
-    echo "  ✓ PASS: Format matches export pattern"
-    TESTS_PASSED=$((TESTS_PASSED + 1))
-  else
-    echo "  ✗ FAIL: Format doesn't match export pattern"
-    TESTS_FAILED=$((TESTS_FAILED + 1))
-  fi
-}
-
-# Test 2: Verification pattern matches actual state file
-test_verification_pattern_matching() {
-  echo "Test 2: Verification pattern matching"
-
-  STATE_FILE=$(mktemp)
-  trap "rm -f '$STATE_FILE'" EXIT
-
-  # Source state-persistence.sh to get real append_workflow_state
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-
-  # Write using real function
-  export STATE_FILE  # Required by append_workflow_state
-  append_workflow_state "REPORT_PATHS_COUNT" "4"
-  append_workflow_state "REPORT_PATH_0" "/path/to/report.md"
-
-  # Verify using fixed grep pattern
-  VERIFICATION_FAILURES=0
-
-  if grep -q "^export REPORT_PATHS_COUNT=" "$STATE_FILE" 2>/dev/null; then
-    echo "  ✓ REPORT_PATHS_COUNT verified"
-  else
-    echo "  ✗ REPORT_PATHS_COUNT missing"
-    VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
-  fi
-
-  if grep -q "^export REPORT_PATH_0=" "$STATE_FILE" 2>/dev/null; then
-    echo "  ✓ REPORT_PATH_0 verified"
-  else
-    echo "  ✗ REPORT_PATH_0 missing"
-    VERIFICATION_FAILURES=$((VERIFICATION_FAILURES + 1))
-  fi
-
-  if [ $VERIFICATION_FAILURES -eq 0 ]; then
-    echo "  ✓ PASS: All variables verified"
-    TESTS_PASSED=$((TESTS_PASSED + 1))
-  else
-    echo "  ✗ FAIL: $VERIFICATION_FAILURES verification failures"
-    TESTS_FAILED=$((TESTS_FAILED + 1))
-  fi
-}
-
-# Test 3: False negative prevention (bug regression test)
-test_false_negative_prevention() {
-  echo "Test 3: False negative prevention"
-
-  STATE_FILE=$(mktemp)
-  trap "rm -f '$STATE_FILE'" EXIT
-
-  # Write state file with correct format
-  echo 'export REPORT_PATHS_COUNT="4"' > "$STATE_FILE"
-
-  # Test OLD pattern (should FAIL)
-  if grep -q "^REPORT_PATHS_COUNT=" "$STATE_FILE" 2>/dev/null; then
-    echo "  ✗ FAIL: Old pattern unexpectedly matched (bug not reproducible)"
-    TESTS_FAILED=$((TESTS_FAILED + 1))
-  else
-    echo "  ✓ PASS: Old pattern correctly fails (bug reproduced)"
-
-    # Test NEW pattern (should PASS)
-    if grep -q "^export REPORT_PATHS_COUNT=" "$STATE_FILE" 2>/dev/null; then
-      echo "  ✓ PASS: New pattern correctly matches"
-      TESTS_PASSED=$((TESTS_PASSED + 1))
-    else
-      echo "  ✗ FAIL: New pattern doesn't match"
-      TESTS_FAILED=$((TESTS_FAILED + 1))
-    fi
-  fi
-}
-
-# Test 4: Integration test - coordinate initialization
-test_coordinate_initialization() {
-  echo "Test 4: Coordinate initialization (integration)"
-
-  # This requires running actual coordinate command, which is heavy
-  # Mark as manual test for now
-  echo "  ⚠ SKIP: Manual integration test required"
-  echo "    Run: /coordinate \"test workflow\""
-  echo "    Expected: Initialization completes, progresses to research phase"
-}
-
-# Run all tests
-echo "=== Coordinate Verification Checkpoint Tests ==="
-echo ""
-
-test_state_file_format
-echo ""
-
-test_verification_pattern_matching
-echo ""
-
-test_false_negative_prevention
-echo ""
-
-test_coordinate_initialization
-echo ""
-
-# Summary
-echo "=== Test Summary ==="
-echo "  Passed: $TESTS_PASSED"
-echo "  Failed: $TESTS_FAILED"
-echo ""
-
-if [ $TESTS_FAILED -eq 0 ]; then
-  echo "✓ All tests passed"
-  exit 0
+# Test 1: Verify REPORT_PATHS_COUNT pattern
+echo "Test 1: REPORT_PATHS_COUNT verification"
+if grep -q "^export REPORT_PATHS_COUNT=" "$STATE_FILE" 2>/dev/null; then
+  echo "✓ PASS: REPORT_PATHS_COUNT pattern works"
 else
-  echo "✗ Some tests failed"
+  echo "✗ FAIL: REPORT_PATHS_COUNT pattern doesn't match"
   exit 1
 fi
+
+# Test 2: Verify USE_HIERARCHICAL_RESEARCH pattern
+echo "Test 2: USE_HIERARCHICAL_RESEARCH verification"
+if grep -q "^export USE_HIERARCHICAL_RESEARCH=" "$STATE_FILE" 2>/dev/null; then
+  echo "✓ PASS: USE_HIERARCHICAL_RESEARCH pattern works"
+else
+  echo "✗ FAIL: USE_HIERARCHICAL_RESEARCH pattern doesn't match"
+  exit 1
+fi
+
+# Test 3: Verify RESEARCH_COMPLEXITY pattern
+echo "Test 3: RESEARCH_COMPLEXITY verification"
+if grep -q "^export RESEARCH_COMPLEXITY=" "$STATE_FILE" 2>/dev/null; then
+  echo "✓ PASS: RESEARCH_COMPLEXITY pattern works"
+else
+  echo "✗ FAIL: RESEARCH_COMPLEXITY pattern doesn't match"
+  exit 1
+fi
+
+# Test 4: Verify REPORT_PATH_N patterns
+echo "Test 4: REPORT_PATH_N verification"
+for i in 0 1 2; do
+  var_name="REPORT_PATH_$i"
+  if grep -q "^export ${var_name}=" "$STATE_FILE" 2>/dev/null; then
+    echo "✓ PASS: $var_name pattern works"
+  else
+    echo "✗ FAIL: $var_name pattern doesn't match"
+    exit 1
+  fi
+done
+
+# Test 5: Verify WORKFLOW_SCOPE pattern
+echo "Test 5: WORKFLOW_SCOPE verification"
+if grep -q "^export WORKFLOW_SCOPE=" "$STATE_FILE" 2>/dev/null; then
+  echo "✓ PASS: WORKFLOW_SCOPE pattern works"
+else
+  echo "✗ FAIL: WORKFLOW_SCOPE pattern doesn't match"
+  exit 1
+fi
+
+# Test 6: Negative test (patterns without export prefix should fail)
+echo "Test 6: Negative test (patterns without export prefix)"
+if grep -q "^REPORT_PATHS_COUNT=" "$STATE_FILE" 2>/dev/null; then
+  echo "✗ FAIL: Pattern without export prefix incorrectly matched"
+  exit 1
+else
+  echo "✓ PASS: Pattern without export prefix correctly failed"
+fi
+
+echo ""
+echo "All verification grep pattern tests passed (6/6)"

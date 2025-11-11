@@ -359,6 +359,11 @@ reconstruct_report_paths_array
 # Determine if hierarchical supervision is needed
 USE_HIERARCHICAL_RESEARCH=$([ $RESEARCH_COMPLEXITY -ge 4 ] && echo "true" || echo "false")
 
+# Save research configuration to state (Spec 648 fix)
+# These variables are used in the next bash block for conditional execution
+append_workflow_state "USE_HIERARCHICAL_RESEARCH" "$USE_HIERARCHICAL_RESEARCH"
+append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+
 if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
   echo "Using hierarchical research supervision (≥4 topics)"
   emit_progress "1" "Invoking research-sub-supervisor for $RESEARCH_COMPLEXITY topics"
