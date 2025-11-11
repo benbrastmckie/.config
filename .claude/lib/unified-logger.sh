@@ -19,6 +19,12 @@
 #   log_complexity_check 3 9.2 8 12  # Adaptive planning
 #   init_conversion_log "$OUTPUT_DIR/conversion.log"  # Conversion
 
+# Source guard: prevent duplicate sourcing (Phase 2 optimization)
+if [ -n "${UNIFIED_LOGGER_SOURCED:-}" ]; then
+  return 0
+fi
+UNIFIED_LOGGER_SOURCED=1
+
 set -euo pipefail
 
 # Source dependencies
