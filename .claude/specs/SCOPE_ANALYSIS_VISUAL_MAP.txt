@@ -1,0 +1,253 @@
+================================================================================
+WORKFLOW SCOPE DETECTION - VISUAL PRIORITY MAP
+================================================================================
+
+PATTERN MATCHING FLOW (First Match Wins)
+========================================
+
+    INPUT: workflow_description
+             |
+             v
+    ╔════════════════════════════════════════════════════════╗
+    ║  PRIORITY 1: Revision-First Patterns (Highest Spec)   ║
+    ╠════════════════════════════════════════════════════════╣
+    ║  Pattern 1a (Line 42):                                 ║
+    ║  ^(revise|update|modify).*(plan|implementation)        ║
+    ║                          .*(accommodate|...)           ║
+    ║  Result: research-and-revise                           ║
+    ║  MATCHES: "Revise /plan to accommodate changes" ✓      ║
+    ╚════════════════════════════════════════════════════════╝
+             | NO MATCH
+             v
+    ╔════════════════════════════════════════════════════════╗
+    ║  Pattern 1b (Line 54):                                 ║
+    ║  (research|analyze).*(and|then|to)                     ║
+    ║                  .*(revise|update.*plan|modify.*plan)  ║
+    ║  Result: research-and-revise                           ║
+    ║  MATCHES: "research and revise the plan" ✓             ║
+    ║  ⚠ NO START ANCHOR - Could match discussions          ║
+    ╚════════════════════════════════════════════════════════╝
+             | NO MATCH
+             v
+    ╔════════════════════════════════════════════════════════╗
+    ║  PRIORITY 2: Plan Path Detection                       ║
+    ╠════════════════════════════════════════════════════════╣
+    ║  Pattern 2 (Line 60):                                  ║
+    ║  (^|space)(...)?specs/[0-9]+_.../plans/...\.md        ║
+    ║  Result: full-implementation                           ║
+    ║  MATCHES: "implement specs/661/plans/001.md" ✓        ║
+    ║  NOTE: Fixed bug in commit 1984391a - was after       ║
+    ║        research-only check, now before               ║
+    ╚════════════════════════════════════════════════════════╝
+             | NO MATCH
+             v
+    ╔════════════════════════════════════════════════════════╗
+    ║  PRIORITY 3: Research-Only Pattern                     ║
+    ╠════════════════════════════════════════════════════════╣
+    ║  Pattern 3a (Line 68):                                 ║
+    ║  ^research.*                                            ║
+    ║  NESTED CHECK (Line 69):                               ║
+    ║  If (plan|implement|fix|debug|create|add|build)        ║
+    ║  found in text → NOT research-only                     ║
+    ║                                                         ║
+    ║  Result: research-only (if no action keywords)         ║
+    ║       OR: research-and-plan (if action keywords)       ║
+    ║  MATCHES: "research patterns" → research-only ✓        ║
+    ║  MATCHES: "research and create plan" → plan ✓         ║
+    ╚════════════════════════════════════════════════════════╝
+             | NO MATCH
+             v
+    ╔════════════════════════════════════════════════════════╗
+    ║  PRIORITY 4: Explicit Keywords (Multiple Patterns)    ║
+    ╠════════════════════════════════════════════════════════╣
+    ║  Pattern 4a (Line 79):                                 ║
+    ║  (^|space)(implement|execute)                          ║
+    ║  Result: full-implementation                           ║
+    ║                                                         ║
+    ║  Pattern 4b (Line 83):                                 ║
+    ║  (plan|create.*plan|design)                            ║
+    ║  Result: research-and-plan                             ║
+    ║                                                         ║
+    ║  Pattern 4c (Line 85):                                 ║
+    ║  (fix|debug|troubleshoot)                              ║
+    ║  Result: debug-only                                    ║
+    ║                                                         ║
+    ║  Pattern 4d (Line 87):                                 ║
+    ║  (build|add|create).*feature                           ║
+    ║  Result: full-implementation                           ║
+    ║  NOTE: Checked in sequence - first match wins         ║
+    ╚════════════════════════════════════════════════════════╝
+             | NO MATCH
+             v
+    ╔════════════════════════════════════════════════════════╗
+    ║  PRIORITY 5: Default Fallback                          ║
+    ╠════════════════════════════════════════════════════════╣
+    ║  Return: research-and-plan                             ║
+    ║  (Safe default for ambiguous inputs)                   ║
+    ╚════════════════════════════════════════════════════════╝
+             |
+             v
+         OUTPUT: One of {
+           - research-only
+           - research-and-plan
+           - research-and-revise
+           - full-implementation
+           - debug-only
+         }
+
+
+CRITICAL PATTERN ANCHORING ANALYSIS
+====================================
+
+Pattern with START ANCHOR (^):
+  ✓ Pattern 1a (revise/update/modify)
+  ✓ Pattern 3a (research)
+  ✓ Pattern 4a (implement/execute)
+
+Patterns WITHOUT START ANCHOR:
+  ✗ Pattern 1b (research+revise) - VULNERABILITY
+  - Pattern 3b (action keywords)
+  - Pattern 4b (plan/design)
+  - Pattern 4c (fix/debug)
+  - Pattern 4d (build/feature)
+
+IMPACT: Patterns without anchor could match:
+  1. As substrings of keywords
+  2. In discussion of workflow types
+  3. In unintended contexts
+
+MITIGATION:
+  - Pattern 1b protected by elif (after Pattern 1a)
+  - Most patterns preceded by high-priority patterns
+  - Default fallback (research-and-plan) is safe
+
+
+FAILURE MODE SEVERITY MATRIX
+=============================
+
+                 LIKELIHOOD   IMPACT     STATUS
+Pattern 1b       LOW          MEDIUM     DOCUMENTED
+Missing anchor   (protected)  (wrong     (in code
+                             scope)      comments)
+
+Greedy match     LOW          LOW        FIXED
+(Pattern 1a)     (mitigated)  (rare)     (tested)
+
+Keyword          LOW          LOW        OK
+proximity        (far apart)  (default   (mitigated)
+                             safe)
+
+Implement vs     NONE         NONE       OK
+feature          (same        (both      (no conflict)
+                 result)      return
+                             impl)
+
+Research +       NONE         NONE       OK
+implement        (correct     (correct   (working)
+                 behavior)    inter-
+                             pret)
+
+
+TEST COVERAGE HEATMAP
+=====================
+
+Scope Type          Coverage    Status    Gaps
+────────────────────────────────────────────────────
+research-only       Good        ✓         Modifier words
+                                          (thoroughly, in detail)
+
+research-and-plan   Good        ✓         Create ambiguity
+                                          (plan vs feature)
+
+full-implementation Good        ✓ (mostly Build + debug
+                                  89%)     Path traversal
+
+research-and-revise Excellent   ✓         Semantic ambiguity
+                                          (approach vs plan)
+
+debug-only          Good        ✓         Mixed keywords
+                                          (debug + implement)
+
+Edge cases          Fair        ~ (2)     Whitespace variations
+                                  fails    Substrings
+                                          Case boundaries
+
+
+DOWNSTREAM IMPACT CHAIN
+=======================
+
+detect_workflow_scope()
+    |
+    +→ WORKFLOW_SCOPE variable
+        |
+        +→ workflow-state-machine.sh
+        |  ├─ Terminal state determination
+        |  └─ Valid scope validation
+        |
+        +→ coordinate.md command
+        |  ├─ research-and-revise: Special revise workflow
+        |  ├─ full-implementation: Standard workflow
+        |  └─ Other: research→plan→implement→test→doc
+        |
+        +→ Phase execution logic
+           ├─ Skip planning for research-and-revise
+           ├─ Skip implementation for debug-only
+           └─ Choose agent type based on scope
+
+
+CRITICAL DECISION POINTS
+========================
+
+Decision Point 1 (Line 42-54):
+  IF starts with (revise|update|modify)
+    AND contains (plan|implementation)
+    AND ends with (accommodate|based on|using|to|for)
+  → research-and-revise
+  ELSE IF research+and+revise pattern
+  → research-and-revise
+
+Decision Point 2 (Line 60):
+  IF contains specs/.../plans/...md path
+  → full-implementation
+  IMPACT: Fixed "implement <plan>" bug in commit 1984391a
+
+Decision Point 3 (Line 68-75):
+  IF starts with research
+    IF has action keywords
+    → research-and-plan
+    ELSE
+    → research-only
+
+Decision Point 4 (Line 79-87):
+  Multiple keyword checks in sequence
+  FIRST MATCH WINS due to elif chain
+
+
+KNOWN VULNERABILITIES & MITIGATIONS
+====================================
+
+Vulnerability 1: Pattern 1b Missing Anchor
+  Severity: MEDIUM
+  Example: "discussing research-and-revise workflow"
+  Mitigation: elif chain, nested checks, documentation
+  Status: MONITORED (test gaps identified)
+
+Vulnerability 2: Greedy .* in Pattern 1a
+  Severity: LOW
+  Example: "Revise implementation plan"
+  Mitigation: Pattern checks keyword AFTER greedy match
+  Status: FIXED (commit 1984391a, tested)
+
+Vulnerability 3: No Word Boundaries in 4b-4d
+  Severity: LOW
+  Example: "debug" keyword matches "debugging"
+  Mitigation: elif chain prioritizes specific patterns
+  Status: MITIGATED (precedence enforced)
+
+Vulnerability 4: Plan Path Detection After Research
+  Severity: HIGH (NOW FIXED)
+  Example: "implement <plan>" → research-and-plan
+  Mitigation: Moved to PRIORITY 2 in commit 1984391a
+  Status: RESOLVED ✓
+
+

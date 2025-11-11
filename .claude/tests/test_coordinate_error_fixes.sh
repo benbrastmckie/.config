@@ -397,6 +397,132 @@ test_planning_phase_uses_agent_delegation
 test_research_and_revise_library_sourcing
 
 # ==============================================================================
+# Test Suite: Phase 1 - Defensive Array Reconstruction Pattern (Spec 672)
+# ==============================================================================
+
+# Source workflow-initialization.sh for Phase 1 functions
+source "${PROJECT_ROOT}/.claude/lib/workflow-initialization.sh"
+
+test_phase1_basic_array_reconstruction() {
+  print_test_header "Phase 1.1: Basic Array Reconstruction"
+
+  # Setup test state
+  export TEST_ARRAY_0="value0"
+  export TEST_ARRAY_1="value1"
+  export TEST_ARRAY_2="value2"
+  export TEST_ARRAY_COUNT=3
+
+  # Execute function
+  reconstruct_array_from_indexed_vars "TEST_ARRAY" "TEST_ARRAY_COUNT"
+
+  # Verify results
+  if [ "${#TEST_ARRAY[@]}" -eq 3 ] && \
+     [ "${TEST_ARRAY[0]}" = "value0" ] && \
+     [ "${TEST_ARRAY[1]}" = "value1" ] && \
+     [ "${TEST_ARRAY[2]}" = "value2" ]; then
+    pass "Basic array reconstruction with all variables present"
+  else
+    fail "Basic array reconstruction failed (expected 3 elements)"
+  fi
+
+  # Cleanup
+  unset TEST_ARRAY TEST_ARRAY_0 TEST_ARRAY_1 TEST_ARRAY_2 TEST_ARRAY_COUNT
+}
+
+test_phase1_missing_count_variable() {
+  print_test_header "Phase 1.2: Missing Count Variable"
+
+  # Setup: NO count variable set
+  export TEST_ARRAY_0="value0"
+
+  # Execute function (should not crash) - capture stderr to temp file to avoid subshell
+  local temp_output="/tmp/test_array_output_$$.txt"
+  reconstruct_array_from_indexed_vars "TEST_ARRAY" "MISSING_COUNT" 2>"$temp_output" || true
+
+  # Verify warning message present
+  if grep -q "WARNING.*MISSING_COUNT not set" "$temp_output"; then
+    pass "Missing count variable triggers warning"
+  else
+    fail "Missing count variable should trigger warning"
+  fi
+  rm -f "$temp_output"
+
+  # Verify array is empty (defensive default)
+  if declare -p TEST_ARRAY &>/dev/null && [ "${#TEST_ARRAY[@]}" -eq 0 ]; then
+    pass "Missing count variable defaults to empty array"
+  else
+    fail "Expected empty array, array not properly initialized"
+  fi
+
+  # Cleanup
+  unset TEST_ARRAY TEST_ARRAY_0
+}
+
+test_phase1_missing_indexed_variable() {
+  print_test_header "Phase 1.3: Missing Indexed Variable"
+
+  # Setup: Skip index 1
+  export TEST_ARRAY_0="value0"
+  # TEST_ARRAY_1 intentionally not set
+  export TEST_ARRAY_2="value2"
+  export TEST_ARRAY_COUNT=3
+
+  # Execute function - capture stderr to temp file to avoid subshell
+  local temp_output="/tmp/test_array_output_$$.txt"
+  reconstruct_array_from_indexed_vars "TEST_ARRAY" "TEST_ARRAY_COUNT" 2>"$temp_output" || true
+
+  # Verify warning for missing variable
+  if grep -q "WARNING.*TEST_ARRAY_1 not set" "$temp_output"; then
+    pass "Missing indexed variable triggers warning"
+  else
+    fail "Missing indexed variable should trigger warning"
+  fi
+  rm -f "$temp_output"
+
+  # Verify array contains only present values (skips missing index)
+  if [ "${#TEST_ARRAY[@]}" -eq 2 ] && \
+     [ "${TEST_ARRAY[0]}" = "value0" ] && \
+     [ "${TEST_ARRAY[1]}" = "value2" ]; then
+    pass "Missing indexed variable skipped gracefully"
+  else
+    fail "Array reconstruction should skip missing variables (expected 2 elements, got ${#TEST_ARRAY[@]})"
+  fi
+
+  # Cleanup
+  unset TEST_ARRAY TEST_ARRAY_0 TEST_ARRAY_2 TEST_ARRAY_COUNT
+}
+
+test_phase1_report_paths_integration() {
+  print_test_header "Phase 1.6: REPORT_PATHS Integration"
+
+  # Setup state variables for REPORT_PATHS
+  export REPORT_PATH_0="/path/to/report1.md"
+  export REPORT_PATH_1="/path/to/report2.md"
+  export REPORT_PATHS_COUNT=2
+
+  # Execute the refactored function
+  reconstruct_report_paths_array
+
+  # Verify array populated correctly
+  if [ "${#REPORT_PATHS[@]}" -eq 2 ] && \
+     [ "${REPORT_PATHS[0]}" = "/path/to/report1.md" ] && \
+     [ "${REPORT_PATHS[1]}" = "/path/to/report2.md" ]; then
+    pass "REPORT_PATHS array integration with generic reconstruction"
+  else
+    fail "REPORT_PATHS integration failed (expected 2 elements)"
+  fi
+
+  # Cleanup
+  unset REPORT_PATHS REPORT_PATH_0 REPORT_PATH_1 REPORT_PATHS_COUNT
+}
+
+# Run Phase 1 tests
+test_phase1_basic_array_reconstruction
+test_phase1_missing_count_variable
+test_phase1_missing_indexed_variable
+test_phase1_report_paths_integration
+
+# ==============================================================================
 # Summary
 # ==============================================================================
 echo ""

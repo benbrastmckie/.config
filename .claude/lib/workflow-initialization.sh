@@ -474,42 +474,121 @@ initialize_workflow_paths() {
 # Helper Functions
 # ==============================================================================
 
+# ==============================================================================
+# Generic Defensive Array Reconstruction Pattern (Spec 672, Phase 1)
+# ==============================================================================
+
+# reconstruct_array_from_indexed_vars: Generic defensive array reconstruction
+#
+# Reconstructs a bash array from indexed variables exported to state persistence.
+# Implements defensive pattern to prevent unbound variable errors (Spec 637 bug fix).
+#
+# Pattern Purpose:
+#   State persistence exports arrays as indexed variables:
+#     export ARRAY_NAME_0="value0"
+#     export ARRAY_NAME_1="value1"
+#     export ARRAY_NAME_COUNT=2
+#
+#   This function safely reconstructs the original array with defensive checks
+#   for missing count variables and missing indexed variables.
+#
+# When to Use This Pattern:
+#   - Array must persist across bash blocks (subprocess isolation)
+#   - State may be partially loaded (some variables missing)
+#   - Silent failures are unacceptable (need warnings for debugging)
+#
+# When NOT to Use:
+#   - Array only used within single bash block (use local array)
+#   - Array reconstruction can fail-fast instead of degrading (use strict checks)
+#   - Performance-critical tight loop (adds 1-2ms overhead per array)
+#
+# Arguments:
+#   $1 - array_name: Name of target array variable (e.g., "REPORT_PATHS")
+#   $2 - count_var_name: Name of count variable (e.g., "REPORT_PATHS_COUNT")
+#   $3 - var_prefix: Optional prefix for indexed variables (default: $array_name)
+#                    Use when variable names differ from array name (e.g., "REPORT_PATH" for REPORT_PATHS array)
+#
+# Effects:
+#   - Sets global array variable named $array_name
+#   - Prints warnings to stderr for missing variables
+#
+# Returns:
+#   0 always (defensive graceful degradation)
+#
+# Example:
+#   # State contains: REPORT_PATH_0, REPORT_PATH_1, REPORT_PATHS_COUNT=2
+#   reconstruct_array_from_indexed_vars "REPORT_PATHS" "REPORT_PATHS_COUNT" "REPORT_PATH"
+#   # Result: REPORT_PATHS=("value0" "value1")
+#
+# Reference: Spec 637 (unbound variable bug), Spec 672 Phase 1 (defensive patterns)
+#
+reconstruct_array_from_indexed_vars() {
+  local array_name="${1:-}"
+  local count_var_name="${2:-}"
+  local var_prefix="${3:-$array_name}"  # Default to array_name if not specified
+
+  # Validate arguments
+  if [ -z "$array_name" ] || [ -z "$count_var_name" ]; then
+    echo "ERROR: reconstruct_array_from_indexed_vars() requires array_name and count_var_name" >&2
+    return 1
+  fi
+
+  # Initialize empty array (using eval to properly initialize global array)
+  eval "${array_name}=()"
+
+  # Defensive check: Ensure count variable is set
+  # ${!count_var_name+x} returns "x" if variable exists, empty if undefined
+  if [ -z "${!count_var_name+x}" ]; then
+    echo "WARNING: $count_var_name not set, defaulting to 0 (array reconstruction skipped)" >&2
+    return 0  # Graceful degradation: empty array
+  fi
+
+  # Safe to use indirect expansion now
+  local count="${!count_var_name}"
+
+  # Validate count is numeric
+  if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+    echo "WARNING: $count_var_name is not numeric (value: '$count'), defaulting to 0" >&2
+    return 0
+  fi
+
+  # Reconstruct array from indexed variables
+  for i in $(seq 0 $((count - 1))); do
+    local var_name="${var_prefix}_${i}"
+
+    # Defensive check: Verify indexed variable exists before accessing
+    # This prevents "unbound variable" errors when state partially loaded
+    if [ -z "${!var_name+x}" ]; then
+      echo "WARNING: $var_name not set, skipping index $i" >&2
+      continue
+    fi
+
+    # Safe to use indirect expansion - append to array
+    local value="${!var_name}"
+    eval "${array_name}+=(\"\$value\")"
+  done
+}
+
 # reconstruct_report_paths_array: Reconstruct REPORT_PATHS array from exported variables
 #
-# Primary: Reads REPORT_PATH_N variables from state
+# Primary: Reads REPORT_PATH_N variables from state using generic defensive pattern
 # Fallback: Filesystem discovery via glob pattern (verification fallback per Spec 057)
 #
 # Usage:
 #   reconstruct_report_paths_array
 #   # Populates global REPORT_PATHS array
 #
+# Implementation Note (Spec 672 Phase 1):
+#   Refactored to use generic reconstruct_array_from_indexed_vars() function
+#   for defensive array reconstruction. Preserves existing filesystem fallback
+#   behavior as verification fallback (Spec 057 pattern).
+#
 reconstruct_report_paths_array() {
-  REPORT_PATHS=()
+  # Use generic defensive reconstruction pattern (Spec 672 Phase 1)
+  # Note: var_prefix is "REPORT_PATH" (singular) because state variables are REPORT_PATH_0, REPORT_PATH_1, etc.
+  reconstruct_array_from_indexed_vars "REPORT_PATHS" "REPORT_PATHS_COUNT" "REPORT_PATH"
 
-  # Defensive check: ensure REPORT_PATHS_COUNT is set
-  if [ -z "${REPORT_PATHS_COUNT:-}" ]; then
-    echo "WARNING: REPORT_PATHS_COUNT not set, defaulting to 0" >&2
-    REPORT_PATHS_COUNT=0
-    return 0
-  fi
-
-  # Primary path: Reconstruct from state variables
-  for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
-    local var_name="REPORT_PATH_$i"
-
-    # Defensive check: verify variable exists before accessing
-    # ${!var_name+x} returns "x" if variable exists, empty if undefined
-    # This prevents "unbound variable" errors when variables not loaded from state
-    if [ -z "${!var_name+x}" ]; then
-      echo "WARNING: $var_name not set, skipping" >&2
-      continue
-    fi
-
-    # Safe to use indirect expansion now
-    REPORT_PATHS+=("${!var_name}")
-  done
-
-  # Fallback path: If reconstruction failed and TOPIC_PATH exists, use filesystem discovery
+  # Verification Fallback: If reconstruction failed and TOPIC_PATH exists, use filesystem discovery
   # This is a verification fallback (per Spec 057): detects state persistence failures
   # immediately rather than hiding them, enables workflow to continue with discovered paths
   if [ ${#REPORT_PATHS[@]} -eq 0 ] && [ -n "${TOPIC_PATH:-}" ]; then
