@@ -127,3 +127,76 @@ verify_file_created() {
 
 # Export function for use in subshells
 export -f verify_file_created
+
+# verify_state_variables - Verify multiple variables exist in state file
+#
+# PARAMETERS:
+#   $1 - state_file: Path to workflow state file
+#   $2+ - var_names: List of variable names to verify
+#
+# RETURNS:
+#   0 - All variables present in state file (success)
+#   1 - One or more variables missing (failure)
+#
+# OUTPUT:
+#   Success: "✓" (single character)
+#   Failure: Diagnostic listing missing variables
+#
+# EXAMPLE:
+#   verify_state_variables "$STATE_FILE" REPORT_PATHS_COUNT REPORT_PATH_0 REPORT_PATH_1
+#   # Success: ✓
+#   # Failure: Lists which variables are missing
+verify_state_variables() {
+  local state_file="$1"
+  shift
+  local var_names=("$@")
+
+  local missing_vars=()
+
+  # Check each variable
+  for var_name in "${var_names[@]}"; do
+    if ! grep -q "^export ${var_name}=" "$state_file" 2>/dev/null; then
+      missing_vars+=("$var_name")
+    fi
+  done
+
+  # Success path: All variables present
+  if [ ${#missing_vars[@]} -eq 0 ]; then
+    echo -n "✓"
+    return 0
+  else
+    # Failure path: Report missing variables
+    echo ""
+    echo "✗ ERROR: State variable verification failed"
+    echo "   Expected: ${#var_names[@]} variables in state file"
+    echo "   Found: $((${#var_names[@]} - ${#missing_vars[@]})) variables"
+    echo ""
+    echo "MISSING VARIABLES:"
+    for var in "${missing_vars[@]}"; do
+      echo "  ❌ $var"
+    done
+    echo ""
+    echo "DIAGNOSTIC INFORMATION:"
+    echo "  - State file: $state_file"
+    if [ -f "$state_file" ]; then
+      local file_size
+      file_size=$(stat -f%z "$state_file" 2>/dev/null || stat -c%s "$state_file" 2>/dev/null || echo "unknown")
+      echo "  - File size: $file_size bytes"
+      echo "  - Variables in file: $(grep -c '^export ' "$state_file" 2>/dev/null || echo 0)"
+    else
+      echo "  - File status: MISSING"
+    fi
+    echo ""
+    echo "TROUBLESHOOTING:"
+    echo "  1. Check append_workflow_state() was called for each variable"
+    echo "  2. Verify set +H directive present (prevents bad substitution)"
+    echo "  3. Check file permissions on state file directory"
+    echo ""
+    echo "State file contents (first 20 lines):"
+    head -20 "$state_file" 2>/dev/null || echo "  (unable to read state file)"
+    echo ""
+    return 1
+  fi
+}
+
+export -f verify_state_variables
