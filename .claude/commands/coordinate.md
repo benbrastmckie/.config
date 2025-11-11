@@ -47,6 +47,9 @@ Now execute the main initialization (this reads from the file created above):
 set +H  # Explicitly disable history expansion (workaround for Bash tool preprocessing issues)
 set -euo pipefail  # Fail-fast error handling
 
+# Performance instrumentation (Phase 1 baseline metrics)
+PERF_START_TOTAL=$(date +%s%N)
+
 echo "=== State Machine Workflow Orchestration ==="
 echo ""
 
@@ -151,6 +154,9 @@ else
   exit 1
 fi
 
+# Performance marker: Library loading complete
+PERF_AFTER_LIBS=$(date +%s%N)
+
 # Source workflow initialization and initialize paths
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
   source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
@@ -164,6 +170,9 @@ if initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
 else
   handle_state_error "Workflow initialization failed" 1
 fi
+
+# Performance marker: Path initialization complete
+PERF_AFTER_PATHS=$(date +%s%N)
 
 # Validate TOPIC_PATH was set by initialization
 if [ -z "${TOPIC_PATH:-}" ]; then
@@ -277,6 +286,17 @@ echo "  Scope: $WORKFLOW_SCOPE"
 echo "  Current State: $CURRENT_STATE"
 echo "  Terminal State: $TERMINAL_STATE"
 echo "  Topic Path: ${TOPIC_PATH:-<not set>}"
+
+# Performance reporting (Phase 1 baseline metrics)
+PERF_END_INIT=$(date +%s%N)
+PERF_LIB_MS=$(( (PERF_AFTER_LIBS - PERF_START_TOTAL) / 1000000 ))
+PERF_PATH_MS=$(( (PERF_AFTER_PATHS - PERF_AFTER_LIBS) / 1000000 ))
+PERF_TOTAL_MS=$(( (PERF_END_INIT - PERF_START_TOTAL) / 1000000 ))
+echo ""
+echo "Performance (Baseline Phase 1):"
+echo "  Library loading: ${PERF_LIB_MS}ms"
+echo "  Path initialization: ${PERF_PATH_MS}ms"
+echo "  Total init overhead: ${PERF_TOTAL_MS}ms"
 echo ""
 ```
 
