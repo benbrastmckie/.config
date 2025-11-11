@@ -338,6 +338,9 @@ initialize_workflow_paths() {
 
 # reconstruct_report_paths_array: Reconstruct REPORT_PATHS array from exported variables
 #
+# Primary: Reads REPORT_PATH_N variables from state
+# Fallback: Filesystem discovery via glob pattern (verification fallback per Spec 057)
+#
 # Usage:
 #   reconstruct_report_paths_array
 #   # Populates global REPORT_PATHS array
@@ -352,6 +355,7 @@ reconstruct_report_paths_array() {
     return 0
   fi
 
+  # Primary path: Reconstruct from state variables
   for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
     local var_name="REPORT_PATH_$i"
 
@@ -366,4 +370,24 @@ reconstruct_report_paths_array() {
     # Safe to use indirect expansion now
     REPORT_PATHS+=("${!var_name}")
   done
+
+  # Fallback path: If reconstruction failed and TOPIC_PATH exists, use filesystem discovery
+  # This is a verification fallback (per Spec 057): detects state persistence failures
+  # immediately rather than hiding them, enables workflow to continue with discovered paths
+  if [ ${#REPORT_PATHS[@]} -eq 0 ] && [ -n "${TOPIC_PATH:-}" ]; then
+    local reports_dir="${TOPIC_PATH}/reports"
+
+    if [ -d "$reports_dir" ]; then
+      echo "Warning: State reconstruction failed ($REPORT_PATHS_COUNT expected, 0 found), using filesystem discovery fallback (verification fallback per Spec 057)" >&2
+
+      # Discover report files via glob pattern, preserving numeric sorting
+      for report_file in "$reports_dir"/[0-9][0-9][0-9]_*.md; do
+        if [ -f "$report_file" ]; then
+          REPORT_PATHS+=("$report_file")
+        fi
+      done
+
+      echo "Fallback discovery found ${#REPORT_PATHS[@]} reports in $reports_dir" >&2
+    fi
+  fi
 }
