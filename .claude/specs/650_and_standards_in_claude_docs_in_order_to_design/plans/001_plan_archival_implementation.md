@@ -135,7 +135,7 @@ fi
 
 ## Implementation Phases
 
-### Phase 0: Preparation and Validation [COMPLETED]
+### Phase 0: Preparation and Validation
 dependencies: []
 
 **Objective**: Validate research findings and prepare development environment
@@ -143,19 +143,19 @@ dependencies: []
 **Complexity**: Low
 
 **Tasks**:
-- [x] Verify completion detection mechanisms in checkpoint-utils.sh (functions: restore_checkpoint, delete_checkpoint)
-- [x] Verify cleanup_plan_directory() function in plan-core-bundle.sh (line 44)
-- [x] Verify ensure_artifact_directory() function in unified-location-detection.sh
-- [x] Confirm gitignore pattern specs/*/* covers archived/ subdirectory
-- [x] Validate /implement Phase 2 integration point (implement.md line 180)
-- [x] Validate /coordinate complete state handler (coordinate.md line 642 STATE_COMPLETE)
-- [x] Review rollback-command-file.sh error handling patterns (safety backup + verification + rollback)
-- [x] Review metadata-extraction.sh for plan metadata extraction (extract_plan_metadata, extract_report_metadata)
+- [ ] Verify completion detection mechanisms in checkpoint-utils.sh (functions: restore_checkpoint, delete_checkpoint)
+- [ ] Verify cleanup_plan_directory() function in plan-core-bundle.sh (line 1093)
+- [ ] Verify ensure_artifact_directory() function in unified-location-detection.sh
+- [ ] Confirm gitignore pattern specs/*/* covers archived/ subdirectory
+- [ ] Validate /implement Phase 2 integration point (implement.md line 180-216)
+- [ ] Validate /coordinate complete state handler (coordinate.md terminal state check)
+- [ ] Review rollback-command-file.sh error handling patterns (lines 40-75)
+- [ ] Review metadata-extraction.sh for plan metadata extraction (line 89-166)
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [x] Update this plan file: Mark completed tasks with [x]
-- [x] Verify changes with git diff
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
