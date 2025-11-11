@@ -99,7 +99,7 @@ coordinate.md:Revision Verification (SIMPLIFIED)
 
 ## Implementation Phases
 
-### Phase 1: Fix Workflow Scope Detection
+### Phase 1: Fix Workflow Scope Detection [COMPLETED]
 dependencies: []
 
 **Objective**: Expand workflow-scope-detection.sh pattern to recognize "Revise X to Y" revision workflows
@@ -135,9 +135,9 @@ After completing the above tasks:
 **Phase 1 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(661): complete Phase 1 - Fix Workflow Scope Detection`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] Git commit created: `feat(661): complete Phase 1 - Fix Workflow Scope Detection`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 2: Reorder Dynamic Path Discovery Before Verification
 dependencies: [1]
@@ -147,12 +147,12 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Identify dynamic discovery block location in coordinate.md (currently lines ~342-362) (file: /home/benjamin/.config/.claude/commands/coordinate.md)
-- [ ] Identify verification checkpoint locations (research phase: ~489 hierarchical, ~550 flat) (file: coordinate.md)
-- [ ] Move discovery block to execute immediately after research agent invocations complete (file: coordinate.md:342-362 → new location before line 489)
-- [ ] Update workflow state persistence: save discovered REPORT_PATHS array to state file (file: coordinate.md:360-362)
-- [ ] Modify verification checkpoints to load REPORT_PATHS from workflow state instead of using pre-calculated paths (file: coordinate.md:489, 550)
-- [ ] Add diagnostic output showing path discovery results (count of files found, paths updated) (file: coordinate.md:358)
+- [x] Identify dynamic discovery block location in coordinate.md (currently lines ~342-362) (file: /home/benjamin/.config/.claude/commands/coordinate.md)
+- [x] Identify verification checkpoint locations (research phase: ~489 hierarchical, ~550 flat) (file: coordinate.md)
+- [x] Move discovery block to execute immediately after research agent invocations complete (file: coordinate.md:342-362 → new location before line 489)
+- [x] Update workflow state persistence: save discovered REPORT_PATHS array to state file (file: coordinate.md:360-362)
+- [x] Modify verification checkpoints to load REPORT_PATHS from workflow state instead of using pre-calculated paths (file: coordinate.md:489, 550)
+- [x] Add diagnostic output showing path discovery results (count of files found, paths updated) (file: coordinate.md:358)
 
 **Testing**:
 ```bash
@@ -173,13 +173,13 @@ cat ~/.claude/tmp/coordinate_*.workflow_state | grep REPORT_PATHS
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
 - [ ] Git commit created: `feat(661): complete Phase 2 - Reorder Dynamic Path Discovery Before Verification`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status

@@ -3,7 +3,8 @@ allowed-tools: Task, TodoWrite, Bash, Read
 argument-hint: <workflow-description>
 description: Coordinate multi-agent workflows with wave-based parallel implementation (state machine architecture)
 command-type: primary
-dependent-commands: research, plan, implement, debug, test, document
+dependent-commands: research, plan, debug, test, document
+dependent-agents: research-specialist, plan-architect, implementer-coordinator, debug-analyst
 ---
 
 # /coordinate - Multi-Agent Workflow Orchestration (State Machine)
