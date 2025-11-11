@@ -340,27 +340,83 @@ initialize_workflow_paths() {
   # Planning phase paths
   local plan_path="${topic_path}/plans/001_${topic_name}_plan.md"
 
-  # For research-and-revise workflows, discover most recent existing plan
-  # This must be done during initialization to make plan path available to planning phase
+  # For research-and-revise workflows, use existing plan path from scope detection
+  # This is different from creation workflows which generate new topic directories
   local existing_plan_path=""
   if [ "$workflow_scope" = "research-and-revise" ]; then
-    # Find most recent .md file in plans directory (sorted by modification time)
-    if [ -d "${topic_path}/plans" ]; then
-      existing_plan_path=$(find "${topic_path}/plans" -name "*.md" -type f -print0 2>/dev/null | \
-                           xargs -0 ls -t 2>/dev/null | head -1)
-
-      if [ -z "$existing_plan_path" ]; then
-        echo "ERROR: research-and-revise workflow requires existing plan but none found in ${topic_path}/plans" >&2
-        return 1
-      fi
-
-      # Export for use in planning phase
-      export EXISTING_PLAN_PATH="$existing_plan_path"
-      append_workflow_state "EXISTING_PLAN_PATH" "$existing_plan_path"
-    else
-      echo "ERROR: research-and-revise workflow requires ${topic_path}/plans directory but it does not exist" >&2
+    # Validation Check 1: EXISTING_PLAN_PATH must be set by scope detection
+    if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
+      echo "ERROR: research-and-revise workflow requires existing plan path" >&2
+      echo "  Workflow description: $workflow_description" >&2
+      echo "  Expected: Path format like 'Revise the plan /path/to/specs/NNN_topic/plans/NNN_plan.md...'" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Check workflow description contains full plan path" >&2
+      echo "    - Verify scope detection exported EXISTING_PLAN_PATH" >&2
       return 1
     fi
+
+    existing_plan_path="$EXISTING_PLAN_PATH"
+
+    # Validation Check 2: Plan file must exist
+    if [ ! -f "$existing_plan_path" ]; then
+      echo "ERROR: Specified plan file does not exist" >&2
+      echo "  Plan path: $existing_plan_path" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Verify file path is correct: test -f \"$existing_plan_path\"" >&2
+      echo "    - Check for typos in workflow description" >&2
+      return 1
+    fi
+
+    # Extract topic directory from existing plan path
+    local extracted_topic
+    extracted_topic=$(extract_topic_from_plan_path "$existing_plan_path")
+
+    if [ -z "$extracted_topic" ]; then
+      echo "ERROR: Could not extract topic directory from plan path" >&2
+      echo "  Plan path: $existing_plan_path" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Check plan path format: /path/to/specs/NNN_topic/plans/NNN_plan.md" >&2
+      echo "    - Verify path structure matches expected format" >&2
+      return 1
+    fi
+
+    # Override topic_path and topic_name with extracted values (don't create new topic)
+    topic_name="$extracted_topic"
+    topic_path="${specs_root}/${topic_name}"
+
+    # Extract topic number from topic name (format: NNN_name)
+    topic_num=$(echo "$topic_name" | grep -oE '^[0-9]{3}')
+
+    # Validation Check 3: Extracted topic directory must exist
+    if [ ! -d "$topic_path" ]; then
+      echo "ERROR: Extracted topic directory does not exist" >&2
+      echo "  Topic directory: $topic_path" >&2
+      echo "  Extracted from: $existing_plan_path" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Verify topic directory exists: test -d \"$topic_path\"" >&2
+      echo "    - Check specs directory structure" >&2
+      return 1
+    fi
+
+    # Validation Check 4: Topic must have plans subdirectory
+    if [ ! -d "$topic_path/plans" ]; then
+      echo "ERROR: Topic directory missing plans/ subdirectory" >&2
+      echo "  Topic path: $topic_path" >&2
+      echo "  Expected: $topic_path/plans" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Verify directory structure: ls -la \"$topic_path\"" >&2
+      echo "    - Topic must follow specs/NNN_topic/plans/ structure" >&2
+      return 1
+    fi
+
+    # Export for use in planning phase
+    export EXISTING_PLAN_PATH="$existing_plan_path"
+    append_workflow_state "EXISTING_PLAN_PATH" "$existing_plan_path"
   fi
 
   # Implementation phase paths
