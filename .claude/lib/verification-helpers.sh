@@ -80,45 +80,89 @@ verify_file_created() {
     echo -n "✓"  # No newline - allows multiple checks on one line
     return 0
   else
-    # Failure path: Verbose diagnostic
+    # Failure path: Enhanced verbose diagnostic
     echo ""
     echo "✗ ERROR [$phase_name]: $item_desc verification failed"
-    echo "   Expected: File exists at $file_path"
+    echo ""
+
+    # Expected vs Actual comparison
+    echo "Expected vs Actual:"
+    echo "  Expected path: $file_path"
+    local expected_filename=$(basename "$file_path")
+    echo "  Expected filename: $expected_filename"
+    echo ""
 
     # Specific failure reason
     if [ ! -f "$file_path" ]; then
-      echo "   Found: File does not exist"
+      echo "  Status: File does not exist"
     else
-      echo "   Found: File empty (0 bytes)"
+      echo "  Status: File empty (0 bytes)"
     fi
     echo ""
 
-    # Directory diagnostics
-    echo "DIAGNOSTIC INFORMATION:"
-    echo "  - Expected path: $file_path"
-    echo "  - Parent directory: $(dirname "$file_path")"
-
+    # Enhanced directory diagnostics with file metadata
     local dir="$(dirname "$file_path")"
+    echo "Directory Analysis:"
+    echo "  Parent directory: $dir"
+
     if [ -d "$dir" ]; then
       local file_count
       file_count=$(ls -1 "$dir" 2>/dev/null | wc -l)
-      echo "  - Directory status: ✓ Exists ($file_count files)"
+      echo "  Directory status: ✓ Exists ($file_count files)"
+      echo ""
 
-      # Show recent files if directory not empty
+      # Show actual files with metadata for mismatch diagnosis
       if [ "$file_count" -gt 0 ]; then
-        echo "  - Recent files:"
-        ls -lht "$dir" | head -4
+        echo "  Files found in directory:"
+        ls -lht "$dir" | head -6 | tail -n +2 | while IFS= read -r line; do
+          # Extract filename from ls output
+          local filename=$(echo "$line" | awk '{print $NF}')
+          local size=$(echo "$line" | awk '{print $5}')
+          local date=$(echo "$line" | awk '{print $6, $7, $8}')
+
+          # Mark if filename matches expected pattern
+          if [[ "$filename" == [0-9][0-9][0-9]_*.md ]]; then
+            echo "     - $filename (size: $size, modified: $date)"
+          else
+            echo "     - $filename (size: $size, modified: $date) [unexpected pattern]"
+          fi
+        done
+        echo ""
+
+        # Root cause analysis for path mismatches
+        echo "  Possible causes:"
+        echo "    1. Agent created descriptive filename instead of generic name"
+        echo "    2. Dynamic path discovery executed after verification"
+        echo "    3. State persistence incomplete (REPORT_PATHS array not populated)"
+        echo "    4. Topic path calculation mismatch"
+      else
+        echo "  Directory is empty"
+        echo ""
+        echo "  Possible causes:"
+        echo "    1. Agent failed to create report file"
+        echo "    2. Wrong topic directory calculated"
+        echo "    3. Reports directory not initialized"
       fi
     else
-      echo "  - Directory status: ✗ Does not exist"
-      echo "  - Fix: mkdir -p $dir"
+      echo "  Directory status: ✗ Does not exist"
+      echo ""
+      echo "  Fix: mkdir -p $dir"
     fi
     echo ""
 
-    # Actionable diagnostic commands
-    echo "Diagnostic commands:"
-    echo "  ls -la $dir"
-    echo "  cat .claude/agents/[agent-name].md | head -50"
+    # Enhanced troubleshooting commands with explanations
+    echo "TROUBLESHOOTING:"
+    echo "  1. List actual files created:"
+    echo "     Command: ls -la $dir"
+    echo ""
+    echo "  2. Check agent completion signals:"
+    echo "     Command: grep -r \"REPORT_CREATED:\" \"\${CLAUDE_PROJECT_DIR}/.claude/tmp/\""
+    echo ""
+    echo "  3. Verify dynamic discovery executed:"
+    echo "     Command: grep -A 10 \"Dynamic Report Path Discovery\" \"\${CLAUDE_PROJECT_DIR}/.claude/commands/coordinate.md\""
+    echo ""
+    echo "  4. Check REPORT_PATHS array contents:"
+    echo "     Command: declare -p REPORT_PATHS 2>/dev/null || echo \"Array not set\""
     echo ""
 
     return 1
