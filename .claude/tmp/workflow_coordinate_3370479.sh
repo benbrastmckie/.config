@@ -1,0 +1,5 @@
+export CLAUDE_PROJECT_DIR="/home/benjamin/.config"
+export WORKFLOW_ID="coordinate_3370479"
+export STATE_FILE="/home/benjamin/.config/.claude/tmp/workflow_coordinate_3370479.sh"
+export WORKFLOW_ID="coordinate_3370479"
+export WORKFLOW_DESCRIPTION=""

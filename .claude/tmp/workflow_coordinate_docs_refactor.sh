@@ -1,0 +1,8 @@
+export CLAUDE_PROJECT_DIR="/home/benjamin/.config"
+export WORKFLOW_ID="coordinate_docs_refactor"
+export STATE_FILE="/home/benjamin/.config/.claude/tmp/workflow_coordinate_docs_refactor.sh"
+export WORKFLOW_ID="coordinate_docs_refactor"
+export WORKFLOW_DESCRIPTION=""
+export WORKFLOW_SCOPE="research-and-plan"
+export TERMINAL_STATE="plan"
+export CURRENT_STATE="initialize"
