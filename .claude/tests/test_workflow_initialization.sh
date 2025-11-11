@@ -346,14 +346,18 @@ test_research_and_revise_workflow() {
 
   # Create mock plan file for revision workflow
   # Note: Topic name is calculated from description, so create directory matching calculated name
-  mkdir -p "${TEST_DIR}/.claude/specs/001_revise_test_topic_plan/plans"
-  echo "# Test Plan" > "${TEST_DIR}/.claude/specs/001_revise_test_topic_plan/plans/001_existing_plan.md"
+  mkdir -p "${TEST_DIR}/.claude/specs/657_revise_test_topic/plans"
+  local mock_plan="${TEST_DIR}/.claude/specs/657_revise_test_topic/plans/001_existing_plan.md"
+  echo "# Test Plan" > "$mock_plan"
 
   # Source the library
   if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Simulate scope detection: export EXISTING_PLAN_PATH as scope detection would
+    export EXISTING_PLAN_PATH="$mock_plan"
+
     # Call the function with revision workflow description
-    if initialize_workflow_paths "Revise test topic plan" "research-and-revise" >/dev/null 2>&1; then
-      # Verify EXISTING_PLAN_PATH is set (specific to revision workflows)
+    if initialize_workflow_paths "Revise the plan $mock_plan to accommodate changes" "research-and-revise" >/dev/null 2>&1; then
+      # Verify EXISTING_PLAN_PATH is still set (specific to revision workflows)
       if [[ -n "${EXISTING_PLAN_PATH:-}" ]] && [[ -f "${EXISTING_PLAN_PATH}" ]]; then
         pass "$test_name"
       else

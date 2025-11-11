@@ -168,7 +168,7 @@ bash test_workflow_initialization.sh
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 2: Add Path Validation for Existing Plans
+### Phase 2: Add Path Validation for Existing Plans [COMPLETED]
 dependencies: [1]
 
 **Objective**: Validate extracted plan paths exist and meet structure requirements
@@ -176,13 +176,13 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Add validation block after topic extraction in research-and-revise section (after line 276)
-- [ ] Check 1: Verify EXISTING_PLAN_PATH is set and non-empty
-- [ ] Check 2: Verify plan file exists using `test -f "$EXISTING_PLAN_PATH"`
-- [ ] Check 3: Verify extracted topic directory exists using `test -d "$topic_path"`
-- [ ] Check 4: Verify topic has plans/ subdirectory using `test -d "$topic_path/plans"`
-- [ ] Add clear error messages for each validation failure (per fail-fast standards)
-- [ ] Include diagnostic information in error output (file paths, expected structure)
+- [x] Add validation block after topic extraction in research-and-revise section (after line 276)
+- [x] Check 1: Verify EXISTING_PLAN_PATH is set and non-empty
+- [x] Check 2: Verify plan file exists using `test -f "$EXISTING_PLAN_PATH"`
+- [x] Check 3: Verify extracted topic directory exists using `test -d "$topic_path"`
+- [x] Check 4: Verify topic has plans/ subdirectory using `test -d "$topic_path/plans"`
+- [x] Add clear error messages for each validation failure (per fail-fast standards)
+- [x] Include diagnostic information in error output (file paths, expected structure)
 
 **Testing**:
 ```bash
@@ -200,7 +200,7 @@ bash test_workflow_initialization.sh
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 3: Integrate Extraction into Initialization Flow
+### Phase 3: Integrate Extraction into Initialization Flow [COMPLETED]
 dependencies: [1, 2]
 
 **Objective**: Replace find-based discovery with path extraction for revision workflows
@@ -208,14 +208,14 @@ dependencies: [1, 2]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Modify research-and-revise block in workflow-initialization.sh (lines 264-282)
-- [ ] Remove find-based plan discovery (lines 266-268 - only for non-revision workflows)
-- [ ] Add call to extract_topic_from_plan_path() using EXISTING_PLAN_PATH
-- [ ] Update topic_path variable to use extracted topic (not generate new one)
-- [ ] Update topic_num extraction from topic_path (parse NNN from NNN_topic format)
-- [ ] Preserve existing EXISTING_PLAN_PATH export (line 276)
-- [ ] Update error messages to reflect new extraction logic
-- [ ] Add inline comments explaining revision vs creation workflow differences
+- [x] Modify research-and-revise block in workflow-initialization.sh (lines 264-282)
+- [x] Remove find-based plan discovery (lines 266-268 - only for non-revision workflows)
+- [x] Add call to extract_topic_from_plan_path() using EXISTING_PLAN_PATH
+- [x] Update topic_path variable to use extracted topic (not generate new one)
+- [x] Update topic_num extraction from topic_path (parse NNN from NNN_topic format)
+- [x] Preserve existing EXISTING_PLAN_PATH export (line 276)
+- [x] Update error messages to reflect new extraction logic
+- [x] Add inline comments explaining revision vs creation workflow differences
 
 **Testing**:
 ```bash
