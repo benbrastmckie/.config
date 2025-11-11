@@ -124,10 +124,33 @@ append_workflow_state "WORKFLOW_DESCRIPTION" "$SAVED_WORKFLOW_DESC"
 # Initialize state machine (use SAVED value, not overwritten variable)
 sm_init "$SAVED_WORKFLOW_DESC" "coordinate"
 
+# ADDED: Extract and save EXISTING_PLAN_PATH for research-and-revise workflows
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  # Extract plan path from workflow description
+  if echo "$SAVED_WORKFLOW_DESC" | grep -Eq "/specs/[0-9]+_[^/]+/plans/"; then
+    EXISTING_PLAN_PATH=$(echo "$SAVED_WORKFLOW_DESC" | grep -oE "/[^ ]+\.md" | head -1)
+    export EXISTING_PLAN_PATH
+
+    # CRITICAL: Verify file exists before proceeding
+    if [ ! -f "$EXISTING_PLAN_PATH" ]; then
+      handle_state_error "Extracted plan path does not exist: $EXISTING_PLAN_PATH" 1
+    fi
+
+    echo "✓ Extracted existing plan path: $EXISTING_PLAN_PATH"
+  else
+    handle_state_error "research-and-revise workflow requires plan path in description" 1
+  fi
+fi
+
 # Save state machine configuration to workflow state
 append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
 append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
 append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
+
+# ADDED: Save EXISTING_PLAN_PATH to state for bash block persistence
+if [ -n "${EXISTING_PLAN_PATH:-}" ]; then
+  append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
+fi
 
 # Source required libraries based on scope
 source "${LIB_DIR}/library-sourcing.sh"
@@ -136,7 +159,7 @@ case "$WORKFLOW_SCOPE" in
   research-only)
     REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "error-handling.sh")
     ;;
-  research-and-plan)
+  research-and-plan|research-and-revise)
     REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "error-handling.sh")
     ;;
   full-implementation)
