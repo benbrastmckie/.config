@@ -239,6 +239,15 @@ initialize_workflow_paths() {
     report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_topic${i}.md")
   done
 
+  # Export individual report path variables for bash block persistence
+  # Arrays cannot be exported across subprocess boundaries, so we export
+  # individual REPORT_PATH_0, REPORT_PATH_1, etc. variables
+  export REPORT_PATH_0="${report_paths[0]}"
+  export REPORT_PATH_1="${report_paths[1]}"
+  export REPORT_PATH_2="${report_paths[2]}"
+  export REPORT_PATH_3="${report_paths[3]}"
+  export REPORT_PATHS_COUNT=4
+
   # Define research subdirectory for overview synthesis
   local research_subdir="${topic_path}/reports"
 
@@ -248,6 +257,29 @@ initialize_workflow_paths() {
 
   # Planning phase paths
   local plan_path="${topic_path}/plans/001_${topic_name}_plan.md"
+
+  # For research-and-revise workflows, discover most recent existing plan
+  # This must be done during initialization to make plan path available to planning phase
+  local existing_plan_path=""
+  if [ "$workflow_scope" = "research-and-revise" ]; then
+    # Find most recent .md file in plans directory (sorted by modification time)
+    if [ -d "${topic_path}/plans" ]; then
+      existing_plan_path=$(find "${topic_path}/plans" -name "*.md" -type f -print0 2>/dev/null | \
+                           xargs -0 ls -t 2>/dev/null | head -1)
+
+      if [ -z "$existing_plan_path" ]; then
+        echo "ERROR: research-and-revise workflow requires existing plan but none found in ${topic_path}/plans" >&2
+        return 1
+      fi
+
+      # Export for use in planning phase
+      export EXISTING_PLAN_PATH="$existing_plan_path"
+      append_workflow_state "EXISTING_PLAN_PATH" "$existing_plan_path"
+    else
+      echo "ERROR: research-and-revise workflow requires ${topic_path}/plans directory but it does not exist" >&2
+      return 1
+    fi
+  fi
 
   # Implementation phase paths
   local impl_artifacts="${topic_path}/artifacts/"
@@ -312,10 +344,26 @@ initialize_workflow_paths() {
 #
 reconstruct_report_paths_array() {
   REPORT_PATHS=()
+
+  # Defensive check: ensure REPORT_PATHS_COUNT is set
+  if [ -z "${REPORT_PATHS_COUNT:-}" ]; then
+    echo "WARNING: REPORT_PATHS_COUNT not set, defaulting to 0" >&2
+    REPORT_PATHS_COUNT=0
+    return 0
+  fi
+
   for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
     local var_name="REPORT_PATH_$i"
-    # Use indirect expansion instead of nameref to avoid "unbound variable" with set -u
-    # ${!var_name} expands to the value of the variable whose name is in $var_name
+
+    # Defensive check: verify variable exists before accessing
+    # ${!var_name+x} returns "x" if variable exists, empty if undefined
+    # This prevents "unbound variable" errors when variables not loaded from state
+    if [ -z "${!var_name+x}" ]; then
+      echo "WARNING: $var_name not set, skipping" >&2
+      continue
+    fi
+
+    # Safe to use indirect expansion now
     REPORT_PATHS+=("${!var_name}")
   done
 }

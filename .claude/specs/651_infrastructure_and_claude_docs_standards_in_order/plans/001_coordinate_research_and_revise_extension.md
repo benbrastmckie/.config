@@ -324,9 +324,11 @@ After completing the above tasks:
 **Phase 1 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(651): complete Phase 1 - Workflow Scope Detection Extension`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] Git commit created: `feat(651): complete Phase 1 - Workflow Scope Detection Extension`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
+
+[COMPLETED]
 
 ### Phase 2: Plan Discovery Logic Implementation
 dependencies: [1]
@@ -336,13 +338,13 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Read current workflow-initialization.sh implementation (file: /home/benjamin/.config/.claude/lib/workflow-initialization.sh)
-- [ ] Add plan discovery logic after line 256 (after plan_path calculation section)
-- [ ] Implement find command to locate most recent .md file in $topic_path/plans/
-- [ ] Add error handling if no existing plan found (fail-fast with clear message)
-- [ ] Export EXISTING_PLAN_PATH for use in coordinate.md planning phase
-- [ ] Add EXISTING_PLAN_PATH to workflow state persistence (append_workflow_state call)
-- [ ] Add inline comments explaining discovery logic and rationale
+- [x] Read current workflow-initialization.sh implementation (file: /home/benjamin/.config/.claude/lib/workflow-initialization.sh)
+- [x] Add plan discovery logic after line 256 (after plan_path calculation section)
+- [x] Implement find command to locate most recent .md file in $topic_path/plans/
+- [x] Add error handling if no existing plan found (fail-fast with clear message)
+- [x] Export EXISTING_PLAN_PATH for use in coordinate.md planning phase
+- [x] Add EXISTING_PLAN_PATH to workflow state persistence (append_workflow_state call)
+- [x] Add inline comments explaining discovery logic and rationale
 
 **Testing**:
 ```bash
@@ -368,13 +370,13 @@ rm -rf /tmp/test_topic
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
 - [ ] Git commit created: `feat(651): complete Phase 2 - Plan Discovery Logic Implementation`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
