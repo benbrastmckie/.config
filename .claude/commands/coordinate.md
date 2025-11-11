@@ -195,6 +195,11 @@ done
 
 echo "Saved $REPORT_PATHS_COUNT report paths to workflow state"
 
+# Source verification helpers (must be sourced BEFORE verify_state_variables is called)
+if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
+fi
+
 # ===== MANDATORY VERIFICATION CHECKPOINT: State Persistence =====
 # Verify all REPORT_PATH variables written to state file (Phase 3: concise pattern)
 echo -n "Verifying state persistence ($((REPORT_PATHS_COUNT + 1)) vars): "
@@ -210,11 +215,6 @@ if verify_state_variables "$STATE_FILE" "${VARS_TO_CHECK[@]}"; then
   echo " verified"
 else
   handle_state_error "State persistence verification failed" 1
-fi
-
-# Source verification helpers
-if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
 fi
 
 # Transition to research state
@@ -419,6 +419,33 @@ else
   exit 1
 fi
 
+# Defensive: Restore RESEARCH_COMPLEXITY if not loaded from state
+# This can happen if workflow state doesn't persist properly across bash blocks
+if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
+  # Recalculate from WORKFLOW_DESCRIPTION (same logic as initial calculation)
+  RESEARCH_COMPLEXITY=2
+
+  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "integrate|migration|refactor|architecture"; then
+    RESEARCH_COMPLEXITY=3
+  fi
+
+  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "multi-.*system|cross-.*platform|distributed|microservices"; then
+    RESEARCH_COMPLEXITY=4
+  fi
+
+  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^(fix|update|modify).*(one|single|small)"; then
+    RESEARCH_COMPLEXITY=1
+  fi
+fi
+
+# Defensive: Restore USE_HIERARCHICAL_RESEARCH if not loaded from state
+if [ -z "${USE_HIERARCHICAL_RESEARCH:-}" ]; then
+  USE_HIERARCHICAL_RESEARCH=$([ $RESEARCH_COMPLEXITY -ge 4 ] && echo "true" || echo "false")
+fi
+
+# Reconstruct REPORT_PATHS array from state
+reconstruct_report_paths_array
+
 emit_progress "1" "Research phase completion - verifying results"
 
 # Handle hierarchical vs flat coordination differently
@@ -491,6 +518,32 @@ if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
 
 else
   echo "Flat research coordination mode"
+
+  # Dynamic Report Path Discovery:
+  # Research agents create descriptive filenames (e.g., 001_auth_patterns.md)
+  # but workflow-initialization.sh pre-calculates generic names (001_topic1.md).
+  # Discover actual created files and update REPORT_PATHS array.
+
+  REPORTS_DIR="${TOPIC_PATH}/reports"
+  if [ -d "$REPORTS_DIR" ]; then
+    # Find all report files matching pattern NNN_*.md (sorted by number)
+    DISCOVERED_REPORTS=()
+    for i in $(seq 1 $RESEARCH_COMPLEXITY); do
+      # Find file matching 00N_*.md pattern
+      PATTERN=$(printf '%03d' $i)
+      FOUND_FILE=$(find "$REPORTS_DIR" -maxdepth 1 -name "${PATTERN}_*.md" -type f | head -1)
+
+      if [ -n "$FOUND_FILE" ]; then
+        DISCOVERED_REPORTS+=("$FOUND_FILE")
+      else
+        # Keep original generic path if no file discovered
+        DISCOVERED_REPORTS+=("${REPORT_PATHS[$i-1]}")
+      fi
+    done
+
+    # Update REPORT_PATHS with discovered paths
+    REPORT_PATHS=("${DISCOVERED_REPORTS[@]}")
+  fi
 
   # ===== MANDATORY VERIFICATION CHECKPOINT: Flat Research =====
   echo ""
@@ -673,10 +726,49 @@ for report in "${REPORT_PATHS[@]}"; do
   REPORT_ARGS="$REPORT_ARGS \"$report\""
 done
 
-echo "Creating implementation plan with ${#REPORT_PATHS[@]} research reports..."
+# Determine planning vs revision based on workflow scope
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  echo "Revising existing plan with ${#REPORT_PATHS[@]} research reports..."
+  echo "Existing plan: $EXISTING_PLAN_PATH"
+else
+  echo "Creating implementation plan with ${#REPORT_PATHS[@]} research reports..."
+fi
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
+**EXECUTE NOW**: USE the Task tool to invoke the appropriate agent based on workflow scope.
+
+<!-- Branch based on WORKFLOW_SCOPE: research-and-revise vs other workflows -->
+
+**IF WORKFLOW_SCOPE = research-and-revise**:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Revise existing plan based on research findings"
+  timeout: 180000
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/revision-specialist.md
+
+    **Workflow-Specific Context**:
+    - Existing Plan Path: $EXISTING_PLAN_PATH (absolute)
+    - Research Reports: ${REPORT_PATHS[@]}
+    - Revision Scope: $WORKFLOW_DESCRIPTION
+    - Project Standards: /home/benjamin/.config/CLAUDE.md
+    - Backup Required: true
+
+    **Key Requirements**:
+    1. Create backup FIRST before any modifications
+    2. Analyze research findings in provided reports
+    3. Apply revisions to existing plan preserving completed phases
+    4. Update revision history section with changes
+    5. Return completion signal with plan path
+
+    Execute revision following all guidelines in behavioral file.
+    Return: REVISION_COMPLETED: $EXISTING_PLAN_PATH
+  "
+}
+
+**ELSE (for research-and-plan, full-implementation, etc.)**:
 
 Task {
   subagent_type: "general-purpose"
@@ -734,36 +826,55 @@ else
   exit 1
 fi
 
-# Validate PLAN_PATH was restored from workflow state
-if [ -z "${PLAN_PATH:-}" ]; then
-  echo "ERROR: PLAN_PATH not restored from workflow state"
-  echo "This indicates a bug in state persistence or initialization"
-  echo "Expected PLAN_PATH to be set by initialize_workflow_paths() in bash block 1"
-  handle_state_error "PLAN_PATH missing from workflow state" 1
+# Determine which path to verify based on workflow scope
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  # For revisions, verify EXISTING_PLAN_PATH
+  VERIFY_PATH="$EXISTING_PLAN_PATH"
+  VERIFY_TYPE="Revised plan"
+
+  # Validate EXISTING_PLAN_PATH was restored from workflow state
+  if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
+    echo "ERROR: EXISTING_PLAN_PATH not restored from workflow state"
+    echo "This indicates a bug in state persistence or plan discovery"
+    handle_state_error "EXISTING_PLAN_PATH missing from workflow state" 1
+  fi
+
+  echo "DEBUG: EXISTING_PLAN_PATH from state: $EXISTING_PLAN_PATH"
+else
+  # For new plans, verify PLAN_PATH
+  VERIFY_PATH="$PLAN_PATH"
+  VERIFY_TYPE="Implementation plan"
+
+  # Validate PLAN_PATH was restored from workflow state
+  if [ -z "${PLAN_PATH:-}" ]; then
+    echo "ERROR: PLAN_PATH not restored from workflow state"
+    echo "This indicates a bug in state persistence or initialization"
+    echo "Expected PLAN_PATH to be set by initialize_workflow_paths() in bash block 1"
+    handle_state_error "PLAN_PATH missing from workflow state" 1
+  fi
+
+  # Verify PLAN_PATH contains topic-based naming (sanity check for descriptive names)
+  if [[ "$PLAN_PATH" == *"/001_implementation.md" ]]; then
+    echo "WARNING: PLAN_PATH uses generic name '001_implementation.md'"
+    echo "  PLAN_PATH: $PLAN_PATH"
+    echo "This indicates a regression in plan naming. Expected descriptive name."
+    echo "Check workflow-initialization.sh sanitize_topic_name() function."
+  fi
+
+  echo "DEBUG: PLAN_PATH from state: $PLAN_PATH"
 fi
 
-# Verify PLAN_PATH contains topic-based naming (sanity check for descriptive names)
-if [[ "$PLAN_PATH" == *"/001_implementation.md" ]]; then
-  echo "WARNING: PLAN_PATH uses generic name '001_implementation.md'"
-  echo "  PLAN_PATH: $PLAN_PATH"
-  echo "This indicates a regression in plan naming. Expected descriptive name."
-  echo "Check workflow-initialization.sh sanitize_topic_name() function."
-fi
-
-emit_progress "2" "Plan creation invoked - awaiting completion"
-
-# PLAN_PATH should be loaded from workflow state (set by initialize_workflow_paths in bash block 1)
-echo "DEBUG: PLAN_PATH from state: $PLAN_PATH"
+emit_progress "2" "Planning invoked - awaiting completion"
 
 # ===== MANDATORY VERIFICATION CHECKPOINT: Planning Phase =====
 echo ""
 echo "MANDATORY VERIFICATION: Planning Phase Artifacts"
-echo "Checking implementation plan..."
+echo "Checking ${VERIFY_TYPE,,}..."
 echo ""
 
-echo -n "  Implementation plan: "
-if verify_file_created "$PLAN_PATH" "Implementation plan" "Planning"; then
-  PLAN_SIZE=$(stat -f%z "$PLAN_PATH" 2>/dev/null || stat -c%s "$PLAN_PATH" 2>/dev/null || echo "unknown")
+echo -n "  $VERIFY_TYPE: "
+if verify_file_created "$VERIFY_PATH" "$VERIFY_TYPE" "Planning"; then
+  PLAN_SIZE=$(stat -f%z "$VERIFY_PATH" 2>/dev/null || stat -c%s "$VERIFY_PATH" 2>/dev/null || echo "unknown")
   echo " verified ($PLAN_SIZE bytes)"
   VERIFICATION_FAILED=false
 else
@@ -774,12 +885,14 @@ fi
 # Fail-fast on verification failure
 if [ "$VERIFICATION_FAILED" = "true" ]; then
   echo ""
-  echo "❌ CRITICAL: Plan file verification failed"
-  echo "   Expected path: $PLAN_PATH"
+  echo "❌ CRITICAL: $VERIFY_TYPE verification failed"
+  echo "   Expected path: $VERIFY_PATH"
   echo ""
   echo "Path analysis:"
   echo "   Topic directory: $TOPIC_PATH"
-  echo "   Expected plan should have descriptive name (not '001_implementation.md')"
+  if [ "$WORKFLOW_SCOPE" != "research-and-revise" ]; then
+    echo "   Expected plan should have descriptive name (not '001_implementation.md')"
+  fi
   echo ""
   # List actual plans created to help diagnose mismatch
   if [ -d "${TOPIC_PATH}/plans" ]; then
@@ -790,20 +903,31 @@ if [ "$VERIFICATION_FAILED" = "true" ]; then
   fi
   echo ""
   echo "TROUBLESHOOTING:"
-  echo "1. Review /plan command output above for error messages"
-  echo "2. Check plan agent behavioral file if used"
-  echo "3. Verify file path calculation logic in workflow-initialization.sh"
-  echo "4. Check if agent created file at different path than coordinate expects"
-  echo "5. Ensure research reports contain sufficient information"
+  if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+    echo "1. Review revision-specialist agent output above for error messages"
+    echo "2. Check backup creation succeeded before revision"
+    echo "3. Verify EXISTING_PLAN_PATH was correctly discovered"
+    echo "4. Ensure research reports contain sufficient information for revision"
+  else
+    echo "1. Review plan-architect agent output above for error messages"
+    echo "2. Check plan agent behavioral file if used"
+    echo "3. Verify file path calculation logic in workflow-initialization.sh"
+    echo "4. Check if agent created file at different path than coordinate expects"
+    echo "5. Ensure research reports contain sufficient information"
+  fi
   echo "6. Re-run workflow after fixing issues"
   echo ""
-  handle_state_error "/plan command failed to create expected plan file" 1
+  handle_state_error "Planning phase failed to create/update expected plan file" 1
 fi
 
-echo "✓ Plan file verified successfully"
+echo "✓ $VERIFY_TYPE verified successfully"
 
-# Save plan path to workflow state
-append_workflow_state "PLAN_PATH" "$PLAN_PATH"
+# Save plan path to workflow state (use appropriate path based on workflow scope)
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  append_workflow_state "PLAN_PATH" "$EXISTING_PLAN_PATH"
+else
+  append_workflow_state "PLAN_PATH" "$PLAN_PATH"
+fi
 
 # ===== CHECKPOINT REQUIREMENT: Planning Phase Complete =====
 echo ""

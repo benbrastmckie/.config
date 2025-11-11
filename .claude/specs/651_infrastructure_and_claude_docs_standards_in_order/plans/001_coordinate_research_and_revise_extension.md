@@ -459,9 +459,11 @@ After completing tasks 11-15:
 **Phase 3 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(651): complete Phase 3 - Revision-Specialist Agent Creation`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] Git commit created: `feat(651): complete Phase 3 - Revision-Specialist Agent Creation`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
+
+[COMPLETED]
 
 ### Phase 4: /coordinate Planning Phase Handler Modification
 dependencies: [1, 2, 3]
@@ -471,16 +473,16 @@ dependencies: [1, 2, 3]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read current /coordinate planning phase handler (file: /home/benjamin/.config/.claude/commands/coordinate.md, lines 687-760)
-- [ ] Add workflow scope detection conditional (if WORKFLOW_SCOPE = research-and-revise)
-- [ ] Implement revision-specialist invocation branch using Task tool
-- [ ] Add behavioral file reference: /home/benjamin/.config/.claude/agents/revision-specialist.md
-- [ ] Pass workflow-specific context (EXISTING_PLAN_PATH, REPORT_PATHS, WORKFLOW_DESCRIPTION, CLAUDE.md)
-- [ ] Add completion signal detection (REVISION_COMPLETED: <path>)
-- [ ] Add mandatory verification checkpoint (verify plan file exists and updated)
-- [ ] Preserve existing plan-architect branch for research-and-plan workflows
-- [ ] Add inline comments explaining branching logic
-- [ ] Update transition logic to handle both branches (transition to STATE_COMPLETE in both cases)
+- [x] Read current /coordinate planning phase handler (file: /home/benjamin/.config/.claude/commands/coordinate.md, lines 687-760)
+- [x] Add workflow scope detection conditional (if WORKFLOW_SCOPE = research-and-revise)
+- [x] Implement revision-specialist invocation branch using Task tool
+- [x] Add behavioral file reference: /home/benjamin/.config/.claude/agents/revision-specialist.md
+- [x] Pass workflow-specific context (EXISTING_PLAN_PATH, REPORT_PATHS, WORKFLOW_DESCRIPTION, CLAUDE.md)
+- [x] Add completion signal detection (REVISION_COMPLETED: <path>)
+- [x] Add mandatory verification checkpoint (verify plan file exists and updated)
+- [x] Preserve existing plan-architect branch for research-and-plan workflows
+- [x] Add inline comments explaining branching logic
+- [x] Update transition logic to handle both branches (transition to STATE_COMPLETE in both cases)
 
 **Testing**:
 ```bash
@@ -500,13 +502,13 @@ dependencies: [1, 2, 3]
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Phase 4 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
 - [ ] Git commit created: `feat(651): complete Phase 4 - /coordinate Planning Phase Handler Modification`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
