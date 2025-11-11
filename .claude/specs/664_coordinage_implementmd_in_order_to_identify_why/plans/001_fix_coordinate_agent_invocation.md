@@ -44,7 +44,7 @@ The /coordinate command ALREADY correctly uses Task tool with implementer-coordi
 ## Success Criteria
 - [x] Workflow scope detection correctly identifies "implement <plan-path>" as full-implementation
 - [x] All scope detection test cases pass (research-only, research-and-plan, full-implementation, research-and-revise, debug-only) - 20/20 tests passing
-- [ ] Documentation clarifies that coordinage_*.md files are transcripts, not implementations
+- [x] Documentation clarifies that coordinage_*.md files are transcripts, not implementations
 - [ ] No SlashCommand fallback logic exists in coordinate.md
 - [ ] Verification tests confirm coordinate.md maintains Standard 11 compliance
 
@@ -155,7 +155,7 @@ bash .claude/tests/run_all_tests.sh
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 3: Update Documentation - Clarify Transcript vs Implementation
+### Phase 3: Update Documentation - Clarify Transcript vs Implementation [COMPLETED]
 dependencies: [2]
 
 **Objective**: Add documentation explaining that coordinage_*.md files are execution transcripts, not command implementations
@@ -163,16 +163,16 @@ dependencies: [2]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Read .claude/docs/guides/coordinate-command-guide.md
-- [ ] Add section "Transcript Files vs Command Implementation" explaining:
+- [x] Read .claude/docs/guides/coordinate-command-guide.md
+- [x] Add section "Transcript Files vs Command Implementation" explaining:
   - coordinage_*.md files are execution logs/transcripts
   - coordinate.md is the actual command implementation
   - Transcripts may show error conditions (like scope detection failures)
   - Transcripts should not be used as reference for correct patterns
-- [ ] Add note in "Common Issues" section about scope detection failures
-- [ ] Update troubleshooting guidance to check workflow-scope-detection.sh logs
-- [ ] Cross-reference Standard 11 compliance verification
-- [ ] Add examples of correct workflow invocations for each scope
+- [x] Add comprehensive troubleshooting guidance for scope detection failures with debug logging
+- [x] Updated workflow scope detection documentation with priority order (1-5)
+- [x] Cross-reference Standard 11 compliance verification with code examples
+- [x] Add examples of correct workflow invocations for all 5 scope types
 
 **Testing**:
 ```bash
