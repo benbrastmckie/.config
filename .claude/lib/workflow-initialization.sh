@@ -103,12 +103,12 @@ initialize_workflow_paths() {
 
   # Validate workflow scope (silent - only errors to stderr)
   case "$workflow_scope" in
-    research-only|research-and-plan|full-implementation|debug-only)
+    research-only|research-and-plan|research-and-revise|full-implementation|debug-only)
       # Valid scope - no output
       ;;
     *)
       echo "ERROR: Unknown workflow scope: $workflow_scope" >&2
-      echo "Valid scopes: research-only, research-and-plan, full-implementation, debug-only" >&2
+      echo "Valid scopes: research-only, research-and-plan, research-and-revise, full-implementation, debug-only" >&2
       return 1
       ;;
   esac

@@ -338,6 +338,37 @@ test_debug_only_workflow() {
   teardown
 }
 
+# Test 9a: Research-and-revise workflow validation (Issue #661 regression test)
+test_research_and_revise_workflow() {
+  local test_name="Research-and-revise workflow validation"
+
+  setup
+
+  # Create mock plan file for revision workflow
+  # Note: Topic name is calculated from description, so create directory matching calculated name
+  mkdir -p "${TEST_DIR}/.claude/specs/001_revise_test_topic_plan/plans"
+  echo "# Test Plan" > "${TEST_DIR}/.claude/specs/001_revise_test_topic_plan/plans/001_existing_plan.md"
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Call the function with revision workflow description
+    if initialize_workflow_paths "Revise test topic plan" "research-and-revise" >/dev/null 2>&1; then
+      # Verify EXISTING_PLAN_PATH is set (specific to revision workflows)
+      if [[ -n "${EXISTING_PLAN_PATH:-}" ]] && [[ -f "${EXISTING_PLAN_PATH}" ]]; then
+        pass "$test_name"
+      else
+        fail "$test_name" "EXISTING_PLAN_PATH not set or file doesn't exist: ${EXISTING_PLAN_PATH:-<empty>}"
+      fi
+    else
+      fail "$test_name" "initialize_workflow_paths returned non-zero for research-and-revise scope"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
 # Test 10: Report paths array reconstruction
 test_report_paths_reconstruction() {
   local test_name="Report paths array reconstruction"
@@ -443,6 +474,7 @@ test_lazy_directory_creation
 test_missing_workflow_description
 test_invalid_workflow_scope
 test_debug_only_workflow
+test_research_and_revise_workflow
 test_report_paths_reconstruction
 test_topic_name_sanitization
 test_tracking_variables
