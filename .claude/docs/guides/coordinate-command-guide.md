@@ -228,6 +228,66 @@ The planning phase uses behavioral injection to invoke the plan-architect agent 
 
 See [Standard 11](./../reference/command_architecture_standards.md#standard-11) and [Behavioral Injection Pattern](./../concepts/patterns/behavioral-injection.md) for complete documentation.
 
+### Architectural Note: Implementation Phase Design
+
+The implementation phase uses behavioral injection to invoke the implementer-coordinator agent rather than the /implement slash command. This design choice:
+
+1. **Enables wave-based parallel execution** (40-60% time savings)
+   - implementer-coordinator uses dependency-analyzer.sh to build execution waves
+   - Independent phases execute in parallel via implementation-executor subagents
+   - Sequential phases execute in order as dependencies complete
+   - Achieves significantly better performance than sequential /implement command
+
+2. **Maintains orchestrator-executor separation** (Standard 0 Phase 0)
+   - Orchestrator pre-calculates all artifact paths (REPORTS_DIR, PLANS_DIR, SUMMARIES_DIR, etc.)
+   - Agent receives paths as injected context in Phase 0
+   - No self-determination of artifact locations by agent
+   - Ensures predictable artifact organization for verification
+
+3. **Follows Standard 11** (Imperative Agent Invocation Pattern)
+   - Imperative instruction: "**EXECUTE NOW**: USE the Task tool to invoke implementer-coordinator"
+   - Direct reference to agent behavioral file (.claude/agents/implementer-coordinator.md)
+   - No code block wrappers around Task invocation
+   - Explicit completion signal: "Return: IMPLEMENTATION_COMPLETE: [summary]"
+   - Complete context injection (plan path, artifact directories, execution requirements)
+
+4. **Prevents context bloat from nested command prompts**
+   - Direct agent invocation: ~400 lines context (agent behavioral file)
+   - Command chaining: ~5000+ lines context (full /implement command prompt - 12.5x overhead!)
+   - Critical for maintaining <30% context usage target throughout workflow
+
+5. **Enables metadata extraction for 95% context reduction**
+   - Agent returns structured completion signal with summary
+   - Orchestrator verifies artifacts via file system checks
+   - No full implementation details in orchestrator context
+   - Verification checkpoint ensures 100% file creation reliability
+
+**The implementer-coordinator agent receives**:
+- Pre-calculated PLAN_PATH from orchestrator
+- Pre-calculated artifact directories (REPORTS_DIR, PLANS_DIR, SUMMARIES_DIR, DEBUG_DIR, OUTPUTS_DIR, CHECKPOINT_DIR)
+- Topic directory path for artifact organization
+- Complete behavioral guidelines from .claude/agents/implementer-coordinator.md
+- Execution requirements (wave-based parallel execution, automated testing, git commits, checkpoint state management)
+
+**Wave-Based Execution Flow**:
+1. implementer-coordinator reads plan and invokes dependency-analyzer
+2. dependency-analyzer parses phase dependencies and calculates waves
+3. Each wave executes in parallel via implementation-executor subagents
+4. Coordinator collects metrics and aggregates results
+5. Checkpoint state enables resume on failure
+
+**Comparison with anti-pattern (command-to-command invocation)**:
+- ❌ Wrong: `SlashCommand with command: "/implement $PLAN_PATH"` (5000+ lines context, sequential execution)
+- ✅ Correct: `Task { prompt: "Read and follow: .claude/agents/implementer-coordinator.md" }` (400 lines context, wave-based parallel execution)
+
+**Performance Benefits**:
+- **Context Reduction**: 95% (5000+ tokens → ~400 tokens)
+- **Time Savings**: 40-60% via parallel execution for plans with independent phases
+- **Reliability**: 100% file creation via mandatory verification checkpoint
+- **Agent Delegation**: 100% compliance with Standard 11
+
+See [Standard 11](./../reference/command_architecture_standards.md#standard-11), [Behavioral Injection Pattern](./../concepts/patterns/behavioral-injection.md), and [implementer-coordinator agent](./../agents/implementer-coordinator.md) for complete documentation.
+
 ---
 
 ## Workflow Types

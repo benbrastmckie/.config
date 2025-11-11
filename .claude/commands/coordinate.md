@@ -981,6 +981,36 @@ fi
 
 echo "✓ $VERIFY_TYPE verified successfully"
 
+# Additional verification for revision workflows
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  # Verify backup was created by revision-specialist agent
+  # Backup naming convention: original_name.md → original_name.md.backup-YYYYMMDD-HHMMSS
+  PLAN_DIR=$(dirname "$EXISTING_PLAN_PATH")
+  PLAN_BASENAME=$(basename "$EXISTING_PLAN_PATH")
+
+  # Find most recent backup file for this plan
+  BACKUP_PATH=$(find "$PLAN_DIR" -maxdepth 1 -name "${PLAN_BASENAME}.backup-*" -type f | sort -r | head -1)
+
+  if [ -n "$BACKUP_PATH" ] && [ -f "$BACKUP_PATH" ]; then
+    BACKUP_SIZE=$(stat -c%s "$BACKUP_PATH" 2>/dev/null || stat -f%z "$BACKUP_PATH" 2>/dev/null || echo "unknown")
+    echo "✓ Backup verified: $(basename "$BACKUP_PATH") ($BACKUP_SIZE bytes)"
+
+    # Save backup path to workflow state for potential rollback
+    append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
+
+    # Simple diff check to confirm changes were made (if files differ, revision succeeded)
+    if diff -q "$EXISTING_PLAN_PATH" "$BACKUP_PATH" > /dev/null 2>&1; then
+      echo "  Note: Plan unchanged (files identical), revision may have found no updates needed"
+    else
+      echo "  Plan modified: revision successfully applied changes"
+    fi
+  else
+    echo "⚠ WARNING: No backup file found for revised plan"
+    echo "  Expected backup pattern: ${PLAN_BASENAME}.backup-YYYYMMDD-HHMMSS"
+    echo "  This may indicate revision-specialist agent did not create backup"
+  fi
+fi
+
 # Save plan path to workflow state (use appropriate path based on workflow scope)
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
   append_workflow_state "PLAN_PATH" "$EXISTING_PLAN_PATH"
@@ -991,18 +1021,39 @@ fi
 # ===== CHECKPOINT REQUIREMENT: Planning Phase Complete =====
 echo ""
 echo "═══════════════════════════════════════════════════════"
-echo "CHECKPOINT: Planning Phase Complete"
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  echo "CHECKPOINT: Revision Phase Complete"
+else
+  echo "CHECKPOINT: Planning Phase Complete"
+fi
 echo "═══════════════════════════════════════════════════════"
-echo "Planning phase status before transitioning to next state:"
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  echo "Revision phase status before transitioning to next state:"
+else
+  echo "Planning phase status before transitioning to next state:"
+fi
 echo ""
 echo "  Artifacts Created:"
-echo "    - Implementation plan: ✓ Created"
-echo "    - Plan path: $PLAN_PATH"
-PLAN_SIZE=$(stat -f%z "$PLAN_PATH" 2>/dev/null || stat -c%s "$PLAN_PATH" 2>/dev/null || echo "unknown")
-echo "    - Plan size: $PLAN_SIZE bytes"
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
+  echo "    - Revised plan: ✓ Updated"
+  echo "    - Plan path: $PLAN_PATH"
+  PLAN_SIZE=$(stat -f%z "$PLAN_PATH" 2>/dev/null || stat -c%s "$PLAN_PATH" 2>/dev/null || echo "unknown")
+  echo "    - Plan size: $PLAN_SIZE bytes"
+  if [ -n "${BACKUP_PATH:-}" ]; then
+    echo "    - Backup created: ✓ Yes ($(basename "$BACKUP_PATH"))"
+  fi
+else
+  echo "    - Implementation plan: ✓ Created"
+  echo "    - Plan path: $PLAN_PATH"
+  PLAN_SIZE=$(stat -f%z "$PLAN_PATH" 2>/dev/null || stat -c%s "$PLAN_PATH" 2>/dev/null || echo "unknown")
+  echo "    - Plan size: $PLAN_SIZE bytes"
+fi
 echo ""
 echo "  Verification Status:"
 echo "    - Plan file verified: ✓ Yes"
+if [ "$WORKFLOW_SCOPE" = "research-and-revise" ] && [ -n "${BACKUP_PATH:-}" ]; then
+  echo "    - Backup verified: ✓ Yes"
+fi
 echo ""
 echo "  Research Integration:"
 REPORT_COUNT="${#REPORT_PATHS[@]}"
