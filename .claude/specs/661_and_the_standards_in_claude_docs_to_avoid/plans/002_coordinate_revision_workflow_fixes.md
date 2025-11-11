@@ -236,7 +236,7 @@ echo "Topic: $TOPIC_PATH"
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 4: Add Comprehensive Regression Tests
+### Phase 4: Add Comprehensive Regression Tests [COMPLETED]
 dependencies: [3]
 
 **Objective**: Ensure 100% test coverage for revision workflow path handling
@@ -244,17 +244,17 @@ dependencies: [3]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Add test cases to test_workflow_initialization.sh for extract_topic_from_plan_path()
-- [ ] Test 1: Simple revision with full plan path (e.g., "Revise /path/to/plan.md")
-- [ ] Test 2: Complex revision with "the plan" syntax (e.g., "Revise the plan /path/to/plan.md")
-- [ ] Test 3: User's exact input from issue #661 (from report 002)
-- [ ] Test 4: Revision without plan path (should fail gracefully with clear error)
-- [ ] Test 5: Revision with non-existent plan path (should fail with diagnostic info)
-- [ ] Test 6: Revision with malformed plan path (should fail with pattern explanation)
-- [ ] Test 7: Verify EXISTING_PLAN_PATH correctly set after extraction
-- [ ] Test 8: Verify topic_path uses extracted directory (not creates new one)
-- [ ] Test 9: Verify error messages contain actionable diagnostic information
-- [ ] Add test comments explaining expected behavior for each case
+- [x] Add test cases to test_workflow_initialization.sh for extract_topic_from_plan_path()
+- [x] Test 1: Simple revision with full plan path (test_revision_full_plan_path)
+- [x] Test 2: Complex revision with "the plan" syntax (test_revision_the_plan_syntax)
+- [x] Test 3: Extract function with valid path (test_extract_topic_valid_path)
+- [x] Test 4: Revision without plan path (test_revision_without_plan_path - fails gracefully)
+- [x] Test 5: Revision with non-existent plan path (test_revision_nonexistent_plan - diagnostic info)
+- [x] Test 6: Revision with malformed plan path (test_extract_topic_malformed_path - pattern explanation)
+- [x] Test 7: Verify EXISTING_PLAN_PATH correctly set after extraction (test_research_and_revise_workflow)
+- [x] Test 8: Verify topic_path uses extracted directory (test_revision_full_plan_path, test_revision_the_plan_syntax)
+- [x] Test 9: Verify error messages contain actionable diagnostic information (test_revision_error_messages)
+- [x] Add test comments explaining expected behavior for each case
 
 **Testing**:
 ```bash
