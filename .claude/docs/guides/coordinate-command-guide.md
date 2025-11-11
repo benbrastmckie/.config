@@ -362,6 +362,75 @@ Phase 6: Documentation (conditional - only if implementation occurred)
 - 1 implementation plan (Level 0)
 - Topic directory structure
 
+### 2a. Research-and-Revise Workflow
+
+**Phases**: 0-2 only
+
+**Keywords**: "revise the plan [path]", "update plan [path] to accommodate"
+
+**Use Case**: Revision of existing plans based on new research findings
+
+**Path Handling**: Unlike creation workflows (which generate NEW topic directories), revision workflows use EXISTING topic directories extracted from the provided plan path.
+
+**Artifacts**:
+- Research reports in existing `specs/{NNN_topic}/reports/`
+- Updated plan in existing `specs/{NNN_topic}/plans/` (backup created before modification)
+- No summary (no implementation occurred)
+
+**Examples**:
+```bash
+# Simple syntax
+/coordinate "Revise /home/user/.claude/specs/657_topic/plans/001_plan.md to accommodate new API"
+
+# Complex syntax with "the plan"
+/coordinate "Revise the plan /home/user/.claude/specs/657_topic/plans/001_plan.md to include caching"
+```
+
+**Path Extraction**:
+The workflow initialization extracts the topic directory from the plan path:
+- Given: `/home/user/.claude/specs/657_topic/plans/001_plan.md`
+- Extracted topic: `657_topic`
+- Reused directory: `/home/user/.claude/specs/657_topic/`
+
+**Validation Requirements**:
+1. Plan path must be provided in workflow description
+2. Plan file must exist at specified path
+3. Topic directory must exist (format: `specs/NNN_topic/`)
+4. Topic must have `plans/` subdirectory
+
+**Error Handling**:
+If validation fails, the workflow fails fast with diagnostic information:
+```
+ERROR: research-and-revise workflow requires existing plan path
+  Workflow description: Revise some plan
+  Expected: Path format like 'Revise the plan /path/to/specs/NNN_topic/plans/NNN_plan.md...'
+
+  Diagnostic:
+    - Check workflow description contains full plan path
+    - Verify scope detection exported EXISTING_PLAN_PATH
+```
+
+**Output**:
+- 2-4 research reports (in existing topic directory)
+- 1 updated plan (original backed up with timestamp)
+- Existing topic directory reused (NOT created new)
+
+**Difference from Creation Workflows**:
+| Aspect | Creation Workflows | Revision Workflows |
+|--------|-------------------|-------------------|
+| Topic Directory | Generate NEW (e.g., `662_new_topic/`) | Use EXISTING (extracted from path) |
+| Plan Discovery | N/A (creating new plan) | Extract from workflow description |
+| Directory Structure | Create all subdirectories | Must already exist |
+| Validation | None (new topic) | Plan exists, directory exists, structure valid |
+| Path Format | Generated from description | Must match `/specs/NNN_topic/plans/NNN_plan.md` |
+
+**Implementation Details**:
+- Extraction function: `extract_topic_from_plan_path()` in `workflow-initialization.sh`
+- Scope detection: `detect_workflow_scope()` exports `EXISTING_PLAN_PATH`
+- Agent invocation: revision-specialist via Task tool (Standard 11 compliance)
+
+See [Issue #661](../../../specs/661_and_the_standards_in_claude_docs_to_avoid/) for complete implementation details and test cases.
+
 ### 3. Full-Implementation Workflow
 
 **Phases**: 0-4, 6 (Phase 5 conditional on test failures)
@@ -951,6 +1020,138 @@ cat .claude/lib/workflow-scope-detection.sh
 # Test scope detection manually
 source .claude/lib/workflow-scope-detection.sh
 detect_workflow_scope "your description here"
+```
+
+---
+
+#### Issue 2a: Revision Workflow Creates New Topic Instead of Using Existing
+
+**Symptoms**:
+- Revision workflow creates NEW topic directory (e.g., `662_plans_001_...`)
+- Error: "research-and-revise workflow requires /path/to/662_plans_001_.../plans directory but it does not exist"
+- Expected EXISTING topic directory not used (e.g., should use `657_topic`)
+
+**Root Cause**:
+Path initialization didn't extract topic from provided plan path. This was fixed in Issue #661.
+
+**Solution**:
+Ensure you're running latest version with Issue #661 fix:
+```bash
+# Check if extract_topic_from_plan_path function exists
+grep -n "extract_topic_from_plan_path" .claude/lib/workflow-initialization.sh
+
+# Should show function definition around line 78
+# If not found, you need to update to latest version
+```
+
+**Workaround (if fix not available)**:
+Navigate to the existing topic directory before running coordinate:
+```bash
+cd .claude/specs/657_existing_topic/
+/coordinate "Revise the plan ./plans/001_plan.md to accommodate changes"
+```
+
+**Correct Workflow Description Format**:
+```bash
+# Include FULL absolute path to plan file
+/coordinate "Revise the plan /home/user/.claude/specs/657_topic/plans/001_plan.md to accommodate new requirements"
+
+# NOT just: "Revise 001_plan.md"
+# NOT just: "Update the plan to accommodate..."
+```
+
+---
+
+#### Issue 2b: Revision Workflow Fails with "EXISTING_PLAN_PATH not set"
+
+**Symptoms**:
+- Error: "ERROR: research-and-revise workflow requires existing plan path"
+- Error: "Workflow description: [your description]"
+- Error: "Check workflow description contains full plan path"
+
+**Root Cause**:
+Workflow description doesn't contain a recognizable plan path for scope detection to extract.
+
+**Solution**:
+Include the complete plan path in your workflow description:
+```bash
+# ✓ CORRECT - Full absolute path
+/coordinate "Revise the plan /home/user/.claude/specs/657_topic/plans/001_plan.md to add caching"
+
+# ✗ WRONG - No path
+/coordinate "Revise the implementation plan to add caching"
+
+# ✗ WRONG - Relative path without context
+/coordinate "Revise plans/001_plan.md to add caching"
+```
+
+**Verification**:
+Test if scope detection can extract the path:
+```bash
+source .claude/lib/workflow-scope-detection.sh
+WORKFLOW_DESCRIPTION="Revise the plan /path/to/specs/657_topic/plans/001_plan.md"
+detect_workflow_scope "$WORKFLOW_DESCRIPTION"
+# Should output: research-and-revise
+echo $EXISTING_PLAN_PATH
+# Should output: /path/to/specs/657_topic/plans/001_plan.md
+```
+
+---
+
+#### Issue 2c: Revision Workflow Fails with "Plan file does not exist"
+
+**Symptoms**:
+- Error: "ERROR: Specified plan file does not exist"
+- Error: "Plan path: /path/to/plan.md"
+- Error: "Verify file path is correct: test -f ..."
+
+**Root Cause**:
+The path provided in workflow description points to a non-existent file.
+
+**Solution**:
+```bash
+# Verify the plan file exists
+ls -la /home/user/.claude/specs/657_topic/plans/001_plan.md
+
+# Check for typos in path
+# Common issues:
+#   - Wrong topic number (657 vs 658)
+#   - Wrong plan number (001 vs 002)
+#   - .md extension missing or wrong
+
+# List available plans
+ls -la .claude/specs/*/plans/*.md
+
+# Copy exact path to avoid typos
+realpath .claude/specs/657_topic/plans/001_plan.md
+# Then paste into workflow description
+```
+
+---
+
+#### Issue 2d: Revision Workflow Fails with "Topic directory does not exist"
+
+**Symptoms**:
+- Error: "ERROR: Extracted topic directory does not exist"
+- Error: "Topic directory: /path/to/specs/NNN_topic"
+- Error: "Extracted from: /path/to/plan.md"
+
+**Root Cause**:
+Plan path format is malformed or topic directory was deleted.
+
+**Solution**:
+```bash
+# Verify topic directory exists
+ls -la .claude/specs/657_topic/
+
+# Check path format matches expected structure
+# Expected: /path/to/specs/NNN_topic/plans/NNN_plan.md
+#                         └────────┘ └───┘
+#                         topic dir   plans subdir
+
+# If topic directory doesn't exist, this may not be a revision workflow
+# Create a new plan instead:
+/coordinate "research topic and create new plan"
 ```
 
 ---
