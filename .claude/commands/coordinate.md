@@ -147,9 +147,19 @@ append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
 append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
 append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
 
+# VERIFICATION CHECKPOINT: Verify WORKFLOW_SCOPE persisted correctly
+verify_state_variable "WORKFLOW_SCOPE" || {
+  handle_state_error "CRITICAL: WORKFLOW_SCOPE not persisted to state after sm_init" 1
+}
+
 # ADDED: Save EXISTING_PLAN_PATH to state for bash block persistence
 if [ -n "${EXISTING_PLAN_PATH:-}" ]; then
   append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
+
+  # VERIFICATION CHECKPOINT: Verify EXISTING_PLAN_PATH persisted correctly
+  verify_state_variable "EXISTING_PLAN_PATH" || {
+    handle_state_error "CRITICAL: EXISTING_PLAN_PATH not persisted to state for research-and-revise workflow" 1
+  }
 fi
 
 # Source required libraries based on scope
@@ -218,6 +228,11 @@ for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
 done
 
 echo "Saved $REPORT_PATHS_COUNT report paths to workflow state"
+
+# VERIFICATION CHECKPOINT: Verify REPORT_PATHS_COUNT persisted correctly
+verify_state_variable "REPORT_PATHS_COUNT" || {
+  handle_state_error "CRITICAL: REPORT_PATHS_COUNT not persisted to state after array export" 1
+}
 
 # Calculate artifact paths for implementer-coordinator agent (Phase 0 optimization)
 # These paths will be injected into the agent during implementation phase
