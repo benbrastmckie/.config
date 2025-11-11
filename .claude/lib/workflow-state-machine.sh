@@ -68,6 +68,7 @@ declare -gA STATE_TRANSITIONS=(
 CURRENT_STATE="${CURRENT_STATE:-${STATE_INITIALIZE}}"
 
 # Array of completed states (state history)
+# Spec 672 Phase 2: Loaded from state at end of file after function definitions
 declare -ga COMPLETED_STATES=()
 
 # Terminal state for this workflow (determined by scope)
@@ -82,6 +83,133 @@ COMMAND_NAME="${COMMAND_NAME:-}"
 # ==============================================================================
 # Core State Machine Functions
 # ==============================================================================
+
+# ==============================================================================
+# COMPLETED_STATES Array Persistence (Spec 672, Phase 2)
+# ==============================================================================
+
+# save_completed_states_to_state: Serialize COMPLETED_STATES array to workflow state
+#
+# Saves the COMPLETED_STATES array to the GitHub Actions-style state file
+# using JSON serialization for reliable cross-bash-block persistence.
+#
+# Purpose:
+#   State machine completed states must persist across bash block boundaries
+#   in orchestration commands (coordinate.md, orchestrate.md, etc.). This function
+#   serializes the array to JSON and saves via state-persistence.sh.
+#
+# Dependencies:
+#   - jq (JSON processing)
+#   - state-persistence.sh: append_workflow_state()
+#
+# Effects:
+#   Writes to workflow state file:
+#   - COMPLETED_STATES_JSON: JSON array of completed state names
+#   - COMPLETED_STATES_COUNT: Integer count for validation
+#
+# Returns:
+#   0 on success, 1 on error
+#
+# Example:
+#   COMPLETED_STATES=("initialize" "research" "plan")
+#   save_completed_states_to_state
+#   # State file now contains:
+#   #   export COMPLETED_STATES_JSON='["initialize","research","plan"]'
+#   #   export COMPLETED_STATES_COUNT=3
+#
+# Reference: Spec 672 Phase 2 (state machine array persistence)
+#
+save_completed_states_to_state() {
+  # Check if jq is available
+  if ! command -v jq &> /dev/null; then
+    echo "WARNING: jq not available, skipping COMPLETED_STATES persistence" >&2
+    return 1
+  fi
+
+  # Check if state persistence function is available
+  if ! command -v append_workflow_state &> /dev/null; then
+    echo "WARNING: append_workflow_state not available, skipping COMPLETED_STATES persistence" >&2
+    return 1
+  fi
+
+  # Serialize array to JSON (handle empty array explicitly)
+  local completed_states_json
+  if [ "${#COMPLETED_STATES[@]}" -eq 0 ]; then
+    completed_states_json="[]"
+  else
+    completed_states_json=$(printf '%s\n' "${COMPLETED_STATES[@]}" | jq -R . | jq -s .)
+  fi
+
+  # Save to workflow state
+  append_workflow_state "COMPLETED_STATES_JSON" "$completed_states_json"
+  append_workflow_state "COMPLETED_STATES_COUNT" "${#COMPLETED_STATES[@]}"
+
+  return 0
+}
+
+# load_completed_states_from_state: Reconstruct COMPLETED_STATES array from workflow state
+#
+# Loads the COMPLETED_STATES array from the GitHub Actions-style state file
+# using the generic defensive reconstruction pattern (Spec 672 Phase 1).
+#
+# Purpose:
+#   Restore completed states history after bash block boundaries. Used in
+#   orchestration commands when re-sourcing state machine library.
+#
+# Dependencies:
+#   - jq (JSON processing)
+#   - workflow-initialization.sh: reconstruct_array_from_indexed_vars() (optional fallback)
+#
+# Effects:
+#   Sets global COMPLETED_STATES array from state file
+#   Prints warnings to stderr if state missing or invalid
+#
+# Returns:
+#   0 always (defensive graceful degradation)
+#
+# Example:
+#   # State file contains:
+#   #   export COMPLETED_STATES_JSON='["initialize","research"]'
+#   #   export COMPLETED_STATES_COUNT=2
+#   load_completed_states_from_state
+#   # Result: COMPLETED_STATES=("initialize" "research")
+#
+# Reference: Spec 672 Phase 2 (state machine array persistence)
+#
+load_completed_states_from_state() {
+  # Defensive: Initialize empty array first
+  COMPLETED_STATES=()
+
+  # Check if COMPLETED_STATES_JSON exists in state
+  if [ -z "${COMPLETED_STATES_JSON:-}" ]; then
+    # Not an error - initial workflow won't have completed states yet
+    return 0
+  fi
+
+  # Check if jq is available
+  if ! command -v jq &> /dev/null; then
+    echo "WARNING: jq not available, cannot load COMPLETED_STATES" >&2
+    return 0  # Graceful degradation
+  fi
+
+  # Validate JSON before parsing
+  if ! echo "$COMPLETED_STATES_JSON" | jq empty 2>/dev/null; then
+    echo "WARNING: COMPLETED_STATES_JSON is invalid, defaulting to empty array" >&2
+    return 0
+  fi
+
+  # Reconstruct array from JSON
+  mapfile -t COMPLETED_STATES < <(echo "$COMPLETED_STATES_JSON" | jq -r '.[]' 2>/dev/null || true)
+
+  # Validate against count (if available)
+  if [ -n "${COMPLETED_STATES_COUNT:-}" ]; then
+    if [ "${#COMPLETED_STATES[@]}" -ne "$COMPLETED_STATES_COUNT" ]; then
+      echo "WARNING: COMPLETED_STATES count mismatch (expected $COMPLETED_STATES_COUNT, got ${#COMPLETED_STATES[@]})" >&2
+    fi
+  fi
+
+  return 0
+}
 
 # sm_init: Initialize new state machine from workflow description
 # Usage: sm_init <workflow-description> <command-name>
@@ -269,6 +397,12 @@ sm_transition() {
 
   # Phase 4: Save post-transition checkpoint
   echo "DEBUG: Post-transition checkpoint (state=$CURRENT_STATE)" >&2
+
+  # Spec 672 Phase 2: Persist COMPLETED_STATES array to workflow state
+  # Save after state update so subsequent bash blocks can restore state history
+  if command -v save_completed_states_to_state &> /dev/null; then
+    save_completed_states_to_state || true  # Non-critical, continue on failure
+  fi
 
   echo "State transition: $CURRENT_STATE (completed: ${#COMPLETED_STATES[@]} states)" >&2
   return 0
@@ -517,3 +651,17 @@ export -f sm_is_terminal
 export -f sm_get_scope
 export -f sm_get_completed_count
 export -f sm_print_status
+
+# Spec 672 Phase 2: Export COMPLETED_STATES persistence functions
+export -f save_completed_states_to_state
+export -f load_completed_states_from_state
+
+# ==============================================================================
+# Library Initialization (Spec 672 Phase 2)
+# ==============================================================================
+
+# Conditionally load COMPLETED_STATES from state on library re-sourcing
+# This preserves state history across bash subprocess boundaries
+if [ "${#COMPLETED_STATES[@]}" -eq 0 ] && [ -n "${COMPLETED_STATES_JSON:-}" ]; then
+  load_completed_states_from_state
+fi
