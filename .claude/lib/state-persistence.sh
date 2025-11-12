@@ -258,7 +258,12 @@ append_workflow_state() {
     return 1
   fi
 
-  echo "export ${key}=\"${value}\"" >> "$STATE_FILE"
+  # Escape special characters in value for safe shell export
+  # Replace backslashes first (to avoid double-escaping), then quotes
+  local escaped_value="${value//\\/\\\\}"  # \ -> \\
+  escaped_value="${escaped_value//\"/\\\"}"  # " -> \"
+
+  echo "export ${key}=\"${escaped_value}\"" >> "$STATE_FILE"
 }
 
 # Save JSON checkpoint (atomic write)
