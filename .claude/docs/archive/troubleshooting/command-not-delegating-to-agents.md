@@ -202,7 +202,7 @@ Agent output: REPORT_CREATED: /path/to/report.md
 **Solution**: [Phase 1 - Path Pre-Calculation](../guides/execution-enforcement-migration-guide.md#phase-1-add-path-pre-calculation-pattern-1)
 
 ### Issue: "Agent didn't create file at all"
-**Solution**: [Agent Authoring Guide - Enforcement Patterns](../guides/agent-authoring-guide.md)
+**Solution**: [Agent Authoring Guide - Enforcement Patterns](../guides/agent-development-guide.md)
 
 ### Issue: "Command skips verification steps"
 **Solution**: [Phase 2 - Verification Checkpoints](../guides/execution-enforcement-migration-guide.md#phase-2-add-verification-checkpoints-pattern-2)
@@ -354,6 +354,6 @@ Task {
 ## See Also
 
 - [Execution Enforcement Migration Guide](../guides/execution-enforcement-migration-guide.md) - Complete migration process
-- [Command Authoring Guide](../guides/command-authoring-guide.md) - Best practices
+- [Command Authoring Guide](../guides/command-development-guide.md) - Best practices
 - [Agent Delegation Issues](agent-delegation-issues.md) - Other delegation problems
 - [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Architecture overview

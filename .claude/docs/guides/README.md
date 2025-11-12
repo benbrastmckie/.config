@@ -199,6 +199,109 @@ Task-focused how-to guides for specific development activities. Use this section
 
 ---
 
+## Command Guides
+
+Comprehensive task-focused documentation for specific slash commands. Each command guide contains complete usage examples, architecture details, and troubleshooting information separated from the executable command file.
+
+**Pattern**: Each command (`.claude/commands/command-name.md`) has a corresponding guide (`.claude/docs/guides/command-name-command-guide.md`)
+
+**Templates**:
+- [Executable Command Template](_template-executable-command.md) - For creating lean command files
+- [Command Guide Template](_template-command-guide.md) - For creating comprehensive documentation
+
+**Why Separated?**: The executable/documentation separation pattern eliminates meta-confusion loops where Claude misinterprets extensive documentation as conversational instructions. See [Command Development Guide - Section 2.4](command-development-guide.md#24-executabledocumentation-separation-pattern).
+
+### Available Command Guides
+
+Currently, command guides are being created following the new separation pattern. Check this section for links to comprehensive guides as they become available.
+
+#### [/coordinate Command Guide](coordinate-command-guide.md)
+**Purpose**: Complete guide to the /coordinate multi-agent workflow orchestration command with wave-based parallel execution.
+
+**Use Cases**:
+- Understanding workflow scope types (research-only, research-and-plan, full-implementation, debug-only)
+- Learning wave-based parallel execution patterns (40-60% time savings)
+- Troubleshooting workflow failures and verification checkpoint issues
+- Optimizing context usage and performance
+- Understanding fail-fast error handling patterns
+
+**See Also**: [/coordinate executable](../../commands/coordinate.md), [Orchestration Best Practices](./orchestration-best-practices.md)
+
+#### [/orchestrate Command Guide](orchestrate-command-guide.md)
+**Purpose**: Complete guide to the /orchestrate multi-agent workflow orchestration command with 7-phase development lifecycle.
+
+**Use Cases**:
+- Complete feature development from research through documentation
+- Understanding 7-phase lifecycle (location → research → plan → implement → test → debug → document)
+- Wave-based parallel implementation (40-60% time savings)
+- Checkpoint recovery and workflow resumption
+- Dry-run mode for workflow preview
+- Pull request automation with --create-pr flag
+
+**See Also**: [/orchestrate executable](../../commands/orchestrate.md), [Orchestration Best Practices](./orchestration-best-practices.md)
+
+#### [/implement Command Guide](implement-command-guide.md)
+**Purpose**: Complete guide to the /implement command for executing implementation plans phase-by-phase with testing and commits.
+
+**Use Cases**:
+- Understanding adaptive planning and automatic replanning triggers
+- Learning checkpoint recovery and phase resumption patterns
+- Implementing complexity-based phase expansion
+- Troubleshooting test failures and scope drift detection
+- Understanding agent delegation for complex phases
+
+**See Also**: [/implement executable](../../commands/implement.md), [Adaptive Planning](../workflows/adaptive-planning-guide.md)
+
+#### [/plan Command Guide](plan-command-guide.md)
+**Purpose**: Complete guide to the /plan command for creating implementation plans with research delegation and complexity analysis.
+
+**Use Cases**:
+- Creating structured implementation plans following project standards
+- Understanding research delegation and agent-based analysis
+- Learning complexity estimation and phase organization
+- Troubleshooting plan creation and standards integration
+- Understanding dependency management for parallel execution
+
+**See Also**: [/plan executable](../../commands/plan.md), [Plan Wizard](../../commands/plan-wizard.md)
+
+#### [/debug Command Guide](debug-command-guide.md)
+**Purpose**: Complete guide to the /debug command for investigating issues and creating diagnostic reports without code changes.
+
+**Use Cases**:
+- Understanding parallel hypothesis testing with multiple agents
+- Learning root cause analysis and diagnostic report creation
+- Troubleshooting complex bugs with systematic investigation
+- Understanding agent delegation for investigation tasks
+- Creating actionable diagnostic reports
+
+**See Also**: [/debug executable](../../commands/debug.md), [Error Enhancement Guide](error-enhancement-guide.md)
+
+#### [/test Command Guide](test-command-guide.md)
+**Purpose**: Complete guide to the /test command for running project-specific tests based on CLAUDE.md testing protocols.
+
+**Use Cases**:
+- Understanding multi-framework test execution (Jest, pytest, cargo, go test, etc.)
+- Learning enhanced error analysis with actionable suggestions
+- Troubleshooting test failures and framework detection
+- Understanding coverage tracking and reporting
+- Integrating test protocols from CLAUDE.md
+
+**See Also**: [/test executable](../../commands/test.md), [Testing Protocols](../reference/claude-md-section-schema.md#testing-protocols)
+
+#### [/document Command Guide](document-command-guide.md)
+**Purpose**: Complete guide to the /document command for updating all relevant documentation based on recent code changes.
+
+**Use Cases**:
+- Understanding standards compliance and cross-reference validation
+- Learning timeless writing policy and documentation best practices
+- Troubleshooting broken links and compliance errors
+- Understanding agent delegation for documentation analysis
+- Maintaining README.md files and API documentation
+
+**See Also**: [/document executable](../../commands/document.md), [Documentation Standards](../reference/claude-md-section-schema.md#documentation-policy)
+
+---
+
 ## Quick Start
 
 ### Create Your First Command

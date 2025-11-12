@@ -1,0 +1,142 @@
+# Security-Focused .gitignore Template for Neovim Configuration Forks
+#
+# This template helps prevent accidentally committing sensitive information
+# when forking and customizing this Neovim configuration.
+#
+# Usage:
+#   1. Copy this file to your repository root as .gitignore
+#   2. Review and customize based on your specific needs
+#   3. Commit .gitignore before making any other changes
+
+# =============================================================================
+# SECRETS AND CREDENTIALS
+# =============================================================================
+
+# SSH keys and certificates
+.ssh/
+*.key
+*.pem
+*.crt
+*.cer
+*.p12
+*.pfx
+
+# API tokens and credentials
+*_token
+*_secret
+*.token
+credentials.json
+secrets/
+.env
+.env.*
+
+# Authentication files
+auth.json
+oauth.json
+.netrc
+
+# =============================================================================
+# PERSONAL CONFIGURATION
+# =============================================================================
+
+# Personal configuration files that shouldn't be shared
+local_config.lua
+personal_settings.lua
+personal_*.lua
+my_*.lua
+
+# User-specific settings
+.user_settings.lua
+user_config/
+
+# =============================================================================
+# SYSTEM AND TEMPORARY FILES
+# =============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# Editor artifacts
+*.swp
+*.swo
+*.swn
+*~
+.*.sw[a-p]
+
+# Vim session files (if you want sessions to be local-only)
+# Uncomment if sessions shouldn't be shared
+# sessions/
+# *.vim
+
+# =============================================================================
+# NEOVIM SPECIFIC
+# =============================================================================
+
+# Lazy.nvim data (plugins managed by lazy.nvim)
+# Note: lazy-lock.json should be committed to ensure consistent plugin versions
+
+# Undo history (if enabled)
+.undodir/
+undodir/
+
+# Spell check personal dictionaries (may contain personal info)
+spell/*.add
+spell/*.add.spl
+
+# LSP and mason installations (regenerated automatically)
+# Note: Keep this commented if you want to commit mason installations
+# mason/
+# lsp/
+
+# Tree-sitter build artifacts
+parser/
+after/parser/
+
+# Neovim data directories (should be in ~/.local/share/nvim anyway)
+.nvim/
+.nvimdirs/
+
+# =============================================================================
+# DEVELOPMENT
+# =============================================================================
+
+# Logs
+*.log
+logs/
+.claude/data/logs/
+
+# Debug files
+debug/
+*.debug
+
+# Test coverage
+coverage/
+.coverage
+
+# Build artifacts
+build/
+dist/
+*.o
+*.so
+*.dylib
+
+# =============================================================================
+# CUSTOM ADDITIONS
+# =============================================================================
+
+# Add your custom patterns below this line
+

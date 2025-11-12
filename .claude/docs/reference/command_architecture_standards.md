@@ -416,6 +416,51 @@ PLAN_METADATA=$(extract_plan_metadata "$PLAN_PATH")
 
 **Cross-Reference**: See [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) for complete implementation details.
 
+#### Relationship to Fail-Fast Policy
+
+Standard 0's Verification and Fallback Pattern implements fail-fast error detection, NOT fail-fast violation. The critical distinction lies in whether fallbacks DETECT errors or HIDE errors.
+
+**How Verification Fallbacks Implement Fail-Fast**:
+
+1. **Error Detection (Fail-Fast)**: MANDATORY VERIFICATION exposes file creation failures immediately
+   - File expected but missing → error detected instantly
+   - Clear diagnostics: "CRITICAL: Report missing at $EXPECTED_PATH"
+   - No silent continuation when files don't exist
+   - Workflow halts with clear troubleshooting guidance
+
+2. **Agent Responsibility**: Agents must create their own artifacts
+   - Orchestrator verifies file existence (detection)
+   - Orchestrator does NOT create placeholder files (masking)
+   - File creation failures expose agent behavioral issues
+   - Clear error messages guide debugging and fixes
+
+3. **Fail-Fast on Verification Failure**: Missing files terminate workflow immediately
+   - Verification detects missing artifacts
+   - Clear diagnostic output with troubleshooting steps
+   - No placeholder or template file creation
+   - User must fix agent or workflow before re-running
+
+**Critical Distinction** (Spec 057):
+- **Bootstrap fallbacks**: HIDE configuration errors → PROHIBITED (fail-fast violation)
+- **Verification fallbacks**: DETECT tool failures → REQUIRED for observability
+- **Orchestrator placeholder creation**: HIDES agent failures → PROHIBITED (fail-fast violation)
+- **Optimization fallbacks**: Performance caches only → ACCEPTABLE (optimization only)
+
+Verification checkpoints detect errors immediately (fail-fast principle). Placeholder file creation by orchestrators hides errors (fail-fast violation). The distinction is critical:
+
+- **Allowed**: `verify_file_created()` → Detect missing file → Fail with diagnostic
+- **Prohibited**: `cat > $MISSING_FILE <<EOF` → Create placeholder → Silent degradation
+
+**Performance Evidence**:
+- File creation rate: Verification ensures 100% agent compliance or immediate failure
+- Bootstrap reliability: 100% (fail-fast exposes configuration errors immediately)
+- Zero silent failures with verification checkpoints
+- Clear error messages reduce debugging time
+
+**Best Practice**: Orchestrators coordinate and verify; agents create artifacts. This separation of concerns maintains fail-fast integrity while ensuring complete artifact creation.
+
+See [Fail-Fast Policy Analysis](../../specs/634_001_coordinate_improvementsmd_implements/reports/001_fail_fast_policy_analysis.md) for complete fallback taxonomy and case studies.
+
 ### Standard 0.5: Subagent Prompt Enforcement
 
 **Extension of Standard 0 for Agent Definition Files**
@@ -1390,10 +1435,257 @@ If behavioral content duplication is detected:
 3. Validate reduction (expect ~90% line reduction per invocation)
 4. Test command execution to verify agent receives guidelines
 
+**Relationship to Standard 14**:
+
+Standard 12 and Standard 14 (Executable/Documentation File Separation) are complementary but distinct:
+
+- **Standard 12**: Determines WHAT content (structural templates inline vs behavioral guidelines referenced from agent files)
+- **Standard 14**: Determines WHERE content goes (executable command vs guide file)
+- **Combined Decision Matrix**:
+  - Structural templates (inline per Standard 12) → Executable file (per Standard 14)
+  - Behavioral content (referenced per Standard 12) → Agent file
+  - Architecture explanations, usage examples, troubleshooting → Guide file (per Standard 14)
+
 **See Also**:
 - [Template vs Behavioral Distinction](./template-vs-behavioral-distinction.md) - Detailed guidance and decision criteria
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Pattern for referencing agent behavioral files
 - [Inline Template Duplication Troubleshooting](../troubleshooting/inline-template-duplication.md) - Detect and fix anti-pattern
+- [Standard 14: Executable/Documentation File Separation](#standard-14-executabledocumentation-file-separation) - Complementary pattern for command file organization
+
+---
+
+### Standard 13: Project Directory Detection
+
+**Pattern**: Commands MUST use `CLAUDE_PROJECT_DIR` for project-relative paths
+
+**Rationale**:
+- `${BASH_SOURCE[0]}` is unavailable in SlashCommand execution context
+- Git-based detection handles worktrees correctly
+- Consistent with library implementation patterns
+- Eliminates library sourcing failures that require AI-driven recovery
+
+**Implementation**:
+
+```bash
+# Detect project directory if not already set
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+```
+
+**Anti-Pattern**:
+
+```bash
+# ❌ INCORRECT - Fails in SlashCommand context
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/../lib"
+```
+
+**When `${BASH_SOURCE[0]}` IS Appropriate**:
+- Standalone test scripts (`.claude/tests/*.sh`)
+- Utility scripts executed directly (not via SlashCommand)
+- Library files that are sourced (not executed)
+
+**Context Awareness**:
+
+Commands and scripts have fundamentally different execution contexts:
+
+| Context | Path Detection | Reliability | Use Case |
+|---------|---------------|-------------|----------|
+| SlashCommand | `CLAUDE_PROJECT_DIR` (git/pwd) | 100% | All command files |
+| Standalone Script | `${BASH_SOURCE[0]}` | 100% | Test files, utilities |
+| Sourced Library | `${BASH_SOURCE[0]}` | 100% | Library files |
+
+**Key Insight**: Execution context determines appropriate pattern choice.
+
+**Error Diagnostics**:
+
+When library sourcing fails, provide enhanced diagnostics:
+
+```bash
+if [ -f "$LIB_DIR/library-sourcing.sh" ]; then
+  source "$LIB_DIR/library-sourcing.sh"
+else
+  echo "ERROR: Required library not found: library-sourcing.sh"
+  echo ""
+  echo "Expected location: $LIB_DIR/library-sourcing.sh"
+  echo ""
+  echo "Diagnostic information:"
+  echo "  CLAUDE_PROJECT_DIR: ${CLAUDE_PROJECT_DIR}"
+  echo "  LIB_DIR: ${LIB_DIR}"
+  echo "  Current directory: $(pwd)"
+  echo ""
+  exit 1
+fi
+```
+
+**See Also**:
+- `.claude/lib/detect-project-dir.sh` - Centralized detection utility
+- `.claude/commands/coordinate.md:527-552` - Reference implementation
+
+---
+
+### Standard 14: Executable/Documentation File Separation
+
+**Requirement**: Commands MUST separate executable logic from comprehensive documentation into distinct files
+
+**Pattern**: Two-file architecture for all commands:
+
+1. **Executable Command File** (`.claude/commands/command-name.md`)
+   - Purpose: Lean execution script for AI interpreter
+   - Size: Target <250 lines (simple commands), max 1,200 lines (complex orchestrators)
+   - Content: Bash blocks, phase markers, minimal inline comments (WHAT not WHY)
+   - Documentation: Single-line reference to guide file only
+   - Audience: AI executor (Claude during command execution)
+
+2. **Command Guide File** (`.claude/docs/guides/command-name-command-guide.md`)
+   - Purpose: Complete task-focused documentation for human developers
+   - Size: Unlimited (typically 500-5,000 lines)
+   - Content: Architecture, examples, troubleshooting, design decisions
+   - Cross-reference: Links back to executable file
+   - Audience: Human developers, maintainers, contributors
+
+**Rationale**:
+
+Mixed-purpose command files combining execution with documentation cause four critical failures:
+
+1. **Recursive Invocation Bugs**: Claude misinterprets documentation as conversational instructions, attempting to "invoke /command" instead of executing AS the command
+
+2. **Permission Denied Errors**: Claude tries to execute `.md` files as bash scripts after conversational interpretation
+
+3. **Infinite Loops**: Multiple recursive invocations occur before execution begins
+
+4. **Context Bloat**: 520+ lines of documentation load before first executable instruction
+
+**Root Cause**: Commands are AI execution scripts (step-by-step instructions Claude reads sequentially), not traditional code. Documentation in-file triggers conversational interpretation instead of execution.
+
+**Evidence**: Pre-migration meta-confusion rate: 75% (15/20 test runs). Post-migration: 0% (0/100 test runs). All 7 migrated commands execute immediately without recursion.
+
+**Enforcement Criteria**:
+
+**Size Limits**:
+```bash
+# Simple commands (most commands)
+if [ "$lines" -gt 250 ]; then
+  echo "FAIL: Exceeds 250-line target for simple commands"
+fi
+
+# Complex orchestrators (/coordinate, /orchestrate, /supervise)
+if [ "$lines" -gt 1200 ]; then
+  echo "FAIL: Exceeds 1,200-line maximum for orchestrators"
+fi
+```
+
+**Cross-Reference Requirement**:
+
+Executable file MUST include:
+```markdown
+**Documentation**: See `.claude/docs/guides/command-name-command-guide.md`
+```
+
+Guide file MUST include:
+```markdown
+**Executable**: `.claude/commands/command-name.md`
+```
+
+**Guide Existence**: All commands exceeding 150 lines MUST have corresponding guide file in `.claude/docs/guides/` following naming convention `command-name-command-guide.md`
+
+**Validation**:
+
+Automated validation via `.claude/tests/validate_executable_doc_separation.sh`:
+
+```bash
+# Run validation on all commands
+./validate_executable_doc_separation.sh
+
+# Expected output:
+# ✓ coordinate.md: 1,084 lines (complex orchestrator, acceptable)
+#   ✓ Guide exists: .claude/docs/guides/coordinate-command-guide.md
+#   ✓ Cross-reference valid (bidirectional)
+# ... (similar for all commands)
+#
+# SUMMARY: 7/7 commands compliant (100%)
+```
+
+**Three-Layer Validation**:
+1. **File Size**: Enforces <250 lines (simple) or <1,200 lines (orchestrator)
+2. **Guide Existence**: Verifies referenced guides exist at correct paths
+3. **Cross-References**: Validates bidirectional links (command → guide, guide → command)
+
+**Implementation Templates**:
+
+**Executable Template** (`.claude/docs/guides/_template-executable-command.md`, 56 lines):
+- Standard 13 CLAUDE_PROJECT_DIR detection
+- Phase-based structure with bash blocks
+- Minimal inline comments (WHAT only)
+- Single-line documentation reference
+- Role statement: "YOU ARE EXECUTING AS the [command] command"
+
+**Guide Template** (`.claude/docs/guides/_template-command-guide.md`, 171 lines):
+- Table of Contents for navigation
+- Overview (Purpose, When to Use, When NOT to Use)
+- Architecture (Design Principles, Workflow Phases, Integration Points)
+- Usage Examples (Basic, Advanced, Edge Cases with expected output)
+- Advanced Topics (Performance, Customization, Patterns)
+- Troubleshooting (Common Issues with symptoms → causes → solutions)
+- References (Cross-references to standards, patterns, related commands)
+
+**Migration Results** (7 commands completed 2025-11-07):
+
+| Command | Original | New | Reduction | Guide | Status |
+|---------|----------|-----|-----------|-------|--------|
+| `/coordinate` | 2,334 | 1,084 | 54% | 1,250 | ✓ |
+| `/orchestrate` | 5,439 | 557 | 90% | 4,882 | ✓ |
+| `/implement` | 2,076 | 220 | 89% | 921 | ✓ |
+| `/plan` | 1,447 | 229 | 84% | 460 | ✓ |
+| `/debug` | 810 | 202 | 75% | 375 | ✓ |
+| `/document` | 563 | 168 | 70% | 669 | ✓ |
+| `/test` | 200 | 149 | 26% | 666 | ✓ |
+
+**Average Reduction**: 70% in executable file size
+**Guide Growth**: Average 1,300 lines of comprehensive documentation (6.5x more than was inline)
+**Reliability**: 100% execution success rate (vs 25% pre-migration)
+
+**Benefits Achieved**:
+
+1. **Meta-Confusion Elimination**: 0% incident rate (was 75% before migration)
+2. **Context Reduction**: 70% average reduction freeing context for execution state
+3. **Independent Evolution**: Logic changes don't touch docs, doc updates don't risk breaking execution
+4. **Unlimited Documentation**: Guides have no size limit, can be comprehensive without bloat
+5. **Fail-Fast Execution**: Lean files obviously executable, errors immediate and clear
+6. **Scalable Pattern**: Templates enable 60-80% faster new command creation
+
+**Relationship to Other Standards**:
+
+**Standard 12 (Structural vs Behavioral Separation)**:
+- Standard 12: Determines WHAT content (structural templates inline vs behavioral guidelines referenced)
+- Standard 14: Determines WHERE content goes (executable vs guide file)
+- Combined: Standard 12 determines inline/referenced, Standard 14 determines command/guide
+
+**Standard 11 (Imperative Agent Invocation)**:
+- Both prevent conversational interpretation of executable content
+- Standard 11: Agent invocations obviously executable (imperative language, no code wrappers)
+- Standard 14: Command files obviously executable (lean, minimal docs)
+- Synergy: Multi-layer protection against meta-confusion
+
+**Standard 0 (Execution Enforcement)**:
+- Standard 0: Defines imperative vs descriptive language patterns
+- Standard 14: Applies imperative language exclusively in executable files
+- Combined: Executables use imperative language, guides use natural explanatory language
+
+**See Also**:
+- [Executable/Documentation Separation Pattern](../../concepts/patterns/executable-documentation-separation.md) - Complete pattern documentation with case studies
+- [Command Development Guide - Section 2.4](../../guides/command-development-guide.md#24-executabledocumentation-separation-pattern) - Practical implementation instructions
+- [Executable Command Template](../../guides/_template-executable-command.md) - Quick-start template for new commands
+- [Command Guide Template](../../guides/_template-command-guide.md) - Documentation structure template
+- `.claude/tests/validate_executable_doc_separation.sh` - Automated validation script
 
 ---
 
@@ -1846,6 +2138,7 @@ Use this checklist when reviewing pull requests that modify command or agent fil
 - [ ] **Error Handling**: Are recovery procedures specific with actions?
 - [ ] **References**: Do external references supplement (not replace) inline instructions?
 - [ ] **File Size**: Is file size >300 lines? (Flag if <300)
+- [ ] **Bash Block Size**: Are bash blocks <300 lines each? (Split if >300, transform errors at ~400)
 - [ ] **Annotations**: Are structural annotations present ([EXECUTION-CRITICAL], etc.)?
 - [ ] **Testing**: Has the command been executed successfully after changes?
 
@@ -1981,6 +2274,144 @@ This section demonstrates correct execution-critical content:
 
 ---
 
+## Standard 15: Library Sourcing Order
+
+### Requirement
+
+Orchestration commands MUST source libraries in dependency order before calling any functions from those libraries.
+
+### Rationale
+
+The bash block execution model enforces subprocess isolation. Functions are only available AFTER sourcing, not before. Premature function calls (before sourcing) result in "command not found" errors that terminate workflow initialization.
+
+**Core Principle**: Each bash block runs in a separate subprocess, so functions don't persist across blocks and must be sourced in every block that uses them.
+
+### Standard Sourcing Pattern
+
+All orchestration commands must source libraries in this specific order:
+
+```bash
+# 1. State machine foundation (FIRST)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+
+# 2. Error handling and verification (BEFORE any verification checkpoints)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# 3. Additional libraries as needed (AFTER core libraries)
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"
+# ... other libraries via source_required_libraries()
+```
+
+### Dependency Justification
+
+**Why this specific order**:
+
+1. **State machine → State persistence**: State machine defines workflow states, state persistence manages cross-block state
+2. **State persistence → Error/Verification**: Error handling and verification functions depend on `append_workflow_state()` (from state-persistence.sh) and `STATE_FILE` variable
+3. **Error/Verification → Checkpoints**: Verification checkpoints call `verify_state_variable()`, `verify_file_created()`, and `handle_state_error()` throughout initialization
+4. **Other libraries AFTER**: All other libraries can load after these foundations are established
+
+### Source Guards Enable Safe Re-Sourcing
+
+All library files use source guards to prevent duplicate execution:
+
+```bash
+# From verification-helpers.sh:11-14
+if [ -n "${VERIFICATION_HELPERS_SOURCED:-}" ]; then
+  return 0
+fi
+export VERIFICATION_HELPERS_SOURCED=1
+```
+
+**Implication**: Including a library in both early sourcing AND in REQUIRED_LIBS array is safe, recommended, and zero-overhead (guard check is instant).
+
+### Validation
+
+**Automated Testing**:
+```bash
+bash .claude/tests/test_library_sourcing_order.sh
+```
+
+This test validates:
+- Functions are sourced before first call (no premature calls)
+- Libraries have source guards (safe for multiple sourcing)
+- Dependency order is correct (state-persistence before dependent libraries)
+- Early sourcing (critical libraries loaded within first 150 lines)
+
+**Manual Code Review**:
+- Verify no function calls appear before library sourcing
+- Check sourcing order matches standard pattern
+- Ensure all bash blocks re-source required libraries
+
+**Runtime Testing**:
+- Test with all workflow scopes before merging
+- Verify no "command not found" errors during initialization
+- Check that verification checkpoints execute successfully
+
+### Examples
+
+**Compliant**: `/coordinate` command (after Spec 675 fix)
+
+Lines 88-127 demonstrate correct sourcing order:
+- Line 93: workflow-state-machine.sh sourced
+- Line 105: state-persistence.sh sourced
+- Line 113: error-handling.sh sourced (EARLY)
+- Line 122: verification-helpers.sh sourced (EARLY)
+- Line 162: First handle_state_error() call (AFTER sourcing)
+- Line 177: First verify_state_variable() call (AFTER sourcing)
+
+**Violation**: Pre-Spec-675 coordinate.md
+
+Functions called at lines 155-239 before sourcing at line 265+:
+- Lines 155, 164, 237: `verify_state_variable()` calls
+- Lines 162, 167, 209: `handle_state_error()` calls
+- Line 335: error-handling.sh sourced (TOO LATE)
+- Line 337: verification-helpers.sh sourced (TOO LATE)
+
+**Result**: "command not found" errors terminated initialization.
+
+### Anti-Pattern: Premature Function Calls
+
+```bash
+# ❌ WRONG: Function called before library sourced
+verify_state_variable "WORKFLOW_SCOPE" || exit 1
+handle_state_error "Initialization failed" 1
+
+# ... many lines later ...
+source "${LIB_DIR}/verification-helpers.sh"
+source "${LIB_DIR}/error-handling.sh"
+```
+
+**Error Symptoms**:
+```
+bash: verify_state_variable: command not found
+bash: handle_state_error: command not found
+```
+
+**Fix**: Source libraries before calling functions
+
+```bash
+# ✓ CORRECT: Source libraries first
+source "${LIB_DIR}/verification-helpers.sh"
+source "${LIB_DIR}/error-handling.sh"
+
+# ... now functions are available ...
+verify_state_variable "WORKFLOW_SCOPE" || exit 1
+handle_state_error "Initialization failed" 1
+```
+
+### References
+
+- **Spec 675** (2025-11-11): Library sourcing order fix - moved error-handling.sh and verification-helpers.sh sourcing to immediately after state-persistence.sh
+- **Spec 620**: Bash history expansion fixes (subprocess isolation discovery)
+- **Spec 630**: State persistence architecture (cross-block state management)
+- [Bash Block Execution Model](../concepts/bash-block-execution-model.md#function-availability-and-sourcing-order): Complete documentation on function availability and sourcing patterns
+
+---
+
 ## Related Standards
 
 This document should be read in conjunction with:
@@ -1988,6 +2419,7 @@ This document should be read in conjunction with:
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md): Agent invocation and coordination patterns
 - [Testing Standards](../guides/testing-standards.md): Validation and testing requirements
 - [Documentation Standards](../../../CLAUDE.md#documentation-policy): General documentation guidelines
+- [Bash Tool Limitations](../troubleshooting/bash-tool-limitations.md): Command substitution escaping and bash block size limits
 
 ---
 

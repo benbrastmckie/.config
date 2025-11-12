@@ -1,0 +1,1000 @@
+# Implementation Plan: Clean-Break Executable/Documentation Separation Architecture
+
+## Metadata
+- **Plan ID**: 002
+- **Date Created**: 2025-11-07
+- **Type**: Architecture Refactor (Clean-Break)
+- **Scope**: Separate executable commands from documentation across all .claude/commands/
+- **Priority**: HIGH
+- **Complexity**: Medium (6/10)
+- **Estimated Duration**: 8-12 hours
+- **Standards File**: /home/benjamin/.config/CLAUDE.md
+- **Related Specs**:
+  - Spec 600: /coordinate refactor (state management patterns)
+  - Spec 601: Strategic architecture analysis
+- **Structure Level**: 0 (Single file - may expand to Level 1 if phases become complex)
+
+## Executive Summary
+
+### Problem Statement
+
+Current orchestrator commands (coordinate.md, orchestrate.md, implement.md) suffer from **meta-confusion loops** where Claude misinterprets extensive documentation as conversational instructions rather than reference material. This causes:
+
+1. **Recursive invocation bugs**: Claude tries to "invoke /coordinate" instead of executing as coordinate
+2. **Permission denied errors**: Attempts to execute .md files as bash scripts
+3. **Infinite loops**: Multiple recursive invocations before execution begins
+4. **Context bloat**: 520+ lines of docs loaded before first executable instruction
+
+**Root Cause**: Mixed-purpose files combining executable code with extensive documentation in single markdown file.
+
+### Solution Overview
+
+**Clean-break architectural separation**:
+- **Executable files** (`.claude/commands/*.md`): Lean execution scripts (150-200 lines)
+- **Documentation files** (`.claude/docs/commands/*-guide.md`): Complete guides (unlimited length)
+
+### Success Criteria
+
+- [ ] All command files under 250 lines (executable-only)
+- [ ] All documentation in separate guide files
+- [ ] No meta-confusion loops in test executions
+- [ ] Commands execute immediately without recursive invocations
+- [ ] Documentation cross-referenced but not loaded during execution
+- [ ] Pattern documented for future command development
+
+### Benefits
+
+✅ **Eliminates Meta-Confusion**: Execution files obviously executable
+✅ **Maintainability**: Change logic or docs independently
+✅ **Scalability**: Documentation can grow without bloating executables
+✅ **Fail-Fast**: Commands execute or error immediately
+✅ **Clean-Break**: Complete elimination of mixed-purpose pattern
+
+### Risks & Mitigation
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| Command breaks after split | Medium | High | Incremental testing per command |
+| Documentation gets stale | Low | Low | Cross-references enforce linkage |
+| Users can't find docs | Low | Medium | Update CLAUDE.md with guide links |
+| Pattern not followed for new commands | Medium | Medium | Template + checklist in docs |
+
+---
+
+## Implementation Phases
+
+### Phase 1: Create New Documentation Structure
+
+**Objective**: Establish new documentation directory and create template files
+
+**Dependencies**: None
+
+**Complexity**: Low (1/10)
+
+**Duration**: 1 hour
+
+#### Tasks
+
+- [ ] Create `.claude/docs/commands/` directory structure
+- [ ] Create template for executable-only command files
+- [ ] Create template for documentation guide files
+- [ ] Document the new architectural pattern in `.claude/docs/guides/command-development-guide.md`
+- [ ] Update CLAUDE.md with new directory structure reference
+
+#### Deliverables
+
+1. **Directory Structure**:
+   ```
+   .claude/docs/commands/
+   ├── README.md                    # Overview of command documentation
+   ├── _template-executable.md      # Template for command files
+   └── _template-guide.md           # Template for guide files
+   ```
+
+2. **Template: _template-executable.md**:
+   ```markdown
+   ---
+   allowed-tools: [tools list]
+   argument-hint: <args>
+   description: Brief one-line description
+   ---
+
+   # /command-name - Brief Title
+
+   YOU ARE EXECUTING AS the [command-name] command.
+
+   **Documentation**: See `.claude/docs/commands/command-name-guide.md`
+
+   ---
+
+   ## Phase 0: [First Phase Name]
+
+   [EXECUTION-CRITICAL: Execute this bash block]
+
+   ```bash
+   # Executable code here
+   # Inline comments explain WHAT, not WHY
+   ```
+
+   ## Phase N: [Last Phase]
+
+   [EXECUTION-CRITICAL: Final phase]
+
+   ```bash
+   # Final phase code
+   ```
+
+   ---
+
+   **Troubleshooting**: See guide for common issues and solutions.
+   ```
+
+3. **Template: _template-guide.md**:
+   ```markdown
+   # /command-name Command - Complete Guide
+
+   **Executable**: `.claude/commands/command-name.md`
+
+   **Quick Start**: Run `/command-name <args>` - the command is self-executing.
+
+   ---
+
+   ## Table of Contents
+   1. [Overview](#overview)
+   2. [Architecture](#architecture)
+   3. [Usage Examples](#usage-examples)
+   4. [Advanced Topics](#advanced-topics)
+   5. [Troubleshooting](#troubleshooting)
+
+   ---
+
+   ## Overview
+   [What the command does, when to use it]
+
+   ## Architecture
+   [Design decisions, patterns used, integration with other commands]
+
+   ## Usage Examples
+   [Real examples with expected output]
+
+   ## Advanced Topics
+   [Edge cases, customization, performance tuning]
+
+   ## Troubleshooting
+   [Common issues and solutions]
+   ```
+
+#### Success Criteria
+
+- [ ] Directory structure created and validated
+- [ ] Both templates created and functional
+- [ ] Pattern documented in command-development-guide.md
+- [ ] CLAUDE.md updated with cross-reference
+
+#### Validation Commands
+
+```bash
+# Verify directory structure
+ls -la .claude/docs/commands/
+
+# Verify templates exist
+test -f .claude/docs/commands/_template-executable.md
+test -f .claude/docs/commands/_template-guide.md
+
+# Verify CLAUDE.md updated
+grep "docs/commands" CLAUDE.md
+```
+
+---
+
+### Phase 2: Migrate /coordinate Command (Pilot)
+
+**Objective**: Split coordinate.md into executable + guide as pilot implementation
+
+**Dependencies**: Phase 1
+
+**Complexity**: Medium (5/10)
+
+**Duration**: 2-3 hours
+
+#### Tasks
+
+- [ ] Analyze current coordinate.md structure (identify executable vs documentation)
+- [ ] Extract executable sections (bash blocks + minimal context)
+- [ ] Create new lean coordinate.md (target: <200 lines)
+- [ ] Extract documentation sections to coordinate-guide.md
+- [ ] Add cross-references between executable and guide
+- [ ] Update CLAUDE.md with new coordinate documentation link
+- [ ] Test coordinate command execution (no meta-confusion loops)
+- [ ] Verify all phases execute correctly
+- [ ] Create backup of original coordinate.md (for rollback if needed)
+
+#### Current Structure Analysis
+
+**coordinate.md Current Layout** (2,883 lines total):
+```
+Lines 1-8:      Frontmatter
+Lines 9-520:    Documentation (architecture, patterns, examples)
+Lines 521-900:  Phase 0 bash blocks
+Lines 901-1200: Phase 1 bash blocks
+Lines 1201-1500: Phase 2 bash blocks
+Lines 1501-1800: Phase 3 bash blocks
+Lines 1801-2100: Phase 4 bash blocks
+Lines 2101-2400: Phase 5 bash blocks
+Lines 2401-2700: Phase 6 bash blocks
+Lines 2701-2883: Additional helpers and completion
+```
+
+#### Target Structure
+
+**NEW coordinate.md** (~180 lines):
+```
+Lines 1-8:      Frontmatter
+Lines 9-15:     Minimal role statement + doc link
+Lines 16-40:    Phase 0 bash block
+Lines 41-65:    Phase 1 agent invocation template
+Lines 66-90:    Phase 2 agent invocation template
+Lines 91-115:   Phase 3 agent invocation template
+Lines 116-140:  Phase 4 agent invocation template
+Lines 141-165:  Phase 5 agent invocation template
+Lines 166-180:  Phase 6 completion
+```
+
+**NEW coordinate-guide.md** (~2,500 lines):
+```
+All documentation content from lines 9-520 of original
+Plus:
+- Architecture deep-dive
+- Pattern explanations
+- Examples with output
+- Troubleshooting guide
+- Design decisions reference
+```
+
+#### Deliverables
+
+1. `.claude/commands/coordinate.md` (executable-only, <200 lines)
+2. `.claude/docs/commands/coordinate-guide.md` (complete documentation)
+3. Updated CLAUDE.md reference
+4. Backup: `.claude/commands/coordinate.md.backup` (for rollback)
+
+#### Success Criteria
+
+- [ ] New coordinate.md under 200 lines
+- [ ] All bash blocks preserved and functional
+- [ ] No documentation prose in executable file
+- [ ] Cross-references working both directions
+- [ ] Test execution: No meta-confusion loops
+- [ ] Test execution: All phases run correctly
+- [ ] Test execution: Agents invoked successfully
+
+#### Validation Commands
+
+```bash
+# Verify file sizes
+wc -l .claude/commands/coordinate.md  # Should be <200
+wc -l .claude/docs/commands/coordinate-guide.md  # Should be ~2500
+
+# Test execution (should not recurse)
+/coordinate "test simple workflow"
+
+# Verify cross-references
+grep "coordinate-guide.md" .claude/commands/coordinate.md
+grep "coordinate.md" .claude/docs/commands/coordinate-guide.md
+```
+
+#### Test Cases
+
+1. **Simple workflow execution**:
+   ```
+   /coordinate "research authentication patterns"
+   Expected: Executes Phase 0 → Phase 1 → Complete
+   Failure mode: Recursive invocation loop
+   ```
+
+2. **Research-and-plan workflow**:
+   ```
+   /coordinate "research API design to create implementation plan"
+   Expected: Executes Phase 0 → Phase 1 → Phase 2 → Complete
+   Failure mode: Phase 2 not executed
+   ```
+
+3. **Error handling**:
+   ```
+   /coordinate ""  # Empty description
+   Expected: Error message with usage guidance
+   Failure mode: Silent failure or crash
+   ```
+
+---
+
+### Phase 3: Migrate /orchestrate Command
+
+**Objective**: Apply same pattern to orchestrate.md (experimental command)
+
+**Dependencies**: Phase 2 (pilot validation)
+
+**Complexity**: Medium (6/10)
+
+**Duration**: 2-3 hours
+
+#### Tasks
+
+- [ ] Analyze orchestrate.md structure (5,438 lines)
+- [ ] Extract executable sections (7 phases + helpers)
+- [ ] Create new lean orchestrate.md (target: <250 lines)
+- [ ] Extract documentation to orchestrate-guide.md
+- [ ] Add cross-references
+- [ ] Update CLAUDE.md
+- [ ] Test execution
+- [ ] Create backup for rollback
+
+#### Current Structure Analysis
+
+**orchestrate.md Current Layout** (5,438 lines):
+```
+Lines 1-10:     Frontmatter
+Lines 11-850:   Documentation (architecture, patterns, design decisions)
+Lines 851-1500: Phase 0 (initialization)
+Lines 1501-2200: Phase 1 (research coordination)
+Lines 2201-2900: Phase 2 (planning)
+Lines 2901-3600: Phase 3 (implementation)
+Lines 3601-4300: Phase 4 (testing)
+Lines 4301-5000: Phase 5 (debugging)
+Lines 5001-5438: Phase 6 (documentation) + helpers
+```
+
+#### Target Structure
+
+**NEW orchestrate.md** (~230 lines):
+```
+Lines 1-10:     Frontmatter
+Lines 11-20:    Minimal role + doc link
+Lines 21-50:    Phase 0
+Lines 51-80:    Phase 1
+Lines 81-110:   Phase 2
+Lines 111-140:  Phase 3
+Lines 141-170:  Phase 4
+Lines 171-200:  Phase 5
+Lines 201-230:  Phase 6 + completion
+```
+
+#### Deliverables
+
+1. `.claude/commands/orchestrate.md` (<250 lines)
+2. `.claude/docs/commands/orchestrate-guide.md` (~5,000 lines)
+3. Updated CLAUDE.md
+4. Backup file
+
+#### Success Criteria
+
+- [ ] New orchestrate.md under 250 lines
+- [ ] All phases preserved
+- [ ] No meta-confusion in testing
+- [ ] Cross-references functional
+
+#### Validation Commands
+
+```bash
+# Verify size reduction
+wc -l .claude/commands/orchestrate.md  # <250
+wc -l .claude/docs/commands/orchestrate-guide.md  # ~5000
+
+# Test execution
+/orchestrate "test workflow"
+```
+
+---
+
+### Phase 4: Migrate /implement Command
+
+**Objective**: Apply pattern to implement.md
+
+**Dependencies**: Phase 3
+
+**Complexity**: Low (3/10)
+
+**Duration**: 1-2 hours
+
+#### Tasks
+
+- [ ] Analyze implement.md structure
+- [ ] Extract executable sections
+- [ ] Create lean implement.md (target: <200 lines)
+- [ ] Create implement-guide.md
+- [ ] Add cross-references
+- [ ] Update CLAUDE.md
+- [ ] Test execution
+- [ ] Create backup
+
+#### Current Structure Analysis
+
+**implement.md Current Layout** (~2,100 lines estimated):
+```
+Lines 1-8:      Frontmatter
+Lines 9-400:    Documentation (usage, architecture)
+Lines 401-2100: Phase execution logic + helpers
+```
+
+#### Target Structure
+
+**NEW implement.md** (~150 lines):
+```
+Lines 1-8:      Frontmatter
+Lines 9-15:     Role + doc link
+Lines 16-150:   Phase execution blocks
+```
+
+#### Deliverables
+
+1. `.claude/commands/implement.md` (<200 lines)
+2. `.claude/docs/commands/implement-guide.md`
+3. Updated CLAUDE.md
+4. Backup file
+
+#### Success Criteria
+
+- [ ] File under 200 lines
+- [ ] All phase logic preserved
+- [ ] Test execution successful
+- [ ] Documentation complete
+
+---
+
+### Phase 5: Update Remaining Commands
+
+**Objective**: Apply pattern to simpler commands (plan, debug, test, document)
+
+**Dependencies**: Phase 4
+
+**Complexity**: Low (2/10)
+
+**Duration**: 2-3 hours total
+
+#### Tasks
+
+For each command (plan.md, debug.md, test.md, document.md):
+- [ ] Analyze structure
+- [ ] Create lean executable version
+- [ ] Create guide file (if needed - simpler commands may not need extensive guides)
+- [ ] Add cross-references
+- [ ] Test execution
+- [ ] Update CLAUDE.md
+
+#### Deliverables
+
+Per command:
+1. Lean executable file
+2. Guide file (if warranted)
+3. CLAUDE.md updates
+
+#### Success Criteria
+
+- [ ] All commands follow new pattern
+- [ ] All tests pass
+- [ ] Documentation consistent
+
+---
+
+### Phase 6: Update Documentation and Standards
+
+**Objective**: Document new pattern and update all references
+
+**Dependencies**: Phase 5
+
+**Complexity**: Low (3/10)
+
+**Duration**: 1-2 hours
+
+#### Tasks
+
+- [ ] Update `.claude/docs/guides/command-development-guide.md` with:
+  - New executable/documentation separation pattern
+  - Migration instructions
+  - Templates and examples
+  - Benefits and rationale
+- [ ] Update CLAUDE.md with:
+  - New command directory structure
+  - Links to all command guides
+  - Pattern enforcement guidelines
+- [ ] Create `.claude/docs/commands/README.md` explaining:
+  - Purpose of command guides
+  - How to find documentation
+  - Cross-reference conventions
+- [ ] Update any other documentation referencing old pattern
+
+#### Deliverables
+
+1. Updated command-development-guide.md section
+2. Updated CLAUDE.md
+3. New .claude/docs/commands/README.md
+4. Migration checklist for future commands
+
+#### Success Criteria
+
+- [ ] All documentation references updated
+- [ ] No broken links
+- [ ] Pattern clearly documented
+- [ ] Migration path clear for future commands
+
+#### Validation
+
+```bash
+# Check for broken cross-references
+grep -r "coordinate.md" .claude/docs/ | grep -v "coordinate-guide.md"
+
+# Verify CLAUDE.md structure
+grep "docs/commands" CLAUDE.md
+
+# Verify README exists
+test -f .claude/docs/commands/README.md
+```
+
+---
+
+### Phase 7: Cleanup and Validation
+
+**Objective**: Remove old pattern completely, validate all changes
+
+**Dependencies**: Phase 6
+
+**Complexity**: Low (2/10)
+
+**Duration**: 1 hour
+
+#### Tasks
+
+- [ ] Run full test suite to verify all commands work
+- [ ] Delete backup files (clean-break - no legacy cruft)
+- [ ] Verify no mixed-purpose files remain
+- [ ] Run validation script across all command files
+- [ ] Document completion and create summary
+
+#### Validation Script
+
+Create `.claude/tests/validate_executable_doc_separation.sh`:
+
+```bash
+#!/usr/bin/env bash
+# Validate executable/documentation separation
+
+FAILED=0
+
+echo "Validating command file sizes..."
+for cmd in .claude/commands/*.md; do
+  if [[ "$cmd" == *"_template"* ]]; then continue; fi
+
+  lines=$(wc -l < "$cmd")
+  if [ "$lines" -gt 300 ]; then
+    echo "FAIL: $cmd has $lines lines (max 300)"
+    FAILED=$((FAILED + 1))
+  else
+    echo "PASS: $cmd ($lines lines)"
+  fi
+done
+
+echo ""
+echo "Validating guide files exist..."
+for cmd in .claude/commands/*.md; do
+  if [[ "$cmd" == *"_template"* ]]; then continue; fi
+
+  basename=$(basename "$cmd" .md)
+  guide=".claude/docs/commands/${basename}-guide.md"
+
+  if grep -q "docs/commands.*guide.md" "$cmd"; then
+    if [ -f "$guide" ]; then
+      echo "PASS: $cmd has guide at $guide"
+    else
+      echo "FAIL: $cmd references missing guide $guide"
+      FAILED=$((FAILED + 1))
+    fi
+  fi
+done
+
+echo ""
+echo "Validating cross-references..."
+for guide in .claude/docs/commands/*-guide.md; do
+  basename=$(basename "$guide" -guide.md)
+  cmd=".claude/commands/${basename}.md"
+
+  if grep -q "commands/${basename}.md" "$guide"; then
+    echo "PASS: $guide references $cmd"
+  else
+    echo "FAIL: $guide missing reference to $cmd"
+    FAILED=$((FAILED + 1))
+  fi
+done
+
+echo ""
+if [ $FAILED -eq 0 ]; then
+  echo "✓ All validations passed"
+  exit 0
+else
+  echo "✗ $FAILED validation(s) failed"
+  exit 1
+fi
+```
+
+#### Success Criteria
+
+- [ ] All tests pass (73/73 test suites)
+- [ ] All command files under 300 lines
+- [ ] All cross-references valid
+- [ ] No backup files remaining
+- [ ] Validation script passes
+- [ ] Summary documentation created
+
+#### Final Deliverables
+
+1. All commands migrated to new pattern
+2. All documentation guides created
+3. All standards updated
+4. Validation script passing
+5. Migration summary document
+
+---
+
+## Rollback Strategy
+
+### If Issues Discovered After Phase 2
+
+**Rollback /coordinate**:
+```bash
+# Restore original file
+mv .claude/commands/coordinate.md.backup .claude/commands/coordinate.md
+
+# Delete new guide
+rm .claude/docs/commands/coordinate-guide.md
+
+# Revert CLAUDE.md changes
+git checkout CLAUDE.md
+
+# Test original works
+/coordinate "test workflow"
+```
+
+### If Issues After Complete Migration
+
+**Full Rollback**:
+```bash
+# Restore all backups
+for backup in .claude/commands/*.backup; do
+  original="${backup%.backup}"
+  mv "$backup" "$original"
+done
+
+# Remove guide directory
+rm -rf .claude/docs/commands/
+
+# Revert all documentation
+git checkout .claude/docs/guides/command-development-guide.md
+git checkout CLAUDE.md
+
+# Run test suite
+.claude/tests/run_all_tests.sh
+```
+
+**Partial Rollback** (keep working commands, revert problematic):
+- Identify problematic command
+- Restore from backup
+- Document issue for future attempt
+- Keep successfully migrated commands
+
+---
+
+## Risk Assessment
+
+### High-Risk Areas
+
+1. **Agent Invocation Changes** (Risk: Medium)
+   - **Issue**: Modifying agent invocation templates might break delegation
+   - **Mitigation**: Preserve exact Task tool syntax, test each command after migration
+   - **Rollback**: Backup files available
+
+2. **Cross-Reference Breakage** (Risk: Low)
+   - **Issue**: Incorrect paths in documentation cross-references
+   - **Mitigation**: Validation script checks all references
+   - **Rollback**: Fix references, no code impact
+
+3. **Context Bloat Regression** (Risk: Low)
+   - **Issue**: Executable files still too large, meta-confusion persists
+   - **Mitigation**: Strict 250-line limit, validation enforced
+   - **Rollback**: Add more aggressive extraction
+
+### Medium-Risk Areas
+
+1. **Test Suite Failures** (Risk: Medium)
+   - **Issue**: Command behavior changes break tests
+   - **Mitigation**: Run tests after each phase, incremental validation
+   - **Rollback**: Per-command rollback, update tests if behavior intentionally changed
+
+2. **Documentation Staleness** (Risk: Medium)
+   - **Issue**: Guides and executables drift over time
+   - **Mitigation**: Cross-references enforce linkage, add to review checklist
+   - **Prevention**: Include in command development standards
+
+### Low-Risk Areas
+
+1. **User Confusion** (Risk: Low)
+   - **Issue**: Users can't find documentation
+   - **Mitigation**: Clear links in CLAUDE.md, help text in commands
+   - **Resolution**: Update help text, improve discoverability
+
+2. **Pattern Non-Adoption** (Risk: Low)
+   - **Issue**: New commands don't follow pattern
+   - **Mitigation**: Templates + checklist in command-development-guide.md
+   - **Prevention**: Include in code review process
+
+---
+
+## Success Metrics
+
+### Quantitative Metrics
+
+| Metric | Target | Measurement Method |
+|--------|--------|-------------------|
+| Command file size | <250 lines | `wc -l` on all .claude/commands/*.md |
+| Meta-confusion loops | 0 occurrences | Test execution logs |
+| Test suite pass rate | 100% (73/73) | `.claude/tests/run_all_tests.sh` |
+| Cross-reference validity | 100% | Validation script |
+| Migration completion | 100% (all commands) | Checklist completion |
+
+### Qualitative Metrics
+
+| Metric | Assessment Method |
+|--------|------------------|
+| Code maintainability | Developer review: "easier to modify?" |
+| Documentation clarity | User review: "easier to find info?" |
+| Execution reliability | Monitoring: "fewer recursive loops?" |
+| Pattern adherence | Code review: "new commands follow pattern?" |
+
+---
+
+## Timeline
+
+**Total Estimated Duration**: 8-12 hours
+
+| Phase | Duration | Cumulative |
+|-------|----------|------------|
+| Phase 1: Create structure | 1 hour | 1 hour |
+| Phase 2: Migrate /coordinate | 2-3 hours | 3-4 hours |
+| Phase 3: Migrate /orchestrate | 2-3 hours | 5-7 hours |
+| Phase 4: Migrate /implement | 1-2 hours | 6-9 hours |
+| Phase 5: Migrate remaining | 2-3 hours | 8-12 hours |
+| Phase 6: Update docs | 1-2 hours | 9-14 hours |
+| Phase 7: Cleanup | 1 hour | 10-15 hours |
+
+**Recommended Approach**: Execute phases incrementally over 3-5 days with testing between each phase.
+
+---
+
+## Dependencies
+
+### External Dependencies
+- None
+
+### Internal Dependencies
+- CLAUDE.md must be accessible for updates
+- Test suite must be functional
+- Git must be available for backups
+
+### Tool Dependencies
+- Bash for validation scripts
+- Standard Unix tools (wc, grep, sed)
+- jq (optional, for JSON parsing if needed)
+
+---
+
+## Appendix A: Pattern Comparison
+
+### Before Migration (Mixed-Purpose)
+
+**coordinate.md** (2,883 lines):
+```markdown
+---
+frontmatter
+---
+
+# Extensive documentation (520 lines)
+- Architecture explanations
+- Pattern descriptions
+- Examples and anti-patterns
+- Design decisions
+- Troubleshooting
+
+## Phase 0: Execution
+```bash
+# Executable code
+```
+
+[More phases...]
+```
+
+**Problems**:
+- Claude reads documentation conversationally
+- "Now let me invoke /coordinate" meta-confusion
+- 520 lines before first executable instruction
+- Documentation and code tightly coupled
+
+### After Migration (Separated)
+
+**coordinate.md** (180 lines):
+```markdown
+---
+frontmatter
+---
+
+# /coordinate - Multi-Agent Orchestrator
+
+YOU ARE EXECUTING AS coordinate command.
+
+**Documentation**: See `.claude/docs/commands/coordinate-guide.md`
+
+## Phase 0: Initialization
+```bash
+# Executable code
+```
+
+[More phases...]
+```
+
+**coordinate-guide.md** (2,500 lines):
+```markdown
+# /coordinate Command - Complete Guide
+
+**Executable**: `.claude/commands/coordinate.md`
+
+## Architecture
+[All documentation here]
+
+## Examples
+[Examples here]
+
+## Troubleshooting
+[Troubleshooting here]
+```
+
+**Benefits**:
+- Execution file obviously executable
+- No conversational documentation to misinterpret
+- Documentation can grow without bloating executable
+- Clear separation of concerns
+
+---
+
+## Appendix B: Template Examples
+
+### Minimal Executable Template
+
+```markdown
+---
+allowed-tools: Task, TodoWrite, Bash, Read
+argument-hint: <arg1> [arg2]
+description: Brief description
+---
+
+# /command - Title
+
+YOU ARE EXECUTING AS the [command] command.
+
+**Documentation**: `.claude/docs/commands/command-guide.md`
+
+---
+
+## Phase 0: First Phase
+
+```bash
+# Standard 13: CLAUDE_PROJECT_DIR detection
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+# Phase logic here
+```
+
+## Phase N: Final Phase
+
+```bash
+# Final phase logic
+```
+
+---
+
+**Troubleshooting**: See guide for common issues.
+```
+
+### Documentation Guide Template
+
+```markdown
+# /command Command - Complete Guide
+
+**Executable**: `.claude/commands/command.md`
+**Quick Start**: `/command <args>`
+
+---
+
+## Table of Contents
+1. [Overview](#overview)
+2. [Usage](#usage)
+3. [Architecture](#architecture)
+4. [Examples](#examples)
+5. [Troubleshooting](#troubleshooting)
+
+---
+
+## Overview
+
+What the command does and when to use it.
+
+## Usage
+
+Syntax, arguments, options.
+
+## Architecture
+
+Design decisions, patterns, integration points.
+
+## Examples
+
+Real examples with expected output.
+
+## Troubleshooting
+
+Common issues and solutions.
+```
+
+---
+
+## Appendix C: Validation Checklist
+
+### Pre-Migration Checklist
+
+- [ ] Backup all command files
+- [ ] Test suite passing (baseline)
+- [ ] Git working directory clean
+- [ ] Templates created and validated
+
+### Per-Command Migration Checklist
+
+- [ ] Original file backed up
+- [ ] Executable sections identified
+- [ ] Documentation sections identified
+- [ ] New executable file created (<250 lines)
+- [ ] New guide file created
+- [ ] Cross-references added both ways
+- [ ] CLAUDE.md updated
+- [ ] Command tested (no meta-confusion)
+- [ ] All phases execute correctly
+- [ ] Agents invoked successfully
+
+### Post-Migration Checklist
+
+- [ ] All commands migrated
+- [ ] All tests passing
+- [ ] Validation script passing
+- [ ] Documentation updated
+- [ ] Backups deleted (clean-break)
+- [ ] Summary created
+
+---
+
+## Completion Criteria
+
+This plan is complete when:
+
+1. ✅ All command files under 250 lines
+2. ✅ All documentation in separate guide files
+3. ✅ All cross-references valid
+4. ✅ Test suite 100% passing (73/73)
+5. ✅ Validation script passing
+6. ✅ No backup files remaining
+7. ✅ Pattern documented in standards
+8. ✅ CLAUDE.md updated with new structure
+
+**Final Validation**: Run `/coordinate "test workflow"` and verify:
+- No recursive invocation loops
+- Executes immediately
+- All phases run correctly
+- No "Permission denied" errors
+- Clean execution from start to finish

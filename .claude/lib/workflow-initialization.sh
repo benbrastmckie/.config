@@ -12,7 +12,13 @@
 #   initialize_workflow_paths "$WORKFLOW_DESC" "$WORKFLOW_TYPE"
 #   # Returns: Exports all path variables (TOPIC_DIR, PLANS_DIR, etc.)
 
-set -euo pipefail
+# Source guard: Prevent multiple sourcing
+if [ -n "${WORKFLOW_INITIALIZATION_SOURCED:-}" ]; then
+  return 0
+fi
+export WORKFLOW_INITIALIZATION_SOURCED=1
+
+set -eo pipefail  # Removed -u flag to allow ${VAR:-} pattern in sourcing scripts
 
 # Detect project directory dynamically
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,6 +39,88 @@ else
   echo "Expected location: $SCRIPT_DIR/detect-project-dir.sh" >&2
   exit 1
 fi
+
+# ==============================================================================
+# Helper Function: extract_topic_from_plan_path
+# ==============================================================================
+
+# extract_topic_from_plan_path: Extract topic directory from plan path
+#
+# Used by research-and-revise workflows to determine which existing topic
+# directory to use (instead of creating a new one).
+#
+# Arguments:
+#   $1 - PLAN_PATH: Absolute path to existing plan (e.g., /path/to/specs/657_topic/plans/001_plan.md)
+#
+# Output:
+#   Topic directory name (e.g., "657_topic") on stdout
+#   Empty string on failure
+#
+# Returns:
+#   0 on success, 1 on failure
+#
+# Expected Path Format:
+#   /path/to/specs/NNN_topic_name/plans/NNN_plan_name.md
+#   └─────────────┘ └────────────┘ └───┘ └──────────────┘
+#   project root    topic dir      plans  plan file
+#
+# Regex Pattern:
+#   /[^ ]+/specs/([0-9]{3}_[^/]+)/plans/[0-9]{3}_[^.]+\.md
+#   Capture group 1: Topic directory (e.g., 657_review_tests_coordinate)
+#
+# Usage:
+#   topic=$(extract_topic_from_plan_path "/home/user/.claude/specs/657_topic/plans/001_plan.md")
+#   if [ -z "$topic" ]; then
+#     echo "ERROR: Could not extract topic from plan path"
+#     return 1
+#   fi
+#
+extract_topic_from_plan_path() {
+  local plan_path="${1:-}"
+
+  # Validate input
+  if [ -z "$plan_path" ]; then
+    echo "ERROR: extract_topic_from_plan_path() requires plan path as argument" >&2
+    return 1
+  fi
+
+  # Check if plan file exists
+  if [ ! -f "$plan_path" ]; then
+    echo "ERROR: Plan file does not exist: $plan_path" >&2
+    return 1
+  fi
+
+  # Validate plan path format using regex
+  # Expected: /path/to/specs/NNN_topic/plans/NNN_plan.md
+  if ! echo "$plan_path" | grep -Eq '/specs/[0-9]{3}_[^/]+/plans/[0-9]{3}_[^.]+\.md$'; then
+    echo "ERROR: Plan path does not match expected format" >&2
+    echo "  Provided: $plan_path" >&2
+    echo "  Expected: /path/to/specs/NNN_topic/plans/NNN_plan.md" >&2
+    return 1
+  fi
+
+  # Extract topic directory using basename/dirname operations
+  # Given: /home/benjamin/.config/.claude/specs/657_topic/plans/001_plan.md
+  # Step 1: dirname → /home/benjamin/.config/.claude/specs/657_topic/plans
+  # Step 2: dirname → /home/benjamin/.config/.claude/specs/657_topic
+  # Step 3: basename → 657_topic
+  local topic_parent
+  topic_parent=$(dirname "$(dirname "$plan_path")")
+
+  local topic_name
+  topic_name=$(basename "$topic_parent")
+
+  # Validate extracted topic name format (NNN_name)
+  if ! echo "$topic_name" | grep -Eq '^[0-9]{3}_[^/]+$'; then
+    echo "ERROR: Extracted topic name does not match expected format (NNN_name)" >&2
+    echo "  Extracted: $topic_name" >&2
+    return 1
+  fi
+
+  # Output topic name to stdout
+  echo "$topic_name"
+  return 0
+}
 
 # ==============================================================================
 # Core Function: initialize_workflow_paths
@@ -97,12 +185,12 @@ initialize_workflow_paths() {
 
   # Validate workflow scope (silent - only errors to stderr)
   case "$workflow_scope" in
-    research-only|research-and-plan|full-implementation|debug-only)
+    research-only|research-and-plan|research-and-revise|full-implementation|debug-only)
       # Valid scope - no output
       ;;
     *)
       echo "ERROR: Unknown workflow scope: $workflow_scope" >&2
-      echo "Valid scopes: research-only, research-and-plan, full-implementation, debug-only" >&2
+      echo "Valid scopes: research-only, research-and-plan, research-and-revise, full-implementation, debug-only" >&2
       return 1
       ;;
   esac
@@ -143,10 +231,12 @@ initialize_workflow_paths() {
   fi
 
   # Calculate topic metadata using utility functions
+  # Note: Calculate topic_name first, then use get_or_create_topic_number for idempotency
+  # This prevents topic number incrementing on each bash block invocation
   local topic_num
   local topic_name
-  topic_num=$(get_next_topic_number "$specs_root")
   topic_name=$(sanitize_topic_name "$workflow_description")
+  topic_num=$(get_or_create_topic_number "$specs_root" "$topic_name")
 
   # Validate required fields
   if [ -z "$project_root" ] || [ -z "$topic_num" ] || [ -z "$topic_name" ]; then
@@ -166,7 +256,7 @@ initialize_workflow_paths() {
     echo "  WORKFLOW_DESCRIPTION: '${workflow_description:-<empty>}'" >&2
     echo "" >&2
     echo "Functions Used:" >&2
-    echo "  get_next_topic_number() - from topic-utils.sh" >&2
+    echo "  get_or_create_topic_number() - from topic-utils.sh (idempotent)" >&2
     echo "  sanitize_topic_name() - from topic-utils.sh" >&2
     echo "" >&2
     return 1
@@ -225,11 +315,33 @@ initialize_workflow_paths() {
   # Pre-calculate ALL artifact paths (exported to calling script)
   # ============================================================================
 
-  # Research phase paths (calculate for max 4 topics)
+  # Research phase paths (pre-allocate maximum 4 paths for Phase 0 optimization)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Design Trade-off: Fixed capacity (4) vs. dynamic complexity (1-4)
+  #   - Pre-allocate max paths upfront → 85% token reduction, 25x speedup
+  #   - Actual usage determined by RESEARCH_COMPLEXITY in Phase 1 (see coordinate.md)
+  #   - Unused paths remain exported but empty (minor memory overhead acceptable)
+  #
+  # Rationale: Phase 0 optimization pattern prioritizes performance over memory efficiency.
+  # Separation of concerns: Path calculation (infrastructure) vs. complexity detection (orchestration).
+  # See: phase-0-optimization.md (pattern guide), Spec 676 (architecture analysis)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   local -a report_paths
   for i in 1 2 3 4; do
     report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_topic${i}.md")
   done
+
+  # Export individual report path variables for bash block persistence
+  # Arrays cannot be exported across subprocess boundaries, so we export
+  # individual REPORT_PATH_0, REPORT_PATH_1, etc. variables
+  export REPORT_PATH_0="${report_paths[0]}"
+  export REPORT_PATH_1="${report_paths[1]}"
+  export REPORT_PATH_2="${report_paths[2]}"
+  export REPORT_PATH_3="${report_paths[3]}"
+
+  # Export fixed count (4) for subprocess persistence
+  # Phase 1 orchestration uses RESEARCH_COMPLEXITY (1-4) for actual agent invocation control
+  export REPORT_PATHS_COUNT=4
 
   # Define research subdirectory for overview synthesis
   local research_subdir="${topic_path}/reports"
@@ -240,6 +352,85 @@ initialize_workflow_paths() {
 
   # Planning phase paths
   local plan_path="${topic_path}/plans/001_${topic_name}_plan.md"
+
+  # For research-and-revise workflows, use existing plan path from scope detection
+  # This is different from creation workflows which generate new topic directories
+  local existing_plan_path=""
+  if [ "$workflow_scope" = "research-and-revise" ]; then
+    # Validation Check 1: EXISTING_PLAN_PATH must be set by scope detection
+    if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
+      echo "ERROR: research-and-revise workflow requires existing plan path" >&2
+      echo "  Workflow description: $workflow_description" >&2
+      echo "  Expected: Path format like 'Revise the plan /path/to/specs/NNN_topic/plans/NNN_plan.md...'" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Check workflow description contains full plan path" >&2
+      echo "    - Verify scope detection exported EXISTING_PLAN_PATH" >&2
+      return 1
+    fi
+
+    existing_plan_path="$EXISTING_PLAN_PATH"
+
+    # Validation Check 2: Plan file must exist
+    if [ ! -f "$existing_plan_path" ]; then
+      echo "ERROR: Specified plan file does not exist" >&2
+      echo "  Plan path: $existing_plan_path" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Verify file path is correct: test -f \"$existing_plan_path\"" >&2
+      echo "    - Check for typos in workflow description" >&2
+      return 1
+    fi
+
+    # Extract topic directory from existing plan path
+    local extracted_topic
+    extracted_topic=$(extract_topic_from_plan_path "$existing_plan_path")
+
+    if [ -z "$extracted_topic" ]; then
+      echo "ERROR: Could not extract topic directory from plan path" >&2
+      echo "  Plan path: $existing_plan_path" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Check plan path format: /path/to/specs/NNN_topic/plans/NNN_plan.md" >&2
+      echo "    - Verify path structure matches expected format" >&2
+      return 1
+    fi
+
+    # Override topic_path and topic_name with extracted values (don't create new topic)
+    topic_name="$extracted_topic"
+    topic_path="${specs_root}/${topic_name}"
+
+    # Extract topic number from topic name (format: NNN_name)
+    topic_num=$(echo "$topic_name" | grep -oE '^[0-9]{3}')
+
+    # Validation Check 3: Extracted topic directory must exist
+    if [ ! -d "$topic_path" ]; then
+      echo "ERROR: Extracted topic directory does not exist" >&2
+      echo "  Topic directory: $topic_path" >&2
+      echo "  Extracted from: $existing_plan_path" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Verify topic directory exists: test -d \"$topic_path\"" >&2
+      echo "    - Check specs directory structure" >&2
+      return 1
+    fi
+
+    # Validation Check 4: Topic must have plans subdirectory
+    if [ ! -d "$topic_path/plans" ]; then
+      echo "ERROR: Topic directory missing plans/ subdirectory" >&2
+      echo "  Topic path: $topic_path" >&2
+      echo "  Expected: $topic_path/plans" >&2
+      echo "" >&2
+      echo "  Diagnostic:" >&2
+      echo "    - Verify directory structure: ls -la \"$topic_path\"" >&2
+      echo "    - Topic must follow specs/NNN_topic/plans/ structure" >&2
+      return 1
+    fi
+
+    # Export for use in planning phase
+    export EXISTING_PLAN_PATH="$existing_plan_path"
+    append_workflow_state "EXISTING_PLAN_PATH" "$existing_plan_path"
+  fi
 
   # Implementation phase paths
   local impl_artifacts="${topic_path}/artifacts/"
@@ -282,14 +473,6 @@ initialize_workflow_paths() {
   export DEBUG_REPORT="$debug_report"
   export SUMMARY_PATH="$summary_path"
 
-  # Export arrays (requires bash 4.2+ for declare -g)
-  # Note: Arrays must be re-declared in calling script
-  # Workaround: Use REPORT_PATHS_COUNT and individual REPORT_PATH_N variables
-  export REPORT_PATHS_COUNT="${#report_paths[@]}"
-  for i in "${!report_paths[@]}"; do
-    export "REPORT_PATH_$i=${report_paths[$i]}"
-  done
-
   # Export tracking variables
   export SUCCESSFUL_REPORT_COUNT="$successful_report_count"
   export TESTS_PASSING="$tests_passing"
@@ -304,16 +487,137 @@ initialize_workflow_paths() {
 # Helper Functions
 # ==============================================================================
 
+# ==============================================================================
+# Generic Defensive Array Reconstruction Pattern (Spec 672, Phase 1)
+# ==============================================================================
+
+# reconstruct_array_from_indexed_vars: Generic defensive array reconstruction
+#
+# Reconstructs a bash array from indexed variables exported to state persistence.
+# Implements defensive pattern to prevent unbound variable errors (Spec 637 bug fix).
+#
+# Pattern Purpose:
+#   State persistence exports arrays as indexed variables:
+#     export ARRAY_NAME_0="value0"
+#     export ARRAY_NAME_1="value1"
+#     export ARRAY_NAME_COUNT=2
+#
+#   This function safely reconstructs the original array with defensive checks
+#   for missing count variables and missing indexed variables.
+#
+# When to Use This Pattern:
+#   - Array must persist across bash blocks (subprocess isolation)
+#   - State may be partially loaded (some variables missing)
+#   - Silent failures are unacceptable (need warnings for debugging)
+#
+# When NOT to Use:
+#   - Array only used within single bash block (use local array)
+#   - Array reconstruction can fail-fast instead of degrading (use strict checks)
+#   - Performance-critical tight loop (adds 1-2ms overhead per array)
+#
+# Arguments:
+#   $1 - array_name: Name of target array variable (e.g., "REPORT_PATHS")
+#   $2 - count_var_name: Name of count variable (e.g., "REPORT_PATHS_COUNT")
+#   $3 - var_prefix: Optional prefix for indexed variables (default: $array_name)
+#                    Use when variable names differ from array name (e.g., "REPORT_PATH" for REPORT_PATHS array)
+#
+# Effects:
+#   - Sets global array variable named $array_name
+#   - Prints warnings to stderr for missing variables
+#
+# Returns:
+#   0 always (defensive graceful degradation)
+#
+# Example:
+#   # State contains: REPORT_PATH_0, REPORT_PATH_1, REPORT_PATHS_COUNT=2
+#   reconstruct_array_from_indexed_vars "REPORT_PATHS" "REPORT_PATHS_COUNT" "REPORT_PATH"
+#   # Result: REPORT_PATHS=("value0" "value1")
+#
+# Reference: Spec 637 (unbound variable bug), Spec 672 Phase 1 (defensive patterns)
+#
+reconstruct_array_from_indexed_vars() {
+  local array_name="${1:-}"
+  local count_var_name="${2:-}"
+  local var_prefix="${3:-$array_name}"  # Default to array_name if not specified
+
+  # Validate arguments
+  if [ -z "$array_name" ] || [ -z "$count_var_name" ]; then
+    echo "ERROR: reconstruct_array_from_indexed_vars() requires array_name and count_var_name" >&2
+    return 1
+  fi
+
+  # Initialize empty array (using eval to properly initialize global array)
+  eval "${array_name}=()"
+
+  # Defensive check: Ensure count variable is set
+  # ${!count_var_name+x} returns "x" if variable exists, empty if undefined
+  if [ -z "${!count_var_name+x}" ]; then
+    echo "WARNING: $count_var_name not set, defaulting to 0 (array reconstruction skipped)" >&2
+    return 0  # Graceful degradation: empty array
+  fi
+
+  # Safe to use indirect expansion now
+  local count="${!count_var_name}"
+
+  # Validate count is numeric
+  if ! [[ "$count" =~ ^[0-9]+$ ]]; then
+    echo "WARNING: $count_var_name is not numeric (value: '$count'), defaulting to 0" >&2
+    return 0
+  fi
+
+  # Reconstruct array from indexed variables
+  for i in $(seq 0 $((count - 1))); do
+    local var_name="${var_prefix}_${i}"
+
+    # Defensive check: Verify indexed variable exists before accessing
+    # This prevents "unbound variable" errors when state partially loaded
+    if [ -z "${!var_name+x}" ]; then
+      echo "WARNING: $var_name not set, skipping index $i" >&2
+      continue
+    fi
+
+    # Safe to use indirect expansion - append to array
+    local value="${!var_name}"
+    eval "${array_name}+=(\"\$value\")"
+  done
+}
+
 # reconstruct_report_paths_array: Reconstruct REPORT_PATHS array from exported variables
+#
+# Primary: Reads REPORT_PATH_N variables from state using generic defensive pattern
+# Fallback: Filesystem discovery via glob pattern (verification fallback per Spec 057)
 #
 # Usage:
 #   reconstruct_report_paths_array
 #   # Populates global REPORT_PATHS array
 #
+# Implementation Note (Spec 672 Phase 1):
+#   Refactored to use generic reconstruct_array_from_indexed_vars() function
+#   for defensive array reconstruction. Preserves existing filesystem fallback
+#   behavior as verification fallback (Spec 057 pattern).
+#
 reconstruct_report_paths_array() {
-  REPORT_PATHS=()
-  for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
-    local var_name="REPORT_PATH_$i"
-    REPORT_PATHS+=("${!var_name}")
-  done
+  # Use generic defensive reconstruction pattern (Spec 672 Phase 1)
+  # Note: var_prefix is "REPORT_PATH" (singular) because state variables are REPORT_PATH_0, REPORT_PATH_1, etc.
+  reconstruct_array_from_indexed_vars "REPORT_PATHS" "REPORT_PATHS_COUNT" "REPORT_PATH"
+
+  # Verification Fallback: If reconstruction failed and TOPIC_PATH exists, use filesystem discovery
+  # This is a verification fallback (per Spec 057): detects state persistence failures
+  # immediately rather than hiding them, enables workflow to continue with discovered paths
+  if [ ${#REPORT_PATHS[@]} -eq 0 ] && [ -n "${TOPIC_PATH:-}" ]; then
+    local reports_dir="${TOPIC_PATH}/reports"
+
+    if [ -d "$reports_dir" ]; then
+      echo "Warning: State reconstruction failed ($REPORT_PATHS_COUNT expected, 0 found), using filesystem discovery fallback (verification fallback per Spec 057)" >&2
+
+      # Discover report files via glob pattern, preserving numeric sorting
+      for report_file in "$reports_dir"/[0-9][0-9][0-9]_*.md; do
+        if [ -f "$report_file" ]; then
+          REPORT_PATHS+=("$report_file")
+        fi
+      done
+
+      echo "Fallback discovery found ${#REPORT_PATHS[@]} reports in $reports_dir" >&2
+    fi
+  fi
 }

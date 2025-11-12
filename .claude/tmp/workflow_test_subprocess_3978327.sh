@@ -1,0 +1,5 @@
+export CLAUDE_PROJECT_DIR="/home/benjamin/.config"
+export WORKFLOW_ID="test_subprocess_3978327"
+export STATE_FILE="/home/benjamin/.config/.claude/tmp/workflow_test_subprocess_3978327.sh"
+export SUBPROCESS_TEST="initial"
+export WORKFLOW="A"

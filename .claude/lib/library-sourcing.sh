@@ -40,6 +40,8 @@
 #   - Detailed error message includes library name and expected path
 #   - Returns 1 on any failure (caller should exit)
 source_required_libraries() {
+  local start_time=$(date +%s%N)
+
   local claude_root
   claude_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -71,8 +73,8 @@ source_required_libraries() {
     fi
   done
 
-  # Debug logging: show deduplication results
-  if [[ ${#libraries[@]} -ne ${#unique_libs[@]} ]]; then
+  # Debug logging: show deduplication results (only when DEBUG=1)
+  if [[ ${#libraries[@]} -ne ${#unique_libs[@]} ]] && [[ "${DEBUG:-0}" == "1" ]]; then
     local removed_count=$((${#libraries[@]} - ${#unique_libs[@]}))
     echo "DEBUG: Library deduplication: ${#libraries[@]} input libraries -> ${#unique_libs[@]} unique libraries ($removed_count duplicates removed)" >&2
   fi
@@ -85,14 +87,16 @@ source_required_libraries() {
   for lib in "${libraries[@]}"; do
     local lib_path="${claude_root}/lib/${lib}"
 
-    if [[ ! -f "$lib_path" ]]; then
+    if [[ -f "$lib_path" ]]; then
+      # Avoid '!' operator due to Bash tool preprocessing issues
+      # shellcheck disable=SC1090
+      if source "$lib_path" 2>/dev/null; then
+        : # Success - continue to next library
+      else
+        failed_libraries+=("$lib (source failed)")
+      fi
+    else
       failed_libraries+=("$lib (expected at: $lib_path)")
-      continue
-    fi
-
-    # shellcheck disable=SC1090
-    if ! source "$lib_path" 2>/dev/null; then
-      failed_libraries+=("$lib (source failed)")
     fi
   done
 
@@ -104,6 +108,13 @@ source_required_libraries() {
     echo "" >&2
     echo "Please ensure all required libraries exist in: ${claude_root}/lib/" >&2
     return 1
+  fi
+
+  # Performance timing (if enabled)
+  if [[ "${DEBUG_PERFORMANCE:-0}" == "1" ]]; then
+    local end_time=$(date +%s%N)
+    local duration_ms=$(( (end_time - start_time) / 1000000 ))
+    echo "PERF: Library sourcing completed in ${duration_ms}ms (${#libraries[@]} libraries)" >&2
   fi
 
   return 0

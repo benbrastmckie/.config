@@ -10,7 +10,7 @@
 #   create_topic_structure(topic_path)    - Create 6 subdirectories with verification
 #   find_matching_topic(topic_desc)       - Search for existing related topics (optional)
 
-set -euo pipefail
+set -eo pipefail  # Match workflow-initialization.sh: removed -u for defensive variable refs
 
 # Get the next sequential topic number in the specs directory
 # Usage: get_next_topic_number "/path/to/specs"
@@ -33,25 +33,111 @@ get_next_topic_number() {
   fi
 }
 
-# Sanitize a workflow description into a valid topic name
-# Usage: sanitize_topic_name "Research: Authentication Patterns (2025)"
-# Returns: "research_authentication_patterns_2025"
+# Get topic number for a given topic name (idempotent - reuses existing if found)
+# Usage: get_or_create_topic_number "/path/to/specs" "research_auth_patterns"
+# Returns: Existing topic number if topic with matching name exists, otherwise next number
 #
-# Rules:
-#   - Convert to lowercase
-#   - Replace spaces with underscores
-#   - Remove special characters (keep alphanumeric and underscores)
-#   - Remove leading/trailing underscores
-#   - Truncate to 50 characters
+# This function solves the topic inconsistency issue where multiple bash blocks
+# would increment the topic number on each invocation. Now it checks for existing
+# topics first and reuses them if found.
+get_or_create_topic_number() {
+  local specs_root="$1"
+  local topic_name="$2"
+
+  # Check for existing topic with exact name match (pattern: NNN_topicname)
+  local existing
+  existing=$(ls -1d "${specs_root}"/[0-9][0-9][0-9]_"${topic_name}" 2>/dev/null | head -1 || echo "")
+
+  if [ -n "$existing" ]; then
+    # Extract and return the existing topic number
+    basename "$existing" | sed 's/^\([0-9][0-9][0-9]\)_.*/\1/'
+  else
+    # No existing topic found - get next number
+    get_next_topic_number "$specs_root"
+  fi
+}
+
+# Sanitize a workflow description into a valid topic name
+# Usage: sanitize_topic_name "Research the /home/benjamin/.config/nvim/docs directory/"
+# Returns: "nvim_docs_directory"
+#
+# Algorithm:
+#   1. Extract path components (last 2-3 meaningful segments)
+#   2. Remove full paths from description
+#   3. Convert to lowercase
+#   4. Remove filler prefixes ("carefully research", "analyze", etc.)
+#   5. Remove stopwords (preserving action verbs and technical terms)
+#   6. Combine path components with cleaned description
+#   7. Clean up formatting (multiple underscores, leading/trailing)
+#   8. Intelligent truncation (preserve whole words, max 50 chars)
+#
+# Examples:
+#   "Research the /home/user/nvim/docs directory" → "nvim_docs_directory"
+#   "fix the token refresh bug" → "fix_token_refresh_bug"
+#   "research authentication patterns to create implementation plan" → "authentication_patterns_create_implementation"
 sanitize_topic_name() {
   local raw_name="$1"
 
-  echo "$raw_name" | \
-    tr '[:upper:]' '[:lower:]' | \
+  # Stopword list (40+ common English words to filter)
+  local stopwords="the a an and or but to for of in on at by with from as is are was were be been being have has had do does did will would should could may might must can about through during before after above below between among into onto upon"
+
+  # Filler prefix patterns (research context words to remove)
+  local filler_prefixes="carefully research|research the|research|analyze the|investigate the|explore the|examine the"
+
+  # Step 1: Extract path components if input contains paths
+  local path_components=""
+  if echo "$raw_name" | grep -qE '/[a-zA-Z0-9_\-]+/'; then
+    # Extract last 2-3 meaningful path segments (skip "home", "user", common dirs)
+    path_components=$(echo "$raw_name" | grep -oE '/[^/]+/[^/]+/?[^/]*/?$' | sed 's|^/||; s|/$||' | tr '/' '_')
+    # Filter out common meaningless segments and config-like dirs
+    path_components=$(echo "$path_components" | sed 's/home_[^_]*_//; s/usr_[^_]*_//; s/opt_[^_]*_//; s/config_//')
+  fi
+
+  # Step 2: Remove full paths and trailing words like "directory" from description
+  local description=$(echo "$raw_name" | sed 's|/[^ ]*||g; s/ directory$//; s/ file$//; s/ folder$//')
+
+  # Step 3: Convert to lowercase
+  description=$(echo "$description" | tr '[:upper:]' '[:lower:]')
+  path_components=$(echo "$path_components" | tr '[:upper:]' '[:lower:]')
+
+  # Step 4: Remove filler prefixes
+  description=$(echo "$description" | sed -E "s/^($filler_prefixes) //")
+
+  # Step 5: Remove stopwords while preserving action verbs and technical terms
+  local cleaned_words=""
+  for word in $description; do
+    # Skip if word is in stopword list
+    if echo " $stopwords " | grep -qw "$word"; then
+      continue
+    fi
+    # Keep word if it's meaningful
+    if [ ${#word} -gt 2 ]; then
+      cleaned_words="$cleaned_words $word"
+    fi
+  done
+
+  # Step 6: Combine path components with cleaned description
+  local combined=""
+  if [ -n "$path_components" ]; then
+    combined="${path_components}_${cleaned_words}"
+  else
+    combined="$cleaned_words"
+  fi
+
+  # Step 7: Clean up formatting
+  combined=$(echo "$combined" | \
     tr ' ' '_' | \
     sed 's/[^a-z0-9_]//g' | \
-    sed 's/^_*//;s/_*$//' | \
-    cut -c1-50
+    sed 's/__*/_/g' | \
+    sed 's/^_*//;s/_*$//')
+
+  # Step 8: Intelligent truncation (preserve whole words, max 50 chars)
+  if [ ${#combined} -gt 50 ]; then
+    # Truncate at 50 and then trim to last complete word
+    combined=$(echo "$combined" | cut -c1-50 | sed 's/_[^_]*$//')
+  fi
+
+  echo "$combined"
 }
 
 # Create the topic directory with lazy subdirectory creation

@@ -19,6 +19,12 @@
 #   log_complexity_check 3 9.2 8 12  # Adaptive planning
 #   init_conversion_log "$OUTPUT_DIR/conversion.log"  # Conversion
 
+# Source guard: prevent duplicate sourcing (Phase 2 optimization)
+if [ -n "${UNIFIED_LOGGER_SOURCED:-}" ]; then
+  return 0
+fi
+UNIFIED_LOGGER_SOURCED=1
+
 set -euo pipefail
 
 # Source dependencies
@@ -707,6 +713,39 @@ emit_progress() {
   echo "PROGRESS: [Phase $phase] - $action"
 }
 
+# Display brief summary for coordinate workflows
+# Used at terminal states to show completion message
+display_brief_summary() {
+  echo ""
+  echo "✓ Workflow complete: $WORKFLOW_SCOPE"
+  case "$WORKFLOW_SCOPE" in
+    research-only)
+      local report_count=${#REPORT_PATHS[@]}
+      echo "Created $report_count research reports in: $TOPIC_PATH/reports/"
+      ;;
+    research-and-plan)
+      local report_count=${#REPORT_PATHS[@]}
+      echo "Created $report_count reports + 1 plan in: $TOPIC_PATH/"
+      echo "→ Run: /implement $PLAN_PATH"
+      ;;
+    full-implementation)
+      echo "Implementation complete. Summary: $SUMMARY_PATH"
+      ;;
+    debug-only)
+      echo "Debug analysis complete: $DEBUG_REPORT"
+      ;;
+    *)
+      echo "Workflow artifacts available in: $TOPIC_PATH"
+      ;;
+  esac
+  echo ""
+
+  # Cleanup temp files now that workflow is complete
+  COORDINATE_DESC_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
+  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+  rm -f "$COORDINATE_DESC_FILE" "$COORDINATE_STATE_ID_FILE" 2>/dev/null || true
+}
+
 # Export all functions for use in other scripts
 export -f rotate_log_file
 export -f write_log_entry
@@ -732,3 +771,4 @@ export -f log_phase_end
 export -f log_validation_check
 export -f log_summary
 export -f emit_progress
+export -f display_brief_summary

@@ -523,25 +523,46 @@ emit_progress "2" "Planning phase started"
 
 STEP 0: Source Required Libraries (MUST BE FIRST)
 
-# Determine script directory
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+```bash
+# Project directory detection (Standard 13)
+# Uses CLAUDE_PROJECT_DIR instead of ${BASH_SOURCE[0]} because SlashCommand
+# execution context does not provide BASH_SOURCE. Git-based detection handles
+# worktrees correctly and matches the pattern used in .claude/lib/detect-project-dir.sh
+#
+# Detect project directory if not already set
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
 
-# Source library-sourcing utilities first
-if [ -f "$SCRIPT_DIR/../lib/library-sourcing.sh" ]; then
-  source "$SCRIPT_DIR/../lib/library-sourcing.sh"
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+if [ -f "$LIB_DIR/library-sourcing.sh" ]; then
+  source "$LIB_DIR/library-sourcing.sh"
 else
   echo "ERROR: Required library not found: library-sourcing.sh"
   echo ""
-  echo "Expected location: $SCRIPT_DIR/../lib/library-sourcing.sh"
+  echo "Expected location: $LIB_DIR/library-sourcing.sh"
+  echo ""
+  echo "Diagnostic information:"
+  echo "  CLAUDE_PROJECT_DIR: ${CLAUDE_PROJECT_DIR}"
+  echo "  LIB_DIR: ${LIB_DIR}"
+  echo "  Current directory: $(pwd)"
+  echo ""
   exit 1
 fi
 
 # Source all required libraries
-if ! source_required_libraries "dependency-analyzer.sh" "context-pruning.sh" "checkpoint-utils.sh" "unified-location-detection.sh" "workflow-detection.sh" "unified-logger.sh" "error-handling.sh"; then
+if ! source_required_libraries "dependency-analyzer.sh"; then
   exit 1
 fi
 
-echo "✓ All libraries loaded successfully"
+echo "✓ All libraries loaded successfully (in this bash block)"
+echo "NOTE: Each bash block runs in isolated subprocess - libraries re-sourced as needed"
 
 # Verify critical functions are defined
 REQUIRED_FUNCTIONS=(
@@ -567,8 +588,8 @@ if [ ${#MISSING_FUNCTIONS[@]} -gt 0 ]; then
   exit 1
 fi
 
-# Define inline helper functions using heredoc pattern to avoid eval escaping issues
-cat <<'INLINE_FUNCTIONS' | bash
+# Define display_brief_summary function inline
+# (Must be defined after library sourcing but before any phase can call it)
 display_brief_summary() {
   echo ""
   echo "✓ Workflow complete: $WORKFLOW_SCOPE"
@@ -600,68 +621,12 @@ display_brief_summary() {
   echo ""
 }
 
-verify_file_created() {
-  local file_path="$1"
-  local item_desc="$2"
-  local phase_name="$3"
-
-  if [ -f "$file_path" ] && [ -s "$file_path" ]; then
-    echo -n "✓"  # Success - single character, no newline
-    return 0
-  else
-    # Failure - verbose diagnostic
-    echo ""
-    echo "✗ ERROR [$phase_name]: $item_desc verification failed"
-    echo "   Expected: File exists at $file_path"
-    [ ! -f "$file_path" ] && echo "   Found: File does not exist" || echo "   Found: File empty (0 bytes)"
-    echo ""
-    echo "DIAGNOSTIC INFORMATION:"
-    echo "  - Expected path: $file_path"
-    echo "  - Parent directory: $(dirname "$file_path")"
-
-    local dir="$(dirname "$file_path")"
-    if [ -d "$dir" ]; then
-      local file_count
-      file_count=$(ls -1 "$dir" 2>/dev/null | wc -l)
-      echo "  - Directory status: ✓ Exists ($file_count files)"
-      if [ "$file_count" -gt 0 ]; then
-        echo "  - Recent files:"
-        ls -lht "$dir" | head -4
-      fi
-    else
-      echo "  - Directory status: ✗ Does not exist"
-      echo "  - Fix: mkdir -p $dir"
-    fi
-    echo ""
-    echo "Diagnostic commands:"
-    echo "  ls -la $dir"
-    echo "  cat .claude/agents/[agent-name].md | head -50"
-    echo ""
-    return 1
-  fi
-}
-
-export -f display_brief_summary
-export -f verify_file_created
-INLINE_FUNCTIONS
-
-# Verify inline functions are defined
-REQUIRED_INLINE_FUNCTIONS=(
-  "display_brief_summary"
-  "verify_file_created"
-)
-
-for func in "${REQUIRED_INLINE_FUNCTIONS[@]}"; do
-  if ! command -v "$func" >/dev/null 2>&1; then
-    echo "ERROR: Inline function not defined: $func"
-    exit 1
-  fi
-done
-
 emit_progress "0" "Libraries loaded and verified"
+```
 
 STEP 1: Parse workflow description from command arguments
 
+```bash
 WORKFLOW_DESCRIPTION="$1"
 
 if [ -z "$WORKFLOW_DESCRIPTION" ]; then
@@ -698,8 +663,24 @@ if [ -n "$RESUME_PHASE" ]; then
   # Skip to the resume phase
   # (Implementation note: In actual execution, this would jump to the appropriate phase section)
 fi
+```
 
 STEP 2: Detect workflow scope
+
+```bash
+# Source required libraries for this bash block
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+source "$LIB_DIR/library-sourcing.sh"
+source_required_libraries || exit 1
 
 WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
 
@@ -726,11 +707,13 @@ esac
 export WORKFLOW_SCOPE PHASES_TO_EXECUTE SKIP_PHASES
 
 echo "Workflow: $WORKFLOW_SCOPE → Phases $PHASES_TO_EXECUTE"
+```
 
 STEP 3: Initialize workflow paths using consolidated function
 
 Use the workflow-initialization.sh library for unified path calculation and directory creation.
 
+```bash
 # Source workflow initialization library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -793,6 +776,75 @@ reconstruct_report_paths_array
 # Emit progress marker
 emit_progress "0" "Location pre-calculation complete (topic: $TOPIC_PATH)"
 echo ""
+```
+
+## Verification Helper Functions
+
+[EXECUTION-CRITICAL: Helper functions for concise verification - defined inline for immediate availability]
+
+**EXECUTE NOW**: USE the Bash tool to define the following helper functions:
+
+**REQUIRED ACTION**: The following helper functions implement concise verification with silent success and verbose failure patterns. These functions MUST be used at all file creation checkpoints.
+
+```bash
+# verify_file_created - Concise file verification with optional verbose failure
+#
+# Arguments:
+#   $1 - file_path (absolute path to verify)
+#   $2 - item_description (e.g., "Research report 1/4")
+#   $3 - phase_name (e.g., "Phase 1")
+#
+# Returns:
+#   0 - File exists and has content (prints single ✓ character)
+#   1 - File missing or empty (prints verbose diagnostic)
+#
+# Output:
+#   Success: Single character "✓" (no newline)
+#   Failure: Multi-line diagnostic with suggested actions
+#
+verify_file_created() {
+  local file_path="$1"
+  local item_desc="$2"
+  local phase_name="$3"
+
+  if [ -f "$file_path" ] && [ -s "$file_path" ]; then
+    echo -n "✓"  # Success - single character, no newline
+    return 0
+  else
+    # Failure - verbose diagnostic
+    echo ""
+    echo "✗ ERROR [$phase_name]: $item_desc verification failed"
+    echo "   Expected: File exists at $file_path"
+    [ ! -f "$file_path" ] && echo "   Found: File does not exist" || echo "   Found: File empty (0 bytes)"
+    echo ""
+    echo "DIAGNOSTIC INFORMATION:"
+    echo "  - Expected path: $file_path"
+    echo "  - Parent directory: $(dirname "$file_path")"
+
+    local dir="$(dirname "$file_path")"
+    if [ -d "$dir" ]; then
+      local file_count
+      file_count=$(ls -1 "$dir" 2>/dev/null | wc -l)
+      echo "  - Directory status: ✓ Exists ($file_count files)"
+      if [ "$file_count" -gt 0 ]; then
+        echo "  - Recent files:"
+        ls -lht "$dir" | head -4
+      fi
+    else
+      echo "  - Directory status: ✗ Does not exist"
+      echo "  - Fix: mkdir -p $dir"
+    fi
+    echo ""
+    echo "Diagnostic commands:"
+    echo "  ls -la $dir"
+    echo "  cat .claude/agents/[agent-name].md | head -50"
+    echo ""
+    return 1
+  fi
+}
+
+export -f verify_file_created
+```
 
 ## Phase 1: Research
 
@@ -806,8 +858,7 @@ echo ""
 
 ### Phase 1 Execution Check
 
-**EXECUTE NOW**: USE the Bash tool to check if Phase 1 should execute:
-
+```bash
 should_run_phase 1 || {
   echo "⏭️  Skipping Phase 1 (Research)"
   echo "  Reason: Workflow type is $WORKFLOW_SCOPE"
@@ -817,13 +868,13 @@ should_run_phase 1 || {
 }
 
 emit_progress "1" "Phase 1: Research (parallel agent invocation)"
+```
 
 ### Complexity-Based Research Topics
 
 STEP 1: Determine research complexity (1-4 topics based on workflow)
 
-**EXECUTE NOW**: USE the Bash tool to determine research complexity:
-
+```bash
 # Simple keyword-based complexity scoring
 RESEARCH_COMPLEXITY=2  # Default: 2 research topics
 
@@ -843,14 +894,29 @@ if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^(fix|update|modify).*(one|single|s
 fi
 
 echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics"
+```
 
 ### Parallel Research Agent Invocation
 
 STEP 2: Invoke 2-4 research agents in parallel (single message, multiple Task calls)
 
-**EXECUTE NOW**: USE the Bash tool to emit progress marker:
+```bash
+# Source required libraries for this bash block
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --is-inside-work-tree &>/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+source "$LIB_DIR/library-sourcing.sh"
+source_required_libraries || exit 1
 
 emit_progress "1" "Invoking $RESEARCH_COMPLEXITY research agents in parallel"
+```
 
 **EXECUTE NOW**: USE the Task tool NOW to invoke the research-specialist agent for EACH research topic.
 
@@ -877,9 +943,9 @@ Task {
   "
 }
 
-**EXECUTE NOW**: USE the Bash tool to emit progress after agent invocations:
-
+```bash
 emit_progress "1" "All research agents invoked - awaiting completion"
+```
 
 ### Mandatory Verification - Research Reports with Auto-Recovery
 
@@ -887,8 +953,7 @@ emit_progress "1" "All research agents invoked - awaiting completion"
 
 STEP 3: Verify ALL research reports created successfully (concise format with fail-fast)
 
-**EXECUTE NOW**: USE the Bash tool to verify all research reports:
-
+```bash
 # Concise verification with inline status indicators
 echo -n "Verifying research reports ($RESEARCH_COMPLEXITY): "
 
@@ -920,6 +985,7 @@ fi
 # VERIFICATION REQUIREMENT: Must not proceed without verification
 echo "Verification checkpoint passed - proceeding to research overview"
 echo ""
+```
 
 ### Research Overview (Conditional Synthesis)
 
@@ -929,8 +995,7 @@ STEP 4: Conditionally create overview report based on workflow scope
 When planning follows (research-and-plan, full-implementation), the plan-architect
 agent will synthesize research reports, making OVERVIEW.md redundant.
 
-**EXECUTE NOW**: USE the Bash tool to conditionally create research overview:
-
+```bash
 # Determine if overview synthesis should occur
 # Uses shared library function: should_synthesize_overview()
 if should_synthesize_overview "$WORKFLOW_SCOPE" "$SUCCESSFUL_REPORT_COUNT"; then

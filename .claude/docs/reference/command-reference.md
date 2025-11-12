@@ -173,7 +173,9 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Diagnostic report in `debug/{topic}/NNN_description.md`
 
-**See**: [debug.md](../../commands/debug.md)
+**See Also**:
+- [/debug Command Guide](../guides/debug-command-guide.md) - Comprehensive usage, parallel hypothesis testing, root cause analysis
+- [debug.md](../../commands/debug.md) - Executable command file
 
 ---
 
@@ -192,7 +194,9 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Updated README files and documentation
 
-**See**: [document.md](../../commands/document.md)
+**See Also**:
+- [/document Command Guide](../guides/document-command-guide.md) - Comprehensive usage, standards compliance, timeless writing
+- [document.md](../../commands/document.md) - Executable command file
 
 ---
 
@@ -251,6 +255,9 @@ Automatically detects workflow type and executes appropriate phases:
 **Output**: Implemented code, git commits, implementation summary
 
 **Dependent Commands**: list, revise, debug, document
+
+**See Also**:
+- [/implement Command Guide](../guides/implement-command-guide.md) - Comprehensive usage, adaptive planning, agent delegation
 
 **See**: [implement.md](../../commands/implement.md)
 
@@ -327,6 +334,9 @@ Automatically detects workflow type and executes appropriate phases:
 **Output**: Implementation plan file in `specs/plans/NNN_plan_name.md`
 
 **Dependent Commands**: report, implement, revise
+
+**See Also**:
+- [/plan Command Guide](../guides/plan-command-guide.md) - Comprehensive usage, research delegation, complexity analysis
 
 **See**: [plan.md](../../commands/plan.md)
 
@@ -463,7 +473,9 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Output**: Test results and analysis
 
-**See**: [test.md](../../commands/test.md)
+**See Also**:
+- [/test Command Guide](../guides/test-command-guide.md) - Comprehensive usage, multi-framework testing, error analysis
+- [test.md](../../commands/test.md) - Executable command file
 
 ---
 
