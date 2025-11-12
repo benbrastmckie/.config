@@ -149,19 +149,20 @@ classify_workflow_regex() {
   elif echo "$workflow_description" | grep -Eq "(^|[[:space:]])(\.|/)?(.*/)?specs/[0-9]+_[^/]+/plans/[^[:space:]]+\.md"; then
     scope="full-implementation"
 
-  # PRIORITY 3: Research-only pattern (explicit research with no action keywords)
+  # PRIORITY 3: Explicit keyword patterns (check before research-only to handle "research X and implement Y")
+  # Note: Use \b for word boundaries to avoid matching "implementation" in "implementation plan"
+  elif echo "$workflow_description" | grep -Eiq "\b(implement|execute)\b"; then
+    scope="full-implementation"
+
+  # PRIORITY 4: Research-only pattern (explicit research with no action keywords)
   elif echo "$workflow_description" | grep -Eiq "^research.*"; then
-    if echo "$workflow_description" | grep -Eiq "(plan|implement|fix|debug|create|add|build)"; then
+    if echo "$workflow_description" | grep -Eiq "(plan|fix|debug|create|add|build)"; then
       # Has action keywords - not research-only
       scope="research-and-plan"
     else
       # Pure research with no action keywords
       scope="research-only"
     fi
-
-  # PRIORITY 4: Explicit keyword patterns
-  elif echo "$workflow_description" | grep -Eiq "(^|[[:space:]])(implement|execute)"; then
-    scope="full-implementation"
 
   # PRIORITY 5: Other specific patterns
   elif echo "$workflow_description" | grep -Eiq "(plan|create.*plan|design)"; then
