@@ -161,8 +161,10 @@ append_workflow_state "WORKFLOW_DESCRIPTION" "$SAVED_WORKFLOW_DESC"
 append_workflow_state "COORDINATE_STATE_ID_FILE" "$COORDINATE_STATE_ID_FILE"
 
 # Initialize state machine (use SAVED value, not overwritten variable)
-# CRITICAL: Capture RESEARCH_COMPLEXITY return value for dynamic path allocation (Spec 678 Phase 3)
-RESEARCH_COMPLEXITY=$(sm_init "$SAVED_WORKFLOW_DESC" "coordinate")
+# CRITICAL: Call sm_init to export WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
+# Do NOT use command substitution $() as it creates subshell that doesn't export to parent
+sm_init "$SAVED_WORKFLOW_DESC" "coordinate" >/dev/null
+# Variables now available via export (not command substitution)
 
 # ADDED: Extract and save EXISTING_PLAN_PATH for research-and-revise workflows
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
