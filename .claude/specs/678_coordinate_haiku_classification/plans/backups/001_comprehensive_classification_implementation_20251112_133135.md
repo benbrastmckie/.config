@@ -5,15 +5,13 @@
 - **Feature**: Comprehensive haiku-based workflow classification with Phase 0 optimization
 - **Scope**: Replace all pattern matching with single haiku call, eliminate Phase 0 pre-allocation tension, fix concurrent execution
 - **Estimated Phases**: 6
-- **Estimated Hours**: 10.5-13.5
+- **Estimated Hours**: 10-13
 - **Structure Level**: 0
-- **Complexity Score**: 54.0 (calculation: 37 tasks × 1.0 + 6 phases × 5.0 + 12 hours × 0.5 + 5 dependencies × 2.0)
+- **Complexity Score**: 52.0 (calculation: 32 tasks × 1.0 + 6 phases × 5.0 + 11.5 hours × 0.5 + 5 dependencies × 2.0)
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - [Current State Analysis](../reports/001_current_state_analysis.md)
   - [Phase 0 and Capture Improvements](../reports/002_phase0_and_capture_improvements.md)
-  - [Infrastructure Analysis](../reports/001_infrastructure_analysis.md)
-  - [Standards Compliance](../reports/002_standards_compliance.md)
 
 ## Overview
 
@@ -64,26 +62,6 @@ From [Phase 0 and Capture Improvements Report](../reports/002_phase0_and_capture
 ## Technical Design
 
 ### Architecture
-
-**Model Selection: Haiku 4.5**
-
-**Task Complexity**: Medium (3 classification dimensions)
-- Workflow type: Simple pattern matching (Haiku strength)
-- Research complexity: Requires numerical reasoning (Haiku adequate)
-- Subtopic decomposition: Requires semantic analysis (acceptable for Haiku)
-
-**Cost Analysis**:
-- Haiku: ~500 tokens avg × 2 calls/day × 30 days = 30K tokens/month = $0.024/month
-- Sonnet: Same usage = $0.090/month (3.75x more expensive)
-
-**Quality Requirements**:
-- Workflow type: 95%+ accuracy required (mission-critical) - Haiku achieves this
-- Subtopic names: 85%+ accuracy acceptable (user can refine) - Haiku sufficient
-- Research complexity: 90%+ accuracy required - Haiku adequate
-
-**Decision**: Use Haiku 4.5 for cost efficiency (proven in Spec 670). If subtopic quality <85% in production testing, upgrade to Sonnet.
-
-**Fallback**: Regex classification provides 100% reliability for workflow type when haiku unavailable.
 
 **Revised Sequence (Haiku-First Classification)**:
 
@@ -404,10 +382,6 @@ dependencies: [5]
 - [ ] Update phase-0-optimization.md with dynamic allocation approach (file: .claude/docs/guides/phase-0-optimization.md, add section)
 - [ ] Update CLAUDE.md workflow classification description (file: CLAUDE.md, update state_based_orchestration section)
 - [ ] Update documentation references to detect_workflow_scope() to use classify_workflow_comprehensive() (file: .claude/docs/**/*.md, global update)
-- [ ] Run validation script for executable/documentation separation compliance (file: .claude/tests/validate_executable_doc_separation.sh)
-- [ ] Run link validation script to verify all updated links follow conventions (file: .claude/scripts/validate-links-quick.sh)
-- [ ] Grep entire .claude/docs/ for "detect_workflow_scope" references outside test/backup files and update with context
-- [ ] Verify command-reference.md includes comprehensive classification enhancement (file: .claude/docs/reference/command-reference.md)
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -421,21 +395,9 @@ After completing the above tasks:
 cd .claude/tests
 ./run_all_tests.sh
 # Expected: All tests passing, including 25+ new comprehensive classification tests
-
-# Run validation scripts
-./validate_executable_doc_separation.sh
-# Expected: coordinate.md passes size limits, guide properly cross-referenced
-
-# Validate link conventions in updated documentation
-.claude/scripts/validate-links-quick.sh
-# Expected: Zero broken links, all relative paths
-
-# Verify no stray references to old function name
-grep -r "detect_workflow_scope" .claude/docs/ | grep -v ".backup" | grep -v "test_" | grep -v "# Historical"
-# Expected: Zero references (or only historical markers)
 ```
 
-**Expected Duration**: 3 hours (increased from 2.5 hours due to additional validation tasks)
+**Expected Duration**: 2.5 hours
 
 **Phase 6 Completion Requirements**:
 - [ ] All phase tasks marked [x]
@@ -486,14 +448,11 @@ grep -r "detect_workflow_scope" .claude/docs/ | grep -v ".backup" | grep -v "tes
 - Update LLM classification pattern with comprehensive classification examples
 - Document enhanced haiku prompt schema and response format
 - Add architectural diagrams showing single-call classification flow
-- **Phase 0 Optimization Clarification**: Document what changed (fixed → dynamic allocation) vs what preserved (pre-calculation core optimization)
 
 ### Standards Updates
 - Update CLAUDE.md state-based orchestration section
 - Document new environment variables (RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON)
 - Add comprehensive classification to workflow scope detection pattern documentation
-- **Link Convention Compliance**: All documentation updates must use relative paths and pass validation scripts
-- **Cross-Reference Completeness**: Verify all command-reference.md and related pattern docs updated
 
 ## Dependencies
 
@@ -591,22 +550,6 @@ The diagnostic message fix (Issue 676) is a quick win that can be cherry-picked 
 ---
 
 ## Revision History
-
-### Revision 3 - 2025-11-12
-
-- **Date**: 2025-11-12
-- **Type**: research-informed (infrastructure and standards compliance)
-- **Research Reports Used**:
-  - [Infrastructure Analysis](../reports/001_infrastructure_analysis.md) - Library architecture, integration points, testing infrastructure
-  - [Standards Compliance](../reports/002_standards_compliance.md) - Documentation standards, validation requirements, model selection analysis
-- **Key Changes**:
-  - **Added Model Selection Justification**: Documented Haiku 4.5 decision with task complexity analysis, cost comparison ($0.024 vs $0.090/month), and quality requirements (Technical Design section)
-  - **Enhanced Phase 6 Validation**: Added 5 tasks for validation script testing, link convention verification, cross-reference completeness checks
-  - **Expanded Testing Section**: Added explicit validation commands for executable/doc separation, link conventions, and stray reference detection
-  - **Updated Documentation Requirements**: Added Phase 0 optimization clarification guidance, link convention compliance notes, cross-reference completeness requirements
-  - **Updated Metadata**: Added 2 new research reports, increased complexity from 52.0 → 54.0 (37 tasks vs 32), updated hours to 10.5-13.5 (Phase 6 now 3h vs 2.5h)
-- **Rationale**: Infrastructure analysis revealed mature library patterns for integration (state persistence, verification checkpoints, test coverage). Standards compliance analysis identified three enhancement opportunities: (1) missing model selection justification per model-selection-guide.md, (2) missing validation script integration for link conventions and executable/doc separation, (3) incomplete cross-reference verification for documentation updates. These enhancements align plan with all project standards while maintaining implementation feasibility.
-- **Backup**: /home/benjamin/.config/.claude/specs/678_coordinate_haiku_classification/plans/backups/001_comprehensive_classification_implementation_20251112_133135.md
 
 ### Revision 2 - 2025-11-12
 
