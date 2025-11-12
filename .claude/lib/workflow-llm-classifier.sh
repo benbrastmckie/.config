@@ -81,14 +81,80 @@ classify_workflow_llm() {
   return 0
 }
 
+# classify_workflow_llm_comprehensive - LLM-based comprehensive workflow classification
+# Provides scope, research complexity, and descriptive subtopic names in a single call
+# Args:
+#   $1: workflow_description - The workflow description to classify
+# Returns:
+#   0: Classification successful (prints JSON to stdout)
+#   1: Classification failed or confidence below threshold
+# Output Format:
+#   {
+#     "workflow_type": "research-and-plan",
+#     "confidence": 0.95,
+#     "research_complexity": 2,
+#     "subtopics": ["Topic 1 description", "Topic 2 description"],
+#     "reasoning": "..."
+#   }
+classify_workflow_llm_comprehensive() {
+  local workflow_description="$1"
+
+  # Input validation
+  if [ -z "$workflow_description" ]; then
+    log_classification_error "classify_workflow_llm_comprehensive" "empty workflow description"
+    return 1
+  fi
+
+  # Build LLM classifier input for comprehensive classification
+  local llm_input
+  if ! llm_input=$(build_llm_classifier_input "$workflow_description" "comprehensive"); then
+    log_classification_error "classify_workflow_llm_comprehensive" "failed to build LLM input"
+    return 1
+  fi
+
+  # Invoke LLM classifier with timeout
+  local llm_output
+  if ! llm_output=$(invoke_llm_classifier "$llm_input"); then
+    log_classification_error "classify_workflow_llm_comprehensive" "LLM invocation failed or timed out"
+    return 1
+  fi
+
+  # Parse and validate LLM response (comprehensive format)
+  local parsed_response
+  if ! parsed_response=$(parse_llm_classifier_response "$llm_output" "comprehensive"); then
+    log_classification_error "classify_workflow_llm_comprehensive" "failed to parse LLM response"
+    return 1
+  fi
+
+  # Check confidence threshold
+  local confidence
+  confidence=$(echo "$parsed_response" | jq -r '.confidence // 0')
+
+  # Bash-native floating point comparison (convert to integer by multiplying by 100)
+  local conf_int=$(echo "$confidence * 100" | awk '{printf "%.0f", $1}')
+  local threshold_int=$(echo "$WORKFLOW_CLASSIFICATION_CONFIDENCE_THRESHOLD * 100" | awk '{printf "%.0f", $1}')
+
+  if [ "$conf_int" -lt "$threshold_int" ]; then
+    log_classification_result "low-confidence" "$parsed_response"
+    return 1
+  fi
+
+  # Success - log and return result
+  log_classification_result "success" "$parsed_response"
+  echo "$parsed_response"
+  return 0
+}
+
 # build_llm_classifier_input - Build JSON payload for LLM classifier
 # Args:
 #   $1: workflow_description - The workflow description to classify
+#   $2: classification_type - "scope" (default) or "comprehensive"
 # Returns:
 #   0: Success (prints JSON to stdout)
 #   1: Error building input
 build_llm_classifier_input() {
   local workflow_description="$1"
+  local classification_type="${2:-scope}"
 
   # Validate input
   if [ -z "$workflow_description" ]; then
@@ -98,20 +164,39 @@ build_llm_classifier_input() {
 
   # Build JSON with proper escaping
   local json_input
-  json_input=$(jq -n \
-    --arg desc "$workflow_description" \
-    '{
-      "task": "classify_workflow_scope",
-      "description": $desc,
-      "valid_scopes": [
-        "research-only",
-        "research-and-plan",
-        "research-and-revise",
-        "full-implementation",
-        "debug-only"
-      ],
-      "instructions": "Analyze the workflow description and determine the user intent. Return a JSON object with: scope (one of valid_scopes), confidence (0.0-1.0), reasoning (brief explanation). Focus on INTENT, not keywords - e.g., '\''research the research-and-revise workflow'\'' is research-and-plan (intent: learn about workflow type), not research-and-revise (intent: revise a plan)."
-    }')
+  if [ "$classification_type" = "comprehensive" ]; then
+    # Comprehensive classification: request workflow_type, research_complexity, and subtopics
+    json_input=$(jq -n \
+      --arg desc "$workflow_description" \
+      '{
+        "task": "classify_workflow_comprehensive",
+        "description": $desc,
+        "valid_scopes": [
+          "research-only",
+          "research-and-plan",
+          "research-and-revise",
+          "full-implementation",
+          "debug-only"
+        ],
+        "instructions": "Analyze the workflow description and provide comprehensive classification. Return a JSON object with: workflow_type (one of valid_scopes), confidence (0.0-1.0), research_complexity (integer 1-4 indicating number of research subtopics needed), subtopics (array of descriptive subtopic names matching complexity count), reasoning (brief explanation). Focus on INTENT, not keywords - e.g., '\''research the research-and-revise workflow'\'' is research-and-plan (intent: learn about workflow type), not research-and-revise (intent: revise a plan). For research_complexity: 1=simple/focused, 2=moderate, 3=complex, 4=highly complex. Subtopics should be descriptive and actionable (not generic '\''Topic N'\'')."
+      }')
+  else
+    # Scope-only classification (backward compatibility)
+    json_input=$(jq -n \
+      --arg desc "$workflow_description" \
+      '{
+        "task": "classify_workflow_scope",
+        "description": $desc,
+        "valid_scopes": [
+          "research-only",
+          "research-and-plan",
+          "research-and-revise",
+          "full-implementation",
+          "debug-only"
+        ],
+        "instructions": "Analyze the workflow description and determine the user intent. Return a JSON object with: scope (one of valid_scopes), confidence (0.0-1.0), reasoning (brief explanation). Focus on INTENT, not keywords - e.g., '\''research the research-and-revise workflow'\'' is research-and-plan (intent: learn about workflow type), not research-and-revise (intent: revise a plan)."
+      }')
+  fi
 
   if [ -z "$json_input" ]; then
     echo "ERROR: build_llm_classifier_input: jq failed to build JSON" >&2
@@ -182,11 +267,13 @@ invoke_llm_classifier() {
 # parse_llm_classifier_response - Validate and parse LLM JSON response
 # Args:
 #   $1: llm_output - Raw LLM output (JSON string)
+#   $2: classification_type - "scope" (default) or "comprehensive"
 # Returns:
 #   0: Success (prints validated JSON to stdout)
 #   1: Invalid or malformed response
 parse_llm_classifier_response() {
   local llm_output="$1"
+  local classification_type="${2:-scope}"
 
   # Validate input
   if [ -z "$llm_output" ]; then
@@ -200,33 +287,85 @@ parse_llm_classifier_response() {
     return 1
   fi
 
-  # Extract and validate required fields
-  local scope confidence reasoning
-  scope=$(echo "$llm_output" | jq -r '.scope // empty')
-  confidence=$(echo "$llm_output" | jq -r '.confidence // empty')
-  reasoning=$(echo "$llm_output" | jq -r '.reasoning // empty')
+  if [ "$classification_type" = "comprehensive" ]; then
+    # Comprehensive classification validation
+    local workflow_type confidence reasoning research_complexity subtopics
+    workflow_type=$(echo "$llm_output" | jq -r '.workflow_type // empty')
+    confidence=$(echo "$llm_output" | jq -r '.confidence // empty')
+    reasoning=$(echo "$llm_output" | jq -r '.reasoning // empty')
+    research_complexity=$(echo "$llm_output" | jq -r '.research_complexity // empty')
+    subtopics=$(echo "$llm_output" | jq -r '.subtopics // empty')
 
-  if [ -z "$scope" ] || [ -z "$confidence" ] || [ -z "$reasoning" ]; then
-    echo "ERROR: parse_llm_classifier_response: missing required fields (scope, confidence, reasoning)" >&2
-    return 1
-  fi
-
-  # Validate scope value
-  local valid_scopes=("research-only" "research-and-plan" "research-and-revise" "full-implementation" "debug-only")
-  local scope_valid=0
-  for valid_scope in "${valid_scopes[@]}"; do
-    if [ "$scope" = "$valid_scope" ]; then
-      scope_valid=1
-      break
+    if [ -z "$workflow_type" ] || [ -z "$confidence" ] || [ -z "$reasoning" ] || [ -z "$research_complexity" ] || [ -z "$subtopics" ]; then
+      echo "ERROR: parse_llm_classifier_response: missing required fields (workflow_type, confidence, reasoning, research_complexity, subtopics)" >&2
+      return 1
     fi
-  done
 
-  if [ $scope_valid -eq 0 ]; then
-    echo "ERROR: parse_llm_classifier_response: invalid scope '$scope'" >&2
-    return 1
+    # Validate workflow_type value
+    local valid_scopes=("research-only" "research-and-plan" "research-and-revise" "full-implementation" "debug-only")
+    local scope_valid=0
+    for valid_scope in "${valid_scopes[@]}"; do
+      if [ "$workflow_type" = "$valid_scope" ]; then
+        scope_valid=1
+        break
+      fi
+    done
+
+    if [ $scope_valid -eq 0 ]; then
+      echo "ERROR: parse_llm_classifier_response: invalid workflow_type '$workflow_type'" >&2
+      return 1
+    fi
+
+    # Validate research_complexity range (1-4)
+    if ! echo "$research_complexity" | grep -Eq '^[1-4]$'; then
+      echo "ERROR: parse_llm_classifier_response: invalid research_complexity '$research_complexity' (must be 1-4)" >&2
+      return 1
+    fi
+
+    # Validate subtopics array count matches complexity
+    local subtopics_count
+    subtopics_count=$(echo "$llm_output" | jq -r '.subtopics | length')
+    if [ "$subtopics_count" -ne "$research_complexity" ]; then
+      echo "ERROR: parse_llm_classifier_response: subtopics count ($subtopics_count) does not match research_complexity ($research_complexity)" >&2
+      return 1
+    fi
+
+  else
+    # Scope-only validation (backward compatibility)
+    local scope confidence reasoning
+    scope=$(echo "$llm_output" | jq -r '.scope // empty')
+    confidence=$(echo "$llm_output" | jq -r '.confidence // empty')
+    reasoning=$(echo "$llm_output" | jq -r '.reasoning // empty')
+
+    if [ -z "$scope" ] || [ -z "$confidence" ] || [ -z "$reasoning" ]; then
+      echo "ERROR: parse_llm_classifier_response: missing required fields (scope, confidence, reasoning)" >&2
+      return 1
+    fi
+
+    # Validate scope value
+    local valid_scopes=("research-only" "research-and-plan" "research-and-revise" "full-implementation" "debug-only")
+    local scope_valid=0
+    for valid_scope in "${valid_scopes[@]}"; do
+      if [ "$scope" = "$valid_scope" ]; then
+        scope_valid=1
+        break
+      fi
+    done
+
+    if [ $scope_valid -eq 0 ]; then
+      echo "ERROR: parse_llm_classifier_response: invalid scope '$scope'" >&2
+      return 1
+    fi
   fi
 
-  # Validate confidence range (0.0 to 1.0)
+  # Validate confidence range (0.0 to 1.0) - applies to both modes
+  local confidence
+  if [ "$classification_type" = "comprehensive" ]; then
+    confidence=$(echo "$llm_output" | jq -r '.confidence // empty')
+  else
+    confidence=$(echo "$llm_output" | jq -r '.confidence // empty')
+  fi
+
   # Accept: 0, 0.5, 1, 1.0, 0.95, etc.
   # Reject: 1.5, 2, -0.5, abc, etc.
   if ! echo "$confidence" | grep -Eq '^(0(\.[0-9]+)?|1(\.0+)?)$'; then
@@ -289,6 +428,7 @@ log_classification_debug() {
 
 # Export functions for use by other scripts
 export -f classify_workflow_llm
+export -f classify_workflow_llm_comprehensive
 export -f build_llm_classifier_input
 export -f invoke_llm_classifier
 export -f parse_llm_classifier_response
