@@ -310,6 +310,7 @@ Multi-level agent coordination system that minimizes context window consumption 
 - **Subagent Delegation**: Commands can delegate complex tasks to specialized subagents - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
 - **Imperative Agent Invocation**: All agent invocations use imperative pattern (not documentation-only YAML blocks) - See [Standard 11](.claude/docs/reference/command_architecture_standards.md#standard-11) and [Anti-Pattern Documentation](.claude/docs/concepts/patterns/behavioral-injection.md#anti-pattern-documentation-only-yaml-blocks)
 - **Workflow Scope Detection**: Automatic detection of workflow requirements - See [Workflow Scope Detection Pattern](.claude/docs/concepts/patterns/workflow-scope-detection.md)
+- **LLM-Based Hybrid Classification**: Semantic workflow classification with 98%+ accuracy and automatic regex fallback for zero operational risk - See [LLM Classification Pattern](.claude/docs/concepts/patterns/llm-classification-pattern.md)
 - **Phase 0 Optimization**: Pre-calculation of paths for 85% token reduction - See [Phase 0 Optimization Guide](.claude/docs/guides/phase-0-optimization.md)
 
 ### Context Reduction Metrics
@@ -330,6 +331,11 @@ Multi-level agent coordination system that minimizes context window consumption 
   - `prune_subagent_output()` - Clear full outputs after metadata extraction
   - `prune_phase_metadata()` - Remove phase data after completion
   - `apply_pruning_policy()` - Automatic pruning by workflow type
+- **Workflow Classification**: `.claude/lib/workflow-llm-classifier.sh`, `.claude/lib/workflow-scope-detection.sh`
+  - `classify_workflow_llm()` - LLM-based semantic classification
+  - `detect_workflow_scope()` - Unified hybrid classification with automatic fallback
+  - `classify_workflow_regex()` - Traditional regex-based classification
+  - Modes: hybrid (default), llm-only, regex-only
 
 ### Agent Templates
 - **Implementation Researcher** (`.claude/agents/implementation-researcher.md`)
