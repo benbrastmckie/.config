@@ -272,15 +272,71 @@ initialize_workflow_paths() {
 
   # Path calculation silent - coordinate.md will display summary
 
-  # Calculate topic path
-  local topic_path="${specs_root}/${topic_num}_${topic_name}"
+  # Calculate topic path - conditional based on workflow scope
+  local topic_path
+  if [ "${workflow_scope:-}" = "research-and-revise" ]; then
+    # research-and-revise: Reuse existing plan's topic directory
+    if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "CRITICAL ERROR: research-and-revise requires EXISTING_PLAN_PATH" >&2
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "" >&2
+      echo "Workflow scope: research-and-revise" >&2
+      echo "EXISTING_PLAN_PATH: ${EXISTING_PLAN_PATH:-<not set>}" >&2
+      echo "" >&2
+      echo "Root cause: EXISTING_PLAN_PATH must be set in environment before calling initialize_workflow_paths()" >&2
+      echo "Solution: Set EXISTING_PLAN_PATH to the path of the plan being revised" >&2
+      echo "" >&2
+      return 1
+    fi
+
+    # Extract topic directory from plan path
+    # Pattern: /path/to/specs/NNN_topic_name/plans/001_plan.md -> /path/to/specs/NNN_topic_name
+    topic_path=$(dirname $(dirname "$EXISTING_PLAN_PATH"))
+
+    # Validate it exists (defensive check)
+    if [ ! -d "$topic_path" ]; then
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "CRITICAL ERROR: Existing topic directory not found" >&2
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "" >&2
+      echo "Extracted path: $topic_path" >&2
+      echo "EXISTING_PLAN_PATH: $EXISTING_PLAN_PATH" >&2
+      echo "" >&2
+      echo "Root cause: Extracted topic directory does not exist on filesystem" >&2
+      echo "Solution: Verify EXISTING_PLAN_PATH points to a valid plan file" >&2
+      echo "" >&2
+      return 1
+    fi
+
+    # Extract topic number and name from existing directory
+    topic_num=$(basename "$topic_path" | grep -oE '^[0-9]+')
+    topic_name=$(basename "$topic_path" | sed 's/^[0-9]\+_//')
+
+    echo "Using existing topic directory: $topic_path (research-and-revise mode)" >&2
+  else
+    # All other workflow scopes: Create new topic directory
+    topic_path="${specs_root}/${topic_num}_${topic_name}"
+  fi
 
   # ============================================================================
   # STEP 3: Directory Structure Creation (Silent - verification occurs, no output)
   # ============================================================================
 
   # Create topic structure using utility function (creates only root directory)
-  if ! create_topic_structure "$topic_path"; then
+  # Skip creation for research-and-revise (directory already exists)
+  if [ "${workflow_scope:-}" = "research-and-revise" ]; then
+    # Verify directory exists (already checked above, but defensive)
+    if [ ! -d "$topic_path" ]; then
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "CRITICAL ERROR: Topic directory disappeared between validation checks" >&2
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "" >&2
+      echo "This should never happen. Topic path: $topic_path" >&2
+      echo "" >&2
+      return 1
+    fi
+  elif ! create_topic_structure "$topic_path"; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     echo "CRITICAL ERROR: Topic root directory creation failed" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
