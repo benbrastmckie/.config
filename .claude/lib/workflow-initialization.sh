@@ -315,7 +315,17 @@ initialize_workflow_paths() {
   # Pre-calculate ALL artifact paths (exported to calling script)
   # ============================================================================
 
-  # Research phase paths (calculate for max 4 topics)
+  # Research phase paths (pre-allocate maximum 4 paths for Phase 0 optimization)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  # Design Trade-off: Fixed capacity (4) vs. dynamic complexity (1-4)
+  #   - Pre-allocate max paths upfront → 85% token reduction, 25x speedup
+  #   - Actual usage determined by RESEARCH_COMPLEXITY in Phase 1 (see coordinate.md)
+  #   - Unused paths remain exported but empty (minor memory overhead acceptable)
+  #
+  # Rationale: Phase 0 optimization pattern prioritizes performance over memory efficiency.
+  # Separation of concerns: Path calculation (infrastructure) vs. complexity detection (orchestration).
+  # See: phase-0-optimization.md (pattern guide), Spec 676 (architecture analysis)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   local -a report_paths
   for i in 1 2 3 4; do
     report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_topic${i}.md")
@@ -328,6 +338,9 @@ initialize_workflow_paths() {
   export REPORT_PATH_1="${report_paths[1]}"
   export REPORT_PATH_2="${report_paths[2]}"
   export REPORT_PATH_3="${report_paths[3]}"
+
+  # Export fixed count (4) for subprocess persistence
+  # Phase 1 orchestration uses RESEARCH_COMPLEXITY (1-4) for actual agent invocation control
   export REPORT_PATHS_COUNT=4
 
   # Define research subdirectory for overview synthesis

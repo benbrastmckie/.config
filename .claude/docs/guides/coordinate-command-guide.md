@@ -354,6 +354,98 @@ The implementation phase uses behavioral injection to invoke the implementer-coo
 
 See [Standard 11](./../reference/command_architecture_standards.md#standard-11), [Behavioral Injection Pattern](./../concepts/patterns/behavioral-injection.md), and [implementer-coordinator agent](./../agents/implementer-coordinator.md) for complete documentation.
 
+### Agent Invocation Architecture: Research Phase
+
+The research phase uses **explicit conditional enumeration** to control agent invocations based on calculated complexity. This architectural pattern ensures the number of agents invoked matches the RESEARCH_COMPLEXITY value (1-4) rather than defaulting to a fixed count.
+
+#### Explicit Loop Requirement
+
+**Critical Constraint**: Natural language instructions like "for EACH research topic (1 to $RESEARCH_COMPLEXITY)" are documentation templates, not executable iteration constraints. Claude interprets these as suggestions and examines available context (e.g., REPORT_PATH variables) to determine invocation count, which can lead to mismatches.
+
+**Solution**: Two-part implementation pattern:
+
+**Part 1: Bash Block** (Variable Preparation):
+```bash
+# Prepare variables for conditional agent invocations (1-4)
+for i in $(seq 1 4); do
+  REPORT_PATH_VAR="REPORT_PATH_$((i-1))"
+  export "RESEARCH_TOPIC_${i}=Topic ${i}"
+  export "AGENT_REPORT_PATH_${i}=${!REPORT_PATH_VAR}"
+done
+```
+
+**Part 2: Markdown Section** (Conditional Task Invocations):
+```markdown
+**IF RESEARCH_COMPLEXITY >= 1** (always true):
+Task { ... agent 1 invocation ... }
+
+**IF RESEARCH_COMPLEXITY >= 2** (true for complexity 2-4):
+Task { ... agent 2 invocation ... }
+
+**IF RESEARCH_COMPLEXITY >= 3** (true for complexity 3-4):
+Task { ... agent 3 invocation ... }
+
+**IF RESEARCH_COMPLEXITY >= 4** (hierarchical research triggers, not this code path):
+Task { ... agent 4 invocation ... }
+```
+
+**Why This Pattern Works**:
+
+1. **Architectural Compliance**: Task tool invocations CANNOT be placed inside bash loops (behavioral injection constraint). Task invocations must occur in markdown sections between bash blocks.
+
+2. **Explicit Control**: Conditional guards (`IF RESEARCH_COMPLEXITY >= N`) provide iteration control while respecting the markdown invocation requirement.
+
+3. **Pattern Alignment**: Follows Standard 11 (Imperative Agent Invocation Pattern) with imperative instructions, behavioral file references, and explicit completion signals.
+
+4. **Correctness**: Ensures agent count matches calculated complexity rather than examining pre-allocated array size.
+
+#### Historical Context
+
+**Problem** (Prior to Spec 676):
+- Research phase used natural language template: "invoke agent for EACH research topic (1 to $RESEARCH_COMPLEXITY)"
+- Claude examined context and found 4 pre-allocated REPORT_PATH variables (Phase 0 optimization)
+- Result: Invoked 4 agents regardless of RESEARCH_COMPLEXITY value (often 2 for typical workflows)
+- Impact: 100% time/token overhead (20-40 min → 10-20 min), ~25,000 tokens wasted per workflow
+
+**Solution** (Spec 676):
+- Replaced natural language template with explicit conditional enumeration
+- Bash block prepares variables, markdown section controls invocation via conditional guards
+- Result: Agent count now matches RESEARCH_COMPLEXITY (2 agents for typical workflows)
+- Impact: 50% time/token savings for research phase
+
+#### Pre-Calculated Array Size vs. Actual Usage
+
+**Design Trade-off**:
+- **REPORT_PATHS_COUNT=4**: Pre-allocated path capacity (Phase 0 optimization for 85% token reduction, 25x speedup)
+- **RESEARCH_COMPLEXITY=1-4**: Actual agent invocations (pattern-based heuristic from workflow description)
+- **Intent**: Pre-allocate max paths (4) for performance, use subset (1-4) dynamically based on complexity
+
+**Rationale**: Phase 0 optimization pattern prioritizes performance over memory efficiency. Minor overhead from unused paths (2-3 empty variables) is acceptable given massive performance benefits. Separation of concerns: path calculation (infrastructure) vs. complexity detection (orchestration).
+
+**Verification Pattern**: Verification and discovery loops use RESEARCH_COMPLEXITY (not REPORT_PATHS_COUNT) to determine iteration bounds, ensuring correctness even when pre-allocated capacity exceeds actual usage.
+
+#### Performance Impact
+
+**Phase 0 Pre-Allocation Benefits**:
+- 85% token reduction vs. agent-based path detection
+- 25x speedup (agent invocation overhead eliminated)
+- Predictable artifact locations for verification
+
+**Explicit Loop Control Benefits** (Spec 676):
+- Eliminates unnecessary agent invocations (4 → 2 for typical workflows)
+- 50% time savings for research phase (20-40 min → 10-20 min)
+- 50% token savings for research phase (~25,000 tokens)
+- Agent count matches user expectations based on workflow complexity
+
+**Combined**: Phase 0 optimization + explicit loop control achieves both fast initialization AND correct agent invocation count.
+
+#### References
+
+- **Spec 676**: Root cause analysis and agent invocation loop fix
+- **Phase 0 Optimization Guide**: `.claude/docs/guides/phase-0-optimization.md` - Pre-calculation strategy
+- **Bash Block Execution Model**: `.claude/docs/concepts/bash-block-execution-model.md` - Subprocess isolation patterns
+- **Standard 11**: Imperative Agent Invocation Pattern requirement
+
 ### Bash Block Execution Patterns
 
 The `/coordinate` command uses multiple bash code blocks to orchestrate workflows. Each bash block executes in a separate subprocess, requiring careful state management and library sourcing.
