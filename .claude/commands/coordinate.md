@@ -347,15 +347,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -365,6 +362,24 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+
+# VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
+if ! command -v verify_state_variable &>/dev/null; then
+  echo "ERROR: verify_state_variable function not available after library sourcing"
+  exit 1
+fi
+if ! command -v handle_state_error &>/dev/null; then
+  echo "ERROR: handle_state_error function not available after library sourcing"
+  exit 1
+fi
 
 # Check if we should skip this state (already at terminal)
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -487,15 +502,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -505,6 +517,24 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+
+# VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
+if ! command -v verify_state_variable &>/dev/null; then
+  echo "ERROR: verify_state_variable function not available after library sourcing"
+  exit 1
+fi
+if ! command -v handle_state_error &>/dev/null; then
+  echo "ERROR: handle_state_error function not available after library sourcing"
+  exit 1
+fi
 
 # Defensive: Restore RESEARCH_COMPLEXITY if not loaded from state
 # This can happen if workflow state doesn't persist properly across bash blocks
@@ -782,15 +812,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -800,6 +827,14 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -939,15 +974,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -957,6 +989,24 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+
+# VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
+if ! command -v verify_state_variable &>/dev/null; then
+  echo "ERROR: verify_state_variable function not available after library sourcing"
+  exit 1
+fi
+if ! command -v handle_state_error &>/dev/null; then
+  echo "ERROR: handle_state_error function not available after library sourcing"
+  exit 1
+fi
 
 # Determine which path to verify based on workflow scope
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
@@ -1201,15 +1251,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -1219,6 +1266,14 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -1285,15 +1340,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -1303,6 +1355,24 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+
+# VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
+if ! command -v verify_state_variable &>/dev/null; then
+  echo "ERROR: verify_state_variable function not available after library sourcing"
+  exit 1
+fi
+if ! command -v handle_state_error &>/dev/null; then
+  echo "ERROR: handle_state_error function not available after library sourcing"
+  exit 1
+fi
 
 emit_progress "3" "Implementation phase completion - verifying results"
 
@@ -1427,15 +1497,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -1445,6 +1512,14 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -1549,15 +1624,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -1567,6 +1639,14 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -1617,15 +1697,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -1635,6 +1712,24 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+
+# VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
+if ! command -v verify_state_variable &>/dev/null; then
+  echo "ERROR: verify_state_variable function not available after library sourcing"
+  exit 1
+fi
+if ! command -v handle_state_error &>/dev/null; then
+  echo "ERROR: handle_state_error function not available after library sourcing"
+  exit 1
+fi
 
 emit_progress "5" "Debug analysis complete - verifying results"
 
@@ -1738,15 +1833,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -1756,6 +1848,14 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -1806,15 +1906,12 @@ fi
 
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-# Re-source critical libraries (source guards make this safe)
+# Standard 15: Library Sourcing Order - Re-source in dependency order
+# Step 1: Source state machine and persistence FIRST (needed for load_workflow_state)
 source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
-source "${LIB_DIR}/workflow-initialization.sh"
-source "${LIB_DIR}/error-handling.sh"
-source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state from fixed semantic filename (Pattern 1)
+# Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
 COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
@@ -1824,6 +1921,24 @@ fi
 
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
+
+# Step 3: Source error handling and verification libraries (Pattern 5 preserves loaded state)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Step 4: Source additional libraries
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+
+# VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
+if ! command -v verify_state_variable &>/dev/null; then
+  echo "ERROR: verify_state_variable function not available after library sourcing"
+  exit 1
+fi
+if ! command -v handle_state_error &>/dev/null; then
+  echo "ERROR: handle_state_error function not available after library sourcing"
+  exit 1
+fi
 
 emit_progress "6" "Documentation updated"
 
