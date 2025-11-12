@@ -1308,6 +1308,9 @@ case "$WORKFLOW_SCOPE" in
   research-and-plan)
     echo "    - Proceeding to: Terminal state (workflow complete)"
     ;;
+  research-and-revise)
+    echo "    - Proceeding to: Terminal state (revision complete)"
+    ;;
   full-implementation)
     echo "    - Proceeding to: Implementation phase"
     ;;
@@ -1320,7 +1323,7 @@ echo ""
 
 # Determine next state based on workflow scope
 case "$WORKFLOW_SCOPE" in
-  research-and-plan)
+  research-and-plan|research-and-revise)
     # Terminal state reached
     sm_transition "$STATE_COMPLETE"
     append_workflow_state "CURRENT_STATE" "$STATE_COMPLETE"
