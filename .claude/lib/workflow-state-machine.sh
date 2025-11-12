@@ -211,6 +211,126 @@ load_completed_states_from_state() {
   return 0
 }
 
+# generate_descriptive_topics_from_plans: Generate descriptive topic names from plan analysis
+# Usage: generate_descriptive_topics_from_plans <workflow-description> <complexity>
+# Returns: JSON array of descriptive topic names
+generate_descriptive_topics_from_plans() {
+  local workflow_desc="$1"
+  local complexity="${2:-4}"  # Default to 4 topics
+
+  # Extract plan paths from description (pattern: /specs/NNN_topic/plans/001_*.md or .claude/specs/...)
+  local source_plan=$(echo "$workflow_desc" | grep -oE '(/[^ ]*)?\.claude/specs/[0-9]+_[^/]+/plans/[^/]+\.md' | head -1)
+  local target_plan=$(echo "$workflow_desc" | grep -oE '(/[^ ]*)?\.claude/specs/[0-9]+_[^/]+/plans/[^/]+\.md' | tail -1)
+
+  # If no absolute path, try relative paths and convert to absolute
+  if [ -z "$source_plan" ]; then
+    local relative_plan=$(echo "$workflow_desc" | grep -oE '\.claude/specs/[0-9]+_[^/]+/plans/[^/]+\.md' | head -1)
+    if [ -n "$relative_plan" ] && [ -f "$CLAUDE_PROJECT_DIR/$relative_plan" ]; then
+      source_plan="$CLAUDE_PROJECT_DIR/$relative_plan"
+    fi
+  fi
+
+  if [ -n "$source_plan" ] && [ -f "$source_plan" ]; then
+    # Read source plan to determine what was implemented
+    local plan_title=$(grep -m1 "^# " "$source_plan" | sed 's/^# //' | sed 's/ Plan$//' | sed 's/ Implementation$//')
+
+    # Extract target topic name from target plan path if available
+    local target_topic_name=""
+    if [ -n "$target_plan" ] && [ "$target_plan" != "$source_plan" ]; then
+      target_topic_name=$(basename $(dirname $(dirname "$target_plan")) | sed 's/^[0-9]\+_//' | tr '_' ' ')
+    fi
+
+    # Generate descriptive topics based on complexity
+    case "$complexity" in
+      2)
+        jq -n --arg t1 "$(echo "$plan_title" | sed 's/ implementation//') implementation architecture" \
+              --arg t2 "Integration approach and lessons learned" \
+              '[$t1, $t2]'
+        ;;
+      3)
+        jq -n --arg t1 "$(echo "$plan_title" | sed 's/ implementation//') implementation architecture" \
+              --arg t2 "${target_topic_name:-Target system} integration points" \
+              --arg t3 "Performance characteristics and optimization opportunities" \
+              '[$t1, $t2, $t3]'
+        ;;
+      *)  # 4 or more
+        jq -n --arg t1 "$(echo "$plan_title" | sed 's/ implementation//') implementation architecture" \
+              --arg t2 "${target_topic_name:-Target system} integration points" \
+              --arg t3 "Performance characteristics and metrics" \
+              --arg t4 "Optimization opportunities and lessons learned" \
+              '[$t1, $t2, $t3, $t4]'
+        ;;
+    esac
+  else
+    # Fallback: Could not find or read plan file
+    # Generate generic topics matching complexity count
+    case "$complexity" in
+      2)
+        echo '["Topic 1","Topic 2"]'
+        ;;
+      3)
+        echo '["Topic 1","Topic 2","Topic 3"]'
+        ;;
+      *)
+        echo '["Topic 1","Topic 2","Topic 3","Topic 4"]'
+        ;;
+    esac
+  fi
+}
+
+# generate_descriptive_topics_from_description: Extract key concepts from workflow description
+# Usage: generate_descriptive_topics_from_description <workflow-description> <complexity>
+# Returns: JSON array of descriptive topic names
+generate_descriptive_topics_from_description() {
+  local workflow_desc="$1"
+  local complexity="${2:-4}"
+
+  # Extract key terms (simple noun/verb extraction)
+  # This is a basic implementation - can be enhanced with more sophisticated NLP
+  local key_terms=$(echo "$workflow_desc" | \
+    grep -oE '\b[A-Z][a-z]+\b|\b(implement|create|add|refactor|optimize|fix|debug|test|document)[a-z]*\b' | \
+    head -8 | \
+    tr '\n' ' ')
+
+  # If we found meaningful terms, use them
+  if [ -n "$key_terms" ]; then
+    # Generate topics based on extracted terms and complexity
+    case "$complexity" in
+      2)
+        jq -n --arg t1 "$key_terms architecture and design" \
+              --arg t2 "Implementation approach and testing" \
+              '[$t1, $t2]'
+        ;;
+      3)
+        jq -n --arg t1 "$key_terms architecture and design" \
+              --arg t2 "Implementation approach and patterns" \
+              --arg t3 "Testing and validation strategy" \
+              '[$t1, $t2, $t3]'
+        ;;
+      *)  # 4 or more
+        jq -n --arg t1 "$key_terms architecture and design" \
+              --arg t2 "Implementation approach and patterns" \
+              --arg t3 "Testing and validation strategy" \
+              --arg t4 "Performance and optimization considerations" \
+              '[$t1, $t2, $t3, $t4]'
+        ;;
+    esac
+  else
+    # Fallback: No meaningful terms found
+    case "$complexity" in
+      2)
+        echo '["Topic 1","Topic 2"]'
+        ;;
+      3)
+        echo '["Topic 1","Topic 2","Topic 3"]'
+        ;;
+      *)
+        echo '["Topic 1","Topic 2","Topic 3","Topic 4"]'
+        ;;
+    esac
+  fi
+}
+
 # sm_init: Initialize new state machine from workflow description
 # Usage: sm_init <workflow-description> <command-name>
 # Example: sm_init "Research authentication patterns" "coordinate"
@@ -263,6 +383,36 @@ sm_init() {
     export WORKFLOW_SCOPE
     export RESEARCH_COMPLEXITY
     export RESEARCH_TOPICS_JSON
+  fi
+
+  # Check if topics are generic (pattern: "Topic N") and replace with descriptive names
+  # This fallback ensures research agents always receive meaningful topic names
+  TOPICS_GENERIC=false
+  if echo "$RESEARCH_TOPICS_JSON" | jq -e '.[] | select(test("^Topic [0-9]+$"))' >/dev/null 2>&1; then
+    TOPICS_GENERIC=true
+  fi
+
+  if [ "$TOPICS_GENERIC" = "true" ]; then
+    echo "Detected generic topic names, generating descriptive topics..." >&2
+    # Generate descriptive topics based on workflow type
+    case "$WORKFLOW_SCOPE" in
+      research-and-revise)
+        # Extract plan paths and generate topics from their content
+        DESCRIPTIVE_TOPICS=$(generate_descriptive_topics_from_plans "$workflow_desc" "$RESEARCH_COMPLEXITY")
+        ;;
+      research-and-plan|full-implementation)
+        # Analyze workflow description for key concepts
+        DESCRIPTIVE_TOPICS=$(generate_descriptive_topics_from_description "$workflow_desc" "$RESEARCH_COMPLEXITY")
+        ;;
+      *)
+        # Keep generic for other scopes (research-only, debug-only)
+        DESCRIPTIVE_TOPICS="$RESEARCH_TOPICS_JSON"
+        ;;
+    esac
+
+    RESEARCH_TOPICS_JSON="$DESCRIPTIVE_TOPICS"
+    export RESEARCH_TOPICS_JSON
+    echo "Generated descriptive topics: $(echo "$RESEARCH_TOPICS_JSON" | jq -r 'join(", ")')" >&2
   fi
 
   # Configure terminal state based on workflow scope
