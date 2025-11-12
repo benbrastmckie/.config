@@ -136,6 +136,7 @@ extract_topic_from_plan_path() {
 # Arguments:
 #   $1 - WORKFLOW_DESCRIPTION: User's workflow description (e.g., "implement auth")
 #   $2 - WORKFLOW_SCOPE: Workflow type (research-only, research-and-plan, full-implementation, debug-only)
+#   $3 - RESEARCH_COMPLEXITY: Number of research subtopics (1-4, default: 2) - NEW in Spec 678
 #
 # Exports (all paths exported to calling script):
 #   LOCATION - Project root directory
@@ -167,6 +168,7 @@ extract_topic_from_plan_path() {
 initialize_workflow_paths() {
   local workflow_description="${1:-}"
   local workflow_scope="${2:-}"
+  local research_complexity="${3:-2}"  # NEW: Accept RESEARCH_COMPLEXITY as third argument (default: 2)
 
   # Validate inputs
   if [ -z "$workflow_description" ]; then
@@ -176,6 +178,12 @@ initialize_workflow_paths() {
 
   if [ -z "$workflow_scope" ]; then
     echo "ERROR: initialize_workflow_paths() requires WORKFLOW_SCOPE as second argument" >&2
+    return 1
+  fi
+
+  # Validate RESEARCH_COMPLEXITY range (1-4)
+  if ! echo "$research_complexity" | grep -Eq '^[1-4]$'; then
+    echo "ERROR: RESEARCH_COMPLEXITY must be 1-4, got: $research_complexity" >&2
     return 1
   fi
 
@@ -315,33 +323,33 @@ initialize_workflow_paths() {
   # Pre-calculate ALL artifact paths (exported to calling script)
   # ============================================================================
 
-  # Research phase paths (pre-allocate maximum 4 paths for Phase 0 optimization)
+  # Research phase paths (dynamically allocate based on RESEARCH_COMPLEXITY)
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # Design Trade-off: Fixed capacity (4) vs. dynamic complexity (1-4)
-  #   - Pre-allocate max paths upfront → 85% token reduction, 25x speedup
-  #   - Actual usage determined by RESEARCH_COMPLEXITY in Phase 1 (see coordinate.md)
-  #   - Unused paths remain exported but empty (minor memory overhead acceptable)
+  # Design Enhancement: Just-in-time dynamic allocation (Spec 678)
+  #   - Allocate EXACTLY $research_complexity paths (1-4)
+  #   - Eliminates pre-allocation tension (fixed capacity vs dynamic usage)
+  #   - Zero unused variable exports → cleaner diagnostics
+  #   - Maintains Phase 0 optimization (85% token reduction, 25x speedup)
   #
-  # Rationale: Phase 0 optimization pattern prioritizes performance over memory efficiency.
-  # Separation of concerns: Path calculation (infrastructure) vs. complexity detection (orchestration).
-  # See: phase-0-optimization.md (pattern guide), Spec 676 (architecture analysis)
+  # Rationale: Complexity now determined in sm_init (before path allocation),
+  # enabling just-in-time allocation that exactly matches usage.
+  # See: Spec 678 Phase 4 (dynamic allocation), phase-0-optimization.md
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   local -a report_paths
-  for i in 1 2 3 4; do
+  for i in $(seq 1 "$research_complexity"); do
     report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_topic${i}.md")
   done
 
   # Export individual report path variables for bash block persistence
   # Arrays cannot be exported across subprocess boundaries, so we export
   # individual REPORT_PATH_0, REPORT_PATH_1, etc. variables
-  export REPORT_PATH_0="${report_paths[0]}"
-  export REPORT_PATH_1="${report_paths[1]}"
-  export REPORT_PATH_2="${report_paths[2]}"
-  export REPORT_PATH_3="${report_paths[3]}"
+  # NOTE: Zero-indexed (REPORT_PATH_0, REPORT_PATH_1, ...), count is $research_complexity
+  for i in $(seq 0 $((research_complexity - 1))); do
+    export "REPORT_PATH_$i=${report_paths[$i]}"
+  done
 
-  # Export fixed count (4) for subprocess persistence
-  # Phase 1 orchestration uses RESEARCH_COMPLEXITY (1-4) for actual agent invocation control
-  export REPORT_PATHS_COUNT=4
+  # Export exact count matching RESEARCH_COMPLEXITY (no unused variables)
+  export REPORT_PATHS_COUNT="$research_complexity"
 
   # Define research subdirectory for overview synthesis
   local research_subdir="${topic_path}/reports"
