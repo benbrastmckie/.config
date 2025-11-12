@@ -1,17 +1,48 @@
-#!/bin/bash
-# Scope Detection Library for /coordinate Command
-# Provides centralized workflow scope detection logic
+#!/usr/bin/env bash
+# Unified Workflow Scope Detection Library
+# Provides hybrid LLM-based classification with automatic regex fallback
+#
+# This library serves all workflow commands (/coordinate, /supervise, custom orchestrators)
+# with a single unified implementation following the clean-break philosophy.
+#
+# Classification Modes:
+#   - hybrid (default): LLM first, regex fallback on timeout/low-confidence
+#   - llm-only: LLM only, fail-fast on errors
+#   - regex-only: Traditional regex patterns only
+#
+# Source guard: Prevent multiple sourcing
+if [ -n "${WORKFLOW_SCOPE_DETECTION_SOURCED:-}" ]; then
+  return 0
+fi
+export WORKFLOW_SCOPE_DETECTION_SOURCED=1
 
-# detect_workflow_scope: Determine workflow scope from description
+set -euo pipefail
+
+# Detect and export CLAUDE_PROJECT_DIR
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  # shellcheck source=.claude/lib/detect-project-dir.sh
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/detect-project-dir.sh"
+fi
+
+# Source LLM classifier library
+# shellcheck source=.claude/lib/workflow-llm-classifier.sh
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-llm-classifier.sh"
+
+# Configuration
+WORKFLOW_CLASSIFICATION_MODE="${WORKFLOW_CLASSIFICATION_MODE:-hybrid}"
+DEBUG_SCOPE_DETECTION="${DEBUG_SCOPE_DETECTION:-0}"
+
+# detect_workflow_scope: Unified hybrid workflow classification
 # Args:
 #   $1: workflow_description - The workflow description to analyze
 # Returns:
 #   Prints one of: research-only, research-and-plan, research-and-revise, full-implementation, debug-only
-# Usage:
-#   WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
+# Environment Variables:
+#   WORKFLOW_CLASSIFICATION_MODE: hybrid (default), llm-only, regex-only
+#   DEBUG_SCOPE_DETECTION: 0 (default), 1 (verbose logging)
 detect_workflow_scope() {
   local workflow_description="$1"
-  local scope="research-and-plan"  # Default fallback
+  local scope=""
 
   # Validation
   if [ -z "$workflow_description" ]; then
@@ -20,62 +51,115 @@ detect_workflow_scope() {
     return 1
   fi
 
+  # Route based on classification mode
+  case "$WORKFLOW_CLASSIFICATION_MODE" in
+    hybrid)
+      # Try LLM first, fallback to regex on error/timeout/low-confidence
+      if scope=$(classify_workflow_llm "$workflow_description" 2>/dev/null); then
+        # LLM classification succeeded
+        local llm_scope
+        llm_scope=$(echo "$scope" | jq -r '.scope // empty')
+
+        if [ -n "$llm_scope" ]; then
+          log_scope_detection "hybrid" "llm" "$llm_scope"
+          echo "$llm_scope"
+          return 0
+        fi
+      fi
+
+      # LLM failed - fallback to regex
+      log_scope_detection "hybrid" "regex-fallback" ""
+      scope=$(classify_workflow_regex "$workflow_description")
+      log_scope_detection "hybrid" "regex" "$scope"
+      echo "$scope"
+      return 0
+      ;;
+
+    llm-only)
+      # LLM only - fail fast on errors
+      if ! scope=$(classify_workflow_llm "$workflow_description"); then
+        echo "ERROR: detect_workflow_scope: LLM classification failed in llm-only mode" >&2
+        echo "research-and-plan"  # Return default on error
+        return 1
+      fi
+
+      local llm_scope
+      llm_scope=$(echo "$scope" | jq -r '.scope // empty')
+
+      if [ -z "$llm_scope" ]; then
+        echo "ERROR: detect_workflow_scope: LLM returned empty scope" >&2
+        echo "research-and-plan"
+        return 1
+      fi
+
+      log_scope_detection "llm-only" "llm" "$llm_scope"
+      echo "$llm_scope"
+      return 0
+      ;;
+
+    regex-only)
+      # Regex only - traditional pattern matching
+      scope=$(classify_workflow_regex "$workflow_description")
+      log_scope_detection "regex-only" "regex" "$scope"
+      echo "$scope"
+      return 0
+      ;;
+
+    *)
+      echo "ERROR: detect_workflow_scope: invalid WORKFLOW_CLASSIFICATION_MODE='$WORKFLOW_CLASSIFICATION_MODE'" >&2
+      echo "ERROR: Valid modes: hybrid, llm-only, regex-only" >&2
+      echo "research-and-plan"
+      return 1
+      ;;
+  esac
+}
+
+# classify_workflow_regex: Traditional regex-based classification (embedded fallback)
+# Args:
+#   $1: workflow_description - The workflow description to analyze
+# Returns:
+#   Prints one of: research-only, research-and-plan, research-and-revise, full-implementation, debug-only
+classify_workflow_regex() {
+  local workflow_description="$1"
+  local scope="research-and-plan"  # Default fallback
+
+  # Validation
+  if [ -z "$workflow_description" ]; then
+    echo "$scope"
+    return 0
+  fi
+
   # Order matters: check more specific patterns first
 
-  # PRIORITY 1: Research-and-revise patterns (most specific - check before plan path)
-  # Check for revision-first pattern (e.g., "Revise X to Y", "Update plan to accommodate Z")
-  # Pattern: ^(revise|update|modify).*(plan|implementation).*(accommodate|based on|using|to|for)
-  #
-  # Regex behavior explained (for maintainers):
-  #   ^(revise|update|modify) - Anchors to start, matches revision verbs
-  #   .*                      - Greedy match: consumes "the plan /long/path.md " etc.
-  #   (plan|implementation)   - Matches "plan" or "implementation" keyword
-  #   .*                      - Greedy match: consumes remaining text before trigger
-  #   (accommodate|...)       - Matches trigger keywords
-  #
-  # Handles both:
-  #   ✓ Simple: "Revise /path/to/plan.md to accommodate..."
-  #   ✓ Complex: "Revise the plan /path/to/plan.md to accommodate..."
-  #
-  # The greedy .* allows flexible matching while still finding required keywords.
-  # Fixed in commit 1984391a (Issue #661) - See test_scope_detection.sh Tests 14-19
+  # PRIORITY 1: Research-and-revise patterns (most specific)
+  # Pattern: revision-first (e.g., "Revise X to Y", "Update plan to accommodate Z")
   if echo "$workflow_description" | grep -Eiq "^(revise|update|modify).*(plan|implementation).*(accommodate|based on|using|to|for)"; then
     scope="research-and-revise"
     # If revision-first and a path is provided, extract topic from existing plan path
-    # Pattern: /path/to/specs/NNN_topic/plans/001_plan.md → extract "NNN_topic"
     if echo "$workflow_description" | grep -Eq "/specs/[0-9]+_[^/]+/plans/"; then
-      # Extract and set EXISTING_PLAN_PATH for coordinate to use
       EXISTING_PLAN_PATH=$(echo "$workflow_description" | grep -oE "/[^ ]+\.md" | head -1)
       export EXISTING_PLAN_PATH
     fi
-  # Check for research-and-revise pattern (specific before general)
-  # Matches: "research X and revise Y", "analyze X to update plan", etc.
-  # ALSO matches revision-first patterns: "Revise plan X to accommodate Y"
+
+  # Pattern: research-and-revise (specific before general)
   elif echo "$workflow_description" | grep -Eiq "(research|analyze).*(and |then |to ).*(revise|update.*plan|modify.*plan)"; then
     scope="research-and-revise"
 
   # PRIORITY 2: Plan path detection (for implementation, not revision)
-  # If workflow description contains a path to a plan file and NOT a revision, classify as full-implementation
-  # Pattern: specs/*/plans/*.md or .claude/specs/*/plans/*.md
   elif echo "$workflow_description" | grep -Eq "(^|[[:space:]])(\.|/)?(.*/)?specs/[0-9]+_[^/]+/plans/[^[:space:]]+\.md"; then
     scope="full-implementation"
-    # Debug logging for plan path detection
-    if [ "${DEBUG_SCOPE_DETECTION:-0}" = "1" ]; then
-      echo "[DEBUG] Scope Detection: detected plan path in workflow description" >&2
-    fi
 
   # PRIORITY 3: Research-only pattern (explicit research with no action keywords)
   elif echo "$workflow_description" | grep -Eiq "^research.*"; then
     if echo "$workflow_description" | grep -Eiq "(plan|implement|fix|debug|create|add|build)"; then
-      # Has action keywords - not research-only, will be classified below
-      scope="research-and-plan"  # Default for research with action keywords
+      # Has action keywords - not research-only
+      scope="research-and-plan"
     else
       # Pure research with no action keywords
       scope="research-only"
     fi
 
-  # PRIORITY 4: Explicit keyword patterns (high priority)
-  # "implement" keyword with or without "feature" - indicates full implementation intent
+  # PRIORITY 4: Explicit keyword patterns
   elif echo "$workflow_description" | grep -Eiq "(^|[[:space:]])(implement|execute)"; then
     scope="full-implementation"
 
@@ -88,14 +172,26 @@ detect_workflow_scope() {
     scope="full-implementation"
   fi
 
-  # Debug logging (optional, enabled via DEBUG_SCOPE_DETECTION=1)
-  if [ "${DEBUG_SCOPE_DETECTION:-0}" = "1" ]; then
-    echo "[DEBUG] Scope Detection: description='$workflow_description'" >&2
-    echo "[DEBUG] Scope Detection: detected scope='$scope'" >&2
-    [ -n "${EXISTING_PLAN_PATH:-}" ] && echo "[DEBUG] Scope Detection: existing_plan='$EXISTING_PLAN_PATH'" >&2
-  fi
-
   echo "$scope"
+  return 0
 }
 
+# log_scope_detection: Structured logging for scope detection decisions
+# Args:
+#   $1: mode - Classification mode (hybrid, llm-only, regex-only)
+#   $2: method - Classification method used (llm, regex, regex-fallback)
+#   $3: scope - Detected scope (optional)
+log_scope_detection() {
+  local mode="$1"
+  local method="$2"
+  local scope="${3:-}"
+
+  if [ "$DEBUG_SCOPE_DETECTION" = "1" ]; then
+    echo "[DEBUG] Scope Detection: mode=$mode, method=$method${scope:+, scope=$scope}" >&2
+  fi
+
+  # TODO: Integrate with unified-logger.sh for structured logging
+}
+
+# Export main function for use by other scripts
 export -f detect_workflow_scope
