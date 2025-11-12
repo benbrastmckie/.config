@@ -652,8 +652,8 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 ### Related
 - [← Parent Directory](../README.md)
 - [commands/](../commands/README.md) - Commands that use agents
-- [docs/using-agents.md](../docs/using-agents.md) - Integration guide
-- [docs/creating-agents.md](../docs/creating-agents.md) - Development guide
+- [docs/guides/using-agents.md](../docs/guides/using-agents.md) - Integration guide
+- [docs/guides/agent-development-guide.md](../docs/guides/agent-development-guide.md) - Development guide
 
 ## Examples
 

@@ -713,5 +713,5 @@ echo "Average: ${AVG}s"
 - [Metadata Extraction Pattern](../concepts/patterns/metadata-extraction.md) - Extraction techniques
 - [Parallel Execution Pattern](../concepts/patterns/parallel-execution.md) - Wave-based execution
 - [Context Management Pattern](../concepts/patterns/context-management.md) - Context reduction techniques
-- [Hierarchical Agents Guide](../concepts/hierarchical-agents.md) - Multi-agent architecture
+- [Hierarchical Agents Guide](../concepts/hierarchical_agents.md) - Multi-agent architecture
 - [Testing Patterns Guide](./testing-patterns.md) - Test measurement techniques
