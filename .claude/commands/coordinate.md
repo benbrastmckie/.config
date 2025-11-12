@@ -104,6 +104,28 @@ else
 fi
 source "${LIB_DIR}/state-persistence.sh"
 
+# CRITICAL: Source error-handling.sh and verification-helpers.sh BEFORE any function calls
+# These libraries must be available for verification checkpoints and error handling
+# throughout initialization (lines 140+). See bash-block-execution-model.md for rationale.
+
+# Source error handling library (provides handle_state_error)
+if [ -f "${LIB_DIR}/error-handling.sh" ]; then
+  source "${LIB_DIR}/error-handling.sh"
+else
+  echo "ERROR: error-handling.sh not found at ${LIB_DIR}/error-handling.sh"
+  echo "Cannot proceed without error handling functions"
+  exit 1
+fi
+
+# Source verification helpers library (provides verify_state_variable, verify_file_created)
+if [ -f "${LIB_DIR}/verification-helpers.sh" ]; then
+  source "${LIB_DIR}/verification-helpers.sh"
+else
+  echo "ERROR: verification-helpers.sh not found at ${LIB_DIR}/verification-helpers.sh"
+  echo "Cannot proceed without verification functions"
+  exit 1
+fi
+
 # Generate unique workflow ID (timestamp-based for reproducibility)
 WORKFLOW_ID="coordinate_$(date +%s)"
 
@@ -259,11 +281,6 @@ append_workflow_state "OUTPUTS_DIR" "$OUTPUTS_DIR"
 append_workflow_state "CHECKPOINT_DIR" "$CHECKPOINT_DIR"
 
 echo "Artifact paths calculated and saved to workflow state"
-
-# Source verification helpers (must be sourced BEFORE verify_state_variables is called)
-if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh" ]; then
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
-fi
 
 # ===== MANDATORY VERIFICATION CHECKPOINT: State Persistence =====
 # Verify all REPORT_PATH variables written to state file (Phase 3: concise pattern)
