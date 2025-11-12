@@ -467,21 +467,120 @@ Task {
 
 **EXECUTE IF** `USE_HIERARCHICAL_RESEARCH == "false"`:
 
-**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent for EACH research topic (1 to $RESEARCH_COMPLEXITY):
+**EXECUTE NOW**: USE the Bash tool to prepare research agent iteration variables:
+
+```bash
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# CRITICAL: Explicit conditional enumeration for agent invocation control
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Natural language templates ("for EACH topic") are interpreted as documentation,
+# not iteration constraints. Claude resolves invocation count by examining available
+# REPORT_PATH variables (4 pre-allocated) rather than RESEARCH_COMPLEXITY value.
+#
+# Solution: Bash block prepares variables, markdown section uses explicit conditional
+# guards (IF RESEARCH_COMPLEXITY >= N) to control Task invocations.
+# See: Spec 676 (root cause analysis), coordinate-command-guide.md (architecture)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# Prepare variables for conditional agent invocations (1-4)
+for i in $(seq 1 4); do
+  REPORT_PATH_VAR="REPORT_PATH_$((i-1))"
+  export "RESEARCH_TOPIC_${i}=Topic ${i}"
+  export "AGENT_REPORT_PATH_${i}=${!REPORT_PATH_VAR}"
+done
+
+echo "━━━ Research Phase: Flat Coordination ━━━"
+echo "Research Complexity: $RESEARCH_COMPLEXITY"
+echo "Agent Invocations: Conditionally guarded (1-4 based on complexity)"
+echo ""
+```
+
+**EXECUTE CONDITIONALLY**: Invoke research agents based on RESEARCH_COMPLEXITY:
+
+**IF RESEARCH_COMPLEXITY >= 1** (always true):
 
 Task {
   subagent_type: "general-purpose"
-  description: "Research [topic name] with mandatory artifact creation"
+  description: "Research Topic 1 with mandatory artifact creation"
   timeout: 300000
   prompt: "
     Read and follow ALL behavioral guidelines from:
     /home/benjamin/.config/.claude/agents/research-specialist.md
 
     **Workflow-Specific Context**:
-    - Research Topic: [actual topic name]
-    - Report Path: [REPORT_PATHS[$i-1] for topic $i]
+    - Research Topic: $RESEARCH_TOPIC_1
+    - Report Path: $AGENT_REPORT_PATH_1
     - Project Standards: /home/benjamin/.config/CLAUDE.md
-    - Complexity Level: [RESEARCH_COMPLEXITY value]
+    - Complexity Level: $RESEARCH_COMPLEXITY
+
+    **CRITICAL**: Create report file at EXACT path provided above.
+
+    Execute research following all guidelines in behavioral file.
+    Return: REPORT_CREATED: [exact absolute path to report file]
+  "
+}
+
+**IF RESEARCH_COMPLEXITY >= 2** (true for complexity 2-4):
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research Topic 2 with mandatory artifact creation"
+  timeout: 300000
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: $RESEARCH_TOPIC_2
+    - Report Path: $AGENT_REPORT_PATH_2
+    - Project Standards: /home/benjamin/.config/CLAUDE.md
+    - Complexity Level: $RESEARCH_COMPLEXITY
+
+    **CRITICAL**: Create report file at EXACT path provided above.
+
+    Execute research following all guidelines in behavioral file.
+    Return: REPORT_CREATED: [exact absolute path to report file]
+  "
+}
+
+**IF RESEARCH_COMPLEXITY >= 3** (true for complexity 3-4):
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research Topic 3 with mandatory artifact creation"
+  timeout: 300000
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: $RESEARCH_TOPIC_3
+    - Report Path: $AGENT_REPORT_PATH_3
+    - Project Standards: /home/benjamin/.config/CLAUDE.md
+    - Complexity Level: $RESEARCH_COMPLEXITY
+
+    **CRITICAL**: Create report file at EXACT path provided above.
+
+    Execute research following all guidelines in behavioral file.
+    Return: REPORT_CREATED: [exact absolute path to report file]
+  "
+}
+
+**IF RESEARCH_COMPLEXITY >= 4** (hierarchical research triggers, not this code path):
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research Topic 4 with mandatory artifact creation"
+  timeout: 300000
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    /home/benjamin/.config/.claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: $RESEARCH_TOPIC_4
+    - Report Path: $AGENT_REPORT_PATH_4
+    - Project Standards: /home/benjamin/.config/CLAUDE.md
+    - Complexity Level: $RESEARCH_COMPLEXITY
 
     **CRITICAL**: Create report file at EXACT path provided above.
 
