@@ -32,86 +32,176 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-llm-classifier.sh"
 WORKFLOW_CLASSIFICATION_MODE="${WORKFLOW_CLASSIFICATION_MODE:-hybrid}"
 DEBUG_SCOPE_DETECTION="${DEBUG_SCOPE_DETECTION:-0}"
 
-# detect_workflow_scope: Unified hybrid workflow classification
+# classify_workflow_comprehensive: Comprehensive workflow classification
+# Provides scope, research complexity, and descriptive subtopic names in a single operation
 # Args:
 #   $1: workflow_description - The workflow description to analyze
 # Returns:
-#   Prints one of: research-only, research-and-plan, research-and-revise, full-implementation, debug-only
-# Environment Variables:
-#   WORKFLOW_CLASSIFICATION_MODE: hybrid (default), llm-only, regex-only
-#   DEBUG_SCOPE_DETECTION: 0 (default), 1 (verbose logging)
-detect_workflow_scope() {
+#   0: Success (prints JSON to stdout)
+#   1: Error
+# Output Format:
+#   {
+#     "workflow_type": "research-and-plan",
+#     "confidence": 0.95,
+#     "research_complexity": 2,
+#     "subtopics": ["Topic 1 description", "Topic 2 description"],
+#     "reasoning": "..."
+#   }
+classify_workflow_comprehensive() {
   local workflow_description="$1"
-  local scope=""
 
   # Validation
   if [ -z "$workflow_description" ]; then
-    echo "ERROR: detect_workflow_scope: workflow_description parameter is empty" >&2
-    echo "research-and-plan"  # Return default on error
+    echo "ERROR: classify_workflow_comprehensive: workflow_description parameter is empty" >&2
+    fallback_comprehensive_classification "$workflow_description"
     return 1
   fi
 
   # Route based on classification mode
   case "$WORKFLOW_CLASSIFICATION_MODE" in
     hybrid)
-      # Try LLM first, fallback to regex on error/timeout/low-confidence
-      if scope=$(classify_workflow_llm "$workflow_description" 2>/dev/null); then
-        # LLM classification succeeded
-        local llm_scope
-        llm_scope=$(echo "$scope" | jq -r '.scope // empty')
-
-        if [ -n "$llm_scope" ]; then
-          log_scope_detection "hybrid" "llm" "$llm_scope"
-          echo "$llm_scope"
+      # Try LLM first, fallback to regex + heuristic on error/timeout/low-confidence
+      local llm_result
+      if llm_result=$(classify_workflow_llm_comprehensive "$workflow_description" 2>/dev/null); then
+        # LLM classification succeeded - validate and return
+        if echo "$llm_result" | jq -e '.workflow_type' >/dev/null 2>&1; then
+          log_scope_detection "hybrid" "llm-comprehensive" "$(echo "$llm_result" | jq -r '.workflow_type')"
+          echo "$llm_result"
           return 0
         fi
       fi
 
-      # LLM failed - fallback to regex
-      log_scope_detection "hybrid" "regex-fallback" ""
-      scope=$(classify_workflow_regex "$workflow_description")
-      log_scope_detection "hybrid" "regex" "$scope"
-      echo "$scope"
+      # LLM failed - fallback to regex + heuristic
+      log_scope_detection "hybrid" "comprehensive-fallback" ""
+      fallback_comprehensive_classification "$workflow_description"
       return 0
       ;;
 
     llm-only)
       # LLM only - fail fast on errors
-      if ! scope=$(classify_workflow_llm "$workflow_description"); then
-        echo "ERROR: detect_workflow_scope: LLM classification failed in llm-only mode" >&2
-        echo "research-and-plan"  # Return default on error
+      if ! llm_result=$(classify_workflow_llm_comprehensive "$workflow_description"); then
+        echo "ERROR: classify_workflow_comprehensive: LLM classification failed in llm-only mode" >&2
+        fallback_comprehensive_classification "$workflow_description"
         return 1
       fi
 
-      local llm_scope
-      llm_scope=$(echo "$scope" | jq -r '.scope // empty')
-
-      if [ -z "$llm_scope" ]; then
-        echo "ERROR: detect_workflow_scope: LLM returned empty scope" >&2
-        echo "research-and-plan"
-        return 1
-      fi
-
-      log_scope_detection "llm-only" "llm" "$llm_scope"
-      echo "$llm_scope"
+      log_scope_detection "llm-only" "llm-comprehensive" "$(echo "$llm_result" | jq -r '.workflow_type')"
+      echo "$llm_result"
       return 0
       ;;
 
     regex-only)
-      # Regex only - traditional pattern matching
-      scope=$(classify_workflow_regex "$workflow_description")
-      log_scope_detection "regex-only" "regex" "$scope"
-      echo "$scope"
+      # Regex + heuristic only - no LLM
+      log_scope_detection "regex-only" "comprehensive-fallback" ""
+      fallback_comprehensive_classification "$workflow_description"
       return 0
       ;;
 
     *)
-      echo "ERROR: detect_workflow_scope: invalid WORKFLOW_CLASSIFICATION_MODE='$WORKFLOW_CLASSIFICATION_MODE'" >&2
-      echo "ERROR: Valid modes: hybrid, llm-only, regex-only" >&2
-      echo "research-and-plan"
+      echo "ERROR: classify_workflow_comprehensive: invalid WORKFLOW_CLASSIFICATION_MODE='$WORKFLOW_CLASSIFICATION_MODE'" >&2
+      fallback_comprehensive_classification "$workflow_description"
       return 1
       ;;
   esac
+}
+
+# fallback_comprehensive_classification: Fallback for comprehensive classification
+# Combines regex scope detection with heuristic complexity calculation
+# Args:
+#   $1: workflow_description - The workflow description to analyze
+# Returns:
+#   Prints JSON to stdout
+fallback_comprehensive_classification() {
+  local workflow_description="$1"
+
+  # Get scope using regex
+  local scope
+  scope=$(classify_workflow_regex "$workflow_description")
+
+  # Infer complexity using heuristics
+  local complexity
+  complexity=$(infer_complexity_from_keywords "$workflow_description")
+
+  # Generate generic topic names
+  local subtopics_json
+  subtopics_json=$(generate_generic_topics "$complexity")
+
+  # Build JSON response
+  jq -n \
+    --arg scope "$scope" \
+    --argjson complexity "$complexity" \
+    --argjson subtopics "$subtopics_json" \
+    '{
+      "workflow_type": $scope,
+      "confidence": 0.6,
+      "research_complexity": $complexity,
+      "subtopics": $subtopics,
+      "reasoning": "Fallback: regex scope + heuristic complexity"
+    }'
+}
+
+# infer_complexity_from_keywords: Heuristic complexity calculation
+# Uses same patterns as coordinate.md:402-414 for backward compatibility
+# Args:
+#   $1: workflow_description - The workflow description to analyze
+# Returns:
+#   Prints integer 1-4 to stdout
+infer_complexity_from_keywords() {
+  local workflow_description="$1"
+  local complexity=2  # Default moderate complexity
+
+  # Count complexity indicators (same logic as coordinate.md pattern matching)
+  local indicator_count=0
+
+  # Check for multiple subtopics
+  if echo "$workflow_description" | grep -Eiq "(and |, |; )"; then
+    ((indicator_count++)) || true
+  fi
+
+  # Check for complex actions
+  if echo "$workflow_description" | grep -Eiq "(analyze|research|investigate|explore)"; then
+    ((indicator_count++)) || true
+  fi
+
+  # Check for implementation scope
+  if echo "$workflow_description" | grep -Eiq "(implement|build|create|develop)"; then
+    ((indicator_count++)) || true
+  fi
+
+  # Check for planning/design
+  if echo "$workflow_description" | grep -Eiq "(plan|design|architect)"; then
+    ((indicator_count++)) || true
+  fi
+
+  # Map indicators to complexity (1-4)
+  if [ "$indicator_count" -eq 0 ]; then
+    complexity=1  # Simple
+  elif [ "$indicator_count" -eq 1 ]; then
+    complexity=2  # Moderate
+  elif [ "$indicator_count" -eq 2 ]; then
+    complexity=3  # Complex
+  else
+    complexity=4  # Highly complex
+  fi
+
+  echo "$complexity"
+}
+
+# generate_generic_topics: Generate generic topic names for fallback mode
+# Args:
+#   $1: complexity - Number of topics to generate (1-4)
+# Returns:
+#   Prints JSON array to stdout
+generate_generic_topics() {
+  local complexity="$1"
+  local topics=()
+
+  for i in $(seq 1 "$complexity"); do
+    topics+=("Topic $i")
+  done
+
+  # Convert to JSON array
+  printf '%s\n' "${topics[@]}" | jq -R . | jq -s .
 }
 
 # classify_workflow_regex: Traditional regex-based classification (embedded fallback)
@@ -194,5 +284,9 @@ log_scope_detection() {
   # TODO: Integrate with unified-logger.sh for structured logging
 }
 
-# Export main function for use by other scripts
-export -f detect_workflow_scope
+# Export functions for use by other scripts
+export -f classify_workflow_comprehensive
+export -f classify_workflow_regex
+export -f fallback_comprehensive_classification
+export -f infer_complexity_from_keywords
+export -f generate_generic_topics

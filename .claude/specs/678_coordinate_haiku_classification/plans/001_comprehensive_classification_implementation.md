@@ -225,18 +225,18 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create `classify_workflow_comprehensive()` function (file: .claude/lib/workflow-scope-detection.sh, add after line 115)
-- [ ] Implement hybrid mode: Try haiku first, fallback to regex + heuristic (file: .claude/lib/workflow-scope-detection.sh, new function)
-- [ ] Create `infer_complexity_from_keywords()` fallback function (file: .claude/lib/workflow-scope-detection.sh, new function after classify_workflow_comprehensive)
-- [ ] Implement complexity calculation using same patterns as coordinate.md:402-414 (file: .claude/lib/workflow-scope-detection.sh)
-- [ ] Create `generate_generic_topics()` helper for fallback mode (file: .claude/lib/workflow-scope-detection.sh, new function)
-- [ ] Add `fallback_comprehensive_classification()` wrapper combining regex + heuristic (file: .claude/lib/workflow-scope-detection.sh)
-- [ ] Delete detect_workflow_scope() function entirely - clean break (file: .claude/lib/workflow-scope-detection.sh)
+- [x] Create `classify_workflow_comprehensive()` function (file: .claude/lib/workflow-scope-detection.sh, add after line 115)
+- [x] Implement hybrid mode: Try haiku first, fallback to regex + heuristic (file: .claude/lib/workflow-scope-detection.sh, new function)
+- [x] Create `infer_complexity_from_keywords()` fallback function (file: .claude/lib/workflow-scope-detection.sh, new function after classify_workflow_comprehensive)
+- [x] Implement complexity calculation using same patterns as coordinate.md:402-414 (file: .claude/lib/workflow-scope-detection.sh)
+- [x] Create `generate_generic_topics()` helper for fallback mode (file: .claude/lib/workflow-scope-detection.sh, new function)
+- [x] Add `fallback_comprehensive_classification()` wrapper combining regex + heuristic (file: .claude/lib/workflow-scope-detection.sh)
+- [x] Delete detect_workflow_scope() function entirely - clean break (file: .claude/lib/workflow-scope-detection.sh)
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -250,11 +250,11 @@ cd .claude/tests
 **Expected Duration**: 2.5 hours
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(678): complete Phase 2 - Comprehensive Classification Function`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(678): complete Phase 2 - Comprehensive Classification Function`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ---
 
