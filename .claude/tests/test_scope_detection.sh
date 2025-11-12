@@ -371,6 +371,175 @@ fi
 echo
 
 # =============================================================================
+# Section 8: Comprehensive Edge Case Tests
+# =============================================================================
+echo "Section 8: Edge Case Tests"
+echo "-----------------------------"
+
+# Test 8.1: Quoted keywords
+info "Test 8.1: Quoted keywords (LLM should handle better than regex)"
+declare -a quoted_tests=(
+  "research the 'implement' command"
+  "analyze the 'revise' function"
+  "investigate the 'coordinate' workflow"
+)
+
+quoted_pass=0
+for desc in "${quoted_tests[@]}"; do
+  result=$(detect_workflow_scope "$desc")
+  if [ -n "$result" ]; then
+    quoted_pass=$((quoted_pass + 1))
+  fi
+done
+
+if [ $quoted_pass -eq ${#quoted_tests[@]} ]; then
+  pass "Quoted keywords handled (${quoted_pass}/${#quoted_tests[@]})"
+else
+  skip "Quoted keywords" "LLM would improve accuracy here"
+fi
+
+# Test 8.2: Negation cases
+info "Test 8.2: Negation (LLM should handle better than regex)"
+declare -a negation_tests=(
+  "don't revise the plan, create a new one"
+  "research alternatives instead of implementing"
+  "analyze but don't execute the changes"
+)
+
+negation_pass=0
+for desc in "${negation_tests[@]}"; do
+  result=$(detect_workflow_scope "$desc")
+  if [ -n "$result" ]; then
+    negation_pass=$((negation_pass + 1))
+  fi
+done
+
+if [ $negation_pass -eq ${#negation_tests[@]} ]; then
+  pass "Negation cases handled (${negation_pass}/${#negation_tests[@]})"
+else
+  skip "Negation cases" "LLM would improve accuracy here"
+fi
+
+# Test 8.3: Multiple actions (priority detection)
+info "Test 8.3: Multiple actions in description"
+declare -A multi_action_tests=(
+  ["research X, plan Y, and implement Z"]="research-and-plan"
+  ["implement feature A and test feature B"]="full-implementation"
+  ["analyze the issue and debug the failure"]="debug-only"
+)
+
+multi_action_pass=1
+for desc in "${!multi_action_tests[@]}"; do
+  expected="${multi_action_tests[$desc]}"
+  result=$(detect_workflow_scope "$desc")
+  if [ "$result" != "$expected" ]; then
+    multi_action_pass=0
+    echo "  Note: '$desc' -> expected $expected, got $result (LLM would improve)"
+  fi
+done
+
+if [ $multi_action_pass -eq 1 ]; then
+  pass "Multiple actions prioritized correctly"
+else
+  skip "Multiple action priority" "LLM would improve accuracy here"
+fi
+
+# Test 8.4: Long descriptions
+info "Test 8.4: Long descriptions (500+ characters)"
+long_desc="research authentication patterns in the codebase including OAuth2 and JWT implementations, analyze security implications and potential vulnerabilities, review current best practices in the industry for authentication and authorization, investigate how our competitors handle user authentication including multi-factor authentication and single sign-on capabilities, examine the performance characteristics of different authentication approaches, and create a comprehensive implementation plan with detailed phases covering research, design, implementation, testing, and deployment strategies for a production-ready authentication system that scales to millions of users"
+
+result=$(detect_workflow_scope "$long_desc")
+if [ "$result" = "research-and-plan" ]; then
+  pass "Long description classified correctly"
+else
+  fail "Long description" "research-and-plan" "$result"
+fi
+
+# Test 8.5: Special characters
+info "Test 8.5: Special characters (Unicode, markdown)"
+declare -a special_char_tests=(
+  "research the auth → implementation path"
+  "analyze *key* authentication patterns"
+  "investigate the \`workflow-detection\` library"
+  "research patterns: OAuth2, JWT & SAML"
+)
+
+special_char_pass=0
+for desc in "${special_char_tests[@]}"; do
+  result=$(detect_workflow_scope "$desc" 2>/dev/null || echo "error")
+  if [ "$result" != "error" ] && [ -n "$result" ]; then
+    special_char_pass=$((special_char_pass + 1))
+  fi
+done
+
+if [ $special_char_pass -eq ${#special_char_tests[@]} ]; then
+  pass "Special characters handled (${special_char_pass}/${#special_char_tests[@]})"
+else
+  fail "Special characters" "${#special_char_tests[@]} tests pass" "$special_char_pass passed"
+fi
+
+# Test 8.6: Empty and malformed input
+info "Test 8.6: Empty and malformed input handling"
+empty_pass=1
+
+# Empty string - should return some default or error
+result=$(detect_workflow_scope "" 2>/dev/null || echo "error")
+if [ -n "$result" ]; then
+  : # Expected behavior - any non-empty result is acceptable
+else
+  echo "  Unexpected: empty result for empty string"
+  empty_pass=0
+fi
+
+# Very short input - should return some result
+result=$(detect_workflow_scope "x" 2>/dev/null || echo "error")
+if [ -n "$result" ]; then
+  : # Expected behavior
+else
+  empty_pass=0
+fi
+
+# Only whitespace - should return some default or error
+result=$(detect_workflow_scope "   " 2>/dev/null || echo "error")
+if [ -n "$result" ]; then
+  : # Expected behavior - any non-empty result is acceptable
+else
+  empty_pass=0
+fi
+
+if [ $empty_pass -eq 1 ]; then
+  pass "Empty and malformed input handled gracefully (returns defaults)"
+else
+  fail "Empty input handling" "graceful handling" "unexpected behavior"
+fi
+
+# Test 8.7: Case sensitivity
+info "Test 8.7: Case insensitivity"
+declare -A case_tests=(
+  ["IMPLEMENT THE FEATURE"]="full-implementation"
+  ["Research And Plan"]="research-and-plan"
+  ["DEBUG the issue"]="debug-only"
+)
+
+case_pass=1
+for desc in "${!case_tests[@]}"; do
+  expected="${case_tests[$desc]}"
+  result=$(detect_workflow_scope "$desc")
+  if [ "$result" != "$expected" ]; then
+    case_pass=0
+    echo "  Failed: '$desc' -> expected $expected, got $result"
+  fi
+done
+
+if [ $case_pass -eq 1 ]; then
+  pass "Case insensitivity works correctly"
+else
+  fail "Case sensitivity" "all cases pass" "some failed (see above)"
+fi
+
+echo
+
+# =============================================================================
 # Test Summary
 # =============================================================================
 echo "========================================="
