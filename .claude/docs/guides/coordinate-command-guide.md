@@ -354,6 +354,160 @@ The implementation phase uses behavioral injection to invoke the implementer-coo
 
 See [Standard 11](./../reference/command_architecture_standards.md#standard-11), [Behavioral Injection Pattern](./../concepts/patterns/behavioral-injection.md), and [implementer-coordinator agent](./../agents/implementer-coordinator.md) for complete documentation.
 
+### Bash Block Execution Patterns
+
+The `/coordinate` command uses multiple bash code blocks to orchestrate workflows. Each bash block executes in a separate subprocess, requiring careful state management and library sourcing.
+
+#### Pattern 1: Fixed Semantic Filename (State ID File)
+
+**Purpose**: Enable reliable state discovery across bash block boundaries
+
+**Implementation**:
+```bash
+# Block 1: Create state ID file with fixed semantic filename
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
+```
+
+**Why Fixed Semantic Filename**:
+- **Predictable Location**: Subsequent blocks know exactly where to find state ID
+- **No Discovery Required**: Avoid timestamp-based filenames that require glob/find
+- **Subprocess Persistence**: File persists after first bash block exits
+
+**Reference**: [bash-block-execution-model.md:163-191](./../concepts/bash-block-execution-model.md)
+
+#### Pattern 6: Cleanup on Completion Only
+
+**Purpose**: Prevent premature cleanup of state files
+
+**Implementation**:
+```bash
+# Block 1: NO EXIT trap here
+# State ID file should persist after this block exits
+
+# ... intermediate blocks: NO EXIT traps ...
+
+# Final completion block: Cleanup trap ONLY here
+display_brief_summary() {
+  # Manual cleanup (preferred over EXIT trap for coordinate)
+  rm -f "${HOME}/.claude/tmp/coordinate_state_id.txt"
+  rm -f "${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+}
+```
+
+**Why No Premature EXIT Traps**:
+- **Subprocess Isolation**: EXIT traps fire when bash block exits (subprocess terminates)
+- **Premature Cleanup**: Trap in Block 1 would delete state files before Block 2 runs
+- **Fail-Fast**: Missing state files in subsequent blocks fail immediately with clear errors
+
+**Reference**: [bash-block-execution-model.md:382-399](./../concepts/bash-block-execution-model.md)
+
+#### Standard 15: Library Sourcing Order
+
+**Purpose**: Ensure all library dependencies available before use
+
+**Implementation** (ALL bash blocks follow this order):
+```bash
+# Step 1: Read state ID file (blocks 2+)
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
+
+# Step 2: Load workflow state BEFORE sourcing libraries
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+fi
+
+# Step 3: Re-source libraries in dependency order
+source "${LIB_DIR}/workflow-state-machine.sh"   # 1. State machine (no deps)
+source "${LIB_DIR}/state-persistence.sh"        # 2. State persistence
+source "${LIB_DIR}/error-handling.sh"           # 3. Error handling (needs state persistence)
+source "${LIB_DIR}/verification-helpers.sh"     # 4. Verification (needs error handling)
+
+# Step 4: Verification checkpoint
+if ! command -v verify_file_created &>/dev/null; then
+  echo "ERROR: Required functions not available after library sourcing" >&2
+  exit 1
+fi
+```
+
+**Why This Order**:
+- **Load State First**: Prevents WORKFLOW_SCOPE reset by library re-initialization
+- **Dependency Order**: Later libraries depend on earlier ones
+- **Verification Checkpoint**: Fail-fast if libraries not loaded correctly
+
+**Reference**: [Standard 15 (command_architecture_standards.md:2277-2413)](./../reference/command_architecture_standards.md#standard-15)
+
+#### Standard 0: Execution Enforcement (Verification Checkpoints)
+
+**Purpose**: Fail-fast when state files missing or functions unavailable
+
+**Implementation**:
+```bash
+# After state ID file creation
+verify_file_created "$COORDINATE_STATE_ID_FILE" "State ID file" "Initialization" || {
+  handle_state_error "CRITICAL: State ID file not created" 1
+}
+
+# After library sourcing
+verify_state_variable "WORKFLOW_SCOPE" || {
+  handle_state_error "CRITICAL: WORKFLOW_SCOPE not loaded" 1
+}
+```
+
+**Why Verification Checkpoints**:
+- **Fail-Fast**: Detect errors immediately, not in subsequent phases
+- **Clear Diagnostics**: Error messages include context (what failed, where, why)
+- **100% Reliability**: Prevents silent failures and undefined behavior
+
+**Reference**: [Standard 0 (command_architecture_standards.md)](./../reference/command_architecture_standards.md#standard-0)
+
+#### Complete Multi-Block Pattern
+
+**3-Block Workflow Example**:
+```bash
+# ===== Block 1: Initialize =====
+WORKFLOW_ID="coordinate_$(date +%s)"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
+
+verify_file_created "$COORDINATE_STATE_ID_FILE" "State ID file" "Block 1"
+
+# NO EXIT trap here (Pattern 6)
+
+# ===== Block 2: Process =====
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+source "$STATE_FILE"  # Load BEFORE sourcing libraries
+
+# Re-source libraries (Standard 15 order)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/error-handling.sh"
+
+# Verify functions available
+command -v handle_state_error &>/dev/null || exit 1
+
+# NO EXIT trap here (Pattern 6)
+
+# ===== Block 3: Complete =====
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+source "$STATE_FILE"
+
+# Re-source libraries
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+
+# Cleanup ONLY in final block (Pattern 6)
+rm -f "$COORDINATE_STATE_ID_FILE" "$STATE_FILE"
+```
+
+**Key Principles**:
+1. **Pattern 1**: Fixed semantic filename for state ID file
+2. **Pattern 6**: Cleanup only in final block
+3. **Standard 15**: Load state before sourcing, maintain dependency order
+4. **Standard 0**: Verification checkpoints at critical points
+
 ---
 
 ## Workflow Types
@@ -1141,6 +1295,133 @@ df -h "$STATE_FILE"  # Check disk space
 ```
 
 See [Verification Checkpoint Pattern](../architecture/coordinate-state-management.md#verification-checkpoint-pattern) for complete documentation.
+
+#### Issue 3: State ID File Not Found / State Persistence Failures
+
+**Symptom**: `/coordinate` fails with "State ID file not found" or "CRITICAL: State ID file not created"
+
+**Error Examples**:
+```
+ERROR: State ID file does not exist
+   Expected path: /home/user/.claude/tmp/coordinate_state_id.txt
+
+CRITICAL: State ID file not created at /home/user/.claude/tmp/coordinate_state_id.txt
+
+TROUBLESHOOTING:
+  1. Verify init_workflow_state() was called in first bash block
+  2. Check STATE_FILE variable was saved to state correctly
+  3. Verify workflow ID file exists and contains valid ID
+  4. Ensure no premature cleanup of state files
+```
+
+**Root Cause**: One of two bugs fixed in Spec 661:
+1. **Premature EXIT trap**: Trap in Block 1 deletes state ID file when block exits
+2. **Timestamp-based filename**: Discovery pattern fails across subprocess boundaries
+
+**Diagnostic Steps**:
+
+1. **Check if state ID file exists** after Block 1:
+```bash
+# Run coordinate command, then immediately check:
+ls -la "${HOME}/.claude/tmp/coordinate_state_id.txt"
+
+# If missing → EXIT trap fired prematurely (Bug 1)
+# If exists → Good, proceed to step 2
+```
+
+2. **Check for premature EXIT trap** in Block 1:
+```bash
+# Search for EXIT trap in first bash block (should NOT exist)
+head -200 .claude/commands/coordinate.md | grep "trap.*EXIT.*coordinate_state_id"
+
+# If found → Bug 1 (premature EXIT trap)
+# If not found → Pattern 6 correctly implemented
+```
+
+3. **Verify fixed semantic filename** used:
+```bash
+# Check for fixed location (correct pattern)
+grep 'COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"' \
+  .claude/commands/coordinate.md
+
+# If not found → Check for old timestamp pattern (incorrect)
+grep 'COORDINATE_STATE_ID_FILE=.*$(date' .claude/commands/coordinate.md
+```
+
+4. **Test state persistence** across bash blocks:
+```bash
+# Run comprehensive test suite
+bash .claude/tests/test_coordinate_exit_trap_timing.sh
+bash .claude/tests/test_coordinate_bash_block_fixes_integration.sh
+```
+
+**Fixed In**: Spec 661 (2025-11-11) - Implemented two critical fixes:
+
+**Fix 1: State ID File Persistence** (Pattern 1 + Pattern 6)
+- Changed from timestamp-based to fixed semantic filename
+- Removed premature EXIT trap from Block 1
+- Moved cleanup to final completion function only
+
+**Fix 2: Library Sourcing Order** (Standard 15)
+- Load workflow state BEFORE re-sourcing libraries
+- Maintain consistent dependency order in ALL bash blocks
+- Add verification checkpoints after library initialization
+
+**Resolution**:
+
+If you encounter this issue, verify both fixes are applied:
+
+```bash
+# 1. Verify Pattern 1 (Fixed Semantic Filename)
+grep -q 'COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"' \
+  .claude/commands/coordinate.md && echo "✓ Pattern 1 OK" || echo "✗ Pattern 1 MISSING"
+
+# 2. Verify Pattern 6 (No premature EXIT trap)
+! head -200 .claude/commands/coordinate.md | grep -q "trap.*EXIT.*coordinate_state_id" \
+  && echo "✓ Pattern 6 OK" || echo "✗ Pattern 6 VIOLATED"
+
+# 3. Verify Standard 15 (Library sourcing order)
+bash .claude/tests/test_library_sourcing_order.sh
+```
+
+**Why These Patterns Matter**:
+
+- **Pattern 1 (Fixed Semantic Filename)**: Subsequent bash blocks need predictable location to find state ID
+- **Pattern 6 (Cleanup on Completion Only)**: EXIT traps fire when bash block exits (subprocess termination), causing premature cleanup
+- **Standard 15 (Library Sourcing Order)**: Loading state before sourcing prevents WORKFLOW_SCOPE reset
+
+**Common Mistakes to Avoid**:
+
+❌ **Wrong**: Timestamp-based state ID filename
+```bash
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_$(date +%s%N).txt"
+# Problem: Subsequent blocks don't know the timestamp
+```
+
+✅ **Correct**: Fixed semantic filename
+```bash
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+# Solution: Predictable location for all blocks
+```
+
+❌ **Wrong**: EXIT trap in Block 1
+```bash
+trap 'rm -f "$COORDINATE_STATE_ID_FILE"' EXIT
+# Problem: Fires when Block 1 exits, before Block 2 runs
+```
+
+✅ **Correct**: Cleanup in final block only
+```bash
+# Block 1, 2, N-1: NO EXIT traps
+# Block N (final): Manual cleanup or trap here
+rm -f "$COORDINATE_STATE_ID_FILE" "$STATE_FILE"
+```
+
+**See Also**:
+- [Bash Block Execution Patterns](#bash-block-execution-patterns) - Complete documentation of all patterns
+- [Spec 661](../../specs/661_and_the_standards_in_claude_docs_to_avoid/) - State persistence and library sourcing fixes
+- [test_coordinate_exit_trap_timing.sh](../../tests/test_coordinate_exit_trap_timing.sh) - 9 tests validating Pattern 1 + Pattern 6
+- [test_coordinate_bash_block_fixes_integration.sh](../../tests/test_coordinate_bash_block_fixes_integration.sh) - 7 integration tests
 
 ---
 
