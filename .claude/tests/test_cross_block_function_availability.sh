@@ -137,6 +137,103 @@ echo "Test 4: Source guards allow safe multiple sourcing"
   fi
 ) && PASSED=$((PASSED + 1)) || FAILED=$((FAILED + 1))
 
+# Test 5: Multi-block coordinate workflow simulation (Spec 661 Phase 4)
+echo "Test 5: Functions available across 3-block coordinate workflow"
+(
+  set +H
+  TEST_STATE_FILE="/tmp/test_multiblock_$$.state"
+
+  # Block 1: Initialize workflow and source libraries
+  bash -c "
+    set +H
+    LIB_DIR='${LIB_DIR}'
+
+    # Source libraries in Standard 15 order
+    source \"\${LIB_DIR}/workflow-state-machine.sh\"
+    source \"\${LIB_DIR}/state-persistence.sh\"
+    source \"\${LIB_DIR}/error-handling.sh\"
+    source \"\${LIB_DIR}/verification-helpers.sh\"
+
+    # Verify critical functions available
+    if command -v handle_state_error &>/dev/null && \
+       command -v verify_file_created &>/dev/null; then
+      echo 'BLOCK1_SUCCESS' > '${TEST_STATE_FILE}'
+    else
+      echo 'BLOCK1_FAIL' > '${TEST_STATE_FILE}'
+      exit 1
+    fi
+  " || exit 1
+
+  # Verify Block 1 success
+  if ! grep -q "BLOCK1_SUCCESS" "$TEST_STATE_FILE"; then
+    rm -f "$TEST_STATE_FILE"
+    echo "  ❌ Block 1 library sourcing failed"
+    exit 1
+  fi
+
+  # Block 2: Re-source libraries (simulating subsequent bash block)
+  bash -c "
+    set +H
+    LIB_DIR='${LIB_DIR}'
+
+    # Re-source libraries in same order
+    source \"\${LIB_DIR}/workflow-state-machine.sh\"
+    source \"\${LIB_DIR}/state-persistence.sh\"
+    source \"\${LIB_DIR}/error-handling.sh\"
+    source \"\${LIB_DIR}/verification-helpers.sh\"
+
+    # Verify functions still available
+    if command -v handle_state_error &>/dev/null && \
+       command -v verify_file_created &>/dev/null; then
+      echo 'BLOCK2_SUCCESS' >> '${TEST_STATE_FILE}'
+    else
+      echo 'BLOCK2_FAIL' >> '${TEST_STATE_FILE}'
+      exit 1
+    fi
+  " || exit 1
+
+  # Verify Block 2 success
+  if ! grep -q "BLOCK2_SUCCESS" "$TEST_STATE_FILE"; then
+    rm -f "$TEST_STATE_FILE"
+    echo "  ❌ Block 2 library re-sourcing failed"
+    exit 1
+  fi
+
+  # Block 3: Final block with all functions
+  bash -c "
+    set +H
+    LIB_DIR='${LIB_DIR}'
+
+    # Re-source libraries again
+    source \"\${LIB_DIR}/workflow-state-machine.sh\"
+    source \"\${LIB_DIR}/state-persistence.sh\"
+    source \"\${LIB_DIR}/error-handling.sh\"
+    source \"\${LIB_DIR}/verification-helpers.sh\"
+    source \"\${LIB_DIR}/unified-logger.sh\"
+
+    # Verify all critical functions available
+    if command -v handle_state_error &>/dev/null && \
+       command -v verify_file_created &>/dev/null && \
+       command -v emit_progress &>/dev/null; then
+      echo 'BLOCK3_SUCCESS' >> '${TEST_STATE_FILE}'
+    else
+      echo 'BLOCK3_FAIL' >> '${TEST_STATE_FILE}'
+      exit 1
+    fi
+  " || exit 1
+
+  # Verify Block 3 success
+  if grep -q "BLOCK3_SUCCESS" "$TEST_STATE_FILE"; then
+    rm -f "$TEST_STATE_FILE"
+    echo "  ✓ Functions available across all 3 blocks (coordinate workflow simulation)"
+    exit 0
+  else
+    rm -f "$TEST_STATE_FILE"
+    echo "  ❌ Block 3 library sourcing failed"
+    exit 1
+  fi
+) && PASSED=$((PASSED + 1)) || FAILED=$((FAILED + 1))
+
 # Results
 echo ""
 echo "Results: $PASSED passed, $FAILED failed"
