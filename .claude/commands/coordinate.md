@@ -873,6 +873,9 @@ case "$WORKFLOW_SCOPE" in
   research-and-plan)
     echo "    - Proceeding to: Planning phase"
     ;;
+  research-and-revise)
+    echo "    - Proceeding to: Revision phase (revising existing plan)"
+    ;;
   full-implementation)
     echo "    - Proceeding to: Planning phase → Implementation"
     ;;
@@ -894,7 +897,7 @@ case "$WORKFLOW_SCOPE" in
     display_brief_summary
     exit 0
     ;;
-  research-and-plan|full-implementation|debug-only)
+  research-and-plan|research-and-revise|full-implementation|debug-only)
     # Continue to planning
     echo "Transitioning from $CURRENT_STATE to $STATE_PLAN"
     sm_transition "$STATE_PLAN"
