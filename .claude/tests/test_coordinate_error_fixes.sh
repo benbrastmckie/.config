@@ -837,6 +837,185 @@ test_phase3_subsequent_block_fail_fast
 test_phase3_default_parameter_behavior
 
 # ==============================================================================
+# Test Suite: Phase 4 - State ID File Persistence (Spec 661)
+# ==============================================================================
+
+test_phase4_state_id_file_fixed_location() {
+  print_test_header "Phase 4.1: State ID File Uses Fixed Semantic Filename"
+
+  # Simulate coordinate.md Block 1 creating state ID file
+  WORKFLOW_ID="test_coordinate_$$_$(date +%s)"
+  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_test_$$.txt"
+
+  # Execute pattern from coordinate.md lines 136-138
+  echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
+
+  # Verify file created
+  if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+    pass "State ID file created at fixed semantic location"
+  else
+    fail "State ID file not created"
+  fi
+
+  # Verify contents
+  if [ "$(cat "$COORDINATE_STATE_ID_FILE")" = "$WORKFLOW_ID" ]; then
+    pass "State ID file contains correct WORKFLOW_ID"
+  else
+    fail "State ID file contents incorrect"
+  fi
+
+  # Cleanup
+  rm -f "$COORDINATE_STATE_ID_FILE"
+}
+
+test_phase4_state_id_file_survives_bash_block() {
+  print_test_header "Phase 4.2: State ID File Survives First Bash Block Exit"
+
+  WORKFLOW_ID="test_coordinate_$$_$(date +%s)"
+  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_block_$$.txt"
+
+  # Simulate Block 1 execution (subprocess context)
+  bash -c "
+    echo '$WORKFLOW_ID' > '$COORDINATE_STATE_ID_FILE'
+    echo 'Block 1 complete'
+  "
+
+  # Verify file persists after subprocess exit
+  if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+    pass "State ID file persists after first bash block exit"
+  else
+    fail "State ID file deleted prematurely"
+  fi
+
+  # Cleanup
+  rm -f "$COORDINATE_STATE_ID_FILE"
+}
+
+test_phase4_no_exit_trap_in_block_1() {
+  print_test_header "Phase 4.3: No EXIT Trap in Block 1 (Pattern 6)"
+
+  COORDINATE_FILE="${PROJECT_ROOT}/.claude/commands/coordinate.md"
+
+  # Check first 200 lines for EXIT trap
+  if head -200 "$COORDINATE_FILE" | grep -q 'trap.*EXIT.*coordinate_state_id'; then
+    fail "coordinate.md Block 1 contains premature EXIT trap (violates Pattern 6)"
+  else
+    pass "coordinate.md Block 1 does not contain premature EXIT trap"
+  fi
+
+  # Verify fixed semantic filename used
+  if grep -q 'COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"' "$COORDINATE_FILE"; then
+    pass "coordinate.md uses fixed semantic filename (Pattern 1)"
+  else
+    fail "coordinate.md does not use fixed semantic filename"
+  fi
+}
+
+test_phase4_verification_checkpoint_exists() {
+  print_test_header "Phase 4.4: Verification Checkpoint After State ID File Creation"
+
+  COORDINATE_FILE="${PROJECT_ROOT}/.claude/commands/coordinate.md"
+
+  # Check for verification checkpoint after state ID file creation
+  # Should be within 10 lines of coordinate_state_id.txt creation
+  if grep -A10 'coordinate_state_id.txt' "$COORDINATE_FILE" | head -15 | grep -q 'verify_file_created.*State ID file'; then
+    pass "Verification checkpoint exists after state ID file creation (Standard 0)"
+  else
+    fail "Missing verification checkpoint for state ID file"
+  fi
+}
+
+# Run Phase 4 tests
+test_phase4_state_id_file_fixed_location
+test_phase4_state_id_file_survives_bash_block
+test_phase4_no_exit_trap_in_block_1
+test_phase4_verification_checkpoint_exists
+
+# ==============================================================================
+# Test Suite: Phase 5 - Backward Compatibility and Error Messages (Spec 661)
+# ==============================================================================
+
+test_phase5_backward_compatibility_removed() {
+  print_test_header "Phase 5.1: Backward Compatibility Pattern Removed (Fail-Fast)"
+
+  COORDINATE_FILE="${PROJECT_ROOT}/.claude/commands/coordinate.md"
+
+  # Check that old timestamp-based pattern is not referenced
+  # Old pattern: coordinate_state_id_${timestamp}.txt
+  if grep -q 'coordinate_state_id_\${.*timestamp' "$COORDINATE_FILE"; then
+    fail "Old timestamp-based pattern still present (should be removed for fail-fast)"
+  else
+    pass "Old timestamp-based pattern removed (fail-fast compliance)"
+  fi
+
+  # Verify no silent fallback logic
+  if grep -i 'fallback.*coordinate_state_id' "$COORDINATE_FILE"; then
+    fail "Silent fallback logic present (violates fail-fast policy)"
+  else
+    pass "No silent fallback logic (fail-fast compliance)"
+  fi
+}
+
+test_phase5_error_message_state_id_missing() {
+  print_test_header "Phase 5.2: Error Message When State ID File Missing"
+
+  # Simulate Block 2+ with missing state ID file
+  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_missing_$$.txt"
+
+  # Ensure file does not exist
+  rm -f "$COORDINATE_STATE_ID_FILE"
+
+  # Execute state loading attempt (should produce error)
+  ERROR_OUTPUT=$(bash -c "
+    source '${PROJECT_ROOT}/.claude/lib/state-persistence.sh'
+    source '${PROJECT_ROOT}/.claude/lib/verification-helpers.sh'
+
+    # Try to verify missing file
+    if verify_file_created '$COORDINATE_STATE_ID_FILE' 'State ID file' 'Test' 2>&1; then
+      echo 'UNEXPECTED_SUCCESS'
+    fi
+  " 2>&1)
+
+  # Verify error message produced
+  if echo "$ERROR_OUTPUT" | grep -iq 'state.*id.*file\|verification.*failed'; then
+    pass "Error message produced when state ID file missing"
+  else
+    fail "No error message when state ID file missing"
+  fi
+}
+
+test_phase5_diagnostic_message_quality() {
+  print_test_header "Phase 5.3: Diagnostic Message Quality"
+
+  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_diagnostic_$$.txt"
+  rm -f "$COORDINATE_STATE_ID_FILE"
+
+  # Test diagnostic output from verification function
+  ERROR_OUTPUT=$(bash -c "
+    source '${PROJECT_ROOT}/.claude/lib/verification-helpers.sh'
+    verify_file_created '$COORDINATE_STATE_ID_FILE' 'State ID file' 'Initialization' 2>&1 || true
+  " 2>&1)
+
+  # Check for helpful diagnostic elements
+  if echo "$ERROR_OUTPUT" | grep -q "$COORDINATE_STATE_ID_FILE"; then
+    pass "Diagnostic includes file path for troubleshooting"
+  else
+    fail "Diagnostic missing file path"
+  fi
+
+  if echo "$ERROR_OUTPUT" | grep -iq 'state.*id\|initialization'; then
+    pass "Diagnostic includes context (State ID file / Initialization)"
+  else
+    fail "Diagnostic missing context"
+  fi
+}
+
+# Run Phase 5 tests
+test_phase5_backward_compatibility_removed
+test_phase5_error_message_state_id_missing
+test_phase5_diagnostic_message_quality
+
+# ==============================================================================
 # Summary
 # ==============================================================================
 echo ""
