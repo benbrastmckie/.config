@@ -49,4 +49,60 @@ else
   echo "⊘ SKIP: Test plan file not found (cannot test Bug #4 fix)"
 fi
 
+# Test 5: research-and-revise scope in research phase transition (Spec 684 Phase 1)
+echo "Test 5: research-and-revise in research phase case statements"
+# Verify research-and-revise appears in both research phase case statements
+COORDINATE_FILE=".claude/commands/coordinate.md"
+if [ -f "$COORDINATE_FILE" ]; then
+  # Check "Next Action" display (around line 876)
+  if grep -A 20 "echo \"  Next Action:\"" "$COORDINATE_FILE" | grep -q "research-and-revise)"; then
+    pass "research-and-revise in research phase 'Next Action' display"
+  else
+    fail "research-and-revise missing from research phase 'Next Action' display"
+  fi
+
+  # Check state transition case pattern (around line 900)
+  if grep -A 1 "research-and-plan|research-and-revise|full-implementation|debug-only)" "$COORDINATE_FILE" | grep -q "Continue to planning"; then
+    pass "research-and-revise in research phase state transition"
+  else
+    fail "research-and-revise missing from research phase state transition"
+  fi
+else
+  fail "coordinate.md not found"
+fi
+
+# Test 6: research-and-revise scope in planning phase transition (Spec 684 Phase 2)
+echo "Test 6: research-and-revise in planning phase case statements"
+if [ -f "$COORDINATE_FILE" ]; then
+  # Check "Next Action" display in planning phase (around line 1311)
+  if grep -B 5 "Terminal state (revision complete)" "$COORDINATE_FILE" | grep -q "research-and-revise)"; then
+    pass "research-and-revise in planning phase 'Next Action' display"
+  else
+    fail "research-and-revise missing from planning phase 'Next Action' display"
+  fi
+
+  # Check terminal state case pattern (around line 1326)
+  if grep -A 1 "research-and-plan|research-and-revise)" "$COORDINATE_FILE" | grep -q "Terminal state reached"; then
+    pass "research-and-revise in planning phase terminal state"
+  else
+    fail "research-and-revise missing from planning phase terminal state"
+  fi
+else
+  fail "coordinate.md not found"
+fi
+
+# Test 7: Completeness of workflow scope coverage
+echo "Test 7: Complete workflow scope coverage"
+if [ -f "$COORDINATE_FILE" ]; then
+  # Count occurrences of research-and-revise in coordinate.md
+  OCCURRENCE_COUNT=$(grep -c "research-and-revise" "$COORDINATE_FILE" || echo 0)
+  if [ "$OCCURRENCE_COUNT" -ge 6 ]; then
+    pass "research-and-revise appears $OCCURRENCE_COUNT times (≥6)"
+  else
+    fail "research-and-revise appears only $OCCURRENCE_COUNT times (<6)"
+  fi
+else
+  fail "coordinate.md not found"
+fi
+
 echo "=== All Tests Complete ==="
