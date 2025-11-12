@@ -452,6 +452,117 @@ Before deploying a new command or updating an existing orchestration command, ve
 - [ ] No `export -f` attempts (ineffective across subprocess boundaries)
 - [ ] Functions from libraries work in manual testing across multiple bash blocks
 
+## Function Availability and Sourcing Order
+
+### Critical Principle
+
+Functions must be sourced BEFORE they are called. This is obvious but frequently violated in practice due to:
+
+1. **Subprocess isolation**: Functions don't persist across bash blocks
+2. **Implicit assumptions**: Developers assume library loading happens automatically
+3. **Code review gaps**: Runtime execution order differs from file order
+
+### Standard Sourcing Order for Orchestration Commands
+
+All orchestration commands (/coordinate, /orchestrate, /supervise) MUST use this sourcing order:
+
+```bash
+# 1. Project directory detection (first)
+CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# 2. State machine core
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+
+# 3. Error handling and verification (BEFORE any checkpoints)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# 4. Additional libraries as needed
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"
+# ... other libraries via source_required_libraries()
+```
+
+### Why This Order Matters
+
+**Dependency Chain**:
+- `verify_state_variable()` requires `STATE_FILE` variable (from state-persistence.sh)
+- `handle_state_error()` requires `append_workflow_state()` function (from state-persistence.sh)
+- Both functions called during initialization for verification checkpoints
+- **Therefore**: state-persistence → error-handling/verification → checkpoints
+
+**Rationale**:
+1. State machine libraries must load first (define state management)
+2. Error handling and verification depend on state persistence
+3. Verification checkpoints use both error handling and verification functions
+4. All other libraries can load after these foundations
+
+### Anti-Pattern: Premature Function Calls
+
+```bash
+# ❌ WRONG: Function called before library sourced
+verify_state_variable "WORKFLOW_SCOPE" || exit 1
+
+# ... many lines later ...
+source "${LIB_DIR}/verification-helpers.sh"
+```
+
+**Error Symptom**:
+```
+bash: verify_state_variable: command not found
+```
+
+**Fix**: Source library before calling function
+
+```bash
+# ✓ CORRECT: Source library first
+source "${LIB_DIR}/verification-helpers.sh"
+
+# ... now functions are available ...
+verify_state_variable "WORKFLOW_SCOPE" || exit 1
+```
+
+### Detection
+
+Use validation script to catch sourcing order violations:
+
+```bash
+bash .claude/tests/test_library_sourcing_order.sh
+```
+
+This test validates:
+- Functions are sourced before first call
+- Libraries have source guards (safe to source multiple times)
+- Dependency order is correct (state-persistence before dependent libraries)
+- Early sourcing (critical libraries loaded within first 150 lines)
+
+### Source Guards Enable Safe Re-Sourcing
+
+All library files use source guards to prevent duplicate execution:
+
+```bash
+# From verification-helpers.sh:11-14
+if [ -n "${VERIFICATION_HELPERS_SOURCED:-}" ]; then
+  return 0
+fi
+export VERIFICATION_HELPERS_SOURCED=1
+```
+
+This pattern makes it safe to source libraries multiple times:
+- First sourcing: Loads functions and sets guard variable
+- Subsequent sourcing: Guard returns immediately, no-op
+- Zero performance penalty (guard check is instant)
+
+**Implication**: Including a library in both early sourcing AND in REQUIRED_LIBS array is safe and recommended.
+
+### Related Specifications
+
+- **Spec 675**: Library sourcing order fix (this specification)
+- **Spec 620**: Bash history expansion fixes (subprocess isolation discovery)
+- **Spec 630**: State persistence architecture (cross-block state management)
+
 ## Anti-Patterns
 
 ### Anti-Pattern 1: Using `$$` for Cross-Block State

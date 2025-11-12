@@ -1053,7 +1053,60 @@ research-and-revise workflow requires both:
 
 ### Common Issues
 
-#### Issue 1: Verification Checkpoint Failures
+#### Issue 1: "command not found" Errors During Initialization
+
+**Symptom**: `/coordinate` fails with `verify_state_variable: command not found` or `handle_state_error: command not found`
+
+**Root Cause**: Library sourcing order violation - functions called before libraries sourced
+
+**Error Examples**:
+```
+bash: verify_state_variable: command not found
+bash: handle_state_error: command not found
+bash: verify_file_created: command not found
+```
+
+**Fix**: Verify library sourcing order in coordinate.md
+
+The /coordinate command must source libraries in this order:
+
+```bash
+# 1. State machine core (lines 88-105)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+
+# 2. Error handling and verification (lines 107-127) - BEFORE any function calls
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# 3. Additional libraries (line 192+)
+source_required_libraries "${REQUIRED_LIBS[@]}"
+```
+
+**Verification Commands**:
+```bash
+# Check sourcing order
+grep -n "^source.*error-handling.sh" .claude/commands/coordinate.md
+grep -n "^source.*verification-helpers.sh" .claude/commands/coordinate.md
+# Both should appear before line 150 (before first function calls)
+
+# Validate with automated test
+bash .claude/tests/test_library_sourcing_order.sh
+```
+
+**Root Cause Details**:
+- Each bash block runs in a separate subprocess
+- Functions don't persist across bash block boundaries
+- Libraries must be sourced in EVERY block that uses their functions
+- Premature function calls (before sourcing) cause "command not found" errors
+
+**Fixed In**: Spec 675 (2025-11-11) - Moved error-handling.sh and verification-helpers.sh sourcing to immediately after state-persistence.sh (lines 107-127), before any verification checkpoints or error handling calls.
+
+**See Also**:
+- [Bash Block Execution Model](../concepts/bash-block-execution-model.md#function-availability-and-sourcing-order) - Complete sourcing order documentation
+- [Spec 675](../../specs/675_infrastructure_and_the_claude_docs_standards/) - Library sourcing order fix
+
+#### Issue 2: Verification Checkpoint Failures
 
 **Symptom**: "CRITICAL: State file verification failed - variables not written"
 
