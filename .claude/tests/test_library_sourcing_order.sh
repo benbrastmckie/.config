@@ -160,6 +160,86 @@ test_dependency_order
 run_test "state-persistence sourced before dependent libraries" $?
 echo ""
 
+# Test sourcing order in ALL bash blocks (Spec 661 Phase 4)
+test_subsequent_blocks_sourcing_order() {
+  local violations=0
+  local cmd_file="${CLAUDE_PROJECT_DIR}/.claude/commands/coordinate.md"
+
+  # Find all bash code blocks in coordinate.md
+  local block_count=0
+  local in_bash_block=false
+  local block_start=0
+
+  while IFS= read -r line_content; do
+    local line_num=$((block_count + 1))
+
+    if echo "$line_content" | grep -q '^```bash$'; then
+      in_bash_block=true
+      block_start=$line_num
+    elif echo "$line_content" | grep -q '^```$' && [ "$in_bash_block" = true ]; then
+      in_bash_block=false
+      block_count=$((block_count + 1))
+
+      # Check sourcing order in this block (blocks 2+ should follow same pattern)
+      if [ $block_count -gt 1 ]; then
+        # Extract this block
+        local block_end=$line_num
+        local block_lines=$(sed -n "${block_start},${block_end}p" "$cmd_file")
+
+        # Check if block contains library sourcing
+        if echo "$block_lines" | grep -q "source.*\.sh"; then
+          # Verify Standard 15 order: state-machine, state-persistence, error-handling, verification-helpers
+          local state_machine_line=$(echo "$block_lines" | grep -n "source.*workflow-state-machine" | head -1 | cut -d: -f1)
+          local state_persist_line=$(echo "$block_lines" | grep -n "source.*state-persistence" | head -1 | cut -d: -f1)
+          local error_handling_line=$(echo "$block_lines" | grep -n "source.*error-handling" | head -1 | cut -d: -f1)
+          local verification_line=$(echo "$block_lines" | grep -n "source.*verification-helpers" | head -1 | cut -d: -f1)
+
+          # If any are found, verify order
+          if [ -n "$state_machine_line" ] && [ -n "$state_persist_line" ]; then
+            if [ "$state_machine_line" -lt "$state_persist_line" ]; then
+              echo "  ✓ Block $block_count: workflow-state-machine before state-persistence"
+            else
+              echo "  ✗ Block $block_count: incorrect order (state-machine should be first)"
+              violations=$((violations + 1))
+            fi
+          fi
+
+          if [ -n "$state_persist_line" ] && [ -n "$error_handling_line" ]; then
+            if [ "$state_persist_line" -lt "$error_handling_line" ]; then
+              echo "  ✓ Block $block_count: state-persistence before error-handling"
+            else
+              echo "  ✗ Block $block_count: state-persistence must be before error-handling"
+              violations=$((violations + 1))
+            fi
+          fi
+
+          if [ -n "$error_handling_line" ] && [ -n "$verification_line" ]; then
+            if [ "$error_handling_line" -lt "$verification_line" ]; then
+              echo "  ✓ Block $block_count: error-handling before verification-helpers"
+            else
+              echo "  ✗ Block $block_count: error-handling must be before verification-helpers"
+              violations=$((violations + 1))
+            fi
+          fi
+        fi
+      fi
+    fi
+  done < "$cmd_file"
+
+  if [ $block_count -lt 2 ]; then
+    echo "  ⚠ Warning: Found only $block_count bash block(s), expected multiple"
+  else
+    echo "  ℹ Checked sourcing order in $block_count bash blocks"
+  fi
+
+  return $violations
+}
+
+echo "Test 5: Subsequent blocks sourcing order (Spec 661)"
+test_subsequent_blocks_sourcing_order
+run_test "All bash blocks follow Standard 15 sourcing order" $?
+echo ""
+
 # Summary
 echo "========================================="
 echo "Test Summary"
