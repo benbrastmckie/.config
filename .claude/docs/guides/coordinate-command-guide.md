@@ -2002,6 +2002,50 @@ cat .claude/data/logs/coordinate-*.log
 # (automatic on next /coordinate invocation)
 ```
 
+#### Issue 5: Variables Not Exported from Functions (Subshell Export Bug)
+
+**Symptom**: Variables set by function not available after call
+
+**Error Examples**:
+```
+ERROR: initialize_workflow_paths() requires WORKFLOW_SCOPE as second argument
+WORKFLOW_SCOPE: <not set>
+```
+
+**Cause**: Command substitution creates subshell (see [Bash Block Execution Model](../concepts/bash-block-execution-model.md))
+
+**Example**:
+```bash
+# WRONG - creates subshell:
+RESULT=$(my_function)  # Subshell - exports don't propagate
+
+# CORRECT - parent shell:
+my_function >/dev/null  # Parent shell - exports available
+RESULT="$EXPORTED_VAR"  # Use exported variable
+```
+
+**Fixed In**: Spec 683 - coordinate.md line 165 (sm_init call pattern)
+
+**Root Cause Details**:
+- Command substitution `$(...)` creates subprocess
+- `export` statements in subprocess don't affect parent shell
+- Parent shell never sees the exported variables
+- Functions must be called directly (not via command substitution) to export to parent
+
+**Solution**:
+```bash
+# Incorrect pattern (don't use):
+COMPLEXITY=$(sm_init "$workflow_desc" "coordinate")
+
+# Correct pattern (use this):
+sm_init "$workflow_desc" "coordinate" >/dev/null
+# Variables now available: $WORKFLOW_SCOPE, $RESEARCH_COMPLEXITY, $RESEARCH_TOPICS_JSON
+```
+
+**See Also**:
+- [Bash Block Execution Model](../concepts/bash-block-execution-model.md#subprocess-isolation) - Complete subprocess patterns
+- [Spec 683 Bug #1 Fix](../../specs/683_coordinate_critical_bug_fixes/plans/001_coordinate_bug_fixes.md#bug-1-subshell-export-fix-completed) - Complete root cause analysis
+
 ### Debug Mode
 
 **Enable verbose logging**:
