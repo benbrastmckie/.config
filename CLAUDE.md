@@ -150,6 +150,36 @@ Commands should check CLAUDE.md in priority order:
 - [Command Development Guide](.claude/docs/guides/command-development-guide.md) - Complete guide to creating and maintaining slash commands
 - [Agent Development Guide](.claude/docs/guides/agent-development-guide.md) - Complete guide to creating and maintaining specialized agents
 - [Model Selection Guide](.claude/docs/guides/model-selection-guide.md) - Guide to choosing Claude model tiers (Haiku/Sonnet/Opus) for agents with cost/quality optimization
+
+### Internal Link Conventions
+[Used by: /document, /plan, /implement, all documentation]
+
+**Standard**: All internal markdown links must use relative paths from the current file location.
+
+**Format**:
+- Same directory: `[File](file.md)`
+- Parent directory: `[File](../file.md)`
+- Subdirectory: `[File](subdir/file.md)`
+- With anchor: `[Section](file.md#section-name)`
+
+**Prohibited**:
+- Absolute filesystem paths: `/home/user/.config/file.md`
+- Repository-relative without base: `.claude/docs/file.md` (from outside .claude/)
+
+**Validation**:
+- Run `.claude/scripts/validate-links-quick.sh` before committing
+- Full validation: `.claude/scripts/validate-links.sh`
+
+**Template Placeholders** (Allowed):
+- `{variable}` - Template variable
+- `NNN_topic` - Placeholder pattern
+- `$ENV_VAR` - Environment variable
+
+**Historical Documentation** (Preserve as-is):
+- Spec reports, summaries, and completed plans may have broken links documenting historical states
+- Only fix if link prevents understanding current system
+
+See [Link Conventions Guide](.claude/docs/guides/link-conventions-guide.md) for complete standards.
 <!-- END_SECTION: code_standards -->
 
 <!-- SECTION: development_philosophy -->
