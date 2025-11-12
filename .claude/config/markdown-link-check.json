@@ -1,0 +1,43 @@
+{
+  "ignorePatterns": [
+    {
+      "comment": "Ignore external URLs (check separately if needed)",
+      "pattern": "^http"
+    },
+    {
+      "comment": "Ignore template variables",
+      "pattern": "\\{[^}]+\\}"
+    },
+    {
+      "comment": "Ignore placeholder patterns",
+      "pattern": "NNN_"
+    },
+    {
+      "comment": "Ignore shell variables",
+      "pattern": "\\$[A-Z_]+"
+    },
+    {
+      "comment": "Ignore regex patterns in examples",
+      "pattern": "\\.\\*"
+    },
+    {
+      "comment": "Ignore anchor-only links (within same file)",
+      "pattern": "^#"
+    },
+    {
+      "comment": "Ignore specs directories (historical documentation)",
+      "pattern": "/specs/"
+    },
+    {
+      "comment": "Ignore archive directory (empty, gitignored)",
+      "pattern": "/archive/"
+    }
+  ],
+  "replacementPatterns": [],
+  "httpHeaders": [],
+  "timeout": "10s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "5s",
+  "aliveStatusCodes": [200, 206]
+}

@@ -105,7 +105,7 @@ grep -n "create_topic_artifact.*plans" .claude/commands/COMMAND_NAME.md
 ```
 
 ### References
-- [Agent Authoring Guide: What Agents Should NOT Do](../guides/agent-authoring-guide.md#what-agents-should-not-do)
+- [Agent Authoring Guide: What Agents Should NOT Do](../guides/agent-development-guide.md#what-agents-should-not-do)
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md)
 
 ---
@@ -203,7 +203,7 @@ ls -R specs/042_feature/
 ```
 
 ### References
-- [Command Authoring Guide: Topic-Based Artifact Paths](../guides/command-authoring-guide.md#topic-based-artifact-paths)
+- [Command Authoring Guide: Topic-Based Artifact Paths](../guides/command-development-guide.md#topic-based-artifact-paths)
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md)
 
 ---
@@ -306,7 +306,7 @@ echo "Context reduction: ${REDUCTION}%"
 
 ### References
 - [Hierarchical Agents: Metadata Extraction](../concepts/hierarchical_agents.md#metadata-extraction)
-- [Command Authoring Guide: Metadata Extraction](../guides/command-authoring-guide.md#metadata-extraction)
+- [Command Authoring Guide: Metadata Extraction](../guides/command-development-guide.md#metadata-extraction)
 
 ---
 
@@ -403,7 +403,7 @@ grep -c "/implement\|/plan\|/report" .claude/agents/AGENT_NAME.md
 ```
 
 ### References
-- [Agent Authoring Guide: Recursion Anti-Pattern](../guides/agent-authoring-guide.md#anti-pattern-recursion)
+- [Agent Authoring Guide: Recursion Anti-Pattern](../guides/agent-development-guide.md#anti-pattern-recursion)
 - [Behavioral Injection Anti-Patterns](../concepts/patterns/behavioral-injection.md#anti-patterns)
 
 ---
@@ -561,7 +561,7 @@ ls specs/042_user_authentication/reports/
 ### References
 - [Directory Protocols](.claude/docs/concepts/directory-protocols.md) - Topic-based structure standards
 - [Artifact Creation Utilities](.claude/lib/artifact-creation.sh) - `create_topic_artifact()` function
-- [Command Authoring Guide: Topic-Based Paths](../guides/command-authoring-guide.md#topic-based-artifact-paths)
+- [Command Authoring Guide: Topic-Based Paths](../guides/command-development-guide.md#topic-based-artifact-paths)
 
 ---
 
