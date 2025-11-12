@@ -132,13 +132,15 @@ WORKFLOW_ID="coordinate_$(date +%s)"
 # Initialize workflow state (GitHub Actions pattern)
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 
-# Save workflow ID to file for subsequent blocks (use unique timestamp-based filename for concurrent workflow isolation)
-TIMESTAMP=$(date +%s%N)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_${TIMESTAMP}.txt"
+# Pattern 1: Fixed Semantic Filename (bash-block-execution-model.md:163-191)
+# Save workflow ID to file for subsequent blocks using fixed location
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
 
-# Add cleanup trap for state ID file (will be removed after workflow completes)
-trap "rm -f '$COORDINATE_STATE_ID_FILE' 2>/dev/null || true" EXIT
+# VERIFICATION CHECKPOINT: Verify state ID file created successfully (Standard 0: Execution Enforcement)
+verify_file_created "$COORDINATE_STATE_ID_FILE" "State ID file" "Initialization" || {
+  handle_state_error "CRITICAL: State ID file not created at $COORDINATE_STATE_ID_FILE" 1
+}
 
 # Save workflow ID and description to state for subsequent blocks
 append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
@@ -353,26 +355,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 # Check if we should skip this state (already at terminal)
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -503,26 +495,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 # Defensive: Restore RESEARCH_COMPLEXITY if not loaded from state
 # This can happen if workflow state doesn't persist properly across bash blocks
@@ -808,26 +790,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -975,26 +947,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 # Determine which path to verify based on workflow scope
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
@@ -1247,26 +1209,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -1341,26 +1293,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 emit_progress "3" "Implementation phase completion - verifying results"
 
@@ -1493,26 +1435,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -1625,26 +1557,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -1703,26 +1625,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 emit_progress "5" "Debug analysis complete - verifying results"
 
@@ -1834,26 +1746,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
@@ -1912,26 +1814,16 @@ source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state with concurrent workflow isolation support
-# Try old fixed location first for backward compatibility
-COORDINATE_STATE_ID_FILE_OLD="${HOME}/.claude/tmp/coordinate_state_id.txt"
-if [ -f "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE_OLD")
-  load_workflow_state "$WORKFLOW_ID"
-
-  # Check if workflow state has unique state ID file path (new pattern)
-  if [ -n "${COORDINATE_STATE_ID_FILE:-}" ] && [ "$COORDINATE_STATE_ID_FILE" != "$COORDINATE_STATE_ID_FILE_OLD" ]; then
-    # Workflow is using new unique state ID file pattern
-    : # COORDINATE_STATE_ID_FILE already set from workflow state
-  else
-    # Workflow is using old fixed location pattern (backward compatibility)
-    COORDINATE_STATE_ID_FILE="$COORDINATE_STATE_ID_FILE_OLD"
-  fi
-else
-  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE_OLD"
+# Load workflow state from fixed semantic filename (Pattern 1)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
+
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
 emit_progress "6" "Documentation updated"
 
