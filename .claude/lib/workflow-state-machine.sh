@@ -222,19 +222,47 @@ sm_init() {
   WORKFLOW_DESCRIPTION="$workflow_desc"
   COMMAND_NAME="$command_name"
 
-  # Detect workflow scope using existing detection library
-  # Note: workflow-scope-detection.sh is for /coordinate (supports revision patterns)
-  #       workflow-detection.sh is for /supervise (older pattern matching)
+  # Perform comprehensive workflow classification (scope + complexity + subtopics)
+  # Source unified workflow scope detection library
   if [ -f "$SCRIPT_DIR/workflow-scope-detection.sh" ]; then
     source "$SCRIPT_DIR/workflow-scope-detection.sh"
-    WORKFLOW_SCOPE=$(detect_workflow_scope "$workflow_desc")
-  elif [ -f "$SCRIPT_DIR/workflow-detection.sh" ]; then
-    # Fallback to older library if newer one not available
-    source "$SCRIPT_DIR/workflow-detection.sh"
-    WORKFLOW_SCOPE=$(detect_workflow_scope "$workflow_desc")
+
+    # Get comprehensive classification (workflow_type, research_complexity, subtopics)
+    local classification_result
+    if classification_result=$(classify_workflow_comprehensive "$workflow_desc" 2>/dev/null); then
+      # Parse JSON response
+      WORKFLOW_SCOPE=$(echo "$classification_result" | jq -r '.workflow_type // "full-implementation"')
+      RESEARCH_COMPLEXITY=$(echo "$classification_result" | jq -r '.research_complexity // 2')
+
+      # Serialize subtopics array to JSON for state persistence
+      RESEARCH_TOPICS_JSON=$(echo "$classification_result" | jq -c '.subtopics // []')
+
+      # Export all three classification dimensions
+      export WORKFLOW_SCOPE
+      export RESEARCH_COMPLEXITY
+      export RESEARCH_TOPICS_JSON
+
+      # Log successful comprehensive classification
+      echo "Comprehensive classification: scope=$WORKFLOW_SCOPE, complexity=$RESEARCH_COMPLEXITY, topics=$(echo "$RESEARCH_TOPICS_JSON" | jq -r 'length')" >&2
+    else
+      # Fallback: Use regex-only classification if comprehensive fails
+      echo "WARNING: Comprehensive classification failed, falling back to regex-only mode" >&2
+      WORKFLOW_SCOPE=$(classify_workflow_regex "$workflow_desc" 2>/dev/null || echo "full-implementation")
+      RESEARCH_COMPLEXITY=2  # Default moderate complexity
+      RESEARCH_TOPICS_JSON='["Topic 1", "Topic 2"]'
+      export WORKFLOW_SCOPE
+      export RESEARCH_COMPLEXITY
+      export RESEARCH_TOPICS_JSON
+    fi
   else
-    # Fallback: assume full-implementation if detection unavailable
+    # Fallback: If workflow-scope-detection.sh not available
+    echo "WARNING: workflow-scope-detection.sh not found, using defaults" >&2
     WORKFLOW_SCOPE="full-implementation"
+    RESEARCH_COMPLEXITY=2
+    RESEARCH_TOPICS_JSON='["Topic 1", "Topic 2"]'
+    export WORKFLOW_SCOPE
+    export RESEARCH_COMPLEXITY
+    export RESEARCH_TOPICS_JSON
   fi
 
   # Configure terminal state based on workflow scope
@@ -264,8 +292,12 @@ sm_init() {
   CURRENT_STATE="$STATE_INITIALIZE"
   COMPLETED_STATES=()
 
-  # Return initialization status
+  # Log initialization status
   echo "State machine initialized: scope=$WORKFLOW_SCOPE, terminal=$TERMINAL_STATE" >&2
+
+  # CRITICAL: Return RESEARCH_COMPLEXITY value for use in dynamic path allocation
+  # This enables Phase 0 just-in-time allocation (eliminates pre-allocation tension)
+  echo "$RESEARCH_COMPLEXITY"
   return 0
 }
 
