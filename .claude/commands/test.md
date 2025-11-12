@@ -1,201 +1,149 @@
 ---
-allowed-tools: Bash, Read, Grep, Glob
+allowed-tools: Bash, Read, Grep, Glob, Task
 argument-hint: <feature/module/file> [test-type]
 description: Run project-specific tests based on CLAUDE.md testing protocols
 command-type: primary
 dependent-commands: debug, test-all, document
 ---
 
-# Run Project Tests
+# /test - Project Test Runner
 
-I'll run the appropriate tests for the specified feature, module, or file using the project's testing protocols defined in CLAUDE.md.
+YOU ARE EXECUTING AS the /test command.
 
-## Target and Test Type
-- **Target**: $1 (feature name, module path, or file path)
-- **Test Type**: $2 (optional: unit, integration, all, nearest, file, suite)
+**Documentation**: See `.claude/docs/guides/test-command-guide.md`
 
-## Process
+---
 
-### 1. Discover Testing Protocols
-For testing protocol discovery, see [Testing Integration Patterns](../docs/command-patterns.md#testing-integration-patterns).
+## Phase 0: Discover Testing Protocols
 
-**Test-specific discovery:** Extract test commands, coverage thresholds, and framework configuration from CLAUDE.md or project files.
-
-### 2. Identify Test Scope
-Based on the target provided, I'll determine:
-- **File-specific**: Test a single file
-- **Module**: Test all files in a module/directory
-- **Feature**: Test related files across modules
-- **Suite**: Run the full test suite
-
-### 3. Select Test Commands
-From CLAUDE.md or project configuration, I'll use:
-
-#### For Neovim/Lua Projects
-- `:TestNearest` - Test nearest function/block
-- `:TestFile` - Test current file
-- `:TestSuite` - Run all tests
-- `:TestLast` - Re-run last test
-- Custom lua test commands
-
-#### For Web Projects
-- `npm test` - Run test suite
-- `npm run test:unit` - Unit tests only
-- `npm run test:e2e` - End-to-end tests
-- `npm run test:coverage` - With coverage report
-
-#### For Python Projects
-- `pytest <path>` - Test specific path
-- `python -m pytest` - Full test suite
-- `pytest -k <pattern>` - Test by name pattern
-- `tox` - Run test environments
-
-#### For Other Projects
-- `make test` - Makefile-based testing
-- `cargo test` - Rust projects
-- `go test ./...` - Go projects
-- Custom test scripts
-
-### 4. Execute Tests
-I'll run tests with appropriate options:
-- **Verbose output** for debugging
-- **Coverage reporting** if available
-- **Parallel execution** for speed
-- **Focused tests** when targeting specific features
-
-### 5. Parse Results
-I'll analyze test output to:
-- Identify failures and their causes
-- Extract coverage metrics
-- Note performance issues
-- Suggest fixes for failures
-
-## Test Detection Strategy
-
-### From CLAUDE.md
-I'll look for patterns like:
-- `Testing:` sections
-- Command examples with `:Test`
-- Test keybindings
-- Test script references
-
-### From Project Structure
-I'll check for:
-- `test/` or `tests/` directories
-- `*_test.lua`, `*.test.js`, `test_*.py` files
-- `spec/` directories (for BDD-style tests)
-- `.github/workflows/` for CI test commands
-
-### Smart Detection
-If no explicit test configuration found, I'll:
-1. Analyze file extensions to determine language
-2. Look for test frameworks in dependencies
-3. Check for test patterns in similar files
-4. Suggest appropriate test setup if none exists
-
-## Output Format
-
-```
-=== Test Execution Report ===
-
-Target: [What was tested]
-Test Command: [Command executed]
-Test Type: [unit/integration/all]
-
-Results:
-- Tests Run: [N]
-- Passed: [N]
-- Failed: [N]
-- Skipped: [N]
-
-[Detailed output if failures]
-
-Coverage: [X%] (if available)
-Duration: [Xs]
-
-[Suggestions for failures if any]
-```
-
-## Error Recovery and Enhanced Analysis
-
-If tests fail, I'll provide enhanced error analysis with actionable suggestions:
-
-### 1. Capture Error Output
-- Capture complete test output including error messages
-- Identify failing test cases and error locations
-- Preserve context around failures
-
-### 2. Run Enhanced Error Analysis
 ```bash
-# Analyze error output with enhanced error tool
-.claude/lib/analyze-error.sh "$TEST_OUTPUT"
+# Standard 13: CLAUDE_PROJECT_DIR detection
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+# Parse arguments
+TARGET="${1:-}"
+TEST_TYPE="${2:-all}"
+
+if [ -z "$TARGET" ]; then
+  echo "Usage: /test <feature/module/file> [test-type]"
+  echo "Test types: unit, integration, all, nearest, file, suite"
+  exit 1
+fi
+
+echo "Target: $TARGET"
+echo "Test Type: $TEST_TYPE"
 ```
 
-### 3. Enhanced Error Report
-The analysis provides:
-- **Error Type Classification**: syntax, test_failure, file_not_found, import_error, null_error, timeout, permission
-- **Error Location**: File and line number with 3 lines of context before/after
-- **Specific Suggestions**: 2-3 actionable fixes tailored to the error type
-- **Debug Commands**: Next steps for investigation
+## Phase 1: Identify Test Scope and Commands
 
-### 4. Graceful Degradation
-For partial test failures:
-- Document which tests passed vs. failed
-- Identify patterns in failures (e.g., all timeout errors)
-- Suggest manual investigation steps:
-  - `/debug "<specific test failure description>"`
-  - Review recent changes: `git diff`
-  - Run individual tests: `:TestNearest`
+```bash
+# Load testing protocols from CLAUDE.md
+CLAUDE_MD=$(find "$CLAUDE_PROJECT_DIR" -maxdepth 1 -name "CLAUDE.md" | head -1)
 
-### 5. Example Enhanced Test Error Output
+if [ -f "$CLAUDE_MD" ]; then
+  # Extract testing_protocols section
+  TEST_PROTOCOLS=$(sed -n '/<!-- SECTION: testing_protocols -->/,/<!-- END_SECTION: testing_protocols -->/p' "$CLAUDE_MD")
+  echo "✓ Testing protocols loaded from CLAUDE.md"
+else
+  echo "⚠️  CLAUDE.md not found - Using smart detection"
+fi
 
-```
-===============================================
-Enhanced Error Analysis
-===============================================
+# Detect project type and test framework
+PROJECT_TYPE="unknown"
 
-Error Type: test_failure
-Location: tests/auth_spec.lua:42
+if [ -f "package.json" ]; then
+  PROJECT_TYPE="node"
+elif [ -f "Cargo.toml" ]; then
+  PROJECT_TYPE="rust"
+elif [ -f "go.mod" ]; then
+  PROJECT_TYPE="go"
+elif [ -d "tests/" ] && ls tests/*_spec.lua > /dev/null 2>&1; then
+  PROJECT_TYPE="lua"
+elif [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
+  PROJECT_TYPE="python"
+fi
 
-Context (around line 42):
-   39  setup(function()
-   40    session = mock_session_factory()
-   41  end)
-   42  it("should login with valid credentials", function()
-   43    local result = auth.login(session, "user", "pass")
-   44    assert.is_not_nil(result)
-   45  end)
-
-Suggestions:
-1. Check test setup - verify mocks and fixtures are initialized correctly
-2. Review test data - ensure test inputs match expected types and values
-3. Check for race conditions - add delays or synchronization if timing-sensitive
-4. Run test in isolation: :TestNearest to isolate the failure
-
-Debug Commands:
-- Investigate further: /debug "auth login test failing with nil result"
-- View file: nvim tests/auth_spec.lua
-- Run tests: :TestNearest or :TestFile
-===============================================
+echo "Detected project type: $PROJECT_TYPE"
 ```
 
-## Agent Usage
+## Phase 2: Execute Tests
 
-For agent invocation patterns, see [Agent Invocation Patterns](../docs/command-patterns.md#agent-invocation-patterns).
+**EXECUTE NOW**: Run tests using discovered protocols or delegate to test specialist.
 
-**Test-specific agent:**
+For simple test execution:
+```bash
+# Execute based on project type
+case "$PROJECT_TYPE" in
+  node)
+    npm test -- "$TARGET"
+    ;;
+  rust)
+    cargo test "$TARGET"
+    ;;
+  go)
+    go test "$TARGET"
+    ;;
+  python)
+    pytest "$TARGET"
+    ;;
+  lua)
+    # Neovim testing
+    echo "Run :TestNearest, :TestFile, or :TestSuite in Neovim"
+    ;;
+  *)
+    # Delegate to test specialist agent for complex detection
+    echo "Using test specialist for framework detection..."
+    ;;
+esac
+```
 
-| Agent | Purpose | Key Capabilities |
-|-------|---------|------------------|
-| test-specialist | Execute tests and analyze failures | Multi-framework support, error categorization, coverage tracking |
+For complex scenarios, delegate to specialized agent:
+```
+Task tool invocation with subagent_type="general-purpose"
+Prompt: "Execute tests for target '${TARGET}' with test type '${TEST_TYPE}'.
 
-**Delegation Benefits:**
-- Framework expertise across multiple test runners
-- Structured failure analysis with error categorization
-- Coverage metrics and gap identification
-- Actionable suggestions for failures
+REQUIREMENTS:
+- Discover test framework and commands from CLAUDE.md or project structure
+- Identify appropriate test scope (file, module, feature, suite)
+- Execute tests with verbose output and coverage if available
+- Parse results and identify failures
+- Suggest fixes for any test failures using enhanced error analysis
 
-**Direct Execution:**
-Quick tests can execute directly without agent overhead. Delegate for complex test suites or detailed diagnostics.
+Return:
+- Test execution summary (passed/failed/skipped)
+- Coverage metrics if available
+- Failure analysis with suggested fixes
+- Performance metrics if notable
+"
+```
 
-Let me analyze your project and run the appropriate tests.
+## Phase 3: Analyze Results and Report
+
+```bash
+# Parse test results
+TEST_EXIT_CODE=$?
+
+if [ $TEST_EXIT_CODE -eq 0 ]; then
+  echo ""
+  echo "✓ All tests passed"
+else
+  echo ""
+  echo "❌ Test failures detected"
+  echo "Exit code: $TEST_EXIT_CODE"
+
+  # Enhanced error analysis available
+  echo ""
+  echo "For detailed failure analysis:"
+  echo "  /debug \"test failure in $TARGET\""
+fi
+
+echo ""
+echo "=== Test Execution Complete ==="
+```
+
+---
+
+**Troubleshooting**: See guide for test framework setup, error analysis, and debugging strategies.

@@ -2,6 +2,12 @@
 # Error handling and recovery utilities
 # Provides functions for error classification, recovery, retry logic, and escalation
 
+# Source guard: Prevent multiple sourcing
+if [ -n "${ERROR_HANDLING_SOURCED:-}" ]; then
+  return 0
+fi
+export ERROR_HANDLING_SOURCED=1
+
 set -euo pipefail
 
 # ==============================================================================
@@ -728,6 +734,122 @@ Error: $base_error
 EOF
 }
 
+# ==============================================================================
+# State Machine Error Handler (Five-Component Format)
+# ==============================================================================
+
+# handle_state_error: Workflow error handler with state context and retry logic
+# Usage: handle_state_error <error-message> [exit-code]
+# Returns: Never (exits with specified exit code)
+#
+# Five-Component Error Message Format:
+# 1. What failed
+# 2. Expected state/behavior
+# 3. Diagnostic commands
+# 4. Context (workflow phase, state)
+# 5. Recommended action
+#
+# Features:
+# - State-aware error messages with workflow context
+# - Retry counter tracking (max 2 retries per state)
+# - State persistence for resume support
+# - Five-component diagnostic format for faster troubleshooting
+#
+# Example:
+#   handle_state_error "Research phase failed verification - 1 reports not created" 1
+handle_state_error() {
+  local error_message="$1"
+  local current_state="${CURRENT_STATE:-unknown}"
+  local exit_code="${2:-1}"
+
+  # Component 1: What failed
+  echo ""
+  echo "✗ ERROR in state '$current_state': $error_message"
+  echo ""
+
+  # Component 2: Expected state/behavior
+  echo "Expected behavior:"
+  case "$current_state" in
+    research)
+      echo "  - All research agents should complete successfully"
+      echo "  - All report files created in \$TOPIC_PATH/reports/"
+      ;;
+    plan)
+      echo "  - Implementation plan created successfully"
+      echo "  - Plan file created in \$TOPIC_PATH/plans/"
+      ;;
+    implement|test|debug|document)
+      echo "  - State '$current_state' should complete without errors"
+      echo "  - Workflow should transition to next valid state"
+      ;;
+    *)
+      echo "  - Workflow should progress to state: $current_state"
+      ;;
+  esac
+  echo ""
+
+  # Component 3: Diagnostic commands
+  echo "Diagnostic commands:"
+  echo "  # Check workflow state"
+  echo "  cat \"\$STATE_FILE\""
+  echo ""
+  echo "  # Check topic directory"
+  echo "  ls -la \"\${TOPIC_PATH:-<not set>}\""
+  echo ""
+  echo "  # Check library sourcing"
+  echo "  bash -n \"\${LIB_DIR}/workflow-state-machine.sh\""
+  echo "  bash -n \"\${LIB_DIR}/workflow-initialization.sh\""
+  echo ""
+
+  # Component 4: Context (workflow phase, state)
+  echo "Context:"
+  echo "  - Workflow: ${WORKFLOW_DESCRIPTION:-<not set>}"
+  echo "  - Scope: ${WORKFLOW_SCOPE:-<not set>}"
+  echo "  - Current State: $current_state"
+  echo "  - Terminal State: ${TERMINAL_STATE:-<not set>}"
+  echo "  - Topic Path: ${TOPIC_PATH:-<not set>}"
+  echo ""
+
+  # Save failed state to workflow state for retry
+  if command -v append_workflow_state &>/dev/null; then
+    append_workflow_state "FAILED_STATE" "$current_state"
+    append_workflow_state "LAST_ERROR" "$error_message"
+
+    # Increment retry counter for this state
+    # Use eval for indirect variable expansion (safe: VAR constructed from known state name)
+    RETRY_COUNT_VAR="RETRY_COUNT_${current_state}"
+    RETRY_COUNT=$(eval echo "\${${RETRY_COUNT_VAR}:-0}")
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    append_workflow_state "$RETRY_COUNT_VAR" "$RETRY_COUNT"
+
+    # Component 5: Recommended action
+    if [ $RETRY_COUNT -ge 2 ]; then
+      echo "Recommended action:"
+      echo "  - Max retries (2) reached for state '$current_state'"
+      echo "  - Review diagnostic output above"
+      echo "  - Fix underlying issue before retrying"
+      echo "  - Check logs: .claude/data/logs/adaptive-planning.log"
+      echo "  - Workflow cannot proceed automatically"
+      echo ""
+    else
+      echo "Recommended action:"
+      echo "  - Retry $RETRY_COUNT/2 available for state '$current_state'"
+      echo "  - Fix the issue identified in diagnostic output"
+      echo "  - Re-run: /coordinate \"${WORKFLOW_DESCRIPTION}\""
+      echo "  - State machine will resume from failed state"
+      echo ""
+    fi
+  else
+    # State persistence not available (bootstrap phase)
+    echo "Recommended action:"
+    echo "  - Fix the issue identified in diagnostic output"
+    echo "  - Re-run the workflow"
+    echo ""
+  fi
+
+  exit $exit_code
+}
+
 # Export functions for use in other scripts
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f classify_error
@@ -748,4 +870,5 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f format_orchestrate_agent_failure
   export -f format_orchestrate_test_failure
   export -f format_orchestrate_phase_context
+  export -f handle_state_error
 fi

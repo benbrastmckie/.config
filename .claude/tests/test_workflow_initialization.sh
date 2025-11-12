@@ -338,6 +338,41 @@ test_debug_only_workflow() {
   teardown
 }
 
+# Test 9a: Research-and-revise workflow validation (Issue #661 regression test)
+test_research_and_revise_workflow() {
+  local test_name="Research-and-revise workflow validation"
+
+  setup
+
+  # Create mock plan file for revision workflow
+  # Note: Topic name is calculated from description, so create directory matching calculated name
+  mkdir -p "${TEST_DIR}/.claude/specs/657_revise_test_topic/plans"
+  local mock_plan="${TEST_DIR}/.claude/specs/657_revise_test_topic/plans/001_existing_plan.md"
+  echo "# Test Plan" > "$mock_plan"
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Simulate scope detection: export EXISTING_PLAN_PATH as scope detection would
+    export EXISTING_PLAN_PATH="$mock_plan"
+
+    # Call the function with revision workflow description
+    if initialize_workflow_paths "Revise the plan $mock_plan to accommodate changes" "research-and-revise" >/dev/null 2>&1; then
+      # Verify EXISTING_PLAN_PATH is still set (specific to revision workflows)
+      if [[ -n "${EXISTING_PLAN_PATH:-}" ]] && [[ -f "${EXISTING_PLAN_PATH}" ]]; then
+        pass "$test_name"
+      else
+        fail "$test_name" "EXISTING_PLAN_PATH not set or file doesn't exist: ${EXISTING_PLAN_PATH:-<empty>}"
+      fi
+    else
+      fail "$test_name" "initialize_workflow_paths returned non-zero for research-and-revise scope"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
 # Test 10: Report paths array reconstruction
 test_report_paths_reconstruction() {
   local test_name="Report paths array reconstruction"
@@ -430,6 +465,232 @@ test_tracking_variables() {
   teardown
 }
 
+# ==============================================================================
+# Phase 4: Comprehensive Regression Tests for Issue #661
+# ==============================================================================
+
+# Test: extract_topic_from_plan_path() with valid path
+test_extract_topic_valid_path() {
+  local test_name="extract_topic_from_plan_path with valid path"
+
+  setup
+
+  # Create mock plan file
+  mkdir -p "${TEST_DIR}/.claude/specs/657_test_topic/plans"
+  local mock_plan="${TEST_DIR}/.claude/specs/657_test_topic/plans/001_test_plan.md"
+  echo "# Test Plan" > "$mock_plan"
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Call extraction function
+    local extracted_topic
+    extracted_topic=$(extract_topic_from_plan_path "$mock_plan" 2>/dev/null)
+
+    if [[ "$extracted_topic" == "657_test_topic" ]]; then
+      pass "$test_name"
+    else
+      fail "$test_name" "Expected '657_test_topic', got '$extracted_topic'"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
+# Test: extract_topic_from_plan_path() with non-existent path
+test_extract_topic_nonexistent_path() {
+  local test_name="extract_topic_from_plan_path with non-existent path"
+
+  setup
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Call extraction function with non-existent path (should fail)
+    if extract_topic_from_plan_path "/nonexistent/path/specs/657_topic/plans/001_plan.md" >/dev/null 2>&1; then
+      fail "$test_name" "Function should fail for non-existent path"
+    else
+      pass "$test_name"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
+# Test: extract_topic_from_plan_path() with malformed path
+test_extract_topic_malformed_path() {
+  local test_name="extract_topic_from_plan_path with malformed path"
+
+  setup
+
+  # Create mock file with wrong structure
+  mkdir -p "${TEST_DIR}/.claude/specs/invalid_name"
+  local mock_plan="${TEST_DIR}/.claude/specs/invalid_name/001_plan.md"
+  echo "# Test Plan" > "$mock_plan"
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Call extraction function with malformed path (should fail)
+    if extract_topic_from_plan_path "$mock_plan" >/dev/null 2>&1; then
+      fail "$test_name" "Function should fail for malformed path"
+    else
+      pass "$test_name"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
+# Test: Revision workflow with full plan path
+test_revision_full_plan_path() {
+  local test_name="Revision workflow with full plan path"
+
+  setup
+
+  # Create mock plan file
+  mkdir -p "${TEST_DIR}/.claude/specs/657_full_path_test/plans"
+  local mock_plan="${TEST_DIR}/.claude/specs/657_full_path_test/plans/001_test_plan.md"
+  echo "# Test Plan" > "$mock_plan"
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Simulate scope detection
+    export EXISTING_PLAN_PATH="$mock_plan"
+
+    # Call initialization with full path
+    if initialize_workflow_paths "Revise $mock_plan to accommodate changes" "research-and-revise" >/dev/null 2>&1; then
+      # Verify topic path uses extracted directory (not creates new one)
+      if [[ "$TOPIC_PATH" == *"657_full_path_test"* ]] && [[ "$TOPIC_NAME" == "657_full_path_test" ]]; then
+        pass "$test_name"
+      else
+        fail "$test_name" "Expected extracted topic '657_full_path_test', got TOPIC_PATH='$TOPIC_PATH' TOPIC_NAME='$TOPIC_NAME'"
+      fi
+    else
+      fail "$test_name" "initialize_workflow_paths returned non-zero"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
+# Test: Revision workflow with "the plan" syntax
+test_revision_the_plan_syntax() {
+  local test_name="Revision workflow with 'the plan' syntax"
+
+  setup
+
+  # Create mock plan file
+  mkdir -p "${TEST_DIR}/.claude/specs/658_the_plan_test/plans"
+  local mock_plan="${TEST_DIR}/.claude/specs/658_the_plan_test/plans/001_test_plan.md"
+  echo "# Test Plan" > "$mock_plan"
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Simulate scope detection
+    export EXISTING_PLAN_PATH="$mock_plan"
+
+    # Call initialization with "the plan" syntax
+    if initialize_workflow_paths "Revise the plan $mock_plan to accommodate new features" "research-and-revise" >/dev/null 2>&1; then
+      # Verify topic path uses extracted directory
+      if [[ "$TOPIC_PATH" == *"658_the_plan_test"* ]] && [[ "$TOPIC_NAME" == "658_the_plan_test" ]]; then
+        pass "$test_name"
+      else
+        fail "$test_name" "Expected extracted topic '658_the_plan_test', got TOPIC_PATH='$TOPIC_PATH' TOPIC_NAME='$TOPIC_NAME'"
+      fi
+    else
+      fail "$test_name" "initialize_workflow_paths returned non-zero"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
+# Test: Revision workflow without plan path (should fail)
+test_revision_without_plan_path() {
+  local test_name="Revision workflow without plan path (should fail)"
+
+  setup
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Don't set EXISTING_PLAN_PATH (simulates missing path)
+    unset EXISTING_PLAN_PATH
+
+    # Call initialization without plan path (should fail with clear error)
+    if initialize_workflow_paths "Revise some plan to accommodate changes" "research-and-revise" 2>/dev/null; then
+      fail "$test_name" "Function should fail when EXISTING_PLAN_PATH not set"
+    else
+      # Verify it failed as expected
+      pass "$test_name"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
+# Test: Revision workflow with non-existent plan (should fail with diagnostic)
+test_revision_nonexistent_plan() {
+  local test_name="Revision workflow with non-existent plan (should fail with diagnostic)"
+
+  setup
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Set EXISTING_PLAN_PATH to non-existent file
+    export EXISTING_PLAN_PATH="/nonexistent/specs/657_topic/plans/001_plan.md"
+
+    # Call initialization (should fail with diagnostic info)
+    if initialize_workflow_paths "Revise /nonexistent/specs/657_topic/plans/001_plan.md" "research-and-revise" 2>/dev/null; then
+      fail "$test_name" "Function should fail when plan file doesn't exist"
+    else
+      # Verify it failed as expected
+      pass "$test_name"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
+# Test: Verify error messages contain diagnostic information
+test_revision_error_messages() {
+  local test_name="Verify error messages contain diagnostic information"
+
+  setup
+
+  # Source the library
+  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+    # Don't set EXISTING_PLAN_PATH
+    unset EXISTING_PLAN_PATH
+
+    # Capture error output
+    local error_output
+    error_output=$(initialize_workflow_paths "Revise plan" "research-and-revise" 2>&1 || true)
+
+    # Verify error message contains diagnostic keywords
+    if echo "$error_output" | grep -qi "diagnostic" && echo "$error_output" | grep -qi "workflow description"; then
+      pass "$test_name"
+    else
+      fail "$test_name" "Error message missing diagnostic information. Got: $error_output"
+    fi
+  else
+    fail "$test_name" "Failed to source workflow-initialization.sh"
+  fi
+
+  teardown
+}
+
 # Run all tests
 echo "Running workflow-initialization.sh unit tests..."
 echo "================================================="
@@ -443,9 +704,20 @@ test_lazy_directory_creation
 test_missing_workflow_description
 test_invalid_workflow_scope
 test_debug_only_workflow
+test_research_and_revise_workflow
 test_report_paths_reconstruction
 test_topic_name_sanitization
 test_tracking_variables
+
+# Phase 4 regression tests
+test_extract_topic_valid_path
+test_extract_topic_nonexistent_path
+test_extract_topic_malformed_path
+test_revision_full_plan_path
+test_revision_the_plan_syntax
+test_revision_without_plan_path
+test_revision_nonexistent_plan
+test_revision_error_messages
 
 # Summary
 echo ""

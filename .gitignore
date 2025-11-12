@@ -93,3 +93,4 @@ nvim/lua/neotex/plugins/tools/himalaya/spec/FAST_SYNC.md
 # Claude TODO files in specs root (should use specs/{topic}/plans/ instead)
 .claude/specs/TODO.md
 .claude/specs/TODO*.md
+node_modules/

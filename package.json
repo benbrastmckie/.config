@@ -1,0 +1,9 @@
+{
+  "name": "config-link-validation",
+  "version": "1.0.0",
+  "description": "Link validation tooling for documentation",
+  "private": true,
+  "devDependencies": {
+    "markdown-link-check": "^3.14.1"
+  }
+}

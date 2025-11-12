@@ -73,9 +73,11 @@ return {
         ['<C-f>'] = { 'scroll_documentation_down', 'fallback' },
         ['<C-space>'] = { 'show', 'show_documentation', 'hide_documentation' },
         ['<C-e>'] = { 'hide', 'fallback' },
-        ['<CR>'] = { 'accept', 'fallback' },
+        -- CR mapping removed - handled by autopairs.lua integration
+        -- This prevents conflicts and allows smart pair expansion
+        -- ['<CR>'] = { 'accept', 'fallback' },
         -- Tab: Navigate snippets or accept completion
-        ['<Tab>'] = { 
+        ['<Tab>'] = {
           'snippet_forward',      -- First try to jump in snippet
           'select_and_accept',    -- Then select & accept completion
           'fallback'              -- Finally fallback to normal Tab

@@ -1,0 +1,847 @@
+# Bash Block Execution Model
+
+## Overview
+
+Each bash block in Claude Code command files (`.claude/commands/*.md`) runs as a **separate subprocess**, not a subshell. This architectural constraint has significant implications for state management and variable persistence across bash blocks.
+
+This document provides comprehensive documentation of subprocess isolation patterns discovered through Specs 620 and 630, validated patterns for cross-block state management, and anti-patterns to avoid.
+
+## Subprocess vs Subshell: Technical Details
+
+### Process Architecture
+
+```
+Claude Code Session
+    ↓
+Command Execution (coordinate.md)
+    ↓
+┌────────── Bash Block 1 ──────────┐
+│ PID: 12345                       │
+│ - Source libraries               │
+│ - Initialize state               │
+│ - Save to files                  │
+│ - Exit subprocess                │
+└──────────────────────────────────┘
+    ↓ (subprocess terminates)
+┌────────── Bash Block 2 ──────────┐
+│ PID: 12346 (NEW PROCESS)        │
+│ - Re-source libraries            │
+│ - Load state from files          │
+│ - Process data                   │
+│ - Exit subprocess                │
+└──────────────────────────────────┘
+```
+
+### Key Characteristics
+
+**Subprocess Isolation**:
+- Each bash block runs in a completely separate process
+- Process ID (`$$`) changes between blocks
+- All environment variables reset (exports lost)
+- All bash functions lost (must re-source libraries)
+- Trap handlers fire at block exit, not workflow exit
+
+**File System as Communication Channel**:
+- Only files written to disk persist across blocks
+- State persistence requires explicit file writes
+- Libraries must be re-sourced in each block
+
+## What Persists vs What Doesn't
+
+### Persists Across Blocks ✓
+
+| Item | Persistence Method | Example |
+|------|-------------------|---------|
+| Files | Written to filesystem | `echo "data" > /tmp/state.txt` |
+| State files | Via state-persistence.sh | `append_workflow_state "KEY" "value"` |
+| Workflow ID | Fixed location file | `${HOME}/.claude/tmp/coordinate_state_id.txt` |
+| Directories | Created with `mkdir -p` | `mkdir -p /path/to/dir` |
+
+### Does NOT Persist Across Blocks ✗
+
+| Item | Reason | Consequence |
+|------|--------|-------------|
+| Environment variables | New process | `export VAR=value` lost |
+| Bash functions | Not inherited | Must re-source library files |
+| Process ID (`$$`) | New PID per block | Cannot use `$$` for cross-block IDs |
+| Trap handlers | Fire at block exit | Cleanup traps fail in early blocks |
+| Current directory | May reset | Use absolute paths always |
+
+## Validation Test
+
+This test demonstrates subprocess isolation:
+
+```bash
+#!/usr/bin/env bash
+# Validation test for subprocess isolation
+
+echo "=== Test 1: Process ID Changes ==="
+cat > /tmp/test_subprocess_1.sh <<'EOF'
+#!/usr/bin/env bash
+echo "Block 1 PID: $$"
+echo "$$" > /tmp/pid_block_1.txt
+EOF
+
+cat > /tmp/test_subprocess_2.sh <<'EOF'
+#!/usr/bin/env bash
+echo "Block 2 PID: $$"
+echo "$$" > /tmp/pid_block_2.txt
+EOF
+
+bash /tmp/test_subprocess_1.sh
+bash /tmp/test_subprocess_2.sh
+
+PID1=$(cat /tmp/pid_block_1.txt)
+PID2=$(cat /tmp/pid_block_2.txt)
+
+if [ "$PID1" != "$PID2" ]; then
+  echo "✓ CONFIRMED: Process IDs differ ($PID1 vs $PID2)"
+  echo "  Each bash block runs as separate subprocess"
+else
+  echo "✗ UNEXPECTED: Process IDs match (same process)"
+fi
+
+echo ""
+echo "=== Test 2: Environment Variables Lost ==="
+cat > /tmp/test_export_1.sh <<'EOF'
+#!/usr/bin/env bash
+export TEST_VAR="set_in_block_1"
+echo "Block 1: TEST_VAR=$TEST_VAR"
+EOF
+
+cat > /tmp/test_export_2.sh <<'EOF'
+#!/usr/bin/env bash
+echo "Block 2: TEST_VAR=${TEST_VAR:-unset}"
+EOF
+
+bash /tmp/test_export_1.sh
+bash /tmp/test_export_2.sh
+
+echo ""
+echo "=== Test 3: Files Persist ==="
+cat > /tmp/test_file_1.sh <<'EOF'
+#!/usr/bin/env bash
+echo "data_from_block_1" > /tmp/test_data.txt
+echo "Block 1: Wrote to file"
+EOF
+
+cat > /tmp/test_file_2.sh <<'EOF'
+#!/usr/bin/env bash
+if [ -f /tmp/test_data.txt ]; then
+  echo "Block 2: Read from file: $(cat /tmp/test_data.txt)"
+else
+  echo "Block 2: File not found"
+fi
+EOF
+
+bash /tmp/test_file_1.sh
+bash /tmp/test_file_2.sh
+
+echo ""
+echo "✓ Files are the ONLY reliable cross-block communication channel"
+
+# Cleanup
+rm -f /tmp/test_subprocess_*.sh /tmp/pid_block_*.txt /tmp/test_export_*.sh /tmp/test_file_*.sh /tmp/test_data.txt
+```
+
+Expected output:
+```
+✓ CONFIRMED: Process IDs differ (12345 vs 12346)
+  Each bash block runs as separate subprocess
+
+Block 1: TEST_VAR=set_in_block_1
+Block 2: TEST_VAR=unset
+
+Block 1: Wrote to file
+Block 2: Read from file: data_from_block_1
+
+✓ Files are the ONLY reliable cross-block communication channel
+```
+
+## Recommended Patterns
+
+### Pattern 1: Fixed Semantic Filenames
+
+**Problem**: Using `$$` for temp filenames causes files to be "lost" across blocks.
+
+**Solution**: Use fixed, semantically meaningful filenames based on workflow context.
+
+```bash
+# ❌ ANTI-PATTERN: PID-based filename
+cat > /tmp/workflow_$$.sh <<'EOF'
+# Workflow state
+EOF
+# File created: /tmp/workflow_12345.sh
+
+# Next bash block (different PID)
+# Cannot find file: /tmp/workflow_12346.sh does not exist
+
+# ✓ RECOMMENDED: Fixed semantic filename
+WORKFLOW_ID="coordinate_$(date +%s)"
+STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+
+cat > "$STATE_FILE" <<'EOF'
+# Workflow state
+EOF
+
+# Next bash block: Same filename accessible
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
+STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+source "$STATE_FILE"  # ✓ Success
+```
+
+### Pattern 2: Save-Before-Source Pattern
+
+**Problem**: State ID must persist across subprocess boundaries.
+
+**Solution**: Save state ID to fixed location file before sourcing state.
+
+```bash
+# Part 1: Initialize and save state ID
+WORKFLOW_ID="coordinate_$(date +%s)"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+
+# Save state ID to fixed location (persists across blocks)
+echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
+
+# Create state file
+STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+cat > "$STATE_FILE" <<'EOF'
+# Workflow state variables
+export CURRENT_STATE="initialize"
+EOF
+
+# Part 2: Load state ID and source state (in next bash block)
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+if [ -f "$COORDINATE_STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+  STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+  source "$STATE_FILE"
+else
+  echo "ERROR: State ID file not found"
+  exit 1
+fi
+```
+
+### Pattern 3: State Persistence Library
+
+**Problem**: Manual state file management is error-prone and verbose.
+
+**Solution**: Use `.claude/lib/state-persistence.sh` for standardized state management.
+
+```bash
+# In each bash block:
+
+# 1. Re-source library (functions lost across block boundaries)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+
+# 2. Load workflow state
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
+load_workflow_state "$WORKFLOW_ID"
+
+# 3. Update state
+append_workflow_state "CURRENT_STATE" "research"
+append_workflow_state "REPORT_COUNT" "3"
+
+# 4. State automatically persists to file
+# No manual file writes needed
+```
+
+### Pattern 4: Library Re-sourcing with Source Guards
+
+**Problem**: Bash functions lost across block boundaries.
+
+**Solution**: Re-source all libraries in each block; use source guards to prevent redundant execution.
+
+```bash
+# At start of EVERY bash block:
+set +H  # CRITICAL: Disable history expansion to prevent bad substitution errors
+
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source critical libraries (source guards make this safe)
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Library source guards prevent duplicate execution:
+# if [ -n "${LIBRARY_NAME_SOURCED:-}" ]; then
+#   return 0
+# fi
+# export LIBRARY_NAME_SOURCED=1
+```
+
+**Critical Requirements**:
+- MUST include `set +H` at the start of every bash block to prevent history expansion from corrupting indirect variable expansion (`${!var_name}`)
+- MUST include unified-logger.sh for emit_progress and display_brief_summary functions
+- Source guards in libraries make multiple sourcing safe and efficient
+
+### Pattern 5: Conditional Variable Initialization
+
+**Problem**: Library variables are reset when re-sourced across subprocess boundaries, even when values are loaded from state files.
+
+**Solution**: Use conditional initialization with bash parameter expansion to preserve existing values while allowing default initialization for unset variables.
+
+```bash
+# ❌ ANTI-PATTERN: Direct initialization (overwrites loaded values)
+# In .claude/lib/workflow-state-machine.sh:
+WORKFLOW_SCOPE=""
+WORKFLOW_DESCRIPTION=""
+CURRENT_STATE="initialize"
+
+# Problem: These assignments execute EVERY time the library is sourced,
+# even when sourced AFTER loading state from persistence layer.
+# Loaded values are immediately overwritten with defaults.
+
+# ✓ RECOMMENDED: Conditional initialization (preserves loaded values)
+# Use ${VAR:-default} parameter expansion:
+WORKFLOW_SCOPE="${WORKFLOW_SCOPE:-}"
+WORKFLOW_DESCRIPTION="${WORKFLOW_DESCRIPTION:-}"
+CURRENT_STATE="${CURRENT_STATE:-initialize}"
+
+# Benefits:
+# - If variable is already set: preserves existing value
+# - If variable is unset: initializes to default (empty or specified)
+# - Safe with set -u: no "unbound variable" errors
+# - Idiomatic bash pattern (GNU manual, section 3.5.3)
+```
+
+**When to Use**:
+- Variables that must persist across bash block boundaries
+- Integration with Pattern 3 (State Persistence Library) and Pattern 4 (Library Re-sourcing)
+- State variables loaded from persistence layer before library re-sourcing
+- Variables that need different values in different workflow contexts
+
+**When NOT to Use**:
+- Constants (use `readonly` instead)
+- Arrays (parameter expansion syntax not supported: `declare -ga ARRAY=()`)
+- One-time initialization inside source guards (already protected from re-execution)
+- Variables that should always reset to defaults on library sourcing
+
+**Example from workflow-state-machine.sh**:
+
+```bash
+# Lines 66-79 in workflow-state-machine.sh
+# State machine variables preserve values across library re-sourcing
+
+# Current state (with default fallback)
+CURRENT_STATE="${CURRENT_STATE:-${STATE_INITIALIZE}}"
+
+# Terminal state (with default fallback)
+TERMINAL_STATE="${TERMINAL_STATE:-${STATE_COMPLETE}}"
+
+# Workflow configuration (preserve if set, initialize to empty if unset)
+WORKFLOW_SCOPE="${WORKFLOW_SCOPE:-}"
+WORKFLOW_DESCRIPTION="${WORKFLOW_DESCRIPTION:-}"
+COMMAND_NAME="${COMMAND_NAME:-}"
+
+# Arrays cannot use conditional initialization
+declare -ga COMPLETED_STATES=()  # Array syntax incompatible with ${VAR:-}
+
+# Constants should remain readonly
+readonly STATE_INITIALIZE="initialize"  # No conditional initialization needed
+```
+
+**Real-World Use Case (from /coordinate)**:
+
+```bash
+# Bash Block 1: Initialize workflow
+source .claude/lib/workflow-state-machine.sh  # WORKFLOW_SCOPE="" (or "${WORKFLOW_SCOPE:-}")
+sm_init "Research authentication" "coordinate"  # Sets WORKFLOW_SCOPE="research-and-plan"
+append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"  # Save to state file
+
+# Bash Block 2: Research phase (NEW SUBPROCESS)
+load_workflow_state "$WORKFLOW_ID"  # Restores WORKFLOW_SCOPE="research-and-plan"
+source .claude/lib/workflow-state-machine.sh  # With conditional init: WORKFLOW_SCOPE preserved!
+                                               # Without: WORKFLOW_SCOPE="" (BUG!)
+
+# Conditional initialization fixes the bug where WORKFLOW_SCOPE was reset to ""
+# after being loaded from state file, causing workflows to incorrectly proceed
+# to unintended phases (Spec 653).
+```
+
+**Technical Details**:
+
+The `${VAR:-word}` parameter expansion:
+- Tests if VAR is unset OR null (empty string)
+- If true: expands to `word`
+- If false: expands to current value of VAR
+- Assignment form: `VAR="${VAR:-default}"` assigns the expanded value
+- Colon semantics: omitting colon (`${VAR-word}`) only tests for unset, not null
+
+See GNU Bash Manual, section 3.5.3 (Shell Parameter Expansion) for complete specification.
+
+### Pattern 6: Cleanup on Completion Only
+
+**Problem**: Trap handlers in early blocks fire at block exit, not workflow exit.
+
+**Solution**: Only set cleanup traps in final completion function.
+
+```bash
+# ❌ ANTI-PATTERN: Trap in early block
+trap 'rm -f /tmp/workflow_*.sh' EXIT  # Fires at block exit, not workflow exit
+
+# ✓ RECOMMENDED: Trap only in completion function
+display_brief_summary() {
+  # This function runs in final bash block only
+  trap 'rm -f /tmp/workflow_*.sh' EXIT
+
+  echo "Workflow complete"
+  # Trap fires when THIS block exits (workflow end)
+}
+```
+
+## Critical Libraries for Re-sourcing
+
+Commands using the bash block execution model MUST re-source these libraries in every bash block to ensure function availability across subprocess boundaries:
+
+### Core State Management Libraries
+
+1. **workflow-state-machine.sh**: State machine operations (sm_init, sm_transition, sm_get_state)
+2. **state-persistence.sh**: GitHub Actions-style state file operations (init_workflow_state, append_workflow_state, load_workflow_state)
+3. **workflow-initialization.sh**: Path detection and initialization (initialize_workflow_paths, reconstruct_report_paths_array)
+
+### Error Handling and Logging Libraries
+
+4. **error-handling.sh**: Fail-fast error handling (handle_state_error, error recovery functions)
+5. **unified-logger.sh**: Progress markers and completion summaries (emit_progress, display_brief_summary, log_* functions)
+6. **verification-helpers.sh**: File creation verification (verify_file_created, verification checkpoint helpers)
+
+### Library Requirements by Command Type
+
+**Orchestration Commands** (/coordinate, /orchestrate, /supervise):
+- ALL six libraries required
+- unified-logger.sh provides critical user feedback functions
+- Omitting any library causes "command not found" errors
+
+**Simple Commands** (single bash block):
+- Only libraries needed for specific operations
+- Example: /setup may only need error-handling.sh
+
+**State-Based Commands** (using state machine pattern):
+- workflow-state-machine.sh + state-persistence.sh required
+- workflow-initialization.sh for path management
+- unified-logger.sh for progress feedback
+
+### Common Errors from Missing Libraries
+
+| Missing Library | Error Symptom | Impact |
+|---|---|---|
+| unified-logger.sh | `emit_progress: command not found` | Missing progress markers (degraded UX) |
+| unified-logger.sh | `display_brief_summary: command not found` | Missing completion summary (degraded UX) |
+| error-handling.sh | `handle_state_error: command not found` | Unhandled errors, unclear failure messages |
+| verification-helpers.sh | `verify_file_created: command not found` | Missing verification checkpoints, silent failures |
+| workflow-state-machine.sh | `sm_transition: command not found` | State transitions fail, workflow halts |
+| state-persistence.sh | `load_workflow_state: command not found` | Cannot restore state across blocks |
+
+### Verification Checklist
+
+Before deploying a new command or updating an existing orchestration command, verify:
+
+- [ ] `set +H` appears at start of every bash block
+- [ ] All six libraries sourced in correct order (state → error → log → verify)
+- [ ] Source statements match Pattern 4 template exactly
+- [ ] No `export -f` attempts (ineffective across subprocess boundaries)
+- [ ] Functions from libraries work in manual testing across multiple bash blocks
+
+## Function Availability and Sourcing Order
+
+### Critical Principle
+
+Functions must be sourced BEFORE they are called. This is obvious but frequently violated in practice due to:
+
+1. **Subprocess isolation**: Functions don't persist across bash blocks
+2. **Implicit assumptions**: Developers assume library loading happens automatically
+3. **Code review gaps**: Runtime execution order differs from file order
+
+### Standard Sourcing Order for Orchestration Commands
+
+All orchestration commands (/coordinate, /orchestrate, /supervise) MUST use this sourcing order:
+
+```bash
+# 1. Project directory detection (first)
+CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# 2. State machine core
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+
+# 3. Error handling and verification (BEFORE any checkpoints)
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# 4. Additional libraries as needed
+source "${LIB_DIR}/workflow-initialization.sh"
+source "${LIB_DIR}/unified-logger.sh"
+# ... other libraries via source_required_libraries()
+```
+
+### Why This Order Matters
+
+**Dependency Chain**:
+- `verify_state_variable()` requires `STATE_FILE` variable (from state-persistence.sh)
+- `handle_state_error()` requires `append_workflow_state()` function (from state-persistence.sh)
+- Both functions called during initialization for verification checkpoints
+- **Therefore**: state-persistence → error-handling/verification → checkpoints
+
+**Rationale**:
+1. State machine libraries must load first (define state management)
+2. Error handling and verification depend on state persistence
+3. Verification checkpoints use both error handling and verification functions
+4. All other libraries can load after these foundations
+
+### Anti-Pattern: Premature Function Calls
+
+```bash
+# ❌ WRONG: Function called before library sourced
+verify_state_variable "WORKFLOW_SCOPE" || exit 1
+
+# ... many lines later ...
+source "${LIB_DIR}/verification-helpers.sh"
+```
+
+**Error Symptom**:
+```
+bash: verify_state_variable: command not found
+```
+
+**Fix**: Source library before calling function
+
+```bash
+# ✓ CORRECT: Source library first
+source "${LIB_DIR}/verification-helpers.sh"
+
+# ... now functions are available ...
+verify_state_variable "WORKFLOW_SCOPE" || exit 1
+```
+
+### Detection
+
+Use validation script to catch sourcing order violations:
+
+```bash
+bash .claude/tests/test_library_sourcing_order.sh
+```
+
+This test validates:
+- Functions are sourced before first call
+- Libraries have source guards (safe to source multiple times)
+- Dependency order is correct (state-persistence before dependent libraries)
+- Early sourcing (critical libraries loaded within first 150 lines)
+
+### Source Guards Enable Safe Re-Sourcing
+
+All library files use source guards to prevent duplicate execution:
+
+```bash
+# From verification-helpers.sh:11-14
+if [ -n "${VERIFICATION_HELPERS_SOURCED:-}" ]; then
+  return 0
+fi
+export VERIFICATION_HELPERS_SOURCED=1
+```
+
+This pattern makes it safe to source libraries multiple times:
+- First sourcing: Loads functions and sets guard variable
+- Subsequent sourcing: Guard returns immediately, no-op
+- Zero performance penalty (guard check is instant)
+
+**Implication**: Including a library in both early sourcing AND in REQUIRED_LIBS array is safe and recommended.
+
+### Related Specifications
+
+- **Spec 675**: Library sourcing order fix (this specification)
+- **Spec 620**: Bash history expansion fixes (subprocess isolation discovery)
+- **Spec 630**: State persistence architecture (cross-block state management)
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Using `$$` for Cross-Block State
+
+**Problem**: Process ID changes per block, making `$$`-based filenames inaccessible.
+
+**Example**:
+```bash
+# Block 1
+STATE_FILE="/tmp/workflow_$$.sh"
+echo "export VAR=value" > "$STATE_FILE"
+# Creates: /tmp/workflow_12345.sh
+
+# Block 2 (different PID)
+STATE_FILE="/tmp/workflow_$$.sh"  # Now /tmp/workflow_12346.sh
+source "$STATE_FILE"  # ✗ File not found
+```
+
+**Fix**: Use Pattern 1 (Fixed Semantic Filenames).
+
+### Anti-Pattern 2: Assuming Exports Work Across Blocks
+
+**Problem**: Environment variables don't persist across subprocess boundaries.
+
+**Example**:
+```bash
+# Block 1
+export WORKFLOW_ID="coord_123"
+export CURRENT_STATE="research"
+
+# Block 2
+echo "State: $CURRENT_STATE"  # ✗ Empty (export lost)
+```
+
+**Fix**: Use state persistence library or write to files.
+
+### Anti-Pattern 3: Premature Trap Handlers
+
+**Problem**: Traps fire at block exit, not workflow exit, causing premature cleanup.
+
+**Example**:
+```bash
+# Block 1 (early in workflow)
+trap 'cleanup_temp_files' EXIT
+
+# Block 2 needs temp files
+# ✗ Files already deleted by Block 1's EXIT trap
+```
+
+**Fix**: Use Pattern 5 (Cleanup on Completion Only).
+
+### Anti-Pattern 4: Code Review Without Runtime Testing
+
+**Problem**: Subprocess isolation issues only appear at runtime, not code review.
+
+**Example**:
+```bash
+# Looks correct in code review:
+export REPORT_PATHS=("report1.md" "report2.md")
+
+# Next block attempts to use it
+for report in "${REPORT_PATHS[@]}"; do  # ✗ Array empty at runtime
+  echo "$report"
+done
+```
+
+**Fix**: Always test bash block sequences with actual subprocess execution.
+
+## Examples
+
+### Example 1: Research Phase State Management
+
+```bash
+# === BASH BLOCK 1: Research Invocation ===
+
+# Re-source libraries (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+
+# Load state from fixed location
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
+load_workflow_state "$WORKFLOW_ID"
+
+# Invoke research agents...
+# Research creates: /path/to/report1.md, /path/to/report2.md
+
+# Save report paths to state file (not exported variables)
+REPORT_PATHS=(
+  "/path/to/report1.md"
+  "/path/to/report2.md"
+)
+append_workflow_state "REPORT_PATHS_JSON" "$(printf '%s\n' "${REPORT_PATHS[@]}" | jq -R . | jq -s .)"
+
+# === BASH BLOCK 2: Research Verification ===
+
+# Re-source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+
+# Load state from fixed location
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
+load_workflow_state "$WORKFLOW_ID"
+
+# Reconstruct array from JSON (subprocess isolation requires this)
+if [ -n "${REPORT_PATHS_JSON:-}" ]; then
+  mapfile -t REPORT_PATHS < <(echo "$REPORT_PATHS_JSON" | jq -r '.[]')
+fi
+
+# Verify reports exist
+for report in "${REPORT_PATHS[@]}"; do
+  if [ -f "$report" ]; then
+    echo "✓ Report verified: $report"
+  else
+    echo "✗ Report missing: $report"
+  fi
+done
+```
+
+### Example 2: Two-Step Execution Pattern
+
+```bash
+# Part 1: Initialize state and save to file
+WORKFLOW_ID="coordinate_$(date +%s)"
+echo "$WORKFLOW_ID" > "${HOME}/.claude/tmp/coordinate_state_id.txt"
+
+STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+cat > "$STATE_FILE" <<'EOF'
+#!/usr/bin/env bash
+export WORKFLOW_DESCRIPTION="Implement authentication"
+export CURRENT_STATE="initialize"
+export WORKFLOW_SCOPE="full-implementation"
+EOF
+
+# Part 2: Source state file (in separate bash block)
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
+STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+  echo "Loaded state: $CURRENT_STATE"
+else
+  echo "ERROR: State file not found"
+  exit 1
+fi
+```
+
+## Integration with State-Based Orchestration
+
+The bash block execution model is a foundational constraint for the state-based orchestration architecture documented in [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md).
+
+### State Machine Coordination
+
+State transitions must be persisted to files because bash blocks cannot share memory:
+
+```bash
+# Block 1: Transition from research to plan
+sm_transition "$STATE_PLAN"
+append_workflow_state "CURRENT_STATE" "$STATE_PLAN"
+# State persisted to file: workflow_123.sh
+
+# Block 2: Load current state
+load_workflow_state "$WORKFLOW_ID"
+if [ "$CURRENT_STATE" = "$STATE_PLAN" ]; then
+  echo "Executing planning phase"
+fi
+```
+
+### Checkpoint Recovery
+
+Checkpoint files enable workflow resume across bash block boundaries:
+
+```bash
+# Block N-1: Save checkpoint before complex operation
+save_checkpoint "research" "phase_complete" '{
+  "reports_created": 3,
+  "verification_status": "success"
+}'
+
+# Block N: Resume from checkpoint if operation failed
+CHECKPOINT=$(load_checkpoint "research" "phase_complete")
+if [ -n "$CHECKPOINT" ]; then
+  REPORTS_CREATED=$(echo "$CHECKPOINT" | jq -r '.reports_created')
+  echo "Resuming: $REPORTS_CREATED reports already created"
+fi
+```
+
+## Troubleshooting
+
+### Symptom: Variable "Disappears" Between Blocks
+
+**Cause**: Export used instead of file-based persistence.
+
+**Diagnosis**:
+```bash
+# Block 1
+export MY_VAR="value"
+echo "Block 1: MY_VAR=$MY_VAR"  # Shows: value
+
+# Block 2
+echo "Block 2: MY_VAR=${MY_VAR:-unset}"  # Shows: unset
+```
+
+**Fix**: Use state persistence:
+```bash
+# Block 1
+append_workflow_state "MY_VAR" "value"
+
+# Block 2
+load_workflow_state "$WORKFLOW_ID"
+echo "Block 2: MY_VAR=$MY_VAR"  # Shows: value
+```
+
+### Symptom: "File Not Found" for Recently Created File
+
+**Cause**: Using `$$` for filename, process ID changed.
+
+**Diagnosis**:
+```bash
+# Block 1
+echo "data" > /tmp/file_$$.txt
+ls /tmp/file_*.txt  # Shows: /tmp/file_12345.txt
+
+# Block 2
+cat /tmp/file_$$.txt  # Looks for: /tmp/file_12346.txt (does not exist)
+```
+
+**Fix**: Use fixed semantic filename:
+```bash
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
+FILE_PATH="/tmp/file_${WORKFLOW_ID}.txt"
+```
+
+### Symptom: Cleanup Happens Too Early
+
+**Cause**: Trap handler fires at block exit, not workflow exit.
+
+**Diagnosis**:
+```bash
+# Block 1
+trap 'rm -f /tmp/temp_files_*.txt' EXIT
+echo "data" > /tmp/temp_files_data.txt
+# Block exits → trap fires → files deleted
+
+# Block 2
+cat /tmp/temp_files_data.txt  # File not found (already deleted)
+```
+
+**Fix**: Only trap in final completion function.
+
+## Related Documentation
+
+- [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md) - Complete architecture built on subprocess isolation patterns
+- [State Machine Orchestrator Development](../guides/state-machine-orchestrator-development.md) - Using these patterns in new orchestrators
+- [Command Development Guide](../guides/command-development-guide.md) - General command development including bash block patterns
+- [Orchestration Best Practices](../guides/orchestration-best-practices.md) - High-level orchestration patterns
+- [/coordinate Command Guide](../guides/coordinate-command-guide.md) - Real-world usage of these patterns
+
+## Historical Context
+
+These patterns were discovered and validated through:
+
+- **Spec 620**: Six fixes for bash history expansion errors, leading to discovery of subprocess isolation (100% test pass rate achieved)
+- **Spec 630**: State persistence architecture, fixing report path loss across blocks (40+ fixes applied)
+
+Key lesson learned: **Code review alone is insufficient for bash block sequences**. Runtime testing with actual subprocess execution is mandatory to catch subprocess isolation issues.
+
+## Summary
+
+**Core Principle**: Each bash block in Claude Code commands is a separate subprocess. Only files persist.
+
+**Validated Patterns**:
+1. Fixed semantic filenames (not `$$`-based)
+2. Save-before-source pattern for state ID
+3. State persistence library for cross-block state
+4. Re-source libraries in every block
+5. Cleanup traps only in final completion function
+
+**Critical Anti-Patterns**:
+1. Using `$$` for cross-block state
+2. Assuming exports work across blocks
+3. Premature trap handlers
+4. Code review without runtime testing
+
+**Testing Requirement**: Always test bash block sequences with actual subprocess execution to validate cross-block communication.

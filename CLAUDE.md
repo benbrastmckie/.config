@@ -80,6 +80,8 @@ Commands should check CLAUDE.md in priority order:
   - `test_shared_utilities.sh` - Utility library functions
   - `test_adaptive_planning.sh` - Adaptive planning integration (16 tests)
   - `test_revise_automode.sh` - /revise auto-mode integration (18 tests)
+- **Validation Scripts**:
+  - `validate_executable_doc_separation.sh` - Verifies executable/documentation separation pattern compliance (file size, guide existence, cross-references)
 
 ### Neovim Testing
 - **Test Commands**: `:TestNearest`, `:TestFile`, `:TestSuite`, `:TestLast`
@@ -125,10 +127,59 @@ Commands should check CLAUDE.md in priority order:
 - **Verification and Fallback**: All file creation operations require MANDATORY VERIFICATION checkpoints - See [Verification and Fallback Pattern](.claude/docs/concepts/patterns/verification-fallback.md)
 - See [Command Architecture Standards](.claude/docs/reference/command_architecture_standards.md) for complete guidelines
 
+### Architectural Separation
+
+**Executable/Documentation Separation Pattern**: Commands and agents separate lean executable logic from comprehensive documentation to eliminate meta-confusion loops and enable independent evolution.
+
+**Pattern**:
+- **Executable Files** (`.claude/commands/*.md`, `.claude/agents/*.md`): Lean execution scripts (<250 lines for commands, <400 lines for agents) containing bash blocks, phase markers, and minimal inline comments (WHAT not WHY)
+- **Guide Files** (`.claude/docs/guides/*-command-guide.md`): Comprehensive task-focused documentation (unlimited length) with architecture, examples, troubleshooting, and design decisions
+
+**Templates**:
+- New Command: Start with [_template-executable-command.md](.claude/docs/guides/_template-executable-command.md)
+- Command Guide: Use [_template-command-guide.md](.claude/docs/guides/_template-command-guide.md)
+
+**Complete Pattern Documentation**:
+- [Executable/Documentation Separation Pattern](.claude/docs/concepts/patterns/executable-documentation-separation.md) - Complete pattern with case studies and metrics
+- [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern) - Practical implementation instructions
+- [Standard 14](.claude/docs/reference/command_architecture_standards.md#standard-14-executabledocumentation-file-separation) - Formal architectural requirement
+
+**Benefits**: 70% average reduction in executable file size, zero meta-confusion incidents, independent documentation growth, fail-fast execution
+
 ### Development Guides
 - [Command Development Guide](.claude/docs/guides/command-development-guide.md) - Complete guide to creating and maintaining slash commands
 - [Agent Development Guide](.claude/docs/guides/agent-development-guide.md) - Complete guide to creating and maintaining specialized agents
 - [Model Selection Guide](.claude/docs/guides/model-selection-guide.md) - Guide to choosing Claude model tiers (Haiku/Sonnet/Opus) for agents with cost/quality optimization
+
+### Internal Link Conventions
+[Used by: /document, /plan, /implement, all documentation]
+
+**Standard**: All internal markdown links must use relative paths from the current file location.
+
+**Format**:
+- Same directory: `[File](file.md)`
+- Parent directory: `[File](../file.md)`
+- Subdirectory: `[File](subdir/file.md)`
+- With anchor: `[Section](file.md#section-name)`
+
+**Prohibited**:
+- Absolute filesystem paths: `/home/user/.config/file.md`
+- Repository-relative without base: `.claude/docs/file.md` (from outside .claude/)
+
+**Validation**:
+- Run `.claude/scripts/validate-links-quick.sh` before committing
+- Full validation: `.claude/scripts/validate-links.sh`
+
+**Template Placeholders** (Allowed):
+- `{variable}` - Template variable
+- `NNN_topic` - Placeholder pattern
+- `$ENV_VAR` - Environment variable
+
+**Historical Documentation** (Preserve as-is):
+- Spec reports, summaries, and completed plans may have broken links documenting historical states
+- Only fix if link prevents understanding current system
+
+See [Link Conventions Guide](.claude/docs/guides/link-conventions-guide.md) for complete standards.
 <!-- END_SECTION: code_standards -->
 
 <!-- SECTION: development_philosophy -->
@@ -139,6 +190,13 @@ Commands should check CLAUDE.md in priority order:
 This project prioritizes clean, coherent systems over backward compatibility. Refactors should create well-designed interfaces without legacy burden. Documentation should be present-focused and timeless, avoiding historical markers like "(New)" or "previously".
 
 Core values: clarity, quality, coherence, maintainability.
+
+### Architectural Principles
+
+- **Clean separation between executable logic and documentation**: Commands and agents use two-file pattern (lean executable + comprehensive guide) enabling fail-fast execution and independent documentation growth without context bloat
+- **Single source of truth**: Each piece of information exists in exactly one authoritative location
+- **Progressive disclosure**: Information revealed when needed, not all upfront
+- **Context window optimization**: Minimize context consumption through metadata extraction and aggressive pruning
 
 ### Clean-Break and Fail-Fast Approach
 
@@ -155,6 +213,13 @@ This configuration maintains a **clean-break, fail-fast evolution philosophy**:
 - Tests pass or fail immediately (no monitoring periods)
 - Breaking changes break loudly with clear error messages
 - No silent fallbacks or graceful degradation
+
+**Critical Distinction - Fallback Types** (Spec 057):
+- **Bootstrap fallbacks**: PROHIBITED (hide configuration errors through silent function definitions)
+- **Verification fallbacks**: REQUIRED (detect tool/agent failures immediately, terminate with diagnostics)
+- **Optimization fallbacks**: ACCEPTABLE (performance caches only, graceful degradation for non-critical features)
+
+Standard 0 (Execution Enforcement) uses verification checkpoints to detect errors immediately, not hide them. Orchestrators verify file creation and fail-fast when agents don't create expected artifacts. See [Fail-Fast Policy Analysis](.claude/specs/634_001_coordinate_improvementsmd_implements/reports/001_fail_fast_policy_analysis.md) for complete taxonomy.
 
 **Avoid Cruft**:
 - No historical commentary in active files
@@ -275,6 +340,7 @@ Multi-level agent coordination system that minimizes context window consumption 
 - **Subagent Delegation**: Commands can delegate complex tasks to specialized subagents - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
 - **Imperative Agent Invocation**: All agent invocations use imperative pattern (not documentation-only YAML blocks) - See [Standard 11](.claude/docs/reference/command_architecture_standards.md#standard-11) and [Anti-Pattern Documentation](.claude/docs/concepts/patterns/behavioral-injection.md#anti-pattern-documentation-only-yaml-blocks)
 - **Workflow Scope Detection**: Automatic detection of workflow requirements - See [Workflow Scope Detection Pattern](.claude/docs/concepts/patterns/workflow-scope-detection.md)
+- **LLM-Based Hybrid Classification**: Semantic workflow classification with 98%+ accuracy and automatic regex fallback for zero operational risk - See [LLM Classification Pattern](.claude/docs/concepts/patterns/llm-classification-pattern.md)
 - **Phase 0 Optimization**: Pre-calculation of paths for 85% token reduction - See [Phase 0 Optimization Guide](.claude/docs/guides/phase-0-optimization.md)
 
 ### Context Reduction Metrics
@@ -295,6 +361,11 @@ Multi-level agent coordination system that minimizes context window consumption 
   - `prune_subagent_output()` - Clear full outputs after metadata extraction
   - `prune_phase_metadata()` - Remove phase data after completion
   - `apply_pruning_policy()` - Automatic pruning by workflow type
+- **Workflow Classification**: `.claude/lib/workflow-llm-classifier.sh`, `.claude/lib/workflow-scope-detection.sh`
+  - `classify_workflow_llm()` - LLM-based semantic classification
+  - `detect_workflow_scope()` - Unified hybrid classification with automatic fallback
+  - `classify_workflow_regex()` - Traditional regex-based classification
+  - Modes: hybrid (default), llm-only, regex-only
 
 ### Agent Templates
 - **Implementation Researcher** (`.claude/agents/implementation-researcher.md`)
@@ -347,6 +418,115 @@ All orchestration commands enforce [Standard 11 (Imperative Agent Invocation Pat
 See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_agents.md) for complete documentation, patterns, and best practices.
 <!-- END_SECTION: hierarchical_agent_architecture -->
 
+<!-- SECTION: state_based_orchestration -->
+## State-Based Orchestration Architecture
+[Used by: /coordinate, /orchestrate, /supervise, custom orchestrators]
+
+### Overview
+State-based orchestration uses explicit state machines with validated transitions to manage multi-phase workflows. Replaces implicit phase numbers with named states, enabling fail-fast validation, atomic transitions, and coordinated checkpoint management.
+
+### Core Components
+
+**0. Bash Block Execution Model** ([Documentation](.claude/docs/concepts/bash-block-execution-model.md))
+- Subprocess isolation constraint: each bash block runs in separate process
+- Validated patterns for cross-block state management
+- Fixed semantic filenames, save-before-source pattern, library re-sourcing
+- Anti-patterns to avoid ($$-based IDs, export assumptions, premature traps)
+- Discovered and validated through Specs 620/630 (100% test pass rate)
+
+**1. State Machine Library** (`.claude/lib/workflow-state-machine.sh`)
+- 8 explicit states: initialize, research, plan, implement, test, debug, document, complete
+- Transition table validation (prevents invalid state changes)
+- Atomic state transitions with checkpoint coordination
+- 50 comprehensive tests (100% pass rate)
+
+**2. State Persistence Library** (`.claude/lib/state-persistence.sh`)
+- GitHub Actions-style workflow state files
+- Selective file-based persistence (7 critical items, 70% of analyzed state)
+- Graceful degradation to stateless recalculation
+- 67% performance improvement (6ms → 2ms for CLAUDE_PROJECT_DIR detection)
+
+**3. Checkpoint Schema V2.0**
+- State machine as first-class citizen in checkpoint structure
+- Supervisor coordination support for hierarchical workflows
+- Error state tracking with retry logic (max 2 retries per state)
+- Backward compatible with V1.3 (auto-migration on load)
+
+**4. Hierarchical Supervisors** (State-Aware)
+- Research supervisor: 95.6% context reduction (10,000 → 440 tokens)
+- Implementation supervisor: 53% time savings via parallel execution
+- Testing supervisor: Sequential lifecycle coordination
+- 19 comprehensive tests (100% pass rate)
+
+### Performance Achievements
+
+**Code Reduction**: 48.9% (3,420 → 1,748 lines across 3 orchestrators)
+- Exceeded 39% target by 9.9%
+- /coordinate: 1,084 → 800 lines (26.2%)
+- /orchestrate: 557 → 551 lines (1.1%)
+- /supervise: 1,779 → 397 lines (77.7%)
+
+**State Operation Performance**: 67% improvement (6ms → 2ms)
+**Context Reduction**: 95.6% via hierarchical supervisors
+**Time Savings**: 53% via parallel execution
+**Reliability**: 100% file creation maintained
+
+### Key Architectural Principles
+
+1. **Explicit Over Implicit**: Named states (STATE_RESEARCH) vs phase numbers (1)
+2. **Validated Transitions**: State machine enforces valid state changes
+3. **Centralized Lifecycle**: Single state machine library owns all state operations
+4. **Selective Persistence**: File-based for expensive operations, stateless for cheap calculations
+5. **Hierarchical Context Reduction**: Pass metadata summaries, not full content
+
+### When to Use State-Based Orchestration
+
+**Use when**:
+- Workflow has multiple distinct phases (3+ states)
+- Conditional transitions exist (test → debug vs test → document)
+- Checkpoint resume required (long-running workflows)
+- Multiple orchestrators share similar patterns
+- Context reduction through hierarchical supervision needed
+
+**Use simpler approaches when**:
+- Workflow is linear with no branches
+- Single-purpose command with no state coordination
+- Workflow completes in <5 minutes
+- State overhead exceeds benefits (<3 phases)
+
+### Resources
+
+- **[State-Based Orchestration Overview](.claude/docs/architecture/state-based-orchestration-overview.md)** (2,000+ lines)
+  - Complete architecture reference
+  - State machine design, selective persistence patterns
+  - Hierarchical supervisor coordination
+  - Performance characteristics and benchmarks
+
+- **[State Machine Orchestrator Development](.claude/docs/guides/state-machine-orchestrator-development.md)** (1,100+ lines)
+  - Creating new orchestrators using state machine
+  - Adding states and transitions
+  - Implementing state handlers
+  - Integrating hierarchical supervisors
+
+- **[State Machine Migration Guide](.claude/docs/guides/state-machine-migration-guide.md)** (1,000+ lines)
+  - Migrating from phase-based to state-based
+  - Before/after code examples
+  - Common migration issues and solutions
+
+- **[Performance Validation Report](.claude/specs/602_601_and_documentation_in_claude_docs_in_order_to/reports/004_performance_validation_report.md)**
+  - Comprehensive performance metrics
+  - Test results (409 tests, 63/81 suites passing)
+  - Detailed analysis of all achievements
+
+### Implementation Status
+
+**Phase 7 Complete** (2025-11-08):
+- All performance targets met or exceeded
+- 127 core state machine tests passing (100%)
+- Comprehensive documentation complete
+- Production-ready architecture
+<!-- END_SECTION: state_based_orchestration -->
+
 <!-- SECTION: project_commands -->
 ## Project-Specific Commands
 
@@ -355,19 +535,29 @@ See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_a
 Located in `.claude/commands/`:
 - `/orchestrate <workflow>` - Multi-agent workflow coordination (research → plan → implement → debug → document)
 - `/coordinate <workflow>` - Clean multi-agent orchestration with wave-based parallel implementation and fail-fast error handling
+  - **Architecture**: [State Management Documentation](.claude/docs/architecture/coordinate-state-management.md) - Subprocess isolation patterns and decision matrix
+  - **Performance**: 41% initialization overhead reduction (528ms saved via state persistence caching), 100% reliability (zero unbound variables/verification failures)
+  - **Usage Guide**: [/coordinate Command Guide](.claude/docs/guides/coordinate-command-guide.md) - Complete architecture, usage examples, troubleshooting
 - `/implement [plan-file]` - Execute implementation plans phase-by-phase with testing and commits
+  - **Usage Guide**: [/implement Command Guide](.claude/docs/guides/implement-command-guide.md) - Complete usage, adaptive planning, and agent delegation
 - `/research <topic>` - Hierarchical multi-agent research with automatic decomposition (replaces archived /report)
 - `/plan <feature>` - Create implementation plans in specs/plans/
+  - **Usage Guide**: [/plan Command Guide](.claude/docs/guides/plan-command-guide.md) - Research delegation, complexity analysis, standards integration
+- `/debug <issue>` - Investigate issues and create diagnostic reports without code changes
+  - **Usage Guide**: [/debug Command Guide](.claude/docs/guides/debug-command-guide.md) - Parallel hypothesis testing, root cause analysis
+- `/test <target>` - Run project-specific tests per Testing Protocols
+  - **Usage Guide**: [/test Command Guide](.claude/docs/guides/test-command-guide.md) - Multi-framework testing, error analysis, coverage tracking
+- `/document [change-description] [scope]` - Update all relevant documentation based on recent code changes
+  - **Usage Guide**: [/document Command Guide](.claude/docs/guides/document-command-guide.md) - Standards compliance, cross-references, timeless writing
 - `/plan-from-template <name>` - Generate plans from reusable templates (11 categories)
 - `/plan-wizard` - Interactive plan creation with guided prompts
-- `/test <target>` - Run project-specific tests per Testing Protocols
 - `/setup [--enhance-with-docs]` - Configure or update this CLAUDE.md file; --enhance-with-docs discovers project documentation and automatically enhances CLAUDE.md
 
 **Orchestration**: Three orchestration commands available (**Use /coordinate for production workflows**):
 
 - `/coordinate` - **Production-Ready** - Wave-based parallel execution and fail-fast error handling (2,500-3,000 lines, recommended default)
 - `/orchestrate` - **In Development** - Full-featured orchestration with PR automation and dashboard tracking (5,438 lines, experimental features may have inconsistent behavior)
-- `/supervise` - **In Development** - Sequential orchestration with proven architectural compliance (1,939 lines, minimal reference being stabilized)
+- `/supervise` - **In Development** - Sequential orchestration with proven architectural compliance (1,779 lines, minimal reference being stabilized)
   - **Usage Guide**: [/supervise Usage Guide](.claude/docs/guides/supervise-guide.md) - Examples and common patterns
   - **Phase Reference**: [/supervise Phase Reference](.claude/docs/reference/supervise-phases.md) - Detailed phase documentation
 
@@ -386,6 +576,15 @@ All orchestration commands provide 7-phase workflow with parallel research (2-4 
 **Template-Based Planning**: Fast plan generation (60-80% faster) using templates for common patterns (CRUD, refactoring, testing, migrations). See `.claude/commands/templates/README.md`.
 
 **Unified Location Detection**: All workflow commands use standardized location detection library (85% token reduction, 25x speedup vs agent-based detection). See [Library API Reference](.claude/docs/reference/library-api.md) for implementation details.
+
+**Command Documentation Pattern**: Commands follow executable/documentation separation:
+- **Executable files** (`.claude/commands/*.md`): Lean execution scripts (<250 lines)
+- **Command guides** (`.claude/docs/guides/*-command-guide.md`): Comprehensive documentation
+- **Templates**: See [Executable Template](.claude/docs/guides/_template-executable-command.md) and [Guide Template](.claude/docs/guides/_template-command-guide.md)
+- **Benefits**: Eliminates meta-confusion loops, improves maintainability
+- **Pattern Documentation**: [Executable/Documentation Separation Pattern](.claude/docs/concepts/patterns/executable-documentation-separation.md) - Complete pattern with case studies and metrics
+- **Implementation Guide**: [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern)
+- **Standard**: [Standard 14](.claude/docs/reference/command_architecture_standards.md#standard-14-executabledocumentation-file-separation) - Formal architectural requirement
 
 For detailed usage, see `.claude/commands/README.md` and individual command files in `.claude/commands/`.
 <!-- END_SECTION: project_commands -->
@@ -410,6 +609,12 @@ See [Setup Guide](.claude/docs/guides/setup-command-guide.md) for detailed usage
 ### Command and Agent Reference
 - [Command Reference](.claude/docs/reference/command-reference.md) - Complete catalog of all slash commands with syntax and examples
 - [Agent Reference](.claude/docs/reference/agent-reference.md) - Complete catalog of all specialized agents with capabilities and usage
+
+### Command Development
+- **New Command**: Start with [_template-executable-command.md](.claude/docs/guides/_template-executable-command.md)
+- **Command Guide**: Use [_template-command-guide.md](.claude/docs/guides/_template-command-guide.md)
+- **Pattern Guide**: [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern) for complete separation pattern details
+- **Validation**: Run `.claude/tests/validate_executable_doc_separation.sh` to verify pattern compliance
 
 ### Navigation
 - [Neovim Configuration](nvim/)

@@ -22,7 +22,7 @@ source "$SCRIPT_DIR/timestamp-utils.sh"
 # ==============================================================================
 
 # Schema version for checkpoint format
-readonly CHECKPOINT_SCHEMA_VERSION="1.3"
+readonly CHECKPOINT_SCHEMA_VERSION="2.0"
 
 # Checkpoint directory
 readonly CHECKPOINTS_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/checkpoints"
@@ -109,7 +109,21 @@ save_checkpoint() {
         current_phase: ($state.current_phase // 0),
         total_phases: ($state.total_phases // 0),
         completed_phases: ($state.completed_phases // []),
+        state_machine: ($state.state_machine // null),
         workflow_state: $state,
+        phase_data: ($state.phase_data // {}),
+        supervisor_state: ($state.supervisor_state // {}),
+        error_state: ($state.error_state // {
+          last_error: null,
+          retry_count: 0,
+          failed_state: null
+        }),
+        metadata: {
+          checkpoint_id: $id,
+          project_name: $project,
+          created_at: $created,
+          updated_at: $created
+        },
         last_error: ($state.last_error // null),
         tests_passing: ($state.tests_passing // true),
         plan_modification_time: (if $plan_mtime != "" then ($plan_mtime | tonumber) else null end),
@@ -349,7 +363,7 @@ migrate_checkpoint_format() {
     local topic_num=$(jq -r '.workflow_state.topic_number // null' "$checkpoint_file")
 
     jq '. + {
-      schema_version: "'$CHECKPOINT_SCHEMA_VERSION'",
+      schema_version: "1.3",
       topic_directory: (if .workflow_state.topic_directory then .workflow_state.topic_directory else null end),
       topic_number: (if .workflow_state.topic_number then .workflow_state.topic_number else null end),
       context_preservation: (.context_preservation // {
@@ -366,6 +380,92 @@ migrate_checkpoint_format() {
         checkbox_propagation_log: []
       })
     }' "$checkpoint_file" > "${checkpoint_file}.migrated"
+
+    # Replace original with migrated version
+    mv "${checkpoint_file}.migrated" "$checkpoint_file"
+    current_version="1.3"
+  fi
+
+  # Migrate from 1.3 to 2.0 (add state machine as first-class citizen)
+  if [ "$current_version" = "1.3" ]; then
+    # Source state machine library for phase-to-state mapping
+    local script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if [ -f "$script_dir/workflow-state-machine.sh" ]; then
+      source "$script_dir/workflow-state-machine.sh"
+    fi
+
+    # Extract workflow_type from checkpoint
+    local workflow_type=$(jq -r '.workflow_type // "unknown"' "$checkpoint_file")
+
+    # Map current_phase to state name
+    local current_phase=$(jq -r '.current_phase // 0' "$checkpoint_file")
+    local current_state=$(map_phase_to_state "$current_phase" 2>/dev/null || echo "initialize")
+
+    # Map completed_phases to state names
+    local completed_phases_json=$(jq -r '.completed_phases // []' "$checkpoint_file")
+    local completed_states_json="[]"
+    if [ "$completed_phases_json" != "[]" ]; then
+      completed_states_json=$(echo "$completed_phases_json" | jq -r '.[]' | while read phase; do
+        if [ -n "$phase" ]; then
+          map_phase_to_state "$phase" 2>/dev/null || echo "initialize"
+        fi
+      done | jq -R . | jq -s .)
+    fi
+
+    # Detect workflow scope from workflow_description (default to full-implementation)
+    local workflow_scope="full-implementation"
+    local workflow_desc=$(jq -r '.workflow_description // ""' "$checkpoint_file")
+    if [ -n "$workflow_desc" ]; then
+      if echo "$workflow_desc" | grep -Eiq "^research" && ! echo "$workflow_desc" | grep -Eiq "plan|implement"; then
+        workflow_scope="research-only"
+      elif echo "$workflow_desc" | grep -Eiq "(research|analyze).*(to |and |for ).*(plan|planning)"; then
+        workflow_scope="research-and-plan"
+      elif echo "$workflow_desc" | grep -Eiq "(fix|debug|troubleshoot)"; then
+        workflow_scope="debug-only"
+      fi
+    fi
+
+    # Build state_machine section
+    jq --arg current_state "$current_state" \
+       --argjson completed_states "$completed_states_json" \
+       --arg scope "$workflow_scope" \
+       --arg workflow_desc "$workflow_desc" \
+       --arg command "$workflow_type" \
+       '. + {
+         schema_version: "'$CHECKPOINT_SCHEMA_VERSION'",
+         state_machine: {
+           current_state: $current_state,
+           completed_states: $completed_states,
+           transition_table: {
+             initialize: "research",
+             research: "plan,complete",
+             plan: "implement,complete",
+             implement: "test",
+             test: "debug,document",
+             debug: "test,complete",
+             document: "complete",
+             complete: ""
+           },
+           workflow_config: {
+             scope: $scope,
+             description: $workflow_desc,
+             command: $command
+           }
+         },
+         phase_data: (.phase_data // {}),
+         supervisor_state: (.supervisor_state // {}),
+         error_state: {
+           last_error: (.last_error // null),
+           retry_count: 0,
+           failed_state: null
+         },
+         metadata: {
+           checkpoint_id: .checkpoint_id,
+           project_name: .project_name,
+           created_at: .created_at,
+           updated_at: .updated_at
+         }
+       }' "$checkpoint_file" > "${checkpoint_file}.migrated"
 
     # Replace original with migrated version
     mv "${checkpoint_file}.migrated" "$checkpoint_file"
@@ -707,14 +807,16 @@ check_safe_resume_conditions() {
     return 1
   fi
 
-  # Condition 4: Checkpoint age must be < 7 days
+  # Condition 4: Checkpoint age must be <= 7 days (within 7 day window)
   if [ -n "$created_at" ]; then
     local checkpoint_timestamp=$(date -d "$created_at" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%SZ" "$created_at" +%s 2>/dev/null || echo "0")
     local current_timestamp=$(date +%s)
     local age_seconds=$((current_timestamp - checkpoint_timestamp))
     local seven_days_seconds=$((7 * 24 * 60 * 60))
+    # Add 1-hour buffer to handle timing precision and timezone edge cases
+    local max_age_seconds=$((seven_days_seconds + 3600))
 
-    if [ "$age_seconds" -gt "$seven_days_seconds" ]; then
+    if [ "$age_seconds" -gt "$max_age_seconds" ]; then
       return 1
     fi
   fi
@@ -783,8 +885,10 @@ get_skip_reason() {
     local current_timestamp=$(date +%s)
     local age_seconds=$((current_timestamp - checkpoint_timestamp))
     local seven_days_seconds=$((7 * 24 * 60 * 60))
+    # Add 1-hour buffer to match check_safe_resume_conditions logic
+    local max_age_seconds=$((seven_days_seconds + 3600))
 
-    if [ "$age_seconds" -gt "$seven_days_seconds" ]; then
+    if [ "$age_seconds" -gt "$max_age_seconds" ]; then
       local age_days=$((age_seconds / 86400))
       echo "Checkpoint $age_days days old (max: 7 days)"
       return 0
@@ -805,6 +909,82 @@ get_skip_reason() {
   return 0
 }
 
+# ==============================================================================
+# State Machine Checkpoint Functions (v2.0)
+# ==============================================================================
+
+# save_state_machine_checkpoint: Save checkpoint with state machine data
+# Usage: save_state_machine_checkpoint <workflow-type> <project-name> <state-machine-json>
+# Returns: Path to saved checkpoint file
+# Example: save_state_machine_checkpoint "coordinate" "auth" '{"current_state":"research",...}'
+save_state_machine_checkpoint() {
+  local workflow_type="${1:-}"
+  local project_name="${2:-}"
+  local state_machine_json="${3:-}"
+
+  if [ -z "$workflow_type" ] || [ -z "$project_name" ]; then
+    echo "Usage: save_state_machine_checkpoint <workflow-type> <project-name> <state-machine-json>" >&2
+    return 1
+  fi
+
+  # Read state from stdin if not provided
+  if [ -z "$state_machine_json" ]; then
+    state_machine_json=$(cat)
+  fi
+
+  # Build workflow state with state_machine section
+  local workflow_state
+  workflow_state=$(jq -n \
+    --argjson state_machine "$state_machine_json" \
+    '{
+      state_machine: $state_machine,
+      workflow_description: ($state_machine.workflow_config.description // ""),
+      current_phase: 0,
+      total_phases: 0,
+      completed_phases: [],
+      phase_data: {},
+      supervisor_state: {},
+      error_state: {
+        last_error: null,
+        retry_count: 0,
+        failed_state: null
+      }
+    }')
+
+  # Call standard save_checkpoint with state machine data
+  save_checkpoint "$workflow_type" "$project_name" "$workflow_state"
+}
+
+# load_state_machine_checkpoint: Load state machine from checkpoint
+# Usage: load_state_machine_checkpoint <workflow-type> [project-name]
+# Returns: State machine JSON section
+# Example: state_machine=$(load_state_machine_checkpoint "coordinate" "auth")
+load_state_machine_checkpoint() {
+  local workflow_type="${1:-}"
+  local project_name="${2:-}"
+
+  if [ -z "$workflow_type" ]; then
+    echo "Usage: load_state_machine_checkpoint <workflow-type> [project-name]" >&2
+    return 1
+  fi
+
+  # Restore full checkpoint
+  local checkpoint_json
+  checkpoint_json=$(restore_checkpoint "$workflow_type" "$project_name")
+
+  if [ $? -ne 0 ]; then
+    return 1
+  fi
+
+  # Extract state_machine section
+  if command -v jq &> /dev/null; then
+    echo "$checkpoint_json" | jq '.state_machine // null'
+  else
+    echo "ERROR: jq required for state machine checkpoint loading" >&2
+    return 1
+  fi
+}
+
 # Export functions for use in other scripts
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f save_checkpoint
@@ -820,4 +1000,6 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f validate_checkpoint_integrity
   export -f check_safe_resume_conditions
   export -f get_skip_reason
+  export -f save_state_machine_checkpoint
+  export -f load_state_machine_checkpoint
 fi

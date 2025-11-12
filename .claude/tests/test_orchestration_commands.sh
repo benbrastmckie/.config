@@ -106,7 +106,7 @@ test_delegation_rate() {
   local expected_min
   case "$(basename "$command_file")" in
     coordinate.md)
-      expected_min=7  # Research, plan, implement, test, debug (3), doc phases
+      expected_min=5  # State machine: Research, plan, implement, debug, document
       ;;
     research.md)
       expected_min=3  # Research-specialist (multiple), synthesizer, spec-updater
@@ -186,6 +186,102 @@ if [[ -x "$SCRIPT_DIR/../lib/rollback-command-file.sh" ]]; then
 else
   record_test "Rollback script executable" "FAIL" "Not found or not executable"
 fi
+
+echo ""
+
+# Test Suite 5: Plan Naming Convention
+echo "Test Suite 5: Plan Naming Convention"
+echo "----------------------------------------"
+
+# Test coordinate plan naming pattern
+test_coordinate_plan_naming() {
+  local test_name="Coordinate plan naming pattern"
+
+  # Source topic-utils.sh to access sanitize_topic_name()
+  if [[ ! -f "$SCRIPT_DIR/../lib/topic-utils.sh" ]]; then
+    record_test "$test_name" "FAIL" "topic-utils.sh not found"
+    return 1
+  fi
+
+  source "$SCRIPT_DIR/../lib/topic-utils.sh"
+
+  # Test workflow description
+  local workflow_desc="fix authentication bug"
+
+  # Expected sanitized name from topic-utils.sh algorithm
+  local expected_topic="fix_authentication_bug"
+  local expected_pattern="001_${expected_topic}_plan.md"
+
+  # Call sanitize_topic_name() directly
+  local actual_topic
+  actual_topic=$(sanitize_topic_name "$workflow_desc")
+
+  # Assert topic name matches expected pattern
+  if [[ "$actual_topic" != "$expected_topic" ]]; then
+    record_test "$test_name" "FAIL" "Topic name mismatch: expected '$expected_topic', got '$actual_topic'"
+    return 1
+  fi
+
+  # Verify plan path construction
+  local topic_path=".claude/specs/999_${actual_topic}"
+  local plan_path="${topic_path}/plans/${expected_pattern}"
+
+  # Assert plan path contains topic name
+  if [[ ! "$plan_path" =~ $expected_topic ]]; then
+    record_test "$test_name" "FAIL" "Plan path missing topic name: $plan_path"
+    return 1
+  fi
+
+  # Assert plan path is NOT generic
+  if [[ "$plan_path" =~ "001_implementation.md" ]]; then
+    record_test "$test_name" "FAIL" "Plan path uses generic name (regression detected)"
+    return 1
+  fi
+
+  record_test "$test_name" "PASS"
+  return 0
+}
+
+# Test that coordinate.md doesn't have hardcoded generic plan path
+test_no_hardcoded_plan_path() {
+  local test_name="No hardcoded generic plan path in coordinate.md"
+  local command_file="$SCRIPT_DIR/../commands/coordinate.md"
+
+  # Check for hardcoded "001_implementation.md" assignment
+  if grep -q 'PLAN_PATH=.*001_implementation\.md' "$command_file"; then
+    record_test "$test_name" "FAIL" "Found hardcoded PLAN_PATH='..001_implementation.md' (regression)"
+    return 1
+  fi
+
+  record_test "$test_name" "PASS"
+  return 0
+}
+
+# Test PLAN_PATH state persistence
+test_plan_path_state_persistence() {
+  local test_name="PLAN_PATH state persistence in coordinate.md"
+  local command_file="$SCRIPT_DIR/../commands/coordinate.md"
+
+  # Verify PLAN_PATH is saved to state (bash block 1)
+  if ! grep -q 'append_workflow_state.*"PLAN_PATH"' "$command_file"; then
+    record_test "$test_name" "FAIL" "PLAN_PATH not saved to workflow state"
+    return 1
+  fi
+
+  # Verify PLAN_PATH validation exists (bash block 2)
+  if ! grep -q 'if.*PLAN_PATH.*empty\|missing' "$command_file"; then
+    record_test "$test_name" "FAIL" "PLAN_PATH validation not found"
+    return 1
+  fi
+
+  record_test "$test_name" "PASS"
+  return 0
+}
+
+# Run plan naming tests
+test_coordinate_plan_naming
+test_no_hardcoded_plan_path
+test_plan_path_state_persistence
 
 echo ""
 
