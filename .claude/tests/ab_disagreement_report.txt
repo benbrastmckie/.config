@@ -1,0 +1,25 @@
+A/B Testing Disagreement Report
+Generated: Wed Nov 12 10:23:15 AM PST 2025
+================================
+
+Summary:
+  Total Tests: 42
+  Agreements: 41
+  Disagreements: 1
+  Agreement Rate: 97%
+
+Disagreement Cases:
+====================
+
+Case #1:
+  Description: research X, plan Y, and implement Z
+  Expected: research-and-plan
+  Regex: full-implementation
+  
+
+Analysis:
+=========
+  - Review each disagreement case manually
+  - Determine which classification is correct
+  - Update test dataset with validated classifications
+  - If LLM consistently outperforms regex, document edge cases
