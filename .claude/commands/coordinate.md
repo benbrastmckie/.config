@@ -34,8 +34,12 @@ set +H  # Disable history expansion to prevent bad substitution errors
 # SUBSTITUTE THE WORKFLOW DESCRIPTION IN THE LINE BELOW
 # CRITICAL: Replace YOUR_WORKFLOW_DESCRIPTION_HERE with the actual workflow description from the user
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
-echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
-echo "✓ Workflow description captured to ${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
+# Use timestamp-based filename for concurrent execution safety (Spec 678 Phase 5)
+WORKFLOW_TEMP_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc_$(date +%s%N).txt"
+echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "$WORKFLOW_TEMP_FILE"
+# Save temp file path for Part 2 to read
+echo "$WORKFLOW_TEMP_FILE" > "${HOME}/.claude/tmp/coordinate_workflow_desc_path.txt"
+echo "✓ Workflow description captured to $WORKFLOW_TEMP_FILE"
 ```
 
 ---
@@ -61,8 +65,15 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
 fi
 
 # Read workflow description from file (written in Part 1)
-# Use fixed filename (not $$ which changes per bash block)
-COORDINATE_DESC_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
+# Read temp file path from path file (Spec 678 Phase 5: concurrent execution safety)
+COORDINATE_DESC_PATH_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc_path.txt"
+
+if [ -f "$COORDINATE_DESC_PATH_FILE" ]; then
+  COORDINATE_DESC_FILE=$(cat "$COORDINATE_DESC_PATH_FILE")
+else
+  # Fallback to legacy fixed filename for backward compatibility
+  COORDINATE_DESC_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
+fi
 
 if [ -f "$COORDINATE_DESC_FILE" ]; then
   WORKFLOW_DESCRIPTION=$(cat "$COORDINATE_DESC_FILE" 2>/dev/null || echo "")
@@ -150,7 +161,8 @@ append_workflow_state "WORKFLOW_DESCRIPTION" "$SAVED_WORKFLOW_DESC"
 append_workflow_state "COORDINATE_STATE_ID_FILE" "$COORDINATE_STATE_ID_FILE"
 
 # Initialize state machine (use SAVED value, not overwritten variable)
-sm_init "$SAVED_WORKFLOW_DESC" "coordinate"
+# CRITICAL: Capture RESEARCH_COMPLEXITY return value for dynamic path allocation (Spec 678 Phase 3)
+RESEARCH_COMPLEXITY=$(sm_init "$SAVED_WORKFLOW_DESC" "coordinate")
 
 # ADDED: Extract and save EXISTING_PLAN_PATH for research-and-revise workflows
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
@@ -227,8 +239,8 @@ else
   exit 1
 fi
 
-if initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
-  : # Success - paths initialized
+if initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE" "$RESEARCH_COMPLEXITY"; then
+  : # Success - paths initialized with dynamic allocation
 else
   handle_state_error "Workflow initialization failed" 1
 fi
@@ -245,6 +257,10 @@ fi
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 
+# Save comprehensive classification results to state (Spec 678 Phase 5)
+append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+append_workflow_state "RESEARCH_TOPICS_JSON" "$RESEARCH_TOPICS_JSON"
+
 # Serialize REPORT_PATHS array to state (subprocess isolation - see bash-block-execution-model.md)
 append_workflow_state "REPORT_PATHS_COUNT" "$REPORT_PATHS_COUNT"
 
@@ -255,7 +271,7 @@ for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
   append_workflow_state "$var_name" "$value"
 done
 
-echo "Saved $REPORT_PATHS_COUNT report paths to workflow state"
+echo "Allocated $REPORT_PATHS_COUNT report paths (dynamically matched to research complexity)"
 
 # VERIFICATION CHECKPOINT: Verify REPORT_PATHS_COUNT persisted correctly
 verify_state_variable "REPORT_PATHS_COUNT" || {
@@ -482,10 +498,25 @@ Task {
 # See: Spec 676 (root cause analysis), coordinate-command-guide.md (architecture)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+# Reconstruct RESEARCH_TOPICS array from JSON state (Spec 678 Phase 5)
+if [ -n "${RESEARCH_TOPICS_JSON:-}" ]; then
+  mapfile -t RESEARCH_TOPICS < <(echo "$RESEARCH_TOPICS_JSON" | jq -r '.[]' 2>/dev/null || true)
+else
+  # Fallback: Generate generic topic names if state not available
+  RESEARCH_TOPICS=("Topic 1" "Topic 2" "Topic 3" "Topic 4")
+fi
+
 # Prepare variables for conditional agent invocations (1-4)
+# Use descriptive subtopic names from comprehensive classification (not generic "Topic N")
 for i in $(seq 1 4); do
   REPORT_PATH_VAR="REPORT_PATH_$((i-1))"
-  export "RESEARCH_TOPIC_${i}=Topic ${i}"
+  # Use descriptive topic name from RESEARCH_TOPICS array (zero-indexed)
+  topic_index=$((i-1))
+  if [ $topic_index -lt ${#RESEARCH_TOPICS[@]} ]; then
+    export "RESEARCH_TOPIC_${i}=${RESEARCH_TOPICS[$topic_index]}"
+  else
+    export "RESEARCH_TOPIC_${i}=Topic ${i}"  # Fallback to generic if array too small
+  fi
   export "AGENT_REPORT_PATH_${i}=${!REPORT_PATH_VAR}"
 done
 
@@ -635,24 +666,10 @@ if ! command -v handle_state_error &>/dev/null; then
   exit 1
 fi
 
-# Defensive: Restore RESEARCH_COMPLEXITY if not loaded from state
-# This can happen if workflow state doesn't persist properly across bash blocks
-if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
-  # Recalculate from WORKFLOW_DESCRIPTION (same logic as initial calculation)
-  RESEARCH_COMPLEXITY=2
-
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "integrate|migration|refactor|architecture"; then
-    RESEARCH_COMPLEXITY=3
-  fi
-
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "multi-.*system|cross-.*platform|distributed|microservices"; then
-    RESEARCH_COMPLEXITY=4
-  fi
-
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^(fix|update|modify).*(one|single|small)"; then
-    RESEARCH_COMPLEXITY=1
-  fi
-fi
+# RESEARCH_COMPLEXITY loaded from workflow state (set by sm_init in Phase 0)
+# Pattern matching removed in Spec 678: comprehensive haiku classification provides
+# all three dimensions (workflow_type, research_complexity, subtopics) in single call.
+# Zero pattern matching for any classification dimension. Fallback to state persistence only.
 
 # Defensive: Restore USE_HIERARCHICAL_RESEARCH if not loaded from state
 if [ -z "${USE_HIERARCHICAL_RESEARCH:-}" ]; then
