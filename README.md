@@ -131,10 +131,10 @@ If you are interested in using NixOS, you can find my [.dotfiles](https://github
 
 Select your operating system for detailed setup instructions:
 
-- [MacOS Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/MacOS-Install.md)
-- [Arch Linux Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Arch-Install.md)
-- [Debian/Ubuntu Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Debian-Install.md)
-- [Windows Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/Windows-Install.md)
+- [MacOS Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/platform/macos.md)
+- [Arch Linux Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/platform/arch.md)
+- [Debian/Ubuntu Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/platform/debian.md)
+- [Windows Installation Guide](https://github.com/benbrastmckie/.config/blob/master/docs/platform/windows.md)
 
 **Quick Start**: See [Installation Guide](nvim/docs/INSTALLATION.md) for prerequisites and setup steps.
 
