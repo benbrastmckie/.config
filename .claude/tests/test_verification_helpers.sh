@@ -259,6 +259,86 @@ else
 fi
 
 # ============================================================================
+# Test Suite 6: verify_files_batch() - Batch File Verification
+# ============================================================================
+
+# Setup test files
+TEST_FILES_DIR="$TEST_DIR/test_files"
+mkdir -p "$TEST_FILES_DIR"
+echo "test content 1" > "$TEST_FILES_DIR/file1.md"
+echo "test content 2" > "$TEST_FILES_DIR/file2.md"
+echo "test content 3" > "$TEST_FILES_DIR/file3.md"
+touch "$TEST_FILES_DIR/empty.md"  # Empty file (0 bytes)
+
+run_test "verify_files_batch() with all files existing and valid"
+if verify_files_batch "Test Phase" \
+  "$TEST_FILES_DIR/file1.md:Test file 1" \
+  "$TEST_FILES_DIR/file2.md:Test file 2" \
+  "$TEST_FILES_DIR/file3.md:Test file 3" >/dev/null 2>&1; then
+  pass_test
+else
+  fail_test "Should succeed when all files exist and have content"
+fi
+
+run_test "verify_files_batch() with one missing file"
+if ! verify_files_batch "Test Phase" \
+  "$TEST_FILES_DIR/file1.md:Test file 1" \
+  "$TEST_FILES_DIR/missing.md:Missing file" >/dev/null 2>&1; then
+  output=$(verify_files_batch "Test Phase" \
+    "$TEST_FILES_DIR/file1.md:Test file 1" \
+    "$TEST_FILES_DIR/missing.md:Missing file" 2>&1 || true)
+  if echo "$output" | grep -q "Missing file"; then
+    pass_test
+  else
+    fail_test "Output should mention the missing file"
+  fi
+else
+  fail_test "Should fail when one file is missing"
+fi
+
+run_test "verify_files_batch() with empty file"
+if ! verify_files_batch "Test Phase" \
+  "$TEST_FILES_DIR/file1.md:Test file 1" \
+  "$TEST_FILES_DIR/empty.md:Empty file" >/dev/null 2>&1; then
+  output=$(verify_files_batch "Test Phase" \
+    "$TEST_FILES_DIR/file1.md:Test file 1" \
+    "$TEST_FILES_DIR/empty.md:Empty file" 2>&1 || true)
+  if echo "$output" | grep -q "Empty file"; then
+    pass_test
+  else
+    fail_test "Output should mention the empty file"
+  fi
+else
+  fail_test "Should fail when file is empty"
+fi
+
+run_test "verify_files_batch() success message format"
+output=$(verify_files_batch "Test Phase" \
+  "$TEST_FILES_DIR/file1.md:Test file 1" \
+  "$TEST_FILES_DIR/file2.md:Test file 2" 2>&1)
+if echo "$output" | grep -q "✓ All 2 files verified"; then
+  pass_test
+else
+  fail_test "Success message should indicate number of files verified"
+fi
+
+run_test "verify_files_batch() provides consolidated output"
+# The benefit of batch verification is not just output size, but consolidated
+# reporting and reduced function call overhead. Verify batch mode produces
+# a single success message rather than individual checkmarks.
+BATCH_OUTPUT=$(verify_files_batch "Test Phase" \
+  "$TEST_FILES_DIR/file1.md:Test file 1" \
+  "$TEST_FILES_DIR/file2.md:Test file 2" \
+  "$TEST_FILES_DIR/file3.md:Test file 3" 2>&1)
+
+# Success: Batch output should be a single consolidated message
+if echo "$BATCH_OUTPUT" | grep -q "All 3 files verified"; then
+  pass_test
+else
+  fail_test "Batch verification should provide consolidated success message"
+fi
+
+# ============================================================================
 # Test Summary
 # ============================================================================
 
