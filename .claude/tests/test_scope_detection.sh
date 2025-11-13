@@ -52,14 +52,11 @@ echo "========================================="
 echo
 
 # =============================================================================
-# Section 1: Regex-Only Mode Tests (DEPRECATED - Phase 4 removed regex mode)
+# Section 1: Regex-Only Mode Tests (Backward Compatibility)
 # =============================================================================
-echo "Section 1: Regex-Only Mode (DEPRECATED - Skipped)"
+echo "Section 1: Regex-Only Mode (Backward Compatibility)"
 echo "----------------------------------------------------"
-skip "Section 1 tests - regex-only mode removed in Phase 4"
 
-# Skip all Section 1 tests
-if false; then
 export WORKFLOW_CLASSIFICATION_MODE=regex-only
 
 # Test 1.1: Plan path detection
@@ -134,19 +131,15 @@ if [ "$result" = "research-and-revise" ]; then
 else
   pass "Edge case handled correctly by regex"
 fi
-fi  # End Section 1 skip block
 
 echo
 
 # =============================================================================
-# Section 2: Hybrid Mode Rejection Test (DEPRECATED - Phase 4 removed hybrid)
+# Section 2: Hybrid Mode Rejection Test (Clean-Break)
 # =============================================================================
-echo "Section 2: Hybrid Mode Rejection (DEPRECATED - Skipped)"
-echo "-------------------------------------------------------"
-skip "Section 2 test - hybrid mode removed in Phase 4"
+echo "Section 2: Hybrid Mode Rejection (Clean-Break)"
+echo "-----------------------------------------------"
 
-# Skip Section 2 tests
-if false; then
 # Test 2.1: Hybrid mode is rejected with appropriate error message
 info "Test 2.1: Hybrid mode - should be rejected with error"
 export WORKFLOW_CLASSIFICATION_MODE=hybrid
@@ -159,7 +152,6 @@ fi
 
 # Reset to valid mode for subsequent tests
 export WORKFLOW_CLASSIFICATION_MODE=regex-only
-fi  # End Section 2 skip block
 
 echo
 

@@ -152,51 +152,12 @@ log_scope_detection() {
 }
 
 # Backward compatibility wrapper for tests
-# Uses simple regex-based pattern matching for basic workflow type detection
-# This provides fast, deterministic results for testing and simple cases
+# Wraps classify_workflow_comprehensive to return just the workflow_type
 detect_workflow_scope() {
   local workflow_description="$1"
-  local detected_scope
-
-  # Priority 1: Revise/Update/Modify patterns with "plan" keyword
-  if echo "$workflow_description" | grep -Eiq "(revise|update|modify).*(plan|implementation)"; then
-    detected_scope="research-and-revise"
-  # Priority 2: Plan path patterns (implement/execute with path to plans/)
-  elif echo "$workflow_description" | grep -Eq "(implement|execute).*(/|specs/|\.claude/).*plans/.*\.md"; then
-    detected_scope="full-implementation"
-  # Priority 3: Debug/Fix/Troubleshoot patterns
-  elif echo "$workflow_description" | grep -Eiq "^(debug|fix|troubleshoot)"; then
-    detected_scope="debug-only"
-  # Priority 4: Plan creation keywords (specific phrases only to avoid false matches)
-  # Match "create a plan", "create an implementation plan", "design a plan" etc.
-  # But NOT "create and implement" or "plan and implement"
-  elif echo "$workflow_description" | grep -Eiq "create (a |an |the )?((comprehensive |implementation )?plan|design)" && \
-       ! echo "$workflow_description" | grep -Eiq "(and|then) implement"; then
-    detected_scope="research-and-plan"
-  elif echo "$workflow_description" | grep -Eiq "(plan|design).*(plan|for)" && \
-       ! echo "$workflow_description" | grep -Eiq "(and|then) implement"; then
-    detected_scope="research-and-plan"
-  # Priority 5: Implementation action keywords (check anywhere in string for multi-intent)
-  elif echo "$workflow_description" | grep -Eiq "(implement|build|execute)"; then
-    detected_scope="full-implementation"
-  # Priority 6: Create keyword (for code components, but not plans)
-  elif echo "$workflow_description" | grep -Eiq "create" && \
-       ! echo "$workflow_description" | grep -Eiq "plan"; then
-    detected_scope="full-implementation"
-  # Priority 7: Research-only (research without other action keywords)
-  elif echo "$workflow_description" | grep -Eiq "^research" && \
-     ! echo "$workflow_description" | grep -Eiq "(implement|build|create|plan|execute)"; then
-    detected_scope="research-only"
-  # Default: research-and-plan (safest assumption for ambiguous inputs)
-  else
-    detected_scope="research-and-plan"
-  fi
-
-  # Log the detection for debugging
-  log_scope_detection "regex-fallback" "detect_workflow_scope" "$detected_scope"
-
-  echo "$detected_scope"
-  return 0
+  local result
+  result=$(classify_workflow_comprehensive "$workflow_description" 2>/dev/null || echo '{"workflow_type":"research-and-plan"}')
+  echo "$result" | jq -r '.workflow_type' 2>/dev/null || echo "research-and-plan"
 }
 
 # Export functions for use by other scripts
