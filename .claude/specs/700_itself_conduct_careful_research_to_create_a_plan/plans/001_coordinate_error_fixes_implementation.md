@@ -198,7 +198,7 @@ cd /home/benjamin/.config/.claude/tests
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
-### Phase 2: Fix Bash History Expansion Error
+### Phase 2: Fix Bash History Expansion Error [COMPLETED]
 dependencies: [1]
 
 **Objective**: Replace bare '!' operator at line 166 with exit code capture pattern
@@ -206,13 +206,13 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Analyze coordinate.md:166-168 for exact context (file: .claude/commands/coordinate.md)
-- [ ] Replace `if ! sm_init` with exit code capture pattern (lines from Report 1:254-278)
-- [ ] Verify stderr output is still captured via 2>&1
-- [ ] Update inline comment to document workaround rationale
-- [ ] Run test_coordinate_preprocessing.sh to verify no unprotected operators remain
-- [ ] Run coordinate command in test environment to verify fix
-- [ ] Document pattern in bash-block-execution-model.md if not already present
+- [x] Analyze coordinate.md:166-168 for exact context (file: .claude/commands/coordinate.md)
+- [x] Replace `if ! sm_init` with exit code capture pattern (lines from Report 1:254-278)
+- [x] Verify stderr output is still captured via 2>&1
+- [x] Update inline comment to document workaround rationale
+- [x] Run test_coordinate_preprocessing.sh to verify no unprotected operators remain
+- [x] Run coordinate command in test environment to verify fix
+- [x] Document pattern in bash-block-execution-model.md if not already present
 
 **Testing**:
 ```bash
@@ -232,11 +232,11 @@ echo "test workflow" | /coordinate  # Should not produce "!: command not found"
 **Expected Duration**: 1.5 hours
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(700): complete Phase 2 - Fix Bash History Expansion`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(700): complete Phase 2 - Fix Bash History Expansion`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 3: Fix sm_init Export Persistence
 dependencies: [1]

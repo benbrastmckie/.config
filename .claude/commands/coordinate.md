@@ -163,7 +163,10 @@ append_workflow_state "COORDINATE_STATE_ID_FILE" "$COORDINATE_STATE_ID_FILE"
 # Initialize state machine (use SAVED value, not overwritten variable)
 # CRITICAL: Call sm_init to export WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
 # Do NOT use command substitution $() as it creates subshell that doesn't export to parent
-if ! sm_init "$SAVED_WORKFLOW_DESC" "coordinate" 2>&1; then
+# WORKAROUND: Use exit code capture instead of bare '!' to avoid bash history expansion (Spec 700, Report 1)
+sm_init "$SAVED_WORKFLOW_DESC" "coordinate" 2>&1
+SM_INIT_EXIT_CODE=$?
+if [ $SM_INIT_EXIT_CODE -ne 0 ]; then
   handle_state_error "State machine initialization failed (workflow classification error). Check network connection or use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline development." 1
 fi
 # Variables now available via export (verified by successful sm_init return code check above)
