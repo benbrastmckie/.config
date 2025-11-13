@@ -328,7 +328,7 @@ echo "test workflow" | /coordinate
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
-### Phase 5: Improve LLM Classification Error Visibility
+### Phase 5: Improve LLM Classification Error Visibility [COMPLETED]
 dependencies: [1]
 
 **Objective**: Remove stderr suppression and add network pre-flight check
@@ -336,15 +336,15 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Remove `2>/dev/null` from sm_init classification call (file: .claude/lib/workflow-state-machine.sh:352)
-- [ ] Change to `2>&1` to preserve error messages (line from Report 4:245)
-- [ ] Add check_network_connectivity() function to workflow-llm-classifier.sh (lines from Report 4:258-274)
-- [ ] Integrate pre-flight check into invoke_llm_classifier() (lines from Report 4:276-282)
-- [ ] Update coordinate.md verification error message (line 174, from Report 4:332-338)
-- [ ] Add offline mode quick start to error messages (lines from Report 4:348-355)
-- [ ] Test offline scenario (network disabled, should fail in <2s)
-- [ ] Test online scenario (network available, should work normally)
-- [ ] Verify error messages are visible and actionable
+- [x] Remove `2>/dev/null` from sm_init classification call (file: .claude/lib/workflow-state-machine.sh:352)
+- [x] Change to `2>&1` to preserve error messages (line from Report 4:245)
+- [x] Add check_network_connectivity() function to workflow-llm-classifier.sh (lines from Report 4:258-274)
+- [x] Integrate pre-flight check into invoke_llm_classifier() (lines from Report 4:276-282)
+- [x] Update coordinate.md verification error message (line 174, from Report 4:332-338)
+- [x] Add offline mode quick start to error messages (lines from Report 4:348-355)
+- [x] Test offline scenario (network disabled, should fail in <2s)
+- [x] Test online scenario (network available, should work normally)
+- [x] Verify error messages are visible and actionable
 
 **Testing**:
 ```bash
@@ -366,11 +366,11 @@ unset WORKFLOW_CLASSIFICATION_TIMEOUT
 **Expected Duration**: 3 hours
 
 **Phase 5 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(700): complete Phase 5 - Improve LLM Classification Error Visibility`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(700): complete Phase 5 - Improve LLM Classification Error Visibility`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 6: Integration Testing and Documentation
 dependencies: [2, 3, 4, 5]

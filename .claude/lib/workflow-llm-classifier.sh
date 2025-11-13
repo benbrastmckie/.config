@@ -215,6 +215,30 @@ build_llm_classifier_input() {
   return 0
 }
 
+# check_network_connectivity - Fast pre-flight check for network availability
+# Returns:
+#   0: Network available or regex-only mode
+#   1: Network unavailable (offline scenario)
+# Added: Spec 700 Phase 5 - Fast-fail for offline scenarios
+check_network_connectivity() {
+  # Fast check for obvious offline scenarios
+  if [ "${WORKFLOW_CLASSIFICATION_MODE:-}" = "regex-only" ]; then
+    return 0  # Skip check, user explicitly chose offline mode
+  fi
+
+  # Check for localhost-only environment
+  # Use ping as lightweight network test (fallback if ping unavailable: return 0)
+  if command -v ping >/dev/null 2>&1; then
+    if ! timeout 1 ping -c 1 8.8.8.8 >/dev/null 2>&1; then
+      echo "WARNING: No network connectivity detected" >&2
+      echo "  Suggestion: Use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline work" >&2
+      return 1
+    fi
+  fi
+
+  return 0
+}
+
 # invoke_llm_classifier - Call AI assistant via file-based signaling
 # Args:
 #   $1: llm_input - JSON input for classifier
@@ -225,6 +249,12 @@ invoke_llm_classifier() {
   local llm_input="$1"
   local request_file="/tmp/llm_classification_request_$$.json"
   local response_file="/tmp/llm_classification_response_$$.json"
+
+  # Pre-flight check: fail fast if network unavailable (Spec 700 Phase 5)
+  if ! check_network_connectivity; then
+    echo "ERROR: LLM classification requires network connectivity" >&2
+    return 1
+  fi
 
   # Cleanup function
   cleanup_temp_files() {

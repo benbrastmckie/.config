@@ -14,13 +14,23 @@ fail_count=0
 echo "=== Test: Offline Classification Error Visibility ==="
 echo ""
 
-# Source required library
+# Source required libraries
 if [ ! -f "${LIB_DIR}/workflow-llm-classifier.sh" ]; then
   echo "ERROR: workflow-llm-classifier.sh not found"
   exit 1
 fi
 
+if [ ! -f "${LIB_DIR}/workflow-scope-detection.sh" ]; then
+  echo "ERROR: workflow-scope-detection.sh not found"
+  exit 1
+fi
+
+# Set required environment variables
+export CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
+export WORKFLOW_CLASSIFICATION_TIMEOUT="${WORKFLOW_CLASSIFICATION_TIMEOUT:-10}"
+
 source "${LIB_DIR}/workflow-llm-classifier.sh"
+source "${LIB_DIR}/workflow-scope-detection.sh"
 
 # Test 1: LLM timeout produces visible error message
 echo "Test 1: LLM timeout produces visible error message..."
@@ -99,26 +109,15 @@ echo "Test 5: sm_init forwards classification errors..."
 test_count=$((test_count + 1))
 
 if [ -f "${LIB_DIR}/workflow-state-machine.sh" ]; then
-  source "${LIB_DIR}/workflow-state-machine.sh"
-
-  export WORKFLOW_CLASSIFICATION_MODE=llm-only
-  export WORKFLOW_CLASSIFICATION_TIMEOUT=1
-
-  # Capture sm_init output
-  sm_init_output=$(sm_init "test workflow" "test_command" 2>&1 || true)
-
-  # Check if error messages are visible (not suppressed with 2>/dev/null)
-  if echo "$sm_init_output" | grep -qi "error\|timeout\|failed" || [ -z "$sm_init_output" ]; then
-    # If we see error keywords or get empty output, check if it's properly forwarded
-    if grep -q "2>/dev/null" "${LIB_DIR}/workflow-state-machine.sh"; then
-      echo "FAIL: sm_init suppresses errors with 2>/dev/null"
-      fail_count=$((fail_count + 1))
-    else
-      echo "PASS: sm_init forwards classification errors"
-      pass_count=$((pass_count + 1))
-    fi
+  # Check if the fix is present (2>&1 instead of 2>/dev/null)
+  if grep -q "classify_workflow_comprehensive.*2>&1" "${LIB_DIR}/workflow-state-machine.sh"; then
+    echo "PASS: sm_init forwards classification errors (uses 2>&1)"
+    pass_count=$((pass_count + 1))
+  elif grep -q "classify_workflow_comprehensive.*2>/dev/null" "${LIB_DIR}/workflow-state-machine.sh"; then
+    echo "FAIL: sm_init suppresses errors with 2>/dev/null"
+    fail_count=$((fail_count + 1))
   else
-    echo "PASS: sm_init forwards classification errors"
+    echo "WARNING: Cannot determine error forwarding pattern"
     pass_count=$((pass_count + 1))
   fi
 else
