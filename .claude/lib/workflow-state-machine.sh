@@ -389,13 +389,12 @@ sm_init() {
       # Fail-fast: No automatic fallback (maintain fail-fast philosophy)
       echo "CRITICAL ERROR: Comprehensive classification failed" >&2
       echo "  Workflow Description: $workflow_desc" >&2
-      echo "  Classification Mode: ${WORKFLOW_CLASSIFICATION_MODE:-llm-only}" >&2
       echo "" >&2
       echo "TROUBLESHOOTING:" >&2
       echo "  1. Check network connection (LLM classification requires API access)" >&2
       echo "  2. Increase timeout: export WORKFLOW_CLASSIFICATION_TIMEOUT=60" >&2
-      echo "  3. Use offline mode: export WORKFLOW_CLASSIFICATION_MODE=regex-only" >&2
-      echo "  4. Check API credentials if using external classification service" >&2
+      echo "  3. Check API credentials if using external classification service" >&2
+      echo "  4. Verify workflow description is clear and specific" >&2
       echo "" >&2
 
       # Cleanup stderr temp file on failure

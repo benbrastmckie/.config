@@ -1,17 +1,20 @@
-# Workflow Classification Guide (2-Mode System)
+# Workflow Classification Guide (LLM-Only)
 
 **Path**: docs → guides → workflow-classification-guide.md
 
-Complete guide to the 2-mode workflow classification system: llm-only (default, online development) and regex-only (offline, testing).
+**IMPORTANT**: This document describes the historical 2-mode system. **regex-only mode has been removed** (Spec 704 Phase 4). The system now uses **LLM-only classification** with fail-fast error handling.
+
+Complete guide to LLM-based workflow classification with fail-fast error handling.
 
 ## Overview
 
-The workflow classification system determines the appropriate phases and research complexity for user workflows by analyzing workflow descriptions. As of Spec 688 (clean-break update), the system uses a 2-mode architecture:
+The workflow classification system determines the appropriate phases and research complexity for user workflows by analyzing workflow descriptions using LLM-based semantic understanding.
 
-1. **llm-only** (DEFAULT): LLM-based semantic classification with fail-fast error handling
-2. **regex-only** (OFFLINE): Traditional regex-based classification for offline/air-gapped environments
+**BREAKING CHANGES**:
+- Spec 688: Hybrid mode with automatic regex fallback was removed
+- Spec 704 Phase 4: regex-only mode was removed
 
-**BREAKING CHANGE**: Hybrid mode with automatic regex fallback was removed in the clean-break update. LLM-only mode now fails fast with clear error messages instead of automatically falling back to regex.
+The system now uses **llm-only mode exclusively** with fail-fast error handling providing clear error messages when classification fails.
 
 ## 2-Mode System Architecture
 

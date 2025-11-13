@@ -1527,40 +1527,35 @@ rm -f "$COORDINATE_STATE_ID_FILE" "$STATE_FILE"
 - Classification timeout (default: 30s)
 - API service unavailable
 
-**Solution**: Use offline regex-only mode for development:
+**Solutions**:
 
-```bash
-# Set classification mode to regex-only (no network required)
-export WORKFLOW_CLASSIFICATION_MODE=regex-only
-
-# Run coordinate command
-/coordinate "research authentication patterns"
-```
-
-**Alternative Solutions**:
-
-1. **Increase timeout** (for slow connections):
+1. **Check network connectivity**:
    ```bash
-   export WORKFLOW_CLASSIFICATION_TIMEOUT=60
+   curl -I https://api.anthropic.com  # Should return 200 OK
+   ping 8.8.8.8  # Should show successful ping
    ```
 
-2. **Check API credentials** (if using external service):
+2. **Increase timeout** (for slow connections):
+   ```bash
+   export WORKFLOW_CLASSIFICATION_TIMEOUT=60
+   /coordinate "research authentication patterns"
+   ```
+
+3. **Check API credentials** (if using external service):
    ```bash
    echo $ANTHROPIC_API_KEY  # Should show key, not empty
    ```
 
-3. **Check network connectivity**:
+4. **Verify workflow description is clear**:
    ```bash
-   curl -I https://api.anthropic.com  # Should return 200 OK
+   # Instead of vague descriptions
+   /coordinate "do stuff"  # ❌ Too vague
+
+   # Use specific, clear descriptions
+   /coordinate "research authentication patterns and create implementation plan"  # ✓ Clear
    ```
 
-**Prevention**:
-
-Set default mode in shell profile for offline development:
-```bash
-# Add to ~/.bashrc or ~/.zshrc
-export WORKFLOW_CLASSIFICATION_MODE=regex-only
-```
+**Note**: regex-only mode was removed in Spec 704 Phase 4 to maintain LLM-only classification with fail-fast error handling.
 
 **Related**: See [LLM Classification Pattern](../concepts/patterns/llm-classification-pattern.md) for complete classification mode documentation.
 
