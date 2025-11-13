@@ -3,11 +3,11 @@
 ## Metadata
 - **Date**: 2025-11-12
 - **Feature**: Command and Agent Architecture Optimization
-- **Scope**: Consolidate redundant orchestrators, improve agent delegation patterns, eliminate underutilized agents
+- **Scope**: Consolidate redundant orchestrators, improve agent delegation patterns, eliminate underutilized agents, implement dynamic routing in /research command
 - **Estimated Phases**: 7
-- **Estimated Hours**: 19-23
+- **Estimated Hours**: 25-29
 - **Structure Level**: 0
-- **Complexity Score**: 112.5
+- **Complexity Score**: 142.5
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - [Commands Architecture Analysis](../reports/001_commands_architecture_analysis.md)
@@ -17,7 +17,7 @@
 
 ## Overview
 
-Optimize the .claude system architecture by consolidating redundant orchestrators (3 → 1) and merging overlapping agents (19 → 15). Research shows the system is already well-optimized (29% Haiku, 52% Sonnet, 19% Opus) with limited agent-level optimization remaining. This plan focuses on architectural cleanup to reduce maintenance burden and improve code organization.
+Optimize the .claude system architecture by consolidating redundant orchestrators (3 → 1), merging overlapping agents (19 → 15), and implementing complexity-based dynamic routing in /research command (24% cost reduction). Research shows the system is already well-optimized (29% Haiku, 52% Sonnet, 19% Opus) with limited agent-level optimization remaining. Note: Comprehensive haiku-based workflow classification (Spec 678) has been completed externally and eliminates all pattern matching for WORKFLOW_SCOPE and RESEARCH_COMPLEXITY. This plan focuses on leveraging that infrastructure for command-level optimizations.
 
 ## Research Summary
 
@@ -35,6 +35,13 @@ Based on comprehensive model usage analysis (Reports 001-002):
 - Net savings: $0.216/week (6-9% system-wide cost reduction)
 - Quality retention: ≥95% maintained
 
+**Primary Opportunity Identified** (Report 001):
+- **Complexity-Based Dynamic Routing in /research**: 24% cost reduction on research operations
+  - Simple topics (1 subtopic): Haiku for basic pattern discovery
+  - Medium topics (2 subtopics): Sonnet (current baseline)
+  - Complex topics (3-4 subtopics): Sonnet or Opus for architectural analysis
+- **Savings**: ~$0.036/week, $1.87 annually
+
 **Limited Agent-Level Optimization**:
 - Only 2 low-confidence downgrade candidates identified:
   - testing-sub-supervisor: 40% confidence, 3.2% potential savings
@@ -50,21 +57,25 @@ Based on comprehensive model usage analysis (Reports 001-002):
 **Revised Approach**:
 - Phase 1-2: Delete redundant orchestrators (clean-break, no deprecation)
 - Phase 3-4: Consolidate overlapping agents (architectural cleanup, not cost optimization)
-- Phase 5: Refactor /revise and /document for better delegation
+- Phase 5: Refactor /revise and /document for better delegation, implement dynamic routing in /research (PRIMARY OPTIMIZATION)
 - Phase 6: Testing and validation
 - Phase 7: Documentation updates
+
+**Integration with Spec 678**: Spec 678 has fully implemented comprehensive haiku-based workflow classification, eliminating all pattern matching for WORKFLOW_SCOPE and RESEARCH_COMPLEXITY detection. The infrastructure exports RESEARCH_COMPLEXITY (1-4) and RESEARCH_TOPICS_JSON via sm_init(), enabling dynamic model selection in commands. This plan leverages that infrastructure to implement complexity-based routing in /research command.
 
 ## Success Criteria
 
 - [ ] Orchestrator count reduced from 3 to 1 (/coordinate)
 - [ ] Agent count reduced from 19 to 15 (4 consolidations completed)
 - [ ] ~1,678 lines of redundant agent code eliminated
+- [ ] Complexity-based dynamic routing implemented in /research (24% cost reduction)
 - [ ] /revise refactored to use Task tool pattern (Standard 11 compliance)
 - [ ] /document refactored to use doc-writer agent delegation
 - [ ] All 409 existing tests passing (100% pass rate maintained)
 - [ ] CLAUDE.md updated to recommend /coordinate exclusively
 - [ ] No regression in orchestration reliability (maintain 100% file creation rate)
 - [ ] Context efficiency maintained or improved (≥95% reduction target)
+- [ ] Research complexity routing validated: <5% error rate increase for Haiku invocations
 
 ## Technical Design
 
@@ -83,17 +94,45 @@ Based on comprehensive model usage analysis (Reports 001-002):
 - Preserve all behavioral requirements and completion criteria
 - **Rationale**: Architectural cleanup to reduce maintenance burden, NOT for cost optimization (research shows 3.2% potential savings not worth migration risk)
 
-**3. Command Refactoring**:
+**3. Dynamic Routing in /research (Uses Spec 678 Infrastructure)**:
+
+Spec 678 implemented comprehensive haiku-based classification that provides RESEARCH_COMPLEXITY (1-4) via sm_init(). This optimization integrates that infrastructure into /research command for complexity-based model selection:
+
+**Model Selection Strategy**:
+- Simple (1 subtopic): Haiku 4.5 - basic pattern discovery
+- Medium (2 subtopics): Sonnet 4.5 - default baseline
+- Complex (3-4 subtopics): Sonnet 4.5 or Opus 4.1 - architectural analysis
+
+**Implementation Approach**:
+- Load RESEARCH_COMPLEXITY from workflow state (set during /coordinate sm_init)
+- Add model selection logic in /research command Phase 0
+- Pass model dynamically to research-specialist Task invocations
+- Use RESEARCH_TOPICS_JSON for descriptive subtopic names (not generic "Topic N")
+
+**Quality Safeguards**:
+- Monitor error rate for Haiku research (<5% increase threshold)
+- Fallback to Sonnet if validation fails
+- 2-week monitoring period before full rollout
+
+**Expected Impact**:
+- 24% cost reduction on research operations ($1.87 annually)
+- Haiku adequate for simple pattern discovery
+- Maintains quality for complex architectural analysis
+
+See [Spec 678 reports](../../../678_coordinate_haiku_classification/reports/) for comprehensive classification architecture and implementation details.
+
+**4. Command Refactoring**:
 - Create revision-specialist agent for /revise command
 - Refactor /revise to use Task tool (not SlashCommand)
 - Refactor /document to delegate to doc-writer agent
 - Breaking changes fail loudly with clear error messages
 
-**4. Testing Strategy**:
+**5. Testing Strategy**:
 - Verify all 409 tests pass after each consolidation
 - Validate agent invocation patterns comply with Standard 11
 - Test orchestration reliability (100% file creation maintained)
 - Verify fail-fast error handling for breaking changes
+- Validate complexity-based routing: error rate <5% increase for Haiku invocations
 
 ## Implementation Phases
 
@@ -284,14 +323,32 @@ After completing the above tasks:
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 5: Refactor /revise and /document Commands
+### Phase 5: Refactor /revise and /document Commands, Implement Dynamic Routing
 dependencies: [4]
 
-**Objective**: Improve orchestration alignment by creating revision-specialist agent and refactoring command delegation
+**Objective**: Improve orchestration alignment by creating revision-specialist agent, refactoring command delegation, and implementing complexity-based dynamic routing in /research command (PRIMARY OPTIMIZATION)
 
-**Complexity**: Medium
+**Complexity**: High
 
 **Tasks**:
+- [ ] **Implement Dynamic Routing in /research**:
+  - [ ] Read current /research.md to understand Phase 0 (research decomposition)
+  - [ ] Add model selection logic in /research Phase 0 to use RESEARCH_COMPLEXITY from workflow state
+  - [ ] Implement case statement for model selection:
+    ```bash
+    case "$RESEARCH_COMPLEXITY" in
+      1)  RESEARCH_MODEL="haiku-4.5" ;;      # Simple topics
+      2)  RESEARCH_MODEL="sonnet-4.5" ;;     # Medium topics (baseline)
+      3|4) RESEARCH_MODEL="sonnet-4.5" ;;    # Complex topics
+      *)  RESEARCH_MODEL="sonnet-4.5" ;;     # Fallback to Sonnet
+    esac
+    ```
+  - [ ] Update research-specialist Task invocations to pass model dynamically: `model: "$RESEARCH_MODEL"`
+  - [ ] Use RESEARCH_TOPICS_JSON for descriptive subtopic names in agent prompts (not generic "Topic N")
+  - [ ] Add logging: `echo "Research complexity: $RESEARCH_COMPLEXITY subtopics → Model: $RESEARCH_MODEL"`
+  - [ ] Implement error rate tracking for Haiku invocations in /research
+  - [ ] Add fallback logic: If Haiku research fails validation, retry with Sonnet
+  - [ ] Update Model Selection Guide with /research complexity-based routing pattern
 - [ ] **Create Revision-Specialist Agent**:
   - [ ] Create `.claude/agents/revision-specialist.md` (estimate 500-600 lines)
   - [ ] Tools: Read, Write, Edit, Bash, Task
@@ -329,7 +386,7 @@ test -f .claude/agents/revision-specialist.md || echo "ERROR: revision-specialis
 bash -c "cd .claude/tests && bash test_command_integration.sh" | grep -q "document.*PASS" || echo "ERROR: /document tests failing"
 ```
 
-**Expected Duration**: 3 hours
+**Expected Duration**: 6 hours
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -340,20 +397,27 @@ After completing the above tasks:
 **Phase 5 Completion Requirements**:
 - [ ] All phase tasks marked [x]
 - [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(677): complete Phase 5 - Refactor Commands`
+- [ ] Git commit created: `feat(677): complete Phase 5 - Refactor Commands and Implement Dynamic Routing`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
 ### Phase 6: Comprehensive Testing and Validation
 dependencies: [5]
 
-**Objective**: Verify all 409 tests pass, validate orchestration reliability, confirm context efficiency
+**Objective**: Verify all 409 tests pass, validate orchestration reliability, confirm context efficiency, validate complexity-based routing
 
 **Complexity**: Medium
 
 **Tasks**:
 - [ ] Run complete test suite: `cd .claude/tests && ./run_all_tests.sh`
 - [ ] Verify 409 tests passing (100% pass rate target)
+- [ ] **Validate Complexity-Based Routing** (PRIMARY VALIDATION):
+  - [ ] Test simple research (1 subtopic): Verify Haiku model selection and error rate <5%
+  - [ ] Test medium research (2 subtopics): Verify Sonnet model selection (baseline)
+  - [ ] Test complex research (3-4 subtopics): Verify Sonnet/Opus model selection
+  - [ ] Monitor error rate for 2 weeks: Track Haiku research failures vs Sonnet baseline
+  - [ ] Verify fallback logic: Confirm Haiku failures retry with Sonnet
+  - [ ] Measure cost reduction: Compare research costs before/after implementation (target: 24% reduction)
 - [ ] Run orchestration reliability tests:
   - [ ] Test /coordinate file creation (100% reliability target)
   - [ ] Test agent delegation patterns (>90% delegation rate)
@@ -366,6 +430,7 @@ dependencies: [5]
   - [ ] `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/coordinate.md`
   - [ ] `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/revise.md`
   - [ ] `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/document.md`
+  - [ ] `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/research.md` (complexity routing validation)
 - [ ] Run executable/documentation separation validation:
   - [ ] `.claude/tests/validate_executable_doc_separation.sh`
 - [ ] Manual workflow validation:
@@ -373,6 +438,7 @@ dependencies: [5]
   - [ ] Run /implement with test plan
   - [ ] Run /debug with test issue
   - [ ] Run /revise with test plan modification
+  - [ ] Run /research with simple, medium, and complex topics (verify model routing)
 
 **Testing**:
 ```bash
@@ -560,38 +626,13 @@ After completing the above tasks:
 - User confusion: 90% reduction (clear orchestrator choice)
 - Documentation: 35% reduction (simpler architecture to document)
 
-## Revision History
+### Cost Optimization (NEW - Phase 5)
+- Research operation cost: 24% reduction via complexity-based routing
+- Annual savings: $1.87 (baseline: 10 research invocations/week)
+- Quality safeguards: <5% error rate increase threshold, 2-week monitoring period
+- Haiku research allocation: ~30% of invocations (simple topics only)
 
-### Revision 5 - 2025-11-12
-- **Date**: 2025-11-12
-- **Type**: complexity-reduction
-- **Research Reports Used**:
-  - /home/benjamin/.config/.claude/specs/680_677_and_the_agents_in_claude_agents_in_order_to/reports/001_add__architecture_and_design.md (Dynamic Routing Architecture Analysis)
-  - /home/benjamin/.config/.claude/specs/680_677_and_the_agents_in_claude_agents_in_order_to/reports/002_implementation_approach_and_testing.md (Simpler Alternatives Analysis)
-- **Key Changes**:
-  - **Metadata**: Updated Scope to remove "implement dynamic routing in /research command"
-  - **Metadata**: Updated Estimated Hours from 25-29 to 19-23 hours (removed 6 hours from Phase 5)
-  - **Metadata**: Updated Complexity Score from 142.5 to 112.5 (reduced by dynamic routing tasks)
-  - **Overview**: Simplified to focus on architectural cleanup without dynamic routing
-  - **Research Summary**: Removed "Primary Opportunity Identified" section about dynamic routing (24% cost reduction)
-  - **Research Summary**: Removed "Integration with Spec 678" section
-  - **Success Criteria**: Removed "Complexity-based dynamic routing implemented in /research (24% cost reduction)"
-  - **Success Criteria**: Removed "Research complexity routing validated: <5% error rate increase for Haiku invocations"
-  - **Technical Design**: Deleted entire Section 3 "Dynamic Routing in /research" (removed 30 lines)
-  - **Technical Design**: Renumbered sections (Section 4 → Section 3, Section 5 → Section 4)
-  - **Phase 5**: Title changed from "Refactor /revise and /document Commands, Implement Dynamic Routing" to "Refactor /revise and /document Commands"
-  - **Phase 5**: Objective simplified to remove dynamic routing implementation
-  - **Phase 5**: Complexity reduced from High to Medium
-  - **Phase 5**: Removed entire "Implement Dynamic Routing in /research" task section (8 tasks removed)
-  - **Phase 5**: Duration reduced from 6 hours to 3 hours
-  - **Phase 5**: Completion commit message changed from "Refactor Commands and Implement Dynamic Routing" to "Refactor Commands"
-  - **Phase 6**: Objective changed to remove "validate complexity-based routing"
-  - **Phase 6**: Removed "Validate Complexity-Based Routing (PRIMARY VALIDATION)" task section (6 tasks removed)
-  - **Phase 6**: Removed research.md validation from command architecture validation
-  - **Phase 6**: Removed "/research with simple, medium, and complex topics" from manual workflow validation
-  - **Performance Targets**: Removed "Cost Optimization (NEW - Phase 5)" section
-- **Rationale**: Dynamic routing adds significant implementation complexity (85+ lines of code, error handling, monitoring infrastructure, 2-week validation period) for minimal benefit ($1.87 annually, 24% research cost reduction). Research reports show simpler alternatives exist (static configuration via CLAUDE.md). User requested complexity reduction by removing dynamic routing to focus on core architectural improvements (orchestrator consolidation, agent merging, command refactoring). This revision eliminates all dynamic routing work while preserving all other architectural improvements.
-- **Backup**: /home/benjamin/.config/.claude/specs/677_and_the_agents_in_claude_agents_in_order_to_rank/plans/001_command_agent_optimization_backup_$(date +%Y%m%d_%H%M%S).md
+## Revision History
 
 ### Revision 4 - 2025-11-12
 - **Date**: 2025-11-12

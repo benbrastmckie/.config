@@ -12,9 +12,6 @@
 - **Research Reports**:
   - [Coordinate Infrastructure Research](../reports/001_coordinate_infrastructure.md)
   - [Documentation Analysis](../reports/002_documentation_analysis.md)
-  - [Documentation Improvement Implementation Architecture](../reports/001_documentation_improvement_implementation_architecture.md) (2025-11-12)
-  - [Target System Integration Points](../reports/002_target_system_integration_points.md) (2025-11-12)
-  - [Performance Characteristics and Metrics](../reports/003_performance_characteristics_and_metrics.md) (2025-11-12)
 
 ## Overview
 
@@ -253,12 +250,10 @@ dependencies: [1]
   - Keep error handling decision tree inline (when to retry vs fail-fast)
   - Add link to error-codes-catalog.md
 - [ ] Verify coordinate error fix documentation integration
-  - Check if Spec 658/684 coordinate error fix reports should be consolidated into coordinate-command-guide.md
-  - Verify coordinate-command-guide.md verification checkpoint section reflects Spec 684 enhancements
+  - Check if reports/001_coordinate_error_patterns.md should be consolidated into coordinate-command-guide.md
+  - Verify coordinate-command-guide.md verification checkpoint section is current
   - Add cross-reference from error-handling-reference.md to coordinate verification enhancement example
   - Ensure coordinate enhanced diagnostic format is documented as error standard implementation
-  - Document Spec 678 LLM classification error modes (timeout, JSON parse, low confidence, network errors)
-  - Include batch verification mode from verification-helpers.sh as implementation example
 
 **Testing**:
 ```bash
@@ -530,9 +525,9 @@ dependencies: [5]
   - Search all 94 coordinate/orchestration docs for links to archive/ directory
   - Create list of stale references (active doc → archived doc)
   - Determine if reference should be updated (point to new doc) or removed (content obsolete)
-  - Verify coordinate error fix reports (Specs 658, 678, 684) are not candidates for archiving (still relevant)
+  - Verify coordinate error fix reports (Spec 658) are not candidates for archiving (still relevant)
   - Check if coordinate error patterns analysis should be consolidated into coordinate-command-guide.md
-  - Ensure coordinate fix research reports (Specs 658, 678, 684) are properly cross-referenced in error-handling-reference.md
+  - Ensure coordinate fix research reports are properly cross-referenced or archived
 - [ ] Update stale references in active docs
   - For each stale reference found, either:
     - Update to point to new equivalent documentation
@@ -813,22 +808,6 @@ None - all work is documentation-only
   - Updated Phase 6 archive audit to verify coordinate fix reports are properly cross-referenced or archived
 - **Rationale**: Coordinate error fixes (Spec 658) completed 2025-11-11 provide concrete implementation examples of error handling best practices that should be documented in Phase 2. No conflicts detected; all 7 phases remain valid and essential. Changes ensure coordinate error fix documentation is properly integrated into main documentation ecosystem.
 - **Backup**: /home/benjamin/.config/.claude/specs/656_docs_in_order_to_identify_any_gaps_or_redundancy/plans/backups/001_documentation_improvement_20251111_120941.md
-
-### Revision 2 - 2025-11-12
-- **Date**: 2025-11-12
-- **Type**: architecture-informed
-- **Research Reports Used**:
-  - /home/benjamin/.config/.claude/specs/656_docs_in_order_to_identify_any_gaps_or_redundancy/reports/001_documentation_improvement_implementation_architecture.md
-  - /home/benjamin/.config/.claude/specs/656_docs_in_order_to_identify_any_gaps_or_redundancy/reports/002_target_system_integration_points.md
-  - /home/benjamin/.config/.claude/specs/656_docs_in_order_to_identify_any_gaps_or_redundancy/reports/003_performance_characteristics_and_metrics.md
-- **Key Changes**:
-  - Updated Phase 2 error handling reference to include Spec 678 LLM classification error modes (timeout, JSON parse, low confidence, network errors)
-  - Added batch verification mode from verification-helpers.sh as implementation example (Spec 684)
-  - Updated Phase 6 archive audit to include Specs 678 and 684 coordinate fix reports alongside Spec 658
-  - Added three new research reports to metadata documenting recent .claude/ refactors
-  - Expanded coordinate error fix verification task to cover Specs 658, 678, and 684
-- **Rationale**: Specs 678 (haiku classification, completed 2025-11-12) and 684 (coordinate error prevention, completed 2025-11-12) provide additional concrete implementation examples of error handling best practices (LLM classification errors, batch verification, workflow scope handling). All 7 phases remain valid and essential. Changes are minimal enhancements ensuring recent coordinate improvements are properly integrated into Phase 2 error handling reference documentation.
-- **Backup**: /home/benjamin/.config/.claude/specs/656_docs_in_order_to_identify_any_gaps_or_redundancy/plans/backups/001_documentation_improvement_20251112_145623.md
 
 ## Notes
 
