@@ -441,6 +441,8 @@ fi
 
 if command -v emit_progress &>/dev/null; then
   emit_progress "1" "State: Research (parallel agent invocation)"
+else
+  echo "PROGRESS: State: Research (parallel agent invocation)"
 fi
 
 # RESEARCH_COMPLEXITY loaded from workflow state (set by sm_init in Phase 0)
