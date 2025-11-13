@@ -764,8 +764,9 @@ reconstruct_array_from_indexed_vars() {
     return 0  # Graceful degradation: empty array
   fi
 
-  # Safe to use indirect expansion now
-  local count="${!count_var_name}"
+  # Use nameref pattern to avoid indirect expansion (bash 4.3+ pattern)
+  local -n count_ref="$count_var_name"
+  local count="$count_ref"
 
   # Validate count is numeric
   if ! [[ "$count" =~ ^[0-9]+$ ]]; then
