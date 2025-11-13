@@ -677,37 +677,29 @@ fi
 # Reconstruct REPORT_PATHS array from state
 reconstruct_report_paths_array
 
-# CRITICAL: Dynamic discovery MUST execute before verification to reconcile agent-created filenames
-# Dynamic Report Path Discovery:
-# Research agents create descriptive filenames (e.g., 001_auth_patterns.md)
-# but workflow-initialization.sh pre-calculates generic names (001_topic1.md).
-# Discover actual created files and update REPORT_PATHS array.
+# Report paths pre-calculated with validated slugs - no discovery needed (Spec 688 Phase 5)
+# Workflow-initialization.sh now generates semantic filenames from LLM-provided slugs
+# (via validate_and_generate_filename_slugs), eliminating the need for post-research
+# filename discovery. Files are created at the exact pre-calculated paths.
+#
+# Verification: Assert that expected report files exist at pre-calculated paths
 REPORTS_DIR="${TOPIC_PATH}/reports"
-DISCOVERY_COUNT=0
+VERIFICATION_FAILED=0
 if [ -d "$REPORTS_DIR" ]; then
-  # Find all report files matching pattern NNN_*.md (sorted by number)
-  DISCOVERED_REPORTS=()
-  # Use REPORT_PATHS_COUNT (pre-allocated count) not RESEARCH_COMPLEXITY (may be stale/recalculated)
-  for i in $(seq 1 $REPORT_PATHS_COUNT); do
-    # Find file matching 00N_*.md pattern
-    PATTERN=$(printf '%03d' $i)
-    FOUND_FILE=$(find "$REPORTS_DIR" -maxdepth 1 -name "${PATTERN}_*.md" -type f | head -1)
-
-    if [ -n "$FOUND_FILE" ]; then
-      DISCOVERED_REPORTS+=("$FOUND_FILE")
-      DISCOVERY_COUNT=$((DISCOVERY_COUNT + 1))
-    else
-      # Keep original generic path if no file discovered
-      DISCOVERED_REPORTS+=("${REPORT_PATHS[$i-1]}")
+  # Verify each expected report file exists
+  for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
+    EXPECTED_PATH="${!REPORT_PATH_$i}"
+    if [ ! -f "$EXPECTED_PATH" ]; then
+      echo "WARNING: Expected report file not found: $EXPECTED_PATH" >&2
+      VERIFICATION_FAILED=$((VERIFICATION_FAILED + 1))
     fi
   done
 
-  # Update REPORT_PATHS with discovered paths
-  REPORT_PATHS=("${DISCOVERED_REPORTS[@]}")
-
-  # Diagnostic output: show path discovery results
-  echo "Dynamic path discovery complete: $DISCOVERY_COUNT/$REPORT_PATHS_COUNT files discovered"
-  [ "$DISCOVERY_COUNT" -gt 0 ] && echo "  Updated REPORT_PATHS array with actual agent-created filenames"
+  if [ "$VERIFICATION_FAILED" -eq 0 ]; then
+    echo "Report verification complete: $REPORT_PATHS_COUNT/$REPORT_PATHS_COUNT files found at pre-calculated paths"
+  else
+    echo "Report verification: $((REPORT_PATHS_COUNT - VERIFICATION_FAILED))/$REPORT_PATHS_COUNT files found ($VERIFICATION_FAILED missing)" >&2
+  fi
 fi
 
 emit_progress "1" "Research phase completion - verifying results"
