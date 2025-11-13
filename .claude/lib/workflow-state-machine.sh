@@ -358,6 +358,9 @@ sm_init() {
       RESEARCH_TOPICS_JSON=$(echo "$classification_result" | jq -c '.subtopics // []')
 
       # Export all three classification dimensions
+      # CRITICAL: These values MUST be persisted to state via append_workflow_state()
+      # in the calling command to survive bash block boundaries. Do NOT recalculate
+      # after sm_init() - use state-persisted values only (see coordinate.md bug fix).
       export WORKFLOW_SCOPE
       export RESEARCH_COMPLEXITY
       export RESEARCH_TOPICS_JSON
@@ -370,6 +373,7 @@ sm_init() {
       WORKFLOW_SCOPE=$(classify_workflow_regex "$workflow_desc" 2>/dev/null || echo "full-implementation")
       RESEARCH_COMPLEXITY=2  # Default moderate complexity
       RESEARCH_TOPICS_JSON='["Topic 1", "Topic 2"]'
+      # CRITICAL: Fallback values must also be persisted to state (see above comment)
       export WORKFLOW_SCOPE
       export RESEARCH_COMPLEXITY
       export RESEARCH_TOPICS_JSON
@@ -380,6 +384,7 @@ sm_init() {
     WORKFLOW_SCOPE="full-implementation"
     RESEARCH_COMPLEXITY=2
     RESEARCH_TOPICS_JSON='["Topic 1", "Topic 2"]'
+    # CRITICAL: Fallback values must also be persisted to state (see above comment)
     export WORKFLOW_SCOPE
     export RESEARCH_COMPLEXITY
     export RESEARCH_TOPICS_JSON
