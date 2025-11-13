@@ -113,6 +113,36 @@ classify_workflow_llm_comprehensive() {
     return 1
   fi
 
+  # TEST MODE: Return canned response for unit testing (avoids real LLM API calls)
+  # This follows bash testing best practices: mock at function level using environment variables
+  if [ "${WORKFLOW_CLASSIFICATION_TEST_MODE:-0}" = "1" ]; then
+    # Return realistic fixture that passes validation
+    # Default to debug-only workflow (complexity=2) for simple test cases
+    cat <<'EOF'
+{
+  "workflow_type": "debug-only",
+  "confidence": 0.95,
+  "research_complexity": 2,
+  "research_topics": [
+    {
+      "short_name": "Test failure analysis",
+      "detailed_description": "Analyze failing tests to identify root causes, patterns, and potential fixes.",
+      "filename_slug": "test_failure_analysis",
+      "research_focus": "Key questions: Which tests are failing? What are the common patterns? Areas to investigate: test infrastructure, mocking, dependencies."
+    },
+    {
+      "short_name": "Implementation review",
+      "detailed_description": "Review recent implementation changes to identify potential issues introduced.",
+      "filename_slug": "implementation_review",
+      "research_focus": "Key questions: What changed recently? Are there breaking changes? Areas to investigate: commit history, affected modules."
+    }
+  ],
+  "reasoning": "Test mode: returning canned response for unit testing"
+}
+EOF
+    return 0
+  fi
+
   # Build LLM classifier input for comprehensive classification
   local llm_input
   if ! llm_input=$(build_llm_classifier_input "$workflow_description" "comprehensive"); then
@@ -123,7 +153,7 @@ classify_workflow_llm_comprehensive() {
   # Invoke LLM classifier with timeout
   local llm_output
   if ! llm_output=$(invoke_llm_classifier "$llm_input"); then
-    log_classification_error "classify_workflow_llm_comprehensive" "LLM invocation failed or timed out"
+    handle_llm_classification_failure "timeout" "LLM invocation failed or timed out" "$workflow_description"
     return 1
   fi
 
@@ -479,7 +509,7 @@ parse_llm_classifier_response() {
 # handle_llm_classification_failure - Structured error handling for LLM classification failures
 # Provides fail-fast error handling with clear context and actionable suggestions
 # Args:
-#   $1: error_type - Type of LLM error (timeout, api_error, low_confidence, parse_error, invalid_mode)
+#   $1: error_type - Type of LLM error (timeout, api_error, low_confidence, parse_error, invalid_mode, network)
 #   $2: error_message - Original error message from LLM classifier
 #   $3: workflow_description - Workflow description that failed classification
 # Returns:
@@ -511,6 +541,11 @@ handle_llm_classification_failure() {
       ;;
     api_error|"$ERROR_TYPE_LLM_API_ERROR")
       echo "  Suggestion: Check network connection and API availability" >&2
+      echo "  Alternative: Use regex-only mode for offline development (export WORKFLOW_CLASSIFICATION_MODE=regex-only)" >&2
+      ;;
+    network|"$ERROR_TYPE_NETWORK")
+      echo "  Suggestion: Check network connectivity (ping, DNS resolution, firewall settings)" >&2
+      echo "  Details: LLM classification requires internet access to reach API endpoints" >&2
       echo "  Alternative: Use regex-only mode for offline development (export WORKFLOW_CLASSIFICATION_MODE=regex-only)" >&2
       ;;
     low_confidence|"$ERROR_TYPE_LLM_LOW_CONFIDENCE")

@@ -348,9 +348,12 @@ sm_init() {
     source "$SCRIPT_DIR/workflow-scope-detection.sh"
 
     # Get comprehensive classification (workflow_type, research_complexity, subtopics)
-    # Preserve stderr output for actionable error messages (Spec 700 Phase 5)
+    # Capture stderr to temp file for error visibility (Spec 704 Phase 1)
+    local classification_stderr_file="${HOME}/.claude/tmp/classification_stderr_$$.tmp"
+    mkdir -p "${HOME}/.claude/tmp"
+
     local classification_result
-    if classification_result=$(classify_workflow_comprehensive "$workflow_desc" 2>&1); then
+    if classification_result=$(classify_workflow_comprehensive "$workflow_desc" 2>"$classification_stderr_file"); then
       # Parse JSON response
       WORKFLOW_SCOPE=$(echo "$classification_result" | jq -r '.workflow_type // "full-implementation"')
       RESEARCH_COMPLEXITY=$(echo "$classification_result" | jq -r '.research_complexity // 2')
@@ -368,7 +371,17 @@ sm_init() {
 
       # Log successful comprehensive classification
       echo "Comprehensive classification: scope=$WORKFLOW_SCOPE, complexity=$RESEARCH_COMPLEXITY, topics=$(echo "$RESEARCH_TOPICS_JSON" | jq -r 'length')" >&2
+
+      # Cleanup stderr temp file on success
+      rm -f "$classification_stderr_file"
     else
+      # Display captured stderr messages for debugging (Spec 704 Phase 1)
+      if [ -s "$classification_stderr_file" ]; then
+        echo "Classification Error Details:" >&2
+        cat "$classification_stderr_file" >&2
+        echo "" >&2
+      fi
+
       # Fail-fast: No automatic fallback (clean-break approach from Spec 688 Phase 3)
       echo "CRITICAL ERROR: Comprehensive classification failed" >&2
       echo "  Workflow Description: $workflow_desc" >&2
@@ -380,6 +393,9 @@ sm_init() {
       echo "  3. Use offline mode: export WORKFLOW_CLASSIFICATION_MODE=regex-only" >&2
       echo "  4. Check API credentials if using external classification service" >&2
       echo "" >&2
+
+      # Cleanup stderr temp file on failure
+      rm -f "$classification_stderr_file"
       return 1
     fi
   else
