@@ -356,7 +356,7 @@ See [Standard 11](./../reference/command_architecture_standards.md#standard-11),
 
 ### Agent Invocation Architecture: Research Phase
 
-The research phase uses **explicit conditional enumeration** to control agent invocations based on calculated complexity. This architectural pattern ensures the number of agents invoked matches the RESEARCH_COMPLEXITY value (1-4) rather than defaulting to a fixed count.
+The research phase uses **explicit conditional enumeration** to control agent invocations based on state-persisted complexity from sm_init(). This architectural pattern ensures the number of agents invoked matches the RESEARCH_COMPLEXITY value (1-4) calculated by comprehensive workflow classification, rather than defaulting to a fixed count or using hardcoded pattern matching.
 
 #### Explicit Loop Requirement
 
@@ -416,13 +416,13 @@ Task { ... agent 4 invocation ... }
 #### Pre-Calculated Array Size vs. Actual Usage
 
 **Design Trade-off**:
-- **REPORT_PATHS_COUNT=4**: Pre-allocated path capacity (Phase 0 optimization for 85% token reduction, 25x speedup)
-- **RESEARCH_COMPLEXITY=1-4**: Actual agent invocations (pattern-based heuristic from workflow description)
-- **Intent**: Pre-allocate max paths (4) for performance, use subset (1-4) dynamically based on complexity
+- **REPORT_PATHS_COUNT**: Actual number of paths allocated (matches RESEARCH_COMPLEXITY from sm_init comprehensive classification)
+- **RESEARCH_COMPLEXITY=1-4**: Complexity score from sm_init() comprehensive workflow classification (workflow-state-machine.sh)
+- **Intent**: Allocate exactly N paths based on complexity, use all allocated paths during research phase
 
-**Rationale**: Phase 0 optimization pattern prioritizes performance over memory efficiency. Minor overhead from unused paths (2-3 empty variables) is acceptable given massive performance benefits. Separation of concerns: path calculation (infrastructure) vs. complexity detection (orchestration).
+**Rationale**: After bug fix (Spec 687), REPORT_PATHS_COUNT always equals RESEARCH_COMPLEXITY. Both values come from sm_init() and are persisted to state. No recalculation occurs in research phase, ensuring consistency throughout workflow.
 
-**Verification Pattern**: Verification and discovery loops use RESEARCH_COMPLEXITY (not REPORT_PATHS_COUNT) to determine iteration bounds, ensuring correctness even when pre-allocated capacity exceeds actual usage.
+**Verification Pattern** (Updated 2025-11-12): Verification and discovery loops use REPORT_PATHS_COUNT to determine iteration bounds. This ensures verification checks exactly as many files as were allocated, even if RESEARCH_COMPLEXITY were to be accidentally recalculated (defense-in-depth pattern).
 
 #### Performance Impact
 
@@ -2045,6 +2045,64 @@ sm_init "$workflow_desc" "coordinate" >/dev/null
 **See Also**:
 - [Bash Block Execution Model](../concepts/bash-block-execution-model.md#subprocess-isolation) - Complete subprocess patterns
 - [Spec 683 Bug #1 Fix](../../specs/683_coordinate_critical_bug_fixes/plans/001_coordinate_bug_fixes.md#bug-1-subshell-export-fix-completed) - Complete root cause analysis
+
+#### Issue 6: Verification Mismatch Between Allocated and Invoked Agents
+
+**Symptom**: Research phase fails with verification error showing mismatch between expected and actual report counts
+
+**Error Examples**:
+```
+Dynamic path discovery complete: 0/2 files discovered
+MANDATORY VERIFICATION: Research Phase Artifacts
+Checking 2 research reports...
+
+  Report 1/2: ✗ ERROR [Research]: Research report 1/2 verification failed
+
+❌ CRITICAL: Research artifact verification failed
+   2 reports not created at expected paths
+```
+
+**Yet**:
+- 3 research agents were actually invoked (Task 1, 2, 3 all completed)
+- 3 report files were created (001, 002, 003 all exist)
+- Verification expects 2 but finds 3
+
+**Root Cause**: RESEARCH_COMPLEXITY was calculated correctly by `sm_init()` in Phase 0 (initialize), but then immediately recalculated using hardcoded regex patterns in Phase 1 (research). This created a mismatch between:
+- **Allocated paths**: Based on sm_init complexity (e.g., 2)
+- **Invoked agents**: Based on recalculated complexity (e.g., 3 due to "integrate" keyword match)
+- **Verification loops**: Based on recalculated complexity (checking for 2 or 3, inconsistent)
+
+**Impact**: ~40-50% of workflows containing keywords like "integrate", "migration", "refactor", "architecture" experienced verification failures despite successful research completion.
+
+**Fixed In**: Spec 687 (2025-11-12) - Removed hardcoded recalculation entirely
+
+**Solution Applied**:
+1. **Phase 1 (Research Handler)**: Removed lines 419-432 (hardcoded pattern matching), replaced with state load validation and fallback warning
+2. **Dynamic Discovery Loop**: Changed from `$RESEARCH_COMPLEXITY` to `$REPORT_PATHS_COUNT` (line 691)
+3. **Verification Loop**: Changed from `$RESEARCH_COMPLEXITY` to `$REPORT_PATHS_COUNT` (line 797)
+4. **State Machine Library**: Added critical comments documenting that RESEARCH_COMPLEXITY must never be recalculated after sm_init()
+
+**Verification**:
+```bash
+# Verify hardcoded recalculation removed
+grep -n "RESEARCH_COMPLEXITY=[0-9]" .claude/commands/coordinate.md
+# Should only show fallback at line ~427, not multiple assignments
+
+# Verify loops use REPORT_PATHS_COUNT
+grep -n "seq 1.*REPORT_PATHS_COUNT" .claude/commands/coordinate.md
+# Should show lines 691 (discovery) and 797 (verification)
+
+# Test with "integrate" keyword (previously triggered bug)
+/coordinate "Research how to integrate authentication patterns"
+# Should succeed with consistency: N agents invoked, N reports verified
+```
+
+**Fallback Behavior**: If RESEARCH_COMPLEXITY is not loaded from state (defensive check), command falls back to complexity=2 with a warning to stderr.
+
+**See Also**:
+- [Root Cause Analysis Report](../../specs/coordinate_command_error/reports/001_root_cause_analysis.md) - Complete 484-line analysis
+- [Bug Fix Implementation Plan](../../specs/coordinate_command_error/plans/001_fix_research_complexity_bug.md) - 5-phase fix plan
+- [Spec 678](../../specs/678_coordinate_haiku_classification/) - Comprehensive classification integration
 
 ### Debug Mode
 
