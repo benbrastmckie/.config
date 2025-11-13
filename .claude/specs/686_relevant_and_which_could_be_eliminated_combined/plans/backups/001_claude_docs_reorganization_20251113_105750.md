@@ -18,8 +18,6 @@
 
 The .claude/docs/ directory contains 128 markdown files (2.9MB) following the Diataxis framework. Research reveals well-organized architecture documentation but significant opportunities for improvement through consolidation, elimination of redirect stubs, archive pruning, and enhanced navigation. This plan implements a systematic reorganization achieving 15-20% size reduction while maintaining all production-critical content.
 
-**Integration with Spec 688**: Phase 7 of this plan integrates the uncompleted documentation tasks from Spec 688 (Fallback Removal and LLM Enhancements). Spec 688 completed 6 of 7 phases implementing a clean-break from hybrid classification mode to a 2-mode system (llm-only/regex-only), but Phase 7 documentation updates were not completed. Those tasks are now incorporated into this reorganization plan.
-
 **Key Goals**:
 1. Eliminate redirect stub files and archived duplicates (7 files)
 2. Consolidate duplicate content (development-workflow, orchestration, testing)
@@ -28,7 +26,6 @@ The .claude/docs/ directory contains 128 markdown files (2.9MB) following the Di
 5. Improve navigation with enhanced quick-reference system
 6. Add comprehensive TOCs to large files (6 files > 2,000 lines)
 7. Establish automated validation testing
-8. **Complete Spec 688 documentation** (enhanced topic generation guide, workflow classification guide, 2-mode system updates)
 
 ## Research Summary
 
@@ -55,7 +52,6 @@ No automated testing for link health, cross-references, or Diataxis compliance. 
 
 ## Success Criteria
 
-**Documentation Reorganization (Original Spec 686 Goals)**:
 - [ ] 7 redirect/duplicate files eliminated from active documentation
 - [ ] 5 obsolete archive files moved to git history only
 - [ ] development-workflow.md consolidation complete (single authoritative source)
@@ -68,15 +64,6 @@ No automated testing for link health, cross-references, or Diataxis compliance. 
 - [ ] Automated validation test suite operational
 - [ ] 15-20% size reduction achieved (2.9MB → 2.3-2.5MB)
 - [ ] All changes maintain backward compatibility for production references
-
-**Spec 688 Documentation Integration (Phase 7 Additional Goals)**:
-- [ ] enhanced-topic-generation-guide.md created documenting research_topics structure
-- [ ] workflow-classification-guide.md created documenting 2-mode system
-- [ ] llm-classification-pattern.md updated to remove hybrid mode (clean-break)
-- [ ] CLAUDE.md hierarchical agent architecture section updated for 2-mode system
-- [ ] CHANGELOG.md updated with Spec 688 breaking changes
-- [ ] All hybrid mode references removed from existing documentation
-- [ ] Zero broken links in new Spec 688 documentation files
 
 ## Technical Design
 
@@ -422,48 +409,14 @@ After completing the above tasks:
 - [ ] Checkpoint saved (large files list, enhanced README)
 - [ ] Update this plan file with phase completion status
 
-### Phase 7: Automated Validation Testing and Workflow Classification Documentation (Spec 688 Integration)
+### Phase 7: Automated Validation Testing and Final Verification
 dependencies: [6]
 
-**Objective**: Establish automated validation suite, complete Spec 688 documentation tasks, and verify all success criteria met
+**Objective**: Establish automated validation suite and verify all success criteria met
 
 **Complexity**: High
 
-**Note**: This phase integrates Phase 7 documentation tasks from Spec 688 (LLM classification enhancements) that were not completed during that implementation.
-
 **Tasks**:
-
-**7A: Workflow Classification Documentation (Spec 688 Phase 7 Integration)**
-- [ ] **Update llm-classification-pattern.md for 2-mode system**:
-  - [ ] Delete hybrid mode from configuration table (clean-break)
-  - [ ] Update default mode to `llm-only` (no hybrid option)
-  - [ ] Simplify valid modes: llm-only (default), regex-only (offline only)
-  - [ ] Add note: "hybrid mode removed in clean-break update"
-  - [ ] Add fail-fast behavior documentation (no automatic fallback to regex)
-- [ ] **Create enhanced-topic-generation-guide.md** documenting new research_topics structure:
-  - [ ] Overview: enhanced response structure (short_name, detailed_description, filename_slug, research_focus)
-  - [ ] LLM prompt instructions for generating detailed topics
-  - [ ] Three-tier filename validation (LLM slug → sanitize → generic)
-  - [ ] Agent prompt streamlining: how detailed_description and research_focus simplify agent context
-  - [ ] Examples: before/after agent prompts
-- [ ] **Create workflow-classification-guide.md** (replaces migration guide):
-  - [ ] 2-mode system overview (llm-only, regex-only)
-  - [ ] When to use llm-only (default, online development)
-  - [ ] When to use regex-only (offline, testing, LLM unavailable)
-  - [ ] Error handling: what to do when LLM fails
-  - [ ] Configuration examples
-  - [ ] **Remove**: Hybrid mode migration, rollback to hybrid, backwards compatibility
-- [ ] **Update CLAUDE.md hierarchical agent architecture section**:
-  - [ ] Note LLM-only default (no hybrid)
-  - [ ] Document enhanced topic generation (detailed descriptions + filename slugs)
-  - [ ] Update configuration examples (remove hybrid references)
-- [ ] **Add CHANGELOG.md entry for breaking changes**:
-  - [ ] "BREAKING: Hybrid classification mode removed (clean-break)"
-  - [ ] "BREAKING: Automatic regex fallback removed from llm-only mode"
-  - [ ] "ENHANCEMENT: LLM generates detailed topic descriptions with filename slugs"
-- [ ] **Remove all hybrid mode references** from existing documentation (fail-fast policy docs, troubleshooting guides)
-
-**7B: Automated Validation Testing**
 - [ ] Create .claude/tests/test_docs_validation.sh: Implement 10 validation tests from research report
 - [ ] Test 1 - Full link validation: `bash /home/benjamin/.config/.claude/scripts/validate-links.sh` (zero errors)
 - [ ] Test 2 - Cross-reference validation: Verify all "hierarchical agent" mentions link to concepts/hierarchical_agents.md
@@ -476,29 +429,18 @@ dependencies: [6]
 - [ ] Test 9 - Executable/documentation separation validation: Verify all command guides have corresponding executables
 - [ ] Test 10 - Cross-category reference balance: Measure outbound link percentages per category
 - [ ] Run complete validation suite: `bash /home/benjamin/.config/.claude/tests/test_docs_validation.sh > /tmp/validation-results.txt`
-
-**7C: Final Verification**
 - [ ] Measure final metrics: File count, total size, archive size, broken links, TODO count
 - [ ] Compare against baseline: Verify 15-20% size reduction achieved, 10% file count reduction
 - [ ] Update CLAUDE.md if needed: Add reference to new orchestration-reference-consolidated.md
-- [ ] Verify all Spec 688 documentation files created and integrated
-- [ ] Run link validation on new workflow classification documentation
-- [ ] Document all changes in .claude/docs/REORGANIZATION-SUMMARY.md: List eliminated files, consolidations, improvements, Spec 688 integration
+- [ ] Document all changes in .claude/docs/REORGANIZATION-SUMMARY.md: List eliminated files, consolidations, improvements
 
 **Testing**:
 ```bash
-# 7A: Verify workflow classification documentation updates
-test -f .claude/docs/guides/enhanced-topic-generation-guide.md && echo "✓ Enhanced topic generation guide created"
-test -f .claude/docs/guides/workflow-classification-guide.md && echo "✓ Workflow classification guide created"
-grep -q "llm-only.*default" .claude/docs/concepts/patterns/llm-classification-pattern.md && echo "✓ LLM pattern updated for 2-mode system"
-! grep -q "hybrid.*mode" .claude/docs/concepts/patterns/llm-classification-pattern.md && echo "✓ Hybrid mode references removed"
-grep -q "BREAKING.*Hybrid classification mode removed" CHANGELOG.md && echo "✓ CHANGELOG updated with Spec 688 changes"
-
-# 7B: Verify all 10 validation tests passing
+# Verify all 10 tests passing
 TEST_PASS_COUNT=$(grep -c "✓" /tmp/validation-results.txt)
 [ "$TEST_PASS_COUNT" -ge 10 ] && echo "✓ All validation tests passing" || echo "✗ Only $TEST_PASS_COUNT/10 tests passing"
 
-# 7C: Verify size reduction achieved
+# Verify size reduction achieved
 INITIAL_SIZE=2900  # KB (baseline)
 FINAL_SIZE=$(du -sm /home/benjamin/.config/.claude/docs/ | awk '{print $1}')
 REDUCTION_PCT=$(echo "scale=1; (($INITIAL_SIZE - $FINAL_SIZE) / $INITIAL_SIZE) * 100" | bc)
@@ -512,13 +454,9 @@ echo "File count reduction: $COUNT_REDUCTION_PCT% (target: 10%)"
 
 # Verify zero broken links
 bash /home/benjamin/.config/.claude/scripts/validate-links.sh | grep -q "ERROR" && echo "✗ Broken links remain" || echo "✓ Zero broken links"
-
-# Verify Spec 688 integration complete
-bash /home/benjamin/.config/.claude/scripts/validate-links-quick.sh .claude/docs/guides/enhanced-topic-generation-guide.md
-bash /home/benjamin/.config/.claude/scripts/validate-links-quick.sh .claude/docs/guides/workflow-classification-guide.md
 ```
 
-**Expected Duration**: 6-8 hours (increased from 4-5 hours due to Spec 688 integration tasks)
+**Expected Duration**: 4-5 hours
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -528,12 +466,9 @@ After completing the above tasks:
 
 **Phase 7 Completion Requirements**:
 - [ ] All phase tasks marked [x]
-- [ ] Spec 688 documentation files created (enhanced-topic-generation-guide.md, workflow-classification-guide.md)
-- [ ] LLM classification pattern updated for 2-mode system
-- [ ] CHANGELOG.md updated with Spec 688 breaking changes
 - [ ] Tests passing (all 10 validation tests pass, size/count reduction targets met, zero broken links)
-- [ ] Git commit created: `feat(686): complete Phase 7 - Validation Testing and Spec 688 Documentation Integration`
-- [ ] Checkpoint saved (validation results, final metrics, Spec 688 integration verification)
+- [ ] Git commit created: `feat(686): complete Phase 7 - Automated Validation Testing and Final Verification`
+- [ ] Checkpoint saved (validation results, final metrics)
 - [ ] Update this plan file with phase completion status
 
 ## Testing Strategy
@@ -646,31 +581,3 @@ This plan implements findings from:
 **Backward Compatibility**: All CLAUDE.md references and command guide paths preserved. Only internal documentation structure changes.
 
 **Expansion Hint**: Complexity score of 87.5 suggests considering `/expand-phase` for Phase 4 (content consolidation) and Phase 7 (validation testing) during implementation if task lists grow beyond 10 tasks.
-
----
-
-## Revision History
-
-### Revision 1 - 2025-11-13
-- **Date**: 2025-11-13
-- **Type**: Spec 688 integration
-- **Trigger**: Implementation of Spec 688 (Fallback Removal and LLM Enhancements) completed Phases 1-6 but left Phase 7 (documentation) incomplete
-- **Research Reports Referenced**:
-  - [Spec 688 Implementation Plan](/home/benjamin/.config/.claude/specs/688_687_how_exactly_workflow_identified_coordinate/plans/001_fallback_removal_llm_enhancements.md)
-- **Key Changes**:
-  - **Phase 7 expanded** to include Spec 688 Phase 7 documentation tasks (previously incomplete)
-  - **Added Section 7A**: Workflow Classification Documentation (Spec 688 integration)
-    - Update llm-classification-pattern.md for 2-mode system (remove hybrid mode)
-    - Create enhanced-topic-generation-guide.md (documents new research_topics structure)
-    - Create workflow-classification-guide.md (2-mode system guide)
-    - Update CLAUDE.md hierarchical agent architecture section
-    - Add CHANGELOG.md entries for breaking changes
-    - Remove all hybrid mode references from existing docs
-  - **Reorganized Phase 7** into 3 subsections: 7A (Spec 688 docs), 7B (validation testing), 7C (final verification)
-  - **Updated testing section** to verify Spec 688 documentation files created and integrated
-  - **Increased Phase 7 duration** from 4-5 hours to 6-8 hours due to additional Spec 688 tasks
-  - **Updated Success Criteria** to include 7 Spec 688 documentation goals
-  - **Updated Overview** to explain Spec 688 integration context
-- **Rationale**: Spec 688 implemented clean-break from hybrid mode to 2-mode system (llm-only/regex-only) with enhanced research_topics structure, but documentation updates were deferred. This reorganization plan is the natural place to complete those documentation tasks alongside the broader .claude/docs/ reorganization.
-- **Backward Compatibility**: All original Spec 686 goals preserved, Spec 688 tasks added as extensions to Phase 7
-- **Backup**: /home/benjamin/.config/.claude/specs/686_relevant_and_which_could_be_eliminated_combined/plans/backups/001_claude_docs_reorganization_20251113_105745.md
