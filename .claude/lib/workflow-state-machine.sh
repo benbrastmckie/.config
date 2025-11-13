@@ -348,8 +348,9 @@ sm_init() {
     source "$SCRIPT_DIR/workflow-scope-detection.sh"
 
     # Get comprehensive classification (workflow_type, research_complexity, subtopics)
+    # Preserve stderr output for actionable error messages (Spec 700 Phase 5)
     local classification_result
-    if classification_result=$(classify_workflow_comprehensive "$workflow_desc" 2>/dev/null); then
+    if classification_result=$(classify_workflow_comprehensive "$workflow_desc" 2>&1); then
       # Parse JSON response
       WORKFLOW_SCOPE=$(echo "$classification_result" | jq -r '.workflow_type // "full-implementation"')
       RESEARCH_COMPLEXITY=$(echo "$classification_result" | jq -r '.research_complexity // 2')
