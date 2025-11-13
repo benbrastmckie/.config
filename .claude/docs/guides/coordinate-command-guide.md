@@ -1517,7 +1517,56 @@ rm -f "$COORDINATE_STATE_ID_FILE" "$STATE_FILE"
 
 ---
 
-#### Issue 2: Agent Failed to Create Expected File
+#### Issue 4: Classification Failures
+
+**Symptom**: Error message "CRITICAL ERROR: Comprehensive classification failed"
+
+**Root Cause**: LLM-based classification requires network access and may fail due to:
+- No network connection
+- API credentials not set
+- Classification timeout (default: 30s)
+- API service unavailable
+
+**Solution**: Use offline regex-only mode for development:
+
+```bash
+# Set classification mode to regex-only (no network required)
+export WORKFLOW_CLASSIFICATION_MODE=regex-only
+
+# Run coordinate command
+/coordinate "research authentication patterns"
+```
+
+**Alternative Solutions**:
+
+1. **Increase timeout** (for slow connections):
+   ```bash
+   export WORKFLOW_CLASSIFICATION_TIMEOUT=60
+   ```
+
+2. **Check API credentials** (if using external service):
+   ```bash
+   echo $ANTHROPIC_API_KEY  # Should show key, not empty
+   ```
+
+3. **Check network connectivity**:
+   ```bash
+   curl -I https://api.anthropic.com  # Should return 200 OK
+   ```
+
+**Prevention**:
+
+Set default mode in shell profile for offline development:
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+export WORKFLOW_CLASSIFICATION_MODE=regex-only
+```
+
+**Related**: See [LLM Classification Pattern](../concepts/patterns/llm-classification-pattern.md) for complete classification mode documentation.
+
+---
+
+#### Issue 5: Agent Failed to Create Expected File
 
 **Symptoms**:
 - Error message: "Agent failed to create expected file"

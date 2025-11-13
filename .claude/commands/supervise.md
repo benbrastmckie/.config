@@ -75,7 +75,17 @@ trap "rm -f '$STATE_FILE'" EXIT
 append_workflow_state "WORKFLOW_ID" "supervise_$$"
 
 # Initialize state machine
-sm_init "$WORKFLOW_DESCRIPTION" "supervise"
+if ! sm_init "$WORKFLOW_DESCRIPTION" "supervise" 2>&1; then
+  handle_state_error "State machine initialization failed (workflow classification error). Check network connection or use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline development." 1
+fi
+
+# VERIFICATION CHECKPOINT: Verify critical variables exported by sm_init
+# Standard 0 (Execution Enforcement): Critical state initialization must be verified
+if [ -z "${WORKFLOW_SCOPE:-}" ]; then
+  handle_state_error "CRITICAL: WORKFLOW_SCOPE not exported by sm_init despite successful return code (library bug)" 1
+fi
+
+echo "✓ State machine variables verified: WORKFLOW_SCOPE=$WORKFLOW_SCOPE"
 
 append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
 append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
