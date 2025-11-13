@@ -82,7 +82,7 @@ classify_workflow_llm() {
 }
 
 # classify_workflow_llm_comprehensive - LLM-based comprehensive workflow classification
-# Provides scope, research complexity, and descriptive subtopic names in a single call
+# Provides scope, research complexity, and enhanced research topics with detailed descriptions in a single call
 # Args:
 #   $1: workflow_description - The workflow description to classify
 # Returns:
@@ -93,7 +93,15 @@ classify_workflow_llm() {
 #     "workflow_type": "research-and-plan",
 #     "confidence": 0.95,
 #     "research_complexity": 2,
-#     "subtopics": ["Topic 1 description", "Topic 2 description"],
+#     "research_topics": [
+#       {
+#         "short_name": "Implementation architecture",
+#         "detailed_description": "Analyze current implementation...",
+#         "filename_slug": "implementation_architecture",
+#         "research_focus": "Key questions: How is..."
+#       }
+#     ],
+#     "subtopics": ["Implementation architecture"],  // Backwards compatibility
 #     "reasoning": "..."
 #   }
 classify_workflow_llm_comprehensive() {
@@ -165,7 +173,7 @@ build_llm_classifier_input() {
   # Build JSON with proper escaping
   local json_input
   if [ "$classification_type" = "comprehensive" ]; then
-    # Comprehensive classification: request workflow_type, research_complexity, and subtopics
+    # Comprehensive classification: request workflow_type, research_complexity, and enhanced research_topics
     json_input=$(jq -n \
       --arg desc "$workflow_description" \
       '{
@@ -178,7 +186,7 @@ build_llm_classifier_input() {
           "full-implementation",
           "debug-only"
         ],
-        "instructions": "Analyze the workflow description and provide comprehensive classification. Return a JSON object with: workflow_type (one of valid_scopes), confidence (0.0-1.0), research_complexity (integer 1-4 indicating number of research subtopics needed), subtopics (array of descriptive subtopic names matching complexity count), reasoning (brief explanation). Focus on INTENT, not keywords - e.g., '\''research the research-and-revise workflow'\'' is research-and-plan (intent: learn about workflow type), not research-and-revise (intent: revise a plan). For research_complexity: 1=simple/focused, 2=moderate, 3=complex, 4=highly complex. Subtopics should be descriptive and actionable (not generic '\''Topic N'\'')."
+        "instructions": "Analyze the workflow description and provide comprehensive classification. Return a JSON object with: workflow_type (one of valid_scopes), confidence (0.0-1.0), research_complexity (integer 1-4 indicating number of research subtopics needed), research_topics (array of objects, one per subtopic, each containing: {short_name: string (concise topic name), detailed_description: string (150-250 words providing comprehensive research context about what to investigate and why), filename_slug: string (filesystem-safe lowercase alphanumeric + underscores, max 50 chars, must match ^[a-z0-9_]{1,50}$), research_focus: string (specific questions to answer and areas to investigate)}), reasoning (brief explanation). Focus on INTENT, not keywords - e.g., '\''research the research-and-revise workflow'\'' is research-and-plan (intent: learn about workflow type), not research-and-revise (intent: revise a plan). For research_complexity: 1=simple/focused, 2=moderate, 3=complex, 4=highly complex. The research_topics array length must match research_complexity exactly. Each topic should provide rich context for research agents."
       }')
   else
     # Scope-only classification (backward compatibility)
@@ -289,15 +297,21 @@ parse_llm_classifier_response() {
 
   if [ "$classification_type" = "comprehensive" ]; then
     # Comprehensive classification validation
-    local workflow_type confidence reasoning research_complexity subtopics
+    local workflow_type confidence reasoning research_complexity research_topics
     workflow_type=$(echo "$llm_output" | jq -r '.workflow_type // empty')
     confidence=$(echo "$llm_output" | jq -r '.confidence // empty')
     reasoning=$(echo "$llm_output" | jq -r '.reasoning // empty')
     research_complexity=$(echo "$llm_output" | jq -r '.research_complexity // empty')
-    subtopics=$(echo "$llm_output" | jq -r '.subtopics // empty')
+    research_topics=$(echo "$llm_output" | jq -r '.research_topics // empty')
 
-    if [ -z "$workflow_type" ] || [ -z "$confidence" ] || [ -z "$reasoning" ] || [ -z "$research_complexity" ] || [ -z "$subtopics" ]; then
-      echo "ERROR: parse_llm_classifier_response: missing required fields (workflow_type, confidence, reasoning, research_complexity, subtopics)" >&2
+    if [ -z "$workflow_type" ] || [ -z "$confidence" ] || [ -z "$reasoning" ] || [ -z "$research_complexity" ] || [ -z "$research_topics" ]; then
+      echo "ERROR: parse_llm_classifier_response: missing required fields (workflow_type, confidence, reasoning, research_complexity, research_topics)" >&2
+      return 1
+    fi
+
+    # Validate research_topics is an array
+    if ! echo "$llm_output" | jq -e '.research_topics | type == "array"' >/dev/null 2>&1; then
+      echo "ERROR: parse_llm_classifier_response: research_topics must be an array" >&2
       return 1
     fi
 
@@ -322,13 +336,63 @@ parse_llm_classifier_response() {
       return 1
     fi
 
-    # Validate subtopics array count matches complexity
-    local subtopics_count
-    subtopics_count=$(echo "$llm_output" | jq -r '.subtopics | length')
-    if [ "$subtopics_count" -ne "$research_complexity" ]; then
-      echo "ERROR: parse_llm_classifier_response: subtopics count ($subtopics_count) does not match research_complexity ($research_complexity)" >&2
+    # Validate research_topics array count matches complexity
+    local topics_count
+    topics_count=$(echo "$llm_output" | jq -r '.research_topics | length')
+    if [ "$topics_count" -ne "$research_complexity" ]; then
+      echo "ERROR: parse_llm_classifier_response: research_topics count ($topics_count) does not match research_complexity ($research_complexity)" >&2
       return 1
     fi
+
+    # Validate each topic has required fields
+    local i
+    for ((i=0; i<topics_count; i++)); do
+      local short_name detailed_description filename_slug research_focus
+      short_name=$(echo "$llm_output" | jq -r ".research_topics[$i].short_name // empty")
+      detailed_description=$(echo "$llm_output" | jq -r ".research_topics[$i].detailed_description // empty")
+      filename_slug=$(echo "$llm_output" | jq -r ".research_topics[$i].filename_slug // empty")
+      research_focus=$(echo "$llm_output" | jq -r ".research_topics[$i].research_focus // empty")
+
+      if [ -z "$short_name" ]; then
+        echo "ERROR: parse_llm_classifier_response: research_topics[$i] missing short_name" >&2
+        return 1
+      fi
+
+      if [ -z "$detailed_description" ]; then
+        echo "ERROR: parse_llm_classifier_response: research_topics[$i] missing detailed_description" >&2
+        return 1
+      fi
+
+      if [ -z "$filename_slug" ]; then
+        echo "ERROR: parse_llm_classifier_response: research_topics[$i] missing filename_slug" >&2
+        return 1
+      fi
+
+      if [ -z "$research_focus" ]; then
+        echo "ERROR: parse_llm_classifier_response: research_topics[$i] missing research_focus" >&2
+        return 1
+      fi
+
+      # Validate filename_slug matches regex ^[a-z0-9_]{1,50}$
+      if ! echo "$filename_slug" | grep -Eq '^[a-z0-9_]{1,50}$'; then
+        echo "ERROR: parse_llm_classifier_response: research_topics[$i].filename_slug '$filename_slug' invalid (must match ^[a-z0-9_]{1,50}$)" >&2
+        return 1
+      fi
+
+      # Validate detailed_description length (50-500 characters)
+      local desc_length=${#detailed_description}
+      if [ "$desc_length" -lt 50 ] || [ "$desc_length" -gt 500 ]; then
+        echo "ERROR: parse_llm_classifier_response: research_topics[$i].detailed_description length ($desc_length chars) must be 50-500 characters" >&2
+        return 1
+      fi
+    done
+
+    # Extract short_name values into backwards-compatible subtopics array for existing code
+    local subtopics_json
+    subtopics_json=$(echo "$llm_output" | jq -c '[.research_topics[].short_name]')
+
+    # Merge subtopics into output for backwards compatibility
+    llm_output=$(echo "$llm_output" | jq --argjson subtopics "$subtopics_json" '. + {subtopics: $subtopics}')
 
   else
     # Scope-only validation (backward compatibility)
