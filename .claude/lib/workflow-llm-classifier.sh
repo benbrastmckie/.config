@@ -119,20 +119,28 @@ classify_workflow_llm_comprehensive() {
   # TEST MODE: Return canned response for unit testing (avoids real LLM API calls)
   # This follows bash testing best practices: mock at function level using environment variables
   if [ "${WORKFLOW_CLASSIFICATION_TEST_MODE:-0}" = "1" ]; then
-    # Use detect_workflow_scope() for input-aware classification in test mode
-    # This allows tests to get different workflow types based on their input
-    local detected_type
-    if command -v detect_workflow_scope >/dev/null 2>&1; then
-      detected_type=$(detect_workflow_scope "$workflow_description" 2>/dev/null || echo "research-and-plan")
-    else
-      # Fallback if detect_workflow_scope not available
-      detected_type="debug-only"
+    # Simple keyword-based fixture selection for test mocking
+    # NOTE: This is NOT production classification - just test fixture selection
+    local mock_type="research-and-plan"  # Default
+
+    # Simple keyword matching for realistic test fixtures
+    # Priority order matters
+    if echo "$workflow_description" | grep -qiE "^(debug|fix|troubleshoot)"; then
+      mock_type="debug-only"
+    elif echo "$workflow_description" | grep -qiE "(revise|update|modify).*(plan|implementation)"; then
+      mock_type="research-and-revise"
+    elif echo "$workflow_description" | grep -qiE "(implement|build|execute)"; then
+      mock_type="full-implementation"
+    elif echo "$workflow_description" | grep -qiE "create.*(module|component|feature|system)" && ! echo "$workflow_description" | grep -qiE "plan"; then
+      mock_type="full-implementation"
+    elif echo "$workflow_description" | grep -qiE "^research" && ! echo "$workflow_description" | grep -qiE "(plan|implement|create)"; then
+      mock_type="research-only"
     fi
 
-    # Return realistic fixture with detected workflow type
+    # Return realistic fixture with mock workflow type
     cat <<EOF
 {
-  "workflow_type": "$detected_type",
+  "workflow_type": "$mock_type",
   "confidence": 0.95,
   "research_complexity": 2,
   "research_topics": [
@@ -149,7 +157,7 @@ classify_workflow_llm_comprehensive() {
       "research_focus": "Key questions: What changed recently? Are there breaking changes? Areas to investigate: commit history, affected modules."
     }
   ],
-  "reasoning": "Test mode: using detect_workflow_scope() for input-aware classification"
+  "reasoning": "Test mode: returning mock response based on simple keyword matching for fixture selection"
 }
 EOF
     return 0
