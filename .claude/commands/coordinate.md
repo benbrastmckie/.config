@@ -422,6 +422,12 @@ fi
 
 # Check if we should skip this state (already at terminal)
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -970,6 +976,12 @@ source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging func
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1412,6 +1424,12 @@ source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging func
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1658,6 +1676,12 @@ source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging func
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1785,6 +1809,12 @@ source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging func
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1994,6 +2024,12 @@ source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging func
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0

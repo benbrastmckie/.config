@@ -27,6 +27,7 @@ WORKFLOW_CLASSIFICATION_DEBUG="${WORKFLOW_CLASSIFICATION_DEBUG:-0}"
 # classify_workflow_llm - Main entry point for LLM-based workflow classification
 # Args:
 #   $1: workflow_description - The workflow description to classify
+#   $2: workflow_id - Workflow identifier for semantic filename scoping (optional)
 # Returns:
 #   0: Classification successful (prints JSON to stdout)
 #   1: Classification failed or confidence below threshold
@@ -34,6 +35,7 @@ WORKFLOW_CLASSIFICATION_DEBUG="${WORKFLOW_CLASSIFICATION_DEBUG:-0}"
 #   {"scope": "research-and-plan", "confidence": 0.95, "reasoning": "..."}
 classify_workflow_llm() {
   local workflow_description="$1"
+  local workflow_id="${2:-classify_$(date +%s)}"  # Generate default if not provided
 
   # Input validation
   if [ -z "$workflow_description" ]; then
@@ -48,9 +50,9 @@ classify_workflow_llm() {
     return 1
   fi
 
-  # Invoke LLM classifier with timeout
+  # Invoke LLM classifier with timeout (pass workflow_id for semantic filename scoping)
   local llm_output
-  if ! llm_output=$(invoke_llm_classifier "$llm_input"); then
+  if ! llm_output=$(invoke_llm_classifier "$llm_input" "$workflow_id"); then
     log_classification_error "classify_workflow_llm" "LLM invocation failed or timed out"
     return 1
   fi
@@ -106,6 +108,7 @@ classify_workflow_llm() {
 #   }
 classify_workflow_llm_comprehensive() {
   local workflow_description="$1"
+  local workflow_id="${2:-classify_$(date +%s)}"  # Generate default if not provided
 
   # Input validation
   if [ -z "$workflow_description" ]; then
@@ -150,9 +153,9 @@ EOF
     return 1
   fi
 
-  # Invoke LLM classifier with timeout
+  # Invoke LLM classifier with timeout (pass workflow_id for semantic filename scoping)
   local llm_output
-  if ! llm_output=$(invoke_llm_classifier "$llm_input"); then
+  if ! llm_output=$(invoke_llm_classifier "$llm_input" "$workflow_id"); then
     handle_llm_classification_failure "timeout" "LLM invocation failed or timed out" "$workflow_description"
     return 1
   fi
@@ -272,13 +275,22 @@ check_network_connectivity() {
 # invoke_llm_classifier - Call AI assistant via file-based signaling
 # Args:
 #   $1: llm_input - JSON input for classifier
+#   $2: workflow_id - Workflow identifier for semantic filename scoping (optional, defaults to "default")
 # Returns:
 #   0: Success (prints JSON response to stdout)
 #   1: Error or timeout
+# Files Created:
+#   ${HOME}/.claude/tmp/llm_request_${workflow_id}.json - Request payload
+#   ${HOME}/.claude/tmp/llm_response_${workflow_id}.json - Response from AI
 invoke_llm_classifier() {
   local llm_input="$1"
-  local request_file="/tmp/llm_classification_request_$$.json"
-  local response_file="/tmp/llm_classification_response_$$.json"
+  local workflow_id="${2:-default}"  # Default to "default" if not provided for backward compatibility
+
+  # Use semantic workflow-scoped filenames (Spec 704 Phase 2)
+  # These persist across bash blocks, unlike PID-based names
+  mkdir -p "${HOME}/.claude/tmp"
+  local request_file="${HOME}/.claude/tmp/llm_request_${workflow_id}.json"
+  local response_file="${HOME}/.claude/tmp/llm_response_${workflow_id}.json"
 
   # Pre-flight check: fail fast if network unavailable (Spec 700 Phase 5)
   if ! check_network_connectivity; then
@@ -286,18 +298,19 @@ invoke_llm_classifier() {
     return 1
   fi
 
-  # Cleanup function
+  # Cleanup function (local to this invocation)
   cleanup_temp_files() {
     rm -f "$request_file" "$response_file"
   }
 
-  # Set trap for cleanup
-  trap cleanup_temp_files EXIT
+  # NOTE: EXIT trap removed per bash block execution model (Spec 704 Phase 2)
+  # Cleanup now happens at workflow completion, not bash block exit
+  # Use cleanup_workflow_classification_files() for workflow-scoped cleanup
 
   # Write request file
   echo "$llm_input" > "$request_file"
 
-  # Signal to AI assistant
+  # Signal to AI assistant with semantic file paths
   echo "[LLM_CLASSIFICATION_REQUEST] Please process request at: $request_file → $response_file" >&2
 
   # Wait for response with timeout
@@ -310,15 +323,15 @@ invoke_llm_classifier() {
       response=$(cat "$response_file")
 
       if [ -z "$response" ]; then
-        log_classification_debug "invoke_llm_classifier" "response file empty"
-        cleanup_temp_files
+        log_classification_debug "invoke_llm_classifier" "response file empty at $response_file"
+        # Don't cleanup here - files persist for debugging
         return 1
       fi
 
       local elapsed=$(echo "$count * 0.5" | awk '{print $1}')
       log_classification_debug "invoke_llm_classifier" "response received after ${elapsed}s"
       echo "$response"
-      cleanup_temp_files
+      # Don't cleanup here - files persist until workflow completion
       return 0
     fi
 
@@ -327,8 +340,8 @@ invoke_llm_classifier() {
   done
 
   # Timeout
-  log_classification_error "invoke_llm_classifier" "timeout after ${WORKFLOW_CLASSIFICATION_TIMEOUT}s"
-  cleanup_temp_files
+  log_classification_error "invoke_llm_classifier" "timeout after ${WORKFLOW_CLASSIFICATION_TIMEOUT}s (request: $request_file)"
+  # Don't cleanup here - files persist for debugging
   return 1
 }
 
@@ -617,6 +630,39 @@ log_classification_debug() {
   fi
 }
 
+# ==============================================================================
+# Workflow-Scoped Cleanup (Spec 704 Phase 2)
+# ==============================================================================
+
+# cleanup_workflow_classification_files - Clean up LLM classification temp files for a workflow
+# Args:
+#   $1: workflow_id - Workflow identifier (required)
+# Returns:
+#   0: Cleanup successful
+# Side effects:
+#   Removes request and response files from ${HOME}/.claude/tmp/
+# Usage:
+#   cleanup_workflow_classification_files "$WORKFLOW_ID"
+cleanup_workflow_classification_files() {
+  local workflow_id="$1"
+
+  if [ -z "$workflow_id" ]; then
+    log_classification_error "cleanup_workflow_classification_files" "workflow_id required"
+    return 1
+  fi
+
+  local request_file="${HOME}/.claude/tmp/llm_request_${workflow_id}.json"
+  local response_file="${HOME}/.claude/tmp/llm_response_${workflow_id}.json"
+
+  # Remove files if they exist
+  if [ -f "$request_file" ] || [ -f "$response_file" ]; then
+    rm -f "$request_file" "$response_file"
+    log_classification_debug "cleanup_workflow_classification_files" "removed files for workflow_id=$workflow_id"
+  fi
+
+  return 0
+}
+
 # Export functions for use by other scripts
 export -f classify_workflow_llm
 export -f classify_workflow_llm_comprehensive
@@ -627,3 +673,4 @@ export -f handle_llm_classification_failure
 export -f log_classification_result
 export -f log_classification_error
 export -f log_classification_debug
+export -f cleanup_workflow_classification_files

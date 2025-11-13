@@ -342,6 +342,10 @@ sm_init() {
   WORKFLOW_DESCRIPTION="$workflow_desc"
   COMMAND_NAME="$command_name"
 
+  # Generate workflow ID for semantic filename scoping (Spec 704 Phase 2)
+  # This enables classification files to persist across bash blocks
+  local classification_workflow_id="${command_name}_classify_$(date +%s)"
+
   # Perform comprehensive workflow classification (scope + complexity + subtopics)
   # Source unified workflow scope detection library
   if [ -f "$SCRIPT_DIR/workflow-scope-detection.sh" ]; then
@@ -353,7 +357,7 @@ sm_init() {
     mkdir -p "${HOME}/.claude/tmp"
 
     local classification_result
-    if classification_result=$(classify_workflow_comprehensive "$workflow_desc" 2>"$classification_stderr_file"); then
+    if classification_result=$(classify_workflow_comprehensive "$workflow_desc" "$classification_workflow_id" 2>"$classification_stderr_file"); then
       # Parse JSON response
       WORKFLOW_SCOPE=$(echo "$classification_result" | jq -r '.workflow_type // "full-implementation"')
       RESEARCH_COMPLEXITY=$(echo "$classification_result" | jq -r '.research_complexity // 2')
