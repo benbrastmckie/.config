@@ -140,14 +140,14 @@ else
 fi
 
 # =============================================================================
-# Test 9: Research with Implement Keyword (should be full-implementation)
+# Test 9: Research with Action Keywords (should not be research-only)
 # =============================================================================
-info "Test 9: Research with implement keyword - should be full-implementation"
+info "Test 9: Research with action keywords - should be research-and-plan"
 result=$(detect_workflow_scope "research async patterns and implement solution")
-if [ "$result" = "full-implementation" ]; then
-  pass "Research with implement keyword detected as full-implementation"
+if [ "$result" = "research-and-plan" ]; then
+  pass "Research with action keywords detected as research-and-plan"
 else
-  fail "Research with implement keyword" "full-implementation" "$result"
+  fail "Research with action keywords" "research-and-plan" "$result"
 fi
 
 # =============================================================================
