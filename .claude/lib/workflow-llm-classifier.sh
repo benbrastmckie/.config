@@ -442,6 +442,68 @@ parse_llm_classifier_response() {
   return 0
 }
 
+# ==============================================================================
+# LLM Classification Error Handling (Spec 688 Phase 4)
+# ==============================================================================
+
+# handle_llm_classification_failure - Structured error handling for LLM classification failures
+# Provides fail-fast error handling with clear context and actionable suggestions
+# Args:
+#   $1: error_type - Type of LLM error (timeout, api_error, low_confidence, parse_error, invalid_mode)
+#   $2: error_message - Original error message from LLM classifier
+#   $3: workflow_description - Workflow description that failed classification
+# Returns:
+#   1 (always fails fast)
+# Side effects:
+#   Writes structured error message to stderr
+handle_llm_classification_failure() {
+  local error_type="$1"
+  local error_message="$2"
+  local workflow_description="$3"
+
+  # Load error type constants if error-handling.sh available
+  if [ -f "${CLAUDE_PROJECT_DIR:-.claude}/.claude/lib/error-handling.sh" ]; then
+    source "${CLAUDE_PROJECT_DIR:-.claude}/.claude/lib/error-handling.sh"
+  fi
+
+  # Build structured error message
+  echo "ERROR: LLM classification failed" >&2
+  echo "  Error Type: $error_type" >&2
+  echo "  Error Message: $error_message" >&2
+  echo "  Workflow Description: $workflow_description" >&2
+  echo "" >&2
+
+  # Provide actionable suggestions based on error type
+  case "$error_type" in
+    timeout|"$ERROR_TYPE_LLM_TIMEOUT")
+      echo "  Suggestion: Increase WORKFLOW_CLASSIFICATION_TIMEOUT (current: ${WORKFLOW_CLASSIFICATION_TIMEOUT:-10}s)" >&2
+      echo "  Alternative: Use regex-only mode for offline development (export WORKFLOW_CLASSIFICATION_MODE=regex-only)" >&2
+      ;;
+    api_error|"$ERROR_TYPE_LLM_API_ERROR")
+      echo "  Suggestion: Check network connection and API availability" >&2
+      echo "  Alternative: Use regex-only mode for offline development (export WORKFLOW_CLASSIFICATION_MODE=regex-only)" >&2
+      ;;
+    low_confidence|"$ERROR_TYPE_LLM_LOW_CONFIDENCE")
+      echo "  Suggestion: Rephrase workflow description with more specific keywords" >&2
+      echo "  Example: Instead of 'research stuff', use 'research authentication patterns and security best practices'" >&2
+      ;;
+    parse_error|"$ERROR_TYPE_LLM_PARSE_ERROR")
+      echo "  Suggestion: This is likely a temporary issue. Retry the operation" >&2
+      echo "  Alternative: Use regex-only mode if issue persists" >&2
+      ;;
+    invalid_mode|"$ERROR_TYPE_INVALID_MODE")
+      echo "  Suggestion: Set WORKFLOW_CLASSIFICATION_MODE to 'llm-only' (default, online) or 'regex-only' (offline)" >&2
+      echo "  Note: hybrid mode was removed in clean-break update (Spec 688 Phase 3)" >&2
+      ;;
+    *)
+      echo "  Suggestion: Unknown error type. Check error message above and retry" >&2
+      echo "  Alternative: Use regex-only mode (export WORKFLOW_CLASSIFICATION_MODE=regex-only)" >&2
+      ;;
+  esac
+
+  return 1
+}
+
 # log_classification_result - Structured logging for classification results
 # Args:
 #   $1: result_type - success, low-confidence, error
@@ -496,6 +558,7 @@ export -f classify_workflow_llm_comprehensive
 export -f build_llm_classifier_input
 export -f invoke_llm_classifier
 export -f parse_llm_classifier_response
+export -f handle_llm_classification_failure
 export -f log_classification_result
 export -f log_classification_error
 export -f log_classification_debug

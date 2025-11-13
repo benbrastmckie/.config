@@ -368,26 +368,19 @@ sm_init() {
       # Log successful comprehensive classification
       echo "Comprehensive classification: scope=$WORKFLOW_SCOPE, complexity=$RESEARCH_COMPLEXITY, topics=$(echo "$RESEARCH_TOPICS_JSON" | jq -r 'length')" >&2
     else
-      # Fallback: Use regex-only classification if comprehensive fails
-      echo "WARNING: Comprehensive classification failed, falling back to regex-only mode" >&2
-      WORKFLOW_SCOPE=$(classify_workflow_regex "$workflow_desc" 2>/dev/null || echo "full-implementation")
-      RESEARCH_COMPLEXITY=2  # Default moderate complexity
-      RESEARCH_TOPICS_JSON='["Topic 1", "Topic 2"]'
-      # CRITICAL: Fallback values must also be persisted to state (see above comment)
-      export WORKFLOW_SCOPE
-      export RESEARCH_COMPLEXITY
-      export RESEARCH_TOPICS_JSON
+      # Fail-fast: No automatic fallback (clean-break approach from Spec 688 Phase 3)
+      echo "CRITICAL ERROR: Comprehensive classification failed" >&2
+      echo "  Workflow Description: $workflow_desc" >&2
+      echo "  Suggestion: Check network connection, increase WORKFLOW_CLASSIFICATION_TIMEOUT, or use regex-only mode" >&2
+      echo "  Alternative: Set WORKFLOW_CLASSIFICATION_MODE=regex-only for offline development" >&2
+      return 1
     fi
   else
-    # Fallback: If workflow-scope-detection.sh not available
-    echo "WARNING: workflow-scope-detection.sh not found, using defaults" >&2
-    WORKFLOW_SCOPE="full-implementation"
-    RESEARCH_COMPLEXITY=2
-    RESEARCH_TOPICS_JSON='["Topic 1", "Topic 2"]'
-    # CRITICAL: Fallback values must also be persisted to state (see above comment)
-    export WORKFLOW_SCOPE
-    export RESEARCH_COMPLEXITY
-    export RESEARCH_TOPICS_JSON
+    # Critical error: If workflow-scope-detection.sh not available
+    echo "CRITICAL ERROR: workflow-scope-detection.sh not found" >&2
+    echo "  Expected location: $SCRIPT_DIR/workflow-scope-detection.sh" >&2
+    echo "  Suggestion: Check installation integrity or reinstall .claude/lib/ files" >&2
+    return 1
   fi
 
   # Check if topics are generic (pattern: "Topic N") and replace with descriptive names
