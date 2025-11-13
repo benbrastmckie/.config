@@ -84,8 +84,6 @@ If you are interested in using NixOS, you can find my [.dotfiles](https://github
 
 ## Key Features
 
-![Screenshot of the configuration](images/screenshot_cite.png)
-
 ### Advanced AI Capabilities
 
 - **Multi-Provider Support** - Switch between Claude, GPT, and Gemini on-the-fly
