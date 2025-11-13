@@ -238,7 +238,7 @@ echo "test workflow" | /coordinate  # Should not produce "!: command not found"
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
-### Phase 3: Fix sm_init Export Persistence
+### Phase 3: Fix sm_init Export Persistence [COMPLETED]
 dependencies: [1]
 
 **Objective**: Persist RESEARCH_COMPLEXITY and RESEARCH_TOPICS_JSON to workflow state
@@ -246,14 +246,14 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Add append_workflow_state calls after sm_init verification (file: .claude/commands/coordinate.md:185-210)
-- [ ] Add persistence for RESEARCH_COMPLEXITY (line from Report 2:240)
-- [ ] Add persistence for RESEARCH_TOPICS_JSON (line from Report 2:241)
-- [ ] Update verification error messages to remove "library bug" label (lines from Report 2:262-277)
-- [ ] Move verification to research block for cross-block validation (lines from Report 2:283-311)
-- [ ] Add documentation comment to sm_init() explaining export lifetime (lines from Report 2:318-342)
-- [ ] Test state persistence across bash block boundaries
-- [ ] Verify all three variables (WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON) load correctly
+- [x] Add append_workflow_state calls after sm_init verification (file: .claude/commands/coordinate.md:185-210)
+- [x] Add persistence for RESEARCH_COMPLEXITY (line from Report 2:240)
+- [x] Add persistence for RESEARCH_TOPICS_JSON (line from Report 2:241)
+- [x] Update verification error messages to remove "library bug" label (lines from Report 2:262-277)
+- [x] Move verification to research block for cross-block validation (lines from Report 2:283-311)
+- [x] Add documentation comment to sm_init() explaining export lifetime (lines from Report 2:318-342)
+- [x] Test state persistence across bash block boundaries
+- [x] Verify all three variables (WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON) load correctly
 
 **Testing**:
 ```bash
@@ -275,11 +275,11 @@ grep "RESEARCH_TOPICS_JSON" ~/.config/.claude/tmp/workflow_$STATE_FILE.sh
 **Expected Duration**: 3 hours
 
 **Phase 3 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(700): complete Phase 3 - Fix sm_init Export Persistence`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(700): complete Phase 3 - Fix sm_init Export Persistence`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 4: Fix State File Path Consistency
 dependencies: [1]

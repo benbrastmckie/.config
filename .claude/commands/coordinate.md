@@ -174,15 +174,15 @@ fi
 # VERIFICATION CHECKPOINT: Verify critical variables exported by sm_init
 # Standard 0 (Execution Enforcement): Critical state initialization must be verified
 if [ -z "${WORKFLOW_SCOPE:-}" ]; then
-  handle_state_error "CRITICAL: WORKFLOW_SCOPE not exported by sm_init despite successful return code (library bug)" 1
+  handle_state_error "CRITICAL: WORKFLOW_SCOPE not exported by sm_init despite successful return code" 1
 fi
 
 if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
-  handle_state_error "CRITICAL: RESEARCH_COMPLEXITY not exported by sm_init despite successful return code (library bug)" 1
+  handle_state_error "CRITICAL: RESEARCH_COMPLEXITY not exported by sm_init despite successful return code" 1
 fi
 
 if [ -z "${RESEARCH_TOPICS_JSON:-}" ]; then
-  handle_state_error "CRITICAL: RESEARCH_TOPICS_JSON not exported by sm_init despite successful return code (library bug)" 1
+  handle_state_error "CRITICAL: RESEARCH_TOPICS_JSON not exported by sm_init despite successful return code" 1
 fi
 
 echo "✓ State machine variables verified: WORKFLOW_SCOPE=$WORKFLOW_SCOPE, RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY"
