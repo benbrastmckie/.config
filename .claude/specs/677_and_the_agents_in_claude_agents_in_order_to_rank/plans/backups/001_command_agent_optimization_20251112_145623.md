@@ -3,21 +3,20 @@
 ## Metadata
 - **Date**: 2025-11-12
 - **Feature**: Command and Agent Architecture Optimization
-- **Scope**: Consolidate redundant orchestrators, improve agent delegation patterns, eliminate underutilized agents
-- **Estimated Phases**: 7
-- **Estimated Hours**: 19-23
+- **Scope**: Consolidate redundant orchestrators, improve agent delegation patterns, eliminate underutilized agents, integrate comprehensive haiku classification
+- **Estimated Phases**: 8
+- **Estimated Hours**: 30-34
 - **Structure Level**: 0
-- **Complexity Score**: 112.5
+- **Complexity Score**: 150.5
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - [Commands Architecture Analysis](../reports/001_commands_architecture_analysis.md)
   - [Agents Architecture Analysis](../reports/002_agents_architecture_analysis.md)
-  - [Comprehensive Haiku Classification Architecture](/home/benjamin/.config/.claude/specs/678_coordinate_haiku_classification/reports/001_haiku_classification_architecture.md) (IMPLEMENTED in Spec 678)
-  - [Optimization Plan Revision Needs](/home/benjamin/.config/.claude/specs/678_coordinate_haiku_classification/reports/002_optimization_plan_revision_needs.md)
+  - [Comprehensive Haiku Classification (Spec 678)](/home/benjamin/.config/.claude/specs/678_coordinate_haiku_classification/plans/001_comprehensive_classification_implementation.md)
 
 ## Overview
 
-Optimize the .claude system architecture by consolidating redundant orchestrators (3 → 1) and merging overlapping agents (19 → 15). Research shows the system is already well-optimized (29% Haiku, 52% Sonnet, 19% Opus) with limited agent-level optimization remaining. This plan focuses on architectural cleanup to reduce maintenance burden and improve code organization.
+Optimize the .claude system architecture by consolidating redundant orchestrators (3 → 1), merging overlapping agents (19 → 15), and implementing comprehensive haiku-based workflow classification (Spec 678). Research shows the system is already well-optimized (29% Haiku, 52% Sonnet, 19% Opus) with limited agent-level optimization remaining. The primary opportunity is implementing complexity-based dynamic routing in /research command (24% cost reduction) and eliminating all pattern matching for workflow classification via comprehensive haiku classification (single call replaces two classification operations).
 
 ## Research Summary
 
@@ -35,6 +34,13 @@ Based on comprehensive model usage analysis (Reports 001-002):
 - Net savings: $0.216/week (6-9% system-wide cost reduction)
 - Quality retention: ≥95% maintained
 
+**Primary Opportunity Identified** (Report 001):
+- **Complexity-Based Dynamic Routing in /research**: 24% cost reduction on research operations
+  - Simple topics (1 subtopic): Haiku for basic pattern discovery
+  - Medium topics (2 subtopics): Sonnet (current baseline)
+  - Complex topics (3-4 subtopics): Sonnet or Opus for architectural analysis
+- **Savings**: ~$0.036/week, $1.87 annually
+
 **Limited Agent-Level Optimization**:
 - Only 2 low-confidence downgrade candidates identified:
   - testing-sub-supervisor: 40% confidence, 3.2% potential savings
@@ -50,21 +56,29 @@ Based on comprehensive model usage analysis (Reports 001-002):
 **Revised Approach**:
 - Phase 1-2: Delete redundant orchestrators (clean-break, no deprecation)
 - Phase 3-4: Consolidate overlapping agents (architectural cleanup, not cost optimization)
-- Phase 5: Refactor /revise and /document for better delegation
-- Phase 6: Testing and validation
-- Phase 7: Documentation updates
+- Phase 5: Integrate comprehensive haiku classification (Spec 678) and implement dynamic routing in /research (PRIMARY OPTIMIZATION)
+- Phase 6: Refactor /revise and /document for better delegation
+- Phase 7: Testing and validation
+- Phase 8: Documentation updates
+
+**Integration with Spec 678**: Phase 5 integrates comprehensive haiku-based workflow classification from Spec 678, which eliminates all pattern matching for WORKFLOW_SCOPE and RESEARCH_COMPLEXITY detection. Single haiku call returns workflow_type, research_complexity, and descriptive subtopic names.
 
 ## Success Criteria
 
 - [ ] Orchestrator count reduced from 3 to 1 (/coordinate)
 - [ ] Agent count reduced from 19 to 15 (4 consolidations completed)
 - [ ] ~1,678 lines of redundant agent code eliminated
+- [ ] **PRIMARY GOAL**: Comprehensive haiku classification integrated (zero pattern matching for WORKFLOW_SCOPE and RESEARCH_COMPLEXITY)
+- [ ] Haiku comprehensive classification returns workflow_type, complexity, and subtopics in single call
+- [ ] Complexity-based dynamic routing implemented in /research (24% cost reduction)
+- [ ] Diagnostic message confusion (Issue 676) resolved
 - [ ] /revise refactored to use Task tool pattern (Standard 11 compliance)
 - [ ] /document refactored to use doc-writer agent delegation
 - [ ] All 409 existing tests passing (100% pass rate maintained)
 - [ ] CLAUDE.md updated to recommend /coordinate exclusively
 - [ ] No regression in orchestration reliability (maintain 100% file creation rate)
 - [ ] Context efficiency maintained or improved (≥95% reduction target)
+- [ ] Research complexity routing validated: <5% error rate increase for Haiku invocations
 
 ## Technical Design
 
@@ -83,17 +97,71 @@ Based on comprehensive model usage analysis (Reports 001-002):
 - Preserve all behavioral requirements and completion criteria
 - **Rationale**: Architectural cleanup to reduce maintenance burden, NOT for cost optimization (research shows 3.2% potential savings not worth migration risk)
 
-**3. Command Refactoring**:
+**3. Comprehensive Haiku Classification and Dynamic Routing (PRIMARY OPTIMIZATION)**:
+
+**Architecture Overview**:
+```
+┌──────────────────────────────────────────────────────────┐
+│ CURRENT STATE (Spec 670 + Manual Patterns)             │
+├──────────────────────────────────────────────────────────┤
+│ 1. Haiku call for WORKFLOW_SCOPE (400ms)                │
+│ 2. Pattern matching for RESEARCH_COMPLEXITY (5ms)       │
+│ 3. Generic topic names ("Topic 1", "Topic 2")           │
+│ Total: ~405ms, pattern matching still exists            │
+└──────────────────────────────────────────────────────────┘
+                         ↓
+┌──────────────────────────────────────────────────────────┐
+│ NEW STATE (Spec 678 Comprehensive Classification)       │
+├──────────────────────────────────────────────────────────┤
+│ Single haiku call returns:                              │
+│ - workflow_type (replaces WORKFLOW_SCOPE)                │
+│ - research_complexity (replaces pattern matching)        │
+│ - subtopics array (descriptive names, not "Topic N")     │
+│ Total: ~500ms, ZERO pattern matching                    │
+└──────────────────────────────────────────────────────────┘
+```
+
+**Comprehensive Classification Integration** (from Spec 678):
+- Update `sm_init()` in workflow-state-machine.sh to use `classify_workflow_comprehensive()`
+- Single haiku call replaces `detect_workflow_scope()` + pattern matching (coordinate.md lines 402-414)
+- Export RESEARCH_COMPLEXITY and RESEARCH_TOPICS_JSON from sm_init()
+- Delete 13-line pattern matching section from coordinate.md
+- Use descriptive subtopic names in research agent prompts (not generic "Topic N")
+- Fix diagnostic message confusion at coordinate.md:258 (capacity vs usage clarity)
+
+**Dynamic Routing in /research** (uses RESEARCH_COMPLEXITY from sm_init):
+- Implement in /research command Phase 0 (before research agent invocation)
+- Research complexity scoring (from comprehensive classification):
+  - Simple (1 subtopic): Haiku 4.5 - basic pattern discovery
+  - Medium (2 subtopics): Sonnet 4.5 - default baseline
+  - Complex (3-4 subtopics): Sonnet 4.5 or Opus 4.1 - architectural analysis
+- Pass model tier dynamically to Task invocation: `model: "$RESEARCH_MODEL"`
+- Use RESEARCH_TOPICS array for descriptive subtopic names
+- Eliminate redundant complexity calculation in /research command
+
+**Quality safeguards**:
+- Monitor error rate for Haiku research (<5% increase threshold)
+- Fallback to Sonnet if validation fails
+- Fallback to regex + heuristic when haiku unavailable
+- 2-week monitoring period before full rollout
+
+**Expected Impact**:
+- 24% cost reduction on research operations ($1.87 annually)
+- Zero pattern matching for workflow classification
+- Single haiku call replaces two classification operations (~95ms saved)
+
+**4. Command Refactoring**:
 - Create revision-specialist agent for /revise command
 - Refactor /revise to use Task tool (not SlashCommand)
 - Refactor /document to delegate to doc-writer agent
 - Breaking changes fail loudly with clear error messages
 
-**4. Testing Strategy**:
+**5. Testing Strategy**:
 - Verify all 409 tests pass after each consolidation
 - Validate agent invocation patterns comply with Standard 11
 - Test orchestration reliability (100% file creation maintained)
 - Verify fail-fast error handling for breaking changes
+- Validate complexity-based routing: error rate <5% increase for Haiku invocations
 
 ## Implementation Phases
 
@@ -284,12 +352,118 @@ After completing the above tasks:
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 5: Refactor /revise and /document Commands
+### Phase 5: Implement Comprehensive Haiku Classification for Workflow Detection and Research Routing
 dependencies: [4]
+
+**Objective**: Integrate comprehensive haiku-based classification (Spec 678) to eliminate all pattern matching for WORKFLOW_SCOPE and RESEARCH_COMPLEXITY, then implement dynamic model selection in /research command (PRIMARY OPTIMIZATION)
+
+**Complexity**: High
+
+**Tasks**:
+- [ ] **Analyze Current Workflow Classification Approach**:
+  - [ ] Read coordinate.md initialization section (lines 47-153) to understand current sm_init() usage
+  - [ ] Identify pattern matching for WORKFLOW_SCOPE (currently uses detect_workflow_scope from Spec 670)
+  - [ ] Identify pattern matching for RESEARCH_COMPLEXITY (coordinate.md lines 402-414, grep-based)
+  - [ ] Document integration points with state machine (sm_init function at workflow-state-machine.sh:140-180)
+  - [ ] Read Spec 678 implementation plan for comprehensive classification details
+- [ ] **Implement Comprehensive Haiku Classification**:
+  - [ ] Create `classify_workflow_comprehensive()` function in workflow-scope-detection.sh
+  - [ ] Function returns JSON with: workflow_type, research_complexity (1-4), subtopics array (descriptive names)
+  - [ ] Update `sm_init()` in workflow-state-machine.sh to call classify_workflow_comprehensive()
+  - [ ] Extract workflow_type → WORKFLOW_SCOPE (existing)
+  - [ ] Extract research_complexity → RESEARCH_COMPLEXITY (NEW)
+  - [ ] Extract subtopics → RESEARCH_TOPICS_JSON (NEW, serialize array for state persistence)
+  - [ ] Export RESEARCH_COMPLEXITY and RESEARCH_TOPICS_JSON from sm_init() to workflow state
+  - [ ] Add fallback logic: If haiku fails, use regex (Spec 670) + heuristic complexity calculation
+- [ ] **Remove Pattern Matching from coordinate.md**:
+  - [ ] Delete pattern matching section entirely (coordinate.md lines 402-414, 13 lines)
+  - [ ] Add comment explaining RESEARCH_COMPLEXITY loaded from sm_init() state
+  - [ ] Update diagnostic message at coordinate.md:258 to clarify capacity vs usage ("Saved 4 report paths (capacity)" instead of ambiguous wording)
+  - [ ] Save RESEARCH_COMPLEXITY and RESEARCH_TOPICS_JSON to workflow state in initialization block (coordinate.md:174-177)
+  - [ ] Load RESEARCH_TOPICS_JSON and reconstruct array in research phase (coordinate.md:418-420)
+- [ ] **Integrate with /research Dynamic Routing**:
+  - [ ] Read current /research.md to understand Phase 0 (research decomposition)
+  - [ ] Use RESEARCH_COMPLEXITY from sm_init() for model selection in /research command
+  - [ ] Add model selection logic in /research Phase 0:
+    ```bash
+    # Load complexity from state (set by sm_init comprehensive classification)
+    case "$RESEARCH_COMPLEXITY" in
+      1)  # Simple topics - basic pattern discovery
+          RESEARCH_MODEL="haiku-4.5"
+          ;;
+      2)  # Medium topics - default baseline
+          RESEARCH_MODEL="sonnet-4.5"
+          ;;
+      3|4)  # Complex topics - architectural analysis
+          RESEARCH_MODEL="sonnet-4.5"  # Consider opus for critical architecture
+          ;;
+      *)  # Very complex (>4 subtopics) - fallback to Sonnet
+          RESEARCH_MODEL="sonnet-4.5"
+          ;;
+    esac
+    ```
+  - [ ] Update research-specialist Task invocations to pass model dynamically: `model: "$RESEARCH_MODEL"`
+  - [ ] Use RESEARCH_TOPICS array for descriptive subtopic names in agent prompts (not generic "Topic N")
+  - [ ] Eliminate redundant complexity calculation in /research command
+  - [ ] Add logging: `echo "Research complexity: $RESEARCH_COMPLEXITY subtopics → Model: $RESEARCH_MODEL"`
+- [ ] **Add Quality Safeguards**:
+  - [ ] Implement error rate tracking for Haiku invocations in /research
+  - [ ] Add fallback logic: If Haiku research fails validation, retry with Sonnet
+  - [ ] Document rollback trigger: >5% error rate increase
+  - [ ] Test fallback mode when haiku unavailable (regex + heuristic)
+- [ ] **Update Documentation**:
+  - [ ] Update Model Selection Guide with /research complexity-based routing pattern
+  - [ ] Document comprehensive classification in coordinate-command-guide.md
+  - [ ] Update LLM classification pattern documentation with comprehensive examples
+  - [ ] Include monitoring requirements (2-week observation period)
+
+**Testing**:
+```bash
+# Test comprehensive classification integration
+cd .claude/tests
+./test_comprehensive_classification.sh
+# Expected: 22 test cases covering haiku classification, fallback, and coordinate integration
+
+# Test simple research (1 subtopic) - should use Haiku
+/research "Find all files implementing authentication" | grep "Model: haiku-4.5"
+
+# Test medium research (2 subtopics) - should use Sonnet
+/research "Analyze authentication patterns and security implementations" | grep "Model: sonnet-4.5"
+
+# Test complex research (3-4 subtopics) - should use Sonnet
+/research "Investigate authentication, authorization, session management, and security audit patterns" | grep "Model: sonnet-4.5"
+
+# Verify pattern matching removed
+! grep -A 10 "RESEARCH_COMPLEXITY=" .claude/commands/coordinate.md | grep "grep" || echo "ERROR: Pattern matching still exists"
+
+# Verify diagnostic message updated
+grep "Saved.*report paths (capacity)" .claude/commands/coordinate.md || echo "ERROR: Diagnostic message not updated"
+
+# Verify error rate tracking
+grep "Research.*haiku.*error" .claude/data/logs/adaptive-planning.log | wc -l
+```
+
+**Expected Duration**: 6 hours
+
+<!-- PROGRESS CHECKPOINT -->
+After completing the above tasks:
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
+<!-- END PROGRESS CHECKPOINT -->
+
+**Phase 5 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `feat(677): complete Phase 5 - Implement Complexity-Based Dynamic Routing`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
+
+### Phase 6: Refactor /revise and /document Commands
+dependencies: [5]
 
 **Objective**: Improve orchestration alignment by creating revision-specialist agent and refactoring command delegation
 
-**Complexity**: Medium
+**Complexity**: High
 
 **Tasks**:
 - [ ] **Create Revision-Specialist Agent**:
@@ -329,7 +503,7 @@ test -f .claude/agents/revision-specialist.md || echo "ERROR: revision-specialis
 bash -c "cd .claude/tests && bash test_command_integration.sh" | grep -q "document.*PASS" || echo "ERROR: /document tests failing"
 ```
 
-**Expected Duration**: 3 hours
+**Expected Duration**: 5 hours
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -337,23 +511,30 @@ After completing the above tasks:
 - [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-**Phase 5 Completion Requirements**:
+**Phase 6 Completion Requirements**:
 - [ ] All phase tasks marked [x]
 - [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(677): complete Phase 5 - Refactor Commands`
+- [ ] Git commit created: `feat(677): complete Phase 6 - Refactor /revise and /document Commands`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 6: Comprehensive Testing and Validation
-dependencies: [5]
+### Phase 7: Comprehensive Testing and Validation
+dependencies: [6]
 
-**Objective**: Verify all 409 tests pass, validate orchestration reliability, confirm context efficiency
+**Objective**: Verify all 409 tests pass, validate orchestration reliability, confirm context efficiency, validate complexity-based routing
 
 **Complexity**: Medium
 
 **Tasks**:
 - [ ] Run complete test suite: `cd .claude/tests && ./run_all_tests.sh`
 - [ ] Verify 409 tests passing (100% pass rate target)
+- [ ] **Validate Complexity-Based Routing** (PRIMARY VALIDATION):
+  - [ ] Test simple research (1 subtopic): Verify Haiku model selection and error rate <5%
+  - [ ] Test medium research (2 subtopics): Verify Sonnet model selection (baseline)
+  - [ ] Test complex research (3-4 subtopics): Verify Sonnet/Opus model selection
+  - [ ] Monitor error rate for 2 weeks: Track Haiku research failures vs Sonnet baseline
+  - [ ] Verify fallback logic: Confirm Haiku failures retry with Sonnet
+  - [ ] Measure cost reduction: Compare research costs before/after implementation (target: 24% reduction)
 - [ ] Run orchestration reliability tests:
   - [ ] Test /coordinate file creation (100% reliability target)
   - [ ] Test agent delegation patterns (>90% delegation rate)
@@ -366,6 +547,7 @@ dependencies: [5]
   - [ ] `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/coordinate.md`
   - [ ] `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/revise.md`
   - [ ] `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/document.md`
+  - [ ] `.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/research.md` (complexity routing validation)
 - [ ] Run executable/documentation separation validation:
   - [ ] `.claude/tests/validate_executable_doc_separation.sh`
 - [ ] Manual workflow validation:
@@ -373,6 +555,7 @@ dependencies: [5]
   - [ ] Run /implement with test plan
   - [ ] Run /debug with test issue
   - [ ] Run /revise with test plan modification
+  - [ ] Run /research with simple, medium, and complex topics (verify model routing)
 
 **Testing**:
 ```bash
@@ -396,15 +579,15 @@ After completing the above tasks:
 - [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-**Phase 6 Completion Requirements**:
+**Phase 7 Completion Requirements**:
 - [ ] All phase tasks marked [x]
 - [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(677): complete Phase 6 - Comprehensive Testing and Validation`
+- [ ] Git commit created: `feat(677): complete Phase 7 - Comprehensive Testing and Validation`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 7: Documentation Updates and Cleanup
-dependencies: [6]
+### Phase 8: Documentation Updates and Cleanup
+dependencies: [7]
 
 **Objective**: Update all documentation to reflect optimized architecture, create migration guide
 
@@ -455,10 +638,10 @@ After completing the above tasks:
 - [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-**Phase 7 Completion Requirements**:
+**Phase 8 Completion Requirements**:
 - [ ] All phase tasks marked [x]
 - [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(677): complete Phase 7 - Update Documentation to Current Architecture`
+- [ ] Git commit created: `feat(677): complete Phase 8 - Update Documentation to Current Architecture`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
@@ -529,9 +712,10 @@ After completing the above tasks:
 - Phase 1 must complete before Phase 2 (deletion before reference updates)
 - Phase 2 must complete before Phase 3 (references updated before agent changes)
 - Phase 3-4 can run sequentially (agent consolidations independent)
-- Phase 5 depends on Phase 4 (agent consolidations complete before command refactoring and dynamic routing)
-- Phase 6 depends on Phase 5 (all changes complete before comprehensive testing)
-- Phase 7 depends on Phase 6 (testing validated before documentation updates)
+- Phase 5 depends on Phase 4 (agent consolidations complete before complexity routing)
+- Phase 6 depends on Phase 5 (complexity routing complete before command refactoring)
+- Phase 7 depends on Phase 6 (all changes complete before comprehensive testing)
+- Phase 8 depends on Phase 7 (testing validated before documentation updates)
 
 ### Risk Mitigation
 - Test after each phase to catch issues early
@@ -560,68 +744,13 @@ After completing the above tasks:
 - User confusion: 90% reduction (clear orchestrator choice)
 - Documentation: 35% reduction (simpler architecture to document)
 
+### Cost Optimization (NEW - Phase 5)
+- Research operation cost: 24% reduction via complexity-based routing
+- Annual savings: $1.87 (baseline: 10 research invocations/week)
+- Quality safeguards: <5% error rate increase threshold, 2-week monitoring period
+- Haiku research allocation: ~30% of invocations (simple topics only)
+
 ## Revision History
-
-### Revision 5 - 2025-11-12
-- **Date**: 2025-11-12
-- **Type**: complexity-reduction
-- **Research Reports Used**:
-  - /home/benjamin/.config/.claude/specs/680_677_and_the_agents_in_claude_agents_in_order_to/reports/001_add__architecture_and_design.md (Dynamic Routing Architecture Analysis)
-  - /home/benjamin/.config/.claude/specs/680_677_and_the_agents_in_claude_agents_in_order_to/reports/002_implementation_approach_and_testing.md (Simpler Alternatives Analysis)
-- **Key Changes**:
-  - **Metadata**: Updated Scope to remove "implement dynamic routing in /research command"
-  - **Metadata**: Updated Estimated Hours from 25-29 to 19-23 hours (removed 6 hours from Phase 5)
-  - **Metadata**: Updated Complexity Score from 142.5 to 112.5 (reduced by dynamic routing tasks)
-  - **Overview**: Simplified to focus on architectural cleanup without dynamic routing
-  - **Research Summary**: Removed "Primary Opportunity Identified" section about dynamic routing (24% cost reduction)
-  - **Research Summary**: Removed "Integration with Spec 678" section
-  - **Success Criteria**: Removed "Complexity-based dynamic routing implemented in /research (24% cost reduction)"
-  - **Success Criteria**: Removed "Research complexity routing validated: <5% error rate increase for Haiku invocations"
-  - **Technical Design**: Deleted entire Section 3 "Dynamic Routing in /research" (removed 30 lines)
-  - **Technical Design**: Renumbered sections (Section 4 → Section 3, Section 5 → Section 4)
-  - **Phase 5**: Title changed from "Refactor /revise and /document Commands, Implement Dynamic Routing" to "Refactor /revise and /document Commands"
-  - **Phase 5**: Objective simplified to remove dynamic routing implementation
-  - **Phase 5**: Complexity reduced from High to Medium
-  - **Phase 5**: Removed entire "Implement Dynamic Routing in /research" task section (8 tasks removed)
-  - **Phase 5**: Duration reduced from 6 hours to 3 hours
-  - **Phase 5**: Completion commit message changed from "Refactor Commands and Implement Dynamic Routing" to "Refactor Commands"
-  - **Phase 6**: Objective changed to remove "validate complexity-based routing"
-  - **Phase 6**: Removed "Validate Complexity-Based Routing (PRIMARY VALIDATION)" task section (6 tasks removed)
-  - **Phase 6**: Removed research.md validation from command architecture validation
-  - **Phase 6**: Removed "/research with simple, medium, and complex topics" from manual workflow validation
-  - **Performance Targets**: Removed "Cost Optimization (NEW - Phase 5)" section
-- **Rationale**: Dynamic routing adds significant implementation complexity (85+ lines of code, error handling, monitoring infrastructure, 2-week validation period) for minimal benefit ($1.87 annually, 24% research cost reduction). Research reports show simpler alternatives exist (static configuration via CLAUDE.md). User requested complexity reduction by removing dynamic routing to focus on core architectural improvements (orchestrator consolidation, agent merging, command refactoring). This revision eliminates all dynamic routing work while preserving all other architectural improvements.
-- **Backup**: /home/benjamin/.config/.claude/specs/677_and_the_agents_in_claude_agents_in_order_to_rank/plans/001_command_agent_optimization_backup_$(date +%Y%m%d_%H%M%S).md
-
-### Revision 4 - 2025-11-12
-- **Date**: 2025-11-12
-- **Type**: research-informed (specs 678/683 implementation completed externally)
-- **Research Reports Used**:
-  - /home/benjamin/.config/.claude/specs/678_coordinate_haiku_classification/reports/001_haiku_classification_architecture.md
-  - /home/benjamin/.config/.claude/specs/678_coordinate_haiku_classification/reports/002_optimization_plan_revision_needs.md
-- **Key Changes**:
-  - **Metadata**: Updated Estimated Phases from 8 to 7 (Phase 5 deleted)
-  - **Metadata**: Updated Estimated Hours from 30-34 to 25-29 hours (removed 6 hours from deleted Phase 5, added 1 hour for dynamic routing in new Phase 5)
-  - **Metadata**: Updated Complexity Score from 150.5 to 142.5 (removed Phase 5 tasks)
-  - **Metadata**: Updated Research Reports to include Spec 678 reports (IMPLEMENTED status)
-  - **Metadata**: Updated Scope to replace "integrate comprehensive haiku classification" with "implement dynamic routing in /research command"
-  - **Overview**: Revised to note Spec 678 comprehensive classification already completed externally
-  - **Overview**: Removed references to implementing comprehensive haiku classification (already done)
-  - **Research Summary**: Updated Integration with Spec 678 to reflect completed implementation
-  - **Success Criteria**: Removed 4 obsolete criteria related to comprehensive classification (PRIMARY GOAL, haiku classification returns, diagnostic message confusion)
-  - **Success Criteria**: Retained complexity-based dynamic routing criterion (moved to Phase 5)
-  - **Technical Design Section 3**: Completely replaced comprehensive classification architecture with brief reference to Spec 678 and focus on dynamic routing implementation
-  - **Revised Approach**: Updated to reflect 7 phases (not 8), combined command refactoring and dynamic routing in Phase 5
-  - **Phase 5 DELETED**: Entire phase "Implement Comprehensive Haiku Classification" removed (100% implemented in specs 678/683)
-  - **Phase 6→5**: Renamed "Refactor /revise and /document Commands" to include dynamic routing implementation
-  - **Phase 5 Tasks**: Added 8 new tasks for dynamic routing in /research command (moved from deleted Phase 5)
-  - **Phase 5 Duration**: Increased from 5 to 6 hours (+1 hour for dynamic routing implementation)
-  - **Phase 7→6**: Renumbered "Comprehensive Testing and Validation"
-  - **Phase 8→7**: Renumbered "Documentation Updates and Cleanup"
-  - **Dependencies**: Updated all phase dependencies to reflect new numbering (Phase 5 depends on [4], Phase 6 depends on [5], Phase 7 depends on [6])
-  - **Completion Requirements**: Updated git commit messages for all phases to reflect new numbering
-- **Rationale**: Spec 678 (comprehensive haiku classification) and Spec 683 (critical bug fixes) have been fully implemented, completing 100% of original Phase 5 work. All pattern matching for workflow classification has been eliminated, RESEARCH_COMPLEXITY infrastructure is in place, and descriptive topic names are generated. The only remaining work is integrating the Spec 678 infrastructure into /research command for dynamic model selection (24% cost reduction). This revision removes obsolete work, consolidates remaining phases, and focuses plan on leveraging existing infrastructure.
-- **Backup**: /home/benjamin/.config/.claude/specs/677_and_the_agents_in_claude_agents_in_order_to_rank/plans/backups/001_command_agent_optimization_20251112_145623.md
 
 ### Revision 3 - 2025-11-12
 - **Date**: 2025-11-12
