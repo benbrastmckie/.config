@@ -99,10 +99,14 @@ test_count=$((test_count + 1))
 
 if [ -f "$COORDINATE_CMD" ]; then
   # Count references to state ID file with CLAUDE_PROJECT_DIR
-  CORRECT_REFS=$(grep -c "CLAUDE_PROJECT_DIR.*coordinate_state_id.txt" "$COORDINATE_CMD" || echo "0")
+  CORRECT_REFS=$(grep -c "CLAUDE_PROJECT_DIR.*coordinate_state_id.txt" "$COORDINATE_CMD" 2>/dev/null || echo "0")
 
   # Count any remaining references to HOME/.claude/tmp/coordinate_state_id.txt
-  INCORRECT_REFS=$(grep -c "HOME.*coordinate_state_id.txt" "$COORDINATE_CMD" || echo "0")
+  INCORRECT_REFS=$(grep -c "HOME.*coordinate_state_id.txt" "$COORDINATE_CMD" 2>/dev/null || echo "0")
+
+  # Validate counts are integers
+  [ "$CORRECT_REFS" -eq "$CORRECT_REFS" ] 2>/dev/null || CORRECT_REFS=0
+  [ "$INCORRECT_REFS" -eq "$INCORRECT_REFS" ] 2>/dev/null || INCORRECT_REFS=0
 
   if [ "$CORRECT_REFS" -gt 0 ] && [ "$INCORRECT_REFS" -eq 0 ]; then
     echo "PASS: All references use CLAUDE_PROJECT_DIR ($CORRECT_REFS found, 0 incorrect)"
