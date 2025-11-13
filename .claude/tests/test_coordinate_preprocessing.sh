@@ -84,15 +84,15 @@ test_count=$((test_count + 1))
 if [ ! -f "$COORDINATE_CMD" ]; then
   echo "SKIP: coordinate.md not found"
 else
-  # Look for the safe pattern: sm_init ... || SM_INIT_RC=$?
-  SAFE_PATTERN_COUNT=$(grep -c "sm_init.*||.*RC=\$?" "$COORDINATE_CMD" || echo "0")
+  # Look for the safe pattern: SM_INIT_EXIT_CODE=$?
+  SAFE_PATTERN_COUNT=$(grep -c "SM_INIT_EXIT_CODE=\$?" "$COORDINATE_CMD" || echo "0")
 
   if [ "$SAFE_PATTERN_COUNT" -ge 1 ]; then
-    echo "PASS: Found safe exit code capture pattern"
+    echo "PASS: Found safe exit code capture pattern (SM_INIT_EXIT_CODE=\$?)"
     pass_count=$((pass_count + 1))
   else
     echo "FAIL: Safe exit code capture pattern not found"
-    echo "Expected pattern: sm_init ... || SM_INIT_RC=\$?"
+    echo "Expected pattern: SM_INIT_EXIT_CODE=\$?"
     fail_count=$((fail_count + 1))
   fi
 fi
