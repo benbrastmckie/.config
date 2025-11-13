@@ -416,22 +416,18 @@ if command -v emit_progress &>/dev/null; then
   emit_progress "1" "State: Research (parallel agent invocation)"
 fi
 
-# Determine research complexity (1-4 topics)
-RESEARCH_COMPLEXITY=2
+# RESEARCH_COMPLEXITY loaded from workflow state (set by sm_init in Phase 0)
+# Pattern matching removed in Spec 678: comprehensive haiku classification provides
+# all three dimensions (workflow_type, research_complexity, subtopics) in single call.
+# Zero pattern matching for any classification dimension. Fallback to state persistence only.
 
-if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "integrate|migration|refactor|architecture"; then
-  RESEARCH_COMPLEXITY=3
+# Defensive: Verify RESEARCH_COMPLEXITY was loaded from state
+if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
+  echo "WARNING: RESEARCH_COMPLEXITY not loaded from state, using fallback=2" >&2
+  RESEARCH_COMPLEXITY=2
 fi
 
-if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "multi-.*system|cross-.*platform|distributed|microservices"; then
-  RESEARCH_COMPLEXITY=4
-fi
-
-if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^(fix|update|modify).*(one|single|small)"; then
-  RESEARCH_COMPLEXITY=1
-fi
-
-echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics"
+echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics (from state persistence)"
 
 # Reconstruct REPORT_PATHS array
 reconstruct_report_paths_array
@@ -691,7 +687,8 @@ DISCOVERY_COUNT=0
 if [ -d "$REPORTS_DIR" ]; then
   # Find all report files matching pattern NNN_*.md (sorted by number)
   DISCOVERED_REPORTS=()
-  for i in $(seq 1 $RESEARCH_COMPLEXITY); do
+  # Use REPORT_PATHS_COUNT (pre-allocated count) not RESEARCH_COMPLEXITY (may be stale/recalculated)
+  for i in $(seq 1 $REPORT_PATHS_COUNT); do
     # Find file matching 00N_*.md pattern
     PATTERN=$(printf '%03d' $i)
     FOUND_FILE=$(find "$REPORTS_DIR" -maxdepth 1 -name "${PATTERN}_*.md" -type f | head -1)
@@ -709,7 +706,7 @@ if [ -d "$REPORTS_DIR" ]; then
   REPORT_PATHS=("${DISCOVERED_REPORTS[@]}")
 
   # Diagnostic output: show path discovery results
-  echo "Dynamic path discovery complete: $DISCOVERY_COUNT/$RESEARCH_COMPLEXITY files discovered"
+  echo "Dynamic path discovery complete: $DISCOVERY_COUNT/$REPORT_PATHS_COUNT files discovered"
   [ "$DISCOVERY_COUNT" -gt 0 ] && echo "  Updated REPORT_PATHS array with actual agent-created filenames"
 fi
 
@@ -789,18 +786,19 @@ else
   # ===== MANDATORY VERIFICATION CHECKPOINT: Flat Research =====
   echo ""
   echo "MANDATORY VERIFICATION: Research Phase Artifacts"
-  echo "Checking $RESEARCH_COMPLEXITY research reports..."
+  echo "Checking $REPORT_PATHS_COUNT research reports..."
   echo ""
 
   VERIFICATION_FAILURES=0
   SUCCESSFUL_REPORT_PATHS=()
   FAILED_REPORT_PATHS=()
 
-  for i in $(seq 1 $RESEARCH_COMPLEXITY); do
+  # Use REPORT_PATHS_COUNT (pre-allocated count) to verify exactly as many files as were allocated
+  for i in $(seq 1 $REPORT_PATHS_COUNT); do
     REPORT_PATH="${REPORT_PATHS[$i-1]}"
-    echo -n "  Report $i/$RESEARCH_COMPLEXITY: "
+    echo -n "  Report $i/$REPORT_PATHS_COUNT: "
     # Avoid ! operator due to Bash tool preprocessing issues
-    if verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Research"; then
+    if verify_file_created "$REPORT_PATH" "Research report $i/$REPORT_PATHS_COUNT" "Research"; then
       SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
       FILE_SIZE=$(stat -f%z "$REPORT_PATH" 2>/dev/null || stat -c%s "$REPORT_PATH" 2>/dev/null || echo "unknown")
       echo " verified ($FILE_SIZE bytes)"
@@ -812,7 +810,7 @@ else
 
   echo ""
   echo "Verification Summary:"
-  echo "  - Success: ${#SUCCESSFUL_REPORT_PATHS[@]}/$RESEARCH_COMPLEXITY reports"
+  echo "  - Success: ${#SUCCESSFUL_REPORT_PATHS[@]}/$REPORT_PATHS_COUNT reports"
   echo "  - Failures: $VERIFICATION_FAILURES reports"
 
   # Track verification metrics in workflow state
@@ -838,7 +836,7 @@ else
     handle_state_error "Research specialists failed to create expected artifacts" 1
   fi
 
-  echo "✓ All $RESEARCH_COMPLEXITY research reports verified successfully"
+  echo "✓ All $REPORT_PATHS_COUNT research reports verified successfully"
 fi
 
 # Save report paths to workflow state (same for both modes)
