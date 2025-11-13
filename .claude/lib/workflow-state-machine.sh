@@ -371,8 +371,14 @@ sm_init() {
       # Fail-fast: No automatic fallback (clean-break approach from Spec 688 Phase 3)
       echo "CRITICAL ERROR: Comprehensive classification failed" >&2
       echo "  Workflow Description: $workflow_desc" >&2
-      echo "  Suggestion: Check network connection, increase WORKFLOW_CLASSIFICATION_TIMEOUT, or use regex-only mode" >&2
-      echo "  Alternative: Set WORKFLOW_CLASSIFICATION_MODE=regex-only for offline development" >&2
+      echo "  Classification Mode: ${WORKFLOW_CLASSIFICATION_MODE:-llm-only}" >&2
+      echo "" >&2
+      echo "TROUBLESHOOTING:" >&2
+      echo "  1. Check network connection (LLM classification requires API access)" >&2
+      echo "  2. Increase timeout: export WORKFLOW_CLASSIFICATION_TIMEOUT=60" >&2
+      echo "  3. Use offline mode: export WORKFLOW_CLASSIFICATION_MODE=regex-only" >&2
+      echo "  4. Check API credentials if using external classification service" >&2
+      echo "" >&2
       return 1
     fi
   else

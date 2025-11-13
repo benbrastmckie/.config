@@ -2459,4 +2459,66 @@ This document should be read in conjunction with:
 
 ---
 
+## Standard 16: Critical Function Return Code Verification
+
+**Requirement**: All critical initialization functions MUST have their return codes checked.
+
+**Rationale**: Bash `set -euo pipefail` does not exit on function failures, only simple command failures. Silent function failures lead to incomplete state initialization and delayed errors.
+
+**Critical Functions** (non-exhaustive list):
+- `sm_init()` - State machine initialization (exports WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON)
+- `initialize_workflow_paths()` - Path allocation (exports TOPIC_PATH, PLAN_PATH, REPORT_PATHS)
+- `source_required_libraries()` - Library loading (makes functions available)
+- `classify_workflow_comprehensive()` - Workflow classification (network-dependent)
+
+**Required Pattern**:
+
+```bash
+# Inline error handling (RECOMMENDED for orchestration commands)
+if ! critical_function arg1 arg2 2>&1; then
+  handle_state_error "critical_function failed: description" 1
+fi
+
+# Compound operator (ACCEPTABLE for simple commands)
+critical_function arg1 arg2 || exit 1
+```
+
+**Prohibited Patterns**:
+
+```bash
+# ✗ WRONG: No return code check
+critical_function arg1 arg2
+
+# ✗ WRONG: Output redirection hides errors
+critical_function arg1 arg2 >/dev/null
+
+# ✗ WRONG: Redirect stdout only (stderr still visible but return code ignored)
+critical_function arg1 arg2 1>/dev/null
+```
+
+**Verification Checkpoints**:
+
+After successful critical function call, verify exported variables:
+
+```bash
+if ! sm_init "$WORKFLOW_DESC" "coordinate" 2>&1; then
+  handle_state_error "State machine initialization failed" 1
+fi
+
+# VERIFICATION: Ensure critical variables exported
+if [ -z "${WORKFLOW_SCOPE:-}" ]; then
+  handle_state_error "CRITICAL: WORKFLOW_SCOPE not exported despite successful return code" 1
+fi
+```
+
+**Related Standards**:
+- Standard 0: Execution Enforcement (verification checkpoints)
+- Standard 15: Library Sourcing Order (function availability)
+
+**Historical Context**: Discovered in Spec 698 where missing return code check in `/coordinate` and `/orchestrate` commands allowed `sm_init()` classification failures to silently proceed, causing unbound variable errors 78 lines later instead of immediate fail-fast behavior.
+
+**Test Requirements**: All commands using critical functions must include unit tests for failure paths (see `.claude/tests/test_sm_init_error_handling.sh` for template).
+
+---
+
 **Remember**: Command files are AI execution scripts, not traditional code. When in doubt, keep content inline.

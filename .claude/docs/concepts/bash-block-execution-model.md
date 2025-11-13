@@ -399,6 +399,55 @@ display_brief_summary() {
 }
 ```
 
+### Pattern 7: Return Code Verification for Critical Functions
+
+**Problem**: Bash functions can fail without causing script exit unless explicitly checked.
+
+**Solution**: Always check return codes for critical initialization functions.
+
+**Critical Functions Requiring Checks**:
+- `sm_init()` - State machine initialization
+- `initialize_workflow_paths()` - Path allocation
+- `source_required_libraries()` - Library loading
+- `classify_workflow_comprehensive()` - Workflow classification
+- Any function that exports state variables
+
+**Pattern**:
+```bash
+# ❌ ANTI-PATTERN: No return code check
+sm_init "$WORKFLOW_DESC" "coordinate" >/dev/null
+# Execution continues even if sm_init fails
+
+# ✓ RECOMMENDED: Explicit return code check with error handling
+if ! sm_init "$WORKFLOW_DESC" "coordinate" 2>&1; then
+  handle_state_error "State machine initialization failed" 1
+fi
+
+# ✓ ALTERNATIVE: Compound operator (for simple cases)
+sm_init "$WORKFLOW_DESC" "coordinate" || exit 1
+```
+
+**Rationale**:
+- `set -euo pipefail` does NOT exit on function failures (only simple commands)
+- Output redirection (`>/dev/null`) hides critical error messages
+- Silent failures lead to unbound variable errors later in execution
+- Explicit checks enable fail-fast error handling (CLAUDE.md development philosophy)
+
+**Example from Spec 698**:
+
+Without return code check, `sm_init()` classification failure allowed execution to continue with uninitialized `RESEARCH_COMPLEXITY`, causing unbound variable error 78 lines later. Adding explicit check caught error immediately at line 166 instead of line 244.
+
+**When to Use**:
+- Any function that initializes critical state variables
+- Functions called in orchestration command initialization blocks
+- Library functions that export variables to parent scope
+- Operations with complex failure modes (network, file I/O, external APIs)
+
+**Related Standards**:
+- Standard 0 (Execution Enforcement) - CLAUDE.md:277-283
+- Fail-Fast Policy - CLAUDE.md:211-215
+- Verification and Fallback Pattern - verification-fallback.md
+
 ## Critical Libraries for Re-sourcing
 
 Commands using the bash block execution model MUST re-source these libraries in every bash block to ensure function availability across subprocess boundaries:

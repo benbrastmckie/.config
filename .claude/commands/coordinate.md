@@ -163,8 +163,26 @@ append_workflow_state "COORDINATE_STATE_ID_FILE" "$COORDINATE_STATE_ID_FILE"
 # Initialize state machine (use SAVED value, not overwritten variable)
 # CRITICAL: Call sm_init to export WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
 # Do NOT use command substitution $() as it creates subshell that doesn't export to parent
-sm_init "$SAVED_WORKFLOW_DESC" "coordinate" >/dev/null
-# Variables now available via export (not command substitution)
+if ! sm_init "$SAVED_WORKFLOW_DESC" "coordinate" 2>&1; then
+  handle_state_error "State machine initialization failed (workflow classification error). Check network connection or use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline development." 1
+fi
+# Variables now available via export (verified by successful sm_init return code check above)
+
+# VERIFICATION CHECKPOINT: Verify critical variables exported by sm_init
+# Standard 0 (Execution Enforcement): Critical state initialization must be verified
+if [ -z "${WORKFLOW_SCOPE:-}" ]; then
+  handle_state_error "CRITICAL: WORKFLOW_SCOPE not exported by sm_init despite successful return code (library bug)" 1
+fi
+
+if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
+  handle_state_error "CRITICAL: RESEARCH_COMPLEXITY not exported by sm_init despite successful return code (library bug)" 1
+fi
+
+if [ -z "${RESEARCH_TOPICS_JSON:-}" ]; then
+  handle_state_error "CRITICAL: RESEARCH_TOPICS_JSON not exported by sm_init despite successful return code (library bug)" 1
+fi
+
+echo "✓ State machine variables verified: WORKFLOW_SCOPE=$WORKFLOW_SCOPE, RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY"
 
 # ADDED: Extract and save EXISTING_PLAN_PATH for research-and-revise workflows
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
