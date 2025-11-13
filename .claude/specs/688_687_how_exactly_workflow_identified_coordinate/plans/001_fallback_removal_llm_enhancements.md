@@ -338,19 +338,19 @@ dependencies: [1, 2]
 - `.claude/lib/workflow-scope-detection.sh` (lines 32, 54-57, 62-78, 82-85, 93-97, 100-104, 114-141, 289-292)
 
 **Tasks**:
-- [ ] Change `WORKFLOW_CLASSIFICATION_MODE` default from `hybrid` to `llm-only` (line 32)
-- [ ] **DELETE entire hybrid mode case block** (lines 62-78) - clean-break approach, no preservation
-- [ ] Add configuration validation rejecting hybrid mode with error: "hybrid mode removed in clean-break update"
-- [ ] **RENAME** `fallback_comprehensive_classification()` → `classify_workflow_regex_comprehensive()` (lines 114-141) - clarifies it's intentional regex classifier, not fallback
-- [ ] Remove automatic fallback call at empty description validation (lines 54-57) - replace with direct `return 1`
-- [ ] Remove automatic fallback call in llm-only mode failure (lines 82-85) - replace with direct `return 1`
-- [ ] Remove automatic fallback call in invalid mode handler (lines 100-104) - replace with direct `return 1`
-- [ ] Update regex-only mode case (lines 93-97) to call renamed function: `classify_workflow_regex_comprehensive()`
-- [ ] Preserve `classify_workflow_regex()` function (lines 212-268) - needed by regex-only mode
-- [ ] Preserve `infer_complexity_from_keywords()` function (lines 149-188) - needed by regex-only mode
-- [ ] Preserve `generate_generic_topics()` function (lines 195-205) - needed by regex-only mode
-- [ ] Update function exports: rename fallback function, preserve classifier functions (lines 289-292)
-- [ ] Add clear fail-fast error messages with context and suggestions at all removal points
+- [x] Change `WORKFLOW_CLASSIFICATION_MODE` default from `hybrid` to `llm-only` (line 32)
+- [x] **DELETE entire hybrid mode case block** (lines 62-78) - clean-break approach, no preservation
+- [x] Add configuration validation rejecting hybrid mode with error: "hybrid mode removed in clean-break update"
+- [x] **RENAME** `fallback_comprehensive_classification()` → `classify_workflow_regex_comprehensive()` (lines 114-141) - clarifies it's intentional regex classifier, not fallback
+- [x] Remove automatic fallback call at empty description validation (lines 54-57) - replace with direct `return 1`
+- [x] Remove automatic fallback call in llm-only mode failure (lines 82-85) - replace with direct `return 1`
+- [x] Remove automatic fallback call in invalid mode handler (lines 100-104) - replace with direct `return 1`
+- [x] Update regex-only mode case (lines 93-97) to call renamed function: `classify_workflow_regex_comprehensive()`
+- [x] Preserve `classify_workflow_regex()` function (lines 212-268) - needed by regex-only mode
+- [x] Preserve `infer_complexity_from_keywords()` function (lines 149-188) - needed by regex-only mode
+- [x] Preserve `generate_generic_topics()` function (lines 195-205) - needed by regex-only mode
+- [x] Update function exports: rename fallback function, preserve classifier functions (lines 289-292)
+- [x] Add clear fail-fast error messages with context and suggestions at all removal points
 
 **Testing**:
 ```bash
@@ -389,16 +389,18 @@ echo "$output" | grep -q "fallback" && echo "FAIL: Automatic fallback still occu
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Phase 3 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
 - [ ] Git commit created: `feat(688): complete Phase 3 - Remove Regex Fallback and Enforce LLM-Only Mode`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
+
+[COMPLETED]
 
 ---
 

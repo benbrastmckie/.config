@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 # Unified Workflow Scope Detection Library
-# Provides hybrid LLM-based classification with automatic regex fallback
+# Provides LLM-based classification with fail-fast error handling
 #
 # This library serves all workflow commands (/coordinate, /supervise, custom orchestrators)
 # with a single unified implementation following the clean-break philosophy.
 #
-# Classification Modes:
-#   - hybrid (default): LLM first, regex fallback on timeout/low-confidence
-#   - llm-only: LLM only, fail-fast on errors
-#   - regex-only: Traditional regex patterns only
+# Classification Modes (Clean-Break: hybrid mode removed):
+#   - llm-only (default): LLM only, fail-fast on errors (no automatic fallback)
+#   - regex-only: Traditional regex patterns for offline development
 #
 # Source guard: Prevent multiple sourcing
 if [ -n "${WORKFLOW_SCOPE_DETECTION_SOURCED:-}" ]; then
@@ -28,8 +27,8 @@ fi
 # shellcheck source=.claude/lib/workflow-llm-classifier.sh
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-llm-classifier.sh"
 
-# Configuration
-WORKFLOW_CLASSIFICATION_MODE="${WORKFLOW_CLASSIFICATION_MODE:-hybrid}"
+# Configuration (Clean-Break: default changed from hybrid to llm-only)
+WORKFLOW_CLASSIFICATION_MODE="${WORKFLOW_CLASSIFICATION_MODE:-llm-only}"
 DEBUG_SCOPE_DETECTION="${DEBUG_SCOPE_DETECTION:-0}"
 
 # classify_workflow_comprehensive: Comprehensive workflow classification
@@ -53,35 +52,20 @@ classify_workflow_comprehensive() {
   # Validation
   if [ -z "$workflow_description" ]; then
     echo "ERROR: classify_workflow_comprehensive: workflow_description parameter is empty" >&2
-    fallback_comprehensive_classification "$workflow_description"
+    echo "  Context: Empty workflow description provided" >&2
+    echo "  Suggestion: Provide a non-empty workflow description" >&2
     return 1
   fi
 
-  # Route based on classification mode
+  # Route based on classification mode (Clean-Break: hybrid mode deleted)
   case "$WORKFLOW_CLASSIFICATION_MODE" in
-    hybrid)
-      # Try LLM first, fallback to regex + heuristic on error/timeout/low-confidence
-      local llm_result
-      if llm_result=$(classify_workflow_llm_comprehensive "$workflow_description" 2>/dev/null); then
-        # LLM classification succeeded - validate and return
-        if echo "$llm_result" | jq -e '.workflow_type' >/dev/null 2>&1; then
-          log_scope_detection "hybrid" "llm-comprehensive" "$(echo "$llm_result" | jq -r '.workflow_type')"
-          echo "$llm_result"
-          return 0
-        fi
-      fi
-
-      # LLM failed - fallback to regex + heuristic
-      log_scope_detection "hybrid" "comprehensive-fallback" ""
-      fallback_comprehensive_classification "$workflow_description"
-      return 0
-      ;;
-
     llm-only)
-      # LLM only - fail fast on errors
+      # LLM only - fail fast on errors (no automatic fallback)
+      local llm_result
       if ! llm_result=$(classify_workflow_llm_comprehensive "$workflow_description"); then
         echo "ERROR: classify_workflow_comprehensive: LLM classification failed in llm-only mode" >&2
-        fallback_comprehensive_classification "$workflow_description"
+        echo "  Context: Workflow description: $workflow_description" >&2
+        echo "  Suggestion: Check network connection, increase WORKFLOW_CLASSIFICATION_TIMEOUT, or use regex-only mode for offline development" >&2
         return 1
       fi
 
@@ -91,27 +75,37 @@ classify_workflow_comprehensive() {
       ;;
 
     regex-only)
-      # Regex + heuristic only - no LLM
-      log_scope_detection "regex-only" "comprehensive-fallback" ""
-      fallback_comprehensive_classification "$workflow_description"
+      # Regex + heuristic only - no LLM (intentional primary classifier for offline development)
+      log_scope_detection "regex-only" "regex-comprehensive" ""
+      classify_workflow_regex_comprehensive "$workflow_description"
       return 0
+      ;;
+
+    hybrid)
+      # Clean-break: hybrid mode removed
+      echo "ERROR: classify_workflow_comprehensive: hybrid mode removed in clean-break update" >&2
+      echo "  Context: WORKFLOW_CLASSIFICATION_MODE='$WORKFLOW_CLASSIFICATION_MODE' no longer valid" >&2
+      echo "  Suggestion: Use llm-only (default, online development) or regex-only (offline development)" >&2
+      return 1
       ;;
 
     *)
       echo "ERROR: classify_workflow_comprehensive: invalid WORKFLOW_CLASSIFICATION_MODE='$WORKFLOW_CLASSIFICATION_MODE'" >&2
-      fallback_comprehensive_classification "$workflow_description"
+      echo "  Context: Valid modes: llm-only, regex-only" >&2
+      echo "  Suggestion: Set WORKFLOW_CLASSIFICATION_MODE to llm-only or regex-only" >&2
       return 1
       ;;
   esac
 }
 
-# fallback_comprehensive_classification: Fallback for comprehensive classification
+# classify_workflow_regex_comprehensive: Regex-based comprehensive classification
+# Intentional primary classifier for offline development (not a fallback)
 # Combines regex scope detection with heuristic complexity calculation
 # Args:
 #   $1: workflow_description - The workflow description to analyze
 # Returns:
 #   Prints JSON to stdout
-fallback_comprehensive_classification() {
+classify_workflow_regex_comprehensive() {
   local workflow_description="$1"
 
   # Get scope using regex
@@ -136,7 +130,7 @@ fallback_comprehensive_classification() {
       "confidence": 0.6,
       "research_complexity": $complexity,
       "subtopics": $subtopics,
-      "reasoning": "Fallback: regex scope + heuristic complexity"
+      "reasoning": "Regex-only mode: regex scope + heuristic complexity"
     }'
 }
 
@@ -284,9 +278,9 @@ log_scope_detection() {
   # TODO: Integrate with unified-logger.sh for structured logging
 }
 
-# Export functions for use by other scripts
+# Export functions for use by other scripts (Clean-Break: renamed fallback function)
 export -f classify_workflow_comprehensive
 export -f classify_workflow_regex
-export -f fallback_comprehensive_classification
+export -f classify_workflow_regex_comprehensive
 export -f infer_complexity_from_keywords
 export -f generate_generic_topics
