@@ -250,21 +250,16 @@ build_llm_classifier_input() {
 
 # check_network_connectivity - Fast pre-flight check for network availability
 # Returns:
-#   0: Network available or regex-only mode
+#   0: Network available
 #   1: Network unavailable (offline scenario)
 # Added: Spec 700 Phase 5 - Fast-fail for offline scenarios
 check_network_connectivity() {
-  # Fast check for obvious offline scenarios
-  if [ "${WORKFLOW_CLASSIFICATION_MODE:-}" = "regex-only" ]; then
-    return 0  # Skip check, user explicitly chose offline mode
-  fi
-
   # Check for localhost-only environment
   # Use ping as lightweight network test (fallback if ping unavailable: return 0)
   if command -v ping >/dev/null 2>&1; then
     if ! timeout 1 ping -c 1 8.8.8.8 >/dev/null 2>&1; then
       echo "WARNING: No network connectivity detected" >&2
-      echo "  Suggestion: Use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline work" >&2
+      echo "  Suggestion: Check network connection or increase timeout" >&2
       return 1
     fi
   fi
@@ -550,16 +545,16 @@ handle_llm_classification_failure() {
   case "$error_type" in
     timeout|"$ERROR_TYPE_LLM_TIMEOUT")
       echo "  Suggestion: Increase WORKFLOW_CLASSIFICATION_TIMEOUT (current: ${WORKFLOW_CLASSIFICATION_TIMEOUT:-10}s)" >&2
-      echo "  Alternative: Use regex-only mode for offline development (export WORKFLOW_CLASSIFICATION_MODE=regex-only)" >&2
+      echo "  Alternative: Check network connection and retry" >&2
       ;;
     api_error|"$ERROR_TYPE_LLM_API_ERROR")
       echo "  Suggestion: Check network connection and API availability" >&2
-      echo "  Alternative: Use regex-only mode for offline development (export WORKFLOW_CLASSIFICATION_MODE=regex-only)" >&2
+      echo "  Alternative: Retry operation or check API credentials" >&2
       ;;
     network|"$ERROR_TYPE_NETWORK")
       echo "  Suggestion: Check network connectivity (ping, DNS resolution, firewall settings)" >&2
       echo "  Details: LLM classification requires internet access to reach API endpoints" >&2
-      echo "  Alternative: Use regex-only mode for offline development (export WORKFLOW_CLASSIFICATION_MODE=regex-only)" >&2
+      echo "  Alternative: Verify network connection and retry" >&2
       ;;
     low_confidence|"$ERROR_TYPE_LLM_LOW_CONFIDENCE")
       echo "  Suggestion: Rephrase workflow description with more specific keywords" >&2
@@ -567,15 +562,15 @@ handle_llm_classification_failure() {
       ;;
     parse_error|"$ERROR_TYPE_LLM_PARSE_ERROR")
       echo "  Suggestion: This is likely a temporary issue. Retry the operation" >&2
-      echo "  Alternative: Use regex-only mode if issue persists" >&2
+      echo "  Alternative: Check workflow description format and retry" >&2
       ;;
     invalid_mode|"$ERROR_TYPE_INVALID_MODE")
-      echo "  Suggestion: Set WORKFLOW_CLASSIFICATION_MODE to 'llm-only' (default, online) or 'regex-only' (offline)" >&2
-      echo "  Note: hybrid mode was removed in clean-break update (Spec 688 Phase 3)" >&2
+      echo "  Suggestion: WORKFLOW_CLASSIFICATION_MODE should be 'llm-only' (only valid mode)" >&2
+      echo "  Note: regex-only mode has been removed to maintain LLM-only classification" >&2
       ;;
     *)
       echo "  Suggestion: Unknown error type. Check error message above and retry" >&2
-      echo "  Alternative: Use regex-only mode (export WORKFLOW_CLASSIFICATION_MODE=regex-only)" >&2
+      echo "  Alternative: Verify network connection and check workflow description" >&2
       ;;
   esac
 

@@ -5,9 +5,8 @@
 # This library serves all workflow commands (/coordinate, /supervise, custom orchestrators)
 # with a single unified implementation following the clean-break philosophy.
 #
-# Classification Modes (Clean-Break: hybrid mode removed):
-#   - llm-only (default): LLM only, fail-fast on errors (no automatic fallback)
-#   - regex-only: Traditional regex patterns for offline development
+# Classification Mode:
+#   - llm-only (only mode): LLM classification with fail-fast on errors
 #
 # Source guard: Prevent multiple sourcing
 if [ -n "${WORKFLOW_SCOPE_DETECTION_SOURCED:-}" ]; then
@@ -57,81 +56,18 @@ classify_workflow_comprehensive() {
     return 1
   fi
 
-  # Route based on classification mode (Clean-Break: hybrid mode deleted)
-  case "$WORKFLOW_CLASSIFICATION_MODE" in
-    llm-only)
-      # LLM only - fail fast on errors (no automatic fallback)
-      local llm_result
-      if ! llm_result=$(classify_workflow_llm_comprehensive "$workflow_description"); then
-        echo "ERROR: classify_workflow_comprehensive: LLM classification failed in llm-only mode" >&2
-        echo "  Context: Workflow description: $workflow_description" >&2
-        echo "  Suggestion: Check network connection, increase WORKFLOW_CLASSIFICATION_TIMEOUT, or use regex-only mode for offline development" >&2
-        return 1
-      fi
+  # LLM-only classification - fail fast on errors (no fallback)
+  local llm_result
+  if ! llm_result=$(classify_workflow_llm_comprehensive "$workflow_description"); then
+    echo "ERROR: classify_workflow_comprehensive: LLM classification failed" >&2
+    echo "  Context: Workflow description: $workflow_description" >&2
+    echo "  Suggestion: Check network connection or increase WORKFLOW_CLASSIFICATION_TIMEOUT" >&2
+    return 1
+  fi
 
-      log_scope_detection "llm-only" "llm-comprehensive" "$(echo "$llm_result" | jq -r '.workflow_type')"
-      echo "$llm_result"
-      return 0
-      ;;
-
-    regex-only)
-      # Regex + heuristic only - no LLM (intentional primary classifier for offline development)
-      log_scope_detection "regex-only" "regex-comprehensive" ""
-      classify_workflow_regex_comprehensive "$workflow_description"
-      return 0
-      ;;
-
-    hybrid)
-      # Clean-break: hybrid mode removed
-      echo "ERROR: classify_workflow_comprehensive: hybrid mode removed in clean-break update" >&2
-      echo "  Context: WORKFLOW_CLASSIFICATION_MODE='$WORKFLOW_CLASSIFICATION_MODE' no longer valid" >&2
-      echo "  Suggestion: Use llm-only (default, online development) or regex-only (offline development)" >&2
-      return 1
-      ;;
-
-    *)
-      echo "ERROR: classify_workflow_comprehensive: invalid WORKFLOW_CLASSIFICATION_MODE='$WORKFLOW_CLASSIFICATION_MODE'" >&2
-      echo "  Context: Valid modes: llm-only, regex-only" >&2
-      echo "  Suggestion: Set WORKFLOW_CLASSIFICATION_MODE to llm-only or regex-only" >&2
-      return 1
-      ;;
-  esac
-}
-
-# classify_workflow_regex_comprehensive: Regex-based comprehensive classification
-# Intentional primary classifier for offline development (not a fallback)
-# Combines regex scope detection with heuristic complexity calculation
-# Args:
-#   $1: workflow_description - The workflow description to analyze
-# Returns:
-#   Prints JSON to stdout
-classify_workflow_regex_comprehensive() {
-  local workflow_description="$1"
-
-  # Get scope using regex
-  local scope
-  scope=$(classify_workflow_regex "$workflow_description")
-
-  # Infer complexity using heuristics
-  local complexity
-  complexity=$(infer_complexity_from_keywords "$workflow_description")
-
-  # Generate generic topic names
-  local subtopics_json
-  subtopics_json=$(generate_generic_topics "$complexity")
-
-  # Build JSON response
-  jq -n \
-    --arg scope "$scope" \
-    --argjson complexity "$complexity" \
-    --argjson subtopics "$subtopics_json" \
-    '{
-      "workflow_type": $scope,
-      "confidence": 0.6,
-      "research_complexity": $complexity,
-      "subtopics": $subtopics,
-      "reasoning": "Regex-only mode: regex scope + heuristic complexity"
-    }'
+  log_scope_detection "llm-only" "llm-comprehensive" "$(echo "$llm_result" | jq -r '.workflow_type')"
+  echo "$llm_result"
+  return 0
 }
 
 # infer_complexity_from_keywords: Heuristic complexity calculation
@@ -198,73 +134,10 @@ generate_generic_topics() {
   printf '%s\n' "${topics[@]}" | jq -R . | jq -s .
 }
 
-# classify_workflow_regex: Traditional regex-based classification (embedded fallback)
-# Args:
-#   $1: workflow_description - The workflow description to analyze
-# Returns:
-#   Prints one of: research-only, research-and-plan, research-and-revise, full-implementation, debug-only
-classify_workflow_regex() {
-  local workflow_description="$1"
-  local scope="research-and-plan"  # Default fallback
-
-  # Validation
-  if [ -z "$workflow_description" ]; then
-    echo "$scope"
-    return 0
-  fi
-
-  # Order matters: check more specific patterns first
-
-  # PRIORITY 1: Research-and-revise patterns (most specific)
-  # Pattern: revision-first (e.g., "Revise X to Y", "Update plan to accommodate Z")
-  if echo "$workflow_description" | grep -Eiq "^(revise|update|modify).*(plan|implementation).*(accommodate|based on|using|to|for)"; then
-    scope="research-and-revise"
-    # If revision-first and a path is provided, extract topic from existing plan path
-    if echo "$workflow_description" | grep -Eq "/specs/[0-9]+_[^/]+/plans/"; then
-      EXISTING_PLAN_PATH=$(echo "$workflow_description" | grep -oE "/[^ ]+\.md" | head -1)
-      export EXISTING_PLAN_PATH
-    fi
-
-  # Pattern: research-and-revise (specific before general)
-  elif echo "$workflow_description" | grep -Eiq "(research|analyze).*(and |then |to ).*(revise|update.*plan|modify.*plan)"; then
-    scope="research-and-revise"
-
-  # PRIORITY 2: Plan path detection (for implementation, not revision)
-  elif echo "$workflow_description" | grep -Eq "(^|[[:space:]])(\.|/)?(.*/)?specs/[0-9]+_[^/]+/plans/[^[:space:]]+\.md"; then
-    scope="full-implementation"
-
-  # PRIORITY 3: Explicit keyword patterns (check before research-only to handle "research X and implement Y")
-  # Note: Use \b for word boundaries to avoid matching "implementation" in "implementation plan"
-  elif echo "$workflow_description" | grep -Eiq "\b(implement|execute)\b"; then
-    scope="full-implementation"
-
-  # PRIORITY 4: Research-only pattern (explicit research with no action keywords)
-  elif echo "$workflow_description" | grep -Eiq "^research.*"; then
-    if echo "$workflow_description" | grep -Eiq "(plan|fix|debug|create|add|build)"; then
-      # Has action keywords - not research-only
-      scope="research-and-plan"
-    else
-      # Pure research with no action keywords
-      scope="research-only"
-    fi
-
-  # PRIORITY 5: Other specific patterns
-  elif echo "$workflow_description" | grep -Eiq "(plan|create.*plan|design)"; then
-    scope="research-and-plan"
-  elif echo "$workflow_description" | grep -Eiq "(fix|debug|troubleshoot)"; then
-    scope="debug-only"
-  elif echo "$workflow_description" | grep -Eiq "(build|add|create).*feature"; then
-    scope="full-implementation"
-  fi
-
-  echo "$scope"
-  return 0
-}
-
 # log_scope_detection: Structured logging for scope detection decisions
 # Args:
-#   $1: mode - Classification mode (hybrid, llm-only, regex-only)
-#   $2: method - Classification method used (llm, regex, regex-fallback)
+#   $1: mode - Classification mode (llm-only)
+#   $2: method - Classification method used (llm-comprehensive)
 #   $3: scope - Detected scope (optional)
 log_scope_detection() {
   local mode="$1"
@@ -287,10 +160,8 @@ detect_workflow_scope() {
   echo "$result" | jq -r '.workflow_type' 2>/dev/null || echo "research-and-plan"
 }
 
-# Export functions for use by other scripts (Clean-Break: renamed fallback function)
+# Export functions for use by other scripts
 export -f classify_workflow_comprehensive
-export -f classify_workflow_regex
-export -f classify_workflow_regex_comprehensive
 export -f infer_complexity_from_keywords
 export -f generate_generic_topics
 export -f detect_workflow_scope  # Backward compatibility wrapper

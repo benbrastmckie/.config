@@ -1,12 +1,14 @@
-# LLM-Based Classification Pattern (2-Mode System)
+# LLM-Based Classification Pattern (LLM-Only)
 
 **Path**: docs → concepts → patterns → llm-classification-pattern.md
 
 [Used by: /coordinate, /supervise, workflow-scope-detection.sh, workflow-detection.sh]
 
-LLM-based classification with fail-fast error handling for 98%+ accuracy semantic understanding. Two modes: llm-only (default, online development) and regex-only (offline/testing).
+**IMPORTANT**: This document describes the historical 2-mode system. **regex-only mode has been removed** (Spec 704 Phase 4). The system now uses **LLM-only classification** with fail-fast error handling.
 
-**Note**: Hybrid mode with automatic regex fallback was removed in clean-break update (Spec 688). LLM-only mode now fails fast with clear error messages instead of falling back automatically.
+LLM-based classification with fail-fast error handling for 98%+ accuracy semantic understanding.
+
+**Note**: Hybrid mode was removed in Spec 688. regex-only mode was removed in Spec 704 Phase 4. LLM-only mode now fails fast with clear error messages when classification fails.
 
 ## Definition
 

@@ -390,24 +390,28 @@ sm_init "research authentication patterns" "test" 2>&1
 - [x] Git commit created: `feat(704): complete Phase 3 - Maintain Fail-Fast Approach`
 - [x] Update this plan file with phase completion status
 
-### Phase 4: LLM Classification - Testing and Documentation
+### Phase 4: LLM Classification - Testing and Documentation [COMPLETED]
 dependencies: [3]
 
-**Objective**: ~~Comprehensive testing of user prompt fallback~~ Test fail-fast behavior and update documentation
+**Objective**: ~~Comprehensive testing of user prompt fallback~~ Test fail-fast behavior, remove regex classification, and update documentation
 
 **Complexity**: Low
 
-**Decision**: Phase 4 simplified to test fail-fast approach and document error visibility improvements.
+**Decision**: Phase 4 expanded to remove regex classification entirely per user request, maintaining LLM-only classification with fail-fast approach.
 
 **Tasks**:
 - [N/A] ~~Create test_sm_init_classification_failure.sh~~ (fail-fast returns 1, not 2)
 - [N/A] ~~Create test_user_prompt_workflow.sh~~ (no user prompt implementation)
 - [N/A] ~~Test heuristic fallback functions~~ (no automatic fallback)
-- [ ] Run existing test suite to verify no regressions
-- [ ] Update coordinate-command-guide.md with Phase 1 error visibility improvements
-- [ ] Document troubleshooting workflow for classification failures
-- [ ] Verify regex-only mode works as offline alternative
-- [ ] Test error messages provide actionable guidance
+- [x] Run existing test suite to verify no regressions
+- [x] Remove all regex classification code from workflow-llm-classifier.sh
+- [x] Remove regex-only mode support from workflow-scope-detection.sh
+- [x] Update WORKFLOW_CLASSIFICATION_MODE handling (remove regex-only option)
+- [x] Update all documentation to remove regex-only mode references
+- [x] Update error messages to remove regex-only suggestions
+- [x] Update coordinate-command-guide.md with Phase 1 error visibility improvements
+- [x] Document troubleshooting workflow for classification failures (LLM-only)
+- [x] Test error messages provide actionable guidance
 
 **Testing**:
 ```bash
@@ -443,14 +447,16 @@ bash .claude/tests/run_all_tests.sh
 - CLAUDE.md: Update "LLM Classification" section with fallback approach
 - Add user prompt UX mockup to guide
 
-**Expected Duration**: 1.5 hours
+**Expected Duration**: 2 hours (expanded from 1.5 hours to include regex removal)
 
 **Phase 4 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(704): complete Phase 4 - Testing and Documentation`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (75/110 baseline maintained)
+- [x] regex classification completely removed from codebase
+- [x] Documentation updated with deprecation notices
+- [x] Error messages provide actionable guidance (no regex-only suggestions)
+- [x] Git commit created: `feat(704): complete Phase 4 - Remove Regex Classification`
+- [x] Update this plan file with phase completion status
 
 ### Phase 5: Test Infrastructure - Environment and Library Fixes
 dependencies: [1, 2]
