@@ -123,6 +123,117 @@ extract_topic_from_plan_path() {
 }
 
 # ==============================================================================
+# Helper Function: validate_and_generate_filename_slugs
+# ==============================================================================
+
+# validate_and_generate_filename_slugs: Three-tier validation for filename slug generation
+#
+# Implements hybrid filename generation (Strategy 3 from Spec 688 Report 002):
+# Tier 1: Use LLM-generated slug if valid (preferred)
+# Tier 2: Sanitize short_name if LLM slug invalid (fallback)
+# Tier 3: Use generic topicN if short_name empty (ultimate fallback)
+#
+# Arguments:
+#   $1 - classification_result: JSON classification result containing research_topics array
+#   $2 - research_complexity: Expected number of topics (1-4)
+#
+# Output:
+#   Prints bash array declaration: slugs=("slug1" "slug2" ...)
+#   Can be eval'd by caller: eval "$(validate_and_generate_filename_slugs "$json" 2)"
+#
+# Returns:
+#   0 on success, 1 on error
+#
+# Side effects:
+#   Logs slug generation strategy to unified-logger.sh (if available)
+#
+validate_and_generate_filename_slugs() {
+  local classification_result="$1"
+  local research_complexity="$2"
+
+  # Validate inputs
+  if [ -z "$classification_result" ]; then
+    echo "ERROR: validate_and_generate_filename_slugs: classification_result required" >&2
+    return 1
+  fi
+
+  if [ -z "$research_complexity" ]; then
+    echo "ERROR: validate_and_generate_filename_slugs: research_complexity required" >&2
+    return 1
+  fi
+
+  # Extract research_topics array from classification result
+  local research_topics
+  research_topics=$(echo "$classification_result" | jq -c '.research_topics // []')
+
+  if [ "$research_topics" = "[]" ] || [ -z "$research_topics" ]; then
+    echo "ERROR: validate_and_generate_filename_slugs: research_topics array empty or missing" >&2
+    return 1
+  fi
+
+  # Validate count matches complexity
+  local topics_count
+  topics_count=$(echo "$research_topics" | jq 'length')
+
+  if [ "$topics_count" -ne "$research_complexity" ]; then
+    echo "ERROR: validate_and_generate_filename_slugs: topics count ($topics_count) != complexity ($research_complexity)" >&2
+    return 1
+  fi
+
+  # Generate validated slugs (three-tier fallback)
+  local -a validated_slugs
+  local slug_regex='^[a-z0-9_]{1,50}$'
+
+  for ((i=0; i<research_complexity; i++)); do
+    local filename_slug short_name final_slug strategy
+
+    # Extract fields from topic
+    filename_slug=$(echo "$research_topics" | jq -r ".[$i].filename_slug // empty")
+    short_name=$(echo "$research_topics" | jq -r ".[$i].short_name // empty")
+
+    # Tier 1: Validate LLM-generated slug
+    if [ -n "$filename_slug" ] && echo "$filename_slug" | grep -Eq "$slug_regex"; then
+      # Check for path separator injection and 255-byte filename limit
+      if echo "$filename_slug" | grep -q '/'; then
+        # Path separator found - reject and fall back
+        strategy="sanitize"
+        final_slug=$(sanitize_topic_name "$short_name")
+      elif [ ${#filename_slug} -gt 255 ]; then
+        # Exceeds filesystem limit - truncate
+        strategy="truncate"
+        final_slug="${filename_slug:0:255}"
+      else
+        # Valid LLM slug - use it
+        strategy="llm"
+        final_slug="$filename_slug"
+      fi
+    # Tier 2: Sanitize short_name fallback
+    elif [ -n "$short_name" ]; then
+      strategy="sanitize"
+      final_slug=$(sanitize_topic_name "$short_name")
+    # Tier 3: Generic fallback
+    else
+      strategy="generic"
+      final_slug="topic$((i+1))"
+    fi
+
+    validated_slugs+=("$final_slug")
+
+    # Log slug generation strategy (if unified-logger available)
+    if declare -f log_slug_generation >/dev/null 2>&1; then
+      log_slug_generation "INFO" "$i" "$strategy" "$final_slug"
+    fi
+  done
+
+  # Output bash array declaration for eval by caller
+  local slugs_str
+  slugs_str=$(printf '"%s" ' "${validated_slugs[@]}")
+  echo "slugs=($slugs_str)"
+
+  return 0
+}
+
+# ==============================================================================
 # Core Function: initialize_workflow_paths
 # ==============================================================================
 
@@ -137,6 +248,7 @@ extract_topic_from_plan_path() {
 #   $1 - WORKFLOW_DESCRIPTION: User's workflow description (e.g., "implement auth")
 #   $2 - WORKFLOW_SCOPE: Workflow type (research-only, research-and-plan, full-implementation, debug-only)
 #   $3 - RESEARCH_COMPLEXITY: Number of research subtopics (1-4, default: 2) - NEW in Spec 678
+#   $4 - CLASSIFICATION_RESULT: JSON classification result with research_topics array (optional, for filename slugs) - NEW in Spec 688
 #
 # Exports (all paths exported to calling script):
 #   LOCATION - Project root directory
@@ -169,6 +281,7 @@ initialize_workflow_paths() {
   local workflow_description="${1:-}"
   local workflow_scope="${2:-}"
   local research_complexity="${3:-2}"  # NEW: Accept RESEARCH_COMPLEXITY as third argument (default: 2)
+  local classification_result="${4:-}"  # NEW in Spec 688: JSON classification result for filename slugs (optional)
 
   # Validate inputs
   if [ -z "$workflow_description" ]; then
@@ -381,19 +494,50 @@ initialize_workflow_paths() {
 
   # Research phase paths (dynamically allocate based on RESEARCH_COMPLEXITY)
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # Design Enhancement: Just-in-time dynamic allocation (Spec 678)
+  # Design Enhancement: Just-in-time dynamic allocation with filename slugs (Spec 678, 688)
   #   - Allocate EXACTLY $research_complexity paths (1-4)
-  #   - Eliminates pre-allocation tension (fixed capacity vs dynamic usage)
-  #   - Zero unused variable exports → cleaner diagnostics
+  #   - Use LLM-generated filename slugs (validated) for semantic filenames
+  #   - Three-tier fallback: LLM slug → sanitized short_name → generic topicN
+  #   - Eliminates pre-allocation tension and post-research filename discovery
   #   - Maintains Phase 0 optimization (85% token reduction, 25x speedup)
   #
-  # Rationale: Complexity now determined in sm_init (before path allocation),
-  # enabling just-in-time allocation that exactly matches usage.
-  # See: Spec 678 Phase 4 (dynamic allocation), phase-0-optimization.md
+  # Rationale: Complexity and filename slugs determined in sm_init (before path
+  # allocation), enabling just-in-time allocation with semantic filenames.
+  # See: Spec 678 Phase 4 (dynamic allocation), Spec 688 Phase 2 (slug validation)
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   local -a report_paths
+  local -a validated_slugs
+
+  # Generate validated filename slugs if classification_result provided
+  if [ -n "$classification_result" ]; then
+    # Extract and validate filename slugs using three-tier fallback
+    local slugs_declaration
+    if slugs_declaration=$(validate_and_generate_filename_slugs "$classification_result" "$research_complexity" 2>&1); then
+      # eval the array declaration: slugs=("slug1" "slug2" ...)
+      eval "$slugs_declaration"
+      validated_slugs=("${slugs[@]}")
+    else
+      # Validation failed - log warning and fall back to generic filenames
+      echo "WARNING: Filename slug validation failed, using generic filenames" >&2
+      echo "  Error: $slugs_declaration" >&2
+      # Generate generic fallback slugs
+      for i in $(seq 1 "$research_complexity"); do
+        validated_slugs+=("topic${i}")
+      done
+    fi
+  else
+    # No classification result provided - use generic filenames (backwards compatibility)
+    for i in $(seq 1 "$research_complexity"); do
+      validated_slugs+=("topic${i}")
+    done
+  fi
+
+  # Allocate report paths using validated slugs
   for i in $(seq 1 "$research_complexity"); do
-    report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_topic${i}.md")
+    local slug_index=$((i - 1))  # slugs array is 0-indexed
+    local slug="${validated_slugs[$slug_index]}"
+    report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_${slug}.md")
   done
 
   # Export individual report path variables for bash block persistence
