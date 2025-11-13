@@ -2,13 +2,13 @@
 
 ## Metadata
 - **Date**: 2025-11-13
-- **Last Revised**: 2025-11-13 (Revision 1: Simplified LLM fallback)
+- **Last Revised**: 2025-11-13 (Revision 2: Phase 6 expansion for 100% test coverage)
 - **Feature**: Aggregated plan addressing all issues from Plans 702 and 703, integrating with .claude/ infrastructure cleanup
 - **Scope**: LLM classification fixes, test infrastructure, library patterns, directory organization, documentation standards
 - **Estimated Phases**: 10
-- **Estimated Hours**: 33-40 (revised from 38-45 after simplification)
+- **Estimated Hours**: 38-48 (revised: 33-40 base + 5-8 hours for comprehensive Phase 6 test fixes)
 - **Structure Level**: 0
-- **Complexity Score**: 167.5
+- **Complexity Score**: 167.5 (may increase with Phase 6 test investigation complexity)
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - [Directory Structure Organization Analysis](/home/benjamin/.config/.claude/specs/700_itself_conduct_careful_research_to_create_a_plan/reports/001_directory_structure_organization_analysis.md)
@@ -20,6 +20,25 @@
   - [Plan 703: Failing Tests Implementation Fixes](/home/benjamin/.config/.claude/specs/703_fix_failing_tests/plans/001_test_failure_fixes_implementation.md)
 
 ## Revision History
+
+### 2025-11-13 - Revision 2: Phase 6 Expansion for 100% Test Pass Rate
+
+**Changes**: Expanded Phase 6 with comprehensive test categorization and integration of Phase 5 deferred tasks
+
+**Tasks Added**:
+- Moved 5 library test fixes from Phase 5 to Phase 6 Category 1
+- Added 8 coordinate command tests to Category 2
+- Added 7 orchestration/delegation tests to Category 3
+- Added 6 workflow detection tests to Category 4
+- Added 8 integration/validation tests to Category 5
+- Added documentation updates to Category 6
+
+**Complexity Impact**:
+- Phase 6 duration: 7 hours → 12-15 hours (increased 71-114%)
+- Overall plan hours: 33-40 → 38-48 (increased 15-20%)
+- Added specific success metrics for each category
+
+**Goal**: Achieve 100% test pass rate (110/110 test suites) by systematically addressing all 33 failing tests in organized categories with clear checkpoints.
 
 ### 2025-11-13 - Revision 1: Simplified LLM Classification Fallback
 
@@ -109,11 +128,11 @@ This aggregated plan unifies fixes from Plans 702 and 703 while integrating dire
 - [ ] Automatic fallback: Offline scenarios gracefully degrade to regex-only mode
 
 ### Test Infrastructure (Plan 703)
-- [x] Test mode infrastructure implemented (COMPLETED)
-- [x] 77/110 tests passing (70% pass rate achieved)
-- [ ] All 33 remaining failing tests pass
-- [ ] 100% test pass rate (110/110 suites)
-- [ ] Test execution time <5 minutes
+- [x] Test mode infrastructure implemented (Phase 0 COMPLETED)
+- [x] 77/110 tests passing (Phase 5 COMPLETED - 70% pass rate achieved)
+- [ ] All 33 remaining failing tests pass (Phase 6 - organized into 6 categories)
+- [ ] 100% test pass rate (110/110 suites) (Phase 6 target)
+- [ ] Test execution time <5 minutes (Phase 6 target)
 
 ### Directory Organization (Research)
 - [ ] validate_links_temp.sh relocated or deleted (root directory clean)
@@ -479,11 +498,7 @@ dependencies: [1, 2]
 - [x] Add dependency-analyzer.sh to REQUIRED_LIBS for full-implementation scope (already present)
 - [x] Update/remove outdated test_bash_command_fixes.sh Test 3 (updated to check REQUIRED_LIBS array)
 
-**Deferred Tasks** (complex test fixes beyond Phase 5 scope):
-- [ ] Fix test_state_machine.sh, test_state_persistence.sh, test_workflow_initialization.sh failures
-- [ ] Fix test_shared_utilities.sh and test_topic_filename_generation.sh failures
-
-**Note**: Test infrastructure improvements achieved. Test suite baseline improved from 76/110 to 77/110 passing (70% pass rate). Remaining test failures require investigation beyond library sourcing issues and will be addressed in Phase 6.
+**Note**: Test infrastructure improvements achieved. Test suite baseline improved from 76/110 to 77/110 passing (70% pass rate). Library and core test failures (test_state_machine.sh, test_state_persistence.sh, test_workflow_initialization.sh, test_shared_utilities.sh, test_topic_filename_generation.sh) moved to Phase 6 Category 1 for systematic resolution.
 
 **Testing**:
 ```bash
@@ -523,73 +538,168 @@ done
 ### Phase 6: Test Infrastructure - Orchestration and Integration Fixes
 dependencies: [5]
 
-**Objective**: Fix orchestrate, coordinate, and integration test failures (Plan 703 Phases 5-8 combined)
+**Objective**: Fix all remaining test failures to achieve 100% test pass rate (Plan 703 Phases 5-8 combined + Phase 5 deferred tasks)
 
 **Complexity**: High
 
-**Tasks**:
-- [ ] Add topic-based path format documentation to orchestrate.md Phase 2
-- [ ] Add research report cross-reference passing documentation
-- [ ] Add metadata extraction strategy documentation
-- [ ] Add summary template artifact sections
+**Tasks** (organized by category):
+
+**Category 1: Library and Core Tests** (deferred from Phase 5)
+- [ ] Investigate and fix test_state_machine.sh failures
+  - Check state constant definitions and transition validation
+  - Verify state machine initialization and transitions work correctly
+- [ ] Investigate and fix test_state_persistence.sh failures
+  - Check file-based state persistence operations
+  - Verify state save/load/cleanup functions
+- [ ] Investigate and fix test_workflow_initialization.sh failures
+  - Check CLAUDE_PROJECT_DIR detection and LIB_DIR setup
+  - Verify library sourcing and initialization sequence
+- [ ] Investigate and fix test_shared_utilities.sh failures
+  - Check utility function implementations
+  - Verify helper functions work in isolation
+- [ ] Investigate and fix test_topic_filename_generation.sh failures
+  - Check topic slug generation and filename sanitization
+  - Verify directory numbering and collision handling
+
+**Category 2: Coordinate Command Tests**
 - [ ] Fix test_coordinate_error_fixes.sh (error handling validation)
 - [ ] Fix test_coordinate_preprocessing.sh (history expansion, quoting)
 - [ ] Fix test_coordinate_standards.sh (Standard 11, Standard 15 compliance)
 - [ ] Fix test_coordinate_synchronization.sh (state synchronization)
+- [ ] Fix test_coordinate_waves.sh (wave execution)
+- [ ] Fix test_coordinate_all.sh (comprehensive coordinate tests)
+- [ ] Fix test_coordinate_error_recovery.sh (error recovery patterns)
+- [ ] Fix test_coordinate_research_complexity_fix.sh (research complexity)
+
+**Category 3: Orchestration and Delegation Tests**
 - [ ] Fix test_orchestration_commands.sh (multi-command validation)
-- [ ] Fix test_supervise_agent_delegation.sh, test_supervise_delegation.sh, test_supervise_scope_detection.sh
+- [ ] Fix test_orchestrate_planning_behavioral_injection.sh (behavioral injection pattern)
+- [ ] Fix test_orchestrate_research_enhancements_simple.sh (research enhancements)
+- [ ] Fix test_supervise_agent_delegation.sh (agent delegation in supervise)
+- [ ] Fix test_supervise_delegation.sh (general delegation patterns)
+- [ ] Fix test_supervise_scope_detection.sh (scope detection in supervise)
+- [ ] Fix test_supervisor_checkpoint_old.sh (checkpoint compatibility)
 
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
+**Category 4: Workflow Detection and Classification Tests**
+- [ ] Fix test_workflow_scope_detection.sh (workflow type detection)
+  - Current: 3/20 tests passing (plan path, revise, debug patterns failing)
+  - Investigate detect_workflow_scope() function logic
+  - Fix priority ordering and keyword matching
+- [ ] Fix test_workflow_detection.sh (workflow pattern recognition)
+- [ ] Fix test_scope_detection.sh (scope inference)
+- [ ] Fix test_scope_detection_ab.sh (A/B comparison tests)
+- [ ] Fix test_offline_classification.sh (offline mode classification)
+- [ ] Fix test_sm_init_error_handling.sh (state machine initialization errors)
 
+**Category 5: Integration and Validation Tests**
 - [ ] Fix test_all_delegation_fixes.sh (comprehensive delegation validation)
 - [ ] Fix test_all_fixes_integration.sh (cross-cutting integration)
-- [ ] Fix test_phase3_verification.sh, test_revision_specialist.sh
-- [ ] Fix test_supervisor_checkpoint_old.sh, test_template_integration.sh
-- [ ] Fix validate_executable_doc_separation.sh, validate_no_agent_slash_commands.sh
-- [ ] Fix test_system_wide_empty_directories.sh
-- [ ] Fix test_scope_detection.sh, test_scope_detection_ab.sh
-- [ ] Investigate and fix "Agent" and "SOME" tests
+- [ ] Fix test_phase3_verification.sh (phase 3 integration)
+- [ ] Fix test_revision_specialist.sh (revision agent patterns)
+- [ ] Fix test_template_integration.sh (template usage validation)
+- [ ] Fix validate_executable_doc_separation.sh (1 validation failing)
+  - Current issue: Unknown validation failure
+  - Investigate what file is failing separation pattern checks
+- [ ] Fix validate_no_agent_slash_commands.sh (1 violation detected)
+  - Current issue: revision-specialist.md references /implement slash command
+  - Update agent to create artifacts directly instead of invoking /implement
+- [ ] Fix test_system_wide_empty_directories.sh (empty directory detection)
+
+**Category 6: Documentation Updates**
+- [ ] Add topic-based path format documentation to orchestrate.md Phase 2
+- [ ] Add research report cross-reference passing documentation
+- [ ] Add metadata extraction strategy documentation
+- [ ] Add summary template artifact sections
+
+<!-- PROGRESS CHECKPOINT -->
+After completing library tests (Category 1):
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify test pass rate improvement with bash .claude/tests/run_all_tests.sh
+<!-- END PROGRESS CHECKPOINT -->
+
+<!-- PROGRESS CHECKPOINT -->
+After completing coordinate tests (Category 2):
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify coordinate-specific tests all pass
+<!-- END PROGRESS CHECKPOINT -->
+
+<!-- PROGRESS CHECKPOINT -->
+After completing all test categories:
+- [ ] Verify 100% test pass rate (110/110 test suites passing)
+- [ ] Run full test suite and confirm no failures
+- [ ] Document any test removals or consolidations
+<!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
 ```bash
-# Test orchestrate documentation
-bash .claude/tests/test_orchestrate_planning_behavioral_injection.sh
-bash .claude/tests/test_orchestrate_research_enhancements_simple.sh
-
-# Test coordinate fixes
-for test in test_coordinate_error_fixes test_coordinate_preprocessing test_coordinate_standards test_coordinate_synchronization; do
-  echo "=== Testing: $test ==="
-  bash .claude/tests/${test}.sh
+# Category 1: Library and Core Tests
+echo "=== Category 1: Library and Core Tests ==="
+for test in test_state_machine test_state_persistence test_workflow_initialization test_shared_utilities test_topic_filename_generation; do
+  echo "Testing: $test"
+  bash .claude/tests/${test}.sh 2>&1 | tail -5
 done
 
-# Test orchestration commands
-bash .claude/tests/test_orchestration_commands.sh
-bash .claude/tests/test_supervise_agent_delegation.sh
-bash .claude/tests/test_supervise_delegation.sh
+# Category 2: Coordinate Command Tests
+echo "=== Category 2: Coordinate Command Tests ==="
+for test in test_coordinate_error_fixes test_coordinate_preprocessing test_coordinate_standards test_coordinate_synchronization test_coordinate_waves test_coordinate_all test_coordinate_error_recovery test_coordinate_research_complexity_fix; do
+  echo "Testing: $test"
+  bash .claude/tests/${test}.sh 2>&1 | tail -5
+done
 
-# Test integration and validation
+# Category 3: Orchestration and Delegation Tests
+echo "=== Category 3: Orchestration Tests ==="
+for test in test_orchestration_commands test_orchestrate_planning_behavioral_injection test_orchestrate_research_enhancements_simple test_supervise_agent_delegation test_supervise_delegation test_supervise_scope_detection test_supervisor_checkpoint_old; do
+  echo "Testing: $test"
+  bash .claude/tests/${test}.sh 2>&1 | tail -5
+done
+
+# Category 4: Workflow Detection and Classification Tests
+echo "=== Category 4: Workflow Detection Tests ==="
+for test in test_workflow_scope_detection test_workflow_detection test_scope_detection test_scope_detection_ab test_offline_classification test_sm_init_error_handling; do
+  echo "Testing: $test"
+  bash .claude/tests/${test}.sh 2>&1 | tail -5
+done
+
+# Category 5: Integration and Validation Tests
+echo "=== Category 5: Integration and Validation Tests ==="
 bash .claude/tests/test_all_delegation_fixes.sh
+bash .claude/tests/test_all_fixes_integration.sh
+bash .claude/tests/test_phase3_verification.sh
+bash .claude/tests/test_revision_specialist.sh
+bash .claude/tests/test_template_integration.sh
 bash .claude/tests/validate_executable_doc_separation.sh
 bash .claude/tests/validate_no_agent_slash_commands.sh
+bash .claude/tests/test_system_wide_empty_directories.sh
 
 # Final verification - all 110 tests
-bash .claude/tests/run_all_tests.sh 2>&1 | tee /tmp/test_results.txt
-grep "Test Suites Passed:" /tmp/test_results.txt
-# Expected: 110/110 (100% pass rate)
+echo "=== Final Verification: Full Test Suite ==="
+bash .claude/tests/run_all_tests.sh 2>&1 | tee /tmp/test_results_phase6.txt
+grep "Test Suites Passed:" /tmp/test_results_phase6.txt
+grep "Test Suites Failed:" /tmp/test_results_phase6.txt
+# Expected: Test Suites Passed: 110
+# Expected: Test Suites Failed: 0
 ```
 
-**Expected Duration**: 7 hours
+**Expected Duration**: 12-15 hours (expanded from original 7 hours to include all deferred Phase 5 tasks)
 
 **Phase 6 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(704): complete Phase 6 - Orchestration and Integration Fixes`
-- [ ] Checkpoint saved (if complex phase)
+- [ ] All category tasks marked [x] (or marked as N/A with explanation)
+- [ ] 100% test pass rate achieved (110/110 test suites passing)
+- [ ] Zero test failures (Test Suites Failed: 0)
+- [ ] All validation scripts passing (validate_executable_doc_separation.sh, validate_no_agent_slash_commands.sh)
+- [ ] Documentation updates completed (orchestrate.md, research reports, metadata extraction)
+- [ ] Test results saved to /tmp/test_results_phase6.txt for verification
+- [ ] Git commit created: `feat(704): complete Phase 6 - Achieve 100% Test Pass Rate`
 - [ ] Update this plan file with phase completion status
+
+**Success Metrics**:
+- Test pass rate: 77/110 (70%) → 110/110 (100%)
+- Category 1 (Library): 0/5 → 5/5 passing
+- Category 2 (Coordinate): 0/8 → 8/8 passing
+- Category 3 (Orchestration): 0/7 → 7/7 passing
+- Category 4 (Workflow Detection): 1/6 → 6/6 passing
+- Category 5 (Integration): 0/8 → 8/8 passing
+- Total improvement: +33 test suites fixed
 
 ### Phase 7: Directory Organization - File Relocation and Cleanup
 dependencies: []
