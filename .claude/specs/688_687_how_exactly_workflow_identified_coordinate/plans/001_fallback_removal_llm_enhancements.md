@@ -417,20 +417,20 @@ dependencies: [3]
 - `.claude/lib/workflow-scope-detection.sh` (update error handling at failure points)
 
 **Tasks**:
-- [ ] Add LLM error types to error-handling.sh: `ERROR_TYPE_LLM_TIMEOUT`, `ERROR_TYPE_LLM_API_ERROR`, `ERROR_TYPE_LLM_LOW_CONFIDENCE`, `ERROR_TYPE_LLM_PARSE_ERROR`, `ERROR_TYPE_INVALID_MODE`
-- [ ] Implement `handle_llm_classification_failure()` function in workflow-llm-classifier.sh
-- [ ] Add error context: error type, error message, workflow description, suggested mode (for offline: suggest regex-only)
-- [ ] Add actionable suggestions for each error type:
+- [x] Add LLM error types to error-handling.sh: `ERROR_TYPE_LLM_TIMEOUT`, `ERROR_TYPE_LLM_API_ERROR`, `ERROR_TYPE_LLM_LOW_CONFIDENCE`, `ERROR_TYPE_LLM_PARSE_ERROR`, `ERROR_TYPE_INVALID_MODE`
+- [x] Implement `handle_llm_classification_failure()` function in workflow-llm-classifier.sh
+- [x] Add error context: error type, error message, workflow description, suggested mode (for offline: suggest regex-only)
+- [x] Add actionable suggestions for each error type:
   - Timeout: "Increase WORKFLOW_CLASSIFICATION_TIMEOUT or use regex-only mode for offline development"
   - API error: "Check network connection or use regex-only mode for offline development"
   - Low confidence: "Rephrase workflow description with more specific keywords"
   - Invalid mode (hybrid): "hybrid mode removed in clean-break update. Use llm-only (default) or regex-only (offline)"
-- [ ] Update state machine initialization (workflow-state-machine.sh:367-376): remove fallback block entirely, replace with fail-fast critical error
-- [ ] Update empty description validation (workflow-scope-detection.sh:54-57): direct `return 1` after error message
-- [ ] Update invalid mode handling (workflow-scope-detection.sh:100-104): detect hybrid mode specifically, provide clean-break explanation
-- [ ] Ensure all error messages follow pattern: "ERROR: [what] | Context: [workflow] | Suggestion: [action]"
-- [ ] Test failure scenarios return non-zero exit codes: LLM timeout, API error, low confidence, empty input, hybrid mode
-- [ ] Verify checkpoint recovery integration (partial progress preserved on failure)
+- [x] Update state machine initialization (workflow-state-machine.sh:367-376): remove fallback block entirely, replace with fail-fast critical error
+- [x] Update empty description validation (workflow-scope-detection.sh:54-57): direct `return 1` after error message
+- [x] Update invalid mode handling (workflow-scope-detection.sh:100-104): detect hybrid mode specifically, provide clean-break explanation
+- [x] Ensure all error messages follow pattern: "ERROR: [what] | Context: [workflow] | Suggestion: [action]"
+- [x] Test failure scenarios return non-zero exit codes: LLM timeout, API error, low confidence, empty input, hybrid mode
+- [x] Verify checkpoint recovery integration (partial progress preserved on failure)
 
 **Testing**:
 ```bash
@@ -467,16 +467,18 @@ sm_init "test" "coordinate" 2>&1 | grep -q "CRITICAL ERROR" || echo "FAIL: sm_in
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Phase 4 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
 - [ ] Git commit created: `feat(688): complete Phase 4 - Fail-Fast Error Handling at All Invocation Points`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
+
+[COMPLETED]
 
 ---
 
