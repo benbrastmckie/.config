@@ -386,7 +386,7 @@ sm_init() {
         echo "" >&2
       fi
 
-      # Fail-fast: No automatic fallback (clean-break approach from Spec 688 Phase 3)
+      # Fail-fast: No automatic fallback (maintain fail-fast philosophy)
       echo "CRITICAL ERROR: Comprehensive classification failed" >&2
       echo "  Workflow Description: $workflow_desc" >&2
       echo "  Classification Mode: ${WORKFLOW_CLASSIFICATION_MODE:-llm-only}" >&2

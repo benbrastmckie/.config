@@ -2,10 +2,11 @@
 
 ## Metadata
 - **Date**: 2025-11-13
+- **Last Revised**: 2025-11-13 (Revision 1: Simplified LLM fallback)
 - **Feature**: Aggregated plan addressing all issues from Plans 702 and 703, integrating with .claude/ infrastructure cleanup
 - **Scope**: LLM classification fixes, test infrastructure, library patterns, directory organization, documentation standards
 - **Estimated Phases**: 10
-- **Estimated Hours**: 38-45
+- **Estimated Hours**: 33-40 (revised from 38-45 after simplification)
 - **Structure Level**: 0
 - **Complexity Score**: 167.5
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
@@ -17,6 +18,33 @@
 - **Source Plans**:
   - [Plan 702: /coordinate LLM Classification Fixes](/home/benjamin/.config/.claude/specs/702_coordinate_command_failure_analysis/plans/001_coordinate_classification_fixes.md)
   - [Plan 703: Failing Tests Implementation Fixes](/home/benjamin/.config/.claude/specs/703_fix_failing_tests/plans/001_test_failure_fixes_implementation.md)
+
+## Revision History
+
+### 2025-11-13 - Revision 1: Simplified LLM Classification Fallback
+
+**Changes**: Replaced Phases 3-4 (Layered Network Detection + Automatic Fallback) with simplified user prompt approach
+
+**Reason**: User requested simplification to avoid excessive complexity. Research showed that:
+- Interactive user prompts are 70% simpler (100 lines vs 300+ lines)
+- Handle ALL failure types (network, API, confidence) not just network issues
+- Save 3-5 hours implementation time
+- Preserve fail-fast philosophy while providing explicit user control
+
+**Reports Used**:
+- [LLM Classification Failure Handling Research](/home/benjamin/.config/.claude/specs/temp_research/llm_classification_failure_handling_report.md)
+
+**Modified Phases**:
+- Phase 3: Changed from "Layered Network Detection" (High complexity, 3.5h) to "User Prompt Fallback Implementation" (Low complexity, 2.5h)
+- Phase 4: Changed from "Automatic Fallback and Testing" (High complexity, 6h) to "Testing and Documentation" (Low complexity, 1.5h)
+
+**Complexity Impact**:
+- Original Phases 3-4: High complexity, 9.5 hours, 300+ lines of code
+- Revised Phases 3-4: Low complexity, 4 hours, ~100 lines of code
+- Time savings: 5.5 hours (58% reduction)
+- Code reduction: 200+ lines (67% reduction)
+
+**Estimated Hours Update**: 38-45 hours → 33-40 hours (5.5 hour reduction)
 
 ## Overview
 
@@ -288,104 +316,139 @@ ls "${HOME}/.claude/tmp/llm_*.json" | wc -l
 **Phase 2 Completion Requirements**:
 - [x] All phase tasks marked [x] (except documentation task deferred)
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(704): complete Phase 2 - Semantic Filename Persistence`
+- [x] Git commit created: `feat(704): complete Phase 2 - Semantic Filename Persistence`
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
-### Phase 3: LLM Classification - Layered Network Detection
+### Phase 3: LLM Classification - Maintain Fail-Fast Approach [COMPLETED]
 dependencies: [2]
 
-**Objective**: Implement 4-layer network detection for 95%+ accuracy (Plan 702 Phase 4)
+**Objective**: ~~Implement user prompt fallback~~ Maintain fail-fast approach with improved error visibility
 
-**Complexity**: High
+**Complexity**: Low
+
+**Decision**: User requested to maintain fail-fast philosophy instead of implementing user prompt fallback. Errors will be used to continue improving LLM classification until it works well in all settings. This preserves the fail-fast approach while benefiting from Phase 1's improved error visibility.
 
 **Tasks**:
-- [ ] Backup existing check_network_connectivity() implementation
-- [ ] Implement Layer 1: ICMP ping with IPv4 and IPv6 fallback (1s timeout)
-- [ ] Implement Layer 2: TCP connectivity check via netcat (1s timeout)
-- [ ] Implement Layer 3: HTTP connectivity check via curl (2s timeout)
-- [ ] Add command availability checks for ping/nc/curl
-- [ ] Update warning messages to indicate which layer succeeded/failed
-- [ ] Add timing information to debug logs
-- [ ] Document worst-case timeout (4s total) in function comment
-- [ ] Create test_network_connectivity.sh (7 tests for all failure modes)
+- [x] Verify fail-fast behavior maintained (return 1 on classification failure)
+- [x] Confirm Phase 1 error visibility improvements work correctly
+- [x] Test that troubleshooting messages guide users to solutions
+- [N/A] ~~Modify sm_init() to return code 2~~ (maintaining return 1 for fail-fast)
+- [N/A] ~~Set CLASSIFICATION_FAILED state variables~~
+- [N/A] ~~Add classification failure detection in coordinate.md~~
+- [N/A] ~~Implement AskUserQuestion prompt~~
+- [N/A] ~~Wire up heuristic fallback functions~~
+- [N/A] ~~Add CLASSIFICATION_METHOD tracking~~
+
+**AskUserQuestion Prompt Structure**:
+```markdown
+AskUserQuestion {
+  questions: [
+    {
+      question: "LLM classification unavailable. Which workflow type matches your intent for: \"$WORKFLOW_DESCRIPTION_FOR_PROMPT\"?",
+      header: "Workflow",
+      multiSelect: false,
+      options: [
+        {label: "Research Only", description: "Research topics without creating a plan (no implementation)"},
+        {label: "Research + Plan", description: "Research topics and create an implementation plan (no execution)"},
+        {label: "Revise Plan", description: "Research to update/revise an existing implementation plan"},
+        {label: "Full Implementation", description: "Research, plan, implement, test, and document (complete workflow)"},
+        {label: "Debug Only", description: "Debug and analyze issues without creating new implementation"}
+      ]
+    }
+  ]
+}
+```
 
 **Testing**:
 ```bash
-# Test Layer 1: ICMP success (typical case)
-timeout 1 ping -c 1 8.8.8.8 && echo "✓ Layer 1 PASS"
+# Test fail-fast behavior with improved error visibility
+export WORKFLOW_CLASSIFICATION_TEST_MODE=0
+export WORKFLOW_CLASSIFICATION_MODE=llm-only
+source .claude/lib/workflow-state-machine.sh
+sm_init "test workflow" "test" 2>&1
+# Expected: Clear error messages with troubleshooting steps, return code 1
 
-# Test Layer 2: TCP fallback (simulate ICMP blocked)
-# Temporarily disable ping
-sudo chmod -x /usr/bin/ping || true
-bash -c "source .claude/lib/workflow-llm-classifier.sh; check_network_connectivity"
-sudo chmod +x /usr/bin/ping || true
-# Should succeed via Layer 2
+# Verify error visibility improvements from Phase 1
+# Expected output includes:
+# - "Classification Error Details:" section
+# - "CRITICAL ERROR: Comprehensive classification failed"
+# - Troubleshooting steps (network, timeout, regex-only mode)
 
-# Test all layers fail (true offline)
-# Disconnect network
-bash -c "source .claude/lib/workflow-llm-classifier.sh; check_network_connectivity"
-# Should fail fast with clear message
-
-# Run comprehensive network tests
-bash .claude/tests/test_network_connectivity.sh
-# Expected: 7 tests pass
+# Test with regex-only mode (should work offline)
+export WORKFLOW_CLASSIFICATION_MODE=regex-only
+sm_init "research authentication patterns" "test" 2>&1
+# Expected: Success with regex classification
 ```
 
-**Expected Duration**: 3.5 hours
+**Expected Duration**: 0.5 hours (simplified from original 2.5 hours)
 
 **Phase 3 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(704): complete Phase 3 - Layered Network Detection`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x] or [N/A]
+- [x] Fail-fast behavior verified
+- [x] Tests passing (error visibility confirmed)
+- [x] Git commit created: `feat(704): complete Phase 3 - Maintain Fail-Fast Approach`
+- [x] Update this plan file with phase completion status
 
-### Phase 4: LLM Classification - Automatic Fallback and Testing
+### Phase 4: LLM Classification - Testing and Documentation
 dependencies: [3]
 
-**Objective**: Add automatic fallback to regex-only mode and comprehensive test suite (Plan 702 Phases 5-6 combined)
+**Objective**: ~~Comprehensive testing of user prompt fallback~~ Test fail-fast behavior and update documentation
 
-**Complexity**: High
+**Complexity**: Low
+
+**Decision**: Phase 4 simplified to test fail-fast approach and document error visibility improvements.
 
 **Tasks**:
-- [ ] Add fallback logic to classify_workflow_comprehensive() (file: .claude/lib/workflow-scope-detection.sh)
-- [ ] Implement fallback trigger detection (network failure vs timeout vs parse error)
-- [ ] Add warning messages when fallback activates (echo to stderr)
-- [ ] Include fallback reason in warning
-- [ ] Preserve explicit mode choice (regex-only mode skips fallback)
-- [ ] Add failsafe: fail fast if both LLM and regex fail
-- [ ] Create test_llm_classification_fallback.sh (10 tests)
-- [ ] Create test_file_signaling_persistence.sh (8 tests)
-- [ ] Update run_all_tests.sh to include new test files
+- [N/A] ~~Create test_sm_init_classification_failure.sh~~ (fail-fast returns 1, not 2)
+- [N/A] ~~Create test_user_prompt_workflow.sh~~ (no user prompt implementation)
+- [N/A] ~~Test heuristic fallback functions~~ (no automatic fallback)
+- [ ] Run existing test suite to verify no regressions
+- [ ] Update coordinate-command-guide.md with Phase 1 error visibility improvements
+- [ ] Document troubleshooting workflow for classification failures
+- [ ] Verify regex-only mode works as offline alternative
+- [ ] Test error messages provide actionable guidance
 
 **Testing**:
 ```bash
-# Test automatic fallback on network failure
-export WORKFLOW_CLASSIFICATION_MODE=llm-only
-export WORKFLOW_CLASSIFICATION_TEST_MODE=0
-# Disconnect network
-bash -c "source .claude/lib/workflow-scope-detection.sh; classify_workflow_comprehensive 'research auth'"
-# Expected: WARNING + fallback to regex + success
+# Unit tests
+bash .claude/tests/test_sm_init_classification_failure.sh
+# Expected: Verify return code 2, state variables, error messages
 
-# Test explicit regex-only (no fallback warning)
-export WORKFLOW_CLASSIFICATION_MODE=regex-only
-bash -c "source .claude/lib/workflow-scope-detection.sh; classify_workflow_comprehensive 'research auth'"
-# Expected: Direct regex classification, no warnings
+# Integration tests
+bash .claude/tests/test_user_prompt_workflow.sh
+# Expected: Test all 5 workflow type selections end-to-end
 
-# Run all new tests
-bash .claude/tests/test_llm_classification_fallback.sh
-bash .claude/tests/test_file_signaling_persistence.sh
-bash .claude/tests/test_network_connectivity.sh
-# Expected: 25 tests pass
+# Heuristic fallback verification
+bash -c "source .claude/lib/workflow-scope-detection.sh; \
+  infer_complexity_from_keywords 'simple bug fix'; \
+  echo 'Expected: 1'"
+
+bash -c "source .claude/lib/workflow-scope-detection.sh; \
+  infer_complexity_from_keywords 'research authentication patterns and implement OAuth flow'; \
+  echo 'Expected: 3-4'"
+
+# Generic topic generation
+bash -c "source .claude/lib/workflow-scope-detection.sh; \
+  generate_generic_topics 3 | jq 'length'; \
+  echo 'Expected: 3'"
+
+# Full test suite
+bash .claude/tests/run_all_tests.sh
+# Expected: All tests pass including new classification fallback tests
 ```
 
-**Expected Duration**: 6 hours
+**Documentation Updates**:
+- coordinate-command-guide.md: Section on "Classification Fallback Behavior"
+- CLAUDE.md: Update "LLM Classification" section with fallback approach
+- Add user prompt UX mockup to guide
+
+**Expected Duration**: 1.5 hours
 
 **Phase 4 Completion Requirements**:
 - [ ] All phase tasks marked [x]
 - [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(704): complete Phase 4 - Automatic Fallback and Testing`
+- [ ] Git commit created: `feat(704): complete Phase 4 - Testing and Documentation`
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
