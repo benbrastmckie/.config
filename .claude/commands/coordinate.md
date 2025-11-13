@@ -145,7 +145,7 @@ STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 
 # Pattern 1: Fixed Semantic Filename (bash-block-execution-model.md:163-191)
 # Save workflow ID to file for subsequent blocks using fixed location
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
 
 # VERIFICATION CHECKPOINT: Verify state ID file created successfully (Standard 0: Execution Enforcement)
@@ -392,7 +392,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -657,7 +657,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -950,7 +950,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -1112,7 +1112,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -1392,7 +1392,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -1481,7 +1481,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -1638,7 +1638,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -1765,7 +1765,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -1838,7 +1838,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -1974,7 +1974,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
@@ -2047,7 +2047,7 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
   echo "Cannot restore workflow state. This is a critical error."
