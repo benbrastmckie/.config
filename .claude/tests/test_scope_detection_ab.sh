@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# A/B Testing Framework for Workflow Classification
+# A/B Testing Framework for Workflow Classification (2-Mode System)
 #
-# Compares LLM-based classification vs regex-based classification
+# Compares LLM-only mode vs regex-only mode classifications
 # to identify disagreements and measure agreement rate.
+# Note: Hybrid mode has been removed in clean-break update.
 
 set -euo pipefail
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Performance Benchmark for Workflow Classification
+# Performance Benchmark for Workflow Classification (2-Mode System)
 #
-# Measures latency (p50/p95/p99), fallback rate, and API cost
+# Measures latency (p50/p95/p99) and API cost for llm-only and regex-only modes
+# Note: Hybrid mode has been removed in clean-break update
 
 set -euo pipefail
 
@@ -133,8 +134,16 @@ main() {
   echo "==========================================="
   echo ""
 
-  # Check which mode to benchmark
-  local mode="${1:-hybrid}"
+  # Check which mode to benchmark (default: llm-only)
+  local mode="${1:-llm-only}"
+
+  # Validate mode
+  if [ "$mode" != "llm-only" ] && [ "$mode" != "regex-only" ]; then
+    echo "ERROR: Invalid mode '$mode'. Use 'llm-only' or 'regex-only'."
+    echo "Note: Hybrid mode has been removed in clean-break update."
+    exit 1
+  fi
+
   echo -e "${CYAN}Benchmarking mode: $mode${NC}"
   echo "Number of iterations: $NUM_ITERATIONS"
   echo "Test descriptions: ${#TEST_DESCRIPTIONS[@]}"
@@ -215,29 +224,17 @@ main() {
 
   echo ""
 
-  # Fallback rate (only relevant for hybrid/llm-only modes)
-  if [ "$mode" != "regex-only" ]; then
-    local fallback_rate=$(calculate_fallback_rate METHODS)
-    echo "Fallback Rate: ${fallback_rate}%"
-
-    if [ $fallback_rate -lt 20 ]; then
-      echo -e "${GREEN}✓ Fallback rate < 20% target${NC}"
-    else
-      echo -e "${YELLOW}⚠ Fallback rate >= 20%${NC}"
-      status="WARN"
-    fi
-    echo ""
-  fi
+  # Note: Fallback rate tracking removed (hybrid mode deleted in clean-break update)
+  # LLM-only mode now fails fast instead of falling back to regex
 
   # Cost estimation (LLM mode only)
-  if [ "$mode" = "llm-only" ] || [ "$mode" = "hybrid" ]; then
+  if [ "$mode" = "llm-only" ]; then
     # Estimate: ~50 tokens per classification, Haiku 4.5 is $0.000003/token
-    local successful_llm_calls=$((NUM_ITERATIONS - $(calculate_fallback_rate METHODS)))
-    local estimated_tokens=$((successful_llm_calls * 50))
+    local estimated_tokens=$((NUM_ITERATIONS * 50))
     local estimated_cost=$(echo "scale=8; $estimated_tokens * 0.000003" | bc)
 
     echo "Cost Estimation (LLM classifications):"
-    echo "  Successful LLM calls: $successful_llm_calls"
+    echo "  Total LLM calls: $NUM_ITERATIONS"
     echo "  Estimated tokens: $estimated_tokens"
     echo "  Estimated cost: \$${estimated_cost}"
     echo "  Cost per classification: \$0.00003 (target)"
