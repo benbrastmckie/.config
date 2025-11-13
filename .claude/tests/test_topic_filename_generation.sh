@@ -85,12 +85,13 @@ EOF
 )
 
 # Parse and validate
-if output=$(echo "$valid_topics_json" | parse_llm_classifier_response 2>&1); then
-  # Check that research_topics were parsed
-  if [ -n "$RESEARCH_TOPICS_JSON" ]; then
+if output=$(parse_llm_classifier_response "$valid_topics_json" "comprehensive" 2>&1); then
+  # Check that subtopics array was created (backwards compatibility)
+  subtopics_count=$(echo "$output" | jq -r '.subtopics | length')
+  if [ "$subtopics_count" -eq 2 ]; then
     pass "Valid enhanced topics parsed successfully"
   else
-    fail "Valid topics parsing" "non-empty RESEARCH_TOPICS_JSON" "empty"
+    fail "Valid topics parsing" "2 subtopics" "got $subtopics_count"
   fi
 else
   fail "Valid topics validation" "should succeed" "failed: $output"
@@ -115,7 +116,7 @@ missing_description_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$missing_description_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$missing_description_json" "comprehensive" 2>/dev/null; then
   fail "Missing detailed_description" "should fail validation" "succeeded"
 else
   pass "Missing detailed_description correctly rejected"
@@ -141,7 +142,7 @@ short_description_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$short_description_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$short_description_json" "comprehensive" 2>/dev/null; then
   fail "Short detailed_description" "should fail validation" "succeeded"
 else
   pass "Short detailed_description correctly rejected"
@@ -168,7 +169,7 @@ long_description_json=$(cat <<EOF
 EOF
 )
 
-if echo "$long_description_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$long_description_json" "comprehensive" 2>/dev/null; then
   fail "Long detailed_description" "should fail validation" "succeeded"
 else
   pass "Long detailed_description correctly rejected"
@@ -193,7 +194,7 @@ missing_focus_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$missing_focus_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$missing_focus_json" "comprehensive" 2>/dev/null; then
   fail "Missing research_focus" "should fail validation" "succeeded"
 else
   pass "Missing research_focus correctly rejected"
@@ -233,7 +234,7 @@ valid_slug_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$valid_slug_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$valid_slug_json" "comprehensive" 2>/dev/null; then
   pass "Valid LLM slugs accepted"
 else
   fail "Valid slug validation" "should succeed" "failed"
@@ -259,7 +260,7 @@ uppercase_slug_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$uppercase_slug_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$uppercase_slug_json" "comprehensive" 2>/dev/null; then
   fail "Uppercase slug validation" "should be rejected" "accepted"
 else
   pass "Uppercase slugs correctly rejected"
@@ -285,7 +286,7 @@ special_char_slug_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$special_char_slug_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$special_char_slug_json" "comprehensive" 2>/dev/null; then
   fail "Special char slug validation" "should be rejected" "accepted"
 else
   pass "Special character slugs correctly rejected"
@@ -312,7 +313,7 @@ long_slug_json=$(cat <<EOF
 EOF
 )
 
-if echo "$long_slug_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$long_slug_json" "comprehensive" 2>/dev/null; then
   fail "Long slug validation" "should be rejected" "accepted"
 else
   pass "Long slugs correctly rejected"
@@ -338,7 +339,7 @@ empty_slug_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$empty_slug_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$empty_slug_json" "comprehensive" 2>/dev/null; then
   fail "Empty slug validation" "should be rejected" "accepted"
 else
   pass "Empty slugs correctly rejected"
@@ -378,12 +379,13 @@ backwards_compat_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$backwards_compat_json" | parse_llm_classifier_response 2>/dev/null; then
-  # Check RESEARCH_TOPICS_JSON contains the short_name values
-  if echo "$RESEARCH_TOPICS_JSON" | jq -e '. == ["Topic A", "Topic B"]' >/dev/null 2>&1; then
-    pass "RESEARCH_TOPICS_JSON contains short_name values for backwards compatibility"
+if output=$(parse_llm_classifier_response "$backwards_compat_json" "comprehensive" 2>&1); then
+  # Check subtopics array contains the short_name values (backwards compatibility)
+  subtopics_value=$(echo "$output" | jq -c '.subtopics')
+  if [ "$subtopics_value" = '["Topic A","Topic B"]' ]; then
+    pass "Subtopics array contains short_name values for backwards compatibility"
   else
-    fail "Backwards compatibility" "['Topic A', 'Topic B']" "$RESEARCH_TOPICS_JSON"
+    fail "Backwards compatibility" '["Topic A","Topic B"]' "$subtopics_value"
   fi
 else
   fail "Backwards compatibility test" "should parse successfully" "failed"
@@ -429,7 +431,7 @@ count_match_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$count_match_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$count_match_json" "comprehensive" 2>/dev/null; then
   pass "Count matching validation passed"
 else
   fail "Count match validation" "should succeed" "failed"
@@ -461,7 +463,7 @@ count_mismatch_few_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$count_mismatch_few_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$count_mismatch_few_json" "comprehensive" 2>/dev/null; then
   fail "Count mismatch (too few)" "should be rejected" "accepted"
 else
   pass "Count mismatch (too few) correctly rejected"
@@ -493,7 +495,7 @@ count_mismatch_many_json=$(cat <<'EOF'
 EOF
 )
 
-if echo "$count_mismatch_many_json" | parse_llm_classifier_response 2>/dev/null; then
+if parse_llm_classifier_response "$count_mismatch_many_json" "comprehensive" 2>/dev/null; then
   fail "Count mismatch (too many)" "should be rejected" "accepted"
 else
   pass "Count mismatch (too many) correctly rejected"
