@@ -112,7 +112,7 @@ else
   fail "load_workflow_state did NOT restore WORKFLOW_ID" "Got: ${WORKFLOW_ID:-empty}"
 fi
 
-# Test 5: load_workflow_state fallback (missing file)
+# Test 5: load_workflow_state fallback (missing file, first block)
 section "Test 5: load_workflow_state graceful degradation"
 ((TESTS_RUN++))
 TEST_WORKFLOW_ID="test_fallback_$$"
@@ -121,8 +121,8 @@ NONEXISTENT_FILE="${PROJECT_ROOT}/.claude/tmp/workflow_${TEST_WORKFLOW_ID}.sh"
 # Ensure file doesn't exist
 rm -f "$NONEXISTENT_FILE"
 
-# Load state - should return 1 but not crash
-if load_workflow_state "$TEST_WORKFLOW_ID" >/dev/null 2>&1; then
+# Load state with is_first_block=true - should return 1 but create fallback file
+if load_workflow_state "$TEST_WORKFLOW_ID" "true" >/dev/null 2>&1; then
   fail "load_workflow_state should return 1 for missing file"
 else
   if [ -f "$NONEXISTENT_FILE" ]; then
@@ -288,8 +288,8 @@ TEST_WORKFLOW_ID="test_subprocess_$$"
 STATE_FILE=$(init_workflow_state "$TEST_WORKFLOW_ID")
 append_workflow_state "SUBPROCESS_TEST" "initial"
 
-# Simulate subprocess (new bash invocation)
-RESULT=$(bash -c "
+# Simulate subprocess (new bash invocation) with CLAUDE_PROJECT_DIR exported
+RESULT=$(CLAUDE_PROJECT_DIR="$PROJECT_ROOT" bash -c "
   source '${PROJECT_ROOT}/.claude/lib/state-persistence.sh'
   load_workflow_state '$TEST_WORKFLOW_ID' >/dev/null 2>&1
   echo \"\${SUBPROCESS_TEST:-missing}\"
