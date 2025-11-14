@@ -50,7 +50,7 @@ Commands now reference shared utility libraries in `.claude/lib/`:
 **File Size Reductions**:
 - `orchestrate.md`: 2,720 → 850 lines (68.8% reduction, 1,870 lines saved)
 - `implement.md`: 987 → 498 lines (49.5% reduction, 489 lines saved)
-- `setup.md`: 911 → 375 lines (58.8% reduction, 536 lines saved)
+- `setup.md`: 1071 → 311 lines (71.0% reduction, 760 lines saved)
 - `revise.md`: 878 → 406 lines (53.8% reduction, 472 lines saved)
 - **Total**: 5,496 → 2,129 lines (61.3% reduction, 3,367 lines saved)
 
