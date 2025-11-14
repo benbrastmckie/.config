@@ -329,7 +329,8 @@ fi
 # Test 6.2: Environment variable compatibility
 info "Test 6.2: DEBUG_SCOPE_DETECTION support"
 export DEBUG_SCOPE_DETECTION=1
-output=$(detect_workflow_scope "test" 2>&1 | grep -c "DEBUG" || echo "0")
+output=$( (detect_workflow_scope "test" 2>&1 | grep -c "DEBUG") || echo "0")
+output=$(echo "$output" | tail -1)
 if [ "$output" -gt 0 ]; then
   pass "DEBUG_SCOPE_DETECTION still works"
 else

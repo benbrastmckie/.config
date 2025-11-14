@@ -145,7 +145,7 @@ STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 
 # Pattern 1: Fixed Semantic Filename (bash-block-execution-model.md:163-191)
 # Save workflow ID to file for subsequent blocks using fixed location
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
 
 # VERIFICATION CHECKPOINT: Verify state ID file created successfully (Standard 0: Execution Enforcement)
@@ -163,29 +163,8 @@ append_workflow_state "COORDINATE_STATE_ID_FILE" "$COORDINATE_STATE_ID_FILE"
 # Initialize state machine (use SAVED value, not overwritten variable)
 # CRITICAL: Call sm_init to export WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
 # Do NOT use command substitution $() as it creates subshell that doesn't export to parent
-# WORKAROUND: Use exit code capture instead of bare '!' to avoid bash history expansion (Spec 700, Report 1)
-sm_init "$SAVED_WORKFLOW_DESC" "coordinate" 2>&1
-SM_INIT_EXIT_CODE=$?
-if [ $SM_INIT_EXIT_CODE -ne 0 ]; then
-  handle_state_error "State machine initialization failed (workflow classification error). Check network connection or use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline development." 1
-fi
-# Variables now available via export (verified by successful sm_init return code check above)
-
-# VERIFICATION CHECKPOINT: Verify critical variables exported by sm_init
-# Standard 0 (Execution Enforcement): Critical state initialization must be verified
-if [ -z "${WORKFLOW_SCOPE:-}" ]; then
-  handle_state_error "CRITICAL: WORKFLOW_SCOPE not exported by sm_init despite successful return code" 1
-fi
-
-if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
-  handle_state_error "CRITICAL: RESEARCH_COMPLEXITY not exported by sm_init despite successful return code" 1
-fi
-
-if [ -z "${RESEARCH_TOPICS_JSON:-}" ]; then
-  handle_state_error "CRITICAL: RESEARCH_TOPICS_JSON not exported by sm_init despite successful return code" 1
-fi
-
-echo "✓ State machine variables verified: WORKFLOW_SCOPE=$WORKFLOW_SCOPE, RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY"
+sm_init "$SAVED_WORKFLOW_DESC" "coordinate" >/dev/null
+# Variables now available via export (not command substitution)
 
 # ADDED: Extract and save EXISTING_PLAN_PATH for research-and-revise workflows
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
@@ -248,7 +227,6 @@ if source_required_libraries "${REQUIRED_LIBS[@]}"; then
   : # Success - libraries loaded
 else
   echo "ERROR: Failed to source required libraries"
-  echo "DIAGNOSTIC: Check that all library files exist in ${LIB_DIR}"
   exit 1
 fi
 
@@ -393,10 +371,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -410,8 +388,6 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -425,12 +401,6 @@ fi
 
 # Check if we should skip this state (already at terminal)
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
-  # Cleanup LLM classification temp files (Spec 704 Phase 2)
-  if [ -n "$WORKFLOW_ID" ]; then
-    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
-    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
-  fi
-
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -444,8 +414,6 @@ fi
 
 if command -v emit_progress &>/dev/null; then
   emit_progress "1" "State: Research (parallel agent invocation)"
-else
-  echo "PROGRESS: State: Research (parallel agent invocation)"
 fi
 
 # RESEARCH_COMPLEXITY loaded from workflow state (set by sm_init in Phase 0)
@@ -516,7 +484,6 @@ Task {
 **EXECUTE NOW**: USE the Bash tool to prepare research agent iteration variables:
 
 ```bash
-set +H  # Disable history expansion to prevent bad substitution errors
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # CRITICAL: Explicit conditional enumeration for agent invocation control
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -669,10 +636,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -686,8 +653,6 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -746,9 +711,7 @@ if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
   # Load supervisor checkpoint to get aggregated metadata
   SUPERVISOR_CHECKPOINT=$(load_json_checkpoint "research_supervisor")
 
-  # extract metadata from supervisor checkpoint (report paths for verification)
-  # metadata extraction enables context reduction by passing summaries instead of full reports
-  # Target: maintain <30% context usage throughout workflow
+  # Extract report paths from supervisor checkpoint
   SUPERVISOR_REPORTS=$(echo "$SUPERVISOR_CHECKPOINT" | jq -r '.aggregated_metadata.reports_created[]')
 
   # ===== MANDATORY VERIFICATION CHECKPOINT: Hierarchical Research =====
@@ -966,10 +929,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -983,17 +946,9 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
-  # Cleanup LLM classification temp files (Spec 704 Phase 2)
-  if [ -n "$WORKFLOW_ID" ]; then
-    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
-    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
-  fi
-
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1136,10 +1091,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -1153,8 +1108,6 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -1418,10 +1371,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -1435,17 +1388,9 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
-  # Cleanup LLM classification temp files (Spec 704 Phase 2)
-  if [ -n "$WORKFLOW_ID" ]; then
-    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
-    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
-  fi
-
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1515,10 +1460,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -1532,8 +1477,6 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -1674,10 +1617,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -1691,17 +1634,9 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
-  # Cleanup LLM classification temp files (Spec 704 Phase 2)
-  if [ -n "$WORKFLOW_ID" ]; then
-    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
-    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
-  fi
-
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1809,10 +1744,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -1826,17 +1761,9 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
-  # Cleanup LLM classification temp files (Spec 704 Phase 2)
-  if [ -n "$WORKFLOW_ID" ]; then
-    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
-    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
-  fi
-
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1890,10 +1817,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -1907,8 +1834,6 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -2028,10 +1953,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -2045,17 +1970,9 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
-  # Cleanup LLM classification temp files (Spec 704 Phase 2)
-  if [ -n "$WORKFLOW_ID" ]; then
-    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
-    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
-  fi
-
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -2109,10 +2026,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
+  echo "Cannot restore workflow state. This is a critical error."
   exit 1
 fi
 
@@ -2126,8 +2043,6 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
-source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
-source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then

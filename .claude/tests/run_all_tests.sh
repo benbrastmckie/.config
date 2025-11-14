@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+# Enable test mode to avoid real LLM API calls during testing
+# This returns canned responses from workflow-llm-classifier.sh
+# Following best practices: mock LLM calls at function level for fast, deterministic tests
+export WORKFLOW_CLASSIFICATION_TEST_MODE=1
+
 VERBOSE=false
 if [ "${1:-}" = "--verbose" ]; then
   VERBOSE=true

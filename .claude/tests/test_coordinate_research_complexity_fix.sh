@@ -7,6 +7,12 @@ set -euo pipefail
 TEST_NAME="coordinate_research_complexity_fix"
 FAILURES=0
 
+# Set CLAUDE_PROJECT_DIR if not already set
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
 echo "=== Integration Test: RESEARCH_COMPLEXITY Bug Fix (Spec 687) ==="
 echo ""
 

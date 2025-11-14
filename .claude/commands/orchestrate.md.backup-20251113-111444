@@ -97,13 +97,6 @@ if [ ! -f "${LIB_DIR}/state-persistence.sh" ]; then
   exit 1
 fi
 source "${LIB_DIR}/state-persistence.sh"
-# Research reports passed via RESEARCH_REPORT_PATHS_FORMATTED variable for cross-referencing
-# Workflow phases: 0=Initialize, 1=Research, 2=Plan, 3=Implement, 4=Test, 5=Debug, 6=Document, 7=Complete
-# Progress tracking: Emit progress markers at each workflow phase transition
-# Context reduction target: <30% context usage throughout workflow
-# Metadata extraction: Reports summarized to <50 words before passing to next phase
-# Research reports are passed as cross-references (paths only, not full content)
-# Topic-based directory structure: specs/{NNN_topic}/plans/, specs/{NNN_topic}/reports/
 
 # Initialize workflow state (GitHub Actions pattern)
 STATE_FILE=$(init_workflow_state "orchestrate_$$")
@@ -113,19 +106,9 @@ trap "rm -f '$STATE_FILE'" EXIT
 append_workflow_state "WORKFLOW_ID" "orchestrate_$$"
 
 # Initialize state machine
-if ! sm_init "$WORKFLOW_DESCRIPTION" "orchestrate" 2>&1; then
-  handle_state_error "State machine initialization failed (workflow classification error). Check network connection or use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline development." 1
-fi
+sm_init "$WORKFLOW_DESCRIPTION" "orchestrate"
 
-# VERIFICATION CHECKPOINT: Verify critical variables exported by sm_init
-# Standard 0 (Execution Enforcement): Critical state initialization must be verified
-if [ -z "${WORKFLOW_SCOPE:-}" ]; then
-  handle_state_error "CRITICAL: WORKFLOW_SCOPE not exported by sm_init despite successful return code (library bug)" 1
-fi
-
-echo "✓ State machine variables verified: WORKFLOW_SCOPE=$WORKFLOW_SCOPE"
-
-# Save state machine configuration (verified by successful sm_init return code check above)
+# Save state machine configuration
 append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
 append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
 append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"

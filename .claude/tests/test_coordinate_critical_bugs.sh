@@ -5,6 +5,12 @@
 
 set -euo pipefail
 
+# Standard test initialization
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
 # Standard test output functions (matches run_all_tests.sh format)
 pass() { echo "✓ PASS: $1"; }
 fail() { echo "✗ FAIL: $1"; return 1; }
@@ -13,8 +19,8 @@ echo "=== Testing Coordinate Critical Bug Fixes (Spec 683) ==="
 
 # Test 1: sm_init export behavior (Bug #1 fix)
 echo "Test 1: sm_init exports to parent shell"
-source .claude/lib/workflow-state-machine.sh
-source .claude/lib/state-persistence.sh
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 sm_init "test workflow" "coordinate" >/dev/null 2>&1
 [ -n "$WORKFLOW_SCOPE" ] && pass "WORKFLOW_SCOPE exported" || fail "WORKFLOW_SCOPE not exported"
 [ -n "$RESEARCH_COMPLEXITY" ] && pass "RESEARCH_COMPLEXITY exported" || fail "RESEARCH_COMPLEXITY not exported"
