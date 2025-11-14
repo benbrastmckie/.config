@@ -72,10 +72,10 @@ INNER_EOF
 SUCCESS_OUTPUT=$(verify_state_variables "$STATE_FILE" REPORT_PATHS_COUNT REPORT_PATH_0 REPORT_PATH_1 REPORT_PATH_2)
 SUCCESS_CHARS=$(echo -n "$SUCCESS_OUTPUT" | wc -c)
 
-if [ "$SUCCESS_CHARS" -eq 1 ]; then
-  echo "✓ PASS: Success output is 1 character (90%+ reduction from verbose output)"
+if [ "$SUCCESS_CHARS" -eq 3 ]; then
+  echo "✓ PASS: Success output is 3 bytes (✓ character, 90%+ reduction from verbose output)"
 else
-  echo "✗ FAIL: Success output should be 1 character (got $SUCCESS_CHARS)"
+  echo "✗ FAIL: Success output should be 3 bytes (got $SUCCESS_CHARS)"
   exit 1
 fi
 
