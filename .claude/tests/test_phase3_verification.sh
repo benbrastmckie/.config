@@ -43,7 +43,8 @@ else
 fi
 
 # Test that diagnostic is produced (capture stderr and stdout)
-DIAGNOSTIC=$(verify_state_variables "$STATE_FILE" VAR1 VAR2 VAR3 2>&1)
+# Note: Use || true to prevent set -e from exiting on non-zero return
+DIAGNOSTIC=$(verify_state_variables "$STATE_FILE" VAR1 VAR2 VAR3 2>&1 || true)
 if echo "$DIAGNOSTIC" | grep -q "VAR3"; then
   echo "✓ PASS: Failure diagnostic lists missing variable"
 else
