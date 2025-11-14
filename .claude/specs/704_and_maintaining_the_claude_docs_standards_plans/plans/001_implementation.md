@@ -544,22 +544,37 @@ dependencies: [5]
 
 **Tasks** (organized by category):
 
-**Category 1: Library and Core Tests** (4/5 at 100%)
+**Category 1: Library and Core Tests** ✅ COMPLETED (7/7 at 100%)
 - [x] Fix test_state_machine.sh failures
   - Result: 50/50 tests passing (100%) ✅
   - Fixed by making TEST_MODE fixture input-aware (keyword matching for mocks only)
-- [ ] Fix test_state_persistence.sh failures
-  - Status: 16/18 tests passing (88.9%)
-  - Remaining: 2 failures related to state persistence across subprocesses
-- [ ] Fix test_workflow_initialization.sh failures
-  - Status: 19/21 tests passing (90.5%)
-  - Remaining: 2 failures related to EXISTING_PLAN_PATH environment variable
+- [x] Fix test_state_persistence.sh failures
+  - Result: 18/18 tests passing (100%) ✅
+  - Fixed: Removed export from source guard (subprocess isolation issue)
+  - Fixed: Added is_first_block=true parameter for graceful degradation
+  - Commit: b094193a
+- [x] Fix test_workflow_initialization.sh failures
+  - Result: 21/21 tests passing (100%) ✅
+  - Fixed: Updated research_complexity default expectation (4 → 2)
+  - Fixed: Updated diagnostic keyword check ("Root cause" + "Solution")
+  - Commit: dbfb2c3c
 - [x] Fix test_shared_utilities.sh failures
   - Result: 32/32 tests passing (100%) ✅
   - Fixed by updating checkpoint schema version expectation to 2.0
-- [ ] Fix test_topic_filename_generation.sh failures
-  - Status: 10/14 tests passing (71.4%)
-  - Remaining: 4 failures in topic slug generation and naming
+- [x] Fix test_topic_filename_generation.sh failures
+  - Result: 14/14 tests passing (100%) ✅
+  - Fixed: Changed from pipe to argument passing for parse_llm_classifier_response
+  - Fixed: Added "comprehensive" classification_type parameter
+  - Commit: dcf41fe8
+- [x] Fix test_offline_classification.sh failures
+  - Result: 5/5 tests passing (100%) ✅
+  - Fixed: Removed obsolete WORKFLOW_CLASSIFICATION_MODE references
+  - Fixed: Updated tests to use WORKFLOW_CLASSIFICATION_TEST_MODE=1
+  - Commit: afcf48d1
+- [x] Fix test_sm_init_error_handling.sh failures
+  - Result: 6/6 tests passing (100%) ✅
+  - Fixed: Removed all WORKFLOW_CLASSIFICATION_MODE references
+  - Commit: 9606be88
 
 **Category 2: Coordinate Command Tests**
 - [ ] Fix test_coordinate_error_fixes.sh (error handling validation)
@@ -622,8 +637,9 @@ dependencies: [5]
 <!-- PROGRESS CHECKPOINT -->
 After completing library tests (Category 1):
 - [x] Update this plan file: Mark completed tasks with [x]
-- [x] Verify test pass rate improvement: 77/110 → 82/110 (74.5%)
-- Status: 4/5 tests at 100%, 1 test at 88.9%
+- [x] Verify test pass rate improvement: 77/110 → 86/110 (78.2%)
+- Status: ✅ ALL 7/7 tests at 100% (CATEGORY COMPLETE)
+- Commits: 5 test fixes (dcf41fe8, b094193a, dbfb2c3c, 9606be88, afcf48d1)
 <!-- END PROGRESS CHECKPOINT -->
 
 <!-- PROGRESS CHECKPOINT -->
@@ -634,10 +650,15 @@ After completing coordinate tests (Category 2):
 
 <!-- PROGRESS CHECKPOINT -->
 After completing all test categories:
-- [⚠️] Partial completion: 82/110 test suites passing (74.5%, target was 100%)
-- [x] Full test suite run completed and results documented
-- [x] Documented deferred items requiring major refactoring or investigation
+- [🔄] In progress: 86/110 test suites passing (78.2%, target: 100%)
+- [x] Category 1 (Library and Core): ✅ COMPLETE (7/7 at 100%)
+- [⚠️] Category 2 (Coordinate): 0/8 fixed (deferred for investigation)
+- [⚠️] Category 3 (Orchestration): 0/7 fixed (deferred for investigation)
+- [x] Category 4 (Workflow Detection): ✅ COMPLETE (3/3 at 100%)
+- [⚠️] Category 5 (Integration): 1/8 fixed (deferred for major refactoring)
 - [x] Critical achievement: Clean-break and fail-fast architectural compliance
+- [x] Full test suite run completed and results documented
+- [🔄] Continuing systematic test fixing to reach 100%
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -692,7 +713,7 @@ grep "Test Suites Failed:" /tmp/test_results_phase6.txt
 
 **Expected Duration**: 12-15 hours (expanded from original 7 hours to include all deferred Phase 5 tasks)
 
-**Phase 6 Completion Status**: ✅ SUBSTANTIALLY COMPLETE (Architecture Compliance Achieved)
+**Phase 6 Completion Status**: 🔄 IN PROGRESS - Continuing to 100% completion
 
 **Phase 6 Completion Requirements**:
 - [x] Critical architectural compliance achieved (clean-break, fail-fast, LLM-only)
