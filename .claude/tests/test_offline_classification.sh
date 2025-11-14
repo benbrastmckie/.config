@@ -36,7 +36,6 @@ source "${LIB_DIR}/workflow-scope-detection.sh"
 echo "Test 1: LLM timeout produces visible error message..."
 test_count=$((test_count + 1))
 
-export WORKFLOW_CLASSIFICATION_MODE=llm-only
 export WORKFLOW_CLASSIFICATION_TIMEOUT=2
 
 # Capture both stdout and stderr
@@ -51,16 +50,16 @@ else
   pass_count=$((pass_count + 1))
 fi
 
-# Test 2: Error message suggests offline mode (regex-only)
+# Test 2: Error message provides actionable suggestions
 echo ""
-echo "Test 2: Error message suggests offline mode..."
+echo "Test 2: Error message provides actionable suggestions..."
 test_count=$((test_count + 1))
 
-if echo "$result" | grep -qi "regex"; then
-  echo "PASS: Error message mentions regex-only mode"
+if echo "$result" | grep -qi "suggestion\|alternative"; then
+  echo "PASS: Error message provides actionable guidance"
   pass_count=$((pass_count + 1))
 else
-  echo "FAIL: Error message doesn't suggest offline alternative"
+  echo "FAIL: Error message doesn't provide actionable suggestions"
   echo "Output received:"
   echo "$result"
   fail_count=$((fail_count + 1))
@@ -84,24 +83,26 @@ else
   fail_count=$((fail_count + 1))
 fi
 
-# Test 4: Regex-only mode works without network
+# Test 4: Test mode works without network (for offline testing)
 echo ""
-echo "Test 4: Regex-only mode works without network..."
+echo "Test 4: Test mode works without network (for offline testing)..."
 test_count=$((test_count + 1))
 
-export WORKFLOW_CLASSIFICATION_MODE=regex-only
+export WORKFLOW_CLASSIFICATION_TEST_MODE=1
 unset WORKFLOW_CLASSIFICATION_TIMEOUT
 
 result=$(classify_workflow_comprehensive "Research authentication patterns" 2>&1)
 
-if [ -n "$result" ] && echo "$result" | grep -q "research"; then
-  echo "PASS: Regex-only mode functional"
+if [ -n "$result" ] && echo "$result" | jq -e '.workflow_type' >/dev/null 2>&1; then
+  echo "PASS: Test mode returns valid JSON classification"
   pass_count=$((pass_count + 1))
 else
-  echo "FAIL: Regex-only mode failed"
+  echo "FAIL: Test mode failed or returned invalid JSON"
   echo "Output: $result"
   fail_count=$((fail_count + 1))
 fi
+
+unset WORKFLOW_CLASSIFICATION_TEST_MODE
 
 # Test 5: Verify sm_init forwards errors (no suppression at sm_init level)
 echo ""
