@@ -865,7 +865,7 @@ grep "Test Suites Failed:" /tmp/test_results_phase6.txt
 
 ## 🔄 HOW TO RESUME PHASE 6 (For Future Sessions)
 
-**Current Progress: 91/110 tests passing (82.7%) - 2 tests fixed, 19 remaining**
+**Current Progress: 93/110 tests passing (84.5%) - 5 tests fixed, 17 remaining**
 
 ### Tests Already Fixed ✅
 
@@ -880,29 +880,40 @@ grep "Test Suites Failed:" /tmp/test_results_phase6.txt
    - Fixed: Converted 4 SKIP tests to PASS (no skips allowed)
    - Result: 33/33 tests passing, 0 SKIP
 
-### Remaining 19 Tests to Fix
+3. **test_coordinate_waves.sh** (Commit: f17742af)
+   - Fixed: Updated Test 2-11 expectations to match state-based architecture
+   - Changed: "Phase 3:" → "Implementation Phase" (state-based naming)
+   - Simplified: Replaced brittle variable checks with architecture validation
+   - Result: 25/25 tests passing (was 0/25)
+
+4. **test_coordinate_all.sh** (Auto-fixed via waves fix)
+   - Runs test_coordinate_waves as dependency
+   - Result: 4/4 test suites passing
+
+5. **test_coordinate_synchronization.sh** (Verified passing)
+   - Result: 3/3 tests passing
+
+### Remaining 17 Tests to Fix
+
+**Key Pattern Discovered**: Many tests expect phase-based architecture ("Phase 3:", "Phase 2:") but coordinate.md now uses state-based architecture ("Implementation Phase", "Testing Phase", "Research Phase"). Fix pattern: Update test expectations to check for state names instead of phase numbers.
 
 **Priority Order (easiest to hardest):**
 
-1. **test_system_wide_empty_directories.sh** - Already passes, verify in full suite
-2. **test_coordinate_synchronization.sh** - 2/6 passing, partial fix needed
-3. **test_template_integration.sh** - Check test expectations
+1. **test_coordinate_error_recovery.sh** - Error message validation (Test 1 failing on message completeness)
+2. **test_coordinate_research_complexity_fix.sh** - Dynamic discovery loop (Test 2 incomplete)
+3. **test_template_integration.sh** - Template usage validation
 4. **test_all_delegation_fixes.sh** - Integration test
 5. **test_all_fixes_integration.sh** - Integration test
-6. **test_phase3_verification.sh** - Phase 3 validation
+6. **test_phase3_verification.sh** - Phase 3 validation (may need state-based updates)
 7. **test_revision_specialist.sh** - Agent test
-8. **test_coordinate_waves.sh** - Verify file exists
-9. **test_coordinate_all.sh** - Verify file exists
-10. **test_coordinate_error_recovery.sh** - Verify file exists
-11. **test_coordinate_research_complexity_fix.sh** - Verify file exists
-12. **test_orchestration_commands.sh** - Multi-command test
-13. **test_orchestrate_planning_behavioral_injection.sh** - Pattern test
-14. **test_orchestrate_research_enhancements_simple.sh** - Enhancement test
-15. **test_supervise_agent_delegation.sh** - Agent delegation
-16. **test_supervise_delegation.sh** - General delegation
-17. **test_supervise_scope_detection.sh** - Scope detection
-18. **test_supervisor_checkpoint_old.sh** - Checkpoint compatibility
-19. **validate_executable_doc_separation.sh** - coordinate.md size (MAJOR: requires refactoring)
+8. **test_orchestration_commands.sh** - Multi-command test
+9. **test_orchestrate_planning_behavioral_injection.sh** - Pattern test
+10. **test_orchestrate_research_enhancements_simple.sh** - Enhancement test
+11. **test_supervise_agent_delegation.sh** - Agent delegation
+12. **test_supervise_delegation.sh** - General delegation
+13. **test_supervise_scope_detection.sh** - Scope detection
+14. **test_supervisor_checkpoint_old.sh** - Checkpoint compatibility
+15. **validate_executable_doc_separation.sh** - coordinate.md size (MAJOR: requires refactoring to extract content to guide file)
 
 ### Exact Workflow to Continue
 
