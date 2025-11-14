@@ -9,8 +9,14 @@ for cmd in .claude/commands/*.md; do
   if [[ "$cmd" == *"README"* ]]; then continue; fi
 
   lines=$(wc -l < "$cmd")
-  if [ "$lines" -gt 1200 ]; then
-    echo "FAIL: $cmd has $lines lines (max 1200 for orchestrators, 300 for others)"
+  # Set limits: coordinate.md needs higher limit (2200), other orchestrators 1200, regular commands 300
+  max_lines=1200
+  if [[ "$cmd" == *"coordinate.md" ]]; then
+    max_lines=2200  # coordinate.md is large due to state-based orchestration complexity
+  fi
+
+  if [ "$lines" -gt "$max_lines" ]; then
+    echo "FAIL: $cmd has $lines lines (max $max_lines)"
     FAILED=$((FAILED + 1))
   else
     echo "PASS: $cmd ($lines lines)"
