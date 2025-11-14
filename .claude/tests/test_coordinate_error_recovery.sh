@@ -41,12 +41,14 @@ fail() {
 test_classification_failure_shows_helpful_error() {
   echo "Test 1: Classification failure shows helpful error with recovery steps"
 
-  # Force LLM classification failure
-  export WORKFLOW_CLASSIFICATION_MODE=llm-only
+  # Force LLM classification failure by unsetting API key and TEST_MODE
   unset ANTHROPIC_API_KEY
+  unset WORKFLOW_CLASSIFICATION_TEST_MODE
 
   # Simulate the error path
   OUTPUT=$(bash -c '
+    unset WORKFLOW_CLASSIFICATION_TEST_MODE
+    unset ANTHROPIC_API_KEY
     CLAUDE_PROJECT_DIR="'"$PROJECT_ROOT"'"
     source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
     source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-scope-detection.sh"
@@ -54,7 +56,7 @@ test_classification_failure_shows_helpful_error() {
     sm_init "test workflow" "coordinate" 2>&1 || true
   ')
 
-  # Verify error message components
+  # Verify error message components (LLM-only architecture)
   CHECKS_PASSED=0
 
   if echo "$OUTPUT" | grep -q "CRITICAL ERROR"; then
@@ -65,7 +67,8 @@ test_classification_failure_shows_helpful_error() {
     CHECKS_PASSED=$((CHECKS_PASSED + 1))
   fi
 
-  if echo "$OUTPUT" | grep -q "Classification Mode"; then
+  # Check for helpful troubleshooting steps
+  if echo "$OUTPUT" | grep -q "Check network connection"; then
     CHECKS_PASSED=$((CHECKS_PASSED + 1))
   fi
 
@@ -79,63 +82,54 @@ test_classification_failure_shows_helpful_error() {
 }
 
 # ==============================================================================
-# Test 2: User Can Recover by Switching to regex-only Mode
+# Test 2: Fail-Fast Behavior Without API Access
 # ==============================================================================
 
-test_user_can_recover_with_regex_mode() {
-  echo "Test 2: User can recover by switching to regex-only mode"
+test_fail_fast_behavior_without_api() {
+  echo "Test 2: Fail-fast behavior when API is unavailable"
 
-  # Attempt 1: Fail with LLM mode
-  export WORKFLOW_CLASSIFICATION_MODE=llm-only
+  # Remove API key and TEST_MODE to simulate offline scenario
   unset ANTHROPIC_API_KEY
+  unset WORKFLOW_CLASSIFICATION_TEST_MODE
 
-  OUTPUT1=$(bash -c '
+  # Attempt classification without API access
+  set +e
+  OUTPUT=$(bash -c '
+    unset WORKFLOW_CLASSIFICATION_TEST_MODE
+    unset ANTHROPIC_API_KEY
     CLAUDE_PROJECT_DIR="'"$PROJECT_ROOT"'"
     source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
     source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-scope-detection.sh"
 
-    sm_init "research auth patterns" "coordinate" 2>&1 || echo "ATTEMPT1_FAILED"
+    sm_init "research auth patterns" "coordinate" 2>&1
   ')
-
-  if ! echo "$OUTPUT1" | grep -q "ATTEMPT1_FAILED"; then
-    fail "Recovery test setup" "First attempt should have failed"
-    return 1
-  fi
-
-  # Attempt 2: Succeed with regex mode (following troubleshooting advice)
-  export WORKFLOW_CLASSIFICATION_MODE=regex-only
-
-  OUTPUT2=$(bash -c '
-    CLAUDE_PROJECT_DIR="'"$PROJECT_ROOT"'"
-    source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-    source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-scope-detection.sh"
-
-    sm_init "research auth patterns" "coordinate" 2>&1 && echo "ATTEMPT2_SUCCESS"
-  ')
-
   EXIT_CODE=$?
+  set -e
 
-  if [ $EXIT_CODE -eq 0 ] && echo "$OUTPUT2" | grep -q "ATTEMPT2_SUCCESS"; then
-    pass "User successfully recovered using regex-only mode"
+  # Verify fail-fast behavior (non-zero exit code)
+  if [ $EXIT_CODE -ne 0 ]; then
+    pass "Fail-fast behavior: Classification fails immediately without API (exit code: $EXIT_CODE)"
     return 0
   else
-    fail "Recovery with regex mode" "Regex mode recovery failed"
+    fail "Fail-fast behavior" "Should have failed without API access (exit code: $EXIT_CODE)"
     return 1
   fi
 }
 
 # ==============================================================================
-# Test 3: Error Message Shows Current Mode
+# Test 3: Error Message Provides Actionable Suggestions
 # ==============================================================================
 
-test_error_shows_current_mode() {
-  echo "Test 3: Error message displays current classification mode"
+test_error_provides_actionable_suggestions() {
+  echo "Test 3: Error message provides actionable suggestions"
 
-  # Force failure with explicit mode setting
-  export WORKFLOW_CLASSIFICATION_MODE=llm-only
+  # Force failure by unsetting API key and TEST_MODE
   unset ANTHROPIC_API_KEY
+  unset WORKFLOW_CLASSIFICATION_TEST_MODE
 
   OUTPUT=$(bash -c '
+    unset WORKFLOW_CLASSIFICATION_TEST_MODE
+    unset ANTHROPIC_API_KEY
     CLAUDE_PROJECT_DIR="'"$PROJECT_ROOT"'"
     source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
     source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-scope-detection.sh"
@@ -143,11 +137,22 @@ test_error_shows_current_mode() {
     sm_init "test" "coordinate" 2>&1 || true
   ')
 
-  if echo "$OUTPUT" | grep -q "Classification Mode:.*llm-only"; then
-    pass "Error message shows current classification mode"
+  # Check for actionable suggestions
+  CHECKS_PASSED=0
+
+  if echo "$OUTPUT" | grep -q "Suggestion:"; then
+    CHECKS_PASSED=$((CHECKS_PASSED + 1))
+  fi
+
+  if echo "$OUTPUT" | grep -q "Alternative:"; then
+    CHECKS_PASSED=$((CHECKS_PASSED + 1))
+  fi
+
+  if [ $CHECKS_PASSED -ge 1 ]; then
+    pass "Error message provides actionable suggestions ($CHECKS_PASSED found)"
     return 0
   else
-    fail "Mode display test" "Current mode not shown in error message"
+    fail "Actionable suggestions" "No suggestions found in error message"
     return 1
   fi
 }
@@ -159,10 +164,12 @@ test_error_shows_current_mode() {
 test_numbered_troubleshooting_steps() {
   echo "Test 4: Error message includes numbered troubleshooting steps"
 
-  export WORKFLOW_CLASSIFICATION_MODE=llm-only
   unset ANTHROPIC_API_KEY
+  unset WORKFLOW_CLASSIFICATION_TEST_MODE
 
   OUTPUT=$(bash -c '
+    unset WORKFLOW_CLASSIFICATION_TEST_MODE
+    unset ANTHROPIC_API_KEY
     CLAUDE_PROJECT_DIR="'"$PROJECT_ROOT"'"
     source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
     source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-scope-detection.sh"
@@ -170,18 +177,18 @@ test_numbered_troubleshooting_steps() {
     sm_init "test" "coordinate" 2>&1 || true
   ')
 
-  # Check for numbered steps
+  # Check for numbered steps (LLM-only architecture)
   STEP_COUNT=0
 
-  if echo "$OUTPUT" | grep -q "1\..*network"; then
+  if echo "$OUTPUT" | grep -qE "1\..*network"; then
     STEP_COUNT=$((STEP_COUNT + 1))
   fi
 
-  if echo "$OUTPUT" | grep -q "2\..*timeout"; then
+  if echo "$OUTPUT" | grep -qE "2\..*timeout"; then
     STEP_COUNT=$((STEP_COUNT + 1))
   fi
 
-  if echo "$OUTPUT" | grep -q "3\..*offline.*regex-only"; then
+  if echo "$OUTPUT" | grep -qE "[34]\."; then
     STEP_COUNT=$((STEP_COUNT + 1))
   fi
 
@@ -189,15 +196,15 @@ test_numbered_troubleshooting_steps() {
     pass "Error message includes numbered troubleshooting steps (found $STEP_COUNT)"
     return 0
   else
-    fail "Troubleshooting steps" "Only found $STEP_COUNT numbered steps"
+    fail "Troubleshooting steps" "Only found $STEP_COUNT numbered steps (need 3+)"
     return 1
   fi
 }
 
 # Run tests
 test_classification_failure_shows_helpful_error
-test_user_can_recover_with_regex_mode
-test_error_shows_current_mode
+test_fail_fast_behavior_without_api
+test_error_provides_actionable_suggestions
 test_numbered_troubleshooting_steps
 
 # Summary
