@@ -4,7 +4,7 @@
 
 # Get the script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATE_DIR="$SCRIPT_DIR/../templates"
+TEMPLATE_DIR="$SCRIPT_DIR/../commands/templates"
 
 # List all available templates with their categories
 # Returns: category:template-name (one per line)
