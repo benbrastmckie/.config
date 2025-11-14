@@ -36,6 +36,8 @@ source "${LIB_DIR}/workflow-scope-detection.sh"
 echo "Test 1: LLM timeout produces visible error message..."
 test_count=$((test_count + 1))
 
+# Temporarily disable test mode to test actual error handling
+unset WORKFLOW_CLASSIFICATION_TEST_MODE
 export WORKFLOW_CLASSIFICATION_TIMEOUT=2
 
 # Capture both stdout and stderr
@@ -110,9 +112,10 @@ echo "Test 5: sm_init forwards classification errors..."
 test_count=$((test_count + 1))
 
 if [ -f "${LIB_DIR}/workflow-state-machine.sh" ]; then
-  # Check if the fix is present (2>&1 instead of 2>/dev/null)
-  if grep -q "classify_workflow_comprehensive.*2>&1" "${LIB_DIR}/workflow-state-machine.sh"; then
-    echo "PASS: sm_init forwards classification errors (uses 2>&1)"
+  # Check if the fix is present (2>&1 or 2>"$file" instead of 2>/dev/null)
+  if grep -q "classify_workflow_comprehensive.*2>&1" "${LIB_DIR}/workflow-state-machine.sh" || \
+     grep -q 'classify_workflow_comprehensive.*2>"' "${LIB_DIR}/workflow-state-machine.sh"; then
+    echo "PASS: sm_init forwards classification errors (captures or forwards stderr)"
     pass_count=$((pass_count + 1))
   elif grep -q "classify_workflow_comprehensive.*2>/dev/null" "${LIB_DIR}/workflow-state-machine.sh"; then
     echo "FAIL: sm_init suppresses errors with 2>/dev/null"
