@@ -4,7 +4,7 @@ This directory contains 42 modular utility libraries used across Claude Code com
 
 **Recent Cleanup (October 2025)**: 25 unused scripts archived to `.claude/archive/lib/cleanup-2025-10-26/` (see [Archive Manifest](../archive/lib/cleanup-2025-10-26/README.md) for details). Library size reduced by ~13%.
 
-**Note**: This README documents **sourced utility libraries** (functions that are sourced into other scripts). For documentation of **standalone utility scripts** (executable scripts), see [UTILS_README.md](UTILS_README.md).
+**Note**: This README documents **sourced function libraries** (functions that are sourced into other scripts). For documentation of **standalone operational scripts** (executable CLI tools), see [scripts/README.md](../scripts/README.md).
 
 ## Table of Contents
 
@@ -40,6 +40,64 @@ Extracting common functionality to shared libraries:
 - **Increases testability** (utilities can be unit tested independently)
 - **Ensures consistency** (same logic used by all commands)
 - **Single responsibility** (each module focused on one domain)
+
+## vs scripts/ (Standalone Operational Scripts)
+
+Understanding when to use `lib/` (this directory) vs `scripts/` is essential for proper organization:
+
+| Aspect | lib/ (Sourced Libraries) | scripts/ (Executable Scripts) |
+|--------|--------------------------|-------------------------------|
+| **Purpose** | Reusable function libraries | Standalone operational tasks |
+| **Execution** | `source lib/name.sh` | `bash scripts/name.sh` |
+| **Interface** | Function calls | CLI with argument parsing |
+| **Output** | Return values, exit codes | Formatted reports, progress indicators |
+| **Scope** | Modular building blocks | Complete end-to-end operations |
+| **Examples** | plan-parsing.sh, error-handling.sh | validate-links.sh, fix-*.sh, migrate-*.sh |
+| **Dependencies** | Pure bash functions | May use external tools (npm, curl, git) |
+| **State** | Stateless (pure functions) | Stateful (modifies files/system) |
+| **Reusability** | General-purpose, used by many | Task-specific, used standalone |
+| **Testing** | Unit tests for individual functions | Integration tests for complete workflows |
+
+### Decision Matrix: When to Use lib/ vs scripts/
+
+**Use lib/ when**:
+- ✓ Building reusable functions for sourcing
+- ✓ Logic needs to be called from multiple commands
+- ✓ Functionality is a building block, not complete task
+- ✓ Pure functions without side effects preferred
+- ✓ Code will be unit tested independently
+- ✓ Function is general-purpose (parsing, validation, transformation)
+
+**Use scripts/ when**:
+- ✓ Building a standalone command-line utility
+- ✓ Task has complete workflow (input → processing → output)
+- ✓ Need CLI argument parsing and help text
+- ✓ Operation is system-level (validation, migration, analysis)
+- ✓ Output should be formatted for human consumption
+- ✓ Task may use external tools or modify system state
+
+### Examples
+
+**lib/ example** - plan-parsing.sh:
+```bash
+# Sourced by commands for plan parsing
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan-parsing.sh"
+phases=$(extract_phases_from_plan "$plan_file")
+# Returns parsed data, no output
+```
+
+**scripts/ example** - validate-links.sh:
+```bash
+# Executed standalone with CLI interface
+bash .claude/scripts/validate-links.sh --verbose
+# Output:
+# Checking: .claude/docs... ✓ 45 files
+# Found 3 broken links:
+#   - docs/guide.md -> missing.md
+# Summary: 3 broken, 142 valid
+```
+
+For complete scripts/ documentation, see [scripts/README.md](../scripts/README.md).
 
 ## Library Classification
 
