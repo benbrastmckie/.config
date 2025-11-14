@@ -561,6 +561,8 @@ echo ""
 
 **IF RESEARCH_COMPLEXITY >= 1** (always true):
 
+**EXECUTE NOW**: USE the Task tool:
+
 Task {
   subagent_type: "general-purpose"
   description: "Research Topic 1 with mandatory artifact creation"
@@ -583,6 +585,8 @@ Task {
 }
 
 **IF RESEARCH_COMPLEXITY >= 2** (true for complexity 2-4):
+
+**EXECUTE NOW**: USE the Task tool:
 
 Task {
   subagent_type: "general-purpose"
@@ -607,6 +611,8 @@ Task {
 
 **IF RESEARCH_COMPLEXITY >= 3** (true for complexity 3-4):
 
+**EXECUTE NOW**: USE the Task tool:
+
 Task {
   subagent_type: "general-purpose"
   description: "Research Topic 3 with mandatory artifact creation"
@@ -629,6 +635,8 @@ Task {
 }
 
 **IF RESEARCH_COMPLEXITY >= 4** (hierarchical research triggers, not this code path):
+
+**EXECUTE NOW**: USE the Task tool:
 
 Task {
   subagent_type: "general-purpose"
@@ -1091,6 +1099,8 @@ Task {
 }
 
 **ELSE (for research-and-plan, full-implementation, etc.)**:
+
+**EXECUTE NOW**: USE the Task tool:
 
 Task {
   subagent_type: "general-purpose"
