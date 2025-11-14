@@ -513,6 +513,7 @@ Task {
 **EXECUTE NOW**: USE the Bash tool to prepare research agent iteration variables:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # CRITICAL: Explicit conditional enumeration for agent invocation control
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
