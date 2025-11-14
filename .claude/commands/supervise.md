@@ -431,13 +431,5 @@ echo "  Summary: ${SUMMARIES_DIR}/001_summary.md"
 State machine reached terminal state. All artifacts available in topic directory.
 
 # ANTI-PATTERN EXAMPLE (DO NOT USE)
-# The following shows an INCORRECT way to invoke agents (for documentation only):
-```yaml
 # ❌ WRONG: Do not wrap Task invocations in code fences
-Task {
-  subagent_type: "general-purpose"
-  description: "Example task"  
-  prompt: "Example prompt"
-}
-```
 # ✓ CORRECT: Use direct Task invocations without code fences (see actual usage above)
