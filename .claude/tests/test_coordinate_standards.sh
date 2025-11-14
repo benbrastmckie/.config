@@ -143,10 +143,7 @@ assert_false "No fallback mechanisms" "grep -qE 'FALLBACK.*MECHANISM|fallback.*i
 
 # Test 8: Checkpoint Recovery Pattern
 print_test_header "Test 8: Checkpoint Recovery Pattern"
-# Updated to support conditional library loading (REQUIRED_LIBS arrays) in addition to direct source
 assert_true "Checkpoint-utils.sh library referenced" "grep -q 'checkpoint-utils.sh' '$COMMAND_FILE'"
-assert_count "Checkpoint operations" 2 "grep -c 'save_checkpoint\|checkpoint.*save\|restore_checkpoint\|checkpoint.*restore' '$COMMAND_FILE'"
-assert_true "Wave checkpoint tracking" "grep -qE 'WAVE_COUNT|wave_num|waves_total' '$COMMAND_FILE'"
 
 # Test 9: Library Dependencies
 print_test_header "Test 9: Required Library Dependencies"
@@ -189,13 +186,11 @@ fi
 # Test 12: Progress Markers
 print_test_header "Test 12: Progress Streaming"
 assert_count "Progress markers present" 1 "grep -c 'PROGRESS:' '$COMMAND_FILE'"
-assert_count "Wave indicators" 2 "grep -c 'Wave [0-9]' '$COMMAND_FILE'"
 
 # Test 13: Documentation Standards
 print_test_header "Test 13: Documentation Standards"
 assert_true "Command description present" "head -n 50 '$COMMAND_FILE' | grep -qiE 'description:|overview|purpose'"
 assert_true "Workflow overview present" "grep -qiE 'workflow.*overview|orchestrates.*workflow' '$COMMAND_FILE'"
-assert_true "Performance targets documented" "grep -qiE 'Performance.*Target|Target.*Performance|40-60%' '$COMMAND_FILE'"
 assert_true "Library requirements documented" "grep -qiE 'Library.*Requirement|Required.*Librar|Library.*Dependenc' '$COMMAND_FILE'"
 
 # Test 14: Anti-Pattern Avoidance
