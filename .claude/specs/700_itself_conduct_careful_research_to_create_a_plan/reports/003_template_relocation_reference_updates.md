@@ -91,7 +91,7 @@ Usage: Referenced by agent creation workflows
 
 **Pattern 1: Direct File References** (Most Common)
 ```markdown
-See [Sub-Supervisor Template](.claude/templates/sub-supervisor-template.md)
+See [Sub-Supervisor Template](.claude/agents/templates/sub-supervisor-template.md)
 ```
 **Count**: ~85 references
 **Impact**: High - Requires path updates
@@ -105,7 +105,7 @@ Templates are located in `.claude/templates/`
 
 **Pattern 3: Code References**
 ```bash
-TEMPLATE_PATH=".claude/templates/sub-supervisor-template.md"
+TEMPLATE_PATH=".claude/agents/templates/sub-supervisor-template.md"
 ```
 **Count**: ~10 references
 **Impact**: High - Breaks functionality if not updated
@@ -213,14 +213,14 @@ test -f .claude/agents/templates/README.md && echo "✓ README created"
 
 **Commands**:
 ```bash
-git mv .claude/templates/sub-supervisor-template.md .claude/agents/templates/sub-supervisor-template.md
+git mv .claude/agents/templates/sub-supervisor-template.md .claude/agents/templates/sub-supervisor-template.md
 ```
 
 **Verification**:
 ```bash
 # Verify move
 test -f .claude/agents/templates/sub-supervisor-template.md && echo "✓ File moved"
-test ! -f .claude/templates/sub-supervisor-template.md && echo "✓ Source removed"
+test ! -f .claude/agents/templates/sub-supervisor-template.md && echo "✓ Source removed"
 
 # Verify content integrity
 wc -l .claude/agents/templates/sub-supervisor-template.md
@@ -246,7 +246,7 @@ if [[ "$1" == "--dry-run" ]]; then
 fi
 
 # Find all files with references to old path
-OLD_PATH=".claude/templates/sub-supervisor-template.md"
+OLD_PATH=".claude/agents/templates/sub-supervisor-template.md"
 NEW_PATH=".claude/agents/templates/sub-supervisor-template.md"
 
 echo "Searching for references to $OLD_PATH..."
@@ -296,7 +296,7 @@ fi
 ./scripts/update-template-references.sh
 
 # Verify updates
-grep -r ".claude/templates/sub-supervisor-template.md" . \
+grep -r ".claude/agents/templates/sub-supervisor-template.md" . \
   --include="*.md" --include="*.sh" \
   --exclude-dir=".git" --exclude-dir="archive"
 # Should output nothing (all references updated)
@@ -424,7 +424,7 @@ fi
 
 # Test 4: Verify git history preserved
 git log --follow .claude/agents/templates/sub-supervisor-template.md | head -20
-# Should show history from .claude/templates/sub-supervisor-template.md
+# Should show history from .claude/agents/templates/sub-supervisor-template.md
 ```
 
 ## Reference Update Strategy
@@ -471,7 +471,7 @@ git reset --hard HEAD  # If not committed
 git revert <commit>    # If already committed
 
 # Restore old structure
-git mv .claude/agents/templates/sub-supervisor-template.md .claude/templates/sub-supervisor-template.md
+git mv .claude/agents/templates/sub-supervisor-template.md .claude/agents/templates/sub-supervisor-template.md
 rm -rf .claude/agents/templates
 
 # Re-run old reference pattern (create rollback script)

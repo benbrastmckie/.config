@@ -226,7 +226,7 @@ From spec 493 (Template Removal Analysis):
 1. Move sub-supervisor-template.md to `.claude/agents/templates/` (create directory)
 2. Remove empty `.claude/templates/` directory
 3. Keep commands/templates/ for plan templates
-4. Update all 100+ references from `.claude/templates/sub-supervisor-template.md` to new location
+4. Update all 100+ references from `.claude/agents/templates/sub-supervisor-template.md` to new location
 
 ### Issue 3: Misplaced Root-Level File
 

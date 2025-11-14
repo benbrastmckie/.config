@@ -923,7 +923,7 @@ dependencies: [2, 3]
   - [x] Define partial failure handling (2/3 workers succeed → report success + failure context)
   - [x] Create supervisor communication protocol document
 - [x] **Supervisor Behavioral File Template**: Create reusable supervisor pattern
-  - [x] Create `.claude/templates/sub-supervisor-template.md` (400-600 lines)
+  - [x] Create `.claude/agents/templates/sub-supervisor-template.md` (400-600 lines)
   - [x] Section: Worker invocation (parallel Task invocations)
   - [x] Section: Metadata extraction (parse worker outputs)
   - [x] Section: Metadata aggregation (combine into supervisor summary)
@@ -962,7 +962,7 @@ AGGREGATED=$(aggregate_worker_metadata "$WORKER_METADATA")
 
 **Deliverables**:
 - Updated checkpoint schema v2.0 (supervisor_state section)
-- `.claude/templates/sub-supervisor-template.md` (400-600 lines)
+- `.claude/agents/templates/sub-supervisor-template.md` (400-600 lines)
 - `.claude/tests/test_supervisor_checkpoint.sh` (12+ tests)
 - `.claude/docs/architecture/hierarchical-supervisor-coordination.md` (800-1200 lines)
 - Updated `.claude/docs/reference/library-api.md` (supervisor checkpoint API)
@@ -1350,7 +1350,7 @@ done
 - Updated `.claude/docs/guides/orchestration-best-practices.md` - State machine patterns
 
 ### Templates
-- `.claude/templates/sub-supervisor-template.md` (400-600 lines) - Supervisor behavioral file template
+- `.claude/agents/templates/sub-supervisor-template.md` (400-600 lines) - Supervisor behavioral file template
 
 **Total Documentation**: ~10,000 lines of comprehensive documentation
 

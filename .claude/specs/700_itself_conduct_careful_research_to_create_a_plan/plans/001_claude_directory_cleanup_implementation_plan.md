@@ -88,7 +88,7 @@ Recommended approach prioritizes high-impact, low-effort changes with automated 
 
 **Reference Update Strategy**:
 - Automated migration script with dry-run mode
-- Pattern matching for absolute paths: `.claude/templates/sub-supervisor-template.md`
+- Pattern matching for absolute paths: `.claude/agents/templates/sub-supervisor-template.md`
 - Relative path calculation for context-sensitive references
 - Verification checkpoints after each batch update
 
@@ -260,13 +260,13 @@ dependencies: [1, 2]
 
 Tasks:
 - [ ] Verify agents/templates/ directory exists (from Phase 2)
-- [ ] Use git mv to relocate template: `git mv .claude/templates/sub-supervisor-template.md .claude/agents/templates/sub-supervisor-template.md`
+- [ ] Use git mv to relocate template: `git mv .claude/agents/templates/sub-supervisor-template.md .claude/agents/templates/sub-supervisor-template.md`
 - [ ] Verify file integrity after move: `wc -l .claude/agents/templates/sub-supervisor-template.md` (should be ~490 lines)
 - [ ] Run reference update script in dry-run mode: `./.claude/scripts/update-template-references.sh --dry-run`
 - [ ] Review dry-run output for any unexpected changes
 - [ ] Execute actual reference updates: `./.claude/scripts/update-template-references.sh`
 - [ ] Verify reference count updated: `grep -r ".claude/agents/templates/sub-supervisor-template.md" . | wc -l` (should be ~119)
-- [ ] Verify no old references remain: `grep -r ".claude/templates/sub-supervisor-template.md" . --exclude-dir=".git" --exclude-dir="archive" | wc -l` (should be 0)
+- [ ] Verify no old references remain: `grep -r ".claude/agents/templates/sub-supervisor-template.md" . --exclude-dir=".git" --exclude-dir="archive" | wc -l` (should be 0)
 - [ ] Handle any relative path references requiring manual updates
 - [ ] Test affected commands still work (/orchestrate, /coordinate)
 
@@ -280,7 +280,7 @@ Testing:
 ```bash
 # Verify template moved
 test -f .claude/agents/templates/sub-supervisor-template.md && echo "✓ Template moved"
-test ! -f .claude/templates/sub-supervisor-template.md && echo "✓ Source removed"
+test ! -f .claude/agents/templates/sub-supervisor-template.md && echo "✓ Source removed"
 
 # Verify content integrity
 LINE_COUNT=$(wc -l < .claude/agents/templates/sub-supervisor-template.md)
@@ -291,7 +291,7 @@ NEW_REFS=$(grep -r ".claude/agents/templates/sub-supervisor-template.md" . --exc
 echo "New references: $NEW_REFS (expected ~119)"
 
 # Verify old references gone
-OLD_REFS=$(grep -r ".claude/templates/sub-supervisor-template.md" . --exclude-dir=".git" --exclude-dir="archive" | wc -l)
+OLD_REFS=$(grep -r ".claude/agents/templates/sub-supervisor-template.md" . --exclude-dir=".git" --exclude-dir="archive" | wc -l)
 [ "$OLD_REFS" -eq 0 ] && echo "✓ No old references"
 
 # Test git history preserved

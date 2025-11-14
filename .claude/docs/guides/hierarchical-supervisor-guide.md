@@ -467,7 +467,7 @@ To create a new supervisor based on the sub-supervisor-template.md:
 ### Step 1: Copy Template
 
 ```bash
-cp .claude/templates/sub-supervisor-template.md \
+cp .claude/agents/templates/sub-supervisor-template.md \
    .claude/agents/my-supervisor.md
 ```
 
