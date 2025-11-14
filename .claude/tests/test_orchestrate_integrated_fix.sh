@@ -28,7 +28,7 @@ This is a test report for validation purposes.
 - Finding 2")
 
   if [[ ! -f "$report" ]]; then
-    echo "FAIL: Report not created"
+    echo "✗ FAIL: Report not created"
     return 1
   fi
 
@@ -38,11 +38,11 @@ This is a test report for validation purposes.
 - [ ] Task 1")
 
   if [[ ! -f "$plan" ]]; then
-    echo "FAIL: Plan not created"
+    echo "✗ FAIL: Plan not created"
     return 1
   fi
 
-  echo "PASS: Artifact creation supports reports and plans"
+  echo "✓ PASS: Artifact creation supports reports and plans"
 
   # Cleanup
   rm -rf "$topic_dir"
@@ -56,26 +56,26 @@ test_topic_structure() {
   local topic_dir=$(get_or_create_topic_dir "orchestrate test" ".claude/specs")
 
   if [[ ! "$topic_dir" =~ .claude/specs/[0-9]+_orchestrate_test ]]; then
-    echo "FAIL: Topic directory format incorrect: $topic_dir"
+    echo "✗ FAIL: Topic directory format incorrect: $topic_dir"
     return 1
   fi
 
   if [[ ! -d "$topic_dir/reports" ]]; then
-    echo "FAIL: reports/ not created"
+    echo "✗ FAIL: reports/ not created"
     return 1
   fi
 
   if [[ ! -d "$topic_dir/plans" ]]; then
-    echo "FAIL: plans/ not created"
+    echo "✗ FAIL: plans/ not created"
     return 1
   fi
 
   if [[ ! -d "$topic_dir/summaries" ]]; then
-    echo "FAIL: summaries/ not created"
+    echo "✗ FAIL: summaries/ not created"
     return 1
   fi
 
-  echo "PASS: Topic directory structure correct"
+  echo "✓ PASS: Topic directory structure correct"
 
   # Cleanup
   rm -rf "$topic_dir"
@@ -103,7 +103,7 @@ JWT tokens recommended for stateless authentication.
 EOF
 
   if [[ ! -f "$report_path" ]]; then
-    echo "FAIL: File not created"
+    echo "✗ FAIL: File not created"
     return 1
   fi
 
@@ -111,11 +111,11 @@ EOF
   local summary=$(echo "$metadata" | jq -r '.summary')
 
   if [[ -z "$summary" ]]; then
-    echo "FAIL: Metadata extraction failed"
+    echo "✗ FAIL: Metadata extraction failed"
     return 1
   fi
 
-  echo "PASS: File created and metadata extracted"
+  echo "✓ PASS: File created and metadata extracted"
 
   # Cleanup
   rm -rf ".claude/specs/test_research"
@@ -151,11 +151,11 @@ EOF
   fi
 
   if [[ ! -f "$report_path" ]]; then
-    echo "FAIL: Fallback didn't create file"
+    echo "✗ FAIL: Fallback didn't create file"
     return 1
   fi
 
-  echo "PASS: Fallback report created"
+  echo "✓ PASS: Fallback report created"
 
   # Cleanup
   rm -rf ".claude/specs/test_research"
@@ -190,7 +190,7 @@ EOF
   local metadata_size=$(echo "$metadata" | wc -c)
 
   if [[ $full_size -eq 0 ]]; then
-    echo "FAIL: Report file is empty"
+    echo "✗ FAIL: Report file is empty"
     return 1
   fi
 
@@ -199,7 +199,7 @@ EOF
   echo "  Full: $full_size chars, Metadata: $metadata_size chars, Reduction: ${reduction}%"
 
   if [[ $reduction -ge 90 ]]; then
-    echo "PASS: Context reduction target met (>90%)"
+    echo "✓ PASS: Context reduction target met (>90%)"
   else
     echo "WARN: Context reduction below target (${reduction}% < 90%)"
   fi
