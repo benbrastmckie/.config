@@ -24,11 +24,11 @@ rm -f "$RESULTS_FILE"
 echo "Test 1: Verifying no code fences around Task invocations..."
 CODE_FENCE_COUNT=$(grep -n '```yaml' "${PROJECT_ROOT}/commands/supervise.md" | wc -l)
 
-if [ "$CODE_FENCE_COUNT" -eq 1 ]; then
-  echo "✓ PASS: Only 1 code-fenced YAML block (anti-pattern example)"
+if [ "$CODE_FENCE_COUNT" -eq 0 ]; then
+  echo "✓ PASS: No code-fenced YAML blocks (all removed)"
   echo "✓ PASS: Code fence removal" >> "$RESULTS_FILE"
 else
-  echo "✗ FAIL: Found $CODE_FENCE_COUNT code-fenced YAML blocks (expected 1)"
+  echo "✗ FAIL: Found $CODE_FENCE_COUNT code-fenced YAML blocks (expected 0)"
   echo "✗ FAIL: Code fence removal - found $CODE_FENCE_COUNT blocks" >> "$RESULTS_FILE"
   exit 1
 fi
@@ -54,18 +54,18 @@ else
   exit 1
 fi
 
-# Test 3: Library Sourcing Unwrapped (lines 210-280 region)
+# Test 3: Bash Execution Blocks Properly Fenced
 echo ""
-echo "Test 3: Verifying library sourcing bash blocks unwrapped..."
-# Check if the library sourcing region (around line 217) has code fences
-LIBRARY_REGION_FENCES=$(sed -n '210,280p' "${PROJECT_ROOT}/commands/supervise.md" | grep -c '```bash' || true)
+echo "Test 3: Verifying bash execution blocks are properly code-fenced..."
+# Check that execution bash blocks ARE properly fenced (not unwrapped like documentation)
+BASH_BLOCK_COUNT=$(sed -n '210,280p' "${PROJECT_ROOT}/commands/supervise.md" | grep -c '```bash' || true)
 
-if [ "$LIBRARY_REGION_FENCES" -eq 0 ]; then
-  echo "✓ PASS: Library sourcing region unwrapped (no code fences in lines 210-280)"
-  echo "✓ PASS: Library sourcing unwrapped" >> "$RESULTS_FILE"
+if [ "$BASH_BLOCK_COUNT" -ge 2 ]; then
+  echo "✓ PASS: Bash execution blocks properly fenced ($BASH_BLOCK_COUNT blocks)"
+  echo "✓ PASS: Bash blocks properly fenced" >> "$RESULTS_FILE"
 else
-  echo "✗ FAIL: Found $LIBRARY_REGION_FENCES code-fenced bash blocks in library sourcing region"
-  echo "✗ FAIL: Library sourcing - found $LIBRARY_REGION_FENCES fences in region" >> "$RESULTS_FILE"
+  echo "✗ FAIL: Expected at least 2 bash execution blocks, found $BASH_BLOCK_COUNT"
+  echo "✗ FAIL: Bash blocks - found only $BASH_BLOCK_COUNT" >> "$RESULTS_FILE"
   exit 1
 fi
 
