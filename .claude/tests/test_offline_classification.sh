@@ -45,10 +45,10 @@ result=$(classify_workflow_comprehensive "test workflow" 2>&1 || true)
 
 # Check if we got any output (not suppressed)
 if [ -z "$result" ]; then
-  echo "FAIL: Error messages suppressed (no output)"
+  echo "✗ FAIL: Error messages suppressed (no output)"
   fail_count=$((fail_count + 1))
 else
-  echo "PASS: Error messages visible"
+  echo "✓ PASS: Error messages visible"
   pass_count=$((pass_count + 1))
 fi
 
@@ -58,10 +58,10 @@ echo "Test 2: Error message provides actionable suggestions..."
 test_count=$((test_count + 1))
 
 if echo "$result" | grep -qi "suggestion\|alternative"; then
-  echo "PASS: Error message provides actionable guidance"
+  echo "✓ PASS: Error message provides actionable guidance"
   pass_count=$((pass_count + 1))
 else
-  echo "FAIL: Error message doesn't provide actionable suggestions"
+  echo "✗ FAIL: Error message doesn't provide actionable suggestions"
   echo "Output received:"
   echo "$result"
   fail_count=$((fail_count + 1))
@@ -78,10 +78,10 @@ end_time=$(date +%s)
 duration=$((end_time - start_time))
 
 if [ "$duration" -lt 5 ]; then
-  echo "PASS: Timeout completed in ${duration}s (acceptable)"
+  echo "✓ PASS: Timeout completed in ${duration}s (acceptable)"
   pass_count=$((pass_count + 1))
 else
-  echo "FAIL: Timeout took ${duration}s (too long)"
+  echo "✗ FAIL: Timeout took ${duration}s (too long)"
   fail_count=$((fail_count + 1))
 fi
 
@@ -96,10 +96,10 @@ unset WORKFLOW_CLASSIFICATION_TIMEOUT
 result=$(classify_workflow_comprehensive "Research authentication patterns" 2>&1)
 
 if [ -n "$result" ] && echo "$result" | jq -e '.workflow_type' >/dev/null 2>&1; then
-  echo "PASS: Test mode returns valid JSON classification"
+  echo "✓ PASS: Test mode returns valid JSON classification"
   pass_count=$((pass_count + 1))
 else
-  echo "FAIL: Test mode failed or returned invalid JSON"
+  echo "✗ FAIL: Test mode failed or returned invalid JSON"
   echo "Output: $result"
   fail_count=$((fail_count + 1))
 fi
@@ -115,17 +115,17 @@ if [ -f "${LIB_DIR}/workflow-state-machine.sh" ]; then
   # Check if the fix is present (2>&1 or 2>"$file" instead of 2>/dev/null)
   if grep -q "classify_workflow_comprehensive.*2>&1" "${LIB_DIR}/workflow-state-machine.sh" || \
      grep -q 'classify_workflow_comprehensive.*2>"' "${LIB_DIR}/workflow-state-machine.sh"; then
-    echo "PASS: sm_init forwards classification errors (captures or forwards stderr)"
+    echo "✓ PASS: sm_init forwards classification errors (captures or forwards stderr)"
     pass_count=$((pass_count + 1))
   elif grep -q "classify_workflow_comprehensive.*2>/dev/null" "${LIB_DIR}/workflow-state-machine.sh"; then
-    echo "FAIL: sm_init suppresses errors with 2>/dev/null"
+    echo "✗ FAIL: sm_init suppresses errors with 2>/dev/null"
     fail_count=$((fail_count + 1))
   else
     echo "WARNING: Cannot determine error forwarding pattern"
     pass_count=$((pass_count + 1))
   fi
 else
-  echo "SKIP: workflow-state-machine.sh not found"
+  echo "⊘ SKIP: workflow-state-machine.sh not found"
 fi
 
 # Summary

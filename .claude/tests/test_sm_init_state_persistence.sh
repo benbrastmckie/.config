@@ -48,10 +48,10 @@ sm_init "Research authentication patterns" "test_command" >/dev/null 2>&1
 
 # Check if variables exist
 if [[ -n "${WORKFLOW_SCOPE:-}" ]] && [[ -n "${RESEARCH_COMPLEXITY:-}" ]] && [[ -n "${RESEARCH_TOPICS_JSON:-}" ]]; then
-  echo "PASS: All three variables set after sm_init"
+  echo "✓ PASS: All three variables set after sm_init"
   pass_count=$((pass_count + 1))
 else
-  echo "FAIL: Missing variables after sm_init"
+  echo "✗ FAIL: Missing variables after sm_init"
   echo "  WORKFLOW_SCOPE=${WORKFLOW_SCOPE:-unset}"
   echo "  RESEARCH_COMPLEXITY=${RESEARCH_COMPLEXITY:-unset}"
   echo "  RESEARCH_TOPICS_JSON=${RESEARCH_TOPICS_JSON:-unset}"
@@ -76,10 +76,10 @@ load_workflow_state "$TEST_WORKFLOW_ID" >/dev/null 2>&1
 
 # Check if variables restored
 if [[ -n "${WORKFLOW_SCOPE:-}" ]] && [[ -n "${RESEARCH_COMPLEXITY:-}" ]] && [[ -n "${RESEARCH_TOPICS_JSON:-}" ]]; then
-  echo "PASS: All three variables restored from state"
+  echo "✓ PASS: All three variables restored from state"
   pass_count=$((pass_count + 1))
 else
-  echo "FAIL: Missing variables after state load"
+  echo "✗ FAIL: Missing variables after state load"
   echo "  WORKFLOW_SCOPE=${WORKFLOW_SCOPE:-unset}"
   echo "  RESEARCH_COMPLEXITY=${RESEARCH_COMPLEXITY:-unset}"
   echo "  RESEARCH_TOPICS_JSON=${RESEARCH_TOPICS_JSON:-unset}"
@@ -94,7 +94,7 @@ test_count=$((test_count + 1))
 STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${TEST_WORKFLOW_ID}.sh"
 
 if [ ! -f "$STATE_FILE" ]; then
-  echo "FAIL: State file not found: $STATE_FILE"
+  echo "✗ FAIL: State file not found: $STATE_FILE"
   fail_count=$((fail_count + 1))
 else
   missing_vars=()
@@ -103,10 +103,10 @@ else
   grep -q "RESEARCH_TOPICS_JSON=" "$STATE_FILE" || missing_vars+=("RESEARCH_TOPICS_JSON")
 
   if [ ${#missing_vars[@]} -eq 0 ]; then
-    echo "PASS: State file contains all three variables"
+    echo "✓ PASS: State file contains all three variables"
     pass_count=$((pass_count + 1))
   else
-    echo "FAIL: State file missing variables: ${missing_vars[*]}"
+    echo "✗ FAIL: State file missing variables: ${missing_vars[*]}"
     echo "State file contents:"
     cat "$STATE_FILE"
     fail_count=$((fail_count + 1))

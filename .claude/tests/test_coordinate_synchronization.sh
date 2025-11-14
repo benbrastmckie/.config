@@ -20,11 +20,11 @@ run_test() {
   TESTS_RUN=$((TESTS_RUN + 1))
 
   if $test_func; then
-    echo "PASS: $test_name"
+    echo "✓ PASS: $test_name"
     TESTS_PASSED=$((TESTS_PASSED + 1))
     return 0
   else
-    echo "FAIL: $test_name"
+    echo "✗ FAIL: $test_name"
     TESTS_FAILED=$((TESTS_FAILED + 1))
     return 1
   fi

@@ -183,8 +183,8 @@ echo ""
 echo "════════════════════════════════════════════════"
 echo "Test Summary"
 echo "════════════════════════════════════════════════"
-echo "PASS: $PASS_COUNT"
-echo "FAIL: $FAIL_COUNT"
+echo "✓ PASS: $PASS_COUNT"
+echo "✗ FAIL: $FAIL_COUNT"
 echo ""
 
 if [ $FAIL_COUNT -eq 0 ]; then

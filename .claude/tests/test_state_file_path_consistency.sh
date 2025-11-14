@@ -28,15 +28,15 @@ test_count=$((test_count + 1))
 COORDINATE_CMD="${SCRIPT_DIR}/../commands/coordinate.md"
 
 if [ ! -f "$COORDINATE_CMD" ]; then
-  echo "FAIL: coordinate.md not found at $COORDINATE_CMD"
+  echo "✗ FAIL: coordinate.md not found at $COORDINATE_CMD"
   fail_count=$((fail_count + 1))
 else
   # Check if COORDINATE_STATE_ID_FILE uses CLAUDE_PROJECT_DIR
   if grep -q 'COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"' "$COORDINATE_CMD"; then
-    echo "PASS: State ID file uses CLAUDE_PROJECT_DIR"
+    echo "✓ PASS: State ID file uses CLAUDE_PROJECT_DIR"
     pass_count=$((pass_count + 1))
   else
-    echo "FAIL: State ID file does not use CLAUDE_PROJECT_DIR"
+    echo "✗ FAIL: State ID file does not use CLAUDE_PROJECT_DIR"
     echo "Looking for: COORDINATE_STATE_ID_FILE=\"\${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt\""
     fail_count=$((fail_count + 1))
   fi
@@ -50,10 +50,10 @@ test_count=$((test_count + 1))
 if [ -f "$COORDINATE_CMD" ]; then
   # Check for old HOME-based path (should not exist in fixed version)
   if grep -q 'COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"' "$COORDINATE_CMD"; then
-    echo "FAIL: Old HOME-based path still present"
+    echo "✗ FAIL: Old HOME-based path still present"
     fail_count=$((fail_count + 1))
   else
-    echo "PASS: Old HOME-based path removed"
+    echo "✓ PASS: Old HOME-based path removed"
     pass_count=$((pass_count + 1))
   fi
 fi
@@ -79,16 +79,16 @@ if [ -f "$STATE_ID_FILE" ]; then
 
   # Verify both files are in CLAUDE_PROJECT_DIR
   if [ -f "$STATE_ID_FILE" ] && [ -f "$STATE_FILE" ]; then
-    echo "PASS: Both state ID and state file in CLAUDE_PROJECT_DIR"
+    echo "✓ PASS: Both state ID and state file in CLAUDE_PROJECT_DIR"
     pass_count=$((pass_count + 1))
   else
-    echo "FAIL: State files not co-located"
+    echo "✗ FAIL: State files not co-located"
     echo "  State ID file: $STATE_ID_FILE (exists: $([ -f "$STATE_ID_FILE" ] && echo yes || echo no))"
     echo "  State file: $STATE_FILE (exists: $([ -f "$STATE_FILE" ] && echo yes || echo no))"
     fail_count=$((fail_count + 1))
   fi
 else
-  echo "FAIL: State ID file not found at $STATE_ID_FILE"
+  echo "✗ FAIL: State ID file not found at $STATE_ID_FILE"
   fail_count=$((fail_count + 1))
 fi
 
@@ -109,10 +109,10 @@ if [ -f "$COORDINATE_CMD" ]; then
   [ "$INCORRECT_REFS" -eq "$INCORRECT_REFS" ] 2>/dev/null || INCORRECT_REFS=0
 
   if [ "$CORRECT_REFS" -gt 0 ] && [ "$INCORRECT_REFS" -eq 0 ]; then
-    echo "PASS: All references use CLAUDE_PROJECT_DIR ($CORRECT_REFS found, 0 incorrect)"
+    echo "✓ PASS: All references use CLAUDE_PROJECT_DIR ($CORRECT_REFS found, 0 incorrect)"
     pass_count=$((pass_count + 1))
   else
-    echo "FAIL: Found incorrect path references"
+    echo "✗ FAIL: Found incorrect path references"
     echo "  Correct (CLAUDE_PROJECT_DIR): $CORRECT_REFS"
     echo "  Incorrect (HOME): $INCORRECT_REFS"
     fail_count=$((fail_count + 1))
