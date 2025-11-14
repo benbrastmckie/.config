@@ -106,8 +106,8 @@ assert_false "No code-fenced Task blocks (any language)" "grep -Pzo '\`\`\`[a-z]
 # Test 2: Imperative Markers Present (Standard 11)
 print_test_header "Test 2: Imperative Markers (Standard 11)"
 assert_true "EXECUTE NOW markers present" "grep -q 'EXECUTE NOW' '$COMMAND_FILE'"
-assert_true "YOU MUST markers present" "grep -q 'YOU MUST' '$COMMAND_FILE'"
-assert_true "REQUIRED ACTION markers present" "grep -qE 'REQUIRED ACTION|REQUIRED:' '$COMMAND_FILE'"
+assert_true "CRITICAL markers present" "grep -q 'CRITICAL:' '$COMMAND_FILE'"
+assert_true "EXECUTION-CRITICAL markers present" "grep -q 'EXECUTION-CRITICAL:' '$COMMAND_FILE'"
 
 # Test 3: Behavioral Content Extraction (Standard 12)
 print_test_header "Test 3: Behavioral Content Extraction (Standard 12)"
