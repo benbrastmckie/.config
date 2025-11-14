@@ -31,6 +31,14 @@ This directory contains troubleshooting guides for common issues in the .claude/
 - **Fix Time**: 15-30 minutes per command
 - **Impact**: 90% code reduction per agent invocation when fixed
 
+### [Duplicate Slash Commands](./duplicate-commands.md)
+- **Problem**: Multiple entries for the same command in Claude Code autocomplete
+- **Category**: Configuration/Usability
+- **Priority**: Low (usability issue, not functional bug)
+- **Symptoms**: Two entries for same command labeled "(user)" and "(project)", missing features in one version
+- **Fix Time**: 10-20 minutes per duplicate
+- **Impact**: Eliminates confusion, ensures current command version used
+
 ## Quick Reference
 
 ### By Problem Type
@@ -40,6 +48,9 @@ This directory contains troubleshooting guides for common issues in the .claude/
 
 **Anti-Patterns:**
 - [Inline Template Duplication](./inline-template-duplication.md) - Behavioral content duplication
+
+**Configuration:**
+- [Duplicate Slash Commands](./duplicate-commands.md) - User/project command conflicts
 
 ### By Symptom
 
@@ -60,6 +71,9 @@ This directory contains troubleshooting guides for common issues in the .claude/
 
 **Maintenance Burden:**
 - [Inline Template Duplication](./inline-template-duplication.md) - Updating behavior in multiple files
+
+**Autocomplete Issues:**
+- [Duplicate Commands](./duplicate-commands.md) - Multiple entries for same command
 
 ## Diagnostic Workflow
 
