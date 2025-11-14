@@ -254,7 +254,7 @@ if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "multi-.*system|cross-.*platform|dis
   RESEARCH_COMPLEXITY=4
 fi
 
-echo "Research State: Invoking $RESEARCH_COMPLEXITY research agents in parallel"
+echo "PROGRESS: Research Phase - Invoking $RESEARCH_COMPLEXITY research agents in parallel"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke research-specialist agents (1 to $RESEARCH_COMPLEXITY in parallel):
@@ -321,7 +321,7 @@ if [ "$CURRENT_STATE" != "$STATE_PLAN" ]; then
   handle_state_error "Expected state 'plan' but current state is '$CURRENT_STATE'" 1
 fi
 
-echo "Planning State: Creating implementation plan"
+echo "PROGRESS: Planning Phase - Creating implementation plan"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke plan-architect:
