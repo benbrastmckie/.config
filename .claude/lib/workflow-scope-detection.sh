@@ -56,6 +56,21 @@ classify_workflow_comprehensive() {
     return 1
   fi
 
+  # Mode validation - fail-fast on invalid modes (clean-break policy)
+  if [ "$WORKFLOW_CLASSIFICATION_MODE" = "hybrid" ]; then
+    echo "ERROR: hybrid mode removed in clean-break refactor" >&2
+    echo "  Context: WORKFLOW_CLASSIFICATION_MODE=hybrid is no longer supported" >&2
+    echo "  Suggestion: Use 'llm-only' (default, recommended) or 'regex-only' (offline)" >&2
+    return 1
+  fi
+
+  if [[ "$WORKFLOW_CLASSIFICATION_MODE" != "llm-only" && "$WORKFLOW_CLASSIFICATION_MODE" != "regex-only" ]]; then
+    echo "ERROR: Invalid WORKFLOW_CLASSIFICATION_MODE: $WORKFLOW_CLASSIFICATION_MODE" >&2
+    echo "  Context: Only 'llm-only' and 'regex-only' are supported" >&2
+    echo "  Suggestion: Set WORKFLOW_CLASSIFICATION_MODE to 'llm-only' or 'regex-only'" >&2
+    return 1
+  fi
+
   # LLM-only classification - fail fast on errors (no fallback)
   local llm_result
   if ! llm_result=$(classify_workflow_llm_comprehensive "$workflow_description"); then

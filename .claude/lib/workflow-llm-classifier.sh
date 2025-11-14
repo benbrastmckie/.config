@@ -307,6 +307,7 @@ invoke_llm_classifier() {
   # Pre-flight check: fail fast if network unavailable (Spec 700 Phase 5)
   if ! check_network_connectivity; then
     echo "ERROR: LLM classification requires network connectivity" >&2
+    echo "  Suggestion: Check internet connection or use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline operation" >&2
     return 1
   fi
 
