@@ -85,8 +85,9 @@ for test_file in $ALL_TEST_FILES; do
       FAILED_TESTS=$((FAILED_TESTS + 1))
     else
       # Count passes from output (grep -c returns 0 on no match but exits with 1)
+      # For FAIL, exclude summary lines (e.g., "✗ FAIL: 0") by filtering out lines ending with ": [number]"
       local_passed=$(echo "$test_output" | grep -c "✓ PASS" || true)
-      local_failed=$(echo "$test_output" | grep -c "✗ FAIL" || true)
+      local_failed=$(echo "$test_output" | grep "✗ FAIL" | grep -v "✗ FAIL: [0-9]\+$" | wc -l || true)
       local_skipped=$(echo "$test_output" | grep -c "⊘ SKIP" || true)
 
       # Ensure values are numeric (grep -c always outputs a number, but double-check)
