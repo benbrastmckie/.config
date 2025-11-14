@@ -814,7 +814,7 @@ Reduction: (10,000 - 440) / 10,000 = 95.6%
 
 ### Supervisor Template
 
-**Location**: `.claude/templates/sub-supervisor-template.md` (600 lines)
+**Location**: `.claude/agents/templates/sub-supervisor-template.md` (600 lines)
 
 **Template Sections**:
 1. **Metadata** (supervisor name, purpose, worker count)

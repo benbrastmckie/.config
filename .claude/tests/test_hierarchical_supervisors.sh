@@ -439,7 +439,7 @@ test_supervisor_time_savings_target() {
 test_supervisor_template_compliance() {
   run_test "Supervisors follow sub-supervisor-template.md structure"
 
-  local template="${CLAUDE_DIR}/templates/sub-supervisor-template.md"
+  local template="${CLAUDE_DIR}/agents/templates/sub-supervisor-template.md"
 
   if [ ! -f "$template" ]; then
     fail_test "Template file not found"
