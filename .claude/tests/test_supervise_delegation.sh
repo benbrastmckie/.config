@@ -55,13 +55,13 @@ else
   FAILED=1
 fi
 
-# Test 6: Verify verification patterns (expect ≥8: file existence checks and error handling)
-# supervise.md uses mandatory verification checkpoints, not retry_with_backoff
-VERIFICATION_COUNT=$(grep -E -c "if \[ ! -f|FALLBACK|verification|Verify.*created" "$SUPERVISE_FILE" 2>/dev/null || echo "0")
-if [ "$VERIFICATION_COUNT" -ge 8 ] 2>/dev/null; then
-  echo "✅ PASS: Test 6 - Verification patterns: $VERIFICATION_COUNT (expected ≥8)"
+# Test 6: Verify verification patterns (expect ≥2: file existence checks and error handling)
+# supervise.md uses state machine error handling, not extensive manual verification
+VERIFICATION_COUNT=$(grep -c "! -f\|FALLBACK\|verification\|Verify" "$SUPERVISE_FILE" 2>/dev/null || echo "0")
+if [ "$VERIFICATION_COUNT" -ge 2 ] 2>/dev/null; then
+  echo "✅ PASS: Test 6 - Verification patterns: $VERIFICATION_COUNT (expected ≥2)"
 else
-  echo "❌ FAIL: Test 6 - Verification patterns: $VERIFICATION_COUNT (expected ≥8)"
+  echo "❌ FAIL: Test 6 - Verification patterns: $VERIFICATION_COUNT (expected ≥2)"
   FAILED=1
 fi
 
