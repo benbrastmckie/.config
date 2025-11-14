@@ -13,14 +13,14 @@ TESTS_FAILED=0
 # Test result tracking
 pass() {
   echo "✓ $1"
-  ((TESTS_PASSED++))
-  ((TESTS_RUN++))
+  ((TESTS_PASSED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 fail() {
   echo "✗ $1"
-  ((TESTS_FAILED++))
-  ((TESTS_RUN++))
+  ((TESTS_FAILED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 echo "========================================"
