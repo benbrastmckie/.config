@@ -98,10 +98,12 @@ if [ ! -f "${LIB_DIR}/state-persistence.sh" ]; then
 fi
 source "${LIB_DIR}/state-persistence.sh"
 # Research reports passed via RESEARCH_REPORT_PATHS_FORMATTED variable for cross-referencing
+# Cross-Reference Requirements: Plan must reference all research reports in metadata section
 # Workflow phases: 0=Initialize, 1=Research, 2=Plan, 3=Implement, 4=Test, 5=Debug, 6=Document, 7=Complete
 # Progress tracking: Emit progress markers at each workflow phase transition
 # Context reduction target: <30% context usage throughout workflow
 # Metadata extraction: Reports summarized to <50 words before passing to next phase
+# Metadata extraction: PLAN_PHASE_COUNT and PLAN_COMPLEXITY extracted (not full plan, 95% reduction)
 # Research reports are passed as cross-references (paths only, not full content)
 # Topic-based directory structure: specs/{NNN_topic}/plans/, specs/{NNN_topic}/reports/
 
@@ -352,6 +354,13 @@ if [ ! -f "$PLAN_PATH" ]; then
   handle_state_error "Plan file not created at: $PLAN_PATH" 1
 fi
 
+# Verify research reports are cross-referenced in plan metadata
+if [ -d "${ARTIFACT_REPORTS}" ] && [ "$(ls -A ${ARTIFACT_REPORTS}/*.md 2>/dev/null | wc -l)" -gt 0 ]; then
+  if ! grep -q "Research Reports.*metadata" "$PLAN_PATH"; then
+    echo "⚠ Warning: Plan metadata may be missing research reports cross-reference"
+  fi
+fi
+
 echo "✓ Plan verified: $PLAN_PATH"
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 
@@ -567,6 +576,17 @@ Task {
     Create summary: ${ARTIFACT_SUMMARIES}/001_implementation_summary.md
     Plan: $PLAN_PATH
     Reports: ${ARTIFACT_REPORTS}/*.md
+
+    Summary template must include:
+
+    ### Artifacts Generated
+
+    **Research Reports**:
+    - [Report 1 Title](path/to/report1.md)
+    - [Report 2 Title](path/to/report2.md)
+
+    **Implementation Plan**:
+    - [Plan Title](path/to/plan.md)
 
     Update all relevant documentation.
     Return: DOCUMENTATION_COMPLETE: [summary path]
