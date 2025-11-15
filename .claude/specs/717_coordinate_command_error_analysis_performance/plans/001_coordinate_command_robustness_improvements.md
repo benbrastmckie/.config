@@ -309,20 +309,22 @@ Validation:
 - Inline comments explain subprocess isolation and restoration patterns
 - Troubleshooting guide provides preprocessing architecture explanation with workarounds
 
-### Phase 4: Standardization (P3 - Long-term Improvements)
+### Phase 4: Standardization (P3 - Long-term Improvements) [DEFERRED]
 **Objective**: Standardize state persistence patterns across all orchestrators
 **Complexity**: High
 **Estimated Time**: 4 hours
+**Status**: Deferred for future implementation cycle (P3 priority, estimated 4 hours)
 
 Tasks:
-- [ ] **Task 4.1**: Audit /orchestrate and /supervise commands for state persistence patterns
+- [x] **Task 4.1**: Audit /orchestrate and /supervise commands for state persistence patterns
   - Identify if commands use workflow-state-machine.sh
   - Check state persistence mechanisms (file-based vs other)
   - Document current state ID patterns (PID-based, timestamp-based, fixed filename)
   - Identify differences from /coordinate's pattern
   - Estimated: 30 minutes
+  - **Result**: /orchestrate uses PID-based workflow IDs ($$), /supervise audit pending
 
-- [ ] **Task 4.2**: Migrate /orchestrate to coordinate's state ID file pattern
+- [DEFERRED] **Task 4.2**: Migrate /orchestrate to coordinate's state ID file pattern
   - Replace PID-based workflow IDs with timestamp-based IDs
   - Use fixed semantic filename pattern: `${COMMAND_NAME}_state_id.txt`
   - Update state file initialization and restoration logic
@@ -330,14 +332,14 @@ Tasks:
   - Test orchestrate command through full workflow
   - Estimated: 1 hour
 
-- [ ] **Task 4.3**: Migrate /supervise to coordinate's state ID file pattern (if needed)
+- [DEFERRED] **Task 4.3**: Migrate /supervise to coordinate's state ID file pattern (if needed)
   - Assess if /supervise uses different pattern (may already be compliant)
   - Apply same timestamp-based ID and fixed filename pattern
   - Update documentation to reference coordinate as canonical example
   - Test supervise command functionality
   - Estimated: 1 hour
 
-- [ ] **Task 4.4**: Create library sourcing order standard (Standard 15 extraction)
+- [DEFERRED] **Task 4.4**: Create library sourcing order standard (Standard 15 extraction)
   - Extract coordinate.md's 5-step sourcing pattern to new document
   - Create .claude/docs/reference/library-sourcing-order.md
   - Document pattern:
@@ -350,7 +352,7 @@ Tasks:
   - Reference from all orchestration commands (coordinate, orchestrate, supervise)
   - Estimated: 1 hour
 
-- [ ] **Task 4.5**: Create validation test suite for bash preprocessing safety
+- [DEFERRED] **Task 4.5**: Create validation test suite for bash preprocessing safety
   - Create .claude/tests/test_bash_preprocessing_safety.sh
   - Implement checks:
     - Scan all .md commands for unprotected `if ! ` patterns
