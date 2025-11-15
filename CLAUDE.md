@@ -176,7 +176,7 @@ See [Adaptive Planning Configuration](.claude/docs/reference/adaptive-planning-c
 
 <!-- SECTION: development_workflow -->
 ## Development Workflow
-[Used by: /implement, /plan, /orchestrate, /coordinate]
+[Used by: /implement, /plan, /coordinate]
 
 Standard workflow: research → plan → implement → test → commit → summarize. The spec updater agent manages artifacts in topic-based directories and maintains cross-references. Adaptive planning adjusts plans during implementation.
 
@@ -193,7 +193,7 @@ See [Development Workflow](.claude/docs/concepts/development-workflow.md) for sp
 
 <!-- SECTION: hierarchical_agent_architecture -->
 ## Hierarchical Agent Architecture
-[Used by: /orchestrate, /implement, /plan, /debug]
+[Used by: /coordinate, /implement, /plan, /debug]
 
 Multi-level agent coordination with metadata-based context passing achieves 95.6% context reduction and 60-80% time savings through parallel execution. Key capabilities: recursive supervision (10+ agents), imperative invocation pattern (Standard 11), LLM-based workflow classification, and aggressive context pruning.
 
@@ -204,7 +204,7 @@ See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_a
 
 <!-- SECTION: state_based_orchestration -->
 ## State-Based Orchestration Architecture
-[Used by: /coordinate, /orchestrate, /supervise, custom orchestrators]
+[Used by: /coordinate, custom orchestrators]
 
 State-based orchestration uses explicit state machines with validated transitions for multi-phase workflows. Achieves 48.9% code reduction and 67% performance improvement through selective persistence, atomic transitions, and hierarchical supervisor coordination.
 
@@ -253,6 +253,9 @@ See [Setup Guide](.claude/docs/guides/setup-command-guide.md) for detailed usage
 - **Command Guide**: Use [_template-command-guide.md](.claude/docs/guides/_template-command-guide.md)
 - **Pattern Guide**: [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern) for complete separation pattern details
 - **Validation**: Run `.claude/tests/validate_executable_doc_separation.sh` to verify pattern compliance
+
+### Version Control
+- **Git Recovery**: [Git Recovery Guide](.claude/docs/guides/git-recovery-guide.md) - View, compare, and restore historical file versions (no backup files needed)
 
 ### Navigation
 - [Neovim Configuration](nvim/)
