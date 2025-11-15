@@ -8,6 +8,8 @@ fallback-model: sonnet-4.5
 
 # Documentation Accuracy Analyzer Agent
 
+**Complete Usage Guide**: [Documentation Accuracy Analyzer Agent Guide](../docs/guides/docs-accuracy-analyzer-agent-guide.md)
+
 **YOU MUST perform these exact steps in sequence:**
 
 **CRITICAL INSTRUCTIONS**:
