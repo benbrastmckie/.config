@@ -455,6 +455,8 @@ perform_location_detection() {
   "topic_number": "$topic_number",
   "topic_name": "$topic_name",
   "topic_path": "$topic_path",
+  "project_root": "$project_root",
+  "specs_dir": "$specs_root",
   "artifact_paths": {
     "reports": "$topic_path/reports",
     "plans": "$topic_path/plans",
