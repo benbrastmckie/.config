@@ -194,94 +194,11 @@ See [Development Workflow](.claude/docs/concepts/development-workflow.md) for sp
 ## Hierarchical Agent Architecture
 [Used by: /orchestrate, /implement, /plan, /debug]
 
-### Overview
-Multi-level agent coordination system that minimizes context window consumption through metadata-based context passing and recursive supervision. Agents delegate work to subagents and pass report references (not full content) between levels.
+Multi-level agent coordination with metadata-based context passing achieves 95.6% context reduction and 60-80% time savings through parallel execution. Key capabilities: recursive supervision (10+ agents), imperative invocation pattern (Standard 11), LLM-based workflow classification, and aggressive context pruning.
 
-### Key Features
-- **Metadata Extraction**: Extract title + 50-word summary from reports/plans (99% context reduction) - See [Metadata Extraction Pattern](.claude/docs/concepts/patterns/metadata-extraction.md)
-- **Forward Message Pattern**: Pass subagent responses directly without re-summarization - See [Forward Message Pattern](.claude/docs/concepts/patterns/forward-message.md)
-- **Recursive Supervision**: Supervisors can manage sub-supervisors for complex workflows - See [Hierarchical Supervision Pattern](.claude/docs/concepts/patterns/hierarchical-supervision.md)
-- **Context Pruning**: Aggressive cleanup of completed phase data - See [Context Management Pattern](.claude/docs/concepts/patterns/context-management.md) and [Context Budget Management Tutorial](.claude/docs/workflows/context-budget-management.md)
-- **Subagent Delegation**: Commands can delegate complex tasks to specialized subagents - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
-- **Imperative Agent Invocation**: All agent invocations use imperative pattern (not documentation-only YAML blocks) - See [Standard 11](.claude/docs/reference/command_architecture_standards.md#standard-11) and [Anti-Pattern Documentation](.claude/docs/concepts/patterns/behavioral-injection.md#anti-pattern-documentation-only-yaml-blocks)
-- **Workflow Scope Detection**: Automatic detection of workflow requirements - See [Workflow Scope Detection Pattern](.claude/docs/concepts/patterns/workflow-scope-detection.md)
-- **LLM-Based Classification (2-Mode System)**: Semantic workflow classification with 98%+ accuracy using llm-only mode (default) or regex-only mode (offline). Enhanced topic generation with detailed descriptions and filename slugs. See [LLM Classification Pattern](.claude/docs/concepts/patterns/llm-classification-pattern.md) and [Enhanced Topic Generation Guide](.claude/docs/guides/enhanced-topic-generation-guide.md)
-- **Phase 0 Optimization**: Pre-calculation of paths for 85% token reduction - See [Phase 0 Optimization Guide](.claude/docs/guides/phase-0-optimization.md)
+**Core Libraries**: metadata-extraction.sh, plan-core-bundle.sh, context-pruning.sh, workflow-llm-classifier.sh
 
-### Context Reduction Metrics
-- **Target**: <30% context usage throughout workflows
-- **Achieved**: 92-97% reduction through metadata-only passing
-- **Performance**: 60-80% time savings with parallel subagent execution
-
-### Utilities
-- **Metadata Extraction**: `.claude/lib/metadata-extraction.sh`
-  - `extract_report_metadata()` - Extract title, summary, file paths, recommendations
-  - `extract_plan_metadata()` - Extract complexity, phases, time estimates
-  - `load_metadata_on_demand()` - Generic metadata loader with caching
-- **Plan Parsing**: `.claude/lib/plan-core-bundle.sh`
-  - `parse_plan_file()` - Parse plan structure and phases
-  - `extract_phase_info()` - Extract phase details and tasks
-  - `get_plan_metadata()` - Get plan-level metadata
-- **Context Management**: `.claude/lib/context-pruning.sh`
-  - `prune_subagent_output()` - Clear full outputs after metadata extraction
-  - `prune_phase_metadata()` - Remove phase data after completion
-  - `apply_pruning_policy()` - Automatic pruning by workflow type
-- **Workflow Classification**: `.claude/lib/workflow-llm-classifier.sh`, `.claude/lib/workflow-scope-detection.sh`
-  - `classify_workflow_comprehensive()` - Main classification function
-  - `classify_workflow_llm()` - LLM-based semantic classification with enhanced topics
-  - `classify_workflow_regex_comprehensive()` - Traditional regex-based classification
-  - `detect_workflow_scope()` - Backward compatibility wrapper
-  - Modes: llm-only (default, online), regex-only (offline) - See [Workflow Classification Guide](.claude/docs/guides/workflow-classification-guide.md)
-
-### Agent Templates
-- **Implementation Researcher** (`.claude/agents/implementation-researcher.md`)
-  - Analyzes codebase before implementation phases
-  - Identifies patterns, utilities, integration points
-  - Returns 50-word summary + artifact path
-- **Debug Analyst** (`.claude/agents/debug-analyst.md`)
-  - Investigates potential root causes in parallel
-  - Returns structured findings + proposed fixes
-  - Enables parallel hypothesis testing
-- **Sub-Supervisor** (`.claude/docs/patterns/hierarchical-supervision.md`)
-  - Manages 2-3 specialized subagents per domain
-  - Returns aggregated metadata only to parent
-  - Enables 10+ research topics (vs 4 without recursion)
-
-### Command Integration
-- **`/implement`**: Delegates codebase exploration for complex phases (complexity ≥8)
-- **`/plan`**: Delegates research for ambiguous features (2-3 parallel research agents)
-- **`/debug`**: Delegates root cause analysis for complex bugs (parallel investigations)
-- **`/orchestrate`**: Supports recursive supervision for large-scale workflows (10+ topics)
-- **`/supervise`**: Multi-phase workflow orchestration (research → plan → implement → test → debug → document)
-
-### Validation and Troubleshooting
-
-All orchestration commands enforce [Standard 11 (Imperative Agent Invocation Pattern)](.claude/docs/reference/command_architecture_standards.md#standard-11), which requires:
-- Imperative instructions (`**EXECUTE NOW**: USE the Task tool...`)
-- No code block wrappers around Task invocations
-- Direct reference to agent behavioral files (`.claude/agents/*.md`)
-- Explicit completion signals (e.g., `REPORT_CREATED:`)
-- Fail-fast error handling with diagnostic commands
-
-**Validation Tools**:
-- `.claude/lib/validate-agent-invocation-pattern.sh` - Detect anti-patterns
-- `.claude/tests/test_orchestration_commands.sh` - Comprehensive testing
-
-**Resources**:
-- [Behavioral Injection Pattern - Anti-Pattern Documentation](.claude/docs/concepts/patterns/behavioral-injection.md) - Complete case studies
-- [Orchestration Troubleshooting Guide](.claude/docs/guides/orchestration-troubleshooting.md) - Debugging procedures
-
-### Usage Example
-```bash
-# /implement automatically invokes research subagent for complex phases
-/implement specs/042_auth/plans/001_implementation.md
-
-# Result: specs/042_auth/artifacts/phase_3_exploration.md created
-# /implement receives: {path, 50-word summary, key_findings[]}
-# Context reduction: 5000 tokens → 250 tokens (95%)
-```
-
-See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_agents.md) for complete documentation, patterns, and best practices.
+See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_agents.md) for complete patterns, utilities, agent templates, command integration, and troubleshooting.
 <!-- END_SECTION: hierarchical_agent_architecture -->
 
 <!-- SECTION: state_based_orchestration -->
@@ -395,64 +312,15 @@ State-based orchestration uses explicit state machines with validated transition
 
 <!-- SECTION: project_commands -->
 ## Project-Specific Commands
+[Used by: all commands, /help]
 
-### Claude Code Commands
+All commands located in `.claude/commands/`. Primary orchestration: `/coordinate` (production-ready, 2,371 lines). Core workflow commands: `/research`, `/plan`, `/implement`, `/test`, `/debug`, `/document`. Planning utilities: `/plan-wizard`, `/plan-from-template`. Setup: `/setup [--enhance-with-docs]`.
 
-Located in `.claude/commands/`:
-- `/orchestrate <workflow>` - Multi-agent workflow coordination (research → plan → implement → debug → document)
-- `/coordinate <workflow>` - Clean multi-agent orchestration with wave-based parallel implementation and fail-fast error handling
-  - **Architecture**: [State Management Documentation](.claude/docs/architecture/coordinate-state-management.md) - Subprocess isolation patterns and decision matrix
-  - **Performance**: 41% initialization overhead reduction (528ms saved via state persistence caching), 100% reliability (zero unbound variables/verification failures)
-  - **Usage Guide**: [/coordinate Command Guide](.claude/docs/guides/coordinate-command-guide.md) - Complete architecture, usage examples, troubleshooting
-- `/implement [plan-file]` - Execute implementation plans phase-by-phase with testing and commits
-  - **Usage Guide**: [/implement Command Guide](.claude/docs/guides/implement-command-guide.md) - Complete usage, adaptive planning, and agent delegation
-- `/research <topic>` - Hierarchical multi-agent research with automatic decomposition (replaces archived /report)
-- `/plan <feature>` - Create implementation plans in specs/plans/
-  - **Usage Guide**: [/plan Command Guide](.claude/docs/guides/plan-command-guide.md) - Research delegation, complexity analysis, standards integration
-- `/debug <issue>` - Investigate issues and create diagnostic reports without code changes
-  - **Usage Guide**: [/debug Command Guide](.claude/docs/guides/debug-command-guide.md) - Parallel hypothesis testing, root cause analysis
-- `/test <target>` - Run project-specific tests per Testing Protocols
-  - **Usage Guide**: [/test Command Guide](.claude/docs/guides/test-command-guide.md) - Multi-framework testing, error analysis, coverage tracking
-- `/document [change-description] [scope]` - Update all relevant documentation based on recent code changes
-  - **Usage Guide**: [/document Command Guide](.claude/docs/guides/document-command-guide.md) - Standards compliance, cross-references, timeless writing
-- `/plan-from-template <name>` - Generate plans from reusable templates (11 categories)
-- `/plan-wizard` - Interactive plan creation with guided prompts
-- `/setup [--enhance-with-docs]` - Configure or update this CLAUDE.md file; --enhance-with-docs discovers project documentation and automatically enhances CLAUDE.md
+**Command Architecture**: Executable/documentation separation pattern - lean executables (<250 lines) + comprehensive guides. See [Standard 14](.claude/docs/reference/command_architecture_standards.md#standard-14).
 
-**Orchestration**: Three orchestration commands available (**Use /coordinate for production workflows**):
+**Performance**: >90% agent delegation, 100% file creation reliability, 40-60% time savings (wave-based execution), <30% context usage.
 
-- `/coordinate` - **Production-Ready** - Wave-based parallel execution and fail-fast error handling (2,371 lines, recommended default)
-- `/orchestrate` - **In Development** - Full-featured orchestration with PR automation and dashboard tracking (618 lines, experimental features may have inconsistent behavior)
-- `/supervise` - **In Development** - Sequential orchestration with proven architectural compliance (435 lines, minimal reference being stabilized)
-  - **Usage Guide**: [/supervise Usage Guide](.claude/docs/guides/supervise-guide.md) - Examples and common patterns
-  - **Phase Reference**: [/supervise Phase Reference](.claude/docs/reference/supervise-phases.md) - Detailed phase documentation
-
-All orchestration commands provide 7-phase workflow with parallel research (2-4 agents), automated complexity evaluation, and conditional debugging. /coordinate provides wave-based parallel implementation achieving 40-60% time savings. Performance: <30% context usage throughout.
-
-**Command Selection**: See [Command Selection Guide](.claude/docs/guides/orchestration-best-practices.md#command-selection) for detailed comparison, decision tree, and maturity status of each command.
-
-**Best Practices**: See [Orchestration Best Practices Guide](.claude/docs/guides/orchestration-best-practices.md) for unified framework covering Phase 0-7, context budget management, and library integration.
-
-**Reliability**:
-- Agent delegation rate: >90% (all orchestration commands verified)
-- File creation reliability: 100% (mandatory verification checkpoints)
-- Bootstrap reliability: 100% (fail-fast exposes configuration errors immediately)
-- Troubleshooting: See [Orchestration Troubleshooting Guide](.claude/docs/guides/orchestration-troubleshooting.md)
-
-**Template-Based Planning**: Fast plan generation (60-80% faster) using templates for common patterns (CRUD, refactoring, testing, migrations). See `.claude/commands/templates/README.md`.
-
-**Unified Location Detection**: All workflow commands use standardized location detection library (85% token reduction, 25x speedup vs agent-based detection). See [Library API Reference](.claude/docs/reference/library-api.md) for implementation details.
-
-**Command Documentation Pattern**: Commands follow executable/documentation separation:
-- **Executable files** (`.claude/commands/*.md`): Lean execution scripts (<250 lines)
-- **Command guides** (`.claude/docs/guides/*-command-guide.md`): Comprehensive documentation
-- **Templates**: See [Executable Template](.claude/docs/guides/_template-executable-command.md) and [Guide Template](.claude/docs/guides/_template-command-guide.md)
-- **Benefits**: Eliminates meta-confusion loops, improves maintainability
-- **Pattern Documentation**: [Executable/Documentation Separation Pattern](.claude/docs/concepts/patterns/executable-documentation-separation.md) - Complete pattern with case studies and metrics
-- **Implementation Guide**: [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern)
-- **Standard**: [Standard 14](.claude/docs/reference/command_architecture_standards.md#standard-14-executabledocumentation-file-separation) - Formal architectural requirement
-
-For detailed usage, see `.claude/commands/README.md` and individual command files in `.claude/commands/`.
+See [Command Reference](.claude/docs/reference/command-reference.md) for complete catalog with syntax and examples. See [Orchestration Best Practices](.claude/docs/guides/orchestration-best-practices.md) for command selection guide and unified framework.
 <!-- END_SECTION: project_commands -->
 
 <!-- SECTION: quick_reference -->
