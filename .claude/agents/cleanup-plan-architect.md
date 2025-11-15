@@ -33,6 +33,7 @@ The invoking command MUST provide you with these paths. Verify you have received
 # CLAUDE_MD_REPORT_PATH: Absolute path to CLAUDE.md analysis report (REPORT_PATH_1)
 # DOCS_REPORT_PATH: Absolute path to docs structure analysis report (REPORT_PATH_2)
 # BLOAT_REPORT_PATH: Absolute path to bloat analysis report (REPORT_PATH_3)
+# ACCURACY_REPORT_PATH: Absolute path to accuracy analysis report (REPORT_PATH_4) [OPTIONAL - may not exist in older workflows]
 # PLAN_PATH: Absolute path where implementation plan will be created
 # PROJECT_DIR: Project root for context
 
@@ -72,10 +73,19 @@ if [[ ! -f "$BLOAT_REPORT_PATH" ]]; then
   exit 1
 fi
 
+# Accuracy report is optional (backward compatibility with older workflows)
+if [[ -n "$ACCURACY_REPORT_PATH" ]] && [[ ! -f "$ACCURACY_REPORT_PATH" ]]; then
+  echo "CRITICAL ERROR: Accuracy analysis report path provided but not found: $ACCURACY_REPORT_PATH"
+  exit 1
+fi
+
 echo "✓ VERIFIED: Absolute paths received"
 echo "  CLAUDE_MD_REPORT: $CLAUDE_MD_REPORT_PATH"
 echo "  DOCS_REPORT: $DOCS_REPORT_PATH"
 echo "  BLOAT_REPORT: $BLOAT_REPORT_PATH"
+if [[ -n "$ACCURACY_REPORT_PATH" ]]; then
+  echo "  ACCURACY_REPORT: $ACCURACY_REPORT_PATH"
+fi
 echo "  PLAN_PATH: $PLAN_PATH"
 echo "  PROJECT_DIR: $PROJECT_DIR"
 ```
@@ -174,9 +184,9 @@ echo "✓ VERIFIED: Plan file created at: $PLAN_PATH"
 
 ### STEP 3 (REQUIRED BEFORE STEP 4) - Read and Synthesize Research Reports
 
-**EXECUTE NOW - Read All Three Research Reports**
+**EXECUTE NOW - Read All Research Reports**
 
-Use Read tool to read all three reports:
+Use Read tool to read all reports (3 or 4 depending on workflow):
 
 ```bash
 # Read CLAUDE.md analysis report
@@ -190,6 +200,12 @@ echo "Reading docs structure analysis report..."
 # Read bloat analysis report
 echo "Reading bloat analysis report..."
 # Use Read tool on $BLOAT_REPORT_PATH
+
+# Read accuracy analysis report (if provided)
+if [[ -n "$ACCURACY_REPORT_PATH" ]] && [[ -f "$ACCURACY_REPORT_PATH" ]]; then
+  echo "Reading accuracy analysis report..."
+  # Use Read tool on $ACCURACY_REPORT_PATH
+fi
 ```
 
 **Synthesis Tasks**:
@@ -206,14 +222,27 @@ echo "Reading bloat analysis report..."
    - Note consolidation opportunities
    - Note split recommendations
    - **CRITICAL**: Use size validation tasks from bloat report
-4. **Map extractions to destinations**
+4. **Extract accuracy findings** from accuracy analysis report (if provided)
+   - List critical accuracy errors (file:line:error:correction)
+   - Note completeness gaps (missing documentation)
+   - Note consistency violations (terminology variance, formatting)
+   - Note timeliness issues (temporal patterns, deprecated references)
+   - Note usability problems (broken links, navigation issues)
+   - Note clarity issues (readability, section complexity)
+   - **CRITICAL**: Prioritize critical accuracy errors FIRST
+5. **Map extractions to destinations**
    - Match each bloated section to appropriate .claude/docs/ location
    - Use integration points from docs analysis
    - **Check projected post-merge sizes from bloat report**
    - Decide: CREATE new file vs MERGE with existing file vs SPLIT before merge
    - **Flag high-risk extractions requiring size validation**
+6. **Integrate quality improvements** (if accuracy report provided)
+   - Add error correction tasks to relevant phases
+   - Add documentation gap-filling tasks
+   - Add consistency improvement tasks
+   - **Prioritize: Critical errors FIRST, bloat reduction SECOND, enhancements THIRD**
 
-**CHECKPOINT**: All three reports read and key findings extracted before proceeding to Step 4.
+**CHECKPOINT**: All reports read and key findings extracted before proceeding to Step 4.
 
 ---
 
