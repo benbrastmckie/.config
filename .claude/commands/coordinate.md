@@ -301,9 +301,26 @@ SM_INIT_EXIT_CODE=$?
 if [ $SM_INIT_EXIT_CODE -ne 0 ]; then
   handle_state_error "State machine initialization failed. Check sm_init parameters." 1
 fi
-# Variables now available via export (verified by successful sm_init return code check above)
+# VERIFICATION CHECKPOINT 1: Verify environment variables exported by sm_init
+# Two-stage verification: (1) environment exports, (2) state file persistence
+# This provides early failure detection and clear diagnostic context
+if [ -z "${WORKFLOW_SCOPE:-}" ] || [ -z "${TERMINAL_STATE:-}" ] || [ -z "${CURRENT_STATE:-}" ] || \
+   [ -z "${RESEARCH_COMPLEXITY:-}" ] || [ -z "${RESEARCH_TOPICS_JSON:-}" ]; then
+  handle_state_error "CRITICAL: Required environment variables not exported by sm_init despite successful return code
 
-# VERIFICATION CHECKPOINT: Verify all state machine variables persisted to state file
+Diagnostic:
+  - sm_init returned success (exit code 0)
+  - One or more required environment variables missing
+  - Required exports: WORKFLOW_SCOPE, TERMINAL_STATE, CURRENT_STATE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
+  - Check sm_init implementation in workflow-state-machine.sh
+  - Verify export statements present for all critical variables
+
+Cannot proceed without environment variable exports." 1
+fi
+
+echo "✓ Environment variables verified: WORKFLOW_SCOPE=$WORKFLOW_SCOPE, TERMINAL_STATE=$TERMINAL_STATE, CURRENT_STATE=$CURRENT_STATE"
+
+# VERIFICATION CHECKPOINT 2: Verify all state machine variables persisted to state file
 # Standard 0 (Execution Enforcement): Critical state initialization must be verified
 # sm_init() now persists all 5 variables to state file (see workflow-state-machine.sh)
 verify_state_variables "$STATE_FILE" "WORKFLOW_SCOPE" "TERMINAL_STATE" "CURRENT_STATE" "RESEARCH_COMPLEXITY" "RESEARCH_TOPICS_JSON" || {
@@ -908,7 +925,10 @@ for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
 done
 
 # Use batch verification for efficient token usage (90% reduction on success)
-if ! verify_files_batch "Research Phase" "${FILE_ENTRIES[@]}"; then
+# Use exit code capture pattern to avoid bash preprocessing issues with negation
+verify_files_batch "Research Phase" "${FILE_ENTRIES[@]}"
+VERIFICATION_EXIT_CODE=$?
+if [ $VERIFICATION_EXIT_CODE -ne 0 ]; then
   handle_state_error "CRITICAL: Research report verification failed
 
 Diagnostic:
