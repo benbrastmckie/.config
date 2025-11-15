@@ -213,6 +213,22 @@ USE the Bash tool:
 
 ```bash
 set +H  # Disable history expansion
+
+# STATE RESTORATION PATTERN: Cross-bash-block state persistence
+#
+# Why state reloading is required:
+# - Each bash block executes in a separate subprocess with its own PID
+# - Environment variables do NOT persist across bash blocks (subprocess isolation)
+# - File-based persistence enables cross-block communication (GitHub Actions pattern)
+# - State must be restored at the beginning of each bash block
+#
+# Ordering dependencies:
+# 1. Load state files BEFORE using state variables
+# 2. Source libraries BEFORE calling library functions
+# 3. Verify state restoration BEFORE proceeding with workflow logic
+#
+# See: .claude/docs/concepts/bash-block-execution-model.md for subprocess isolation details
+#
 # Re-load workflow state (needed after Task invocation)
 COORDINATE_DESC_PATH_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc_path.txt"
 if [ -f "$COORDINATE_DESC_PATH_FILE" ]; then

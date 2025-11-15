@@ -337,6 +337,54 @@ generate_descriptive_topics_from_description() {
 #
 # BREAKING CHANGE (Spec 1763161992 Phase 2): Classification now performed by invoking command BEFORE sm_init.
 # sm_init accepts classification results as parameters (no internal classification).
+# sm_init: Initialize state machine and persist classification variables
+#
+# Purpose:
+#   Initialize state machine with workflow classification parameters and persist
+#   all critical state variables to both bash environment and state file.
+#
+# Parameters:
+#   $1 - workflow_desc: Description of the workflow/task
+#   $2 - command_name: Name of the command invoking sm_init (e.g., "coordinate")
+#   $3 - workflow_type: Workflow scope (research-only|research-and-plan|research-and-revise|full-implementation|debug-only)
+#   $4 - research_complexity: Integer 1-4 indicating research depth
+#   $5 - research_topics_json: JSON array of research topics
+#
+# Environment Exports:
+#   WORKFLOW_SCOPE - Workflow type (same as workflow_type parameter)
+#   RESEARCH_COMPLEXITY - Research depth (1-4)
+#   RESEARCH_TOPICS_JSON - JSON array of topics
+#   TERMINAL_STATE - Terminal state for this workflow (computed from workflow_type)
+#   CURRENT_STATE - Initial state (always "initialize")
+#
+# State File Persistence:
+#   All 5 environment variables are persisted to STATE_FILE using append_workflow_state()
+#   This ensures verification checkpoints can validate state file contents
+#   Follows COMPLETED_STATES persistence pattern (see lines 144-145)
+#
+# Returns:
+#   0 - Success (all validation passed, variables exported and persisted)
+#   1 - Validation failure (invalid parameters, missing classification)
+#
+# Calling Pattern:
+#   1. Invoke workflow-classifier agent to get CLASSIFICATION_JSON
+#   2. Extract workflow_type, research_complexity, research_topics_json from CLASSIFICATION_JSON
+#   3. Call sm_init with extracted parameters
+#   4. Verify environment variables exported (WORKFLOW_SCOPE, etc.)
+#   5. Verify state file persistence (using verify_state_variables)
+#
+# Example:
+#   sm_init "$WORKFLOW_DESC" "coordinate" "research-only" "2" '["topic1","topic2"]'
+#   # Check return code
+#   if [ $? -ne 0 ]; then
+#     echo "State machine initialization failed"
+#     exit 1
+#   fi
+#   # Verify exports
+#   [ -n "${WORKFLOW_SCOPE:-}" ] || { echo "WORKFLOW_SCOPE not exported"; exit 1; }
+#   # Verify state file
+#   verify_state_variables "$STATE_FILE" "WORKFLOW_SCOPE" "TERMINAL_STATE" "CURRENT_STATE" "RESEARCH_COMPLEXITY" "RESEARCH_TOPICS_JSON"
+#
 sm_init() {
   local workflow_desc="$1"
   local command_name="$2"
