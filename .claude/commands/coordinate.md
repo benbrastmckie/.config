@@ -160,14 +160,107 @@ append_workflow_state "WORKFLOW_DESCRIPTION" "$SAVED_WORKFLOW_DESC"
 # Save state ID file path to workflow state for bash block persistence
 append_workflow_state "COORDINATE_STATE_ID_FILE" "$COORDINATE_STATE_ID_FILE"
 
-# Initialize state machine (use SAVED value, not overwritten variable)
-# CRITICAL: Call sm_init to export WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
+echo "✓ State machine pre-initialization complete. Proceeding to workflow classification..."
+```
+
+---
+
+## Phase 0.1: Workflow Classification
+
+**EXECUTE NOW**: USE the Task tool to invoke workflow-classifier agent:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Classify workflow intent for orchestration"
+  model: "haiku"
+  timeout: 30000
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/workflow-classifier.md
+
+    **Workflow-Specific Context**:
+    - Workflow Description: $SAVED_WORKFLOW_DESC
+    - Command Name: coordinate
+
+    **CRITICAL**: Return structured JSON classification.
+
+    Execute classification following all guidelines in behavioral file.
+    Return: CLASSIFICATION_COMPLETE: {JSON classification object}
+  "
+}
+
+USE the Bash tool:
+
+```bash
+set +H  # Disable history expansion
+# Re-load workflow state (needed after Task invocation)
+COORDINATE_DESC_PATH_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc_path.txt"
+if [ -f "$COORDINATE_DESC_PATH_FILE" ]; then
+  COORDINATE_DESC_FILE=$(cat "$COORDINATE_DESC_PATH_FILE")
+  SAVED_WORKFLOW_DESC=$(cat "$COORDINATE_DESC_FILE" 2>/dev/null || echo "")
+fi
+
+# Standard 13: CLAUDE_PROJECT_DIR detection
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source required libraries
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Load workflow state
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
+
+# Parse classification JSON from agent response
+# The agent returns: CLASSIFICATION_COMPLETE: {JSON}
+# Extract JSON portion after the signal
+CLASSIFICATION_JSON=$(echo "$AGENT_RESPONSE" | grep -oP 'CLASSIFICATION_COMPLETE:\s*\K.*')
+
+# Verify JSON extraction succeeded
+if [ -z "$CLASSIFICATION_JSON" ]; then
+  handle_state_error "CRITICAL: Failed to extract classification JSON from agent response. Expected format: CLASSIFICATION_COMPLETE: {JSON}" 1
+fi
+
+# Parse JSON fields using jq
+WORKFLOW_TYPE=$(echo "$CLASSIFICATION_JSON" | jq -r '.workflow_type' 2>/dev/null)
+RESEARCH_COMPLEXITY=$(echo "$CLASSIFICATION_JSON" | jq -r '.research_complexity' 2>/dev/null)
+RESEARCH_TOPICS_JSON=$(echo "$CLASSIFICATION_JSON" | jq -c '.research_topics' 2>/dev/null)
+
+# VERIFICATION CHECKPOINT: Verify all required fields extracted (Standard 0: Execution Enforcement)
+if [ -z "$WORKFLOW_TYPE" ] || [ "$WORKFLOW_TYPE" = "null" ]; then
+  handle_state_error "CRITICAL: workflow_type not found in classification JSON: $CLASSIFICATION_JSON" 1
+fi
+
+if [ -z "$RESEARCH_COMPLEXITY" ] || [ "$RESEARCH_COMPLEXITY" = "null" ]; then
+  handle_state_error "CRITICAL: research_complexity not found in classification JSON: $CLASSIFICATION_JSON" 1
+fi
+
+if [ -z "$RESEARCH_TOPICS_JSON" ] || [ "$RESEARCH_TOPICS_JSON" = "null" ]; then
+  handle_state_error "CRITICAL: research_topics not found in classification JSON: $CLASSIFICATION_JSON" 1
+fi
+
+# Export classification variables for sm_init consumption
+export WORKFLOW_TYPE
+export RESEARCH_COMPLEXITY
+export RESEARCH_TOPICS_JSON
+
+echo "✓ Workflow classification complete: type=$WORKFLOW_TYPE, complexity=$RESEARCH_COMPLEXITY"
+
+# Initialize state machine with 5 parameters (refactored signature in commit ce1d29a1, Spec 1763161992 Phase 2)
+# CRITICAL: Use SAVED_WORKFLOW_DESC (not overwritten variable)
 # Do NOT use command substitution $() as it creates subshell that doesn't export to parent
-# WORKAROUND: Use exit code capture instead of bare '!' to avoid bash history expansion (Spec 700, Report 1)
-sm_init "$SAVED_WORKFLOW_DESC" "coordinate" 2>&1
+sm_init "$SAVED_WORKFLOW_DESC" "coordinate" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "$RESEARCH_TOPICS_JSON" 2>&1
 SM_INIT_EXIT_CODE=$?
 if [ $SM_INIT_EXIT_CODE -ne 0 ]; then
-  handle_state_error "State machine initialization failed (workflow classification error). Check network connection or use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline development." 1
+  handle_state_error "State machine initialization failed. Check sm_init parameters." 1
 fi
 # Variables now available via export (verified by successful sm_init return code check above)
 
@@ -230,16 +323,16 @@ source "${LIB_DIR}/library-sourcing.sh"
 
 case "$WORKFLOW_SCOPE" in
   research-only)
-    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "error-handling.sh")
+    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "workflow-llm-classifier.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "error-handling.sh")
     ;;
   research-and-plan|research-and-revise)
-    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "error-handling.sh")
+    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "workflow-llm-classifier.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "error-handling.sh")
     ;;
   full-implementation)
-    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "dependency-analyzer.sh" "context-pruning.sh" "error-handling.sh")
+    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "workflow-llm-classifier.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "dependency-analyzer.sh" "context-pruning.sh" "error-handling.sh")
     ;;
   debug-only)
-    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "error-handling.sh")
+    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "workflow-llm-classifier.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "error-handling.sh")
     ;;
 esac
 
