@@ -154,13 +154,13 @@ sm_init() (modified)
 
 ## Implementation Phases
 
-### Phase 1: Critical Fixes (P0 - Blocks All Usage)
+### Phase 1: Critical Fixes (P0 - Blocks All Usage) [COMPLETED]
 **Objective**: Fix initialization bugs preventing command execution
 **Complexity**: Medium
 **Estimated Time**: 25 minutes
 
 Tasks:
-- [ ] **Task 1.1**: Modify `sm_init()` to persist classification variables to state file (.claude/lib/workflow-state-machine.sh:391-402)
+- [x] **Task 1.1**: Modify `sm_init()` to persist classification variables to state file (.claude/lib/workflow-state-machine.sh:391-402)
   - Add `append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"` after line 395
   - Add `append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"` after line 396
   - Add `append_workflow_state "RESEARCH_TOPICS_JSON" "$RESEARCH_TOPICS_JSON"` after line 399
@@ -168,7 +168,7 @@ Tasks:
   - Verify state-persistence.sh is already sourced (it is - line 8)
   - Estimated: 10 minutes
 
-- [ ] **Task 1.2**: Reorder verification checkpoint in coordinate.md
+- [x] **Task 1.2**: Reorder verification checkpoint in coordinate.md
   - Remove or comment out verification at line 308 (premature check)
   - Move comprehensive verification to after line 343 (after all state persistence)
   - Verify all 5 variables: WORKFLOW_SCOPE, TERMINAL_STATE, CURRENT_STATE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
