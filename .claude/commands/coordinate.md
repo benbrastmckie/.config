@@ -180,6 +180,9 @@ verify_state_variable "COORDINATE_STATE_ID_FILE" || {
   handle_state_error "CRITICAL: COORDINATE_STATE_ID_FILE not persisted to state" 1
 }
 
+# Persist performance instrumentation start time for cross-bash-block access (subprocess isolation)
+append_workflow_state "PERF_START_TOTAL" "$PERF_START_TOTAL"
+
 echo "✓ State machine pre-initialization complete. Proceeding to workflow classification..."
 ```
 
@@ -420,6 +423,7 @@ fi
 
 # Performance marker: Library loading complete
 PERF_AFTER_LIBS=$(date +%s%N)
+append_workflow_state "PERF_AFTER_LIBS" "$PERF_AFTER_LIBS"
 
 # Source workflow initialization and initialize paths
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
@@ -437,6 +441,7 @@ fi
 
 # Performance marker: Path initialization complete
 PERF_AFTER_PATHS=$(date +%s%N)
+append_workflow_state "PERF_AFTER_PATHS" "$PERF_AFTER_PATHS"
 
 # Validate TOPIC_PATH was set by initialization
 if [ -z "${TOPIC_PATH:-}" ]; then
@@ -538,7 +543,19 @@ echo "  Terminal State: $TERMINAL_STATE"
 echo "  Topic Path: ${TOPIC_PATH:-<not set>}"
 
 # Performance reporting (Phase 1 baseline metrics)
+# Restore performance variables from state (set in previous bash blocks)
+# Required due to subprocess isolation - see bash-block-execution-model.md
+if [ -n "${PERF_START_TOTAL:-}" ]; then
+  : # Already loaded from workflow state
+else
+  # Fallback: reload if not already available
+  load_workflow_state "$WORKFLOW_ID"
+fi
+
 PERF_END_INIT=$(date +%s%N)
+append_workflow_state "PERF_END_INIT" "$PERF_END_INIT"
+
+# Calculate performance metrics (all variables now available from state)
 PERF_LIB_MS=$(( (PERF_AFTER_LIBS - PERF_START_TOTAL) / 1000000 ))
 PERF_PATH_MS=$(( (PERF_AFTER_PATHS - PERF_AFTER_LIBS) / 1000000 ))
 PERF_TOTAL_MS=$(( (PERF_END_INIT - PERF_START_TOTAL) / 1000000 ))
@@ -548,6 +565,10 @@ echo "  Library loading: ${PERF_LIB_MS}ms"
 echo "  Path initialization: ${PERF_PATH_MS}ms"
 echo "  Total init overhead: ${PERF_TOTAL_MS}ms"
 echo ""
+
+# NOTE: Performance instrumentation spans multiple bash blocks
+# Variables persisted to state file to cross subprocess boundaries
+# See .claude/docs/concepts/bash-block-execution-model.md for details
 ```
 
 ---
