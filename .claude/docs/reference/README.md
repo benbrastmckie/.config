@@ -78,6 +78,45 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 
 ---
 
+### [Testing Protocols](testing-protocols.md)
+**Purpose**: Complete test discovery, patterns, coverage requirements, and isolation standards for the project.
+
+**Use Cases**:
+- When implementing /test or /test-all commands
+- To understand test discovery priority order
+- To learn framework-specific test patterns and commands
+- When setting up new test frameworks or coverage requirements
+
+**See Also**: [Test Command Guide](../guides/test-command-guide.md), [CLAUDE.md Section Schema](claude-md-section-schema.md#testing-protocols)
+
+---
+
+### [Code Standards](code-standards.md)
+**Purpose**: Coding conventions, language-specific standards, architectural requirements, and link conventions for the project.
+
+**Use Cases**:
+- When implementing /implement or /refactor commands
+- To understand language-specific coding conventions
+- To learn architectural standards for commands and agents
+- When creating new code or reviewing existing code
+
+**See Also**: [Command Development Guide](../guides/command-development-guide.md), [Standards Integration Guide](../guides/standards-integration.md)
+
+---
+
+### [Adaptive Planning Configuration](adaptive-planning-config.md)
+**Purpose**: Complexity thresholds, threshold adjustment guidelines, and configuration ranges for adaptive planning.
+
+**Use Cases**:
+- When configuring complexity thresholds for plan expansion
+- To understand how to adjust thresholds for different project types
+- To learn threshold ranges and their implications
+- When debugging complexity-based plan expansion issues
+
+**See Also**: [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md), [CLAUDE.md Section Schema](claude-md-section-schema.md#adaptive-planning)
+
+---
+
 ### [Library API Reference](library-api.md)
 **Purpose**: Quick lookup reference for all `.claude/lib/` utility libraries with function signatures, return formats, and performance characteristics.
 
@@ -145,6 +184,9 @@ reference/
 ├── command_architecture_standards.md      Command/agent design requirements
 ├── template-vs-behavioral-distinction.md  Inline vs reference decision criteria
 ├── phase_dependencies.md                  Dependency syntax and wave calculation
+├── testing-protocols.md                   Test discovery and coverage standards
+├── code-standards.md                      Coding conventions and language standards
+├── adaptive-planning-config.md            Complexity thresholds and configuration
 └── library-api.md                         Utility library API reference
 ```
 

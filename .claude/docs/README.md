@@ -114,7 +114,7 @@ Guides should cross-reference these authoritative sources rather than duplicatin
 docs/
 ├── README.md                    Main documentation index (this file)
 │
-├── reference/                   Information-oriented quick lookup (11 files)
+├── reference/                   Information-oriented quick lookup (14 files)
 │   ├── README.md                Reference documentation index
 │   ├── command-reference.md     Complete command catalog
 │   ├── agent-reference.md       Complete agent catalog
@@ -125,7 +125,10 @@ docs/
 │   ├── refactor-structure.md    Refactor report template structure
 │   ├── report-structure.md      Research report template structure
 │   ├── orchestration-reference.md  Unified orchestration reference (commands, patterns, metrics)
-│   └── workflow-phases.md       Detailed workflow phase descriptions
+│   ├── workflow-phases.md       Detailed workflow phase descriptions
+│   ├── testing-protocols.md     Test discovery, patterns, coverage requirements
+│   ├── code-standards.md        Coding conventions and language-specific standards
+│   └── adaptive-planning-config.md  Complexity thresholds and configuration ranges
 │
 ├── guides/                      Task-focused how-to guides (19 files)
 │   ├── README.md                How-to guides index
@@ -149,11 +152,12 @@ docs/
 │   ├── migration-validation.md  Enforcement migration verification
 │   └── performance-optimization.md Context reduction and time savings
 │
-├── concepts/                    Understanding-oriented explanations (4 files + patterns)
+├── concepts/                    Understanding-oriented explanations (5 files + patterns)
 │   ├── README.md                Concepts documentation index
 │   ├── hierarchical_agents.md   Multi-level agent coordination
 │   ├── writing-standards.md     Development philosophy and documentation
 │   ├── directory-protocols.md   Topic-based artifact organization
+│   ├── directory-organization.md  Directory structure and file placement
 │   ├── development-workflow.md  Development workflow patterns
 │   └── patterns/                Architectural patterns catalog (9 patterns)
 │       ├── README.md            Patterns catalog index
@@ -176,6 +180,13 @@ docs/
 │   ├── spec_updater_guide.md    Spec updater agent usage
 │   ├── tts-integration-guide.md TTS system setup tutorial
 │   └── conversion-guide.md      Document conversion workflows
+│
+├── quick-reference/             Quick decision trees and flowcharts (4 files)
+│   ├── README.md                Quick reference index
+│   ├── command-vs-agent-flowchart.md  Command vs agent decision tree
+│   ├── agent-selection-flowchart.md   Agent selection guide
+│   ├── error-handling-flowchart.md    Error diagnosis and resolution
+│   └── template-usage-decision-tree.md  Template vs custom plans
 │
 └── archive/                     Historical documentation (5 files)
     ├── README.md                Archive index with redirects

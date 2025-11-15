@@ -53,6 +53,19 @@ Understanding-oriented explanations of system architecture and principles. Use t
 
 ---
 
+### [Directory Organization](directory-organization.md)
+**Purpose**: Complete directory structure guide for .claude/ system including scripts/, lib/, commands/, agents/ descriptions, file placement rules, decision matrix, and anti-patterns.
+
+**Use Cases**:
+- To understand where to place new files in .claude/ directory
+- When implementing new commands or agents and need file placement guidance
+- To learn the decision process for scripts/ vs lib/ placement
+- When reviewing code and ensuring proper directory organization
+
+**See Also**: [Directory Protocols](directory-protocols.md), [Command Development Guide](../guides/command-development-guide.md)
+
+---
+
 ### [Development Workflow](development-workflow.md)
 **Purpose**: Overview of the standard development workflow including research, planning, implementation, testing, and summarization phases with spec updater integration.
 
@@ -94,6 +107,7 @@ concepts/
 ├── hierarchical_agents.md      Multi-level agent coordination architecture
 ├── writing-standards.md        Development philosophy and documentation standards
 ├── directory-protocols.md      Topic-based artifact organization system
+├── directory-organization.md   Directory structure and file placement rules
 └── development-workflow.md     Standard development lifecycle and spec updater
 ```
 
