@@ -105,7 +105,7 @@ All tests MUST use isolation patterns to prevent production directory pollution.
 - **Cleanup Traps**: Register `trap cleanup EXIT` to ensure cleanup on all exit paths
 - **Validation**: Test runner detects and reports production directory pollution
 
-**Detection Point**: `unified-location-detection.sh` checks `CLAUDE_SPECS_ROOT` first (line 57), preventing production directory creation when override is set.
+**Detection Point**: `unified-location-detection.sh` checks `CLAUDE_SPECS_ROOT` first, preventing production directory creation when override is set.
 
 **Reference Documentation**:
 - [Test Isolation Standards](.claude/docs/reference/test-isolation-standards.md) - Complete standards and patterns
@@ -238,7 +238,6 @@ Clear directory organization prevents file misplacement, reduces confusion, and 
 ├── agents/         Specialized AI assistant definitions
 │   └── templates/  Agent behavioral templates (sub-supervisor, etc.)
 ├── docs/           Integration guides and standards
-├── utils/          Specialized helper utilities
 └── tests/          Test suites for system validation
 ```
 
@@ -376,16 +375,15 @@ docs/
 
 ### File Placement Decision Matrix
 
-| Question | scripts/ | lib/ | utils/ | commands/ | agents/ |
-|----------|----------|------|--------|-----------|---------|
-| Standalone executable? | ✓ | ✗ | Sometimes | ✗ | ✗ |
-| Needs CLI arguments? | ✓ | ✗ | Sometimes | ✗ | ✗ |
-| Sourced by other code? | ✗ | ✓ | Sometimes | ✗ | ✗ |
-| Complete workflow? | ✓ | ✗ | ✗ | ✓ | ✓ |
-| Reusable function? | ✗ | ✓ | Sometimes | ✗ | ✗ |
-| User-facing command? | ✗ | ✗ | ✗ | ✓ | ✗ |
-| AI agent behavioral? | ✗ | ✗ | ✗ | ✗ | ✓ |
-| Specialized helper? | ✗ | ✗ | ✓ | ✗ | ✗ |
+| Question | scripts/ | lib/ | commands/ | agents/ |
+|----------|----------|------|-----------|---------|
+| Standalone executable? | ✓ | ✗ | ✗ | ✗ |
+| Needs CLI arguments? | ✓ | ✗ | ✗ | ✗ |
+| Sourced by other code? | ✗ | ✓ | ✗ | ✗ |
+| Complete workflow? | ✓ | ✗ | ✓ | ✓ |
+| Reusable function? | ✗ | ✓ | ✗ | ✗ |
+| User-facing command? | ✗ | ✗ | ✓ | ✗ |
+| AI agent behavioral? | ✗ | ✗ | ✗ | ✓ |
 
 ### Decision Process
 
@@ -398,15 +396,11 @@ docs/
 → NO: Continue
 
 **3. Is it a standalone executable tool?**
-→ YES: Check if system-level operation
-  - System validation/migration: `scripts/tool-name.sh`
-  - Specialized helper: `utils/tool-name.sh`
+→ YES: `scripts/tool-name.sh`
 → NO: Continue
 
 **4. Is it a reusable function library?**
-→ YES: Check if general-purpose
-  - General-purpose: `lib/library-name.sh`
-  - Specialized helper: `utils/library-name.sh`
+→ YES: `lib/library-name.sh`
 → NO: Consult with team
 
 ### Anti-Patterns
@@ -416,7 +410,7 @@ docs/
 - ✗ Plan templates in `.claude/templates/` (should be `commands/templates/`)
 - ✗ Validation scripts in `lib/` (should be `scripts/`)
 - ✗ Sourced libraries in `scripts/` (should be `lib/`)
-- ✗ Standalone executables in `lib/` (should be `scripts/` or `utils/`)
+- ✗ Standalone executables in `lib/` (should be `scripts/`)
 
 **Naming Violations**:
 - ✗ CamelCase for bash scripts (use kebab-case)
@@ -877,9 +871,9 @@ Located in `.claude/commands/`:
 
 **Orchestration**: Three orchestration commands available (**Use /coordinate for production workflows**):
 
-- `/coordinate` - **Production-Ready** - Wave-based parallel execution and fail-fast error handling (2,500-3,000 lines, recommended default)
-- `/orchestrate` - **In Development** - Full-featured orchestration with PR automation and dashboard tracking (5,438 lines, experimental features may have inconsistent behavior)
-- `/supervise` - **In Development** - Sequential orchestration with proven architectural compliance (1,779 lines, minimal reference being stabilized)
+- `/coordinate` - **Production-Ready** - Wave-based parallel execution and fail-fast error handling (2,371 lines, recommended default)
+- `/orchestrate` - **In Development** - Full-featured orchestration with PR automation and dashboard tracking (618 lines, experimental features may have inconsistent behavior)
+- `/supervise` - **In Development** - Sequential orchestration with proven architectural compliance (435 lines, minimal reference being stabilized)
   - **Usage Guide**: [/supervise Usage Guide](.claude/docs/guides/supervise-guide.md) - Examples and common patterns
   - **Phase Reference**: [/supervise Phase Reference](.claude/docs/reference/supervise-phases.md) - Detailed phase documentation
 
