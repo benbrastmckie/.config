@@ -248,13 +248,13 @@ Validation:
 - Environment variable verification provides actionable diagnostics
 - Error messages clearly distinguish environment export vs state file persistence failures
 
-### Phase 3: Documentation (P2 - Prevents Future Issues)
+### Phase 3: Documentation (P2 - Prevents Future Issues) [COMPLETED]
 **Objective**: Document state persistence contracts and architectural patterns
 **Complexity**: Low
 **Estimated Time**: 45 minutes
 
 Tasks:
-- [ ] **Task 3.1**: Document sm_init() state persistence contract (.claude/lib/workflow-state-machine.sh:391-402)
+- [x] **Task 3.1**: Document sm_init() state persistence contract (.claude/lib/workflow-state-machine.sh:391-402)
   - Add function header documentation describing:
     - Purpose: Initialize state machine and persist classification variables
     - Parameters: CLASSIFICATION_JSON, command_name
@@ -265,7 +265,7 @@ Tasks:
   - Document calling pattern: sm_init → verify environment → verify state file
   - Estimated: 15 minutes
 
-- [ ] **Task 3.2**: Expand state reloading comments in coordinate.md
+- [x] **Task 3.2**: Expand state reloading comments in coordinate.md
   - Replace terse comment "Re-load workflow state (needed after Task invocation)" (line ~330)
   - Add comprehensive block explaining:
     - Subprocess isolation: Each bash block runs in separate subprocess (different PID)
@@ -275,7 +275,7 @@ Tasks:
   - Reference .claude/docs/concepts/bash-block-execution-model.md for details
   - Estimated: 10 minutes
 
-- [ ] **Task 3.3**: Document bash tool preprocessing limitations
+- [x] **Task 3.3**: Document bash tool preprocessing limitations
   - Create/update .claude/docs/troubleshooting/bash-tool-limitations.md
   - Explain preprocessing architecture:
     - Bash tool wrapper executes BEFORE runtime bash interpretation

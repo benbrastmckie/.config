@@ -287,6 +287,146 @@ This is distinct from:
 - **Bash history expansion** - Not related to `!` in `${!var}` patterns
 - **Agent context limitations** - This affects command files, not agent prompts
 
+## Bash History Expansion Preprocessing Errors
+
+### Problem: "if !" Patterns Trigger History Expansion
+
+When using negated conditionals with function calls (`if ! function_name`), bash preprocessing can trigger history expansion errors BEFORE runtime `set +H` takes effect.
+
+**Root Cause**: The Bash tool wrapper executes preprocessing BEFORE runtime bash interpretation, so `set +H` directives cannot affect the preprocessing stage.
+
+**Timeline**:
+```
+1. Bash tool preprocessing stage (history expansion occurs here)
+   ↓
+2. Runtime bash interpretation (set +H executed here - too late!)
+```
+
+**Error Pattern**:
+```bash
+# Command file contains:
+set +H  # Disable history expansion
+if ! sm_transition "$STATE_RESEARCH"; then
+  echo "Transition failed"
+  exit 1
+fi
+
+# Error (preprocessing stage, BEFORE set +H takes effect):
+bash: !: command not found
+```
+
+### Detection
+
+Symptoms of preprocessing history expansion errors:
+- `bash: !: command not found` errors despite `set +H` at top of block
+- Errors occur with `if ! ` patterns followed by function calls
+- Same code works fine outside of Bash tool context
+
+### Workarounds
+
+Three patterns to avoid preprocessing history expansion:
+
+#### Pattern 1: Exit Code Capture (Recommended)
+
+**Use explicit exit code capture instead of inline negation:**
+
+```bash
+# BEFORE (vulnerable to preprocessing):
+if ! sm_transition "$STATE_RESEARCH"; then
+  echo "ERROR: Transition failed"
+  exit 1
+fi
+
+# AFTER (safe from preprocessing):
+sm_transition "$STATE_RESEARCH"
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: Transition failed"
+  exit 1
+fi
+```
+
+**Benefits**:
+- Explicit and readable
+- No preprocessing vulnerabilities
+- Maintains same error handling behavior
+- Validated across 15+ historical specifications
+
+#### Pattern 2: Positive Logic
+
+**Invert the conditional logic to avoid negation:**
+
+```bash
+# BEFORE (vulnerable):
+if ! verify_files_batch "Phase" "${FILES[@]}"; then
+  handle_error
+fi
+
+# AFTER (safe):
+if verify_files_batch "Phase" "${FILES[@]}"; then
+  : # Success, continue
+else
+  handle_error
+fi
+```
+
+**Trade-offs**:
+- Can be less clear (inverted semantics)
+- Acceptable for simple cases
+- May require additional code structure
+
+#### Pattern 3: Test Command Negation
+
+**Use explicit function call, then test the result:**
+
+```bash
+# Call function explicitly
+sm_init "$params"
+
+# Test exit code with test command
+if [ $? -ne 0 ]; then
+  echo "ERROR: Initialization failed"
+  exit 1
+fi
+```
+
+### Prevention
+
+When writing command files or agent prompts:
+
+1. **Avoid `if ! function_call` patterns** - Use exit code capture instead
+2. **Audit existing code** - Search for `if ! ` patterns and evaluate vulnerability
+3. **Test in Bash tool context** - Don't assume `set +H` provides protection
+4. **Document workarounds** - Comment why exit code capture is used
+
+### Commands Using These Patterns
+
+These commands have been updated to use preprocessing-safe patterns:
+
+- `/coordinate` - Uses exit code capture for `verify_files_batch` (line 912)
+- See Spec 717 for comprehensive analysis and implementation
+
+### Historical Context
+
+Preprocessing safety patterns validated across specifications:
+- Spec 620: Fix coordinate bash history expansion errors (47/47 test pass rate)
+- Spec 641: Array serialization preprocessing workaround
+- Spec 672: State persistence fail-fast validation
+- Spec 685: Bash tool limitations documentation
+- Spec 700: Comprehensive bash history expansion analysis
+- Spec 717: Coordinate command robustness improvements (this specification)
+
+### Why "set +H" Doesn't Work
+
+`set +H` is a **runtime directive** that disables history expansion during bash execution. However:
+
+1. **Bash tool wrapper preprocessing** happens BEFORE runtime
+2. **Preprocessing stage** doesn't see or respect runtime directives
+3. **History expansion occurs** during preprocessing, not runtime
+4. **`set +H` executes** only after preprocessing completes (too late!)
+
+**Conclusion**: `set +H` protects against runtime history expansion but cannot prevent preprocessing-stage expansion triggered by Bash tool wrapper.
+
 ## Related Documentation
 
 - [Command Development Guide](../guides/command-development-guide.md) - Best practices for command development
