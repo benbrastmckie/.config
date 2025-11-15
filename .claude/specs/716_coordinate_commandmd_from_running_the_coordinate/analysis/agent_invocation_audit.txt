@@ -1,0 +1,72 @@
+# Agent Invocation Audit
+# Generated: $(date)
+
+## Agent Invocations Found
+
+### 1. workflow-classifier (line 170-172)
+Task invocation: Phase 0.1
+Agent file: .claude/agents/workflow-classifier.md
+Expected output: CLASSIFICATION_JSON in state file
+Verification: ✓ Lines 224-245 verify state file contains CLASSIFICATION_JSON
+Status: HAS verification
+Recommendation: Consider adding 2-second grace period before verification
+
+### 2. research-sub-supervisor (line 608-610)
+Task invocation: Phase 1 (hierarchical research)
+Agent file: .claude/agents/research-sub-supervisor.md
+Expected output: Multiple research reports
+Verification: ✗ No immediate post-Task verification
+Recommendation: Add verify_files_batch after Task completion
+
+### 3. research-specialist (multiple invocations)
+Task invocations: Lines 682-684, 707-709, 732-734, 757-759
+Agent file: .claude/agents/research-specialist.md
+Expected output: Research report files
+Verification: Partial (batch verification at end of research phase)
+Recommendation: Add individual verify_file_created after each Task
+
+### 4. Plan creation agent (line 1280-1282)
+Task invocation: Phase 2 planning
+Agent file: Referenced via behavioral injection
+Expected output: Plan file at PLAN_PATH
+Verification: ✗ No immediate post-Task verification
+Recommendation: Add verify_file_created after Task completion
+
+### 5. implementer-coordinator (line 1654-1656)
+Task invocation: Phase 3 implementation
+Agent file: .claude/agents/implementer-coordinator.md
+Expected output: Implementation results, updated plan
+Verification: ✗ No immediate post-Task verification
+Recommendation: Add verification of implementation artifacts
+
+### 6. /debug command invocation (line 2045-2047)
+Task invocation: Phase 4 debugging
+Agent file: Via SlashCommand tool (not Task)
+Expected output: Debug reports
+Verification: ✗ No immediate post-Task verification
+Recommendation: Add verify_file_created for debug reports
+
+### 7. /document command invocation (line 2264-2266)
+Task invocation: Phase 5 documentation
+Agent file: Via SlashCommand tool (not Task)
+Expected output: Updated documentation
+Verification: ✗ No immediate post-Task verification
+Recommendation: Add verification of documentation updates
+
+## Verification Coverage Summary
+- Total agent invocations: 10+ (including multiple research-specialist calls)
+- Invocations with immediate verification: 1 (10%)
+- Target: 100% post-Task verification coverage
+
+## Critical Gaps
+1. research-specialist invocations lack individual file verification
+2. Plan creation lacks file verification
+3. Implementation lacks artifact verification
+4. Debug and document commands lack output verification
+
+## Recommendations for Phase 5
+1. Add verify_file_created immediately after each Task invocation
+2. Add 2-second grace period for file system sync
+3. Implement fallback dynamic discovery for misnamed files
+4. Track agent compliance metrics (bash execution vs text-only)
+5. Enhanced agent behavioral files with explicit execution requirements

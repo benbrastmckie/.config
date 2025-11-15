@@ -137,6 +137,16 @@ else
   exit 1
 fi
 
+# VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
+if ! command -v verify_file_created &>/dev/null; then
+  echo "ERROR: verify_file_created function not available after library sourcing"
+  exit 1
+fi
+if ! command -v handle_state_error &>/dev/null; then
+  echo "ERROR: handle_state_error function not available after library sourcing"
+  exit 1
+fi
+
 # Generate unique workflow ID (timestamp-based for reproducibility)
 WORKFLOW_ID="coordinate_$(date +%s)"
 
