@@ -103,7 +103,7 @@ git log --all --oneline -- path/to/file  # Check history exists
 
 ## Implementation Phases
 
-### Phase 1: Remove Obsolete Directories (<700)
+### Phase 1: Remove Obsolete Directories (<700) [COMPLETED]
 
 dependencies: []
 
@@ -112,37 +112,12 @@ dependencies: []
 **Complexity**: Low
 
 **Tasks**:
-- [ ] List directories to be removed
-  ```bash
-  ls -1d .claude/specs/[0-6][0-9][0-9]_* > /tmp/obsolete_dirs.txt
-  wc -l /tmp/obsolete_dirs.txt  # Should show 198
-  ```
-- [ ] Quick scan for any critical cross-references (unlikely for old specs)
-  ```bash
-  # Sample check on a few directories
-  grep -r "specs/0[0-6][0-9]" .claude/commands/ --include="*.md" || echo "No references found"
-  grep -r "specs/0[0-6][0-9]" .claude/docs/ --include="*.md" || echo "No references found"
-  ```
-- [ ] Remove all directories numbered <700 in batches
-  ```bash
-  # Remove in groups to avoid command line limits
-  git rm -r .claude/specs/0[0-5][0-9]_* 2>/dev/null || true
-  git rm -r .claude/specs/6[0-8][0-9]_* 2>/dev/null || true
-  git rm -r .claude/specs/69[0-9]_* 2>/dev/null || true
-  ```
-- [ ] Verify removal count
-  ```bash
-  # Should show only directories 700+
-  ls -1d .claude/specs/[0-9][0-9][0-9]_* | wc -l  # Should be ~14 (212 - 198)
-  ```
-- [ ] Stage changes for git
-  ```bash
-  git add -A
-  ```
-- [ ] Create git commit
-  ```bash
-  git commit -m "chore(714): remove 198 obsolete spec directories (<700)"
-  ```
+- [x] List directories to be removed
+- [x] Quick scan for any critical cross-references (unlikely for old specs)
+- [x] Remove all directories numbered <700 in batches
+- [x] Verify removal count (14 directories remain - all 700+)
+- [x] Stage changes for git
+- [x] Create git commit
 
 **Testing**:
 ```bash
@@ -163,7 +138,7 @@ ls -ld .claude/specs/7[0-9][0-9]_*
 
 ---
 
-### Phase 2: Clean Up Loose Files
+### Phase 2: Clean Up Loose Files [COMPLETED]
 
 dependencies: [1]
 
@@ -172,44 +147,12 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] List all loose markdown files (excluding README.md)
-  ```bash
-  find .claude/specs -maxdepth 1 -type f -name "*.md" ! -name "README.md"
-  ```
-  Expected: 12 files
-- [ ] Quick check for any critical cross-references
-  ```bash
-  grep -r "coordinate_output.md" .claude/commands/ --include="*.md" || echo "No refs"
-  grep -r "coordinate_output.md" .claude/docs/ --include="*.md" || echo "No refs"
-  ```
-- [ ] Remove all loose files (these are all workflow artifacts/typos)
-  ```bash
-  git rm .claude/specs/coordinage_implement.md
-  git rm .claude/specs/coordinage_plan.md
-  git rm .claude/specs/coordinate_command.md
-  git rm .claude/specs/coordinate_output.md
-  git rm .claude/specs/coordinate_research.md
-  git rm .claude/specs/coordinate_revise.md
-  git rm .claude/specs/coordinate_ultrathink.md
-  git rm .claude/specs/optimize_output.md
-  git rm .claude/specs/research_output.md
-  git rm .claude/specs/setup_choice.md
-  git rm .claude/specs/supervise_output.md
-  git rm .claude/specs/workflow_scope_detection_analysis.md
-  ```
-- [ ] Verify no loose markdown files remain (except README.md)
-  ```bash
-  find .claude/specs -maxdepth 1 -type f -name "*.md" ! -name "README.md"
-  ```
-  Expected: Empty output
-- [ ] Stage changes for git
-  ```bash
-  git add -A
-  ```
-- [ ] Create git commit
-  ```bash
-  git commit -m "chore(714): remove 12 loose files from specs root"
-  ```
+- [x] List all loose markdown files (excluding README.md)
+- [x] Quick check for any critical cross-references
+- [x] Remove all loose files (these are all workflow artifacts/typos)
+- [x] Verify no loose markdown files remain (except README.md)
+- [x] Stage changes for git
+- [x] Create git commit
 
 **Testing**:
 ```bash
