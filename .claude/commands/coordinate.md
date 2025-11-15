@@ -219,14 +219,33 @@ COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
 load_workflow_state "$WORKFLOW_ID"
 
-# Parse classification JSON from agent response
-# The agent returns: CLASSIFICATION_COMPLETE: {JSON}
-# Extract JSON portion after the signal
-CLASSIFICATION_JSON=$(echo "$AGENT_RESPONSE" | grep -oP 'CLASSIFICATION_COMPLETE:\s*\K.*')
+# FAIL-FAST STATE LOADING: Load classification from state (saved by workflow-classifier agent)
+# The workflow-classifier agent MUST have executed append_workflow_state "CLASSIFICATION_JSON" before this block
+# See .claude/agents/workflow-classifier.md for agent behavior
 
-# Verify JSON extraction succeeded
-if [ -z "$CLASSIFICATION_JSON" ]; then
-  handle_state_error "CRITICAL: Failed to extract classification JSON from agent response. Expected format: CLASSIFICATION_COMPLETE: {JSON}" 1
+# FAIL-FAST VALIDATION: Classification must exist in state
+if [ -z "${CLASSIFICATION_JSON:-}" ]; then
+  handle_state_error "CRITICAL: workflow-classifier agent did not save CLASSIFICATION_JSON to state
+
+Diagnostic:
+  - Agent was instructed to save classification via append_workflow_state
+  - Expected: append_workflow_state \"CLASSIFICATION_JSON\" \"\$CLASSIFICATION_JSON\"
+  - Check agent's bash execution in previous response
+  - State file: \$STATE_FILE (loaded via load_workflow_state at line 220)
+
+This is a critical bug. The workflow cannot proceed without classification data." 1
+fi
+
+# FAIL-FAST VALIDATION: JSON must be valid
+if ! echo "$CLASSIFICATION_JSON" | jq empty 2>/dev/null; then
+  handle_state_error "CRITICAL: Invalid JSON in CLASSIFICATION_JSON
+
+Diagnostic:
+  - Content: $CLASSIFICATION_JSON
+  - JSON validation failed
+  - Agent may have malformed the JSON output
+
+This is a critical bug. The workflow cannot proceed with invalid JSON." 1
 fi
 
 # Parse JSON fields using jq
@@ -546,10 +565,16 @@ fi
 # all three dimensions (workflow_type, research_complexity, subtopics) in single call.
 # Zero pattern matching for any classification dimension. Fallback to state persistence only.
 
-# Defensive: Verify RESEARCH_COMPLEXITY was loaded from state
+# FAIL-FAST VALIDATION: RESEARCH_COMPLEXITY must be loaded from state
 if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
-  echo "WARNING: RESEARCH_COMPLEXITY not loaded from state, using fallback=2" >&2
-  RESEARCH_COMPLEXITY=2
+  handle_state_error "CRITICAL: RESEARCH_COMPLEXITY not loaded from state
+
+Diagnostic:
+  - Expected: RESEARCH_COMPLEXITY should have been saved by Phase 0.1 classification
+  - Check Phase 0.1 bash block for sm_init parameters and state persistence
+  - This variable determines number of research topics and coordination strategy
+
+Cannot proceed without research complexity score." 1
 fi
 
 echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics (from state persistence)"
@@ -805,9 +830,16 @@ fi
 # all three dimensions (workflow_type, research_complexity, subtopics) in single call.
 # Zero pattern matching for any classification dimension. Fallback to state persistence only.
 
-# Defensive: Restore USE_HIERARCHICAL_RESEARCH if not loaded from state
+# FAIL-FAST VALIDATION: USE_HIERARCHICAL_RESEARCH must be loaded from state
 if [ -z "${USE_HIERARCHICAL_RESEARCH:-}" ]; then
-  USE_HIERARCHICAL_RESEARCH=$([ $RESEARCH_COMPLEXITY -ge 4 ] && echo "true" || echo "false")
+  handle_state_error "CRITICAL: USE_HIERARCHICAL_RESEARCH not loaded from state
+
+Diagnostic:
+  - Expected: USE_HIERARCHICAL_RESEARCH should have been saved by Phase 1 initialization
+  - Check Phase 1 bash block for append_workflow_state \"USE_HIERARCHICAL_RESEARCH\" call
+  - This variable determines hierarchical vs flat research coordination
+
+Cannot proceed without research coordination mode." 1
 fi
 
 # Reconstruct REPORT_PATHS array from state
@@ -818,25 +850,46 @@ reconstruct_report_paths_array
 # (via validate_and_generate_filename_slugs), eliminating the need for post-research
 # filename discovery. Files are created at the exact pre-calculated paths.
 #
-# Verification: Assert that expected report files exist at pre-calculated paths
+# FAIL-FAST VERIFICATION: Assert that expected report files exist at pre-calculated paths
+# No filesystem discovery fallback - agents MUST create files at exact pre-calculated paths
 REPORTS_DIR="${TOPIC_PATH}/reports"
-VERIFICATION_FAILED=0
-if [ -d "$REPORTS_DIR" ]; then
-  # Verify each expected report file exists
-  for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
-    EXPECTED_PATH="${!REPORT_PATH_$i}"
-    if [ ! -f "$EXPECTED_PATH" ]; then
-      echo "WARNING: Expected report file not found: $EXPECTED_PATH" >&2
-      VERIFICATION_FAILED=$((VERIFICATION_FAILED + 1))
-    fi
-  done
 
-  if [ "$VERIFICATION_FAILED" -eq 0 ]; then
-    echo "Report verification complete: $REPORT_PATHS_COUNT/$REPORT_PATHS_COUNT files found at pre-calculated paths"
-  else
-    echo "Report verification: $((REPORT_PATHS_COUNT - VERIFICATION_FAILED))/$REPORT_PATHS_COUNT files found ($VERIFICATION_FAILED missing)" >&2
-  fi
+# Verify reports directory exists
+if [ ! -d "$REPORTS_DIR" ]; then
+  handle_state_error "CRITICAL: Reports directory not found: $REPORTS_DIR
+
+Diagnostic:
+  - Expected directory should have been created during topic initialization
+  - Check workflow-initialization.sh for directory creation logic
+
+Cannot proceed without reports directory." 1
 fi
+
+# Fail-fast verification of pre-calculated report paths
+# Note: More detailed verification happens later (lines 880+ for hierarchical, 935+ for flat)
+# This is an early check to fail fast before deeper processing
+VERIFICATION_FAILED=0
+for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
+  EXPECTED_PATH="${!REPORT_PATH_$i}"
+  if [ ! -f "$EXPECTED_PATH" ]; then
+    echo "ERROR: Expected report file not found: $EXPECTED_PATH" >&2
+    VERIFICATION_FAILED=$((VERIFICATION_FAILED + 1))
+  fi
+done
+
+if [ "$VERIFICATION_FAILED" -gt 0 ]; then
+  handle_state_error "CRITICAL: $VERIFICATION_FAILED report files not found at pre-calculated paths
+
+Diagnostic:
+  - Expected $REPORT_PATHS_COUNT reports in $REPORTS_DIR
+  - Found: $((REPORT_PATHS_COUNT - VERIFICATION_FAILED))/$REPORT_PATHS_COUNT
+  - Research agents must create files at exact pre-calculated paths
+  - Check research agent invocations and file creation logic
+
+Cannot proceed with missing research artifacts." 1
+fi
+
+echo "✓ Report pre-check complete: $REPORT_PATHS_COUNT/$REPORT_PATHS_COUNT files found at pre-calculated paths"
 
 emit_progress "1" "Research phase completion - verifying results"
 
@@ -1118,21 +1171,52 @@ if command -v emit_progress &>/dev/null; then
   emit_progress "2" "State: Planning (implementation plan creation)"
 fi
 
-# Reconstruct report paths from state
-# Defensive JSON handling: Validate JSON before parsing to prevent jq parse errors
-if [ -n "${REPORT_PATHS_JSON:-}" ]; then
-  # Validate JSON before parsing
-  if echo "$REPORT_PATHS_JSON" | jq empty 2>/dev/null; then
-    mapfile -t REPORT_PATHS < <(echo "$REPORT_PATHS_JSON" | jq -r '.[]')
-    echo "Loaded ${#REPORT_PATHS[@]} report paths from state"
-  else
-    echo "WARNING: Invalid REPORT_PATHS_JSON, using empty array" >&2
-    REPORT_PATHS=()
-  fi
-else
-  echo "WARNING: REPORT_PATHS_JSON not set, using empty array" >&2
-  REPORT_PATHS=()
+# FAIL-FAST STATE LOADING: Reconstruct report paths from state
+# The research phase MUST have saved REPORT_PATHS_JSON to state before this phase
+
+# FAIL-FAST VALIDATION: REPORT_PATHS_JSON must exist in state
+if [ -z "${REPORT_PATHS_JSON:-}" ]; then
+  handle_state_error "CRITICAL: REPORT_PATHS_JSON not loaded from state
+
+Diagnostic:
+  - Expected: JSON array of report paths from Phase 1 (Research)
+  - State file should have been saved by Phase 0 allocation or Phase 1 research
+  - Check previous phases for append_workflow_state \"REPORT_PATHS_JSON\" calls
+
+Cannot proceed with planning without research report paths." 1
 fi
+
+# FAIL-FAST VALIDATION: JSON must be valid
+if ! echo "$REPORT_PATHS_JSON" | jq empty 2>/dev/null; then
+  handle_state_error "CRITICAL: Invalid JSON in REPORT_PATHS_JSON
+
+Diagnostic:
+  - Content: $REPORT_PATHS_JSON
+  - JSON validation failed
+  - Check Phase 0/1 for malformed JSON serialization
+
+Cannot proceed with planning with malformed report paths." 1
+fi
+
+# Reconstruct REPORT_PATHS array from JSON
+mapfile -t REPORT_PATHS < <(echo "$REPORT_PATHS_JSON" | jq -r '.[]')
+
+# FAIL-FAST VALIDATION: Array must not be empty (unless workflow allows it)
+# Note: Some workflows (research-only with 0 complexity) may legitimately have 0 reports
+# But for planning workflows, we need at least 1 report
+if [ "${#REPORT_PATHS[@]}" -eq 0 ] && [ "$WORKFLOW_SCOPE" != "research-and-plan" ]; then
+  handle_state_error "CRITICAL: REPORT_PATHS array is empty after reconstruction
+
+Diagnostic:
+  - REPORT_PATHS_JSON: $REPORT_PATHS_JSON
+  - Reconstructed array length: 0
+  - Expected: At least 1 report path from research phase for $WORKFLOW_SCOPE workflow
+  - Check Phase 1 research agents for successful report creation
+
+Cannot proceed with planning without research reports." 1
+fi
+
+echo "✓ Reconstructed REPORT_PATHS array: ${#REPORT_PATHS[@]} paths loaded"
 
 # Build report references for /plan
 REPORT_ARGS=""

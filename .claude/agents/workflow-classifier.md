@@ -527,4 +527,60 @@ Before returning classification, verify:
 
 **YOU MUST complete all steps before returning your response.**
 
+## CRITICAL - MANDATORY STATE PERSISTENCE
+
+**AFTER** generating the classification JSON, you MUST save it to workflow state for the coordinate command to load in the next bash block.
+
+**EXECUTE IMMEDIATELY** after completing classification:
+
+USE the Bash tool:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Standard 13: CLAUDE_PROJECT_DIR detection
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+# Load state persistence library
+source "$CLAUDE_PROJECT_DIR/.claude/lib/state-persistence.sh"
+
+# Load workflow state ID
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
+  echo "ERROR: State ID file not found: $COORDINATE_STATE_ID_FILE" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+
+# Save classification JSON to state (REQUIRED - coordinate command will fail without this)
+# Replace the JSON below with your actual classification result
+CLASSIFICATION_JSON='<INSERT_YOUR_CLASSIFICATION_JSON_HERE>'
+
+# Validate JSON before saving
+if ! echo "$CLASSIFICATION_JSON" | jq empty 2>/dev/null; then
+  echo "ERROR: Invalid JSON in classification result" >&2
+  exit 1
+fi
+
+# Save to state
+append_workflow_state "CLASSIFICATION_JSON" "$CLASSIFICATION_JSON"
+
+# Verify saved successfully
+load_workflow_state "$WORKFLOW_ID"
+if [ -z "${CLASSIFICATION_JSON:-}" ]; then
+  echo "ERROR: Failed to save CLASSIFICATION_JSON to state" >&2
+  exit 1
+fi
+
+echo "✓ Classification saved to state successfully"
+```
+
+**IMPORTANT**: Replace `<INSERT_YOUR_CLASSIFICATION_JSON_HERE>` with your actual classification JSON object.
+
+After saving to state, return the completion signal:
+
 Return format: `CLASSIFICATION_COMPLETE: {JSON object}`
