@@ -303,21 +303,23 @@ if [ $SM_INIT_EXIT_CODE -ne 0 ]; then
 fi
 # Variables now available via export (verified by successful sm_init return code check above)
 
-# VERIFICATION CHECKPOINT: Verify critical variables exported by sm_init
+# VERIFICATION CHECKPOINT: Verify all state machine variables persisted to state file
 # Standard 0 (Execution Enforcement): Critical state initialization must be verified
-verify_state_variables "$STATE_FILE" "WORKFLOW_SCOPE" "RESEARCH_COMPLEXITY" "RESEARCH_TOPICS_JSON" || {
-  handle_state_error "CRITICAL: Required variables not exported by sm_init despite successful return code
+# sm_init() now persists all 5 variables to state file (see workflow-state-machine.sh)
+verify_state_variables "$STATE_FILE" "WORKFLOW_SCOPE" "TERMINAL_STATE" "CURRENT_STATE" "RESEARCH_COMPLEXITY" "RESEARCH_TOPICS_JSON" || {
+  handle_state_error "CRITICAL: Required state machine variables not persisted by sm_init despite successful return code
 
 Diagnostic:
   - sm_init returned success (exit code 0)
-  - One or more required variables not exported: WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
+  - One or more required variables not persisted to state file
+  - Required variables: WORKFLOW_SCOPE, TERMINAL_STATE, CURRENT_STATE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
   - Check sm_init implementation in workflow-state-machine.sh
-  - Verify export statements present for all critical variables
+  - Verify append_workflow_state calls present for all critical variables
 
 Cannot proceed without state machine initialization." 1
 }
 
-echo "✓ State machine variables verified: WORKFLOW_SCOPE=$WORKFLOW_SCOPE, RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY"
+echo "✓ State machine variables verified in state file (5/5 variables present)"
 
 # ADDED: Extract and save EXISTING_PLAN_PATH for research-and-revise workflows
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
@@ -337,15 +339,9 @@ if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
   fi
 fi
 
-# Save state machine configuration to workflow state
-append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
-append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
-append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
-
-# VERIFICATION CHECKPOINT: Verify WORKFLOW_SCOPE persisted correctly
-verify_state_variable "WORKFLOW_SCOPE" || {
-  handle_state_error "CRITICAL: WORKFLOW_SCOPE not persisted to state after sm_init" 1
-}
+# NOTE: State machine configuration (WORKFLOW_SCOPE, TERMINAL_STATE, CURRENT_STATE,
+# RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON) already persisted by sm_init()
+# No need to duplicate append_workflow_state calls here - verified above at line 309
 
 # ADDED: Save EXISTING_PLAN_PATH to state for bash block persistence
 if [ -n "${EXISTING_PLAN_PATH:-}" ]; then

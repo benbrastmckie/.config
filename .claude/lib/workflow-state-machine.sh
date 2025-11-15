@@ -398,6 +398,16 @@ sm_init() {
   export RESEARCH_COMPLEXITY
   export RESEARCH_TOPICS_JSON
 
+  # Persist classification variables to state file (following COMPLETED_STATES pattern)
+  # This ensures verification checkpoints can validate state file persistence
+  if command -v append_workflow_state &> /dev/null; then
+    append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
+    append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+    append_workflow_state "RESEARCH_TOPICS_JSON" "$RESEARCH_TOPICS_JSON"
+  else
+    echo "WARNING: append_workflow_state not available, skipping classification persistence" >&2
+  fi
+
   # Log accepted classification
   echo "Classification accepted: scope=$WORKFLOW_SCOPE, complexity=$RESEARCH_COMPLEXITY, topics=$(echo "$RESEARCH_TOPICS_JSON" | jq -r 'length')" >&2
 
@@ -427,6 +437,18 @@ sm_init() {
   # Initialize state machine
   CURRENT_STATE="$STATE_INITIALIZE"
   COMPLETED_STATES=()
+
+  # Export and persist terminal state and current state for verification
+  export TERMINAL_STATE
+  export CURRENT_STATE
+
+  # Persist state machine variables to state file
+  if command -v append_workflow_state &> /dev/null; then
+    append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
+    append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
+  else
+    echo "WARNING: append_workflow_state not available, skipping state machine persistence" >&2
+  fi
 
   # Log initialization status
   echo "State machine initialized: scope=$WORKFLOW_SCOPE, terminal=$TERMINAL_STATE" >&2
