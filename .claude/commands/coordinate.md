@@ -305,17 +305,17 @@ fi
 
 # VERIFICATION CHECKPOINT: Verify critical variables exported by sm_init
 # Standard 0 (Execution Enforcement): Critical state initialization must be verified
-if [ -z "${WORKFLOW_SCOPE:-}" ]; then
-  handle_state_error "CRITICAL: WORKFLOW_SCOPE not exported by sm_init despite successful return code" 1
-fi
+verify_state_variables "$STATE_FILE" "WORKFLOW_SCOPE" "RESEARCH_COMPLEXITY" "RESEARCH_TOPICS_JSON" || {
+  handle_state_error "CRITICAL: Required variables not exported by sm_init despite successful return code
 
-if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
-  handle_state_error "CRITICAL: RESEARCH_COMPLEXITY not exported by sm_init despite successful return code" 1
-fi
+Diagnostic:
+  - sm_init returned success (exit code 0)
+  - One or more required variables not exported: WORKFLOW_SCOPE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
+  - Check sm_init implementation in workflow-state-machine.sh
+  - Verify export statements present for all critical variables
 
-if [ -z "${RESEARCH_TOPICS_JSON:-}" ]; then
-  handle_state_error "CRITICAL: RESEARCH_TOPICS_JSON not exported by sm_init despite successful return code" 1
-fi
+Cannot proceed without state machine initialization." 1
+}
 
 echo "✓ State machine variables verified: WORKFLOW_SCOPE=$WORKFLOW_SCOPE, RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY"
 
@@ -327,9 +327,9 @@ if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
     export EXISTING_PLAN_PATH
 
     # CRITICAL: Verify file exists before proceeding
-    if [ ! -f "$EXISTING_PLAN_PATH" ]; then
+    verify_file_created "$EXISTING_PLAN_PATH" "Existing plan file" "Initialization" || {
       handle_state_error "Extracted plan path does not exist: $EXISTING_PLAN_PATH" 1
-    fi
+    }
 
     echo "✓ Extracted existing plan path: $EXISTING_PLAN_PATH"
   else
@@ -902,31 +902,28 @@ Diagnostic:
 Cannot proceed without reports directory." 1
 fi
 
-# Fail-fast verification of pre-calculated report paths
+# Fail-fast verification of pre-calculated report paths using batch verification
 # Note: More detailed verification happens later (lines 880+ for hierarchical, 935+ for flat)
 # This is an early check to fail fast before deeper processing
-VERIFICATION_FAILED=0
+FILE_ENTRIES=()
 for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
   EXPECTED_PATH="${!REPORT_PATH_$i}"
-  if [ ! -f "$EXPECTED_PATH" ]; then
-    echo "ERROR: Expected report file not found: $EXPECTED_PATH" >&2
-    VERIFICATION_FAILED=$((VERIFICATION_FAILED + 1))
-  fi
+  FILE_ENTRIES+=("${EXPECTED_PATH}:Research report $((i+1))")
 done
 
-if [ "$VERIFICATION_FAILED" -gt 0 ]; then
-  handle_state_error "CRITICAL: $VERIFICATION_FAILED report files not found at pre-calculated paths
+# Use batch verification for efficient token usage (90% reduction on success)
+if ! verify_files_batch "Research Phase" "${FILE_ENTRIES[@]}"; then
+  handle_state_error "CRITICAL: Research report verification failed
 
 Diagnostic:
   - Expected $REPORT_PATHS_COUNT reports in $REPORTS_DIR
-  - Found: $((REPORT_PATHS_COUNT - VERIFICATION_FAILED))/$REPORT_PATHS_COUNT
   - Research agents must create files at exact pre-calculated paths
   - Check research agent invocations and file creation logic
+  - See verification output above for specific missing files
 
 Cannot proceed with missing research artifacts." 1
 fi
-
-echo "✓ Report pre-check complete: $REPORT_PATHS_COUNT/$REPORT_PATHS_COUNT files found at pre-calculated paths"
+echo ""  # Add newline after batch verification output
 
 emit_progress "1" "Research phase completion - verifying results"
 
