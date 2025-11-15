@@ -273,7 +273,12 @@ This is a critical bug. The workflow cannot proceed without classification data.
 fi
 
 # FAIL-FAST VALIDATION: JSON must be valid
-if ! echo "$CLASSIFICATION_JSON" | jq empty 2>/dev/null; then
+# Exit code capture pattern prevents bash preprocessing errors
+# Bash tool preprocessing happens BEFORE runtime 'set +H' directive
+# Pattern validated in Specs 620, 641, 672, 685, 700, 719
+echo "$CLASSIFICATION_JSON" | jq empty 2>/dev/null
+JSON_VALID=$?
+if [ $JSON_VALID -ne 0 ]; then
   handle_state_error "CRITICAL: Invalid JSON in CLASSIFICATION_JSON
 
 Diagnostic:
@@ -1253,7 +1258,10 @@ Cannot proceed with planning without research report paths." 1
 fi
 
 # FAIL-FAST VALIDATION: JSON must be valid
-if ! echo "$REPORT_PATHS_JSON" | jq empty 2>/dev/null; then
+# Exit code capture pattern prevents bash preprocessing errors (Spec 719)
+echo "$REPORT_PATHS_JSON" | jq empty 2>/dev/null
+JSON_VALID=$?
+if [ $JSON_VALID -ne 0 ]; then
   handle_state_error "CRITICAL: Invalid JSON in REPORT_PATHS_JSON
 
 Diagnostic:
