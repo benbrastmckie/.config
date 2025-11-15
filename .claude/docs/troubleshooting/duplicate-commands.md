@@ -246,6 +246,133 @@ fi
 
 **Outcome**: Single `/setup` entry in autocomplete with all current features.
 
+## Case Study: Complete ~/.claude/ Cleanup (Commands, Agents, Hooks)
+
+**Problem**: Duplicate entries for commands, agents, and hooks causing autocomplete clutter, potential agent version conflicts, and hook double-execution.
+
+**Scope**:
+- Commands: 23 duplicates (e.g., `/implement` showed 4 entries: 2 user + 2 project)
+- Agents: 9 duplicates (outdated Oct 2 vs current Nov 14 versions)
+- Hooks: 3 duplicates (risk of double-execution)
+
+**Root Cause**: User-level ~/.claude/ artifacts duplicating project-level .config/.claude/ artifacts.
+
+**Workflow Context**: User employs `<leader>ac` (nvim mapping) to copy .config/.claude/ into any project for portability, making ~/.claude/ unnecessary and causing conflicts.
+
+**Solution**: Complete ~/.claude/ cleanup - remove ALL commands, agents, and hooks to establish .config/.claude/ as single source of truth.
+
+### Implementation Steps
+
+#### 1. Audit and Backup (Phase 1)
+```bash
+# Create audit logs
+ls -1 ~/.claude/commands/*.md > /tmp/user-commands-audit.txt
+ls -1 ~/.claude/agents/*.md > /tmp/user-agents-audit.txt
+ls -1 ~/.claude/hooks/*.sh > /tmp/user-hooks-audit.txt
+
+# Create complete backup
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+cp -r ~/.claude ~/.claude.backup-$TIMESTAMP
+
+# Verify backup integrity
+ORIGINAL_COUNT=$(find ~/.claude -type f | wc -l)
+BACKUP_COUNT=$(find ~/.claude.backup-$TIMESTAMP -type f | wc -l)
+test "$ORIGINAL_COUNT" -eq "$BACKUP_COUNT" && echo "✓ Backup complete"
+```
+
+Results:
+- User-level: 23 commands, 9 agents, 3 hooks (35 files)
+- Project-level: 20 commands, 38 agents, 3 hooks (61 files)
+- Backup created: ~/.claude.backup-20251115-110445 (12,751 total files)
+
+#### 2. Complete Removal (Phase 2)
+```bash
+# Remove all user-level artifacts
+rm ~/.claude/commands/*.md      # 23 files
+rm ~/.claude/agents/*.md        # 9 files
+rm ~/.claude/hooks/*.sh         # 3 files
+
+# Verify directories empty
+test -z "$(ls -A ~/.claude/commands/)" && echo "✓ Commands empty"
+test -z "$(ls -A ~/.claude/agents/)" && echo "✓ Agents empty"
+test -z "$(ls -A ~/.claude/hooks/)" && echo "✓ Hooks empty"
+
+# Verify project artifacts intact
+ls .config/.claude/commands/*.md | wc -l  # 20 ✓
+find .config/.claude/agents -name '*.md' | wc -l  # 38 ✓
+ls .config/.claude/hooks/*.sh | wc -l  # 3 ✓
+```
+
+#### 3. Verification (Phase 3)
+After restarting Claude Code:
+- Dropdown: Each command appears exactly once (no duplicates)
+- No (user) scope markers visible
+- All commands show (project) marker only
+- `/resume-implement` no longer appears (was deleted, functionality merged into `/implement`)
+- Agent invocations use .config/.claude/agents/ only
+- Hooks execute once per event (no double-execution)
+
+#### 4. Documentation Updates (Phase 4)
+- Added this complete cleanup case study
+- Documented <leader>ac portability workflow
+- Added agent and hook cleanup guidance
+- Updated rollback procedures
+
+### Benefits
+
+**Commands**:
+- Autocomplete clutter eliminated (4× `/implement` → 1×)
+- Latest features available (--report-scope-drift, --create-pr, --dashboard, --dry-run)
+- No version confusion
+
+**Agents**:
+- Consistent agent versions (all from Nov 14, not outdated Oct 2)
+- No agent invocation conflicts
+- Predictable agent behavior
+
+**Hooks**:
+- Single execution per event (no double-execution)
+- No conflicting hook behavior
+- Predictable hook results
+
+**Workflow**:
+- .config/.claude/ is single source of truth
+- <leader>ac copies all artifacts to projects for portability
+- No reliance on global ~/.claude/ directory
+- Version-controlled, team-shared configuration
+
+### Rollback Procedure
+
+Complete rollback if issues arise:
+
+```bash
+# Restore entire ~/.claude/ directory
+cp -r ~/.claude.backup-20251115-110445 ~/.claude
+
+# Restart Claude Code
+# All user-level artifacts will reappear (duplicates return)
+```
+
+Partial rollback (single command/agent/hook):
+
+```bash
+# Restore specific artifact
+mkdir -p ~/.claude/commands/
+cp ~/.claude.backup-20251115-110445/commands/implement.md ~/.claude/commands/
+
+# Note: This recreates duplicates for that specific artifact
+```
+
+### Applicability
+
+This complete cleanup approach is ideal when:
+- User has systematic duplication (10+ artifacts)
+- User employs portability workflow (e.g., <leader>ac to copy configs)
+- User doesn't need global ~/.claude/ for cross-project functionality
+- User wants .config/.claude/ as authoritative source
+
+**Alternative**: For selective cleanup, see "Systematic Cleanup (Multiple Duplicates)" section above.
+
 ## FAQ
 
 ### Q: Can I prioritize project commands over user commands?

@@ -213,6 +213,50 @@ State-based orchestration uses explicit state machines with validated transition
 See [State-Based Orchestration Overview](.claude/docs/architecture/state-based-orchestration-overview.md) for complete architecture, [State Machine Development Guide](.claude/docs/guides/state-machine-orchestrator-development.md) for creating orchestrators, and [Migration Guide](.claude/docs/guides/state-machine-migration-guide.md) for phase-to-state transitions.
 <!-- END_SECTION: state_based_orchestration -->
 
+<!-- SECTION: configuration_portability -->
+## Configuration Portability and Command Discovery
+[Used by: all commands, project setup, troubleshooting]
+
+### Command/Agent/Hook Discovery Hierarchy
+
+Claude Code discovers commands, agents, and hooks from multiple sources:
+1. **Built-in registry**: ~50 built-in commands
+2. **Project-level**: `.config/.claude/` (or `.claude/` at repo root)
+3. **User-level**: `~/.claude/` (global, cross-project)
+4. **Plugin commands**: From installed plugins
+5. **MCP servers**: From MCP server integrations
+
+**Important**: Claude Code does NOT prioritize or deduplicate. If the same command/agent/hook exists in both user and project locations, BOTH will appear.
+
+### Single Source of Truth: .config/.claude/
+
+This project maintains .config/.claude/ as the single authoritative source for all commands, agents, and hooks:
+
+**Why .config/.claude/ Priority**:
+- **Version controlled**: Team-shared, tracked in git
+- **Portability**: Easily copied to other projects via `<leader>ac` (nvim mapping)
+- **Latest features**: Always contains current, up-to-date versions
+- **No conflicts**: Avoids duplicate entries when ~/.claude/ is kept empty
+- **Consistency**: All team members and projects use same versions
+
+**User-level ~/.claude/ kept empty**:
+- Prevents duplicate command/agent/hook entries in autocomplete
+- Avoids version conflicts (outdated user vs. current project)
+- Eliminates hook double-execution risk
+- Simplifies troubleshooting (single source to check)
+
+### Portability Workflow
+
+Use `<leader>ac` (nvim mapping) to copy .config/.claude/ artifacts into any project:
+- Copies all commands, agents, hooks, and configuration
+- Provides full .claude/ functionality in any project
+- No dependency on global ~/.claude/ directory
+- Version-controlled, portable setup
+
+For duplicate command troubleshooting, see [Duplicate Commands Troubleshooting](.claude/docs/troubleshooting/duplicate-commands.md).
+
+<!-- END_SECTION: configuration_portability -->
+
 <!-- SECTION: project_commands -->
 ## Project-Specific Commands
 [Used by: all commands, /help]
