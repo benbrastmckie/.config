@@ -176,6 +176,7 @@ See [Adaptive Planning Configuration](.claude/docs/reference/adaptive-planning-c
 
 <!-- SECTION: development_workflow -->
 ## Development Workflow
+[Used by: /implement, /plan, /orchestrate, /coordinate]
 
 Standard workflow: research → plan → implement → test → commit → summarize. The spec updater agent manages artifacts in topic-based directories and maintains cross-references. Adaptive planning adjusts plans during implementation.
 
@@ -227,6 +228,7 @@ See [Command Reference](.claude/docs/reference/command-reference.md) for complet
 
 <!-- SECTION: quick_reference -->
 ## Quick Reference
+[Used by: all commands]
 
 ### Common Tasks
 - **Run Tests**: `:TestSuite` or `/test-all`
