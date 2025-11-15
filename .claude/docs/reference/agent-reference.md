@@ -17,6 +17,42 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ## Agent Directory
 
+### claude-md-analyzer
+**Purpose**: Analyzes CLAUDE.md structure and identifies optimization opportunities using existing library functions
+
+**Capabilities**:
+- Parse CLAUDE.md section boundaries using optimize-claude-md.sh library
+- Identify bloated sections (>80 lines with balanced threshold)
+- Detect metadata gaps ([Used by: ...] tags)
+- Suggest integration points for .claude/docs/ extractions
+- Generate structured analysis reports
+
+**Allowed Tools**: Read, Write, Grep, Bash
+
+**Used By**: /optimize-claude (research stage)
+
+**Definition**: [.claude/agents/claude-md-analyzer.md](../../agents/claude-md-analyzer.md)
+
+---
+
+### cleanup-plan-architect
+**Purpose**: Synthesizes research reports and generates CLAUDE.md optimization implementation plans
+
+**Capabilities**:
+- Read and synthesize multiple research reports
+- Match bloated sections to appropriate .claude/docs/ locations
+- Generate /implement-compatible optimization plans
+- Include backup and rollback procedures
+- Create phased extraction strategies
+
+**Allowed Tools**: Read, Write, Grep, Bash
+
+**Used By**: /optimize-claude (planning stage)
+
+**Definition**: [.claude/agents/cleanup-plan-architect.md](../../agents/cleanup-plan-architect.md)
+
+---
+
 ### code-reviewer
 **Purpose**: Reviews code against project standards and identifies quality issues
 
@@ -100,6 +136,23 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
+### debug-analyst
+**Purpose**: Parallel root cause analysis for complex bugs with multiple potential causes
+
+**Capabilities**:
+- Hypothesis testing across multiple potential root causes
+- Log analysis and code inspection
+- Structured findings with proposed fixes
+- Parallel investigation coordination
+
+**Allowed Tools**: Read, Bash, Grep, Glob
+
+**Used By**: /debug (parallel investigations)
+
+**Definition**: [.claude/agents/debug-analyst.md](../../agents/debug-analyst.md)
+
+---
+
 ### doc-converter
 **Purpose**: Bidirectional document format conversion (Markdown, DOCX, PDF)
 
@@ -114,6 +167,61 @@ For command architecture standards and agent invocation patterns, see [Command A
 **Used By**: /convert-docs
 
 **Definition**: [.claude/agents/doc-converter.md](../../agents/doc-converter.md)
+
+---
+
+### docs-structure-analyzer
+**Purpose**: Analyzes .claude/docs/ organization and identifies integration opportunities for CLAUDE.md extractions
+
+**Capabilities**:
+- Discover .claude/docs/ directory structure
+- Identify existing documentation categories (concepts/, guides/, reference/)
+- Find natural integration points for CLAUDE.md extractions
+- Detect gaps in documentation coverage
+- Identify overlapping or duplicate documentation
+- Generate structured analysis reports
+
+**Allowed Tools**: Read, Write, Grep, Glob, Bash
+
+**Used By**: /optimize-claude (research stage)
+
+**Definition**: [.claude/agents/docs-structure-analyzer.md](../../agents/docs-structure-analyzer.md)
+
+---
+
+### docs-accuracy-analyzer
+**Purpose**: Semantic documentation quality analysis for accuracy and timeliness
+
+**Capabilities**:
+- Accuracy checking against codebase reality
+- Consistency validation across documentation
+- Timeliness assessment (outdated claims detection)
+- Semantic analysis for misleading or incorrect information
+- Generate structured quality reports
+
+**Allowed Tools**: Read, Grep, Glob, Bash
+
+**Used By**: /research (documentation quality reports), /setup --analyze
+
+**Definition**: [.claude/agents/docs-accuracy-analyzer.md](../../agents/docs-accuracy-analyzer.md)
+
+---
+
+### docs-bloat-analyzer
+**Purpose**: CLAUDE.md structure analysis and bloat detection for optimization planning
+
+**Capabilities**:
+- File size analysis and bloat scoring
+- Extraction recommendations for oversized sections
+- Risk assessment for potential merges
+- Integration point identification for .claude/docs/
+- Generate structured bloat reports
+
+**Allowed Tools**: Read, Grep, Glob, Bash
+
+**Used By**: /setup --analyze, /optimize-claude
+
+**Definition**: [.claude/agents/docs-bloat-analyzer.md](../../agents/docs-bloat-analyzer.md)
 
 ---
 
@@ -199,6 +307,60 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
+### implementation-executor
+**Purpose**: Phase execution coordination during implementation with checkpoint management
+
+**Capabilities**:
+- Task execution following implementation plans
+- Checkpoint management and state tracking
+- Test running and validation
+- Git commit creation with structured messages
+- Phase completion verification
+
+**Allowed Tools**: Read, Write, Edit, Bash, TodoWrite
+
+**Used By**: /implement (phase execution)
+
+**Definition**: [.claude/agents/implementation-executor.md](../../agents/implementation-executor.md)
+
+---
+
+### implementation-sub-supervisor
+**Purpose**: Implementation workflow coordination with parallel implementer management
+
+**Capabilities**:
+- Parallel implementer coordination
+- Wave-based execution management
+- Dependency analysis for task distribution
+- Merge coordination across multiple implementers
+- Progress tracking and reporting
+
+**Allowed Tools**: Read, Write, Grep, Glob, Bash, Task
+
+**Used By**: /orchestrate (implementation supervision)
+
+**Definition**: [.claude/agents/implementation-sub-supervisor.md](../../agents/implementation-sub-supervisor.md)
+
+---
+
+### implementer-coordinator
+**Purpose**: Multi-implementer coordination for parallel wave-based execution
+
+**Capabilities**:
+- Dependency analysis across implementation tasks
+- Task distribution to parallel implementers
+- Merge coordination and conflict resolution
+- Wave progression management
+- Metadata consolidation from implementers
+
+**Allowed Tools**: Read, Write, Grep, Glob, Bash, Task
+
+**Used By**: /coordinate (wave-based implementation)
+
+**Definition**: [.claude/agents/implementer-coordinator.md](../../agents/implementer-coordinator.md)
+
+---
+
 ### metrics-specialist
 **Purpose**: Performance analysis and optimization recommendations
 
@@ -249,6 +411,60 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
+### research-sub-supervisor
+**Purpose**: Hierarchical research coordination managing 2-4 parallel research agents
+
+**Capabilities**:
+- Coordinate 2-4 specialized research agents per domain
+- Metadata consolidation from multiple researchers
+- Topic decomposition for parallel research
+- Report aggregation and synthesis
+- Recursive supervision for complex topics
+
+**Allowed Tools**: Read, Write, Grep, Glob, Task
+
+**Used By**: /research (complex topics), /orchestrate (research phase)
+
+**Definition**: [.claude/agents/research-sub-supervisor.md](../../agents/research-sub-supervisor.md)
+
+---
+
+### research-synthesizer
+**Purpose**: Multi-report consolidation and cross-reference extraction for research synthesis
+
+**Capabilities**:
+- Read and synthesize multiple research reports
+- Cross-reference extraction across reports
+- Finding aggregation and deduplication
+- Generate unified research summaries
+- Identify contradictions and gaps
+
+**Allowed Tools**: Read, Write, Grep, Glob
+
+**Used By**: /research (final report generation)
+
+**Definition**: [.claude/agents/research-synthesizer.md](../../agents/research-synthesizer.md)
+
+---
+
+### revision-specialist
+**Purpose**: Plan revision with auto-mode support for adaptive replanning
+
+**Capabilities**:
+- Adaptive replanning based on implementation feedback
+- Complexity re-evaluation after discoveries
+- Phase expansion/compression recommendations
+- Auto-mode integration with /implement
+- Maximum 2 replans per phase enforcement
+
+**Allowed Tools**: Read, Write, Edit, Grep, Glob
+
+**Used By**: /revise (manual and --auto-mode), /implement (adaptive planning)
+
+**Definition**: [.claude/agents/revision-specialist.md](../../agents/revision-specialist.md)
+
+---
+
 ### test-specialist
 **Purpose**: Test execution and failure analysis
 
@@ -266,12 +482,68 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
+### spec-updater
+**Purpose**: Artifact lifecycle management in topic-based directories with gitignore compliance
+
+**Capabilities**:
+- Create and manage topic-based directory structures (specs/{NNN_topic}/)
+- File creation with proper subdirectory placement (plans/, reports/, summaries/, debug/)
+- Gitignore compliance enforcement (plans gitignored, debug reports committed)
+- Cross-reference maintenance across artifacts
+- Metadata extraction and propagation
+
+**Allowed Tools**: Read, Write, Edit, Grep, Glob, Bash
+
+**Used By**: All orchestration commands (/orchestrate, /coordinate, /supervise)
+
+**Definition**: [.claude/agents/spec-updater.md](../../agents/spec-updater.md)
+
+---
+
+### testing-sub-supervisor
+**Purpose**: Test workflow coordination with multi-framework testing support
+
+**Capabilities**:
+- Multi-framework test execution coordination
+- Coverage analysis and reporting
+- Error categorization and prioritization
+- Sequential lifecycle coordination (setup → test → teardown)
+- Test failure diagnostics
+
+**Allowed Tools**: Read, Write, Bash, Grep, Glob, Task
+
+**Used By**: /orchestrate (testing phase supervision)
+
+**Definition**: [.claude/agents/testing-sub-supervisor.md](../../agents/testing-sub-supervisor.md)
+
+---
+
+### workflow-classifier
+**Purpose**: LLM-based workflow detection and enhanced topic generation with 98%+ accuracy
+
+**Capabilities**:
+- Semantic workflow classification (llm-only mode, default)
+- Traditional regex-based classification (regex-only mode, offline)
+- Enhanced topic generation with detailed descriptions and filename slugs
+- Topic number assignment from sequence file
+- Workflow scope detection (research-only, research-and-plan, full-implementation, debug-only)
+
+**Allowed Tools**: Read, Write, Bash, Grep
+
+**Used By**: /plan, /orchestrate, /coordinate (workflow type detection)
+
+**Definition**: [.claude/agents/workflow-classifier.md](../../agents/workflow-classifier.md)
+
+---
+
 ## Tool Access Matrix
 
 Quick reference for which tools each agent can use:
 
 | Agent | Read | Write | Edit | Bash | Grep | Glob | TodoWrite | WebSearch | WebFetch |
 |-------|------|-------|------|------|------|------|-----------|-----------|----------|
+| claude-md-analyzer | ✓ | ✓ | | ✓ | ✓ | | | | |
+| cleanup-plan-architect | ✓ | ✓ | | ✓ | ✓ | | | | |
 | code-reviewer | ✓ | | | ✓ | ✓ | ✓ | | | |
 | code-writer | ✓ | ✓ | ✓ | ✓ | | | ✓ | | |
 | collapse_specialist | ✓ | | | | ✓ | ✓ | | | |
@@ -280,6 +552,7 @@ Quick reference for which tools each agent can use:
 | doc-converter | ✓ | ✓ | | ✓ | | | | | |
 | doc-converter-update | ✓ | ✓ | ✓ | ✓ | | | | | |
 | doc-converter-usage | ✓ | | | ✓ | | | | | |
+| docs-structure-analyzer | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |
 | doc-writer | ✓ | ✓ | ✓ | | ✓ | ✓ | | | |
 | expansion_specialist | ✓ | | | | ✓ | ✓ | | | |
 | github-specialist | ✓ | | | ✓ | ✓ | ✓ | | | |
@@ -304,6 +577,9 @@ Quick reference for which tools each agent can use:
 - **Plan Expansion**: expansion_specialist (phase expansion analysis)
 - **Plan Collapse**: collapse_specialist (phase collapse analysis)
 - **Document Conversion**: doc-converter (format conversion)
+- **CLAUDE.md Analysis**: claude-md-analyzer (analyze CLAUDE.md structure and bloat)
+- **Docs Structure Analysis**: docs-structure-analyzer (analyze .claude/docs/ organization)
+- **Optimization Planning**: cleanup-plan-architect (generate CLAUDE.md optimization plans)
 
 **Tool Restrictions**: Agents can ONLY use tools listed in their allowed-tools. Attempting to use unlisted tools will result in permission errors.
 
