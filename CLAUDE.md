@@ -95,6 +95,43 @@ Commands should check CLAUDE.md in priority order:
 - All public APIs must have tests
 - Critical paths require integration tests
 - Regression tests for all bug fixes
+
+### Test Isolation Standards
+All tests MUST use isolation patterns to prevent production directory pollution.
+
+**Key Requirements**:
+- **Environment Overrides**: Set `CLAUDE_SPECS_ROOT="/tmp/test_specs_$$"` to override location detection
+- **Temporary Directories**: Use `mktemp` for unique test directories per run
+- **Cleanup Traps**: Register `trap cleanup EXIT` to ensure cleanup on all exit paths
+- **Validation**: Test runner detects and reports production directory pollution
+
+**Detection Point**: `unified-location-detection.sh` checks `CLAUDE_SPECS_ROOT` first (line 57), preventing production directory creation when override is set.
+
+**Reference Documentation**:
+- [Test Isolation Standards](.claude/docs/reference/test-isolation-standards.md) - Complete standards and patterns
+- [Library Header Documentation](.claude/lib/unified-location-detection.sh) - CLAUDE_SPECS_ROOT override mechanism (lines 44-68)
+- [Test Template](.claude/tests/README.md) - Complete isolation pattern examples
+
+**Utilities**:
+- `.claude/scripts/detect-empty-topics.sh` - Detect and remove empty topic directories
+- `.claude/tests/run_all_tests.sh` - Automated pollution detection (pre/post-test validation)
+
+**Manual Testing Best Practices**:
+When testing commands manually, always set isolation overrides:
+```bash
+export CLAUDE_SPECS_ROOT="/tmp/manual_test_$$"
+export CLAUDE_PROJECT_DIR="/tmp/manual_test_$$"
+mkdir -p "$CLAUDE_SPECS_ROOT"
+
+# Run command
+/command-to-test "arguments"
+
+# Cleanup
+rm -rf "/tmp/manual_test_$$"
+unset CLAUDE_SPECS_ROOT CLAUDE_PROJECT_DIR
+```
+
+This prevents empty directory creation during development and experimentation.
 <!-- END_SECTION: testing_protocols -->
 
 <!-- SECTION: code_standards -->
