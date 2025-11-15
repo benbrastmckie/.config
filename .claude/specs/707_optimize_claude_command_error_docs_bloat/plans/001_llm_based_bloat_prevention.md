@@ -445,7 +445,7 @@ git checkout HEAD -- .claude/commands/optimize-claude.md
 
 ---
 
-## Phase 4: Planning Agent Update (P1)
+## Phase 4: Planning Agent Update (P1) [COMPLETED]
 
 **Objective**: Modify cleanup-plan-architect.md to receive and integrate bloat analysis report into plan generation.
 
@@ -454,11 +454,11 @@ git checkout HEAD -- .claude/commands/optimize-claude.md
 **Tasks**:
 
 ### Phase 4.1: Update Input Verification
-- [ ] Read cleanup-plan-architect.md STEP 1 (lines 25-71)
-- [ ] Add BLOAT_REPORT_PATH to input verification
-- [ ] Add absolute path check for bloat report
-- [ ] Add file existence check for bloat report
-- [ ] Update echo statement to include bloat report path
+- [x] Read cleanup-plan-architect.md STEP 1 (lines 25-71)
+- [x] Add BLOAT_REPORT_PATH to input verification
+- [x] Add absolute path check for bloat report
+- [x] Add file existence check for bloat report
+- [x] Update echo statement to include bloat report path
 
 **Updated STEP 1 Verification**:
 ```bash
@@ -507,10 +507,10 @@ echo "  PROJECT_DIR: $PROJECT_DIR"
 ```
 
 ### Phase 4.2: Update Report Reading Logic
-- [ ] Read cleanup-plan-architect.md STEP 3 (report synthesis section)
-- [ ] Add instruction to read bloat analysis report
-- [ ] Update synthesis logic to integrate bloat findings
-- [ ] Emphasize bloat prevention tasks in plan generation
+- [x] Read cleanup-plan-architect.md STEP 3 (report synthesis section)
+- [x] Add instruction to read bloat analysis report
+- [x] Update synthesis logic to integrate bloat findings
+- [x] Emphasize bloat prevention tasks in plan generation
 
 **Updated Report Reading Instructions**:
 ```markdown
@@ -539,11 +539,11 @@ Use Read tool to read all three research reports:
 ```
 
 ### Phase 4.3: Update Plan Generation Guidelines
-- [ ] Locate plan generation instructions in STEP 4
-- [ ] Add bloat prevention emphasis
-- [ ] Include size validation tasks in extraction phases
-- [ ] Add bloat checks to verification phase
-- [ ] Document rollback procedures for bloat-inducing merges
+- [x] Locate plan generation instructions in STEP 4
+- [x] Add bloat prevention emphasis
+- [x] Include size validation tasks in extraction phases
+- [x] Add bloat checks to verification phase
+- [x] Document rollback procedures for bloat-inducing merges
 
 **Updated Plan Generation Guidelines**:
 ```markdown
@@ -583,17 +583,17 @@ Use Read tool to read all three research reports:
 ```
 
 ### Phase 4.4: Update Completion Signal
-- [ ] Locate STEP 5 verification
-- [ ] Update echo statement to confirm 3 reports processed
-- [ ] Maintain PLAN_CREATED completion signal format
+- [x] Locate STEP 5 verification
+- [x] Update echo statement to confirm 3 reports processed
+- [x] Maintain PLAN_CREATED completion signal format
 
 **Verification**:
-- [ ] Agent accepts 3 input reports
-- [ ] All reports verified before plan generation
-- [ ] Plan includes bloat prevention tasks
-- [ ] Size validation tasks added to extraction phases
-- [ ] Verification phase includes bloat checks
-- [ ] Rollback procedures account for bloat scenarios
+- [x] Agent accepts 3 input reports
+- [x] All reports verified before plan generation
+- [x] Plan includes bloat prevention tasks
+- [x] Size validation tasks added to extraction phases
+- [x] Verification phase includes bloat checks
+- [x] Rollback procedures account for bloat scenarios
 
 **Rollback Procedure**:
 ```bash
