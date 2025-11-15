@@ -137,7 +137,7 @@ After completing the above tasks:
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
-### Phase 2: Create Empty Directory Detection Utility
+### Phase 2: Create Empty Directory Detection Utility [COMPLETED]
 dependencies: []
 
 **Objective**: Build standalone script for detecting and removing empty topic directories
@@ -145,14 +145,14 @@ dependencies: []
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Create new file `.claude/scripts/detect-empty-topics.sh`
-- [ ] Implement directory scanning (find empty topics matching pattern `[0-9][0-9][0-9]_*`)
-- [ ] Add --cleanup flag for optional removal
-- [ ] Add safe removal using `rmdir` (fails if non-empty)
-- [ ] Implement count reporting and directory listing
-- [ ] Add executable permissions (`chmod +x`)
-- [ ] Test with dry-run mode
-- [ ] Test with actual cleanup on test directories
+- [x] Create new file `.claude/scripts/detect-empty-topics.sh`
+- [x] Implement directory scanning (find empty topics matching pattern `[0-9][0-9][0-9]_*`)
+- [x] Add --cleanup flag for optional removal
+- [x] Add safe removal using `rmdir` (fails if non-empty)
+- [x] Implement count reporting and directory listing
+- [x] Add executable permissions (`chmod +x`)
+- [x] Test with dry-run mode
+- [x] Test with actual cleanup on test directories
 
 **Testing**:
 ```bash
@@ -175,11 +175,11 @@ rm -rf "$TEST_TOPIC"
 **Expected Duration**: 1 hour
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(713): complete Phase 2 - Create Empty Directory Detection Utility`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(713): complete Phase 2 - Create Empty Directory Detection Utility`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 3: Enhance Test Runner with Pollution Detection
 dependencies: []
