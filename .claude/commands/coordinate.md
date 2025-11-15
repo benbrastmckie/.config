@@ -165,10 +165,20 @@ verify_file_created "$COORDINATE_STATE_ID_FILE" "State ID file" "Initialization"
 
 # Save workflow ID and description to state for subsequent blocks
 append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
+verify_state_variable "WORKFLOW_ID" || {
+  handle_state_error "CRITICAL: WORKFLOW_ID not persisted to state" 1
+}
+
 append_workflow_state "WORKFLOW_DESCRIPTION" "$SAVED_WORKFLOW_DESC"
+verify_state_variable "WORKFLOW_DESCRIPTION" || {
+  handle_state_error "CRITICAL: WORKFLOW_DESCRIPTION not persisted to state" 1
+}
 
 # Save state ID file path to workflow state for bash block persistence
 append_workflow_state "COORDINATE_STATE_ID_FILE" "$COORDINATE_STATE_ID_FILE"
+verify_state_variable "COORDINATE_STATE_ID_FILE" || {
+  handle_state_error "CRITICAL: COORDINATE_STATE_ID_FILE not persisted to state" 1
+}
 
 echo "✓ State machine pre-initialization complete. Proceeding to workflow classification..."
 ```
@@ -401,14 +411,31 @@ fi
 
 # Save paths to workflow state
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+verify_state_variable "TOPIC_PATH" || {
+  handle_state_error "CRITICAL: TOPIC_PATH not persisted to state" 1
+}
+
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
+verify_state_variable "PLAN_PATH" || {
+  handle_state_error "CRITICAL: PLAN_PATH not persisted to state" 1
+}
 
 # Save comprehensive classification results to state (Spec 678 Phase 5)
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+verify_state_variable "RESEARCH_COMPLEXITY" || {
+  handle_state_error "CRITICAL: RESEARCH_COMPLEXITY not persisted to state" 1
+}
+
 append_workflow_state "RESEARCH_TOPICS_JSON" "$RESEARCH_TOPICS_JSON"
+verify_state_variable "RESEARCH_TOPICS_JSON" || {
+  handle_state_error "CRITICAL: RESEARCH_TOPICS_JSON not persisted to state" 1
+}
 
 # Serialize REPORT_PATHS array to state (subprocess isolation - see bash-block-execution-model.md)
 append_workflow_state "REPORT_PATHS_COUNT" "$REPORT_PATHS_COUNT"
+verify_state_variable "REPORT_PATHS_COUNT" || {
+  handle_state_error "CRITICAL: REPORT_PATHS_COUNT not persisted to state" 1
+}
 
 # Save individual report path variables (using eval to avoid Bash tool preprocessing issues)
 for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
