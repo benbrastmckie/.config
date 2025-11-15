@@ -5,8 +5,8 @@
 - **Created**: 2025-11-14
 - **Type**: optimization
 - **Status**: in_progress
-- **Progress**: 4 of 10 phases complete (40%)
-- **Time Invested**: ~2 hours
+- **Progress**: 5 of 10 phases complete (50%)
+- **Time Invested**: ~2.2 hours
 - **Priority**: high
 - **Complexity Score**: 7.5
 - **Estimated Duration**: 12-16 hours (7-10 hours remaining)
@@ -30,7 +30,7 @@ Optimize CLAUDE.md and .claude/docs/ structure through accuracy corrections, blo
 - [x] Line number reference corrected or generalized ✅ **COMPLETED** - Phase 1
 
 ### Bloat Reduction (Must Achieve)
-- [x] CLAUDE.md reduced by ≥400 lines (40%+ reduction target) ✅ **EXCEEDED** - 456 lines (45.5%) - Phase 3
+- [x] CLAUDE.md reduced by ≥400 lines (40%+ reduction target) ✅ **EXCEEDED** - 588 lines (58.7%) - Phases 3-4
 - [ ] Net bloat file reduction ≥4 files (from 10 to ≤6 bloated files) ⏳ Pending validation - Phase 9
 - [x] Zero new bloated files created (>400 lines) ✅ **COMPLETED** - All extractions <275 lines - Phase 3
 - [x] All critical file splits completed (4 files: command-development-guide, orchestrate-command-guide, coordinate-command-guide, state-based-orchestration-overview) ✅ **COMPLETED** - 3 of 4 split (state-based kept unified) - Phase 2
@@ -429,7 +429,13 @@ n**Status**: Completed
 
 ---
 
-### Phase 4: Conditional Extractions (High Risk) (2-3 hours)
+### Phase 4: Conditional Extractions (High Risk) (2-3 hours) ✅ **COMPLETED**
+
+**Status**: Completed
+**Actual Duration**: 10 min
+**Results**: SKIPPED merges (bloat prevention), condensed CLAUDE.md sections only, 132 lines saved
+**Approach Modified**: Prevented bloat by skipping merges into already-bloated files
+**Commit**: docs(715): condense hierarchical agents and commands sections without merges
 
 **Purpose**: Merge CLAUDE.md content into existing files with bloat prevention
 
@@ -528,11 +534,22 @@ n**Status**: Completed
    echo "✓ command-reference.md updated: $FINAL_SIZE lines"
    ```
 
-**Completion Criteria**:
-- Hierarchical agents content merged with deduplication (file <600 lines)
-- Command reference updated with unique content (file <600 lines)
-- CLAUDE.md sections replaced with summaries + links
-- Git commit: "docs: merge hierarchical agents and command catalog from CLAUDE.md"
+**Completion Criteria** (MODIFIED):
+- ~~Hierarchical agents content merged~~ → **SKIPPED** (hierarchical_agents.md already bloated at 2,217 lines)
+- ~~Command reference updated~~ → **SKIPPED** (content already covered via Command Selection Guide links)
+- ✅ CLAUDE.md sections replaced with summaries + links (93 lines → 9 lines, 61 lines → 12 lines)
+- ✅ Git commit: "docs(715): condense hierarchical agents and commands sections without merges"
+
+**Bloat Prevention Decision**:
+Original plan called for merging CLAUDE.md content into hierarchical_agents.md and command-reference.md. However:
+- hierarchical_agents.md: 2,217 lines (far exceeds 600-line warning threshold)
+- command-reference.md: 616 lines (at threshold, orchestration comparison already linked)
+- Merging would violate bloat prevention goal
+
+**Modified Approach**:
+- Condensed CLAUDE.md sections to concise summaries with links
+- Skipped all merges to prevent bloat migration
+- Net result: 132 additional lines saved (exceeds original extraction goals)
 
 ---
 
@@ -1031,8 +1048,8 @@ Execute with: `/implement /home/benjamin/.config/.claude/specs/715_optimize_clau
 ## Implementation Progress Summary
 
 **Last Updated**: 2025-11-14
-**Status**: In Progress - 4 of 10 phases complete (40%)
-**Time Invested**: ~2 hours of ~12-16 hours estimated
+**Status**: In Progress - 5 of 10 phases complete (50%)
+**Time Invested**: ~2.2 hours of ~12-16 hours estimated
 
 ### Completed Phases ✅
 
@@ -1065,16 +1082,25 @@ Execute with: `/implement /home/benjamin/.config/.claude/specs/715_optimize_clau
   - `docs(715): extract testing protocols and code standards`
   - `docs(715): complete Phase 3 - extract directory org and adaptive config`
 
+**Phase 4: Conditional Extractions** (10 min)
+- SKIPPED merging into hierarchical_agents.md (already bloated at 2,217 lines)
+- SKIPPED merging into command-reference.md (content already linked)
+- Condensed hierarchical agent section: 93 → 9 lines (84 lines saved)
+- Condensed project commands section: 61 → 12 lines (49 lines saved)
+- CLAUDE.md reduced: 545 → 413 lines (132 additional lines saved)
+- Total CLAUDE.md reduction: 1,001 → 413 lines (588 lines, 58.7% reduction)
+- Git commit: `docs(715): condense hierarchical agents and commands sections without merges`
+
 ### Key Achievements 🎉
 
-✅ **Primary Goal EXCEEDED**: CLAUDE.md reduction target was 400 lines (40%), achieved 456 lines (45.5%)
+✅ **Primary Goal GREATLY EXCEEDED**: CLAUDE.md reduction target was 400 lines (40%), achieved 588 lines (58.7%)
 ✅ **All extracted files under threshold**: Largest file is 275 lines (69% of 400-line limit)
 ✅ **Critical accuracy corrections**: All 3 command sizes fixed, utils references removed
 ✅ **File splits completed**: 3 of 3 critical guides split (state-based intentionally kept unified)
+✅ **Bloat prevention success**: Prevented bloat migration by skipping merges into already-bloated files
 
 ### Remaining Work ⏳
 
-**Phase 4**: Conditional Extractions (2-3 hours) - Merge with deduplication
 **Phase 5**: Summary Replacements (30 min) - Replace bloated sections
 **Phase 6**: Agent Documentation (2-3 hours) - Add 12 missing agents
 **Phase 7**: READMEs & Metadata (1 hour) - Create missing README files
@@ -1095,7 +1121,8 @@ Execute with: `/implement /home/benjamin/.config/.claude/specs/715_optimize_clau
 2. `refactor(715): split bloated command guides into topic-based files`
 3. `docs(715): extract testing protocols and code standards from CLAUDE.md`
 4. `docs(715): complete Phase 3 - extract directory org and adaptive config from CLAUDE.md`
+5. `docs(715): condense hierarchical agents and commands sections without merges`
 
 ---
 
-**Next Session**: Continue with Phase 4 (Conditional Extractions) or skip to Phase 6 (Agent Documentation) for high-value completeness improvements.
+**Next Session**: Continue with Phase 5 (Summary Replacements) or skip to Phase 6 (Agent Documentation) for high-value completeness improvements.
