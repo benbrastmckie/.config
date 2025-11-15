@@ -248,7 +248,7 @@ rm .claude/agents/docs-bloat-analyzer.md
 
 ---
 
-## Phase 3: Workflow Integration (P1)
+## Phase 3: Workflow Integration (P1) [COMPLETED]
 
 **Objective**: Update optimize-claude.md workflow from 3-agent to 4-agent architecture, adding bloat analyzer invocation between research and planning phases.
 
@@ -273,23 +273,23 @@ rm .claude/agents/docs-bloat-analyzer.md
 **Tasks**:
 
 ### Phase 3.1: Add Bloat Report Path Allocation
-- [ ] Read optimize-claude.md lines 44-48 (current path definitions)
-- [ ] Add `REPORT_PATH_3` definition after line 47
-- [ ] Set `REPORT_PATH_3="${REPORTS_DIR}/003_bloat_analysis.md"`
-- [ ] Verify path numbering consistent (001, 002, 003)
+- [x] Read optimize-claude.md lines 44-48 (current path definitions)
+- [x] Add `REPORT_PATH_3` definition after line 47
+- [x] Set `REPORT_PATH_3="${REPORTS_DIR}/003_bloat_analysis.md"`
+- [x] Verify path numbering consistent (001, 002, 003)
 
 ### Phase 3.2: Insert Bloat Analysis Phase
-- [ ] Read optimize-claude.md Phase 3 (lines 114-138, current verification checkpoint)
-- [ ] Rename current "Phase 3" to "Phase 3: Research Verification Checkpoint"
-- [ ] Insert new "Phase 4: Bloat Analysis Invocation" after research verification
-- [ ] Insert new "Phase 5: Bloat Analysis Verification Checkpoint" after bloat invocation
-- [ ] Update subsequent phase numbers (old Phase 4 becomes Phase 6, etc.)
+- [x] Read optimize-claude.md Phase 3 (lines 114-138, current verification checkpoint)
+- [x] Rename current "Phase 3" to "Phase 3: Research Verification Checkpoint"
+- [x] Insert new "Phase 4: Bloat Analysis Invocation" after research verification
+- [x] Insert new "Phase 5: Bloat Analysis Verification Checkpoint" after bloat invocation
+- [x] Update subsequent phase numbers (old Phase 4 becomes Phase 6, etc.)
 
 ### Phase 3.3: Implement Bloat Analysis Invocation
-- [ ] Create Phase 4 bash block with Task tool invocation
-- [ ] Pass 3 absolute paths: CLAUDE_MD_REPORT ($REPORT_PATH_1), DOCS_REPORT ($REPORT_PATH_2), BLOAT_REPORT_PATH ($REPORT_PATH_3)
-- [ ] Use behavioral injection pattern (read .claude/agents/docs-bloat-analyzer.md)
-- [ ] Include completion signal expectation: REPORT_CREATED: [path]
+- [x] Create Phase 4 bash block with Task tool invocation
+- [x] Pass 3 absolute paths: CLAUDE_MD_REPORT ($REPORT_PATH_1), DOCS_REPORT ($REPORT_PATH_2), BLOAT_REPORT_PATH ($REPORT_PATH_3)
+- [x] Use behavioral injection pattern (read .claude/agents/docs-bloat-analyzer.md)
+- [x] Include completion signal expectation: REPORT_CREATED: [path]
 
 **Phase 4 Template**:
 ```markdown
@@ -327,10 +327,10 @@ Task {
 ```
 
 ### Phase 3.4: Implement Bloat Analysis Verification Checkpoint
-- [ ] Create Phase 5 bash block with verification logic
-- [ ] Check `REPORT_PATH_3` file exists
-- [ ] Display error and exit 1 if bloat report missing
-- [ ] Display success message with report path
+- [x] Create Phase 5 bash block with verification logic
+- [x] Check `REPORT_PATH_3` file exists
+- [x] Display error and exit 1 if bloat report missing
+- [x] Display success message with report path
 
 **Phase 5 Template**:
 ```markdown
@@ -355,10 +355,10 @@ echo ""
 ```
 
 ### Phase 3.5: Update Planning Agent Invocation
-- [ ] Read optimize-claude.md Phase 4 (lines 142-175, cleanup-plan-architect invocation)
-- [ ] Update phase number to Phase 6
-- [ ] Add BLOAT_REPORT_PATH to input paths
-- [ ] Update task description to mention 3 reports (not 2)
+- [x] Read optimize-claude.md Phase 4 (lines 142-175, cleanup-plan-architect invocation)
+- [x] Update phase number to Phase 6
+- [x] Add BLOAT_REPORT_PATH to input paths
+- [x] Update task description to mention 3 reports (not 2)
 
 **Updated Planning Invocation**:
 ```markdown
@@ -401,10 +401,10 @@ Task {
 ```
 
 ### Phase 3.6: Update Display Results
-- [ ] Read optimize-claude.md Phase 6 (lines 197-214, display results)
-- [ ] Update phase number to Phase 8
-- [ ] Add bloat analysis report to displayed research reports
-- [ ] Update report count (2 → 3 reports)
+- [x] Read optimize-claude.md Phase 6 (lines 197-214, display results)
+- [x] Update phase number to Phase 8
+- [x] Add bloat analysis report to displayed research reports
+- [x] Update report count (2 → 3 reports)
 
 **Updated Display Results**:
 ```markdown
@@ -430,11 +430,11 @@ echo ""
 ```
 
 **Verification**:
-- [ ] All phase numbers sequential (1, 2, 3, 4, 5, 6, 7, 8)
-- [ ] 3 verification checkpoints (research, bloat, plan)
-- [ ] All paths absolute and consistent
-- [ ] Behavioral injection pattern used for all agents
-- [ ] Completion signals expected from all agents
+- [x] All phase numbers sequential (1, 2, 3, 4, 5, 6, 7, 8)
+- [x] 3 verification checkpoints (research, bloat, plan)
+- [x] All paths absolute and consistent
+- [x] Behavioral injection pattern used for all agents
+- [x] Completion signals expected from all agents
 
 **Rollback Procedure**:
 ```bash
