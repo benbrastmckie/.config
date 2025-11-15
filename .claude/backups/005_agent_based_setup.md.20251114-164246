@@ -10,8 +10,6 @@
 - **Related Commands**: /plan, /implement, /coordinate
 - **Related Agents**: claude-md-analyzer (new), docs-structure-analyzer (new), cleanup-plan-architect (new)
 - **Pattern Reference**: Similar to /coordinate but simpler (2 research agents → 1 planning agent, no flags)
-- **Integration Libraries**: optimize-claude-md.sh, unified-location-detection.sh, research-specialist.md pattern
-- **Revision**: 2025-11-14 - Integrated with existing .claude/ infrastructure to avoid redundancy
 
 ## Overview
 
@@ -25,7 +23,7 @@ Create a new `/optimize-claude` command that provides intelligent CLAUDE.md and 
 **Workflow**:
 
 **Stage 1: Parallel Research** (2 agents)
-1. **claude-md-analyzer**: Analyzes CLAUDE.md using existing optimize-claude-md.sh library functions
+1. **claude-md-analyzer**: Analyzes CLAUDE.md structure, section sizes, metadata usage
 2. **docs-structure-analyzer**: Analyzes .claude/docs/ organization, existing files, integration points
 
 **Stage 2: Sequential Planning** (1 agent)
@@ -33,12 +31,6 @@ Create a new `/optimize-claude` command that provides intelligent CLAUDE.md and 
 
 **Stage 3: Present Results**
 4. Display plan location and next steps (no interactive prompts)
-
-**Infrastructure Integration**:
-- Uses `unified-location-detection.sh` for topic/artifact path allocation
-- Leverages `optimize-claude-md.sh` analyze_bloat() function for CLAUDE.md analysis
-- Follows `research-specialist.md` pattern for agent behavioral structure
-- Uses existing directory protocols from `.claude/docs/concepts/directory-protocols.md`
 
 ### Success Criteria
 - [ ] Three new specialized agents created following agent development guide
@@ -155,9 +147,8 @@ Pattern Comparison:
 **Purpose**: Research agent that analyzes CLAUDE.md structure and identifies optimization opportunities
 
 **Capabilities**:
-- **LEVERAGE EXISTING**: Uses analyze_bloat() from .claude/lib/optimize-claude-md.sh
-- Parse CLAUDE.md section boundaries and hierarchy (via existing awk logic)
-- Count lines per section (bloat detection via existing function)
+- Parse CLAUDE.md section boundaries and hierarchy
+- Count lines per section (bloat detection)
 - Analyze metadata usage ([Used by: ...] tags)
 - Identify sections without metadata
 - Detect duplicate or overlapping content
@@ -167,8 +158,6 @@ Pattern Comparison:
 
 **Tools**: Read, Write, Grep, Bash
 
-**Integration**: Sources .claude/lib/optimize-claude-md.sh and calls analyze_bloat() directly
-
 **Input Requirements** (provided by /optimize-claude):
 - `CLAUDE_MD_PATH`: Absolute path to CLAUDE.md
 - `REPORT_PATH`: Absolute path for analysis report (REPORT_PATH_1)
@@ -177,7 +166,7 @@ Pattern Comparison:
 **Output Requirements**:
 - Research report file created at `REPORT_PATH`
 - Completion signal: `REPORT_CREATED: [path]`
-- Report format: Structured markdown with sections, line counts, bloat flags, recommendations (same format as optimize-claude-md.sh output)
+- Report format: Structured markdown with sections, line counts, bloat flags, recommendations
 
 ---
 
@@ -395,20 +384,21 @@ The cleanup-plan-architect agent generates implementation plans following this s
 
 **Tasks**:
 - [ ] Create agent file with frontmatter (allowed-tools: Read, Write, Grep, Bash; model: haiku-4.5)
-- [ ] Follow research-specialist.md pattern for behavioral structure (use existing pattern from .claude/agents/research-specialist.md)
+- [ ] Follow research-specialist.md pattern for behavioral structure
 - [ ] Implement STEP 1: Verify input paths (CLAUDE_MD_PATH, REPORT_PATH)
-- [ ] Implement STEP 1.5: Ensure parent directory exists using ensure_artifact_directory() from unified-location-detection.sh
-- [ ] Implement STEP 2: Create report file FIRST (fail-fast guarantee, Write tool)
-- [ ] **INTEGRATION**: Implement STEP 3 by sourcing and calling existing library
-  - Source .claude/lib/optimize-claude-md.sh
-  - Call set_threshold_profile("balanced")
-  - Call analyze_bloat("$CLAUDE_MD_PATH") and capture output
-  - **NO DUPLICATION**: Reuse existing awk logic for parsing (already handles section boundaries, line counts, metadata)
-- [ ] Implement STEP 4: Enhance analysis with additional insights
-  - Read output from analyze_bloat()
-  - Add integration point suggestions (which sections → which .claude/docs/ locations)
-  - Cross-reference with existing .claude/docs/ files to detect duplicates
-- [ ] Implement STEP 5: Write enhanced analysis to REPORT_PATH
+- [ ] Implement STEP 1.5: Ensure parent directory exists (lazy creation)
+- [ ] Implement STEP 2: Create report file FIRST (fail-fast guarantee)
+- [ ] Implement STEP 3: Analyze CLAUDE.md structure
+  - Parse section boundaries (## headers)
+  - Count lines per section
+  - Extract metadata tags ([Used by: ...])
+  - Identify sections without metadata
+  - Flag sections exceeding threshold
+- [ ] Implement STEP 4: Generate recommendations
+  - List bloated sections with line counts
+  - Suggest extraction candidates
+  - Identify metadata gaps
+- [ ] Implement STEP 5: Write analysis to REPORT_PATH
 - [ ] Implement STEP 6: Emit completion signal (REPORT_CREATED: [path])
 - [ ] Add verification checkpoints between steps
 - [ ] Follow imperative language standard (MUST/WILL/SHALL)
@@ -568,15 +558,12 @@ grep -q "^## Phase" "$TEST_PLAN" && echo "✓ Phases found" || echo "✗ No phas
 
 **Tasks**:
 - [ ] Create new command file
-- [ ] **INTEGRATION**: Add bash block (Phase 1) using unified-location-detection.sh
-  - Source .claude/lib/unified-location-detection.sh
-  - Call perform_location_detection("optimize CLAUDE.md structure") to get topic path
-  - Extract topic_path, reports_dir, plans_dir from JSON output
-  - Allocate REPORT_PATH_1="${reports_dir}/001_claude_md_analysis.md"
-  - Allocate REPORT_PATH_2="${reports_dir}/002_docs_structure_analysis.md"
-  - Allocate PLAN_PATH="${plans_dir}/001_optimization_plan.md"
+- [ ] Add bash block (Phase 1): Calculate topic-based paths
+  - Topic directory (timestamp-based: optimize_claude_${TIMESTAMP})
+  - REPORT_PATH_1 (CLAUDE.md analysis)
+  - REPORT_PATH_2 (docs structure analysis)
+  - PLAN_PATH (optimization plan)
   - Set THRESHOLD="balanced" (hardcoded)
-  - **NO MANUAL mkdir**: Directory creation handled by lazy creation in agents
 - [ ] Add markdown section (Phase 2): Invoke research agents in parallel
   - Use two Task blocks in single message
   - Pass REPORT_PATH_1 to claude-md-analyzer
@@ -606,47 +593,37 @@ grep -q "^## Phase" "$TEST_PLAN" && echo "✓ Phases found" || echo "✗ No phas
 
 Analyzes CLAUDE.md and .claude/docs/ structure to generate an optimization plan.
 
-## Phase 1: Path Allocation (Using unified-location-detection.sh)
+## Phase 1: Path Allocation
 
 ```bash
 set -euo pipefail
 
-# Source unified location detection library
-source "${CLAUDE_PROJECT_DIR:-.}/.claude/lib/unified-location-detection.sh" || {
-  echo "ERROR: Failed to source unified-location-detection.sh"
-  exit 1
-}
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
 
 echo "=== /optimize-claude: CLAUDE.md Optimization Workflow ==="
 
-# Use unified location detection to allocate topic-based paths
-LOCATION_JSON=$(perform_location_detection "optimize CLAUDE.md structure")
-
-# Extract paths from JSON
-TOPIC_PATH=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
-SPECS_DIR=$(echo "$LOCATION_JSON" | jq -r '.specs_dir')
-PROJECT_ROOT=$(echo "$LOCATION_JSON" | jq -r '.project_root')
-
-# Verify paths allocated
-[ -z "$TOPIC_PATH" ] && echo "ERROR: Failed to allocate topic path" && exit 1
-
-# Calculate artifact paths (directories created lazily by agents)
-REPORTS_DIR="${TOPIC_PATH}/reports"
-PLANS_DIR="${TOPIC_PATH}/plans"
-REPORT_PATH_1="${REPORTS_DIR}/001_claude_md_analysis.md"
-REPORT_PATH_2="${REPORTS_DIR}/002_docs_structure_analysis.md"
-PLAN_PATH="${PLANS_DIR}/001_optimization_plan.md"
-
-# Set paths for analysis
-CLAUDE_MD_PATH="${PROJECT_ROOT}/CLAUDE.md"
-DOCS_DIR="${PROJECT_ROOT}/.claude/docs"
+CLAUDE_MD_PATH="${PROJECT_DIR:-$CLAUDE_PROJECT_DIR}/CLAUDE.md"
+DOCS_DIR="${CLAUDE_PROJECT_DIR}/.claude/docs"
 
 [ ! -f "$CLAUDE_MD_PATH" ] && echo "ERROR: CLAUDE.md not found at $CLAUDE_MD_PATH" && exit 1
 [ ! -d "$DOCS_DIR" ] && echo "ERROR: .claude/docs/ not found at $DOCS_DIR" && exit 1
 
+# Calculate topic-based paths (timestamp for uniqueness)
+TIMESTAMP=$(date +%s)
+TOPIC_DIR="${CLAUDE_PROJECT_DIR}/.claude/specs/optimize_claude_${TIMESTAMP}"
+REPORT_PATH_1="${TOPIC_DIR}/reports/001_claude_md_analysis.md"
+REPORT_PATH_2="${TOPIC_DIR}/reports/002_docs_structure_analysis.md"
+PLAN_PATH="${TOPIC_DIR}/plans/001_optimization_plan.md"
+
+# Create directories
+mkdir -p "${TOPIC_DIR}/reports"
+mkdir -p "${TOPIC_DIR}/plans"
+
 echo ""
 echo "Research Stage: Analyzing CLAUDE.md and documentation..."
-echo "  → Topic: $TOPIC_PATH"
 echo "  → Analyzing CLAUDE.md structure (balanced threshold: 80 lines)"
 echo "  → Analyzing .claude/docs/ organization"
 echo ""
@@ -1205,26 +1182,6 @@ git status  # Review changes before commit
 
 ## Notes
 
-### Infrastructure Integration Points
-
-**CRITICAL**: This implementation MUST leverage existing .claude/ infrastructure to avoid redundancy.
-
-1. **Library Integration** (.claude/lib/):
-   - **optimize-claude-md.sh**: analyze_bloat() function provides complete CLAUDE.md analysis
-   - **unified-location-detection.sh**: perform_location_detection() handles topic/artifact allocation
-   - **research-specialist.md**: Pattern for agent behavioral structure (STEP 1-6 sequence)
-   - **NO DUPLICATION**: Reuse existing awk parsing, directory creation, path allocation
-
-2. **Documentation Integration** (.claude/docs/):
-   - **directory-protocols.md**: Topic-based structure, lazy directory creation, artifact numbering
-   - **behavioral-injection.md**: Agent invocation pattern (Task tool with behavioral files)
-   - **research-specialist.md**: Reference implementation for research agents
-
-3. **Standards Compliance**:
-   - Imperative language (MUST/WILL/SHALL) from imperative-language-guide.md
-   - Verification checkpoints (create-before-analyze) from verification-fallback.md
-   - Executable/documentation separation (<400 lines agents) from command_architecture_standards.md
-
 ### Design Decisions
 
 1. **Agent-based vs Library Function**: Chose agent delegation for:
@@ -1232,13 +1189,11 @@ git status  # Review changes before commit
    - Reusability (agent can be invoked by other commands)
    - Testability (agent can be tested independently)
    - Context reduction (agent summaries passed, not full analysis)
-   - **INTEGRATION**: Agents source and call existing libraries (no reimplementation)
 
 2. **Topic-based Plan Storage**: Following project standards for:
    - Artifact lifecycle management (plans in specs/)
    - Gitignore compliance (reports tracked, plans optional)
-   - Discoverability (unified-location-detection.sh handles numbering)
-   - **INTEGRATION**: Uses perform_location_detection() from existing library
+   - Discoverability (timestamped topics prevent collisions)
 
 3. **Simple Results Display**: No interactive prompts because:
    - Keeps command simple and predictable
@@ -1251,7 +1206,6 @@ git status  # Review changes before commit
    - Simplifies command (no flag parsing needed)
    - Users who need different thresholds can modify agents
    - Reduces decision fatigue
-   - **INTEGRATION**: Matches existing optimize-claude-md.sh default
 
 ### Future Enhancements
 
@@ -1497,50 +1451,3 @@ rm -f .claude/docs/concepts/directory-organization.md  # If created but incomple
 ---
 
 This plan is ready for `/implement` execution or manual implementation following the phased approach.
-
----
-
-## Revision History
-
-### 2025-11-14 - Revision 1: Infrastructure Integration
-
-**Changes Made**:
-- Added infrastructure integration section documenting existing libraries to leverage
-- Updated Agent 1 (claude-md-analyzer) to source and call optimize-claude-md.sh analyze_bloat()
-- Updated command Phase 1 to use unified-location-detection.sh perform_location_detection()
-- Updated Phase 1 Subtask 1.1 to eliminate duplication of awk parsing logic
-- Added lazy directory creation pattern (no manual mkdir in command)
-- Updated example command code to use JSON output from location detection
-- Documented integration points with .claude/lib/ and .claude/docs/
-
-**Reason for Revision**:
-User requested integration with existing .claude/ infrastructure to avoid redundancy and inconsistency. The original plan reimplemented functionality that already exists in optimize-claude-md.sh and unified-location-detection.sh.
-
-**Modified Phases**:
-- Metadata: Added Integration Libraries and Revision fields
-- Overview: Added Infrastructure Integration subsection
-- Agent 1 specification: Added LEVERAGE EXISTING capabilities
-- Phase 1 Subtask 1.1: Changed STEP 3 to source library instead of reimplementing
-- Phase 2 tasks: Changed to use unified-location-detection.sh
-- Phase 2 example code: Changed to use perform_location_detection()
-- Notes: Added Infrastructure Integration Points section with library/doc references
-
-**Files Affected by Revision**:
-- All agent specifications now reference existing libraries
-- Command implementation now uses unified-location-detection.sh
-- Testing approach remains unchanged (agents still unit testable)
-- Documentation requirements unchanged
-
-**Benefits of Integration**:
-- Eliminates ~200 lines of duplicate awk parsing logic
-- Reduces maintenance burden (updates to optimize-claude-md.sh auto-propagate)
-- Ensures consistency with existing CLAUDE.md analysis behavior
-- Leverages proven, tested directory allocation logic
-- Maintains lazy directory creation pattern (400-500 empty dirs → 0)
-- Follows established standards from directory-protocols.md
-
-**Implementation Impact**:
-- Agent 1 becomes simpler (call library vs reimplement)
-- Command Phase 1 becomes simpler (call library vs manual path calculation)
-- Testing complexity reduced (mock library functions vs test awk logic)
-- No change to workflow sequence or user experience
