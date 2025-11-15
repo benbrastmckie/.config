@@ -331,113 +331,75 @@ generate_descriptive_topics_from_description() {
   fi
 }
 
-# sm_init: Initialize new state machine from workflow description
-# Usage: sm_init <workflow-description> <command-name>
-# Example: sm_init "Research authentication patterns" "coordinate"
+# sm_init: Initialize new state machine with pre-computed classification
+# Usage: sm_init <workflow-description> <command-name> <workflow-type> <research-complexity> <research-topics-json>
+# Example: sm_init "Research authentication patterns" "coordinate" "research-and-plan" 2 '[{"short_name":"Auth Patterns",...}]'
+#
+# BREAKING CHANGE (Spec 1763161992 Phase 2): Classification now performed by invoking command BEFORE sm_init.
+# sm_init accepts classification results as parameters (no internal classification).
 sm_init() {
   local workflow_desc="$1"
   local command_name="$2"
+  local workflow_type="$3"
+  local research_complexity="$4"
+  local research_topics_json="$5"
 
   # Store workflow configuration
   WORKFLOW_DESCRIPTION="$workflow_desc"
   COMMAND_NAME="$command_name"
 
-  # Generate workflow ID for semantic filename scoping (Spec 704 Phase 2)
-  # This enables classification files to persist across bash blocks
-  local classification_workflow_id="${command_name}_classify_$(date +%s)"
-
-  # Perform comprehensive workflow classification (scope + complexity + subtopics)
-  # Source unified workflow scope detection library
-  if [ -f "$SCRIPT_DIR/workflow-scope-detection.sh" ]; then
-    source "$SCRIPT_DIR/workflow-scope-detection.sh"
-
-    # Get comprehensive classification (workflow_type, research_complexity, subtopics)
-    # Capture stderr to temp file for error visibility (Spec 704 Phase 1)
-    local classification_stderr_file="${HOME}/.claude/tmp/classification_stderr_$$.tmp"
-    mkdir -p "${HOME}/.claude/tmp"
-
-    local classification_result
-    if classification_result=$(classify_workflow_comprehensive "$workflow_desc" "$classification_workflow_id" 2>"$classification_stderr_file"); then
-      # Parse JSON response
-      WORKFLOW_SCOPE=$(echo "$classification_result" | jq -r '.workflow_type // "full-implementation"')
-      RESEARCH_COMPLEXITY=$(echo "$classification_result" | jq -r '.research_complexity // 2')
-
-      # Serialize subtopics array to JSON for state persistence
-      RESEARCH_TOPICS_JSON=$(echo "$classification_result" | jq -c '.subtopics // []')
-
-      # Export all three classification dimensions
-      # CRITICAL: These values MUST be persisted to state via append_workflow_state()
-      # in the calling command to survive bash block boundaries. Do NOT recalculate
-      # after sm_init() - use state-persisted values only (see coordinate.md bug fix).
-      export WORKFLOW_SCOPE
-      export RESEARCH_COMPLEXITY
-      export RESEARCH_TOPICS_JSON
-
-      # Log successful comprehensive classification
-      echo "Comprehensive classification: scope=$WORKFLOW_SCOPE, complexity=$RESEARCH_COMPLEXITY, topics=$(echo "$RESEARCH_TOPICS_JSON" | jq -r 'length')" >&2
-
-      # Cleanup stderr temp file on success
-      rm -f "$classification_stderr_file"
-    else
-      # Display captured stderr messages for debugging (Spec 704 Phase 1)
-      if [ -s "$classification_stderr_file" ]; then
-        echo "Classification Error Details:" >&2
-        cat "$classification_stderr_file" >&2
-        echo "" >&2
-      fi
-
-      # Fail-fast: No automatic fallback (maintain fail-fast philosophy)
-      echo "CRITICAL ERROR: Comprehensive classification failed" >&2
-      echo "  Workflow Description: $workflow_desc" >&2
-      echo "" >&2
-      echo "TROUBLESHOOTING:" >&2
-      echo "  1. Check network connection (LLM classification requires API access)" >&2
-      echo "  2. Increase timeout: export WORKFLOW_CLASSIFICATION_TIMEOUT=60" >&2
-      echo "  3. Check API credentials if using external classification service" >&2
-      echo "  4. Verify workflow description is clear and specific" >&2
-      echo "" >&2
-
-      # Cleanup stderr temp file on failure
-      rm -f "$classification_stderr_file"
-      return 1
-    fi
-  else
-    # Critical error: If workflow-scope-detection.sh not available
-    echo "CRITICAL ERROR: workflow-scope-detection.sh not found" >&2
-    echo "  Expected location: $SCRIPT_DIR/workflow-scope-detection.sh" >&2
-    echo "  Suggestion: Check installation integrity or reinstall .claude/lib/ files" >&2
+  # Parameter validation (fail-fast)
+  if [ -z "$workflow_type" ] || [ -z "$research_complexity" ] || [ -z "$research_topics_json" ]; then
+    echo "ERROR: sm_init requires classification parameters" >&2
+    echo "  Usage: sm_init WORKFLOW_DESC COMMAND_NAME WORKFLOW_TYPE RESEARCH_COMPLEXITY RESEARCH_TOPICS_JSON" >&2
+    echo "" >&2
+    echo "  Missing parameters:" >&2
+    [ -z "$workflow_type" ] && echo "    - workflow_type" >&2
+    [ -z "$research_complexity" ] && echo "    - research_complexity" >&2
+    [ -z "$research_topics_json" ] && echo "    - research_topics_json" >&2
+    echo "" >&2
+    echo "  IMPORTANT: Commands must invoke workflow-classifier agent BEFORE calling sm_init" >&2
+    echo "  See: .claude/agents/workflow-classifier.md" >&2
     return 1
   fi
 
-  # Check if topics are generic (pattern: "Topic N") and replace with descriptive names
-  # This fallback ensures research agents always receive meaningful topic names
-  TOPICS_GENERIC=false
-  if echo "$RESEARCH_TOPICS_JSON" | jq -e '.[] | select(test("^Topic [0-9]+$"))' >/dev/null 2>&1; then
-    TOPICS_GENERIC=true
+  # Validate workflow_type enum
+  case "$workflow_type" in
+    research-only|research-and-plan|research-and-revise|full-implementation|debug-only)
+      : # Valid
+      ;;
+    *)
+      echo "ERROR: Invalid workflow_type: $workflow_type" >&2
+      echo "  Valid types: research-only, research-and-plan, research-and-revise, full-implementation, debug-only" >&2
+      return 1
+      ;;
+  esac
+
+  # Validate research_complexity range
+  if ! [[ "$research_complexity" =~ ^[0-9]+$ ]] || [ "$research_complexity" -lt 1 ] || [ "$research_complexity" -gt 4 ]; then
+    echo "ERROR: research_complexity must be integer 1-4, got: $research_complexity" >&2
+    return 1
   fi
 
-  if [ "$TOPICS_GENERIC" = "true" ]; then
-    echo "Detected generic topic names, generating descriptive topics..." >&2
-    # Generate descriptive topics based on workflow type
-    case "$WORKFLOW_SCOPE" in
-      research-and-revise)
-        # Extract plan paths and generate topics from their content
-        DESCRIPTIVE_TOPICS=$(generate_descriptive_topics_from_plans "$workflow_desc" "$RESEARCH_COMPLEXITY")
-        ;;
-      research-and-plan|full-implementation)
-        # Analyze workflow description for key concepts
-        DESCRIPTIVE_TOPICS=$(generate_descriptive_topics_from_description "$workflow_desc" "$RESEARCH_COMPLEXITY")
-        ;;
-      *)
-        # Keep generic for other scopes (research-only, debug-only)
-        DESCRIPTIVE_TOPICS="$RESEARCH_TOPICS_JSON"
-        ;;
-    esac
-
-    RESEARCH_TOPICS_JSON="$DESCRIPTIVE_TOPICS"
-    export RESEARCH_TOPICS_JSON
-    echo "Generated descriptive topics: $(echo "$RESEARCH_TOPICS_JSON" | jq -r 'join(", ")')" >&2
+  # Validate research_topics_json is valid JSON array
+  if ! echo "$research_topics_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    echo "ERROR: research_topics_json must be valid JSON array" >&2
+    echo "  Received: $research_topics_json" >&2
+    return 1
   fi
+
+  # Store validated classification parameters
+  WORKFLOW_SCOPE="$workflow_type"
+  RESEARCH_COMPLEXITY="$research_complexity"
+  RESEARCH_TOPICS_JSON="$research_topics_json"
+
+  # Export classification dimensions for use by orchestration commands
+  export WORKFLOW_SCOPE
+  export RESEARCH_COMPLEXITY
+  export RESEARCH_TOPICS_JSON
+
+  # Log accepted classification
+  echo "Classification accepted: scope=$WORKFLOW_SCOPE, complexity=$RESEARCH_COMPLEXITY, topics=$(echo "$RESEARCH_TOPICS_JSON" | jq -r 'length')" >&2
 
   # Configure terminal state based on workflow scope
   case "$WORKFLOW_SCOPE" in

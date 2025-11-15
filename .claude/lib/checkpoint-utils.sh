@@ -22,7 +22,7 @@ source "$SCRIPT_DIR/timestamp-utils.sh"
 # ==============================================================================
 
 # Schema version for checkpoint format
-readonly CHECKPOINT_SCHEMA_VERSION="2.0"
+readonly CHECKPOINT_SCHEMA_VERSION="2.1"
 
 # Checkpoint directory
 readonly CHECKPOINTS_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/checkpoints"
@@ -469,6 +469,46 @@ migrate_checkpoint_format() {
 
     # Replace original with migrated version
     mv "${checkpoint_file}.migrated" "$checkpoint_file"
+    current_version="2.0"
+  fi
+
+  # Migrate from 2.0 to 2.1 (add classification metadata section)
+  # Spec 1763161992 Phase 2.5: LLM Classification Agent Integration
+  if [ "$current_version" = "2.0" ]; then
+    echo "Migrating checkpoint from v2.0 to v2.1 (adding classification metadata)" >&2
+
+    # Extract existing workflow_config.scope
+    local existing_scope=$(jq -r '.state_machine.workflow_config.scope // "full-implementation"' "$checkpoint_file")
+
+    # Apply default classification metadata
+    jq --arg scope "$existing_scope" '. + {
+      schema_version: "2.1",
+      state_machine: (.state_machine + {
+        classification: {
+          workflow_type: $scope,
+          research_complexity: 2,
+          research_topics: [],
+          confidence: 0.0,
+          reasoning: "Migrated from v2.0 (defaults applied, re-classification recommended)",
+          classified_at: null
+        }
+      })
+    }' "$checkpoint_file" > "${checkpoint_file}.migrated"
+
+    # Verify migration succeeded
+    if [ $? -eq 0 ] && [ -f "${checkpoint_file}.migrated" ]; then
+      mv "${checkpoint_file}.migrated" "$checkpoint_file"
+      current_version="2.1"
+      echo "✓ Migration to v2.1 complete" >&2
+    else
+      echo "Failed to migrate checkpoint to v2.1" >&2
+      # Restore from backup
+      if [ -f "$backup_file" ]; then
+        mv "$backup_file" "$checkpoint_file"
+        echo "Restored checkpoint from backup" >&2
+      fi
+      return 1
+    fi
   fi
 
   return 0
