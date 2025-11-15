@@ -1,91 +1,88 @@
-> /coordinate is running… once all plans in a given specs/NNN_topic/ directory have been fully 
-implemented, I want the final stage of the implementation phase in /coordinate to archive the 
-NNN_topic/ directory by moving it to specs/archive/ which should be .gitignored to reduce clutter. If 
-there are plans in that topic directory that are not fully complete, this step can be skipped with a 
-note to the user. research, plan, and implement this minor refactor while conforming to the standards 
-given in .claude/docs/ 
+> /coordinate is running… "The .claude/commands/ directorry has become cluttered with backups and commands that are not often used such as collapse.md, analyze.md, list.md, plan-from-template.md, plan-wizard.md, refactor.md, supervise.md, orchestrate.md, test-all.md, and test.md. Research what these rarely used commands do, creating a plan which removes clutter and then creates a check-list to remove plugins ranked by priority from definitely-remove to maybe-keep that I can review." 
   ⎿  Allowed 4 tools for this command
 
-● I'll help you implement topic directory archiving in the /coordinate command. Let me break this
-  down into phases: research, planning, and implementation.
+● I'll help you analyze the rarely used commands in .claude/commands/
+  and create a prioritized cleanup plan. Let me start by executing the
+  /coordinate workflow.
 
-● Let me start by researching the current implementation structure and relevant patterns.
+● Bash(set +H  # Disable history expansion to prevent bad substitution
+      errors
+      # SUBSTITUTE THE WORKFLOW DESCRIPTION IN THE LINE BELOW…)
+  ⎿ ✓ Workflow description captured to /home/benjamin/.claude/tmp/coor
+    dinate_workflow_desc_1763226554719372491.txt
 
-● Search(pattern: "Phase 3.*Implementation", path: ".claude/commands", glob: "*.md")
-  ⎿  Found 5 files (ctrl+o to expand)
 
-● Search(pattern: "checkpoint.*phase_3|implementation.*complete", path:
-        ".claude/commands/coordinate.md", output_mode: "content")
-  ⎿  Found 7 lines (ctrl+o to expand)
+● Bash(set +H  # Explicitly disable history expansion (workaround for Bash
+      tool preprocessing issues)
+      set -euo pipefail  # Fail-fast error handling…)
+  ⎿ === State Machine Workflow Orchestration ===                      
 
-● Read(.claude/lib/plan-core-bundle.sh)
-  ⎿  Read 100 lines
+    ✓✓ State machine pre-initialization complete. Proceeding to workfl
+    ow classification...
 
-● Search(pattern: "**/*archive*.sh", path: ".claude/lib")
-  ⎿  Found 0 files 
 
-● Search(pattern: "specs/archive|archive.*directory", path: ".claude", glob: "**/*.md")
-  ⎿  Found 31 files (ctrl+o to expand)
+● Now I'll invoke the workflow classifier agent to determine the
+  workflow type and complexity:
 
-● Read(.gitignore)
-  ⎿  Read 96 lines
+● Task(Classify workflow intent for orchestration)
+  ⎿  Done (1 tool use · 27.0k tokens · 13s)                           
 
-● Search(pattern: "get_plan_status|plan.*complete|implementation.*status", path: ".claude/lib", glob:
-        "*.sh")
-  ⎿  Found 2 files (ctrl+o to expand)
+● Bash(set +H  # Disable history expansion…)
+  ⎿  Error: Exit code 127
+     /run/current-system/sw/bin/bash: line 412: !: command not found
+     DEBUG: Pre-transition checkpoint (state=initialize → research)
+     DEBUG: Post-transition checkpoint (state=research)
+     State transition: research (completed: 1 states)
+     /run/current-system/sw/bin/bash: line 645: PERF_START_TOTAL: unbound 
+     variable
 
-● Read(.claude/lib/checkbox-utils.sh)
-  ⎿  Read 150 lines
+     ✓ Workflow classification complete: type=research-and-plan, 
+     complexity=2
+     Classification accepted: scope=research-and-plan, complexity=2, 
+     topics=2
+     State machine initialized: scope=research-and-plan, terminal=plan
+     … +14 lines (ctrl+o to see all)
 
-● Bash(find /home/benjamin/.config/.claude/specs -maxdepth 1 -type d -name '[0-9]*' | head -5)
-  ⎿  /home/benjamin/.config/.claude/specs/476_research_the_research_command_in_order_to_identify 
-     /home/benjamin/.config/.claude/specs/495_coordinate_command_failure_analysis
-     /home/benjamin/.config/.claude/specs/482_research_claudedocs_for_historical_comments_cleanup
-     … +2 lines (ctrl+o to expand)
+● The state machine has been initialized successfully. Now let me
+  proceed with the research phase:
 
-● Bash(ls -la /home/benjamin/.config/.claude/specs/540_research_phase_6_test_failure_fixes_for_improve
-      d_im/plans/ 2>/dev/null | head -10)
-  ⎿  total 28                                                                             
-     drwx------ 2 benjamin users  4096 Oct 30 11:19 .
-     drwxr-xr-x 5 benjamin users  4096 Oct 30 11:20 ..
-     -rw-r--r-- 1 benjamin users 16977 Oct 30 11:19 001_improved_phase_6_implementation.md
+● Bash(set +H  # Disable history expansion to prevent bad substitution
+      errors
+      # Re-source libraries (functions lost across bash block boundaries)…)
+  ⎿  PROGRESS: [Phase 1] - State: Research (parallel agent invocation)
+     Research Complexity Score: 2 topics (from state persistence)
+     Using flat research coordination (<4 topics)
+     PROGRESS: [Phase 1] - Invoking 2 research agents in parallel
 
-● Read(.claude/specs/540_research_phase_6_test_failure_fixes_for_improved_im/plans/001_improved_phase_
-      6_implementation.md)
-  ⎿  Read 80 lines
+● Now I'll prepare the research agent variables and invoke them in
+  parallel:
 
-● Search(pattern: "^\[x\]|^- \[x\]", path: ".claude/specs/540_research_phase_6_test_failure_fixes_for_
-        improved_im/plans/001_improved_phase_6_implementation.md", output_mode: "count")
-  ⎿  Found 0 matches across 0 files 
+● Bash(set +H  # Disable history expansion to prevent bad substitution
+      errors
+      # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━…)
+  ⎿ ━━━ Research Phase: Flat Coordination ━━━                         
+    Research Complexity: 2
+    Agent Invocations: Conditionally guarded (1-4 based on complexity)
+    … +2 lines (ctrl+o to expand)
 
-● Search(pattern: "^- \[[ x]\]", path: ".claude/specs/540_research_phase_6_test_failure_fixes_for_impr
-        oved_im/plans/001_improved_phase_6_implementation.md", output_mode: "count")
-  ⎿  Found 0 matches across 0 files 
 
-● Now let me search for how to determine plan completion status:
+● Let me fix the variable expansion issue and invoke the research
+  agents:
 
-● Bash(grep -n "^\[x\]" /home/benjamin/.config/.claude/specs/540_research_phase_6_test_failure_fixes_f
-      or_improved_im/plans/001_improved_phase_6_implementation.md | wc…)
-  ⎿  0
+● Bash(set +H
+      # Standard 13: CLAUDE_PROJECT_DIR detection…)
+  ⎿  ━━━ Research Phase: Flat Coordination ━━━
+     Research Complexity: 2
+     … +7 lines (ctrl+o to expand)
 
-● Bash(grep -n "^- \[x\]" /home/benjamin/.config/.claude/specs/540_research_phase_6_test_failure_fixes
-      _for_improved_im/plans/001_improved_phase_6_implementation.md | w…)
-  ⎿  73
+● Perfect! Now I'll invoke the two research agents in parallel:
 
-● Bash(grep -nE "^- \[[ x]\]" /home/benjamin/.config/.claude/specs/540_research_phase_6_test_failure_f
-      ixes_for_improved_im/plans/001_improved_phase_6_implementation.md…)
-  ⎿  73
+  Task(Research rarely-used commands analysis)
+  ⎿  Read 200 lines
+     .claude/specs/plans/011_command_workflow_safety_enhancements.md
+     +17 more tool uses (ctrl+o to expand)
 
-● Search(pattern: "### Phase [0-9]", path: ".claude/specs/540_research_phase_6_test_failure_fixes_for_
-        improved_im/plans/001_improved_phase_6_implementation.md", output_mode: "content")
-  ⎿  Found 4 lines (ctrl+o to expand)
-
-● Good! Now I have a clear picture. Let me look at the documentation standards for this feature:
-
-● Read(.claude/docs/concepts/directory-protocols.md)
-  ⎿  Read 150 lines
-
-● Search(pattern: "archive|gitignore|lifecycle", path: ".claude/docs/concepts/directory-protocols.md",
-         output_mode: "content")
-  ⎿  Found 117 lines (ctrl+o to expand)
-  ⎿  Interrupted · What should Claude do instead?
+  Task(Research cleanup prioritization framework)
+  ⎿  Total backup size: 1556
+     Did 1 search in 18s
+     +23 more tool uses (ctrl+o to expand)
