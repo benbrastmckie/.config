@@ -1,7 +1,7 @@
 -- lua/neotex/plugins/ai/util/avante_mcp.lua
 
-local mcp_server = require('neotex.plugins.ai.claude.util.mcp_server')
-local tool_registry = require('neotex.plugins.ai.claude.util.tool_registry')
+local mcp_server = require('neotex.plugins.ai.avante.mcp.mcp_server')
+local tool_registry = require('neotex.plugins.ai.avante.mcp.tool_registry')
 
 local M = {}
 
@@ -161,7 +161,7 @@ function M.generate_enhanced_prompt(persona, conversation_context)
   
   -- Fallback to Lua prompts if JSON doesn't have placeholder
   if not base_prompt or not string.find(base_prompt, "{MCP_TOOLS_PLACEHOLDER}") then
-    local ok, prompts_module = pcall(require, "neotex.plugins.ai.claude.util.system-prompts")
+    local ok, prompts_module = pcall(require, "neotex.plugins.ai.avante.mcp.system-prompts")
     if ok then
       local prompt_data, _ = prompts_module.get_default()
       if prompt_data and prompt_data.prompt and string.find(prompt_data.prompt, "{MCP_TOOLS_PLACEHOLDER}") then
@@ -187,7 +187,7 @@ end
 -- Direct function to open MCPHub interface without delays
 function M.open_mcphub()
   -- Get the mcp_server module
-  local mcp_server = require("neotex.plugins.ai.claude.util.mcp_server")
+  local mcp_server = require("neotex.plugins.ai.avante.mcp.mcp_server")
   
   -- First make sure any existing processes are cleaned up
   mcp_server.cleanup_existing_processes()
@@ -341,9 +341,9 @@ function M.setup()
     vim.notify("Reloading Avante configuration...", vim.log.levels.INFO)
     
     -- Clear package cache for our modules
-    package.loaded["neotex.plugins.ai.claude.util.avante_mcp"] = nil
-    package.loaded["neotex.plugins.ai.claude.util.tool_registry"] = nil
-    package.loaded["neotex.plugins.ai.claude.util.system-prompts"] = nil
+    package.loaded["neotex.plugins.ai.avante.mcp.avante_mcp"] = nil
+    package.loaded["neotex.plugins.ai.avante.mcp.tool_registry"] = nil
+    package.loaded["neotex.plugins.ai.avante.mcp.system-prompts"] = nil
     
     -- Try to reload Avante config
     local ok, avante = pcall(require, "avante")

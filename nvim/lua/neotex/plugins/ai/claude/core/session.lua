@@ -358,7 +358,7 @@ function M.show_session_picker()
         if selection then
           local choice = selection.value.value
           if choice == "continue" then
-            local claude_util = require("neotex.plugins.ai.claude.utils.claude-code")
+            local claude_util = require("neotex.plugins.ai.claude.claude-session.claude-code")
             if claude_util.continue() then
               M.save_session_state()
               -- Auto-enter insert mode

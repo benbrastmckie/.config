@@ -344,7 +344,7 @@ function M.resume_session(session_id)
   end
 
   -- First try using open_with_command from claude-code utils
-  local claude_util_ok, claude_util = pcall(require, "neotex.plugins.ai.claude.utils.claude-code")
+  local claude_util_ok, claude_util = pcall(require, "neotex.plugins.ai.claude.claude-session.claude-code")
   if claude_util_ok and claude_util.open_with_command then
     success = claude_util.open_with_command(command)
   end

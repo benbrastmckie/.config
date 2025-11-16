@@ -235,7 +235,7 @@ function M.simple_session_picker(on_select)
           end
 
           -- Use our cleaner utility function to resume the session
-          local claude_util = require("neotex.plugins.ai.claude.utils.claude-code")
+          local claude_util = require("neotex.plugins.ai.claude.claude-session.claude-code")
           local success = claude_util.resume_session(selected.session_id)
 
           if success then

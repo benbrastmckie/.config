@@ -8,7 +8,7 @@
 local M = {}
 
 -- Dependencies
-local detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
+local detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
 
 --- Generate spawn command for new tab
 --- @param worktree_path string Path to worktree directory
