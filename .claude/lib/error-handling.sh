@@ -19,6 +19,13 @@ readonly ERROR_TYPE_TRANSIENT="transient"
 readonly ERROR_TYPE_PERMANENT="permanent"
 readonly ERROR_TYPE_FATAL="fatal"
 
+# LLM-specific error types (Spec 688)
+readonly ERROR_TYPE_LLM_TIMEOUT="llm_timeout"
+readonly ERROR_TYPE_LLM_API_ERROR="llm_api_error"
+readonly ERROR_TYPE_LLM_LOW_CONFIDENCE="llm_low_confidence"
+readonly ERROR_TYPE_LLM_PARSE_ERROR="llm_parse_error"
+readonly ERROR_TYPE_INVALID_MODE="invalid_mode"
+
 # classify_error: Classify error based on error message
 # Usage: classify_error <error-message>
 # Returns: Error type (transient, permanent, fatal)

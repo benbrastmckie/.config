@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+# Enable test mode to avoid real LLM API calls during testing
+# This returns canned responses from workflow-llm-classifier.sh
+# Following best practices: mock LLM calls at function level for fast, deterministic tests
+export WORKFLOW_CLASSIFICATION_TEST_MODE=1
+
 VERBOSE=false
 if [ "${1:-}" = "--verbose" ]; then
   VERBOSE=true
@@ -29,6 +34,22 @@ echo "════════════════════════�
 echo "  Claude Code Test Suite Runner"
 echo "════════════════════════════════════════════════"
 echo ""
+
+# Pre-test pollution check
+# Capture baseline empty directory count to detect pollution
+CLAUDE_ROOT="$(cd "$TEST_DIR/.." && pwd)"
+SPECS_DIR="$CLAUDE_ROOT/specs"
+
+if [[ -d "$SPECS_DIR" ]]; then
+    BEFORE_EMPTY_COUNT=$(find "$SPECS_DIR" -maxdepth 1 -type d -empty 2>/dev/null | wc -l)
+    echo "Pre-test validation: $BEFORE_EMPTY_COUNT empty topic directories"
+    echo ""
+else
+    echo "Warning: specs directory not found at $SPECS_DIR"
+    echo "Skipping pollution detection"
+    echo ""
+    BEFORE_EMPTY_COUNT=-1
+fi
 
 # Find all test files
 TEST_FILES=$(find "$TEST_DIR" -name "test_*.sh" -not -name "run_all_tests.sh" | sort)
@@ -80,8 +101,9 @@ for test_file in $ALL_TEST_FILES; do
       FAILED_TESTS=$((FAILED_TESTS + 1))
     else
       # Count passes from output (grep -c returns 0 on no match but exits with 1)
+      # For FAIL, exclude summary lines (e.g., "✗ FAIL: 0") by filtering out lines ending with ": [number]"
       local_passed=$(echo "$test_output" | grep -c "✓ PASS" || true)
-      local_failed=$(echo "$test_output" | grep -c "✗ FAIL" || true)
+      local_failed=$(echo "$test_output" | grep "✗ FAIL" | grep -v "✗ FAIL: [0-9]\+$" | wc -l || true)
       local_skipped=$(echo "$test_output" | grep -c "⊘ SKIP" || true)
 
       # Ensure values are numeric (grep -c always outputs a number, but double-check)
@@ -104,6 +126,34 @@ for test_file in $ALL_TEST_FILES; do
 
   echo ""
 done
+
+# Post-test pollution detection
+if [[ $BEFORE_EMPTY_COUNT -ge 0 && -d "$SPECS_DIR" ]]; then
+    AFTER_EMPTY_COUNT=$(find "$SPECS_DIR" -maxdepth 1 -type d -empty 2>/dev/null | wc -l)
+
+    if (( AFTER_EMPTY_COUNT > BEFORE_EMPTY_COUNT )); then
+        echo "════════════════════════════════════════════════"
+        echo -e "${RED}✗ POLLUTION DETECTED${NC}"
+        echo "════════════════════════════════════════════════"
+        echo "WARNING: Tests created $(( AFTER_EMPTY_COUNT - BEFORE_EMPTY_COUNT )) empty topic director$([ $(( AFTER_EMPTY_COUNT - BEFORE_EMPTY_COUNT )) -eq 1 ] && echo y || echo ies)"
+        echo ""
+        echo "Empty directories found:"
+        find "$SPECS_DIR" -maxdepth 1 -type d -empty 2>/dev/null | while read -r dir; do
+            echo "  - $(basename "$dir")"
+        done
+        echo ""
+        echo "This indicates test isolation failure. Tests must use CLAUDE_SPECS_ROOT override."
+        echo "See: .claude/docs/reference/test-isolation-standards.md"
+        echo ""
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    else
+        echo "════════════════════════════════════════════════"
+        echo -e "${GREEN}✓ NO POLLUTION DETECTED${NC}"
+        echo "════════════════════════════════════════════════"
+        echo "Post-test validation: $AFTER_EMPTY_COUNT empty topic directories"
+        echo ""
+    fi
+fi
 
 # Summary
 echo "════════════════════════════════════════════════"

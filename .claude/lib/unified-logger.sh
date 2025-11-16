@@ -746,9 +746,59 @@ display_brief_summary() {
   rm -f "$COORDINATE_DESC_FILE" "$COORDINATE_STATE_ID_FILE" 2>/dev/null || true
 }
 
+# ==============================================================================
+# Filename Slug Generation Logging (Spec 688)
+# ==============================================================================
+
+# log_slug_generation: Log filename slug generation strategy for monitoring
+#
+# Tracks which tier was used for each research topic:
+#   - llm: LLM-generated slug passed validation (preferred)
+#   - sanitize: LLM slug invalid, sanitized short_name used (fallback)
+#   - truncate: LLM slug exceeded 255 bytes, truncated
+#   - generic: Both LLM slug and short_name empty, used topicN (ultimate fallback)
+#
+# Arguments:
+#   $1 - level: Log level (DEBUG, INFO, WARN, ERROR)
+#   $2 - topic_index: Topic index (0-3)
+#   $3 - strategy: Strategy used (llm, sanitize, truncate, generic)
+#   $4 - final_slug: Final validated slug
+#
+# Log format:
+#   [2025-11-12 22:30:45] INFO SLUG_GENERATION topic_index=0 strategy=llm slug=implementation_architecture
+#
+log_slug_generation() {
+  local level="$1"
+  local topic_index="$2"
+  local strategy="$3"
+  local final_slug="$4"
+
+  # Validate inputs
+  if [[ -z "$level" || -z "$topic_index" || -z "$strategy" || -z "$final_slug" ]]; then
+    return 1
+  fi
+
+  # Create log entry
+  local timestamp
+  timestamp=$(generate_timestamp)
+  local message="topic_index=$topic_index strategy=$strategy slug=$final_slug"
+
+  # Write to adaptive planning log (slug generation is part of adaptive planning workflow)
+  rotate_log_file "$AP_LOG_FILE"
+  write_log_entry "$AP_LOG_FILE" "$level" "SLUG_GENERATION" "$message"
+
+  # Also log to stderr if DEBUG mode enabled
+  if [ "${WORKFLOW_CLASSIFICATION_DEBUG:-0}" = "1" ]; then
+    echo "[DEBUG] Slug generation: $message" >&2
+  fi
+
+  return 0
+}
+
 # Export all functions for use in other scripts
 export -f rotate_log_file
 export -f write_log_entry
+export -f log_slug_generation
 export -f log_trigger_evaluation
 export -f log_complexity_check
 export -f log_test_failure_pattern

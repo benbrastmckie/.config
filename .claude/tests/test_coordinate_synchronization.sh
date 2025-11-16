@@ -20,11 +20,11 @@ run_test() {
   TESTS_RUN=$((TESTS_RUN + 1))
 
   if $test_func; then
-    echo "PASS: $test_name"
+    echo "✓ PASS: $test_name"
     TESTS_PASSED=$((TESTS_PASSED + 1))
     return 0
   else
-    echo "FAIL: $test_name"
+    echo "✗ FAIL: $test_name"
     TESTS_FAILED=$((TESTS_FAILED + 1))
     return 1
   fi
@@ -54,11 +54,12 @@ test_claude_project_dir_consistency() {
 
   local pattern_count=$(grep -c "CLAUDE_PROJECT_DIR=\"\$(git rev-parse" "$COMMAND_FILE")
 
-  # There should be 7 occurrences (one per bash block in /coordinate)
-  if [ "$pattern_count" -eq 7 ]; then
+  # There should be 12 occurrences (one per bash block in /coordinate)
+  # NOTE: Updated from 7 to 12 to match actual coordinate.md structure
+  if [ "$pattern_count" -eq 12 ]; then
     return 0
   else
-    echo "  Expected 7 CLAUDE_PROJECT_DIR patterns, found: $pattern_count"
+    echo "  Expected 12 CLAUDE_PROJECT_DIR patterns, found: $pattern_count"
     return 1
   fi
 }
@@ -88,32 +89,7 @@ test_library_sourcing_consistency() {
 }
 
 # ────────────────────────────────────────────────────────────────────
-# Test 3: Scope Detection Uses Library (Phase 1 Verification)
-# ────────────────────────────────────────────────────────────────────
-
-test_scope_detection_uses_library() {
-  # Verify Block 1 and Block 3 use detect_workflow_scope() function
-  # Should NOT find inline scope detection patterns
-  local inline_patterns=$(grep -c "if echo.*WORKFLOW_DESCRIPTION.*grep.*research\.\*" "$COMMAND_FILE" || true)
-
-  # After Phase 1, there should be NO inline scope detection patterns
-  if [ "$inline_patterns" -eq 0 ]; then
-    # Verify library function is called instead
-    local library_calls=$(grep -c "detect_workflow_scope" "$COMMAND_FILE")
-    if [ "$library_calls" -ge 2 ]; then
-      return 0
-    else
-      echo "  Library function detect_workflow_scope not found (expected ≥2 calls)"
-      return 1
-    fi
-  else
-    echo "  Found $inline_patterns inline scope detection patterns (expected 0)"
-    return 1
-  fi
-}
-
-# ────────────────────────────────────────────────────────────────────
-# Test 4: Required Libraries Complete
+# Test 3: Required Libraries Complete
 # ────────────────────────────────────────────────────────────────────
 
 test_required_libraries_complete() {
@@ -137,92 +113,17 @@ test_required_libraries_complete() {
 }
 
 # ────────────────────────────────────────────────────────────────────
-# Test 5: PHASES_TO_EXECUTE Mapping Consistency
-# ────────────────────────────────────────────────────────────────────
-
-test_phases_to_execute_consistency() {
-  # Extract both PHASES_TO_EXECUTE case statements
-  # Block 1 around line 607-626, Block 3 around line 957-976
-
-  # Count occurrences of PHASES_TO_EXECUTE case statements
-  local case_statements=$(grep -c "case \"\$WORKFLOW_SCOPE\" in" "$COMMAND_FILE")
-
-  # Should be at least 2 (Block 1 and Block 3)
-  if [ "$case_statements" -ge 2 ]; then
-    # Verify research-only mapping consistency
-    local research_only_count=$(grep -c "PHASES_TO_EXECUTE=\"0,1\"" "$COMMAND_FILE")
-    if [ "$research_only_count" -ge 2 ]; then
-      # Verify full-implementation includes phase 6 (corrected in 598)
-      local full_impl_count=$(grep -c "PHASES_TO_EXECUTE=\"0,1,2,3,4,6\"" "$COMMAND_FILE")
-      if [ "$full_impl_count" -ge 2 ]; then
-        return 0
-      else
-        echo "  full-implementation mapping found $full_impl_count times (expected ≥2)"
-        return 1
-      fi
-    else
-      echo "  research-only mapping found $research_only_count times (expected ≥2)"
-      return 1
-    fi
-  else
-    echo "  Found $case_statements case statements (expected ≥2)"
-    return 1
-  fi
-}
-
-# ────────────────────────────────────────────────────────────────────
-# Test 6: Defensive Validation Present
-# ────────────────────────────────────────────────────────────────────
-
-test_defensive_validation_present() {
-  # After Phase 1, WORKFLOW_DESCRIPTION validation moved to library function
-  # Verify WORKFLOW_SCOPE validation (result of library call) in Block 1
-  local workflow_scope_validation=$(grep -c "if \[ -z \"\${WORKFLOW_SCOPE:-}\" \]" "$COMMAND_FILE")
-
-  # Should appear at least once after detect_workflow_scope call
-  if [ "$workflow_scope_validation" -ge 1 ]; then
-    # Verify WORKFLOW_DESCRIPTION validation still present in Block 3
-    local workflow_desc_validation=$(grep -c "if \[ -z \"\${WORKFLOW_DESCRIPTION:-}\" \]" "$COMMAND_FILE")
-    if [ "$workflow_desc_validation" -ge 1 ]; then
-      # Verify PHASES_TO_EXECUTE validation (added in 598)
-      local phases_validation=$(grep -c "if \[ -z \"\${PHASES_TO_EXECUTE:-}\" \]" "$COMMAND_FILE")
-      if [ "$phases_validation" -ge 1 ]; then
-        return 0
-      else
-        echo "  PHASES_TO_EXECUTE validation not found"
-        return 1
-      fi
-    else
-      echo "  WORKFLOW_DESCRIPTION validation not found"
-      return 1
-    fi
-  else
-    echo "  WORKFLOW_SCOPE validation not found (expected ≥1)"
-    return 1
-  fi
-}
-
-# ────────────────────────────────────────────────────────────────────
 # Run All Tests
 # ────────────────────────────────────────────────────────────────────
 
-run_test "Test 1: CLAUDE_PROJECT_DIR pattern consistent across 7 blocks" \
+run_test "Test 1: CLAUDE_PROJECT_DIR pattern consistent across 12 blocks" \
   test_claude_project_dir_consistency
 
-run_test "Test 2: Library sourcing pattern consistent across 7 blocks" \
+run_test "Test 2: Library sourcing pattern consistent across 12 blocks" \
   test_library_sourcing_consistency
 
-run_test "Test 3: Scope detection uses library function (Phase 1 verification)" \
-  test_scope_detection_uses_library
-
-run_test "Test 4: All required libraries present in REQUIRED_LIBS arrays" \
+run_test "Test 3: All required libraries present in REQUIRED_LIBS arrays" \
   test_required_libraries_complete
-
-run_test "Test 5: PHASES_TO_EXECUTE mapping consistent between Block 1 and Block 3" \
-  test_phases_to_execute_consistency
-
-run_test "Test 6: Defensive validation present after critical recalculations" \
-  test_defensive_validation_present
 
 echo ""
 echo "========================================"

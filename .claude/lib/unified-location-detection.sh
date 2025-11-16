@@ -40,6 +40,32 @@
 #   # Lazy directory creation pattern:
 #   ensure_artifact_directory "$REPORT_PATH" || exit 1
 #   echo "content" > "$REPORT_PATH"
+#
+# Test Isolation:
+#   Tests invoking this library MUST use environment variable overrides to prevent
+#   production directory pollution. See .claude/docs/reference/test-isolation-standards.md
+#
+#   Required Test Pattern:
+#     export CLAUDE_SPECS_ROOT="/tmp/test_specs_$$"
+#     export CLAUDE_PROJECT_DIR="/tmp/test_project_$$"
+#     mkdir -p "$CLAUDE_SPECS_ROOT"
+#
+#     # Cleanup trap
+#     trap 'rm -rf /tmp/test_specs_$$ /tmp/test_project_$$' EXIT
+#
+#   Override Detection Order (see get_specs_root() function):
+#     1. CLAUDE_SPECS_ROOT (test override) ← CHECKED FIRST
+#     2. CLAUDE_PROJECT_DIR/.claude/specs
+#     3. Git root detection
+#     4. Upward directory search
+#
+#   Setting CLAUDE_SPECS_ROOT ensures all location detection functions use
+#   temporary directories, preventing empty topic directory creation in production.
+#
+#   Example Test Files Demonstrating Correct Pattern:
+#     - .claude/tests/test_unified_location_detection.sh (lines 23-27)
+#     - .claude/tests/test_unified_location_simple.sh (lines 18-22)
+#     - .claude/tests/test_system_wide_location.sh (lines 19-23)
 
 # Removed strict error mode to allow graceful handling of expected failures (e.g., ls with no matches)
 # set -euo pipefail
@@ -455,6 +481,8 @@ perform_location_detection() {
   "topic_number": "$topic_number",
   "topic_name": "$topic_name",
   "topic_path": "$topic_path",
+  "project_root": "$project_root",
+  "specs_dir": "$specs_root",
   "artifact_paths": {
     "reports": "$topic_path/reports",
     "plans": "$topic_path/plans",

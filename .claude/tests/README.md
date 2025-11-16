@@ -275,12 +275,15 @@ When adding new tests, categorize them:
 
 ### Test File Template
 
+**IMPORTANT**: All tests MUST use test isolation patterns to prevent production directory pollution.
+See: [Test Isolation Standards](../docs/reference/test-isolation-standards.md)
+
 ```bash
 #!/usr/bin/env bash
 # Test suite for <feature>
 # Tests <description>
 
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -293,20 +296,52 @@ TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
 
-# Test directory
-TEST_DIR="/tmp/<feature>_tests_$$"
+# Test directory (unique per test run for concurrent safety)
+TEST_DIR="$(mktemp -d -t <feature>_tests.XXXXXX)"
+
+# Test isolation: Override location detection to use temporary directories
+export CLAUDE_SPECS_ROOT="$TEST_DIR/.claude/specs"
+export CLAUDE_PROJECT_DIR="$TEST_DIR"
 
 # Setup/cleanup functions
 setup() {
   echo "Setting up test environment: $TEST_DIR"
-  rm -rf "$TEST_DIR"
-  mkdir -p "$TEST_DIR"
+
+  # Create test project structure
+  mkdir -p "$CLAUDE_SPECS_ROOT"
+  mkdir -p "$TEST_DIR/.claude/lib"
+  mkdir -p "$TEST_DIR/.claude/commands"
+
+  # Copy required libraries if needed
+  # cp -r /path/to/.claude/lib/* "$TEST_DIR/.claude/lib/"
 }
 
 cleanup() {
+  local exit_code=$?
+
   echo "Cleaning up test environment"
-  rm -rf "$TEST_DIR"
+
+  # Validate no production pollution (for workflow tests)
+  # if [[ -d "/home/user/.config/.claude/specs" ]]; then
+  #   local pollution=$(find /home/user/.config/.claude/specs -maxdepth 1 -type d -empty 2>/dev/null | wc -l)
+  #   if (( pollution > 0 )); then
+  #     echo "WARNING: Test created production pollution"
+  #     find /home/user/.config/.claude/specs -maxdepth 1 -type d -empty
+  #   fi
+  # fi
+
+  # Remove test directory
+  [[ -n "$TEST_DIR" && -d "$TEST_DIR" ]] && rm -rf "$TEST_DIR"
+
+  # Unset environment overrides
+  unset CLAUDE_SPECS_ROOT
+  unset CLAUDE_PROJECT_DIR
+
+  exit $exit_code
 }
+
+# Register cleanup trap (MUST be before any test operations)
+trap cleanup EXIT
 
 # Test helper functions (pass, fail, info)
 # ... (copy from existing test files)
@@ -353,6 +388,96 @@ run_all_tests() {
 # Run tests
 run_all_tests
 ```
+
+## Test Isolation Patterns
+
+### Overview
+
+All tests MUST use isolation patterns to prevent production directory pollution. This is enforced by the test runner's pollution detection (see Phase 3).
+
+**Reference**: [Test Isolation Standards](../docs/reference/test-isolation-standards.md) - Complete documentation
+
+### Required Patterns
+
+**1. Environment Variable Overrides**
+
+```bash
+# Set BEFORE sourcing any libraries or running commands
+export CLAUDE_SPECS_ROOT="$TEST_DIR/.claude/specs"
+export CLAUDE_PROJECT_DIR="$TEST_DIR"
+```
+
+**Why Required**: Location detection checks `CLAUDE_SPECS_ROOT` first (see `unified-location-detection.sh:57`), preventing production directory creation.
+
+**2. mktemp for Temporary Directories**
+
+```bash
+# Use mktemp with unique suffix for concurrent safety
+TEST_DIR="$(mktemp -d -t feature_tests.XXXXXX)"
+```
+
+**Benefits**:
+- Unique directory per test run
+- Enables concurrent test execution
+- Standard temporary directory location
+
+**3. EXIT Trap Registration**
+
+```bash
+cleanup() {
+  local exit_code=$?
+  [[ -n "$TEST_DIR" && -d "$TEST_DIR" ]] && rm -rf "$TEST_DIR"
+  unset CLAUDE_SPECS_ROOT
+  unset CLAUDE_PROJECT_DIR
+  exit $exit_code
+}
+
+trap cleanup EXIT  # Register BEFORE creating any test resources
+```
+
+**Why Required**: Ensures cleanup happens on normal exit, test failure, or interruption.
+
+### Validation Checklist
+
+Before submitting tests, verify:
+
+- [ ] Test uses `mktemp` for temporary directory creation
+- [ ] Test sets `CLAUDE_SPECS_ROOT` to `/tmp` location
+- [ ] Test sets `CLAUDE_PROJECT_DIR` to `/tmp` location (if needed)
+- [ ] Test registers `trap cleanup EXIT` before operations
+- [ ] Cleanup function removes temporary directories
+- [ ] Cleanup function unsets environment variables
+- [ ] Cleanup function preserves exit code
+- [ ] Test uses unique identifiers ($$) for concurrent safety
+
+### Example Test Files
+
+See these files for correct isolation patterns:
+
+- `.claude/tests/test_unified_location_detection.sh` (environment overrides)
+- `.claude/tests/test_parsing_utilities.sh` (mktemp + trap pattern)
+- `.claude/tests/test_command_integration.sh` (complete isolation setup)
+
+### Manual Testing
+
+When testing commands manually:
+
+```bash
+# ALWAYS set isolation overrides for manual testing
+export CLAUDE_SPECS_ROOT="/tmp/manual_test_$$"
+export CLAUDE_PROJECT_DIR="/tmp/manual_test_$$"
+mkdir -p "$CLAUDE_SPECS_ROOT"
+
+# Run command
+/command-to-test "arguments"
+
+# Cleanup
+rm -rf "/tmp/manual_test_$$"
+unset CLAUDE_SPECS_ROOT
+unset CLAUDE_PROJECT_DIR
+```
+
+**Benefits**: Prevents empty directory creation during development and experimentation.
 
 ## Troubleshooting
 

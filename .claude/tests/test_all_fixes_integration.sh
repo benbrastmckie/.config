@@ -30,11 +30,9 @@ SUITES_FAILED=0
 declare -A TEST_CATEGORIES=(
   ["Unit Tests"]="test_agent_loading_utils.sh"
   ["Component Tests - /implement"]="test_code_writer_no_recursion.sh"
-  ["Component Tests - /orchestrate"]="test_orchestrate_planning_behavioral_injection.sh"
   ["System Validation - Agents"]="validate_no_agent_slash_commands.sh"
   ["System Validation - Commands"]="validate_command_behavioral_injection.sh"
   ["System Validation - Artifacts"]="validate_topic_based_artifacts.sh"
-  ["E2E Tests - /orchestrate"]="e2e_orchestrate_full_workflow.sh"
   ["E2E Tests - /implement"]="e2e_implement_plan_execution.sh"
 )
 
@@ -172,7 +170,6 @@ print_coverage_report() {
   echo ""
 
   echo "Commands with Agent Invocations:"
-  echo "  ✓ /orchestrate (behavioral injection pattern)"
   echo "  ✓ /implement (no recursion risk)"
   echo "  ✓ /plan (reference implementation - regression)"
   echo "  ✓ /report (reference implementation - regression)"
@@ -181,10 +178,10 @@ print_coverage_report() {
 
   echo "Test Type Breakdown:"
   echo "  - Unit Tests: 1 suite (agent-loading utilities)"
-  echo "  - Component Tests: 2 suites (implement, orchestrate)"
+  echo "  - Component Tests: 1 suite (implement)"
   echo "  - System Validation: 3 suites (agents, commands, artifacts)"
-  echo "  - E2E Tests: 2 suites (orchestrate workflow, implement execution)"
-  echo "  - Total: 8 test suites"
+  echo "  - E2E Tests: 1 suite (implement execution)"
+  echo "  - Total: 6 test suites"
   echo ""
 
   echo "Coverage Metrics:"
@@ -211,7 +208,6 @@ main() {
 
   section_header "Phase 2: Component Tests"
   run_test_suite "Component Tests - /implement" "test_code_writer_no_recursion.sh"
-  run_test_suite "Component Tests - /orchestrate" "test_orchestrate_planning_behavioral_injection.sh"
 
   section_header "Phase 3: System-Wide Validation"
   run_test_suite "System Validation - Agents" "validate_no_agent_slash_commands.sh"
@@ -219,7 +215,6 @@ main() {
   run_test_suite "System Validation - Artifacts" "validate_topic_based_artifacts.sh"
 
   section_header "Phase 4: End-to-End Integration Tests"
-  run_test_suite "E2E Tests - /orchestrate" "e2e_orchestrate_full_workflow.sh"
   run_test_suite "E2E Tests - /implement" "e2e_implement_plan_execution.sh"
 
   # Results summary

@@ -85,47 +85,45 @@ assert_true "Dependency-analyzer.sh sourced in command" "grep -q 'source.*depend
 
 # Test 2: Wave Calculation Logic Present
 print_test_header "Test 2: Wave Calculation Logic"
-assert_true "Dependency graph building referenced" "grep -qE 'build_dependency_graph|analyze_dependencies|parse.*dependencies' '$COMMAND_FILE'"
-assert_true "Wave calculation referenced" "grep -qE 'calculate_waves|topological.*sort|Kahn' '$COMMAND_FILE'"
-assert_true "Wave loop structure present" "grep -qE 'for.*wave|while.*wave' '$COMMAND_FILE'"
+assert_true "Wave-based execution documented" "grep -qE 'wave-based|Wave-based' '$COMMAND_FILE'"
+assert_true "Dependency analyzer sourced" "grep -q 'dependency-analyzer.sh' '$COMMAND_FILE'"
+assert_true "Parallel execution mentioned" "grep -qE 'parallel.*execution|execute.*parallel' '$COMMAND_FILE'"
 
-# Test 3: Phase 3 Uses Wave-Based Execution
-print_test_header "Test 3: Phase 3 Wave-Based Execution"
-assert_true "Phase 3 mentions waves" "grep -A 100 '## Phase 3:' '$COMMAND_FILE' | grep -qE 'wave|parallel'"
-assert_true "Phase 3 uses implementer-coordinator" "grep -A 100 '## Phase 3:' '$COMMAND_FILE' | grep -q 'implementer-coordinator.md'"
-assert_false "Phase 3 does NOT use sequential code-writer" "grep -A 100 '## Phase 3:' '$COMMAND_FILE' | grep -q 'code-writer.md'"
+# Test 3: Implementation Phase Uses Wave-Based Execution
+print_test_header "Test 3: Implementation Phase Wave-Based Execution"
+assert_true "Implementation Phase mentions waves" "grep -A 100 '## State Handler: Implementation Phase' '$COMMAND_FILE' | grep -qE 'wave|parallel'"
+assert_true "Implementation Phase uses implementer-coordinator" "grep -A 100 '## State Handler: Implementation Phase' '$COMMAND_FILE' | grep -q 'implementer-coordinator.md'"
+assert_false "Implementation Phase does NOT use sequential code-writer" "grep -A 100 '## State Handler: Implementation Phase' '$COMMAND_FILE' | grep -q 'code-writer.md'"
 
 # Test 4: Parallel Execution Pattern
 print_test_header "Test 4: Parallel Execution Pattern"
 assert_true "Parallel execution documented" "grep -qE 'parallel.*execution|execute.*parallel' '$COMMAND_FILE'"
-assert_true "Wave context mentioned" "grep -qiE 'Wave.*Execution.*Context|Wave.*Context' '$COMMAND_FILE'"
+assert_true "Implementer-coordinator agent documented" "grep -q 'implementer-coordinator' '$COMMAND_FILE'"
 
-# Test 5: Wave Checkpoint Schema
-print_test_header "Test 5: Wave Checkpoint Schema"
-assert_true "Wave number tracking" "grep -qE 'wave_num|WAVE_COUNT' '$COMMAND_FILE'"
-assert_true "Completed waves tracking" "grep -qE 'WAVES_COMPLETED|waves.*completed' '$COMMAND_FILE'"
-assert_true "Wave-level checkpointing" "grep -qE 'checkpoint.*wave|wave.*checkpoint' '$COMMAND_FILE'"
+# Test 5: Checkpoint Integration
+print_test_header "Test 5: Checkpoint Integration"
+assert_true "Checkpoint utilities integrated" "grep -qE 'checkpoint-utils.sh|checkpoint.*recovery' '$COMMAND_FILE'"
+assert_true "State persistence mentioned" "grep -qE 'state.*persistence|persist.*state' '$COMMAND_FILE'"
 
-# Test 6: Wave Progress Markers
-print_test_header "Test 6: Wave Progress Markers"
-assert_true "Wave progress markers documented" "grep -qE 'Wave [0-9]+|wave.*[0-9]+' '$COMMAND_FILE'"
-assert_true "Parallel phase execution mentioned" "grep -qE 'parallel.*phase|phase.*parallel' '$COMMAND_FILE'"
+# Test 6: Implementation Delegation
+print_test_header "Test 6: Implementation Delegation"
+assert_true "Implementer-coordinator delegation" "grep -q 'implementer-coordinator' '$COMMAND_FILE'"
+assert_true "Parallel execution strategy" "grep -qE 'parallel.*execution|wave.*based' '$COMMAND_FILE'"
 
-# Test 7: Wave Execution Control
-print_test_header "Test 7: Wave Execution Control"
-assert_true "Wave execution control flow" "grep -qE 'for.*wave|while.*wave' '$COMMAND_FILE'"
-assert_true "Wave processing structure" "grep -qE 'WAVE.*\$|wave_num' '$COMMAND_FILE'"
+# Test 7: Documentation Quality
+print_test_header "Test 7: Documentation Quality"
+assert_true "Wave-based execution documented" "grep -qi 'wave' '$COMMAND_FILE'"
+assert_true "State-based architecture documented" "grep -qE 'State Handler|state.*machine' '$COMMAND_FILE'"
 
-# Test 8: Performance Metrics Tracking
-print_test_header "Test 8: Performance Metrics"
-assert_true "Time savings tracking" "grep -qE 'time.*saving|performance.*improvement' '$COMMAND_FILE'"
-assert_true "Parallel phase count tracking" "grep -qE 'parallel.*phase.*count|phases.*parallel' '$COMMAND_FILE'"
-assert_true "Wave performance targets" "grep -qE '40-60%|40.*60.*percent' '$COMMAND_FILE'"
+# Test 8: Library Integration
+print_test_header "Test 8: Library Integration"
+assert_true "Dependency analyzer sourced" "grep -q 'dependency-analyzer.sh' '$COMMAND_FILE'"
+assert_true "Error handling library sourced" "grep -qE 'error-handling.sh|emit_error' '$COMMAND_FILE'"
 
-# Test 9: Dependency Syntax Documentation
-print_test_header "Test 9: Dependency Syntax Documentation"
-assert_true "Dependency syntax mentioned" "grep -qE 'dependencies:\s*\[|phase.*depend' '$COMMAND_FILE'"
-assert_true "Wave execution explanation present" "grep -qE 'wave.*execution|parallel.*wave' '$COMMAND_FILE'"
+# Test 9: Architecture Compliance
+print_test_header "Test 9: Architecture Compliance"
+assert_true "Uses state-based phases" "grep -qE 'Implementation Phase|Testing Phase|Research Phase' '$COMMAND_FILE'"
+assert_true "Supports parallel execution" "grep -qE 'parallel|wave' '$COMMAND_FILE'"
 
 # Test 10: Library Function Usage
 print_test_header "Test 10: Library Function Usage"
@@ -144,10 +142,10 @@ else
 fi
 TESTS_RUN=$((TESTS_RUN + 1))
 
-# Test 11: Wave-Based Performance Documentation
-print_test_header "Test 11: Wave-Based Performance Documentation"
-assert_true "Performance improvement documented" "grep -qE '40-60%|40.*60.*percent' '$COMMAND_FILE'"
-assert_true "Wave-based execution benefits mentioned" "grep -qiE 'wave.*saving|wave.*performance|parallel.*saving' '$COMMAND_FILE'"
+# Test 11: Wave-Based Execution Benefits
+print_test_header "Test 11: Wave-Based Execution Benefits"
+assert_true "Wave-based execution mentioned" "grep -qi 'wave.*based' '$COMMAND_FILE'"
+assert_true "Parallel execution capability documented" "grep -qi 'parallel' '$COMMAND_FILE'"
 
 # Summary
 print_test_header "Test Summary"

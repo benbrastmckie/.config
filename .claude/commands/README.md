@@ -2,16 +2,18 @@
 
 Custom slash command definitions for Claude Code. Each command extends Claude's capabilities with specialized workflows for development, documentation, testing, and project management.
 
-**Current Command Count**: 20 active commands
+**Current Command Count**: 19 active commands
 
 ## Command Highlights
 
-**/orchestrate**:
+**/coordinate** (Production Orchestrator):
+- State machine architecture with 48.9% code reduction vs legacy orchestrators
 - Research phase creates persistent report files in `specs/reports/{topic}/`
 - Debug loop creates persistent debug reports in `debug/{topic}/`
 - Planning phase cross-references research reports automatically
 - Documentation phase generates comprehensive workflow summaries
 - Complete artifact traceability from research through implementation
+- Wave-based parallel execution for 40-60% time savings
 
 **Integration Benefits**:
 - Agents create files directly (no inline summaries)
@@ -19,6 +21,15 @@ Custom slash command definitions for Claude Code. Each command extends Claude's 
 - Clear separation: specs/ (gitignored) vs debug/ (tracked)
 - Full end-to-end workflow automation with proper documentation
 - Intelligent error recovery with persistent debugging artifacts
+
+### Command Cleanup (2025-11-15)
+
+**Removed Commands** (Clean-break philosophy):
+- `/orchestrate` → **Use `/coordinate` instead** (superseded by production-ready replacement)
+- `/supervise` → **Use `/coordinate` instead** (reference implementation only)
+- All backup files (23 files, 1.4M) → **Use git for version control** (see [Git Recovery Guide](../docs/guides/git-recovery-guide.md))
+
+**Impact**: 48.1% directory reduction (52 → 27 files), 71% disk space reclaimed (2.2M → 640K)
 
 ### Command Consolidation (2025-10-10)
 
@@ -48,9 +59,9 @@ Commands now reference shared utility libraries in `.claude/lib/`:
 **Reference-Based Composition Pattern**: Commands now use a modular documentation architecture where detailed sections are extracted to `commands/shared/` files and referenced via markdown links.
 
 **File Size Reductions**:
-- `orchestrate.md`: 2,720 → 850 lines (68.8% reduction, 1,870 lines saved)
+- `coordinate.md`: 2,720 → 850 lines (68.8% reduction, 1,870 lines saved)
 - `implement.md`: 987 → 498 lines (49.5% reduction, 489 lines saved)
-- `setup.md`: 911 → 375 lines (58.8% reduction, 536 lines saved)
+- `setup.md`: 1071 → 311 lines (71.0% reduction, 760 lines saved)
 - `revise.md`: 878 → 406 lines (53.8% reduction, 472 lines saved)
 - **Total**: 5,496 → 2,129 lines (61.3% reduction, 3,367 lines saved)
 
@@ -218,24 +229,6 @@ Commands provide structured, repeatable workflows for:
 - Coverage reporting
 - Performance analysis
 - Standards compliance
-
----
-
-#### /orchestrate
-**Purpose**: Coordinate subagents through end-to-end development workflows
-
-**Usage**: `/orchestrate <workflow-description> [--parallel] [--sequential] [--create-pr]`
-
-**Features**:
-- Multi-agent coordination with persistent artifacts
-- Research phase creates report files in `specs/reports/{topic}/`
-- Debug loop creates report files in `debug/{topic}/`
-- Planning phase cross-references research reports
-- Documentation phase with comprehensive summaries
-- Parallel or sequential execution
-- Progress tracking with TodoWrite
-- Intelligent error recovery with debugging loop
-- Optional PR creation on completion
 
 ---
 
@@ -524,7 +517,7 @@ What the command produces
 
 ### Primary Commands
 Main workflow drivers that users invoke frequently:
-- `/implement`, `/plan`, `/research`, `/test`, `/orchestrate`
+- `/implement`, `/plan`, `/research`, `/test`, `/coordinate`
 
 ### Support Commands
 Helper commands for specific tasks:
@@ -799,17 +792,16 @@ description: Brief description shown in picker
 - [expand-stage.md](expand-stage.md) - Stage expansion (L1→L2)
 - [collapse-phase.md](collapse-phase.md) - Phase collapse (L1→L0)
 - [collapse-stage.md](collapse-stage.md) - Stage collapse (L2→L1)
-- [orchestrate.md](orchestrate.md) - Multi-agent coordination
+- [coordinate.md](coordinate.md) - Multi-agent workflow coordination (production orchestrator)
 - [plan.md](plan.md) - Implementation planning
 - [plan-wizard.md](plan-wizard.md) - Interactive plan creation
+- [plan-from-template.md](plan-from-template.md) - Template-based planning
 - [refactor.md](refactor.md) - Code analysis
-- [report.md](report.md) - Research reports
+- [research.md](research.md) - Research reports
 - [revise.md](revise.md) - Plan revision
 - [setup.md](setup.md) - CLAUDE.md setup
 - [test.md](test.md) - Test execution
 - [test-all.md](test-all.md) - Full test suite
-- [update.md](update.md) - Plan and report updates
-- [validate-setup.md](validate-setup.md) - Setup validation
 
 ### Related
 - [← Parent Directory](../README.md)

@@ -22,14 +22,14 @@ TEST_OUTPUT=""
 
 # Helper functions
 pass() {
-  ((TESTS_PASSED++))
-  ((TESTS_RUN++))
+  ((TESTS_PASSED++)) || true
+  ((TESTS_RUN++)) || true
   echo "✓ $1"
 }
 
 fail() {
-  ((TESTS_FAILED++))
-  ((TESTS_RUN++))
+  ((TESTS_FAILED++)) || true
+  ((TESTS_RUN++)) || true
   echo "✗ $1"
   if [ -n "${2:-}" ]; then
     echo "  Error: $2"

@@ -1,18 +1,22 @@
-# LLM-Based Hybrid Classification Pattern
+# LLM-Based Classification Pattern (LLM-Only)
 
 **Path**: docs → concepts → patterns → llm-classification-pattern.md
 
 [Used by: /coordinate, /supervise, workflow-scope-detection.sh, workflow-detection.sh]
 
-Hybrid LLM-based classification with automatic regex fallback for 98%+ accuracy semantic understanding with zero operational risk.
+**IMPORTANT**: This document describes the historical 2-mode system. **regex-only mode has been removed** (Spec 704 Phase 4). The system now uses **LLM-only classification** with fail-fast error handling.
+
+LLM-based classification with fail-fast error handling for 98%+ accuracy semantic understanding.
+
+**Note**: Hybrid mode was removed in Spec 688. regex-only mode was removed in Spec 704 Phase 4. LLM-only mode now fails fast with clear error messages when classification fails.
 
 ## Definition
 
-LLM-Based Hybrid Classification is a pattern where semantic understanding is provided by an LLM (Claude Haiku 4.5) as the primary classifier, with automatic fallback to traditional regex patterns when the LLM is unavailable, times out, or returns low confidence. This enables high-accuracy intent detection while maintaining 100% reliability through graceful degradation.
+LLM-Based Classification is a pattern where semantic understanding is provided by an LLM (Claude Haiku 4.5) in llm-only mode, with an explicit regex-only mode available for offline development and testing. The system uses fail-fast error handling instead of automatic fallback, providing clear error messages when LLM classification fails.
 
 The pattern transforms classification from:
 - **Before**: Regex-only pattern matching (92% accuracy, 8% false positive rate on edge cases)
-- **After**: LLM semantic understanding with regex safety net (98%+ accuracy, zero operational risk)
+- **After**: LLM semantic understanding with fail-fast errors (98%+ accuracy, clear failure handling)
 
 ## Rationale
 
@@ -32,27 +36,33 @@ Regex-based classification fails on semantic edge cases:
 
 - **Semantic Understanding**: LLM distinguishes intent from keyword presence
 - **Edge Case Handling**: 8% false positive rate reduced to <2%
-- **Zero Risk**: Automatic regex fallback ensures 100% availability
+- **Fail-Fast Errors**: Clear error messages with actionable suggestions
 - **Cost Efficiency**: Negligible cost ($0.03/month for typical usage)
-- **Backward Compatibility**: 100% compatible with existing code
+- **Offline Support**: Regex-only mode for offline/air-gapped development
 
 ## Implementation
 
 ### Core Mechanism
 
-**Architecture**:
+**Architecture** (2-Mode System):
 
 ```
-User Input → detect_workflow_scope()
+User Input → classify_workflow_comprehensive()
                 │
-                ├─→ [hybrid mode] LLM Classifier (Haiku 4.5)
+                ├─→ [llm-only mode] (DEFAULT)
+                │       LLM Classifier (Haiku 4.5)
                 │       │
-                │       ├─→ [confidence >= 0.7] Return LLM result
-                │       └─→ [confidence < 0.7] Fallback to regex
+                │       ├─→ [success] Return LLM result (JSON)
+                │       └─→ [failure] Fail-fast with error message
+                │               ├─→ Timeout: "Increase WORKFLOW_CLASSIFICATION_TIMEOUT"
+                │               ├─→ API error: "Check network or use regex-only"
+                │               └─→ Low confidence: "Rephrase description"
                 │
-                ├─→ [llm-only mode] LLM Classifier (no fallback)
-                │
-                └─→ [regex-only mode] Regex Classifier (traditional)
+                └─→ [regex-only mode] (OFFLINE)
+                        Regex Classifier (traditional)
+                        └─→ Return regex result (JSON)
+
+Note: Hybrid mode removed - no automatic fallback
 ```
 
 **Step 1: Primary LLM Classification**
@@ -60,32 +70,33 @@ User Input → detect_workflow_scope()
 The system first attempts LLM-based classification:
 
 ```bash
-# From .claude/lib/workflow-scope-detection.sh
-detect_workflow_scope() {
+# From .claude/lib/workflow-scope-detection.sh (simplified for 2-mode system)
+classify_workflow_comprehensive() {
   local workflow_description="$1"
-  local scope=""
 
   case "$WORKFLOW_CLASSIFICATION_MODE" in
-    hybrid)
-      # Try LLM first, fallback to regex on error/timeout/low-confidence
-      if scope=$(classify_workflow_llm "$workflow_description" 2>/dev/null); then
-        local llm_scope
-        llm_scope=$(echo "$scope" | jq -r '.scope // empty')
-
-        if [ -n "$llm_scope" ]; then
-          log_scope_detection "hybrid" "llm" "$llm_scope"
-          echo "$llm_scope"
-          return 0
-        fi
+    llm-only)
+      # LLM classification with fail-fast error handling
+      if ! result=$(classify_workflow_llm "$workflow_description" 2>&1); then
+        # Fail fast with clear error message
+        echo "ERROR: LLM classification failed" >&2
+        echo "  Workflow: $workflow_description" >&2
+        echo "  Suggestion: Use regex-only mode for offline development" >&2
+        return 1
       fi
-
-      # LLM failed - fallback to regex
-      scope=$(classify_workflow_regex "$workflow_description")
-      log_scope_detection "hybrid" "regex-fallback" "$scope"
-      echo "$scope"
+      echo "$result"
       return 0
       ;;
-    # ... other modes ...
+    regex-only)
+      # Traditional regex classification (offline/testing)
+      classify_workflow_regex_comprehensive "$workflow_description"
+      return 0
+      ;;
+    *)
+      echo "ERROR: Invalid WORKFLOW_CLASSIFICATION_MODE='$WORKFLOW_CLASSIFICATION_MODE'" >&2
+      echo "  Valid modes: llm-only (default), regex-only" >&2
+      return 1
+      ;;
   esac
 }
 ```
@@ -165,29 +176,32 @@ parse_llm_classifier_response() {
 
 ### Configuration
 
-**Environment Variables**:
+**Environment Variables** (2-Mode System):
 
 ```bash
-# Classification mode (default: hybrid)
-WORKFLOW_CLASSIFICATION_MODE="hybrid"  # hybrid, llm-only, regex-only
-
-# Confidence threshold (default: 0.7)
-WORKFLOW_CLASSIFICATION_CONFIDENCE_THRESHOLD="0.7"
+# Classification mode (default: llm-only)
+WORKFLOW_CLASSIFICATION_MODE="llm-only"  # llm-only (default), regex-only
 
 # Timeout in seconds (default: 10)
 WORKFLOW_CLASSIFICATION_TIMEOUT="10"
 
 # Debug logging (default: 0)
 WORKFLOW_CLASSIFICATION_DEBUG="0"  # 0 = disabled, 1 = enabled
+
+# Note: WORKFLOW_CLASSIFICATION_CONFIDENCE_THRESHOLD removed (clean-break)
+# LLM now returns enhanced topics with confidence validation in parse step
 ```
 
-**Rollback Procedure**:
+**Mode Selection**:
 
 ```bash
-# Immediate rollback to regex-only mode
+# Online development (default): LLM classification
+export WORKFLOW_CLASSIFICATION_MODE=llm-only
+
+# Offline/air-gapped development: Regex classification
 export WORKFLOW_CLASSIFICATION_MODE=regex-only
 
-# Or per-command:
+# Per-command override:
 WORKFLOW_CLASSIFICATION_MODE=regex-only /coordinate "description"
 ```
 
@@ -209,33 +223,40 @@ WORKFLOW_CLASSIFICATION_MODE=regex-only /coordinate "description"
 
 ### Code Example
 
-**Full Example**: Detecting workflow scope with hybrid classification
+**Full Example**: Detecting workflow scope with 2-mode system
 
 ```bash
 #!/usr/bin/env bash
-# Example: Classify workflow descriptions
+# Example: Classify workflow descriptions (2-mode system)
 
 source .claude/lib/workflow-scope-detection.sh
 
 # Test Case 1: Semantic edge case (LLM handles better)
 description="research the research-and-revise workflow to understand misclassification"
-scope=$(detect_workflow_scope "$description")
-echo "Case 1: $scope"  # Expected: research-only (not research-and-revise)
+if result=$(classify_workflow_comprehensive "$description"); then
+  scope=$(echo "$result" | jq -r '.workflow_type')
+  echo "Case 1: $scope"  # Expected: research-only (not research-and-revise)
+else
+  echo "Case 1: LLM classification failed (use regex-only for offline)"
+fi
 
-# Test Case 2: Clear intent (both LLM and regex work)
+# Test Case 2: Clear intent (LLM mode)
 description="research authentication patterns and create implementation plan"
-scope=$(detect_workflow_scope "$description")
+result=$(classify_workflow_comprehensive "$description")
+scope=$(echo "$result" | jq -r '.workflow_type')
 echo "Case 2: $scope"  # Expected: research-and-plan
 
-# Test Case 3: Force fallback (test resilience)
-WORKFLOW_CLASSIFICATION_TIMEOUT=0 \
-  scope=$(detect_workflow_scope "$description")
-echo "Case 3: $scope (used regex fallback)"  # Expected: research-and-plan
+# Test Case 3: Regex-only mode (offline development)
+WORKFLOW_CLASSIFICATION_MODE=regex-only
+result=$(classify_workflow_comprehensive "$description")
+scope=$(echo "$result" | jq -r '.workflow_type')
+echo "Case 3: $scope (regex-only mode)"  # Expected: research-and-plan
 
-# Test Case 4: Rollback to regex-only
-WORKFLOW_CLASSIFICATION_MODE=regex-only \
-  scope=$(detect_workflow_scope "$description")
-echo "Case 4: $scope (regex-only mode)"  # Expected: research-and-plan
+# Test Case 4: Error handling (fail-fast)
+WORKFLOW_CLASSIFICATION_TIMEOUT=0.001
+if ! result=$(classify_workflow_comprehensive "$description" 2>&1); then
+  echo "Case 4: LLM timeout - fail-fast error shown"
+fi
 ```
 
 ## Performance Impact
@@ -244,12 +265,12 @@ echo "Case 4: $scope (regex-only mode)"  # Expected: research-and-plan
 
 **Accuracy Improvements** (from A/B testing on 42 real workflow descriptions):
 
-| Metric | Regex-Only | Hybrid (LLM + Regex) | Improvement |
-|--------|------------|----------------------|-------------|
-| Overall Accuracy | 92% | 97%+ | +5% |
+| Metric | Regex-Only | LLM-Only | Improvement |
+|--------|------------|----------|-------------|
+| Overall Accuracy | 92% | 98%+ | +6% |
 | Edge Case Accuracy | 60% | 95%+ | +35% |
 | False Positive Rate | 8% | <2% | -6% |
-| Agreement Rate | N/A | 97% | Baseline |
+| A/B Agreement Rate | N/A | 90%+ | Baseline |
 
 **Performance Characteristics**:
 
@@ -268,87 +289,91 @@ echo "Case 4: $scope (regex-only mode)"  # Expected: research-and-plan
 - Classification response: ~50 tokens
 - Total: ~250 tokens per classification
 
-**Reliability Metrics**:
+**Reliability Metrics** (2-Mode System):
 
 | Metric | Value | Notes |
 |--------|-------|-------|
-| Availability | 100% | Regex fallback ensures no failures |
-| Fallback Rate | <20% | Target from testing |
-| Timeout Handling | Automatic | Transparent to user |
-| Error Recovery | Graceful | No user-visible failures |
+| LLM Success Rate | 95-98% | When API available |
+| Regex Availability | 100% | No external dependencies |
+| Timeout Handling | Fail-Fast | Clear error messages |
+| Error Recovery | Manual | User switches to regex-only mode |
 
-### Optimization Techniques
+### Optimization Techniques (2-Mode System)
 
-**1. Confidence Threshold Tuning**
+**1. Timeout Optimization**
 
-Adjust threshold based on observed LLM accuracy:
-
-```bash
-# Conservative (fewer false positives, more fallbacks)
-WORKFLOW_CLASSIFICATION_CONFIDENCE_THRESHOLD=0.9
-
-# Balanced (default)
-WORKFLOW_CLASSIFICATION_CONFIDENCE_THRESHOLD=0.7
-
-# Aggressive (more LLM decisions, fewer fallbacks)
-WORKFLOW_CLASSIFICATION_CONFIDENCE_THRESHOLD=0.5
-```
-
-**2. Timeout Optimization**
-
-Reduce timeout for faster fallback in slow network conditions:
+Adjust timeout based on network conditions:
 
 ```bash
-# Fast fallback (5 seconds)
+# Fast fail-fast (5 seconds) - for good network connections
 WORKFLOW_CLASSIFICATION_TIMEOUT=5
 
 # Balanced (default: 10 seconds)
 WORKFLOW_CLASSIFICATION_TIMEOUT=10
 
-# Patient (15 seconds)
+# Patient (15 seconds) - for slow/high-latency networks
 WORKFLOW_CLASSIFICATION_TIMEOUT=15
 ```
 
-**3. Mode Selection**
+**2. Mode Selection**
 
 Choose mode based on environment and requirements:
 
 ```bash
-# Production (default): High accuracy + reliability
-WORKFLOW_CLASSIFICATION_MODE=hybrid
-
-# Testing: LLM-only to validate accuracy
+# Online development (default): LLM classification with fail-fast
 WORKFLOW_CLASSIFICATION_MODE=llm-only
 
-# Fallback: Regex-only for air-gapped or emergency rollback
+# Offline/air-gapped: Regex classification (no LLM dependency)
 WORKFLOW_CLASSIFICATION_MODE=regex-only
+
+# Testing/CI: Test both modes for consistency
+for mode in llm-only regex-only; do
+  WORKFLOW_CLASSIFICATION_MODE=$mode classify_workflow_comprehensive "test"
+done
+```
+
+**3. Error Handling Best Practices**
+
+Handle LLM failures gracefully in scripts:
+
+```bash
+# Retry with regex-only on LLM failure
+if ! result=$(classify_workflow_comprehensive "$description" 2>/dev/null); then
+  echo "LLM failed, retrying with regex-only..." >&2
+  WORKFLOW_CLASSIFICATION_MODE=regex-only \
+    result=$(classify_workflow_comprehensive "$description")
+fi
 ```
 
 ## Anti-Patterns
 
-### Example Violation 1: No Fallback (LLM-Only in Production)
+### Example Violation 1: Ignoring LLM Failures (No Error Handling)
 
-**Problem**: Using `llm-only` mode in production without fallback:
+**Problem**: Not handling LLM classification failures:
 
 ```bash
-# WRONG: No fallback - users see failures during LLM outages
+# WRONG: No error handling - script breaks on LLM failure
 WORKFLOW_CLASSIFICATION_MODE=llm-only
-scope=$(detect_workflow_scope "$description")
-# Fails if LLM times out or returns error
+result=$(classify_workflow_comprehensive "$description")
+scope=$(echo "$result" | jq -r '.workflow_type')
+# Fails silently if LLM times out or returns error
 ```
 
 **Why It Fails**:
-- LLM outages cause complete workflow failures
-- Network issues block all classification
-- No graceful degradation
+- LLM outages cause script to break
+- No clear error message for user
+- No fallback strategy
 
 **Correct Approach**:
 
 ```bash
-# CORRECT: Hybrid mode provides automatic fallback
-WORKFLOW_CLASSIFICATION_MODE=hybrid
-scope=$(detect_workflow_scope "$description")
-# Transparently falls back to regex on LLM failure
+# CORRECT: Handle errors with clear messages
+if ! result=$(classify_workflow_comprehensive "$description" 2>&1); then
+  echo "ERROR: LLM classification failed" >&2
+  echo "  Suggestion: Use WORKFLOW_CLASSIFICATION_MODE=regex-only for offline work" >&2
+  exit 1
+fi
+scope=$(echo "$result" | jq -r '.workflow_type')
 ```
 
 ### Example Violation 2: Synchronous Blocking Without Timeout
@@ -432,17 +457,17 @@ echo "Detected scope: $scope"  # Works for LLM and regex results
 - Struggles with semantic edge cases
 - Lower maintenance for simple cases, higher for complex patterns
 
-**LLM-Only Classification** (no fallback)
-- Maximum accuracy (98%+) but operational risk
-- External LLM dependency creates availability concerns
-- Not suitable for production without fallback
-- Higher cost at scale
+**LLM-Only Classification** (this pattern - default mode)
+- Maximum accuracy (98%+) with fail-fast error handling
+- External LLM dependency requires network connectivity
+- Clear error messages guide users to regex-only mode when needed
+- Minimal cost ($0.03/month typical usage)
 
-**Hybrid Classification** (this pattern)
-- Best of both: High accuracy (97%+) + zero risk (fallback)
-- Balances performance, accuracy, and reliability
-- Transparent fallback preserves user experience
-- Production-ready with minimal cost
+**Regex-Only Classification** (offline mode)
+- Good accuracy (92%) with zero external dependencies
+- 100% offline availability for air-gapped environments
+- Fast (<10ms) but struggles with semantic edge cases
+- Production-ready for offline scenarios
 
 ## References
 
@@ -471,6 +496,34 @@ echo "Detected scope: $scope"  # Works for LLM and regex results
 - [Bash Block Execution Model](../bash-block-execution-model.md) - Subprocess isolation patterns
 
 ## Changelog
+
+### 2025-11-13: Clean-Break Update - Hybrid Mode Removed
+
+**Implementation**: Spec 688, Phases 1-6 complete
+- **BREAKING**: Hybrid mode removed entirely (clean-break approach)
+- **BREAKING**: Automatic regex fallback removed from llm-only mode
+- Enhanced LLM response with detailed topics and filename slugs
+- Fail-fast error handling with actionable suggestions
+- 2-mode system: llm-only (default), regex-only (offline)
+
+**Changes**:
+- Default mode: `hybrid` → `llm-only`
+- Valid modes: 3 modes → 2 modes (hybrid deleted)
+- Fallback behavior: Automatic → Fail-fast with clear errors
+- Function renamed: `fallback_comprehensive_classification()` → `classify_workflow_regex_comprehensive()`
+
+**Test Results**:
+- test_scope_detection.sh: 30/33 passing (90.9%)
+- Hybrid mode rejection test added
+- Fail-fast scenario tests added
+
+**Related Commits**:
+- b306a787: Phase 1 - LLM Prompt and Response Enhancement
+- d4cdc9b3: Phase 2 - Hybrid Filename Generation with Validation Fallback
+- 5e3a9ebe: Phase 3 - Remove Hybrid Mode and Automatic Regex Fallback
+- 226e569a: Phase 4 - Fail-Fast Error Handling
+- d2f737bb: Phase 5 - Remove Discovery Reconciliation from Commands
+- 28c812a2: Phase 6 - Update Test Suite for 2-Mode System
 
 ### 2025-11-12: Initial Implementation
 

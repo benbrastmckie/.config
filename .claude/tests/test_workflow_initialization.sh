@@ -381,12 +381,12 @@ test_report_paths_reconstruction() {
 
   # Source the library
   if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
-    # Call the function
-    if initialize_workflow_paths "test topic" "research-only" >/dev/null 2>&1; then
+    # Call the function with research_complexity=4
+    if initialize_workflow_paths "test topic" "research-only" 4 >/dev/null 2>&1; then
       # Reconstruct array
       reconstruct_report_paths_array
 
-      # Verify array has 4 elements (max research topics)
+      # Verify array has 4 elements (specified research_complexity)
       if [[ "${#REPORT_PATHS[@]}" -eq 4 ]]; then
         pass "$test_name"
       else
@@ -678,8 +678,8 @@ test_revision_error_messages() {
     local error_output
     error_output=$(initialize_workflow_paths "Revise plan" "research-and-revise" 2>&1 || true)
 
-    # Verify error message contains diagnostic keywords
-    if echo "$error_output" | grep -qi "diagnostic" && echo "$error_output" | grep -qi "workflow description"; then
+    # Verify error message contains diagnostic information (Root cause + Solution)
+    if echo "$error_output" | grep -qi "Root cause" && echo "$error_output" | grep -qi "Solution"; then
       pass "$test_name"
     else
       fail "$test_name" "Error message missing diagnostic information. Got: $error_output"

@@ -1,96 +1,45 @@
-jesseduffield/
-nvim/session/
-tmux/
-nvim/autoload/plugged
-Unknown Organization/zoom.conf
-dconf/user
-enchant
-environment.d
-evolution/sources
-fontconfig/conf.d
-git
-gnome-control-center/backgrounds
-lazygit
-nautilus
-nvim/plugin
-nvim/spell
-pulse
-session
-totem
-yelp
-.gsd-keyboard.settings-ported
-QtProject.conf
-gnome-initial-setup-done
-mimeapps.list
-monitors.xml
-monitors.xml~
-okularpartrc
-okularrc
-user-dirs.dirs
-user-dirs.locale
-zoom.conf
-zoomus.conf
-cef_user_data/Dictionaries/en-US-10-1.bdic
-nvim/sessions
-gtk-3.0
-okular.kmessagebox
-gtk-4.0/gtk.css
-cef_user_data/WidevineCdm
-evince
-temp
-fish/fish_variables
-alacritty/alacritty.toml
-configstore/
-nixpkgs/
-plots/
-.gitignore
-configstore.save
-nixpkgs.save/overlays
-plots.save
-VSCodium
-torrential
-Smart Code ltd/Stremio.conf
-Vial/Vial.conf
-qmk/qmk.ini
-via-nativia
-fish/conf.d/private.fish
-BraveSoftware/Brave-Browser
-niri/config.kdl
-systemd/user
-nvim/examples
-LazyVim
-Signal
+# ============================================================================
+# Universal Dotfiles Gitignore
+# Items that should be ignored in ANY clone of this configuration
+# ============================================================================
 
+# Claude Code System Files
+.claude/data/                              # Runtime data and logs
+.claude/tmp/                               # Temporary execution files
+.claude/lib/tmp/                           # Library temporary files
+.claude/registry/                          # Runtime registry cache
+.claude/specs/*/reports/                   # Generated research reports (gitignored per directory-protocols)
+.claude/specs/*/plans/                     # Generated implementation plans (gitignored per directory-protocols)
+.claude/specs/*/summaries/                 # Generated execution summaries (gitignored per directory-protocols)
 
-*.aux
-*.bbl
-*.bib
-*.blg
-*.fdb_latexmk
-*.fls
-*.log
-*.pdf
-*.synctex.gz
+# Neovim - Session & Generated Files
+nvim/sessions/                             # Session state files
+nvim/session/                              # Alternate session directory
+nvim/spell/                                # Compiled spell files
+nvim/plugin/                               # Plugin installations
+nvim/autoload/plugged/                     # Legacy plugin manager
+nvim/examples/                             # Example/test files
+LazyVim/                                   # LazyVim distribution files
 
-**/CLAUDE.md
-**/.claude/
-!.claude/
-!.claude/commands/
-!.claude/commands/*.md
-# Archive directory (local only, not tracked)
-.claude/archive/
-# Topic-based specs organization (added by /migrate-specs)
-# Gitignore all specs subdirectories
-specs/*/*
-# Un-ignore debug subdirectories within topics
-!specs/*/debug/
-!specs/*/debug/**
-nvim/test.tex
-himalaya/config.toml
-himalaya/config.toml.bak
-nvim/lua/neotex/plugins/tools/himalaya/spec/FAST_SYNC.md
+# Shell - Runtime Variables
+fish/fish_variables                        # Fish shell runtime state
 
-# Claude TODO files in specs root (should use specs/{topic}/plans/ instead)
-.claude/specs/TODO.md
-.claude/specs/TODO*.md
-node_modules/
+# Build Artifacts - LaTeX
+*.aux                                      # LaTeX auxiliary files
+*.bbl                                      # BibTeX bibliography
+*.bib                                      # Bibliography database
+*.blg                                      # BibTeX log
+*.fdb_latexmk                              # Latexmk database
+*.fls                                      # LaTeX file list
+*.log                                      # Build logs
+*.pdf                                      # Generated PDFs
+*.synctex.gz                               # SyncTeX compression
+
+# Build Artifacts - Node/JavaScript
+node_modules/                              # NPM dependencies
+
+# Generic Temporary Files
+temp/                                      # Temporary working directory
+**/tmp/                                    # Temporary directories at any level
+.gitignore                                 # Avoid recursive gitignore tracking
+gmail-oauth2.env

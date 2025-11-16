@@ -1,8 +1,21 @@
 # /setup Command and Utilities Guide
 
+**Executable**: `.claude/commands/setup.md` - Lean execution script (311 lines)
+**This Guide**: Comprehensive documentation, architecture, and usage examples
+
 ## Overview
 
 The /setup command ecosystem provides tools for creating and maintaining optimal CLAUDE.md files with intelligent context management.
+
+**Command Modes** (6 modes, priority-based):
+1. **Standard** (`/setup [dir]`) - Generate/update CLAUDE.md with standards detection
+2. **Cleanup** (`/setup --cleanup [dir]`) - Extract bloated sections to auxiliary files
+3. **Validation** (`/setup --validate [dir]`) - Verify CLAUDE.md structure and links
+4. **Analysis** (`/setup --analyze [dir]`) - Detect discrepancies between docs and codebase
+5. **Report Application** (`/setup --apply-report <path> [dir]`) - Apply filled analysis reports
+6. **Enhancement** (`/setup --enhance-with-docs [dir]`) - Auto-discover docs and enhance CLAUDE.md
+
+**Architecture**: This command follows the [Executable/Documentation Separation Pattern](../concepts/patterns/executable-documentation-separation.md). The executable file (setup.md) contains lean execution logic with bash blocks and verification checkpoints. This guide contains comprehensive architecture, usage examples, and troubleshooting.
 
 ## Core Utilities
 
