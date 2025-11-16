@@ -780,7 +780,7 @@ append_workflow_state "REPORTS_CREATED" "$REPORTS_CREATED"
 **Step 1: Copy supervisor template**
 
 ```bash
-cp .claude/templates/sub-supervisor-template.md \
+cp .claude/agents/templates/sub-supervisor-template.md \
    .claude/agents/my-custom-supervisor.md
 ```
 

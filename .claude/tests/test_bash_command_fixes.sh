@@ -73,15 +73,15 @@ else
 fi
 
 # ==============================================================================
-# Test 3: Verify unified-logger.sh sourced in coordinate.md Phase 0 Block 3
+# Test 3: Verify unified-logger.sh in REQUIRED_LIBS for all scopes
 # ==============================================================================
 echo ""
-echo "Test 3: Verify emit_progress function availability in Phase 0 Block 3"
+echo "Test 3: Verify unified-logger.sh in REQUIRED_LIBS array"
 
-if grep -A 100 "STEP 0.6: Initialize Workflow Paths" "$PROJECT_ROOT/.claude/commands/coordinate.md" | grep "source.*unified-logger.sh" >/dev/null; then
-  pass "unified-logger.sh sourced in Phase 0 Block 3"
+if grep 'REQUIRED_LIBS=.*unified-logger.sh' "$PROJECT_ROOT/.claude/commands/coordinate.md" >/dev/null; then
+  pass "unified-logger.sh in REQUIRED_LIBS array"
 else
-  fail "unified-logger.sh sourcing" "library sourced in Block 3" "not found"
+  fail "unified-logger.sh in REQUIRED_LIBS" "library in REQUIRED_LIBS array" "not found"
 fi
 
 # ==============================================================================

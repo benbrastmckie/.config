@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # test_orchestration_commands.sh
-# Unified test suite for orchestration commands (/coordinate, /research, /supervise)
+# Unified test suite for orchestration commands (/coordinate, /research)
 
 set -uo pipefail
 
@@ -111,9 +111,6 @@ test_delegation_rate() {
     research.md)
       expected_min=3  # Research-specialist (multiple), synthesizer, spec-updater
       ;;
-    supervise.md)
-      expected_min=5  # Research, plan, implement, test, doc (5 main phases)
-      ;;
     *)
       expected_min=1  # At least one agent invocation expected
       ;;
@@ -143,7 +140,6 @@ echo "Test Suite 1: Agent Invocation Patterns"
 echo "----------------------------------------"
 test_agent_invocation_pattern "$SCRIPT_DIR/../commands/coordinate.md"
 test_agent_invocation_pattern "$SCRIPT_DIR/../commands/research.md"
-test_agent_invocation_pattern "$SCRIPT_DIR/../commands/supervise.md"
 echo ""
 
 # Test Suite 2: Bootstrap Sequences
@@ -151,7 +147,6 @@ echo "Test Suite 2: Bootstrap Sequences"
 echo "----------------------------------------"
 test_bootstrap_sequence "coordinate"
 test_bootstrap_sequence "research"
-test_bootstrap_sequence "supervise"
 echo ""
 
 # Test Suite 3: Delegation Rate Analysis
@@ -159,7 +154,6 @@ echo "Test Suite 3: Delegation Rate Analysis"
 echo "----------------------------------------"
 test_delegation_rate "$SCRIPT_DIR/../commands/coordinate.md"
 test_delegation_rate "$SCRIPT_DIR/../commands/research.md"
-test_delegation_rate "$SCRIPT_DIR/../commands/supervise.md"
 echo ""
 
 # Test Suite 4: Utility Scripts

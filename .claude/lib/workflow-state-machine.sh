@@ -211,31 +211,253 @@ load_completed_states_from_state() {
   return 0
 }
 
-# sm_init: Initialize new state machine from workflow description
-# Usage: sm_init <workflow-description> <command-name>
-# Example: sm_init "Research authentication patterns" "coordinate"
+# generate_descriptive_topics_from_plans: Generate descriptive topic names from plan analysis
+# Usage: generate_descriptive_topics_from_plans <workflow-description> <complexity>
+# Returns: JSON array of descriptive topic names
+generate_descriptive_topics_from_plans() {
+  local workflow_desc="$1"
+  local complexity="${2:-4}"  # Default to 4 topics
+
+  # Extract plan paths from description (pattern: /specs/NNN_topic/plans/001_*.md or .claude/specs/...)
+  local source_plan=$(echo "$workflow_desc" | grep -oE '(/[^ ]*)?\.claude/specs/[0-9]+_[^/]+/plans/[^/]+\.md' | head -1)
+  local target_plan=$(echo "$workflow_desc" | grep -oE '(/[^ ]*)?\.claude/specs/[0-9]+_[^/]+/plans/[^/]+\.md' | tail -1)
+
+  # If no absolute path, try relative paths and convert to absolute
+  if [ -z "$source_plan" ]; then
+    local relative_plan=$(echo "$workflow_desc" | grep -oE '\.claude/specs/[0-9]+_[^/]+/plans/[^/]+\.md' | head -1)
+    if [ -n "$relative_plan" ] && [ -f "$CLAUDE_PROJECT_DIR/$relative_plan" ]; then
+      source_plan="$CLAUDE_PROJECT_DIR/$relative_plan"
+    fi
+  fi
+
+  if [ -n "$source_plan" ] && [ -f "$source_plan" ]; then
+    # Read source plan to determine what was implemented
+    local plan_title=$(grep -m1 "^# " "$source_plan" | sed 's/^# //' | sed 's/ Plan$//' | sed 's/ Implementation$//')
+
+    # Extract target topic name from target plan path if available
+    local target_topic_name=""
+    if [ -n "$target_plan" ] && [ "$target_plan" != "$source_plan" ]; then
+      target_topic_name=$(basename $(dirname $(dirname "$target_plan")) | sed 's/^[0-9]\+_//' | tr '_' ' ')
+    fi
+
+    # Generate descriptive topics based on complexity
+    case "$complexity" in
+      2)
+        jq -n --arg t1 "$(echo "$plan_title" | sed 's/ implementation//') implementation architecture" \
+              --arg t2 "Integration approach and lessons learned" \
+              '[$t1, $t2]'
+        ;;
+      3)
+        jq -n --arg t1 "$(echo "$plan_title" | sed 's/ implementation//') implementation architecture" \
+              --arg t2 "${target_topic_name:-Target system} integration points" \
+              --arg t3 "Performance characteristics and optimization opportunities" \
+              '[$t1, $t2, $t3]'
+        ;;
+      *)  # 4 or more
+        jq -n --arg t1 "$(echo "$plan_title" | sed 's/ implementation//') implementation architecture" \
+              --arg t2 "${target_topic_name:-Target system} integration points" \
+              --arg t3 "Performance characteristics and metrics" \
+              --arg t4 "Optimization opportunities and lessons learned" \
+              '[$t1, $t2, $t3, $t4]'
+        ;;
+    esac
+  else
+    # Fallback: Could not find or read plan file
+    # Generate generic topics matching complexity count
+    case "$complexity" in
+      2)
+        echo '["Topic 1","Topic 2"]'
+        ;;
+      3)
+        echo '["Topic 1","Topic 2","Topic 3"]'
+        ;;
+      *)
+        echo '["Topic 1","Topic 2","Topic 3","Topic 4"]'
+        ;;
+    esac
+  fi
+}
+
+# generate_descriptive_topics_from_description: Extract key concepts from workflow description
+# Usage: generate_descriptive_topics_from_description <workflow-description> <complexity>
+# Returns: JSON array of descriptive topic names
+generate_descriptive_topics_from_description() {
+  local workflow_desc="$1"
+  local complexity="${2:-4}"
+
+  # Extract key terms (simple noun/verb extraction)
+  # This is a basic implementation - can be enhanced with more sophisticated NLP
+  local key_terms=$(echo "$workflow_desc" | \
+    grep -oE '\b[A-Z][a-z]+\b|\b(implement|create|add|refactor|optimize|fix|debug|test|document)[a-z]*\b' | \
+    head -8 | \
+    tr '\n' ' ')
+
+  # If we found meaningful terms, use them
+  if [ -n "$key_terms" ]; then
+    # Generate topics based on extracted terms and complexity
+    case "$complexity" in
+      2)
+        jq -n --arg t1 "$key_terms architecture and design" \
+              --arg t2 "Implementation approach and testing" \
+              '[$t1, $t2]'
+        ;;
+      3)
+        jq -n --arg t1 "$key_terms architecture and design" \
+              --arg t2 "Implementation approach and patterns" \
+              --arg t3 "Testing and validation strategy" \
+              '[$t1, $t2, $t3]'
+        ;;
+      *)  # 4 or more
+        jq -n --arg t1 "$key_terms architecture and design" \
+              --arg t2 "Implementation approach and patterns" \
+              --arg t3 "Testing and validation strategy" \
+              --arg t4 "Performance and optimization considerations" \
+              '[$t1, $t2, $t3, $t4]'
+        ;;
+    esac
+  else
+    # Fallback: No meaningful terms found
+    case "$complexity" in
+      2)
+        echo '["Topic 1","Topic 2"]'
+        ;;
+      3)
+        echo '["Topic 1","Topic 2","Topic 3"]'
+        ;;
+      *)
+        echo '["Topic 1","Topic 2","Topic 3","Topic 4"]'
+        ;;
+    esac
+  fi
+}
+
+# sm_init: Initialize new state machine with pre-computed classification
+# Usage: sm_init <workflow-description> <command-name> <workflow-type> <research-complexity> <research-topics-json>
+# Example: sm_init "Research authentication patterns" "coordinate" "research-and-plan" 2 '[{"short_name":"Auth Patterns",...}]'
+#
+# BREAKING CHANGE (Spec 1763161992 Phase 2): Classification now performed by invoking command BEFORE sm_init.
+# sm_init accepts classification results as parameters (no internal classification).
+# sm_init: Initialize state machine and persist classification variables
+#
+# Purpose:
+#   Initialize state machine with workflow classification parameters and persist
+#   all critical state variables to both bash environment and state file.
+#
+# Parameters:
+#   $1 - workflow_desc: Description of the workflow/task
+#   $2 - command_name: Name of the command invoking sm_init (e.g., "coordinate")
+#   $3 - workflow_type: Workflow scope (research-only|research-and-plan|research-and-revise|full-implementation|debug-only)
+#   $4 - research_complexity: Integer 1-4 indicating research depth
+#   $5 - research_topics_json: JSON array of research topics
+#
+# Environment Exports:
+#   WORKFLOW_SCOPE - Workflow type (same as workflow_type parameter)
+#   RESEARCH_COMPLEXITY - Research depth (1-4)
+#   RESEARCH_TOPICS_JSON - JSON array of topics
+#   TERMINAL_STATE - Terminal state for this workflow (computed from workflow_type)
+#   CURRENT_STATE - Initial state (always "initialize")
+#
+# State File Persistence:
+#   All 5 environment variables are persisted to STATE_FILE using append_workflow_state()
+#   This ensures verification checkpoints can validate state file contents
+#   Follows COMPLETED_STATES persistence pattern (see lines 144-145)
+#
+# Returns:
+#   0 - Success (all validation passed, variables exported and persisted)
+#   1 - Validation failure (invalid parameters, missing classification)
+#
+# Calling Pattern:
+#   1. Invoke workflow-classifier agent to get CLASSIFICATION_JSON
+#   2. Extract workflow_type, research_complexity, research_topics_json from CLASSIFICATION_JSON
+#   3. Call sm_init with extracted parameters
+#   4. Verify environment variables exported (WORKFLOW_SCOPE, etc.)
+#   5. Verify state file persistence (using verify_state_variables)
+#
+# Example:
+#   sm_init "$WORKFLOW_DESC" "coordinate" "research-only" "2" '["topic1","topic2"]'
+#   # Check return code
+#   if [ $? -ne 0 ]; then
+#     echo "State machine initialization failed"
+#     exit 1
+#   fi
+#   # Verify exports
+#   [ -n "${WORKFLOW_SCOPE:-}" ] || { echo "WORKFLOW_SCOPE not exported"; exit 1; }
+#   # Verify state file
+#   verify_state_variables "$STATE_FILE" "WORKFLOW_SCOPE" "TERMINAL_STATE" "CURRENT_STATE" "RESEARCH_COMPLEXITY" "RESEARCH_TOPICS_JSON"
+#
 sm_init() {
   local workflow_desc="$1"
   local command_name="$2"
+  local workflow_type="$3"
+  local research_complexity="$4"
+  local research_topics_json="$5"
 
   # Store workflow configuration
   WORKFLOW_DESCRIPTION="$workflow_desc"
   COMMAND_NAME="$command_name"
 
-  # Detect workflow scope using existing detection library
-  # Note: workflow-scope-detection.sh is for /coordinate (supports revision patterns)
-  #       workflow-detection.sh is for /supervise (older pattern matching)
-  if [ -f "$SCRIPT_DIR/workflow-scope-detection.sh" ]; then
-    source "$SCRIPT_DIR/workflow-scope-detection.sh"
-    WORKFLOW_SCOPE=$(detect_workflow_scope "$workflow_desc")
-  elif [ -f "$SCRIPT_DIR/workflow-detection.sh" ]; then
-    # Fallback to older library if newer one not available
-    source "$SCRIPT_DIR/workflow-detection.sh"
-    WORKFLOW_SCOPE=$(detect_workflow_scope "$workflow_desc")
-  else
-    # Fallback: assume full-implementation if detection unavailable
-    WORKFLOW_SCOPE="full-implementation"
+  # Parameter validation (fail-fast)
+  if [ -z "$workflow_type" ] || [ -z "$research_complexity" ] || [ -z "$research_topics_json" ]; then
+    echo "ERROR: sm_init requires classification parameters" >&2
+    echo "  Usage: sm_init WORKFLOW_DESC COMMAND_NAME WORKFLOW_TYPE RESEARCH_COMPLEXITY RESEARCH_TOPICS_JSON" >&2
+    echo "" >&2
+    echo "  Missing parameters:" >&2
+    [ -z "$workflow_type" ] && echo "    - workflow_type" >&2
+    [ -z "$research_complexity" ] && echo "    - research_complexity" >&2
+    [ -z "$research_topics_json" ] && echo "    - research_topics_json" >&2
+    echo "" >&2
+    echo "  IMPORTANT: Commands must invoke workflow-classifier agent BEFORE calling sm_init" >&2
+    echo "  See: .claude/agents/workflow-classifier.md" >&2
+    return 1
   fi
+
+  # Validate workflow_type enum
+  case "$workflow_type" in
+    research-only|research-and-plan|research-and-revise|full-implementation|debug-only)
+      : # Valid
+      ;;
+    *)
+      echo "ERROR: Invalid workflow_type: $workflow_type" >&2
+      echo "  Valid types: research-only, research-and-plan, research-and-revise, full-implementation, debug-only" >&2
+      return 1
+      ;;
+  esac
+
+  # Validate research_complexity range
+  if ! [[ "$research_complexity" =~ ^[0-9]+$ ]] || [ "$research_complexity" -lt 1 ] || [ "$research_complexity" -gt 4 ]; then
+    echo "ERROR: research_complexity must be integer 1-4, got: $research_complexity" >&2
+    return 1
+  fi
+
+  # Validate research_topics_json is valid JSON array
+  if ! echo "$research_topics_json" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    echo "ERROR: research_topics_json must be valid JSON array" >&2
+    echo "  Received: $research_topics_json" >&2
+    return 1
+  fi
+
+  # Store validated classification parameters
+  WORKFLOW_SCOPE="$workflow_type"
+  RESEARCH_COMPLEXITY="$research_complexity"
+  RESEARCH_TOPICS_JSON="$research_topics_json"
+
+  # Export classification dimensions for use by orchestration commands
+  export WORKFLOW_SCOPE
+  export RESEARCH_COMPLEXITY
+  export RESEARCH_TOPICS_JSON
+
+  # Persist classification variables to state file (following COMPLETED_STATES pattern)
+  # This ensures verification checkpoints can validate state file persistence
+  if command -v append_workflow_state &> /dev/null; then
+    append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
+    append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+    append_workflow_state "RESEARCH_TOPICS_JSON" "$RESEARCH_TOPICS_JSON"
+  else
+    echo "WARNING: append_workflow_state not available, skipping classification persistence" >&2
+  fi
+
+  # Log accepted classification
+  echo "Classification accepted: scope=$WORKFLOW_SCOPE, complexity=$RESEARCH_COMPLEXITY, topics=$(echo "$RESEARCH_TOPICS_JSON" | jq -r 'length')" >&2
 
   # Configure terminal state based on workflow scope
   case "$WORKFLOW_SCOPE" in
@@ -264,8 +486,24 @@ sm_init() {
   CURRENT_STATE="$STATE_INITIALIZE"
   COMPLETED_STATES=()
 
-  # Return initialization status
+  # Export and persist terminal state and current state for verification
+  export TERMINAL_STATE
+  export CURRENT_STATE
+
+  # Persist state machine variables to state file
+  if command -v append_workflow_state &> /dev/null; then
+    append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
+    append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
+  else
+    echo "WARNING: append_workflow_state not available, skipping state machine persistence" >&2
+  fi
+
+  # Log initialization status
   echo "State machine initialized: scope=$WORKFLOW_SCOPE, terminal=$TERMINAL_STATE" >&2
+
+  # CRITICAL: Return RESEARCH_COMPLEXITY value for use in dynamic path allocation
+  # This enables Phase 0 just-in-time allocation (eliminates pre-allocation tension)
+  echo "$RESEARCH_COMPLEXITY"
   return 0
 }
 

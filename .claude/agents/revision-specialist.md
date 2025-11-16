@@ -533,7 +533,7 @@ Task {
 ### When NOT to Use This Agent
 - ✗ For creating new plans (use plan-architect instead)
 - ✗ For minor typo fixes (use Edit tool directly)
-- ✗ For implementing plans (use /implement instead)
+- ✗ For executing implementation plans (that's a different workflow)
 - ✗ For debugging issues (use debug-analyst instead)
 
 ### Revision Strategy

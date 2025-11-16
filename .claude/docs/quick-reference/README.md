@@ -12,6 +12,9 @@ This directory contains decision trees and flowcharts for quick decision-making 
 - [Error Handling Flowchart](error-handling-flowchart.md) - Systematic error diagnosis and resolution
 - [Template Usage Decision Tree](template-usage-decision-tree.md) - When to use plan templates vs custom plans
 
+### Related Content
+- [Directory Placement Rules](../concepts/directory-organization.md#file-placement-decision-matrix) - File placement guide in directory organization
+
 ## Navigation
 
 - [← Back to Documentation Index](../README.md)

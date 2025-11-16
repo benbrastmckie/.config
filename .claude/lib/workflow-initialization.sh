@@ -123,6 +123,117 @@ extract_topic_from_plan_path() {
 }
 
 # ==============================================================================
+# Helper Function: validate_and_generate_filename_slugs
+# ==============================================================================
+
+# validate_and_generate_filename_slugs: Three-tier validation for filename slug generation
+#
+# Implements hybrid filename generation (Strategy 3 from Spec 688 Report 002):
+# Tier 1: Use LLM-generated slug if valid (preferred)
+# Tier 2: Sanitize short_name if LLM slug invalid (fallback)
+# Tier 3: Use generic topicN if short_name empty (ultimate fallback)
+#
+# Arguments:
+#   $1 - classification_result: JSON classification result containing research_topics array
+#   $2 - research_complexity: Expected number of topics (1-4)
+#
+# Output:
+#   Prints bash array declaration: slugs=("slug1" "slug2" ...)
+#   Can be eval'd by caller: eval "$(validate_and_generate_filename_slugs "$json" 2)"
+#
+# Returns:
+#   0 on success, 1 on error
+#
+# Side effects:
+#   Logs slug generation strategy to unified-logger.sh (if available)
+#
+validate_and_generate_filename_slugs() {
+  local classification_result="$1"
+  local research_complexity="$2"
+
+  # Validate inputs
+  if [ -z "$classification_result" ]; then
+    echo "ERROR: validate_and_generate_filename_slugs: classification_result required" >&2
+    return 1
+  fi
+
+  if [ -z "$research_complexity" ]; then
+    echo "ERROR: validate_and_generate_filename_slugs: research_complexity required" >&2
+    return 1
+  fi
+
+  # Extract research_topics array from classification result
+  local research_topics
+  research_topics=$(echo "$classification_result" | jq -c '.research_topics // []')
+
+  if [ "$research_topics" = "[]" ] || [ -z "$research_topics" ]; then
+    echo "ERROR: validate_and_generate_filename_slugs: research_topics array empty or missing" >&2
+    return 1
+  fi
+
+  # Validate count matches complexity
+  local topics_count
+  topics_count=$(echo "$research_topics" | jq 'length')
+
+  if [ "$topics_count" -ne "$research_complexity" ]; then
+    echo "ERROR: validate_and_generate_filename_slugs: topics count ($topics_count) != complexity ($research_complexity)" >&2
+    return 1
+  fi
+
+  # Generate validated slugs (three-tier fallback)
+  local -a validated_slugs
+  local slug_regex='^[a-z0-9_]{1,50}$'
+
+  for ((i=0; i<research_complexity; i++)); do
+    local filename_slug short_name final_slug strategy
+
+    # Extract fields from topic
+    filename_slug=$(echo "$research_topics" | jq -r ".[$i].filename_slug // empty")
+    short_name=$(echo "$research_topics" | jq -r ".[$i].short_name // empty")
+
+    # Tier 1: Validate LLM-generated slug
+    if [ -n "$filename_slug" ] && echo "$filename_slug" | grep -Eq "$slug_regex"; then
+      # Check for path separator injection and 255-byte filename limit
+      if echo "$filename_slug" | grep -q '/'; then
+        # Path separator found - reject and fall back
+        strategy="sanitize"
+        final_slug=$(sanitize_topic_name "$short_name")
+      elif [ ${#filename_slug} -gt 255 ]; then
+        # Exceeds filesystem limit - truncate
+        strategy="truncate"
+        final_slug="${filename_slug:0:255}"
+      else
+        # Valid LLM slug - use it
+        strategy="llm"
+        final_slug="$filename_slug"
+      fi
+    # Tier 2: Sanitize short_name fallback
+    elif [ -n "$short_name" ]; then
+      strategy="sanitize"
+      final_slug=$(sanitize_topic_name "$short_name")
+    # Tier 3: Generic fallback
+    else
+      strategy="generic"
+      final_slug="topic$((i+1))"
+    fi
+
+    validated_slugs+=("$final_slug")
+
+    # Log slug generation strategy (if unified-logger available)
+    if declare -f log_slug_generation >/dev/null 2>&1; then
+      log_slug_generation "INFO" "$i" "$strategy" "$final_slug"
+    fi
+  done
+
+  # Output bash array declaration for eval by caller
+  local slugs_str
+  slugs_str=$(printf '"%s" ' "${validated_slugs[@]}")
+  echo "slugs=($slugs_str)"
+
+  return 0
+}
+
+# ==============================================================================
 # Core Function: initialize_workflow_paths
 # ==============================================================================
 
@@ -136,6 +247,8 @@ extract_topic_from_plan_path() {
 # Arguments:
 #   $1 - WORKFLOW_DESCRIPTION: User's workflow description (e.g., "implement auth")
 #   $2 - WORKFLOW_SCOPE: Workflow type (research-only, research-and-plan, full-implementation, debug-only)
+#   $3 - RESEARCH_COMPLEXITY: Number of research subtopics (1-4, default: 2) - NEW in Spec 678
+#   $4 - CLASSIFICATION_RESULT: JSON classification result with research_topics array (optional, for filename slugs) - NEW in Spec 688
 #
 # Exports (all paths exported to calling script):
 #   LOCATION - Project root directory
@@ -167,6 +280,8 @@ extract_topic_from_plan_path() {
 initialize_workflow_paths() {
   local workflow_description="${1:-}"
   local workflow_scope="${2:-}"
+  local research_complexity="${3:-2}"  # NEW: Accept RESEARCH_COMPLEXITY as third argument (default: 2)
+  local classification_result="${4:-}"  # NEW in Spec 688: JSON classification result for filename slugs (optional)
 
   # Validate inputs
   if [ -z "$workflow_description" ]; then
@@ -176,6 +291,12 @@ initialize_workflow_paths() {
 
   if [ -z "$workflow_scope" ]; then
     echo "ERROR: initialize_workflow_paths() requires WORKFLOW_SCOPE as second argument" >&2
+    return 1
+  fi
+
+  # Validate RESEARCH_COMPLEXITY range (1-4)
+  if ! echo "$research_complexity" | grep -Eq '^[1-4]$'; then
+    echo "ERROR: RESEARCH_COMPLEXITY must be 1-4, got: $research_complexity" >&2
     return 1
   fi
 
@@ -264,15 +385,71 @@ initialize_workflow_paths() {
 
   # Path calculation silent - coordinate.md will display summary
 
-  # Calculate topic path
-  local topic_path="${specs_root}/${topic_num}_${topic_name}"
+  # Calculate topic path - conditional based on workflow scope
+  local topic_path
+  if [ "${workflow_scope:-}" = "research-and-revise" ]; then
+    # research-and-revise: Reuse existing plan's topic directory
+    if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "CRITICAL ERROR: research-and-revise requires EXISTING_PLAN_PATH" >&2
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "" >&2
+      echo "Workflow scope: research-and-revise" >&2
+      echo "EXISTING_PLAN_PATH: ${EXISTING_PLAN_PATH:-<not set>}" >&2
+      echo "" >&2
+      echo "Root cause: EXISTING_PLAN_PATH must be set in environment before calling initialize_workflow_paths()" >&2
+      echo "Solution: Set EXISTING_PLAN_PATH to the path of the plan being revised" >&2
+      echo "" >&2
+      return 1
+    fi
+
+    # Extract topic directory from plan path
+    # Pattern: /path/to/specs/NNN_topic_name/plans/001_plan.md -> /path/to/specs/NNN_topic_name
+    topic_path=$(dirname $(dirname "$EXISTING_PLAN_PATH"))
+
+    # Validate it exists (defensive check)
+    if [ ! -d "$topic_path" ]; then
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "CRITICAL ERROR: Existing topic directory not found" >&2
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "" >&2
+      echo "Extracted path: $topic_path" >&2
+      echo "EXISTING_PLAN_PATH: $EXISTING_PLAN_PATH" >&2
+      echo "" >&2
+      echo "Root cause: Extracted topic directory does not exist on filesystem" >&2
+      echo "Solution: Verify EXISTING_PLAN_PATH points to a valid plan file" >&2
+      echo "" >&2
+      return 1
+    fi
+
+    # Extract topic number and name from existing directory
+    topic_num=$(basename "$topic_path" | grep -oE '^[0-9]+')
+    topic_name=$(basename "$topic_path" | sed 's/^[0-9]\+_//')
+
+    echo "Using existing topic directory: $topic_path (research-and-revise mode)" >&2
+  else
+    # All other workflow scopes: Create new topic directory
+    topic_path="${specs_root}/${topic_num}_${topic_name}"
+  fi
 
   # ============================================================================
   # STEP 3: Directory Structure Creation (Silent - verification occurs, no output)
   # ============================================================================
 
   # Create topic structure using utility function (creates only root directory)
-  if ! create_topic_structure "$topic_path"; then
+  # Skip creation for research-and-revise (directory already exists)
+  if [ "${workflow_scope:-}" = "research-and-revise" ]; then
+    # Verify directory exists (already checked above, but defensive)
+    if [ ! -d "$topic_path" ]; then
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "CRITICAL ERROR: Topic directory disappeared between validation checks" >&2
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+      echo "" >&2
+      echo "This should never happen. Topic path: $topic_path" >&2
+      echo "" >&2
+      return 1
+    fi
+  elif ! create_topic_structure "$topic_path"; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     echo "CRITICAL ERROR: Topic root directory creation failed" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
@@ -315,33 +492,64 @@ initialize_workflow_paths() {
   # Pre-calculate ALL artifact paths (exported to calling script)
   # ============================================================================
 
-  # Research phase paths (pre-allocate maximum 4 paths for Phase 0 optimization)
+  # Research phase paths (dynamically allocate based on RESEARCH_COMPLEXITY)
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  # Design Trade-off: Fixed capacity (4) vs. dynamic complexity (1-4)
-  #   - Pre-allocate max paths upfront → 85% token reduction, 25x speedup
-  #   - Actual usage determined by RESEARCH_COMPLEXITY in Phase 1 (see coordinate.md)
-  #   - Unused paths remain exported but empty (minor memory overhead acceptable)
+  # Design Enhancement: Just-in-time dynamic allocation with filename slugs (Spec 678, 688)
+  #   - Allocate EXACTLY $research_complexity paths (1-4)
+  #   - Use LLM-generated filename slugs (validated) for semantic filenames
+  #   - Three-tier fallback: LLM slug → sanitized short_name → generic topicN
+  #   - Eliminates pre-allocation tension and post-research filename discovery
+  #   - Maintains Phase 0 optimization (85% token reduction, 25x speedup)
   #
-  # Rationale: Phase 0 optimization pattern prioritizes performance over memory efficiency.
-  # Separation of concerns: Path calculation (infrastructure) vs. complexity detection (orchestration).
-  # See: phase-0-optimization.md (pattern guide), Spec 676 (architecture analysis)
+  # Rationale: Complexity and filename slugs determined in sm_init (before path
+  # allocation), enabling just-in-time allocation with semantic filenames.
+  # See: Spec 678 Phase 4 (dynamic allocation), Spec 688 Phase 2 (slug validation)
   # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
   local -a report_paths
-  for i in 1 2 3 4; do
-    report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_topic${i}.md")
+  local -a validated_slugs
+
+  # Generate validated filename slugs if classification_result provided
+  if [ -n "$classification_result" ]; then
+    # Extract and validate filename slugs using three-tier fallback
+    local slugs_declaration
+    if slugs_declaration=$(validate_and_generate_filename_slugs "$classification_result" "$research_complexity" 2>&1); then
+      # eval the array declaration: slugs=("slug1" "slug2" ...)
+      eval "$slugs_declaration"
+      validated_slugs=("${slugs[@]}")
+    else
+      # Validation failed - log warning and fall back to generic filenames
+      echo "WARNING: Filename slug validation failed, using generic filenames" >&2
+      echo "  Error: $slugs_declaration" >&2
+      # Generate generic fallback slugs
+      for i in $(seq 1 "$research_complexity"); do
+        validated_slugs+=("topic${i}")
+      done
+    fi
+  else
+    # No classification result provided - use generic filenames (backwards compatibility)
+    for i in $(seq 1 "$research_complexity"); do
+      validated_slugs+=("topic${i}")
+    done
+  fi
+
+  # Allocate report paths using validated slugs
+  for i in $(seq 1 "$research_complexity"); do
+    local slug_index=$((i - 1))  # slugs array is 0-indexed
+    local slug="${validated_slugs[$slug_index]}"
+    report_paths+=("${topic_path}/reports/$(printf '%03d' $i)_${slug}.md")
   done
 
   # Export individual report path variables for bash block persistence
   # Arrays cannot be exported across subprocess boundaries, so we export
   # individual REPORT_PATH_0, REPORT_PATH_1, etc. variables
-  export REPORT_PATH_0="${report_paths[0]}"
-  export REPORT_PATH_1="${report_paths[1]}"
-  export REPORT_PATH_2="${report_paths[2]}"
-  export REPORT_PATH_3="${report_paths[3]}"
+  # NOTE: Zero-indexed (REPORT_PATH_0, REPORT_PATH_1, ...), count is $research_complexity
+  for i in $(seq 0 $((research_complexity - 1))); do
+    export "REPORT_PATH_$i=${report_paths[$i]}"
+  done
 
-  # Export fixed count (4) for subprocess persistence
-  # Phase 1 orchestration uses RESEARCH_COMPLEXITY (1-4) for actual agent invocation control
-  export REPORT_PATHS_COUNT=4
+  # Export exact count matching RESEARCH_COMPLEXITY (no unused variables)
+  export REPORT_PATHS_COUNT="$research_complexity"
 
   # Define research subdirectory for overview synthesis
   local research_subdir="${topic_path}/reports"
@@ -556,8 +764,9 @@ reconstruct_array_from_indexed_vars() {
     return 0  # Graceful degradation: empty array
   fi
 
-  # Safe to use indirect expansion now
-  local count="${!count_var_name}"
+  # Use nameref pattern to avoid indirect expansion (bash 4.3+ pattern)
+  local -n count_ref="$count_var_name"
+  local count="$count_ref"
 
   # Validate count is numeric
   if ! [[ "$count" =~ ^[0-9]+$ ]]; then

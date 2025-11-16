@@ -21,6 +21,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "${PROJECT_ROOT}/.claude/lib/state-persistence.sh"
 source "${PROJECT_ROOT}/.claude/lib/verification-helpers.sh"
 
+# Enable test mode for LLM classification (prevents real API calls)
+export WORKFLOW_CLASSIFICATION_TEST_MODE=1
+
 print_test_header() {
   echo ""
   echo "═══════════════════════════════════════════════════════"
@@ -691,8 +694,10 @@ test_phase3_first_block_graceful_init() {
 
   # Execute load with is_first_block=true (should gracefully initialize)
   local exit_code
+  set +e  # Temporarily disable errexit to capture exit code
   load_workflow_state "$test_workflow_id" true
   exit_code=$?
+  set -e  # Re-enable errexit
 
   # Verify it returned 1 (initialized new state)
   if [ "$exit_code" -eq 1 ]; then
@@ -730,8 +735,10 @@ test_phase3_subsequent_block_success() {
 
   # Execute load with is_first_block=false (should load successfully)
   local exit_code
+  set +e  # Temporarily disable errexit to capture exit code
   load_workflow_state "$test_workflow_id" false
   exit_code=$?
+  set -e  # Re-enable errexit
 
   # Verify it returned 0 (loaded successfully)
   if [ "$exit_code" -eq 0 ]; then
@@ -771,8 +778,10 @@ test_phase3_subsequent_block_fail_fast() {
   # Execute load with is_first_block=false (should fail-fast)
   local exit_code
   local error_output
+  set +e  # Temporarily disable errexit to capture exit code
   error_output=$(load_workflow_state "$test_workflow_id" false 2>&1)
   exit_code=$?
+  set -e  # Re-enable errexit
 
   # Verify it returned 2 (CRITICAL ERROR)
   if [ "$exit_code" -eq 2 ]; then
@@ -816,8 +825,10 @@ test_phase3_default_parameter_behavior() {
 
   # Execute load WITHOUT second parameter (should default to false)
   local exit_code
+  set +e  # Temporarily disable errexit to capture exit code
   load_workflow_state "$test_workflow_id" 2>/dev/null
   exit_code=$?
+  set -e  # Re-enable errexit
 
   # Verify default behavior is fail-fast (exit code 2)
   if [ "$exit_code" -eq 2 ]; then
@@ -845,7 +856,7 @@ test_phase4_state_id_file_fixed_location() {
 
   # Simulate coordinate.md Block 1 creating state ID file
   WORKFLOW_ID="test_coordinate_$$_$(date +%s)"
-  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_test_$$.txt"
+  COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id_test_$$.txt"
 
   # Execute pattern from coordinate.md lines 136-138
   echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
@@ -872,7 +883,7 @@ test_phase4_state_id_file_survives_bash_block() {
   print_test_header "Phase 4.2: State ID File Survives First Bash Block Exit"
 
   WORKFLOW_ID="test_coordinate_$$_$(date +%s)"
-  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_block_$$.txt"
+  COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id_block_$$.txt"
 
   # Simulate Block 1 execution (subprocess context)
   bash -c "
@@ -904,7 +915,7 @@ test_phase4_no_exit_trap_in_block_1() {
   fi
 
   # Verify fixed semantic filename used
-  if grep -q 'COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"' "$COORDINATE_FILE"; then
+  if grep -q 'COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"' "$COORDINATE_FILE"; then
     pass "coordinate.md uses fixed semantic filename (Pattern 1)"
   else
     fail "coordinate.md does not use fixed semantic filename"
@@ -960,7 +971,7 @@ test_phase5_error_message_state_id_missing() {
   print_test_header "Phase 5.2: Error Message When State ID File Missing"
 
   # Simulate Block 2+ with missing state ID file
-  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_missing_$$.txt"
+  COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id_missing_$$.txt"
 
   # Ensure file does not exist
   rm -f "$COORDINATE_STATE_ID_FILE"
@@ -987,7 +998,7 @@ test_phase5_error_message_state_id_missing() {
 test_phase5_diagnostic_message_quality() {
   print_test_header "Phase 5.3: Diagnostic Message Quality"
 
-  COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id_diagnostic_$$.txt"
+  COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id_diagnostic_$$.txt"
   rm -f "$COORDINATE_STATE_ID_FILE"
 
   # Test diagnostic output from verification function

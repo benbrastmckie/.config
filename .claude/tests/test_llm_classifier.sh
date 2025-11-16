@@ -427,9 +427,9 @@ echo
 echo "========================================="
 echo "Test Summary"
 echo "========================================="
-echo "PASS: $PASS_COUNT"
-echo "FAIL: $FAIL_COUNT"
-echo "SKIP: $SKIP_COUNT"
+echo "✓ PASS: $PASS_COUNT"
+echo "✗ FAIL: $FAIL_COUNT"
+echo "⊘ SKIP: $SKIP_COUNT"
 echo "TOTAL: $((PASS_COUNT + FAIL_COUNT + SKIP_COUNT))"
 echo
 

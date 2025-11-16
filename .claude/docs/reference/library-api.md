@@ -751,7 +751,7 @@ echo "Research complete: ${RESEARCH_COMPLETE}"  # Output: true
 
 ### workflow-llm-classifier.sh
 
-LLM-based semantic workflow classification using Claude Haiku 4.5 for high-accuracy intent detection. Provides primary classification in hybrid mode with confidence-based fallback triggering.
+LLM-based semantic workflow classification using Claude Haiku 4.5 for high-accuracy intent detection. Returns enhanced topics with detailed descriptions, filename slugs, and research focus areas.
 
 **Pattern**: Semantic understanding with confidence thresholds
 **Accuracy**: 98%+ (vs 92% regex-only)
@@ -831,14 +831,16 @@ Validate LLM response and check confidence threshold.
 
 ### workflow-scope-detection.sh
 
-Unified hybrid workflow classification combining LLM semantic understanding with regex fallback for 100% reliability. Supports three modes: hybrid (default), llm-only, regex-only.
+Unified workflow classification with 2-mode system: llm-only (default, online) and regex-only (offline). LLM-only mode uses fail-fast error handling, no automatic fallback.
 
-**Pattern**: Hybrid classification with automatic fallback
-**Modes**: hybrid (default), llm-only, regex-only
-**Accuracy**: 97%+ (hybrid), 92% (regex-only)
-**Reliability**: 100% (automatic fallback)
-**Test Coverage**: 31 tests, 100% pass rate (30 passing, 1 skipped)
-**Dependencies**: `workflow-llm-classifier.sh` (hybrid/llm-only modes), `jq` (JSON parsing)
+**Pattern**: 2-mode classification with fail-fast error handling
+**Modes**: llm-only (default, online), regex-only (offline)
+**Accuracy**: 98%+ (llm-only), 92% (regex-only)
+**Reliability**: 95-98% (llm-only), 100% (regex-only)
+**Test Coverage**: 33 tests, 90.9% pass rate (30 passing, 1 failure, 2 skipped)
+**Dependencies**: `workflow-llm-classifier.sh` (llm-only mode), `jq` (JSON parsing)
+
+**BREAKING CHANGE**: Hybrid mode removed in Spec 688 clean-break update. Use `llm-only` (default) or `regex-only` (offline) explicitly.
 
 **Backward Compatibility**: 100% compatible with existing code (function signature unchanged)
 
@@ -856,27 +858,35 @@ Unified workflow classification with automatic mode detection and fallback.
 **Exit Codes**: `0` (always succeeds - fallback ensures reliability)
 
 **Modes** (controlled by `WORKFLOW_CLASSIFICATION_MODE` environment variable):
-- `hybrid` (default): LLM first, regex fallback on timeout/low-confidence
-- `llm-only`: LLM only, fail-fast on errors
-- `regex-only`: Traditional regex patterns only
+- `llm-only` (default): LLM classification with fail-fast on errors
+- `regex-only`: Traditional regex patterns for offline/testing
+
+**BREAKING**: `hybrid` mode removed - no automatic fallback
 
 **Example**:
 ```bash
 source .claude/lib/workflow-scope-detection.sh
 
-# Hybrid mode (default) - LLM with automatic fallback
-scope=$(detect_workflow_scope "research auth patterns and create plan")
+# llm-only mode (default) - Use classify_workflow_comprehensive
+result=$(classify_workflow_comprehensive "research auth patterns and create plan")
+scope=$(echo "$result" | jq -r '.workflow_type')
 echo "$scope"  # Output: "research-and-plan"
 
-# Regex-only mode (immediate rollback)
+# Backward compatibility wrapper
+scope=$(detect_workflow_scope "research auth patterns")
+echo "$scope"  # Output: "research-and-plan"
+
+# Regex-only mode for offline
 WORKFLOW_CLASSIFICATION_MODE=regex-only \
   scope=$(detect_workflow_scope "implement feature X")
 echo "$scope"  # Output: "full-implementation"
 
-# Force fallback by timeout
-WORKFLOW_CLASSIFICATION_TIMEOUT=0 \
-  scope=$(detect_workflow_scope "research auth")
-echo "$scope"  # Output: "research-and-plan" (via regex fallback)
+# Error handling for LLM failures
+if ! result=$(classify_workflow_comprehensive "task" 2>&1); then
+  echo "LLM failed, using regex-only..." >&2
+  WORKFLOW_CLASSIFICATION_MODE=regex-only \
+    result=$(classify_workflow_comprehensive "task")
+fi
 ```
 
 ##### `classify_workflow_regex(workflow_description)`

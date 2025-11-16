@@ -368,3 +368,146 @@ verify_state_variables() {
 }
 
 export -f verify_state_variables
+
+# verify_files_batch - Batch verify multiple files with concise success reporting
+#
+# PURPOSE:
+#   Verifies multiple files exist and contain content, with single-line success
+#   reporting and comprehensive diagnostics only on failure. Achieves improved
+#   token efficiency compared to sequential verify_file_created() calls.
+#
+# PARAMETERS:
+#   $1 - phase_name: Phase identifier for error messages (e.g., "Phase 1")
+#   $2+ - file_entries: Space-separated pairs of "path:description"
+#
+# RETURNS:
+#   0 - All files exist and have content (success)
+#   1 - One or more files missing or empty (failure)
+#
+# OUTPUT:
+#   Success: "✓ All N files verified" (single line)
+#   Failure: Comprehensive diagnostics for each failed file
+#
+# EXAMPLES:
+#   # Verify 2 research reports
+#   verify_files_batch "Phase 1" \
+#     "/path/to/report1.md:Research report 1" \
+#     "/path/to/report2.md:Research report 2"
+#   # Success: ✓ All 2 files verified
+#   # Return: 0
+#
+#   # Failure case (one missing file)
+#   verify_files_batch "Phase 1" \
+#     "/path/to/existing.md:Existing file" \
+#     "/path/to/missing.md:Missing file"
+#   # Output: Multi-line diagnostic for missing.md
+#   # Return: 1
+#
+#   # Usage in workflow
+#   if verify_files_batch "Phase 1" "${FILE_ENTRIES[@]}"; then
+#     echo ""  # Newline after success message
+#     proceed_to_phase_2
+#   else
+#     echo "ERROR: File verification failed"
+#     exit 1
+#   fi
+#
+# TOKEN EFFICIENCY:
+#   - Sequential verify_file_created(): ~50 tokens per file (N files = 50N tokens)
+#   - Batch verification: ~30 tokens total (success) or ~50N tokens (failure)
+#   - Net savings: ~20 tokens per file on success path
+#   - Example: 5 files = 250 tokens → 30 tokens (88% reduction)
+verify_files_batch() {
+  local phase_name="$1"
+  shift
+  local file_entries=("$@")
+
+  local total_count="${#file_entries[@]}"
+  local success_count=0
+  local failed_files=()
+  local failed_descs=()
+
+  # Verify each file
+  for entry in "${file_entries[@]}"; do
+    # Split entry into path and description (format: "path:description")
+    local file_path="${entry%%:*}"
+    local item_desc="${entry#*:}"
+
+    if [ -f "$file_path" ] && [ -s "$file_path" ]; then
+      ((success_count++))
+    else
+      failed_files+=("$file_path")
+      failed_descs+=("$item_desc")
+    fi
+  done
+
+  # Success path: All files verified
+  if [ "$success_count" -eq "$total_count" ]; then
+    echo -n "✓ All $total_count files verified"
+    return 0
+  else
+    # Failure path: Report failures
+    echo ""
+    echo "✗ ERROR [$phase_name]: Batch file verification failed"
+    echo ""
+    echo "Summary:"
+    echo "  Expected: $total_count files"
+    echo "  Success: $success_count files"
+    echo "  Failed: $((total_count - success_count)) files"
+    echo ""
+
+    # Report each failed file with diagnostics
+    for i in "${!failed_files[@]}"; do
+      local file_path="${failed_files[$i]}"
+      local item_desc="${failed_descs[$i]}"
+
+      echo "Failed file #$((i + 1)): $item_desc"
+      echo "  Expected path: $file_path"
+      echo "  Expected filename: $(basename "$file_path")"
+      echo ""
+
+      # Specific failure reason
+      if [ ! -f "$file_path" ]; then
+        echo "  Status: File does not exist"
+      else
+        echo "  Status: File empty (0 bytes)"
+      fi
+      echo ""
+
+      # Directory diagnostics
+      local dir="$(dirname "$file_path")"
+      echo "  Parent directory: $dir"
+
+      if [ -d "$dir" ]; then
+        local file_count
+        file_count=$(ls -1 "$dir" 2>/dev/null | wc -l)
+        echo "  Directory status: ✓ Exists ($file_count files)"
+
+        if [ "$file_count" -gt 0 ]; then
+          echo "  Recent files:"
+          ls -lt "$dir" | head -4 | tail -n +2 | awk '{print "    - " $NF " (" $5 " bytes)"}'
+        fi
+      else
+        echo "  Directory status: ✗ Does not exist"
+        echo "  Fix: mkdir -p $dir"
+      fi
+      echo ""
+    done
+
+    # Consolidated troubleshooting
+    echo "TROUBLESHOOTING:"
+    echo "  1. List files in parent directory:"
+    echo "     ls -la $(dirname "${failed_files[0]}")"
+    echo ""
+    echo "  2. Check agent completion signals:"
+    echo "     grep -r \"CREATED:\" \"\${CLAUDE_PROJECT_DIR}/.claude/tmp/\""
+    echo ""
+    echo "  3. Verify state persistence:"
+    echo "     declare -p REPORT_PATHS 2>/dev/null || echo \"Array not set\""
+    echo ""
+
+    return 1
+  fi
+}
+
+export -f verify_files_batch

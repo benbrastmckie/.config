@@ -5,11 +5,13 @@
 # pattern ($GITHUB_OUTPUT, $GITHUB_STATE). It provides fast, reliable state management for
 # critical state items where file-based persistence outperforms stateless recalculation.
 #
-# Source guard: Prevent multiple sourcing
+# Source guard: Prevent multiple sourcing within same bash process
+# NOTE: Do NOT export this variable - each bash block is a separate process
+# and needs to source the library independently
 if [ -n "${STATE_PERSISTENCE_SOURCED:-}" ]; then
   return 0
 fi
-export STATE_PERSISTENCE_SOURCED=1
+STATE_PERSISTENCE_SOURCED=1
 #
 # Key Features:
 # - Selective state persistence (7 critical items identified via decision criteria)
@@ -258,7 +260,12 @@ append_workflow_state() {
     return 1
   fi
 
-  echo "export ${key}=\"${value}\"" >> "$STATE_FILE"
+  # Escape special characters in value for safe shell export
+  # Replace backslashes first (to avoid double-escaping), then quotes
+  local escaped_value="${value//\\/\\\\}"  # \ -> \\
+  escaped_value="${escaped_value//\"/\\\"}"  # " -> \"
+
+  echo "export ${key}=\"${escaped_value}\"" >> "$STATE_FILE"
 }
 
 # Save JSON checkpoint (atomic write)

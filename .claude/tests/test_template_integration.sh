@@ -7,7 +7,7 @@ set -e
 # Setup test environment
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="$SCRIPT_DIR/../lib"
-TEMPLATE_DIR="$SCRIPT_DIR/../templates"
+TEMPLATE_DIR="$SCRIPT_DIR/../commands/templates"
 TEST_SPECS_DIR="$SCRIPT_DIR/test_specs"
 
 # Check if template system exists
@@ -132,7 +132,7 @@ test_list_templates() {
   local count
   count=$(echo "$output" | wc -l)
 
-  assert_equals "11" "$count" "Should list 11 templates"
+  assert_equals "10" "$count" "Should list 10 templates"
 }
 
 test_list_categories() {

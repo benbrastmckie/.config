@@ -526,10 +526,124 @@ get_report_section() {
   fi
 }
 
+extract_accuracy_metadata() {
+  local report_path="${1:-}"
+
+  if [ -z "$report_path" ]; then
+    echo "Usage: extract_accuracy_metadata <accuracy-report-path>" >&2
+    return 1
+  fi
+
+  if [ ! -f "$report_path" ]; then
+    echo "{\"error\":\"File not found: $report_path\"}" >&2
+    return 1
+  fi
+
+  # Extract title (first # heading)
+  local title=$(head -100 "$report_path" | grep -m1 '^# ' | sed 's/^# //')
+
+  # Extract 50-word summary from Executive Summary section
+  local summary=""
+  local exec_summary_section=$(get_report_section "$report_path" "Executive Summary" 2>/dev/null || echo "")
+
+  if [ -n "$exec_summary_section" ]; then
+    # Extract first paragraph from executive summary (non-heading, non-empty lines)
+    summary=$(echo "$exec_summary_section" | grep -v '^#' | grep -v '^$' | head -5 | tr '\n' ' ' | awk '{for(i=1;i<=50 && i<=NF;i++) printf "%s ", $i}')
+  else
+    # Fallback: first 50 words from content after title
+    summary=$(head -200 "$report_path" | grep -v '^#' | grep -v '^-' | grep -v '^$' | head -5 | tr '\n' ' ' | awk '{for(i=1;i<=50 && i<=NF;i++) printf "%s ", $i}')
+  fi
+
+  # Extract error count from Current Accuracy State section
+  local error_count="0"
+  local accuracy_section=$(get_report_section "$report_path" "Current Accuracy State" 2>/dev/null || echo "")
+  if [ -n "$accuracy_section" ]; then
+    # Look for error count patterns like "12 critical accuracy errors" or "Found 12 errors"
+    local error_line=$(echo "$accuracy_section" | grep -iE '[0-9]+\s+(critical\s+)?(accuracy\s+)?errors?' | head -1)
+    if [ -n "$error_line" ]; then
+      error_count=$(echo "$error_line" | grep -oE '[0-9]+' | head -1)
+    fi
+    # Also check executive summary for error count
+    if [ "$error_count" = "0" ]; then
+      error_count=$(echo "$summary" | grep -oE '[0-9]+\s+(critical\s+)?(accuracy\s+)?errors?' | grep -oE '[0-9]+' | head -1 || echo "0")
+    fi
+  fi
+
+  # Extract completeness percentage from Completeness Analysis section
+  local completeness_pct="0"
+  local completeness_section=$(get_report_section "$report_path" "Completeness Analysis" 2>/dev/null || echo "")
+  if [ -n "$completeness_section" ]; then
+    # Look for completeness percentage patterns like "85%" or "completeness: 85%"
+    local pct_line=$(echo "$completeness_section" | grep -iE '(completeness|coverage).*[0-9]+%|[0-9]+%.*completeness' | head -1)
+    if [ -n "$pct_line" ]; then
+      completeness_pct=$(echo "$pct_line" | grep -oE '[0-9]+%' | grep -oE '[0-9]+' | head -1)
+    fi
+    # Also check for fraction pattern like "102/120" and calculate percentage
+    if [ "$completeness_pct" = "0" ]; then
+      local fraction=$(echo "$completeness_section" | grep -oE '[0-9]+/[0-9]+' | head -1)
+      if [ -n "$fraction" ]; then
+        local numerator=$(echo "$fraction" | cut -d/ -f1)
+        local denominator=$(echo "$fraction" | cut -d/ -f2)
+        if [ "$denominator" != "0" ]; then
+          completeness_pct=$((numerator * 100 / denominator))
+        fi
+      fi
+    fi
+  fi
+
+  # Extract key findings from Quality Improvement Recommendations section (top 3-5)
+  local key_findings=""
+  local recommendations_section=$(get_report_section "$report_path" "Quality Improvement Recommendations" 2>/dev/null || echo "")
+
+  if [ -n "$recommendations_section" ]; then
+    # Extract first 5 bullet points or table rows
+    key_findings=$(echo "$recommendations_section" | grep -E '^-|^\|' | grep -v '^\|-' | head -5 | sed 's/^- //' | sed 's/^\| //' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+  else
+    key_findings="[]"
+  fi
+
+  # Get file size for context reduction calculation
+  local file_size=$(wc -c < "$report_path" | tr -d ' ')
+
+  # Build JSON
+  if command -v jq &> /dev/null; then
+    jq -n \
+      --arg title "${title:-Documentation Accuracy Analysis Report}" \
+      --arg summary "${summary% }" \
+      --arg error_count "${error_count:-0}" \
+      --arg completeness "${completeness_pct:-0}" \
+      --argjson findings "${key_findings:-[]}" \
+      --arg path "$report_path" \
+      --arg size "$file_size" \
+      '{
+        title: $title,
+        summary: $summary,
+        error_count: ($error_count | tonumber),
+        completeness_pct: ($completeness | tonumber),
+        key_findings: $findings,
+        path: $path,
+        size: ($size | tonumber)
+      }'
+  else
+    cat <<EOF
+{
+  "title": "${title:-Documentation Accuracy Analysis Report}",
+  "summary": "${summary% }",
+  "error_count": ${error_count:-0},
+  "completeness_pct": ${completeness_pct:-0},
+  "key_findings": ${key_findings:-[]},
+  "path": "$report_path",
+  "size": $file_size
+}
+EOF
+  fi
+}
+
 # Export functions
 export -f extract_report_metadata
 export -f extract_plan_metadata
 export -f extract_summary_metadata
+export -f extract_accuracy_metadata
 export -f load_metadata_on_demand
 export -f cache_metadata
 export -f get_cached_metadata

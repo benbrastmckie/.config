@@ -30,9 +30,11 @@ This directory provides a complete development workflow ecosystem:
 .claude/
 ├── agents/              Specialized AI assistant definitions
 │   ├── prompts/        Agent evaluation templates
-│   └── shared/         Agent protocols (error, invocation, logging)
+│   ├── shared/         Agent protocols (error, invocation, logging)
+│   └── templates/      Reusable agent templates (sub-supervisor, etc.)
 ├── checkpoints/         Workflow state for interruption recovery
 ├── commands/            Slash commands for workflows
+│   └── templates/      Plan templates (YAML) for /plan-from-template
 ├── data/                Runtime data (gitignored)
 │   ├── agents/         Agent runtime data and metrics
 │   ├── checkpoints/    Workflow state persistence
@@ -50,12 +52,34 @@ This directory provides a complete development workflow ecosystem:
 │   ├── reports/        Research and investigations
 │   ├── standards/      Command templates and protocols
 │   └── summaries/      Implementation summaries
-├── templates/           Reusable workflow templates (YAML)
 ├── tests/               Test suites for system validation
 ├── tts/                 Voice notification system
 ├── utils/               Specialized helper utilities
 └── settings.local.json  Hook and permission configuration
 ```
+
+## Organization Principles
+
+The directory structure follows clear separation of concerns:
+
+1. **Templates Organization**:
+   - **agents/templates/** - Agent behavioral templates (sub-supervisor-template.md)
+   - **commands/templates/** - Plan templates for /plan-from-template (YAML files)
+   - These serve different purposes and should not be confused
+
+2. **Executable vs Sourced**:
+   - **scripts/** - Standalone CLI tools (validate-links.sh, migrate-*.sh)
+   - **lib/** - Sourced function libraries (plan-parsing.sh, error-handling.sh)
+   - **utils/** - Specialized helpers bridging the two
+
+3. **Documentation Requirements**:
+   - Every directory must have a README.md
+   - READMEs should document purpose, characteristics, and when to use
+   - Cross-reference related directories for clarity
+
+4. **File Placement Decision Matrix**:
+   - See [lib/README.md - Decision Matrix](lib/README.md#decision-matrix-when-to-use-lib-vs-scripts) for lib/ vs scripts/
+   - See [scripts/README.md - Decision Matrix](scripts/README.md#decision-matrix-when-to-use-scripts) for complete guidelines
 
 ## Directory Roles
 

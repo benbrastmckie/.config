@@ -34,8 +34,12 @@ set +H  # Disable history expansion to prevent bad substitution errors
 # SUBSTITUTE THE WORKFLOW DESCRIPTION IN THE LINE BELOW
 # CRITICAL: Replace YOUR_WORKFLOW_DESCRIPTION_HERE with the actual workflow description from the user
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
-echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
-echo "✓ Workflow description captured to ${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
+# Use timestamp-based filename for concurrent execution safety (Spec 678 Phase 5)
+WORKFLOW_TEMP_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc_$(date +%s%N).txt"
+echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "$WORKFLOW_TEMP_FILE"
+# Save temp file path for Part 2 to read
+echo "$WORKFLOW_TEMP_FILE" > "${HOME}/.claude/tmp/coordinate_workflow_desc_path.txt"
+echo "✓ Workflow description captured to $WORKFLOW_TEMP_FILE"
 ```
 
 ---
@@ -61,8 +65,15 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
 fi
 
 # Read workflow description from file (written in Part 1)
-# Use fixed filename (not $$ which changes per bash block)
-COORDINATE_DESC_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
+# Read temp file path from path file (Spec 678 Phase 5: concurrent execution safety)
+COORDINATE_DESC_PATH_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc_path.txt"
+
+if [ -f "$COORDINATE_DESC_PATH_FILE" ]; then
+  COORDINATE_DESC_FILE=$(cat "$COORDINATE_DESC_PATH_FILE")
+else
+  # Fallback to legacy fixed filename for backward compatibility
+  COORDINATE_DESC_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc.txt"
+fi
 
 if [ -f "$COORDINATE_DESC_FILE" ]; then
   WORKFLOW_DESCRIPTION=$(cat "$COORDINATE_DESC_FILE" 2>/dev/null || echo "")
@@ -126,6 +137,16 @@ else
   exit 1
 fi
 
+# VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
+if ! command -v verify_file_created &>/dev/null; then
+  echo "ERROR: verify_file_created function not available after library sourcing"
+  exit 1
+fi
+if ! command -v handle_state_error &>/dev/null; then
+  echo "ERROR: handle_state_error function not available after library sourcing"
+  exit 1
+fi
+
 # Generate unique workflow ID (timestamp-based for reproducibility)
 WORKFLOW_ID="coordinate_$(date +%s)"
 
@@ -134,7 +155,7 @@ STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 
 # Pattern 1: Fixed Semantic Filename (bash-block-execution-model.md:163-191)
 # Save workflow ID to file for subsequent blocks using fixed location
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 echo "$WORKFLOW_ID" > "$COORDINATE_STATE_ID_FILE"
 
 # VERIFICATION CHECKPOINT: Verify state ID file created successfully (Standard 0: Execution Enforcement)
@@ -144,13 +165,202 @@ verify_file_created "$COORDINATE_STATE_ID_FILE" "State ID file" "Initialization"
 
 # Save workflow ID and description to state for subsequent blocks
 append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
+verify_state_variable "WORKFLOW_ID" || {
+  handle_state_error "CRITICAL: WORKFLOW_ID not persisted to state" 1
+}
+
 append_workflow_state "WORKFLOW_DESCRIPTION" "$SAVED_WORKFLOW_DESC"
+verify_state_variable "WORKFLOW_DESCRIPTION" || {
+  handle_state_error "CRITICAL: WORKFLOW_DESCRIPTION not persisted to state" 1
+}
 
 # Save state ID file path to workflow state for bash block persistence
 append_workflow_state "COORDINATE_STATE_ID_FILE" "$COORDINATE_STATE_ID_FILE"
+verify_state_variable "COORDINATE_STATE_ID_FILE" || {
+  handle_state_error "CRITICAL: COORDINATE_STATE_ID_FILE not persisted to state" 1
+}
 
-# Initialize state machine (use SAVED value, not overwritten variable)
-sm_init "$SAVED_WORKFLOW_DESC" "coordinate"
+# Persist performance instrumentation start time for cross-bash-block access (subprocess isolation)
+append_workflow_state "PERF_START_TOTAL" "$PERF_START_TOTAL"
+
+echo "✓ State machine pre-initialization complete. Proceeding to workflow classification..."
+```
+
+---
+
+## Phase 0.1: Workflow Classification
+
+**EXECUTE NOW**: USE the Task tool to invoke workflow-classifier agent:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Classify workflow intent for orchestration"
+  model: "haiku"
+  timeout: 30000
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/workflow-classifier.md
+
+    **Workflow-Specific Context**:
+    - Workflow Description: $SAVED_WORKFLOW_DESC
+    - Command Name: coordinate
+
+    **CRITICAL**: Return structured JSON classification.
+
+    Execute classification following all guidelines in behavioral file.
+    Return: CLASSIFICATION_COMPLETE: {JSON classification object}
+  "
+}
+
+USE the Bash tool:
+
+```bash
+set +H  # Disable history expansion
+
+# STATE RESTORATION PATTERN: Cross-bash-block state persistence
+#
+# Why state reloading is required:
+# - Each bash block executes in a separate subprocess with its own PID
+# - Environment variables do NOT persist across bash blocks (subprocess isolation)
+# - File-based persistence enables cross-block communication (GitHub Actions pattern)
+# - State must be restored at the beginning of each bash block
+#
+# Ordering dependencies:
+# 1. Load state files BEFORE using state variables
+# 2. Source libraries BEFORE calling library functions
+# 3. Verify state restoration BEFORE proceeding with workflow logic
+#
+# See: .claude/docs/concepts/bash-block-execution-model.md for subprocess isolation details
+#
+# Re-load workflow state (needed after Task invocation)
+COORDINATE_DESC_PATH_FILE="${HOME}/.claude/tmp/coordinate_workflow_desc_path.txt"
+if [ -f "$COORDINATE_DESC_PATH_FILE" ]; then
+  COORDINATE_DESC_FILE=$(cat "$COORDINATE_DESC_PATH_FILE")
+  SAVED_WORKFLOW_DESC=$(cat "$COORDINATE_DESC_FILE" 2>/dev/null || echo "")
+fi
+
+# Standard 13: CLAUDE_PROJECT_DIR detection
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Re-source required libraries
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
+
+# Load workflow state
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
+
+# FAIL-FAST STATE LOADING: Load classification from state (saved by workflow-classifier agent)
+# The workflow-classifier agent MUST have executed append_workflow_state "CLASSIFICATION_JSON" before this block
+# See .claude/agents/workflow-classifier.md for agent behavior
+
+# FAIL-FAST VALIDATION: Classification must exist in state
+if [ -z "${CLASSIFICATION_JSON:-}" ]; then
+  handle_state_error "CRITICAL: workflow-classifier agent did not save CLASSIFICATION_JSON to state
+
+Diagnostic:
+  - Agent was instructed to save classification via append_workflow_state
+  - Expected: append_workflow_state \"CLASSIFICATION_JSON\" \"\$CLASSIFICATION_JSON\"
+  - Check agent's bash execution in previous response
+  - State file: \$STATE_FILE (loaded via load_workflow_state at line 220)
+
+This is a critical bug. The workflow cannot proceed without classification data." 1
+fi
+
+# FAIL-FAST VALIDATION: JSON must be valid
+# Exit code capture pattern prevents bash preprocessing errors
+# Bash tool preprocessing happens BEFORE runtime 'set +H' directive
+# Pattern validated in Specs 620, 641, 672, 685, 700, 719
+echo "$CLASSIFICATION_JSON" | jq empty 2>/dev/null
+JSON_VALID=$?
+if [ $JSON_VALID -ne 0 ]; then
+  handle_state_error "CRITICAL: Invalid JSON in CLASSIFICATION_JSON
+
+Diagnostic:
+  - Content: $CLASSIFICATION_JSON
+  - JSON validation failed
+  - Agent may have malformed the JSON output
+
+This is a critical bug. The workflow cannot proceed with invalid JSON." 1
+fi
+
+# Parse JSON fields using jq
+WORKFLOW_TYPE=$(echo "$CLASSIFICATION_JSON" | jq -r '.workflow_type' 2>/dev/null)
+RESEARCH_COMPLEXITY=$(echo "$CLASSIFICATION_JSON" | jq -r '.research_complexity' 2>/dev/null)
+RESEARCH_TOPICS_JSON=$(echo "$CLASSIFICATION_JSON" | jq -c '.research_topics' 2>/dev/null)
+
+# VERIFICATION CHECKPOINT: Verify all required fields extracted (Standard 0: Execution Enforcement)
+if [ -z "$WORKFLOW_TYPE" ] || [ "$WORKFLOW_TYPE" = "null" ]; then
+  handle_state_error "CRITICAL: workflow_type not found in classification JSON: $CLASSIFICATION_JSON" 1
+fi
+
+if [ -z "$RESEARCH_COMPLEXITY" ] || [ "$RESEARCH_COMPLEXITY" = "null" ]; then
+  handle_state_error "CRITICAL: research_complexity not found in classification JSON: $CLASSIFICATION_JSON" 1
+fi
+
+if [ -z "$RESEARCH_TOPICS_JSON" ] || [ "$RESEARCH_TOPICS_JSON" = "null" ]; then
+  handle_state_error "CRITICAL: research_topics not found in classification JSON: $CLASSIFICATION_JSON" 1
+fi
+
+# Export classification variables for sm_init consumption
+export WORKFLOW_TYPE
+export RESEARCH_COMPLEXITY
+export RESEARCH_TOPICS_JSON
+
+echo "✓ Workflow classification complete: type=$WORKFLOW_TYPE, complexity=$RESEARCH_COMPLEXITY"
+
+# Initialize state machine with 5 parameters (refactored signature in commit ce1d29a1, Spec 1763161992 Phase 2)
+# CRITICAL: Use SAVED_WORKFLOW_DESC (not overwritten variable)
+# Do NOT use command substitution $() as it creates subshell that doesn't export to parent
+sm_init "$SAVED_WORKFLOW_DESC" "coordinate" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "$RESEARCH_TOPICS_JSON" 2>&1
+SM_INIT_EXIT_CODE=$?
+if [ $SM_INIT_EXIT_CODE -ne 0 ]; then
+  handle_state_error "State machine initialization failed. Check sm_init parameters." 1
+fi
+# VERIFICATION CHECKPOINT 1: Verify environment variables exported by sm_init
+# Two-stage verification: (1) environment exports, (2) state file persistence
+# This provides early failure detection and clear diagnostic context
+if [ -z "${WORKFLOW_SCOPE:-}" ] || [ -z "${TERMINAL_STATE:-}" ] || [ -z "${CURRENT_STATE:-}" ] || \
+   [ -z "${RESEARCH_COMPLEXITY:-}" ] || [ -z "${RESEARCH_TOPICS_JSON:-}" ]; then
+  handle_state_error "CRITICAL: Required environment variables not exported by sm_init despite successful return code
+
+Diagnostic:
+  - sm_init returned success (exit code 0)
+  - One or more required environment variables missing
+  - Required exports: WORKFLOW_SCOPE, TERMINAL_STATE, CURRENT_STATE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
+  - Check sm_init implementation in workflow-state-machine.sh
+  - Verify export statements present for all critical variables
+
+Cannot proceed without environment variable exports." 1
+fi
+
+echo "✓ Environment variables verified: WORKFLOW_SCOPE=$WORKFLOW_SCOPE, TERMINAL_STATE=$TERMINAL_STATE, CURRENT_STATE=$CURRENT_STATE"
+
+# VERIFICATION CHECKPOINT 2: Verify all state machine variables persisted to state file
+# Standard 0 (Execution Enforcement): Critical state initialization must be verified
+# sm_init() now persists all 5 variables to state file (see workflow-state-machine.sh)
+verify_state_variables "$STATE_FILE" "WORKFLOW_SCOPE" "TERMINAL_STATE" "CURRENT_STATE" "RESEARCH_COMPLEXITY" "RESEARCH_TOPICS_JSON" || {
+  handle_state_error "CRITICAL: Required state machine variables not persisted by sm_init despite successful return code
+
+Diagnostic:
+  - sm_init returned success (exit code 0)
+  - One or more required variables not persisted to state file
+  - Required variables: WORKFLOW_SCOPE, TERMINAL_STATE, CURRENT_STATE, RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON
+  - Check sm_init implementation in workflow-state-machine.sh
+  - Verify append_workflow_state calls present for all critical variables
+
+Cannot proceed without state machine initialization." 1
+}
+
+echo "✓ State machine variables verified in state file (5/5 variables present)"
 
 # ADDED: Extract and save EXISTING_PLAN_PATH for research-and-revise workflows
 if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
@@ -160,9 +370,9 @@ if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
     export EXISTING_PLAN_PATH
 
     # CRITICAL: Verify file exists before proceeding
-    if [ ! -f "$EXISTING_PLAN_PATH" ]; then
+    verify_file_created "$EXISTING_PLAN_PATH" "Existing plan file" "Initialization" || {
       handle_state_error "Extracted plan path does not exist: $EXISTING_PLAN_PATH" 1
-    fi
+    }
 
     echo "✓ Extracted existing plan path: $EXISTING_PLAN_PATH"
   else
@@ -170,15 +380,9 @@ if [ "$WORKFLOW_SCOPE" = "research-and-revise" ]; then
   fi
 fi
 
-# Save state machine configuration to workflow state
-append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
-append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
-append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
-
-# VERIFICATION CHECKPOINT: Verify WORKFLOW_SCOPE persisted correctly
-verify_state_variable "WORKFLOW_SCOPE" || {
-  handle_state_error "CRITICAL: WORKFLOW_SCOPE not persisted to state after sm_init" 1
-}
+# NOTE: State machine configuration (WORKFLOW_SCOPE, TERMINAL_STATE, CURRENT_STATE,
+# RESEARCH_COMPLEXITY, RESEARCH_TOPICS_JSON) already persisted by sm_init()
+# No need to duplicate append_workflow_state calls here - verified above at line 309
 
 # ADDED: Save EXISTING_PLAN_PATH to state for bash block persistence
 if [ -n "${EXISTING_PLAN_PATH:-}" ]; then
@@ -195,16 +399,16 @@ source "${LIB_DIR}/library-sourcing.sh"
 
 case "$WORKFLOW_SCOPE" in
   research-only)
-    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "error-handling.sh")
+    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "workflow-llm-classifier.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "error-handling.sh")
     ;;
   research-and-plan|research-and-revise)
-    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "error-handling.sh")
+    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "workflow-llm-classifier.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "error-handling.sh")
     ;;
   full-implementation)
-    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "dependency-analyzer.sh" "context-pruning.sh" "error-handling.sh")
+    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "workflow-llm-classifier.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "dependency-analyzer.sh" "context-pruning.sh" "error-handling.sh")
     ;;
   debug-only)
-    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "error-handling.sh")
+    REQUIRED_LIBS=("workflow-detection.sh" "workflow-scope-detection.sh" "workflow-llm-classifier.sh" "unified-logger.sh" "unified-location-detection.sh" "overview-synthesis.sh" "metadata-extraction.sh" "checkpoint-utils.sh" "error-handling.sh")
     ;;
 esac
 
@@ -213,11 +417,13 @@ if source_required_libraries "${REQUIRED_LIBS[@]}"; then
   : # Success - libraries loaded
 else
   echo "ERROR: Failed to source required libraries"
+  echo "DIAGNOSTIC: Check that all library files exist in ${LIB_DIR}"
   exit 1
 fi
 
 # Performance marker: Library loading complete
 PERF_AFTER_LIBS=$(date +%s%N)
+append_workflow_state "PERF_AFTER_LIBS" "$PERF_AFTER_LIBS"
 
 # Source workflow initialization and initialize paths
 if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" ]; then
@@ -227,14 +433,15 @@ else
   exit 1
 fi
 
-if initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"; then
-  : # Success - paths initialized
+if initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE" "$RESEARCH_COMPLEXITY"; then
+  : # Success - paths initialized with dynamic allocation
 else
   handle_state_error "Workflow initialization failed" 1
 fi
 
 # Performance marker: Path initialization complete
 PERF_AFTER_PATHS=$(date +%s%N)
+append_workflow_state "PERF_AFTER_PATHS" "$PERF_AFTER_PATHS"
 
 # Validate TOPIC_PATH was set by initialization
 if [ -z "${TOPIC_PATH:-}" ]; then
@@ -243,10 +450,31 @@ fi
 
 # Save paths to workflow state
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+verify_state_variable "TOPIC_PATH" || {
+  handle_state_error "CRITICAL: TOPIC_PATH not persisted to state" 1
+}
+
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
+verify_state_variable "PLAN_PATH" || {
+  handle_state_error "CRITICAL: PLAN_PATH not persisted to state" 1
+}
+
+# Save comprehensive classification results to state (Spec 678 Phase 5)
+append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+verify_state_variable "RESEARCH_COMPLEXITY" || {
+  handle_state_error "CRITICAL: RESEARCH_COMPLEXITY not persisted to state" 1
+}
+
+append_workflow_state "RESEARCH_TOPICS_JSON" "$RESEARCH_TOPICS_JSON"
+verify_state_variable "RESEARCH_TOPICS_JSON" || {
+  handle_state_error "CRITICAL: RESEARCH_TOPICS_JSON not persisted to state" 1
+}
 
 # Serialize REPORT_PATHS array to state (subprocess isolation - see bash-block-execution-model.md)
 append_workflow_state "REPORT_PATHS_COUNT" "$REPORT_PATHS_COUNT"
+verify_state_variable "REPORT_PATHS_COUNT" || {
+  handle_state_error "CRITICAL: REPORT_PATHS_COUNT not persisted to state" 1
+}
 
 # Save individual report path variables (using eval to avoid Bash tool preprocessing issues)
 for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
@@ -255,7 +483,7 @@ for ((i=0; i<REPORT_PATHS_COUNT; i++)); do
   append_workflow_state "$var_name" "$value"
 done
 
-echo "Saved $REPORT_PATHS_COUNT report paths to workflow state"
+echo "Allocated $REPORT_PATHS_COUNT report paths (dynamically matched to research complexity)"
 
 # VERIFICATION CHECKPOINT: Verify REPORT_PATHS_COUNT persisted correctly
 verify_state_variable "REPORT_PATHS_COUNT" || {
@@ -315,7 +543,19 @@ echo "  Terminal State: $TERMINAL_STATE"
 echo "  Topic Path: ${TOPIC_PATH:-<not set>}"
 
 # Performance reporting (Phase 1 baseline metrics)
+# Restore performance variables from state (set in previous bash blocks)
+# Required due to subprocess isolation - see bash-block-execution-model.md
+if [ -n "${PERF_START_TOTAL:-}" ]; then
+  : # Already loaded from workflow state
+else
+  # Fallback: reload if not already available
+  load_workflow_state "$WORKFLOW_ID"
+fi
+
 PERF_END_INIT=$(date +%s%N)
+append_workflow_state "PERF_END_INIT" "$PERF_END_INIT"
+
+# Calculate performance metrics (all variables now available from state)
 PERF_LIB_MS=$(( (PERF_AFTER_LIBS - PERF_START_TOTAL) / 1000000 ))
 PERF_PATH_MS=$(( (PERF_AFTER_PATHS - PERF_AFTER_LIBS) / 1000000 ))
 PERF_TOTAL_MS=$(( (PERF_END_INIT - PERF_START_TOTAL) / 1000000 ))
@@ -325,6 +565,10 @@ echo "  Library loading: ${PERF_LIB_MS}ms"
 echo "  Path initialization: ${PERF_PATH_MS}ms"
 echo "  Total init overhead: ${PERF_TOTAL_MS}ms"
 echo ""
+
+# NOTE: Performance instrumentation spans multiple bash blocks
+# Variables persisted to state file to cross subprocess boundaries
+# See .claude/docs/concepts/bash-block-execution-model.md for details
 ```
 
 ---
@@ -353,10 +597,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -370,6 +614,8 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -383,6 +629,12 @@ fi
 
 # Check if we should skip this state (already at terminal)
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -396,24 +648,28 @@ fi
 
 if command -v emit_progress &>/dev/null; then
   emit_progress "1" "State: Research (parallel agent invocation)"
+else
+  echo "PROGRESS: State: Research (parallel agent invocation)"
 fi
 
-# Determine research complexity (1-4 topics)
-RESEARCH_COMPLEXITY=2
+# RESEARCH_COMPLEXITY loaded from workflow state (set by sm_init in Phase 0)
+# Pattern matching removed in Spec 678: comprehensive haiku classification provides
+# all three dimensions (workflow_type, research_complexity, subtopics) in single call.
+# Zero pattern matching for any classification dimension. Fallback to state persistence only.
 
-if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "integrate|migration|refactor|architecture"; then
-  RESEARCH_COMPLEXITY=3
+# FAIL-FAST VALIDATION: RESEARCH_COMPLEXITY must be loaded from state
+if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
+  handle_state_error "CRITICAL: RESEARCH_COMPLEXITY not loaded from state
+
+Diagnostic:
+  - Expected: RESEARCH_COMPLEXITY should have been saved by Phase 0.1 classification
+  - Check Phase 0.1 bash block for sm_init parameters and state persistence
+  - This variable determines number of research topics and coordination strategy
+
+Cannot proceed without research complexity score." 1
 fi
 
-if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "multi-.*system|cross-.*platform|distributed|microservices"; then
-  RESEARCH_COMPLEXITY=4
-fi
-
-if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^(fix|update|modify).*(one|single|small)"; then
-  RESEARCH_COMPLEXITY=1
-fi
-
-echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics"
+echo "Research Complexity Score: $RESEARCH_COMPLEXITY topics (from state persistence)"
 
 # Reconstruct REPORT_PATHS array
 reconstruct_report_paths_array
@@ -470,6 +726,7 @@ Task {
 **EXECUTE NOW**: USE the Bash tool to prepare research agent iteration variables:
 
 ```bash
+set +H  # Disable history expansion to prevent bad substitution errors
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # CRITICAL: Explicit conditional enumeration for agent invocation control
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -482,10 +739,25 @@ Task {
 # See: Spec 676 (root cause analysis), coordinate-command-guide.md (architecture)
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+# Reconstruct RESEARCH_TOPICS array from JSON state (Spec 678 Phase 5)
+if [ -n "${RESEARCH_TOPICS_JSON:-}" ]; then
+  mapfile -t RESEARCH_TOPICS < <(echo "$RESEARCH_TOPICS_JSON" | jq -r '.[]' 2>/dev/null || true)
+else
+  # Fallback: Generate generic topic names if state not available
+  RESEARCH_TOPICS=("Topic 1" "Topic 2" "Topic 3" "Topic 4")
+fi
+
 # Prepare variables for conditional agent invocations (1-4)
+# Use descriptive subtopic names from comprehensive classification (not generic "Topic N")
 for i in $(seq 1 4); do
   REPORT_PATH_VAR="REPORT_PATH_$((i-1))"
-  export "RESEARCH_TOPIC_${i}=Topic ${i}"
+  # Use descriptive topic name from RESEARCH_TOPICS array (zero-indexed)
+  topic_index=$((i-1))
+  if [ $topic_index -lt ${#RESEARCH_TOPICS[@]} ]; then
+    export "RESEARCH_TOPIC_${i}=${RESEARCH_TOPICS[$topic_index]}"
+  else
+    export "RESEARCH_TOPIC_${i}=Topic ${i}"  # Fallback to generic if array too small
+  fi
   export "AGENT_REPORT_PATH_${i}=${!REPORT_PATH_VAR}"
 done
 
@@ -498,6 +770,8 @@ echo ""
 **EXECUTE CONDITIONALLY**: Invoke research agents based on RESEARCH_COMPLEXITY:
 
 **IF RESEARCH_COMPLEXITY >= 1** (always true):
+
+**EXECUTE NOW**: USE the Task tool:
 
 Task {
   subagent_type: "general-purpose"
@@ -522,6 +796,8 @@ Task {
 
 **IF RESEARCH_COMPLEXITY >= 2** (true for complexity 2-4):
 
+**EXECUTE NOW**: USE the Task tool:
+
 Task {
   subagent_type: "general-purpose"
   description: "Research Topic 2 with mandatory artifact creation"
@@ -545,6 +821,8 @@ Task {
 
 **IF RESEARCH_COMPLEXITY >= 3** (true for complexity 3-4):
 
+**EXECUTE NOW**: USE the Task tool:
+
 Task {
   subagent_type: "general-purpose"
   description: "Research Topic 3 with mandatory artifact creation"
@@ -567,6 +845,8 @@ Task {
 }
 
 **IF RESEARCH_COMPLEXITY >= 4** (hierarchical research triggers, not this code path):
+
+**EXECUTE NOW**: USE the Task tool:
 
 Task {
   subagent_type: "general-purpose"
@@ -607,10 +887,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -624,6 +904,8 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -635,64 +917,71 @@ if ! command -v handle_state_error &>/dev/null; then
   exit 1
 fi
 
-# Defensive: Restore RESEARCH_COMPLEXITY if not loaded from state
-# This can happen if workflow state doesn't persist properly across bash blocks
-if [ -z "${RESEARCH_COMPLEXITY:-}" ]; then
-  # Recalculate from WORKFLOW_DESCRIPTION (same logic as initial calculation)
-  RESEARCH_COMPLEXITY=2
+# RESEARCH_COMPLEXITY loaded from workflow state (set by sm_init in Phase 0)
+# Pattern matching removed in Spec 678: comprehensive haiku classification provides
+# all three dimensions (workflow_type, research_complexity, subtopics) in single call.
+# Zero pattern matching for any classification dimension. Fallback to state persistence only.
 
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "integrate|migration|refactor|architecture"; then
-    RESEARCH_COMPLEXITY=3
-  fi
-
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "multi-.*system|cross-.*platform|distributed|microservices"; then
-    RESEARCH_COMPLEXITY=4
-  fi
-
-  if echo "$WORKFLOW_DESCRIPTION" | grep -Eiq "^(fix|update|modify).*(one|single|small)"; then
-    RESEARCH_COMPLEXITY=1
-  fi
-fi
-
-# Defensive: Restore USE_HIERARCHICAL_RESEARCH if not loaded from state
+# FAIL-FAST VALIDATION: USE_HIERARCHICAL_RESEARCH must be loaded from state
 if [ -z "${USE_HIERARCHICAL_RESEARCH:-}" ]; then
-  USE_HIERARCHICAL_RESEARCH=$([ $RESEARCH_COMPLEXITY -ge 4 ] && echo "true" || echo "false")
+  handle_state_error "CRITICAL: USE_HIERARCHICAL_RESEARCH not loaded from state
+
+Diagnostic:
+  - Expected: USE_HIERARCHICAL_RESEARCH should have been saved by Phase 1 initialization
+  - Check Phase 1 bash block for append_workflow_state \"USE_HIERARCHICAL_RESEARCH\" call
+  - This variable determines hierarchical vs flat research coordination
+
+Cannot proceed without research coordination mode." 1
 fi
 
 # Reconstruct REPORT_PATHS array from state
 reconstruct_report_paths_array
 
-# CRITICAL: Dynamic discovery MUST execute before verification to reconcile agent-created filenames
-# Dynamic Report Path Discovery:
-# Research agents create descriptive filenames (e.g., 001_auth_patterns.md)
-# but workflow-initialization.sh pre-calculates generic names (001_topic1.md).
-# Discover actual created files and update REPORT_PATHS array.
+# Report paths pre-calculated with validated slugs - no discovery needed (Spec 688 Phase 5)
+# Workflow-initialization.sh now generates semantic filenames from LLM-provided slugs
+# (via validate_and_generate_filename_slugs), eliminating the need for post-research
+# filename discovery. Files are created at the exact pre-calculated paths.
+#
+# FAIL-FAST VERIFICATION: Assert that expected report files exist at pre-calculated paths
+# No filesystem discovery fallback - agents MUST create files at exact pre-calculated paths
 REPORTS_DIR="${TOPIC_PATH}/reports"
-DISCOVERY_COUNT=0
-if [ -d "$REPORTS_DIR" ]; then
-  # Find all report files matching pattern NNN_*.md (sorted by number)
-  DISCOVERED_REPORTS=()
-  for i in $(seq 1 $RESEARCH_COMPLEXITY); do
-    # Find file matching 00N_*.md pattern
-    PATTERN=$(printf '%03d' $i)
-    FOUND_FILE=$(find "$REPORTS_DIR" -maxdepth 1 -name "${PATTERN}_*.md" -type f | head -1)
 
-    if [ -n "$FOUND_FILE" ]; then
-      DISCOVERED_REPORTS+=("$FOUND_FILE")
-      DISCOVERY_COUNT=$((DISCOVERY_COUNT + 1))
-    else
-      # Keep original generic path if no file discovered
-      DISCOVERED_REPORTS+=("${REPORT_PATHS[$i-1]}")
-    fi
-  done
+# Verify reports directory exists
+if [ ! -d "$REPORTS_DIR" ]; then
+  handle_state_error "CRITICAL: Reports directory not found: $REPORTS_DIR
 
-  # Update REPORT_PATHS with discovered paths
-  REPORT_PATHS=("${DISCOVERED_REPORTS[@]}")
+Diagnostic:
+  - Expected directory should have been created during topic initialization
+  - Check workflow-initialization.sh for directory creation logic
 
-  # Diagnostic output: show path discovery results
-  echo "Dynamic path discovery complete: $DISCOVERY_COUNT/$RESEARCH_COMPLEXITY files discovered"
-  [ "$DISCOVERY_COUNT" -gt 0 ] && echo "  Updated REPORT_PATHS array with actual agent-created filenames"
+Cannot proceed without reports directory." 1
 fi
+
+# Fail-fast verification of pre-calculated report paths using batch verification
+# Note: More detailed verification happens later (lines 880+ for hierarchical, 935+ for flat)
+# This is an early check to fail fast before deeper processing
+FILE_ENTRIES=()
+for i in $(seq 0 $((REPORT_PATHS_COUNT - 1))); do
+  EXPECTED_PATH="${!REPORT_PATH_$i}"
+  FILE_ENTRIES+=("${EXPECTED_PATH}:Research report $((i+1))")
+done
+
+# Use batch verification for efficient token usage (90% reduction on success)
+# Use exit code capture pattern to avoid bash preprocessing issues with negation
+verify_files_batch "Research Phase" "${FILE_ENTRIES[@]}"
+VERIFICATION_EXIT_CODE=$?
+if [ $VERIFICATION_EXIT_CODE -ne 0 ]; then
+  handle_state_error "CRITICAL: Research report verification failed
+
+Diagnostic:
+  - Expected $REPORT_PATHS_COUNT reports in $REPORTS_DIR
+  - Research agents must create files at exact pre-calculated paths
+  - Check research agent invocations and file creation logic
+  - See verification output above for specific missing files
+
+Cannot proceed with missing research artifacts." 1
+fi
+echo ""  # Add newline after batch verification output
 
 emit_progress "1" "Research phase completion - verifying results"
 
@@ -703,7 +992,9 @@ if [ "$USE_HIERARCHICAL_RESEARCH" = "true" ]; then
   # Load supervisor checkpoint to get aggregated metadata
   SUPERVISOR_CHECKPOINT=$(load_json_checkpoint "research_supervisor")
 
-  # Extract report paths from supervisor checkpoint
+  # extract metadata from supervisor checkpoint (report paths for verification)
+  # metadata extraction enables context reduction by passing summaries instead of full reports
+  # Target: maintain <30% context usage throughout workflow
   SUPERVISOR_REPORTS=$(echo "$SUPERVISOR_CHECKPOINT" | jq -r '.aggregated_metadata.reports_created[]')
 
   # ===== MANDATORY VERIFICATION CHECKPOINT: Hierarchical Research =====
@@ -770,18 +1061,19 @@ else
   # ===== MANDATORY VERIFICATION CHECKPOINT: Flat Research =====
   echo ""
   echo "MANDATORY VERIFICATION: Research Phase Artifacts"
-  echo "Checking $RESEARCH_COMPLEXITY research reports..."
+  echo "Checking $REPORT_PATHS_COUNT research reports..."
   echo ""
 
   VERIFICATION_FAILURES=0
   SUCCESSFUL_REPORT_PATHS=()
   FAILED_REPORT_PATHS=()
 
-  for i in $(seq 1 $RESEARCH_COMPLEXITY); do
+  # Use REPORT_PATHS_COUNT (pre-allocated count) to verify exactly as many files as were allocated
+  for i in $(seq 1 $REPORT_PATHS_COUNT); do
     REPORT_PATH="${REPORT_PATHS[$i-1]}"
-    echo -n "  Report $i/$RESEARCH_COMPLEXITY: "
+    echo -n "  Report $i/$REPORT_PATHS_COUNT: "
     # Avoid ! operator due to Bash tool preprocessing issues
-    if verify_file_created "$REPORT_PATH" "Research report $i/$RESEARCH_COMPLEXITY" "Research"; then
+    if verify_file_created "$REPORT_PATH" "Research report $i/$REPORT_PATHS_COUNT" "Research"; then
       SUCCESSFUL_REPORT_PATHS+=("$REPORT_PATH")
       FILE_SIZE=$(stat -f%z "$REPORT_PATH" 2>/dev/null || stat -c%s "$REPORT_PATH" 2>/dev/null || echo "unknown")
       echo " verified ($FILE_SIZE bytes)"
@@ -793,7 +1085,7 @@ else
 
   echo ""
   echo "Verification Summary:"
-  echo "  - Success: ${#SUCCESSFUL_REPORT_PATHS[@]}/$RESEARCH_COMPLEXITY reports"
+  echo "  - Success: ${#SUCCESSFUL_REPORT_PATHS[@]}/$REPORT_PATHS_COUNT reports"
   echo "  - Failures: $VERIFICATION_FAILURES reports"
 
   # Track verification metrics in workflow state
@@ -819,7 +1111,7 @@ else
     handle_state_error "Research specialists failed to create expected artifacts" 1
   fi
 
-  echo "✓ All $RESEARCH_COMPLEXITY research reports verified successfully"
+  echo "✓ All $REPORT_PATHS_COUNT research reports verified successfully"
 fi
 
 # Save report paths to workflow state (same for both modes)
@@ -854,6 +1146,9 @@ case "$WORKFLOW_SCOPE" in
   research-and-plan)
     echo "    - Proceeding to: Planning phase"
     ;;
+  research-and-revise)
+    echo "    - Proceeding to: Revision phase (revising existing plan)"
+    ;;
   full-implementation)
     echo "    - Proceeding to: Planning phase → Implementation"
     ;;
@@ -875,7 +1170,7 @@ case "$WORKFLOW_SCOPE" in
     display_brief_summary
     exit 0
     ;;
-  research-and-plan|full-implementation|debug-only)
+  research-and-plan|research-and-revise|full-implementation|debug-only)
     # Continue to planning
     echo "Transitioning from $CURRENT_STATE to $STATE_PLAN"
     sm_transition "$STATE_PLAN"
@@ -917,10 +1212,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -934,9 +1229,17 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -960,21 +1263,55 @@ if command -v emit_progress &>/dev/null; then
   emit_progress "2" "State: Planning (implementation plan creation)"
 fi
 
-# Reconstruct report paths from state
-# Defensive JSON handling: Validate JSON before parsing to prevent jq parse errors
-if [ -n "${REPORT_PATHS_JSON:-}" ]; then
-  # Validate JSON before parsing
-  if echo "$REPORT_PATHS_JSON" | jq empty 2>/dev/null; then
-    mapfile -t REPORT_PATHS < <(echo "$REPORT_PATHS_JSON" | jq -r '.[]')
-    echo "Loaded ${#REPORT_PATHS[@]} report paths from state"
-  else
-    echo "WARNING: Invalid REPORT_PATHS_JSON, using empty array" >&2
-    REPORT_PATHS=()
-  fi
-else
-  echo "WARNING: REPORT_PATHS_JSON not set, using empty array" >&2
-  REPORT_PATHS=()
+# FAIL-FAST STATE LOADING: Reconstruct report paths from state
+# The research phase MUST have saved REPORT_PATHS_JSON to state before this phase
+
+# FAIL-FAST VALIDATION: REPORT_PATHS_JSON must exist in state
+if [ -z "${REPORT_PATHS_JSON:-}" ]; then
+  handle_state_error "CRITICAL: REPORT_PATHS_JSON not loaded from state
+
+Diagnostic:
+  - Expected: JSON array of report paths from Phase 1 (Research)
+  - State file should have been saved by Phase 0 allocation or Phase 1 research
+  - Check previous phases for append_workflow_state \"REPORT_PATHS_JSON\" calls
+
+Cannot proceed with planning without research report paths." 1
 fi
+
+# FAIL-FAST VALIDATION: JSON must be valid
+# Exit code capture pattern prevents bash preprocessing errors (Spec 719)
+echo "$REPORT_PATHS_JSON" | jq empty 2>/dev/null
+JSON_VALID=$?
+if [ $JSON_VALID -ne 0 ]; then
+  handle_state_error "CRITICAL: Invalid JSON in REPORT_PATHS_JSON
+
+Diagnostic:
+  - Content: $REPORT_PATHS_JSON
+  - JSON validation failed
+  - Check Phase 0/1 for malformed JSON serialization
+
+Cannot proceed with planning with malformed report paths." 1
+fi
+
+# Reconstruct REPORT_PATHS array from JSON
+mapfile -t REPORT_PATHS < <(echo "$REPORT_PATHS_JSON" | jq -r '.[]')
+
+# FAIL-FAST VALIDATION: Array must not be empty (unless workflow allows it)
+# Note: Some workflows (research-only with 0 complexity) may legitimately have 0 reports
+# But for planning workflows, we need at least 1 report
+if [ "${#REPORT_PATHS[@]}" -eq 0 ] && [ "$WORKFLOW_SCOPE" != "research-and-plan" ]; then
+  handle_state_error "CRITICAL: REPORT_PATHS array is empty after reconstruction
+
+Diagnostic:
+  - REPORT_PATHS_JSON: $REPORT_PATHS_JSON
+  - Reconstructed array length: 0
+  - Expected: At least 1 report path from research phase for $WORKFLOW_SCOPE workflow
+  - Check Phase 1 research agents for successful report creation
+
+Cannot proceed with planning without research reports." 1
+fi
+
+echo "✓ Reconstructed REPORT_PATHS array: ${#REPORT_PATHS[@]} paths loaded"
 
 # Build report references for /plan
 REPORT_ARGS=""
@@ -1035,6 +1372,8 @@ Task {
 
 **ELSE (for research-and-plan, full-implementation, etc.)**:
 
+**EXECUTE NOW**: USE the Task tool:
+
 Task {
   subagent_type: "general-purpose"
   description: "Create implementation plan guided by research reports"
@@ -1079,10 +1418,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -1096,6 +1435,8 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -1286,6 +1627,9 @@ case "$WORKFLOW_SCOPE" in
   research-and-plan)
     echo "    - Proceeding to: Terminal state (workflow complete)"
     ;;
+  research-and-revise)
+    echo "    - Proceeding to: Terminal state (revision complete)"
+    ;;
   full-implementation)
     echo "    - Proceeding to: Implementation phase"
     ;;
@@ -1298,7 +1642,7 @@ echo ""
 
 # Determine next state based on workflow scope
 case "$WORKFLOW_SCOPE" in
-  research-and-plan)
+  research-and-plan|research-and-revise)
     # Terminal state reached
     sm_transition "$STATE_COMPLETE"
     append_workflow_state "CURRENT_STATE" "$STATE_COMPLETE"
@@ -1356,10 +1700,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -1373,9 +1717,17 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1445,10 +1797,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -1462,6 +1814,8 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -1602,10 +1956,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -1619,9 +1973,17 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1729,10 +2091,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -1746,9 +2108,17 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -1802,10 +2172,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -1819,6 +2189,8 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then
@@ -1938,10 +2310,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -1955,9 +2327,17 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # Check if we should skip this state
 if [ "$CURRENT_STATE" = "$TERMINAL_STATE" ]; then
+  # Cleanup LLM classification temp files (Spec 704 Phase 2)
+  if [ -n "$WORKFLOW_ID" ]; then
+    rm -f "${HOME}/.claude/tmp/llm_request_${WORKFLOW_ID}.json"
+    rm -f "${HOME}/.claude/tmp/llm_response_${WORKFLOW_ID}.json"
+  fi
+
   echo "✓ Workflow complete at terminal state: $TERMINAL_STATE"
   display_brief_summary
   exit 0
@@ -2011,10 +2391,10 @@ source "${LIB_DIR}/workflow-state-machine.sh"
 source "${LIB_DIR}/state-persistence.sh"
 
 # Step 2: Load workflow state BEFORE other libraries (prevents WORKFLOW_SCOPE reset)
-COORDINATE_STATE_ID_FILE="${HOME}/.claude/tmp/coordinate_state_id.txt"
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 if [ ! -f "$COORDINATE_STATE_ID_FILE" ]; then
   echo "ERROR: Workflow state ID file not found: $COORDINATE_STATE_ID_FILE"
-  echo "Cannot restore workflow state. This is a critical error."
+  echo "DIAGNOSTIC: Cannot restore workflow state. Check if previous bash block created state file."
   exit 1
 fi
 
@@ -2028,6 +2408,8 @@ source "${LIB_DIR}/verification-helpers.sh"
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"  # Provides emit_progress and logging functions
+source "${LIB_DIR}/context-pruning.sh"  # Provides context reduction and pruning functions
+source "${LIB_DIR}/dependency-analyzer.sh"  # Provides phase dependency analysis for wave execution
 
 # VERIFICATION CHECKPOINT: Verify critical functions available (Standard 0)
 if ! command -v verify_state_variable &>/dev/null; then

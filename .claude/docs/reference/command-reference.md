@@ -26,7 +26,6 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 - [/expand](#expand)
 - [/implement](#implement)
 - [/list](#list)
-- [/orchestrate](#orchestrate)
 - [/plan](#plan)
 - [/plan-from-template](#plan-from-template)
 - [/plan-wizard](#plan-wizard)
@@ -148,7 +147,7 @@ Automatically detects workflow type and executes appropriate phases:
 - Implementation summary (specs/summaries/)
 
 **Performance**:
-- File size: 2,500-3,000 lines (vs 5,438 for /orchestrate)
+- File size: 2,500-3,000 lines (production orchestrator)
 - Context usage: <30% throughout workflow
 - Time savings: 40-60% (wave-based execution)
 
@@ -281,40 +280,6 @@ Automatically detects workflow type and executes appropriate phases:
 **Output**: Formatted list with metadata
 
 **See**: [list.md](../../commands/list.md)
-
----
-
-### /orchestrate
-**Purpose**: Coordinate subagents through end-to-end development workflows
-
-**Status**: **In Development** ⚠️ - Experimental PR automation features, may have inconsistent behavior
-
-**Complexity**: 5,438 lines (heaviest, includes PR automation and dashboard tracking)
-
-**Usage**: `/orchestrate <workflow-description> [--parallel] [--sequential] [--create-pr]`
-
-**Type**: primary
-
-**Warning**: Not recommended for production use until stabilized. Use **/coordinate** instead for reliable workflows.
-
-**Arguments**:
-- `workflow-description`: Feature or workflow to implement
-- `--parallel`: Run independent phases in parallel
-- `--sequential`: Force sequential execution
-- `--create-pr`: Create GitHub PR on completion (experimental)
-
-**Experimental Features**:
-- PR automation with github-specialist agent
-- Interactive progress dashboard
-- Comprehensive metrics tracking
-
-**Agents Used**: All agents (research-specialist, plan-architect, code-writer, test-specialist, debug-specialist, doc-writer, github-specialist)
-
-**Output**: Research reports, implementation plan, code changes, tests, documentation, optional PR (experimental)
-
-**See Also**:
-- [Command Selection Guide](../guides/orchestration-best-practices.md#command-selection) - Compare all orchestration commands
-- [orchestrate.md](../../commands/orchestrate.md) - Command documentation
 
 ---
 
@@ -516,8 +481,8 @@ Automatically detects workflow type and executes appropriate phases:
 
 ### Primary Commands
 Core development workflow drivers:
+- **/coordinate** - Coordinate multi-agent end-to-end workflows (production orchestrator)
 - **/implement** - Execute implementation plans with testing and commits
-- **/orchestrate** - Coordinate multi-agent end-to-end workflows
 - **/plan** - Create detailed implementation plans
 - **/report** - Research topics and create reports
 - **/test** - Run project-specific tests
@@ -552,35 +517,35 @@ Maintenance and setup commands:
 
 ### research-specialist
 Research and codebase analysis:
-- **/orchestrate** (research phase)
+- **/coordinate** (research phase)
 - **/plan-wizard** (optional research phase)
 - **/report**
 
 ### plan-architect
 Structured implementation planning:
-- **/orchestrate** (planning phase)
+- **/coordinate** (planning phase)
 - **/plan**
 - **/revise** (complex plan changes)
 
 ### code-writer
 Feature implementation:
-- **/orchestrate** (implementation phase)
+- **/coordinate** (implementation phase)
 - **/implement** (phase-by-phase)
 
 ### test-specialist
 Test creation and execution:
-- **/orchestrate** (testing phase)
+- **/coordinate** (testing phase)
 - **/implement** (test execution)
 - **/test** (test creation if needed)
 
 ### debug-specialist
 Issue investigation:
-- **/orchestrate** (debugging loop)
+- **/coordinate** (debugging loop)
 - **/debug**
 
 ### doc-writer
 Documentation updates:
-- **/orchestrate** (documentation phase)
+- **/coordinate** (documentation phase)
 - **/document**
 
 ### doc-converter
@@ -589,7 +554,7 @@ Document format conversion:
 
 ### github-specialist
 GitHub operations:
-- **/orchestrate** (PR creation)
+- **/coordinate** (PR creation)
 - **/implement** (PR creation with --create-pr)
 
 ### code-analyzer
