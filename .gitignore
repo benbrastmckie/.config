@@ -42,3 +42,4 @@ node_modules/                              # NPM dependencies
 temp/                                      # Temporary working directory
 **/tmp/                                    # Temporary directories at any level
 .gitignore                                 # Avoid recursive gitignore tracking
+gmail-oauth2.env
