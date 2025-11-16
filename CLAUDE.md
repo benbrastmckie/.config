@@ -82,89 +82,16 @@ See [Directory Organization](.claude/docs/concepts/directory-organization.md) fo
 
 <!-- SECTION: development_philosophy -->
 ## Development Philosophy
-
 [Used by: /refactor, /implement, /plan, /document]
 
-This project prioritizes clean, coherent systems over backward compatibility. Refactors should create well-designed interfaces without legacy burden. Documentation should be present-focused and timeless, avoiding historical markers like "(New)" or "previously".
-
-Core values: clarity, quality, coherence, maintainability.
-
-### Architectural Principles
-
-- **Clean separation between executable logic and documentation**: Commands and agents use two-file pattern (lean executable + comprehensive guide) enabling fail-fast execution and independent documentation growth without context bloat
-- **Single source of truth**: Each piece of information exists in exactly one authoritative location
-- **Progressive disclosure**: Information revealed when needed, not all upfront
-- **Context window optimization**: Minimize context consumption through metadata extraction and aggressive pruning
-
-### Clean-Break and Fail-Fast Approach
-
-This configuration maintains a **clean-break, fail-fast evolution philosophy**:
-
-**Clean Break**:
-- Delete obsolete code immediately after migration
-- No deprecation warnings, compatibility shims, or transition periods
-- No archives beyond git history
-- Configuration and code describe what they are, not what they were
-
-**Fail Fast**:
-- Missing files produce immediate, obvious bash errors
-- Tests pass or fail immediately (no monitoring periods)
-- Breaking changes break loudly with clear error messages
-- No silent fallbacks or graceful degradation
-
-**Critical Distinction - Fallback Types** (Spec 057):
-- **Bootstrap fallbacks**: PROHIBITED (hide configuration errors through silent function definitions)
-- **Verification fallbacks**: REQUIRED (detect tool/agent failures immediately, terminate with diagnostics)
-- **Optimization fallbacks**: ACCEPTABLE (performance caches only, graceful degradation for non-critical features)
-
-Standard 0 (Execution Enforcement) uses verification checkpoints to detect errors immediately, not hide them. Orchestrators verify file creation and fail-fast when agents don't create expected artifacts. See [Fail-Fast Policy Analysis](.claude/specs/634_001_coordinate_improvementsmd_implements/reports/001_fail_fast_policy_analysis.md) for complete taxonomy.
-
-**Avoid Cruft**:
-- No historical commentary in active files
-- No backward compatibility layers
-- No migration tracking spreadsheets (use git commits)
-- No "what changed" documentation (use git log)
-
-**Rationale**: Configuration should focus on being what it is without extra commentary on top. Clear, immediate failures are better than hidden complexity masking problems.
-
-See [Writing Standards](.claude/docs/concepts/writing-standards.md) for complete refactoring principles and documentation standards.
+See [Writing Standards](.claude/docs/concepts/writing-standards.md) for complete development philosophy, clean-break approach, and documentation standards.
 <!-- END_SECTION: development_philosophy -->
 
 <!-- SECTION: adaptive_planning -->
 ## Adaptive Planning
 [Used by: /implement]
 
-### Overview
-`/implement` includes intelligent plan revision capabilities that automatically detect when replanning is needed during execution.
-
-### Automatic Triggers
-1. **Complexity Detection**: Phase complexity score >8 or >10 tasks triggers phase expansion
-2. **Test Failure Patterns**: 2+ consecutive test failures in same phase suggests missing prerequisites
-3. **Scope Drift**: Manual flag `--report-scope-drift "description"` for discovered out-of-scope work
-
-### Behavior
-- Automatically invokes `/revise --auto-mode` when triggers detected
-- Updates plan structure (expands phases, adds phases, or updates tasks)
-- Continues implementation with revised plan
-- Maximum 2 replans per phase prevents infinite loops
-
-### Logging
-- **Log File**: `.claude/data/logs/adaptive-planning.log`
-- **Log Rotation**: 10MB max, 5 files retained
-- **Query Logs**: Use functions from `.claude/lib/unified-logger.sh`
-
-### Loop Prevention
-- Replan counters tracked in checkpoints
-- Max 2 replans per phase enforced
-- Replan history logged for audit trail
-- User escalation when limit exceeded
-
-### Utilities
-- **Checkpoint Management**: `.claude/lib/checkpoint-utils.sh` - See [Checkpoint Recovery Pattern](.claude/docs/concepts/patterns/checkpoint-recovery.md)
-- **Complexity Analysis**: `.claude/lib/complexity-utils.sh`
-- **Adaptive Logging**: `.claude/lib/unified-logger.sh`
-- **Error Handling**: `.claude/lib/error-handling.sh`
-- **Context Management**: See [Context Management Pattern](.claude/docs/concepts/patterns/context-management.md) for pruning and reduction techniques
+See [Adaptive Planning Guide](.claude/docs/workflows/adaptive-planning-guide.md) for intelligent plan revision capabilities, automatic triggers, and loop prevention.
 <!-- END_SECTION: adaptive_planning -->
 
 <!-- SECTION: adaptive_planning_config -->
@@ -217,44 +144,7 @@ See [State-Based Orchestration Overview](.claude/docs/architecture/state-based-o
 ## Configuration Portability and Command Discovery
 [Used by: all commands, project setup, troubleshooting]
 
-### Command/Agent/Hook Discovery Hierarchy
-
-Claude Code discovers commands, agents, and hooks from multiple sources:
-1. **Built-in registry**: ~50 built-in commands
-2. **Project-level**: `.config/.claude/` (or `.claude/` at repo root)
-3. **User-level**: `~/.claude/` (global, cross-project)
-4. **Plugin commands**: From installed plugins
-5. **MCP servers**: From MCP server integrations
-
-**Important**: Claude Code does NOT prioritize or deduplicate. If the same command/agent/hook exists in both user and project locations, BOTH will appear.
-
-### Single Source of Truth: .config/.claude/
-
-This project maintains .config/.claude/ as the single authoritative source for all commands, agents, and hooks:
-
-**Why .config/.claude/ Priority**:
-- **Version controlled**: Team-shared, tracked in git
-- **Portability**: Easily copied to other projects via `<leader>ac` (nvim mapping)
-- **Latest features**: Always contains current, up-to-date versions
-- **No conflicts**: Avoids duplicate entries when ~/.claude/ is kept empty
-- **Consistency**: All team members and projects use same versions
-
-**User-level ~/.claude/ kept empty**:
-- Prevents duplicate command/agent/hook entries in autocomplete
-- Avoids version conflicts (outdated user vs. current project)
-- Eliminates hook double-execution risk
-- Simplifies troubleshooting (single source to check)
-
-### Portability Workflow
-
-Use `<leader>ac` (nvim mapping) to copy .config/.claude/ artifacts into any project:
-- Copies all commands, agents, hooks, and configuration
-- Provides full .claude/ functionality in any project
-- No dependency on global ~/.claude/ directory
-- Version-controlled, portable setup
-
-For duplicate command troubleshooting, see [Duplicate Commands Troubleshooting](.claude/docs/troubleshooting/duplicate-commands.md).
-
+See [Duplicate Commands Troubleshooting](.claude/docs/troubleshooting/duplicate-commands.md) for command/agent/hook discovery hierarchy and configuration portability.
 <!-- END_SECTION: configuration_portability -->
 
 <!-- SECTION: project_commands -->
@@ -274,37 +164,7 @@ See [Command Reference](.claude/docs/reference/command-reference.md) for complet
 ## Quick Reference
 [Used by: all commands]
 
-### Common Tasks
-- **Run Tests**: `:TestSuite` or `/test-all`
-- **Format Code**: `<leader>mp`
-- **Check Linting**: `<leader>l`
-- **Find Files**: `<C-p>` (Telescope)
-- **Search Project**: `<leader>sg` (Telescope grep)
-
-### Setup Utilities
-- **Test Detection**: `.claude/lib/detect-testing.sh [dir]` - Score testing infrastructure (0-6)
-- **Optimize CLAUDE.md**: `.claude/lib/optimize-claude-md.sh CLAUDE.md --dry-run` - Analyze bloat
-- **Generate READMEs**: `.claude/lib/generate-readme.sh --generate-all [dir]` - Documentation coverage
-
-See [Setup Guide](.claude/docs/guides/setup-command-guide.md) for detailed usage patterns and troubleshooting.
-
-### Command and Agent Reference
-- [Command Reference](.claude/docs/reference/command-reference.md) - Complete catalog of all slash commands with syntax and examples
-- [Agent Reference](.claude/docs/reference/agent-reference.md) - Complete catalog of all specialized agents with capabilities and usage
-
-### Command Development
-- **New Command**: Start with [_template-executable-command.md](.claude/docs/guides/_template-executable-command.md)
-- **Command Guide**: Use [_template-command-guide.md](.claude/docs/guides/_template-command-guide.md)
-- **Pattern Guide**: [Command Development Guide - Section 2.4](.claude/docs/guides/command-development-guide.md#24-executabledocumentation-separation-pattern) for complete separation pattern details
-- **Validation**: Run `.claude/tests/validate_executable_doc_separation.sh` to verify pattern compliance
-
-### Version Control
-- **Git Recovery**: [Git Recovery Guide](.claude/docs/guides/git-recovery-guide.md) - View, compare, and restore historical file versions (no backup files needed)
-
-### Navigation
-- [Neovim Configuration](nvim/)
-- [Specifications](nvim/specs/)
-- [Commands](.claude/commands/)
+See [Quick Reference](.claude/docs/quick-reference/README.md) for common tasks, setup utilities, command/agent references, and navigation links.
 <!-- END_SECTION: quick_reference -->
 
 <!-- SECTION: documentation_policy -->
