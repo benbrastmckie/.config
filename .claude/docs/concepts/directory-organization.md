@@ -44,7 +44,7 @@ Clear directory organization prevents file misplacement, reduces confusion, and 
 - ✓ Need CLI argument parsing and formatted output
 - ✓ System-level operation (validation, migration, analysis)
 
-**Documentation**: See [scripts/README.md](.claude/scripts/README.md)
+**Documentation**: See [scripts/README.md](../../scripts/README.md)
 
 ---
 
@@ -268,8 +268,8 @@ done
 
 ### References
 
-- [scripts/README.md](.claude/scripts/README.md) - Standalone operational tools
-- [lib/README.md](.claude/lib/README.md) - Sourced function libraries (includes vs scripts/ comparison)
-- [.claude/README.md](.claude/README.md) - Complete directory structure guide
-- [Command Development Guide](.claude/docs/guides/command-development-guide.md) - Creating slash commands
-- [Agent Development Guide](.claude/docs/guides/agent-development-guide.md) - Creating specialized agents
+- [scripts/README.md](../../scripts/README.md) - Standalone operational tools
+- [lib/README.md](../../lib/README.md) - Sourced function libraries (includes vs scripts/ comparison)
+- [.claude/README.md](../../README.md) - Complete directory structure guide
+- [Command Development Guide](../guides/command-development-guide.md) - Creating slash commands
+- [Agent Development Guide](../guides/agent-development-guide.md) - Creating specialized agents
