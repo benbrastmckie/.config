@@ -105,39 +105,21 @@ See [Adaptive Planning Configuration](.claude/docs/reference/adaptive-planning-c
 ## Development Workflow
 [Used by: /implement, /plan, /coordinate]
 
-Standard workflow: research → plan → implement → test → commit → summarize. The spec updater agent manages artifacts in topic-based directories and maintains cross-references. Adaptive planning adjusts plans during implementation.
-
-Key patterns:
-- **5-phase workflow**: Reports, plans, execution, summaries, adaptive adjustments
-- **Spec updater integration**: Artifact management, lifecycle tracking, gitignore compliance
-- **Plan hierarchy updates**: Automatic checkbox propagation across plan levels
-- **Git workflow**: Feature branches, atomic commits, test before commit
-- **Checkpoint Recovery**: State preservation for resumable workflows - See [Checkpoint Recovery Pattern](.claude/docs/concepts/patterns/checkpoint-recovery.md)
-- **Parallel Execution**: Wave-based implementation for 40-60% time savings - See [Parallel Execution Pattern](.claude/docs/concepts/patterns/parallel-execution.md)
-
-See [Development Workflow](.claude/docs/concepts/development-workflow.md) for spec updater details, artifact lifecycle, and integration patterns.
+See [Development Workflow](.claude/docs/concepts/development-workflow.md) for complete workflow documentation with spec updater details.
 <!-- END_SECTION: development_workflow -->
 
 <!-- SECTION: hierarchical_agent_architecture -->
 ## Hierarchical Agent Architecture
 [Used by: /coordinate, /implement, /plan, /debug]
 
-Multi-level agent coordination with metadata-based context passing achieves 95.6% context reduction and 60-80% time savings through parallel execution. Key capabilities: recursive supervision (10+ agents), imperative invocation pattern (Standard 11), LLM-based workflow classification, and aggressive context pruning.
-
-**Core Libraries**: metadata-extraction.sh, plan-core-bundle.sh, context-pruning.sh, workflow-llm-classifier.sh
-
-See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_agents.md) for complete patterns, utilities, agent templates, command integration, and troubleshooting.
+See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_agents.md) for complete patterns, utilities, templates, and troubleshooting.
 <!-- END_SECTION: hierarchical_agent_architecture -->
 
 <!-- SECTION: state_based_orchestration -->
 ## State-Based Orchestration Architecture
 [Used by: /coordinate, custom orchestrators]
 
-State-based orchestration uses explicit state machines with validated transitions for multi-phase workflows. Achieves 48.9% code reduction and 67% performance improvement through selective persistence, atomic transitions, and hierarchical supervisor coordination.
-
-**Core Libraries**: workflow-state-machine.sh, state-persistence.sh, checkpoint-utils.sh (Schema V2.0)
-
-See [State-Based Orchestration Overview](.claude/docs/architecture/state-based-orchestration-overview.md) for complete architecture, [State Machine Development Guide](.claude/docs/guides/state-machine-orchestrator-development.md) for creating orchestrators, and [Migration Guide](.claude/docs/guides/state-machine-migration-guide.md) for phase-to-state transitions.
+See [State-Based Orchestration Overview](.claude/docs/architecture/state-based-orchestration-overview.md) for complete architecture, migration guide, and performance metrics.
 <!-- END_SECTION: state_based_orchestration -->
 
 <!-- SECTION: configuration_portability -->
@@ -151,13 +133,7 @@ See [Duplicate Commands Troubleshooting](.claude/docs/troubleshooting/duplicate-
 ## Project-Specific Commands
 [Used by: all commands, /help]
 
-All commands located in `.claude/commands/`. Primary orchestration: `/coordinate` (production-ready, 2,371 lines). Core workflow commands: `/research`, `/plan`, `/implement`, `/test`, `/debug`, `/document`. Planning utilities: `/plan-wizard`, `/plan-from-template`. Setup: `/setup [--enhance-with-docs]`.
-
-**Command Architecture**: Executable/documentation separation pattern - lean executables (<250 lines) + comprehensive guides. See [Standard 14](.claude/docs/reference/command_architecture_standards.md#standard-14).
-
-**Performance**: >90% agent delegation, 100% file creation reliability, 40-60% time savings (wave-based execution), <30% context usage.
-
-See [Command Reference](.claude/docs/reference/command-reference.md) for complete catalog with syntax and examples. See [Orchestration Best Practices](.claude/docs/guides/orchestration-best-practices.md) for command selection guide and unified framework.
+See [Command Reference](.claude/docs/reference/command-reference.md) for complete catalog of slash commands with syntax and examples.
 <!-- END_SECTION: project_commands -->
 
 <!-- SECTION: quick_reference -->
