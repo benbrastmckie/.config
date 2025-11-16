@@ -415,7 +415,7 @@ function M.setup_commands()
 
   -- System prompt selection command
   vim.api.nvim_create_user_command("AvantePrompt", function()
-    local ok, system_prompts = pcall(require, "neotex.plugins.ai.claude.util.system-prompts")
+    local ok, system_prompts = pcall(require, "neotex.plugins.ai.avante.mcp.system-prompts")
     if ok then
       system_prompts.show_prompt_selection()
     else
@@ -425,7 +425,7 @@ function M.setup_commands()
 
   -- System prompt management command
   vim.api.nvim_create_user_command("AvantePromptManager", function()
-    local ok, system_prompts = pcall(require, "neotex.plugins.ai.claude.util.system-prompts")
+    local ok, system_prompts = pcall(require, "neotex.plugins.ai.avante.mcp.system-prompts")
     if ok then
       system_prompts.show_prompt_manager()
     else
@@ -435,7 +435,7 @@ function M.setup_commands()
 
   -- System prompt editor command
   vim.api.nvim_create_user_command("AvantePromptEdit", function(opts)
-    local ok, system_prompts = pcall(require, "neotex.plugins.ai.claude.util.system-prompts")
+    local ok, system_prompts = pcall(require, "neotex.plugins.ai.avante.mcp.system-prompts")
     if ok then
       -- If args provided, try to edit that specific prompt
       if opts.args and opts.args ~= "" then
@@ -482,7 +482,7 @@ function M.show_model_notification()
   end
 
   -- Load the default system prompt
-  local ok, system_prompts = pcall(require, "neotex.plugins.ai.claude.util.system-prompts")
+  local ok, system_prompts = pcall(require, "neotex.plugins.ai.avante.mcp.system-prompts")
   local prompt_info = ""
   local prompt_name = ""
 

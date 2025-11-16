@@ -1321,7 +1321,7 @@ end
 --- @param command table Command data
 local function send_command_to_terminal(command)
   local notify = require('neotex.util.notifications')
-  local terminal_state = require('neotex.plugins.ai.claude.utils.terminal-state')
+  local terminal_state = require('neotex.plugins.ai.claude.claude-session.terminal-state')
 
   -- Get base command string with trailing space for arguments
   local command_text = "/" .. command.name .. " "
@@ -3333,7 +3333,7 @@ function M.show_commands_picker(opts)
       -- Create new command with Ctrl-n (event-driven, no timers)
       map("i", "<C-n>", function()
         local notify = require('neotex.util.notifications')
-        local terminal_state = require('neotex.plugins.ai.claude.utils.terminal-state')
+        local terminal_state = require('neotex.plugins.ai.claude.claude-session.terminal-state')
         local project_dir = vim.fn.getcwd()
 
         -- Close the picker

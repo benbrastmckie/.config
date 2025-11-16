@@ -1,14 +1,22 @@
-# Claude AI Integration Module
+# Claude Code Integration
 
-This module provides a comprehensive internal Claude AI integration system for Neovim, containing 9,626 lines of code across 20 files. It works in conjunction with the external `claude-code.nvim` plugin (configured in `../claudecode.lua`) to provide advanced Claude AI functionality.
+Claude Code-specific functionality for terminal session management, state coordination, and command queuing in Neovim.
+
+## Purpose
+
+This directory contains Claude Code integration for Neovim, handling terminal session state management and subprocess isolation. Avante-related functionality has been moved to `../avante/` to maintain proper architectural separation.
+
+This module works in conjunction with the external `claude-code.nvim` plugin (configured in `../claudecode.lua`) to provide advanced Claude AI functionality.
 
 ## Architectural Overview
 
-This module represents the **internal system** for Claude AI integration, while `../claudecode.lua` serves as the **external plugin configuration layer**. This separation follows clean architecture principles:
+This module represents the **internal system** for Claude Code integration, while `../claudecode.lua` serves as the **external plugin configuration layer**. This separation follows clean architecture principles:
 
 - **External dependencies** are isolated in plugin configs
 - **Internal business logic** is organized in domain modules
 - **Clear boundary** between "what we use" vs "what we built"
+
+[IMPORTANT] This directory contains **only Claude Code** functionality. Avante integration is located in `../avante/` to maintain proper separation of concerns between AI integrations.
 
 ## Core Features
 
@@ -94,7 +102,7 @@ ai/claude/
 │   ├── pickers.lua              # Telescope pickers (272 lines)
 │   └── native-sessions.lua      # Native session handling (598 lines)
 │
-├── utils/                       # 3,400+ lines - Core utilities
+├── claude-session/              # 3,400+ lines - Session management utilities
 │   ├── claude-code.lua          # Claude Code integration (145 lines)
 │   ├── git.lua                  # Git operations (46 lines)
 │   ├── persistence.lua          # Session file I/O (72 lines)

@@ -7,7 +7,7 @@
 local M = {}
 
 -- Use shared terminal state module (event-driven, no timers)
-local terminal_state = require('neotex.plugins.ai.claude.utils.terminal-state')
+local terminal_state = require('neotex.plugins.ai.claude.claude-session.terminal-state')
 
 -- Configuration
 M.config = {
