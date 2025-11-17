@@ -181,23 +181,23 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create research-specialist invocation template with behavioral injection pattern (5 instances will use this)
-- [ ] Create plan-architect invocation template (4 instances will use this)
-- [ ] Create implementer-coordinator invocation template (1 instance will use this)
-- [ ] Create debug-analyst invocation template (2 instances will use this)
-- [ ] Create research-sub-supervisor invocation template (1 conditional instance will use this)
+- [x] Create research-specialist invocation template with behavioral injection pattern (5 instances will use this)
+- [x] Create plan-architect invocation template (4 instances will use this)
+- [x] Create implementer-coordinator invocation template (1 instance will use this)
+- [x] Create debug-analyst invocation template (2 instances will use this)
+- [x] Create research-sub-supervisor invocation template (1 conditional instance will use this)
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [ ] Test research-specialist template in isolation on /research-report command
-- [ ] Verify behavioral injection works: agent file referenced, not duplicated
-- [ ] Test plan-architect template in isolation on /research-plan command
-- [ ] Validate Task tool invocation format matches execution-enforcement-guide.md lines 104-138
-- [ ] Document template usage in command guide files
+- [x] Test research-specialist template in isolation on /research-report command
+- [x] Verify behavioral injection works: agent file referenced, not duplicated
+- [x] Test plan-architect template in isolation on /research-plan command
+- [x] Validate Task tool invocation format matches execution-enforcement-guide.md lines 104-138
+- [x] Document template usage in command guide files
 
 **Testing**:
 ```bash
@@ -213,11 +213,11 @@ After completing the above tasks:
 **Expected Duration**: 3 hours
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(021): complete Phase 2 - Agent Invocation Pattern Templates`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(021): complete Phase 2 - Agent Invocation Pattern Templates`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 3: Agent Invocation Pattern Implementation
 dependencies: [2]
