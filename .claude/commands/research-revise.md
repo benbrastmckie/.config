@@ -210,7 +210,15 @@ if [ "$NEW_REPORT_COUNT" -eq 0 ]; then
 fi
 
 TOTAL_REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
-echo "✓ Research phase complete (total reports: $TOTAL_REPORT_COUNT, new: $NEW_REPORT_COUNT)"
+
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Research phase complete"
+echo "- Workflow type: research-and-revise"
+echo "- Existing plan: $EXISTING_PLAN_PATH"
+echo "- Total reports: $TOTAL_REPORT_COUNT (new: $NEW_REPORT_COUNT)"
+echo "- All files verified: ✓"
+echo "- Proceeding to: Plan revision phase"
 echo ""
 
 # Persist variables across bash blocks (subprocess isolation)
@@ -317,7 +325,14 @@ if [ "$FILE_SIZE" -lt 500 ]; then
   exit 1
 fi
 
-echo "✓ Plan revision complete: $EXISTING_PLAN_PATH"
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Plan revision complete"
+echo "- Revised plan: $EXISTING_PLAN_PATH"
+echo "- Plan size: $(wc -c < "$EXISTING_PLAN_PATH") bytes"
+echo "- Backup saved: $BACKUP_PATH"
+echo "- All verifications: ✓"
+echo "- Proceeding to: Completion"
 echo ""
 
 # Persist variables for Part 5 (subprocess isolation)

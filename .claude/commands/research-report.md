@@ -202,7 +202,15 @@ if [ -n "$UNDERSIZED_FILES" ]; then
 fi
 
 REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
-echo "✓ Research phase complete ($REPORT_COUNT reports created)"
+
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Research phase complete"
+echo "- Workflow type: research-only"
+echo "- Research complexity: $RESEARCH_COMPLEXITY"
+echo "- Reports created: $REPORT_COUNT in $RESEARCH_DIR"
+echo "- All files verified: ✓"
+echo "- Proceeding to: Completion"
 echo ""
 
 # Persist report count for completion summary
