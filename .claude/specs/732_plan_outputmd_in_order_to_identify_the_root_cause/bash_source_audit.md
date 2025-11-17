@@ -9,38 +9,41 @@ Three additional commands use the broken BASH_SOURCE[0] pattern and require the 
 ### 1. /implement (.claude/commands/implement.md)
 
 **Location**: Line 21
-**Current Pattern**:
+**Previous Pattern**:
 ```bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 ```
 
-**Status**: BROKEN (same issue as plan.md)
+**Status**: FIXED in Spec 736 Phase 1
 **Priority**: HIGH (critical command for implementation workflow)
+**Fix Date**: 2025-11-16
 
 ### 2. /expand (.claude/commands/expand.md)
 
 **Locations**: Lines 80 and 563
-**Current Pattern**:
+**Previous Pattern**:
 ```bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 ```
 
-**Status**: BROKEN (same issue as plan.md)
+**Status**: FIXED in Spec 736 Phase 2
 **Priority**: MEDIUM (used for plan expansion)
+**Fix Date**: 2025-11-16
 
 ### 3. /collapse (.claude/commands/collapse.md)
 
 **Locations**: Lines 82 and 431
-**Current Pattern**:
+**Previous Pattern**:
 ```bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
 ```
 
-**Status**: BROKEN (same issue as plan.md)
+**Status**: FIXED in Spec 736 Phase 3
 **Priority**: MEDIUM (used for plan collapsing)
+**Fix Date**: 2025-11-16
 
 ## Root Cause
 
@@ -86,11 +89,11 @@ source "$UTILS_DIR/workflow-state-machine.sh"
 
 ## Follow-Up Actions
 
-1. Create separate spec (e.g., 733) to fix implement.md, expand.md, and collapse.md
-2. Apply same inline bootstrap pattern to all three commands
-3. Test each command from root, subdirectories, and outside project
-4. Update command development guide with anti-pattern warning
-5. Consider creating a reusable bootstrap snippet for future commands
+1. ✓ Created Spec 736 to fix implement.md, expand.md, and collapse.md
+2. ✓ Applied same inline bootstrap pattern to all three commands
+3. ✓ Tested each command from root, subdirectories, and outside project
+4. [ ] Update command development guide with anti-pattern warning
+5. [ ] Consider creating a reusable bootstrap snippet for future commands
 
 ## Documentation Updated
 
@@ -106,11 +109,14 @@ source "$UTILS_DIR/workflow-state-machine.sh"
 
 ## Severity Assessment
 
-**Severity**: CRITICAL
-- All four commands (plan, implement, expand, collapse) completely non-functional
-- Bootstrap failure prevents any library sourcing
-- Affects core workflow commands
+**Severity**: RESOLVED
+- All four commands (plan, implement, expand, collapse) now using inline bootstrap
+- Bootstrap failure issue completely resolved
+- Core workflow commands fully functional
 
-**User Impact**: Complete workflow breakage for planning and implementation
+**User Impact**: Zero - all commands working correctly
 
-**Mitigation**: Spec 732 fixes /plan (highest priority), follow-up spec needed for others
+**Resolution**:
+- Spec 732 fixed /plan command
+- Spec 736 fixed /implement, /expand, /collapse commands
+- All fixes use identical inline CLAUDE_PROJECT_DIR bootstrap pattern

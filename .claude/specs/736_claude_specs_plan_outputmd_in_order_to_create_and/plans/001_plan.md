@@ -308,13 +308,13 @@ dependencies: [4]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Update bash_source_audit.md to mark implement, expand, collapse as FIXED (file: /home/benjamin/.config/.claude/specs/732_plan_outputmd_in_order_to_identify_the_root_cause/bash_source_audit.md)
-- [ ] Create IMPLEMENTATION_SUMMARY.md for Spec 736 (file: /home/benjamin/.config/.claude/specs/736_claude_specs_plan_outputmd_in_order_to_create_and/IMPLEMENTATION_SUMMARY.md)
-- [ ] Add Issue 10 to troubleshooting guide for BASH_SOURCE errors (file: /home/benjamin/.config/.claude/docs/troubleshooting/common-issues.md)
-- [ ] Update command development guide with bootstrap pattern standard (file: /home/benjamin/.config/.claude/docs/guides/command-development-fundamentals.md)
-- [ ] Archive plan_output.md to Spec 732 artifacts directory (file: /home/benjamin/.config/.claude/specs/plan_output.md → /home/benjamin/.config/.claude/specs/732_plan_outputmd_in_order_to_identify_the_root_cause/artifacts/error_log_before_fix.md)
-- [ ] Verify all documentation follows project standards (no emojis, clear examples)
-- [ ] Create git status summary showing all changes
+- [x] Update bash_source_audit.md to mark implement, expand, collapse as FIXED (file: /home/benjamin/.config/.claude/specs/732_plan_outputmd_in_order_to_identify_the_root_cause/bash_source_audit.md)
+- [x] Create IMPLEMENTATION_SUMMARY.md for Spec 736 (file: /home/benjamin/.config/.claude/specs/736_claude_specs_plan_outputmd_in_order_to_create_and/IMPLEMENTATION_SUMMARY.md)
+- [x] Add Issue 10 to troubleshooting guide for BASH_SOURCE errors (file: /home/benjamin/.config/.claude/docs/troubleshooting/common-issues.md)
+- [x] Update command development guide with bootstrap pattern standard (file: /home/benjamin/.config/.claude/docs/guides/command-development-fundamentals.md)
+- [x] Archive plan_output.md to Spec 732 artifacts directory (file: /home/benjamin/.config/.claude/specs/plan_output.md → /home/benjamin/.config/.claude/specs/732_plan_outputmd_in_order_to_identify_the_root_cause/artifacts/error_log_before_fix.md)
+- [x] Verify all documentation follows project standards (no emojis, clear examples)
+- [x] Create git status summary showing all changes
 
 **Testing**:
 ```bash
@@ -335,11 +335,11 @@ git diff
 **Expected Duration**: 2 hours
 
 **Phase 5 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(736): complete Phase 5 - Documentation and spec completion`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(736): complete Phase 5 - Documentation and spec completion`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ## Testing Strategy
 
