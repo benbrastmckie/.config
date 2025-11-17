@@ -85,6 +85,111 @@ test -f src/auth/login.js && echo "Found login file"
 ```
 **Why inline**: Execution-critical constraints that commands must enforce immediately.
 
+## Orchestration Sequences (Context-Dependent)
+
+### Characteristics
+
+Orchestration sequences are STEP patterns that coordinate workflow progression and agent preparation. Unlike structural templates (command execution structure) and behavioral content (agent internal workflows), orchestration sequences live at the boundary between command and agent responsibilities.
+
+**Key Distinguishing Criteria**:
+- **Command-owned STEP sequences** (inline): Coordinate cross-agent workflows, prepare shared context, manage phase transitions
+- **Agent-owned STEP sequences** (referenced): Define agent internal procedures, file creation workflows, quality checks
+
+**Ownership Decision Test**:
+```
+Ask: "Who executes this STEP sequence?"
+├─ Command/orchestrator → INLINE (Standard 0: Execution Enforcement)
+├─ Agent/subagent → REFERENCE (Standard 12: Behavioral Content Separation)
+└─ Ambiguous → Default to REFERENCE (fail-safe for context management)
+```
+
+### Examples of Command-Owned STEP Sequences (Inline)
+
+#### Multi-Phase Orchestration Coordination
+```markdown
+STEP 1: Calculate all artifact paths BEFORE invoking agents
+STEP 2: Invoke research agents in parallel (Phase 1)
+STEP 3: MANDATORY VERIFICATION of all report files
+STEP 4: Invoke implementation agents sequentially (Phase 2)
+```
+**Why inline**: Command coordinates phase transitions and agent preparation. Agent doesn't execute this; command does.
+
+#### Agent Preparation and Context Injection
+```markdown
+STEP 1: Create topic directory structure
+STEP 2: Pre-calculate all file paths for agent injection
+STEP 3: Inject paths into agent prompts via Task tool
+```
+**Why inline**: Command prepares context before agent invocation. Orchestrator responsibility, not agent.
+
+#### Cross-Agent Workflow Progression
+```markdown
+STEP 1: Collect outputs from all research agents
+STEP 2: Synthesize findings into unified summary
+STEP 3: Pass summary to implementation agents
+```
+**Why inline**: Command synthesizes cross-agent results. No single agent owns this workflow.
+
+### Examples of Agent-Owned STEP Sequences (Referenced)
+
+#### File Creation Workflow
+```markdown
+STEP 1: Create report file with Write tool at pre-calculated path
+STEP 2: Verify file exists with Read tool
+STEP 3: Return file path in completion signal
+```
+**Why referenced**: Agent internal workflow. Belongs in `.claude/agents/*.md`, not command file.
+
+#### Research Procedure
+```markdown
+STEP 1: Analyze codebase for existing patterns (Grep/Read)
+STEP 2: Document findings in structured format
+STEP 3: Generate recommendations based on analysis
+```
+**Why referenced**: Agent execution procedure. Single agent owns this workflow.
+
+#### Quality Check Sequence
+```markdown
+STEP 1: Verify all required sections present in output
+STEP 2: Check cross-references are valid
+STEP 3: Validate markdown format compliance
+```
+**Why referenced**: Agent self-verification. Agent responsibility, not orchestrator.
+
+### Decision Flowchart
+
+See [STEP Pattern Classification Flowchart](../quick-reference/step-pattern-classification-flowchart.md) for fast decisions.
+
+**Quick Summary**:
+1. Identify STEP sequence
+2. Ask "Who executes this? Command or Agent?"
+3. Command → Inline per Standard 0 (Execution Enforcement)
+4. Agent → Reference per Standard 12 (Behavioral Content Separation)
+5. Ambiguous → Default to Reference (safer for context management)
+
+### Reconciliation with Standards
+
+**Apparent Tension**: Standard 0 says "inline execution steps", Standard 12 says "reference behavioral content". Orchestration sequences seem to fit both.
+
+**Resolution**: Apply ownership test.
+- **Standard 0 (Inline)**: Applies to command-owned execution (multi-phase coordination, agent preparation)
+- **Standard 12 (Reference)**: Applies to agent-owned behavior (file creation workflows, research procedures)
+
+**Example Reconciliation**:
+```markdown
+# Command file (inline orchestration - Standard 0)
+STEP 1: Pre-calculate paths for all agents
+STEP 2: Invoke researcher via Task tool with path injection
+STEP 3: Verify researcher created file at expected path
+
+# Agent file (referenced behavior - Standard 12)
+STEP 1: Read injected path from prompt
+STEP 2: Create research report using Write tool
+STEP 3: Return completion signal with file path
+```
+
+Command orchestrates (inline), agent executes (referenced). No duplication, clear ownership.
+
 ## Behavioral Content (MUST Be Referenced)
 
 ### Characteristics
