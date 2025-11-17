@@ -21,18 +21,61 @@ YOU ARE EXECUTING a research-and-revise workflow that creates research reports b
 **Terminal State**: plan (after plan revision complete)
 **Expected Output**: Research reports + revised plan (with backup of original)
 
-## Part 1: Capture Revision Description and Extract Plan Path
+## Part 1: Capture Revision Description
 
-**EXECUTE NOW**: Capture the revision description and extract the plan path:
+**EXECUTE NOW**: The user invoked `/research-revise "<revision-description-with-plan-path>"`. Capture that description.
+
+In the **small bash block below**, replace `YOUR_REVISION_DESCRIPTION_HERE` with the actual revision description (keeping the quotes).
+
+**Example**: If user ran `/research-revise "revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements"`, change:
+- FROM: `echo "YOUR_REVISION_DESCRIPTION_HERE" > "$TEMP_FILE"`
+- TO: `echo "revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements" > "$TEMP_FILE"`
+
+Execute this bash block with your substitution:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
-REVISION_DESCRIPTION="$1"
+# SUBSTITUTE THE REVISION DESCRIPTION IN THE LINE BELOW
+# CRITICAL: Replace YOUR_REVISION_DESCRIPTION_HERE with the actual revision description from the user
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+# Use timestamp-based filename for concurrent execution safety
+TEMP_FILE="${HOME}/.claude/tmp/research-revise_arg_$(date +%s%N).txt"
+echo "YOUR_REVISION_DESCRIPTION_HERE" > "$TEMP_FILE"
+# Save temp file path for Part 2 to read
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/research-revise_arg_path.txt"
+echo "Revision description captured to $TEMP_FILE"
+```
+
+## Part 2: Read and Validate Revision Description
+
+**EXECUTE NOW**: Read the captured description, extract plan path, and validate:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Read revision description from file (written in Part 1)
+RESEARCH_REVISE_DESC_PATH_FILE="${HOME}/.claude/tmp/research-revise_arg_path.txt"
+
+if [ -f "$RESEARCH_REVISE_DESC_PATH_FILE" ]; then
+  RESEARCH_REVISE_DESC_FILE=$(cat "$RESEARCH_REVISE_DESC_PATH_FILE")
+else
+  # Fallback to legacy fixed filename for backward compatibility
+  RESEARCH_REVISE_DESC_FILE="${HOME}/.claude/tmp/research-revise_arg.txt"
+fi
+
+if [ -f "$RESEARCH_REVISE_DESC_FILE" ]; then
+  REVISION_DESCRIPTION=$(cat "$RESEARCH_REVISE_DESC_FILE" 2>/dev/null || echo "")
+else
+  echo "ERROR: Revision description file not found: $RESEARCH_REVISE_DESC_FILE"
+  echo "This usually means Part 1 (argument capture) didn't execute."
+  echo "Usage: /research-revise \"revise plan at /path/to/plan.md based on INSIGHTS\""
+  exit 1
+fi
 
 if [ -z "$REVISION_DESCRIPTION" ]; then
-  echo "ERROR: Revision description with plan path required"
-  echo "USAGE: /research-revise \"revise plan at /path/to/plan.md based on NEW_INSIGHTS\""
-  echo "EXAMPLE: /research-revise \"revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements\""
+  echo "ERROR: Revision description is empty"
+  echo "File exists but contains no content: $RESEARCH_REVISE_DESC_FILE"
+  echo "Usage: /research-revise \"revise plan at /path/to/plan.md based on INSIGHTS\""
   exit 1
 fi
 
@@ -80,7 +123,7 @@ echo "Research Complexity: $RESEARCH_COMPLEXITY"
 echo ""
 ```
 
-## Part 2: State Machine Initialization
+## Part 3: State Machine Initialization
 
 **EXECUTE NOW**: Initialize the state machine and source required libraries:
 

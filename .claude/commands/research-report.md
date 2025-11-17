@@ -22,16 +22,59 @@ YOU ARE EXECUTING a research-only workflow that creates comprehensive research r
 
 ## Part 1: Capture Workflow Description
 
-**EXECUTE NOW**: Capture and validate the workflow description:
+**EXECUTE NOW**: The user invoked `/research-report "<workflow-description>"`. Capture that description.
+
+In the **small bash block below**, replace `YOUR_WORKFLOW_DESCRIPTION_HERE` with the actual workflow description (keeping the quotes).
+
+**Example**: If user ran `/research-report "authentication patterns in codebase"`, change:
+- FROM: `echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "$TEMP_FILE"`
+- TO: `echo "authentication patterns in codebase" > "$TEMP_FILE"`
+
+Execute this bash block with your substitution:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
-WORKFLOW_DESCRIPTION="$1"
+# SUBSTITUTE THE WORKFLOW DESCRIPTION IN THE LINE BELOW
+# CRITICAL: Replace YOUR_WORKFLOW_DESCRIPTION_HERE with the actual workflow description from the user
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+# Use timestamp-based filename for concurrent execution safety
+TEMP_FILE="${HOME}/.claude/tmp/research-report_arg_$(date +%s%N).txt"
+echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "$TEMP_FILE"
+# Save temp file path for Part 2 to read
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/research-report_arg_path.txt"
+echo "Workflow description captured to $TEMP_FILE"
+```
+
+## Part 2: Read and Validate Workflow Description
+
+**EXECUTE NOW**: Read the captured description and validate:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Read workflow description from file (written in Part 1)
+RESEARCH_REPORT_DESC_PATH_FILE="${HOME}/.claude/tmp/research-report_arg_path.txt"
+
+if [ -f "$RESEARCH_REPORT_DESC_PATH_FILE" ]; then
+  RESEARCH_REPORT_DESC_FILE=$(cat "$RESEARCH_REPORT_DESC_PATH_FILE")
+else
+  # Fallback to legacy fixed filename for backward compatibility
+  RESEARCH_REPORT_DESC_FILE="${HOME}/.claude/tmp/research-report_arg.txt"
+fi
+
+if [ -f "$RESEARCH_REPORT_DESC_FILE" ]; then
+  WORKFLOW_DESCRIPTION=$(cat "$RESEARCH_REPORT_DESC_FILE" 2>/dev/null || echo "")
+else
+  echo "ERROR: Workflow description file not found: $RESEARCH_REPORT_DESC_FILE"
+  echo "This usually means Part 1 (argument capture) didn't execute."
+  echo "Usage: /research-report \"<workflow description>\""
+  exit 1
+fi
 
 if [ -z "$WORKFLOW_DESCRIPTION" ]; then
-  echo "ERROR: Workflow description required"
-  echo "USAGE: /research-report <workflow-description>"
-  echo "EXAMPLE: /research-report \"authentication patterns in codebase\""
+  echo "ERROR: Workflow description is empty"
+  echo "File exists but contains no content: $RESEARCH_REPORT_DESC_FILE"
+  echo "Usage: /research-report \"<workflow description>\""
   exit 1
 fi
 
@@ -60,7 +103,7 @@ echo "Complexity: $RESEARCH_COMPLEXITY"
 echo ""
 ```
 
-## Part 2: State Machine Initialization
+## Part 3: State Machine Initialization
 
 **EXECUTE NOW**: Initialize the state machine and source required libraries:
 

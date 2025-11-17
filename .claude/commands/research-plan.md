@@ -23,16 +23,59 @@ YOU ARE EXECUTING a research-and-plan workflow that creates comprehensive resear
 
 ## Part 1: Capture Feature Description
 
-**EXECUTE NOW**: Capture and validate the feature description:
+**EXECUTE NOW**: The user invoked `/research-plan "<feature-description>"`. Capture that description.
+
+In the **small bash block below**, replace `YOUR_FEATURE_DESCRIPTION_HERE` with the actual feature description (keeping the quotes).
+
+**Example**: If user ran `/research-plan "implement user authentication with JWT tokens"`, change:
+- FROM: `echo "YOUR_FEATURE_DESCRIPTION_HERE" > "$TEMP_FILE"`
+- TO: `echo "implement user authentication with JWT tokens" > "$TEMP_FILE"`
+
+Execute this bash block with your substitution:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
-FEATURE_DESCRIPTION="$1"
+# SUBSTITUTE THE FEATURE DESCRIPTION IN THE LINE BELOW
+# CRITICAL: Replace YOUR_FEATURE_DESCRIPTION_HERE with the actual feature description from the user
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+# Use timestamp-based filename for concurrent execution safety
+TEMP_FILE="${HOME}/.claude/tmp/research-plan_arg_$(date +%s%N).txt"
+echo "YOUR_FEATURE_DESCRIPTION_HERE" > "$TEMP_FILE"
+# Save temp file path for Part 2 to read
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/research-plan_arg_path.txt"
+echo "Feature description captured to $TEMP_FILE"
+```
+
+## Part 2: Read and Validate Feature Description
+
+**EXECUTE NOW**: Read the captured description and validate:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Read feature description from file (written in Part 1)
+RESEARCH_PLAN_DESC_PATH_FILE="${HOME}/.claude/tmp/research-plan_arg_path.txt"
+
+if [ -f "$RESEARCH_PLAN_DESC_PATH_FILE" ]; then
+  RESEARCH_PLAN_DESC_FILE=$(cat "$RESEARCH_PLAN_DESC_PATH_FILE")
+else
+  # Fallback to legacy fixed filename for backward compatibility
+  RESEARCH_PLAN_DESC_FILE="${HOME}/.claude/tmp/research-plan_arg.txt"
+fi
+
+if [ -f "$RESEARCH_PLAN_DESC_FILE" ]; then
+  FEATURE_DESCRIPTION=$(cat "$RESEARCH_PLAN_DESC_FILE" 2>/dev/null || echo "")
+else
+  echo "ERROR: Feature description file not found: $RESEARCH_PLAN_DESC_FILE"
+  echo "This usually means Part 1 (argument capture) didn't execute."
+  echo "Usage: /research-plan \"<feature description>\""
+  exit 1
+fi
 
 if [ -z "$FEATURE_DESCRIPTION" ]; then
-  echo "ERROR: Feature description required"
-  echo "USAGE: /research-plan <feature-description>"
-  echo "EXAMPLE: /research-plan \"implement user authentication with JWT tokens\""
+  echo "ERROR: Feature description is empty"
+  echo "File exists but contains no content: $RESEARCH_PLAN_DESC_FILE"
+  echo "Usage: /research-plan \"<feature description>\""
   exit 1
 fi
 
@@ -61,7 +104,7 @@ echo "Research Complexity: $RESEARCH_COMPLEXITY"
 echo ""
 ```
 
-## Part 2: State Machine Initialization
+## Part 3: State Machine Initialization
 
 **EXECUTE NOW**: Initialize the state machine and source required libraries:
 
