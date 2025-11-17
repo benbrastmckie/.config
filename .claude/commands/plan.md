@@ -767,7 +767,170 @@ echo "  Phases: $PHASE_COUNT"
 echo "  Tasks: $CHECKBOX_COUNT"
 ```
 
-## Phase 4: Plan Presentation
+## Phase 4: Plan Validation
+
+**EXECUTE NOW**: Validate created plan against project standards.
+
+```bash
+echo ""
+echo "PROGRESS: Validating plan..."
+
+# Source validation library (should already be available from Phase 0, but verify)
+if [ -z "${VALIDATE_PLAN_SOURCED:-}" ]; then
+  if ! source "$UTILS_DIR/validate-plan.sh" 2>&1; then
+    echo "ERROR: Failed to source validate-plan.sh"
+    echo "DIAGNOSTIC: Validation library not found at: $UTILS_DIR/validate-plan.sh"
+    echo "DIAGNOSTIC: Skipping validation (non-critical)"
+    VALIDATION_SKIPPED=true
+  else
+    VALIDATION_SKIPPED=false
+  fi
+else
+  VALIDATION_SKIPPED=false
+fi
+
+if [ "$VALIDATION_SKIPPED" = "false" ]; then
+  # STANDARD 16: Verify validation return code
+  if ! VALIDATION_REPORT=$(validate_plan "$PLAN_PATH" "$CLAUDE_MD" 2>&1); then
+    echo "WARNING: Plan validation encountered issues"
+    echo "DIAGNOSTIC: Validation report may be incomplete"
+  fi
+
+  # Parse validation report
+  ERROR_COUNT=$(echo "$VALIDATION_REPORT" | jq -r '.summary.errors // 0')
+  WARNING_COUNT=$(echo "$VALIDATION_REPORT" | jq -r '.summary.warnings // 0')
+
+  echo "  Validation complete:"
+  echo "    Errors: $ERROR_COUNT"
+  echo "    Warnings: $WARNING_COUNT"
+
+  # Display errors (critical)
+  if [ "$ERROR_COUNT" -gt 0 ]; then
+    echo ""
+    echo "  ERRORS FOUND:"
+
+    # Metadata errors
+    METADATA_VALID=$(echo "$VALIDATION_REPORT" | jq -r '.metadata.valid')
+    if [ "$METADATA_VALID" = "false" ]; then
+      MISSING_FIELDS=$(echo "$VALIDATION_REPORT" | jq -r '.metadata.missing[]')
+      echo "    Metadata missing fields:"
+      for field in $MISSING_FIELDS; do
+        echo "      - $field"
+      done
+    fi
+
+    # Dependency errors
+    DEPS_VALID=$(echo "$VALIDATION_REPORT" | jq -r '.dependencies.valid')
+    if [ "$DEPS_VALID" = "false" ]; then
+      DEPS_ISSUES=$(echo "$VALIDATION_REPORT" | jq -r '.dependencies.issues[]')
+      echo "    Phase dependency issues:"
+      while IFS= read -r issue; do
+        [ -n "$issue" ] && echo "      - $issue"
+      done <<< "$DEPS_ISSUES"
+    fi
+  fi
+
+  # Display warnings (informational)
+  if [ "$WARNING_COUNT" -gt 0 ]; then
+    echo ""
+    echo "  WARNINGS:"
+
+    # Standards compliance warnings
+    STANDARDS_VALID=$(echo "$VALIDATION_REPORT" | jq -r '.standards.valid')
+    if [ "$STANDARDS_VALID" = "false" ]; then
+      STANDARDS_ISSUES=$(echo "$VALIDATION_REPORT" | jq -r '.standards.issues[]')
+      while IFS= read -r issue; do
+        [ -n "$issue" ] && echo "    - $issue"
+      done <<< "$STANDARDS_ISSUES"
+    fi
+
+    # Test warnings
+    TESTS_VALID=$(echo "$VALIDATION_REPORT" | jq -r '.tests.valid')
+    if [ "$TESTS_VALID" = "false" ]; then
+      TESTS_ISSUES=$(echo "$VALIDATION_REPORT" | jq -r '.tests.issues[]')
+      while IFS= read -r issue; do
+        [ -n "$issue" ] && echo "    - $issue"
+      done <<< "$TESTS_ISSUES"
+    fi
+
+    # Documentation warnings
+    DOCS_VALID=$(echo "$VALIDATION_REPORT" | jq -r '.documentation.valid')
+    if [ "$DOCS_VALID" = "false" ]; then
+      DOCS_ISSUES=$(echo "$VALIDATION_REPORT" | jq -r '.documentation.issues[]')
+      while IFS= read -r issue; do
+        [ -n "$issue" ] && echo "    - $issue"
+      done <<< "$DOCS_ISSUES"
+    fi
+  fi
+
+  # STANDARD 0: Fail-fast on critical validation errors
+  if [ "$ERROR_COUNT" -gt 0 ]; then
+    echo ""
+    echo "✗ ERROR: Plan validation found $ERROR_COUNT critical error(s)"
+    echo "DIAGNOSTIC: Fix errors before proceeding with implementation"
+    echo "DIAGNOSTIC: Plan file: $PLAN_PATH"
+    echo "DIAGNOSTIC: Standards file: $CLAUDE_MD"
+    exit 1
+  fi
+
+  # Cache validation report
+  if [ -n "$VALIDATION_REPORT" ]; then
+    append_workflow_state "VALIDATION_REPORT" "$VALIDATION_REPORT"
+  fi
+
+  echo "✓ Phase 4: Plan validation complete"
+  if [ "$WARNING_COUNT" -gt 0 ]; then
+    echo "  Status: Passed with $WARNING_COUNT warning(s)"
+  else
+    echo "  Status: All checks passed"
+  fi
+else
+  echo "⚠ Phase 4: Plan validation skipped (library not available)"
+fi
+```
+
+## Phase 5: Expansion Evaluation (Conditional)
+
+**EXECUTE NOW**: Evaluate if plan requires phase expansion based on complexity analysis.
+
+```bash
+echo ""
+echo "PROGRESS: Evaluating expansion requirements..."
+
+# Calculate average phase complexity for decision-making
+# For now, use a simple heuristic: if complexity ≥8 or phases ≥7, consider expansion
+
+EXPANSION_NEEDED=false
+EXPANSION_REASON=""
+
+if [ "$ESTIMATED_COMPLEXITY" -ge 8 ]; then
+  EXPANSION_NEEDED=true
+  EXPANSION_REASON="High overall complexity ($ESTIMATED_COMPLEXITY/10)"
+elif [ "$PHASE_COUNT" -ge 7 ]; then
+  EXPANSION_NEEDED=true
+  EXPANSION_REASON="High phase count ($PHASE_COUNT phases)"
+fi
+
+if [ "$EXPANSION_NEEDED" = "false" ]; then
+  echo "  No expansion needed (complexity: $ESTIMATED_COMPLEXITY, phases: $PHASE_COUNT)"
+  echo "  Plan is suitable for direct implementation"
+else
+  echo "  Expansion recommended: $EXPANSION_REASON"
+  echo ""
+  echo "  RECOMMENDATION: Consider using /expand command for detailed phase breakdown"
+  echo "  Command: /expand $PLAN_PATH"
+  echo ""
+  echo "  Expansion provides:"
+  echo "    - Detailed task breakdown per phase"
+  echo "    - Granular dependency management"
+  echo "    - Better progress tracking"
+  echo "    - Reduced cognitive load during implementation"
+fi
+
+echo "✓ Phase 5: Expansion evaluation complete"
+```
+
+## Phase 6: Plan Presentation
 
 **EXECUTE NOW**: Present plan summary to user.
 
@@ -783,10 +946,37 @@ echo "Complexity: $ESTIMATED_COMPLEXITY/10"
 echo "Phases: $PHASE_COUNT"
 echo "Tasks: $CHECKBOX_COUNT"
 echo ""
+
+# Show research reports if any
+if [ -n "${GENERATED_REPORT_PATHS_JSON:-}" ]; then
+  RESEARCH_COUNT=$(echo "$GENERATED_REPORT_PATHS_JSON" | jq 'length')
+  if [ "$RESEARCH_COUNT" -gt 0 ]; then
+    echo "Research reports: $RESEARCH_COUNT"
+    echo "$GENERATED_REPORT_PATHS_JSON" | jq -r '.[]' | while read -r report; do
+      echo "  - $report"
+    done
+    echo ""
+  fi
+fi
+
+# Show validation status
+if [ "$VALIDATION_SKIPPED" = "false" ] && [ -n "${WARNING_COUNT:-}" ]; then
+  echo "Validation: ✓ Passed"
+  if [ "$WARNING_COUNT" -gt 0 ]; then
+    echo "  (with $WARNING_COUNT warning(s) - review recommended)"
+  fi
+  echo ""
+fi
+
 echo "Next steps:"
 echo "  1. Review plan: cat $PLAN_PATH"
-echo "  2. Implement: /implement $PLAN_PATH"
-echo "  3. Expand complex phases: /expand $PLAN_PATH"
+if [ "$EXPANSION_NEEDED" = "true" ]; then
+  echo "  2. Expand phases: /expand $PLAN_PATH  (recommended)"
+  echo "  3. Implement: /implement $PLAN_PATH"
+else
+  echo "  2. Implement: /implement $PLAN_PATH"
+  echo "  3. Expand if needed: /expand $PLAN_PATH"
+fi
 echo ""
 ```
 
