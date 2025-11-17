@@ -145,9 +145,26 @@ echo ""
 echo ""
 echo "Verifying research artifacts..."
 
-if [ ! -d "$RESEARCH_DIR" ] || [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
-  echo "ERROR: Research phase failed to create artifacts" >&2
+if [ ! -d "$RESEARCH_DIR" ]; then
+  echo "ERROR: Research phase failed to create reports directory" >&2
   echo "DIAGNOSTIC: Expected directory: $RESEARCH_DIR" >&2
+  echo "SOLUTION: Check research-specialist agent logs for failures" >&2
+  exit 1
+fi
+
+# File-level verification (not directory-level)
+if [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
+  echo "ERROR: Research phase failed to create report files" >&2
+  echo "DIAGNOSTIC: Directory exists but no .md files found: $RESEARCH_DIR" >&2
+  echo "SOLUTION: Check research-specialist agent behavioral file compliance" >&2
+  exit 1
+fi
+
+# Verify file size (minimum 100 bytes)
+UNDERSIZED_FILES=$(find "$RESEARCH_DIR" -name '*.md' -type f -size -100c 2>/dev/null)
+if [ -n "$UNDERSIZED_FILES" ]; then
+  echo "ERROR: Research report(s) too small (< 100 bytes)" >&2
+  echo "DIAGNOSTIC: Files: $UNDERSIZED_FILES" >&2
   exit 1
 fi
 

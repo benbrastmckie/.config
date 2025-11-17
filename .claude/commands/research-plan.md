@@ -173,6 +173,14 @@ if [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
   exit 1
 fi
 
+# Verify file size (minimum 100 bytes)
+UNDERSIZED_FILES=$(find "$RESEARCH_DIR" -name '*.md' -type f -size -100c 2>/dev/null)
+if [ -n "$UNDERSIZED_FILES" ]; then
+  echo "ERROR: Research report(s) too small (< 100 bytes)" >&2
+  echo "DIAGNOSTIC: Files: $UNDERSIZED_FILES" >&2
+  exit 1
+fi
+
 REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
 echo "✓ Research phase complete ($REPORT_COUNT reports created)"
 echo ""

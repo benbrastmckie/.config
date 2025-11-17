@@ -266,10 +266,12 @@ if [ ! -f "$EXISTING_PLAN_PATH" ]; then
   exit 1
 fi
 
-# Verify plan was actually modified (newer than backup)
-if [ "$EXISTING_PLAN_PATH" -ot "$BACKUP_PATH" ]; then
-  echo "WARNING: Plan file not modified (older than backup)"
-  echo "NOTE: Plan may not have needed revision"
+# Verify plan was actually modified (must be different from backup)
+if cmp -s "$EXISTING_PLAN_PATH" "$BACKUP_PATH"; then
+  echo "ERROR: Plan file not modified (identical to backup)" >&2
+  echo "DIAGNOSTIC: Plan revision must make changes based on research insights" >&2
+  echo "SOLUTION: Review research reports and ensure agent applies revisions" >&2
+  exit 1
 fi
 
 FILE_SIZE=$(wc -c < "$EXISTING_PLAN_PATH")
