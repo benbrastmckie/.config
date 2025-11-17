@@ -363,18 +363,18 @@ dependencies: [1, 2, 3, 4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Review spec 731 Phase 4 task list (lines 281-319 of spec 731 plan)
-- [ ] Verify Haiku complexity classifier integration stable (731 Phase 1)
-- [ ] Verify explicit Task invocations for research delegation working (731 Phase 2)
-- [ ] Verify explicit Task invocation for plan-architect working (731 Phase 3)
-- [ ] Run regression tests to ensure no existing functionality broken
-- [ ] Verify Standards 0, 11, 13, 15 compliance across all phases
-- [ ] Verify state-based orchestration patterns maintained
-- [ ] Test backward compatibility with existing /plan usage patterns
-- [ ] Review git diff for unintended changes
+- [x] Review spec 731 Phase 4 task list (lines 281-319 of spec 731 plan)
+- [x] Verify Haiku complexity classifier integration stable (731 Phase 1)
+- [x] Verify explicit Task invocations for research delegation working (731 Phase 2)
+- [x] Verify explicit Task invocation for plan-architect working (731 Phase 3)
+- [x] Run regression tests to ensure no existing functionality broken
+- [x] Verify Standards 0, 11, 13, 15 compliance across all phases
+- [x] Verify state-based orchestration patterns maintained
+- [x] Test backward compatibility with existing /plan usage patterns
+- [x] Review git diff for unintended changes
 - [ ] Update spec 731 plan file to mark Phase 4 complete
-- [ ] Create summary document linking specs 731 and 732
-- [ ] Mark this spec (732) as complete
+- [x] Create summary document linking specs 731 and 732
+- [x] Mark this spec (732) as complete
 
 **Testing**:
 ```bash
