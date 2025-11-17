@@ -23,7 +23,10 @@ YOU ARE EXECUTING a build-from-plan workflow that takes an existing implementati
 
 ## Part 1: Argument Parsing and Plan Discovery
 
+**EXECUTE NOW**: Parse arguments and discover the plan file:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Bootstrap CLAUDE_PROJECT_DIR detection
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -149,7 +152,14 @@ fi
 
 ## Part 2: State Machine Initialization
 
+**EXECUTE NOW**: Initialize the state machine for workflow tracking:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source required libraries (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
 # Hardcode workflow type
 WORKFLOW_TYPE="full-implementation"
 TERMINAL_STATE="complete"
@@ -181,7 +191,14 @@ echo ""
 
 ## Part 3: Implementation Phase
 
+**EXECUTE NOW**: Transition to implementation state and prepare for agent delegation:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source required libraries (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
 # Transition to implement state with return code verification
 if ! sm_transition "$STATE_IMPLEMENT" 2>&1; then
   echo "ERROR: State transition to IMPLEMENT failed" >&2
@@ -204,12 +221,19 @@ echo ""
 
 # Pre-calculate topic path from plan file
 TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
+
+# Persist variables for next block and agent
+echo "PLAN_FILE=$PLAN_FILE" > "${HOME}/.claude/tmp/build_state_$$.txt"
+echo "TOPIC_PATH=$TOPIC_PATH" >> "${HOME}/.claude/tmp/build_state_$$.txt"
+echo "STARTING_PHASE=$STARTING_PHASE" >> "${HOME}/.claude/tmp/build_state_$$.txt"
 ```
+
+**EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent.
 
 Task {
   subagent_type: "general-purpose"
   description: "Execute implementation plan with wave-based parallelization"
-  prompt: |
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md
 
@@ -234,11 +258,20 @@ Task {
     Execute all implementation phases according to the plan, following wave-based
     execution with dependency analysis.
 
-    Return completion signal in format:
-    IMPLEMENTATION_COMPLETE: {PHASE_COUNT}
+    Return: IMPLEMENTATION_COMPLETE: {PHASE_COUNT}
+  "
 }
 
+**EXECUTE NOW**: Verify implementation completion and persist state:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source required libraries (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+
+# Load state from previous block
+source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
+
 # MANDATORY VERIFICATION
 echo "Verifying implementation completion..."
 
@@ -280,8 +313,16 @@ fi
 
 ## Part 4: Testing Phase
 
+**EXECUTE NOW**: Run tests and determine pass/fail status:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source required libraries (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
 # Load workflow state from Part 3 (subprocess isolation)
+source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
 load_workflow_state "${WORKFLOW_ID:-$$}" false
 
 # Transition to test state with return code verification
@@ -369,8 +410,16 @@ fi
 
 ## Part 5: Conditional Branching (Debug or Document)
 
+**EXECUTE NOW**: Branch to debug or document phase based on test results:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source required libraries (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
 # Load workflow state from Part 4 (subprocess isolation)
+source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
 load_workflow_state "${WORKFLOW_ID:-$$}" false
 
 # Conditional phase based on test results
@@ -398,12 +447,17 @@ if [ "$TESTS_PASSED" = "false" ]; then
   # Pre-calculate debug directory
   DEBUG_DIR="${TOPIC_PATH}/debug"
   mkdir -p "$DEBUG_DIR"
+
+  # Persist debug directory for agent
+  echo "DEBUG_DIR=$DEBUG_DIR" >> "${HOME}/.claude/tmp/build_state_$$.txt"
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent.
+
 Task {
-  subagent_type: "debug-analyst"
+  subagent_type: "general-purpose"
   description: "Debug failed tests in build workflow"
-  prompt: |
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
 
@@ -417,80 +471,117 @@ Task {
     - Debug Directory: ${DEBUG_DIR}
     - Workflow Type: full-implementation-debug
 
-    Execute debugging analysis according to behavioral guidelines and return completion signal:
-    DEBUG_COMPLETE: ${DEBUG_REPORT_PATH}
+    Execute debugging analysis according to behavioral guidelines.
+
+    Return: DEBUG_COMPLETE: {report_path}
+  "
 }
 
+**EXECUTE NOW**: Verify debug artifacts were created:
+
 ```bash
-  # MANDATORY VERIFICATION
-  echo "Verifying debug artifacts..."
+set +H  # CRITICAL: Disable history expansion
+# Re-source required libraries (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 
-  if [ ! -d "$DEBUG_DIR" ]; then
-    echo "ERROR: Debug phase failed to create debug directory" >&2
-    echo "DIAGNOSTIC: Expected directory: $DEBUG_DIR" >&2
-    exit 1
-  fi
+# Load state from previous block
+source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
 
-  if [ -z "$(find "$DEBUG_DIR" -name '*.md' 2>/dev/null)" ]; then
-    echo "ERROR: Debug phase failed to create debug report" >&2
-    echo "DIAGNOSTIC: Directory exists but no .md files found: $DEBUG_DIR" >&2
-    exit 1
-  fi
+# MANDATORY VERIFICATION
+echo "Verifying debug artifacts..."
 
-  DEBUG_REPORT=$(find "$DEBUG_DIR" -name '*.md' -type f | head -1)
-  echo "✓ Debug analysis complete (report: $DEBUG_REPORT)"
-  echo ""
-
-  echo "NOTE: After debug, you may re-run /build to retry tests"
-  echo ""
-
-  # Persist completed state
-  save_completed_states_to_state
-
-else
-  # Tests passed → document phase with return code verification
-  if ! sm_transition "$STATE_DOCUMENT" 2>&1; then
-    echo "ERROR: State transition to DOCUMENT failed" >&2
-    echo "DIAGNOSTIC Information:" >&2
-    echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
-    echo "  - Attempted Transition: → DOCUMENT" >&2
-    echo "  - Workflow Type: full-implementation" >&2
-    echo "  - Tests passed: $TESTS_PASSED (expecting true)" >&2
-    echo "POSSIBLE CAUSES:" >&2
-    echo "  - Conditional logic error (tests_passed check)" >&2
-    echo "  - State not persisted after testing" >&2
-    echo "  - Invalid transition from current state" >&2
-    echo "TROUBLESHOOTING:" >&2
-    echo "  - Verify TESTS_PASSED variable is 'true'" >&2
-    echo "  - Check testing checkpoint output" >&2
-    exit 1
-  fi
-  echo "=== Phase 3: Documentation ==="
-  echo ""
-
-  echo "Updating documentation for implemented features..."
-
-  # Basic documentation update (check for README updates needed)
-  if git diff --name-only HEAD~${COMMIT_COUNT}..HEAD | grep -qE '(\.py|\.js|\.ts|\.go|\.rs)$'; then
-    echo "NOTE: Code files modified, documentation update recommended"
-    echo "Consider updating:"
-    echo "  - README.md"
-    echo "  - API documentation"
-    echo "  - CHANGELOG.md"
-  fi
-
-  echo "✓ Documentation phase complete"
-  echo ""
-
-  # Persist completed state
-  save_completed_states_to_state
+if [ ! -d "$DEBUG_DIR" ]; then
+  echo "ERROR: Debug phase failed to create debug directory" >&2
+  echo "DIAGNOSTIC: Expected directory: $DEBUG_DIR" >&2
+  exit 1
 fi
+
+if [ -z "$(find "$DEBUG_DIR" -name '*.md' 2>/dev/null)" ]; then
+  echo "ERROR: Debug phase failed to create debug report" >&2
+  echo "DIAGNOSTIC: Directory exists but no .md files found: $DEBUG_DIR" >&2
+  exit 1
+fi
+
+DEBUG_REPORT=$(find "$DEBUG_DIR" -name '*.md' -type f | head -1)
+echo "✓ Debug analysis complete (report: $DEBUG_REPORT)"
+echo ""
+
+echo "NOTE: After debug, you may re-run /build to retry tests"
+echo ""
+
+# Persist completed state
+save_completed_states_to_state
+```
+
+**EXECUTE NOW**: Handle documentation phase when tests pass:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source required libraries (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
+# Load state from previous block
+source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
+load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# Skip if tests failed (debug phase handled separately)
+if [ "$TESTS_PASSED" = "false" ]; then
+  echo "DEBUG phase completed, skipping documentation"
+  exit 0
+fi
+
+# Tests passed → document phase with return code verification
+if ! sm_transition "$STATE_DOCUMENT" 2>&1; then
+  echo "ERROR: State transition to DOCUMENT failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → DOCUMENT" >&2
+  echo "  - Workflow Type: full-implementation" >&2
+  echo "  - Tests passed: $TESTS_PASSED (expecting true)" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Conditional logic error (tests_passed check)" >&2
+  echo "  - State not persisted after testing" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Verify TESTS_PASSED variable is 'true'" >&2
+  echo "  - Check testing checkpoint output" >&2
+  exit 1
+fi
+echo "=== Phase 3: Documentation ==="
+echo ""
+
+echo "Updating documentation for implemented features..."
+
+# Basic documentation update (check for README updates needed)
+if git diff --name-only HEAD~${COMMIT_COUNT}..HEAD | grep -qE '(\.py|\.js|\.ts|\.go|\.rs)$'; then
+  echo "NOTE: Code files modified, documentation update recommended"
+  echo "Consider updating:"
+  echo "  - README.md"
+  echo "  - API documentation"
+  echo "  - CHANGELOG.md"
+fi
+
+echo "✓ Documentation phase complete"
+echo ""
+
+# Persist completed state
+save_completed_states_to_state
 ```
 
 ## Part 6: Completion & Cleanup
 
+**EXECUTE NOW**: Complete workflow and cleanup state:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source required libraries (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
+
 # Load workflow state from Part 5 (subprocess isolation)
+source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
 load_workflow_state "${WORKFLOW_ID:-$$}" false
 
 # Transition to complete state with return code verification
@@ -537,6 +628,9 @@ echo ""
 if [ "$TESTS_PASSED" = "true" ]; then
   delete_checkpoint "build" 2>/dev/null || true
 fi
+
+# Cleanup temp state file
+rm -f "${HOME}/.claude/tmp/build_state_$$.txt"
 
 exit 0
 ```

@@ -23,7 +23,10 @@ YOU ARE EXECUTING a research-and-plan workflow that creates comprehensive resear
 
 ## Part 1: Capture Feature Description
 
+**EXECUTE NOW**: Capture and validate the feature description:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 FEATURE_DESCRIPTION="$1"
 
 if [ -z "$FEATURE_DESCRIPTION" ]; then
@@ -60,7 +63,10 @@ echo ""
 
 ## Part 2: State Machine Initialization
 
+**EXECUTE NOW**: Initialize the state machine and source required libraries:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Detect project directory (bootstrap pattern)
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -137,7 +143,10 @@ echo ""
 
 ## Part 3: Research Phase Execution
 
+**EXECUTE NOW**: Transition to research state and allocate topic directory:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
@@ -192,26 +201,32 @@ append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
 append_workflow_state "FEATURE_DESCRIPTION" "$FEATURE_DESCRIPTION"
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
 Task {
-  subagent_type: "research-specialist"
-  description: "Research $FEATURE_DESCRIPTION"
-  prompt: |
+  subagent_type: "general-purpose"
+  description: "Research ${FEATURE_DESCRIPTION} with mandatory file creation"
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
     You are conducting research for: research-plan workflow
 
-    Input:
-    - Research Topic: $FEATURE_DESCRIPTION
-    - Research Complexity: $RESEARCH_COMPLEXITY
-    - Output Directory: $RESEARCH_DIR
+    **Workflow-Specific Context**:
+    - Research Topic: ${FEATURE_DESCRIPTION}
+    - Research Complexity: ${RESEARCH_COMPLEXITY}
+    - Output Directory: ${RESEARCH_DIR}
     - Workflow Type: research-and-plan
 
     Execute research according to behavioral guidelines and return completion signal:
-    REPORT_CREATED: ${REPORT_PATH}
+    REPORT_CREATED: [path to created report]
+  "
 }
 
+**EXECUTE NOW**: Verify research artifacts were created:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
@@ -263,7 +278,10 @@ fi
 
 ## Part 4: Planning Phase Execution
 
+**EXECUTE NOW**: Transition to planning state and prepare for plan creation:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
@@ -308,27 +326,33 @@ REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
+
 Task {
-  subagent_type: "plan-architect"
-  description: "Create implementation plan for $FEATURE_DESCRIPTION"
-  prompt: |
+  subagent_type: "general-purpose"
+  description: "Create implementation plan for ${FEATURE_DESCRIPTION} with mandatory file creation"
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
     You are creating an implementation plan for: research-plan workflow
 
-    Input:
-    - Feature Description: $FEATURE_DESCRIPTION
-    - Output Path: $PLAN_PATH
-    - Research Reports: $REPORT_PATHS_JSON
+    **Workflow-Specific Context**:
+    - Feature Description: ${FEATURE_DESCRIPTION}
+    - Output Path: ${PLAN_PATH}
+    - Research Reports: ${REPORT_PATHS_JSON}
     - Workflow Type: research-and-plan
     - Operation Mode: new plan creation
 
     Execute planning according to behavioral guidelines and return completion signal:
     PLAN_CREATED: ${PLAN_PATH}
+  "
 }
 
+**EXECUTE NOW**: Verify plan artifacts were created:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # MANDATORY VERIFICATION
 echo "Verifying plan artifacts..."
 
@@ -368,7 +392,10 @@ fi
 
 ## Part 5: Completion & Cleanup
 
+**EXECUTE NOW**: Complete the workflow and display summary:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"

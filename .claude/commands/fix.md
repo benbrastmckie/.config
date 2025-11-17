@@ -23,7 +23,10 @@ YOU ARE EXECUTING a debug-focused workflow that investigates issues through rese
 
 ## Part 1: Capture Issue Description
 
+**EXECUTE NOW**: Capture and validate the issue description:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 ISSUE_DESCRIPTION="$1"
 
 if [ -z "$ISSUE_DESCRIPTION" ]; then
@@ -55,7 +58,10 @@ echo ""
 
 ## Part 2: State Machine Initialization
 
+**EXECUTE NOW**: Initialize state machine and source required libraries:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Detect project directory
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -129,7 +135,15 @@ echo ""
 
 ## Part 3: Research Phase (Issue Investigation)
 
+**EXECUTE NOW**: Transition to research state and allocate topic directory:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
+
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
@@ -173,12 +187,21 @@ DEBUG_DIR="${SPECS_DIR}/debug"
 # Create subdirectories (topic root already created atomically)
 mkdir -p "$RESEARCH_DIR"
 mkdir -p "$DEBUG_DIR"
+
+# Persist variables for next block and agent
+echo "SPECS_DIR=$SPECS_DIR" > "${HOME}/.claude/tmp/fix_state_$$.txt"
+echo "RESEARCH_DIR=$RESEARCH_DIR" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
+echo "DEBUG_DIR=$DEBUG_DIR" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
+echo "ISSUE_DESCRIPTION=$ISSUE_DESCRIPTION" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
+echo "RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
 Task {
-  subagent_type: "research-specialist"
+  subagent_type: "general-purpose"
   description: "Research root cause for $ISSUE_DESCRIPTION"
-  prompt: |
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
@@ -191,11 +214,22 @@ Task {
     - Workflow Type: debug-only
     - Context Mode: root cause analysis
 
-    Execute research according to behavioral guidelines and return completion signal:
-    REPORT_CREATED: ${REPORT_PATH}
+    Execute research according to behavioral guidelines.
+
+    Return: REPORT_CREATED: {report_path}
+  "
 }
 
+**EXECUTE NOW**: Verify research artifacts were created:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+
+# Load state from previous block
+source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
+
 # MANDATORY VERIFICATION
 echo "Verifying research artifacts..."
 
@@ -250,10 +284,16 @@ fi
 
 ## Part 4: Planning Phase (Debug Strategy)
 
+**EXECUTE NOW**: Transition to planning state and prepare for plan creation:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
+# Load state from previous block
+source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
@@ -295,12 +335,18 @@ PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
 # Collect research report paths
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
+
+# Persist additional state for agent
+echo "PLAN_PATH=$PLAN_PATH" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
+echo "REPORT_PATHS_JSON='$REPORT_PATHS_JSON'" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
+
 Task {
-  subagent_type: "plan-architect"
+  subagent_type: "general-purpose"
   description: "Create debug strategy plan for $ISSUE_DESCRIPTION"
-  prompt: |
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
@@ -313,11 +359,22 @@ Task {
     - Workflow Type: debug-only
     - Plan Mode: debug strategy
 
-    Execute planning according to behavioral guidelines and return completion signal:
-    PLAN_CREATED: ${PLAN_PATH}
+    Execute planning according to behavioral guidelines.
+
+    Return: PLAN_CREATED: {plan_path}
+  "
 }
 
+**EXECUTE NOW**: Verify plan artifacts were created:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+
+# Load state from previous block
+source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
+
 # MANDATORY VERIFICATION
 echo "Verifying plan artifacts..."
 
@@ -357,10 +414,16 @@ fi
 
 ## Part 5: Debug Phase (Root Cause Analysis)
 
+**EXECUTE NOW**: Transition to debug state and prepare for root cause analysis:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
+# Load state from previous block
+source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
@@ -393,10 +456,12 @@ echo "=== Phase 3: Debug (Root Cause Analysis) ==="
 echo ""
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent.
+
 Task {
-  subagent_type: "debug-analyst"
+  subagent_type: "general-purpose"
   description: "Root cause analysis for $ISSUE_DESCRIPTION"
-  prompt: |
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
 
@@ -409,11 +474,22 @@ Task {
     - Debug Directory: $DEBUG_DIR
     - Workflow Type: debug-only
 
-    Execute root cause analysis according to behavioral guidelines and return completion signal:
-    DEBUG_COMPLETE: ${ANALYSIS_PATH}
+    Execute root cause analysis according to behavioral guidelines.
+
+    Return: DEBUG_COMPLETE: {analysis_path}
+  "
 }
 
+**EXECUTE NOW**: Verify debug artifacts were created:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+
+# Load state from previous block
+source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
+
 # MANDATORY VERIFICATION
 echo "Verifying debug artifacts..."
 
@@ -449,10 +525,16 @@ fi
 
 ## Part 6: Completion & Cleanup
 
+**EXECUTE NOW**: Complete workflow and cleanup state:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
+# Load state from previous block
+source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 5 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
@@ -496,6 +578,9 @@ echo "- Review debug artifacts: ls $DEBUG_DIR"
 echo "- Apply fixes identified in analysis"
 echo "- Re-run tests to verify fix"
 echo ""
+
+# Cleanup temp state file
+rm -f "${HOME}/.claude/tmp/fix_state_$$.txt"
 
 exit 0
 ```
