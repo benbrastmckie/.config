@@ -23,7 +23,10 @@ YOU ARE EXECUTING a research-and-revise workflow that creates research reports b
 
 ## Part 1: Capture Revision Description and Extract Plan Path
 
+**EXECUTE NOW**: Capture the revision description and extract the plan path:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 REVISION_DESCRIPTION="$1"
 
 if [ -z "$REVISION_DESCRIPTION" ]; then
@@ -79,7 +82,10 @@ echo ""
 
 ## Part 2: State Machine Initialization
 
+**EXECUTE NOW**: Initialize the state machine and source required libraries:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Detect project directory (bootstrap pattern)
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -149,7 +155,10 @@ echo ""
 
 ## Part 3: Research Phase Execution
 
+**EXECUTE NOW**: Transition to research state and prepare research directory:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
@@ -183,27 +192,33 @@ REVISION_NUMBER=$(find "$RESEARCH_DIR" -name 'revision_*.md' 2>/dev/null | wc -l
 REVISION_NUMBER=$((REVISION_NUMBER + 1))
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
 Task {
-  subagent_type: "research-specialist"
-  description: "Research revision insights for $REVISION_DETAILS"
-  prompt: |
+  subagent_type: "general-purpose"
+  description: "Research revision insights for ${REVISION_DETAILS} with mandatory file creation"
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
     You are conducting research for: research-revise workflow
 
-    Input:
-    - Research Topic: Plan revision insights for: $REVISION_DETAILS
-    - Research Complexity: $RESEARCH_COMPLEXITY
-    - Output Directory: $RESEARCH_DIR
+    **Workflow-Specific Context**:
+    - Research Topic: Plan revision insights for: ${REVISION_DETAILS}
+    - Research Complexity: ${RESEARCH_COMPLEXITY}
+    - Output Directory: ${RESEARCH_DIR}
     - Workflow Type: research-and-revise
-    - Existing Plan: $EXISTING_PLAN_PATH
+    - Existing Plan: ${EXISTING_PLAN_PATH}
 
     Execute research according to behavioral guidelines and return completion signal:
-    REPORT_CREATED: ${REPORT_PATH}
+    REPORT_CREATED: [path to created report]
+  "
 }
 
+**EXECUTE NOW**: Verify research artifacts were created:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # MANDATORY VERIFICATION
 echo "Verifying research artifacts..."
 
@@ -250,7 +265,10 @@ fi
 
 ## Part 4: Plan Revision Phase
 
+**EXECUTE NOW**: Transition to planning state and create backup:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
 
@@ -303,28 +321,34 @@ REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
+
 Task {
-  subagent_type: "plan-architect"
-  description: "Revise implementation plan based on $REVISION_DETAILS"
-  prompt: |
+  subagent_type: "general-purpose"
+  description: "Revise implementation plan based on ${REVISION_DETAILS} with mandatory file modification"
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
     You are revising an implementation plan for: research-revise workflow
 
-    Input:
-    - Existing Plan Path: $EXISTING_PLAN_PATH
-    - Backup Path: $BACKUP_PATH
-    - Revision Details: $REVISION_DETAILS
-    - Research Reports: $REPORT_PATHS_JSON
+    **Workflow-Specific Context**:
+    - Existing Plan Path: ${EXISTING_PLAN_PATH}
+    - Backup Path: ${BACKUP_PATH}
+    - Revision Details: ${REVISION_DETAILS}
+    - Research Reports: ${REPORT_PATHS_JSON}
     - Workflow Type: research-and-revise
     - Operation Mode: plan revision
 
     Execute plan revision according to behavioral guidelines and return completion signal:
     PLAN_REVISED: ${EXISTING_PLAN_PATH}
+  "
 }
 
+**EXECUTE NOW**: Verify plan revision was successful:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # MANDATORY VERIFICATION
 echo "Verifying plan revision..."
 
@@ -371,7 +395,10 @@ fi
 
 ## Part 5: Completion & Cleanup
 
+**EXECUTE NOW**: Complete the workflow and display summary:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
 

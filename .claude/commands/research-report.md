@@ -22,7 +22,10 @@ YOU ARE EXECUTING a research-only workflow that creates comprehensive research r
 
 ## Part 1: Capture Workflow Description
 
+**EXECUTE NOW**: Capture and validate the workflow description:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 WORKFLOW_DESCRIPTION="$1"
 
 if [ -z "$WORKFLOW_DESCRIPTION" ]; then
@@ -59,7 +62,10 @@ echo ""
 
 ## Part 2: State Machine Initialization
 
+**EXECUTE NOW**: Initialize the state machine and source required libraries:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Detect project directory (bootstrap pattern)
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -136,7 +142,10 @@ echo ""
 
 ## Part 3: Research Phase Execution
 
+**EXECUTE NOW**: Transition to research state and allocate topic directory:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
@@ -185,26 +194,32 @@ append_workflow_state "WORKFLOW_DESCRIPTION" "$WORKFLOW_DESCRIPTION"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
 Task {
-  subagent_type: "research-specialist"
-  description: "Research $WORKFLOW_DESCRIPTION"
-  prompt: |
+  subagent_type: "general-purpose"
+  description: "Research ${WORKFLOW_DESCRIPTION} with mandatory file creation"
+  prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
     You are conducting research for: research-report workflow
 
-    Input:
-    - Research Topic: $WORKFLOW_DESCRIPTION
-    - Research Complexity: $RESEARCH_COMPLEXITY
-    - Output Directory: $RESEARCH_DIR
+    **Workflow-Specific Context**:
+    - Research Topic: ${WORKFLOW_DESCRIPTION}
+    - Research Complexity: ${RESEARCH_COMPLEXITY}
+    - Output Directory: ${RESEARCH_DIR}
     - Workflow Type: research-only
 
     Execute research according to behavioral guidelines and return completion signal:
-    REPORT_CREATED: ${REPORT_PATH}
+    REPORT_CREATED: [path to created report]
+  "
 }
 
+**EXECUTE NOW**: Verify research artifacts were created:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # MANDATORY VERIFICATION
 echo "Verifying research artifacts..."
 
@@ -254,7 +269,10 @@ fi
 
 ## Part 4: Completion & Cleanup
 
+**EXECUTE NOW**: Complete the workflow and display summary:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
 

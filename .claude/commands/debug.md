@@ -16,7 +16,10 @@ allowed-tools: Read, Bash, Grep, Glob, WebSearch, WebFetch, TodoWrite, Task
 
 ## Phase 0: Parse Arguments and Setup
 
+**EXECUTE NOW**: Parse arguments and initialize debug investigation:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Parse issue description and context reports
 ISSUE_DESCRIPTION="$1"
 CONTEXT_REPORTS=()
@@ -45,7 +48,10 @@ REPORT_PATH="$TOPIC_DIR/debug/${NEXT_NUMBER}_debug.md"
 
 ## Phase 1: Initial Investigation
 
+**EXECUTE NOW**: Perform initial investigation and identify potential causes:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 echo "PROGRESS: Investigating issue: $ISSUE_DESCRIPTION"
 
 # Read context reports if provided
@@ -60,7 +66,10 @@ POTENTIAL_CAUSES=$(analyze_issue "$ISSUE_DESCRIPTION")
 
 ## Phase 2: Evidence Collection
 
+**EXECUTE NOW**: Collect evidence from code, git history, and logs:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Search for relevant code
 RELEVANT_FILES=$(grep -r -l "$ERROR_PATTERN" . --include="*.lua" --include="*.sh" --include="*.md" 2>/dev/null)
 
@@ -73,21 +82,51 @@ ERROR_LOGS=$(find . -name "*.log" -mtime -7 -exec grep -l "$ERROR_PATTERN" {} \;
 
 ## Phase 3: Parallel Hypothesis Investigation (Complex Issues)
 
+**EXECUTE NOW**: Evaluate complexity and invoke parallel analysts if needed:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Check if issue is complex (requires parallel investigation)
 COMPLEXITY_SCORE=$(calculate_issue_complexity "$ISSUE_DESCRIPTION" "$POTENTIAL_CAUSES")
 
 if [ "$COMPLEXITY_SCORE" -ge 6 ]; then
   echo "PROGRESS: Complex issue - invoking parallel debug analysts"
-  # Invoke 2-3 debug-analyst agents in parallel via Task tool
-  # Each investigates different hypothesis
-  # Aggregate findings via forward_message pattern
+  echo "NEEDS_PARALLEL=true" > "${HOME}/.claude/tmp/debug_state_$$.txt"
+  echo "COMPLEXITY_SCORE=$COMPLEXITY_SCORE" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
+else
+  echo "NEEDS_PARALLEL=false" > "${HOME}/.claude/tmp/debug_state_$$.txt"
 fi
 ```
 
+**EXECUTE NOW**: USE the Task tool to invoke parallel debug-analyst agents if complexity is high.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Parallel hypothesis investigation for complex issue"
+  prompt: "
+    Read state from ${HOME}/.claude/tmp/debug_state_$$.txt
+
+    If NEEDS_PARALLEL=true:
+      Read and follow ALL behavioral guidelines from:
+      ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
+
+      Investigate multiple hypotheses in parallel for: $ISSUE_DESCRIPTION
+      Each hypothesis should be investigated independently.
+      Aggregate findings and identify most likely root cause.
+
+    If NEEDS_PARALLEL=false:
+      Skip parallel investigation, single analysis sufficient.
+
+    Return: HYPOTHESIS_COMPLETE: {findings_summary}
+  "
+}
+
 ## Phase 4: Root Cause Analysis
 
+**EXECUTE NOW**: Analyze evidence and determine root cause:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 # Analyze collected evidence
 ROOT_CAUSE=$(determine_root_cause "$POTENTIAL_CAUSES" "$EVIDENCE")
 
@@ -97,7 +136,10 @@ VERIFICATION=$(verify_root_cause "$ROOT_CAUSE")
 
 ## Phase 5: Create Debug Report
 
+**EXECUTE NOW**: Generate comprehensive debug report:
+
 ```bash
+set +H  # CRITICAL: Disable history expansion
 cat > "$REPORT_PATH" << 'EOF'
 # Debug Report: <Issue Title>
 
@@ -182,10 +224,10 @@ echo "DEBUG_REPORT_CREATED: $REPORT_PATH"
 
 ## Phase 6: Update Registry and Cross-References
 
-```bash
-# Invoke spec-updater agent to update registry
-# Fallback: Direct registry update if agent fails
+**EXECUTE NOW**: Update registry and add cross-references to related reports:
 
+```bash
+set +H  # CRITICAL: Disable history expansion
 # Add cross-references to related reports
 for report in "${CONTEXT_REPORTS[@]}"; do
   echo "## Related Debug Report" >> "$report"
