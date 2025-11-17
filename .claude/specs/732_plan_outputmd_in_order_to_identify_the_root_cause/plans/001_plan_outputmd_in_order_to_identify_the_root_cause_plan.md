@@ -229,12 +229,12 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Search codebase for BASH_SOURCE pattern: `grep -r 'BASH_SOURCE\[0\]' .claude/commands/`
-- [ ] Document affected commands (collapse.md, implement.md, expand.md from report 001)
-- [ ] Test each affected command to verify if BASH_SOURCE issue impacts them
-- [ ] Create issue/spec for auditing and fixing other affected commands (separate from this spec)
-- [ ] Document BASH_SOURCE limitation in bash-block-execution-model.md
-- [ ] Add anti-pattern warning to command development guide
+- [x] Search codebase for BASH_SOURCE pattern: `grep -r 'BASH_SOURCE\[0\]' .claude/commands/`
+- [x] Document affected commands (collapse.md, implement.md, expand.md from report 001)
+- [x] Test each affected command to verify if BASH_SOURCE issue impacts them
+- [x] Create issue/spec for auditing and fixing other affected commands (separate from this spec)
+- [x] Document BASH_SOURCE limitation in bash-block-execution-model.md
+- [x] Add anti-pattern warning to command development guide
 
 **Testing**:
 ```bash
