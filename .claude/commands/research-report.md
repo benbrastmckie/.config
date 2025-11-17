@@ -147,33 +147,29 @@ RESEARCH_DIR="${CLAUDE_PROJECT_DIR}/.claude/specs/${TOPIC_NUMBER}_${TOPIC_SLUG}/
 
 # Create research directory
 mkdir -p "$RESEARCH_DIR"
+```
 
-# IMPERATIVE AGENT INVOCATION
-echo "EXECUTE NOW: USE the Task tool to invoke research-specialist agent"
-echo ""
-echo "YOU MUST:"
-echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md"
-echo "2. Return completion signal: REPORT_CREATED: \${REPORT_PATH}"
-echo ""
-echo "Workflow-Specific Context:"
-echo "- Research Complexity: $RESEARCH_COMPLEXITY"
-echo "- Workflow Description: $WORKFLOW_DESCRIPTION"
-echo "- Output Directory: $RESEARCH_DIR"
-echo "- Workflow Type: research-only"
-echo ""
+Task {
+  subagent_type: "research-specialist"
+  description: "Research $WORKFLOW_DESCRIPTION"
+  prompt: |
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
-# Hierarchical supervision for complexity ≥4
-if [ "$RESEARCH_COMPLEXITY" -ge 4 ]; then
-  echo "NOTE: Hierarchical supervision mode (complexity ≥4)"
-  echo "Invoke research-sub-supervisor agent to coordinate multiple sub-agents"
-  echo "Supervisor Agent: ${CLAUDE_PROJECT_DIR}/.claude/agents/research-sub-supervisor.md"
-fi
+    You are conducting research for: research-report workflow
 
-# FAIL-FAST VERIFICATION (no fallback, exit 1 on failure)
-# Wait for agent to complete (Task tool invocation happens in Claude Code context)
-# This checkpoint is evaluated AFTER agent completes
+    Input:
+    - Research Topic: $WORKFLOW_DESCRIPTION
+    - Research Complexity: $RESEARCH_COMPLEXITY
+    - Output Directory: $RESEARCH_DIR
+    - Workflow Type: research-only
 
-echo ""
+    Execute research according to behavioral guidelines and return completion signal:
+    REPORT_CREATED: ${REPORT_PATH}
+}
+
+```bash
+# MANDATORY VERIFICATION
 echo "Verifying research artifacts..."
 
 if [ ! -d "$RESEARCH_DIR" ]; then
