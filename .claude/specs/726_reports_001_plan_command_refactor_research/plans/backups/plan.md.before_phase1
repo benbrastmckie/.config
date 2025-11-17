@@ -18,8 +18,6 @@ dependent-commands: implement, expand, revise
 
 **EXECUTE NOW**: Initialize orchestrator state, detect project directory, source libraries in correct order, pre-calculate all artifact paths before any agent invocations.
 
-**Documentation**: See `plan-command-guide.md` §3.1 "Phase 0: Orchestrator Initialization" for conceptual overview, path pre-calculation strategy, and state management details.
-
 ```bash
 set +H  # Disable history expansion to prevent bad substitution errors
 
@@ -189,8 +187,6 @@ echo "  Plan: $PLAN_PATH"
 
 **EXECUTE NOW**: Analyze feature complexity using LLM classification with haiku-4 model, falling back to heuristic analysis if needed.
 
-**Documentation**: See `plan-command-guide.md` §3.2 "Phase 1: Feature Analysis" for heuristic algorithm details, scoring methodology, and output format specification.
-
 ```bash
 echo ""
 echo "PROGRESS: Analyzing feature complexity..."
@@ -225,14 +221,17 @@ Research delegation triggers:
 # EXECUTE NOW: USE the Task tool with haiku model for fast classification
 ANALYSIS_JSON=""
 if command -v claude &>/dev/null; then
+  # Invoke LLM classifier (Task tool will be used here by Claude Code)
+  # This is a placeholder for the actual Task tool invocation
   ANALYSIS_JSON=$(echo "$ANALYSIS_PROMPT" | jq -Rs '{prompt: .}')
 fi
 
-# Fallback to heuristic analysis if LLM fails (see guide §3.2 for algorithm details)
+# Fallback to heuristic analysis if LLM fails
 if [ -z "$ANALYSIS_JSON" ] || ! echo "$ANALYSIS_JSON" | jq -e . >/dev/null 2>&1; then
   echo "  Fallback: Using heuristic analysis (LLM unavailable)"
 
-  # Keyword scoring
+  # Heuristic algorithm per Standard 16
+  # 1. Keyword scoring
   KEYWORD_SCORE=0
   if echo "$FEATURE_DESCRIPTION" | grep -qiE "architecture|migrate|redesign"; then
     KEYWORD_SCORE=8
@@ -244,7 +243,7 @@ if [ -z "$ANALYSIS_JSON" ] || ! echo "$ANALYSIS_JSON" | jq -e . >/dev/null 2>&1;
     KEYWORD_SCORE=2
   fi
 
-  # Length scoring
+  # 2. Length scoring
   WORD_COUNT=$(echo "$FEATURE_DESCRIPTION" | wc -w)
   LENGTH_SCORE=0
   if [ "$WORD_COUNT" -gt 40 ]; then
@@ -255,8 +254,10 @@ if [ -z "$ANALYSIS_JSON" ] || ! echo "$ANALYSIS_JSON" | jq -e . >/dev/null 2>&1;
     LENGTH_SCORE=1
   fi
 
-  # Combined score
+  # 3. Combined score
   COMPLEXITY_SCORE=$((KEYWORD_SCORE + LENGTH_SCORE))
+
+  # Generate heuristic JSON
   REQUIRES_RESEARCH="false"
   [ "$COMPLEXITY_SCORE" -ge 7 ] && REQUIRES_RESEARCH="true"
 
@@ -301,8 +302,6 @@ echo "  Requires research: $REQUIRES_RESEARCH"
 
 **EXECUTE NOW**: If complexity ≥7 or architecture keywords detected, delegate research to specialist agents.
 
-**Documentation**: See `plan-command-guide.md` §3.3 "Phase 1.5: Research Delegation" for trigger conditions, topic generation strategy, agent invocation pattern, and metadata extraction details.
-
 ```bash
 # Skip research delegation if not required
 if [ "$REQUIRES_RESEARCH" != "true" ]; then
@@ -314,7 +313,8 @@ else
   echo "PROGRESS: Complex feature detected - delegating research"
   echo "  Complexity: $ESTIMATED_COMPLEXITY/10"
 
-  # Generate research topics (2-4 based on complexity)
+  # Generate 1-4 research topics from feature description
+  # Topic count based on complexity level
   RESEARCH_TOPIC_COUNT=2
   if [ "$ESTIMATED_COMPLEXITY" -ge 9 ]; then
     RESEARCH_TOPIC_COUNT=4
@@ -322,6 +322,7 @@ else
     RESEARCH_TOPIC_COUNT=3
   fi
 
+  # Generate research topics using keyword analysis
   declare -a RESEARCH_TOPICS=()
 
   if echo "$FEATURE_DESCRIPTION" | grep -qiE "architecture|design"; then
@@ -340,32 +341,38 @@ else
     RESEARCH_TOPICS+=("Performance optimization techniques")
   fi
 
-  # Add generic topics if needed
+  # Add generic topics if we don't have enough
   if [ ${#RESEARCH_TOPICS[@]} -lt $RESEARCH_TOPIC_COUNT ]; then
     RESEARCH_TOPICS+=("Implementation approaches for: $FEATURE_DESCRIPTION")
   fi
+
   if [ ${#RESEARCH_TOPICS[@]} -lt $RESEARCH_TOPIC_COUNT ]; then
     RESEARCH_TOPICS+=("Best practices and standards compliance")
   fi
+
+  # Trim to desired count
   RESEARCH_TOPICS=("${RESEARCH_TOPICS[@]:0:$RESEARCH_TOPIC_COUNT}")
 
   echo "  Generated ${#RESEARCH_TOPICS[@]} research topics"
 
-  # Pre-calculate ALL report paths BEFORE agent invocation (prevents behavioral injection)
+  # Pre-calculate ALL report paths BEFORE any agent invocation (CRITICAL for behavioral injection)
   declare -a GENERATED_REPORT_PATHS=()
   REPORTS_DIR="$TOPIC_DIR/reports"
 
+  # STANDARD 16: Verify directory creation
   if ! mkdir -p "$REPORTS_DIR" 2>/dev/null; then
     echo "ERROR: Failed to create reports directory: $REPORTS_DIR"
     echo "DIAGNOSTIC: Check permissions on $TOPIC_DIR"
     exit 1
   fi
 
+  # Pre-calculate report paths for each topic
   for i in "${!RESEARCH_TOPICS[@]}"; do
     REPORT_NUM=$(printf "%03d" $((i + 1)))
     REPORT_SLUG=$(echo "${RESEARCH_TOPICS[$i]}" | tr '[:upper:]' '[:lower:]' | tr -s ' ' '_' | sed 's/[^a-z0-9_]//g' | cut -c1-40)
     REPORT_PATH="$REPORTS_DIR/${REPORT_NUM}_${REPORT_SLUG}.md"
 
+    # STANDARD 0: Verify path is absolute
     if [[ ! "$REPORT_PATH" =~ ^/ ]]; then
       echo "ERROR: Generated REPORT_PATH is not absolute: $REPORT_PATH"
       echo "DIAGNOSTIC: This is a programming error in path calculation"
@@ -383,6 +390,10 @@ else
   echo ""
   echo "AGENT_INVOCATION: Invoking ${#RESEARCH_TOPICS[@]} research-specialist agents in parallel"
 
+  # For each research topic, we need to invoke a research-specialist agent
+  # In a real implementation, this would use the Task tool in a single message
+  # with multiple invocations for parallel execution (40-60% time savings)
+
   RESEARCH_SUCCESSFUL=true
   for i in "${!RESEARCH_TOPICS[@]}"; do
     TOPIC="${RESEARCH_TOPICS[$i]}"
@@ -394,6 +405,7 @@ else
     echo "  Topic: $TOPIC"
     echo "  Output: $REPORT_PATH"
 
+    # Prepare context for agent invocation
     RESEARCH_CONTEXT=$(jq -n \
       --arg topic "$TOPIC" \
       --arg output "$REPORT_PATH" \
@@ -407,6 +419,9 @@ else
         standards_path: $standards,
         complexity_level: ($complexity | tonumber)
       }')
+
+    # In actual implementation, this would invoke via Task tool:
+    # Task prompt: "Read and follow: .claude/agents/research-specialist.md\n\n**Workflow-Specific Context**:\n$RESEARCH_CONTEXT"
 
     # Temporary: Create placeholder report (will be replaced by actual agent)
     if [ ! -f "$REPORT_PATH" ]; then
@@ -457,6 +472,7 @@ EOF
       echo "DIAGNOSTIC: Agent name: research-specialist"
       echo "DIAGNOSTIC: Check agent behavioral file: .claude/agents/research-specialist.md"
 
+      # Graceful degradation: Continue with partial research
       RESEARCH_SUCCESSFUL=false
       echo "WARNING: Continuing with partial research (agent $REPORT_NUM failed)"
     else
@@ -464,37 +480,44 @@ EOF
     fi
   done
 
-  # Extract metadata from reports (250-token summaries, 95% context reduction)
+  # Extract metadata from reports using extract_report_metadata() (250-token summaries, 95% context reduction)
   echo ""
   echo "PROGRESS: Extracting metadata from research reports..."
 
   declare -a RESEARCH_METADATA=()
   for REPORT_PATH in "${GENERATED_REPORT_PATHS[@]}"; do
     if [ -f "$REPORT_PATH" ]; then
+      # STANDARD 16: Verify extract_report_metadata() return code
       if ! METADATA=$(extract_report_metadata "$REPORT_PATH" 2>&1); then
         echo "WARNING: Failed to extract metadata from: $REPORT_PATH"
         echo "DIAGNOSTIC: $METADATA"
+        # Continue with empty metadata
         METADATA=""
       fi
 
+      # Store metadata (or summary if metadata extraction failed)
       if [ -n "$METADATA" ]; then
         RESEARCH_METADATA+=("$METADATA")
       else
+        # Fallback: Extract first 250 chars as summary
         SUMMARY=$(head -c 250 "$REPORT_PATH" | tr '\n' ' ')
         RESEARCH_METADATA+=("$SUMMARY")
       fi
     fi
   done
 
-  # Cache metadata for plan-architect context injection
+  # Cache metadata to state file for plan-architect context injection
   if [ ${#RESEARCH_METADATA[@]} -gt 0 ]; then
     RESEARCH_METADATA_JSON=$(printf '%s\n' "${RESEARCH_METADATA[@]}" | jq -R . | jq -s .)
+
+    # STANDARD 16: Verify state file write return code
     if ! append_workflow_state "RESEARCH_METADATA_JSON" "$RESEARCH_METADATA_JSON" 2>&1; then
       echo "WARNING: Failed to cache research metadata to state file"
       echo "DIAGNOSTIC: Metadata will be re-extracted if needed"
     fi
   fi
 
+  # Save generated report paths for plan creation
   if [ ${#GENERATED_REPORT_PATHS[@]} -gt 0 ]; then
     GENERATED_REPORT_PATHS_JSON=$(printf '%s\n' "${GENERATED_REPORT_PATHS[@]}" | jq -R . | jq -s .)
     append_workflow_state "GENERATED_REPORT_PATHS_JSON" "$GENERATED_REPORT_PATHS_JSON"
@@ -511,13 +534,14 @@ EOF
     echo "  Reports created: ${#GENERATED_REPORT_PATHS[@]}"
   fi
 
-  # Merge generated reports with user-provided reports
+  # Merge generated reports with any user-provided reports
   if [ ${#REPORT_PATHS[@]} -gt 0 ]; then
     ALL_REPORT_PATHS=("${REPORT_PATHS[@]}" "${GENERATED_REPORT_PATHS[@]}")
   else
     ALL_REPORT_PATHS=("${GENERATED_REPORT_PATHS[@]}")
   fi
 
+  # Update REPORT_PATHS_JSON with all reports
   ALL_REPORT_PATHS_JSON=$(printf '%s\n' "${ALL_REPORT_PATHS[@]}" | jq -R . | jq -s .)
   append_workflow_state "REPORT_PATHS_JSON" "$ALL_REPORT_PATHS_JSON"
 fi
@@ -526,8 +550,6 @@ fi
 ## Phase 2: Standards Discovery
 
 **EXECUTE NOW**: Discover CLAUDE.md and extract project standards.
-
-**Documentation**: See `plan-command-guide.md` §3.4 "Phase 2: Standards Discovery" for discovery process, minimal CLAUDE.md template, and cache strategy.
 
 ```bash
 echo ""
@@ -583,8 +605,6 @@ echo "  Standards file: $CLAUDE_MD"
 
 **EXECUTE NOW**: Invoke plan-architect agent to create implementation plan with behavioral injection.
 
-**Documentation**: See `plan-command-guide.md` §3.5 "Phase 3: Plan Creation" for agent invocation pattern, workflow-specific context format, verification requirements, and error diagnostic templates.
-
 ```bash
 echo ""
 echo "PROGRESS: Creating implementation plan..."
@@ -593,6 +613,7 @@ echo "PROGRESS: Creating implementation plan..."
 # STANDARD 11: Imperative invocation marker
 # EXECUTE NOW: USE the Task tool with subagent_type=general-purpose
 
+# Prepare workflow-specific context for agent
 CONTEXT_JSON=$(jq -n \
   --arg feature "$FEATURE_DESCRIPTION" \
   --arg output_path "$PLAN_PATH" \
@@ -609,14 +630,24 @@ CONTEXT_JSON=$(jq -n \
     report_paths: $reports
   }')
 
+# Save context for agent invocation
 CONTEXT_FILE="$TOPIC_DIR/.plan_context_$$.json"
 echo "$CONTEXT_JSON" > "$CONTEXT_FILE"
 
+# IMPORTANT: The actual agent invocation will be done by Claude Code using Task tool
+# This is a marker for Claude Code to invoke the agent
 echo "AGENT_INVOCATION_MARKER: plan-architect"
 echo "AGENT_CONTEXT_FILE: $CONTEXT_FILE"
 echo "EXPECTED_OUTPUT: $PLAN_PATH"
 
+# The plan-architect agent will:
+# 1. Read behavioral guidelines from: .claude/agents/plan-architect.md
+# 2. Load workflow-specific context from: $CONTEXT_FILE
+# 3. Create plan file at: $PLAN_PATH
+# 4. Return signal: PLAN_CREATED: $PLAN_PATH
+
 # Temporary: Create basic plan structure if agent not available
+# This will be replaced by actual agent invocation
 if [ ! -f "$PLAN_PATH" ]; then
   echo "  Creating plan structure (agent not yet available)..."
 
@@ -659,6 +690,7 @@ This plan outlines the implementation approach for: $FEATURE_DESCRIPTION
 
 EOF
 
+  # Add remaining phases
   for i in $(seq 2 $SUGGESTED_PHASES); do
     cat >> "$PLAN_PATH" << EOF
 
@@ -675,6 +707,7 @@ EOF
 EOF
   done
 
+  # Add final sections
   cat >> "$PLAN_PATH" << EOF
 
 ## Rollback Strategy
@@ -706,7 +739,7 @@ if [ ! -f "$PLAN_PATH" ]; then
   exit 1
 fi
 
-# Verify file size ≥500 bytes
+# Verify file size ≥2000 bytes (comprehensive plan structural check)
 FILE_SIZE=$(wc -c < "$PLAN_PATH")
 if [ "$FILE_SIZE" -lt 500 ]; then
   echo "✗ WARNING: Plan file seems incomplete (${FILE_SIZE} bytes)"
@@ -720,7 +753,7 @@ if [ "$PHASE_COUNT" -lt 3 ]; then
   echo "DIAGNOSTIC: Minimum 3 phases recommended for structured implementation"
 fi
 
-# Verify checkbox count ≥10
+# Verify checkbox count ≥10 for /implement compatibility
 CHECKBOX_COUNT=$(grep -c "^- \[ \]" "$PLAN_PATH" || echo "0")
 if [ "$CHECKBOX_COUNT" -lt 10 ]; then
   echo "✗ WARNING: Plan has fewer than 10 tasks (found: $CHECKBOX_COUNT)"
@@ -738,12 +771,11 @@ echo "  Tasks: $CHECKBOX_COUNT"
 
 **EXECUTE NOW**: Validate created plan against project standards.
 
-**Documentation**: See `plan-command-guide.md` §3.6 "Phase 4: Plan Validation" for validation checks, output format, fail-fast behavior, and graceful degradation strategy.
-
 ```bash
 echo ""
 echo "PROGRESS: Validating plan..."
 
+# Source validation library (should already be available from Phase 0, but verify)
 if [ -z "${VALIDATE_PLAN_SOURCED:-}" ]; then
   if ! source "$UTILS_DIR/validate-plan.sh" 2>&1; then
     echo "ERROR: Failed to source validate-plan.sh"
@@ -758,11 +790,13 @@ else
 fi
 
 if [ "$VALIDATION_SKIPPED" = "false" ]; then
+  # STANDARD 16: Verify validation return code
   if ! VALIDATION_REPORT=$(validate_plan "$PLAN_PATH" "$CLAUDE_MD" 2>&1); then
     echo "WARNING: Plan validation encountered issues"
     echo "DIAGNOSTIC: Validation report may be incomplete"
   fi
 
+  # Parse validation report
   ERROR_COUNT=$(echo "$VALIDATION_REPORT" | jq -r '.summary.errors // 0')
   WARNING_COUNT=$(echo "$VALIDATION_REPORT" | jq -r '.summary.warnings // 0')
 
@@ -770,6 +804,7 @@ if [ "$VALIDATION_SKIPPED" = "false" ]; then
   echo "    Errors: $ERROR_COUNT"
   echo "    Warnings: $WARNING_COUNT"
 
+  # Display errors (critical)
   if [ "$ERROR_COUNT" -gt 0 ]; then
     echo ""
     echo "  ERRORS FOUND:"
@@ -795,10 +830,12 @@ if [ "$VALIDATION_SKIPPED" = "false" ]; then
     fi
   fi
 
+  # Display warnings (informational)
   if [ "$WARNING_COUNT" -gt 0 ]; then
     echo ""
     echo "  WARNINGS:"
 
+    # Standards compliance warnings
     STANDARDS_VALID=$(echo "$VALIDATION_REPORT" | jq -r '.standards.valid')
     if [ "$STANDARDS_VALID" = "false" ]; then
       STANDARDS_ISSUES=$(echo "$VALIDATION_REPORT" | jq -r '.standards.issues[]')
@@ -807,6 +844,7 @@ if [ "$VALIDATION_SKIPPED" = "false" ]; then
       done <<< "$STANDARDS_ISSUES"
     fi
 
+    # Test warnings
     TESTS_VALID=$(echo "$VALIDATION_REPORT" | jq -r '.tests.valid')
     if [ "$TESTS_VALID" = "false" ]; then
       TESTS_ISSUES=$(echo "$VALIDATION_REPORT" | jq -r '.tests.issues[]')
@@ -815,6 +853,7 @@ if [ "$VALIDATION_SKIPPED" = "false" ]; then
       done <<< "$TESTS_ISSUES"
     fi
 
+    # Documentation warnings
     DOCS_VALID=$(echo "$VALIDATION_REPORT" | jq -r '.documentation.valid')
     if [ "$DOCS_VALID" = "false" ]; then
       DOCS_ISSUES=$(echo "$VALIDATION_REPORT" | jq -r '.documentation.issues[]')
@@ -834,6 +873,7 @@ if [ "$VALIDATION_SKIPPED" = "false" ]; then
     exit 1
   fi
 
+  # Cache validation report
   if [ -n "$VALIDATION_REPORT" ]; then
     append_workflow_state "VALIDATION_REPORT" "$VALIDATION_REPORT"
   fi
@@ -853,11 +893,12 @@ fi
 
 **EXECUTE NOW**: Evaluate if plan requires phase expansion based on complexity analysis.
 
-**Documentation**: See `plan-command-guide.md` §3.7 "Phase 5: Expansion Evaluation" for expansion triggers and recommendation format.
-
 ```bash
 echo ""
 echo "PROGRESS: Evaluating expansion requirements..."
+
+# Calculate average phase complexity for decision-making
+# For now, use a simple heuristic: if complexity ≥8 or phases ≥7, consider expansion
 
 EXPANSION_NEEDED=false
 EXPANSION_REASON=""
@@ -892,8 +933,6 @@ echo "✓ Phase 5: Expansion evaluation complete"
 ## Phase 6: Plan Presentation
 
 **EXECUTE NOW**: Present plan summary to user.
-
-**Documentation**: See `plan-command-guide.md` §3.8 "Phase 6: Plan Presentation" for output format and conditional elements.
 
 ```bash
 echo ""

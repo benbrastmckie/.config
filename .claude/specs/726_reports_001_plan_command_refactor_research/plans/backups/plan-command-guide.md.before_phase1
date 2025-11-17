@@ -10,12 +10,11 @@
 
 1. [Overview](#overview)
 2. [Usage](#usage)
-3. [Execution Phases](#execution-phases)
-4. [Research Delegation](#research-delegation)
-5. [Complexity Analysis](#complexity-analysis)
-6. [Standards Integration](#standards-integration)
-7. [Plan Structure](#plan-structure)
-8. [Troubleshooting](#troubleshooting)
+3. [Research Delegation](#research-delegation)
+4. [Complexity Analysis](#complexity-analysis)
+5. [Standards Integration](#standards-integration)
+6. [Plan Structure](#plan-structure)
+7. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -71,281 +70,9 @@ The `/plan` command creates comprehensive implementation plans following project
 
 ---
 
-## Execution Phases
-
-The `/plan` command executes through 7 distinct phases. This section provides conceptual overviews - for implementation details, see `plan.md` lines 17-981.
-
-### Phase 0: Orchestrator Initialization
-
-**Purpose**: Initialize state management, detect project directory, pre-calculate all artifact paths.
-
-**Implementation**: `plan.md` lines 17-184
-
-**Key Operations**:
-- Source libraries in dependency order (workflow state machine → state persistence → error handling → verification helpers)
-- Parse feature description and optional report paths
-- Validate absolute paths (STANDARD 13)
-- Allocate topic directory atomically using unified location detection
-- Pre-calculate plan output path BEFORE any agent invocations (critical for behavioral injection)
-- Export all paths to workflow state for cross-phase access
-
-**Path Pre-Calculation Strategy**: All artifact paths are calculated in Phase 0 to prevent behavioral injection vulnerabilities. This ensures agents receive fully-formed output paths as input, eliminating path negotiation during execution.
-
-**State Management**: Uses workflow state machine for persistent state across phases, with automatic cleanup on exit.
-
-### Phase 1: Feature Analysis (LLM Classification)
-
-**Purpose**: Analyze feature complexity using LLM classification, with heuristic fallback.
-
-**Implementation**: `plan.md` lines 186-299
-
-**Key Operations**:
-- Design classification prompt for haiku-4 model
-- Invoke LLM classifier via Task tool (imperative marker: EXECUTE NOW)
-- Fallback to heuristic algorithm if LLM unavailable
-- Extract complexity score, suggested phases, research requirements
-- Cache analysis results to workflow state
-
-**Heuristic Algorithm** (used when LLM unavailable):
-
-1. **Keyword Scoring**:
-   - "architecture|migrate|redesign" → 8 points
-   - "refactor|integrate|system" → 6 points
-   - "implement|create|build" → 4 points
-   - Default → 2 points
-
-2. **Length Scoring**:
-   - >40 words → 3 points
-   - >20 words → 2 points
-   - >10 words → 1 point
-
-3. **Combined Score**: `COMPLEXITY_SCORE = KEYWORD_SCORE + LENGTH_SCORE`
-
-4. **Research Trigger**: `requires_research = (COMPLEXITY_SCORE >= 7)`
-
-**Output Format**:
-```json
-{
-  "estimated_complexity": <1-10>,
-  "suggested_phases": <3-10>,
-  "template_type": "<architecture|feature|bugfix|refactor>",
-  "keywords": ["keyword1", "keyword2"],
-  "requires_research": <true|false>
-}
-```
-
-### Phase 1.5: Research Delegation (Conditional)
-
-**Purpose**: For complex features (complexity ≥7), delegate research to specialist agents.
-
-**Implementation**: `plan.md` lines 301-547
-
-**Trigger Conditions**:
-- Complexity ≥7, OR
-- Architecture keywords detected ("architecture", "design", "migrate", "refactor", "integrate", "performance")
-
-**Research Topic Generation**:
-- Topic count: 2-4 based on complexity (9+ → 4 topics, 7-8 → 3 topics, default → 2 topics)
-- Generated from keyword analysis of feature description
-- Generic topics added if keyword analysis yields insufficient topics
-
-**Agent Invocation Strategy**:
-- Pre-calculate ALL report paths BEFORE any agent invocation (STANDARD 16)
-- Invoke research-specialist agents in parallel (40-60% time savings)
-- Each agent receives: topic, output path, feature context, standards path, complexity level
-- MANDATORY verification after EACH agent completes (STANDARD 0)
-- Graceful degradation: Continue with partial research if agents fail
-
-**Metadata Extraction**:
-- Extract 250-token summaries from each report (95% context reduction: 2000 tokens → 100 tokens)
-- Cache metadata to workflow state for plan-architect context injection
-- Fallback to first 250 chars if metadata extraction fails
-
-**Output**: Array of research report paths and metadata summaries saved to workflow state.
-
-### Phase 2: Standards Discovery
-
-**Purpose**: Discover CLAUDE.md and extract project standards.
-
-**Implementation**: `plan.md` lines 550-602
-
-**Discovery Process**:
-1. Start from `CLAUDE_PROJECT_DIR`
-2. Search upward for CLAUDE.md
-3. Stop at first match or root directory
-4. Create minimal CLAUDE.md if not found
-
-**Minimal CLAUDE.md Template** (auto-created if missing):
-```markdown
-# Project Configuration
-
-## Code Standards
-- Follow language-specific conventions
-- Use consistent indentation (2 spaces)
-- Add comprehensive comments
-
-## Testing Protocols
-- Test coverage target: ≥80%
-- Test location: tests/ or .claude/tests/
-- Run tests before commits
-
-## Documentation Policy
-- Update README with changes
-- Document public APIs
-- Use clear, concise language
-```
-
-**Cache**: Standards file path saved to workflow state for plan-architect context injection.
-
-### Phase 3: Plan Creation via Plan-Architect Agent
-
-**Purpose**: Invoke plan-architect agent to create implementation plan with behavioral injection.
-
-**Implementation**: `plan.md` lines 604-768
-
-**Agent Invocation Pattern** (STANDARD 12):
-- Reference agent behavioral file ONLY: `.claude/agents/plan-architect.md`
-- No inline duplication of agent logic
-- Imperative invocation marker: EXECUTE NOW
-- Use Task tool with `subagent_type=general-purpose`
-
-**Workflow-Specific Context** (injected via JSON):
-```json
-{
-  "feature_description": "<feature>",
-  "output_path": "<pre-calculated absolute path>",
-  "standards_path": "<CLAUDE.md path>",
-  "complexity": <1-10>,
-  "suggested_phases": <3-10>,
-  "report_paths": ["<path1>", "<path2>"]
-}
-```
-
-**Temporary Fallback**: If agent not available, creates basic plan structure with metadata and phase placeholders.
-
-**MANDATORY Verification** (STANDARD 0):
-- File exists at expected path
-- File size ≥500 bytes (basic plan check)
-- Phase count ≥3 (minimum structure)
-- Checkbox count ≥10 (task tracking for `/implement`)
-
-**Error Diagnostic Template**:
-```
-✗ ERROR: Agent plan-architect failed to create: <path>
-DIAGNOSTIC: Check agent output above for errors
-DIAGNOSTIC: Expected file at: <path>
-DIAGNOSTIC: Parent directory: <dirname>
-DIAGNOSTIC: Directory exists: yes/no
-```
-
-### Phase 4: Plan Validation
-
-**Purpose**: Validate created plan against project standards.
-
-**Implementation**: `plan.md` lines 770-890
-
-**Validation Library**: `$UTILS_DIR/validate-plan.sh` (sourced in Phase 0)
-
-**Validation Checks**:
-1. **Metadata Validation**: Required fields (Date, Feature, Scope, Phases, Hours, Structure Level, Complexity, Standards File)
-2. **Dependency Validation**: Phase dependencies are valid and acyclic
-3. **Standards Compliance**: Code standards, testing protocols, documentation policy adherence
-4. **Test Coverage**: Test requirements present in phases
-5. **Documentation**: Documentation requirements present in phases
-
-**Output Format**:
-```json
-{
-  "summary": {
-    "errors": <count>,
-    "warnings": <count>
-  },
-  "metadata": {
-    "valid": <true|false>,
-    "missing": ["<field1>", "<field2>"]
-  },
-  "dependencies": {
-    "valid": <true|false>,
-    "issues": ["<issue1>", "<issue2>"]
-  },
-  "standards": {
-    "valid": <true|false>,
-    "issues": ["<issue1>", "<issue2>"]
-  }
-}
-```
-
-**Fail-Fast** (STANDARD 0): Exit with error if validation finds critical errors (error count > 0).
-
-**Graceful Degradation**: Skip validation if library not available (non-critical).
-
-### Phase 5: Expansion Evaluation (Conditional)
-
-**Purpose**: Evaluate if plan requires phase expansion based on complexity.
-
-**Implementation**: `plan.md` lines 892-931
-
-**Expansion Triggers**:
-- Complexity ≥8, OR
-- Phase count ≥7
-
-**Expansion Recommendation**:
-```
-RECOMMENDATION: Consider using /expand command for detailed phase breakdown
-Command: /expand <plan-path>
-
-Expansion provides:
-  - Detailed task breakdown per phase
-  - Granular dependency management
-  - Better progress tracking
-  - Reduced cognitive load during implementation
-```
-
-**Note**: All plans start as Level 0 (single-file) regardless of complexity. Expansion is a post-creation operation.
-
-### Phase 6: Plan Presentation
-
-**Purpose**: Present plan summary to user with next steps.
-
-**Implementation**: `plan.md` lines 933-981
-
-**Output Format**:
-```
-=========================================
-PLAN CREATED SUCCESSFULLY
-=========================================
-
-Feature: <description>
-Plan location: <path>
-Complexity: <N>/10
-Phases: <count>
-Tasks: <count>
-
-Research reports: <count>
-  - <path1>
-  - <path2>
-
-Validation: ✓ Passed
-  (with N warning(s) - review recommended)
-
-Next steps:
-  1. Review plan: cat <path>
-  2. Expand phases: /expand <path>  (recommended if complexity ≥8)
-  3. Implement: /implement <path>
-```
-
-**Conditional Elements**:
-- Research reports: Only shown if Phase 1.5 executed
-- Validation status: Only shown if Phase 4 executed
-- Expansion recommendation: Only shown if expansion needed (Phase 5)
-
----
-
 ## Research Delegation
 
 For complex features, the command automatically delegates research to specialized agents.
-
-**Implementation**: See `plan.md` Phase 1.5 (lines 305-523) for complete research delegation logic.
 
 ### Complexity Triggers
 
@@ -423,8 +150,6 @@ Task {
 
 ## Complexity Analysis
 
-**Implementation**: See `plan.md` Phase 1 (lines 188-299) for LLM classification and heuristic fallback algorithm.
-
 ### Feature Description Complexity Pre-Analysis
 
 Before creating the plan, analyzes the feature description to estimate complexity.
@@ -480,8 +205,6 @@ COMPLEXITY_SCORE=$(calculate_plan_complexity "$REQUIREMENTS" "$PHASE_COUNT")
 
 ## Standards Integration
 
-**Implementation**: See `plan.md` Phase 2 (lines 526-577) for standards discovery algorithm.
-
 ### Standards Discovery
 
 The command discovers and applies project standards from CLAUDE.md.
@@ -528,8 +251,6 @@ When CLAUDE.md not found:
 ---
 
 ## Plan Structure
-
-**Implementation**: See `plan.md` Phase 3 (lines 580-737) for plan creation logic and template generation.
 
 ### Uniform Plan Template
 
@@ -660,8 +381,6 @@ Plans support three structure levels:
 ---
 
 ## Troubleshooting
-
-**Implementation**: Diagnostic patterns and error templates are embedded in `plan.md` throughout all phases (especially Phase 3 lines 699-706, Phase 4 lines 747-852).
 
 ### Command Not Creating Plan
 
