@@ -151,19 +151,18 @@ PLANS_DIR="${SPECS_DIR}/plans"
 mkdir -p "$RESEARCH_DIR"
 mkdir -p "$PLANS_DIR"
 
-# IMPERATIVE AGENT INVOCATION (Standard 11 compliance)
+# IMPERATIVE AGENT INVOCATION
 echo "EXECUTE NOW: USE the Task tool to invoke research-specialist agent"
 echo ""
 echo "YOU MUST:"
 echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md"
-echo "2. Follow Standard 0.5 enforcement (sequential step dependencies)"
-echo "3. Return completion signal: REPORT_CREATED: \${REPORT_PATH}"
+echo "2. Return completion signal: REPORT_CREATED: \${REPORT_PATH}"
 echo ""
-echo "Research Parameters:"
-echo "- Complexity: $RESEARCH_COMPLEXITY"
-echo "- Topics: Auto-detect from feature description"
+echo "Workflow-Specific Context:"
+echo "- Research Complexity: $RESEARCH_COMPLEXITY"
 echo "- Feature Description: $FEATURE_DESCRIPTION"
 echo "- Output Directory: $RESEARCH_DIR"
+echo "- Workflow Type: research-and-plan"
 echo ""
 
 # Hierarchical supervision for complexity ≥4
@@ -228,23 +227,20 @@ PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 
-# IMPERATIVE AGENT INVOCATION (Standard 11 compliance)
+# IMPERATIVE AGENT INVOCATION
 echo "EXECUTE NOW: USE the Task tool to invoke plan-architect agent"
 echo ""
 echo "YOU MUST:"
 echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md"
-echo "2. Follow Standard 0.5 enforcement (sequential step dependencies)"
-echo "3. Use Write tool to CREATE NEW plan at exact path: $PLAN_PATH"
-echo "4. Return completion signal: PLAN_CREATED: \${PLAN_PATH}"
+echo "2. Use Write tool to create plan at: $PLAN_PATH"
+echo "3. Return completion signal: PLAN_CREATED: \${PLAN_PATH}"
 echo ""
-echo "Plan Context:"
+echo "Workflow-Specific Context:"
 echo "- Feature Description: $FEATURE_DESCRIPTION"
 echo "- Output Path: $PLAN_PATH"
 echo "- Research Reports: $REPORT_PATHS_JSON"
-echo "- Mode: NEW PLAN CREATION (not revision)"
-echo ""
-echo "CRITICAL: Create NEW implementation plan at exact path."
-echo "Execute plan creation following all guidelines in behavioral file."
+echo "- Workflow Type: research-and-plan"
+echo "- Operation Mode: new plan creation"
 echo ""
 
 # FAIL-FAST VERIFICATION (no fallback, exit 1 on failure)

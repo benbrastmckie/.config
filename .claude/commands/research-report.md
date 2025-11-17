@@ -147,19 +147,18 @@ RESEARCH_DIR="${CLAUDE_PROJECT_DIR}/.claude/specs/${TOPIC_NUMBER}_${TOPIC_SLUG}/
 # Create research directory
 mkdir -p "$RESEARCH_DIR"
 
-# IMPERATIVE AGENT INVOCATION (Standard 11 compliance)
+# IMPERATIVE AGENT INVOCATION
 echo "EXECUTE NOW: USE the Task tool to invoke research-specialist agent"
 echo ""
 echo "YOU MUST:"
 echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md"
-echo "2. Follow Standard 0.5 enforcement (sequential step dependencies)"
-echo "3. Return completion signal: REPORT_CREATED: \${REPORT_PATH}"
+echo "2. Return completion signal: REPORT_CREATED: \${REPORT_PATH}"
 echo ""
-echo "Research Parameters:"
-echo "- Complexity: $RESEARCH_COMPLEXITY"
-echo "- Topics: Auto-detect from workflow description"
+echo "Workflow-Specific Context:"
+echo "- Research Complexity: $RESEARCH_COMPLEXITY"
 echo "- Workflow Description: $WORKFLOW_DESCRIPTION"
 echo "- Output Directory: $RESEARCH_DIR"
+echo "- Workflow Type: research-only"
 echo ""
 
 # Hierarchical supervision for complexity ≥4
