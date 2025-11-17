@@ -680,6 +680,61 @@ done
 
 **Fix**: Always test bash block sequences with actual subprocess execution.
 
+### Anti-Pattern 5: Using BASH_SOURCE for Script Directory Detection
+
+**Problem**: `BASH_SOURCE[0]` is empty in Claude Code's bash block execution context, causing SCRIPT_DIR to resolve incorrectly.
+
+**Example**:
+```bash
+# ❌ ANTI-PATTERN: BASH_SOURCE-based SCRIPT_DIR (fails in Claude Code)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+# BASH_SOURCE[0] is empty → SCRIPT_DIR=/current/working/directory
+# Path resolves to: /current/working/directory/../lib/ (WRONG)
+# Expected path: /project/root/.claude/lib/ (CORRECT)
+```
+
+**Why It Fails**:
+- Claude Code executes bash blocks as separate subprocesses without preserving script metadata
+- `BASH_SOURCE[0]` requires being executed from a script file with `bash script.sh`
+- Bash blocks are executed more like `bash -c 'commands'`, where BASH_SOURCE is undefined
+- This creates a bootstrap paradox: need `detect-project-dir.sh` to find project directory, but need project directory to source `detect-project-dir.sh`
+
+**Fix**: Use inline CLAUDE_PROJECT_DIR detection with git-based discovery:
+```bash
+# ✓ CORRECT: Inline git-based CLAUDE_PROJECT_DIR detection
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  # Fallback: search upward for .claude/ directory
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Validate CLAUDE_PROJECT_DIR
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory"
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# Now source libraries using absolute paths
+UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
+source "$UTILS_DIR/workflow-state-machine.sh"
+```
+
+**Impact**:
+- Affected commands: `/plan`, `/implement`, `/expand`, `/collapse`
+- Severity: Critical (commands completely non-functional)
+- Fixed in: Spec 732 (plan.md), remaining commands require separate fixes
+
 ## Examples
 
 ### Example 1: Research Phase State Management
