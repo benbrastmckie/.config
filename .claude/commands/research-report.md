@@ -134,6 +134,18 @@ echo ""
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → RESEARCH" >&2
+  echo "  - Workflow Type: research-only" >&2
+  echo "  - Research topic: $WORKFLOW_DESCRIPTION" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - State machine not initialized properly" >&2
+  echo "  - Workflow type wrong (should be research-only)" >&2
+  echo "  - State file corruption" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Verify sm_init called successfully" >&2
+  echo "  - Check workflow type configuration" >&2
   exit 1
 fi
 echo "=== Phase 1: Research ==="
@@ -232,6 +244,18 @@ load_workflow_state "${WORKFLOW_ID:-$$}" false
 # Research-only workflow: terminate after research with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   echo "ERROR: State transition to COMPLETE failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → COMPLETE" >&2
+  echo "  - Workflow Type: research-only" >&2
+  echo "  - Terminal State: complete" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Research phase did not complete" >&2
+  echo "  - State not persisted after research" >&2
+  echo "  - Terminal state misconfigured" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check research checkpoint output" >&2
+  echo "  - Verify reports created: $REPORT_COUNT" >&2
   exit 1
 fi
 

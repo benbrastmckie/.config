@@ -127,6 +127,18 @@ echo ""
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → RESEARCH" >&2
+  echo "  - Workflow Type: debug-only" >&2
+  echo "  - Issue: $ISSUE_DESCRIPTION" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - State machine not initialized properly" >&2
+  echo "  - Workflow type misconfigured" >&2
+  echo "  - State file corruption" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Verify sm_init called with debug-only workflow type" >&2
+  echo "  - Check ~/.claude/data/state/ for corruption" >&2
   exit 1
 fi
 echo "=== Phase 1: Research (Issue Investigation) ==="
@@ -226,6 +238,18 @@ load_workflow_state "${WORKFLOW_ID:-$$}" false
 # Transition to plan state with return code verification
 if ! sm_transition "$STATE_PLAN" 2>&1; then
   echo "ERROR: State transition to PLAN failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → PLAN" >&2
+  echo "  - Workflow Type: debug-only" >&2
+  echo "  - Reports created: $REPORT_COUNT" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Research phase did not complete" >&2
+  echo "  - No reports created (check REPORT_COUNT)" >&2
+  echo "  - State not persisted after research" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check research checkpoint output" >&2
+  echo "  - Verify reports exist in $RESEARCH_DIR" >&2
   exit 1
 fi
 echo "=== Phase 2: Planning (Debug Strategy) ==="
@@ -310,6 +334,18 @@ load_workflow_state "${WORKFLOW_ID:-$$}" false
 # Transition to debug state with return code verification
 if ! sm_transition "$STATE_DEBUG" 2>&1; then
   echo "ERROR: State transition to DEBUG failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → DEBUG" >&2
+  echo "  - Workflow Type: debug-only" >&2
+  echo "  - Plan file: $PLAN_PATH" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Planning phase did not complete" >&2
+  echo "  - Plan file missing or invalid" >&2
+  echo "  - State not persisted after planning" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check planning checkpoint output" >&2
+  echo "  - Verify plan exists: $PLAN_PATH" >&2
   exit 1
 fi
 echo "=== Phase 3: Debug (Root Cause Analysis) ==="
@@ -379,6 +415,18 @@ load_workflow_state "${WORKFLOW_ID:-$$}" false
 # Debug-only workflow: terminate after debug phase with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   echo "ERROR: State transition to COMPLETE failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → COMPLETE" >&2
+  echo "  - Workflow Type: debug-only" >&2
+  echo "  - Terminal State: complete" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Debug phase did not complete" >&2
+  echo "  - State not persisted properly" >&2
+  echo "  - Terminal state misconfigured" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check debug checkpoint output" >&2
+  echo "  - Verify workflow_type is debug-only" >&2
   exit 1
 fi
 

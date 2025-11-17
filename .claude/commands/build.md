@@ -185,6 +185,18 @@ echo ""
 # Transition to implement state with return code verification
 if ! sm_transition "$STATE_IMPLEMENT" 2>&1; then
   echo "ERROR: State transition to IMPLEMENT failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → IMPLEMENT" >&2
+  echo "  - Workflow Type: full-implementation" >&2
+  echo "  - Plan File: $PLAN_FILE" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - State machine not initialized properly" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "  - State file corruption in ~/.claude/data/state/" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Verify sm_init was called successfully" >&2
+  echo "  - Check state machine logs for details" >&2
   exit 1
 fi
 echo "=== Phase 1: Implementation ==="
@@ -275,6 +287,18 @@ load_workflow_state "${WORKFLOW_ID:-$$}" false
 # Transition to test state with return code verification
 if ! sm_transition "$STATE_TEST" 2>&1; then
   echo "ERROR: State transition to TEST failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → TEST" >&2
+  echo "  - Workflow Type: full-implementation" >&2
+  echo "  - Implementation complete: check CHECKPOINT above" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Implementation phase did not complete properly" >&2
+  echo "  - State not persisted after implementation" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check implementation checkpoint output" >&2
+  echo "  - Verify implementation phase completed" >&2
   exit 1
 fi
 echo "=== Phase 2: Testing ==="
@@ -354,6 +378,18 @@ if [ "$TESTS_PASSED" = "false" ]; then
   # Tests failed → debug phase with return code verification
   if ! sm_transition "$STATE_DEBUG" 2>&1; then
     echo "ERROR: State transition to DEBUG failed" >&2
+    echo "DIAGNOSTIC Information:" >&2
+    echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+    echo "  - Attempted Transition: → DEBUG" >&2
+    echo "  - Workflow Type: full-implementation" >&2
+    echo "  - Tests passed: $TESTS_PASSED (expecting false)" >&2
+    echo "POSSIBLE CAUSES:" >&2
+    echo "  - Conditional logic error (tests_passed check)" >&2
+    echo "  - State not persisted after testing" >&2
+    echo "  - Invalid transition from current state" >&2
+    echo "TROUBLESHOOTING:" >&2
+    echo "  - Verify TESTS_PASSED variable is 'false'" >&2
+    echo "  - Check testing checkpoint output" >&2
     exit 1
   fi
   echo "=== Phase 3: Debug (Tests Failed) ==="
@@ -415,6 +451,18 @@ else
   # Tests passed → document phase with return code verification
   if ! sm_transition "$STATE_DOCUMENT" 2>&1; then
     echo "ERROR: State transition to DOCUMENT failed" >&2
+    echo "DIAGNOSTIC Information:" >&2
+    echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+    echo "  - Attempted Transition: → DOCUMENT" >&2
+    echo "  - Workflow Type: full-implementation" >&2
+    echo "  - Tests passed: $TESTS_PASSED (expecting true)" >&2
+    echo "POSSIBLE CAUSES:" >&2
+    echo "  - Conditional logic error (tests_passed check)" >&2
+    echo "  - State not persisted after testing" >&2
+    echo "  - Invalid transition from current state" >&2
+    echo "TROUBLESHOOTING:" >&2
+    echo "  - Verify TESTS_PASSED variable is 'true'" >&2
+    echo "  - Check testing checkpoint output" >&2
     exit 1
   fi
   echo "=== Phase 3: Documentation ==="
@@ -448,6 +496,18 @@ load_workflow_state "${WORKFLOW_ID:-$$}" false
 # Transition to complete state with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   echo "ERROR: State transition to COMPLETE failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → COMPLETE" >&2
+  echo "  - Workflow Type: full-implementation" >&2
+  echo "  - Terminal State: complete" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Previous phase (debug/document) did not complete" >&2
+  echo "  - State not persisted properly" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check last checkpoint output" >&2
+  echo "  - Verify all required phases completed" >&2
   exit 1
 fi
 
