@@ -85,6 +85,12 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
 # 3. Error handling
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
+# 4. Unified location detection for atomic topic allocation
+if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>&1; then
+  echo "ERROR: Failed to source unified-location-detection.sh"
+  echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
+  exit 1
+fi
 
 # Verify library versions
 check_library_requirements "$(cat <<'EOF'
@@ -144,14 +150,27 @@ fi
 echo "=== Phase 1: Research (Issue Investigation) ==="
 echo ""
 
-# Pre-calculate directories
+# Generate topic slug from issue description
 TOPIC_SLUG=$(echo "$ISSUE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | sed 's/^_//;s/_$//' | cut -c1-50)
-TOPIC_NUMBER=$(find "${CLAUDE_PROJECT_DIR}/.claude/specs" -maxdepth 1 -type d -name '[0-9]*_*' 2>/dev/null | wc -l | xargs)
-TOPIC_NUMBER=$((TOPIC_NUMBER + 1))
-SPECS_DIR="${CLAUDE_PROJECT_DIR}/.claude/specs/${TOPIC_NUMBER}_${TOPIC_SLUG}"
+
+# Allocate topic directory atomically (eliminates race conditions)
+SPECS_ROOT="${CLAUDE_PROJECT_DIR}/.claude/specs"
+RESULT=$(allocate_and_create_topic "$SPECS_ROOT" "$TOPIC_SLUG")
+if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to allocate topic directory"
+  echo "DIAGNOSTIC: Check permissions on $SPECS_ROOT"
+  exit 1
+fi
+
+# Extract topic number and full path from result
+TOPIC_NUMBER="${RESULT%|*}"
+SPECS_DIR="${RESULT#*|}"
+
+# Define subdirectories
 RESEARCH_DIR="${SPECS_DIR}/reports"
 DEBUG_DIR="${SPECS_DIR}/debug"
 
+# Create subdirectories (topic root already created atomically)
 mkdir -p "$RESEARCH_DIR"
 mkdir -p "$DEBUG_DIR"
 ```
@@ -232,8 +251,19 @@ fi
 ## Part 4: Planning Phase (Debug Strategy)
 
 ```bash
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# Re-export state machine variables (restored by load_workflow_state)
+export CURRENT_STATE
+export TERMINAL_STATE
+export WORKFLOW_SCOPE
+export RESEARCH_COMPLEXITY
+export RESEARCH_TOPICS_JSON
 
 # Transition to plan state with return code verification
 if ! sm_transition "$STATE_PLAN" 2>&1; then
@@ -328,8 +358,19 @@ fi
 ## Part 5: Debug Phase (Root Cause Analysis)
 
 ```bash
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# Re-export state machine variables (restored by load_workflow_state)
+export CURRENT_STATE
+export TERMINAL_STATE
+export WORKFLOW_SCOPE
+export RESEARCH_COMPLEXITY
+export RESEARCH_TOPICS_JSON
 
 # Transition to debug state with return code verification
 if ! sm_transition "$STATE_DEBUG" 2>&1; then
@@ -409,8 +450,19 @@ fi
 ## Part 6: Completion & Cleanup
 
 ```bash
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
 # Load workflow state from Part 5 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# Re-export state machine variables (restored by load_workflow_state)
+export CURRENT_STATE
+export TERMINAL_STATE
+export WORKFLOW_SCOPE
+export RESEARCH_COMPLEXITY
+export RESEARCH_TOPICS_JSON
 
 # Debug-only workflow: terminate after debug phase with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
