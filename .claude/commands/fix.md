@@ -94,13 +94,24 @@ WORKFLOW_TYPE="debug-only"
 TERMINAL_STATE="debug"
 COMMAND_NAME="fix"
 
-# Initialize state machine
-sm_init \
+# Initialize state machine with return code verification
+if ! sm_init \
   "$ISSUE_DESCRIPTION" \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
-  "{}"
+  "{}" 2>&1; then
+  echo "ERROR: State machine initialization failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Issue Description: $ISSUE_DESCRIPTION" >&2
+  echo "  - Command Name: $COMMAND_NAME" >&2
+  echo "  - Workflow Type: $WORKFLOW_TYPE" >&2
+  echo "  - Research Complexity: $RESEARCH_COMPLEXITY" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Library version incompatibility (require workflow-state-machine.sh >=2.0.0)" >&2
+  echo "  - State file corruption in ~/.claude/data/state/" >&2
+  exit 1
+fi
 
 echo "✓ State machine initialized"
 echo ""
@@ -109,8 +120,11 @@ echo ""
 ## Part 3: Research Phase (Issue Investigation)
 
 ```bash
-# Transition to research state
-sm_transition "$STATE_RESEARCH"
+# Transition to research state with return code verification
+if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+  echo "ERROR: State transition to RESEARCH failed" >&2
+  exit 1
+fi
 echo "=== Phase 1: Research (Issue Investigation) ==="
 echo ""
 
@@ -172,15 +186,21 @@ REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
 echo "✓ Research phase complete ($REPORT_COUNT reports created)"
 echo ""
 
-# Persist completed state
-save_completed_states_to_state
+# Persist completed state with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
+  exit 1
+fi
 ```
 
 ## Part 4: Planning Phase (Debug Strategy)
 
 ```bash
-# Transition to plan state
-sm_transition "$STATE_PLAN"
+# Transition to plan state with return code verification
+if ! sm_transition "$STATE_PLAN" 2>&1; then
+  echo "ERROR: State transition to PLAN failed" >&2
+  exit 1
+fi
 echo "=== Phase 2: Planning (Debug Strategy) ==="
 echo ""
 
@@ -230,15 +250,21 @@ fi
 echo "✓ Planning phase complete (strategy: $PLAN_PATH)"
 echo ""
 
-# Persist completed state
-save_completed_states_to_state
+# Persist completed state with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
+  exit 1
+fi
 ```
 
 ## Part 5: Debug Phase (Root Cause Analysis)
 
 ```bash
-# Transition to debug state
-sm_transition "$STATE_DEBUG"
+# Transition to debug state with return code verification
+if ! sm_transition "$STATE_DEBUG" 2>&1; then
+  echo "ERROR: State transition to DEBUG failed" >&2
+  exit 1
+fi
 echo "=== Phase 3: Debug (Root Cause Analysis) ==="
 echo ""
 
@@ -276,15 +302,21 @@ fi
 echo "✓ Debug phase complete (artifacts: $DEBUG_ARTIFACT_COUNT)"
 echo ""
 
-# Persist completed state
-save_completed_states_to_state
+# Persist completed state with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
+  exit 1
+fi
 ```
 
 ## Part 6: Completion & Cleanup
 
 ```bash
-# Debug-only workflow: terminate after debug phase
-sm_transition "$STATE_COMPLETE"
+# Debug-only workflow: terminate after debug phase with return code verification
+if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  echo "ERROR: State transition to COMPLETE failed" >&2
+  exit 1
+fi
 
 echo "=== Debug Workflow Complete ==="
 echo ""

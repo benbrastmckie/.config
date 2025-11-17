@@ -150,13 +150,24 @@ WORKFLOW_TYPE="build"
 TERMINAL_STATE="complete"
 COMMAND_NAME="build"
 
-# Initialize state machine
-sm_init \
+# Initialize state machine with return code verification
+if ! sm_init \
   "$PLAN_FILE" \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
   "0" \
-  "[]"
+  "[]" 2>&1; then
+  echo "ERROR: State machine initialization failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Plan File: $PLAN_FILE" >&2
+  echo "  - Command Name: $COMMAND_NAME" >&2
+  echo "  - Workflow Type: $WORKFLOW_TYPE" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Library version incompatibility (require workflow-state-machine.sh >=2.0.0)" >&2
+  echo "  - State file corruption in ~/.claude/data/state/" >&2
+  echo "  - Invalid plan file format" >&2
+  exit 1
+fi
 
 echo "✓ State machine initialized"
 echo ""
@@ -165,8 +176,11 @@ echo ""
 ## Part 3: Implementation Phase
 
 ```bash
-# Transition to implement state
-sm_transition "$STATE_IMPLEMENT"
+# Transition to implement state with return code verification
+if ! sm_transition "$STATE_IMPLEMENT" 2>&1; then
+  echo "ERROR: State transition to IMPLEMENT failed" >&2
+  exit 1
+fi
 echo "=== Phase 1: Implementation ==="
 echo ""
 
@@ -206,15 +220,21 @@ fi
 echo "✓ Implementation phase complete"
 echo ""
 
-# Persist completed state
-save_completed_states_to_state
+# Persist completed state with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
+  exit 1
+fi
 ```
 
 ## Part 4: Testing Phase
 
 ```bash
-# Transition to test state
-sm_transition "$STATE_TEST"
+# Transition to test state with return code verification
+if ! sm_transition "$STATE_TEST" 2>&1; then
+  echo "ERROR: State transition to TEST failed" >&2
+  exit 1
+fi
 echo "=== Phase 2: Testing ==="
 echo ""
 
@@ -262,8 +282,11 @@ fi
 
 echo ""
 
-# Persist completed state
-save_completed_states_to_state
+# Persist completed state with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
+  exit 1
+fi
 ```
 
 ## Part 5: Conditional Branching (Debug or Document)
@@ -271,8 +294,11 @@ save_completed_states_to_state
 ```bash
 # Conditional phase based on test results
 if [ "$TESTS_PASSED" = "false" ]; then
-  # Tests failed → debug phase
-  sm_transition "$STATE_DEBUG"
+  # Tests failed → debug phase with return code verification
+  if ! sm_transition "$STATE_DEBUG" 2>&1; then
+    echo "ERROR: State transition to DEBUG failed" >&2
+    exit 1
+  fi
   echo "=== Phase 3: Debug (Tests Failed) ==="
   echo ""
 
@@ -297,8 +323,11 @@ if [ "$TESTS_PASSED" = "false" ]; then
   save_completed_states_to_state
 
 else
-  # Tests passed → document phase
-  sm_transition "$STATE_DOCUMENT"
+  # Tests passed → document phase with return code verification
+  if ! sm_transition "$STATE_DOCUMENT" 2>&1; then
+    echo "ERROR: State transition to DOCUMENT failed" >&2
+    exit 1
+  fi
   echo "=== Phase 3: Documentation ==="
   echo ""
 
@@ -324,8 +353,11 @@ fi
 ## Part 6: Completion & Cleanup
 
 ```bash
-# Transition to complete state
-sm_transition "$STATE_COMPLETE"
+# Transition to complete state with return code verification
+if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  echo "ERROR: State transition to COMPLETE failed" >&2
+  exit 1
+fi
 
 echo "=== Build Complete ==="
 echo ""

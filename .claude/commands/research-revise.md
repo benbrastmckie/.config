@@ -120,13 +120,24 @@ WORKFLOW_TYPE="research-and-revise"
 TERMINAL_STATE="plan"
 COMMAND_NAME="research-revise"
 
-# Initialize state machine
-sm_init \
+# Initialize state machine with return code verification
+if ! sm_init \
   "$REVISION_DESCRIPTION" \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
-  "{}"
+  "{}" 2>&1; then
+  echo "ERROR: State machine initialization failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Revision Description: $REVISION_DESCRIPTION" >&2
+  echo "  - Command Name: $COMMAND_NAME" >&2
+  echo "  - Workflow Type: $WORKFLOW_TYPE" >&2
+  echo "  - Research Complexity: $RESEARCH_COMPLEXITY" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Library version incompatibility (require workflow-state-machine.sh >=2.0.0)" >&2
+  echo "  - State file corruption in ~/.claude/data/state/" >&2
+  exit 1
+fi
 
 echo "✓ State machine initialized"
 echo ""
@@ -135,8 +146,11 @@ echo ""
 ## Part 3: Research Phase Execution
 
 ```bash
-# Transition to research state
-sm_transition "$STATE_RESEARCH"
+# Transition to research state with return code verification
+if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+  echo "ERROR: State transition to RESEARCH failed" >&2
+  exit 1
+fi
 echo "=== Phase 1: Research ==="
 echo ""
 
@@ -196,15 +210,21 @@ TOTAL_REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
 echo "✓ Research phase complete (total reports: $TOTAL_REPORT_COUNT, new: $NEW_REPORT_COUNT)"
 echo ""
 
-# Persist completed state
-save_completed_states_to_state
+# Persist completed state with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
+  exit 1
+fi
 ```
 
 ## Part 4: Plan Revision Phase
 
 ```bash
-# Transition to plan state
-sm_transition "$STATE_PLAN"
+# Transition to plan state with return code verification
+if ! sm_transition "$STATE_PLAN" 2>&1; then
+  echo "ERROR: State transition to PLAN failed" >&2
+  exit 1
+fi
 echo "=== Phase 2: Plan Revision ==="
 echo ""
 
@@ -284,15 +304,21 @@ fi
 echo "✓ Plan revision complete: $EXISTING_PLAN_PATH"
 echo ""
 
-# Persist completed state
-save_completed_states_to_state
+# Persist completed state with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
+  exit 1
+fi
 ```
 
 ## Part 5: Completion & Cleanup
 
 ```bash
-# Research-and-revise workflow: terminate after plan revision
-sm_transition "$STATE_COMPLETE"
+# Research-and-revise workflow: terminate after plan revision with return code verification
+if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  echo "ERROR: State transition to COMPLETE failed" >&2
+  exit 1
+fi
 
 echo "=== Research-and-Revise Complete ==="
 echo ""
