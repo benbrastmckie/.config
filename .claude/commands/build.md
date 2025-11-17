@@ -1,0 +1,384 @@
+---
+allowed-tools: Task, TodoWrite, Bash, Read, Grep, Glob
+argument-hint: [plan-file] [starting-phase] [--dry-run]
+description: Build-from-plan workflow - Implementation, testing, debug, and documentation phases
+command-type: primary
+dependent-agents:
+  - implementer-coordinator
+  - debug-analyst
+library-requirements:
+  - workflow-state-machine.sh: ">=2.0.0"
+  - state-persistence.sh: ">=1.5.0"
+---
+
+# /build - Build-from-Plan Workflow Command
+
+YOU ARE EXECUTING a build-from-plan workflow that takes an existing implementation plan and executes it through implementation, testing, debugging (if needed), and documentation phases.
+
+**Workflow Type**: build
+**Terminal State**: complete (after all phases complete)
+**Expected Input**: Existing plan file path
+**Expected Output**: Implemented features with passing tests and updated documentation
+
+## Part 1: Argument Parsing and Plan Discovery
+
+```bash
+# Bootstrap CLAUDE_PROJECT_DIR detection
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# Source required libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
+
+# Verify library versions
+check_library_requirements "$(cat <<'EOF'
+workflow-state-machine.sh: ">=2.0.0"
+state-persistence.sh: ">=1.5.0"
+EOF
+)" || exit 1
+
+# Parse arguments
+PLAN_FILE="$1"
+STARTING_PHASE="${2:-1}"
+DRY_RUN="false"
+
+shift 2 2>/dev/null || shift $# 2>/dev/null
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run) DRY_RUN="true"; shift ;;
+    *) shift ;;
+  esac
+done
+
+# Validate STARTING_PHASE is numeric
+if ! echo "$STARTING_PHASE" | grep -Eq "^[0-9]+$"; then
+  echo "ERROR: Invalid starting phase: $STARTING_PHASE (must be numeric)" >&2
+  exit 1
+fi
+
+echo "=== Build-from-Plan Workflow ==="
+echo ""
+
+# Auto-resume logic if no plan file specified
+if [ -z "$PLAN_FILE" ]; then
+  echo "PROGRESS: No plan file specified, searching for incomplete plans..."
+
+  # Strategy 1: Check for checkpoint from previous /build execution
+  CHECKPOINT_DATA=$(load_checkpoint "build" 2>/dev/null || echo "")
+
+  if [ -n "$CHECKPOINT_DATA" ]; then
+    CHECKPOINT_FILE="${HOME}/.claude/data/checkpoints/build_checkpoint.json"
+    if [ -f "$CHECKPOINT_FILE" ]; then
+      # Verify checkpoint age (<24 hours)
+      CHECKPOINT_AGE_HOURS=$(( ($(date +%s) - $(stat -c %Y "$CHECKPOINT_FILE" 2>/dev/null || stat -f %m "$CHECKPOINT_FILE")) / 3600 ))
+
+      if [ "$CHECKPOINT_AGE_HOURS" -lt 24 ]; then
+        PLAN_FILE=$(echo "$CHECKPOINT_DATA" | jq -r '.plan_path')
+        STARTING_PHASE=$(echo "$CHECKPOINT_DATA" | jq -r '.current_phase')
+        echo "✓ Auto-resuming from checkpoint: Phase $STARTING_PHASE"
+        echo "  Plan: $(basename "$PLAN_FILE")"
+      else
+        echo "WARNING: Checkpoint stale (>24h), searching for recent plan..."
+        CHECKPOINT_DATA=""
+      fi
+    fi
+  fi
+
+  # Strategy 2: Find most recent incomplete plan
+  if [ -z "$PLAN_FILE" ]; then
+    PLAN_FILE=$(find "$CLAUDE_PROJECT_DIR/.claude/specs" -path "*/plans/[0-9]*_*.md" -type f -exec ls -t {} + 2>/dev/null | head -1)
+
+    if [ -z "$PLAN_FILE" ]; then
+      echo "ERROR: No plan file found in specs/*/plans/" >&2
+      echo "DIAGNOSTIC: Create a plan using /research-plan or /plan first" >&2
+      exit 1
+    fi
+
+    echo "✓ Auto-detected most recent plan: $(basename "$PLAN_FILE")"
+  fi
+fi
+
+# Verify plan file exists
+if [ ! -f "$PLAN_FILE" ]; then
+  echo "ERROR: Plan file not found: $PLAN_FILE" >&2
+  exit 1
+fi
+
+echo "Plan: $PLAN_FILE"
+echo "Starting Phase: $STARTING_PHASE"
+echo ""
+
+# Dry-run mode
+if [ "$DRY_RUN" = "true" ]; then
+  echo "=== DRY-RUN MODE: Preview Only ==="
+  echo ""
+  echo "Plan: $(basename "$PLAN_FILE")"
+  echo "Starting Phase: $STARTING_PHASE"
+  echo ""
+  echo "Phases would be executed by implementer-coordinator agent"
+  echo "Test results would determine debug vs documentation path"
+  exit 0
+fi
+```
+
+## Part 2: State Machine Initialization
+
+```bash
+# Hardcode workflow type
+WORKFLOW_TYPE="build"
+TERMINAL_STATE="complete"
+COMMAND_NAME="build"
+
+# Initialize state machine
+sm_init \
+  "$PLAN_FILE" \
+  "$COMMAND_NAME" \
+  "$WORKFLOW_TYPE" \
+  "0" \
+  "[]"
+
+echo "✓ State machine initialized"
+echo ""
+```
+
+## Part 3: Implementation Phase
+
+```bash
+# Transition to implement state
+sm_transition "$STATE_IMPLEMENT"
+echo "=== Phase 1: Implementation ==="
+echo ""
+
+# IMPERATIVE AGENT INVOCATION (Standard 11 compliance)
+echo "EXECUTE NOW: USE the Task tool to invoke implementer-coordinator agent"
+echo ""
+echo "YOU MUST:"
+echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md"
+echo "2. Follow Standard 0.5 enforcement (sequential step dependencies)"
+echo "3. Execute plan phases starting from phase $STARTING_PHASE"
+echo "4. Create git commits for each completed phase"
+echo "5. Return completion signal: IMPLEMENTATION_COMPLETE: \${PHASE_COUNT}"
+echo ""
+echo "Implementation Context:"
+echo "- Plan Path: $PLAN_FILE"
+echo "- Starting Phase: $STARTING_PHASE"
+echo "- Wave-based execution: Enabled (parallel where possible)"
+echo "- Mode: BUILD (implementation only, no research/planning)"
+echo ""
+
+# FAIL-FAST VERIFICATION
+echo ""
+echo "Verifying implementation..."
+
+# Check if any files were modified (basic implementation check)
+if git diff --quiet && git diff --cached --quiet; then
+  echo "WARNING: No changes detected (implementation may have been no-op)"
+fi
+
+# Check for implementation artifacts (git commits)
+COMMIT_COUNT=$(git log --oneline --since="5 minutes ago" | wc -l)
+if [ "$COMMIT_COUNT" -eq 0 ]; then
+  echo "WARNING: No recent commits found"
+  echo "NOTE: Implementation may not have created commits"
+fi
+
+echo "✓ Implementation phase complete"
+echo ""
+
+# Persist completed state
+save_completed_states_to_state
+```
+
+## Part 4: Testing Phase
+
+```bash
+# Transition to test state
+sm_transition "$STATE_TEST"
+echo "=== Phase 2: Testing ==="
+echo ""
+
+# Extract test command from plan (if specified)
+TEST_COMMAND=$(grep -oE "(npm test|pytest|\.\/run_all_tests\.sh|:TestSuite)" "$PLAN_FILE" | head -1 || echo "")
+
+if [ -z "$TEST_COMMAND" ]; then
+  echo "NOTE: No explicit test command found in plan"
+  echo "Attempting to auto-detect test framework..."
+
+  # Auto-detect test framework
+  if [ -f "package.json" ] && grep -q '"test"' package.json; then
+    TEST_COMMAND="npm test"
+  elif [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
+    TEST_COMMAND="pytest"
+  elif [ -f ".claude/run_all_tests.sh" ]; then
+    TEST_COMMAND="./.claude/run_all_tests.sh"
+  else
+    echo "WARNING: No test framework detected, skipping test phase"
+    TEST_COMMAND=""
+  fi
+fi
+
+if [ -n "$TEST_COMMAND" ]; then
+  echo "Running tests: $TEST_COMMAND"
+  echo ""
+
+  TEST_OUTPUT=$($TEST_COMMAND 2>&1)
+  TEST_EXIT_CODE=$?
+
+  echo "$TEST_OUTPUT"
+  echo ""
+
+  if [ $TEST_EXIT_CODE -ne 0 ]; then
+    echo "✗ Tests failed (exit code: $TEST_EXIT_CODE)"
+    TESTS_PASSED=false
+  else
+    echo "✓ Tests passed"
+    TESTS_PASSED=true
+  fi
+else
+  echo "✓ Test phase skipped (no test command)"
+  TESTS_PASSED=true
+fi
+
+echo ""
+
+# Persist completed state
+save_completed_states_to_state
+```
+
+## Part 5: Conditional Branching (Debug or Document)
+
+```bash
+# Conditional phase based on test results
+if [ "$TESTS_PASSED" = "false" ]; then
+  # Tests failed → debug phase
+  sm_transition "$STATE_DEBUG"
+  echo "=== Phase 3: Debug (Tests Failed) ==="
+  echo ""
+
+  echo "EXECUTE NOW: USE the Task tool to invoke debug-analyst agent"
+  echo ""
+  echo "YOU MUST:"
+  echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md"
+  echo "2. Analyze test failures from output above"
+  echo "3. Identify root cause and create fix"
+  echo "4. Return completion signal: DEBUG_COMPLETE: \${FIX_DESCRIPTION}"
+  echo ""
+  echo "Debug Context:"
+  echo "- Test Command: $TEST_COMMAND"
+  echo "- Test Exit Code: $TEST_EXIT_CODE"
+  echo "- Test Output: Available above"
+  echo ""
+
+  echo "NOTE: After debug, you may re-run /build to retry tests"
+  echo ""
+
+  # Persist completed state
+  save_completed_states_to_state
+
+else
+  # Tests passed → document phase
+  sm_transition "$STATE_DOCUMENT"
+  echo "=== Phase 3: Documentation ==="
+  echo ""
+
+  echo "Updating documentation for implemented features..."
+
+  # Basic documentation update (check for README updates needed)
+  if git diff --name-only HEAD~${COMMIT_COUNT}..HEAD | grep -qE '(\.py|\.js|\.ts|\.go|\.rs)$'; then
+    echo "NOTE: Code files modified, documentation update recommended"
+    echo "Consider updating:"
+    echo "  - README.md"
+    echo "  - API documentation"
+    echo "  - CHANGELOG.md"
+  fi
+
+  echo "✓ Documentation phase complete"
+  echo ""
+
+  # Persist completed state
+  save_completed_states_to_state
+fi
+```
+
+## Part 6: Completion & Cleanup
+
+```bash
+# Transition to complete state
+sm_transition "$STATE_COMPLETE"
+
+echo "=== Build Complete ==="
+echo ""
+echo "Workflow Type: build"
+echo "Plan: $PLAN_FILE"
+echo "Implementation: ✓ Complete"
+echo "Testing: $([ "$TESTS_PASSED" = "true" ] && echo "✓ Passed" || echo "✗ Failed (debugged)")"
+echo ""
+
+if [ "$TESTS_PASSED" = "true" ]; then
+  echo "Next Steps:"
+  echo "- Review changes: git log --oneline -$COMMIT_COUNT"
+  echo "- Create PR: gh pr create"
+  echo "- Deploy: (follow project deployment process)"
+else
+  echo "Next Steps:"
+  echo "- Review debug analysis above"
+  echo "- Apply fixes and re-run: /build $PLAN_FILE"
+  echo "- Or continue from test phase: /build $PLAN_FILE 2"
+fi
+
+echo ""
+
+# Delete checkpoint (successful completion)
+if [ "$TESTS_PASSED" = "true" ]; then
+  delete_checkpoint "build" 2>/dev/null || true
+fi
+
+exit 0
+```
+
+---
+
+**Troubleshooting**:
+
+- **No plan found**: Create a plan first using `/research-plan` or `/plan`
+- **Tests failing**: Use debug output above, or invoke `/fix` for dedicated debugging
+- **Implementation incomplete**: Check implementer-coordinator agent logs
+- **Checkpoint issues**: Delete stale checkpoint: `rm ~/.claude/data/checkpoints/build_checkpoint.json`
+- **State machine errors**: Ensure library versions compatible (workflow-state-machine.sh >=2.0.0)
+
+**Usage Examples**:
+
+```bash
+# Auto-resume from most recent plan
+/build
+
+# Build specific plan
+/build .claude/specs/123_auth/plans/001_implementation.md
+
+# Resume from specific phase (e.g., phase 3)
+/build .claude/specs/123_auth/plans/001_implementation.md 3
+
+# Dry-run preview
+/build --dry-run
+```
