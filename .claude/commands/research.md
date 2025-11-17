@@ -102,6 +102,12 @@ SUBTOPICS=(
 source .claude/lib/topic-utils.sh
 source .claude/lib/detect-project-dir.sh
 
+# Add unified location detection for atomic allocation
+if ! source .claude/lib/unified-location-detection.sh 2>&1; then
+  echo "ERROR: Failed to source unified-location-detection.sh"
+  exit 1
+fi
+
 # Get project root (from environment or git)
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR}"
 if [ -z "$PROJECT_ROOT" ]; then
@@ -128,13 +134,20 @@ else
   mkdir -p "$SPECS_ROOT"
 fi
 
-# Calculate topic metadata
-TOPIC_NUM=$(get_next_topic_number "$SPECS_ROOT")
+# Generate sanitized topic name
 TOPIC_NAME=$(sanitize_topic_name "$RESEARCH_TOPIC")
-TOPIC_DIR="${SPECS_ROOT}/${TOPIC_NUM}_${TOPIC_NAME}"
 
-# Create topic root directory
-mkdir -p "$TOPIC_DIR"
+# Allocate topic directory atomically (eliminates race conditions)
+RESULT=$(allocate_and_create_topic "$SPECS_ROOT" "$TOPIC_NAME")
+if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to allocate topic directory"
+  echo "DIAGNOSTIC: Check permissions on $SPECS_ROOT"
+  exit 1
+fi
+
+# Extract topic number and path
+TOPIC_NUM="${RESULT%|*}"
+TOPIC_DIR="${RESULT#*|}"
 
 echo "TOPIC_DIR: $TOPIC_DIR"
 echo "TOPIC_NUM: $TOPIC_NUM"

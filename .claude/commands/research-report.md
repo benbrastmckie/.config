@@ -91,6 +91,12 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
 # 3. Error handling
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
+# 4. Unified location detection for atomic topic allocation
+if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>&1; then
+  echo "ERROR: Failed to source unified-location-detection.sh"
+  echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
+  exit 1
+fi
 
 # Verify library versions (fail-fast if incompatible)
 check_library_requirements "$(cat <<'EOF'
@@ -151,13 +157,24 @@ fi
 echo "=== Phase 1: Research ==="
 echo ""
 
-# Pre-calculate research directory path
+# Generate topic slug from workflow description
 TOPIC_SLUG=$(echo "$WORKFLOW_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | sed 's/^_//;s/_$//' | cut -c1-50)
-TOPIC_NUMBER=$(find "${CLAUDE_PROJECT_DIR}/.claude/specs" -maxdepth 1 -type d -name '[0-9]*_*' 2>/dev/null | wc -l | xargs)
-TOPIC_NUMBER=$((TOPIC_NUMBER + 1))
-RESEARCH_DIR="${CLAUDE_PROJECT_DIR}/.claude/specs/${TOPIC_NUMBER}_${TOPIC_SLUG}/reports"
 
-# Create research directory
+# Allocate topic directory atomically (eliminates race conditions)
+SPECS_ROOT="${CLAUDE_PROJECT_DIR}/.claude/specs"
+RESULT=$(allocate_and_create_topic "$SPECS_ROOT" "$TOPIC_SLUG")
+if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to allocate topic directory"
+  echo "DIAGNOSTIC: Check permissions on $SPECS_ROOT"
+  exit 1
+fi
+
+# Extract topic number and full path from result
+TOPIC_NUMBER="${RESULT%|*}"
+TOPIC_DIR="${RESULT#*|}"
+RESEARCH_DIR="${TOPIC_DIR}/reports"
+
+# Create reports subdirectory (topic root already created atomically)
 mkdir -p "$RESEARCH_DIR"
 
 # Persist variables across bash blocks (subprocess isolation)
