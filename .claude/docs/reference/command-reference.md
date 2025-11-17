@@ -17,6 +17,7 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 ## Command Index (Alphabetical)
 
 - [/analyze](#analyze)
+- [/build](#build) ✨ NEW
 - [/collapse](#collapse)
 - [/convert-docs](#convert-docs)
 - [/coordinate](#coordinate)
@@ -24,6 +25,7 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 - [/document](#document)
 - [/example-with-agent](#example-with-agent)
 - [/expand](#expand)
+- [/fix](#fix) ✨ NEW
 - [/implement](#implement)
 - [/list](#list)
 - [/plan](#plan)
@@ -31,6 +33,9 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 - [/plan-wizard](#plan-wizard)
 - [/refactor](#refactor)
 - [/report](#report)
+- [/research-plan](#research-plan) ✨ NEW
+- [/research-report](#research-report) ✨ NEW
+- [/research-revise](#research-revise) ✨ NEW
 - [/revise](#revise)
 - [/setup](#setup)
 - [/test](#test)
@@ -57,6 +62,28 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 **Output**: Console analysis report with rankings and recommendations
 
 **See**: [analyze.md](../../commands/analyze.md)
+
+---
+
+### /build
+**Purpose**: Build-from-plan workflow - Implementation, testing, debug, and documentation phases
+
+**Usage**: `/build [plan-file] [starting-phase] [--dry-run]`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `plan-file` (optional): Path to implementation plan (auto-detects if omitted)
+- `starting-phase` (optional): Phase number to start from (default: 1)
+- `--dry-run`: Preview execution without running
+
+**Agents Used**: implementer-coordinator, debug-analyst
+
+**Output**: Implemented features with commits, test results, debug analysis or documentation
+
+**Workflow**: `implement → test → [debug OR document] → complete`
+
+**See**: [build.md](../../commands/build.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
 
 ---
 
@@ -238,6 +265,27 @@ Automatically detects workflow type and executes appropriate phases:
 
 ---
 
+### /fix
+**Purpose**: Debug-focused workflow - Root cause analysis and bug fixing
+
+**Usage**: `/fix <issue-description> [--complexity 1-4]`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `issue-description` (required): Description of issue to investigate
+- `--complexity` (optional): Research depth 1-4 (default: 2)
+
+**Agents Used**: research-specialist, plan-architect, debug-analyst
+
+**Output**: Debug research reports, debug strategy plan, root cause analysis
+
+**Workflow**: `research → plan (debug strategy) → debug → complete`
+
+**See**: [fix.md](../../commands/fix.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+
+---
+
 ### /implement
 **Purpose**: Execute implementation plans with automated testing and commits
 
@@ -376,6 +424,69 @@ Automatically detects workflow type and executes appropriate phases:
 **Output**: Research report in `specs/reports/{topic}/NNN_report_name.md`
 
 **Dependent Commands**: plan
+
+---
+
+### /research-plan
+**Purpose**: Research and create new implementation plan workflow
+
+**Usage**: `/research-plan <feature-description> [--complexity 1-4]`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `feature-description` (required): Feature to research and plan
+- `--complexity` (optional): Research depth 1-4 (default: 3)
+
+**Agents Used**: research-specialist, research-sub-supervisor, plan-architect
+
+**Output**: Research reports + implementation plan
+
+**Workflow**: `research → plan → complete`
+
+**See**: [research-plan.md](../../commands/research-plan.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+
+---
+
+### /research-report
+**Purpose**: Research-only workflow - Creates comprehensive research reports without planning or implementation
+
+**Usage**: `/research-report <workflow-description> [--complexity 1-4]`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `workflow-description` (required): Topic to research
+- `--complexity` (optional): Research depth 1-4 (default: 2)
+
+**Agents Used**: research-specialist, research-sub-supervisor
+
+**Output**: Research reports only (no plan)
+
+**Workflow**: `research → complete`
+
+**See**: [research-report.md](../../commands/research-report.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+
+---
+
+### /research-revise
+**Purpose**: Research and revise existing implementation plan workflow
+
+**Usage**: `/research-revise "revise plan at <plan-path> based on <new-insights>" [--complexity 1-4]`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `revision-description` (required): Must include plan path and revision details
+- `--complexity` (optional): Research depth 1-4 (default: 2)
+
+**Agents Used**: research-specialist, research-sub-supervisor, plan-architect
+
+**Output**: Research reports + revised plan (with backup)
+
+**Workflow**: `research → plan revision → complete`
+
+**See**: [research-revise.md](../../commands/research-revise.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
 
 ---
 
