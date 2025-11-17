@@ -147,6 +147,13 @@ RESEARCH_DIR="${CLAUDE_PROJECT_DIR}/.claude/specs/${TOPIC_NUMBER}_${TOPIC_SLUG}/
 
 # Create research directory
 mkdir -p "$RESEARCH_DIR"
+
+# Persist variables across bash blocks (subprocess isolation)
+append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
+append_workflow_state "TOPIC_SLUG" "$TOPIC_SLUG"
+append_workflow_state "TOPIC_NUMBER" "$TOPIC_NUMBER"
+append_workflow_state "WORKFLOW_DESCRIPTION" "$WORKFLOW_DESCRIPTION"
+append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
 ```
 
 Task {
@@ -198,6 +205,9 @@ REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
 echo "✓ Research phase complete ($REPORT_COUNT reports created)"
 echo ""
 
+# Persist report count for completion summary
+append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
+
 # Persist completed state (call after every sm_transition) with return code verification
 if ! save_completed_states_to_state 2>&1; then
   echo "ERROR: Failed to persist completed state" >&2
@@ -208,6 +218,9 @@ fi
 ## Part 4: Completion & Cleanup
 
 ```bash
+# Load workflow state from Part 3 (subprocess isolation)
+load_workflow_state "${WORKFLOW_ID:-$$}" false
+
 # Research-only workflow: terminate after research with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   echo "ERROR: State transition to COMPLETE failed" >&2
