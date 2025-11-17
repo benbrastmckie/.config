@@ -1454,6 +1454,51 @@ Standard 12 and Standard 14 (Executable/Documentation File Separation) are compl
 - [Inline Template Duplication Troubleshooting](../troubleshooting/inline-template-duplication.md) - Detect and fix anti-pattern
 - [Standard 14: Executable/Documentation File Separation](#standard-14-executabledocumentation-file-separation) - Complementary pattern for command file organization
 
+#### Standard 0 and Standard 12 Reconciliation
+
+**Apparent Tension**: Standard 0 (Execution Enforcement) prescribes inline execution steps, while Standard 12 (Structural vs Behavioral Content Separation) prescribes referencing behavioral content. STEP sequences appear to fit both categories.
+
+**Resolution**: Apply ownership-based decision criteria.
+
+**Standard 0 applies to** command-owned execution (INLINE):
+- Multi-phase orchestration coordination ("STEP 1: Invoke agents in parallel")
+- Agent preparation and context injection ("STEP 1: Pre-calculate paths BEFORE agent invocation")
+- Cross-agent workflow progression ("STEP 1: Collect outputs from all research agents")
+- Verification checkpoints ("STEP 1: MANDATORY VERIFICATION of file existence")
+
+**Standard 12 applies to** agent-owned behavior (REFERENCE):
+- File creation workflows ("STEP 1: Create report file with Write tool")
+- Research procedures ("STEP 1: Analyze codebase for existing patterns")
+- Quality check sequences ("STEP 1: Verify all required sections present")
+- Agent output formatting ("STEP 1: Return results in JSON format")
+
+**Ownership Decision Test**:
+```
+Ask: "Who executes this STEP sequence?"
+├─ Command/orchestrator → INLINE (Standard 0: Execution Enforcement)
+├─ Agent/subagent → REFERENCE (Standard 12: Behavioral Content Separation)
+└─ Ambiguous → Default to REFERENCE (fail-safe for context management)
+```
+
+**Example Reconciliation**:
+```markdown
+# Command file (inline orchestration - Standard 0)
+STEP 1: Pre-calculate paths for all agents
+STEP 2: Invoke researcher via Task tool with path injection
+STEP 3: Verify researcher created file at expected path
+
+# Agent file (referenced behavior - Standard 12)
+STEP 1: Read injected path from prompt
+STEP 2: Create research report using Write tool
+STEP 3: Return completion signal with file path
+```
+
+Command orchestrates (inline), agent executes (referenced). No duplication, clear ownership.
+
+**Decision Flowchart**: See [STEP Pattern Classification Flowchart](../quick-reference/step-pattern-classification-flowchart.md) for fast decision tree.
+
+**Complete Category Documentation**: See [Template vs Behavioral Distinction → Orchestration Sequences](./template-vs-behavioral-distinction.md#orchestration-sequences-context-dependent) for comprehensive examples and distinguishing criteria.
+
 ---
 
 ### Standard 13: Project Directory Detection
