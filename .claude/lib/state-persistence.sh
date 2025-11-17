@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # state-persistence.sh - GitHub Actions-style state persistence for .claude/ workflows
 #
+# Version: 1.5.0
+# Last Modified: 2025-11-17
+#
 # This library implements selective file-based state persistence following the GitHub Actions
 # pattern ($GITHUB_OUTPUT, $GITHUB_STATE). It provides fast, reliable state management for
 # critical state items where file-based persistence outperforms stateless recalculation.
@@ -12,6 +15,7 @@ if [ -n "${STATE_PERSISTENCE_SOURCED:-}" ]; then
   return 0
 fi
 STATE_PERSISTENCE_SOURCED=1
+export STATE_PERSISTENCE_VERSION="1.5.0"
 #
 # Key Features:
 # - Selective state persistence (7 critical items identified via decision criteria)

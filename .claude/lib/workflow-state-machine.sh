@@ -2,6 +2,9 @@
 # Workflow State Machine Library
 # Provides formal state machine abstraction for orchestration commands
 #
+# Version: 2.0.0
+# Last Modified: 2025-11-17
+#
 # This library implements an explicit state machine for workflow orchestration,
 # replacing implicit phase-based tracking with clear states, transitions, and validation.
 #
@@ -22,6 +25,7 @@ if [ -n "${WORKFLOW_STATE_MACHINE_SOURCED:-}" ]; then
   return 0
 fi
 export WORKFLOW_STATE_MACHINE_SOURCED=1
+export WORKFLOW_STATE_MACHINE_VERSION="2.0.0"
 
 set -euo pipefail
 
