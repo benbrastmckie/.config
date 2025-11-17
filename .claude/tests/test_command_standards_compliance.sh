@@ -78,9 +78,12 @@ test_standard_0() {
   local cmd_file="$1"
   local cmd_name=$(basename "$cmd_file" .md)
 
-  local must_count=$(grep -c "YOU MUST\|MUST\|WILL\|SHALL" "$cmd_file" 2>/dev/null || echo "0")
-  local execute_now=$(grep -c "EXECUTE NOW" "$cmd_file" 2>/dev/null || echo "0")
-  local role_statement=$(grep -c "YOU ARE EXECUTING\|YOUR ROLE" "$cmd_file" 2>/dev/null || echo "0")
+  local must_count=$(grep -E "YOU MUST|MUST|WILL|SHALL" "$cmd_file" 2>/dev/null | wc -l)
+  must_count=${must_count:-0}
+  local execute_now=$(grep -c "EXECUTE NOW" "$cmd_file" 2>/dev/null)
+  execute_now=${execute_now:-0}
+  local role_statement=$(grep -E "YOU ARE EXECUTING|YOUR ROLE" "$cmd_file" 2>/dev/null | wc -l)
+  role_statement=${role_statement:-0}
 
   if [ "$role_statement" -gt 0 ] && [ "$execute_now" -gt 0 ]; then
     log_result "PASS" "Standard 0" "$cmd_name" "Has role statement and EXECUTE NOW directives ($must_count imperative markers)"
@@ -100,15 +103,18 @@ test_standard_13() {
   local cmd_name=$(basename "$cmd_file" .md)
 
   # Check if command has bash blocks (some commands are pure markdown)
-  local has_bash=$(grep -c '```bash' "$cmd_file" 2>/dev/null || echo "0")
+  local has_bash=$(grep -c '```bash' "$cmd_file" 2>/dev/null)
+  has_bash=${has_bash:-0}
 
   if [ "$has_bash" -eq 0 ]; then
     log_result "PASS" "Standard 13" "$cmd_name" "No bash blocks (pure markdown command)"
     return
   fi
 
-  local has_detection=$(grep -c "CLAUDE_PROJECT_DIR" "$cmd_file" 2>/dev/null || echo "0")
-  local has_git_detect=$(grep -c "git rev-parse\|\.claude" "$cmd_file" 2>/dev/null || echo "0")
+  local has_detection=$(grep -c "CLAUDE_PROJECT_DIR" "$cmd_file" 2>/dev/null)
+  has_detection=${has_detection:-0}
+  local has_git_detect=$(grep -E "git rev-parse|\.claude" "$cmd_file" 2>/dev/null | wc -l)
+  has_git_detect=${has_git_detect:-0}
 
   if [ "$has_detection" -gt 0 ] && [ "$has_git_detect" -gt 0 ]; then
     log_result "PASS" "Standard 13" "$cmd_name" "Project directory detection implemented"
@@ -142,7 +148,8 @@ test_standard_14() {
     log_result "PASS" "Standard 14" "$cmd_name" "Alternative guide file exists"
   else
     # Check if command references a guide
-    local has_guide_ref=$(grep -c "guide\|Guide" "$cmd_file" 2>/dev/null || echo "0")
+    local has_guide_ref=$(grep -c "guide\|Guide" "$cmd_file" 2>/dev/null)
+    has_guide_ref=${has_guide_ref:-0}
     if [ "$has_guide_ref" -gt 0 ]; then
       log_result "WARN" "Standard 14" "$cmd_name" "References guide but file not found at $guide_file"
     else
@@ -158,13 +165,16 @@ test_standard_15() {
   local cmd_name=$(basename "$cmd_file" .md)
 
   # Check if command sources libraries
-  local has_source=$(grep -c "^source\|source \"\|source '" "$cmd_file" 2>/dev/null || echo "0")
+  local has_source=$(grep -E "^source|source \"|source '" "$cmd_file" 2>/dev/null | wc -l)
+  has_source=${has_source:-0}
 
   if [ "$has_source" -eq 0 ]; then
     # Check if command has bash blocks that might need libraries
-    local has_bash=$(grep -c '```bash' "$cmd_file" 2>/dev/null || echo "0")
+    local has_bash=$(grep -c '```bash' "$cmd_file" 2>/dev/null)
+    has_bash=${has_bash:-0}
     if [ "$has_bash" -gt 0 ]; then
-      local has_functions=$(grep -c "sm_init\|sm_transition\|verify_file_created\|handle_state_error" "$cmd_file" 2>/dev/null || echo "0")
+      local has_functions=$(grep -E "sm_init|sm_transition|verify_file_created|handle_state_error" "$cmd_file" 2>/dev/null | wc -l)
+      has_functions=${has_functions:-0}
       if [ "$has_functions" -gt 0 ]; then
         log_result "FAIL" "Standard 15" "$cmd_name" "Uses library functions but no source statements"
       else
@@ -194,7 +204,8 @@ test_standard_16() {
   local cmd_name=$(basename "$cmd_file" .md)
 
   # Check if command has bash blocks
-  local has_bash=$(grep -c '```bash' "$cmd_file" 2>/dev/null || echo "0")
+  local has_bash=$(grep -c '```bash' "$cmd_file" 2>/dev/null)
+  has_bash=${has_bash:-0}
 
   if [ "$has_bash" -eq 0 ]; then
     log_result "PASS" "Standard 16" "$cmd_name" "No bash blocks"
@@ -202,11 +213,14 @@ test_standard_16() {
   fi
 
   # Check for return code verification patterns
-  local has_if_not=$(grep -c "if ! \|if !" "$cmd_file" 2>/dev/null || echo "0")
-  local has_pipe_or=$(grep -c " || \|exit 1" "$cmd_file" 2>/dev/null || echo "0")
+  local has_if_not=$(grep -E "if ! |if !" "$cmd_file" 2>/dev/null | wc -l)
+  has_if_not=${has_if_not:-0}
+  local has_pipe_or=$(grep -E " \|\| |exit 1" "$cmd_file" 2>/dev/null | wc -l)
+  has_pipe_or=${has_pipe_or:-0}
 
   # Check for critical function calls without verification
-  local critical_calls=$(grep -c "sm_init\|sm_transition\|source \"" "$cmd_file" 2>/dev/null || echo "0")
+  local critical_calls=$(grep -E "sm_init|sm_transition|source \"" "$cmd_file" 2>/dev/null | wc -l)
+  critical_calls=${critical_calls:-0}
 
   if [ "$has_if_not" -gt 0 ] || [ "$has_pipe_or" -gt 2 ]; then
     log_result "PASS" "Standard 16" "$cmd_name" "Return code verification present ($has_if_not if-not patterns, $has_pipe_or error checks)"
