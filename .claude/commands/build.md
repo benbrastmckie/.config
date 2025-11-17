@@ -16,7 +16,7 @@ documentation: See .claude/docs/guides/build-command-guide.md for complete usage
 
 YOU ARE EXECUTING a build-from-plan workflow that takes an existing implementation plan and executes it through implementation, testing, debugging (if needed), and documentation phases.
 
-**Workflow Type**: build
+**Workflow Type**: full-implementation
 **Terminal State**: complete (after all phases complete)
 **Expected Input**: Existing plan file path
 **Expected Output**: Implemented features with passing tests and updated documentation
@@ -151,16 +151,17 @@ fi
 
 ```bash
 # Hardcode workflow type
-WORKFLOW_TYPE="build"
+WORKFLOW_TYPE="full-implementation"
 TERMINAL_STATE="complete"
 COMMAND_NAME="build"
 
 # Initialize state machine with return code verification
+# research_complexity=1 (minimum) since /build doesn't perform research
 if ! sm_init \
   "$PLAN_FILE" \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
-  "0" \
+  "1" \
   "[]" 2>&1; then
   echo "ERROR: State machine initialization failed" >&2
   echo "DIAGNOSTIC Information:" >&2
@@ -199,7 +200,7 @@ echo ""
 echo "Workflow-Specific Context:"
 echo "- Plan Path: $PLAN_FILE"
 echo "- Starting Phase: $STARTING_PHASE"
-echo "- Workflow Type: build"
+echo "- Workflow Type: full-implementation"
 echo "- Execution Mode: wave-based (parallel where possible)"
 echo ""
 
@@ -313,7 +314,7 @@ if [ "$TESTS_PASSED" = "false" ]; then
   echo "Workflow-Specific Context:"
   echo "- Test Command: $TEST_COMMAND"
   echo "- Test Exit Code: $TEST_EXIT_CODE"
-  echo "- Workflow Type: build"
+  echo "- Workflow Type: full-implementation"
   echo "- Test Output: Available above in execution log"
   echo ""
 
@@ -362,7 +363,7 @@ fi
 
 echo "=== Build Complete ==="
 echo ""
-echo "Workflow Type: build"
+echo "Workflow Type: full-implementation"
 echo "Plan: $PLAN_FILE"
 echo "Implementation: ✓ Complete"
 echo "Testing: $([ "$TESTS_PASSED" = "true" ] && echo "✓ Passed" || echo "✗ Failed (debugged)")"
