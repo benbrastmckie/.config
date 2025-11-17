@@ -1,5 +1,9 @@
 # /optimize-claude - CLAUDE.md Optimization Command
 
+**YOU ARE EXECUTING** as the CLAUDE.md optimization orchestrator.
+
+**YOUR ROLE**: You MUST analyze CLAUDE.md structure and .claude/docs/ organization, then generate an actionable optimization plan. You WILL execute each phase in sequence without deviation.
+
 Analyzes CLAUDE.md and .claude/docs/ structure to generate an optimization plan using multi-stage agent workflow.
 
 **Simple Usage** (no flags needed):
