@@ -1841,6 +1841,93 @@ echo "$ANALYSIS" | jq '.reasoning'
 # Complexity is an estimate - adjust during implementation
 ```
 
+### Issue 9: "Failed to detect project directory" or Library Sourcing Errors
+
+**Symptom**:
+```
+ERROR: Failed to detect project directory
+DIAGNOSTIC: No git repository found and no .claude/ directory in parent tree
+SOLUTION: Run /plan from within a directory containing .claude/ subdirectory
+```
+
+OR
+
+```
+bash: /home/user/project/../lib/detect-project-dir.sh: No such file or directory
+ERROR: Failed to source workflow-state-machine.sh
+```
+
+**Root Cause**:
+
+These errors occur when the CLAUDE_PROJECT_DIR bootstrap pattern fails to detect the project directory, or when libraries cannot be sourced due to incorrect paths.
+
+**Common Causes**:
+
+1. **Running from outside project**: Command executed from a directory that is not within the project tree
+2. **Missing .claude/ directory**: Project directory does not contain `.claude/` subdirectory
+3. **Not a git repository**: Project is not initialized as a git repository AND has no `.claude/` directory
+4. **Incorrect working directory**: Current directory has changed unexpectedly during execution
+
+**Diagnosis**:
+```bash
+# Check current directory
+pwd
+
+# Check for .claude/ directory
+ls -la .claude/
+
+# Check git repository status
+git rev-parse --show-toplevel
+
+# Check parent directories for .claude/
+current_dir="$(pwd)"
+while [ "$current_dir" != "/" ]; do
+  if [ -d "$current_dir/.claude" ]; then
+    echo "Found .claude/ at: $current_dir"
+    break
+  fi
+  current_dir="$(dirname "$current_dir")"
+done
+```
+
+**Solutions**:
+
+```bash
+# Solution 1: Navigate to project directory
+cd /path/to/your/project
+/plan "feature description"
+
+# Solution 2: Initialize git repository (if not already)
+cd /path/to/your/project
+git init
+git add .
+git commit -m "Initial commit"
+/plan "feature description"
+
+# Solution 3: Create .claude/ directory structure
+cd /path/to/your/project
+mkdir -p .claude/{commands,lib,agents,docs,tests}
+/plan "feature description"
+
+# Solution 4: Verify library paths
+CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+ls -la "$CLAUDE_PROJECT_DIR/.claude/lib/workflow-state-machine.sh"
+# Should show file if properly structured
+```
+
+**Prevention**:
+
+The inline CLAUDE_PROJECT_DIR bootstrap pattern (implemented in Spec 732) eliminates most path detection issues by:
+- Using git-based detection first (fastest and most reliable)
+- Falling back to upward directory search for `.claude/`
+- Validating detection before sourcing any libraries
+- Providing clear diagnostic messages for all failure modes
+
+If you continue to see these errors after following the solutions above, check that:
+1. The project has a `.claude/lib/` directory with required libraries
+2. File permissions allow reading the library files
+3. No symbolic links are breaking the path traversal
+
 ### Debug Mode Instructions
 
 **Enable Debug Mode**:
@@ -2754,12 +2841,44 @@ The `/plan` command executes through 7 distinct phases. This section provides co
 **Implementation**: `plan.md` lines 17-184
 
 **Key Operations**:
+- **Bootstrap CLAUDE_PROJECT_DIR detection** using inline git-based discovery (no library dependencies)
 - Source libraries in dependency order (workflow state machine → state persistence → error handling → verification helpers)
 - Parse feature description and optional report paths
 - Validate absolute paths (STANDARD 13)
 - Allocate topic directory atomically using unified location detection
 - Pre-calculate plan output path BEFORE any agent invocations (critical for behavioral injection)
 - Export all paths to workflow state for cross-phase access
+
+**CLAUDE_PROJECT_DIR Bootstrap Pattern** (Spec 732):
+
+The command uses inline git-based detection to establish the project directory before sourcing any libraries. This eliminates the bootstrap paradox where we need `detect-project-dir.sh` to find the project directory, but need the project directory to source `detect-project-dir.sh`.
+
+```bash
+# Primary detection via git
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  # Fallback: search upward for .claude/ directory
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Validate and export
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory"
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+```
+
+**Why Not BASH_SOURCE?**: The pattern `SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"` fails in Claude Code because bash blocks execute as separate subprocesses without script metadata. `BASH_SOURCE[0]` is empty, causing SCRIPT_DIR to resolve to the current working directory instead of the commands directory. See [bash-block-execution-model.md](../concepts/bash-block-execution-model.md) Anti-Pattern 5 for details.
 
 **Path Pre-Calculation Strategy**: All artifact paths are calculated in Phase 0 to prevent behavioral injection vulnerabilities. This ensures agents receive fully-formed output paths as input, eliminating path negotiation during execution.
 
