@@ -24,12 +24,33 @@ dependent-commands: implement, expand, revise
 set +H  # Disable history expansion to prevent bad substitution errors
 
 # STANDARD 13: Detect project directory using CLAUDE_PROJECT_DIR (git-based detection)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if ! source "$SCRIPT_DIR/../lib/detect-project-dir.sh" 2>&1; then
+# Bootstrap CLAUDE_PROJECT_DIR detection (inline, no library dependency)
+# This eliminates the bootstrap paradox where we need detect-project-dir.sh to find
+# the project directory, but need the project directory to source detect-project-dir.sh
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  # Fallback: search upward for .claude/ directory
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Validate CLAUDE_PROJECT_DIR
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
   echo "ERROR: Failed to detect project directory"
-  echo "DIAGNOSTIC: Check that detect-project-dir.sh exists at: $SCRIPT_DIR/../lib/"
+  echo "DIAGNOSTIC: No git repository found and no .claude/ directory in parent tree"
+  echo "SOLUTION: Run /plan from within a directory containing .claude/ subdirectory"
   exit 1
 fi
+
+# Export for use by sourced libraries
+export CLAUDE_PROJECT_DIR
 
 # STANDARD 15: Source libraries in dependency order
 UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
