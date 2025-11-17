@@ -245,6 +245,12 @@ fi
 echo "✓ Implementation phase complete"
 echo ""
 
+# Persist variables across bash blocks (subprocess isolation)
+append_workflow_state "PLAN_FILE" "$PLAN_FILE"
+append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "STARTING_PHASE" "$STARTING_PHASE"
+append_workflow_state "COMMIT_COUNT" "$COMMIT_COUNT"
+
 # Persist completed state with return code verification
 if ! save_completed_states_to_state 2>&1; then
   echo "ERROR: Failed to persist completed state" >&2
@@ -255,6 +261,9 @@ fi
 ## Part 4: Testing Phase
 
 ```bash
+# Load workflow state from Part 3 (subprocess isolation)
+load_workflow_state "${WORKFLOW_ID:-$$}" false
+
 # Transition to test state with return code verification
 if ! sm_transition "$STATE_TEST" 2>&1; then
   echo "ERROR: State transition to TEST failed" >&2
@@ -307,6 +316,11 @@ fi
 
 echo ""
 
+# Persist test results for Part 5 (subprocess isolation)
+append_workflow_state "TESTS_PASSED" "$TESTS_PASSED"
+append_workflow_state "TEST_COMMAND" "$TEST_COMMAND"
+append_workflow_state "TEST_EXIT_CODE" "${TEST_EXIT_CODE:-0}"
+
 # Persist completed state with return code verification
 if ! save_completed_states_to_state 2>&1; then
   echo "ERROR: Failed to persist completed state" >&2
@@ -317,6 +331,9 @@ fi
 ## Part 5: Conditional Branching (Debug or Document)
 
 ```bash
+# Load workflow state from Part 4 (subprocess isolation)
+load_workflow_state "${WORKFLOW_ID:-$$}" false
+
 # Conditional phase based on test results
 if [ "$TESTS_PASSED" = "false" ]; then
   # Tests failed → debug phase with return code verification
@@ -410,6 +427,9 @@ fi
 ## Part 6: Completion & Cleanup
 
 ```bash
+# Load workflow state from Part 5 (subprocess isolation)
+load_workflow_state "${WORKFLOW_ID:-$$}" false
+
 # Transition to complete state with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   echo "ERROR: State transition to COMPLETE failed" >&2
