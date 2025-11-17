@@ -190,23 +190,45 @@ fi
 echo "=== Phase 1: Implementation ==="
 echo ""
 
-# IMPERATIVE AGENT INVOCATION
-echo "EXECUTE NOW: USE the Task tool to invoke implementer-coordinator agent"
-echo ""
-echo "YOU MUST:"
-echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md"
-echo "2. Return completion signal: IMPLEMENTATION_COMPLETE: \${PHASE_COUNT}"
-echo ""
-echo "Workflow-Specific Context:"
-echo "- Plan Path: $PLAN_FILE"
-echo "- Starting Phase: $STARTING_PHASE"
-echo "- Workflow Type: full-implementation"
-echo "- Execution Mode: wave-based (parallel where possible)"
-echo ""
+# Pre-calculate topic path from plan file
+TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
+```
 
-# FAIL-FAST VERIFICATION
-echo ""
-echo "Verifying implementation..."
+Task {
+  subagent_type: "general-purpose"
+  description: "Execute implementation plan with wave-based parallelization"
+  prompt: |
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md
+
+    You are executing the implementation phase for: build workflow
+
+    Input:
+    - plan_path: $PLAN_FILE
+    - topic_path: $TOPIC_PATH
+    - artifact_paths:
+      - reports: ${TOPIC_PATH}/reports/
+      - plans: ${TOPIC_PATH}/plans/
+      - summaries: ${TOPIC_PATH}/summaries/
+      - debug: ${TOPIC_PATH}/debug/
+      - outputs: ${TOPIC_PATH}/outputs/
+      - checkpoints: ${HOME}/.claude/data/checkpoints/
+
+    Workflow-Specific Context:
+    - Starting Phase: ${STARTING_PHASE}
+    - Workflow Type: full-implementation
+    - Execution Mode: wave-based (parallel where possible)
+
+    Execute all implementation phases according to the plan, following wave-based
+    execution with dependency analysis.
+
+    Return completion signal in format:
+    IMPLEMENTATION_COMPLETE: {PHASE_COUNT}
+}
+
+```bash
+# MANDATORY VERIFICATION
+echo "Verifying implementation completion..."
 
 # Check if any files were modified (basic implementation check)
 if git diff --quiet && git diff --cached --quiet; then
@@ -305,17 +327,50 @@ if [ "$TESTS_PASSED" = "false" ]; then
   echo "=== Phase 3: Debug (Tests Failed) ==="
   echo ""
 
-  echo "EXECUTE NOW: USE the Task tool to invoke debug-analyst agent"
-  echo ""
-  echo "YOU MUST:"
-  echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md"
-  echo "2. Return completion signal: DEBUG_COMPLETE: \${FIX_DESCRIPTION}"
-  echo ""
-  echo "Workflow-Specific Context:"
-  echo "- Test Command: $TEST_COMMAND"
-  echo "- Test Exit Code: $TEST_EXIT_CODE"
-  echo "- Workflow Type: full-implementation"
-  echo "- Test Output: Available above in execution log"
+  # Pre-calculate debug directory
+  DEBUG_DIR="${TOPIC_PATH}/debug"
+  mkdir -p "$DEBUG_DIR"
+```
+
+Task {
+  subagent_type: "debug-analyst"
+  description: "Debug failed tests in build workflow"
+  prompt: |
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
+
+    You are conducting debugging analysis for: build workflow
+
+    Input:
+    - Issue Description: Tests failed with exit code ${TEST_EXIT_CODE}
+    - Failed Phase: testing
+    - Test Command: ${TEST_COMMAND}
+    - Test Exit Code: ${TEST_EXIT_CODE}
+    - Debug Directory: ${DEBUG_DIR}
+    - Workflow Type: full-implementation-debug
+
+    Execute debugging analysis according to behavioral guidelines and return completion signal:
+    DEBUG_COMPLETE: ${DEBUG_REPORT_PATH}
+}
+
+```bash
+  # MANDATORY VERIFICATION
+  echo "Verifying debug artifacts..."
+
+  if [ ! -d "$DEBUG_DIR" ]; then
+    echo "ERROR: Debug phase failed to create debug directory" >&2
+    echo "DIAGNOSTIC: Expected directory: $DEBUG_DIR" >&2
+    exit 1
+  fi
+
+  if [ -z "$(find "$DEBUG_DIR" -name '*.md' 2>/dev/null)" ]; then
+    echo "ERROR: Debug phase failed to create debug report" >&2
+    echo "DIAGNOSTIC: Directory exists but no .md files found: $DEBUG_DIR" >&2
+    exit 1
+  fi
+
+  DEBUG_REPORT=$(find "$DEBUG_DIR" -name '*.md' -type f | head -1)
+  echo "✓ Debug analysis complete (report: $DEBUG_REPORT)"
   echo ""
 
   echo "NOTE: After debug, you may re-run /build to retry tests"
