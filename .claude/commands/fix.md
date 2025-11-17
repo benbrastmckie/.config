@@ -10,6 +10,7 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
+documentation: See .claude/docs/guides/fix-command-guide.md for complete usage guide
 ---
 
 # /fix - Debug-Focused Workflow Command
