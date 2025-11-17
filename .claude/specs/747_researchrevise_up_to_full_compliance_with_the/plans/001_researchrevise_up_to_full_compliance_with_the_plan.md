@@ -142,15 +142,15 @@ dependencies: [1]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Wrap sm_init() in /build.md (lines 154-162) with return code verification and diagnostic output
-- [ ] Wrap sm_init() in /fix.md (lines 98-105) with return code verification and diagnostic output
-- [ ] Wrap sm_init() in /research-report.md (lines 105-114) with return code verification and diagnostic output
-- [ ] Wrap sm_init() in /research-plan.md (lines 106-115) with return code verification and diagnostic output
-- [ ] Wrap sm_init() in /research-revise.md (lines 131-138) with return code verification and diagnostic output
-- [ ] Add return code verification for all sm_transition() calls across 5 commands
-- [ ] Add return code verification for all save_completed_states_to_state() calls across 5 commands
-- [ ] Add return code verification for check_library_requirements() calls across 5 commands
-- [ ] Create diagnostic output template: parameters used, workflow type, complexity, possible causes, library compatibility
+- [x] Wrap sm_init() in /build.md (lines 154-162) with return code verification and diagnostic output
+- [x] Wrap sm_init() in /fix.md (lines 98-105) with return code verification and diagnostic output
+- [x] Wrap sm_init() in /research-report.md (lines 105-114) with return code verification and diagnostic output
+- [x] Wrap sm_init() in /research-plan.md (lines 106-115) with return code verification and diagnostic output
+- [x] Wrap sm_init() in /research-revise.md (lines 131-138) with return code verification and diagnostic output
+- [x] Add return code verification for all sm_transition() calls across 5 commands
+- [x] Add return code verification for all save_completed_states_to_state() calls across 5 commands
+- [x] Add return code verification for check_library_requirements() calls across 5 commands
+- [x] Create diagnostic output template: parameters used, workflow type, complexity, possible causes, library compatibility
 
 Testing:
 ```bash

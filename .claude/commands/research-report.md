@@ -101,14 +101,25 @@ WORKFLOW_TYPE="research-only"
 TERMINAL_STATE="research"
 COMMAND_NAME="research-report"
 
-# Initialize state machine with 5 parameters
+# Initialize state machine with 5 parameters and return code verification
 # Parameters: description, command_name, workflow_type, research_complexity, research_topics_json
-sm_init \
+if ! sm_init \
   "$WORKFLOW_DESCRIPTION" \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
-  "{}"  # Empty topics JSON (populated during research)
+  "{}" 2>&1; then  # Empty topics JSON (populated during research)
+  echo "ERROR: State machine initialization failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Workflow Description: $WORKFLOW_DESCRIPTION" >&2
+  echo "  - Command Name: $COMMAND_NAME" >&2
+  echo "  - Workflow Type: $WORKFLOW_TYPE" >&2
+  echo "  - Research Complexity: $RESEARCH_COMPLEXITY" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Library version incompatibility (require workflow-state-machine.sh >=2.0.0)" >&2
+  echo "  - State file corruption in ~/.claude/data/state/" >&2
+  exit 1
+fi
 
 echo "✓ State machine initialized"
 echo ""
@@ -117,8 +128,11 @@ echo ""
 ## Part 3: Research Phase Execution
 
 ```bash
-# Transition to research state
-sm_transition "$STATE_RESEARCH"
+# Transition to research state with return code verification
+if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+  echo "ERROR: State transition to RESEARCH failed" >&2
+  exit 1
+fi
 echo "=== Phase 1: Research ==="
 echo ""
 
@@ -186,15 +200,21 @@ REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
 echo "✓ Research phase complete ($REPORT_COUNT reports created)"
 echo ""
 
-# Persist completed state (call after every sm_transition)
-save_completed_states_to_state
+# Persist completed state (call after every sm_transition) with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
+  exit 1
+fi
 ```
 
 ## Part 4: Completion & Cleanup
 
 ```bash
-# Research-only workflow: terminate after research
-sm_transition "$STATE_COMPLETE"
+# Research-only workflow: terminate after research with return code verification
+if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  echo "ERROR: State transition to COMPLETE failed" >&2
+  exit 1
+fi
 
 echo "=== Research Complete ==="
 echo ""
