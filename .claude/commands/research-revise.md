@@ -130,7 +130,7 @@ if ! sm_init \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
-  "{}" 2>&1; then
+  "[]" 2>&1; then
   echo "ERROR: State machine initialization failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Revision Description: $REVISION_DESCRIPTION" >&2

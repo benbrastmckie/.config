@@ -112,7 +112,7 @@ if ! sm_init \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
-  "{}" 2>&1; then  # Empty topics JSON (populated during research)
+  "[]" 2>&1; then  # Empty topics JSON array (populated during research)
   echo "ERROR: State machine initialization failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Feature Description: $FEATURE_DESCRIPTION" >&2
