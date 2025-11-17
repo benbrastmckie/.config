@@ -4,8 +4,8 @@
 - **Date**: 2025-11-17
 - **Feature**: Bring /build, /fix, /research-report, /research-plan, /research-revise to full compliance with .claude/docs/ standards
 - **Scope**: Standards compliance remediation for 5 Plan 743 commands across 7 standards with 68-76 hour effort
-- **Estimated Phases**: 6
-- **Estimated Hours**: 65
+- **Estimated Phases**: 7
+- **Estimated Hours**: 73
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Structure Level**: 0
 - **Complexity Score**: 142.5
@@ -35,6 +35,7 @@ The Plan 743 commands (/build, /fix, /research-report, /research-plan, /research
 - [ ] Standard 15 (Library Sourcing): All commands use identical dependency-ordered sourcing pattern
 - [ ] Standard 16 (Return Code Verification): All critical functions (sm_init, sm_transition, save_completed_states_to_state) wrapped with error handling
 - [ ] Behavioral compliance test coverage ≥80% for all commands and critical agents
+- [ ] Automated validation for all 16 architecture standards integrated into CI/CD
 - [ ] File creation reliability 100% (verified through behavioral tests)
 - [ ] Execution reliability 100% (no silent failures from unverified return codes)
 - [ ] Guide file quality metrics: 100% section completeness across all 5 guides
@@ -97,19 +98,19 @@ dependencies: []
 **Complexity**: High
 
 Tasks:
-- [x] Replace directory-level verification in /fix.md (lines 144-158) with file-level REPORT_PATH check
-- [x] Replace directory-level verification in /research-report.md (lines 161-178) with file-level REPORT_PATH check
-- [x] Replace directory-level verification in /research-plan.md (lines 162-177) with file-level REPORT_PATH check
-- [x] Add file size validation (minimum 100 bytes) to all verification checkpoints
-- [x] Add diagnostic output on verification failure: expected path, agent name, troubleshooting path
-- [x] Ensure all artifact paths pre-calculated before agent invocations and injected into prompts
-- [x] Fix /research-revise.md (lines 260-273) to fail on unmodified plan instead of WARNING
-- [x] Verify /build.md git-based verification replaced with explicit artifact path checks
+- [ ] Replace directory-level verification in /fix.md (lines 144-158) with file-level REPORT_PATH check
+- [ ] Replace directory-level verification in /research-report.md (lines 161-178) with file-level REPORT_PATH check
+- [ ] Replace directory-level verification in /research-plan.md (lines 162-177) with file-level REPORT_PATH check
+- [ ] Add file size validation (minimum 100 bytes) to all verification checkpoints
+- [ ] Add diagnostic output on verification failure: expected path, agent name, troubleshooting path
+- [ ] Ensure all artifact paths pre-calculated before agent invocations and injected into prompts
+- [ ] Fix /research-revise.md (lines 260-273) to fail on unmodified plan instead of WARNING
+- [ ] Verify /build.md git-based verification replaced with explicit artifact path checks
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [x] Update this plan file: Mark completed tasks with [x]
-- [x] Verify changes with git diff
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 Testing:
@@ -142,15 +143,15 @@ dependencies: [1]
 **Complexity**: Medium
 
 Tasks:
-- [x] Wrap sm_init() in /build.md (lines 154-162) with return code verification and diagnostic output
-- [x] Wrap sm_init() in /fix.md (lines 98-105) with return code verification and diagnostic output
-- [x] Wrap sm_init() in /research-report.md (lines 105-114) with return code verification and diagnostic output
-- [x] Wrap sm_init() in /research-plan.md (lines 106-115) with return code verification and diagnostic output
-- [x] Wrap sm_init() in /research-revise.md (lines 131-138) with return code verification and diagnostic output
-- [x] Add return code verification for all sm_transition() calls across 5 commands
-- [x] Add return code verification for all save_completed_states_to_state() calls across 5 commands
-- [x] Add return code verification for check_library_requirements() calls across 5 commands
-- [x] Create diagnostic output template: parameters used, workflow type, complexity, possible causes, library compatibility
+- [ ] Wrap sm_init() in /build.md (lines 154-162) with return code verification and diagnostic output
+- [ ] Wrap sm_init() in /fix.md (lines 98-105) with return code verification and diagnostic output
+- [ ] Wrap sm_init() in /research-report.md (lines 105-114) with return code verification and diagnostic output
+- [ ] Wrap sm_init() in /research-plan.md (lines 106-115) with return code verification and diagnostic output
+- [ ] Wrap sm_init() in /research-revise.md (lines 131-138) with return code verification and diagnostic output
+- [ ] Add return code verification for all sm_transition() calls across 5 commands
+- [ ] Add return code verification for all save_completed_states_to_state() calls across 5 commands
+- [ ] Add return code verification for check_library_requirements() calls across 5 commands
+- [ ] Create diagnostic output template: parameters used, workflow type, complexity, possible causes, library compatibility
 
 Testing:
 ```bash
@@ -183,13 +184,13 @@ dependencies: [1]
 **Complexity**: Low
 
 Tasks:
-- [x] Update /build.md (lines 47-52) to standard sourcing order: state-persistence.sh, workflow-state-machine.sh, library-version-check.sh, error-handling.sh, checkpoint-utils.sh
-- [x] Update /fix.md (lines 80-83) to move error-handling.sh before library-version-check.sh per standard order
-- [x] Update /research-report.md (lines 85-90) to move error-handling.sh before library-version-check.sh
-- [x] Update /research-plan.md (lines 86-91) to move error-handling.sh before library-version-check.sh
-- [x] Update /research-revise.md (lines 106-109) to move error-handling.sh before library-version-check.sh
-- [x] Add inline comments explaining dependency order: "Source libraries in dependency order (Standard 15)"
-- [x] Add section comments: "# 1. State machine foundation", "# 2. Library version checking", "# 3. Error handling", "# 4. Additional utilities"
+- [ ] Update /build.md (lines 47-52) to standard sourcing order: state-persistence.sh, workflow-state-machine.sh, library-version-check.sh, error-handling.sh, checkpoint-utils.sh
+- [ ] Update /fix.md (lines 80-83) to move error-handling.sh before library-version-check.sh per standard order
+- [ ] Update /research-report.md (lines 85-90) to move error-handling.sh before library-version-check.sh
+- [ ] Update /research-plan.md (lines 86-91) to move error-handling.sh before library-version-check.sh
+- [ ] Update /research-revise.md (lines 106-109) to move error-handling.sh before library-version-check.sh
+- [ ] Add inline comments explaining dependency order: "Source libraries in dependency order (Standard 15)"
+- [ ] Add section comments: "# 1. State machine foundation", "# 2. Library version checking", "# 3. Error handling", "# 4. Additional utilities"
 
 Testing:
 ```bash
@@ -221,26 +222,26 @@ dependencies: [1]
 **Complexity**: Medium
 
 Tasks:
-- [x] Transform /build.md implementer-coordinator invocation (lines 173-189) to Task template with subagent_type, description, structured prompt
-- [x] Transform /build.md debug-analyst invocation to Task template (if applicable)
-- [x] Transform /build.md documentation invocation to Task template (if applicable)
-- [x] Transform /fix.md research-specialist invocation (lines 129-142) to Task template, remove behavioral instruction "Focus research on..."
-- [x] Transform /fix.md plan-architect invocation to Task template (if applicable)
-- [x] Transform /fix.md debug-analyst invocation to Task template (if applicable)
-- [x] Transform /research-report.md research-specialist invocation (lines 134-154) to Task template
-- [x] Transform /research-plan.md research-specialist invocation to Task template
-- [x] Transform /research-plan.md plan-architect invocation to Task template
+- [ ] Transform /build.md implementer-coordinator invocation (lines 173-189) to Task template with subagent_type, description, structured prompt
+- [ ] Transform /build.md debug-analyst invocation to Task template (if applicable)
+- [ ] Transform /build.md documentation invocation to Task template (if applicable)
+- [ ] Transform /fix.md research-specialist invocation (lines 129-142) to Task template, remove behavioral instruction "Focus research on..."
+- [ ] Transform /fix.md plan-architect invocation to Task template (if applicable)
+- [ ] Transform /fix.md debug-analyst invocation to Task template (if applicable)
+- [ ] Transform /research-report.md research-specialist invocation (lines 134-154) to Task template
+- [ ] Transform /research-plan.md research-specialist invocation to Task template
+- [ ] Transform /research-plan.md plan-architect invocation to Task template
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [x] Update this plan file: Mark completed tasks with [x]
-- [x] Verify changes with git diff
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [x] Transform /research-revise.md research-specialist invocation to Task template, remove behavioral instruction "focused on new insights"
-- [x] Transform /research-revise.md plan-architect invocation to Task template
-- [x] Verify all prompts contain only workflow-specific context (no behavioral instructions like "Focus on...", "Follow Standard 0.5...")
-- [x] Verify all Task blocks include subagent_type: "general-purpose", description, and structured prompt with context parameters
+- [ ] Transform /research-revise.md research-specialist invocation to Task template, remove behavioral instruction "focused on new insights"
+- [ ] Transform /research-revise.md plan-architect invocation to Task template
+- [ ] Verify all prompts contain only workflow-specific context (no behavioral instructions like "Focus on...", "Follow Standard 0.5...")
+- [ ] Verify all Task blocks include subagent_type: "general-purpose", description, and structured prompt with context parameters
 
 Testing:
 ```bash
@@ -274,28 +275,28 @@ dependencies: []
 **Complexity**: High
 
 Tasks:
-- [x] Create /build-command-guide.md (1,000 lines estimated) using _template-command-guide.md baseline
-- [x] Populate /build-command-guide.md: Overview (purpose, when to use, when NOT to use), Architecture (state machine integration, library dependencies, workflow phases), Usage Examples (basic/advanced/edge with output), Advanced Topics (performance, customization, workflow integration), Troubleshooting (checkpoint stale errors, state machine failures, library version issues), See Also (cross-references)
-- [x] Create /fix-command-guide.md (700 lines estimated) using template baseline
-- [x] Populate /fix-command-guide.md with systematic section coverage
-- [x] Create /research-report-command-guide.md (500 lines estimated) using template baseline
-- [x] Populate /research-report-command-guide.md with systematic section coverage
-- [x] Create /research-plan-command-guide.md (500 lines estimated) using template baseline
-- [x] Populate /research-plan-command-guide.md with systematic section coverage
-- [x] Create /research-revise-command-guide.md (500 lines estimated) using template baseline
-- [x] Populate /research-revise-command-guide.md with systematic section coverage
+- [ ] Create /build-command-guide.md (1,000 lines estimated) using _template-command-guide.md baseline
+- [ ] Populate /build-command-guide.md: Overview (purpose, when to use, when NOT to use), Architecture (state machine integration, library dependencies, workflow phases), Usage Examples (basic/advanced/edge with output), Advanced Topics (performance, customization, workflow integration), Troubleshooting (checkpoint stale errors, state machine failures, library version issues), See Also (cross-references)
+- [ ] Create /fix-command-guide.md (700 lines estimated) using template baseline
+- [ ] Populate /fix-command-guide.md with systematic section coverage
+- [ ] Create /research-report-command-guide.md (500 lines estimated) using template baseline
+- [ ] Populate /research-report-command-guide.md with systematic section coverage
+- [ ] Create /research-plan-command-guide.md (500 lines estimated) using template baseline
+- [ ] Populate /research-plan-command-guide.md with systematic section coverage
+- [ ] Create /research-revise-command-guide.md (500 lines estimated) using template baseline
+- [ ] Populate /research-revise-command-guide.md with systematic section coverage
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [x] Update this plan file: Mark completed tasks with [x]
-- [x] Verify changes with git diff
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [x] Add bidirectional cross-references: executable → guide in command frontmatter ("Documentation: See .claude/docs/guides/...")
-- [x] Add bidirectional cross-references: guide → executable in guide header ("Executable: .claude/commands/...")
-- [x] Verify all guides include 7 mandatory sections: Table of Contents, Overview, Architecture, Usage Examples, Advanced Topics, Troubleshooting, See Also
-- [x] Verify all guides follow present-focused writing standards (no historical commentary, temporal markers, migration language)
-- [x] Run validate_executable_doc_separation.sh to verify file existence, cross-reference integrity, size limits
+- [ ] Add bidirectional cross-references: executable → guide in command frontmatter ("Documentation: See .claude/docs/guides/...")
+- [ ] Add bidirectional cross-references: guide → executable in guide header ("Executable: .claude/commands/...")
+- [ ] Verify all guides include 7 mandatory sections: Table of Contents, Overview, Architecture, Usage Examples, Advanced Topics, Troubleshooting, See Also
+- [ ] Verify all guides follow present-focused writing standards (no historical commentary, temporal markers, migration language)
+- [ ] Run validate_executable_doc_separation.sh to verify file existence, cross-reference integrity, size limits
 
 Testing:
 ```bash
@@ -329,28 +330,28 @@ dependencies: [1, 2, 3, 4]
 **Complexity**: High
 
 Tasks:
-- [x] Create validate_behavioral_compliance.sh (8 hours) with 6 test pattern categories: file creation compliance, completion signal format, agent delegation rate, context reduction validation
-- [x] Apply behavioral tests to all 16 command files for verification checkpoint presence
-- [x] Apply behavioral tests to measure agent delegation rate (>90% target)
-- [x] Apply behavioral tests to validate context reduction (90-95% target from 11,500 tokens → 700 tokens)
-- [x] Extend validate_orchestrator_commands.sh (4 hours) to test actual agent invocation and file creation (beyond structural validation)
-- [x] Create test_agent_behavioral_compliance.sh (8 hours) using test_optimize_claude_agents.sh patterns (369 lines reference)
-- [x] Test priority agents: research-specialist, implementer-coordinator, plan-architect, revision-specialist
-- [x] Validate STEP structure, imperative language, verification checkpoints, file size limits (40KB max per agent)
-- [x] Integrate all new test suites into run_all_tests.sh with pollution detection
+- [ ] Create validate_behavioral_compliance.sh (8 hours) with 6 test pattern categories: file creation compliance, completion signal format, agent delegation rate, context reduction validation
+- [ ] Apply behavioral tests to all 16 command files for verification checkpoint presence
+- [ ] Apply behavioral tests to measure agent delegation rate (>90% target)
+- [ ] Apply behavioral tests to validate context reduction (90-95% target from 11,500 tokens → 700 tokens)
+- [ ] Extend validate_orchestrator_commands.sh (4 hours) to test actual agent invocation and file creation (beyond structural validation)
+- [ ] Create test_agent_behavioral_compliance.sh (8 hours) using test_optimize_claude_agents.sh patterns (369 lines reference)
+- [ ] Test priority agents: research-specialist, implementer-coordinator, plan-architect, revision-specialist
+- [ ] Validate STEP structure, imperative language, verification checkpoints, file size limits (40KB max per agent)
+- [ ] Integrate all new test suites into run_all_tests.sh with pollution detection
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [x] Update this plan file: Mark completed tasks with [x]
-- [x] Verify changes with git diff
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [x] Test file creation compliance pattern: verify agents create files at injected paths with minimum file size
-- [x] Test completion signal format pattern: verify agents return properly formatted signals
-- [x] Test STEP structure pattern: verify agents have numbered sequential STEPs
-- [x] Test imperative language pattern: verify agents use MUST/WILL/SHALL (not should/may/can)
-- [x] Test verification checkpoints pattern: verify agents have mandatory verification sections
-- [x] Run full test suite and verify 80%+ pass rate
+- [ ] Test file creation compliance pattern: verify agents create files at injected paths with minimum file size
+- [ ] Test completion signal format pattern: verify agents return properly formatted signals
+- [ ] Test STEP structure pattern: verify agents have numbered sequential STEPs
+- [ ] Test imperative language pattern: verify agents use MUST/WILL/SHALL (not should/may/can)
+- [ ] Test verification checkpoints pattern: verify agents have mandatory verification sections
+- [ ] Run full test suite and verify 80%+ pass rate
 
 Testing:
 ```bash
@@ -377,6 +378,55 @@ Testing:
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
+### Phase 7: Establish CI/CD Integration and Coverage Tracking
+dependencies: [6]
+
+**Objective**: Automate test execution in CI pipeline to prevent regressions and enforce standards compliance
+
+**Complexity**: Medium
+
+Tasks:
+- [ ] Create .github/workflows/test.yml (4 hours) with triggers on pull requests and pushes to main
+- [ ] Configure workflow to run run_all_tests.sh with full validation
+- [ ] Add test result reporting as PR comments
+- [ ] Add merge blocking if tests fail
+- [ ] Add coverage report generation
+- [ ] Create pre-commit hooks (2 hours) to run fast tests (<30s) before commit
+- [ ] Add pre-commit validation for changed files against standards
+- [ ] Add pre-commit prevention of commits with obvious violations
+- [ ] Add nightly regression test schedule (2 hours) for comprehensive validation
+- [ ] Configure nightly tests to run end-to-end workflows
+- [ ] Add nightly failure reporting to maintainers
+- [ ] Create coverage_report.sh script to calculate coverage percentages (commands, agents, standards, libraries)
+- [ ] Generate HTML coverage reports showing uncovered files and functions
+- [ ] Track coverage trends over commits
+- [ ] Integrate coverage reporting with CI/CD to publish reports as artifacts
+- [ ] Set coverage thresholds: commands 100%, agents 80%, standards 100%, libraries 80%
+- [ ] Configure CI to fail if coverage drops below thresholds
+
+Testing:
+```bash
+# Test CI workflow locally
+act -j test  # Requires act CLI tool
+
+# Verify pre-commit hooks work
+git add .
+git commit -m "test: verify pre-commit hooks"
+# Expected: Fast tests run before commit completes
+
+# Generate coverage report
+.claude/scripts/coverage_report.sh
+# Expected: HTML report generated, coverage percentages calculated
+```
+
+**Expected Duration**: 8 hours
+
+**Phase 7 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `feat(747): complete Phase 7 - CI/CD Integration and Coverage Tracking`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
 
 ## Testing Strategy
 
@@ -405,8 +455,10 @@ Testing:
 - Libraries: 80% (public APIs covered)
 
 ### Test Execution
+- Pre-commit: Fast tests (<30s) via hooks
+- Pull Request: Full test suite via .github/workflows/test.yml
+- Nightly: Comprehensive validation including end-to-end tests
 - Manual: .claude/tests/run_all_tests.sh for local development
-- Integration: Tests executed as part of existing test infrastructure
 
 ## Documentation Requirements
 
@@ -440,6 +492,7 @@ Testing:
 ### Internal Dependencies
 - Phase 1 (Verification Checkpoints) blocks Phases 2, 3, 4 (core reliability foundation)
 - Phase 6 (Test Suites) depends on Phases 1-4 completing (tests verify compliance)
+- Phase 7 (CI/CD) depends on Phase 6 (test infrastructure must exist)
 - Phase 5 (Guide Files) independent, can run parallel to other phases
 
 ### Prerequisite Knowledge
@@ -448,7 +501,3 @@ Testing:
 - Standard 16 (Return Code Verification) error handling patterns
 - Testing protocols from testing-protocols.md (test isolation, pollution detection)
 - Writing standards from writing-standards.md (present-focused, no historical commentary)
-
-## Revision History
-
-- **2025-11-17**: Remove Phase 7 (CI/CD Integration and Coverage Tracking)

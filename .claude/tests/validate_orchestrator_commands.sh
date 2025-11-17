@@ -350,6 +350,104 @@ validate_workflow_specific_patterns() {
 }
 
 # ==============================================================================
+# Feature 7: Actual Agent Invocation Testing (Extended)
+# ==============================================================================
+
+validate_actual_agent_invocation() {
+    local cmd="$1"
+    local cmd_file=".claude/commands/${cmd}.md"
+
+    log_test "Validating actual agent invocation: $cmd"
+
+    local invocation_checks=0
+
+    # Check 1: Task tool invocation present
+    if grep -q "Task {" "$cmd_file" || grep -q "USE the Task tool" "$cmd_file"; then
+        ((invocation_checks++))
+    else
+        log_fail "$cmd: Missing Task tool invocation"
+    fi
+
+    # Check 2: subagent_type specified
+    if grep -q "subagent_type:" "$cmd_file" || grep -q "general-purpose" "$cmd_file"; then
+        ((invocation_checks++))
+    else
+        log_fail "$cmd: Missing subagent_type specification"
+    fi
+
+    # Check 3: Agent file reference
+    if grep -q "\.claude/agents/" "$cmd_file"; then
+        ((invocation_checks++))
+    else
+        log_fail "$cmd: Missing agent file reference"
+    fi
+
+    # Check 4: Behavioral file reading enforced
+    if grep -q "Read and follow" "$cmd_file" || grep -q "MUST read" "$cmd_file"; then
+        ((invocation_checks++))
+    else
+        log_fail "$cmd: Missing behavioral file reading enforcement"
+    fi
+
+    if [ $invocation_checks -ge 3 ]; then
+        log_pass "$cmd: Agent invocation structure validated ($invocation_checks/4 checks)"
+        return 0
+    else
+        log_fail "$cmd: Incomplete agent invocation structure ($invocation_checks/4 checks)"
+        return 1
+    fi
+}
+
+# ==============================================================================
+# Feature 8: File Creation Validation (Extended)
+# ==============================================================================
+
+validate_file_creation_pattern() {
+    local cmd="$1"
+    local cmd_file=".claude/commands/${cmd}.md"
+
+    log_test "Validating file creation pattern: $cmd"
+
+    local creation_checks=0
+
+    # Check 1: Artifact paths pre-calculated
+    if grep -q "_PATH=" "$cmd_file"; then
+        ((creation_checks++))
+    else
+        log_fail "$cmd: Missing pre-calculated artifact paths"
+    fi
+
+    # Check 2: Paths injected into agent prompts
+    if grep -q "Report Path:\|Plan Path:\|Output Path:" "$cmd_file"; then
+        ((creation_checks++))
+    else
+        log_fail "$cmd: Missing path injection into prompts"
+    fi
+
+    # Check 3: File-level verification (not directory-level)
+    if grep -q 'if \[ ! -f "\$.*_PATH" \]' "$cmd_file"; then
+        ((creation_checks++))
+    else
+        log_fail "$cmd: Missing file-level verification checkpoints"
+    fi
+
+    # Check 4: No directory-level pattern (anti-pattern)
+    if ! grep -q "find.*-name '\*.md'" "$cmd_file"; then
+        ((creation_checks++))
+    else
+        log_fail "$cmd: Contains directory-level verification (anti-pattern)"
+    fi
+
+    if [ $creation_checks -ge 3 ]; then
+        log_pass "$cmd: File creation pattern validated ($creation_checks/4 checks)"
+        return 0
+    else
+        log_fail "$cmd: Incomplete file creation pattern ($creation_checks/4 checks)"
+        return 1
+    fi
+}
+
+# ==============================================================================
 # Main Validation Loop
 # ==============================================================================
 
@@ -368,6 +466,8 @@ for cmd in "${COMMANDS[@]}"; do
     validate_library_requirements "$cmd" || true
     validate_verification_checkpoints "$cmd" || true
     validate_workflow_specific_patterns "$cmd" || true
+    validate_actual_agent_invocation "$cmd" || true
+    validate_file_creation_pattern "$cmd" || true
 
     echo ""
 done
