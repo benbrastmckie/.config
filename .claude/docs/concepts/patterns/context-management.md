@@ -216,6 +216,190 @@ Total: 5,400 tokens (22% context usage)
 Result: Completed 7-phase workflow in <30% context budget
 ```
 
+## Context Usage Targets and Monitoring
+
+### Usage Target: <30% Throughout Workflow Lifecycle
+
+**Primary Goal**: Maintain context usage below 30% across entire workflow to ensure:
+- Sufficient headroom for unexpected complexity
+- Ability to recover from errors without context overflow
+- Smooth workflow progression without pruning emergencies
+
+**Measurement Points**:
+```bash
+# Check current context usage
+/context  # Should show ≤30% during normal operation
+
+# Automated monitoring (in workflow commands)
+CURRENT_USAGE=$(get_context_usage_percentage)
+if [ "$CURRENT_USAGE" -gt 30 ]; then
+  log_warning "Context usage: ${CURRENT_USAGE}% (target: <30%)"
+  trigger_aggressive_pruning
+fi
+```
+
+### Warning Thresholds
+
+**Green Zone** (<25%): Normal operation
+- Continue workflow without intervention
+- Standard pruning policies apply
+- No warnings needed
+
+**Yellow Zone** (25-30%): Approaching limit
+- Log informational message
+- Increase pruning frequency
+- Consider phase simplification for remaining work
+
+**Orange Zone** (30-40%): Exceeding target
+- **WARNING**: Log visible warning to user
+- Apply aggressive pruning immediately
+- Consider hierarchical supervision if >4 agents
+- Review workflow complexity
+
+**Red Zone** (>40%): Critical
+- **ERROR**: Workflow may fail soon
+- Emergency pruning of all non-essential context
+- MANDATORY hierarchical supervision
+- Consider workflow splitting
+
+### Pruning Triggers
+
+**Automatic Triggers**:
+1. **After Phase Completion**: Always prune phase-scoped context (Layer 2 → Layer 3)
+2. **After Agent Completion**: Prune full agent response, retain metadata only
+3. **Usage > 30%**: Trigger aggressive pruning pass
+4. **Usage > 40%**: Emergency pruning + hierarchical supervision recommendation
+
+**Manual Triggers**:
+```bash
+# Force pruning at any time
+source "$CLAUDE_PROJECT_DIR/.claude/lib/context-pruning.sh"
+force_context_prune "aggressive"
+
+# Workflow-specific pruning
+apply_workflow_pruning_policy "$WORKFLOW_TYPE"
+```
+
+### Workflow-Specific Pruning Policies
+
+**Research Workflow** (Aggressive Pruning):
+- Target: <15% context usage
+- Rationale: Multiple parallel agents, large report outputs
+- Policy:
+  ```bash
+  - Prune full agent responses immediately
+  - Retain 200-token metadata only
+  - Forward message pattern mandatory
+  - No research content in planning phase context
+  ```
+
+**Implementation Workflow** (Moderate Pruning):
+- Target: <25% context usage
+- Rationale: Sequential code changes, moderate complexity
+- Policy:
+  ```bash
+  - Retain current file content during active editing
+  - Prune completed file changes to metadata
+  - Keep test results summary only (not full output)
+  - Prune git diff after commit
+  ```
+
+**Validation Workflow** (Conservative Pruning):
+- Target: <20% context usage
+- Rationale: Need test failure context for debugging
+- Policy:
+  ```bash
+  - Retain test failure messages and stack traces
+  - Prune passing test outputs
+  - Keep validation metadata for reporting
+  - Retain error context for troubleshooting
+  ```
+
+### Hierarchical Supervision Integration
+
+**Trigger Criteria**: Apply hierarchical supervision when:
+1. Total agents ≥5 (flat supervision would exceed 30% context)
+2. Context usage >30% with flat supervision
+3. Workflow has complex inter-agent dependencies
+4. Need specialized supervision logic (phase coordination, result synthesis)
+
+**Context Benefits**:
+```
+Flat Supervision (6 agents):
+- 6 agents × 10KB = 60KB overhead
+- Orchestration logic: ~15KB
+- Total: ~75KB ≈ 38% context ✗
+
+Hierarchical Supervision (6 agents via 2 supervisors):
+- 2 supervisors × 5KB = 10KB overhead
+- 6 agents × metadata only = 3KB
+- Orchestration logic: ~8KB
+- Total: ~21KB ≈ 11% context ✓
+
+Context Reduction: 38% → 11% (71% improvement)
+```
+
+**Implementation**:
+```markdown
+# When context usage >30% with multiple agents
+if [ "$AGENT_COUNT" -ge 5 ] && [ "$CONTEXT_USAGE" -gt 30 ]; then
+  echo "RECOMMENDATION: Switch to hierarchical supervision"
+  echo "Expected context reduction: ~60-70%"
+  echo "See: .claude/docs/architecture/state-based-orchestration-overview.md"
+fi
+```
+
+**Case Study Reference**: Coordinate command migration (45% → 23% context usage via hierarchical supervision)
+
+### Monitoring and Validation
+
+**Pre-Workflow Validation**:
+```bash
+# Estimate context requirements before starting
+estimate_workflow_context "$WORKFLOW_TYPE" "$AGENT_COUNT"
+# Output: "Estimated context: 28% (within target)"
+
+# If estimate >30%, recommend changes
+if [ "$ESTIMATED" -gt 30 ]; then
+  echo "WARNING: Estimated context $ESTIMATED% exceeds 30% target"
+  echo "Consider: Hierarchical supervision, workflow simplification"
+fi
+```
+
+**During-Workflow Monitoring**:
+```bash
+# Check context after each phase
+log_context_usage "$PHASE_NUMBER" "$CURRENT_USAGE"
+
+# Automated checkpoint with context tracking
+save_checkpoint_with_context_metric "$CHECKPOINT_DATA" "$CONTEXT_USAGE"
+```
+
+**Post-Workflow Analysis**:
+```bash
+# Generate context usage report
+generate_context_report "$WORKFLOW_ID"
+# Output:
+# Phase 1: 12%
+# Phase 2: 18%
+# Phase 3: 22%
+# Peak: 22% (target: <30%) ✓
+```
+
+### Cross-References
+
+**Library Implementation**:
+- `.claude/lib/context-pruning.sh` - Context pruning utilities
+- `.claude/lib/checkpoint-utils.sh` - Checkpoint-based state management
+
+**Related Patterns**:
+- [Hierarchical Supervision](../architecture/state-based-orchestration-overview.md) - Scalability for >4 agents
+- [Metadata Extraction Pattern](metadata-extraction.md) - Condensing agent outputs
+- [Forward Message Pattern](forward-message.md) - Zero-cost metadata passing
+
+**Decision Framework**:
+- [Architectural Decision Framework](../architectural-decision-framework.md) - Decision 2: Flat vs Hierarchical Supervision
+
 ## Anti-Patterns
 
 ### Violation 1: No Pruning
