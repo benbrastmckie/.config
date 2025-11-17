@@ -329,22 +329,22 @@ dependencies: [1, 3]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create or update `.claude/docs/guides/plan-command-guide.md`:
-  - [ ] Add §2.5 "CLAUDE_PROJECT_DIR Bootstrap Pattern"
-  - [ ] Update §3.1 "Phase 0: Orchestrator Initialization" with inline detection details
-  - [ ] Document why SCRIPT_DIR pattern doesn't work in Claude Code
-  - [ ] Add troubleshooting section for library path errors
-- [ ] Update `.claude/docs/concepts/bash-block-execution-model.md`:
-  - [ ] Add BASH_SOURCE[0] limitation documentation
-  - [ ] Add anti-pattern section warning against SCRIPT_DIR usage
-  - [ ] Recommend inline CLAUDE_PROJECT_DIR detection pattern
-  - [ ] Include code examples for correct bootstrap pattern
+- [x] Create or update `.claude/docs/guides/plan-command-guide.md`:
+  - [x] Add §2.5 "CLAUDE_PROJECT_DIR Bootstrap Pattern"
+  - [x] Update §3.1 "Phase 0: Orchestrator Initialization" with inline detection details
+  - [x] Document why SCRIPT_DIR pattern doesn't work in Claude Code
+  - [x] Add troubleshooting section for library path errors
+- [x] Update `.claude/docs/concepts/bash-block-execution-model.md`:
+  - [x] Add BASH_SOURCE[0] limitation documentation
+  - [x] Add anti-pattern section warning against SCRIPT_DIR usage
+  - [x] Recommend inline CLAUDE_PROJECT_DIR detection pattern
+  - [x] Include code examples for correct bootstrap pattern
 - [ ] Update `.claude/docs/reference/command-reference.md`:
   - [ ] Verify /plan entry accuracy
   - [ ] Update examples if needed
 - [ ] Update CLAUDE.md if architectural changes warrant it
-- [ ] Review all documentation for consistency and clarity
-- [ ] Remove any historical commentary (per development philosophy)
+- [x] Review all documentation for consistency and clarity
+- [x] Remove any historical commentary (per development philosophy)
 
 **Expected Duration**: 1-2 hours
 
