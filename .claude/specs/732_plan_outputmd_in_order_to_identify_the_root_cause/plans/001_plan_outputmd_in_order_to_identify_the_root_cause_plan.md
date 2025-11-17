@@ -261,7 +261,7 @@ dependencies: [1]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Test simple feature (no research): `/plan "add button to settings page"`
+- [x] Test simple feature (no research): `/plan "add button to settings page"`
 - [ ] Verify Haiku complexity classifier invoked (from spec 731 Phase 1)
 - [ ] Verify complexity score calculated correctly
 - [ ] Verify plan-architect agent invoked (from spec 731 Phase 3)
@@ -273,17 +273,17 @@ dependencies: [1]
 - [ ] Test with provided reports: `/plan "refactor auth" /path/to/auth_analysis.md`
 - [ ] Verify provided reports included in plan metadata
 - [ ] Verify plan-architect receives all report paths
-- [ ] Test error paths: run from outside project, invalid feature description
-- [ ] Verify clear diagnostic messages for all error conditions
-- [ ] Verify no "command not found" errors
-- [ ] Verify no "bad substitution" errors
-- [ ] Verify state persistence works (STATE_FILE created and populated)
+- [x] Test error paths: run from outside project, invalid feature description
+- [x] Verify clear diagnostic messages for all error conditions
+- [x] Verify no "command not found" errors
+- [x] Verify no "bad substitution" errors
+- [x] Verify state persistence works (STATE_FILE created and populated)
 - [ ] Verify workflow resumption works if interrupted
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
