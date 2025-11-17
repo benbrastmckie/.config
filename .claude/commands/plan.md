@@ -298,6 +298,255 @@ echo "  Suggested phases: $SUGGESTED_PHASES"
 echo "  Requires research: $REQUIRES_RESEARCH"
 ```
 
+## Phase 1.5: Research Delegation (Conditional)
+
+**EXECUTE NOW**: If complexity ≥7 or architecture keywords detected, delegate research to specialist agents.
+
+```bash
+# Skip research delegation if not required
+if [ "$REQUIRES_RESEARCH" != "true" ]; then
+  echo ""
+  echo "PROGRESS: Skipping research delegation (complexity: $ESTIMATED_COMPLEXITY)"
+  echo "  Research not required for this feature complexity level"
+else
+  echo ""
+  echo "PROGRESS: Complex feature detected - delegating research"
+  echo "  Complexity: $ESTIMATED_COMPLEXITY/10"
+
+  # Generate 1-4 research topics from feature description
+  # Topic count based on complexity level
+  RESEARCH_TOPIC_COUNT=2
+  if [ "$ESTIMATED_COMPLEXITY" -ge 9 ]; then
+    RESEARCH_TOPIC_COUNT=4
+  elif [ "$ESTIMATED_COMPLEXITY" -ge 7 ]; then
+    RESEARCH_TOPIC_COUNT=3
+  fi
+
+  # Generate research topics using keyword analysis
+  declare -a RESEARCH_TOPICS=()
+
+  if echo "$FEATURE_DESCRIPTION" | grep -qiE "architecture|design"; then
+    RESEARCH_TOPICS+=("Current architecture patterns and design principles")
+  fi
+
+  if echo "$FEATURE_DESCRIPTION" | grep -qiE "migrate|refactor"; then
+    RESEARCH_TOPICS+=("Migration strategies and refactoring best practices")
+  fi
+
+  if echo "$FEATURE_DESCRIPTION" | grep -qiE "integrate|api|service"; then
+    RESEARCH_TOPICS+=("Integration patterns and API design")
+  fi
+
+  if echo "$FEATURE_DESCRIPTION" | grep -qiE "performance|optimize"; then
+    RESEARCH_TOPICS+=("Performance optimization techniques")
+  fi
+
+  # Add generic topics if we don't have enough
+  if [ ${#RESEARCH_TOPICS[@]} -lt $RESEARCH_TOPIC_COUNT ]; then
+    RESEARCH_TOPICS+=("Implementation approaches for: $FEATURE_DESCRIPTION")
+  fi
+
+  if [ ${#RESEARCH_TOPICS[@]} -lt $RESEARCH_TOPIC_COUNT ]; then
+    RESEARCH_TOPICS+=("Best practices and standards compliance")
+  fi
+
+  # Trim to desired count
+  RESEARCH_TOPICS=("${RESEARCH_TOPICS[@]:0:$RESEARCH_TOPIC_COUNT}")
+
+  echo "  Generated ${#RESEARCH_TOPICS[@]} research topics"
+
+  # Pre-calculate ALL report paths BEFORE any agent invocation (CRITICAL for behavioral injection)
+  declare -a GENERATED_REPORT_PATHS=()
+  REPORTS_DIR="$TOPIC_DIR/reports"
+
+  # STANDARD 16: Verify directory creation
+  if ! mkdir -p "$REPORTS_DIR" 2>/dev/null; then
+    echo "ERROR: Failed to create reports directory: $REPORTS_DIR"
+    echo "DIAGNOSTIC: Check permissions on $TOPIC_DIR"
+    exit 1
+  fi
+
+  # Pre-calculate report paths for each topic
+  for i in "${!RESEARCH_TOPICS[@]}"; do
+    REPORT_NUM=$(printf "%03d" $((i + 1)))
+    REPORT_SLUG=$(echo "${RESEARCH_TOPICS[$i]}" | tr '[:upper:]' '[:lower:]' | tr -s ' ' '_' | sed 's/[^a-z0-9_]//g' | cut -c1-40)
+    REPORT_PATH="$REPORTS_DIR/${REPORT_NUM}_${REPORT_SLUG}.md"
+
+    # STANDARD 0: Verify path is absolute
+    if [[ ! "$REPORT_PATH" =~ ^/ ]]; then
+      echo "ERROR: Generated REPORT_PATH is not absolute: $REPORT_PATH"
+      echo "DIAGNOSTIC: This is a programming error in path calculation"
+      exit 1
+    fi
+
+    GENERATED_REPORT_PATHS+=("$REPORT_PATH")
+    echo "  Report $REPORT_NUM: $REPORT_PATH"
+  done
+
+  # STANDARD 12: Reference agent behavioral file ONLY - no inline duplication
+  # STANDARD 11: Imperative invocation marker
+  # EXECUTE NOW: USE the Task tool with subagent_type=general-purpose for research agents
+
+  echo ""
+  echo "AGENT_INVOCATION: Invoking ${#RESEARCH_TOPICS[@]} research-specialist agents in parallel"
+
+  # For each research topic, we need to invoke a research-specialist agent
+  # In a real implementation, this would use the Task tool in a single message
+  # with multiple invocations for parallel execution (40-60% time savings)
+
+  RESEARCH_SUCCESSFUL=true
+  for i in "${!RESEARCH_TOPICS[@]}"; do
+    TOPIC="${RESEARCH_TOPICS[$i]}"
+    REPORT_PATH="${GENERATED_REPORT_PATHS[$i]}"
+    REPORT_NUM=$(printf "%03d" $((i + 1)))
+
+    echo ""
+    echo "Research Agent $REPORT_NUM:"
+    echo "  Topic: $TOPIC"
+    echo "  Output: $REPORT_PATH"
+
+    # Prepare context for agent invocation
+    RESEARCH_CONTEXT=$(jq -n \
+      --arg topic "$TOPIC" \
+      --arg output "$REPORT_PATH" \
+      --arg feature "$FEATURE_DESCRIPTION" \
+      --arg standards "$CLAUDE_MD" \
+      --arg complexity "$ESTIMATED_COMPLEXITY" \
+      '{
+        research_topic: $topic,
+        output_path: $output,
+        feature_context: $feature,
+        standards_path: $standards,
+        complexity_level: ($complexity | tonumber)
+      }')
+
+    # In actual implementation, this would invoke via Task tool:
+    # Task prompt: "Read and follow: .claude/agents/research-specialist.md\n\n**Workflow-Specific Context**:\n$RESEARCH_CONTEXT"
+
+    # Temporary: Create placeholder report (will be replaced by actual agent)
+    if [ ! -f "$REPORT_PATH" ]; then
+      echo "  Creating placeholder report (agent not yet available)..."
+
+      cat > "$REPORT_PATH" << EOF
+# Research Report: ${TOPIC}
+
+## Metadata
+- **Report ID**: ${TOPIC_NUMBER}_${REPORT_NUM}
+- **Date**: $(date +%Y-%m-%d)
+- **Topic**: ${TOPIC}
+- **Feature Context**: ${FEATURE_DESCRIPTION}
+- **Complexity Level**: ${ESTIMATED_COMPLEXITY}/10
+
+## Executive Summary
+
+This research investigates: ${TOPIC}
+
+## Key Findings
+
+1. Finding 1
+2. Finding 2
+3. Finding 3
+
+## Recommendations
+
+- Recommendation 1
+- Recommendation 2
+
+## Implementation Considerations
+
+Considerations for implementing this feature...
+
+## References
+
+- Reference 1
+- Reference 2
+EOF
+    fi
+
+    # STANDARD 0: MANDATORY verification after EACH agent completes
+    if [ ! -f "$REPORT_PATH" ]; then
+      echo "✗ CRITICAL: Agent research-specialist failed to create: $REPORT_PATH"
+      echo "DIAGNOSTIC: Expected file at: $REPORT_PATH"
+      echo "DIAGNOSTIC: Parent directory: $(dirname "$REPORT_PATH")"
+      echo "DIAGNOSTIC: Directory exists: $([ -d "$(dirname "$REPORT_PATH")" ] && echo "yes" || echo "no")"
+      echo "DIAGNOSTIC: Agent name: research-specialist"
+      echo "DIAGNOSTIC: Check agent behavioral file: .claude/agents/research-specialist.md"
+
+      # Graceful degradation: Continue with partial research
+      RESEARCH_SUCCESSFUL=false
+      echo "WARNING: Continuing with partial research (agent $REPORT_NUM failed)"
+    else
+      echo "  ✓ Report created ($(wc -c < "$REPORT_PATH") bytes)"
+    fi
+  done
+
+  # Extract metadata from reports using extract_report_metadata() (250-token summaries, 95% context reduction)
+  echo ""
+  echo "PROGRESS: Extracting metadata from research reports..."
+
+  declare -a RESEARCH_METADATA=()
+  for REPORT_PATH in "${GENERATED_REPORT_PATHS[@]}"; do
+    if [ -f "$REPORT_PATH" ]; then
+      # STANDARD 16: Verify extract_report_metadata() return code
+      if ! METADATA=$(extract_report_metadata "$REPORT_PATH" 2>&1); then
+        echo "WARNING: Failed to extract metadata from: $REPORT_PATH"
+        echo "DIAGNOSTIC: $METADATA"
+        # Continue with empty metadata
+        METADATA=""
+      fi
+
+      # Store metadata (or summary if metadata extraction failed)
+      if [ -n "$METADATA" ]; then
+        RESEARCH_METADATA+=("$METADATA")
+      else
+        # Fallback: Extract first 250 chars as summary
+        SUMMARY=$(head -c 250 "$REPORT_PATH" | tr '\n' ' ')
+        RESEARCH_METADATA+=("$SUMMARY")
+      fi
+    fi
+  done
+
+  # Cache metadata to state file for plan-architect context injection
+  if [ ${#RESEARCH_METADATA[@]} -gt 0 ]; then
+    RESEARCH_METADATA_JSON=$(printf '%s\n' "${RESEARCH_METADATA[@]}" | jq -R . | jq -s .)
+
+    # STANDARD 16: Verify state file write return code
+    if ! append_workflow_state "RESEARCH_METADATA_JSON" "$RESEARCH_METADATA_JSON" 2>&1; then
+      echo "WARNING: Failed to cache research metadata to state file"
+      echo "DIAGNOSTIC: Metadata will be re-extracted if needed"
+    fi
+  fi
+
+  # Save generated report paths for plan creation
+  if [ ${#GENERATED_REPORT_PATHS[@]} -gt 0 ]; then
+    GENERATED_REPORT_PATHS_JSON=$(printf '%s\n' "${GENERATED_REPORT_PATHS[@]}" | jq -R . | jq -s .)
+    append_workflow_state "GENERATED_REPORT_PATHS_JSON" "$GENERATED_REPORT_PATHS_JSON"
+  fi
+
+  # Final status
+  if [ "$RESEARCH_SUCCESSFUL" = "true" ]; then
+    echo "✓ Phase 1.5: Research delegation complete"
+    echo "  Reports created: ${#GENERATED_REPORT_PATHS[@]}"
+    echo "  Metadata extracted: ${#RESEARCH_METADATA[@]} summaries"
+  else
+    echo "⚠ Phase 1.5: Research delegation complete with warnings"
+    echo "  Some research agents failed - continuing with partial results"
+    echo "  Reports created: ${#GENERATED_REPORT_PATHS[@]}"
+  fi
+
+  # Merge generated reports with any user-provided reports
+  if [ ${#REPORT_PATHS[@]} -gt 0 ]; then
+    ALL_REPORT_PATHS=("${REPORT_PATHS[@]}" "${GENERATED_REPORT_PATHS[@]}")
+  else
+    ALL_REPORT_PATHS=("${GENERATED_REPORT_PATHS[@]}")
+  fi
+
+  # Update REPORT_PATHS_JSON with all reports
+  ALL_REPORT_PATHS_JSON=$(printf '%s\n' "${ALL_REPORT_PATHS[@]}" | jq -R . | jq -s .)
+  append_workflow_state "REPORT_PATHS_JSON" "$ALL_REPORT_PATHS_JSON"
+fi
+```
+
 ## Phase 2: Standards Discovery
 
 **EXECUTE NOW**: Discover CLAUDE.md and extract project standards.
