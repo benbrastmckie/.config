@@ -5,7 +5,7 @@
 - **Indentation**: 2 spaces, expandtab
 - **Line length**: ~100 characters (soft limit)
 - **Naming**: snake_case for variables/functions, PascalCase for module tables
-- **Error Handling**: Use appropriate error handling for language (pcall for Lua, try-catch for others)
+- **Error Handling**: Use defensive programming patterns with structured error messages (WHICH/WHAT/WHERE) - See [Defensive Programming Patterns](.claude/docs/concepts/patterns/defensive-programming.md) and [Error Enhancement Guide](.claude/docs/guides/error-enhancement-guide.md)
 - **Documentation**: Every directory must have a README.md
 - **Character Encoding**: UTF-8 only, no emojis in file content
 
