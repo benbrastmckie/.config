@@ -171,18 +171,18 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read expand.md to identify both BASH_SOURCE pattern locations at ~lines 80, 563 (file: /home/benjamin/.config/.claude/commands/expand.md)
-- [ ] Replace first BASH_SOURCE pattern (line ~80) with inline bootstrap (file: /home/benjamin/.config/.claude/commands/expand.md)
-- [ ] Replace second BASH_SOURCE pattern (line ~563) with inline bootstrap (file: /home/benjamin/.config/.claude/commands/expand.md)
-- [ ] Add directory traversal fallback for both locations (file: /home/benjamin/.config/.claude/commands/expand.md)
-- [ ] Add fail-fast validation with diagnostic messages (file: /home/benjamin/.config/.claude/commands/expand.md)
-- [ ] Verify all library sourcing uses absolute paths via UTILS_DIR (file: /home/benjamin/.config/.claude/commands/expand.md)
-- [ ] Ensure both bash blocks in expand.md have consistent bootstrap pattern (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Read expand.md to identify both BASH_SOURCE pattern locations at ~lines 80, 563 (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Replace first BASH_SOURCE pattern (line ~80) with inline bootstrap (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Replace second BASH_SOURCE pattern (line ~563) with inline bootstrap (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Add directory traversal fallback for both locations (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Add fail-fast validation with diagnostic messages (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Verify all library sourcing uses absolute paths via UTILS_DIR (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Ensure both bash blocks in expand.md have consistent bootstrap pattern (file: /home/benjamin/.config/.claude/commands/expand.md)
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -203,11 +203,11 @@ cd /home/benjamin/.config && /expand phase /path/to/plan.md 1
 **Expected Duration**: 1.5 hours
 
 **Phase 2 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(736): complete Phase 2 - Fix /expand command bootstrap`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(736): complete Phase 2 - Fix /expand command bootstrap`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 3: Fix /collapse Command Bootstrap
 dependencies: [2]
