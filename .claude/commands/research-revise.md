@@ -213,6 +213,14 @@ TOTAL_REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
 echo "✓ Research phase complete (total reports: $TOTAL_REPORT_COUNT, new: $NEW_REPORT_COUNT)"
 echo ""
 
+# Persist variables across bash blocks (subprocess isolation)
+append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
+append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
+append_workflow_state "SPECS_DIR" "$SPECS_DIR"
+append_workflow_state "TOTAL_REPORT_COUNT" "$TOTAL_REPORT_COUNT"
+append_workflow_state "NEW_REPORT_COUNT" "$NEW_REPORT_COUNT"
+append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
+
 # Persist completed state with return code verification
 if ! save_completed_states_to_state 2>&1; then
   echo "ERROR: Failed to persist completed state" >&2
@@ -223,6 +231,9 @@ fi
 ## Part 4: Plan Revision Phase
 
 ```bash
+# Load workflow state from Part 3 (subprocess isolation)
+load_workflow_state "${WORKFLOW_ID:-$$}" false
+
 # Transition to plan state with return code verification
 if ! sm_transition "$STATE_PLAN" 2>&1; then
   echo "ERROR: State transition to PLAN failed" >&2
@@ -309,6 +320,9 @@ fi
 echo "✓ Plan revision complete: $EXISTING_PLAN_PATH"
 echo ""
 
+# Persist variables for Part 5 (subprocess isolation)
+append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
+
 # Persist completed state with return code verification
 if ! save_completed_states_to_state 2>&1; then
   echo "ERROR: Failed to persist completed state" >&2
@@ -319,6 +333,9 @@ fi
 ## Part 5: Completion & Cleanup
 
 ```bash
+# Load workflow state from Part 4 (subprocess isolation)
+load_workflow_state "${WORKFLOW_ID:-$$}" false
+
 # Research-and-revise workflow: terminate after plan revision with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   echo "ERROR: State transition to COMPLETE failed" >&2
