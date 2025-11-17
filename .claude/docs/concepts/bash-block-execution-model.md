@@ -371,7 +371,38 @@ else
 fi
 ```
 
-### Pattern 3: State Persistence Library
+### Pattern 3: Two-Step Argument Capture
+
+**Problem**: Arguments with special characters (quotes, `!`, `$`) fail with direct `$1` capture.
+
+**Solution**: Use two-bash-block pattern where Part 1 captures user input via explicit substitution.
+
+```bash
+# Part 1: Capture argument to temp file
+# CRITICAL: Claude replaces YOUR_ARGUMENT_HERE with actual argument
+set +H
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+TEMP_FILE="${HOME}/.claude/tmp/mycommand_arg_$(date +%s%N).txt"
+echo "YOUR_ARGUMENT_HERE" > "$TEMP_FILE"
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/mycommand_arg_path.txt"
+
+# Part 2: Read captured argument (in next bash block)
+set +H
+PATH_FILE="${HOME}/.claude/tmp/mycommand_arg_path.txt"
+if [ -f "$PATH_FILE" ]; then
+  TEMP_FILE=$(cat "$PATH_FILE")
+  ARGUMENT=$(cat "$TEMP_FILE")
+else
+  echo "ERROR: Argument file not found"
+  exit 1
+fi
+```
+
+**Reference**: See [Command Authoring Standards](../reference/command-authoring-standards.md#pattern-2-two-step-capture-with-library-recommended-for-complex-input) for complete pattern documentation.
+
+**Commands Using This Pattern**: `/coordinate`, `/research-report`, `/research-plan`, `/research-revise`
+
+### Pattern 4: State Persistence Library
 
 **Problem**: Manual state file management is error-prone and verbose.
 

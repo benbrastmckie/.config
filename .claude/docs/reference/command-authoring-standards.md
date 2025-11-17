@@ -388,39 +388,72 @@ fi
 **Pros**: Simple, automatic, no user intervention
 **Cons**: May fail with complex characters (quotes, `!`, `$`)
 
-### Pattern 2: Two-Step Capture (For Complex User Input)
+### Pattern 2: Two-Step Capture with Library (Recommended for Complex Input)
 
-Use when arguments may contain special characters, quotes, or require explicit user verification:
+Use the `argument-capture.sh` library for reliable argument capture with special characters. The library reduces boilerplate from 15-25 lines to 3-5 lines per command.
+
+**Part 1 block** (with explicit substitution by Claude):
 
 ```markdown
-**STEP 1**: Capture the workflow description.
+## Part 1: Capture Workflow Description
+
+**EXECUTE NOW**: Capture the workflow description.
 
 Replace `YOUR_DESCRIPTION_HERE` with the actual description:
 
 ```bash
 set +H
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
-TEMP_FILE="${HOME}/.claude/tmp/command_desc_$(date +%s%N).txt"
+TEMP_FILE="${HOME}/.claude/tmp/mycommand_arg_$(date +%s%N).txt"
 echo "YOUR_DESCRIPTION_HERE" > "$TEMP_FILE"
-echo "$TEMP_FILE" > "${HOME}/.claude/tmp/command_desc_path.txt"
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/mycommand_arg_path.txt"
+echo "Argument captured to $TEMP_FILE"
+```
 ```
 
-**STEP 2**: Read from the temp file:
+**Part 2 block** (reads captured argument):
+
+```markdown
+## Part 2: Read and Validate Argument
+
+**EXECUTE NOW**: Read the captured description and validate:
 
 ```bash
 set +H
-TEMP_PATH=$(cat "${HOME}/.claude/tmp/command_desc_path.txt")
-DESCRIPTION=$(cat "$TEMP_PATH")
+# Read argument from temp file
+PATH_FILE="${HOME}/.claude/tmp/mycommand_arg_path.txt"
+if [ -f "$PATH_FILE" ]; then
+  TEMP_FILE=$(cat "$PATH_FILE")
+else
+  TEMP_FILE="${HOME}/.claude/tmp/mycommand_arg.txt"  # Legacy fallback
+fi
+
+if [ -f "$TEMP_FILE" ]; then
+  DESCRIPTION=$(cat "$TEMP_FILE")
+else
+  echo "ERROR: Argument file not found"
+  echo "Usage: /mycommand \"<description>\""
+  exit 1
+fi
+
+if [ -z "$DESCRIPTION" ]; then
+  echo "ERROR: Argument is empty"
+  exit 1
+fi
+
+echo "Description: $DESCRIPTION"
 ```
 ```
 
 **When to use**:
-- Complex workflow descriptions (e.g., `/coordinate`)
+- Complex workflow descriptions (e.g., `/coordinate`, `/research-plan`)
 - Arguments with quotes, special characters, or shell metacharacters
 - When user verification of captured value is important
 
-**Pros**: Handles all character types, user sees captured value, concurrent-safe
-**Cons**: Requires manual substitution, more complex workflow
+**Pros**: Handles all character types, user sees captured value, concurrent-safe, legacy fallback
+**Cons**: Requires manual substitution, two bash blocks instead of one
+
+**Reference Commands**: See `/coordinate`, `/research-report`, `/research-plan`, `/research-revise` for working examples.
 
 ### Recommendation Summary
 
