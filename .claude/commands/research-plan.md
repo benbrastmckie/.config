@@ -135,6 +135,18 @@ echo ""
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → RESEARCH" >&2
+  echo "  - Workflow Type: research-and-plan" >&2
+  echo "  - Command Name: research-plan" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - State machine not initialized properly" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "  - State file corruption in ~/.claude/data/state/" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Verify sm_init was called successfully" >&2
+  echo "  - Check state machine logs for details" >&2
   exit 1
 fi
 echo "=== Phase 1: Research ==="
@@ -235,6 +247,18 @@ load_workflow_state "${WORKFLOW_ID:-$$}" false
 # Transition to plan state with return code verification
 if ! sm_transition "$STATE_PLAN" 2>&1; then
   echo "ERROR: State transition to PLAN failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → PLAN" >&2
+  echo "  - Workflow Type: research-and-plan" >&2
+  echo "  - Research complete: check CHECKPOINT above" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Research phase did not complete properly" >&2
+  echo "  - State not persisted after research" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check research checkpoint output" >&2
+  echo "  - Verify research phase completed" >&2
   exit 1
 fi
 echo "=== Phase 2: Planning ==="
@@ -317,6 +341,18 @@ load_workflow_state "${WORKFLOW_ID:-$$}" false
 # Research-and-plan workflow: terminate after planning with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   echo "ERROR: State transition to COMPLETE failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → COMPLETE" >&2
+  echo "  - Workflow Type: research-and-plan" >&2
+  echo "  - Terminal State: plan" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Planning phase did not complete properly" >&2
+  echo "  - State not persisted after planning" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check planning checkpoint output" >&2
+  echo "  - Verify plan file was created successfully" >&2
   exit 1
 fi
 
