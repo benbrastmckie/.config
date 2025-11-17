@@ -217,18 +217,18 @@ dependencies: [2]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read collapse.md to identify both BASH_SOURCE pattern locations at ~lines 82, 431 (file: /home/benjamin/.config/.claude/commands/collapse.md)
-- [ ] Replace first BASH_SOURCE pattern (line ~82) with inline bootstrap (file: /home/benjamin/.config/.claude/commands/collapse.md)
-- [ ] Replace second BASH_SOURCE pattern (line ~431) with inline bootstrap (file: /home/benjamin/.config/.claude/commands/collapse.md)
-- [ ] Add directory traversal fallback for both locations (file: /home/benjamin/.config/.claude/commands/collapse.md)
-- [ ] Add fail-fast validation with diagnostic messages (file: /home/benjamin/.config/.claude/commands/collapse.md)
-- [ ] Verify all library sourcing uses absolute paths via UTILS_DIR (file: /home/benjamin/.config/.claude/commands/collapse.md)
-- [ ] Ensure both bash blocks in collapse.md have consistent bootstrap pattern (file: /home/benjamin/.config/.claude/commands/collapse.md)
+- [x] Read collapse.md to identify both BASH_SOURCE pattern locations at ~lines 82, 431 (file: /home/benjamin/.config/.claude/commands/collapse.md)
+- [x] Replace first BASH_SOURCE pattern (line ~82) with inline bootstrap (file: /home/benjamin/.config/.claude/commands/collapse.md)
+- [x] Replace second BASH_SOURCE pattern (line ~431) with inline bootstrap (file: /home/benjamin/.config/.claude/commands/collapse.md)
+- [x] Add directory traversal fallback for both locations (file: /home/benjamin/.config/.claude/commands/collapse.md)
+- [x] Add fail-fast validation with diagnostic messages (file: /home/benjamin/.config/.claude/commands/collapse.md)
+- [x] Verify all library sourcing uses absolute paths via UTILS_DIR (file: /home/benjamin/.config/.claude/commands/collapse.md)
+- [x] Ensure both bash blocks in collapse.md have consistent bootstrap pattern (file: /home/benjamin/.config/.claude/commands/collapse.md)
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -249,11 +249,11 @@ cd /home/benjamin/.config && /collapse /path/to/expanded/plan
 **Expected Duration**: 1.5 hours
 
 **Phase 3 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(736): complete Phase 3 - Fix /collapse command bootstrap`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(736): complete Phase 3 - Fix /collapse command bootstrap`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 4: Integration Testing and Validation
 dependencies: [1, 2, 3]
