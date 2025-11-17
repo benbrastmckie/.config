@@ -25,6 +25,25 @@ allowed-tools: Read, Write, Edit, Glob, Grep, Task, MultiEdit, TodoWrite, SlashC
 YOU MUST parse arguments to determine operation mode and extract parameters:
 
 ```bash
+# Standard 13: Detect project directory
+CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-}"
+if [ -z "$CLAUDE_PROJECT_DIR" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+    [ -z "$CLAUDE_PROJECT_DIR" ] && CLAUDE_PROJECT_DIR="$(pwd)"
+  fi
+fi
+export CLAUDE_PROJECT_DIR
+
 # CRITICAL: Parse arguments
 ARG1="$1"
 ARG2="$2"
