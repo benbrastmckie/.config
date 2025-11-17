@@ -227,18 +227,22 @@ dependencies: [2]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Replace research-specialist invocations (5 instances): /fix, /research-report, /research-plan (2), /research-revise
-- [ ] Add MANDATORY VERIFICATION after each research-specialist invocation (5 instances)
+- [x] Replace research-specialist invocations in /research-plan (1 instance - partial)
+- [ ] Replace research-specialist invocations (4 remaining instances): /fix, /research-report, /research-revise
+- [x] Add MANDATORY VERIFICATION after research-specialist invocation in /research-plan
+- [ ] Add MANDATORY VERIFICATION after remaining research-specialist invocations (4 instances)
 - [ ] Test file creation reliability for research-specialist: 10/10 trials
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [ ] Replace plan-architect invocations (4 instances): /fix, /research-plan, /research-revise (2)
-- [ ] Add MANDATORY VERIFICATION after each plan-architect invocation (4 instances)
+- [x] Replace plan-architect invocation in /research-plan (1 instance - partial)
+- [ ] Replace plan-architect invocations (3 remaining instances): /fix, /research-revise (2)
+- [x] Add MANDATORY VERIFICATION after plan-architect invocation in /research-plan
+- [ ] Add MANDATORY VERIFICATION after remaining plan-architect invocations (3 instances)
 - [ ] Test file creation reliability for plan-architect: 10/10 trials
 - [ ] Replace implementer-coordinator invocation (1 instance): /build
 - [ ] Replace debug-analyst invocations (2 instances): /build, /fix
@@ -246,8 +250,8 @@ After completing the above tasks:
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 - [ ] Update all 5 command guide files with agent invocation cross-references
