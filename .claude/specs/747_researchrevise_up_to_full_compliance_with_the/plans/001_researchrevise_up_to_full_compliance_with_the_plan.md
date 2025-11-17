@@ -183,13 +183,13 @@ dependencies: [1]
 **Complexity**: Low
 
 Tasks:
-- [ ] Update /build.md (lines 47-52) to standard sourcing order: state-persistence.sh, workflow-state-machine.sh, library-version-check.sh, error-handling.sh, checkpoint-utils.sh
-- [ ] Update /fix.md (lines 80-83) to move error-handling.sh before library-version-check.sh per standard order
-- [ ] Update /research-report.md (lines 85-90) to move error-handling.sh before library-version-check.sh
-- [ ] Update /research-plan.md (lines 86-91) to move error-handling.sh before library-version-check.sh
-- [ ] Update /research-revise.md (lines 106-109) to move error-handling.sh before library-version-check.sh
-- [ ] Add inline comments explaining dependency order: "Source libraries in dependency order (Standard 15)"
-- [ ] Add section comments: "# 1. State machine foundation", "# 2. Library version checking", "# 3. Error handling", "# 4. Additional utilities"
+- [x] Update /build.md (lines 47-52) to standard sourcing order: state-persistence.sh, workflow-state-machine.sh, library-version-check.sh, error-handling.sh, checkpoint-utils.sh
+- [x] Update /fix.md (lines 80-83) to move error-handling.sh before library-version-check.sh per standard order
+- [x] Update /research-report.md (lines 85-90) to move error-handling.sh before library-version-check.sh
+- [x] Update /research-plan.md (lines 86-91) to move error-handling.sh before library-version-check.sh
+- [x] Update /research-revise.md (lines 106-109) to move error-handling.sh before library-version-check.sh
+- [x] Add inline comments explaining dependency order: "Source libraries in dependency order (Standard 15)"
+- [x] Add section comments: "# 1. State machine foundation", "# 2. Library version checking", "# 3. Error handling", "# 4. Additional utilities"
 
 Testing:
 ```bash

@@ -83,11 +83,13 @@ fi
 
 export CLAUDE_PROJECT_DIR
 
-# Source libraries in correct order
-# CRITICAL: state-persistence.sh and workflow-state-machine.sh MUST be sourced first
+# Source libraries in dependency order (Standard 15)
+# 1. State machine foundation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+# 2. Library version checking
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
+# 3. Error handling
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
 
 # Verify library versions (fail-fast if incompatible)
