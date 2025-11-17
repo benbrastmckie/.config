@@ -263,16 +263,16 @@ dependencies: [1, 2, 3]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create integration test script testing all commands from project root (file: /home/benjamin/.config/.claude/specs/736_claude_specs_plan_outputmd_in_order_to_create_and/tests/integration_test.sh)
-- [ ] Test all commands from subdirectories (nvim/, .claude/specs/, .claude/commands/)
-- [ ] Test all commands from outside project (should fail with clear error messages)
-- [ ] Verify CLAUDE_PROJECT_DIR detected correctly in all contexts
-- [ ] Verify all libraries source successfully (workflow-state-machine.sh, state-persistence.sh, etc.)
-- [ ] Check for "No such file or directory" errors (should be zero)
-- [ ] Verify Standards 0, 11, 13, 15 compliance for all commands
-- [ ] Test edge cases (symlinks, git worktrees, non-git projects with .claude/)
-- [ ] Compare bootstrap performance (should be ~2ms for git detection)
-- [ ] Verify backward compatibility (existing workflows still work)
+- [x] Create integration test script testing all commands from project root (file: /home/benjamin/.config/.claude/specs/736_claude_specs_plan_outputmd_in_order_to_create_and/tests/integration_test.sh)
+- [x] Test all commands from subdirectories (nvim/, .claude/specs/, .claude/commands/)
+- [x] Test all commands from outside project (should fail with clear error messages)
+- [x] Verify CLAUDE_PROJECT_DIR detected correctly in all contexts
+- [x] Verify all libraries source successfully (workflow-state-machine.sh, state-persistence.sh, etc.)
+- [x] Check for "No such file or directory" errors (should be zero)
+- [x] Verify Standards 0, 11, 13, 15 compliance for all commands
+- [x] Test edge cases (symlinks, git worktrees, non-git projects with .claude/)
+- [x] Compare bootstrap performance (should be ~2ms for git detection)
+- [x] Verify backward compatibility (existing workflows still work)
 
 **Testing**:
 ```bash
@@ -294,11 +294,11 @@ time (cd /home/benjamin/.config && /implement --help > /dev/null)
 **Expected Duration**: 2 hours
 
 **Phase 4 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(736): complete Phase 4 - Integration testing and validation`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(736): complete Phase 4 - Integration testing and validation`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 5: Documentation and Spec Completion
 dependencies: [4]
