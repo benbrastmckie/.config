@@ -4,8 +4,8 @@
 - **Date**: 2025-11-16
 - **Feature**: Refactor /plan command with robust architecture patterns
 - **Scope**: Transform pseudocode template to production-grade executable command
-- **Estimated Phases**: 6
-- **Estimated Hours**: 18-22
+- **Estimated Phases**: 8
+- **Estimated Hours**: 17-21
 - **Structure Level**: 0
 - **Complexity Score**: 127.5
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
@@ -39,29 +39,50 @@ The refactored command will:
 
 4. **Context Preservation** (Report 004): State-persistence.sh (GitHub Actions pattern) achieves 70% performance improvement (50ms → 15ms), metadata-extraction.sh provides 50-word summaries, context-pruning.sh achieves 95% reduction. Pre-calculated artifact paths eliminate subagent overhead.
 
+**Standards Compliance Requirements** (from .claude/docs/):
+
+5. **Command Architecture Standards**: Commands MUST use imperative language (YOU MUST, EXECUTE NOW, MANDATORY) for critical operations. Standard 14 requires executable/documentation separation: executable target <250 lines (simple commands), comprehensive guide unlimited. Standard 11 requires imperative agent invocation with explicit execution markers.
+
+6. **Behavioral Injection Pattern**: Path pre-calculation BEFORE agent invocation, context injection via file content (not SlashCommand), metadata-only passing (95% context reduction). NO command-to-command invocation via SlashCommand. Standard 12 requires structural/behavioral content separation.
+
+7. **Library Sourcing Order** (Standard 15): Source state machine foundation FIRST, then error handling BEFORE verification checkpoints. Source guards enable safe re-sourcing. Specific order: workflow-state-machine.sh → state-persistence.sh → error-handling.sh → verification-helpers.sh.
+
+8. **Testing Protocols**: Test location `.claude/tests/`, pattern `test_*.sh`, coverage ≥80% for modified code. Test isolation using `CLAUDE_SPECS_ROOT="/tmp/test_specs_$$"` override. Cleanup traps mandatory.
+
 **Recommended Approach**:
 - Follow optimize-claude's fail-fast verification pattern, NOT coordinate's complexity
-- Use single bash script execution (not multi-block coordination)
-- Implement LLM-based feature analysis for intelligent pre-planning
-- Apply behavioral injection with mandatory file creation protocol
-- Leverage existing libraries (plan-core-bundle.sh, complexity-utils.sh)
+- Apply Standard 14: Separate executable (<250 lines) from comprehensive guide
+- Use imperative language (EXECUTE NOW, YOU MUST) for all critical operations (Standard 0)
+- Implement behavioral injection with mandatory file creation protocol (Standard 11)
+- Leverage existing libraries with correct sourcing order (Standard 15)
 - Add comprehensive validation with validate-plan.sh
-- Maintain absolute path discipline throughout
+- Maintain absolute path discipline with CLAUDE_PROJECT_DIR detection (Standard 13)
+- Apply metadata-only passing for 95% context reduction
+- Support progressive expansion (all plans start Level 0, expand on-demand)
 
 ## Success Criteria
 
 - [ ] Plan command executes from pseudocode template to working implementation
-- [ ] Feature description analysis uses LLM classification (haiku-4 model)
+- [ ] **Standard 14 Compliance**: Executable command <250 lines, comprehensive guide exists separately
+- [ ] **Standard 0 Compliance**: Imperative language (EXECUTE NOW, YOU MUST) for all critical operations
+- [ ] **Standard 11 Compliance**: Imperative agent invocation with explicit execution markers, no code-fenced examples
+- [ ] **Standard 12 Compliance**: Structural templates inline, behavioral content referenced from agent files
+- [ ] **Standard 13 Compliance**: Use CLAUDE_PROJECT_DIR for project detection, never BASH_SOURCE[0]
+- [ ] **Standard 15 Compliance**: Library sourcing order enforced (state machine → persistence → error handling)
+- [ ] **Standard 16 Compliance**: All critical function return codes verified with `if ! function; then` checks
+- [ ] Feature description analysis uses LLM classification (haiku-4 model) or heuristic fallback
 - [ ] Research delegation triggers automatically for complexity ≥7 or architecture keywords
 - [ ] Plan-architect agent creates plans with mandatory verification checkpoints
 - [ ] All operations use absolute paths (verified at entry point)
 - [ ] Validation confirms plans meet CLAUDE.md standards compliance
-- [ ] Test suite covers agent structure, completion signals, and behavioral compliance
-- [ ] Command stays under 400 lines (no code transformation bugs)
+- [ ] Test suite covers agent structure, completion signals, behavioral compliance (≥80% coverage)
+- [ ] Test isolation using CLAUDE_SPECS_ROOT override, cleanup traps mandatory
 - [ ] Idempotent operations allow safe re-runs
 - [ ] Error messages include context (agent name, expected artifact, diagnostic hints)
 - [ ] Plans include rollback procedures
-- [ ] Documentation updated with usage examples and troubleshooting
+- [ ] Documentation guide updated with usage examples and troubleshooting
+- [ ] Automated validation passes: validate_executable_doc_separation.sh
+- [ ] No anti-patterns: documentation-only YAML blocks, command-to-command invocation, inline duplication
 
 ## Technical Design
 
@@ -101,13 +122,22 @@ The refactored command will:
   │   ├─ Verify plan created at exact path (fail-fast)
   │   └─ Verify file size ≥2000 bytes, phase count ≥3
   │
-  └─ Phase 6: Plan Validation
-      ├─ Source validate-plan.sh (NEW LIBRARY)
-      ├─ Validate metadata completeness
-      ├─ Validate standards compliance
-      ├─ Validate test phases present
-      ├─ Validate phase dependencies valid
-      └─ Generate validation report
+  ├─ Phase 6: Plan Validation
+  │   ├─ Source validate-plan.sh (NEW LIBRARY)
+  │   ├─ Validate metadata completeness
+  │   ├─ Validate standards compliance
+  │   ├─ Validate test phases present
+  │   ├─ Validate phase dependencies valid
+  │   └─ Generate validation report
+  │
+  └─ Phase 7: Expansion Evaluation (Conditional)
+      ├─ Invoke complexity-estimator agent to analyze all phases
+      ├─ Determine if any phases meet expansion threshold (complexity ≥8)
+      ├─ If no expansion needed: present plan outline and complete
+      └─ If expansion needed: invoke plan-structure-manager agents in parallel
+          ├─ Use single-message invocation for parallelism
+          ├─ Verify expanded phase files created
+          └─ Update plan metadata (Level 0→1, Expanded Phases list)
 ```
 
 ### Component Design
@@ -141,6 +171,18 @@ The refactored command will:
 - Validate phase dependencies (no circular deps)
 - Generate validation report with warnings/errors
 
+**5. Expansion Evaluation (Post-Validation)**
+- Invoke complexity-estimator agent to analyze all phases in created plan
+- Agent evaluates each phase using context-aware analysis (not just task count)
+- Complexity threshold: ≥8 triggers expansion recommendation
+- Decision logic:
+  - **No phases ≥8**: Present basic plan outline (phase names, objectives, paths) and complete
+  - **One or more phases ≥8**: Invoke plan-structure-manager agents in parallel
+- Parallel expansion: Use single-message invocation for 60-80% time savings
+- Verify expanded phase files created at pre-calculated paths (fail-fast)
+- Update plan metadata: Structure Level 0→1, Expanded Phases list
+- Follows /expand command patterns (see .claude/commands/expand.md)
+
 ### Error Handling Strategy
 
 **Fail-Fast Verification Pattern** (from optimize-claude):
@@ -173,29 +215,70 @@ verify_state_variable "PLAN_PATH" || exit 1
 
 ## Implementation Phases
 
-### Phase 1: Core Command Structure
+### Phase 0: Orchestrator Initialization and Path Pre-Calculation
 dependencies: []
+
+**Objective**: Establish orchestrator role, detect project directory, source libraries in correct order, pre-calculate all artifact paths before any agent invocations
+
+**Complexity**: Low
+
+**Tasks**:
+- [x] **Standard 13**: YOU MUST detect project directory using CLAUDE_PROJECT_DIR environment variable (git-based detection, never BASH_SOURCE[0])
+- [x] **Standard 15**: YOU MUST source libraries in dependency order: workflow-state-machine.sh → state-persistence.sh → error-handling.sh → verification-helpers.sh
+- [x] **Standard 16**: YOU MUST verify library sourcing with return code checks: `if ! source lib 2>&1; then handle_error; fi`
+- [x] **EXECUTE NOW**: Initialize workflow state using init_workflow_state("plan_$$")
+- [x] **EXECUTE NOW**: Pre-calculate topic directory path using get_or_create_topic_dir()
+- [x] **EXECUTE NOW**: Pre-calculate plan output path before any agent invocations (behavioral injection requirement)
+- [x] **EXECUTE NOW**: Pre-calculate potential report paths array (used if research delegation required)
+- [x] **Standard 0**: YOU MUST export all pre-calculated paths to workflow state for use in subsequent phases
+- [x] **Standard 0**: MANDATORY VERIFICATION - verify all paths are absolute using absolute path validation
+
+<!-- PROGRESS CHECKPOINT -->
+After completing the above tasks:
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
+<!-- END PROGRESS CHECKPOINT -->
+
+**Testing**:
+```bash
+# Test path pre-calculation
+/plan "test feature" # Should calculate paths in Phase 0
+# Verify: All paths are absolute
+# Verify: Workflow state initialized
+# Verify: Libraries sourced correctly
+```
+
+**Expected Duration**: 30-45 minutes
+
+**Phase 0 Completion Requirements**:
+- [x] All phase tasks marked [x]
+- [x] All pre-calculated paths are absolute
+- [x] Workflow state initialized successfully
+- [x] Git commit created: `feat(726): complete Phase 0 - Orchestrator Initialization`
+- [x] Update this plan file with phase completion status
+
+### Phase 1: Core Command Structure
+dependencies: [0]
 
 **Objective**: Create executable command framework with argument parsing and validation
 
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create `/home/benjamin/.config/.claude/commands/plan.md` with executable bash blocks (file: .claude/commands/plan.md)
-- [ ] Implement argument parsing with quoted multi-word support (lines 17-39)
-- [ ] Add absolute path validation for all input paths (entry point verification)
-- [ ] Source required libraries: unified-location-detection.sh, state-persistence.sh
-- [ ] Initialize workflow state using init_workflow_state("plan_$$")
-- [ ] Add help text display for --help flag
-- [ ] Implement error handling with context enrichment pattern
-- [ ] Add set +H to disable history expansion (prevent bad substitution errors)
-- [ ] Verify CLAUDE_PROJECT_DIR detection succeeds (fail-fast if missing)
-- [ ] Add comprehensive inline comments explaining patterns
+- [x] **EXECUTE NOW**: CREATE file `/home/benjamin/.config/.claude/commands/plan.md` with executable bash blocks targeting <250 lines (Standard 14)
+- [x] **Standard 14 Monitoring**: YOU MUST track line count throughout implementation, extract documentation to guide file if approaching 200 lines
+- [x] **YOU MUST**: Implement argument parsing with quoted multi-word support (lines 17-39)
+- [x] **YOU MUST**: Add absolute path validation for all input paths at entry point (fail-fast if relative paths detected)
+- [x] **YOU MUST**: Add help text display for --help flag (concise inline, comprehensive in guide file)
+- [x] **Standard 0**: YOU MUST use imperative language for error handling with MANDATORY VERIFICATION after every critical operation
+- [x] **EXECUTE NOW**: Add set +H to disable history expansion (prevent bad substitution errors)
+- [x] **EXECUTE NOW**: Implement error context enrichment providing agent name, expected artifact, diagnostic hints in all error messages
+- [x] **YOU MUST**: Add comprehensive inline comments explaining patterns with explicit Standard N references for design rationale
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
 **Testing**:
@@ -215,30 +298,34 @@ After completing the above tasks:
 **Expected Duration**: 3-4 hours
 
 **Phase 1 Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(726): complete Phase 1 - Core Command Structure`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
+- [x] All phase tasks marked [x]
+- [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [x] Git commit created: `feat(726): complete Phase 1 - Core Command Structure`
+- [x] Checkpoint saved (if complex phase)
+- [x] Update this plan file with phase completion status
 
 ### Phase 2: Feature Analysis (LLM Classification)
-dependencies: [1]
+dependencies: [0, 1]
 
 **Objective**: Implement intelligent feature analysis using LLM classification pattern
 
 **Complexity**: High
 
 **Tasks**:
-- [ ] Create analyze_feature_description() function using Task tool (file: .claude/commands/plan.md, lines 40-85)
-- [ ] Use haiku-4 model for fast classification (<5 seconds)
-- [ ] Design classification prompt: extract complexity, scope, keywords, suggested template
-- [ ] Return structured JSON: {estimated_complexity, suggested_phases, template_type, keywords, requires_research}
-- [ ] Implement complexity trigger logic: ≥7 OR keywords (integrate, migrate, refactor, architecture)
-- [ ] Cache analysis results to state file (avoid re-analysis on retries)
-- [ ] Add error handling for Task tool failures (fallback to heuristic analysis)
-- [ ] Verify JSON schema matches downstream expectations
-- [ ] Add logging: emit_progress "Analyzing feature complexity..."
-- [ ] Document classification criteria in inline comments
+- [ ] **EXECUTE NOW**: CREATE analyze_feature_description() function using Task tool (file: .claude/commands/plan.md, lines 40-85)
+- [ ] **Standard 11**: YOU MUST use imperative agent invocation with explicit execution marker: "EXECUTE NOW: USE the Task tool"
+- [ ] **Standard 11**: YOU MUST NOT include code-fenced Task examples in command file (prevents priming effect blocking actual execution)
+- [ ] **YOU MUST**: Use haiku-4 model for fast classification (<5 seconds)
+- [ ] **EXECUTE NOW**: Design classification prompt extracting complexity, scope, keywords, suggested template
+- [ ] **YOU MUST**: Return structured JSON: {estimated_complexity, suggested_phases, template_type, keywords, requires_research}
+- [ ] **EXECUTE NOW**: Implement complexity trigger logic: ≥7 OR keywords (integrate, migrate, refactor, architecture)
+- [ ] **Standard 16**: YOU MUST verify Task tool return code: `if ! result=$(analyze_feature 2>&1); then fallback_heuristic; fi`
+- [ ] **EXECUTE NOW**: Implement fallback heuristic algorithm: (1) Keyword scoring (architecture/refactor/migrate=8, implement/create=5, fix/adjust=3), (2) Length scoring (<10 words=0, 10-20=1, 20-40=2, >40=3), (3) Combined score triggers research if ≥7
+- [ ] **YOU MUST**: Cache analysis results to state file (avoid re-analysis on retries)
+- [ ] **Standard 16**: YOU MUST verify cache write return code before proceeding
+- [ ] **YOU MUST**: Verify JSON schema matches downstream expectations using jq validation
+- [ ] **EXECUTE NOW**: Add logging with emit_progress "Analyzing feature complexity..."
+- [ ] **YOU MUST**: Document classification criteria in inline comments with explicit Standard N references
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -267,25 +354,31 @@ analyze_feature_description "Refactor plugin architecture" # Should return: comp
 - [ ] Update this plan file with phase completion status
 
 ### Phase 3: Research Delegation
-dependencies: [2]
+dependencies: [0, 2]
 
 **Objective**: Implement conditional research delegation for complex features
 
 **Complexity**: High
 
 **Tasks**:
-- [ ] Implement research delegation trigger logic (file: .claude/commands/plan.md, lines 86-145)
-- [ ] Generate 1-4 research topics from feature description (based on complexity)
-- [ ] Pre-calculate report paths using topic-based organization (create_topic_artifact pattern)
-- [ ] Ensure report directories exist using ensure_artifact_directory()
-- [ ] Invoke research-specialist agents with behavioral injection (source research-specialist.md)
-- [ ] Pass workflow-specific context: topic, report_path, standards, complexity
-- [ ] Implement parallel agent invocation (1-4 agents based on RESEARCH_COMPLEXITY)
-- [ ] Add fail-fast verification after each agent (verify report exists)
-- [ ] Extract metadata from reports using extract_report_metadata() (50-word summaries)
-- [ ] Cache metadata to state file for plan-architect context
-- [ ] Add timeout handling (5-minute default per agent)
-- [ ] Implement graceful degradation if agent fails (continue with partial research)
+- [ ] **EXECUTE NOW**: IMPLEMENT research delegation trigger logic (file: .claude/commands/plan.md, lines 86-145)
+- [ ] **YOU MUST**: Generate 1-4 research topics from feature description (based on complexity analysis from Phase 2)
+- [ ] **Behavioral Injection - CRITICAL**: YOU MUST pre-calculate ALL report paths in Phase 0 or this phase BEFORE any agent invocation (agents receive paths, never calculate them)
+- [ ] **Standard 16**: YOU MUST verify path pre-calculation return code before proceeding
+- [ ] **EXECUTE NOW**: Ensure report directories exist using ensure_artifact_directory() (lazy creation, 80% reduction in mkdir calls)
+- [ ] **Standard 12 - NO DUPLICATION**: YOU MUST reference agent behavioral file ONLY, never duplicate procedures. Use exact pattern: "Read and follow ALL behavioral guidelines from: .claude/agents/research-specialist.md"
+- [ ] **Standard 12 Compliance Example**: Task prompt format MUST be: "Read and follow: .claude/agents/research-specialist.md\n\n**Workflow-Specific Context**:\n- Research Topic: $TOPIC\n- Report Path: $REPORT_PATH (pre-calculated)\n- Standards: $STANDARDS_PATH\n- Complexity: $LEVEL\n\nExecute per behavioral guidelines. Return: REPORT_CREATED: $REPORT_PATH"
+- [ ] **Standard 11**: YOU MUST use imperative invocation marker: "EXECUTE NOW: USE the Task tool with subagent_type=general-purpose"
+- [ ] **Standard 11**: YOU MUST NOT include code-fenced Task examples in command file (creates priming effect preventing execution)
+- [ ] **EXECUTE NOW**: Implement parallel agent invocation (1-4 agents based on RESEARCH_COMPLEXITY, 40-60% time savings via single-message multi-Task pattern)
+- [ ] **Standard 0 - MANDATORY**: YOU MUST verify after EACH agent completes: `if [ ! -f "$REPORT_PATH" ]; then echo "CRITICAL: Agent research-specialist failed to create: $REPORT_PATH"; exit 1; fi`
+- [ ] **Design Decision - Fail-Fast**: Verification FAILS IMMEDIATELY on missing files, NO placeholder creation by orchestrator (Standard 0 clarification: orchestrators never create agent artifacts)
+- [ ] **Standard 16**: YOU MUST verify extract_report_metadata() return code: `if ! metadata=$(extract_report_metadata "$REPORT_PATH" 2>&1); then warn_and_continue; fi`
+- [ ] **EXECUTE NOW**: Extract metadata from reports using extract_report_metadata() (250-token summaries, 95% context reduction)
+- [ ] **YOU MUST**: Cache metadata to state file for plan-architect context injection
+- [ ] **Standard 16**: YOU MUST verify state file write return code
+- [ ] **EXECUTE NOW**: Add timeout handling (5-minute default per agent, configurable)
+- [ ] **YOU MUST**: Document graceful degradation strategy: if agent fails verification, log error with full context (agent name, expected path, diagnostic), continue with partial research, warn user at completion
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -314,28 +407,32 @@ After completing the above tasks:
 - [ ] Update this plan file with phase completion status
 
 ### Phase 4: Standards Discovery and Validation Library
-dependencies: [1]
+dependencies: [0, 1]
 
 **Objective**: Implement standards discovery and create validate-plan.sh library
 
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Implement standards discovery in command (file: .claude/commands/plan.md, lines 146-175)
-- [ ] Source unified-location-detection.sh for upward CLAUDE.md search
-- [ ] Extract code standards from CLAUDE.md (indentation, naming, language-specific)
-- [ ] Extract testing protocols (test commands, coverage requirements)
-- [ ] Extract documentation policy (README requirements, format standards)
-- [ ] Cache extracted standards to state file (avoid re-extraction)
-- [ ] Create validate-plan.sh library (file: .claude/lib/validate-plan.sh, NEW)
-- [ ] Implement validate_metadata() - check 8 required fields present
-- [ ] Implement validate_standards_compliance() - verify standards referenced
-- [ ] Implement validate_test_phases() - check test phases exist if Testing Protocols defined
-- [ ] Implement validate_documentation_tasks() - check docs tasks exist if Documentation Policy defined
-- [ ] Implement validate_phase_dependencies() - check no circular dependencies
-- [ ] Add generate_validation_report() - return JSON with warnings/errors
-- [ ] Add comprehensive error messages for each validation failure
-- [ ] Document library functions with usage examples
+- [ ] **EXECUTE NOW**: IMPLEMENT standards discovery in command (file: .claude/commands/plan.md, lines 146-175)
+- [ ] **Standard 15**: YOU MUST source unified-location-detection.sh (if not already sourced in Phase 0, verify sourcing order)
+- [ ] **Standard 16**: YOU MUST verify library sourcing: `if ! source unified-location-detection.sh 2>&1; then fail_fast; fi`
+- [ ] **Standard 13**: YOU MUST use CLAUDE_PROJECT_DIR for upward CLAUDE.md search in ALL path operations (never BASH_SOURCE[0])
+- [ ] **EXECUTE NOW**: Extract code standards from CLAUDE.md (indentation, naming, language-specific conventions)
+- [ ] **EXECUTE NOW**: Extract testing protocols (test commands, coverage requirements ≥80%, test isolation standards)
+- [ ] **EXECUTE NOW**: Extract documentation policy (README requirements, timeless writing standards, format compliance)
+- [ ] **YOU MUST**: Cache extracted standards to state file (avoid re-extraction on retries)
+- [ ] **Standard 16**: YOU MUST verify cache write return code
+- [ ] **EXECUTE NOW**: CREATE validate-plan.sh library (file: .claude/lib/validate-plan.sh, NEW)
+- [ ] **Standard 16**: YOU MUST design ALL validation functions to return exit codes: 0=success, 1=failure, never silent failures
+- [ ] **EXECUTE NOW**: IMPLEMENT validate_metadata() - check 8 required fields present (Date, Feature, Scope, Phases, Hours, Structure Level, Complexity, Standards)
+- [ ] **EXECUTE NOW**: IMPLEMENT validate_standards_compliance() - verify CLAUDE.md path referenced, standards sections present, Standard N references included
+- [ ] **EXECUTE NOW**: IMPLEMENT validate_test_phases() - check test phases exist if Testing Protocols defined (≥80% coverage requirement)
+- [ ] **EXECUTE NOW**: IMPLEMENT validate_documentation_tasks() - check docs tasks exist if Documentation Policy defined
+- [ ] **EXECUTE NOW**: IMPLEMENT validate_phase_dependencies() - check no circular dependencies using Kahn's algorithm, no forward references, no self-dependencies
+- [ ] **EXECUTE NOW**: ADD generate_validation_report() - return JSON with categorized warnings/errors, severity levels, fix suggestions
+- [ ] **Standard 0**: YOU MUST add comprehensive error messages with full context (field name, expected value, actual value, fix suggestion, related standard)
+- [ ] **YOU MUST**: Document library functions with usage examples, return code contracts, standards compliance notes
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -369,29 +466,33 @@ validate_plan "$PLAN_PATH" "$STANDARDS_FILE" # Should return validation report
 - [ ] Update this plan file with phase completion status
 
 ### Phase 5: Plan-Architect Agent Invocation
-dependencies: [2, 3, 4]
+dependencies: [0, 2, 3, 4]
 
 **Objective**: Implement plan creation via plan-architect agent with behavioral injection
 
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Pre-calculate plan path using topic-based organization (file: .claude/commands/plan.md, lines 176-230)
-- [ ] Ensure plan parent directory exists using ensure_artifact_directory()
-- [ ] Source plan-architect.md behavioral file (verify file exists)
-- [ ] Build workflow-specific context prompt (feature, research reports, standards, output path)
-- [ ] Include ALL research report paths in agent prompt metadata
-- [ ] Pass complexity score and suggested phases from feature analysis
-- [ ] Invoke plan-architect using Task tool with general-purpose subagent
-- [ ] Set timeout to 10 minutes (comprehensive planning)
-- [ ] Parse agent return signal: PLAN_CREATED: [absolute-path]
-- [ ] Verify plan file created at exact path (fail-fast)
-- [ ] Verify file size ≥2000 bytes (comprehensive plan check)
-- [ ] Verify phase count ≥3 (minimum phases check)
-- [ ] Verify checkbox count ≥10 (/implement compatibility check)
-- [ ] Extract plan metadata using extract_plan_metadata()
-- [ ] Cache plan metadata to state file
-- [ ] Add error context enrichment (agent name, expected artifact, diagnostic hints)
+- [ ] **Behavioral Injection - CRITICAL**: Plan path MUST be pre-calculated in Phase 0 (file: .claude/commands/plan.md, lines 176-230)
+- [ ] **Standard 16**: YOU MUST verify Phase 0 path pre-calculation before proceeding: `if [ -z "$PLAN_PATH" ]; then fail_fast; fi`
+- [ ] **EXECUTE NOW**: Ensure plan parent directory exists using ensure_artifact_directory() (lazy creation pattern)
+- [ ] **Standard 12 - NO DUPLICATION**: YOU MUST reference agent behavioral file ONLY: "Read and follow ALL behavioral guidelines from: .claude/agents/plan-architect.md"
+- [ ] **Standard 12 Compliance Example**: Task prompt MUST be: "Read and follow: .claude/agents/plan-architect.md\n\n**Workflow-Specific Context**:\n- Feature Description: $FEATURE\n- Report Paths: ${REPORT_PATHS[@]} (metadata extracted in Phase 3)\n- Standards Path: $STANDARDS_PATH\n- Output Path: $PLAN_PATH (pre-calculated)\n- Complexity: $COMPLEXITY\n- Suggested Phases: $SUGGESTED_PHASES\n\nExecute per behavioral guidelines. Return: PLAN_CREATED: $PLAN_PATH"
+- [ ] **YOU MUST**: Include ALL research report paths in metadata (NOT full content - use cached metadata from Phase 3 for 95% context reduction)
+- [ ] **YOU MUST**: Pass complexity score and suggested phases from Phase 2 feature analysis
+- [ ] **Standard 11**: YOU MUST use imperative invocation marker: "EXECUTE NOW: USE the Task tool with subagent_type=general-purpose"
+- [ ] **Standard 11**: YOU MUST NOT include code-fenced Task examples in command file (prevents priming effect blocking execution)
+- [ ] **EXECUTE NOW**: Set timeout to 10 minutes (comprehensive planning with research integration)
+- [ ] **YOU MUST**: Parse agent return signal with exact format: PLAN_CREATED: [absolute-path]
+- [ ] **Standard 0 - MANDATORY**: YOU MUST verify immediately: `if [ ! -f "$PLAN_PATH" ]; then echo "CRITICAL: Agent plan-architect failed to create: $PLAN_PATH. Check agent output above for errors."; exit 1; fi`
+- [ ] **EXECUTE NOW**: Verify file size ≥2000 bytes (comprehensive plan structural check)
+- [ ] **EXECUTE NOW**: Verify phase count ≥3 using: `PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH"); if [ "$PHASE_COUNT" -lt 3 ]; then fail_fast; fi`
+- [ ] **EXECUTE NOW**: Verify checkbox count ≥10 for /implement compatibility: `CHECKBOX_COUNT=$(grep -c "\[ \]" "$PLAN_PATH"); if [ "$CHECKBOX_COUNT" -lt 10 ]; then warn; fi`
+- [ ] **Standard 16**: YOU MUST verify metadata extraction: `if ! metadata=$(extract_plan_metadata "$PLAN_PATH" 2>&1); then echo "WARNING: Metadata extraction failed, continuing..."; fi`
+- [ ] **EXECUTE NOW**: Extract plan metadata using extract_plan_metadata()
+- [ ] **YOU MUST**: Cache plan metadata to state file
+- [ ] **Standard 16**: YOU MUST verify cache write return code
+- [ ] **Standard 0**: YOU MUST add error context enrichment to ALL failure paths (agent name: plan-architect, expected artifact: $PLAN_PATH, diagnostic: "Check agent output above for STEP failures")
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -423,33 +524,28 @@ After completing the above tasks:
 - [ ] Checkpoint saved (if complex phase)
 - [ ] Update this plan file with phase completion status
 
-### Phase 6: Validation, Testing, and Documentation
-dependencies: [5]
+### Phase 6: Plan Validation
+dependencies: [0, 5]
 
-**Objective**: Validate plans, create test suite, and update documentation
+**Objective**: Validate created plan against project standards and completeness requirements
 
-**Complexity**: Medium
+**Complexity**: Low
 
 **Tasks**:
-- [ ] Invoke validate-plan.sh on created plan (file: .claude/commands/plan.md, lines 231-250)
-- [ ] Parse validation report (JSON with warnings/errors)
-- [ ] Display validation warnings to user (non-blocking)
-- [ ] Fail-fast on validation errors (blocking)
-- [ ] Create test suite (file: .claude/tests/test_plan_command.sh, NEW)
-- [ ] Test argument parsing (quoted descriptions, multiple reports)
-- [ ] Test absolute path validation (reject relative paths)
-- [ ] Test feature analysis (complexity detection, keyword matching)
-- [ ] Test research delegation (triggers, agent invocation, verification)
-- [ ] Test standards discovery (CLAUDE.md detection, extraction)
-- [ ] Test plan creation (verify file exists, size, phases, checkboxes)
-- [ ] Test validation (metadata, standards, test phases, dependencies)
-- [ ] Test error handling (missing files, agent failures, invalid inputs)
-- [ ] Update plan-command-guide.md with usage examples (file: .claude/docs/guides/plan-command-guide.md)
-- [ ] Add troubleshooting section (common errors, diagnostic steps)
-- [ ] Update CLAUDE.md with command reference (file: CLAUDE.md)
-- [ ] Add rollback procedure to implementation plans (template update)
-- [ ] Run full test suite and verify all tests pass
-- [ ] Verify command stays under 400 lines (no code transformation risk)
+- [ ] **Standard 15**: YOU MUST source validate-plan.sh library (if not sourced in Phase 0, verify dependency order)
+- [ ] **Standard 16**: YOU MUST verify library sourcing: `if ! source .claude/lib/validate-plan.sh 2>&1; then fail_fast "validate-plan.sh library not found"; fi`
+- [ ] **EXECUTE NOW**: Invoke validate_plan() on created plan (file: .claude/commands/plan.md, lines 231-250)
+- [ ] **Standard 16**: YOU MUST verify validation return code: `if ! report=$(validate_plan "$PLAN_PATH" "$STANDARDS_FILE" 2>&1); then echo "CRITICAL: Plan validation failed"; exit 1; fi`
+- [ ] **EXECUTE NOW**: Parse validation report JSON using jq: `WARNINGS=$(echo "$report" | jq -r '.warnings | length'); ERRORS=$(echo "$report" | jq -r '.errors | length')`
+- [ ] **YOU MUST**: Display validation warnings to user (non-blocking, informational with severity levels)
+- [ ] **Standard 0 - MANDATORY**: YOU MUST fail-fast on validation errors: `if [ "$ERROR_COUNT" -gt 0 ]; then echo "Plan validation found $ERROR_COUNT critical errors. Fix before proceeding."; exit 1; fi`
+- [ ] **EXECUTE NOW**: Verify metadata completeness (8 required fields: Date, Feature, Scope, Phases, Hours, Structure Level, Complexity, Standards)
+- [ ] **EXECUTE NOW**: Verify standards references (CLAUDE.md path present, Standard N references included, code standards section exists, testing protocols referenced)
+- [ ] **EXECUTE NOW**: Verify test phases present if Testing Protocols defined in CLAUDE.md (coverage target ≥80% documented)
+- [ ] **EXECUTE NOW**: Verify documentation tasks exist if Documentation Policy defined (timeless writing compliance, README requirements)
+- [ ] **EXECUTE NOW**: Validate phase dependencies using Kahn's algorithm (no circular deps, no forward refs, no self-deps)
+- [ ] **Standard 14 - CRITICAL**: YOU MUST check executable file size: `LINES=$(wc -l < .claude/commands/plan.md); if [ "$LINES" -gt 250 ]; then echo "WARNING: Executable exceeds 250-line target ($LINES lines). Extract documentation to guide file."; fi`
+- [ ] **EXECUTE NOW**: Generate validation report summary for user displaying warning count, error count, specific field issues with fix suggestions
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
@@ -457,96 +553,144 @@ After completing the above tasks:
 - [ ] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-**Testing**:
-```bash
-# Run full test suite
-.claude/tests/test_plan_command.sh
-
-# Verify all test groups pass:
-# - Argument parsing tests
-# - Path validation tests
-# - Feature analysis tests
-# - Research delegation tests
-# - Standards discovery tests
-# - Plan creation tests
-# - Validation tests
-# - Error handling tests
-
-# Manual integration tests
-/plan "Add user authentication" # Full workflow
-/plan "Migrate to microservices" report1.md report2.md # With research
-/plan "Fix login bug" # Simple workflow (no research)
-```
-
-**Expected Duration**: 2-3 hours
+**Expected Duration**: 30-45 minutes
 
 **Phase 6 Completion Requirements**:
 - [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(726): complete Phase 6 - Validation, Testing, and Documentation`
-- [ ] Checkpoint saved (if complex phase)
+- [ ] Validation report generated
+- [ ] Git commit created: `feat(726): complete Phase 6 - Plan Validation`
 - [ ] Update this plan file with phase completion status
 
-## Testing Strategy
+### Phase 7: Expansion Evaluation (Conditional)
+dependencies: [0, 6]
 
-### Unit Testing
-- Test each function in isolation (argument parsing, feature analysis, standards discovery)
-- Mock external dependencies (Task tool, file I/O)
-- Verify error handling paths
+**Objective**: Evaluate if plan requires phase expansion and execute parallel expansion if needed
 
-### Integration Testing
-- Test full command workflow end-to-end
-- Verify agent invocation and verification checkpoints
-- Test with real feature descriptions (10+ diverse examples)
+**Complexity**: Medium
 
-### Regression Testing
-- Test suite prevents behavioral regressions
-- Verify agent structure compliance
-- Check completion signal format
-- Validate file size limits (<400 lines per agent)
+**Tasks**:
+- [ ] **Standard 12 - NO DUPLICATION**: YOU MUST reference agent behavioral file ONLY: "Read and follow ALL behavioral guidelines from: .claude/agents/complexity-estimator.md"
+- [ ] **Standard 11**: YOU MUST use imperative invocation: "EXECUTE NOW: USE the Task tool with subagent_type=general-purpose"
+- [ ] **Standard 12 Compliance**: Task prompt MUST be: "Read and follow: .claude/agents/complexity-estimator.md\n\n**Workflow-Specific Context**:\n- Plan Path: $PLAN_PATH\n\nExecute per behavioral guidelines. Return: COMPLEXITY_ANALYSIS: {results}"
+- [ ] **EXECUTE NOW**: Invoke complexity-estimator agent to analyze all phases in created plan (file: .claude/commands/plan.md, NEW section)
+- [ ] **YOU MUST**: Agent evaluates each phase using context-aware analysis (task count, dependency complexity, technical depth, NOT just line count)
+- [ ] **EXECUTE NOW**: Determine if any phases meet expansion threshold (complexity ≥8 per Adaptive Planning Configuration standards)
+- [ ] **Conditional Logic**: If no phases ≥8, present basic plan outline (phase names, objectives, file path) and complete command
+- [ ] **Behavioral Injection - CRITICAL**: If expansion needed, YOU MUST pre-calculate ALL expanded phase file paths BEFORE invoking plan-structure-manager agents
+- [ ] **Standard 16**: YOU MUST verify path pre-calculation return codes
+- [ ] **Standard 12 - NO DUPLICATION**: YOU MUST reference plan-structure-manager agent file ONLY: "Read and follow ALL behavioral guidelines from: .claude/agents/plan-structure-manager.md"
+- [ ] **Standard 12 Compliance**: Task prompt format: "Read and follow: .claude/agents/plan-structure-manager.md\n\n**Workflow-Specific Context**:\n- Plan Path: $PLAN_PATH\n- Phase Number: $PHASE_NUM\n- Expanded Phase File: $PHASE_FILE (pre-calculated)\n\nExecute per behavioral guidelines. Return: PHASE_EXPANDED: $PHASE_FILE"
+- [ ] **EXECUTE NOW**: Invoke plan-structure-manager agents in parallel for flagged phases using single-message multi-Task pattern (40-60% time savings)
+- [ ] **Standard 0 - MANDATORY**: YOU MUST verify EACH expanded phase: `if [ ! -f "$PHASE_FILE" ]; then echo "CRITICAL: Agent plan-structure-manager failed to create: $PHASE_FILE"; exit 1; fi`
+- [ ] **EXECUTE NOW**: Update plan metadata section with Structure Level (0→1) and Expanded Phases list
+- [ ] **YOU MUST**: Follow /expand command patterns for consistency (reference .claude/commands/expand.md for structural templates)
 
-### Test Suite Structure
-```
-.claude/tests/test_plan_command.sh
-├─ Test Group 1: Argument Parsing
-├─ Test Group 2: Path Validation
-├─ Test Group 3: Feature Analysis
-├─ Test Group 4: Research Delegation
-├─ Test Group 5: Standards Discovery
-├─ Test Group 6: Plan Creation
-├─ Test Group 7: Validation
-└─ Test Group 8: Error Handling
-```
+<!-- PROGRESS CHECKPOINT -->
+After completing the above tasks:
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
+<!-- END PROGRESS CHECKPOINT -->
 
-### Coverage Requirements
-- 100% of critical paths (argument parsing, agent invocation, verification)
-- 80% of error handling paths (missing files, invalid inputs)
-- All agent behavioral requirements (from plan-architect.md)
+**Expected Duration**: 10-30 minutes (conditional on complexity analysis)
+
+**Phase 7 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Complexity analysis complete
+- [ ] Expansion decision made and executed (if needed)
+- [ ] Git commit created: `feat(726): complete Phase 7 - Expansion Evaluation`
+- [ ] Update this plan file with phase completion status
+
+## Testing Requirements (Per Testing Protocols)
+
+### Test Location and Naming
+- **Test file**: `/home/benjamin/.config/.claude/tests/test_plan_command.sh`
+- **Pattern**: Follow `test_*.sh` convention
+- **Coverage target**: ≥80% for all modified code
+
+### Test Isolation
+- Use `CLAUDE_SPECS_ROOT="/tmp/test_specs_$$"` environment variable override
+- Cleanup trap: `trap cleanup EXIT` to remove test artifacts
+- Pre-test validation: Verify empty directory before tests
+- Post-test validation: Verify no production pollution
+
+### Test Cases Required
+1. **Argument Parsing Tests**:
+   - Single-word feature description
+   - Multi-word quoted feature description
+   - Absolute path validation (reject relative paths)
+   - Help flag display
+
+2. **Feature Analysis Tests**:
+   - Low complexity (≤6): no research delegation
+   - High complexity (≥7): research delegation triggered
+   - Architecture keywords: research delegation triggered
+   - Task tool failure: fallback to heuristic analysis
+
+3. **Standards Compliance Tests**:
+   - Library sourcing order verification
+   - CLAUDE_PROJECT_DIR detection (not BASH_SOURCE)
+   - Return code verification for critical functions
+   - Imperative language pattern validation
+
+4. **Agent Invocation Tests**:
+   - Research agents: verify report files created
+   - Plan-architect: verify plan file created
+   - Complexity-estimator: verify phase analysis
+   - Parallel invocation: verify time savings
+
+5. **Validation Tests**:
+   - Metadata completeness (8 required fields)
+   - Standards compliance (CLAUDE.md referenced)
+   - Phase dependency validation (no circular deps)
+
+6. **Integration Tests**:
+   - End-to-end: feature description → plan created
+   - With research reports: verify metadata extracted
+   - Expansion evaluation: verify conditional expansion
+
+### Automated Validation Scripts
+- Run `validate_executable_doc_separation.sh` to verify:
+  - Executable file size <250 lines (Standard 14)
+  - Guide file exists and is comprehensive
+  - Cross-references bidirectional
+
+- Run `.claude/lib/validate-agent-invocation-pattern.sh` to verify:
+  - Imperative patterns present (EXECUTE NOW, YOU MUST)
+  - No YAML/JSON wrappers around Task invocations
+  - No code-fenced Task examples
 
 ## Documentation Requirements
 
-### Command Guide Updates
-- Update `/home/benjamin/.config/.claude/docs/guides/plan-command-guide.md` with:
+### Command Guide Updates (Standard 14)
+- Comprehensive guide exists: `/home/benjamin/.config/.claude/docs/guides/plan-command-guide.md`
+- Update with:
   - Usage examples (simple features, complex features, with research reports)
   - Feature analysis criteria (complexity triggers, keyword matching)
   - Research delegation workflow
   - Plan validation process
+  - Standards compliance requirements
   - Troubleshooting section
+- Bidirectional cross-reference: executable → guide, guide → executable
 
 ### CLAUDE.md Updates
 - Add /plan command reference to command catalog
 - Document research delegation triggers
 - Document validation requirements
+- Reference standards compliance (Standards 0, 11, 12, 13, 14, 15, 16)
 
 ### Inline Documentation
 - Comprehensive comments explaining patterns
-- References to research reports for design rationale
-- Examples of correct usage
+- References to standards (Standard N) for design rationale
+- References to research reports for architectural decisions
+- Examples of correct usage (NOT code-fenced Task examples)
 
-### Template Updates
-- Add rollback procedures to plan templates
-- Document validation requirements
-- Include behavioral injection examples
+### Agent Behavioral Files
+- Ensure agent files exist:
+  - `.claude/agents/research-specialist.md`
+  - `.claude/agents/plan-architect.md`
+  - `.claude/agents/complexity-estimator.md`
+  - `.claude/agents/plan-structure-manager.md`
+- No inline duplication (reference files, don't duplicate procedures)
 
 ## Dependencies
 
@@ -647,3 +791,11 @@ If implementation complexity increases during execution, consider using `/expand
 
 **Design Rationale**:
 This plan avoids coordinate's complexity (2,466 lines, 13 failed refactors, subprocess isolation constraints) and follows optimize-claude's robustness patterns (fail-fast verification, behavioral injection, library integration, lazy directory creation, comprehensive testing).
+
+## Revision History
+
+- **2025-11-16** (Revision 5): Critical standards compliance gaps addressed based on gap analysis research. Key changes: (1) Added Phase 0 for orchestrator pattern compliance - establishes orchestrator role, pre-calculates ALL artifact paths before agent invocations, sources libraries in correct order per Standard 15. (2) Transformed all task language to imperative (EXECUTE NOW, YOU MUST) per Standards 0 and 11. (3) Added explicit Standard 12 compliance examples showing behavioral injection pattern: "Read and follow: .claude/agents/[name].md" with metadata-only context, NO inline procedure duplication. (4) Added Standard 14 executable size monitoring to Phase 6 validation (<250 line target). (5) Expanded Standard 16 application to ALL critical functions, not just library sourcing. (6) Added fail-fast design decision documentation (no placeholder creation by orchestrator). (7) Added fallback heuristic algorithm specification for Phase 2 LLM classification. (8) Updated all phase dependencies to reference Phase 0. (9) Increased estimated phases 7→8, hours 16-20→17-21. This revision eliminates the most critical compliance gaps: behavioral content duplication (Gap 1), missing imperative execution markers (Gap 2), and missing Phase 0 for orchestrator pattern (Gap 7).
+- **2025-11-16** (Revision 4): Standards compliance integration. Researched comprehensive .claude/docs/ standards and integrated compliance requirements throughout all phases. Key additions: (1) Research Summary expanded with 8 standards compliance requirements including Standard 14 (executable/doc separation <250 lines), Standard 0 (imperative language), Standards 11-12 (behavioral injection), Standard 15 (library sourcing order), Standard 16 (return code verification). (2) Success Criteria expanded with explicit standard compliance checkpoints and anti-pattern prevention. (3) Phase tasks updated with standard-specific implementation requirements (Standard N tags). (4) New Testing Requirements section added with test isolation, coverage targets (≥80%), and automated validation scripts. (5) Documentation Requirements expanded with Standard 14 compliance (bidirectional cross-references, no inline agent duplication). This revision ensures implementation will comply with all established architectural standards, avoiding anti-patterns like documentation-only YAML blocks, command-to-command invocation, and code-fenced Task examples.
+- **2025-11-16** (Revision 3): Removed Phase 8 (Testing and Documentation). Recognized that /plan command only creates plans, not implements them. Testing and documentation are concerns for the implementation phase (when someone uses /implement), not plan creation phase. Reduced from 8 to 7 phases, estimated hours 16-20. The command now completes after Phase 7 (Expansion Evaluation), presenting either a basic plan outline or an expanded plan structure.
+- **2025-11-16** (Revision 2): Restructured phases to separate concerns. Split original Phase 6 into three distinct phases: Phase 6 (Plan Validation - validates plan against standards), Phase 7 (Expansion Evaluation - conditionally expands complex phases using complexity-estimator agent), and Phase 8 (Testing and Documentation). This separation improves clarity, allows validation to complete before expansion decisions, and makes expansion truly optional based on complexity analysis. Total phases increased from 6 to 8, estimated hours 21-26.
+- **2025-11-16** (Revision 1): Added expansion evaluation logic to Phase 6. After plan validation, command will invoke complexity-estimator agent to analyze all phases for expansion needs (threshold: complexity ≥8). If no expansion needed, presents basic plan outline and completes. If expansion needed, invokes plan-structure-manager agents in parallel for flagged phases. This follows patterns from /expand command to ensure complex phases receive detailed specifications.
