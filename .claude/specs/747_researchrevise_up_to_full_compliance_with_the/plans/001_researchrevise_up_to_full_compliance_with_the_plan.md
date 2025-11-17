@@ -221,26 +221,26 @@ dependencies: [1]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Transform /build.md implementer-coordinator invocation (lines 173-189) to Task template with subagent_type, description, structured prompt
-- [ ] Transform /build.md debug-analyst invocation to Task template (if applicable)
-- [ ] Transform /build.md documentation invocation to Task template (if applicable)
-- [ ] Transform /fix.md research-specialist invocation (lines 129-142) to Task template, remove behavioral instruction "Focus research on..."
-- [ ] Transform /fix.md plan-architect invocation to Task template (if applicable)
-- [ ] Transform /fix.md debug-analyst invocation to Task template (if applicable)
-- [ ] Transform /research-report.md research-specialist invocation (lines 134-154) to Task template
-- [ ] Transform /research-plan.md research-specialist invocation to Task template
-- [ ] Transform /research-plan.md plan-architect invocation to Task template
+- [x] Transform /build.md implementer-coordinator invocation (lines 173-189) to Task template with subagent_type, description, structured prompt
+- [x] Transform /build.md debug-analyst invocation to Task template (if applicable)
+- [x] Transform /build.md documentation invocation to Task template (if applicable)
+- [x] Transform /fix.md research-specialist invocation (lines 129-142) to Task template, remove behavioral instruction "Focus research on..."
+- [x] Transform /fix.md plan-architect invocation to Task template (if applicable)
+- [x] Transform /fix.md debug-analyst invocation to Task template (if applicable)
+- [x] Transform /research-report.md research-specialist invocation (lines 134-154) to Task template
+- [x] Transform /research-plan.md research-specialist invocation to Task template
+- [x] Transform /research-plan.md plan-architect invocation to Task template
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [ ] Transform /research-revise.md research-specialist invocation to Task template, remove behavioral instruction "focused on new insights"
-- [ ] Transform /research-revise.md plan-architect invocation to Task template
-- [ ] Verify all prompts contain only workflow-specific context (no behavioral instructions like "Focus on...", "Follow Standard 0.5...")
-- [ ] Verify all Task blocks include subagent_type: "general-purpose", description, and structured prompt with context parameters
+- [x] Transform /research-revise.md research-specialist invocation to Task template, remove behavioral instruction "focused on new insights"
+- [x] Transform /research-revise.md plan-architect invocation to Task template
+- [x] Verify all prompts contain only workflow-specific context (no behavioral instructions like "Focus on...", "Follow Standard 0.5...")
+- [x] Verify all Task blocks include subagent_type: "general-purpose", description, and structured prompt with context parameters
 
 Testing:
 ```bash

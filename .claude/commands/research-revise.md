@@ -169,20 +169,19 @@ REVISION_TOPIC_SLUG=$(echo "$REVISION_DETAILS" | tr '[:upper:]' '[:lower:]' | se
 REVISION_NUMBER=$(find "$RESEARCH_DIR" -name 'revision_*.md' 2>/dev/null | wc -l | xargs)
 REVISION_NUMBER=$((REVISION_NUMBER + 1))
 
-# IMPERATIVE AGENT INVOCATION (Standard 11 compliance)
+# IMPERATIVE AGENT INVOCATION
 echo "EXECUTE NOW: USE the Task tool to invoke research-specialist agent"
 echo ""
 echo "YOU MUST:"
 echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md"
-echo "2. Follow Standard 0.5 enforcement (sequential step dependencies)"
-echo "3. Return completion signal: REPORT_CREATED: \${REPORT_PATH}"
+echo "2. Return completion signal: REPORT_CREATED: \${REPORT_PATH}"
 echo ""
-echo "Research Parameters:"
-echo "- Complexity: $RESEARCH_COMPLEXITY"
-echo "- Topics: Auto-detect from revision details"
+echo "Workflow-Specific Context:"
+echo "- Research Complexity: $RESEARCH_COMPLEXITY"
 echo "- Revision Details: $REVISION_DETAILS"
 echo "- Output Directory: $RESEARCH_DIR"
-echo "- Context: Plan revision research (focused on new insights)"
+echo "- Workflow Type: research-and-revise"
+echo "- Existing Plan: $EXISTING_PLAN_PATH"
 echo ""
 
 # Hierarchical supervision for complexity ≥4
@@ -259,25 +258,21 @@ echo ""
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 
-# IMPERATIVE AGENT INVOCATION (Standard 11 compliance)
+# IMPERATIVE AGENT INVOCATION
 echo "EXECUTE NOW: USE the Task tool to invoke plan-architect agent"
 echo ""
 echo "YOU MUST:"
 echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md"
-echo "2. Follow Standard 0.5 enforcement (sequential step dependencies)"
-echo "3. Use Edit tool to REVISE existing plan (preserve completed phases)"
-echo "4. Return completion signal: PLAN_REVISED: \${PLAN_PATH}"
+echo "2. Use Edit tool to modify plan at: $EXISTING_PLAN_PATH"
+echo "3. Return completion signal: PLAN_REVISED: \${PLAN_PATH}"
 echo ""
-echo "Plan Revision Context:"
+echo "Workflow-Specific Context:"
 echo "- Existing Plan Path: $EXISTING_PLAN_PATH"
 echo "- Backup Path: $BACKUP_PATH"
 echo "- Revision Details: $REVISION_DETAILS"
 echo "- Research Reports: $REPORT_PATHS_JSON"
-echo "- Mode: PLAN REVISION (not new creation)"
-echo ""
-echo "CRITICAL: REVISE existing plan with new research insights."
-echo "Use Edit tool to modify file, preserving ALL completed phases."
-echo "Execute revision following all guidelines in behavioral file."
+echo "- Workflow Type: research-and-revise"
+echo "- Operation Mode: plan revision"
 echo ""
 
 # FAIL-FAST VERIFICATION
