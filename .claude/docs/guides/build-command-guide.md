@@ -1,0 +1,512 @@
+# /build Command - Complete Guide
+
+**Executable**: `.claude/commands/build.md`
+
+**Quick Start**: Run `/build [plan-file] [starting-phase]` - executes implementation plan with automated testing and debugging.
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Usage Examples](#usage-examples)
+4. [Advanced Topics](#advanced-topics)
+5. [Troubleshooting](#troubleshooting)
+6. [See Also](#see-also)
+
+---
+
+## Overview
+
+### Purpose
+
+The `/build` command executes existing implementation plans through a complete build-from-plan workflow: implementation → testing → conditional debugging/documentation. It automates the implementation process using the implementer-coordinator agent, runs tests, and handles failures through debugging or success through documentation.
+
+### When to Use
+
+- **Executing implementation plans**: When you have an existing plan file and want to implement it
+- **Resuming interrupted work**: Auto-resumes from checkpoints when no plan specified
+- **Iterative development**: Supports starting from specific phases for incremental work
+- **Automated workflows**: Integrates testing and debugging into implementation
+
+### When NOT to Use
+
+- **Creating new plans**: Use `/research-plan` or `/plan` instead
+- **Research-only tasks**: Use `/research-report` for investigation without implementation
+- **Bug investigation**: Use `/fix` for debug-focused workflows
+- **Plan revision**: Use `/research-revise` or `/revise` to modify existing plans
+
+---
+
+## Architecture
+
+### Design Principles
+
+1. **State Machine Foundation**: Uses workflow-state-machine.sh v2.0+ for reliable state transitions
+2. **Agent Delegation**: Delegates implementation to implementer-coordinator agent with behavioral injection
+3. **Fail-Fast Verification**: Comprehensive return code verification prevents silent failures
+4. **Auto-Resume Support**: Checkpoint-based resumption for interrupted workflows
+5. **Conditional Branching**: Test results determine debug vs documentation path
+
+### Patterns Used
+
+- **State-Based Orchestration**: (state-based-orchestration-overview.md) Manages workflow through explicit states
+- **Behavioral Injection**: (behavioral-injection.md) Separates orchestration from agent behavior
+- **Fail-Fast Verification**: (Standard 0) Mandatory verification after agent invocations
+- **Checkpoint Management**: (checkpoint-utils.sh) Enables workflow resumption
+
+### Workflow States
+
+```
+┌─────────────┐
+│  IMPLEMENT  │ ← Starting state
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐
+│    TEST     │
+└──────┬──────┘
+       │
+       ├─ Tests Pass ──▶ ┌────────────┐
+       │                 │  DOCUMENT  │
+       │                 └─────┬──────┘
+       │                       │
+       └─ Tests Fail ───▶ ┌─────────┐  │
+                          │  DEBUG  │  │
+                          └────┬────┘  │
+                               │       │
+                               ▼       ▼
+                          ┌─────────────┐
+                          │  COMPLETE   │
+                          └─────────────┘
+```
+
+### Integration Points
+
+- **State Machine**: workflow-state-machine.sh (>=2.0.0) for state management
+- **Checkpointing**: checkpoint-utils.sh for workflow resumption
+- **Implementation**: implementer-coordinator agent for phase execution
+- **Debugging**: debug-analyst agent for test failure investigation
+- **Testing**: Auto-detects test frameworks (npm test, pytest, run_all_tests.sh)
+
+### Data Flow
+
+1. **Input**: Plan file path (or auto-detect from checkpoints/recent plans)
+2. **State Initialization**: sm_init() with workflow_type="build"
+3. **Implementation Phase**: implementer-coordinator executes plan phases
+4. **Testing Phase**: Run tests and capture exit code
+5. **Conditional Branch**:
+   - Tests pass → Document phase → Complete
+   - Tests fail → Debug phase → Complete (manual retry needed)
+6. **Output**: Implemented features with git commits per phase
+
+---
+
+## Usage Examples
+
+### Example 1: Basic Usage (Execute Most Recent Plan)
+
+```bash
+/build
+```
+
+**Expected Output**:
+```
+=== Build-from-Plan Workflow ===
+
+PROGRESS: No plan file specified, searching for incomplete plans...
+✓ Auto-detected most recent plan: 001_auth_implementation.md
+Plan: /home/user/.config/.claude/specs/123_auth/plans/001_auth_implementation.md
+Starting Phase: 1
+
+✓ State machine initialized
+
+=== Phase 1: Implementation ===
+
+EXECUTE NOW: USE the Task tool to invoke implementer-coordinator agent
+...
+✓ Implementation phase complete
+
+=== Phase 2: Testing ===
+
+Running tests: npm test
+...
+✓ Tests passed
+
+=== Phase 3: Documentation ===
+...
+✓ Documentation phase complete
+
+=== Build Complete ===
+
+Workflow Type: build
+Implementation: ✓ Complete
+Testing: ✓ Passed
+```
+
+**Explanation**:
+Auto-detects the most recent plan file and executes all phases from beginning to end. Creates git commits for completed phases.
+
+### Example 2: Execute Specific Plan from Phase 3
+
+```bash
+/build .claude/specs/123_auth/plans/001_auth_implementation.md 3
+```
+
+**Expected Output**:
+```
+=== Build-from-Plan Workflow ===
+
+Plan: .claude/specs/123_auth/plans/001_auth_implementation.md
+Starting Phase: 3
+
+✓ State machine initialized
+
+=== Phase 3: Implementation ===
+...
+```
+
+**Explanation**:
+Executes specific plan starting from phase 3 (skipping phases 1-2). Useful for resuming after manual interruption or completing remaining phases.
+
+### Example 3: Dry-Run Mode
+
+```bash
+/build --dry-run
+```
+
+**Expected Output**:
+```
+=== DRY-RUN MODE: Preview Only ===
+
+Plan: 001_auth_implementation.md
+Starting Phase: 1
+
+Phases would be executed by implementer-coordinator agent
+Test results would determine debug vs documentation path
+```
+
+**Explanation**:
+Preview mode shows what would be executed without making changes. Useful for validating plan discovery and phase detection.
+
+### Example 4: Auto-Resume from Checkpoint
+
+```bash
+/build
+```
+
+**Expected Output**:
+```
+=== Build-from-Plan Workflow ===
+
+PROGRESS: No plan file specified, searching for incomplete plans...
+✓ Auto-resuming from checkpoint: Phase 4
+  Plan: 001_auth_implementation.md
+
+Plan: /home/user/.config/.claude/specs/123_auth/plans/001_auth_implementation.md
+Starting Phase: 4
+
+✓ State machine initialized
+
+=== Phase 4: Implementation ===
+...
+```
+
+**Explanation**:
+Automatically resumes from checkpoint if found (<24 hours old). Enables workflow continuation after interruptions.
+
+### Example 5: Test Failure Path
+
+```bash
+/build
+```
+
+**Expected Output**:
+```
+...
+=== Phase 2: Testing ===
+
+Running tests: npm test
+
+  FAIL  src/auth.test.js
+    ✕ validates JWT tokens (23 ms)
+
+✗ Tests failed (exit code: 1)
+
+=== Phase 3: Debug (Tests Failed) ===
+
+EXECUTE NOW: USE the Task tool to invoke debug-analyst agent
+
+Workflow-Specific Context:
+- Test Command: npm test
+- Test Exit Code: 1
+- Workflow Type: build
+- Test Output: Available above in execution log
+
+NOTE: After debug, you may re-run /build to retry tests
+
+=== Build Complete ===
+
+Workflow Type: build
+Implementation: ✓ Complete
+Testing: ✗ Failed (debugged)
+
+Next Steps:
+- Review debug analysis above
+- Apply fixes and re-run: /build $PLAN_FILE
+- Or continue from test phase: /build $PLAN_FILE 2
+```
+
+**Explanation**:
+When tests fail, automatically transitions to debug phase. Debug-analyst investigates failures and provides analysis. User must apply fixes and re-run.
+
+---
+
+## Advanced Topics
+
+### Performance Considerations
+
+**Checkpoint Optimization**:
+- Checkpoints saved after each phase completion
+- Stale checkpoint detection (<24 hours) prevents incorrect resumption
+- Delete checkpoint manually: `rm ~/.claude/data/checkpoints/build_checkpoint.json`
+
+**Test Framework Detection**:
+- Automatically detects: npm test, pytest, run_all_tests.sh
+- Extraction from plan: searches for test command patterns
+- Manual specification: modify TEST_COMMAND in plan file
+
+**Commit Granularity**:
+- One commit per completed phase
+- Git commit messages reference phase number and name
+- Enables easy rollback to specific implementation stages
+
+### Customization
+
+**Starting Phase Override**:
+```bash
+/build plan.md 5  # Start from phase 5
+```
+
+**Checkpoint Behavior**:
+- Create `.claude/data/checkpoints/` directory for checkpoint isolation
+- Checkpoint validity period: 24 hours (hardcoded)
+- Future: Add `--ignore-checkpoint` flag for forced fresh starts
+
+**Test Command Override**:
+Edit plan file to include explicit test command:
+```markdown
+Testing:
+\`\`\`bash
+npm test -- --coverage
+\`\`\`
+```
+
+### Integration with Other Workflows
+
+**Research → Plan → Build Chain**:
+```bash
+/research-plan "implement user authentication"  # Creates plan
+/build                                          # Auto-detects and executes plan
+```
+
+**Plan → Build → PR Chain**:
+```bash
+/plan "add API rate limiting"
+/build
+gh pr create --title "Add API rate limiting"
+```
+
+**Iterative Development**:
+```bash
+/build plan.md 1    # Implement phase 1
+# Manual testing/review
+/build plan.md 2    # Continue with phase 2
+```
+
+**Debug Loop**:
+```bash
+/build              # Tests fail, debug phase runs
+# Apply fixes manually
+/build              # Retry from test phase (checkpoint resumes)
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### Issue 1: No Plan File Found
+
+**Symptoms**:
+- Error: "No plan file found in specs/*/plans/"
+- Occurs when running `/build` without arguments
+
+**Cause**:
+No plan files exist in `.claude/specs/*/plans/` directories.
+
+**Solution**:
+```bash
+# Create a plan first
+/research-plan "feature description"
+# Or /plan "feature description"
+
+# Then run build
+/build
+```
+
+#### Issue 2: State Machine Initialization Failed
+
+**Symptoms**:
+- Error: "State machine initialization failed"
+- Diagnostic shows library version incompatibility
+
+**Cause**:
+Workflow-state-machine.sh version <2.0.0 or missing library dependencies.
+
+**Solution**:
+```bash
+# Check library version
+cat .claude/lib/workflow-state-machine.sh | grep "VERSION="
+
+# If version <2.0.0, update library
+# (Follow library update process)
+
+# Verify state persistence library exists
+ls .claude/lib/state-persistence.sh
+```
+
+#### Issue 3: Checkpoint Stale or Corrupted
+
+**Symptoms**:
+- Warning: "Checkpoint stale (>24h), searching for recent plan..."
+- Auto-resume fails with checkpoint error
+
+**Cause**:
+Checkpoint file is older than 24 hours or corrupted JSON.
+
+**Solution**:
+```bash
+# Remove stale checkpoint
+rm ~/.claude/data/checkpoints/build_checkpoint.json
+
+# Run build fresh
+/build plan.md
+```
+
+#### Issue 4: Git Changes Not Detected
+
+**Symptoms**:
+- Warning: "No changes detected (implementation may have been no-op)"
+- No git commits found
+
+**Cause**:
+Implementer-coordinator agent didn't create file changes, or git repository not initialized.
+
+**Solution**:
+```bash
+# Verify git repository
+git status
+
+# Check if implementation actually made changes
+git diff
+
+# If no changes, review agent output for errors
+# Agent may have encountered issues during implementation
+```
+
+#### Issue 5: Test Framework Not Detected
+
+**Symptoms**:
+- Note: "No explicit test command found in plan"
+- Tests skipped entirely
+
+**Cause**:
+No package.json, pytest.ini, or run_all_tests.sh found, and plan doesn't specify test command.
+
+**Solution**:
+Add test command to plan file:
+```markdown
+### Phase N: Testing
+
+\`\`\`bash
+npm test
+\`\`\`
+```
+
+Or create run_all_tests.sh:
+```bash
+#!/bin/bash
+# Add test commands here
+pytest tests/
+```
+
+#### Issue 6: Tests Fail But No Debug Output
+
+**Symptoms**:
+- Tests fail with exit code >0
+- Debug phase invoked but no useful analysis
+
+**Cause**:
+Debug-analyst agent may need test output context or specific test framework knowledge.
+
+**Solution**:
+```bash
+# Run tests manually to see full output
+npm test --verbose
+
+# Review test output for specific failures
+# Apply fixes based on error messages
+
+# Re-run build
+/build plan.md 2  # Resume from test phase
+```
+
+### Debug Mode
+
+The `/build` command doesn't have a specific debug flag, but you can enable verbose output:
+
+```bash
+# Enable bash debugging
+set -x
+/build plan.md
+set +x
+```
+
+**Checkpoint Inspection**:
+```bash
+# View checkpoint contents
+cat ~/.claude/data/checkpoints/build_checkpoint.json | jq .
+
+# Check checkpoint age
+stat ~/.claude/data/checkpoints/build_checkpoint.json
+```
+
+**State Machine Inspection**:
+```bash
+# View state file
+cat ~/.claude/data/state/workflow_state.json | jq .
+
+# Check current state
+cat ~/.claude/data/state/workflow_state.json | jq '.current_state'
+```
+
+### Getting Help
+
+- Check [Command Reference](../reference/command-reference.md) for quick syntax
+- Review [State-Based Orchestration](../architecture/state-based-orchestration-overview.md) for workflow details
+- See related commands: `/implement`, `/coordinate`, `/fix`
+- Review [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md) for plan structure
+
+---
+
+## See Also
+
+- [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md)
+- [Implementer-Coordinator Agent](../../agents/implementer-coordinator.md)
+- [Debug-Analyst Agent](../../agents/debug-analyst.md)
+- [Checkpoint Utils Reference](../../lib/checkpoint-utils.sh)
+- [Command Reference](../reference/command-reference.md)
+- Related Commands: `/implement`, `/coordinate`, `/fix`, `/plan`

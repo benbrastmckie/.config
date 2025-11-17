@@ -9,6 +9,7 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
+documentation: See .claude/docs/guides/build-command-guide.md for complete usage guide
 ---
 
 # /build - Build-from-Plan Workflow Command

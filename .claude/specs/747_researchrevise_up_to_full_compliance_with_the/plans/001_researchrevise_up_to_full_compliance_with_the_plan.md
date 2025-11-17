@@ -274,28 +274,28 @@ dependencies: []
 **Complexity**: High
 
 Tasks:
-- [ ] Create /build-command-guide.md (1,000 lines estimated) using _template-command-guide.md baseline
-- [ ] Populate /build-command-guide.md: Overview (purpose, when to use, when NOT to use), Architecture (state machine integration, library dependencies, workflow phases), Usage Examples (basic/advanced/edge with output), Advanced Topics (performance, customization, workflow integration), Troubleshooting (checkpoint stale errors, state machine failures, library version issues), See Also (cross-references)
-- [ ] Create /fix-command-guide.md (700 lines estimated) using template baseline
-- [ ] Populate /fix-command-guide.md with systematic section coverage
-- [ ] Create /research-report-command-guide.md (500 lines estimated) using template baseline
-- [ ] Populate /research-report-command-guide.md with systematic section coverage
-- [ ] Create /research-plan-command-guide.md (500 lines estimated) using template baseline
-- [ ] Populate /research-plan-command-guide.md with systematic section coverage
-- [ ] Create /research-revise-command-guide.md (500 lines estimated) using template baseline
-- [ ] Populate /research-revise-command-guide.md with systematic section coverage
+- [x] Create /build-command-guide.md (1,000 lines estimated) using _template-command-guide.md baseline
+- [x] Populate /build-command-guide.md: Overview (purpose, when to use, when NOT to use), Architecture (state machine integration, library dependencies, workflow phases), Usage Examples (basic/advanced/edge with output), Advanced Topics (performance, customization, workflow integration), Troubleshooting (checkpoint stale errors, state machine failures, library version issues), See Also (cross-references)
+- [x] Create /fix-command-guide.md (700 lines estimated) using template baseline
+- [x] Populate /fix-command-guide.md with systematic section coverage
+- [x] Create /research-report-command-guide.md (500 lines estimated) using template baseline
+- [x] Populate /research-report-command-guide.md with systematic section coverage
+- [x] Create /research-plan-command-guide.md (500 lines estimated) using template baseline
+- [x] Populate /research-plan-command-guide.md with systematic section coverage
+- [x] Create /research-revise-command-guide.md (500 lines estimated) using template baseline
+- [x] Populate /research-revise-command-guide.md with systematic section coverage
 
 <!-- PROGRESS CHECKPOINT -->
 After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
+- [x] Update this plan file: Mark completed tasks with [x]
+- [x] Verify changes with git diff
 <!-- END PROGRESS CHECKPOINT -->
 
-- [ ] Add bidirectional cross-references: executable → guide in command frontmatter ("Documentation: See .claude/docs/guides/...")
-- [ ] Add bidirectional cross-references: guide → executable in guide header ("Executable: .claude/commands/...")
-- [ ] Verify all guides include 7 mandatory sections: Table of Contents, Overview, Architecture, Usage Examples, Advanced Topics, Troubleshooting, See Also
-- [ ] Verify all guides follow present-focused writing standards (no historical commentary, temporal markers, migration language)
-- [ ] Run validate_executable_doc_separation.sh to verify file existence, cross-reference integrity, size limits
+- [x] Add bidirectional cross-references: executable → guide in command frontmatter ("Documentation: See .claude/docs/guides/...")
+- [x] Add bidirectional cross-references: guide → executable in guide header ("Executable: .claude/commands/...")
+- [x] Verify all guides include 7 mandatory sections: Table of Contents, Overview, Architecture, Usage Examples, Advanced Topics, Troubleshooting, See Also
+- [x] Verify all guides follow present-focused writing standards (no historical commentary, temporal markers, migration language)
+- [x] Run validate_executable_doc_separation.sh to verify file existence, cross-reference integrity, size limits
 
 Testing:
 ```bash
