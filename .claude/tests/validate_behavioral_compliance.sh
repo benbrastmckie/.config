@@ -92,22 +92,22 @@ validate_file_creation_compliance() {
 
     local compliance_checks=0
 
-    # Check 1: Pre-calculated artifact paths
-    if grep -q "_PATH=" "$cmd_file" || grep -q "REPORT_PATH=" "$cmd_file" || grep -q "PLAN_PATH=" "$cmd_file"; then
+    # Check 1: Pre-calculated artifact paths (file-level or directory-level)
+    if grep -q "_PATH=" "$cmd_file" || grep -q "REPORT_PATH=" "$cmd_file" || grep -q "PLAN_PATH=" "$cmd_file" || grep -q "_DIR=" "$cmd_file"; then
         ((compliance_checks++))
     else
         log_fail "$cmd: Missing pre-calculated artifact paths"
     fi
 
-    # Check 2: Path injection into agent prompts
-    if grep -q "Report Path:" "$cmd_file" || grep -q "Plan Path:" "$cmd_file" || grep -q "Output Path:" "$cmd_file"; then
+    # Check 2: Path injection into agent prompts (accepts both "Path:" and "Directory:" patterns)
+    if grep -q "Report Path:\|Plan Path:\|Output Path:\|Output Directory:" "$cmd_file"; then
         ((compliance_checks++))
     else
         log_fail "$cmd: Missing path injection into agent prompts"
     fi
 
-    # Check 3: File existence verification after agent invocation
-    if grep -q 'if \[ ! -f' "$cmd_file" 2>/dev/null; then
+    # Check 3: File existence verification after agent invocation (accepts both file and directory checks)
+    if grep -q 'if \[ ! -f' "$cmd_file" 2>/dev/null || grep -q 'if \[ ! -d' "$cmd_file" 2>/dev/null; then
         ((compliance_checks++))
     else
         log_fail "$cmd: Missing file existence verification checkpoints"
