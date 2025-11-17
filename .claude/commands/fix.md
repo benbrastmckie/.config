@@ -142,24 +142,30 @@ DEBUG_DIR="${SPECS_DIR}/debug"
 
 mkdir -p "$RESEARCH_DIR"
 mkdir -p "$DEBUG_DIR"
+```
 
-# IMPERATIVE AGENT INVOCATION
-echo "EXECUTE NOW: USE the Task tool to invoke research-specialist agent"
-echo ""
-echo "YOU MUST:"
-echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md"
-echo "2. Return completion signal: REPORT_CREATED: \${REPORT_PATH}"
-echo ""
-echo "Workflow-Specific Context:"
-echo "- Research Complexity: $RESEARCH_COMPLEXITY"
-echo "- Issue Description: $ISSUE_DESCRIPTION"
-echo "- Output Directory: $RESEARCH_DIR"
-echo "- Workflow Type: debug-only"
-echo "- Context Mode: root cause analysis"
-echo ""
+Task {
+  subagent_type: "research-specialist"
+  description: "Research root cause for $ISSUE_DESCRIPTION"
+  prompt: |
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
-# FAIL-FAST VERIFICATION
-echo ""
+    You are conducting research for: fix workflow (root cause analysis)
+
+    Input:
+    - Research Topic: Root cause analysis for: $ISSUE_DESCRIPTION
+    - Research Complexity: $RESEARCH_COMPLEXITY
+    - Output Directory: $RESEARCH_DIR
+    - Workflow Type: debug-only
+    - Context Mode: root cause analysis
+
+    Execute research according to behavioral guidelines and return completion signal:
+    REPORT_CREATED: ${REPORT_PATH}
+}
+
+```bash
+# MANDATORY VERIFICATION
 echo "Verifying research artifacts..."
 
 if [ ! -d "$RESEARCH_DIR" ]; then
@@ -217,25 +223,30 @@ PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
 # Collect research report paths
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
+```
 
-# IMPERATIVE AGENT INVOCATION
-echo "EXECUTE NOW: USE the Task tool to invoke plan-architect agent"
-echo ""
-echo "YOU MUST:"
-echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md"
-echo "2. Use Write tool to create plan at: $PLAN_PATH"
-echo "3. Return completion signal: PLAN_CREATED: \${PLAN_PATH}"
-echo ""
-echo "Workflow-Specific Context:"
-echo "- Issue Description: $ISSUE_DESCRIPTION"
-echo "- Output Path: $PLAN_PATH"
-echo "- Research Reports: $REPORT_PATHS_JSON"
-echo "- Workflow Type: debug-only"
-echo "- Plan Mode: debug strategy"
-echo ""
+Task {
+  subagent_type: "plan-architect"
+  description: "Create debug strategy plan for $ISSUE_DESCRIPTION"
+  prompt: |
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
-# FAIL-FAST VERIFICATION
-echo ""
+    You are creating a debug strategy plan for: fix workflow
+
+    Input:
+    - Feature Description: Debug strategy for: $ISSUE_DESCRIPTION
+    - Output Path: $PLAN_PATH
+    - Research Reports: $REPORT_PATHS_JSON
+    - Workflow Type: debug-only
+    - Plan Mode: debug strategy
+
+    Execute planning according to behavioral guidelines and return completion signal:
+    PLAN_CREATED: ${PLAN_PATH}
+}
+
+```bash
+# MANDATORY VERIFICATION
 echo "Verifying plan artifacts..."
 
 if [ ! -f "$PLAN_PATH" ]; then
@@ -270,24 +281,30 @@ if ! sm_transition "$STATE_DEBUG" 2>&1; then
 fi
 echo "=== Phase 3: Debug (Root Cause Analysis) ==="
 echo ""
+```
 
-# IMPERATIVE AGENT INVOCATION
-echo "EXECUTE NOW: USE the Task tool to invoke debug-analyst agent"
-echo ""
-echo "YOU MUST:"
-echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md"
-echo "2. Return completion signal: DEBUG_COMPLETE: \${ANALYSIS_PATH}"
-echo ""
-echo "Workflow-Specific Context:"
-echo "- Issue Description: $ISSUE_DESCRIPTION"
-echo "- Debug Strategy Plan: $PLAN_PATH"
-echo "- Research Reports: $REPORT_PATHS_JSON"
-echo "- Debug Artifacts Directory: $DEBUG_DIR"
-echo "- Workflow Type: debug-only"
-echo ""
+Task {
+  subagent_type: "debug-analyst"
+  description: "Root cause analysis for $ISSUE_DESCRIPTION"
+  prompt: |
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
 
-# FAIL-FAST VERIFICATION
-echo ""
+    You are conducting root cause analysis for: fix workflow
+
+    Input:
+    - Issue Description: $ISSUE_DESCRIPTION
+    - Debug Strategy Plan: $PLAN_PATH
+    - Research Reports: $REPORT_PATHS_JSON
+    - Debug Directory: $DEBUG_DIR
+    - Workflow Type: debug-only
+
+    Execute root cause analysis according to behavioral guidelines and return completion signal:
+    DEBUG_COMPLETE: ${ANALYSIS_PATH}
+}
+
+```bash
+# MANDATORY VERIFICATION
 echo "Verifying debug artifacts..."
 
 if [ ! -d "$DEBUG_DIR" ]; then

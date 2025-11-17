@@ -169,30 +169,30 @@ mkdir -p "$RESEARCH_DIR"
 REVISION_TOPIC_SLUG=$(echo "$REVISION_DETAILS" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | sed 's/^_//;s/_$//' | cut -c1-30)
 REVISION_NUMBER=$(find "$RESEARCH_DIR" -name 'revision_*.md' 2>/dev/null | wc -l | xargs)
 REVISION_NUMBER=$((REVISION_NUMBER + 1))
+```
 
-# IMPERATIVE AGENT INVOCATION
-echo "EXECUTE NOW: USE the Task tool to invoke research-specialist agent"
-echo ""
-echo "YOU MUST:"
-echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md"
-echo "2. Return completion signal: REPORT_CREATED: \${REPORT_PATH}"
-echo ""
-echo "Workflow-Specific Context:"
-echo "- Research Complexity: $RESEARCH_COMPLEXITY"
-echo "- Revision Details: $REVISION_DETAILS"
-echo "- Output Directory: $RESEARCH_DIR"
-echo "- Workflow Type: research-and-revise"
-echo "- Existing Plan: $EXISTING_PLAN_PATH"
-echo ""
+Task {
+  subagent_type: "research-specialist"
+  description: "Research revision insights for $REVISION_DETAILS"
+  prompt: |
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
-# Hierarchical supervision for complexity ≥4
-if [ "$RESEARCH_COMPLEXITY" -ge 4 ]; then
-  echo "NOTE: Hierarchical supervision mode (complexity ≥4)"
-  echo "Invoke research-sub-supervisor agent"
-fi
+    You are conducting research for: research-revise workflow
 
-# FAIL-FAST VERIFICATION
-echo ""
+    Input:
+    - Research Topic: Plan revision insights for: $REVISION_DETAILS
+    - Research Complexity: $RESEARCH_COMPLEXITY
+    - Output Directory: $RESEARCH_DIR
+    - Workflow Type: research-and-revise
+    - Existing Plan: $EXISTING_PLAN_PATH
+
+    Execute research according to behavioral guidelines and return completion signal:
+    REPORT_CREATED: ${REPORT_PATH}
+}
+
+```bash
+# MANDATORY VERIFICATION
 echo "Verifying research artifacts..."
 
 if [ ! -d "$RESEARCH_DIR" ]; then
@@ -258,25 +258,31 @@ echo ""
 # Collect research report paths
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
+```
 
-# IMPERATIVE AGENT INVOCATION
-echo "EXECUTE NOW: USE the Task tool to invoke plan-architect agent"
-echo ""
-echo "YOU MUST:"
-echo "1. Read and follow ALL behavioral guidelines from: ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md"
-echo "2. Use Edit tool to modify plan at: $EXISTING_PLAN_PATH"
-echo "3. Return completion signal: PLAN_REVISED: \${PLAN_PATH}"
-echo ""
-echo "Workflow-Specific Context:"
-echo "- Existing Plan Path: $EXISTING_PLAN_PATH"
-echo "- Backup Path: $BACKUP_PATH"
-echo "- Revision Details: $REVISION_DETAILS"
-echo "- Research Reports: $REPORT_PATHS_JSON"
-echo "- Workflow Type: research-and-revise"
-echo "- Operation Mode: plan revision"
-echo ""
+Task {
+  subagent_type: "plan-architect"
+  description: "Revise implementation plan based on $REVISION_DETAILS"
+  prompt: |
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
-# FAIL-FAST VERIFICATION
+    You are revising an implementation plan for: research-revise workflow
+
+    Input:
+    - Existing Plan Path: $EXISTING_PLAN_PATH
+    - Backup Path: $BACKUP_PATH
+    - Revision Details: $REVISION_DETAILS
+    - Research Reports: $REPORT_PATHS_JSON
+    - Workflow Type: research-and-revise
+    - Operation Mode: plan revision
+
+    Execute plan revision according to behavioral guidelines and return completion signal:
+    PLAN_REVISED: ${EXISTING_PLAN_PATH}
+}
+
+```bash
+# MANDATORY VERIFICATION
 echo "Verifying plan revision..."
 
 if [ ! -f "$EXISTING_PLAN_PATH" ]; then
