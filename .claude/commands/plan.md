@@ -593,148 +593,140 @@ echo "  Standards file: $CLAUDE_MD"
 **Documentation**: See `plan-command-guide.md` §3.5 "Phase 3: Plan Creation" for agent invocation pattern, workflow-specific context format, verification requirements, and error diagnostic templates.
 
 ```bash
+set +H
+
+# STATE RESTORATION
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+source "${LIB_DIR}/state-persistence.sh"
+
+# Load workflow state
+PLAN_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$PLAN_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
+
 echo ""
 echo "PROGRESS: Creating implementation plan..."
 
-# STANDARD 12: Reference agent behavioral file ONLY - no inline duplication
-# STANDARD 11: Imperative invocation marker
-# EXECUTE NOW: USE the Task tool with subagent_type=general-purpose
-
+# Build context JSON for plan-architect
+# Use PLAN_COMPLEXITY from Haiku classifier (not legacy ESTIMATED_COMPLEXITY)
 CONTEXT_JSON=$(jq -n \
   --arg feature "$FEATURE_DESCRIPTION" \
   --arg output_path "$PLAN_PATH" \
-  --arg standards "$CLAUDE_MD" \
-  --arg complexity "$ESTIMATED_COMPLEXITY" \
-  --arg phases "$SUGGESTED_PHASES" \
-  --argjson reports "$(echo "${REPORT_PATHS_JSON:-[]}")" \
+  --arg standards "${CLAUDE_MD:-}" \
+  --arg complexity "$PLAN_COMPLEXITY" \
+  --arg research_complexity "$RESEARCH_COMPLEXITY" \
+  --argjson research_topics "$RESEARCH_TOPICS_JSON" \
+  --argjson reports "${REPORT_PATHS_JSON:-[]}" \
   '{
     feature_description: $feature,
     output_path: $output_path,
     standards_path: $standards,
-    complexity: ($complexity | tonumber),
-    suggested_phases: ($phases | tonumber),
+    plan_complexity: ($complexity | tonumber),
+    research_complexity: ($research_complexity | tonumber),
+    research_topics: $research_topics,
     report_paths: $reports
   }')
 
-CONTEXT_FILE="$TOPIC_DIR/.plan_context_$$.json"
+# Save context to temp file for agent access
+CONTEXT_FILE="$TOPIC_DIR/.plan_context_${WORKFLOW_ID}.json"
 echo "$CONTEXT_JSON" > "$CONTEXT_FILE"
 
-echo "AGENT_INVOCATION_MARKER: plan-architect"
-echo "AGENT_CONTEXT_FILE: $CONTEXT_FILE"
-echo "EXPECTED_OUTPUT: $PLAN_PATH"
+echo "AGENT_INVOCATION: plan-architect"
+echo "  Context file: $CONTEXT_FILE"
+echo "  Expected output: $PLAN_PATH"
+```
 
-# Temporary: Create basic plan structure if agent not available
-if [ ! -f "$PLAN_PATH" ]; then
-  echo "  Creating plan structure (agent not yet available)..."
+**EXECUTE NOW**: USE the Task tool to invoke plan-architect agent:
 
-  cat > "$PLAN_PATH" << EOF
-# Implementation Plan
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
-## Metadata
-- **Date**: $(date +%Y-%m-%d)
-- **Feature**: $FEATURE_DESCRIPTION
-- **Scope**: Implementation plan for feature
-- **Estimated Phases**: $SUGGESTED_PHASES
-- **Estimated Hours**: TBD
-- **Structure Level**: 0
-- **Complexity Score**: $ESTIMATED_COMPLEXITY
-- **Standards File**: $CLAUDE_MD
+    **Plan Context**:
+    - Feature Description: $FEATURE_DESCRIPTION
+    - Output Path: $PLAN_PATH
+    - Plan Complexity: $PLAN_COMPLEXITY/10
+    - Research Complexity: $RESEARCH_COMPLEXITY/3
+    - Research Topics: $RESEARCH_TOPICS_JSON
+    - Report Paths: $REPORT_PATHS_JSON
+    - Standards Path: ${CLAUDE_MD:-}
 
-## Overview
+    **CRITICAL**: Create implementation plan file at EXACT path provided above.
 
-This plan outlines the implementation approach for: $FEATURE_DESCRIPTION
+    The path has been PRE-CALCULATED by the orchestrator.
+    DO NOT modify the path. DO NOT create files elsewhere.
 
-## Success Criteria
+    If research reports are provided, integrate findings into plan.
+    Plan should have at least 3 phases and 10 actionable tasks.
 
-- [ ] Feature implemented according to requirements
-- [ ] Tests passing with ≥80% coverage
-- [ ] Documentation updated
-- [ ] Code reviewed and approved
+    Execute plan creation following all guidelines in behavioral file.
+  "
+}
 
-## Implementation Phases
+USE the Bash tool:
 
-### Phase 1: Setup and Preparation
+```bash
+set +H
 
-**Objective**: Prepare development environment and gather requirements
-
-**Tasks**:
-- [ ] Review requirements
-- [ ] Setup development environment
-- [ ] Create initial project structure
-
-**Expected Duration**: 1-2 hours
-
-EOF
-
-  for i in $(seq 2 $SUGGESTED_PHASES); do
-    cat >> "$PLAN_PATH" << EOF
-
-### Phase $i: Implementation Phase $i
-
-**Objective**: TBD
-
-**Tasks**:
-- [ ] Task 1
-- [ ] Task 2
-
-**Expected Duration**: TBD
-
-EOF
-  done
-
-  cat >> "$PLAN_PATH" << EOF
-
-## Rollback Strategy
-
-If issues occur during implementation:
-1. Revert commits using git
-2. Document issues
-3. Revise plan as needed
-
-## Risk Assessment
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| TBD | Medium | Medium | TBD |
-
-## Notes
-
-Created using /plan command
-EOF
+# STATE RESTORATION
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
 fi
 
-# STANDARD 0: MANDATORY verification
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+source "${LIB_DIR}/state-persistence.sh"
+
+# Load workflow state
+PLAN_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$PLAN_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
+
+# VERIFICATION CHECKPOINT: Verify plan file created
 if [ ! -f "$PLAN_PATH" ]; then
-  echo "✗ ERROR: Agent plan-architect failed to create: $PLAN_PATH"
-  echo "DIAGNOSTIC: Check agent output above for errors"
-  echo "DIAGNOSTIC: Expected file at: $PLAN_PATH"
-  echo "DIAGNOSTIC: Parent directory: $(dirname "$PLAN_PATH")"
-  echo "DIAGNOSTIC: Directory exists: $([ -d "$(dirname "$PLAN_PATH")" ] && echo "yes" || echo "no")"
+  echo "✗ CRITICAL: plan-architect agent failed to create: $PLAN_PATH"
+  echo ""
+  echo "Diagnostic:"
+  echo "  - Expected file at: $PLAN_PATH"
+  echo "  - Parent directory: $(dirname "$PLAN_PATH")"
+  echo "  - Directory exists: $([ -d "$(dirname "$PLAN_PATH")" ] && echo "yes" || echo "no")"
+  echo "  - Agent behavioral file: ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md"
+  echo ""
+  echo "This is a critical failure. Cannot proceed without implementation plan."
   exit 1
 fi
 
-# Verify file size ≥500 bytes
+# Verify file size ≥2000 bytes (meaningful plan content)
 FILE_SIZE=$(wc -c < "$PLAN_PATH")
-if [ "$FILE_SIZE" -lt 500 ]; then
+if [ "$FILE_SIZE" -lt 2000 ]; then
   echo "✗ WARNING: Plan file seems incomplete (${FILE_SIZE} bytes)"
-  echo "DIAGNOSTIC: Expected at least 500 bytes for basic plan"
+  echo "  Expected at least 2000 bytes for comprehensive plan"
+  echo "  File may lack sufficient detail for implementation"
 fi
 
 # Verify phase count ≥3
 PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo "0")
 if [ "$PHASE_COUNT" -lt 3 ]; then
   echo "✗ WARNING: Plan has fewer than 3 phases (found: $PHASE_COUNT)"
-  echo "DIAGNOSTIC: Minimum 3 phases recommended for structured implementation"
+  echo "  Minimum 3 phases recommended for structured implementation"
 fi
 
 # Verify checkbox count ≥10
 CHECKBOX_COUNT=$(grep -c "^- \[ \]" "$PLAN_PATH" || echo "0")
 if [ "$CHECKBOX_COUNT" -lt 10 ]; then
   echo "✗ WARNING: Plan has fewer than 10 tasks (found: $CHECKBOX_COUNT)"
-  echo "DIAGNOSTIC: At least 10 tasks recommended for /implement tracking"
+  echo "  At least 10 tasks recommended for /implement tracking"
 fi
 
-echo "✓ Phase 3: Plan created"
+echo "✓ Phase 3: Plan created successfully"
 echo "  File: $PLAN_PATH"
 echo "  Size: ${FILE_SIZE} bytes"
 echo "  Phases: $PHASE_COUNT"
