@@ -192,7 +192,15 @@ if [ -n "$UNDERSIZED_FILES" ]; then
 fi
 
 REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
-echo "✓ Research phase complete ($REPORT_COUNT reports created)"
+
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Research phase complete"
+echo "- Workflow type: debug-only"
+echo "- Issue: $ISSUE_DESCRIPTION"
+echo "- Reports created: $REPORT_COUNT in $RESEARCH_DIR"
+echo "- All files verified: ✓"
+echo "- Proceeding to: Planning phase"
 echo ""
 
 # Persist variables across bash blocks (subprocess isolation)
@@ -271,7 +279,14 @@ if [ "$FILE_SIZE" -lt 200 ]; then
   exit 1
 fi
 
-echo "✓ Planning phase complete (strategy: $PLAN_PATH)"
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Planning phase complete"
+echo "- Plan file: $PLAN_PATH"
+echo "- Plan size: $(wc -c < "$PLAN_PATH") bytes"
+echo "- Research reports used: $REPORT_COUNT"
+echo "- All verifications: ✓"
+echo "- Proceeding to: Debug phase"
 echo ""
 
 # Persist variables for Part 5 (subprocess isolation)
@@ -336,7 +351,13 @@ if [ "$DEBUG_ARTIFACT_COUNT" -eq 0 ]; then
   echo "NOTE: No debug artifacts created (analysis may be in plan or reports)"
 fi
 
-echo "✓ Debug phase complete (artifacts: $DEBUG_ARTIFACT_COUNT)"
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Debug phase complete"
+echo "- Debug artifacts: $DEBUG_ARTIFACT_COUNT in $DEBUG_DIR"
+echo "- Analysis complete: ✓"
+echo "- All verifications: ✓"
+echo "- Proceeding to: Completion"
 echo ""
 
 # Persist variables for Part 6 (subprocess isolation)

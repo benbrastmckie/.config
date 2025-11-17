@@ -205,7 +205,15 @@ if [ -n "$UNDERSIZED_FILES" ]; then
 fi
 
 REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
-echo "✓ Research phase complete ($REPORT_COUNT reports created)"
+
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Research phase complete"
+echo "- Workflow type: research-and-plan"
+echo "- Feature: $FEATURE_DESCRIPTION"
+echo "- Reports created: $REPORT_COUNT in $RESEARCH_DIR"
+echo "- All files verified: ✓"
+echo "- Proceeding to: Planning phase"
 echo ""
 
 # Persist report count for completion summary
@@ -280,7 +288,14 @@ if [ "$FILE_SIZE" -lt 500 ]; then
   exit 1
 fi
 
-echo "✓ Planning phase complete (plan: $PLAN_PATH)"
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Planning phase complete"
+echo "- Plan file: $PLAN_PATH"
+echo "- Plan size: $(wc -c < "$PLAN_PATH") bytes"
+echo "- Research reports used: $REPORT_COUNT"
+echo "- All verifications: ✓"
+echo "- Proceeding to: Completion"
 echo ""
 
 # Persist variables across bash blocks (subprocess isolation)

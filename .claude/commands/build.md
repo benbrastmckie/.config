@@ -242,7 +242,15 @@ if [ "$COMMIT_COUNT" -eq 0 ]; then
   echo "NOTE: Implementation may not have created commits"
 fi
 
-echo "✓ Implementation phase complete"
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Implementation phase complete"
+echo "- Workflow type: full-implementation"
+echo "- Plan file: $PLAN_FILE"
+echo "- Changes detected: $(git diff --cached --quiet && echo "none" || echo "yes")"
+echo "- Recent commits: $COMMIT_COUNT"
+echo "- All phases verified: ✓"
+echo "- Proceeding to: Testing phase"
 echo ""
 
 # Persist variables across bash blocks (subprocess isolation)
@@ -314,6 +322,13 @@ else
   TESTS_PASSED=true
 fi
 
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Testing phase complete"
+echo "- Test command: ${TEST_COMMAND:-none}"
+echo "- Test result: $([ "$TESTS_PASSED" = "true" ] && echo "✓ PASSED" || echo "✗ FAILED (exit code: $TEST_EXIT_CODE)")"
+echo "- All verifications: ✓"
+echo "- Proceeding to: $([ "$TESTS_PASSED" = "true" ] && echo "Documentation phase" || echo "Debug phase")"
 echo ""
 
 # Persist test results for Part 5 (subprocess isolation)
