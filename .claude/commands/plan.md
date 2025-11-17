@@ -84,12 +84,24 @@ if ! source "$UTILS_DIR/metadata-extraction.sh" 2>&1; then
 fi
 
 # Initialize workflow state
-STATE_FILE=$(init_workflow_state "plan_$$")
+WORKFLOW_ID="plan_$$"
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 if [ $? -ne 0 ]; then
   echo "ERROR: Failed to initialize workflow state"
   exit 1
 fi
 trap "rm -f '$STATE_FILE'" EXIT
+
+# Pattern 1: Fixed Semantic Filename (bash-block-execution-model.md:163-191)
+# Save workflow ID to file for subsequent blocks using fixed location
+PLAN_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+echo "$WORKFLOW_ID" > "$PLAN_STATE_ID_FILE"
+
+# VERIFICATION CHECKPOINT: Verify state ID file created successfully
+if [ ! -f "$PLAN_STATE_ID_FILE" ]; then
+  echo "ERROR: State ID file not created at $PLAN_STATE_ID_FILE"
+  exit 1
+fi
 
 # Parse arguments
 FEATURE_DESCRIPTION="$1"
@@ -106,6 +118,11 @@ if [ -z "$FEATURE_DESCRIPTION" ]; then
   echo "  /plan \"Refactor plugin architecture\" /path/to/research.md"
   exit 1
 fi
+
+# CRITICAL: Save feature description BEFORE any workflow state operations
+# Libraries may pre-initialize variables which could overwrite parent values
+SAVED_FEATURE_DESC="$FEATURE_DESCRIPTION"
+export SAVED_FEATURE_DESC
 
 # Parse optional report paths
 REPORT_PATHS=()
@@ -165,7 +182,9 @@ if [[ ! "$PLAN_PATH" =~ ^/ ]]; then
 fi
 
 # Export all pre-calculated paths to workflow state
-append_workflow_state "FEATURE_DESCRIPTION" "$FEATURE_DESCRIPTION"
+append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
+append_workflow_state "PLAN_STATE_ID_FILE" "$PLAN_STATE_ID_FILE"
+append_workflow_state "FEATURE_DESCRIPTION" "$SAVED_FEATURE_DESC"
 append_workflow_state "TOPIC_DIR" "$TOPIC_DIR"
 append_workflow_state "TOPIC_NUMBER" "$TOPIC_NUMBER"
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
@@ -185,116 +204,148 @@ echo "  Topic: $TOPIC_DIR"
 echo "  Plan: $PLAN_PATH"
 ```
 
-## Phase 1: Feature Analysis (LLM Classification)
+## Phase 1: Feature Complexity Classification (Haiku Subagent)
 
-**EXECUTE NOW**: Analyze feature complexity using LLM classification with haiku-4 model, falling back to heuristic analysis if needed.
+**EXECUTE NOW**: USE the Task tool to invoke plan-complexity-classifier agent:
 
-**Documentation**: See `plan-command-guide.md` §3.2 "Phase 1: Feature Analysis" for heuristic algorithm details, scoring methodology, and output format specification.
+Task {
+  subagent_type: "general-purpose"
+  description: "Classify feature complexity for planning"
+  model: "haiku"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-complexity-classifier.md
 
-```bash
-echo ""
-echo "PROGRESS: Analyzing feature complexity..."
+    **Feature-Specific Context**:
+    - Feature Description: $SAVED_FEATURE_DESC
+    - Command Name: plan
 
-# Design classification prompt for LLM analysis
-ANALYSIS_PROMPT="Analyze the following feature description and provide a JSON response:
+    **CRITICAL**: Return structured JSON classification.
 
-Feature: \"$FEATURE_DESCRIPTION\"
-
-Return JSON with this structure:
-{
-  \"estimated_complexity\": <number 1-10>,
-  \"suggested_phases\": <number 3-10>,
-  \"template_type\": \"<architecture|feature|bugfix|refactor>\",
-  \"keywords\": [\"keyword1\", \"keyword2\"],
-  \"requires_research\": <true|false>
+    Execute classification following all guidelines in behavioral file.
+    Return: CLASSIFICATION_COMPLETE: {JSON classification object}
+  "
 }
 
-Complexity scoring:
-- 1-3: Simple features (add button, fix typo, update config)
-- 4-6: Moderate features (new endpoint, UI component, data model)
-- 7-8: Complex features (authentication system, API integration, refactoring)
-- 9-10: Major features (microservices migration, architecture redesign)
+USE the Bash tool:
 
-Research delegation triggers:
-- Complexity >= 7
-- Keywords: integrate, migrate, refactor, architecture, design, system
-- Cross-cutting concerns
-- Multiple subsystem changes"
+```bash
+set +H  # Disable history expansion
 
-# STANDARD 11: Imperative agent invocation with explicit execution marker
-# EXECUTE NOW: USE the Task tool with haiku model for fast classification
-ANALYSIS_JSON=""
-if command -v claude &>/dev/null; then
-  ANALYSIS_JSON=$(echo "$ANALYSIS_PROMPT" | jq -Rs '{prompt: .}')
+# STATE RESTORATION PATTERN: Cross-bash-block state persistence
+# Re-load workflow state (needed after Task invocation)
+
+# Standard 13: CLAUDE_PROJECT_DIR detection
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
 fi
 
-# Fallback to heuristic analysis if LLM fails (see guide §3.2 for algorithm details)
-if [ -z "$ANALYSIS_JSON" ] || ! echo "$ANALYSIS_JSON" | jq -e . >/dev/null 2>&1; then
-  echo "  Fallback: Using heuristic analysis (LLM unavailable)"
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
-  # Keyword scoring
-  KEYWORD_SCORE=0
-  if echo "$FEATURE_DESCRIPTION" | grep -qiE "architecture|migrate|redesign"; then
-    KEYWORD_SCORE=8
-  elif echo "$FEATURE_DESCRIPTION" | grep -qiE "refactor|integrate|system"; then
-    KEYWORD_SCORE=6
-  elif echo "$FEATURE_DESCRIPTION" | grep -qiE "implement|create|build"; then
-    KEYWORD_SCORE=4
-  else
-    KEYWORD_SCORE=2
-  fi
+# Re-source required libraries
+source "${LIB_DIR}/workflow-state-machine.sh"
+source "${LIB_DIR}/state-persistence.sh"
+source "${LIB_DIR}/error-handling.sh"
+source "${LIB_DIR}/verification-helpers.sh"
 
-  # Length scoring
-  WORD_COUNT=$(echo "$FEATURE_DESCRIPTION" | wc -w)
-  LENGTH_SCORE=0
-  if [ "$WORD_COUNT" -gt 40 ]; then
-    LENGTH_SCORE=3
-  elif [ "$WORD_COUNT" -gt 20 ]; then
-    LENGTH_SCORE=2
-  elif [ "$WORD_COUNT" -gt 10 ]; then
-    LENGTH_SCORE=1
-  fi
+# Load workflow state
+PLAN_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$PLAN_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
 
-  # Combined score
-  COMPLEXITY_SCORE=$((KEYWORD_SCORE + LENGTH_SCORE))
-  REQUIRES_RESEARCH="false"
-  [ "$COMPLEXITY_SCORE" -ge 7 ] && REQUIRES_RESEARCH="true"
-
-  SUGGESTED_PHASES=5
-  if [ "$COMPLEXITY_SCORE" -ge 8 ]; then
-    SUGGESTED_PHASES=7
-  elif [ "$COMPLEXITY_SCORE" -le 3 ]; then
-    SUGGESTED_PHASES=3
-  fi
-
-  ANALYSIS_JSON=$(jq -n \
-    --arg complexity "$COMPLEXITY_SCORE" \
-    --arg phases "$SUGGESTED_PHASES" \
-    --arg requires_research "$REQUIRES_RESEARCH" \
-    '{
-      estimated_complexity: ($complexity | tonumber),
-      suggested_phases: ($phases | tonumber),
-      template_type: "feature",
-      keywords: [],
-      requires_research: ($requires_research == "true")
-    }')
+# FAIL-FAST VALIDATION: Classification must exist in state
+if [ -z "${CLASSIFICATION_JSON:-}" ]; then
+  echo "ERROR: plan-complexity-classifier agent did not save CLASSIFICATION_JSON to state"
+  echo ""
+  echo "Diagnostic:"
+  echo "  - Agent was instructed to save classification via append_workflow_state"
+  echo "  - Expected: append_workflow_state \"CLASSIFICATION_JSON\" \"\$CLASSIFICATION_JSON\""
+  echo "  - Check agent's bash execution in previous response"
+  echo "  - State file: $STATE_FILE (loaded via load_workflow_state)"
+  echo ""
+  echo "This is a critical bug. The workflow cannot proceed without classification data."
+  exit 1
 fi
 
-# Extract analysis results
-ESTIMATED_COMPLEXITY=$(echo "$ANALYSIS_JSON" | jq -r '.estimated_complexity')
-SUGGESTED_PHASES=$(echo "$ANALYSIS_JSON" | jq -r '.suggested_phases')
-REQUIRES_RESEARCH=$(echo "$ANALYSIS_JSON" | jq -r '.requires_research')
+# FAIL-FAST VALIDATION: JSON must be valid
+echo "$CLASSIFICATION_JSON" | jq empty 2>/dev/null
+JSON_VALID=$?
+if [ $JSON_VALID -ne 0 ]; then
+  echo "ERROR: Invalid JSON in CLASSIFICATION_JSON"
+  echo ""
+  echo "Diagnostic:"
+  echo "  - Content: $CLASSIFICATION_JSON"
+  echo "  - JSON validation failed"
+  echo "  - Agent may have malformed the JSON output"
+  echo ""
+  echo "This is a critical bug. The workflow cannot proceed with invalid JSON."
+  exit 1
+fi
 
-# Cache analysis results to state file
-append_workflow_state "ESTIMATED_COMPLEXITY" "$ESTIMATED_COMPLEXITY"
-append_workflow_state "SUGGESTED_PHASES" "$SUGGESTED_PHASES"
-append_workflow_state "REQUIRES_RESEARCH" "$REQUIRES_RESEARCH"
-append_workflow_state "ANALYSIS_JSON" "$ANALYSIS_JSON"
+# Parse JSON fields using jq
+RESEARCH_COMPLEXITY=$(echo "$CLASSIFICATION_JSON" | jq -r '.research_complexity' 2>/dev/null)
+PLAN_COMPLEXITY=$(echo "$CLASSIFICATION_JSON" | jq -r '.plan_complexity' 2>/dev/null)
+RESEARCH_TOPICS_JSON=$(echo "$CLASSIFICATION_JSON" | jq -c '.research_topics' 2>/dev/null)
+PLAN_FILENAME_SLUG=$(echo "$CLASSIFICATION_JSON" | jq -r '.plan_filename_slug' 2>/dev/null)
+CONFIDENCE=$(echo "$CLASSIFICATION_JSON" | jq -r '.confidence' 2>/dev/null)
 
-echo "✓ Phase 1: Feature analysis complete"
-echo "  Complexity: $ESTIMATED_COMPLEXITY/10"
-echo "  Suggested phases: $SUGGESTED_PHASES"
-echo "  Requires research: $REQUIRES_RESEARCH"
+# VERIFICATION CHECKPOINT: Verify all required fields extracted
+if [ -z "$RESEARCH_COMPLEXITY" ] || [ "$RESEARCH_COMPLEXITY" = "null" ]; then
+  echo "ERROR: research_complexity not found in classification JSON: $CLASSIFICATION_JSON"
+  exit 1
+fi
+
+if [ -z "$PLAN_COMPLEXITY" ] || [ "$PLAN_COMPLEXITY" = "null" ]; then
+  echo "ERROR: plan_complexity not found in classification JSON: $CLASSIFICATION_JSON"
+  exit 1
+fi
+
+if [ -z "$RESEARCH_TOPICS_JSON" ] || [ "$RESEARCH_TOPICS_JSON" = "null" ]; then
+  echo "ERROR: research_topics not found in classification JSON: $CLASSIFICATION_JSON"
+  exit 1
+fi
+
+if [ -z "$PLAN_FILENAME_SLUG" ] || [ "$PLAN_FILENAME_SLUG" = "null" ]; then
+  echo "ERROR: plan_filename_slug not found in classification JSON: $CLASSIFICATION_JSON"
+  exit 1
+fi
+
+# Generate semantic report filenames from research topics (if any)
+TOPIC_COUNT=$(echo "$RESEARCH_TOPICS_JSON" | jq 'length')
+
+if [ "$TOPIC_COUNT" -gt 0 ]; then
+  # Extract filename slugs from topics array
+  REPORT_PATHS=()
+  for i in $(seq 0 $((TOPIC_COUNT - 1))); do
+    FILENAME_SLUG=$(echo "$RESEARCH_TOPICS_JSON" | jq -r ".[$i].filename_slug")
+    REPORT_NUMBER=$(printf "%03d" $((i + 1)))
+    REPORT_PATH="${TOPIC_DIR}/reports/${REPORT_NUMBER}_${FILENAME_SLUG}.md"
+    REPORT_PATHS+=("$REPORT_PATH")
+  done
+
+  # Convert REPORT_PATHS array to JSON for state persistence
+  REPORT_PATHS_JSON=$(printf '%s\n' "${REPORT_PATHS[@]}" | jq -R . | jq -s .)
+  append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
+fi
+
+# Update PLAN_PATH with semantic filename slug
+PLAN_PATH="${TOPIC_DIR}/plans/${TOPIC_NUMBER}_${PLAN_FILENAME_SLUG}.md"
+append_workflow_state "PLAN_PATH" "$PLAN_PATH"
+
+# Export classification variables to state
+append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+append_workflow_state "PLAN_COMPLEXITY" "$PLAN_COMPLEXITY"
+append_workflow_state "RESEARCH_TOPICS_JSON" "$RESEARCH_TOPICS_JSON"
+append_workflow_state "PLAN_FILENAME_SLUG" "$PLAN_FILENAME_SLUG"
+append_workflow_state "CONFIDENCE" "$CONFIDENCE"
+
+echo "✓ Phase 1: Feature complexity classification complete"
+echo "  Research complexity: $RESEARCH_COMPLEXITY/3"
+echo "  Plan complexity: $PLAN_COMPLEXITY/10"
+echo "  Research topics: $TOPIC_COUNT"
+echo "  Plan filename: ${PLAN_FILENAME_SLUG}.md"
+echo "  Confidence: $CONFIDENCE"
 ```
 
 ## Phase 1.5: Research Delegation (Conditional)
