@@ -73,6 +73,15 @@ export STATE_PERSISTENCE_VERSION="1.5.0"
 # - Recalculation is expensive (>30ms) or impossible
 # - Phase dependencies require prior phase outputs
 #
+# State File Locations (Spec 752 Phase 9):
+# - STANDARD: .claude/tmp/workflow_*.sh (temporary workflow state, auto-cleanup)
+# - STANDARD: .claude/tmp/*.json (JSON checkpoints, atomic writes)
+# - DEPRECATED: .claude/data/workflows/*.state (legacy location, no longer used)
+# - DO NOT USE: State files outside .claude/tmp/ (violates temporary data conventions)
+#
+# All workflow state files MUST be created in .claude/tmp/ for consistent cleanup,
+# discoverability, and adherence to temporary data conventions.
+#
 # Dependencies:
 # - jq (JSON parsing and validation)
 # - mktemp (atomic write temp file creation)
@@ -131,6 +140,18 @@ init_workflow_state() {
   # Create .claude/tmp if it doesn't exist
   mkdir -p "${CLAUDE_PROJECT_DIR}/.claude/tmp"
 
+  # Spec 752 Phase 9: Check for legacy state file locations and warn
+  LEGACY_STATE_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/workflows"
+  if [ -d "$LEGACY_STATE_DIR" ]; then
+    LEGACY_FILES=$(find "$LEGACY_STATE_DIR" -name "*.state" 2>/dev/null | wc -l)
+    if [ "$LEGACY_FILES" -gt 0 ]; then
+      echo "⚠️  WARNING: Found $LEGACY_FILES legacy state file(s) in $LEGACY_STATE_DIR" >&2
+      echo "   Legacy location .claude/data/workflows/*.state is deprecated" >&2
+      echo "   State files now use: .claude/tmp/workflow_*.sh" >&2
+      echo "   Consider cleaning up legacy files: rm -f $LEGACY_STATE_DIR/*.state" >&2
+    fi
+  fi
+
   # Create state file
   STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${workflow_id}.sh"
 
@@ -187,15 +208,57 @@ EOF
 #   # OR (default is false)
 #   load_workflow_state "coordinate_$$"
 #
-# Reference: Spec 672 Phase 3 (fail-fast state validation)
+# Reference: Spec 672 Phase 3 (fail-fast state validation), Spec 752 Phase 3 (variable validation)
 load_workflow_state() {
   local workflow_id="${1:-$$}"
   local is_first_block="${2:-false}"  # Spec 672 Phase 3: Fail-fast validation mode
+  shift 2 || true  # Remove first two parameters
+  local required_vars=("$@")  # Spec 752 Phase 3: Optional variable validation
   local state_file="${CLAUDE_PROJECT_DIR:-$HOME}/.claude/tmp/workflow_${workflow_id}.sh"
 
   if [ -f "$state_file" ]; then
     # State file exists - source it to restore variables
     source "$state_file"
+
+    # Spec 752 Phase 3: Variable validation (if required variables specified)
+    if [ ${#required_vars[@]} -gt 0 ]; then
+      local missing_vars=()
+      for var_name in "${required_vars[@]}"; do
+        # Check if variable exists and is not empty
+        if [ -z "${!var_name:-}" ]; then
+          missing_vars+=("$var_name")
+        fi
+      done
+
+      # If any required variables are missing, fail with detailed error
+      if [ ${#missing_vars[@]} -gt 0 ]; then
+        echo "" >&2
+        echo "❌ CRITICAL ERROR: Required state variables missing" >&2
+        echo "" >&2
+        echo "Missing variables:" >&2
+        for var in "${missing_vars[@]}"; do
+          echo "  - $var" >&2
+        done
+        echo "" >&2
+        echo "State file location: $state_file" >&2
+        echo "" >&2
+        echo "State file contents:" >&2
+        echo "════════════════════════════════════════════════════" >&2
+        cat "$state_file" >&2
+        echo "════════════════════════════════════════════════════" >&2
+        echo "" >&2
+        echo "TROUBLESHOOTING:" >&2
+        echo "  1. Check if previous bash block called append_workflow_state() for these variables" >&2
+        echo "  2. Verify variable names are spelled correctly" >&2
+        echo "  3. Review state file contents above for actual variable names" >&2
+        echo "  4. Check if append_workflow_state() completed successfully" >&2
+        echo "" >&2
+        echo "Aborting workflow to prevent silent data loss." >&2
+        echo "" >&2
+        return 3  # Exit code 3 = validation error (distinct from missing file error)
+      fi
+    fi
+
     return 0
   else
     # Spec 672 Phase 3: Distinguish expected vs unexpected missing state files
@@ -348,6 +411,45 @@ load_json_checkpoint() {
     # Graceful degradation: return empty JSON object if missing
     echo "{}"
   fi
+}
+
+# Save classification checkpoint (Spec 752 Phase 6)
+#
+# Specialized checkpoint function for workflow classification results.
+# Stores classification JSON atomically to avoid bash escaping issues.
+#
+# Args:
+#   $1 - workflow_id: Workflow identifier
+#   $2 - classification_json: Complete classification JSON object
+#
+# Example:
+#   save_classification_checkpoint "$WORKFLOW_ID" "$CLASSIFICATION_JSON"
+save_classification_checkpoint() {
+  local workflow_id="$1"
+  local classification_json="$2"
+
+  # Use generic checkpoint function with workflow-specific name
+  save_json_checkpoint "classification_${workflow_id}" "$classification_json"
+}
+
+# Load classification checkpoint (Spec 752 Phase 6)
+#
+# Loads classification checkpoint for a workflow.
+# Returns empty JSON object {} if file missing (graceful degradation).
+#
+# Args:
+#   $1 - workflow_id: Workflow identifier
+#
+# Returns:
+#   Echoes classification JSON if exists, or {} if missing
+#
+# Example:
+#   CLASSIFICATION_JSON=$(load_classification_checkpoint "$WORKFLOW_ID")
+load_classification_checkpoint() {
+  local workflow_id="$1"
+
+  # Use generic checkpoint function with workflow-specific name
+  load_json_checkpoint "classification_${workflow_id}"
 }
 
 # Append JSONL log (benchmark logging)

@@ -212,6 +212,64 @@ Task {
   "
 }
 
+**IMMEDIATELY AFTER Task completes**, extract and save classification:
+
+USE the Bash tool:
+
+```bash
+set +H  # Disable history expansion
+set -euo pipefail
+
+# CRITICAL: Extract classification JSON from workflow-classifier agent response above
+# The agent returns: CLASSIFICATION_COMPLETE: {JSON object}
+# We must extract this JSON and save to workflow state for subsequent bash blocks
+
+# Standard 13: CLAUDE_PROJECT_DIR detection
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+# Load state persistence library
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+source "${LIB_DIR}/state-persistence.sh"
+
+# Re-load workflow state
+COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
+WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
+load_workflow_state "$WORKFLOW_ID"
+
+# COORDINATOR: Extract the JSON from the Task tool output above
+# Look for the signal: CLASSIFICATION_COMPLETE: {...}
+# Replace <EXTRACT_FROM_TASK_OUTPUT> with the actual JSON from agent response
+CLASSIFICATION_JSON='<EXTRACT_FROM_TASK_OUTPUT>'
+
+# Validate JSON before saving
+if ! echo "$CLASSIFICATION_JSON" | jq empty 2>/dev/null; then
+  echo "ERROR: Invalid JSON in classification result" >&2
+  echo "Received: $CLASSIFICATION_JSON" >&2
+  exit 1
+fi
+
+# Save to state
+append_workflow_state "CLASSIFICATION_JSON" "$CLASSIFICATION_JSON"
+
+# Verify saved successfully
+load_workflow_state "$WORKFLOW_ID"
+if [ -z "${CLASSIFICATION_JSON:-}" ]; then
+  echo "ERROR: Failed to save CLASSIFICATION_JSON to state" >&2
+  exit 1
+fi
+
+echo "✓ Classification saved to state successfully"
+echo "  Workflow type: $(echo "$CLASSIFICATION_JSON" | jq -r '.workflow_type')"
+echo "  Research complexity: $(echo "$CLASSIFICATION_JSON" | jq -r '.research_complexity')"
+```
+
+---
+
+## Phase 0.2: State Machine Initialization
+
 USE the Bash tool:
 
 ```bash
@@ -253,27 +311,16 @@ source "${LIB_DIR}/state-persistence.sh"
 source "${LIB_DIR}/error-handling.sh"
 source "${LIB_DIR}/verification-helpers.sh"
 
-# Load workflow state
+# Load workflow state with variable validation (Spec 752 Phase 4)
 COORDINATE_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/coordinate_state_id.txt"
 WORKFLOW_ID=$(cat "$COORDINATE_STATE_ID_FILE")
-load_workflow_state "$WORKFLOW_ID"
 
-# FAIL-FAST STATE LOADING: Load classification from state (saved by workflow-classifier agent)
-# The workflow-classifier agent MUST have executed append_workflow_state "CLASSIFICATION_JSON" before this block
-# See .claude/agents/workflow-classifier.md for agent behavior
+# Spec 752 Phase 3-4: Enhanced load_workflow_state with variable validation
+# If CLASSIFICATION_JSON is missing, load_workflow_state will fail-fast with detailed diagnostics
+# including state file contents and troubleshooting steps
+load_workflow_state "$WORKFLOW_ID" false "CLASSIFICATION_JSON"
 
-# FAIL-FAST VALIDATION: Classification must exist in state
-if [ -z "${CLASSIFICATION_JSON:-}" ]; then
-  handle_state_error "CRITICAL: workflow-classifier agent did not save CLASSIFICATION_JSON to state
-
-Diagnostic:
-  - Agent was instructed to save classification via append_workflow_state
-  - Expected: append_workflow_state \"CLASSIFICATION_JSON\" \"\$CLASSIFICATION_JSON\"
-  - Check agent's bash execution in previous response
-  - State file: \$STATE_FILE (loaded via load_workflow_state at line 220)
-
-This is a critical bug. The workflow cannot proceed without classification data." 1
-fi
+# If we reach here, CLASSIFICATION_JSON exists and is non-empty (validated by load_workflow_state)
 
 # FAIL-FAST VALIDATION: JSON must be valid
 # Exit code capture pattern prevents bash preprocessing errors

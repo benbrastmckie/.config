@@ -46,6 +46,154 @@ Command Execution (coordinate.md)
 - State persistence requires explicit file writes
 - Libraries must be re-sourced in each block
 
+## Task Tool Subprocess Isolation
+
+### Overview
+
+The Task tool creates an additional level of subprocess isolation beyond bash blocks. When agents are invoked via Task tool, they run in **completely isolated subprocesses** with no access to the parent command's environment or state.
+
+### Architecture
+
+```
+Parent Command (coordinate.md)
+    ↓
+Bash Block 1 (PID: 12345)
+│ - STATE_FILE=.claude/tmp/workflow_12345.sh
+│ - export CLASSIFICATION_JSON='...'
+│    ↓
+│   Task Tool Invocation
+│       ↓
+│   ┌─────── Agent Subprocess ──────┐
+│   │ PID: 12346 (ISOLATED)        │
+│   │ - NO access to STATE_FILE    │
+│   │ - NO access to env vars      │
+│   │ - Can only return text       │
+│   └──────────────────────────────┘
+│       ↓ (returns text output)
+│
+│ - Extract result from agent output
+│ - Save to STATE_FILE
+└─────────────────────────────────────
+```
+
+### Critical Constraints
+
+**Agent subprocess CANNOT**:
+- Access parent bash block environment variables
+- Execute bash commands if `allowed-tools: None`
+- Modify parent STATE_FILE directly
+- Use `append_workflow_state()` in parent context
+
+**Agent subprocess CAN**:
+- Read files (if `allowed-tools: Read`)
+- Return structured text output
+- Perform analysis and classification
+- Generate JSON results
+
+### Correct State Persistence Pattern
+
+**Anti-Pattern** (causes state persistence failures):
+```markdown
+## Agent Behavioral File (workflow-classifier.md)
+
+allowed-tools: None  ← Agent has NO bash tool
+
+## Instructions
+
+After classification, save to state:
+
+```bash
+source .claude/lib/state-persistence.sh
+append_workflow_state "CLASSIFICATION_JSON" "$JSON"
+```
+```
+
+**Problem**: Agent configured with `allowed-tools: None` cannot execute bash commands. Even with `allowed-tools: Bash`, the agent subprocess cannot access parent STATE_FILE variable.
+
+**Correct Pattern** (Spec 752 Fix):
+```markdown
+## Agent Behavioral File (workflow-classifier.md)
+
+allowed-tools: None  ← Classification-only agent
+
+## Output Format
+
+Return: CLASSIFICATION_COMPLETE: {JSON object}
+
+The parent command will extract and save this JSON to state.
+```
+
+```markdown
+## Parent Command (coordinate.md)
+
+**Phase 0.1**: Invoke classifier agent
+
+Task {
+  prompt: "Classify workflow... Return: CLASSIFICATION_COMPLETE: {JSON}"
+}
+
+**IMMEDIATELY AFTER Task completes**, extract and save:
+
+```bash
+# Extract JSON from agent response above
+CLASSIFICATION_JSON='<EXTRACT_FROM_TASK_OUTPUT>'
+
+# Validate JSON
+echo "$CLASSIFICATION_JSON" | jq empty || exit 1
+
+# Save to state (parent context has access to STATE_FILE)
+append_workflow_state "CLASSIFICATION_JSON" "$CLASSIFICATION_JSON"
+```
+```
+
+### Key Principles
+
+1. **Agent Returns Data**: Agents return structured output (JSON, signals)
+2. **Parent Persists State**: Parent command extracts output and saves to state
+3. **File-Based Communication**: Only method across Task tool boundary
+4. **Validate Before Save**: Always validate JSON before persisting
+
+### Agent Configuration Guidelines
+
+**Classification-Only Agents**:
+```yaml
+allowed-tools: None
+description: Classification-only agent - returns JSON, does not persist state
+```
+
+**Analysis Agents** (need to read files):
+```yaml
+allowed-tools: Read, Grep
+description: Analysis agent - reads files, returns findings
+```
+
+**Execution Agents** (need to modify code):
+```yaml
+allowed-tools: Read, Write, Edit, Bash
+description: Implementation agent - executes tasks, creates commits
+```
+
+### Troubleshooting
+
+**Symptom**: Unbound variable error in subsequent bash block
+```
+bash: CLASSIFICATION_JSON: unbound variable
+```
+
+**Root Cause**: Agent tried to persist state but couldn't due to subprocess isolation
+
+**Solution**: Move state persistence to parent command bash block
+
+**Symptom**: Agent behavioral file has conflicting instructions
+```
+allowed-tools: None
+Instructions: "USE the Bash tool to save state"
+```
+
+**Root Cause**: Behavioral file contradicts frontmatter configuration
+
+**Solution**: Remove bash execution instructions, use output-based pattern
+
 ## What Persists vs What Doesn't
 
 ### Persists Across Blocks ✓
