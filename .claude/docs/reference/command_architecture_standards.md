@@ -1,18 +1,33 @@
 # Command and Agent Architecture Standards
 
-**Document Type**: Architecture Standards
-**Scope**: All files in `.claude/commands/` and `.claude/agents/`
-**Status**: ACTIVE - Must be followed for all modifications
-**Last Updated**: 2025-10-27 (Spec 497 - Unified orchestration improvements)
-**Derived From**: Refactoring damage analysis (commit 40b9146)
+**Document Status**: SPLIT - This document has been split for maintainability
+**Last Updated**: 2025-11-17
 
 ---
 
-## Purpose
+## This Document Has Been Split
 
-This document establishes architectural standards for Claude Code command and agent files to ensure they remain **directly executable by Claude** while avoiding code duplication and maintaining clear organization.
+For better maintainability, this large document (2571 lines) has been split into focused files under 400 lines each.
 
-**Key Principle**: Command and agent files are **AI prompts that drive execution**, not traditional software code. Refactoring patterns that work for code may break AI execution.
+**Please refer to the new split files**:
+
+| Topic | Document | Lines |
+|-------|----------|-------|
+| Overview & Index | [architecture-standards-overview.md](architecture-standards-overview.md) | ~150 |
+| Standards 0, 0.5 (Validation) | [architecture-standards-validation.md](architecture-standards-validation.md) | ~400 |
+| Standards 1-5 (Documentation) | [architecture-standards-documentation.md](architecture-standards-documentation.md) | ~250 |
+| Standard 11 (Integration) | [architecture-standards-integration.md](architecture-standards-integration.md) | ~250 |
+| Standards 12-14 (Dependencies) | [architecture-standards-dependencies.md](architecture-standards-dependencies.md) | ~400 |
+| Standards 15-16 (Error Handling) | [architecture-standards-error-handling.md](architecture-standards-error-handling.md) | ~350 |
+| Testing & Review | [architecture-standards-testing.md](architecture-standards-testing.md) | ~400 |
+
+**Start here**: [Architecture Standards Overview](architecture-standards-overview.md)
+
+---
+
+## Legacy Content Below
+
+The content below is preserved for reference but should be accessed via the split files above.
 
 ---
 

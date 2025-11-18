@@ -1,24 +1,36 @@
 # Execution Enforcement Guide
 
-**Document Type**: Comprehensive Guide
-**Scope**: Command and agent execution enforcement (Standards 0 and 0.5)
-**Status**: ACTIVE - Use for all command/agent creation and migration
-**Last Updated**: 2025-10-21
-**Related Standards**: [Command Architecture Standards - Standard 0 & 0.5](../reference/command_architecture_standards.md)
+**Document Status**: SPLIT - This document has been split for maintainability
+**Last Updated**: 2025-11-17
 
 ---
 
-## Table of Contents
+## This Document Has Been Split
 
-1. [Overview](#overview)
-2. [Standards 0 and 0.5](#standards-0-and-0-5)
-3. [Imperative Language Rules](#imperative-language-rules)
-4. [Enforcement Patterns](#enforcement-patterns)
-5. [Migration Process](#migration-process)
-6. [Validation and Audit](#validation-and-audit)
-7. [Common Migration Patterns](#common-migration-patterns)
-8. [Troubleshooting](#troubleshooting)
-9. [Quick Reference](#quick-reference)
+For better maintainability, this large document (1584 lines) has been split into focused files under 400 lines each.
+
+**Please refer to the new split files**:
+
+| Topic | Document | Description |
+|-------|----------|-------------|
+| Overview | [execution-enforcement-overview.md](execution-enforcement-overview.md) | Introduction, standards, key concepts |
+| Patterns | [execution-enforcement-patterns.md](execution-enforcement-patterns.md) | Imperative language and enforcement patterns |
+| Migration | [execution-enforcement-migration.md](execution-enforcement-migration.md) | Migration process and examples |
+| Validation | [execution-enforcement-validation.md](execution-enforcement-validation.md) | Validation, audit, and troubleshooting |
+
+**Start here**: [Execution Enforcement Overview](execution-enforcement-overview.md)
+
+---
+
+## Legacy Content Below
+
+The content below is preserved for reference but should be accessed via the split files above.
+
+---
+
+**Document Type**: Comprehensive Guide
+**Scope**: Command and agent execution enforcement (Standards 0 and 0.5)
+**Related Standards**: [Command Architecture Standards](../reference/architecture-standards-validation.md)
 
 ---
 

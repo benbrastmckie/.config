@@ -1,14 +1,42 @@
 # Agent Development Guide
 
-**Path**: docs → guides → agent-development-guide.md
+**Document Status**: SPLIT - This document has been split for maintainability
+**Last Updated**: 2025-11-17
+
+---
+
+## This Document Has Been Split
+
+For better maintainability, this large document (2178 lines) has been split into focused files under 400 lines each.
+
+**Please refer to the new split files**:
+
+| Topic | Document | Description |
+|-------|----------|-------------|
+| Fundamentals | [agent-development-fundamentals.md](agent-development-fundamentals.md) | Creating agents, file structure |
+| Patterns | [agent-development-patterns.md](agent-development-patterns.md) | Invocation and integration patterns |
+| Testing | [agent-development-testing.md](agent-development-testing.md) | Testing and validation |
+| Troubleshooting | [agent-development-troubleshooting.md](agent-development-troubleshooting.md) | Common issues and solutions |
+| Advanced | [agent-development-advanced.md](agent-development-advanced.md) | Advanced patterns and optimization |
+| Examples | [agent-development-examples.md](agent-development-examples.md) | Reference implementations |
+
+**Start here**: [Agent Development Fundamentals](agent-development-fundamentals.md)
+
+---
+
+## Legacy Content Below
+
+The content below is preserved for reference but should be accessed via the split files above.
+
+---
+
+**Path**: docs -> guides -> agent-development-guide.md
 
 Comprehensive guide for creating, invoking, and maintaining custom Claude Code agents using the behavioral injection pattern.
 
-**Target Audience**: Developers creating new agent behavioral files, modifying existing agents, or integrating agents into commands.
-
 **Related Documentation**:
 - [Command Development Guide](command-development-guide.md) - How commands invoke agents
-- [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md) - Overall architecture
+- [Hierarchical Agent Architecture](../concepts/hierarchical-agents-overview.md) - Overall architecture
 - [Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) - Common issues
 
 ## Quick Start: Your First Agent

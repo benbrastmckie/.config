@@ -1,25 +1,38 @@
 # State-Based Orchestration Architecture: Complete Overview
 
+**Document Status**: SPLIT - This document has been split for maintainability
+**Last Updated**: 2025-11-17
+
+---
+
+## This Document Has Been Split
+
+For better maintainability, this large document (1752 lines) has been split into focused files under 400 lines each.
+
+**Please refer to the new split files**:
+
+| Topic | Document | Description |
+|-------|----------|-------------|
+| Overview | [state-orchestration-overview.md](state-orchestration-overview.md) | Architecture summary and principles |
+| States | [state-orchestration-states.md](state-orchestration-states.md) | State definitions and machine API |
+| Transitions | [state-orchestration-transitions.md](state-orchestration-transitions.md) | State transitions and persistence |
+| Examples | [state-orchestration-examples.md](state-orchestration-examples.md) | Reference implementations |
+| Troubleshooting | [state-orchestration-troubleshooting.md](state-orchestration-troubleshooting.md) | Common issues and solutions |
+
+**Start here**: [State Orchestration Overview](state-orchestration-overview.md)
+
+---
+
+## Legacy Content Below
+
+The content below is preserved for reference but should be accessed via the split files above.
+
+---
+
 ## Metadata
 - **Date**: 2025-11-08
 - **Status**: Production (Phase 7 Complete)
-- **Implementation Plan**: [State-Based Orchestrator Refactor](../../specs/602_601_and_documentation_in_claude_docs_in_order_to/plans/001_state_based_orchestrator_refactor.md)
-- **Performance Report**: [Performance Validation Report](../../specs/602_601_and_documentation_in_claude_docs_in_order_to/reports/004_performance_validation_report.md)
 - **Version**: 2.0 (State Machine Architecture)
-
-## Table of Contents
-
-1. [Executive Summary](#executive-summary)
-2. [Architecture Principles](#architecture-principles)
-3. [State Machine Architecture](#state-machine-architecture)
-4. [Selective State Persistence](#selective-state-persistence)
-5. [Hierarchical Supervisor Coordination](#hierarchical-supervisor-coordination)
-6. [Checkpoint Schema V2.0](#checkpoint-schema-v20)
-7. [Performance Characteristics](#performance-characteristics)
-8. [Migration from Phase-Based Architecture](#migration-from-phase-based-architecture)
-9. [Developer Guide Quick Reference](#developer-guide-quick-reference)
-10. [Troubleshooting](#troubleshooting)
-11. [Related Documentation](#related-documentation)
 
 ## Executive Summary
 
