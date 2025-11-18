@@ -173,6 +173,16 @@ WORKFLOW_TYPE="research-and-revise"
 TERMINAL_STATE="plan"
 COMMAND_NAME="research-revise"
 
+# Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
+WORKFLOW_ID="research_revise_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/research_revise_state_id.txt"
+mkdir -p "$(dirname "$STATE_ID_FILE")"
+echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+export WORKFLOW_ID
+
+# Initialize workflow state BEFORE sm_init (correct initialization order)
+init_workflow_state "$WORKFLOW_ID"
+
 # Initialize state machine with return code verification
 if ! sm_init \
   "$REVISION_DESCRIPTION" \
@@ -192,7 +202,7 @@ if ! sm_init \
   exit 1
 fi
 
-echo "✓ State machine initialized"
+echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
 echo ""
 ```
 
@@ -312,8 +322,18 @@ fi
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+STATE_ID_FILE="${HOME}/.claude/tmp/research_revise_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
 # Load workflow state from Part 3 (subprocess isolation)
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+load_workflow_state "$WORKFLOW_ID" false
 
 # Transition to plan state with return code verification
 if ! sm_transition "$STATE_PLAN" 2>&1; then
@@ -442,8 +462,23 @@ fi
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+STATE_ID_FILE="${HOME}/.claude/tmp/research_revise_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
+# Re-source required libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
 # Load workflow state from Part 4 (subprocess isolation)
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+load_workflow_state "$WORKFLOW_ID" false
 
 # Research-and-revise workflow: terminate after plan revision with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then

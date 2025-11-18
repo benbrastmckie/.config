@@ -118,7 +118,7 @@ CURRENT_PHASE=5  # Can skip phases 1-4! No validation
 ```bash
 sm_transition "debug"
 # ERROR: Invalid transition: initialize → debug
-# Valid transitions from initialize: research
+# Valid transitions from initialize: research,implement
 ```
 
 **Benefits**:
@@ -207,7 +207,7 @@ The transition table defines **all valid state changes**:
 
 ```bash
 declare -A STATE_TRANSITIONS=(
-  [initialize]="research"
+  [initialize]="research,implement" # Can go to research or directly to implement (for /build)
   [research]="plan,complete"        # Can skip to complete for research-only
   [plan]="implement,complete"       # Can skip to complete for research-and-plan
   [implement]="test"
@@ -850,7 +850,7 @@ Checkpoint Schema V2.0 makes the **state machine a first-class citizen** with ex
     "current_state": "research",
     "completed_states": ["initialize"],
     "transition_table": {
-      "initialize": "research",
+      "initialize": "research,implement",
       "research": "plan,complete",
       "plan": "implement,complete",
       "implement": "test",
@@ -944,7 +944,7 @@ migrate_checkpoint_v1_to_v2() {
         current_state: $current_state,
         completed_states: [],
         transition_table: {
-          initialize: "research",
+          initialize: "research,implement",
           research: "plan,complete",
           plan: "implement,complete",
           implement: "test",
@@ -1465,18 +1465,18 @@ See [Hierarchical Supervisor Guide](../guides/hierarchical-supervisor-guide.md) 
 
 **Symptom**:
 ```
-ERROR: Invalid transition: initialize → implement
-Valid transitions from initialize: research
+ERROR: Invalid transition: initialize → debug
+Valid transitions from initialize: research,implement
 ```
 
-**Cause**: Attempting to skip states not allowed by transition table
+**Cause**: Attempting to transition to a state not allowed by transition table
 
-**Solution**: Transition through valid intermediate states
+**Solution**: Transition through valid intermediate states. Note that `/build` command can now transition directly from `initialize` to `implement`.
 ```bash
-# Wrong
-sm_transition "implement"  # Can't skip from initialize
+# For /build command (direct to implement is now allowed)
+sm_transition "implement"
 
-# Right
+# For research-and-plan workflows
 sm_transition "research"
 sm_transition "plan"
 sm_transition "implement"
@@ -1491,14 +1491,18 @@ Warning: State file not found, recalculating...
 
 **Cause**: `load_workflow_state` called before `init_workflow_state`
 
-**Solution**: Initialize state file in first bash block
+**Solution**: Initialize state file in first bash block BEFORE calling sm_init
 ```bash
-# Block 1: Initialize
-STATE_FILE=$(init_workflow_state "workflow_$$")
+# Block 1: Initialize - CORRECT ORDER
+WORKFLOW_ID="command_$(date +%s)"
+init_workflow_state "$WORKFLOW_ID"  # Must come BEFORE sm_init
+sm_init "$description" "$command" "$workflow_type" "$complexity" "[]"
 
 # Block 2+: Load
-load_workflow_state "workflow_$$"
+load_workflow_state "$WORKFLOW_ID" false
 ```
+
+**Important**: The `init_workflow_state` call must come BEFORE `sm_init` because `sm_init` calls `append_workflow_state` which requires STATE_FILE to be set.
 
 #### 3. Checkpoint Version Mismatch
 

@@ -218,6 +218,16 @@ WORKFLOW_TYPE="full-implementation"
 TERMINAL_STATE="complete"
 COMMAND_NAME="build"
 
+# Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
+WORKFLOW_ID="build_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+mkdir -p "$(dirname "$STATE_ID_FILE")"
+echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+export WORKFLOW_ID
+
+# Initialize workflow state BEFORE sm_init (correct initialization order)
+init_workflow_state "$WORKFLOW_ID"
+
 # Initialize state machine with return code verification
 # research_complexity=1 (minimum) since /build doesn't perform research
 if ! sm_init \
@@ -238,7 +248,7 @@ if ! sm_init \
   exit 1
 fi
 
-echo "✓ State machine initialized"
+echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
 echo ""
 ```
 
@@ -275,10 +285,14 @@ echo ""
 # Pre-calculate topic path from plan file
 TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
 
+# Load WORKFLOW_ID for file naming
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
 # Persist variables for next block and agent
-echo "PLAN_FILE=$PLAN_FILE" > "${HOME}/.claude/tmp/build_state_$$.txt"
-echo "TOPIC_PATH=$TOPIC_PATH" >> "${HOME}/.claude/tmp/build_state_$$.txt"
-echo "STARTING_PHASE=$STARTING_PHASE" >> "${HOME}/.claude/tmp/build_state_$$.txt"
+echo "PLAN_FILE=$PLAN_FILE" > "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
+echo "TOPIC_PATH=$TOPIC_PATH" >> "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
+echo "STARTING_PHASE=$STARTING_PHASE" >> "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent.
@@ -322,8 +336,12 @@ set +H  # CRITICAL: Disable history expansion
 # Re-source required libraries (subprocess isolation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern)
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
 # Load state from previous block
-source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
+source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
 
 # MANDATORY VERIFICATION
 echo "Verifying implementation completion..."
@@ -374,9 +392,19 @@ set +H  # CRITICAL: Disable history expansion
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
 # Load workflow state from Part 3 (subprocess isolation)
-source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
+load_workflow_state "$WORKFLOW_ID" false
 
 # Transition to test state with return code verification
 if ! sm_transition "$STATE_TEST" 2>&1; then
@@ -471,9 +499,19 @@ set +H  # CRITICAL: Disable history expansion
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
 # Load workflow state from Part 4 (subprocess isolation)
-source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
+load_workflow_state "$WORKFLOW_ID" false
 
 # Conditional phase based on test results
 if [ "$TESTS_PASSED" = "false" ]; then
@@ -502,7 +540,7 @@ if [ "$TESTS_PASSED" = "false" ]; then
   mkdir -p "$DEBUG_DIR"
 
   # Persist debug directory for agent
-  echo "DEBUG_DIR=$DEBUG_DIR" >> "${HOME}/.claude/tmp/build_state_$$.txt"
+  echo "DEBUG_DIR=$DEBUG_DIR" >> "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent.
@@ -537,8 +575,12 @@ set +H  # CRITICAL: Disable history expansion
 # Re-source required libraries (subprocess isolation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern)
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
 # Load state from previous block
-source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
+source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
 
 # MANDATORY VERIFICATION
 echo "Verifying debug artifacts..."
@@ -574,9 +616,13 @@ set +H  # CRITICAL: Disable history expansion
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern)
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
 # Load state from previous block
-source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
+load_workflow_state "$WORKFLOW_ID" false
 
 # Skip if tests failed (debug phase handled separately)
 if [ "$TESTS_PASSED" = "false" ]; then
@@ -633,9 +679,19 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
 # Load workflow state from Part 5 (subprocess isolation)
-source "${HOME}/.claude/tmp/build_state_$$.txt" 2>/dev/null || true
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
+load_workflow_state "$WORKFLOW_ID" false
 
 # Transition to complete state with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
@@ -682,8 +738,9 @@ if [ "$TESTS_PASSED" = "true" ]; then
   delete_checkpoint "build" 2>/dev/null || true
 fi
 
-# Cleanup temp state file
-rm -f "${HOME}/.claude/tmp/build_state_$$.txt"
+# Cleanup temp state files
+rm -f "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
+rm -f "${HOME}/.claude/tmp/build_state_id.txt"
 
 exit 0
 ```
