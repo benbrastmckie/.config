@@ -32,10 +32,10 @@ The `/build` command executes existing implementation plans through a complete b
 
 ### When NOT to Use
 
-- **Creating new plans**: Use `/research-plan` or `/plan` instead
-- **Research-only tasks**: Use `/research-report` for investigation without implementation
-- **Bug investigation**: Use `/fix` for debug-focused workflows
-- **Plan revision**: Use `/research-revise` or `/revise` to modify existing plans
+- **Creating new plans**: Use `/plan` or `/plan` instead
+- **Research-only tasks**: Use `/research` for investigation without implementation
+- **Bug investigation**: Use `/debug` for debug-focused workflows
+- **Plan revision**: Use `/revise` or `/revise` to modify existing plans
 
 ---
 
@@ -307,7 +307,7 @@ npm test -- --coverage
 
 **Research → Plan → Build Chain**:
 ```bash
-/research-plan "implement user authentication"  # Creates plan
+/plan "implement user authentication"  # Creates plan
 /build                                          # Auto-detects and executes plan
 ```
 
@@ -350,7 +350,7 @@ No plan files exist in `.claude/specs/*/plans/` directories.
 **Solution**:
 ```bash
 # Create a plan first
-/research-plan "feature description"
+/plan "feature description"
 # Or /plan "feature description"
 
 # Then run build
@@ -497,7 +497,7 @@ cat ~/.claude/data/state/workflow_state.json | jq '.current_state'
 
 - Check [Command Reference](../reference/command-reference.md) for quick syntax
 - Review [State-Based Orchestration](../architecture/state-based-orchestration-overview.md) for workflow details
-- See related commands: `/implement`, `/coordinate`, `/fix`
+- See related commands: `/implement`, `/coordinate`, `/debug`
 - Review [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md) for plan structure
 
 ---
@@ -509,4 +509,4 @@ cat ~/.claude/data/state/workflow_state.json | jq '.current_state'
 - [Debug-Analyst Agent](../../agents/debug-analyst.md)
 - [Checkpoint Utils Reference](../../lib/checkpoint-utils.sh)
 - [Command Reference](../reference/command-reference.md)
-- Related Commands: `/implement`, `/coordinate`, `/fix`, `/plan`
+- Related Commands: `/implement`, `/coordinate`, `/debug`, `/plan`

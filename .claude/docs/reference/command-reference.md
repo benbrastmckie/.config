@@ -25,7 +25,7 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 - [/document](#document)
 - [/example-with-agent](#example-with-agent)
 - [/expand](#expand)
-- [/fix](#fix) ✨ NEW
+- [/debug](#fix) ✨ NEW
 - [/implement](#implement) - ARCHIVED
 - [/list](#list)
 - [/plan](#plan) - ARCHIVED
@@ -33,9 +33,9 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 - [/plan-wizard](#plan-wizard)
 - [/refactor](#refactor)
 - [/report](#report)
-- [/research-plan](#research-plan) ✨ NEW
-- [/research-report](#research-report) ✨ NEW
-- [/research-revise](#research-revise) ✨ NEW
+- [/plan](#research-plan) ✨ NEW
+- [/research](#research-report) ✨ NEW
+- [/revise](#research-revise) ✨ NEW
 - [/research](#research) - ARCHIVED
 - [/revise](#revise) - ARCHIVED
 - [/setup](#setup)
@@ -184,11 +184,11 @@ Automatically detects workflow type and executes appropriate phases:
 ---
 
 ### /debug
-**Status**: ARCHIVED - Use `/fix` instead
+**Status**: ARCHIVED - Use `/debug` instead
 
 **Purpose**: Investigate issues and create diagnostic reports without code changes
 
-**Migration**: This command has been archived. Use `/fix` for bug fixing workflows.
+**Migration**: This command has been archived. Use `/debug` for bug fixing workflows.
 
 **Archive Location**: `.claude/archive/legacy-workflow-commands/commands/debug.md`
 
@@ -252,10 +252,10 @@ Automatically detects workflow type and executes appropriate phases:
 
 ---
 
-### /fix
+### /debug
 **Purpose**: Debug-focused workflow - Root cause analysis and bug fixing
 
-**Usage**: `/fix <issue-description> [--complexity 1-4]`
+**Usage**: `/debug <issue-description> [--complexity 1-4]`
 
 **Type**: orchestrator
 
@@ -269,7 +269,7 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Workflow**: `research → plan (debug strategy) → debug → complete`
 
-**See**: [fix.md](../../commands/fix.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+**See**: [fix.md](../../commands/debug.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
 
 ---
 
@@ -306,11 +306,11 @@ Automatically detects workflow type and executes appropriate phases:
 ---
 
 ### /plan
-**Status**: ARCHIVED - Use `/research-plan` instead
+**Status**: ARCHIVED - Use `/plan` instead
 
 **Purpose**: Create detailed implementation plans following project standards
 
-**Migration**: This command has been archived. Use `/research-plan` for planning workflows that include research.
+**Migration**: This command has been archived. Use `/plan` for planning workflows that include research.
 
 **Archive Location**: `.claude/archive/legacy-workflow-commands/commands/plan.md`
 
@@ -388,10 +388,10 @@ Automatically detects workflow type and executes appropriate phases:
 
 ---
 
-### /research-plan
+### /plan
 **Purpose**: Research and create new implementation plan workflow
 
-**Usage**: `/research-plan <feature-description> [--complexity 1-4]`
+**Usage**: `/plan <feature-description> [--complexity 1-4]`
 
 **Type**: orchestrator
 
@@ -405,14 +405,14 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Workflow**: `research → plan → complete`
 
-**See**: [research-plan.md](../../commands/research-plan.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+**See**: [research-plan.md](../../commands/plan.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
 
 ---
 
-### /research-report
+### /research
 **Purpose**: Research-only workflow - Creates comprehensive research reports without planning or implementation
 
-**Usage**: `/research-report <workflow-description> [--complexity 1-4]`
+**Usage**: `/research <workflow-description> [--complexity 1-4]`
 
 **Type**: orchestrator
 
@@ -426,14 +426,14 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Workflow**: `research → complete`
 
-**See**: [research-report.md](../../commands/research-report.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+**See**: [research-report.md](../../commands/research.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
 
 ---
 
-### /research-revise
+### /revise
 **Purpose**: Research and revise existing implementation plan workflow
 
-**Usage**: `/research-revise "revise plan at <plan-path> based on <new-insights>" [--complexity 1-4]`
+**Usage**: `/revise "revise plan at <plan-path> based on <new-insights>" [--complexity 1-4]`
 
 **Type**: orchestrator
 
@@ -447,27 +447,27 @@ Automatically detects workflow type and executes appropriate phases:
 
 **Workflow**: `research → plan revision → complete`
 
-**See**: [research-revise.md](../../commands/research-revise.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+**See**: [research-revise.md](../../commands/revise.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
 
 ---
 
 ### /research
-**Status**: ARCHIVED - Use `/research-report` or `/research-plan` instead
+**Status**: ARCHIVED - Use `/research` or `/plan` instead
 
 **Purpose**: Research topics and create comprehensive reports
 
-**Migration**: This command has been archived. Use `/research-report` for research-only workflows or `/research-plan` for combined research and planning.
+**Migration**: This command has been archived. Use `/research` for research-only workflows or `/plan` for combined research and planning.
 
 **Archive Location**: `.claude/archive/legacy-workflow-commands/commands/research.md`
 
 ---
 
 ### /revise
-**Status**: ARCHIVED - Use `/research-revise` instead
+**Status**: ARCHIVED - Use `/revise` instead
 
 **Purpose**: Revise existing plan or report with new requirements (content modification)
 
-**Migration**: This command has been archived. Use `/research-revise` for plan revision workflows that may require research.
+**Migration**: This command has been archived. Use `/revise` for plan revision workflows that may require research.
 
 **Archive Location**: `.claude/archive/legacy-workflow-commands/commands/revise.md`
 
@@ -553,20 +553,20 @@ Automatically detects workflow type and executes appropriate phases:
 Core development workflow drivers:
 - **/coordinate** - Coordinate multi-agent end-to-end workflows (production orchestrator)
 - **/build** - Build-from-plan workflow with testing and documentation
-- **/fix** - Debug-focused workflow for root cause analysis
-- **/research-plan** - Research and create implementation plans
-- **/research-report** - Research-only workflow for reports
-- **/research-revise** - Research and revise existing plans
+- **/debug** - Debug-focused workflow for root cause analysis
+- **/plan** - Research and create implementation plans
+- **/research** - Research-only workflow for reports
+- **/revise** - Research and revise existing plans
 - **/test** - Run project-specific tests
 - **/test-all** - Run complete test suite
 
 ### Archived Commands
 Legacy commands that have been superseded:
-- **/debug** - ARCHIVED (use /fix)
+- **/debug** - ARCHIVED (use /debug)
 - **/implement** - ARCHIVED (use /build)
-- **/plan** - ARCHIVED (use /research-plan)
-- **/research** - ARCHIVED (use /research-report or /research-plan)
-- **/revise** - ARCHIVED (use /research-revise)
+- **/plan** - ARCHIVED (use /plan)
+- **/research** - ARCHIVED (use /research or /plan)
+- **/revise** - ARCHIVED (use /revise)
 
 ### Support Commands
 Specialized assistance commands:
@@ -579,7 +579,7 @@ Specialized assistance commands:
 Execution state and artifact management:
 - **/collapse** - Merge expanded phases/stages back to parent
 - **/expand** - Extract phases/stages to separate files
-- **/update** - DEPRECATED (use /research-revise)
+- **/update** - DEPRECATED (use /revise)
 
 ### Utility Commands
 Maintenance and setup commands:
@@ -602,13 +602,13 @@ Research and codebase analysis:
 ### plan-architect
 Structured implementation planning:
 - **/coordinate** (planning phase)
-- **/research-plan**
-- **/research-revise** (complex plan changes)
+- **/plan**
+- **/revise** (complex plan changes)
 
 ### debug-analyst
 Issue investigation:
 - **/coordinate** (debugging loop)
-- **/fix**
+- **/debug**
 
 ### doc-converter
 Document format conversion:

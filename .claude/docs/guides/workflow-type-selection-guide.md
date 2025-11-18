@@ -11,11 +11,11 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 | Your Goal | Recommended Command | Alternative |
 |-----------|---------------------|-------------|
-| Research a topic (no implementation) | `/research-report` | `/coordinate` |
-| Research + create new plan | `/research-plan` | `/coordinate` |
-| Research + revise existing plan | `/research-revise` | `/coordinate` |
+| Research a topic (no implementation) | `/research` | `/coordinate` |
+| Research + create new plan | `/plan` | `/coordinate` |
+| Research + revise existing plan | `/revise` | `/coordinate` |
 | Build from existing plan | `/build` | `/coordinate` or `/implement` |
-| Debug/investigate issues | `/fix` | `/coordinate` or `/debug` |
+| Debug/investigate issues | `/debug` | `/coordinate` or `/debug` |
 | Full workflow (research → plan → implement) | `/coordinate` | Chain commands |
 
 ## Command Comparison
@@ -36,7 +36,7 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 ## Detailed Command Reference
 
-### 1. /research-report - Research-Only Workflow
+### 1. /research - Research-Only Workflow
 
 **Use When**:
 - Investigating a topic before deciding on implementation
@@ -48,16 +48,16 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 **Syntax**:
 ```bash
-/research-report "<topic-description>" [--complexity 1-4]
+/research "<topic-description>" [--complexity 1-4]
 ```
 
 **Examples**:
 ```bash
 # Basic research (complexity 2, default)
-/research-report "authentication patterns in codebase"
+/research "authentication patterns in codebase"
 
 # Comprehensive research (complexity 4)
-/research-report "API architecture and data flow --complexity 4"
+/research "API architecture and data flow --complexity 4"
 ```
 
 **Outputs**:
@@ -69,7 +69,7 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 ---
 
-### 2. /research-plan - Research + New Plan Creation
+### 2. /plan - Research + New Plan Creation
 
 **Use When**:
 - Starting a new feature from scratch
@@ -80,16 +80,16 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 **Syntax**:
 ```bash
-/research-plan "<feature-description>" [--complexity 1-4]
+/plan "<feature-description>" [--complexity 1-4]
 ```
 
 **Examples**:
 ```bash
 # Standard research + planning (complexity 3, default)
-/research-plan "implement user authentication with JWT tokens"
+/plan "implement user authentication with JWT tokens"
 
 # Thorough research before planning
-/research-plan "add real-time notifications system --complexity 4"
+/plan "add real-time notifications system --complexity 4"
 ```
 
 **Outputs**:
@@ -102,7 +102,7 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 ---
 
-### 3. /research-revise - Research + Plan Revision
+### 3. /revise - Research + Plan Revision
 
 **Use When**:
 - Have existing plan that needs updates based on new insights
@@ -113,16 +113,16 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 **Syntax**:
 ```bash
-/research-revise "revise plan at <plan-path> based on <new-insights>" [--complexity 1-4]
+/revise "revise plan at <plan-path> based on <new-insights>" [--complexity 1-4]
 ```
 
 **Examples**:
 ```bash
 # Basic revision research (complexity 2, default)
-/research-revise "revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements"
+/revise "revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements"
 
 # Thorough revision research
-/research-revise "revise plan at ./plans/api.md incorporating GraphQL findings --complexity 3"
+/revise "revise plan at ./plans/api.md incorporating GraphQL findings --complexity 3"
 ```
 
 **Outputs**:
@@ -181,7 +181,7 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 ---
 
-### 5. /fix - Debug-Focused Workflow
+### 5. /debug - Debug-Focused Workflow
 
 **Use When**:
 - Investigating bugs or errors
@@ -192,19 +192,19 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 **Syntax**:
 ```bash
-/fix "<issue-description>" [--complexity 1-4]
+/debug "<issue-description>" [--complexity 1-4]
 ```
 
 **Examples**:
 ```bash
 # Basic debugging (complexity 2, default)
-/fix "authentication timeout errors in production"
+/debug "authentication timeout errors in production"
 
 # Complex debugging investigation
-/fix "intermittent database connection failures --complexity 3"
+/debug "intermittent database connection failures --complexity 3"
 
 # Performance issue
-/fix "API endpoint latency exceeds 2s on POST /api/users"
+/debug "API endpoint latency exceeds 2s on POST /api/users"
 ```
 
 **Outputs**:
@@ -260,19 +260,19 @@ This guide helps you choose the right orchestrator command for your workflow nee
 
 ## Workflow Type Characteristics
 
-### Research-Only (`/research-report`)
+### Research-Only (`/research`)
 **Terminal State**: research
 **Phases**: Research → Complete
 **Default Complexity**: 2
 **Best For**: Exploration, investigation, documentation
 
-### Research-and-Plan (`/research-plan`)
+### Research-and-Plan (`/plan`)
 **Terminal State**: plan
 **Phases**: Research → Plan → Complete
 **Default Complexity**: 3
 **Best For**: New features requiring investigation first
 
-### Research-and-Revise (`/research-revise`)
+### Research-and-Revise (`/revise`)
 **Terminal State**: plan
 **Phases**: Research → Plan Revision → Complete
 **Default Complexity**: 2
@@ -284,7 +284,7 @@ This guide helps you choose the right orchestrator command for your workflow nee
 **Default Complexity**: N/A (no research)
 **Best For**: Executing existing plans
 
-### Debug-Only (`/fix`)
+### Debug-Only (`/debug`)
 **Terminal State**: debug
 **Phases**: Research → Plan (Strategy) → Debug → Complete
 **Default Complexity**: 2
@@ -314,10 +314,10 @@ You can chain dedicated commands for custom workflows:
 ### Research → Plan → Implement
 ```bash
 # Step 1: Research
-/research-report "user authentication patterns"
+/research "user authentication patterns"
 
 # Step 2: Plan (after reviewing research)
-/research-plan "implement JWT authentication"
+/plan "implement JWT authentication"
 
 # Step 3: Implement (after reviewing plan)
 /build .claude/specs/123_auth/plans/001_implementation.md
@@ -326,10 +326,10 @@ You can chain dedicated commands for custom workflows:
 ### Plan → Revise → Implement
 ```bash
 # Step 1: Create initial plan
-/research-plan "add GraphQL API"
+/plan "add GraphQL API"
 
 # Step 2: Revise plan with new insights
-/research-revise "revise plan at .claude/specs/456_graphql/plans/001_plan.md based on Apollo Server findings"
+/revise "revise plan at .claude/specs/456_graphql/plans/001_plan.md based on Apollo Server findings"
 
 # Step 3: Implement revised plan
 /build .claude/specs/456_graphql/plans/001_plan.md
@@ -338,7 +338,7 @@ You can chain dedicated commands for custom workflows:
 ### Debug → Fix → Test
 ```bash
 # Step 1: Debug investigation
-/fix "API timeout errors on /users endpoint"
+/debug "API timeout errors on /users endpoint"
 
 # Step 2: Apply fixes from debug analysis
 # (manual code changes)
@@ -361,7 +361,7 @@ If you're currently using `/coordinate`, here's how to migrate:
 
 **After**:
 ```bash
-/research-report "authentication patterns"
+/research "authentication patterns"
 ```
 
 **Benefits**: 5-10s faster (no workflow classification)
@@ -374,7 +374,7 @@ If you're currently using `/coordinate`, here's how to migrate:
 
 **After**:
 ```bash
-/research-plan "implement user authentication with JWT"
+/plan "implement user authentication with JWT"
 ```
 
 **Benefits**: Explicit intent, slightly faster
@@ -432,21 +432,21 @@ If you're currently using `/coordinate`, here's how to migrate:
 
 ### "No plan file found"
 **Problem**: `/build` can't find plan to implement
-**Solution**: Create plan first with `/research-plan` or `/plan`
+**Solution**: Create plan first with `/plan` or `/plan`
 
 ### "Workflow classification taking too long"
 **Problem**: `/coordinate` classification overhead
-**Solution**: Use dedicated command (e.g., `/research-plan` instead of `/coordinate`)
+**Solution**: Use dedicated command (e.g., `/plan` instead of `/coordinate`)
 
 ### "Plan path extraction failed"
-**Problem**: `/research-revise` can't parse plan path
+**Problem**: `/revise` can't parse plan path
 **Solution**: Ensure path format correct:
 ```bash
 # ✓ Correct
-/research-revise "revise plan at ./path/to/plan.md based on findings"
+/revise "revise plan at ./path/to/plan.md based on findings"
 
 # ✗ Incorrect
-/research-revise "revise my plan using new findings"
+/revise "revise my plan using new findings"
 ```
 
 ### "Tests failing in /build"
@@ -463,7 +463,7 @@ If you're currently using `/coordinate`, here's how to migrate:
 
 ## Summary
 
-**Use dedicated commands** (`/research-report`, `/research-plan`, `/research-revise`, `/build`, `/fix`) when:
+**Use dedicated commands** (`/research`, `/plan`, `/revise`, `/build`, `/debug`) when:
 - You know the workflow type you need
 - You want 5-10s faster execution
 - You prefer explicit, clear command names

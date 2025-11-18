@@ -400,7 +400,7 @@ fi
 
 **Reference**: See [Command Authoring Standards](../reference/command-authoring-standards.md#pattern-2-two-step-capture-with-library-recommended-for-complex-input) for complete pattern documentation.
 
-**Commands Using This Pattern**: `/coordinate`, `/research-report`, `/research-plan`, `/research-revise`
+**Commands Using This Pattern**: `/coordinate`, `/research-report`, `/plan`, `/research-revise`
 
 ### Pattern 4: State Persistence Library
 

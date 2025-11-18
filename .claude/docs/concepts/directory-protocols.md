@@ -127,9 +127,9 @@ T4                                     mkdir 027_b [UNLOCK]
 
 **Commands Using Atomic Allocation**:
 - `/plan` - Creates implementation plan topic
-- `/research-plan` - Creates research+plan topic
-- `/fix` - Creates debug topic
-- `/research-report` - Creates research-only topic
+- `/plan` - Creates research+plan topic
+- `/debug` - Creates debug topic
+- `/research` - Creates research-only topic
 - `/research` - Creates hierarchical research topic
 
 **See**: [Unified Location Detection API](../reference/library-api.md#allocate_and_create_topic) for complete function documentation.

@@ -77,7 +77,7 @@ Commands provide structured, repeatable workflows for:
 - Automatic research topic identification
 - Complexity assessment
 - Optional research execution
-- Integration with /research-plan command
+- Integration with /plan command
 
 **Output**: `specs/plans/NNN_plan_name.md`
 
@@ -347,7 +347,7 @@ What the command produces
 
 ### Primary Commands
 Main workflow drivers that users invoke frequently:
-- `/build`, `/coordinate`, `/research-plan`, `/research-report`, `/test`
+- `/build`, `/coordinate`, `/plan`, `/research-report`, `/test`
 
 ### Support Commands
 Helper commands for specific tasks:
@@ -394,7 +394,7 @@ Commands support progressive plan organization that grows based on actual comple
 
 All plan commands work with progressive structure levels:
 
-- `/research-plan`: Creates Level 0 plan (single file), provides expansion hints if complex
+- `/plan`: Creates Level 0 plan (single file), provides expansion hints if complex
 - `/build`: Navigates structure level to find and execute phases
 - `/list plans`: Shows level indicators [L0], [L1], [L2]
 - `/research-revise`: Modifies plans with research integration
@@ -453,7 +453,7 @@ Commands discover project standards through CLAUDE.md:
 ### Standards Sections Used
 
 ```markdown
-[Used by: /build, /refactor, /research-plan]
+[Used by: /build, /refactor, /plan]
 ## Code Standards
 - Indentation
 - Line length
@@ -466,7 +466,7 @@ Commands discover project standards through CLAUDE.md:
 - Test patterns
 - Coverage requirements
 
-[Used by: /document, /research-plan]
+[Used by: /document, /plan]
 ## Documentation Policy
 - README requirements
 - Documentation format
@@ -644,7 +644,7 @@ description: Brief description shown in picker
 ### Running Implementation
 ```bash
 # Research and create plan
-/research-plan "Add dark mode toggle to settings"
+/plan "Add dark mode toggle to settings"
 
 # Build from plan (single file)
 /build specs/plans/007_dark_mode_implementation.md
@@ -662,7 +662,7 @@ description: Brief description shown in picker
 ### Research and Plan
 ```bash
 # Research the topic and create plan
-/research-plan "TTS engine comparison for Linux"
+/plan "TTS engine comparison for Linux"
 
 # Research only (no plan)
 /research-report "Authentication best practices"
