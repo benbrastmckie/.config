@@ -46,11 +46,11 @@ These commands were replaced by state-based orchestration workflows that provide
 
 The replacement commands are:
 - `/build` - Replaces debug, implement, plan workflow
-- `/fix` - Replaces debug-focused workflow
+- `/debug` - Replaces debug-focused workflow (previously /fix)
 - `/coordinate` - Replaces multi-agent orchestration
-- `/research-plan` - Replaces research + plan workflow
-- `/research-revise` - Replaces research + revise workflow
-- `/research-report` - Replaces research-only workflow
+- `/plan` - Replaces research + plan workflow (previously /research-plan)
+- `/revise` - Replaces research + revise workflow (previously /research-revise)
+- `/research` - Replaces research-only workflow (previously /research-report)
 
 ## Recovery Procedures
 
