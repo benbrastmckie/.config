@@ -1,8 +1,8 @@
-# /research-plan Command - Complete Guide
+# /plan Command - Complete Guide
 
-**Executable**: `.claude/commands/research-plan.md`
+**Executable**: `.claude/commands/plan.md`
 
-**Quick Start**: Run `/research-plan "<feature-description>"` - creates research reports and implementation plan.
+**Quick Start**: Run `/plan "<feature-description>"` - creates research reports and implementation plan.
 
 ---
 
@@ -21,7 +21,7 @@
 
 ### Purpose
 
-The `/research-plan` command provides a research-and-plan workflow that creates comprehensive research reports and then generates a new implementation plan based on those findings. It bridges investigation and action by producing both understanding (research) and actionable steps (plan).
+The `/plan` command provides a research-and-plan workflow that creates comprehensive research reports and then generates a new implementation plan based on those findings. It bridges investigation and action by producing both understanding (research) and actionable steps (plan).
 
 ### When to Use
 
@@ -32,9 +32,9 @@ The `/research-plan` command provides a research-and-plan workflow that creates 
 
 ### When NOT to Use
 
-- **Research-only tasks**: Use `/research-report` if you don't need a plan
-- **Existing plan revision**: Use `/research-revise` to update existing plans
-- **Debugging**: Use `/fix` for debug-focused workflows
+- **Research-only tasks**: Use `/research` if you don't need a plan
+- **Existing plan revision**: Use `/revise` to update existing plans
+- **Debugging**: Use `/debug` for debug-focused workflows
 - **Direct implementation**: Use `/build` if you already have a plan
 
 ---
@@ -97,7 +97,7 @@ The `/research-plan` command provides a research-and-plan workflow that creates 
 ### Example 1: Basic Feature Planning
 
 ```bash
-/research-plan "implement user authentication with JWT tokens"
+/plan"implement user authentication with JWT tokens"
 ```
 
 **Expected Output**:
@@ -152,7 +152,7 @@ Researches JWT authentication approaches, then creates detailed implementation p
 ### Example 2: Complex Feature with Higher Complexity
 
 ```bash
-/research-plan "implement real-time collaborative editing --complexity 4"
+/plan"implement real-time collaborative editing --complexity 4"
 ```
 
 **Expected Output**:
@@ -183,7 +183,7 @@ Higher complexity (4) triggers hierarchical supervision for comprehensive resear
 ### Example 3: Architecture Decision with Research
 
 ```bash
-/research-plan "migrate from REST API to GraphQL"
+/plan"migrate from REST API to GraphQL"
 ```
 
 **Expected Output**:
@@ -235,10 +235,10 @@ Researches GraphQL migration approaches, patterns, and gotchas. Creates phased m
 **Complexity Override**:
 ```bash
 # Lower for well-understood features
-/research-plan "add new API endpoint --complexity 2"
+/plan"add new API endpoint --complexity 2"
 
 # Higher for complex architectures
-/research-plan "implement event sourcing --complexity 4"
+/plan"implement event sourcing --complexity 4"
 ```
 
 **Feature Description Best Practices**:
@@ -250,14 +250,14 @@ Researches GraphQL migration approaches, patterns, and gotchas. Creates phased m
 
 **Research-Plan → Build Chain**:
 ```bash
-/research-plan "implement caching layer"
+/plan"implement caching layer"
 # Review plan
 /build  # Auto-detects and executes plan
 ```
 
 **Research-Plan → Review → Build**:
 ```bash
-/research-plan "add rate limiting"
+/plan"add rate limiting"
 # Manual review of plan
 # Adjust plan if needed with /revise
 /build
@@ -265,14 +265,14 @@ Researches GraphQL migration approaches, patterns, and gotchas. Creates phased m
 
 **Iterative Research-Plan**:
 ```bash
-/research-report "caching strategies"  # Initial investigation
-/research-plan "implement Redis caching"  # Focused plan based on findings
+/research "caching strategies"  # Initial investigation
+/plan"implement Redis caching"  # Focused plan based on findings
 ```
 
 **Split Workflow Alternative**:
 ```bash
 # Alternative to /research-plan: do research and planning separately
-/research-report "authentication approaches"
+/research "authentication approaches"
 # Review research
 /plan "implement OAuth2 authentication"
 ```
@@ -298,7 +298,7 @@ Insufficient research reports or plan-architect encountered errors.
 ls -lh .claude/specs/*/reports/
 
 # Re-run with higher complexity for better research
-/research-plan "feature description --complexity 4"
+/plan"feature description --complexity 4"
 
 # Check if feature description is specific enough
 # Bad: "add feature"
@@ -317,7 +317,7 @@ Research-specialist agent failed or feature description too vague.
 **Solution**:
 ```bash
 # Make feature description more specific
-/research-plan "implement JWT authentication with bcrypt password hashing for Express.js API"
+/plan"implement JWT authentication with bcrypt password hashing for Express.js API"
 
 # Check research-specialist agent file
 cat .claude/agents/research-specialist.md
@@ -364,10 +364,10 @@ Improve feature description:
 Example:
 ```bash
 # Before (too vague)
-/research-plan "add notifications"
+/plan"add notifications"
 
 # After (specific)
-/research-plan "implement real-time push notifications using WebSocket for user activity alerts in multi-tenant application"
+/plan"implement real-time push notifications using WebSocket for user activity alerts in multi-tenant application"
 ```
 
 ### Debug Mode
@@ -377,7 +377,7 @@ Enable verbose output:
 ```bash
 # Bash debugging
 set -x
-/research-plan "feature description"
+/plan"feature description"
 set +x
 ```
 
@@ -414,7 +414,7 @@ cat ~/.claude/data/state/workflow_state.json | jq '.completed_states'
 
 - Check [Command Reference](../reference/command-reference.md) for quick syntax
 - Review [Plan-Architect Agent](../../agents/plan-architect.md) for planning patterns
-- See related commands: `/research-report`, `/research-revise`, `/plan`
+- See related commands: `/research`, `/revise`, `/plan`
 - Review [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md) for plan structure
 
 ---
@@ -426,4 +426,4 @@ cat ~/.claude/data/state/workflow_state.json | jq '.completed_states'
 - [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md)
 - [Directory Protocols](../concepts/directory-protocols.md)
 - [Command Reference](../reference/command-reference.md)
-- Related Commands: `/research-report`, `/research-revise`, `/build`, `/implement`
+- Related Commands: `/research`, `/revise`, `/build`, `/implement`

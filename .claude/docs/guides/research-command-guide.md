@@ -1,8 +1,8 @@
-# /research-report Command - Complete Guide
+# /research Command - Complete Guide
 
-**Executable**: `.claude/commands/research-report.md`
+**Executable**: `.claude/commands/research.md`
 
-**Quick Start**: Run `/research-report "<topic>"` - creates research reports without planning or implementation.
+**Quick Start**: Run `/research "<topic>"` - creates research reports without planning or implementation.
 
 ---
 
@@ -21,7 +21,7 @@
 
 ### Purpose
 
-The `/research-report` command provides a research-only workflow that creates comprehensive research reports without planning or implementation phases. It's ideal for investigation, analysis, and understanding codebases or technologies before committing to implementation.
+The `/research` command provides a research-only workflow that creates comprehensive research reports without planning or implementation phases. It's ideal for investigation, analysis, and understanding codebases or technologies before committing to implementation.
 
 ### When to Use
 
@@ -32,10 +32,10 @@ The `/research-report` command provides a research-only workflow that creates co
 
 ### When NOT to Use
 
-- **Creating implementation plans**: Use `/research-plan` for research + planning
-- **Debugging issues**: Use `/fix` for debug-focused workflows
+- **Creating implementation plans**: Use `/plan` for research + planning
+- **Debugging issues**: Use `/debug` for debug-focused workflows
 - **Full implementation**: Use `/coordinate` for research + plan + implement
-- **Modifying plans**: Use `/research-revise` for plan revision with new research
+- **Modifying plans**: Use `/revise` for plan revision with new research
 
 ---
 
@@ -90,7 +90,7 @@ The `/research-report` command provides a research-only workflow that creates co
 ### Example 1: Basic Research
 
 ```bash
-/research-report "authentication patterns in codebase"
+/research"authentication patterns in codebase"
 ```
 
 **Expected Output**:
@@ -121,7 +121,7 @@ Report Count: 4
 
 Next Steps:
 - Review reports in: .claude/specs/750_authentication_patterns/reports
-- Use /research-plan to create implementation plan from research
+- Use /plan to create implementation plan from research
 - Use /coordinate for full workflow (research + plan + implement)
 ```
 
@@ -131,7 +131,7 @@ Creates comprehensive research reports about authentication patterns. Reports sa
 ### Example 2: Higher Complexity Research
 
 ```bash
-/research-report "React performance optimization techniques --complexity 3"
+/research"React performance optimization techniques --complexity 3"
 ```
 
 **Expected Output**:
@@ -161,7 +161,7 @@ Higher complexity (3) produces more reports with deeper analysis. Useful for com
 ### Example 3: Hierarchical Supervision Mode
 
 ```bash
-/research-report "microservices architecture migration strategy --complexity 4"
+/research"microservices architecture migration strategy --complexity 4"
 ```
 
 **Expected Output**:
@@ -214,7 +214,7 @@ Complexity 4 triggers hierarchical supervision with research-sub-supervisor coor
 **Complexity Specification**:
 ```bash
 # Embedded in description (recommended)
-/research-report "topic --complexity 3"
+/research"topic --complexity 3"
 
 # Complexity defaults by research type:
 # - Quick exploration: Use complexity 1
@@ -232,7 +232,7 @@ Complexity 4 triggers hierarchical supervision with research-sub-supervisor coor
 
 **Research → Plan Chain**:
 ```bash
-/research-report "user authentication approaches"
+/research"user authentication approaches"
 # Review reports
 /plan "implement JWT authentication"  # Create plan based on research
 ```
@@ -240,14 +240,14 @@ Complexity 4 triggers hierarchical supervision with research-sub-supervisor coor
 **Research → Research-Plan Chain**:
 ```bash
 # Alternative: Combined workflow
-/research-plan "implement JWT authentication"  # Does research + planning in one command
+/plan "implement JWT authentication"  # Does research + planning in one command
 ```
 
 **Iterative Research**:
 ```bash
-/research-report "API design patterns"           # Initial investigation
+/research"API design patterns"           # Initial investigation
 # Review findings, identify gaps
-/research-report "REST vs GraphQL comparison"    # Deeper dive on specific aspect
+/research"REST vs GraphQL comparison"    # Deeper dive on specific aspect
 ```
 
 ---
@@ -268,10 +268,10 @@ Research-specialist agent failed or workflow description too vague.
 **Solution**:
 ```bash
 # Make description more specific
-/research-report "JWT authentication implementation in src/auth module"
+/research"JWT authentication implementation in src/auth module"
 
 # Increase complexity for better coverage
-/research-report "authentication patterns --complexity 3"
+/research"authentication patterns --complexity 3"
 
 # Check if research directory was created
 ls .claude/specs/
@@ -293,7 +293,7 @@ Research-specialist encountered errors or found insufficient information.
 # Good: "foo module architecture" (appropriate scope)
 
 # Increase complexity for deeper investigation
-/research-report "topic --complexity 3"
+/research"topic --complexity 3"
 ```
 
 #### Issue 3: State Machine Initialization Failed
@@ -325,15 +325,15 @@ Empty or missing description argument.
 **Solution**:
 ```bash
 # Provide description in quotes
-/research-report "topic description here"
+/research"topic description here"
 
 # Not:
 /research-report
 
 # Examples of good descriptions:
-/research-report "authentication patterns in Express.js applications"
-/research-report "React hooks best practices for state management"
-/research-report "database indexing strategies for PostgreSQL"
+/research"authentication patterns in Express.js applications"
+/research"React hooks best practices for state management"
+/research"database indexing strategies for PostgreSQL"
 ```
 
 ### Debug Mode
@@ -343,7 +343,7 @@ Enable verbose output:
 ```bash
 # Bash debugging
 set -x
-/research-report "topic"
+/research"topic"
 set +x
 ```
 
@@ -376,7 +376,7 @@ cat ~/.claude/data/state/workflow_state.json | jq '.workflow_type'
 
 - Check [Command Reference](../reference/command-reference.md) for quick syntax
 - Review [Research-Specialist Agent](../../agents/research-specialist.md) for research patterns
-- See related commands: `/research-plan`, `/fix`, `/coordinate`
+- See related commands: `/plan`, `/debug`, `/coordinate`
 - Review [Directory Protocols](../concepts/directory-protocols.md) for specs organization
 
 ---
@@ -388,4 +388,4 @@ cat ~/.claude/data/state/workflow_state.json | jq '.workflow_type'
 - [Directory Protocols](../concepts/directory-protocols.md)
 - [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md)
 - [Command Reference](../reference/command-reference.md)
-- Related Commands: `/research-plan`, `/research-revise`, `/fix`, `/coordinate`
+- Related Commands: `/plan`, `/revise`, `/debug`, `/coordinate`
