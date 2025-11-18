@@ -177,15 +177,18 @@ SPECS_DIR=$(detect_specs_directory "$PROJECT_ROOT")
 TOPIC_SLUG=$(echo "$FEATURE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | tr -s ' ' '_' | sed 's/[^a-z0-9_]//g' | cut -c1-50)
 
 # Allocate topic directory atomically
-TOPIC_DIR=$(allocate_and_create_topic "$SPECS_DIR" "$TOPIC_SLUG")
+RESULT=$(allocate_and_create_topic "$SPECS_DIR" "$TOPIC_SLUG")
 if [ $? -ne 0 ]; then
   echo "ERROR: Failed to allocate topic directory"
   echo "DIAGNOSTIC: Check permissions on $SPECS_DIR"
   exit 1
 fi
 
+# Parse pipe-delimited result: "NUMBER|PATH"
+TOPIC_NUMBER="${RESULT%|*}"
+TOPIC_DIR="${RESULT#*|}"
+
 # Pre-calculate plan output path BEFORE any agent invocations
-TOPIC_NUMBER=$(basename "$TOPIC_DIR" | grep -oE '^[0-9]+')
 PLAN_PATH="$TOPIC_DIR/plans/${TOPIC_NUMBER}_implementation_plan.md"
 
 # Ensure parent directory exists (lazy creation)

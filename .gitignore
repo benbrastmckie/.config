@@ -41,5 +41,8 @@ node_modules/                              # NPM dependencies
 # Generic Temporary Files
 temp/                                      # Temporary working directory
 **/tmp/                                    # Temporary directories at any level
+
+# Runtime Coordination Files
+*.lock                                     # Lock files (flock coordination)
 .gitignore                                 # Avoid recursive gitignore tracking
 gmail-oauth2.env

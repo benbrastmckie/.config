@@ -52,8 +52,9 @@ specs/
 
 ### Topic Directories
 
-- **Format**: `NNN_topic_name/` (e.g., `042_authentication/`, `001_cleanup/`)
-- **Numbering**: Three-digit sequential numbers (001, 002, 003...)
+- **Format**: `NNN_topic_name/` (e.g., `042_authentication/`, `000_initial/`)
+- **Numbering**: Three-digit sequential numbers starting from 000 (000, 001, 002...)
+- **Rollover**: Numbers wrap from 999 to 000 (with collision detection)
 - **Naming**: Snake_case describing the feature or area
 - **Scope**: Contains all artifacts for a single feature or related area
 
@@ -109,6 +110,12 @@ T4                                     mkdir 027_b [UNLOCK]
 ```
 
 **Performance**: Atomic allocation adds ~10ms overhead per topic creation due to lock contention. This is acceptable for human-driven workflow commands.
+
+**Numbering Behavior**:
+- **First topic**: 000 (not 001)
+- **Rollover**: After 999, numbers wrap to 000
+- **Collision detection**: If the calculated number already exists (after rollover), finds next available
+- **Full exhaustion**: Returns error if all 1000 numbers are used (rare edge case)
 
 **Lock File**: `${specs_root}/.topic_number.lock`
 - Created automatically on first allocation
