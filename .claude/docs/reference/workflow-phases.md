@@ -1,14 +1,36 @@
 # Workflow Phases Documentation
 
-This document provides comprehensive documentation for all workflow phases in the /orchestrate command, including detailed execution procedures, agent invocation patterns, and checkpoint management.
+**Document Status**: SPLIT - This document has been split for maintainability
+**Last Updated**: 2025-11-17
+
+---
+
+## This Document Has Been Split
+
+For better maintainability, this large document (2176 lines) has been split into focused files under 400 lines each.
+
+**Please refer to the new split files**:
+
+| Topic | Document | Description |
+|-------|----------|-------------|
+| Overview | [workflow-phases-overview.md](workflow-phases-overview.md) | Phase coordination and summary |
+| Research | [workflow-phases-research.md](workflow-phases-research.md) | Parallel research execution |
+| Planning | [workflow-phases-planning.md](workflow-phases-planning.md) | Plan creation |
+| Implementation | [workflow-phases-implementation.md](workflow-phases-implementation.md) | Wave-based code execution |
+| Testing | [workflow-phases-testing.md](workflow-phases-testing.md) | Test execution |
+| Documentation | [workflow-phases-documentation.md](workflow-phases-documentation.md) | Documentation updates |
+
+**Start here**: [Workflow Phases Overview](workflow-phases-overview.md)
+
+---
+
+## Legacy Content Below
+
+The content below is preserved for reference but should be accessed via the split files above.
+
+---
 
 **Referenced by**: [orchestrate.md](../../commands/orchestrate.md)
-
-**Contents**:
-- Research Phase (Parallel Execution)
-- Planning Phase (Sequential Execution)
-- Implementation Phase (Adaptive Execution)
-- Documentation Phase (Sequential Execution)
 
 ---
 
