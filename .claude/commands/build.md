@@ -21,12 +21,57 @@ YOU ARE EXECUTING a build-from-plan workflow that takes an existing implementati
 **Expected Input**: Existing plan file path
 **Expected Output**: Implemented features with passing tests and updated documentation
 
-## Part 1: Argument Parsing and Plan Discovery
+## Part 1: Capture Build Arguments
 
-**EXECUTE NOW**: Parse arguments and discover the plan file:
+**EXECUTE NOW**: The user invoked `/build [plan-file] [starting-phase] [--dry-run]`. Capture those arguments.
+
+In the **small bash block below**, replace `YOUR_BUILD_ARGS_HERE` with the actual build arguments (or leave empty for auto-resume).
+
+**Examples**:
+- If user ran `/build plan.md 3 --dry-run`, change to: `echo "plan.md 3 --dry-run" > "$TEMP_FILE"`
+- If user ran `/build`, change to: `echo "" > "$TEMP_FILE"` (auto-resume mode)
+
+Execute this bash block with your substitution:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+# SUBSTITUTE THE BUILD ARGUMENTS IN THE LINE BELOW
+# CRITICAL: Replace YOUR_BUILD_ARGS_HERE with the actual arguments from the user
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+# Use timestamp-based filename for concurrent execution safety
+TEMP_FILE="${HOME}/.claude/tmp/build_arg_$(date +%s%N).txt"
+echo "YOUR_BUILD_ARGS_HERE" > "$TEMP_FILE"
+# Save temp file path for Part 2 to read
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/build_arg_path.txt"
+echo "Build arguments captured to $TEMP_FILE"
+```
+
+## Part 2: Read Arguments and Discover Plan
+
+**EXECUTE NOW**: Read the captured arguments and discover the plan file:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Read build arguments from file (written in Part 1)
+BUILD_ARG_PATH_FILE="${HOME}/.claude/tmp/build_arg_path.txt"
+
+if [ -f "$BUILD_ARG_PATH_FILE" ]; then
+  BUILD_ARG_FILE=$(cat "$BUILD_ARG_PATH_FILE")
+else
+  # Fallback to legacy fixed filename for backward compatibility
+  BUILD_ARG_FILE="${HOME}/.claude/tmp/build_arg.txt"
+fi
+
+if [ -f "$BUILD_ARG_FILE" ]; then
+  BUILD_ARGS=$(cat "$BUILD_ARG_FILE" 2>/dev/null || echo "")
+else
+  echo "ERROR: Build arguments file not found: $BUILD_ARG_FILE"
+  echo "This usually means Part 1 (argument capture) didn't execute."
+  echo "Usage: /build [plan-file] [starting-phase] [--dry-run]"
+  exit 1
+fi
+
 # Bootstrap CLAUDE_PROJECT_DIR detection
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -66,18 +111,26 @@ state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
 
-# Parse arguments
-PLAN_FILE="$1"
-STARTING_PHASE="${2:-1}"
+# Parse arguments from captured BUILD_ARGS
+# Convert to array for proper handling
+read -ra ARGS_ARRAY <<< "$BUILD_ARGS"
+
+PLAN_FILE="${ARGS_ARRAY[0]:-}"
+STARTING_PHASE="${ARGS_ARRAY[1]:-1}"
 DRY_RUN="false"
 
-shift 2 2>/dev/null || shift $# 2>/dev/null
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --dry-run) DRY_RUN="true"; shift ;;
-    *) shift ;;
+# Parse remaining args for flags
+for arg in "${ARGS_ARRAY[@]:2}"; do
+  case "$arg" in
+    --dry-run) DRY_RUN="true" ;;
   esac
 done
+
+# Handle case where only --dry-run is provided without phase
+if [[ "$STARTING_PHASE" == "--dry-run" ]]; then
+  STARTING_PHASE="1"
+  DRY_RUN="true"
+fi
 
 # Validate STARTING_PHASE is numeric
 if ! echo "$STARTING_PHASE" | grep -Eq "^[0-9]+$"; then
@@ -150,7 +203,7 @@ if [ "$DRY_RUN" = "true" ]; then
 fi
 ```
 
-## Part 2: State Machine Initialization
+## Part 3: State Machine Initialization
 
 **EXECUTE NOW**: Initialize the state machine for workflow tracking:
 
@@ -189,7 +242,7 @@ echo "✓ State machine initialized"
 echo ""
 ```
 
-## Part 3: Implementation Phase
+## Part 4: Implementation Phase
 
 **EXECUTE NOW**: Transition to implementation state and prepare for agent delegation:
 
@@ -311,7 +364,7 @@ if ! save_completed_states_to_state 2>&1; then
 fi
 ```
 
-## Part 4: Testing Phase
+## Part 5: Testing Phase
 
 **EXECUTE NOW**: Run tests and determine pass/fail status:
 
@@ -408,7 +461,7 @@ if ! save_completed_states_to_state 2>&1; then
 fi
 ```
 
-## Part 5: Conditional Branching (Debug or Document)
+## Part 6: Conditional Branching (Debug or Document)
 
 **EXECUTE NOW**: Branch to debug or document phase based on test results:
 
@@ -569,7 +622,7 @@ echo ""
 save_completed_states_to_state
 ```
 
-## Part 6: Completion & Cleanup
+## Part 7: Completion & Cleanup
 
 **EXECUTE NOW**: Complete workflow and cleanup state:
 
