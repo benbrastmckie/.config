@@ -12,6 +12,70 @@
 
 set -eo pipefail  # Match workflow-initialization.sh: removed -u for defensive variable refs
 
+# extract_significant_words: Extract significant words from description for fallback slug generation
+#
+# Used as Tier 2 fallback when LLM-generated topic_directory_slug is invalid.
+# Extracts first 4 significant words (>2 chars, not stopwords) and formats as snake_case.
+#
+# Arguments:
+#   $1 - description: Workflow description text
+#
+# Output:
+#   Snake_case string of significant words (max 40 chars)
+#
+# Example:
+#   extract_significant_words "I see that in the project directories the names are odd"
+#   # Returns: "see_project_directories_names"
+#
+extract_significant_words() {
+  local description="$1"
+
+  # Stopword list (common English words to filter)
+  local stopwords=" the a an and or but to for of in on at by with from as is are was were be been being have has had do does did will would should could may might must can about through during before after above below between among into onto upon that this these those i you we they it "
+
+  # Convert to lowercase and split into words
+  local words
+  words=$(echo "$description" | tr '[:upper:]' '[:lower:]' | tr -cs '[:alnum:]' ' ')
+
+  # Extract significant words (not stopwords, >2 chars)
+  local significant_words=""
+  local count=0
+
+  for word in $words; do
+    # Skip stopwords and short words
+    if echo "$stopwords" | grep -qw "$word"; then
+      continue
+    fi
+
+    if [ ${#word} -le 2 ]; then
+      continue
+    fi
+
+    # Add word if we haven't reached 4 yet
+    if [ $count -lt 4 ]; then
+      if [ -n "$significant_words" ]; then
+        significant_words="${significant_words}_${word}"
+      else
+        significant_words="$word"
+      fi
+      count=$((count + 1))
+    fi
+  done
+
+  # Ensure max 40 characters
+  if [ ${#significant_words} -gt 40 ]; then
+    # Truncate at 40 and trim to last complete word
+    significant_words=$(echo "$significant_words" | cut -c1-40 | sed 's/_[^_]*$//')
+  fi
+
+  # Return result (or "topic" if empty)
+  if [ -z "$significant_words" ]; then
+    echo "topic"
+  else
+    echo "$significant_words"
+  fi
+}
+
 # Get the next sequential topic number in the specs directory
 # Usage: get_next_topic_number "/path/to/specs"
 # Returns: "001" for empty directory, or next number (e.g., "006" if max is 005)
