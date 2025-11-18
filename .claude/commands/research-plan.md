@@ -160,6 +160,16 @@ WORKFLOW_TYPE="research-and-plan"
 TERMINAL_STATE="plan"
 COMMAND_NAME="research-plan"
 
+# Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
+WORKFLOW_ID="research_plan_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/research_plan_state_id.txt"
+mkdir -p "$(dirname "$STATE_ID_FILE")"
+echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+export WORKFLOW_ID
+
+# Initialize workflow state BEFORE sm_init (correct initialization order)
+init_workflow_state "$WORKFLOW_ID"
+
 # Initialize state machine with 5 parameters and return code verification
 # Parameters: description, command_name, workflow_type, research_complexity, research_topics_json
 if ! sm_init \
@@ -180,7 +190,7 @@ if ! sm_init \
   exit 1
 fi
 
-echo "✓ State machine initialized"
+echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
 echo ""
 ```
 
@@ -329,8 +339,18 @@ set +H  # CRITICAL: Disable history expansion
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+STATE_ID_FILE="${HOME}/.claude/tmp/research_plan_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
 # Load workflow state from Part 3 (subprocess isolation)
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+load_workflow_state "$WORKFLOW_ID" false
 
 # Re-export state machine variables (restored by load_workflow_state)
 export CURRENT_STATE
@@ -443,8 +463,18 @@ set +H  # CRITICAL: Disable history expansion
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+STATE_ID_FILE="${HOME}/.claude/tmp/research_plan_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
 # Load workflow state from Part 4 (subprocess isolation)
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+load_workflow_state "$WORKFLOW_ID" false
 
 # Re-export state machine variables (restored by load_workflow_state)
 export CURRENT_STATE

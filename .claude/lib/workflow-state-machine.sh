@@ -53,7 +53,7 @@ readonly STATE_COMPLETE="complete"           # Phase 7: Finalization, cleanup
 
 # Defines valid state transitions (comma-separated list of allowed next states)
 declare -gA STATE_TRANSITIONS=(
-  [initialize]="research"
+  [initialize]="research,implement" # Can go to research or directly to implement (for /build)
   [research]="plan,complete"        # Can skip to complete for research-only
   [plan]="implement,complete"       # Can skip to complete for research-and-plan
   [implement]="test"
@@ -749,7 +749,7 @@ sm_save() {
     completed_states_json=$(printf '%s\n' "${COMPLETED_STATES[@]}" | jq -R . | jq -s .)
   fi
 
-  # Build transition table JSON
+  # Build transition table JSON (reads from STATE_TRANSITIONS, already updated)
   local transition_table_json
   transition_table_json=$(jq -n \
     --arg init "${STATE_TRANSITIONS[initialize]}" \
