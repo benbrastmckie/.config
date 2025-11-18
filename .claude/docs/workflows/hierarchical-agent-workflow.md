@@ -239,7 +239,7 @@ See [Context Budget Management Tutorial](./context-budget-management.md).
 
 ## Related Documentation
 
-- [Hierarchical Agent Architecture Guide](../concepts/hierarchical_agents.md) - Complete architecture documentation
+- [Hierarchical Agent Architecture Guide](../concepts/hierarchical-agents.md) - Complete architecture documentation
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Agent invocation patterns
 - [Metadata Extraction Pattern](../concepts/patterns/metadata-extraction.md) - Metadata extraction details
 - [Forward Message Pattern](../concepts/patterns/forward-message.md) - Passing subagent outputs

@@ -8,7 +8,7 @@ Comprehensive guide for creating, invoking, and maintaining custom Claude Code a
 
 **Related Documentation**:
 - [Command Development Guide](command-development-guide.md) - How commands invoke agents
-- [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Overall architecture
+- [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md) - Overall architecture
 - [Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) - Common issues
 
 ## Quick Start: Your First Agent
@@ -676,7 +676,7 @@ When designing agents for multi-agent workflows, ensure outputs are compatible w
 
 **Why This Matters**: Structured outputs enable `extract_report_metadata()` and `forward_message()` utilities to extract metadata (path + 50-word summary) instead of passing full content between agents, achieving 95% context reduction.
 
-See [Hierarchical Agents Guide](../concepts/hierarchical_agents.md#metadata-extraction) for complete metadata extraction patterns.
+See [Hierarchical Agents Guide](../concepts/hierarchical-agents.md#metadata-extraction) for complete metadata extraction patterns.
 
 ---
 
@@ -1351,15 +1351,15 @@ Task {
 
 **See Also**:
 - [Command Architecture Standards](../reference/command_architecture_standards.md#layered-context-architecture) for complete layered context guidelines
-- [Hierarchical Agents Guide](../concepts/hierarchical_agents.md#metadata-extraction) for metadata extraction patterns
+- [Hierarchical Agents Guide](../concepts/hierarchical-agents.md#metadata-extraction) for metadata extraction patterns
 
 ---
 
 ## 3.2. Context Preservation Patterns
 
-When integrating agents into multi-phase workflows, use metadata-based context preservation to minimize token consumption. For complete documentation on context preservation patterns, metadata extraction utilities, forward message patterns, and context pruning strategies, see [Hierarchical Agents Guide](../concepts/hierarchical_agents.md).
+When integrating agents into multi-phase workflows, use metadata-based context preservation to minimize token consumption. For complete documentation on context preservation patterns, metadata extraction utilities, forward message patterns, and context pruning strategies, see [Hierarchical Agents Guide](../concepts/hierarchical-agents.md).
 
-**Key Patterns** (detailed in hierarchical_agents.md):
+**Key Patterns** (detailed in hierarchical-agents.md):
 - **Metadata-Only Passing**: Extract path + 50-word summary instead of full content (95-99% reduction)
 - **Forward Message**: Pass subagent responses without re-summarization (eliminates 200-300 token overhead)
 - **Context Pruning**: Prune completed phase data, retain only references (80-90% reduction)
@@ -2164,7 +2164,7 @@ Agents should implement these patterns from the [Patterns Catalog](../concepts/p
 
 ### Reference Documentation
 
-- [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Multi-agent coordination
+- [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md) - Multi-agent coordination
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Architecture standards
 - [Agent Reference](../reference/agent-reference.md) - Quick agent reference
 - [Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) - Common issues

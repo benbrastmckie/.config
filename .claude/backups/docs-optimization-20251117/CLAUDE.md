@@ -39,6 +39,7 @@ This CLAUDE.md serves as the central configuration and standards index for this 
 - [Neovim Configuration Guidelines](nvim/CLAUDE.md) - Coding standards, style guide, and architecture documentation for Neovim configuration
 - [Code Standards](nvim/docs/CODE_STANDARDS.md) - Lua coding conventions, module structure, and development process
 - [Documentation Standards](nvim/docs/DOCUMENTATION_STANDARDS.md) - Documentation structure, style guide, and content standards
+- [Specifications Directory](nvim/specs/) - Implementation plans, research reports, and technical specifications
 
 <!-- SECTION: directory_protocols -->
 ### Directory Protocols
@@ -111,7 +112,7 @@ See [Development Workflow](.claude/docs/concepts/development-workflow.md) for co
 ## Hierarchical Agent Architecture
 [Used by: /coordinate, /implement, /plan, /debug]
 
-See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical-agents.md) for complete patterns, utilities, templates, and troubleshooting.
+See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical_agents.md) for complete patterns, utilities, templates, and troubleshooting.
 <!-- END_SECTION: hierarchical_agent_architecture -->
 
 <!-- SECTION: state_based_orchestration -->

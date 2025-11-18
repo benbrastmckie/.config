@@ -54,7 +54,7 @@ When Claude executes a command:
 
 **Solution**: Distinguish between descriptive documentation and mandatory execution directives using specific linguistic patterns and verification checkpoints.
 
-**Complete Guide**: See [Imperative Language Guide](../guides/imperative-language-guide.md) for comprehensive usage patterns, transformation rules, and validation techniques.
+**Complete Guide**: See [Imperative Language Guide](../archive/guides/imperative-language-guide.md) for comprehensive usage patterns, transformation rules, and validation techniques.
 
 **Robustness Patterns**: Apply systematic patterns for reliable command development - See [Robustness Framework](../concepts/robustness-framework.md) for unified pattern index with validation methods.
 

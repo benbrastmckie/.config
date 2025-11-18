@@ -109,7 +109,7 @@ Follow [Prevention Guidelines](./agent-delegation-troubleshooting.md#prevention-
 - [Agent Development Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 11: Imperative Agent Invocation
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Complete pattern documentation
-- [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Overall system architecture
+- [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md) - Overall system architecture
 
 ## Archive
 

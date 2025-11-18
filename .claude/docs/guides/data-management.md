@@ -311,7 +311,7 @@ grep -i "error\|fail\|exception" .claude/data/logs/*.log
 4. Check logs: `tail .claude/data/logs/tts.log`
 5. Test espeak-ng: `espeak-ng "Test message"`
 
-**See Also**: [Orchestration Guide](../workflows/orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [TTS Integration Guide](../workflows/tts-integration-guide.md), [data/logs/README.md](../../data/logs/README.md)
+**See Also**: [Orchestration Guide](../workflows/orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical-agents.md), [TTS Integration Guide](../workflows/tts-integration-guide.md), [data/logs/README.md](../../data/logs/README.md)
 
 ## Metrics
 
@@ -543,7 +543,7 @@ rm .claude/data/registry/artifact_*.json
 find .claude/data/registry -name "*.json" -mtime +30 -delete
 ```
 
-**See Also**: [Hierarchical Agents Guide](../concepts/hierarchical_agents.md), [Orchestration Guide](../workflows/orchestration-guide.md), [data/registry/README.md](../../data/registry/README.md)
+**See Also**: [Hierarchical Agents Guide](../concepts/hierarchical-agents.md), [Orchestration Guide](../workflows/orchestration-guide.md), [data/registry/README.md](../../data/registry/README.md)
 
 ## Integration Workflows
 
@@ -671,7 +671,7 @@ ls .claude/data/registry/*.json
 - [Checkpoint Template Guide](../workflows/checkpoint_template_guide.md) - Checkpoint system details
 
 ### Concepts
-- [Hierarchical Agents](../concepts/hierarchical_agents.md) - Registry integration patterns
+- [Hierarchical Agents](../concepts/hierarchical-agents.md) - Registry integration patterns
 - [Development Workflow](../concepts/development-workflow.md) - Artifact lifecycle management
 
 ### Data Subdirectories

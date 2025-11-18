@@ -1157,5 +1157,5 @@ echo "✓ Behavioral injection pattern validated"
 
 - [Command Architecture Standards](../../reference/command_architecture_standards.md) - Phase 0 requirements
 - [Creating Commands Guide](../../guides/command-development-guide.md) - Orchestrator patterns
-- [Hierarchical Agents Guide](../hierarchical_agents.md) - Agent coordination architecture
+- [Hierarchical Agents Guide](../hierarchical-agents.md) - Agent coordination architecture
 - [Orchestration Guide](../../workflows/orchestration-guide.md) - Full workflow patterns

@@ -16,31 +16,32 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 
 ## Command Index (Alphabetical)
 
-### Active Commands
 - [/analyze](#analyze)
-- [/build](#build)
+- [/build](#build) ✨ NEW
 - [/collapse](#collapse)
 - [/convert-docs](#convert-docs)
 - [/coordinate](#coordinate)
+- [/debug](#debug) - ARCHIVED
 - [/document](#document)
 - [/example-with-agent](#example-with-agent)
 - [/expand](#expand)
+- [/debug](#fix) ✨ NEW
+- [/implement](#implement) - ARCHIVED
 - [/list](#list)
-- [/plan](#plan)
+- [/plan](#plan) - ARCHIVED
 - [/plan-from-template](#plan-from-template)
 - [/plan-wizard](#plan-wizard)
 - [/refactor](#refactor)
 - [/report](#report)
-- [/research](#research)
-- [/revise](#revise)
+- [/plan](#research-plan) ✨ NEW
+- [/research](#research-report) ✨ NEW
+- [/revise](#research-revise) ✨ NEW
+- [/research](#research) - ARCHIVED
+- [/revise](#revise) - ARCHIVED
 - [/setup](#setup)
 - [/test](#test)
 - [/test-all](#test-all)
-
-### Archived Commands
-- [/debug](#debug-archived)
-- [/implement](#implement-archived)
-- [/update](#update-archived)
+- [/update](#update) ⚠️ DEPRECATED
 
 ---
 

@@ -418,7 +418,7 @@ echo "✓ Hierarchical supervision pattern validated"
 
 ## See Also
 
-- [Hierarchical Agents Guide](../hierarchical_agents.md) - Complete architectural documentation
+- [Hierarchical Agents Guide](../hierarchical-agents.md) - Complete architectural documentation
 - [Orchestration Guide](../../workflows/orchestration-guide.md) - Full workflow patterns
 - [Creating Agents Guide](../../guides/agent-development-guide.md) - Sub-supervisor development
 - [Performance Measurement Guide](../../guides/performance-optimization.md) - Measuring hierarchical efficiency

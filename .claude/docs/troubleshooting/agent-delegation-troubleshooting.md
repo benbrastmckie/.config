@@ -60,7 +60,7 @@ START: Do you see Task tool invocations in command output?
 ```
 ● /report is running…
 ● Read(.claude/commands/report.md)
-● Read(.claude/docs/concepts/hierarchical_agents.md)
+● Read(.claude/docs/concepts/hierarchical-agents.md)
 ● Glob(pattern: ".claude/agents/*.md")
 ● Read(.claude/agents/research-specialist.md)
 ● Write(reports/001_analysis.md)  ← Direct write, no agent
@@ -660,7 +660,7 @@ echo "Context reduction: ${REDUCTION}%"
 
 #### Related Resources
 
-- [Hierarchical Agents: Metadata Extraction](../concepts/hierarchical_agents.md#metadata-extraction)
+- [Hierarchical Agents: Metadata Extraction](../concepts/hierarchical-agents.md#metadata-extraction)
 - [Context Management Pattern](../concepts/patterns/context-management.md)
 
 ---
@@ -1124,7 +1124,7 @@ cat .claude/specs/002_report_creation/example_3.md
 
 # Observed:
 # - ● Read(.claude/commands/report.md)
-# - ● Read(.claude/docs/concepts/hierarchical_agents.md)
+# - ● Read(.claude/docs/concepts/hierarchical-agents.md)
 # - ● Write(reports/002_report_command_compliance_analysis.md)
 # - No Task tool invocations
 # - Single report created
@@ -1191,7 +1191,7 @@ I'll orchestrate hierarchical research by delegating to specialized subagents.
 - [Agent Development Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Complete pattern documentation
 - [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 11: Imperative Agent Invocation
-- [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - Overall system architecture
+- [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md) - Overall system architecture
 - [Execution Enforcement Migration Guide](../guides/execution-enforcement-guide.md) - Complete migration process
 
 ---
