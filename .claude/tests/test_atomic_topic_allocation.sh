@@ -47,7 +47,7 @@ warn() {
 
 # Test 1: Sequential allocation
 test_sequential_allocation() {
-  local test_name="Sequential allocation (001-010)"
+  local test_name="Sequential allocation (000-009)"
   local test_root="/tmp/test_specs_seq_$$"
 
   # Setup
@@ -55,13 +55,13 @@ test_sequential_allocation() {
 
   # Execute: create 10 topics sequentially
   local failed=false
-  for i in {1..10}; do
+  for i in {0..9}; do
     local result
     result=$(allocate_and_create_topic "$test_root" "topic_$i")
     local topic_num="${result%|*}"
     local topic_path="${result#*|}"
 
-    # Verify number matches expected
+    # Verify number matches expected (now starts from 000)
     local expected
     expected=$(printf "%03d" "$i")
     if [ "$topic_num" != "$expected" ]; then
@@ -199,7 +199,7 @@ test_lock_file_creation() {
 
 # Test 5: Empty specs directory (first topic)
 test_empty_specs_directory() {
-  local test_name="Empty specs directory (first topic = 001)"
+  local test_name="Empty specs directory (first topic = 000)"
   local test_root="/tmp/test_empty_$$"
 
   # Setup: create empty directory
@@ -210,11 +210,11 @@ test_empty_specs_directory() {
   result=$(allocate_and_create_topic "$test_root" "first_topic")
   local topic_num="${result%|*}"
 
-  # Verify: first topic is 001
-  if [ "$topic_num" = "001" ]; then
+  # Verify: first topic is 000
+  if [ "$topic_num" = "000" ]; then
     pass "$test_name"
   else
-    fail "$test_name - Expected 001, got $topic_num"
+    fail "$test_name - Expected 000, got $topic_num"
   fi
 
   # Cleanup
@@ -260,8 +260,8 @@ test_topic_path_format() {
   result=$(allocate_and_create_topic "$test_root" "my_topic")
   local topic_path="${result#*|}"
 
-  # Verify: path format
-  local expected_path="${test_root}/001_my_topic"
+  # Verify: path format (first topic is now 000)
+  local expected_path="${test_root}/000_my_topic"
   if [ "$topic_path" = "$expected_path" ]; then
     pass "$test_name"
   else
@@ -319,9 +319,9 @@ test_directory_creation() {
   rm -rf "$test_root"
 }
 
-# Test 10: Concurrent first allocation (race for 001)
+# Test 10: Concurrent first allocation (race for 000)
 test_concurrent_first_allocation() {
-  local test_name="Concurrent first allocation (race for 001)"
+  local test_name="Concurrent first allocation (race for 000)"
   local test_root="/tmp/test_first_$$"
 
   # Setup: empty directory
@@ -333,7 +333,7 @@ test_concurrent_first_allocation() {
   done
   wait
 
-  # Verify: 5 unique directories (001-005)
+  # Verify: 5 unique directories (000-004)
   local count
   count=$(ls -1d "$test_root"/[0-9][0-9][0-9]_* 2>/dev/null | wc -l)
 
@@ -343,11 +343,87 @@ test_concurrent_first_allocation() {
     return
   fi
 
-  # Check that 001 exists (someone won the race)
-  if ls -d "$test_root"/001_* > /dev/null 2>&1; then
+  # Check that 000 exists (someone won the race)
+  if ls -d "$test_root"/000_* > /dev/null 2>&1; then
     pass "$test_name"
   else
-    fail "$test_name - 001 directory not created"
+    fail "$test_name - 000 directory not created"
+  fi
+
+  # Cleanup
+  rm -rf "$test_root"
+}
+
+# Test 11: Rollover from 999 to 000
+test_rollover() {
+  local test_name="Rollover from 999 to 000"
+  local test_root="/tmp/test_rollover_$$"
+
+  # Setup: create directory with topic 999
+  mkdir -p "$test_root/999_existing"
+
+  # Execute: allocate next topic
+  local result
+  result=$(allocate_and_create_topic "$test_root" "after_999")
+  local topic_num="${result%|*}"
+
+  # Verify: next topic is 000 (rollover)
+  if [ "$topic_num" = "000" ]; then
+    pass "$test_name"
+  else
+    fail "$test_name - Expected 000 after 999, got $topic_num"
+  fi
+
+  # Cleanup
+  rm -rf "$test_root"
+}
+
+# Test 12: Collision detection after rollover
+test_collision_detection() {
+  local test_name="Collision detection after rollover"
+  local test_root="/tmp/test_collision_$$"
+
+  # Setup: create topics 999 and 000
+  mkdir -p "$test_root/999_existing"
+  mkdir -p "$test_root/000_existing"
+
+  # Execute: allocate next topic (should skip 000 and go to 001)
+  local result
+  result=$(allocate_and_create_topic "$test_root" "collision_test")
+  local topic_num="${result%|*}"
+
+  # Verify: skipped collision, got 001
+  if [ "$topic_num" = "001" ]; then
+    pass "$test_name"
+  else
+    fail "$test_name - Expected 001 (skip collision), got $topic_num"
+  fi
+
+  # Cleanup
+  rm -rf "$test_root"
+}
+
+# Test 13: Multiple consecutive collisions
+test_multiple_collisions() {
+  local test_name="Multiple consecutive collisions"
+  local test_root="/tmp/test_multi_collision_$$"
+
+  # Setup: create topics 999, 000, 001, 002
+  mkdir -p "$test_root/999_existing"
+  mkdir -p "$test_root/000_existing"
+  mkdir -p "$test_root/001_existing"
+  mkdir -p "$test_root/002_existing"
+
+  # Execute: allocate next topic (should skip 000, 001, 002 and go to 003)
+  local result
+  result=$(allocate_and_create_topic "$test_root" "multi_collision")
+  local topic_num="${result%|*}"
+
+  # Verify: skipped all collisions, got 003
+  if [ "$topic_num" = "003" ]; then
+    pass "$test_name"
+  else
+    fail "$test_name - Expected 003 (skip collisions), got $topic_num"
   fi
 
   # Cleanup
@@ -359,6 +435,7 @@ run_all_tests() {
   echo "=== Atomic Topic Allocation Test Suite ==="
   echo ""
   echo "Testing allocate_and_create_topic() for race condition elimination"
+  echo "and rollover behavior (000-999 with collision detection)"
   echo ""
 
   test_sequential_allocation
@@ -371,6 +448,9 @@ run_all_tests() {
   test_return_format
   test_directory_creation
   test_concurrent_first_allocation
+  test_rollover
+  test_collision_detection
+  test_multiple_collisions
 
   echo ""
   echo "=== Test Summary ==="

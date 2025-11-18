@@ -32,6 +32,12 @@
 #   for workflow operations. Stress tested with 1000 parallel allocations (100 iterations
 #   × 10 processes), verified 0% collision rate.
 #
+# Numbering Behavior:
+#   - First topic: 000 (not 001)
+#   - Rollover: 999 -> 000 (modulo 1000)
+#   - Collision handling: If rolled-over number exists, find next available
+#   - Full exhaustion: Error if all 1000 numbers used (rare edge case)
+#
 # Usage:
 #   source /path/to/unified-location-detection.sh
 #   LOCATION_JSON=$(perform_location_detection "workflow description")
@@ -189,13 +195,14 @@ get_next_topic_number() {
       sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
       sort -n | tail -1)
 
-    # Handle empty directory (first topic)
+    # Handle empty directory (first topic starts at 000)
     if [ -z "$max_num" ]; then
-      echo "001"
+      echo "000"
     else
-      # Increment and format with leading zeros
+      # Increment with rollover at 1000 (999 -> 000)
       # Note: 10#$max_num forces base-10 interpretation (avoids octal issues)
-      printf "%03d" $((10#$max_num + 1))
+      local next_num=$(( (10#$max_num + 1) % 1000 ))
+      printf "%03d" "$next_num"
     fi
 
   } 200>"$lockfile"
@@ -250,17 +257,34 @@ allocate_and_create_topic() {
       sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
       sort -n | tail -1)
 
-    # Handle empty directory (first topic)
+    # Calculate next topic number with rollover
     local topic_number
     if [ -z "$max_num" ]; then
-      topic_number="001"
+      topic_number="000"
     else
-      # Increment and format with leading zeros
-      topic_number=$(printf "%03d" $((10#$max_num + 1)))
+      # Increment with rollover at 1000 (999 -> 000)
+      local next_num=$(( (10#$max_num + 1) % 1000 ))
+      topic_number=$(printf "%03d" "$next_num")
     fi
 
     # Construct topic path
     local topic_path="${specs_root}/${topic_number}_${topic_name}"
+
+    # Handle collision when rolling over (find next available number)
+    # Check if ANY directory with this number prefix exists, not just exact path match
+    local attempts=0
+    while ls -d "${specs_root}/${topic_number}_"* >/dev/null 2>&1 && [ $attempts -lt 1000 ]; do
+      # A directory with this number prefix exists (collision)
+      local next_num=$(( (10#$topic_number + 1) % 1000 ))
+      topic_number=$(printf "%03d" "$next_num")
+      topic_path="${specs_root}/${topic_number}_${topic_name}"
+      ((attempts++))
+    done
+
+    if [ $attempts -ge 1000 ]; then
+      echo "ERROR: All 1000 topic numbers exhausted in $specs_root" >&2
+      return 1
+    fi
 
     # Create topic directory INSIDE LOCK (atomic operation)
     mkdir -p "$topic_path" || {
