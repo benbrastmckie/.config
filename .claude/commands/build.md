@@ -306,6 +306,19 @@ fi
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern)
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
+# Load workflow state from Part 3 (subprocess isolation)
+load_workflow_state "$WORKFLOW_ID" false
+
 # Transition to implement state with return code verification
 if ! sm_transition "$STATE_IMPLEMENT" 2>&1; then
   echo "ERROR: State transition to IMPLEMENT failed" >&2

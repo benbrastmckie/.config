@@ -220,6 +220,14 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
 
+# Load WORKFLOW_ID from file (fail-fast pattern)
+STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+fi
+
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
