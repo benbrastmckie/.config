@@ -162,9 +162,7 @@ Automatically detects workflow type and executes appropriate phases:
 - research-specialist (Phase 1)
 - plan-architect (Phase 2)
 - implementer-coordinator, implementation-executor (Phase 3)
-- test-specialist (Phase 4)
 - debug-analyst (Phase 5, conditional)
-- doc-writer (Phase 6, conditional)
 
 **Output**:
 - Research reports (specs/reports/)
@@ -206,8 +204,6 @@ Automatically detects workflow type and executes appropriate phases:
 **Arguments**:
 - `change-description` (optional): What changed
 - `scope` (optional): Specific files/directories to document
-
-**Agents Used**: doc-writer
 
 **Output**: Updated README files and documentation
 
@@ -510,8 +506,6 @@ Automatically detects workflow type and executes appropriate phases:
 - `feature/module/file`: Test target
 - `test-type` (optional): Type of test to run
 
-**Agents Used**: test-specialist (test creation if needed)
-
 **Output**: Test results and analysis
 
 **See Also**:
@@ -608,29 +602,13 @@ Research and codebase analysis:
 ### plan-architect
 Structured implementation planning:
 - **/coordinate** (planning phase)
-- **/plan**
-- **/revise** (complex plan changes)
+- **/research-plan**
+- **/research-revise** (complex plan changes)
 
-### code-writer
-Feature implementation:
-- **/coordinate** (implementation phase)
-- **/implement** (phase-by-phase)
-
-### test-specialist
-Test creation and execution:
-- **/coordinate** (testing phase)
-- **/implement** (test execution)
-- **/test** (test creation if needed)
-
-### debug-specialist
+### debug-analyst
 Issue investigation:
 - **/coordinate** (debugging loop)
-- **/debug**
-
-### doc-writer
-Documentation updates:
-- **/coordinate** (documentation phase)
-- **/document**
+- **/fix**
 
 ### doc-converter
 Document format conversion:
@@ -639,7 +617,7 @@ Document format conversion:
 ### github-specialist
 GitHub operations:
 - **/coordinate** (PR creation)
-- **/implement** (PR creation with --create-pr)
+- **/build** (PR creation with --create-pr)
 
 ### code-analyzer
 Code quality analysis:
