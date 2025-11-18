@@ -9,18 +9,18 @@ export CLAUDE_PROJECT_DIR
 
 COMMANDS=(
   "build"
-  "fix"
-  "research-report"
-  "research-plan"
-  "research-revise"
+  "debug"
+  "research"
+  "plan"
+  "revise"
 )
 
 COMMAND_PATHS=(
   "${CLAUDE_PROJECT_DIR}/.claude/commands/build.md"
-  "${CLAUDE_PROJECT_DIR}/.claude/commands/fix.md"
-  "${CLAUDE_PROJECT_DIR}/.claude/commands/research-report.md"
-  "${CLAUDE_PROJECT_DIR}/.claude/commands/research-plan.md"
-  "${CLAUDE_PROJECT_DIR}/.claude/commands/research-revise.md"
+  "${CLAUDE_PROJECT_DIR}/.claude/commands/debug.md"
+  "${CLAUDE_PROJECT_DIR}/.claude/commands/research.md"
+  "${CLAUDE_PROJECT_DIR}/.claude/commands/plan.md"
+  "${CLAUDE_PROJECT_DIR}/.claude/commands/revise.md"
 )
 
 echo "=== Phase 7: Comprehensive Compliance Verification ==="

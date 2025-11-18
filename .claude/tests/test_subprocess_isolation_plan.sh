@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# test_subprocess_isolation_research_plan.sh
-# Regression test for bash block variable scope in /research-plan command
+# test_subprocess_isolation_plan.sh
+# Regression test for bash block variable scope in /plan command
 #
 # This test verifies that variables set in Part 3 (research phase) are correctly
 # persisted and restored in Part 4 (planning phase) and Part 5 (completion).
@@ -16,7 +16,7 @@
 # - No empty values in completion summary
 #
 # Usage:
-#   bash /home/benjamin/.config/.claude/tests/test_subprocess_isolation_research_plan.sh
+#   bash /home/benjamin/.config/.claude/tests/test_subprocess_isolation_plan.sh
 
 set -euo pipefail
 
@@ -33,12 +33,12 @@ export CLAUDE_PROJECT_DIR
 # Source state-persistence library
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 
-echo "=== Subprocess Isolation Test: /research-plan ==="
+echo "=== Subprocess Isolation Test: /plan ==="
 echo ""
 
 # Simulate Part 3: Set variables and persist state
 echo "Test 1: Simulating Part 3 (Research Phase)"
-WORKFLOW_ID="test_research_plan_$$"
+WORKFLOW_ID="test_plan_$$"
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 trap "rm -f '$STATE_FILE'" EXIT
 

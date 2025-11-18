@@ -10,10 +10,10 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
-documentation: See .claude/docs/guides/fix-command-guide.md for complete usage guide
+documentation: See .claude/docs/guides/debug-command-guide.md for complete usage guide
 ---
 
-# /fix - Debug-Focused Workflow Command
+# /debug - Debug-Focused Workflow Command
 
 YOU ARE EXECUTING a debug-focused workflow that investigates issues through research, creates a debug strategy plan, and performs root cause analysis with fixes.
 
@@ -31,8 +31,8 @@ ISSUE_DESCRIPTION="$1"
 
 if [ -z "$ISSUE_DESCRIPTION" ]; then
   echo "ERROR: Issue description required"
-  echo "USAGE: /fix <issue-description>"
-  echo "EXAMPLE: /fix \"investigate authentication timeout errors in production logs\""
+  echo "USAGE: /debug <issue-description>"
+  echo "EXAMPLE: /debug \"investigate authentication timeout errors in production logs\""
   exit 1
 fi
 
@@ -108,7 +108,7 @@ EOF
 # Hardcode workflow type
 WORKFLOW_TYPE="debug-only"
 TERMINAL_STATE="debug"
-COMMAND_NAME="fix"
+COMMAND_NAME="debug"
 
 # Initialize state machine with return code verification
 if ! sm_init \
@@ -189,11 +189,11 @@ mkdir -p "$RESEARCH_DIR"
 mkdir -p "$DEBUG_DIR"
 
 # Persist variables for next block and agent
-echo "SPECS_DIR=$SPECS_DIR" > "${HOME}/.claude/tmp/fix_state_$$.txt"
-echo "RESEARCH_DIR=$RESEARCH_DIR" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
-echo "DEBUG_DIR=$DEBUG_DIR" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
-echo "ISSUE_DESCRIPTION=$ISSUE_DESCRIPTION" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
-echo "RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
+echo "SPECS_DIR=$SPECS_DIR" > "${HOME}/.claude/tmp/debug_state_$$.txt"
+echo "RESEARCH_DIR=$RESEARCH_DIR" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
+echo "DEBUG_DIR=$DEBUG_DIR" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
+echo "ISSUE_DESCRIPTION=$ISSUE_DESCRIPTION" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
+echo "RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
@@ -205,7 +205,7 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
-    You are conducting research for: fix workflow (root cause analysis)
+    You are conducting research for: debug workflow (root cause analysis)
 
     Input:
     - Research Topic: Root cause analysis for: $ISSUE_DESCRIPTION
@@ -228,7 +228,7 @@ set +H  # CRITICAL: Disable history expansion
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
+source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # MANDATORY VERIFICATION
 echo "Verifying research artifacts..."
@@ -293,7 +293,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
+source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
@@ -337,8 +337,8 @@ REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 
 # Persist additional state for agent
-echo "PLAN_PATH=$PLAN_PATH" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
-echo "REPORT_PATHS_JSON='$REPORT_PATHS_JSON'" >> "${HOME}/.claude/tmp/fix_state_$$.txt"
+echo "PLAN_PATH=$PLAN_PATH" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
+echo "REPORT_PATHS_JSON='$REPORT_PATHS_JSON'" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
@@ -350,7 +350,7 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
-    You are creating a debug strategy plan for: fix workflow
+    You are creating a debug strategy plan for: debug workflow
 
     Input:
     - Feature Description: Debug strategy for: $ISSUE_DESCRIPTION
@@ -373,7 +373,7 @@ set +H  # CRITICAL: Disable history expansion
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
+source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # MANDATORY VERIFICATION
 echo "Verifying plan artifacts..."
@@ -423,7 +423,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
+source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
@@ -465,7 +465,7 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
 
-    You are conducting root cause analysis for: fix workflow
+    You are conducting root cause analysis for: debug workflow
 
     Input:
     - Issue Description: $ISSUE_DESCRIPTION
@@ -488,7 +488,7 @@ set +H  # CRITICAL: Disable history expansion
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
+source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # MANDATORY VERIFICATION
 echo "Verifying debug artifacts..."
@@ -534,7 +534,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/fix_state_$$.txt" 2>/dev/null || true
+source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 5 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
@@ -580,7 +580,7 @@ echo "- Re-run tests to verify fix"
 echo ""
 
 # Cleanup temp state file
-rm -f "${HOME}/.claude/tmp/fix_state_$$.txt"
+rm -f "${HOME}/.claude/tmp/debug_state_$$.txt"
 
 exit 0
 ```
@@ -598,11 +598,11 @@ exit 0
 
 ```bash
 # Basic debugging
-/fix "authentication timeout errors in production"
+/debug "authentication timeout errors in production"
 
 # Higher complexity investigation
-/fix "intermittent database connection failures --complexity 3"
+/debug "intermittent database connection failures --complexity 3"
 
 # Performance issue
-/fix "API endpoint latency exceeds 2s on POST /api/users"
+/debug "API endpoint latency exceeds 2s on POST /api/users"
 ```

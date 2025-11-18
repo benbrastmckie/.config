@@ -10,10 +10,10 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
-documentation: See .claude/docs/guides/research-revise-command-guide.md for complete usage guide
+documentation: See .claude/docs/guides/revise-command-guide.md for complete usage guide
 ---
 
-# /research-revise - Research-and-Revise Workflow Command
+# /revise - Research-and-Revise Workflow Command
 
 YOU ARE EXECUTING a research-and-revise workflow that creates research reports based on new insights and then revises an existing implementation plan.
 
@@ -23,11 +23,11 @@ YOU ARE EXECUTING a research-and-revise workflow that creates research reports b
 
 ## Part 1: Capture Revision Description
 
-**EXECUTE NOW**: The user invoked `/research-revise "<revision-description-with-plan-path>"`. Capture that description.
+**EXECUTE NOW**: The user invoked `/revise "<revision-description-with-plan-path>"`. Capture that description.
 
 In the **small bash block below**, replace `YOUR_REVISION_DESCRIPTION_HERE` with the actual revision description (keeping the quotes).
 
-**Example**: If user ran `/research-revise "revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements"`, change:
+**Example**: If user ran `/revise "revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements"`, change:
 - FROM: `echo "YOUR_REVISION_DESCRIPTION_HERE" > "$TEMP_FILE"`
 - TO: `echo "revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements" > "$TEMP_FILE"`
 
@@ -39,10 +39,10 @@ set +H  # CRITICAL: Disable history expansion
 # CRITICAL: Replace YOUR_REVISION_DESCRIPTION_HERE with the actual revision description from the user
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
 # Use timestamp-based filename for concurrent execution safety
-TEMP_FILE="${HOME}/.claude/tmp/research-revise_arg_$(date +%s%N).txt"
+TEMP_FILE="${HOME}/.claude/tmp/revise_arg_$(date +%s%N).txt"
 echo "YOUR_REVISION_DESCRIPTION_HERE" > "$TEMP_FILE"
 # Save temp file path for Part 2 to read
-echo "$TEMP_FILE" > "${HOME}/.claude/tmp/research-revise_arg_path.txt"
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/revise_arg_path.txt"
 echo "Revision description captured to $TEMP_FILE"
 ```
 
@@ -54,28 +54,28 @@ echo "Revision description captured to $TEMP_FILE"
 set +H  # CRITICAL: Disable history expansion
 
 # Read revision description from file (written in Part 1)
-RESEARCH_REVISE_DESC_PATH_FILE="${HOME}/.claude/tmp/research-revise_arg_path.txt"
+REVISE_DESC_PATH_FILE="${HOME}/.claude/tmp/revise_arg_path.txt"
 
-if [ -f "$RESEARCH_REVISE_DESC_PATH_FILE" ]; then
-  RESEARCH_REVISE_DESC_FILE=$(cat "$RESEARCH_REVISE_DESC_PATH_FILE")
+if [ -f "$REVISE_DESC_PATH_FILE" ]; then
+  REVISE_DESC_FILE=$(cat "$REVISE_DESC_PATH_FILE")
 else
   # Fallback to legacy fixed filename for backward compatibility
-  RESEARCH_REVISE_DESC_FILE="${HOME}/.claude/tmp/research-revise_arg.txt"
+  REVISE_DESC_FILE="${HOME}/.claude/tmp/revise_arg.txt"
 fi
 
-if [ -f "$RESEARCH_REVISE_DESC_FILE" ]; then
-  REVISION_DESCRIPTION=$(cat "$RESEARCH_REVISE_DESC_FILE" 2>/dev/null || echo "")
+if [ -f "$REVISE_DESC_FILE" ]; then
+  REVISION_DESCRIPTION=$(cat "$REVISE_DESC_FILE" 2>/dev/null || echo "")
 else
-  echo "ERROR: Revision description file not found: $RESEARCH_REVISE_DESC_FILE"
+  echo "ERROR: Revision description file not found: $REVISE_DESC_FILE"
   echo "This usually means Part 1 (argument capture) didn't execute."
-  echo "Usage: /research-revise \"revise plan at /path/to/plan.md based on INSIGHTS\""
+  echo "Usage: /revise \"revise plan at /path/to/plan.md based on INSIGHTS\""
   exit 1
 fi
 
 if [ -z "$REVISION_DESCRIPTION" ]; then
   echo "ERROR: Revision description is empty"
-  echo "File exists but contains no content: $RESEARCH_REVISE_DESC_FILE"
-  echo "Usage: /research-revise \"revise plan at /path/to/plan.md based on INSIGHTS\""
+  echo "File exists but contains no content: $REVISE_DESC_FILE"
+  echo "Usage: /revise \"revise plan at /path/to/plan.md based on INSIGHTS\""
   exit 1
 fi
 
@@ -103,7 +103,7 @@ EXISTING_PLAN_PATH=$(echo "$REVISION_DESCRIPTION" | grep -oE '[./][^ ]+\.md' | h
 # Validate plan path exists
 if [ -z "$EXISTING_PLAN_PATH" ]; then
   echo "ERROR: No plan path found in revision description" >&2
-  echo "USAGE: /research-revise \"revise plan at /path/to/plan.md based on INSIGHTS\"" >&2
+  echo "USAGE: /revise \"revise plan at /path/to/plan.md based on INSIGHTS\"" >&2
   exit 1
 fi
 
@@ -171,11 +171,11 @@ EOF
 # Hardcode workflow type
 WORKFLOW_TYPE="research-and-revise"
 TERMINAL_STATE="plan"
-COMMAND_NAME="research-revise"
+COMMAND_NAME="revise"
 
 # Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
-WORKFLOW_ID="research_revise_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/research_revise_state_id.txt"
+WORKFLOW_ID="revise_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
@@ -254,7 +254,7 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
-    You are conducting research for: research-revise workflow
+    You are conducting research for: revise workflow
 
     **Workflow-Specific Context**:
     - Research Topic: Plan revision insights for: ${REVISION_DETAILS}
@@ -323,7 +323,7 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
-STATE_ID_FILE="${HOME}/.claude/tmp/research_revise_state_id.txt"
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
@@ -393,7 +393,7 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
-    You are revising an implementation plan for: research-revise workflow
+    You are revising an implementation plan for: revise workflow
 
     **Workflow-Specific Context**:
     - Existing Plan Path: ${EXISTING_PLAN_PATH}
@@ -464,7 +464,7 @@ fi
 set +H  # CRITICAL: Disable history expansion
 
 # Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
-STATE_ID_FILE="${HOME}/.claude/tmp/research_revise_state_id.txt"
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
