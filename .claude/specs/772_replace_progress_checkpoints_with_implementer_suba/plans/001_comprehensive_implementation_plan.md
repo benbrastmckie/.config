@@ -45,21 +45,21 @@ Recommended approach: Create implementation-executor as the execution engine wit
 
 ## Success Criteria
 
-- [ ] implementation-executor.md agent created with complete execution, update, and continuation logic
-- [ ] PROGRESS CHECKPOINT insertion code removed from plan-architect.md (STEP 2.5)
-- [ ] PROGRESS CHECKPOINT insertion code removed from plan-structure-manager.md (STEP 3.5, templates)
-- [ ] implementer-coordinator.md updated to handle context_exhausted signal and structured returns
-- [ ] Automatic plan file updates working (tasks marked with [x])
-- [ ] Automatic git commits created after each phase completion
-- [ ] Summary generated with Work Status and Work Remaining sections at TOP of file
-- [ ] Summary states "100% complete" OR lists specific remaining tasks
-- [ ] Context exhaustion detected at 70% threshold and triggers summary generation
-- [ ] build.md implements continuation loop with MAX_ITERATIONS=5
-- [ ] Previous summary passed as continuation_context to new executor instances
-- [ ] Executor reads previous summary to determine exact resume point
-- [ ] Structured return format includes work_remaining field
-- [ ] All tests passing for new functionality
-- [ ] Existing workflows continue to function correctly
+- [x] implementation-executor.md agent created with complete execution, update, and continuation logic
+- [x] PROGRESS CHECKPOINT insertion code removed from plan-architect.md (STEP 2.5)
+- [x] PROGRESS CHECKPOINT insertion code removed from plan-structure-manager.md (STEP 3.5, templates)
+- [x] implementer-coordinator.md updated to handle context_exhausted signal and structured returns
+- [x] Automatic plan file updates working (tasks marked with [x])
+- [x] Automatic git commits created after each phase completion
+- [x] Summary generated with Work Status and Work Remaining sections at TOP of file
+- [x] Summary states "100% complete" OR lists specific remaining tasks
+- [x] Context exhaustion detected at 70% threshold and triggers summary generation
+- [x] build.md implements continuation loop with MAX_ITERATIONS=5
+- [x] Previous summary passed as continuation_context to new executor instances
+- [x] Executor reads previous summary to determine exact resume point
+- [x] Structured return format includes work_remaining field
+- [x] All tests passing for new functionality
+- [x] Existing workflows continue to function correctly
 
 ## Technical Design
 
@@ -378,20 +378,20 @@ dependencies: [1, 2, 3, 4, 5]
 **Complexity**: Low
 
 Tasks:
-- [ ] Create unit test for implementation-executor plan update logic
-- [ ] Create unit test for context exhaustion detection at 70% threshold
-- [ ] Create unit test for summary generation with Work Status at top
-- [ ] Create integration test for full workflow with summary generation
-- [ ] Test continuation loop with simulated context exhaustion
-- [ ] Test that new executor instance reads previous summary and resumes from correct point
-- [ ] Verify summary states "100% complete" only when all tasks have [x]
-- [ ] Test git commit creation with proper message format
-- [ ] Test spec-updater hierarchy propagation
-- [ ] Verify MAX_ITERATIONS error handling (timeout error to user)
-- [ ] Verify existing plans without PROGRESS CHECKPOINTs work correctly
-- [ ] Update CLAUDE.md if needed with new workflow documentation
-- [ ] Update relevant .claude/docs files with new continuation architecture
-- [ ] Create example of new workflow in action showing continuation scenario
+- [x] Create unit test for implementation-executor plan update logic
+- [x] Create unit test for context exhaustion detection at 70% threshold
+- [x] Create unit test for summary generation with Work Status at top
+- [x] Create integration test for full workflow with summary generation
+- [x] Test continuation loop with simulated context exhaustion
+- [x] Test that new executor instance reads previous summary and resumes from correct point
+- [x] Verify summary states "100% complete" only when all tasks have [x]
+- [x] Test git commit creation with proper message format
+- [x] Test spec-updater hierarchy propagation
+- [x] Verify MAX_ITERATIONS error handling (timeout error to user)
+- [x] Verify existing plans without PROGRESS CHECKPOINTs work correctly
+- [x] Update CLAUDE.md if needed with new workflow documentation
+- [x] Update relevant .claude/docs files with new continuation architecture
+- [x] Create example of new workflow in action showing continuation scenario
 
 Testing:
 ```bash
