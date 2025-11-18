@@ -606,6 +606,13 @@ sm_current_state() {
 sm_transition() {
   local next_state="$1"
 
+  # Fail-fast if STATE_FILE not loaded (Spec 787: State persistence bug fix)
+  if [ -z "${STATE_FILE:-}" ]; then
+    echo "ERROR: STATE_FILE not set in sm_transition()" >&2
+    echo "DIAGNOSTIC: Call load_workflow_state() before sm_transition()" >&2
+    return 1
+  fi
+
   # Phase 1: Validate transition is allowed
   local valid_transitions="${STATE_TRANSITIONS[$CURRENT_STATE]}"
 
@@ -623,6 +630,12 @@ sm_transition() {
 
   # Phase 3: Update state
   CURRENT_STATE="$next_state"
+
+  # Persist CURRENT_STATE to state file (following sm_init pattern)
+  # This ensures subsequent bash blocks can read the correct state
+  if command -v append_workflow_state &> /dev/null; then
+    append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
+  fi
 
   # Add to completed states history (avoid duplicates)
   local already_completed=0

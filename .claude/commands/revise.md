@@ -212,6 +212,24 @@ echo ""
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
+# Load WORKFLOW_ID from file (fail-fast pattern)
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
+# Load workflow state (subprocess isolation)
+load_workflow_state "$WORKFLOW_ID" false
+
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
