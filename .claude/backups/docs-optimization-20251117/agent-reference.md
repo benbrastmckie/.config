@@ -53,6 +53,40 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
+### code-reviewer
+**Purpose**: Reviews code against project standards and identifies quality issues
+
+**Capabilities**:
+- Standards compliance review
+- Code quality analysis
+- Refactoring opportunity identification
+- Review report generation with severity levels
+
+**Allowed Tools**: Read, Grep, Glob, Bash
+
+**Used By**: /refactor, /orchestrate (optional pre-commit)
+
+**Definition**: [.claude/agents/code-reviewer.md](../../agents/code-reviewer.md)
+
+---
+
+### code-writer
+**Purpose**: Generates and modifies code following project standards
+
+**Capabilities**:
+- Code generation for new features
+- Bug fixes and modifications
+- Standards-compliant formatting
+- Test file creation
+
+**Allowed Tools**: Read, Write, Edit, Bash, TodoWrite
+
+**Used By**: /orchestrate (implementation phase), /orchestrate (fix application)
+
+**Definition**: [.claude/agents/code-writer.md](../../agents/code-writer.md)
+
+---
+
 ### collapse_specialist
 **Purpose**: Analyzes expanded plans for collapsing back to parent structure
 
@@ -65,7 +99,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /collapse (auto-analysis mode)
 
-**Definition**: [.claude/agents/plan-structure-manager.md](../../agents/plan-structure-manager.md) (collapse_specialist behavior)
+**Definition**: [.claude/agents/collapse_specialist.md](../../agents/plan-structure-manager.md)
 
 ---
 
@@ -223,6 +257,23 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
+### doc-writer
+**Purpose**: Documentation creation and maintenance
+
+**Capabilities**:
+- README updates and creation
+- Documentation synchronization
+- Cross-referencing
+- Unicode box-drawing diagrams
+
+**Allowed Tools**: Read, Write, Edit, Grep, Glob
+
+**Used By**: /document, /orchestrate (documentation phase)
+
+**Definition**: [.claude/agents/doc-writer.md](../../agents/doc-writer.md)
+
+---
+
 ### expansion_specialist
 **Purpose**: Analyzes phases for expansion into detailed specifications
 
@@ -235,7 +286,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /expand (auto-analysis mode)
 
-**Definition**: [.claude/agents/plan-structure-manager.md](../../agents/plan-structure-manager.md) (expansion_specialist behavior)
+**Definition**: [.claude/agents/expansion_specialist.md](../../agents/plan-structure-manager.md)
 
 ---
 
@@ -253,6 +304,24 @@ For command architecture standards and agent invocation patterns, see [Command A
 **Used By**: /implement (--create-pr), /orchestrate (workflow PRs)
 
 **Definition**: [.claude/agents/github-specialist.md](../../agents/github-specialist.md)
+
+---
+
+### implementation-executor
+**Purpose**: Phase execution coordination during implementation with checkpoint management
+
+**Capabilities**:
+- Task execution following implementation plans
+- Checkpoint management and state tracking
+- Test running and validation
+- Git commit creation with structured messages
+- Phase completion verification
+
+**Allowed Tools**: Read, Write, Edit, Bash, TodoWrite
+
+**Used By**: /implement (phase execution)
+
+**Definition**: [.claude/agents/implementation-executor.md](../../agents/implementation-executor.md)
 
 ---
 
@@ -338,7 +407,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Used By**: /orchestrate (research phase), /plan (optional), /report (optional)
 
-**Definition**: [.claude/agents/research-specialist.md](../../agents/research-specialist.md)
+**Definition**: [.claude/agents/research-specialist.md](../../agents/implementation-researcher.md)
 
 ---
 
@@ -393,6 +462,23 @@ For command architecture standards and agent invocation patterns, see [Command A
 **Used By**: /revise (manual and --auto-mode), /implement (adaptive planning)
 
 **Definition**: [.claude/agents/revision-specialist.md](../../agents/revision-specialist.md)
+
+---
+
+### test-specialist
+**Purpose**: Test execution and failure analysis
+
+**Capabilities**:
+- Run tests across multiple frameworks
+- Analyze test failures
+- Coverage reporting
+- Multi-framework support (Jest, pytest, Neovim tests, etc.)
+
+**Allowed Tools**: Bash, Read, Grep
+
+**Used By**: /test (optional), /test-all (optional), /orchestrate (validation)
+
+**Definition**: [.claude/agents/test-specialist.md](../../agents/debug-specialist.md)
 
 ---
 
@@ -458,6 +544,8 @@ Quick reference for which tools each agent can use:
 |-------|------|-------|------|------|------|------|-----------|-----------|----------|
 | claude-md-analyzer | ✓ | ✓ | | ✓ | ✓ | | | | |
 | cleanup-plan-architect | ✓ | ✓ | | ✓ | ✓ | | | | |
+| code-reviewer | ✓ | | | ✓ | ✓ | ✓ | | | |
+| code-writer | ✓ | ✓ | ✓ | ✓ | | | ✓ | | |
 | collapse_specialist | ✓ | | | | ✓ | ✓ | | | |
 | complexity_estimator | ✓ | | | | ✓ | ✓ | | | |
 | debug-specialist | ✓ | | | ✓ | ✓ | ✓ | | ✓ | |
@@ -465,17 +553,23 @@ Quick reference for which tools each agent can use:
 | doc-converter-update | ✓ | ✓ | ✓ | ✓ | | | | | |
 | doc-converter-usage | ✓ | | | ✓ | | | | | |
 | docs-structure-analyzer | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |
+| doc-writer | ✓ | ✓ | ✓ | | ✓ | ✓ | | | |
 | expansion_specialist | ✓ | | | | ✓ | ✓ | | | |
 | github-specialist | ✓ | | | ✓ | ✓ | ✓ | | | |
 | metrics-specialist | ✓ | | | ✓ | ✓ | | | | |
 | plan-architect | ✓ | ✓ | | | ✓ | ✓ | | ✓ | |
 | research-specialist | ✓ | | | | ✓ | ✓ | | ✓ | ✓ |
+| test-specialist | ✓ | | | ✓ | ✓ | | | | |
 
 ## Agent Selection Guidelines
 
 **Choose based on primary task**:
 - **Research/Analysis**: research-specialist (read-only investigation)
+- **Code Generation**: code-writer (write and modify code)
+- **Testing**: test-specialist (run tests and analyze failures)
 - **Planning**: plan-architect (create implementation plans)
+- **Documentation**: doc-writer (maintain docs)
+- **Code Review**: code-reviewer (standards compliance)
 - **Debugging**: debug-specialist (root cause analysis)
 - **Performance**: metrics-specialist (analyze performance data)
 - **GitHub Operations**: github-specialist (PRs, issues, CI/CD)

@@ -22,7 +22,7 @@
 - **Templates** must be complete and copy-paste ready (agent prompts, JSON schemas, bash commands)
 - **Critical warnings** (CRITICAL, IMPORTANT, NEVER) must stay in command files
 - **Reference files** (`shared/`, `templates/`, `docs/`) provide supplemental context only
-- **Imperative Language**: All required actions use MUST/WILL/SHALL (never should/may/can) - See [Imperative Language Guide](.claude/docs/guides/imperative-language-guide.md)
+- **Imperative Language**: All required actions use MUST/WILL/SHALL (never should/may/can) - See [Imperative Language Guide](.claude/docs/archive/guides/imperative-language-guide.md)
 - **Behavioral Injection**: Commands invoke agents via Task tool with context injection (not SlashCommand) - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
 - **Verification and Fallback**: All file creation operations require MANDATORY VERIFICATION checkpoints - See [Verification and Fallback Pattern](.claude/docs/concepts/patterns/verification-fallback.md)
 - **Robustness Patterns**: Apply systematic robustness patterns for reliable command development - See [Robustness Framework](.claude/docs/concepts/robustness-framework.md)

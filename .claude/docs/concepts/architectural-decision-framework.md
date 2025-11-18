@@ -319,6 +319,6 @@ find .claude/specs/*/plans -name "*.md" -exec grep -l "pattern keyword" {} \; | 
 - [Code Standards](../reference/code-standards.md) → General coding standards
 
 **Guides**:
-- [Command Development Guide](../guides/command-development-guide.md) → Command creation patterns
+- [Command Development Guide](../guides/command-development-index.md) → Command creation patterns
 - [Agent Development Guide](../guides/agent-development-guide.md) → Agent creation patterns
 - [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md) → Plan template usage

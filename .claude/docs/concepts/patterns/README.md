@@ -127,7 +127,7 @@ These patterns have demonstrated:
 
 ## Related Documentation
 
-- [Hierarchical Agents Guide](../hierarchical_agents.md) - Complete agent architecture
+- [Hierarchical Agents Guide](../hierarchical-agents.md) - Complete agent architecture
 - [Creating Commands Guide](../../guides/command-development-guide.md) - Command development
 - [Creating Agents Guide](../../guides/agent-development-guide.md) - Agent development
 - [Testing Patterns Guide](../../guides/testing-patterns.md) - Validation approaches

@@ -270,7 +270,7 @@ Review these diagnostics to quickly identify and resolve issues.
 
 ## See Also
 
-- [/supervise Phase Reference](../reference/supervise-phases.md) - Detailed phase documentation
+- [/supervise Phase Reference](../archive/reference/supervise-phases.md) - Detailed phase documentation (archived)
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - How agents are invoked
 - [Verification-Fallback Pattern](../concepts/patterns/verification-fallback.md) - Fail-fast error handling
 - [Directory Protocols](../concepts/directory-protocols.md) - Artifact organization structure

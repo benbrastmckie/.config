@@ -475,7 +475,7 @@ export COORDINATE_DEBUG=1
 
 - Check [Orchestration Best Practices Guide](./orchestration-best-practices.md) for patterns
 - Review [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md)
-- See [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md)
+- See [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md)
 - Consult [Command Reference](../reference/command-reference.md) for quick syntax
 
 ---

@@ -158,7 +158,7 @@ TOPIC_NAME=$(sanitize_topic_name "OAuth 2.0 Security (Best Practices)")
 
 ##### `ensure_artifact_directory(file_path)`
 
-**NEW**: Create parent directory for artifact file using lazy creation pattern.
+Creates parent directory for artifact file using lazy creation pattern.
 
 **Arguments**:
 - `file_path` (string): Absolute path to artifact file (e.g., report, plan, summary)

@@ -22,20 +22,20 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - When using auto-analysis mode for automatic complexity-based expansion/collapse
 - To implement end-to-end development workflows with specialized agents
 
-**See Also**: [Hierarchical Agent Workflow](hierarchical-agent-workflow.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Command Reference](../reference/command-reference.md), [Adaptive Planning Guide](adaptive-planning-guide.md)
+**See Also**: [Hierarchical Agent Workflow](hierarchical-agent-workflow.md), [Hierarchical Agents](../concepts/hierarchical-agents.md), [Command Reference](../reference/command-reference.md), [Adaptive Planning Guide](adaptive-planning-guide.md)
 
 ---
 
 ### [Hierarchical Agent Workflow](hierarchical-agent-workflow.md) → Consolidated
-**Status**: This guide has been consolidated into [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md#tutorial-walkthrough) as the "Tutorial Walkthrough" section.
+**Status**: This guide has been consolidated into [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md#tutorial-walkthrough) as the "Tutorial Walkthrough" section.
 
-**Migration**: For step-by-step workflow tutorials, see the comprehensive Tutorial Walkthrough section in [Hierarchical Agents](../concepts/hierarchical_agents.md#tutorial-walkthrough), which includes:
+**Migration**: For step-by-step workflow tutorials, see the comprehensive Tutorial Walkthrough section in [Hierarchical Agents](../concepts/hierarchical-agents.md#tutorial-walkthrough), which includes:
 - /orchestrate complete workflow walkthrough
 - /implement with subagent delegation tutorial
 - /plan with research integration tutorial
 - Checkpoint recovery tutorial
 
-**See Also**: [Orchestration Guide](orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Using Agents](../guides/agent-development-guide.md), [Development Workflow](../concepts/development-workflow.md)
+**See Also**: [Orchestration Guide](orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical-agents.md), [Using Agents](../guides/agent-development-guide.md), [Development Workflow](../concepts/development-workflow.md)
 
 ---
 
@@ -198,7 +198,7 @@ workflows/
 ### Advanced Path
 1. [Orchestration Guide](orchestration-guide.md) - Start with full workflow
 2. [Hierarchical Agent Workflow](hierarchical-agent-workflow.md) - Supervisor-worker patterns
-3. [Hierarchical Agents](../concepts/hierarchical_agents.md) - Deep architecture
+3. [Hierarchical Agents](../concepts/hierarchical-agents.md) - Deep architecture
 4. [Adaptive Planning Guide](adaptive-planning-guide.md) - Advanced structures
 5. [Checkpoint Template Guide](checkpoint_template_guide.md) - State optimization
 6. [Spec Updater Guide](spec_updater_guide.md) - Custom artifact management
