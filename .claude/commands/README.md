@@ -2,7 +2,7 @@
 
 Custom slash command definitions for Claude Code. Each command extends Claude's capabilities with specialized workflows for development, documentation, testing, and project management.
 
-**Current Command Count**: 19 active commands
+**Current Command Count**: 12 active commands
 
 ## Command Highlights
 
@@ -21,74 +21,6 @@ Custom slash command definitions for Claude Code. Each command extends Claude's 
 - Clear separation: specs/ (gitignored) vs debug/ (tracked)
 - Full end-to-end workflow automation with proper documentation
 - Intelligent error recovery with persistent debugging artifacts
-
-### Command Cleanup (2025-11-15)
-
-**Removed Commands** (Clean-break philosophy):
-- `/orchestrate` → **Use `/coordinate` instead** (superseded by production-ready replacement)
-- `/supervise` → **Use `/coordinate` instead** (reference implementation only)
-- All backup files (23 files, 1.4M) → **Use git for version control** (see [Git Recovery Guide](../docs/guides/git-recovery-guide.md))
-
-**Impact**: 48.1% directory reduction (52 → 27 files), 71% disk space reclaimed (2.2M → 640K)
-
-### Command Consolidation (2025-10-10)
-
-**Deprecated Commands**:
-- `/update` → **Use `/revise` instead** (consolidated for clarity)
-
-**Why**: `/update` and `/revise` had 70% overlapping functionality, causing user confusion
-about when to use which command. All update capabilities have been integrated into
-`/revise` for a single, clear command for all content modifications.
-
-### Command Consolidation (2025-10-06)
-Consolidated redundant commands for a cleaner interface:
-- `/cleanup` → **Removed** (use `/setup --cleanup` instead)
-- `/validate-setup` → **Removed** (use `/setup --validate` instead)
-- `/analyze-agents` + `/analyze-patterns` → **Removed** (use `/analyze [type]` instead)
-
-### Shared Utilities Integration (2025-10-06)
-Commands now reference shared utility libraries in `.claude/lib/`:
-- `checkpoint-utils.sh` - Workflow state persistence
-- `complexity-utils.sh` - Phase complexity analysis
-- `artifact-utils.sh` - Artifact tracking and registry
-- `error-utils.sh` - Error classification and recovery
-- `adaptive-planning-logger.sh` - Adaptive planning logging
-
-### Phase 7 Modularization (2025-10-15)
-
-**Reference-Based Composition Pattern**: Commands now use a modular documentation architecture where detailed sections are extracted to `commands/shared/` files and referenced via markdown links.
-
-**File Size Reductions**:
-- `coordinate.md`: 2,720 → 850 lines (68.8% reduction, 1,870 lines saved)
-- `implement.md`: 987 → 498 lines (49.5% reduction, 489 lines saved)
-- `setup.md`: 1071 → 311 lines (71.0% reduction, 760 lines saved)
-- `revise.md`: 878 → 406 lines (53.8% reduction, 472 lines saved)
-- **Total**: 5,496 → 2,129 lines (61.3% reduction, 3,367 lines saved)
-
-**Shared Documentation Files Created** (`commands/shared/`):
-- `workflow-phases.md` (1,903 lines) - 5 workflow phases for orchestration
-- `phase-execution.md` (383 lines) - Checkpoint, test, commit workflow
-- `implementation-workflow.md` (152 lines) - Implementation patterns
-- `setup-modes.md` (406 lines) - 5 setup command modes
-- `bloat-detection.md` (266 lines) - Bloat detection algorithms
-- `extraction-strategies.md` (348 lines) - Extraction preferences
-- `standards-analysis.md` (247 lines) - Standards analysis procedures
-- `revise-auto-mode.md` (434 lines) - Auto-mode specification
-- `revision-types.md` (109 lines) - 5 revision types
-
-**Consolidated Utilities** (`lib/`):
-- `plan-core-bundle.sh` (1,159 lines) - Consolidates 3 planning utilities
-- `unified-logger.sh` (717 lines) - Consolidates 2 loggers
-- `base-utils.sh` (~100 lines) - Common error(), warn(), info() functions
-
-**Benefits**:
-- **Reduced Duplication**: Common patterns documented once, referenced everywhere
-- **Improved Maintainability**: Update shared file once, all commands benefit
-- **Better Navigation**: Command files show summaries, shared files provide details
-- **Simplified Imports**: 3 → 1 for planning utils, 2 → 1 for loggers
-- **Backward Compatibility**: Wrapper files maintain compatibility during transition
-
-**See**: [commands/shared/README.md](shared/README.md) for shared documentation index
 
 ## Purpose
 
@@ -134,38 +66,6 @@ Commands provide structured, repeatable workflows for:
 
 ### Primary Commands
 
-#### /implement
-**Purpose**: Execute implementation plans with automated testing and commits
-
-**Usage**: `/implement [plan-file] [starting-phase]`
-
-**Features**:
-- Auto-resume from incomplete plans
-- Phase-by-phase execution
-- Automated testing after each phase
-- Git commits with descriptive messages
-- Standards discovery and application
-
-**Dependencies**: list, update, revise, debug, document
-
----
-
-#### /plan
-**Purpose**: Create detailed implementation plans following project standards
-
-**Usage**: `/plan <feature description> [report-path1] [report-path2] ...`
-
-**Features**:
-- Research report integration
-- Phase breakdown
-- Success criteria definition
-- Risk assessment
-- Standards compliance
-
-**Output**: `specs/plans/NNN_plan_name.md`
-
----
-
 #### /plan-wizard
 **Purpose**: Interactive wizard for guided plan creation with research integration
 
@@ -177,32 +77,9 @@ Commands provide structured, repeatable workflows for:
 - Automatic research topic identification
 - Complexity assessment
 - Optional research execution
-- Integration with /plan command
+- Integration with /research-plan command
 
 **Output**: `specs/plans/NNN_plan_name.md`
-
----
-
-#### /research
-**Purpose**: Research topics using hierarchical multi-agent pattern
-
-**Usage**: `/research <topic or question>`
-
-**Features**:
-- Automatic topic decomposition into 2-4 subtopics
-- Parallel research-specialist agents for faster execution (40-60% time savings)
-- Hierarchical structure with individual subtopic reports
-- Comprehensive OVERVIEW.md synthesis report (ALL CAPS)
-- Cross-references between all reports
-- Better organization with grouped subdirectories
-- Web research integration
-- Technology investigation
-- Best practices analysis
-- Structured markdown output
-
-**Output**: `specs/{NNN_topic}/reports/{NNN_research}/` directory containing:
-- Individual subtopic reports: `001_subtopic.md`, `002_subtopic.md`, etc.
-- Final synthesis: `OVERVIEW.md` (ALL CAPS, not numbered)
 
 ---
 
@@ -233,19 +110,6 @@ Commands provide structured, repeatable workflows for:
 ---
 
 ### Support Commands
-
-#### /debug
-**Purpose**: Investigate issues and create diagnostic reports without code changes
-
-**Usage**: `/debug <issue-description> [report-path1] [report-path2] ...`
-
-**Features**:
-- Read-only investigation
-- Diagnostic report generation
-- Root cause analysis
-- Research report integration
-
----
 
 #### /document
 **Purpose**: Update documentation based on recent code changes
@@ -321,26 +185,6 @@ See `.claude/commands/templates/example-feature.yaml` for template structure.
 
 ### Workflow Commands
 
-
-#### /revise
-**Purpose**: Revise existing implementation plan or research report with new requirements
-
-**Usage**:
-- `/revise <revision-details> [context-path1] ...` (revision-first)
-- `/revise <artifact-path> <revision-details> [context-path1] ...` (path-first)
-
-**Features**:
-- **Plans**: Progressive structure-aware modification, all levels (L0/L1/L2)
-- **Reports**: Section-specific targeting, findings updates
-- Flexible syntax (revision-first or path-first)
-- Research integration for both plans and reports
-- Auto-mode for `/implement` integration (plans only)
-- No implementation (planning only)
-
-**Artifact Support**: Plans (L0/L1/L2), Reports (single-file)
-
----
-
 #### /expand phase
 **Purpose**: Extract phase to separate file (Level 0 → 1 transition)
 
@@ -360,20 +204,6 @@ See `.claude/commands/templates/example-feature.yaml` for template structure.
 - Content merging
 - Directory cleanup
 - Metadata updates
-
----
-
-#### /update ⚠️ DEPRECATED
-**Purpose**: ⚠️ DEPRECATED - Use `/revise` instead
-
-**Deprecation Date**: 2025-10-10
-
-**Migration**: Use `/revise` for all plan and report modifications
-
-**Why Deprecated**: 70% functionality overlap with `/revise`. Consolidating to `/revise` provides:
-- Clearer command responsibilities (content vs structure)
-- Better features (auto-mode, research integration, structure recommendations)
-- Single command for all content modifications
 
 ---
 
@@ -517,19 +347,19 @@ What the command produces
 
 ### Primary Commands
 Main workflow drivers that users invoke frequently:
-- `/implement`, `/plan`, `/research`, `/test`, `/coordinate`
+- `/build`, `/coordinate`, `/research-plan`, `/research-report`, `/test`
 
 ### Support Commands
 Helper commands for specific tasks:
-- `/debug`, `/document`, `/refactor`
+- `/fix`, `/document`, `/refactor`
 
 ### Workflow Commands
 Commands for managing execution state:
-- `/revise`, `/update`
+- `/expand`, `/collapse`, `/research-revise`
 
 ### Utility Commands
 Management and maintenance commands:
-- `/cleanup`, `/list-*`, `/setup`, `/validate-setup`
+- `/list-*`, `/setup`, `/analyze`
 
 ## Adaptive Plan Structures
 
@@ -564,11 +394,10 @@ Commands support progressive plan organization that grows based on actual comple
 
 All plan commands work with progressive structure levels:
 
-- `/plan`: Creates Level 0 plan (single file), provides expansion hints if complex
-- `/implement`: Navigates structure level to find and execute phases
+- `/research-plan`: Creates Level 0 plan (single file), provides expansion hints if complex
+- `/build`: Navigates structure level to find and execute phases
 - `/list plans`: Shows level indicators [L0], [L1], [L2]
-- `/update plan`: Modifies correct files based on expansion status
-- `/revise`: Analyzes revision scope to target appropriate file(s)
+- `/research-revise`: Modifies plans with research integration
 - `/expand phase`: Extracts phase to separate file (Level 0 → 1)
 - `/expand stage`: Extracts stage to separate file (Level 1 → 2)
 - `/collapse phase`: Merges phase back into main plan (Level 1 → 0)
@@ -624,20 +453,20 @@ Commands discover project standards through CLAUDE.md:
 ### Standards Sections Used
 
 ```markdown
-[Used by: /implement, /refactor, /plan]
+[Used by: /build, /refactor, /research-plan]
 ## Code Standards
 - Indentation
 - Line length
 - Naming conventions
 - Error handling
 
-[Used by: /test, /test-all, /implement]
+[Used by: /test, /test-all, /build]
 ## Testing Protocols
 - Test commands
 - Test patterns
 - Coverage requirements
 
-[Used by: /document, /plan]
+[Used by: /document, /research-plan]
 ## Documentation Policy
 - README requirements
 - Documentation format
@@ -755,9 +584,9 @@ Commands in this directory are integrated with the Neovim artifact picker for vi
 " Open picker
 :ClaudeCommands
 
-" Navigate to /plan command
-" Press Return to insert "/plan" in Claude Code
-" Or press <C-e> to edit plan.md file
+" Navigate to /build command
+" Press Return to insert "/build" in Claude Code
+" Or press <C-e> to edit build.md file
 ```
 
 ### Command File Structure
@@ -772,7 +601,7 @@ description: Brief description shown in picker
 ---
 ```
 
-**Primary commands** (e.g., `/plan`, `/implement`) appear at the root level with their dependent commands nested below. **Dependent commands** can appear under multiple parents if referenced by multiple primary commands.
+**Primary commands** (e.g., `/build`, `/coordinate`) appear at the root level with their dependent commands nested below. **Dependent commands** can appear under multiple parents if referenced by multiple primary commands.
 
 ### Documentation
 
@@ -784,21 +613,23 @@ description: Brief description shown in picker
 
 ### Command Definitions
 - [analyze.md](analyze.md) - System analysis (agents, patterns, metrics)
-- [debug.md](debug.md) - Issue investigation
-- [document.md](document.md) - Documentation updates
-- [implement.md](implement.md) - Plan execution
-- [list.md](list.md) - List artifacts (plans, reports, summaries)
-- [expand-phase.md](expand-phase.md) - Phase expansion (L0→L1)
-- [expand-stage.md](expand-stage.md) - Stage expansion (L1→L2)
+- [build.md](build.md) - Build from plan execution
 - [collapse-phase.md](collapse-phase.md) - Phase collapse (L1→L0)
 - [collapse-stage.md](collapse-stage.md) - Stage collapse (L2→L1)
+- [convert-docs.md](convert-docs.md) - Document format conversion
 - [coordinate.md](coordinate.md) - Multi-agent workflow coordination (production orchestrator)
-- [plan.md](plan.md) - Implementation planning
-- [plan-wizard.md](plan-wizard.md) - Interactive plan creation
+- [document.md](document.md) - Documentation updates
+- [expand-phase.md](expand-phase.md) - Phase expansion (L0→L1)
+- [expand-stage.md](expand-stage.md) - Stage expansion (L1→L2)
+- [expand.md](expand.md) - Automatic expansion
+- [fix.md](fix.md) - Debug and fix issues
+- [list.md](list.md) - List artifacts (plans, reports, summaries)
 - [plan-from-template.md](plan-from-template.md) - Template-based planning
+- [plan-wizard.md](plan-wizard.md) - Interactive plan creation
 - [refactor.md](refactor.md) - Code analysis
-- [research.md](research.md) - Research reports
-- [revise.md](revise.md) - Plan revision
+- [research-plan.md](research-plan.md) - Research and create plans
+- [research-report.md](research-report.md) - Research reports only
+- [research-revise.md](research-revise.md) - Research and revise plans
 - [setup.md](setup.md) - CLAUDE.md setup
 - [test.md](test.md) - Test execution
 - [test-all.md](test-all.md) - Full test suite
@@ -812,29 +643,29 @@ description: Brief description shown in picker
 
 ### Running Implementation
 ```bash
-# Create plan (always starts as Level 0)
-/plan "Add dark mode toggle to settings"
+# Research and create plan
+/research-plan "Add dark mode toggle to settings"
 
-# Implement Level 0 plan (single file)
-/implement specs/plans/007_dark_mode_implementation.md
+# Build from plan (single file)
+/build specs/plans/007_dark_mode_implementation.md
 
 # Expand complex phase during implementation
 /expand phase specs/plans/007_dark_mode.md 2
 
-# Implement Level 1 plan (with expanded phase)
-/implement specs/plans/007_dark_mode/
+# Build Level 1 plan (with expanded phase)
+/build specs/plans/007_dark_mode/
 
 # Or just auto-resume latest incomplete plan
-/implement
+/build
 ```
 
 ### Research and Plan
 ```bash
-# Research the topic
-/research "TTS engine comparison for Linux"
+# Research the topic and create plan
+/research-plan "TTS engine comparison for Linux"
 
-# Create plan using research (creates Level 0 plan)
-/plan "Integrate TTS notifications" specs/reports/020_tts_engines.md
+# Research only (no plan)
+/research-report "Authentication best practices"
 ```
 
 ### Progressive Plan Management
@@ -848,11 +679,8 @@ description: Brief description shown in picker
 # Expand phase as complexity grows
 /expand phase specs/plans/007_dark_mode.md 2
 
-# Update Level 1 plan (modifies appropriate files)
-/update plan specs/plans/015_dashboard/ "Add Phase 9: Performance testing"
-
-# Revise specific phase
-/revise "Update Phase 3 complexity to High" specs/plans/015_dashboard/
+# Revise plan with research
+/research-revise "Add Phase 9: Performance testing" specs/plans/015_dashboard/
 
 # Collapse phase to simplify
 /collapse phase specs/plans/015_dashboard/ 5
@@ -866,6 +694,6 @@ description: Brief description shown in picker
 # Run full suite
 /test-all coverage
 
-# Debug failures
-/debug "Login tests failing with timeout error"
+# Fix failures
+/fix "Login tests failing with timeout error"
 ```
