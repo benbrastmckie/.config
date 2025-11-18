@@ -63,8 +63,8 @@ if [ -f "$checkpoint_file" ]; then
   schema_version=$(jq -r '.schema_version' "$checkpoint_file")
   supervisor_state=$(jq -r '.supervisor_state.research_supervisor' "$checkpoint_file")
 
-  if [ "$schema_version" = "2.0" ] && [ "$supervisor_state" != "null" ]; then
-    pass "Supervisor state in v2.0 checkpoint working"
+  if [ "$schema_version" = "2.1" ] && [ "$supervisor_state" != "null" ]; then
+    pass "Supervisor state in v2.1 checkpoint working"
     rm -f "$checkpoint_file"
   else
     fail "Supervisor state in v2.0 checkpoint failed"

@@ -536,10 +536,10 @@ test_supervisor_state_v2_checkpoint() {
     local schema_version=$(jq -r '.schema_version' "$checkpoint_file")
     local supervisor_state=$(jq -r '.supervisor_state.research_supervisor' "$checkpoint_file")
 
-    if [ "$schema_version" = "2.0" ] && \
+    if [ "$schema_version" = "2.1" ] && \
        [ "$supervisor_state" != "null" ] && \
        [ "$(echo "$supervisor_state" | jq -r '.worker_count')" = "4" ]; then
-      pass "Supervisor state in v2.0 checkpoint working"
+      pass "Supervisor state in v2.1 checkpoint working"
       rm -f "$checkpoint_file"
     else
       fail "Supervisor state in v2.0 checkpoint failed" "Schema or state incorrect"

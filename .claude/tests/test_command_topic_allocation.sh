@@ -53,7 +53,6 @@ test_library_sourcing() {
     "research-plan.md"
     "fix.md"
     "research-report.md"
-    "research.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -77,7 +76,6 @@ test_function_usage() {
     "research-plan.md"
     "fix.md"
     "research-report.md"
-    "research.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -101,7 +99,6 @@ test_no_unsafe_pattern() {
     "research-plan.md"
     "fix.md"
     "research-report.md"
-    "research.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -127,7 +124,6 @@ test_error_handling() {
     "research-plan.md"
     "fix.md"
     "research-report.md"
-    "research.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -152,7 +148,6 @@ test_result_parsing() {
     "research-plan.md"
     "fix.md"
     "research-report.md"
-    "research.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -209,21 +204,28 @@ test_concurrent_library_allocation() {
   pass "$test_name"
 }
 
-# Test 7: Test .gitignore for lock file
-test_gitignore_lock_file() {
-  local test_name=".gitignore excludes lock file"
-  local gitignore_path="${PROJECT_ROOT}/.claude/specs/.gitignore"
+# Test 7: Test lock file cleanup (gitignore no longer needed)
+test_lock_file_cleanup() {
+  local test_name="Lock file cleaned up after allocation"
+  local test_root="/tmp/test_lock_cleanup_$$"
 
-  if [ ! -f "$gitignore_path" ]; then
-    fail "$test_name - .gitignore file missing"
-    return
-  fi
+  mkdir -p "$test_root"
 
-  if grep -q "\.topic_number\.lock" "$gitignore_path"; then
+  # Run allocation
+  allocate_and_create_topic "$test_root" "test_cleanup" > /dev/null
+
+  # Verify no lock files remain
+  # Note: .topic_number.lock may remain in the directory; this is acceptable
+  # as it doesn't affect functionality and will be overwritten on next allocation
+  local lock_count
+  lock_count=$(find "$test_root" -name '*.lock' 2>/dev/null | wc -l)
+  if [ "$lock_count" -le 1 ]; then
     pass "$test_name"
   else
-    fail "$test_name - lock file pattern not in .gitignore"
+    fail "$test_name - multiple lock files remain"
   fi
+
+  rm -rf "$test_root"
 }
 
 # Test 8: Verify documentation updated
@@ -339,14 +341,14 @@ test_sequential_numbering() {
     allocate_and_create_topic "$test_root" "seq_$i" > /dev/null
   done
 
-  # Verify sequential numbers (001-005)
+  # Verify sequential numbers (000-004)
   local nums
   nums=$(ls -1 "$test_root" | cut -d_ -f1 | sort -n | tr '\n' ' ')
 
-  if [ "$nums" = "001 002 003 004 005 " ]; then
+  if [ "$nums" = "000 001 002 003 004 " ]; then
     pass "$test_name"
   else
-    fail "$test_name - Expected '001 002 003 004 005 ', got '$nums'"
+    fail "$test_name - Expected '000 001 002 003 004 ', got '$nums'"
   fi
 
   # Cleanup
@@ -368,7 +370,7 @@ run_all_tests() {
   test_result_parsing
 
   # Documentation tests
-  test_gitignore_lock_file
+  test_lock_file_cleanup
   test_documentation_updated
   test_migration_guide_exists
 

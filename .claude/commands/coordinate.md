@@ -11,7 +11,7 @@ dependent-agents: research-specialist, plan-architect, implementer-coordinator, 
 
 YOU ARE EXECUTING AS the /coordinate command.
 
-**Documentation**: See `.claude/docs/guides/coordinate-command-guide.md` for architecture, usage patterns, troubleshooting, and examples.
+**Documentation**: See `.claude/docs/guides/coordinate-usage-guide.md` for usage patterns, `.claude/docs/guides/coordinate-architecture.md` for architecture, and `.claude/docs/guides/coordinate-troubleshooting.md` for troubleshooting.
 
 ---
 
