@@ -431,23 +431,23 @@ fi
 
 ## Example Commands
 
-### Example 1: Research-Only Command (/research-report)
+### Example 1: Research-Only Command (/research)
 
 **Workflow Type**: `research-only`
 **Terminal State**: `research`
 **Phases**: Research → Complete
 **Complexity**: 150-200 lines
 
-See: `.claude/commands/research-report.md` (created in Phase 2)
+See: `.claude/commands/research.md` (created in Phase 2)
 
-### Example 2: Research-and-Plan Command (/research-plan)
+### Example 2: Research-and-Plan Command (/plan)
 
 **Workflow Type**: `research-and-plan`
 **Terminal State**: `plan`
 **Phases**: Research → Plan → Complete
 **Complexity**: 150-200 lines
 
-See: `.claude/commands/research-plan.md` (created in Phase 3)
+See: `.claude/commands/plan.md` (created in Phase 3)
 
 ### Example 3: Build Command (/build)
 
@@ -510,21 +510,21 @@ See: `.claude/commands/build.md` (created in Phase 4)
 
 ```bash
 # Test command syntax validation
-test -f .claude/commands/research-report.md || exit 1
+test -f .claude/commands/research.md || exit 1
 
 # Test YAML frontmatter parsing
-grep -q "allowed-tools: Task" .claude/commands/research-report.md || exit 1
+grep -q "allowed-tools: Task" .claude/commands/research.md || exit 1
 
 # Test state machine integration
-grep -q "sm_init" .claude/commands/research-report.md || exit 1
-grep -q "sm_transition" .claude/commands/research-report.md || exit 1
+grep -q "sm_init" .claude/commands/research.md || exit 1
+grep -q "sm_transition" .claude/commands/research.md || exit 1
 ```
 
 ### Integration Testing (End-to-End)
 
 ```bash
 # Test command execution
-/research-report "authentication patterns in codebase"
+/research "authentication patterns in codebase"
 
 # Verify outputs (FAIL-FAST: exit 1 if any check fails)
 test -d .claude/specs/*/reports/ || exit 1  # Research reports created

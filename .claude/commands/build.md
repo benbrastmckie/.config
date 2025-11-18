@@ -172,7 +172,7 @@ if [ -z "$PLAN_FILE" ]; then
 
     if [ -z "$PLAN_FILE" ]; then
       echo "ERROR: No plan file found in specs/*/plans/" >&2
-      echo "DIAGNOSTIC: Create a plan using /research-plan or /plan first" >&2
+      echo "DIAGNOSTIC: Create a plan using /plan or /plan first" >&2
       exit 1
     fi
 
@@ -749,7 +749,7 @@ exit 0
 
 **Troubleshooting**:
 
-- **No plan found**: Create a plan first using `/research-plan` or `/plan`
+- **No plan found**: Create a plan first using `/plan` or `/plan`
 - **Tests failing**: Use debug output above, or invoke `/fix` for dedicated debugging
 - **Implementation incomplete**: Check implementer-coordinator agent logs
 - **Checkpoint issues**: Delete stale checkpoint: `rm ~/.claude/data/checkpoints/build_checkpoint.json`

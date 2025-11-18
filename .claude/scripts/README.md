@@ -48,7 +48,7 @@ Scripts provide **task-specific command-line utilities** for:
 
 **fix-absolute-to-relative.sh**
 - **Purpose**: Convert absolute filesystem paths to relative markdown links
-- **Usage**: `bash .claude/scripts/fix-absolute-to-relative.sh [--dry-run]`
+- **Usage**: `bash .claude/scripts/debug-absolute-to-relative.sh [--dry-run]`
 - **Features**:
   - Fixes paths like `/home/user/.config/file.md` → `file.md`
   - Supports dry-run mode for preview
@@ -57,13 +57,13 @@ Scripts provide **task-specific command-line utilities** for:
 
 **fix-duplicate-paths.sh**
 - **Purpose**: Remove duplicate path components in links
-- **Usage**: `bash .claude/scripts/fix-duplicate-paths.sh [--dry-run]`
+- **Usage**: `bash .claude/scripts/debug-duplicate-paths.sh [--dry-run]`
 - **Example**: `.claude/docs/.claude/docs/file.md` → `.claude/docs/file.md`
 - **Features**: Pattern detection and automated correction
 
 **fix-renamed-files.sh**
 - **Purpose**: Update links to reflect renamed files
-- **Usage**: `bash .claude/scripts/fix-renamed-files.sh [--dry-run]`
+- **Usage**: `bash .claude/scripts/debug-renamed-files.sh [--dry-run]`
 - **Features**: Searches for old references and updates to new paths
 
 **rollback-link-fixes.sh**
@@ -144,7 +144,7 @@ Use `utils/` instead when:
 ### Dry-Run Mode
 Most scripts support `--dry-run` to preview changes:
 ```bash
-bash .claude/scripts/fix-absolute-to-relative.sh --dry-run
+bash .claude/scripts/debug-absolute-to-relative.sh --dry-run
 # Shows what would change without modifying files
 ```
 

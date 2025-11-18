@@ -446,23 +446,23 @@ echo "Description: $DESCRIPTION"
 ```
 
 **When to use**:
-- Complex workflow descriptions (e.g., `/coordinate`, `/research-plan`)
+- Complex workflow descriptions (e.g., `/coordinate`, `/plan`)
 - Arguments with quotes, special characters, or shell metacharacters
 - When user verification of captured value is important
 
 **Pros**: Handles all character types, user sees captured value, concurrent-safe, legacy fallback
 **Cons**: Requires manual substitution, two bash blocks instead of one
 
-**Reference Commands**: See `/coordinate`, `/research-report`, `/research-plan`, `/research-revise` for working examples.
+**Reference Commands**: See `/coordinate`, `/research-report`, `/plan`, `/research-revise` for working examples.
 
 ### Recommendation Summary
 
 | Argument Type | Recommended Pattern | Example Commands |
 |--------------|---------------------|------------------|
 | File paths | Direct $1 | `/implement`, `/build` |
-| Issue descriptions | Direct $1 | `/debug`, `/fix` |
+| Issue descriptions | Direct $1 | `/debug`, `/debug` |
 | Complex workflows | Two-step | `/coordinate` |
-| Feature descriptions | Either (project choice) | `/plan`, `/research-plan` |
+| Feature descriptions | Either (project choice) | `/plan`, `/plan` |
 
 ### Concurrent Execution Safety
 

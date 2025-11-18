@@ -101,10 +101,10 @@ grep -oE '\]\([^)]+\)' file.md | sed 's/](\(.*\))/\1/'
 ### Strategy 1: Automated Fix (Common Patterns)
 ```bash
 # Fix absolute path duplications
-./.claude/scripts/fix-duplicate-paths.sh
+./.claude/scripts/debug-duplicate-paths.sh
 
 # Fix renamed files
-./.claude/scripts/fix-renamed-files.sh
+./.claude/scripts/debug-renamed-files.sh
 ```
 
 ### Strategy 2: Manual Fix (Individual Files)
