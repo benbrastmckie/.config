@@ -69,17 +69,17 @@ Recommended approach: Start with foundation (library + tests), migrate all 3 res
 
 ## Success Criteria
 
-- [ ] `argument-capture.sh` library created with source guard, version tracking, and error handling
-- [ ] Library functions `capture_argument_part1()`, `capture_argument_part2()`, and `cleanup_argument_files()` implemented
-- [ ] Test suite with ~8 test cases covering library functions and edge cases
-- [ ] /research-report migrated to two-step pattern via library functions
-- [ ] /research-plan migrated to two-step pattern via library functions
-- [ ] /research-revise migrated to two-step pattern via library functions
-- [ ] /build migrated to two-step pattern via library functions
-- [ ] command-authoring-standards.md updated with library usage examples
-- [ ] bash-block-execution-model.md updated with library reference
-- [ ] Backward compatibility verified (legacy filename fallbacks work)
-- [ ] All migrated commands execute correctly with various argument types
+- [x] `argument-capture.sh` library created with source guard, version tracking, and error handling
+- [x] Library functions `capture_argument_part1()`, `capture_argument_part2()`, and `cleanup_argument_files()` implemented
+- [x] Test suite with ~8 test cases covering library functions and edge cases (10 tests)
+- [x] /research-report migrated to two-step pattern via library functions
+- [x] /research-plan migrated to two-step pattern via library functions
+- [x] /research-revise migrated to two-step pattern via library functions
+- [x] /build migrated to two-step pattern via library functions
+- [x] command-authoring-standards.md updated with library usage examples
+- [x] bash-block-execution-model.md updated with library reference
+- [x] Backward compatibility verified (legacy filename fallbacks work)
+- [x] All migrated commands execute correctly with various argument types
 
 ## Technical Design
 
@@ -306,11 +306,11 @@ Testing:
 **Phase 3 Completion Requirements**:
 - [x] All phase tasks marked [x]
 - [x] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(760): complete Phase 3 - Build Command Migration`
+- [x] Git commit created: `feat(760): complete Phase 3 - Build Command Migration` (335bec7b)
 - [x] Checkpoint saved (if complex phase)
 - [x] Update this plan file with phase completion status
 
-**Status**: IN PROGRESS (awaiting commit)
+**Status**: COMPLETED
 
 ---
 
