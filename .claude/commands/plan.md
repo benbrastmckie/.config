@@ -220,8 +220,9 @@ fi
 echo "=== Phase 1: Research ==="
 echo ""
 
-# Generate topic slug from feature description
-TOPIC_SLUG=$(echo "$FEATURE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | sed 's/^_//;s/_$//' | cut -c1-50)
+# Generate topic slug from feature description using sanitize_topic_name for consistency
+# This provides semantic slug generation vs simple truncation
+TOPIC_SLUG=$(sanitize_topic_name "$FEATURE_DESCRIPTION")
 
 # Allocate topic directory atomically (eliminates race conditions)
 SPECS_ROOT="${CLAUDE_PROJECT_DIR}/.claude/specs"
