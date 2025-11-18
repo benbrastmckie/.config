@@ -133,7 +133,44 @@ Estimate research scope on 1-4 scale:
 
 **RULE**: Topic count MUST EXACTLY MATCH complexity score (complexity=2 → exactly 2 topics)
 
-#### 3. Research Topics (REQUIRED)
+#### 3. Topic Directory Slug (REQUIRED)
+
+Generate a semantic slug for the topic directory name:
+
+**topic_directory_slug** - A semantic, readable identifier that captures the core concept
+
+**Format Requirements**:
+- Regex pattern: `^[a-z0-9_]{1,40}$`
+- Maximum 40 characters (directory readability)
+- Lowercase letters, numbers, and underscores only
+- NO hyphens, spaces, or special characters
+- NO path separators (/)
+
+**Semantic Requirements**:
+- Captures the core concept or feature being implemented
+- Readable and meaningful at a glance
+- Stable across similar descriptions (same feature → same slug)
+- Concise (prefer 2-4 meaningful words joined by underscores)
+
+**Examples Table**:
+
+| Workflow Description | topic_directory_slug | Reasoning |
+|---------------------|---------------------|-----------|
+| "Research authentication patterns and create implementation plan" | `auth_patterns_implementation` | Core concept: auth patterns being implemented |
+| "Implement dark mode toggle feature for settings page" | `dark_mode_toggle` | Core feature: dark mode toggle |
+| "Fix JWT token expiration bug causing login failures" | `jwt_token_expiration_bug` | Core issue: JWT expiration bug |
+| "Research the specs directory naming conventions" | `specs_directory_naming` | Core topic: specs naming |
+
+**Anti-Patterns to Avoid**:
+
+| Bad Slug | Problem | Better Slug |
+|---------|---------|-------------|
+| `research_the_authentication_patterns_and_cr` | Truncation without semantic awareness | `auth_patterns_implementation` |
+| `772_auth_feature` | Numeric prefix (handled separately) | `auth_feature` |
+| `auth-patterns` | Contains hyphens (invalid) | `auth_patterns` |
+| `implement_the_new_feature_for_users` | Too many filler words | `new_user_feature` |
+
+#### 4. Research Topics (REQUIRED)
 
 Generate research topics matching complexity count:
 
@@ -191,7 +228,13 @@ Generate research topics matching complexity count:
    - [ ] research_complexity is integer 1-4
    - [ ] Complexity matches scope breadth accurately
 
-3. **Research Topics Validation**:
+3. **Topic Directory Slug Validation**:
+   - [ ] topic_directory_slug matches regex: `^[a-z0-9_]{1,40}$`
+   - [ ] NO path separators (/) - SECURITY CHECK
+   - [ ] Captures core concept semantically
+   - [ ] Length is 1-40 characters
+
+4. **Research Topics Validation**:
    - [ ] Topic count EXACTLY MATCHES research_complexity
    - [ ] Each topic has ALL required fields (short_name, detailed_description, filename_slug, research_focus)
    - [ ] detailed_description is 50-500 characters
@@ -199,11 +242,11 @@ Generate research topics matching complexity count:
    - [ ] filename_slug matches regex: `^[a-z0-9_]{1,50}$`
    - [ ] No duplicate filename slugs
 
-4. **Confidence Validation**:
+5. **Confidence Validation**:
    - [ ] confidence is float 0.0-1.0
    - [ ] confidence reflects certainty of classification
 
-5. **Reasoning Validation**:
+6. **Reasoning Validation**:
    - [ ] reasoning explains classification decision briefly (1-3 sentences)
 
 **CHECKPOINT**: ALL validation criteria MUST pass before Step 4.
@@ -222,6 +265,7 @@ CLASSIFICATION_COMPLETE: {
   "workflow_type": "research-and-plan",
   "confidence": 0.95,
   "research_complexity": 2,
+  "topic_directory_slug": "auth_patterns_session_mgmt",
   "research_topics": [
     {
       "short_name": "Authentication Patterns",
@@ -265,6 +309,7 @@ CLASSIFICATION_COMPLETE: {
   "workflow_type": "research-only",
   "confidence": 0.85,
   "research_complexity": 1,
+  "topic_directory_slug": "research_revise_workflow",
   "research_topics": [
     {
       "short_name": "Research-and-Revise Workflow",
@@ -292,6 +337,7 @@ CLASSIFICATION_COMPLETE: {
   "workflow_type": "research-and-plan",
   "confidence": 0.90,
   "research_complexity": 2,
+  "topic_directory_slug": "new_implementation_plan",
   "research_topics": [
     {
       "short_name": "Implementation Requirements",
@@ -325,6 +371,7 @@ CLASSIFICATION_COMPLETE: {
   "workflow_type": "research-only",
   "confidence": 0.95,
   "research_complexity": 1,
+  "topic_directory_slug": "build_command_usage",
   "research_topics": [
     {
       "short_name": "Build Command Usage",
@@ -352,6 +399,7 @@ CLASSIFICATION_COMPLETE: {
   "workflow_type": "full-implementation",
   "confidence": 0.98,
   "research_complexity": 3,
+  "topic_directory_slug": "auth_system_implementation",
   "research_topics": [
     {
       "short_name": "Authentication Patterns",
@@ -390,6 +438,7 @@ CLASSIFICATION_COMPLETE: {
   "workflow_type": "research-only",
   "confidence": 0.30,
   "research_complexity": 1,
+  "topic_directory_slug": "general_investigation",
   "research_topics": [
     {
       "short_name": "General Investigation",
@@ -402,6 +451,58 @@ CLASSIFICATION_COMPLETE: {
 }
 ```
 
+### Edge Case 6: Long Verbose Description (Topic Slug)
+
+**Scenario**: "I would like you to carefully research and thoroughly analyze the existing authentication patterns used throughout our codebase, paying special attention to how JWT tokens are validated and refreshed in the various microservices"
+
+**Analysis**:
+- Very verbose description with many filler words
+- Core concept: JWT token validation/refresh in microservices
+- topic_directory_slug must capture essence in max 40 chars
+
+**topic_directory_slug**: `jwt_token_validation_microservices`
+
+**Reasoning**: Extracted core technical concepts (JWT, token, validation, microservices), removed filler words (carefully, thoroughly, special attention), stayed within 40 char limit.
+
+### Edge Case 7: Path-Heavy Description (Topic Slug)
+
+**Scenario**: "Research the /home/benjamin/.config/.claude/specs/771_research_option_1_in_home_benjamin_config_claude_s/ directory structure and naming conventions"
+
+**Analysis**:
+- Contains long file path that would truncate badly
+- Core concept: specs directory naming conventions
+- Must NOT include path components in slug
+
+**topic_directory_slug**: `specs_directory_naming`
+
+**Reasoning**: Ignored path entirely, focused on semantic meaning (specs directory naming), concise and readable.
+
+### Edge Case 8: Multiple Topics Description (Topic Slug)
+
+**Scenario**: "Implement authentication, authorization, session management, and token refresh for the user portal"
+
+**Analysis**:
+- Multiple related topics (auth, authz, sessions, tokens)
+- Core concept: user auth system for portal
+- Must capture overall theme, not list all topics
+
+**topic_directory_slug**: `user_portal_auth_system`
+
+**Reasoning**: Unified multiple related topics under single theme (auth system), included context (user portal), avoided listing individual features.
+
+### Edge Case 9: Action-Focused Description (Topic Slug)
+
+**Scenario**: "Fix the critical production bug where users cannot log in after password reset"
+
+**Analysis**:
+- Action-focused (fix bug)
+- Specific issue: login failure after password reset
+- topic_directory_slug should capture the bug topic
+
+**topic_directory_slug**: `login_password_reset_bug`
+
+**Reasoning**: Captured the specific bug context (login, password reset), included "bug" to indicate issue type, excluded "fix" action verb.
+
 ---
 
 ## Completion Criteria
@@ -413,6 +514,12 @@ Before returning your classification, verify ALL criteria met:
 - [ ] Semantic analysis applied (context considered)
 - [ ] Edge cases handled correctly (quotes, negations, ambiguity)
 - [ ] Confidence reflects classification certainty
+
+**Topic Directory Slug Quality**:
+- [ ] Matches regex `^[a-z0-9_]{1,40}$`
+- [ ] Captures core concept semantically
+- [ ] No path separators (security check)
+- [ ] Length between 1-40 characters
 
 **Research Topics Quality**:
 - [ ] Topic count EXACTLY matches complexity
@@ -514,6 +621,7 @@ Before returning classification, verify:
 - [ ] STEP 2: Semantic classification performed
   - [ ] Workflow type determined using intent analysis
   - [ ] Research complexity calculated (1-4)
+  - [ ] Topic directory slug generated (semantic, 1-40 chars)
   - [ ] Research topics generated (count = complexity)
   - [ ] All topic fields populated and validated
 - [ ] STEP 3: Classification validated
