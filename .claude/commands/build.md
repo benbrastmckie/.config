@@ -280,6 +280,28 @@ echo ""
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 # Re-source required libraries (subprocess isolation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
@@ -355,6 +377,28 @@ Task {
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 # Re-source required libraries (subprocess isolation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 
@@ -410,6 +454,28 @@ fi
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 # Re-source required libraries (subprocess isolation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
@@ -517,6 +583,28 @@ fi
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 # Re-source required libraries (subprocess isolation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
@@ -594,6 +682,28 @@ Task {
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 # Re-source required libraries (subprocess isolation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 
@@ -634,6 +744,28 @@ save_completed_states_to_state
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 # Re-source required libraries (subprocess isolation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
@@ -696,6 +828,28 @@ save_completed_states_to_state
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 # Re-source required libraries (subprocess isolation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
