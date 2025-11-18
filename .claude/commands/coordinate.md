@@ -480,8 +480,8 @@ else
   exit 1
 fi
 
-if initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE" "$RESEARCH_COMPLEXITY"; then
-  : # Success - paths initialized with dynamic allocation
+if initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"; then
+  : # Success - paths initialized with dynamic allocation and LLM-generated topic slug
 else
   handle_state_error "Workflow initialization failed" 1
 fi
