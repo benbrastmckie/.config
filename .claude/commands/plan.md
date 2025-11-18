@@ -10,10 +10,10 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
-documentation: See .claude/docs/guides/research-plan-command-guide.md for complete usage guide
+documentation: See .claude/docs/guides/plan-command-guide.md for complete usage guide
 ---
 
-# /research-plan - Research-and-Plan Workflow Command
+# /plan - Research-and-Plan Workflow Command
 
 YOU ARE EXECUTING a research-and-plan workflow that creates comprehensive research reports and then generates a new implementation plan based on those findings.
 
@@ -23,11 +23,11 @@ YOU ARE EXECUTING a research-and-plan workflow that creates comprehensive resear
 
 ## Part 1: Capture Feature Description
 
-**EXECUTE NOW**: The user invoked `/research-plan "<feature-description>"`. Capture that description.
+**EXECUTE NOW**: The user invoked `/plan "<feature-description>"`. Capture that description.
 
 In the **small bash block below**, replace `YOUR_FEATURE_DESCRIPTION_HERE` with the actual feature description (keeping the quotes).
 
-**Example**: If user ran `/research-plan "implement user authentication with JWT tokens"`, change:
+**Example**: If user ran `/plan "implement user authentication with JWT tokens"`, change:
 - FROM: `echo "YOUR_FEATURE_DESCRIPTION_HERE" > "$TEMP_FILE"`
 - TO: `echo "implement user authentication with JWT tokens" > "$TEMP_FILE"`
 
@@ -39,10 +39,10 @@ set +H  # CRITICAL: Disable history expansion
 # CRITICAL: Replace YOUR_FEATURE_DESCRIPTION_HERE with the actual feature description from the user
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
 # Use timestamp-based filename for concurrent execution safety
-TEMP_FILE="${HOME}/.claude/tmp/research-plan_arg_$(date +%s%N).txt"
+TEMP_FILE="${HOME}/.claude/tmp/plan_arg_$(date +%s%N).txt"
 echo "YOUR_FEATURE_DESCRIPTION_HERE" > "$TEMP_FILE"
 # Save temp file path for Part 2 to read
-echo "$TEMP_FILE" > "${HOME}/.claude/tmp/research-plan_arg_path.txt"
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/plan_arg_path.txt"
 echo "Feature description captured to $TEMP_FILE"
 ```
 
@@ -54,28 +54,28 @@ echo "Feature description captured to $TEMP_FILE"
 set +H  # CRITICAL: Disable history expansion
 
 # Read feature description from file (written in Part 1)
-RESEARCH_PLAN_DESC_PATH_FILE="${HOME}/.claude/tmp/research-plan_arg_path.txt"
+PLAN_DESC_PATH_FILE="${HOME}/.claude/tmp/plan_arg_path.txt"
 
-if [ -f "$RESEARCH_PLAN_DESC_PATH_FILE" ]; then
-  RESEARCH_PLAN_DESC_FILE=$(cat "$RESEARCH_PLAN_DESC_PATH_FILE")
+if [ -f "$PLAN_DESC_PATH_FILE" ]; then
+  PLAN_DESC_FILE=$(cat "$PLAN_DESC_PATH_FILE")
 else
   # Fallback to legacy fixed filename for backward compatibility
-  RESEARCH_PLAN_DESC_FILE="${HOME}/.claude/tmp/research-plan_arg.txt"
+  PLAN_DESC_FILE="${HOME}/.claude/tmp/plan_arg.txt"
 fi
 
-if [ -f "$RESEARCH_PLAN_DESC_FILE" ]; then
-  FEATURE_DESCRIPTION=$(cat "$RESEARCH_PLAN_DESC_FILE" 2>/dev/null || echo "")
+if [ -f "$PLAN_DESC_FILE" ]; then
+  FEATURE_DESCRIPTION=$(cat "$PLAN_DESC_FILE" 2>/dev/null || echo "")
 else
-  echo "ERROR: Feature description file not found: $RESEARCH_PLAN_DESC_FILE"
+  echo "ERROR: Feature description file not found: $PLAN_DESC_FILE"
   echo "This usually means Part 1 (argument capture) didn't execute."
-  echo "Usage: /research-plan \"<feature description>\""
+  echo "Usage: /plan \"<feature description>\""
   exit 1
 fi
 
 if [ -z "$FEATURE_DESCRIPTION" ]; then
   echo "ERROR: Feature description is empty"
-  echo "File exists but contains no content: $RESEARCH_PLAN_DESC_FILE"
-  echo "Usage: /research-plan \"<feature description>\""
+  echo "File exists but contains no content: $PLAN_DESC_FILE"
+  echo "Usage: /plan \"<feature description>\""
   exit 1
 fi
 
@@ -84,8 +84,8 @@ DEFAULT_COMPLEXITY=3
 RESEARCH_COMPLEXITY="$DEFAULT_COMPLEXITY"
 
 # Support both embedded and explicit flag formats:
-# - Embedded: /research-plan "description --complexity 4"
-# - Explicit: /research-plan --complexity 4 "description"
+# - Embedded: /plan "description --complexity 4"
+# - Explicit: /plan --complexity 4 "description"
 if [[ "$FEATURE_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
   RESEARCH_COMPLEXITY="${BASH_REMATCH[1]}"
   # Strip flag from feature description
@@ -158,11 +158,11 @@ EOF
 # Hardcode workflow type (replaces LLM classification)
 WORKFLOW_TYPE="research-and-plan"
 TERMINAL_STATE="plan"
-COMMAND_NAME="research-plan"
+COMMAND_NAME="plan"
 
 # Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
-WORKFLOW_ID="research_plan_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/research_plan_state_id.txt"
+WORKFLOW_ID="plan_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
@@ -207,7 +207,7 @@ if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
   echo "  - Attempted Transition: → RESEARCH" >&2
   echo "  - Workflow Type: research-and-plan" >&2
-  echo "  - Command Name: research-plan" >&2
+  echo "  - Command Name: plan" >&2
   echo "POSSIBLE CAUSES:" >&2
   echo "  - State machine not initialized properly" >&2
   echo "  - Invalid transition from current state" >&2
@@ -263,7 +263,7 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
-    You are conducting research for: research-plan workflow
+    You are conducting research for: plan workflow
 
     **Workflow-Specific Context**:
     - Research Topic: ${FEATURE_DESCRIPTION}
@@ -340,7 +340,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
 # Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
-STATE_ID_FILE="${HOME}/.claude/tmp/research_plan_state_id.txt"
+STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
@@ -398,7 +398,7 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
-    You are creating an implementation plan for: research-plan workflow
+    You are creating an implementation plan for: plan workflow
 
     **Workflow-Specific Context**:
     - Feature Description: ${FEATURE_DESCRIPTION}
@@ -464,7 +464,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
 # Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
-STATE_ID_FILE="${HOME}/.claude/tmp/research_plan_state_id.txt"
+STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2

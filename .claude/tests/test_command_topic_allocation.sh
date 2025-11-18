@@ -50,9 +50,9 @@ test_library_sourcing() {
   local test_name="All commands source unified-location-detection.sh"
   local failed=false
   local commands=(
-    "research-plan.md"
-    "fix.md"
-    "research-report.md"
+    "plan.md"
+    "debug.md"
+    "research.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -73,9 +73,9 @@ test_function_usage() {
   local test_name="All commands use allocate_and_create_topic()"
   local failed=false
   local commands=(
-    "research-plan.md"
-    "fix.md"
-    "research-report.md"
+    "plan.md"
+    "debug.md"
+    "research.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -96,9 +96,9 @@ test_no_unsafe_pattern() {
   local test_name="No commands use unsafe count+increment pattern"
   local failed=false
   local commands=(
-    "research-plan.md"
-    "fix.md"
-    "research-report.md"
+    "plan.md"
+    "debug.md"
+    "research.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -121,9 +121,9 @@ test_error_handling() {
   local test_name="All commands have error handling for allocation"
   local failed=false
   local commands=(
-    "research-plan.md"
-    "fix.md"
-    "research-report.md"
+    "plan.md"
+    "debug.md"
+    "research.md"
   )
 
   for cmd in "${commands[@]}"; do
@@ -145,9 +145,9 @@ test_result_parsing() {
   local test_name="All commands correctly parse allocation result"
   local failed=false
   local commands=(
-    "research-plan.md"
-    "fix.md"
-    "research-report.md"
+    "plan.md"
+    "debug.md"
+    "research.md"
   )
 
   for cmd in "${commands[@]}"; do

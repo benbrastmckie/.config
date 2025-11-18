@@ -9,10 +9,10 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
-documentation: See .claude/docs/guides/research-report-command-guide.md for complete usage guide
+documentation: See .claude/docs/guides/research-command-guide.md for complete usage guide
 ---
 
-# /research-report - Research-Only Workflow Command
+# /research - Research-Only Workflow Command
 
 YOU ARE EXECUTING a research-only workflow that creates comprehensive research reports without planning or implementation phases.
 
@@ -22,11 +22,11 @@ YOU ARE EXECUTING a research-only workflow that creates comprehensive research r
 
 ## Part 1: Capture Workflow Description
 
-**EXECUTE NOW**: The user invoked `/research-report "<workflow-description>"`. Capture that description.
+**EXECUTE NOW**: The user invoked `/research "<workflow-description>"`. Capture that description.
 
 In the **small bash block below**, replace `YOUR_WORKFLOW_DESCRIPTION_HERE` with the actual workflow description (keeping the quotes).
 
-**Example**: If user ran `/research-report "authentication patterns in codebase"`, change:
+**Example**: If user ran `/research "authentication patterns in codebase"`, change:
 - FROM: `echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "$TEMP_FILE"`
 - TO: `echo "authentication patterns in codebase" > "$TEMP_FILE"`
 
@@ -38,10 +38,10 @@ set +H  # CRITICAL: Disable history expansion
 # CRITICAL: Replace YOUR_WORKFLOW_DESCRIPTION_HERE with the actual workflow description from the user
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
 # Use timestamp-based filename for concurrent execution safety
-TEMP_FILE="${HOME}/.claude/tmp/research-report_arg_$(date +%s%N).txt"
+TEMP_FILE="${HOME}/.claude/tmp/research_arg_$(date +%s%N).txt"
 echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "$TEMP_FILE"
 # Save temp file path for Part 2 to read
-echo "$TEMP_FILE" > "${HOME}/.claude/tmp/research-report_arg_path.txt"
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/research_arg_path.txt"
 echo "Workflow description captured to $TEMP_FILE"
 ```
 
@@ -53,28 +53,28 @@ echo "Workflow description captured to $TEMP_FILE"
 set +H  # CRITICAL: Disable history expansion
 
 # Read workflow description from file (written in Part 1)
-RESEARCH_REPORT_DESC_PATH_FILE="${HOME}/.claude/tmp/research-report_arg_path.txt"
+RESEARCH_DESC_PATH_FILE="${HOME}/.claude/tmp/research_arg_path.txt"
 
-if [ -f "$RESEARCH_REPORT_DESC_PATH_FILE" ]; then
-  RESEARCH_REPORT_DESC_FILE=$(cat "$RESEARCH_REPORT_DESC_PATH_FILE")
+if [ -f "$RESEARCH_DESC_PATH_FILE" ]; then
+  RESEARCH_DESC_FILE=$(cat "$RESEARCH_DESC_PATH_FILE")
 else
   # Fallback to legacy fixed filename for backward compatibility
-  RESEARCH_REPORT_DESC_FILE="${HOME}/.claude/tmp/research-report_arg.txt"
+  RESEARCH_DESC_FILE="${HOME}/.claude/tmp/research_arg.txt"
 fi
 
-if [ -f "$RESEARCH_REPORT_DESC_FILE" ]; then
-  WORKFLOW_DESCRIPTION=$(cat "$RESEARCH_REPORT_DESC_FILE" 2>/dev/null || echo "")
+if [ -f "$RESEARCH_DESC_FILE" ]; then
+  WORKFLOW_DESCRIPTION=$(cat "$RESEARCH_DESC_FILE" 2>/dev/null || echo "")
 else
-  echo "ERROR: Workflow description file not found: $RESEARCH_REPORT_DESC_FILE"
+  echo "ERROR: Workflow description file not found: $RESEARCH_DESC_FILE"
   echo "This usually means Part 1 (argument capture) didn't execute."
-  echo "Usage: /research-report \"<workflow description>\""
+  echo "Usage: /research \"<workflow description>\""
   exit 1
 fi
 
 if [ -z "$WORKFLOW_DESCRIPTION" ]; then
   echo "ERROR: Workflow description is empty"
-  echo "File exists but contains no content: $RESEARCH_REPORT_DESC_FILE"
-  echo "Usage: /research-report \"<workflow description>\""
+  echo "File exists but contains no content: $RESEARCH_DESC_FILE"
+  echo "Usage: /research \"<workflow description>\""
   exit 1
 fi
 
@@ -83,8 +83,8 @@ DEFAULT_COMPLEXITY=2
 RESEARCH_COMPLEXITY="$DEFAULT_COMPLEXITY"
 
 # Support both embedded and explicit flag formats:
-# - Embedded: /research-report "description --complexity 4"
-# - Explicit: /research-report --complexity 4 "description"
+# - Embedded: /research "description --complexity 4"
+# - Explicit: /research --complexity 4 "description"
 if [[ "$WORKFLOW_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
   RESEARCH_COMPLEXITY="${BASH_REMATCH[1]}"
   # Strip flag from workflow description
@@ -157,11 +157,11 @@ EOF
 # Hardcode workflow type (replaces LLM classification)
 WORKFLOW_TYPE="research-only"
 TERMINAL_STATE="research"
-COMMAND_NAME="research-report"
+COMMAND_NAME="research"
 
 # Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
-WORKFLOW_ID="research_report_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/research_report_state_id.txt"
+WORKFLOW_ID="research_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/research_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
@@ -256,7 +256,7 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
 
-    You are conducting research for: research-report workflow
+    You are conducting research for: research workflow
 
     **Workflow-Specific Context**:
     - Research Topic: ${WORKFLOW_DESCRIPTION}
@@ -328,7 +328,7 @@ fi
 set +H  # CRITICAL: Disable history expansion
 
 # Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
-STATE_ID_FILE="${HOME}/.claude/tmp/research_report_state_id.txt"
+STATE_ID_FILE="${HOME}/.claude/tmp/research_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
