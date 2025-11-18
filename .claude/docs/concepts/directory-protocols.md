@@ -58,19 +58,46 @@ specs/
 - **Naming**: Snake_case describing the feature or area
 - **Scope**: Contains all artifacts for a single feature or related area
 
+### Topic Naming
+
+Topic directories use semantic slug generation to create meaningful, readable names.
+
+**Semantic Slug Generation** (Spec 771):
+
+Commands generate topic slugs in different ways based on available context:
+
+1. **With LLM Classification** (coordinate command):
+   - Uses `topic_directory_slug` from workflow-classifier agent
+   - Three-tier fallback: LLM slug -> extract significant words -> sanitize
+   - Format: `^[a-z0-9_]{1,40}$` (max 40 chars for readability)
+
+2. **Without LLM Classification** (plan, research commands):
+   - Uses `sanitize_topic_name()` for semantic word extraction
+   - Filters stopwords and preserves meaningful terms
+   - Format: `^[a-z0-9_]{1,50}$` (max 50 chars)
+
+**Examples**:
+| Description | Generated Slug |
+|-------------|----------------|
+| "Research the authentication patterns and create plan" | `auth_patterns_implementation` |
+| "Fix JWT token expiration bug causing login failures" | `jwt_token_expiration_bug` |
+| "Research the /home/user/.config/.claude/ directory" | `claude_directory` |
+
 ### Atomic Topic Allocation
 
 All commands that create topic directories MUST use atomic allocation to prevent race conditions and ensure sequential numbering.
 
 **Standard Pattern**:
 ```bash
-# 1. Source unified location detection library
+# 1. Source required libraries
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/topic-utils.sh"
 
-# 2. Generate sanitized topic name (max 50 chars, snake_case)
-TOPIC_SLUG=$(echo "$DESCRIPTION" | tr '[:upper:]' '[:lower:]' | \
-             sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | \
-             sed 's/^_//;s/_$//' | cut -c1-50)
+# 2. Generate semantic topic slug (preferred: use sanitize_topic_name)
+TOPIC_SLUG=$(sanitize_topic_name "$DESCRIPTION")
+
+# Alternative: Use LLM-generated slug if classification available
+# TOPIC_SLUG=$(validate_topic_directory_slug "$CLASSIFICATION_JSON" "$DESCRIPTION")
 
 # 3. Atomically allocate topic directory
 RESULT=$(allocate_and_create_topic "$SPECS_DIR" "$TOPIC_SLUG")
