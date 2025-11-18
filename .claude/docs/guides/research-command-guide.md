@@ -328,7 +328,7 @@ Empty or missing description argument.
 /research"topic description here"
 
 # Not:
-/research-report
+/research
 
 # Examples of good descriptions:
 /research"authentication patterns in Express.js applications"

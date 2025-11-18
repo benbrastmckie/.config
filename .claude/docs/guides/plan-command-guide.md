@@ -271,7 +271,7 @@ Researches GraphQL migration approaches, patterns, and gotchas. Creates phased m
 
 **Split Workflow Alternative**:
 ```bash
-# Alternative to /research-plan: do research and planning separately
+# Alternative to /plan: do research and planning separately
 /research "authentication approaches"
 # Review research
 /plan "implement OAuth2 authentication"

@@ -142,7 +142,7 @@ ls -1 .claude/specs/ | cut -d_ -f1 | sort | uniq -d
 
 ## Complete Before/After Example
 
-### Before: /research-plan (Unsafe)
+### Before: /plan (Unsafe)
 
 ```bash
 # Pre-calculate research directory path
@@ -158,7 +158,7 @@ mkdir -p "$RESEARCH_DIR"
 mkdir -p "$PLANS_DIR"
 ```
 
-### After: /research-plan (Safe)
+### After: /plan (Safe)
 
 ```bash
 # Generate topic slug from feature description

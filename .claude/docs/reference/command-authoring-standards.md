@@ -453,7 +453,7 @@ echo "Description: $DESCRIPTION"
 **Pros**: Handles all character types, user sees captured value, concurrent-safe, legacy fallback
 **Cons**: Requires manual substitution, two bash blocks instead of one
 
-**Reference Commands**: See `/coordinate`, `/research-report`, `/plan`, `/research-revise` for working examples.
+**Reference Commands**: See `/coordinate`, `/research`, `/plan`, `/revise` for working examples.
 
 ### Recommendation Summary
 
