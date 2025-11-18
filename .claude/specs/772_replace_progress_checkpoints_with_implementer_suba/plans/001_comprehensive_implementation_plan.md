@@ -249,8 +249,8 @@ dependencies: [1]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Add summary generation function to implementation-executor.md with Work Status at TOP
-- [ ] Implement Work Remaining section format template:
+- [x] Add summary generation function to implementation-executor.md with Work Status at TOP
+- [x] Implement Work Remaining section format template:
   ```markdown
   ## Work Status
   **Completion**: [XX]% complete
@@ -264,16 +264,16 @@ Tasks:
   To continue: re-invoke with this summary as continuation_context
   Resume from Phase N, task M
   ```
-- [ ] Implement 100% complete validation - only state "100% complete" when ALL tasks have [x]
-- [ ] Use workflow-phases.md summary template (lines 729-849) as basis for Completed Work Details
-- [ ] Implement summary path calculation: `{topic_path}/summaries/NNN_workflow_summary.md`
-- [ ] Add summary metadata population (date, topic, duration, phases, executor instance number)
-- [ ] Add phase completion details to summary
-- [ ] Add git commits list to summary
-- [ ] Add files modified tracking to summary
-- [ ] Create context checkpoint summary variant triggered at 70% threshold
-- [ ] Ensure Continuation Instructions include exact resume point (phase number, task description)
-- [ ] Add summary path to structured return from implementation-executor
+- [x] Implement 100% complete validation - only state "100% complete" when ALL tasks have [x]
+- [x] Use workflow-phases.md summary template (lines 729-849) as basis for Completed Work Details
+- [x] Implement summary path calculation: `{topic_path}/summaries/NNN_workflow_summary.md`
+- [x] Add summary metadata population (date, topic, duration, phases, executor instance number)
+- [x] Add phase completion details to summary
+- [x] Add git commits list to summary
+- [x] Add files modified tracking to summary
+- [x] Create context checkpoint summary variant triggered at 70% threshold
+- [x] Ensure Continuation Instructions include exact resume point (phase number, task description)
+- [x] Add summary path to structured return from implementation-executor
 
 Testing:
 ```bash
@@ -295,8 +295,8 @@ dependencies: [1, 3]
 **Complexity**: High
 
 Tasks:
-- [ ] Add continuation loop to `/home/benjamin/.config/.claude/commands/build.md` Part 4 with MAX_ITERATIONS=5
-- [ ] Implement loop structure:
+- [x] Add continuation loop to `/home/benjamin/.config/.claude/commands/build.md` Part 4 with MAX_ITERATIONS=5
+- [x] Implement loop structure:
   ```bash
   ITERATION=0
   while [ work_remaining > 0 ] && [ ITERATION < MAX_ITERATIONS ]; do
@@ -306,18 +306,18 @@ Tasks:
     ITERATION++
   done
   ```
-- [ ] Add error handling for MAX_ITERATIONS reached without completion (timeout error to user)
-- [ ] Parse implementer-coordinator return for work_remaining and summary_path fields
-- [ ] Pass continuation_context parameter to implementer-coordinator when continuing
-- [ ] Add summary display to user in build.md completion output
-- [ ] Update return signal documentation in build.md
-- [ ] Update `/home/benjamin/.config/.claude/agents/implementer-coordinator.md` executor invocation to match new interface
-- [ ] Update expected return format in implementer-coordinator to include structured results with work_remaining
-- [ ] Add summary path aggregation logic to implementer-coordinator
-- [ ] Update result aggregation to track git commits across all phases
-- [ ] Add handling of context_exhausted signal from implementation-executor
-- [ ] Re-invoke implementation-executor with continuation_context when context exhaustion detected
-- [ ] Update final return format to include summary_path and work_remaining fields
+- [x] Add error handling for MAX_ITERATIONS reached without completion (timeout error to user)
+- [x] Parse implementer-coordinator return for work_remaining and summary_path fields
+- [x] Pass continuation_context parameter to implementer-coordinator when continuing
+- [x] Add summary display to user in build.md completion output
+- [x] Update return signal documentation in build.md
+- [x] Update `/home/benjamin/.config/.claude/agents/implementer-coordinator.md` executor invocation to match new interface
+- [x] Update expected return format in implementer-coordinator to include structured results with work_remaining
+- [x] Add summary path aggregation logic to implementer-coordinator
+- [x] Update result aggregation to track git commits across all phases
+- [x] Add handling of context_exhausted signal from implementation-executor
+- [x] Re-invoke implementation-executor with continuation_context when context exhaustion detected
+- [x] Update final return format to include summary_path and work_remaining fields
 
 Testing:
 ```bash
@@ -343,9 +343,9 @@ dependencies: [1, 3]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Update `/home/benjamin/.config/.claude/agents/implementer-coordinator.md` to detect context_exhausted from executor return
-- [ ] Add logic to re-invoke implementation-executor with continuation_context when context exhausted
-- [ ] Implement continuation_context parameter in executor invocation:
+- [x] Update `/home/benjamin/.config/.claude/agents/implementer-coordinator.md` to detect context_exhausted from executor return
+- [x] Add logic to re-invoke implementation-executor with continuation_context when context exhausted
+- [x] Implement continuation_context parameter in executor invocation:
   ```markdown
   Input:
   - plan_path: $PLAN_FILE
@@ -353,12 +353,12 @@ Tasks:
   - continuation_context: $PREVIOUS_SUMMARY_PATH  # Optional, for continuation
   - iteration: $ITERATION
   ```
-- [ ] Add executor instance tracking (N of M)
-- [ ] Update wave execution loop to check for context exhaustion after each phase
-- [ ] Add summary generation trigger when all phases complete OR context exhausted
-- [ ] Ensure partial completion summaries include exact resume point
-- [ ] Update result aggregation to merge across continuation instances
-- [ ] Add handling for graceful exit with handoff summary
+- [x] Add executor instance tracking (N of M)
+- [x] Update wave execution loop to check for context exhaustion after each phase
+- [x] Add summary generation trigger when all phases complete OR context exhausted
+- [x] Ensure partial completion summaries include exact resume point
+- [x] Update result aggregation to merge across continuation instances
+- [x] Add handling for graceful exit with handoff summary
 
 Testing:
 ```bash

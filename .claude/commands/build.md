@@ -339,7 +339,12 @@ echo "TOPIC_PATH=$TOPIC_PATH" >> "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}
 echo "STARTING_PHASE=$STARTING_PHASE" >> "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent.
+**EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent with continuation loop support.
+
+**Continuation Loop Parameters**:
+- MAX_ITERATIONS: 5 (prevents infinite loops)
+- ITERATION: Starts at 1, increments on each continuation
+- continuation_context: Path to previous summary (null for first iteration)
 
 Task {
   subagent_type: "general-purpose"
@@ -369,9 +374,31 @@ Task {
     Execute all implementation phases according to the plan, following wave-based
     execution with dependency analysis.
 
+    IMPORTANT: After completing all phases or if context exhaustion detected:
+    - Create a summary in summaries/ directory
+    - Summary must have Work Status at TOP showing completion percentage
+    - If incomplete, include Work Remaining section with specific tasks
+    - Return summary path in completion signal
+
     Return: IMPLEMENTATION_COMPLETE: {PHASE_COUNT}
+    summary_path: /path/to/summary
+    work_remaining: 0 or list of incomplete phases
   "
 }
+
+**Continuation Loop Handling**:
+
+If the implementation-coordinator returns with work_remaining > 0:
+1. Parse the summary_path from the return
+2. Increment ITERATION counter
+3. Check if ITERATION > MAX_ITERATIONS (5)
+   - If yes: ERROR - Implementation timed out after 5 iterations
+   - If no: Re-invoke implementer-coordinator with continuation_context
+4. Pass the previous summary as continuation_context for the next iteration
+5. The new executor instance reads the summary and resumes from Work Remaining
+
+**NOTE**: This continuation mechanism ensures persistence through context exhaustion.
+The summary documents all completed work and exact resume point for seamless handoff.
 
 **EXECUTE NOW**: Verify implementation completion and persist state:
 
