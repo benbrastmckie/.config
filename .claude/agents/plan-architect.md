@@ -109,68 +109,7 @@ RESEARCH_REPORTS:
 # Include both reports in metadata "Research Reports" section
 ```
 
-**CHECKPOINT**: Plan file created at provided path before Step 2.5.
-
----
-
-### STEP 2.5 (REQUIRED BEFORE STEP 3) - Inject Progress Tracking Reminders
-
-**MANDATORY REQUIREMENT - Progress Reminder Injection**
-
-Even Level 0 plans (not yet expanded) need progress tracking reminders for direct implementation.
-
-**For each phase in Level 0 plan**:
-
-1. Count tasks in phase
-2. If tasks > 5: Insert task-level reminder after every 5 tasks
-3. Insert phase completion checklist at end of phase section
-
-**Level 0 Phase Completion Reminder Template**:
-```markdown
-**Phase N Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(NNN): complete Phase N - [Name]`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
-```
-
-**Injection Points**:
-- After every 5 tasks within a phase (for phases with >5 tasks)
-- At the end of each phase section (before next phase heading)
-
-**Reminder Injection Algorithm**:
-```markdown
-For each phase in plan:
-  1. Count phase tasks
-  2. If task_count > 5:
-     - Calculate checkpoint_positions = [5, 10, 15, ...]
-     - Insert task-level checkpoint at each position
-  3. Always insert phase completion checklist at end of phase
-```
-
-**Task-Level Checkpoint Template** (for Level 0 plans):
-```markdown
-<!-- PROGRESS CHECKPOINT -->
-After completing the above tasks:
-- [ ] Update this plan file: Mark completed tasks with [x]
-- [ ] Verify changes with git diff
-<!-- END PROGRESS CHECKPOINT -->
-```
-
-**Phase Completion Checklist Template** (for Level 0 plans):
-```markdown
-**Phase {N} Completion Requirements**:
-- [ ] All phase tasks marked [x]
-- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
-- [ ] Git commit created: `feat(NNN): complete Phase {N} - {Phase Name}`
-- [ ] Checkpoint saved (if complex phase)
-- [ ] Update this plan file with phase completion status
-```
-
-**CRITICAL**: Injection is MANDATORY - Do not create plans without progress reminders.
-
-**CHECKPOINT**: Progress reminders injected in all phases before Step 3.
+**CHECKPOINT**: Plan file created at provided path before Step 3.
 
 ---
 
@@ -208,8 +147,6 @@ If research reports were provided:
 - [ ] Research reports listed in metadata (if provided)
 - [ ] All report paths match those provided in prompt
 - [ ] Plan structure is parseable by /implement
-- [ ] Progress reminders injected in all phases (added in STEP 2.5)
-- [ ] Phase completion checklists present at end of each phase
 
 **CHECKPOINT**: All verifications must pass before Step 4.
 
