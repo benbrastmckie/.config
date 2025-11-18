@@ -1,8 +1,8 @@
-# /fix Command - Complete Guide
+# /debug Command - Complete Guide
 
-**Executable**: `.claude/commands/fix.md`
+**Executable**: `.claude/commands/debug.md`
 
-**Quick Start**: Run `/fix "<issue-description>"` - debug-focused workflow for root cause analysis.
+**Quick Start**: Run `/debug "<issue-description>"` - debug-focused workflow for root cause analysis.
 
 ---
 
@@ -21,7 +21,7 @@
 
 ### Purpose
 
-The `/fix` command provides a debug-focused workflow for investigating issues through research, creating debug strategy plans, and performing root cause analysis. It automates the investigation process using specialized agents and produces actionable debugging artifacts.
+The `/debug` command provides a debug-focused workflow for investigating issues through research, creating debug strategy plans, and performing root cause analysis. It automates the investigation process using specialized agents and produces actionable debugging artifacts.
 
 ### When to Use
 
@@ -33,9 +33,9 @@ The `/fix` command provides a debug-focused workflow for investigating issues th
 ### When NOT to Use
 
 - **Implementing features**: Use `/build` or `/coordinate` for implementation workflows
-- **Creating plans**: Use `/plan` or `/research-plan` for implementation planning
-- **Research without fixes**: Use `/research-report` for investigation-only tasks
-- **Plan revision**: Use `/research-revise` for modifying existing plans
+- **Creating plans**: Use `/plan` or `/plan` for implementation planning
+- **Research without fixes**: Use `/research` for investigation-only tasks
+- **Plan revision**: Use `/revise` for modifying existing plans
 
 ---
 
@@ -102,7 +102,7 @@ The `/fix` command provides a debug-focused workflow for investigating issues th
 ### Example 1: Basic Bug Investigation
 
 ```bash
-/fix "authentication timeout errors in production"
+/debug"authentication timeout errors in production"
 ```
 
 **Expected Output**:
@@ -159,7 +159,7 @@ Investigates authentication timeouts through automated research, creates systema
 ### Example 2: Complex Issue with Higher Complexity
 
 ```bash
-/fix "intermittent database connection failures --complexity 4"
+/debug"intermittent database connection failures --complexity 4"
 ```
 
 **Expected Output**:
@@ -187,7 +187,7 @@ Higher complexity (4) triggers hierarchical supervision mode for deeper investig
 ### Example 3: Performance Issue Investigation
 
 ```bash
-/fix "API endpoint latency exceeds 2s on POST /api/users"
+/debug"API endpoint latency exceeds 2s on POST /api/users"
 ```
 
 **Expected Output**:
@@ -250,10 +250,10 @@ Performance issues are investigated with focus on latency analysis. Debug artifa
 **Complexity Override**:
 ```bash
 # Embedded in description
-/fix "issue description --complexity 3"
+/debug"issue description --complexity 3"
 
 # Or use explicit syntax (if supported)
-/fix --complexity 3 "issue description"
+/debug--complexity 3 "issue description"
 ```
 
 **Issue Description Best Practices**:
@@ -265,20 +265,20 @@ Performance issues are investigated with focus on latency analysis. Debug artifa
 
 **Fix → Build Chain**:
 ```bash
-/fix "authentication bug"              # Investigate and identify root cause
+/debug"authentication bug"              # Investigate and identify root cause
 # Manually apply fixes
 /build                                 # Re-run implementation tests
 ```
 
 **Research → Fix Chain**:
 ```bash
-/research-report "authentication patterns in codebase"  # Understand system
-/fix "authentication timeout errors"                    # Debug specific issue
+/research "authentication patterns in codebase"  # Understand system
+/debug"authentication timeout errors"                    # Debug specific issue
 ```
 
 **Fix → Plan → Build Chain**:
 ```bash
-/fix "database performance issues"     # Identify problems
+/debug"database performance issues"     # Identify problems
 /plan "optimize database queries"      # Create fix implementation plan
 /build                                 # Implement fixes
 ```
@@ -301,10 +301,10 @@ Research-specialist agent encountered errors or issue description too vague.
 **Solution**:
 ```bash
 # Make issue description more specific
-/fix "authentication timeout errors in production - JWT validation fails after 30s"
+/debug"authentication timeout errors in production - JWT validation fails after 30s"
 
 # Or increase complexity for deeper investigation
-/fix "authentication timeout errors --complexity 3"
+/debug"authentication timeout errors --complexity 3"
 
 # Check research-specialist agent logs
 cat .claude/agents/research-specialist.md
@@ -328,7 +328,7 @@ ls .claude/specs/*/reports/
 du -h .claude/specs/*/reports/*.md
 
 # If reports are empty, re-run with higher complexity
-/fix "issue description --complexity 3"
+/debug"issue description --complexity 3"
 ```
 
 #### Issue 3: No Debug Artifacts Created
@@ -393,10 +393,10 @@ Improve issue description with:
 Example:
 ```bash
 # Before (too vague)
-/fix "authentication problems"
+/debug"authentication problems"
 
 # After (specific)
-/fix "JWT validation fails with 'Token expired' error in production after exactly 30 seconds, only affects users in EU timezone, started after deployment on 2025-01-15"
+/debug"JWT validation fails with 'Token expired' error in production after exactly 30 seconds, only affects users in EU timezone, started after deployment on 2025-01-15"
 ```
 
 ### Debug Mode
@@ -406,7 +406,7 @@ Enable bash debugging for verbose output:
 ```bash
 # Enable trace mode
 set -x
-/fix "issue description"
+/debug"issue description"
 set +x
 ```
 
@@ -435,7 +435,7 @@ find .claude/specs -path "*/reports/*.md" -size -100c
 
 - Check [Command Reference](../reference/command-reference.md) for quick syntax
 - Review [Research-Specialist Agent](../../agents/research-specialist.md) for research patterns
-- See related commands: `/research-report`, `/debug`, `/build`
+- See related commands: `/research`, `/debug`, `/build`
 - Review [State-Based Orchestration](../architecture/state-based-orchestration-overview.md) for workflow details
 
 ---
@@ -447,4 +447,4 @@ find .claude/specs -path "*/reports/*.md" -size -100c
 - [Debug-Analyst Agent](../../agents/debug-analyst.md)
 - [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md)
 - [Command Reference](../reference/command-reference.md)
-- Related Commands: `/debug`, `/research-report`, `/build`, `/coordinate`
+- Related Commands: `/debug`, `/research`, `/build`, `/coordinate`

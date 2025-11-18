@@ -1,8 +1,8 @@
-# /research-revise Command - Complete Guide
+# /revise Command - Complete Guide
 
-**Executable**: `.claude/commands/research-revise.md`
+**Executable**: `.claude/commands/revise.md`
 
-**Quick Start**: Run `/research-revise "revise plan at /path/to/plan.md based on NEW_INSIGHTS"` - creates research and revises existing plan.
+**Quick Start**: Run `/revise "revise plan at /path/to/plan.md based on NEW_INSIGHTS"` - creates research and revises existing plan.
 
 ---
 
@@ -21,7 +21,7 @@
 
 ### Purpose
 
-The `/research-revise` command provides a research-and-revise workflow that creates research reports based on new insights and then revises an existing implementation plan. It's designed for adaptive planning when new information emerges or requirements change.
+The `/revise` command provides a research-and-revise workflow that creates research reports based on new insights and then revises an existing implementation plan. It's designed for adaptive planning when new information emerges or requirements change.
 
 ### When to Use
 
@@ -32,10 +32,10 @@ The `/research-revise` command provides a research-and-revise workflow that crea
 
 ### When NOT to Use
 
-- **Creating new plans**: Use `/research-plan` or `/plan` for initial plan creation
-- **Research-only tasks**: Use `/research-report` if you don't need plan revision
+- **Creating new plans**: Use `/plan` or `/plan` for initial plan creation
+- **Research-only tasks**: Use `/research` if you don't need plan revision
 - **Simple plan edits**: Use `/revise` for direct plan revision without research
-- **Debugging**: Use `/fix` for debug-focused workflows
+- **Debugging**: Use `/debug` for debug-focused workflows
 
 ---
 
@@ -100,7 +100,7 @@ The `/research-revise` command provides a research-and-revise workflow that crea
 ### Example 1: Basic Plan Revision
 
 ```bash
-/research-revise "revise plan at .claude/specs/752_auth/plans/001_plan.md based on new security requirements"
+/revise"revise plan at .claude/specs/752_auth/plans/001_plan.md based on new security requirements"
 ```
 
 **Expected Output**:
@@ -161,7 +161,7 @@ Researches new security requirements, backs up original plan, revises plan based
 ### Example 2: Higher Complexity Revision
 
 ```bash
-/research-revise "revise plan at ./plans/001_api.md based on performance testing results showing N+1 query issues --complexity 3"
+/revise"revise plan at ./plans/001_api.md based on performance testing results showing N+1 query issues --complexity 3"
 ```
 
 **Expected Output**:
@@ -189,7 +189,7 @@ Higher complexity (3) for deeper investigation of performance issues. Creates mo
 ### Example 3: Post-Implementation Revision
 
 ```bash
-/research-revise "revise plan at .claude/specs/753_caching/plans/001_plan.md based on implementation learnings about Redis memory limits"
+/revise"revise plan at .claude/specs/753_caching/plans/001_plan.md based on implementation learnings about Redis memory limits"
 ```
 
 **Expected Output**:
@@ -217,7 +217,7 @@ Updates plan based on real implementation experience. Research investigates Redi
 ### Example 4: No Changes Needed (Error Case)
 
 ```bash
-/research-revise "revise plan at ./plans/001_plan.md based on minor style feedback"
+/revise"revise plan at ./plans/001_plan.md based on minor style feedback"
 ```
 
 **Expected Output**:
@@ -265,10 +265,10 @@ Fail-fast verification detects when plan wasn't actually modified. Prevents no-o
 **Complexity Override**:
 ```bash
 # Higher complexity for major revisions
-/research-revise "revise plan at ./plans/001.md based on architecture change --complexity 4"
+/revise"revise plan at ./plans/001.md based on architecture change --complexity 4"
 
 # Lower complexity for minor updates
-/research-revise "revise plan at ./plans/001.md based on typo fixes --complexity 1"
+/revise"revise plan at ./plans/001.md based on typo fixes --complexity 1"
 ```
 
 **Revision Description Best Practices**:
@@ -279,14 +279,14 @@ Fail-fast verification detects when plan wasn't actually modified. Prevents no-o
 **Plan Path Formats**:
 ```bash
 # Absolute path
-/research-revise "revise plan at /home/user/.claude/specs/752/plans/001.md based on changes"
+/revise"revise plan at /home/user/.claude/specs/752/plans/001.md based on changes"
 
 # Relative path
-/research-revise "revise plan at .claude/specs/752/plans/001.md based on changes"
-/research-revise "revise plan at ./plans/001.md based on changes"
+/revise"revise plan at .claude/specs/752/plans/001.md based on changes"
+/revise"revise plan at ./plans/001.md based on changes"
 
 # Parent directory path
-/research-revise "revise plan at ../other-project/plans/001.md based on changes"
+/revise"revise plan at ../other-project/plans/001.md based on changes"
 ```
 
 ### Integration with Other Workflows
@@ -295,24 +295,24 @@ Fail-fast verification detects when plan wasn't actually modified. Prevents no-o
 ```bash
 /build plans/001.md              # Start implementation
 # Discover issues during implementation
-/research-revise "revise plan at plans/001.md based on discovered API limitations"
+/revise"revise plan at plans/001.md based on discovered API limitations"
 /build plans/001.md              # Continue with revised plan
 ```
 
 **Review → Revise Chain**:
 ```bash
 # After code review
-/research-revise "revise plan at plans/001.md based on security review findings"
+/revise"revise plan at plans/001.md based on security review findings"
 /build plans/001.md              # Implement security improvements
 ```
 
 **Iterative Revision**:
 ```bash
-/research-plan "implement caching"
+/plan "implement caching"
 # Initial implementation attempt
-/research-revise "revise plan at plans/001.md based on memory constraints"
+/revise"revise plan at plans/001.md based on memory constraints"
 # Second implementation attempt
-/research-revise "revise plan at plans/001.md based on performance testing"
+/revise"revise plan at plans/001.md based on performance testing"
 # Final implementation
 ```
 
@@ -334,7 +334,7 @@ Revision description doesn't contain valid plan path pattern.
 **Solution**:
 ```bash
 # Include plan path in description
-/research-revise "revise plan at /path/to/plan.md based on changes"
+/revise"revise plan at /path/to/plan.md based on changes"
 
 # Path formats that work:
 # - /absolute/path/plan.md
@@ -429,10 +429,10 @@ This is often normal behavior. The command will proceed using existing reports.
 
 ```bash
 # If you need new research, increase complexity
-/research-revise "revise plan at plans/001.md based on details --complexity 3"
+/revise"revise plan at plans/001.md based on details --complexity 3"
 
 # Or provide more specific revision details
-/research-revise "revise plan at plans/001.md based on newly discovered WebSocket security vulnerability CVE-2025-1234"
+/revise"revise plan at plans/001.md based on newly discovered WebSocket security vulnerability CVE-2025-1234"
 ```
 
 ### Debug Mode
@@ -442,7 +442,7 @@ Enable verbose output:
 ```bash
 # Bash debugging
 set -x
-/research-revise "revise plan at path/to/plan.md based on changes"
+/revise"revise plan at path/to/plan.md based on changes"
 set +x
 ```
 
@@ -478,7 +478,7 @@ echo $?  # 0 = identical (would fail), 1 = different (would pass)
 
 - Check [Command Reference](../reference/command-reference.md) for quick syntax
 - Review [Plan-Architect Agent](../../agents/plan-architect.md) for revision patterns
-- See related commands: `/research-plan`, `/revise`, `/plan`
+- See related commands: `/plan`, `/revise`, `/plan`
 - Review [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md) for plan structure
 
 ---
@@ -490,4 +490,4 @@ echo $?  # 0 = identical (would fail), 1 = different (would pass)
 - [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md)
 - [Directory Protocols](../concepts/directory-protocols.md)
 - [Command Reference](../reference/command-reference.md)
-- Related Commands: `/research-plan`, `/revise`, `/build`, `/implement`
+- Related Commands: `/plan`, `/revise`, `/build`, `/implement`
