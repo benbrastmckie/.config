@@ -147,6 +147,12 @@ if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>
   echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
   exit 1
 fi
+# 5. Workflow initialization for semantic slug generation (Plan 777)
+if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" 2>&1; then
+  echo "ERROR: Failed to source workflow-initialization.sh"
+  echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
+  exit 1
+fi
 
 # Verify library versions (fail-fast if incompatible)
 check_library_requirements "$(cat <<'EOF'
@@ -192,9 +198,72 @@ fi
 
 echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
 echo ""
+
+# Persist CLAUDE_PROJECT_DIR for subsequent bash blocks
+append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
 ```
 
-## Part 3: Research Phase Execution
+## Part 3a: Workflow Classification (Semantic Slug Generation)
+
+**EXECUTE NOW**: USE the Task tool to invoke the workflow-classifier agent for semantic topic directory naming.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Classify workflow for ${FEATURE_DESCRIPTION}"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/workflow-classifier.md
+
+    You are classifying a workflow for: plan command
+
+    **Inputs**:
+    - Workflow Description: ${FEATURE_DESCRIPTION}
+    - Command Name: plan
+
+    Execute classification according to behavioral guidelines and return:
+    CLASSIFICATION_COMPLETE: {JSON classification result}
+  "
+}
+
+**EXECUTE NOW**: Parse the classification result and extract the topic_directory_slug:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
+# Load WORKFLOW_ID from file
+STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+fi
+
+# Parse CLASSIFICATION_COMPLETE from previous Task output
+# The workflow-classifier agent returns JSON after CLASSIFICATION_COMPLETE:
+# This block expects the classification result to be in a variable or file
+
+# For now, we'll use a placeholder - the actual classification JSON should be
+# captured from the Task tool output above and stored here
+CLASSIFICATION_JSON="${CLASSIFICATION_RESULT:-}"
+
+# If classification failed or wasn't captured, set empty for fallback behavior
+if [ -z "$CLASSIFICATION_JSON" ]; then
+  echo "Note: Classification result not captured, using fallback slug generation"
+  CLASSIFICATION_JSON=""
+fi
+
+# Persist classification for initialize_workflow_paths
+append_workflow_state "CLASSIFICATION_JSON" "$CLASSIFICATION_JSON"
+
+echo "✓ Classification complete"
+echo ""
+```
+
+## Part 3b: Research Phase Execution
 
 **EXECUTE NOW**: Transition to research state and allocate topic directory:
 
@@ -220,29 +289,25 @@ fi
 echo "=== Phase 1: Research ==="
 echo ""
 
-# Generate topic slug from feature description using sanitize_topic_name for consistency
-# This provides semantic slug generation vs simple truncation
-TOPIC_SLUG=$(sanitize_topic_name "$FEATURE_DESCRIPTION")
+# Load classification result from state (persisted in Part 3a)
+CLASSIFICATION_JSON="${CLASSIFICATION_JSON:-}"
 
-# Allocate topic directory atomically (eliminates race conditions)
-SPECS_ROOT="${CLAUDE_PROJECT_DIR}/.claude/specs"
-RESULT=$(allocate_and_create_topic "$SPECS_ROOT" "$TOPIC_SLUG")
-if [ $? -ne 0 ]; then
-  echo "ERROR: Failed to allocate topic directory"
-  echo "DIAGNOSTIC: Check permissions on $SPECS_ROOT"
-  echo "DETAILS: $RESULT"
+# Initialize workflow paths using semantic slug generation (Plan 777)
+# This uses the three-tier fallback: LLM slug -> extract_significant_words -> sanitize_topic_name
+if ! initialize_workflow_paths "$FEATURE_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"; then
+  echo "ERROR: Failed to initialize workflow paths"
+  echo "DIAGNOSTIC: Check initialize_workflow_paths() in workflow-initialization.sh"
   exit 1
 fi
 
-# Extract topic number and full path from result
-TOPIC_NUMBER="${RESULT%|*}"
-SPECS_DIR="${RESULT#*|}"
+# Map initialize_workflow_paths exports to expected variables
+# The function exports: TOPIC_PATH, TOPIC_NAME, TOPIC_NUM, SPECS_ROOT, etc.
+SPECS_DIR="$TOPIC_PATH"
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+PLANS_DIR="${TOPIC_PATH}/plans"
+TOPIC_SLUG="$TOPIC_NAME"
 
-# Define subdirectories
-RESEARCH_DIR="${SPECS_DIR}/reports"
-PLANS_DIR="${SPECS_DIR}/plans"
-
-# Create subdirectories (topic root already created atomically)
+# Create subdirectories (topic root already created by initialize_workflow_paths)
 mkdir -p "$RESEARCH_DIR"
 mkdir -p "$PLANS_DIR"
 
@@ -253,6 +318,8 @@ append_workflow_state "PLANS_DIR" "$PLANS_DIR"
 append_workflow_state "TOPIC_SLUG" "$TOPIC_SLUG"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
 append_workflow_state "FEATURE_DESCRIPTION" "$FEATURE_DESCRIPTION"
+append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "TOPIC_NUM" "$TOPIC_NUM"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.

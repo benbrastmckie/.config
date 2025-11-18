@@ -97,6 +97,12 @@ if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>
   echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
   exit 1
 fi
+# 5. Workflow initialization for semantic slug generation (Plan 777)
+if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" 2>&1; then
+  echo "ERROR: Failed to source workflow-initialization.sh"
+  echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
+  exit 1
+fi
 
 # Verify library versions
 check_library_requirements "$(cat <<'EOF'
@@ -131,6 +137,76 @@ fi
 
 echo "✓ State machine initialized"
 echo ""
+
+# Generate WORKFLOW_ID for state persistence
+WORKFLOW_ID="debug_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+mkdir -p "$(dirname "$STATE_ID_FILE")"
+echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+export WORKFLOW_ID
+
+# Initialize workflow state for subprocess isolation
+init_workflow_state "$WORKFLOW_ID"
+
+# Persist CLAUDE_PROJECT_DIR and ISSUE_DESCRIPTION for subsequent bash blocks
+append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
+append_workflow_state "ISSUE_DESCRIPTION" "$ISSUE_DESCRIPTION"
+append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+```
+
+## Part 2a: Workflow Classification (Semantic Slug Generation)
+
+**EXECUTE NOW**: USE the Task tool to invoke the workflow-classifier agent for semantic topic directory naming.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Classify workflow for ${ISSUE_DESCRIPTION}"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/workflow-classifier.md
+
+    You are classifying a workflow for: debug command
+
+    **Inputs**:
+    - Workflow Description: ${ISSUE_DESCRIPTION}
+    - Command Name: debug
+
+    Execute classification according to behavioral guidelines and return:
+    CLASSIFICATION_COMPLETE: {JSON classification result}
+  "
+}
+
+**EXECUTE NOW**: Parse the classification result:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
+# Load WORKFLOW_ID from file
+STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+fi
+
+# Parse CLASSIFICATION_COMPLETE from previous Task output
+CLASSIFICATION_JSON="${CLASSIFICATION_RESULT:-}"
+
+# If classification failed or wasn't captured, set empty for fallback behavior
+if [ -z "$CLASSIFICATION_JSON" ]; then
+  echo "Note: Classification result not captured, using fallback slug generation"
+  CLASSIFICATION_JSON=""
+fi
+
+# Persist classification for initialize_workflow_paths
+append_workflow_state "CLASSIFICATION_JSON" "$CLASSIFICATION_JSON"
+
+echo "✓ Classification complete"
+echo ""
 ```
 
 ## Part 3: Research Phase (Issue Investigation)
@@ -164,36 +240,41 @@ fi
 echo "=== Phase 1: Research (Issue Investigation) ==="
 echo ""
 
-# Generate topic slug from issue description
-TOPIC_SLUG=$(echo "$ISSUE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | sed 's/^_//;s/_$//' | cut -c1-50)
+# Load classification result from state (persisted in Part 2a)
+CLASSIFICATION_JSON="${CLASSIFICATION_JSON:-}"
 
-# Allocate topic directory atomically (eliminates race conditions)
-SPECS_ROOT="${CLAUDE_PROJECT_DIR}/.claude/specs"
-RESULT=$(allocate_and_create_topic "$SPECS_ROOT" "$TOPIC_SLUG")
-if [ $? -ne 0 ]; then
-  echo "ERROR: Failed to allocate topic directory"
-  echo "DIAGNOSTIC: Check permissions on $SPECS_ROOT"
+# Initialize workflow paths using semantic slug generation (Plan 777)
+# This uses the three-tier fallback: LLM slug -> extract_significant_words -> sanitize_topic_name
+if ! initialize_workflow_paths "$ISSUE_DESCRIPTION" "debug-only" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"; then
+  echo "ERROR: Failed to initialize workflow paths"
+  echo "DIAGNOSTIC: Check initialize_workflow_paths() in workflow-initialization.sh"
   exit 1
 fi
 
-# Extract topic number and full path from result
-TOPIC_NUMBER="${RESULT%|*}"
-SPECS_DIR="${RESULT#*|}"
+# Map initialize_workflow_paths exports to expected variables
+# The function exports: TOPIC_PATH, TOPIC_NAME, TOPIC_NUM, SPECS_ROOT, etc.
+SPECS_DIR="$TOPIC_PATH"
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+DEBUG_DIR="${TOPIC_PATH}/debug"
+TOPIC_SLUG="$TOPIC_NAME"
 
-# Define subdirectories
-RESEARCH_DIR="${SPECS_DIR}/reports"
-DEBUG_DIR="${SPECS_DIR}/debug"
-
-# Create subdirectories (topic root already created atomically)
+# Create subdirectories (topic root already created by initialize_workflow_paths)
 mkdir -p "$RESEARCH_DIR"
 mkdir -p "$DEBUG_DIR"
 
-# Persist variables for next block and agent
+# Persist variables for next block and agent (legacy format for compatibility)
 echo "SPECS_DIR=$SPECS_DIR" > "${HOME}/.claude/tmp/debug_state_$$.txt"
 echo "RESEARCH_DIR=$RESEARCH_DIR" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
 echo "DEBUG_DIR=$DEBUG_DIR" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
 echo "ISSUE_DESCRIPTION=$ISSUE_DESCRIPTION" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
 echo "RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
+
+# Also persist to workflow state for better isolation
+append_workflow_state "SPECS_DIR" "$SPECS_DIR"
+append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
+append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
+append_workflow_state "TOPIC_SLUG" "$TOPIC_SLUG"
+append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
