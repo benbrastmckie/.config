@@ -440,7 +440,17 @@ initialize_workflow_paths() {
   # This prevents topic number incrementing on each bash block invocation
   local topic_num
   local topic_name
-  topic_name=$(sanitize_topic_name "$workflow_description")
+
+  # Use LLM-generated topic_directory_slug if classification_result provided (Spec 771)
+  # Otherwise fall back to sanitize_topic_name() for backward compatibility
+  if [ -n "$classification_result" ]; then
+    # Use three-tier validation: LLM slug -> extract -> sanitize
+    topic_name=$(validate_topic_directory_slug "$classification_result" "$workflow_description")
+  else
+    # No classification result - use legacy sanitization (backward compatible)
+    topic_name=$(sanitize_topic_name "$workflow_description")
+  fi
+
   topic_num=$(get_or_create_topic_number "$specs_root" "$topic_name")
 
   # Validate required fields
