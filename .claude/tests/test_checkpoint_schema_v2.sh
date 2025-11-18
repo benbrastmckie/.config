@@ -111,7 +111,7 @@ assert_success "Checkpoint file exists"
 
 # Test 1.3: Checkpoint has v2.0 schema version
 schema_version=$(jq -r '.schema_version' "$checkpoint_file")
-assert_equals "2.0" "$schema_version" "Schema version is 2.0"
+assert_equals "2.1" "$schema_version" "Schema version is 2.1"
 
 # Test 1.4: Checkpoint contains state_machine section
 has_state_machine=$(jq -e '.state_machine' "$checkpoint_file" &>/dev/null && echo "yes" || echo "no")

@@ -327,10 +327,10 @@ CLASSIFICATION_COMPLETE: {
   "research_complexity": 1,
   "research_topics": [
     {
-      "short_name": "Implement Command Usage",
-      "detailed_description": "Learn how the /implement command works, including syntax, options, and workflow integration",
-      "filename_slug": "implement_command_usage",
-      "research_focus": "How do you invoke /implement? What are the command options? How does it integrate with plans?"
+      "short_name": "Build Command Usage",
+      "detailed_description": "Learn how the /build command works, including syntax, options, and workflow integration",
+      "filename_slug": "build_command_usage",
+      "research_focus": "How do you invoke /build? What are the command options? How does it integrate with plans?"
     }
   ],
   "reasoning": "Quoted 'implement' indicates topic of research, not action to perform. Primary intent is learning."

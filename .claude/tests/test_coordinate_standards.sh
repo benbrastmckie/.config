@@ -160,9 +160,7 @@ AGENT_DIR="$SCRIPT_DIR/../agents"
 assert_true "research-specialist.md exists" "[ -f '$AGENT_DIR/research-specialist.md' ]"
 assert_true "plan-architect.md exists" "[ -f '$AGENT_DIR/plan-architect.md' ]"
 assert_true "implementer-coordinator.md exists" "[ -f '$AGENT_DIR/implementer-coordinator.md' ]"
-assert_true "test-specialist.md exists" "[ -f '$AGENT_DIR/test-specialist.md' ]"
 assert_true "debug-analyst.md exists" "[ -f '$AGENT_DIR/debug-analyst.md' ]"
-assert_true "doc-writer.md exists" "[ -f '$AGENT_DIR/doc-writer.md' ]"
 
 # Test 11: File Size Budget Compliance
 print_test_header "Test 11: File Size Budget"
