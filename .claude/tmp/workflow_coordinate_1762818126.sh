@@ -1,8 +1,0 @@
-export CLAUDE_PROJECT_DIR="/home/benjamin/.config"
-export WORKFLOW_ID="coordinate_1762818126"
-export STATE_FILE="/home/benjamin/.config/.claude/tmp/workflow_coordinate_1762818126.sh"
-export WORKFLOW_ID="coordinate_1762818126"
-export WORKFLOW_DESCRIPTION="test workflow"
-export WORKFLOW_SCOPE="research-and-plan"
-export TERMINAL_STATE="plan"
-export CURRENT_STATE="initialize"

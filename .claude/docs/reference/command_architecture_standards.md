@@ -1,18 +1,33 @@
 # Command and Agent Architecture Standards
 
-**Document Type**: Architecture Standards
-**Scope**: All files in `.claude/commands/` and `.claude/agents/`
-**Status**: ACTIVE - Must be followed for all modifications
-**Last Updated**: 2025-10-27 (Spec 497 - Unified orchestration improvements)
-**Derived From**: Refactoring damage analysis (commit 40b9146)
+**Document Status**: SPLIT - This document has been split for maintainability
+**Last Updated**: 2025-11-17
 
 ---
 
-## Purpose
+## This Document Has Been Split
 
-This document establishes architectural standards for Claude Code command and agent files to ensure they remain **directly executable by Claude** while avoiding code duplication and maintaining clear organization.
+For better maintainability, this large document (2571 lines) has been split into focused files under 400 lines each.
 
-**Key Principle**: Command and agent files are **AI prompts that drive execution**, not traditional software code. Refactoring patterns that work for code may break AI execution.
+**Please refer to the new split files**:
+
+| Topic | Document | Lines |
+|-------|----------|-------|
+| Overview & Index | [architecture-standards-overview.md](architecture-standards-overview.md) | ~150 |
+| Standards 0, 0.5 (Validation) | [architecture-standards-validation.md](architecture-standards-validation.md) | ~400 |
+| Standards 1-5 (Documentation) | [architecture-standards-documentation.md](architecture-standards-documentation.md) | ~250 |
+| Standard 11 (Integration) | [architecture-standards-integration.md](architecture-standards-integration.md) | ~250 |
+| Standards 12-14 (Dependencies) | [architecture-standards-dependencies.md](architecture-standards-dependencies.md) | ~400 |
+| Standards 15-16 (Error Handling) | [architecture-standards-error-handling.md](architecture-standards-error-handling.md) | ~350 |
+| Testing & Review | [architecture-standards-testing.md](architecture-standards-testing.md) | ~400 |
+
+**Start here**: [Architecture Standards Overview](architecture-standards-overview.md)
+
+---
+
+## Legacy Content Below
+
+The content below is preserved for reference but should be accessed via the split files above.
 
 ---
 
@@ -54,7 +69,9 @@ When Claude executes a command:
 
 **Solution**: Distinguish between descriptive documentation and mandatory execution directives using specific linguistic patterns and verification checkpoints.
 
-**Complete Guide**: See [Imperative Language Guide](../guides/imperative-language-guide.md) for comprehensive usage patterns, transformation rules, and validation techniques.
+**Complete Guide**: See [Imperative Language Guide](../archive/guides/imperative-language-guide.md) for comprehensive usage patterns, transformation rules, and validation techniques.
+
+**Robustness Patterns**: Apply systematic patterns for reliable command development - See [Robustness Framework](../concepts/robustness-framework.md) for unified pattern index with validation methods.
 
 #### Imperative vs Descriptive Language
 
@@ -1451,6 +1468,51 @@ Standard 12 and Standard 14 (Executable/Documentation File Separation) are compl
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Pattern for referencing agent behavioral files
 - [Inline Template Duplication Troubleshooting](../troubleshooting/inline-template-duplication.md) - Detect and fix anti-pattern
 - [Standard 14: Executable/Documentation File Separation](#standard-14-executabledocumentation-file-separation) - Complementary pattern for command file organization
+
+#### Standard 0 and Standard 12 Reconciliation
+
+**Apparent Tension**: Standard 0 (Execution Enforcement) prescribes inline execution steps, while Standard 12 (Structural vs Behavioral Content Separation) prescribes referencing behavioral content. STEP sequences appear to fit both categories.
+
+**Resolution**: Apply ownership-based decision criteria.
+
+**Standard 0 applies to** command-owned execution (INLINE):
+- Multi-phase orchestration coordination ("STEP 1: Invoke agents in parallel")
+- Agent preparation and context injection ("STEP 1: Pre-calculate paths BEFORE agent invocation")
+- Cross-agent workflow progression ("STEP 1: Collect outputs from all research agents")
+- Verification checkpoints ("STEP 1: MANDATORY VERIFICATION of file existence")
+
+**Standard 12 applies to** agent-owned behavior (REFERENCE):
+- File creation workflows ("STEP 1: Create report file with Write tool")
+- Research procedures ("STEP 1: Analyze codebase for existing patterns")
+- Quality check sequences ("STEP 1: Verify all required sections present")
+- Agent output formatting ("STEP 1: Return results in JSON format")
+
+**Ownership Decision Test**:
+```
+Ask: "Who executes this STEP sequence?"
+├─ Command/orchestrator → INLINE (Standard 0: Execution Enforcement)
+├─ Agent/subagent → REFERENCE (Standard 12: Behavioral Content Separation)
+└─ Ambiguous → Default to REFERENCE (fail-safe for context management)
+```
+
+**Example Reconciliation**:
+```markdown
+# Command file (inline orchestration - Standard 0)
+STEP 1: Pre-calculate paths for all agents
+STEP 2: Invoke researcher via Task tool with path injection
+STEP 3: Verify researcher created file at expected path
+
+# Agent file (referenced behavior - Standard 12)
+STEP 1: Read injected path from prompt
+STEP 2: Create research report using Write tool
+STEP 3: Return completion signal with file path
+```
+
+Command orchestrates (inline), agent executes (referenced). No duplication, clear ownership.
+
+**Decision Flowchart**: See [STEP Pattern Classification Flowchart](../quick-reference/step-pattern-classification-flowchart.md) for fast decision tree.
+
+**Complete Category Documentation**: See [Template vs Behavioral Distinction → Orchestration Sequences](./template-vs-behavioral-distinction.md#orchestration-sequences-context-dependent) for comprehensive examples and distinguishing criteria.
 
 ---
 

@@ -36,6 +36,167 @@ Commands should check CLAUDE.md in priority order:
 - Critical paths require integration tests
 - Regression tests for all bug fixes
 
+### Agent Behavioral Compliance Testing
+
+Agent behavioral compliance tests validate that agents follow execution procedures, create required files, and return properly formatted results. These tests prevent workflow failures caused by agent behavioral violations.
+
+**Required Test Types**:
+
+1. **File Creation Compliance**: Verify agent creates expected files at injected paths
+2. **Completion Signal Format**: Validate agent returns results in specified format
+3. **STEP Structure Validation**: Confirm agent follows documented STEP sequences
+4. **Imperative Language**: Check agent behavioral files use MUST/WILL/SHALL (not should/may/can)
+5. **Verification Checkpoints**: Ensure agent implements self-verification before returning
+6. **File Size Limits**: Validate agent output files meet size constraints
+
+**Test Pattern Examples**:
+
+```bash
+# Example 1: File Creation Compliance
+test_agent_creates_file() {
+  local test_dir="/tmp/test_agent_$$"
+  mkdir -p "$test_dir"
+
+  # Invoke agent with path injection
+  REPORT_PATH="$test_dir/research_report.md"
+  invoke_research_agent "$REPORT_PATH"
+
+  # Verify file exists at expected path
+  if [ ! -f "$REPORT_PATH" ]; then
+    echo "FAIL: Agent did not create file at injected path: $REPORT_PATH"
+    return 1
+  fi
+
+  # Verify file is not empty
+  if [ ! -s "$REPORT_PATH" ]; then
+    echo "FAIL: Agent created empty file"
+    return 1
+  fi
+
+  echo "PASS: Agent created file with content"
+  rm -rf "$test_dir"
+  return 0
+}
+
+# Example 2: Completion Signal Format
+test_completion_signal_format() {
+  local agent_output=$(invoke_agent "test task")
+
+  # Verify completion signal present
+  if ! echo "$agent_output" | grep -q "COMPLETION SIGNAL"; then
+    echo "FAIL: Agent did not return completion signal"
+    return 1
+  fi
+
+  # Verify file path included
+  if ! echo "$agent_output" | grep -q "file_path:"; then
+    echo "FAIL: Completion signal missing file_path field"
+    return 1
+  fi
+
+  # Extract and verify file path
+  file_path=$(echo "$agent_output" | grep "file_path:" | cut -d: -f2 | tr -d ' ')
+  if [ ! -f "$file_path" ]; then
+    echo "FAIL: Reported file path does not exist: $file_path"
+    return 1
+  fi
+
+  echo "PASS: Completion signal format valid"
+  return 0
+}
+
+# Example 3: STEP Structure Validation
+test_agent_step_structure() {
+  local agent_file=".claude/agents/researcher.md"
+
+  # Verify STEP sequences present
+  step_count=$(grep -c "^STEP [0-9]:" "$agent_file")
+  if [ "$step_count" -eq 0 ]; then
+    echo "FAIL: No STEP sequences found in agent file"
+    return 1
+  fi
+
+  # Verify STEPs are numbered sequentially
+  for i in $(seq 1 "$step_count"); do
+    if ! grep -q "^STEP $i:" "$agent_file"; then
+      echo "FAIL: STEP $i missing (non-sequential numbering)"
+      return 1
+    fi
+  done
+
+  echo "PASS: STEP structure valid ($step_count steps)"
+  return 0
+}
+
+# Example 4: Imperative Language Validation
+test_agent_imperative_language() {
+  local agent_file=".claude/agents/researcher.md"
+
+  # Check for prohibited weak language
+  weak_language=$(grep -E "should|may|can|might|could" "$agent_file" | grep -v "# " | head -5)
+  if [ -n "$weak_language" ]; then
+    echo "FAIL: Agent file uses weak language (should/may/can):"
+    echo "$weak_language"
+    return 1
+  fi
+
+  # Verify imperative language present
+  imperative_count=$(grep -cE "MUST|WILL|SHALL" "$agent_file")
+  if [ "$imperative_count" -lt 5 ]; then
+    echo "FAIL: Insufficient imperative language (found $imperative_count, expected ≥5)"
+    return 1
+  fi
+
+  echo "PASS: Agent file uses imperative language ($imperative_count instances)"
+  return 0
+}
+
+# Example 5: Verification Checkpoints
+test_agent_verification_checkpoints() {
+  local agent_file=".claude/agents/researcher.md"
+
+  # Verify MANDATORY VERIFICATION or self-verification present
+  if ! grep -q "MANDATORY VERIFICATION\|verify.*before returning\|verification checkpoint" "$agent_file"; then
+    echo "FAIL: No verification checkpoints found in agent file"
+    return 1
+  fi
+
+  echo "PASS: Agent file includes verification checkpoints"
+  return 0
+}
+
+# Example 6: File Size Limits
+test_agent_file_size_limits() {
+  local agent_file=".claude/agents/researcher.md"
+  local max_size=40960  # 40KB limit for agent files
+
+  # Get file size in bytes
+  file_size=$(wc -c < "$agent_file")
+
+  if [ "$file_size" -gt "$max_size" ]; then
+    echo "FAIL: Agent file exceeds size limit (${file_size} bytes > ${max_size} bytes)"
+    echo "Consider: Split into agent file + guide file per Standard 14"
+    return 1
+  fi
+
+  echo "PASS: Agent file size acceptable (${file_size} bytes)"
+  return 0
+}
+```
+
+**Reference Test Suite**: `.claude/tests/test_optimize_claude_agents.sh` (320-line behavioral validation suite)
+
+**When to Apply**:
+- When creating new agents
+- When modifying agent behavioral files
+- When debugging agent file creation failures
+- When validating agent compliance with standards
+
+**Cross-References**:
+- [Agent Development Guide](../guides/agent-development-guide.md) → Section 3 (Behavioral Compliance)
+- [Robustness Framework](../concepts/robustness-framework.md) → Pattern 5 (Comprehensive Testing)
+- [Command Architecture Standards](./command_architecture_standards.md) → Standard 0 (Execution Enforcement)
+
 ### Test Isolation Standards
 All tests MUST use isolation patterns to prevent production directory pollution.
 

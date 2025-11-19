@@ -104,6 +104,19 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 
 ---
 
+### [Output Formatting Standards](output-formatting-standards.md)
+**Purpose**: Output suppression patterns, block consolidation rules, and comment standards to ensure clean Claude Code display.
+
+**Use Cases**:
+- When developing commands to minimize display noise
+- To understand library sourcing suppression patterns
+- To learn block consolidation rules (target 2-3 blocks)
+- When applying WHAT not WHY comment standards
+
+**See Also**: [Code Standards](code-standards.md), [Bash Block Execution Model](../concepts/bash-block-execution-model.md), [Command Authoring Standards](command-authoring-standards.md)
+
+---
+
 ### [Adaptive Planning Configuration](adaptive-planning-config.md)
 **Purpose**: Complexity thresholds, threshold adjustment guidelines, and configuration ranges for adaptive planning.
 
@@ -146,11 +159,23 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 - When refactoring commands to eliminate behavioral duplication
 - To debug inline duplication anti-pattern (150+ line agent invocations)
 
-**See Also**: [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md), [Command Architecture Standards](command_architecture_standards.md) - Standard 12, [Inline Template Duplication Troubleshooting](../troubleshooting/inline-template-duplication.md)
+**See Also**: [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md), [Command Architecture Standards](command_architecture_standards.md) - Standard 12, [Inline Template Duplication Troubleshooting](../troubleshooting/inline-template-duplication.md), [STEP Pattern Classification Flowchart](../quick-reference/step-pattern-classification-flowchart.md)
 
 ---
 
 ## Quick Start
+
+### Pattern Discovery
+```bash
+# Find robustness patterns for reliable command development
+less .claude/docs/concepts/robustness-framework.md
+
+# Look up defensive programming patterns
+less .claude/docs/concepts/patterns/defensive-programming.md
+
+# Make architectural decisions (bash blocks vs scripts, flat vs hierarchical supervision)
+less .claude/docs/concepts/architectural-decision-framework.md
+```
 
 ### Look Up a Command
 ```bash
@@ -186,8 +211,15 @@ reference/
 ├── phase_dependencies.md                  Dependency syntax and wave calculation
 ├── testing-protocols.md                   Test discovery and coverage standards
 ├── code-standards.md                      Coding conventions and language standards
+├── output-formatting-standards.md         Output suppression and formatting patterns
 ├── adaptive-planning-config.md            Complexity thresholds and configuration
 └── library-api.md                         Utility library API reference
+
+Related Resources:
+├── ../concepts/robustness-framework.md           Unified pattern index (9 patterns)
+├── ../concepts/patterns/defensive-programming.md Defensive programming reference (5 sections)
+├── ../concepts/architectural-decision-framework.md Decision frameworks (3 decisions)
+└── ../quick-reference/step-pattern-classification-flowchart.md STEP ownership flowchart
 ```
 
 ## Related Documentation
@@ -195,7 +227,13 @@ reference/
 **Other Categories**:
 - [Guides](../guides/) - Task-focused how-to guides build on reference specifications
 - [Concepts](../concepts/) - Architectural concepts explain the design rationale behind reference standards
+- [Quick Reference](../quick-reference/) - Fast decision tools and flowcharts for common choices
 - [Workflows](../workflows/) - Step-by-step workflows apply reference specifications to real tasks
+
+**Key Frameworks** (Cross-Directory):
+- [Robustness Framework](../concepts/robustness-framework.md) - Unified index of 9 reliability patterns
+- [Defensive Programming](../concepts/patterns/defensive-programming.md) - 5 defensive patterns with examples
+- [Architectural Decisions](../concepts/architectural-decision-framework.md) - Decision criteria for fundamental choices
 
 **External Directories**:
 - [Commands](../../commands/) - Command implementation files

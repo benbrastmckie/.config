@@ -648,6 +648,89 @@ All 3 research reports created successfully.
 
 ---
 
+## Output vs Error Distinction
+
+### Overview
+
+Output suppression patterns reduce visual noise in Claude Code display while preserving critical error visibility. This section clarifies what to suppress vs preserve.
+
+### What to Suppress
+
+| Category | Examples | Action |
+|----------|----------|--------|
+| Success messages | "File created", "Operation complete" | Suppress with `>/dev/null` |
+| Progress indicators | "Processing...", "Loading..." | Remove entirely |
+| Intermediate state | "Setting X to Y", "Validated Z" | Suppress |
+| Library initialization | Function definitions, module loads | Suppress with `2>/dev/null` |
+
+**Pattern**:
+```bash
+# Suppress verbose library output
+source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source library" >&2
+  exit 1
+}
+
+# Suppress directory operations
+mkdir -p "$OUTPUT_DIR" 2>/dev/null || true
+```
+
+### What to Preserve
+
+| Category | Examples | Action |
+|----------|----------|--------|
+| Errors | "ERROR: File not found" | Print to stderr |
+| Warnings | "WARN: Deprecated pattern" | Print to stderr |
+| Final summaries | "Setup complete: workflow_123" | Single line per block |
+| User-needed data | File paths, URLs, identifiers | Print explicitly |
+
+**Pattern**:
+```bash
+# Errors to stderr (always visible)
+echo "ERROR: Configuration invalid" >&2
+
+# Final summary to stdout (minimal)
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+### Single Summary Line per Block
+
+Each bash block should output a single summary line instead of multiple progress messages:
+
+```bash
+# ❌ ANTI-PATTERN: Multiple verbose messages
+echo "Starting initialization..."
+echo "Loading libraries..."
+echo "Validating configuration..."
+echo "Creating directories..."
+echo "Initialization complete"
+
+# ✓ CORRECT: Single summary
+# Perform all operations silently
+source "$LIB" 2>/dev/null || exit 1
+validate_config || exit 1
+mkdir -p "$DIR" 2>/dev/null
+
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+### Relationship to Error Enhancement
+
+Output suppression applies to **success and progress output only**. Errors remain verbose per [Error Enhancement Guide](error-enhancement-guide.md) standards:
+
+- Errors use WHICH/WHAT/WHERE structure
+- Errors include resolution guidance
+- Errors are not suppressed
+
+### Related Documentation
+
+See [Output Formatting Standards](../reference/output-formatting-standards.md) for:
+- Complete output suppression patterns
+- Block consolidation rules
+- Comment standards (WHAT not WHY)
+
+---
+
 ## Usage Notes
 
 ### Referencing This File

@@ -52,10 +52,114 @@ specs/
 
 ### Topic Directories
 
-- **Format**: `NNN_topic_name/` (e.g., `042_authentication/`, `001_cleanup/`)
-- **Numbering**: Three-digit sequential numbers (001, 002, 003...)
+- **Format**: `NNN_topic_name/` (e.g., `042_authentication/`, `000_initial/`)
+- **Numbering**: Three-digit sequential numbers starting from 000 (000, 001, 002...)
+- **Rollover**: Numbers wrap from 999 to 000 (with collision detection)
 - **Naming**: Snake_case describing the feature or area
 - **Scope**: Contains all artifacts for a single feature or related area
+
+### Topic Naming
+
+Topic directories use semantic slug generation to create meaningful, readable names.
+
+**Semantic Slug Generation** (Spec 771):
+
+Commands generate topic slugs in different ways based on available context:
+
+1. **With LLM Classification** (coordinate command):
+   - Uses `topic_directory_slug` from workflow-classifier agent
+   - Three-tier fallback: LLM slug -> extract significant words -> sanitize
+   - Format: `^[a-z0-9_]{1,40}$` (max 40 chars for readability)
+
+2. **Without LLM Classification** (plan, research commands):
+   - Uses `sanitize_topic_name()` for semantic word extraction
+   - Filters stopwords and preserves meaningful terms
+   - Format: `^[a-z0-9_]{1,50}$` (max 50 chars)
+
+**Examples**:
+| Description | Generated Slug |
+|-------------|----------------|
+| "Research the authentication patterns and create plan" | `auth_patterns_implementation` |
+| "Fix JWT token expiration bug causing login failures" | `jwt_token_expiration_bug` |
+| "Research the /home/user/.config/.claude/ directory" | `claude_directory` |
+
+### Atomic Topic Allocation
+
+All commands that create topic directories MUST use atomic allocation to prevent race conditions and ensure sequential numbering.
+
+**Standard Pattern**:
+```bash
+# 1. Source required libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/topic-utils.sh"
+
+# 2. Generate semantic topic slug (preferred: use sanitize_topic_name)
+TOPIC_SLUG=$(sanitize_topic_name "$DESCRIPTION")
+
+# Alternative: Use LLM-generated slug if classification available
+# TOPIC_SLUG=$(validate_topic_directory_slug "$CLASSIFICATION_JSON" "$DESCRIPTION")
+
+# 3. Atomically allocate topic directory
+RESULT=$(allocate_and_create_topic "$SPECS_DIR" "$TOPIC_SLUG")
+if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to allocate topic directory"
+  exit 1
+fi
+
+# 4. Extract topic number and path
+TOPIC_NUMBER="${RESULT%|*}"
+TOPIC_PATH="${RESULT#*|}"
+```
+
+**Why Atomic Allocation?**
+
+The `allocate_and_create_topic()` function holds an exclusive file lock through BOTH topic number calculation AND directory creation. This eliminates the race condition that occurs with the count-then-create pattern.
+
+**Race Condition (Unsafe Pattern)**:
+```
+Time  Process A              Process B
+T0    count dirs -> 25
+T1                           count dirs -> 25
+T2    calc next -> 26
+T3                           calc next -> 26
+T4    mkdir 026_a
+T5                           mkdir 026_b (COLLISION!)
+```
+
+**Atomic Operation (Safe Pattern)**:
+```
+Time  Process A                        Process B
+T0    [LOCK] count -> 25, calc -> 26
+T1                                     [WAITING FOR LOCK]
+T2    mkdir 026_a [UNLOCK]
+T3                                     [LOCK] count -> 26, calc -> 27
+T4                                     mkdir 027_b [UNLOCK]
+```
+
+**Performance**: Atomic allocation adds ~10ms overhead per topic creation due to lock contention. This is acceptable for human-driven workflow commands.
+
+**Numbering Behavior**:
+- **First topic**: 000 (not 001)
+- **Rollover**: After 999, numbers wrap to 000
+- **Collision detection**: If the calculated number already exists (after rollover), finds next available
+- **Full exhaustion**: Returns error if all 1000 numbers are used (rare edge case)
+
+**Lock File**: `${specs_root}/.topic_number.lock`
+- Created automatically on first allocation
+- Never deleted (persists for subsequent allocations)
+- Empty file (<1KB, gitignored)
+- Lock released automatically when process exits
+
+**Concurrency Guarantee**: Tested with 1000 concurrent allocations, 0% collision rate.
+
+**Commands Using Atomic Allocation**:
+- `/plan` - Creates implementation plan topic
+- `/plan` - Creates research+plan topic
+- `/debug` - Creates debug topic
+- `/research` - Creates research-only topic
+- `/research` - Creates hierarchical research topic
+
+**See**: [Unified Location Detection API](../reference/library-api.md#allocate_and_create_topic) for complete function documentation.
 
 ### Artifact Numbering
 

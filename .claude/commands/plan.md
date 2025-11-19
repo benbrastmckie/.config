@@ -1,229 +1,419 @@
 ---
-allowed-tools: Read, Write, Bash, Grep, Glob, WebSearch
-argument-hint: <feature description> [report-path1] [report-path2] ...
-description: Create a detailed implementation plan following project standards, optionally guided by research reports
+allowed-tools: Task, TodoWrite, Bash, Read, Grep, Glob, Write
+argument-hint: <feature-description> [--file <path>] [--complexity 1-4]
+description: Research and create new implementation plan workflow
 command-type: primary
-dependent-commands: list, update, revise
+dependent-agents:
+  - research-specialist
+  - research-sub-supervisor
+  - plan-architect
+library-requirements:
+  - workflow-state-machine.sh: ">=2.0.0"
+  - state-persistence.sh: ">=1.5.0"
+documentation: See .claude/docs/guides/plan-command-guide.md for complete usage guide
 ---
 
-# /plan - Create Implementation Plan
+# /plan - Research-and-Plan Workflow Command
 
-**YOU ARE EXECUTING** as the plan creator.
+YOU ARE EXECUTING a research-and-plan workflow that creates comprehensive research reports and then generates a new implementation plan based on those findings.
 
-**Documentation**: See `.claude/docs/guides/plan-command-guide.md` for complete usage guide, research delegation, and complexity analysis.
+**Workflow Type**: research-and-plan
+**Terminal State**: plan (after planning phase complete)
+**Expected Output**: Research reports + implementation plan in .claude/specs/NNN_topic/
 
----
+## Block 1: Consolidated Setup
 
-## Phase 0: Parse Arguments and Pre-Analysis
+**EXECUTE NOW**: The user invoked `/plan "<feature-description>"`. Capture that description.
 
-```bash
-# Parse feature description and report paths
-FEATURE_DESCRIPTION="$1"
-REPORT_PATHS=()
-shift
-while [[ $# -gt 0 ]]; do
-  [[ "$1" == *.md ]] && REPORT_PATHS+=("$1")
-  shift
-done
+In the **bash block below**, replace `YOUR_FEATURE_DESCRIPTION_HERE` with the actual feature description (keeping the quotes).
 
-# Load complexity utilities
-source .claude/lib/complexity-utils.sh
+**Example**: If user ran `/plan "implement user authentication with JWT tokens"`, change:
+- FROM: `echo "YOUR_FEATURE_DESCRIPTION_HERE" > "$TEMP_FILE"`
+- TO: `echo "implement user authentication with JWT tokens" > "$TEMP_FILE"`
 
-# Analyze feature description
-ANALYSIS=$(analyze_feature_description "$FEATURE_DESCRIPTION")
-ESTIMATED_COMPLEXITY=$(echo "$ANALYSIS" | jq -r '.estimated_complexity')
-SUGGESTED_PHASES=$(echo "$ANALYSIS" | jq -r '.suggested_phases')
-
-echo "PROGRESS: Feature complexity estimated at $ESTIMATED_COMPLEXITY"
-echo "PROGRESS: Suggested phases: $SUGGESTED_PHASES"
-```
-
-## Phase 0.5: Research Delegation (Conditional)
+Execute this bash block with your substitution:
 
 ```bash
-# Check if research delegation needed
-REQUIRES_RESEARCH="false"
-[ "$ESTIMATED_COMPLEXITY" -ge 7 ] && REQUIRES_RESEARCH="true"
-[[ "$FEATURE_DESCRIPTION" =~ (integrate|migrate|refactor|architecture) ]] && REQUIRES_RESEARCH="true"
+set +H  # CRITICAL: Disable history expansion
 
-if [ "$REQUIRES_RESEARCH" = "true" ]; then
-  echo "PROGRESS: Complex feature detected - invoking research agents"
-  # Invoke research-specialist agents via Task tool
-  # Use forward_message pattern for metadata extraction
-  # Cache research reports for plan creation
+# === CAPTURE FEATURE DESCRIPTION ===
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+TEMP_FILE="${HOME}/.claude/tmp/plan_arg_$(date +%s%N).txt"
+# SUBSTITUTE THE FEATURE DESCRIPTION IN THE LINE BELOW
+echo "YOUR_FEATURE_DESCRIPTION_HERE" > "$TEMP_FILE"
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/plan_arg_path.txt"
+
+# === READ AND VALIDATE ===
+FEATURE_DESCRIPTION=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
+
+if [ -z "$FEATURE_DESCRIPTION" ]; then
+  echo "ERROR: Feature description is empty" >&2
+  echo "Usage: /plan \"<feature description>\"" >&2
+  exit 1
 fi
-```
 
-## Phase 1: Standards Discovery and Report Integration
+# Parse optional --complexity flag (default: 3 for research-and-plan)
+DEFAULT_COMPLEXITY=3
+RESEARCH_COMPLEXITY="$DEFAULT_COMPLEXITY"
 
-```bash
-# Discover CLAUDE.md
-CLAUDE_MD=$(find . -name "CLAUDE.md" -type f | head -1)
-[ -n "$CLAUDE_MD" ] && source .claude/lib/extract-standards.sh "$CLAUDE_MD"
+if [[ "$FEATURE_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
+  RESEARCH_COMPLEXITY="${BASH_REMATCH[1]}"
+  FEATURE_DESCRIPTION=$(echo "$FEATURE_DESCRIPTION" | sed 's/--complexity[[:space:]]*[1-4]//' | xargs)
+fi
 
-# Integrate research reports (if provided)
-if [ ${#REPORT_PATHS[@]} -gt 0 ]; then
-  echo "PROGRESS: Integrating ${#REPORT_PATHS[@]} research reports"
-  for report in "${REPORT_PATHS[@]}"; do
-    # Extract key findings, recommendations
-    # Update report implementation status
+if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
+  echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
+  exit 1
+fi
+
+# Parse optional --file flag for long prompts
+ORIGINAL_PROMPT_FILE_PATH=""
+if [[ "$FEATURE_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
+  ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
+  # Convert to absolute path if relative
+  if [[ ! "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]; then
+    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+  fi
+  # Validate file exists
+  if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+    echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    exit 1
+  fi
+  # Read file content into FEATURE_DESCRIPTION
+  FEATURE_DESCRIPTION=$(cat "$ORIGINAL_PROMPT_FILE_PATH")
+  if [ -z "$FEATURE_DESCRIPTION" ]; then
+    echo "WARNING: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
+  fi
+elif [[ "$FEATURE_DESCRIPTION" =~ --file ]]; then
+  echo "ERROR: --file flag requires a path argument" >&2
+  echo "Usage: /plan --file /path/to/prompt.md" >&2
+  exit 1
+fi
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
   done
 fi
-```
 
-## Phase 2: Requirements Analysis and Complexity Evaluation
-
-```bash
-# Analyze requirements from feature description
-REQUIREMENTS=$(extract_requirements "$FEATURE_DESCRIPTION")
-
-# Calculate plan complexity
-COMPLEXITY_SCORE=$(calculate_plan_complexity "$REQUIREMENTS" "$SUGGESTED_PHASES")
-export COMPLEXITY_SCORE
-
-echo "PROGRESS: Plan complexity: $COMPLEXITY_SCORE"
-```
-
-## Phase 3: Topic-Based Location Determination
-
-```bash
-# Determine specs directory location
-SPECS_DIR=$(find . -type d -name "specs" | head -1)
-[ -z "$SPECS_DIR" ] && SPECS_DIR="./specs"
-
-# Find next available topic number
-NEXT_NUMBER=$(find "$SPECS_DIR" -maxdepth 1 -type d -name "[0-9]*" | 
-              sed 's/.*\/\([0-9]\{3\}\).*/\1/' | sort -n | tail -1 | 
-              awk '{printf "%03d\n", $1+1}')
-[ -z "$NEXT_NUMBER" ] && NEXT_NUMBER="001"
-
-# Create topic directory
-TOPIC_SLUG=$(echo "$FEATURE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | cut -c1-50)
-TOPIC_DIR="$SPECS_DIR/${NEXT_NUMBER}_${TOPIC_SLUG}"
-mkdir -p "$TOPIC_DIR/plans"
-mkdir -p "$TOPIC_DIR/reports"
-mkdir -p "$TOPIC_DIR/summaries"
-
-PLAN_PATH="$TOPIC_DIR/plans/${NEXT_NUMBER}_implementation_plan.md"
-```
-
-## Phase 4: Plan Creation
-
-```bash
-# Create plan file using uniform structure
-cat > "$PLAN_PATH" << 'EOF'
-# Implementation Plan: <Feature Name>
-
-## Metadata
-- **Plan ID**: ${NEXT_NUMBER}
-- **Date Created**: $(date +%Y-%m-%d)
-- **Type**: [Architecture/Feature/Bugfix/Refactor]
-- **Scope**: <Brief scope description>
-- **Priority**: [HIGH/MEDIUM/LOW]
-- **Complexity**: ${COMPLEXITY_SCORE}/10
-- **Estimated Duration**: <N hours>
-- **Standards File**: ${CLAUDE_MD}
-- **Related Specs**: []
-- **Structure Level**: 0 (Single-file)
-
-## Executive Summary
-
-### Problem Statement
-<What problem does this solve?>
-
-### Solution Overview
-<High-level solution approach>
-
-### Success Criteria
-- [ ] <Criterion 1>
-- [ ] <Criterion 2>
-
-### Benefits
-<Key benefits of implementing this>
-
----
-
-## Implementation Phases
-
-### Phase 1: <Phase Name>
-
-**Objective**: <What this phase accomplishes>
-
-**Dependencies**: None
-
-**Complexity**: <N>/10
-
-**Duration**: <N hours>
-
-#### Tasks
-
-- [ ] <Task 1>
-- [ ] <Task 2>
-
-#### Deliverables
-
-1. <Deliverable 1>
-2. <Deliverable 2>
-
-#### Success Criteria
-
-- [ ] <Criterion 1>
-- [ ] <Criterion 2>
-
----
-
-[Additional phases...]
-
----
-
-## Rollback Strategy
-
-[How to rollback if issues occur]
-
----
-
-## Risk Assessment
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| <Risk 1> | <Low/Medium/High> | <Low/Medium/High> | <How to mitigate> |
-
----
-
-## Success Metrics
-
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| <Metric 1> | <Target> | <How to measure> |
-
----
-
-## Completion Criteria
-
-This plan is complete when:
-1. <Criterion 1>
-2. <Criterion 2>
-EOF
-
-echo "PROGRESS: Plan created at $PLAN_PATH"
-```
-
-## Phase 5: Plan Validation and Registration
-
-```bash
-# Validate plan structure
-.claude/lib/validate-plan.sh "$PLAN_PATH"
-
-# Update SPECS.md registry
-if [ -f "$SPECS_DIR/SPECS.md" ]; then
-  echo "- [${NEXT_NUMBER}] $FEATURE_DESCRIPTION - $PLAN_PATH" >> "$SPECS_DIR/SPECS.md"
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
 fi
 
-echo "PLAN_CREATED: $PLAN_PATH"
-echo "COMPLEXITY: $COMPLEXITY_SCORE"
-echo "PHASES: $SUGGESTED_PHASES"
+export CLAUDE_PROJECT_DIR
+
+# === SOURCE LIBRARIES ===
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source unified-location-detection.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-initialization.sh" >&2
+  exit 1
+}
+
+# Verify library versions
+check_library_requirements "$(cat <<'EOF'
+workflow-state-machine.sh: ">=2.0.0"
+state-persistence.sh: ">=1.5.0"
+EOF
+)" || exit 1
+
+# === INITIALIZE STATE ===
+WORKFLOW_TYPE="research-and-plan"
+TERMINAL_STATE="plan"
+COMMAND_NAME="plan"
+
+WORKFLOW_ID="plan_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+mkdir -p "$(dirname "$STATE_ID_FILE")"
+echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+export WORKFLOW_ID
+
+init_workflow_state "$WORKFLOW_ID"
+
+if ! sm_init "$FEATURE_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1; then
+  echo "ERROR: State machine initialization failed" >&2
+  exit 1
+fi
+
+# === TRANSITION TO RESEARCH AND SETUP PATHS ===
+if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+  echo "ERROR: State transition to RESEARCH failed" >&2
+  exit 1
+fi
+
+# Initialize workflow paths (uses fallback slug generation)
+if ! initialize_workflow_paths "$FEATURE_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" ""; then
+  echo "ERROR: Failed to initialize workflow paths" >&2
+  exit 1
+fi
+
+SPECS_DIR="$TOPIC_PATH"
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+PLANS_DIR="${TOPIC_PATH}/plans"
+mkdir -p "$RESEARCH_DIR"
+mkdir -p "$PLANS_DIR"
+
+# === ARCHIVE PROMPT FILE (if --file was used) ===
+ARCHIVED_PROMPT_PATH=""
+if [ -n "$ORIGINAL_PROMPT_FILE_PATH" ] && [ -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+  mkdir -p "${TOPIC_PATH}/prompts"
+  ARCHIVED_PROMPT_PATH="${TOPIC_PATH}/prompts/$(basename "$ORIGINAL_PROMPT_FILE_PATH")"
+  mv "$ORIGINAL_PROMPT_FILE_PATH" "$ARCHIVED_PROMPT_PATH"
+  echo "Prompt file archived: $ARCHIVED_PROMPT_PATH"
+fi
+
+# === PERSIST FOR BLOCK 2 ===
+append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
+append_workflow_state "SPECS_DIR" "$SPECS_DIR"
+append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
+append_workflow_state "PLANS_DIR" "$PLANS_DIR"
+append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "TOPIC_NAME" "$TOPIC_NAME"
+append_workflow_state "TOPIC_NUM" "$TOPIC_NUM"
+append_workflow_state "FEATURE_DESCRIPTION" "$FEATURE_DESCRIPTION"
+append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "$ORIGINAL_PROMPT_FILE_PATH"
+append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
+
+echo "Setup complete: $WORKFLOW_ID (research-and-plan, complexity: $RESEARCH_COMPLEXITY)"
+echo "Research directory: $RESEARCH_DIR"
+echo "Plans directory: $PLANS_DIR"
+```
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${FEATURE_DESCRIPTION} with mandatory file creation"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
+
+    You are conducting research for: plan workflow
+
+    **Workflow-Specific Context**:
+    - Research Topic: ${FEATURE_DESCRIPTION}
+    - Research Complexity: ${RESEARCH_COMPLEXITY}
+    - Output Directory: ${RESEARCH_DIR}
+    - Workflow Type: research-and-plan
+    - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
+    - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
+
+    If an archived prompt file is provided (not 'none'), read it for complete context.
+
+    Execute research according to behavioral guidelines and return completion signal:
+    REPORT_CREATED: [path to created report]
+  "
+}
+
+## Block 2: Research Verification and Planning Setup
+
+**EXECUTE NOW**: Verify research artifacts and prepare for planning:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === LOAD STATE ===
+STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
+# Detect project directory
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+
+load_workflow_state "$WORKFLOW_ID" false
+
+# === VERIFY RESEARCH ARTIFACTS ===
+echo "Verifying research artifacts..."
+
+if [ ! -d "$RESEARCH_DIR" ]; then
+  echo "ERROR: Research phase failed to create reports directory" >&2
+  exit 1
+fi
+
+if [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
+  echo "ERROR: Research phase failed to create report files" >&2
+  exit 1
+fi
+
+UNDERSIZED_FILES=$(find "$RESEARCH_DIR" -name '*.md' -type f -size -100c 2>/dev/null)
+if [ -n "$UNDERSIZED_FILES" ]; then
+  echo "ERROR: Research report(s) too small (< 100 bytes)" >&2
+  exit 1
+fi
+
+REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
+append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
+
+echo "Research verified: $REPORT_COUNT reports"
+echo ""
+
+# === TRANSITION TO PLAN ===
+if ! sm_transition "$STATE_PLAN" 2>&1; then
+  echo "ERROR: State transition to PLAN failed" >&2
+  exit 1
+fi
+
+echo "=== Phase 2: Planning ==="
+echo ""
+
+# === PREPARE PLAN PATH ===
+PLAN_NUMBER="001"
+PLAN_FILENAME="${PLAN_NUMBER}_$(echo "$TOPIC_NAME" | cut -c1-40)_plan.md"
+PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
+
+# Collect research report paths
+REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
+REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
+
+# === PERSIST FOR BLOCK 3 ===
+append_workflow_state "PLAN_PATH" "$PLAN_PATH"
+append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
+
+save_completed_states_to_state 2>/dev/null
+
+echo "Plan will be created at: $PLAN_PATH"
+echo "Using $REPORT_COUNT research reports"
+```
+
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Create implementation plan for ${FEATURE_DESCRIPTION} with mandatory file creation"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    You are creating an implementation plan for: plan workflow
+
+    **Workflow-Specific Context**:
+    - Feature Description: ${FEATURE_DESCRIPTION}
+    - Output Path: ${PLAN_PATH}
+    - Research Reports: ${REPORT_PATHS_JSON}
+    - Workflow Type: research-and-plan
+    - Operation Mode: new plan creation
+    - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
+    - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
+
+    If an archived prompt file is provided (not 'none'), reference it for complete context.
+
+    Execute planning according to behavioral guidelines and return completion signal:
+    PLAN_CREATED: ${PLAN_PATH}
+  "
+}
+
+## Block 3: Plan Verification and Completion
+
+**EXECUTE NOW**: Verify plan artifacts and complete workflow:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === LOAD STATE ===
+STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
+# Detect project directory
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+
+load_workflow_state "$WORKFLOW_ID" false
+
+# === VERIFY PLAN ARTIFACTS ===
+echo "Verifying plan artifacts..."
+
+if [ ! -f "$PLAN_PATH" ]; then
+  echo "ERROR: Planning phase failed to create plan file" >&2
+  exit 1
+fi
+
+FILE_SIZE=$(wc -c < "$PLAN_PATH")
+if [ "$FILE_SIZE" -lt 500 ]; then
+  echo "ERROR: Plan file too small ($FILE_SIZE bytes)" >&2
+  exit 1
+fi
+
+echo "Plan verified: $FILE_SIZE bytes"
+echo ""
+
+# === COMPLETE WORKFLOW ===
+if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  echo "ERROR: State transition to COMPLETE failed" >&2
+  exit 1
+fi
+
+save_completed_states_to_state 2>/dev/null
+
+echo "=== Research-and-Plan Complete ==="
+echo ""
+echo "Workflow Type: research-and-plan"
+echo "Specs Directory: $SPECS_DIR"
+echo "Research Reports: $REPORT_COUNT reports in $RESEARCH_DIR"
+echo "Implementation Plan: $PLAN_PATH"
+echo ""
+echo "Next Steps:"
+echo "- Review plan: cat $PLAN_PATH"
+echo "- Implement plan: /build $PLAN_PATH"
+echo "- Or use /coordinate for full workflow"
+
+exit 0
 ```
 
 ---
 
-**Troubleshooting**: See guide for research delegation patterns, complexity analysis, and template usage.
+**Troubleshooting**:
+
+- **Research fails**: Check research-specialist agent behavioral file compliance
+- **Planning fails**: Check plan-architect agent behavioral file (`.claude/agents/plan-architect.md`)
+- **Plan file empty**: Verify feature description is clear and research reports exist
+- **State machine errors**: Ensure library versions compatible (workflow-state-machine.sh >=2.0.0)
+- **File not found error**: Ensure --file path is correct and file exists; relative paths are resolved from current directory
+- **Empty file warning**: The prompt file exists but has no content; add content to the file

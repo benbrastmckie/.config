@@ -16,7 +16,7 @@ YOU ARE EXECUTING AS the /setup command.
 
 ## Phase 0: Argument Parsing and Mode Detection
 
-[EXECUTION-CRITICAL: Execute this bash block immediately]
+**EXECUTE NOW**: Execute this bash block immediately
 
 ```bash
 set +H
@@ -64,7 +64,7 @@ export MODE PROJECT_DIR DRY_RUN THRESHOLD REPORT_PATH
 
 ## Phase 1: Standard Mode - CLAUDE.md Generation
 
-[EXECUTION-CRITICAL: Execute when MODE=standard]
+**EXECUTE NOW**: Execute when MODE=standard
 
 ```bash
 set +H
@@ -131,7 +131,7 @@ echo "✓ Created: $CLAUDE_MD_PATH"
 
 ## Phase 2: Cleanup Mode - Section Extraction
 
-[EXECUTION-CRITICAL: Execute when MODE=cleanup]
+**EXECUTE NOW**: Execute when MODE=cleanup
 
 ```bash
 set +H
@@ -166,7 +166,7 @@ echo "✓ Cleanup complete"
 
 ## Phase 3: Validation Mode - Structure Verification
 
-[EXECUTION-CRITICAL: Execute when MODE=validate]
+**EXECUTE NOW**: Execute when MODE=validate
 
 ```bash
 set +H
@@ -207,7 +207,7 @@ done)
 
 ## Phase 4: Analysis Mode - Discrepancy Detection
 
-[EXECUTION-CRITICAL: Execute when MODE=analyze]
+**EXECUTE NOW**: Execute when MODE=analyze
 
 ```bash
 set +H
@@ -250,7 +250,7 @@ echo "✓ Report: $REPORT"
 
 ## Phase 5: Report Application
 
-[EXECUTION-CRITICAL: Execute when MODE=apply-report]
+**EXECUTE NOW**: Execute when MODE=apply-report
 
 ```bash
 set +H
@@ -278,7 +278,7 @@ echo "Review $REPORT_PATH and update $CLAUDE_MD_PATH"
 
 ## Phase 6: Enhancement Mode
 
-[EXECUTION-CRITICAL: Execute when MODE=enhance]
+**EXECUTE NOW**: Execute when MODE=enhance
 
 ```bash
 set +H

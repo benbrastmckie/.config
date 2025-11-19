@@ -326,7 +326,7 @@ Directories without README.md:
 ## Overlap Detection
 
 ### Duplicate Content Found
-1. **hierarchical_agents.md** (concepts/)
+1. **hierarchical-agents.md** (concepts/)
    - Overlaps with: CLAUDE.md lines [X]-[Y] (Hierarchical Agent Architecture section)
    - Resolution: Merge CLAUDE.md content into existing file, replace with link
 

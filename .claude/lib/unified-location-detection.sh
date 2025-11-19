@@ -32,6 +32,12 @@
 #   for workflow operations. Stress tested with 1000 parallel allocations (100 iterations
 #   × 10 processes), verified 0% collision rate.
 #
+# Numbering Behavior:
+#   - First topic: 000 (not 001)
+#   - Rollover: 999 -> 000 (modulo 1000)
+#   - Collision handling: If rolled-over number exists, find next available
+#   - Full exhaustion: Error if all 1000 numbers used (rare edge case)
+#
 # Usage:
 #   source /path/to/unified-location-detection.sh
 #   LOCATION_JSON=$(perform_location_detection "workflow description")
@@ -70,6 +76,13 @@
 # Removed strict error mode to allow graceful handling of expected failures (e.g., ls with no matches)
 # set -euo pipefail
 set -eo pipefail
+
+# Source topic-utils.sh for extract_significant_words function (Plan 777 fallback improvement)
+# This must be sourced before other functions to make extract_significant_words available
+SCRIPT_DIR_ULD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR_ULD/topic-utils.sh" ]; then
+  source "$SCRIPT_DIR_ULD/topic-utils.sh"
+fi
 
 # ============================================================================
 # SECTION 1: Project Root Detection
@@ -189,13 +202,14 @@ get_next_topic_number() {
       sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
       sort -n | tail -1)
 
-    # Handle empty directory (first topic)
+    # Handle empty directory (first topic starts at 000)
     if [ -z "$max_num" ]; then
-      echo "001"
+      echo "000"
     else
-      # Increment and format with leading zeros
+      # Increment with rollover at 1000 (999 -> 000)
       # Note: 10#$max_num forces base-10 interpretation (avoids octal issues)
-      printf "%03d" $((10#$max_num + 1))
+      local next_num=$(( (10#$max_num + 1) % 1000 ))
+      printf "%03d" "$next_num"
     fi
 
   } 200>"$lockfile"
@@ -250,17 +264,34 @@ allocate_and_create_topic() {
       sed 's/.*\/\([0-9][0-9][0-9]\)_.*/\1/' | \
       sort -n | tail -1)
 
-    # Handle empty directory (first topic)
+    # Calculate next topic number with rollover
     local topic_number
     if [ -z "$max_num" ]; then
-      topic_number="001"
+      topic_number="000"
     else
-      # Increment and format with leading zeros
-      topic_number=$(printf "%03d" $((10#$max_num + 1)))
+      # Increment with rollover at 1000 (999 -> 000)
+      local next_num=$(( (10#$max_num + 1) % 1000 ))
+      topic_number=$(printf "%03d" "$next_num")
     fi
 
     # Construct topic path
     local topic_path="${specs_root}/${topic_number}_${topic_name}"
+
+    # Handle collision when rolling over (find next available number)
+    # Check if ANY directory with this number prefix exists, not just exact path match
+    local attempts=0
+    while ls -d "${specs_root}/${topic_number}_"* >/dev/null 2>&1 && [ $attempts -lt 1000 ]; do
+      # A directory with this number prefix exists (collision)
+      local next_num=$(( (10#$topic_number + 1) % 1000 ))
+      topic_number=$(printf "%03d" "$next_num")
+      topic_path="${specs_root}/${topic_number}_${topic_name}"
+      ((attempts++))
+    done
+
+    if [ $attempts -ge 1000 ]; then
+      echo "ERROR: All 1000 topic numbers exhausted in $specs_root" >&2
+      return 1
+    fi
 
     # Create topic directory INSIDE LOCK (atomic operation)
     mkdir -p "$topic_path" || {
@@ -316,22 +347,37 @@ find_existing_topic() {
 #   $1: raw_name - Raw workflow description (user input)
 # Returns: Sanitized topic name (snake_case, max 50 chars)
 # Rules:
-#   - Convert to lowercase
-#   - Replace spaces with underscores
-#   - Remove all non-alphanumeric except underscores
-#   - Trim leading/trailing underscores
-#   - Collapse multiple underscores
-#   - Truncate to 50 characters
+#   - First try extract_significant_words for semantic extraction (Plan 777 improvement)
+#   - If that fails or produces empty result, fall back to basic sanitization:
+#     - Convert to lowercase
+#     - Replace spaces with underscores
+#     - Remove all non-alphanumeric except underscores
+#     - Trim leading/trailing underscores
+#     - Collapse multiple underscores
+#     - Truncate to 50 characters
 #
 # Usage:
 #   TOPIC_NAME=$(sanitize_topic_name "Research: Authentication Patterns")
-#   # Result: "research_authentication_patterns"
+#   # Result: "authentication_patterns" (via extract_significant_words)
 #
 # Exit Codes:
 #   0: Success
 sanitize_topic_name() {
   local raw_name="$1"
+  local result=""
 
+  # Tier 1: Try extract_significant_words for semantic extraction (Plan 777)
+  # This produces better slugs by extracting meaningful words and filtering stopwords
+  if declare -f extract_significant_words >/dev/null 2>&1; then
+    result=$(extract_significant_words "$raw_name")
+    # Validate result is not empty and not just "topic" fallback
+    if [ -n "$result" ] && [ "$result" != "topic" ]; then
+      echo "$result"
+      return 0
+    fi
+  fi
+
+  # Tier 2: Fall back to basic sanitization
   echo "$raw_name" | \
     tr '[:upper:]' '[:lower:]' | \
     tr ' ' '_' | \

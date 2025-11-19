@@ -41,7 +41,7 @@ state_json='{
 }'
 
 checkpoint_file=$(save_checkpoint "test_v2" "simple" "$state_json")
-assert_equals "2.0" "$(jq -r '.schema_version' "$checkpoint_file")" "Schema version is 2.0"
+assert_equals "2.1" "$(jq -r '.schema_version' "$checkpoint_file")" "Schema version is 2.1"
 assert_equals "research" "$(jq -r '.state_machine.current_state' "$checkpoint_file")" "State machine preserved"
 
 # Test 2: State machine wrapper functions

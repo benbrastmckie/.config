@@ -13,7 +13,7 @@ Understanding-oriented explanations of system architecture and principles. Use t
 
 ## Documents in This Section
 
-### [Hierarchical Agent Architecture](hierarchical_agents.md)
+### [Hierarchical Agent Architecture](hierarchical-agents.md)
 **Purpose**: Complete architecture guide for multi-level agent coordination with metadata-based context passing, recursive supervision, and context pruning strategies. Includes comprehensive tutorial walkthrough section with step-by-step examples of /orchestrate, /implement, and /plan workflows.
 
 **Use Cases**:
@@ -82,7 +82,7 @@ Understanding-oriented explanations of system architecture and principles. Use t
 ## Quick Start
 
 ### Understand Agent Architecture
-1. Start with [Hierarchical Agent Architecture](hierarchical_agents.md)
+1. Start with [Hierarchical Agent Architecture](hierarchical-agents.md)
 2. Review metadata extraction examples and context reduction metrics
 3. Study forward message pattern for efficient subagent coordination
 4. Learn recursive supervision for scaling beyond 5 agents
@@ -104,7 +104,7 @@ Understanding-oriented explanations of system architecture and principles. Use t
 ```
 concepts/
 ├── README.md                   (this file)
-├── hierarchical_agents.md      Multi-level agent coordination architecture
+├── hierarchical-agents.md      Multi-level agent coordination architecture
 ├── writing-standards.md        Development philosophy and documentation standards
 ├── directory-protocols.md      Topic-based artifact organization system
 ├── directory-organization.md   Directory structure and file placement rules
@@ -163,10 +163,10 @@ The Claude Code system uses a layered architecture:
 1. [Development Workflow](development-workflow.md) - Overview of standard process
 2. [Directory Protocols](directory-protocols.md) - Where things go
 3. [Writing Standards](writing-standards.md) - How to document
-4. [Hierarchical Agents](hierarchical_agents.md) - Advanced coordination
+4. [Hierarchical Agents](hierarchical-agents.md) - Advanced coordination
 
 **For Command Developers**:
-1. [Hierarchical Agents](hierarchical_agents.md) - Agent coordination patterns
+1. [Hierarchical Agents](hierarchical-agents.md) - Agent coordination patterns
 2. [Directory Protocols](directory-protocols.md) - Artifact management
 3. [Development Workflow](development-workflow.md) - Workflow integration
 4. [Writing Standards](writing-standards.md) - Documentation quality

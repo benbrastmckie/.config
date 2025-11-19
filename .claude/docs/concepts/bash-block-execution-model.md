@@ -46,6 +46,154 @@ Command Execution (coordinate.md)
 - State persistence requires explicit file writes
 - Libraries must be re-sourced in each block
 
+## Task Tool Subprocess Isolation
+
+### Overview
+
+The Task tool creates an additional level of subprocess isolation beyond bash blocks. When agents are invoked via Task tool, they run in **completely isolated subprocesses** with no access to the parent command's environment or state.
+
+### Architecture
+
+```
+Parent Command (coordinate.md)
+    ↓
+Bash Block 1 (PID: 12345)
+│ - STATE_FILE=.claude/tmp/workflow_12345.sh
+│ - export CLASSIFICATION_JSON='...'
+│    ↓
+│   Task Tool Invocation
+│       ↓
+│   ┌─────── Agent Subprocess ──────┐
+│   │ PID: 12346 (ISOLATED)        │
+│   │ - NO access to STATE_FILE    │
+│   │ - NO access to env vars      │
+│   │ - Can only return text       │
+│   └──────────────────────────────┘
+│       ↓ (returns text output)
+│
+│ - Extract result from agent output
+│ - Save to STATE_FILE
+└─────────────────────────────────────
+```
+
+### Critical Constraints
+
+**Agent subprocess CANNOT**:
+- Access parent bash block environment variables
+- Execute bash commands if `allowed-tools: None`
+- Modify parent STATE_FILE directly
+- Use `append_workflow_state()` in parent context
+
+**Agent subprocess CAN**:
+- Read files (if `allowed-tools: Read`)
+- Return structured text output
+- Perform analysis and classification
+- Generate JSON results
+
+### Correct State Persistence Pattern
+
+**Anti-Pattern** (causes state persistence failures):
+```markdown
+## Agent Behavioral File (workflow-classifier.md)
+
+allowed-tools: None  ← Agent has NO bash tool
+
+## Instructions
+
+After classification, save to state:
+
+```bash
+source .claude/lib/state-persistence.sh
+append_workflow_state "CLASSIFICATION_JSON" "$JSON"
+```
+```
+
+**Problem**: Agent configured with `allowed-tools: None` cannot execute bash commands. Even with `allowed-tools: Bash`, the agent subprocess cannot access parent STATE_FILE variable.
+
+**Correct Pattern** (Spec 752 Fix):
+```markdown
+## Agent Behavioral File (workflow-classifier.md)
+
+allowed-tools: None  ← Classification-only agent
+
+## Output Format
+
+Return: CLASSIFICATION_COMPLETE: {JSON object}
+
+The parent command will extract and save this JSON to state.
+```
+
+```markdown
+## Parent Command (coordinate.md)
+
+**Phase 0.1**: Invoke classifier agent
+
+Task {
+  prompt: "Classify workflow... Return: CLASSIFICATION_COMPLETE: {JSON}"
+}
+
+**IMMEDIATELY AFTER Task completes**, extract and save:
+
+```bash
+# Extract JSON from agent response above
+CLASSIFICATION_JSON='<EXTRACT_FROM_TASK_OUTPUT>'
+
+# Validate JSON
+echo "$CLASSIFICATION_JSON" | jq empty || exit 1
+
+# Save to state (parent context has access to STATE_FILE)
+append_workflow_state "CLASSIFICATION_JSON" "$CLASSIFICATION_JSON"
+```
+```
+
+### Key Principles
+
+1. **Agent Returns Data**: Agents return structured output (JSON, signals)
+2. **Parent Persists State**: Parent command extracts output and saves to state
+3. **File-Based Communication**: Only method across Task tool boundary
+4. **Validate Before Save**: Always validate JSON before persisting
+
+### Agent Configuration Guidelines
+
+**Classification-Only Agents**:
+```yaml
+allowed-tools: None
+description: Classification-only agent - returns JSON, does not persist state
+```
+
+**Analysis Agents** (need to read files):
+```yaml
+allowed-tools: Read, Grep
+description: Analysis agent - reads files, returns findings
+```
+
+**Execution Agents** (need to modify code):
+```yaml
+allowed-tools: Read, Write, Edit, Bash
+description: Implementation agent - executes tasks, creates commits
+```
+
+### Troubleshooting
+
+**Symptom**: Unbound variable error in subsequent bash block
+```
+bash: CLASSIFICATION_JSON: unbound variable
+```
+
+**Root Cause**: Agent tried to persist state but couldn't due to subprocess isolation
+
+**Solution**: Move state persistence to parent command bash block
+
+**Symptom**: Agent behavioral file has conflicting instructions
+```
+allowed-tools: None
+Instructions: "USE the Bash tool to save state"
+```
+
+**Root Cause**: Behavioral file contradicts frontmatter configuration
+
+**Solution**: Remove bash execution instructions, use output-based pattern
+
 ## What Persists vs What Doesn't
 
 ### Persists Across Blocks ✓
@@ -223,7 +371,38 @@ else
 fi
 ```
 
-### Pattern 3: State Persistence Library
+### Pattern 3: Two-Step Argument Capture
+
+**Problem**: Arguments with special characters (quotes, `!`, `$`) fail with direct `$1` capture.
+
+**Solution**: Use two-bash-block pattern where Part 1 captures user input via explicit substitution.
+
+```bash
+# Part 1: Capture argument to temp file
+# CRITICAL: Claude replaces YOUR_ARGUMENT_HERE with actual argument
+set +H
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+TEMP_FILE="${HOME}/.claude/tmp/mycommand_arg_$(date +%s%N).txt"
+echo "YOUR_ARGUMENT_HERE" > "$TEMP_FILE"
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/mycommand_arg_path.txt"
+
+# Part 2: Read captured argument (in next bash block)
+set +H
+PATH_FILE="${HOME}/.claude/tmp/mycommand_arg_path.txt"
+if [ -f "$PATH_FILE" ]; then
+  TEMP_FILE=$(cat "$PATH_FILE")
+  ARGUMENT=$(cat "$TEMP_FILE")
+else
+  echo "ERROR: Argument file not found"
+  exit 1
+fi
+```
+
+**Reference**: See [Command Authoring Standards](../reference/command-authoring-standards.md#pattern-2-two-step-capture-with-library-recommended-for-complex-input) for complete pattern documentation.
+
+**Commands Using This Pattern**: `/coordinate`, `/research`, `/plan`, `/revise`
+
+### Pattern 4: State Persistence Library
 
 **Problem**: Manual state file management is error-prone and verbose.
 
@@ -426,6 +605,69 @@ fi
 # ✓ ALTERNATIVE: Compound operator (for simple cases)
 sm_init "$WORKFLOW_DESC" "coordinate" || exit 1
 ```
+
+### Pattern 8: Block Count Minimization
+
+**Problem**: Each bash block creates a separate display element in Claude Code output, causing visual noise and degraded user experience.
+
+**Solution**: Consolidate related operations into fewer blocks. Target 2-3 blocks per command.
+
+**Target Block Structure**:
+
+| Block Type | Purpose | Operations |
+|-----------|---------|------------|
+| **Setup** | Initialization | Argument capture, library sourcing, validation, state machine init, path allocation |
+| **Execute** | Main workflow | Core processing, agent invocations, state transitions |
+| **Cleanup** | Completion | Final validation, completion signal, summary output |
+
+**Example Consolidation**:
+```bash
+# ❌ ANTI-PATTERN: 6 separate blocks
+Block 1: mkdir output dir
+Block 2: source libraries
+Block 3: validate config
+Block 4: init state machine
+Block 5: allocate workflow ID
+Block 6: persist state
+
+# ✓ RECOMMENDED: 2 consolidated blocks
+Block 1 (Setup):
+  mkdir -p "$DIR" 2>/dev/null
+  source "${LIB}/state-machine.sh" 2>/dev/null || exit 1
+  source "${LIB}/persistence.sh" 2>/dev/null || exit 1
+  validate_config || exit 1
+  sm_init "$DESC" "$CMD" "$TYPE" || exit 1
+  WORKFLOW_ID=$(allocate_workflow_id) || exit 1
+  append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID" || exit 1
+  echo "Setup complete: $WORKFLOW_ID"
+
+Block 2 (Execute):
+  # Main workflow logic
+```
+
+**Consolidation Rules**:
+1. **Combine consecutive operations** that don't require intermediate verification
+2. **Separate operations** that need explicit checkpoints or error handling
+3. **Keep Task invocations** in their own conceptual section for response visibility
+4. **Suppress verbose output** within consolidated blocks
+
+**Benefits**:
+- **50-67% reduction** in display noise (6 blocks to 2-3)
+- **Faster execution** (fewer subprocess spawns)
+- **Cleaner output** (single summary per block)
+- **Easier debugging** (logical groupings)
+
+**When to Use**:
+- New command development
+- Refactoring commands with excessive block counts
+- Commands with noisy display output
+
+**When NOT to Use**:
+- Blocks with distinct error recovery requirements
+- Operations requiring explicit user confirmation between steps
+- Task tool invocations that need visible response boundaries
+
+See [Output Formatting Standards](../reference/output-formatting-standards.md) for complete output suppression and consolidation patterns.
 
 **Rationale**:
 - `set -euo pipefail` does NOT exit on function failures (only simple commands)
@@ -679,6 +921,61 @@ done
 ```
 
 **Fix**: Always test bash block sequences with actual subprocess execution.
+
+### Anti-Pattern 5: Using BASH_SOURCE for Script Directory Detection
+
+**Problem**: `BASH_SOURCE[0]` is empty in Claude Code's bash block execution context, causing SCRIPT_DIR to resolve incorrectly.
+
+**Example**:
+```bash
+# ❌ ANTI-PATTERN: BASH_SOURCE-based SCRIPT_DIR (fails in Claude Code)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+# BASH_SOURCE[0] is empty → SCRIPT_DIR=/current/working/directory
+# Path resolves to: /current/working/directory/../lib/ (WRONG)
+# Expected path: /project/root/.claude/lib/ (CORRECT)
+```
+
+**Why It Fails**:
+- Claude Code executes bash blocks as separate subprocesses without preserving script metadata
+- `BASH_SOURCE[0]` requires being executed from a script file with `bash script.sh`
+- Bash blocks are executed more like `bash -c 'commands'`, where BASH_SOURCE is undefined
+- This creates a bootstrap paradox: need `detect-project-dir.sh` to find project directory, but need project directory to source `detect-project-dir.sh`
+
+**Fix**: Use inline CLAUDE_PROJECT_DIR detection with git-based discovery:
+```bash
+# ✓ CORRECT: Inline git-based CLAUDE_PROJECT_DIR detection
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  # Fallback: search upward for .claude/ directory
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Validate CLAUDE_PROJECT_DIR
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory"
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# Now source libraries using absolute paths
+UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
+source "$UTILS_DIR/workflow-state-machine.sh"
+```
+
+**Impact**:
+- Affected commands: `/plan`, `/implement`, `/expand`, `/collapse`
+- Severity: Critical (commands completely non-functional)
+- Fixed in: Spec 732 (plan.md), remaining commands require separate fixes
 
 ## Examples
 

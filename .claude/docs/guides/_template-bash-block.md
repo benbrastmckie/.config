@@ -27,40 +27,30 @@ export CLAUDE_PROJECT_DIR
 LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
 # === STEP 1: Source State Machine and Persistence (FIRST) ===
-# These libraries provide the foundation for state management
+# Load state management libraries with output suppression
 
-if [ -f "${LIB_DIR}/workflow-state-machine.sh" ]; then
-  source "${LIB_DIR}/workflow-state-machine.sh"
-else
-  echo "ERROR: workflow-state-machine.sh not found"
+source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
   exit 1
-fi
+}
 
-if [ -f "${LIB_DIR}/state-persistence.sh" ]; then
-  source "${LIB_DIR}/state-persistence.sh"
-else
-  echo "ERROR: state-persistence.sh not found"
+source "${LIB_DIR}/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
-fi
+}
 
 # === STEP 2: Source Error Handling and Verification (BEFORE any function calls) ===
-# These libraries must be available for all verification checkpoints
+# Load error handling libraries with output suppression
 
-if [ -f "${LIB_DIR}/error-handling.sh" ]; then
-  source "${LIB_DIR}/error-handling.sh"
-else
-  echo "ERROR: error-handling.sh not found at ${LIB_DIR}/error-handling.sh"
-  echo "Cannot proceed without error handling functions"
+source "${LIB_DIR}/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
-fi
+}
 
-if [ -f "${LIB_DIR}/verification-helpers.sh" ]; then
-  source "${LIB_DIR}/verification-helpers.sh"
-else
-  echo "ERROR: verification-helpers.sh not found at ${LIB_DIR}/verification-helpers.sh"
-  echo "Cannot proceed without verification functions"
+source "${LIB_DIR}/verification-helpers.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source verification-helpers.sh" >&2
   exit 1
-fi
+}
 
 # === STEP 3: Verification Checkpoint (Standard 0) ===
 # Verify critical functions are available before proceeding
@@ -102,7 +92,8 @@ append_workflow_state "<COMMAND>_STATE_ID_FILE" "$<COMMAND>_STATE_ID_FILE"
 # Add your command-specific initialization logic here
 # Example: Parse arguments, validate inputs, set initial variables
 
-echo "✓ Initialization complete. Proceeding to main workflow..."
+# Single summary line (output suppression pattern)
+echo "Setup complete: $WORKFLOW_ID"
 ```
 
 ### Block 2+: Subsequent Bash Blocks (State Loading)

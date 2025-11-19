@@ -16,26 +16,31 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 
 ## Command Index (Alphabetical)
 
+### Active Commands
 - [/analyze](#analyze)
+- [/build](#build)
 - [/collapse](#collapse)
 - [/convert-docs](#convert-docs)
-- [/coordinate](#coordinate)
-- [/debug](#debug)
 - [/document](#document)
 - [/example-with-agent](#example-with-agent)
 - [/expand](#expand)
-- [/implement](#implement)
 - [/list](#list)
 - [/plan](#plan)
 - [/plan-from-template](#plan-from-template)
 - [/plan-wizard](#plan-wizard)
 - [/refactor](#refactor)
 - [/report](#report)
+- [/research](#research)
 - [/revise](#revise)
 - [/setup](#setup)
 - [/test](#test)
 - [/test-all](#test-all)
-- [/update](#update) ⚠️ DEPRECATED
+
+### Archived Commands
+- [/coordinate](#coordinate-archived)
+- [/debug](#debug-archived)
+- [/implement](#implement-archived)
+- [/update](#update-archived)
 
 ---
 
@@ -57,6 +62,28 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 **Output**: Console analysis report with rankings and recommendations
 
 **See**: [analyze.md](../../commands/analyze.md)
+
+---
+
+### /build
+**Purpose**: Build-from-plan workflow - Implementation, testing, debug, and documentation phases
+
+**Usage**: `/build [plan-file] [starting-phase] [--dry-run]`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `plan-file` (optional): Path to implementation plan (auto-detects if omitted)
+- `starting-phase` (optional): Phase number to start from (default: 1)
+- `--dry-run`: Preview execution without running
+
+**Agents Used**: implementer-coordinator, debug-analyst
+
+**Output**: Implemented features with commits, test results, debug analysis or documentation
+
+**Workflow**: `implement → test → [debug OR document] → complete`
+
+**See**: [build.md](../../commands/build.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
 
 ---
 
@@ -103,78 +130,29 @@ See [Command Architecture Standards](command_architecture_standards.md) for comp
 ---
 
 ### /coordinate
+**Status**: ARCHIVED - Use `/build`, `/plan`, `/research`, `/debug`, or `/revise` instead
+
 **Purpose**: Clean multi-agent workflow orchestration with wave-based parallel implementation
 
-**Status**: **Production-Ready** ✓ - Stable, tested, recommended for all workflows
+**Migration**: This command has been archived and its functionality split into dedicated commands:
+- `/build` - For implementation workflows
+- `/plan` - For research and planning workflows
+- `/research` - For research-only workflows
+- `/debug` - For debugging workflows
+- `/revise` - For plan revision workflows
 
-**Complexity**: 2,500-3,000 lines (medium, well-optimized)
-
-**Usage**: `/coordinate <workflow-description>`
-
-**Type**: primary
-
-**Arguments**:
-- `workflow-description`: Natural language description of workflow to execute
-
-**Workflow Scope Detection**:
-Automatically detects workflow type and executes appropriate phases:
-- **research-only**: Phases 0-1 (keywords: "research [topic]" without "plan" or "implement")
-- **research-and-plan**: Phases 0-2 (keywords: "research...to create plan", most common)
-- **full-implementation**: Phases 0-4, 6 (keywords: "implement", "build", "add feature")
-- **debug-only**: Phases 0, 1, 5 (keywords: "fix [bug]", "debug [issue]")
-
-**Key Features**:
-- **Wave-Based Execution**: 40-60% time savings through parallel implementation of independent phases
-- **Fail-Fast Error Handling**: Clear diagnostics, single execution path, no retries
-- **Context Reduction**: <30% context usage via metadata extraction and aggressive pruning
-- **Checkpoint Resume**: Auto-resume from phase boundaries after interruption
-- **Production-Ready**: Stable, reliable, recommended default orchestration command
-
-**Agents Used**:
-- research-specialist (Phase 1)
-- plan-architect (Phase 2)
-- implementer-coordinator, implementation-executor (Phase 3)
-- test-specialist (Phase 4)
-- debug-analyst (Phase 5, conditional)
-- doc-writer (Phase 6, conditional)
-
-**Output**:
-- Research reports (specs/reports/)
-- Implementation plan (specs/plans/)
-- Code changes (Phase 3)
-- Test results (Phase 4)
-- Debug reports (Phase 5, if needed)
-- Implementation summary (specs/summaries/)
-
-**Performance**:
-- File size: 2,500-3,000 lines (production orchestrator)
-- Context usage: <30% throughout workflow
-- Time savings: 40-60% (wave-based execution)
-
-**See Also**:
-- [Command Selection Guide](../guides/orchestration-best-practices.md#command-selection) - Compare all orchestration commands
-- [coordinate.md](../../commands/coordinate.md) - Command documentation
+**Archive Location**: `.claude/archive/coordinate/commands/coordinate.md`
 
 ---
 
 ### /debug
+**Status**: ARCHIVED - Use `/debug` instead
+
 **Purpose**: Investigate issues and create diagnostic reports without code changes
 
-**Usage**: `/debug <issue-description> [report-path1] [report-path2] ...`
+**Migration**: This command has been archived. Use `/debug` for bug fixing workflows.
 
-**Type**: support
-
-**Arguments**:
-- `issue-description`: Description of the issue to investigate
-- `report-paths` (optional): Research reports for context
-
-**Agents Used**: debug-specialist
-
-**Output**: Diagnostic report in `debug/{topic}/NNN_description.md`
-
-**See Also**:
-- [/debug Command Guide](../guides/debug-command-guide.md) - Comprehensive usage, parallel hypothesis testing, root cause analysis
-- [debug.md](../../commands/debug.md) - Executable command file
+**Archive Location**: `.claude/archive/legacy-workflow-commands/commands/debug.md`
 
 ---
 
@@ -188,8 +166,6 @@ Automatically detects workflow type and executes appropriate phases:
 **Arguments**:
 - `change-description` (optional): What changed
 - `scope` (optional): Specific files/directories to document
-
-**Agents Used**: doc-writer
 
 **Output**: Updated README files and documentation
 
@@ -238,27 +214,36 @@ Automatically detects workflow type and executes appropriate phases:
 
 ---
 
-### /implement
-**Purpose**: Execute implementation plans with automated testing and commits
+### /debug
+**Purpose**: Debug-focused workflow - Root cause analysis and bug fixing
 
-**Usage**: `/implement [plan-file] [starting-phase]`
+**Usage**: `/debug <issue-description> [--file <path>] [--complexity 1-4]`
 
-**Type**: primary
+**Type**: orchestrator
 
 **Arguments**:
-- `plan-file` (optional): Path to plan (auto-resumes latest if omitted)
-- `starting-phase` (optional): Phase number to start from
+- `issue-description` (required): Description of issue to investigate
+- `--file` (optional): Path to file containing long prompt (archived to specs/NNN_topic/prompts/)
+- `--complexity` (optional): Research depth 1-4 (default: 2)
 
-**Agents Used**: code-writer (per phase), test-specialist (testing), github-specialist (PR creation)
+**Agents Used**: research-specialist, plan-architect, debug-analyst
 
-**Output**: Implemented code, git commits, implementation summary
+**Output**: Debug research reports, debug strategy plan, root cause analysis
 
-**Dependent Commands**: list, revise, debug, document
+**Workflow**: `research → plan (debug strategy) → debug → complete`
 
-**See Also**:
-- [/implement Command Guide](../guides/implement-command-guide.md) - Comprehensive usage, adaptive planning, agent delegation
+**See**: [fix.md](../../commands/debug.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
 
-**See**: [implement.md](../../commands/implement.md)
+---
+
+### /implement
+**Status**: ARCHIVED - Use `/build` instead
+
+**Purpose**: Execute implementation plans with automated testing and commits
+
+**Migration**: This command has been archived. Use `/build` for plan implementation workflows.
+
+**Archive Location**: `.claude/archive/legacy-workflow-commands/commands/implement.md`
 
 ---
 
@@ -284,26 +269,13 @@ Automatically detects workflow type and executes appropriate phases:
 ---
 
 ### /plan
+**Status**: ARCHIVED - Use `/plan` instead
+
 **Purpose**: Create detailed implementation plans following project standards
 
-**Usage**: `/plan <feature-description> [report-path1] [report-path2] ...`
+**Migration**: This command has been archived. Use `/plan` for planning workflows that include research.
 
-**Type**: primary
-
-**Arguments**:
-- `feature-description`: Feature to implement
-- `report-paths` (optional): Research reports to incorporate
-
-**Agents Used**: plan-architect
-
-**Output**: Implementation plan file in `specs/plans/NNN_plan_name.md`
-
-**Dependent Commands**: report, implement, revise
-
-**See Also**:
-- [/plan Command Guide](../guides/plan-command-guide.md) - Comprehensive usage, research delegation, complexity analysis
-
-**See**: [plan.md](../../commands/plan.md)
+**Archive Location**: `.claude/archive/legacy-workflow-commands/commands/plan.md`
 
 ---
 
@@ -379,25 +351,90 @@ Automatically detects workflow type and executes appropriate phases:
 
 ---
 
-### /revise
-**Purpose**: Revise existing plan or report with new requirements (content modification)
+### /plan
+**Purpose**: Research and create new implementation plan workflow
 
-**Usage**:
-- `/revise <revision-details> [context-path1] ...` (revision-first)
-- `/revise <artifact-path> <revision-details> [context-path1] ...` (path-first)
+**Usage**: `/plan <feature-description> [--file <path>] [--complexity 1-4]`
 
-**Type**: workflow
+**Type**: orchestrator
 
 **Arguments**:
-- `revision-details`: What to change
-- `artifact-path`: Path to plan or report
-- `context-paths` (optional): Additional context (reports, files)
+- `feature-description` (required): Feature to research and plan
+- `--file` (optional): Path to file containing long prompt (archived to specs/NNN_topic/prompts/)
+- `--complexity` (optional): Research depth 1-4 (default: 3)
 
-**Agents Used**: None (direct modification) or plan-architect (complex changes)
+**Agents Used**: research-specialist, research-sub-supervisor, plan-architect
 
-**Output**: Updated plan or report with modifications
+**Output**: Research reports + implementation plan
 
-**See**: [revise.md](../../commands/revise.md)
+**Workflow**: `research → plan → complete`
+
+**See**: [research-plan.md](../../commands/plan.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+
+---
+
+### /research
+**Purpose**: Research-only workflow - Creates comprehensive research reports without planning or implementation
+
+**Usage**: `/research <workflow-description> [--file <path>] [--complexity 1-4]`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `workflow-description` (required): Topic to research
+- `--file` (optional): Path to file containing long prompt (archived to specs/NNN_topic/prompts/)
+- `--complexity` (optional): Research depth 1-4 (default: 2)
+
+**Agents Used**: research-specialist, research-sub-supervisor
+
+**Output**: Research reports only (no plan)
+
+**Workflow**: `research → complete`
+
+**See**: [research-report.md](../../commands/research.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+
+---
+
+### /revise
+**Purpose**: Research and revise existing implementation plan workflow
+
+**Usage**: `/revise "revise plan at <plan-path> based on <new-insights>" [--complexity 1-4]`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `revision-description` (required): Must include plan path and revision details
+- `--complexity` (optional): Research depth 1-4 (default: 2)
+
+**Agents Used**: research-specialist, research-sub-supervisor, plan-architect
+
+**Output**: Research reports + revised plan (with backup)
+
+**Workflow**: `research → plan revision → complete`
+
+**See**: [research-revise.md](../../commands/revise.md), [Workflow Selection Guide](../guides/workflow-type-selection-guide.md)
+
+---
+
+### /research
+**Status**: ARCHIVED - Use `/research` or `/plan` instead
+
+**Purpose**: Research topics and create comprehensive reports
+
+**Migration**: This command has been archived. Use `/research` for research-only workflows or `/plan` for combined research and planning.
+
+**Archive Location**: `.claude/archive/legacy-workflow-commands/commands/research.md`
+
+---
+
+### /revise
+**Status**: ARCHIVED - Use `/revise` instead
+
+**Purpose**: Revise existing plan or report with new requirements (content modification)
+
+**Migration**: This command has been archived. Use `/revise` for plan revision workflows that may require research.
+
+**Archive Location**: `.claude/archive/legacy-workflow-commands/commands/revise.md`
 
 ---
 
@@ -433,8 +470,6 @@ Automatically detects workflow type and executes appropriate phases:
 **Arguments**:
 - `feature/module/file`: Test target
 - `test-type` (optional): Type of test to run
-
-**Agents Used**: test-specialist (test creation if needed)
 
 **Output**: Test results and analysis
 
@@ -481,16 +516,25 @@ Automatically detects workflow type and executes appropriate phases:
 
 ### Primary Commands
 Core development workflow drivers:
-- **/coordinate** - Coordinate multi-agent end-to-end workflows (production orchestrator)
-- **/implement** - Execute implementation plans with testing and commits
-- **/plan** - Create detailed implementation plans
-- **/report** - Research topics and create reports
+- **/build** - Build-from-plan workflow with testing and documentation
+- **/debug** - Debug-focused workflow for root cause analysis
+- **/plan** - Research and create implementation plans
+- **/research** - Research-only workflow for reports
+- **/revise** - Research and revise existing plans
 - **/test** - Run project-specific tests
 - **/test-all** - Run complete test suite
 
+### Archived Commands
+Legacy commands that have been superseded:
+- **/coordinate** - ARCHIVED (use /build, /plan, /research, /debug, or /revise)
+- **/debug** - ARCHIVED (use /debug)
+- **/implement** - ARCHIVED (use /build)
+- **/plan** - ARCHIVED (use /plan)
+- **/research** - ARCHIVED (use /research or /plan)
+- **/revise** - ARCHIVED (use /revise)
+
 ### Support Commands
 Specialized assistance commands:
-- **/debug** - Investigate issues with diagnostic reports
 - **/document** - Update documentation based on code changes
 - **/plan-from-template** - Generate plans from templates
 - **/plan-wizard** - Interactive plan creation wizard
@@ -500,8 +544,7 @@ Specialized assistance commands:
 Execution state and artifact management:
 - **/collapse** - Merge expanded phases/stages back to parent
 - **/expand** - Extract phases/stages to separate files
-- **/revise** - Modify plan or report content
-- **/update** - ⚠️ DEPRECATED (use /revise)
+- **/update** - DEPRECATED (use /revise)
 
 ### Utility Commands
 Maintenance and setup commands:
@@ -517,45 +560,25 @@ Maintenance and setup commands:
 
 ### research-specialist
 Research and codebase analysis:
-- **/coordinate** (research phase)
+- **/plan** (research phase)
+- **/research** (research phase)
 - **/plan-wizard** (optional research phase)
 - **/report**
 
 ### plan-architect
 Structured implementation planning:
-- **/coordinate** (planning phase)
-- **/plan**
+- **/plan** (planning phase)
 - **/revise** (complex plan changes)
+- **/debug** (debug strategy planning)
 
-### code-writer
-Feature implementation:
-- **/coordinate** (implementation phase)
-- **/implement** (phase-by-phase)
-
-### test-specialist
-Test creation and execution:
-- **/coordinate** (testing phase)
-- **/implement** (test execution)
-- **/test** (test creation if needed)
-
-### debug-specialist
+### debug-analyst
 Issue investigation:
-- **/coordinate** (debugging loop)
-- **/debug**
-
-### doc-writer
-Documentation updates:
-- **/coordinate** (documentation phase)
-- **/document**
+- **/debug** (root cause analysis)
+- **/build** (conditional debugging)
 
 ### doc-converter
 Document format conversion:
 - **/convert-docs** (optional)
-
-### github-specialist
-GitHub operations:
-- **/coordinate** (PR creation)
-- **/implement** (PR creation with --create-pr)
 
 ### code-analyzer
 Code quality analysis:
@@ -574,8 +597,9 @@ Code quality analysis:
 ---
 
 **Notes**:
-- Command count: 20 active commands + 1 deprecated
+- Command count: 14 active commands + 6 archived + 1 deprecated
 - All commands support CLAUDE.md standards discovery
 - Commands can invoke specialized agents for complex tasks
 - Progressive plan structure (L0/L1/L2) supported by plan-related commands
 - Artifact organization: specs/ (gitignored), debug/ (tracked)
+- Archived commands available at `.claude/archive/`

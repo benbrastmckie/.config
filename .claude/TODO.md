@@ -2,7 +2,11 @@
 
 ## Implementation Plans
 
-- When the implement subagent is used by coordinate, it is important that completed phases are marked with [COMPLETED] in their section headers, and for expanded plans, all parent plans are updated as well
+- Implement phase break plan /home/benjamin/.config/.claude/specs/775_use_homebenjaminconfigclaudespecs774_for_the_resea/plans/001_option_b_state_machine_then_plan.md
+- directory names
+- clean up readme files
+- archive unused scripts
+- revise usage guides
 
 ## Research
 

@@ -112,13 +112,11 @@ Essential utilities sourced automatically by all orchestration commands via `lib
 - **unified-logger.sh** - Progress logging utilities with structured output
 - **workflow-detection.sh** - Workflow scope detection functions
 - **metadata-extraction.sh** - 99% context reduction through metadata-only passing
-- **context-pruning.sh** - Context management utilities for budget control
 
 ### Workflow Libraries (Orchestration Commands)
-Used by `/orchestrate`, `/coordinate`, `/supervise`, `/implement`:
+Used by `/build`, `/plan`, `/debug`, `/research`, `/revise`:
 
 - **parallel-execution.sh** - Wave-based parallel implementation (40-60% time savings)
-- **dependency-analyzer.sh** - Wave-based execution analysis
 - **complexity-utils.sh** - Complexity analysis and threshold detection
 - **adaptive-planning-logger.sh** - Structured logging for adaptive events
 - **plan-core-bundle.sh** - Core plan parsing functions (phases, stages, metadata)
@@ -155,7 +153,7 @@ Feature-specific utilities that can be excluded without breaking core functional
 ```bash
 # Orchestration command (uses library-sourcing.sh)
 source .claude/lib/library-sourcing.sh
-source_required_libraries "dependency-analyzer.sh" || exit 1
+source_required_libraries || exit 1
 
 # Specialized command (direct sourcing)
 source .claude/lib/convert-core.sh

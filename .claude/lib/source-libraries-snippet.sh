@@ -34,11 +34,11 @@ source_required_libraries "workflow-detection.sh" "unified-logger.sh" "checkpoin
 # - Phase 0 (Location):        unified-location-detection.sh
 # - Phase 1 (Research):        unified-logger.sh
 # - Phase 2 (Planning):        checkpoint-utils.sh, unified-logger.sh
-# - Phase 3 (Implementation):  dependency-analyzer.sh, unified-logger.sh, checkpoint-utils.sh
+# - Phase 3 (Implementation):  unified-logger.sh, checkpoint-utils.sh
 # - Phase 4 (Testing):         unified-logger.sh, checkpoint-utils.sh
 # - Phase 5 (Debug):           unified-logger.sh, checkpoint-utils.sh
-# - Phase 6 (Documentation):   unified-logger.sh, context-pruning.sh
+# - Phase 6 (Documentation):   unified-logger.sh
 # - Workflow Detection:        workflow-detection.sh
 #
 # Performance Impact:
-# - ~0.1s per source × 12 blocks = ~1.2s total overhead (acceptable trade-off)
+# - ~0.1s per source ï¿½ 12 blocks = ~1.2s total overhead (acceptable trade-off)

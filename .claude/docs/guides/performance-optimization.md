@@ -1313,7 +1313,7 @@ echo "Detailed info available: $([ -n "$DETAILED_INFO" ] && echo 'Yes' || echo '
 - [Metadata Extraction Pattern](../concepts/patterns/metadata-extraction.md) - Extraction techniques
 - [Parallel Execution Pattern](../concepts/patterns/parallel-execution.md) - Wave-based execution
 - [Context Management Pattern](../concepts/patterns/context-management.md) - Context reduction techniques
-- [Hierarchical Agents Guide](../concepts/hierarchical_agents.md) - Multi-agent architecture
+- [Hierarchical Agents Guide](../concepts/hierarchical-agents.md) - Multi-agent architecture
 - [Library API Reference](../reference/library-api.md) - Utility library documentation
 - [Command Development Guide](./command-development-guide.md) - Command optimization patterns
 - [Agent Development Guide](./agent-development-guide.md) - Agent efficiency patterns

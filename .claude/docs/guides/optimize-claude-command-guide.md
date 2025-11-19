@@ -1,5 +1,7 @@
 # /optimize-claude Command Guide
 
+> **Command File**: [.claude/commands/optimize-claude.md](../../commands/optimize-claude.md)
+
 ## Overview
 
 The `/optimize-claude` command analyzes your CLAUDE.md file and .claude/docs/ directory structure to generate an optimization plan. It uses a multi-stage agent workflow to identify bloated sections, find integration opportunities, and create a detailed implementation plan.

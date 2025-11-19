@@ -6,6 +6,44 @@
 
 MANDATORY VERIFICATION checkpoints with fallback file creation mechanisms achieve 100% file creation rates.
 
+## Terminology Clarification
+
+**Critical Distinction**: "Verification fallback" and "creation fallback" have opposite meanings in fail-fast philosophy.
+
+**Verification Fallback** (✓ ALLOWED - This Pattern):
+- **Purpose**: Error DETECTION through verification checkpoints
+- **Action**: Verify file exists after agent completion
+- **On Failure**: Report clear diagnostics, terminate workflow
+- **Philosophy**: Exposes agent behavioral issues for developer to fix
+- **Result**: Proper agent implementation, not orchestrator compensation
+
+**Creation Fallback** (✗ PROHIBITED - Error Masking):
+- **Purpose**: Error HIDING through automatic file creation
+- **Action**: Silently create placeholder files when agent fails
+- **On Failure**: Masks problem, workflow continues with empty/invalid files
+- **Philosophy**: Hides agent behavioral issues from developer
+- **Result**: Agent failures go unnoticed, technical debt accumulates
+
+**This Pattern Uses**: Verification fallback (allowed detection) NOT creation fallback (prohibited masking).
+
+**Example Reconciliation**:
+```bash
+# ✓ GOOD - Verification Fallback (Detection)
+if [ ! -f "$EXPECTED_PATH" ]; then
+  echo "CRITICAL: File missing at $EXPECTED_PATH"
+  echo "TROUBLESHOOTING: Review agent behavioral file and fix file creation logic"
+  exit 1  # Fail fast - expose the problem
+fi
+
+# ✗ BAD - Creation Fallback (Masking)
+if [ ! -f "$EXPECTED_PATH" ]; then
+  touch "$EXPECTED_PATH"  # Silently mask agent failure
+  echo "Created placeholder"  # No diagnostics, problem hidden
+fi
+```
+
+**See Also**: [Defensive Programming Patterns](defensive-programming.md) → Section 2 (Null Safety) for additional fail-fast examples.
+
 ## Definition
 
 Verification and Fallback is a pattern where commands and agents validate file creation after every write operation and implement fallback mechanisms when files don't exist. This eliminates file creation failures by catching and correcting missing files immediately rather than discovering failures at workflow end.

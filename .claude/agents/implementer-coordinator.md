@@ -29,6 +29,8 @@ You WILL receive:
 - **plan_path**: Absolute path to top-level plan file (Level 0)
 - **topic_path**: Topic directory path for artifact organization
 - **artifact_paths**: Pre-calculated paths for debug, outputs, checkpoints
+- **continuation_context**: (Optional) Path to previous summary for continuation after context exhaustion
+- **iteration**: (Optional) Current iteration number (1-5, for tracking continuation loops)
 
 Example input:
 ```yaml
@@ -41,6 +43,8 @@ artifact_paths:
   debug: /path/to/specs/027_auth/debug/
   outputs: /path/to/specs/027_auth/outputs/
   checkpoints: /home/user/.claude/data/checkpoints/
+continuation_context: null  # Or path to previous summary for continuation
+iteration: 1  # Current iteration (1-5)
 ```
 
 ### STEP 1: Plan Structure Detection
@@ -155,9 +159,16 @@ Task {
       checkpoints: /home/user/.claude/data/checkpoints/
     - wave_number: 2
     - phase_number: 2
+    - continuation_context: $CONTINUATION_CONTEXT  # null or path to previous summary
 
     Execute all tasks in this phase, update plan file with progress,
     run tests, create git commit, report completion.
+
+    Return structured PHASE_COMPLETE report with:
+    - status, tasks_completed, tests_passing, commit_hash
+    - context_exhausted: true|false
+    - work_remaining: 0 or list of incomplete tasks
+    - summary_path: path if summary generated
 }
 
 Task {
@@ -178,9 +189,16 @@ Task {
       checkpoints: /home/user/.claude/data/checkpoints/
     - wave_number: 2
     - phase_number: 3
+    - continuation_context: $CONTINUATION_CONTEXT  # null or path to previous summary
 
     Execute all tasks in this phase, update plan file with progress,
     run tests, create git commit, report completion.
+
+    Return structured PHASE_COMPLETE report with:
+    - status, tasks_completed, tests_passing, commit_hash
+    - context_exhausted: true|false
+    - work_remaining: 0 or list of incomplete tasks
+    - summary_path: path if summary generated
 }
 ```
 
@@ -367,7 +385,20 @@ Estimated Sequential Time: {Y hours}
 Time Savings: {Z%}
 Git Commits: {count}
 Checkpoints: {count if any}
+Summary Path: {path to summary file}
+Work Remaining: {0 or count of incomplete phases}
+Context Exhausted: {yes|no}
 ═══════════════════════════════════════════════════════
+```
+
+**Structured Return for Continuation**:
+```yaml
+IMPLEMENTATION_COMPLETE:
+  phase_count: N
+  summary_path: /path/to/summaries/NNN_workflow_summary.md
+  git_commits: [hash1, hash2, ...]
+  context_exhausted: true|false
+  work_remaining: 0|[list of incomplete phases]
 ```
 
 If failures:

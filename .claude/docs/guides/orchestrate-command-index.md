@@ -39,7 +39,7 @@ This guide has been split into 2 files for easier navigation.
 - [/orchestrate Command](../../commands/orchestrate.md) - Executable command file
 - [Orchestration Best Practices](orchestration-best-practices.md)
 - [State-Based Orchestration](../architecture/state-based-orchestration-overview.md)
-- [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md)
+- [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md)
 
 ## Migration Note
 

@@ -23,7 +23,7 @@ Task-focused how-to guides for specific development activities. Use this section
 - To learn how to coordinate multiple agents using behavioral injection
 - When implementing metadata-only context passing (95% context reduction)
 
-**See Also**: [Command Reference](../reference/command-reference.md), [Command Patterns](command-patterns.md), [Command Architecture Standards](../reference/command_architecture_standards.md), [Hierarchical Agents](../concepts/hierarchical_agents.md)
+**See Also**: [Command Reference](../reference/command-reference.md), [Command Patterns](command-patterns.md), [Command Architecture Standards](../reference/command_architecture_standards.md), [Hierarchical Agents](../concepts/hierarchical-agents.md)
 
 ---
 
@@ -37,7 +37,7 @@ Task-focused how-to guides for specific development activities. Use this section
 - When designing agents compatible with metadata extraction utilities
 - To ensure agents never invoke slash commands for artifact creation
 
-**See Also**: [Agent Reference](../reference/agent-reference.md), [Command Development Guide](command-development-guide.md), [Hierarchical Agents](../concepts/hierarchical_agents.md), [Troubleshooting](../troubleshooting/agent-delegation-troubleshooting.md)
+**See Also**: [Agent Reference](../reference/agent-reference.md), [Command Development Guide](command-development-guide.md), [Hierarchical Agents](../concepts/hierarchical-agents.md), [Troubleshooting](../troubleshooting/agent-delegation-troubleshooting.md)
 
 ---
 
@@ -50,7 +50,7 @@ Task-focused how-to guides for specific development activities. Use this section
 - When optimizing multi-agent workflows for context efficiency
 - To debug agent invocation failures or context consumption issues
 
-**See Also**: [Creating Agents](agent-development-guide.md), [Agent Reference](../reference/agent-reference.md), [Hierarchical Agents](../concepts/hierarchical_agents.md)
+**See Also**: [Creating Agents](agent-development-guide.md), [Agent Reference](../reference/agent-reference.md), [Hierarchical Agents](../concepts/hierarchical-agents.md)
 
 ---
 
@@ -314,7 +314,7 @@ Currently, command guides are being created following the new separation pattern
 1. Review [Agent Reference](../reference/agent-reference.md) for available agents
 2. Follow [Using Agents](agent-development-guide.md) for correct invocation pattern
 3. Reference [Command Patterns](command-patterns.md) for agent chains
-4. Optimize with [Hierarchical Agents](../concepts/hierarchical_agents.md)
+4. Optimize with [Hierarchical Agents](../concepts/hierarchical-agents.md)
 
 ### Add Standards Discovery
 1. Review [CLAUDE.md Section Schema](../reference/claude-md-section-schema.md)

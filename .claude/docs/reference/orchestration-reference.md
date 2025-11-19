@@ -972,7 +972,7 @@ Task {
 
 - [Agent Delegation Troubleshooting](../troubleshooting/agent-delegation-troubleshooting.md) - Diagnose and fix delegation issues
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Correct agent invocation pattern
-- [Hierarchical Agent Architecture](../concepts/hierarchical_agents.md) - System overview and metadata extraction
+- [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md) - System overview and metadata extraction
 - [Command Development Guide](../guides/command-development-guide.md) - Creating new orchestration commands
 - [Workflow Phases Reference](./workflow-phases.md) - Detailed phase documentation
 - [Library API Reference](./library-api.md) - Unified location detection and utilities

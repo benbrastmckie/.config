@@ -23,10 +23,6 @@
 #   4. unified-logger.sh - Progress logging utilities
 #   5. unified-location-detection.sh - Project structure detection
 #   6. metadata-extraction.sh - Report/plan metadata extraction
-#   7. context-pruning.sh - Context management utilities
-#
-# Optional Libraries:
-#   - dependency-analyzer.sh - Wave-based execution analysis (for /coordinate)
 #
 # Deduplication:
 #   - Automatically removes duplicate library names before sourcing
@@ -52,7 +48,6 @@ source_required_libraries() {
     "unified-logger.sh"
     "unified-location-detection.sh"
     "metadata-extraction.sh"
-    "context-pruning.sh"
   )
 
   # Add optional libraries from arguments
