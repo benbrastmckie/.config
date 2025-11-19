@@ -606,6 +606,69 @@ fi
 sm_init "$WORKFLOW_DESC" "coordinate" || exit 1
 ```
 
+### Pattern 8: Block Count Minimization
+
+**Problem**: Each bash block creates a separate display element in Claude Code output, causing visual noise and degraded user experience.
+
+**Solution**: Consolidate related operations into fewer blocks. Target 2-3 blocks per command.
+
+**Target Block Structure**:
+
+| Block Type | Purpose | Operations |
+|-----------|---------|------------|
+| **Setup** | Initialization | Argument capture, library sourcing, validation, state machine init, path allocation |
+| **Execute** | Main workflow | Core processing, agent invocations, state transitions |
+| **Cleanup** | Completion | Final validation, completion signal, summary output |
+
+**Example Consolidation**:
+```bash
+# ❌ ANTI-PATTERN: 6 separate blocks
+Block 1: mkdir output dir
+Block 2: source libraries
+Block 3: validate config
+Block 4: init state machine
+Block 5: allocate workflow ID
+Block 6: persist state
+
+# ✓ RECOMMENDED: 2 consolidated blocks
+Block 1 (Setup):
+  mkdir -p "$DIR" 2>/dev/null
+  source "${LIB}/state-machine.sh" 2>/dev/null || exit 1
+  source "${LIB}/persistence.sh" 2>/dev/null || exit 1
+  validate_config || exit 1
+  sm_init "$DESC" "$CMD" "$TYPE" || exit 1
+  WORKFLOW_ID=$(allocate_workflow_id) || exit 1
+  append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID" || exit 1
+  echo "Setup complete: $WORKFLOW_ID"
+
+Block 2 (Execute):
+  # Main workflow logic
+```
+
+**Consolidation Rules**:
+1. **Combine consecutive operations** that don't require intermediate verification
+2. **Separate operations** that need explicit checkpoints or error handling
+3. **Keep Task invocations** in their own conceptual section for response visibility
+4. **Suppress verbose output** within consolidated blocks
+
+**Benefits**:
+- **50-67% reduction** in display noise (6 blocks to 2-3)
+- **Faster execution** (fewer subprocess spawns)
+- **Cleaner output** (single summary per block)
+- **Easier debugging** (logical groupings)
+
+**When to Use**:
+- New command development
+- Refactoring commands with excessive block counts
+- Commands with noisy display output
+
+**When NOT to Use**:
+- Blocks with distinct error recovery requirements
+- Operations requiring explicit user confirmation between steps
+- Task tool invocations that need visible response boundaries
+
+See [Output Formatting Standards](../reference/output-formatting-standards.md) for complete output suppression and consolidation patterns.
+
 **Rationale**:
 - `set -euo pipefail` does NOT exit on function failures (only simple commands)
 - Output redirection (`>/dev/null`) hides critical error messages

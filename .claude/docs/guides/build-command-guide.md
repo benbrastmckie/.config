@@ -101,6 +101,74 @@ The `/build` command executes existing implementation plans through a complete b
    - Tests fail → Debug phase → Complete (manual retry needed)
 6. **Output**: Implemented features with git commits per phase
 
+### Phase Update Mechanism
+
+After the implementer-coordinator completes all phases, the build command automatically marks phases as complete in the plan file:
+
+1. **Checkbox Updates**: All task checkboxes in completed phases are marked `[x]`
+2. **[COMPLETE] Markers**: Phase headings receive `[COMPLETE]` suffix (e.g., `### Phase 1: Setup [COMPLETE]`)
+3. **Hierarchy Synchronization**: Updates propagate to phase files and stage files in expanded plans (Level 1/2)
+4. **Verification**: Checkbox consistency is verified after updates
+
+**Implementation Details**:
+- Uses `checkbox-utils.sh` functions: `mark_phase_complete()`, `add_complete_marker()`, `verify_checkbox_consistency()`
+- Fallback to spec-updater agent if direct updates fail
+- Phase completion status persisted to workflow state for recovery
+
+**Plan File Before**:
+```markdown
+### Phase 1: Setup
+
+Tasks:
+- [ ] Create project structure
+- [ ] Initialize dependencies
+```
+
+**Plan File After**:
+```markdown
+### Phase 1: Setup [COMPLETE]
+
+Tasks:
+- [x] Create project structure
+- [x] Initialize dependencies
+```
+
+### Progress Tracking During Execution
+
+The build command provides real-time visibility into phase execution through status markers:
+
+**Marker Lifecycle**:
+```
+[NOT STARTED] --> [IN PROGRESS] --> [COMPLETE]
+```
+
+**How it Works**:
+
+1. **Plan Creation**: When /plan creates a plan, all phases have `[NOT STARTED]` markers
+2. **Build Start**: First phase is marked `[IN PROGRESS]` when build begins
+3. **Phase Completion**: As each phase completes, markers transition:
+   - Current phase: `[IN PROGRESS]` -> `[COMPLETE]`
+   - Next phase: `[NOT STARTED]` -> `[IN PROGRESS]`
+
+**Visual Progress Example**:
+
+```markdown
+# During Phase 2 execution:
+### Phase 1: Setup [COMPLETE]
+### Phase 2: Implementation [IN PROGRESS]
+### Phase 3: Testing [NOT STARTED]
+
+# After Phase 2 completes:
+### Phase 1: Setup [COMPLETE]
+### Phase 2: Implementation [COMPLETE]
+### Phase 3: Testing [IN PROGRESS]
+```
+
+**Legacy Plan Support**:
+Plans created without status markers receive automatic `[NOT STARTED]` markers when /build runs, ensuring all plans benefit from progress tracking.
+
+**Related**: See [Plan Progress Tracking](../reference/plan-progress-tracking.md) for complete documentation of the marker system and utility functions.
+
 ---
 
 ## Usage Examples
@@ -462,6 +530,60 @@ npm test --verbose
 
 # Re-run build
 /build plan.md 2  # Resume from test phase
+```
+
+#### Issue 7: Phase Updates Not Applied to Plan File
+
+**Symptoms**:
+- Build completes but plan file still shows unchecked tasks `[ ]`
+- No `[COMPLETE]` markers on phase headings
+- Warning: "Phase update failed (will use fallback)"
+
+**Cause**:
+- checkbox-utils.sh not found or failed to source
+- Phase heading format doesn't match expected pattern `### Phase N:`
+- File permission issues preventing updates
+
+**Solution**:
+```bash
+# Verify checkbox-utils.sh exists
+ls -la .claude/lib/checkbox-utils.sh
+
+# Test checkbox functions manually
+source .claude/lib/checkbox-utils.sh
+mark_phase_complete "/path/to/plan.md" 1
+
+# Check file permissions
+ls -la /path/to/plan.md
+
+# Manually add [COMPLETE] marker if needed
+sed -i 's/^### Phase 1:/### Phase 1: [COMPLETE]/g' /path/to/plan.md
+```
+
+#### Issue 8: Phase Hierarchy Not Synchronized
+
+**Symptoms**:
+- Main plan shows phase complete but phase file shows tasks incomplete
+- verify_checkbox_consistency() warns about mismatches
+
+**Cause**:
+Expanded plan structure (Level 1/2) with phase files that weren't updated during mark_phase_complete.
+
+**Solution**:
+```bash
+# Verify plan structure
+source .claude/lib/checkbox-utils.sh
+
+# Check for expanded phase files
+ls .claude/specs/*/plans/*/phase_*.md
+
+# Manually propagate updates
+for phase_file in .claude/specs/topic/plans/planname/phase_*.md; do
+  sed -i 's/^- \[ \]/- [x]/g' "$phase_file"
+done
+
+# Verify consistency
+verify_checkbox_consistency "/path/to/plan.md" 1
 ```
 
 ### Debug Mode

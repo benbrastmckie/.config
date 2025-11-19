@@ -1,6 +1,6 @@
 ---
 allowed-tools: Task, TodoWrite, Bash, Read, Grep, Glob
-argument-hint: <workflow-description>
+argument-hint: <workflow-description> [--file <path>] [--complexity 1-4]
 description: Research-only workflow - Creates comprehensive research reports without planning or implementation
 command-type: primary
 dependent-agents:
@@ -20,11 +20,11 @@ YOU ARE EXECUTING a research-only workflow that creates comprehensive research r
 **Terminal State**: research (after research phase complete)
 **Expected Output**: Research reports in .claude/specs/NNN_topic/reports/
 
-## Part 1: Capture Workflow Description
+## Block 1: Consolidated Setup
 
 **EXECUTE NOW**: The user invoked `/research "<workflow-description>"`. Capture that description.
 
-In the **small bash block below**, replace `YOUR_WORKFLOW_DESCRIPTION_HERE` with the actual workflow description (keeping the quotes).
+In the **bash block below**, replace `YOUR_WORKFLOW_DESCRIPTION_HERE` with the actual workflow description (keeping the quotes).
 
 **Example**: If user ran `/research "authentication patterns in codebase"`, change:
 - FROM: `echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "$TEMP_FILE"`
@@ -34,47 +34,20 @@ Execute this bash block with your substitution:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
-# SUBSTITUTE THE WORKFLOW DESCRIPTION IN THE LINE BELOW
-# CRITICAL: Replace YOUR_WORKFLOW_DESCRIPTION_HERE with the actual workflow description from the user
+
+# === CAPTURE WORKFLOW DESCRIPTION ===
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
-# Use timestamp-based filename for concurrent execution safety
 TEMP_FILE="${HOME}/.claude/tmp/research_arg_$(date +%s%N).txt"
+# SUBSTITUTE THE WORKFLOW DESCRIPTION IN THE LINE BELOW
 echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "$TEMP_FILE"
-# Save temp file path for Part 2 to read
 echo "$TEMP_FILE" > "${HOME}/.claude/tmp/research_arg_path.txt"
-echo "Workflow description captured to $TEMP_FILE"
-```
 
-## Part 2: Read and Validate Workflow Description
-
-**EXECUTE NOW**: Read the captured description and validate:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-
-# Read workflow description from file (written in Part 1)
-RESEARCH_DESC_PATH_FILE="${HOME}/.claude/tmp/research_arg_path.txt"
-
-if [ -f "$RESEARCH_DESC_PATH_FILE" ]; then
-  RESEARCH_DESC_FILE=$(cat "$RESEARCH_DESC_PATH_FILE")
-else
-  # Fallback to legacy fixed filename for backward compatibility
-  RESEARCH_DESC_FILE="${HOME}/.claude/tmp/research_arg.txt"
-fi
-
-if [ -f "$RESEARCH_DESC_FILE" ]; then
-  WORKFLOW_DESCRIPTION=$(cat "$RESEARCH_DESC_FILE" 2>/dev/null || echo "")
-else
-  echo "ERROR: Workflow description file not found: $RESEARCH_DESC_FILE"
-  echo "This usually means Part 1 (argument capture) didn't execute."
-  echo "Usage: /research \"<workflow description>\""
-  exit 1
-fi
+# === READ AND VALIDATE ===
+WORKFLOW_DESCRIPTION=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
 
 if [ -z "$WORKFLOW_DESCRIPTION" ]; then
-  echo "ERROR: Workflow description is empty"
-  echo "File exists but contains no content: $RESEARCH_DESC_FILE"
-  echo "Usage: /research \"<workflow description>\""
+  echo "ERROR: Workflow description is empty" >&2
+  echo "Usage: /research \"<workflow description>\"" >&2
   exit 1
 fi
 
@@ -82,38 +55,44 @@ fi
 DEFAULT_COMPLEXITY=2
 RESEARCH_COMPLEXITY="$DEFAULT_COMPLEXITY"
 
-# Support both embedded and explicit flag formats:
-# - Embedded: /research "description --complexity 4"
-# - Explicit: /research --complexity 4 "description"
 if [[ "$WORKFLOW_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
   RESEARCH_COMPLEXITY="${BASH_REMATCH[1]}"
-  # Strip flag from workflow description
   WORKFLOW_DESCRIPTION=$(echo "$WORKFLOW_DESCRIPTION" | sed 's/--complexity[[:space:]]*[1-4]//' | xargs)
 fi
 
-# Validation: reject invalid complexity values
 if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
   echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
   exit 1
 fi
 
-echo "=== Research-Only Workflow ==="
-echo "Description: $WORKFLOW_DESCRIPTION"
-echo "Complexity: $RESEARCH_COMPLEXITY"
-echo ""
-```
+# Parse optional --file flag for long prompts
+ORIGINAL_PROMPT_FILE_PATH=""
+if [[ "$WORKFLOW_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
+  ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
+  # Convert to absolute path if relative
+  if [[ ! "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]; then
+    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+  fi
+  # Validate file exists
+  if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+    echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    exit 1
+  fi
+  # Read file content into WORKFLOW_DESCRIPTION
+  WORKFLOW_DESCRIPTION=$(cat "$ORIGINAL_PROMPT_FILE_PATH")
+  if [ -z "$WORKFLOW_DESCRIPTION" ]; then
+    echo "WARNING: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
+  fi
+elif [[ "$WORKFLOW_DESCRIPTION" =~ --file ]]; then
+  echo "ERROR: --file flag requires a path argument" >&2
+  echo "Usage: /research --file /path/to/prompt.md" >&2
+  exit 1
+fi
 
-## Part 3: State Machine Initialization
-
-**EXECUTE NOW**: Initialize the state machine and source required libraries:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-# Detect project directory (bootstrap pattern)
+# === DETECT PROJECT DIRECTORY ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
-  # Fallback: search upward for .claude/ directory
   current_dir="$(pwd)"
   while [ "$current_dir" != "/" ]; do
     if [ -d "$current_dir/.claude" ]; then
@@ -126,191 +105,86 @@ fi
 
 if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
   echo "ERROR: Failed to detect project directory" >&2
-  echo "DIAGNOSTIC: No git repository found and no .claude/ directory in parent tree" >&2
   exit 1
 fi
 
 export CLAUDE_PROJECT_DIR
 
-# Source libraries in dependency order (Standard 15)
-# 1. State machine foundation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-# 2. Library version checking
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
-# 3. Error handling
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
-# 4. Unified location detection for atomic topic allocation
-if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>&1; then
-  echo "ERROR: Failed to source unified-location-detection.sh"
-  echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
+# === SOURCE LIBRARIES ===
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
-fi
-# 5. Workflow initialization for semantic slug generation (Plan 777)
-if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" 2>&1; then
-  echo "ERROR: Failed to source workflow-initialization.sh"
-  echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-initialization.sh" >&2
   exit 1
-fi
+}
 
-# Verify library versions (fail-fast if incompatible)
+# Verify library versions
 check_library_requirements "$(cat <<'EOF'
 workflow-state-machine.sh: ">=2.0.0"
 state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
 
-# Hardcode workflow type (replaces LLM classification)
+# === INITIALIZE STATE ===
 WORKFLOW_TYPE="research-only"
 TERMINAL_STATE="research"
 COMMAND_NAME="research"
 
-# Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
 WORKFLOW_ID="research_$(date +%s)"
 STATE_ID_FILE="${HOME}/.claude/tmp/research_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
-# Initialize workflow state BEFORE sm_init (correct initialization order)
 init_workflow_state "$WORKFLOW_ID"
 
-# Initialize state machine with 5 parameters and return code verification
-# Parameters: description, command_name, workflow_type, research_complexity, research_topics_json
-if ! sm_init \
-  "$WORKFLOW_DESCRIPTION" \
-  "$COMMAND_NAME" \
-  "$WORKFLOW_TYPE" \
-  "$RESEARCH_COMPLEXITY" \
-  "[]" 2>&1; then  # Empty topics JSON array (populated during research)
+if ! sm_init "$WORKFLOW_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1; then
   echo "ERROR: State machine initialization failed" >&2
-  echo "DIAGNOSTIC Information:" >&2
-  echo "  - Workflow Description: $WORKFLOW_DESCRIPTION" >&2
-  echo "  - Command Name: $COMMAND_NAME" >&2
-  echo "  - Workflow Type: $WORKFLOW_TYPE" >&2
-  echo "  - Research Complexity: $RESEARCH_COMPLEXITY" >&2
-  echo "POSSIBLE CAUSES:" >&2
-  echo "  - Library version incompatibility (require workflow-state-machine.sh >=2.0.0)" >&2
-  echo "  - State file corruption in ~/.claude/data/state/" >&2
   exit 1
 fi
 
-echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
-echo ""
-
-# Persist CLAUDE_PROJECT_DIR for subsequent bash blocks
-append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
-```
-
-## Part 3a: Workflow Classification (Semantic Slug Generation)
-
-**EXECUTE NOW**: USE the Task tool to invoke the workflow-classifier agent for semantic topic directory naming.
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Classify workflow for ${WORKFLOW_DESCRIPTION}"
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/workflow-classifier.md
-
-    You are classifying a workflow for: research command
-
-    **Inputs**:
-    - Workflow Description: ${WORKFLOW_DESCRIPTION}
-    - Command Name: research
-
-    Execute classification according to behavioral guidelines and return:
-    CLASSIFICATION_COMPLETE: {JSON classification result}
-  "
-}
-
-**EXECUTE NOW**: Parse the classification result:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-
-# Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-
-# Load WORKFLOW_ID from file
-STATE_ID_FILE="${HOME}/.claude/tmp/research_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-  export WORKFLOW_ID
-  load_workflow_state "$WORKFLOW_ID" false
-fi
-
-# Parse CLASSIFICATION_COMPLETE from previous Task output
-CLASSIFICATION_JSON="${CLASSIFICATION_RESULT:-}"
-
-# If classification failed or wasn't captured, set empty for fallback behavior
-if [ -z "$CLASSIFICATION_JSON" ]; then
-  echo "Note: Classification result not captured, using fallback slug generation"
-  CLASSIFICATION_JSON=""
-fi
-
-# Persist classification for initialize_workflow_paths
-append_workflow_state "CLASSIFICATION_JSON" "$CLASSIFICATION_JSON"
-
-echo "✓ Classification complete"
-echo ""
-```
-
-## Part 3b: Research Phase Execution
-
-**EXECUTE NOW**: Transition to research state and allocate topic directory:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-# Transition to research state with return code verification
+# === TRANSITION TO RESEARCH AND SETUP PATHS ===
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
   echo "ERROR: State transition to RESEARCH failed" >&2
-  echo "DIAGNOSTIC Information:" >&2
-  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
-  echo "  - Attempted Transition: → RESEARCH" >&2
-  echo "  - Workflow Type: research-only" >&2
-  echo "  - Research topic: $WORKFLOW_DESCRIPTION" >&2
-  echo "POSSIBLE CAUSES:" >&2
-  echo "  - State machine not initialized properly" >&2
-  echo "  - Workflow type wrong (should be research-only)" >&2
-  echo "  - State file corruption" >&2
-  echo "TROUBLESHOOTING:" >&2
-  echo "  - Verify sm_init called successfully" >&2
-  echo "  - Check workflow type configuration" >&2
-  exit 1
-fi
-echo "=== Phase 1: Research ==="
-echo ""
-
-# Load classification result from state (persisted in Part 3a)
-CLASSIFICATION_JSON="${CLASSIFICATION_JSON:-}"
-
-# Initialize workflow paths using semantic slug generation (Plan 777)
-# This uses the three-tier fallback: LLM slug -> extract_significant_words -> sanitize_topic_name
-if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "research-only" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"; then
-  echo "ERROR: Failed to initialize workflow paths"
-  echo "DIAGNOSTIC: Check initialize_workflow_paths() in workflow-initialization.sh"
   exit 1
 fi
 
-# Map initialize_workflow_paths exports to expected variables
-# The function exports: TOPIC_PATH, TOPIC_NAME, TOPIC_NUM, SPECS_ROOT, etc.
-TOPIC_DIR="$TOPIC_PATH"
+# Initialize workflow paths (uses fallback slug generation)
+if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "research-only" "$RESEARCH_COMPLEXITY" ""; then
+  echo "ERROR: Failed to initialize workflow paths" >&2
+  exit 1
+fi
+
 RESEARCH_DIR="${TOPIC_PATH}/reports"
-TOPIC_SLUG="$TOPIC_NAME"
-TOPIC_NUMBER="$TOPIC_NUM"
-
-# Create reports subdirectory (topic root already created by initialize_workflow_paths)
 mkdir -p "$RESEARCH_DIR"
 
-# Persist variables across bash blocks (subprocess isolation)
+# === ARCHIVE PROMPT FILE (if --file was used) ===
+ARCHIVED_PROMPT_PATH=""
+if [ -n "$ORIGINAL_PROMPT_FILE_PATH" ] && [ -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+  mkdir -p "${TOPIC_PATH}/prompts"
+  ARCHIVED_PROMPT_PATH="${TOPIC_PATH}/prompts/$(basename "$ORIGINAL_PROMPT_FILE_PATH")"
+  mv "$ORIGINAL_PROMPT_FILE_PATH" "$ARCHIVED_PROMPT_PATH"
+  echo "Prompt file archived: $ARCHIVED_PROMPT_PATH"
+fi
+
+# === PERSIST FOR BLOCK 2 ===
+append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
 append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
-append_workflow_state "TOPIC_SLUG" "$TOPIC_SLUG"
-append_workflow_state "TOPIC_NUMBER" "$TOPIC_NUMBER"
+append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "TOPIC_NAME" "$TOPIC_NAME"
 append_workflow_state "WORKFLOW_DESCRIPTION" "$WORKFLOW_DESCRIPTION"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
-append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "$ORIGINAL_PROMPT_FILE_PATH"
+append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
+
+echo "Setup complete: $WORKFLOW_ID (research-only, complexity: $RESEARCH_COMPLEXITY)"
+echo "Research directory: $RESEARCH_DIR"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
@@ -329,116 +203,88 @@ Task {
     - Research Complexity: ${RESEARCH_COMPLEXITY}
     - Output Directory: ${RESEARCH_DIR}
     - Workflow Type: research-only
+    - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
+    - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
+
+    If an archived prompt file is provided (not 'none'), read it for complete context.
 
     Execute research according to behavioral guidelines and return completion signal:
     REPORT_CREATED: [path to created report]
   "
 }
 
-**EXECUTE NOW**: Verify research artifacts were created:
+## Block 2: Verification and Completion
 
-```bash
-set +H  # CRITICAL: Disable history expansion
-# MANDATORY VERIFICATION
-echo "Verifying research artifacts..."
-
-if [ ! -d "$RESEARCH_DIR" ]; then
-  echo "ERROR: Research phase failed to create reports directory" >&2
-  echo "DIAGNOSTIC: Expected directory: $RESEARCH_DIR" >&2
-  echo "SOLUTION: Check research-specialist agent logs for failures" >&2
-  exit 1
-fi
-
-if [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
-  echo "ERROR: Research phase failed to create report files" >&2
-  echo "DIAGNOSTIC: Directory exists but no .md files found: $RESEARCH_DIR" >&2
-  echo "SOLUTION: Check research-specialist agent behavioral file compliance" >&2
-  exit 1
-fi
-
-# Verify file size (minimum 100 bytes)
-UNDERSIZED_FILES=$(find "$RESEARCH_DIR" -name '*.md' -type f -size -100c 2>/dev/null)
-if [ -n "$UNDERSIZED_FILES" ]; then
-  echo "ERROR: Research report(s) too small (< 100 bytes)" >&2
-  echo "DIAGNOSTIC: Files: $UNDERSIZED_FILES" >&2
-  exit 1
-fi
-
-REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
-
-# CHECKPOINT REPORTING
-echo ""
-echo "CHECKPOINT: Research phase complete"
-echo "- Workflow type: research-only"
-echo "- Research complexity: $RESEARCH_COMPLEXITY"
-echo "- Reports created: $REPORT_COUNT in $RESEARCH_DIR"
-echo "- All files verified: ✓"
-echo "- Proceeding to: Completion"
-echo ""
-
-# Persist report count for completion summary
-append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
-
-# Persist completed state (call after every sm_transition) with return code verification
-if ! save_completed_states_to_state 2>&1; then
-  echo "ERROR: Failed to persist completed state" >&2
-  exit 1
-fi
-```
-
-## Part 4: Completion & Cleanup
-
-**EXECUTE NOW**: Complete the workflow and display summary:
+**EXECUTE NOW**: Verify research artifacts and complete workflow:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+# === LOAD STATE ===
 STATE_ID_FILE="${HOME}/.claude/tmp/research_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
-  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  echo "ERROR: WORKFLOW_ID file not found" >&2
   exit 1
 fi
 WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 export WORKFLOW_ID
 
-# Re-source required libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+# Detect project directory
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
 
-# Load workflow state from Part 3 (subprocess isolation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+
 load_workflow_state "$WORKFLOW_ID" false
 
-# Research-only workflow: terminate after research with return code verification
-if ! sm_transition "$STATE_COMPLETE" 2>&1; then
-  echo "ERROR: State transition to COMPLETE failed" >&2
-  echo "DIAGNOSTIC Information:" >&2
-  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
-  echo "  - Attempted Transition: → COMPLETE" >&2
-  echo "  - Workflow Type: research-only" >&2
-  echo "  - Terminal State: complete" >&2
-  echo "POSSIBLE CAUSES:" >&2
-  echo "  - Research phase did not complete" >&2
-  echo "  - State not persisted after research" >&2
-  echo "  - Terminal state misconfigured" >&2
-  echo "TROUBLESHOOTING:" >&2
-  echo "  - Check research checkpoint output" >&2
-  echo "  - Verify reports created: $REPORT_COUNT" >&2
+# === VERIFY ARTIFACTS ===
+echo "Verifying research artifacts..."
+
+if [ ! -d "$RESEARCH_DIR" ]; then
+  echo "ERROR: Research phase failed to create reports directory" >&2
   exit 1
 fi
 
-echo "=== Research Complete ==="
+if [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
+  echo "ERROR: Research phase failed to create report files" >&2
+  exit 1
+fi
+
+UNDERSIZED_FILES=$(find "$RESEARCH_DIR" -name '*.md' -type f -size -100c 2>/dev/null)
+if [ -n "$UNDERSIZED_FILES" ]; then
+  echo "ERROR: Research report(s) too small (< 100 bytes)" >&2
+  exit 1
+fi
+
+REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
+
+# === COMPLETE WORKFLOW ===
+if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  echo "ERROR: State transition to COMPLETE failed" >&2
+  exit 1
+fi
+
+save_completed_states_to_state 2>/dev/null
+
 echo ""
+echo "=== Research Complete ==="
 echo "Workflow Type: research-only"
 echo "Reports Directory: $RESEARCH_DIR"
 echo "Report Count: $REPORT_COUNT"
 echo ""
 echo "Next Steps:"
 echo "- Review reports in: $RESEARCH_DIR"
-echo "- Use /research-plan to create implementation plan from research"
+echo "- Use /plan to create implementation plan from research"
 echo "- Use /coordinate for full workflow (research + plan + implement)"
-echo ""
 
 exit 0
 ```
@@ -451,3 +297,5 @@ exit 0
 - **No reports created**: Verify workflow description is clear and actionable
 - **State machine errors**: Ensure library versions are compatible (workflow-state-machine.sh >=2.0.0)
 - **Complexity too low**: Use `--complexity 3` or `--complexity 4` for more comprehensive research
+- **File not found error**: Ensure --file path is correct and file exists; relative paths are resolved from current directory
+- **Empty file warning**: The prompt file exists but has no content; add content to the file

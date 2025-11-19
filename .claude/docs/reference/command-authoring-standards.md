@@ -476,13 +476,99 @@ This prevents conflicts when multiple commands run simultaneously.
 
 ---
 
+## Output Suppression Requirements
+
+Commands MUST suppress verbose output to maintain clean Claude Code display. Each bash block should produce minimal output focused on actionable results.
+
+### Mandatory Suppression Patterns
+
+#### Library Sourcing Suppression
+
+All library sourcing MUST suppress output while preserving error handling:
+
+```bash
+source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+```
+
+**Why**: Library sourcing can produce verbose output (function definitions, initialization messages) that clutters display without adding value.
+
+#### Directory Operations Suppression
+
+Directory operations MUST suppress non-critical output:
+
+```bash
+mkdir -p "$OUTPUT_DIR" 2>/dev/null || true
+```
+
+**Why**: Directory operations either succeed silently or are handled elsewhere.
+
+#### Single Summary Line per Block
+
+Each block SHOULD output a single summary line instead of multiple progress messages:
+
+```bash
+# ❌ ANTI-PATTERN: Multiple verbose messages
+echo "Starting initialization..."
+echo "Loading libraries..."
+echo "Validating configuration..."
+echo "Creating directories..."
+echo "Initialization complete"
+
+# ✓ CORRECT: Single summary
+# Perform all operations silently
+source "$LIB" 2>/dev/null || exit 1
+validate_config || exit 1
+mkdir -p "$DIR" 2>/dev/null
+
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+### Output vs Error Distinction
+
+**Suppress**: Success messages, progress indicators, intermediate state
+**Preserve**: Errors (to stderr), warnings, final summaries, user-needed data
+
+```bash
+# Errors to stderr (always visible)
+echo "ERROR: Configuration invalid" >&2
+
+# Summary to stdout (minimal)
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+### Block Count Target
+
+Commands SHOULD use 2-3 bash blocks maximum to minimize display noise:
+
+| Block | Purpose |
+|-------|---------|
+| **Setup** | Capture, validate, source, init, allocate |
+| **Execute** | Main workflow logic |
+| **Cleanup** | Verify, complete, summary |
+
+See [Bash Block Execution Model - Pattern 8](../concepts/bash-block-execution-model.md#pattern-8-block-count-minimization) for detailed consolidation patterns.
+
+### Complete Reference
+
+See [Output Formatting Standards](output-formatting-standards.md) for:
+- All output suppression patterns
+- Block consolidation rules
+- Comment standards (WHAT not WHY)
+- Output vs error distinction
+
+---
+
 ## Related Documentation
 
 - [Bash Block Execution Model](../concepts/bash-block-execution-model.md) - Complete subprocess isolation patterns
 - [Command Development Fundamentals](../guides/command-development-fundamentals.md) - Section 5.2.1 on Task patterns
 - [State Persistence Library](library-api.md#state-persistence) - API reference
+- [Output Formatting Standards](output-formatting-standards.md) - Output suppression and formatting patterns
 
 ---
 
-**Last Updated**: 2025-11-17
-**Spec Reference**: 756_command_bash_execution_directives
+**Last Updated**: 2025-11-18
+**Spec Reference**: 756_command_bash_execution_directives, 794_001_comprehensive_output_formatting_refactormd_to

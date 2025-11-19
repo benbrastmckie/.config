@@ -53,22 +53,6 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
-### collapse_specialist
-**Purpose**: Analyzes expanded plans for collapsing back to parent structure
-
-**Capabilities**:
-- Complexity re-analysis for expanded phases/stages
-- Collapse recommendations with justification
-- Determines if content can be safely merged
-
-**Allowed Tools**: Read, Grep, Glob
-
-**Used By**: /collapse (auto-analysis mode)
-
-**Definition**: [.claude/agents/plan-structure-manager.md](../../agents/plan-structure-manager.md) (collapse_specialist behavior)
-
----
-
 ### complexity_estimator
 **Purpose**: Context-aware complexity analysis for plan expansion/collapse decisions
 
@@ -223,57 +207,6 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
-### expansion_specialist
-**Purpose**: Analyzes phases for expansion into detailed specifications
-
-**Capabilities**:
-- Phase complexity analysis
-- Expansion recommendations with justification
-- Determines when expansion provides value
-
-**Allowed Tools**: Read, Grep, Glob
-
-**Used By**: /expand (auto-analysis mode)
-
-**Definition**: [.claude/agents/plan-structure-manager.md](../../agents/plan-structure-manager.md) (expansion_specialist behavior)
-
----
-
-### github-specialist
-**Purpose**: GitHub operations including PRs, issues, and CI/CD monitoring
-
-**Capabilities**:
-- PR creation with metadata
-- Issue management
-- CI workflow monitoring
-- Primary tool: gh CLI via Bash
-
-**Allowed Tools**: Read, Grep, Glob, Bash
-
-**Used By**: /implement (--create-pr), /orchestrate (workflow PRs)
-
-**Definition**: [.claude/agents/github-specialist.md](../../agents/github-specialist.md)
-
----
-
-### implementation-sub-supervisor
-**Purpose**: Implementation workflow coordination with parallel implementer management
-
-**Capabilities**:
-- Parallel implementer coordination
-- Wave-based execution management
-- Dependency analysis for task distribution
-- Merge coordination across multiple implementers
-- Progress tracking and reporting
-
-**Allowed Tools**: Read, Write, Grep, Glob, Bash, Task
-
-**Used By**: /orchestrate (implementation supervision)
-
-**Definition**: [.claude/agents/implementation-sub-supervisor.md](../../agents/implementation-sub-supervisor.md)
-
----
-
 ### implementer-coordinator
 **Purpose**: Multi-implementer coordination for parallel wave-based execution
 
@@ -286,26 +219,9 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Allowed Tools**: Read, Write, Grep, Glob, Bash, Task
 
-**Used By**: /coordinate (wave-based implementation)
+**Used By**: /build (wave-based implementation)
 
 **Definition**: [.claude/agents/implementer-coordinator.md](../../agents/implementer-coordinator.md)
-
----
-
-### metrics-specialist
-**Purpose**: Performance analysis and optimization recommendations
-
-**Capabilities**:
-- Analyze metrics from .claude/data/metrics/
-- Identify bottlenecks
-- Statistical analysis
-- Optimization suggestions
-
-**Allowed Tools**: Read, Bash, Grep
-
-**Used By**: Custom performance analysis commands (future)
-
-**Definition**: [.claude/agents/metrics-specialist.md](../../agents/metrics-specialist.md)
 
 ---
 
@@ -360,42 +276,6 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
-### research-synthesizer
-**Purpose**: Multi-report consolidation and cross-reference extraction for research synthesis
-
-**Capabilities**:
-- Read and synthesize multiple research reports
-- Cross-reference extraction across reports
-- Finding aggregation and deduplication
-- Generate unified research summaries
-- Identify contradictions and gaps
-
-**Allowed Tools**: Read, Write, Grep, Glob
-
-**Used By**: /research (final report generation)
-
-**Definition**: [.claude/agents/research-synthesizer.md](../../agents/research-synthesizer.md)
-
----
-
-### revision-specialist
-**Purpose**: Plan revision with auto-mode support for adaptive replanning
-
-**Capabilities**:
-- Adaptive replanning based on implementation feedback
-- Complexity re-evaluation after discoveries
-- Phase expansion/compression recommendations
-- Auto-mode integration with /implement
-- Maximum 2 replans per phase enforcement
-
-**Allowed Tools**: Read, Write, Edit, Grep, Glob
-
-**Used By**: /revise (manual and --auto-mode), /implement (adaptive planning)
-
-**Definition**: [.claude/agents/revision-specialist.md](../../agents/revision-specialist.md)
-
----
-
 ### spec-updater
 **Purpose**: Artifact lifecycle management in topic-based directories with gitignore compliance
 
@@ -414,42 +294,6 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
-### testing-sub-supervisor
-**Purpose**: Test workflow coordination with multi-framework testing support
-
-**Capabilities**:
-- Multi-framework test execution coordination
-- Coverage analysis and reporting
-- Error categorization and prioritization
-- Sequential lifecycle coordination (setup → test → teardown)
-- Test failure diagnostics
-
-**Allowed Tools**: Read, Write, Bash, Grep, Glob, Task
-
-**Used By**: /orchestrate (testing phase supervision)
-
-**Definition**: [.claude/agents/testing-sub-supervisor.md](../../agents/testing-sub-supervisor.md)
-
----
-
-### workflow-classifier
-**Purpose**: LLM-based workflow detection and enhanced topic generation with 98%+ accuracy
-
-**Capabilities**:
-- Semantic workflow classification (llm-only mode, default)
-- Traditional regex-based classification (regex-only mode, offline)
-- Enhanced topic generation with detailed descriptions and filename slugs
-- Topic number assignment from sequence file
-- Workflow scope detection (research-only, research-and-plan, full-implementation, debug-only)
-
-**Allowed Tools**: Read, Write, Bash, Grep
-
-**Used By**: /plan, /orchestrate, /coordinate (workflow type detection)
-
-**Definition**: [.claude/agents/workflow-classifier.md](../../agents/workflow-classifier.md)
-
----
-
 ## Tool Access Matrix
 
 Quick reference for which tools each agent can use:
@@ -458,18 +302,15 @@ Quick reference for which tools each agent can use:
 |-------|------|-------|------|------|------|------|-----------|-----------|----------|
 | claude-md-analyzer | ✓ | ✓ | | ✓ | ✓ | | | | |
 | cleanup-plan-architect | ✓ | ✓ | | ✓ | ✓ | | | | |
-| collapse_specialist | ✓ | | | | ✓ | ✓ | | | |
 | complexity_estimator | ✓ | | | | ✓ | ✓ | | | |
 | debug-specialist | ✓ | | | ✓ | ✓ | ✓ | | ✓ | |
 | doc-converter | ✓ | ✓ | | ✓ | | | | | |
-| doc-converter-update | ✓ | ✓ | ✓ | ✓ | | | | | |
-| doc-converter-usage | ✓ | | | ✓ | | | | | |
 | docs-structure-analyzer | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |
-| expansion_specialist | ✓ | | | | ✓ | ✓ | | | |
-| github-specialist | ✓ | | | ✓ | ✓ | ✓ | | | |
-| metrics-specialist | ✓ | | | ✓ | ✓ | | | | |
+| implementer-coordinator | ✓ | ✓ | | ✓ | ✓ | ✓ | | | |
 | plan-architect | ✓ | ✓ | | | ✓ | ✓ | | ✓ | |
 | research-specialist | ✓ | | | | ✓ | ✓ | | ✓ | ✓ |
+| research-sub-supervisor | ✓ | ✓ | | | ✓ | ✓ | | | |
+| spec-updater | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | | | |
 
 ## Agent Selection Guidelines
 
@@ -477,15 +318,12 @@ Quick reference for which tools each agent can use:
 - **Research/Analysis**: research-specialist (read-only investigation)
 - **Planning**: plan-architect (create implementation plans)
 - **Debugging**: debug-specialist (root cause analysis)
-- **Performance**: metrics-specialist (analyze performance data)
-- **GitHub Operations**: github-specialist (PRs, issues, CI/CD)
 - **Complexity Analysis**: complexity_estimator (expansion/collapse decisions)
-- **Plan Expansion**: expansion_specialist (phase expansion analysis)
-- **Plan Collapse**: collapse_specialist (phase collapse analysis)
 - **Document Conversion**: doc-converter (format conversion)
 - **CLAUDE.md Analysis**: claude-md-analyzer (analyze CLAUDE.md structure and bloat)
 - **Docs Structure Analysis**: docs-structure-analyzer (analyze .claude/docs/ organization)
 - **Optimization Planning**: cleanup-plan-architect (generate CLAUDE.md optimization plans)
+- **Wave-Based Implementation**: implementer-coordinator (parallel phase execution)
 
 **Tool Restrictions**: Agents can ONLY use tools listed in their allowed-tools. Attempting to use unlisted tools will result in permission errors.
 

@@ -104,6 +104,19 @@ Information-oriented quick lookup documentation for commands, agents, schemas, a
 
 ---
 
+### [Output Formatting Standards](output-formatting-standards.md)
+**Purpose**: Output suppression patterns, block consolidation rules, and comment standards to ensure clean Claude Code display.
+
+**Use Cases**:
+- When developing commands to minimize display noise
+- To understand library sourcing suppression patterns
+- To learn block consolidation rules (target 2-3 blocks)
+- When applying WHAT not WHY comment standards
+
+**See Also**: [Code Standards](code-standards.md), [Bash Block Execution Model](../concepts/bash-block-execution-model.md), [Command Authoring Standards](command-authoring-standards.md)
+
+---
+
 ### [Adaptive Planning Configuration](adaptive-planning-config.md)
 **Purpose**: Complexity thresholds, threshold adjustment guidelines, and configuration ranges for adaptive planning.
 
@@ -198,6 +211,7 @@ reference/
 ├── phase_dependencies.md                  Dependency syntax and wave calculation
 ├── testing-protocols.md                   Test discovery and coverage standards
 ├── code-standards.md                      Coding conventions and language standards
+├── output-formatting-standards.md         Output suppression and formatting patterns
 ├── adaptive-planning-config.md            Complexity thresholds and configuration
 └── library-api.md                         Utility library API reference
 

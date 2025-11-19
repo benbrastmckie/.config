@@ -2,94 +2,7 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 19 specialized agents (22 - 4 archived + 1 new)
-
-## Recent Changes
-
-### Agent Consolidation (2025-10-27)
-Consolidated overlapping agents and refactored deterministic logic to utility libraries:
-
-**Agents Consolidated**:
-- `expansion-specialist.md` + `collapse-specialist.md` → **plan-structure-manager.md** (95% overlap eliminated, 506 lines saved)
-- `plan-expander.md` → **Archived** (pure coordination wrapper with no behavioral logic, 562 lines saved)
-- `git-commit-helper.md` → **Refactored to .claude/lib/git-commit-utils.sh** (deterministic logic moved to library, 100 lines saved, zero agent invocation overhead)
-
-**Impact**:
-- Agents: 22 → 19 (14% reduction)
-- Code reduction: 1,168 lines saved
-- Performance: Zero invocation overhead for git commit message generation (now library function)
-- Architecture: Unified operation parameter pattern (expand/collapse)
-- Maintainability: 3 fewer agents to maintain, clearer patterns
-
-### Registry Update (2025-10-27)
-Added 5 missing agents to registry for complete tracking:
-
-**Agents Added to Registry**:
-- `doc-converter-usage.md` → Documentation file (moved to docs/ in Phase 2)
-- `git-commit-helper.md` → Specialized (refactored to .claude/lib/git-commit-utils.sh in Phase 5)
-- `implementation-executor.md` → Hierarchical implementation agent
-- `implementer-coordinator.md` → Hierarchical coordinator agent
-- `research-synthesizer.md` → Specialized research agent
-
-**Impact**:
-- Registry: 17 → 22 entries (100% coverage)
-- Agent discovery improved
-- Metrics tracking enabled for all agents
-
-### Agent Cleanup (2025-10-26)
-Removed deprecated agent to improve maintainability:
-
-**Agent Removed**:
-- `location-specialist.md` → **Archived** (superseded by unified location detection library)
-
-**Impact**:
-- Agents: 22 → 21 files (4.5% reduction, ~14KB saved)
-- Functionality preserved in `.claude/lib/unified-location-detection.sh`
-- Unified codebase with library-based location detection
-
-### Orchestration Integration (2025-10-12)
-Agents enhanced for comprehensive multi-phase workflow orchestration:
-
-**research-specialist**:
-- Direct file creation for research reports in `specs/reports/{topic}/`
-- Topic-based organization with incremental numbering per topic
-- Structured metadata including workflow context and specs directory
-- Integration with /orchestrate research phase
-
-**debug-specialist**:
-- File-based debug reports in `debug/{topic}/` directory
-- Persistent debugging documentation separate from gitignored specs/
-- Integration with /orchestrate debugging loop
-- Structured investigation reports with root cause analysis
-
-**plan-architect**:
-- Report verification and linking in plan metadata
-- Cross-referencing research reports in implementation plans
-- Enhanced metadata for research-driven planning
-- Integration with /orchestrate planning phase
-
-**Benefits**:
-- End-to-end workflow coordination through /orchestrate
-- Persistent documentation for all workflow phases
-- Clear artifact organization (specs/ for plans/reports, debug/ for investigations)
-- Complete traceability from research through debugging
-
-### Shared Protocols (2025-10-06)
-Agents now reference shared protocol documentation in `.claude/agents/shared/`:
-- `progress-streaming-protocol.md` - Standard progress reporting format
-- `error-handling-guidelines.md` - Consistent error handling patterns
-
-**Benefits**:
-- ~200 LOC reduction through duplication removal
-- Standardized behavior across all agents
-- Easier agent creation with documented patterns
-
-### Agent Standardization (2025-10-06)
-All agents now follow consistent structure:
-1. **Core Responsibility** - Single clear purpose
-2. **Capabilities** - What the agent can do
-3. **Protocols** - References to shared documentation
-4. **Specialization** - Unique agent-specific logic
+**Current Agent Count**: 16 active agents
 
 ## Purpose
 
@@ -127,46 +40,88 @@ Agents enable modular, focused assistance by providing:
 
 ## Available Agents
 
-### code-reviewer.md
-**Purpose**: Analyze code for quality, standards compliance, and potential issues
+### Command-to-Agent Mapping
 
-**Capabilities**:
-- Code quality assessment
-- Standards compliance checking
-- Bug detection
-- Performance analysis
-- Security review
+Quick reference for which agents are invoked by each command and their roles:
 
-**Allowed Tools**: Read, Grep, Glob, Bash
+#### /plan
+- **workflow-classifier** - Classify request type (feature, bugfix, research)
+- **plan-complexity-classifier** - Assess feature complexity for planning depth
+- **research-specialist** - Gather codebase context and best practices
+- **plan-architect** - Design implementation plan with phases and tasks
 
-**Typical Use Cases**:
-- Pre-commit code review
-- Refactoring analysis
-- Quality assurance checks
+#### /research
+- **research-specialist** - Conduct technology investigation and generate reports
 
----
+#### /revise
+- **research-specialist** - Research updates needed for plan revision
+- **plan-architect** - Integrate changes into revised plan
 
-### code-writer.md
-**Purpose**: Write and modify code following project standards
+#### /build
+- **implementer-coordinator** - Orchestrate wave-based parallel phase execution
+- **implementation-executor** - Execute individual phase tasks
+- **spec-updater** - Track progress via checkbox updates
+- **debug-analyst** - Investigate build failures
 
-**Capabilities**:
-- Code generation
-- Feature implementation
-- Bug fixes
-- Refactoring
-- Standards-compliant formatting
+#### /debug
+- **workflow-classifier** - Classify issue type
+- **research-specialist** - Analyze codebase for issue context
+- **plan-architect** - Design fix plan if needed
+- **debug-analyst** - Test hypotheses in parallel
+- **debug-specialist** - Perform root cause analysis
 
-**Allowed Tools**: Read, Write, Edit, Bash, TodoWrite
+#### /expand
+- **complexity-estimator** - Assess complexity for expansion decisions
 
-**Typical Use Cases**:
-- Implementing features from specs
-- Fixing identified bugs
-- Refactoring code sections
+#### /collapse
+- **complexity-estimator** - Assess complexity for collapse decisions
+
+#### /setup
+- **claude-md-analyzer** - Analyze CLAUDE.md structure
+- **docs-structure-analyzer** - Audit documentation organization
+- **docs-bloat-analyzer** - Detect semantic redundancy
+- **docs-accuracy-analyzer** - Verify documentation accuracy
+- **cleanup-plan-architect** - Create optimization plans
+
+#### /convert-docs
+- **doc-converter** - Convert Word/PDF documents to Markdown
+
+### Model Selection Patterns
+
+Agents use different models based on task requirements:
+
+#### haiku / haiku-4.5
+Fast classification, deterministic operations, parsing:
+- **plan-complexity-classifier** - Rapid complexity assessment
+- **complexity-estimator** - Fast complexity scoring for expand/collapse
+- **implementer-coordinator** - Deterministic wave coordination
+- **spec-updater** - Consistent checkbox and progress updates
+- **doc-converter** - Reliable format conversion operations
+- **claude-md-analyzer** - Fast structural analysis
+- **docs-structure-analyzer** - Rapid documentation scanning
+
+#### sonnet-4.5
+Complex reasoning, research, coordination:
+- **research-specialist** - Deep codebase analysis and report generation
+- **implementation-executor** - Complex code generation and testing
+- **research-sub-supervisor** - Multi-worker coordination
+- **debug-analyst** - Parallel hypothesis testing
+- **cleanup-plan-architect** - Planning reasoning for cleanup tasks
+
+#### opus-4.1 / opus-4.5
+Architectural decisions, complex debugging, semantic analysis:
+- **plan-architect** - High-quality architectural design decisions
+- **debug-specialist** - Deep root cause analysis
+- **docs-bloat-analyzer** - Semantic redundancy detection
+- **docs-accuracy-analyzer** - Code-documentation consistency verification
 
 ---
 
 ### debug-specialist.md
 **Purpose**: Investigate and diagnose issues without making changes
+**Model**: opus-4.1 (complex root cause analysis)
+
+**Used By Commands**: /debug
 
 **Capabilities**:
 - Error analysis
@@ -176,6 +131,8 @@ Agents enable modular, focused assistance by providing:
 - Diagnostic report generation
 - File-based debug reports for orchestrated workflows
 - Persistent debugging documentation in `debug/{topic}/`
+
+**Dependencies**: None
 
 **Allowed Tools**: Read, Grep, Glob, Bash, WebSearch, Write
 
@@ -189,6 +146,9 @@ Agents enable modular, focused assistance by providing:
 
 ### doc-converter.md
 **Purpose**: Convert Word (DOCX) and PDF files to Markdown format
+**Model**: haiku-4.5 (deterministic conversion operations)
+
+**Used By Commands**: /convert-docs
 
 **Capabilities**:
 - Batch document conversion (DOCX and PDF)
@@ -198,6 +158,9 @@ Agents enable modular, focused assistance by providing:
 - Image extraction and organization
 - Conversion validation and quality checks
 - Progress reporting and statistics
+
+**Dependencies**:
+- External tools: markitdown, pandoc, pymupdf4llm
 
 **Allowed Tools**: Read, Grep, Glob, Bash, Write
 
@@ -209,66 +172,11 @@ Agents enable modular, focused assistance by providing:
 
 ---
 
-### doc-writer.md
-**Purpose**: Create and update documentation
-
-**Capabilities**:
-- README generation
-- API documentation
-- Usage examples
-- Architecture diagrams
-- Standards compliance
-
-**Allowed Tools**: Read, Write, Edit, Grep, Glob
-
-**Typical Use Cases**:
-- Creating missing READMEs
-- Updating documentation after changes
-- Generating API documentation
-
----
-
-### github-specialist.md
-**Purpose**: Manage GitHub operations including PRs, issues, and CI/CD monitoring
-
-**Capabilities**:
-- Pull request creation with rich metadata
-- Issue management and categorization
-- CI/CD workflow monitoring
-- Repository state verification
-- GitHub CLI integration
-
-**Allowed Tools**: Read, Grep, Glob, Bash
-
-**Typical Use Cases**:
-- Creating PRs after implementation completion
-- Generating issues from debug reports
-- Monitoring CI workflow status
-- Linking PRs to implementation plans and reports
-
----
-
-### metrics-specialist.md
-**Purpose**: Analyze performance metrics and generate insights
-
-**Capabilities**:
-- Metrics analysis
-- Performance trend identification
-- Bottleneck detection
-- Optimization recommendations
-- Report generation
-
-**Allowed Tools**: Read, Grep, Bash
-
-**Typical Use Cases**:
-- Monthly performance reviews
-- Identifying slow commands
-- Optimization planning
-
----
-
 ### plan-architect.md
 **Purpose**: Design implementation plans from requirements
+**Model**: opus-4.1 (architectural decisions)
+
+**Used By Commands**: /plan, /revise, /coordinate, /debug
 
 **Capabilities**:
 - Requirements analysis
@@ -276,6 +184,10 @@ Agents enable modular, focused assistance by providing:
 - Phase breakdown
 - Risk assessment
 - Success criteria definition
+- Report verification and linking in plan metadata
+- Cross-referencing research reports
+
+**Dependencies**: None (self-contained)
 
 **Allowed Tools**: Read, Write, Grep, Glob
 
@@ -288,6 +200,9 @@ Agents enable modular, focused assistance by providing:
 
 ### research-specialist.md
 **Purpose**: Conduct research and generate comprehensive reports
+**Model**: sonnet-4.5 (complex reasoning and research)
+
+**Used By Commands**: /plan, /research, /revise, /coordinate, /debug
 
 **Capabilities**:
 - Technology investigation
@@ -299,6 +214,9 @@ Agents enable modular, focused assistance by providing:
 - Topic-based organization with incremental numbering
 - Integration with /orchestrate research phase
 
+**Dependencies**:
+- Libraries: `.claude/lib/unified-location-detection.sh`
+
 **Allowed Tools**: Read, Write, Grep, Glob, WebSearch
 
 **Typical Use Cases**:
@@ -309,27 +227,11 @@ Agents enable modular, focused assistance by providing:
 
 ---
 
-### test-specialist.md
-**Purpose**: Run tests, analyze results, and ensure quality
-
-**Capabilities**:
-- Test execution
-- Result analysis
-- Failure diagnosis
-- Coverage assessment
-- Test improvement suggestions
-
-**Allowed Tools**: Read, Bash, Grep, Glob
-
-**Typical Use Cases**:
-- Running test suites
-- Analyzing test failures
-- Validating implementations
-
----
-
-### complexity_estimator.md
+### complexity-estimator.md
 **Purpose**: Provide context-aware complexity analysis for plan expansion/collapse decisions
+**Model**: haiku-4.5 (fast complexity assessment)
+
+**Used By Commands**: /expand, /collapse
 
 **Capabilities**:
 - Context-aware complexity estimation (1-10 scale)
@@ -338,6 +240,8 @@ Agents enable modular, focused assistance by providing:
 - Risk and testing requirements evaluation
 - JSON-structured recommendations with reasoning
 
+**Dependencies**: None (read-only)
+
 **Allowed Tools**: Read, Grep, Glob
 
 **Typical Use Cases**:
@@ -345,6 +249,247 @@ Agents enable modular, focused assistance by providing:
 - Auto-analysis mode in /collapse command
 - Determining which phases warrant separate files
 - Evaluating if expanded content can be collapsed
+
+---
+
+### debug-analyst.md
+**Purpose**: Parallel hypothesis testing for debugging
+**Model**: sonnet-4.5 (complex analysis)
+
+**Used By Commands**: /debug, /build
+
+**Capabilities**:
+- Hypothesis generation and testing
+- Parallel failure analysis
+- Root cause identification
+- Solution recommendation
+
+**Dependencies**: None
+
+**Allowed Tools**: Read, Grep, Glob, Bash
+
+**Typical Use Cases**:
+- Testing multiple debug hypotheses in parallel
+- Build failure investigation
+- Implementation error diagnosis
+
+---
+
+### implementer-coordinator.md
+**Purpose**: Wave-based parallel phase execution orchestration
+**Model**: haiku-4.5 (deterministic coordination)
+
+**Used By Commands**: /build, /coordinate
+
+**Capabilities**:
+- Dependency analysis and wave structure building
+- Parallel executor invocation
+- Progress monitoring and aggregation
+- Failure handling and isolation
+
+**Dependencies**: None (self-contained)
+
+**Allowed Tools**: Read, Bash, Task
+
+**Subagents Invoked**: implementation-executor
+
+**Typical Use Cases**:
+- Orchestrating multi-phase implementations
+- Maximizing parallel execution (40-60% time savings)
+- Build workflow coordination
+
+---
+
+### implementation-executor.md
+**Purpose**: Execute single phase implementation tasks
+**Model**: sonnet-4.5 (complex implementation reasoning)
+
+**Used By Commands**: /build (via implementer-coordinator)
+
+**Capabilities**:
+- Phase task execution
+- Progress tracking and plan updates
+- Test running and validation
+- Git commit creation
+
+**Dependencies**: None
+
+**Allowed Tools**: Read, Write, Edit, Bash, Grep, Glob, Task
+
+**Subagents Invoked**: spec-updater
+
+**Typical Use Cases**:
+- Executing individual plan phases
+- Single-phase implementation with testing
+- Code generation and validation
+
+---
+
+### spec-updater.md
+**Purpose**: Manage artifact updates and progress tracking
+**Model**: haiku-4.5 (deterministic updates)
+
+**Used By Commands**: /build
+
+**Capabilities**:
+- Checkbox state management
+- Plan file progress updates
+- Artifact synchronization
+- Status marker placement
+
+**Dependencies**:
+- Libraries: `.claude/lib/checkbox-utils.sh`
+
+**Allowed Tools**: Read, Write, Edit, Bash
+
+**Typical Use Cases**:
+- Marking tasks complete in plan files
+- Synchronizing progress across artifacts
+- Maintaining plan file consistency
+
+---
+
+### claude-md-analyzer.md
+**Purpose**: Analyze CLAUDE.md structure and content
+**Model**: haiku-4.5 (fast structural analysis)
+
+**Used By Commands**: /setup
+
+**Capabilities**:
+- CLAUDE.md structure analysis
+- Section identification
+- Content organization assessment
+- Optimization recommendations
+
+**Dependencies**:
+- Libraries: `.claude/lib/unified-location-detection.sh`, `.claude/lib/optimize-claude-md.sh`
+
+**Allowed Tools**: Read, Grep, Glob, Bash
+
+**Typical Use Cases**:
+- Analyzing existing CLAUDE.md for improvements
+- Structure validation
+- Content optimization planning
+
+---
+
+### docs-structure-analyzer.md
+**Purpose**: Analyze documentation directory organization
+**Model**: haiku-4.5 (fast structural analysis)
+
+**Used By Commands**: /setup
+
+**Capabilities**:
+- Documentation structure mapping
+- Navigation link validation
+- Organization quality assessment
+- Reorganization recommendations
+
+**Dependencies**:
+- Libraries: `.claude/lib/unified-location-detection.sh`
+
+**Allowed Tools**: Read, Grep, Glob, Bash
+
+**Typical Use Cases**:
+- Auditing documentation directory structure
+- Finding broken navigation links
+- Planning documentation reorganization
+
+---
+
+### docs-bloat-analyzer.md
+**Purpose**: Semantic bloat detection in documentation
+**Model**: opus-4.5 (high-quality semantic analysis)
+
+**Used By Commands**: /setup
+
+**Capabilities**:
+- Duplicate content detection
+- Semantic redundancy identification
+- Content consolidation recommendations
+- Bloat severity scoring
+
+**Dependencies**:
+- Libraries: `.claude/lib/unified-location-detection.sh`
+
+**Allowed Tools**: Read, Grep, Glob, Bash
+
+**Typical Use Cases**:
+- Finding duplicate documentation
+- Reducing documentation bloat
+- Consolidating overlapping content
+
+---
+
+### docs-accuracy-analyzer.md
+**Purpose**: Documentation accuracy and consistency verification
+**Model**: opus-4.5 (high-quality analysis)
+
+**Used By Commands**: /setup
+
+**Capabilities**:
+- Code-documentation consistency checking
+- Accuracy verification
+- Outdated content detection
+- Update recommendations
+
+**Dependencies**:
+- Libraries: `.claude/lib/unified-location-detection.sh`
+
+**Allowed Tools**: Read, Grep, Glob, Bash
+
+**Typical Use Cases**:
+- Verifying documentation accuracy
+- Finding outdated documentation
+- Ensuring code-doc consistency
+
+---
+
+### cleanup-plan-architect.md
+**Purpose**: Create optimization plans for CLAUDE.md cleanup
+**Model**: sonnet-4.5 (planning reasoning)
+
+**Used By Commands**: /setup
+
+**Capabilities**:
+- Cleanup plan generation
+- Priority assessment
+- Implementation phase design
+- Risk evaluation
+
+**Dependencies**:
+- Libraries: `.claude/lib/unified-location-detection.sh`
+
+**Allowed Tools**: Read, Write, Grep, Glob
+
+**Typical Use Cases**:
+- Creating CLAUDE.md optimization plans
+- Prioritizing cleanup tasks
+- Designing cleanup implementation
+
+---
+
+### plan-complexity-classifier.md
+**Purpose**: Classify feature complexity for planning
+**Model**: haiku (fast classification)
+
+**Used By Commands**: /plan
+
+**Capabilities**:
+- Feature complexity assessment
+- Planning depth recommendation
+- Resource estimation
+- Risk classification
+
+**Dependencies**:
+- Libraries: `.claude/lib/state-persistence.sh`
+
+**Allowed Tools**: None
+
+**Typical Use Cases**:
+- Determining planning depth requirements
+- Classifying feature complexity level
+- Resource allocation guidance
 
 ## Agent Definition Format
 
@@ -387,22 +532,27 @@ Common usage patterns and examples
 ### Read-Only Agents
 Agents that analyze without modifying:
 - **Tools**: Read, Grep, Glob, Bash (read-only commands)
-- **Examples**: code-reviewer, debug-specialist, metrics-specialist
+- **Examples**: debug-specialist, complexity-estimator
 
 ### Writing Agents
 Agents that create or modify content:
 - **Tools**: Read, Write, Edit, Bash
-- **Examples**: code-writer, doc-writer, plan-architect
+- **Examples**: plan-architect, implementation-executor, spec-updater
 
 ### Research Agents
 Agents that gather external information:
 - **Tools**: Read, Write, Grep, Glob, WebSearch
 - **Examples**: research-specialist
 
-### Testing Agents
-Agents that execute and analyze tests:
-- **Tools**: Read, Bash, Grep, Glob
-- **Examples**: test-specialist
+### Coordination Agents
+Agents that orchestrate other agents:
+- **Tools**: Read, Bash, Task
+- **Examples**: implementer-coordinator
+
+### Classification Agents
+Agents with minimal/no tools for fast classification:
+- **Tools**: None or Read only
+- **Examples**: plan-complexity-classifier
 
 ## Agent Invocation
 
@@ -410,9 +560,9 @@ Agents are typically invoked by commands, not directly by users.
 
 ### From Commands
 ```markdown
-I'll invoke the code-writer agent to implement this feature.
+I'll invoke the implementation-executor agent to implement this phase.
 
-[Invoke code-writer with context]
+[Invoke implementation-executor with context]
 ```
 
 ### Context Passing
@@ -483,22 +633,24 @@ Agents provide:
 Commands orchestrate agents to accomplish complex workflows:
 
 ```
-/implement
-  ├── plan-architect → Design phases
-  ├── code-writer → Implement each phase
-  ├── test-specialist → Verify implementation
-  └── doc-writer → Update documentation
+/plan
+  ├── plan-complexity-classifier → Assess complexity
+  ├── research-specialist → Gather context
+  └── plan-architect → Create implementation plan
 
-/report
-  ├── research-specialist → Gather information
-  └── doc-writer → Format report
+/build
+  ├── implementer-coordinator → Orchestrate wave execution
+  │   └── implementation-executor → Execute phase tasks
+  │       └── spec-updater → Track progress
+  └── debug-analyst → Investigate failures
 
 /debug
-  ├── debug-specialist → Investigate issue
-  └── code-writer → Apply fixes (if requested)
+  ├── research-specialist → Analyze codebase
+  ├── debug-analyst → Test hypotheses
+  └── debug-specialist → Root cause analysis
 
-/expand-phase (agent-assisted for complex phases)
-  └── general-purpose + research-specialist behavior → Research phase context
+/expand, /collapse
+  └── complexity-estimator → Assess complexity
 ```
 
 ### /expand-phase Integration
@@ -521,7 +673,7 @@ Task tool:
 
 **Agent Behaviors Used**:
 - **research-specialist**: Default for codebase analysis (complex phases)
-- **code-reviewer**: For refactor/consolidation phases
+- **debug-analyst**: For refactor/consolidation phases
 - **plan-architect**: For very complex phase structure analysis
 
 **Complexity Detection**:
@@ -633,17 +785,34 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 ## Navigation
 
 ### Agent Definitions
-- [code-reviewer.md](code-reviewer.md) - Code quality analysis
-- [code-writer.md](code-writer.md) - Code implementation
+
+**Classification Agents**:
+- [plan-complexity-classifier.md](plan-complexity-classifier.md) - Feature complexity assessment
 - [complexity-estimator.md](complexity-estimator.md) - Context-aware complexity analysis
-- [debug-specialist.md](debug-specialist.md) - Issue investigation
-- [doc-converter.md](doc-converter.md) - Convert Word/PDF to Markdown
-- [doc-writer.md](doc-writer.md) - Documentation creation
-- [github-specialist.md](github-specialist.md) - GitHub operations and PR management
-- [metrics-specialist.md](metrics-specialist.md) - Performance analysis
-- [plan-architect.md](plan-architect.md) - Implementation planning
+
+**Research Agents**:
 - [research-specialist.md](research-specialist.md) - Research and reports
-- [test-specialist.md](test-specialist.md) - Testing and validation
+- [research-sub-supervisor.md](research-sub-supervisor.md) - Coordinate research workers
+
+**Planning Agents**:
+- [plan-architect.md](plan-architect.md) - Implementation planning
+- [cleanup-plan-architect.md](cleanup-plan-architect.md) - CLAUDE.md optimization plans
+
+**Implementation Agents**:
+- [implementer-coordinator.md](implementer-coordinator.md) - Wave-based parallel execution
+- [implementation-executor.md](implementation-executor.md) - Single phase execution
+- [spec-updater.md](spec-updater.md) - Artifact updates and progress
+
+**Debug/Analysis Agents**:
+- [debug-specialist.md](debug-specialist.md) - Root cause analysis
+- [debug-analyst.md](debug-analyst.md) - Parallel hypothesis testing
+- [claude-md-analyzer.md](claude-md-analyzer.md) - CLAUDE.md structure analysis
+- [docs-structure-analyzer.md](docs-structure-analyzer.md) - Documentation organization
+- [docs-bloat-analyzer.md](docs-bloat-analyzer.md) - Semantic bloat detection
+- [docs-accuracy-analyzer.md](docs-accuracy-analyzer.md) - Documentation accuracy
+
+**Utility Agents**:
+- [doc-converter.md](doc-converter.md) - Convert Word/PDF to Markdown
 
 ### Subdirectories
 - [prompts/](prompts/README.md) - Agent evaluation prompt templates
@@ -657,15 +826,6 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 
 ## Examples
 
-### Invoking Code Writer
-```markdown
-I'll use the code-writer agent to implement the new feature.
-
-Task: Implement user authentication module
-Files: src/auth.lua
-Standards: Follow CLAUDE.md code standards (2 space indent, snake_case)
-```
-
 ### Invoking Research Specialist
 ```markdown
 I'll use the research-specialist agent to investigate options.
@@ -675,11 +835,20 @@ Output: Research report in specs/reports/
 Focus: Performance, voice quality, installation complexity
 ```
 
-### Invoking Test Specialist
+### Invoking Plan Architect
 ```markdown
-I'll use the test-specialist agent to validate the changes.
+I'll use the plan-architect agent to design the implementation.
 
-Target: Run full test suite
-Analyze: Any failures or regressions
-Report: Coverage and quality metrics
+Requirements: Add user authentication to the application
+Scope: Backend API, database models, security considerations
+Output: Implementation plan with phases and tasks
+```
+
+### Invoking Debug Specialist
+```markdown
+I'll use the debug-specialist agent to investigate the issue.
+
+Problem: Build command fails with state transition error
+Symptoms: COMPLETE markers not being added correctly
+Output: Root cause analysis and fix recommendations
 ```

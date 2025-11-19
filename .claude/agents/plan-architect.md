@@ -95,6 +95,7 @@ Tier Selection:
 - USE Write tool (not SlashCommand)
 - CREATE file at EXACT path provided (do not recalculate)
 - INCLUDE all research reports in metadata (if provided)
+- INCLUDE `[NOT STARTED]` markers on ALL phase headings (required for progress tracking)
 - WAIT for Write to complete before Step 3
 
 **Example**:
@@ -287,6 +288,31 @@ Each phase must include:
 - **Testing**: Specific test commands or approaches
 - **Expected Duration**: Time estimate
 
+### Phase Heading Format
+
+Phase headings MUST include status markers for progress tracking:
+
+**Required Format**: `### Phase N: Name [NOT STARTED]`
+
+**Status Marker Lifecycle**:
+1. **[NOT STARTED]**: Applied during plan creation (your responsibility)
+2. **[IN PROGRESS]**: Applied by /build when phase execution begins
+3. **[COMPLETE]**: Applied by /build when phase execution ends
+4. **[BLOCKED]**: Applied when phase cannot proceed due to failures
+
+**Examples**:
+```markdown
+### Phase 1: Foundation [NOT STARTED]
+### Phase 2: Core Implementation [NOT STARTED]
+### Phase 3: Testing [NOT STARTED]
+```
+
+**Important**:
+- ALL phase headings MUST include `[NOT STARTED]` when plan is created
+- This enables visibility into plan progress throughout implementation
+- The /build command manages marker transitions automatically
+- Do NOT omit status markers - they are required for progress tracking
+
 ## Behavioral Guidelines
 
 ### Research Integration
@@ -442,12 +468,12 @@ Task {
     - Existing modules: lua/async/ (needs extension) (existing_patterns)
     - Alternative library comparison (alternatives)
 
-    Plan Structure:
-    Phase 1: Core async primitives
-    Phase 2: Promise implementation
-    Phase 3: Error handling
-    Phase 4: Integration tests
-    Phase 5: Documentation
+    Plan Structure (all phases MUST include [NOT STARTED] markers):
+    Phase 1: Core async primitives [NOT STARTED]
+    Phase 2: Promise implementation [NOT STARTED]
+    Phase 3: Error handling [NOT STARTED]
+    Phase 4: Integration tests [NOT STARTED]
+    Phase 5: Documentation [NOT STARTED]
 
     Each phase:
     - Clear objectives
@@ -542,7 +568,7 @@ Recommended approach based on research: [synthesis]
 
 ## Implementation Phases
 
-### Phase 1: Foundation
+### Phase 1: Foundation [NOT STARTED]
 dependencies: []
 
 **Objective**: [Goal]
@@ -558,7 +584,9 @@ Testing:
 :TestFile
 ```
 
-### Phase 2: [Next Phase]
+**Expected Duration**: X hours
+
+### Phase 2: [Next Phase] [NOT STARTED]
 dependencies: [1]
 
 **Objective**: [Goal]
@@ -567,6 +595,8 @@ dependencies: [1]
 Tasks:
 - [ ] Task 1
 - [ ] Task 2
+
+**Expected Duration**: X hours
 
 **Note**: Phase dependencies enable parallel execution when using `/implement`.
 - Empty `[]` or omitted = no dependencies (runs in first wave)
@@ -713,6 +743,7 @@ Before completing your task, YOU MUST verify ALL of these criteria are met:
 - [x] Each phase has estimated time
 - [x] Phases are ordered logically (dependencies respected)
 - [x] Total estimated time is reasonable (not >40 hours without justification)
+- [x] ALL phase headings include `[NOT STARTED]` status marker
 
 ### Research Integration (CRITICAL if reports provided)
 - [x] All provided research reports listed in metadata
@@ -769,6 +800,11 @@ PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo 0)
 CHECKBOX_COUNT=$(grep -c "^- \[ \]" "$PLAN_PATH" || echo 0)
 [ "$CHECKBOX_COUNT" -ge 10 ] || echo "WARNING: Only $CHECKBOX_COUNT checkboxes (need ≥10)"
 
+# 5. Status marker check (all phases must have [NOT STARTED])
+PHASE_HEADERS=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo 0)
+STATUS_MARKERS=$(grep -c "^### Phase [0-9].*\[NOT STARTED\]" "$PLAN_PATH" || echo 0)
+[ "$PHASE_HEADERS" -eq "$STATUS_MARKERS" ] || echo "WARNING: Not all phases have [NOT STARTED] markers ($STATUS_MARKERS/$PHASE_HEADERS)"
+
 echo "✓ VERIFIED: All completion criteria met"
 ```
 
@@ -798,7 +834,7 @@ Before returning, mentally verify:
 ```
 [x] All 4 file creation requirements met
 [x] All 8 content completeness requirements met
-[x] All 7 phase structure requirements met
+[x] All 8 phase structure requirements met (including status markers)
 [x] All 5 research integration requirements met (if applicable)
 [x] All 5 standards compliance requirements met
 [x] All 6 quality standards requirements met
@@ -807,7 +843,7 @@ Before returning, mentally verify:
 [x] Verification commands executed successfully
 ```
 
-**Total Requirements**: 42 criteria - ALL must be met (100% compliance)
+**Total Requirements**: 43 criteria - ALL must be met (100% compliance)
 
 **Target Score**: 95+/100 on enforcement rubric
 
