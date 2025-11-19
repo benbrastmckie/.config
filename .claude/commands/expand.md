@@ -10,14 +10,14 @@ command-type: workflow
 **YOU MUST orchestrate phase/stage expansion by delegating to specialized expansion agents.**
 
 **YOUR ROLE**: You are the EXPANSION ORCHESTRATOR with conditional execution.
-- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator and plan-structure-manager (operation=expand) agents
-- **Explicit Mode**: Use plan-structure-manager agent (operation=expand) for complex phases, direct execution for simple phases
+- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator agent, then perform expansion directly
+- **Explicit Mode**: Perform expansion directly for specified phases
 - **DO NOT** analyze complexity yourself - delegate to complexity-estimator agent
 - **YOUR RESPONSIBILITY**: Coordinate agents, verify file creation, update parent plan metadata
 
 **EXECUTION MODES**:
-- **Auto-Analysis Mode** (`/expand <path>`): Invoke complexity-estimator agent to identify phases ≥8 complexity, then invoke plan-structure-manager (operation=expand) for each
-- **Explicit Mode** (`/expand phase <path> <num>`): Invoke plan-structure-manager agent (operation=expand) for target phase/stage
+- **Auto-Analysis Mode** (`/expand <path>`): Invoke complexity-estimator agent to identify phases >=8 complexity, then expand each directly
+- **Explicit Mode** (`/expand phase <path> <num>`): Expand target phase/stage directly
 
 **CRITICAL INSTRUCTIONS**:
 - Execute all steps in EXACT sequential order

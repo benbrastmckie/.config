@@ -1,6 +1,6 @@
 ---
 allowed-tools: Task, TodoWrite, Bash, Read, Grep, Glob, Edit
-argument-hint: <revision-description-with-plan-path>
+argument-hint: <revision-description-with-plan-path> [--file <path>] [--complexity 1-4] [--dry-run]
 description: Research and revise existing implementation plan workflow
 command-type: primary
 dependent-agents:
@@ -96,6 +96,49 @@ if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
   exit 1
 fi
 
+# Parse optional --dry-run flag
+DRY_RUN="false"
+if [[ "$REVISION_DESCRIPTION" =~ --dry-run ]]; then
+  DRY_RUN="true"
+  # Strip flag from revision description
+  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--dry-run//' | xargs)
+fi
+
+# Parse optional --file flag for long prompt handling
+ORIGINAL_PROMPT_FILE_PATH=""
+if [[ "$REVISION_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
+  ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
+  # Strip --file flag and path from description
+  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--file[[:space:]]*[^[:space:]]*//' | xargs)
+
+  # Convert relative path to absolute
+  if [[ ! "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]; then
+    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+  fi
+
+  # Validate file exists
+  if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+    echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    echo "DIAGNOSTIC: Ensure --file path is correct and file exists" >&2
+    exit 1
+  fi
+
+  # Read file content as revision description
+  FILE_CONTENT=$(cat "$ORIGINAL_PROMPT_FILE_PATH")
+  if [ -z "$FILE_CONTENT" ]; then
+    echo "ERROR: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    echo "DIAGNOSTIC: The prompt file must contain both the plan path and revision details" >&2
+    exit 1
+  fi
+
+  REVISION_DESCRIPTION="$FILE_CONTENT"
+  echo "Loaded revision description from file: $ORIGINAL_PROMPT_FILE_PATH"
+elif [[ "$REVISION_DESCRIPTION" =~ --file$ ]] || [[ "$REVISION_DESCRIPTION" =~ --file[[:space:]]*$ ]]; then
+  echo "ERROR: --file flag requires a path argument" >&2
+  echo "USAGE: /revise \"--file /path/to/prompt.md\"" >&2
+  exit 1
+fi
+
 # Extract existing plan path from revision description
 # Matches: /path/to/file.md or ./relative/path.md or ../relative/path.md or .claude/path.md
 EXISTING_PLAN_PATH=$(echo "$REVISION_DESCRIPTION" | grep -oE '[./][^ ]+\.md' | head -1)
@@ -120,7 +163,29 @@ echo "=== Research-and-Revise Workflow ==="
 echo "Existing Plan: $EXISTING_PLAN_PATH"
 echo "Revision Details: $REVISION_DETAILS"
 echo "Research Complexity: $RESEARCH_COMPLEXITY"
+echo "Dry Run: $DRY_RUN"
 echo ""
+
+# Dry-run execution gate - preview and exit before state machine
+if [ "$DRY_RUN" = "true" ]; then
+  echo "=== DRY-RUN MODE ==="
+  echo ""
+  echo "Would perform the following actions:"
+  echo ""
+  echo "1. Initialize state machine for research-and-revise workflow"
+  echo "2. Execute research phase:"
+  echo "   - Analyze revision requirements: $REVISION_DETAILS"
+  echo "   - Create research reports in: $(dirname "$(dirname "$EXISTING_PLAN_PATH")")/reports/"
+  echo "   - Research complexity level: $RESEARCH_COMPLEXITY"
+  echo "3. Execute plan revision phase:"
+  echo "   - Create backup of existing plan"
+  echo "   - Revise plan based on research insights"
+  echo "   - Verify plan modifications"
+  echo "4. Complete workflow and display summary"
+  echo ""
+  echo "No changes were made (dry-run mode)"
+  exit 0
+fi
 ```
 
 ## Part 3: State Machine Initialization
@@ -542,3 +607,6 @@ exit 0
 - **Plan not modified**: Agent may determine no revision needed based on research
 - **Plan corrupted**: Restore from backup in plans/backups/ directory
 - **State machine errors**: Ensure library versions compatible (workflow-state-machine.sh >=2.0.0)
+- **File not found error**: Ensure --file path is correct and file exists; relative paths are resolved from current directory
+- **Empty file error**: The prompt file must contain both the plan path and revision details
+- **Dry-run mode**: Use --dry-run to preview what would be done without executing

@@ -10,14 +10,14 @@ command-type: workflow
 **YOU MUST orchestrate phase/stage collapse by delegating to specialized collapse agents.**
 
 **YOUR ROLE**: You are the COLLAPSE ORCHESTRATOR with conditional execution.
-- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator and plan-structure-manager (operation=collapse) agents
-- **Explicit Mode**: Use plan-structure-manager agent (operation=collapse) for complex collapses, direct execution for simple collapses
+- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator agent, then perform collapse directly
+- **Explicit Mode**: Perform collapse directly for specified phases
 - **DO NOT** analyze complexity yourself - delegate to complexity-estimator agent
 - **YOUR RESPONSIBILITY**: Coordinate agents, verify content preservation, update parent metadata
 
 **EXECUTION MODES**:
-- **Auto-Analysis Mode** (`/collapse <path>`): Invoke complexity-estimator agent to identify phases ≤5 complexity, then invoke plan-structure-manager (operation=collapse) for each
-- **Explicit Mode** (`/collapse phase <path> <num>`): Invoke plan-structure-manager agent (operation=collapse) for target phase/stage
+- **Auto-Analysis Mode** (`/collapse <path>`): Invoke complexity-estimator agent to identify phases <=5 complexity, then collapse each directly
+- **Explicit Mode** (`/collapse phase <path> <num>`): Collapse target phase/stage directly
 
 **CRITICAL INSTRUCTIONS**:
 - Execute all steps in EXACT sequential order

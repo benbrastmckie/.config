@@ -28,6 +28,40 @@
 - **Robustness Patterns**: Apply systematic robustness patterns for reliable command development - See [Robustness Framework](.claude/docs/concepts/robustness-framework.md)
 - See [Command Architecture Standards](.claude/docs/reference/command_architecture_standards.md) for complete guidelines
 
+### Output Suppression Patterns
+[Used by: All commands and agents]
+
+Commands MUST suppress verbose output to maintain clean Claude Code display:
+
+**Library Sourcing**: Suppress output while preserving error handling
+```bash
+source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+```
+
+**Directory Operations**: Suppress non-critical operations
+```bash
+mkdir -p "$OUTPUT_DIR" 2>/dev/null || true
+```
+
+**Single Summary Line**: One output per block instead of multiple progress messages
+```bash
+# After all operations complete
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+**WHAT not WHY Comments**: Comments describe what code does, not why it was designed that way
+```bash
+# Load state management functions (correct - WHAT)
+source lib.sh
+
+# We source here because subprocess isolation requires... (incorrect - WHY)
+```
+
+See [Output Formatting Standards](.claude/docs/reference/output-formatting-standards.md) for comprehensive patterns and [Bash Block Execution Model](.claude/docs/concepts/bash-block-execution-model.md#pattern-8-block-count-minimization) for block consolidation.
+
 ### Architectural Separation
 
 **Executable/Documentation Separation Pattern**: Commands and agents separate lean executable logic from comprehensive documentation to eliminate meta-confusion loops and enable independent evolution.

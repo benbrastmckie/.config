@@ -150,23 +150,25 @@ Expected plan format:
 
 ## Phases
 
-### Phase 1: Core Infrastructure
+### Phase 1: Core Infrastructure [NOT STARTED]
 - **Dependencies**: []
 - **Tasks**:
   - [ ] Create base module
   - [ ] Setup configuration
 
-### Phase 2: Main Feature
+### Phase 2: Main Feature [NOT STARTED]
 - **Dependencies**: ["Phase 1"]
 - **Tasks**:
   - [ ] Implement core logic
   - [ ] Add error handling
 
-### Phase 3: Testing
+### Phase 3: Testing [NOT STARTED]
 - **Dependencies**: ["Phase 2"]
 - **Tasks**:
   - [ ] Unit tests
   - [ ] Integration tests
+
+**Note**: Phase headings include status markers (`[NOT STARTED]`, `[IN PROGRESS]`, `[COMPLETE]`) for progress tracking. These are managed automatically by /plan and /build commands. See [Plan Progress Tracking](plan-progress-tracking.md) for details.
 
 ## Execution Waves
 - Wave 1: Phase 1

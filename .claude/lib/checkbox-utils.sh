@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
 # checkbox-utils.sh
 #
-# Utilities for updating checkboxes across plan hierarchy levels.
+# Utilities for updating checkboxes and status markers across plan hierarchy levels.
 # Supports progressive plan structures (Level 0/1/2).
 #
 # Functions:
 #   - update_checkbox() - Update a single checkbox with fuzzy matching
 #   - propagate_checkbox_update() - Propagate checkbox state across hierarchy
 #   - verify_checkbox_consistency() - Verify all levels synchronized
+#   - mark_phase_complete() - Mark all tasks in a phase as complete
+#   - mark_stage_complete() - Mark all tasks in a stage as complete
+#   - propagate_progress_marker() - Propagate status marker to hierarchy
+#   - remove_status_marker() - Remove status marker from phase heading
+#   - add_in_progress_marker() - Add [IN PROGRESS] marker to phase heading
+#   - add_complete_marker() - Add [COMPLETE] marker to phase heading
+#   - add_not_started_markers() - Add [NOT STARTED] to legacy plans
+#   - verify_phase_complete() - Verify all tasks in phase are complete
 
 set -e
 
@@ -332,9 +340,255 @@ mark_stage_complete() {
   return 0
 }
 
+# Propagate progress marker to parent plans for Level 1/2 structures
+# Usage: propagate_progress_marker <plan_path> <phase_num> <status>
+# status: "NOT STARTED", "IN PROGRESS", "COMPLETE", "BLOCKED"
+propagate_progress_marker() {
+  local plan_path="$1"
+  local phase_num="$2"
+  local status="$3"
+
+  # Detect structure level
+  local structure_level=$(detect_structure_level "$plan_path")
+
+  # Get plan directory if expanded
+  local plan_dir=$(get_plan_directory "$plan_path" 2>/dev/null || echo "")
+
+  if [[ -z "$plan_dir" ]]; then
+    # Level 0: Single file - no propagation needed
+    return 0
+  fi
+
+  # Get main plan file (parent directory of plan_dir + plan_name.md)
+  local plan_name=$(basename "$plan_dir")
+  local main_plan="$(dirname "$plan_dir")/$plan_name.md"
+
+  # Get phase file if expanded
+  local phase_file=$(get_phase_file "$plan_path" "$phase_num" 2>/dev/null || echo "")
+
+  # Determine which marker function to use
+  local marker_func=""
+  case "$status" in
+    "NOT STARTED")
+      # No function for adding NOT STARTED (used at plan creation)
+      return 0
+      ;;
+    "IN PROGRESS")
+      marker_func="add_in_progress_marker"
+      ;;
+    "COMPLETE")
+      marker_func="add_complete_marker"
+      ;;
+    *)
+      warn "Unknown status: $status"
+      return 1
+      ;;
+  esac
+
+  # Update phase file if it exists
+  if [[ -n "$phase_file" && -f "$phase_file" ]]; then
+    $marker_func "$phase_file" "$phase_num" 2>/dev/null || \
+      warn "Could not update status in phase file: $phase_file"
+  fi
+
+  # Update main plan
+  if [[ -f "$main_plan" ]]; then
+    $marker_func "$main_plan" "$phase_num" 2>/dev/null || \
+      warn "Could not update status in main plan: $main_plan"
+  fi
+
+  return 0
+}
+
+# Remove any status marker from phase heading
+# Usage: remove_status_marker <plan_path> <phase_num>
+# Removes: [NOT STARTED], [IN PROGRESS], [COMPLETE], [BLOCKED], [SKIPPED]
+remove_status_marker() {
+  local plan_path="$1"
+  local phase_num="$2"
+
+  if [[ ! -f "$plan_path" ]]; then
+    error "Plan file not found: $plan_path"
+    return 1
+  fi
+
+  # Remove any existing status marker from phase heading
+  local temp_file=$(mktemp)
+  awk -v phase="$phase_num" '
+    /^### Phase / {
+      phase_field = $3
+      gsub(/:/, "", phase_field)
+      if (phase_field == phase) {
+        gsub(/\[(NOT STARTED|IN PROGRESS|COMPLETE|BLOCKED|SKIPPED)\]/, "")
+        gsub(/[[:space:]]+$/, "")  # Trim trailing whitespace
+      }
+      print
+      next
+    }
+    { print }
+  ' "$plan_path" > "$temp_file"
+
+  mv "$temp_file" "$plan_path"
+  return 0
+}
+
+# Add [IN PROGRESS] marker to phase heading
+# Usage: add_in_progress_marker <plan_path> <phase_num>
+add_in_progress_marker() {
+  local plan_path="$1"
+  local phase_num="$2"
+
+  if [[ ! -f "$plan_path" ]]; then
+    error "Plan file not found: $plan_path"
+    return 1
+  fi
+
+  # First remove any existing status marker
+  remove_status_marker "$plan_path" "$phase_num"
+
+  # Add [IN PROGRESS] marker to phase heading
+  local temp_file=$(mktemp)
+  awk -v phase="$phase_num" '
+    /^### Phase / {
+      phase_field = $3
+      gsub(/:/, "", phase_field)
+      if (phase_field == phase && !/\[IN PROGRESS\]/) {
+        sub(/$/, " [IN PROGRESS]")
+      }
+      print
+      next
+    }
+    { print }
+  ' "$plan_path" > "$temp_file"
+
+  mv "$temp_file" "$plan_path"
+  return 0
+}
+
+# Add [COMPLETE] marker to phase heading
+# Usage: add_complete_marker <plan_path> <phase_num>
+add_complete_marker() {
+  local plan_path="$1"
+  local phase_num="$2"
+
+  if [[ ! -f "$plan_path" ]]; then
+    error "Plan file not found: $plan_path"
+    return 1
+  fi
+
+  # First remove any existing status marker (including NOT STARTED and IN PROGRESS)
+  remove_status_marker "$plan_path" "$phase_num"
+
+  # Add [COMPLETE] marker to phase heading
+  local temp_file=$(mktemp)
+  awk -v phase="$phase_num" '
+    /^### Phase / {
+      phase_field = $3
+      gsub(/:/, "", phase_field)
+      if (phase_field == phase && !/\[COMPLETE\]/) {
+        sub(/$/, " [COMPLETE]")
+      }
+      print
+      next
+    }
+    { print }
+  ' "$plan_path" > "$temp_file"
+
+  mv "$temp_file" "$plan_path"
+  return 0
+}
+
+# Add [NOT STARTED] markers to all phases without status markers
+# Usage: add_not_started_markers <plan_path>
+# Used for legacy plan compatibility
+add_not_started_markers() {
+  local plan_path="$1"
+
+  if [[ ! -f "$plan_path" ]]; then
+    error "Plan file not found: $plan_path"
+    return 1
+  fi
+
+  # Add [NOT STARTED] marker to phase headings that don't have any status marker
+  local temp_file=$(mktemp)
+  awk '
+    /^### Phase [0-9]+:/ {
+      # Check if line already has a status marker
+      if (!/\[(NOT STARTED|IN PROGRESS|COMPLETE|BLOCKED|SKIPPED)\]/) {
+        # Add [NOT STARTED] marker
+        sub(/$/, " [NOT STARTED]")
+      }
+      print
+      next
+    }
+    { print }
+  ' "$plan_path" > "$temp_file"
+
+  mv "$temp_file" "$plan_path"
+
+  # Log for user visibility
+  local count=$(grep -c "^### Phase.*\[NOT STARTED\]" "$plan_path" 2>/dev/null || echo "0")
+  if [[ "$count" -gt 0 ]]; then
+    if type log &>/dev/null; then
+      log "Added [NOT STARTED] markers to $count phases in legacy plan"
+    else
+      echo "Added [NOT STARTED] markers to $count phases in legacy plan"
+    fi
+  fi
+
+  return 0
+}
+
+# Verify that a phase is fully complete (all checkboxes checked)
+# Usage: verify_phase_complete <plan_path> <phase_num>
+# Returns: 0 if phase is complete, 1 if incomplete
+verify_phase_complete() {
+  local plan_path="$1"
+  local phase_num="$2"
+
+  if [[ ! -f "$plan_path" ]]; then
+    error "Plan file not found: $plan_path"
+  fi
+
+  # Check if any unchecked boxes remain in the phase
+  local unchecked_count
+  unchecked_count=$(awk -v phase="$phase_num" '
+    /^### Phase / {
+      phase_field = $3
+      gsub(/:/, "", phase_field)
+      if (phase_field == phase) {
+        in_phase = 1
+      } else if (in_phase) {
+        in_phase = 0
+      }
+      next
+    }
+    /^## / && in_phase {
+      in_phase = 0
+      next
+    }
+    in_phase && /^[[:space:]]*- \[[ ]\]/ {
+      count++
+    }
+    END { print count+0 }
+  ' "$plan_path")
+
+  if [[ "$unchecked_count" -eq 0 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Export all functions for sourcing
 export -f update_checkbox
 export -f propagate_checkbox_update
 export -f verify_checkbox_consistency
 export -f mark_phase_complete
 export -f mark_stage_complete
+export -f propagate_progress_marker
+export -f remove_status_marker
+export -f add_in_progress_marker
+export -f add_complete_marker
+export -f add_not_started_markers
+export -f verify_phase_complete

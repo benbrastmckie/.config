@@ -1,6 +1,6 @@
 ---
 allowed-tools: Task, TodoWrite, Bash, Read, Grep, Glob
-argument-hint: <issue-description>
+argument-hint: <issue-description> [--file <path>] [--complexity 1-4]
 description: Debug-focused workflow - Root cause analysis and bug fixing
 command-type: primary
 dependent-agents:
@@ -50,6 +50,30 @@ if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
   exit 1
 fi
 
+# Parse optional --file flag for long prompts
+ORIGINAL_PROMPT_FILE_PATH=""
+if [[ "$ISSUE_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
+  ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
+  # Convert to absolute path if relative
+  if [[ ! "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]; then
+    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+  fi
+  # Validate file exists
+  if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+    echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    exit 1
+  fi
+  # Read file content into ISSUE_DESCRIPTION
+  ISSUE_DESCRIPTION=$(cat "$ORIGINAL_PROMPT_FILE_PATH")
+  if [ -z "$ISSUE_DESCRIPTION" ]; then
+    echo "WARNING: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
+  fi
+elif [[ "$ISSUE_DESCRIPTION" =~ --file ]]; then
+  echo "ERROR: --file flag requires a path argument" >&2
+  echo "Usage: /debug --file /path/to/issue.md" >&2
+  exit 1
+fi
+
 echo "=== Debug-Focused Workflow ==="
 echo "Issue: $ISSUE_DESCRIPTION"
 echo "Research Complexity: $RESEARCH_COMPLEXITY"
@@ -83,26 +107,19 @@ fi
 
 export CLAUDE_PROJECT_DIR
 
-# Source libraries in dependency order (Standard 15)
-# 1. State machine foundation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-# 2. Library version checking
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
-# 3. Error handling
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
-# 4. Unified location detection for atomic topic allocation
-if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>&1; then
-  echo "ERROR: Failed to source unified-location-detection.sh"
-  echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
+# Source libraries in dependency order (Standard 15) with output suppression
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
-fi
-# 5. Workflow initialization for semantic slug generation (Plan 777)
-if ! source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" 2>&1; then
-  echo "ERROR: Failed to source workflow-initialization.sh"
-  echo "DIAGNOSTIC: Check library exists at: ${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-initialization.sh" >&2
   exit 1
-fi
+}
 
 # Verify library versions
 check_library_requirements "$(cat <<'EOF'
@@ -116,13 +133,23 @@ WORKFLOW_TYPE="debug-only"
 TERMINAL_STATE="debug"
 COMMAND_NAME="debug"
 
+# Generate WORKFLOW_ID for state persistence
+WORKFLOW_ID="debug_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+mkdir -p "$(dirname "$STATE_ID_FILE")"
+echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+export WORKFLOW_ID
+
+# Initialize workflow state BEFORE sm_init (correct initialization order)
+init_workflow_state "$WORKFLOW_ID"
+
 # Initialize state machine with return code verification
 if ! sm_init \
   "$ISSUE_DESCRIPTION" \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
-  "{}" 2>&1; then
+  "[]" 2>&1; then
   echo "ERROR: State machine initialization failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Issue Description: $ISSUE_DESCRIPTION" >&2
@@ -135,18 +162,8 @@ if ! sm_init \
   exit 1
 fi
 
-echo "✓ State machine initialized"
+echo "State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
 echo ""
-
-# Generate WORKFLOW_ID for state persistence
-WORKFLOW_ID="debug_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
-mkdir -p "$(dirname "$STATE_ID_FILE")"
-echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
-export WORKFLOW_ID
-
-# Initialize workflow state for subprocess isolation
-init_workflow_state "$WORKFLOW_ID"
 
 # Persist CLAUDE_PROJECT_DIR and ISSUE_DESCRIPTION for subsequent bash blocks
 append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
@@ -182,8 +199,8 @@ Task {
 set +H  # CRITICAL: Disable history expansion
 
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
 
 # Load WORKFLOW_ID from file
 STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
@@ -216,8 +233,8 @@ echo ""
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
@@ -270,6 +287,15 @@ TOPIC_SLUG="$TOPIC_NAME"
 mkdir -p "$RESEARCH_DIR"
 mkdir -p "$DEBUG_DIR"
 
+# === ARCHIVE PROMPT FILE (if --file was used) ===
+ARCHIVED_PROMPT_PATH=""
+if [ -n "$ORIGINAL_PROMPT_FILE_PATH" ] && [ -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+  mkdir -p "${TOPIC_PATH}/prompts"
+  ARCHIVED_PROMPT_PATH="${TOPIC_PATH}/prompts/$(basename "$ORIGINAL_PROMPT_FILE_PATH")"
+  mv "$ORIGINAL_PROMPT_FILE_PATH" "$ARCHIVED_PROMPT_PATH"
+  echo "Prompt file archived: $ARCHIVED_PROMPT_PATH"
+fi
+
 # Persist variables for next block and agent (legacy format for compatibility)
 echo "SPECS_DIR=$SPECS_DIR" > "${HOME}/.claude/tmp/debug_state_$$.txt"
 echo "RESEARCH_DIR=$RESEARCH_DIR" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
@@ -283,6 +309,8 @@ append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
 append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
 append_workflow_state "TOPIC_SLUG" "$TOPIC_SLUG"
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "$ORIGINAL_PROMPT_FILE_PATH"
+append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
@@ -302,6 +330,10 @@ Task {
     - Output Directory: $RESEARCH_DIR
     - Workflow Type: debug-only
     - Context Mode: root cause analysis
+    - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
+    - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
+
+    If an archived prompt file is provided (not 'none'), read it for complete context.
 
     Execute research according to behavioral guidelines.
 
@@ -378,8 +410,8 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -447,6 +479,10 @@ Task {
     - Research Reports: $REPORT_PATHS_JSON
     - Workflow Type: debug-only
     - Plan Mode: debug strategy
+    - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
+    - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
+
+    If an archived prompt file is provided (not 'none'), reference it for complete context.
 
     Execute planning according to behavioral guidelines.
 
@@ -508,8 +544,8 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -619,8 +655,8 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -682,6 +718,8 @@ exit 0
 - **No debug artifacts**: Analysis may be in plan file or reports directory
 - **Root cause unclear**: Increase complexity with --complexity 3 or --complexity 4
 - **State machine errors**: Ensure library versions compatible (workflow-state-machine.sh >=2.0.0)
+- **File not found error**: Ensure --file path is correct and file exists; relative paths are resolved from current directory
+- **Empty file warning**: The prompt file exists but has no content; add content to the file
 
 **Usage Examples**:
 

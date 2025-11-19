@@ -70,6 +70,19 @@ See [Testing Protocols](.claude/docs/reference/testing-protocols.md) for complet
 See [Code Standards](.claude/docs/reference/code-standards.md) for complete coding conventions, language-specific standards, architectural requirements, and link conventions.
 <!-- END_SECTION: code_standards -->
 
+<!-- SECTION: output_formatting -->
+## Output Formatting Standards
+[Used by: /implement, /build, /coordinate, all commands and agents]
+
+See [Output Formatting Standards](.claude/docs/reference/output-formatting-standards.md) for output suppression patterns, block consolidation rules, and comment standards (WHAT not WHY).
+
+**Quick Reference**:
+- Suppress library sourcing with `2>/dev/null` while preserving error handling
+- Target 2-3 bash blocks per command (Setup/Execute/Cleanup)
+- Single summary line per block instead of multiple progress messages
+- Comments describe WHAT code does, not WHY it was designed that way
+<!-- END_SECTION: output_formatting -->
+
 <!-- SECTION: directory_organization -->
 ## Directory Organization Standards
 [Used by: /implement, /plan, /refactor, all development commands]

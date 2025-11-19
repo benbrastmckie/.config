@@ -21,11 +21,11 @@ YOU ARE EXECUTING a build-from-plan workflow that takes an existing implementati
 **Expected Input**: Existing plan file path
 **Expected Output**: Implemented features with passing tests and updated documentation
 
-## Part 1: Capture Build Arguments
+## Block 1: Consolidated Setup
 
 **EXECUTE NOW**: The user invoked `/build [plan-file] [starting-phase] [--dry-run]`. Capture those arguments.
 
-In the **small bash block below**, replace `YOUR_BUILD_ARGS_HERE` with the actual build arguments (or leave empty for auto-resume).
+In the **bash block below**, replace `YOUR_BUILD_ARGS_HERE` with the actual build arguments (or leave empty for auto-resume).
 
 **Examples**:
 - If user ran `/build plan.md 3 --dry-run`, change to: `echo "plan.md 3 --dry-run" > "$TEMP_FILE"`
@@ -34,45 +34,25 @@ In the **small bash block below**, replace `YOUR_BUILD_ARGS_HERE` with the actua
 Execute this bash block with your substitution:
 
 ```bash
-set +H  # CRITICAL: Disable history expansion
-# SUBSTITUTE THE BUILD ARGUMENTS IN THE LINE BELOW
-# CRITICAL: Replace YOUR_BUILD_ARGS_HERE with the actual arguments from the user
+set +H 2>/dev/null || true
+set +o histexpand 2>/dev/null || true
+set -e  # Fail-fast per code-standards.md
+
+# DEBUG_LOG initialization per spec 778
+DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
+
+# === CAPTURE BUILD ARGUMENTS ===
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
-# Use timestamp-based filename for concurrent execution safety
 TEMP_FILE="${HOME}/.claude/tmp/build_arg_$(date +%s%N).txt"
+# SUBSTITUTE THE BUILD ARGUMENTS IN THE LINE BELOW
 echo "YOUR_BUILD_ARGS_HERE" > "$TEMP_FILE"
-# Save temp file path for Part 2 to read
 echo "$TEMP_FILE" > "${HOME}/.claude/tmp/build_arg_path.txt"
-echo "Build arguments captured to $TEMP_FILE"
-```
 
-## Part 2: Read Arguments and Discover Plan
+# === READ AND PARSE ARGUMENTS ===
+BUILD_ARGS=$(cat "$TEMP_FILE" 2>/dev/null || echo "")
 
-**EXECUTE NOW**: Read the captured arguments and discover the plan file:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-
-# Read build arguments from file (written in Part 1)
-BUILD_ARG_PATH_FILE="${HOME}/.claude/tmp/build_arg_path.txt"
-
-if [ -f "$BUILD_ARG_PATH_FILE" ]; then
-  BUILD_ARG_FILE=$(cat "$BUILD_ARG_PATH_FILE")
-else
-  # Fallback to legacy fixed filename for backward compatibility
-  BUILD_ARG_FILE="${HOME}/.claude/tmp/build_arg.txt"
-fi
-
-if [ -f "$BUILD_ARG_FILE" ]; then
-  BUILD_ARGS=$(cat "$BUILD_ARG_FILE" 2>/dev/null || echo "")
-else
-  echo "ERROR: Build arguments file not found: $BUILD_ARG_FILE"
-  echo "This usually means Part 1 (argument capture) didn't execute."
-  echo "Usage: /build [plan-file] [starting-phase] [--dry-run]"
-  exit 1
-fi
-
-# Bootstrap CLAUDE_PROJECT_DIR detection
+# === DETECT PROJECT DIRECTORY ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -93,46 +73,36 @@ fi
 
 export CLAUDE_PROJECT_DIR
 
-# Source libraries in dependency order (Standard 15)
-# 1. State machine foundation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-# 2. Library version checking
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
-# 3. Error handling
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
-# 4. Additional utilities
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
+# === SOURCE LIBRARIES ===
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh" 2>/dev/null
 
-# Verify library versions
 check_library_requirements "$(cat <<'EOF'
 workflow-state-machine.sh: ">=2.0.0"
 state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
 
-# Parse arguments from captured BUILD_ARGS
-# Convert to array for proper handling
+# === PARSE ARGUMENTS ===
 read -ra ARGS_ARRAY <<< "$BUILD_ARGS"
-
 PLAN_FILE="${ARGS_ARRAY[0]:-}"
 STARTING_PHASE="${ARGS_ARRAY[1]:-1}"
 DRY_RUN="false"
 
-# Parse remaining args for flags
 for arg in "${ARGS_ARRAY[@]:2}"; do
   case "$arg" in
     --dry-run) DRY_RUN="true" ;;
   esac
 done
 
-# Handle case where only --dry-run is provided without phase
 if [[ "$STARTING_PHASE" == "--dry-run" ]]; then
   STARTING_PHASE="1"
   DRY_RUN="true"
 fi
 
-# Validate STARTING_PHASE is numeric
 if ! echo "$STARTING_PHASE" | grep -Eq "^[0-9]+$"; then
   echo "ERROR: Invalid starting phase: $STARTING_PHASE (must be numeric)" >&2
   exit 1
@@ -141,46 +111,39 @@ fi
 echo "=== Build-from-Plan Workflow ==="
 echo ""
 
-# Auto-resume logic if no plan file specified
+# === AUTO-RESUME LOGIC ===
 if [ -z "$PLAN_FILE" ]; then
   echo "PROGRESS: No plan file specified, searching for incomplete plans..."
 
-  # Strategy 1: Check for checkpoint from previous /build execution
   CHECKPOINT_DATA=$(load_checkpoint "build" 2>/dev/null || echo "")
 
   if [ -n "$CHECKPOINT_DATA" ]; then
     CHECKPOINT_FILE="${HOME}/.claude/data/checkpoints/build_checkpoint.json"
     if [ -f "$CHECKPOINT_FILE" ]; then
-      # Verify checkpoint age (<24 hours)
       CHECKPOINT_AGE_HOURS=$(( ($(date +%s) - $(stat -c %Y "$CHECKPOINT_FILE" 2>/dev/null || stat -f %m "$CHECKPOINT_FILE")) / 3600 ))
 
       if [ "$CHECKPOINT_AGE_HOURS" -lt 24 ]; then
         PLAN_FILE=$(echo "$CHECKPOINT_DATA" | jq -r '.plan_path')
         STARTING_PHASE=$(echo "$CHECKPOINT_DATA" | jq -r '.current_phase')
-        echo "✓ Auto-resuming from checkpoint: Phase $STARTING_PHASE"
-        echo "  Plan: $(basename "$PLAN_FILE")"
+        echo "Auto-resuming from checkpoint: Phase $STARTING_PHASE"
       else
-        echo "WARNING: Checkpoint stale (>24h), searching for recent plan..."
         CHECKPOINT_DATA=""
       fi
     fi
   fi
 
-  # Strategy 2: Find most recent incomplete plan
   if [ -z "$PLAN_FILE" ]; then
     PLAN_FILE=$(find "$CLAUDE_PROJECT_DIR/.claude/specs" -path "*/plans/[0-9]*_*.md" -type f -exec ls -t {} + 2>/dev/null | head -1)
 
     if [ -z "$PLAN_FILE" ]; then
       echo "ERROR: No plan file found in specs/*/plans/" >&2
-      echo "DIAGNOSTIC: Create a plan using /plan or /plan first" >&2
       exit 1
     fi
 
-    echo "✓ Auto-detected most recent plan: $(basename "$PLAN_FILE")"
+    echo "Auto-detected most recent plan: $(basename "$PLAN_FILE")"
   fi
 fi
 
-# Verify plan file exists
 if [ ! -f "$PLAN_FILE" ]; then
   echo "ERROR: Plan file not found: $PLAN_FILE" >&2
   exit 1
@@ -190,174 +153,75 @@ echo "Plan: $PLAN_FILE"
 echo "Starting Phase: $STARTING_PHASE"
 echo ""
 
-# Dry-run mode
+# === DRY-RUN MODE ===
 if [ "$DRY_RUN" = "true" ]; then
   echo "=== DRY-RUN MODE: Preview Only ==="
-  echo ""
   echo "Plan: $(basename "$PLAN_FILE")"
   echo "Starting Phase: $STARTING_PHASE"
-  echo ""
   echo "Phases would be executed by implementer-coordinator agent"
-  echo "Test results would determine debug vs documentation path"
   exit 0
 fi
-```
 
-## Part 3: State Machine Initialization
+# === MARK STARTING PHASE IN PROGRESS ===
+# Source checkbox-utils if not already sourced
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkbox-utils.sh" 2>/dev/null || true
 
-**EXECUTE NOW**: Initialize the state machine for workflow tracking:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-
-# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
+# Check for legacy plan (no status markers) and add [NOT STARTED] markers
+if type add_not_started_markers &>/dev/null; then
+  # Check if any phase heading lacks a status marker
+  if grep -qE "^### Phase [0-9]+:" "$PLAN_FILE" && ! grep -qE "^### Phase [0-9]+:.*\[(NOT STARTED|IN PROGRESS|COMPLETE|BLOCKED|SKIPPED)\]" "$PLAN_FILE"; then
+    echo "Legacy plan detected (no status markers), adding [NOT STARTED] markers..."
+    add_not_started_markers "$PLAN_FILE" 2>/dev/null || true
   fi
 fi
 
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
+# Mark the starting phase as [IN PROGRESS] for visibility
+if type add_in_progress_marker &>/dev/null; then
+  if add_in_progress_marker "$PLAN_FILE" "$STARTING_PHASE" 2>/dev/null; then
+    echo "Marked Phase $STARTING_PHASE as [IN PROGRESS]"
+  else
+    echo "NOTE: Could not add progress marker (non-fatal)"
+  fi
 fi
+echo ""
 
-# Re-source required libraries (subprocess isolation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-
-# Hardcode workflow type
+# === INITIALIZE STATE MACHINE ===
 WORKFLOW_TYPE="full-implementation"
 TERMINAL_STATE="complete"
 COMMAND_NAME="build"
 
-# Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
 WORKFLOW_ID="build_$(date +%s)"
 STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
-# Initialize workflow state BEFORE sm_init (correct initialization order)
 init_workflow_state "$WORKFLOW_ID"
 
-# Initialize state machine with return code verification
-# research_complexity=1 (minimum) since /build doesn't perform research
-if ! sm_init \
-  "$PLAN_FILE" \
-  "$COMMAND_NAME" \
-  "$WORKFLOW_TYPE" \
-  "1" \
-  "[]" 2>&1; then
+if ! sm_init "$PLAN_FILE" "$COMMAND_NAME" "$WORKFLOW_TYPE" "1" "[]" 2>&1; then
   echo "ERROR: State machine initialization failed" >&2
-  echo "DIAGNOSTIC Information:" >&2
-  echo "  - Plan File: $PLAN_FILE" >&2
-  echo "  - Command Name: $COMMAND_NAME" >&2
-  echo "  - Workflow Type: $WORKFLOW_TYPE" >&2
-  echo "POSSIBLE CAUSES:" >&2
-  echo "  - Library version incompatibility (require workflow-state-machine.sh >=2.0.0)" >&2
-  echo "  - State file corruption in ~/.claude/data/state/" >&2
-  echo "  - Invalid plan file format" >&2
   exit 1
 fi
 
-echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
-echo ""
-```
-
-## Part 4: Implementation Phase
-
-**EXECUTE NOW**: Transition to implementation state and prepare for agent delegation:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-
-# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-fi
-
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
-fi
-
-# Re-source required libraries (subprocess isolation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-
-# Load WORKFLOW_ID from file (fail-fast pattern)
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
-  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Load workflow state from Part 3 (subprocess isolation)
-load_workflow_state "$WORKFLOW_ID" false
-
-# Transition to implement state with return code verification
+# === TRANSITION TO IMPLEMENT ===
 if ! sm_transition "$STATE_IMPLEMENT" 2>&1; then
   echo "ERROR: State transition to IMPLEMENT failed" >&2
-  echo "DIAGNOSTIC Information:" >&2
-  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
-  echo "  - Attempted Transition: → IMPLEMENT" >&2
-  echo "  - Workflow Type: full-implementation" >&2
-  echo "  - Plan File: $PLAN_FILE" >&2
-  echo "POSSIBLE CAUSES:" >&2
-  echo "  - State machine not initialized properly" >&2
-  echo "  - Invalid transition from current state" >&2
-  echo "  - State file corruption in ~/.claude/data/state/" >&2
-  echo "TROUBLESHOOTING:" >&2
-  echo "  - Verify sm_init was called successfully" >&2
-  echo "  - Check state machine logs for details" >&2
   exit 1
 fi
-echo "=== Phase 1: Implementation ==="
-echo ""
 
-# Pre-calculate topic path from plan file
 TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
 
-# Load WORKFLOW_ID for file naming
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+# === PERSIST FOR BLOCK 2 ===
+append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
+append_workflow_state "PLAN_FILE" "$PLAN_FILE"
+append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "STARTING_PHASE" "$STARTING_PHASE"
 
-# Persist variables for next block and agent
-echo "PLAN_FILE=$PLAN_FILE" > "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
-echo "TOPIC_PATH=$TOPIC_PATH" >> "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
-echo "STARTING_PHASE=$STARTING_PHASE" >> "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
+echo "Setup complete: $WORKFLOW_ID"
+echo "Topic path: $TOPIC_PATH"
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent with continuation loop support.
-
-**Continuation Loop Parameters**:
-- MAX_ITERATIONS: 5 (prevents infinite loops)
-- ITERATION: Starts at 1, increments on each continuation
-- continuation_context: Path to previous summary (null for first iteration)
+**EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent.
 
 Task {
   subagent_type: "general-purpose"
@@ -384,13 +248,17 @@ Task {
     - Workflow Type: full-implementation
     - Execution Mode: wave-based (parallel where possible)
 
-    Execute all implementation phases according to the plan, following wave-based
-    execution with dependency analysis.
+    Progress Tracking Instructions:
+    - Source checkbox-utils.sh: source ${CLAUDE_PROJECT_DIR}/.claude/lib/checkbox-utils.sh
+    - Before starting each phase: add_in_progress_marker '$PLAN_FILE' <phase_num>
+    - After completing each phase: mark_phase_complete '$PLAN_FILE' <phase_num> && add_complete_marker '$PLAN_FILE' <phase_num>
+    - This creates visible progress: [NOT STARTED] -> [IN PROGRESS] -> [COMPLETE]
+
+    Execute all implementation phases according to the plan.
 
     IMPORTANT: After completing all phases or if context exhaustion detected:
     - Create a summary in summaries/ directory
     - Summary must have Work Status at TOP showing completion percentage
-    - If incomplete, include Work Remaining section with specific tasks
     - Return summary path in completion signal
 
     Return: IMPLEMENTATION_COMPLETE: {PHASE_COUNT}
@@ -399,169 +267,272 @@ Task {
   "
 }
 
-**Continuation Loop Handling**:
-
-If the implementation-coordinator returns with work_remaining > 0:
-1. Parse the summary_path from the return
-2. Increment ITERATION counter
-3. Check if ITERATION > MAX_ITERATIONS (5)
-   - If yes: ERROR - Implementation timed out after 5 iterations
-   - If no: Re-invoke implementer-coordinator with continuation_context
-4. Pass the previous summary as continuation_context for the next iteration
-5. The new executor instance reads the summary and resumes from Work Remaining
-
-**NOTE**: This continuation mechanism ensures persistence through context exhaustion.
-The summary documents all completed work and exact resume point for seamless handoff.
-
-**EXECUTE NOW**: Verify implementation completion and persist state:
+**EXECUTE NOW**: After implementer-coordinator completes, parse the phase count and invoke spec-updater agent to mark completed phases in the plan hierarchy.
 
 ```bash
-set +H  # CRITICAL: Disable history expansion
+set +H 2>/dev/null || true
+set +o histexpand 2>/dev/null || true
+set -e  # Fail-fast per code-standards.md
 
-# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-fi
+# DEBUG_LOG initialization per spec 778
+DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
-fi
-
-# Re-source required libraries (subprocess isolation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-
-# Load WORKFLOW_ID from file (fail-fast pattern)
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-
-# Load state from previous block
-source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
-
-# MANDATORY VERIFICATION
-echo "Verifying implementation completion..."
-
-# Check if any files were modified (basic implementation check)
-if git diff --quiet && git diff --cached --quiet; then
-  echo "WARNING: No changes detected (implementation may have been no-op)"
-fi
-
-# Check for implementation artifacts (git commits)
-COMMIT_COUNT=$(git log --oneline --since="5 minutes ago" | wc -l)
-if [ "$COMMIT_COUNT" -eq 0 ]; then
-  echo "WARNING: No recent commits found"
-  echo "NOTE: Implementation may not have created commits"
-fi
-
-# CHECKPOINT REPORTING
-echo ""
-echo "CHECKPOINT: Implementation phase complete"
-echo "- Workflow type: full-implementation"
-echo "- Plan file: $PLAN_FILE"
-echo "- Changes detected: $(git diff --cached --quiet && echo "none" || echo "yes")"
-echo "- Recent commits: $COMMIT_COUNT"
-echo "- All phases verified: ✓"
-echo "- Proceeding to: Testing phase"
-echo ""
-
-# Persist variables across bash blocks (subprocess isolation)
-append_workflow_state "PLAN_FILE" "$PLAN_FILE"
-append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
-append_workflow_state "STARTING_PHASE" "$STARTING_PHASE"
-append_workflow_state "COMMIT_COUNT" "$COMMIT_COUNT"
-
-# Persist completed state with return code verification
-if ! save_completed_states_to_state 2>&1; then
-  echo "ERROR: Failed to persist completed state" >&2
-  exit 1
-fi
-```
-
-## Part 5: Testing Phase
-
-**EXECUTE NOW**: Run tests and determine pass/fail status:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-
-# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-fi
-
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
-fi
-
-# Re-source required libraries (subprocess isolation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-
-# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+# === LOAD STATE ===
 STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
-  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  echo "ERROR: WORKFLOW_ID file not found" >&2
   exit 1
 fi
 WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 export WORKFLOW_ID
 
-# Load workflow state from Part 3 (subprocess isolation)
-source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
+# Detect project directory
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkbox-utils.sh" 2>/dev/null
+
 load_workflow_state "$WORKFLOW_ID" false
 
-# Transition to test state with return code verification
-if ! sm_transition "$STATE_TEST" 2>&1; then
-  echo "ERROR: State transition to TEST failed" >&2
-  echo "DIAGNOSTIC Information:" >&2
-  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
-  echo "  - Attempted Transition: → TEST" >&2
-  echo "  - Workflow Type: full-implementation" >&2
-  echo "  - Implementation complete: check CHECKPOINT above" >&2
-  echo "POSSIBLE CAUSES:" >&2
-  echo "  - Implementation phase did not complete properly" >&2
-  echo "  - State not persisted after implementation" >&2
-  echo "  - Invalid transition from current state" >&2
-  echo "TROUBLESHOOTING:" >&2
-  echo "  - Check implementation checkpoint output" >&2
-  echo "  - Verify implementation phase completed" >&2
+# === VALIDATE STATE AFTER LOAD ===
+if [ -z "$STATE_FILE" ]; then
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Phase update block"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
   exit 1
 fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Phase update block"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+[ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state from: $STATE_FILE" >&2
+echo "Phase update: State validated"
+
+echo ""
+echo "=== Phase Update: Marking Completed Phases ==="
+echo ""
+
+# Extract phase count from implementer-coordinator output
+# Default to detecting from plan file if not explicitly provided
+if [ -z "${COMPLETED_PHASE_COUNT:-}" ]; then
+  # Count phases in plan file
+  COMPLETED_PHASE_COUNT=$(grep -c "^### Phase" "$PLAN_FILE" 2>/dev/null || echo "0")
+fi
+
+if [ "$COMPLETED_PHASE_COUNT" -gt 0 ]; then
+  echo "Phases to mark complete: $COMPLETED_PHASE_COUNT"
+  echo ""
+
+  # Store completed phases for state persistence
+  COMPLETED_PHASES=""
+
+  # Track phases that need fallback
+  FALLBACK_NEEDED=""
+
+  for phase_num in $(seq 1 "$COMPLETED_PHASE_COUNT"); do
+    echo "Marking Phase $phase_num complete..."
+
+    # Try to mark phase complete using checkbox-utils.sh
+    if mark_phase_complete "$PLAN_FILE" "$phase_num" 2>/dev/null; then
+      echo "  ✓ Checkboxes marked complete"
+
+      # Add [COMPLETE] marker to phase heading
+      # Note: add_complete_marker automatically removes [NOT STARTED] and [IN PROGRESS] markers
+      if add_complete_marker "$PLAN_FILE" "$phase_num" 2>/dev/null; then
+        echo "  ✓ [COMPLETE] marker added"
+      else
+        echo "  ⚠ [COMPLETE] marker failed"
+        FALLBACK_NEEDED="${FALLBACK_NEEDED}${phase_num},"
+      fi
+
+      COMPLETED_PHASES="${COMPLETED_PHASES}${phase_num},"
+    else
+      echo "  ⚠ Phase $phase_num update failed (will use fallback)"
+      FALLBACK_NEEDED="${FALLBACK_NEEDED}${phase_num},"
+    fi
+  done
+
+  # Persist fallback tracking
+  append_workflow_state "FALLBACK_NEEDED" "$FALLBACK_NEEDED"
+
+  # Verify checkbox consistency
+  if verify_checkbox_consistency "$PLAN_FILE" 1 2>/dev/null; then
+    echo ""
+    echo "✓ Checkbox hierarchy synchronized"
+  else
+    echo ""
+    echo "⚠ Checkbox hierarchy may need manual verification"
+  fi
+
+  # Persist completed phases
+  append_workflow_state "COMPLETED_PHASES" "$COMPLETED_PHASES"
+  append_workflow_state "COMPLETED_PHASE_COUNT" "$COMPLETED_PHASE_COUNT"
+else
+  echo "No phases to mark complete"
+fi
+
+save_completed_states_to_state 2>/dev/null || true
+
+echo ""
+echo "Phase update complete"
+```
+
+If the above checkbox-utils approach failed for any phase, **EXECUTE NOW**: USE the Task tool to invoke the spec-updater agent as a fallback for more comprehensive plan hierarchy updates.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Update plan hierarchy after implementation completion"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/spec-updater.md
+
+    You are acting as a Spec Updater Agent.
+
+    Update plan hierarchy checkboxes after implementation completion.
+
+    Plan: ${PLAN_FILE}
+    Total Phases: ${COMPLETED_PHASE_COUNT}
+    All phases have been completed successfully.
+
+    Steps:
+    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    2. For each phase (1 to ${COMPLETED_PHASE_COUNT}): mark_phase_complete '${PLAN_FILE}' <phase_num>
+    3. Verify consistency: verify_checkbox_consistency '${PLAN_FILE}' (each phase)
+    4. Add [COMPLETE] marker to phase headings if not present
+    5. Report: List all files updated (stage → phase → main plan)
+
+    Expected output:
+    - Confirmation of hierarchy update
+    - List of updated files at each level
+    - Verification that all levels are synchronized
+  "
+}
+
+## Block 2: Testing Phase
+
+**EXECUTE NOW**: Verify implementation and run tests:
+
+```bash
+set +H 2>/dev/null || true
+set +o histexpand 2>/dev/null || true
+set -e  # Fail-fast per code-standards.md
+
+# DEBUG_LOG initialization per spec 778
+DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
+
+# === LOAD STATE ===
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
+# Detect project directory
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+
+load_workflow_state "$WORKFLOW_ID" false
+
+# === VALIDATE STATE AFTER LOAD ===
+if [ -z "$STATE_FILE" ]; then
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 2, testing phase initialization"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 2, testing phase initialization"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ -z "${CURRENT_STATE:-}" ] || [ "$CURRENT_STATE" = "initialize" ]; then
+  {
+    echo "[$(date)] ERROR: State restoration failed"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: CURRENT_STATE not properly restored (expected: implement, got: ${CURRENT_STATE:-empty})"
+    echo "WHERE: Block 2, testing phase initialization"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State restoration failed (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+[ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state: $CURRENT_STATE" >&2
+echo "Block 2: State validated ($CURRENT_STATE)"
+
+# === VERIFY IMPLEMENTATION ===
+echo "Verifying implementation completion..."
+
+COMMIT_COUNT=$(git log --oneline --since="5 minutes ago" | wc -l)
+if [ "$COMMIT_COUNT" -eq 0 ]; then
+  echo "NOTE: No recent commits found"
+fi
+
+echo "Implementation checkpoint: $COMMIT_COUNT recent commits"
+echo ""
+
+# === TRANSITION TO TEST ===
+if ! sm_transition "$STATE_TEST" 2>&1; then
+  echo "ERROR: State transition to TEST failed" >&2
+  exit 1
+fi
+
 echo "=== Phase 2: Testing ==="
 echo ""
 
-# Extract test command from plan (if specified)
+# === RUN TESTS ===
 TEST_COMMAND=$(grep -oE "(npm test|pytest|\.\/run_all_tests\.sh|:TestSuite)" "$PLAN_FILE" | head -1 || echo "")
 
 if [ -z "$TEST_COMMAND" ]; then
-  echo "NOTE: No explicit test command found in plan"
-  echo "Attempting to auto-detect test framework..."
-
-  # Auto-detect test framework
   if [ -f "package.json" ] && grep -q '"test"' package.json; then
     TEST_COMMAND="npm test"
   elif [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
@@ -569,7 +540,6 @@ if [ -z "$TEST_COMMAND" ]; then
   elif [ -f ".claude/run_all_tests.sh" ]; then
     TEST_COMMAND="./.claude/run_all_tests.sh"
   else
-    echo "WARNING: No test framework detected, skipping test phase"
     TEST_COMMAND=""
   fi
 fi
@@ -585,115 +555,152 @@ if [ -n "$TEST_COMMAND" ]; then
   echo ""
 
   if [ $TEST_EXIT_CODE -ne 0 ]; then
-    echo "✗ Tests failed (exit code: $TEST_EXIT_CODE)"
+    echo "Tests failed (exit code: $TEST_EXIT_CODE)"
     TESTS_PASSED=false
   else
-    echo "✓ Tests passed"
+    echo "Tests passed"
     TESTS_PASSED=true
   fi
 else
-  echo "✓ Test phase skipped (no test command)"
+  echo "Test phase skipped (no test command)"
   TESTS_PASSED=true
+  TEST_EXIT_CODE=0
 fi
 
-# CHECKPOINT REPORTING
-echo ""
-echo "CHECKPOINT: Testing phase complete"
-echo "- Test command: ${TEST_COMMAND:-none}"
-echo "- Test result: $([ "$TESTS_PASSED" = "true" ] && echo "✓ PASSED" || echo "✗ FAILED (exit code: $TEST_EXIT_CODE)")"
-echo "- All verifications: ✓"
-echo "- Proceeding to: $([ "$TESTS_PASSED" = "true" ] && echo "Documentation phase" || echo "Debug phase")"
-echo ""
-
-# Persist test results for Part 5 (subprocess isolation)
+# === PERSIST FOR BLOCK 3 ===
 append_workflow_state "TESTS_PASSED" "$TESTS_PASSED"
 append_workflow_state "TEST_COMMAND" "$TEST_COMMAND"
 append_workflow_state "TEST_EXIT_CODE" "${TEST_EXIT_CODE:-0}"
+append_workflow_state "COMMIT_COUNT" "$COMMIT_COUNT"
 
-# Persist completed state with return code verification
-if ! save_completed_states_to_state 2>&1; then
-  echo "ERROR: Failed to persist completed state" >&2
-  exit 1
-fi
+save_completed_states_to_state 2>/dev/null
+
+echo ""
+echo "Test result: $([ "$TESTS_PASSED" = "true" ] && echo "PASSED" || echo "FAILED")"
+echo "Proceeding to: $([ "$TESTS_PASSED" = "true" ] && echo "Documentation" || echo "Debug")"
 ```
 
-## Part 6: Conditional Branching (Debug or Document)
+## Block 3: Conditional Debug or Documentation
 
-**EXECUTE NOW**: Branch to debug or document phase based on test results:
+**EXECUTE NOW**: Handle debug (if tests failed) or documentation (if tests passed):
 
 ```bash
-set +H  # CRITICAL: Disable history expansion
+set +H 2>/dev/null || true
+set +o histexpand 2>/dev/null || true
+set -e  # Fail-fast per code-standards.md
 
-# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-fi
+# DEBUG_LOG initialization per spec 778
+DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
-fi
-
-# Re-source required libraries (subprocess isolation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-
-# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+# === LOAD STATE ===
 STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
-  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  echo "ERROR: WORKFLOW_ID file not found" >&2
   exit 1
 fi
 WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 export WORKFLOW_ID
 
-# Load workflow state from Part 4 (subprocess isolation)
-source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
+# Detect project directory
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh" 2>/dev/null
+
 load_workflow_state "$WORKFLOW_ID" false
 
-# Conditional phase based on test results
+# === VALIDATE STATE AFTER LOAD ===
+if [ -z "$STATE_FILE" ]; then
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 3, debug/document phase initialization"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 3, debug/document phase initialization"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ -z "${CURRENT_STATE:-}" ]; then
+  {
+    echo "[$(date)] ERROR: State restoration failed"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: CURRENT_STATE not properly restored (got: empty)"
+    echo "WHERE: Block 3, debug/document phase initialization"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State restoration failed (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+[ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state: $CURRENT_STATE" >&2
+echo "Block 3: State validated ($CURRENT_STATE)"
+
+# === CONDITIONAL BRANCHING ===
 if [ "$TESTS_PASSED" = "false" ]; then
-  # Tests failed → debug phase with return code verification
+  # Tests failed -> Debug phase
   if ! sm_transition "$STATE_DEBUG" 2>&1; then
     echo "ERROR: State transition to DEBUG failed" >&2
-    echo "DIAGNOSTIC Information:" >&2
-    echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
-    echo "  - Attempted Transition: → DEBUG" >&2
-    echo "  - Workflow Type: full-implementation" >&2
-    echo "  - Tests passed: $TESTS_PASSED (expecting false)" >&2
-    echo "POSSIBLE CAUSES:" >&2
-    echo "  - Conditional logic error (tests_passed check)" >&2
-    echo "  - State not persisted after testing" >&2
-    echo "  - Invalid transition from current state" >&2
-    echo "TROUBLESHOOTING:" >&2
-    echo "  - Verify TESTS_PASSED variable is 'false'" >&2
-    echo "  - Check testing checkpoint output" >&2
     exit 1
   fi
+
   echo "=== Phase 3: Debug (Tests Failed) ==="
   echo ""
 
-  # Pre-calculate debug directory
   DEBUG_DIR="${TOPIC_PATH}/debug"
   mkdir -p "$DEBUG_DIR"
 
-  # Persist debug directory for agent
-  echo "DEBUG_DIR=$DEBUG_DIR" >> "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
+  echo "Debug directory: $DEBUG_DIR"
+  echo "Test command: $TEST_COMMAND"
+  echo "Exit code: $TEST_EXIT_CODE"
+  echo ""
+  echo "NOTE: After debug, re-run /build to retry tests"
+
+  append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
+else
+  # Tests passed -> Documentation phase
+  if ! sm_transition "$STATE_DOCUMENT" 2>&1; then
+    echo "ERROR: State transition to DOCUMENT failed" >&2
+    exit 1
+  fi
+
+  echo "=== Phase 3: Documentation ==="
+  echo ""
+
+  if git diff --name-only HEAD~${COMMIT_COUNT}..HEAD 2>/dev/null | grep -qE '(\.py|\.js|\.ts|\.go|\.rs)$'; then
+    echo "NOTE: Code files modified, documentation update recommended"
+  fi
+
+  echo "Documentation phase complete"
+fi
+
+save_completed_states_to_state 2>/dev/null
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent.
+If tests failed, **EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent.
 
 Task {
   subagent_type: "general-purpose"
@@ -718,245 +725,177 @@ Task {
   "
 }
 
-**EXECUTE NOW**: Verify debug artifacts were created:
+## Block 4: Completion
+
+**EXECUTE NOW**: Complete workflow and cleanup:
 
 ```bash
-set +H  # CRITICAL: Disable history expansion
+set +H 2>/dev/null || true
+set +o histexpand 2>/dev/null || true
+set -e  # Fail-fast per code-standards.md
 
-# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-fi
+# DEBUG_LOG initialization per spec 778
+DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
-fi
-
-# Re-source required libraries (subprocess isolation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-
-# Load WORKFLOW_ID from file (fail-fast pattern)
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-
-# Load state from previous block
-source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
-
-# MANDATORY VERIFICATION
-echo "Verifying debug artifacts..."
-
-if [ ! -d "$DEBUG_DIR" ]; then
-  echo "ERROR: Debug phase failed to create debug directory" >&2
-  echo "DIAGNOSTIC: Expected directory: $DEBUG_DIR" >&2
-  exit 1
-fi
-
-if [ -z "$(find "$DEBUG_DIR" -name '*.md' 2>/dev/null)" ]; then
-  echo "ERROR: Debug phase failed to create debug report" >&2
-  echo "DIAGNOSTIC: Directory exists but no .md files found: $DEBUG_DIR" >&2
-  exit 1
-fi
-
-DEBUG_REPORT=$(find "$DEBUG_DIR" -name '*.md' -type f | head -1)
-echo "✓ Debug analysis complete (report: $DEBUG_REPORT)"
-echo ""
-
-echo "NOTE: After debug, you may re-run /build to retry tests"
-echo ""
-
-# Persist completed state
-save_completed_states_to_state
-```
-
-**EXECUTE NOW**: Handle documentation phase when tests pass:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-
-# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-fi
-
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
-fi
-
-# Re-source required libraries (subprocess isolation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-
-# Load WORKFLOW_ID from file (fail-fast pattern)
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-
-# Load state from previous block
-source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
-load_workflow_state "$WORKFLOW_ID" false
-
-# Skip if tests failed (debug phase handled separately)
-if [ "$TESTS_PASSED" = "false" ]; then
-  echo "DEBUG phase completed, skipping documentation"
-  exit 0
-fi
-
-# Tests passed → document phase with return code verification
-if ! sm_transition "$STATE_DOCUMENT" 2>&1; then
-  echo "ERROR: State transition to DOCUMENT failed" >&2
-  echo "DIAGNOSTIC Information:" >&2
-  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
-  echo "  - Attempted Transition: → DOCUMENT" >&2
-  echo "  - Workflow Type: full-implementation" >&2
-  echo "  - Tests passed: $TESTS_PASSED (expecting true)" >&2
-  echo "POSSIBLE CAUSES:" >&2
-  echo "  - Conditional logic error (tests_passed check)" >&2
-  echo "  - State not persisted after testing" >&2
-  echo "  - Invalid transition from current state" >&2
-  echo "TROUBLESHOOTING:" >&2
-  echo "  - Verify TESTS_PASSED variable is 'true'" >&2
-  echo "  - Check testing checkpoint output" >&2
-  exit 1
-fi
-echo "=== Phase 3: Documentation ==="
-echo ""
-
-echo "Updating documentation for implemented features..."
-
-# Basic documentation update (check for README updates needed)
-if git diff --name-only HEAD~${COMMIT_COUNT}..HEAD | grep -qE '(\.py|\.js|\.ts|\.go|\.rs)$'; then
-  echo "NOTE: Code files modified, documentation update recommended"
-  echo "Consider updating:"
-  echo "  - README.md"
-  echo "  - API documentation"
-  echo "  - CHANGELOG.md"
-fi
-
-echo "✓ Documentation phase complete"
-echo ""
-
-# Persist completed state
-save_completed_states_to_state
-```
-
-## Part 7: Completion & Cleanup
-
-**EXECUTE NOW**: Complete workflow and cleanup state:
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-
-# Bootstrap CLAUDE_PROJECT_DIR detection (subprocess isolation - cannot rely on previous block export)
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-fi
-
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
-fi
-
-# Re-source required libraries (subprocess isolation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
-
-# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+# === LOAD STATE ===
 STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
-  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  echo "ERROR: WORKFLOW_ID file not found" >&2
   exit 1
 fi
 WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 export WORKFLOW_ID
 
-# Load workflow state from Part 5 (subprocess isolation)
-source "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null || true
+# Detect project directory
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh" 2>/dev/null
+
 load_workflow_state "$WORKFLOW_ID" false
 
-# Transition to complete state with return code verification
-if ! sm_transition "$STATE_COMPLETE" 2>&1; then
-  echo "ERROR: State transition to COMPLETE failed" >&2
-  echo "DIAGNOSTIC Information:" >&2
-  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
-  echo "  - Attempted Transition: → COMPLETE" >&2
-  echo "  - Workflow Type: full-implementation" >&2
-  echo "  - Terminal State: complete" >&2
-  echo "POSSIBLE CAUSES:" >&2
-  echo "  - Previous phase (debug/document) did not complete" >&2
-  echo "  - State not persisted properly" >&2
-  echo "  - Invalid transition from current state" >&2
-  echo "TROUBLESHOOTING:" >&2
-  echo "  - Check last checkpoint output" >&2
-  echo "  - Verify all required phases completed" >&2
+# === VALIDATE STATE AFTER LOAD ===
+if [ -z "$STATE_FILE" ]; then
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 4, workflow completion"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
   exit 1
 fi
 
-echo "=== Build Complete ==="
+if [ ! -f "$STATE_FILE" ]; then
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 4, workflow completion"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ -z "${CURRENT_STATE:-}" ]; then
+  {
+    echo "[$(date)] ERROR: State restoration failed"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: CURRENT_STATE not properly restored (got: empty)"
+    echo "WHERE: Block 4, workflow completion"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State restoration failed (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+[ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state: $CURRENT_STATE" >&2
+echo "Block 4: State validated ($CURRENT_STATE)"
+
+# === VALIDATE PREDECESSOR STATE ===
+case "$CURRENT_STATE" in
+  document|debug)
+    # Valid - can transition to complete
+    ;;
+  test)
+    {
+      echo "[$(date)] ERROR: Invalid predecessor state for completion"
+      echo "WHICH: sm_transition to complete"
+      echo "WHAT: Cannot transition to complete from test state - Block 3 did not execute"
+      echo "WHERE: Block 4, workflow completion"
+      echo "CURRENT_STATE: $CURRENT_STATE"
+      echo ""
+      echo "TROUBLESHOOTING:"
+      echo "1. Check Block 3 for errors (debug/document phase)"
+      echo "2. Verify state file contains expected transitions"
+      echo "3. Check for history expansion errors in previous blocks"
+    } >> "$DEBUG_LOG"
+    echo "ERROR: Invalid predecessor state - Block 3 did not complete (see $DEBUG_LOG)" >&2
+    exit 1
+    ;;
+  implement)
+    {
+      echo "[$(date)] ERROR: Invalid predecessor state for completion"
+      echo "WHICH: sm_transition to complete"
+      echo "WHAT: Cannot transition to complete from implement state - Blocks 2 and 3 did not execute"
+      echo "WHERE: Block 4, workflow completion"
+      echo "CURRENT_STATE: $CURRENT_STATE"
+      echo ""
+      echo "TROUBLESHOOTING:"
+      echo "1. Check Block 2 for errors (testing phase)"
+      echo "2. Check Block 3 for errors (debug/document phase)"
+      echo "3. Verify state file contains expected transitions"
+    } >> "$DEBUG_LOG"
+    echo "ERROR: Invalid predecessor state - Blocks 2 and 3 did not complete (see $DEBUG_LOG)" >&2
+    exit 1
+    ;;
+  *)
+    {
+      echo "[$(date)] ERROR: Unexpected predecessor state"
+      echo "WHICH: sm_transition to complete"
+      echo "WHAT: Unrecognized state before completion"
+      echo "WHERE: Block 4, workflow completion"
+      echo "CURRENT_STATE: $CURRENT_STATE"
+    } >> "$DEBUG_LOG"
+    echo "ERROR: Unexpected predecessor state '$CURRENT_STATE' (see $DEBUG_LOG)" >&2
+    exit 1
+    ;;
+esac
+
+# === COMPLETE WORKFLOW ===
+if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  echo "ERROR: State transition to COMPLETE failed" >&2
+  exit 1
+fi
+
 echo ""
+echo "=== Build Complete ==="
 echo "Workflow Type: full-implementation"
 echo "Plan: $PLAN_FILE"
-echo "Implementation: ✓ Complete"
-echo "Testing: $([ "$TESTS_PASSED" = "true" ] && echo "✓ Passed" || echo "✗ Failed (debugged)")"
+echo "Phases Completed: ${COMPLETED_PHASE_COUNT:-0}"
+echo "Implementation: Complete"
+echo "Testing: $([ "$TESTS_PASSED" = "true" ] && echo "Passed" || echo "Failed (debugged)")"
 echo ""
+
+# Show completed phases summary
+if [ -n "${COMPLETED_PHASES:-}" ]; then
+  echo "Phase Summary:"
+  # Parse comma-separated list of completed phases
+  IFS=',' read -ra PHASE_ARRAY <<< "${COMPLETED_PHASES%,}"
+  for phase in "${PHASE_ARRAY[@]}"; do
+    if [ -n "$phase" ]; then
+      echo "  ✓ Phase $phase: Complete"
+    fi
+  done
+  echo ""
+fi
 
 if [ "$TESTS_PASSED" = "true" ]; then
   echo "Next Steps:"
   echo "- Review changes: git log --oneline -$COMMIT_COUNT"
   echo "- Create PR: gh pr create"
-  echo "- Deploy: (follow project deployment process)"
+  delete_checkpoint "build" 2>/dev/null || true
 else
   echo "Next Steps:"
   echo "- Review debug analysis above"
   echo "- Apply fixes and re-run: /build $PLAN_FILE"
-  echo "- Or continue from test phase: /build $PLAN_FILE 2"
 fi
 
-echo ""
-
-# Delete checkpoint (successful completion)
-if [ "$TESTS_PASSED" = "true" ]; then
-  delete_checkpoint "build" 2>/dev/null || true
-fi
-
-# Cleanup temp state files
-rm -f "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt"
-rm -f "${HOME}/.claude/tmp/build_state_id.txt"
+# Cleanup
+rm -f "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null
+rm -f "${HOME}/.claude/tmp/build_state_id.txt" 2>/dev/null
 
 exit 0
 ```
@@ -965,8 +904,8 @@ exit 0
 
 **Troubleshooting**:
 
-- **No plan found**: Create a plan first using `/plan` or `/plan`
-- **Tests failing**: Use debug output above, or invoke `/fix` for dedicated debugging
+- **No plan found**: Create a plan first using `/plan`
+- **Tests failing**: Use debug output above, or invoke `/debug` for dedicated debugging
 - **Implementation incomplete**: Check implementer-coordinator agent logs
 - **Checkpoint issues**: Delete stale checkpoint: `rm ~/.claude/data/checkpoints/build_checkpoint.json`
 - **State machine errors**: Ensure library versions compatible (workflow-state-machine.sh >=2.0.0)
