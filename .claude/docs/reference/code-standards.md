@@ -5,7 +5,7 @@
 - **Indentation**: 2 spaces, expandtab
 - **Line length**: ~100 characters (soft limit)
 - **Naming**: snake_case for variables/functions, PascalCase for module tables
-- **Error Handling**: Use appropriate error handling for language (pcall for Lua, try-catch for others)
+- **Error Handling**: Use defensive programming patterns with structured error messages (WHICH/WHAT/WHERE) - See [Defensive Programming Patterns](.claude/docs/concepts/patterns/defensive-programming.md) and [Error Enhancement Guide](.claude/docs/guides/error-enhancement-guide.md)
 - **Documentation**: Every directory must have a README.md
 - **Character Encoding**: UTF-8 only, no emojis in file content
 
@@ -22,10 +22,45 @@
 - **Templates** must be complete and copy-paste ready (agent prompts, JSON schemas, bash commands)
 - **Critical warnings** (CRITICAL, IMPORTANT, NEVER) must stay in command files
 - **Reference files** (`shared/`, `templates/`, `docs/`) provide supplemental context only
-- **Imperative Language**: All required actions use MUST/WILL/SHALL (never should/may/can) - See [Imperative Language Guide](.claude/docs/guides/imperative-language-guide.md)
+- **Imperative Language**: All required actions use MUST/WILL/SHALL (never should/may/can) - See [Imperative Language Guide](.claude/docs/archive/guides/imperative-language-guide.md)
 - **Behavioral Injection**: Commands invoke agents via Task tool with context injection (not SlashCommand) - See [Behavioral Injection Pattern](.claude/docs/concepts/patterns/behavioral-injection.md)
 - **Verification and Fallback**: All file creation operations require MANDATORY VERIFICATION checkpoints - See [Verification and Fallback Pattern](.claude/docs/concepts/patterns/verification-fallback.md)
+- **Robustness Patterns**: Apply systematic robustness patterns for reliable command development - See [Robustness Framework](.claude/docs/concepts/robustness-framework.md)
 - See [Command Architecture Standards](.claude/docs/reference/command_architecture_standards.md) for complete guidelines
+
+### Output Suppression Patterns
+[Used by: All commands and agents]
+
+Commands MUST suppress verbose output to maintain clean Claude Code display:
+
+**Library Sourcing**: Suppress output while preserving error handling
+```bash
+source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+```
+
+**Directory Operations**: Suppress non-critical operations
+```bash
+mkdir -p "$OUTPUT_DIR" 2>/dev/null || true
+```
+
+**Single Summary Line**: One output per block instead of multiple progress messages
+```bash
+# After all operations complete
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+**WHAT not WHY Comments**: Comments describe what code does, not why it was designed that way
+```bash
+# Load state management functions (correct - WHAT)
+source lib.sh
+
+# We source here because subprocess isolation requires... (incorrect - WHY)
+```
+
+See [Output Formatting Standards](.claude/docs/reference/output-formatting-standards.md) for comprehensive patterns and [Bash Block Execution Model](.claude/docs/concepts/bash-block-execution-model.md#pattern-8-block-count-minimization) for block consolidation.
 
 ### Architectural Separation
 

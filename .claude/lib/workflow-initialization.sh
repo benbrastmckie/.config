@@ -234,6 +234,90 @@ validate_and_generate_filename_slugs() {
 }
 
 # ==============================================================================
+# Helper Function: validate_topic_directory_slug
+# ==============================================================================
+
+# validate_topic_directory_slug: Three-tier validation for topic directory slug generation
+#
+# Implements hybrid topic slug generation (Spec 771):
+# Tier 1: Use LLM-generated topic_directory_slug if valid (preferred)
+# Tier 2: Extract significant words from description if LLM slug invalid (fallback)
+# Tier 3: Use sanitize_topic_name() if extract fails (ultimate fallback)
+#
+# Arguments:
+#   $1 - classification_result: JSON classification result containing topic_directory_slug field
+#   $2 - workflow_description: Original workflow description (for fallbacks)
+#
+# Output:
+#   Validated topic_directory_slug string on stdout
+#
+# Returns:
+#   0 on success, 1 on error
+#
+# Side effects:
+#   Logs slug generation strategy (if log function available)
+#
+validate_topic_directory_slug() {
+  local classification_result="${1:-}"
+  local workflow_description="${2:-}"
+
+  local topic_slug=""
+  local strategy="sanitize"  # Default strategy
+
+  # Slug validation regex: lowercase letters, numbers, underscores only, 1-40 chars
+  local slug_regex='^[a-z0-9_]{1,40}$'
+
+  # Tier 1: Try to extract and validate LLM-generated slug
+  if [ -n "$classification_result" ]; then
+    # Extract topic_directory_slug from JSON
+    topic_slug=$(echo "$classification_result" | jq -r '.topic_directory_slug // empty' 2>/dev/null)
+
+    if [ -n "$topic_slug" ]; then
+      # Security check: Reject if contains path separators
+      if echo "$topic_slug" | grep -q '/'; then
+        echo "WARNING: topic_directory_slug contains path separator, rejecting (security check)" >&2
+        topic_slug=""
+      # Validate format
+      elif echo "$topic_slug" | grep -Eq "$slug_regex"; then
+        strategy="llm"
+        # Valid LLM slug - use it
+      else
+        echo "WARNING: topic_directory_slug '$topic_slug' invalid format, falling back" >&2
+        topic_slug=""
+      fi
+    fi
+  fi
+
+  # Tier 2: Extract significant words from description
+  if [ -z "$topic_slug" ] && [ -n "$workflow_description" ]; then
+    # Use extract_significant_words from topic-utils.sh
+    if declare -f extract_significant_words >/dev/null 2>&1; then
+      topic_slug=$(extract_significant_words "$workflow_description")
+      if [ -n "$topic_slug" ] && echo "$topic_slug" | grep -Eq "$slug_regex"; then
+        strategy="extract"
+      else
+        topic_slug=""
+      fi
+    fi
+  fi
+
+  # Tier 3: Ultimate fallback to sanitize_topic_name
+  if [ -z "$topic_slug" ]; then
+    topic_slug=$(sanitize_topic_name "$workflow_description")
+    strategy="sanitize"
+  fi
+
+  # Log slug generation strategy (if unified-logger available)
+  if declare -f log_topic_slug_generation >/dev/null 2>&1; then
+    log_topic_slug_generation "INFO" "$strategy" "$topic_slug"
+  fi
+
+  # Output the validated slug
+  echo "$topic_slug"
+  return 0
+}
+
+# ==============================================================================
 # Core Function: initialize_workflow_paths
 # ==============================================================================
 
@@ -356,7 +440,17 @@ initialize_workflow_paths() {
   # This prevents topic number incrementing on each bash block invocation
   local topic_num
   local topic_name
-  topic_name=$(sanitize_topic_name "$workflow_description")
+
+  # Use LLM-generated topic_directory_slug if classification_result provided (Spec 771)
+  # Otherwise fall back to sanitize_topic_name() for backward compatibility
+  if [ -n "$classification_result" ]; then
+    # Use three-tier validation: LLM slug -> extract -> sanitize
+    topic_name=$(validate_topic_directory_slug "$classification_result" "$workflow_description")
+  else
+    # No classification result - use legacy sanitization (backward compatible)
+    topic_name=$(sanitize_topic_name "$workflow_description")
+  fi
+
   topic_num=$(get_or_create_topic_number "$specs_root" "$topic_name")
 
   # Validate required fields

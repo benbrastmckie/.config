@@ -1,27 +1,36 @@
 # Command Implementation Patterns
 
-**Path**: docs → guides → command-patterns.md
-
-This document provides reusable patterns and examples for implementing Claude Code commands. Commands should reference these patterns rather than duplicating documentation inline.
-
-For command architecture standards and design principles, see [Command Architecture Standards](../reference/command_architecture_standards.md).
-
-**Last Updated**: 2025-10-10
+**Document Status**: SPLIT - This document has been split for maintainability
+**Last Updated**: 2025-11-17
 
 ---
 
-## Table of Contents
+## This Document Has Been Split
 
-1. [Agent Invocation Patterns](#agent-invocation-patterns)
-2. [Checkpoint Management Patterns](#checkpoint-management-patterns)
-3. [Error Recovery Patterns](#error-recovery-patterns)
-4. [Artifact Referencing Patterns](#artifact-referencing-patterns)
-5. [Testing Integration Patterns](#testing-integration-patterns)
-6. [Progress Streaming Patterns](#progress-streaming-patterns)
-7. [Standards Discovery Patterns](#standards-discovery-patterns)
-8. [Logger Initialization Pattern](#logger-initialization-pattern)
-9. [Pull Request Creation Pattern](#pull-request-creation-pattern)
-10. [Parallel Execution Safety Pattern](#parallel-execution-safety-pattern)
+For better maintainability, this large document (1519 lines) has been split into focused files under 400 lines each.
+
+**Please refer to the new split files**:
+
+| Topic | Document | Description |
+|-------|----------|-------------|
+| Overview | [command-patterns-overview.md](command-patterns-overview.md) | Pattern index and quick reference |
+| Agent Patterns | [command-patterns-agents.md](command-patterns-agents.md) | Agent invocation and coordination |
+| Checkpoint Patterns | [command-patterns-checkpoints.md](command-patterns-checkpoints.md) | State and error handling |
+| Integration Patterns | [command-patterns-integration.md](command-patterns-integration.md) | Testing, PR creation, git |
+
+**Start here**: [Command Patterns Overview](command-patterns-overview.md)
+
+---
+
+## Legacy Content Below
+
+The content below is preserved for reference but should be accessed via the split files above.
+
+---
+
+**Path**: docs -> guides -> command-patterns.md
+
+For architecture standards, see [Architecture Standards](../reference/architecture-standards-overview.md).
 
 ---
 

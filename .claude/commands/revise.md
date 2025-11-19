@@ -1,776 +1,612 @@
 ---
+allowed-tools: Task, TodoWrite, Bash, Read, Grep, Glob, Edit
+argument-hint: <revision-description-with-plan-path> [--file <path>] [--complexity 1-4] [--dry-run]
+description: Research and revise existing implementation plan workflow
 command-type: primary
-dependent-commands: list, expand
-description: Revise the most recently discussed plan with user-provided changes (supports interactive and automated modes)
-argument-hint: <revision-details> [--auto-mode] [--context <json>] [report-path1] [report-path2] ...
-allowed-tools: Read, Write, Edit, Glob, Grep, Task, MultiEdit, TodoWrite, SlashCommand
+dependent-agents:
+  - research-specialist
+  - research-sub-supervisor
+  - plan-architect
+library-requirements:
+  - workflow-state-machine.sh: ">=2.0.0"
+  - state-persistence.sh: ">=1.5.0"
+documentation: See .claude/docs/guides/revise-command-guide.md for complete usage guide
 ---
 
-# /revise Command
+# /revise - Research-and-Revise Workflow Command
 
-**YOU MUST revise implementation plans or research reports according to user-provided details.** Your PRIMARY OBLIGATION is modifying the artifact file with requested changes while preserving structure and creating backups - this is MANDATORY and NON-NEGOTIABLE.
+YOU ARE EXECUTING a research-and-revise workflow that creates research reports based on new insights and then revises an existing implementation plan.
 
-**ROLE CLARITY**: You are a plan/report revision specialist. You WILL parse revision requirements, create backups, apply changes systematically, and update revision history. Backup creation is not optional - you MUST create backups before modifications.
+**Workflow Type**: research-and-revise
+**Terminal State**: plan (after plan revision complete)
+**Expected Output**: Research reports + revised plan (with backup of original)
 
-**CRITICAL RESTRICTIONS**:
-- YOU MUST ONLY modify artifact files (plans/*.md, reports/*.md)
-- YOU MUST NEVER execute implementation code or run tests
-- YOU MUST ALWAYS create backups before modifications
-- YOU MUST preserve completion markers for already-executed phases
+## Part 1: Capture Revision Description
 
-## STEP 1 (REQUIRED BEFORE STEP 2) - Parse Arguments and Determine Mode
+**EXECUTE NOW**: The user invoked `/revise "<revision-description-with-plan-path>"`. Capture that description.
 
-### EXECUTE NOW - Parse Command Arguments
+In the **small bash block below**, replace `YOUR_REVISION_DESCRIPTION_HERE` with the actual revision description (keeping the quotes).
 
-YOU MUST parse arguments to determine operation mode and extract parameters:
+**Example**: If user ran `/revise "revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements"`, change:
+- FROM: `echo "YOUR_REVISION_DESCRIPTION_HERE" > "$TEMP_FILE"`
+- TO: `echo "revise plan at .claude/specs/123_auth/plans/001_plan.md based on new security requirements" > "$TEMP_FILE"`
+
+Execute this bash block with your substitution:
 
 ```bash
-# CRITICAL: Parse arguments
-ARG1="$1"
-ARG2="$2"
-ARG_REST="${@:3}"
+set +H  # CRITICAL: Disable history expansion
+# SUBSTITUTE THE REVISION DESCRIPTION IN THE LINE BELOW
+# CRITICAL: Replace YOUR_REVISION_DESCRIPTION_HERE with the actual revision description from the user
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+# Use timestamp-based filename for concurrent execution safety
+TEMP_FILE="${HOME}/.claude/tmp/revise_arg_$(date +%s%N).txt"
+echo "YOUR_REVISION_DESCRIPTION_HERE" > "$TEMP_FILE"
+# Save temp file path for Part 2 to read
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/revise_arg_path.txt"
+echo "Revision description captured to $TEMP_FILE"
+```
 
-# MANDATORY: Determine if auto-mode
-if echo "$ARG_REST" | grep -q "\-\-auto-mode"; then
-  OPERATION_MODE="auto"
-  echo "✓ Mode: Automated (--auto-mode detected)"
+## Part 2: Read and Validate Revision Description
+
+**EXECUTE NOW**: Read the captured description, extract plan path, and validate:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Read revision description from file (written in Part 1)
+REVISE_DESC_PATH_FILE="${HOME}/.claude/tmp/revise_arg_path.txt"
+
+if [ -f "$REVISE_DESC_PATH_FILE" ]; then
+  REVISE_DESC_FILE=$(cat "$REVISE_DESC_PATH_FILE")
 else
-  OPERATION_MODE="interactive"
-  echo "✓ Mode: Interactive"
-fi
-```
-
-**CHECKPOINT REQUIREMENT**: Before proceeding, YOU MUST verify:
-- [ ] ARG1 is not empty (STEP 1 verification)
-- [ ] Operation mode determined (auto|interactive)
-
-### Auto-Mode Parameter Extraction
-
-**IF operation_mode=auto**, YOU MUST extract structured JSON context:
-
-```bash
-# CRITICAL: Extract JSON context
-CONTEXT_JSON=$(echo "$ARG_REST" | sed -n "s/.*--context '\(.*\)'.*/\1/p")
-
-if [ -z "$CONTEXT_JSON" ]; then
-  echo "CRITICAL ERROR: Auto-mode requires --context JSON"
-  exit 1
+  # Fallback to legacy fixed filename for backward compatibility
+  REVISE_DESC_FILE="${HOME}/.claude/tmp/revise_arg.txt"
 fi
 
-# Parse JSON fields
-REVISION_TYPE=$(echo "$CONTEXT_JSON" | jq -r '.revision_type')
-PHASE_NUM=$(echo "$CONTEXT_JSON" | jq -r '.phase_number // empty')
-REASON=$(echo "$CONTEXT_JSON" | jq -r '.reason // empty')
-
-echo "✓ Parsed auto-mode context: type=$REVISION_TYPE"
-```
-
-**MANDATORY VERIFICATION**:
-```bash
-# CRITICAL: Validate JSON structure
-if [ "$REVISION_TYPE" = "null" ] || [ -z "$REVISION_TYPE" ]; then
-  echo "CRITICAL ERROR: Invalid JSON - missing revision_type"
-
-  # FALLBACK MECHANISM: Return error JSON
-  cat <<'EOF'
-{
-  "status": "error",
-  "error_type": "invalid_json",
-  "error_message": "Missing required field: revision_type"
-}
-EOF
-  exit 1
-fi
-
-echo "✓ CRITICAL: JSON validation passed"
-```
-
-### Interactive Mode Parameter Extraction
-
-**IF operation_mode=interactive**, YOU MUST extract revision details and optional paths:
-
-```bash
-# Check if ARG1 is a file path or revision description
-if [ -f "$ARG1" ]; then
-  # Path-first syntax: /revise <artifact-path> <revision-details> [context-paths...]
-  ARTIFACT_PATH="$ARG1"
-  REVISION_DETAILS="$ARG2"
-  CONTEXT_PATHS="${@:3}"
-  echo "✓ Path-first syntax detected"
+if [ -f "$REVISE_DESC_FILE" ]; then
+  REVISION_DESCRIPTION=$(cat "$REVISE_DESC_FILE" 2>/dev/null || echo "")
 else
-  # Revision-first syntax: /revise <revision-details> [context-paths...]
-  REVISION_DETAILS="$ARG1"
-  CONTEXT_PATHS="${@:2}"
-  ARTIFACT_PATH=""  # Will auto-detect in STEP 2
-  echo "✓ Revision-first syntax detected"
-fi
-```
-
-**MANDATORY VERIFICATION**:
-```bash
-# CRITICAL: Verify revision details present
-if [ -z "$REVISION_DETAILS" ]; then
-  echo "CRITICAL ERROR: Revision details required"
-  echo "Usage: /revise <revision-details> [context-paths...]"
-  echo "   OR: /revise <artifact-path> <revision-details> [context-paths...]"
+  echo "ERROR: Revision description file not found: $REVISE_DESC_FILE"
+  echo "This usually means Part 1 (argument capture) didn't execute."
+  echo "Usage: /revise \"revise plan at /path/to/plan.md based on INSIGHTS\""
   exit 1
 fi
 
-echo "✓ Revision details: $REVISION_DETAILS"
-```
+if [ -z "$REVISION_DESCRIPTION" ]; then
+  echo "ERROR: Revision description is empty"
+  echo "File exists but contains no content: $REVISE_DESC_FILE"
+  echo "Usage: /revise \"revise plan at /path/to/plan.md based on INSIGHTS\""
+  exit 1
+fi
 
-## STEP 2 (REQUIRED BEFORE STEP 3) - Detect and Validate Artifact
+# Parse optional --complexity flag (default: 2 for research-and-revise)
+DEFAULT_COMPLEXITY=2
+RESEARCH_COMPLEXITY="$DEFAULT_COMPLEXITY"
 
-### EXECUTE NOW - Artifact Detection
+# Support both embedded and explicit flag formats
+if [[ "$REVISION_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
+  RESEARCH_COMPLEXITY="${BASH_REMATCH[1]}"
+  # Strip flag from revision description
+  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--complexity[[:space:]]*[1-4]//' | xargs)
+fi
 
-YOU MUST identify the target artifact (plan or report):
+# Validation: reject invalid complexity values
+if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
+  echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
+  exit 1
+fi
 
-**Auto-Mode Artifact Detection**:
-```bash
-# CRITICAL: In auto-mode, artifact path is ARG1
-if [ "$OPERATION_MODE" = "auto" ]; then
-  ARTIFACT_PATH="$ARG1"
+# Parse optional --dry-run flag
+DRY_RUN="false"
+if [[ "$REVISION_DESCRIPTION" =~ --dry-run ]]; then
+  DRY_RUN="true"
+  # Strip flag from revision description
+  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--dry-run//' | xargs)
+fi
 
-  if [ ! -f "$ARTIFACT_PATH" ]; then
-    echo "CRITICAL ERROR: Plan file not found: $ARTIFACT_PATH"
+# Parse optional --file flag for long prompt handling
+ORIGINAL_PROMPT_FILE_PATH=""
+if [[ "$REVISION_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
+  ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
+  # Strip --file flag and path from description
+  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--file[[:space:]]*[^[:space:]]*//' | xargs)
+
+  # Convert relative path to absolute
+  if [[ ! "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]; then
+    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+  fi
+
+  # Validate file exists
+  if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+    echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    echo "DIAGNOSTIC: Ensure --file path is correct and file exists" >&2
     exit 1
   fi
 
-  echo "✓ Auto-mode artifact: $ARTIFACT_PATH"
-fi
-```
-
-**Interactive Mode Artifact Detection**:
-```bash
-# CRITICAL: If no explicit path, detect from conversation context
-if [ "$OPERATION_MODE" = "interactive" ] && [ -z "$ARTIFACT_PATH" ]; then
-  # Search for most recently discussed plan or report
-  # Priority: conversation mentions > recent modifications > /list-plans output
-
-  RECENT_PLANS=$(find . -path "*/specs/plans/*.md" -type f -mmin -60 2>/dev/null | head -5)
-
-  if [ -n "$RECENT_PLANS" ]; then
-    # Present options to user (in actual execution, use most recent)
-    ARTIFACT_PATH=$(echo "$RECENT_PLANS" | head -1)
-    echo "✓ Auto-detected artifact: $ARTIFACT_PATH"
-  else
-    echo "CRITICAL ERROR: No recent plans found"
-    echo "Hint: Specify explicit path or use /list-plans"
+  # Read file content as revision description
+  FILE_CONTENT=$(cat "$ORIGINAL_PROMPT_FILE_PATH")
+  if [ -z "$FILE_CONTENT" ]; then
+    echo "ERROR: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    echo "DIAGNOSTIC: The prompt file must contain both the plan path and revision details" >&2
     exit 1
   fi
-fi
-```
 
-**CHECKPOINT REQUIREMENT**: Before proceeding, YOU MUST verify:
-- [ ] ARTIFACT_PATH is set and not empty
-- [ ] File exists at ARTIFACT_PATH
-- [ ] File is readable
-
-### Detect Artifact Type
-
-YOU MUST determine if artifact is a plan or report:
-
-```bash
-# CRITICAL: Detect artifact type
-if echo "$ARTIFACT_PATH" | grep -q "/plans/"; then
-  ARTIFACT_TYPE="plan"
-elif echo "$ARTIFACT_PATH" | grep -q "/reports/"; then
-  ARTIFACT_TYPE="report"
-else
-  echo "WARNING: Cannot determine artifact type from path"
-  # Fallback: Check content for plan markers
-  if grep -q "^## Phase [0-9]" "$ARTIFACT_PATH"; then
-    ARTIFACT_TYPE="plan"
-  else
-    ARTIFACT_TYPE="report"
-  fi
-fi
-
-echo "✓ Artifact type: $ARTIFACT_TYPE"
-```
-
-### Detect Plan Structure Level (if artifact is plan)
-
-**IF ARTIFACT_TYPE=plan**, YOU MUST detect structure level:
-
-```bash
-# CRITICAL: Detect plan structure level
-if [ "$ARTIFACT_TYPE" = "plan" ]; then
-  # Check for Structure Level metadata
-  STRUCTURE_LEVEL=$(grep "^- \*\*Structure Level\*\*:" "$ARTIFACT_PATH" | sed 's/.*: //')
-
-  if [ -z "$STRUCTURE_LEVEL" ]; then
-    # Fallback: Detect from content
-    if [ -d "$(dirname "$ARTIFACT_PATH")/$(basename "$ARTIFACT_PATH" .md)" ]; then
-      STRUCTURE_LEVEL="1"  # Has subdirectory, likely L1
-    else
-      STRUCTURE_LEVEL="0"  # Single file, L0
-    fi
-  fi
-
-  echo "✓ Plan structure level: $STRUCTURE_LEVEL"
-fi
-```
-
-**MANDATORY VERIFICATION**:
-```bash
-# FILE_VERIFICATION_ENFORCED: Ensure artifact exists and is readable
-if [ ! -f "$ARTIFACT_PATH" ] || [ ! -r "$ARTIFACT_PATH" ]; then
-  echo "CRITICAL ERROR: Artifact file not accessible: $ARTIFACT_PATH"
+  REVISION_DESCRIPTION="$FILE_CONTENT"
+  echo "Loaded revision description from file: $ORIGINAL_PROMPT_FILE_PATH"
+elif [[ "$REVISION_DESCRIPTION" =~ --file$ ]] || [[ "$REVISION_DESCRIPTION" =~ --file[[:space:]]*$ ]]; then
+  echo "ERROR: --file flag requires a path argument" >&2
+  echo "USAGE: /revise \"--file /path/to/prompt.md\"" >&2
   exit 1
 fi
 
-FILE_SIZE=$(wc -c < "$ARTIFACT_PATH")
-if [ "$FILE_SIZE" -lt 100 ]; then
-  echo "WARNING: Artifact file very small ($FILE_SIZE bytes)"
+# Extract existing plan path from revision description
+# Matches: /path/to/file.md or ./relative/path.md or ../relative/path.md or .claude/path.md
+EXISTING_PLAN_PATH=$(echo "$REVISION_DESCRIPTION" | grep -oE '[./][^ ]+\.md' | head -1)
+
+# Validate plan path exists
+if [ -z "$EXISTING_PLAN_PATH" ]; then
+  echo "ERROR: No plan path found in revision description" >&2
+  echo "USAGE: /revise \"revise plan at /path/to/plan.md based on INSIGHTS\"" >&2
+  exit 1
 fi
 
-echo "✓ CRITICAL: Artifact validated ($FILE_SIZE bytes)"
+if [ ! -f "$EXISTING_PLAN_PATH" ]; then
+  echo "ERROR: Existing plan not found: $EXISTING_PLAN_PATH" >&2
+  echo "DIAGNOSTIC: Ensure plan file exists before revision" >&2
+  exit 1
+fi
+
+# Extract revision details (everything after plan path)
+REVISION_DETAILS=$(echo "$REVISION_DESCRIPTION" | sed "s|.*$EXISTING_PLAN_PATH||" | xargs)
+
+echo "=== Research-and-Revise Workflow ==="
+echo "Existing Plan: $EXISTING_PLAN_PATH"
+echo "Revision Details: $REVISION_DETAILS"
+echo "Research Complexity: $RESEARCH_COMPLEXITY"
+echo "Dry Run: $DRY_RUN"
+echo ""
+
+# Dry-run execution gate - preview and exit before state machine
+if [ "$DRY_RUN" = "true" ]; then
+  echo "=== DRY-RUN MODE ==="
+  echo ""
+  echo "Would perform the following actions:"
+  echo ""
+  echo "1. Initialize state machine for research-and-revise workflow"
+  echo "2. Execute research phase:"
+  echo "   - Analyze revision requirements: $REVISION_DETAILS"
+  echo "   - Create research reports in: $(dirname "$(dirname "$EXISTING_PLAN_PATH")")/reports/"
+  echo "   - Research complexity level: $RESEARCH_COMPLEXITY"
+  echo "3. Execute plan revision phase:"
+  echo "   - Create backup of existing plan"
+  echo "   - Revise plan based on research insights"
+  echo "   - Verify plan modifications"
+  echo "4. Complete workflow and display summary"
+  echo ""
+  echo "No changes were made (dry-run mode)"
+  exit 0
+fi
 ```
 
-## STEP 3 (REQUIRED BEFORE STEP 4) - Load Context (Research Reports)
+## Part 3: State Machine Initialization
 
-### EXECUTE NOW - Load Research Reports
-
-**IF context paths provided**, YOU MUST load and validate research reports:
+**EXECUTE NOW**: Initialize the state machine and source required libraries:
 
 ```bash
-# CRITICAL: Load research reports for context
-declare -A RESEARCH_CONTENT
-
-if [ -n "$CONTEXT_PATHS" ]; then
-  echo "Loading research context..."
-
-  for REPORT_PATH in $CONTEXT_PATHS; do
-    if [ -f "$REPORT_PATH" ]; then
-      RESEARCH_CONTENT["$REPORT_PATH"]=$(cat "$REPORT_PATH")
-      echo "✓ Loaded: $REPORT_PATH"
-    else
-      echo "WARNING: Research report not found: $REPORT_PATH"
+set +H  # CRITICAL: Disable history expansion
+# Detect project directory (bootstrap pattern)
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  # Fallback: search upward for .claude/ directory
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
     fi
+    current_dir="$(dirname "$current_dir")"
   done
+fi
 
-  RESEARCH_COUNT=${#RESEARCH_CONTENT[@]}
-  echo "✓ Loaded $RESEARCH_COUNT research reports"
-else
-  echo "✓ No research context provided"
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  echo "DIAGNOSTIC: No git repository found and no .claude/ directory in parent tree" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# Source libraries in dependency order (Standard 15)
+# 1. State machine foundation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+# 2. Library version checking
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
+# 3. Error handling
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
+
+# Verify library versions
+check_library_requirements "$(cat <<'EOF'
+workflow-state-machine.sh: ">=2.0.0"
+state-persistence.sh: ">=1.5.0"
+EOF
+)" || exit 1
+
+# Hardcode workflow type
+WORKFLOW_TYPE="research-and-revise"
+TERMINAL_STATE="plan"
+COMMAND_NAME="revise"
+
+# Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
+WORKFLOW_ID="revise_$(date +%s)"
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+mkdir -p "$(dirname "$STATE_ID_FILE")"
+echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+export WORKFLOW_ID
+
+# Initialize workflow state BEFORE sm_init (correct initialization order)
+init_workflow_state "$WORKFLOW_ID"
+
+# Initialize state machine with return code verification
+if ! sm_init \
+  "$REVISION_DESCRIPTION" \
+  "$COMMAND_NAME" \
+  "$WORKFLOW_TYPE" \
+  "$RESEARCH_COMPLEXITY" \
+  "[]" 2>&1; then
+  echo "ERROR: State machine initialization failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Revision Description: $REVISION_DESCRIPTION" >&2
+  echo "  - Command Name: $COMMAND_NAME" >&2
+  echo "  - Workflow Type: $WORKFLOW_TYPE" >&2
+  echo "  - Research Complexity: $RESEARCH_COMPLEXITY" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Library version incompatibility (require workflow-state-machine.sh >=2.0.0)" >&2
+  echo "  - State file corruption in ~/.claude/data/state/" >&2
+  exit 1
+fi
+
+echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
+echo ""
+```
+
+## Part 3: Research Phase Execution
+
+**EXECUTE NOW**: Transition to research state and prepare research directory:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
+# Load WORKFLOW_ID from file (fail-fast pattern)
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
+# Load workflow state (subprocess isolation)
+load_workflow_state "$WORKFLOW_ID" false
+
+# Transition to research state with return code verification
+if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+  echo "ERROR: State transition to RESEARCH failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → RESEARCH" >&2
+  echo "  - Workflow Type: research-and-revise" >&2
+  echo "  - Command Name: research-revise" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - State machine not initialized properly" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "  - State file corruption in ~/.claude/data/state/" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Verify sm_init was called successfully" >&2
+  echo "  - Check state machine logs for details" >&2
+  exit 1
+fi
+echo "=== Phase 1: Research ==="
+echo ""
+
+# Derive specs directory from existing plan path
+SPECS_DIR=$(dirname "$(dirname "$EXISTING_PLAN_PATH")")
+RESEARCH_DIR="${SPECS_DIR}/reports"
+
+# Create research directory if not exists
+mkdir -p "$RESEARCH_DIR"
+
+# Generate unique research topic for revision insights
+REVISION_TOPIC_SLUG=$(echo "$REVISION_DETAILS" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | sed 's/^_//;s/_$//' | cut -c1-30)
+REVISION_NUMBER=$(find "$RESEARCH_DIR" -name 'revision_*.md' 2>/dev/null | wc -l | xargs)
+REVISION_NUMBER=$((REVISION_NUMBER + 1))
+```
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research revision insights for ${REVISION_DETAILS} with mandatory file creation"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
+
+    You are conducting research for: revise workflow
+
+    **Workflow-Specific Context**:
+    - Research Topic: Plan revision insights for: ${REVISION_DETAILS}
+    - Research Complexity: ${RESEARCH_COMPLEXITY}
+    - Output Directory: ${RESEARCH_DIR}
+    - Workflow Type: research-and-revise
+    - Existing Plan: ${EXISTING_PLAN_PATH}
+
+    Execute research according to behavioral guidelines and return completion signal:
+    REPORT_CREATED: [path to created report]
+  "
+}
+
+**EXECUTE NOW**: Verify research artifacts were created:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+# MANDATORY VERIFICATION
+echo "Verifying research artifacts..."
+
+if [ ! -d "$RESEARCH_DIR" ]; then
+  echo "ERROR: Research phase failed to create reports directory" >&2
+  echo "DIAGNOSTIC: Expected directory: $RESEARCH_DIR" >&2
+  exit 1
+fi
+
+# Count new reports created (may already have existing reports)
+NEW_REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' -type f -newer "$EXISTING_PLAN_PATH" 2>/dev/null | wc -l)
+
+if [ "$NEW_REPORT_COUNT" -eq 0 ]; then
+  echo "WARNING: No new research reports created"
+  echo "NOTE: Proceeding with plan revision using existing reports"
+fi
+
+TOTAL_REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
+
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Research phase complete"
+echo "- Workflow type: research-and-revise"
+echo "- Existing plan: $EXISTING_PLAN_PATH"
+echo "- Total reports: $TOTAL_REPORT_COUNT (new: $NEW_REPORT_COUNT)"
+echo "- All files verified: ✓"
+echo "- Proceeding to: Plan revision phase"
+echo ""
+
+# Persist variables across bash blocks (subprocess isolation)
+append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
+append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
+append_workflow_state "SPECS_DIR" "$SPECS_DIR"
+append_workflow_state "TOTAL_REPORT_COUNT" "$TOTAL_REPORT_COUNT"
+append_workflow_state "NEW_REPORT_COUNT" "$NEW_REPORT_COUNT"
+append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
+
+# Persist completed state with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
+  exit 1
 fi
 ```
 
-**CHECKPOINT REQUIREMENT**: Before proceeding, YOU MUST verify:
-- [ ] CONTEXT_PATHS parsed (may be empty)
-- [ ] All valid research reports loaded
-- [ ] Invalid paths logged as warnings (not blocking)
+## Part 4: Plan Revision Phase
 
-## STEP 4 (REQUIRED BEFORE STEP 5) - Create Backup
-
-### EXECUTE NOW - Create Artifact Backup
-
-YOU MUST create backup before ANY modifications:
+**EXECUTE NOW**: Transition to planning state and create backup:
 
 ```bash
-# CRITICAL: Create backup with timestamp
+set +H  # CRITICAL: Disable history expansion
+# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
+# Load workflow state from Part 3 (subprocess isolation)
+load_workflow_state "$WORKFLOW_ID" false
+
+# Transition to plan state with return code verification
+if ! sm_transition "$STATE_PLAN" 2>&1; then
+  echo "ERROR: State transition to PLAN failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → PLAN" >&2
+  echo "  - Workflow Type: research-and-revise" >&2
+  echo "  - Research complete: check CHECKPOINT above" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Research phase did not complete properly" >&2
+  echo "  - State not persisted after research" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check research checkpoint output" >&2
+  echo "  - Verify research phase completed" >&2
+  exit 1
+fi
+echo "=== Phase 2: Plan Revision ==="
+echo ""
+
+# Create backup before revision
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR=$(dirname "$ARTIFACT_PATH")/backups
-BACKUP_FILENAME="$(basename "$ARTIFACT_PATH" .md)_${TIMESTAMP}.md"
+BACKUP_DIR="$(dirname "$EXISTING_PLAN_PATH")/backups"
+BACKUP_FILENAME="$(basename "$EXISTING_PLAN_PATH" .md)_${TIMESTAMP}.md"
 BACKUP_PATH="$BACKUP_DIR/$BACKUP_FILENAME"
 
-# Create backup directory if needed
 mkdir -p "$BACKUP_DIR"
+cp "$EXISTING_PLAN_PATH" "$BACKUP_PATH"
 
-# Copy original to backup
-cp "$ARTIFACT_PATH" "$BACKUP_PATH"
+# FAIL-FAST BACKUP VERIFICATION
+if [ ! -f "$BACKUP_PATH" ]; then
+  echo "ERROR: Backup creation failed at $BACKUP_PATH" >&2
+  exit 1
+fi
+
+FILE_SIZE=$(wc -c < "$BACKUP_PATH")
+if [ "$FILE_SIZE" -lt 100 ]; then
+  echo "ERROR: Backup file too small ($FILE_SIZE bytes)" >&2
+  exit 1
+fi
 
 echo "✓ Backup created: $BACKUP_PATH"
+echo ""
+
+# Collect research report paths
+REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
+REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 ```
 
-**FILE_CREATION_ENFORCED: Verify backup created**:
-```bash
-# MANDATORY: Verify backup file exists
-if [ ! -f "$BACKUP_PATH" ]; then
-  echo "CRITICAL ERROR: Backup creation failed"
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
 
-  # FALLBACK MECHANISM: Try alternate backup location
-  BACKUP_PATH="/tmp/$(basename "$ARTIFACT_PATH")_backup_$$"
-  cp "$ARTIFACT_PATH" "$BACKUP_PATH"
+Task {
+  subagent_type: "general-purpose"
+  description: "Revise implementation plan based on ${REVISION_DETAILS} with mandatory file modification"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
-  if [ ! -f "$BACKUP_PATH" ]; then
-    echo "CRITICAL ERROR: All backup attempts failed"
-    exit 1
-  fi
+    You are revising an implementation plan for: revise workflow
 
-  echo "WARNING: Using fallback backup location: $BACKUP_PATH"
-fi
+    **Workflow-Specific Context**:
+    - Existing Plan Path: ${EXISTING_PLAN_PATH}
+    - Backup Path: ${BACKUP_PATH}
+    - Revision Details: ${REVISION_DETAILS}
+    - Research Reports: ${REPORT_PATHS_JSON}
+    - Workflow Type: research-and-revise
+    - Operation Mode: plan revision
 
-BACKUP_SIZE=$(wc -c < "$BACKUP_PATH")
-echo "✓ CRITICAL: Backup verified ($BACKUP_SIZE bytes)"
-```
-
-## STEP 5 (REQUIRED BEFORE STEP 6) - Execute Revision
-
-**CHECKPOINT REQUIREMENT**: Before executing revision, YOU MUST verify:
-- [ ] Artifact path and type validated (STEP 2 complete)
-- [ ] Backup created and verified (STEP 4 complete)
-- [ ] Revision details/context loaded (STEP 1 & 3 complete)
-
-### Auto-Mode Revision Execution
-
-**IF OPERATION_MODE=auto**, YOU MUST execute automated revision based on revision_type:
-
-#### Revision Type: expand_phase
-
-```bash
-if [ "$REVISION_TYPE" = "expand_phase" ]; then
-  # CRITICAL: Invoke /expand command
-  /expand phase "$ARTIFACT_PATH" "$PHASE_NUM"
-
-  # Capture result
-  EXPAND_RESULT=$?
-
-  if [ $EXPAND_RESULT -eq 0 ]; then
-    ACTION_TAKEN="Expanded Phase $PHASE_NUM to separate file"
-    echo "✓ Phase expansion complete"
-  else
-    echo "ERROR: Phase expansion failed"
-    REVISION_STATUS="error"
-  fi
-fi
-```
-
-#### Revision Type: add_phase
-
-```bash
-if [ "$REVISION_TYPE" = "add_phase" ]; then
-  # CRITICAL: Insert new phase into plan
-  NEW_PHASE_NUM=$(echo "$CONTEXT_JSON" | jq -r '.new_phase_number')
-  NEW_PHASE_NAME=$(echo "$CONTEXT_JSON" | jq -r '.new_phase_name')
-  NEW_PHASE_TASKS=$(echo "$CONTEXT_JSON" | jq -r '.tasks[]')
-
-  # Build new phase content
-  NEW_PHASE_CONTENT="## Phase $NEW_PHASE_NUM: $NEW_PHASE_NAME
-
-**Objective**: [Objective from context]
-
-**Tasks**:
-$NEW_PHASE_TASKS
-
-**Acceptance Criteria**:
-- All tasks completed
-- Tests passing
-"
-
-  # Insert phase at specified position
-  # (Use Edit tool to insert after specified phase)
-
-  ACTION_TAKEN="Added Phase $NEW_PHASE_NUM: $NEW_PHASE_NAME"
-  echo "✓ Phase addition complete"
-fi
-```
-
-#### Revision Type: update_tasks
-
-```bash
-if [ "$REVISION_TYPE" = "update_tasks" ]; then
-  # CRITICAL: Update task list for specified phase
-  TASK_OPERATIONS=$(echo "$CONTEXT_JSON" | jq -r '.task_operations[]')
-
-  # Apply each task operation (add, remove, modify)
-  for OPERATION in $TASK_OPERATIONS; do
-    OP_TYPE=$(echo "$OPERATION" | jq -r '.type')
-
-    case "$OP_TYPE" in
-      "add")
-        # Add new task to phase
-        ;;
-      "remove")
-        # Remove specified task
-        ;;
-      "modify")
-        # Update task text
-        ;;
-    esac
-  done
-
-  ACTION_TAKEN="Updated tasks for Phase $PHASE_NUM"
-  echo "✓ Task update complete"
-fi
-```
-
-#### Revision Type: collapse_phase
-
-```bash
-if [ "$REVISION_TYPE" = "collapse_phase" ]; then
-  # CRITICAL: Invoke /collapse command
-  /collapse phase "$ARTIFACT_PATH" "$PHASE_NUM"
-
-  COLLAPSE_RESULT=$?
-
-  if [ $COLLAPSE_RESULT -eq 0 ]; then
-    ACTION_TAKEN="Collapsed Phase $PHASE_NUM into parent file"
-    echo "✓ Phase collapse complete"
-  else
-    echo "ERROR: Phase collapse failed"
-    REVISION_STATUS="error"
-  fi
-fi
-```
-
-**MANDATORY VERIFICATION**:
-```bash
-# CRITICAL: Verify auto-mode revision completed
-if [ "$REVISION_STATUS" = "error" ]; then
-  echo "CRITICAL ERROR: Auto-mode revision failed"
-
-  # FALLBACK MECHANISM: Restore from backup
-  cp "$BACKUP_PATH" "$ARTIFACT_PATH"
-  echo "✓ Backup restored"
-
-  # Return error JSON
-  cat <<EOF
-{
-  "status": "error",
-  "error_type": "revision_failed",
-  "error_message": "Auto-mode revision failed for type: $REVISION_TYPE",
-  "backup_restored": true
+    Execute plan revision according to behavioral guidelines and return completion signal:
+    PLAN_REVISED: ${EXISTING_PLAN_PATH}
+  "
 }
-EOF
+
+**EXECUTE NOW**: Verify plan revision was successful:
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+# MANDATORY VERIFICATION
+echo "Verifying plan revision..."
+
+if [ ! -f "$EXISTING_PLAN_PATH" ]; then
+  echo "ERROR: Plan file disappeared during revision: $EXISTING_PLAN_PATH" >&2
+  echo "DIAGNOSTIC: Restore from backup: $BACKUP_PATH" >&2
   exit 1
 fi
 
-echo "✓ CRITICAL: Auto-mode revision successful"
-```
-
-### Interactive Mode Revision Execution
-
-**IF OPERATION_MODE=interactive**, YOU MUST apply revision using Read, Edit, Write tools:
-
-```bash
-# CRITICAL: Load current artifact content
-CURRENT_CONTENT=$(cat "$ARTIFACT_PATH")
-
-# EXECUTE NOW: Apply revision based on details
-# This involves:
-# 1. Understanding revision request from REVISION_DETAILS
-# 2. Incorporating insights from RESEARCH_CONTENT (if any)
-# 3. Making targeted edits using Edit tool
-# 4. Preserving structure and completion markers
-
-# Example: Adding a phase
-if echo "$REVISION_DETAILS" | grep -qi "add.*phase"; then
-  # Extract phase details from revision description
-  # Insert new phase at appropriate location
-  # Update phase numbering if needed
-  echo "✓ Adding phase based on revision details"
-fi
-
-# Example: Modifying tasks
-if echo "$REVISION_DETAILS" | grep -qi "update.*task"; then
-  # Identify target phase
-  # Modify task list
-  # Preserve checkbox states
-  echo "✓ Updating tasks based on revision details"
-fi
-
-# Example: Metadata update
-if echo "$REVISION_DETAILS" | grep -qi "metadata\|complexity"; then
-  # Update metadata section
-  echo "✓ Updating metadata based on revision details"
-fi
-
-echo "✓ Interactive revision complete"
-```
-
-**CHECKPOINT REQUIREMENT**: After revision execution, YOU MUST verify:
-- [ ] Artifact file modified
-- [ ] Changes align with revision details/context
-- [ ] File structure preserved (still valid markdown)
-- [ ] Completion markers preserved (if present)
-
-## STEP 6 (REQUIRED BEFORE STEP 7) - Add Revision History
-
-### EXECUTE NOW - Update Revision History
-
-YOU MUST add revision entry to artifact's revision history:
-
-```bash
-# CRITICAL: Prepare revision history entry
-REVISION_DATE=$(date +%Y-%m-%d)
-REVISION_ENTRY="- **$REVISION_DATE**: $REVISION_DETAILS"
-
-# If auto-mode, use structured description
-if [ "$OPERATION_MODE" = "auto" ]; then
-  REVISION_ENTRY="- **$REVISION_DATE**: Auto-revision ($REVISION_TYPE) - $REASON"
-fi
-
-# Check if Revision History section exists
-if grep -q "^## Revision History" "$ARTIFACT_PATH"; then
-  # Append to existing section
-  # Find line after "## Revision History" and insert
-  LINE_NUM=$(grep -n "^## Revision History" "$ARTIFACT_PATH" | cut -d: -f1)
-  INSERT_LINE=$((LINE_NUM + 2))
-
-  # Insert revision entry
-  sed -i "${INSERT_LINE}i\\
-$REVISION_ENTRY
-" "$ARTIFACT_PATH"
-else
-  # Create new Revision History section at end
-  cat >> "$ARTIFACT_PATH" <<EOF
-
-## Revision History
-
-$REVISION_ENTRY
-EOF
-fi
-
-echo "✓ Revision history updated"
-```
-
-**MANDATORY VERIFICATION**:
-```bash
-# CRITICAL: Verify revision history entry added
-if grep -q "$REVISION_DATE" "$ARTIFACT_PATH"; then
-  echo "✓ CRITICAL: Revision history verified"
-else
-  echo "WARNING: Revision history verification failed"
-fi
-```
-
-## STEP 7 (ABSOLUTE REQUIREMENT) - Verify Changes and Return Response
-
-**CHECKPOINT REQUIREMENT**: Before returning response, YOU MUST verify:
-- [ ] Artifact file modified (STEP 5 complete)
-- [ ] Revision history added (STEP 6 complete)
-- [ ] Backup exists (STEP 4 verification passed)
-- [ ] File structure valid (markdown parseable)
-
-### EXECUTE NOW - Final Verification
-
-YOU MUST verify artifact is in valid state:
-
-```bash
-# CRITICAL: Verify file structure
-FILE_SIZE_AFTER=$(wc -c < "$ARTIFACT_PATH")
-
-if [ "$FILE_SIZE_AFTER" -lt 100 ]; then
-  echo "CRITICAL ERROR: Artifact corrupted (too small)"
-
-  # FALLBACK MECHANISM: Restore backup
-  cp "$BACKUP_PATH" "$ARTIFACT_PATH"
-  echo "✓ Backup restored due to corruption"
+# Verify plan was actually modified (must be different from backup)
+if cmp -s "$EXISTING_PLAN_PATH" "$BACKUP_PATH"; then
+  echo "ERROR: Plan file not modified (identical to backup)" >&2
+  echo "DIAGNOSTIC: Plan revision must make changes based on research insights" >&2
+  echo "SOLUTION: Review research reports and ensure agent applies revisions" >&2
   exit 1
 fi
 
-# Verify markdown structure
-if [ "$ARTIFACT_TYPE" = "plan" ]; then
-  PHASE_COUNT=$(grep -c "^## Phase [0-9]" "$ARTIFACT_PATH")
-  echo "✓ Plan contains $PHASE_COUNT phases"
+FILE_SIZE=$(wc -c < "$EXISTING_PLAN_PATH")
+if [ "$FILE_SIZE" -lt 500 ]; then
+  echo "ERROR: Plan file too small after revision ($FILE_SIZE bytes)" >&2
+  echo "DIAGNOSTIC: Plan may have been corrupted, restore from: $BACKUP_PATH" >&2
+  exit 1
 fi
 
-echo "✓ CRITICAL: Final verification passed"
-```
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Plan revision complete"
+echo "- Revised plan: $EXISTING_PLAN_PATH"
+echo "- Plan size: $(wc -c < "$EXISTING_PLAN_PATH") bytes"
+echo "- Backup saved: $BACKUP_PATH"
+echo "- All verifications: ✓"
+echo "- Proceeding to: Completion"
+echo ""
 
-### Generate Response
+# Persist variables for Part 5 (subprocess isolation)
+append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
 
-**RETURN_FORMAT_SPECIFIED**: YOU MUST return response in THIS EXACT FORMAT:
-
-**Auto-Mode Response (JSON)**:
-```json
-{
-  "status": "success",
-  "action_taken": "${ACTION_TAKEN}",
-  "plan_file": "${ARTIFACT_PATH}",
-  "backup_file": "${BACKUP_PATH}",
-  "revision_summary": "${REASON}",
-  "structure_recommendations": {
-    "collapse_opportunities": [],
-    "expansion_opportunities": []
-  }
-}
-```
-
-**Interactive Mode Response (Text)**:
-```
-✓ Revision complete: ${ARTIFACT_PATH}
-
-Changes applied:
-- ${REVISION_DETAILS}
-
-Backup created: ${BACKUP_PATH}
-
-Revision history updated with: ${REVISION_DATE} entry
-
-File size: ${FILE_SIZE_AFTER} bytes (was ${FILE_SIZE} bytes)
-```
-
-## COMPLETION CRITERIA - ALL REQUIRED
-
-YOU MUST verify ALL of the following before considering your task complete:
-
-**Argument Parsing** (ALL MANDATORY):
-- [ ] Operation mode determined (auto|interactive)
-- [ ] Revision details or JSON context extracted
-- [ ] Artifact path identified (explicit or auto-detected)
-- [ ] Research context loaded (if provided)
-
-**Artifact Validation** (ALL MANDATORY):
-- [ ] Artifact type detected (plan|report)
-- [ ] File exists and is readable
-- [ ] Structure level detected (for plans)
-- [ ] File size validated (>100 bytes)
-
-**Backup Creation** (ALL MANDATORY):
-- [ ] Backup directory created/verified
-- [ ] Backup file created
-- [ ] Backup file verified (exists and size matches)
-- [ ] Backup path recorded
-
-**Revision Execution** (ALL MANDATORY):
-- [ ] Revision type identified
-- [ ] Changes applied to artifact
-- [ ] Structure preserved
-- [ ] Completion markers preserved (if applicable)
-- [ ] Revision successful (no errors)
-
-**Revision History** (ALL MANDATORY):
-- [ ] Revision history section located or created
-- [ ] Revision entry added with date
-- [ ] Entry includes revision details
-- [ ] Entry verified in file
-
-**Final Verification** (ALL MANDATORY):
-- [ ] Artifact file size reasonable (>100 bytes)
-- [ ] Markdown structure valid
-- [ ] Phase count verified (for plans)
-- [ ] No corruption detected
-
-**Response Generation** (ALL MANDATORY):
-- [ ] Status determined (success|error)
-- [ ] Response format matches mode (JSON for auto, text for interactive)
-- [ ] All required fields present
-- [ ] File paths absolute
-
-**Error Handling** (ALL MANDATORY):
-- [ ] Backup restoration on failure
-- [ ] Error messages descriptive
-- [ ] Exit codes appropriate
-- [ ] Fallback mechanisms tested
-
-**NON-COMPLIANCE**: Failure to meet ANY criterion is UNACCEPTABLE and constitutes task failure.
-
-## Usage Examples
-
-### Interactive Mode Examples
-
-**Add Phase to Plan**:
-```bash
-/revise "Add Phase 6 for deployment and monitoring"
-```
-
-**Modify Tasks with Research Context**:
-```bash
-/revise "Update Phase 3 tasks based on performance findings" specs/reports/018_performance.md
-```
-
-**Update Metadata**:
-```bash
-/revise specs/plans/025_feature.md "Update complexity to High and add security risk"
-```
-
-### Auto-Mode Examples
-
-**Expand Phase (from /implement)**:
-```bash
-/revise specs/plans/042_auth.md --auto-mode --context '{
-  "revision_type": "expand_phase",
-  "phase_number": 3,
-  "reason": "Complexity score 9.2 exceeds threshold 8.0"
-}'
-```
-
-**Add Phase (from /implement)**:
-```bash
-/revise specs/plans/042_auth.md --auto-mode --context '{
-  "revision_type": "add_phase",
-  "new_phase_number": 5,
-  "new_phase_name": "Security Hardening",
-  "reason": "Test failures indicate missing security prerequisites"
-}'
-```
-
-## Error Handling
-
-### No Plans Found
-```bash
-if [ -z "$ARTIFACT_PATH" ]; then
-  echo "ERROR: No plans found"
-  echo "Hint: Create a plan first with /plan <feature-description>"
+# Persist completed state with return code verification
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: Failed to persist completed state" >&2
   exit 1
 fi
 ```
 
-### Invalid JSON (Auto-Mode)
+## Part 5: Completion & Cleanup
+
+**EXECUTE NOW**: Complete the workflow and display summary:
+
 ```bash
-if [ "$OPERATION_MODE" = "auto" ] && [ -z "$CONTEXT_JSON" ]; then
-  cat <<'EOF'
-{
-  "status": "error",
-  "error_type": "invalid_json",
-  "error_message": "Auto-mode requires valid --context JSON"
-}
-EOF
+set +H  # CRITICAL: Disable history expansion
+
+# Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+  echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
   exit 1
 fi
-```
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
 
-### Backup Failure
-```bash
-if [ ! -f "$BACKUP_PATH" ]; then
-  echo "CRITICAL ERROR: Cannot proceed without backup"
-  echo "Check permissions for: $(dirname "$BACKUP_PATH")"
+# Re-source required libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+
+# Load workflow state from Part 4 (subprocess isolation)
+load_workflow_state "$WORKFLOW_ID" false
+
+# Research-and-revise workflow: terminate after plan revision with return code verification
+if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  echo "ERROR: State transition to COMPLETE failed" >&2
+  echo "DIAGNOSTIC Information:" >&2
+  echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
+  echo "  - Attempted Transition: → COMPLETE" >&2
+  echo "  - Workflow Type: research-and-revise" >&2
+  echo "  - Terminal State: plan" >&2
+  echo "POSSIBLE CAUSES:" >&2
+  echo "  - Plan revision phase did not complete properly" >&2
+  echo "  - State not persisted after plan revision" >&2
+  echo "  - Invalid transition from current state" >&2
+  echo "TROUBLESHOOTING:" >&2
+  echo "  - Check plan revision checkpoint output" >&2
+  echo "  - Verify revised plan file exists and differs from backup" >&2
   exit 1
 fi
+
+echo "=== Research-and-Revise Complete ==="
+echo ""
+echo "Workflow Type: research-and-revise"
+echo "Specs Directory: $SPECS_DIR"
+echo "Research Reports: $TOTAL_REPORT_COUNT total ($NEW_REPORT_COUNT new)"
+echo "Revised Plan: $EXISTING_PLAN_PATH"
+echo "Plan Backup: $BACKUP_PATH"
+echo ""
+echo "Next Steps:"
+echo "- Review revised plan: cat $EXISTING_PLAN_PATH"
+echo "- Compare with backup: diff $BACKUP_PATH $EXISTING_PLAN_PATH"
+echo "- Implement revised plan: /implement $EXISTING_PLAN_PATH"
+echo ""
+
+exit 0
 ```
 
-## Integration with Other Commands
+---
 
-### /implement Integration
+**Troubleshooting**:
 
-When /implement detects:
-- **High complexity**: Invokes `/revise --auto-mode` with `revision_type=expand_phase`
-- **Test failures**: Invokes `/revise --auto-mode` with `revision_type=add_phase`
-- **Scope drift**: Invokes `/revise --auto-mode` with `revision_type=update_tasks`
-
-### /list-plans Integration
-
-Use `/list-plans` to discover available plans before revision:
-```bash
-/list-plans --incomplete
-/revise specs/plans/042_auth.md "Update Phase 3..."
-```
-
-### /expand and /collapse Integration
-
-Auto-mode revision may invoke:
-- `/expand phase <plan> <phase-num>` for expansion
-- `/collapse phase <plan> <phase-num>` for collapse
-
-## Best Practices
-
-1. **Be Specific**: Provide clear revision details
-2. **Use Research**: Reference reports for evidence-based changes
-3. **Preserve Progress**: Don't remove completion markers
-4. **Review Backups**: Backups stored in `backups/` subdirectory
-5. **Check History**: Revision history tracks all changes
-6. **Test Integration**: After revision, review before `/implement`
-
-## Notes
-
-- **Backup mandatory**: Always creates backup before modifications
-- **Structure preservation**: Maintains plan hierarchy (L0/L1/L2)
-- **Completion markers**: Preserves checkbox states for executed phases
-- **Audit trail**: Revision history provides permanent record
-- **No execution**: Command only modifies artifacts, never runs code
-- **Mode flexibility**: Supports both interactive and automated workflows
-
-Let me begin processing your revision request.
+- **Plan path not found**: Ensure path format correct (/path/to/plan.md or ./relative/path.md)
+- **Backup failed**: Check write permissions in plans/backups/ directory
+- **Plan not modified**: Agent may determine no revision needed based on research
+- **Plan corrupted**: Restore from backup in plans/backups/ directory
+- **State machine errors**: Ensure library versions compatible (workflow-state-machine.sh >=2.0.0)
+- **File not found error**: Ensure --file path is correct and file exists; relative paths are resolved from current directory
+- **Empty file error**: The prompt file must contain both the plan path and revision details
+- **Dry-run mode**: Use --dry-run to preview what would be done without executing

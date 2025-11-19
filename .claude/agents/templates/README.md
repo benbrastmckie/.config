@@ -59,7 +59,7 @@ When creating a new agent template:
 
 - [Agent Development Guide](../../docs/guides/agent-development-guide.md) - Complete guide to creating agents
 - [Agent Reference](../../docs/reference/agent-reference.md) - Catalog of all specialized agents
-- [Hierarchical Agent Architecture](../../docs/concepts/hierarchical_agents.md) - Multi-level coordination patterns
+- [Hierarchical Agent Architecture](../../docs/concepts/hierarchical-agents.md) - Multi-level coordination patterns
 - [Behavioral Injection Pattern](../../docs/concepts/patterns/behavioral-injection.md) - Agent invocation pattern
 
 ## vs Commands Templates

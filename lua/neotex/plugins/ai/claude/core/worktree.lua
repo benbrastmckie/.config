@@ -81,7 +81,7 @@ function M.setup(opts)
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
   -- Check terminal support (lazy-loaded)
-  local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
+  local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
   if not terminal_detect.supports_tabs() then
     local terminal_name = terminal_detect.get_display_name()
     local terminal_type = terminal_detect.detect()
@@ -303,7 +303,7 @@ function M.create_worktree_with_claude()
     }
 
     -- Create terminal tab if available
-    local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
+    local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
     if terminal_detect.supports_tabs() then
       M._spawn_terminal_tab(worktree_path, feature, session_id, context_file)
     else
@@ -323,8 +323,8 @@ end
 -- Terminal: Spawn new tab for worktree (supports Kitty and WezTerm)
 function M._spawn_terminal_tab(worktree_path, feature, session_id, context_file)
   -- Lazy-load dependencies for performance
-  local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
-  local terminal_cmds = require('neotex.plugins.ai.claude.utils.terminal-commands')
+  local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
+  local terminal_cmds = require('neotex.plugins.ai.claude.claude-session.terminal-commands')
   local notify = require('neotex.util.notifications')
 
   -- Check terminal support
@@ -511,8 +511,8 @@ function M.switch_session()
       end
       
       -- Switch terminal tab if available
-      local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
-      local terminal_cmds = require('neotex.plugins.ai.claude.utils.terminal-commands')
+      local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
+      local terminal_cmds = require('neotex.plugins.ai.claude.claude-session.terminal-commands')
       if terminal_detect.supports_tabs() and choice.session.tab_id then
         -- Try to activate tab
         local activate_cmd = terminal_cmds.activate_tab(choice.session.tab_id)
@@ -557,7 +557,7 @@ function M.list_sessions()
   print(string.rep("-", 80))
   print(string.format("Total: %d session(s)", vim.tbl_count(M.sessions)))
   
-  local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
+  local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
   if terminal_detect.supports_tabs() then
     local tab_count = 0
     for _, session in pairs(M.sessions) do
@@ -600,7 +600,7 @@ function M.delete_session()
         
         if vim.v.shell_error == 0 then
           -- Close terminal tab if exists
-          local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
+          local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
           if terminal_detect.supports_tabs() and choice.session.tab_id then
             -- Note: Tab closing is terminal-specific and may not be supported
             if terminal_detect.detect() == 'wezterm' then
@@ -961,8 +961,8 @@ function M.telescope_sessions()
           local open_file = vim.fn.filereadable(claude_md_path) == 1 and "CLAUDE.md" or ""
 
           -- Use terminal abstraction for spawning
-          local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
-          local terminal_cmds = require('neotex.plugins.ai.claude.utils.terminal-commands')
+          local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
+          local terminal_cmds = require('neotex.plugins.ai.claude.claude-session.terminal-commands')
 
           if not terminal_detect.supports_tabs() then
             local terminal_name = terminal_detect.get_display_name()
@@ -1214,7 +1214,7 @@ function M._quick_create(name, type)
     }
 
     -- Spawn tab (needs session to exist)
-    local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
+    local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
     if terminal_detect.supports_tabs() then
       M._spawn_terminal_tab(worktree_path, name, name .. "-" .. os.time(), 
         worktree_path .. "/CLAUDE.md")
@@ -1340,8 +1340,8 @@ end
 
 -- Spawn new terminal tab for restoration
 function M._spawn_restoration_tab(worktree_path, name)
-  local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
-  local terminal_cmds = require('neotex.plugins.ai.claude.utils.terminal-commands')
+  local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
+  local terminal_cmds = require('neotex.plugins.ai.claude.claude-session.terminal-commands')
 
   if not terminal_detect.supports_tabs() then
     local terminal_name = terminal_detect.get_display_name()
@@ -1421,7 +1421,7 @@ end
 function M._restore_claude_session(pane_id, session_id)
   if not pane_id then return end
 
-  local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
+  local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
   local terminal = terminal_detect.detect()
 
   -- Terminal-specific text sending (not all terminals support this)
@@ -2050,8 +2050,8 @@ function M.claude_session_picker()
         local selection = action_state.get_selected_entry()
         actions.close(prompt_bufnr)
         if selection then
-          local terminal_detect = require('neotex.plugins.ai.claude.utils.terminal-detection')
-          local terminal_cmds = require('neotex.plugins.ai.claude.utils.terminal-commands')
+          local terminal_detect = require('neotex.plugins.ai.claude.claude-session.terminal-detection')
+          local terminal_cmds = require('neotex.plugins.ai.claude.claude-session.terminal-commands')
 
           if not terminal_detect.supports_tabs() then
             local terminal_name = terminal_detect.get_display_name()

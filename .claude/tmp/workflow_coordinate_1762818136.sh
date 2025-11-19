@@ -1,8 +1,0 @@
-export CLAUDE_PROJECT_DIR="/home/benjamin/.config"
-export WORKFLOW_ID="coordinate_1762818136"
-export STATE_FILE="/home/benjamin/.config/.claude/tmp/workflow_coordinate_1762818136.sh"
-export WORKFLOW_ID="coordinate_1762818136"
-export WORKFLOW_DESCRIPTION="implement authentication system"
-export WORKFLOW_SCOPE="full-implementation"
-export TERMINAL_STATE="complete"
-export CURRENT_STATE="initialize"

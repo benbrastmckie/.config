@@ -2,374 +2,449 @@
 
 **Executable**: `.claude/commands/debug.md`
 
-**Quick Start**: Run `/debug "<issue description>" [report-path1]` - investigates issues and creates diagnostic reports without making code changes.
+**Quick Start**: Run `/debug "<issue-description>"` - debug-focused workflow for root cause analysis.
 
 ---
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Usage](#usage)
-3. [Investigation Techniques](#investigation-techniques)
-4. [Parallel Hypothesis Testing](#parallel-hypothesis-testing)
-5. [Report Structure](#report-structure)
-6. [Troubleshooting](#troubleshooting)
+2. [Architecture](#architecture)
+3. [Usage Examples](#usage-examples)
+4. [Advanced Topics](#advanced-topics)
+5. [Troubleshooting](#troubleshooting)
+6. [See Also](#see-also)
 
 ---
 
 ## Overview
 
-The `/debug` command investigates issues systematically, creating diagnostic reports that document root causes, proposed solutions, and prevention recommendations - all without modifying code.
+### Purpose
 
-### Key Capabilities
-
-- **Root cause analysis**: Systematic investigation to identify underlying issues
-- **Parallel hypothesis testing**: Investigates multiple potential causes simultaneously
-- **Evidence collection**: Gathers code, logs, git history, and environmental factors
-- **Solution proposals**: Recommends multiple solutions with pros/cons/risks
-- **Impact assessment**: Evaluates severity, scope, and urgency
-- **Prevention recommendations**: Suggests measures to prevent recurrence
+The `/debug` command provides a debug-focused workflow for investigating issues through research, creating debug strategy plans, and performing root cause analysis. It automates the investigation process using specialized agents and produces actionable debugging artifacts.
 
 ### When to Use
 
-- Investigate production issues or bugs
-- Analyze test failures during implementation
-- Diagnose performance problems
-- Research recurring issues
-- Document known issues before fixing
+- **Bug investigation**: Analyzing production errors, timeouts, or failures
+- **Root cause analysis**: Investigating intermittent issues or performance problems
+- **Debug strategy**: Creating systematic debugging approaches for complex issues
+- **Error diagnosis**: Understanding stack traces, logs, and error patterns
+
+### When NOT to Use
+
+- **Implementing features**: Use `/build` or `/coordinate` for implementation workflows
+- **Creating plans**: Use `/plan` or `/plan` for implementation planning
+- **Research without fixes**: Use `/research` for investigation-only tasks
+- **Plan revision**: Use `/revise` for modifying existing plans
 
 ---
 
-## Usage
+## Architecture
 
-### Basic Syntax
+### Design Principles
+
+1. **Debug-Only Workflow**: Focuses solely on investigation and analysis, not implementation
+2. **Three-Phase Process**: Research → Plan → Debug with agent delegation
+3. **Artifact Generation**: Creates research reports, debug strategy plan, and debug artifacts
+4. **Complexity-Aware**: Adjustable research complexity (1-4) for investigation depth
+5. **State Machine Based**: Terminal state is "debug" (workflow ends after root cause analysis)
+
+### Patterns Used
+
+- **State-Based Orchestration**: (state-based-orchestration-overview.md) Manages debug workflow states
+- **Behavioral Injection**: (behavioral-injection.md) Separates orchestration from agent behavior
+- **Fail-Fast Verification**: (Standard 0) File-level verification with size checks
+- **Complexity-Based Research**: (complexity-utils.sh) Adjusts research depth based on issue complexity
+
+### Workflow States
+
+```
+┌──────────────┐
+│   RESEARCH   │ ← Issue investigation
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│     PLAN     │ ← Debug strategy creation
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│    DEBUG     │ ← Root cause analysis (terminal state)
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│   COMPLETE   │
+└──────────────┘
+```
+
+### Integration Points
+
+- **State Machine**: workflow-state-machine.sh (>=2.0.0) for state management
+- **Research**: research-specialist agent for issue investigation
+- **Planning**: plan-architect agent for debug strategy creation
+- **Analysis**: debug-analyst agent for root cause investigation
+- **Output**: specs/{NNN_topic}/reports/, plans/, debug/ directories
+
+### Data Flow
+
+1. **Input**: Issue description + optional complexity level (default: 2)
+2. **Research Phase**: research-specialist creates investigation reports
+3. **Planning Phase**: plan-architect creates debug strategy plan
+4. **Debug Phase**: debug-analyst performs root cause analysis
+5. **Output**: Debug artifacts in specs/{topic}/debug/, strategy plan, research reports
+
+---
+
+## Usage Examples
+
+### Example 1: Basic Bug Investigation
 
 ```bash
-/debug "<issue description>" [report-path1] [report-path2] ...
+/debug"authentication timeout errors in production"
 ```
 
-### Arguments
+**Expected Output**:
+```
+=== Debug-Focused Workflow ===
+Issue: authentication timeout errors in production
+Research Complexity: 2
 
-- **issue description** (required): Clear description of the problem to investigate
-- **report-path** (optional): Context reports (research, other debug reports)
+✓ State machine initialized
 
-### Examples
+=== Phase 1: Research (Issue Investigation) ===
+
+EXECUTE NOW: USE the Task tool to invoke research-specialist agent
+
+Workflow-Specific Context:
+- Research Complexity: 2
+- Issue Description: authentication timeout errors in production
+- Output Directory: /home/user/.config/.claude/specs/748_authentication_timeout/reports
+- Workflow Type: debug-only
+- Context Mode: root cause analysis
+
+✓ Research phase complete (3 reports created)
+
+=== Phase 2: Planning (Debug Strategy) ===
+
+EXECUTE NOW: USE the Task tool to invoke plan-architect agent
+
+✓ Planning phase complete (strategy: 001_debug_strategy.md)
+
+=== Phase 3: Debug (Root Cause Analysis) ===
+
+EXECUTE NOW: USE the Task tool to invoke debug-analyst agent
+
+✓ Debug phase complete (artifacts: 2 files)
+
+=== Debug Workflow Complete ===
+
+Workflow Type: debug-only
+Specs Directory: .claude/specs/748_authentication_timeout
+Research Reports: 3 reports
+Debug Strategy Plan: .claude/specs/748_authentication_timeout/plans/001_debug_strategy.md
+Debug Artifacts: 2 files
+
+Next Steps:
+- Review debug strategy: cat .claude/specs/748_authentication_timeout/plans/001_debug_strategy.md
+- Review debug artifacts: ls .claude/specs/748_authentication_timeout/debug
+- Apply fixes identified in analysis
+- Re-run tests to verify fix
+```
+
+**Explanation**:
+Investigates authentication timeouts through automated research, creates systematic debug strategy, and performs root cause analysis. Generates comprehensive debugging artifacts for manual fix application.
+
+### Example 2: Complex Issue with Higher Complexity
 
 ```bash
-# Basic investigation
-/debug "Authentication failing with null pointer exception"
-
-# With context report
-/debug "Database migration fails on production" specs/042_db/reports/001_prod_analysis.md
-
-# Multiple context reports
-/debug "Performance regression after caching update" \
-  specs/050_cache/reports/001_redis_analysis.md \
-  specs/050_cache/reports/002_performance_benchmarks.md
+/debug"intermittent database connection failures --complexity 4"
 ```
 
----
+**Expected Output**:
+```
+=== Debug-Focused Workflow ===
+Issue: intermittent database connection failures
+Research Complexity: 4
 
-## Investigation Techniques
+✓ State machine initialized
 
-### Code Analysis
+=== Phase 1: Research (Issue Investigation) ===
 
-**Static Analysis:**
-- Search for relevant code patterns
-- Identify error handling gaps
-- Check for null/undefined access
-- Review type safety
+NOTE: Hierarchical supervision mode (complexity ≥4)
+Invoke research-sub-supervisor agent to coordinate multiple sub-agents
 
-**Pattern Detection:**
-- Search for similar issues in codebase
-- Check git history for related changes
-- Review closed issues/PRs
-- Identify code smells
+✓ Research phase complete (8 reports created)
 
-### Environmental Checks
+=== Phase 2: Planning (Debug Strategy) ===
+...
+```
 
-**System State:**
-- Check environment variables
-- Review configuration files
-- Verify dependencies/versions
-- Check system resources
+**Explanation**:
+Higher complexity (4) triggers hierarchical supervision mode for deeper investigation. Produces more comprehensive research reports and detailed debug strategy.
 
-**Log Analysis:**
-- Search error logs for patterns
-- Check timestamps for correlation
-- Identify error frequency
-- Review stack traces
+### Example 3: Performance Issue Investigation
 
-### Git History
-
-**Recent Changes:**
 ```bash
-# Changes in last week
-git log --oneline --since="1 week ago"
-
-# Changes to specific files
-git log --oneline -- path/to/file
-
-# Find when issue was introduced
-git bisect start
+/debug"API endpoint latency exceeds 2s on POST /api/users"
 ```
+
+**Expected Output**:
+```
+=== Debug-Focused Workflow ===
+Issue: API endpoint latency exceeds 2s on POST /api/users
+Research Complexity: 2
+
+✓ State machine initialized
+
+=== Phase 1: Research (Issue Investigation) ===
+...
+✓ Research phase complete (4 reports created)
+
+=== Phase 2: Planning (Debug Strategy) ===
+...
+✓ Planning phase complete (strategy: 001_debug_strategy.md)
+
+=== Phase 3: Debug (Root Cause Analysis) ===
+...
+✓ Debug phase complete (artifacts: 3 files)
+
+=== Debug Workflow Complete ===
+
+Next Steps:
+- Review debug strategy: cat .claude/specs/749_api_endpoint_latency/plans/001_debug_strategy.md
+- Review debug artifacts: ls .claude/specs/749_api_endpoint_latency/debug
+- Apply fixes identified in analysis
+- Re-run tests to verify fix
+```
+
+**Explanation**:
+Performance issues are investigated with focus on latency analysis. Debug artifacts may include profiling data, query analysis, or resource utilization reports.
 
 ---
 
-## Parallel Hypothesis Testing
+## Advanced Topics
 
-For complex issues (complexity ≥6), the command invokes multiple debug-analyst agents in parallel to investigate different hypotheses simultaneously.
+### Performance Considerations
 
-### Complexity Triggers
+**Complexity Levels**:
+- **Level 1**: Quick investigation, 1-2 reports, surface-level analysis
+- **Level 2** (default): Standard investigation, 3-4 reports, moderate depth
+- **Level 3**: Deep investigation, 5-6 reports, comprehensive analysis
+- **Level 4**: Hierarchical investigation, 7+ reports, exhaustive analysis with sub-supervisor
 
-Parallel investigation activates when:
-1. **Issue complexity ≥6** (calculated from description and potential causes)
-2. **Multiple potential causes** (3+ distinct hypotheses)
-3. **System-wide impact** (affects multiple components)
+**Research Time**:
+- Complexity 1: ~5-10 minutes
+- Complexity 2: ~10-20 minutes
+- Complexity 3: ~20-40 minutes
+- Complexity 4: ~40-60 minutes
 
-### Parallel Investigation Workflow
+**Artifact Storage**:
+- Reports: `.claude/specs/{NNN_topic}/reports/`
+- Plans: `.claude/specs/{NNN_topic}/plans/`
+- Debug artifacts: `.claude/specs/{NNN_topic}/debug/`
 
-```
-┌─────────────────────────────────────────┐
-│ Issue Complexity Analysis               │
-│ → Calculate Complexity Score            │
-│ → Identify Potential Causes             │
-└─────────────────────────────────────────┘
-                 │
-                 ▼
-         Complexity ≥6?
-                 │
-         ┌───────┴───────┐
-         │               │
-         ▼               ▼
-        YES             NO
-         │               │
-         │               └──→ Single Investigation
-         │
-         ▼
-┌─────────────────────────────────────────┐
-│ Invoke 2-3 Debug Analysts in Parallel  │
-│ → Each investigates different hypothesis│
-│ → Simultaneous evidence collection      │
-│ → Independent root cause analysis       │
-└─────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────┐
-│ Aggregate Findings                      │
-│ → Collect all investigation results     │
-│ → Compare hypotheses                    │
-│ → Identify strongest root cause         │
-│ → Merge evidence                        │
-└─────────────────────────────────────────┘
+### Customization
+
+**Complexity Override**:
+```bash
+# Embedded in description
+/debug"issue description --complexity 3"
+
+# Or use explicit syntax (if supported)
+/debug--complexity 3 "issue description"
 ```
 
-### Agent Invocation
+**Issue Description Best Practices**:
+- Be specific: Include error messages, stack traces, affected components
+- Provide context: Environment (production/staging), frequency, user impact
+- Include constraints: "occurs only on mobile browsers", "happens after 10pm"
 
-```
-Task {
-  subagent_type: "general-purpose"
-  description: "Investigate hypothesis: <hypothesis>"
-  prompt: |
-    Read and follow behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/debug-analyst.md
-    
-    You are acting as a Debug Analyst Agent.
-    
-    Issue: <issue description>
-    Hypothesis: <specific hypothesis to investigate>
-    Context: <relevant context and reports>
-    
-    Investigate this hypothesis:
-    1. Collect relevant evidence
-    2. Analyze code and logs
-    3. Verify hypothesis
-    4. Propose solutions if valid
-    
-    Return: Structured findings (evidence, verification, solutions)
-}
+### Integration with Other Workflows
+
+**Fix → Build Chain**:
+```bash
+/debug"authentication bug"              # Investigate and identify root cause
+# Manually apply fixes
+/build                                 # Re-run implementation tests
 ```
 
-### Benefits
-
-- **50% faster investigation**: Parallel hypothesis testing vs sequential
-- **Comprehensive coverage**: Multiple angles investigated simultaneously
-- **Higher accuracy**: Cross-validation of findings
-- **Reduced context**: Metadata-only aggregation (95% reduction)
-
----
-
-## Report Structure
-
-Debug reports follow a uniform structure for consistency and completeness.
-
-### Standard Template
-
-```markdown
-# Debug Report: <Issue Title>
-
-## Metadata
-- **Report ID**: NNN
-- **Date**: YYYY-MM-DD
-- **Issue**: Brief description
-- **Severity**: [CRITICAL/HIGH/MEDIUM/LOW]
-- **Status**: Under Investigation
-- **Related Files**: List of files
-- **Context Reports**: Links to reports used
-
-## Issue Description
-
-Detailed description of the problem including:
-- Symptoms observed
-- When issue occurs
-- Affected systems/users
-- Error messages
-
-## Investigation Summary
-
-High-level summary of investigation process and findings.
-
-## Evidence Collected
-
-### Code Analysis
-- Relevant code sections
-- Potential problem areas
-- Code patterns identified
-
-### Recent Changes
-- Git commits related to issue
-- Configuration changes
-- Dependency updates
-
-### Error Patterns
-- Error logs and stack traces
-- Error frequency and timing
-- Patterns across environments
-
-## Root Cause Analysis
-
-### Primary Root Cause
-Most likely cause with supporting evidence
-
-### Contributing Factors
-1. Factor 1 with explanation
-2. Factor 2 with explanation
-
-### Verification
-How root cause was verified (tests, reproduction steps)
-
-## Proposed Solutions
-
-### Solution 1 (Recommended)
-- **Description**: What to do
-- **Implementation**: How to implement
-- **Pros**: Benefits
-- **Cons**: Drawbacks
-- **Risk**: [LOW/MEDIUM/HIGH]
-
-### Solution 2 (Alternative)
-[Same structure]
-
-## Impact Assessment
-
-- **Users Affected**: Scope
-- **Systems Affected**: List
-- **Data Impact**: Any data concerns
-- **Urgency**: [IMMEDIATE/HIGH/MEDIUM/LOW]
-
-## Next Steps
-
-1. Immediate actions
-2. Short-term fixes
-3. Long-term improvements
-
-## Prevention Recommendations
-
-- How to prevent recurrence
-- Monitoring improvements
-- Process changes
-- Testing enhancements
-
-## References
-
-- Related issues
-- Documentation links
-- External resources
+**Research → Fix Chain**:
+```bash
+/research "authentication patterns in codebase"  # Understand system
+/debug"authentication timeout errors"                    # Debug specific issue
 ```
 
-### Report Location
-
-Reports are stored in topic-based directories:
-
-```
-specs/
-└── 042_authentication/
-    ├── debug/
-    │   ├── 001_debug.md
-    │   ├── 002_debug.md
-    │   └── 003_debug.md
-    ├── plans/
-    │   └── 042_implementation_plan.md
-    └── reports/
-        └── 042_research.md
+**Fix → Plan → Build Chain**:
+```bash
+/debug"database performance issues"     # Identify problems
+/plan "optimize database queries"      # Create fix implementation plan
+/build                                 # Implement fixes
 ```
 
 ---
 
 ## Troubleshooting
 
-### No Debug Report Created
+### Common Issues
 
-**Symptom**: Command runs but report not found
+#### Issue 1: Research Phase Fails to Create Artifacts
 
-**Diagnosis**:
+**Symptoms**:
+- Error: "Research phase failed to create report files"
+- Research directory exists but is empty
+
+**Cause**:
+Research-specialist agent encountered errors or issue description too vague.
+
+**Solution**:
 ```bash
-# Check specs directory
-ls -la specs/*/debug/
+# Make issue description more specific
+/debug"authentication timeout errors in production - JWT validation fails after 30s"
 
-# Verify permissions
-ls -ld specs/
+# Or increase complexity for deeper investigation
+/debug"authentication timeout errors --complexity 3"
+
+# Check research-specialist agent logs
+cat .claude/agents/research-specialist.md
 ```
 
-**Solutions:**
-- Create debug directory: `mkdir -p specs/001_topic/debug`
-- Fix permissions: `chmod 755 specs`
-- Check disk space: `df -h`
+#### Issue 2: Plan File Too Small
 
-### Parallel Investigation Not Triggering
+**Symptoms**:
+- Error: "Plan file too small (XXX bytes)"
+- Plan created but minimal content
 
-**Symptom**: Complex issue but single investigation
+**Cause**:
+Plan-architect agent received insufficient research context or encountered errors.
 
-**Diagnosis**:
+**Solution**:
 ```bash
-# Check issue complexity
-source .claude/lib/complexity-utils.sh
-SCORE=$(calculate_issue_complexity "$ISSUE_DESC")
-echo "Complexity: $SCORE"
+# Verify research reports exist
+ls .claude/specs/*/reports/
+
+# Check report file sizes
+du -h .claude/specs/*/reports/*.md
+
+# If reports are empty, re-run with higher complexity
+/debug"issue description --complexity 3"
 ```
 
-**Solutions:**
-- Add detail to issue description (increases complexity)
-- Mention multiple potential causes
-- Add system-wide impact keywords
+#### Issue 3: No Debug Artifacts Created
 
-### Root Cause Not Found
+**Symptoms**:
+- Note: "No debug artifacts created (analysis may be in plan or reports)"
+- Debug directory empty
 
-**Symptom**: Investigation complete but no root cause identified
+**Cause**:
+Debug-analyst provided analysis in strategy plan or reports rather than separate artifacts. This is normal for some issue types.
 
-**Solutions:**
-- Provide more context reports
-- Add specific error messages to description
-- Include reproduction steps
-- Review recent git changes manually
-- Use `/research` for deeper analysis first
+**Solution**:
+```bash
+# Review debug strategy plan
+cat .claude/specs/*/plans/001_debug_strategy.md
+
+# Review research reports
+cat .claude/specs/*/reports/*.md
+
+# Debug analysis is often embedded in these files
+```
+
+#### Issue 4: State Machine Initialization Failed
+
+**Symptoms**:
+- Error: "State machine initialization failed"
+- Diagnostic shows library version issues
+
+**Cause**:
+Missing or incompatible workflow-state-machine.sh version.
+
+**Solution**:
+```bash
+# Check library version
+grep "VERSION=" .claude/lib/workflow-state-machine.sh
+
+# Ensure version >=2.0.0
+# Update library if needed
+
+# Verify state-persistence.sh exists
+ls .claude/lib/state-persistence.sh
+```
+
+#### Issue 5: Issue Description Too Vague
+
+**Symptoms**:
+- Research produces generic reports
+- Debug strategy lacks specific steps
+- Root cause analysis inconclusive
+
+**Cause**:
+Issue description doesn't provide enough context for targeted investigation.
+
+**Solution**:
+Improve issue description with:
+- **Error messages**: Exact error text or codes
+- **Stack traces**: Relevant portions of stack traces
+- **Environment**: Production/staging, OS, browser, version
+- **Steps to reproduce**: How to trigger the issue
+- **Frequency**: Always, intermittent, specific conditions
+
+Example:
+```bash
+# Before (too vague)
+/debug"authentication problems"
+
+# After (specific)
+/debug"JWT validation fails with 'Token expired' error in production after exactly 30 seconds, only affects users in EU timezone, started after deployment on 2025-01-15"
+```
+
+### Debug Mode
+
+Enable bash debugging for verbose output:
+
+```bash
+# Enable trace mode
+set -x
+/debug"issue description"
+set +x
+```
+
+**State Inspection**:
+```bash
+# View current state
+cat ~/.claude/data/state/workflow_state.json | jq .
+
+# Check workflow type
+cat ~/.claude/data/state/workflow_state.json | jq '.workflow_type'
+```
+
+**Artifact Verification**:
+```bash
+# List all research reports
+find .claude/specs -name "*.md" -path "*/reports/*"
+
+# Check file sizes
+find .claude/specs -path "*/reports/*.md" -exec du -h {} \;
+
+# Verify minimum size (should be >100 bytes)
+find .claude/specs -path "*/reports/*.md" -size -100c
+```
+
+### Getting Help
+
+- Check [Command Reference](../reference/command-reference.md) for quick syntax
+- Review [Research-Specialist Agent](../../agents/research-specialist.md) for research patterns
+- See related commands: `/research`, `/debug`, `/build`
+- Review [State-Based Orchestration](../architecture/state-based-orchestration-overview.md) for workflow details
 
 ---
 
 ## See Also
 
-- [/implement Command Guide](implement-command-guide.md) - Error recovery integration
-- [/test Command Guide](test-command-guide.md) - Test failure debugging
-- [Error Handling Utilities](../reference/library-api.md#error-handling) - Error classification
-- [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md)
-- [Command Development Guide](command-development-guide.md)
+- [Research-Specialist Agent](../../agents/research-specialist.md)
+- [Plan-Architect Agent](../../agents/plan-architect.md)
+- [Debug-Analyst Agent](../../agents/debug-analyst.md)
+- [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md)
+- [Command Reference](../reference/command-reference.md)
+- Related Commands: `/debug`, `/research`, `/build`, `/coordinate`

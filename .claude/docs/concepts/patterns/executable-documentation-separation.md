@@ -300,7 +300,27 @@ REPORTS_DIR="$TOPIC_PATH/reports/"
 
 **Impact**: Better documentation without execution cost. Guides average 1,300 lines (vs 200-line executable target), providing 6.5x more comprehensive documentation than was previously possible.
 
-### Benefit 5: Fail-Fast Execution
+### Benefit 5: Output Formatting Compliance
+
+**Lean Executables Enable Output Suppression Patterns**:
+
+Lean executable files naturally align with output suppression standards:
+- Minimal inline comments use WHAT not WHY pattern
+- Consolidated bash blocks reduce display noise (2-3 blocks vs 6+)
+- Single summary line per block instead of verbose progress messages
+- Library sourcing uses `2>/dev/null` pattern with error handling
+
+**Pattern Synergy**:
+```bash
+# Lean executable with output suppression
+source "${LIB}/state-machine.sh" 2>/dev/null || exit 1
+sm_init "$DESC" "$CMD" "$TYPE" || exit 1
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+See [Output Formatting Standards](../../reference/output-formatting-standards.md) for complete suppression and consolidation patterns.
+
+### Benefit 6: Fail-Fast Execution
 
 **Pattern Enforcement**:
 - Lean files make execution intent obvious to both Claude and human maintainers
@@ -316,7 +336,7 @@ REPORTS_DIR="$TOPIC_PATH/reports/"
 
 **Result**: Commands execute correctly or fail immediately with clear diagnostics. No silent degradation, no "works sometimes" behavior, no hidden complexity.
 
-### Benefit 6: Scalable Pattern for Future Development
+### Benefit 7: Scalable Pattern for Future Development
 
 **Template-Driven Creation**:
 - New commands start with proven structure from templates
@@ -335,7 +355,7 @@ REPORTS_DIR="$TOPIC_PATH/reports/"
 - Zero pattern violations introduced since migration completion
 - New contributors apply pattern correctly after reading guide
 
-### Benefit 7: Standards Integration
+### Benefit 8: Standards Integration
 
 **CLAUDE.md Integration**:
 - "Command and Agent Architecture Standards" section updated

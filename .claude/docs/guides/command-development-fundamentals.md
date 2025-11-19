@@ -798,3 +798,74 @@ test_no_documentation_only_yaml_blocks() {
     return 1
   fi
 }
+
+---
+
+## 8. Block Structure Optimization
+
+### 8.1 Target Block Count
+
+Commands SHOULD use 2-3 bash blocks maximum to minimize display noise in Claude Code:
+
+| Block | Purpose | Operations |
+|-------|---------|------------|
+| **Setup** | Initialization | Argument capture, library sourcing, validation, state machine init, path allocation |
+| **Execute** | Main workflow | Core processing, agent invocations, state transitions |
+| **Cleanup** | Completion | Final validation, completion signal, summary output |
+
+### 8.2 Consolidation Pattern
+
+**Before** (6 blocks - excessive):
+```markdown
+Block 1: mkdir output dir
+Block 2: source libraries
+Block 3: validate config
+Block 4: init state machine
+Block 5: allocate workflow ID
+Block 6: persist state
+```
+
+**After** (2 blocks - optimized):
+```bash
+# Block 1: Setup
+set +H
+mkdir -p "$DIR" 2>/dev/null
+source "${LIB}/state-machine.sh" 2>/dev/null || exit 1
+source "${LIB}/persistence.sh" 2>/dev/null || exit 1
+validate_config || exit 1
+sm_init "$DESC" "$CMD" "$TYPE" || exit 1
+WORKFLOW_ID=$(allocate_workflow_id) || exit 1
+append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID" || exit 1
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+### 8.3 Output Suppression
+
+Use output suppression within consolidated blocks:
+
+**Library Sourcing**:
+```bash
+source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source library" >&2
+  exit 1
+}
+```
+
+**Single Summary Line**:
+```bash
+# After all setup operations
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+### 8.4 Benefits
+
+- **50-67% reduction** in display noise
+- **Faster execution** (fewer subprocess spawns)
+- **Cleaner output** (single summary per block)
+- **Easier debugging** (logical groupings)
+
+### 8.5 Related Documentation
+
+- [Bash Block Execution Model - Pattern 8](../concepts/bash-block-execution-model.md#pattern-8-block-count-minimization)
+- [Output Formatting Standards](../reference/output-formatting-standards.md)
+- [Command Authoring Standards](../reference/command-authoring-standards.md#output-suppression-requirements)

@@ -166,66 +166,6 @@
       "dependencies": [],
       "behavioral_file": ".claude/agents/doc-writer.md"
     },
-    "github-specialist": {
-      "type": "specialized",
-      "category": "analysis",
-      "description": "Specialized in GitHub operations including PRs, issues, and CI/CD monitoring",
-      "tools": [
-        "Read",
-        "Grep",
-        "Glob",
-        "Bash"
-      ],
-      "metrics": {
-        "total_invocations": 0,
-        "successful_invocations": 0,
-        "failed_invocations": 0,
-        "average_duration_seconds": 0.0,
-        "last_invocation": null
-      },
-      "dependencies": [],
-      "behavioral_file": ".claude/agents/github-specialist.md"
-    },
-    "implementation-researcher": {
-      "type": "specialized",
-      "category": "research",
-      "description": "Analyze codebase to inform implementation phase execution",
-      "tools": [
-        "Glob",
-        "Grep",
-        "Read",
-        "Task",
-        "Write"
-      ],
-      "metrics": {
-        "total_invocations": 0,
-        "successful_invocations": 0,
-        "failed_invocations": 0,
-        "average_duration_seconds": 0.0,
-        "last_invocation": null
-      },
-      "dependencies": [],
-      "behavioral_file": ".claude/agents/implementation-researcher.md"
-    },
-    "metrics-specialist": {
-      "type": "specialized",
-      "category": "analysis",
-      "description": "Specialized in performance analysis and optimization recommendations",
-      "tools": [
-        "Read",
-        "Bash",
-        "Grep"
-      ],
-      "metrics": {
-        "total_invocations": 0,
-        "successful_invocations": 0,
-        "failed_invocations": 0,
-        "average_duration_seconds": 0.0,
-        "last_invocation": null
-      },
-      "dependencies": [],
-      "behavioral_file": ".claude/agents/metrics-specialist.md"
-    },
     "plan-architect": {
       "type": "hierarchical",
       "category": "planning",
@@ -246,26 +186,6 @@
       },
       "dependencies": [],
       "behavioral_file": ".claude/agents/plan-architect.md"
-    },
-    "plan-structure-manager": {
-      "type": "hierarchical",
-      "category": "planning",
-      "description": "Unified agent for expanding/collapsing phases and stages in implementation plans",
-      "tools": [
-        "Read",
-        "Write",
-        "Edit",
-        "Bash"
-      ],
-      "metrics": {
-        "total_invocations": 0,
-        "successful_invocations": 0,
-        "failed_invocations": 0,
-        "average_duration_seconds": 0.0,
-        "last_invocation": null
-      },
-      "dependencies": [],
-      "behavioral_file": ".claude/agents/plan-structure-manager.md"
     },
     "research-specialist": {
       "type": "specialized",
@@ -362,24 +282,6 @@
       },
       "dependencies": [],
       "behavioral_file": ".claude/agents/implementer-coordinator.md"
-    },
-    "research-synthesizer": {
-      "type": "specialized",
-      "category": "research",
-      "description": "Synthesizes multiple individual research reports into comprehensive overview report with cross-references",
-      "tools": [
-        "Read",
-        "Write"
-      ],
-      "metrics": {
-        "total_invocations": 0,
-        "successful_invocations": 0,
-        "failed_invocations": 0,
-        "average_duration_seconds": 0.0,
-        "last_invocation": null
-      },
-      "dependencies": [],
-      "behavioral_file": ".claude/agents/research-synthesizer.md"
     }
   }
 }

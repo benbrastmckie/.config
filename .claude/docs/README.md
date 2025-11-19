@@ -43,7 +43,7 @@ Common tasks and where to find guidance:
 
 7. **Understand architectural patterns**
    → [Patterns Catalog](concepts/patterns/README.md)
-   → [Hierarchical Agents](concepts/hierarchical_agents.md)
+   → [Hierarchical Agents](concepts/hierarchical-agents.md)
 
 8. **Implement wave-based parallel execution**
    → [Parallel Execution Pattern](concepts/patterns/parallel-execution.md)
@@ -90,7 +90,7 @@ Looking to work on a specific area? Use these quick-start paths:
 
 ### Working on Agents?
 → **Start**: [Agent Development Guide](guides/agent-development-guide.md)
-→ **Architecture**: [Hierarchical Agents](concepts/hierarchical_agents.md)
+→ **Architecture**: [Hierarchical Agents](concepts/hierarchical-agents.md)
 → **Reference**: [Agent Reference](reference/agent-reference.md)
 
 ### Refactoring .claude/?
@@ -104,7 +104,7 @@ Looking to work on a specific area? Use these quick-start paths:
 - **Patterns**: `concepts/patterns/` catalog is authoritative for architectural patterns
 - **Command Syntax**: `reference/command-reference.md` is authoritative for command usage
 - **Agent Syntax**: `reference/agent-reference.md` is authoritative for agent capabilities
-- **Architecture**: `concepts/hierarchical_agents.md` is authoritative for system design
+- **Architecture**: `concepts/hierarchical-agents.md` is authoritative for system design
 
 Guides should cross-reference these authoritative sources rather than duplicating content.
 
@@ -154,7 +154,7 @@ docs/
 │
 ├── concepts/                    Understanding-oriented explanations (5 files + patterns)
 │   ├── README.md                Concepts documentation index
-│   ├── hierarchical_agents.md   Multi-level agent coordination
+│   ├── hierarchical-agents.md   Multi-level agent coordination
 │   ├── writing-standards.md     Development philosophy and documentation
 │   ├── directory-protocols.md   Topic-based artifact organization
 │   ├── directory-organization.md  Directory structure and file placement
@@ -230,7 +230,7 @@ Commands orchestrate specialized subagents through structured workflows:
 **`/orchestrate`**: Complete end-to-end workflow (6 phases: research → planning → implementation → testing → debugging → documentation)
 - Target: <30% context usage throughout
 
-**For Complete Command Workflow Details**: See [Hierarchical Agent Architecture - Tutorial Walkthrough](concepts/hierarchical_agents.md#tutorial-walkthrough)
+**For Complete Command Workflow Details**: See [Hierarchical Agent Architecture - Tutorial Walkthrough](concepts/hierarchical-agents.md#tutorial-walkthrough)
 
 ### Layered Context Architecture
 
@@ -303,7 +303,7 @@ Agent invocations use five context layers to minimize token consumption while ma
 
 **Target**: <30% context usage throughout workflows
 
-**For Technical Details**: See [Hierarchical Agents Guide](concepts/hierarchical_agents.md)
+**For Technical Details**: See [Hierarchical Agents Guide](concepts/hierarchical-agents.md)
 
 ### Parallel Execution with Dependencies
 
@@ -352,7 +352,7 @@ Savings: 40 min (27%)
 - Implementation phase: 40-60% faster (wave-based execution)
 - Overall workflows: 35-50% faster vs sequential
 
-**For Complete Details**: See [Hierarchical Agent Architecture](concepts/hierarchical_agents.md) and [Tutorial Walkthrough](concepts/hierarchical_agents.md#tutorial-walkthrough)
+**For Complete Details**: See [Hierarchical Agent Architecture](concepts/hierarchical-agents.md) and [Tutorial Walkthrough](concepts/hierarchical-agents.md#tutorial-walkthrough)
 
 ---
 
@@ -387,7 +387,7 @@ Understanding-oriented explanations of architecture and design. Use when you nee
 - [Behavioral Injection Pattern](concepts/patterns/behavioral-injection.md) - Reference behavioral files, inject context
 
 **Key Documents**:
-- [Hierarchical Agents](concepts/hierarchical_agents.md) - Multi-level agent coordination architecture
+- [Hierarchical Agents](concepts/hierarchical-agents.md) - Multi-level agent coordination architecture
 - [Writing Standards](concepts/writing-standards.md) - Development philosophy and documentation principles
 - [Directory Protocols](concepts/directory-protocols.md) - Topic-based artifact organization system
 - [Development Workflow](concepts/development-workflow.md) - Standard workflow patterns and artifact management
@@ -570,13 +570,13 @@ Before committing:
 - [Using Agents](guides/agent-development-guide.md) - Agent integration
 - [Standards Integration](guides/standards-integration.md) - Standards usage
 - [Command Patterns](guides/command-patterns.md) - Pattern catalog
-- [Command Examples](guides/command-examples.md) - Command examples
+- [Command Examples](archive/guides/command-examples.md) - Command examples (archived)
 - [Logging Patterns](guides/logging-patterns.md) - Logging standards
 - [Efficiency Guide](guides/performance-optimization.md) - Performance optimization
 - [Error Enhancement Guide](guides/error-enhancement-guide.md) - Error handling
 
 **Concepts**:
-- [Hierarchical Agents](concepts/hierarchical_agents.md) - Multi-level agent coordination
+- [Hierarchical Agents](concepts/hierarchical-agents.md) - Multi-level agent coordination
 - [Writing Standards](concepts/writing-standards.md) - Documentation and code standards
 - [Directory Protocols](concepts/directory-protocols.md) - Directory structure and artifacts
 - [Development Workflow](concepts/development-workflow.md) - Development workflow patterns
@@ -615,7 +615,7 @@ Before committing:
 - [Creating Agents](guides/agent-development-guide.md)
 - [Using Agents](guides/agent-development-guide.md)
 - [Agent Reference](reference/agent-reference.md)
-- [Hierarchical Agents](concepts/hierarchical_agents.md)
+- [Hierarchical Agents](concepts/hierarchical-agents.md)
 
 **Commands**:
 - [Creating Commands](guides/command-development-guide.md)
@@ -734,7 +734,7 @@ See: [Standards Integration](guides/standards-integration.md)
 - [Creating Agents](guides/agent-development-guide.md)
 - [Using Agents](guides/agent-development-guide.md)
 - [Agent Reference](reference/agent-reference.md)
-- [Hierarchical Agents](concepts/hierarchical_agents.md)
+- [Hierarchical Agents](concepts/hierarchical-agents.md)
 - [../agents/README.md](../agents/README.md)
 
 ### Command System

@@ -10,14 +10,14 @@ command-type: workflow
 **YOU MUST orchestrate phase/stage collapse by delegating to specialized collapse agents.**
 
 **YOUR ROLE**: You are the COLLAPSE ORCHESTRATOR with conditional execution.
-- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator and plan-structure-manager (operation=collapse) agents
-- **Explicit Mode**: Use plan-structure-manager agent (operation=collapse) for complex collapses, direct execution for simple collapses
+- **Auto-Analysis Mode**: ONLY use Task tool to invoke complexity-estimator agent, then perform collapse directly
+- **Explicit Mode**: Perform collapse directly for specified phases
 - **DO NOT** analyze complexity yourself - delegate to complexity-estimator agent
 - **YOUR RESPONSIBILITY**: Coordinate agents, verify content preservation, update parent metadata
 
 **EXECUTION MODES**:
-- **Auto-Analysis Mode** (`/collapse <path>`): Invoke complexity-estimator agent to identify phases ≤5 complexity, then invoke plan-structure-manager (operation=collapse) for each
-- **Explicit Mode** (`/collapse phase <path> <num>`): Invoke plan-structure-manager agent (operation=collapse) for target phase/stage
+- **Auto-Analysis Mode** (`/collapse <path>`): Invoke complexity-estimator agent to identify phases <=5 complexity, then collapse each directly
+- **Explicit Mode** (`/collapse phase <path> <num>`): Collapse target phase/stage directly
 
 **CRITICAL INSTRUCTIONS**:
 - Execute all steps in EXACT sequential order
@@ -78,9 +78,34 @@ Reverse phase expansion by merging expanded phase content back into the main pla
 #### STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Current Structure
 
 ```bash
-# Detect project directory dynamically
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+# STANDARD 13: Detect project directory using CLAUDE_PROJECT_DIR (git-based detection)
+# Bootstrap CLAUDE_PROJECT_DIR detection (inline, no library dependency)
+# This eliminates the bootstrap paradox where we need detect-project-dir.sh to find
+# the project directory, but need the project directory to source detect-project-dir.sh
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  # Fallback: search upward for .claude/ directory
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Validate CLAUDE_PROJECT_DIR
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory"
+  echo "DIAGNOSTIC: No git repository found and no .claude/ directory in parent tree"
+  echo "SOLUTION: Run command from within a directory containing .claude/ subdirectory"
+  exit 1
+fi
+
+# Export for use by sourced libraries
+export CLAUDE_PROJECT_DIR
 
 # Source consolidated planning utilities
 source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-core-bundle.sh"
@@ -427,9 +452,34 @@ When `MODE="auto"`, implement the following workflow:
 #### Phase 1: Setup and Discovery
 
 ```bash
-# Detect project directory dynamically
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+# STANDARD 13: Detect project directory using CLAUDE_PROJECT_DIR (git-based detection)
+# Bootstrap CLAUDE_PROJECT_DIR detection (inline, no library dependency)
+# This eliminates the bootstrap paradox where we need detect-project-dir.sh to find
+# the project directory, but need the project directory to source detect-project-dir.sh
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  # Fallback: search upward for .claude/ directory
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Validate CLAUDE_PROJECT_DIR
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory"
+  echo "DIAGNOSTIC: No git repository found and no .claude/ directory in parent tree"
+  echo "SOLUTION: Run command from within a directory containing .claude/ subdirectory"
+  exit 1
+fi
+
+# Export for use by sourced libraries
+export CLAUDE_PROJECT_DIR
 
 # Source utilities
 # Source consolidated planning utilities

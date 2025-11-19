@@ -56,7 +56,7 @@ Let's create a simple orchestrator for a research-and-report workflow.
 
 ### Step 1: Create Command File
 
-Create `.claude/commands/research-report.md`:
+Create `.claude/commands/research.md`:
 
 ```markdown
 # Research and Report Workflow
@@ -206,10 +206,10 @@ sm_transition "complete" && echo "✓ Transition to complete"
 
 ```bash
 # Research-only workflow
-/research-report "Research authentication patterns"
+/research "Research authentication patterns"
 
 # Full workflow
-/research-report "Research and report on authentication"
+/research "Research and report on authentication"
 ```
 
 Congratulations! You've created your first state-based orchestrator.

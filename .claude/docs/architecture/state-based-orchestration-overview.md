@@ -1,25 +1,38 @@
 # State-Based Orchestration Architecture: Complete Overview
 
+**Document Status**: SPLIT - This document has been split for maintainability
+**Last Updated**: 2025-11-17
+
+---
+
+## This Document Has Been Split
+
+For better maintainability, this large document (1752 lines) has been split into focused files under 400 lines each.
+
+**Please refer to the new split files**:
+
+| Topic | Document | Description |
+|-------|----------|-------------|
+| Overview | [state-orchestration-overview.md](state-orchestration-overview.md) | Architecture summary and principles |
+| States | [state-orchestration-states.md](state-orchestration-states.md) | State definitions and machine API |
+| Transitions | [state-orchestration-transitions.md](state-orchestration-transitions.md) | State transitions and persistence |
+| Examples | [state-orchestration-examples.md](state-orchestration-examples.md) | Reference implementations |
+| Troubleshooting | [state-orchestration-troubleshooting.md](state-orchestration-troubleshooting.md) | Common issues and solutions |
+
+**Start here**: [State Orchestration Overview](state-orchestration-overview.md)
+
+---
+
+## Legacy Content Below
+
+The content below is preserved for reference but should be accessed via the split files above.
+
+---
+
 ## Metadata
 - **Date**: 2025-11-08
 - **Status**: Production (Phase 7 Complete)
-- **Implementation Plan**: [State-Based Orchestrator Refactor](../../specs/602_601_and_documentation_in_claude_docs_in_order_to/plans/001_state_based_orchestrator_refactor.md)
-- **Performance Report**: [Performance Validation Report](../../specs/602_601_and_documentation_in_claude_docs_in_order_to/reports/004_performance_validation_report.md)
 - **Version**: 2.0 (State Machine Architecture)
-
-## Table of Contents
-
-1. [Executive Summary](#executive-summary)
-2. [Architecture Principles](#architecture-principles)
-3. [State Machine Architecture](#state-machine-architecture)
-4. [Selective State Persistence](#selective-state-persistence)
-5. [Hierarchical Supervisor Coordination](#hierarchical-supervisor-coordination)
-6. [Checkpoint Schema V2.0](#checkpoint-schema-v20)
-7. [Performance Characteristics](#performance-characteristics)
-8. [Migration from Phase-Based Architecture](#migration-from-phase-based-architecture)
-9. [Developer Guide Quick Reference](#developer-guide-quick-reference)
-10. [Troubleshooting](#troubleshooting)
-11. [Related Documentation](#related-documentation)
 
 ## Executive Summary
 
@@ -118,7 +131,7 @@ CURRENT_PHASE=5  # Can skip phases 1-4! No validation
 ```bash
 sm_transition "debug"
 # ERROR: Invalid transition: initialize → debug
-# Valid transitions from initialize: research
+# Valid transitions from initialize: research,implement
 ```
 
 **Benefits**:
@@ -207,7 +220,7 @@ The transition table defines **all valid state changes**:
 
 ```bash
 declare -A STATE_TRANSITIONS=(
-  [initialize]="research"
+  [initialize]="research,implement" # Can go to research or directly to implement (for /build)
   [research]="plan,complete"        # Can skip to complete for research-only
   [plan]="implement,complete"       # Can skip to complete for research-and-plan
   [implement]="test"
@@ -850,7 +863,7 @@ Checkpoint Schema V2.0 makes the **state machine a first-class citizen** with ex
     "current_state": "research",
     "completed_states": ["initialize"],
     "transition_table": {
-      "initialize": "research",
+      "initialize": "research,implement",
       "research": "plan,complete",
       "plan": "implement,complete",
       "implement": "test",
@@ -944,7 +957,7 @@ migrate_checkpoint_v1_to_v2() {
         current_state: $current_state,
         completed_states: [],
         transition_table: {
-          initialize: "research",
+          initialize: "research,implement",
           research: "plan,complete",
           plan: "implement,complete",
           implement: "test",
@@ -1465,18 +1478,18 @@ See [Hierarchical Supervisor Guide](../guides/hierarchical-supervisor-guide.md) 
 
 **Symptom**:
 ```
-ERROR: Invalid transition: initialize → implement
-Valid transitions from initialize: research
+ERROR: Invalid transition: initialize → debug
+Valid transitions from initialize: research,implement
 ```
 
-**Cause**: Attempting to skip states not allowed by transition table
+**Cause**: Attempting to transition to a state not allowed by transition table
 
-**Solution**: Transition through valid intermediate states
+**Solution**: Transition through valid intermediate states. Note that `/build` command can now transition directly from `initialize` to `implement`.
 ```bash
-# Wrong
-sm_transition "implement"  # Can't skip from initialize
+# For /build command (direct to implement is now allowed)
+sm_transition "implement"
 
-# Right
+# For research-and-plan workflows
 sm_transition "research"
 sm_transition "plan"
 sm_transition "implement"
@@ -1491,14 +1504,18 @@ Warning: State file not found, recalculating...
 
 **Cause**: `load_workflow_state` called before `init_workflow_state`
 
-**Solution**: Initialize state file in first bash block
+**Solution**: Initialize state file in first bash block BEFORE calling sm_init
 ```bash
-# Block 1: Initialize
-STATE_FILE=$(init_workflow_state "workflow_$$")
+# Block 1: Initialize - CORRECT ORDER
+WORKFLOW_ID="command_$(date +%s)"
+init_workflow_state "$WORKFLOW_ID"  # Must come BEFORE sm_init
+sm_init "$description" "$command" "$workflow_type" "$complexity" "[]"
 
 # Block 2+: Load
-load_workflow_state "workflow_$$"
+load_workflow_state "$WORKFLOW_ID" false
 ```
+
+**Important**: The `init_workflow_state` call must come BEFORE `sm_init` because `sm_init` calls `append_workflow_state` which requires STATE_FILE to be set.
 
 #### 3. Checkpoint Version Mismatch
 

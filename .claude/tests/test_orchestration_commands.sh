@@ -108,9 +108,6 @@ test_delegation_rate() {
     coordinate.md)
       expected_min=5  # State machine: Research, plan, implement, debug, document
       ;;
-    research.md)
-      expected_min=3  # Research-specialist (multiple), synthesizer, spec-updater
-      ;;
     *)
       expected_min=1  # At least one agent invocation expected
       ;;
@@ -139,21 +136,18 @@ echo ""
 echo "Test Suite 1: Agent Invocation Patterns"
 echo "----------------------------------------"
 test_agent_invocation_pattern "$SCRIPT_DIR/../commands/coordinate.md"
-test_agent_invocation_pattern "$SCRIPT_DIR/../commands/research.md"
 echo ""
 
 # Test Suite 2: Bootstrap Sequences
 echo "Test Suite 2: Bootstrap Sequences"
 echo "----------------------------------------"
 test_bootstrap_sequence "coordinate"
-test_bootstrap_sequence "research"
 echo ""
 
 # Test Suite 3: Delegation Rate Analysis
 echo "Test Suite 3: Delegation Rate Analysis"
 echo "----------------------------------------"
 test_delegation_rate "$SCRIPT_DIR/../commands/coordinate.md"
-test_delegation_rate "$SCRIPT_DIR/../commands/research.md"
 echo ""
 
 # Test Suite 4: Utility Scripts

@@ -224,6 +224,11 @@ return {
         },
       },
       completion = {
+        keyword = {
+          -- 'full' will match text before AND after cursor, preventing duplicate suffixes
+          -- Example: typing 'han' with 's' following cursor, selecting 'hands' won't create 'handss'
+          range = 'full',
+        },
         accept = {
           auto_brackets = {
             enabled = true,

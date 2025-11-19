@@ -2,459 +2,428 @@
 
 **Executable**: `.claude/commands/plan.md`
 
-**Quick Start**: Run `/plan "<feature description>" [report-path1] [report-path2]` - creates implementation plans guided by research reports.
+**Quick Start**: Run `/plan "<feature-description>"` - creates research reports and implementation plan.
 
 ---
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Usage](#usage)
-3. [Research Delegation](#research-delegation)
-4. [Complexity Analysis](#complexity-analysis)
-5. [Standards Integration](#standards-integration)
-6. [Plan Structure](#plan-structure)
-7. [Troubleshooting](#troubleshooting)
+2. [Architecture](#architecture)
+3. [Usage Examples](#usage-examples)
+4. [Advanced Topics](#advanced-topics)
+5. [Troubleshooting](#troubleshooting)
+6. [See Also](#see-also)
 
 ---
 
 ## Overview
 
-The `/plan` command creates comprehensive implementation plans following project standards, optionally incorporating insights from research reports.
+### Purpose
 
-### Key Capabilities
-
-- **Feature complexity pre-analysis**: Estimates complexity and suggests structure before planning
-- **Automatic research delegation**: Invokes research agents for complex features
-- **Standards discovery**: Extracts and applies project standards from CLAUDE.md
-- **Report integration**: Incorporates findings from research reports
-- **Topic-based organization**: Creates organized spec directories with numbered topics
-- **Metadata-rich plans**: Includes complexity scores, dependencies, success criteria
+The `/plan` command provides a research-and-plan workflow that creates comprehensive research reports and then generates a new implementation plan based on those findings. It bridges investigation and action by producing both understanding (research) and actionable steps (plan).
 
 ### When to Use
 
-- Create implementation plans for new features
-- Plan refactoring or architecture changes
-- Document complex bug fixes requiring multiple phases
-- Integrate research findings into actionable plans
+- **Feature planning with research**: When you need to research before planning implementation
+- **Informed decision-making**: Creating plans based on investigation findings
+- **New feature development**: Starting with research to understand context, then planning
+- **Architecture decisions**: Researching options before committing to implementation approach
+
+### When NOT to Use
+
+- **Research-only tasks**: Use `/research` if you don't need a plan
+- **Existing plan revision**: Use `/revise` to update existing plans
+- **Debugging**: Use `/debug` for debug-focused workflows
+- **Direct implementation**: Use `/build` if you already have a plan
 
 ---
 
-## Usage
+## Architecture
 
-### Basic Syntax
+### Design Principles
+
+1. **Two-Phase Workflow**: Research → Plan (no implementation)
+2. **Terminal at Plan**: Workflow ends after plan creation
+3. **Research-Informed Planning**: Plan-architect uses research reports for context
+4. **Complexity-Aware Research**: Adjustable research depth (default: 3 for planning workflows)
+5. **New Plan Creation**: Creates new plans (not revisions)
+
+### Patterns Used
+
+- **State-Based Orchestration**: (state-based-orchestration-overview.md) Two-state workflow
+- **Behavioral Injection**: (behavioral-injection.md) Agent behavior separated from orchestration
+- **Fail-Fast Verification**: (Standard 0) File and size verification
+- **Topic-Based Structure**: (directory-protocols.md) Numbered topic directories with plans/ and reports/
+
+### Workflow States
+
+```
+┌──────────────┐
+│   RESEARCH   │ ← Feature investigation
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│     PLAN     │ ← Implementation plan creation (terminal state)
+└──────┬───────┘
+       │
+       ▼
+┌──────────────┐
+│   COMPLETE   │
+└──────────────┘
+```
+
+### Integration Points
+
+- **State Machine**: workflow-state-machine.sh (>=2.0.0) for state management
+- **Research**: research-specialist agent for investigation reports
+- **Planning**: plan-architect agent for implementation plan creation
+- **Supervision**: research-sub-supervisor agent for complexity ≥4
+- **Output**: specs/{NNN_topic}/reports/ and specs/{NNN_topic}/plans/
+
+### Data Flow
+
+1. **Input**: Feature description + optional complexity (default: 3)
+2. **State Initialization**: sm_init() with workflow_type="research-and-plan"
+3. **Research Phase**: research-specialist creates investigation reports
+4. **Planning Phase**: plan-architect creates implementation plan from research
+5. **Output**: Research reports + implementation plan ready for /build or /implement
+
+---
+
+## Usage Examples
+
+### Example 1: Basic Feature Planning
 
 ```bash
-/plan "<feature description>" [report-path1] [report-path2] ...
+/plan"implement user authentication with JWT tokens"
 ```
 
-### Arguments
+**Expected Output**:
+```
+=== Research-and-Plan Workflow ===
+Feature: implement user authentication with JWT tokens
+Research Complexity: 3
 
-- **feature description** (required): Clear description of what to implement
-- **report-path** (optional): Paths to research reports in `specs/reports/*.md`
+✓ State machine initialized
 
-### Examples
+=== Phase 1: Research ===
+
+EXECUTE NOW: USE the Task tool to invoke research-specialist agent
+
+Workflow-Specific Context:
+- Research Complexity: 3
+- Feature Description: implement user authentication with JWT tokens
+- Output Directory: /home/user/.config/.claude/specs/752_implement_user_authentication/reports
+- Workflow Type: research-and-plan
+
+✓ Research phase complete (6 reports created)
+
+=== Phase 2: Planning ===
+
+EXECUTE NOW: USE the Task tool to invoke plan-architect agent
+
+Workflow-Specific Context:
+- Feature Description: implement user authentication with JWT tokens
+- Output Path: .claude/specs/752_implement_user_authentication/plans/001_implement_user_authentication_plan.md
+- Research Reports: [".claude/specs/752_implement_user_authentication/reports/001_topic1.md", ...]
+- Workflow Type: research-and-plan
+- Operation Mode: new plan creation
+
+✓ Planning phase complete (plan: 001_implement_user_authentication_plan.md)
+
+=== Research-and-Plan Complete ===
+
+Workflow Type: research-and-plan
+Specs Directory: .claude/specs/752_implement_user_authentication
+Research Reports: 6 reports in .claude/specs/752_implement_user_authentication/reports
+Implementation Plan: .claude/specs/752_implement_user_authentication/plans/001_implement_user_authentication_plan.md
+
+Next Steps:
+- Review plan: cat .claude/specs/752_implement_user_authentication/plans/001_implement_user_authentication_plan.md
+- Implement plan: /implement .claude/specs/752_implement_user_authentication/plans/001_implement_user_authentication_plan.md
+- Use /build to execute implementation phases
+```
+
+**Explanation**:
+Researches JWT authentication approaches, then creates detailed implementation plan based on findings. Plan includes phases, tasks, success criteria, and technical design informed by research.
+
+### Example 2: Complex Feature with Higher Complexity
 
 ```bash
-# Simple feature
-/plan "Add user authentication with JWT"
-
-# With research report
-/plan "Migrate database to PostgreSQL" specs/042_db/reports/001_migration_analysis.md
-
-# Multiple reports
-/plan "Implement caching layer" \
-  specs/050_cache/reports/001_redis_analysis.md \
-  specs/050_cache/reports/002_performance_benchmarks.md
+/plan"implement real-time collaborative editing --complexity 4"
 ```
 
----
-
-## Research Delegation
-
-For complex features, the command automatically delegates research to specialized agents.
-
-### Complexity Triggers
-
-Research delegation activates when:
-1. **Estimated complexity ≥7** (from feature description analysis)
-2. **Keywords detected**: integrate, migrate, refactor, architecture
-3. **Manual flag**: `--force-research`
-
-### Research Workflow
-
+**Expected Output**:
 ```
-┌─────────────────────────────────────────┐
-│ Feature Description Analysis            │
-│ → Complexity Score Calculated           │
-└─────────────────────────────────────────┘
-                 │
-                 ▼
-         Triggers Met?
-         (complexity ≥7)
-                 │
-         ┌───────┴───────┐
-         │               │
-         ▼               ▼
-        YES             NO
-         │               │
-         │               └──→ Skip to Phase 1
-         │
-         ▼
-┌─────────────────────────────────────────┐
-│ Invoke research-specialist agents       │
-│ → 2-3 parallel research threads         │
-│ → Create research reports                │
-│ → Extract metadata                       │
-└─────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────┐
-│ Integrate research into plan            │
-│ → Use findings for phase design          │
-│ → Reference reports in metadata          │
-└─────────────────────────────────────────┘
+=== Research-and-Plan Workflow ===
+Feature: implement real-time collaborative editing
+Research Complexity: 4
+
+✓ State machine initialized
+
+=== Phase 1: Research ===
+
+NOTE: Hierarchical supervision mode (complexity ≥4)
+Invoke research-sub-supervisor agent to coordinate multiple sub-agents
+
+✓ Research phase complete (11 reports created)
+
+=== Phase 2: Planning ===
+...
+✓ Planning phase complete
+
+=== Research-and-Plan Complete ===
 ```
 
-### Research Agent Invocation
+**Explanation**:
+Higher complexity (4) triggers hierarchical supervision for comprehensive research. Creates extensive research reports and detailed implementation plan for complex feature.
 
-When triggered, the command invokes research-specialist agents:
-
-```
-Task {
-  subagent_type: "general-purpose"
-  description: "Research <aspect> for <feature>"
-  prompt: |
-    Read and follow behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
-    
-    You are acting as a Research Specialist Agent.
-    
-    Research: <specific aspect>
-    Feature: <feature description>
-    Focus: <research focus area>
-    
-    Create report at: specs/{TOPIC_DIR}/reports/{NNN}_research.md
-    Return metadata only (path + 50-word summary + key findings).
-}
-```
-
-### Benefits of Research Delegation
-
-- **95% context reduction**: Metadata-only passing (2000 tokens → 100 tokens)
-- **Parallel research**: 2-3 simultaneous research threads
-- **Comprehensive coverage**: Multiple aspects researched in parallel
-- **Informed planning**: Research findings integrated into plan design
-
----
-
-## Complexity Analysis
-
-### Feature Description Complexity Pre-Analysis
-
-Before creating the plan, analyzes the feature description to estimate complexity.
-
-**Analysis Factors:**
-- Keyword complexity weights (integrate: +2, migrate: +2, refactor: +1.5, architecture: +2)
-- Scope indicators (multiple, across, all: +1 each)
-- Uncertainty markers (maybe, possibly, consider: -0.5 each)
-- Technical depth indicators (API, database, authentication, performance: +1 each)
-
-**Output:**
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-COMPLEXITY PRE-ANALYSIS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Estimated complexity: 7.5 (High)
-Recommended structure: single-file (expand if needed)
-Suggested phases: 5-7
-Matching templates: database-migration, architecture-refactor
-
-Recommendations:
-- Consider using /plan-from-template for faster planning
-- High complexity suggests research delegation
-- All plans start as single-file regardless of complexity
-- Use /expand phase during implementation if phases prove complex
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
-
-### Plan Complexity Calculation
-
-After requirements analysis, calculates final plan complexity:
+### Example 3: Architecture Decision with Research
 
 ```bash
-COMPLEXITY_SCORE=$(calculate_plan_complexity "$REQUIREMENTS" "$PHASE_COUNT")
+/plan"migrate from REST API to GraphQL"
 ```
 
-**Calculation Factors:**
-- Base complexity from feature description
-- Number of phases (more phases = higher complexity)
-- Requirements breadth (number of distinct requirements)
-- Integration points (dependencies on other systems)
-- Risk factors (breaking changes, data migrations)
+**Expected Output**:
+```
+=== Research-and-Plan Workflow ===
+Feature: migrate from REST API to GraphQL
+Research Complexity: 3
 
-**Complexity Ranges:**
-- **0-3**: Simple feature (1-3 phases, straightforward implementation)
-- **4-6**: Medium feature (4-5 phases, some integration)
-- **7-9**: Complex feature (6+ phases, significant integration)
-- **10+**: Very complex (multi-system changes, architecture refactor)
+✓ State machine initialized
 
----
+=== Phase 1: Research ===
+✓ Research phase complete (7 reports created)
 
-## Standards Integration
+=== Phase 2: Planning ===
+✓ Planning phase complete (plan: 001_migrate_from_rest_api_to_plan.md)
 
-### Standards Discovery
+=== Research-and-Plan Complete ===
 
-The command discovers and applies project standards from CLAUDE.md.
-
-**Discovery Process:**
-1. Search upward from working directory for CLAUDE.md
-2. Check for subdirectory-specific CLAUDE.md files
-3. Extract relevant sections: Code Standards, Testing Protocols, Documentation Policy
-4. Capture standards file path in plan metadata
-
-**Standards Sections Used:**
-- **Code Standards**: Indentation, naming conventions, error handling patterns
-- **Testing Protocols**: Test commands, coverage requirements, test patterns
-- **Documentation Policy**: Documentation structure and requirements
-- **Directory Protocols**: Spec directory organization, artifact lifecycle
-
-### Standards Application in Plans
-
-**Plan Metadata:**
-```markdown
-## Metadata
-- **Standards File**: /path/to/CLAUDE.md
-- **Code Standards**: 2-space indent, snake_case, pcall error handling
-- **Testing**: :TestSuite, ≥80% coverage
-- **Documentation**: README per directory, inline comments for complex logic
+Specs Directory: .claude/specs/753_migrate_from_rest_api_to
+Research Reports: 7 reports
+Implementation Plan: .claude/specs/753_migrate_from_rest_api_to/plans/001_migrate_from_rest_api_to_plan.md
 ```
 
-**Phase Tasks:**
-```markdown
-#### Tasks
-- [ ] Implement feature following Code Standards (2-space indent, snake_case)
-- [ ] Add tests per Testing Protocols (:TestSuite, ≥80% coverage)
-- [ ] Create documentation per Documentation Policy (README, inline comments)
+**Explanation**:
+Researches GraphQL migration approaches, patterns, and gotchas. Creates phased migration plan based on research findings, including risk mitigation and rollback strategies.
+
+---
+
+## Advanced Topics
+
+### Performance Considerations
+
+**Default Complexity**:
+- Research-and-plan workflows default to complexity 3 (higher than research-only's default of 2)
+- Rationale: Planning requires deeper understanding of implementation details
+
+**Complexity Selection Guide**:
+- **Complexity 2**: Simple, well-understood features with clear implementation
+- **Complexity 3** (default): Most features requiring moderate investigation
+- **Complexity 4**: Complex features, architecture changes, or unfamiliar domains
+
+**Phase Duration**:
+- Research phase (complexity 3): ~20-40 minutes
+- Planning phase: ~10-20 minutes
+- Total: ~30-60 minutes for typical feature
+
+### Customization
+
+**Complexity Override**:
+```bash
+# Lower for well-understood features
+/plan"add new API endpoint --complexity 2"
+
+# Higher for complex architectures
+/plan"implement event sourcing --complexity 4"
 ```
 
-### Fallback Behavior
+**Feature Description Best Practices**:
+- Include scope: "implement user authentication" vs "add login button"
+- Specify technology: "using JWT tokens" vs generic "authentication"
+- Provide context: "for multi-tenant SaaS application"
 
-When CLAUDE.md not found:
-1. Use sensible language-specific defaults
-2. Note in plan metadata: "Standards File: Not found (using defaults)"
-3. Suggest running `/setup` to create CLAUDE.md
-4. Continue with reduced standards enforcement
+### Integration with Other Workflows
 
----
-
-## Plan Structure
-
-### Uniform Plan Template
-
-All plans follow a uniform structure regardless of complexity:
-
-```markdown
-# Implementation Plan: <Feature Name>
-
-## Metadata
-- **Plan ID**: NNN
-- **Date Created**: YYYY-MM-DD
-- **Type**: [Architecture/Feature/Bugfix/Refactor]
-- **Scope**: Brief scope description
-- **Priority**: [HIGH/MEDIUM/LOW]
-- **Complexity**: N/10
-- **Estimated Duration**: N hours
-- **Standards File**: /path/to/CLAUDE.md
-- **Related Specs**: []
-- **Structure Level**: 0 (Single-file)
-
-## Executive Summary
-
-### Problem Statement
-What problem does this solve?
-
-### Solution Overview
-High-level solution approach
-
-### Success Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
-
-### Benefits
-Key benefits of implementing this
-
----
-
-## Implementation Phases
-
-### Phase N: Phase Name
-
-**Objective**: What this phase accomplishes
-
-**Dependencies**: [Phase numbers or "None"]
-
-**Complexity**: N/10
-
-**Duration**: N hours
-
-#### Tasks
-
-- [ ] Task 1
-- [ ] Task 2
-
-#### Deliverables
-
-1. Deliverable 1
-2. Deliverable 2
-
-#### Success Criteria
-
-- [ ] Criterion 1
-- [ ] Criterion 2
-
----
-
-## Rollback Strategy
-
-How to rollback if issues occur
-
----
-
-## Risk Assessment
-
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| Risk 1 | Low/Medium/High | Low/Medium/High | How to mitigate |
-
----
-
-## Success Metrics
-
-| Metric | Target | Measurement Method |
-|--------|--------|-------------------|
-| Metric 1 | Target | How to measure |
-
----
-
-## Completion Criteria
-
-This plan is complete when:
-1. Criterion 1
-2. Criterion 2
+**Research-Plan → Build Chain**:
+```bash
+/plan"implement caching layer"
+# Review plan
+/build  # Auto-detects and executes plan
 ```
 
-### Topic-Based Organization
-
-Plans are organized in topic-based directories:
-
-```
-specs/
-├── 001_authentication/
-│   ├── plans/
-│   │   └── 001_implementation_plan.md
-│   ├── reports/
-│   │   └── 001_research.md
-│   └── summaries/
-│       └── 001_implementation_summary.md
-├── 042_database_migration/
-│   ├── plans/
-│   │   └── 042_implementation_plan.md
-│   └── reports/
-│       ├── 042_migration_analysis.md
-│       └── 042_performance_benchmarks.md
-└── SPECS.md
+**Research-Plan → Review → Build**:
+```bash
+/plan"add rate limiting"
+# Manual review of plan
+# Adjust plan if needed with /revise
+/build
 ```
 
-### Progressive Plan Levels
+**Iterative Research-Plan**:
+```bash
+/research "caching strategies"  # Initial investigation
+/plan"implement Redis caching"  # Focused plan based on findings
+```
 
-Plans support three structure levels:
-
-- **Level 0** (Single-file): All phases inline (default for all new plans)
-- **Level 1** (Phase-expanded): Complex phases in separate files (created via `/expand phase`)
-- **Level 2** (Stage-expanded): Stages in separate files (created via `/expand stage`)
-
-**Note**: All plans start as Level 0 regardless of complexity. Use `/expand` during implementation if phases become too complex.
+**Split Workflow Alternative**:
+```bash
+# Alternative to /plan: do research and planning separately
+/research "authentication approaches"
+# Review research
+/plan "implement OAuth2 authentication"
+```
 
 ---
 
 ## Troubleshooting
 
-### Command Not Creating Plan
+### Common Issues
 
-**Symptom**: Command runs but no plan file created
+#### Issue 1: Plan File Too Small
 
-**Diagnosis**: Check for errors in plan creation
+**Symptoms**:
+- Error: "Plan file too small (XXX bytes)"
+- Plan created but lacks detail
+
+**Cause**:
+Insufficient research reports or plan-architect encountered errors.
+
+**Solution**:
 ```bash
-# Verify specs directory exists
-ls -la specs/
+# Verify research reports exist and have content
+ls -lh .claude/specs/*/reports/
 
-# Check permissions
-ls -ld specs/
+# Re-run with higher complexity for better research
+/plan"feature description --complexity 4"
+
+# Check if feature description is specific enough
+# Bad: "add feature"
+# Good: "implement user authentication with JWT and refresh tokens"
 ```
 
-**Solutions:**
-- Create specs directory: `mkdir -p specs/plans`
-- Fix permissions: `chmod 755 specs`
-- Check disk space: `df -h`
+#### Issue 2: Research Phase Failed
 
-### Research Delegation Not Triggering
+**Symptoms**:
+- Error: "Research phase failed to create report files"
+- No reports directory or empty reports
 
-**Symptom**: Complex feature but no research agents invoked
+**Cause**:
+Research-specialist agent failed or feature description too vague.
 
-**Diagnosis**: Check complexity score
+**Solution**:
 ```bash
-source .claude/lib/complexity-utils.sh
-ANALYSIS=$(analyze_feature_description "your feature description")
-echo "$ANALYSIS" | jq
+# Make feature description more specific
+/plan"implement JWT authentication with bcrypt password hashing for Express.js API"
+
+# Check research-specialist agent file
+cat .claude/agents/research-specialist.md
 ```
 
-**Solutions:**
-- Complexity < 7 → Not triggered (expected)
-- Add complexity keywords: integrate, migrate, refactor, architecture
-- Use manual flag: `/plan "feature" --force-research`
+#### Issue 3: Planning Phase Failed
 
-### Standards Not Discovered
+**Symptoms**:
+- Error: "Planning phase failed to create plan file"
+- Plan file missing or empty
 
-**Symptom**: Plan created but no standards file referenced
+**Cause**:
+Plan-architect didn't receive research reports or encountered errors.
 
-**Diagnosis**: Check CLAUDE.md location
+**Solution**:
 ```bash
-find . -name "CLAUDE.md" -type f
+# Verify research reports exist
+find .claude/specs -path "*/reports/*.md"
+
+# Check if reports have sufficient content (>100 bytes)
+find .claude/specs -path "*/reports/*.md" -size -100c
+
+# Manually review reports to ensure quality
+cat .claude/specs/*/reports/*.md
 ```
 
-**Solutions:**
-- Create CLAUDE.md: `/setup`
-- Move CLAUDE.md to project root or parent directory
-- Check file permissions: `ls -l CLAUDE.md`
+#### Issue 4: Feature Description Too Vague
 
-### Plan Complexity Seems Wrong
+**Symptoms**:
+- Generic research reports
+- Shallow implementation plan
+- Missing technical details
 
-**Symptom**: Complexity score doesn't match expectation
+**Cause**:
+Feature description lacks specificity or context.
 
-**Diagnosis**: Review complexity calculation
+**Solution**:
+Improve feature description:
+- **Add technologies**: "using React hooks" vs just "React"
+- **Specify scope**: "for admin dashboard" vs generic feature
+- **Include constraints**: "must support offline mode"
+- **Provide context**: "migrating from class components"
+
+Example:
 ```bash
-source .claude/lib/complexity-utils.sh
-# Check feature description analysis
-ANALYSIS=$(analyze_feature_description "your description")
-echo "$ANALYSIS" | jq '.estimated_complexity'
+# Before (too vague)
+/plan"add notifications"
+
+# After (specific)
+/plan"implement real-time push notifications using WebSocket for user activity alerts in multi-tenant application"
 ```
 
-**Solutions:**
-- Add technical keywords to increase complexity (API, database, authentication)
-- Remove uncertainty markers to increase confidence (maybe, possibly)
-- Simplify feature description to reduce complexity
-- Manual override in plan metadata after creation
+### Debug Mode
+
+Enable verbose output:
+
+```bash
+# Bash debugging
+set -x
+/plan"feature description"
+set +x
+```
+
+**Artifact Verification**:
+```bash
+# Verify research reports exist
+find .claude/specs -path "*/reports/*.md" | head -20
+
+# Check report sizes
+du -h .claude/specs/*/reports/*.md
+
+# Verify plan file exists and has content
+find .claude/specs -path "*/plans/*.md"
+ls -lh .claude/specs/*/plans/*.md
+
+# Check plan size (should be >500 bytes)
+find .claude/specs -path "*/plans/*.md" -size -500c
+```
+
+**State Inspection**:
+```bash
+# Check workflow state
+cat ~/.claude/data/state/workflow_state.json | jq .
+
+# Verify workflow type
+cat ~/.claude/data/state/workflow_state.json | jq '.workflow_type'
+# Should output: "research-and-plan"
+
+# Check completed states
+cat ~/.claude/data/state/workflow_state.json | jq '.completed_states'
+```
+
+### Getting Help
+
+- Check [Command Reference](../reference/command-reference.md) for quick syntax
+- Review [Plan-Architect Agent](../../agents/plan-architect.md) for planning patterns
+- See related commands: `/research`, `/revise`, `/plan`
+- Review [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md) for plan structure
 
 ---
 
 ## See Also
 
-- [/implement Command Guide](implement-command-guide.md) - Executing implementation plans
-- [/research Command Guide](research-command-guide.md) - Creating research reports
-- [/expand Command Guide](expand-command-guide.md) - Expanding phases/stages
-- [/plan-from-template Command](../commands/plan-from-template.md) - Template-based planning
-- [Directory Protocols](../concepts/directory-protocols.md) - Spec directory organization
-- [Command Development Guide](command-development-guide.md)
+- [Research-Specialist Agent](../../agents/research-specialist.md)
+- [Plan-Architect Agent](../../agents/plan-architect.md)
+- [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md)
+- [Directory Protocols](../concepts/directory-protocols.md)
+- [Command Reference](../reference/command-reference.md)
+- Related Commands: `/research`, `/revise`, `/build`, `/implement`

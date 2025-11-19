@@ -2,6 +2,9 @@
 # Workflow State Machine Library
 # Provides formal state machine abstraction for orchestration commands
 #
+# Version: 2.0.0
+# Last Modified: 2025-11-17
+#
 # This library implements an explicit state machine for workflow orchestration,
 # replacing implicit phase-based tracking with clear states, transitions, and validation.
 #
@@ -22,6 +25,7 @@ if [ -n "${WORKFLOW_STATE_MACHINE_SOURCED:-}" ]; then
   return 0
 fi
 export WORKFLOW_STATE_MACHINE_SOURCED=1
+export WORKFLOW_STATE_MACHINE_VERSION="2.0.0"
 
 set -euo pipefail
 
@@ -49,7 +53,7 @@ readonly STATE_COMPLETE="complete"           # Phase 7: Finalization, cleanup
 
 # Defines valid state transitions (comma-separated list of allowed next states)
 declare -gA STATE_TRANSITIONS=(
-  [initialize]="research"
+  [initialize]="research,implement" # Can go to research or directly to implement (for /build)
   [research]="plan,complete"        # Can skip to complete for research-only
   [plan]="implement,complete"       # Can skip to complete for research-and-plan
   [implement]="test"
@@ -602,6 +606,13 @@ sm_current_state() {
 sm_transition() {
   local next_state="$1"
 
+  # Fail-fast if STATE_FILE not loaded (Spec 787: State persistence bug fix)
+  if [ -z "${STATE_FILE:-}" ]; then
+    echo "ERROR: STATE_FILE not set in sm_transition()" >&2
+    echo "DIAGNOSTIC: Call load_workflow_state() before sm_transition()" >&2
+    return 1
+  fi
+
   # Phase 1: Validate transition is allowed
   local valid_transitions="${STATE_TRANSITIONS[$CURRENT_STATE]}"
 
@@ -619,6 +630,12 @@ sm_transition() {
 
   # Phase 3: Update state
   CURRENT_STATE="$next_state"
+
+  # Persist CURRENT_STATE to state file (following sm_init pattern)
+  # This ensures subsequent bash blocks can read the correct state
+  if command -v append_workflow_state &> /dev/null; then
+    append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
+  fi
 
   # Add to completed states history (avoid duplicates)
   local already_completed=0
@@ -745,7 +762,7 @@ sm_save() {
     completed_states_json=$(printf '%s\n' "${COMPLETED_STATES[@]}" | jq -R . | jq -s .)
   fi
 
-  # Build transition table JSON
+  # Build transition table JSON (reads from STATE_TRANSITIONS, already updated)
   local transition_table_json
   transition_table_json=$(jq -n \
     --arg init "${STATE_TRANSITIONS[initialize]}" \

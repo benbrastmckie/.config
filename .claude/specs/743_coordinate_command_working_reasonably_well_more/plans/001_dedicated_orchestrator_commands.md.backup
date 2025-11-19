@@ -1,0 +1,666 @@
+# Dedicated Orchestrator Commands Implementation Plan
+
+## Metadata
+- **Date**: 2025-11-16
+- **Feature**: Dedicated Orchestrator Commands for Each Workflow Type
+- **Scope**: Extract 5 workflow types from /coordinate into standalone commands while preserving all essential features
+- **Estimated Phases**: 7
+- **Estimated Hours**: 28
+- **Structure Level**: 0
+- **Complexity Score**: 147.0
+- **Standards File**: /home/benjamin/.config/CLAUDE.md
+- **Research Reports**:
+  - [Current Coordinate Command Architecture](../reports/001_coordinate_command_architecture.md)
+  - [Distinct Workflows in Coordinate](../reports/002_distinct_workflows_in_coordinate.md)
+  - [Feature Preservation Patterns](../reports/003_feature_preservation_patterns.md)
+
+## Overview
+
+The /coordinate command currently handles 5 distinct workflow types through initial AI-based classification, which adds 5-10 seconds latency and unnecessary complexity for users who know their exact workflow type. This plan extracts each workflow type into dedicated orchestrator commands (/report, /research-plan, /research-revise, /build, /fix) that skip classification while preserving all 6 essential coordinate features: wave-based parallel execution (40-60% time savings), state machine architecture (48.9% code reduction), context reduction (95.6% via hierarchical supervisors), metadata extraction (95% token reduction), behavioral injection (100% file creation reliability), and verification checkpoints (fail-fast error handling).
+
+## Research Summary
+
+**Key Findings from Research Reports**:
+
+1. **From Current Coordinate Command Architecture Report**:
+   - Workflow classification adds 5-10s latency via workflow-classifier agent
+   - State machine uses 8 explicit states with validated transitions
+   - Cross-bash-block coordination requires file-based state persistence (GitHub Actions pattern)
+   - Library sourcing order is critical (state machine libraries BEFORE load_workflow_state)
+   - Hierarchical supervision threshold: complexity ≥4 topics
+
+2. **From Distinct Workflows in Coordinate Report**:
+   - 5 workflow types with distinct inputs, outputs, and state transitions
+   - research-only: initialize → research → complete (no plan/implementation)
+   - research-and-plan: initialize → research → plan → complete
+   - research-and-revise: initialize → research → plan → complete (with existing plan path)
+   - full-implementation: initialize → research → plan → implement → test → debug/document → complete
+   - debug-only: initialize → research → plan → debug → complete
+   - Each workflow has specific termination conditions and output artifact requirements
+
+3. **From Feature Preservation Patterns Report**:
+   - 6 essential features form integrated system (cannot cherry-pick features)
+   - Wave-based execution requires pre-calculated artifact paths to prevent conflicts
+   - Behavioral injection provides 100% file creation reliability vs 60-80% without
+   - Metadata extraction enables 10+ agents vs 2-3 without context reduction
+   - Fail-fast validation philosophy (no retries, clear diagnostics)
+   - Library reuse strategy preserves features through stable APIs
+
+**Recommended Approach Based on Research**:
+- Use library reuse strategy (workflow-state-machine.sh, state-persistence.sh) for feature preservation
+- Skip workflow-classifier agent invocation (workflow type hardcoded per command)
+- Preserve two-step initialization pattern to avoid positional parameter issues
+- Maintain hierarchical supervision threshold (≥4 topics) from coordinate
+- Implement all 6 essential features through architectural template approach
+- Use fail-fast verification checkpoints after all agent invocations
+
+## Success Criteria
+- [ ] All 5 dedicated orchestrator commands created and functional
+- [ ] Workflow classification phase removed (5-10s latency reduction)
+- [ ] All 6 essential coordinate features preserved in each command
+- [ ] State machine library integration maintained
+- [ ] Test suite validates delegation rate >90%, file creation 100%
+- [ ] Documentation updated with workflow type selection guide
+- [ ] Backward compatibility maintained (/coordinate still functional)
+
+## Technical Design
+
+### Architecture Decision: Shared State Machine + Per-Workflow Command Files
+
+**Core Components**:
+
+1. **Shared Libraries** (preserved from /coordinate):
+   - `workflow-state-machine.sh` - 8-state lifecycle management
+   - `state-persistence.sh` - GitHub Actions pattern for cross-bash-block coordination
+   - `dependency-analyzer.sh` - Wave-based parallel execution (Kahn's algorithm)
+   - `metadata-extraction.sh` - 95% context reduction utilities
+   - `verification-helpers.sh` - Fail-fast checkpoint validation
+   - `error-handling.sh` - Diagnostic error messages
+
+2. **New Command Files** (5 dedicated orchestrators):
+   - `/report` - Research-only workflow (no plan/implementation)
+   - `/research-plan` - Research + new plan creation
+   - `/research-revise` - Research + existing plan revision
+   - `/build` - Build from existing plan (implement-test-debug-document workflow, takes plan path + optional start phase)
+   - `/fix` - Debug-focused workflow
+
+3. **Command File Structure** (template-based approach):
+   ```markdown
+   ---
+   allowed-tools: Task, TodoWrite, Bash, Read
+   argument-hint: <workflow-description>
+   description: [Workflow-specific description]
+   command-type: primary
+   dependent-agents: [Workflow-specific agents]
+   ---
+
+   # Part 1: Capture Workflow Description (identical across all commands)
+   # Part 2: State Machine Initialization (hardcoded workflow_type)
+   # Phase 1: Research (identical across all commands)
+   # Phase 2: Planning (conditional: new plan vs revision vs skip)
+   # Phase 3: Implementation (conditional: fullstack only)
+   # Phase 4: Testing (conditional: fullstack only)
+   # Phase 5: Debug (conditional: debug/fullstack only)
+   # Phase 6: Documentation (conditional: fullstack only)
+   # Completion & Cleanup (workflow-specific terminal state)
+   ```
+
+### State Machine Integration
+
+**Workflow Type Hardcoding** (replaces classification):
+```bash
+# /research command
+WORKFLOW_TYPE="research-only"
+TERMINAL_STATE="research"
+
+# /research-plan command
+WORKFLOW_TYPE="research-and-plan"
+TERMINAL_STATE="plan"
+
+# /research-revise command
+WORKFLOW_TYPE="research-and-revise"
+TERMINAL_STATE="plan"
+
+# /fullstack command
+WORKFLOW_TYPE="full-implementation"
+TERMINAL_STATE="complete"
+
+# /debug command
+WORKFLOW_TYPE="debug-only"
+TERMINAL_STATE="debug"
+```
+
+**sm_init() Invocation Pattern**:
+```bash
+# All commands use same initialization pattern
+sm_init \
+  "$WORKFLOW_DESCRIPTION" \
+  "$COMMAND_NAME" \
+  "$WORKFLOW_TYPE" \
+  "$RESEARCH_COMPLEXITY" \
+  "$RESEARCH_TOPICS_JSON"
+```
+
+### Research Complexity Handling
+
+**Default Complexity per Workflow Type**:
+- `/report`: Default complexity 2 (extensible to 1-4 via flags)
+- `/research-plan`: Default complexity 3 (comprehensive research before planning)
+- `/research-revise`: Default complexity 2 (focused research for revision)
+- `/build`: N/A (takes existing plan path as argument, no research phase)
+- `/fix`: Default complexity 2 (focused debugging research)
+
+**Optional Complexity Override** (future enhancement):
+```bash
+# Phase 0: Parse optional --complexity flag
+RESEARCH_COMPLEXITY=2  # Default
+if [[ "$WORKFLOW_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
+  RESEARCH_COMPLEXITY="${BASH_REMATCH[1]}"
+fi
+```
+
+### Phase Conditional Execution
+
+**Conditional Phase Logic per Command**:
+
+1. **/report**: Execute research phase only, skip to complete
+2. **/research-plan**: Execute research → plan → complete
+3. **/research-revise**: Execute research → plan (revision mode) → complete
+4. **/build**: Execute implement → test → debug/document → complete (takes existing plan path as argument, optional start phase)
+5. **/fix**: Execute research → plan (debug strategy) → debug → complete
+
+**Implementation Pattern**:
+```bash
+# After research phase
+case "$COMMAND_NAME" in
+  research)
+    sm_transition "$STATE_COMPLETE"
+    display_brief_summary
+    exit 0
+    ;;
+  research-plan|research-revise)
+    sm_transition "$STATE_PLAN"
+    ;;
+  fullstack)
+    sm_transition "$STATE_PLAN"
+    ;;
+  debug)
+    sm_transition "$STATE_PLAN"
+    ;;
+esac
+```
+
+### Feature Preservation Strategy
+
+**All 6 Essential Features Maintained**:
+
+1. **Wave-Based Parallel Execution** (40-60% time savings):
+   - Preserved in /fullstack command via implementer-coordinator agent
+   - Uses dependency-analyzer.sh library (unchanged)
+   - Pre-calculated artifact paths prevent parallel execution conflicts
+
+2. **State Machine Architecture** (48.9% code reduction):
+   - All commands use workflow-state-machine.sh library
+   - Hardcoded workflow_type replaces LLM classification
+   - State transitions validated against transition table
+
+3. **Context Reduction** (95.6% via hierarchical supervisors):
+   - Hierarchical threshold (≥4 topics) preserved in all commands
+   - research-sub-supervisor agent used for complexity ≥4
+   - Flat coordination for complexity <4
+
+4. **Metadata Extraction** (95% token reduction):
+   - All agents return metadata-only responses (200-300 tokens vs 5,000-10,000)
+   - Behavioral injection pattern preserved
+   - Verification checkpoints validate artifact creation
+
+5. **Behavioral Injection** (100% file creation reliability):
+   - Path pre-calculation before agent invocations
+   - Context injection into agent prompts
+   - Imperative instructions (EXECUTE NOW, USE Task tool)
+
+6. **Verification Checkpoints** (fail-fast error handling):
+   - Mandatory verification after each agent invocation
+   - File existence checks with diagnostic messages
+   - No retry logic (fail-fast philosophy)
+
+## Implementation Phases
+
+### Phase 1: Foundation - Create Command Template and Shared Utilities
+dependencies: []
+
+**Objective**: Create reusable template with all 6 essential features for command generation
+
+**Complexity**: Medium
+
+**Tasks**:
+- [ ] Create template file: `.claude/templates/state-based-orchestrator-template.md` (600-800 lines)
+- [ ] Include Part 1: Workflow description capture (lines 1-50, identical to /coordinate)
+- [ ] Include Part 2: State machine initialization with workflow_type placeholder (lines 50-200)
+- [ ] Include Phase 1: Research with hierarchical/flat coordination (lines 200-500)
+- [ ] Include placeholder sections for conditional phases (planning, implementation, testing, debug, documentation)
+- [ ] Add substitution markers: `{{WORKFLOW_TYPE}}`, `{{TERMINAL_STATE}}`, `{{COMMAND_NAME}}`, `{{DEFAULT_COMPLEXITY}}`
+- [ ] Document customization points in template header
+- [ ] Create library compatibility verification script: `.claude/lib/verify-state-machine-compatibility.sh`
+- [ ] Verify all 6 essential features present in template (checklist validation)
+
+**Testing**:
+```bash
+# Verify template structure
+bash .claude/lib/verify-state-machine-compatibility.sh .claude/templates/state-based-orchestrator-template.md
+
+# Verify all substitution markers present
+grep -c "{{WORKFLOW_TYPE}}" .claude/templates/state-based-orchestrator-template.md  # Expected: ≥2
+grep -c "{{COMMAND_NAME}}" .claude/templates/state-based-orchestrator-template.md  # Expected: ≥3
+```
+
+**Expected Duration**: 4 hours
+
+<!-- PROGRESS CHECKPOINT -->
+After completing the above tasks:
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
+<!-- END PROGRESS CHECKPOINT -->
+
+**Phase 1 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `feat(743): complete Phase 1 - Foundation - Create Command Template and Shared Utilities`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
+
+### Phase 2: Research-Only Command - Create /research
+dependencies: [1]
+
+**Objective**: Create simplest workflow command (research-only) as proof-of-concept
+
+**Complexity**: Low
+
+**Tasks**:
+- [ ] Copy template to `.claude/commands/research.md`
+- [ ] Substitute `{{WORKFLOW_TYPE}}` → `"research-only"`
+- [ ] Substitute `{{TERMINAL_STATE}}` → `"research"`
+- [ ] Substitute `{{COMMAND_NAME}}` → `"research"`
+- [ ] Substitute `{{DEFAULT_COMPLEXITY}}` → `2`
+- [ ] Remove conditional phase sections (planning, implementation, testing, debug, documentation)
+- [ ] Add research-only completion logic: `sm_transition "$STATE_COMPLETE"` after research phase
+- [ ] Update YAML frontmatter: `description: "Research workflow without plan/implementation"`
+- [ ] Add verification checkpoint after research phase
+- [ ] Test command with example workflow: `/research "authentication patterns in codebase"`
+
+**Testing**:
+```bash
+# Test /research command execution
+cd "$CLAUDE_PROJECT_DIR"
+/research "authentication patterns in codebase"
+
+# Verify outputs
+test -d .claude/specs/*/reports/  # Research reports created
+test ! -f .claude/specs/*/plans/*.md  # No plan file created (expected)
+
+# Verify state machine
+grep "TERMINAL_STATE=research" ~/.claude/tmp/workflow_*.sh
+grep "WORKFLOW_TYPE=research-only" ~/.claude/tmp/workflow_*.sh
+```
+
+**Expected Duration**: 3 hours
+
+**Phase 2 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `feat(743): complete Phase 2 - Research-Only Command - Create /research`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
+
+### Phase 3: Research-and-Plan Commands - Create /research-plan and /research-revise
+dependencies: [2]
+
+**Objective**: Create planning-focused workflows (new plan creation and plan revision)
+
+**Complexity**: Medium
+
+**Tasks**:
+- [ ] Create `/research-plan` command from template
+- [ ] Substitute workflow_type → `"research-and-plan"`, terminal_state → `"plan"`, default_complexity → `3`
+- [ ] Add Phase 2: Planning with plan-architect agent invocation (new plan creation mode)
+- [ ] Add verification checkpoint for plan file creation
+- [ ] Add completion logic: `sm_transition "$STATE_COMPLETE"` after planning phase
+- [ ] Create `/research-revise` command from template
+- [ ] Substitute workflow_type → `"research-and-revise"`, terminal_state → `"plan"`, default_complexity → `2`
+- [ ] Add existing plan path extraction from workflow description
+- [ ] Add Phase 2: Planning with plan-architect agent invocation (revision mode)
+- [ ] Add plan backup logic before revision
+- [ ] Add verification checkpoint for revised plan file
+- [ ] Test `/research-plan` with example: `/research-plan "implement user authentication system"`
+- [ ] Test `/research-revise` with example: `/research-revise "revise plan at .claude/specs/042_auth/plans/001_plan.md based on new security requirements"`
+
+**Testing**:
+```bash
+# Test /research-plan command
+/research-plan "implement user authentication system"
+test -f .claude/specs/*/plans/001_*.md  # New plan created
+
+# Test /research-revise command
+PLAN_PATH=".claude/specs/042_auth/plans/001_plan.md"
+/research-revise "revise plan at $PLAN_PATH based on new security requirements"
+test -f .claude/specs/042_auth/plans/backups/001_*.md  # Backup created
+test -f "$PLAN_PATH"  # Revised plan exists
+
+# Verify state transitions
+grep "sm_transition.*plan" .claude/commands/research-plan.md
+grep "sm_transition.*complete" .claude/commands/research-plan.md
+```
+
+**Expected Duration**: 5 hours
+
+<!-- PROGRESS CHECKPOINT -->
+After completing the above tasks:
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
+<!-- END PROGRESS CHECKPOINT -->
+
+**Phase 3 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `feat(743): complete Phase 3 - Research-and-Plan Commands - Create /research-plan and /research-revise`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
+
+### Phase 4: Build Command - Create /build
+dependencies: [3]
+
+**Objective**: Create build-from-plan workflow that takes existing plan and implements it
+
+**Complexity**: High
+
+**Tasks**:
+- [ ] Create `/build` command from template
+- [ ] Add argument parsing for plan path (required) and optional start phase number
+- [ ] Substitute workflow_type → `"build"`, terminal_state → `"complete"`
+- [ ] Skip research and planning phases (command takes existing plan as input)
+- [ ] Add Phase 1: Implementation with implementer-coordinator agent
+- [ ] Add wave-based parallel execution logic (dependency-analyzer.sh integration)
+- [ ] Add pre-calculated artifact paths (REPORTS_DIR, PLANS_DIR, SUMMARIES_DIR, etc.)
+- [ ] Add Phase 2: Testing with test suite execution
+- [ ] Add conditional branching: test success → document phase, test failure → debug phase
+- [ ] Add Phase 3: Debug (conditional on test failures)
+- [ ] Add debug retry logic with max attempts limit
+- [ ] Add Phase 4: Documentation (conditional on test success)
+- [ ] Add completion logic with final summary display
+- [ ] Add resume-from-phase logic using optional phase parameter
+- [ ] Test `/build` with example: `/build .claude/specs/*/plans/001_example.md`
+- [ ] Test resume functionality: `/build .claude/specs/*/plans/001_example.md 3` (start from phase 3)
+
+**Testing**:
+```bash
+# Test /build command with plan path
+/build .claude/specs/743_*/plans/001_dedicated_orchestrator_commands.md
+
+# Verify phases executed (no research/plan phases)
+# Implementation artifacts verified by implementer-coordinator agent
+# Test results logged in test phase
+
+# Verify state transitions
+grep "sm_transition.*implement" .claude/commands/build.md
+grep "sm_transition.*test" .claude/commands/build.md
+grep "sm_transition.*complete" .claude/commands/build.md
+
+# Verify wave execution
+grep "dependency-analyzer.sh" .claude/commands/build.md
+grep "implementer-coordinator" .claude/commands/build.md
+
+# Test resume functionality
+/build .claude/specs/743_*/plans/001_dedicated_orchestrator_commands.md 2  # Resume from testing phase
+```
+
+**Expected Duration**: 6 hours
+
+<!-- PROGRESS CHECKPOINT -->
+After completing the above tasks:
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
+<!-- END PROGRESS CHECKPOINT -->
+
+**Phase 4 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `feat(743): complete Phase 4 - Build Command - Create /build`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
+
+### Phase 5: Debug-Focused Command - Create /debug
+dependencies: [4]
+
+**Objective**: Create debug-focused workflow for root cause analysis and bug fixing
+
+**Complexity**: Medium
+
+**Tasks**:
+- [ ] Create `/fix` command from template
+- [ ] Substitute workflow_type → `"debug-only"`, terminal_state → `"debug"`, default_complexity → `2`
+- [ ] Add Phase 2: Planning (debug strategy plan creation)
+- [ ] Add Phase 3: Debug with debug-analyst agent invocation
+- [ ] Add root cause analysis logic
+- [ ] Add fix verification with optional test execution
+- [ ] Add completion logic: `sm_transition "$STATE_COMPLETE"` after debug phase
+- [ ] Test `/fix` with example: `/fix "investigate authentication timeout errors in production logs"`
+
+**Testing**:
+```bash
+# Test /fix command
+/fix "investigate authentication timeout errors in production logs"
+
+# Verify outputs
+test -d .claude/specs/*/reports/  # Debug research reports
+test -f .claude/specs/*/plans/*.md  # Debug strategy plan
+test -f .claude/specs/*/debug/*.log  # Debug artifacts
+
+# Verify state transitions
+grep "sm_transition.*debug" .claude/commands/fix.md
+grep "sm_transition.*complete" .claude/commands/fix.md
+```
+
+**Expected Duration**: 4 hours
+
+**Phase 5 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `feat(743): complete Phase 5 - Debug-Focused Command - Create /debug`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
+
+### Phase 6: Feature Preservation Validation
+dependencies: [2, 3, 4, 5]
+
+**Objective**: Verify all 6 essential coordinate features preserved in new commands
+
+**Complexity**: Medium
+
+**Tasks**:
+- [ ] Create validation script: `.claude/tests/validate_feature_preservation.sh`
+- [ ] Add delegation rate validation (behavioral injection check) - target >90%
+- [ ] Add context usage validation (metadata extraction check) - target <300 tokens per agent
+- [ ] Add state machine validation (sm_init and sm_transition usage check)
+- [ ] Add verification checkpoint validation (file existence checks after agent invocations)
+- [ ] Add wave execution validation (dependency-analyzer.sh usage in /fullstack)
+- [ ] Add hierarchical supervision validation (research-sub-supervisor for complexity ≥4)
+- [ ] Run validation against all 5 new commands
+- [ ] Fix any feature preservation violations found
+- [ ] Document validation results in `.claude/specs/743_*/artifacts/feature_preservation_results.md`
+
+**Testing**:
+```bash
+# Run feature preservation validation
+for cmd in research research-plan research-revise fullstack debug; do
+  echo "Validating /$(basename "$cmd")"
+  bash .claude/tests/validate_feature_preservation.sh ".claude/commands/$cmd.md"
+done
+
+# Expected output (all checks pass):
+# ✓ Delegation rate: 95% (target: >90%)
+# ✓ Context usage: 250 tokens (target: <300)
+# ✓ State machine: sm_init and sm_transition present
+# ✓ Verification checkpoints: 100% coverage
+# ✓ Wave execution: dependency-analyzer.sh present (fullstack only)
+# ✓ Hierarchical supervision: research-sub-supervisor for complexity ≥4
+```
+
+**Expected Duration**: 4 hours
+
+<!-- PROGRESS CHECKPOINT -->
+After completing the above tasks:
+- [ ] Update this plan file: Mark completed tasks with [x]
+- [ ] Verify changes with git diff
+<!-- END PROGRESS CHECKPOINT -->
+
+**Phase 6 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `feat(743): complete Phase 6 - Feature Preservation Validation`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
+
+### Phase 7: Documentation and Backward Compatibility
+dependencies: [6]
+
+**Objective**: Update documentation and maintain /coordinate backward compatibility
+
+**Complexity**: Low
+
+**Tasks**:
+- [ ] Create workflow type selection guide: `.claude/docs/guides/workflow-type-selection-guide.md`
+- [ ] Add decision matrix: user intent → command mapping
+- [ ] Add examples for each workflow type
+- [ ] Add comparison table: /coordinate vs dedicated commands
+- [ ] Update `.claude/docs/quick-reference/command-reference.md` with new commands
+- [ ] Add deprecation notice to /coordinate command (recommend dedicated commands)
+- [ ] Update CLAUDE.md PROJECT_COMMANDS section with new commands
+- [ ] Test /coordinate still functional (backward compatibility verification)
+- [ ] Add migration guide from /coordinate to dedicated commands
+
+**Testing**:
+```bash
+# Verify documentation completeness
+test -f .claude/docs/guides/workflow-type-selection-guide.md
+grep -q "research-only" .claude/docs/guides/workflow-type-selection-guide.md
+grep -q "research-and-plan" .claude/docs/guides/workflow-type-selection-guide.md
+
+# Verify /coordinate backward compatibility
+/coordinate "research authentication patterns"  # Should still work
+grep "DEPRECATED" .claude/commands/coordinate.md  # Deprecation notice present
+
+# Verify command reference updated
+grep -q "/research" .claude/docs/quick-reference/command-reference.md
+grep -q "/fullstack" .claude/docs/quick-reference/command-reference.md
+```
+
+**Expected Duration**: 2 hours
+
+**Phase 7 Completion Requirements**:
+- [ ] All phase tasks marked [x]
+- [ ] Tests passing (run test suite per Testing Protocols in CLAUDE.md)
+- [ ] Git commit created: `feat(743): complete Phase 7 - Documentation and Backward Compatibility`
+- [ ] Checkpoint saved (if complex phase)
+- [ ] Update this plan file with phase completion status
+
+## Testing Strategy
+
+### Unit Testing (Per Phase)
+- Template validation: Verify all substitution markers present
+- Command syntax validation: YAML frontmatter parsing
+- State machine integration: sm_init and sm_transition usage
+- Library sourcing order: state machine libraries before load_workflow_state
+
+### Integration Testing (Phase 6)
+- End-to-end workflow execution for each command
+- Agent invocation verification (behavioral injection)
+- File creation verification (verification checkpoints)
+- State persistence verification (cross-bash-block coordination)
+
+### Performance Testing
+- Latency reduction measurement: /coordinate vs dedicated commands (target: 5-10s reduction)
+- Wave execution performance: /fullstack parallel vs sequential (target: 40-60% time savings)
+- Context usage measurement: metadata extraction validation (target: <300 tokens per agent)
+
+### Feature Preservation Testing
+- Delegation rate validation (target: >90%)
+- Context reduction validation (target: 95%+)
+- File creation reliability (target: 100%)
+- State machine transition validation (all transitions valid)
+- Wave execution validation (/fullstack only)
+- Hierarchical supervision validation (complexity ≥4)
+
+### Regression Testing
+- Verify /coordinate still functional after changes
+- Verify existing agent behavioral files compatible
+- Verify existing library APIs unchanged
+
+## Documentation Requirements
+
+### User-Facing Documentation
+- Workflow type selection guide (decision matrix)
+- Command reference updates (5 new commands)
+- Migration guide from /coordinate to dedicated commands
+- Examples for each workflow type
+
+### Developer Documentation
+- Template customization guide
+- Feature preservation checklist
+- Library API stability guarantees
+- Anti-pattern warnings
+
+### Architecture Documentation
+- State machine integration patterns
+- Conditional phase execution logic
+- Workflow type to terminal state mapping
+- Hierarchical supervision threshold configuration
+
+## Dependencies
+
+### External Dependencies
+- Existing library files (workflow-state-machine.sh, state-persistence.sh, etc.)
+- Existing agent behavioral files (research-specialist, plan-architect, implementer-coordinator, debug-analyst)
+- Testing infrastructure (.claude/tests/)
+
+### Prerequisite Tasks
+- None (self-contained implementation)
+
+### Blocking Issues
+- None identified
+
+## Risk Management
+
+### Technical Risks
+
+**Risk 1: Library API Changes**
+- **Likelihood**: Low
+- **Impact**: High (breaks all commands)
+- **Mitigation**: Use library compatibility verification script, lock library versions
+
+**Risk 2: Feature Loss During Template Customization**
+- **Likelihood**: Medium
+- **Impact**: High (defeats purpose of dedicated commands)
+- **Mitigation**: Automated feature preservation validation in Phase 6
+
+**Risk 3: State Machine Transition Errors**
+- **Likelihood**: Low
+- **Impact**: Medium (workflow stuck in invalid state)
+- **Mitigation**: sm_transition() validates transitions against table, fail-fast on invalid transitions
+
+### Process Risks
+
+**Risk 1: Template Maintenance Burden**
+- **Likelihood**: Medium
+- **Impact**: Low (template updates needed when patterns evolve)
+- **Mitigation**: Version template with changelog, provide migration guides
+
+**Risk 2: Test Coverage Gaps**
+- **Likelihood**: Medium
+- **Impact**: Medium (undetected feature violations)
+- **Mitigation**: Comprehensive test suite in Phase 6, CI/CD integration
+
+### Rollback Strategy
+- Keep /coordinate functional (backward compatibility)
+- Mark new commands as experimental initially
+- Gradual migration with deprecation period
+- Git revert available for each phase (atomic commits)
