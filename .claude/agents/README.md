@@ -2,7 +2,7 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 16 active agents
+**Current Agent Count**: 15 active agents
 
 ## Purpose
 
@@ -49,6 +49,10 @@ Quick reference for which agents are invoked by each command and their roles:
 - **plan-complexity-classifier** - Assess feature complexity for planning depth
 - **research-specialist** - Gather codebase context and best practices
 - **plan-architect** - Design implementation plan with phases and tasks
+
+#### /repair
+- **repair-analyst** - Analyze error logs and identify root cause patterns
+- **plan-architect** - Create fix implementation plan based on error analysis
 
 #### /research
 - **research-specialist** - Conduct technology investigation and generate reports

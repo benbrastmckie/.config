@@ -241,6 +241,24 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
+### repair-analyst
+**Purpose**: Error log analysis and root cause pattern detection
+
+**Capabilities**:
+- Read and parse error logs from .claude/data/logs/errors.jsonl
+- Group errors by type, command, and root cause using inline jq analysis
+- Calculate frequencies and distributions
+- Identify correlated errors and systemic issues
+- Create structured error analysis reports with recommendations
+
+**Allowed Tools**: Read, Write, Grep, Glob, Bash
+
+**Used By**: /repair (error analysis phase)
+
+**Definition**: [.claude/agents/repair-analyst.md](../../agents/repair-analyst.md)
+
+---
+
 ### research-specialist
 **Purpose**: Read-only research and codebase analysis
 
