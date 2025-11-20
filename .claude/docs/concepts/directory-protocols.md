@@ -246,6 +246,50 @@ specs/009_orchestration_enhancement/
     └── plan_backup_20251016.md
 ```
 
+### Artifact Traceability
+
+Implementation summaries create a traceability chain to research reports through plan links:
+
+```
+Summary → Plan → Reports
+   ↓         ↓
+   ↓         └─ Plan metadata contains report links
+   ↓
+   └─ Summary metadata contains plan link
+```
+
+**Traceability Pattern**:
+- Summaries link to plans in metadata section
+- Plans link to reports in metadata section
+- This creates complete traceability without redundant linking
+
+**Path Format**:
+- From summaries: `../plans/001_plan.md` (relative path for portability)
+- From plans: `../reports/001_report.md` (relative path for portability)
+
+**Example Summary Metadata**:
+```markdown
+## Metadata
+- **Date**: 2025-11-19 14:30
+- **Plan**: [Implementation Plan](../plans/001_implementation.md)
+- **Phases Completed**: 5/5
+- **Git Commits**: [abc123, def456]
+```
+
+**Example Plan Metadata**:
+```markdown
+## Metadata
+- **Research Reports**:
+  - [Auth Patterns](../reports/001_auth_patterns.md)
+  - [Security Practices](../reports/002_security_practices.md)
+```
+
+**Why This Pattern**:
+- Co-located directory structure makes navigation trivial
+- Plans already link to reports (no need for summaries to duplicate)
+- Relative paths ensure portability across systems
+- Complete traceability with minimal linking overhead
+
 ### Metadata-Only References
 
 Artifacts should be referenced by **path + metadata**, not full content, to minimize context usage (see [Command Architecture Standards - Standards 6-8](../reference/architecture/overview.md#context-preservation-standards)).

@@ -803,11 +803,10 @@ Create implementation summary linking plan and research reports.
     - Implementation complete: {DATE}
 
     **REQUIRED SUMMARY STRUCTURE**:
-    - Metadata (date completed, plan link, reports used, phases completed)
+    - Metadata (date completed, plan link, phases completed)
     - Implementation Overview
     - Key Changes
     - Test Results
-    - Report Integration (how research informed implementation)
     - Lessons Learned
 
     **VERIFICATION**: \`test -f "${SUMMARIES_DIR}/001_oauth_implementation_summary.md" && echo "SUMMARY_CREATED"\`
@@ -818,9 +817,8 @@ Create implementation summary linking plan and research reports.
 ### Integration Checklist
 
 - [ ] Calculate summary path before invoking agent
-- [ ] Include links to plan and all research reports
+- [ ] Include link to plan in metadata (creates traceability chain: Summary → Plan → Reports)
 - [ ] Document test results from Phase 4
-- [ ] Note how research informed implementation decisions
 - [ ] Capture lessons learned for future workflows
 
 ---
