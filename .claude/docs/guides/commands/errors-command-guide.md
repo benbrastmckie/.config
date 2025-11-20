@@ -227,6 +227,66 @@ log_command_error \
 
 ---
 
+## Complete Error Management Workflow
+
+The `/errors` command is part of a comprehensive error management lifecycle that supports systematic error resolution. Understanding this workflow helps you effectively use error logging for debugging and continuous improvement.
+
+### Error Lifecycle Phases
+
+**1. Error Production (Automatic)**
+- Commands and agents automatically log errors via `log_command_error()`
+- Errors stored in `~/.claude/data/logs/errors.jsonl` with full context
+- No manual intervention required
+
+**2. Error Querying (/errors)**
+- View and filter logged errors by time, type, command, or severity
+- Generate summary reports to identify patterns
+- Export filtered results for further analysis
+
+**3. Error Analysis (/repair)**
+- Group errors by pattern and root cause
+- Create error analysis reports in `specs/{NNN_topic}/reports/`
+- Generate implementation plans with fix phases
+
+**4. Fix Implementation (/build)**
+- Execute repair plans with automatic testing
+- Create git commits for each fix phase
+- Verify fixes resolve logged errors
+
+### Example Workflow
+
+After a failed `/build` command execution:
+
+```bash
+# Step 1: Query recent build errors
+/errors --command /build --since 1h --summary
+
+# Output shows 5 state_error instances in phase execution
+
+# Step 2: Analyze error patterns
+/repair --command /build --type state_error --complexity 2
+
+# Creates:
+# - specs/856_build_state_errors/reports/001_build_state_error_analysis.md
+# - specs/856_build_state_errors/plans/001_build_state_error_fix_plan.md
+
+# Step 3: Review plan and implement fixes
+/build specs/856_build_state_errors/plans/001_build_state_error_fix_plan.md
+
+# Step 4: Verify fixes resolved errors
+/errors --command /build --since 10m
+
+# Output: No errors found (confirmation)
+```
+
+### Integration Points
+
+- **Error Handling Pattern**: See [Error Handling Pattern](../../concepts/patterns/error-handling.md) for technical integration details
+- **Repair Command**: See [Repair Command Guide](repair-command-guide.md) for systematic error analysis workflow
+- **Build Command**: See [Build Command Guide](build-command-guide.md) for executing repair plans
+
+---
+
 ## Troubleshooting
 
 ### No Errors Displayed
@@ -288,6 +348,7 @@ log_command_error \
 
 ### Related Commands
 
+- `/repair` - Error analysis and repair planning workflow
 - `/debug` - Debug workflow with root cause analysis
 - `/build` - Build workflow (uses error logging)
 - `/plan` - Planning workflow (uses error logging)

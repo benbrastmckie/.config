@@ -407,6 +407,138 @@ For long operations:
 - Enable resume from checkpoint on failure
 - Document partial completion state
 
+## Error Return Protocol
+
+When agents encounter unrecoverable errors, they must return structured error signals for parent command parsing and centralized logging.
+
+### Error Signal Format
+
+Agents must output both `ERROR_CONTEXT` (JSON) and `TASK_ERROR` (human-readable) signals:
+
+```bash
+ERROR_CONTEXT: {
+  "error_type": "validation_error",
+  "message": "Invalid complexity score",
+  "details": {"score": 150, "max": 100}
+}
+
+TASK_ERROR: validation_error - Invalid complexity score: 150 exceeds maximum 100
+```
+
+### Standardized Error Types
+
+Use these error types consistently across all agents:
+
+| Error Type | Usage | Example |
+|------------|-------|---------|
+| `validation_error` | Input validation failures | Invalid argument value, missing required field |
+| `file_error` | File system operations failures | File not found, permission denied, corrupted file |
+| `parse_error` | Output parsing failures | Invalid JSON, malformed data structure |
+| `execution_error` | General execution failures | Command failed, operation timeout |
+| `timeout_error` | Operation timeout errors | Network request timeout, process timeout |
+| `state_error` | Workflow state issues | State file missing, invalid state transition |
+| `dependency_error` | Missing or invalid dependencies | Required tool not installed, library not found |
+| `agent_error` | Subagent failures | Nested agent returned error |
+
+### When to Return Error Signals
+
+Return error signals when:
+- ✅ All retry attempts exhausted
+- ✅ Fatal error encountered (cannot continue)
+- ✅ Required dependency missing
+- ✅ Invalid input that cannot be recovered
+- ✅ Workflow state corruption detected
+
+Do NOT return error signals for:
+- ❌ Transient errors (retry instead)
+- ❌ Warnings or non-fatal issues
+- ❌ Partial success (report partial completion instead)
+- ❌ Recoverable errors (attempt recovery first)
+
+### Parent Command Integration
+
+Parent commands parse agent error signals using `parse_subagent_error()`:
+
+```bash
+# In parent command
+agent_output=$(Task {
+  subagent_type: "general-purpose"
+  prompt: "Execute research task..."
+})
+
+# Parse agent error signals
+if echo "$agent_output" | grep -q "TASK_ERROR:"; then
+  parse_subagent_error "$agent_output" "research-specialist"
+  exit 1
+fi
+```
+
+The `parse_subagent_error()` function:
+1. Extracts ERROR_CONTEXT JSON from agent output
+2. Extracts TASK_ERROR signal for user display
+3. Logs error to centralized log with full workflow context
+4. Preserves workflow_id, user_args, command_name from parent
+
+### Example Error Return Flow
+
+**Agent Output**:
+```
+Research analysis complete for 3 of 5 topics.
+
+ERROR_CONTEXT: {
+  "error_type": "timeout_error",
+  "message": "Network request timeout for topic: advanced-patterns",
+  "details": {
+    "url": "https://docs.example.com/advanced",
+    "timeout_seconds": 30,
+    "attempt": 3
+  }
+}
+
+TASK_ERROR: timeout_error - Network request timeout after 3 attempts (30s each)
+```
+
+**Parent Command Handling**:
+```bash
+parse_subagent_error "$agent_output" "research-specialist"
+# Logs to .claude/data/errors.jsonl:
+# {
+#   "timestamp": "2025-11-19T10:30:45Z",
+#   "error_type": "timeout_error",
+#   "command_name": "/research",
+#   "workflow_id": "research_1732017045",
+#   "user_args": "advanced-patterns security-best-practices",
+#   "agent_name": "research-specialist",
+#   "message": "Network request timeout after 3 attempts (30s each)",
+#   "details": "{\"url\":\"https://docs.example.com/advanced\",...}"
+# }
+exit 1
+```
+
+### Best Practices
+
+**Do**:
+- ✅ Always include both ERROR_CONTEXT (JSON) and TASK_ERROR (human-readable)
+- ✅ Use standardized error types from the table above
+- ✅ Include specific details in ERROR_CONTEXT.details field
+- ✅ Make TASK_ERROR message clear and actionable
+- ✅ Return error signals only after all recovery attempts
+
+**Don't**:
+- ❌ Return partial ERROR_CONTEXT (missing fields)
+- ❌ Use custom error types not in standard list
+- ❌ Include sensitive information in error messages
+- ❌ Return error signals for warnings or partial success
+- ❌ Omit critical context (what operation failed, where, why)
+
+### References
+
+- [Error Handling Pattern](.claude/docs/concepts/patterns/error-handling.md) - Complete pattern documentation
+- [Error Handling API Reference](.claude/docs/reference/library-api/error-handling.md) - Function signatures
+- [Architecture Standard 17](.claude/docs/reference/architecture/error-handling.md#standard-17-centralized-error-logging-integration) - Centralized logging requirement
+
+---
+
 ## See Also
 
 - [Progress Streaming Protocol](progress-streaming-protocol.md) - How to report progress

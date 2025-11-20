@@ -78,6 +78,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# === INITIALIZE ERROR LOGGING ===
+ensure_error_log_exists
+
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
 
 check_library_requirements "$(cat <<'EOF'
@@ -203,23 +207,56 @@ mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
+# Set command metadata for error logging
+COMMAND_NAME="/build"
+USER_ARGS="$PLAN_FILE"
+export COMMAND_NAME USER_ARGS
+
 # Capture state file path for append_workflow_state
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
 
 # Validate state file creation
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to initialize workflow state file" \
+    "bash_block_1" \
+    "$(jq -n --arg path "${STATE_FILE:-UNDEFINED}" '{expected_path: $path}')"
+
   echo "ERROR: Failed to initialize workflow state" >&2
   exit 1
 fi
 
 if ! sm_init "$PLAN_FILE" "$COMMAND_NAME" "$WORKFLOW_TYPE" "1" "[]" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State machine initialization failed" \
+    "bash_block_1" \
+    "$(jq -n --arg type "$WORKFLOW_TYPE" --arg plan "$PLAN_FILE" \
+       '{workflow_type: $type, plan_file: $plan}')"
+
   echo "ERROR: State machine initialization failed" >&2
   exit 1
 fi
 
 # === TRANSITION TO IMPLEMENT ===
 if ! sm_transition "$STATE_IMPLEMENT" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to IMPLEMENT failed" \
+    "bash_block_1" \
+    "$(jq -n --arg state "IMPLEMENT" '{target_state: $state}')"
+
   echo "ERROR: State transition to IMPLEMENT failed" >&2
   exit 1
 fi
@@ -315,12 +352,22 @@ fi
 export CLAUDE_PROJECT_DIR
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_1b" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
   {
     echo "[$(date)] ERROR: State file path not set"
     echo "WHICH: load_workflow_state"
@@ -332,6 +379,15 @@ if [ -z "$STATE_FILE" ]; then
 fi
 
 if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found after load" \
+    "bash_block_1b" \
+    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
+
   {
     echo "[$(date)] ERROR: State file not found"
     echo "WHICH: load_workflow_state"
@@ -482,11 +538,21 @@ export CLAUDE_PROJECT_DIR
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_2" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
   {
     echo "[$(date)] ERROR: State file path not set"
     echo "WHICH: load_workflow_state"
@@ -498,6 +564,15 @@ if [ -z "$STATE_FILE" ]; then
 fi
 
 if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found after load" \
+    "bash_block_2" \
+    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
+
   {
     echo "[$(date)] ERROR: State file not found"
     echo "WHICH: load_workflow_state"
@@ -510,6 +585,16 @@ if [ ! -f "$STATE_FILE" ]; then
 fi
 
 if [ -z "${CURRENT_STATE:-}" ] || [ "$CURRENT_STATE" = "initialize" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State restoration failed - CURRENT_STATE invalid" \
+    "bash_block_2" \
+    "$(jq -n --arg state "${CURRENT_STATE:-empty}" \
+       '{current_state: $state, expected: "implement"}')"
+
   {
     echo "[$(date)] ERROR: State restoration failed"
     echo "WHICH: load_workflow_state"
@@ -537,6 +622,15 @@ echo ""
 
 # === TRANSITION TO TEST ===
 if ! sm_transition "$STATE_TEST" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to TEST failed" \
+    "bash_block_2" \
+    "$(jq -n --arg state "TEST" '{target_state: $state}')"
+
   echo "ERROR: State transition to TEST failed" >&2
   exit 1
 fi
@@ -631,12 +725,22 @@ export CLAUDE_PROJECT_DIR
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_3" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
   {
     echo "[$(date)] ERROR: State file path not set"
     echo "WHICH: load_workflow_state"
@@ -648,6 +752,15 @@ if [ -z "$STATE_FILE" ]; then
 fi
 
 if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found after load" \
+    "bash_block_3" \
+    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
+
   {
     echo "[$(date)] ERROR: State file not found"
     echo "WHICH: load_workflow_state"
@@ -660,6 +773,15 @@ if [ ! -f "$STATE_FILE" ]; then
 fi
 
 if [ -z "${CURRENT_STATE:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State restoration failed - CURRENT_STATE empty" \
+    "bash_block_3" \
+    "$(jq -n '{current_state: "empty"}')"
+
   {
     echo "[$(date)] ERROR: State restoration failed"
     echo "WHICH: load_workflow_state"
@@ -678,6 +800,15 @@ echo "Block 3: State validated ($CURRENT_STATE)"
 if [ "$TESTS_PASSED" = "false" ]; then
   # Tests failed -> Debug phase
   if ! sm_transition "$STATE_DEBUG" 2>&1; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "state_error" \
+      "State transition to DEBUG failed" \
+      "bash_block_3" \
+      "$(jq -n --arg state "DEBUG" '{target_state: $state}')"
+
     echo "ERROR: State transition to DEBUG failed" >&2
     exit 1
   fi
@@ -698,6 +829,15 @@ if [ "$TESTS_PASSED" = "false" ]; then
 else
   # Tests passed -> Documentation phase
   if ! sm_transition "$STATE_DOCUMENT" 2>&1; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "state_error" \
+      "State transition to DOCUMENT failed" \
+      "bash_block_3" \
+      "$(jq -n --arg state "DOCUMENT" '{target_state: $state}')"
+
     echo "ERROR: State transition to DOCUMENT failed" >&2
     exit 1
   fi
@@ -776,12 +916,22 @@ export CLAUDE_PROJECT_DIR
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_4" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
   {
     echo "[$(date)] ERROR: State file path not set"
     echo "WHICH: load_workflow_state"
@@ -793,6 +943,15 @@ if [ -z "$STATE_FILE" ]; then
 fi
 
 if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found after load" \
+    "bash_block_4" \
+    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
+
   {
     echo "[$(date)] ERROR: State file not found"
     echo "WHICH: load_workflow_state"
@@ -805,6 +964,15 @@ if [ ! -f "$STATE_FILE" ]; then
 fi
 
 if [ -z "${CURRENT_STATE:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State restoration failed - CURRENT_STATE empty" \
+    "bash_block_4" \
+    "$(jq -n '{current_state: "empty"}')"
+
   {
     echo "[$(date)] ERROR: State restoration failed"
     echo "WHICH: load_workflow_state"
@@ -871,6 +1039,15 @@ esac
 
 # === COMPLETE WORKFLOW ===
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to COMPLETE failed" \
+    "bash_block_4" \
+    "$(jq -n --arg state "COMPLETE" '{target_state: $state}')"
+
   echo "ERROR: State transition to COMPLETE failed" >&2
   exit 1
 fi

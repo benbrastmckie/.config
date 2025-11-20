@@ -132,10 +132,15 @@ state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
 
+# === INITIALIZE ERROR LOGGING ===
+ensure_error_log_exists
+
 # === INITIALIZE STATE ===
 WORKFLOW_TYPE="research-and-plan"
 TERMINAL_STATE="plan"
-COMMAND_NAME="plan"
+COMMAND_NAME="/plan"
+USER_ARGS="$FEATURE_DESCRIPTION"
+export COMMAND_NAME USER_ARGS
 
 WORKFLOW_ID="plan_$(date +%s)"
 STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
@@ -149,23 +154,79 @@ export STATE_FILE
 
 # Validate state file creation
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to initialize workflow state file" \
+    "bash_block_1" \
+    "$(jq -n --arg path "${STATE_FILE:-UNDEFINED}" '{expected_path: $path}')"
+
   echo "ERROR: Failed to initialize workflow state" >&2
   exit 1
 fi
 
+# NEW: Verify state file contains required variables
+if ! grep -q "WORKFLOW_ID=" "$STATE_FILE" 2>/dev/null; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "State file missing WORKFLOW_ID - file creation incomplete" \
+    "bash_block_1" \
+    "$(jq -n --arg path "$STATE_FILE" '{state_file: $path}')"
+
+  echo "ERROR: State file missing WORKFLOW_ID - file creation incomplete" >&2
+  echo "State file: $STATE_FILE" >&2
+  exit 1
+fi
+
+# NEW: Final checkpoint before Block 1 completes
+echo "✓ State file validated: $STATE_FILE"
+
 if ! sm_init "$FEATURE_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State machine initialization failed" \
+    "bash_block_1" \
+    "$(jq -n --arg type "$WORKFLOW_TYPE" --argjson complexity "$RESEARCH_COMPLEXITY" \
+       '{workflow_type: $type, complexity: $complexity}')"
+
   echo "ERROR: State machine initialization failed" >&2
   exit 1
 fi
 
 # === TRANSITION TO RESEARCH AND SETUP PATHS ===
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to RESEARCH failed" \
+    "bash_block_1" \
+    "$(jq -n --arg state "$STATE_RESEARCH" '{target_state: $state}')"
+
   echo "ERROR: State transition to RESEARCH failed" >&2
   exit 1
 fi
 
 # Initialize workflow paths (uses fallback slug generation)
 if ! initialize_workflow_paths "$FEATURE_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" ""; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Failed to initialize workflow paths" \
+    "bash_block_1" \
+    "$(jq -n --arg desc "$FEATURE_DESCRIPTION" '{feature: $desc}')"
+
   echo "ERROR: Failed to initialize workflow paths" >&2
   exit 1
 fi
@@ -259,24 +320,128 @@ export CLAUDE_PROJECT_DIR
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# Initialize DEBUG_LOG if not already set
+DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === VALIDATE STATE AFTER LOAD ===
+if [ -z "$STATE_FILE" ]; then
+  # Log to centralized error log
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_2" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+  # Also log to DEBUG_LOG
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 2, research phase"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  # Log to centralized error log
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found at expected path" \
+    "bash_block_2" \
+    "$(jq -n --arg path "$STATE_FILE" '{expected_path: $path}')"
+
+  # Also log to DEBUG_LOG
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 2, research phase"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+# Validate critical variables from Block 1
+if [ -z "$TOPIC_PATH" ] || [ -z "$RESEARCH_DIR" ]; then
+  # Log to centralized error log
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Critical variables not restored from state" \
+    "bash_block_2" \
+    "$(jq -n --arg topic "${TOPIC_PATH:-MISSING}" --arg research "${RESEARCH_DIR:-MISSING}" \
+       '{TOPIC_PATH: $topic, RESEARCH_DIR: $research}')"
+
+  # Also log to DEBUG_LOG
+  {
+    echo "[$(date)] ERROR: Critical variables not restored"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: TOPIC_PATH or RESEARCH_DIR missing after load"
+    echo "WHERE: Block 2, research phase"
+    echo "TOPIC_PATH: ${TOPIC_PATH:-MISSING}"
+    echo "RESEARCH_DIR: ${RESEARCH_DIR:-MISSING}"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: Critical variables not restored (see $DEBUG_LOG)" >&2
+  exit 1
+fi
 
 # === VERIFY RESEARCH ARTIFACTS ===
 echo "Verifying research artifacts..."
 
 if [ ! -d "$RESEARCH_DIR" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Research phase failed to create reports directory" \
+    "bash_block_2" \
+    "$(jq -n --arg dir "$RESEARCH_DIR" '{expected_dir: $dir}')"
+
   echo "ERROR: Research phase failed to create reports directory" >&2
   exit 1
 fi
 
 if [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Research phase failed to create report files" \
+    "bash_block_2" \
+    "$(jq -n --arg dir "$RESEARCH_DIR" '{research_dir: $dir}')"
+
   echo "ERROR: Research phase failed to create report files" >&2
   exit 1
 fi
 
 UNDERSIZED_FILES=$(find "$RESEARCH_DIR" -name '*.md' -type f -size -100c 2>/dev/null)
 if [ -n "$UNDERSIZED_FILES" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Research report(s) too small (< 100 bytes)" \
+    "bash_block_2" \
+    "$(jq -n --arg files "$UNDERSIZED_FILES" '{undersized_files: $files}')"
+
   echo "ERROR: Research report(s) too small (< 100 bytes)" >&2
   exit 1
 fi
@@ -289,6 +454,15 @@ echo ""
 
 # === TRANSITION TO PLAN ===
 if ! sm_transition "$STATE_PLAN" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to PLAN failed" \
+    "bash_block_2" \
+    "$(jq -n --arg state "$STATE_PLAN" '{target_state: $state}')"
+
   echo "ERROR: State transition to PLAN failed" >&2
   exit 1
 fi
@@ -372,19 +546,113 @@ export CLAUDE_PROJECT_DIR
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# Initialize DEBUG_LOG if not already set
+DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === VALIDATE STATE AFTER LOAD ===
+if [ -z "$STATE_FILE" ]; then
+  # Log to centralized error log
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_3" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+  # Also log to DEBUG_LOG
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 3, planning phase"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  # Log to centralized error log
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found at expected path" \
+    "bash_block_3" \
+    "$(jq -n --arg path "$STATE_FILE" '{expected_path: $path}')"
+
+  # Also log to DEBUG_LOG
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 3, planning phase"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+# Validate PLAN_PATH was set by Block 2
+if [ -z "$PLAN_PATH" ]; then
+  # Log to centralized error log
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "PLAN_PATH not found in state" \
+    "bash_block_3" \
+    "$(jq -n '{message: "PLAN_PATH not set by Block 2"}')"
+
+  # Also log to DEBUG_LOG
+  {
+    echo "[$(date)] ERROR: PLAN_PATH not found in state"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: PLAN_PATH not set by Block 2"
+    echo "WHERE: Block 3, planning phase"
+    echo "State file contents:"
+    cat "$STATE_FILE" 2>&1 | sed 's/^/  /'
+  } >> "$DEBUG_LOG"
+  echo "ERROR: PLAN_PATH not found in state (see $DEBUG_LOG)" >&2
+  exit 1
+fi
 
 # === VERIFY PLAN ARTIFACTS ===
 echo "Verifying plan artifacts..."
 
 if [ ! -f "$PLAN_PATH" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Planning phase failed to create plan file" \
+    "bash_block_3" \
+    "$(jq -n --arg path "$PLAN_PATH" '{expected_path: $path}')"
+
   echo "ERROR: Planning phase failed to create plan file" >&2
   exit 1
 fi
 
 FILE_SIZE=$(wc -c < "$PLAN_PATH")
 if [ "$FILE_SIZE" -lt 500 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Plan file too small" \
+    "bash_block_3" \
+    "$(jq -n --argjson size "$FILE_SIZE" '{file_size: $size, min_size: 500}')"
+
   echo "ERROR: Plan file too small ($FILE_SIZE bytes)" >&2
   exit 1
 fi
@@ -394,6 +662,15 @@ echo ""
 
 # === COMPLETE WORKFLOW ===
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to COMPLETE failed" \
+    "bash_block_3" \
+    "$(jq -n --arg state "$STATE_COMPLETE" '{target_state: $state}')"
+
   echo "ERROR: State transition to COMPLETE failed" >&2
   exit 1
 fi

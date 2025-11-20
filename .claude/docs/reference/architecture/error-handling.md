@@ -212,6 +212,198 @@ All commands using critical functions must include unit tests for failure paths 
 
 ---
 
+## Standard 17: Centralized Error Logging Integration
+
+### Requirement
+
+All commands and agents MUST integrate centralized error logging via `log_command_error()` for queryable error tracking and cross-workflow debugging. The system automatically routes test errors to `.claude/tests/logs/test-errors.jsonl` and production errors to `.claude/data/logs/errors.jsonl`.
+
+### Rationale
+
+Environment-based error logging provides:
+1. **Single Source of Truth Per Environment**: Production errors in `.claude/data/logs/errors.jsonl`, test errors in `.claude/tests/logs/test-errors.jsonl`
+2. **Automatic Test Isolation**: Environment detection prevents test pollution of production logs
+3. **Structured Format**: Machine-readable JSON entries with environment, error_type, message, details, context
+4. **Trend Analysis**: `/errors` command enables filtering by type, time, command, severity for both logs
+5. **Cross-Workflow Debugging**: Preserve workflow context (workflow_id, user_args, command_name)
+6. **Agent Error Propagation**: `parse_subagent_error()` captures agent ERROR_CONTEXT and TASK_ERROR signals
+
+Without environment-aware logging, test errors pollute production logs, making production error analysis difficult and creating noise in debugging workflows.
+
+### Standard Integration Pattern
+
+**Step 1: Source Error Handling Library**
+```bash
+# Early in command initialization (after LIB_DIR setup)
+source "$CLAUDE_LIB/core/error-handling.sh" 2>/dev/null || {
+  echo "Error: Cannot load error-handling library"
+  exit 1
+}
+```
+
+**Step 2: Set Workflow Metadata**
+```bash
+# After argument parsing
+COMMAND_NAME="/command-name"
+WORKFLOW_ID="workflow_$(date +%s)"
+USER_ARGS="$*"  # Capture original arguments
+```
+
+**Step 3: Initialize Error Log**
+```bash
+# Before any error logging calls
+ensure_error_log_exists
+```
+
+**Step 4: Log Errors at All Error Points**
+```bash
+# Validation errors
+if [ -z "$required_arg" ]; then
+  log_command_error "validation_error" \
+    "Missing required argument: feature_description" \
+    "Command usage: /command <arg1> <arg2>"
+  exit 1
+fi
+
+# File errors
+if [ ! -f "$plan_path" ]; then
+  log_command_error "file_error" \
+    "Plan file not found: $plan_path" \
+    "Expected path from workflow initialization"
+  exit 1
+fi
+
+# Execution errors
+if ! some_critical_function; then
+  log_command_error "execution_error" \
+    "Critical function failed: some_critical_function" \
+    "Return code: $?"
+  exit 1
+fi
+```
+
+**Step 5: Parse Subagent Errors**
+```bash
+# After subagent execution
+agent_output=$(Task { ... })
+
+# Parse agent error signals
+if echo "$agent_output" | grep -q "TASK_ERROR:"; then
+  parse_subagent_error "$agent_output" "research-specialist"
+  exit 1
+fi
+```
+
+### Agent Error Return Protocol
+
+Agents must return structured error signals for parent command parsing:
+
+**Error Signal Format**:
+```bash
+# In agent output
+ERROR_CONTEXT: {
+  "error_type": "validation_error",
+  "message": "Invalid complexity score",
+  "details": {"score": 150, "max": 100}
+}
+
+TASK_ERROR: validation_error - Invalid complexity score: 150 exceeds maximum 100
+```
+
+**Parent Command Parsing**:
+```bash
+# Parent command uses parse_subagent_error()
+parse_subagent_error "$agent_output" "$agent_name"
+# Automatically logs to centralized log with full workflow context
+```
+
+### Error Types
+
+Use these standardized error types:
+- `state_error` - Workflow state persistence issues
+- `validation_error` - Input validation failures
+- `agent_error` - Subagent execution failures
+- `parse_error` - Output parsing failures
+- `file_error` - File system operations failures
+- `timeout_error` - Operation timeout errors
+- `execution_error` - General execution failures
+- `dependency_error` - Missing or invalid dependencies
+
+### Validation
+
+**Automated Testing**:
+```bash
+bash .claude/tests/test_error_logging_compliance.sh
+```
+
+This test validates:
+- All commands source error-handling.sh
+- All commands use log_command_error() at error points
+- Reports compliant vs non-compliant commands
+- Exit code 1 if any non-compliant commands found
+
+**Manual Verification**:
+```bash
+# Test error logging integration
+/command-name <invalid-args>  # Trigger error intentionally
+
+# Verify error logged
+/errors --command /command-name --limit 1
+
+# Check error details
+/errors --type validation_error --limit 5
+```
+
+**Runtime Verification**:
+- Test each command with invalid inputs
+- Verify errors appear in `/errors` query output
+- Check workflow context is complete (workflow_id, user_args, command_name)
+- Confirm error_type matches actual error category
+
+### Examples
+
+**Compliant Command**: `/build` command
+
+```bash
+# Lines 50-55: Source library
+source "$CLAUDE_LIB/core/error-handling.sh" 2>/dev/null || {
+  echo "Error: Cannot load error-handling library"
+  exit 1
+}
+
+# Line 72: Set metadata
+COMMAND_NAME="/build"
+WORKFLOW_ID="build_$(date +%s)"
+USER_ARGS="$*"
+
+# Line 89: Initialize log
+ensure_error_log_exists
+
+# Line 145: Log validation error
+if [ ! -f "$plan_path" ]; then
+  log_command_error "file_error" \
+    "Plan file not found: $plan_path" \
+    "Run /plan first to create implementation plan"
+  exit 1
+fi
+
+# Line 312: Parse subagent error
+parse_subagent_error "$coordinator_output" "implementer-coordinator"
+```
+
+**Non-Compliant Command**: `/expand` (before integration)
+
+No error-handling.sh sourcing, errors go to terminal only, no queryable history.
+
+### References
+
+- [Error Handling Pattern](.claude/docs/concepts/patterns/error-handling.md) - Complete pattern documentation
+- [Error Handling API Reference](.claude/docs/reference/library-api/error-handling.md) - Function signatures and usage
+- [Errors Command Guide](.claude/docs/guides/commands/errors-command-guide.md) - Query interface and workflows
+- [Agent Error Handling Guidelines](.claude/agents/shared/error-handling-guidelines.md) - Agent error return protocol
+
+---
+
 ## Anti-Patterns to Avoid
 
 ### Anti-Pattern 1: Reference-Only Sections

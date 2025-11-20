@@ -2,6 +2,7 @@
 allowed-tools: Bash, Read
 description: Query and display error logs from commands and subagents
 argument-hint: [--command CMD] [--since TIME] [--type TYPE] [--limit N] [--summary]
+command-type: utility
 ---
 
 # /errors Command
@@ -25,17 +26,21 @@ Query and display error logs from centralized error logging system.
 - `--type TYPE` - Filter by error type (state_error, validation_error, agent_error, etc.)
 - `--limit N` - Limit number of results (default: 10)
 - `--workflow-id ID` - Filter by workflow ID
+- `--log-file PATH` - Log file path (default: .claude/data/logs/errors.jsonl)
 - `--summary` - Show error summary instead of individual errors
 - `--raw` - Output raw JSONL entries
 
 ## Examples
 
 ```bash
-# Show recent errors
+# Show recent errors (production log)
 /errors
 
 # Show last 5 errors
 /errors --limit 5
+
+# Query test log
+/errors --log-file .claude/tests/logs/test-errors.jsonl
 
 # Filter by command
 /errors --command /build
@@ -43,8 +48,11 @@ Query and display error logs from centralized error logging system.
 # Show errors since date
 /errors --since 2025-11-19
 
-# Show error summary
+# Show error summary (production)
 /errors --summary
+
+# Show test log summary
+/errors --log-file .claude/tests/logs/test-errors.jsonl --summary
 
 # Combine filters
 /errors --command /build --type state_error --limit 3
@@ -58,6 +66,7 @@ COMMAND_FILTER=""
 SINCE_FILTER=""
 TYPE_FILTER=""
 WORKFLOW_FILTER=""
+LOG_FILE_ARG=""
 LIMIT="10"
 SHOW_SUMMARY="false"
 SHOW_RAW="false"
@@ -82,6 +91,10 @@ while [ $# -gt 0 ]; do
       ;;
     --workflow-id)
       WORKFLOW_FILTER="$2"
+      shift 2
+      ;;
+    --log-file)
+      LOG_FILE_ARG="$2"
       shift 2
       ;;
     --summary)
@@ -116,18 +129,20 @@ elif [ "$SHOW_RAW" = "true" ]; then
   [ -n "$SINCE_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --since $SINCE_FILTER"
   [ -n "$TYPE_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --type $TYPE_FILTER"
   [ -n "$WORKFLOW_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --workflow-id $WORKFLOW_FILTER"
+  [ -n "$LOG_FILE_ARG" ] && QUERY_ARGS="$QUERY_ARGS --log-file $LOG_FILE_ARG"
   [ -n "$LIMIT" ] && QUERY_ARGS="$QUERY_ARGS --limit $LIMIT"
 
   query_errors $QUERY_ARGS
 else
   # Check for filters
-  if [ -n "$COMMAND_FILTER" ] || [ -n "$SINCE_FILTER" ] || [ -n "$TYPE_FILTER" ] || [ -n "$WORKFLOW_FILTER" ]; then
+  if [ -n "$COMMAND_FILTER" ] || [ -n "$SINCE_FILTER" ] || [ -n "$TYPE_FILTER" ] || [ -n "$WORKFLOW_FILTER" ] || [ -n "$LOG_FILE_ARG" ]; then
     # Use query_errors with filters
     QUERY_ARGS=""
     [ -n "$COMMAND_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --command $COMMAND_FILTER"
     [ -n "$SINCE_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --since $SINCE_FILTER"
     [ -n "$TYPE_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --type $TYPE_FILTER"
     [ -n "$WORKFLOW_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --workflow-id $WORKFLOW_FILTER"
+    [ -n "$LOG_FILE_ARG" ] && QUERY_ARGS="$QUERY_ARGS --log-file $LOG_FILE_ARG"
     [ -n "$LIMIT" ] && QUERY_ARGS="$QUERY_ARGS --limit $LIMIT"
 
     # Query and format results
@@ -223,11 +238,18 @@ Time Range:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-## Log Location
+## Log Locations
 
-Error logs are stored at:
+Error logs are stored in environment-specific locations:
+
+**Production Log**:
 ```
 .claude/data/logs/errors.jsonl
 ```
 
-Log rotation occurs automatically at 10MB with 5 backup files retained.
+**Test Log**:
+```
+.claude/tests/logs/test-errors.jsonl
+```
+
+Log rotation occurs automatically at 10MB with 5 backup files retained for both logs. The system automatically routes errors based on execution context (test scripts in `.claude/tests/` → test log, all others → production log).

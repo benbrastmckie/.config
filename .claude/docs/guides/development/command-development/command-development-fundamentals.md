@@ -532,6 +532,130 @@ Use consistent terminology across all commands:
 
 ---
 
+## 4.5 Error Logging Integration
+
+All commands MUST integrate centralized error logging for queryable error tracking and cross-workflow debugging. This enables the `/errors` command to query error history and supports troubleshooting with `/repair`.
+
+### 4.5.1 Required Steps
+
+**Step 1: Source Error Handling Library**
+
+Early in command initialization (after LIB_DIR setup):
+
+```bash
+# Source error handling library
+source "$CLAUDE_LIB/core/error-handling.sh" 2>/dev/null || {
+  echo "Error: Cannot load error-handling library"
+  exit 1
+}
+```
+
+**Step 2: Set Workflow Metadata**
+
+After argument parsing:
+
+```bash
+# Set workflow metadata for error context
+COMMAND_NAME="/command-name"
+WORKFLOW_ID="workflow_$(date +%s)"
+USER_ARGS="$*"  # Capture original arguments
+```
+
+**Step 3: Initialize Error Log**
+
+Before any error logging calls:
+
+```bash
+# Ensure error log exists
+ensure_error_log_exists
+```
+
+**Step 4: Log Errors at All Error Points**
+
+Use `log_command_error()` at validation, file, and execution error points:
+
+```bash
+# Validation errors
+if [ -z "$required_arg" ]; then
+  log_command_error "validation_error" \
+    "Missing required argument: feature_description" \
+    "Command usage: /command <arg1> <arg2>"
+  exit 1
+fi
+
+# File errors
+if [ ! -f "$plan_path" ]; then
+  log_command_error "file_error" \
+    "Plan file not found: $plan_path" \
+    "Expected path from workflow initialization"
+  exit 1
+fi
+
+# Execution errors
+if ! some_critical_function; then
+  log_command_error "execution_error" \
+    "Critical function failed: some_critical_function" \
+    "Return code: $?"
+  exit 1
+fi
+```
+
+### 4.5.2 Error Types
+
+Use these standardized error types:
+
+| Error Type | Usage | Example |
+|------------|-------|---------|
+| `validation_error` | Input validation failures | Missing required argument |
+| `file_error` | File system operations failures | File not found, permission denied |
+| `state_error` | Workflow state persistence issues | State file corrupted |
+| `agent_error` | Subagent execution failures | Agent returned TASK_ERROR |
+| `parse_error` | Output parsing failures | Invalid JSON from agent |
+| `timeout_error` | Operation timeout errors | Network request timeout |
+| `execution_error` | General execution failures | Command failed with non-zero exit |
+| `dependency_error` | Missing or invalid dependencies | Required tool not installed |
+
+### 4.5.3 Parsing Subagent Errors
+
+If your command invokes agents, parse their error signals with `parse_subagent_error()`:
+
+```bash
+# After subagent execution
+agent_output=$(Task { ... })
+
+# Parse agent error signals
+if echo "$agent_output" | grep -q "TASK_ERROR:"; then
+  parse_subagent_error "$agent_output" "research-specialist"
+  exit 1
+fi
+```
+
+This automatically logs the agent error to the centralized log with full workflow context.
+
+### 4.5.4 Testing Error Logging Integration
+
+After implementing error logging:
+
+```bash
+# Test error logging works
+/command-name <invalid-args>  # Trigger error intentionally
+
+# Verify error logged
+/errors --command /command-name --limit 1
+
+# Check error details
+/errors --type validation_error --limit 5
+```
+
+### 4.5.5 References
+
+- [Error Handling Pattern](.claude/docs/concepts/patterns/error-handling.md) - Complete pattern documentation
+- [Error Handling API Reference](.claude/docs/reference/library-api/error-handling.md) - Function signatures
+- [Architecture Standard 17](.claude/docs/reference/architecture/error-handling.md#standard-17-centralized-error-logging-integration) - Requirement specification
+- [Errors Command Guide](.claude/docs/guides/commands/errors-command-guide.md) - Query interface
+
+---
+
 ## 5. Agent Integration
 
 ### 5.1 When Commands Use Agents

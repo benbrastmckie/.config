@@ -191,22 +191,6 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
-### doc-converter-usage
-**Purpose**: Demonstrates document conversion tool usage patterns
-
-**Capabilities**:
-- Example conversion workflows
-- Common conversion scenarios
-- Best practices for document conversion
-
-**Allowed Tools**: Read, Bash
-
-**Used By**: Internal documentation and examples
-
-**Definition**: [.claude/agents/doc-converter-usage.md](../../agents/doc-converter.md)
-
----
-
 ### implementer-coordinator
 **Purpose**: Multi-implementer coordination for parallel wave-based execution
 

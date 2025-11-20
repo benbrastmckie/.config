@@ -467,7 +467,7 @@ Core utilities for all subsystems:
 - Error analysis and complexity assessment
 - Progressive plan structure parsing
 
-**Location**: `lib/` | **See**: [lib/UTILS_README.md](lib/UTILS_README.md)
+**Location**: `lib/` | **See**: [lib/README.md](lib/README.md)
 **Neovim**: Browse via `<leader>ac` → [Lib] section
 
 ## Configuration
@@ -779,7 +779,7 @@ ls .claude/commands/ .claude/agents/ .claude/templates/
 - [data/](data/README.md) - Runtime logs and metrics (gitignored)
 - [docs/](docs/README.md) - Integration guides and standards
 - [hooks/](hooks/README.md) - Event automation scripts
-- [lib/](lib/UTILS_README.md) - Supporting utilities
+- [lib/](lib/README.md) - Supporting utilities
 - [specs/](specs/README.md) - Plans, reports, summaries (gitignored)
 - [templates/](templates/README.md) - Reusable workflow patterns
 - [tests/](tests/README.md) - System test suites

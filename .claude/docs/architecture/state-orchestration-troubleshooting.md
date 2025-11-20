@@ -70,7 +70,7 @@ fi
 **Solution**:
 ```bash
 # Check if state file exists
-STATE_FILE=".claude/state/workflow_${ID}.state"
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${ID}.sh"
 
 if [ ! -f "$STATE_FILE" ]; then
   echo "State file not found, starting fresh"
@@ -190,10 +190,10 @@ done
 
 ```bash
 # List state files
-ls -la .claude/state/
+ls -la .claude/tmp/workflow_*.sh
 
 # Show state file contents
-cat ".claude/state/workflow_${ID}.state"
+cat "${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${ID}.sh"
 
 # Check specific value
 load_workflow_state "PLAN_PATH"
@@ -289,7 +289,7 @@ save_checkpoint "coordinate" "$CHECKPOINT"
 **Fix**: Clean up old state files.
 ```bash
 # Remove old state files
-find .claude/state -name "*.state" -mtime +7 -delete
+find .claude/tmp -name "workflow_*.sh" -mtime +7 -delete
 ```
 
 ### Context Overflow

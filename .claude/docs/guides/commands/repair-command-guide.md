@@ -95,6 +95,89 @@ The `/repair` command provides an error analysis and repair planning workflow th
 
 ---
 
+## Complete Error Management Workflow
+
+The `/repair` command is part of a comprehensive error management lifecycle that bridges error discovery and systematic resolution. Understanding this workflow helps you leverage error logging for continuous improvement and proactive debugging.
+
+### Error Lifecycle Phases
+
+**1. Error Production (Automatic)**
+- Commands and agents automatically log errors via `log_command_error()`
+- Errors stored in `~/.claude/data/logs/errors.jsonl` with full context
+- No manual intervention required
+
+**2. Error Querying (/errors)**
+- View and filter logged errors by time, type, command, or severity
+- Generate summary reports to identify error patterns
+- Determine scope and priority for analysis
+
+**3. Error Analysis (/repair)**
+- Group errors by pattern and root cause using repair-analyst agent
+- Create comprehensive error analysis reports in `specs/{NNN_topic}/reports/`
+- Generate implementation plans with fix phases via plan-architect agent
+- Return plan path ready for execution
+
+**4. Fix Implementation (/build)**
+- Execute repair plans with automatic testing after each phase
+- Create git commits for completed fix phases
+- Handle failures via debugging workflow if needed
+
+**5. Verification (/errors)**
+- Query errors after fix implementation to confirm resolution
+- Validate error patterns no longer occur
+- Close the error management loop
+
+### Example Workflow
+
+Complete workflow from error discovery through resolution:
+
+```bash
+# Step 1: Discover error patterns
+/errors --since 24h --summary
+
+# Output shows multiple state_error and parse_error instances across commands
+
+# Step 2: Analyze specific error pattern (e.g., state errors)
+/repair --type state_error --complexity 3
+
+# Creates:
+# - specs/857_state_error_patterns/reports/001_state_error_analysis.md
+# - specs/857_state_error_patterns/plans/001_state_error_fix_plan.md
+
+# Step 3: Review plan before implementation
+# (Manual review of plan file to understand proposed fixes)
+
+# Step 4: Execute repair plan
+/build specs/857_state_error_patterns/plans/001_state_error_fix_plan.md
+
+# Step 5: Verify fixes resolved the errors
+/errors --type state_error --since 10m
+
+# Output: No errors found (confirmation)
+```
+
+### Integration Points
+
+- **Error Handling Pattern**: See [Error Handling Pattern](../../concepts/patterns/error-handling.md) for technical integration details
+- **Errors Command**: See [Errors Command Guide](errors-command-guide.md) for error querying and discovery workflow
+- **Build Command**: See [Build Command Guide](build-command-guide.md) for executing repair plans with testing
+
+### When to Use /repair vs /debug
+
+**Use /repair when**:
+- Multiple similar errors across different workflows
+- Error patterns suggest systematic issues (not one-off bugs)
+- You want automated analysis + fix plan generation
+- Working with logged errors from historical execution
+
+**Use /debug when**:
+- Single specific failure needs root cause analysis
+- Interactive debugging with file inspection required
+- Error not logged or needs immediate investigation
+- Working with current/live failures
+
+---
+
 ## Usage Examples
 
 ### Example 1: Analyze All Errors

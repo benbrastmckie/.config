@@ -226,6 +226,14 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh"
 # 3. Error handling
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh"
 
+# === INITIALIZE ERROR LOGGING ===
+ensure_error_log_exists
+
+# Set command metadata for error logging
+COMMAND_NAME="/revise"
+USER_ARGS="$REVISION_DETAILS"
+export COMMAND_NAME USER_ARGS
+
 # Verify library versions
 check_library_requirements "$(cat <<'EOF'
 workflow-state-machine.sh: ">=2.0.0"
@@ -251,6 +259,15 @@ export STATE_FILE
 
 # Validate state file creation
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to initialize workflow state file" \
+    "bash_block_3" \
+    "$(jq -n --arg path "${STATE_FILE:-UNDEFINED}" '{expected_path: $path}')"
+
   echo "ERROR: Failed to initialize workflow state" >&2
   exit 1
 fi
@@ -262,6 +279,16 @@ if ! sm_init \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
   "[]" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State machine initialization failed" \
+    "bash_block_3" \
+    "$(jq -n --arg type "$WORKFLOW_TYPE" --argjson complexity "$RESEARCH_COMPLEXITY" \
+       '{workflow_type: $type, complexity: $complexity}')"
+
   echo "ERROR: State machine initialization failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Revision Description: $REVISION_DESCRIPTION" >&2
@@ -288,6 +315,7 @@ set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
 STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
@@ -302,8 +330,84 @@ export WORKFLOW_ID
 # Load workflow state (subprocess isolation)
 load_workflow_state "$WORKFLOW_ID" false
 
+# === VALIDATE STATE AFTER LOAD ===
+DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
+
+if [ -z "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_4" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 4, research phase"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found at expected path" \
+    "bash_block_4" \
+    "$(jq -n --arg path "$STATE_FILE" '{expected_path: $path}')"
+
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 4, research phase"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+# Validate critical variables
+if [ -z "$EXISTING_PLAN_PATH" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Critical variable EXISTING_PLAN_PATH not restored after state load" \
+    "bash_block_4" \
+    "$(jq -n --arg var "EXISTING_PLAN_PATH" '{missing_variable: $var}')"
+
+  {
+    echo "[$(date)] ERROR: Critical variables not restored"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: EXISTING_PLAN_PATH missing after load"
+    echo "WHERE: Block 4, research phase"
+    echo "EXISTING_PLAN_PATH: ${EXISTING_PLAN_PATH:-MISSING}"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: Critical variables not restored (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to RESEARCH failed" \
+    "bash_block_4" \
+    "$(jq -n --arg state "RESEARCH" '{target_state: $state}')"
+
   echo "ERROR: State transition to RESEARCH failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
@@ -425,8 +529,84 @@ export WORKFLOW_ID
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "$WORKFLOW_ID" false
 
+# === VALIDATE STATE AFTER LOAD ===
+DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
+
+if [ -z "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_5" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 5, planning phase"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found at expected path" \
+    "bash_block_5" \
+    "$(jq -n --arg path "$STATE_FILE" '{expected_path: $path}')"
+
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 5, planning phase"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+# Validate critical variables
+if [ -z "$EXISTING_PLAN_PATH" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Critical variable EXISTING_PLAN_PATH not restored after state load" \
+    "bash_block_5" \
+    "$(jq -n --arg var "EXISTING_PLAN_PATH" '{missing_variable: $var}')"
+
+  {
+    echo "[$(date)] ERROR: Critical variables not restored"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: EXISTING_PLAN_PATH missing after load"
+    echo "WHERE: Block 5, planning phase"
+    echo "EXISTING_PLAN_PATH: ${EXISTING_PLAN_PATH:-MISSING}"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: Critical variables not restored (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
 # Transition to plan state with return code verification
 if ! sm_transition "$STATE_PLAN" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to PLAN failed" \
+    "bash_block_5" \
+    "$(jq -n --arg state "PLAN" '{target_state: $state}')"
+
   echo "ERROR: State transition to PLAN failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
@@ -566,12 +746,22 @@ export WORKFLOW_ID
 # Re-source required libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "$WORKFLOW_ID" false
 
 # Research-and-revise workflow: terminate after plan revision with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to COMPLETE failed" \
+    "bash_block_6" \
+    "$(jq -n --arg state "COMPLETE" '{target_state: $state}')"
+
   echo "ERROR: State transition to COMPLETE failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2

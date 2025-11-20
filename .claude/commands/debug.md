@@ -112,6 +112,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# === INITIALIZE ERROR LOGGING ===
+ensure_error_log_exists
+
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
   echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
@@ -140,12 +144,26 @@ mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
+# Set command metadata for error logging
+COMMAND_NAME="/debug"
+USER_ARGS="$ISSUE_DESCRIPTION"
+export COMMAND_NAME USER_ARGS
+
 # Capture state file path for append_workflow_state
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
 
 # Validate state file creation
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to initialize workflow state file" \
+    "bash_block_2" \
+    "$(jq -n --arg path "${STATE_FILE:-UNDEFINED}" '{expected_path: $path}')"
+
   echo "ERROR: Failed to initialize workflow state" >&2
   exit 1
 fi
@@ -157,6 +175,16 @@ if ! sm_init \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
   "[]" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State machine initialization failed" \
+    "bash_block_2" \
+    "$(jq -n --arg type "$WORKFLOW_TYPE" --argjson complexity "$RESEARCH_COMPLEXITY" \
+       '{workflow_type: $type, complexity: $complexity}')"
+
   echo "ERROR: State machine initialization failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Issue Description: $ISSUE_DESCRIPTION" >&2
@@ -208,6 +236,7 @@ set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 # Load WORKFLOW_ID from file
 STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
@@ -215,6 +244,51 @@ if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
+
+  # === VALIDATE STATE AFTER LOAD ===
+  DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+  mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
+
+  if [ -z "$STATE_FILE" ]; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "state_error" \
+      "State file path not set after load" \
+      "bash_block_2a" \
+      "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+    {
+      echo "[$(date)] ERROR: State file path not set"
+      echo "WHICH: load_workflow_state"
+      echo "WHAT: STATE_FILE variable empty after load"
+      echo "WHERE: Block 2a, classification verification"
+    } >> "$DEBUG_LOG"
+    echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+    exit 1
+  fi
+
+  if [ ! -f "$STATE_FILE" ]; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "file_error" \
+      "State file not found after load" \
+      "bash_block_2a" \
+      "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
+
+    {
+      echo "[$(date)] ERROR: State file not found"
+      echo "WHICH: load_workflow_state"
+      echo "WHAT: File does not exist at expected path"
+      echo "WHERE: Block 2a, classification verification"
+      echo "PATH: $STATE_FILE"
+    } >> "$DEBUG_LOG"
+    echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+    exit 1
+  fi
 fi
 
 # Parse CLASSIFICATION_COMPLETE from previous Task output
@@ -242,6 +316,7 @@ set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
@@ -250,10 +325,64 @@ if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
+
+  # === VALIDATE STATE AFTER LOAD ===
+  DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+  mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
+
+  if [ -z "$STATE_FILE" ]; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "state_error" \
+      "State file path not set after load" \
+      "bash_block_3" \
+      "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+    {
+      echo "[$(date)] ERROR: State file path not set"
+      echo "WHICH: load_workflow_state"
+      echo "WHAT: STATE_FILE variable empty after load"
+      echo "WHERE: Block 3, research phase setup"
+    } >> "$DEBUG_LOG"
+    echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+    exit 1
+  fi
+
+  if [ ! -f "$STATE_FILE" ]; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "file_error" \
+      "State file not found after load" \
+      "bash_block_3" \
+      "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
+
+    {
+      echo "[$(date)] ERROR: State file not found"
+      echo "WHICH: load_workflow_state"
+      echo "WHAT: File does not exist at expected path"
+      echo "WHERE: Block 3, research phase setup"
+      echo "PATH: $STATE_FILE"
+    } >> "$DEBUG_LOG"
+    echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+    exit 1
+  fi
 fi
 
 # Transition to research state with return code verification
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to RESEARCH failed" \
+    "bash_block_3" \
+    "$(jq -n --arg state "RESEARCH" '{target_state: $state}')"
+
   echo "ERROR: State transition to RESEARCH failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
@@ -419,12 +548,58 @@ set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# === VALIDATE STATE AFTER LOAD ===
+DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
+
+if [ -z "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_4" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 4, planning phase"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found after load" \
+    "bash_block_4" \
+    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
+
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 4, planning phase"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
 
 # Re-export state machine variables (restored by load_workflow_state)
 export CURRENT_STATE
@@ -435,6 +610,15 @@ export RESEARCH_TOPICS_JSON
 
 # Transition to plan state with return code verification
 if ! sm_transition "$STATE_PLAN" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to PLAN failed" \
+    "bash_block_4" \
+    "$(jq -n --arg state "PLAN" '{target_state: $state}')"
+
   echo "ERROR: State transition to PLAN failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
@@ -553,12 +737,58 @@ set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# === VALIDATE STATE AFTER LOAD ===
+DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
+
+if [ -z "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_5" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 5, debug phase"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found after load" \
+    "bash_block_5" \
+    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
+
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 5, debug phase"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
 
 # Re-export state machine variables (restored by load_workflow_state)
 export CURRENT_STATE
@@ -569,6 +799,15 @@ export RESEARCH_TOPICS_JSON
 
 # Transition to debug state with return code verification
 if ! sm_transition "$STATE_DEBUG" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to DEBUG failed" \
+    "bash_block_5" \
+    "$(jq -n --arg state "DEBUG" '{target_state: $state}')"
+
   echo "ERROR: State transition to DEBUG failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2
@@ -664,12 +903,58 @@ set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 5 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# === VALIDATE STATE AFTER LOAD ===
+DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
+
+if [ -z "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_6" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 6, completion phase"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found after load" \
+    "bash_block_6" \
+    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
+
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 6, completion phase"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
 
 # Re-export state machine variables (restored by load_workflow_state)
 export CURRENT_STATE
@@ -680,6 +965,15 @@ export RESEARCH_TOPICS_JSON
 
 # Debug-only workflow: terminate after debug phase with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to COMPLETE failed" \
+    "bash_block_6" \
+    "$(jq -n --arg state "COMPLETE" '{target_state: $state}')"
+
   echo "ERROR: State transition to COMPLETE failed" >&2
   echo "DIAGNOSTIC Information:" >&2
   echo "  - Current State: $(sm_current_state 2>/dev/null || echo 'unknown')" >&2

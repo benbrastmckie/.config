@@ -284,7 +284,7 @@ create_cross_reference() {
 ```bash
 init_state_file() {
   local id="$1"
-  STATE_FILE=".claude/state/workflow_${id}.state"
+  STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${id}.sh"
 
   echo "WORKFLOW_ID=$id" > "$STATE_FILE"
   echo "CREATED_AT=$(date -Iseconds)" >> "$STATE_FILE"

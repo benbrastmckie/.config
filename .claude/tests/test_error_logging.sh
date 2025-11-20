@@ -72,8 +72,8 @@ assert_not_empty() {
 
 # Setup: Create clean test log
 setup() {
-  mkdir -p "${CLAUDE_PROJECT_DIR}/.claude/data/logs"
-  echo "" > "${CLAUDE_PROJECT_DIR}/.claude/data/logs/errors.jsonl"
+  mkdir -p "${CLAUDE_PROJECT_DIR}/.claude/tests/logs"
+  echo "" > "${CLAUDE_PROJECT_DIR}/.claude/tests/logs/test-errors.jsonl"
 }
 
 # Test 1: log_command_error creates valid JSONL entry
@@ -91,7 +91,7 @@ test_log_command_error() {
 
   # Verify entry was added
   local line_count
-  line_count=$(wc -l < "${CLAUDE_PROJECT_DIR}/.claude/data/logs/errors.jsonl")
+  line_count=$(wc -l < "${CLAUDE_PROJECT_DIR}/.claude/tests/logs/test-errors.jsonl")
 
   # Should have at least 1 line (may have extra from setup)
   if [ "$line_count" -ge 1 ]; then
@@ -104,7 +104,7 @@ test_log_command_error() {
 
   # Verify JSON is valid
   local last_entry
-  last_entry=$(tail -1 "${CLAUDE_PROJECT_DIR}/.claude/data/logs/errors.jsonl")
+  last_entry=$(tail -1 "${CLAUDE_PROJECT_DIR}/.claude/tests/logs/test-errors.jsonl")
 
   if echo "$last_entry" | jq empty 2>/dev/null; then
     echo "PASS: Entry is valid JSON"
@@ -126,6 +126,10 @@ test_log_command_error() {
   local workflow_id_val
   workflow_id_val=$(echo "$last_entry" | jq -r '.workflow_id')
   assert_equals "build_test_123" "$workflow_id_val" "Workflow ID field correct"
+
+  local environment_val
+  environment_val=$(echo "$last_entry" | jq -r '.environment')
+  assert_equals "test" "$environment_val" "Environment field correct"
 }
 
 # Test 2: parse_subagent_error extracts error info
@@ -276,6 +280,9 @@ test_recent_errors
 test_error_summary
 test_error_type_constants
 test_get_error_context
+
+# Cleanup: Remove test log file
+rm -f "${CLAUDE_PROJECT_DIR}/.claude/tests/logs/test-errors.jsonl"
 
 echo ""
 echo "========================================"
