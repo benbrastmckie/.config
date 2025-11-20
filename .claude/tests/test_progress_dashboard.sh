@@ -20,7 +20,7 @@ declare -a FAILED_TESTS=()
 
 # Source the progress dashboard utility
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/progress-dashboard.sh"
+source "$SCRIPT_DIR/../lib/util/progress-dashboard.sh"
 
 # Helper function to run a test
 run_test() {

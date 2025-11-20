@@ -53,7 +53,7 @@ else
 fi
 
 # Locate the library
-LIB_FILE="$SCRIPT_DIR/../lib/workflow-state-machine.sh"
+LIB_FILE="$SCRIPT_DIR/../lib/workflow/workflow-state-machine.sh"
 if [ ! -f "$LIB_FILE" ]; then
   echo "ERROR: Cannot find workflow-state-machine.sh at $LIB_FILE"
   exit 1

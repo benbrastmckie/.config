@@ -170,7 +170,7 @@ get_pruning_statistics <workflow_id>
 export_pruning_report <output_path>
 ```
 
-See [Command Architecture Standards - Standard 8](../reference/command_architecture_standards.md#standard-8) for complete context pruning specifications.
+See [Command Architecture Standards - Standard 8](../reference/architecture/overview.md#standard-8) for complete context pruning specifications.
 
 ---
 

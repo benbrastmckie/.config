@@ -370,7 +370,7 @@ Rationale:
 
 **When tasks are completed across hierarchy levels**:
 
-Checkbox utilities are available via `.claude/lib/checkbox-utils.sh` for systematic hierarchy updates.
+Checkbox utilities are available via `.claude/lib/plan/checkbox-utils.sh` for systematic hierarchy updates.
 
 **Functions**:
 - `update_checkbox <file> <task_pattern> <new_state>` - Update single checkbox with fuzzy matching
@@ -382,7 +382,7 @@ Checkbox utilities are available via `.claude/lib/checkbox-utils.sh` for systema
 
 1. **Update deepest level first** (stage file if Level 2):
    ```bash
-   source .claude/lib/checkbox-utils.sh
+   source .claude/lib/plan/checkbox-utils.sh
    update_checkbox "stage_2_backend.md" "Create API endpoints" "x"
    ```
 
@@ -431,7 +431,7 @@ Task {
     All tasks in this phase have been completed successfully.
 
     Steps:
-    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    1. Source checkbox utilities: source .claude/lib/plan/checkbox-utils.sh
     2. Mark phase complete: mark_phase_complete "${PLAN_PATH}" ${PHASE_NUM}
     3. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" ${PHASE_NUM}
     4. Report: List all files updated (stage → phase → main plan)
@@ -480,7 +480,7 @@ Task {
     All phases have been completed successfully.
 
     Steps:
-    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    1. Source checkbox utilities: source .claude/lib/plan/checkbox-utils.sh
     2. Detect structure level: detect_structure_level "${PLAN_PATH}"
     3. For each completed phase: mark_phase_complete "${PLAN_PATH}" ${phase_num}
     4. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" (all phases)
@@ -518,7 +518,7 @@ Verification:
 **1. Checkbox Utility Not Found**:
 ```bash
 # Detection
-if [ ! -f ".claude/lib/checkbox-utils.sh" ]; then
+if [ ! -f ".claude/lib/plan/checkbox-utils.sh" ]; then
   echo "ERROR: checkbox-utils.sh not found" >&2
   echo "ERROR: Cannot update plan hierarchy" >&2
   exit 1
@@ -598,7 +598,7 @@ type mark_phase_complete
 **Solution**:
 ```bash
 # Manually propagate updates
-source .claude/lib/checkbox-utils.sh
+source .claude/lib/plan/checkbox-utils.sh
 mark_phase_complete "$PLAN_PATH" "$PHASE_NUM"
 verify_checkbox_consistency "$PLAN_PATH" "$PHASE_NUM"
 ```
@@ -710,7 +710,7 @@ propagate_checkbox_update "$PLAN_PATH" "$PHASE_NUM" "$TASK_PATTERN" "x"
 
 1. **Check utility availability**:
    ```bash
-   source .claude/lib/checkbox-utils.sh
+   source .claude/lib/plan/checkbox-utils.sh
    type update_checkbox
    type mark_phase_complete
    ```

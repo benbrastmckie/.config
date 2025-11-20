@@ -3,7 +3,7 @@
 
 set -e
 
-CONFIG_FILE=".claude/config/markdown-link-check.json"
+CONFIG_FILE=".claude/scripts/markdown-link-check.json"
 DAYS="${1:-7}"  # Default: files modified in last 7 days
 
 echo "Quick Link Validation (files modified in last $DAYS days)"

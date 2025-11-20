@@ -140,7 +140,7 @@ Architectural decisions, complex debugging, semantic analysis:
 - Troubleshooting failures
 - Understanding error messages
 - Investigating performance issues
-- Creating debug reports during /orchestrate debugging loop
+- Creating debug reports during debugging loops
 
 ---
 
@@ -176,7 +176,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Design implementation plans from requirements
 **Model**: opus-4.1 (architectural decisions)
 
-**Used By Commands**: /plan, /revise, /coordinate, /debug
+**Used By Commands**: /plan, /revise, /debug
 
 **Capabilities**:
 - Requirements analysis
@@ -202,7 +202,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Conduct research and generate comprehensive reports
 **Model**: sonnet-4.5 (complex reasoning and research)
 
-**Used By Commands**: /plan, /research, /revise, /coordinate, /debug
+**Used By Commands**: /plan, /research, /revise, /debug
 
 **Capabilities**:
 - Technology investigation
@@ -212,10 +212,10 @@ Architectural decisions, complex debugging, semantic analysis:
 - Report writing
 - Direct report file creation in `specs/reports/{topic}/`
 - Topic-based organization with incremental numbering
-- Integration with /orchestrate research phase
+- Integration with research phases in workflows
 
 **Dependencies**:
-- Libraries: `.claude/lib/unified-location-detection.sh`
+- Libraries: `.claude/lib/core/unified-location-detection.sh`
 
 **Allowed Tools**: Read, Write, Grep, Glob, WebSearch
 
@@ -279,7 +279,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Wave-based parallel phase execution orchestration
 **Model**: haiku-4.5 (deterministic coordination)
 
-**Used By Commands**: /build, /coordinate
+**Used By Commands**: /build
 
 **Capabilities**:
 - Dependency analysis and wave structure building
@@ -338,7 +338,7 @@ Architectural decisions, complex debugging, semantic analysis:
 - Status marker placement
 
 **Dependencies**:
-- Libraries: `.claude/lib/checkbox-utils.sh`
+- Libraries: `.claude/lib/plan/checkbox-utils.sh`
 
 **Allowed Tools**: Read, Write, Edit, Bash
 
@@ -362,7 +362,7 @@ Architectural decisions, complex debugging, semantic analysis:
 - Optimization recommendations
 
 **Dependencies**:
-- Libraries: `.claude/lib/unified-location-detection.sh`, `.claude/lib/optimize-claude-md.sh`
+- Libraries: `.claude/lib/core/unified-location-detection.sh`, `.claude/lib/util/optimize-claude-md.sh`
 
 **Allowed Tools**: Read, Grep, Glob, Bash
 
@@ -386,7 +386,7 @@ Architectural decisions, complex debugging, semantic analysis:
 - Reorganization recommendations
 
 **Dependencies**:
-- Libraries: `.claude/lib/unified-location-detection.sh`
+- Libraries: `.claude/lib/core/unified-location-detection.sh`
 
 **Allowed Tools**: Read, Grep, Glob, Bash
 
@@ -410,7 +410,7 @@ Architectural decisions, complex debugging, semantic analysis:
 - Bloat severity scoring
 
 **Dependencies**:
-- Libraries: `.claude/lib/unified-location-detection.sh`
+- Libraries: `.claude/lib/core/unified-location-detection.sh`
 
 **Allowed Tools**: Read, Grep, Glob, Bash
 
@@ -434,7 +434,7 @@ Architectural decisions, complex debugging, semantic analysis:
 - Update recommendations
 
 **Dependencies**:
-- Libraries: `.claude/lib/unified-location-detection.sh`
+- Libraries: `.claude/lib/core/unified-location-detection.sh`
 
 **Allowed Tools**: Read, Grep, Glob, Bash
 
@@ -458,7 +458,7 @@ Architectural decisions, complex debugging, semantic analysis:
 - Risk evaluation
 
 **Dependencies**:
-- Libraries: `.claude/lib/unified-location-detection.sh`
+- Libraries: `.claude/lib/core/unified-location-detection.sh`
 
 **Allowed Tools**: Read, Write, Grep, Glob
 
@@ -482,7 +482,7 @@ Architectural decisions, complex debugging, semantic analysis:
 - Risk classification
 
 **Dependencies**:
-- Libraries: `.claude/lib/state-persistence.sh`
+- Libraries: `.claude/lib/core/state-persistence.sh`
 
 **Allowed Tools**: None
 
@@ -821,8 +821,8 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 ### Related
 - [← Parent Directory](../README.md)
 - [commands/](../commands/README.md) - Commands that use agents
-- [docs/guides/using-agents.md](../docs/guides/using-agents.md) - Integration guide
-- [docs/guides/agent-development-guide.md](../docs/guides/agent-development-guide.md) - Development guide
+- [docs/archive/guides/using-agents.md](../docs/archive/guides/using-agents.md) - Integration guide (archived)
+- [docs/guides/development/agent-development/agent-development-fundamentals.md](../docs/guides/development/agent-development/agent-development-fundamentals.md) - Development guide
 
 ## Examples
 

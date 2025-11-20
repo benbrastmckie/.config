@@ -479,7 +479,6 @@ Result: All files present, workflow completes successfully
 
 ## See Also
 
-- [Testing Patterns Guide](../../guides/testing-patterns.md) - File creation testing strategies
-- [Migration Validation Guide](../../guides/migration-validation.md) - How to validate 100% file creation
-- [Command Architecture Standards](../../reference/command_architecture_standards.md) - Standard 0 requirements
-- [Creating Commands Guide](../../guides/command-development-guide.md) - Implementation best practices
+- [Testing Patterns Guide](../../guides/patterns/testing-patterns.md) - File creation testing strategies
+- [Command Architecture Standards](../../reference/architecture/overview.md) - Standard 0 requirements and validation
+- [Creating Commands Guide](../../guides/development/command-development/command-development-fundamentals.md) - Implementation best practices

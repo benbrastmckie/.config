@@ -143,7 +143,7 @@ if [[ $BEFORE_EMPTY_COUNT -ge 0 && -d "$SPECS_DIR" ]]; then
         done
         echo ""
         echo "This indicates test isolation failure. Tests must use CLAUDE_SPECS_ROOT override."
-        echo "See: .claude/docs/reference/test-isolation-standards.md"
+        echo "See: .claude/docs/reference/standards/test-isolation.md"
         echo ""
         FAILED_TESTS=$((FAILED_TESTS + 1))
     else

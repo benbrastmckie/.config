@@ -136,8 +136,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - `verify_artifact_or_recover(expected_path, topic_slug)` - Verify artifact with path recovery
 
 - **Comprehensive Documentation** (#002_report_creation):
-  - `.claude/docs/guides/agent-authoring-guide.md` - Complete guide for creating agent behavioral files (7 sections, anti-patterns, correct patterns, cross-reference requirements)
-  - `.claude/docs/guides/command-authoring-guide.md` - Complete guide for commands invoking agents (8 sections, topic-based paths, Task tool templates)
+  - `.claude/docs/guides/development/agent-development/agent-development-fundamentals.md` - Complete guide for creating agent behavioral files (7 sections, anti-patterns, correct patterns, cross-reference requirements)
+  - `.claude/docs/guides/development/command-development/command-development-fundamentals.md` - Complete guide for commands invoking agents (8 sections, topic-based paths, Task tool templates)
   - `.claude/docs/troubleshooting/agent-delegation-issues.md` - Troubleshooting guide with 5 common issues (symptoms, diagnosis, solutions)
   - `.claude/docs/examples/behavioral-injection-workflow.md` - Complete workflow example
   - `.claude/docs/examples/correct-agent-invocation.md` - Task tool invocation examples
@@ -222,7 +222,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 3. Inject paths via prompt, not via slash commands
 4. Extract metadata only (not full content) using `extract_report_metadata()`, `extract_plan_metadata()`
 5. Include cross-references when required (plan-architect, doc-writer)
-6. See [Command Authoring Guide](.claude/docs/guides/command-authoring-guide.md)
+6. See [Command Authoring Guide](.claude/docs/guides/development/command-development/command-development-fundamentals.md)
 
 **For Agent Authors**:
 1. NEVER use SlashCommand tool for artifact creation
@@ -230,7 +230,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 3. Return metadata only (path + summary + findings)
 4. Use Write/Read/Edit tools for file operations
 5. Include cross-references when required (plan-architect, doc-writer)
-6. See [Agent Authoring Guide](.claude/docs/guides/agent-authoring-guide.md)
+6. See [Agent Authoring Guide](.claude/docs/guides/development/agent-development/agent-development-fundamentals.md)
 
 **For Troubleshooting**:
 - See [Troubleshooting Guide](.claude/docs/troubleshooting/agent-delegation-issues.md)

@@ -21,6 +21,14 @@ export HOME="${HOME:-/home/$(whoami)}"
 # Create temp directory
 mkdir -p "${CLAUDE_PROJECT_DIR}/.claude/tmp"
 
+# Pre-flight check - coordinate.md was archived
+COORDINATE_CMD="${SCRIPT_DIR}/../commands/coordinate.md"
+if [ ! -f "$COORDINATE_CMD" ]; then
+  echo "SKIP: coordinate.md not found (was archived)"
+  echo "This test validates coordinate.md state file consistency."
+  exit 0  # Exit successfully to indicate skip
+fi
+
 # Test 1: Verify coordinate.md uses CLAUDE_PROJECT_DIR for state ID file
 echo "Test 1: coordinate.md uses CLAUDE_PROJECT_DIR for state ID file..."
 test_count=$((test_count + 1))

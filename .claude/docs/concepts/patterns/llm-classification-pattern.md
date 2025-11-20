@@ -487,12 +487,12 @@ echo "Detected scope: $scope"  # Works for LLM and regex results
 
 - [Implementation Plan](../../specs/670_workflow_classification_improvement/plans/001_hybrid_classification_implementation.md) - Complete implementation history
 - [Architecture Report](../../specs/670_workflow_classification_improvement/reports/003_implementation_architecture.md) - Technical design decisions
-- [Library API Reference](../../reference/library-api.md) - API documentation
+- [Library API Reference](../../reference/library-api/overview.md) - API documentation
 
 ### Related Standards
 
-- [Standard 13: Project Directory Detection](../../reference/command_architecture_standards.md#standard-13) - CLAUDE_PROJECT_DIR usage
-- [Standard 14: Executable/Documentation Separation](../../reference/command_architecture_standards.md#standard-14) - Documentation pattern
+- [Standard 13: Project Directory Detection](../../reference/architecture/overview.md#standard-13) - CLAUDE_PROJECT_DIR usage
+- [Standard 14: Executable/Documentation Separation](../../reference/architecture/overview.md#standard-14) - Documentation pattern
 - [Bash Block Execution Model](../bash-block-execution-model.md) - Subprocess isolation patterns
 
 ## Changelog

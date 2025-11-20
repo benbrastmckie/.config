@@ -3,7 +3,7 @@
 #
 # PURPOSE:
 #   Validates all command files against the 16 architectural standards defined in
-#   .claude/docs/reference/command_architecture_standards.md
+#   .claude/docs/reference/architecture/overview.md
 #
 # USAGE:
 #   ./test_command_standards_compliance.sh [command.md]

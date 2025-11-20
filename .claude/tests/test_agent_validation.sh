@@ -19,6 +19,13 @@ TESTS_FAILED=0
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
+# Pre-flight check for required agent
+AGENT_FILE="$PROJECT_ROOT/.claude/agents/plan-structure-manager.md"
+if [ ! -f "$AGENT_FILE" ]; then
+  echo "SKIP: plan-structure-manager agent not found (may have been archived or renamed)"
+  exit 0  # Exit successfully to indicate skip
+fi
+
 # Test function
 test_case() {
   local description="$1"

@@ -8,7 +8,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source the library under test
-source "$SCRIPT_DIR/../lib/git-commit-utils.sh"
+source "$SCRIPT_DIR/../lib/util/git-commit-utils.sh"
 
 # Test counters
 TESTS_RUN=0

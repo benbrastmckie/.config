@@ -68,7 +68,7 @@ To create a new template:
 5. Add testing and validation steps
 6. Document in this README
 
-See [Command Development Guide](../../docs/guides/command-development-guide.md) for template development guidelines.
+See [Command Development Guide](../../docs/guides/development/command-development/command-development-fundamentals.md) for template development guidelines.
 
 ## Related Documentation
 

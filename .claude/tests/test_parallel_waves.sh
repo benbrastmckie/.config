@@ -5,7 +5,7 @@ set -euo pipefail
 
 # Check if parse-phase-dependencies.sh exists
 # This script was removed in Phase 1 refactor (commit 6f03824) as dead code
-if [ ! -f ".claude/lib/parse-phase-dependencies.sh" ]; then
+if [ ! -f ".claude/.claude/archive/lib/parse-phase-dependencies.sh" ]; then
   echo "SKIP: parse-phase-dependencies.sh was removed (wave generation functionality deprecated)"
   echo "This test validates functionality that is no longer part of the system."
   exit 0
@@ -51,7 +51,7 @@ dependencies: [1]
 dependencies: [2]
 EOF
 
-  WAVES=$(.claude/lib/parse-phase-dependencies.sh "$TEST_DIR/simple_plan.md")
+  WAVES=$(.claude/.claude/archive/lib/parse-phase-dependencies.sh "$TEST_DIR/simple_plan.md")
 
   # Expected output: 3 waves, one phase each
   local expected="WAVE_1:1"$'\n'"WAVE_2:2"$'\n'"WAVE_3:3"
@@ -83,7 +83,7 @@ dependencies: [1]
 dependencies: [2, 3]
 EOF
 
-  WAVES=$(.claude/lib/parse-phase-dependencies.sh "$TEST_DIR/parallel_plan.md")
+  WAVES=$(.claude/.claude/archive/lib/parse-phase-dependencies.sh "$TEST_DIR/parallel_plan.md")
 
   # Wave 2 should contain phases 2 and 3 in parallel
   if echo "$WAVES" | grep -q "WAVE_2:2 3"; then
@@ -116,7 +116,7 @@ dependencies: [1]
 dependencies: [2, 3, 4]
 EOF
 
-  WAVES=$(.claude/lib/parse-phase-dependencies.sh "$TEST_DIR/complex_plan.md")
+  WAVES=$(.claude/.claude/archive/lib/parse-phase-dependencies.sh "$TEST_DIR/complex_plan.md")
 
   # Wave 2 should contain phases 2, 3, and 4 in parallel
   # Wave 3 should contain phase 5
@@ -141,7 +141,7 @@ dependencies: [2]
 dependencies: [1]
 EOF
 
-  WAVES=$(.claude/lib/parse-phase-dependencies.sh "$TEST_DIR/circular_plan.md" 2>&1 || true)
+  WAVES=$(.claude/.claude/archive/lib/parse-phase-dependencies.sh "$TEST_DIR/circular_plan.md" 2>&1 || true)
 
   # Should detect circular dependency
   if echo "$WAVES" | grep -q "ERROR: Circular dependency"; then
@@ -168,7 +168,7 @@ dependencies: []
 dependencies: []
 EOF
 
-  WAVES=$(.claude/lib/parse-phase-dependencies.sh "$TEST_DIR/no_deps_plan.md")
+  WAVES=$(.claude/.claude/archive/lib/parse-phase-dependencies.sh "$TEST_DIR/no_deps_plan.md")
 
   # All phases should be in wave 1
   if echo "$WAVES" | grep -q "WAVE_1:1 2 3"; then
@@ -192,7 +192,7 @@ dependencies: []
 dependencies: [1, 99]
 EOF
 
-  WAVES=$(.claude/lib/parse-phase-dependencies.sh "$TEST_DIR/missing_dep_plan.md" 2>&1 || true)
+  WAVES=$(.claude/.claude/archive/lib/parse-phase-dependencies.sh "$TEST_DIR/missing_dep_plan.md" 2>&1 || true)
 
   # Should detect missing phase reference
   # Note: Current implementation may not catch this - test documents expected behavior

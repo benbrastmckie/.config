@@ -80,7 +80,7 @@ test_library_sourcing() {
   run_test "Library can be sourced without errors"
 
   # Source in subshell to avoid polluting test environment
-  if (source "$PROJECT_ROOT/.claude/lib/workflow-init.sh" 2>&1); then
+  if (source "$PROJECT_ROOT/lib/workflow/workflow-init.sh" 2>&1); then
     pass "Library sourced successfully"
   else
     fail "Library sourcing failed"
@@ -92,8 +92,8 @@ test_source_guard() {
 
   # Source twice and check it doesn't error
   if (
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     [ "$WORKFLOW_INIT_VERSION" = "1.0.0" ]
   ); then
     pass "Source guard works correctly"
@@ -107,7 +107,7 @@ test_init_workflow_creates_state() {
 
   local output
   output=$(
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     init_workflow "test" "test description" "research-only" 2
     echo "WORKFLOW_ID=$WORKFLOW_ID"
     echo "STATE_FILE=$STATE_FILE"
@@ -129,7 +129,7 @@ test_init_workflow_summary_line() {
 
   local output
   output=$(
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     init_workflow "test" "test description" "research-only" 2 2>&1
   )
 
@@ -145,7 +145,7 @@ test_init_workflow_missing_args() {
 
   local exit_code=0
   (
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     init_workflow "" "" 2>/dev/null
   ) || exit_code=$?
 
@@ -160,7 +160,7 @@ test_init_workflow_state_id_file() {
   run_test "init_workflow creates state ID file for subprocess recovery"
 
   (
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     init_workflow "testcmd" "test description" "research-only" 2
   ) >/dev/null 2>&1
 
@@ -185,14 +185,14 @@ test_load_workflow_context() {
 
   # Initialize workflow
   (
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     init_workflow "loadtest" "test description" "research-only" 2
   ) >/dev/null 2>&1
 
   # Load context in new subshell
   local output
   output=$(
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     load_workflow_context "loadtest"
     echo "WORKFLOW_ID=$WORKFLOW_ID"
     echo "CLAUDE_PROJECT_DIR=$CLAUDE_PROJECT_DIR"
@@ -213,7 +213,7 @@ test_load_workflow_context_missing_state() {
 
   local exit_code=0
   (
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     load_workflow_context "nonexistent" 2>/dev/null
   ) || exit_code=$?
 
@@ -229,7 +229,7 @@ test_workflow_error_output() {
 
   local output
   output=$(
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     workflow_error "Test error" "Test diagnostic" 2>&1
   )
 
@@ -249,7 +249,7 @@ test_exports_available() {
 
   local output
   output=$(
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     declare -F | grep -E "init_workflow|load_workflow_context|finalize_workflow|workflow_error" | wc -l
   )
 
@@ -264,7 +264,7 @@ test_debug_log_creation() {
   run_test "Debug log is created during init"
 
   (
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     init_workflow "debugtest" "test description" "research-only" 2
   ) >/dev/null 2>&1
 
@@ -289,7 +289,7 @@ test_workflow_type_default() {
 
   local output
   output=$(
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     # Call without workflow_type argument
     init_workflow "defaulttest" "test description" 2>&1
   )
@@ -310,7 +310,7 @@ test_complexity_default() {
 
   local output
   output=$(
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     init_workflow "complextest" "test description" "research-only" 2>&1
   )
 
@@ -329,7 +329,7 @@ test_state_persistence_variables() {
 
   # Initialize workflow
   (
-    source "$PROJECT_ROOT/.claude/lib/workflow-init.sh"
+    source "$PROJECT_ROOT/lib/workflow/workflow-init.sh"
     init_workflow "persisttest" "my test workflow" "research-only" 3
   ) >/dev/null 2>&1
 

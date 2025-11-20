@@ -393,7 +393,7 @@ generate_context_report "$WORKFLOW_ID"
 - `.claude/lib/checkpoint-utils.sh` - Checkpoint-based state management
 
 **Related Patterns**:
-- [Hierarchical Supervision](../architecture/state-based-orchestration-overview.md) - Scalability for >4 agents
+- [Hierarchical Supervision](../../architecture/state-based-orchestration-overview.md) - Scalability for >4 agents
 - [Metadata Extraction Pattern](metadata-extraction.md) - Condensing agent outputs
 - [Forward Message Pattern](forward-message.md) - Zero-cost metadata passing
 
@@ -469,7 +469,7 @@ Cannot selectively prune - must keep everything or lose critical context
 
 ## See Also
 
-- [Performance Measurement Guide](../../guides/performance-optimization.md) - Measuring context usage
+- [Performance Measurement Guide](../../guides/patterns/performance-optimization.md) - Measuring context usage
 - [Hierarchical Agents Guide](../hierarchical-agents.md) - Multi-agent context strategies
 - `.claude/lib/context-pruning.sh` - Pruning utilities
 - `.claude/lib/unified-logger.sh` - Efficient logging with minimal context impact

@@ -491,7 +491,7 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
 fi
 
 # Load state persistence library
-source "$CLAUDE_PROJECT_DIR/.claude/lib/state-persistence.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/core/state-persistence.sh"
 
 # Load workflow state ID (plan command saves to plan_state_id.txt)
 PLAN_STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"

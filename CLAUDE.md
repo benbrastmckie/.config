@@ -60,21 +60,21 @@ See [Directory Protocols](.claude/docs/concepts/directory-protocols.md) for comp
 ## Testing Protocols
 [Used by: /test, /test-all, /implement]
 
-See [Testing Protocols](.claude/docs/reference/testing-protocols.md) for complete test discovery, patterns, coverage requirements, and isolation standards.
+See [Testing Protocols](.claude/docs/reference/standards/testing-protocols.md) for complete test discovery, patterns, coverage requirements, and isolation standards.
 <!-- END_SECTION: testing_protocols -->
 
 <!-- SECTION: code_standards -->
 ## Code Standards
 [Used by: /implement, /refactor, /plan]
 
-See [Code Standards](.claude/docs/reference/code-standards.md) for complete coding conventions, language-specific standards, architectural requirements, and link conventions.
+See [Code Standards](.claude/docs/reference/standards/code-standards.md) for complete coding conventions, language-specific standards, architectural requirements, and link conventions.
 <!-- END_SECTION: code_standards -->
 
 <!-- SECTION: output_formatting -->
 ## Output Formatting Standards
-[Used by: /implement, /build, /coordinate, all commands and agents]
+[Used by: /implement, /build, all commands and agents]
 
-See [Output Formatting Standards](.claude/docs/reference/output-formatting-standards.md) for output suppression patterns, block consolidation rules, and comment standards (WHAT not WHY).
+See [Output Formatting Standards](.claude/docs/reference/standards/output-formatting.md) for output suppression patterns, block consolidation rules, and comment standards (WHAT not WHY).
 
 **Quick Reference**:
 - Suppress library sourcing with `2>/dev/null` while preserving error handling
@@ -110,26 +110,26 @@ See [Adaptive Planning Guide](.claude/docs/workflows/adaptive-planning-guide.md)
 ## Adaptive Planning Configuration
 [Used by: /plan, /expand, /implement, /revise]
 
-See [Adaptive Planning Configuration](.claude/docs/reference/adaptive-planning-config.md) for complexity thresholds, threshold adjustment guidelines, and configuration ranges.
+See [Adaptive Planning Configuration](.claude/docs/reference/standards/adaptive-planning.md) for complexity thresholds, threshold adjustment guidelines, and configuration ranges.
 <!-- END_SECTION: adaptive_planning_config -->
 
 <!-- SECTION: development_workflow -->
 ## Development Workflow
-[Used by: /implement, /plan, /coordinate]
+[Used by: /implement, /plan, /build]
 
 See [Development Workflow](.claude/docs/concepts/development-workflow.md) for complete workflow documentation with spec updater details.
 <!-- END_SECTION: development_workflow -->
 
 <!-- SECTION: hierarchical_agent_architecture -->
 ## Hierarchical Agent Architecture
-[Used by: /coordinate, /implement, /plan, /debug]
+[Used by: /build, /implement, /plan, /debug]
 
 See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical-agents.md) for complete patterns, utilities, templates, and troubleshooting.
 <!-- END_SECTION: hierarchical_agent_architecture -->
 
 <!-- SECTION: state_based_orchestration -->
 ## State-Based Orchestration Architecture
-[Used by: /coordinate, custom orchestrators]
+[Used by: /build, custom orchestrators]
 
 See [State-Based Orchestration Overview](.claude/docs/architecture/state-based-orchestration-overview.md) for complete architecture, migration guide, and performance metrics.
 <!-- END_SECTION: state_based_orchestration -->
@@ -145,14 +145,14 @@ See [Duplicate Commands Troubleshooting](.claude/docs/troubleshooting/duplicate-
 ## Project-Specific Commands
 [Used by: all commands, /help]
 
-See [Command Reference](.claude/docs/reference/command-reference.md) for complete catalog of slash commands with syntax and examples.
+See [Command Reference](.claude/docs/reference/standards/command-reference.md) for complete catalog of slash commands with syntax and examples.
 <!-- END_SECTION: project_commands -->
 
 <!-- SECTION: quick_reference -->
 ## Quick Reference
 [Used by: all commands]
 
-See [Quick Reference](.claude/docs/quick-reference/README.md) for common tasks, setup utilities, command/agent references, and navigation links.
+See [Decision Trees](.claude/docs/reference/decision-trees/README.md) for decision flowcharts, and [Reference Documentation](.claude/docs/reference/README.md) for command/agent references and navigation links.
 <!-- END_SECTION: quick_reference -->
 
 <!-- SECTION: documentation_policy -->

@@ -7,8 +7,8 @@ set -eo pipefail
 # Setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-source "$PROJECT_ROOT/lib/checkpoint-utils.sh"
-source "$PROJECT_ROOT/lib/workflow-state-machine.sh"
+source "$PROJECT_ROOT/lib/workflow/checkpoint-utils.sh"
+source "$PROJECT_ROOT/lib/workflow/workflow-state-machine.sh"
 
 TESTS_RUN=0
 TESTS_PASSED=0

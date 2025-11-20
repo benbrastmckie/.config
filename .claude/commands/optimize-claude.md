@@ -26,7 +26,7 @@ set -euo pipefail
 
 # Source unified location detection library
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || {
   echo "ERROR: Failed to source unified-location-detection.sh"
   exit 1
 }

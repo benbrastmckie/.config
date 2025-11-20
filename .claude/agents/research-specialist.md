@@ -55,7 +55,7 @@ Use Bash tool to create parent directory if needed:
 
 ```bash
 # Source unified location detection library
-source .claude/lib/unified-location-detection.sh
+source .claude/lib/core/unified-location-detection.sh
 
 # Ensure parent directory exists (lazy creation pattern)
 ensure_artifact_directory "$REPORT_PATH" || {

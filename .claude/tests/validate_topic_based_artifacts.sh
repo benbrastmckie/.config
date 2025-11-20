@@ -195,7 +195,7 @@ else
   echo "   specs/reports/001_topic.md → specs/{NNN_topic}/reports/001_topic.md"
   echo ""
   echo "2. Update commands to use create_topic_artifact():"
-  echo "   source \"\${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh\""
+  echo "   source \"\${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh\""
   echo "   TOPIC_DIR=\$(get_or_create_topic_dir \"\$DESCRIPTION\" \"specs\")"
   echo "   REPORT_PATH=\$(create_topic_artifact \"\$TOPIC_DIR\" \"reports\" \"topic\" \"\")"
   echo ""

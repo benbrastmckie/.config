@@ -155,7 +155,7 @@ T4                                     mkdir 027_b [UNLOCK]
 - `/research` - Creates research-only topic
 - `/research` - Creates hierarchical research topic
 
-**See**: [Unified Location Detection API](../reference/library-api-overview.md#allocate_and_create_topic) for complete function documentation.
+**See**: [Unified Location Detection API](../reference/library-api/overview.md#allocate_and_create_topic) for complete function documentation.
 
 ### Artifact Numbering
 
@@ -186,7 +186,7 @@ echo "content" > "$FILE_PATH"
 - `/plan`: Creates `plans/` only when writing plan files
 - `/research`: Creates `reports/{NNN_research}/` hierarchy on-demand
 
-**See**: [Library API Reference](../reference/library-api-overview.md#ensure_artifact_directory) for complete documentation
+**See**: [Library API Reference](../reference/library-api/overview.md#ensure_artifact_directory) for complete documentation
 
 **Example**:
 ```
@@ -243,7 +243,7 @@ specs/009_orchestration_enhancement/
 
 ### Metadata-Only References
 
-Artifacts should be referenced by **path + metadata**, not full content, to minimize context usage (see [Command Architecture Standards - Standards 6-8](../reference/command_architecture_standards.md#context-preservation-standards)).
+Artifacts should be referenced by **path + metadata**, not full content, to minimize context usage (see [Command Architecture Standards - Standards 6-8](../reference/architecture/overview.md#context-preservation-standards)).
 
 **Metadata Extraction Utilities** (`.claude/lib/metadata-extraction.sh`):
 - `extract_report_metadata(report_path)` - Extracts title, 50-word summary, key findings, file paths
@@ -355,7 +355,7 @@ This creates 3 execution waves:
 - Wave 2: Phases 2 and 3 (parallel execution)
 - Wave 3: Phase 4
 
-See [phase_dependencies.md](../reference/phase_dependencies.md) for detailed dependency syntax and examples.
+See [phase_dependencies.md](../reference/workflows/phase-dependencies.md) for detailed dependency syntax and examples.
 
 ---
 

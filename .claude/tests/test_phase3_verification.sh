@@ -5,7 +5,7 @@
 set -euo pipefail
 
 CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/verification-helpers.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/util/verification-helpers.sh"
 
 # Setup test state file
 TEST_DIR=$(mktemp -d)

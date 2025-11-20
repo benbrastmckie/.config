@@ -629,7 +629,7 @@ espeak-ng voices (run `espeak-ng --voices` for full list):
 ## Related Topics
 
 - [Orchestration Guide](orchestration-guide.md) - Multi-agent workflows with TTS notifications
-- [Efficiency Guide](../guides/performance-optimization.md) - Performance optimization including TTS configuration
+- [Efficiency Guide](../guides/patterns/performance-optimization.md) - Performance optimization including TTS configuration
 
 ## Resources
 

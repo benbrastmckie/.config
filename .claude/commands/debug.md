@@ -10,7 +10,7 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
-documentation: See .claude/docs/guides/debug-command-guide.md for complete usage guide
+documentation: See .claude/docs/guides/commands/debug-command-guide.md for complete usage guide
 ---
 
 # /debug - Debug-Focused Workflow Command
@@ -108,15 +108,15 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # Source libraries in dependency order (Standard 15) with output suppression
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>/dev/null || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
   echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
 }
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" 2>/dev/null || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
   echo "ERROR: Failed to source workflow-initialization.sh" >&2
   exit 1
 }
@@ -140,8 +140,15 @@ mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
-# Initialize workflow state BEFORE sm_init (correct initialization order)
-init_workflow_state "$WORKFLOW_ID"
+# Capture state file path for append_workflow_state
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+export STATE_FILE
+
+# Validate state file creation
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to initialize workflow state" >&2
+  exit 1
+fi
 
 # Initialize state machine with return code verification
 if ! sm_init \
@@ -199,8 +206,8 @@ Task {
 set +H  # CRITICAL: Disable history expansion
 
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 
 # Load WORKFLOW_ID from file
 STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
@@ -233,9 +240,9 @@ echo ""
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
 STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
@@ -346,7 +353,7 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -410,8 +417,8 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -495,7 +502,7 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -544,8 +551,8 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -610,7 +617,7 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -655,8 +662,8 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true

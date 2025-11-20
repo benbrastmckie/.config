@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Source the library
-source "$PROJECT_ROOT/.claude/lib/topic-utils.sh"
+source "$PROJECT_ROOT/lib/plan/topic-utils.sh"
 
 # Test counter
 TESTS_RUN=0

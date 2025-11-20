@@ -35,8 +35,8 @@ The content below is preserved for reference but should be accessed via the spli
 The hierarchical agent architecture enables multi-level agent coordination that minimizes context window consumption through metadata-based context passing and recursive supervision.
 
 **Related Documentation**:
-- [Using Agents](../guides/agent-development-guide.md) - Agent invocation patterns and behavioral injection
-- [Command Architecture Standards](../reference/architecture-standards-overview.md) - Standards 1, 6-8
+- [Using Agents](../guides/development/agent-development/agent-development-fundamentals.md) - Agent invocation patterns and behavioral injection
+- [Command Architecture Standards](../reference/architecture/overview.md) - Standards 1, 6-8
 
 ## Architecture Principles
 
@@ -793,7 +793,7 @@ prune_phase_metadata "research"
 ```
 
 **See Also**:
-- [Command Architecture Standards](../reference/command_architecture_standards.md#standard-8) for context pruning requirements (Standard 8)
+- [Command Architecture Standards](../reference/architecture/overview.md#standard-8) for context pruning requirements (Standard 8)
 - [Forward Message Pattern](#forward-message-pattern) (this document) for no-paraphrase handoffs
 
 ## Command Integration
@@ -1463,8 +1463,8 @@ OVERVIEW_PATH="$RESEARCH_SUBDIR/OVERVIEW.md"  # ALL CAPS, not numbered
 This section documents the correct patterns for invoking agents from commands, with emphasis on the **behavioral injection pattern** that enables metadata-based context reduction and topic-based artifact organization.
 
 **Related Documentation**:
-- [Agent Authoring Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
-- [Command Authoring Guide](../guides/command-development-guide.md) - Invoking agents from commands
+- [Agent Authoring Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Creating agent behavioral files
+- [Command Authoring Guide](../guides/development/command-development/command-development-fundamentals.md) - Invoking agents from commands
 
 ### The Behavioral Injection Pattern
 

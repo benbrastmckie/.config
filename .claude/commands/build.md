@@ -9,7 +9,7 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
-documentation: See .claude/docs/guides/build-command-guide.md for complete usage guide
+documentation: See .claude/docs/guides/commands/build-command-guide.md for complete usage guide
 ---
 
 # /build - Build-from-Plan Workflow Command
@@ -74,11 +74,11 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === SOURCE LIBRARIES ===
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
 
 check_library_requirements "$(cat <<'EOF'
 workflow-state-machine.sh: ">=2.0.0"
@@ -164,7 +164,7 @@ fi
 
 # === MARK STARTING PHASE IN PROGRESS ===
 # Source checkbox-utils if not already sourced
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkbox-utils.sh" 2>/dev/null || true
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || true
 
 # Check for legacy plan (no status markers) and add [NOT STARTED] markers
 if type add_not_started_markers &>/dev/null; then
@@ -183,6 +183,13 @@ if type add_in_progress_marker &>/dev/null; then
     echo "NOTE: Could not add progress marker (non-fatal)"
   fi
 fi
+
+# Update plan metadata status to IN PROGRESS
+if type update_plan_status &>/dev/null; then
+  if update_plan_status "$PLAN_FILE" "IN PROGRESS" 2>/dev/null; then
+    echo "Plan metadata status updated to [IN PROGRESS]"
+  fi
+fi
 echo ""
 
 # === INITIALIZE STATE MACHINE ===
@@ -196,7 +203,15 @@ mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
-init_workflow_state "$WORKFLOW_ID"
+# Capture state file path for append_workflow_state
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+export STATE_FILE
+
+# Validate state file creation
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to initialize workflow state" >&2
+  exit 1
+fi
 
 if ! sm_init "$PLAN_FILE" "$COMMAND_NAME" "$WORKFLOW_TYPE" "1" "[]" 2>&1; then
   echo "ERROR: State machine initialization failed" >&2
@@ -249,7 +264,7 @@ Task {
     - Execution Mode: wave-based (parallel where possible)
 
     Progress Tracking Instructions:
-    - Source checkbox-utils.sh: source ${CLAUDE_PROJECT_DIR}/.claude/lib/checkbox-utils.sh
+    - Source checkbox-utils.sh: source ${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh
     - Before starting each phase: add_in_progress_marker '$PLAN_FILE' <phase_num>
     - After completing each phase: mark_phase_complete '$PLAN_FILE' <phase_num> && add_complete_marker '$PLAN_FILE' <phase_num>
     - This creates visible progress: [NOT STARTED] -> [IN PROGRESS] -> [COMPLETE]
@@ -299,8 +314,8 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkbox-utils.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
@@ -418,7 +433,7 @@ Task {
     All phases have been completed successfully.
 
     Steps:
-    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    1. Source checkbox utilities: source .claude/lib/plan/checkbox-utils.sh
     2. For each phase (1 to ${COMPLETED_PHASE_COUNT}): mark_phase_complete '${PLAN_FILE}' <phase_num>
     3. Verify consistency: verify_checkbox_consistency '${PLAN_FILE}' (each phase)
     4. Add [COMPLETE] marker to phase headings if not present
@@ -465,8 +480,8 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
@@ -614,9 +629,9 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
@@ -759,9 +774,9 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
@@ -882,15 +897,21 @@ if [ -n "${COMPLETED_PHASES:-}" ]; then
   echo ""
 fi
 
+# Update metadata status if all phases complete
+if type check_all_phases_complete &>/dev/null && type update_plan_status &>/dev/null; then
+  if check_all_phases_complete "$PLAN_FILE"; then
+    if update_plan_status "$PLAN_FILE" "COMPLETE" 2>/dev/null; then
+      echo "✓ Plan metadata status updated to [COMPLETE]"
+    fi
+  else
+    echo "⚠ Some phases incomplete, metadata status not updated to COMPLETE"
+  fi
+fi
+
 if [ "$TESTS_PASSED" = "true" ]; then
-  echo "Next Steps:"
-  echo "- Review changes: git log --oneline -$COMMIT_COUNT"
-  echo "- Create PR: gh pr create"
   delete_checkpoint "build" 2>/dev/null || true
 else
-  echo "Next Steps:"
-  echo "- Review debug analysis above"
-  echo "- Apply fixes and re-run: /build $PLAN_FILE"
+  echo "Re-run after applying fixes: /build $PLAN_FILE"
 fi
 
 # Cleanup

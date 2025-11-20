@@ -398,7 +398,7 @@ else
 fi
 ```
 
-**Reference**: See [Command Authoring Standards](../reference/command-authoring-standards.md#pattern-2-two-step-capture-with-library-recommended-for-complex-input) for complete pattern documentation.
+**Reference**: See [Command Authoring Standards](../reference/standards/command-authoring.md#pattern-2-two-step-capture-with-library-recommended-for-complex-input) for complete pattern documentation.
 
 **Commands Using This Pattern**: `/coordinate`, `/research`, `/plan`, `/revise`
 
@@ -667,7 +667,7 @@ Block 2 (Execute):
 - Operations requiring explicit user confirmation between steps
 - Task tool invocations that need visible response boundaries
 
-See [Output Formatting Standards](../reference/output-formatting-standards.md) for complete output suppression and consolidation patterns.
+See [Output Formatting Standards](../reference/standards/output-formatting.md) for complete output suppression and consolidation patterns.
 
 **Rationale**:
 - `set -euo pipefail` does NOT exit on function failures (only simple commands)
@@ -1159,10 +1159,10 @@ cat /tmp/temp_files_data.txt  # File not found (already deleted)
 ## Related Documentation
 
 - [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md) - Complete architecture built on subprocess isolation patterns
-- [State Machine Orchestrator Development](../guides/state-machine-orchestrator-development.md) - Using these patterns in new orchestrators
-- [Command Development Guide](../guides/command-development-guide.md) - General command development including bash block patterns
-- [Orchestration Best Practices](../guides/orchestration-best-practices.md) - High-level orchestration patterns
-- [/coordinate Command Guide](../guides/coordinate-command-guide.md) - Real-world usage of these patterns
+- [State Machine Orchestrator Development](../guides/orchestration/state-machine-orchestrator-development.md) - Using these patterns in new orchestrators
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - General command development including bash block patterns
+- [Orchestration Best Practices](../guides/orchestration/orchestration-best-practices.md) - High-level orchestration patterns
+- [/coordinate Command Guide](../guides/commands/build-command-guide.md) - Real-world usage of these patterns
 
 ## Historical Context
 

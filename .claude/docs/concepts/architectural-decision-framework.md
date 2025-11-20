@@ -263,7 +263,7 @@ Total: 10 agents via 3 supervisors, <25% context usage via context pruning
 - Consistency: 100% (all plans follow template)
 - Maintenance: Centralized (update template, not 40 plans)
 
-**Reference**: `.claude/docs/guides/_template-phase-expansion-plan.md`
+**Reference**: `.claude/docs/guides/templates/_template-phase-expansion-plan.md`
 
 ## Decision Framework Summary
 
@@ -315,10 +315,10 @@ find .claude/specs/*/plans -name "*.md" -exec grep -l "pattern keyword" {} \; | 
 - [State-Based Orchestration](../architecture/state-based-orchestration-overview.md) → Hierarchical supervision architecture
 
 **Standards**:
-- [Command Architecture Standards](../reference/command_architecture_standards.md) → Complete command standards
-- [Code Standards](../reference/code-standards.md) → General coding standards
+- [Command Architecture Standards](../reference/architecture/overview.md) → Complete command standards
+- [Code Standards](../reference/standards/code-standards.md) → General coding standards
 
 **Guides**:
-- [Command Development Guide](../guides/command-development-index.md) → Command creation patterns
-- [Agent Development Guide](../guides/agent-development-guide.md) → Agent creation patterns
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) → Command creation patterns
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) → Agent creation patterns
 - [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md) → Plan template usage

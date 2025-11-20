@@ -10,7 +10,7 @@ This directory documents the core architectural patterns that enable reliable, e
 
 ### Core Patterns
 
-- **[Template vs Behavioral Distinction](../../reference/template-vs-behavioral-distinction.md)** - Critical architectural principle for inline vs reference
+- **[Template vs Behavioral Distinction](../../reference/architecture/template-vs-behavioral.md)** - Critical architectural principle for inline vs reference
 
 ### Agent Coordination Patterns
 
@@ -128,13 +128,13 @@ These patterns have demonstrated:
 ## Related Documentation
 
 - [Hierarchical Agents Guide](../hierarchical-agents.md) - Complete agent architecture
-- [Creating Commands Guide](../../guides/command-development-guide.md) - Command development
-- [Creating Agents Guide](../../guides/agent-development-guide.md) - Agent development
-- [Testing Patterns Guide](../../guides/testing-patterns.md) - Validation approaches
-- [Performance Measurement Guide](../../guides/performance-optimization.md) - Metrics and benchmarks
+- [Creating Commands Guide](../../guides/development/command-development/command-development-fundamentals.md) - Command development
+- [Creating Agents Guide](../../guides/development/agent-development/agent-development-fundamentals.md) - Agent development
+- [Testing Patterns Guide](../../guides/patterns/testing-patterns.md) - Validation approaches
+- [Performance Measurement Guide](../../guides/patterns/performance-optimization.md) - Metrics and benchmarks
 
 ## See Also
 
-- [Command Architecture Standards](../../reference/command_architecture_standards.md)
+- [Command Architecture Standards](../../reference/architecture/overview.md)
 - [Orchestration Guide](../../workflows/orchestration-guide.md)
 - [Development Workflow](../development-workflow.md)

@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Source the checkpoint utilities
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/checkpoint-utils.sh"
+source "$SCRIPT_DIR/../lib/workflow/checkpoint-utils.sh"
 
 # Test counters
 TESTS_RUN=0

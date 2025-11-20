@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Source the library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/workflow-detection.sh"
+source "$SCRIPT_DIR/../lib/workflow/workflow-detection.sh"
 
 # Test counter
 TESTS_RUN=0

@@ -165,8 +165,8 @@ Agent output: REPORT_CREATED: /path/to/report.md
 
 #### Related Resources
 
-- [Execution Enforcement Migration Guide](../guides/execution-enforcement-guide.md)
-- [Command Development Guide](../guides/command-development-guide.md)
+- [Execution Enforcement Migration Guide](../guides/patterns/execution-enforcement/execution-enforcement-overview.md)
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md)
 
 ---
 
@@ -555,7 +555,7 @@ bash .claude/tests/test_supervise_agent_delegation.sh
 #### Related Resources
 
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md)
-- [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 11
+- [Command Architecture Standards](../reference/architecture/overview.md) - Standard 11
 
 ---
 
@@ -806,7 +806,7 @@ grep -n "create_topic_artifact.*plans" .claude/commands/COMMAND_NAME.md
 
 #### Related Resources
 
-- [Agent Development Guide: What Agents Should NOT Do](../guides/agent-development-guide.md#what-agents-should-not-do)
+- [Agent Development Guide: What Agents Should NOT Do](../guides/development/agent-development/agent-development-fundamentals.md#what-agents-should-not-do)
 - [Behavioral Injection Anti-Patterns](../concepts/patterns/behavioral-injection.md#anti-patterns)
 
 ---
@@ -993,8 +993,8 @@ Follow these guidelines when creating new commands:
 
 10. **Follow established patterns**
     - Study working commands (e.g., /orchestrate, /research)
-    - Reference [Command Development Guide](../guides/command-development-guide.md)
-    - Follow [Standard 11: Imperative Agent Invocation](../reference/command_architecture_standards.md#standard-11)
+    - Reference [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md)
+    - Follow [Standard 11: Imperative Agent Invocation](../reference/architecture/overview.md#standard-11)
 
 ### Code Review Checklist
 
@@ -1187,12 +1187,12 @@ I'll orchestrate hierarchical research by delegating to specialized subagents.
 
 ## Related Documentation
 
-- [Command Development Guide](../guides/command-development-guide.md) - Best practices for command creation
-- [Agent Development Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - Best practices for command creation
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Creating agent behavioral files
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Complete pattern documentation
-- [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 11: Imperative Agent Invocation
+- [Command Architecture Standards](../reference/architecture/overview.md) - Standard 11: Imperative Agent Invocation
 - [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md) - Overall system architecture
-- [Execution Enforcement Migration Guide](../guides/execution-enforcement-guide.md) - Complete migration process
+- [Execution Enforcement Migration Guide](../guides/patterns/execution-enforcement/execution-enforcement-overview.md) - Complete migration process
 
 ---
 

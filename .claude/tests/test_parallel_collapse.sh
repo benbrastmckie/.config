@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Source test framework
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -19,7 +19,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 
 # Source the library under test
-source "$CLAUDE_PROJECT_DIR/.claude/lib/auto-analysis-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/auto-analysis-utils.sh"
 
 # Helper function to run a test
 run_test() {

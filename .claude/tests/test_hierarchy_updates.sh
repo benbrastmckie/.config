@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Source the checkbox utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/checkbox-utils.sh" 2>/dev/null || {
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || {
   echo "ERROR: Failed to source checkbox-utils.sh"
   exit 1
 }

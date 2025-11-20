@@ -248,7 +248,7 @@ artifact_refs=$(aggregate_expansion_artifacts "$plan_path")
 
 **Context Preservation Standards:**
 
-This artifact-based aggregation pattern implements **Standard 7 (Forward Message Pattern)** from [Command Architecture Standards](../reference/command_architecture_standards.md#context-preservation-standards), where subagent responses are passed via artifact references rather than re-summarized content. Combined with **Standard 8 (Context Pruning)**, orchestration workflows achieve 60-85% context reduction while maintaining complete operation history in artifacts.
+This artifact-based aggregation pattern implements **Standard 7 (Forward Message Pattern)** from [Command Architecture Standards](../reference/architecture/overview.md#context-preservation-standards), where subagent responses are passed via artifact references rather than re-summarized content. Combined with **Standard 8 (Context Pruning)**, orchestration workflows achieve 60-85% context reduction while maintaining complete operation history in artifacts.
 
 ---
 

@@ -15,22 +15,23 @@ setup_test_environment() {
   export CLAUDE_SPECS_ROOT="$test_dir"
   export CLAUDE_PROJECT_DIR="$test_dir"
 
-  # Create minimal test structure
-  mkdir -p "$test_dir/.claude/lib"
+  # Create minimal test structure with subdirectories
+  mkdir -p "$test_dir/.claude/lib/core"
+  mkdir -p "$test_dir/.claude/lib/workflow"
   mkdir -p "$test_dir/.claude/tmp"
 
-  # Copy required libraries
-  cp /home/benjamin/.config/.claude/lib/state-persistence.sh "$test_dir/.claude/lib/"
-  cp /home/benjamin/.config/.claude/lib/workflow-state-machine.sh "$test_dir/.claude/lib/"
+  # Copy required libraries to correct subdirectories
+  cp /home/benjamin/.config/.claude/lib/core/state-persistence.sh "$test_dir/.claude/lib/core/"
+  cp /home/benjamin/.config/.claude/lib/workflow/workflow-state-machine.sh "$test_dir/.claude/lib/workflow/"
 
   # Copy checkpoint-utils if it exists
-  if [ -f "/home/benjamin/.config/.claude/lib/checkpoint-utils.sh" ]; then
-    cp /home/benjamin/.config/.claude/lib/checkpoint-utils.sh "$test_dir/.claude/lib/"
+  if [ -f "/home/benjamin/.config/.claude/lib/workflow/checkpoint-utils.sh" ]; then
+    cp /home/benjamin/.config/.claude/lib/workflow/checkpoint-utils.sh "$test_dir/.claude/lib/workflow/"
   fi
 
   # Copy error-handling if it exists (dependency)
-  if [ -f "/home/benjamin/.config/.claude/lib/error-handling.sh" ]; then
-    cp /home/benjamin/.config/.claude/lib/error-handling.sh "$test_dir/.claude/lib/"
+  if [ -f "/home/benjamin/.config/.claude/lib/core/error-handling.sh" ]; then
+    cp /home/benjamin/.config/.claude/lib/core/error-handling.sh "$test_dir/.claude/lib/core/"
   fi
 
   echo "$test_dir"
@@ -52,8 +53,8 @@ test_valid_state_transitions() {
   TEST_DIR="$test_dir"
 
   # Source libraries
-  source "$test_dir/.claude/lib/state-persistence.sh"
-  source "$test_dir/.claude/lib/workflow-state-machine.sh"
+  source "$test_dir/.claude/lib/core/state-persistence.sh"
+  source "$test_dir/.claude/lib/workflow/workflow-state-machine.sh"
 
   # Initialize workflow
   export WORKFLOW_ID="test_workflow_valid"
@@ -77,8 +78,8 @@ test_invalid_implement_to_complete() {
   TEST_DIR="$test_dir"
 
   # Source libraries
-  source "$test_dir/.claude/lib/state-persistence.sh"
-  source "$test_dir/.claude/lib/workflow-state-machine.sh"
+  source "$test_dir/.claude/lib/core/state-persistence.sh"
+  source "$test_dir/.claude/lib/workflow/workflow-state-machine.sh"
 
   # Initialize workflow
   export WORKFLOW_ID="test_workflow_impl_complete"
@@ -103,8 +104,8 @@ test_invalid_test_to_complete() {
   TEST_DIR="$test_dir"
 
   # Source libraries
-  source "$test_dir/.claude/lib/state-persistence.sh"
-  source "$test_dir/.claude/lib/workflow-state-machine.sh"
+  source "$test_dir/.claude/lib/core/state-persistence.sh"
+  source "$test_dir/.claude/lib/workflow/workflow-state-machine.sh"
 
   # Initialize workflow
   export WORKFLOW_ID="test_workflow_test_complete"
@@ -130,8 +131,8 @@ test_valid_debug_to_complete() {
   TEST_DIR="$test_dir"
 
   # Source libraries
-  source "$test_dir/.claude/lib/state-persistence.sh"
-  source "$test_dir/.claude/lib/workflow-state-machine.sh"
+  source "$test_dir/.claude/lib/core/state-persistence.sh"
+  source "$test_dir/.claude/lib/workflow/workflow-state-machine.sh"
 
   # Initialize workflow
   export WORKFLOW_ID="test_workflow_debug_complete"
@@ -158,8 +159,8 @@ test_state_persistence() {
   TEST_DIR="$test_dir"
 
   # Source libraries
-  source "$test_dir/.claude/lib/state-persistence.sh"
-  source "$test_dir/.claude/lib/workflow-state-machine.sh"
+  source "$test_dir/.claude/lib/core/state-persistence.sh"
+  source "$test_dir/.claude/lib/workflow/workflow-state-machine.sh"
 
   # Initialize and transition
   export WORKFLOW_ID="test_workflow_persist"
@@ -228,8 +229,8 @@ test_missing_state_file() {
   TEST_DIR="$test_dir"
 
   # Source libraries
-  source "$test_dir/.claude/lib/state-persistence.sh"
-  source "$test_dir/.claude/lib/workflow-state-machine.sh"
+  source "$test_dir/.claude/lib/core/state-persistence.sh"
+  source "$test_dir/.claude/lib/workflow/workflow-state-machine.sh"
 
   # Try to load a non-existent workflow
   local result

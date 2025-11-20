@@ -9,8 +9,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Source without set -e to avoid exit on errors
-(set +e; source "$SCRIPT_DIR/../lib/checkbox-utils.sh") 2>/dev/null
-source "$SCRIPT_DIR/../lib/checkbox-utils.sh" 2>/dev/null || true
+(set +e; source "$SCRIPT_DIR/../lib/plan/checkbox-utils.sh") 2>/dev/null
+source "$SCRIPT_DIR/../lib/plan/checkbox-utils.sh" 2>/dev/null || true
 
 # Test counters
 TESTS_RUN=0

@@ -429,8 +429,8 @@ Preprocessing safety patterns validated across specifications:
 
 ## Related Documentation
 
-- [Command Development Guide](../guides/command-development-guide.md) - Best practices for command development
-- [Agent Development Guide](../guides/agent-development-guide.md) - Guidelines for creating specialized agents
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - Best practices for command development
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Guidelines for creating specialized agents
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - How to invoke agents with context
-- [Library API Reference](../reference/library-api.md) - API documentation for .claude/lib/ utilities
-- [Command Architecture Standards](../reference/command_architecture_standards.md) - Architecture requirements and best practices
+- [Library API Reference](../reference/library-api/overview.md) - API documentation for .claude/lib/ utilities
+- [Command Architecture Standards](../reference/architecture/overview.md) - Architecture requirements and best practices

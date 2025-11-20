@@ -32,12 +32,12 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # Source required libraries
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkbox-utils.sh" 2>/dev/null || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || {
   echo -e "${RED}ERROR: Could not source checkbox-utils.sh${NC}"
   exit 1
 }
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo -e "${RED}ERROR: Could not source state-persistence.sh${NC}"
   exit 1
 }

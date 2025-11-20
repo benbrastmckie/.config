@@ -8,6 +8,8 @@
 .claude/tmp/                               # Temporary execution files
 .claude/lib/tmp/                           # Library temporary files
 .claude/registry/                          # Runtime registry cache
+.claude/backups/                           # Plan backups from revisions
+.claude/archive/                           # Archived workflow artifacts
 .claude/specs/*/reports/                   # Generated research reports (gitignored per directory-protocols)
 .claude/specs/*/plans/                     # Generated implementation plans (gitignored per directory-protocols)
 .claude/specs/*/summaries/                 # Generated execution summaries (gitignored per directory-protocols)

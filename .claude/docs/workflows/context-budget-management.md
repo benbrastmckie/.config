@@ -659,12 +659,12 @@ fi
 - [Parallel Execution Pattern](../concepts/patterns/parallel-execution.md) - Wave-based pruning strategies
 
 ### Related Guides
-- [Orchestration Best Practices Guide](../guides/orchestration-best-practices.md) - 7-phase workflow with context budget targets
-- [Phase 0 Optimization Guide](../guides/phase-0-optimization.md) - 85% reduction in Phase 0
+- [Orchestration Best Practices Guide](../guides/orchestration/orchestration-best-practices.md) - 7-phase workflow with context budget targets
+- [Phase 0 Optimization Guide](../guides/patterns/phase-0-optimization.md) - 85% reduction in Phase 0
 
 ### Related Reference
-- [Library API Reference](../reference/library-api.md) - context-pruning.sh, metadata-extraction.sh
-- [Orchestration Reference](../reference/orchestration-reference.md) - Context usage per command
+- [Library API Reference](../reference/library-api/overview.md) - context-pruning.sh, metadata-extraction.sh
+- [Orchestration Reference](../reference/workflows/orchestration-reference.md) - Context usage per command
 
 ## Changelog
 

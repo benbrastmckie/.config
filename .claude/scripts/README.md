@@ -21,6 +21,18 @@ Scripts provide **task-specific command-line utilities** for:
 
 ## Current Scripts
 
+### Configuration Files
+
+**markdown-link-check.json**
+- **Purpose**: Configuration for markdown-link-check npm package
+- **Usage**: Used automatically by validate-links.sh and validate-links-quick.sh
+- **Features**:
+  - Defines ignored patterns (localhost, placeholders)
+  - Sets timeout values for external link checks
+  - Configures retries for HTTP 429 responses
+- **Format**: JSON configuration file
+- **Dependencies**: markdown-link-check npm package
+
 ### Link Validation
 
 **validate-links.sh**
@@ -28,7 +40,7 @@ Scripts provide **task-specific command-line utilities** for:
 - **Usage**: `bash .claude/scripts/validate-links.sh`
 - **Features**:
   - Checks `.claude/docs`, `.claude/commands`, `.claude/agents`, READMEs
-  - Uses configuration from `.claude/config/markdown-link-check.json`
+  - Uses configuration from `.claude/scripts/markdown-link-check.json`
   - Generates timestamped logs in `.claude/tmp/link-validation/`
   - Color-coded output with error counts
 - **Output**: Validation report with broken link details

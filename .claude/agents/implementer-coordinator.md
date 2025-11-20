@@ -83,7 +83,7 @@ fi
 
 1. **Invoke dependency-analyzer Utility**:
    ```bash
-   bash /home/user/.config/.claude/lib/dependency-analyzer.sh "$plan_path" > dependency_analysis.json
+   bash /home/user/.config/.claude/lib/util/dependency-analyzer.sh "$plan_path" > dependency_analysis.json
    ```
 
 2. **Parse Analysis Results**:

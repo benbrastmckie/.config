@@ -9,8 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Source required libraries
-source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
-source "$CLAUDE_PROJECT_DIR/.claude/lib/state-persistence.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/workflow/checkpoint-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/core/state-persistence.sh"
 
 # Test counters
 TESTS_RUN=0

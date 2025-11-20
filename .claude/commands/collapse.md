@@ -108,7 +108,7 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # Source consolidated planning utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-core-bundle.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/plan-core-bundle.sh"
 
 # Normalize plan path (handle both directory and file paths)
 if [[ -f "$plan_path" ]] && [[ "$plan_path" == *.md ]]; then
@@ -483,8 +483,8 @@ export CLAUDE_PROJECT_DIR
 
 # Source utilities
 # Source consolidated planning utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/plan-core-bundle.sh"
-source "$CLAUDE_PROJECT_DIR/.claude/lib/auto-analysis-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/plan-core-bundle.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/auto-analysis-utils.sh"
 
 # Validate plan path
 if [[ ! -f "$PLAN_PATH" ]] && [[ ! -d "$PLAN_PATH" ]]; then

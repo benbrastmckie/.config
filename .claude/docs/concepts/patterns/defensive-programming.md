@@ -76,7 +76,7 @@ grep -q "if \[ \$# " script.sh
 ```
 
 **Cross-References**:
-- [Code Standards](../../reference/code-standards.md) → Standard 13 (Absolute Paths)
+- [Code Standards](../../reference/standards/code-standards.md) → Standard 13 (Absolute Paths)
 - [Robustness Framework](../robustness-framework.md) → Pattern 6 (Absolute Paths)
 
 ## 2. Null Safety
@@ -153,7 +153,7 @@ grep -q "if \[ -z.*+x.*\]; then" script.sh
 ```
 
 **Cross-References**:
-- [Error Enhancement Guide](../../guides/error-enhancement-guide.md) → Section on Null Handling
+- [Error Enhancement Guide](../../guides/patterns/error-enhancement-guide.md) → Section on Null Handling
 - [Robustness Framework](../robustness-framework.md) → Pattern 7 (Error Context)
 
 ## 3. Return Code Verification
@@ -226,8 +226,8 @@ grep -q "set -o pipefail" script.sh
 ```
 
 **Cross-References**:
-- [Code Standards](../../reference/code-standards.md) → Standard 16 (Return Code Verification)
-- [Library API Reference](../../guides/library-api.md) → Return Value Documentation
+- [Code Standards](../../reference/standards/code-standards.md) → Standard 16 (Return Code Verification)
+- [Library API Reference](../../reference/library-api/overview.md) → Return Value Documentation
 
 ## 4. Idempotent Operations
 
@@ -301,7 +301,7 @@ grep -q "if \[ -z.*_SOURCED.*\]; then" script.sh
 
 **Cross-References**:
 - [Robustness Framework](../robustness-framework.md) → Pattern 8 (Idempotent Operations)
-- [Command Development Guide](../../guides/command-development-guide.md) → Resumable Workflows
+- [Command Development Guide](../../guides/development/command-development/command-development-fundamentals.md) → Resumable Workflows
 
 ## 5. Error Context
 
@@ -377,7 +377,7 @@ grep "ERROR:" script.sh | grep -q "Phase\|Step"
 ```
 
 **Cross-References**:
-- [Error Enhancement Guide](../../guides/error-enhancement-guide.md) → Complete error patterns
+- [Error Enhancement Guide](../../guides/patterns/error-enhancement-guide.md) → Complete error patterns
 - [Robustness Framework](../robustness-framework.md) → Pattern 7 (Error Context)
 
 ## Pattern Application Guide
@@ -446,10 +446,10 @@ fi
 - [Context Management](context-management.md) - Context usage optimization
 
 **Standards**:
-- [Code Standards](../../reference/code-standards.md) - General coding standards
-- [Command Architecture Standards](../../reference/command_architecture_standards.md) - Command-specific standards
+- [Code Standards](../../reference/standards/code-standards.md) - General coding standards
+- [Command Architecture Standards](../../reference/architecture/overview.md) - Command-specific standards
 
 **Guides**:
-- [Error Enhancement Guide](../../guides/error-enhancement-guide.md) - Complete error handling patterns
-- [Library API Reference](../../guides/library-api.md) - Library function documentation
-- [Command Development Guide](../../guides/command-development-guide.md) - Command development practices
+- [Error Enhancement Guide](../../guides/patterns/error-enhancement-guide.md) - Complete error handling patterns
+- [Library API Reference](../../reference/library-api/overview.md) - Library function documentation
+- [Command Development Guide](../../guides/development/command-development/command-development-fundamentals.md) - Command development practices
