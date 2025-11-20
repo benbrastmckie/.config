@@ -72,7 +72,7 @@ The supervisor will read the artifact file directly if detailed content is neede
 
 **Step 2: Metadata Extraction via Utility Functions**
 
-Use `.claude/lib/metadata-extraction.sh` for consistent extraction:
+Use `.claude/lib/workflow/metadata-extraction.sh` for consistent extraction:
 
 ```bash
 # Extract report metadata
@@ -391,4 +391,4 @@ echo "Scalability improvement: ${max_agents_with_metadata}x" # Expected: 20x
 - [Hierarchical Agents Guide](../hierarchical-agents.md) - Complete agent coordination architecture
 - [Performance Measurement Guide](../../guides/patterns/performance-optimization.md) - How to measure context reduction
 - [Creating Agents Guide](../../guides/development/agent-development/agent-development-fundamentals.md) - Agent development best practices
-- `.claude/lib/metadata-extraction.sh` - Utility functions for metadata extraction
+- `.claude/lib/workflow/metadata-extraction.sh` - Utility functions for metadata extraction

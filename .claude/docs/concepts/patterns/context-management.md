@@ -71,7 +71,7 @@ After Phase N completes:
 Result: Phase N reduced from 5,000 tokens to 200 tokens (96% reduction)
 ```
 
-Use `.claude/lib/context-pruning.sh` utilities:
+Use `.claude/lib/workflow/context-pruning.sh` utilities:
 ```bash
 # Prune subagent output after metadata extraction
 prune_subagent_output "agent_response" "metadata"
@@ -273,7 +273,7 @@ fi
 **Manual Triggers**:
 ```bash
 # Force pruning at any time
-source "$CLAUDE_PROJECT_DIR/.claude/lib/context-pruning.sh"
+# Context pruning library not yet implemented
 force_context_prune "aggressive"
 
 # Workflow-specific pruning
@@ -389,8 +389,8 @@ generate_context_report "$WORKFLOW_ID"
 ### Cross-References
 
 **Library Implementation**:
-- `.claude/lib/context-pruning.sh` - Context pruning utilities
-- `.claude/lib/checkpoint-utils.sh` - Checkpoint-based state management
+- `.claude/lib/workflow/context-pruning.sh` - Context pruning utilities
+- `.claude/lib/workflow/checkpoint-utils.sh` - Checkpoint-based state management
 
 **Related Patterns**:
 - [Hierarchical Supervision](../../architecture/state-based-orchestration-overview.md) - Scalability for >4 agents
@@ -471,5 +471,5 @@ Cannot selectively prune - must keep everything or lose critical context
 
 - [Performance Measurement Guide](../../guides/patterns/performance-optimization.md) - Measuring context usage
 - [Hierarchical Agents Guide](../hierarchical-agents.md) - Multi-agent context strategies
-- `.claude/lib/context-pruning.sh` - Pruning utilities
-- `.claude/lib/unified-logger.sh` - Efficient logging with minimal context impact
+- `.claude/lib/workflow/context-pruning.sh` - Pruning utilities
+- `.claude/lib/core/unified-logger.sh` - Efficient logging with minimal context impact

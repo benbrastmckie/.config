@@ -59,7 +59,7 @@ RESULT=$(perform_function)
 
 ```bash
 # Source library and perform location detection
-source "${CLAUDE_CONFIG:-${HOME}/.config}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG:-${HOME}/.config}/.claude/lib/core/unified-location-detection.sh"
 LOCATION_JSON=$(perform_location_detection "$TOPIC" "false")
 
 # Extract all needed paths

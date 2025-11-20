@@ -197,29 +197,17 @@ Periodically check for duplicates:
 comm -12 <(ls ~/.claude/commands/ | grep '.md$' | sort) <(ls .claude/commands/ | grep '.md$' | sort)
 ```
 
-## Detection Script (Future Enhancement)
+## Detection Method
 
-Consider adding a lint/check script to detect duplicates:
+Use the following command to detect duplicate commands:
 
 ```bash
-#!/bin/bash
-# .claude/scripts/check-duplicate-commands.sh
+# List commands that exist in both locations
+comm -12 <(ls ~/.claude/commands/*.md 2>/dev/null | xargs -n1 basename | sort) \
+         <(ls .claude/commands/*.md 2>/dev/null | xargs -n1 basename | sort)
 
-USER_CMDS=$(ls ~/.claude/commands/*.md 2>/dev/null | xargs -n1 basename)
-PROJECT_CMDS=$(ls .claude/commands/*.md 2>/dev/null | xargs -n1 basename)
-
-DUPLICATES=$(comm -12 <(echo "$USER_CMDS" | sort) <(echo "$PROJECT_CMDS" | sort))
-
-if [ -n "$DUPLICATES" ]; then
-  echo "⚠️  Duplicate commands detected:"
-  echo "$DUPLICATES"
-  echo ""
-  echo "Run: diff ~/.claude/commands/COMMAND .claude/commands/COMMAND"
-  exit 1
-else
-  echo "✅ No duplicate commands found"
-  exit 0
-fi
+# Compare specific duplicates
+diff ~/.claude/commands/COMMAND.md .claude/commands/COMMAND.md
 ```
 
 ## Related Documentation

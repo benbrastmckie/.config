@@ -108,7 +108,7 @@ STEP 3: Verify file created
 **Content:**
 ```bash
 # EXECUTE NOW
-source .claude/lib/artifact-creation.sh
+source .claude/lib/artifact/artifact-creation.sh
 REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "001" "")
 ```
 

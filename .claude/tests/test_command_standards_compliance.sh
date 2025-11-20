@@ -136,11 +136,11 @@ test_standard_14() {
     return
   fi
 
-  local guide_file="${GUIDES_DIR}/${cmd_name}-command-guide.md"
+  local guide_file="${GUIDES_DIR}/commands/${cmd_name}-command-guide.md"
 
   # Check for alternative guide patterns
-  local alt_guide_1="${GUIDES_DIR}/${cmd_name}-guide.md"
-  local alt_guide_2="${GUIDES_DIR}/${cmd_name}-usage-guide.md"
+  local alt_guide_1="${GUIDES_DIR}/commands/${cmd_name}-guide.md"
+  local alt_guide_2="${GUIDES_DIR}/commands/${cmd_name}-usage-guide.md"
 
   if [ -f "$guide_file" ]; then
     log_result "PASS" "Standard 14" "$cmd_name" "Guide file exists"

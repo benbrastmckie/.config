@@ -251,6 +251,7 @@ When implementation encounters issues, revise the plan and rebuild:
 | /convert-docs | [convert-docs-command-guide.md](convert-docs-command-guide.md) | Convert between document formats |
 | /debug | [debug-command-guide.md](debug-command-guide.md) | Debug-focused workflow for root cause analysis |
 | /document | [document-command-guide.md](document-command-guide.md) | Generate documentation |
+| /errors | [errors-command-guide.md](errors-command-guide.md) | Query and analyze error logs from workflows |
 | /expand | [expand-command-guide.md](expand-command-guide.md) | Expand phases into detailed task files |
 | /optimize-claude | [optimize-claude-command-guide.md](optimize-claude-command-guide.md) | Optimize CLAUDE.md configuration |
 | /plan | [plan-command-guide.md](plan-command-guide.md) | Research and create implementation plans |

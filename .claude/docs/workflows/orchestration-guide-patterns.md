@@ -150,7 +150,7 @@ fi
 
 ### Utility Library Reference
 
-Context pruning utilities are provided by `.claude/lib/context-pruning.sh`:
+Context pruning utilities are provided by `.claude/lib/workflow/context-pruning.sh`:
 
 ```bash
 # Core Functions

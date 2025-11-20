@@ -42,7 +42,7 @@ Every bash code block in a command file MUST be preceded by an explicit executio
 
 ```bash
 set +H  # Disable history expansion
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
 # ... execution code
 ```
 ```
@@ -54,7 +54,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
 
 ```bash
 set +H
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
 # ... code that will NOT be executed
 ```
 ```
@@ -80,7 +80,7 @@ From `/research.md` (working command):
 **EXECUTE NOW**: USE the Bash tool to source libraries and decompose topic:
 
 ```bash
-source .claude/lib/topic-decomposition.sh
+source .claude/lib/plan/topic-decomposition.sh
 # ...
 ```
 ```
@@ -190,10 +190,10 @@ Libraries MUST be re-sourced in every bash block:
 
 ```bash
 set +H  # CRITICAL: First line
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-logger.sh"
 ```
 
 **Why**: Functions from libraries don't persist across subprocess boundaries.
@@ -234,11 +234,11 @@ Variables MUST be persisted to files using the state persistence library:
 
 ```bash
 # In Block 1: Save state
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 append_workflow_state "VARIABLE_NAME" "$VARIABLE_VALUE"
 
 # In Block 2: Load state
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "${WORKFLOW_ID:-$$}"
 # $VARIABLE_NAME is now available
 ```

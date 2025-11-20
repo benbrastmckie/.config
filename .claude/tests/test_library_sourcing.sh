@@ -98,6 +98,7 @@ test_missing_library_error() {
   # Intentionally skip error-handling.sh to test missing library
 
   # Create a test version of library-sourcing.sh pointing to TEST_DIR
+  mkdir -p "$TEST_DIR/.claude/lib/core"
   cat > "$TEST_DIR/.claude/lib/core/library-sourcing.sh" <<'EOF'
 source_required_libraries() {
   local claude_root="$TEST_CLAUDE_ROOT"
@@ -160,32 +161,46 @@ test_invalid_library_path() {
 
   setup
 
-  # Create test library directory with a corrupted library
-  mkdir -p "$TEST_DIR/lib"
+  # Create test library directory with proper subdirectory structure (post-refactoring)
+  mkdir -p "$TEST_DIR/lib/core"
+  mkdir -p "$TEST_DIR/lib/plan"
+  mkdir -p "$TEST_DIR/lib/artifact"
+  mkdir -p "$TEST_DIR/lib/workflow"
+  mkdir -p "$TEST_DIR/.claude/lib/core"
 
-  # Copy all libraries
-  for lib in topic-utils.sh detect-project-dir.sh artifact-creation.sh \
-              metadata-extraction.sh overview-synthesis.sh checkpoint-utils.sh error-handling.sh; do
-    if [[ -f "${CLAUDE_ROOT}/lib/${lib}" ]]; then
-      cp "${CLAUDE_ROOT}/lib/${lib}" "$TEST_DIR/lib/"
+  # Library paths after refactoring (commit fb8680db)
+  declare -A LIB_SOURCES=(
+    ["plan/topic-utils.sh"]="plan/topic-utils.sh"
+    ["core/detect-project-dir.sh"]="core/detect-project-dir.sh"
+    ["artifact/artifact-creation.sh"]="artifact/artifact-creation.sh"
+    ["workflow/metadata-extraction.sh"]="workflow/metadata-extraction.sh"
+    ["artifact/overview-synthesis.sh"]="artifact/overview-synthesis.sh"
+    ["workflow/checkpoint-utils.sh"]="workflow/checkpoint-utils.sh"
+    ["core/error-handling.sh"]="core/error-handling.sh"
+  )
+
+  # Copy all libraries to their proper subdirectory locations
+  for lib_path in "${!LIB_SOURCES[@]}"; do
+    if [[ -f "${CLAUDE_ROOT}/lib/${lib_path}" ]]; then
+      cp "${CLAUDE_ROOT}/lib/${lib_path}" "$TEST_DIR/lib/${lib_path}"
     fi
   done
 
-  # Create corrupted library (syntax error)
-  echo "this is not valid bash syntax }{][" > "$TEST_DIR/.claude/lib/core/error-handling.sh"
+  # Create corrupted library (syntax error) in test directory
+  echo "this is not valid bash syntax }{][" > "$TEST_DIR/lib/core/error-handling.sh"
 
-  # Create test version of library-sourcing.sh
+  # Create test version of library-sourcing.sh with subdirectory paths
   cat > "$TEST_DIR/.claude/lib/core/library-sourcing.sh" <<'EOF'
 source_required_libraries() {
   local claude_root="$TEST_CLAUDE_ROOT"
   local libraries=(
-    "topic-utils.sh"
-    "detect-project-dir.sh"
-    "artifact-creation.sh"
-    "metadata-extraction.sh"
-    "overview-synthesis.sh"
-    "checkpoint-utils.sh"
-    "error-handling.sh"
+    "plan/topic-utils.sh"
+    "core/detect-project-dir.sh"
+    "artifact/artifact-creation.sh"
+    "workflow/metadata-extraction.sh"
+    "artifact/overview-synthesis.sh"
+    "workflow/checkpoint-utils.sh"
+    "core/error-handling.sh"
   )
   local failed_libraries=()
   for lib in "${libraries[@]}"; do
@@ -238,6 +253,7 @@ test_error_message_format() {
 
   # Create empty test lib directory (all libraries missing)
   mkdir -p "$TEST_DIR/lib"
+  mkdir -p "$TEST_DIR/.claude/lib/core"
 
   # Create test version of library-sourcing.sh
   cat > "$TEST_DIR/.claude/lib/core/library-sourcing.sh" <<'EOF'

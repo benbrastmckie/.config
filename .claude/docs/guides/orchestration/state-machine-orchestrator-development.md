@@ -68,8 +68,8 @@ Execute research-and-report workflow with state machine coordination.
 ```bash
 # Source libraries
 CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Initialize workflow state
 STATE_FILE=$(init_workflow_state "research_report_$$")
@@ -103,7 +103,7 @@ echo "Terminal state: $TERMINAL_STATE"
 
 ```bash
 # Load workflow state
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "research_report_$$"
 
 # Execute research phase
@@ -126,7 +126,7 @@ fi
 
 ```bash
 # Load workflow state
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "research_report_$$"
 
 # Execute report phase
@@ -145,7 +145,7 @@ fi
 
 ```bash
 # Load workflow state
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "research_report_$$"
 
 if [ "$CURRENT_STATE" == "complete" ]; then
@@ -969,7 +969,7 @@ Create comprehensive test suite:
 
 # Setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/../lib/workflow-state-machine.sh"
+source "${SCRIPT_DIR}/../lib/workflow/workflow-state-machine.sh"
 
 # Test counters
 TESTS_RUN=0

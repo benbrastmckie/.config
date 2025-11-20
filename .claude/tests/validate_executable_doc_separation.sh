@@ -30,7 +30,7 @@ for cmd in .claude/commands/*.md; do
   if [[ "$cmd" == *"README"* ]]; then continue; fi
 
   basename=$(basename "$cmd" .md)
-  guide=".claude/docs/guides/${basename}-command-guide.md"
+  guide=".claude/docs/guides/commands/${basename}-command-guide.md"
 
   if grep -q "docs/guides.*${basename}-command-guide.md" "$cmd" 2>/dev/null; then
     if [ -f "$guide" ]; then

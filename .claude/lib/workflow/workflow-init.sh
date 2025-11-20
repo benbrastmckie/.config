@@ -94,6 +94,7 @@ _source_lib() {
 #   $3 - workflow_type: Workflow scope (research-only, research-and-plan, full-implementation, etc.)
 #   $4 - research_complexity: (Optional) Research complexity 1-4, default 2
 #   $5 - research_topics_json: (Optional) JSON array of research topics, default "[]"
+#   $6 - user_args: (Optional) Original user command arguments for error logging
 #
 # Environment Exports:
 #   CLAUDE_PROJECT_DIR - Project root directory
@@ -102,13 +103,14 @@ _source_lib() {
 #   WORKFLOW_DESCRIPTION - Sanitized workflow description
 #   WORKFLOW_TYPE - Workflow scope
 #   RESEARCH_COMPLEXITY - Research complexity (1-4)
+#   USER_ARGS - Original user command arguments
 #
 # Returns:
 #   0 on success with summary line on stdout
 #   1 on failure with error message to stderr
 #
 # Example:
-#   init_workflow "research" "authentication patterns" "research-only" 2
+#   init_workflow "research" "authentication patterns" "research-only" 2 "[]" "auth patterns --complexity 3"
 #   # Output: Setup complete: research_1700000000 (research-only, complexity: 2)
 #
 init_workflow() {
@@ -117,6 +119,7 @@ init_workflow() {
   local workflow_type="${3:-full-implementation}"
   local research_complexity="${4:-2}"
   local research_topics_json="${5:-[]}"
+  local user_args="${6:-}"
 
   # Validate required arguments
   if [ -z "$command_name" ] || [ -z "$workflow_description" ]; then
@@ -164,14 +167,14 @@ init_workflow() {
   # ============================================================================
 
   # Core libraries (required)
-  _source_lib "state-persistence.sh" "required" || return 1
-  _source_lib "workflow-state-machine.sh" "required" || return 1
+  _source_lib "core/state-persistence.sh" "required" || return 1
+  _source_lib "workflow/workflow-state-machine.sh" "required" || return 1
 
   # Support libraries (required for full functionality)
-  _source_lib "library-version-check.sh" "optional"
-  _source_lib "error-handling.sh" "optional"
-  _source_lib "unified-location-detection.sh" "optional"
-  _source_lib "workflow-initialization.sh" "optional"
+  _source_lib "core/library-version-check.sh" "optional"
+  _source_lib "core/error-handling.sh" "optional"
+  _source_lib "core/unified-location-detection.sh" "optional"
+  _source_lib "workflow/workflow-initialization.sh" "optional"
 
   # ============================================================================
   # STEP 3: Generate WORKFLOW_ID and initialize state
@@ -214,12 +217,14 @@ init_workflow() {
   append_workflow_state "WORKFLOW_DESCRIPTION" "$workflow_description"
   append_workflow_state "WORKFLOW_TYPE" "$workflow_type"
   append_workflow_state "COMMAND_NAME" "$command_name"
+  append_workflow_state "USER_ARGS" "$user_args"
 
   # Export variables for use in calling script
   export WORKFLOW_DESCRIPTION="$workflow_description"
   export WORKFLOW_TYPE="$workflow_type"
   export COMMAND_NAME="$command_name"
   export RESEARCH_COMPLEXITY="$research_complexity"
+  export USER_ARGS="$user_args"
 
   # ============================================================================
   # Single summary line output
@@ -297,8 +302,8 @@ load_workflow_context() {
   # STEP 2: Source required libraries (with suppression)
   # ============================================================================
 
-  _source_lib "state-persistence.sh" "required" || return 1
-  _source_lib "workflow-state-machine.sh" "required" || return 1
+  _source_lib "core/state-persistence.sh" "required" || return 1
+  _source_lib "workflow/workflow-state-machine.sh" "required" || return 1
 
   # ============================================================================
   # STEP 3: Load WORKFLOW_ID from state ID file
@@ -405,6 +410,44 @@ workflow_error() {
 }
 
 # ==============================================================================
+# Utility Function: get_error_context
+# ==============================================================================
+
+# get_error_context: Get current workflow context as JSON for error logging
+#
+# Returns JSON object with workflow context suitable for log_command_error().
+# Uses current environment variables set by init_workflow/load_workflow_context.
+#
+# Returns:
+#   JSON string with workflow context on stdout
+#
+# Example:
+#   context=$(get_error_context)
+#   log_command_error "/build" "$WORKFLOW_ID" "$USER_ARGS" "state_error" "msg" "bash_block" "$context"
+#
+get_error_context() {
+  jq -n \
+    --arg command_name "${COMMAND_NAME:-unknown}" \
+    --arg workflow_id "${WORKFLOW_ID:-unknown}" \
+    --arg user_args "${USER_ARGS:-}" \
+    --arg current_state "${CURRENT_STATE:-unknown}" \
+    --arg workflow_type "${WORKFLOW_TYPE:-unknown}" \
+    --arg topic_path "${TOPIC_PATH:-}" \
+    --arg state_file "${STATE_FILE:-}" \
+    --arg workflow_description "${WORKFLOW_DESCRIPTION:-}" \
+    '{
+      command_name: $command_name,
+      workflow_id: $workflow_id,
+      user_args: $user_args,
+      current_state: $current_state,
+      workflow_type: $workflow_type,
+      topic_path: $topic_path,
+      state_file: $state_file,
+      workflow_description: $workflow_description
+    }'
+}
+
+# ==============================================================================
 # Export Functions
 # ==============================================================================
 
@@ -412,3 +455,4 @@ export -f init_workflow
 export -f load_workflow_context
 export -f finalize_workflow
 export -f workflow_error
+export -f get_error_context

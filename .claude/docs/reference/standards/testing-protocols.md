@@ -236,7 +236,7 @@ trap 'rm -rf "$TEST_ROOT"' EXIT
 
 **Reference Documentation**:
 - [Test Isolation Standards](test-isolation.md) - Complete standards and patterns
-- [Library Header Documentation](.claude/lib/unified-location-detection.sh) - CLAUDE_SPECS_ROOT override mechanism (lines 44-68)
+- [Library Header Documentation](.claude/lib/core/unified-location-detection.sh) - CLAUDE_SPECS_ROOT override mechanism (lines 44-68)
 - [Test Template](.claude/tests/README.md) - Complete isolation pattern examples
 
 **Utilities**:

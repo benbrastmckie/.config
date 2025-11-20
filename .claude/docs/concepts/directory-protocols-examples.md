@@ -17,7 +17,7 @@ This document is part of a multi-part guide:
 
 **Source Utilities**:
 ```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/metadata-extraction.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/workflow/metadata-extraction.sh"
 ```
 
 #### create_topic_artifact()
@@ -195,7 +195,7 @@ cleanup_all_temp_artifacts "$TOPIC_DIR"
 cat > specs/009_topic/scripts/investigate.sh <<'EOF'
 #!/bin/bash
 # Test complexity scoring on sample phases
-.claude/lib/complexity-utils.sh calculate_phase_complexity ...
+.claude/lib/plan/complexity-utils.sh calculate_phase_complexity ...
 EOF
 
 chmod +x specs/009_topic/scripts/investigate.sh
@@ -429,6 +429,6 @@ create_topic_artifact "specs/009_topic" "debug" "test" "content"
 - **spec_updater_guide.md**: Spec updater agent usage and patterns
 - **command_architecture_standards.md**: Context preservation standards (Standards 6-8)
 - **phase_dependencies.md**: Wave-based execution and dependency syntax
-- **.claude/lib/metadata-extraction.sh**: Shell utility implementations
+- **.claude/lib/workflow/metadata-extraction.sh**: Shell utility implementations
 
 **Cross-Reference**: See [Command Architecture Standards](../reference/architecture/overview.md) for context preservation patterns when working with topic artifacts.

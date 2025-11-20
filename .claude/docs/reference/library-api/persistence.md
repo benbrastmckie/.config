@@ -110,7 +110,7 @@ Initialize workflow state file with initial environment variables. Call once per
 
 **Usage**:
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 STATE_FILE=$(init_workflow_state "coordinate_$$")
 trap "rm -f '$STATE_FILE'" EXIT  # Cleanup on exit
 ```
@@ -138,7 +138,7 @@ Load workflow state file to restore exported variables. Call in subsequent bash 
 
 **Usage**:
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "coordinate_$$"
 echo "$CLAUDE_PROJECT_DIR"  # Variable restored from state file
 ```
@@ -263,14 +263,14 @@ append_jsonl_log "benchmarks" "$BENCHMARK"
 
 ```bash
 # Block 1: Initialize workflow state
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 STATE_FILE=$(init_workflow_state "coordinate_$$")
 trap "rm -f '$STATE_FILE'" EXIT
 
 # CLAUDE_PROJECT_DIR detected once and cached (6ms)
 
 # Block 2: Research phase
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "coordinate_$$"  # Fast load (2ms)
 
 # Invoke research supervisor (returns aggregated metadata)
@@ -279,7 +279,7 @@ save_json_checkpoint "supervisor_metadata" "$SUPERVISOR_RESULT"
 append_workflow_state "RESEARCH_COMPLETE" "true"
 
 # Block 3: Plan phase
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "coordinate_$$"
 
 # Load research metadata (95% context reduction vs full outputs)

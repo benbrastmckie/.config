@@ -45,32 +45,6 @@ Utilities provide:
 
 ---
 
-#### list-checkpoints.sh
-**Purpose**: List available checkpoints
-
-**Usage**: `./list-checkpoints.sh [workflow-type]`
-
-**Functionality**:
-- Lists all or filtered checkpoints
-- Shows creation time, progress
-- Indicates stale/corrupted
-- Sorted by most recent
-
----
-
-#### cleanup-checkpoints.sh
-**Purpose**: Remove old/completed checkpoints
-
-**Usage**: `./cleanup-checkpoints.sh [max-age-days]`
-
-**Functionality**:
-- Deletes checkpoints older than threshold (default 7 days)
-- Archives failed checkpoints
-- Preserves active workflows
-- Reports cleanup summary
-
----
-
 ### Template System
 
 #### parse-template.sh
@@ -205,34 +179,6 @@ Utilities provide:
 
 ---
 
-### Context Validation
-
-#### validate-context-reduction.sh
-**Purpose**: Validate context reduction across hierarchical agent workflows
-
-**Usage**: `./validate-context-reduction.sh [--verbose] [--output FILE] [--threshold N] [--target N]`
-
-**Functionality**:
-- Validates context usage <30% throughout workflows
-- Verifies context reduction ≥60% vs direct implementation
-- Tests metadata-only passing mechanisms
-- Ensures no loss of functionality
-
-**Parameters**:
-- `--verbose`: Show detailed validation output
-- `--output FILE`: Write report to FILE (markdown format)
-- `--threshold N`: Set context usage threshold (default: 30%)
-- `--target N`: Set reduction target (default: 60%)
-- `--help`: Show help message
-
-**Example**:
-```bash
-./validate-context-reduction.sh --verbose --output report.md
-./validate-context-reduction.sh --threshold 25 --target 70
-```
-
-**Note**: Migrated from deprecated scripts/ directory (spec 492)
-
 ## Integration Points
 
 ### Commands Using Utilities
@@ -326,10 +272,8 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 - [complexity-utils.sh](complexity-utils.sh) - Phase complexity scoring
 - [error-utils.sh](error-utils.sh) - Error classification and recovery
 - [handle-collaboration.sh](handle-collaboration.sh) - Agent collaboration protocol
-- [parse-adaptive-plan.sh](parse-adaptive-plan.sh) - Progressive plan structure parsing
 - [parse-template.sh](parse-template.sh) - Template validation and parsing
 - [substitute-variables.sh](substitute-variables.sh) - Variable substitution engine
-- [validate-context-reduction.sh](validate-context-reduction.sh) - Context reduction validation suite
 
 ### Related
 - [← Parent Directory](../README.md)
@@ -346,11 +290,6 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 # Template system
 ./parse-template.sh .claude/templates/crud-feature.yaml validate
 ./substitute-variables.sh template.yaml '{"entity":"User","fields":["name","email"]}'
-
-# Progressive plan parsing
-./parse-adaptive-plan.sh detect_structure_level specs/plans/015_feature.md
-./parse-adaptive-plan.sh is_plan_expanded specs/plans/015_feature/
-./parse-adaptive-plan.sh list_expanded_phases specs/plans/015_feature/
 
 # Checkpoint utilities
 source ./checkpoint-utils.sh

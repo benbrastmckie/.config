@@ -168,7 +168,7 @@ SCRIPT_FILE="specs/009_topic/scripts/test_bundle_compatibility.sh"
 cat > "$SCRIPT_FILE" <<'EOF'
 #!/usr/bin/env bash
 # Test script for bundle compatibility debugging
-source .claude/lib/plan-core-bundle.sh
+source .claude/lib/plan/plan-core-bundle.sh
 # ... test logic ...
 EOF
 
@@ -274,7 +274,7 @@ Create artifacts programmatically:
 
 ```bash
 # Source utilities
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 
 # Create debug report
 DEBUG_CONTENT="$(cat <<EOF
@@ -357,7 +357,7 @@ When creating cross-references between artifacts, use **metadata-only passing** 
 
 ### Metadata Extraction for Cross-References
 
-Use `extract_report_metadata()` utility from `.claude/lib/metadata-extraction.sh` when creating cross-references:
+Use `extract_report_metadata()` utility from `.claude/lib/workflow/metadata-extraction.sh` when creating cross-references:
 
 ```bash
 # Extract metadata from research reports

@@ -177,7 +177,7 @@ Mark sections with usage annotations to guide future refactoring:
 [INLINE-REQUIRED: Bash commands and tool calls must remain inline]
 
 ```bash
-source .claude/lib/checkpoint-utils.sh
+source .claude/lib/workflow/checkpoint-utils.sh
 CHECKPOINT=$(load_checkpoint "implement")
 ```
 
@@ -185,7 +185,7 @@ CHECKPOINT=$(load_checkpoint "implement")
 [INLINE-REQUIRED: Parsing logic with specific commands]
 
 ```bash
-LEVEL=$(parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+LEVEL=$(plan-core-bundle.sh detect_structure_level "$PLAN_PATH")
 ```
 ```
 

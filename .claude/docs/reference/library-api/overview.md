@@ -37,7 +37,6 @@ For task-focused guides on when and how to use libraries, see [Using Utility Lib
 - [workflow-scope-detection.sh](library-api-state-machine.md#workflow-scope-detectionsh) - Unified workflow classification
 
 **Agent Support**:
-- [agent-registry-utils.sh](library-api-utilities.md#agent-registry-utilssh) - Agent registration and discovery
 - [hierarchical-agent-support.sh](library-api-utilities.md#hierarchical-agent-supportsh) - Multi-level agent coordination
 
 **Workflow Support**:
@@ -47,7 +46,7 @@ For task-focused guides on when and how to use libraries, see [Using Utility Lib
 - [overview-synthesis.sh](library-api-utilities.md#overview-synthesissh) - Standardized overview synthesis decision logic
 
 **Analysis and Validation**:
-- [complexity-thresholds.sh](library-api-utilities.md#complexity-thresholdssh) - Complexity scoring for plans
+- [complexity-utils.sh](library-api-utilities.md#complexity-utilssh) - Complexity scoring for plans
 - [structure-validator.sh](library-api-utilities.md#structure-validatorsh) - Directory structure validation
 
 See [Complete Library List](library-api-utilities.md#complete-library-list) for all 70+ libraries.
@@ -98,7 +97,7 @@ Complete location detection workflow. Orchestrates all detection functions and r
 **Usage Example**:
 ```bash
 # Source the library
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Perform location detection
 LOCATION_JSON=$(perform_location_detection "research authentication patterns")

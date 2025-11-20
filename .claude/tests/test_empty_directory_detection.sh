@@ -12,7 +12,7 @@ set -euo pipefail
 # Test framework setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="${SCRIPT_DIR}/../lib"
-UNIFIED_LIB="${LIB_DIR}/unified-location-detection.sh"
+UNIFIED_LIB="${LIB_DIR}/core/unified-location-detection.sh"
 
 # Test counters
 TOTAL_TESTS=0

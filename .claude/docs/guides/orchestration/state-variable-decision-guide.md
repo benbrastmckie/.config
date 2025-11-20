@@ -9,7 +9,7 @@ This guide provides decision criteria for choosing between file-based persistenc
 **Related Documentation**:
 - [Bash Block Execution Model](.claude/docs/concepts/bash-block-execution-model.md)
 - [Coordinate State Management](.claude/docs/architecture/coordinate-state-management.md)
-- [State Persistence Library](.claude/lib/state-persistence.sh)
+- [State Persistence Library](.claude/lib/core/state-persistence.sh)
 
 ## Quick Decision Matrix
 
@@ -253,7 +253,7 @@ done
 
 **Rule**: All array reconstruction must handle missing variables gracefully
 
-See [Defensive Array Reconstruction Pattern](../lib/workflow-initialization.sh)
+See [Defensive Array Reconstruction Pattern](../lib/workflow/workflow-initialization.sh)
 
 ## Migration Guide
 
@@ -444,8 +444,8 @@ REPORTS_DIR="${TOPIC_PATH}/reports"  # Fast, deterministic, no persistence neede
 
 - [Bash Block Execution Model](.claude/docs/concepts/bash-block-execution-model.md) - Subprocess isolation constraints
 - [Coordinate State Management](.claude/docs/architecture/coordinate-state-management.md) - Complete state architecture
-- [State Persistence Library](.claude/lib/state-persistence.sh) - Implementation details
-- [Defensive Array Reconstruction](.claude/lib/workflow-initialization.sh) - Pattern implementation
+- [State Persistence Library](.claude/lib/core/state-persistence.sh) - Implementation details
+- [Defensive Array Reconstruction](.claude/lib/workflow/workflow-initialization.sh) - Pattern implementation
 - [Fail-Fast Policy Analysis](.claude/specs/634_001_coordinate_improvementsmd_implements/reports/001_fail_fast_policy_analysis.md) - Fallback type taxonomy
 
 ## Summary

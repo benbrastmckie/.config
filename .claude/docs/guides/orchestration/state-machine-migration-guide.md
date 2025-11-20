@@ -72,12 +72,12 @@ From our three successful migrations:
 
 Every state machine migration requires:
 
-1. **State Machine Library**: `.claude/lib/workflow-state-machine.sh`
+1. **State Machine Library**: `.claude/lib/workflow/workflow-state-machine.sh`
    - `sm_init()`: Initialize state machine
    - `sm_transition()`: Transition between states
    - `sm_execute()`: Execute state handlers (optional)
 
-2. **State Persistence Library**: `.claude/lib/state-persistence.sh`
+2. **State Persistence Library**: `.claude/lib/core/state-persistence.sh`
    - `init_workflow_state()`: Create state file
    - `load_workflow_state()`: Restore state
    - `append_workflow_state()`: Add state variables
@@ -199,8 +199,8 @@ if [ -z "$WORKFLOW_DESCRIPTION" ]; then
 fi
 
 # Source state machine libraries
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Initialize workflow state (GitHub Actions pattern)
 STATE_FILE=$(init_workflow_state "mycommand_$$")
@@ -217,7 +217,7 @@ append_workflow_state "TERMINAL_STATE" "$TERMINAL_STATE"
 append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
 
 # Source and initialize paths (existing logic)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh"
 initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "$WORKFLOW_SCOPE"
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
 
@@ -413,7 +413,7 @@ bash .claude/tests/validate_executable_doc_separation.sh 2>&1 | grep "mycommand.
 # Expected: PASS on size, guide existence, cross-references
 
 # 3. Check agent invocation patterns
-bash .claude/lib/validate-agent-invocation-pattern.sh .claude/commands/mycommand.md
+bash .claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/mycommand.md
 # Expected: No anti-patterns detected
 
 # 4. Verify line count reduction
@@ -611,7 +611,7 @@ bash .claude/tests/test_orchestration_commands.sh
 
 2. **Anti-Pattern Detection** (MUST PASS):
 ```bash
-bash .claude/lib/validate-agent-invocation-pattern.sh .claude/commands/mycommand.md
+bash .claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/mycommand.md
 # No violations allowed
 ```
 
@@ -706,7 +706,7 @@ LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 source "${LIB_DIR}/workflow-state-machine.sh"
 
 # CORRECT
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
 ```
 
 **Why**: Test pattern looks for `source.*\.claude/lib/` or `source.*lib/` and needs full paths to match.
@@ -998,10 +998,10 @@ Don't migrate if:
 
 ### Resources
 
-- **State Machine Library**: `.claude/lib/workflow-state-machine.sh`
-- **State Persistence Library**: `.claude/lib/state-persistence.sh`
+- **State Machine Library**: `.claude/lib/workflow/workflow-state-machine.sh`
+- **State Persistence Library**: `.claude/lib/core/state-persistence.sh`
 - **Test Suite**: `.claude/tests/test_orchestration_commands.sh`
-- **Anti-Pattern Validator**: `.claude/lib/validate-agent-invocation-pattern.sh`
+- **Anti-Pattern Validator**: `.claude/lib/util/validate-agent-invocation-pattern.sh`
 - **Example Migrations**: See `/coordinate`, `/orchestrate`, `/supervise` in `.claude/commands/`
 
 ---

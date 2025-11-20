@@ -80,8 +80,8 @@ set -eo pipefail
 # Source topic-utils.sh for extract_significant_words function (Plan 777 fallback improvement)
 # This must be sourced before other functions to make extract_significant_words available
 SCRIPT_DIR_ULD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR_ULD/topic-utils.sh" ]; then
-  source "$SCRIPT_DIR_ULD/topic-utils.sh"
+if [ -f "$SCRIPT_DIR_ULD/../plan/topic-utils.sh" ]; then
+  source "$SCRIPT_DIR_ULD/../plan/topic-utils.sh"
 fi
 
 # ============================================================================

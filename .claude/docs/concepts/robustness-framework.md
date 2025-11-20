@@ -270,13 +270,9 @@ grep -q "file_path\|status\|error_message" command_file.md
 ## Validation Methods
 
 **Pre-commit Validation**:
-```bash
-# Verify robustness patterns applied
-.claude/scripts/validate-command-standards.sh command_file.md
-
-# Verify testing requirements met
-.claude/scripts/run-command-tests.sh
-```
+- Run tests for affected commands: `bash .claude/tests/test_*.sh`
+- Verify link integrity: `.claude/scripts/validate-links-quick.sh`
+- Check command syntax and structure manually
 
 **Integration Validation**:
 - Cross-reference accuracy: All links point to existing files

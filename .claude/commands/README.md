@@ -224,7 +224,7 @@ The core development workflow follows this sequence: **/research** -> **/plan** 
 
 **Dependencies**:
 - **Agents**: complexity-estimator
-- **Libraries**: plan-core-bundle.sh, auto-analysis-utils.sh, parse-adaptive-plan.sh
+- **Libraries**: plan-core-bundle.sh, auto-analysis-utils.sh, plan-core-bundle.sh
 
 **Features**:
 - On-demand phase/stage extraction
@@ -574,22 +574,22 @@ Advanced users can use the progressive parsing utility directly:
 
 ```bash
 # Detect plan structure level
-.claude/lib/parse-adaptive-plan.sh detect_structure_level <plan-path>
+.claude/lib/plan-core-bundle.sh detect_structure_level <plan-path>
 
 # Check if plan is expanded
-.claude/lib/parse-adaptive-plan.sh is_plan_expanded <plan-path>
+.claude/lib/plan-core-bundle.sh is_plan_expanded <plan-path>
 
 # Check if specific phase is expanded
-.claude/lib/parse-adaptive-plan.sh is_phase_expanded <plan-path> <phase-num>
+.claude/lib/plan-core-bundle.sh is_phase_expanded <plan-path> <phase-num>
 
 # List expanded phases
-.claude/lib/parse-adaptive-plan.sh list_expanded_phases <plan-path>
+.claude/lib/plan-core-bundle.sh list_expanded_phases <plan-path>
 
 # List expanded stages for a phase
-.claude/lib/parse-adaptive-plan.sh list_expanded_stages <plan-path> <phase-num>
+.claude/lib/plan-core-bundle.sh list_expanded_stages <plan-path> <phase-num>
 
 # Get plan status
-.claude/lib/parse-adaptive-plan.sh get_status <plan-path>
+.claude/lib/plan-core-bundle.sh get_status <plan-path>
 ```
 
 ## Standards Discovery

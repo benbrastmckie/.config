@@ -139,7 +139,7 @@ echo "✓ VERIFIED: Plan file exists: $plan_file"
 
 **EXECUTE NOW - Parse Phase from Plan**:
 
-Read the specified phase from the main plan using `parse-adaptive-plan.sh` utilities:
+Read the specified phase from the main plan using `plan-core-bundle.sh` utilities:
 - Phase heading and title
 - Objective
 - Complexity
@@ -859,7 +859,8 @@ echo "  Failed: $(echo "$aggregation_result" | jq '.failed')"
 ```bash
 if [[ "$MODE" == "explicit" ]] && [[ "$TYPE" == "phase" ]]; then
   # Detect plan structure
-  source .claude/lib/parse-adaptive-plan.sh
+  # NOTE: plan-core-bundle.sh was consolidated into plan-core-bundle.sh
+  source .claude/lib/plan/plan-core-bundle.sh
 
   # Extract phase content
   phase_content=$(extract_phase "$PATH" "$NUM")

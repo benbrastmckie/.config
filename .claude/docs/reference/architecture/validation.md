@@ -47,7 +47,7 @@ Use explicit "EXECUTE NOW" markers for critical operations:
 Run this code block BEFORE invoking agents:
 
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh"
 WORKFLOW_TOPIC_DIR=$(get_or_create_topic_dir "$WORKFLOW_DESCRIPTION" ".claude/specs")
 
 declare -A REPORT_PATHS

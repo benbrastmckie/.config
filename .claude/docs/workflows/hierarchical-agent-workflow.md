@@ -64,7 +64,7 @@ Level 3: Task Executors (focused single-task agents - rarely used)
 **Implementation**:
 ```bash
 # Metadata extraction utility
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 extract_report_metadata "$report_path"
 # Returns: {title, summary, file_paths, recommendations, path, size}
 ```
@@ -171,7 +171,7 @@ Supports recursive supervision for large-scale workflows (10+ topics):
 ## Utilities
 
 ### Metadata Extraction
-**Library**: `.claude/lib/metadata-extraction.sh`
+**Library**: `.claude/lib/workflow/metadata-extraction.sh`
 
 Functions:
 - `extract_report_metadata()` - Extract report metadata
@@ -179,7 +179,7 @@ Functions:
 - `load_metadata_on_demand()` - Generic metadata loader with caching
 
 ### Plan Parsing
-**Library**: `.claude/lib/plan-core-bundle.sh`
+**Library**: `.claude/lib/plan/plan-core-bundle.sh`
 
 Functions:
 - `parse_plan_file()` - Parse plan structure and phases
@@ -187,7 +187,7 @@ Functions:
 - `get_plan_metadata()` - Get plan-level metadata
 
 ### Context Management
-**Library**: `.claude/lib/context-pruning.sh`
+**Library**: `.claude/lib/workflow/context-pruning.sh`
 
 Functions:
 - `prune_subagent_output()` - Clear full outputs after metadata extraction

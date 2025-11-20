@@ -543,7 +543,7 @@ PHASES_TO_EXECUTE=$(calculate_phases "$WORKFLOW_SCOPE")
 
 ```bash
 # Source checkpoint utilities
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh"
 
 # After each phase completion
 CHECKPOINT_DATA=$(cat <<EOF
@@ -591,7 +591,7 @@ fi
 
 **References**:
 - Implementation: `/implement` command
-- Utilities: `.claude/lib/checkpoint-utils.sh`
+- Utilities: `.claude/lib/workflow/checkpoint-utils.sh`
 
 ---
 
@@ -611,9 +611,9 @@ fi
 - Spec 593: Comprehensive Problem Mapping
 
 **Library References**:
-- `.claude/lib/checkpoint-utils.sh` - Checkpoint save/restore utilities
-- `.claude/lib/workflow-detection.sh` - Workflow scope detection
-- `.claude/lib/unified-location-detection.sh` - Path calculation utilities
+- `.claude/lib/workflow/checkpoint-utils.sh` - Checkpoint save/restore utilities
+- `.claude/lib/workflow/workflow-detection.sh` - Workflow scope detection
+- `.claude/lib/core/unified-location-detection.sh` - Path calculation utilities
 
 **Command Examples**:
 - `/coordinate` - Stateless recalculation implementation
@@ -703,7 +703,7 @@ Before marking command complete:
 **EXECUTE NOW - Calculate Report Path**
 
 ```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-creation.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact/artifact-creation.sh"
 TOPIC_DIR=$(get_or_create_topic_dir "$RESEARCH_TOPIC" ".claude/specs")
 REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "001_${TOPIC_SLUG}" "")
 echo "Report will be written to: $REPORT_PATH"
@@ -797,7 +797,7 @@ echo "✓ Verified: Report exists at $REPORT_PATH"
 2. **Bash Execution Blocks**
    ```bash
    # EXECUTE NOW
-   source .claude/lib/artifact-creation.sh
+   source .claude/lib/artifact/artifact-creation.sh
    REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "001" "")
    ```
    - **Why inline**: Commands must execute these operations directly

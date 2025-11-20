@@ -441,7 +441,7 @@ Code-writer agents follow this protocol:
 
 ### Checkbox Utilities
 
-Plan hierarchy updates use `.claude/lib/checkbox-utils.sh`:
+Plan hierarchy updates use `.claude/lib/plan/checkbox-utils.sh`:
 
 - `update_checkbox()` - Mark task complete with fuzzy matching
 - `propagate_checkbox_update()` - Update parent levels
@@ -636,7 +636,7 @@ Debug reports created in topic-based structure:
 **Cause**: Checkbox update propagation failed
 
 **Solution**:
-1. Use `.claude/lib/checkbox-utils.sh` to manually update
+1. Use `.claude/lib/plan/checkbox-utils.sh` to manually update
 2. Verify all levels using `verify_hierarchy_consistency()`
 3. Re-run spec-updater if inconsistencies found
 

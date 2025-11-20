@@ -239,8 +239,8 @@ test -f CLAUDE.md && echo "Found" || echo "Missing"
    ```
 3. Verify libraries are sourced correctly:
    ```bash
-   bash -n .claude/lib/optimize-claude-md.sh
-   bash -n .claude/lib/unified-location-detection.sh
+   bash -n .claude/lib/util/optimize-claude-md.sh
+   bash -n .claude/lib/core/unified-location-detection.sh
    ```
 
 ### Issue: Plan has no optimization recommendations

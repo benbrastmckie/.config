@@ -8,7 +8,7 @@
 # Source the library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="$SCRIPT_DIR/../lib"
-source "$LIB_DIR/overview-synthesis.sh"
+source "$LIB_DIR/artifact/overview-synthesis.sh"
 
 # Test counters
 TESTS_PASSED=0

@@ -308,7 +308,7 @@ workflow-state-machine.sh version <2.0.0.
 **Solution**:
 ```bash
 # Check version
-grep VERSION= .claude/lib/workflow-state-machine.sh
+grep VERSION= .claude/lib/workflow/workflow-state-machine.sh
 
 # Ensure version >=2.0.0
 ```

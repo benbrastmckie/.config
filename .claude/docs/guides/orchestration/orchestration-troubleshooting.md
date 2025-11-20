@@ -36,7 +36,7 @@ ls .claude/TODO*.md 2>/dev/null
 # Look for: TODO files indicate agent delegation failure
 
 # 5. Run validation
-./.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
+./.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
 # Look for: Anti-pattern violations
 ```
 
@@ -162,7 +162,7 @@ echo "$SCRIPT_DIR"
 grep -n '```yaml' .claude/commands/command-name.md
 
 # Validate agent invocation pattern
-./.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
+./.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
 
 # Check for TODO files
 ls -la .claude/TODO*.md
@@ -435,7 +435,7 @@ ls -la .claude/specs/*/reports/
 **Solution**:
 1. Pre-calculate paths using location detection utilities:
    ```bash
-   source .claude/lib/unified-location-detection.sh
+   source .claude/lib/core/unified-location-detection.sh
    topic_dir=$(create_topic_structure "feature_name")
    report_path="$topic_dir/reports/001_subtopic.md"
    ```
@@ -540,7 +540,7 @@ ls -la .claude/specs/NNN_topic/{reports,plans,summaries,debug}
 **EXECUTE NOW**: Create topic directory structure:
 
 ```bash
-source .claude/lib/unified-location-detection.sh
+source .claude/lib/core/unified-location-detection.sh
 topic_dir=$(create_topic_structure "feature_name")
 echo "TOPIC_DIR: $topic_dir"
 
@@ -638,18 +638,18 @@ Error: Library sourcing failed
 ```
 ERROR: Failed to source workflow-detection.sh
 
-EXPECTED PATH: /home/user/.config/.claude/lib/workflow-detection.sh
+EXPECTED PATH: /home/user/.config/.claude/lib/workflow/workflow-detection.sh
 
 DIAGNOSTIC COMMANDS:
-  ls -la /home/user/.config/.claude/lib/workflow-detection.sh
-  cat /home/user/.config/.claude/lib/workflow-detection.sh | head -10
+  ls -la /home/user/.config/.claude/lib/workflow/workflow-detection.sh
+  cat /home/user/.config/.claude/lib/workflow/workflow-detection.sh | head -10
 
 CONTEXT: Library required for workflow scope detection (detect_workflow_scope function)
 
 ACTION:
   1. Verify library file exists at expected path
   2. Check file permissions (should be readable)
-  3. Restore from git if missing: git checkout .claude/lib/workflow-detection.sh
+  3. Restore from git if missing: git checkout .claude/lib/workflow/workflow-detection.sh
 ```
 
 **Error Message Standards** (5 components):
@@ -698,7 +698,7 @@ save_checkpoint "$checkpoint_name" "$data"
 **Fix**: Update command to use correct API:
 ```bash
 # Correct usage:
-source .claude/lib/checkpoint-utils.sh
+source .claude/lib/workflow/checkpoint-utils.sh
 save_checkpoint "coordinate_phase2" "{\"topic\":\"$topic\",\"reports\":\"$reports\"}"
 
 # Restore:
@@ -761,7 +761,7 @@ jq empty .claude/data/checkpoints/[checkpoint].json
 **EXECUTE NOW**: USE the Bash tool to calculate paths:
 
 ```bash
-source .claude/lib/unified-location-detection.sh
+source .claude/lib/core/unified-location-detection.sh
 topic_dir=$(create_topic_structure "[topic_name]")
 report_path="$topic_dir/reports/001_[subtopic].md"
 echo "REPORT_PATH: $report_path"
@@ -802,7 +802,7 @@ ls -la "$report_path"
 
 ```bash
 # Validate specific command
-./.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
+./.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
 
 # Expected output if compliant:
 # ✓ No anti-patterns detected
@@ -871,7 +871,7 @@ Follow this decision tree for fastest diagnosis:
 
 Before committing changes to orchestration commands:
 
-- [ ] Run validation script: `.claude/lib/validate-agent-invocation-pattern.sh`
+- [ ] Run validation script: `.claude/lib/util/validate-agent-invocation-pattern.sh`
 - [ ] Run test suite: `.claude/tests/test_orchestration_commands.sh`
 - [ ] Verify no TODO files created: `ls .claude/TODO*.md` (should fail)
 - [ ] Verify files in correct locations: `ls .claude/specs/*/reports/`

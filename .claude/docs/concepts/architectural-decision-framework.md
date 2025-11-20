@@ -47,7 +47,7 @@ This framework provides explicit decision criteria for three recurring architect
 **EXECUTE NOW - Calculate Artifact Paths**
 
 bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact-creation.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/artifact/artifact-creation.sh"
 TOPIC_DIR=$(get_or_create_topic_dir "$WORKFLOW_DESCRIPTION" ".claude/specs")
 REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "$topic" "")
 echo "Pre-calculated path: $REPORT_PATH"
@@ -57,10 +57,10 @@ echo "Pre-calculated path: $REPORT_PATH"
 
 **Standalone Script - Complex Validation**:
 ```bash
-# .claude/scripts/validate-plan-structure.sh
-# Validates plan file structure, dependencies, metadata
-# Used by: /plan, /implement, /expand, /collapse
-# 150+ lines of validation logic
+# .claude/scripts/validate-links.sh
+# Validates markdown links across the codebase
+# Used by: /implement, /document, /refactor
+# 100+ lines of link validation logic
 ```
 
 **Why standalone**: Shared by multiple commands, complex logic, requires dedicated testing.

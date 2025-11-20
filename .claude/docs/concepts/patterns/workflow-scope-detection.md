@@ -75,7 +75,7 @@ else:
 
 ### Library: workflow-detection.sh
 
-Location: `.claude/lib/workflow-detection.sh`
+Location: `.claude/lib/workflow/workflow-detection.sh`
 
 #### Function: `detect_workflow_scope(workflow_description)`
 
@@ -92,7 +92,7 @@ Analyzes workflow description and returns scope type.
 
 **Example**:
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/workflow-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/workflow-detection.sh"
 
 SCOPE=$(detect_workflow_scope "research OAuth 2.0 authentication patterns")
 echo "$SCOPE"  # Output: research-only
@@ -131,7 +131,7 @@ Determines if a specific phase should execute for given workflow scope.
 
 **Example**:
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/workflow-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/workflow-detection.sh"
 
 WORKFLOW="research OAuth 2.0 patterns"
 
@@ -164,7 +164,7 @@ fi
 
 \`\`\`bash
 # Source workflow detection library
-source "${CLAUDE_CONFIG}/.claude/lib/workflow-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/workflow-detection.sh"
 
 # Check if testing should run
 WORKFLOW_DESCRIPTION="<original user input>"
@@ -204,7 +204,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 **EXECUTE NOW**: USE the Bash tool to check conditions:
 
 \`\`\`bash
-source "${CLAUDE_CONFIG}/.claude/lib/workflow-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/workflow-detection.sh"
 
 WORKFLOW_DESCRIPTION="<original user input>"
 TESTS_FAILED=<captured from Phase 4>
@@ -242,7 +242,7 @@ fi
 **EXECUTE NOW**: USE the Bash tool to detect and announce workflow scope:
 
 \`\`\`bash
-source "${CLAUDE_CONFIG}/.claude/lib/workflow-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/workflow-detection.sh"
 
 WORKFLOW_DESCRIPTION="<user input>"
 SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")

@@ -671,12 +671,12 @@ fi
 ## References
 
 ### Implementation Files
-- [workflow-llm-classifier.sh](../../lib/workflow-llm-classifier.sh) - Enhanced topic parsing
-- [workflow-initialization.sh](../../lib/workflow-initialization.sh) - Filename slug validation
-- [unified-logger.sh](../../lib/unified-logger.sh) - Slug generation logging
+- [workflow-llm-classifier.sh](../../lib/workflow/workflow-llm-classifier.sh) - Enhanced topic parsing
+- [workflow-initialization.sh](../../lib/workflow/workflow-initialization.sh) - Filename slug validation
+- [unified-logger.sh](../../lib/core/unified-logger.sh) - Slug generation logging
 
 ### Testing Files
-- [test_topic_filename_generation.sh](../../tests/test_topic_filename_generation.sh) - Enhanced topic tests
+- [test_topic_filename_generation.sh](../../../tests/test_topic_filename_generation.sh) - Enhanced topic tests
 
 ### Related Documentation
 - [LLM Classification Pattern](../concepts/patterns/llm-classification-pattern.md) - Overall classification pattern

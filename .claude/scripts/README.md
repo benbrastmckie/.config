@@ -5,10 +5,10 @@ This directory contains standalone executable scripts for system maintenance, va
 ## Purpose
 
 Scripts provide **task-specific command-line utilities** for:
-- **Link validation** - Finding and fixing broken markdown links
-- **Migration operations** - Updating references and relocating files
-- **Performance analysis** - Analyzing system metrics and behavior
-- **System validation** - Verifying integrity and compliance
+- **Link validation** - Finding broken markdown links
+- **Topic management** - Detecting empty topic directories
+- **Agent validation** - Verifying agent behavioral files
+- **System validation** - Ensuring integrity and compliance
 
 ## Characteristics
 
@@ -48,64 +48,39 @@ Scripts provide **task-specific command-line utilities** for:
 
 **validate-links-quick.sh**
 - **Purpose**: Fast link validation without external dependencies
-- **Usage**: `bash .claude/scripts/validate-links-quick.sh`
+- **Usage**: `bash .claude/scripts/validate-links-quick.sh [days]`
 - **Features**:
   - Pure bash implementation (no npm required)
   - Checks only `.claude/docs` directory
+  - Optional parameter to check files modified in last N days
   - Faster execution for quick checks
 - **Output**: List of broken links with expected paths
 - **Dependencies**: None (bash only)
 
-### Link Fixing
+### Topic Management
 
-**fix-absolute-to-relative.sh**
-- **Purpose**: Convert absolute filesystem paths to relative markdown links
-- **Usage**: `bash .claude/scripts/debug-absolute-to-relative.sh [--dry-run]`
+**detect-empty-topics.sh**
+- **Purpose**: Find and report empty topic directories in specs/
+- **Usage**: `bash .claude/scripts/detect-empty-topics.sh`
 - **Features**:
-  - Fixes paths like `/home/user/.config/file.md` → `file.md`
-  - Supports dry-run mode for preview
-  - Processes all markdown files in active documentation
-- **Output**: Count of files modified and changes made
+  - Scans `.claude/specs/` for topic directories
+  - Identifies topics with no plans, reports, or summaries
+  - Helps maintain clean spec directory
+- **Output**: List of empty topic directories that can be removed
+- **Dependencies**: None (bash only)
 
-**fix-duplicate-paths.sh**
-- **Purpose**: Remove duplicate path components in links
-- **Usage**: `bash .claude/scripts/debug-duplicate-paths.sh [--dry-run]`
-- **Example**: `.claude/docs/.claude/docs/file.md` → `.claude/docs/file.md`
-- **Features**: Pattern detection and automated correction
+### Agent Validation
 
-**fix-renamed-files.sh**
-- **Purpose**: Update links to reflect renamed files
-- **Usage**: `bash .claude/scripts/debug-renamed-files.sh [--dry-run]`
-- **Features**: Searches for old references and updates to new paths
-
-**rollback-link-fixes.sh**
-- **Purpose**: Revert link fixing changes
-- **Usage**: `bash .claude/scripts/rollback-link-fixes.sh`
-- **Features**: Git-based rollback to previous state
-
-### Migration and Updates
-
-**update-template-references.sh**
-- **Purpose**: Automated migration of template file references
-- **Usage**: `bash .claude/scripts/update-template-references.sh [--dry-run] [--verbose]`
+**validate-agent-behavioral-file.sh**
+- **Purpose**: Validate agent behavioral file structure and metadata
+- **Usage**: `bash .claude/scripts/validate-agent-behavioral-file.sh <agent-file.md>`
 - **Features**:
-  - Updates references from old to new paths
-  - Dry-run mode shows changes without modifying files
-  - Verbose mode shows detailed progress
-  - Automatic verification after migration
-- **Example**: Used in Phase 7 to migrate sub-supervisor-template.md references
-- **Output**: Summary of files updated and verification results
-
-### Analysis and Metrics
-
-**analyze-coordinate-performance.sh**
-- **Purpose**: Analyze `/coordinate` command performance metrics
-- **Usage**: `bash .claude/scripts/analyze-coordinate-performance.sh`
-- **Features**:
-  - Parse execution logs for timing data
-  - Calculate phase durations
-  - Generate performance reports
-- **Output**: Performance analysis with bottleneck identification
+  - Validates YAML frontmatter (allowed-tools, model, description)
+  - Checks required sections (Role, Responsibilities, Workflow)
+  - Verifies structural integrity
+  - Reports detailed validation errors
+- **Output**: Pass/fail with specific error messages for failures
+- **Dependencies**: None (bash only)
 
 ## vs lib/ (Sourced Libraries)
 
@@ -116,7 +91,7 @@ Scripts provide **task-specific command-line utilities** for:
 | **Interface** | CLI with argument parsing | Function calls |
 | **Output** | Formatted reports, progress | Return values, exit codes |
 | **Scope** | Complete end-to-end operations | Modular building blocks |
-| **Examples** | validate-links.sh, fix-*.sh | plan-parsing.sh, error-handling.sh |
+| **Examples** | validate-links.sh, detect-empty-topics.sh | plan-parsing.sh, error-handling.sh |
 | **Dependencies** | May use external tools | Pure bash functions |
 | **State** | Stateful (modifies files/system) | Stateless (pure functions) |
 | **Reusability** | Task-specific | General-purpose |
@@ -127,7 +102,7 @@ Scripts provide **task-specific command-line utilities** for:
 |--------|----------|--------|
 | **Purpose** | System management operations | Specialized helper utilities |
 | **Scope** | System-wide tasks | Specific use cases |
-| **Examples** | Migration, validation | Compatibility shims, metrics display |
+| **Examples** | Link validation, topic management | Compatibility shims, metrics display |
 | **Documentation** | This README | [../utils/README.md](../utils/README.md) |
 
 ## Decision Matrix: When to Use scripts/
@@ -136,7 +111,7 @@ Use `scripts/` when:
 - ✓ Building a standalone command-line utility
 - ✓ Task has complete workflow (input → processing → output)
 - ✓ Need CLI argument parsing and help text
-- ✓ Operation is system-level (validation, migration, analysis)
+- ✓ Operation is system-level (validation, topic management, analysis)
 - ✓ Output should be formatted for human consumption
 - ✓ Task may use external tools (npm, curl, git)
 
@@ -153,18 +128,14 @@ Use `utils/` instead when:
 
 ## Common Patterns
 
-### Dry-Run Mode
-Most scripts support `--dry-run` to preview changes:
+### Parameter Support
+Scripts accept parameters for flexible operation:
 ```bash
-bash .claude/scripts/debug-absolute-to-relative.sh --dry-run
-# Shows what would change without modifying files
-```
+# Check files modified in last 7 days
+bash .claude/scripts/validate-links-quick.sh 7
 
-### Verbose Output
-Many scripts support `--verbose` for detailed progress:
-```bash
-bash .claude/scripts/update-template-references.sh --verbose
-# Shows file-by-file progress
+# Validate specific agent file
+bash .claude/scripts/validate-agent-behavioral-file.sh .claude/agents/researcher.md
 ```
 
 ### Help Text

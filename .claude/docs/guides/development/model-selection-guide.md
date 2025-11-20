@@ -381,21 +381,6 @@ Track these metrics for migrated agents (2-4 weeks):
 | User quality issues | ≤3/week | Rollback if >3/week |
 | Critical failures | 0 | Immediate rollback |
 
-### Monitoring Script
-
-Use `.claude/lib/monitor-model-usage.sh` to track metrics:
-
-```bash
-# Check current model usage distribution
-.claude/lib/monitor-model-usage.sh --summary
-
-# Track specific agent metrics
-.claude/lib/monitor-model-usage.sh --agent spec-updater --period 7d
-
-# Generate cost report
-.claude/lib/monitor-model-usage.sh --cost-report --output report.md
-```
-
 ## Best Practices
 
 ### DO

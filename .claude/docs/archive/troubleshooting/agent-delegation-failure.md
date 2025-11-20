@@ -103,7 +103,7 @@ description: Specialized agent description
 ```
 
 **Why Bash is Required**:
-- Agents use bash for library sourcing (e.g., `source .claude/lib/metadata-extraction.sh`)
+- Agents use bash for library sourcing (e.g., `source .claude/lib/workflow/metadata-extraction.sh`)
 - Verification checkpoints require bash commands
 - File path validation uses bash utilities
 
@@ -199,15 +199,15 @@ Remove code fences from library sourcing blocks:
 **Source Required Libraries**
 
 ```bash
-source "$SCRIPT_DIR/../lib/unified-location-detection.sh"
-source "$SCRIPT_DIR/../lib/metadata-extraction.sh"
+source "$SCRIPT_DIR/../lib/core/unified-location-detection.sh"
+source "$SCRIPT_DIR/../lib/workflow/metadata-extraction.sh"
 ```
 
 # After
 **EXECUTE NOW - Source Required Libraries**
 
-source "$SCRIPT_DIR/../lib/unified-location-detection.sh"
-source "$SCRIPT_DIR/../lib/metadata-extraction.sh"
+source "$SCRIPT_DIR/../lib/core/unified-location-detection.sh"
+source "$SCRIPT_DIR/../lib/workflow/metadata-extraction.sh"
 ```
 
 **Verification**:

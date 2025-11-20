@@ -138,7 +138,7 @@ See also:
 
 ```bash
 # Source artifact creation utilities
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh"
 
 # Step 1: Get or create topic directory
 TOPIC_DIR=$(get_or_create_topic_dir "$FEATURE_DESCRIPTION" "specs")
@@ -192,7 +192,7 @@ fi
 
 ```bash
 # Source metadata extraction utilities
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Extract report metadata
 REPORT_METADATA=$(extract_report_metadata "$REPORT_PATH")
@@ -244,7 +244,7 @@ Commands should prefer utility libraries over agent invocation when:
 CLAUDE_CONFIG="${CLAUDE_CONFIG:-${HOME}/.config}"
 
 # Source the library
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Call library function
 LOCATION_JSON=$(perform_location_detection "$USER_INPUT")
@@ -275,7 +275,7 @@ fi
 - `checkpoint-utils.sh` - Checkpoint state management
 
 **Agent Support**:
-- `agent-registry-utils.sh` - Agent registration and discovery
+- `# agent-registry-utils.sh (removed)` - Agent registration and discovery
 - `hierarchical-agent-support.sh` - Multi-level agent coordination
 
 **Workflow Support**:
@@ -296,7 +296,7 @@ Use `library-sourcing.sh` for orchestration commands that need core libraries pl
 ```bash
 #!/usr/bin/env bash
 # Source library-sourcing.sh for automatic core library loading
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/library-sourcing.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/core/library-sourcing.sh"
 
 # Load core libraries (7) + additional workflow libraries
 # Automatic deduplication prevents re-sourcing duplicates
@@ -327,8 +327,8 @@ Use direct sourcing for specialized commands with narrow library needs:
 # Source only the specific libraries needed
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-source "${SCRIPT_DIR}/../lib/convert-core.sh"
-source "${SCRIPT_DIR}/../lib/conversion-logger.sh"
+source "${SCRIPT_DIR}/../lib/convert/convert-core.sh"
+# Conversion logger not yet implemented
 
 # Call specialized conversion functions
 convert_file "$INPUT" "$OUTPUT"
@@ -396,10 +396,10 @@ Artifact operations are split across two focused libraries:
 
 ```bash
 # Artifact file creation and directory management
-source .claude/lib/artifact-creation.sh
+source .claude/lib/artifact/artifact-creation.sh
 
 # Artifact tracking, querying, and validation
-source .claude/lib/artifact-registry.sh
+source .claude/lib/artifact/artifact-registry.sh
 ```
 
 See [Library Classification](../../lib/README.md#library-classification) for complete details on available functions.
@@ -437,7 +437,7 @@ LOCATION_JSON=$(perform_location_detection "$TOPIC" "false")
 
 ```bash
 # ✓ CORRECT: Parent command calculates paths
-source "${CLAUDE_CONFIG:-${HOME}/.config}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG:-${HOME}/.config}/.claude/lib/core/unified-location-detection.sh"
 LOCATION_JSON=$(perform_location_detection "$TOPIC" "false")
 
 # Extract all needed paths
@@ -647,7 +647,7 @@ Notice the CLAUDE_PROJECT_DIR detection, WORKFLOW_SCOPE calculation, and PHASES_
 For complex calculations (>20 lines), extract to shared library function:
 
 ```bash
-# .claude/lib/workflow-scope-detection.sh
+# .claude/lib/workflow/workflow-scope-detection.sh
 detect_workflow_scope() {
   local workflow_description="$1"
   local scope=""
@@ -676,7 +676,7 @@ Then every block sources the library and calls the function:
 
 ```bash
 # Every block
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-scope-detection.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-scope-detection.sh"
 WORKFLOW_SCOPE=$(detect_workflow_scope "$WORKFLOW_DESCRIPTION")
 ```
 
@@ -776,7 +776,7 @@ Checkpoint files serialize workflow state to JSON at phase boundaries, enabling 
 
 ```bash
 # Source checkpoint utilities
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh"
 
 # After Phase 1 completion
 CHECKPOINT_DATA=$(cat <<EOF

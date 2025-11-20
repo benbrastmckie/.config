@@ -207,7 +207,7 @@ cp checkpoint.json.backup checkpoint.json
 
 ### Checkpoint Utilities
 
-**Core Functions** (`.claude/lib/checkpoint-utils.sh`):
+**Core Functions** (`.claude/lib/workflow/checkpoint-utils.sh`):
 
 1. **save_checkpoint(workflow_type, project_name, state_json)**
    - Creates new checkpoint or updates existing

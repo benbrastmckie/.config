@@ -43,8 +43,8 @@ echo "Test 1: Verify no indirect variable expansions in library files"
 # The nameref pattern should be: local -n varname=
 
 # context-pruning.sh was archived - skip test
-if [ -f "$PROJECT_ROOT/lib/context-pruning.sh" ]; then
-  if grep 'local -n.*=' "$PROJECT_ROOT/lib/context-pruning.sh" >/dev/null 2>&1; then
+if [ -f "$PROJECT_ROOT/.claude/lib/context-pruning.sh" ]; then
+  if grep 'local -n.*=' "$PROJECT_ROOT/.claude/lib/context-pruning.sh" >/dev/null 2>&1; then
     pass "context-pruning.sh uses nameref pattern"
   else
     fail "context-pruning.sh nameref" "found nameref pattern" "not found"
@@ -53,7 +53,7 @@ else
   echo "  - context-pruning.sh archived (skipped)"
 fi
 
-if grep 'local -n.*=' "$PROJECT_ROOT/lib/workflow/workflow-initialization.sh" >/dev/null 2>&1; then
+if grep 'local -n.*=' "$PROJECT_ROOT/.claude/lib/workflow/workflow-initialization.sh" >/dev/null 2>&1; then
   pass "workflow-initialization.sh uses nameref pattern"
 else
   fail "workflow-initialization.sh nameref" "found nameref pattern" "not found"
@@ -66,8 +66,8 @@ echo ""
 echo "Test 2: Verify library files source without errors"
 
 # context-pruning.sh was archived - skip test
-if [ -f "$PROJECT_ROOT/lib/context-pruning.sh" ]; then
-  if bash -c "source '$PROJECT_ROOT/lib/context-pruning.sh'" 2>&1 | grep -qi error; then
+if [ -f "$PROJECT_ROOT/.claude/lib/context-pruning.sh" ]; then
+  if bash -c "source '$PROJECT_ROOT/.claude/lib/context-pruning.sh'" 2>&1 | grep -qi error; then
     fail "context-pruning.sh sourcing" "clean source" "errors found"
   else
     pass "context-pruning.sh sources cleanly"
@@ -76,7 +76,7 @@ else
   echo "  - context-pruning.sh archived (skipped)"
 fi
 
-if bash -c "source '$PROJECT_ROOT/lib/workflow/workflow-initialization.sh'" 2>&1 | grep -qi error; then
+if bash -c "source '$PROJECT_ROOT/.claude/lib/workflow/workflow-initialization.sh'" 2>&1 | grep -qi error; then
   fail "workflow-initialization.sh sourcing" "clean source" "errors found"
 else
   pass "workflow-initialization.sh sources cleanly"

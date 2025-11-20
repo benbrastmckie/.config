@@ -330,7 +330,7 @@ fi
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/workflow-scope-detection.sh
+source .claude/lib/workflow/workflow-scope-detection.sh
 
 # Default llm-only mode
 description="research authentication patterns and create implementation plan"
@@ -352,7 +352,7 @@ echo "Topics: $topics"
 # Air-gapped environment configuration
 export WORKFLOW_CLASSIFICATION_MODE=regex-only
 
-source .claude/lib/workflow-scope-detection.sh
+source .claude/lib/workflow/workflow-scope-detection.sh
 
 # Classification works offline
 description="implement user authentication"
@@ -366,7 +366,7 @@ echo "Workflow type: $workflow_type"  # full-implementation
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/workflow-scope-detection.sh
+source .claude/lib/workflow/workflow-scope-detection.sh
 
 classify_with_fallback() {
   local description="$1"
@@ -399,7 +399,7 @@ result=$(classify_with_fallback "$description")
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/workflow-scope-detection.sh
+source .claude/lib/workflow/workflow-scope-detection.sh
 
 description="research the coordinate command implementation"
 
@@ -429,7 +429,7 @@ fi
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/workflow-scope-detection.sh
+source .claude/lib/workflow/workflow-scope-detection.sh
 
 description="implement OAuth2 authentication with JWT tokens"
 result=$(classify_workflow_comprehensive "$description")
@@ -627,14 +627,14 @@ done
 ## References
 
 ### Implementation Files
-- [workflow-scope-detection.sh](../../lib/workflow-scope-detection.sh) - Main classification library
-- [workflow-llm-classifier.sh](../../lib/workflow-llm-classifier.sh) - LLM classifier implementation
-- [workflow-detection.sh](../../lib/workflow-detection.sh) - /supervise integration
+- [workflow-scope-detection.sh](../../lib/workflow/workflow-scope-detection.sh) - Main classification library
+- [workflow-llm-classifier.sh](../../lib/workflow/workflow-llm-classifier.sh) - LLM classifier implementation
+- [workflow-detection.sh](../../lib/workflow/workflow-detection.sh) - /supervise integration
 
 ### Testing Files
-- [test_scope_detection.sh](../../tests/test_scope_detection.sh) - Integration tests
-- [test_scope_detection_ab.sh](../../tests/test_scope_detection_ab.sh) - A/B mode comparison
-- [bench_workflow_classification.sh](../../tests/bench_workflow_classification.sh) - Performance benchmarks
+- [test_scope_detection.sh](../../../tests/test_scope_detection.sh) - Integration tests
+- [test_scope_detection_ab.sh](../../../tests/test_scope_detection_ab.sh) - A/B mode comparison
+- [bench_workflow_classification.sh](../../../tests/bench_workflow_classification.sh) - Performance benchmarks
 
 ### Related Documentation
 - [LLM Classification Pattern](../concepts/patterns/llm-classification-pattern.md) - Overall pattern documentation

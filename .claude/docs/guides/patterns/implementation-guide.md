@@ -52,10 +52,10 @@ Before implementing the phase, check if it's already expanded and display curren
 
 ```bash
 # Detect plan structure level
-LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+LEVEL=$(.claude/lib/plan-core-bundle.sh detect_structure_level "$PLAN_PATH")
 
 # Check if current phase is expanded
-IS_PHASE_EXPANDED=$(.claude/lib/parse-adaptive-plan.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
+IS_PHASE_EXPANDED=$(.claude/lib/plan-core-bundle.sh is_phase_expanded "$PLAN_PATH" "$CURRENT_PHASE")
 ```
 
 **Display Structure Information:**
@@ -86,7 +86,7 @@ Evaluate phase complexity using hybrid approach: threshold-based scoring with ag
 
 1. **Threshold calculation** (uses complexity-utils.sh):
    ```bash
-   source "${CLAUDE_PROJECT_DIR}/.claude/lib/complexity-utils.sh"
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/complexity-utils.sh"
    THRESHOLD_SCORE=$(calculate_phase_complexity "$PHASE_NAME" "$TASK_LIST")
    TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]" || echo "0")
    ```
@@ -105,7 +105,7 @@ Evaluate phase complexity using hybrid approach: threshold-based scoring with ag
 
 3. **Logging and analytics**:
    ```bash
-   source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh"
+   source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-logger.sh"
    log_complexity_check "$CURRENT_PHASE" "$COMPLEXITY_SCORE" "$COMPLEXITY_THRESHOLD_HIGH" "$AGENT_NEEDED"
 
    # Log discrepancy if agent evaluation differed from threshold
@@ -121,7 +121,7 @@ Evaluate phase complexity using hybrid approach: threshold-based scoring with ag
 **Quick Example**:
 ```bash
 # Calculate threshold score
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/complexity-utils.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/complexity-utils.sh"
 THRESHOLD_SCORE=$(calculate_phase_complexity "$PHASE_NAME" "$TASK_LIST")
 TASK_COUNT=$(echo "$TASK_LIST" | grep -c "^- \[ \]")
 
@@ -204,7 +204,7 @@ Run tests by:
 
 1. **Error classification** (uses error-handling.sh):
    ```bash
-   source "$CLAUDE_PROJECT_DIR/.claude/lib/error-handling.sh"
+   source "$CLAUDE_PROJECT_DIR/.claude/lib/core/error-handling.sh"
    ERROR_TYPE=$(detect_error_type "$TEST_OUTPUT")  # → syntax, test_failure, timeout, etc.
    SUGGESTIONS=$(generate_suggestions "$ERROR_TYPE" "$TEST_OUTPUT" "$ERROR_LOCATION")
    ```
@@ -346,7 +346,7 @@ Automatically evaluate if an expanded phase should be collapsed back to the main
 **Collapse Thresholds**: Tasks ≤ 5 AND Complexity < 6.0 (both required, conservative approach)
 
 **Workflow**:
-1. Check phase expansion and completion status (parse-adaptive-plan.sh)
+1. Check phase expansion and completion status (plan-core-bundle.sh)
 2. Extract metrics: task count, complexity score (complexity-utils.sh)
 3. Log evaluation (log_collapse_check for observability)
 4. If thresholds met: Build collapse context JSON, invoke `/revise --auto-mode collapse_phase`
@@ -436,7 +436,7 @@ Initialize required utilities for consistent error handling, state management, a
 1. **Detect project directory**:
    ```bash
    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-   source "$SCRIPT_DIR/../lib/detect-project-dir.sh"  # Sets CLAUDE_PROJECT_DIR
+   source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"  # Sets CLAUDE_PROJECT_DIR
    ```
 
 2. **Verify core utilities**:
@@ -446,7 +446,7 @@ Initialize required utilities for consistent error handling, state management, a
    [ -f "$UTILS_DIR/checkpoint-utils.sh" ] || { echo "ERROR: checkpoint-utils.sh not found"; exit 1; }
    [ -f "$UTILS_DIR/complexity-utils.sh" ] || { echo "ERROR: complexity-utils.sh not found"; exit 1; }
    [ -f "$UTILS_DIR/unified-logger.sh" ] || { echo "ERROR: unified-logger.sh not found"; exit 1; }
-   [ -f "$UTILS_DIR/agent-registry-utils.sh" ] || { echo "ERROR: agent-registry-utils.sh not found"; exit 1; }
+   [ -f "$UTILS_DIR/# agent-registry-utils.sh (removed)" ] || { echo "ERROR: # agent-registry-utils.sh (removed) not found"; exit 1; }
    ```
 
 3. **Initialize logger** (`.claude/logs/adaptive-planning.log`, 10MB max, 5 files retained):
@@ -466,11 +466,11 @@ Initialize required utilities for consistent error handling, state management, a
 **Quick Example**:
 ```bash
 # Step 1: Detect project
-source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
 
 # Step 2 & 3: Source utilities and logger
 UTILS_DIR="$CLAUDE_PROJECT_DIR/.claude/lib"
-for util in error-handling.sh checkpoint-utils.sh complexity-utils.sh unified-logger.sh agent-registry-utils.sh; do
+for util in error-handling.sh checkpoint-utils.sh complexity-utils.sh unified-logger.sh # agent-registry-utils.sh (removed); do
   [ -f "$UTILS_DIR/$util" ] || { echo "ERROR: $util not found"; exit 1; }
 done
 source "$UTILS_DIR/adaptive-planning-logger.sh"
@@ -490,7 +490,7 @@ This command supports all three progressive structure levels:
 **Step 0: Detect Plan Structure Level**
 ```bash
 # Use adaptive plan parser to detect structure
-LEVEL=$(.claude/lib/parse-adaptive-plan.sh detect_structure_level "$PLAN_PATH")
+LEVEL=$(.claude/lib/plan-core-bundle.sh detect_structure_level "$PLAN_PATH")
 # Returns: 0 (single-file), 1 (phase-expanded), or 2 (stage-expanded)
 ```
 
@@ -512,7 +512,7 @@ All level-specific differences are abstracted by progressive utilities:
 Let me first locate the implementation plan:
 
 1. **Detect and parse the plan** to identify:
-   - Plan structure level (0, 1, or 2) using parse-adaptive-plan.sh
+   - Plan structure level (0, 1, or 2) using plan-core-bundle.sh
    - Expanded phases and stages (via progressive parsing utilities)
    - Referenced research reports (if any)
    - Standards file path (if captured in plan metadata)
@@ -547,5 +547,5 @@ Execute preview mode instead of actual implementation when `--dry-run` flag dete
 4. Display formatted preview (Unicode box-drawing with waves, phases, agents, files, tests, estimates)
 5. Prompt and either exit or continue to normal flow
 
-**Implementation**: Phase analysis uses hybrid_complexity_evaluation(); agent assignment maps complexity to types; duration from agent-registry-utils.sh; wave display shows sequential/parallel patterns; file/test extraction via regex
+**Implementation**: Phase analysis uses hybrid_complexity_evaluation(); agent assignment maps complexity to types; duration from # agent-registry-utils.sh (removed); wave display shows sequential/parallel patterns; file/test extraction via regex
 

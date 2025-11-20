@@ -83,7 +83,7 @@ Replace agent invocation with standardized bash library:
 
 ```bash
 # Source unified location detection library
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Perform location detection (single function call)
 LOCATION_JSON=$(perform_location_detection "implement JWT authentication")
@@ -181,13 +181,13 @@ if [ -z "$CLAUDE_CONFIG" ]; then
 fi
 
 # Source unified location detection library
-if ! source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh" 2>/dev/null; then
+if ! source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null; then
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "ERROR: Failed to load unified-location-detection.sh"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
   echo "**What failed**: Library sourcing"
-  echo "**Expected**: Library at ${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+  echo "**Expected**: Library at ${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
   echo "**Diagnostic**: Run: ls -la ${CLAUDE_CONFIG}/.claude/lib/"
   echo "**Context**: Required for Phase 0 (85% token reduction, 25x speedup)"
   echo "**Action**: Verify installation: git status .claude/lib/ | grep unified-location"
@@ -330,7 +330,7 @@ echo "LOCATION_COMPLETE: $TOPIC_PATH"
 **EXECUTE NOW**: USE the Bash tool to calculate paths:
 
 \`\`\`bash
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 LOCATION_JSON=$(perform_location_detection "research OAuth patterns")
 
@@ -457,7 +457,7 @@ grep -r "subagent_type.*general-purpose" .claude/commands/ | grep -i "location\|
 **EXECUTE NOW**: USE the Bash tool:
 
 \`\`\`bash
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 LOCATION_JSON=$(perform_location_detection "$WORKFLOW_DESCRIPTION")
 TOPIC_PATH=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
 REPORTS_DIR=$(echo "$LOCATION_JSON" | jq -r '.artifact_paths.reports')
@@ -469,7 +469,7 @@ echo "LOCATION_COMPLETE: $TOPIC_PATH"
 
 ```bash
 # Add library loading verification
-if ! source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh" 2>/dev/null; then
+if ! source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null; then
   echo "ERROR: unified-location-detection.sh not found"
   echo "DIAGNOSTIC: ls -la ${CLAUDE_CONFIG}/.claude/lib/"
   exit 1
@@ -529,7 +529,7 @@ ERROR: Failed to load unified-location-detection.sh
 **Solutions**:
 ```bash
 # Solution 1: Verify library exists
-ls -la "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+ls -la "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Solution 2: Check CLAUDE_CONFIG
 echo "$CLAUDE_CONFIG"  # Should be: /home/user/.config or project root
@@ -550,7 +550,7 @@ bash: perform_location_detection: command not found
 **Solutions**:
 ```bash
 # Solution 1: Verify function defined
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 declare -f perform_location_detection  # Should print function definition
 
 # Solution 2: Re-install library

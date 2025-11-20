@@ -57,12 +57,22 @@ fi
 
 echo ""
 echo "Test 3: Verify all critical libraries have source guards"
+# Library paths after refactoring (commit fb8680db) - uses subdirectory structure
+declare -A LIB_PATHS=(
+  ["workflow-state-machine"]="workflow/workflow-state-machine.sh"
+  ["state-persistence"]="core/state-persistence.sh"
+  ["workflow-initialization"]="workflow/workflow-initialization.sh"
+  ["error-handling"]="core/error-handling.sh"
+  ["unified-logger"]="core/unified-logger.sh"
+)
+
 MISSING_GUARDS=0
-for lib in workflow-state-machine state-persistence workflow-initialization error-handling unified-logger verification-helpers; do
-  if grep -q "SOURCED" "${SAVED_DIR}/.claude/lib/${lib}.sh" 2>/dev/null; then
-    echo "✓ $lib.sh has source guard"
+for lib in "${!LIB_PATHS[@]}"; do
+  lib_path="${LIB_PATHS[$lib]}"
+  if grep -q "SOURCED" "${SAVED_DIR}/.claude/lib/${lib_path}" 2>/dev/null; then
+    echo "✓ $lib has source guard"
   else
-    echo "✗ $lib.sh missing source guard"
+    echo "✗ $lib missing source guard"
     MISSING_GUARDS=$((MISSING_GUARDS + 1))
   fi
 done

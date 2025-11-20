@@ -38,7 +38,7 @@ Quick decision tree for diagnosing and resolving common Claude Code errors.
 - [ ] Behavioral files (`.claude/agents/*.md`) not referenced
 - [ ] Task tool not used (only YAML documentation blocks)
 - [ ] Agent returns but supervisor doesn't process result
-- [ ] 0% delegation rate (validate with `.claude/lib/validate-agent-invocation-pattern.sh`)
+- [ ] 0% delegation rate (validate with `.claude/lib/util/validate-agent-invocation-pattern.sh`)
 
 ### Diagnostic Commands
 
@@ -47,7 +47,7 @@ Quick decision tree for diagnosing and resolving common Claude Code errors.
 grep -n '```yaml' .claude/commands/YOUR-COMMAND.md
 
 # Validate agent invocation pattern compliance
-.claude/lib/validate-agent-invocation-pattern.sh
+.claude/lib/util/validate-agent-invocation-pattern.sh
 
 # Check delegation rate
 find .claude/specs/*/reports -name "*.md" | wc -l  # Should be >0
@@ -407,7 +407,7 @@ ls -la .claude/commands/
 
 ```bash
 # Source library before use
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 
 # Then call function
 extract_report_metadata "/path/to/report.md"
@@ -441,7 +441,7 @@ test -f CLAUDE.md && echo "✓ CLAUDE.md found" || echo "✗ CLAUDE.md missing"
 ls -la .claude/{commands,agents,lib,tests}/
 
 # Validate agent invocation patterns
-.claude/lib/validate-agent-invocation-pattern.sh
+.claude/lib/util/validate-agent-invocation-pattern.sh
 ```
 
 ### 3. Run Tests

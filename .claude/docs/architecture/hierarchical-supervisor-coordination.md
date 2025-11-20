@@ -30,7 +30,7 @@ The orchestrator is the top-level coordinator that:
 
 ```bash
 # In orchestrator bash block
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "coordinate_$$"
 
 # Invoke supervisor for 4+ topics (hierarchical threshold)
@@ -530,7 +530,7 @@ The supervisor extracts metadata from each worker output:
 
 ```bash
 # Extract metadata from worker report using metadata-extraction.sh
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
 
 WORKER_1_METADATA=$(extract_report_metadata "$WORKER_1_OUTPUT_PATH")
 # Returns: {
@@ -583,7 +583,7 @@ The supervisor saves its state using state-persistence.sh:
 
 ```bash
 # Load workflow state (initialized by orchestrator)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "coordinate_$$"
 
 # Build supervisor checkpoint

@@ -503,14 +503,14 @@ append_workflow_state() {
 
 ```bash
 # Block 1: Initialize workflow state
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 STATE_FILE=$(init_workflow_state "coordinate_$$")
 
 # Expensive operation - detect ONCE, cache in state file
 # (Subsequent blocks read from state file: 6ms → 2ms)
 
 # Block 2+: Load workflow state
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "coordinate_$$"
 
 # CLAUDE_PROJECT_DIR now available (read from state file)
@@ -698,7 +698,7 @@ SUPERVISOR_RESULT=$(invoke_hierarchical_supervisor \
 **1. Orchestrator → Supervisor Invocation**:
 ```bash
 # Orchestrator bash block
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 load_workflow_state "coordinate_$$"
 
 # Invoke supervisor via Task tool
@@ -1256,8 +1256,8 @@ fi
 **State-Based Orchestrator** (coordinate.md after migration):
 ```bash
 # Block 1: State machine initialization
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 STATE_FILE=$(init_workflow_state "coordinate_$$")
 sm_init "$WORKFLOW_DESCRIPTION" "coordinate"
@@ -1328,7 +1328,7 @@ declare -A STATE_TRANSITIONS=(
 
 **Step 3: Initialize state machine**
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
 sm_init "$WORKFLOW_DESCRIPTION" "my_orchestrator"
 ```
 

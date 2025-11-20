@@ -66,7 +66,7 @@ This guide covers the `/orchestrate` command and the underlying parallel executi
 
 #### 2. Utility Libraries
 
-**Artifact Management** (`.claude/lib/artifact-creation.sh`, `.claude/lib/artifact-registry.sh`)
+**Artifact Management** (`.claude/lib/artifact/artifact-creation.sh`, `.claude/lib/artifact/artifact-registry.sh`)
 ```bash
 create_artifact_directory()         # Create specs/artifacts/{plan_name}/
 save_operation_artifact()           # Save operation results
@@ -74,7 +74,7 @@ load_artifact_references()          # Load artifact paths only
 cleanup_operation_artifacts()       # Remove old artifacts
 ```
 
-**Parallel Execution** (`.claude/lib/auto-analysis-utils.sh`)
+**Parallel Execution** (`.claude/lib/plan/auto-analysis-utils.sh`)
 ```bash
 invoke_expansion_agents_parallel()  # Launch expansion agents
 invoke_collapse_agents_parallel()   # Launch collapse agents
@@ -83,7 +83,7 @@ aggregate_collapse_artifacts()      # Collect collapse artifacts
 coordinate_metadata_updates()       # Update plan metadata
 ```
 
-**Error Recovery** (`.claude/lib/error-handling.sh`)
+**Error Recovery** (`.claude/lib/core/error-handling.sh`)
 ```bash
 retry_with_timeout()                # Retry with 1.5x timeout
 retry_with_fallback()               # Retry with reduced toolset
@@ -91,7 +91,7 @@ handle_partial_failure()            # Process partial successes
 escalate_to_user_parallel()         # Interactive escalation
 ```
 
-**Checkpoint Management** (`.claude/lib/checkpoint-utils.sh`)
+**Checkpoint Management** (`.claude/lib/workflow/checkpoint-utils.sh`)
 ```bash
 save_parallel_operation_checkpoint()  # Save pre-operation state
 restore_from_checkpoint()             # Rollback on failure
@@ -407,7 +407,7 @@ apply_pruning_policy --mode aggressive --workflow orchestrate --phase implementa
 
 ### Utility Library Reference
 
-Context pruning utilities are provided by `.claude/lib/context-pruning.sh`:
+Context pruning utilities are provided by `.claude/lib/workflow/context-pruning.sh`:
 
 ```bash
 # Core Functions
@@ -1086,7 +1086,7 @@ This section demonstrates a complete workflow using the behavioral injection pat
 #### Step 1: Calculate Topic Directory
 
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh"
 
 FEATURE_DESCRIPTION="User authentication with OAuth 2.0"
 TOPIC_DIR=$(get_or_create_topic_dir "$FEATURE_DESCRIPTION" "specs")
@@ -1185,7 +1185,7 @@ Task {
 **Extract Metadata**:
 
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Verify artifacts created
 VERIFIED_OAUTH=$(verify_artifact_or_recover "$REPORT_OAUTH" "oauth_security")

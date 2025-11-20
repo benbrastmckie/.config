@@ -6,7 +6,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_ROOT="$(dirname "$SCRIPT_DIR")"
 
-source "$CLAUDE_ROOT/.claude/lib/artifact/topic-decomposition.sh"
+source "$CLAUDE_ROOT/lib/plan/topic-decomposition.sh"
 
 echo "========================================="
 echo "Testing Topic Decomposition Utility"

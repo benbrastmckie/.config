@@ -357,7 +357,19 @@ retry_with_fallback() {
 # Error log directory
 readonly ERROR_LOG_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/data/logs"
 
-# log_error_context: Log error with context for debugging
+# Error log file for centralized JSONL logging
+readonly ERROR_LOG_FILE="${ERROR_LOG_DIR}/errors.jsonl"
+
+# Error type constants for consistency
+readonly ERROR_TYPE_STATE="state_error"
+readonly ERROR_TYPE_VALIDATION="validation_error"
+readonly ERROR_TYPE_AGENT="agent_error"
+readonly ERROR_TYPE_PARSE="parse_error"
+readonly ERROR_TYPE_FILE="file_error"
+readonly ERROR_TYPE_TIMEOUT_ERR="timeout_error"
+readonly ERROR_TYPE_EXECUTION="execution_error"
+
+# log_error_context: Log error with context for debugging (legacy function)
 # Usage: log_error_context <error-type> <location> <message> [context-data]
 # Returns: Path to error log file
 # Example: log_error_context "permanent" "auth.lua:42" "nil reference" '{"phase":3}'
@@ -390,6 +402,344 @@ $(caller 2 2>/dev/null || echo "")
 EOF
 
   echo "$log_file"
+}
+
+# log_command_error: Log command error to centralized JSONL error log
+# Usage: log_command_error <command> <workflow_id> <user_args> <error_type> <message> <source> [context_json]
+# Returns: 0 on success, 1 on failure
+# Example: log_command_error "/build" "build_123" "plan.md 3" "state_error" "State file not found" "bash_block" '{"state_file": "/path"}'
+log_command_error() {
+  local command="${1:-unknown}"
+  local workflow_id="${2:-unknown}"
+  local user_args="${3:-}"
+  local error_type="${4:-unknown}"
+  local message="${5:-}"
+  local source="${6:-unknown}"
+  local context_json="$7"
+
+  # Default to empty object if not provided or invalid
+  if [ -z "$context_json" ]; then
+    context_json="{}"
+  fi
+
+  # Validate context_json is valid JSON
+  if ! echo "$context_json" | jq empty 2>/dev/null; then
+    context_json="{}"
+  fi
+
+  # Ensure log directory exists
+  mkdir -p "$ERROR_LOG_DIR"
+
+  # Check for log rotation
+  rotate_error_log
+
+  # Generate timestamp in ISO 8601 format
+  local timestamp
+  timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  # Build stack trace array
+  local stack_json="[]"
+  local stack_items=()
+  local i=0
+  while true; do
+    local caller_info
+    caller_info=$(caller $i 2>/dev/null) || break
+    if [ -n "$caller_info" ]; then
+      stack_items+=("$caller_info")
+    fi
+    i=$((i + 1))
+    # Safety limit
+    if [ $i -gt 20 ]; then
+      break
+    fi
+  done
+  if [ ${#stack_items[@]} -gt 0 ]; then
+    stack_json=$(printf '%s\n' "${stack_items[@]}" | jq -R -s 'split("\n") | map(select(. != ""))')
+  fi
+
+  # Build and append JSON entry (compact format for JSONL)
+  local json_entry
+  json_entry=$(jq -c -n \
+    --arg timestamp "$timestamp" \
+    --arg command "$command" \
+    --arg workflow_id "$workflow_id" \
+    --arg user_args "$user_args" \
+    --arg error_type "$error_type" \
+    --arg message "$message" \
+    --arg source "$source" \
+    --argjson stack "$stack_json" \
+    --argjson context "$context_json" \
+    '{
+      timestamp: $timestamp,
+      command: $command,
+      workflow_id: $workflow_id,
+      user_args: $user_args,
+      error_type: $error_type,
+      error_message: $message,
+      source: $source,
+      stack: $stack,
+      context: $context
+    }')
+
+  # Append to JSONL log file
+  echo "$json_entry" >> "$ERROR_LOG_FILE"
+  return 0
+}
+
+# parse_subagent_error: Parse TASK_ERROR signal from subagent output
+# Usage: parse_subagent_error <output>
+# Returns: JSON with error_type and message, or empty {} if no error found
+# Example:
+#   output="TASK_ERROR: validation_error - Schema mismatch"
+#   error_json=$(parse_subagent_error "$output")
+#   # Returns: {"error_type": "validation_error", "message": "Schema mismatch", "found": true}
+parse_subagent_error() {
+  local output="${1:-}"
+
+  # Look for TASK_ERROR signal pattern
+  # Format: TASK_ERROR: error_type - message
+  if echo "$output" | grep -q "TASK_ERROR:"; then
+    local error_line
+    error_line=$(echo "$output" | grep "TASK_ERROR:" | head -1)
+
+    # Extract error_type and message
+    local error_type message
+    error_type=$(echo "$error_line" | sed -n 's/.*TASK_ERROR: *\([^ -]*\).*/\1/p')
+    message=$(echo "$error_line" | sed -n 's/.*TASK_ERROR: *[^ -]* *- *\(.*\)/\1/p')
+
+    # Also look for ERROR_CONTEXT JSON if present
+    local error_context="{}"
+    if echo "$output" | grep -q "ERROR_CONTEXT:"; then
+      error_context=$(echo "$output" | sed -n '/ERROR_CONTEXT:/,/```/p' | sed '1d;$d' | jq -c '.' 2>/dev/null || echo "{}")
+    fi
+
+    jq -n \
+      --arg error_type "$error_type" \
+      --arg message "$message" \
+      --argjson context "$error_context" \
+      '{
+        error_type: $error_type,
+        message: $message,
+        context: $context,
+        found: true
+      }'
+  else
+    echo '{"found": false}'
+  fi
+}
+
+# rotate_error_log: Rotate error log file if it exceeds size threshold
+# Usage: rotate_error_log
+# Returns: 0 always
+# Rotates with 5-file retention (errors.jsonl.1, .2, etc.)
+rotate_error_log() {
+  local log_file="$ERROR_LOG_FILE"
+  local max_size_bytes=$((10 * 1024 * 1024))  # 10MB
+  local max_backups=5
+
+  # Check if log file exists
+  if [ ! -f "$log_file" ]; then
+    return 0
+  fi
+
+  # Check file size
+  local file_size
+  file_size=$(stat -c%s "$log_file" 2>/dev/null || stat -f%z "$log_file" 2>/dev/null || echo 0)
+
+  if [ "$file_size" -ge "$max_size_bytes" ]; then
+    # Rotate existing backups
+    for i in $(seq $((max_backups - 1)) -1 1); do
+      if [ -f "${log_file}.${i}" ]; then
+        mv "${log_file}.${i}" "${log_file}.$((i + 1))"
+      fi
+    done
+
+    # Move current log to .1
+    mv "$log_file" "${log_file}.1"
+
+    # Create new empty log file
+    touch "$log_file"
+  fi
+
+  return 0
+}
+
+# ensure_error_log_exists: Ensure error log directory and file exist
+# Usage: ensure_error_log_exists
+# Returns: 0 on success
+ensure_error_log_exists() {
+  mkdir -p "$ERROR_LOG_DIR"
+  if [ ! -f "$ERROR_LOG_FILE" ]; then
+    touch "$ERROR_LOG_FILE"
+  fi
+  return 0
+}
+
+# query_errors: Query errors from JSONL log with filters
+# Usage: query_errors [--command CMD] [--since TIME] [--type TYPE] [--limit N] [--workflow-id ID]
+# Returns: Filtered JSONL entries on stdout
+# Example: query_errors --command /build --limit 10
+query_errors() {
+  local command_filter=""
+  local since_filter=""
+  local type_filter=""
+  local workflow_filter=""
+  local limit=50
+
+  # Parse arguments
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --command)
+        command_filter="$2"
+        shift 2
+        ;;
+      --since)
+        since_filter="$2"
+        shift 2
+        ;;
+      --type)
+        type_filter="$2"
+        shift 2
+        ;;
+      --limit)
+        limit="$2"
+        shift 2
+        ;;
+      --workflow-id)
+        workflow_filter="$2"
+        shift 2
+        ;;
+      *)
+        shift
+        ;;
+    esac
+  done
+
+  # Check if log file exists
+  if [ ! -f "$ERROR_LOG_FILE" ]; then
+    return 0
+  fi
+
+  # Build jq filter
+  local jq_filter="."
+
+  if [ -n "$command_filter" ]; then
+    jq_filter="$jq_filter | select(.command == \"$command_filter\")"
+  fi
+
+  if [ -n "$type_filter" ]; then
+    jq_filter="$jq_filter | select(.error_type == \"$type_filter\")"
+  fi
+
+  if [ -n "$workflow_filter" ]; then
+    jq_filter="$jq_filter | select(.workflow_id == \"$workflow_filter\")"
+  fi
+
+  if [ -n "$since_filter" ]; then
+    jq_filter="$jq_filter | select(.timestamp >= \"$since_filter\")"
+  fi
+
+  # Apply filter and limit
+  jq -c "$jq_filter" "$ERROR_LOG_FILE" 2>/dev/null | tail -n "$limit"
+}
+
+# recent_errors: Display recent errors in human-readable format
+# Usage: recent_errors [count]
+# Returns: Formatted error list on stdout
+# Example: recent_errors 5
+recent_errors() {
+  local count="${1:-10}"
+
+  # Check if log file exists
+  if [ ! -f "$ERROR_LOG_FILE" ]; then
+    echo "No error log found."
+    return 0
+  fi
+
+  # Check if log file is empty
+  if [ ! -s "$ERROR_LOG_FILE" ]; then
+    echo "No errors logged."
+    return 0
+  fi
+
+  echo "Recent Errors (last $count):"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  tail -n "$count" "$ERROR_LOG_FILE" | while IFS= read -r line; do
+    if [ -n "$line" ]; then
+      local timestamp command error_type message user_args workflow_id
+      timestamp=$(echo "$line" | jq -r '.timestamp // "unknown"' 2>/dev/null)
+      command=$(echo "$line" | jq -r '.command // "unknown"' 2>/dev/null)
+      error_type=$(echo "$line" | jq -r '.error_type // "unknown"' 2>/dev/null)
+      message=$(echo "$line" | jq -r '.error_message // "No message"' 2>/dev/null)
+      user_args=$(echo "$line" | jq -r '.user_args // ""' 2>/dev/null)
+      workflow_id=$(echo "$line" | jq -r '.workflow_id // "unknown"' 2>/dev/null)
+
+      echo ""
+      echo "[$timestamp] $command"
+      echo "  Type: $error_type"
+      echo "  Message: $message"
+      if [ -n "$user_args" ]; then
+        # Truncate long args
+        if [ ${#user_args} -gt 50 ]; then
+          user_args="${user_args:0:47}..."
+        fi
+        echo "  Args: $user_args"
+      fi
+      echo "  Workflow: $workflow_id"
+    fi
+  done
+
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+# error_summary: Display error summary with counts by command and type
+# Usage: error_summary
+# Returns: Formatted summary on stdout
+error_summary() {
+  # Check if log file exists
+  if [ ! -f "$ERROR_LOG_FILE" ]; then
+    echo "No error log found."
+    return 0
+  fi
+
+  # Check if log file is empty
+  if [ ! -s "$ERROR_LOG_FILE" ]; then
+    echo "No errors logged."
+    return 0
+  fi
+
+  local total_errors
+  total_errors=$(wc -l < "$ERROR_LOG_FILE")
+
+  echo "Error Summary"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "Total Errors: $total_errors"
+  echo ""
+
+  echo "By Command:"
+  jq -r '.command' "$ERROR_LOG_FILE" 2>/dev/null | sort | uniq -c | sort -rn | while read -r count cmd; do
+    printf "  %-20s %s\n" "$cmd" "$count"
+  done
+
+  echo ""
+  echo "By Type:"
+  jq -r '.error_type' "$ERROR_LOG_FILE" 2>/dev/null | sort | uniq -c | sort -rn | while read -r count type; do
+    printf "  %-20s %s\n" "$type" "$count"
+  done
+
+  echo ""
+
+  # Show time range
+  local first_error last_error
+  first_error=$(head -1 "$ERROR_LOG_FILE" | jq -r '.timestamp // "unknown"' 2>/dev/null)
+  last_error=$(tail -1 "$ERROR_LOG_FILE" | jq -r '.timestamp // "unknown"' 2>/dev/null)
+
+  echo "Time Range:"
+  echo "  First: $first_error"
+  echo "  Last:  $last_error"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
 # ==============================================================================
@@ -673,7 +1023,6 @@ Recovery Options:
 4. Abort workflow and resolve underlying issue
 
 Troubleshooting:
-- Check agent registry: .claude/lib/agent-registry-utils.sh
 - Review logs: .claude/logs/adaptive-planning.log
 - Inspect checkpoint: $(if [ -n "$checkpoint_path" ]; then echo "$checkpoint_path"; else echo "Not saved"; fi)
 EOF
@@ -868,6 +1217,13 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f retry_with_timeout
   export -f retry_with_fallback
   export -f log_error_context
+  export -f log_command_error
+  export -f parse_subagent_error
+  export -f rotate_error_log
+  export -f ensure_error_log_exists
+  export -f query_errors
+  export -f recent_errors
+  export -f error_summary
   export -f escalate_to_user
   export -f escalate_to_user_parallel
   export -f try_with_fallback

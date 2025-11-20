@@ -702,8 +702,8 @@ In this example:
 - `docs/README.md` - Follows format from CLAUDE.md Documentation Policy
 
 **Utility Libraries** (neither applies directly):
-- `.claude/lib/metadata-extraction.sh` - General bash best practices
-- `.claude/lib/checkpoint-utils.sh` - Internal utility conventions
+- `.claude/lib/workflow/metadata-extraction.sh` - General bash best practices
+- `.claude/lib/workflow/checkpoint-utils.sh` - Internal utility conventions
 
 ### Cross-References
 

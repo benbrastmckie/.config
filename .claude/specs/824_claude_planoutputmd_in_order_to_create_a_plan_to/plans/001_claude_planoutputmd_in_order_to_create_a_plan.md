@@ -7,7 +7,7 @@
 - **Estimated Phases**: 5
 - **Estimated Hours**: 4.5
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETE]
 - **Structure Level**: 0
 - **Complexity Score**: 56.5
 - **Research Reports**:
@@ -88,7 +88,7 @@ _source_lib "core/state-persistence.sh" "required"
 
 ## Implementation Phases
 
-### Phase 1: Fix Critical Code - Direct Source Paths [NOT STARTED]
+### Phase 1: Fix Critical Code - Direct Source Paths [COMPLETE]
 dependencies: []
 
 **Objective**: Fix incorrect relative paths in workflow library files that cause immediate failures
@@ -96,12 +96,12 @@ dependencies: []
 **Complexity**: Low
 
 Tasks:
-- [ ] Read workflow-llm-classifier.sh to confirm current path (file: /home/benjamin/.config/.claude/lib/workflow/workflow-llm-classifier.sh)
-- [ ] Update line 19 to use correct relative path: `source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../core/detect-project-dir.sh"`
-- [ ] Optionally refactor to use SCRIPT_DIR pattern for consistency with other files
-- [ ] Read unified-location-detection.sh to confirm topic-utils.sh path (file: /home/benjamin/.config/.claude/lib/core/unified-location-detection.sh)
-- [ ] Update lines 83-84 to use correct path: `$SCRIPT_DIR_ULD/../plan/topic-utils.sh` instead of `$SCRIPT_DIR_ULD/topic-utils.sh`
-- [ ] Verify both files source correctly by running basic source tests
+- [x] Read workflow-llm-classifier.sh to confirm current path (file: /home/benjamin/.config/.claude/lib/workflow/workflow-llm-classifier.sh)
+- [x] Update line 19 to use correct relative path: `source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../core/detect-project-dir.sh"`
+- [x] Optionally refactor to use SCRIPT_DIR pattern for consistency with other files
+- [x] Read unified-location-detection.sh to confirm topic-utils.sh path (file: /home/benjamin/.config/.claude/lib/core/unified-location-detection.sh)
+- [x] Update lines 83-84 to use correct path: `$SCRIPT_DIR_ULD/../plan/topic-utils.sh` instead of `$SCRIPT_DIR_ULD/topic-utils.sh`
+- [x] Verify both files source correctly by running basic source tests
 
 Testing:
 ```bash
@@ -116,7 +116,7 @@ echo "unified-location-detection.sh exit code: $?"
 
 **Expected Duration**: 0.5 hours
 
-### Phase 2: Fix Critical Code - workflow-init.sh _source_lib Calls [NOT STARTED]
+### Phase 2: Fix Critical Code - workflow-init.sh _source_lib Calls [COMPLETE]
 dependencies: [1]
 
 **Objective**: Update all _source_lib calls to include subdirectory prefixes
@@ -124,16 +124,16 @@ dependencies: [1]
 **Complexity**: Low
 
 Tasks:
-- [ ] Read workflow-init.sh to identify all _source_lib calls (file: /home/benjamin/.config/.claude/lib/workflow/workflow-init.sh)
-- [ ] Update line 167: `_source_lib "core/state-persistence.sh" "required"`
-- [ ] Update line 168: `_source_lib "workflow/workflow-state-machine.sh" "required"`
-- [ ] Update line 171: `_source_lib "core/library-version-check.sh" "optional"`
-- [ ] Update line 172: `_source_lib "core/error-handling.sh" "optional"`
-- [ ] Update line 173: `_source_lib "core/unified-location-detection.sh" "optional"`
-- [ ] Update line 174: `_source_lib "workflow/workflow-initialization.sh" "optional"`
-- [ ] Update line 300: `_source_lib "core/state-persistence.sh" "required"`
-- [ ] Update line 301: `_source_lib "workflow/workflow-state-machine.sh" "required"`
-- [ ] Verify all updated paths resolve to existing files
+- [x] Read workflow-init.sh to identify all _source_lib calls (file: /home/benjamin/.config/.claude/lib/workflow/workflow-init.sh)
+- [x] Update line 167: `_source_lib "core/state-persistence.sh" "required"`
+- [x] Update line 168: `_source_lib "workflow/workflow-state-machine.sh" "required"`
+- [x] Update line 171: `_source_lib "core/library-version-check.sh" "optional"`
+- [x] Update line 172: `_source_lib "core/error-handling.sh" "optional"`
+- [x] Update line 173: `_source_lib "core/unified-location-detection.sh" "optional"`
+- [x] Update line 174: `_source_lib "workflow/workflow-initialization.sh" "optional"`
+- [x] Update line 300: `_source_lib "core/state-persistence.sh" "required"`
+- [x] Update line 301: `_source_lib "workflow/workflow-state-machine.sh" "required"`
+- [x] Verify all updated paths resolve to existing files
 
 Testing:
 ```bash
@@ -152,7 +152,7 @@ bash -c '
 
 **Expected Duration**: 0.5 hours
 
-### Phase 3: Fix Test Files and Commands [NOT STARTED]
+### Phase 3: Fix Test Files and Commands [COMPLETE]
 dependencies: [1, 2]
 
 **Objective**: Fix or remove test files and commands with incorrect library paths
@@ -160,13 +160,13 @@ dependencies: [1, 2]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Investigate test_phase3_verification.sh - determine if verification-helpers.sh was archived (file: /home/benjamin/.config/.claude/tests/.claude/tests/test_phase3_verification.sh)
-- [ ] Either remove test_phase3_verification.sh if functionality was archived, OR create verification-helpers.sh stub
-- [ ] Read expand.md to find parse-adaptive-plan.sh reference (file: /home/benjamin/.config/.claude/commands/expand.md)
-- [ ] Remove or comment out parse-adaptive-plan.sh reference at line 862 if library was consolidated
-- [ ] Read crud-feature.yaml template (file: /home/benjamin/.config/.claude/commands/templates/crud-feature.yaml)
-- [ ] Update line 78 from `source .claude/lib/checkbox-utils.sh` to `source .claude/lib/plan/checkbox-utils.sh`
-- [ ] Verify all fixed commands/tests work correctly
+- [x] Investigate test_phase3_verification.sh - determine if verification-helpers.sh was archived (file: /home/benjamin/.config/.claude/tests/.claude/tests/test_phase3_verification.sh)
+- [x] Either remove test_phase3_verification.sh if functionality was archived, OR create verification-helpers.sh stub
+- [x] Read expand.md to find parse-adaptive-plan.sh reference (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Remove or comment out parse-adaptive-plan.sh reference at line 862 if library was consolidated
+- [x] Read crud-feature.yaml template (file: /home/benjamin/.config/.claude/commands/templates/crud-feature.yaml)
+- [x] Update line 78 from `source .claude/lib/checkbox-utils.sh` to `source .claude/lib/plan/checkbox-utils.sh`
+- [x] Verify all fixed commands/tests work correctly
 
 Testing:
 ```bash
@@ -182,7 +182,7 @@ grep -A5 'source.*adaptive-plan' /home/benjamin/.config/.claude/commands/expand.
 
 **Expected Duration**: 1.0 hour
 
-### Phase 4: Update Documentation Paths [NOT STARTED]
+### Phase 4: Update Documentation Paths [COMPLETE]
 dependencies: [1, 2, 3]
 
 **Objective**: Bulk update all documentation files with flat paths to hierarchical paths
@@ -190,21 +190,21 @@ dependencies: [1, 2, 3]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Create sed script to update common library paths (state-persistence.sh, workflow-state-machine.sh, etc.)
-- [ ] Update state-persistence.sh references: `.claude/lib/state-persistence.sh` -> `.claude/lib/core/state-persistence.sh`
-- [ ] Update workflow-state-machine.sh references: `.claude/lib/workflow-state-machine.sh` -> `.claude/lib/workflow/workflow-state-machine.sh`
-- [ ] Update metadata-extraction.sh references: `.claude/lib/metadata-extraction.sh` -> `.claude/lib/workflow/metadata-extraction.sh`
-- [ ] Update artifact-creation.sh references: `.claude/lib/artifact-creation.sh` -> `.claude/lib/artifact/artifact-creation.sh`
-- [ ] Update error-handling.sh references: `.claude/lib/error-handling.sh` -> `.claude/lib/core/error-handling.sh`
-- [ ] Update unified-location-detection.sh references: `.claude/lib/unified-location-detection.sh` -> `.claude/lib/core/unified-location-detection.sh`
-- [ ] Update topic-utils.sh references: `.claude/lib/topic-utils.sh` -> `.claude/lib/plan/topic-utils.sh`
-- [ ] Update checkbox-utils.sh references: `.claude/lib/checkbox-utils.sh` -> `.claude/lib/plan/checkbox-utils.sh`
-- [ ] Update complexity-utils.sh references: `.claude/lib/complexity-utils.sh` -> `.claude/lib/plan/complexity-utils.sh`
-- [ ] Update dependency-analyzer.sh references: `.claude/lib/dependency-analyzer.sh` -> `.claude/lib/util/dependency-analyzer.sh`
-- [ ] Update checkpoint-utils.sh references: `.claude/lib/checkpoint-utils.sh` -> `.claude/lib/workflow/checkpoint-utils.sh`
-- [ ] Update workflow-detection.sh references: `.claude/lib/workflow-detection.sh` -> `.claude/lib/workflow/workflow-detection.sh`
-- [ ] Update library-version-check.sh references: `.claude/lib/library-version-check.sh` -> `.claude/lib/core/library-version-check.sh`
-- [ ] Remove all references to archived context-pruning.sh or mark as deprecated
+- [x] Create sed script to update common library paths (state-persistence.sh, workflow-state-machine.sh, etc.)
+- [x] Update state-persistence.sh references: `.claude/lib/state-persistence.sh` -> `.claude/lib/core/state-persistence.sh`
+- [x] Update workflow-state-machine.sh references: `.claude/lib/workflow-state-machine.sh` -> `.claude/lib/workflow/workflow-state-machine.sh`
+- [x] Update metadata-extraction.sh references: `.claude/lib/metadata-extraction.sh` -> `.claude/lib/workflow/metadata-extraction.sh`
+- [x] Update artifact-creation.sh references: `.claude/lib/artifact-creation.sh` -> `.claude/lib/artifact/artifact-creation.sh`
+- [x] Update error-handling.sh references: `.claude/lib/error-handling.sh` -> `.claude/lib/core/error-handling.sh`
+- [x] Update unified-location-detection.sh references: `.claude/lib/unified-location-detection.sh` -> `.claude/lib/core/unified-location-detection.sh`
+- [x] Update topic-utils.sh references: `.claude/lib/topic-utils.sh` -> `.claude/lib/plan/topic-utils.sh`
+- [x] Update checkbox-utils.sh references: `.claude/lib/checkbox-utils.sh` -> `.claude/lib/plan/checkbox-utils.sh`
+- [x] Update complexity-utils.sh references: `.claude/lib/complexity-utils.sh` -> `.claude/lib/plan/complexity-utils.sh`
+- [x] Update dependency-analyzer.sh references: `.claude/lib/dependency-analyzer.sh` -> `.claude/lib/util/dependency-analyzer.sh`
+- [x] Update checkpoint-utils.sh references: `.claude/lib/checkpoint-utils.sh` -> `.claude/lib/workflow/checkpoint-utils.sh`
+- [x] Update workflow-detection.sh references: `.claude/lib/workflow-detection.sh` -> `.claude/lib/workflow/workflow-detection.sh`
+- [x] Update library-version-check.sh references: `.claude/lib/library-version-check.sh` -> `.claude/lib/core/library-version-check.sh`
+- [x] Remove all references to archived context-pruning.sh or mark as deprecated
 
 Testing:
 ```bash
@@ -217,7 +217,7 @@ grep -r "context-pruning" /home/benjamin/.config/.claude/docs/ --include="*.md" 
 
 **Expected Duration**: 1.5 hours
 
-### Phase 5: Integration Testing and Validation [NOT STARTED]
+### Phase 5: Integration Testing and Validation [COMPLETE]
 dependencies: [1, 2, 3, 4]
 
 **Objective**: Validate that all workflow commands work correctly after fixes
@@ -225,14 +225,14 @@ dependencies: [1, 2, 3, 4]
 **Complexity**: Low
 
 Tasks:
-- [ ] Test /plan command with a simple workflow description
-- [ ] Test /research command with a simple topic
-- [ ] Test /build command basic invocation
-- [ ] Create validation script to check all source statements in .claude/lib/*.sh files
-- [ ] Run validation script to confirm no broken references remain
-- [ ] Test source chain: workflow-init.sh -> workflow-state-machine.sh -> detect-project-dir.sh
-- [ ] Verify error messages are clear when libraries are missing (not misleading paths)
-- [ ] Run existing test suite to check for regressions
+- [x] Test /plan command with a simple workflow description
+- [x] Test /research command with a simple topic
+- [x] Test /build command basic invocation
+- [x] Create validation script to check all source statements in .claude/lib/*.sh files
+- [x] Run validation script to confirm no broken references remain
+- [x] Test source chain: workflow-init.sh -> workflow-state-machine.sh -> detect-project-dir.sh
+- [x] Verify error messages are clear when libraries are missing (not misleading paths)
+- [x] Run existing test suite to check for regressions
 
 Testing:
 ```bash

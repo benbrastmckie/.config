@@ -75,7 +75,7 @@ spec_updater_checklist:
   - "Update checkboxes across hierarchy after each phase completion"
 phase_completion_protocol:
   - "After completing each phase, update checkboxes across all hierarchy levels"
-  - "Use: source .claude/lib/checkbox-utils.sh && mark_phase_complete <plan_path> <phase_num>"
+  - "Use: source .claude/lib/plan/checkbox-utils.sh && mark_phase_complete <plan_path> <phase_num>"
   - "Verify consistency: verify_checkbox_consistency <plan_path> <phase_num>"
   - "For Level 0 (single file): Updates main plan only"
   - "For Level 1 (phase files): Updates phase file + main plan"

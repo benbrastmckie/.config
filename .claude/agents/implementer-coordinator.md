@@ -498,6 +498,74 @@ Savings: 40%
 - **Checkpoint Threshold**: 70% context usage
 - **Retry Logic**: No automatic retries (orchestrator handles via debugging phase)
 
+## Error Return Protocol
+
+If a critical error prevents workflow completion, return a structured error signal for logging by the parent command.
+
+### Error Signal Format
+
+When an unrecoverable error occurs:
+
+1. **Output error context** (for logging):
+   ```
+   ERROR_CONTEXT: {
+     "error_type": "state_error",
+     "message": "State file not found",
+     "details": {"expected_path": "/path/to/state.sh"}
+   }
+   ```
+
+2. **Return error signal**:
+   ```
+   TASK_ERROR: state_error - State file not found at /path/to/state.sh
+   ```
+
+3. The parent command will parse this signal using `parse_subagent_error()` and log it to errors.jsonl with full workflow context.
+
+### Error Types
+
+Use these standardized error types:
+
+- `state_error` - Workflow state persistence issues
+- `validation_error` - Input validation failures
+- `agent_error` - Subagent execution failures
+- `parse_error` - Output parsing failures
+- `file_error` - File system operations failures
+- `timeout_error` - Operation timeout errors
+- `execution_error` - General execution failures
+- `dependency_error` - Missing or invalid dependencies
+
+### When to Return Errors
+
+Return a TASK_ERROR signal when:
+
+- Required files are missing or inaccessible
+- State restoration fails
+- Dependency analysis returns invalid results
+- All retry attempts exhausted
+- Circular dependencies detected
+
+Do NOT return TASK_ERROR for:
+
+- Individual phase failures (report in IMPLEMENTATION_COMPLETE instead)
+- Recoverable errors that can be handled internally
+- Warnings or non-fatal issues
+
+### Example Error Return
+
+```markdown
+ERROR_CONTEXT: {
+  "error_type": "dependency_error",
+  "message": "Circular dependency detected",
+  "details": {
+    "phases": [2, 3, 4],
+    "cycle": "Phase 2 -> Phase 3 -> Phase 4 -> Phase 2"
+  }
+}
+
+TASK_ERROR: dependency_error - Circular dependency detected involving phases 2, 3, 4
+```
+
 ## Success Criteria
 
 Implementation is successful if:

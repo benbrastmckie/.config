@@ -889,7 +889,7 @@ cleanup_all_temp_artifacts "$TOPIC_DIR"
 cat > specs/009_topic/scripts/investigate.sh <<'EOF'
 #!/bin/bash
 # Test complexity scoring on sample phases
-.claude/lib/complexity-utils.sh calculate_phase_complexity ...
+.claude/lib/plan/complexity-utils.sh calculate_phase_complexity ...
 EOF
 
 chmod +x specs/009_topic/scripts/investigate.sh

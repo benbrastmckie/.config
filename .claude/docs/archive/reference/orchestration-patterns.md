@@ -403,7 +403,7 @@ The orchestrator uses a hybrid evaluation approach combining threshold-based and
 **Step 1: Source Complexity Utilities**
 
 ```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/complexity-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/complexity-utils.sh"
 ```
 
 **Step 2: Evaluate Each Phase**
@@ -1022,7 +1022,7 @@ Phase dependencies are specified in phase metadata using the `Dependencies` fiel
 **Step 1: Source Dependency Analysis Utilities**
 
 ```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/dependency-analysis.sh"
+# Use lib/util/dependency-analyzer.sh instead
 ```
 
 **Step 2: Validate Dependencies**
@@ -1374,7 +1374,7 @@ Update plan templates to include Dependencies field:
 #### Documentation References
 
 For dependency syntax and wave calculation details:
-- Dependency Analysis: `.claude/lib/dependency-analysis.sh`
+- Dependency Analysis: `lib/util/dependency-analyzer.sh`
 - Phase Dependencies Guide: `.claude/docs/phase_dependencies.md` (to be created in Task 4.4)
 - Plan Templates: `.claude/templates/*.yaml` (updated in Task 4.3)
 
@@ -1913,7 +1913,7 @@ Task {
     All tasks in this phase have been completed successfully.
 
     Steps:
-    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    1. Source checkbox utilities: source .claude/lib/plan/checkbox-utils.sh
     2. Mark phase complete: mark_phase_complete "${PLAN_PATH}" ${PHASE_NUM}
     3. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" ${PHASE_NUM}
     4. Report: List all files updated (stage → phase → main plan)
@@ -1952,7 +1952,7 @@ Task {
     All phases have been completed successfully.
 
     Steps:
-    1. Source checkbox utilities: source .claude/lib/checkbox-utils.sh
+    1. Source checkbox utilities: source .claude/lib/plan/checkbox-utils.sh
     2. Detect structure level: detect_structure_level "${PLAN_PATH}"
     3. For each completed phase: mark_phase_complete "${PLAN_PATH}" ${phase_num}
     4. Verify consistency: verify_checkbox_consistency "${PLAN_PATH}" (all phases)
@@ -1978,7 +1978,7 @@ Add hierarchy update confirmation to workflow summary:
 
 #### Checkbox Utilities Integration
 
-The spec-updater agent uses functions from `.claude/lib/checkbox-utils.sh`:
+The spec-updater agent uses functions from `.claude/lib/plan/checkbox-utils.sh`:
 
 **`mark_phase_complete(plan_path, phase_num)`**:
 - Marks all tasks in a phase as complete `[x]`
@@ -2014,7 +2014,7 @@ fi
 **Missing Utilities**:
 ```bash
 # Verify checkbox-utils.sh available
-if [ ! -f ".claude/lib/checkbox-utils.sh" ]; then
+if [ ! -f ".claude/lib/plan/checkbox-utils.sh" ]; then
   error "checkbox-utils.sh not found"
   error "Cannot update plan hierarchy"
 
@@ -2074,8 +2074,8 @@ PROGRESS: Saving checkpoint with hierarchy update status
 #### Integration with Shared Utilities
 
 **Dependencies**:
-- `.claude/lib/checkbox-utils.sh` - Core checkbox update functions
-- `.claude/lib/plan-core-bundle.sh` - Plan structure detection
+- `.claude/lib/plan/checkbox-utils.sh` - Core checkbox update functions
+- `.claude/lib/plan/plan-core-bundle.sh` - Plan structure detection
 - `.claude/agents/spec-updater.md` - Agent behavioral guidelines
 
 **Utility Functions Used**:
@@ -2273,7 +2273,7 @@ Checkpoints enable workflow resumption after interruption.
 
 **Checkpoint Save Function**:
 ```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/workflow/checkpoint-utils.sh"
 
 save_checkpoint "orchestrate" "$(create_checkpoint_json)"
 ```
@@ -2418,7 +2418,7 @@ fi
 
 **Implementation**:
 ```bash
-source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/workflow/checkpoint-utils.sh"
 
 if ! save_checkpoint "orchestrate" "$CHECKPOINT_DATA"; then
   # Save failed - warn but continue
@@ -2518,5 +2518,5 @@ This file represents the current template standards. Historical templates are pr
 **Used By**: /orchestrate, /debug, /plan, /implement
 **Related Files**:
 - `.claude/commands/orchestrate.md`
-- `.claude/lib/checkpoint-utils.sh`
+- `.claude/lib/workflow/checkpoint-utils.sh`
 - `.claude/lib/error-utils.sh`
