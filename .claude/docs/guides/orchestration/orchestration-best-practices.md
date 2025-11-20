@@ -204,7 +204,7 @@ Calculate all artifact paths **before** any agent invocation to enable explicit 
 
 \`\`\`bash
 # Source unified location detection library
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Perform location detection
 LOCATION_JSON=$(perform_location_detection "<workflow_description>")
@@ -358,7 +358,7 @@ echo "REPORT_3_PATH: $REPORT_3"
 
 \`\`\`bash
 # Source metadata extraction library
-source "${CLAUDE_CONFIG}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Extract metadata from all reports
 METADATA_1=$(extract_report_metadata "$REPORT_1")
@@ -464,7 +464,7 @@ Create implementation plan using metadata from research reports, applying comple
 
 \`\`\`bash
 # Source complexity utilities
-source "${CLAUDE_CONFIG}/.claude/lib/complexity-utils.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/plan/complexity-utils.sh"
 
 # Analyze plan
 PLAN_PATH="${PLANS_DIR}/001_oauth_implementation_plan.md"
@@ -533,7 +533,7 @@ Execute implementation plan using wave-based parallel execution for independent 
 
 \`\`\`bash
 # Source dependency analyzer
-source "${CLAUDE_CONFIG}/.claude/lib/dependency-analyzer.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/util/dependency-analyzer.sh"
 
 # Analyze plan dependencies
 PLAN_PATH="${PLANS_DIR}/001_oauth_implementation_plan.md"
@@ -590,7 +590,7 @@ echo "$WAVES"
 
 \`\`\`bash
 # Source context pruning library
-source "${CLAUDE_CONFIG}/.claude/lib/context-pruning.sh"
+# Context pruning library not yet implemented
 
 # Prune Phase 1 and Phase 2 context (aggressive policy)
 prune_phase_output "Wave 1 (Phases 1-2)" "aggressive"
@@ -648,7 +648,7 @@ Run project-specific tests if workflow scope includes implementation or debuggin
 
 \`\`\`bash
 # Source workflow detection library
-source "${CLAUDE_CONFIG}/.claude/lib/workflow-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/workflow-detection.sh"
 
 # Determine if testing phase should run
 WORKFLOW_DESCRIPTION="<original workflow description>"
@@ -1166,7 +1166,7 @@ Detect configuration errors immediately with actionable diagnostic context.
 Every error message must include:
 
 1. **What Failed**: Specific operation (e.g., "unified-location-detection.sh library load failed")
-2. **Expected State**: What should have happened (e.g., "Library should exist at ${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh")
+2. **Expected State**: What should have happened (e.g., "Library should exist at ${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh")
 3. **Diagnostic Commands**: Exact commands to investigate (e.g., `ls -la ${CLAUDE_CONFIG}/.claude/lib/`)
 4. **Context**: Why this is required (e.g., "Required for Phase 0 path calculation")
 5. **Action**: Steps to resolve (e.g., "Verify library installation: git status .claude/lib/")
@@ -1184,13 +1184,13 @@ Every error message must include:
 
 ```bash
 # Bootstrap library loading
-if ! source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh" 2>/dev/null; then
+if ! source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null; then
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "ERROR: Failed to load unified-location-detection.sh library"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
   echo "**What failed**: Library sourcing"
-  echo "**Expected**: Library should exist at ${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+  echo "**Expected**: Library should exist at ${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
   echo "**Diagnostic**: Run: ls -la ${CLAUDE_CONFIG}/.claude/lib/"
   echo "**Context**: Required for Phase 0 path pre-calculation (85% token reduction)"
   echo "**Action**: Verify installation: git status .claude/lib/ | grep unified-location-detection"
@@ -1284,26 +1284,26 @@ All orchestration commands must source these libraries:
 
 ```bash
 # Phase 0: Location Detection
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Phase 1: Research
-source "${CLAUDE_CONFIG}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Phase 2: Planning
-source "${CLAUDE_CONFIG}/.claude/lib/complexity-utils.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/plan/complexity-utils.sh"
 
 # Phase 3: Implementation
-source "${CLAUDE_CONFIG}/.claude/lib/dependency-analyzer.sh"
-source "${CLAUDE_CONFIG}/.claude/lib/context-pruning.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/util/dependency-analyzer.sh"
+# Context pruning library not yet implemented
 
 # Phase 4: Testing
-source "${CLAUDE_CONFIG}/.claude/lib/workflow-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/workflow-detection.sh"
 
 # Phase 5: Debugging
-source "${CLAUDE_CONFIG}/.claude/lib/error-handling.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/error-handling.sh"
 
 # All Phases: Checkpoint Management
-source "${CLAUDE_CONFIG}/.claude/lib/checkpoint-utils.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/checkpoint-utils.sh"
 ```
 
 ### Verification Template

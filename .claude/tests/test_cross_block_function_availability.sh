@@ -28,8 +28,8 @@ echo "Test 1: emit_progress function availability"
   set +H
 
   # Source unified-logger.sh
-  if [ -f "${LIB_DIR}/unified-logger.sh" ]; then
-    source "${LIB_DIR}/unified-logger.sh"
+  if [ -f "${LIB_DIR}/core/unified-logger.sh" ]; then
+    source "${LIB_DIR}/core/unified-logger.sh"
   else
     echo "  ❌ unified-logger.sh not found"
     exit 1
@@ -58,7 +58,7 @@ echo "Test 2: display_brief_summary function availability"
   set +H
 
   # Source unified-logger.sh
-  source "${LIB_DIR}/unified-logger.sh"
+  source "${LIB_DIR}/core/unified-logger.sh"
 
   # Test display_brief_summary function
   if command -v display_brief_summary &>/dev/null; then
@@ -88,14 +88,14 @@ echo "Test 3: Functions available across subprocess boundaries"
 (
   # Block 1: Source libraries
   set +H
-  source "${LIB_DIR}/unified-logger.sh"
+  source "${LIB_DIR}/core/unified-logger.sh"
 
   echo "block1_sourced" > /tmp/test_func_$$.txt
 
   # Block 2: Separate subprocess, re-source libraries
   (
     set +H
-    source "${LIB_DIR}/unified-logger.sh"
+    source "${LIB_DIR}/core/unified-logger.sh"
 
     # Verify functions still available
     if command -v emit_progress &>/dev/null && command -v display_brief_summary &>/dev/null; then
@@ -123,9 +123,9 @@ echo "Test 4: Source guards allow safe multiple sourcing"
   set +H
 
   # Source same library multiple times
-  source "${LIB_DIR}/unified-logger.sh"
-  source "${LIB_DIR}/unified-logger.sh"
-  source "${LIB_DIR}/unified-logger.sh"
+  source "${LIB_DIR}/core/unified-logger.sh"
+  source "${LIB_DIR}/core/unified-logger.sh"
+  source "${LIB_DIR}/core/unified-logger.sh"
 
   # Functions should still work
   if command -v emit_progress &>/dev/null; then
@@ -143,16 +143,22 @@ echo "Test 5: Functions available across 3-block coordinate workflow"
   set +H
   TEST_STATE_FILE="/tmp/test_multiblock_$$.state"
 
+  # Check if verification-helpers.sh exists (was archived with coordinate command)
+  if [ ! -f "${LIB_DIR}/util/verification-helpers.sh" ]; then
+    echo "  - verification-helpers.sh archived with coordinate (skipped)"
+    exit 0
+  fi
+
   # Block 1: Initialize workflow and source libraries
   bash -c "
     set +H
     LIB_DIR='${LIB_DIR}'
 
     # Source libraries in Standard 15 order
-    source \"\${LIB_DIR}/workflow-state-machine.sh\"
-    source \"\${LIB_DIR}/state-persistence.sh\"
-    source \"\${LIB_DIR}/error-handling.sh\"
-    source \"\${LIB_DIR}/verification-helpers.sh\"
+    source \"\${LIB_DIR}/workflow/workflow-state-machine.sh\"
+    source \"\${LIB_DIR}/core/state-persistence.sh\"
+    source \"\${LIB_DIR}/core/error-handling.sh\"
+    source \"\${LIB_DIR}/util/verification-helpers.sh\"
 
     # Verify critical functions available
     if command -v handle_state_error &>/dev/null && \
@@ -177,10 +183,10 @@ echo "Test 5: Functions available across 3-block coordinate workflow"
     LIB_DIR='${LIB_DIR}'
 
     # Re-source libraries in same order
-    source \"\${LIB_DIR}/workflow-state-machine.sh\"
-    source \"\${LIB_DIR}/state-persistence.sh\"
-    source \"\${LIB_DIR}/error-handling.sh\"
-    source \"\${LIB_DIR}/verification-helpers.sh\"
+    source \"\${LIB_DIR}/workflow/workflow-state-machine.sh\"
+    source \"\${LIB_DIR}/core/state-persistence.sh\"
+    source \"\${LIB_DIR}/core/error-handling.sh\"
+    source \"\${LIB_DIR}/util/verification-helpers.sh\"
 
     # Verify functions still available
     if command -v handle_state_error &>/dev/null && \
@@ -205,11 +211,11 @@ echo "Test 5: Functions available across 3-block coordinate workflow"
     LIB_DIR='${LIB_DIR}'
 
     # Re-source libraries again
-    source \"\${LIB_DIR}/workflow-state-machine.sh\"
-    source \"\${LIB_DIR}/state-persistence.sh\"
-    source \"\${LIB_DIR}/error-handling.sh\"
-    source \"\${LIB_DIR}/verification-helpers.sh\"
-    source \"\${LIB_DIR}/unified-logger.sh\"
+    source \"\${LIB_DIR}/workflow/workflow-state-machine.sh\"
+    source \"\${LIB_DIR}/core/state-persistence.sh\"
+    source \"\${LIB_DIR}/core/error-handling.sh\"
+    source \"\${LIB_DIR}/util/verification-helpers.sh\"
+    source \"\${LIB_DIR}/core/unified-logger.sh\"
 
     # Verify all critical functions available
     if command -v handle_state_error &>/dev/null && \

@@ -343,10 +343,10 @@ When using agents in multi-agent workflows, follow these context preservation pa
 
 ### Utilities
 
-- `extract_report_metadata()` - Extract title + 50-word summary from research reports (`.claude/lib/metadata-extraction.sh`)
+- `extract_report_metadata()` - Extract title + 50-word summary from research reports (`.claude/lib/workflow/metadata-extraction.sh`)
 - `extract_plan_metadata()` - Extract complexity + phase count from implementation plans
 - `forward_message()` - Extract handoff context from subagent output without paraphrasing
-- `prune_subagent_output()` - Remove full output after metadata extraction (`.claude/lib/context-pruning.sh`)
+- `prune_subagent_output()` - Remove full output after metadata extraction (`.claude/lib/workflow/context-pruning.sh`)
 
 ### Target
 

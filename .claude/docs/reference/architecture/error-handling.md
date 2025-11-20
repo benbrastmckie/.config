@@ -235,7 +235,7 @@ Execute the implementation plan phase by phase with testing and git commits.
 
 **Step 1: Load Plan and Checkpoint**
 ```bash
-source .claude/lib/checkpoint-utils.sh
+source .claude/lib/workflow/checkpoint-utils.sh
 CHECKPOINT=$(load_checkpoint "implement")
 PLAN_PATH=$(echo "$CHECKPOINT" | jq -r '.plan_path')
 CURRENT_PHASE=$(echo "$CHECKPOINT" | jq -r '.current_phase')
@@ -269,7 +269,7 @@ Task {
 **GOOD**:
 ```markdown
 **Quick Reference**:
-1. Discover plan using find + parse-adaptive-plan.sh
+1. Discover plan using find + plan-core-bundle.sh
 2. Load checkpoint with load_checkpoint "implement"
 3. Execute phases sequentially (or in waves if dependencies present)
 4. Run tests after each phase using standards-defined test commands

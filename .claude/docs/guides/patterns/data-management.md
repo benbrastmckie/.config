@@ -212,7 +212,7 @@ grep "EVENT=Stop" .claude/data/logs/hook-debug.log
 #### adaptive-planning.log
 **Purpose**: Adaptive planning replan event logging
 
-**Written By**: `.claude/lib/unified-logger.sh`
+**Written By**: `.claude/lib/core/unified-logger.sh`
 
 **Format**: Structured logging of complexity detection, replan triggers, and plan updates
 
@@ -464,7 +464,7 @@ Artifact metadata tracking enables:
 
 ### Which Utilities Write Registry Files
 
-- `.claude/lib/metadata-extraction.sh` - Unified artifact management
+- `.claude/lib/workflow/metadata-extraction.sh` - Unified artifact management
 - `/orchestrate` - Workflow coordination
 - `/implement` - Implementation tracking
 - Various commands creating trackable artifacts

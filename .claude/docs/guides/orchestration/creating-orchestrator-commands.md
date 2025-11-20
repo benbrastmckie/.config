@@ -103,10 +103,10 @@ export CLAUDE_PROJECT_DIR
 
 # Source libraries in correct order
 # CRITICAL: state-persistence.sh and workflow-state-machine.sh MUST be sourced first
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh"
 
 # Verify library versions (fail-fast if incompatible)
 check_library_requirements "$(cat <<'EOF'

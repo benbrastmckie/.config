@@ -162,7 +162,7 @@ fi
 
 ```bash
 # Add path calculation before agent invocation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh"
 
 TOPIC_DIR=$(get_or_create_topic_dir "$FEATURE_DESCRIPTION" "specs")
 REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "research" "")
@@ -236,7 +236,7 @@ If results found, command is loading full content (context bloat).
 
 **Step 3: Check metadata summary length**
 ```bash
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 METADATA=$(extract_report_metadata "$REPORT_PATH")
 SUMMARY=$(echo "$METADATA" | jq -r '.summary')
 WORD_COUNT=$(echo "$SUMMARY" | wc -w)
@@ -253,7 +253,7 @@ echo "Summary word count: $WORD_COUNT (should be ≤50)"
 FULL_REPORT=$(cat "$REPORT_PATH")  # ❌ 5000 tokens
 
 # CORRECT: Extract metadata only
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
 METADATA=$(extract_report_metadata "$REPORT_PATH")  # ✅ 250 tokens
 SUMMARY=$(echo "$METADATA" | jq -r '.summary')  # ≤50 words
 ```
@@ -261,7 +261,7 @@ SUMMARY=$(echo "$METADATA" | jq -r '.summary')  # ≤50 words
 **Fix 2: Prune subagent outputs after metadata extraction**
 
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/context-pruning.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/context-pruning.sh"
 
 # After subagent completes
 METADATA=$(extract_report_metadata "$REPORT_PATH")
@@ -277,7 +277,7 @@ prune_subagent_output "subagent_id"
 If summaries are too long, update metadata extraction:
 
 ```bash
-# In .claude/lib/metadata-extraction.sh
+# In .claude/lib/workflow/metadata-extraction.sh
 # Ensure summary truncation to 50 words
 SUMMARY=$(echo "$FULL_SUMMARY" | head -c 300 | sed 's/\s\S*$/.../')
 ```
@@ -459,7 +459,7 @@ grep -n "create_topic_artifact\|get_or_create_topic_dir" \
 REPORT_PATH="specs/reports/042_research.md"  # ❌ Flat structure
 
 # CORRECT: Topic-based path calculation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh"
 
 TOPIC_DIR=$(get_or_create_topic_dir "$FEATURE_DESCRIPTION" "specs")
 REPORT_PATH=$(create_topic_artifact "$TOPIC_DIR" "reports" "research" "")
@@ -560,7 +560,7 @@ ls specs/042_user_authentication/reports/
 
 ### References
 - [Directory Protocols](.claude/docs/concepts/directory-protocols.md) - Topic-based structure standards
-- [Artifact Creation Utilities](.claude/lib/artifact-creation.sh) - `create_topic_artifact()` function
+- [Artifact Creation Utilities](.claude/lib/artifact/artifact-creation.sh) - `create_topic_artifact()` function
 - [Command Authoring Guide: Topic-Based Paths](../guides/command-development-guide.md#topic-based-artifact-paths)
 
 ---

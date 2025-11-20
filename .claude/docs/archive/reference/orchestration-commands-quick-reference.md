@@ -80,7 +80,7 @@ Phase 6: Documentation (summary + cross-references)
 **EXECUTE NOW**: USE the Bash tool to calculate paths:
 
 ```bash
-source .claude/lib/unified-location-detection.sh
+source .claude/lib/core/unified-location-detection.sh
 topic_dir=$(create_topic_structure "topic_name")
 report_path="$topic_dir/reports/001_subtopic.md"
 echo "REPORT_PATH: $report_path"
@@ -144,7 +144,7 @@ Task {
 
 **Look for**: PROGRESS: markers (indicates agent execution)
 
-**Fix**: Run `.claude/lib/validate-agent-invocation-pattern.sh`
+**Fix**: Run `.claude/lib/util/validate-agent-invocation-pattern.sh`
 
 ### 3. Files Created?
 
@@ -178,7 +178,7 @@ ls .claude/TODO*.md 2>/dev/null
 
 **Diagnosis**:
 ```bash
-./.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
+./.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
 ```
 
 **Solution**: Remove code fences around Task invocations, add `**EXECUTE NOW**` directives
@@ -237,7 +237,7 @@ grep -i "error\|warning" [command output]
 
 ```bash
 # Validate specific command
-./.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
+./.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
 
 # Run full test suite
 ./.claude/tests/test_orchestration_commands.sh
@@ -331,7 +331,7 @@ After running any orchestration command, verify:
 - [ ] Agent return signals visible (REPORT_CREATED:, PLAN_CREATED:)
 - [ ] Error messages include diagnostic commands
 - [ ] Tests passing (if implementation phase)
-- [ ] Validation script passes: `.claude/lib/validate-agent-invocation-pattern.sh`
+- [ ] Validation script passes: `.claude/lib/util/validate-agent-invocation-pattern.sh`
 
 ## Emergency Procedures
 
@@ -350,7 +350,7 @@ cp .claude/commands/coordinate.md.backup-20251027_144342 \
    .claude/commands/coordinate.md
 
 # Verify rollback
-./.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/coordinate.md
+./.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/coordinate.md
 ```
 
 ### Fix Immediate Issues
@@ -360,7 +360,7 @@ cp .claude/commands/coordinate.md.backup-20251027_144342 \
 ls -la .claude/lib/
 
 # Delegation failure: Validate patterns
-./.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/[command].md
+./.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/[command].md
 
 # File creation failure: Check verification checkpoints
 grep -n "MANDATORY VERIFICATION" .claude/commands/[command].md
@@ -395,10 +395,10 @@ All orchestration commands must comply with:
 - [Command Architecture Standards](./command_architecture_standards.md) - All standards
 
 ### Utilities
-- Validation: `.claude/lib/validate-agent-invocation-pattern.sh`
+- Validation: `.claude/lib/util/validate-agent-invocation-pattern.sh`
 - Testing: `.claude/tests/test_orchestration_commands.sh`
-- Backup: `.claude/lib/backup-command-file.sh`
-- Rollback: `.claude/lib/rollback-command-file.sh`
+- Backup: `.claude/lib/util/backup-command-file.sh`
+- Rollback: `.claude/lib/util/rollback-command-file.sh`
 
 ### Case Studies
 - Spec 438: `/supervise` agent delegation fix
@@ -408,7 +408,7 @@ All orchestration commands must comply with:
 
 ## Tips & Best Practices
 
-1. **Always validate before committing**: Run `.claude/lib/validate-agent-invocation-pattern.sh`
+1. **Always validate before committing**: Run `.claude/lib/util/validate-agent-invocation-pattern.sh`
 2. **Test after changes**: Run `.claude/tests/test_orchestration_commands.sh`
 3. **Verify file locations**: Check `specs/NNN_topic/` directories
 4. **Monitor delegation rate**: Look for PROGRESS: markers

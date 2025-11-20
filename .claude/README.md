@@ -119,8 +119,8 @@ The directory structure follows clear separation of concerns:
 **Characteristics**:
 - Task-specific executables for maintenance and analysis
 - Include CLI argument parsing and formatted output
-- System-level operations (migration, validation, metrics)
-- Examples: migrate_to_topic_structure.sh, validate_migration.sh, context_metrics_dashboard.sh
+- System-level operations (validation, analysis)
+- Examples: validate-links.sh, validate-agent-behavioral-file.sh, detect-empty-topics.sh
 
 **Difference from lib/**: scripts/ are standalone executables, lib/ are sourced functions
 

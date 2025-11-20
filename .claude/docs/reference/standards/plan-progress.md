@@ -185,7 +185,7 @@ grep "\[IN PROGRESS\]" plan.md
 While typically managed by /build, markers can be updated manually:
 
 ```bash
-source .claude/lib/checkbox-utils.sh
+source .claude/lib/plan/checkbox-utils.sh
 add_in_progress_marker "plan.md" "3"
 ```
 
@@ -203,7 +203,7 @@ add_in_progress_marker "plan.md" "3"
 If phases lack status markers:
 
 ```bash
-source .claude/lib/checkbox-utils.sh
+source .claude/lib/plan/checkbox-utils.sh
 add_not_started_markers "plan.md"
 ```
 
@@ -216,7 +216,7 @@ The `remove_status_marker()` function is called automatically before adding new 
 Verify checkbox-utils.sh is sourced correctly:
 
 ```bash
-source .claude/lib/checkbox-utils.sh
+source .claude/lib/plan/checkbox-utils.sh
 type add_in_progress_marker  # Should show function
 ```
 

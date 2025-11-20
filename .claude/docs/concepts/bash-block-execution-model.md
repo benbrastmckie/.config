@@ -103,7 +103,7 @@ allowed-tools: None  ← Agent has NO bash tool
 After classification, save to state:
 
 ```bash
-source .claude/lib/state-persistence.sh
+source .claude/lib/core/state-persistence.sh
 append_workflow_state "CLASSIFICATION_JSON" "$JSON"
 ```
 ```
@@ -406,13 +406,13 @@ fi
 
 **Problem**: Manual state file management is error-prone and verbose.
 
-**Solution**: Use `.claude/lib/state-persistence.sh` for standardized state management.
+**Solution**: Use `.claude/lib/core/state-persistence.sh` for standardized state management.
 
 ```bash
 # In each bash block:
 
 # 1. Re-source library (functions lost across block boundaries)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # 2. Load workflow state
 WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
@@ -471,7 +471,7 @@ source "${LIB_DIR}/verification-helpers.sh"
 
 ```bash
 # ❌ ANTI-PATTERN: Direct initialization (overwrites loaded values)
-# In .claude/lib/workflow-state-machine.sh:
+# In .claude/lib/workflow/workflow-state-machine.sh:
 WORKFLOW_SCOPE=""
 WORKFLOW_DESCRIPTION=""
 CURRENT_STATE="initialize"
@@ -533,13 +533,13 @@ readonly STATE_INITIALIZE="initialize"  # No conditional initialization needed
 
 ```bash
 # Bash Block 1: Initialize workflow
-source .claude/lib/workflow-state-machine.sh  # WORKFLOW_SCOPE="" (or "${WORKFLOW_SCOPE:-}")
+source .claude/lib/workflow/workflow-state-machine.sh  # WORKFLOW_SCOPE="" (or "${WORKFLOW_SCOPE:-}")
 sm_init "Research authentication" "coordinate"  # Sets WORKFLOW_SCOPE="research-and-plan"
 append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"  # Save to state file
 
 # Bash Block 2: Research phase (NEW SUBPROCESS)
 load_workflow_state "$WORKFLOW_ID"  # Restores WORKFLOW_SCOPE="research-and-plan"
-source .claude/lib/workflow-state-machine.sh  # With conditional init: WORKFLOW_SCOPE preserved!
+source .claude/lib/workflow/workflow-state-machine.sh  # With conditional init: WORKFLOW_SCOPE preserved!
                                                # Without: WORKFLOW_SCOPE="" (BUG!)
 
 # Conditional initialization fixes the bug where WORKFLOW_SCOPE was reset to ""
@@ -930,7 +930,7 @@ done
 ```bash
 # ❌ ANTI-PATTERN: BASH_SOURCE-based SCRIPT_DIR (fails in Claude Code)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
 # BASH_SOURCE[0] is empty → SCRIPT_DIR=/current/working/directory
 # Path resolves to: /current/working/directory/../lib/ (WRONG)
 # Expected path: /project/root/.claude/lib/ (CORRECT)
@@ -985,7 +985,7 @@ source "$UTILS_DIR/workflow-state-machine.sh"
 # === BASH BLOCK 1: Research Invocation ===
 
 # Re-source libraries (subprocess isolation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Load state from fixed location
 WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")
@@ -1004,7 +1004,7 @@ append_workflow_state "REPORT_PATHS_JSON" "$(printf '%s\n' "${REPORT_PATHS[@]}" 
 # === BASH BLOCK 2: Research Verification ===
 
 # Re-source libraries
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Load state from fixed location
 WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/coordinate_state_id.txt")

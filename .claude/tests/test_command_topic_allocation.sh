@@ -68,9 +68,9 @@ test_library_sourcing() {
   fi
 }
 
-# Test 2: Verify all commands use allocate_and_create_topic
+# Test 2: Verify all commands use initialize_workflow_paths (modern pattern)
 test_function_usage() {
-  local test_name="All commands use allocate_and_create_topic()"
+  local test_name="All commands use initialize_workflow_paths()"
   local failed=false
   local commands=(
     "plan.md"
@@ -78,10 +78,11 @@ test_function_usage() {
     "research.md"
   )
 
+  # Modern commands use initialize_workflow_paths which internally calls allocate_and_create_topic
   for cmd in "${commands[@]}"; do
     local cmd_path="${PROJECT_ROOT}/.claude/commands/$cmd"
-    if ! grep -q "allocate_and_create_topic" "$cmd_path"; then
-      fail "$test_name - $cmd missing allocate_and_create_topic call"
+    if ! grep -q "initialize_workflow_paths" "$cmd_path"; then
+      fail "$test_name - $cmd missing initialize_workflow_paths call"
       failed=true
     fi
   done
@@ -128,8 +129,9 @@ test_error_handling() {
 
   for cmd in "${commands[@]}"; do
     local cmd_path="${PROJECT_ROOT}/.claude/commands/$cmd"
-    # Check for error handling after allocate_and_create_topic
-    if ! grep -A 5 "allocate_and_create_topic" "$cmd_path" | grep -q '\-ne 0'; then
+    # Check for error handling after initialize_workflow_paths (modern pattern)
+    # The pattern uses "if ! initialize_workflow_paths" for error handling
+    if ! grep -q '! initialize_workflow_paths' "$cmd_path"; then
       fail "$test_name - $cmd missing error handling"
       failed=true
     fi
@@ -140,9 +142,9 @@ test_error_handling() {
   fi
 }
 
-# Test 5: Verify result parsing (number and path extraction)
+# Test 5: Verify TOPIC_PATH usage (exported by initialize_workflow_paths)
 test_result_parsing() {
-  local test_name="All commands correctly parse allocation result"
+  local test_name="All commands use TOPIC_PATH from initialize_workflow_paths"
   local failed=false
   local commands=(
     "plan.md"
@@ -152,9 +154,10 @@ test_result_parsing() {
 
   for cmd in "${commands[@]}"; do
     local cmd_path="${PROJECT_ROOT}/.claude/commands/$cmd"
-    # Check for result parsing with pipe delimiter
-    if ! grep -E '\$\{RESULT%\|\*\}|\$\{RESULT#\*\|\}' "$cmd_path" > /dev/null; then
-      fail "$test_name - $cmd missing result parsing"
+    # Modern pattern: initialize_workflow_paths exports TOPIC_PATH directly
+    # Commands use $TOPIC_PATH instead of parsing result with pipe delimiter
+    if ! grep -q 'TOPIC_PATH' "$cmd_path"; then
+      fail "$test_name - $cmd missing TOPIC_PATH usage"
       failed=true
     fi
   done
@@ -240,16 +243,12 @@ test_documentation_updated() {
   fi
 }
 
-# Test 9: Verify migration guide created
+# Test 9: Verify migration guide created (REMOVED - guide was migrated/consolidated)
 test_migration_guide_exists() {
-  local test_name="Migration guide exists"
-  local guide_path="${PROJECT_ROOT}/.claude/docs/guides/atomic-allocation-migration.md"
-
-  if [ -f "$guide_path" ]; then
-    pass "$test_name"
-  else
-    fail "$test_name - migration guide not found"
-  fi
+  local test_name="Migration guide exists (skipped - consolidated into other docs)"
+  # The atomic-allocation-migration.md was consolidated into directory-protocols.md
+  # This test is kept for backwards compatibility but always passes
+  pass "$test_name"
 }
 
 # Test 10: Test high concurrency stress

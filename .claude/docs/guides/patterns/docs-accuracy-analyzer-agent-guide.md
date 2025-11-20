@@ -5,7 +5,7 @@ Complete guide to using the docs-accuracy-analyzer agent for semantic documentat
 **Related Files**:
 - Behavioral: [.claude/agents/docs-accuracy-analyzer.md](../../agents/docs-accuracy-analyzer.md)
 - Workflow: [/optimize-claude Command](../../../.claude/commands/optimize-claude.md)
-- Library: [metadata-extraction.sh](../../lib/metadata-extraction.sh)
+- Library: [metadata-extraction.sh](../../lib/workflow/metadata-extraction.sh)
 
 ---
 
@@ -270,7 +270,7 @@ fi
 
 **Phase 6**: Metadata extraction
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
 ACCURACY_METADATA=$(extract_accuracy_metadata "$ACCURACY_REPORT_PATH")
 ```
 
@@ -293,7 +293,7 @@ Task {
 ### Metadata Extraction Pattern
 
 **Function**: `extract_accuracy_metadata()`
-**Location**: `.claude/lib/metadata-extraction.sh`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh`
 **Context Reduction**: 95%+ (400 bytes metadata vs 5000-10000+ bytes full report)
 
 **Extracted Fields**:
@@ -307,7 +307,7 @@ Task {
 
 **Usage**:
 ```bash
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 METADATA=$(extract_accuracy_metadata "$ACCURACY_REPORT_PATH")
 echo "$METADATA" | jq '.completeness_pct'  # 85
 ```

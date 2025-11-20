@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LIB_DIR="$SCRIPT_DIR/../lib"
 
 # Source required libraries
-source "$LIB_DIR/plan-core-bundle.sh"
+source "$LIB_DIR/plan/plan-core-bundle.sh"
 
 # Colors for output
 RED='\033[0;31m'

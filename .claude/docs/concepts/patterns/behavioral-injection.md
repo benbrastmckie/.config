@@ -822,7 +822,7 @@ Verify: $topic_dir should contain absolute path to .claude/specs/NNN_topic/
 
 #### Prevention Measures
 
-**Validation Script**: `.claude/lib/validate-agent-invocation-pattern.sh`
+**Validation Script**: `.claude/lib/util/validate-agent-invocation-pattern.sh`
 - Detects YAML-style Task blocks in command files
 - Detects markdown code fences around invocations
 - Detects template variables in prompts (`${VAR}`)
@@ -867,7 +867,7 @@ restore_checkpoint "$checkpoint_name"
 
 ```bash
 # Example fallback (lines 242-274):
-if ! source .claude/lib/workflow-detection.sh; then
+if ! source .claude/lib/workflow/workflow-detection.sh; then
   # Define fallback function inline
   detect_workflow_scope() {
     echo "research-only"  # Default assumption
@@ -887,7 +887,7 @@ fi
 
 **Before** (Silent fallback):
 ```bash
-if ! source .claude/lib/workflow-detection.sh; then
+if ! source .claude/lib/workflow/workflow-detection.sh; then
   # Fallback function
   detect_workflow_scope() { echo "research-only"; }
 fi
@@ -895,10 +895,10 @@ fi
 
 **After** (Explicit error):
 ```bash
-if ! source .claude/lib/workflow-detection.sh; then
+if ! source .claude/lib/workflow/workflow-detection.sh; then
   echo "ERROR: Failed to source workflow-detection.sh"
-  echo "EXPECTED PATH: $SCRIPT_DIR/.claude/lib/workflow-detection.sh"
-  echo "DIAGNOSTIC: ls -la $SCRIPT_DIR/.claude/lib/workflow-detection.sh"
+  echo "EXPECTED PATH: $SCRIPT_DIR/.claude/lib/workflow/workflow-detection.sh"
+  echo "DIAGNOSTIC: ls -la $SCRIPT_DIR/.claude/lib/workflow/workflow-detection.sh"
   echo ""
   echo "CONTEXT: Library required for workflow scope detection"
   echo "ACTION: Verify library file exists and is readable"
@@ -926,7 +926,7 @@ fi
 ```bash
 if ! declare -F detect_workflow_scope >/dev/null; then
   echo "ERROR: Missing required function: detect_workflow_scope"
-  echo "EXPECTED PROVIDER: .claude/lib/workflow-detection.sh"
+  echo "EXPECTED PROVIDER: .claude/lib/workflow/workflow-detection.sh"
   echo "DIAGNOSTIC: declare -F | grep detect_workflow_scope"
   echo "DIAGNOSTIC: Check if workflow-detection.sh was sourced successfully"
   exit 1
@@ -1043,7 +1043,7 @@ fi
 
 **Unified Validation**: Both specs contributed to shared testing infrastructure
 
-- **Validation Script**: `.claude/lib/validate-agent-invocation-pattern.sh` (from spec 495)
+- **Validation Script**: `.claude/lib/util/validate-agent-invocation-pattern.sh` (from spec 495)
 - **Test Suite**: `.claude/tests/test_orchestration_commands.sh` (unified from both specs)
 - **Error Standards**: Diagnostic message format (from spec 057)
 

@@ -44,7 +44,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 LIB_DIR=$(cd "$SCRIPT_DIR/../lib" && pwd)
 
 # Source unified workflow scope detection
-source "$LIB_DIR/workflow-scope-detection.sh"
+source "$LIB_DIR/workflow/workflow-scope-detection.sh"
 
 echo "========================================="
 echo "Unified Workflow Scope Detection Tests"
@@ -376,7 +376,7 @@ echo "-----------------------------"
 
 # Test 7.1: workflow-detection.sh sources unified library
 info "Test 7.1: workflow-detection.sh integration"
-if source "$LIB_DIR/workflow-detection.sh" 2>/dev/null; then
+if source "$LIB_DIR/workflow/workflow-detection.sh" 2>/dev/null; then
   # should_run_phase should be available
   if declare -f should_run_phase >/dev/null; then
     pass "workflow-detection.sh integrates correctly"

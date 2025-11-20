@@ -434,13 +434,13 @@ Workflow-state-machine.sh version <2.0.0 or missing library dependencies.
 **Solution**:
 ```bash
 # Check library version
-cat .claude/lib/workflow-state-machine.sh | grep "VERSION="
+cat .claude/lib/workflow/workflow-state-machine.sh | grep "VERSION="
 
 # If version <2.0.0, update library
 # (Follow library update process)
 
 # Verify state persistence library exists
-ls .claude/lib/state-persistence.sh
+ls .claude/lib/core/state-persistence.sh
 ```
 
 #### Issue 3: Checkpoint Stale or Corrupted
@@ -544,10 +544,10 @@ npm test --verbose
 **Solution**:
 ```bash
 # Verify checkbox-utils.sh exists
-ls -la .claude/lib/checkbox-utils.sh
+ls -la .claude/lib/plan/checkbox-utils.sh
 
 # Test checkbox functions manually
-source .claude/lib/checkbox-utils.sh
+source .claude/lib/plan/checkbox-utils.sh
 mark_phase_complete "/path/to/plan.md" 1
 
 # Check file permissions
@@ -569,7 +569,7 @@ Expanded plan structure (Level 1/2) with phase files that weren't updated during
 **Solution**:
 ```bash
 # Verify plan structure
-source .claude/lib/checkbox-utils.sh
+source .claude/lib/plan/checkbox-utils.sh
 
 # Check for expanded phase files
 ls .claude/specs/*/plans/*/phase_*.md
@@ -626,6 +626,6 @@ cat ~/.claude/data/state/workflow_state.json | jq '.current_state'
 - [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md)
 - [Implementer-Coordinator Agent](../../agents/implementer-coordinator.md)
 - [Debug-Analyst Agent](../../agents/debug-analyst.md)
-- [Checkpoint Utils Reference](../../lib/checkpoint-utils.sh)
+- [Checkpoint Utils Reference](../../lib/workflow/checkpoint-utils.sh)
 - [Command Reference](../reference/standards/command-reference.md)
 - Related Commands: `/implement`, `/coordinate`, `/debug`, `/plan`

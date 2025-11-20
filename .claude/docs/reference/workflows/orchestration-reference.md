@@ -96,7 +96,7 @@ Phase 7: Summary (artifact lifecycle tracking)
 **EXECUTE NOW**: USE the Bash tool to calculate paths:
 
 ```bash
-source .claude/lib/unified-location-detection.sh
+source .claude/lib/core/unified-location-detection.sh
 topic_dir=$(create_topic_structure "topic_name")
 report_path="$topic_dir/reports/001_subtopic.md"
 echo "REPORT_PATH: $report_path"
@@ -162,7 +162,7 @@ Task {
 
 **Look for**: PROGRESS: markers (indicates agent execution)
 
-**Fix**: Run `.claude/lib/validate-agent-invocation-pattern.sh`
+**Fix**: Run `.claude/lib/util/validate-agent-invocation-pattern.sh`
 
 #### 3. Files Created?
 
@@ -196,7 +196,7 @@ ls .claude/TODO*.md 2>/dev/null
 
 **Diagnosis**:
 ```bash
-./.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
+./.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/command-name.md
 ```
 
 **Solution**: Remove code fences around Task invocations, add `**EXECUTE NOW**` directives
@@ -912,7 +912,7 @@ SPECS_DIR=$(extract from agent output)
 
 **Pattern**:
 ```bash
-source .claude/lib/unified-location-detection.sh
+source .claude/lib/core/unified-location-detection.sh
 detect_workflow_scope "$USER_WORKFLOW"
 SPECS_DIR="$WORKFLOW_SPECS_DIR"
 ```
@@ -950,7 +950,7 @@ Task {
 
 ```bash
 # ✓ CORRECT
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 
 REPORT_META=$(extract_report_metadata "$REPORT_PATH")  # 250 tokens
 PLAN_META=$(extract_plan_metadata "$PLAN_PATH")        # 300 tokens
@@ -990,7 +990,7 @@ Verify orchestration command compliance:
 .claude/tests/test_orchestration_commands.sh
 
 # Validate agent invocation pattern
-.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/*.md
+.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/*.md
 
 # Check delegation rate
 .claude/tests/test_supervise_agent_delegation.sh

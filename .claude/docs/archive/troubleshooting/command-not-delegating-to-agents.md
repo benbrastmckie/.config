@@ -35,7 +35,7 @@ Your command has this issue if you observe:
 **Working Command** (delegating):
 ```
 ● /report is running…
-● Bash(source .claude/lib/topic-decomposition.sh && ...)
+● Bash(source .claude/lib/plan/topic-decomposition.sh && ...)
 ● Task(research-specialist) - Research auth_patterns
 ● Task(research-specialist) - Research oauth_flows
 ● Task(research-specialist) - Research session_mgmt

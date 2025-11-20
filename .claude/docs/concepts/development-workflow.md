@@ -75,7 +75,7 @@ The spec updater agent manages artifacts in topic-based directory structure:
 
 ## Shell Utilities
 
-Located in `.claude/lib/metadata-extraction.sh`:
+Located in `.claude/lib/workflow/metadata-extraction.sh`:
 - `create_topic_artifact <topic-dir> <type> <name> <content>` - Create artifact
 - `cleanup_topic_artifacts <topic-dir> <type> [age-days]` - Clean specific type
 - `cleanup_all_temp_artifacts <topic-dir>` - Clean all temporary artifacts
@@ -89,7 +89,7 @@ Located in `.claude/lib/metadata-extraction.sh`:
 
 ## Plan Hierarchy Updates
 
-Located in `.claude/lib/checkbox-utils.sh`:
+Located in `.claude/lib/plan/checkbox-utils.sh`:
 - Automatically updates checkboxes across plan hierarchy levels after phase completion
 - Functions: `update_checkbox()`, `propagate_checkbox_update()`, `mark_phase_complete()`, `verify_checkbox_consistency()`
 - Supports Level 0 (single file), Level 1 (expanded phases), Level 2 (stages → phases → main)

@@ -14,40 +14,6 @@ This document is part of a multi-part reference:
 
 ## Agent Support
 
-### agent-registry-utils.sh
-
-Agent registration and discovery. Used by `/orchestrate` and Task tool integration.
-
-#### Core Functions
-
-##### `register_agent(agent_name, agent_path, capabilities)`
-
-Register an agent in the global registry.
-
-**Arguments**:
-- `agent_name` (string): Unique agent identifier
-- `agent_path` (string): Absolute path to agent definition
-- `capabilities` (string): Comma-separated capability list
-
-**Returns**: Nothing
-
-**Exit Codes**:
-- `0`: Success
-- `1`: Failure (invalid arguments, registry write failed)
-
-##### `discover_agent(capability_pattern)`
-
-Discover registered agents matching capability pattern.
-
-**Arguments**:
-- `capability_pattern` (string): Regex pattern to match capabilities
-
-**Returns**: Newline-separated list of matching agent paths
-
-**Exit Codes**: `0` (always succeeds)
-
----
-
 ### hierarchical-agent-support.sh
 
 Multi-level agent coordination for recursive supervision patterns.
@@ -268,7 +234,7 @@ Returns human-readable explanation of why overview synthesis was skipped.
 
 ## Analysis and Validation
 
-### complexity-thresholds.sh
+### complexity-utils.sh
 
 Complexity scoring for plans. Used by `/plan` and adaptive planning in `/implement`.
 
@@ -326,23 +292,19 @@ Validate that topic directory has all 6 required subdirectories.
 ### Plan Management
 - `plan-core-bundle.sh` - Plan parsing and manipulation
 - `progressive-planning-utils.sh` - Progressive plan expansion/collapse
-- `complexity-thresholds.sh` - Plan complexity scoring
+- `complexity-utils.sh` - Plan complexity scoring
 - `dependency-analyzer.sh` - Phase dependency analysis
 - `checkpoint-utils.sh` - Checkpoint state management
 - `checkbox-utils.sh` - Checkbox state tracking in plans
 
 ### Agent Coordination
-- `agent-registry-utils.sh` - Agent registration and discovery
-- `agent-discovery.sh` - Agent capability matching
 - `agent-loading-utils.sh` - Agent definition loading
 - `hierarchical-agent-support.sh` - Multi-level agent coordination
 - `agent-frontmatter-validator.sh` - Agent metadata validation
-- `agent-schema-validator.sh` - Agent schema validation
 
 ### Context Optimization
 - `metadata-extraction.sh` - Report/plan metadata extraction
 - `context-pruning.sh` - Context window optimization
-- `context-metrics.sh` - Context usage measurement
 
 ### Artifact Management
 - `artifact-creation.sh` - Artifact file creation
@@ -370,9 +332,6 @@ Validate that topic directory has all 6 required subdirectories.
 - `generate-testing-protocols.sh` - Test protocol generation
 - `structure-validator.sh` - Directory structure validation
 
-### Git Integration
-- `git-utils.sh` - Git operations (commit, push, status)
-
 ### Conversion Utilities
 - `convert-core.sh` - Document format conversion
 - `convert-docx.sh` - DOCX conversion
@@ -380,10 +339,8 @@ Validate that topic directory has all 6 required subdirectories.
 - `convert-pdf.sh` - PDF conversion
 
 ### Miscellaneous
-- `json-utils.sh` - JSON parsing and manipulation
 - `timestamp-utils.sh` - Timestamp utilities
 - `base-utils.sh` - Base utility functions
-- `deps-utils.sh` - Dependency checking
 
 ### Migration Scripts
 - `migrate-checkpoint-v1.3.sh` - Checkpoint migration
@@ -399,10 +356,10 @@ Always source libraries using absolute paths from `CLAUDE_CONFIG`:
 
 ```bash
 # Recommended
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Also acceptable (relative path from .claude/)
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/unified-location-detection.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/core/unified-location-detection.sh"
 ```
 
 ### jq Dependency

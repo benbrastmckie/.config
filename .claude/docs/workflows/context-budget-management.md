@@ -565,7 +565,7 @@ prune_subagent_output "agent_response" "metadata"  # Must be called after EACH a
 # Change: 4 agents → 3 agents (saves 300 tokens)
 
 # Solution 3: Verify metadata extraction library loaded
-source "${CLAUDE_CONFIG}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/metadata-extraction.sh"
 if ! declare -f extract_report_metadata > /dev/null; then
   echo "ERROR: Metadata extraction not available"
   exit 1

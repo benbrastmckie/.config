@@ -80,7 +80,7 @@ This guide covers the `/orchestrate` command and the underlying parallel executi
 
 #### 2. Utility Libraries
 
-**Artifact Management** (`.claude/lib/artifact-creation.sh`, `.claude/lib/artifact-registry.sh`)
+**Artifact Management** (`.claude/lib/artifact/artifact-creation.sh`, `.claude/lib/artifact/artifact-registry.sh`)
 ```bash
 create_artifact_directory()         # Create specs/artifacts/{plan_name}/
 save_operation_artifact()           # Save operation results
@@ -88,7 +88,7 @@ load_artifact_references()          # Load artifact paths only
 cleanup_operation_artifacts()       # Remove old artifacts
 ```
 
-**Parallel Execution** (`.claude/lib/auto-analysis-utils.sh`)
+**Parallel Execution** (`.claude/lib/plan/auto-analysis-utils.sh`)
 ```bash
 invoke_expansion_agents_parallel()  # Launch expansion agents
 invoke_collapse_agents_parallel()   # Launch collapse agents
@@ -97,7 +97,7 @@ aggregate_collapse_artifacts()      # Collect collapse artifacts
 coordinate_metadata_updates()       # Update plan metadata
 ```
 
-**Error Recovery** (`.claude/lib/error-handling.sh`)
+**Error Recovery** (`.claude/lib/core/error-handling.sh`)
 ```bash
 retry_with_timeout()                # Retry with 1.5x timeout
 retry_with_fallback()               # Retry with reduced toolset
@@ -105,7 +105,7 @@ handle_partial_failure()            # Process partial successes
 escalate_to_user_parallel()         # Interactive escalation
 ```
 
-**Checkpoint Management** (`.claude/lib/checkpoint-utils.sh`)
+**Checkpoint Management** (`.claude/lib/workflow/checkpoint-utils.sh`)
 ```bash
 save_parallel_operation_checkpoint()  # Save pre-operation state
 restore_from_checkpoint()             # Rollback on failure

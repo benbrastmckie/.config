@@ -4,7 +4,7 @@
 
 The workflow state machine provides a formal abstraction for orchestration command execution, replacing implicit phase-based tracking with explicit states, transitions, and validation. This architecture enables clearer workflow logic, better error handling, and atomic state transitions.
 
-**Location**: `.claude/lib/workflow-state-machine.sh`
+**Location**: `.claude/lib/workflow/workflow-state-machine.sh`
 
 **Used by**: `/coordinate`, `/orchestrate`, `/supervise` (future migration)
 
@@ -627,7 +627,7 @@ PHASE_PLAN=2
 
 # After
 # Use state constants from state machine
-source .claude/lib/workflow-state-machine.sh
+source .claude/lib/workflow/workflow-state-machine.sh
 ```
 
 2. **Replace Phase Loop with State Loop**:
@@ -978,8 +978,8 @@ sm_save "$CHECKPOINT_FILE"
 
 - [Checkpoint Recovery Pattern](.claude/docs/concepts/patterns/checkpoint-recovery.md)
 - [Orchestration Best Practices](.claude/docs/guides/orchestration/orchestration-best-practices.md)
-- [Workflow Detection](.claude/lib/workflow-detection.sh) - Source file
-- [Checkpoint Utilities](.claude/lib/checkpoint-utils.sh) - Checkpoint schema v1.3
+- [Workflow Detection](.claude/lib/workflow/workflow-detection.sh) - Source file
+- [Checkpoint Utilities](.claude/lib/workflow/checkpoint-utils.sh) - Checkpoint schema v1.3
 
 ## Changelog
 

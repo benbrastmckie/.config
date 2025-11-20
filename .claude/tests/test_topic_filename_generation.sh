@@ -44,8 +44,8 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 LIB_DIR=$(cd "$SCRIPT_DIR/../lib" && pwd)
 
 # Source libraries
-source "$LIB_DIR/workflow-llm-classifier.sh"
-source "$LIB_DIR/workflow-initialization.sh"
+source "$LIB_DIR/workflow/workflow-llm-classifier.sh"
+source "$LIB_DIR/workflow/workflow-initialization.sh"
 
 echo "========================================="
 echo "Enhanced Topic Filename Generation Tests"

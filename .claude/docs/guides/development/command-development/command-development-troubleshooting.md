@@ -161,7 +161,7 @@ Checkpoints enable resumability for long-running operations that may be interrup
 **Checkpoint Save Pattern**:
 ```bash
 # Source checkpoint utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/workflow/checkpoint-utils.sh"
 
 # Create checkpoint data
 CHECKPOINT_DATA=$(cat <<EOF

@@ -22,6 +22,7 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 - [/collapse](#collapse)
 - [/convert-docs](#convert-docs)
 - [/document](#document)
+- [/errors](#errors)
 - [/example-with-agent](#example-with-agent)
 - [/expand](#expand)
 - [/list](#list)
@@ -172,6 +173,30 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 **See Also**:
 - [/document Command Guide](../guides/commands/document-command-guide.md) - Comprehensive usage, standards compliance, timeless writing
 - [document.md](../../commands/document.md) - Executable command file
+
+---
+
+### /errors
+**Purpose**: Query and analyze error logs from centralized error logging system
+
+**Usage**: `/errors [--command <cmd>] [--workflow-id <id>] [--error-type <type>] [--limit <N>] [--summary]`
+
+**Type**: utility
+
+**Arguments**:
+- `--command <cmd>` (optional): Filter by command name (e.g., `/build`, `/plan`)
+- `--workflow-id <id>` (optional): Filter by workflow ID
+- `--error-type <type>` (optional): Filter by error type (state_error, validation_error, etc.)
+- `--limit <N>` (optional): Limit results to N most recent (default: 10)
+- `--summary` (optional): Show summary statistics instead of individual errors
+
+**Agents Used**: None (direct query)
+
+**Output**: Formatted error log entries with context and timestamps
+
+**See Also**:
+- [/errors Command Guide](../guides/commands/errors-command-guide.md) - Comprehensive usage, query patterns, troubleshooting workflows
+- [errors.md](../../commands/errors.md) - Executable command file
 
 ---
 
@@ -550,6 +575,7 @@ Execution state and artifact management:
 Maintenance and setup commands:
 - **/analyze** - System performance metrics and analysis
 - **/convert-docs** - Document format conversion
+- **/errors** - Query and analyze error logs
 - **/example-with-agent** - Agent invocation template
 - **/list** - List implementation artifacts
 - **/setup** - Configure or update CLAUDE.md
@@ -597,7 +623,7 @@ Code quality analysis:
 ---
 
 **Notes**:
-- Command count: 14 active commands + 6 archived + 1 deprecated
+- Command count: 15 active commands + 6 archived + 1 deprecated
 - All commands support CLAUDE.md standards discovery
 - Commands can invoke specialized agents for complex tasks
 - Progressive plan structure (L0/L1/L2) supported by plan-related commands

@@ -231,19 +231,19 @@ DEBUGGING_INVOKED="false" # Set if Phase 5 executes
 **Required Libraries** (sourced in Phase 0):
 ```bash
 # Location detection
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Metadata extraction
-source "${CLAUDE_CONFIG}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Checkpoint management
-source "${CLAUDE_CONFIG}/.claude/lib/checkpoint-utils.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/checkpoint-utils.sh"
 
 # Error handling
-source "${CLAUDE_CONFIG}/.claude/lib/error-handling.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/error-handling.sh"
 
 # Progress streaming
-source "${CLAUDE_CONFIG}/.claude/lib/unified-logger.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-logger.sh"
 ```
 
 **Library Functions Used**:
@@ -348,7 +348,7 @@ Export paths to workflow state
 **Bash Execution Block**:
 ```bash
 # Source unified location detection library
-source "${CLAUDE_CONFIG:-${HOME}/.config}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG:-${HOME}/.config}/.claude/lib/core/unified-location-detection.sh"
 
 # Perform location detection
 LOCATION_JSON=$(perform_location_detection "$WORKFLOW_DESCRIPTION" "false")

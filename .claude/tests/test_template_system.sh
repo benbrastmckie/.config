@@ -81,7 +81,7 @@ plan:
         - Task 2
 EOF
 
-  if bash "$LIB_DIR/parse-template.sh" "$template_file" validate >/dev/null 2>&1; then
+  if bash "$LIB_DIR/plan/parse-template.sh" "$template_file" validate >/dev/null 2>&1; then
     pass "Valid template passes validation"
   else
     fail "Valid template failed validation" "Template should be valid"
@@ -99,7 +99,7 @@ variables:
 EOF
 
   local output
-  output=$(bash "$LIB_DIR/parse-template.sh" "$template_file" validate 2>&1) || true
+  output=$(bash "$LIB_DIR/plan/parse-template.sh" "$template_file" validate 2>&1) || true
   if echo "$output" | grep -q "missing 'name' field"; then
     pass "Template without name fails validation"
   else
@@ -118,7 +118,7 @@ variables:
 EOF
 
   local output
-  output=$(bash "$LIB_DIR/parse-template.sh" "$template_file" validate 2>&1) || true
+  output=$(bash "$LIB_DIR/plan/parse-template.sh" "$template_file" validate 2>&1) || true
   if echo "$output" | grep -q "missing 'description' field"; then
     pass "Template without description fails validation"
   else
@@ -130,7 +130,7 @@ test_nonexistent_template_fails() {
   info "Testing nonexistent template file"
 
   local output
-  output=$(bash "$LIB_DIR/parse-template.sh" "$TEST_DIR/nonexistent.yaml" validate 2>&1) || true
+  output=$(bash "$LIB_DIR/plan/parse-template.sh" "$TEST_DIR/nonexistent.yaml" validate 2>&1) || true
   if echo "$output" | grep -q "not found"; then
     pass "Nonexistent template fails with error"
   else
@@ -157,7 +157,7 @@ variables:
 EOF
 
   local output
-  output=$(bash "$LIB_DIR/parse-template.sh" "$template_file" extract-metadata)
+  output=$(bash "$LIB_DIR/plan/parse-template.sh" "$template_file" extract-metadata)
 
   if echo "$output" | grep -q '"name": "Metadata Test Template"'; then
     pass "Extracted template name correctly"
@@ -201,7 +201,7 @@ plan:
 EOF
 
   local output
-  output=$(bash "$LIB_DIR/parse-template.sh" "$template_file" extract-variables)
+  output=$(bash "$LIB_DIR/plan/parse-template.sh" "$template_file" extract-variables)
 
   if echo "$output" | grep -q '"name":"feature_name"'; then
     pass "Extracted first variable"
@@ -245,7 +245,7 @@ plan:
 EOF
 
   local output
-  output=$(bash "$LIB_DIR/parse-template.sh" "$template_file" extract-phases)
+  output=$(bash "$LIB_DIR/plan/parse-template.sh" "$template_file" extract-phases)
 
   if [[ "$output" == "3" ]]; then
     pass "Extracted correct number of phases (3)"
@@ -274,7 +274,7 @@ EOF
 
   local variables='{"feature_name":"User Auth","component_name":"AuthManager"}'
   local output
-  output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
+  output=$(bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$variables")
 
   if echo "$output" | grep -q "Test User Auth substitution"; then
     pass "Simple substitution in description"
@@ -306,7 +306,7 @@ EOF
 
   local variables='{"feature_name":"Test"}'
   local output
-  output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
+  output=$(bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$variables")
 
   if echo "$output" | grep -q "{{undefined_var}}"; then
     pass "Missing variable leaves placeholder intact"
@@ -335,7 +335,7 @@ EOF
 
   local variables='{"has_tests":"true"}'
   local output
-  output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
+  output=$(bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$variables")
 
   if echo "$output" | grep -q "testing: true"; then
     pass "If conditional includes content when true"
@@ -360,7 +360,7 @@ EOF
 
   local variables='{"has_tests":"false"}'
   local output
-  output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
+  output=$(bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$variables")
 
   if ! echo "$output" | grep -q "testing: true"; then
     pass "If conditional excludes content when false"
@@ -384,7 +384,7 @@ EOF
 
   local variables='{"skip_phase":"false"}'
   local output
-  output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
+  output=$(bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$variables")
 
   if echo "$output" | grep -q "phase_included: true"; then
     pass "Unless conditional includes content when false"
@@ -413,7 +413,7 @@ EOF
 
   local variables='{"fields":["name","email","password"]}'
   local output
-  output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
+  output=$(bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$variables")
 
   if echo "$output" | grep -q -- "- name" && echo "$output" | grep -q -- "- email" && echo "$output" | grep -q -- "- password"; then
     pass "Each iteration processes all array items"
@@ -438,7 +438,7 @@ EOF
 
   local variables='{"items":["first","second","third"]}'
   local output
-  output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
+  output=$(bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$variables")
 
   if echo "$output" | grep -q "index: 0" && echo "$output" | grep -q "index: 1" && echo "$output" | grep -q "index: 2"; then
     pass "Index helper works correctly"
@@ -463,7 +463,7 @@ EOF
 
   local variables='{"fields":[]}'
   local output
-  output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
+  output=$(bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$variables")
 
   # Should not contain any list items after "fields:"
   if ! echo "$output" | grep -A 1 "fields:" | grep -q " - "; then
@@ -489,7 +489,7 @@ EOF
 
   # Template should still validate (our validator is simple)
   # but YAML parser would catch this - testing our validator's limits
-  if bash "$LIB_DIR/parse-template.sh" "$template_file" validate >/dev/null 2>&1; then
+  if bash "$LIB_DIR/plan/parse-template.sh" "$template_file" validate >/dev/null 2>&1; then
     pass "Simple validator accepts syntactically complete file"
   else
     fail "Validator too strict" "File has required fields"
@@ -508,7 +508,7 @@ EOF
   local invalid_json='{invalid json}'
 
   # Script should handle gracefully (may produce empty substitutions)
-  if bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$invalid_json" 2>&1 >/dev/null || true; then
+  if bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$invalid_json" 2>&1 >/dev/null || true; then
     pass "Invalid JSON handled without crash"
   else
     fail "Should handle invalid JSON gracefully" "Script crashed"
@@ -557,7 +557,7 @@ plan:
 EOF
 
   # Step 1: Validate
-  if bash "$LIB_DIR/parse-template.sh" "$template_file" validate >/dev/null 2>&1; then
+  if bash "$LIB_DIR/plan/parse-template.sh" "$template_file" validate >/dev/null 2>&1; then
     pass "Full workflow: template validation"
   else
     fail "Full workflow: validation failed" "Template should be valid"
@@ -565,7 +565,7 @@ EOF
 
   # Step 2: Extract metadata
   local metadata
-  metadata=$(bash "$LIB_DIR/parse-template.sh" "$template_file" extract-metadata)
+  metadata=$(bash "$LIB_DIR/plan/parse-template.sh" "$template_file" extract-metadata)
   if echo "$metadata" | grep -q "CRUD Feature Template"; then
     pass "Full workflow: metadata extraction"
   else
@@ -574,7 +574,7 @@ EOF
 
   # Step 3: Extract phases
   local phase_count
-  phase_count=$(bash "$LIB_DIR/parse-template.sh" "$template_file" extract-phases)
+  phase_count=$(bash "$LIB_DIR/plan/parse-template.sh" "$template_file" extract-phases)
   if [[ "$phase_count" == "2" ]]; then
     pass "Full workflow: phase extraction (2 phases)"
   else
@@ -584,7 +584,7 @@ EOF
   # Step 4: Substitute variables
   local variables='{"entity_name":"Product","fields":["name","price","description"]}'
   local output
-  output=$(bash "$LIB_DIR/substitute-variables.sh" "$template_file" "$variables")
+  output=$(bash "$LIB_DIR/artifact/substitute-variables.sh" "$template_file" "$variables")
 
   if echo "$output" | grep -q "Product CRUD Implementation"; then
     pass "Full workflow: title substitution"

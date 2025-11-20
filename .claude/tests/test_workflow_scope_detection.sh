@@ -44,7 +44,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 LIB_DIR=$(cd "$SCRIPT_DIR/../lib" && pwd)
 
 # Source workflow scope detection
-source "$LIB_DIR/workflow-scope-detection.sh"
+source "$LIB_DIR/workflow/workflow-scope-detection.sh"
 
 echo "========================================="
 echo "Workflow Scope Detection Tests"

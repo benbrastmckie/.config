@@ -8,12 +8,7 @@
 - refactor docs/
 - clean up readme files
 - refactor scripts
-- refactor libraries
-  - fix references
-- research other elements
-  - /home/benjamin/.config/.claude/specs/standards/command-protocols.md
 - check <leader>ac menu
-
 
 ## Research
 

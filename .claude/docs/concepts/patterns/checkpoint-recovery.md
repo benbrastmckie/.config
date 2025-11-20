@@ -311,6 +311,6 @@ WITH checkpoints:
 ## See Also
 
 - [Creating Commands Guide](../../guides/development/command-development/command-development-fundamentals.md) - Checkpoint integration
-- `.claude/lib/checkpoint-utils.sh` - Checkpoint management utilities
-- `.claude/lib/unified-logger.sh` - Logging with checkpoint integration
+- `.claude/lib/workflow/checkpoint-utils.sh` - Checkpoint management utilities
+- `.claude/lib/core/unified-logger.sh` - Logging with checkpoint integration
 - `.claude/data/checkpoints/` - Checkpoint storage directory

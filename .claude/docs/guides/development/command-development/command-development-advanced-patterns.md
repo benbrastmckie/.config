@@ -98,7 +98,7 @@ fi
 
 **Checkpoint Utilities Library**:
 
-The `.claude/lib/checkpoint-utils.sh` library provides:
+The `.claude/lib/workflow/checkpoint-utils.sh` library provides:
 
 ```bash
 # Save checkpoint with automatic rotation
@@ -245,7 +245,7 @@ fi
 
 **See Also**:
 - [Checkpoint Recovery Pattern](../concepts/patterns/checkpoint-recovery.md) - Detailed implementation
-- `.claude/lib/checkpoint-utils.sh` - Checkpoint utilities library
+- `.claude/lib/workflow/checkpoint-utils.sh` - Checkpoint utilities library
 - Case Study 2: /implement Success Story (section 6.5)
 
 ---

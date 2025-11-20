@@ -288,7 +288,7 @@ git rm --cached specs/042_auth/reports/001_research.md
 **Manual Creation**:
 ```bash
 # Create artifact using utility function
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 
 create_topic_artifact "specs/009_topic" "debug" "test_failure" "# Debug Report\n\n..."
 ```

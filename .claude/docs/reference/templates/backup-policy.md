@@ -163,7 +163,7 @@ diff .claude/commands/coordinate.md .claude/commands/coordinate.md.backup-202510
 cp .claude/commands/coordinate.md.backup-20251027_144342 .claude/commands/coordinate.md
 
 # 4. Verify rollback
-./.claude/lib/validate-agent-invocation-pattern.sh .claude/commands/coordinate.md
+./.claude/lib/util/validate-agent-invocation-pattern.sh .claude/commands/coordinate.md
 
 # 5. Test command
 /coordinate "test workflow" --dry-run
@@ -215,7 +215,7 @@ fi
 
 ## Backup Best Practices
 
-1. **Always backup before edits**: Use `.claude/lib/backup-command-file.sh`
+1. **Always backup before edits**: Use `.claude/lib/util/backup-command-file.sh`
 2. **Test after restore**: Run validation and tests after rollback
 3. **Document retention decisions**: Note why keeping or removing
 4. **Archive before deletion**: Compress old backups rather than delete immediately
@@ -225,5 +225,5 @@ fi
 
 - [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - Backup procedures
 - [Orchestration Troubleshooting Guide](../guides/orchestration/orchestration-troubleshooting.md) - Rollback scenarios
-- Backup utility: `.claude/lib/backup-command-file.sh`
-- Rollback utility: `.claude/lib/rollback-command-file.sh`
+- Backup utility: `.claude/lib/util/backup-command-file.sh`
+- Rollback utility: `.claude/lib/util/rollback-command-file.sh`

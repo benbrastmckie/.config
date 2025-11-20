@@ -152,13 +152,13 @@ Level 3: Task Executors (focused single-task agents - rarely used)
 
 ### extract_report_metadata()
 
-**Location**: `.claude/lib/metadata-extraction.sh`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh`
 
 **Purpose**: Extract concise metadata from research reports.
 
 **Usage**:
 ```bash
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 
 metadata=$(extract_report_metadata "specs/042_auth/reports/001_patterns.md")
 title=$(echo "$metadata" | jq -r '.title')
@@ -175,7 +175,7 @@ summary=$(echo "$metadata" | jq -r '.summary')  # ≤50 words
 
 ### extract_plan_metadata()
 
-**Location**: `.claude/lib/metadata-extraction.sh`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh`
 
 **Purpose**: Extract implementation plan metadata for complexity assessment.
 
@@ -194,7 +194,7 @@ phases=$(echo "$metadata" | jq -r '.phases')
 
 ### load_metadata_on_demand()
 
-**Location**: `.claude/lib/metadata-extraction.sh`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh`
 
 **Purpose**: Generic metadata loader with automatic type detection and caching.
 
@@ -215,7 +215,7 @@ cached=$(load_metadata_on_demand "specs/042_auth/reports/001_patterns.md")
 
 ### Metadata Cache Management
 
-**Location**: `.claude/lib/metadata-extraction.sh:2204-2238`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh:2204-2238`
 
 **Cache Operations**:
 ```bash
@@ -240,7 +240,7 @@ declare -A METADATA_CACHE
 
 ### forward_message()
 
-**Location**: `.claude/lib/metadata-extraction.sh:2244-2340`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh:2244-2340`
 
 **Purpose**: Extract structured handoff context from subagent output without re-summarization.
 
@@ -279,7 +279,7 @@ Handoff passed to next phase
 
 ### parse_subagent_response()
 
-**Location**: `.claude/lib/metadata-extraction.sh:2342-2390`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh:2342-2390`
 
 **Purpose**: Parse structured JSON/YAML from subagent outputs.
 
@@ -298,7 +298,7 @@ artifacts=$(echo "$response" | jq -r '.artifacts[]')
 
 ### Handoff Logging
 
-**Location**: `.claude/lib/metadata-extraction.sh:2322-2338`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh:2322-2338`
 
 **Logs**:
 - **Subagent Outputs**: `.claude/data/logs/subagent-outputs.log`
@@ -388,7 +388,7 @@ Each sub-supervisor:
 
 ### invoke_sub_supervisor()
 
-**Location**: `.claude/lib/metadata-extraction.sh:2445-2524`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh:2445-2524`
 
 **Purpose**: Prepare sub-supervisor invocation with task domain and subagent list.
 
@@ -411,7 +411,7 @@ invocation_data=$(invoke_sub_supervisor "$config")
 
 ### track_supervision_depth()
 
-**Location**: `.claude/lib/metadata-extraction.sh:2526-2561`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh:2526-2561`
 
 **Purpose**: Prevent infinite recursion in supervisor hierarchies.
 
@@ -445,7 +445,7 @@ track_supervision_depth decrement
 
 ### generate_supervision_tree()
 
-**Location**: `.claude/lib/metadata-extraction.sh:2563-2628`
+**Location**: `.claude/lib/workflow/metadata-extraction.sh:2563-2628`
 
 **Purpose**: Visualize hierarchical agent structure for debugging.
 
@@ -482,7 +482,7 @@ Primary Orchestrator (3 agents)
 
 ### Pruning Strategies
 
-**Location**: `.claude/lib/context-pruning.sh`
+**Location**: `.claude/lib/workflow/context-pruning.sh`
 
 **1. Subagent Output Pruning**:
 ```bash
@@ -723,7 +723,7 @@ prune_all_subagent_outputs  # Too late - context already high
 
 ### Utility References
 
-**Context Pruning Functions** (`.claude/lib/context-pruning.sh`):
+**Context Pruning Functions** (`.claude/lib/workflow/context-pruning.sh`):
 ```bash
 # Prune specific subagent
 prune_subagent_output "$agent_id"
@@ -738,7 +738,7 @@ prune_workflow_metadata "$workflow_type"
 apply_pruning_policy --mode [aggressive|moderate|minimal] --workflow [name]
 ```
 
-**Metadata Extraction** (`.claude/lib/metadata-extraction.sh`):
+**Metadata Extraction** (`.claude/lib/workflow/metadata-extraction.sh`):
 ```bash
 # Extract before pruning
 extract_report_metadata "$report_path"
@@ -759,8 +759,8 @@ log_context_metrics "$command" "$reduction_percent"
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/metadata-extraction.sh
-source .claude/lib/context-pruning.sh
+source .claude/lib/workflow/metadata-extraction.sh
+# Context pruning library not yet implemented
 
 # Launch 3 research agents in parallel
 Task { research-specialist: Topic 1 } &
@@ -1079,19 +1079,6 @@ You are a {task_domain} sub-supervisor managing {N} specialized subagents.
 - Artifact count
 - Metadata size
 
-**Dashboard**: `.claude/scripts/context_metrics_dashboard.sh`
-
-**Usage**:
-```bash
-# Generate metrics summary
-.claude/scripts/context_metrics_dashboard.sh
-
-# Output (text format):
-Average Context Reduction: 89%
-Max Context Usage: 27%
-Commands <70% Reduction: 0
-```
-
 **Metrics Format**:
 ```
 2025-10-16 12:00:00 | /implement | CONTEXT_BEFORE: 5000 tokens
@@ -1159,7 +1146,7 @@ echo "$tree"
 **Solutions**:
 ```bash
 # Verify pruning enabled
-source .claude/lib/context-pruning.sh
+# Context pruning library not yet implemented
 
 # Manual pruning
 prune_subagent_output "$subagent_id"
@@ -1201,19 +1188,13 @@ tree=$(generate_supervision_tree "$workflow_state")
 echo "$tree"
 ```
 
-**2. Context Metrics Dashboard**:
-```bash
-# View reduction statistics
-.claude/scripts/context_metrics_dashboard.sh
-```
-
-**3. Subagent Output Logs**:
+**2. Subagent Output Logs**:
 ```bash
 # Review full subagent outputs (not retained in memory)
 tail -50 .claude/data/logs/subagent-outputs.log
 ```
 
-**4. Phase Handoff Logs**:
+**3. Phase Handoff Logs**:
 ```bash
 # Review handoff contexts between phases
 tail -50 .claude/data/logs/phase-handoffs.log
@@ -1224,7 +1205,7 @@ tail -50 .claude/data/logs/phase-handoffs.log
 **Context Reduction Validation**:
 ```bash
 # Run validation script
-.claude/lib/validate-context-reduction.sh
+.claude/lib/# validate-context-reduction.sh (removed)
 
 # Expected output:
 # Total tests: 6
@@ -1238,10 +1219,6 @@ tail -50 .claude/data/logs/phase-handoffs.log
 # Calculate average reduction
 grep "REDUCTION:" .claude/data/logs/context-metrics.log | \
   awk '{sum+=$NF} END {print "Avg:", sum/NR"%"}'
-
-# Identify commands needing optimization
-.claude/scripts/context_metrics_dashboard.sh | \
-  grep "Commands <70% Reduction"
 ```
 
 ## Examples
@@ -1250,7 +1227,7 @@ grep "REDUCTION:" .claude/data/logs/context-metrics.log | \
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 
 # Extract report metadata
 report_path="specs/042_auth/reports/001_patterns.md"
@@ -1272,7 +1249,7 @@ echo "Referenced files: $paths"
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 
 # Simulate subagent completion
 subagent_output="Research complete. Created report at specs/042_auth/reports/001_patterns.md.
@@ -1296,7 +1273,7 @@ next_phase_context=$(echo "$handoff" | jq -r '.next_phase_context')
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/metadata-extraction.sh
+source .claude/lib/workflow/metadata-extraction.sh
 
 # Primary orchestrator invokes sub-supervisor
 track_supervision_depth reset
@@ -1342,7 +1319,7 @@ track_supervision_depth decrement  # Depth = 0
 
 ```bash
 #!/usr/bin/env bash
-source .claude/lib/context-pruning.sh
+# Context pruning library not yet implemented
 
 # After research phase completes
 workflow_state='{
@@ -1591,7 +1568,7 @@ SlashCommand {
 **Command** (orchestrate.md - CORRECT):
 ```bash
 # 1. Pre-calculate topic-based plan path
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh"
 TOPIC_DIR=$(get_or_create_topic_dir "$WORKFLOW_DESCRIPTION" "specs")
 PLAN_PATH=$(create_topic_artifact "$TOPIC_DIR" "plans" "implementation" "")
 # Result: specs/042_workflow/plans/042_implementation.md
@@ -1670,7 +1647,7 @@ Write {
 
 #### Path Calculation Utilities
 
-**Source**: `.claude/lib/artifact-creation.sh`
+**Source**: `.claude/lib/artifact/artifact-creation.sh`
 
 ```bash
 # Get or create topic directory
@@ -1702,7 +1679,7 @@ verify_artifact_or_recover(expected_path, topic_slug)
 
 #### Metadata Extraction Utilities
 
-**Source**: `.claude/lib/metadata-extraction.sh`
+**Source**: `.claude/lib/workflow/metadata-extraction.sh`
 
 ```bash
 # Extract report metadata

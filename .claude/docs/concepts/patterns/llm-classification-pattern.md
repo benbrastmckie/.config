@@ -70,7 +70,7 @@ Note: Hybrid mode removed - no automatic fallback
 The system first attempts LLM-based classification:
 
 ```bash
-# From .claude/lib/workflow-scope-detection.sh (simplified for 2-mode system)
+# From .claude/lib/workflow/workflow-scope-detection.sh (simplified for 2-mode system)
 classify_workflow_comprehensive() {
   local workflow_description="$1"
 
@@ -106,7 +106,7 @@ classify_workflow_comprehensive() {
 The LLM classifier uses file-based signaling for AI assistant interaction:
 
 ```bash
-# From .claude/lib/workflow-llm-classifier.sh
+# From .claude/lib/workflow/workflow-llm-classifier.sh
 classify_workflow_llm() {
   local workflow_description="$1"
 
@@ -229,7 +229,7 @@ WORKFLOW_CLASSIFICATION_MODE=regex-only /coordinate "description"
 #!/usr/bin/env bash
 # Example: Classify workflow descriptions (2-mode system)
 
-source .claude/lib/workflow-scope-detection.sh
+source .claude/lib/workflow/workflow-scope-detection.sh
 
 # Test Case 1: Semantic edge case (LLM handles better)
 description="research the research-and-revise workflow to understand misclassification"
@@ -473,15 +473,15 @@ echo "Detected scope: $scope"  # Works for LLM and regex results
 
 ### Implementation Files
 
-- [workflow-llm-classifier.sh](../../lib/workflow-llm-classifier.sh) - LLM classification library
-- [workflow-scope-detection.sh](../../lib/workflow-scope-detection.sh) - Unified hybrid detection
-- [workflow-detection.sh](../../lib/workflow-detection.sh) - /supervise integration
+- [workflow-llm-classifier.sh](../../lib/workflow/workflow-llm-classifier.sh) - LLM classification library
+- [workflow-scope-detection.sh](../../lib/workflow/workflow-scope-detection.sh) - Unified hybrid detection
+- [workflow-detection.sh](../../lib/workflow/workflow-detection.sh) - /supervise integration
 
 ### Testing Files
 
-- [test_llm_classifier.sh](../../tests/test_llm_classifier.sh) - Unit tests (37 tests)
-- [test_scope_detection.sh](../../tests/test_scope_detection.sh) - Integration tests (31 tests)
-- [test_scope_detection_ab.sh](../../tests/test_scope_detection_ab.sh) - A/B testing (42 cases)
+- [test_llm_classifier.sh](../../../tests/test_llm_classifier.sh) - Unit tests (37 tests)
+- [test_scope_detection.sh](../../../tests/test_scope_detection.sh) - Integration tests (31 tests)
+- [test_scope_detection_ab.sh](../../../tests/test_scope_detection_ab.sh) - A/B testing (42 cases)
 
 ### Documentation
 

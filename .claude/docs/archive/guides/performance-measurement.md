@@ -8,7 +8,7 @@ This guide demonstrates how to validate context reduction and time savings claim
 
 - Understanding of hierarchical agent architecture (see CLAUDE.md)
 - Familiarity with metadata extraction and parallel execution patterns
-- Access to benchmark utilities (`.claude/lib/metadata-extraction.sh`, `.claude/tests/fixtures/benchmark_001_context/`)
+- Access to benchmark utilities (`.claude/lib/workflow/metadata-extraction.sh`, `.claude/tests/fixtures/benchmark_001_context/`)
 
 ## Steps
 
@@ -545,7 +545,7 @@ echo "Agent-based token usage: $AGENT_TOKENS tokens"
 
 START=$(date +%s%3N)
 # Source library and perform detection
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 LOCATION_JSON=$(perform_location_detection "implement authentication patterns")
 END=$(date +%s%3N)
 LIBRARY_TIME=$((END - START))

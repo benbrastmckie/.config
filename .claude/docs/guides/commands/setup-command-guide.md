@@ -25,7 +25,7 @@ Score-based testing framework detection (0-6 points).
 
 **Usage**:
 ```bash
-.claude/lib/detect-testing.sh [directory]
+.claude/lib/util/detect-testing.sh [directory]
 ```
 
 **Scoring System**:
@@ -39,7 +39,7 @@ Score-based testing framework detection (0-6 points).
 
 **Example**:
 ```bash
-$ .claude/lib/detect-testing.sh /home/benjamin/.config
+$ .claude/lib/util/detect-testing.sh /home/benjamin/.config
 SCORE:1
 FRAMEWORKS:plenary bash-tests
 ```
@@ -50,7 +50,7 @@ Generates adaptive testing protocols based on confidence score.
 
 **Usage**:
 ```bash
-.claude/lib/generate-testing-protocols.sh <score> <frameworks>
+.claude/lib/util/generate-testing-protocols.sh <score> <frameworks>
 ```
 
 **Confidence Levels**:
@@ -60,7 +60,7 @@ Generates adaptive testing protocols based on confidence score.
 
 **Example**:
 ```bash
-$ .claude/lib/generate-testing-protocols.sh 5 "pytest jest"
+$ .claude/lib/util/generate-testing-protocols.sh 5 "pytest jest"
 # Generates comprehensive testing protocols
 ```
 
@@ -81,7 +81,7 @@ This optimization utility is designed for **CLAUDE.md files only**, NOT for comm
 
 **Usage**:
 ```bash
-.claude/lib/optimize-claude-md.sh [file] [options]
+.claude/lib/util/optimize-claude-md.sh [file] [options]
 
 Options:
   --dry-run           Preview analysis without changes (default)
@@ -94,7 +94,7 @@ Options:
 **Example**:
 ```bash
 # Analyze current CLAUDE.md
-$ .claude/lib/optimize-claude-md.sh CLAUDE.md --dry-run --balanced
+$ .claude/lib/util/optimize-claude-md.sh CLAUDE.md --dry-run --balanced
 
 # Output shows:
 # - Section analysis table (name, lines, status, recommendation)
@@ -106,61 +106,18 @@ $ .claude/lib/optimize-claude-md.sh CLAUDE.md --dry-run --balanced
 
 **Automatic Backup**: Creates timestamped backups in `.claude/backups/` before modifications.
 
-### 4. README Scaffolding (`generate-readme.sh`)
-
-Template-based README.md generation with navigation links.
-
-**Usage**:
-```bash
-# Generate for single directory
-.claude/lib/generate-readme.sh [directory]
-
-# Find directories without README
-.claude/lib/generate-readme.sh --find [root]
-
-# Generate for all eligible directories
-.claude/lib/generate-readme.sh --generate-all [root] [--force]
-```
-
-**Features**:
-- Auto-detects parent README and generates parent links
-- Lists files and subdirectories with descriptions
-- Adds [FILL IN:] placeholders for manual content
-- Preserves existing READMEs (--force to overwrite)
-- Reports coverage: N/M directories (X%)
-
-**Example**:
-```bash
-$ .claude/lib/generate-readme.sh --generate-all /project
-
-Scanning /project for directories without README.md...
-Found 12 directories without README.md
-
-Generated README at /project/lib/README.md
-Generated README at /project/docs/README.md
-...
-
-=== Summary ===
-Generated: 12 READMEs
-Skipped: 0 directories
-Coverage: 45/50 directories (90.0%)
-```
-
 ## Usage Patterns
 
 ### Pattern 1: New Project Setup
 
 ```bash
 # 1. Detect testing infrastructure
-.claude/lib/detect-testing.sh /project
+.claude/lib/util/detect-testing.sh /project
 
 # 2. Generate testing protocols based on score
-.claude/lib/generate-testing-protocols.sh 4 "pytest" > testing.md
+.claude/lib/util/generate-testing-protocols.sh 4 "pytest" > testing.md
 
-# 3. Create systematic documentation
-.claude/lib/generate-readme.sh --generate-all /project
-
-# 4. Use /setup for CLAUDE.md
+# 3. Use /setup for CLAUDE.md
 /setup /project
 ```
 
@@ -168,10 +125,10 @@ Coverage: 45/50 directories (90.0%)
 
 ```bash
 # 1. Analyze for bloat
-.claude/lib/optimize-claude-md.sh CLAUDE.md --dry-run
+.claude/lib/util/optimize-claude-md.sh CLAUDE.md --dry-run
 
 # 2. Review recommendations, then optimize
-.claude/lib/optimize-claude-md.sh CLAUDE.md --balanced
+.claude/lib/util/optimize-claude-md.sh CLAUDE.md --balanced
 
 # 3. Validate result
 wc -l CLAUDE.md
@@ -182,32 +139,23 @@ cat CLAUDE.md  # Review inline summaries and links
 
 ```bash
 # 1. Detect current test infrastructure
-.claude/lib/detect-testing.sh .
+.claude/lib/util/detect-testing.sh .
 
 # 2. Add CI/CD or test files to improve score
 # (e.g., add .github/workflows/test.yml)
 
 # 3. Re-detect to see improved score
-.claude/lib/detect-testing.sh .
+.claude/lib/util/detect-testing.sh .
 
 # 4. Generate upgraded testing protocols
-.claude/lib/generate-testing-protocols.sh 4 "pytest"
+.claude/lib/util/generate-testing-protocols.sh 4 "pytest"
 ```
 
 ### Pattern 4: Documentation Coverage
 
 ```bash
-# 1. Find gaps in documentation
-.claude/lib/generate-readme.sh --find /project
-
-# 2. Generate READMEs for gaps
-.claude/lib/generate-readme.sh --generate-all /project
-
-# 3. Fill [FILL IN:] placeholders manually
-# Edit generated README.md files
-
-# 4. Validate links and structure
-grep -r "\[FILL IN:\]" /project  # Find remaining placeholders
+# 1. Validate links and structure
+# Edit README.md files as needed
 ```
 
 ## Threshold Profiles
@@ -241,7 +189,7 @@ echo 'pytest tests/' >> run_tests.sh
 chmod +x run_tests.sh
 
 # Re-detect
-.claude/lib/detect-testing.sh .
+.claude/lib/util/detect-testing.sh .
 ```
 
 ### Issue: README generation creates too many files
@@ -249,11 +197,6 @@ chmod +x run_tests.sh
 **Cause**: Project has many small directories
 
 **Solution**: Use generate_readme() for specific directories only:
-```bash
-# Generate for specific dirs
-.claude/lib/generate-readme.sh /project/src
-.claude/lib/generate-readme.sh /project/docs
-```
 
 ### Issue: Optimization utility shows no bloated sections
 
@@ -261,7 +204,7 @@ chmod +x run_tests.sh
 
 **Solution**: This is good! Use --aggressive profile if you still want extractions:
 ```bash
-.claude/lib/optimize-claude-md.sh CLAUDE.md --aggressive
+.claude/lib/util/optimize-claude-md.sh CLAUDE.md --aggressive
 ```
 
 ### Issue: Generated protocols don't match project needs
@@ -274,7 +217,7 @@ chmod +x run_tests.sh
 touch pytest.ini  # or jest.config.js, etc.
 
 # Re-detect
-.claude/lib/detect-testing.sh .
+.claude/lib/util/detect-testing.sh .
 ```
 
 ## Best Practices

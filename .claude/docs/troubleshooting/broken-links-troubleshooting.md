@@ -98,13 +98,13 @@ grep -oE '\]\([^)]+\)' file.md | sed 's/](\(.*\))/\1/'
 
 ## Fixing Strategies
 
-### Strategy 1: Automated Fix (Common Patterns)
+### Strategy 1: Search and Replace
 ```bash
-# Fix absolute path duplications
-./.claude/scripts/debug-duplicate-paths.sh
+# Find all references to broken link target
+grep -r "old-path" --include="*.md" .claude/
 
-# Fix renamed files
-./.claude/scripts/debug-renamed-files.sh
+# Use sed for bulk replacement
+sed -i 's|old-path|new-path|g' file.md
 ```
 
 ### Strategy 2: Manual Fix (Individual Files)

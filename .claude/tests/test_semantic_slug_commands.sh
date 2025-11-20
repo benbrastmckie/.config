@@ -26,8 +26,8 @@ export CLAUDE_PROJECT_DIR="$TEST_ROOT"
 trap 'rm -rf "$TEST_ROOT"' EXIT
 
 # Source the libraries
-source "$PROJECT_ROOT/lib/core/unified-location-detection.sh"
-source "$PROJECT_ROOT/lib/workflow/workflow-initialization.sh"
+source "$PROJECT_ROOT/.claude/lib/core/unified-location-detection.sh"
+source "$PROJECT_ROOT/.claude/lib/workflow/workflow-initialization.sh"
 
 # Test counter
 TESTS_RUN=0

@@ -53,7 +53,7 @@ Invoke LLM classifier with timeout and confidence validation.
 
 **Example**:
 ```bash
-source .claude/lib/workflow-llm-classifier.sh
+source .claude/lib/workflow/workflow-llm-classifier.sh
 
 # Semantic edge case (LLM handles better than regex)
 result=$(classify_workflow_llm "research the research-and-revise workflow")
@@ -130,7 +130,7 @@ Unified workflow classification with automatic mode detection and fallback.
 
 **Example**:
 ```bash
-source .claude/lib/workflow-scope-detection.sh
+source .claude/lib/workflow/workflow-scope-detection.sh
 
 # llm-only mode (default) - Use classify_workflow_comprehensive
 result=$(classify_workflow_comprehensive "research auth patterns and create plan")

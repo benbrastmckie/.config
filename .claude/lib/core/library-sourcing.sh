@@ -38,16 +38,16 @@
 source_required_libraries() {
   local start_time=$(date +%s%N)
 
-  local claude_root
-  claude_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  local lib_root
+  lib_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
   local libraries=(
-    "workflow-detection.sh"
-    "error-handling.sh"
-    "checkpoint-utils.sh"
-    "unified-logger.sh"
-    "unified-location-detection.sh"
-    "metadata-extraction.sh"
+    "workflow/workflow-detection.sh"
+    "core/error-handling.sh"
+    "workflow/checkpoint-utils.sh"
+    "core/unified-logger.sh"
+    "core/unified-location-detection.sh"
+    "workflow/metadata-extraction.sh"
   )
 
   # Add optional libraries from arguments
@@ -80,7 +80,7 @@ source_required_libraries() {
   local failed_libraries=()
 
   for lib in "${libraries[@]}"; do
-    local lib_path="${claude_root}/lib/${lib}"
+    local lib_path="${lib_root}/${lib}"
 
     if [[ -f "$lib_path" ]]; then
       # Avoid '!' operator due to Bash tool preprocessing issues
@@ -101,7 +101,7 @@ source_required_libraries() {
       echo "  - $failed_lib" >&2
     done
     echo "" >&2
-    echo "Please ensure all required libraries exist in: ${claude_root}/lib/" >&2
+    echo "Please ensure all required libraries exist in: ${lib_root}/" >&2
     return 1
   fi
 

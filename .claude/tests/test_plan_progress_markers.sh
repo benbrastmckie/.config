@@ -20,14 +20,14 @@ TESTS_FAILED=0
 # Test helper functions
 test_pass() {
   echo "  PASS: $1"
-  ((TESTS_PASSED++))
-  ((TESTS_RUN++))
+  ((TESTS_PASSED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 test_fail() {
   echo "  FAIL: $1"
-  ((TESTS_FAILED++))
-  ((TESTS_RUN++))
+  ((TESTS_FAILED++)) || true
+  ((TESTS_RUN++)) || true
 }
 
 # Create test plan files

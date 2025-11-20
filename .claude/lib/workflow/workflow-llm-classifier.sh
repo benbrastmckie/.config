@@ -16,7 +16,7 @@ set -euo pipefail
 # Detect and export CLAUDE_PROJECT_DIR
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
   # shellcheck source=.claude/lib/core/detect-project-dir.sh
-  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/detect-project-dir.sh"
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../core/detect-project-dir.sh"
 fi
 
 # Configuration (environment variable overrides)

@@ -34,9 +34,9 @@ Clear directory organization prevents file misplacement, reduces confusion, and 
 
 **Examples**:
 - `validate-links.sh` - Comprehensive markdown link validation
-- `fix-absolute-to-relative.sh` - Convert absolute paths to relative
-- `update-template-references.sh` - Automated reference migration
-- `analyze-coordinate-performance.sh` - Performance metrics analysis
+- `validate-links-quick.sh` - Fast validation for recent file changes
+- `detect-empty-topics.sh` - Find empty topic directories
+- `validate-agent-behavioral-file.sh` - Validate agent behavioral files
 
 **When to Use**:
 - ✓ Building standalone command-line utility

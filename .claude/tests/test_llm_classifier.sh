@@ -44,7 +44,7 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 LIB_DIR=$(cd "$SCRIPT_DIR/../lib" && pwd)
 
 # Source workflow LLM classifier
-source "$LIB_DIR/workflow-llm-classifier.sh"
+source "$LIB_DIR/workflow/workflow-llm-classifier.sh"
 
 echo "========================================="
 echo "Workflow LLM Classifier Unit Tests"

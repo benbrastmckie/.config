@@ -613,7 +613,7 @@ Phase 4: SUCCESS
 
 ```bash
 # Test dependency parsing for single phase
-source .claude/lib/dependency-analysis.sh
+# Use lib/util/dependency-analyzer.sh instead
 deps=$(parse_dependencies "plan.md" 3)
 echo "Phase 3 dependencies: $deps"
 ```
@@ -740,7 +740,7 @@ detect_circular_dependencies <plan_file>
 
 ## Related Documentation
 
-- **Dependency Analysis Library**: `.claude/lib/dependency-analysis.sh`
+- **Dependency Analysis Library**: `lib/util/dependency-analyzer.sh`
 - **Wave Execution Tests**: `.claude/tests/test_wave_execution.sh`
 - **Plan Template**: `.claude/commands/plan.md`
 - **Orchestration Patterns**: `orchestration-reference.md`
@@ -826,5 +826,5 @@ detect_circular_dependencies <plan_file>
 
 **Last Updated**: 2025-10-16
 **Used By**: /orchestrate, /plan, /implement
-**Utilities**: dependency-analysis.sh
+**Utilities**: # dependency-analysis.sh (removed)
 **Tests**: test_wave_execution.sh, test_dependency_analysis.sh

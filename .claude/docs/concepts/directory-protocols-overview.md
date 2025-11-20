@@ -86,8 +86,8 @@ All commands that create topic directories MUST use atomic allocation to prevent
 **Standard Pattern**:
 ```bash
 # 1. Source required libraries
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/topic-utils.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/topic-utils.sh"
 
 # 2. Generate semantic topic slug (preferred: use sanitize_topic_name)
 TOPIC_SLUG=$(sanitize_topic_name "$DESCRIPTION")
@@ -176,7 +176,7 @@ Subdirectories are created **on-demand** when files are written, not eagerly whe
 **Implementation**:
 ```bash
 # Before writing any file, ensure parent directory exists
-source .claude/lib/unified-location-detection.sh
+source .claude/lib/core/unified-location-detection.sh
 ensure_artifact_directory "$FILE_PATH" || exit 1
 echo "content" > "$FILE_PATH"
 ```
@@ -245,7 +245,7 @@ specs/009_orchestration_enhancement/
 
 Artifacts should be referenced by **path + metadata**, not full content, to minimize context usage (see [Command Architecture Standards - Standards 6-8](../reference/architecture/overview.md#context-preservation-standards)).
 
-**Metadata Extraction Utilities** (`.claude/lib/metadata-extraction.sh`):
+**Metadata Extraction Utilities** (`.claude/lib/workflow/metadata-extraction.sh`):
 - `extract_report_metadata(report_path)` - Extracts title, 50-word summary, key findings, file paths
 - `extract_plan_metadata(plan_path)` - Extracts complexity, phases, time estimates, dependencies
 - `load_metadata_on_demand(artifact_path)` - Generic metadata loader with caching
@@ -367,4 +367,4 @@ See [phase_dependencies.md](../reference/workflows/phase-dependencies.md) for de
 - **spec_updater_guide.md**: Spec updater agent usage and patterns
 - **command_architecture_standards.md**: Context preservation standards (Standards 6-8)
 - **phase_dependencies.md**: Wave-based execution and dependency syntax
-- **.claude/lib/metadata-extraction.sh**: Shell utility implementations
+- **.claude/lib/workflow/metadata-extraction.sh**: Shell utility implementations

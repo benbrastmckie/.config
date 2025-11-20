@@ -67,7 +67,7 @@ Use the utility functions:
 
 ```bash
 # Source utilities
-source .claude/lib/template-integration.sh
+source .claude/lib/artifact/template-integration.sh
 
 # Extract topic from feature description
 topic_name=$(extract_topic_from_question "Add OAuth2 authentication")
@@ -484,4 +484,4 @@ If you have existing flat structure (specs/plans/, specs/reports/), migration is
 - [CLAUDE.md](../../CLAUDE.md) - Full project configuration
 - [Spec Updater Agent](.claude/agents/spec-updater.md) - Automated artifact management
 - [Artifact Operations](.claude/lib/artifact-operations.sh) - Utility functions
-- [Template Integration](.claude/lib/template-integration.sh) - Topic utilities
+- [Template Integration](.claude/lib/artifact/template-integration.sh) - Topic utilities

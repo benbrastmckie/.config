@@ -16,7 +16,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 LIB_DIR="${PROJECT_ROOT}/.claude/lib"
-UNIFIED_LIB="${LIB_DIR}/unified-location-detection.sh"
+UNIFIED_LIB="${LIB_DIR}/core/unified-location-detection.sh"
 
 # Test counters
 TOTAL_TESTS=0

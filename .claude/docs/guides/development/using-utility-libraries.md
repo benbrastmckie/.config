@@ -76,7 +76,7 @@ Always use absolute paths from `CLAUDE_CONFIG`:
 CLAUDE_CONFIG="${CLAUDE_CONFIG:-${HOME}/.config}"
 
 # Source the library
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 ```
 
 ### 2. Call Library Functions
@@ -131,7 +131,7 @@ mkdir -p "$TOPIC_PATH"/{reports,plans,summaries,debug,scripts,outputs}
 **After** (unified library, 10 lines):
 ```bash
 # New pattern (single source of truth)
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 LOCATION_JSON=$(perform_location_detection "$USER_INPUT")
 TOPIC_PATH=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
@@ -157,7 +157,7 @@ fi
 
 **Implementation**:
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Step 1: Detect topic location
 LOCATION_JSON=$(perform_location_detection "$USER_INPUT")
@@ -200,7 +200,7 @@ specs/082_authentication_patterns/
 
 **Implementation**:
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/plan-core-bundle.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/plan/plan-core-bundle.sh"
 
 PLAN_PATH="$1"
 
@@ -233,7 +233,7 @@ done
 
 **Implementation**:
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/metadata-extraction.sh"
 
 REPORT_PATH="specs/082_auth/reports/001_oauth_patterns.md"
 
@@ -268,7 +268,7 @@ EOF
 
 **Implementation**:
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/checkpoint-utils.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/checkpoint-utils.sh"
 
 PLAN_FILE="$1"
 CHECKPOINT_NAME="implement_$(basename "$PLAN_FILE" .md)"
@@ -310,7 +310,7 @@ done
 
 **Implementation**:
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/unified-logger.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-logger.sh"
 
 # Log informational message
 log_info "Starting implementation of plan: $PLAN_FILE"
@@ -360,7 +360,7 @@ query_logs "Phase.*complexity" "2025-10-20T00:00:00/2025-10-23T23:59:59"
 # Enable strict error handling
 set -euo pipefail
 
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 
 # Function fails → script exits immediately
 LOCATION_JSON=$(perform_location_detection "$USER_INPUT")
@@ -372,7 +372,7 @@ TOPIC_PATH=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
 **Use Case**: Optional features where failure shouldn't stop execution
 
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Try to extract metadata, use fallback if fails
 if METADATA=$(extract_report_metadata "$REPORT_PATH" 2>/dev/null); then
@@ -388,7 +388,7 @@ fi
 **Use Case**: Network-dependent or flaky operations
 
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/json-utils.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/# json-utils.sh (removed)"
 
 # Try jq, fall back to sed parsing
 if command -v jq &>/dev/null; then
@@ -404,7 +404,7 @@ fi
 **Use Case**: Consistent error handling across commands
 
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/error-handling.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/error-handling.sh"
 
 # Function fails → standardized error handling with recovery
 if ! create_topic_structure "$TOPIC_PATH"; then
@@ -494,7 +494,7 @@ Test library functions in isolation:
 #!/usr/bin/env bash
 # test_unified_location_detection.sh
 
-source .claude/lib/unified-location-detection.sh
+source .claude/lib/core/unified-location-detection.sh
 
 # Test 1: Topic name sanitization
 test_sanitize_topic_name() {
@@ -575,7 +575,7 @@ test_report_directory_creation || exit 1
 source unified-location-detection.sh
 
 # Correct
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 ```
 
 ### Issue: JSON parsing fails without jq
@@ -672,7 +672,7 @@ fi
 Log when libraries are invoked for audit trail:
 
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/unified-logger.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-logger.sh"
 
 log_info "Performing location detection for: $USER_INPUT"
 LOCATION_JSON=$(perform_location_detection "$USER_INPUT")
@@ -719,7 +719,7 @@ mkdir -p "$TOPIC_PATH"/{reports,plans}
 
 **After**:
 ```bash
-source "${CLAUDE_CONFIG}/.claude/lib/unified-location-detection.sh"
+source "${CLAUDE_CONFIG}/.claude/lib/core/unified-location-detection.sh"
 LOCATION_JSON=$(perform_location_detection "$1")
 TOPIC_PATH=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
 ```

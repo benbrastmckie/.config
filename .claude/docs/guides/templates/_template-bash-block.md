@@ -277,7 +277,7 @@ Example:
 # Step 4: Source additional libraries
 source "${LIB_DIR}/workflow-initialization.sh"
 source "${LIB_DIR}/unified-logger.sh"
-source "${LIB_DIR}/context-pruning.sh"       # New library
+# Context pruning not yet implemented
 source "${LIB_DIR}/dependency-analyzer.sh"   # New library
 ```
 
@@ -388,9 +388,9 @@ EOF
 
 - [Command Architecture Standards](.claude/docs/reference/architecture/overview.md) - Standards 0, 15, 16
 - [Bash Block Execution Model](.claude/docs/concepts/bash-block-execution-model.md) - Subprocess isolation patterns
-- [State Persistence Library](.claude/lib/state-persistence.sh) - State management API
+- [State Persistence Library](.claude/lib/core/state-persistence.sh) - State management API
 - [Verification Helpers Library](.claude/lib/verification-helpers.sh) - Verification patterns
-- [Error Handling Library](.claude/lib/error-handling.sh) - Error classification and recovery
+- [Error Handling Library](.claude/lib/core/error-handling.sh) - Error classification and recovery
 
 ## Version History
 

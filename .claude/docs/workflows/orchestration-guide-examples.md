@@ -156,7 +156,7 @@ This section demonstrates a complete workflow using the behavioral injection pat
 #### Step 1: Calculate Topic Directory
 
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh"
 
 FEATURE_DESCRIPTION="User authentication with OAuth 2.0"
 TOPIC_DIR=$(get_or_create_topic_dir "$FEATURE_DESCRIPTION" "specs")
@@ -255,7 +255,7 @@ Task {
 **Extract Metadata**:
 
 ```bash
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Verify artifacts created
 VERIFIED_OAUTH=$(verify_artifact_or_recover "$REPORT_OAUTH" "oauth_security")

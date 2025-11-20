@@ -262,7 +262,7 @@ ls -1 .claude/lib/*.sh
 # Common utilities:
 # - metadata-extraction.sh - Extract plan/report metadata
 # - artifact-creation.sh - Create topic directories and artifacts
-# - complexity-thresholds.sh - Complexity analysis
+# - complexity-utils.sh - Complexity analysis
 # - checkpoint-utils.sh - State management
 # - unified-logger.sh - Logging with rotation
 ```
@@ -271,8 +271,8 @@ ls -1 .claude/lib/*.sh
 
 ```bash
 # 1. Source utility at beginning of relevant section
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh"
 
 # 2. Replace manual implementations
 # BEFORE (manual):
@@ -376,7 +376,7 @@ Complexity is calculated using the following formula:
 Complexity score determines when plans should be expanded. The formula considers phase count, task count, and file references.
 
 For extended details including formula derivation, threshold tuning, and edge case handling:
-See [Orchestration Complexity Details](../../.claude/lib/complexity-utils.sh)
+See [Orchestration Complexity Details](../../.claude/lib/plan/complexity-utils.sh)
 ```
 
 4. **Validate extraction quality**:
@@ -404,7 +404,7 @@ Reference the complete catalog:
 |---------|---------|---------------|
 | metadata-extraction.sh | Extract metadata from plans/reports | extract_plan_metadata(), extract_report_metadata() |
 | artifact-creation.sh | Create spec directories and files | create_topic_artifact(), get_or_create_topic_dir() |
-| complexity-thresholds.sh | Complexity analysis | get_complexity_threshold(), calculate_phase_complexity() |
+| complexity-utils.sh | Complexity analysis | get_complexity_threshold(), calculate_phase_complexity() |
 | checkpoint-utils.sh | State management | save_checkpoint(), restore_checkpoint() |
 | unified-logger.sh | Logging with rotation | log_info(), log_error(), query_logs() |
 | plan-core-bundle.sh | Plan parsing | parse_plan_file(), extract_phase_info() |
@@ -416,7 +416,7 @@ See individual utility files for complete API documentation.
 **Pattern 1: Metadata Extraction**
 ```bash
 # Source utility
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Extract metadata
 METADATA=$(extract_plan_metadata "$PLAN_PATH")
@@ -429,7 +429,7 @@ COMPLEXITY=$(echo "$METADATA" | jq -r '.complexity_score')
 **Pattern 2: Artifact Creation**
 ```bash
 # Source utility
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact-creation.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/artifact/artifact-creation.sh"
 
 # Create topic directory and artifacts
 TOPIC_DIR=$(get_or_create_topic_dir "auth_feature")
@@ -440,7 +440,7 @@ PLAN_PATH=$(create_topic_artifact "$TOPIC_DIR" "plans" "001_implementation.md")
 **Pattern 3: Checkpoint Management**
 ```bash
 # Source utility
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/checkpoint-utils.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh"
 
 # Save state before risky operation
 save_checkpoint "before_implementation" "$PLAN_PATH" "$PHASE_NUM"
@@ -800,11 +800,11 @@ Task tool usage: ≥1 per agent invocation
 
 ### Utilities
 
-- `.claude/lib/metadata-extraction.sh` - Plan/report metadata extraction
-- `.claude/lib/artifact-creation.sh` - Topic directory and artifact creation
-- `.claude/lib/complexity-thresholds.sh` - Complexity analysis
-- `.claude/lib/checkpoint-utils.sh` - State management
-- `.claude/lib/unified-logger.sh` - Logging with rotation
+- `.claude/lib/workflow/metadata-extraction.sh` - Plan/report metadata extraction
+- `.claude/lib/artifact/artifact-creation.sh` - Topic directory and artifact creation
+- `.claude/lib/plan/complexity-utils.sh` - Complexity analysis
+- `.claude/lib/workflow/checkpoint-utils.sh` - State management
+- `.claude/lib/core/unified-logger.sh` - Logging with rotation
 
 ---
 

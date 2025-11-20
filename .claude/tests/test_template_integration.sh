@@ -6,8 +6,9 @@ set -e
 
 # Setup test environment
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIB_DIR="$SCRIPT_DIR/../lib"
-TEMPLATE_DIR="$SCRIPT_DIR/../commands/templates"
+CLAUDE_ROOT="$(dirname "$SCRIPT_DIR")"
+LIB_DIR="$CLAUDE_ROOT/lib"
+TEMPLATE_DIR="$CLAUDE_ROOT/commands/templates"
 TEST_SPECS_DIR="$SCRIPT_DIR/test_specs"
 
 # Check if template system exists
@@ -128,7 +129,7 @@ echo -e "\n${YELLOW}=== Test Suite 1: Template Discovery ===${NC}\n"
 
 test_list_templates() {
   local output
-  output=$(bash "$LIB_DIR/template-integration.sh" list)
+  output=$(bash "$LIB_DIR/artifact/template-integration.sh" list)
   local count
   count=$(echo "$output" | wc -l)
 
@@ -137,7 +138,7 @@ test_list_templates() {
 
 test_list_categories() {
   local output
-  output=$(bash "$LIB_DIR/template-integration.sh" list-category)
+  output=$(bash "$LIB_DIR/artifact/template-integration.sh" list-category)
   local has_feature
   has_feature=$(echo "$output" | grep -c "feature" || true)
 
@@ -146,7 +147,7 @@ test_list_categories() {
 
 test_list_templates_by_category() {
   local output
-  output=$(bash "$LIB_DIR/template-integration.sh" list-category "feature")
+  output=$(bash "$LIB_DIR/artifact/template-integration.sh" list-category "feature")
   local count
   count=$(echo "$output" | wc -l)
 
@@ -167,7 +168,7 @@ test_next_plan_number() {
   echo "# Test Plan" > "$TEST_SPECS_DIR/plans/042_test.md"
 
   local next_num
-  next_num=$(bash "$LIB_DIR/template-integration.sh" next-number "$TEST_SPECS_DIR/plans")
+  next_num=$(bash "$LIB_DIR/artifact/template-integration.sh" next-number "$TEST_SPECS_DIR/plans")
 
   assert_equals "043" "$next_num" "Should return next plan number after 042"
 
@@ -178,7 +179,7 @@ test_next_plan_number_empty_dir() {
   setup_test_env
 
   local next_num
-  next_num=$(bash "$LIB_DIR/template-integration.sh" next-number "$TEST_SPECS_DIR/plans")
+  next_num=$(bash "$LIB_DIR/artifact/template-integration.sh" next-number "$TEST_SPECS_DIR/plans")
 
   assert_equals "001" "$next_num" "Should return 001 for empty directory"
 
@@ -211,7 +212,7 @@ Test plan overview.
 - [ ] Task 2
 EOF
 
-  assert_success "bash '$LIB_DIR/template-integration.sh' validate '$TEST_SPECS_DIR/plans/001_test.md'" "Should validate correct plan structure"
+  assert_success "bash '$LIB_DIR/artifact/template-integration.sh' validate '$TEST_SPECS_DIR/plans/001_test.md'" "Should validate correct plan structure"
 
   cleanup_test_env
 }
@@ -230,7 +231,7 @@ Test plan overview.
 - [ ] Task 1
 EOF
 
-  if bash "$LIB_DIR/template-integration.sh" validate "$TEST_SPECS_DIR/plans/002_test.md" 2>/dev/null; then
+  if bash "$LIB_DIR/artifact/template-integration.sh" validate "$TEST_SPECS_DIR/plans/002_test.md" 2>/dev/null; then
     assert_equals "fail" "pass" "Should fail validation for missing metadata"
   else
     assert_equals "fail" "fail" "Should fail validation for missing metadata"
@@ -260,7 +261,7 @@ test_link_template_to_plan() {
 Test plan.
 EOF
 
-  bash "$LIB_DIR/template-integration.sh" link "$TEST_SPECS_DIR/plans/003_test.md" "example-feature"
+  bash "$LIB_DIR/artifact/template-integration.sh" link "$TEST_SPECS_DIR/plans/003_test.md" "example-feature"
 
   assert_file_contains "$TEST_SPECS_DIR/plans/003_test.md" "Template Source" "Should add template source to plan"
 
@@ -280,7 +281,7 @@ test_template_to_plan_workflow() {
   [[ -f "$template_file" ]] && assert_equals "success" "success" "Step 1: Template file exists" || assert_equals "success" "fail" "Step 1: Template file exists"
 
   # 2. Validate template structure
-  if bash "$LIB_DIR/parse-template.sh" "$template_file" validate &>/dev/null; then
+  if bash "$LIB_DIR/plan/parse-template.sh" "$template_file" validate &>/dev/null; then
     assert_equals "success" "success" "Step 2: Template validates"
   else
     assert_equals "success" "fail" "Step 2: Template validates"
@@ -288,7 +289,7 @@ test_template_to_plan_workflow() {
 
   # 3. Get next plan number
   local next_num
-  next_num=$(bash "$LIB_DIR/template-integration.sh" next-number "$TEST_SPECS_DIR/plans")
+  next_num=$(bash "$LIB_DIR/artifact/template-integration.sh" next-number "$TEST_SPECS_DIR/plans")
 
   assert_equals "001" "$next_num" "Step 3: Get next plan number"
 
@@ -312,12 +313,12 @@ EOF
   assert_file_exists "$plan_file" "Step 4: Generate plan file"
 
   # 5. Link template
-  bash "$LIB_DIR/template-integration.sh" link "$plan_file" "example-feature"
+  bash "$LIB_DIR/artifact/template-integration.sh" link "$plan_file" "example-feature"
 
   assert_file_contains "$plan_file" "Template Source" "Step 5: Link template to plan"
 
   # 6. Validate generated plan
-  if bash "$LIB_DIR/template-integration.sh" validate "$plan_file" &>/dev/null; then
+  if bash "$LIB_DIR/artifact/template-integration.sh" validate "$plan_file" &>/dev/null; then
     assert_equals "success" "success" "Step 6: Plan validates"
   else
     assert_equals "success" "fail" "Step 6: Plan validates"
@@ -338,7 +339,7 @@ test_all_templates_parseable() {
     local template_name
     template_name=$(basename "$template" .yaml)
 
-    if bash "$LIB_DIR/parse-template.sh" "$template" validate &>/dev/null; then
+    if bash "$LIB_DIR/plan/parse-template.sh" "$template" validate &>/dev/null; then
       echo -e "${GREEN}✓${NC} Template parseable: $template_name"
       TESTS_PASSED=$((TESTS_PASSED + 1))
     else
