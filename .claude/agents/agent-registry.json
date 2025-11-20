@@ -187,6 +187,27 @@
       "dependencies": [],
       "behavioral_file": ".claude/agents/plan-architect.md"
     },
+    "repair-analyst": {
+      "type": "specialized",
+      "category": "analysis",
+      "description": "Specialized in error log analysis and root cause pattern detection",
+      "tools": [
+        "Read",
+        "Write",
+        "Grep",
+        "Glob",
+        "Bash"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [],
+      "behavioral_file": ".claude/agents/repair-analyst.md"
+    },
     "research-specialist": {
       "type": "specialized",
       "category": "research",
