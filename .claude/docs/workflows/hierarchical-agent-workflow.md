@@ -199,7 +199,7 @@ Functions:
 ### Phase 0 Optimization
 Pre-calculate artifact paths before workflow execution (85% token reduction).
 
-See [Phase 0 Optimization Guide](../guides/phase-0-optimization.md).
+See [Phase 0 Optimization Guide](../guides/patterns/phase-0-optimization.md).
 
 ### Parallel Execution
 Wave-based parallel implementation for 40-60% time savings.
@@ -244,4 +244,4 @@ See [Context Budget Management Tutorial](./context-budget-management.md).
 - [Metadata Extraction Pattern](../concepts/patterns/metadata-extraction.md) - Metadata extraction details
 - [Forward Message Pattern](../concepts/patterns/forward-message.md) - Passing subagent outputs
 - [Context Management Pattern](../concepts/patterns/context-management.md) - Context pruning strategies
-- [Orchestration Best Practices Guide](../guides/orchestration-best-practices.md) - Unified orchestration framework
+- [Orchestration Best Practices Guide](../guides/orchestration/orchestration-best-practices.md) - Unified orchestration framework

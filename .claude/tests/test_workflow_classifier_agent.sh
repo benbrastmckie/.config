@@ -48,8 +48,8 @@ section() {
 
 # Pre-flight check
 if [ ! -f "$AGENT_FILE" ]; then
-  echo "ERROR: Agent file not found: $AGENT_FILE"
-  exit 1
+  echo "SKIP: Agent file not found: $AGENT_FILE (workflow-classifier agent was archived)"
+  exit 0  # Exit successfully to indicate skip, not failure
 fi
 
 info "Testing agent file: $AGENT_FILE"

@@ -17,7 +17,7 @@ agent-dependencies: doc-converter
 - **YOUR RESPONSIBILITY**: Parse arguments, detect mode, delegate to script or agent
 
 **EXECUTION MODES**:
-- **Script Mode** (default): Invoke `.claude/lib/convert-core.sh` script via Bash - fast, direct tool invocation
+- **Script Mode** (default): Invoke `.claude/lib/convert/convert-core.sh` script via Bash - fast, direct tool invocation
 - **Agent Mode** (--use-agent or keywords): Invoke doc-converter agent via Task tool - comprehensive 5-phase workflow with validation
 
 **MODE DETECTION LOGIC**:
@@ -239,7 +239,7 @@ mkdir -p "$OUTPUT_DIR_ABS" || {
 echo "PROGRESS: Output directory: $OUTPUT_DIR_ABS"
 
 # Source the conversion core module and run main function
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/convert-core.sh" || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/convert/convert-core.sh" || {
   echo "❌ CRITICAL ERROR: Cannot source convert-core.sh"
   exit 1
 }

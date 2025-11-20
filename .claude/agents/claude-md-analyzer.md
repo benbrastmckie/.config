@@ -71,7 +71,7 @@ Use Bash tool to source unified location detection library and create directory:
 ```bash
 # Source unified location detection library for directory creation
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || {
   echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
 }
@@ -158,7 +158,7 @@ Use Bash tool to source optimize-claude-md.sh and run analyze_bloat():
 ```bash
 # Source existing analysis library
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/optimize-claude-md.sh" || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/util/optimize-claude-md.sh" || {
   echo "ERROR: Failed to source optimize-claude-md.sh" >&2
   exit 1
 }
@@ -374,8 +374,8 @@ Analysis reports you create become permanent reference materials for planning ph
 
 ## Extraction Candidates
 
-1. **Code Standards** (84 lines) → .claude/docs/reference/code-standards.md
-   - Rationale: Standards documentation belongs in reference/
+1. **Code Standards** (84 lines) → .claude/docs/reference/standards/code-standards.md
+   - Rationale: Standards documentation belongs in reference/standards/
    - Integration: Create new file (no existing code-standards.md found)
 
 2. **Directory Organization Standards** (231 lines) → .claude/docs/concepts/directory-organization.md
@@ -397,7 +397,7 @@ Analysis reports you create become permanent reference materials for planning ph
 - Gaps: No directory-organization.md file (should be created)
 - Opportunity: Extract architectural sections here
 
-### .claude/docs/reference/
+### .claude/docs/reference/standards/
 - Natural home for: Code Standards, Testing Protocols
 - Gaps: No code-standards.md file (should be created)
 - Opportunity: Extract standards and API documentation here

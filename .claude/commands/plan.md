@@ -10,7 +10,7 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
-documentation: See .claude/docs/guides/plan-command-guide.md for complete usage guide
+documentation: See .claude/docs/guides/commands/plan-command-guide.md for complete usage guide
 ---
 
 # /plan - Research-and-Plan Workflow Command
@@ -112,15 +112,15 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === SOURCE LIBRARIES ===
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" 2>/dev/null || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
   echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
 }
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-initialization.sh" 2>/dev/null || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
   echo "ERROR: Failed to source workflow-initialization.sh" >&2
   exit 1
 }
@@ -143,7 +143,15 @@ mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
-init_workflow_state "$WORKFLOW_ID"
+# Capture state file path for append_workflow_state
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+export STATE_FILE
+
+# Validate state file creation
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to initialize workflow state" >&2
+  exit 1
+fi
 
 if ! sm_init "$FEATURE_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1; then
   echo "ERROR: State machine initialization failed" >&2
@@ -249,8 +257,8 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
@@ -362,8 +370,8 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
@@ -402,7 +410,6 @@ echo ""
 echo "Next Steps:"
 echo "- Review plan: cat $PLAN_PATH"
 echo "- Implement plan: /build $PLAN_PATH"
-echo "- Or use /coordinate for full workflow"
 
 exit 0
 ```

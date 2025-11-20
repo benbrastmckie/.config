@@ -977,7 +977,7 @@ sm_save "$CHECKPOINT_FILE"
 ## Related Documentation
 
 - [Checkpoint Recovery Pattern](.claude/docs/concepts/patterns/checkpoint-recovery.md)
-- [Orchestration Best Practices](.claude/docs/guides/orchestration-best-practices.md)
+- [Orchestration Best Practices](.claude/docs/guides/orchestration/orchestration-best-practices.md)
 - [Workflow Detection](.claude/lib/workflow-detection.sh) - Source file
 - [Checkpoint Utilities](.claude/lib/checkpoint-utils.sh) - Checkpoint schema v1.3
 

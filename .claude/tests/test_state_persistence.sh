@@ -52,7 +52,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Source the library under test
-source "${PROJECT_ROOT}/.claude/lib/state-persistence.sh"
+source "${PROJECT_ROOT}/.claude/lib/core/state-persistence.sh"
 
 # Test 1: init_workflow_state creates state file
 section "Test 1: init_workflow_state creates state file"
@@ -290,7 +290,7 @@ append_workflow_state "SUBPROCESS_TEST" "initial"
 
 # Simulate subprocess (new bash invocation) with CLAUDE_PROJECT_DIR exported
 RESULT=$(CLAUDE_PROJECT_DIR="$PROJECT_ROOT" bash -c "
-  source '${PROJECT_ROOT}/.claude/lib/state-persistence.sh'
+  source '${PROJECT_ROOT}/.claude/lib/core/state-persistence.sh'
   load_workflow_state '$TEST_WORKFLOW_ID' >/dev/null 2>&1
   echo \"\${SUBPROCESS_TEST:-missing}\"
 ")

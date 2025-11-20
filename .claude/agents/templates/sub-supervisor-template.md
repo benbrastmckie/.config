@@ -90,7 +90,7 @@ This supervisor returns aggregated metadata ONLY (not full worker outputs):
 
 ```bash
 # Source state persistence library
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Load workflow state (contains CLAUDE_PROJECT_DIR, STATE_FILE, etc.)
 load_workflow_state "{{WORKFLOW_ID}}"
@@ -228,7 +228,7 @@ Task {
 
 ```bash
 # Source metadata extraction library
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Parse worker completion signals
 WORKER_1_OUTPUT="{{WORKER_1_OUTPUT_PATH}}"

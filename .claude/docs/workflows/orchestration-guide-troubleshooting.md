@@ -247,5 +247,5 @@ grep -i error operation.log
 - [/orchestrate Command](../../commands/orchestrate.md) - Full command documentation
 - [/expand Command](../../commands/expand.md) - Phase expansion details
 - [/collapse Command](../../commands/collapse.md) - Phase collapse details
-- [Agent Development Guide](../guides/agent-development-guide.md) - Creating specialized agents
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Creating specialized agents
 - [Adaptive Planning Guide](adaptive-planning-guide.md) - Progressive plan structures

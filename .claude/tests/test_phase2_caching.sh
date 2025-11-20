@@ -8,7 +8,7 @@ CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 
 echo "Test 1: Source guard prevents duplicate execution"
 # Source the library twice and verify the guard works
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-logger.sh"
 if [ "${UNIFIED_LOGGER_SOURCED:-}" = "1" ]; then
   echo "✓ PASS: unified-logger.sh sourced, guard variable set"
 else
@@ -17,7 +17,7 @@ else
 fi
 
 # Source again - should return immediately
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-logger.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-logger.sh"
 if [ "${UNIFIED_LOGGER_SOURCED:-}" = "1" ]; then
   echo "✓ PASS: Second sourcing worked (guard prevented re-execution)"
 else
@@ -27,7 +27,7 @@ fi
 
 echo ""
 echo "Test 2: CLAUDE_PROJECT_DIR caching via state persistence"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Initialize state (saves CLAUDE_PROJECT_DIR)
 STATE_FILE=$(init_workflow_state "test_caching_$$")

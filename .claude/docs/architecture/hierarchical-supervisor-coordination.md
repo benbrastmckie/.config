@@ -12,7 +12,7 @@ This document defines the architecture for hierarchical supervisor coordination 
 - **Last Updated**: 2025-11-07
 - **Related**:
   - [Checkpoint Schema v2.0](#checkpoint-schema)
-  - [State Persistence Library](../reference/library-api.md#state-persistence)
+  - [State Persistence Library](../reference/library-api/overview.md#state-persistence)
   - [Workflow State Machine](workflow-state-machine.md)
 
 ## Architecture Components
@@ -822,10 +822,10 @@ fi
 
 ## References
 
-- [State Persistence Library](../reference/library-api.md#state-persistence)
+- [State Persistence Library](../reference/library-api/overview.md#state-persistence)
 - [Workflow State Machine](workflow-state-machine.md)
-- [Checkpoint Utils](../reference/library-api.md#checkpoint-utils)
-- [Metadata Extraction](../reference/library-api.md#metadata-extraction)
+- [Checkpoint Utils](../reference/library-api/overview.md#checkpoint-utils)
+- [Metadata Extraction](../reference/library-api/overview.md#metadata-extraction)
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md)
 
 ## Revision History

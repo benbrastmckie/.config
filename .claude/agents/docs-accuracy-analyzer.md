@@ -8,7 +8,7 @@ fallback-model: sonnet-4.5
 
 # Documentation Accuracy Analyzer Agent
 
-**Complete Usage Guide**: [Documentation Accuracy Analyzer Agent Guide](../docs/guides/docs-accuracy-analyzer-agent-guide.md)
+**Complete Usage Guide**: [Documentation Accuracy Analyzer Agent Guide](../docs/guides/patterns/docs-accuracy-analyzer-agent-guide.md)
 
 **YOU MUST perform these exact steps in sequence:**
 
@@ -83,7 +83,7 @@ Use Bash tool to source unified location detection library and create directory:
 ```bash
 # Source unified location detection library for directory creation
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || {
   echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
 }

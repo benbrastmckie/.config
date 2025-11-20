@@ -22,7 +22,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - When using auto-analysis mode for automatic complexity-based expansion/collapse
 - To implement end-to-end development workflows with specialized agents
 
-**See Also**: [Hierarchical Agent Workflow](hierarchical-agent-workflow.md), [Hierarchical Agents](../concepts/hierarchical-agents.md), [Command Reference](../reference/command-reference.md), [Adaptive Planning Guide](adaptive-planning-guide.md)
+**See Also**: [Hierarchical Agent Workflow](hierarchical-agent-workflow.md), [Hierarchical Agents](../concepts/hierarchical-agents.md), [Command Reference](../reference/standards/command-reference.md), [Adaptive Planning Guide](adaptive-planning-guide.md)
 
 ---
 
@@ -35,7 +35,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - /plan with research integration tutorial
 - Checkpoint recovery tutorial
 
-**See Also**: [Orchestration Guide](orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical-agents.md), [Using Agents](../guides/agent-development-guide.md), [Development Workflow](../concepts/development-workflow.md)
+**See Also**: [Orchestration Guide](orchestration-guide.md), [Hierarchical Agents](../concepts/hierarchical-agents.md), [Using Agents](../guides/development/agent-development/agent-development-fundamentals.md), [Development Workflow](../concepts/development-workflow.md)
 
 ---
 
@@ -48,7 +48,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - When implementing workflows that need to survive process interruptions
 - To learn checkpoint-based resume functionality for long-running workflows
 
-**See Also**: [Checkpoint Template Guide](checkpoint_template_guide.md), [Phase Dependencies](../reference/phase_dependencies.md), [Orchestration Guide](orchestration-guide.md)
+**See Also**: [Checkpoint Template Guide](checkpoint_template_guide.md), [Phase Dependencies](../reference/workflows/phase-dependencies.md), [Orchestration Guide](orchestration-guide.md)
 
 ---
 
@@ -61,7 +61,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - To use templates for rapid plan generation (60-80% faster than manual /plan)
 - When leveraging the integrated template → checkpoint → implementation workflow
 
-**See Also**: [Adaptive Planning Guide](adaptive-planning-guide.md), [Data Management Guide](../guides/data-management.md)
+**See Also**: [Adaptive Planning Guide](adaptive-planning-guide.md), [Data Management Guide](../guides/patterns/data-management.md)
 
 ---
 
@@ -87,7 +87,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - To customize TTS categories, voice parameters, and message formats
 - When troubleshooting TTS integration or audio output issues
 
-**See Also**: [Orchestration Guide](orchestration-guide.md), [Efficiency Guide](../guides/performance-optimization.md)
+**See Also**: [Orchestration Guide](orchestration-guide.md), [Efficiency Guide](../guides/patterns/performance-optimization.md)
 
 ---
 
@@ -100,7 +100,7 @@ Learning-oriented step-by-step tutorials for accomplishing complex workflows. Us
 - When converting entire directories of documentation
 - To troubleshoot conversion quality or tool installation issues
 
-**See Also**: [Creating Commands](../guides/command-development-guide.md), [Command Reference](../reference/command-reference.md)
+**See Also**: [Creating Commands](../guides/development/command-development/command-development-fundamentals.md), [Command Reference](../reference/standards/command-reference.md)
 
 ---
 
@@ -245,7 +245,7 @@ workflows/
 **Parallel Execution**:
 - Use `--parallel` flag in /orchestrate for 40-60% time savings
 - Leverage phase dependencies for wave-based execution
-- Review [Phase Dependencies](../reference/phase_dependencies.md) for syntax
+- Review [Phase Dependencies](../reference/workflows/phase-dependencies.md) for syntax
 
 **Context Efficiency**:
 - Hierarchical agents achieve 92-97% context reduction

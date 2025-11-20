@@ -166,5 +166,5 @@ REPORTS=$(echo "$METADATA" | jq -r '.reports[]')
 ## Related Documentation
 
 - [State-Based Orchestration](../architecture/state-based-orchestration-overview.md)
-- [Agent Development Guide](../guides/agent-development-guide.md)
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md)
 - [Behavioral Injection Pattern](patterns/behavioral-injection.md)

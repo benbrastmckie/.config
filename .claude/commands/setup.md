@@ -10,7 +10,7 @@ dependent-commands: orchestrate
 
 YOU ARE EXECUTING AS the /setup command.
 
-**Documentation**: See `.claude/docs/guides/setup-command-guide.md` for complete architecture, usage examples, mode descriptions, and troubleshooting.
+**Documentation**: See `.claude/docs/guides/commands/setup-command-guide.md` for complete architecture, usage examples, mode descriptions, and troubleshooting.
 
 ---
 
@@ -308,4 +308,4 @@ echo "Wait for /orchestrate to complete"
 
 ---
 
-**Troubleshooting**: See `.claude/docs/guides/setup-command-guide.md` for common issues and solutions.
+**Troubleshooting**: See `.claude/docs/guides/commands/setup-command-guide.md` for common issues and solutions.

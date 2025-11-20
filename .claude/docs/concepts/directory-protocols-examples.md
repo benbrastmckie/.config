@@ -431,4 +431,4 @@ create_topic_artifact "specs/009_topic" "debug" "test" "content"
 - **phase_dependencies.md**: Wave-based execution and dependency syntax
 - **.claude/lib/metadata-extraction.sh**: Shell utility implementations
 
-**Cross-Reference**: See [Command Architecture Standards](../reference/command_architecture_standards.md) for context preservation patterns when working with topic artifacts.
+**Cross-Reference**: See [Command Architecture Standards](../reference/architecture/overview.md) for context preservation patterns when working with topic artifacts.

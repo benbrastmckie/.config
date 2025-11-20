@@ -255,7 +255,7 @@ When properly distinguishing structural templates from behavioral content:
 - **Behavioral content referenced once** from agent files
 - **Single source of truth** for agent guidelines (no duplication)
 
-For detailed guidance on what qualifies as structural vs behavioral, see [Template vs Behavioral Distinction](../../reference/template-vs-behavioral-distinction.md).
+For detailed guidance on what qualifies as structural vs behavioral, see [Template vs Behavioral Distinction](../../reference/architecture/template-vs-behavioral.md).
 
 ## Anti-Patterns
 
@@ -411,7 +411,7 @@ If you find documentation-only YAML blocks:
 2. **Convert to executable**: If the block should invoke agents, remove code block wrapper and add imperative instruction
 3. **Add tests**: Create regression tests to validate agent delegation rate
 
-For detailed conversion steps, see [Command Development Guide](../../guides/command-development-guide.md#avoiding-documentation-only-patterns).
+For detailed conversion steps, see [Command Development Guide](../../guides/development/command-development/command-development-fundamentals.md#avoiding-documentation-only-patterns).
 
 ### Anti-Pattern: Code-Fenced Task Examples Create Priming Effect
 
@@ -523,7 +523,7 @@ bash .claude/tests/test_supervise_agent_delegation.sh
 - Use HTML comments for clarifications (invisible to Claude)
 - Move complex examples to external reference files
 - Test delegation rate after adding any Task examples
-- Follow [Command Development Guide](../../guides/command-development-guide.md) patterns
+- Follow [Command Development Guide](../../guides/development/command-development/command-development-fundamentals.md) patterns
 
 ### Anti-Pattern: Undermined Imperative Pattern
 
@@ -834,8 +834,8 @@ Verify: $topic_dir should contain absolute path to .claude/specs/NNN_topic/
 - Regression tests to prevent reintroduction
 
 **Documentation Updates**:
-- Updated [Command Architecture Standards](../../reference/command_architecture_standards.md) - Standard 11
-- Created [Orchestration Troubleshooting Guide](../../guides/orchestration-troubleshooting.md)
+- Updated [Command Architecture Standards](../../reference/architecture/overview.md) - Standard 11
+- Created [Orchestration Troubleshooting Guide](../../guides/orchestration/orchestration-troubleshooting.md)
 - This behavioral injection documentation updated with case study
 
 ### Spec 057: /supervise Command Robustness Improvements
@@ -1025,7 +1025,7 @@ fi
 - Regression tests for fallback removal
 
 **Documentation Updates**:
-- Created [Orchestration Troubleshooting Guide](../../guides/orchestration-troubleshooting.md)
+- Created [Orchestration Troubleshooting Guide](../../guides/orchestration/orchestration-troubleshooting.md)
 - Updated fail-fast philosophy documentation
 - Updated error handling best practices
 
@@ -1155,7 +1155,7 @@ echo "✓ Behavioral injection pattern validated"
 
 ## See Also
 
-- [Command Architecture Standards](../../reference/command_architecture_standards.md) - Phase 0 requirements
-- [Creating Commands Guide](../../guides/command-development-guide.md) - Orchestrator patterns
+- [Command Architecture Standards](../../reference/architecture/overview.md) - Phase 0 requirements
+- [Creating Commands Guide](../../guides/development/command-development/command-development-fundamentals.md) - Orchestrator patterns
 - [Hierarchical Agents Guide](../hierarchical-agents.md) - Agent coordination architecture
 - [Orchestration Guide](../../workflows/orchestration-guide.md) - Full workflow patterns

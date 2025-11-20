@@ -3,7 +3,7 @@
 
 set -e
 
-CONFIG_FILE=".claude/config/markdown-link-check.json"
+CONFIG_FILE=".claude/scripts/markdown-link-check.json"
 OUTPUT_DIR=".claude/tmp/link-validation"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 OUTPUT_FILE="$OUTPUT_DIR/validation_${TIMESTAMP}.log"

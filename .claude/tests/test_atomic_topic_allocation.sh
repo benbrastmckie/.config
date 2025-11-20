@@ -16,7 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Source the unified location detection library
-source "${PROJECT_ROOT}/.claude/lib/unified-location-detection.sh"
+source "${PROJECT_ROOT}/.claude/lib/core/unified-location-detection.sh"
 
 # Reset error handling after sourcing library (library sets -e)
 set +e

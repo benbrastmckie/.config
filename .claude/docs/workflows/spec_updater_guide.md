@@ -353,7 +353,7 @@ Research Reports:
 
 ## Cross-Reference Best Practices
 
-When creating cross-references between artifacts, use **metadata-only passing** to minimize context usage (see [Command Architecture Standards - Standard 6](../reference/command_architecture_standards.md#standard-6)).
+When creating cross-references between artifacts, use **metadata-only passing** to minimize context usage (see [Command Architecture Standards - Standard 6](../reference/architecture/overview.md#standard-6)).
 
 ### Metadata Extraction for Cross-References
 
@@ -387,7 +387,7 @@ EOF
 
 ### Agent Invocation Pattern
 
-When invoking spec-updater agent, use **behavioral injection pattern** (see [Command Architecture Standards](../reference/command_architecture_standards.md#agent-invocation-patterns)):
+When invoking spec-updater agent, use **behavioral injection pattern** (see [Command Architecture Standards](../reference/architecture/overview.md#agent-invocation-patterns)):
 
 ```markdown
 Task {

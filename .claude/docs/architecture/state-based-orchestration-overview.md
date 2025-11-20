@@ -1468,7 +1468,7 @@ else
 fi
 ```
 
-See [Hierarchical Supervisor Guide](../guides/hierarchical-supervisor-guide.md) for complete integration guide.
+See [Hierarchical Supervisor Guide](../guides/orchestration/hierarchical-supervisor-guide.md) for complete integration guide.
 
 ## Troubleshooting
 
@@ -1699,29 +1699,29 @@ time ./new_coordinate.md "Research authentication"
 
 ### Developer Guides
 
-- **[State Machine Migration Guide](../guides/state-machine-migration-guide.md)** (1,011 lines)
+- **[State Machine Migration Guide](../guides/orchestration/state-machine-migration-guide.md)** (1,011 lines)
   - Step-by-step migration procedures
   - Before/after code examples
   - Common migration issues and solutions
 
-- **[Hierarchical Supervisor Guide](../guides/hierarchical-supervisor-guide.md)** (1,015 lines)
+- **[Hierarchical Supervisor Guide](../guides/orchestration/hierarchical-supervisor-guide.md)** (1,015 lines)
   - When to use hierarchical supervision
   - Supervisor behavioral file structure
   - Checkpoint coordination patterns
 
-- **[State Machine Orchestrator Development](../guides/state-machine-orchestrator-development.md)** (pending)
+- **[State Machine Orchestrator Development](../guides/orchestration/state-machine-orchestrator-development.md)** (pending)
   - Creating new orchestrators from scratch
   - Adding states and transitions
   - Implementing state handlers
 
 ### Reference Documentation
 
-- **[Library API Reference](../reference/library-api.md)**
+- **[Library API Reference](../reference/library-api/overview.md)**
   - State machine library API (`workflow-state-machine.sh`)
   - State persistence library API (`state-persistence.sh`)
   - Supervisor checkpoint functions
 
-- **[Command Architecture Standards](../reference/command_architecture_standards.md)**
+- **[Command Architecture Standards](../reference/architecture/overview.md)**
   - Standard 11: Imperative Agent Invocation Pattern
   - Standard 13: CLAUDE_PROJECT_DIR Detection
   - Standard 14: Executable/Documentation Separation

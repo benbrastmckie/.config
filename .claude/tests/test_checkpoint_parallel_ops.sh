@@ -6,7 +6,7 @@ set -euo pipefail
 
 # Source test framework
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/../lib/detect-project-dir.sh"
+source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -23,7 +23,7 @@ TEST_CHECKPOINT_DIR="/tmp/test_checkpoints"
 export CHECKPOINTS_DIR="$TEST_CHECKPOINT_DIR"
 
 # Source the library under test
-source "$CLAUDE_PROJECT_DIR/.claude/lib/checkpoint-utils.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/workflow/checkpoint-utils.sh"
 
 # Cleanup function
 cleanup_test_checkpoints() {

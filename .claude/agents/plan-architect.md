@@ -543,6 +543,7 @@ Task {
 - **Estimated Phases**: [N]
 - **Estimated Hours**: [H]
 - **Standards File**: /path/to/CLAUDE.md
+- **Status**: [NOT STARTED]
 - **Research Reports**:
   - [Report 1 Title](../reports/001_report_name.md)
   - [Report 2 Title](../reports/002_report_name.md)
@@ -726,7 +727,7 @@ Before completing your task, YOU MUST verify ALL of these criteria are met:
 - [x] File size is >2000 bytes (indicates comprehensive plan)
 
 ### Content Completeness (MANDATORY SECTIONS)
-- [x] All required metadata present (Date, Feature, Research Reports, Standards, Complexity, Time)
+- [x] All required metadata present (Date, Feature, Research Reports, Standards, Status, Complexity, Time)
 - [x] Executive Summary completed (2-3 sentences)
 - [x] Success Criteria section with measurable criteria (minimum 3)
 - [x] Technical Design section with architecture decisions
@@ -800,7 +801,10 @@ PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo 0)
 CHECKBOX_COUNT=$(grep -c "^- \[ \]" "$PLAN_PATH" || echo 0)
 [ "$CHECKBOX_COUNT" -ge 10 ] || echo "WARNING: Only $CHECKBOX_COUNT checkboxes (need ≥10)"
 
-# 5. Status marker check (all phases must have [NOT STARTED])
+# 5. Status field check (metadata must have Status field)
+grep -q "^\- \*\*Status\*\*: \[NOT STARTED\]" "$PLAN_PATH" || echo "WARNING: Missing Status field in metadata"
+
+# 6. Status marker check (all phases must have [NOT STARTED])
 PHASE_HEADERS=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" || echo 0)
 STATUS_MARKERS=$(grep -c "^### Phase [0-9].*\[NOT STARTED\]" "$PLAN_PATH" || echo 0)
 [ "$PHASE_HEADERS" -eq "$STATUS_MARKERS" ] || echo "WARNING: Not all phases have [NOT STARTED] markers ($STATUS_MARKERS/$PHASE_HEADERS)"
@@ -843,7 +847,7 @@ Before returning, mentally verify:
 [x] Verification commands executed successfully
 ```
 
-**Total Requirements**: 43 criteria - ALL must be met (100% compliance)
+**Total Requirements**: 44 criteria - ALL must be met (100% compliance)
 
 **Target Score**: 95+/100 on enforcement rubric
 
@@ -853,6 +857,7 @@ Before returning, mentally verify:
 
 Before finalizing plan:
 - [ ] All required sections present
+- [ ] Status field present in metadata (`- **Status**: [NOT STARTED]`)
 - [ ] Tasks use checkbox format `- [ ]`
 - [ ] Each phase has testing section
 - [ ] Standards referenced and incorporated

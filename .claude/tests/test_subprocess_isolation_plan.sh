@@ -31,7 +31,7 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # Source state-persistence library
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 echo "=== Subprocess Isolation Test: /plan ==="
 echo ""
@@ -63,7 +63,7 @@ echo ""
 echo "Test 2: Simulating Part 4 (Planning Phase - New Subprocess)"
 (
   # Source library in subprocess (simulating new bash block)
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
   # Load workflow state (as done in Part 4)
   load_workflow_state "$WORKFLOW_ID" false
@@ -124,7 +124,7 @@ echo ""
 echo "Test 3: Simulating Part 5 (Completion - New Subprocess)"
 (
   # Source library in subprocess (simulating new bash block)
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
   # Load workflow state (as done in Part 5)
   load_workflow_state "$WORKFLOW_ID" false

@@ -84,7 +84,7 @@ grep -q "source.*/.claude/lib/" command_file.md
 grep -q "get_or_create_topic_dir\|create_topic_artifact\|save_checkpoint" command_file.md
 ```
 
-**Complete Documentation**: [Library API Reference](../guides/library-api.md)
+**Complete Documentation**: [Library API Reference](../reference/library-api/overview.md)
 
 **Cross-References**:
 - Defensive Programming → Section 1 (Input Validation)
@@ -139,7 +139,7 @@ grep -q "expected-link.md" referencing_file.md
 # See testing-protocols.md for behavioral test suite
 ```
 
-**Complete Documentation**: [Testing Protocols](../reference/testing-protocols.md)
+**Complete Documentation**: [Testing Protocols](../reference/standards/testing-protocols.md)
 
 **Cross-References**:
 - Command Development Guide → Section 4 (Testing)
@@ -165,7 +165,7 @@ grep -q '\$CLAUDE_PROJECT_DIR' command_file.md
 ! grep -E '^\.\./|^\.\/' command_file.md || echo "WARNING: Relative paths detected"
 ```
 
-**Complete Documentation**: [Code Standards](../reference/code-standards.md) → Standard 13
+**Complete Documentation**: [Code Standards](../reference/standards/code-standards.md) → Standard 13
 
 **Cross-References**:
 - Library API → Path calculation functions
@@ -190,7 +190,7 @@ grep -q "ERROR:.*-.*-" command_file.md
 grep "ERROR:" command_file.md | grep -q "Phase\|Step\|Line"
 ```
 
-**Complete Documentation**: [Error Enhancement Guide](../guides/error-enhancement-guide.md)
+**Complete Documentation**: [Error Enhancement Guide](../guides/patterns/error-enhancement-guide.md)
 
 **Cross-References**:
 - Defensive Programming → Section 5 (Error Context)
@@ -240,7 +240,7 @@ grep -q "Agent MUST return" command_file.md
 grep -q "file_path\|status\|error_message" command_file.md
 ```
 
-**Complete Documentation**: [Command Architecture Standards](../reference/command_architecture_standards.md) → Standard 11
+**Complete Documentation**: [Command Architecture Standards](../reference/architecture/overview.md) → Standard 11
 
 **Cross-References**:
 - Behavioral Injection → Agent Communication Protocol
@@ -292,12 +292,12 @@ grep -q "file_path\|status\|error_message" command_file.md
 - [Context Management](patterns/context-management.md)
 
 **Standards**:
-- [Code Standards](../reference/code-standards.md)
-- [Command Architecture Standards](../reference/command_architecture_standards.md)
-- [Testing Protocols](../reference/testing-protocols.md)
+- [Code Standards](../reference/standards/code-standards.md)
+- [Command Architecture Standards](../reference/architecture/overview.md)
+- [Testing Protocols](../reference/standards/testing-protocols.md)
 
 **Guides**:
-- [Command Development Guide](../guides/command-development-guide.md)
-- [Agent Development Guide](../guides/agent-development-guide.md)
-- [Error Enhancement Guide](../guides/error-enhancement-guide.md)
-- [Library API Reference](../guides/library-api.md)
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md)
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md)
+- [Error Enhancement Guide](../guides/patterns/error-enhancement-guide.md)
+- [Library API Reference](../reference/library-api/overview.md)

@@ -12,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Source workflow scope detection library
-source "${PROJECT_ROOT}/.claude/lib/workflow-scope-detection.sh"
+source "${PROJECT_ROOT}/.claude/lib/workflow/workflow-scope-detection.sh"
 
 # Test results tracking
 TOTAL_TESTS=0

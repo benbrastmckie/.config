@@ -14,16 +14,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Test isolation: Use temporary directories
-export CLAUDE_SPECS_ROOT="/tmp/test_semantic_slugs_$$"
-export CLAUDE_PROJECT_DIR="$PROJECT_ROOT"
-mkdir -p "$CLAUDE_SPECS_ROOT"
+# CRITICAL: Both CLAUDE_SPECS_ROOT and CLAUDE_PROJECT_DIR must point to temporary
+# directories to prevent production pollution. See docs/reference/standards/testing-protocols.md
+# for test isolation requirements.
+TEST_ROOT="/tmp/test_semantic_slugs_$$"
+mkdir -p "$TEST_ROOT/.claude/specs"
+export CLAUDE_SPECS_ROOT="$TEST_ROOT/.claude/specs"
+export CLAUDE_PROJECT_DIR="$TEST_ROOT"
 
-# Cleanup trap
-trap 'rm -rf /tmp/test_semantic_slugs_$$' EXIT
+# Cleanup trap - remove entire test root
+trap 'rm -rf "$TEST_ROOT"' EXIT
 
 # Source the libraries
-source "$PROJECT_ROOT/.claude/lib/unified-location-detection.sh"
-source "$PROJECT_ROOT/.claude/lib/workflow-initialization.sh"
+source "$PROJECT_ROOT/lib/core/unified-location-detection.sh"
+source "$PROJECT_ROOT/lib/workflow/workflow-initialization.sh"
 
 # Test counter
 TESTS_RUN=0

@@ -5,7 +5,7 @@
 - **Symptoms**: Large command files, maintenance burden, synchronization issues
 - **Severity**: Medium (affects maintainability, not functionality)
 - **Fix Time**: 15-30 minutes per command
-- **Related**: [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md)
+- **Related**: [Template vs Behavioral Distinction](../reference/architecture/template-vs-behavioral.md)
 
 ## Quick Diagnosis
 
@@ -413,7 +413,7 @@ Task {
 **2. Reference Template vs Behavioral Distinction Before Creating Commands**
 
 Before writing command files, review:
-- [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md)
+- [Template vs Behavioral Distinction](../reference/architecture/template-vs-behavioral.md)
 - Decision tree: "Should this be inline?"
 - Structural templates (inline) vs behavioral content (referenced)
 
@@ -645,10 +645,10 @@ Based on /supervise experience:
 
 ## Related Documentation
 
-- [Template vs Behavioral Distinction](../reference/template-vs-behavioral-distinction.md) - Decision criteria for inline vs reference
+- [Template vs Behavioral Distinction](../reference/architecture/template-vs-behavioral.md) - Decision criteria for inline vs reference
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - How to reference agent files correctly
-- [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 12: Structural vs Behavioral Content Separation
-- [Agent Development Guide](../guides/agent-development-guide.md) - Agent files as single source of truth
+- [Command Architecture Standards](../reference/architecture/overview.md) - Standard 12: Structural vs Behavioral Content Separation
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Agent files as single source of truth
 
 ## Summary
 

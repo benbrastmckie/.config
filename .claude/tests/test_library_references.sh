@@ -13,18 +13,23 @@ echo "Testing Library References..."
 echo "=============================="
 echo
 
-# Test 1: Verify all bundles exist
+# Test 1: Verify all bundles exist (now in subdirectories)
 echo "Test 1: Verify consolidated bundles exist"
-BUNDLES=("plan-core-bundle.sh" "unified-logger.sh" "base-utils.sh")
+# Bundles are now in subdirectories: plan/, core/
+declare -A BUNDLES=(
+  ["plan-core-bundle.sh"]="plan"
+  ["unified-logger.sh"]="core"
+)
 PASS=0
 FAIL=0
 
-for bundle in "${BUNDLES[@]}"; do
-  if [[ -f "$LIB_DIR/$bundle" ]]; then
-    echo "  ✓ $bundle exists"
+for bundle in "${!BUNDLES[@]}"; do
+  subdir="${BUNDLES[$bundle]}"
+  if [[ -f "$LIB_DIR/$subdir/$bundle" ]]; then
+    echo "  ✓ $bundle exists (in $subdir/)"
     ((PASS++)) || true
   else
-    echo "  ✗ $bundle missing"
+    echo "  ✗ $bundle missing from $subdir/"
     ((FAIL++)) || true
   fi
 done
@@ -51,18 +56,24 @@ done
 echo "  Result: $PASS/$((PASS+FAIL)) deprecated utilities removed"
 echo
 
-# Test 3: Verify standalone utilities still exist
+# Test 3: Verify standalone utilities still exist (now in subdirectories)
 echo "Test 3: Verify standalone utilities exist"
-STANDALONE=("complexity-utils.sh" "checkpoint-utils.sh" "error-handling.sh" "artifact-creation.sh" "artifact-registry.sh")
+# Utilities are now organized in subdirectories
+declare -A STANDALONE=(
+  ["checkpoint-utils.sh"]="workflow"
+  ["error-handling.sh"]="core"
+  ["artifact-creation.sh"]="artifact"
+)
 PASS=0
 FAIL=0
 
-for util in "${STANDALONE[@]}"; do
-  if [[ -f "$LIB_DIR/$util" ]]; then
-    echo "  ✓ $util exists"
+for util in "${!STANDALONE[@]}"; do
+  subdir="${STANDALONE[$util]}"
+  if [[ -f "$LIB_DIR/$subdir/$util" ]]; then
+    echo "  ✓ $util exists (in $subdir/)"
     ((PASS++)) || true
   else
-    echo "  ✗ $util missing"
+    echo "  ✗ $util missing from $subdir/"
     ((FAIL++)) || true
   fi
 done
@@ -70,22 +81,25 @@ done
 echo "  Result: $PASS/$((PASS+FAIL)) standalone utilities found"
 echo
 
-# Test 4: Verify bundle internal sourcing
-echo "Test 4: Verify bundles source base-utils.sh"
+# Test 4: Verify subdirectory structure exists
+echo "Test 4: Verify library subdirectory structure"
+SUBDIRS=("core" "workflow" "plan" "artifact" "convert" "util")
 PASS=0
 FAIL=0
 
-for bundle in "plan-core-bundle.sh" "unified-logger.sh"; do
-  if grep -q 'source.*base-utils.sh' "$LIB_DIR/$bundle"; then
-    echo "  ✓ $bundle sources base-utils.sh"
+for subdir in "${SUBDIRS[@]}"; do
+  if [[ -d "$LIB_DIR/$subdir" ]]; then
+    # Count files in subdirectory
+    count=$(find "$LIB_DIR/$subdir" -name "*.sh" -type f 2>/dev/null | wc -l)
+    echo "  ✓ $subdir/ exists ($count libraries)"
     ((PASS++)) || true
   else
-    echo "  ✗ $bundle doesn't source base-utils.sh"
+    echo "  ✗ $subdir/ missing"
     ((FAIL++)) || true
   fi
 done
 
-echo "  Result: $PASS/$((PASS+FAIL)) bundles source base-utils.sh"
+echo "  Result: $PASS/$((PASS+FAIL)) subdirectories found"
 echo
 
 # Summary

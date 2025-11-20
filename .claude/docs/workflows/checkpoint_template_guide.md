@@ -1012,7 +1012,7 @@ yq eval '.name, .category, .variables, .plan_template' template.yaml
 
 ## Cross-References
 
-- **Command Architecture Standards**: [command_architecture_standards.md](../reference/command_architecture_standards.md) - Context preservation patterns
+- **Command Architecture Standards**: [command_architecture_standards.md](../reference/architecture/overview.md) - Context preservation patterns
 - **Bash Patterns**: [bash-patterns.yaml](../templates/bash-patterns.yaml) - Reusable utility procedures
 - **Implementation Patterns**: [implementation-patterns.yaml](../templates/implementation-patterns.yaml) - Workflow procedures
 - **Orchestration Guide**: [orchestration-guide.md](orchestration-guide.md) - Multi-agent workflows with checkpoints

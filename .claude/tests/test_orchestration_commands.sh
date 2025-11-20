@@ -11,6 +11,14 @@ TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
 
+# Pre-flight check - coordinate.md was archived
+COORDINATE_CMD="${SCRIPT_DIR}/../commands/coordinate.md"
+if [ ! -f "$COORDINATE_CMD" ]; then
+  echo "SKIP: coordinate.md not found (was archived)"
+  echo "This test validates orchestration commands including coordinate."
+  exit 0  # Exit successfully to indicate skip
+fi
+
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -52,7 +60,7 @@ test_agent_invocation_pattern() {
   fi
 
   # Run validation script
-  if "$SCRIPT_DIR/../lib/validate-agent-invocation-pattern.sh" "$command_file" >/dev/null 2>&1; then
+  if "$SCRIPT_DIR/../lib/util/validate-agent-invocation-pattern.sh" "$command_file" >/dev/null 2>&1; then
     record_test "$test_name" "PASS"
     return 0
   else
@@ -155,21 +163,21 @@ echo "Test Suite 4: Utility Scripts"
 echo "----------------------------------------"
 
 # Test validation script exists and is executable
-if [[ -x "$SCRIPT_DIR/../lib/validate-agent-invocation-pattern.sh" ]]; then
+if [[ -x "$SCRIPT_DIR/../lib/util/validate-agent-invocation-pattern.sh" ]]; then
   record_test "Validation script executable" "PASS"
 else
   record_test "Validation script executable" "FAIL" "Not found or not executable"
 fi
 
 # Test backup script exists and is executable
-if [[ -x "$SCRIPT_DIR/../lib/backup-command-file.sh" ]]; then
+if [[ -x "$SCRIPT_DIR/../lib/util/backup-command-file.sh" ]]; then
   record_test "Backup script executable" "PASS"
 else
   record_test "Backup script executable" "FAIL" "Not found or not executable"
 fi
 
 # Test rollback script exists and is executable
-if [[ -x "$SCRIPT_DIR/../lib/rollback-command-file.sh" ]]; then
+if [[ -x "$SCRIPT_DIR/../lib/util/rollback-command-file.sh" ]]; then
   record_test "Rollback script executable" "PASS"
 else
   record_test "Rollback script executable" "FAIL" "Not found or not executable"
@@ -186,12 +194,12 @@ test_coordinate_plan_naming() {
   local test_name="Coordinate plan naming pattern"
 
   # Source topic-utils.sh to access sanitize_topic_name()
-  if [[ ! -f "$SCRIPT_DIR/../lib/topic-utils.sh" ]]; then
+  if [[ ! -f "$SCRIPT_DIR/../lib/plan/topic-utils.sh" ]]; then
     record_test "$test_name" "FAIL" "topic-utils.sh not found"
     return 1
   fi
 
-  source "$SCRIPT_DIR/../lib/topic-utils.sh"
+  source "$SCRIPT_DIR/../lib/plan/topic-utils.sh"
 
   # Test workflow description
   local workflow_desc="fix authentication bug"

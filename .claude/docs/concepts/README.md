@@ -23,7 +23,7 @@ Understanding-oriented explanations of system architecture and principles. Use t
 - When debugging context exhaustion issues in complex workflows
 - For step-by-step tutorial walkthroughs of complete workflows (see Tutorial Walkthrough section)
 
-**See Also**: [Using Agents](../guides/agent-development-guide.md), [Orchestration Guide](../workflows/orchestration-guide.md), [Command Architecture Standards](../reference/command_architecture_standards.md)
+**See Also**: [Using Agents](../guides/development/agent-development/agent-development-fundamentals.md), [Orchestration Guide](../workflows/orchestration-guide.md), [Command Architecture Standards](../reference/architecture/overview.md)
 
 ---
 
@@ -62,7 +62,7 @@ Understanding-oriented explanations of system architecture and principles. Use t
 - To learn the decision process for scripts/ vs lib/ placement
 - When reviewing code and ensuring proper directory organization
 
-**See Also**: [Directory Protocols](directory-protocols.md), [Command Development Guide](../guides/command-development-guide.md)
+**See Also**: [Directory Protocols](directory-protocols.md), [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md)
 
 ---
 
@@ -173,6 +173,6 @@ The Claude Code system uses a layered architecture:
 
 **For System Architects**:
 1. All concept documents in sequence
-2. Cross-reference with [Command Architecture Standards](../reference/command_architecture_standards.md)
+2. Cross-reference with [Command Architecture Standards](../reference/architecture/overview.md)
 3. Study utilities in [Libraries](../../lib/)
 4. Review command implementations in [Commands](../../commands/)

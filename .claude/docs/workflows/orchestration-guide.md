@@ -232,7 +232,7 @@ artifact_refs=$(aggregate_expansion_artifacts "$plan_path")
 
 **Context Preservation Standards:**
 
-This artifact-based aggregation pattern implements **Standard 7 (Forward Message Pattern)** from [Command Architecture Standards](../reference/command_architecture_standards.md#context-preservation-standards), where subagent responses are passed via artifact references rather than re-summarized content. Combined with **Standard 8 (Context Pruning)**, orchestration workflows achieve 60-85% context reduction while maintaining complete operation history in artifacts.
+This artifact-based aggregation pattern implements **Standard 7 (Forward Message Pattern)** from [Command Architecture Standards](../reference/architecture/overview.md#context-preservation-standards), where subagent responses are passed via artifact references rather than re-summarized content. Combined with **Standard 8 (Context Pruning)**, orchestration workflows achieve 60-85% context reduction while maintaining complete operation history in artifacts.
 
 ## Context Pruning Workflows
 
@@ -427,7 +427,7 @@ get_pruning_statistics <workflow_id>
 export_pruning_report <output_path>
 ```
 
-See [Command Architecture Standards - Standard 8](../reference/command_architecture_standards.md#standard-8) for complete context pruning specifications.
+See [Command Architecture Standards - Standard 8](../reference/architecture/overview.md#standard-8) for complete context pruning specifications.
 
 ## User Workflows
 
@@ -1299,8 +1299,8 @@ specs/027_user_authentication/
 **Reduction**: 95% (18000 → 950 tokens)
 
 **See Also**:
-- [Agent Development Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
-- [Command Development Guide](../guides/command-development-guide.md) - Invoking agents from commands
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Creating agent behavioral files
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - Invoking agents from commands
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Pattern details
 - [Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) - Common issues and solutions
 
@@ -1367,5 +1367,5 @@ Proceed with these operations? (y/n):
 - [/orchestrate Command](../../commands/orchestrate.md) - Full command documentation
 - [/expand Command](../../commands/expand.md) - Phase expansion details
 - [/collapse Command](../../commands/collapse.md) - Phase collapse details
-- [Agent Development Guide](../guides/agent-development-guide.md) - Creating specialized agents
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Creating specialized agents
 - [Adaptive Planning Guide](adaptive-planning-guide.md) - Progressive plan structures

@@ -333,4 +333,4 @@ verify_state_variable "NAME" || exit 1
 - [Overview](hierarchical-agents-overview.md)
 - [Coordination](hierarchical-agents-coordination.md)
 - [Patterns](hierarchical-agents-patterns.md)
-- [Architecture Standards](../reference/architecture-standards-overview.md)
+- [Architecture Standards](../reference/architecture/overview.md)

@@ -10,7 +10,7 @@ dependent-agents:
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
-documentation: See .claude/docs/guides/revise-command-guide.md for complete usage guide
+documentation: See .claude/docs/guides/commands/revise-command-guide.md for complete usage guide
 ---
 
 # /revise - Research-and-Revise Workflow Command
@@ -219,12 +219,12 @@ export CLAUDE_PROJECT_DIR
 
 # Source libraries in dependency order (Standard 15)
 # 1. State machine foundation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
 # 2. Library version checking
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/library-version-check.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh"
 # 3. Error handling
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/error-handling.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh"
 
 # Verify library versions
 check_library_requirements "$(cat <<'EOF'
@@ -245,8 +245,15 @@ mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
-# Initialize workflow state BEFORE sm_init (correct initialization order)
-init_workflow_state "$WORKFLOW_ID"
+# Capture state file path for append_workflow_state
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+export STATE_FILE
+
+# Validate state file creation
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to initialize workflow state" >&2
+  exit 1
+fi
 
 # Initialize state machine with return code verification
 if ! sm_init \
@@ -279,8 +286,8 @@ echo ""
 set +H  # CRITICAL: Disable history expansion
 
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
 STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
@@ -557,8 +564,8 @@ WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 export WORKFLOW_ID
 
 # Re-source required libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow-state-machine.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
 
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "$WORKFLOW_ID" false

@@ -327,6 +327,6 @@ Quality: Higher (no information loss or errors)
 ## See Also
 
 - [Hierarchical Agents Guide](../hierarchical-agents.md) - Multi-level forwarding patterns
-- [Creating Commands Guide](../../guides/command-development-guide.md) - Supervisor communication best practices
+- [Creating Commands Guide](../../guides/development/command-development/command-development-fundamentals.md) - Supervisor communication best practices
 - [Orchestration Guide](../../workflows/orchestration-guide.md) - Workflow-level forwarding
 - [Writing Standards](../writing-standards.md) - Precision and clarity principles

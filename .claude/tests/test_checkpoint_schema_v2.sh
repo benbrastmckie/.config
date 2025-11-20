@@ -9,8 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Source required libraries
-source "$PROJECT_ROOT/lib/checkpoint-utils.sh"
-source "$PROJECT_ROOT/lib/workflow-state-machine.sh"
+source "$PROJECT_ROOT/lib/workflow/checkpoint-utils.sh"
+source "$PROJECT_ROOT/lib/workflow/workflow-state-machine.sh"
 
 # Test counters
 TESTS_RUN=0

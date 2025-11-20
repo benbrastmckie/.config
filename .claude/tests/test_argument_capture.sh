@@ -54,8 +54,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REAL_LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
 
 # Check if library exists
-if [ ! -f "$REAL_LIB_DIR/argument-capture.sh" ]; then
-  echo "ERROR: argument-capture.sh not found at $REAL_LIB_DIR/argument-capture.sh"
+if [ ! -f "$REAL_LIB_DIR/workflow/argument-capture.sh" ]; then
+  echo "ERROR: argument-capture.sh not found at $REAL_LIB_DIR/workflow/argument-capture.sh"
   exit 1
 fi
 
@@ -67,7 +67,7 @@ test_library_sources() {
   ((TESTS_RUN++))
   # Source library (unset source guard first)
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   if [ -n "${ARGUMENT_CAPTURE_SOURCED:-}" ]; then
     pass "test_library_sources"
@@ -80,7 +80,7 @@ test_library_sources() {
 test_version_variable() {
   ((TESTS_RUN++))
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   if [ "${ARGUMENT_CAPTURE_VERSION:-}" = "1.0.0" ]; then
     pass "test_version_variable"
@@ -93,7 +93,7 @@ test_version_variable() {
 test_capture_part1_creates_files() {
   ((TESTS_RUN++))
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   # Clean up any existing files
   rm -f "${HOME}/.claude/tmp/testcmd_arg"*.txt
@@ -120,7 +120,7 @@ test_capture_part1_creates_files() {
 test_capture_part2_reads_content() {
   ((TESTS_RUN++))
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   # Clean up and setup
   rm -f "${HOME}/.claude/tmp/testcmd2_arg"*.txt
@@ -140,7 +140,7 @@ test_capture_part2_reads_content() {
 test_capture_part2_exports_variable() {
   ((TESTS_RUN++))
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   # Clean up and setup
   rm -f "${HOME}/.claude/tmp/testcmd3_arg"*.txt
@@ -168,7 +168,7 @@ test_capture_part2_exports_variable() {
 test_cleanup_removes_files() {
   ((TESTS_RUN++))
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   # Clean up and setup
   rm -f "${HOME}/.claude/tmp/testcmd4_arg"*.txt
@@ -198,7 +198,7 @@ test_cleanup_removes_files() {
 test_part2_fails_without_part1() {
   ((TESTS_RUN++))
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   # Clean up any existing files
   rm -f "${HOME}/.claude/tmp/nopart1_arg"*.txt
@@ -215,7 +215,7 @@ test_part2_fails_without_part1() {
 test_part2_fails_with_empty_content() {
   ((TESTS_RUN++))
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   # Clean up and create empty file
   rm -f "${HOME}/.claude/tmp/emptycmd_arg"*.txt
@@ -233,7 +233,7 @@ test_part2_fails_with_empty_content() {
 test_handles_special_characters() {
   ((TESTS_RUN++))
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   # Clean up and setup with special characters
   rm -f "${HOME}/.claude/tmp/specialcmd_arg"*.txt
@@ -254,7 +254,7 @@ test_handles_special_characters() {
 test_legacy_fallback() {
   ((TESTS_RUN++))
   unset ARGUMENT_CAPTURE_SOURCED
-  source "$REAL_LIB_DIR/argument-capture.sh"
+  source "$REAL_LIB_DIR/workflow/argument-capture.sh"
 
   # Clean up and create legacy file directly (without path file)
   rm -f "${HOME}/.claude/tmp/legacycmd_arg"*.txt

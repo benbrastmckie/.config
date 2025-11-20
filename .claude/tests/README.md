@@ -276,7 +276,7 @@ When adding new tests, categorize them:
 ### Test File Template
 
 **IMPORTANT**: All tests MUST use test isolation patterns to prevent production directory pollution.
-See: [Test Isolation Standards](../docs/reference/test-isolation-standards.md)
+See: [Test Isolation Standards](../docs/reference/standards/test-isolation.md)
 
 ```bash
 #!/usr/bin/env bash
@@ -395,7 +395,7 @@ run_all_tests
 
 All tests MUST use isolation patterns to prevent production directory pollution. This is enforced by the test runner's pollution detection (see Phase 3).
 
-**Reference**: [Test Isolation Standards](../docs/reference/test-isolation-standards.md) - Complete documentation
+**Reference**: [Test Isolation Standards](../docs/reference/standards/test-isolation.md) - Complete documentation
 
 ### Required Patterns
 

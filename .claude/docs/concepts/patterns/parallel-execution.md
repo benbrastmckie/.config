@@ -288,6 +288,6 @@ Savings: 30% (6.4 hours saved)
 ## See Also
 
 - [Orchestration Guide](../../workflows/orchestration-guide.md) - Wave-based workflow patterns
-- [Performance Measurement Guide](../../guides/performance-optimization.md) - Measuring time savings
-- `.claude/docs/reference/phase_dependencies.md` - Dependency syntax reference
+- [Performance Measurement Guide](../../guides/patterns/performance-optimization.md) - Measuring time savings
+- `.claude/docs/reference/workflows/phase-dependencies.md` - Dependency syntax reference
 - `.claude/lib/parallel-execution.sh` - Wave scheduling utilities

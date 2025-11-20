@@ -81,7 +81,7 @@ Use Bash tool to source unified location detection library and create directory:
 ```bash
 # Source unified location detection library for directory creation
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/unified-location-detection.sh" || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || {
   echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
 }
@@ -259,7 +259,7 @@ Use Edit tool to replace placeholder sections with actual analysis:
 ### Bloated Files (>400 lines)
 | File Path | Current Size | Severity | Recommendation |
 |-----------|--------------|----------|----------------|
-| .claude/docs/guides/command-development-guide.md | 3980 lines | CRITICAL | Split into 4 files |
+| .claude/docs/guides/development/command-development/command-development-fundamentals.md | 3980 lines | CRITICAL | Split into 4 files |
 | .claude/docs/guides/coordinate-command-guide.md | 567 lines | BLOATED | Split into 2 files |
 
 ### High-Risk Extractions (projected bloat)

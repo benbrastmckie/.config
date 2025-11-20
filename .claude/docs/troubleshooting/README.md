@@ -105,9 +105,9 @@ Follow [Prevention Guidelines](./agent-delegation-troubleshooting.md#prevention-
 
 ## Related Documentation
 
-- [Command Development Guide](../guides/command-development-guide.md) - Best practices for command creation
-- [Agent Development Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
-- [Command Architecture Standards](../reference/command_architecture_standards.md) - Standard 11: Imperative Agent Invocation
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - Best practices for command creation
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Creating agent behavioral files
+- [Command Architecture Standards](../reference/architecture/overview.md) - Standard 11: Imperative Agent Invocation
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Complete pattern documentation
 - [Hierarchical Agent Architecture](../concepts/hierarchical-agents.md) - Overall system architecture
 

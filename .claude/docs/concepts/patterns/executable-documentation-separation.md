@@ -183,7 +183,7 @@ Structure breakdown:
 
 YOU ARE EXECUTING AS the /orchestrate command.
 
-**Documentation**: See `.claude/docs/guides/orchestrate-command-guide.md`
+**Documentation**: See `.claude/docs/guides/commands/build-command-guide.md`
 
 ---
 
@@ -318,7 +318,7 @@ sm_init "$DESC" "$CMD" "$TYPE" || exit 1
 echo "Setup complete: $WORKFLOW_ID"
 ```
 
-See [Output Formatting Standards](../../reference/output-formatting-standards.md) for complete suppression and consolidation patterns.
+See [Output Formatting Standards](../../reference/standards/output-formatting.md) for complete suppression and consolidation patterns.
 
 ### Benefit 6: Fail-Fast Execution
 
@@ -599,15 +599,15 @@ The executable/documentation separation pattern combines with imperative languag
 Checking command files in .claude/commands/:
 
 ✓ coordinate.md: 1,084 lines (complex orchestrator, acceptable)
-  ✓ Guide exists: .claude/docs/guides/coordinate-command-guide.md
+  ✓ Guide exists: .claude/docs/guides/commands/build-command-guide.md
   ✓ Cross-reference valid (bidirectional)
 
 ✓ orchestrate.md: 557 lines (under 1200 max)
-  ✓ Guide exists: .claude/docs/guides/orchestrate-command-guide.md
+  ✓ Guide exists: .claude/docs/guides/commands/build-command-guide.md
   ✓ Cross-reference valid (bidirectional)
 
 ✓ implement.md: 220 lines (under 250 target)
-  ✓ Guide exists: .claude/docs/guides/implement-command-guide.md
+  ✓ Guide exists: .claude/docs/guides/commands/implement-command-guide.md
   ✓ Cross-reference valid (bidirectional)
 
 ... (similar for all commands)
@@ -678,21 +678,21 @@ Tests specifically designed to trigger meta-confusion if pattern not followed:
 ### Related Standards
 
 **Standard 12: Structural vs Behavioral Content Separation**
-- Path: [Command Architecture Standards - Standard 12](../../reference/command_architecture_standards.md#standard-12-structural-vs-behavioral-content-separation)
+- Path: [Command Architecture Standards - Standard 12](../../reference/architecture/overview.md#standard-12-structural-vs-behavioral-content-separation)
 - Relationship: Complementary patterns determining content placement
 - Standard 12 focus: WHAT content (structural templates inline vs behavioral content referenced from agent files)
 - This pattern focus: WHERE content goes (executable vs guide file)
 - Combined usage: Standard 12 determines inline/referenced, executable/documentation determines command/guide
 
 **Standard 11: Imperative Agent Invocation Pattern**
-- Path: [Command Architecture Standards - Standard 11](../../reference/command_architecture_standards.md#standard-11-imperative-agent-invocation-pattern)
+- Path: [Command Architecture Standards - Standard 11](../../reference/architecture/overview.md#standard-11-imperative-agent-invocation-pattern)
 - Relationship: Synergy in preventing conversational interpretation
 - Standard 11: Ensures agent invocations obviously executable (imperative language, no code wrappers)
 - This pattern: Ensures command files obviously executable (lean, minimal docs)
 - Combined effect: Multi-layer protection against meta-confusion
 
 **Standard 0: Execution Enforcement**
-- Path: [Command Architecture Standards - Standard 0](../../reference/command_architecture_standards.md#standard-0-execution-enforcement)
+- Path: [Command Architecture Standards - Standard 0](../../reference/architecture/overview.md#standard-0-execution-enforcement)
 - Relationship: Linguistic foundation for executable files
 - Standard 0: Defines imperative vs descriptive language patterns
 - This pattern: Applies imperative language exclusively in executable files
@@ -701,14 +701,14 @@ Tests specifically designed to trigger meta-confusion if pattern not followed:
 ### Related Guides
 
 **Command Development Guide - Section 2.4**
-- Path: [Command Development Guide - Section 2.4](../../guides/command-development-guide.md#24-executabledocumentation-separation-pattern)
+- Path: [Command Development Guide - Section 2.4](../../guides/development/command-development/command-development-fundamentals.md#24-executabledocumentation-separation-pattern)
 - Content: Task-oriented implementation instructions
 - Coverage: Migration checklist, template usage, file size guidelines, cross-reference conventions
 - Audience: Developers creating or migrating commands
 - Usage: Practical "how-to" guide for applying this pattern
 
 **Agent Development Guide**
-- Path: [Agent Development Guide](../../guides/agent-development-guide.md)
+- Path: [Agent Development Guide](../../guides/development/agent-development/agent-development-fundamentals.md)
 - Relationship: Parallel pattern for agent behavioral/usage separation
 - Note: Section 1.6 recommended for agent-specific guidance (parallel to command pattern)
 - Threshold: Agent files >400 lines (vs 250 for commands) due to behavioral complexity
@@ -739,14 +739,14 @@ Tests specifically designed to trigger meta-confusion if pattern not followed:
 ### Templates
 
 **Executable Command Template**
-- Path: [Template - Executable Command](../../guides/_template-executable-command.md)
+- Path: [Template - Executable Command](../../guides/templates/_template-executable-command.md)
 - Purpose: Quick-start template for new command creation
 - Size: 56 lines (demonstrates lean structure)
 - Content: Standard 13 detection, phase structure, minimal inline comments, cross-reference
 - Usage: Copy, rename, fill sections, validate
 
 **Command Guide Template**
-- Path: [Template - Command Guide](../../guides/_template-command-guide.md)
+- Path: [Template - Command Guide](../../guides/templates/_template-command-guide.md)
 - Purpose: Comprehensive documentation structure for guide files
 - Size: 171 lines (demonstrates complete structure)
 - Content: Table of Contents, Overview, Architecture, Usage Examples, Advanced Topics, Troubleshooting, References
@@ -755,7 +755,7 @@ Tests specifically designed to trigger meta-confusion if pattern not followed:
 ### Quick References
 
 **Executable vs Guide Content Decision Tree**
-- Path: [Quick Reference - Executable vs Guide Content](../../quick-reference/executable-vs-guide-content.md) (recommended creation)
+- Path: [Decision Trees - Executable vs Guide Content](../../reference/decision-trees/executable-vs-guide-content.md)
 - Purpose: Fast content placement decision support
 - Content: Decision tree, content type matrix, edge cases, quick validation checklist
 - Usage: Reference when unsure where specific content belongs
@@ -780,7 +780,7 @@ The pattern aligns with Diataxis by placing content in appropriate categories:
 - Architectural principles and benefits
 - Case studies and evidence
 
-**Quick Reference**: Decision-oriented support (quick-reference/)
+**Decision Trees**: Decision-oriented support (reference/decision-trees/)
 - Fast lookup for content placement decisions
 - Decision trees and flowcharts
 - Edge case guidance
@@ -919,7 +919,7 @@ Run `/command "task"`.
 [...continues for 500-2000 lines with comprehensive coverage...]
 ```
 
-**Remediation**: Use guide template (`.claude/docs/guides/_template-command-guide.md`), fill all sections thoroughly, aim for 500+ lines minimum.
+**Remediation**: Use guide template (`.claude/docs/guides/templates/_template-command-guide.md`), fill all sections thoroughly, aim for 500+ lines minimum.
 
 ### Anti-Pattern 3: Broken Cross-References
 
@@ -1005,14 +1005,14 @@ Guide file:
    - Historical context
 
 4. **Create New Lean Executable**
-   - Start with executable template (`.claude/docs/guides/_template-executable-command.md`)
+   - Start with executable template (`.claude/docs/guides/templates/_template-executable-command.md`)
    - Copy only executable sections identified in step 2
    - Target <250 lines (simple) or <1,200 (orchestrator)
    - Add role statement: "YOU ARE EXECUTING AS the [command] command"
    - Add single-line doc reference: `**Documentation**: See guide file`
 
 5. **Extract Documentation to Guide File**
-   - Start with guide template (`.claude/docs/guides/_template-command-guide.md`)
+   - Start with guide template (`.claude/docs/guides/templates/_template-command-guide.md`)
    - Copy all documentation sections identified in step 3
    - Organize into standard structure (Overview, Architecture, Examples, Troubleshooting)
    - Expand with additional examples and explanations as needed
@@ -1076,10 +1076,10 @@ The executable/documentation separation pattern solves meta-confusion loops by s
 **Implementation**: Use templates for new commands, follow 10-step migration checklist for existing commands, validate with automated script before committing.
 
 **See Also**:
-- [Command Development Guide - Section 2.4](../../guides/command-development-guide.md#24-executabledocumentation-separation-pattern) - Practical implementation instructions
-- [Command Architecture Standards](../../reference/command_architecture_standards.md) - Formal architectural requirements
-- [Executable Command Template](../../guides/_template-executable-command.md) - Quick-start template for new commands
-- [Command Guide Template](../../guides/_template-command-guide.md) - Documentation structure template
+- [Command Development Guide - Section 2.4](../../guides/development/command-development/command-development-fundamentals.md#24-executabledocumentation-separation-pattern) - Practical implementation instructions
+- [Command Architecture Standards](../../reference/architecture/overview.md) - Formal architectural requirements
+- [Executable Command Template](../../guides/templates/_template-executable-command.md) - Quick-start template for new commands
+- [Command Guide Template](../../guides/templates/_template-command-guide.md) - Documentation structure template
 - [Behavioral Injection Pattern](./behavioral-injection.md) - Complementary pattern for agent coordination
 
 ---

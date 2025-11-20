@@ -432,8 +432,8 @@ Proceed with these operations? (y/n):
 
 ## See Also
 
-- [Agent Development Guide](../guides/agent-development-guide.md) - Creating agent behavioral files
-- [Command Development Guide](../guides/command-development-guide.md) - Invoking agents from commands
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Creating agent behavioral files
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - Invoking agents from commands
 - [Behavioral Injection Pattern](../concepts/patterns/behavioral-injection.md) - Pattern details
 - [Troubleshooting Guide](../troubleshooting/agent-delegation-troubleshooting.md) - Common issues and solutions
 

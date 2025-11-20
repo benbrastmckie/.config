@@ -69,7 +69,7 @@ test_research_only_workflow() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call the function
     if initialize_workflow_paths "test research topic" "research-only" >/dev/null 2>&1; then
       # Verify exported variables
@@ -107,7 +107,7 @@ test_research_and_plan_workflow() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call the function
     if initialize_workflow_paths "test feature" "research-and-plan" >/dev/null 2>&1; then
       # Verify plan path is set
@@ -133,7 +133,7 @@ test_full_workflow() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call the function
     if initialize_workflow_paths "implement authentication" "full-implementation" >/dev/null 2>&1; then
       # Verify all artifact paths are set
@@ -169,7 +169,7 @@ test_topic_directory_numbering() {
   mkdir -p "$TEST_DIR/.claude/specs/002_another_topic"
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call the function
     if initialize_workflow_paths "new topic" "research-only" >/dev/null 2>&1; then
       # Verify topic number is 003
@@ -195,7 +195,7 @@ test_absolute_paths() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call the function
     if initialize_workflow_paths "test topic" "full-implementation" >/dev/null 2>&1; then
       # Verify all paths are absolute (start with /)
@@ -236,7 +236,7 @@ test_lazy_directory_creation() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call the function
     if initialize_workflow_paths "test topic" "full-implementation" >/dev/null 2>&1; then
       # Verify topic root exists
@@ -277,7 +277,7 @@ test_missing_workflow_description() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call function without first parameter (should fail)
     if initialize_workflow_paths "" "research-only" >/dev/null 2>&1; then
       fail "$test_name" "Should have failed with empty WORKFLOW_DESCRIPTION"
@@ -298,7 +298,7 @@ test_invalid_workflow_scope() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call function with invalid scope
     if initialize_workflow_paths "test topic" "invalid-scope" >/dev/null 2>&1; then
       fail "$test_name" "Should have failed with invalid workflow scope"
@@ -319,7 +319,7 @@ test_debug_only_workflow() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call the function
     if initialize_workflow_paths "debug auth issue" "debug-only" >/dev/null 2>&1; then
       # Verify debug report path is set
@@ -351,7 +351,7 @@ test_research_and_revise_workflow() {
   echo "# Test Plan" > "$mock_plan"
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Simulate scope detection: export EXISTING_PLAN_PATH as scope detection would
     export EXISTING_PLAN_PATH="$mock_plan"
 
@@ -380,7 +380,7 @@ test_report_paths_reconstruction() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call the function with research_complexity=4
     if initialize_workflow_paths "test topic" "research-only" 4 >/dev/null 2>&1; then
       # Reconstruct array
@@ -409,7 +409,7 @@ test_topic_name_sanitization() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call function with special characters in description
     if initialize_workflow_paths "Test Topic With Spaces & Special!@#" "research-only" >/dev/null 2>&1; then
       # Verify topic name is sanitized (lowercase, underscores, no special chars)
@@ -435,7 +435,7 @@ test_tracking_variables() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call the function
     if initialize_workflow_paths "test topic" "full-implementation" >/dev/null 2>&1; then
       # Verify tracking variables are set
@@ -481,7 +481,7 @@ test_extract_topic_valid_path() {
   echo "# Test Plan" > "$mock_plan"
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call extraction function
     local extracted_topic
     extracted_topic=$(extract_topic_from_plan_path "$mock_plan" 2>/dev/null)
@@ -505,7 +505,7 @@ test_extract_topic_nonexistent_path() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call extraction function with non-existent path (should fail)
     if extract_topic_from_plan_path "/nonexistent/path/specs/657_topic/plans/001_plan.md" >/dev/null 2>&1; then
       fail "$test_name" "Function should fail for non-existent path"
@@ -531,7 +531,7 @@ test_extract_topic_malformed_path() {
   echo "# Test Plan" > "$mock_plan"
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Call extraction function with malformed path (should fail)
     if extract_topic_from_plan_path "$mock_plan" >/dev/null 2>&1; then
       fail "$test_name" "Function should fail for malformed path"
@@ -557,7 +557,7 @@ test_revision_full_plan_path() {
   echo "# Test Plan" > "$mock_plan"
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Simulate scope detection
     export EXISTING_PLAN_PATH="$mock_plan"
 
@@ -591,7 +591,7 @@ test_revision_the_plan_syntax() {
   echo "# Test Plan" > "$mock_plan"
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Simulate scope detection
     export EXISTING_PLAN_PATH="$mock_plan"
 
@@ -620,7 +620,7 @@ test_revision_without_plan_path() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Don't set EXISTING_PLAN_PATH (simulates missing path)
     unset EXISTING_PLAN_PATH
 
@@ -645,7 +645,7 @@ test_revision_nonexistent_plan() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Set EXISTING_PLAN_PATH to non-existent file
     export EXISTING_PLAN_PATH="/nonexistent/specs/657_topic/plans/001_plan.md"
 
@@ -670,7 +670,7 @@ test_revision_error_messages() {
   setup
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/workflow-initialization.sh"; then
+  if source "${CLAUDE_ROOT}/.claude/lib/workflow/workflow-initialization.sh"; then
     # Don't set EXISTING_PLAN_PATH
     unset EXISTING_PLAN_PATH
 

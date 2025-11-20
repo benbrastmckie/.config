@@ -560,15 +560,15 @@ assert_contains "$output" "TESTING_EXECUTING"
 - [Context Management Pattern](context-management.md) - Budget allocation per scope type
 
 ### Related Guides
-- [Orchestration Best Practices Guide](../../guides/orchestration-best-practices.md) - Complete 7-phase framework with scope detection
-- [Orchestration Troubleshooting Guide](../../guides/orchestration-troubleshooting.md) - Debugging scope detection issues
+- [Orchestration Best Practices Guide](../../guides/orchestration/orchestration-best-practices.md) - Complete 7-phase framework with scope detection
+- [Orchestration Troubleshooting Guide](../../guides/orchestration/orchestration-troubleshooting.md) - Debugging scope detection issues
 
 ### Related Workflows
 - [Context Budget Management Tutorial](../../workflows/context-budget-management.md) - Budget allocation strategies per scope
 
 ### Related Reference
-- [Library API Reference](../../reference/library-api.md) - workflow-detection.sh function signatures
-- [Orchestration Reference](../../reference/orchestration-reference.md) - Command comparison by scope handling
+- [Library API Reference](../../reference/library-api/overview.md) - workflow-detection.sh function signatures
+- [Orchestration Reference](../../reference/workflows/orchestration-reference.md) - Command comparison by scope handling
 
 ## Changelog
 

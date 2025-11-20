@@ -26,7 +26,7 @@ Comprehensive guide covering project development philosophy, documentation stand
 - **System integration**: What matters is that existing commands and agents work well together in the current implementation
 - **No legacy burden**: Don't compromise current design to support old formats or deprecated patterns
 - **Migration is acceptable**: Breaking changes are acceptable when they improve system quality
-- **Exception - Command Files**: Command and agent files require special refactoring rules (see [Command Architecture Standards](../reference/command_architecture_standards.md)) because they are AI prompts, not traditional code
+- **Exception - Command Files**: Command and agent files require special refactoring rules (see [Command Architecture Standards](../reference/architecture/overview.md)) because they are AI prompts, not traditional code
 
 ### Core Values
 
@@ -553,5 +553,5 @@ Ask: "Does this describe what the system currently does, or how it changed?" If 
 
 ## See Also
 
-- [Command Architecture Standards](../reference/command_architecture_standards.md) for command-specific refactoring rules
+- [Command Architecture Standards](../reference/architecture/overview.md) for command-specific refactoring rules
 - [Development Workflow](development-workflow.md) for git workflow and commit practices

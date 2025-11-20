@@ -271,5 +271,5 @@ done
 - [scripts/README.md](../../scripts/README.md) - Standalone operational tools
 - [lib/README.md](../../lib/README.md) - Sourced function libraries (includes vs scripts/ comparison)
 - [.claude/README.md](../../README.md) - Complete directory structure guide
-- [Command Development Guide](../guides/command-development-guide.md) - Creating slash commands
-- [Agent Development Guide](../guides/agent-development-guide.md) - Creating specialized agents
+- [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - Creating slash commands
+- [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Creating specialized agents

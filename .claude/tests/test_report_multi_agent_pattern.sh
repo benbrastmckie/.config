@@ -7,13 +7,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_ROOT="$(dirname "$SCRIPT_DIR")"
 
 # Source utilities
-source "$CLAUDE_ROOT/lib/artifact-creation.sh" 2>/dev/null || {
+source "$CLAUDE_ROOT/.claude/lib/artifact/artifact-creation.sh" 2>/dev/null || {
   echo "WARNING: artifact-creation.sh not found, using mock functions"
   get_or_create_topic_dir() { echo "/tmp/test_topic_dir"; }
   get_next_artifact_number() { echo "1"; }
 }
-source "$CLAUDE_ROOT/lib/artifact-registry.sh" 2>/dev/null || true
-source "$CLAUDE_ROOT/lib/topic-decomposition.sh"
+source "$CLAUDE_ROOT/.claude/lib/artifact/artifact-registry.sh" 2>/dev/null || true
+source "$CLAUDE_ROOT/.claude/lib/artifact/topic-decomposition.sh"
 
 # Test data
 TEST_TOPIC="test_authentication_patterns"

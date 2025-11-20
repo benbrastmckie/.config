@@ -72,7 +72,7 @@ This supervisor returns aggregated metadata ONLY (not full worker outputs):
 
 ```bash
 # Source state persistence library
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
 
 # Load workflow state (contains CLAUDE_PROJECT_DIR, STATE_FILE, etc.)
 load_workflow_state
@@ -218,7 +218,7 @@ Task {
 
 ```bash
 # Source metadata extraction library
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/metadata-extraction.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/metadata-extraction.sh"
 
 # Parse worker completion signals (extract paths from worker responses)
 # Example: "REPORT_CREATED: /path/to/report1.md"
@@ -485,7 +485,7 @@ Use research-sub-supervisor when:
 ## References
 
 - [Hierarchical Supervisor Coordination Architecture](../docs/architecture/hierarchical-supervisor-coordination.md)
-- [State Persistence Library](../docs/reference/library-api.md#state-persistence)
-- [Metadata Extraction Library](../docs/reference/library-api.md#metadata-extraction)
+- [State Persistence Library](../docs/reference/library-api/persistence.md)
+- [Metadata Extraction Library](../docs/reference/library-api/utilities.md)
 - [Research Specialist Worker](research-specialist.md)
 - [Sub-Supervisor Template](../templates/sub-supervisor-template.md)

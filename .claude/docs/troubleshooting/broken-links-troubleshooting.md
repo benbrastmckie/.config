@@ -7,7 +7,7 @@ Solutions for common broken link issues.
 ### Check Single File
 ```bash
 npx markdown-link-check path/to/file.md \
-  --config .claude/config/markdown-link-check.json
+  --config .claude/scripts/markdown-link-check.json
 ```
 
 ### Check Recent Changes
@@ -126,11 +126,11 @@ Pre-commit hook validates staged markdown files automatically.
 ```
 
 ### Documentation Standards
-- Follow [Link Conventions Guide](../guides/link-conventions-guide.md)
+- Follow link conventions from code-standards.md
 - Review relative path calculation before committing
 - Test links locally before pushing
 
 ## References
 
-- [Link Conventions Guide](../guides/link-conventions-guide.md)
+- [Code Standards - Link Conventions](../reference/standards/code-standards.md#link-conventions)
 - [markdown-link-check](https://github.com/tcort/markdown-link-check)

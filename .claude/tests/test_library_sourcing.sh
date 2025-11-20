@@ -52,7 +52,7 @@ test_all_libraries_sourced() {
   local test_name="All 7 libraries sourced successfully"
 
   # Source the library
-  if source "${CLAUDE_ROOT}/lib/library-sourcing.sh"; then
+  if source "${CLAUDE_ROOT}/lib/core/library-sourcing.sh"; then
     # Call the function
     if source_required_libraries 2>/dev/null; then
       # Verify all 7 libraries were sourced by checking for known functions
@@ -98,7 +98,7 @@ test_missing_library_error() {
   # Intentionally skip error-handling.sh to test missing library
 
   # Create a test version of library-sourcing.sh pointing to TEST_DIR
-  cat > "$TEST_DIR/lib/library-sourcing.sh" <<'EOF'
+  cat > "$TEST_DIR/.claude/lib/core/library-sourcing.sh" <<'EOF'
 source_required_libraries() {
   local claude_root="$TEST_CLAUDE_ROOT"
   local libraries=(
@@ -134,7 +134,7 @@ EOF
 
   # Source and test
   # shellcheck disable=SC1091
-  source "$TEST_DIR/lib/library-sourcing.sh"
+  source "$TEST_DIR/.claude/lib/core/library-sourcing.sh"
 
   if ! source_required_libraries 2>/dev/null; then
     # Function should fail with missing library
@@ -172,10 +172,10 @@ test_invalid_library_path() {
   done
 
   # Create corrupted library (syntax error)
-  echo "this is not valid bash syntax }{][" > "$TEST_DIR/lib/error-handling.sh"
+  echo "this is not valid bash syntax }{][" > "$TEST_DIR/.claude/lib/core/error-handling.sh"
 
   # Create test version of library-sourcing.sh
-  cat > "$TEST_DIR/lib/library-sourcing.sh" <<'EOF'
+  cat > "$TEST_DIR/.claude/lib/core/library-sourcing.sh" <<'EOF'
 source_required_libraries() {
   local claude_root="$TEST_CLAUDE_ROOT"
   local libraries=(
@@ -211,7 +211,7 @@ EOF
 
   # Source and test
   # shellcheck disable=SC1091
-  source "$TEST_DIR/lib/library-sourcing.sh"
+  source "$TEST_DIR/.claude/lib/core/library-sourcing.sh"
 
   if ! source_required_libraries 2>/dev/null; then
     # Function should fail with corrupted library
@@ -240,7 +240,7 @@ test_error_message_format() {
   mkdir -p "$TEST_DIR/lib"
 
   # Create test version of library-sourcing.sh
-  cat > "$TEST_DIR/lib/library-sourcing.sh" <<'EOF'
+  cat > "$TEST_DIR/.claude/lib/core/library-sourcing.sh" <<'EOF'
 source_required_libraries() {
   local claude_root="$TEST_CLAUDE_ROOT"
   local libraries=(
@@ -271,7 +271,7 @@ EOF
 
   # Source and test
   # shellcheck disable=SC1091
-  source "$TEST_DIR/lib/library-sourcing.sh"
+  source "$TEST_DIR/.claude/lib/core/library-sourcing.sh"
 
   local error_output
   error_output=$(source_required_libraries 2>&1 || true)
@@ -292,7 +292,7 @@ test_return_codes() {
   local test_name="Return codes (0=success, 1=failure)"
 
   # Test success case
-  if source "${CLAUDE_ROOT}/lib/library-sourcing.sh"; then
+  if source "${CLAUDE_ROOT}/lib/core/library-sourcing.sh"; then
     if source_required_libraries 2>/dev/null; then
       local success_code=$?
       if [[ $success_code -eq 0 ]]; then
