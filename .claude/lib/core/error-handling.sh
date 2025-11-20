@@ -357,8 +357,11 @@ retry_with_fallback() {
 # Error log directory
 readonly ERROR_LOG_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/data/logs"
 
-# Error log file for centralized JSONL logging
-readonly ERROR_LOG_FILE="${ERROR_LOG_DIR}/errors.jsonl"
+# Test log directory
+readonly TEST_LOG_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/tests/logs"
+
+# Error log file (default to production, set dynamically in log_command_error)
+ERROR_LOG_FILE="${ERROR_LOG_DIR}/errors.jsonl"
 
 # Error type constants for consistency
 readonly ERROR_TYPE_STATE="state_error"
@@ -427,8 +430,22 @@ log_command_error() {
     context_json="{}"
   fi
 
-  # Ensure log directory exists
-  mkdir -p "$ERROR_LOG_DIR"
+  # Detect execution environment (test vs production)
+  local environment="production"
+
+  # Check BASH_SOURCE for test script indicators
+  if [[ "${BASH_SOURCE[2]:-}" =~ /tests/ ]] || [[ "$0" =~ /tests/ ]]; then
+    environment="test"
+  fi
+
+  # Route to appropriate log file based on environment
+  if [ "$environment" = "test" ]; then
+    ERROR_LOG_FILE="${TEST_LOG_DIR}/test-errors.jsonl"
+    mkdir -p "$TEST_LOG_DIR"
+  else
+    ERROR_LOG_FILE="${ERROR_LOG_DIR}/errors.jsonl"
+    mkdir -p "$ERROR_LOG_DIR"
+  fi
 
   # Check for log rotation
   rotate_error_log
@@ -461,6 +478,7 @@ log_command_error() {
   local json_entry
   json_entry=$(jq -c -n \
     --arg timestamp "$timestamp" \
+    --arg environment "$environment" \
     --arg command "$command" \
     --arg workflow_id "$workflow_id" \
     --arg user_args "$user_args" \
@@ -471,6 +489,7 @@ log_command_error() {
     --argjson context "$context_json" \
     '{
       timestamp: $timestamp,
+      environment: $environment,
       command: $command,
       workflow_id: $workflow_id,
       user_args: $user_args,
@@ -585,6 +604,7 @@ query_errors() {
   local type_filter=""
   local workflow_filter=""
   local limit=50
+  local log_file="${ERROR_LOG_DIR}/errors.jsonl"
 
   # Parse arguments
   while [ $# -gt 0 ]; do
@@ -609,6 +629,10 @@ query_errors() {
         workflow_filter="$2"
         shift 2
         ;;
+      --log-file)
+        log_file="$2"
+        shift 2
+        ;;
       *)
         shift
         ;;
@@ -616,7 +640,7 @@ query_errors() {
   done
 
   # Check if log file exists
-  if [ ! -f "$ERROR_LOG_FILE" ]; then
+  if [ ! -f "$log_file" ]; then
     return 0
   fi
 
@@ -640,7 +664,7 @@ query_errors() {
   fi
 
   # Apply filter and limit
-  jq -c "$jq_filter" "$ERROR_LOG_FILE" 2>/dev/null | tail -n "$limit"
+  jq -c "$jq_filter" "$log_file" 2>/dev/null | tail -n "$limit"
 }
 
 # recent_errors: Display recent errors in human-readable format

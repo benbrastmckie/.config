@@ -668,3 +668,18 @@ Before completing research and creating report file:
 - Confirm all claims are evidenced by specific examples
 - Verify report number calculated correctly via Glob
 - Return structured report path: `REPORT_PATH: {path}`
+
+### Error Handling
+When encountering unrecoverable errors, return structured error signals for parent command parsing:
+
+```bash
+ERROR_CONTEXT: {
+  "error_type": "file_error",
+  "message": "Cannot access codebase directory",
+  "details": {"path": "/invalid/path", "error": "No such file or directory"}
+}
+
+TASK_ERROR: file_error - Cannot access codebase directory: /invalid/path
+```
+
+See [Error Handling Guidelines](shared/error-handling-guidelines.md#error-return-protocol) for complete error return protocol and standardized error types.

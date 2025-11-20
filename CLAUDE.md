@@ -83,6 +83,34 @@ See [Output Formatting Standards](.claude/docs/reference/standards/output-format
 - Comments describe WHAT code does, not WHY it was designed that way
 <!-- END_SECTION: output_formatting -->
 
+<!-- SECTION: error_logging -->
+## Error Logging Standards
+[Used by: all commands, all agents, /implement, /build, /debug, /errors, /repair]
+
+All commands and agents must integrate centralized error logging for queryable error tracking and cross-workflow debugging.
+
+**Quick Reference**:
+1. Source error-handling library: `source "$CLAUDE_LIB/core/error-handling.sh" 2>/dev/null || { echo "Error: Cannot load error-handling library"; exit 1; }`
+2. Initialize error log: `ensure_error_log_exists`
+3. Set workflow metadata: `COMMAND_NAME="/command"`, `WORKFLOW_ID="workflow_$(date +%s)"`, `USER_ARGS="$*"`
+4. Log errors: `log_command_error "$error_type" "$error_message" "$error_details"`
+5. Parse subagent errors: `parse_subagent_error "$agent_output" "$agent_name"`
+
+**Error Types**: `state_error`, `validation_error`, `agent_error`, `parse_error`, `file_error`, `timeout_error`, `execution_error`, `dependency_error`
+
+**Error Consumption Workflow**:
+1. **Query errors**: `/errors [--command CMD] [--since TIME] [--type TYPE]` to view logged errors
+2. **Analyze patterns**: `/repair [--since TIME] [--type TYPE]` to group errors and create fix plan
+3. **Implement fixes**: `/build [plan-file]` to execute repair plan
+
+**Quick Commands**:
+- View recent errors: `/errors --since 1h --summary`
+- Analyze command failures: `/repair --command /build --complexity 2`
+- Debug specific error type: `/errors --type state_error --limit 10`
+
+See [Error Handling Pattern](.claude/docs/concepts/patterns/error-handling.md) for complete integration requirements, agent error return protocol, and troubleshooting workflows. See [Errors Command Guide](.claude/docs/guides/commands/errors-command-guide.md) and [Repair Command Guide](.claude/docs/guides/commands/repair-command-guide.md) for error management workflow details.
+<!-- END_SECTION: error_logging -->
+
 <!-- SECTION: directory_organization -->
 ## Directory Organization Standards
 [Used by: /implement, /plan, /refactor, all development commands]

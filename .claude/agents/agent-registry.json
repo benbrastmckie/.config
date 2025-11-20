@@ -249,21 +249,6 @@
       "dependencies": [],
       "behavioral_file": ".claude/agents/test-specialist.md"
     },
-    "doc-converter-usage": {
-      "type": "documentation",
-      "category": "documentation",
-      "description": "Quick start guide for doc-converter agent (note: this is documentation, not an agent)",
-      "tools": [],
-      "metrics": {
-        "total_invocations": 0,
-        "successful_invocations": 0,
-        "failed_invocations": 0,
-        "average_duration_seconds": 0.0,
-        "last_invocation": null
-      },
-      "dependencies": [],
-      "behavioral_file": ".claude/agents/doc-converter-usage.md"
-    },
     "implementation-executor": {
       "type": "hierarchical",
       "category": "implementation",

@@ -102,7 +102,7 @@ Resume a workflow that was interrupted during implementation.
 #!/bin/bash
 
 # Check for existing state
-STATE_FILE=".claude/state/workflow_${ID}.state"
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${ID}.sh"
 
 if [ -f "$STATE_FILE" ]; then
   # Resume

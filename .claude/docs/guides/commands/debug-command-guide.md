@@ -399,6 +399,40 @@ Example:
 /debug"JWT validation fails with 'Token expired' error in production after exactly 30 seconds, only affects users in EU timezone, started after deployment on 2025-01-15"
 ```
 
+#### Issue 6: Workflow Failures Investigation
+
+**Symptoms**:
+- Debug workflow itself fails
+- Agent invocation errors
+- State machine errors during debug process
+
+**Cause**:
+Previous workflow errors or system issues affecting debug workflow execution.
+
+**Solution**:
+Use `/errors` command to investigate error history before debugging:
+
+```bash
+# Check recent errors for this workflow
+/errors --workflow-id debug_20251019_153045
+
+# Check recent /debug command errors
+/errors --command /debug --limit 5
+
+# Review error patterns before debugging
+/errors --summary
+
+# Investigate specific error types
+/errors --type agent_error --limit 10
+```
+
+This helps identify if the issue is:
+- A recurring pattern across multiple workflows
+- Specific to certain agents or phases
+- Related to recent system changes or environment issues
+
+**See Also**: [/errors Command Guide](errors-command-guide.md)
+
 ### Debug Mode
 
 Enable bash debugging for verbose output:

@@ -27,19 +27,20 @@ This directory documents the core architectural patterns that enable reliable, e
 
 6. **[Verification and Fallback](./verification-fallback.md)** - MANDATORY VERIFICATION checkpoints with fallback mechanisms for 100% file creation
 7. **[Checkpoint Recovery](./checkpoint-recovery.md)** - State preservation and restoration for resilient workflows
+8. **[Error Handling](./error-handling.md)** - Centralized JSONL-based error logging with query interface and recovery patterns
 
 ### Performance Patterns
 
-8. **[Parallel Execution](./parallel-execution.md)** - Wave-based and concurrent agent execution for 40-60% time savings
-9. **[Workflow Scope Detection](./workflow-scope-detection.md)** - Conditional phase execution based on workflow type for context savings
+9. **[Parallel Execution](./parallel-execution.md)** - Wave-based and concurrent agent execution for 40-60% time savings
+10. **[Workflow Scope Detection](./workflow-scope-detection.md)** - Conditional phase execution based on workflow type for context savings
 
 ### Classification Patterns
 
-10. **[LLM-Based Hybrid Classification](./llm-classification-pattern.md)** - LLM semantic understanding with automatic regex fallback for 98%+ accuracy and zero operational risk
+11. **[LLM-Based Hybrid Classification](./llm-classification-pattern.md)** - LLM semantic understanding with automatic regex fallback for 98%+ accuracy and zero operational risk
 
 ### File Organization Patterns
 
-11. **[Executable/Documentation Separation](./executable-documentation-separation.md)** - Separate lean executable logic (<250 lines) from comprehensive documentation (unlimited) to eliminate meta-confusion loops and enable independent evolution
+12. **[Executable/Documentation Separation](./executable-documentation-separation.md)** - Separate lean executable logic (<250 lines) from comprehensive documentation (unlimited) to eliminate meta-confusion loops and enable independent evolution
 
 ## Anti-Patterns
 

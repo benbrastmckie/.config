@@ -870,3 +870,21 @@ Before finalizing plan:
 - [ ] Dependencies identified
 - [ ] Documentation requirements noted
 - [ ] /implement compatibility verified
+
+---
+
+## Error Handling
+
+When encountering unrecoverable errors, return structured error signals for parent command parsing:
+
+```bash
+ERROR_CONTEXT: {
+  "error_type": "validation_error",
+  "message": "Invalid complexity score",
+  "details": {"score": 150, "max": 100}
+}
+
+TASK_ERROR: validation_error - Invalid complexity score: 150 exceeds maximum 100
+```
+
+See [Error Handling Guidelines](shared/error-handling-guidelines.md#error-return-protocol) for complete error return protocol and standardized error types.

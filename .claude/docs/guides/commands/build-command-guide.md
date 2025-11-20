@@ -529,7 +529,43 @@ npm test --verbose
 /build plan.md 2  # Resume from test phase
 ```
 
-#### Issue 7: Phase Updates Not Applied to Plan File
+#### Issue 7: Reviewing Error Logs Before Retry
+
+**Symptoms**:
+- Build fails repeatedly with similar errors
+- Unclear which phase or component is causing failures
+- Need to understand error patterns before retry
+
+**Cause**:
+Multiple build attempts with similar failures may indicate systemic issues that require investigation.
+
+**Solution**:
+Use `/errors` command to review error history before retrying:
+
+```bash
+# Check recent /build errors
+/errors --command /build --limit 5
+
+# Review errors for specific workflow
+/errors --workflow-id build_20251019_153045
+
+# Check for error patterns
+/errors --summary
+
+# Investigate specific error types (e.g., state, agent, validation)
+/errors --type state_error --limit 10
+```
+
+This helps identify:
+- Whether the error is a new issue or recurring pattern
+- Which phase or agent is failing most frequently
+- If recent environmental changes are causing failures
+
+After understanding the error pattern, apply appropriate fixes before retry.
+
+**See Also**: [/errors Command Guide](errors-command-guide.md), [Debug Command Guide](debug-command-guide.md)
+
+#### Issue 8: Phase Updates Not Applied to Plan File
 
 **Symptoms**:
 - Build completes but plan file still shows unchecked tasks `[ ]`

@@ -464,24 +464,29 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 ---
 
 ### /setup
-**Purpose**: Setup or improve CLAUDE.md with smart extraction and optimization
+**Purpose**: Setup or analyze CLAUDE.md with automatic mode detection for initialization and diagnostics
 
-**Usage**: `/setup [project-directory] [--cleanup [--dry-run]] [--analyze] [--apply-report <report-path>]`
+**Usage**: `/setup [project-directory] [--force]`
 
 **Type**: utility
 
 **Arguments**:
-- `project-directory` (optional): Target directory
-- `--cleanup`: Optimize CLAUDE.md by extracting sections
-- `--dry-run`: Preview cleanup without changes
-- `--analyze`: Analyze standards completeness
-- `--apply-report`: Apply recommendations from report
+- `project-directory` (optional): Target directory (defaults to project root)
+- `--force`: Overwrite existing CLAUDE.md without switching to analysis mode
+
+**Modes** (automatic detection):
+- **Standard Mode**: Creates CLAUDE.md with auto-detected standards (when file doesn't exist)
+- **Analysis Mode**: Validates and analyzes existing CLAUDE.md (automatic when file exists)
+- **Force Mode**: Regenerates CLAUDE.md from scratch (with --force flag)
+
+**Related Commands**:
+- `/optimize-claude`: For cleanup and enhancement operations
 
 **Agents Used**: None
 
-**Output**: Created/updated CLAUDE.md file
+**Output**: Created CLAUDE.md file or analysis report in `.claude/specs/NNN_*/reports/`
 
-**See**: [setup.md](../../commands/setup.md)
+**See**: [setup.md](../../commands/setup.md), [Setup Command Guide](../guides/commands/setup-command-guide.md)
 
 ---
 

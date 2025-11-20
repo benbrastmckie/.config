@@ -77,7 +77,7 @@ PLAN=$(load_workflow_state "PLAN_PATH")
 GitHub Actions-style workflow state file:
 
 ```bash
-# .claude/state/workflow_<id>.state
+# .claude/tmp/workflow_<id>.sh
 WORKFLOW_ID=abc123
 WORKFLOW_SCOPE=standard
 TOPIC_PATH=/path/to/specs/042_feature
@@ -93,7 +93,7 @@ CURRENT_WAVE=2
 # Initialize
 init_workflow_state() {
   local id="$1"
-  STATE_FILE=".claude/state/workflow_${id}.state"
+  STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${id}.sh"
   echo "WORKFLOW_ID=$id" > "$STATE_FILE"
 }
 

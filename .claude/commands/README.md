@@ -2,7 +2,7 @@
 
 Custom slash command definitions for Claude Code. Each command extends Claude's capabilities with specialized workflows for development, documentation, testing, and project management.
 
-**Current Command Count**: 10 active commands
+**Current Command Count**: 12 active commands
 
 ## Workflow
 
@@ -38,6 +38,82 @@ The core development workflow follows this sequence: **/research** -> **/plan** 
 - **Revision**: Update existing plans with new research insights (/revise)
 - **Implementation**: Execute plans with testing and commits (/build)
 - **Debugging**: Root cause analysis and bug fixing (/debug)
+
+### Error Management Workflow
+
+Commands and agents automatically log errors to a centralized queryable log. The error management workflow provides systematic error resolution:
+
+**Error Lifecycle**:
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ERROR PRODUCTION (Automatic)                                    │
+├─────────────────────────────────────────────────────────────────┤
+│ Commands/agents log errors via log_command_error()             │
+│ Output: ~/.claude/data/errors.jsonl                            │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ ERROR QUERYING (/errors)                                        │
+├─────────────────────────────────────────────────────────────────┤
+│ Filter and view logged errors by time, type, command           │
+│ Output: Console display or summary report                      │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ ERROR ANALYSIS (/repair)                                        │
+├─────────────────────────────────────────────────────────────────┤
+│ Group error patterns and create fix plan                       │
+│ Output: Error analysis report + implementation plan            │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ FIX IMPLEMENTATION (/build)                                     │
+├─────────────────────────────────────────────────────────────────┤
+│ Execute repair plan with tests and commits                     │
+│ Output: Git commits for fixes                                  │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                             ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ VERIFICATION (/errors)                                          │
+├─────────────────────────────────────────────────────────────────┤
+│ Confirm fixes resolved logged errors                           │
+│ Output: Success confirmation                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Usage Patterns**:
+
+1. **Debugging Recent Failures**:
+   ```bash
+   /errors --since 1h --summary          # View recent error summary
+   /repair --since 1h --complexity 2     # Analyze and create fix plan
+   /build <repair-plan>                  # Implement fixes
+   ```
+
+2. **Systematic Error Cleanup**:
+   ```bash
+   /errors --type state_error --limit 20 # Identify error patterns
+   /repair --type state_error            # Create comprehensive fix plan
+   /build <repair-plan>                  # Execute repairs
+   ```
+
+3. **Targeted Command Analysis**:
+   ```bash
+   /errors --command /build --summary    # Analyze specific command errors
+   /repair --command /build              # Create command-specific fix plan
+   /build <repair-plan>                  # Implement improvements
+   ```
+
+**Key Commands**:
+- **/errors**: Query error log with filters (time, type, command, severity)
+- **/repair**: Analyze error patterns and generate fix plans
+- **/build**: Execute repair plans with automatic testing
+
+See [Errors Command Guide](../docs/guides/commands/errors-command-guide.md) and [Repair Command Guide](../docs/guides/commands/repair-command-guide.md) for complete workflow details.
 
 ### Technical Advantages
 
@@ -288,6 +364,60 @@ The core development workflow follows this sequence: **/research** -> **/plan** 
 ---
 
 ### Utility Commands
+
+#### /errors
+**Purpose**: Query and display error logs from commands and subagents with filtering and analysis capabilities
+
+**Usage**: `/errors [--command CMD] [--since TIME] [--type TYPE] [--limit N] [--summary]`
+
+**Type**: utility
+
+**Example**:
+```bash
+/errors --command build --since "2 hours ago"
+```
+
+**Dependencies**:
+- **Libraries**: error-handling.sh
+
+**Features**:
+- Centralized error log querying with rich context (timestamps, error types, workflow IDs, stack traces)
+- Multiple filter options (command, time, type, workflow ID)
+- Summary statistics and recent error views
+- Automatic log rotation (10MB with 5 backups)
+- Integrates with /repair for error analysis and fix planning
+
+**Documentation**: [Errors Command Guide](../docs/guides/commands/errors-command-guide.md)
+
+---
+
+#### /repair
+**Purpose**: Research error patterns and create implementation plan to fix them
+
+**Usage**: `/repair [--since TIME] [--type TYPE] [--command CMD] [--severity LEVEL] [--complexity 1-4]`
+
+**Type**: utility
+
+**Example**:
+```bash
+/repair --since "1 week ago"
+```
+
+**Dependencies**:
+- **Agents**: repair-analyst, plan-architect
+- **Libraries**: workflow-state-machine.sh, state-persistence.sh
+
+**Features**:
+- Two-phase workflow: Error Analysis → Fix Planning (no implementation)
+- Pattern-based error grouping and root cause analysis
+- Integration with /errors command for log queries
+- Complexity-aware analysis (default: 2 for error analysis)
+- Generated plans executed via /build workflow
+- Terminal state at plan creation (use /build to execute)
+
+**Documentation**: [Repair Command Guide](../docs/guides/commands/repair-command-guide.md)
+
+---
 
 #### /setup
 **Purpose**: Setup or improve CLAUDE.md with smart extraction, cleanup optimization, validation, standards analysis, report-driven updates, and automatic documentation enhancement
@@ -759,9 +889,11 @@ description: Brief description shown in picker
 - [collapse.md](collapse.md) - Phase/stage collapse (Level 1 to 0, Level 2 to 1)
 - [convert-docs.md](convert-docs.md) - Document format conversion
 - [debug.md](debug.md) - Debug-focused workflow with root cause analysis
+- [errors.md](errors.md) - Query and display error logs
 - [expand.md](expand.md) - Phase/stage expansion (Level 0 to 1, Level 1 to 2)
 - [optimize-claude.md](optimize-claude.md) - CLAUDE.md optimization analysis
 - [plan.md](plan.md) - Research and create implementation plans
+- [repair.md](repair.md) - Error analysis and repair planning
 - [research.md](research.md) - Research-only workflow for reports
 - [revise.md](revise.md) - Research and revise existing plans
 - [setup.md](setup.md) - CLAUDE.md setup and optimization

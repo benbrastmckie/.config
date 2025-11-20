@@ -12,6 +12,7 @@ This directory contains API reference documentation for the shell library functi
 | state-machine.md | State machine API reference |
 | persistence.md | Persistence utilities API reference |
 | utilities.md | General utility functions API reference |
+| error-handling.md | Error logging, classification, and recovery API reference |
 
 ## Navigation
 

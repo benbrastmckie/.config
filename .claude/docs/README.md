@@ -78,6 +78,16 @@ Common tasks and where to find guidance:
     → [Orchestration Troubleshooting Guide](guides/orchestration/orchestration-troubleshooting.md)
     → [Error Handling Flowchart](reference/decision-trees/error-handling-flowchart.md)
 
+16. **Query and analyze error logs**
+    → [/errors Command Guide](guides/commands/errors-command-guide.md)
+    → [Error Handling Pattern](concepts/patterns/error-handling.md)
+    → [Error Handling API Reference](reference/library-api/error-handling.md)
+
+17. **Analyze error patterns and create fix plans**
+    → [/repair Command Guide](guides/commands/repair-command-guide.md)
+    → [Error Handling Pattern](concepts/patterns/error-handling.md)
+    → [State-Based Orchestration](architecture/state-based-orchestration-overview.md)
+
 ## Quick Navigation for Agents
 
 Looking to work on a specific area? Use these quick-start paths:

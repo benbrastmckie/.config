@@ -131,10 +131,15 @@ state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
 
+# === INITIALIZE ERROR LOGGING ===
+ensure_error_log_exists
+
 # === INITIALIZE STATE ===
 WORKFLOW_TYPE="research-only"
 TERMINAL_STATE="research"
-COMMAND_NAME="research"
+COMMAND_NAME="/research"
+USER_ARGS="$WORKFLOW_DESCRIPTION"
+export COMMAND_NAME USER_ARGS
 
 WORKFLOW_ID="research_$(date +%s)"
 STATE_ID_FILE="${HOME}/.claude/tmp/research_state_id.txt"
@@ -148,23 +153,60 @@ export STATE_FILE
 
 # Validate state file creation
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to initialize workflow state file" \
+    "bash_block_1" \
+    "$(jq -n --arg path "${STATE_FILE:-UNDEFINED}" '{expected_path: $path}')"
+
   echo "ERROR: Failed to initialize workflow state" >&2
   exit 1
 fi
 
 if ! sm_init "$WORKFLOW_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State machine initialization failed" \
+    "bash_block_1" \
+    "$(jq -n --arg type "$WORKFLOW_TYPE" --argjson complexity "$RESEARCH_COMPLEXITY" \
+       '{workflow_type: $type, complexity: $complexity}')"
+
   echo "ERROR: State machine initialization failed" >&2
   exit 1
 fi
 
 # === TRANSITION TO RESEARCH AND SETUP PATHS ===
 if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to RESEARCH failed" \
+    "bash_block_1" \
+    "$(jq -n --arg state "$STATE_RESEARCH" '{target_state: $state}')"
+
   echo "ERROR: State transition to RESEARCH failed" >&2
   exit 1
 fi
 
 # Initialize workflow paths (uses fallback slug generation)
 if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "research-only" "$RESEARCH_COMPLEXITY" ""; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Failed to initialize workflow paths" \
+    "bash_block_1" \
+    "$(jq -n --arg desc "$WORKFLOW_DESCRIPTION" '{description: $desc}')"
+
   echo "ERROR: Failed to initialize workflow paths" >&2
   exit 1
 fi
@@ -251,24 +293,122 @@ export CLAUDE_PROJECT_DIR
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# Initialize DEBUG_LOG if not already set
+DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === VALIDATE STATE AFTER LOAD ===
+if [ -z "$STATE_FILE" ]; then
+  # Log to centralized error log
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State file path not set after load" \
+    "bash_block_2" \
+    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
+
+  # Also log to DEBUG_LOG
+  {
+    echo "[$(date)] ERROR: State file path not set"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: STATE_FILE variable empty after load"
+    echo "WHERE: Block 2, research verification"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "State file not found at expected path" \
+    "bash_block_2" \
+    "$(jq -n --arg path "$STATE_FILE" '{expected_path: $path}')"
+
+  {
+    echo "[$(date)] ERROR: State file not found"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: File does not exist at expected path"
+    echo "WHERE: Block 2, research verification"
+    echo "PATH: $STATE_FILE"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
+  exit 1
+fi
+
+# Validate critical variables from Block 1
+if [ -z "$RESEARCH_DIR" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Critical variables not restored from state" \
+    "bash_block_2" \
+    "$(jq -n --arg dir "${RESEARCH_DIR:-MISSING}" '{research_dir: $dir}')"
+
+  {
+    echo "[$(date)] ERROR: Critical variables not restored"
+    echo "WHICH: load_workflow_state"
+    echo "WHAT: RESEARCH_DIR missing after load"
+    echo "WHERE: Block 2, research verification"
+    echo "RESEARCH_DIR: ${RESEARCH_DIR:-MISSING}"
+  } >> "$DEBUG_LOG"
+  echo "ERROR: Critical variables not restored (see $DEBUG_LOG)" >&2
+  exit 1
+fi
 
 # === VERIFY ARTIFACTS ===
 echo "Verifying research artifacts..."
 
 if [ ! -d "$RESEARCH_DIR" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Research phase failed to create reports directory" \
+    "bash_block_2" \
+    "$(jq -n --arg dir "$RESEARCH_DIR" '{expected_dir: $dir}')"
+
   echo "ERROR: Research phase failed to create reports directory" >&2
   exit 1
 fi
 
 if [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Research phase failed to create report files" \
+    "bash_block_2" \
+    "$(jq -n --arg dir "$RESEARCH_DIR" '{research_dir: $dir}')"
+
   echo "ERROR: Research phase failed to create report files" >&2
   exit 1
 fi
 
 UNDERSIZED_FILES=$(find "$RESEARCH_DIR" -name '*.md' -type f -size -100c 2>/dev/null)
 if [ -n "$UNDERSIZED_FILES" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Research report(s) too small" \
+    "bash_block_2" \
+    "$(jq -n --arg files "$UNDERSIZED_FILES" '{undersized_files: $files, min_size: 100}')"
+
   echo "ERROR: Research report(s) too small (< 100 bytes)" >&2
   exit 1
 fi
@@ -277,6 +417,15 @@ REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
 
 # === COMPLETE WORKFLOW ===
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to COMPLETE failed" \
+    "bash_block_2" \
+    "$(jq -n --arg state "$STATE_COMPLETE" '{target_state: $state}')"
+
   echo "ERROR: State transition to COMPLETE failed" >&2
   exit 1
 fi
