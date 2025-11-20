@@ -8,11 +8,48 @@ The `/optimize-claude` command analyzes your CLAUDE.md file and .claude/docs/ di
 
 ## Usage
 
+### Basic Usage
+
 ```bash
 /optimize-claude  # Simple, no flags needed
 ```
 
-No arguments or flags required - the command runs with sensible defaults.
+### Advanced Usage
+
+```bash
+/optimize-claude [--threshold <aggressive|balanced|conservative>]
+                 [--aggressive|--balanced|--conservative]
+                 [--dry-run]
+                 [--file <report-path>] ...
+```
+
+### Flags
+
+- `--threshold <value>`: Set bloat detection threshold
+  - `aggressive`: >50 lines (strict bloat detection)
+  - `balanced`: >80 lines (default, recommended)
+  - `conservative`: >120 lines (lenient, for complex domains)
+- `--aggressive`: Shorthand for `--threshold aggressive`
+- `--balanced`: Shorthand for `--threshold balanced`
+- `--conservative`: Shorthand for `--threshold conservative`
+- `--dry-run`: Preview workflow stages without execution
+- `--file <path>`: Add additional report to research phase (can be used multiple times)
+
+### Examples
+
+```bash
+# Use aggressive threshold for strict bloat detection
+/optimize-claude --aggressive
+
+# Preview workflow without execution
+/optimize-claude --dry-run
+
+# Include additional analysis reports
+/optimize-claude --file .claude/specs/analysis_report.md
+
+# Combine multiple flags
+/optimize-claude --conservative --file report1.md --file report2.md
+```
 
 ## Workflow
 
@@ -187,27 +224,104 @@ After `/optimize-claude` completes:
 
 ## Thresholds and Configuration
 
-### Balanced Threshold (Hardcoded)
+### Threshold Profiles
 
-The command uses a "balanced" threshold of 80 lines for bloat detection. This is a good default for most projects:
+The command supports three threshold profiles for bloat detection:
+
+#### Aggressive (50 lines)
+
+```bash
+/optimize-claude --aggressive
+```
+
+- **Bloated**: Sections >50 lines → Extract to .claude/docs/
+- **Moderate**: Sections 30-50 lines → Consider extraction
+- **Optimal**: Sections <30 lines → Keep inline
+
+**Use when**:
+- CLAUDE.md is very large (>500 lines)
+- You want maximum extraction for minimal inline content
+- Documentation is complex and needs extensive detail
+
+#### Balanced (80 lines, default)
+
+```bash
+/optimize-claude --balanced  # or just /optimize-claude
+```
 
 - **Bloated**: Sections >80 lines → Extract to .claude/docs/
 - **Moderate**: Sections 50-80 lines → Consider extraction
 - **Optimal**: Sections <50 lines → Keep inline
 
-### Why 80 Lines?
+**Use when**:
+- CLAUDE.md is moderate size (200-500 lines)
+- You want good balance between inline and extracted content
+- This is the recommended default for most projects
+
+#### Conservative (120 lines)
+
+```bash
+/optimize-claude --conservative
+```
+
+- **Bloated**: Sections >120 lines → Extract to .claude/docs/
+- **Moderate**: Sections 80-120 lines → Consider extraction
+- **Optimal**: Sections <80 lines → Keep inline
+
+**Use when**:
+- CLAUDE.md is relatively small (<300 lines)
+- Sections have complex interdependencies
+- You prefer more content inline for discoverability
+
+### Why These Thresholds?
 
 - Fits ~2 screens of terminal output
 - Leaves room for summaries (2-3 sentences + link)
 - Balances context overhead vs reference jumping
 - Matches optimize-claude-md.sh library default
 
-### Future Customization
+### Dry-Run Mode
 
-If you need different thresholds, you can:
-1. Modify the agent directly (claude-md-analyzer.md)
-2. Request a command enhancement to add `--threshold` flag
-3. Run optimize-claude-md.sh library directly for custom analysis
+Preview the workflow without executing agents:
+
+```bash
+/optimize-claude --dry-run
+```
+
+**Output includes**:
+- Workflow stages (Research, Analysis, Planning)
+- Agents that will be invoked
+- Current threshold configuration
+- Additional reports (if any)
+- Artifact paths that will be created
+- Estimated execution time (3-5 minutes)
+
+**Use dry-run when**:
+- Verifying threshold settings before execution
+- Checking which agents will be invoked
+- Previewing artifact paths
+- Understanding workflow stages
+
+### Additional Reports
+
+Include extra analysis reports for enhanced context:
+
+```bash
+/optimize-claude --file .claude/specs/analysis_report.md
+/optimize-claude --file report1.md --file report2.md --file report3.md
+```
+
+**How it works**:
+- Reports are validated (must exist) during setup
+- Report paths are passed to docs-structure-analyzer agent
+- Agent incorporates findings into research analysis
+- Useful for iterative optimization with prior analysis
+
+**Example use cases**:
+- Including previous optimization reports for delta analysis
+- Adding custom analysis from manual review
+- Incorporating external documentation audits
+- Building on prior /research command outputs
 
 ## Troubleshooting
 
@@ -245,12 +359,15 @@ test -f CLAUDE.md && echo "Found" || echo "Missing"
 
 ### Issue: Plan has no optimization recommendations
 
-**Cause**: Your CLAUDE.md may already be well-optimized
+**Cause**: Your CLAUDE.md may already be well-optimized for current threshold
 
 **Solution**:
 1. Check CLAUDE.md analysis report for bloated sections
-2. If no sections >80 lines, your CLAUDE.md is already optimal
-3. Consider using a more aggressive threshold (50 lines) if desired
+2. If no sections exceed threshold, try a more aggressive setting:
+   ```bash
+   /optimize-claude --aggressive  # 50-line threshold
+   ```
+3. If still no recommendations, your CLAUDE.md is already optimal
 
 ### Issue: Verification fails after implementation
 
@@ -264,6 +381,210 @@ test -f CLAUDE.md && echo "Found" || echo "Missing"
    ```
 2. Review extraction phase that failed
 3. Re-run that phase manually with corrections
+
+### Issue: Agent timeout during execution
+
+**Cause**: Large CLAUDE.md or complex .claude/docs/ structure
+
+**Solution**:
+1. Check if agents are still running:
+   ```bash
+   ps aux | grep claude
+   ```
+2. Increase timeout if available in future versions
+3. Break into smaller operations (analyze CLAUDE.md separately from docs)
+
+### Issue: Reports are created but contain no content
+
+**Cause**: Agents completed but analysis found no issues
+
+**Solution**:
+1. Check report files directly:
+   ```bash
+   cat .claude/specs/[topic]/reports/*.md
+   ```
+2. If truly empty, CLAUDE.md may be optimal
+3. Verify .claude/docs/ directory exists and has content to analyze
+
+### Issue: False positive bloat detection
+
+**Cause**: Threshold too aggressive for your use case
+
+**Solution**:
+1. Use conservative threshold for lenient bloat detection:
+   ```bash
+   /optimize-claude --conservative  # 120-line threshold
+   ```
+2. Review bloat criteria in analysis report
+3. Some projects benefit from larger inline CLAUDE.md sections
+
+### Issue: claude-md-analyzer agent fails with parse error
+
+**Cause**: CLAUDE.md has malformed sections or invalid metadata
+
+**Solution**:
+1. Validate CLAUDE.md structure first:
+   ```bash
+   /setup --validate
+   ```
+2. Check for unmatched brackets or malformed `[Used by: ...]` metadata
+3. Fix structural issues before re-running optimization
+
+### Issue: docs-structure-analyzer finds no documentation
+
+**Cause**: No .claude/docs/ directory or documentation not in standard format
+
+**Solution**:
+1. Check if docs exist:
+   ```bash
+   find .claude/docs -name "*.md" -type f
+   ```
+2. Create basic documentation structure if missing
+3. Ensure READMEs follow expected format (see setup-command-guide.md)
+
+### Issue: cleanup-plan-architect fails to generate plan
+
+**Cause**: Analysis reports missing or incomplete
+
+**Solution**:
+1. Verify all prior agents completed successfully
+2. Check for completion markers in command output
+3. Re-run from beginning if any agent failed:
+   ```bash
+   /optimize-claude
+   ```
+
+### Issue: bloat-analyzer detects everything as bloated
+
+**Cause**: Very low threshold or genuinely bloated documentation
+
+**Solution**:
+1. Review analysis report line counts
+2. If sections are >150 lines, bloat detection is likely correct
+3. Prioritize highest-impact extractions first
+
+### Issue: accuracy-analyzer has low confidence scores
+
+**Cause**: Inconsistent documentation or limited sample size
+
+**Solution**:
+1. Review accuracy report for specific inconsistencies
+2. Fix flagged issues manually
+3. Re-run analysis after improvements:
+   ```bash
+   /optimize-claude
+   ```
+
+### Issue: Path allocation fails with "topic directory error"
+
+**Cause**: unified-location-detection.sh cannot allocate topic path
+
+**Solution**:
+1. Check .claude/specs/ directory exists:
+   ```bash
+   mkdir -p .claude/specs
+   ```
+2. Verify permissions:
+   ```bash
+   chmod u+w .claude/specs
+   ```
+3. Re-run command
+
+### Issue: Generated plan format incompatible with /implement
+
+**Cause**: Plan structure doesn't match expected format
+
+**Solution**:
+1. Check plan has proper phase markers (### Phase N:)
+2. Verify plan metadata includes all required fields
+3. Report issue if plan generation has bugs
+
+### Issue: Concurrent execution conflicts
+
+**Cause**: Multiple /optimize-claude runs or other commands modifying same files
+
+**Solution**:
+1. Wait for first execution to complete
+2. Check for lock files:
+   ```bash
+   ls .claude/.locks/
+   ```
+3. Remove stale locks if process crashed (be careful!)
+
+### Issue: .claude/docs/ not detected despite existing
+
+**Cause**: Directory permissions or non-standard structure
+
+**Solution**:
+1. Verify directory is readable:
+   ```bash
+   ls -ld .claude/docs/
+   test -r .claude/docs/ && echo "Readable" || echo "Not readable"
+   ```
+2. Check for README.md in docs root:
+   ```bash
+   ls .claude/docs/README.md
+   ```
+3. Fix permissions if needed:
+   ```bash
+   chmod -R u+r .claude/docs/
+   ```
+
+### Issue: Invalid threshold value error
+
+**Cause**: Provided threshold value is not one of the valid options
+
+**Solution**:
+```bash
+# Valid threshold values are: aggressive, balanced, conservative
+/optimize-claude --threshold balanced  # Correct
+/optimize-claude --aggressive          # Correct (shorthand)
+
+# Invalid examples:
+/optimize-claude --threshold strict    # ERROR: invalid value
+/optimize-claude --threshold 80        # ERROR: must use name, not number
+```
+
+### Issue: Additional report file not found
+
+**Cause**: File path provided to `--file` flag doesn't exist or is incorrect
+
+**Solution**:
+1. Verify file exists before passing to command:
+   ```bash
+   test -f path/to/report.md && echo "Found" || echo "Not found"
+   ```
+2. Use absolute paths for clarity:
+   ```bash
+   /optimize-claude --file /absolute/path/to/report.md
+   ```
+3. Check for typos in file path
+
+### Issue: Dry-run shows unexpected configuration
+
+**Cause**: Flags not parsed correctly or unexpected defaults
+
+**Solution**:
+1. Use dry-run to preview before execution:
+   ```bash
+   /optimize-claude --aggressive --dry-run
+   ```
+2. Verify threshold value in dry-run output
+3. Check additional reports are listed (if provided)
+4. Adjust flags if configuration doesn't match expectations
+
+### Issue: Multiple file flags not recognized
+
+**Cause**: Incorrect flag syntax or shell quoting issues
+
+**Solution**:
+```bash
+# Correct: Repeat --file for each report
+/optimize-claude --file report1.md --file report2.md
+
+# Incorrect: Only one file path per --file flag
+/optimize-claude --file report1.md report2.md  # ERROR: report2.md treated as unknown arg
+```
 
 ## Integration with Other Commands
 
