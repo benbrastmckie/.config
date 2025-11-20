@@ -176,6 +176,7 @@ To continue implementation:
 
 ## Metadata
 - **Date**: YYYY-MM-DD HH:MM
+- **Plan**: [Plan Title](../plans/NNN_plan.md)
 - **Executor Instance**: [N of M]
 - **Context Exhaustion**: [Yes/No]
 - **Phases Completed**: [N/M]
@@ -197,6 +198,12 @@ Changes:
 ```
 
 **CRITICAL**: Work Status MUST be at the TOP of the file for immediate parsing.
+
+**Plan Link Requirement**:
+- ALWAYS include the Plan field in the Metadata section
+- Use relative path format: `../plans/NNN_plan.md`
+- The plan_path is provided in the input context
+- This creates the traceability chain: Summary → Plan → Reports
 
 **100% Complete Validation**:
 - ONLY state "100% complete" when ALL tasks in ALL phases have [x]

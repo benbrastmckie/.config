@@ -875,6 +875,22 @@ if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   exit 1
 fi
 
+# === VALIDATE SUMMARY PLAN LINK ===
+# Check if summary was created and includes plan link
+SUMMARIES_DIR="${TOPIC_PATH}/summaries"
+if [ -d "$SUMMARIES_DIR" ]; then
+  # Find most recent summary file (by modification time)
+  LATEST_SUMMARY=$(ls -t "$SUMMARIES_DIR"/*.md 2>/dev/null | head -n 1)
+  if [ -n "$LATEST_SUMMARY" ] && [ -f "$LATEST_SUMMARY" ]; then
+    if ! grep -q '^\*\*Plan\*\*:' "$LATEST_SUMMARY" 2>/dev/null && \
+       ! grep -q '^- \*\*Plan\*\*:' "$LATEST_SUMMARY" 2>/dev/null; then
+      echo "⚠ WARNING: Summary missing plan link" >&2
+      echo "  Summary: $LATEST_SUMMARY" >&2
+      echo "  Add plan link to Metadata section for traceability" >&2
+    fi
+  fi
+fi
+
 echo ""
 echo "=== Build Complete ==="
 echo "Workflow Type: full-implementation"
