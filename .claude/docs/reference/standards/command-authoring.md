@@ -9,6 +9,9 @@ Mandatory standards for creating and maintaining executable command files in `.c
 3. [Subprocess Isolation Requirements](#subprocess-isolation-requirements)
 4. [State Persistence Patterns](#state-persistence-patterns)
 5. [Validation and Testing](#validation-and-testing)
+6. [Argument Capture Patterns](#argument-capture-patterns)
+7. [Output Suppression Requirements](#output-suppression-requirements)
+8. [Prohibited Patterns](#prohibited-patterns)
 
 ---
 
@@ -558,6 +561,102 @@ See [Output Formatting Standards](output-formatting-standards.md) for:
 - Block consolidation rules
 - Comment standards (WHAT not WHY)
 - Output vs error distinction
+
+---
+
+## Prohibited Patterns
+
+### Negation in Conditional Tests (if ! and elif !)
+
+Commands MUST NOT use `if !` or `elif !` patterns due to bash history expansion errors. These patterns trigger preprocessing-stage history expansion BEFORE runtime `set +H` can disable it, causing UI errors in command output files.
+
+**Prohibited Patterns**:
+
+```bash
+# ❌ ANTI-PATTERN: Negation in if condition
+if ! some_command arg1 arg2; then
+  echo "ERROR: Command failed"
+  exit 1
+fi
+
+# ❌ ANTI-PATTERN: Negation in elif condition
+if [ -z "$VAR" ]; then
+  VAR="default"
+elif ! echo "$VAR" | grep -Eq '^pattern$'; then
+  VAR="default"
+fi
+```
+
+**Root Cause**: The Bash tool performs preprocessing BEFORE script execution. During preprocessing, history expansion is enabled by default and processes the exclamation mark (`!`) before the script runs `set +H` to disable it. This causes errors like:
+
+```
+/run/current-system/sw/bin/bash: line 42: !: command not found
+```
+
+### Required Alternative: Exit Code Capture
+
+Use exit code capture pattern instead of negation:
+
+**Pattern 1: Simple `if !` Replacement**
+
+```bash
+# ✓ CORRECT: Exit code capture
+some_command arg1 arg2
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: Command failed"
+  exit 1
+fi
+```
+
+**Pattern 2: `elif !` Replacement**
+
+```bash
+# ✓ CORRECT: Nested conditional with exit code capture
+if [ -z "$VAR" ]; then
+  VAR="default"
+else
+  echo "$VAR" | grep -Eq '^pattern$'
+  IS_VALID=$?
+  if [ $IS_VALID -ne 0 ]; then
+    VAR="default"
+  fi
+fi
+```
+
+**Pattern 3: Pipeline with Negation**
+
+```bash
+# ❌ ANTI-PATTERN: Negated pipeline
+if ! echo "$VALUE" | command1 | command2; then
+  handle_error
+fi
+
+# ✓ CORRECT: Exit code capture for pipeline
+echo "$VALUE" | command1 | command2
+PIPELINE_STATUS=$?
+if [ $PIPELINE_STATUS -ne 0 ]; then
+  handle_error
+fi
+```
+
+### Validation
+
+All command files are validated by the automated test suite:
+
+```bash
+# Run detection test
+.claude/tests/test_no_if_negation_patterns.sh
+
+# Zero violations expected
+# Test will fail if any if ! or elif ! patterns found
+```
+
+See [Bash Tool Limitations](../../troubleshooting/bash-tool-limitations.md) for complete technical explanation of preprocessing-stage history expansion timing.
+
+### Historical Context
+
+This prohibition is based on systematic remediation across 52 instances in 8 command files (Spec 876), following similar fixes in Specs 620, 641, 672, 685, 700, 717. The exit code capture pattern has proven reliable with 100% test pass rate across all implementations.
 
 ---
 

@@ -20,8 +20,8 @@
 
 ## Create Plans
 
-- build testing phase run by testing subagent
-- /repair command to make plan indicate which errors have been addressed
+- /convert-docs
+- make implementer more persistent
 
 ## Other
 

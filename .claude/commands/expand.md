@@ -276,13 +276,17 @@ For detailed tasks and implementation, see [Phase N Details](phase_N_name.md)
 
 ```bash
 # Verify main plan updated
-if ! grep -q "Structure Level: 1" "$plan_file"; then
+grep -q "Structure Level: 1" "$plan_file"
+GREP_EXIT=$?
+if [ $GREP_EXIT -ne 0 ]; then
   echo "❌ ERROR: Main plan metadata not updated"
   exit 1
 fi
 
 # Verify phase number in expanded phases list
-if ! grep -q "Expanded Phases:.*$phase_num" "$plan_file"; then
+grep -q "Expanded Phases:.*$phase_num" "$plan_file"
+GREP_EXIT=$?
+if [ $GREP_EXIT -ne 0 ]; then
   echo "❌ ERROR: Phase $phase_num not added to expanded phases list"
   exit 1
 fi
@@ -480,19 +484,25 @@ echo "✓ VERIFIED: Stage file created: $stage_file (${file_size} bytes)"
 
 ```bash
 # Verify main plan structure level
-if ! grep -q "Structure Level: 2" "$main_plan"; then
+grep -q "Structure Level: 2" "$main_plan"
+GREP_EXIT=$?
+if [ $GREP_EXIT -ne 0 ]; then
   echo "❌ ERROR: Main plan structure level not updated"
   exit 1
 fi
 
 # Verify phase file has stage in expanded list
-if ! grep -q "Expanded Stages:.*$stage_num" "$phase_file"; then
+grep -q "Expanded Stages:.*$stage_num" "$phase_file"
+GREP_EXIT=$?
+if [ $GREP_EXIT -ne 0 ]; then
   echo "❌ ERROR: Stage $stage_num not in expanded stages list"
   exit 1
 fi
 
 # Verify stage file has metadata
-if ! grep -q "Stage Number: $stage_num" "$stage_file"; then
+grep -q "Stage Number: $stage_num" "$stage_file"
+GREP_EXIT=$?
+if [ $GREP_EXIT -ne 0 ]; then
   echo "❌ ERROR: Stage file missing metadata"
   exit 1
 fi
@@ -1018,7 +1028,9 @@ if [[ ! -f "$EXPANDED_FILE" ]]; then
 fi
 
 # 2. Verify parent plan updated
-if ! grep -q "phase_${NUM}_" "$MAIN_PLAN"; then
+grep -q "phase_${NUM}_" "$MAIN_PLAN"
+GREP_EXIT=$?
+if [ $GREP_EXIT -ne 0 ]; then
   echo '{"expansion_status":"error","error_type":"validation_failed","error_message":"Parent plan not updated with link"}' >&2
   exit 1
 fi
@@ -1030,7 +1042,9 @@ if [[ -z "$EXPANDED_PHASES" ]]; then
 fi
 
 # 4. Verify spec updater checklist preserved
-if ! grep -q "## Spec Updater Checklist" "$EXPANDED_FILE"; then
+grep -q "## Spec Updater Checklist" "$EXPANDED_FILE"
+GREP_EXIT=$?
+if [ $GREP_EXIT -ne 0 ]; then
   CHECKLIST_PRESERVED=false
 else
   CHECKLIST_PRESERVED=true
@@ -1080,9 +1094,11 @@ fi
 
 ## Checkpoint Reporting
 
-**YOU MUST report expansion checkpoint. This is NOT optional.**
+**YOU MUST report expansion checkpoint using standardized console summary format. This is NOT optional.**
 
 **CHECKPOINT REQUIREMENT - Report Expansion Complete**
+
+Following console summary standards from `.claude/docs/reference/standards/output-formatting.md`:
 
 **ABSOLUTE REQUIREMENT**: After expansion completes, YOU MUST report this checkpoint. This is NOT optional.
 
@@ -1091,14 +1107,18 @@ fi
 **Report Format**:
 
 ```
-CHECKPOINT: Expansion Complete
-- Type: [phase|stage] expansion
-- Plan: ${PLAN_PATH}
-- Items Expanded: ${EXPANDED_COUNT}
-- Structure Level: ${OLD_LEVEL} → ${NEW_LEVEL}
-- Artifacts Created: ${ARTIFACT_COUNT}
-- Metadata: ✓ UPDATED
-- Status: READY FOR IMPLEMENTATION
+=== Expand Complete ===
+
+Summary: Expanded ${EXPANDED_COUNT} ${TYPE}(s) from structure level ${OLD_LEVEL} to ${NEW_LEVEL}, creating ${ARTIFACT_COUNT} artifact files. Expansion enables more detailed implementation planning for complex phases/stages.
+
+Artifacts:
+  📄 Expanded Files: ${ARTIFACT_PATHS}
+  📄 Plan: ${PLAN_PATH} (metadata updated)
+
+Next Steps:
+  • Review expanded files: ls -lh ${EXPANDED_DIR}/
+  • Continue implementation: /build ${PLAN_PATH}
+  • Further expand if needed: /expand [phase|stage] ${PLAN_PATH} ${NUM}
 ```
 
 **Required Information**:

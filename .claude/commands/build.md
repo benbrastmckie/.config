@@ -107,7 +107,9 @@ if [[ "$STARTING_PHASE" == "--dry-run" ]]; then
   DRY_RUN="true"
 fi
 
-if ! echo "$STARTING_PHASE" | grep -Eq "^[0-9]+$"; then
+echo "$STARTING_PHASE" | grep -Eq "^[0-9]+$"
+PHASE_VALID=$?
+if [ $PHASE_VALID -ne 0 ]; then
   echo "ERROR: Invalid starting phase: $STARTING_PHASE (must be numeric)" >&2
   exit 1
 fi
@@ -248,7 +250,9 @@ if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
   exit 1
 fi
 
-if ! sm_init "$PLAN_FILE" "$COMMAND_NAME" "$WORKFLOW_TYPE" "1" "[]" 2>&1; then
+sm_init "$PLAN_FILE" "$COMMAND_NAME" "$WORKFLOW_TYPE" "1" "[]" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -264,7 +268,9 @@ if ! sm_init "$PLAN_FILE" "$COMMAND_NAME" "$WORKFLOW_TYPE" "1" "[]" 2>&1; then
 fi
 
 # === TRANSITION TO IMPLEMENT ===
-if ! sm_transition "$STATE_IMPLEMENT" 2>&1; then
+sm_transition "$STATE_IMPLEMENT" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -534,7 +540,9 @@ else
   echo "No phases to mark complete"
 fi
 
-if ! save_completed_states_to_state; then
+save_completed_states_to_state
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: State persistence failed" >&2
   exit 1
@@ -834,7 +842,9 @@ echo "Implementation checkpoint: $COMMIT_COUNT recent commits"
 echo ""
 
 # === TRANSITION TO TEST ===
-if ! sm_transition "$STATE_TEST" 2>&1; then
+sm_transition "$STATE_TEST" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -943,7 +953,9 @@ append_workflow_state "TEST_EXIT_CODE" "${TEST_EXIT_CODE:-0}"
 append_workflow_state "TEST_ARTIFACT_PATH" "${TEST_ARTIFACT_PATH:-}"
 append_workflow_state "COMMIT_COUNT" "$COMMIT_COUNT"
 
-if ! save_completed_states_to_state; then
+save_completed_states_to_state
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: State persistence failed" >&2
   exit 1
@@ -1099,7 +1111,9 @@ echo "Block 3: State validated ($CURRENT_STATE)"
 # === CONDITIONAL BRANCHING ===
 if [ "$TESTS_PASSED" = "false" ]; then
   # Tests failed -> Debug phase
-  if ! sm_transition "$STATE_DEBUG" 2>&1; then
+  sm_transition "$STATE_DEBUG" 2>&1
+  EXIT_CODE=$?
+  if [ $EXIT_CODE -ne 0 ]; then
     log_command_error \
       "$COMMAND_NAME" \
       "$WORKFLOW_ID" \
@@ -1127,7 +1141,9 @@ if [ "$TESTS_PASSED" = "false" ]; then
   append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
 else
   # Tests passed -> Documentation phase
-  if ! sm_transition "$STATE_DOCUMENT" 2>&1; then
+  sm_transition "$STATE_DOCUMENT" 2>&1
+  EXIT_CODE=$?
+  if [ $EXIT_CODE -ne 0 ]; then
     log_command_error \
       "$COMMAND_NAME" \
       "$WORKFLOW_ID" \
@@ -1151,7 +1167,9 @@ else
   echo "Documentation phase complete"
 fi
 
-if ! save_completed_states_to_state; then
+save_completed_states_to_state
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: State persistence failed" >&2
   exit 1
@@ -1376,7 +1394,9 @@ case "$CURRENT_STATE" in
 esac
 
 # === COMPLETE WORKFLOW ===
-if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+sm_transition "$STATE_COMPLETE" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -1397,8 +1417,11 @@ if [ -d "$SUMMARIES_DIR" ]; then
   # Find most recent summary file (by modification time)
   LATEST_SUMMARY=$(ls -t "$SUMMARIES_DIR"/*.md 2>/dev/null | head -n 1)
   if [ -n "$LATEST_SUMMARY" ] && [ -f "$LATEST_SUMMARY" ]; then
-    if ! grep -q '^\*\*Plan\*\*:' "$LATEST_SUMMARY" 2>/dev/null && \
-       ! grep -q '^- \*\*Plan\*\*:' "$LATEST_SUMMARY" 2>/dev/null; then
+    grep -q '^\*\*Plan\*\*:' "$LATEST_SUMMARY" 2>/dev/null
+    GREP1_EXIT=$?
+    grep -q '^- \*\*Plan\*\*:' "$LATEST_SUMMARY" 2>/dev/null
+    GREP2_EXIT=$?
+    if [ $GREP1_EXIT -ne 0 ] && [ $GREP2_EXIT -ne 0 ]; then
       echo "⚠ WARNING: Summary missing plan link" >&2
       echo "  Summary: $LATEST_SUMMARY" >&2
       echo "  Add plan link to Metadata section for traceability" >&2
@@ -1406,43 +1429,66 @@ if [ -d "$SUMMARIES_DIR" ]; then
   fi
 fi
 
-echo ""
-echo "=== Build Complete ==="
-echo "Workflow Type: full-implementation"
-echo "Plan: $PLAN_FILE"
-echo "Phases Completed: ${COMPLETED_PHASE_COUNT:-0}"
-echo "Implementation: Complete"
-echo "Testing: $([ "$TESTS_PASSED" = "true" ] && echo "Passed" || echo "Failed (debugged)")"
-echo ""
+# === CONSOLE SUMMARY ===
+# Source summary formatting library
+source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || {
+  echo "ERROR: Failed to load summary-formatting library" >&2
+  exit 1
+}
 
-# Show completed phases summary
+# Build summary text
+TESTS_STATUS=$([ "$TESTS_PASSED" = "true" ] && echo "all tests passing" || echo "tests debugged")
+SUMMARY_TEXT="Completed implementation of ${COMPLETED_PHASE_COUNT:-0} phases with $TESTS_STATUS. Implementation summary includes phase breakdown, test results, and git commit history."
+
+# Build phases section
+PHASES=""
 if [ -n "${COMPLETED_PHASES:-}" ]; then
-  echo "Phase Summary:"
-  # Parse comma-separated list of completed phases
   IFS=',' read -ra PHASE_ARRAY <<< "${COMPLETED_PHASES%,}"
   for phase in "${PHASE_ARRAY[@]}"; do
     if [ -n "$phase" ]; then
-      echo "  ✓ Phase $phase: Complete"
+      PHASES="${PHASES}  • Phase $phase: Complete
+"
     fi
   done
-  echo ""
 fi
+
+# Build artifacts section
+ARTIFACTS="  📄 Plan: $PLAN_FILE"
+if [ -d "$SUMMARIES_DIR" ]; then
+  LATEST_SUMMARY=$(ls -t "$SUMMARIES_DIR"/*.md 2>/dev/null | head -n 1)
+  if [ -n "$LATEST_SUMMARY" ]; then
+    ARTIFACTS="${ARTIFACTS}
+  ✅ Summary: $LATEST_SUMMARY"
+  fi
+fi
+
+# Build next steps
+if [ "$TESTS_PASSED" = "true" ]; then
+  NEXT_STEPS="  • Review summary: cat $LATEST_SUMMARY
+  • Check git commits: git log --oneline -5
+  • Review plan updates: cat $PLAN_FILE"
+else
+  NEXT_STEPS="  • Review debug output: cat $LATEST_SUMMARY
+  • Fix remaining issues and re-run: /build $PLAN_FILE
+  • Check test failures: see summary for details"
+fi
+
+# Print standardized summary
+print_artifact_summary "Build" "$SUMMARY_TEXT" "$PHASES" "$ARTIFACTS" "$NEXT_STEPS"
 
 # Update metadata status if all phases complete
 if type check_all_phases_complete &>/dev/null && type update_plan_status &>/dev/null; then
   if check_all_phases_complete "$PLAN_FILE"; then
     if update_plan_status "$PLAN_FILE" "COMPLETE" 2>/dev/null; then
+      echo ""
       echo "✓ Plan metadata status updated to [COMPLETE]"
     fi
-  else
-    echo "⚠ Some phases incomplete, metadata status not updated to COMPLETE"
   fi
 fi
 
+# Cleanup checkpoints if tests passed
 if [ "$TESTS_PASSED" = "true" ]; then
   delete_checkpoint "build" 2>/dev/null || true
-else
-  echo "Re-run after applying fixes: /build $PLAN_FILE"
 fi
 
 # Cleanup

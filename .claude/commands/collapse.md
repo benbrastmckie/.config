@@ -700,17 +700,23 @@ This verification is already performed in Steps 4-6, ensuring:
 
 ### CHECKPOINT REQUIREMENT - Collapse Operation Complete
 
-**YOU MUST report collapse status**:
+**YOU MUST report collapse status using standardized console summary format**:
+
+Following console summary standards from `.claude/docs/reference/standards/output-formatting.md`:
 
 ```
-CHECKPOINT: Collapse Operation Complete
-- Type: [phase|stage]
-- Target: [phase_N or stage_N]
-- Parent Plan: [main plan path]
-- Structure Level: [0|1|2] (after collapse)
-- Files Deleted: [expanded file path]
-- Content Preserved: YES
-- Status: SUCCESS
+=== Collapse Complete ===
+
+Summary: Collapsed ${TYPE} ${TARGET} back into parent plan, transitioning from structure level ${OLD_LEVEL} to ${NEW_LEVEL}. Content and completion status preserved in consolidated plan file.
+
+Artifacts:
+  📄 Plan: ${PARENT_PLAN_PATH} (updated with collapsed content)
+  📁 Removed: ${COLLAPSED_FILE_PATH}
+
+Next Steps:
+  • Review consolidated plan: cat ${PARENT_PLAN_PATH}
+  • Verify content preserved: grep -A 10 "Phase ${NUM}" ${PARENT_PLAN_PATH}
+  • Continue implementation: /build ${PARENT_PLAN_PATH}
 ```
 
 ### Return Format Specification

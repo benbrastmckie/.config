@@ -75,12 +75,13 @@ See [Code Standards](.claude/docs/reference/standards/code-standards.md) for com
 ## Output Formatting Standards
 [Used by: /implement, /build, all commands and agents]
 
-See [Output Formatting Standards](.claude/docs/reference/standards/output-formatting.md) for output suppression patterns, block consolidation rules, and comment standards (WHAT not WHY).
+See [Output Formatting Standards](.claude/docs/reference/standards/output-formatting.md) for output suppression patterns, block consolidation rules, comment standards (WHAT not WHY), and console summary format.
 
 **Quick Reference**:
 - Suppress library sourcing with `2>/dev/null` while preserving error handling
 - Target 2-3 bash blocks per command (Setup/Execute/Cleanup)
-- Single summary line per block instead of multiple progress messages
+- Single summary line per block for interim output (not final completion summaries)
+- Console summaries use 4-section format (Summary/Phases/Artifacts/Next Steps) with emoji markers
 - Comments describe WHAT code does, not WHY it was designed that way
 <!-- END_SECTION: output_formatting -->
 

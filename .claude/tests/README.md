@@ -124,6 +124,14 @@ This directory contains the comprehensive test suite for the Claude Code agentia
     - **Coverage**: 41/42 tests passing (97% pass rate, exceeds 90% target)
     - **Purpose**: Validation of LLM classification accuracy vs regex baseline
 
+15. **test_no_if_negation_patterns.sh** - Tests for prohibited bash negation patterns (3 tests)
+    - Command files accessibility validation
+    - Detection of `if !` patterns in command files
+    - Detection of `elif !` patterns in command files
+    - Error logging integration with test mode isolation
+    - **Coverage**: 3/3 tests passing (100%)
+    - **Purpose**: Prevent bash history expansion UI errors caused by preprocessing-stage negation patterns
+
 ## Running Tests
 
 ### Run Individual Test Suites

@@ -275,22 +275,27 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
     # File exists but is empty - agent failed
     NAMING_STRATEGY="agent_empty_output"
     TOPIC_NAME="no_name"
-  elif ! echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'; then
-    # Invalid format - log and fall back
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "validation_error" \
-      "Topic naming agent returned invalid format" \
-      "bash_block_1c" \
-      "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
-
-    NAMING_STRATEGY="validation_failed"
-    TOPIC_NAME="no_name"
   else
-    # Valid topic name from LLM
-    NAMING_STRATEGY="llm_generated"
+    # Validate topic name format (exit code capture pattern)
+    echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
+    IS_VALID=$?
+    if [ $IS_VALID -ne 0 ]; then
+      # Invalid format - log and fall back
+      log_command_error \
+        "$COMMAND_NAME" \
+        "$WORKFLOW_ID" \
+        "$USER_ARGS" \
+        "validation_error" \
+        "Topic naming agent returned invalid format" \
+        "bash_block_1c" \
+        "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
+
+      NAMING_STRATEGY="validation_failed"
+      TOPIC_NAME="no_name"
+    else
+      # Valid topic name from LLM
+      NAMING_STRATEGY="llm_generated"
+    fi
   fi
 else
   # File doesn't exist - agent failed to write
@@ -317,7 +322,9 @@ rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
 CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
 
 # Initialize workflow paths with LLM-generated name (or fallback)
-if ! initialize_workflow_paths "$OPTIMIZATION_DESCRIPTION" "optimize-claude" "1" "$CLASSIFICATION_JSON"; then
+initialize_workflow_paths "$OPTIMIZATION_DESCRIPTION" "optimize-claude" "1" "$CLASSIFICATION_JSON"
+INIT_EXIT=$?
+if [ $INIT_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \

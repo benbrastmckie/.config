@@ -7,7 +7,10 @@
 - **Naming**: snake_case for variables/functions, PascalCase for module tables
 - **Error Handling**: Use defensive programming patterns with structured error messages (WHICH/WHAT/WHERE) and integrate centralized error logging - See [Defensive Programming Patterns](.claude/docs/concepts/patterns/defensive-programming.md), [Error Handling Pattern](.claude/docs/concepts/patterns/error-handling.md), and [Error Enhancement Guide](.claude/docs/guides/patterns/error-enhancement-guide.md)
 - **Documentation**: Every directory must have a README.md
-- **Character Encoding**: UTF-8 only, no emojis in file content
+- **Character Encoding**: UTF-8 only
+- **Emoji Policy**:
+  - **File Content**: NO emoji in artifact files (.md, .sh, .lua, .json, etc.) - ensures UTF-8 compatibility and plain-text parsing
+  - **Terminal Output**: Emoji markers ALLOWED in console output (stdout/stderr) for visual scanning - see [Console Summary Standards](output-formatting.md#console-summary-standards) for approved vocabulary
 
 ### Language-Specific Standards
 - **Lua**: See [Neovim Configuration Guidelines](nvim/CLAUDE.md) for detailed Lua standards

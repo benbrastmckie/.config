@@ -249,7 +249,9 @@ EOF
     NO_META=$(grep -n "^## " "$CLAUDE_MD_PATH" | while read line; do
       LN=$(echo "$line" | cut -d: -f1)
       # Check if next line has [Used by: metadata
-      if ! sed -n "$((LN + 1))p" "$CLAUDE_MD_PATH" | grep -q "\[Used by:"; then
+      sed -n "$((LN + 1))p" "$CLAUDE_MD_PATH" | grep -q "\[Used by:"
+      GREP_EXIT=$?
+      if [ $GREP_EXIT -ne 0 ]; then
         echo "$line" | cut -d: -f2-
       fi
     done)

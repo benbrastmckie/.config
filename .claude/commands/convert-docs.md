@@ -245,7 +245,9 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/convert/convert-core.sh" || {
 }
 
 # Execute conversion with error handling
-if ! main_conversion "$input_dir" "$OUTPUT_DIR_ABS"; then
+main_conversion "$input_dir" "$OUTPUT_DIR_ABS"
+CONVERSION_EXIT=$?
+if [ $CONVERSION_EXIT -ne 0 ]; then
   echo "❌ ERROR: Script mode conversion failed"
   exit 1
 fi

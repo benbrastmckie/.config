@@ -74,7 +74,9 @@ if [[ "$ARGS_STRING" =~ --complexity[[:space:]]+([1-4]) ]]; then
   ARGS_STRING=$(echo "$ARGS_STRING" | sed 's/--complexity[[:space:]]*[1-4]//' | xargs)
 fi
 
-if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
+echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"
+COMPLEXITY_VALID=$?
+if [ $COMPLEXITY_VALID -ne 0 ]; then
   echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
   exit 1
 fi
@@ -175,7 +177,9 @@ if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
   exit 1
 fi
 
-if ! sm_init "$ERROR_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1; then
+sm_init "$ERROR_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1
+SM_INIT_EXIT=$?
+if [ $SM_INIT_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -191,7 +195,9 @@ if ! sm_init "$ERROR_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_CO
 fi
 
 # === TRANSITION TO RESEARCH AND SETUP PATHS ===
-if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+sm_transition "$STATE_RESEARCH" 2>&1
+SM_TRANSITION_EXIT=$?
+if [ $SM_TRANSITION_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -206,7 +212,9 @@ if ! sm_transition "$STATE_RESEARCH" 2>&1; then
 fi
 
 # Initialize workflow paths (uses fallback slug generation)
-if ! initialize_workflow_paths "$ERROR_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" ""; then
+initialize_workflow_paths "$ERROR_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" ""
+INIT_EXIT=$?
+if [ $INIT_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -412,7 +420,9 @@ echo "Research verified: $REPORT_COUNT reports"
 echo ""
 
 # === TRANSITION TO PLAN ===
-if ! sm_transition "$STATE_PLAN" 2>&1; then
+sm_transition "$STATE_PLAN" 2>&1
+SM_TRANSITION_EXIT=$?
+if [ $SM_TRANSITION_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -442,7 +452,9 @@ REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
 
-if ! save_completed_states_to_state; then
+save_completed_states_to_state
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: State persistence failed" >&2
   exit 1
@@ -615,7 +627,9 @@ echo "Plan verified: $FILE_SIZE bytes"
 echo ""
 
 # === COMPLETE WORKFLOW ===
-if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+sm_transition "$STATE_COMPLETE" 2>&1
+SM_TRANSITION_EXIT=$?
+if [ $SM_TRANSITION_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -629,7 +643,9 @@ if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   exit 1
 fi
 
-if ! save_completed_states_to_state; then
+save_completed_states_to_state
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: State persistence failed" >&2
   exit 1
@@ -639,15 +655,25 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
   echo "WARNING: State file not found after save: $STATE_FILE" >&2
 fi
 
-# === OUTPUT SUMMARY ===
-echo "=== Error Analysis and Planning Complete ==="
-echo ""
-echo "Workflow Type: research-and-plan"
-echo "Specs Directory: $SPECS_DIR"
-echo "Error Analysis Reports: $REPORT_COUNT reports in $RESEARCH_DIR"
-echo "Fix Implementation Plan: $PLAN_PATH"
-echo ""
-echo "Next Steps:"
-echo "- Review plan: cat $PLAN_PATH"
-echo "- Implement fixes: /build $PLAN_PATH"
+# === CONSOLE SUMMARY ===
+# Source summary formatting library
+source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || {
+  echo "ERROR: Failed to load summary-formatting library" >&2
+  exit 1
+}
+
+# Build summary text
+SUMMARY_TEXT="Analyzed error patterns and created $REPORT_COUNT analysis reports with fix implementation plan. Plan provides structured approach to resolving identified issues."
+
+# Build artifacts section
+ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)
+  📄 Plan: $PLAN_PATH"
+
+# Build next steps
+NEXT_STEPS="  • Review fix plan: cat $PLAN_PATH
+  • Review error analysis: ls -lh $RESEARCH_DIR/
+  • Implement fixes: /build $PLAN_PATH"
+
+# Print standardized summary (no phases for repair command)
+print_artifact_summary "Repair" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
 ```
