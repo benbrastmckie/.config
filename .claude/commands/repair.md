@@ -224,6 +224,9 @@ mkdir -p "$RESEARCH_DIR"
 mkdir -p "$PLANS_DIR"
 
 # === PERSIST FOR BLOCK 2 ===
+append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
+append_workflow_state "USER_ARGS" "$USER_ARGS"
+append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
 append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
 append_workflow_state "SPECS_DIR" "$SPECS_DIR"
 append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
@@ -300,6 +303,18 @@ DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/repair")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+if [ -z "${WORKFLOW_ID:-}" ]; then
+  WORKFLOW_ID=$(grep "^WORKFLOW_ID=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "repair_$(date +%s)")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -423,7 +438,15 @@ REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
 
-save_completed_states_to_state 2>/dev/null
+if ! save_completed_states_to_state; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: State persistence failed" >&2
+  exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
+fi
 
 echo "Plan will be created at: $PLAN_PATH"
 echo "Using $REPORT_COUNT research reports"
@@ -489,6 +512,18 @@ DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/repair")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+if [ -z "${WORKFLOW_ID:-}" ]; then
+  WORKFLOW_ID=$(grep "^WORKFLOW_ID=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "repair_$(date +%s)")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -587,7 +622,15 @@ if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   exit 1
 fi
 
-save_completed_states_to_state 2>/dev/null
+if ! save_completed_states_to_state; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: State persistence failed" >&2
+  exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
+fi
 
 # === OUTPUT SUMMARY ===
 echo "=== Error Analysis and Planning Complete ==="
