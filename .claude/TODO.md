@@ -56,3 +56,4 @@
   - /home/benjamin/.config/.claude/specs/102_plan_command_error_analysis/reports/001_error_report.md
 - fix /errors
   - /home/benjamin/.config/.claude/errors-output.md
+  - reports created in the wrong directory /home/benjamin/.config/.claude/specs/20251120_build_error_analysis/reports/001_error_report.md
