@@ -478,6 +478,12 @@ add_complete_marker() {
     return 1
   fi
 
+  # Validate phase completion before marking
+  if ! verify_phase_complete "$plan_path" "$phase_num"; then
+    error "Cannot mark Phase $phase_num complete - incomplete tasks remain"
+    return 1
+  fi
+
   # First remove any existing status marker (including NOT STARTED and IN PROGRESS)
   remove_status_marker "$plan_path" "$phase_num"
 
