@@ -93,6 +93,9 @@ function M.parse_doc_description(filepath)
     elseif line:match("^#%s+[^#]") then
       -- Found a title heading (# Title, not ## Subheading)
       after_title = true
+    elseif line:match("^##") then
+      -- Found subheading - stop looking for description
+      after_title = false
     elseif after_title and line ~= "" and not line:match("^#") then
       -- Plain text after title, before any subheading
       return line:sub(1, 40)
