@@ -65,16 +65,35 @@ check_error_logged() {
     return 1
   fi
 
+  # Capture jq stderr for error detection
+  local jq_stderr=$(mktemp)
+
   # Check for error in recent entries (last 20 lines)
   # Note: Parentheses are critical for jq operator precedence - (.error_message | contains(...)) must be grouped
   # Search in both error_message and context.command fields for maximum coverage
-  local found=$(tail -20 "$ERROR_LOG_FILE" | jq -r "select(.command == \"$command_name\" and ((.error_message | contains(\"$error_pattern\")) or (.context.command // \"\" | contains(\"$error_pattern\")))) | .timestamp" | head -1)
+  local found
+  found=$(tail -20 "$ERROR_LOG_FILE" | jq -r "select(.command == \"$command_name\" and ((.error_message | contains(\"$error_pattern\")) or (.context.command // \"\" | contains(\"$error_pattern\")))) | .timestamp" 2>"$jq_stderr" | head -1)
+
+  # Check for jq errors
+  if [ -s "$jq_stderr" ]; then
+    local jq_error=$(cat "$jq_stderr")
+    rm -f "$jq_stderr"
+    echo "NOT_FOUND:jq_error:$jq_error"
+    return 1
+  fi
+  rm -f "$jq_stderr"
 
   if [ -n "$found" ]; then
     echo "FOUND"
     return 0
   else
-    echo "NOT_FOUND"
+    # Provide detailed error type for debugging
+    local command_exists=$(tail -20 "$ERROR_LOG_FILE" | jq -r "select(.command == \"$command_name\") | .timestamp" | head -1)
+    if [ -z "$command_exists" ]; then
+      echo "NOT_FOUND:wrong_command"
+    else
+      echo "NOT_FOUND:wrong_message"
+    fi
     return 1
   fi
 }
