@@ -65,11 +65,13 @@ end
 --- @param standards table Standards to sync
 --- @param all_data_docs table Data docs to sync
 --- @param settings table Settings to sync
+--- @param scripts table Scripts to sync
+--- @param tests table Tests to sync
 --- @param merge_only boolean If true, only add new files (skip conflicts)
 --- @return number total_synced Total number of artifacts synced
 local function load_all_with_strategy(project_dir, commands, agents, hooks, all_tts, templates,
                                       lib_utils, docs, all_agent_protocols, standards,
-                                      all_data_docs, settings, merge_only)
+                                      all_data_docs, settings, scripts, tests, merge_only)
   -- Create local directories if needed
   helpers.ensure_directory(project_dir .. "/.claude/commands")
   helpers.ensure_directory(project_dir .. "/.claude/agents")
@@ -80,6 +82,8 @@ local function load_all_with_strategy(project_dir, commands, agents, hooks, all_
   helpers.ensure_directory(project_dir .. "/.claude/templates")
   helpers.ensure_directory(project_dir .. "/.claude/lib")
   helpers.ensure_directory(project_dir .. "/.claude/docs")
+  helpers.ensure_directory(project_dir .. "/.claude/scripts")
+  helpers.ensure_directory(project_dir .. "/.claude/tests")
   helpers.ensure_directory(project_dir .. "/.claude/specs/standards")
   helpers.ensure_directory(project_dir .. "/.claude/data/commands")
   helpers.ensure_directory(project_dir .. "/.claude/data/agents")
@@ -98,9 +102,11 @@ local function load_all_with_strategy(project_dir, commands, agents, hooks, all_
   local std_count = sync_files(standards, false, merge_only)
   local data_count = sync_files(all_data_docs, false, merge_only)
   local set_count = sync_files(settings, false, merge_only)
+  local script_count = sync_files(scripts, true, merge_only)
+  local test_count = sync_files(tests, true, merge_only)
 
   local total_synced = cmd_count + agt_count + hook_count + tts_count + tmpl_count + lib_count + doc_count +
-                       proto_count + std_count + data_count + set_count
+                       proto_count + std_count + data_count + set_count + script_count + test_count
 
   -- Report results
   if total_synced > 0 then
@@ -108,9 +114,9 @@ local function load_all_with_strategy(project_dir, commands, agents, hooks, all_
     helpers.notify(
       string.format(
         "Synced %d artifacts%s: %d commands, %d agents, %d hooks, %d TTS, %d templates, %d lib, %d docs, " ..
-        "%d protocols, %d standards, %d data, %d settings",
+        "%d protocols, %d standards, %d data, %d settings, %d scripts, %d tests",
         total_synced, strategy_msg, cmd_count, agt_count, hook_count, tts_count, tmpl_count, lib_count, doc_count,
-        proto_count, std_count, data_count, set_count
+        proto_count, std_count, data_count, set_count, script_count, test_count
       ),
       "INFO"
     )
@@ -154,6 +160,8 @@ function M.load_all_globally()
   local commands = scan.scan_directory_for_sync(global_dir, project_dir, "commands", "*.md")
   local agents = scan.scan_directory_for_sync(global_dir, project_dir, "agents", "*.md")
   local hooks = scan.scan_directory_for_sync(global_dir, project_dir, "hooks", "*.sh")
+  local scripts = scan.scan_directory_for_sync(global_dir, project_dir, "scripts", "*.sh")
+  local tests = scan.scan_directory_for_sync(global_dir, project_dir, "tests", "test_*.sh")
 
   -- Scan TTS files from 2 directories
   local tts_hooks = scan.scan_directory_for_sync(global_dir, project_dir, "hooks", "tts-*.sh")
@@ -237,7 +245,7 @@ function M.load_all_globally()
 
   -- Check if any artifacts found
   local total_files = #commands + #agents + #hooks + #all_tts + #templates + #lib_utils + #docs +
-                      #all_agent_protocols + #standards + #all_data_docs + #settings
+                      #all_agent_protocols + #standards + #all_data_docs + #settings + #scripts + #tests
   if total_files == 0 then
     helpers.notify("No global artifacts found in ~/.config/.claude/", "WARN")
     return 0
@@ -254,11 +262,13 @@ function M.load_all_globally()
   local std_copy, std_replace = count_actions(standards)
   local data_copy, data_replace = count_actions(all_data_docs)
   local set_copy, set_replace = count_actions(settings)
+  local script_copy, script_replace = count_actions(scripts)
+  local test_copy, test_replace = count_actions(tests)
 
   local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy + tmpl_copy + lib_copy + doc_copy +
-                     proto_copy + std_copy + data_copy + set_copy
+                     proto_copy + std_copy + data_copy + set_copy + script_copy + test_copy
   local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace + tmpl_replace + lib_replace +
-                        doc_replace + proto_replace + std_replace + data_replace + set_replace
+                        doc_replace + proto_replace + std_replace + data_replace + set_replace + script_replace + test_replace
 
   -- Skip if no operations needed
   if total_copy + total_replace == 0 then
@@ -270,7 +280,7 @@ function M.load_all_globally()
   local message, buttons, default_choice, merge_only
 
   if total_replace > 0 then
-    -- Has conflicts - offer both strategies
+    -- Has conflicts - offer all 5 strategies
     message = string.format(
       "Load all artifacts from global directory?\n\n" ..
       "New artifacts: %d\n" ..
@@ -279,12 +289,15 @@ function M.load_all_globally()
       total_copy, total_replace
     )
     buttons = string.format(
-      "&Replace all + add new (%d total)\n" ..
-      "&Add new only (%d new)\n" ..
+      "&1: Replace existing + add new (%d total)\n" ..
+      "&2: Add new only (%d new)\n" ..
+      "&3: Interactive per-file\n" ..
+      "&4: Preview diff\n" ..
+      "&5: Clean copy (DELETE local-only)\n" ..
       "&Cancel",
       total_copy + total_replace, total_copy
     )
-    default_choice = 3
+    default_choice = 6  -- Default to Cancel for safety
   else
     -- No conflicts - only new artifacts
     message = string.format(
@@ -304,11 +317,23 @@ function M.load_all_globally()
   local choice = vim.fn.confirm(message, buttons, default_choice)
 
   if total_replace > 0 then
-    -- Options: 1=Replace all, 2=Add new only, 3=Cancel
+    -- Options: 1=Replace existing + add new, 2=Add new only, 3=Interactive, 4=Preview diff, 5=Clean copy, 6=Cancel
     if choice == 1 then
       merge_only = false
     elseif choice == 2 then
       merge_only = true
+    elseif choice == 3 then
+      -- Interactive per-file (not implemented yet, fallback to Replace all for now)
+      helpers.notify("Interactive mode not yet implemented, using Replace existing + add new", "WARN")
+      merge_only = false
+    elseif choice == 4 then
+      -- Preview diff (not implemented yet, fallback to Replace all for now)
+      helpers.notify("Preview diff not yet implemented, using Replace existing + add new", "WARN")
+      merge_only = false
+    elseif choice == 5 then
+      -- Clean copy (not implemented yet, fallback to Replace all for now)
+      helpers.notify("Clean copy not yet implemented, using Replace existing + add new", "WARN")
+      merge_only = false
     else
       helpers.notify("Load all artifacts cancelled", "INFO")
       return 0
@@ -326,7 +351,7 @@ function M.load_all_globally()
   -- Execute the sync operation
   return load_all_with_strategy(
     project_dir, commands, agents, hooks, all_tts, templates, lib_utils, docs,
-    all_agent_protocols, standards, all_data_docs, settings, merge_only
+    all_agent_protocols, standards, all_data_docs, settings, scripts, tests, merge_only
   )
 end
 
@@ -366,6 +391,8 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
     doc = "docs",
     template = "templates",
     tts_file = "tts",
+    script = "scripts",
+    test = "tests",
   }
 
   local subdir = subdir_map[artifact_type]
@@ -380,7 +407,8 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
   local global_filepath = global_dir .. "/.claude/" .. subdir .. "/" .. artifact.name
   if artifact_type == "command" or artifact_type == "agent" or artifact_type == "doc" then
     global_filepath = global_filepath .. ".md"
-  elseif artifact_type == "hook" or artifact_type == "lib" or artifact_type == "tts_file" then
+  elseif artifact_type == "hook" or artifact_type == "lib" or artifact_type == "tts_file" or
+         artifact_type == "script" or artifact_type == "test" then
     global_filepath = global_filepath .. ".sh"
   elseif artifact_type == "template" then
     global_filepath = global_filepath .. ".yaml"
@@ -420,7 +448,8 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
   end
 
   -- Preserve permissions for shell scripts
-  if artifact_type == "hook" or artifact_type == "lib" or artifact_type == "tts_file" then
+  if artifact_type == "hook" or artifact_type == "lib" or artifact_type == "tts_file" or
+     artifact_type == "script" or artifact_type == "test" then
     helpers.copy_file_permissions(global_filepath, local_filepath)
   end
 

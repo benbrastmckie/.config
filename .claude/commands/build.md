@@ -201,10 +201,24 @@ WORKFLOW_TYPE="full-implementation"
 TERMINAL_STATE="complete"
 COMMAND_NAME="build"
 
+# Generate workflow ID with timestamp
 WORKFLOW_ID="build_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+
+# Use persistent state ID file with atomic write for cross-block accessibility
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
-echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+
+# Atomic write using temp file + mv pattern
+TEMP_STATE_ID="${STATE_ID_FILE}.tmp.$$"
+echo "$WORKFLOW_ID" > "$TEMP_STATE_ID"
+mv "$TEMP_STATE_ID" "$STATE_ID_FILE"
+
+# Verify state ID file was created
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: Failed to create state ID file at $STATE_ID_FILE" >&2
+  exit 1
+fi
+
 export WORKFLOW_ID
 
 # Set command metadata for error logging
@@ -215,7 +229,7 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 # === SETUP BASH ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
-# Capture state file path for append_workflow_state
+# Initialize workflow state file (creates .claude/tmp/workflow_${WORKFLOW_ID}.sh)
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
 
@@ -336,32 +350,69 @@ set -e  # Fail-fast per code-standards.md
 DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
-# === LOAD STATE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Detect project directory
+# === DETECT PROJECT DIRECTORY FIRST ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
   current_dir="$(pwd)"
-  while [ "$current_dir" != "/" ]; do
+  while [ "$current_dir" != "/" ]; then
     [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
     current_dir="$(dirname "$current_dir")"
   done
 fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 export CLAUDE_PROJECT_DIR
 
+# === SOURCE LIBRARIES ===
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null
 
+ensure_error_log_exists
+
+# === LOAD WORKFLOW STATE WITH RECOVERY ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
+
+# Attempt to read WORKFLOW_ID from state ID file
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+else
+  # Recovery: Find most recent build workflow state file
+  LATEST_STATE=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "workflow_build_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+
+  if [ -n "$LATEST_STATE" ] && [ -f "$LATEST_STATE" ]; then
+    # Extract WORKFLOW_ID from state file name
+    WORKFLOW_ID=$(basename "$LATEST_STATE" .sh | sed 's/^workflow_//')
+    echo "RECOVERY: State ID file missing, restored from most recent state file" >&2
+    echo "WORKFLOW_ID: $WORKFLOW_ID" >&2
+  else
+    echo "ERROR: Cannot recover WORKFLOW_ID - no state ID file and no workflow state files found" >&2
+    echo "Expected: $STATE_ID_FILE" >&2
+    echo "Search path: ${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_build_*.sh" >&2
+    exit 1
+  fi
+fi
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: WORKFLOW_ID is empty after state recovery attempt" >&2
+  exit 1
+fi
+
+export WORKFLOW_ID
+
+# Load workflow state (fail-fast if state file missing - indicates persistence failure)
 load_workflow_state "$WORKFLOW_ID" false
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: Failed to load workflow state for WORKFLOW_ID: $WORKFLOW_ID" >&2
+  echo "Exit code: $EXIT_CODE" >&2
+  exit $EXIT_CODE
+fi
 
 # === RESTORE ERROR LOGGING CONTEXT ===
 if [ -z "${COMMAND_NAME:-}" ]; then
@@ -535,10 +586,6 @@ Task {
 First, read state to get paths:
 
 ```bash
-# Load workflow state to get paths
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-
 # Detect project directory
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -549,8 +596,22 @@ else
     current_dir="$(dirname "$current_dir")"
   done
 fi
+export CLAUDE_PROJECT_DIR
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+
+# Load workflow state with recovery
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+else
+  # Recovery: Find most recent build workflow state file
+  LATEST_STATE=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "workflow_build_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+  if [ -n "$LATEST_STATE" ]; then
+    WORKFLOW_ID=$(basename "$LATEST_STATE" .sh | sed 's/^workflow_//')
+  fi
+fi
+
 load_workflow_state "$WORKFLOW_ID" false
 
 # Extract paths from state
@@ -636,16 +697,7 @@ set -e  # Fail-fast per code-standards.md
 DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
-# === LOAD STATE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Detect project directory
+# === DETECT PROJECT DIRECTORY ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -655,13 +707,41 @@ else
     current_dir="$(dirname "$current_dir")"
   done
 fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
 export CLAUDE_PROJECT_DIR
 
+# === SOURCE LIBRARIES ===
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+ensure_error_log_exists
+
+# === LOAD STATE WITH RECOVERY ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+else
+  # Recovery: Find most recent build workflow state file
+  LATEST_STATE=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "workflow_build_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+  if [ -n "$LATEST_STATE" ]; then
+    WORKFLOW_ID=$(basename "$LATEST_STATE" .sh | sed 's/^workflow_//')
+  else
+    echo "ERROR: Cannot recover WORKFLOW_ID" >&2
+    exit 1
+  fi
+fi
+export WORKFLOW_ID
 
 load_workflow_state "$WORKFLOW_ID" false
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: Failed to load workflow state" >&2
+  exit $EXIT_CODE
+fi
 
 # === RESTORE ERROR LOGGING CONTEXT ===
 if [ -z "${COMMAND_NAME:-}" ]; then
@@ -891,16 +971,7 @@ set -e  # Fail-fast per code-standards.md
 DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
-# === LOAD STATE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Detect project directory
+# === DETECT PROJECT DIRECTORY ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -910,14 +981,42 @@ else
     current_dir="$(dirname "$current_dir")"
   done
 fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
 export CLAUDE_PROJECT_DIR
 
+# === SOURCE LIBRARIES ===
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
+ensure_error_log_exists
+
+# === LOAD STATE WITH RECOVERY ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+else
+  # Recovery: Find most recent build workflow state file
+  LATEST_STATE=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "workflow_build_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+  if [ -n "$LATEST_STATE" ]; then
+    WORKFLOW_ID=$(basename "$LATEST_STATE" .sh | sed 's/^workflow_//')
+  else
+    echo "ERROR: Cannot recover WORKFLOW_ID" >&2
+    exit 1
+  fi
+fi
+export WORKFLOW_ID
 
 load_workflow_state "$WORKFLOW_ID" false
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: Failed to load workflow state" >&2
+  exit $EXIT_CODE
+fi
 
 # === RESTORE ERROR LOGGING CONTEXT ===
 if [ -z "${COMMAND_NAME:-}" ]; then
@@ -1101,16 +1200,7 @@ set -e  # Fail-fast per code-standards.md
 DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
-# === LOAD STATE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Detect project directory
+# === DETECT PROJECT DIRECTORY ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -1120,14 +1210,42 @@ else
     current_dir="$(dirname "$current_dir")"
   done
 fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
 export CLAUDE_PROJECT_DIR
 
+# === SOURCE LIBRARIES ===
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
+ensure_error_log_exists
+
+# === LOAD STATE WITH RECOVERY ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+else
+  # Recovery: Find most recent build workflow state file
+  LATEST_STATE=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "workflow_build_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+  if [ -n "$LATEST_STATE" ]; then
+    WORKFLOW_ID=$(basename "$LATEST_STATE" .sh | sed 's/^workflow_//')
+  else
+    echo "ERROR: Cannot recover WORKFLOW_ID" >&2
+    exit 1
+  fi
+fi
+export WORKFLOW_ID
 
 load_workflow_state "$WORKFLOW_ID" false
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: Failed to load workflow state" >&2
+  exit $EXIT_CODE
+fi
 
 # === RESTORE ERROR LOGGING CONTEXT ===
 if [ -z "${COMMAND_NAME:-}" ]; then
@@ -1329,7 +1447,11 @@ fi
 
 # Cleanup
 rm -f "${HOME}/.claude/tmp/build_state_${WORKFLOW_ID}.txt" 2>/dev/null
-rm -f "${HOME}/.claude/tmp/build_state_id.txt" 2>/dev/null
+rm -f "${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt" 2>/dev/null
+# Also clean up workflow state file if it exists
+if [ -n "${STATE_FILE:-}" ] && [ -f "$STATE_FILE" ]; then
+  rm -f "$STATE_FILE" 2>/dev/null
+fi
 
 exit 0
 ```
