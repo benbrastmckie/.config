@@ -121,6 +121,47 @@ get_or_create_topic_number() {
   fi
 }
 
+# strip_artifact_references: Remove artifact references from topic name input
+#
+# Removes artifact references to prevent misleading directory names.
+# Strips artifact numbering (001_, NNN_), artifact subdirectories (reports_, plans_, etc.),
+# file extensions (.md, .txt, etc.), common basenames (readme, claude, etc.),
+# and topic references (NNN_ patterns).
+#
+# Arguments:
+#   $1 - text: Raw text containing potential artifact references
+#
+# Returns:
+#   Cleaned text with artifacts removed
+#
+# Examples:
+#   "reports/001_analysis.md" → "analysis"
+#   ".claude/plan-output.md" → ""
+#   "794_001_comprehensive.md" → "comprehensive"
+#   "README" → ""
+strip_artifact_references() {
+  local text="$1"
+
+  # Remove artifact numbering patterns (001_, 002_, etc.)
+  text=$(echo "$text" | sed 's/[0-9]\{3\}_//g')
+
+  # Remove artifact directory names (with underscore, slash, or space separator, or as standalone words)
+  text=$(echo "$text" | sed -E 's/(^| )(reports|plans|summaries|debug|scripts|outputs|artifacts|backups)( |$)/ /g')
+  text=$(echo "$text" | sed 's/\(reports\|plans\|summaries\|debug\|scripts\|outputs\|artifacts\|backups\)[_/]//g')
+  text=$(echo "$text" | sed 's/[_/]\(reports\|plans\|summaries\|debug\|scripts\|outputs\|artifacts\|backups\)//g')
+
+  # Remove file extensions
+  text=$(echo "$text" | sed 's/\.\(md\|txt\|sh\|json\|yaml\)//g')
+
+  # Remove common file basenames (case-insensitive)
+  text=$(echo "$text" | sed 's/\b\(readme\|claude\|output\|plan\|report\|summary\)\b//gi')
+
+  # Remove topic number references (NNN_ pattern at word boundaries)
+  text=$(echo "$text" | sed 's/\b[0-9]\{3\}_//g')
+
+  echo "$text"
+}
+
 # Sanitize a workflow description into a valid topic name
 # Usage: sanitize_topic_name "Research the /home/benjamin/.config/nvim/docs directory/"
 # Returns: "nvim_docs_directory"
@@ -133,17 +174,24 @@ get_or_create_topic_number() {
 #   5. Remove stopwords (preserving action verbs and technical terms)
 #   6. Combine path components with cleaned description
 #   7. Clean up formatting (multiple underscores, leading/trailing)
-#   8. Intelligent truncation (preserve whole words, max 50 chars)
+#   8. Intelligent truncation (preserve whole words, max 35 chars)
 #
 # Examples:
 #   "Research the /home/user/nvim/docs directory" → "nvim_docs_directory"
 #   "fix the token refresh bug" → "fix_token_refresh_bug"
-#   "research authentication patterns to create implementation plan" → "authentication_patterns_create_implementation"
+#   "research authentication patterns to create implementation plan" → "authentication_patterns_implementation"
 sanitize_topic_name() {
   local raw_name="$1"
 
   # Stopword list (40+ common English words to filter)
   local stopwords="the a an and or but to for of in on at by with from as is are was were be been being have has had do does did will would should could may might must can about through during before after above below between among into onto upon"
+
+  # Planning context stopwords (planning/command meta-words to filter)
+  # Note: Action verbs like "fix" are preserved as they convey semantic meaning
+  local planning_stopwords="create update research plan implement analyze review investigate explore examine identify evaluate order accordingly appropriately exactly carefully detailed comprehensive command file document directory topic spec artifact report summary which want need make ensure check verify"
+
+  # Combine stopwords
+  stopwords="$stopwords $planning_stopwords"
 
   # Filler prefix patterns (research context words to remove)
   local filler_prefixes="carefully research|research the|research|analyze the|investigate the|explore the|examine the"
@@ -159,6 +207,10 @@ sanitize_topic_name() {
 
   # Step 2: Remove full paths and trailing words like "directory" from description
   local description=$(echo "$raw_name" | sed 's|/[^ ]*||g; s/ directory$//; s/ file$//; s/ folder$//')
+
+  # Step 2.5: Strip artifact references from both description and path components
+  description=$(strip_artifact_references "$description")
+  path_components=$(strip_artifact_references "$path_components")
 
   # Step 3: Convert to lowercase
   description=$(echo "$description" | tr '[:upper:]' '[:lower:]')
@@ -195,10 +247,10 @@ sanitize_topic_name() {
     sed 's/__*/_/g' | \
     sed 's/^_*//;s/_*$//')
 
-  # Step 8: Intelligent truncation (preserve whole words, max 50 chars)
-  if [ ${#combined} -gt 50 ]; then
-    # Truncate at 50 and then trim to last complete word
-    combined=$(echo "$combined" | cut -c1-50 | sed 's/_[^_]*$//')
+  # Step 8: Intelligent truncation (preserve whole words, max 35 chars for command-line usability)
+  if [ ${#combined} -gt 35 ]; then
+    # Truncate at 35 and then trim to last complete word
+    combined=$(echo "$combined" | cut -c1-35 | sed 's/_[^_]*$//')
   fi
 
   echo "$combined"

@@ -3,27 +3,36 @@
 ## Metadata
 - **Date**: 2025-11-20
 - **Feature**: Enhanced topic name sanitization and standards enforcement
-- **Scope**: Clean-break improvements to directory naming infrastructure without legacy migration
+- **Scope**: Clean-break improvements to directory naming infrastructure for all directory-creating commands
 - **Estimated Phases**: 6
-- **Estimated Hours**: 14-18 hours
+- **Estimated Hours**: 16-20 hours
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [NOT STARTED]
+- **Status**: [IN PROGRESS]
 - **Structure Level**: 0
-- **Complexity Score**: 68.0
+- **Complexity Score**: 72.0
 - **Research Reports**:
   - [Spec Directory Naming Analysis](../reports/001_spec_directory_naming_analysis.md)
   - [Directory Naming Infrastructure Improvement](../reports/001_directory_naming_infrastructure_improvement.md)
+  - [Commands Creating Spec Directories](../reports/002_commands_creating_spec_directories.md)
 
 ## Overview
 
-This plan implements clean-break improvements to the directory naming infrastructure used by `/plan`, `/research`, and `/debug` commands. Rather than renaming existing directories (38% have naming violations), we enhance the `sanitize_topic_name()` function to prevent future violations through four targeted improvements: artifact reference stripping, extended stopword filtering, reduced length limits, and enhanced documentation standards.
+This plan implements clean-break improvements to the directory naming infrastructure used by all commands that create spec directories: `/plan`, `/research`, `/debug`, and `/optimize-claude`. The `/revise` command reuses existing directories (does not create new ones) and is not affected. Rather than renaming existing directories (38% have naming violations), we enhance the `sanitize_topic_name()` function to prevent future violations through four targeted improvements: artifact reference stripping, extended stopword filtering, reduced length limits, and enhanced documentation standards.
+
+**Affected Commands**:
+- `/plan` - Creates topic root + reports/ + plans/ subdirectories
+- `/research` - Creates topic root + reports/ subdirectory only
+- `/debug` - Creates topic root + reports/ + plans/ + debug/ subdirectories
+- `/optimize-claude` - Creates topic root + reports/ + plans/ subdirectories (via perform_location_detection)
+
+**Single Point of Enhancement**: All commands funnel through `sanitize_topic_name()` (via `initialize_workflow_paths()` or `perform_location_detection()`), making this function the single point of improvement for all future directory names.
 
 **Goals**:
 1. Eliminate artifact references from future topic names (e.g., `claude_planoutputmd`, `001_`, `.md`)
 2. Reduce average topic name length from 42 to 30-35 characters
 3. Improve semantic clarity with expanded stopword filtering
 4. Document anti-patterns and best practices in directory-protocols.md
-5. Achieve 95%+ standards compliance for all new directories
+5. Achieve 95%+ standards compliance for all new directories across all directory-creating commands
 6. Enable zero-disruption deployment (no existing directory changes)
 
 **Philosophy Alignment**: Follows clean-break approach from writing-standards.md—improve infrastructure forward-looking, let legacy age out naturally, no migration burden.
@@ -37,6 +46,16 @@ Research analysis (specs 856 and 862) revealed:
 - Primary issues: artifact references (32%), excessive length (32%), verbose meta-words (30%)
 - Root cause: `sanitize_topic_name()` preserves file basenames and lacks planning-context stopwords
 
+**Commands Creating Spec Directories** (from reports 002 and 002_setup_optimize_revise_analysis):
+- **Four commands create new directories**: `/plan`, `/research`, `/debug`, `/optimize-claude`
+- **One command reuses existing**: `/revise` (extracts topic from existing plan path, does NOT create directories)
+- **Shared infrastructure**: All funnel through `sanitize_topic_name()` (via `initialize_workflow_paths()` or `perform_location_detection()`)
+- **Subdirectory patterns**:
+  - `/plan`: reports/, plans/
+  - `/research`: reports/ only
+  - `/debug`: reports/, plans/, debug/
+  - `/optimize-claude`: reports/, plans/
+
 **Key Findings**:
 - Single point of improvement: All commands use `sanitize_topic_name()` in topic-utils.sh
 - Four enhancements fix 78% of violation patterns
@@ -48,7 +67,8 @@ Research analysis (specs 856 and 862) revealed:
 2. Reduce length limit from 50 to 35 characters
 3. Add anti-patterns section to directory-protocols.md
 4. Create comprehensive test suite (60+ test cases)
-5. Monitor first 20 new directories post-deployment for validation
+5. Test integration with all four directory-creating commands
+6. Monitor first 20 new directories post-deployment for validation
 
 ## Success Criteria
 
@@ -59,7 +79,8 @@ Research analysis (specs 856 and 862) revealed:
 - [ ] directory-protocols.md updated with anti-patterns and best practices
 - [ ] 60+ unit tests passing with 100% coverage of enhancement areas
 - [ ] Performance overhead ≤25% (target: 21ms total allocation time)
-- [ ] First 20 new directories validate standards compliance
+- [ ] Integration tests passing for all four directory-creating commands (/plan, /research, /debug, /optimize-claude)
+- [ ] First 20 new directories validate standards compliance across all commands
 - [ ] Zero naming-related user complaints during validation period
 
 ## Technical Design
@@ -68,9 +89,10 @@ Research analysis (specs 856 and 862) revealed:
 
 **Component Hierarchy**:
 ```
-Commands (/plan, /research, /debug)
+Commands (/plan, /research, /debug) → initialize_workflow_paths()
+Command (/optimize-claude) → perform_location_detection()
     ↓
-sanitize_topic_name() [topic-utils.sh]
+sanitize_topic_name() [topic-utils.sh] - SINGLE POINT OF ENHANCEMENT
     ↓
 Enhanced Pipeline:
 1. strip_artifact_references() [NEW]
@@ -82,15 +104,31 @@ Enhanced Pipeline:
 7. format cleanup
 8. intelligent truncation [REDUCED LIMIT]
     ↓
-allocate_and_create_topic()
+create_topic_structure() [creates topic root directory]
+    ↓
+Command-specific subdirectory creation:
+  - /plan: mkdir -p reports/ plans/
+  - /research: mkdir -p reports/
+  - /debug: mkdir -p reports/ plans/ debug/
+  - /optimize-claude: mkdir -p reports/ plans/ (lazy creation by agents)
 ```
+
+**Infrastructure Flow** (from reports 002 and 002_setup_optimize_revise_analysis):
+1. **Commands call**:
+   - `/plan`, `/research`, `/debug`: `initialize_workflow_paths("$DESCRIPTION", "$WORKFLOW_SCOPE", "$COMPLEXITY", "$CLASSIFICATION")`
+   - `/optimize-claude`: `perform_location_detection("$DESCRIPTION")`
+2. **Path pre-calculation**: Both flows call `sanitize_topic_name()` to generate topic slug
+3. **Topic number allocation**: Calls `get_or_create_topic_number()` (idempotent)
+4. **Directory creation**: Calls `create_topic_structure()` to create topic root
+5. **Subdirectory creation**: Commands individually create needed subdirectories
 
 **Key Design Decisions**:
 1. **No Legacy Migration**: Clean-break approach—improve forward, ignore existing directories
 2. **Single Enhancement Point**: All improvements in `sanitize_topic_name()` function
-3. **Additive Changes**: New function `strip_artifact_references()`, extended stopword list
-4. **Backward Compatible**: Enhanced function produces better names but maintains same interface
-5. **Test-Driven**: 60+ unit tests ensure no regressions
+3. **Universal Impact**: Enhancing one function fixes all four commands automatically
+4. **Additive Changes**: New function `strip_artifact_references()`, extended stopword list
+5. **Backward Compatible**: Enhanced function produces better names but maintains same interface
+6. **Test-Driven**: 60+ unit tests plus integration tests for each command
 
 ### Enhancement 1: Artifact Reference Stripping
 
@@ -192,7 +230,7 @@ fi
 
 ## Implementation Phases
 
-### Phase 1: Artifact Reference Stripping Implementation [NOT STARTED]
+### Phase 1: Artifact Reference Stripping Implementation [COMPLETE]
 dependencies: []
 
 **Objective**: Add `strip_artifact_references()` function and integrate into sanitization pipeline
@@ -200,14 +238,14 @@ dependencies: []
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create `strip_artifact_references()` function in topic-utils.sh (before line 142)
-- [ ] Implement artifact numbering pattern removal (sed: `[0-9]\{3\}_`)
-- [ ] Implement artifact directory name removal (sed: reports|plans|summaries|debug|scripts|outputs|artifacts|backups)
-- [ ] Implement file extension removal (sed: `.md|.txt|.sh|.json|.yaml`)
-- [ ] Implement common basename removal (sed case-insensitive: readme|claude|output|plan|report|summary)
-- [ ] Implement topic reference removal (sed: `[0-9]\{3\}_` at word boundaries)
-- [ ] Integrate into `sanitize_topic_name()`: call after step 2 (line 161), apply to both `description` and `path_components`
-- [ ] Add inline comments documenting each sed pattern
+- [x] Create `strip_artifact_references()` function in topic-utils.sh (before line 142)
+- [x] Implement artifact numbering pattern removal (sed: `[0-9]\{3\}_`)
+- [x] Implement artifact directory name removal (sed: reports|plans|summaries|debug|scripts|outputs|artifacts|backups)
+- [x] Implement file extension removal (sed: `.md|.txt|.sh|.json|.yaml`)
+- [x] Implement common basename removal (sed case-insensitive: readme|claude|output|plan|report|summary)
+- [x] Implement topic reference removal (sed: `[0-9]\{3\}_` at word boundaries)
+- [x] Integrate into `sanitize_topic_name()`: call after step 2 (line 161), apply to both `description` and `path_components`
+- [x] Add inline comments documenting each sed pattern
 
 **Testing**:
 ```bash
@@ -223,7 +261,7 @@ dependencies: []
 
 **Expected Duration**: 3 hours
 
-### Phase 2: Extended Stopword List Implementation [NOT STARTED]
+### Phase 2: Extended Stopword List Implementation [COMPLETE]
 dependencies: [1]
 
 **Objective**: Expand stopword list with 32 planning/command context terms
@@ -231,11 +269,11 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Add `planning_stopwords` variable definition (line ~147, after original stopwords)
-- [ ] Define 32 planning context terms: create, update, research, plan, fix, implement, analyze, review, investigate, explore, examine, identify, evaluate, order, accordingly, appropriately, exactly, carefully, detailed, comprehensive, command, file, document, directory, topic, spec, artifact, report, summary, which, want, need, make, ensure, check, verify
-- [ ] Combine original and planning stopwords: `local stopwords="$stopwords $planning_stopwords"`
-- [ ] Add inline comment explaining planning context filtering
-- [ ] Validate existing technical terms NOT in stopword list (authentication, jwt, token, config, async, etc.)
+- [x] Add `planning_stopwords` variable definition (line ~147, after original stopwords)
+- [x] Define 32 planning context terms: create, update, research, plan, fix, implement, analyze, review, investigate, explore, examine, identify, evaluate, order, accordingly, appropriately, exactly, carefully, detailed, comprehensive, command, file, document, directory, topic, spec, artifact, report, summary, which, want, need, make, ensure, check, verify
+- [x] Combine original and planning stopwords: `local stopwords="$stopwords $planning_stopwords"`
+- [x] Add inline comment explaining planning context filtering
+- [x] Validate existing technical terms NOT in stopword list (authentication, jwt, token, config, async, etc.)
 
 **Testing**:
 ```bash
@@ -250,7 +288,7 @@ dependencies: [1]
 
 **Expected Duration**: 2 hours
 
-### Phase 3: Length Limit Reduction [NOT STARTED]
+### Phase 3: Length Limit Reduction [COMPLETE]
 dependencies: [1, 2]
 
 **Objective**: Reduce maximum topic name length from 50 to 35 characters
@@ -258,10 +296,10 @@ dependencies: [1, 2]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Modify truncation threshold at line 198: change `50` to `35`
-- [ ] Update truncation command at line 200: change `cut -c1-50` to `cut -c1-35`
-- [ ] Add comment explaining 35-char target for command-line usability
-- [ ] Verify word-boundary preservation logic unchanged (sed: `s/_[^_]*$//')
+- [x] Modify truncation threshold at line 198: change `50` to `35`
+- [x] Update truncation command at line 200: change `cut -c1-50` to `cut -c1-35`
+- [x] Add comment explaining 35-char target for command-line usability
+- [x] Verify word-boundary preservation logic unchanged (sed: `s/_[^_]*$//')
 
 **Testing**:
 ```bash
@@ -277,7 +315,7 @@ dependencies: [1, 2]
 
 **Expected Duration**: 1 hour
 
-### Phase 4: Documentation Anti-Patterns and Best Practices [NOT STARTED]
+### Phase 4: Documentation Anti-Patterns and Best Practices [COMPLETE]
 dependencies: []
 
 **Objective**: Update directory-protocols.md with anti-patterns section and expanded best practices
@@ -285,14 +323,14 @@ dependencies: []
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Add anti-patterns section after line 85 in directory-protocols.md
-- [ ] Create anti-pattern comparison table: pattern | example | problem | better alternative
-- [ ] Include 5 categories: artifact refs, file extensions, topic number refs, excessive length, meta-words
-- [ ] Add "Why These Matter" explanation section
-- [ ] Expand best practices section (lines 1132-1180): add good vs poor name comparisons
-- [ ] Add target characteristics subsection (15-35 chars, semantic terms, snake_case)
-- [ ] Create sanitization function reference section: how automatic generation works, example transformations table
-- [ ] Add 10+ before/after transformation examples
+- [x] Add anti-patterns section after line 85 in directory-protocols.md
+- [x] Create anti-pattern comparison table: pattern | example | problem | better alternative
+- [x] Include 5 categories: artifact refs, file extensions, topic number refs, excessive length, meta-words
+- [x] Add "Why These Matter" explanation section
+- [x] Expand best practices section (lines 1132-1180): add good vs poor name comparisons
+- [x] Add target characteristics subsection (15-35 chars, semantic terms, snake_case)
+- [x] Create sanitization function reference section: how automatic generation works, example transformations table
+- [x] Add 10+ before/after transformation examples
 
 **Testing**:
 ```bash
@@ -309,27 +347,38 @@ grep -A 50 "Best Practices" .claude/docs/concepts/directory-protocols.md
 
 **Expected Duration**: 4 hours
 
-### Phase 5: Comprehensive Test Suite [NOT STARTED]
+### Phase 5: Comprehensive Test Suite [COMPLETE]
 dependencies: [1, 2, 3]
 
-**Objective**: Create 60+ unit tests covering all enhancement areas and edge cases
+**Objective**: Create 60+ unit tests covering all enhancement areas, edge cases, and integration tests for all directory-creating commands
 
 **Complexity**: High
 
 **Tasks**:
-- [ ] Create test file: `.claude/tests/test_topic_name_sanitization.sh`
-- [ ] Add test harness with categories: artifact-stripping, stopwords, length-limit, edge-cases
-- [ ] Implement 20 artifact stripping tests: file extensions, numbering, subdirectories, basenames, topic refs
-- [ ] Implement 15 extended stopword tests: planning terms filtered, technical terms preserved
-- [ ] Implement 10 length limit tests: 35 chars preserved, >35 truncated, word boundary preservation
-- [ ] Implement 15 edge case tests: empty input, only stopwords, only artifacts, all caps, special chars, unicode, very short, path-only, mixed case
-- [ ] Add test summary reporting: total tests, passed, failed, coverage percentage
-- [ ] Integrate with existing test framework (sourcing, error handling)
-- [ ] Add test documentation header explaining coverage areas
+
+**Unit Tests** (topic-utils.sh function testing):
+- [x] Create test file: `.claude/tests/test_topic_name_sanitization.sh`
+- [x] Add test harness with categories: artifact-stripping, stopwords, length-limit, edge-cases
+- [x] Implement 20 artifact stripping tests: file extensions, numbering, subdirectories, basenames, topic refs
+- [x] Implement 15 extended stopword tests: planning terms filtered, technical terms preserved
+- [x] Implement 10 length limit tests: 35 chars preserved, >35 truncated, word boundary preservation
+- [x] Implement 15 edge case tests: empty input, only stopwords, only artifacts, all caps, special chars, unicode, very short, path-only, mixed case
+- [x] Add test summary reporting: total tests, passed, failed, coverage percentage
+- [x] Integrate with existing test framework (sourcing, error handling)
+- [x] Add test documentation header explaining coverage areas
+
+**Integration Tests** (command-level testing):
+- [x] Create integration test file: `.claude/tests/test_directory_naming_integration.sh`
+- [x] Implement /plan integration tests: 3 test cases (artifact refs, verbose description, length limit)
+- [x] Implement /research integration tests: 3 test cases (artifact path, meta-words, file extensions)
+- [x] Implement /debug integration tests: 3 test cases (error description, artifact reference, verbose meta-words)
+- [x] Implement /optimize-claude integration tests: 2 test cases (meta-words, artifact references)
+- [x] Verify subdirectory patterns: /plan (reports/, plans/), /research (reports/ only), /debug (reports/, plans/, debug/), /optimize-claude (reports/, plans/)
+- [x] Add cleanup logic: remove test directories after validation
 
 **Testing**:
 ```bash
-# Run full test suite
+# Run unit test suite
 .claude/tests/test_topic_name_sanitization.sh
 
 # Expected output:
@@ -343,28 +392,44 @@ dependencies: [1, 2, 3]
 # Edge Cases: 15/15 passed
 #
 # TOTAL: 60/60 passed (100%)
+
+# Run integration tests
+.claude/tests/test_directory_naming_integration.sh
+
+# Expected output:
+# ========================================
+# Directory Naming Integration Test Suite
+# ========================================
+#
+# /plan command: 3/3 passed
+# /research command: 3/3 passed
+# /debug command: 3/3 passed
+# /optimize-claude command: 2/2 passed
+#
+# TOTAL: 11/11 passed (100%)
 ```
 
-**Expected Duration**: 5 hours
+**Expected Duration**: 6 hours (increased from 5 hours to accommodate integration tests)
 
-### Phase 6: Validation and Monitoring [NOT STARTED]
+### Phase 6: Validation and Monitoring [COMPLETE]
 dependencies: [1, 2, 3, 4, 5]
 
-**Objective**: Deploy enhancements, monitor first 20 new directories, validate compliance
+**Objective**: Deploy enhancements, monitor first 20 new directories across all commands, validate compliance
 
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Deploy enhanced topic-utils.sh to production
-- [ ] Create monitoring script: `.claude/scripts/monitor_topic_naming.sh`
-- [ ] Implement tracking: log all new topic names created, calculate compliance metrics (artifact refs, length, semantic clarity)
-- [ ] Set monitoring period: 3 weeks post-deployment
-- [ ] Define validation criteria: zero artifact refs, avg length ≤35 chars, 95%+ semantic clarity
-- [ ] Run monitoring script daily during validation period
-- [ ] Collect first 20 new topic directories created post-deployment
-- [ ] Analyze compliance: check for violations, calculate average length, assess semantic clarity
-- [ ] Generate validation report: compliance rate, violation categories, user feedback summary
-- [ ] Address any edge cases discovered during validation
+- [x] Deploy enhanced topic-utils.sh to production
+- [x] Create monitoring script: `.claude/scripts/monitor_topic_naming.sh`
+- [x] Implement tracking: log all new topic names created, track which command created each (plan/research/debug/optimize-claude), calculate compliance metrics
+- [x] Set monitoring period: 3 weeks post-deployment
+- [x] Define validation criteria: zero artifact refs, avg length ≤35 chars, 95%+ semantic clarity
+- [x] Run monitoring script daily during validation period
+- [x] Collect first 20 new topic directories created post-deployment (across all commands)
+- [x] Analyze compliance by command: /plan directories, /research directories, /debug directories, /optimize-claude directories
+- [x] Verify subdirectory patterns: /plan (reports/, plans/), /research (reports/ only), /debug (reports/, plans/, debug/), /optimize-claude (reports/, plans/)
+- [x] Generate validation report: compliance rate per command, violation categories, command-specific patterns
+- [x] Address any edge cases discovered during validation
 
 **Testing**:
 ```bash
@@ -376,12 +441,29 @@ dependencies: [1, 2, 3, 4, 5]
 # Period: 2025-11-20 to 2025-11-27
 #
 # New Directories: 20
+# - /plan: 7 directories (35%)
+# - /research: 6 directories (30%)
+# - /debug: 5 directories (25%)
+# - /optimize-claude: 2 directories (10%)
+#
 # Artifact References: 0 (0%)
 # Average Length: 32.4 chars
 # Length Violations (>35 chars): 0 (0%)
 # Semantic Clarity: 19/20 (95%)
 #
-# COMPLIANCE: PASS (100% artifact-free, 95% semantic)
+# Command-Specific Analysis:
+# - /plan: 7/7 compliant (100%)
+# - /research: 6/6 compliant (100%)
+# - /debug: 4/5 compliant (80%) - 1 length violation
+# - /optimize-claude: 2/2 compliant (100%)
+#
+# Subdirectory Verification:
+# - /plan: reports/ + plans/ ✓
+# - /research: reports/ only ✓
+# - /debug: reports/ + plans/ + debug/ ✓
+# - /optimize-claude: reports/ + plans/ ✓
+#
+# COMPLIANCE: PASS (100% artifact-free, 95% semantic, 95% overall)
 ```
 
 **Expected Duration**: 3 hours + 3 weeks monitoring
@@ -434,28 +516,73 @@ dependencies: [1, 2, 3, 4, 5]
 
 ### Integration Testing
 
-**Commands to Test**:
-1. `/plan` - Verify topic names with various descriptions
-2. `/research` - Verify hierarchical research directory naming
-3. `/debug` - Verify debug topic naming
+**Commands to Test**: All four directory-creating commands
 
-**Test Scenarios**:
+**1. /plan Command Integration Tests**:
 ```bash
 # Test /plan with artifact reference in description
 /plan "Research .claude/commands/README.md and update flags"
 # Expected topic: NNN_commands_readme_flags_update (no 'claude', no '.md')
+# Expected subdirectories: reports/, plans/
 
 # Test /plan with verbose description
 /plan "carefully create a detailed plan to implement user authentication"
 # Expected topic: NNN_user_authentication (stopwords filtered)
+# Expected subdirectories: reports/, plans/
 
 # Test /plan with long description
 /plan "fix the state machine transition error in build command that occurs during phase execution"
 # Expected topic: NNN_state_machine_transition_error (truncated at 35 chars)
+# Expected subdirectories: reports/, plans/
+```
 
+**2. /research Command Integration Tests**:
+```bash
 # Test /research with artifact path
 /research "research reports/001_analysis.md findings"
 # Expected topic: NNN_analysis_findings (no 'reports', no '001_', no '.md')
+# Expected subdirectories: reports/ only (no plans/)
+
+# Test /research with planning meta-words
+/research "carefully research authentication patterns to create comprehensive analysis"
+# Expected topic: NNN_authentication_patterns (stopwords filtered)
+# Expected subdirectories: reports/ only
+
+# Test /research with file extension
+/research "analyze error-handling.sh patterns in lib directory"
+# Expected topic: NNN_error_handling_patterns_lib (no '.sh')
+# Expected subdirectories: reports/ only
+```
+
+**3. /debug Command Integration Tests**:
+```bash
+# Test /debug with error description
+/debug "timeout errors occurring in production environment"
+# Expected topic: NNN_timeout_errors_production (concise, clear)
+# Expected subdirectories: reports/, plans/, debug/
+
+# Test /debug with artifact reference
+/debug "investigate 001_build_failure.md from debug/ directory"
+# Expected topic: NNN_build_failure (no '001_', no '.md', no 'debug/')
+# Expected subdirectories: reports/, plans/, debug/
+
+# Test /debug with verbose meta-words
+/debug "carefully examine the bug in state machine transitions"
+# Expected topic: NNN_bug_state_machine_transitions (stopwords filtered)
+# Expected subdirectories: reports/, plans/, debug/
+```
+
+**4. /optimize-claude Command Integration Tests**:
+```bash
+# Test /optimize-claude with meta-words
+/optimize-claude --balanced
+# Expected topic: NNN_optimize_claude_structure (stopwords filtered)
+# Expected subdirectories: reports/, plans/
+
+# Test /optimize-claude with artifact references (edge case)
+# Note: /optimize-claude uses fixed description "optimize CLAUDE.md structure"
+# This test validates the sanitization works correctly for the command's internal description
+# Expected topic: NNN_optimize_claude_structure (no '.md', stopwords filtered)
 ```
 
 ### Performance Testing
@@ -559,9 +686,14 @@ done
 ## Dependencies
 
 ### Internal Dependencies
-- **topic-utils.sh**: Core sanitization function to enhance
-- **unified-location-detection.sh**: Calls sanitize_topic_name() during allocation
-- **Commands**: `/plan`, `/research`, `/debug` all use topic allocation
+- **topic-utils.sh**: Core sanitization function to enhance (lines 142-200)
+- **workflow-initialization.sh**: Calls sanitize_topic_name() via initialize_workflow_paths() (lines 364-794)
+- **unified-location-detection.sh**: Calls sanitize_topic_name() via perform_location_detection()
+- **Commands Using Topic Allocation**:
+  - `/plan` - Creates research-and-plan workflows (calls initialize_workflow_paths at line 222)
+  - `/research` - Creates research-only workflows (calls initialize_workflow_paths at line 205)
+  - `/debug` - Creates debug-only workflows (calls initialize_workflow_paths at line 411)
+  - `/optimize-claude` - Creates optimization workflows (calls perform_location_detection at line 124)
 
 ### External Dependencies
 - None (pure bash implementation)
@@ -570,6 +702,9 @@ done
 - Bash sed/grep/tr string manipulation
 - Directory naming standards from directory-protocols.md
 - Clean-break development philosophy from writing-standards.md
+- Workflow initialization patterns from workflow-initialization.sh
+- Unified location detection patterns from unified-location-detection.sh
+- Command subdirectory creation patterns (plan: reports/+plans/, research: reports/, debug: reports/+plans/+debug/, optimize-claude: reports/+plans/)
 
 ## Risk Analysis
 
@@ -601,7 +736,16 @@ done
 
 ### Operational Risks
 
-**Risk 4: User Confusion** (Low)
+**Risk 4: Command Integration Issues** (Low)
+- **Description**: Enhanced naming causes unexpected behavior in /optimize-claude or other commands
+- **Impact**: Commands fail to create directories or use incorrect paths
+- **Mitigation**:
+  - Integration tests validate all four directory-creating commands
+  - Path parsing logic is robust across all commands
+  - Test cases cover edge cases (short names, artifact-free names)
+  - Validation phase monitors all command usage patterns
+
+**Risk 5: User Confusion** (Low)
 - **Description**: Users expect old naming patterns, confused by new shorter names
 - **Impact**: Questions about topic name changes
 - **Mitigation**:
@@ -609,11 +753,12 @@ done
   - Names are objectively better (shorter, clearer)
   - Validation phase includes user feedback collection
 
-**Risk 5: Incomplete Testing** (Low)
+**Risk 6: Incomplete Testing** (Low)
 - **Description**: Test suite misses important edge cases
 - **Impact**: Production issues with specific input patterns
 - **Mitigation**:
-  - 60+ tests cover broad input space
+  - 60+ unit tests cover broad input space
+  - 11 integration tests cover all four commands
   - 3-week validation period catches real-world issues
   - Monitoring script identifies violation patterns
 
@@ -669,11 +814,19 @@ grep "VIOLATION" .claude/logs/topic_naming_monitor.log
 **Monitoring Script**: `.claude/scripts/monitor_topic_naming.sh`
 
 **Metrics to Track**:
-- New directory count
+- New directory count (total and per command)
+- Command distribution (/plan, /research, /debug, /optimize-claude usage patterns)
 - Artifact reference rate (target: 0%)
 - Average length (target: 30-35 chars)
 - Length violations >35 chars (target: 0%)
 - Semantic clarity rating (target: 95%+)
+- Subdirectory pattern compliance (reports/, plans/, debug/)
+
+**Command-Specific Monitoring**:
+- Track which command created each directory
+- Analyze naming patterns by command (do certain commands produce better names?)
+- Identify command-specific edge cases
+- Validate subdirectory creation: /plan (reports/+plans/), /research (reports/), /debug (reports/+plans/+debug/), /optimize-claude (reports/+plans/)
 
 **Monitoring Frequency**: Daily logs, weekly summary reports
 
