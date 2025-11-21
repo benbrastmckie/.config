@@ -154,6 +154,28 @@ All script mode features PLUS:
 
 **EXECUTE NOW**: Follow these steps in EXACT sequential order.
 
+### STEP 0 (SKILL AVAILABILITY CHECK) - Check for document-converter Skill
+
+**EXECUTE FIRST - Skill Detection**:
+
+```bash
+# Check if document-converter skill exists
+SKILL_AVAILABLE=false
+SKILL_PATH="${CLAUDE_PROJECT_DIR}/.claude/skills/document-converter/SKILL.md"
+
+if [[ -f "$SKILL_PATH" ]]; then
+  SKILL_AVAILABLE=true
+  echo "✓ DETECTED: document-converter skill available"
+else
+  echo "⚠ INFO: document-converter skill not found (using legacy mode)"
+fi
+```
+
+**MANDATORY VERIFICATION - Skill Check Complete**:
+```bash
+echo "✓ VERIFIED: Skill availability check complete (available=$SKILL_AVAILABLE)"
+```
+
 ### STEP 1 (REQUIRED BEFORE STEP 2) - Parse Arguments
 
 **YOU MUST parse arguments and set defaults**:
@@ -220,9 +242,69 @@ echo "PROGRESS: Conversion mode: $([ "$agent_mode" = true ] && echo "AGENT" || e
 echo "✓ VERIFIED: Execution mode determined: $agent_mode"
 ```
 
+### STEP 3.5 (CONDITIONAL) - Skill Delegation
+
+**CRITICAL**: Execute this step ONLY if SKILL_AVAILABLE=true AND agent_mode=false
+
+**SKILL DELEGATION PATH**: When skill is available in script mode, delegate to skill for seamless integration.
+
+**EXECUTE NOW - Delegate to Skill**:
+
+When skill is available, use natural language delegation to invoke it:
+
+```
+I'm delegating this conversion to the document-converter skill.
+
+Use the document-converter skill to convert files from $input_dir to $output_dir.
+
+Input directory: $input_dir
+Output directory: $output_dir
+Expected files: $file_count
+```
+
+The skill will:
+1. Source conversion libraries automatically
+2. Detect available tools (MarkItDown, Pandoc, PyMuPDF4LLM, etc.)
+3. Process all files with optimal tool selection
+4. Generate conversion.log with statistics
+5. Return completion summary
+
+**MANDATORY VERIFICATION - Skill Delegation Complete**:
+```bash
+# After skill completes, verify output
+output_count=$(find "$output_dir" -type f \( -name "*.md" -o -name "*.docx" -o -name "*.pdf" \) 2>/dev/null | wc -l)
+
+if [[ $output_count -eq 0 ]]; then
+  echo "❌ CRITICAL ERROR: Skill delegation produced no output files"
+  echo "⚠ Falling back to script mode..."
+  SKILL_AVAILABLE=false  # Trigger fallback to Step 4
+else
+  echo "✓ VERIFIED: Skill produced $output_count files"
+  # Skip to Step 6 (final verification)
+  skip_to_step_6=true
+fi
+```
+
+**CHECKPOINT REQUIREMENT - Skill Delegation Complete**:
+
+Report skill results:
+```
+CHECKPOINT: Skill Delegation Complete
+- Skill: document-converter
+- Input Directory: $input_dir
+- Output Directory: $output_dir
+- Files Converted: $output_count
+- Log File: $output_dir/conversion.log
+- Status: SUCCESS
+```
+
+**NOTE**: If skill delegation fails or produces no output, automatically fall back to STEP 4 (Script Mode).
+
 ### STEP 4 (CONDITIONAL) - Script Mode Execution
 
-**CRITICAL**: Execute this step ONLY if agent_mode=false
+**CRITICAL**: Execute this step ONLY if (agent_mode=false AND SKILL_AVAILABLE=false) OR (skill delegation failed in Step 3.5)
+
+**FALLBACK MODE**: Direct script invocation when skill is unavailable or delegation failed.
 
 **EXECUTE NOW - Invoke Conversion Script**:
 
@@ -374,7 +456,7 @@ Create verification BEFORE proceeding:
 ```
 ✓ Document Conversion Complete
 
-Mode: [SCRIPT|AGENT]
+Mode: [SKILL|SCRIPT|AGENT]
 Input: $input_dir ($file_count files)
 Output: $output_dir ($output_count files converted)
 Log: $output_dir/conversion.log
