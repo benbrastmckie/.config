@@ -433,8 +433,8 @@ log_command_error() {
   # Detect execution environment (test vs production)
   local environment="production"
 
-  # Check BASH_SOURCE for test script indicators
-  if [[ "${BASH_SOURCE[2]:-}" =~ /tests/ ]] || [[ "$0" =~ /tests/ ]]; then
+  # Check for explicit test mode or test script indicators
+  if [[ -n "${CLAUDE_TEST_MODE:-}" ]] || [[ "${BASH_SOURCE[2]:-}" =~ /tests/ ]] || [[ "$0" =~ /tests/ ]]; then
     environment="test"
   fi
 

@@ -4,10 +4,14 @@
 
 set -euo pipefail
 
+# Enable test mode for proper error log routing
+export CLAUDE_TEST_MODE=1
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_DIR="$(dirname "$SCRIPT_DIR")"
+TEST_LOG_DIR="${SCRIPT_DIR}/logs"
 ERROR_LOG_DIR="${CLAUDE_DIR}/data/logs"
-ERROR_LOG_FILE="${ERROR_LOG_DIR}/errors.jsonl"
+ERROR_LOG_FILE="${TEST_LOG_DIR}/test-errors.jsonl"
 
 # Backup existing error log
 if [ -f "$ERROR_LOG_FILE" ]; then
