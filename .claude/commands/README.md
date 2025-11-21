@@ -466,8 +466,11 @@ See [Errors Command Guide](../docs/guides/commands/errors-command-guide.md) and 
 **Features**:
 - Bidirectional format conversion
 - Script mode (fast) or agent mode (comprehensive)
+- Skill-based execution when document-converter skill available
 - Markdown, DOCX, and PDF support
 - Quality reporting with agent mode
+
+**Documentation**: [Convert-Docs Command Guide](../docs/guides/commands/convert-docs-command-guide.md)
 
 ---
 
