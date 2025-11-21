@@ -3,253 +3,301 @@
 ## Metadata
 - **Date**: 2025-11-20
 - **Agent**: repair-analyst
-- **Error Count**: 23 errors
-- **Time Range**: 2025-11-20 19:24:59 to 2025-11-21 01:45:31 (6.3 hours)
+- **Error Count**: 10 errors
+- **Time Range**: 2025-11-21 06:02:36 to 2025-11-21 06:18:47 (16 minutes)
 - **Report Type**: Error Log Analysis
 
 ## Executive Summary
 
-Analysis of 23 errors logged over 6.3 hours reveals execution errors dominate (78%, 18 errors), primarily exit code 127 "command not found" failures (50% of execution errors) from test scripts. File errors (8%, 2 errors) indicate missing state files in test scenarios. State transition errors (8%, 2 errors) show /build command failures. Most errors originate from test commands (65%), suggesting test suite issues rather than production workflow failures.
+Analysis of 10 production errors logged over 16 minutes reveals critical infrastructure failures. Execution errors dominate (60%, 6 errors), all exit code 127 "command not found" affecting production workflows (/build, /plan, /debug). Agent errors (20%, 2 errors) show topic naming agent failures. Parse error (10%, 1 error) indicates error-handling initialization issue. Unlike previous analysis showing test-induced errors, all current errors are production failures requiring immediate attention.
 
 ## Error Patterns
 
-### Pattern 1: Command Not Found (Exit Code 127)
-- **Frequency**: 9 errors (39% of total, 50% of execution errors)
-- **Commands Affected**: /test-t3, /test-t4, /test (4 occurrences), /test with repair/plan/build/debug/revise subcommands
-- **Time Range**: 2025-11-20 23:23:50 to 2025-11-21 01:42:20
+### Pattern 1: Missing State Management Functions (Exit Code 127)
+- **Frequency**: 3 errors (30% of total, 50% of execution errors)
+- **Commands Affected**: /build (2 occurrences), /plan (1 occurrence)
+- **Time Range**: 2025-11-21 06:04:06 to 2025-11-21 06:18:47
 - **Example Error**:
   ```json
   {
-    "error_type": "execution_error",
-    "error_message": "Bash error at line 8: exit code 127",
-    "context": {
-      "exit_code": 127,
-      "command": "nonexistent_command_xyz123"
-    }
-  }
-  ```
-- **Root Cause Hypothesis**: Test scripts intentionally invoke nonexistent commands/functions to validate error trap functionality. Pattern shows deliberate testing of error handling (commands like `nonexistent_command_xyz123`, `nonexistent_function_abc789`).
-- **Proposed Fix**: No fix required - these are intentional test failures validating error logging infrastructure. Consider adding test metadata to distinguish intentional vs. unintentional errors.
-- **Priority**: Low
-- **Effort**: Low (documentation/metadata enhancement)
-
-### Pattern 2: Generic Execution Failures (Exit Code 1)
-- **Frequency**: 5 errors (22% of total, 28% of execution errors)
-- **Commands Affected**: /test-simple, /test-debug, /test, /test-trap
-- **Time Range**: 2025-11-20 23:24:06 to 2025-11-20 23:25:39
-- **Example Error**:
-  ```json
-  {
-    "error_type": "execution_error",
-    "error_message": "Bash error at line 8: exit code 1",
-    "source": "bash_trap",
-    "context": {
-      "exit_code": 1,
-      "command": "false"
-    }
-  }
-  ```
-- **Root Cause Hypothesis**: Test scripts executing `false` command to trigger error traps. These are intentional test failures for validating bash error handling infrastructure.
-- **Proposed Fix**: No code fix required. Add test context metadata to error logs to distinguish test-induced errors from production errors.
-- **Priority**: Low
-- **Effort**: Low (metadata enhancement)
-
-### Pattern 3: State File Not Found
-- **Frequency**: 2 errors (8% of total)
-- **Commands Affected**: /test-t6 (2 occurrences)
-- **Time Range**: 2025-11-20 23:23:50 to 2025-11-20 23:23:59
-- **Example Error**:
-  ```json
-  {
-    "error_type": "file_error",
-    "error_message": "State file not found",
-    "context": {
-      "path": "/nonexistent/state.sh"
-    }
-  }
-  ```
-- **Root Cause Hypothesis**: Test validates error handling for missing state files. Path `/nonexistent/state.sh` confirms intentional test scenario.
-- **Proposed Fix**: No fix required - intentional test case. Consider enhancing error message to include recovery suggestions for production scenarios.
-- **Priority**: Low
-- **Effort**: Low (error message enhancement)
-
-### Pattern 4: State Transition Failure (Production)
-- **Frequency**: 2 errors (8% of total)
-- **Commands Affected**: /manual-test, /build
-- **Time Range**: 2025-11-20 19:24:59 to 2025-11-21 01:05:45
-- **Example Error**:
-  ```json
-  {
-    "error_type": "state_error",
-    "error_message": "State transition to DOCUMENT failed",
+    "timestamp": "2025-11-21T06:04:06Z",
     "command": "/build",
+    "error_type": "execution_error",
+    "error_message": "Bash error at line 398: exit code 127",
     "context": {
-      "target_state": "DOCUMENT"
+      "line": 398,
+      "exit_code": 127,
+      "command": "save_completed_states_to_state"
     }
   }
   ```
-- **Root Cause Hypothesis**: Build workflow state machine unable to transition to DOCUMENT phase. Suggests missing validation or precondition failure in state-based orchestration.
-- **Proposed Fix**: Add state transition validation logging to identify why DOCUMENT state is unreachable. Review state prerequisites in build orchestrator.
+- **Root Cause Hypothesis**: Commands attempting to call state management functions (`save_completed_states_to_state`, `append_workflow_state`) that are not defined or not sourced. This indicates state-based orchestration library is not being loaded correctly in command initialization.
+- **Proposed Fix**: Ensure commands source state management library before calling state functions. Add function existence checks before calling state management functions. Verify library paths in command initialization blocks.
+- **Priority**: Critical
+- **Effort**: Medium (requires library sourcing audit across commands)
+
+### Pattern 2: Missing Initialization Function (Exit Code 127)
+- **Frequency**: 1 error (10% of total, 17% of execution errors)
+- **Commands Affected**: /debug
+- **Time Range**: 2025-11-21 06:17:35
+- **Example Error**:
+  ```json
+  {
+    "timestamp": "2025-11-21T06:17:35Z",
+    "command": "/debug",
+    "error_type": "execution_error",
+    "error_message": "Bash error at line 96: exit code 127",
+    "context": {
+      "line": 96,
+      "exit_code": 127,
+      "command": "initialize_workflow_paths \"$ISSUE_DESCRIPTION\" \"debug-only\" \"$RESEARCH_COMPLEXITY\" \"$CLASSIFICATION_JSON\""
+    }
+  }
+  ```
+- **Root Cause Hypothesis**: /debug command calling `initialize_workflow_paths` function that is not defined or not sourced. This indicates workflow initialization library is not being loaded correctly in debug command.
+- **Proposed Fix**: Ensure /debug command sources workflow initialization library. Add function existence validation before calling initialization functions. Standardize library sourcing across all workflow commands.
+- **Priority**: Critical
+- **Effort**: Medium (requires library sourcing standardization)
+
+### Pattern 3: Missing bashrc File (Exit Code 127)
+- **Frequency**: 2 errors (20% of total, 33% of execution errors)
+- **Commands Affected**: /plan (2 occurrences)
+- **Time Range**: 2025-11-21 06:13:55 to 2025-11-21 06:16:44
+- **Example Error**:
+  ```json
+  {
+    "timestamp": "2025-11-21T06:13:55Z",
+    "command": "/plan",
+    "error_type": "execution_error",
+    "error_message": "Bash error at line 1: exit code 127",
+    "context": {
+      "line": 1,
+      "exit_code": 127,
+      "command": ". /etc/bashrc"
+    }
+  }
+  ```
+- **Root Cause Hypothesis**: Commands attempting to source `/etc/bashrc` which does not exist on this system. This is likely a Linux system where bashrc is at `/etc/bash.bashrc` or user-specific at `~/.bashrc`. The sourcing logic needs to handle missing system bashrc gracefully.
+- **Proposed Fix**: Update command initialization to check if `/etc/bashrc` exists before sourcing. Use conditional sourcing: `[ -f /etc/bashrc ] && . /etc/bashrc || true`. Consider sourcing from multiple standard locations with fallback.
 - **Priority**: High
-- **Effort**: Medium (requires debugging state machine logic)
+- **Effort**: Low (simple conditional check)
 
-### Pattern 5: Test Command Execution Failure
-- **Frequency**: 4 errors (17% of total)
-- **Commands Affected**: /test (multiple test scenarios)
-- **Time Range**: 2025-11-20 23:24:37 to 2025-11-21 01:42:20
+### Pattern 4: Topic Naming Agent Failure
+- **Frequency**: 2 errors (20% of total)
+- **Commands Affected**: /plan (2 occurrences)
+- **Time Range**: 2025-11-21 06:16:44 to 2025-11-21 06:17:10
 - **Example Error**:
   ```json
   {
-    "error_type": "execution_error",
-    "error_message": "Test error message",
-    "source": "test_source"
-  }
-  ```
-- **Root Cause Hypothesis**: Generic test errors with varying sources. Some appear to be direct logging tests rather than trapped errors.
-- **Proposed Fix**: No fix required - test infrastructure validation. Consider standardizing test error sources for clearer pattern detection.
-- **Priority**: Low
-- **Effort**: Low (test standardization)
-
-### Pattern 6: Build Command Test Failure (Exit Code 1)
-- **Frequency**: 1 error (4% of total)
-- **Commands Affected**: /build
-- **Time Range**: 2025-11-21 01:45:31
-- **Example Error**:
-  ```json
-  {
-    "error_type": "execution_error",
-    "error_message": "Bash error at line 354: exit code 1",
+    "timestamp": "2025-11-21T06:16:44Z",
+    "command": "/plan",
+    "error_type": "agent_error",
+    "error_message": "Topic naming agent failed or returned invalid name",
+    "source": "bash_block_1c",
     "context": {
-      "command": "TEST_OUTPUT=$($TEST_COMMAND 2>&1)"
+      "feature": "The .claude/commands/ are working well...",
+      "fallback_reason": "agent_no_output_file"
     }
   }
   ```
-- **Root Cause Hypothesis**: Build command test execution failed during test phase. Command substitution captured exit code 1, suggesting test suite failure during build workflow.
-- **Proposed Fix**: Investigate why test command failed at line 354. Add pre-test validation to ensure test environment is properly configured.
-- **Priority**: Medium
-- **Effort**: Medium (requires test suite debugging)
+- **Root Cause Hypothesis**: Topic naming agent (Haiku LLM) failed to create output file. This could indicate: (1) agent invocation failure, (2) agent returned no output, (3) output file path incorrect, or (4) agent timeout. The fallback reason `agent_no_output_file` suggests agent completed but didn't write expected output file.
+- **Proposed Fix**: Add diagnostic logging to topic naming agent invocation. Log agent input, expected output path, agent exit code, and file system state. Enhance fallback logic to check for partial output files. Add timeout handling with detailed error messages.
+- **Priority**: High
+- **Effort**: Medium (requires agent invocation debugging)
+
+### Pattern 5: Error Trap Initialization Failure (Parse Error)
+- **Frequency**: 1 error (10% of total)
+- **Commands Affected**: /test-t1
+- **Time Range**: 2025-11-21 06:02:36
+- **Example Error**:
+  ```json
+  {
+    "timestamp": "2025-11-21T06:02:36Z",
+    "command": "/test-t1",
+    "error_type": "parse_error",
+    "error_message": "Bash error at line 1: exit code 2",
+    "context": {
+      "line": 1,
+      "exit_code": 2,
+      "command": "trap '_log_bash_exit $LINENO \"$BASH_COMMAND\" \"'\"$cmd_name\"'\" \"'\"$workflow_id\"'\" \"'\"$user_args\"'\"' EXIT"
+    }
+  }
+  ```
+- **Root Cause Hypothesis**: Bash trap command syntax error during error-handling initialization. Exit code 2 indicates syntax/parse error. The complex quote escaping in trap command may be causing shell parsing issues. Variables `$cmd_name`, `$workflow_id`, `$user_args` may not be properly escaped for trap context.
+- **Proposed Fix**: Review trap command quote escaping in error-handling library initialization. Use simpler variable passing mechanism (e.g., function with fixed parameters instead of embedded string interpolation). Add syntax validation for trap commands before installation.
+- **Priority**: High
+- **Effort**: Medium (requires careful quote escaping review)
 
 ## Root Cause Analysis
 
-### Root Cause 1: Test-Induced Errors Lack Metadata Tagging
-- **Related Patterns**: Pattern 1 (Command Not Found), Pattern 2 (Generic Execution Failures), Pattern 3 (State File Not Found), Pattern 5 (Test Command Execution)
-- **Impact**: 20 commands affected (87% of errors are test-related)
-- **Evidence**: Error messages contain obviously synthetic test data (`nonexistent_command_xyz123`, `false`, `/nonexistent/state.sh`), workflow IDs include "test_" prefix, but error log format doesn't distinguish test vs. production errors
-- **Fix Strategy**: Enhance error logging to include `is_test: true` metadata field. Update test scripts to set `TEST_MODE=true` environment variable that error-handling library checks. Add filtering capability to /errors command to exclude test errors by default.
+### Root Cause 1: Library Sourcing Inconsistency Across Commands
+- **Related Patterns**: Pattern 1 (Missing State Management Functions), Pattern 2 (Missing Initialization Function)
+- **Impact**: 4 commands affected (40% of errors), blocking /build, /plan, and /debug workflows
+- **Evidence**: Multiple commands failing with exit code 127 "command not found" for library functions (`save_completed_states_to_state`, `append_workflow_state`, `initialize_workflow_paths`). This indicates commands are not consistently sourcing required libraries before calling library functions.
+- **Fix Strategy**: Audit all commands for library sourcing completeness. Create standardized command initialization template that sources all core libraries (error-handling, state management, workflow initialization). Add function existence checks with helpful error messages before calling library functions. Consider creating centralized library loader function that all commands source first.
 
-### Root Cause 2: State Transition Validation Insufficient
-- **Related Patterns**: Pattern 4 (State Transition Failure)
-- **Impact**: 2 commands affected (/build workflow, 8% of errors)
-- **Evidence**: Build command failed to transition to DOCUMENT state without detailed diagnostic information about why the transition was blocked. Error context only shows target state, not precondition failures.
-- **Fix Strategy**: Enhance state transition functions to log precondition validation failures before attempting transition. Add state graph validation to show current state, target state, required prerequisites, and which prerequisites are missing. Update state-based orchestration to emit detailed transition failure diagnostics.
+### Root Cause 2: Platform-Specific Path Assumptions
+- **Related Patterns**: Pattern 3 (Missing bashrc File)
+- **Impact**: 2 commands affected (20% of errors), affecting /plan workflow
+- **Evidence**: Commands attempting to source `/etc/bashrc` which doesn't exist on Linux systems (typically at `/etc/bash.bashrc` or user-specific `~/.bashrc`). Hard-coded paths fail on different platforms.
+- **Fix Strategy**: Replace hard-coded `/etc/bashrc` with conditional sourcing that tries multiple standard locations. Use pattern: `for f in /etc/bashrc /etc/bash.bashrc ~/.bashrc; do [ -f "$f" ] && . "$f" && break; done`. Add platform detection to choose appropriate paths. Document platform-specific initialization requirements.
 
-### Root Cause 3: Test Phase Execution Lacks Error Context
-- **Related Patterns**: Pattern 6 (Build Command Test Failure)
-- **Impact**: 1 command affected (/build workflow)
-- **Evidence**: Test execution at line 354 failed with exit code 1, but error context only shows command substitution syntax. Missing information: which test command ran, what assertion failed, test output/logs location.
-- **Fix Strategy**: Enhance build command test phase to capture test output before checking exit code. Log test command name, test suite path, and output file location in error context. Add pre-test validation to check test environment (test files exist, dependencies available, etc.).
+### Root Cause 3: Agent Output Contract Violation
+- **Related Patterns**: Pattern 4 (Topic Naming Agent Failure)
+- **Impact**: 2 commands affected (20% of errors), blocking /plan workflow topic naming
+- **Evidence**: Topic naming agent completing but not writing expected output file, causing fallback reason `agent_no_output_file`. This suggests agent either (1) failed silently, (2) wrote to wrong path, (3) has output contract mismatch with invoking command, or (4) timed out without cleanup.
+- **Fix Strategy**: Review topic naming agent behavioral guidelines for output file requirements. Add agent output validation: check output file exists, has expected format, contains valid topic name. Add diagnostic logging: log agent input file path, expected output file path, agent exit code, stderr/stdout. Enhance fallback logic to capture and log partial output. Add timeout with graceful degradation to fallback topic name generation.
 
 ## Recommendations
 
-### 1. Add Test Mode Metadata to Error Logging (Priority: High, Effort: Low)
-- **Description**: Enhance error-handling library to detect and tag test-induced errors with metadata
-- **Rationale**: 87% of logged errors are from tests, polluting production error analysis. Currently impossible to filter test vs. production errors without manual inspection.
+### 1. Create Standardized Command Library Initialization (Priority: Critical, Effort: Medium)
+- **Description**: Create centralized library loader that all commands source before executing workflow logic
+- **Rationale**: 40% of production errors are exit code 127 "command not found" for library functions. Commands are inconsistently sourcing required libraries, causing immediate workflow failures.
 - **Implementation**:
-  1. Add `is_test` boolean field to error log schema
-  2. Update `log_command_error()` in `error-handling.sh` to check for `TEST_MODE` environment variable
-  3. Modify test scripts to export `TEST_MODE=true` before invoking error scenarios
-  4. Update `/errors` command to add `--exclude-tests` flag (default: false for backward compatibility)
-  5. Document test mode usage in Testing Protocols
+  1. Create `/.claude/lib/core/command-init.sh` with standardized sourcing logic:
+     - Source error-handling library (with validation)
+     - Source state management library (with validation)
+     - Source workflow initialization library (with validation)
+     - Export commonly needed environment variables
+  2. Add function existence validation with helpful error messages:
+     ```bash
+     if ! declare -f save_completed_states_to_state >/dev/null; then
+       echo "ERROR: State management functions not loaded. Check library sourcing." >&2
+       exit 1
+     fi
+     ```
+  3. Update all workflow commands (/build, /plan, /debug, /implement, etc.) to source command-init.sh first
+  4. Add pre-flight checks that validate all required functions are available
+  5. Document library initialization requirements in Command Development Guide
+- **Dependencies**: Access to /.claude/commands/ and /.claude/lib/core/
+- **Impact**: Eliminates 40% of production errors immediately, prevents future library sourcing errors, improves command reliability
+
+### 2. Fix Platform-Specific bashrc Sourcing (Priority: High, Effort: Low)
+- **Description**: Replace hard-coded `/etc/bashrc` with platform-aware conditional sourcing
+- **Rationale**: 20% of production errors from attempting to source non-existent `/etc/bashrc` on Linux systems. Hard-coded paths break cross-platform compatibility.
+- **Implementation**:
+  1. Locate bashrc sourcing in command initialization (likely in command templates or common initialization code)
+  2. Replace `. /etc/bashrc` with conditional multi-location sourcing:
+     ```bash
+     # Try multiple standard bashrc locations
+     for bashrc_path in /etc/bashrc /etc/bash.bashrc ~/.bashrc; do
+       if [ -f "$bashrc_path" ]; then
+         . "$bashrc_path" 2>/dev/null || true
+         break
+       fi
+     done
+     ```
+  3. Add platform detection if needed: `case "$(uname -s)" in ...`
+  4. Document platform-specific initialization in deployment guide
 - **Dependencies**: None
-- **Impact**: Enables accurate production error analysis, reduces noise in error reports by 87%, improves error query precision
+- **Impact**: Eliminates 20% of production errors, improves cross-platform reliability, reduces support burden
 
-### 2. Enhance State Transition Diagnostics (Priority: High, Effort: Medium)
-- **Description**: Add detailed precondition validation logging to state transition functions
-- **Rationale**: State transition failures provide no diagnostic context about why transitions fail, making debugging impossible without code inspection.
+### 3. Enhance Topic Naming Agent Diagnostics and Validation (Priority: High, Effort: Medium)
+- **Description**: Add comprehensive diagnostic logging and output validation to topic naming agent invocation
+- **Rationale**: 20% of production errors from topic naming agent not creating expected output file. Agent failures are opaque, with no diagnostic information about why output file is missing.
 - **Implementation**:
-  1. Locate state transition functions in state-based orchestration code
-  2. Add precondition validation checks before each `set_state()` call
-  3. Log validation failures with: current state, target state, required prerequisites, missing prerequisites
-  4. Update error context to include state graph information: `{current: "TEST", target: "DOCUMENT", blocked_by: ["test_failures"]}`
-  5. Add state transition diagram to build command documentation
-- **Dependencies**: Access to state-based orchestration implementation files
-- **Impact**: Reduces state-related debugging time from hours to minutes, enables self-service troubleshooting, improves build workflow reliability
+  1. Locate topic naming agent invocation in /plan command (likely in bash_block_1c)
+  2. Add pre-invocation logging:
+     - Log agent input file path and verify file exists
+     - Log expected output file path
+     - Set timeout with explicit error message
+  3. Add post-invocation validation:
+     ```bash
+     if [ ! -f "$AGENT_OUTPUT_FILE" ]; then
+       echo "ERROR: Topic naming agent did not create output file: $AGENT_OUTPUT_FILE" >&2
+       echo "Agent exit code: $?" >&2
+       echo "Checking for partial output..." >&2
+       ls -la "$(dirname "$AGENT_OUTPUT_FILE")" || true
+     fi
+     ```
+  4. Capture agent stderr/stdout to separate files for debugging
+  5. Review topic naming agent behavioral guidelines (/.claude/agents/topic-namer.md) for output contract requirements
+  6. Enhance fallback logic to log reason for fallback and provide alternative topic generation
+- **Dependencies**: Access to /plan command and topic naming agent files
+- **Impact**: Eliminates 20% of production errors, enables agent debugging, improves topic naming reliability
 
-### 3. Improve Build Command Test Phase Error Context (Priority: Medium, Effort: Medium)
-- **Description**: Capture and log comprehensive test execution context during build workflow test phase
-- **Rationale**: Test failures during build provide minimal diagnostic information (only exit code), requiring manual re-execution to debug.
+### 4. Fix Error Trap Quote Escaping (Priority: High, Effort: Medium)
+- **Description**: Review and fix complex quote escaping in bash trap commands used for error handling
+- **Rationale**: 10% of production errors are parse errors (exit code 2) during trap installation. Complex quote escaping in trap command causing shell parsing failures.
 - **Implementation**:
-  1. Update build command test execution block (line ~354) to:
-     - Capture test output to temporary file before checking exit code
-     - Extract test command name from `$TEST_COMMAND` variable
-     - Include test output file path in error context
-  2. Modify error logging to include: `{test_command: "name", test_output: "/tmp/path", test_suite: "path/to/suite"}`
-  3. Add pre-test validation: check test file exists, test dependencies available
-  4. Log validation failures separately from test execution failures
-- **Dependencies**: Build command source code access (/.claude/commands/build.md or build script)
-- **Impact**: Reduces test failure debugging time by 50%, enables parallel test development, improves test phase reliability
+  1. Locate trap installation in error-handling library (/.claude/lib/core/error-handling.sh)
+  2. Review current trap command that's failing:
+     ```bash
+     trap '_log_bash_exit $LINENO "$BASH_COMMAND" "'"$cmd_name"'" "'"$workflow_id"'" "'"$user_args"'"' EXIT
+     ```
+  3. Simplify variable passing by using global variables instead of embedded string interpolation:
+     ```bash
+     # Set globals before trap installation
+     export ERROR_CONTEXT_CMD_NAME="$cmd_name"
+     export ERROR_CONTEXT_WORKFLOW_ID="$workflow_id"
+     export ERROR_CONTEXT_USER_ARGS="$user_args"
 
-### 4. Standardize Test Error Sources (Priority: Low, Effort: Low)
-- **Description**: Establish consistent source field values for test-generated errors
-- **Rationale**: Test errors use varying sources (test, test_source, bash_test), complicating pattern detection and filtering.
-- **Implementation**:
-  1. Define standard test error sources in Testing Protocols documentation:
-     - `test_unit` for unit tests
-     - `test_integration` for integration tests
-     - `test_validation` for validation tests
-  2. Update test scripts to use standardized sources when logging errors
-  3. Add validation to error-handling library to warn about non-standard sources in test mode
-- **Dependencies**: None
-- **Impact**: Improves error pattern grouping accuracy, simplifies test error analysis, enables source-based filtering
+     # Simplified trap without complex escaping
+     trap '_log_bash_exit $LINENO "$BASH_COMMAND"' EXIT
 
-### 5. Add Error Message Enhancement for Missing State Files (Priority: Low, Effort: Low)
-- **Description**: Enhance file_error messages to include recovery suggestions
-- **Rationale**: Production users encountering missing state files receive no guidance on resolution, causing support requests.
+     # Update _log_bash_exit to read from globals
+     ```
+  4. Add trap syntax validation before installation
+  5. Add tests for trap installation with various argument types (spaces, quotes, special chars)
+- **Dependencies**: Access to /.claude/lib/core/error-handling.sh
+- **Impact**: Eliminates 10% of production errors, improves error handling reliability, reduces trap-related issues
+
+### 5. Add Command Initialization Self-Test (Priority: Medium, Effort: Low)
+- **Description**: Create self-test mechanism that validates command initialization before workflow execution
+- **Rationale**: Multiple initialization failures could be detected early with pre-flight checks, preventing cascading failures and providing better error messages.
 - **Implementation**:
-  1. Update file_error logging to detect state file paths (pattern: `**/state.sh` or `**/state/*`)
-  2. Append recovery suggestions to error message:
-     - "State file not found. This may indicate incomplete workflow initialization. Try: /setup to reinitialize project state."
-  3. Add knowledge base link for common state file issues
-- **Dependencies**: None
-- **Impact**: Reduces support requests by 30%, improves user self-service, enhances error message quality
+  1. Add `validate_command_initialization()` function to command-init.sh:
+     - Check all required libraries are sourced
+     - Verify all expected functions are defined
+     - Validate environment variables are set
+     - Check file system permissions for common paths
+  2. Call validation function at end of command-init.sh sourcing
+  3. Provide detailed error messages with resolution steps for each failure type
+  4. Add `--skip-validation` flag for performance-sensitive scenarios
+- **Dependencies**: Requires Recommendation #1 (command-init.sh) to be implemented first
+- **Impact**: Catches initialization errors early, provides actionable error messages, reduces cascading failures
 
 ## References
 
 ### Error Log Source
 - **Path**: `/home/benjamin/.config/.claude/data/logs/errors.jsonl`
-- **Total Errors Analyzed**: 23
-- **Line Count**: 23 (excluding header)
+- **Total Errors Analyzed**: 10
+- **Line Count**: 10
 
 ### Filter Criteria Applied
-- **Since**: None (analyzed all historical errors)
+- **Since**: None (analyzed all current errors)
 - **Type**: None (analyzed all error types)
 - **Command**: None (analyzed all commands)
 - **Severity**: None (analyzed all severity levels)
 
 ### Analysis Metadata
 - **Analysis Timestamp**: 2025-11-20
-- **Analysis Duration**: 6.3 hours of error data (2025-11-20 19:24:59 to 2025-11-21 01:45:31)
+- **Error Time Range**: 2025-11-21 06:02:36 to 2025-11-21 06:18:47 (16 minutes)
 - **Agent**: repair-analyst (sonnet-4.5)
 - **Workflow**: research-and-plan (complexity 2)
 
 ### Error Type Distribution
-- `execution_error`: 18 errors (78%)
-- `file_error`: 2 errors (8%)
-- `state_error`: 2 errors (8%)
+- `execution_error`: 6 errors (60%)
+- `agent_error`: 2 errors (20%)
+- `parse_error`: 1 error (10%)
 
 ### Command Distribution
-- `/test` (all variants): 15 errors (65%)
-- `/build`: 2 errors (8%)
-- Other test commands: 6 errors (26%)
+- `/plan`: 5 errors (50%)
+- `/build`: 2 errors (20%)
+- `/debug`: 1 error (10%)
+- `/test-t1`: 1 error (10%)
 
 ### Exit Code Distribution (Execution Errors)
-- Exit code 127 (command not found): 9 errors (50% of execution errors)
-- Exit code 1 (general failure): 5 errors (28% of execution errors)
-- No exit code captured: 4 errors (22% of execution errors)
+- Exit code 127 (command not found): 6 errors (100% of execution errors)
 
-## Implementation Status
-- **Status**: Plan Revised
-- **Plan**: [../plans/001_error_analysis_and_repair_plan.md](../plans/001_error_analysis_and_repair_plan.md)
-- **Implementation**: [Will be updated by /build orchestrator]
-- **Date**: 2025-11-20
-- **Revision Notes**: Plan expanded from 4 to 7 phases to address build workflow execution failures identified in gap analysis report. Now covers both error logging infrastructure (original scope) and build workflow repair (new scope).
+### Error Source Distribution
+- `bash_trap`: 7 errors (70%)
+- `bash_block_1c`: 2 errors (20%)
+- (no source/parse context): 1 error (10%)
+
+### Critical Findings Summary
+- **All errors are production failures** (no test-induced errors in current log)
+- **Library sourcing is primary failure mode** (40% of errors)
+- **Platform compatibility issues** (20% of errors from missing /etc/bashrc)
+- **Agent contract violations** (20% of errors from topic naming agent)
+- **Error handling infrastructure issues** (10% from trap initialization)

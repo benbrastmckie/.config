@@ -879,8 +879,8 @@ if [ -z "$TEST_OUTPUT_PATH" ] || [ ! -f "$TEST_OUTPUT_PATH" ]; then
       TEST_COMMAND="npm test"
     elif [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
       TEST_COMMAND="pytest"
-    elif [ -f ".claude/run_all_tests.sh" ]; then
-      TEST_COMMAND="./.claude/run_all_tests.sh"
+    elif [ -f ".claude/tests/run_all_tests.sh" ]; then
+      TEST_COMMAND="./.claude/tests/run_all_tests.sh"
     else
       TEST_COMMAND=""
     fi

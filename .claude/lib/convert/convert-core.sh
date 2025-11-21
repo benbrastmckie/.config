@@ -25,6 +25,40 @@ source "$SCRIPT_DIR/convert-docx.sh"
 source "$SCRIPT_DIR/convert-pdf.sh"
 source "$SCRIPT_DIR/convert-markdown.sh"
 
+# Conditional error logging integration (backward compatible)
+ERROR_LOGGING_AVAILABLE=false
+if [[ -n "${CLAUDE_PROJECT_DIR:-}" ]]; then
+  if source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null; then
+    ERROR_LOGGING_AVAILABLE=true
+    if type ensure_error_log_exists &>/dev/null; then
+      ensure_error_log_exists 2>/dev/null || true
+    fi
+  fi
+fi
+
+# Wrapper function for conversion error logging
+log_conversion_error() {
+  local error_type="${1:-execution_error}"
+  local error_message="${2:-Unknown conversion error}"
+  local error_details="${3:-{}}"
+
+  if [[ "$ERROR_LOGGING_AVAILABLE" == "true" ]] && type log_command_error &>/dev/null; then
+    local command="${COMMAND_NAME:-convert-core.sh}"
+    local workflow_id="${WORKFLOW_ID:-unknown}"
+    local user_args="${USER_ARGS:-}"
+    local source="convert-core.sh"
+
+    log_command_error \
+      "$command" \
+      "$workflow_id" \
+      "$user_args" \
+      "$error_type" \
+      "$error_message" \
+      "$source" \
+      "$error_details"
+  fi
+}
+
 # Timeout configuration (seconds)
 TIMEOUT_DOCX_TO_MD=60
 TIMEOUT_PDF_TO_MD=300
@@ -874,6 +908,7 @@ convert_file() {
 
       if [[ "$conversion_success" == "false" ]]; then
         echo "    ✗ Failed to convert $basename"
+        log_conversion_error "execution_error" "DOCX conversion failed" "{\"input_file\": \"$input_file\", \"basename\": \"$basename\", \"output_file\": \"$output_file\"}"
         docx_failed=$((docx_failed + 1))
       else
         echo "    ✓ Converted to $(basename "$output_file") (using $tool_used)"
@@ -933,6 +968,7 @@ convert_file() {
 
       if [[ "$conversion_success" == "false" ]]; then
         echo "    ✗ Failed to convert $basename"
+        log_conversion_error "execution_error" "PDF conversion failed" "{\"input_file\": \"$input_file\", \"basename\": \"$basename\", \"output_file\": \"$output_file\"}"
         pdf_failed=$((pdf_failed + 1))
       else
         echo "    ✓ Converted to $(basename "$output_file") (using $tool_used)"
@@ -963,10 +999,12 @@ convert_file() {
           fi
         else
           echo "    ✗ Failed to convert $basename"
+          log_conversion_error "execution_error" "Markdown conversion failed" "{\"input_file\": \"$input_file\", \"basename\": \"$basename\", \"output_file\": \"$output_file\"}"
           md_to_docx_failed=$((md_to_docx_failed + 1))
         fi
       else
         echo "    ✗ Pandoc not available for MD→DOCX conversion"
+        log_conversion_error "execution_error" "Markdown conversion failed: Pandoc not available" "{\"input_file\": \"$input_file\", \"basename\": \"$basename\", \"output_file\": \"$output_file\"}"
         md_to_docx_failed=$((md_to_docx_failed + 1))
       fi
       ;;
@@ -1240,6 +1278,7 @@ main_conversion() {
   # Validate input directory
   if [[ ! -d "$INPUT_DIR" ]]; then
     echo "Error: Input directory not found: $INPUT_DIR" >&2
+    log_conversion_error "validation_error" "Input directory not found" "{\"input_dir\": \"$INPUT_DIR\"}"
     exit 1
   fi
 

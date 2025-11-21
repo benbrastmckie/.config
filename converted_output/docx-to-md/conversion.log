@@ -1,0 +1,15 @@
+Document Conversion Log - Fri Nov 21 08:28:45 AM PST 2025
+Input Directory: /home/benjamin/.config/converted_output
+Output Directory: /home/benjamin/.config/converted_output/docx-to-md
+Conversion Direction: TO_MARKDOWN
+
+[SUCCESS] convert-test-original.docx → convert-test-original.md (tool: markitdown)
+[SUCCESS] convert-test-original.pdf → convert-test-original_1.md (tool: markitdown)
+
+======================================
+Conversion Summary
+======================================
+DOCX → MD: 1 success, 0 failed
+PDF → MD: 1 success, 0 failed
+MD → DOCX: 0 success, 0 failed
+MD → PDF: 0 success, 0 failed

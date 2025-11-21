@@ -154,6 +154,46 @@ All script mode features PLUS:
 
 **EXECUTE NOW**: Follow these steps in EXACT sequential order.
 
+### STEP 0.5 (ENVIRONMENT INITIALIZATION) - Initialize CLAUDE_PROJECT_DIR
+
+**EXECUTE FIRST - Defensive Environment Initialization**:
+
+```bash
+# Defensive initialization of CLAUDE_PROJECT_DIR with fallback detection
+if [[ -z "${CLAUDE_PROJECT_DIR:-}" ]]; then
+  # Attempt to source unified-location-detection.sh and use detect_project_root
+  if [[ -f ".claude/lib/core/unified-location-detection.sh" ]]; then
+    source .claude/lib/core/unified-location-detection.sh 2>/dev/null && {
+      CLAUDE_PROJECT_DIR="$(detect_project_root)"
+    } || {
+      # Fallback: Use git root or pwd
+      CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+    }
+  else
+    # Direct fallback if library not found: use git root or pwd
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  fi
+
+  export CLAUDE_PROJECT_DIR
+fi
+
+# Validate CLAUDE_PROJECT_DIR is set and valid
+if [[ -z "${CLAUDE_PROJECT_DIR:-}" ]]; then
+  echo "❌ CRITICAL ERROR: CLAUDE_PROJECT_DIR not set after initialization"
+  exit 1
+fi
+
+if [[ ! -d "$CLAUDE_PROJECT_DIR" ]]; then
+  echo "❌ CRITICAL ERROR: CLAUDE_PROJECT_DIR points to non-existent directory: $CLAUDE_PROJECT_DIR"
+  exit 1
+fi
+```
+
+**MANDATORY VERIFICATION - Environment Initialized**:
+```bash
+echo "✓ VERIFIED: CLAUDE_PROJECT_DIR=$CLAUDE_PROJECT_DIR"
+```
+
 ### STEP 0 (SKILL AVAILABILITY CHECK) - Check for document-converter Skill
 
 **EXECUTE FIRST - Skill Detection**:
@@ -193,6 +233,38 @@ user_request="$*"  # Full command text for mode detection
 echo "✓ VERIFIED: input_dir=$input_dir, output_dir=$output_dir"
 ```
 
+### STEP 1.5 (ERROR LOGGING SETUP) - Initialize Error Logging
+
+**EXECUTE NOW - Error Logging Integration**:
+
+```bash
+# Source error-handling library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "❌ CRITICAL ERROR: Cannot load error-handling library"
+  echo "   Expected: ${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh"
+  exit 1
+}
+
+# Initialize error log
+ensure_error_log_exists || {
+  echo "❌ CRITICAL ERROR: Cannot initialize error log"
+  exit 1
+}
+
+# Set workflow metadata
+COMMAND_NAME="/convert-docs"
+WORKFLOW_ID="convert_docs_$(date +%s)"
+USER_ARGS="$*"
+
+# Export metadata to environment for delegated scripts
+export COMMAND_NAME WORKFLOW_ID USER_ARGS
+```
+
+**MANDATORY VERIFICATION - Error Logging Initialized**:
+```bash
+echo "✓ VERIFIED: Error logging initialized (workflow_id=$WORKFLOW_ID)"
+```
+
 ### STEP 2 (REQUIRED BEFORE STEP 3) - Verify Input Path
 
 **EXECUTE NOW - Path Verification**:
@@ -201,6 +273,14 @@ echo "✓ VERIFIED: input_dir=$input_dir, output_dir=$output_dir"
 # Verify input directory exists
 if [[ ! -d "$input_dir" ]]; then
   echo "❌ CRITICAL ERROR: Input directory does not exist: $input_dir"
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Input directory does not exist" \
+    "step_2_validation" \
+    "$(jq -n --arg dir "$input_dir" '{input_dir: $dir, provided_by_user: true}')"
   exit 1
 fi
 
@@ -210,6 +290,14 @@ file_count=$(find "$input_dir" -type f \( -name "*.md" -o -name "*.docx" -o -nam
 if [[ $file_count -eq 0 ]]; then
   echo "❌ CRITICAL ERROR: No convertible files found in $input_dir"
   echo "   Looking for: *.md, *.docx, *.pdf"
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "No convertible files found in input directory" \
+    "step_2_validation" \
+    "$(jq -n --arg dir "$input_dir" --argjson count $file_count --argjson exts '["md", "docx", "pdf"]' '{input_dir: $dir, file_count: $count, expected_extensions: $exts}')"
   exit 1
 fi
 
@@ -323,6 +411,14 @@ echo "PROGRESS: Output directory: $OUTPUT_DIR_ABS"
 # Source the conversion core module and run main function
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/convert/convert-core.sh" || {
   echo "❌ CRITICAL ERROR: Cannot source convert-core.sh"
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Failed to source convert-core.sh library" \
+    "step_4_script_mode" \
+    "$(jq -n --arg lib "${CLAUDE_PROJECT_DIR}/.claude/lib/convert/convert-core.sh" --arg proj "$CLAUDE_PROJECT_DIR" '{lib_path: $lib, CLAUDE_PROJECT_DIR: $proj}')"
   exit 1
 }
 
@@ -331,6 +427,14 @@ main_conversion "$input_dir" "$OUTPUT_DIR_ABS"
 CONVERSION_EXIT=$?
 if [ $CONVERSION_EXIT -ne 0 ]; then
   echo "❌ ERROR: Script mode conversion failed"
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "execution_error" \
+    "main_conversion function returned non-zero exit code" \
+    "step_4_script_mode" \
+    "$(jq -n --arg input "$input_dir" --arg output "$OUTPUT_DIR_ABS" --argjson exit $CONVERSION_EXIT '{exit_code: $exit, input_dir: $input, output_dir: $output, mode: "script"}')"
   exit 1
 fi
 ```
@@ -414,6 +518,14 @@ if [[ ! -d "$output_dir" ]]; then
     output_dir="$possible_output"
   else
     echo "❌ FALLBACK FAILED: No output directory found"
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "agent_error" \
+      "Agent mode failed: output directory not created" \
+      "step_5_agent_mode" \
+      "$(jq -n --arg expected "$output_dir" --arg input "$input_dir" '{expected_output_dir: $expected, input_dir: $input, mode: "agent", agent_name: "doc-converter"}')"
     exit 1
   fi
 fi
@@ -423,6 +535,14 @@ output_count=$(find "$output_dir" -type f \( -name "*.md" -o -name "*.docx" -o -
 
 if [[ $output_count -eq 0 ]]; then
   echo "❌ CRITICAL ERROR: Agent mode produced no output files"
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Agent mode produced no output files" \
+    "step_5_agent_mode" \
+    "$(jq -n --arg output "$output_dir" --arg input "$input_dir" --argjson count $output_count '{output_dir: $output, input_dir: $input, file_count: $count, mode: "agent", agent_name: "doc-converter"}')"
   exit 1
 fi
 

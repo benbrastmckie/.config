@@ -51,11 +51,11 @@ else
     BEFORE_EMPTY_COUNT=-1
 fi
 
-# Find all test files
-TEST_FILES=$(find "$TEST_DIR" -name "test_*.sh" -not -name "run_all_tests.sh" | sort)
+# Find all test files (recursive, excluding fixtures and other non-test directories)
+TEST_FILES=$(find "$TEST_DIR" \( -path "*/fixtures" -o -path "*/logs" -o -path "*/validation_results" -o -path "*/tmp" -o -path "*/scripts" \) -prune -o -name "test_*.sh" -not -name "run_all_tests.sh" -print | sort)
 
 # Find all validation scripts
-VALIDATION_FILES=$(find "$TEST_DIR" -name "validate_*.sh" | sort)
+VALIDATION_FILES=$(find "$TEST_DIR" \( -path "*/fixtures" -o -path "*/logs" -o -path "*/validation_results" -o -path "*/tmp" -o -path "*/scripts" \) -prune -o -name "validate_*.sh" -print | sort)
 
 # Combine test and validation files
 ALL_TEST_FILES="$TEST_FILES $VALIDATION_FILES"

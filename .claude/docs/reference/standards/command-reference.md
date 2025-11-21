@@ -177,26 +177,37 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 ---
 
 ### /errors
-**Purpose**: Query and analyze error logs from centralized error logging system
+**Purpose**: Generate error analysis reports via errors-analyst agent, or query error logs directly
 
-**Usage**: `/errors [--command <cmd>] [--workflow-id <id>] [--error-type <type>] [--limit <N>] [--summary]`
+**Usage**: `/errors [options]`
 
 **Type**: utility
 
+**Modes**:
+- **Default Mode** (no `--query` flag): Generate structured error analysis report via errors-analyst agent
+- **Query Mode** (`--query` flag): Display error logs directly (backward compatible)
+
 **Arguments**:
 - `--command <cmd>` (optional): Filter by command name (e.g., `/build`, `/plan`)
+- `--since <time>` (optional): Filter errors since timestamp (ISO 8601 format)
+- `--type <type>` (optional): Filter by error type (state_error, validation_error, agent_error, etc.)
 - `--workflow-id <id>` (optional): Filter by workflow ID
-- `--error-type <type>` (optional): Filter by error type (state_error, validation_error, etc.)
-- `--limit <N>` (optional): Limit results to N most recent (default: 10)
-- `--summary` (optional): Show summary statistics instead of individual errors
+- `--limit <N>` (optional): Limit results (default: 10 for query mode, all for report mode)
+- `--log-file <path>` (optional): Log file path (default: .claude/data/logs/errors.jsonl)
+- `--query` (optional): Use query mode (legacy behavior)
+- `--summary` (optional): Show error summary (query mode only)
+- `--raw` (optional): Output raw JSONL entries (query mode only)
 
-**Agents Used**: None (direct query)
+**Agents Used**: errors-analyst (Haiku model for context-efficient analysis)
 
-**Output**: Formatted error log entries with context and timestamps
+**Output**:
+- **Report Mode**: Error analysis report in `.claude/specs/{NNN_error_analysis}/reports/001_error_report.md`
+- **Query Mode**: Formatted error log entries with context and timestamps
 
 **See Also**:
-- [/errors Command Guide](../guides/commands/errors-command-guide.md) - Comprehensive usage, query patterns, troubleshooting workflows
+- [/errors Command Guide](../guides/commands/errors-command-guide.md) - Comprehensive usage, report generation, query patterns
 - [errors.md](../../commands/errors.md) - Executable command file
+- [errors-analyst Agent](agent-reference.md#errors-analyst) - Error analysis agent reference
 
 ---
 

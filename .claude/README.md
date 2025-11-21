@@ -774,9 +774,10 @@ ls .claude/commands/ .claude/agents/ .claude/templates/
 
 ### Core Subsystems
 - [agents/](agents/README.md) - Specialized AI assistants
-- [data/checkpoints/](data/checkpoints/README.md) - Workflow state persistence
+- [backups/](backups/README.md) - Backup storage for refactors
 - [commands/](commands/README.md) - Slash commands
 - [data/](data/README.md) - Runtime logs and metrics (gitignored)
+- [data/checkpoints/](data/checkpoints/README.md) - Workflow state persistence
 - [docs/](docs/README.md) - Integration guides and standards
 - [hooks/](hooks/README.md) - Event automation scripts
 - [lib/](lib/README.md) - Supporting utilities

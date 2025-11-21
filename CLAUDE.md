@@ -190,9 +190,19 @@ See [Decision Trees](.claude/docs/reference/decision-trees/README.md) for decisi
 [Used by: /document, /plan]
 
 ### README Requirements
-Every subdirectory must have a README.md containing:
+
+See [Documentation Standards](.claude/docs/reference/standards/documentation-standards.md) for complete README.md structure requirements, directory classification, and template selection guide.
+
+**Directory Classification Quick Reference**:
+- **Active Development** (commands/, agents/, lib/, docs/, tests/, scripts/): README.md required at all levels
+- **Utility** (data/, backups/): Root README.md only, documents purpose and lifecycle
+- **Temporary** (tmp/): README.md not required (ephemeral content)
+- **Archive** (archive/): Timestamped manifests only, no root README
+- **Topic-Based** (specs/): Root README.md only, individual topics self-documenting
+
+**Standard README Sections** (for directories requiring README):
 - **Purpose**: Clear explanation of directory role
-- **Module Documentation**: Documentation for each file/module
+- **Module Documentation**: Documentation for each file/module (active directories only)
 - **Usage Examples**: Code examples where applicable
 - **Navigation Links**: Links to parent and subdirectory READMEs
 

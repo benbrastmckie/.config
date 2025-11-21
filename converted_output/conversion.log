@@ -1,0 +1,14 @@
+Document Conversion Log - Fri Nov 21 08:28:12 AM PST 2025
+Input Directory: /home/benjamin/.config/.claude/tmp
+Output Directory: /home/benjamin/.config/converted_output
+Conversion Direction: FROM_MARKDOWN
+
+[SUCCESS] convert-test-original.md → convert-test-original.docx (tool: pandoc)
+
+======================================
+Conversion Summary
+======================================
+DOCX → MD: 0 success, 0 failed
+PDF → MD: 0 success, 0 failed
+MD → DOCX: 1 success, 0 failed
+MD → PDF: 0 success, 0 failed
