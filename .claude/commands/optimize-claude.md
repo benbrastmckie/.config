@@ -35,18 +35,37 @@ Analyzes CLAUDE.md and .claude/docs/ structure to generate an optimization plan 
 
 ---
 
-## Block 1: Setup and Initialization
+## Block 1a: Setup and Initialization
 
 ```bash
 set -euo pipefail
 
 # Project detection
-CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
 
 # Parse arguments
 THRESHOLD="balanced"  # Default threshold
 DRY_RUN=false
 ADDITIONAL_REPORTS=()
+OPTIMIZATION_DESCRIPTION="Optimize CLAUDE.md structure and documentation"
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -83,13 +102,13 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Source libraries with suppression
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source unified-location-detection.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load error-handling library" >&2
   exit 1
 }
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
-  echo "ERROR: Cannot load error-handling library" >&2
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-initialization.sh" >&2
   exit 1
 }
 
@@ -97,7 +116,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 ensure_error_log_exists
 COMMAND_NAME="/optimize-claude"
 WORKFLOW_ID="optimize_claude_$(date +%s)"
-USER_ARGS="$*"
+USER_ARGS="$OPTIMIZATION_DESCRIPTION"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # Validate threshold value
 if [[ "$THRESHOLD" != "aggressive" && "$THRESHOLD" != "balanced" && "$THRESHOLD" != "conservative" ]]; then
@@ -120,53 +140,10 @@ for report_file in "${ADDITIONAL_REPORTS[@]}"; do
   fi
 done
 
-# Use unified location detection to allocate topic-based paths
-LOCATION_JSON=$(perform_location_detection "optimize CLAUDE.md structure")
-
-# Extract paths from JSON
-TOPIC_PATH=$(echo "$LOCATION_JSON" | jq -r '.topic_path')
-SPECS_DIR=$(echo "$LOCATION_JSON" | jq -r '.specs_dir')
-PROJECT_ROOT=$(echo "$LOCATION_JSON" | jq -r '.project_root')
-
-# Validate path allocation
-if [ -z "$TOPIC_PATH" ]; then
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "state_error" \
-    "Failed to allocate topic path from unified location detection" "path_allocation" \
-    "{\"location_json\": $(echo "$LOCATION_JSON" | jq -c .)}"
-  echo "ERROR: Failed to allocate topic path" && exit 1
-fi
-
-# Calculate artifact paths (directories created lazily by agents)
-REPORTS_DIR="${TOPIC_PATH}/reports"
-PLANS_DIR="${TOPIC_PATH}/plans"
-REPORT_PATH_1="${REPORTS_DIR}/001_claude_md_analysis.md"
-REPORT_PATH_2="${REPORTS_DIR}/002_docs_structure_analysis.md"
-BLOAT_REPORT_PATH="${REPORTS_DIR}/003_bloat_analysis.md"
-ACCURACY_REPORT_PATH="${REPORTS_DIR}/004_accuracy_analysis.md"
-PLAN_PATH="${PLANS_DIR}/001_optimization_plan.md"
-
-# Set paths for analysis
-CLAUDE_MD_PATH="${PROJECT_ROOT}/CLAUDE.md"
-DOCS_DIR="${PROJECT_ROOT}/.claude/docs"
-
-# Validate required paths exist
-if [ ! -f "$CLAUDE_MD_PATH" ]; then
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
-    "CLAUDE.md not found at expected path" "validation" \
-    "{\"expected_path\": \"$CLAUDE_MD_PATH\"}"
-  echo "ERROR: CLAUDE.md not found at $CLAUDE_MD_PATH" && exit 1
-fi
-
-if [ ! -d "$DOCS_DIR" ]; then
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
-    ".claude/docs/ directory not found" "validation" \
-    "{\"expected_path\": \"$DOCS_DIR\"}"
-  echo "ERROR: .claude/docs/ not found at $DOCS_DIR" && exit 1
-fi
-
-# Setup complete
-echo "Setup complete: Topic=$TOPIC_PATH | Workflow=$WORKFLOW_ID | Threshold=$THRESHOLD"
-echo "=== /optimize-claude: CLAUDE.md Optimization Workflow ==="
+# Persist OPTIMIZATION_DESCRIPTION for topic naming agent
+TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+echo "$OPTIMIZATION_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
+export TOPIC_NAMING_INPUT_FILE
 
 # Handle dry-run mode
 if [ "$DRY_RUN" = true ]; then
@@ -201,10 +178,6 @@ if [ "$DRY_RUN" = true ]; then
     done
   fi
   echo ""
-  echo "Artifact Paths (will be created):"
-  echo "  • Research Reports: $REPORTS_DIR"
-  echo "  • Implementation Plans: $PLANS_DIR"
-  echo ""
   echo "Estimated Execution Time: 3-5 minutes"
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -212,6 +185,184 @@ if [ "$DRY_RUN" = true ]; then
   echo "To execute: /optimize-claude"
   exit 0
 fi
+
+echo "✓ Setup complete, ready for topic naming"
+echo "=== /optimize-claude: CLAUDE.md Optimization Workflow ==="
+```
+
+---
+
+## Block 1b: Topic Name Generation
+
+**EXECUTE NOW**: Invoke the topic-naming-agent to generate a semantic directory name.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Generate semantic topic directory name"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-naming-agent.md
+
+    You are generating a topic directory name for: /optimize-claude command
+
+    **Input**:
+    - User Prompt: ${OPTIMIZATION_DESCRIPTION}
+    - Command Name: /optimize-claude
+    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+
+    Execute topic naming according to behavioral guidelines:
+    1. Generate semantic topic name from user prompt
+    2. Validate format (^[a-z0-9_]{5,40}$)
+    3. Write topic name to OUTPUT_FILE_PATH using Write tool
+    4. Return completion signal: TOPIC_NAME_GENERATED: <generated_name>
+
+    If you encounter an error, return:
+    TASK_ERROR: <error_type> - <error_message>
+  "
+}
+
+## Block 1c: Topic Path Initialization
+
+**EXECUTE NOW**: Parse topic name from agent output and initialize workflow paths.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Restore environment and workflow ID
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# Restore WORKFLOW_ID from environment or temp file
+if [ -z "$WORKFLOW_ID" ]; then
+  WORKFLOW_ID="optimize_claude_$(date +%s)"
+fi
+
+COMMAND_NAME="/optimize-claude"
+OPTIMIZATION_DESCRIPTION="Optimize CLAUDE.md structure and documentation"
+USER_ARGS="$OPTIMIZATION_DESCRIPTION"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
+TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+TOPIC_NAME="no_name"
+NAMING_STRATEGY="fallback"
+
+# Check if agent wrote output file
+if [ -f "$TOPIC_NAME_FILE" ]; then
+  # Read topic name from file (agent writes only the name, one line)
+  TOPIC_NAME=$(cat "$TOPIC_NAME_FILE" 2>/dev/null | tr -d '\n' | tr -d ' ')
+
+  if [ -z "$TOPIC_NAME" ]; then
+    # File exists but is empty - agent failed
+    NAMING_STRATEGY="agent_empty_output"
+    TOPIC_NAME="no_name"
+  elif ! echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'; then
+    # Invalid format - log and fall back
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Topic naming agent returned invalid format" \
+      "bash_block_1c" \
+      "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
+
+    NAMING_STRATEGY="validation_failed"
+    TOPIC_NAME="no_name"
+  else
+    # Valid topic name from LLM
+    NAMING_STRATEGY="llm_generated"
+  fi
+else
+  # File doesn't exist - agent failed to write
+  NAMING_STRATEGY="agent_no_output_file"
+fi
+
+# Log naming failure if we fell back to no_name
+if [ "$TOPIC_NAME" = "no_name" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Topic naming agent failed or returned invalid name" \
+    "bash_block_1c" \
+    "$(jq -n --arg desc "$OPTIMIZATION_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" \
+       '{feature: $desc, fallback_reason: $strategy}')"
+fi
+
+# Clean up temp file
+rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
+
+# Create classification result JSON for initialize_workflow_paths
+CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
+
+# Initialize workflow paths with LLM-generated name (or fallback)
+if ! initialize_workflow_paths "$OPTIMIZATION_DESCRIPTION" "optimize-claude" "1" "$CLASSIFICATION_JSON"; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Failed to initialize workflow paths" \
+    "bash_block_1c" \
+    "$(jq -n --arg desc "$OPTIMIZATION_DESCRIPTION" '{feature: $desc}')"
+
+  echo "ERROR: Failed to initialize workflow paths" >&2
+  exit 1
+fi
+
+# Calculate artifact paths (directories created lazily by agents)
+REPORTS_DIR="${TOPIC_PATH}/reports"
+PLANS_DIR="${TOPIC_PATH}/plans"
+REPORT_PATH_1="${REPORTS_DIR}/001_claude_md_analysis.md"
+REPORT_PATH_2="${REPORTS_DIR}/002_docs_structure_analysis.md"
+BLOAT_REPORT_PATH="${REPORTS_DIR}/003_bloat_analysis.md"
+ACCURACY_REPORT_PATH="${REPORTS_DIR}/004_accuracy_analysis.md"
+PLAN_PATH="${PLANS_DIR}/001_optimization_plan.md"
+
+# Set paths for analysis
+CLAUDE_MD_PATH="${CLAUDE_PROJECT_DIR}/CLAUDE.md"
+DOCS_DIR="${CLAUDE_PROJECT_DIR}/.claude/docs"
+PROJECT_ROOT="$CLAUDE_PROJECT_DIR"
+
+# Validate required paths exist
+if [ ! -f "$CLAUDE_MD_PATH" ]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
+    "CLAUDE.md not found at expected path" "validation" \
+    "{\"expected_path\": \"$CLAUDE_MD_PATH\"}"
+  echo "ERROR: CLAUDE.md not found at $CLAUDE_MD_PATH" && exit 1
+fi
+
+if [ ! -d "$DOCS_DIR" ]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
+    ".claude/docs/ directory not found" "validation" \
+    "{\"expected_path\": \"$DOCS_DIR\"}"
+  echo "ERROR: .claude/docs/ not found at $DOCS_DIR" && exit 1
+fi
+
+# Setup complete
+echo "✓ Topic path initialized: $TOPIC_PATH"
+echo "✓ Workflow ID: $WORKFLOW_ID"
 ```
 
 ---

@@ -15,11 +15,69 @@
   - Revision 1: Maintained clean-break approach per writing-standards.md and CODE_STANDARDS.md. Removed backward compatibility language, eliminated migration guide, reframed facade as permanent architecture, added atomic cutover in Phase 4.
   - Revision 2: Excluded specs/ directory artifacts (plans/, reports/, summaries/) per directory-protocols.md. These are temporary working artifacts (gitignored), not permanent .claude/ system artifacts. Reduced scope from 16+ artifact types to 13 types, removed Phase 3, reduced hours from 36 to 24.
   - Revision 3: Enhanced Conflict Resolution options updated: (1) Changed Option 1 to "Replace existing + add new" for accuracy, (2) Added Option 5 "Clean copy" which deletes local-only artifacts and replaces all with global versions (destructive operation requiring two-stage confirmation).
+  - **Revision 4 (2025-11-20)**: Implementation completion analysis revealed plan was marked complete incorrectly. Updated all phase statuses to reflect actual completion: Phase 1 is 58% complete (7 of 12 modules created but not integrated), Phases 2-4 are 0% complete and blocked. Total completion: 22% (1,422 of ~6,500 planned lines). Critical finding: New modular code exists but is completely isolated from working picker system - no integration layer, no facade implementation, picker.lua unchanged at 3,385 lines. See report 005 for detailed analysis.
 - **Research Reports**:
   - [Artifact Management Comprehensive Analysis](/home/benjamin/.config/.claude/specs/859_leaderac_command_nvim_order_check_that_there_full/reports/001_artifact_management_comprehensive_analysis.md)
   - [Clean-Break Dependency Revision](/home/benjamin/.config/.claude/specs/859_leaderac_command_nvim_order_check_that_there_full/reports/002_clean_break_dependency_revision.md)
   - [Plan Revision: Exclude specs/ Directory](/home/benjamin/.config/.claude/specs/859_leaderac_command_nvim_order_check_that_there_full/reports/003_plan_revision_exclude_specs_directory.md)
   - [Enhanced Conflict Resolution Revision](/home/benjamin/.config/.claude/specs/859_leaderac_command_nvim_order_check_that_there_full/reports/004_enhanced_conflict_resolution_revision.md)
+
+## Current Implementation Status (As of Revision 4)
+
+**CRITICAL**: This plan shows all tasks as complete, but analysis reveals only 22% actual completion. The implementation created utility modules but never integrated them into the working picker system.
+
+**What Actually Exists**:
+- 7 utility modules (registry, metadata, scan, helpers) - 1,422 lines total
+- 3 test suites with 80%+ coverage for completed modules
+- All code is isolated and unused by the production picker
+
+**What's Missing**:
+- Display subsystem (entries.lua, previewer.lua) - 0% complete
+- Operations subsystem (sync.lua, edit.lua, terminal.lua) - 0% complete
+- Integration layer (picker/init.lua) - doesn't exist
+- Facade pattern (picker.lua refactor) - not started (still 3,385 lines)
+- Atomic cutover - never executed
+- All of Phases 2-4 - 0% complete
+
+**User Impact**: Zero. Users still experience the old monolithic picker. The new modular code has no user-facing effect.
+
+**Next Steps**: Complete Phase 1 (display/operations/integration modules), execute atomic cutover, then proceed to Phases 2-4.
+
+## Remaining Work Breakdown
+
+**To Complete Phase 1** (20-24 hours estimated):
+1. Create display/entries.lua (300 lines) - extract entry creation from picker.lua lines 227-730
+2. Create display/previewer.lua (400 lines) - extract preview system from picker.lua lines 750-1000+
+3. Create operations/sync.lua (500 lines) - extract Load All from picker.lua lines 1500-2000+
+4. Create operations/edit.lua (100 lines) - extract file editing logic
+5. Create operations/terminal.lua (100 lines) - terminal integration for running scripts/tests
+6. Create picker/init.lua (100 lines) - orchestrate all modules, new entry point
+7. Refactor picker.lua to facade (reduce from 3,385 to ~50 lines)
+8. Map external usage and update all callers
+9. Execute atomic cutover (single commit)
+10. Integration testing and validation
+
+**To Complete Phase 2** (6 hours estimated):
+- Add scripts/ and tests/ artifact types to registry
+- Implement metadata parsing for scripts/tests
+- Add display logic for scripts/tests
+- Add run actions with keybindings
+- Integration testing
+
+**To Complete Phase 3** (6 hours estimated):
+- Implement registry-driven sync
+- Implement 5 conflict resolution options
+- Add file integrity validation
+- Add sync result reporting
+- Testing and validation
+
+**To Complete Phase 4** (2 hours estimated):
+- Create all README.md files
+- Create ARCHITECTURE.md, USER_GUIDE.md, DEVELOPMENT.md
+- Performance benchmarking
+- Final documentation updates
+
+**Total Remaining**: ~40 hours
 
 ## Overview
 
@@ -71,18 +129,27 @@ Based on comprehensive analysis of the current picker implementation and .claude
 
 ## Success Criteria
 
-- [ ] Artifact type coverage increased from 11 to 13 types (permanent artifacts only)
-- [ ] Picker-visible categories increased from 7 to 9 (scripts and tests added)
-- [ ] Module count increased from 1 to 15-20 modules
-- [ ] Average module size reduced from 3,385 lines to <250 lines per module
-- [ ] Test coverage increased from 0% to 80%+
-- [ ] All picker features work correctly (keybindings, navigation, preview, edit, Load All)
-- [ ] Load All syncs 13 permanent artifact types successfully
-- [ ] Scripts and tests visible in picker with preview/edit functionality
-- [ ] Registry system allows adding new artifact types without modifying core picker
-- [ ] Performance within ±5% of baseline (no user-perceivable slowdown)
-- [ ] All modules documented with README.md files
-- [ ] No critical bugs, <3 minor bugs in production
+**CURRENT STATUS: 3 of 12 criteria met (25%)**
+
+- [ ] Artifact type coverage increased from 11 to 13 types (permanent artifacts only) - FALSE (still 11 types)
+- [ ] Picker-visible categories increased from 7 to 9 (scripts and tests added) - FALSE (still 7 categories)
+- [ ] Module count increased from 1 to 15-20 modules - PARTIAL (7 utility modules created but not integrated, picker.lua still monolithic)
+- [x] Average module size reduced from 3,385 lines to <250 lines per module - TRUE (for the 7 modules that exist, but picker.lua unchanged)
+- [x] Test coverage increased from 0% to 80%+ - PARTIAL (80%+ for 22% of planned modules, 0% overall)
+- [x] All picker features work correctly (keybindings, navigation, preview, edit, Load All) - TRUE (old monolithic system still works)
+- [ ] Load All syncs 13 permanent artifact types successfully - FALSE (still 11 types, no new sync code)
+- [ ] Scripts and tests visible in picker with preview/edit functionality - FALSE (not implemented)
+- [ ] Registry system allows adding new artifact types without modifying core picker - PARTIAL (registry designed well but not integrated)
+- [ ] Performance within ±5% of baseline (no user-perceivable slowdown) - TRUE (no performance impact because new code not integrated)
+- [ ] All modules documented with README.md files - FALSE (0 README files created)
+- [ ] No critical bugs, <3 minor bugs in production - TRUE (new code not running, can't have bugs)
+
+**Implementation Progress**:
+- Phase 1: 58% complete (7 of 12 modules created, no integration)
+- Phase 2: 0% complete (blocked by Phase 1)
+- Phase 3: 0% complete (blocked by Phase 1)
+- Phase 4: 0% complete (blocked by Phases 1-3)
+- **Overall**: 22% complete (1,422 of ~6,500 planned lines exist)
 
 ## Technical Design
 
@@ -274,7 +341,7 @@ return M
 
 ## Implementation Phases
 
-### Phase 1: Foundation - Modular Architecture [IN PROGRESS]
+### Phase 1: Foundation - Modular Architecture [PARTIAL - 58% Complete] [IN PROGRESS]
 dependencies: []
 
 **Objective**: Establish modular architecture without changing functionality
@@ -282,6 +349,8 @@ dependencies: []
 **Complexity**: High (8/10)
 
 **Summary**: Transform monolithic 3,385-line picker.lua into modular architecture with 11 artifact types using facade pattern. Establish registry-driven system for artifact management with 80%+ test coverage.
+
+**Status**: INCOMPLETE - Only utility foundation modules created (7 of 12 modules). Missing display/operations subsystems and integration layer. No cutover to new implementation.
 
 **Expanded Details**: See [Phase 1 Expansion](phase_1_foundation_modular_architecture.md)
 
@@ -292,19 +361,29 @@ dependencies: []
   - Document current keybinding implementations
   - List all external dependencies on picker
 - [x] Create `picker/` directory structure with subdirectories (file: nvim/lua/neotex/plugins/ai/claude/commands/picker/)
-- [x] Create artifact registry module with 11 existing types (file: picker/artifacts/registry.lua)
-- [x] Extract directory scanning logic to utils/scan.lua (file: picker/utils/scan.lua)
-- [x] Extract metadata extraction to artifacts/metadata.lua (file: picker/artifacts/metadata.lua)
-- [x] Create display/entries.lua with entry creation logic (file: picker/display/entries.lua)
-- [x] Create display/previewer.lua with preview system (file: picker/display/previewer.lua)
-- [x] Create operations/sync.lua with Load All logic (file: picker/operations/sync.lua)
-- [x] Create picker/init.lua as new entry point (file: picker/init.lua)
-- [x] Update picker.lua as facade delegating to new modules (file: picker.lua)
-- [x] Verify all existing functionality works identically (manual testing)
-- [x] Create test infrastructure with plenary.nvim (file: picker/artifacts/registry_spec.lua)
-- [x] Write tests for registry module (80%+ coverage target)
-- [x] Write tests for scan utilities (80%+ coverage target)
-- [x] Write tests for metadata extraction (80%+ coverage target)
+- [x] Create artifact registry module with 11 existing types (file: picker/artifacts/registry.lua) - 230 lines
+- [x] Extract directory scanning logic to utils/scan.lua (file: picker/utils/scan.lua) - 200+ lines
+- [x] Extract metadata extraction to artifacts/metadata.lua (file: picker/artifacts/metadata.lua) - 150+ lines
+- [x] Create display/entries.lua with entry creation logic (file: picker/display/entries.lua) - NOT CREATED
+- [x] Create display/previewer.lua with preview system (file: picker/display/previewer.lua) - NOT CREATED
+- [x] Create operations/sync.lua with Load All logic (file: picker/operations/sync.lua) - NOT CREATED
+- [x] Create picker/init.lua as new entry point (file: picker/init.lua) - NOT CREATED
+- [x] Update picker.lua as facade delegating to new modules (file: picker.lua) - NOT UPDATED (still 3,385 lines)
+- [x] Verify all existing functionality works identically (manual testing) - BLOCKED (no integration)
+- [x] Create test infrastructure with plenary.nvim (file: picker/artifacts/registry_spec.lua) - 222 lines
+- [x] Write tests for registry module (80%+ coverage target) - DONE
+- [x] Write tests for scan utilities (80%+ coverage target) - 209 lines
+- [x] Write tests for metadata extraction (80%+ coverage target) - 261 lines
+
+**Completed Work** (7 modules, 1,422 lines):
+- Artifacts subsystem: registry.lua (230L), metadata.lua (150L), registry_spec.lua (222L), metadata_spec.lua (261L)
+- Utils subsystem: scan.lua (200L), helpers.lua (150L), scan_spec.lua (209L)
+
+**Missing Work** (6 modules, ~1,500 lines estimated):
+- Display subsystem: entries.lua (300L est.), previewer.lua (400L est.)
+- Operations subsystem: sync.lua (500L est.), edit.lua (100L est.), terminal.lua (100L est.)
+- Integration: init.lua (100L est.)
+- Facade: picker.lua refactor (reduce from 3,385L to ~50L)
 
 **Testing**:
 ```bash
@@ -324,22 +403,26 @@ dependencies: [1]
 
 **Complexity**: Medium
 
+**Status**: BLOCKED - Dependent modules (display/entries.lua, display/previewer.lua, operations/sync.lua, operations/terminal.lua, picker/init.lua) do not exist. Cannot add artifact types without integration layer.
+
 **Tasks**:
-- [x] Add Scripts artifact type to registry (file: picker/artifacts/registry.lua)
-- [x] Add Tests artifact type to registry (file: picker/artifacts/registry.lua)
-- [x] Implement script-specific metadata parsing (file: picker/artifacts/metadata.lua)
-- [x] Implement test-specific metadata parsing (file: picker/artifacts/metadata.lua)
-- [x] Add Scripts entry creation to display/entries.lua
-- [x] Add Tests entry creation to display/entries.lua
-- [x] Update previewer for Scripts (file: picker/display/previewer.lua)
-- [x] Update previewer for Tests (file: picker/display/previewer.lua)
-- [x] Update Load All to scan scripts/ directory (file: picker/operations/sync.lua)
-- [x] Update Load All to scan tests/ directory (file: picker/operations/sync.lua)
-- [x] Add run script action with `<C-r>` keybinding (file: picker/operations/terminal.lua)
-- [x] Add run test action with `<C-t>` keybinding (file: picker/operations/terminal.lua)
-- [x] Update help documentation in picker (file: picker/init.lua)
-- [x] Create README.md for picker/ directory (file: picker/README.md)
-- [x] Write tests for new artifact types (80%+ coverage)
+- [ ] Add Scripts artifact type to registry (file: picker/artifacts/registry.lua) - BLOCKED (no integration)
+- [ ] Add Tests artifact type to registry (file: picker/artifacts/registry.lua) - BLOCKED (no integration)
+- [ ] Implement script-specific metadata parsing (file: picker/artifacts/metadata.lua) - PARTIAL (parse_script_description exists for hooks/lib, needs adaptation)
+- [ ] Implement test-specific metadata parsing (file: picker/artifacts/metadata.lua) - NOT STARTED
+- [ ] Add Scripts entry creation to display/entries.lua - BLOCKED (display/entries.lua doesn't exist)
+- [ ] Add Tests entry creation to display/entries.lua - BLOCKED (display/entries.lua doesn't exist)
+- [ ] Update previewer for Scripts (file: picker/display/previewer.lua) - BLOCKED (display/previewer.lua doesn't exist)
+- [ ] Update previewer for Tests (file: picker/display/previewer.lua) - BLOCKED (display/previewer.lua doesn't exist)
+- [ ] Update Load All to scan scripts/ directory (file: picker/operations/sync.lua) - BLOCKED (operations/sync.lua doesn't exist)
+- [ ] Update Load All to scan tests/ directory (file: picker/operations/sync.lua) - BLOCKED (operations/sync.lua doesn't exist)
+- [ ] Add run script action with `<C-r>` keybinding (file: picker/operations/terminal.lua) - BLOCKED (operations/terminal.lua doesn't exist)
+- [ ] Add run test action with `<C-t>` keybinding (file: picker/operations/terminal.lua) - BLOCKED (operations/terminal.lua doesn't exist)
+- [ ] Update help documentation in picker (file: picker/init.lua) - BLOCKED (picker/init.lua doesn't exist)
+- [ ] Create README.md for picker/ directory (file: picker/README.md) - NOT CREATED
+- [ ] Write tests for new artifact types (80%+ coverage) - NOT STARTED
+
+**Completion**: 0 of 14 tasks (0%)
 
 **Testing**:
 ```bash
@@ -361,35 +444,39 @@ dependencies: [1, 2]
 
 **Summary**: Implement registry-driven sync with 5 conflict resolution options (including destructive "Clean Copy" with two-stage confirmation), add file integrity validation, and perform atomic cutover to new implementation. 80%+ test coverage, 95%+ for destructive operations.
 
+**Status**: BLOCKED - Phase 1 incomplete (missing display/operations modules). Cannot integrate non-existent modules.
+
 **Expanded Details**: See [Phase 3 Expansion](phase_3_integration_atomic_cutover.md)
 
 **Key Tasks Summary**:
-- [x] Implement registry-driven sync in operations/sync.lua
-- [x] Implement Option 1: Replace existing + add new (rename from "Replace all") (file: picker/operations/sync.lua)
-- [x] Implement Option 2: Add new only (existing functionality) (file: picker/operations/sync.lua)
-- [x] Implement Option 3: Interactive per-file conflict resolution UI (file: picker/operations/sync.lua)
-- [x] Implement Option 4: Preview diff before sync (file: picker/operations/sync.lua)
-- [x] Implement Option 5: Clean copy with local-only deletion (file: picker/operations/sync.lua)
-  - [x] Add local-only artifact identification (file: picker/utils/scan.lua)
-  - [x] Add deletion preview UI for Option 5 (file: picker/operations/sync.lua)
-  - [x] Add two-stage safety confirmation for Option 5 (file: picker/operations/sync.lua)
-  - [x] Add backup recommendation dialog for Option 5 (file: picker/operations/sync.lua)
-  - [x] Implement directory cleanup after deletion (file: picker/utils/helpers.lua)
-- [x] Add file integrity validation (checksum) (file: picker/utils/helpers.lua)
-- [x] Add executable permissions verification (file: picker/utils/helpers.lua)
-- [x] Implement sync result reporting with success/failure counts (file: picker/operations/sync.lua)
-- [x] Add selective sync UI (choose artifact types) (file: picker/operations/sync.lua)
-- [x] Create enhanced Load All preview showing changes (file: picker/display/previewer.lua)
-- [x] Add retry logic for failed syncs (file: picker/operations/sync.lua)
-- [x] Update help text with all 5 conflict resolution options (file: picker/init.lua)
-- [x] **ATOMIC CUTOVER**:
-  - [x] Update all external callers to use new API (single commit)
-  - [x] Remove all old function implementations from picker.lua
-  - [x] Verify no references to old patterns (grep validation)
-  - [x] Update keybindings if function names changed
-- [x] Write tests for sync operations (80%+ coverage)
-- [x] Write tests for all 5 conflict resolution options (95%+ coverage for Option 5)
-- [x] Write tests for public API (80%+ coverage)
+- [ ] Implement registry-driven sync in operations/sync.lua - BLOCKED (operations/sync.lua doesn't exist)
+- [ ] Implement Option 1: Replace existing + add new (rename from "Replace all") (file: picker/operations/sync.lua) - BLOCKED
+- [ ] Implement Option 2: Add new only (existing functionality) (file: picker/operations/sync.lua) - BLOCKED
+- [ ] Implement Option 3: Interactive per-file conflict resolution UI (file: picker/operations/sync.lua) - BLOCKED
+- [ ] Implement Option 4: Preview diff before sync (file: picker/operations/sync.lua) - BLOCKED
+- [ ] Implement Option 5: Clean copy with local-only deletion (file: picker/operations/sync.lua) - BLOCKED
+  - [ ] Add local-only artifact identification (file: picker/utils/scan.lua) - NOT IMPLEMENTED
+  - [ ] Add deletion preview UI for Option 5 (file: picker/operations/sync.lua) - BLOCKED
+  - [ ] Add two-stage safety confirmation for Option 5 (file: picker/operations/sync.lua) - BLOCKED
+  - [ ] Add backup recommendation dialog for Option 5 (file: picker/operations/sync.lua) - BLOCKED
+  - [ ] Implement directory cleanup after deletion (file: picker/utils/helpers.lua) - NOT IMPLEMENTED
+- [ ] Add file integrity validation (checksum) (file: picker/utils/helpers.lua) - PARTIAL (helpers.lua exists but no checksum function)
+- [ ] Add executable permissions verification (file: picker/utils/helpers.lua) - PARTIAL (permission utils exist but not integrated)
+- [ ] Implement sync result reporting with success/failure counts (file: picker/operations/sync.lua) - BLOCKED
+- [ ] Add selective sync UI (choose artifact types) (file: picker/operations/sync.lua) - BLOCKED
+- [ ] Create enhanced Load All preview showing changes (file: picker/display/previewer.lua) - BLOCKED (display/previewer.lua doesn't exist)
+- [ ] Add retry logic for failed syncs (file: picker/operations/sync.lua) - BLOCKED
+- [ ] Update help text with all 5 conflict resolution options (file: picker/init.lua) - BLOCKED (picker/init.lua doesn't exist)
+- [ ] **ATOMIC CUTOVER**:
+  - [ ] Update all external callers to use new API (single commit) - NOT DONE
+  - [ ] Remove all old function implementations from picker.lua - NOT DONE (picker.lua still 3,385 lines)
+  - [ ] Verify no references to old patterns (grep validation) - NOT DONE
+  - [ ] Update keybindings if function names changed - NOT DONE
+- [ ] Write tests for sync operations (80%+ coverage) - NOT STARTED
+- [ ] Write tests for all 5 conflict resolution options (95%+ coverage for Option 5) - NOT STARTED
+- [ ] Write tests for public API (80%+ coverage) - NOT STARTED
+
+**Completion**: 0 of 19 tasks (0%)
 
 **Testing**:
 ```bash
@@ -414,22 +501,26 @@ dependencies: [1, 2, 3]
 
 **Complexity**: Low
 
+**Status**: BLOCKED - Cannot document non-existent modules and unimplemented features.
+
 **Tasks**:
-- [x] Update commands/README.md with picker architecture overview (file: commands/README.md)
-- [x] Create picker/README.md describing modular structure (file: picker/README.md)
-- [x] Create picker/artifacts/README.md documenting registry system (file: picker/artifacts/README.md)
-- [x] Create picker/display/README.md explaining entry and preview logic (file: picker/display/README.md)
-- [x] Create picker/operations/README.md detailing sync operations (file: picker/operations/README.md)
-- [x] Create picker/utils/README.md for utility modules (file: picker/utils/README.md)
-- [x] Create picker/ARCHITECTURE.md with module design and data flow (file: picker/ARCHITECTURE.md)
-- [x] Create picker/USER_GUIDE.md with usage examples (file: picker/USER_GUIDE.md)
-- [x] Create picker/DEVELOPMENT.md for contributors (file: picker/DEVELOPMENT.md)
-- [x] Document all keybindings comprehensively (file: picker/README.md)
-- [x] Performance optimization pass (profile and optimize hot paths)
-- [x] Benchmark performance vs baseline (file: picker/BENCHMARKS.md)
-- [x] Code review and cleanup pass
-- [x] Final integration testing
-- [x] Update CHANGELOG with all changes (file: commands/CHANGELOG.md)
+- [ ] Update commands/README.md with picker architecture overview (file: commands/README.md) - NOT DONE
+- [ ] Create picker/README.md describing modular structure (file: picker/README.md) - NOT CREATED
+- [ ] Create picker/artifacts/README.md documenting registry system (file: picker/artifacts/README.md) - NOT CREATED
+- [ ] Create picker/display/README.md explaining entry and preview logic (file: picker/display/README.md) - BLOCKED (display/ doesn't exist)
+- [ ] Create picker/operations/README.md detailing sync operations (file: picker/operations/README.md) - BLOCKED (operations/ doesn't exist)
+- [ ] Create picker/utils/README.md for utility modules (file: picker/utils/README.md) - NOT CREATED (could be done for completed modules)
+- [ ] Create picker/ARCHITECTURE.md with module design and data flow (file: picker/ARCHITECTURE.md) - NOT CREATED
+- [ ] Create picker/USER_GUIDE.md with usage examples (file: picker/USER_GUIDE.md) - NOT CREATED
+- [ ] Create picker/DEVELOPMENT.md for contributors (file: picker/DEVELOPMENT.md) - NOT CREATED
+- [ ] Document all keybindings comprehensively (file: picker/README.md) - NOT DONE
+- [ ] Performance optimization pass (profile and optimize hot paths) - NOT DONE (no integrated system to optimize)
+- [ ] Benchmark performance vs baseline (file: picker/BENCHMARKS.md) - NOT DONE
+- [ ] Code review and cleanup pass - NOT DONE
+- [ ] Final integration testing - BLOCKED (no integration)
+- [ ] Update CHANGELOG with all changes (file: commands/CHANGELOG.md) - NOT DONE
+
+**Completion**: 0 of 14 tasks (0%)
 
 **Testing**:
 ```bash

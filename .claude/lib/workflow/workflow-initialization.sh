@@ -197,7 +197,8 @@ validate_and_generate_filename_slugs() {
       if echo "$filename_slug" | grep -q '/'; then
         # Path separator found - reject and fall back
         strategy="sanitize"
-        final_slug=$(sanitize_topic_name "$short_name")
+        # Basic sanitization for short_name
+        final_slug=$(echo "$short_name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | sed 's/[^a-z0-9_]//g' | sed 's/__*/_/g' | sed 's/^_*//;s/_*$//' | cut -c1-50)
       elif [ ${#filename_slug} -gt 255 ]; then
         # Exceeds filesystem limit - truncate
         strategy="truncate"
@@ -210,7 +211,8 @@ validate_and_generate_filename_slugs() {
     # Tier 2: Sanitize short_name fallback
     elif [ -n "$short_name" ]; then
       strategy="sanitize"
-      final_slug=$(sanitize_topic_name "$short_name")
+      # Basic sanitization for short_name
+      final_slug=$(echo "$short_name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | sed 's/[^a-z0-9_]//g' | sed 's/__*/_/g' | sed 's/^_*//;s/_*$//' | cut -c1-50)
     # Tier 3: Generic fallback
     else
       strategy="generic"
@@ -237,12 +239,11 @@ validate_and_generate_filename_slugs() {
 # Helper Function: validate_topic_directory_slug
 # ==============================================================================
 
-# validate_topic_directory_slug: Three-tier validation for topic directory slug generation
+# validate_topic_directory_slug: Two-tier validation for topic directory slug generation
 #
-# Implements hybrid topic slug generation (Spec 771):
+# Implements hybrid topic slug generation:
 # Tier 1: Use LLM-generated topic_directory_slug if valid (preferred)
-# Tier 2: Extract significant words from description if LLM slug invalid (fallback)
-# Tier 3: Use sanitize_topic_name() if extract fails (ultimate fallback)
+# Tier 2: Use basic sanitization as fallback
 #
 # Arguments:
 #   $1 - classification_result: JSON classification result containing topic_directory_slug field
@@ -288,22 +289,10 @@ validate_topic_directory_slug() {
     fi
   fi
 
-  # Tier 2: Extract significant words from description
-  if [ -z "$topic_slug" ] && [ -n "$workflow_description" ]; then
-    # Use extract_significant_words from topic-utils.sh
-    if declare -f extract_significant_words >/dev/null 2>&1; then
-      topic_slug=$(extract_significant_words "$workflow_description")
-      if [ -n "$topic_slug" ] && echo "$topic_slug" | grep -Eq "$slug_regex"; then
-        strategy="extract"
-      else
-        topic_slug=""
-      fi
-    fi
-  fi
-
-  # Tier 3: Ultimate fallback to sanitize_topic_name
+  # Tier 2: Basic sanitization fallback
   if [ -z "$topic_slug" ]; then
-    topic_slug=$(sanitize_topic_name "$workflow_description")
+    # Basic sanitization for fallback scenarios
+    topic_slug=$(echo "$workflow_description" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | sed 's/[^a-z0-9_]//g' | sed 's/__*/_/g' | sed 's/^_*//;s/_*$//' | cut -c1-40)
     strategy="sanitize"
   fi
 
@@ -450,13 +439,13 @@ initialize_workflow_paths() {
   local topic_name
 
   # Use LLM-generated topic_directory_slug if classification_result provided (Spec 771)
-  # Otherwise fall back to sanitize_topic_name() for backward compatibility
+  # Otherwise fall back to basic sanitization for backward compatibility
   if [ -n "$classification_result" ]; then
-    # Use three-tier validation: LLM slug -> extract -> sanitize
+    # Use two-tier validation: LLM slug -> sanitize
     topic_name=$(validate_topic_directory_slug "$classification_result" "$workflow_description")
   else
-    # No classification result - use legacy sanitization (backward compatible)
-    topic_name=$(sanitize_topic_name "$workflow_description")
+    # No classification result - use basic sanitization (backward compatible)
+    topic_name=$(echo "$workflow_description" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | sed 's/[^a-z0-9_]//g' | sed 's/__*/_/g' | sed 's/^_*//;s/_*$//' | cut -c1-50)
   fi
 
   topic_num=$(get_or_create_topic_number "$specs_root" "$topic_name")
@@ -480,7 +469,7 @@ initialize_workflow_paths() {
     echo "" >&2
     echo "Functions Used:" >&2
     echo "  get_or_create_topic_number() - from topic-utils.sh (idempotent)" >&2
-    echo "  sanitize_topic_name() - from topic-utils.sh" >&2
+    echo "  validate_topic_directory_slug() - from workflow-initialization.sh" >&2
     echo "" >&2
     return 1
   fi

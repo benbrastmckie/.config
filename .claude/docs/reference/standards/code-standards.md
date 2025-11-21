@@ -62,6 +62,87 @@ source lib.sh
 
 See [Output Formatting Standards](output-formatting.md) for comprehensive patterns and [Bash Block Execution Model](.claude/docs/concepts/bash-block-execution-model.md#pattern-8-block-count-minimization) for block consolidation.
 
+### Directory Creation Anti-Patterns
+[Used by: All commands and agents]
+
+Commands MUST NOT create artifact subdirectories eagerly during setup. Use the lazy directory creation pattern where directories are created only when files are written.
+
+**NEVER: Eager Subdirectory Creation**
+
+This anti-pattern creates empty directories that persist when workflows fail or are interrupted:
+
+```bash
+# WRONG: Eager directory creation in command setup
+initialize_workflow_paths "$TOPIC_NAME" || exit 1
+
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+DEBUG_DIR="${TOPIC_PATH}/debug"
+PLANS_DIR="${TOPIC_PATH}/plans"
+
+# Creates directories immediately (VIOLATES lazy creation standard)
+mkdir -p "$RESEARCH_DIR"
+mkdir -p "$DEBUG_DIR"
+mkdir -p "$PLANS_DIR"
+
+# If workflow fails before agent writes files, empty directories persist
+```
+
+**Impact**: Each failed workflow creates 1-3 empty subdirectories. Over 400-500+ empty directories accumulated before this pattern was remediated (Spec 869 root cause analysis). Empty directories create false signals during debugging and violate the lazy creation standard documented in [Directory Protocols](../../concepts/directory-protocols.md).
+
+**ALWAYS: Lazy Directory Creation in Agents**
+
+Agents create parent directories on-demand when writing files using `ensure_artifact_directory()`:
+
+```bash
+# CORRECT: Command setup (path assignment only, no mkdir)
+initialize_workflow_paths "$TOPIC_NAME" || exit 1
+
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+DEBUG_DIR="${TOPIC_PATH}/debug"
+PLANS_DIR="${TOPIC_PATH}/plans"
+
+# No mkdir here - agents handle lazy creation
+
+# In agent behavioral guidelines (e.g., research-specialist.md)
+source .claude/lib/core/unified-location-detection.sh
+
+REPORT_PATH="${RESEARCH_DIR}/001_report.md"
+
+# Ensure parent directory exists (lazy creation pattern)
+ensure_artifact_directory "$REPORT_PATH" || {
+  echo "ERROR: Failed to create parent directory for report" >&2
+  exit 1
+}
+
+# Write tool creates file (parent directory guaranteed to exist)
+# Directory created ONLY when file is written
+```
+
+**Benefits**: No empty directories when workflows fail, consistent with lazy creation standard, simpler command code, agents have full control over directory lifecycle.
+
+**Exception: Atomic Directory+File Creation**
+
+When directory creation is immediately followed by file creation in the same bash block, eager creation is acceptable:
+
+```bash
+# ACCEPTABLE: Atomic directory+file creation (revise.md example)
+BACKUP_DIR="${TOPIC_PATH}/backups"
+mkdir -p "$BACKUP_DIR"
+cp "$PLAN_PATH" "${BACKUP_DIR}/$(basename "$PLAN_PATH").backup_$(date +%s)"
+# File written immediately after mkdir - no empty directory risk
+```
+
+**Audit Checklist**:
+- Commands MUST NOT use `mkdir -p $RESEARCH_DIR`, `$DEBUG_DIR`, `$PLANS_DIR`, or `$SUMMARIES_DIR`
+- Agents MUST call `ensure_artifact_directory()` before writing artifact files
+- Only exception: Atomic directory+file creation where file write follows immediately in same bash block
+- Verify with: `grep 'mkdir -p "\$.*_DIR"' .claude/commands/*.md` (should only match atomic patterns)
+
+**See Also**:
+- [Directory Protocols - Lazy Directory Creation](../../concepts/directory-protocols.md#lazy-directory-creation)
+- [Unified Location Detection API](../../concepts/directory-protocols.md#unified-location-detection-library) - `ensure_artifact_directory()` function documentation
+- [Error Case Study: Spec 869](../../troubleshooting/common-issues.md) - Empty debug/ directory root cause analysis
+
 ### Architectural Separation
 
 **Executable/Documentation Separation Pattern**: Commands and agents separate lean executable logic from comprehensive documentation to eliminate meta-confusion loops and enable independent evolution.

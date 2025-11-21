@@ -35,6 +35,18 @@ Execute this bash block with your substitution:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
+# Minimal error handling for argument capture block
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" ]; then
+    source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+    ensure_error_log_exists 2>/dev/null
+    setup_bash_error_trap "/revise" "revise_capture_$(date +%s)" "argument_capture" 2>/dev/null || true
+  fi
+fi
+
 # SUBSTITUTE THE REVISION DESCRIPTION IN THE LINE BELOW
 # CRITICAL: Replace YOUR_REVISION_DESCRIPTION_HERE with the actual revision description from the user
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
@@ -52,6 +64,34 @@ echo "Revision description captured to $TEMP_FILE"
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
+# Detect project directory for error logging
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Source error handling early for trap setup
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load error-handling library" >&2
+  exit 1
+}
+ensure_error_log_exists
+
+# Set initial command metadata for error logging
+WORKFLOW_ID="revise_init_$(date +%s)"
+COMMAND_NAME="/revise"
+USER_ARGS="$*"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Read revision description from file (written in Part 1)
 REVISE_DESC_PATH_FILE="${HOME}/.claude/tmp/revise_arg_path.txt"
@@ -111,8 +151,10 @@ if [[ "$REVISION_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
   # Strip --file flag and path from description
   REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--file[[:space:]]*[^[:space:]]*//' | xargs)
 
-  # Convert relative path to absolute
-  if [[ ! "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]; then
+  # Convert relative path to absolute (preprocessing-safe pattern)
+  [[ "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]
+  IS_ABSOLUTE_PATH=$?
+  if [ $IS_ABSOLUTE_PATH -ne 0 ]; then
     ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
   fi
 
@@ -257,6 +299,14 @@ export WORKFLOW_ID
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
 
+# === PERSIST ERROR LOGGING CONTEXT ===
+append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
+append_workflow_state "USER_ARGS" "$USER_ARGS"
+append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Validate state file creation
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
   log_command_error \
@@ -329,6 +379,18 @@ export WORKFLOW_ID
 
 # Load workflow state (subprocess isolation)
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/revise")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
@@ -430,9 +492,6 @@ echo ""
 SPECS_DIR=$(dirname "$(dirname "$EXISTING_PLAN_PATH")")
 RESEARCH_DIR="${SPECS_DIR}/reports"
 
-# Create research directory if not exists
-mkdir -p "$RESEARCH_DIR"
-
 # Generate unique research topic for revision insights
 REVISION_TOPIC_SLUG=$(echo "$REVISION_DETAILS" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | sed 's/^_//;s/_$//' | cut -c1-30)
 REVISION_NUMBER=$(find "$RESEARCH_DIR" -name 'revision_*.md' 2>/dev/null | wc -l | xargs)
@@ -466,6 +525,32 @@ Task {
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# Load WORKFLOW_ID from file
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+
+  # Restore error logging context
+  if [ -z "${COMMAND_NAME:-}" ]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/revise")
+  fi
+  if [ -z "${USER_ARGS:-}" ]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+  fi
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # Setup bash error trap
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+fi
+
 # MANDATORY VERIFICATION
 echo "Verifying research artifacts..."
 
@@ -505,8 +590,13 @@ append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
 
 # Persist completed state with return code verification
 if ! save_completed_states_to_state 2>&1; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
 fi
 ```
 
@@ -528,6 +618,18 @@ export WORKFLOW_ID
 
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/revise")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
@@ -682,6 +784,32 @@ Task {
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# Load WORKFLOW_ID from file
+STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+
+  # Restore error logging context
+  if [ -z "${COMMAND_NAME:-}" ]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/revise")
+  fi
+  if [ -z "${USER_ARGS:-}" ]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+  fi
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # Setup bash error trap
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+fi
+
 # MANDATORY VERIFICATION
 echo "Verifying plan revision..."
 
@@ -721,8 +849,13 @@ append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
 
 # Persist completed state with return code verification
 if ! save_completed_states_to_state 2>&1; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
 fi
 ```
 
@@ -750,6 +883,18 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/revise")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Research-and-revise workflow: terminate after plan revision with return code verification
 if ! sm_transition "$STATE_COMPLETE" 2>&1; then

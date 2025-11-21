@@ -43,7 +43,7 @@ Comments in executable files describe what the code does, not why it was designe
 
 **Problem**: Library sourcing produces verbose output (function definitions, initialization messages).
 
-**Pattern**:
+**Pattern (Correct - Fail-Fast)**:
 ```bash
 source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
   echo "ERROR: Failed to source workflow-state-machine.sh" >&2
@@ -51,7 +51,47 @@ source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
 }
 ```
 
-**Why**: Redirects all library output to /dev/null while preserving error handling. Errors go to stderr for visibility.
+**Why**: Redirects verbose library output to /dev/null while preserving error handling via fail-fast pattern. The `|| { exit 1 }` ensures sourcing failures are caught.
+
+**IMPORTANT - When Error Suppression is NOT Appropriate**:
+
+Error suppression should NEVER be used for:
+- Critical operations (state persistence, library loading)
+- Operations where failure must be detected
+- Function calls that need error capture
+
+**Anti-Pattern (Hides Failures)**:
+```bash
+# WRONG: Suppresses errors, hides failures
+save_completed_states_to_state 2>/dev/null
+
+# WRONG: Prevents error detection
+library_function || true
+```
+
+**Correct Pattern (Explicit Error Handling)**:
+```bash
+# RIGHT: Explicit error checking
+if ! save_completed_states_to_state; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to persist state transitions" \
+    "bash_block" \
+    "$(jq -n --arg file "$STATE_FILE" '{state_file: $file}')"
+
+  echo "ERROR: State persistence failed" >&2
+  exit 1
+fi
+```
+
+**Guidelines for Error Suppression**:
+1. **Use for**: Non-critical directory creation, verbose library output
+2. **Don't use for**: State persistence, critical operations, function calls
+3. **Always provide**: Fail-fast alternative (`|| { exit 1 }`) for critical operations
+4. **Always check**: Return codes for operations that can fail
 
 ### Directory Operations Suppression
 

@@ -352,6 +352,30 @@ fi
 - Maintains same error handling behavior
 - Validated across 15+ historical specifications
 
+**Real-World Example: Path Validation in Commands**
+
+The `/plan`, `/revise`, `/debug`, and `/research` commands all use this pattern for relative-to-absolute path conversion:
+
+```bash
+# BEFORE (vulnerable to preprocessing):
+if [[ ! "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]; then
+  ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+fi
+
+# AFTER (preprocessing-safe):
+[[ "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]
+IS_ABSOLUTE_PATH=$?
+if [ $IS_ABSOLUTE_PATH -ne 0 ]; then
+  ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+fi
+```
+
+The pattern works by:
+1. Running the test WITHOUT negation
+2. Capturing the exit code ($? = 0 if absolute, $? = 1 if relative)
+3. Using arithmetic comparison in single brackets (no preprocessing issues)
+4. Achieving identical logic without exposing `!` to preprocessing stage
+
 #### Pattern 2: Positive Logic
 
 **Invert the conditional logic to avoid negation:**
@@ -404,7 +428,12 @@ When writing command files or agent prompts:
 These commands have been updated to use preprocessing-safe patterns:
 
 - `/coordinate` - Uses exit code capture for `verify_files_batch` (line 912)
+- `/plan` - Uses exit code capture for path validation (line 74-78)
+- `/revise` - Uses exit code capture for path validation (line 115-119)
+- `/debug` - Uses exit code capture for path validation (line 58-62)
+- `/research` - Uses exit code capture for path validation (line 73-77)
 - See Spec 717 for comprehensive analysis and implementation
+- See Spec 864 for preprocessing safety remediation across workflow commands
 
 ### Historical Context
 
