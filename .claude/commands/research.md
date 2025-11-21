@@ -60,7 +60,9 @@ if [[ "$WORKFLOW_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
   WORKFLOW_DESCRIPTION=$(echo "$WORKFLOW_DESCRIPTION" | sed 's/--complexity[[:space:]]*[1-4]//' | xargs)
 fi
 
-if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
+echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"
+COMPLEXITY_VALID=$?
+if [ $COMPLEXITY_VALID -ne 0 ]; then
   echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
   exit 1
 fi
@@ -171,7 +173,9 @@ if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
   exit 1
 fi
 
-if ! sm_init "$WORKFLOW_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1; then
+sm_init "$WORKFLOW_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1
+SM_INIT_EXIT=$?
+if [ $SM_INIT_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -187,7 +191,9 @@ if ! sm_init "$WORKFLOW_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH
 fi
 
 # === TRANSITION TO RESEARCH AND SETUP PATHS ===
-if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+sm_transition "$STATE_RESEARCH" 2>&1
+SM_TRANSITION_EXIT=$?
+if [ $SM_TRANSITION_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -311,22 +317,27 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
     # File exists but is empty - agent failed
     NAMING_STRATEGY="agent_empty_output"
     TOPIC_NAME="no_name"
-  elif ! echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'; then
-    # Invalid format - log and fall back
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "validation_error" \
-      "Topic naming agent returned invalid format" \
-      "bash_block_1c" \
-      "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
-
-    NAMING_STRATEGY="validation_failed"
-    TOPIC_NAME="no_name"
   else
-    # Valid topic name from LLM
-    NAMING_STRATEGY="llm_generated"
+    # Validate topic name format (exit code capture pattern)
+    echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
+    IS_VALID=$?
+    if [ $IS_VALID -ne 0 ]; then
+      # Invalid format - log and fall back
+      log_command_error \
+        "$COMMAND_NAME" \
+        "$WORKFLOW_ID" \
+        "$USER_ARGS" \
+        "validation_error" \
+        "Topic naming agent returned invalid format" \
+        "bash_block_1c" \
+        "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
+
+      NAMING_STRATEGY="validation_failed"
+      TOPIC_NAME="no_name"
+    else
+      # Valid topic name from LLM
+      NAMING_STRATEGY="llm_generated"
+    fi
   fi
 else
   # File doesn't exist - agent failed to write
@@ -353,7 +364,9 @@ rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
 CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
 
 # Initialize workflow paths with LLM-generated name (or fallback)
-if ! initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "research-only" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"; then
+initialize_workflow_paths "$WORKFLOW_DESCRIPTION" "research-only" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"
+INIT_EXIT=$?
+if [ $INIT_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -589,7 +602,9 @@ fi
 REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
 
 # === COMPLETE WORKFLOW ===
-if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+sm_transition "$STATE_COMPLETE" 2>&1
+SM_TRANSITION_EXIT=$?
+if [ $SM_TRANSITION_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -603,7 +618,9 @@ if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   exit 1
 fi
 
-if ! save_completed_states_to_state; then
+save_completed_states_to_state
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: State persistence failed" >&2
   exit 1
@@ -613,16 +630,26 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
   echo "WARNING: State file not found after save: $STATE_FILE" >&2
 fi
 
-echo ""
-echo "=== Research Complete ==="
-echo "Workflow Type: research-only"
-echo "Reports Directory: $RESEARCH_DIR"
-echo "Report Count: $REPORT_COUNT"
-echo ""
-echo "Next Steps:"
-echo "- Review reports in: $RESEARCH_DIR"
-echo "- Use /plan to create implementation plan from research"
-echo "- Use /coordinate for full workflow (research + plan + implement)"
+# === CONSOLE SUMMARY ===
+# Source summary formatting library
+source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || {
+  echo "ERROR: Failed to load summary-formatting library" >&2
+  exit 1
+}
+
+# Build summary text
+SUMMARY_TEXT="Analyzed codebase and created $REPORT_COUNT research report(s) investigating ${WORKFLOW_DESCRIPTION}. Research provides foundation for creating implementation plan with evidence-based strategy selection."
+
+# Build artifacts section
+ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)"
+
+# Build next steps
+NEXT_STEPS="  • Review reports: ls -lh $RESEARCH_DIR/
+  • Create implementation plan: /plan \"${WORKFLOW_DESCRIPTION}\"
+  • Run full workflow: /coordinate \"${WORKFLOW_DESCRIPTION}\""
+
+# Print standardized summary (no phases for research command)
+print_artifact_summary "Research" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
 
 exit 0
 ```

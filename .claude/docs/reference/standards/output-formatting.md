@@ -313,6 +313,270 @@ Output suppression applies to **success and progress output only**. Errors remai
 
 ---
 
+## Console Summary Standards
+[Used by: /research, /plan, /debug, /build, /revise, /repair, /expand, /collapse]
+
+### Purpose and Scope
+
+Console summaries are concise completion messages (15-25 lines) displayed when commands finish. They serve as navigation aids directing users to comprehensive artifact files (.md in reports/, plans/, summaries/).
+
+**Key Distinction**:
+- **Console Summary**: 15-25 lines, terminal stdout, scannable format, emoji markers allowed
+- **Summary Artifact**: 150-250 lines, .md file in summaries/, comprehensive details, no emoji
+
+### Required Structure
+
+All artifact-producing commands MUST use this 4-section format:
+
+```bash
+cat << EOF
+=== [Command] Complete ===
+
+Summary: [2-3 sentence narrative explaining what was accomplished and why it matters]
+
+Phases:
+  • Phase 1: [Title or "Complete"]
+  • Phase 2: [Title or "Complete"]
+  [Only shown if workflow has phases]
+
+Artifacts:
+  📄 Plan: /absolute/path/to/plan.md
+  📊 Reports: /absolute/path/to/reports/ (N files)
+  ✅ Summary: /absolute/path/to/summary.md
+  [Grouped by artifact type, emoji-prefixed]
+
+Next Steps:
+  • Review [artifact]: cat /absolute/path
+  • [Command-specific action 1]
+  • [Command-specific action 2]
+EOF
+```
+
+### Section Requirements
+
+#### Summary Section
+
+**Requirements**:
+- 2-3 sentences maximum
+- Explain WHAT was accomplished (scope, scale)
+- Explain WHY it matters (purpose, value)
+- Use narrative language, not technical jargon
+
+**Examples**:
+```bash
+# Good: WHAT + WHY
+Summary: Analyzed authentication system across 12 files and identified 3 implementation strategies. Research provides foundation for secure JWT-based authentication plan with refresh token support.
+
+# Bad: Too technical, no context
+Summary: Completed research phase. Files written to /path/to/reports/.
+```
+
+#### Phases Section
+
+**Requirements**:
+- Only include if workflow has distinct phases
+- One bullet per phase with completion status
+- Use `•` for bullets, not `-` or `*`
+- Show phase title if available, otherwise "Complete"
+
+**Examples**:
+```bash
+# With titles
+Phases:
+  • Phase 1: Project Structure Analysis - Complete
+  • Phase 2: API Integration Implementation - Complete
+  • Phase 3: Testing and Validation - Complete
+
+# Minimal (when titles not available)
+Phases:
+  • Phase 1: Complete
+  • Phase 2: Complete
+```
+
+**Omit entirely** if workflow has no phases (e.g., /research, /plan in single-phase mode).
+
+#### Artifacts Section
+
+**Requirements**:
+- One line per artifact type, grouped logically
+- Use emoji markers from vocabulary below
+- Always use absolute paths (never relative)
+- Show file count for directories with `(N files)` notation
+- Order: Primary artifacts first (plans, reports), then supporting (debug, checkpoints)
+
+**Path Format Rules**:
+- **Single file**: `📄 Plan: /absolute/path/to/plan.md`
+- **Directory with files**: `📊 Reports: /absolute/path/to/reports/ (3 files)`
+- **Empty directory**: Omit entirely (don't show)
+
+**Emoji Vocabulary**:
+| Emoji | Artifact Type | Usage |
+|-------|--------------|-------|
+| 📄 | Plan files | .md files in plans/ directory |
+| 📊 | Research reports | .md files in reports/ directory |
+| ✅ | Implementation summaries | .md files in summaries/ directory |
+| 🔧 | Debug artifacts | Files in debug/ directory |
+| 📁 | Generic directory | When specific type doesn't apply |
+| 💾 | Checkpoint files | .json files in checkpoints/ |
+
+**Examples**:
+```bash
+# Multiple artifact types
+Artifacts:
+  📄 Plan: /home/user/.config/.claude/specs/027_auth/plans/027_auth_plan.md
+  📊 Reports: /home/user/.config/.claude/specs/027_auth/reports/ (2 files)
+  ✅ Summary: /home/user/.config/.claude/specs/027_auth/summaries/027_auth_summary.md
+
+# Single artifact
+Artifacts:
+  📄 Plan: /home/user/.config/.claude/specs/027_auth/plans/027_auth_plan.md
+
+# With debug output
+Artifacts:
+  📄 Plan: /home/user/.config/.claude/specs/027_auth/plans/027_auth_plan.md
+  🔧 Debug: /home/user/.config/.claude/specs/027_auth/debug/ (5 files)
+```
+
+#### Next Steps Section
+
+**Requirements**:
+- 2-4 actionable commands user can copy-paste
+- First step MUST be reviewing primary artifact
+- Use absolute paths in commands
+- Be command-specific (not generic)
+- Use `•` for bullets, not `-` or `*`
+
+**Examples**:
+```bash
+# Good: Specific, actionable, with paths
+Next Steps:
+  • Review plan: cat /home/user/.config/.claude/specs/027_auth/plans/027_auth_plan.md
+  • Begin implementation: /build /home/user/.config/.claude/specs/027_auth/plans/027_auth_plan.md
+  • Review research: cat /home/user/.config/.claude/specs/027_auth/reports/001_auth_strategies.md
+
+# Bad: Generic, no paths
+Next Steps:
+  • Review the plan file
+  • Run /build if ready
+  • Check the reports
+```
+
+### Length Targets
+
+| Section | Target Length | Notes |
+|---------|--------------|-------|
+| Summary | 2-3 sentences | ~40-80 words total |
+| Phases | 1 line per phase | Omit if no phases |
+| Artifacts | 1-5 lines | One per artifact type |
+| Next Steps | 2-4 lines | Actionable commands |
+| **Total** | **15-25 lines** | Including headers and spacing |
+
+### Relationship to Summary Artifacts
+
+**Console Summary** (this section):
+- Concise completion message
+- Terminal stdout display
+- Navigation to artifacts
+- Emoji markers allowed
+
+**Summary Artifact** (.md file):
+- Comprehensive implementation details
+- 150-250 lines typical
+- Created by agents in summaries/
+- No emoji (file content standard)
+
+**Division of Labor**:
+```
+User completes /build
+    ↓
+Console Summary (15-25 lines)
+  • What was accomplished
+  • Where to find details
+  • What to do next
+    ↓
+User reviews Summary Artifact (150-250 lines)
+  • Phase-by-phase breakdown
+  • Test results and metrics
+  • Implementation decisions
+  • Git commit history
+```
+
+### Terminal Output Emoji Policy
+
+**Allowed**: Emoji markers in terminal stdout for visual scanning (📄 📊 ✅ 🔧)
+
+**Not Allowed**: Emoji in file artifacts (.md files in plans/, reports/, summaries/)
+
+**Rationale**: Terminal output is ephemeral and benefits from visual markers. File artifacts are permanent documentation requiring UTF-8 compatibility and plain-text parsing.
+
+See [Code Standards - Emoji Policy](code-standards.md#general-principles) for complete policy.
+
+### Implementation Notes
+
+**Variable Substitution**:
+```bash
+# Use existing command variables
+PLAN_PATH="/path/to/plan.md"
+RESEARCH_DIR="/path/to/reports"
+SUMMARY_PATH="/path/to/summary.md"
+
+cat << EOF
+Artifacts:
+  📄 Plan: $PLAN_PATH
+  📊 Reports: $RESEARCH_DIR/ ($(ls "$RESEARCH_DIR" | wc -l) files)
+  ✅ Summary: $SUMMARY_PATH
+EOF
+```
+
+**Phase Title Extraction** (Optional):
+```bash
+# Simple approach: Use phase status only
+Phases:
+  • Phase 1: Complete
+  • Phase 2: Complete
+
+# Advanced approach: Extract titles from plan file (future enhancement)
+PHASE_1_TITLE=$(grep "^### Phase 1:" "$PLAN_PATH" | sed 's/### Phase 1: //')
+Phases:
+  • Phase 1: $PHASE_1_TITLE
+```
+
+**Error Output Preservation**:
+
+Console summary format applies to SUCCESS output only. Error messages remain verbose per [Error Enhancement Guide](../guides/patterns/error-enhancement-guide.md):
+
+```bash
+if [ $? -ne 0 ]; then
+  # Error output (verbose, structured)
+  echo "ERROR: Plan generation failed" >&2
+  echo "WHICH: Planning agent execution" >&2
+  echo "WHAT: Agent returned non-zero exit code" >&2
+  echo "WHERE: Phase 2 - Strategy Selection" >&2
+  exit 1
+fi
+
+# Success output (concise console summary)
+cat << EOF
+=== Plan Complete ===
+Summary: Created 5-phase implementation plan...
+EOF
+```
+
+### Command-Specific Guidance
+
+| Command | Primary Artifacts | Typical Phases | Next Steps Focus |
+|---------|------------------|---------------|------------------|
+| /research | 📊 Reports (1-3 files) | None | Review reports, run /plan |
+| /plan | 📊 Reports, 📄 Plan | None | Review plan, run /build |
+| /debug | 🔧 Debug, 📄 Plan | 3-4 phases | Review debug analysis, run /build |
+| /build | ✅ Summary, 📄 Plan | 3-5 phases | Review summary, check tests |
+| /revise | 📄 Plan (updated), 📁 Backup | None | Review changes, run /build |
+| /repair | 📊 Error Analysis, 📄 Repair Plan | None | Review analysis, run /build |
+| /expand | 📄 Expanded Phases | None | Review expanded phases, continue /build |
+| /collapse | 📄 Plan (collapsed) | None | Review collapsed plan, resume work |
+
+---
+
 ## Related Documentation
 
 ### Core References

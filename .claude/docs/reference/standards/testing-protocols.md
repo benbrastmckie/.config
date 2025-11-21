@@ -20,6 +20,7 @@ Commands should check CLAUDE.md in priority order:
   - `test_shared_utilities.sh` - Utility library functions
   - `test_adaptive_planning.sh` - Adaptive planning integration (16 tests)
   - `test_revise_automode.sh` - /revise auto-mode integration (18 tests)
+  - `test_no_if_negation_patterns.sh` - Prohibited bash negation pattern detection (3 tests)
 - **Validation Scripts**:
   - `validate_executable_doc_separation.sh` - Verifies executable/documentation separation pattern compliance (file size, guide existence, cross-references)
 

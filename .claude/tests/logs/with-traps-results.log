@@ -1,14 +1,14 @@
-Test Results - Thu Nov 20 03:23:59 PM PST 2025
+Test Results - Thu Nov 20 09:23:42 PM PST 2025
 Mode: with-traps
 Tests Run: 6
-Passed: 0
-Failed: 6
-Capture Rate: 0%
+Passed: 5
+Failed: 1
+Capture Rate: 83%
 
 Individual Results:
-  T1:FAIL
-  T2:FAIL
-  T3:FAIL
-  T4:FAIL
+  T1:PASS
+  T2:PASS
+  T3:PASS
+  T4:PASS
   T5:FAIL
-  T6:FAIL
+  T6:PASS

@@ -131,7 +131,9 @@ if [[ "$REVISION_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
 fi
 
 # Validation: reject invalid complexity values
-if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
+echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"
+COMPLEXITY_VALID=$?
+if [ $COMPLEXITY_VALID -ne 0 ]; then
   echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
   exit 1
 fi
@@ -323,12 +325,14 @@ if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
 fi
 
 # Initialize state machine with return code verification
-if ! sm_init \
+sm_init \
   "$REVISION_DESCRIPTION" \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
-  "[]" 2>&1; then
+  "[]" 2>&1
+SM_INIT_EXIT=$?
+if [ $SM_INIT_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -460,7 +464,9 @@ if [ -z "$EXISTING_PLAN_PATH" ]; then
 fi
 
 # Transition to research state with return code verification
-if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+sm_transition "$STATE_RESEARCH" 2>&1
+SM_TRANSITION_EXIT=$?
+if [ $SM_TRANSITION_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -589,7 +595,9 @@ append_workflow_state "NEW_REPORT_COUNT" "$NEW_REPORT_COUNT"
 append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
 
 # Persist completed state with return code verification
-if ! save_completed_states_to_state 2>&1; then
+save_completed_states_to_state 2>&1
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
@@ -699,7 +707,9 @@ if [ -z "$EXISTING_PLAN_PATH" ]; then
 fi
 
 # Transition to plan state with return code verification
-if ! sm_transition "$STATE_PLAN" 2>&1; then
+sm_transition "$STATE_PLAN" 2>&1
+SM_TRANSITION_EXIT=$?
+if [ $SM_TRANSITION_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -848,7 +858,9 @@ echo ""
 append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
 
 # Persist completed state with return code verification
-if ! save_completed_states_to_state 2>&1; then
+save_completed_states_to_state 2>&1
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
@@ -897,7 +909,9 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Research-and-revise workflow: terminate after plan revision with return code verification
-if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+sm_transition "$STATE_COMPLETE" 2>&1
+SM_TRANSITION_EXIT=$?
+if [ $SM_TRANSITION_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -923,18 +937,28 @@ if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   exit 1
 fi
 
-echo "=== Research-and-Revise Complete ==="
-echo ""
-echo "Workflow Type: research-and-revise"
-echo "Specs Directory: $SPECS_DIR"
-echo "Research Reports: $TOTAL_REPORT_COUNT total ($NEW_REPORT_COUNT new)"
-echo "Revised Plan: $EXISTING_PLAN_PATH"
-echo "Plan Backup: $BACKUP_PATH"
-echo ""
-echo "Next Steps:"
-echo "- Review revised plan: cat $EXISTING_PLAN_PATH"
-echo "- Compare with backup: diff $BACKUP_PATH $EXISTING_PLAN_PATH"
-echo "- Implement revised plan: /implement $EXISTING_PLAN_PATH"
+# === CONSOLE SUMMARY ===
+# Source summary formatting library
+source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || {
+  echo "ERROR: Failed to load summary-formatting library" >&2
+  exit 1
+}
+
+# Build summary text
+SUMMARY_TEXT="Revised implementation plan based on $NEW_REPORT_COUNT new research reports (total: $TOTAL_REPORT_COUNT). Updated plan incorporates new insights while preserving existing structure."
+
+# Build artifacts section
+ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($TOTAL_REPORT_COUNT files, $NEW_REPORT_COUNT new)
+  📄 Plan: $EXISTING_PLAN_PATH (revised)
+  📁 Backup: $BACKUP_PATH"
+
+# Build next steps
+NEXT_STEPS="  • Review revised plan: cat $EXISTING_PLAN_PATH
+  • Compare with backup: diff $BACKUP_PATH $EXISTING_PLAN_PATH
+  • Implement revised plan: /build $EXISTING_PLAN_PATH"
+
+# Print standardized summary (no phases for revise command)
+print_artifact_summary "Revise" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
 echo ""
 
 exit 0

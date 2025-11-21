@@ -61,7 +61,9 @@ if [[ "$FEATURE_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
   FEATURE_DESCRIPTION=$(echo "$FEATURE_DESCRIPTION" | sed 's/--complexity[[:space:]]*[1-4]//' | xargs)
 fi
 
-if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
+echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"
+COMPLEXITY_VALID=$?
+if [ $COMPLEXITY_VALID -ne 0 ]; then
   echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
   exit 1
 fi
@@ -173,7 +175,9 @@ if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
 fi
 
 # NEW: Verify state file contains required variables
-if ! grep -q "WORKFLOW_ID=" "$STATE_FILE" 2>/dev/null; then
+grep -q "WORKFLOW_ID=" "$STATE_FILE" 2>/dev/null
+GREP_EXIT=$?
+if [ $GREP_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -191,7 +195,9 @@ fi
 # NEW: Final checkpoint before Block 1 completes
 echo "✓ State file validated: $STATE_FILE"
 
-if ! sm_init "$FEATURE_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1; then
+sm_init "$FEATURE_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_COMPLEXITY" "[]" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -207,7 +213,9 @@ if ! sm_init "$FEATURE_DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" "$RESEARCH_
 fi
 
 # === TRANSITION TO RESEARCH AND SETUP PATHS ===
-if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+sm_transition "$STATE_RESEARCH" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -334,22 +342,27 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
     # File exists but is empty - agent failed
     NAMING_STRATEGY="agent_empty_output"
     TOPIC_NAME="no_name"
-  elif ! echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'; then
-    # Invalid format - log and fall back
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "validation_error" \
-      "Topic naming agent returned invalid format" \
-      "bash_block_1c" \
-      "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
-
-    NAMING_STRATEGY="validation_failed"
-    TOPIC_NAME="no_name"
   else
-    # Valid topic name from LLM
-    NAMING_STRATEGY="llm_generated"
+    # Validate topic name format (exit code capture pattern)
+    echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
+    IS_VALID=$?
+    if [ $IS_VALID -ne 0 ]; then
+      # Invalid format - log and fall back
+      log_command_error \
+        "$COMMAND_NAME" \
+        "$WORKFLOW_ID" \
+        "$USER_ARGS" \
+        "validation_error" \
+        "Topic naming agent returned invalid format" \
+        "bash_block_1c" \
+        "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
+
+      NAMING_STRATEGY="validation_failed"
+      TOPIC_NAME="no_name"
+    else
+      # Valid topic name from LLM
+      NAMING_STRATEGY="llm_generated"
+    fi
   fi
 else
   # File doesn't exist - agent failed to write
@@ -376,7 +389,9 @@ rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
 CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
 
 # Initialize workflow paths with LLM-generated name (or fallback)
-if ! initialize_workflow_paths "$FEATURE_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"; then
+initialize_workflow_paths "$FEATURE_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"
+INIT_EXIT=$?
+if [ $INIT_EXIT -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -628,7 +643,9 @@ echo "Research verified: $REPORT_COUNT reports"
 echo ""
 
 # === TRANSITION TO PLAN ===
-if ! sm_transition "$STATE_PLAN" 2>&1; then
+sm_transition "$STATE_PLAN" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -658,7 +675,9 @@ REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
 
-if ! save_completed_states_to_state; then
+save_completed_states_to_state
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: State persistence failed" >&2
   exit 1
@@ -856,7 +875,9 @@ echo "Plan verified: $FILE_SIZE bytes"
 echo ""
 
 # === COMPLETE WORKFLOW ===
-if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+sm_transition "$STATE_COMPLETE" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -870,7 +891,9 @@ if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   exit 1
 fi
 
-if ! save_completed_states_to_state; then
+save_completed_states_to_state
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: State persistence failed" >&2
   exit 1
@@ -880,16 +903,31 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
   echo "WARNING: State file not found after save: $STATE_FILE" >&2
 fi
 
-echo "=== Research-and-Plan Complete ==="
-echo ""
-echo "Workflow Type: research-and-plan"
-echo "Specs Directory: $SPECS_DIR"
-echo "Research Reports: $REPORT_COUNT reports in $RESEARCH_DIR"
-echo "Implementation Plan: $PLAN_PATH"
-echo ""
-echo "Next Steps:"
-echo "- Review plan: cat $PLAN_PATH"
-echo "- Implement plan: /build $PLAN_PATH"
+# === CONSOLE SUMMARY ===
+# Source summary formatting library
+source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || {
+  echo "ERROR: Failed to load summary-formatting library" >&2
+  exit 1
+}
+
+# Extract phase count and estimated hours from plan
+PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$PLAN_PATH" 2>/dev/null || echo "0")
+ESTIMATED_HOURS=$(grep "Estimated Hours:" "$PLAN_PATH" | head -1 | sed 's/.*: //' 2>/dev/null || echo "unknown")
+
+# Build summary text
+SUMMARY_TEXT="Created implementation plan with $PHASE_COUNT phases (estimated $ESTIMATED_HOURS hours) based on $REPORT_COUNT research reports. Plan provides structured roadmap for implementing ${FEATURE_DESCRIPTION}."
+
+# Build artifacts section
+ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)
+  📄 Plan: $PLAN_PATH"
+
+# Build next steps
+NEXT_STEPS="  • Review plan: cat $PLAN_PATH
+  • Begin implementation: /build $PLAN_PATH
+  • Review research: ls -lh $RESEARCH_DIR/"
+
+# Print standardized summary (no phases for plan command)
+print_artifact_summary "Plan" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
 
 exit 0
 ```

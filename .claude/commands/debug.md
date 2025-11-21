@@ -74,7 +74,9 @@ if [[ "$ISSUE_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
   ISSUE_DESCRIPTION=$(echo "$ISSUE_DESCRIPTION" | sed 's/--complexity[[:space:]]*[1-4]//' | xargs)
 fi
 
-if ! echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"; then
+echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"
+COMPLEXITY_VALID=$?
+if [ $COMPLEXITY_VALID -ne 0 ]; then
   echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
   exit 1
 fi
@@ -208,12 +210,14 @@ if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
 fi
 
 # Initialize state machine with return code verification
-if ! sm_init \
+sm_init \
   "$ISSUE_DESCRIPTION" \
   "$COMMAND_NAME" \
   "$WORKFLOW_TYPE" \
   "$RESEARCH_COMPLEXITY" \
-  "[]" 2>&1; then
+  "[]" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -363,22 +367,27 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
     # File exists but is empty - agent failed
     NAMING_STRATEGY="agent_empty_output"
     TOPIC_NAME="no_name"
-  elif ! echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'; then
-    # Invalid format - log and fall back
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "validation_error" \
-      "Topic naming agent returned invalid format" \
-      "bash_block_2a" \
-      "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
-
-    NAMING_STRATEGY="validation_failed"
-    TOPIC_NAME="no_name"
   else
-    # Valid topic name from LLM
-    NAMING_STRATEGY="llm_generated"
+    # Validate topic name format (exit code capture pattern)
+    echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
+    IS_VALID=$?
+    if [ $IS_VALID -ne 0 ]; then
+      # Invalid format - log and fall back
+      log_command_error \
+        "$COMMAND_NAME" \
+        "$WORKFLOW_ID" \
+        "$USER_ARGS" \
+        "validation_error" \
+        "Topic naming agent returned invalid format" \
+        "bash_block_2a" \
+        "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
+
+      NAMING_STRATEGY="validation_failed"
+      TOPIC_NAME="no_name"
+    else
+      # Valid topic name from LLM
+      NAMING_STRATEGY="llm_generated"
+    fi
   fi
 else
   # File doesn't exist - agent failed to write
@@ -491,7 +500,9 @@ if [ -f "$STATE_ID_FILE" ]; then
 fi
 
 # Transition to research state with return code verification
-if ! sm_transition "$STATE_RESEARCH" 2>&1; then
+sm_transition "$STATE_RESEARCH" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -524,7 +535,9 @@ CLASSIFICATION_JSON="${CLASSIFICATION_JSON:-}"
 
 # Initialize workflow paths using semantic slug generation (Plan 777)
 # This uses the three-tier fallback: LLM slug -> extract_significant_words -> sanitize_topic_name
-if ! initialize_workflow_paths "$ISSUE_DESCRIPTION" "debug-only" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"; then
+initialize_workflow_paths "$ISSUE_DESCRIPTION" "debug-only" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"
+INIT_EXIT=$?
+if [ $INIT_EXIT -ne 0 ]; then
   echo "ERROR: Failed to initialize workflow paths"
   echo "DIAGNOSTIC: Check initialize_workflow_paths() in workflow-initialization.sh"
   exit 1
@@ -670,7 +683,9 @@ append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
 append_workflow_state "ISSUE_DESCRIPTION" "$ISSUE_DESCRIPTION"
 
 # Persist completed state with return code verification
-if ! save_completed_states_to_state 2>&1; then
+save_completed_states_to_state 2>&1
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
@@ -763,7 +778,9 @@ export RESEARCH_COMPLEXITY
 export RESEARCH_TOPICS_JSON
 
 # Transition to plan state with return code verification
-if ! sm_transition "$STATE_PLAN" 2>&1; then
+sm_transition "$STATE_PLAN" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -898,7 +915,9 @@ append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
 
 # Persist completed state with return code verification
-if ! save_completed_states_to_state 2>&1; then
+save_completed_states_to_state 2>&1
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
@@ -991,7 +1010,9 @@ export RESEARCH_COMPLEXITY
 export RESEARCH_TOPICS_JSON
 
 # Transition to debug state with return code verification
-if ! sm_transition "$STATE_DEBUG" 2>&1; then
+sm_transition "$STATE_DEBUG" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -1104,7 +1125,9 @@ echo ""
 append_workflow_state "DEBUG_ARTIFACT_COUNT" "$DEBUG_ARTIFACT_COUNT"
 
 # Persist completed state with return code verification
-if ! save_completed_states_to_state 2>&1; then
+save_completed_states_to_state 2>&1
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
   log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
@@ -1197,7 +1220,9 @@ export RESEARCH_COMPLEXITY
 export RESEARCH_TOPICS_JSON
 
 # Debug-only workflow: terminate after debug phase with return code verification
-if ! sm_transition "$STATE_COMPLETE" 2>&1; then
+sm_transition "$STATE_COMPLETE" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -1223,19 +1248,32 @@ if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   exit 1
 fi
 
-echo "=== Debug Workflow Complete ==="
-echo ""
-echo "Workflow Type: debug-only"
-echo "Specs Directory: $SPECS_DIR"
-echo "Research Reports: $REPORT_COUNT reports"
-echo "Debug Strategy Plan: $PLAN_PATH"
-echo "Debug Artifacts: $DEBUG_ARTIFACT_COUNT files"
-echo ""
-echo "Next Steps:"
-echo "- Review debug strategy: cat $PLAN_PATH"
-echo "- Review debug artifacts: ls $DEBUG_DIR"
-echo "- Apply fixes identified in analysis"
-echo "- Re-run tests to verify fix"
+# === CONSOLE SUMMARY ===
+# Source summary formatting library
+source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || {
+  echo "ERROR: Failed to load summary-formatting library" >&2
+  exit 1
+}
+
+# Build summary text
+SUMMARY_TEXT="Analyzed issue through root cause investigation with $REPORT_COUNT research reports and created debug strategy plan. Debug artifacts include analysis findings and recommended resolution approach."
+
+# Build artifacts section
+ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)
+  📄 Plan: $PLAN_PATH"
+if [ "$DEBUG_ARTIFACT_COUNT" -gt 0 ]; then
+  ARTIFACTS="${ARTIFACTS}
+  🔧 Debug: $DEBUG_DIR/ ($DEBUG_ARTIFACT_COUNT files)"
+fi
+
+# Build next steps
+NEXT_STEPS="  • Review debug strategy: cat $PLAN_PATH
+  • Review debug artifacts: ls -lh $DEBUG_DIR/
+  • Apply fixes identified in analysis
+  • Re-run tests to verify fix"
+
+# Print standardized summary (no phases for debug command)
+print_artifact_summary "Debug" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
 echo ""
 
 # Cleanup temp state file
