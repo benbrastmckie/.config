@@ -1356,8 +1356,12 @@ validate_agent_output() {
 
   # Timeout: file not created
   log_command_error \
+    "${COMMAND_NAME:-/unknown}" \
+    "${WORKFLOW_ID:-unknown}" \
+    "${USER_ARGS:-}" \
     "agent_error" \
     "Agent $agent_name did not create output file within ${timeout_seconds}s" \
+    "validate_agent_output" \
     "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" '{agent: $agent, expected_file: $file}')"
 
   return 1
@@ -1383,8 +1387,12 @@ validate_agent_output_with_retry() {
             return 0  # Success: file exists and passes validation
           else
             log_command_error \
+              "${COMMAND_NAME:-/unknown}" \
+              "${WORKFLOW_ID:-unknown}" \
+              "${USER_ARGS:-}" \
               "validation_error" \
               "Agent $agent_name output file failed format validation (retry $retry/$max_retries)" \
+              "validate_agent_output_with_retry" \
               "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" --argjson retry "$retry" '{agent: $agent, output_file: $file, retry: $retry}')"
 
             # Remove invalid file before retry
@@ -1407,8 +1415,12 @@ validate_agent_output_with_retry() {
 
   # All retries exhausted: file not created or validation failed
   log_command_error \
+    "${COMMAND_NAME:-/unknown}" \
+    "${WORKFLOW_ID:-unknown}" \
+    "${USER_ARGS:-}" \
     "agent_error" \
     "Agent $agent_name did not create valid output file after $max_retries attempts" \
+    "validate_agent_output_with_retry" \
     "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" --argjson retries "$max_retries" '{agent: $agent, expected_file: $file, retries: $retries}')"
 
   return 1

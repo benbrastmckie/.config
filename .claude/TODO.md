@@ -40,12 +40,13 @@
 - make commands update TODO.md
 - make metadata and summary outputs uniform across artifacts
   - include directory project numbers
-- [ ] fix /covert-docs /home/benjamin/.config/.claude/specs/889_convert_docs_error_logging_debug/plans/001_debug_strategy.md
+- [:] fix /covert-docs /home/benjamin/.config/.claude/specs/889_convert_docs_error_logging_debug/plans/001_debug_strategy.md
   - /home/benjamin/.config/.claude/convert-docs-output.md
   - /home/benjamin/.config/.claude/specs/888_errors_command_test_report/reports/001_error_report.md
-  - add latex
+  - test
 - why is there an empty /debug directory in /home/benjamin/.config/.claude/specs/889_convert_docs_error_logging_debug/
   - /home/benjamin/.config/.claude/debug-output.md
+  - plan /home/benjamin/.config/.claude/specs/891_debug_command_empty_dir_infra/plans/001_debug_strategy.md
 - fix /debug
   - /home/benjamin/.config/.claude/debug-output.md
 - fix /build
