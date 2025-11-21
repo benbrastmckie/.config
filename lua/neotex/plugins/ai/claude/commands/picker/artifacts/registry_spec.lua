@@ -105,11 +105,12 @@ describe("picker.artifacts.registry", function()
       end
     end)
 
-    it("includes all 11 artifact types", function()
+    it("includes all 13 artifact types", function()
       local sync_types = registry.get_sync_types()
-      -- Should have 11 types: command, agent, hook_event, tts_file, template,
-      -- lib, doc, agent_protocol, standard, data_doc, settings
-      assert.equals(11, #sync_types)
+      -- Should have 13 types: command, agent, hook_event, tts_file, template,
+      -- lib, doc, agent_protocol, standard, data_doc, settings, script, test
+      -- Now includes script and test types (Phase 3)
+      assert.equals(13, #sync_types)
     end)
   end)
 
@@ -117,15 +118,15 @@ describe("picker.artifacts.registry", function()
     it("formats command heading correctly", function()
       local heading = registry.format_heading("command")
       assert.is_not_nil(heading)
-      assert.is_true(heading:match("%[Commands%]"))
-      assert.is_true(heading:match("Slash commands"))
+      assert.is_not_nil(heading:match("%[Commands%]"))
+      assert.is_not_nil(heading:match("Slash commands"))
     end)
 
     it("formats agent heading correctly", function()
       local heading = registry.format_heading("agent")
       assert.is_not_nil(heading)
-      assert.is_true(heading:match("%[Agents%]"))
-      assert.is_true(heading:match("AI assistants"))
+      assert.is_not_nil(heading:match("%[Agents%]"))
+      assert.is_not_nil(heading:match("AI assistants"))
     end)
 
     it("returns empty string for invalid type", function()
@@ -143,9 +144,9 @@ describe("picker.artifacts.registry", function()
       }
       local result = registry.format_artifact(artifact, "command", "├─")
       assert.is_not_nil(result)
-      assert.is_true(result:match("^%*"))  -- Starts with * for local
-      assert.is_true(result:match("test%-command"))
-      assert.is_true(result:match("Test description"))
+      assert.is_not_nil(result:match("^%*"))  -- Starts with * for local
+      assert.is_not_nil(result:match("test%-command"))
+      assert.is_not_nil(result:match("Test description"))
     end)
 
     it("formats artifact without local marker", function()
@@ -156,9 +157,9 @@ describe("picker.artifacts.registry", function()
       }
       local result = registry.format_artifact(artifact, "command", "└─")
       assert.is_not_nil(result)
-      assert.is_false(result:match("^%*"))  -- Does not start with *
-      assert.is_true(result:match("global%-command"))
-      assert.is_true(result:match("Global description"))
+      assert.is_nil(result:match("^%*"))  -- Does not start with *
+      assert.is_not_nil(result:match("global%-command"))
+      assert.is_not_nil(result:match("Global description"))
     end)
 
     it("uses 2-space indent for hook_event", function()
@@ -170,7 +171,7 @@ describe("picker.artifacts.registry", function()
       local result = registry.format_artifact(artifact, "hook_event", "├─")
       assert.is_not_nil(result)
       -- Hook events should have 2-space indent
-      assert.is_true(result:match("%s%s├─"))  -- Two spaces before tree char
+      assert.is_not_nil(result:match("%s%s├─"))  -- Two spaces before tree char
     end)
 
     it("uses 1-space indent for commands", function()
@@ -182,7 +183,7 @@ describe("picker.artifacts.registry", function()
       local result = registry.format_artifact(artifact, "command", "├─")
       assert.is_not_nil(result)
       -- Commands should have 1-space indent
-      assert.is_true(result:match("%s├─"))  -- One space before tree char
+      assert.is_not_nil(result:match("%s├─"))  -- One space before tree char
     end)
 
     it("strips 'Specialized in' prefix from agent descriptions", function()
@@ -193,8 +194,8 @@ describe("picker.artifacts.registry", function()
       }
       local result = registry.format_artifact(artifact, "agent", "├─")
       assert.is_not_nil(result)
-      assert.is_false(result:match("Specialized in"))
-      assert.is_true(result:match("testing"))
+      assert.is_nil(result:match("Specialized in"))
+      assert.is_not_nil(result:match("testing"))
     end)
   end)
 
