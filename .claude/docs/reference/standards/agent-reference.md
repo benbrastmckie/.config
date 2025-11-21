@@ -103,6 +103,26 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 ---
 
+### errors-analyst
+**Purpose**: Error log analysis, pattern detection, and error report generation
+
+**Capabilities**:
+- Parse JSONL error log format with structured field extraction
+- Group errors by type, command, and time patterns
+- Calculate frequency statistics and identify top error patterns
+- Generate structured markdown reports with metadata, findings, and recommendations
+- Context-efficient analysis using Haiku model (1000-2200 token budget per report)
+
+**Model**: claude-3-5-haiku-20241022
+
+**Allowed Tools**: Read, Write, Grep, Glob, Bash
+
+**Used By**: /errors (default report generation mode)
+
+**Definition**: [.claude/agents/errors-analyst.md](../../agents/errors-analyst.md)
+
+---
+
 ### doc-converter
 **Purpose**: Bidirectional document format conversion (Markdown, DOCX, PDF)
 

@@ -6,7 +6,7 @@ set -e
 
 # Get script directory and source libraries
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LIB_DIR="$SCRIPT_DIR/../lib"
+LIB_DIR="$SCRIPT_DIR/../../lib"
 
 # Source required libraries
 source "$LIB_DIR/plan/plan-core-bundle.sh"

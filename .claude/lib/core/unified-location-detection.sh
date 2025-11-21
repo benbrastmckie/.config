@@ -69,9 +69,7 @@
 #   temporary directories, preventing empty topic directory creation in production.
 #
 #   Example Test Files Demonstrating Correct Pattern:
-#     - .claude/tests/test_unified_location_detection.sh (lines 23-27)
-#     - .claude/tests/test_unified_location_simple.sh (lines 18-22)
-#     - .claude/tests/test_system_wide_location.sh (lines 19-23)
+#     - .claude/tests/integration/test_system_wide_location.sh (lines 19-23)
 
 # Removed strict error mode to allow graceful handling of expected failures (e.g., ls with no matches)
 # set -euo pipefail

@@ -1,228 +1,127 @@
-# Error Analysis and Repair - Implementation Plan
+# Error Analysis and Repair Implementation Plan
 
 ## Metadata
 - **Date**: 2025-11-20
-- **Feature**: Error Logging Infrastructure Enhancement and Build Workflow Repair
-- **Scope**: Add test mode metadata tagging, fix bash histexpand issues, implement state file persistence, enhance state transition diagnostics, improve build test phase error context, align test compliance expectations
-- **Estimated Phases**: 7
-- **Estimated Hours**: 14
+- **Feature**: Error Analysis and Repair Workflow
+- **Scope**: Comprehensive error remediation addressing infrastructure failures, build workflow issues, and standards compliance
+- **Estimated Phases**: 8
+- **Estimated Hours**: 12
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [IN PROGRESS]
+- **Status**: [NOT STARTED]
 - **Structure Level**: 0
-- **Complexity Score**: 68.5
+- **Complexity Score**: 95.5
 - **Research Reports**:
-  - [Error Analysis Report](/home/benjamin/.config/.claude/specs/871_error_analysis_and_repair/reports/001_error_analysis.md)
-  - [Build Errors vs Plan 871 Gap Analysis](/home/benjamin/.config/.claude/specs/871_error_analysis_and_repair/reports/002_build_errors_plan_gap_analysis.md)
-  - [Plan Revision Compliance Synthesis](/home/benjamin/.config/.claude/specs/871_error_analysis_and_repair/reports/002_plan_revision_compliance_synthesis.md)
+  - [Error Analysis Report](../reports/001_error_analysis.md)
+  - [Build Errors Plan Gap Analysis](../reports/002_build_errors_plan_gap_analysis.md)
+  - [Plan Revision Compliance Synthesis](../reports/002_plan_revision_compliance_synthesis.md)
 
 ## Overview
 
-Analysis of error logs and build-output.md reveals two categories of issues requiring remediation: (1) error logging infrastructure gaps affecting 87% of logged errors, and (2) build workflow execution failures blocking build command completion. This comprehensive plan addresses both categories: test mode metadata tagging to reduce analysis noise by 87%, bash preprocessing safety using exit code capture pattern (compliant with Bash Tool Limitations documentation) to eliminate history expansion errors, state file persistence infrastructure to enable multi-block workflow continuation, enhanced state transition diagnostics with precondition validation, improved build test phase error context, and test compliance expectation alignment. Plan revised to achieve full compliance with .claude/docs/ standards (Phase 0 rewritten using documented preprocessing-safe patterns). Combined impact: production error analysis time reduced by 87%, build workflow completion rate increased from 0% to 100%, and test failure investigation time reduced by 50%.
+This plan addresses critical production failures identified across error logging, build workflow execution, and bash preprocessing. Analysis of 10 production errors reveals 5 distinct root causes: library sourcing inconsistency (40%), platform-specific path assumptions (20%), agent output contract violations (20%), error trap initialization failures (10%), and bash history expansion preprocessing errors affecting build workflows. The plan implements comprehensive fixes across 8 phases targeting immediate workflow unblocking and long-term infrastructure reliability.
 
 ## Research Summary
 
-**Error Log Analysis** (001_error_analysis.md):
-Error analysis of 23 logged errors reveals distinct patterns:
-- **Test-Induced Errors**: 87% of errors originate from test commands with synthetic data (`nonexistent_command_xyz123`, `false`, `/nonexistent/state.sh`) but lack metadata tags
-- **State Transition Failures**: Build workflow unable to transition to DOCUMENT state with insufficient diagnostic context about blocked preconditions
-- **Test Phase Failures**: Build command test execution at line 354 fails with minimal context (only exit code, missing test output/command details)
+Key findings from research reports inform this implementation:
 
-The report identifies 3 root causes: (1) test errors lack metadata tagging, (2) state transition validation insufficient, and (3) test phase execution lacks error context. Five recommendations range from low to medium effort, with the top 3 providing 95% of value (test metadata, state diagnostics, test context).
+**Error Pattern Analysis** (001_error_analysis.md):
+- 60% execution errors (all exit code 127 "command not found")
+- Library functions not available: save_completed_states_to_state, append_workflow_state, initialize_workflow_paths
+- Platform incompatibility: /etc/bashrc sourcing fails on Linux
+- Agent failures: topic naming agent not creating output files
+- Parse errors: trap command quote escaping issues
 
-**Build Output Gap Analysis** (002_build_errors_plan_gap_analysis.md):
-Analysis of build-output.md reveals 5 distinct error categories in build workflow execution that were NOT addressed by original plan:
-1. **Bash Histexpand Syntax Errors**: Line 322 histexpand errors (`!: command not found`) break bash block execution despite mitigation attempts
-2. **State File Persistence Failures**: State file `.claude/tmp/build_state_id.txt` lost between blocks, preventing workflow continuation (CRITICAL)
-3. **Test Script Execution Issues**: Test scripts require explicit `bash` prefix due to missing execute permissions or shebang issues
-4. **Test Compliance Misalignment**: Test expects 6 blocks in /build, finds 5 with traps (1 documentation block intentionally excluded)
-5. **State Transition Blocks**: Same state file loss issue prevents state management operations
+**Build Workflow Failures** (002_build_errors_plan_gap_analysis.md):
+- 5 error categories in build execution (histexpand syntax, state file persistence, test script execution, test compliance, state transitions)
+- Bash history expansion preprocessing errors cannot be fixed with runtime set +H
+- State file loss between workflow blocks prevents completion
+- Test scripts lack execute permissions and proper shebangs
 
-Gap analysis shows original plan addressed only 1/5 error categories (20% coverage), leaving critical build workflow failures unresolved.
+**Standards Compliance Requirements** (002_plan_revision_compliance_synthesis.md):
+- Exit code capture pattern required for preprocessing safety (bash-tool-limitations.md:328-377)
+- WHAT/WHY comment distinction: code comments describe WHAT, docs explain WHY
+- Test validation enforcement needed beyond one-time chmod
+- Documentation should enhance existing requirements rather than duplicate
 
-**Plan Revision Compliance Synthesis** (002_plan_revision_compliance_synthesis.md):
-Compliance review of original plan 871 identified 1 critical blocking issue and 3 optional improvements. The blocking issue was Phase 0's histexpand remediation approach, which contradicted bash-tool-limitations.md by proposing runtime `set +H` directives that cannot prevent preprocessing-stage history expansion errors. The documented exit code capture pattern (lines 329-354) is the only preprocessing-safe approach. Plan revised to replace all `if ! function_call` patterns with explicit exit code capture. Optional improvements address test documentation redundancy, test script validation enforcement, and WHAT/WHY comment clarification.
-
-**Recommended approach based on combined research**:
-1. CRITICAL: State file persistence infrastructure (blocks build workflow - 0% completion rate currently)
-2. CRITICAL: Bash preprocessing safety using exit code capture pattern (documented in bash-tool-limitations.md:329-354)
-3. HIGH: Test mode metadata (87% noise reduction in error analysis)
-4. HIGH: State transition diagnostics (enables debugging without code inspection)
-5. MEDIUM: Build test phase context (50% debugging time reduction)
-6. MEDIUM: Test script execution validation (eliminates workaround invocations)
-7. LOW: Test compliance alignment (reduces false positives in test suite)
+**Recommended Approach**: Implement standardized command initialization, platform-aware resource sourcing, preprocessing-safe bash patterns, robust state file persistence, and comprehensive test script validation with enforcement mechanisms.
 
 ## Success Criteria
 
-**Error Logging Infrastructure**:
-- [ ] Error logs include `is_test` metadata field for test-induced errors
-- [ ] `/errors` command supports `--exclude-tests` flag to filter test errors
-- [ ] State transition failures log detailed precondition validation diagnostics
-- [ ] Build command test phase captures test output and logs comprehensive error context
-
-**Build Workflow Repair**:
-- [ ] Build command bash blocks execute without histexpand errors
-- [ ] State files persist across all multi-block workflow transitions
-- [ ] Build workflow completes successfully (0% → 100% completion rate)
-- [ ] Test scripts execute directly without requiring explicit `bash` prefix
-- [ ] Test compliance checks align with implementation design decisions
-
-**Validation**:
-- [ ] All existing tests pass with enhanced error logging
-- [ ] Build workflow test phase completes without state file errors
-- [ ] Documentation updated for test mode usage, state transition debugging, and state file persistence
+- [ ] All library sourcing errors eliminated (0 exit code 127 for library functions)
+- [ ] Cross-platform bashrc sourcing working on Linux and macOS
+- [ ] Topic naming agent failures reduced to <5% (with diagnostic logging)
+- [ ] Build workflow completes without state file errors
+- [ ] Bash preprocessing errors eliminated (0 "!: command not found" errors)
+- [ ] Test scripts executable with proper shebangs (100% compliance)
+- [ ] Test mode detection working in error logs (is_test field populated)
+- [ ] Error filtering functional (/errors --exclude-tests removes test errors)
+- [ ] State transition diagnostics provide actionable error messages
+- [ ] Build test phase captures comprehensive error context
 
 ## Technical Design
 
-### Architecture Decisions
+### Architecture Overview
 
-**Bash Preprocessing Safety**:
-- Replace all `if ! function_call` patterns with exit code capture pattern
-- Replace all `if [[ ! "$PATH" = /* ]]` patterns with preprocessing-safe alternatives
-- Use explicit exit code capture: `function_call; EXIT_CODE=$?; if [ $EXIT_CODE -ne 0 ]; then`
-- No functional changes to bash block logic, only preprocessing-safe syntax
-- Document exit code capture pattern in Bash Tool Limitations guide
-- Cross-reference preprocessing safety in Command Development Guide
+The implementation spans three architectural layers:
 
-**State File Persistence Infrastructure**:
-- Implement atomic state file write using temporary file + move pattern
-- Add state file path validation function: check existence before read operations
-- Implement recovery mechanism: recreate with workflow metadata if lost
-- Use environment variable for state file path (persistent across blocks) instead of temp file location
-- Add error logging for all state file operations using centralized error logging
-- Design: Write → Validate → Read → Cleanup lifecycle with verification at each step
+**Layer 1: Command Initialization Infrastructure**
+- Centralized library loader (command-init.sh) sourcing core libraries
+- Function existence validation with helpful error messages
+- Platform-aware resource sourcing (bashrc, environment setup)
+- Pre-flight checks for command prerequisites
 
-**Error Metadata Schema Enhancement**:
-- Add `is_test` boolean field to error log JSON schema
-- Maintain backward compatibility (field optional, defaults to false)
-- Detection mechanism: check `TEST_MODE` environment variable in error-handling library
+**Layer 2: Bash Execution Safety**
+- Exit code capture pattern replacing negated conditionals (if ! pattern)
+- Preprocessing-safe path validation
+- History expansion error elimination
+- Atomic state file operations with validation
 
-**State Transition Validation**:
-- Add precondition validation layer before `set_state()` calls
-- Log validation failures with state graph context: `{current: "X", target: "Y", blocked_by: ["reasons"]}`
-- No changes to state machine transitions, only diagnostic logging enhancement
-- Depends on state file persistence for reliable state tracking
-
-**Build Test Phase Context**:
-- Capture test output to temporary file before exit code check
-- Extract test command name from `$TEST_COMMAND` variable
-- Include test output file path, command name, and suite path in error context
-- Add pre-test validation for test file existence and dependencies
-- Depends on state persistence for workflow continuity
-
-**Test Script Execution Prerequisites**:
-- Standardize all test scripts with execute permissions (`chmod +x`)
-- Verify shebang line presence: `#!/bin/bash` or `#!/usr/bin/env bash`
-- Document as requirement in Testing Protocols
-- No changes to test logic, only execution mechanics
-
-**Test Compliance Expectation Alignment**:
-- Update test assertions to match actual block counts (not hardcoded expectations)
-- Document exclusion of documentation blocks from trap requirements
-- Add design rationale to error handling pattern documentation
+**Layer 3: Error Context and Diagnostics**
+- Test mode detection (TEST_MODE environment variable)
+- Error log filtering (--exclude-tests flag)
+- State transition precondition validation
+- Enhanced error context capture in build workflows
 
 ### Component Interactions
 
-**Build Workflow Flow** (with fixes):
 ```
-Multi-Block Command Execution
-    ↓ exit code capture pattern (Phase 0: preprocessing-safe)
-Bash Block Execution
-    ↓ no preprocessing errors
-State File Operations (Phase 1)
-    ↓ create_state_file() → atomic write
-    ↓ validate_state_file() → existence check
-    ↓ persist across blocks
-State Orchestration (Phase 4)
-    ↓ set_state() with precondition validation
-    ↓ diagnostic logging on failure
-Test Execution (Phase 5)
-    ↓ capture test output
-    ↓ log comprehensive context
-Build Completion (0% → 100% success rate)
-```
-
-**Error Logging Flow** (with metadata):
-```
-Test Scripts
-    ↓ export TEST_MODE=true
-Error Handling Library (error-handling.sh)
-    ↓ log_command_error() checks TEST_MODE
-    ↓ adds is_test: true metadata
-Error Log (errors.jsonl)
-    ↓
-/errors Command
-    ↓ --exclude-tests flag filters
-Production Error Analysis (noise reduced 87%)
-```
-
-**State Transition Flow** (with diagnostics):
-```
-State Orchestration
-    ↓ state file validated (Phase 1)
-    ↓ set_state() called
-Precondition Validation (Phase 4)
-    ↓ checks prerequisites
-    ↓ logs failure diagnostics if blocked
-    ↓ includes state graph context
-Error Log (with state graph context)
-    ↓
-Developer Debugging (state transition clear)
+┌─────────────────────────────────────────────────────────────┐
+│ Command Invocation (/build, /plan, /debug, etc.)           │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ command-init.sh (Standardized Initialization)              │
+│ - Source error-handling.sh                                  │
+│ - Source state-management.sh                                │
+│ - Source workflow-initialization.sh                         │
+│ - Platform detection and bashrc sourcing                    │
+│ - Function existence validation                             │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Workflow Execution (Bash Blocks)                            │
+│ - Exit code capture pattern (preprocessing safe)            │
+│ - Atomic state file operations                              │
+│ - Error context logging with test mode detection            │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Error Logging and Analysis                                  │
+│ - is_test metadata field                                    │
+│ - Filtering capabilities (--exclude-tests)                  │
+│ - Enhanced diagnostics (state transitions, build phase)     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-**Test Execution Flow** (with prerequisites):
-```
-Test Scripts (Phase 6)
-    ↓ execute permissions verified
-    ↓ shebang present
-Direct Invocation (./.claude/tests/test_*.sh)
-    ↓ no explicit bash prefix needed
-Test Compliance Validation (Phase 7)
-    ↓ expectations aligned with design
-    ↓ documentation blocks excluded
-Compliance Tests Pass (no false positives)
-```
+### Key Design Decisions
 
-### File Modifications
-
-**Phase 0 (Preprocessing Safety)**:
-1. `.claude/commands/build.md`: Replace `if ! ` patterns with exit code capture
-2. `.claude/commands/plan.md`: Replace `if ! ` patterns with exit code capture
-3. `.claude/commands/debug.md`: Replace `if ! ` patterns with exit code capture
-4. `.claude/commands/repair.md`: Replace `if ! ` patterns with exit code capture
-5. `.claude/commands/revise.md`: Replace `if ! ` patterns with exit code capture
-6. `.claude/docs/troubleshooting/bash-tool-limitations.md`: Add exit code capture pattern examples
-7. `.claude/docs/guides/development/command-development/command-development-fundamentals.md`: Cross-reference preprocessing safety
-
-**Phase 1 (State Persistence)**:
-8. `.claude/lib/workflow/state-orchestration.sh` (or similar): Add state file functions
-9. `.claude/commands/build.md`: Update to use persistent state file infrastructure
-
-**Phase 2 (Test Metadata)**:
-10. `.claude/lib/core/error-handling.sh`: Add `is_test` detection and logging
-11. Test scripts (`.claude/tests/*.sh`): Export `TEST_MODE=true` in test setup
-12. `.claude/docs/reference/standards/testing-protocols.md`: Add test mode code examples
-13. `.claude/docs/concepts/patterns/error-handling.md`: Document `is_test` field usage
-
-**Phase 3 (Errors Filtering)**:
-14. `.claude/commands/errors.md` or `.claude/scripts/errors.sh`: Add `--exclude-tests` flag
-15. `.claude/docs/guides/commands/errors-command-guide.md`: Document filtering usage
-
-**Phase 4 (State Diagnostics)**:
-16. State-based orchestration files: Add precondition validation logging
-17. `.claude/docs/architecture/state-based-orchestration-overview.md`: Add prerequisites and diagnostics
-
-**Phase 5 (Test Context)**:
-18. `.claude/commands/build.md`: Enhance test phase error context capture
-19. `.claude/docs/guides/commands/build-command-guide.md`: Document test phase error handling
-
-**Phase 6 (Test Scripts)**:
-20. All test scripts (`.claude/tests/*.sh`): Add execute permissions and verify shebangs
-21. `.claude/tests/run_all_tests.sh`: Add validation for execute permissions and shebangs (if runner exists)
-22. `.claude/docs/reference/standards/testing-protocols.md`: Document script requirements in "Test Script Requirements" section
-
-**Phase 7 (Compliance)**:
-23. `.claude/tests/test_bash_error_compliance.sh`: Update block count expectations
-24. `.claude/docs/concepts/patterns/error-handling.md`: Document block exclusion rationale
+1. **Centralized Initialization**: Single command-init.sh prevents library sourcing inconsistency (addresses 40% of errors)
+2. **Exit Code Capture**: Only preprocessing-safe pattern per bash-tool-limitations.md:329-354 (runtime set +H ineffective)
+3. **Platform Detection**: Multi-location bashrc sourcing handles Linux/macOS differences gracefully
+4. **Atomic State Operations**: State file writes with fsync and validation prevent loss between blocks
+5. **Test Runner Validation**: Ongoing enforcement prevents permission degradation (beyond one-time chmod)
 
 ## Implementation Phases
 
@@ -234,8 +133,10 @@ dependencies: []
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Audit all bash blocks in `.claude/commands/build.md` for `if ! ` patterns (grep: `grep -n "if ! " .claude/commands/build.md`)
-- [ ] Replace `if ! function_call` patterns with exit code capture pattern (file: `.claude/commands/build.md`):
+- [ ] Audit all bash blocks in .claude/commands/build.md for `if ! ` patterns
+  - Use grep: `grep -n "if ! " /home/benjamin/.config/.claude/commands/build.md`
+  - Document each occurrence with line number and context
+- [ ] Replace `if ! function_call` patterns with exit code capture:
   ```bash
   function_call
   EXIT_CODE=$?
@@ -243,8 +144,9 @@ dependencies: []
     # error handling
   fi
   ```
-- [ ] Audit path validation blocks for `if [[ ! "$PATH" = /* ]]` patterns
-- [ ] Replace with preprocessing-safe pattern (file: `.claude/commands/build.md`):
+  - File: /home/benjamin/.config/.claude/commands/build.md
+- [ ] Audit path validation blocks for `if [[ ! "$PATH" = /* ]]` patterns in build.md
+- [ ] Replace with preprocessing-safe pattern:
   ```bash
   [[ "$PATH" = /* ]]
   IS_ABSOLUTE=$?
@@ -253,429 +155,874 @@ dependencies: []
   fi
   ```
 - [ ] Test updated bash blocks for absence of `!: command not found` errors
-- [ ] Apply same exit code capture pattern to plan.md, debug.md, repair.md, revise.md (files: `.claude/commands/plan.md`, `.claude/commands/debug.md`, `.claude/commands/repair.md`, `.claude/commands/revise.md`)
-- [ ] Add exit code capture pattern examples to existing Bash Tool Limitations documentation section "Bash History Expansion Preprocessing Errors" (file: `.claude/docs/troubleshooting/bash-tool-limitations.md`, lines 290-458)
-- [ ] Cross-reference preprocessing safety pattern in Command Development Guide (file: `.claude/docs/guides/development/command-development/command-development-fundamentals.md`)
+  - Test command: `/build [test-plan] --dry-run`
+- [ ] Apply same exit code capture pattern to /home/benjamin/.config/.claude/commands/plan.md
+- [ ] Apply pattern to /home/benjamin/.config/.claude/commands/debug.md
+- [ ] Apply pattern to /home/benjamin/.config/.claude/commands/repair.md
+- [ ] Apply pattern to /home/benjamin/.config/.claude/commands/revise.md
+- [ ] Add pattern examples to bash-tool-limitations.md section "Bash History Expansion Preprocessing Errors"
+  - File: /home/benjamin/.config/.claude/docs/troubleshooting/bash-tool-limitations.md
+  - Section exists at lines 290-458
+- [ ] Cross-reference preprocessing safety pattern in Command Development Guide
+  - File: /home/benjamin/.config/.claude/docs/guides/development/command-development-guide.md
 
 **Testing**:
 ```bash
 # Test build command with complex plan requiring state transitions
+cd /home/benjamin/.config
 /build /tmp/test_plan.md 1
 
 # Verify no preprocessing errors
-grep -i "!: command not found" <(build output) && echo "FAIL: Preprocessing errors remain" || echo "PASS: No preprocessing errors"
+grep -i "!: command not found" <(cat build-output.md) && echo "FAIL: Preprocessing errors remain" || echo "PASS: No preprocessing errors"
 
 # Test across all commands with negated conditionals
 for cmd in build plan debug repair revise; do
   echo "Testing /$cmd for preprocessing safety..."
-  # Invoke with test inputs
+  grep -n "if ! " .claude/commands/${cmd}.md || echo "  ✓ No vulnerable patterns in /$cmd"
 done
 ```
 
 **Expected Duration**: 2 hours
 
-### Phase 1: State File Persistence Infrastructure [COMPLETE]
+### Phase 1: Standardized Command Library Initialization [NOT STARTED]
 dependencies: []
 
-**Objective**: Implement robust state file persistence for multi-block workflows to prevent state loss between blocks
+**Objective**: Create centralized library loader eliminating library sourcing inconsistencies
 
 **Complexity**: Medium
 
 **Tasks**:
-- [x] Identify where state file is created in build workflow (grep for `build_state_id.txt` in `.claude/commands/build.md`)
-- [x] Add atomic state file write function to state orchestration library (file: `.claude/lib/workflow/state-orchestration.sh` or similar)
-- [x] Implement state file path validation function: check file exists before reading (file: state orchestration library)
-- [x] Add state file recovery mechanism: recreate with appropriate metadata if lost (file: state orchestration library)
-- [x] Update build command to use persistent state file location (environment variable instead of tmp file) (file: `.claude/commands/build.md`)
-- [x] Add state file verification after each block that creates state file (file: `.claude/commands/build.md`)
-- [x] Create state file cleanup function for workflow completion (file: state orchestration library)
-- [x] Add error logging for state file operations using centralized error logging (file: state orchestration library)
+- [ ] Create /home/benjamin/.config/.claude/lib/core/command-init.sh with library sourcing logic
+  - Source error-handling.sh with existence validation
+  - Source state-management.sh with existence validation
+  - Source workflow-initialization.sh with existence validation
+  - Export common environment variables (CLAUDE_ROOT, CLAUDE_LIB, CLAUDE_COMMANDS)
+- [ ] Add function existence validation with helpful error messages:
+  ```bash
+  if ! declare -f save_completed_states_to_state >/dev/null; then
+    echo "ERROR: State management functions not loaded. Library: state-management.sh" >&2
+    exit 1
+  fi
+  ```
+- [ ] Create validation for each critical function:
+  - save_completed_states_to_state (state-management.sh)
+  - append_workflow_state (state-management.sh)
+  - initialize_workflow_paths (workflow-initialization.sh)
+  - log_command_error (error-handling.sh)
+  - ensure_error_log_exists (error-handling.sh)
+- [ ] Update /home/benjamin/.config/.claude/commands/build.md to source command-init.sh first
+  - Add at top of script: `source "$CLAUDE_LIB/core/command-init.sh" 2>/dev/null || { echo "CRITICAL: Cannot load command-init.sh"; exit 1; }`
+- [ ] Update /home/benjamin/.config/.claude/commands/plan.md to source command-init.sh
+- [ ] Update /home/benjamin/.config/.claude/commands/debug.md to source command-init.sh
+- [ ] Update /home/benjamin/.config/.claude/commands/implement.md to source command-init.sh
+- [ ] Update /home/benjamin/.config/.claude/commands/repair.md to source command-init.sh
+- [ ] Document library initialization requirements in Command Development Guide
+  - File: /home/benjamin/.config/.claude/docs/guides/development/command-development-guide.md
+  - Section: "Command Initialization Requirements"
 
 **Testing**:
 ```bash
-# Test state file persistence across multiple bash blocks
-source .claude/lib/workflow/state-orchestration.sh
-source .claude/lib/core/error-handling.sh
+# Test command initialization across all workflow commands
+for cmd in build plan debug implement repair; do
+  echo "Testing /$cmd initialization..."
+  # Invoke with minimal args to trigger initialization
+  /$cmd --help 2>&1 | grep -i "cannot load" && echo "  FAIL: Init failed" || echo "  ✓ Init successful"
+done
 
-ensure_error_log_exists
-COMMAND_NAME="/test-state-persistence"
-WORKFLOW_ID="test_state_$(date +%s)"
-
-# Block 1: Create state file
-create_state_file "$WORKFLOW_ID"
-STATE_FILE_PATH=$(get_state_file_path "$WORKFLOW_ID")
-[ -f "$STATE_FILE_PATH" ] && echo "✓ State file created" || echo "✗ State file creation failed"
-
-# Block 2: Verify state file persists
-STATE_FILE_PATH=$(get_state_file_path "$WORKFLOW_ID")
-[ -f "$STATE_FILE_PATH" ] && echo "✓ State file persisted" || echo "✗ State file lost between blocks"
-
-# Block 3: Cleanup
-cleanup_state_file "$WORKFLOW_ID"
-[ ! -f "$STATE_FILE_PATH" ] && echo "✓ State file cleaned up" || echo "✗ State file cleanup failed"
-```
-
-**Expected Duration**: 3 hours
-
-### Phase 2: Test Mode Metadata Infrastructure [NOT STARTED]
-dependencies: []
-
-**Objective**: Add test mode detection and metadata tagging to error logging infrastructure
-
-**Complexity**: Low
-
-**Tasks**:
-- [ ] Update error log JSON schema documentation to include `is_test` boolean field (file: `.claude/docs/concepts/patterns/error-handling.md`)
-- [ ] Modify `log_command_error()` function in error-handling.sh to check `TEST_MODE` environment variable (file: `.claude/lib/core/error-handling.sh`)
-- [ ] Add `is_test` field to error log output when `TEST_MODE=true` (file: `.claude/lib/core/error-handling.sh`)
-- [ ] Add test case validating `is_test` metadata appears in error logs (file: `.claude/tests/test_error_logging_metadata.sh`)
-- [ ] Verify Testing Protocols documentation includes `TEST_MODE=true` requirement (existing at lines 195-198)
-- [ ] Add code examples to Testing Protocols showing `TEST_MODE` integration in test setup (file: `.claude/docs/reference/standards/testing-protocols.md`)
-- [ ] Document `is_test` field usage in Error Handling Pattern examples (file: `.claude/docs/concepts/patterns/error-handling.md`)
-
-**Testing**:
-```bash
-# Create test script that exports TEST_MODE=true and logs error
-cat > /tmp/test_metadata.sh <<'EOF'
-#!/bin/bash
-source .claude/lib/core/error-handling.sh
-ensure_error_log_exists
-export TEST_MODE=true
-COMMAND_NAME="/test-metadata"
-WORKFLOW_ID="test_metadata_$(date +%s)"
-log_command_error "execution_error" "Test error message" '{"test_key": "test_value"}'
-EOF
-
-bash /tmp/test_metadata.sh
-
-# Verify is_test field appears in error log
-grep -q '"is_test":true' .claude/data/logs/errors.jsonl && echo "✓ Test metadata logged" || echo "✗ Test metadata missing"
+# Test function availability after initialization
+bash -c "source /home/benjamin/.config/.claude/lib/core/command-init.sh && declare -f save_completed_states_to_state >/dev/null && echo 'PASS: Function loaded'"
 ```
 
 **Expected Duration**: 1.5 hours
 
-### Phase 3: Errors Command Test Filtering [NOT STARTED]
+### Phase 2: Platform-Aware Resource Sourcing [NOT STARTED]
+dependencies: []
+
+**Objective**: Replace hard-coded /etc/bashrc with platform-aware conditional sourcing
+
+**Complexity**: Low
+
+**Tasks**:
+- [ ] Locate bashrc sourcing in command initialization (likely in command templates or build.md)
+  - Search: `grep -n "/etc/bashrc" /home/benjamin/.config/.claude/commands/*.md`
+- [ ] Replace `. /etc/bashrc` with conditional multi-location sourcing:
+  ```bash
+  # Try multiple standard bashrc locations
+  for bashrc_path in /etc/bashrc /etc/bash.bashrc ~/.bashrc; do
+    if [ -f "$bashrc_path" ]; then
+      . "$bashrc_path" 2>/dev/null || true
+      break
+    fi
+  done
+  ```
+- [ ] Add platform detection if needed:
+  ```bash
+  case "$(uname -s)" in
+    Linux)   BASHRC_LOCATIONS="/etc/bash.bashrc ~/.bashrc" ;;
+    Darwin)  BASHRC_LOCATIONS="/etc/bashrc ~/.bash_profile ~/.bashrc" ;;
+    *)       BASHRC_LOCATIONS="~/.bashrc" ;;
+  esac
+  ```
+- [ ] Update command-init.sh to include platform-aware bashrc sourcing
+  - File: /home/benjamin/.config/.claude/lib/core/command-init.sh (created in Phase 1)
+- [ ] Document platform-specific initialization in deployment guide
+  - File: /home/benjamin/.config/.claude/docs/guides/deployment/platform-compatibility.md (create if missing)
+  - Section: "Shell Initialization Across Platforms"
+- [ ] Test on Linux system (current environment)
+- [ ] Add test coverage for macOS bashrc paths (document expected behavior)
+
+**Testing**:
+```bash
+# Test bashrc sourcing on current Linux system
+bash -c "source /home/benjamin/.config/.claude/lib/core/command-init.sh && echo 'Bashrc sourcing completed without errors'"
+
+# Verify no errors for missing /etc/bashrc
+grep -i "bashrc: no such file" <(bash -c "source /home/benjamin/.config/.claude/lib/core/command-init.sh 2>&1") && echo "FAIL: Bashrc error" || echo "PASS: No bashrc errors"
+
+# Test platform detection
+uname -s | grep -q "Linux" && echo "Platform: Linux detected correctly"
+```
+
+**Expected Duration**: 0.5 hours
+
+### Phase 3: Topic Naming Agent Diagnostics and Validation [NOT STARTED]
+dependencies: []
+
+**Objective**: Add comprehensive diagnostic logging and output validation to topic naming agent invocation
+
+**Complexity**: Medium
+
+**Tasks**:
+- [ ] Locate topic naming agent invocation in /home/benjamin/.config/.claude/commands/plan.md
+  - Search for topic-namer.md or create_topic_artifact references
+- [ ] Add pre-invocation logging before agent call:
+  ```bash
+  echo "DEBUG: Topic naming agent input file: $AGENT_INPUT_FILE" >&2
+  echo "DEBUG: Expected output file: $AGENT_OUTPUT_FILE" >&2
+  test -f "$AGENT_INPUT_FILE" || { echo "ERROR: Agent input file missing"; exit 1; }
+  ```
+- [ ] Add timeout with explicit error message:
+  ```bash
+  timeout 30s claude-agent topic-namer.md < "$AGENT_INPUT_FILE" > "$AGENT_OUTPUT_FILE" 2>"$AGENT_STDERR_FILE" || {
+    AGENT_EXIT_CODE=$?
+    echo "ERROR: Topic naming agent failed (exit $AGENT_EXIT_CODE)" >&2
+  }
+  ```
+- [ ] Add post-invocation validation:
+  ```bash
+  if [ ! -f "$AGENT_OUTPUT_FILE" ]; then
+    echo "ERROR: Topic naming agent did not create output file: $AGENT_OUTPUT_FILE" >&2
+    echo "Agent exit code: $AGENT_EXIT_CODE" >&2
+    echo "Checking for partial output in agent directory..." >&2
+    ls -la "$(dirname "$AGENT_OUTPUT_FILE")" || true
+    echo "Agent stderr (last 20 lines):" >&2
+    tail -n 20 "$AGENT_STDERR_FILE" || true
+  fi
+  ```
+- [ ] Capture agent stderr/stdout to separate files for debugging:
+  - stderr: /tmp/topic-namer-stderr-${TIMESTAMP}.log
+  - stdout: captured to $AGENT_OUTPUT_FILE
+- [ ] Review topic naming agent behavioral guidelines
+  - File: /home/benjamin/.config/.claude/agents/topic-namer.md
+  - Verify output contract requirements (expected output format, file location)
+- [ ] Enhance fallback logic to log reason and provide alternative topic generation:
+  ```bash
+  if [ ! -f "$AGENT_OUTPUT_FILE" ]; then
+    log_command_error "agent_error" "Topic naming agent failed" "reason=agent_no_output_file"
+    TOPIC_NAME="${FALLBACK_TOPIC_PREFIX}_$(date +%s)"
+    echo "Fallback topic name: $TOPIC_NAME"
+  fi
+  ```
+
+**Testing**:
+```bash
+# Test topic naming agent with valid input
+echo "Test feature description" > /tmp/agent_test_input.txt
+AGENT_OUTPUT_FILE=/tmp/agent_test_output.txt
+# Run agent invocation block from plan.md
+test -f "$AGENT_OUTPUT_FILE" && echo "PASS: Agent created output" || echo "FAIL: Agent no output"
+
+# Test agent timeout handling
+timeout 1s sleep 10 || echo "Timeout mechanism working"
+
+# Test diagnostic output capture
+grep -q "DEBUG: Topic naming agent input file" <(test stderr output) && echo "PASS: Diagnostics logged"
+```
+
+**Expected Duration**: 1.5 hours
+
+### Phase 4: Atomic State File Persistence [NOT STARTED]
 dependencies: [2]
 
-**Objective**: Add `--exclude-tests` flag to /errors command for filtering test-induced errors
+**Objective**: Implement robust state file operations preventing loss between workflow blocks
 
-**Complexity**: Low
+**Complexity**: High
 
 **Tasks**:
-- [ ] Locate /errors command implementation (search for errors command file in .claude/commands/ or .claude/scripts/)
-- [ ] Add `--exclude-tests` flag to argument parser (default: false for backward compatibility)
-- [ ] Implement filter logic to skip errors where `is_test: true` when flag enabled
-- [ ] Update /errors command help text to document `--exclude-tests` flag
-- [ ] Add test case validating test errors are filtered when flag used (file: `.claude/tests/test_errors_command_filter.sh`)
-- [ ] Update Errors Command Guide documentation with filter usage examples (file: `.claude/docs/guides/commands/errors-command-guide.md`)
+- [ ] Create atomic state file write function in state-management.sh:
+  ```bash
+  atomic_write_state_file() {
+    local state_file="$1"
+    local state_content="$2"
+    local temp_file="${state_file}.tmp.$$"
+
+    echo "$state_content" > "$temp_file"
+    sync "$temp_file"  # Force write to disk
+    mv "$temp_file" "$state_file" || {
+      echo "ERROR: Failed to atomically write state file: $state_file" >&2
+      rm -f "$temp_file"
+      return 1
+    }
+
+    # Verify state file exists and has content
+    test -s "$state_file"
+    VERIFY_EXIT_CODE=$?
+    if [ $VERIFY_EXIT_CODE -ne 0 ]; then
+      echo "ERROR: State file verification failed: $state_file" >&2
+      return 1
+    fi
+  }
+  ```
+  - File: /home/benjamin/.config/.claude/lib/core/state-management.sh
+- [ ] Add state file validation before reads:
+  ```bash
+  validate_state_file() {
+    local state_file="$1"
+
+    test -f "$state_file"
+    FILE_EXISTS=$?
+    if [ $FILE_EXISTS -ne 0 ]; then
+      echo "ERROR: State file does not exist: $state_file" >&2
+      return 1
+    fi
+
+    test -s "$state_file"
+    FILE_HAS_CONTENT=$?
+    if [ $FILE_HAS_CONTENT -ne 0 ]; then
+      echo "ERROR: State file is empty: $state_file" >&2
+      return 1
+    fi
+
+    return 0
+  }
+  ```
+- [ ] Implement state file recovery mechanism:
+  ```bash
+  recover_state_file() {
+    local state_file="$1"
+    local backup_dir="$2"
+
+    # Look for recent backup
+    find "$backup_dir" -name "$(basename "$state_file").backup.*" -mmin -30 | head -n 1
+    LATEST_BACKUP_EXIT_CODE=$?
+
+    if [ $LATEST_BACKUP_EXIT_CODE -eq 0 ]; then
+      LATEST_BACKUP=$(find "$backup_dir" -name "$(basename "$state_file").backup.*" -mmin -30 | head -n 1)
+      echo "INFO: Recovering state file from backup: $LATEST_BACKUP" >&2
+      cp "$LATEST_BACKUP" "$state_file"
+      return $?
+    fi
+
+    return 1
+  }
+  ```
+- [ ] Update build.md to use atomic state file operations
+  - File: /home/benjamin/.config/.claude/commands/build.md
+  - Replace direct state file writes with atomic_write_state_file calls
+- [ ] Add state file backup before modifications:
+  ```bash
+  BACKUP_FILE="${STATE_FILE}.backup.$(date +%s)"
+  test -f "$STATE_FILE" && cp "$STATE_FILE" "$BACKUP_FILE"
+  ```
+- [ ] Update state file location to persistent directory (not /tmp)
+  - Use: /home/benjamin/.config/.claude/data/state/build_state_${WORKFLOW_ID}.txt
+  - Ensure data/state directory exists in command-init.sh
+- [ ] Test state file persistence across multi-block workflows
+- [ ] Add state file cleanup mechanism (remove files older than 7 days)
 
 **Testing**:
 ```bash
-# Create test and production errors
-export TEST_MODE=true
-.claude/scripts/log_test_error.sh  # Logs test error
+# Test atomic state file write
+source /home/benjamin/.config/.claude/lib/core/state-management.sh
+atomic_write_state_file "/tmp/test_state.txt" "test_workflow_id_123" && echo "PASS: Atomic write" || echo "FAIL: Atomic write"
 
-unset TEST_MODE
-.claude/scripts/log_production_error.sh  # Logs production error
+# Test state file validation
+validate_state_file "/tmp/test_state.txt" && echo "PASS: Validation" || echo "FAIL: Validation"
 
-# Verify filtering works
-ERROR_COUNT_ALL=$(/errors --limit 100 | wc -l)
-ERROR_COUNT_FILTERED=$(/errors --exclude-tests --limit 100 | wc -l)
+# Test recovery mechanism
+rm /tmp/test_state.txt
+recover_state_file "/tmp/test_state.txt" "/tmp" && echo "PASS: Recovery" || echo "INFO: No backup available"
 
-[ "$ERROR_COUNT_FILTERED" -lt "$ERROR_COUNT_ALL" ] && echo "✓ Test filter working" || echo "✗ Filter not working"
+# Test build workflow state persistence
+/build [test-plan] 1
+grep -q "ERROR: State file" <(cat build-output.md) && echo "FAIL: State file errors" || echo "PASS: State persistence working"
 ```
 
 **Expected Duration**: 2 hours
 
-### Phase 4: State Transition Diagnostics [NOT STARTED]
-dependencies: [1, 2]
-
-**Objective**: Enhance state transition validation with precondition checking and detailed diagnostic logging
-
-**Complexity**: Medium
-
-**Tasks**:
-- [ ] Search for state transition functions (grep for "set_state" or "transition" in .claude/lib/ or state orchestration files)
-- [ ] Identify state-based orchestration implementation file (likely in .claude/lib/workflow/ or commands/build.md)
-- [ ] Add precondition validation function before each `set_state()` call (validate prerequisites for target state)
-- [ ] Log validation failures with state graph context: current state, target state, blocked prerequisites
-- [ ] Update error context to include `{current: "STATE", target: "STATE", blocked_by: ["reason1", "reason2"]}`
-- [ ] Add state transition validation test case (file: `.claude/tests/test_state_transition_validation.sh`)
-- [ ] Document state transition prerequisites in State-Based Orchestration docs (file: `.claude/docs/architecture/state-based-orchestration-overview.md`)
-- [ ] Add state transition diagram showing valid transitions and prerequisites (file: `.claude/docs/architecture/state-based-orchestration-overview.md`)
-
-**Testing**:
-```bash
-# Create test workflow that attempts invalid state transition
-cat > /tmp/test_state_validation.sh <<'EOF'
-#!/bin/bash
-source .claude/lib/core/error-handling.sh
-source .claude/lib/workflow/state-orchestration.sh  # Adjust path if different
-
-ensure_error_log_exists
-COMMAND_NAME="/test-state"
-WORKFLOW_ID="test_state_$(date +%s)"
-
-# Attempt transition to DOCUMENT without completing TEST
-set_state "TEST"
-set_state "DOCUMENT"  # Should fail and log diagnostics
-EOF
-
-bash /tmp/test_state_validation.sh
-
-# Verify diagnostic context logged
-grep -q '"blocked_by"' .claude/data/logs/errors.jsonl && echo "✓ State diagnostics logged" || echo "✗ State diagnostics missing"
-```
-
-**Expected Duration**: 3 hours
-
-### Phase 5: Build Test Phase Error Context [NOT STARTED]
-dependencies: [1, 2]
-
-**Objective**: Capture comprehensive test execution context during build workflow test phase
-
-**Complexity**: Medium
-
-**Tasks**:
-- [ ] Locate build command test execution block (grep for "TEST_COMMAND" or line ~354 in build command)
-- [ ] Add test output capture to temporary file before exit code check (file: `.claude/commands/build.md` or build script)
-- [ ] Extract test command name from `$TEST_COMMAND` variable and include in error context
-- [ ] Update error logging to include test output file path, command name, and test suite path
-- [ ] Add pre-test validation: check test file exists, test dependencies available
-- [ ] Log pre-test validation failures separately from test execution failures
-- [ ] Add test case for build command test phase error context (file: `.claude/tests/test_build_test_phase_context.sh`)
-- [ ] Update build command documentation with test phase error handling (file: `.claude/docs/guides/commands/build-command-guide.md` or create if missing)
-
-**Testing**:
-```bash
-# Create test plan with intentionally failing test
-cat > /tmp/test_plan.md <<'EOF'
-# Test Plan
-
-## Phase 1: Test Phase
-- [ ] Run failing test
-
-Testing:
-```bash
-exit 1  # Intentional failure
-```
-EOF
-
-# Run build command with test plan
-/build /tmp/test_plan.md 1
-
-# Verify error context includes test command and output path
-ERROR_LOG=$(tail -1 .claude/data/logs/errors.jsonl)
-echo "$ERROR_LOG" | grep -q '"test_command"' && echo "✓ Test command logged" || echo "✗ Test command missing"
-echo "$ERROR_LOG" | grep -q '"test_output"' && echo "✓ Test output path logged" || echo "✗ Test output path missing"
-```
-
-**Expected Duration**: 1.5 hours
-
-### Phase 6: Test Script Execution Prerequisites [NOT STARTED]
+### Phase 5: Test Script Execution Validation and Enforcement [NOT STARTED]
 dependencies: []
 
-**Objective**: Validate and fix test script execution prerequisites to enable direct script invocation
+**Objective**: Ensure test scripts have proper permissions, shebangs, and TEST_MODE integration
 
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Identify all test scripts in `.claude/tests/` directory (use Glob: `**/*.sh` in tests directory)
-- [ ] Check execute permissions for each test script: `test -x script.sh`
-- [ ] Add execute permissions to all test scripts: `chmod +x .claude/tests/*.sh` (file: all test scripts)
-- [ ] Verify shebang line exists in all test scripts: `#!/bin/bash` or `#!/usr/bin/env bash`
-- [ ] Add shebang to any test scripts missing it (file: affected test scripts)
-- [ ] Update `.claude/tests/run_all_tests.sh` to validate execute permissions before running tests (if runner exists)
-- [ ] Add pre-test validation: check shebang exists, fail-fast if missing
-- [ ] Add execute permission check to test discovery logic
-- [ ] Test direct invocation of test scripts (without explicit `bash` prefix): `./.claude/tests/test_*.sh`
-- [ ] Document test script requirements in Testing Protocols: create "Test Script Requirements" section (file: `.claude/docs/reference/standards/testing-protocols.md`)
+- [ ] Audit all test scripts for execute permissions:
+  ```bash
+  find /home/benjamin/.config/.claude/tests -name "*.sh" -type f ! -executable
+  ```
+- [ ] Add execute permissions to all test scripts:
+  ```bash
+  chmod +x /home/benjamin/.config/.claude/tests/*.sh
+  ```
+- [ ] Verify shebang line exists in all test scripts:
+  ```bash
+  for script in /home/benjamin/.config/.claude/tests/*.sh; do
+    head -n 1 "$script" | grep -q "^#!/" || echo "Missing shebang: $script"
+  done
+  ```
+- [ ] Add shebang to scripts missing it:
+  ```bash
+  #!/usr/bin/env bash
+  ```
+- [ ] Add TEST_MODE export to all test scripts (at top after shebang):
+  ```bash
+  export TEST_MODE=true
+  ```
+- [ ] Update test runner to validate permissions before execution:
+  - File: /home/benjamin/.config/.claude/tests/run_all_tests.sh
+  - Add pre-test validation:
+  ```bash
+  validate_test_script() {
+    local script="$1"
+
+    # Check shebang
+    head -n 1 "$script" | grep -q "^#!/"
+    SHEBANG_CHECK=$?
+    if [ $SHEBANG_CHECK -ne 0 ]; then
+      echo "ERROR: Missing shebang in test script: $script" >&2
+      return 1
+    fi
+
+    # Check execute permission
+    test -x "$script"
+    EXEC_CHECK=$?
+    if [ $EXEC_CHECK -ne 0 ]; then
+      echo "ERROR: Test script not executable: $script" >&2
+      echo "  Fix: chmod +x $script" >&2
+      return 1
+    fi
+
+    return 0
+  }
+  ```
+- [ ] Document test script requirements in Testing Protocols:
+  - File: /home/benjamin/.config/.claude/docs/reference/standards/testing-protocols.md
+  - Create section: "Test Script Requirements"
+  - Content: Shebang requirement, execute permissions, TEST_MODE export
 
 **Testing**:
 ```bash
-# Verify all test scripts have execute permissions and shebangs
-for test_script in .claude/tests/test_*.sh; do
-  if [ ! -x "$test_script" ]; then
-    echo "✗ Missing execute permission: $test_script"
-  else
-    echo "✓ Has execute permission: $test_script"
-  fi
-
-  if ! head -1 "$test_script" | grep -q '^#!/'; then
-    echo "✗ Missing shebang: $test_script"
-  else
-    echo "✓ Has shebang: $test_script"
-  fi
+# Verify all test scripts have shebangs
+for script in /home/benjamin/.config/.claude/tests/*.sh; do
+  head -n 1 "$script" | grep -q "^#!/" && echo "✓ $script" || echo "✗ $script (missing shebang)"
 done
 
-# Test direct invocation
-./.claude/tests/test_bash_error_compliance.sh && echo "✓ Direct invocation works" || echo "✗ Direct invocation failed"
+# Verify all test scripts are executable
+find /home/benjamin/.config/.claude/tests -name "*.sh" -type f ! -executable | wc -l | grep -q "^0$" && echo "PASS: All scripts executable" || echo "FAIL: Some scripts not executable"
+
+# Test script validation in test runner
+bash /home/benjamin/.config/.claude/tests/run_all_tests.sh 2>&1 | grep -i "missing shebang\|not executable" && echo "FAIL: Validation errors" || echo "PASS: All tests valid"
 ```
 
 **Expected Duration**: 1 hour
 
-### Phase 7: Test Compliance Expectation Alignment [NOT STARTED]
-dependencies: [0, 1]
+### Phase 6: Error Trap Quote Escaping Fix [NOT STARTED]
+dependencies: []
 
-**Objective**: Align test compliance checks with implementation design decisions
+**Objective**: Fix complex quote escaping in bash trap commands eliminating parse errors
 
-**Complexity**: Low
+**Complexity**: Medium
 
 **Tasks**:
-- [ ] Read test compliance script to understand current expectations (file: `.claude/tests/test_bash_error_compliance.sh`)
-- [ ] Identify hardcoded block count expectations in test (grep for block count assertions)
-- [ ] Review build command to count actual bash blocks and identify documentation blocks (file: `.claude/commands/build.md`)
-- [ ] Update test expectations to match actual block counts (file: `.claude/tests/test_bash_error_compliance.sh`)
-- [ ] Document exclusion of documentation blocks from trap requirements in test comments
-- [ ] Add design decision documentation: why documentation blocks are excluded from trap requirements (file: `.claude/docs/concepts/patterns/error-handling.md`)
-- [ ] Test compliance check with updated expectations: `./.claude/tests/test_bash_error_compliance.sh`
-- [ ] Verify test now passes with correct implementation (all phases should show ✓)
+- [ ] Locate trap installation in error-handling library
+  - File: /home/benjamin/.config/.claude/lib/core/error-handling.sh
+  - Search for trap command with _log_bash_exit
+- [ ] Review current trap command causing parse errors:
+  ```bash
+  trap '_log_bash_exit $LINENO "$BASH_COMMAND" "'"$cmd_name"'" "'"$workflow_id"'" "'"$user_args"'"' EXIT
+  ```
+- [ ] Simplify variable passing using global variables instead of embedded string interpolation:
+  ```bash
+  # Set globals before trap installation
+  export ERROR_CONTEXT_CMD_NAME="$cmd_name"
+  export ERROR_CONTEXT_WORKFLOW_ID="$workflow_id"
+  export ERROR_CONTEXT_USER_ARGS="$user_args"
+
+  # Simplified trap without complex escaping
+  trap '_log_bash_exit $LINENO "$BASH_COMMAND"' EXIT
+  ```
+- [ ] Update _log_bash_exit function to read from global variables:
+  ```bash
+  _log_bash_exit() {
+    local line_number="$1"
+    local command="$2"
+    local cmd_name="${ERROR_CONTEXT_CMD_NAME:-unknown}"
+    local workflow_id="${ERROR_CONTEXT_WORKFLOW_ID:-unknown}"
+    local user_args="${ERROR_CONTEXT_USER_ARGS:-}"
+
+    # Existing error logging logic
+  }
+  ```
+  - File: /home/benjamin/.config/.claude/lib/core/error-handling.sh
+- [ ] Add trap syntax validation before installation:
+  ```bash
+  validate_trap_syntax() {
+    local trap_command="$1"
+
+    # Test trap syntax by installing in subshell
+    (trap "$trap_command" EXIT 2>/dev/null)
+    SYNTAX_CHECK=$?
+    if [ $SYNTAX_CHECK -ne 0 ]; then
+      echo "ERROR: Invalid trap syntax: $trap_command" >&2
+      return 1
+    fi
+
+    return 0
+  }
+  ```
+- [ ] Add unit tests for trap installation with various argument types:
+  - Test with spaces in arguments
+  - Test with quotes in arguments
+  - Test with special characters (!, $, ", ')
+  - File: /home/benjamin/.config/.claude/tests/test_error_trap_escaping.sh
 
 **Testing**:
 ```bash
-# Run compliance test and verify no false positives
-./.claude/tests/test_bash_error_compliance.sh
+# Test trap installation with complex arguments
+cmd_name="/test-cmd"
+workflow_id="test_workflow_123"
+user_args="--arg 'value with spaces' --flag"
 
-# Expected output:
-# ✓ /plan: N/N blocks (100% coverage)
-# ✓ /build: M/M blocks (100% coverage, documentation blocks excluded by design)
-# ✓ /debug: X/X blocks (100% coverage)
-# ✓ /repair: Y/Y blocks (100% coverage)
-# ✓ /revise: Z/Z blocks (100% coverage)
+source /home/benjamin/.config/.claude/lib/core/error-handling.sh
+# Verify no parse errors during trap installation
+echo $? | grep -q "^0$" && echo "PASS: Trap installed without errors" || echo "FAIL: Trap installation error"
+
+# Test trap execution with various argument types
+bash -c "source /home/benjamin/.config/.claude/lib/core/error-handling.sh && exit 1" 2>&1 | grep -q "parse error\|syntax error" && echo "FAIL: Parse error" || echo "PASS: No parse errors"
+
+# Run unit tests
+bash /home/benjamin/.config/.claude/tests/test_error_trap_escaping.sh
 ```
 
 **Expected Duration**: 1.5 hours
 
+### Phase 7: Test Mode Detection and Error Log Filtering [NOT STARTED]
+dependencies: [1, 5]
+
+**Objective**: Add is_test metadata field and --exclude-tests filtering to error logging
+
+**Complexity**: Low
+
+**Tasks**:
+- [ ] Add is_test field detection in error-handling library:
+  ```bash
+  detect_test_mode() {
+    # Check TEST_MODE environment variable
+    if [ "${TEST_MODE:-false}" = "true" ]; then
+      echo "true"
+      return 0
+    fi
+
+    # Check if invoked from test directory
+    pwd | grep -q "/tests/"
+    FROM_TESTS_DIR=$?
+    if [ $FROM_TESTS_DIR -eq 0 ]; then
+      echo "true"
+      return 0
+    fi
+
+    echo "false"
+    return 0
+  }
+  ```
+  - File: /home/benjamin/.config/.claude/lib/core/error-handling.sh
+- [ ] Update log_command_error to include is_test field:
+  ```bash
+  log_command_error() {
+    local error_type="$1"
+    local error_message="$2"
+    local error_details="$3"
+
+    local is_test=$(detect_test_mode)
+
+    # Build JSON log entry with is_test field
+    local log_entry=$(jq -n \
+      --arg timestamp "$(date -Iseconds)" \
+      --arg command "${ERROR_CONTEXT_CMD_NAME:-unknown}" \
+      --arg error_type "$error_type" \
+      --arg error_message "$error_message" \
+      --arg is_test "$is_test" \
+      --argjson context "$error_details" \
+      '{timestamp: $timestamp, command: $command, error_type: $error_type, error_message: $error_message, is_test: ($is_test == "true"), context: $context}')
+
+    echo "$log_entry" >> "$ERROR_LOG_FILE"
+  }
+  ```
+- [ ] Add --exclude-tests flag to /errors command:
+  - File: /home/benjamin/.config/.claude/commands/errors.md
+  - Add flag parsing:
+  ```bash
+  EXCLUDE_TESTS=false
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --exclude-tests)
+        EXCLUDE_TESTS=true
+        shift
+        ;;
+      *)
+        # Other flag handling
+        ;;
+    esac
+  done
+  ```
+- [ ] Implement filtering logic in errors command:
+  ```bash
+  if [ "$EXCLUDE_TESTS" = "true" ]; then
+    jq -c 'select(.is_test == false)' "$ERROR_LOG_FILE"
+  else
+    cat "$ERROR_LOG_FILE"
+  fi
+  ```
+- [ ] Verify Testing Protocols documentation includes TEST_MODE requirement
+  - File: /home/benjamin/.config/.claude/docs/reference/standards/testing-protocols.md
+  - Section exists at lines 195-198 (verify and enhance if needed)
+- [ ] Add code examples to Testing Protocols showing TEST_MODE integration:
+  ```bash
+  # Example test script structure
+  #!/usr/bin/env bash
+  export TEST_MODE=true  # Required for test mode detection
+
+  # Test implementation
+  ```
+- [ ] Document is_test field usage in Error Handling Pattern examples:
+  - File: /home/benjamin/.config/.claude/docs/concepts/patterns/error-handling.md
+  - Add section showing is_test field in error log entries
+
+**Testing**:
+```bash
+# Test is_test detection with TEST_MODE set
+TEST_MODE=true bash -c "source /home/benjamin/.config/.claude/lib/core/error-handling.sh && detect_test_mode" | grep -q "true" && echo "PASS: TEST_MODE detected" || echo "FAIL"
+
+# Test is_test detection from test directory
+cd /home/benjamin/.config/.claude/tests
+bash -c "source /home/benjamin/.config/.claude/lib/core/error-handling.sh && detect_test_mode" | grep -q "true" && echo "PASS: Test dir detected" || echo "FAIL"
+
+# Test error log filtering
+/errors --exclude-tests --limit 10 | jq -r '.is_test' | grep -q "true" && echo "FAIL: Test errors not filtered" || echo "PASS: Filtering working"
+
+# Verify error log entries have is_test field
+/errors --limit 5 | jq -r 'has("is_test")' | grep -q "false" && echo "FAIL: Missing is_test field" || echo "PASS: is_test field present"
+```
+
+**Expected Duration**: 1 hour
+
+### Phase 8: State Transition Diagnostics and Build Test Context [NOT STARTED]
+dependencies: [4, 7]
+
+**Objective**: Enhance state transition diagnostics with precondition validation and improve build test phase error context capture
+
+**Complexity**: Medium
+
+**Tasks**:
+- [ ] Add precondition validation to state transition functions:
+  ```bash
+  validate_state_transition() {
+    local from_state="$1"
+    local to_state="$2"
+    local workflow_id="$3"
+
+    # Validate workflow_id exists
+    test -n "$workflow_id"
+    ID_CHECK=$?
+    if [ $ID_CHECK -ne 0 ]; then
+      echo "ERROR: Workflow ID is empty" >&2
+      log_command_error "state_error" "State transition validation failed" '{"reason": "empty_workflow_id"}'
+      return 1
+    fi
+
+    # Validate state file exists
+    local state_file="/home/benjamin/.config/.claude/data/state/workflow_${workflow_id}.txt"
+    validate_state_file "$state_file"
+    STATE_FILE_CHECK=$?
+    if [ $STATE_FILE_CHECK -ne 0 ]; then
+      echo "ERROR: State file validation failed for workflow $workflow_id" >&2
+      log_command_error "state_error" "State file missing or invalid" "{\"workflow_id\": \"$workflow_id\", \"state_file\": \"$state_file\"}"
+      return 1
+    fi
+
+    # Validate state transition is allowed
+    case "$from_state:$to_state" in
+      "INIT:RESEARCH"|"RESEARCH:PLANNING"|"PLANNING:IMPLEMENTATION"|"IMPLEMENTATION:TESTING"|"TESTING:COMPLETE")
+        echo "INFO: Valid state transition: $from_state → $to_state" >&2
+        return 0
+        ;;
+      *)
+        echo "ERROR: Invalid state transition: $from_state → $to_state" >&2
+        log_command_error "state_error" "Invalid state transition" "{\"from\": \"$from_state\", \"to\": \"$to_state\", \"workflow_id\": \"$workflow_id\"}"
+        return 1
+        ;;
+    esac
+  }
+  ```
+  - File: /home/benjamin/.config/.claude/lib/core/state-management.sh
+- [ ] Update sm_transition function to call validation before transition:
+  ```bash
+  sm_transition() {
+    local new_state="$1"
+    local workflow_id="${2:-$WORKFLOW_ID}"
+
+    # Get current state
+    local current_state=$(get_current_state "$workflow_id")
+
+    # Validate transition
+    validate_state_transition "$current_state" "$new_state" "$workflow_id"
+    VALIDATION_CHECK=$?
+    if [ $VALIDATION_CHECK -ne 0 ]; then
+      return 1
+    fi
+
+    # Perform transition (existing logic)
+  }
+  ```
+- [ ] Add build test phase error context capture in build.md:
+  ```bash
+  # Before test execution
+  TEST_PHASE_START=$(date +%s)
+  TEST_PHASE_PLAN_FILE="$PLAN_FILE"
+  TEST_PHASE_PHASE_NUMBER="$PHASE_NUMBER"
+
+  # During test execution
+  run_phase_tests() {
+    local phase_number="$1"
+    local test_commands="$2"
+
+    echo "INFO: Running tests for Phase $phase_number" >&2
+
+    eval "$test_commands"
+    TEST_EXIT_CODE=$?
+
+    if [ $TEST_EXIT_CODE -ne 0 ]; then
+      TEST_DURATION=$(($(date +%s) - TEST_PHASE_START))
+      log_command_error "test_failure" "Phase $phase_number tests failed" \
+        "{\"phase\": $phase_number, \"plan_file\": \"$TEST_PHASE_PLAN_FILE\", \"duration_seconds\": $TEST_DURATION, \"exit_code\": $TEST_EXIT_CODE}"
+    fi
+
+    return $TEST_EXIT_CODE
+  }
+  ```
+  - File: /home/benjamin/.config/.claude/commands/build.md
+- [ ] Add state transition diagnostic output with actionable messages:
+  ```bash
+  # Example diagnostic message
+  echo "State Transition Diagnostics:" >&2
+  echo "  Workflow ID: $workflow_id" >&2
+  echo "  Current State: $current_state" >&2
+  echo "  Target State: $new_state" >&2
+  echo "  State File: $state_file" >&2
+  echo "  Prerequisites Met: $(validate_prerequisites)" >&2
+  ```
+- [ ] Update state transition error messages to include resolution steps:
+  ```bash
+  echo "ERROR: State transition failed: $current_state → $new_state" >&2
+  echo "Resolution steps:" >&2
+  echo "  1. Verify workflow ID is correct: $workflow_id" >&2
+  echo "  2. Check state file exists: $state_file" >&2
+  echo "  3. Ensure prerequisites for $new_state are met" >&2
+  echo "  4. Check error log: /errors --command /build --since 1h" >&2
+  ```
+- [ ] Add test phase context to error logs (test framework used, test count, failure patterns)
+- [ ] Document state transition validation in State-Based Orchestration docs:
+  - File: /home/benjamin/.config/.claude/docs/architecture/state-based-orchestration-overview.md
+  - Section: "State Transition Validation and Error Handling"
+
+**Testing**:
+```bash
+# Test state transition validation with invalid transition
+source /home/benjamin/.config/.claude/lib/core/state-management.sh
+validate_state_transition "COMPLETE" "INIT" "test_wf_123" 2>&1 | grep -q "Invalid state transition" && echo "PASS: Invalid transition detected" || echo "FAIL"
+
+# Test with missing workflow ID
+validate_state_transition "INIT" "RESEARCH" "" 2>&1 | grep -q "empty_workflow_id" && echo "PASS: Empty ID detected" || echo "FAIL"
+
+# Test build phase error context
+/build [test-plan] 1 2>&1 | grep -q "Running tests for Phase" && echo "PASS: Test phase context captured" || echo "FAIL"
+
+# Verify error log has test phase context
+/errors --type test_failure --limit 5 | jq -r '.context | has("phase", "plan_file", "duration_seconds")' | grep -q "false" && echo "FAIL: Missing context" || echo "PASS: Context complete"
+```
+
+**Expected Duration**: 2 hours
+
 ## Testing Strategy
 
 ### Unit Testing
-- Test exit code capture pattern with various negated conditional scenarios
-- Test state file creation, persistence, and cleanup functions
-- Test error-handling library with and without `TEST_MODE` environment variable
-- Test /errors command filtering with mixed test/production error logs
-- Test state transition validation with various invalid state sequences
-- Test build command test phase context capture with failing tests
-- Test script execution permissions and shebang validation
-- Test compliance check alignment with actual block counts
+- Library function tests: state-management.sh, error-handling.sh, workflow-initialization.sh functions
+- Target coverage: 85% for critical path functions (atomic state writes, state validation, error logging)
+- Test isolation: Each test script exports TEST_MODE=true to populate is_test field
+- Test framework: Bash unit testing with assertion functions
 
 ### Integration Testing
-- Execute build workflow end-to-end to verify preprocessing safety (no `!: command not found` errors)
-- Run multi-block workflows to verify state file persistence across blocks
-- Run full test suite with `TEST_MODE=true` and verify all test errors tagged
-- Execute build workflow with intentional test failures and verify error context
-- Run /errors command with production workload and verify test noise reduced
-- Invoke test scripts directly (without bash prefix) to verify execution prerequisites
-- Run compliance tests to verify alignment with design decisions
+- Multi-block workflow tests: Verify state file persistence across build phases
+- Cross-platform tests: bashrc sourcing on Linux and macOS environments
+- Agent integration tests: Topic naming agent with various input types
+- End-to-end: /build workflow from plan parsing to completion
 
-### Validation Testing
-- Build workflow completion rate: verify 0% → 100% improvement
-- State file persistence: verify no state loss across all multi-block workflows
-- Before/after comparison: count production-relevant errors with and without test filtering
-- State transition failure scenario: verify diagnostic context enables debugging without code inspection
-- Build test failure scenario: verify test output is captured and accessible
-- Test script invocation: verify direct execution works for all test scripts
-- Compliance test false positives: verify elimination of design-based failures
+### Regression Testing
+- Historical error patterns: Verify all 10 errors from 001_error_analysis.md are fixed
+- Build output verification: Re-run build-output.md scenario and verify 0 errors
+- Preprocessing safety: Test commands with history expansion characters (!, $, etc.)
+- State transition coverage: Test all valid and invalid state transitions
 
-### Test Coverage Requirements
-- Bash preprocessing safety: Coverage across all multi-block commands with exit code capture pattern
-- State file operations: 100% coverage of create/persist/cleanup/recovery paths
-- Error-handling library: 100% coverage of `is_test` logic paths
-- /errors command: Test filtering enabled/disabled paths
-- State validation: All state transition prerequisite checks
-- Build test phase: Test output capture and error context paths
-- Test script validation: All test scripts in `.claude/tests/`
-- Compliance checks: All commands with bash blocks
+### Performance Testing
+- State file operations: Measure atomic write/read latency (target <50ms)
+- Error logging overhead: Verify <5ms overhead per log_command_error call
+- Command initialization: Target <100ms for command-init.sh sourcing
+
+### Test Commands
+```bash
+# Run all unit tests
+bash /home/benjamin/.config/.claude/tests/run_all_tests.sh
+
+# Run specific test suites
+bash /home/benjamin/.config/.claude/tests/test_state_management.sh
+bash /home/benjamin/.config/.claude/tests/test_error_handling.sh
+bash /home/benjamin/.config/.claude/tests/test_bash_preprocessing_safety.sh
+
+# Integration test: full build workflow
+/build /home/benjamin/.config/.claude/specs/871_error_analysis_and_repair/plans/001_error_analysis_and_repair_plan.md 1
+
+# Verify error filtering
+/errors --exclude-tests --since 1h --summary
+
+# Test cross-platform bashrc sourcing
+bash -c "source /home/benjamin/.config/.claude/lib/core/command-init.sh && echo 'Platform init successful'"
+```
 
 ## Documentation Requirements
 
-### Update Existing Documentation
-- `.claude/docs/troubleshooting/bash-tool-limitations.md`: Add exit code capture pattern examples to existing "Bash History Expansion Preprocessing Errors" section (lines 290-458)
-- `.claude/docs/guides/development/command-development/command-development-fundamentals.md`: Cross-reference preprocessing safety pattern from Bash Tool Limitations
-- `.claude/docs/architecture/state-based-orchestration-overview.md`: Add state file persistence infrastructure and recovery mechanisms
-- `.claude/docs/concepts/patterns/error-handling.md`: Add `is_test` field to error log schema and document test mode usage
-- `.claude/docs/reference/standards/testing-protocols.md`: Add code examples for `TEST_MODE` integration, document test script execution prerequisites (permissions, shebangs) in "Test Script Requirements" section
-- `.claude/docs/guides/commands/errors-command-guide.md`: Document `--exclude-tests` flag usage
-- `.claude/docs/architecture/state-based-orchestration-overview.md`: Add state transition prerequisites and diagnostics
+### Standards Documentation Updates
+- **Output Formatting Standards** (WHAT/WHY clarification):
+  - File: /home/benjamin/.config/.claude/docs/reference/standards/output-formatting.md
+  - Clarify: Code comments describe WHAT, documentation explains WHY
+  - Section already exists at lines 227-271 (verify compliance)
 
-### Create New Documentation (if missing)
-- `.claude/docs/guides/commands/build-command-guide.md`: Document test phase error handling, context capture, and state file persistence (only if build guide doesn't exist)
+- **Testing Protocols** (TEST_MODE requirement and test script standards):
+  - File: /home/benjamin/.config/.claude/docs/reference/standards/testing-protocols.md
+  - Verify TEST_MODE requirement exists at lines 195-198
+  - Add "Test Script Requirements" section (shebangs, permissions, TEST_MODE export)
+  - Add code examples showing TEST_MODE integration in test setup
+
+- **Bash Tool Limitations** (preprocessing safety patterns):
+  - File: /home/benjamin/.config/.claude/docs/troubleshooting/bash-tool-limitations.md
+  - Enhance section "Bash History Expansion Preprocessing Errors" (lines 290-458)
+  - Add exit code capture pattern examples from Phase 0
+  - Cross-reference from Command Development Guide
+
+### Guide Documentation Updates
+- **Command Development Guide** (initialization requirements):
+  - File: /home/benjamin/.config/.claude/docs/guides/development/command-development-guide.md
+  - Add "Command Initialization Requirements" section
+  - Document command-init.sh sourcing pattern
+  - Reference library sourcing validation
+
+- **Error Handling Pattern** (is_test field and filtering):
+  - File: /home/benjamin/.config/.claude/docs/concepts/patterns/error-handling.md
+  - Add examples showing is_test field in error log entries
+  - Document --exclude-tests flag usage
+  - Show test mode detection patterns
+
+- **State-Based Orchestration Overview** (state validation):
+  - File: /home/benjamin/.config/.claude/docs/architecture/state-based-orchestration-overview.md
+  - Add "State Transition Validation and Error Handling" section
+  - Document precondition validation requirements
+  - Include state transition diagnostic output examples
+
+### New Documentation
+- **Platform Compatibility Guide** (if not exists):
+  - File: /home/benjamin/.config/.claude/docs/guides/deployment/platform-compatibility.md
+  - Section: "Shell Initialization Across Platforms"
+  - Document bashrc sourcing patterns for Linux/macOS/other platforms
+  - Include platform detection examples
 
 ### Documentation Standards
 - Follow CLAUDE.md documentation policy (no emojis, clear examples, CommonMark)
-- **Documentation files** (`.claude/docs/`) SHOULD include design rationale (WHY this pattern exists)
+- **Documentation files** (.claude/docs/) SHOULD include design rationale (WHY this pattern exists)
 - **Implementation code comments** MUST describe WHAT code does only (not WHY - see Output Formatting Standards)
 - Include code examples for exit code capture pattern (preprocessing safety)
 - Document state file persistence lifecycle and recovery mechanisms
 - Include code examples for test mode usage and error log filtering
 - Add state transition diagrams using Unicode box-drawing (show prerequisites)
 - Cross-reference Error Handling Pattern for error context requirements
-- Document test script requirements: execute permissions, shebangs, TEST_MODE integration (file: `.claude/docs/reference/standards/testing-protocols.md` - "Test Script Requirements" section)
+- Document test script requirements: execute permissions, shebangs, TEST_MODE integration
 
 ## Dependencies
 
-### Internal Dependencies
-- Bash preprocessing safety (Phase 0) - can run in parallel with other phases
-- State file persistence infrastructure (Phase 1) - CRITICAL for build workflow, blocks Phase 4 and Phase 5
-- Error-handling library (`.claude/lib/core/error-handling.sh`) - must be updated first (Phase 2)
-- /errors command implementation - depends on error log schema enhancement (Phase 3 depends on Phase 2)
-- State-based orchestration code - depends on state file infrastructure (Phase 4 depends on Phase 1 and Phase 2)
-- Build command implementation - depends on state persistence and error logging (Phase 5 depends on Phase 1 and Phase 2)
-- Test script validation (Phase 6) - can run in parallel with other phases
-- Test compliance alignment (Phase 7) - depends on preprocessing safety and state fixes (Phase 7 depends on Phase 0 and Phase 1)
-
 ### External Dependencies
-- Bash 4.0+ for associative arrays (existing requirement)
-- `jq` for JSON parsing in /errors command (existing requirement)
-- Test framework infrastructure (existing)
+- jq: Required for JSON error log parsing and construction (already available)
+- bash 4.0+: Required for associative arrays in state management
+- sync/fsync: Required for atomic state file writes
+- find: Required for state file backup discovery
 
-### Risk Mitigation
-- **Preprocessing Safety Impact**: Exit code capture pattern is functionally equivalent to `if ! ` (low risk - semantics preserved)
-- **State File Persistence**: Atomic writes and validation prevent data corruption (medium risk - critical for workflow)
-- **Backward Compatibility**: `is_test` field optional in error logs (defaults to false if missing)
-- **Test Suite Impact**: Gradual rollout of `TEST_MODE=true` across test scripts (no breakage if some tests don't set it)
-- **State Machine Risk**: Only adding diagnostic logging, not changing state transitions (no functional impact)
-- **Test Script Changes**: Execute permission changes isolated to test directory (low risk)
-- **Compliance Test Updates**: Only updating assertions, not test logic (low risk)
+### Internal Dependencies
+- Error handling library: /home/benjamin/.config/.claude/lib/core/error-handling.sh
+- State management library: /home/benjamin/.config/.claude/lib/core/state-management.sh
+- Workflow initialization library: /home/benjamin/.config/.claude/lib/core/workflow-initialization.sh
+- Topic naming agent: /home/benjamin/.config/.claude/agents/topic-namer.md
 
-## Notes
+### Phase Dependencies
+- Phase 4 depends on Phase 2: Platform-aware sourcing needed before state file location determination
+- Phase 7 depends on Phase 1: Test mode detection requires error-handling library initialization
+- Phase 7 depends on Phase 5: TEST_MODE integration needs test script validation
+- Phase 8 depends on Phase 4: State transition validation requires atomic state operations
+- Phase 8 depends on Phase 7: Build test context capture uses error logging with is_test field
 
-### Implementation Order Rationale
-- **Phase 0 (Preprocessing Safety)**: Can run in parallel - isolated bash block pattern changes
-- **Phase 1 (State Persistence)**: CRITICAL - must complete before Phases 4 and 5 (build workflow blocked)
-- **Phase 2 (Test Metadata)**: Foundation for Phase 3 (errors filtering)
-- **Phase 3 (Errors Filtering)**: Depends on Phase 2 (error log schema)
-- **Phase 4 (State Diagnostics)**: Depends on Phases 1 and 2 (state infrastructure + error logging)
-- **Phase 5 (Test Context)**: Depends on Phases 1 and 2 (state persistence + error logging)
-- **Phase 6 (Test Scripts)**: Can run in parallel - isolated test directory changes
-- **Phase 7 (Compliance)**: Depends on Phases 0 and 1 (fixes must be in place before test alignment)
+**Parallel Execution Waves** (40-60% time savings):
+- **Wave 1** (parallel): Phases 0, 1, 2, 6 (independent preprocessing, library, platform, trap fixes)
+- **Wave 2** (parallel): Phases 3, 5 (independent agent diagnostics and test validation)
+- **Wave 3** (sequential): Phase 4 (depends on Phase 2 for platform-aware paths)
+- **Wave 4** (sequential): Phase 7 (depends on Phases 1, 5 for library and TEST_MODE)
+- **Wave 5** (sequential): Phase 8 (depends on Phases 4, 7 for state and logging)
 
-**Parallelization Opportunities**:
-- Wave 1: Phases 0, 1, 2, 6 (independent)
-- Wave 2: Phases 3, 4 (depend on Phase 2)
-- Wave 3: Phase 5 (depends on Phases 1 and 2)
-- Wave 4: Phase 7 (depends on Phases 0 and 1)
+## Risk Management
 
-This ordering enables ~40% time savings through parallel execution while respecting critical dependencies.
+### Technical Risks
+1. **Exit Code Capture Adoption**: Risk that existing commands have many `if ! ` patterns requiring replacement
+   - Mitigation: Audit all commands first (grep survey), prioritize critical commands (build, plan)
+   - Rollback: Pattern can be applied incrementally per command
 
-### Complexity Justification
-Score of 68.5 reflects comprehensive scope combining infrastructure enhancement and workflow repair:
-- Well-defined scope from dual research analysis (error logs + build output)
-- Clear implementation strategy for each phase (8 distinct objectives)
-- Medium-risk changes (state file persistence is critical, other changes are low-risk)
-- No architectural changes required (enhancements to existing infrastructure)
-- Addresses 100% of identified error categories (vs. 20% in original plan)
+2. **State File Migration**: Risk that existing workflows have incompatible state file formats
+   - Mitigation: Implement backward-compatible state file reader with version detection
+   - Recovery: State file recovery mechanism handles missing/corrupt files
 
-### Plan Revision Rationale
-Original plan addressed only error logging infrastructure (1/5 error categories from build-output.md). Gap analysis revealed build workflow execution failures were completely unaddressed. Revised plan now covers:
-1. **Original scope** (Phases 2-5): Test metadata, errors filtering, state diagnostics, test context
-2. **New scope** (Phases 0, 1, 6, 7): Histexpand remediation, state persistence, test script execution, compliance alignment
+3. **Test Mode False Positives**: Risk that TEST_MODE detection incorrectly flags production runs as tests
+   - Mitigation: Require explicit TEST_MODE=true export (no automatic detection from paths)
+   - Validation: Test filtering with known production error logs
 
-This revision increases coverage from 20% to 100% of identified errors while maintaining focused, actionable phases.
+4. **Platform Detection Edge Cases**: Risk that platform detection misidentifies OS type
+   - Mitigation: Test on known Linux and macOS systems, use conservative fallback
+   - Monitoring: Log platform detection results for troubleshooting
 
-### Research Recommendations Not Included
-From 001_error_analysis.md:
-- Recommendation 4 (Standardize Test Error Sources): Deferred to future work (nice-to-have, not critical)
-- Recommendation 5 (Error Message Enhancement for State Files): Incorporated into Phase 1 (state file persistence with error context)
+### Process Risks
+1. **Documentation Lag**: Risk that documentation updates lag behind implementation
+   - Mitigation: Update docs in same phase as implementation (not deferred)
+   - Validation: Documentation requirements in phase completion criteria
 
-From 002_build_errors_plan_gap_analysis.md:
-- All 4 recommendations incorporated into revised plan (Phases 0, 1, 6, 7)
+2. **Breaking Changes**: Risk that library changes break dependent commands
+   - Mitigation: Implement backward-compatible wrappers for modified functions
+   - Testing: Regression tests cover all workflow commands
+
+3. **Testing Overhead**: Risk that test mode detection adds latency to production runs
+   - Mitigation: Benchmark TEST_MODE detection (target <1ms overhead)
+   - Optimization: Cache detection result in global variable per command invocation

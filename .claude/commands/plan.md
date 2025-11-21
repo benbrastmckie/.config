@@ -266,6 +266,69 @@ Task {
   "
 }
 
+**EXECUTE NOW**: Validate agent output file was created.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Load state for validation
+STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID for validation" >&2
+  exit 1
+fi
+
+WORKFLOW_STATE_FILE="${HOME}/.claude/tmp/state_${WORKFLOW_ID}.sh"
+if [ -f "$WORKFLOW_STATE_FILE" ]; then
+  set +u  # Allow unbound variables during source
+  source "$WORKFLOW_STATE_FILE"
+  set -u  # Re-enable strict mode
+fi
+
+# Restore environment
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# Source error handling library for validation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load error-handling library" >&2
+  exit 1
+}
+
+# Set workflow metadata for error logging
+COMMAND_NAME="/plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS
+
+# Initialize error log
+ensure_error_log_exists
+
+# Validate topic naming agent output
+TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+
+if ! validate_agent_output "topic-naming-agent" "$TOPIC_NAME_FILE" 5; then
+  echo "WARNING: Topic naming agent failed to create output file within 5s" >&2
+  echo "         Falling back to 'no_name' directory structure" >&2
+  echo "         Check error log for diagnostic details: /errors --type agent_error --limit 5" >&2
+fi
+
+echo "Agent output validation complete"
+```
+
 ## Block 1c: Topic Path Initialization
 
 **EXECUTE NOW**: Parse topic name from agent output and initialize workflow paths.
@@ -323,6 +386,7 @@ export COMMAND_NAME USER_ARGS
 
 # Source libraries
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null
 
 # === SETUP BASH ERROR TRAP ===

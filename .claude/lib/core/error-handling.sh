@@ -1333,6 +1333,100 @@ setup_bash_error_trap() {
   export -f parse_subagent_error
   export -f rotate_error_log
   export -f ensure_error_log_exists
+# ==============================================================================
+# Agent Output Validation
+# ==============================================================================
+
+# Validate agent created expected output file
+# Usage: validate_agent_output <agent_name> <expected_file> [timeout_seconds]
+# Returns: 0 if file exists and non-empty, 1 otherwise
+validate_agent_output() {
+  local agent_name="$1"
+  local expected_file="$2"
+  local timeout_seconds="${3:-5}"
+
+  local elapsed=0
+  while [ $elapsed -lt $timeout_seconds ]; do
+    if [ -f "$expected_file" ] && [ -s "$expected_file" ]; then
+      return 0  # Success: file exists and non-empty
+    fi
+    sleep 0.5
+    elapsed=$((elapsed + 1))
+  done
+
+  # Timeout: file not created
+  log_command_error \
+    "agent_error" \
+    "Agent $agent_name did not create output file within ${timeout_seconds}s" \
+    "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" '{agent: $agent, expected_file: $file}')"
+
+  return 1
+}
+
+# Enhanced agent output validation with retry logic
+# Usage: validate_agent_output_with_retry <agent_name> <expected_file> <format_validator> [timeout] [retries]
+# Returns: 0 if file exists and passes validation, 1 otherwise
+validate_agent_output_with_retry() {
+  local agent_name="$1"
+  local expected_file="$2"
+  local format_validator="$3"  # Function name or "none"
+  local timeout_seconds="${4:-5}"
+  local max_retries="${5:-3}"
+
+  for retry in $(seq 1 $max_retries); do
+    local elapsed=0
+    while [ $elapsed -lt $timeout_seconds ]; do
+      if [ -f "$expected_file" ] && [ -s "$expected_file" ]; then
+        # File exists and non-empty, validate format if validator provided
+        if [ "$format_validator" != "none" ]; then
+          if $format_validator "$expected_file"; then
+            return 0  # Success: file exists and passes validation
+          else
+            log_command_error \
+              "validation_error" \
+              "Agent $agent_name output file failed format validation (retry $retry/$max_retries)" \
+              "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" --argjson retry "$retry" '{agent: $agent, output_file: $file, retry: $retry}')"
+
+            # Remove invalid file before retry
+            rm -f "$expected_file" 2>/dev/null
+            break  # Exit timeout loop, proceed to next retry
+          fi
+        else
+          return 0  # Success: file exists, no format validation required
+        fi
+      fi
+      sleep 0.5
+      elapsed=$((elapsed + 1))
+    done
+
+    # If not last retry, sleep before next attempt
+    if [ $retry -lt $max_retries ]; then
+      sleep $((retry * 2))  # Exponential backoff: 2s, 4s, 6s
+    fi
+  done
+
+  # All retries exhausted: file not created or validation failed
+  log_command_error \
+    "agent_error" \
+    "Agent $agent_name did not create valid output file after $max_retries attempts" \
+    "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" --argjson retries "$max_retries" '{agent: $agent, expected_file: $file, retries: $retries}')"
+
+  return 1
+}
+
+# Topic name format validator
+validate_topic_name_format() {
+  local file="$1"
+  local topic_name=$(cat "$file" 2>/dev/null | tr -d '\n' | tr -d ' ')
+
+  # Validate format: lowercase alphanumeric + underscore, 5-40 chars
+  if echo "$topic_name" | grep -Eq '^[a-z0-9_]{5,40}$'; then
+    return 0
+  fi
+
+  return 1
+}
+
   export -f query_errors
   export -f recent_errors
   export -f error_summary
@@ -1348,4 +1442,7 @@ setup_bash_error_trap() {
   export -f handle_state_error
   export -f setup_bash_error_trap
   export -f _log_bash_exit
+  export -f validate_agent_output
+  export -f validate_agent_output_with_retry
+  export -f validate_topic_name_format
 fi

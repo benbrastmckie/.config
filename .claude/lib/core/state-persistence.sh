@@ -496,3 +496,59 @@ append_jsonl_log() {
 
   echo "$json_entry" >> "$log_file"
 }
+
+# ==============================================================================
+# State Validation Functions
+# ==============================================================================
+
+# Validate required variables are present in loaded state
+# Usage: validate_state_variables <var1> <var2> ... <varN>
+# Returns: 0 if all variables set, 1 if any missing
+# Example: validate_state_variables "FEATURE_DESCRIPTION" "TOPIC_PATH" "WORKFLOW_ID"
+validate_state_variables() {
+  local -a required_vars=("$@")
+  local missing_vars=()
+
+  for var_name in "${required_vars[@]}"; do
+    # Check if variable is set (not empty or unset)
+    if [ -z "${!var_name+x}" ]; then
+      missing_vars+=("$var_name")
+    fi
+  done
+
+  if [ ${#missing_vars[@]} -gt 0 ]; then
+    # Load error-handling library if available for logging
+    if declare -f log_command_error >/dev/null 2>&1; then
+      log_command_error \
+        "state_error" \
+        "Required state variables missing after load: ${missing_vars[*]}" \
+        "$(jq -n --arg vars "${missing_vars[*]}" '{missing_variables: $vars}')"
+    fi
+
+    echo "ERROR: State validation failed - missing variables: ${missing_vars[*]}" >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# Block-specific state validation profiles
+# Defines required variables per block type
+validate_block_state() {
+  local block_type="$1"
+
+  case "$block_type" in
+    state)
+      # Block 1c: Requires feature description, workflow ID, project dir
+      validate_state_variables "FEATURE_DESCRIPTION" "WORKFLOW_ID" "CLAUDE_PROJECT_DIR" "RESEARCH_COMPLEXITY"
+      ;;
+    verify)
+      # Block 2/3: Requires all paths and metadata
+      validate_state_variables "TOPIC_PATH" "RESEARCH_DIR" "PLANS_DIR" "WORKFLOW_ID" "FEATURE_DESCRIPTION"
+      ;;
+    *)
+      echo "ERROR: Unknown block type for validation: $block_type" >&2
+      return 1
+      ;;
+  esac
+}

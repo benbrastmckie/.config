@@ -21,15 +21,19 @@
 
 ### Purpose
 
-The `/errors` command provides access to the centralized error logging system, allowing you to query, filter, and analyze errors from all commands and subagents. It displays error logs with detailed context including timestamps, error types, workflow IDs, and stack traces.
+The `/errors` command provides two modes for working with the centralized error logging system:
+
+1. **Report Generation Mode** (default): Delegates to the errors-analyst agent to generate structured error analysis reports with pattern detection, statistics, and recommendations
+2. **Query Mode** (`--query` flag): Directly queries and displays error logs with filtering capabilities (backward compatible with previous behavior)
 
 ### When to Use
 
+- **Report Mode**: Generate comprehensive error analysis reports for documentation or /repair workflow integration
+- **Error pattern analysis**: Identify recurring error patterns across commands and workflows
 - **Debugging workflows**: Investigate why a command or workflow failed
-- **Error analysis**: Analyze patterns in errors across commands
 - **Workflow troubleshooting**: Track errors for specific workflow IDs
-- **Post-mortem analysis**: Review errors that occurred during a time period
-- **Error monitoring**: Check for recent errors or error trends
+- **Post-mortem analysis**: Create detailed analysis reports for time periods
+- **Query Mode**: Quick ad-hoc error queries when full report is not needed
 
 ### When NOT to Use
 
@@ -43,28 +47,46 @@ The `/errors` command provides access to the centralized error logging system, a
 
 ### Design Principles
 
-1. **Centralized Logging**: All errors stored in single JSONL file
-2. **Rich Context**: Includes command, workflow_id, timestamp, stack trace, error type
-3. **Query Interface**: Filter by command, time, type, workflow ID
-4. **Multiple Views**: Recent errors, filtered queries, summary statistics, raw JSONL
-5. **Automatic Rotation**: 10MB log rotation with 5 backup files
+1. **Dual-Mode Operation**: Report generation (default) and query mode (--query flag)
+2. **Agent Delegation**: Haiku model for context-efficient error analysis
+3. **Centralized Logging**: All errors stored in single JSONL file
+4. **Rich Context**: Includes command, workflow_id, timestamp, stack trace, error type
+5. **Query Interface**: Filter by command, time, type, workflow ID
+6. **Multiple Views**: Structured reports, recent errors, filtered queries, summary statistics, raw JSONL
+7. **Automatic Rotation**: 10MB log rotation with 5 backup files
 
 ### Patterns Used
 
+- **Agent Delegation**: errors-analyst agent handles report generation (Haiku model)
 - **JSONL Format**: One JSON object per line for easy streaming/parsing
 - **Structured Logging**: Consistent schema for all error entries
 - **Time-Series Data**: ISO 8601 timestamps for chronological queries
 - **Error Taxonomy**: Standardized error types for classification
+- **Topic-Based Artifacts**: Reports stored in `.claude/specs/{NNN_topic}/reports/`
 
 ### Integration Points
 
+- **Agents**: errors-analyst (claude-3-5-haiku-20241022)
 - **Error Handling Library**: `.claude/lib/core/error-handling.sh` (>=1.0.0)
+- **State Machine Library**: `.claude/lib/workflow/workflow-state-machine.sh` (>=2.0.0)
+- **Location Detection**: `.claude/lib/core/unified-location-detection.sh` (>=1.0.0)
 - **Log Storage**: `.claude/data/logs/errors.jsonl`
+- **Report Artifacts**: `.claude/specs/{NNN_error_analysis}/reports/001_error_report.md`
 - **Commands**: All commands can log errors via `log_command_error`
 - **Workflow Context**: Integrates with workflow-init.sh for context extraction
 
 ### Data Flow
 
+**Report Mode (Default)**:
+1. **Input**: User provides filter options (command, time, type, etc.)
+2. **Setup**: Create topic-based directory structure for artifacts
+3. **Invocation**: Invoke errors-analyst agent via Task tool
+4. **Analysis**: Agent reads error log, parses JSONL, groups by patterns
+5. **Report**: Agent generates structured markdown report with findings
+6. **Verification**: Command verifies report exists and extracts summary
+7. **Output**: Displays report path and key statistics
+
+**Query Mode (--query flag)**:
 1. **Input**: User provides filter options (command, time, type, etc.)
 2. **Query**: `query_errors` function filters JSONL log file
 3. **Format**: Results formatted as human-readable or raw JSON
@@ -74,86 +96,105 @@ The `/errors` command provides access to the centralized error logging system, a
 
 ## Usage Examples
 
-### Basic Usage
+### Report Generation (Default Mode)
 
 ```bash
-# Show last 10 errors (default)
+# Generate error analysis report for all errors
 /errors
 
-# Show last 5 errors
-/errors --limit 5
+# Generate report for specific command errors
+/errors --command /build
 
-# Show error summary statistics
-/errors --summary
+# Generate report for specific error type
+/errors --type execution_error
+
+# Generate report for errors since yesterday
+/errors --since 2025-11-20
+
+# Generate report with multiple filters
+/errors --command /build --type state_error --since 2025-11-19
 ```
 
-### Filtering by Command
+### Query Mode (Legacy Behavior)
+
+```bash
+# Show last 10 errors directly
+/errors --query
+
+# Show last 5 errors
+/errors --query --limit 5
+
+# Show error summary statistics
+/errors --query --summary
+```
+
+### Query Mode - Filtering by Command
 
 ```bash
 # Show errors from /build command
-/errors --command /build
+/errors --query --command /build
 
 # Show errors from /plan command
-/errors --command /plan --limit 20
+/errors --query --command /plan --limit 20
 ```
 
-### Filtering by Time
+### Query Mode - Filtering by Time
 
 ```bash
 # Show errors since a specific date
-/errors --since 2025-11-19
+/errors --query --since 2025-11-19
 
 # Show errors since a specific timestamp
-/errors --since 2025-11-19T10:00:00Z
+/errors --query --since 2025-11-19T10:00:00Z
 
 # Combine with command filter
-/errors --command /build --since 2025-11-19 --limit 10
+/errors --query --command /build --since 2025-11-19 --limit 10
 ```
 
-### Filtering by Error Type
+### Query Mode - Filtering by Error Type
 
 ```bash
 # Show validation errors only
-/errors --type validation_error
+/errors --query --type validation_error
 
 # Show state errors from /build
-/errors --command /build --type state_error
+/errors --query --command /build --type state_error
 
 # Show agent errors
-/errors --type agent_error --limit 15
+/errors --query --type agent_error --limit 15
 ```
 
-### Filtering by Workflow
+### Query Mode - Filtering by Workflow
 
 ```bash
 # Show errors for specific workflow ID
-/errors --workflow-id build_1732023400
+/errors --query --workflow-id build_1732023400
 
 # Combine with error type
-/errors --workflow-id plan_1732023100 --type validation_error
+/errors --query --workflow-id plan_1732023100 --type validation_error
 ```
 
-### Raw Output
+### Query Mode - Raw Output
 
 ```bash
 # Get raw JSONL for processing
-/errors --raw --limit 5
+/errors --query --raw --limit 5
 
 # Filter and get raw output
-/errors --command /build --type state_error --raw
+/errors --query --command /build --type state_error --raw
 ```
 
-### Complex Filters
+### Query Mode - Complex Filters
 
 ```bash
 # Multiple filters combined
-/errors --command /build --type state_error --since 2025-11-19 --limit 5
+/errors --query --command /build --type state_error --since 2025-11-19 --limit 5
 
 # Recent errors of specific type
-/errors --type validation_error --limit 10
+/errors --query --type validation_error --limit 10
 
 # Workflow-specific errors since date
-/errors --workflow-id build_123 --since 2025-11-18
+/errors --query --workflow-id build_123 --since 2025-11-18
 ```
 
 ---
@@ -238,14 +279,15 @@ The `/errors` command is part of a comprehensive error management lifecycle that
 - Errors stored in `~/.claude/data/logs/errors.jsonl` with full context
 - No manual intervention required
 
-**2. Error Querying (/errors)**
-- View and filter logged errors by time, type, command, or severity
-- Generate summary reports to identify patterns
-- Export filtered results for further analysis
+**2. Error Analysis (/errors)**
+- Generate structured error analysis reports via errors-analyst agent (default mode)
+- View and filter logged errors by time, type, command, or severity (--query mode)
+- Identify error patterns with frequency statistics and grouping
+- Export filtered results for further analysis or /repair workflow integration
 
-**3. Error Analysis (/repair)**
+**3. Fix Planning (/repair)**
 - Group errors by pattern and root cause
-- Create error analysis reports in `specs/{NNN_topic}/reports/`
+- Create repair analysis reports in `specs/{NNN_topic}/reports/`
 - Generate implementation plans with fix phases
 
 **4. Fix Implementation (/build)**
@@ -258,25 +300,33 @@ The `/errors` command is part of a comprehensive error management lifecycle that
 After a failed `/build` command execution:
 
 ```bash
-# Step 1: Query recent build errors
-/errors --command /build --since 1h --summary
+# Step 1: Generate error analysis report
+/errors --command /build --since 1h
 
-# Output shows 5 state_error instances in phase execution
+# Output:
+# - Report: /path/.claude/specs/887_build_error_analysis/reports/001_error_report.md
+# - Total Errors Analyzed: 5
+# - Most Frequent Type: state_error
 
-# Step 2: Analyze error patterns
+# Step 2: Review report and create fix plan
+cat /path/.claude/specs/887_build_error_analysis/reports/001_error_report.md
 /repair --command /build --type state_error --complexity 2
 
 # Creates:
-# - specs/856_build_state_errors/reports/001_build_state_error_analysis.md
-# - specs/856_build_state_errors/plans/001_build_state_error_fix_plan.md
+# - specs/888_build_state_errors/reports/001_build_state_error_analysis.md
+# - specs/888_build_state_errors/plans/001_build_state_error_fix_plan.md
 
 # Step 3: Review plan and implement fixes
-/build specs/856_build_state_errors/plans/001_build_state_error_fix_plan.md
+/build specs/888_build_state_errors/plans/001_build_state_error_fix_plan.md
 
 # Step 4: Verify fixes resolved errors
-/errors --command /build --since 10m
+/errors --query --command /build --since 10m
 
 # Output: No errors found (confirmation)
+
+# Alternative: Use report mode to verify
+/errors --command /build --since 10m
+# Report shows 0 errors analyzed
 ```
 
 ### Integration Points
