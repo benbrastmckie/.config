@@ -210,7 +210,10 @@ export WORKFLOW_ID
 # Set command metadata for error logging
 COMMAND_NAME="/build"
 USER_ARGS="$PLAN_FILE"
-export COMMAND_NAME USER_ARGS
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Capture state file path for append_workflow_state
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
@@ -264,6 +267,9 @@ fi
 TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
 
 # === PERSIST FOR BLOCK 2 ===
+append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
+append_workflow_state "USER_ARGS" "$USER_ARGS"
+append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
 append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
 append_workflow_state "PLAN_FILE" "$PLAN_FILE"
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
@@ -356,6 +362,18 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/build")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -465,7 +483,15 @@ else
   echo "No phases to mark complete"
 fi
 
-save_completed_states_to_state 2>/dev/null || true
+if ! save_completed_states_to_state; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: State persistence failed" >&2
+  exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
+fi
 
 echo ""
 echo "Phase update complete"
@@ -502,9 +528,104 @@ Task {
   "
 }
 
-## Block 2: Testing Phase
+## Testing Phase: Invoke Test-Executor Subagent
 
-**EXECUTE NOW**: Verify implementation and run tests:
+**EXECUTE NOW**: Before Block 2, invoke test-executor subagent to run tests with framework detection and structured reporting.
+
+First, read state to get paths:
+
+```bash
+# Load workflow state to get paths
+STATE_ID_FILE="${HOME}/.claude/tmp/build_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+# Detect project directory
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+load_workflow_state "$WORKFLOW_ID" false
+
+# Extract paths from state
+PLAN_FILE=$(grep "^PLAN_FILE=" "$STATE_FILE" | cut -d'=' -f2-)
+TOPIC_PATH=$(grep "^TOPIC_PATH=" "$STATE_FILE" | cut -d'=' -f2-)
+
+# Pre-calculate test output path
+TEST_OUTPUT_PATH="${TOPIC_PATH}/outputs/test_results_$(date +%s).md"
+mkdir -p "${TOPIC_PATH}/outputs" 2>/dev/null || true
+
+# Output paths for Task tool
+echo "PLAN_FILE=$PLAN_FILE"
+echo "TOPIC_PATH=$TOPIC_PATH"
+echo "TEST_OUTPUT_PATH=$TEST_OUTPUT_PATH"
+```
+
+Now invoke test-executor subagent via Task tool:
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Execute test suite with framework detection and structured reporting"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/test-executor.md
+
+    You are acting as a Test-Executor Agent.
+
+    Execute test suite with automatic framework detection and create structured test result artifact.
+
+    Input:
+    - plan_path: ${PLAN_FILE}
+    - topic_path: ${TOPIC_PATH}
+    - artifact_paths:
+        outputs: ${TOPIC_PATH}/outputs/
+        debug: ${TOPIC_PATH}/debug/
+    - test_config:
+        test_command: null  # Auto-detect framework
+        retry_on_failure: false
+        isolation_mode: true
+        max_retries: 2
+        timeout_minutes: 30
+    - output_path: ${TEST_OUTPUT_PATH}
+
+    Follow the 6-STEP execution process:
+    1. Create test output artifact at output_path
+    2. Detect test framework using detect-testing.sh utility
+    3. Execute tests with isolation and capture output
+    4. Parse test results and extract failures
+    5. Update artifact with structured results
+    6. Return TEST_COMPLETE signal with metadata only
+
+    Expected return format:
+    TEST_COMPLETE:
+      status: passed|failed|error
+      framework: <detected_framework>
+      test_command: <executed_command>
+      tests_run: N
+      tests_passed: N
+      tests_failed: N
+      tests_skipped: N
+      test_output_path: <artifact_path>
+      failed_tests: [list if any]
+      exit_code: N
+      execution_time: <duration>
+      coverage: N%|N/A
+
+    On error, return:
+    ERROR_CONTEXT: {error details JSON}
+    TASK_ERROR: <error_type> - <error_message>
+  "
+}
+
+## Block 2: Testing Phase - Load Test Results
+
+**EXECUTE NOW**: Load test results from test-executor artifact and persist state:
 
 ```bash
 set +H 2>/dev/null || true
@@ -541,6 +662,18 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/build")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -635,54 +768,110 @@ if ! sm_transition "$STATE_TEST" 2>&1; then
   exit 1
 fi
 
-echo "=== Phase 2: Testing ==="
+echo "=== Phase 2: Testing - Parse Results ==="
 echo ""
 
-# === RUN TESTS ===
-TEST_COMMAND=$(grep -oE "(npm test|pytest|\.\/run_all_tests\.sh|:TestSuite)" "$PLAN_FILE" | head -1 || echo "")
+# === PARSE TEST-EXECUTOR RESPONSE ===
+# The test-executor subagent was invoked before this block
+# It should have created a test artifact at ${TOPIC_PATH}/outputs/test_results_*.md
+# Find the most recent test result artifact
+TEST_OUTPUT_PATH=$(ls -t "${TOPIC_PATH}/outputs/test_results_"*.md 2>/dev/null | head -1 || echo "")
 
-if [ -z "$TEST_COMMAND" ]; then
-  if [ -f "package.json" ] && grep -q '"test"' package.json; then
-    TEST_COMMAND="npm test"
-  elif [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
-    TEST_COMMAND="pytest"
-  elif [ -f ".claude/run_all_tests.sh" ]; then
-    TEST_COMMAND="./.claude/run_all_tests.sh"
-  else
-    TEST_COMMAND=""
+if [ -z "$TEST_OUTPUT_PATH" ] || [ ! -f "$TEST_OUTPUT_PATH" ]; then
+  echo "WARNING: Test artifact not found, test-executor may have failed"
+  echo "Attempting fallback: inline test execution"
+
+  # Fallback to inline testing
+  TEST_COMMAND=$(grep -oE "(npm test|pytest|\.\/run_all_tests\.sh|:TestSuite)" "$PLAN_FILE" | head -1 || echo "")
+
+  if [ -z "$TEST_COMMAND" ]; then
+    if [ -f "package.json" ] && grep -q '"test"' package.json; then
+      TEST_COMMAND="npm test"
+    elif [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
+      TEST_COMMAND="pytest"
+    elif [ -f ".claude/run_all_tests.sh" ]; then
+      TEST_COMMAND="./.claude/run_all_tests.sh"
+    else
+      TEST_COMMAND=""
+    fi
   fi
-fi
 
-if [ -n "$TEST_COMMAND" ]; then
-  echo "Running tests: $TEST_COMMAND"
+  if [ -n "$TEST_COMMAND" ]; then
+    echo "Running tests: $TEST_COMMAND"
+    TEST_OUTPUT=$($TEST_COMMAND 2>&1)
+    TEST_EXIT_CODE=$?
+    echo "$TEST_OUTPUT"
+
+    if [ $TEST_EXIT_CODE -ne 0 ]; then
+      echo "Tests failed (exit code: $TEST_EXIT_CODE)"
+      TESTS_PASSED=false
+    else
+      echo "Tests passed"
+      TESTS_PASSED=true
+    fi
+  else
+    echo "Test phase skipped (no test command)"
+    TESTS_PASSED=true
+    TEST_EXIT_CODE=0
+  fi
+else
+  echo "Loading test results from: $TEST_OUTPUT_PATH"
   echo ""
 
-  TEST_OUTPUT=$($TEST_COMMAND 2>&1)
-  TEST_EXIT_CODE=$?
+  # Extract metadata from test artifact
+  TEST_EXIT_CODE=$(grep "^- \*\*Exit Code\*\*:" "$TEST_OUTPUT_PATH" | grep -oE '[0-9]+' | head -1 || echo "0")
+  TEST_FRAMEWORK=$(grep "^- \*\*Test Framework\*\*:" "$TEST_OUTPUT_PATH" | cut -d':' -f2- | xargs || echo "unknown")
+  TEST_COMMAND=$(grep "^- \*\*Test Command\*\*:" "$TEST_OUTPUT_PATH" | cut -d':' -f2- | xargs || echo "")
+  TESTS_FAILED=$(grep "^- \*\*Failed\*\*:" "$TEST_OUTPUT_PATH" | grep -oE '[0-9]+' | head -1 || echo "0")
+  TESTS_PASSED_COUNT=$(grep "^- \*\*Passed\*\*:" "$TEST_OUTPUT_PATH" | grep -oE '[0-9]+' | head -1 || echo "0")
+  EXECUTION_TIME=$(grep "^- \*\*Execution Time\*\*:" "$TEST_OUTPUT_PATH" | cut -d':' -f2- | xargs || echo "N/A")
 
-  echo "$TEST_OUTPUT"
+  # Display test summary
+  echo "Test Framework: $TEST_FRAMEWORK"
+  echo "Test Command: $TEST_COMMAND"
+  echo "Exit Code: $TEST_EXIT_CODE"
+  echo "Tests Passed: $TESTS_PASSED_COUNT"
+  echo "Tests Failed: $TESTS_FAILED"
+  echo "Execution Time: $EXECUTION_TIME"
   echo ""
 
-  if [ $TEST_EXIT_CODE -ne 0 ]; then
-    echo "Tests failed (exit code: $TEST_EXIT_CODE)"
+  # Determine overall test status
+  if [ "$TEST_EXIT_CODE" -ne 0 ] || [ "$TESTS_FAILED" -gt 0 ]; then
+    echo "Tests failed"
     TESTS_PASSED=false
+
+    # Display failed test details if available
+    if [ "$TESTS_FAILED" -gt 0 ]; then
+      echo ""
+      echo "Failed Tests:"
+      sed -n '/^## Failed Tests/,/^## /p' "$TEST_OUTPUT_PATH" | grep -E '^[0-9]+\.' | head -10 || true
+      echo ""
+    fi
   else
     echo "Tests passed"
     TESTS_PASSED=true
   fi
-else
-  echo "Test phase skipped (no test command)"
-  TESTS_PASSED=true
-  TEST_EXIT_CODE=0
+
+  # Store artifact path for potential debugging
+  TEST_ARTIFACT_PATH="$TEST_OUTPUT_PATH"
 fi
 
 # === PERSIST FOR BLOCK 3 ===
 append_workflow_state "TESTS_PASSED" "$TESTS_PASSED"
 append_workflow_state "TEST_COMMAND" "$TEST_COMMAND"
 append_workflow_state "TEST_EXIT_CODE" "${TEST_EXIT_CODE:-0}"
+append_workflow_state "TEST_ARTIFACT_PATH" "${TEST_ARTIFACT_PATH:-}"
 append_workflow_state "COMMIT_COUNT" "$COMMIT_COUNT"
 
-save_completed_states_to_state 2>/dev/null
+if ! save_completed_states_to_state; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: State persistence failed" >&2
+  exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
+fi
 
 echo ""
 echo "Test result: $([ "$TESTS_PASSED" = "true" ] && echo "PASSED" || echo "FAILED")"
@@ -729,6 +918,18 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/build")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -817,7 +1018,6 @@ if [ "$TESTS_PASSED" = "false" ]; then
   echo ""
 
   DEBUG_DIR="${TOPIC_PATH}/debug"
-  mkdir -p "$DEBUG_DIR"
 
   echo "Debug directory: $DEBUG_DIR"
   echo "Test command: $TEST_COMMAND"
@@ -852,7 +1052,15 @@ else
   echo "Documentation phase complete"
 fi
 
-save_completed_states_to_state 2>/dev/null
+if ! save_completed_states_to_state; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: State persistence failed" >&2
+  exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
+fi
 ```
 
 If tests failed, **EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent.
@@ -920,6 +1128,18 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/build")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
