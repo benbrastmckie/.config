@@ -1237,6 +1237,94 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f detect_error_type
   export -f extract_location
   export -f generate_suggestions
+# _log_bash_error: Internal ERR trap handler for bash-level error capture
+# Usage: Called by ERR trap, not invoked directly
+# Args: exit_code, line_no, failed_command, command_name, workflow_id, user_args
+# Effect: Logs bash error to centralized error log before exit
+_log_bash_error() {
+  local exit_code=$1
+  local line_no=$2
+  local failed_command=$3
+  local command_name=$4
+  local workflow_id=$5
+  local user_args=$6
+
+  # Mark that we've logged this error to prevent duplicate logging from EXIT trap
+  _BASH_ERROR_LOGGED=1
+
+  # Determine error type from exit code
+  local error_type="execution_error"
+  case $exit_code in
+    2) error_type="parse_error" ;;      # Bash syntax error
+    127) error_type="execution_error" ;; # Command not found
+  esac
+
+  # Log to centralized error log
+  log_command_error \
+    "$command_name" \
+    "$workflow_id" \
+    "$user_args" \
+    "$error_type" \
+    "Bash error at line $line_no: exit code $exit_code" \
+    "bash_trap" \
+    "$(jq -n --argjson line "$line_no" --argjson code "$exit_code" --arg cmd "$failed_command" \
+       '{line: $line, exit_code: $code, command: $cmd}')"
+
+  exit $exit_code
+}
+
+# _log_bash_exit: Internal EXIT trap handler for errors not caught by ERR trap
+# Usage: Called by EXIT trap, not invoked directly
+# Args: Same as _log_bash_error, captured from trap context
+# Effect: Logs bash errors that don't trigger ERR (e.g., unbound variables with set -u)
+_log_bash_exit() {
+  local exit_code=$?
+  local line_no=$1
+  local failed_command=$2
+  local command_name=$3
+  local workflow_id=$4
+  local user_args=$5
+
+  # Only log if error occurred AND not already logged by ERR trap
+  if [ $exit_code -ne 0 ] && [ -z "${_BASH_ERROR_LOGGED:-}" ]; then
+    # Determine error type from exit code
+    local error_type="execution_error"
+    case $exit_code in
+      1) error_type="execution_error" ;;   # General error (includes unbound variables)
+      2) error_type="parse_error" ;;       # Bash syntax error
+      127) error_type="execution_error" ;; # Command not found
+    esac
+
+    # Log to centralized error log
+    log_command_error \
+      "$command_name" \
+      "$workflow_id" \
+      "$user_args" \
+      "$error_type" \
+      "Bash error at line $line_no: exit code $exit_code" \
+      "bash_trap" \
+      "$(jq -n --argjson line "$line_no" --argjson code "$exit_code" --arg cmd "$failed_command" \
+         '{line: $line, exit_code: $code, command: $cmd}')"
+  fi
+}
+
+# setup_bash_error_trap: Register ERR and EXIT traps for bash-level error capture
+# Usage: setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+# Effect: Registers ERR trap (for command failures) and EXIT trap (for unbound variables, set -u violations)
+# Context: Must be called after sourcing error-handling.sh and initializing error log
+# Note: Uses both ERR and EXIT traps to catch all error types - ERR for command failures, EXIT for set -u violations
+setup_bash_error_trap() {
+  local cmd_name="${1:-/unknown}"
+  local workflow_id="${2:-unknown}"
+  local user_args="${3:-}"
+
+  # ERR trap: Catches command failures (exit code 127, etc.) - logs and exits
+  trap '_log_bash_error $? $LINENO "$BASH_COMMAND" "'"$cmd_name"'" "'"$workflow_id"'" "'"$user_args"'"' ERR
+
+  # EXIT trap: Catches errors that don't trigger ERR (e.g., unbound variables with set -u) - logs only if error not already logged
+  trap '_log_bash_exit $LINENO "$BASH_COMMAND" "'"$cmd_name"'" "'"$workflow_id"'" "'"$user_args"'"' EXIT
+}
+
   export -f retry_with_backoff
   export -f retry_with_timeout
   export -f retry_with_fallback
@@ -1258,4 +1346,6 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f format_orchestrate_test_failure
   export -f format_orchestrate_phase_context
   export -f handle_state_error
+  export -f setup_bash_error_trap
+  export -f _log_bash_exit
 fi
