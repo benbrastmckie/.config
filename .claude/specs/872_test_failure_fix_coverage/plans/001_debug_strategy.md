@@ -175,7 +175,7 @@ cd /home/benjamin/.config/.claude/tests
 
 **Expected Duration**: 1 hour
 
-### Phase 2: Implement Test Environment Separation [NOT STARTED]
+### Phase 2: Implement Test Environment Separation [COMPLETE]
 dependencies: [1]
 
 **Objective**: Isolate test logs from production logs using explicit environment variable
@@ -183,12 +183,12 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Add `export CLAUDE_TEST_MODE=1` to test script initialization (file: /home/benjamin/.config/.claude/tests/test_bash_error_integration.sh, lines 20-30)
-- [ ] Update environment detection in error-handling.sh to check `CLAUDE_TEST_MODE` variable (file: /home/benjamin/.config/.claude/lib/core/error-handling.sh, line 437)
-- [ ] Change condition from `if [[ "${BASH_SOURCE[2]:-}" =~ /tests/ ]] || [[ "$0" =~ /tests/ ]]; then` to include `|| [[ -n "${CLAUDE_TEST_MODE:-}" ]]`
-- [ ] Create test log directory if missing (file: /home/benjamin/.config/.claude/tests/logs/, ensure exists)
-- [ ] Run test suite and verify test errors route to `.claude/tests/logs/test-errors.jsonl`
-- [ ] Verify production log is not polluted with new test entries
+- [x] Add `export CLAUDE_TEST_MODE=1` to test script initialization (file: /home/benjamin/.config/.claude/tests/test_bash_error_integration.sh, lines 20-30)
+- [x] Update environment detection in error-handling.sh to check `CLAUDE_TEST_MODE` variable (file: /home/benjamin/.config/.claude/lib/core/error-handling.sh, line 437)
+- [x] Change condition from `if [[ "${BASH_SOURCE[2]:-}" =~ /tests/ ]] || [[ "$0" =~ /tests/ ]]; then` to include `|| [[ -n "${CLAUDE_TEST_MODE:-}" ]]`
+- [x] Create test log directory if missing (file: /home/benjamin/.config/.claude/tests/logs/, ensure exists)
+- [x] Run test suite and verify test errors route to `.claude/tests/logs/test-errors.jsonl`
+- [x] Verify production log is not polluted with new test entries
 
 **Testing**:
 ```bash
