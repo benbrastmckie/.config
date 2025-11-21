@@ -259,3 +259,65 @@ unset CLAUDE_SPECS_ROOT CLAUDE_PROJECT_DIR
 ```
 
 This prevents empty directory creation during development and experimentation.
+
+### jq Filter Safety and Operator Precedence
+
+When using jq in test scripts to query JSON logs, operator precedence is critical. Incorrect precedence can cause type errors when boolean operations are piped to string functions.
+
+**Common Pitfall - Incorrect Precedence**:
+```bash
+# WRONG: Boolean result piped to contains()
+jq 'select(.field == "value" and .message | contains("pattern"))'
+# Evaluates as: (field == "value" and message) | contains("pattern")
+# Result: boolean | contains() → TYPE ERROR
+```
+
+**Correct Pattern - Explicit Parentheses**:
+```bash
+# CORRECT: String operation grouped before AND
+jq 'select(.field == "value" and (.message | contains("pattern")))'
+# Evaluates as: field == "value" and (message | contains("pattern"))
+# Result: boolean and boolean → boolean (no type error)
+```
+
+**Best Practices**:
+
+1. **Always Use Parentheses for Pipe Operations in Boolean Context**:
+   ```bash
+   # When combining boolean comparisons with pipe operations
+   jq 'select(.command == "test" and (.error_message | contains("error")))'
+   ```
+
+2. **Search Multiple Fields with OR**:
+   ```bash
+   # Search in multiple JSON fields
+   jq 'select(.cmd == "test" and ((.msg | contains("err")) or (.context.cmd // "" | contains("err"))))'
+   ```
+
+3. **Use // for Default Values**:
+   ```bash
+   # Provide empty string default for missing fields
+   jq '.context.command // ""'
+   ```
+
+4. **Test jq Filters Manually Before Use**:
+   ```bash
+   # Test filter against sample data
+   echo '{"field":"value","message":"test error"}' | jq 'select(.field == "value" and (.message | contains("error")))'
+   ```
+
+5. **Capture jq Errors in Test Scripts**:
+   ```bash
+   # Capture stderr to detect jq failures
+   local jq_stderr=$(mktemp)
+   local result=$(cat data.json | jq 'filter' 2>"$jq_stderr")
+   if [ -s "$jq_stderr" ]; then
+     echo "jq error: $(cat "$jq_stderr")"
+   fi
+   rm -f "$jq_stderr"
+   ```
+
+**Common Error Messages**:
+- `boolean (true/false) and string ("...") cannot have their containment checked` - Fix: Add parentheses around pipe operation
+- `Cannot iterate over null` - Fix: Use `// ""` or `// []` for default values
+- `Cannot index array with string` - Fix: Verify JSON structure matches filter expectations
