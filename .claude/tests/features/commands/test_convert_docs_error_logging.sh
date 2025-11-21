@@ -16,7 +16,6 @@ FAIL_COUNT=0
 # Setup test environment
 setup_test_env() {
   TEST_TMP_DIR=$(mktemp -d)
-  TEST_ERROR_LOG="${TEST_TMP_DIR}/test-errors.jsonl"
   TEST_INPUT_DIR="${TEST_TMP_DIR}/input"
   TEST_OUTPUT_DIR="${TEST_TMP_DIR}/output"
 
@@ -24,9 +23,14 @@ setup_test_env() {
   mkdir -p "${TEST_OUTPUT_DIR}"
 
   export CLAUDE_PROJECT_DIR="$PROJECT_ROOT"
-  export CLAUDE_DATA_DIR="${TEST_TMP_DIR}/.claude/data"
-  mkdir -p "${CLAUDE_DATA_DIR}/logs"
-  export ERROR_LOG="${CLAUDE_DATA_DIR}/logs/errors.jsonl"
+
+  # Ensure error log directory exists
+  ERROR_LOG_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/logs"
+  mkdir -p "$ERROR_LOG_DIR"
+  ERROR_LOG_FILE="${ERROR_LOG_DIR}/errors.jsonl"
+
+  # Count initial entries for test isolation
+  INITIAL_LOG_LINES=$(wc -l < "$ERROR_LOG_FILE" 2>/dev/null || echo 0)
 }
 
 # Cleanup test environment
@@ -34,7 +38,6 @@ cleanup_test_env() {
   if [ -n "${TEST_TMP_DIR:-}" ] && [ -d "$TEST_TMP_DIR" ]; then
     rm -rf "$TEST_TMP_DIR"
   fi
-  unset CLAUDE_DATA_DIR ERROR_LOG
 }
 
 # Test helper: Assert contains
@@ -78,27 +81,36 @@ assert_log_entry_exists() {
   local message_pattern="$2"
   local test_name="$3"
 
-  if [ ! -f "$ERROR_LOG" ]; then
+  if [ ! -f "$ERROR_LOG_FILE" ]; then
     echo "  ✗ $test_name"
-    echo "    Error log not found: $ERROR_LOG"
+    echo "    Error log not found: $ERROR_LOG_FILE"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  if grep -q "\"error_type\":\"$error_type\"" "$ERROR_LOG" && \
-     grep -q "$message_pattern" "$ERROR_LOG"; then
-    echo "  ✓ $test_name"
-    PASS_COUNT=$((PASS_COUNT + 1))
-    return 0
-  else
-    echo "  ✗ $test_name"
-    echo "    Expected error_type: $error_type"
-    echo "    Expected message pattern: $message_pattern"
-    echo "    Actual log contents:"
-    cat "$ERROR_LOG" 2>/dev/null || echo "    (empty or missing)"
-    FAIL_COUNT=$((FAIL_COUNT + 1))
-    return 1
+  # Check only new entries added since test started
+  local current_lines
+  current_lines=$(wc -l < "$ERROR_LOG_FILE" 2>/dev/null || echo 0)
+  local new_lines=$((current_lines - INITIAL_LOG_LINES))
+
+  if [ $new_lines -gt 0 ]; then
+    local new_entries
+    new_entries=$(tail -n "$new_lines" "$ERROR_LOG_FILE")
+
+    if echo "$new_entries" | grep -q "\"error_type\":\"$error_type\"" && \
+       echo "$new_entries" | grep -q "$message_pattern"; then
+      echo "  ✓ $test_name"
+      PASS_COUNT=$((PASS_COUNT + 1))
+      return 0
+    fi
   fi
+
+  echo "  ✗ $test_name"
+  echo "    Expected error_type: $error_type"
+  echo "    Expected message pattern: $message_pattern"
+  echo "    New log entries since test start: $new_lines"
+  FAIL_COUNT=$((FAIL_COUNT + 1))
+  return 1
 }
 
 # Test 1: convert-core.sh library sources without errors
@@ -161,10 +173,8 @@ test_validation_error_logging() {
   # Call main_conversion with invalid directory in a subshell
   (
     export CLAUDE_PROJECT_DIR="${PROJECT_ROOT}"
-    export CLAUDE_DATA_DIR="${CLAUDE_DATA_DIR}"
-    export ERROR_LOG="${ERROR_LOG}"
     export COMMAND_NAME="/convert-docs"
-    export WORKFLOW_ID="test_validation"
+    export WORKFLOW_ID="test_validation_$(date +%s)"
     export USER_ARGS="/nonexistent/directory"
 
     set +e  # Allow errors to continue
@@ -228,10 +238,8 @@ test_log_entry_structure() {
   # Trigger validation error in a subshell
   (
     export CLAUDE_PROJECT_DIR="${PROJECT_ROOT}"
-    export CLAUDE_DATA_DIR="${CLAUDE_DATA_DIR}"
-    export ERROR_LOG="${ERROR_LOG}"
     export COMMAND_NAME="/convert-docs"
-    export WORKFLOW_ID="test_workflow"
+    export WORKFLOW_ID="test_workflow_$(date +%s)"
     export USER_ARGS="/test/path"
 
     set +e  # Allow errors to continue
@@ -243,9 +251,12 @@ test_log_entry_structure() {
   # Give a moment for file I/O to complete
   sleep 0.1
 
-  if [ -f "$ERROR_LOG" ]; then
+  if [ -f "$ERROR_LOG_FILE" ]; then
+    local current_lines
+    current_lines=$(wc -l < "$ERROR_LOG_FILE" 2>/dev/null || echo 0)
+    local new_lines=$((current_lines - INITIAL_LOG_LINES))
     local log_content
-    log_content=$(cat "$ERROR_LOG")
+    log_content=$(tail -n "$new_lines" "$ERROR_LOG_FILE")
 
     # Check for required fields
     local all_pass=true
