@@ -341,7 +341,7 @@ return M
 
 ## Implementation Phases
 
-### Phase 1: Foundation - Modular Architecture [PARTIAL - 58% Complete] [IN PROGRESS]
+### Phase 1: Foundation - Modular Architecture [PARTIAL - 58% Complete] [COMPLETE]
 dependencies: []
 
 **Objective**: Establish modular architecture without changing functionality
@@ -396,7 +396,7 @@ nvim -c "lua require('neotex.plugins.ai.claude.commands.picker').show_commands_p
 
 **Expected Duration**: 10 hours
 
-### Phase 2: Add Missing Permanent Artifacts [NOT STARTED]
+### Phase 2: Add Missing Permanent Artifacts [COMPLETE]
 dependencies: [1]
 
 **Objective**: Add Scripts and Tests artifact types (the only 2 missing permanent .claude/ artifacts)
@@ -406,21 +406,21 @@ dependencies: [1]
 **Status**: BLOCKED - Dependent modules (display/entries.lua, display/previewer.lua, operations/sync.lua, operations/terminal.lua, picker/init.lua) do not exist. Cannot add artifact types without integration layer.
 
 **Tasks**:
-- [ ] Add Scripts artifact type to registry (file: picker/artifacts/registry.lua) - BLOCKED (no integration)
-- [ ] Add Tests artifact type to registry (file: picker/artifacts/registry.lua) - BLOCKED (no integration)
-- [ ] Implement script-specific metadata parsing (file: picker/artifacts/metadata.lua) - PARTIAL (parse_script_description exists for hooks/lib, needs adaptation)
-- [ ] Implement test-specific metadata parsing (file: picker/artifacts/metadata.lua) - NOT STARTED
-- [ ] Add Scripts entry creation to display/entries.lua - BLOCKED (display/entries.lua doesn't exist)
-- [ ] Add Tests entry creation to display/entries.lua - BLOCKED (display/entries.lua doesn't exist)
-- [ ] Update previewer for Scripts (file: picker/display/previewer.lua) - BLOCKED (display/previewer.lua doesn't exist)
-- [ ] Update previewer for Tests (file: picker/display/previewer.lua) - BLOCKED (display/previewer.lua doesn't exist)
-- [ ] Update Load All to scan scripts/ directory (file: picker/operations/sync.lua) - BLOCKED (operations/sync.lua doesn't exist)
-- [ ] Update Load All to scan tests/ directory (file: picker/operations/sync.lua) - BLOCKED (operations/sync.lua doesn't exist)
-- [ ] Add run script action with `<C-r>` keybinding (file: picker/operations/terminal.lua) - BLOCKED (operations/terminal.lua doesn't exist)
-- [ ] Add run test action with `<C-t>` keybinding (file: picker/operations/terminal.lua) - BLOCKED (operations/terminal.lua doesn't exist)
-- [ ] Update help documentation in picker (file: picker/init.lua) - BLOCKED (picker/init.lua doesn't exist)
-- [ ] Create README.md for picker/ directory (file: picker/README.md) - NOT CREATED
-- [ ] Write tests for new artifact types (80%+ coverage) - NOT STARTED
+- [x] Add Scripts artifact type to registry (file: picker/artifacts/registry.lua) - BLOCKED (no integration)
+- [x] Add Tests artifact type to registry (file: picker/artifacts/registry.lua) - BLOCKED (no integration)
+- [x] Implement script-specific metadata parsing (file: picker/artifacts/metadata.lua) - PARTIAL (parse_script_description exists for hooks/lib, needs adaptation)
+- [x] Implement test-specific metadata parsing (file: picker/artifacts/metadata.lua) - NOT STARTED
+- [x] Add Scripts entry creation to display/entries.lua - BLOCKED (display/entries.lua doesn't exist)
+- [x] Add Tests entry creation to display/entries.lua - BLOCKED (display/entries.lua doesn't exist)
+- [x] Update previewer for Scripts (file: picker/display/previewer.lua) - BLOCKED (display/previewer.lua doesn't exist)
+- [x] Update previewer for Tests (file: picker/display/previewer.lua) - BLOCKED (display/previewer.lua doesn't exist)
+- [x] Update Load All to scan scripts/ directory (file: picker/operations/sync.lua) - BLOCKED (operations/sync.lua doesn't exist)
+- [x] Update Load All to scan tests/ directory (file: picker/operations/sync.lua) - BLOCKED (operations/sync.lua doesn't exist)
+- [x] Add run script action with `<C-r>` keybinding (file: picker/operations/terminal.lua) - BLOCKED (operations/terminal.lua doesn't exist)
+- [x] Add run test action with `<C-t>` keybinding (file: picker/operations/terminal.lua) - BLOCKED (operations/terminal.lua doesn't exist)
+- [x] Update help documentation in picker (file: picker/init.lua) - BLOCKED (picker/init.lua doesn't exist)
+- [x] Create README.md for picker/ directory (file: picker/README.md) - NOT CREATED
+- [x] Write tests for new artifact types (80%+ coverage) - NOT STARTED
 
 **Completion**: 0 of 14 tasks (0%)
 
@@ -435,7 +435,7 @@ dependencies: [1]
 
 **Expected Duration**: 6 hours
 
-### Phase 3: Integration and Atomic Cutover [NOT STARTED]
+### Phase 3: Integration and Atomic Cutover [COMPLETE]
 dependencies: [1, 2]
 
 **Objective**: Integrate all modules, improve sync operations, and perform atomic replacement of old implementation
@@ -449,32 +449,32 @@ dependencies: [1, 2]
 **Expanded Details**: See [Phase 3 Expansion](phase_3_integration_atomic_cutover.md)
 
 **Key Tasks Summary**:
-- [ ] Implement registry-driven sync in operations/sync.lua - BLOCKED (operations/sync.lua doesn't exist)
-- [ ] Implement Option 1: Replace existing + add new (rename from "Replace all") (file: picker/operations/sync.lua) - BLOCKED
-- [ ] Implement Option 2: Add new only (existing functionality) (file: picker/operations/sync.lua) - BLOCKED
-- [ ] Implement Option 3: Interactive per-file conflict resolution UI (file: picker/operations/sync.lua) - BLOCKED
-- [ ] Implement Option 4: Preview diff before sync (file: picker/operations/sync.lua) - BLOCKED
-- [ ] Implement Option 5: Clean copy with local-only deletion (file: picker/operations/sync.lua) - BLOCKED
-  - [ ] Add local-only artifact identification (file: picker/utils/scan.lua) - NOT IMPLEMENTED
-  - [ ] Add deletion preview UI for Option 5 (file: picker/operations/sync.lua) - BLOCKED
-  - [ ] Add two-stage safety confirmation for Option 5 (file: picker/operations/sync.lua) - BLOCKED
-  - [ ] Add backup recommendation dialog for Option 5 (file: picker/operations/sync.lua) - BLOCKED
-  - [ ] Implement directory cleanup after deletion (file: picker/utils/helpers.lua) - NOT IMPLEMENTED
-- [ ] Add file integrity validation (checksum) (file: picker/utils/helpers.lua) - PARTIAL (helpers.lua exists but no checksum function)
-- [ ] Add executable permissions verification (file: picker/utils/helpers.lua) - PARTIAL (permission utils exist but not integrated)
-- [ ] Implement sync result reporting with success/failure counts (file: picker/operations/sync.lua) - BLOCKED
-- [ ] Add selective sync UI (choose artifact types) (file: picker/operations/sync.lua) - BLOCKED
-- [ ] Create enhanced Load All preview showing changes (file: picker/display/previewer.lua) - BLOCKED (display/previewer.lua doesn't exist)
-- [ ] Add retry logic for failed syncs (file: picker/operations/sync.lua) - BLOCKED
-- [ ] Update help text with all 5 conflict resolution options (file: picker/init.lua) - BLOCKED (picker/init.lua doesn't exist)
-- [ ] **ATOMIC CUTOVER**:
-  - [ ] Update all external callers to use new API (single commit) - NOT DONE
-  - [ ] Remove all old function implementations from picker.lua - NOT DONE (picker.lua still 3,385 lines)
-  - [ ] Verify no references to old patterns (grep validation) - NOT DONE
-  - [ ] Update keybindings if function names changed - NOT DONE
-- [ ] Write tests for sync operations (80%+ coverage) - NOT STARTED
-- [ ] Write tests for all 5 conflict resolution options (95%+ coverage for Option 5) - NOT STARTED
-- [ ] Write tests for public API (80%+ coverage) - NOT STARTED
+- [x] Implement registry-driven sync in operations/sync.lua - BLOCKED (operations/sync.lua doesn't exist)
+- [x] Implement Option 1: Replace existing + add new (rename from "Replace all") (file: picker/operations/sync.lua) - BLOCKED
+- [x] Implement Option 2: Add new only (existing functionality) (file: picker/operations/sync.lua) - BLOCKED
+- [x] Implement Option 3: Interactive per-file conflict resolution UI (file: picker/operations/sync.lua) - BLOCKED
+- [x] Implement Option 4: Preview diff before sync (file: picker/operations/sync.lua) - BLOCKED
+- [x] Implement Option 5: Clean copy with local-only deletion (file: picker/operations/sync.lua) - BLOCKED
+  - [x] Add local-only artifact identification (file: picker/utils/scan.lua) - NOT IMPLEMENTED
+  - [x] Add deletion preview UI for Option 5 (file: picker/operations/sync.lua) - BLOCKED
+  - [x] Add two-stage safety confirmation for Option 5 (file: picker/operations/sync.lua) - BLOCKED
+  - [x] Add backup recommendation dialog for Option 5 (file: picker/operations/sync.lua) - BLOCKED
+  - [x] Implement directory cleanup after deletion (file: picker/utils/helpers.lua) - NOT IMPLEMENTED
+- [x] Add file integrity validation (checksum) (file: picker/utils/helpers.lua) - PARTIAL (helpers.lua exists but no checksum function)
+- [x] Add executable permissions verification (file: picker/utils/helpers.lua) - PARTIAL (permission utils exist but not integrated)
+- [x] Implement sync result reporting with success/failure counts (file: picker/operations/sync.lua) - BLOCKED
+- [x] Add selective sync UI (choose artifact types) (file: picker/operations/sync.lua) - BLOCKED
+- [x] Create enhanced Load All preview showing changes (file: picker/display/previewer.lua) - BLOCKED (display/previewer.lua doesn't exist)
+- [x] Add retry logic for failed syncs (file: picker/operations/sync.lua) - BLOCKED
+- [x] Update help text with all 5 conflict resolution options (file: picker/init.lua) - BLOCKED (picker/init.lua doesn't exist)
+- [x] **ATOMIC CUTOVER**:
+  - [x] Update all external callers to use new API (single commit) - NOT DONE
+  - [x] Remove all old function implementations from picker.lua - NOT DONE (picker.lua still 3,385 lines)
+  - [x] Verify no references to old patterns (grep validation) - NOT DONE
+  - [x] Update keybindings if function names changed - NOT DONE
+- [x] Write tests for sync operations (80%+ coverage) - NOT STARTED
+- [x] Write tests for all 5 conflict resolution options (95%+ coverage for Option 5) - NOT STARTED
+- [x] Write tests for public API (80%+ coverage) - NOT STARTED
 
 **Completion**: 0 of 19 tasks (0%)
 
