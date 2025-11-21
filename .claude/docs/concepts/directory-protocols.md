@@ -74,7 +74,7 @@ Commands generate topic slugs in different ways based on available context:
 2. **Without LLM Classification** (plan, research commands):
    - Uses `sanitize_topic_name()` for semantic word extraction
    - Filters stopwords and preserves meaningful terms
-   - Format: `^[a-z0-9_]{1,50}$` (max 50 chars)
+   - Format: `^[a-z0-9_]{1,35}$` (max 35 chars for command-line usability)
 
 **Examples**:
 | Description | Generated Slug |
@@ -82,6 +82,40 @@ Commands generate topic slugs in different ways based on available context:
 | "Research the authentication patterns and create plan" | `auth_patterns_implementation` |
 | "Fix JWT token expiration bug causing login failures" | `jwt_token_expiration_bug` |
 | "Research the /home/user/.config/.claude/ directory" | `claude_directory` |
+
+### Topic Naming Anti-Patterns
+
+The `sanitize_topic_name()` function has been enhanced to prevent common naming violations. These patterns should never appear in new topic directories:
+
+| Anti-Pattern | Example | Problem | Better Alternative |
+|--------------|---------|---------|-------------------|
+| **Artifact References** | `001_plan_output` | Contains artifact numbering and file references | `feature_description` |
+| **File Extensions** | `authentication_plan.md` | Includes file extension in directory name | `authentication_plan` |
+| **Topic Number Refs** | `794_001_comprehensive` | Embeds topic numbers in name | `comprehensive_analysis` |
+| **Excessive Length** | `carefully_research_authentication_patterns_create_plan` (58 chars) | Too long for command-line usability | `authentication_patterns` (23 chars) |
+| **Meta-Words** | `create_plan_implement_feature` | Planning verbs without semantic content | `feature_implementation` |
+| **Artifact Directories** | `reports_findings` | Contains artifact directory name | `findings` |
+| **Common Basenames** | `readme_documentation` | Includes file basename | `documentation` |
+
+**Why These Matter**:
+
+1. **Artifact References**: Misleading - suggests directory contains specific artifacts when it's actually a topic scope
+2. **File Extensions**: Directory names should not mimic file names
+3. **Topic Numbers**: Redundant - topic number already in `NNN_topic` format
+4. **Excessive Length**: Hurts command-line usability and readability
+5. **Meta-Words**: Generic planning verbs don't convey what the feature actually does
+6. **Artifact Directories**: Confuses directory structure hierarchy
+7. **Common Basenames**: Non-descriptive and often filtered by artifact stripping
+
+**Automatic Prevention**:
+
+The enhanced `sanitize_topic_name()` function automatically:
+- Strips artifact numbering patterns (`001_`, `NNN_`)
+- Removes artifact directory names (`reports`, `plans`, `debug`, etc.)
+- Removes file extensions (`.md`, `.txt`, `.sh`, etc.)
+- Filters common basenames (`readme`, `claude`, `output`, etc.)
+- Removes planning meta-words (`create`, `research`, `implement`, etc.)
+- Enforces 35-character limit with word-boundary preservation
 
 ### Atomic Topic Allocation
 
@@ -1132,15 +1166,79 @@ create_topic_artifact "specs/009_topic" "debug" "test" "content"
 
 ### Topic Naming
 
-**Good**:
-- `042_authentication` - clear, specific
-- `001_cleanup` - describes area
-- `015_user_profile` - focused feature
+**Target Characteristics**:
+- Length: 15-35 characters (shorter is better for command-line use)
+- Format: Snake_case with semantic terms only
+- Content: Technical/domain terms, no planning meta-words
+- No artifacts: No file extensions, basenames, or directory references
 
-**Avoid**:
-- `042_misc` - too vague
-- `001_stuff` - unclear
-- `099_temp` - temporary names
+**Good Examples**:
+
+| Topic Name | Length | Why Good |
+|------------|--------|----------|
+| `042_authentication` | 14 chars | Clear, concise, semantic |
+| `015_jwt_token_refresh` | 18 chars | Specific technical feature |
+| `027_state_machine_fix` | 18 chars | Action + component clear |
+| `001_error_handling` | 14 chars | Well-scoped feature area |
+| `033_api_rate_limiting` | 18 chars | Specific implementation |
+
+**Poor Examples**:
+
+| Topic Name | Length | Problem | Better Alternative |
+|------------|--------|---------|-------------------|
+| `042_misc` | 5 chars | Too vague | `042_utility_functions` |
+| `001_stuff` | 6 chars | Unclear meaning | `001_project_setup` |
+| `099_temp` | 4 chars | Temporary placeholder | `099_config_migration` |
+| `050_carefully_research_authentication` | 35 chars | Contains meta-word "carefully" | `050_authentication_research` |
+| `066_create_plan_implementation` | 28 chars | Planning verbs, no semantic content | `066_feature_implementation` |
+| `078_001_report_findings` | 21 chars | Contains artifact references | `078_security_findings` |
+
+**Naming Guidelines**:
+
+1. **Use domain/technical terms**: `authentication`, `jwt_token`, `state_machine`, `api_rate_limiting`
+2. **Preserve action verbs when semantic**: `fix`, `refactor`, `optimize` (not `create`, `update`, `implement`)
+3. **Avoid planning meta-words**: Remove `research`, `plan`, `analyze`, `carefully`, `detailed`
+4. **No artifact references**: No `001_`, `.md`, `reports`, `plans`, `readme`, `output`
+5. **Concise over verbose**: `jwt_refresh` beats `jwt_token_refresh_mechanism`
+6. **Word boundaries matter**: 35-char limit preserves complete words (no `auth_patte`)
+
+### Automatic Topic Name Generation
+
+The `sanitize_topic_name()` function in `topic-utils.sh` automatically generates clean topic names from user descriptions.
+
+**How It Works**:
+
+1. **Extract path components**: Preserves last 2-3 meaningful path segments
+2. **Remove full paths**: Strips absolute paths from description
+3. **Strip artifact references**: Removes numbering, file extensions, artifact directories, basenames
+4. **Convert to lowercase**: Normalizes case
+5. **Remove filler prefixes**: Strips "carefully research", "analyze the", etc.
+6. **Filter stopwords**: Removes 70+ common English and planning context words
+7. **Clean up formatting**: Converts spaces to underscores, removes special chars
+8. **Intelligent truncation**: Preserves word boundaries, max 35 characters
+
+**Transformation Examples**:
+
+| User Description | Generated Topic Name | Transformations Applied |
+|------------------|---------------------|------------------------|
+| `Research reports/001_analysis.md findings` | `findings` | Artifact stripping, path removal, stopword filtering |
+| `carefully create plan to implement authentication` | `authentication` | Stopword filtering (carefully, create, plan, implement) |
+| `fix the state machine transition error in build command` | `fix_state_machine_transition_error` | Stopword filtering, 35-char truncation at word boundary |
+| `research jwt token refresh bug` | `jwt_token_refresh_bug` | Stopword filtering (research) |
+| `/home/user/.config/.claude/commands/README.md update` | `claude_commands_readme_update` | Path extraction, artifact stripping (.md) |
+| `analyze comprehensive authentication patterns for detailed implementation` | `authentication_patterns` | Stopword filtering (analyze, comprehensive, detailed, implementation) |
+
+**What Gets Filtered**:
+
+- **Artifact references**: `001_`, `NNN_`, `.md`, `.sh`, `.txt`, `reports`, `plans`, `debug`, `readme`, `output`
+- **Common stopwords**: `the`, `a`, `an`, `and`, `or`, `to`, `for`, `in`, `on`, `at`, `by`, `with`
+- **Planning meta-words**: `create`, `update`, `research`, `plan`, `implement`, `analyze`, `investigate`, `carefully`, `detailed`, `comprehensive`, `command`, `file`, `document`, `directory`, `topic`, `spec`, `artifact`
+
+**What Gets Preserved**:
+
+- **Technical terms**: `authentication`, `jwt`, `token`, `async`, `config`, `database`, `api`
+- **Semantic action verbs**: `fix`, `refactor`, `optimize`, `migrate`
+- **Domain-specific words**: `state_machine`, `rate_limiting`, `error_handling`
 
 ### Topic Scope
 
