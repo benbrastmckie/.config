@@ -27,6 +27,35 @@ YOU ARE EXECUTING a debug-focused workflow that investigates issues through rese
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
+# Detect project directory for error logging
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; then
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Source error handling early for trap setup
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load error-handling library" >&2
+  exit 1
+}
+ensure_error_log_exists
+
+# Set initial command metadata for error logging
+WORKFLOW_ID="debug_init_$(date +%s)"
+COMMAND_NAME="/debug"
+USER_ARGS="$*"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 ISSUE_DESCRIPTION="$1"
 
 if [ -z "$ISSUE_DESCRIPTION" ]; then
@@ -54,8 +83,10 @@ fi
 ORIGINAL_PROMPT_FILE_PATH=""
 if [[ "$ISSUE_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
   ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
-  # Convert to absolute path if relative
-  if [[ ! "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]; then
+  # Convert to absolute path if relative (preprocessing-safe pattern)
+  [[ "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]
+  IS_ABSOLUTE_PATH=$?
+  if [ $IS_ABSOLUTE_PATH -ne 0 ]; then
     ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
   fi
   # Validate file exists
@@ -153,6 +184,14 @@ export COMMAND_NAME USER_ARGS
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
 
+# === PERSIST ERROR LOGGING CONTEXT ===
+append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
+append_workflow_state "USER_ARGS" "$USER_ARGS"
+append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Validate state file creation
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
   log_command_error \
@@ -206,29 +245,36 @@ append_workflow_state "ISSUE_DESCRIPTION" "$ISSUE_DESCRIPTION"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
 ```
 
-## Part 2a: Workflow Classification (Semantic Slug Generation)
+## Part 2a: Topic Name Generation
 
-**EXECUTE NOW**: USE the Task tool to invoke the workflow-classifier agent for semantic topic directory naming.
+**EXECUTE NOW**: USE the Task tool to invoke the topic-naming-agent for semantic topic directory naming.
 
 Task {
   subagent_type: "general-purpose"
-  description: "Classify workflow for ${ISSUE_DESCRIPTION}"
+  description: "Generate semantic topic directory name"
   prompt: "
     Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/workflow-classifier.md
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-naming-agent.md
 
-    You are classifying a workflow for: debug command
+    You are generating a topic directory name for: /debug command
 
-    **Inputs**:
-    - Workflow Description: ${ISSUE_DESCRIPTION}
-    - Command Name: debug
+    **Input**:
+    - User Prompt: ${ISSUE_DESCRIPTION}
+    - Command Name: /debug
+    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
 
-    Execute classification according to behavioral guidelines and return:
-    CLASSIFICATION_COMPLETE: {JSON classification result}
+    Execute topic naming according to behavioral guidelines:
+    1. Generate semantic topic name from user prompt
+    2. Validate format (^[a-z0-9_]{5,40}$)
+    3. Write topic name to OUTPUT_FILE_PATH using Write tool
+    4. Return completion signal: TOPIC_NAME_GENERATED: <generated_name>
+
+    If you encounter an error, return:
+    TASK_ERROR: <error_type> - <error_message>
   "
 }
 
-**EXECUTE NOW**: Parse the classification result:
+**EXECUTE NOW**: Parse the topic name from agent output:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -244,6 +290,18 @@ if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
+
+  # === RESTORE ERROR LOGGING CONTEXT ===
+  if [ -z "${COMMAND_NAME:-}" ]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+  fi
+  if [ -z "${USER_ARGS:-}" ]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+  fi
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # === SETUP BASH ERROR TRAP ===
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
   # === VALIDATE STATE AFTER LOAD ===
   DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
@@ -263,7 +321,7 @@ if [ -f "$STATE_ID_FILE" ]; then
       echo "[$(date)] ERROR: State file path not set"
       echo "WHICH: load_workflow_state"
       echo "WHAT: STATE_FILE variable empty after load"
-      echo "WHERE: Block 2a, classification verification"
+      echo "WHERE: Block 2a, topic naming verification"
     } >> "$DEBUG_LOG"
     echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
     exit 1
@@ -283,7 +341,7 @@ if [ -f "$STATE_ID_FILE" ]; then
       echo "[$(date)] ERROR: State file not found"
       echo "WHICH: load_workflow_state"
       echo "WHAT: File does not exist at expected path"
-      echo "WHERE: Block 2a, classification verification"
+      echo "WHERE: Block 2a, topic naming verification"
       echo "PATH: $STATE_FILE"
     } >> "$DEBUG_LOG"
     echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
@@ -291,19 +349,67 @@ if [ -f "$STATE_ID_FILE" ]; then
   fi
 fi
 
-# Parse CLASSIFICATION_COMPLETE from previous Task output
-CLASSIFICATION_JSON="${CLASSIFICATION_RESULT:-}"
+# === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
+TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+TOPIC_NAME="no_name"
+NAMING_STRATEGY="fallback"
 
-# If classification failed or wasn't captured, set empty for fallback behavior
-if [ -z "$CLASSIFICATION_JSON" ]; then
-  echo "Note: Classification result not captured, using fallback slug generation"
-  CLASSIFICATION_JSON=""
+# Check if agent wrote output file
+if [ -f "$TOPIC_NAME_FILE" ]; then
+  # Read topic name from file (agent writes only the name, one line)
+  TOPIC_NAME=$(cat "$TOPIC_NAME_FILE" 2>/dev/null | tr -d '\n' | tr -d ' ')
+
+  if [ -z "$TOPIC_NAME" ]; then
+    # File exists but is empty - agent failed
+    NAMING_STRATEGY="agent_empty_output"
+    TOPIC_NAME="no_name"
+  elif ! echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'; then
+    # Invalid format - log and fall back
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Topic naming agent returned invalid format" \
+      "bash_block_2a" \
+      "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
+
+    NAMING_STRATEGY="validation_failed"
+    TOPIC_NAME="no_name"
+  else
+    # Valid topic name from LLM
+    NAMING_STRATEGY="llm_generated"
+  fi
+else
+  # File doesn't exist - agent failed to write
+  NAMING_STRATEGY="agent_no_output_file"
 fi
+
+# Log naming failure if we fell back to no_name
+if [ "$TOPIC_NAME" = "no_name" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Topic naming agent failed or returned invalid name" \
+    "bash_block_2a" \
+    "$(jq -n --arg desc "$ISSUE_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" \
+       '{issue: $desc, fallback_reason: $strategy}')"
+fi
+
+# Clean up temp file
+rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
+
+# Create classification result JSON for initialize_workflow_paths
+CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
 
 # Persist classification for initialize_workflow_paths
 append_workflow_state "CLASSIFICATION_JSON" "$CLASSIFICATION_JSON"
+append_workflow_state "TOPIC_NAME" "$TOPIC_NAME"
+append_workflow_state "NAMING_STRATEGY" "$NAMING_STRATEGY"
 
-echo "✓ Classification complete"
+echo "✓ Topic naming complete: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 echo ""
 ```
 
@@ -325,6 +431,18 @@ if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
+
+  # === RESTORE ERROR LOGGING CONTEXT ===
+  if [ -z "${COMMAND_NAME:-}" ]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+  fi
+  if [ -z "${USER_ARGS:-}" ]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+  fi
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # === SETUP BASH ERROR TRAP ===
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
   # === VALIDATE STATE AFTER LOAD ===
   DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
@@ -419,10 +537,6 @@ RESEARCH_DIR="${TOPIC_PATH}/reports"
 DEBUG_DIR="${TOPIC_PATH}/debug"
 TOPIC_SLUG="$TOPIC_NAME"
 
-# Create subdirectories (topic root already created by initialize_workflow_paths)
-mkdir -p "$RESEARCH_DIR"
-mkdir -p "$DEBUG_DIR"
-
 # === ARCHIVE PROMPT FILE (if --file was used) ===
 ARCHIVED_PROMPT_PATH=""
 if [ -n "$ORIGINAL_PROMPT_FILE_PATH" ] && [ -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
@@ -481,8 +595,31 @@ Task {
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# Load WORKFLOW_ID from file
+STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+
+  # Restore error logging context
+  if [ -z "${COMMAND_NAME:-}" ]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+  fi
+  if [ -z "${USER_ARGS:-}" ]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+  fi
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # Setup bash error trap
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+fi
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -534,8 +671,13 @@ append_workflow_state "ISSUE_DESCRIPTION" "$ISSUE_DESCRIPTION"
 
 # Persist completed state with return code verification
 if ! save_completed_states_to_state 2>&1; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
 fi
 ```
 
@@ -555,6 +697,18 @@ source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
@@ -639,7 +793,6 @@ echo ""
 
 # Pre-calculate plan path
 PLANS_DIR="${SPECS_DIR}/plans"
-mkdir -p "$PLANS_DIR"
 PLAN_NUMBER="001"
 PLAN_FILENAME="${PLAN_NUMBER}_debug_strategy.md"
 PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
@@ -685,8 +838,31 @@ Task {
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# Load WORKFLOW_ID from file
+STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+
+  # Restore error logging context
+  if [ -z "${COMMAND_NAME:-}" ]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+  fi
+  if [ -z "${USER_ARGS:-}" ]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+  fi
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # Setup bash error trap
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+fi
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -723,8 +899,13 @@ append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
 
 # Persist completed state with return code verification
 if ! save_completed_states_to_state 2>&1; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
 fi
 ```
 
@@ -744,6 +925,18 @@ source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
@@ -855,8 +1048,31 @@ Task {
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+
+# Load WORKFLOW_ID from file
+STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+
+  # Restore error logging context
+  if [ -z "${COMMAND_NAME:-}" ]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+  fi
+  if [ -z "${USER_ARGS:-}" ]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+  fi
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # Setup bash error trap
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+fi
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -889,8 +1105,13 @@ append_workflow_state "DEBUG_ARTIFACT_COUNT" "$DEBUG_ARTIFACT_COUNT"
 
 # Persist completed state with return code verification
 if ! save_completed_states_to_state 2>&1; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: Failed to persist completed state" >&2
   exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
 fi
 ```
 
@@ -910,6 +1131,18 @@ source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 5 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"

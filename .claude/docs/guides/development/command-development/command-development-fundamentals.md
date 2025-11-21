@@ -967,13 +967,40 @@ echo "Setup complete: $WORKFLOW_ID"
 
 Use output suppression within consolidated blocks:
 
-**Library Sourcing**:
+**Library Sourcing (MANDATORY in Every Bash Block)**:
+
+Each bash block is an independent process and MUST independently source all required libraries:
+
 ```bash
-source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source library" >&2
+# MANDATORY: Source required libraries in EVERY bash block
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load state-persistence library" >&2
+  exit 1
+}
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load error-handling library" >&2
+  exit 1
+}
+
+# MANDATORY: Verify critical functions are available after sourcing
+if ! command -v load_workflow_state &>/dev/null; then
+  echo "ERROR: load_workflow_state function not available after sourcing" >&2
   exit 1
 }
 ```
+
+**Why Mandatory Re-Sourcing?**:
+- Bash blocks run in separate processes (subprocess isolation)
+- Functions sourced in Block 1 are NOT available in Block 2+
+- Each block must independently source its dependencies
+- Failure to re-source causes "command not found" errors
+
+**Key Requirements**:
+1. Source ALL required libraries at start of EVERY block
+2. Use fail-fast pattern (`|| { error; exit 1 }`) instead of error suppression
+3. Verify critical function availability after sourcing
+4. Never assume functions from previous blocks are available
 
 **Single Summary Line**:
 ```bash

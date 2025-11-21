@@ -283,6 +283,98 @@ function M.create_templates_entries()
   return entries
 end
 
+--- Create entries for scripts section
+--- @return table Array of entries
+function M.create_scripts_entries()
+  local entries = {}
+  local project_dir = vim.fn.getcwd()
+  local global_dir = vim.fn.expand("~/.config")
+
+  local local_scripts = scan.scan_directory(project_dir .. "/.claude/scripts", "*.sh")
+  local global_scripts = scan.scan_directory(global_dir .. "/.claude/scripts", "*.sh")
+  local all_scripts = scan.merge_artifacts(local_scripts, global_scripts)
+
+  if #all_scripts > 0 then
+    table.sort(all_scripts, function(a, b) return a.name < b.name end)
+
+    for i, script in ipairs(all_scripts) do
+      local is_first = (i == 1)
+      local indent_char = helpers.get_tree_char(is_first)
+      local description = metadata.parse_script_description(script.filepath)
+
+      table.insert(entries, {
+        display = helpers.format_display(
+          script.is_local and "*" or " ",
+          " " .. indent_char,
+          script.name,
+          description
+        ),
+        entry_type = "script",
+        name = script.name,
+        filepath = script.filepath,
+        is_local = script.is_local,
+        ordinal = "zzzz_script_" .. script.name
+      })
+    end
+
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~scripts_heading",
+      display = string.format("%-40s %s", "[Scripts]", "Standalone CLI tools"),
+      entry_type = "heading",
+      ordinal = "scripts"
+    })
+  end
+
+  return entries
+end
+
+--- Create entries for tests section
+--- @return table Array of entries
+function M.create_tests_entries()
+  local entries = {}
+  local project_dir = vim.fn.getcwd()
+  local global_dir = vim.fn.expand("~/.config")
+
+  local local_tests = scan.scan_directory(project_dir .. "/.claude/tests", "test_*.sh")
+  local global_tests = scan.scan_directory(global_dir .. "/.claude/tests", "test_*.sh")
+  local all_tests = scan.merge_artifacts(local_tests, global_tests)
+
+  if #all_tests > 0 then
+    table.sort(all_tests, function(a, b) return a.name < b.name end)
+
+    for i, test in ipairs(all_tests) do
+      local is_first = (i == 1)
+      local indent_char = helpers.get_tree_char(is_first)
+      local description = metadata.parse_script_description(test.filepath)
+
+      table.insert(entries, {
+        display = helpers.format_display(
+          test.is_local and "*" or " ",
+          " " .. indent_char,
+          test.name,
+          description
+        ),
+        entry_type = "test",
+        name = test.name,
+        filepath = test.filepath,
+        is_local = test.is_local,
+        ordinal = "zzzz_test_" .. test.name
+      })
+    end
+
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~tests_heading",
+      display = string.format("%-40s %s", "[Tests]", "Test suites"),
+      entry_type = "heading",
+      ordinal = "tests"
+    })
+  end
+
+  return entries
+end
+
 --- Create entries for TTS files section
 --- @param tts_files table TTS files from parser
 --- @return table Array of entries
@@ -595,25 +687,37 @@ function M.create_picker_entries(structure)
     table.insert(all_entries, entry)
   end
 
-  -- 5. TTS files section
+  -- 5. Scripts section
+  local scripts = M.create_scripts_entries()
+  for _, entry in ipairs(scripts) do
+    table.insert(all_entries, entry)
+  end
+
+  -- 6. Tests section
+  local tests = M.create_tests_entries()
+  for _, entry in ipairs(tests) do
+    table.insert(all_entries, entry)
+  end
+
+  -- 7. TTS files section
   local tts = M.create_tts_entries(structure.tts_files or {})
   for _, entry in ipairs(tts) do
     table.insert(all_entries, entry)
   end
 
-  -- 6. Standalone agents section
+  -- 8. Standalone agents section
   local standalone_agents = M.create_standalone_agents_entries(structure)
   for _, entry in ipairs(standalone_agents) do
     table.insert(all_entries, entry)
   end
 
-  -- 7. Hooks section
+  -- 9. Hooks section
   local hooks = M.create_hooks_entries(structure)
   for _, entry in ipairs(hooks) do
     table.insert(all_entries, entry)
   end
 
-  -- 8. Commands section (appears at top)
+  -- 10. Commands section (appears at top)
   local commands = M.create_commands_entries(structure)
   for _, entry in ipairs(commands) do
     table.insert(all_entries, entry)

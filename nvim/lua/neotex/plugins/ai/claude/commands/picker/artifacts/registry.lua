@@ -94,6 +94,44 @@ M.ARTIFACT_TYPES = {
     sync_enabled = true,
   },
 
+  script = {
+    name = "script",
+    plural = "Scripts",
+    extension = ".sh",
+    subdirs = { "scripts" },
+    preserve_permissions = true,
+    description_parser = "parse_script_description",
+    heading = "[Scripts]",
+    heading_description = "Standalone CLI tools",
+    tree_indent = " ",
+    picker_visible = true,
+    sync_enabled = true,
+    -- Custom keybindings for running scripts
+    custom_actions = {
+      run = true,  -- Enable <C-r> to run with arguments
+    },
+  },
+
+  test = {
+    name = "test",
+    plural = "Tests",
+    extension = ".sh",
+    subdirs = { "tests" },
+    preserve_permissions = true,
+    description_parser = "parse_script_description",
+    heading = "[Tests]",
+    heading_description = "Test suites",
+    tree_indent = " ",
+    picker_visible = true,
+    sync_enabled = true,
+    -- Custom keybindings for running tests
+    custom_actions = {
+      run = true,  -- Enable <C-t> to run test
+    },
+    -- Filter for test_*.sh pattern
+    pattern_filter = "^test_",
+  },
+
   doc = {
     name = "doc",
     plural = "Docs",

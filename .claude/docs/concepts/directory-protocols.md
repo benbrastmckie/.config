@@ -60,62 +60,53 @@ specs/
 
 ### Topic Naming
 
-Topic directories use semantic slug generation to create meaningful, readable names.
+Topic directories use AI-powered semantic naming to generate meaningful, descriptive names from user prompts.
 
-**Semantic Slug Generation** (Spec 771):
+**LLM-Based Naming System**:
 
-Commands generate topic slugs in different ways based on available context:
+The system uses a Haiku LLM agent (topic-naming-agent) that analyzes user descriptions and generates semantic topic names. The agent understands context, extracts key technical terms, and formats names as snake_case directory names.
 
-1. **With LLM Classification** (coordinate command):
-   - Uses `topic_directory_slug` from workflow-classifier agent
-   - Three-tier fallback: LLM slug -> extract significant words -> sanitize
-   - Format: `^[a-z0-9_]{1,40}$` (max 40 chars for readability)
+**Naming Process**:
+1. Commands invoke topic-naming-agent with user's feature description
+2. Agent analyzes semantic meaning (5-15 word prompts)
+3. Agent extracts technical terms, action verbs, domain concepts
+4. Agent returns formatted name: `^[a-z0-9_]{5,40}$`
+5. Commands validate format and create directory
 
-2. **Without LLM Classification** (plan, research commands):
-   - Uses `sanitize_topic_name()` for semantic word extraction
-   - Filters stopwords and preserves meaningful terms
-   - Format: `^[a-z0-9_]{1,35}$` (max 35 chars for command-line usability)
+**Fallback Behavior**:
+- Agent timeout (>5s): Falls back to `NNN_no_name/` sentinel
+- Validation failure: Falls back to `NNN_no_name/` sentinel
+- Empty prompt: Falls back to `NNN_no_name/` sentinel
+- Failures logged to centralized error log for investigation
 
 **Examples**:
-| Description | Generated Slug |
-|-------------|----------------|
-| "Research the authentication patterns and create plan" | `auth_patterns_implementation` |
-| "Fix JWT token expiration bug causing login failures" | `jwt_token_expiration_bug` |
-| "Research the /home/user/.config/.claude/ directory" | `claude_directory` |
+| User Description | Generated Name |
+|------------------|----------------|
+| "Fix JWT token expiration bug causing login failures" | `jwt_token_expiration_fix` |
+| "Implement OAuth authentication with SSO support" | `oauth_auth_sso_implementation` |
+| "Refactor state machine transitions in build command" | `state_machine_transitions_refactor` |
+| "Add rate limiting to API gateway endpoints" | `api_gateway_rate_limiting` |
+| "Research database connection pooling strategies" | `database_connection_pooling` |
 
-### Topic Naming Anti-Patterns
+**Monitoring Failures**:
+Use `.claude/scripts/check_no_name_directories.sh` to identify naming failures:
+```bash
+# Check for naming failures
+.claude/scripts/check_no_name_directories.sh
 
-The `sanitize_topic_name()` function has been enhanced to prevent common naming violations. These patterns should never appear in new topic directories:
+# Investigate failures
+/errors --type agent_error --command /plan
 
-| Anti-Pattern | Example | Problem | Better Alternative |
-|--------------|---------|---------|-------------------|
-| **Artifact References** | `001_plan_output` | Contains artifact numbering and file references | `feature_description` |
-| **File Extensions** | `authentication_plan.md` | Includes file extension in directory name | `authentication_plan` |
-| **Topic Number Refs** | `794_001_comprehensive` | Embeds topic numbers in name | `comprehensive_analysis` |
-| **Excessive Length** | `carefully_research_authentication_patterns_create_plan` (58 chars) | Too long for command-line usability | `authentication_patterns` (23 chars) |
-| **Meta-Words** | `create_plan_implement_feature` | Planning verbs without semantic content | `feature_implementation` |
-| **Artifact Directories** | `reports_findings` | Contains artifact directory name | `findings` |
-| **Common Basenames** | `readme_documentation` | Includes file basename | `documentation` |
+# Rename no_name directories manually
+.claude/scripts/rename_no_name_directory.sh specs/867_no_name jwt_token_fix
+```
 
-**Why These Matter**:
-
-1. **Artifact References**: Misleading - suggests directory contains specific artifacts when it's actually a topic scope
-2. **File Extensions**: Directory names should not mimic file names
-3. **Topic Numbers**: Redundant - topic number already in `NNN_topic` format
-4. **Excessive Length**: Hurts command-line usability and readability
-5. **Meta-Words**: Generic planning verbs don't convey what the feature actually does
-6. **Artifact Directories**: Confuses directory structure hierarchy
-7. **Common Basenames**: Non-descriptive and often filtered by artifact stripping
-
-**Automatic Prevention**:
-
-The enhanced `sanitize_topic_name()` function automatically:
-- Strips artifact numbering patterns (`001_`, `NNN_`)
-- Removes artifact directory names (`reports`, `plans`, `debug`, etc.)
-- Removes file extensions (`.md`, `.txt`, `.sh`, etc.)
-- Filters common basenames (`readme`, `claude`, `output`, etc.)
-- Removes planning meta-words (`create`, `research`, `implement`, etc.)
-- Enforces 35-character limit with word-boundary preservation
+**Format Requirements**:
+- Length: 5-40 characters (optimized for readability)
+- Character set: Lowercase letters, digits, underscores only
+- Pattern: `^[a-z0-9_]{5,40}$`
+- No consecutive underscores
+- Must start and end with alphanumeric character
 
 ### Atomic Topic Allocation
 
@@ -250,6 +241,133 @@ specs/042_authentication/
 - Contains numbered individual subtopic reports (001, 002, 003...)
 - Contains `OVERVIEW.md` (ALL CAPS, not numbered) as final synthesis
 - OVERVIEW.md distinguishes final synthesis from individual subtopic reports
+
+### Common Violation: Eager mkdir in Commands
+
+Commands MUST NOT create artifact subdirectories (`reports/`, `debug/`, `plans/`, `summaries/`) eagerly during setup. This violates the lazy directory creation standard and creates empty directories that persist when workflows fail.
+
+**ANTI-PATTERN** (Historical - Fixed in Spec 870):
+
+```bash
+# WRONG: Command creates subdirectories during setup (debug.md, plan.md, etc.)
+initialize_workflow_paths "$TOPIC_NAME" || exit 1
+
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+DEBUG_DIR="${TOPIC_PATH}/debug"
+PLANS_DIR="${TOPIC_PATH}/plans"
+
+# Eager directory creation (VIOLATES lazy creation standard)
+mkdir -p "$RESEARCH_DIR"
+mkdir -p "$DEBUG_DIR"
+mkdir -p "$PLANS_DIR"
+
+# Agent invoked later...
+# If workflow fails before agent writes files, empty directories persist
+```
+
+**Why This Is Wrong**:
+
+When commands create subdirectories during setup, any workflow failure or interruption before file creation leaves empty directories:
+
+```bash
+# Workflow execution timeline
+1. initialize_workflow_paths creates topic root: specs/042_auth/
+2. Command creates subdirectories: specs/042_auth/reports/, specs/042_auth/debug/
+3. User cancels workflow (Ctrl+C) or workflow fails before agent runs
+4. Result: Empty subdirectories persist indefinitely
+
+# Real-world impact
+specs/042_auth/
+├── reports/     # EMPTY - workflow cancelled before research phase
+└── debug/       # EMPTY - workflow failed before debug phase
+```
+
+**Impact Evidence**:
+
+This anti-pattern was systematically identified and remediated in Spec 870 after root cause analysis:
+
+- **Spec 867**: Empty `debug/` directory created 8 minutes before topic directory (timestamp analysis)
+- **Spec 869**: Root cause investigation found 10 violations across 6 commands
+- **Accumulated Impact**: 400-500+ empty subdirectories across `.claude/specs/` before remediation
+- **False Signals**: Empty directories suggested failed workflows, complicating debugging
+- **Standard Violation**: Contradicts lazy creation pattern documented in this file
+
+**Correct Pattern**:
+
+Commands assign directory paths but do NOT create directories. Agents create directories on-demand when writing files:
+
+```bash
+# CORRECT: Command setup (path assignment only)
+initialize_workflow_paths "$TOPIC_NAME" || exit 1
+
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+DEBUG_DIR="${TOPIC_PATH}/debug"
+PLANS_DIR="${TOPIC_PATH}/plans"
+
+# No mkdir here - agents handle lazy creation
+
+# In agent behavioral guidelines (e.g., research-specialist.md)
+source .claude/lib/core/unified-location-detection.sh
+
+REPORT_PATH="${RESEARCH_DIR}/001_analysis.md"
+
+# Ensure parent directory exists (lazy creation pattern)
+ensure_artifact_directory "$REPORT_PATH" || {
+  echo "ERROR: Failed to create parent directory for report" >&2
+  exit 1
+}
+
+# Write tool creates file
+# Directory created ONLY when file is written
+```
+
+**Workflow Timeline (Correct)**:
+
+```bash
+# Workflow execution timeline
+1. initialize_workflow_paths creates topic root: specs/042_auth/
+2. Command assigns path variables (NO mkdir)
+3. Agent calls ensure_artifact_directory() before writing file
+4. Directory created: specs/042_auth/reports/
+5. File written: specs/042_auth/reports/001_analysis.md
+
+# If workflow fails at step 3 (before agent runs):
+specs/042_auth/          # Topic root exists (correct)
+# No subdirectories - clean state (correct)
+
+# If workflow succeeds:
+specs/042_auth/
+└── reports/
+    └── 001_analysis.md  # Directory + file both exist (correct)
+```
+
+**Audit Checklist for Command Development**:
+
+When developing or modifying commands, verify:
+
+- [ ] Command DOES NOT use `mkdir -p "$RESEARCH_DIR"`
+- [ ] Command DOES NOT use `mkdir -p "$DEBUG_DIR"`
+- [ ] Command DOES NOT use `mkdir -p "$PLANS_DIR"`
+- [ ] Command DOES NOT use `mkdir -p "$SUMMARIES_DIR"`
+- [ ] Agent behavioral guidelines DO call `ensure_artifact_directory()` before file writes
+- [ ] Only exception: Atomic directory+file creation (mkdir immediately followed by file write in same bash block)
+
+**Verification Commands**:
+
+```bash
+# Check for violations (should return empty or only atomic patterns)
+grep 'mkdir -p "\$RESEARCH_DIR"' .claude/commands/*.md | grep -v backup
+grep 'mkdir -p "\$DEBUG_DIR"' .claude/commands/*.md | grep -v backup
+grep 'mkdir -p "\$PLANS_DIR"' .claude/commands/*.md | grep -v backup
+
+# Verify agents use lazy creation (should return multiple matches)
+grep 'ensure_artifact_directory' .claude/agents/*.md
+```
+
+**See Also**:
+- [Code Standards - Directory Creation Anti-Patterns](../reference/standards/code-standards.md#directory-creation-anti-patterns) - Complete anti-pattern documentation with examples
+- [Unified Location Detection Library](../reference/library-api/overview.md#ensure_artifact_directory) - `ensure_artifact_directory()` function API
+- [Spec 870 Implementation](../../specs/870_fix_lazy_directory_creation_violations_across_6_co/plans/001_fix_lazy_directory_creation_violations_a_plan.md) - Systematic remediation of violations
 ```
 
 ### Complete Topic Structure Example
@@ -1202,43 +1320,48 @@ create_topic_artifact "specs/009_topic" "debug" "test" "content"
 5. **Concise over verbose**: `jwt_refresh` beats `jwt_token_refresh_mechanism`
 6. **Word boundaries matter**: 35-char limit preserves complete words (no `auth_patte`)
 
-### Automatic Topic Name Generation
+### LLM Agent Integration
 
-The `sanitize_topic_name()` function in `topic-utils.sh` automatically generates clean topic names from user descriptions.
+Commands integrate with the topic-naming-agent for semantic name generation:
 
-**How It Works**:
+**Integration Pattern**:
+```bash
+# Source error handling library
+source "$CLAUDE_LIB/core/error-handling.sh" 2>/dev/null || exit 1
+ensure_error_log_exists
 
-1. **Extract path components**: Preserves last 2-3 meaningful path segments
-2. **Remove full paths**: Strips absolute paths from description
-3. **Strip artifact references**: Removes numbering, file extensions, artifact directories, basenames
-4. **Convert to lowercase**: Normalizes case
-5. **Remove filler prefixes**: Strips "carefully research", "analyze the", etc.
-6. **Filter stopwords**: Removes 70+ common English and planning context words
-7. **Clean up formatting**: Converts spaces to underscores, removes special chars
-8. **Intelligent truncation**: Preserves word boundaries, max 35 characters
+# Set command metadata
+COMMAND_NAME="/plan"  # or /research, /debug, /optimize-claude
+WORKFLOW_ID="workflow_$(date +%s)"
 
-**Transformation Examples**:
+# Invoke topic-naming-agent via Task tool
+AGENT_OUTPUT=$(invoke_topic_naming_agent "$USER_DESCRIPTION")
 
-| User Description | Generated Topic Name | Transformations Applied |
-|------------------|---------------------|------------------------|
-| `Research reports/001_analysis.md findings` | `findings` | Artifact stripping, path removal, stopword filtering |
-| `carefully create plan to implement authentication` | `authentication` | Stopword filtering (carefully, create, plan, implement) |
-| `fix the state machine transition error in build command` | `fix_state_machine_transition_error` | Stopword filtering, 35-char truncation at word boundary |
-| `research jwt token refresh bug` | `jwt_token_refresh_bug` | Stopword filtering (research) |
-| `/home/user/.config/.claude/commands/README.md update` | `claude_commands_readme_update` | Path extraction, artifact stripping (.md) |
-| `analyze comprehensive authentication patterns for detailed implementation` | `authentication_patterns` | Stopword filtering (analyze, comprehensive, detailed, implementation) |
+# Parse completion signal
+if echo "$AGENT_OUTPUT" | grep -q "TOPIC_NAME_GENERATED:"; then
+  TOPIC_NAME=$(echo "$AGENT_OUTPUT" | grep "TOPIC_NAME_GENERATED:" | sed 's/TOPIC_NAME_GENERATED: *//')
 
-**What Gets Filtered**:
+  # Validate format
+  if validate_topic_name_format "$TOPIC_NAME"; then
+    # Success: use LLM-generated name
+    allocate_and_create_topic "$SPECS_DIR" "$TOPIC_NAME"
+  else
+    # Validation failed: fallback
+    log_command_error "validation_error" "Invalid topic name format" "name=$TOPIC_NAME"
+    TOPIC_NAME="no_name"
+  fi
+else
+  # Agent failed: fallback
+  log_command_error "agent_error" "Topic naming agent failed" "prompt=$USER_DESCRIPTION"
+  TOPIC_NAME="no_name"
+fi
+```
 
-- **Artifact references**: `001_`, `NNN_`, `.md`, `.sh`, `.txt`, `reports`, `plans`, `debug`, `readme`, `output`
-- **Common stopwords**: `the`, `a`, `an`, `and`, `or`, `to`, `for`, `in`, `on`, `at`, `by`, `with`
-- **Planning meta-words**: `create`, `update`, `research`, `plan`, `implement`, `analyze`, `investigate`, `carefully`, `detailed`, `comprehensive`, `command`, `file`, `document`, `directory`, `topic`, `spec`, `artifact`
+**Agent Response Time**: <3 seconds average (Haiku 4.5 optimized)
+**Cost**: ~$0.003 per topic creation (~$2.16/year at typical usage)
+**Failure Rate**: <5% (monitored via check_no_name_directories.sh)
 
-**What Gets Preserved**:
-
-- **Technical terms**: `authentication`, `jwt`, `token`, `async`, `config`, `database`, `api`
-- **Semantic action verbs**: `fix`, `refactor`, `optimize`, `migrate`
-- **Domain-specific words**: `state_machine`, `rate_limiting`, `error_handling`
+**See**: [Topic Naming with LLM Guide](../guides/development/topic-naming-with-llm.md) for complete integration details, prompt engineering tips, and troubleshooting strategies.
 
 ### Topic Scope
 

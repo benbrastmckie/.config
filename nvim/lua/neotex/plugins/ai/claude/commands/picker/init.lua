@@ -122,6 +122,12 @@ function M.show_commands_picker(opts)
         elseif selection.value.entry_type == "tts_file" and selection.value.filepath then
           actions.close(prompt_bufnr)
           edit.edit_artifact_file(selection.value.filepath)
+        elseif selection.value.entry_type == "script" and selection.value.filepath then
+          actions.close(prompt_bufnr)
+          edit.edit_artifact_file(selection.value.filepath)
+        elseif selection.value.entry_type == "test" and selection.value.filepath then
+          actions.close(prompt_bufnr)
+          edit.edit_artifact_file(selection.value.filepath)
         end
       end)
 
@@ -233,6 +239,28 @@ function M.show_commands_picker(opts)
       map("i", "<C-n>", function()
         actions.close(prompt_bufnr)
         terminal.create_new_command()
+      end)
+
+      -- Run script with Ctrl-r (prompts for arguments)
+      map("i", "<C-r>", function()
+        local selection = action_state.get_selected_entry()
+        if not selection or selection.value.entry_type ~= "script" then
+          return
+        end
+
+        actions.close(prompt_bufnr)
+        terminal.run_script_with_args(selection.value.filepath, selection.value.name)
+      end)
+
+      -- Run test with Ctrl-t
+      map("i", "<C-t>", function()
+        local selection = action_state.get_selected_entry()
+        if not selection or selection.value.entry_type ~= "test" then
+          return
+        end
+
+        actions.close(prompt_bufnr)
+        terminal.run_test(selection.value.filepath, selection.value.name)
       end)
 
       return true

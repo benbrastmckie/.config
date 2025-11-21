@@ -379,6 +379,64 @@ local function preview_tts_file(self, entry)
   vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
 end
 
+--- Create preview for script entries (shell scripts)
+--- @param self table Telescope previewer state
+--- @param entry table Telescope entry
+local function preview_script(self, entry)
+  local filepath = entry.value.filepath
+  if not filepath or vim.fn.filereadable(filepath) ~= 1 then
+    vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {"File not found"})
+    return
+  end
+
+  local lines = vim.fn.readfile(filepath)
+
+  -- Add metadata footer
+  table.insert(lines, "")
+  table.insert(lines, "# " .. string.rep("=", 60))
+  table.insert(lines, "")
+  table.insert(lines, "# File: " .. entry.value.name)
+
+  -- Get permissions
+  local perms = vim.fn.getfperm(filepath)
+  table.insert(lines, "# Permissions: " .. (perms or "N/A"))
+
+  table.insert(lines, "# Status: " .. (entry.value.is_local and "[Local]" or "[Global]"))
+  table.insert(lines, "# Action: Run with <C-r> (prompts for arguments)")
+
+  vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+  vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "sh")
+end
+
+--- Create preview for test entries (shell scripts)
+--- @param self table Telescope previewer state
+--- @param entry table Telescope entry
+local function preview_test(self, entry)
+  local filepath = entry.value.filepath
+  if not filepath or vim.fn.filereadable(filepath) ~= 1 then
+    vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {"File not found"})
+    return
+  end
+
+  local lines = vim.fn.readfile(filepath)
+
+  -- Add metadata footer
+  table.insert(lines, "")
+  table.insert(lines, "# " .. string.rep("=", 60))
+  table.insert(lines, "")
+  table.insert(lines, "# File: " .. entry.value.name)
+
+  -- Get permissions
+  local perms = vim.fn.getfperm(filepath)
+  table.insert(lines, "# Permissions: " .. (perms or "N/A"))
+
+  table.insert(lines, "# Status: " .. (entry.value.is_local and "[Local]" or "[Global]"))
+  table.insert(lines, "# Action: Run with <C-t> (executes test)")
+
+  vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+  vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "sh")
+end
+
 --- Create preview for lib entries (shell scripts)
 --- @param self table Telescope previewer state
 --- @param entry table Telescope entry
@@ -567,6 +625,10 @@ function M.create_command_previewer()
         preview_tts_file(self, entry)
       elseif entry.value.entry_type == "lib" then
         preview_lib(self, entry)
+      elseif entry.value.entry_type == "script" then
+        preview_script(self, entry)
+      elseif entry.value.entry_type == "test" then
+        preview_test(self, entry)
       elseif entry.value.entry_type == "template" then
         preview_template(self, entry)
       elseif entry.value.entry_type == "doc" then

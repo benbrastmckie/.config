@@ -77,8 +77,8 @@
 # set -euo pipefail
 set -eo pipefail
 
-# Source topic-utils.sh for extract_significant_words function (Plan 777 fallback improvement)
-# This must be sourced before other functions to make extract_significant_words available
+# Source topic-utils.sh for validate_topic_name_format function
+# This must be sourced before other functions to make validation available
 SCRIPT_DIR_ULD="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR_ULD/../plan/topic-utils.sh" ]; then
   source "$SCRIPT_DIR_ULD/../plan/topic-utils.sh"
@@ -347,37 +347,26 @@ find_existing_topic() {
 #   $1: raw_name - Raw workflow description (user input)
 # Returns: Sanitized topic name (snake_case, max 50 chars)
 # Rules:
-#   - First try extract_significant_words for semantic extraction (Plan 777 improvement)
-#   - If that fails or produces empty result, fall back to basic sanitization:
-#     - Convert to lowercase
-#     - Replace spaces with underscores
-#     - Remove all non-alphanumeric except underscores
-#     - Trim leading/trailing underscores
-#     - Collapse multiple underscores
-#     - Truncate to 50 characters
+#   - Convert to lowercase
+#   - Replace spaces with underscores
+#   - Remove all non-alphanumeric except underscores
+#   - Trim leading/trailing underscores
+#   - Collapse multiple underscores
+#   - Truncate to 50 characters
 #
 # Usage:
 #   TOPIC_NAME=$(sanitize_topic_name "Research: Authentication Patterns")
-#   # Result: "authentication_patterns" (via extract_significant_words)
+#   # Result: "research_authentication_patterns"
 #
 # Exit Codes:
 #   0: Success
+#
+# Note: This is a simple fallback sanitization. Commands should use topic-naming-agent
+#       for semantic name generation. This function is only used when agent fails.
 sanitize_topic_name() {
   local raw_name="$1"
-  local result=""
 
-  # Tier 1: Try extract_significant_words for semantic extraction (Plan 777)
-  # This produces better slugs by extracting meaningful words and filtering stopwords
-  if declare -f extract_significant_words >/dev/null 2>&1; then
-    result=$(extract_significant_words "$raw_name")
-    # Validate result is not empty and not just "topic" fallback
-    if [ -n "$result" ] && [ "$result" != "topic" ]; then
-      echo "$result"
-      return 0
-    fi
-  fi
-
-  # Tier 2: Fall back to basic sanitization
+  # Basic sanitization for fallback scenarios
   echo "$raw_name" | \
     tr '[:upper:]' '[:lower:]' | \
     tr ' ' '_' | \

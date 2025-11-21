@@ -153,6 +153,9 @@ mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Capture state file path for append_workflow_state
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
@@ -220,8 +223,6 @@ fi
 SPECS_DIR="$TOPIC_PATH"
 RESEARCH_DIR="${TOPIC_PATH}/reports"
 PLANS_DIR="${TOPIC_PATH}/plans"
-mkdir -p "$RESEARCH_DIR"
-mkdir -p "$PLANS_DIR"
 
 # === PERSIST FOR BLOCK 2 ===
 append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
@@ -315,6 +316,9 @@ if [ -z "${WORKFLOW_ID:-}" ]; then
   WORKFLOW_ID=$(grep "^WORKFLOW_ID=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "repair_$(date +%s)")
 fi
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -524,6 +528,9 @@ if [ -z "${WORKFLOW_ID:-}" ]; then
   WORKFLOW_ID=$(grep "^WORKFLOW_ID=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "repair_$(date +%s)")
 fi
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then

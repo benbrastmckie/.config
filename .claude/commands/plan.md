@@ -21,7 +21,7 @@ YOU ARE EXECUTING a research-and-plan workflow that creates comprehensive resear
 **Terminal State**: plan (after planning phase complete)
 **Expected Output**: Research reports + implementation plan in .claude/specs/NNN_topic/
 
-## Block 1: Consolidated Setup
+## Block 1a: Initial Setup and State Initialization
 
 **EXECUTE NOW**: The user invoked `/plan "<feature-description>"`. Capture that description.
 
@@ -70,8 +70,10 @@ fi
 ORIGINAL_PROMPT_FILE_PATH=""
 if [[ "$FEATURE_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
   ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
-  # Convert to absolute path if relative
-  if [[ ! "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]; then
+  # Convert to absolute path if relative (preprocessing-safe pattern)
+  [[ "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]
+  IS_ABSOLUTE_PATH=$?
+  if [ $IS_ABSOLUTE_PATH -ne 0 ]; then
     ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
   fi
   # Validate file exists
@@ -148,6 +150,9 @@ mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Capture state file path for append_workflow_state
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
@@ -209,22 +214,176 @@ if ! sm_transition "$STATE_RESEARCH" 2>&1; then
     "$USER_ARGS" \
     "state_error" \
     "State transition to RESEARCH failed" \
-    "bash_block_1" \
+    "bash_block_1a" \
     "$(jq -n --arg state "$STATE_RESEARCH" '{target_state: $state}')"
 
   echo "ERROR: State transition to RESEARCH failed" >&2
   exit 1
 fi
 
-# Initialize workflow paths (uses fallback slug generation)
-if ! initialize_workflow_paths "$FEATURE_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" ""; then
+# Persist FEATURE_DESCRIPTION for topic naming agent
+TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+echo "$FEATURE_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
+export TOPIC_NAMING_INPUT_FILE
+
+echo "✓ Setup complete, ready for topic naming"
+```
+
+## Block 1b: Topic Name Generation
+
+**EXECUTE NOW**: Invoke the topic-naming-agent to generate a semantic directory name.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Generate semantic topic directory name"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-naming-agent.md
+
+    You are generating a topic directory name for: /plan command
+
+    **Input**:
+    - User Prompt: ${FEATURE_DESCRIPTION}
+    - Command Name: /plan
+    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+
+    Execute topic naming according to behavioral guidelines:
+    1. Generate semantic topic name from user prompt
+    2. Validate format (^[a-z0-9_]{5,40}$)
+    3. Write topic name to OUTPUT_FILE_PATH using Write tool
+    4. Return completion signal: TOPIC_NAME_GENERATED: <generated_name>
+
+    If you encounter an error, return:
+    TASK_ERROR: <error_type> - <error_message>
+  "
+}
+
+## Block 1c: Topic Path Initialization
+
+**EXECUTE NOW**: Parse topic name from agent output and initialize workflow paths.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === RESTORE STATE FROM BLOCK 1A ===
+STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
+  exit 1
+fi
+
+# Restore workflow state file
+STATE_FILE="${HOME}/.claude/tmp/state_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+# FEATURE_DESCRIPTION should be in state file, but also check temp file as backup
+TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+if [ -z "$FEATURE_DESCRIPTION" ] && [ -f "$TOPIC_NAMING_INPUT_FILE" ]; then
+  FEATURE_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null)
+fi
+
+if [ -z "$FEATURE_DESCRIPTION" ]; then
+  echo "ERROR: Failed to restore FEATURE_DESCRIPTION from Block 1a" >&2
+  exit 1
+fi
+
+# Restore environment
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+export CLAUDE_PROJECT_DIR
+COMMAND_NAME="/plan"
+USER_ARGS="$FEATURE_DESCRIPTION"
+export COMMAND_NAME USER_ARGS
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
+TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+TOPIC_NAME="no_name"
+NAMING_STRATEGY="fallback"
+
+# Check if agent wrote output file
+if [ -f "$TOPIC_NAME_FILE" ]; then
+  # Read topic name from file (agent writes only the name, one line)
+  TOPIC_NAME=$(cat "$TOPIC_NAME_FILE" 2>/dev/null | tr -d '\n' | tr -d ' ')
+
+  if [ -z "$TOPIC_NAME" ]; then
+    # File exists but is empty - agent failed
+    NAMING_STRATEGY="agent_empty_output"
+    TOPIC_NAME="no_name"
+  elif ! echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'; then
+    # Invalid format - log and fall back
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Topic naming agent returned invalid format" \
+      "bash_block_1c" \
+      "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
+
+    NAMING_STRATEGY="validation_failed"
+    TOPIC_NAME="no_name"
+  else
+    # Valid topic name from LLM
+    NAMING_STRATEGY="llm_generated"
+  fi
+else
+  # File doesn't exist - agent failed to write
+  NAMING_STRATEGY="agent_no_output_file"
+fi
+
+# Log naming failure if we fell back to no_name
+if [ "$TOPIC_NAME" = "no_name" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Topic naming agent failed or returned invalid name" \
+    "bash_block_1c" \
+    "$(jq -n --arg desc "$FEATURE_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" \
+       '{feature: $desc, fallback_reason: $strategy}')"
+fi
+
+# Clean up temp file
+rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
+
+# Create classification result JSON for initialize_workflow_paths
+CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
+
+# Initialize workflow paths with LLM-generated name (or fallback)
+if ! initialize_workflow_paths "$FEATURE_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
     "$USER_ARGS" \
     "file_error" \
     "Failed to initialize workflow paths" \
-    "bash_block_1" \
+    "bash_block_1c" \
     "$(jq -n --arg desc "$FEATURE_DESCRIPTION" '{feature: $desc}')"
 
   echo "ERROR: Failed to initialize workflow paths" >&2
@@ -234,8 +393,6 @@ fi
 SPECS_DIR="$TOPIC_PATH"
 RESEARCH_DIR="${TOPIC_PATH}/reports"
 PLANS_DIR="${TOPIC_PATH}/plans"
-mkdir -p "$RESEARCH_DIR"
-mkdir -p "$PLANS_DIR"
 
 # === ARCHIVE PROMPT FILE (if --file was used) ===
 ARCHIVED_PROMPT_PATH=""
@@ -247,6 +404,9 @@ if [ -n "$ORIGINAL_PROMPT_FILE_PATH" ] && [ -f "$ORIGINAL_PROMPT_FILE_PATH" ]; t
 fi
 
 # === PERSIST FOR BLOCK 2 ===
+append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
+append_workflow_state "USER_ARGS" "$USER_ARGS"
+append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
 append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
 append_workflow_state "SPECS_DIR" "$SPECS_DIR"
 append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
@@ -262,7 +422,10 @@ append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
 echo "Setup complete: $WORKFLOW_ID (research-and-plan, complexity: $RESEARCH_COMPLEXITY)"
 echo "Research directory: $RESEARCH_DIR"
 echo "Plans directory: $PLANS_DIR"
+echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 ```
+
+## Block 1d: Research Initiation
 
 **EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
 
@@ -327,6 +490,18 @@ DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/plan")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -483,7 +658,15 @@ REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
 append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
 
-save_completed_states_to_state 2>/dev/null
+if ! save_completed_states_to_state; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: State persistence failed" >&2
+  exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
+fi
 
 echo "Plan will be created at: $PLAN_PATH"
 echo "Using $REPORT_COUNT research reports"
@@ -553,6 +736,18 @@ DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/plan")
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+fi
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === SETUP BASH ERROR TRAP ===
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -675,7 +870,15 @@ if ! sm_transition "$STATE_COMPLETE" 2>&1; then
   exit 1
 fi
 
-save_completed_states_to_state 2>/dev/null
+if ! save_completed_states_to_state; then
+  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: State persistence failed" >&2
+  exit 1
+fi
+
+if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
+  echo "WARNING: State file not found after save: $STATE_FILE" >&2
+fi
 
 echo "=== Research-and-Plan Complete ==="
 echo ""
