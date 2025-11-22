@@ -43,7 +43,7 @@ Common tasks and where to find guidance:
 
 7. **Understand architectural patterns**
    → [Patterns Catalog](concepts/patterns/README.md)
-   → [Hierarchical Agents](concepts/hierarchical-agents.md)
+   → [Hierarchical Agents Overview](concepts/hierarchical-agents-overview.md)
 
 8. **Implement wave-based parallel execution**
    → [Parallel Execution Pattern](concepts/patterns/parallel-execution.md)

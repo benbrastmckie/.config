@@ -315,11 +315,11 @@ validate_topic_directory_slug() {
     fi
   fi
 
-  # Tier 2: Basic sanitization fallback
+  # Tier 2: Static fallback (no sanitization - use clear failure signal)
   if [ -z "$topic_slug" ]; then
-    # Basic sanitization for fallback scenarios
-    topic_slug=$(echo "$workflow_description" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | sed 's/[^a-z0-9_]//g' | sed 's/__*/_/g' | sed 's/^_*//;s/_*$//' | cut -c1-40)
-    strategy="sanitize"
+    # Use static fallback that clearly signals LLM naming failure
+    topic_slug="no_name_error"
+    strategy="fallback"
   fi
 
   # Log slug generation strategy (if unified-logger available)
@@ -676,8 +676,9 @@ initialize_workflow_paths() {
   # (see Phase 1: Research Overview section for actual path calculation)
   local overview_path=""  # Initialized empty, set conditionally during research phase
 
-  # Planning phase paths
-  local plan_path="${topic_path}/plans/001_${topic_name}_plan.md"
+  # Planning phase paths (kebab-case for filenames)
+  local plan_slug=$(echo "$topic_name" | tr '_' '-')
+  local plan_path="${topic_path}/plans/001-${plan_slug}-plan.md"
 
   # For research-and-revise workflows, use existing plan path from scope detection
   # This is different from creation workflows which generate new topic directories

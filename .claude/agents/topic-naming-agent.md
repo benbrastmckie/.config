@@ -173,7 +173,7 @@ state_machine_refactor
 
 **OUTPUT FILE CREATION IS MANDATORY**:
 The invoking command validates that the output file exists and contains valid content.
-If the Write tool fails or you skip this step, the workflow will fall back to 'no_name'.
+If the Write tool fails or you skip this step, the workflow will fall back to 'no_name_error'.
 ALWAYS use the Write tool before returning the completion signal.
 
 **Completion Signal**:

@@ -317,7 +317,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
 TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
-TOPIC_NAME="no_name"
+TOPIC_NAME="no_name_error"
 NAMING_STRATEGY="fallback"
 
 # Check if agent wrote output file
@@ -328,7 +328,7 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
   if [ -z "$TOPIC_NAME" ]; then
     # File exists but is empty - agent failed
     NAMING_STRATEGY="agent_empty_output"
-    TOPIC_NAME="no_name"
+    TOPIC_NAME="no_name_error"
   else
     # Validate topic name format (exit code capture pattern)
     echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
@@ -345,7 +345,7 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
         "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
 
       NAMING_STRATEGY="validation_failed"
-      TOPIC_NAME="no_name"
+      TOPIC_NAME="no_name_error"
     else
       # Valid topic name from LLM
       NAMING_STRATEGY="llm_generated"
@@ -357,7 +357,7 @@ else
 fi
 
 # Log naming failure if we fell back to no_name
-if [ "$TOPIC_NAME" = "no_name" ]; then
+if [ "$TOPIC_NAME" = "no_name_error" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \

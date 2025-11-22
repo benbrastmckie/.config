@@ -370,7 +370,9 @@ TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
 
 # === PERSIST FOR BLOCK 2 ===
 # Defensive check: Verify append_workflow_state function available
-if ! type append_workflow_state &>/dev/null; then
+type append_workflow_state &>/dev/null
+TYPE_CHECK=$?
+if [ $TYPE_CHECK -ne 0 ]; then
   echo "ERROR: append_workflow_state function not found" >&2
   echo "DIAGNOSTIC: state-persistence.sh library not sourced in this block" >&2
   exit 1
@@ -970,7 +972,9 @@ if [ "$COMPLETED_PHASE_COUNT" -gt 0 ]; then
   done
 
   # Defensive check: Verify append_workflow_state function available
-  if ! type append_workflow_state &>/dev/null; then
+  type append_workflow_state &>/dev/null
+  TYPE_CHECK=$?
+  if [ $TYPE_CHECK -ne 0 ]; then
     echo "ERROR: append_workflow_state function not found" >&2
     echo "DIAGNOSTIC: state-persistence.sh library not sourced in this block" >&2
     exit 1
@@ -996,7 +1000,9 @@ else
 fi
 
 # Defensive check: Verify save_completed_states_to_state function available
-if ! type save_completed_states_to_state &>/dev/null; then
+type save_completed_states_to_state &>/dev/null
+TYPE_CHECK=$?
+if [ $TYPE_CHECK -ne 0 ]; then
   echo "ERROR: save_completed_states_to_state function not found" >&2
   echo "DIAGNOSTIC: workflow-state-machine.sh library not sourced in this block" >&2
   exit 1
@@ -1432,7 +1438,9 @@ fi
 
 # === PERSIST FOR BLOCK 3 ===
 # Defensive check: Verify append_workflow_state function available
-if ! type append_workflow_state &>/dev/null; then
+type append_workflow_state &>/dev/null
+TYPE_CHECK=$?
+if [ $TYPE_CHECK -ne 0 ]; then
   echo "ERROR: append_workflow_state function not found" >&2
   echo "DIAGNOSTIC: state-persistence.sh library not sourced in this block" >&2
   exit 1
@@ -1445,7 +1453,9 @@ append_workflow_state "TEST_ARTIFACT_PATH" "${TEST_ARTIFACT_PATH:-}"
 append_workflow_state "COMMIT_COUNT" "$COMMIT_COUNT"
 
 # Defensive check: Verify save_completed_states_to_state function available
-if ! type save_completed_states_to_state &>/dev/null; then
+type save_completed_states_to_state &>/dev/null
+TYPE_CHECK=$?
+if [ $TYPE_CHECK -ne 0 ]; then
   echo "ERROR: save_completed_states_to_state function not found" >&2
   echo "DIAGNOSTIC: workflow-state-machine.sh library not sourced in this block" >&2
   exit 1
@@ -1649,7 +1659,9 @@ if [ "$TESTS_PASSED" = "false" ]; then
   echo "NOTE: After debug, re-run /build to retry tests"
 
   # Defensive check: Verify append_workflow_state function available
-  if ! type append_workflow_state &>/dev/null; then
+  type append_workflow_state &>/dev/null
+  TYPE_CHECK=$?
+  if [ $TYPE_CHECK -ne 0 ]; then
     echo "ERROR: append_workflow_state function not found" >&2
     echo "DIAGNOSTIC: state-persistence.sh library not sourced in this block" >&2
     exit 1
@@ -1685,7 +1697,9 @@ else
 fi
 
 # Defensive check: Verify save_completed_states_to_state function available
-if ! type save_completed_states_to_state &>/dev/null; then
+type save_completed_states_to_state &>/dev/null
+TYPE_CHECK=$?
+if [ $TYPE_CHECK -ne 0 ]; then
   echo "ERROR: save_completed_states_to_state function not found" >&2
   echo "DIAGNOSTIC: workflow-state-machine.sh library not sourced in this block" >&2
   exit 1

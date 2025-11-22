@@ -340,7 +340,9 @@ TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
 # - 3 retries with 10-second timeout each (30 seconds total + backoff)
 # - Increased from 5s to 10s to allow Haiku agent more time for completion
 # - validate_topic_name_format checks content format after file creation
-if ! validate_agent_output_with_retry "topic-naming-agent" "$TOPIC_NAME_FILE" "validate_topic_name_format" 10 3; then
+validate_agent_output_with_retry "topic-naming-agent" "$TOPIC_NAME_FILE" "validate_topic_name_format" 10 3
+VALIDATION_RESULT=$?
+if [ $VALIDATION_RESULT -ne 0 ]; then
   echo "WARNING: Topic naming agent failed to create valid output file after 3 attempts" >&2
   echo "         Falling back to 'no_name' directory structure" >&2
   echo "         Expected output: $TOPIC_NAME_FILE" >&2
@@ -430,7 +432,9 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2
 
 # === PRE-FLIGHT FUNCTION VALIDATION ===
 # Verify required functions are available before using them (prevents exit 127 errors)
-if ! declare -f append_workflow_state >/dev/null 2>&1; then
+declare -f append_workflow_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
   echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
   exit 1
 fi
@@ -440,7 +444,7 @@ setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
 TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
-TOPIC_NAME="no_name"
+TOPIC_NAME="no_name_error"
 NAMING_STRATEGY="fallback"
 
 # Check if agent wrote output file
@@ -451,7 +455,7 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
   if [ -z "$TOPIC_NAME" ]; then
     # File exists but is empty - agent failed
     NAMING_STRATEGY="agent_empty_output"
-    TOPIC_NAME="no_name"
+    TOPIC_NAME="no_name_error"
   else
     # Validate topic name format (exit code capture pattern)
     echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
@@ -468,7 +472,7 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
         "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
 
       NAMING_STRATEGY="validation_failed"
-      TOPIC_NAME="no_name"
+      TOPIC_NAME="no_name_error"
     else
       # Valid topic name from LLM
       NAMING_STRATEGY="llm_generated"
@@ -480,7 +484,7 @@ else
 fi
 
 # Log naming failure if we fell back to no_name
-if [ "$TOPIC_NAME" = "no_name" ]; then
+if [ "$TOPIC_NAME" = "no_name_error" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -628,11 +632,15 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 
 # === PRE-FLIGHT FUNCTION VALIDATION (Block 2) ===
 # Verify required functions are available before using them (prevents exit 127 errors)
-if ! declare -f append_workflow_state >/dev/null 2>&1; then
+declare -f append_workflow_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
   echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
   exit 1
 fi
-if ! declare -f save_completed_states_to_state >/dev/null 2>&1; then
+declare -f save_completed_states_to_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
   echo "ERROR: save_completed_states_to_state function not available after sourcing state-persistence.sh" >&2
   exit 1
 fi
@@ -811,7 +819,7 @@ echo ""
 
 # === PREPARE PLAN PATH ===
 PLAN_NUMBER="001"
-PLAN_FILENAME="${PLAN_NUMBER}_$(echo "$TOPIC_NAME" | cut -c1-40)_plan.md"
+PLAN_FILENAME="${PLAN_NUMBER}-$(echo "$TOPIC_NAME" | tr '_' '-' | cut -c1-40)-plan.md"
 PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
 
 # Collect research report paths
@@ -910,7 +918,9 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 
 # === PRE-FLIGHT FUNCTION VALIDATION (Block 3) ===
 # Verify required functions are available before using them (prevents exit 127 errors)
-if ! declare -f save_completed_states_to_state >/dev/null 2>&1; then
+declare -f save_completed_states_to_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
   echo "ERROR: save_completed_states_to_state function not available after sourcing state-persistence.sh" >&2
   exit 1
 fi

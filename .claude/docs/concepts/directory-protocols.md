@@ -29,7 +29,11 @@ The topic-based artifact organization system co-locates all artifacts related to
 - Easy cleanup of temporary artifacts
 - Metadata-only artifact references reduce context usage by 95%
 
-**Structure**: `specs/{NNN_topic}/{artifact_type}/NNN_artifact_name.md`
+**Structure**: `specs/{NNN_topic}/{artifact_type}/NNN-artifact-name.md`
+
+**Naming Conventions**:
+- **Directories**: snake_case with underscores (e.g., `918_topic_naming_standards/`)
+- **Files**: kebab-case with hyphens (e.g., `001-topic-naming-plan.md`)
 
 ---
 
@@ -73,11 +77,16 @@ The system uses a Haiku LLM agent (topic-naming-agent) that analyzes user descri
 4. Agent returns formatted name: `^[a-z0-9_]{5,40}$`
 5. Commands validate format and create directory
 
+**Commands Using LLM Naming** (7 total):
+- /plan, /research, /debug, /optimize-claude
+- /errors, /setup (analyze mode), /repair
+
 **Fallback Behavior**:
-- Agent timeout (>5s): Falls back to `NNN_no_name/` sentinel
-- Validation failure: Falls back to `NNN_no_name/` sentinel
-- Empty prompt: Falls back to `NNN_no_name/` sentinel
+- Agent timeout (>5s): Falls back to `NNN_no_name_error/` sentinel
+- Validation failure: Falls back to `NNN_no_name_error/` sentinel
+- Empty prompt: Falls back to `NNN_no_name_error/` sentinel
 - Failures logged to centralized error log for investigation
+- `no_name_error` clearly signals LLM failure for post-hoc correction
 
 **Examples**:
 | User Description | Generated Name |

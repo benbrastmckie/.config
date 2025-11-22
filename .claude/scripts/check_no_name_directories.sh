@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# check_no_name_directories.sh - Monitor and report no_name topic directories
+# check_no_name_directories.sh - Monitor and report no_name_error topic directories
 # Purpose: Detect topic naming agent failures for debugging and quality monitoring
 # Exit codes: 0 (no failures), 1 (failures found)
 
@@ -22,7 +22,7 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [OPTIONS]
 
-Monitor .claude/specs/ directory for topic naming failures (no_name directories).
+Monitor .claude/specs/ directory for topic naming failures (no_name_error directories).
 
 OPTIONS:
   -h, --help     Show this help message
@@ -33,8 +33,8 @@ ENVIRONMENT:
   CLAUDE_SPECS_ROOT  Override specs directory location
 
 EXIT CODES:
-  0  No no_name directories found (success)
-  1  One or more no_name directories found (failure)
+  0  No no_name_error directories found (success)
+  1  One or more no_name_error directories found (failure)
 
 EXAMPLES:
   # Check for naming failures
@@ -86,7 +86,7 @@ fi
 NO_NAME_DIRS=()
 while IFS= read -r dir; do
   NO_NAME_DIRS+=("$dir")
-done < <(find "$SPECS_DIR" -type d -name '*_no_name' 2>/dev/null | sort)
+done < <(find "$SPECS_DIR" -type d -name '*_no_name_error' 2>/dev/null | sort)
 
 # Count results
 COUNT=${#NO_NAME_DIRS[@]}
@@ -116,10 +116,10 @@ else
   echo ""
 
   # List directories
-  echo "No_name directories:"
+  echo "No_name_error directories:"
   for dir in "${NO_NAME_DIRS[@]}"; do
     # Extract topic number
-    topic_num=$(basename "$dir" | sed 's/_no_name$//')
+    topic_num=$(basename "$dir" | sed 's/_no_name_error$//')
     echo "  - $dir"
 
     # Verbose mode: show directory contents

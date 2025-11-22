@@ -1,9 +1,12 @@
 ---
 command-type: primary
 description: Convert between Markdown, Word (DOCX), and PDF formats bidirectionally
-argument-hint: <input-directory> [output-directory] [--use-agent]
+argument-hint: <input-directory> [output-directory] [--use-agent] [--no-api] [--parallel]
 allowed-tools: Bash, Task, Read
 agent-dependencies: doc-converter
+library-requirements:
+  - error-handling.sh: ">=1.0.0"
+  - summary-formatting.sh: ">=1.0.0"
 ---
 
 # Convert Documents - Bidirectional Conversion
@@ -159,6 +162,8 @@ All script mode features PLUS:
 **EXECUTE FIRST - Defensive Environment Initialization**:
 
 ```bash
+set +H  # CRITICAL: Disable history expansion
+
 # Defensive initialization of CLAUDE_PROJECT_DIR with fallback detection
 if [[ -z "${CLAUDE_PROJECT_DIR:-}" ]]; then
   # Attempt to source unified-location-detection.sh and use detect_project_root
@@ -238,9 +243,10 @@ echo "✓ VERIFIED: input_dir=$input_dir, output_dir=$output_dir"
 **EXECUTE NOW - Error Logging Integration**:
 
 ```bash
-# Source error-handling library
+# === SOURCE LIBRARIES (Three-Tier Pattern) ===
+# Tier 1: Critical Foundation (fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
-  echo "❌ CRITICAL ERROR: Cannot load error-handling library"
+  echo "CRITICAL ERROR: Cannot load error-handling library"
   echo "   Expected: ${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh"
   exit 1
 }

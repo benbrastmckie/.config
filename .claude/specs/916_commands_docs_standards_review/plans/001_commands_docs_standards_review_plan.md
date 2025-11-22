@@ -7,7 +7,7 @@
 - **Estimated Phases**: 5
 - **Estimated Hours**: 18-24 hours (revised from 14-18 per gap analysis additions)
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETE]
 - **Structure Level**: 0
 - **Complexity Score**: 104.5
 - **Research Reports**:
@@ -17,6 +17,9 @@
   - [Plans Gap Analysis Report](/home/benjamin/.config/.claude/specs/917_plans_research_docs_standards_gaps/reports/001_plans_gaps_analysis.md)
 - **Revision Notes**:
   - Rev 1 (2025-11-21): Incorporated bash block consolidation documentation, reference tracking, state persistence testing, command template creation, and standards documentation improvements per gap analysis
+  - Rev 2 (2025-11-21): Added Plan 918 as prerequisite - kebab-case file naming and LLM naming changes will be implemented first
+- **Prerequisite Plan**:
+  - [Plan 918: Topic Naming Standards with Kebab-Case](/home/benjamin/.config/.claude/specs/918_topic_naming_standards_kebab_case/plans/001_topic_naming_standards_kebab_case_plan.md) - IMPLEMENT FIRST
 
 ## Overview
 
@@ -125,7 +128,7 @@ fi
 
 ## Implementation Phases
 
-### Phase 1: Critical Standards Violations [NOT STARTED]
+### Phase 1: Critical Standards Violations [COMPLETE]
 dependencies: []
 
 **Objective**: Remediate all prohibited `if !` conditional patterns and ensure history expansion disabling across all commands
@@ -133,18 +136,18 @@ dependencies: []
 **Complexity**: Medium
 
 Tasks:
-- [ ] Read build.md and identify all 7 `if !` pattern locations (file: /home/benjamin/.config/.claude/commands/build.md)
-- [ ] Convert build.md `if !` patterns to exit code capture pattern
-- [ ] Read plan.md and identify all 5 `if !` pattern locations (file: /home/benjamin/.config/.claude/commands/plan.md)
-- [ ] Convert plan.md `if !` patterns to exit code capture pattern
-- [ ] Read debug.md and identify all 2 `if !` pattern locations (file: /home/benjamin/.config/.claude/commands/debug.md)
-- [ ] Convert debug.md `if !` patterns to exit code capture pattern
-- [ ] Read repair.md and identify the 1 `if !` pattern location (file: /home/benjamin/.config/.claude/commands/repair.md)
-- [ ] Convert repair.md `if !` pattern to exit code capture pattern
-- [ ] Verify expand.md includes `set +H` at bash block starts (file: /home/benjamin/.config/.claude/commands/expand.md)
-- [ ] Verify collapse.md includes `set +H` at bash block starts (file: /home/benjamin/.config/.claude/commands/collapse.md)
-- [ ] Verify convert-docs.md includes `set +H` at bash block starts (file: /home/benjamin/.config/.claude/commands/convert-docs.md)
-- [ ] Run lint_bash_conditionals.sh to verify no remaining violations
+- [x] Read build.md and identify all 7 `if !` pattern locations (file: /home/benjamin/.config/.claude/commands/build.md)
+- [x] Convert build.md `if !` patterns to exit code capture pattern
+- [x] Read plan.md and identify all 5 `if !` pattern locations (file: /home/benjamin/.config/.claude/commands/plan.md)
+- [x] Convert plan.md `if !` patterns to exit code capture pattern
+- [x] Read debug.md and identify all 2 `if !` pattern locations (file: /home/benjamin/.config/.claude/commands/debug.md)
+- [x] Convert debug.md `if !` patterns to exit code capture pattern
+- [x] Read repair.md and identify the 1 `if !` pattern location (file: /home/benjamin/.config/.claude/commands/repair.md)
+- [x] Convert repair.md `if !` pattern to exit code capture pattern
+- [x] Verify expand.md includes `set +H` at bash block starts (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Verify collapse.md includes `set +H` at bash block starts (file: /home/benjamin/.config/.claude/commands/collapse.md)
+- [x] Verify convert-docs.md includes `set +H` at bash block starts (file: /home/benjamin/.config/.claude/commands/convert-docs.md)
+- [x] Run lint_bash_conditionals.sh to verify no remaining violations
 
 Testing:
 ```bash
@@ -158,7 +161,7 @@ bash scripts/validate-all-standards.sh --staged
 
 **Expected Duration**: 3-4 hours
 
-### Phase 2: Command Uniformity [NOT STARTED]
+### Phase 2: Command Uniformity [COMPLETE]
 dependencies: [1]
 
 **Objective**: Ensure all commands follow uniform standards for Three-Tier sourcing comments and frontmatter fields
@@ -166,19 +169,19 @@ dependencies: [1]
 **Complexity**: Low-Medium
 
 Tasks:
-- [ ] Read expand.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/expand.md)
-- [ ] Read collapse.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/collapse.md)
-- [ ] Read errors.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/errors.md)
-- [ ] Read convert-docs.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/convert-docs.md)
-- [ ] Read setup.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/setup.md)
-- [ ] Read optimize-claude.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/optimize-claude.md)
-- [ ] Add `documentation:` field to optimize-claude.md frontmatter
-- [ ] Verify all 12 commands have uniform frontmatter structure
-- [ ] Run check-library-sourcing.sh to validate Three-Tier compliance
-- [ ] Document bash block count for expand.md (currently ~32 blocks vs. target <=8)
-- [ ] Document bash block count for collapse.md (currently ~29 blocks vs. target <=8)
-- [ ] Note consolidation requirement per output-formatting.md#block-consolidation-patterns
-- [ ] Create consolidation task reference to Plan 883 or separate follow-up plan
+- [x] Read expand.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/expand.md)
+- [x] Read collapse.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/collapse.md)
+- [x] Read errors.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/errors.md)
+- [x] Read convert-docs.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/convert-docs.md)
+- [x] Read setup.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/setup.md)
+- [x] Read optimize-claude.md and add Three-Tier sourcing comments to all library sourcing blocks (file: /home/benjamin/.config/.claude/commands/optimize-claude.md)
+- [x] Add `documentation:` field to optimize-claude.md frontmatter
+- [x] Verify all 12 commands have uniform frontmatter structure
+- [x] Run check-library-sourcing.sh to validate Three-Tier compliance
+- [x] Document bash block count for expand.md (currently ~32 blocks vs. target <=8)
+- [x] Document bash block count for collapse.md (currently ~29 blocks vs. target <=8)
+- [x] Note consolidation requirement per output-formatting.md#block-consolidation-patterns
+- [x] Create consolidation task reference to Plan 883 or separate follow-up plan
 
 Testing:
 ```bash
@@ -199,7 +202,7 @@ done
 
 **Expected Duration**: 3-4 hours (increased from 2-3 for bash block documentation)
 
-### Phase 3: Documentation Consolidation [NOT STARTED]
+### Phase 3: Documentation Consolidation [COMPLETE]
 dependencies: [1]
 
 **Objective**: Consolidate redundant documentation files for hierarchical agents and directory protocols with comprehensive reference tracking to prevent broken links
@@ -209,25 +212,25 @@ dependencies: [1]
 **Reference Tracking Requirement**: Gap analysis identified 66+ hierarchical-agents references and 86+ directory-protocols references. All must be inventoried and updated.
 
 Tasks:
-- [ ] **Pre-Consolidation Reference Inventory (CRITICAL)**:
-  - [ ] Run `grep -r "hierarchical-agents" .claude/ > refs_hierarchical.txt` to capture all 66+ references
-  - [ ] Run `grep -r "directory-protocols" .claude/ > refs_directory.txt` to capture all 86+ references
-  - [ ] Document high-impact reference locations (docs/README.md, concepts/README.md, CLAUDE.md)
-- [ ] Inventory all hierarchical-agents*.md files in docs/concepts/ (expected: 7 files - see research report)
-- [ ] Analyze content overlap between hierarchical agents files
-- [ ] Create consolidated hierarchical-agents.md with clear section structure
-- [ ] Update all 66+ references to old hierarchical agents files using inventory
-- [ ] Archive old hierarchical agents files with timestamp
-- [ ] Run validate-links-quick.sh after hierarchical-agents consolidation
-- [ ] Inventory all directory-protocols*.md files in docs/concepts/ (expected: 5 files - see research report)
-- [ ] Analyze content overlap between directory protocols files
-- [ ] Determine consolidation strategy (merge vs. clear hierarchy)
-- [ ] Implement directory protocols consolidation
-- [ ] Update all 86+ references to old directory protocols files using inventory
-- [ ] Update CLAUDE.md reference to directory-protocols.md if file renamed
-- [ ] Archive old directory protocols files with timestamp
-- [ ] Update docs/README.md navigation links
-- [ ] Run validate-links-quick.sh after directory-protocols consolidation
+- [x] **Pre-Consolidation Reference Inventory (CRITICAL)**:
+  - [x] Run `grep -r "hierarchical-agents" .claude/ > refs_hierarchical.txt` to capture all 66+ references
+  - [x] Run `grep -r "directory-protocols" .claude/ > refs_directory.txt` to capture all 86+ references
+  - [x] Document high-impact reference locations (docs/README.md, concepts/README.md, CLAUDE.md)
+- [x] Inventory all hierarchical-agents*.md files in docs/concepts/ (expected: 7 files - see research report)
+- [x] Analyze content overlap between hierarchical agents files
+- [x] Create consolidated hierarchical-agents.md with clear section structure
+- [x] Update all 66+ references to old hierarchical agents files using inventory
+- [x] Archive old hierarchical agents files with timestamp
+- [x] Run validate-links-quick.sh after hierarchical-agents consolidation
+- [x] Inventory all directory-protocols*.md files in docs/concepts/ (expected: 5 files - see research report)
+- [x] Analyze content overlap between directory protocols files
+- [x] Determine consolidation strategy (merge vs. clear hierarchy)
+- [x] Implement directory protocols consolidation
+- [x] Update all 86+ references to old directory protocols files using inventory
+- [x] Update CLAUDE.md reference to directory-protocols.md if file renamed
+- [x] Archive old directory protocols files with timestamp
+- [x] Update docs/README.md navigation links
+- [x] Run validate-links-quick.sh after directory-protocols consolidation
 
 Testing:
 ```bash
@@ -249,7 +252,7 @@ grep -r "directory-protocols-structure" docs/ | grep -v archive/ | grep -v .txt
 
 **Expected Duration**: 5-7 hours (increased from 4-6 for reference tracking)
 
-### Phase 4: Archive Maintenance [NOT STARTED]
+### Phase 4: Archive Maintenance [COMPLETE]
 dependencies: [3]
 
 **Objective**: Review and prune archive directory to remove duplicates and truly obsolete content
@@ -257,14 +260,14 @@ dependencies: [3]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Generate inventory of archive/ directory (expected: 37+ files)
-- [ ] Identify files that duplicate active documentation
-- [ ] Identify files that are truly obsolete (no useful content)
-- [ ] Create archive manifest documenting what remains and why
-- [ ] Remove identified duplicate files
-- [ ] Remove identified obsolete files
-- [ ] Verify archive README.md accurately describes remaining content
-- [ ] Run link validation to ensure no broken references to removed files
+- [x] Generate inventory of archive/ directory (expected: 37+ files)
+- [x] Identify files that duplicate active documentation
+- [x] Identify files that are truly obsolete (no useful content)
+- [x] Create archive manifest documenting what remains and why
+- [x] Remove identified duplicate files
+- [x] Remove identified obsolete files
+- [x] Verify archive README.md accurately describes remaining content
+- [x] Run link validation to ensure no broken references to removed files
 
 Testing:
 ```bash
@@ -278,7 +281,7 @@ find docs/archive/ -name "*.md" | wc -l
 
 **Expected Duration**: 2-3 hours
 
-### Phase 5: Validation, Testing, and Standards Documentation [NOT STARTED]
+### Phase 5: Validation, Testing, and Standards Documentation [COMPLETE]
 dependencies: [1, 2, 3, 4]
 
 **Objective**: Comprehensive validation of all changes, state persistence verification, command template creation, and standards documentation improvements for uniformity tracking
@@ -287,40 +290,40 @@ dependencies: [1, 2, 3, 4]
 
 Tasks:
 **Validation Tasks**:
-- [ ] Run validate-all-standards.sh --all to check full compliance
-- [ ] Run validate-links-quick.sh to verify all internal links
-- [ ] Run lint_bash_conditionals.sh to verify no prohibited patterns
-- [ ] Run check-library-sourcing.sh to verify Three-Tier compliance
-- [ ] Run lint_error_suppression.sh to verify error handling patterns
-- [ ] Execute pre-commit hooks on all modified files
+- [x] Run validate-all-standards.sh --all to check full compliance
+- [x] Run validate-links-quick.sh to verify all internal links
+- [x] Run lint_bash_conditionals.sh to verify no prohibited patterns
+- [x] Run check-library-sourcing.sh to verify Three-Tier compliance
+- [x] Run lint_error_suppression.sh to verify error handling patterns
+- [x] Execute pre-commit hooks on all modified files
 
 **State Persistence Testing (Gap Analysis Recommendation)**:
-- [ ] Test state persistence across modified bash blocks in Phase 1 commands (build.md, plan.md, debug.md, repair.md)
-- [ ] Verify STATE_FILE integrity for workflows using modified commands
-- [ ] Run test_state_persistence_across_blocks.sh if available (location: .claude/tests/unit/)
-- [ ] Document any state persistence issues found and mitigations applied
+- [x] Test state persistence across modified bash blocks in Phase 1 commands (build.md, plan.md, debug.md, repair.md)
+- [x] Verify STATE_FILE integrity for workflows using modified commands
+- [x] Run test_state_persistence_across_blocks.sh if available (location: .claude/tests/unit/)
+- [x] Document any state persistence issues found and mitigations applied
 
 **Command Template Creation (Gap Analysis Recommendation)**:
-- [ ] Create workflow-command-template.md at /home/benjamin/.config/.claude/commands/templates/
-- [ ] Template MUST reference code-standards.md#mandatory-bash-block-sourcing-pattern
-- [ ] Template MUST reference output-formatting.md#block-consolidation-patterns
-- [ ] Template MUST reference enforcement-mechanisms.md for validation requirements
-- [ ] Template SHOULD include optional skills availability check per skills-authoring.md
-- [ ] Add template to commands/templates/README.md navigation
+- [x] Create workflow-command-template.md at /home/benjamin/.config/.claude/commands/templates/
+- [x] Template MUST reference code-standards.md#mandatory-bash-block-sourcing-pattern
+- [x] Template MUST reference output-formatting.md#block-consolidation-patterns
+- [x] Template MUST reference enforcement-mechanisms.md for validation requirements
+- [x] Template SHOULD include optional skills availability check per skills-authoring.md
+- [x] Add template to commands/templates/README.md navigation
 
 **Standards Documentation Improvements (Gap Analysis Recommendation)**:
-- [ ] Add "Command Uniformity Metrics" section to command-reference.md with compliance tracking table:
+- [x] Add "Command Uniformity Metrics" section to command-reference.md with compliance tracking table:
   - `if !` patterns count, Three-Tier compliance %, `set +H` compliance %, `documentation:` frontmatter %, bash block count audit
-- [ ] Add "Command Uniformity Requirements" section to code-standards.md:
+- [x] Add "Command Uniformity Requirements" section to code-standards.md:
   - Required elements table (Three-Tier comments, fail-fast handlers, set +H, exit code capture, documentation frontmatter)
   - Block count guidelines by command type (simple: 1-2, workflow: 2-4, complex: 4-8)
   - Current outliers documentation (expand.md: 32, collapse.md: 29)
-- [ ] Add "Quick Validation Reference" subsection to enforcement-mechanisms.md
+- [x] Add "Quick Validation Reference" subsection to enforcement-mechanisms.md
 
 **Finalization Tasks**:
-- [ ] Generate compliance summary report
-- [ ] Document any remaining issues or technical debt
-- [ ] Update CLAUDE.md if any standards clarifications needed
+- [x] Generate compliance summary report
+- [x] Document any remaining issues or technical debt
+- [x] Update CLAUDE.md if any standards clarifications needed
 
 Testing:
 ```bash
@@ -403,9 +406,10 @@ If implementation reveals ambiguities in existing standards, document them in:
 - Access to .claude/docs/ directory (full documentation tree)
 - Access to .claude/scripts/lint/ validation tools
 - Pre-commit hooks installed and functional
+- **Plan 918 MUST be implemented first** - Plan 918 modifies overlapping files (errors.md, setup.md, repair.md, plan.md, debug.md, directory-protocols.md) with LLM naming and kebab-case changes
 
 ### External Dependencies
-None - all work is internal to .claude/ system
+- Plan 918 (Topic Naming Standards with Kebab-Case) - must complete before starting this plan to avoid merge conflicts and ensure consistent file state
 
 ### Phase Dependencies
 ```
@@ -436,6 +440,8 @@ Note: Phase 2 and Phase 3 can run in parallel after Phase 1 completes.
    - Mitigation: State persistence testing in Phase 5 before declaring completion
 5. **CLAUDE.md reference breakage**: directory-protocols.md is referenced from main CLAUDE.md; renaming breaks project configuration
    - Mitigation: Explicit CLAUDE.md update task in Phase 3; verification before Phase 5
+6. **File state drift from Plan 918**: Commands modified by Plan 918 may have different structure when Plan 916 executes
+   - Mitigation: Plan 918 as explicit prerequisite; verify file state before modifying each command
 
 ### Mitigation Strategies
 - Incremental changes with per-file validation

@@ -472,12 +472,13 @@ When invoked as part of `/orchestrate` workflows, I create permanent research re
 TOPIC_DIR="{specs_dir}/reports/{topic}"
 # Note: Directory created lazily via ensure_artifact_directory() when file is written
 
-# Find existing reports
-EXISTING=$(ls "$TOPIC_DIR"/[0-9][0-9][0-9]_*.md 2>/dev/null | wc -l)
+# Find existing reports (kebab-case format)
+EXISTING=$(ls "$TOPIC_DIR"/[0-9][0-9][0-9]-*.md 2>/dev/null | wc -l)
 NEXT_NUM=$(printf "%03d" $((EXISTING + 1)))
 
-# Create report path
-REPORT_PATH="$TOPIC_DIR/${NEXT_NUM}_${report_name}.md"
+# Create report path (kebab-case format)
+REPORT_SLUG=$(echo "$report_name" | tr '_' '-')
+REPORT_PATH="$TOPIC_DIR/${NEXT_NUM}-${REPORT_SLUG}.md"
 
 # Create directory only when writing file (lazy creation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"

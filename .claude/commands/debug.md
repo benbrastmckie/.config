@@ -424,7 +424,9 @@ if [ -f "$STATE_ID_FILE" ]; then
 fi
 
 # === DEFENSIVE CHECK: Verify initialize_workflow_paths available ===
-if ! type initialize_workflow_paths &>/dev/null; then
+type initialize_workflow_paths &>/dev/null
+TYPE_CHECK=$?
+if [ $TYPE_CHECK -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -441,7 +443,7 @@ fi
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
 TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
-TOPIC_NAME="no_name"
+TOPIC_NAME="no_name_error"
 NAMING_STRATEGY="fallback"
 
 # Check if agent wrote output file
@@ -452,7 +454,7 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
   if [ -z "$TOPIC_NAME" ]; then
     # File exists but is empty - agent failed
     NAMING_STRATEGY="agent_empty_output"
-    TOPIC_NAME="no_name"
+    TOPIC_NAME="no_name_error"
   else
     # Validate topic name format (exit code capture pattern)
     echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
@@ -469,7 +471,7 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
         "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
 
       NAMING_STRATEGY="validation_failed"
-      TOPIC_NAME="no_name"
+      TOPIC_NAME="no_name_error"
     else
       # Valid topic name from LLM
       NAMING_STRATEGY="llm_generated"
@@ -481,7 +483,7 @@ else
 fi
 
 # Log naming failure if we fell back to no_name
-if [ "$TOPIC_NAME" = "no_name" ]; then
+if [ "$TOPIC_NAME" = "no_name_error" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -636,7 +638,9 @@ echo ""
 CLASSIFICATION_JSON="${CLASSIFICATION_JSON:-}"
 
 # === DEFENSIVE CHECK: Verify initialize_workflow_paths available ===
-if ! type initialize_workflow_paths &>/dev/null; then
+type initialize_workflow_paths &>/dev/null
+TYPE_CHECK=$?
+if [ $TYPE_CHECK -ne 0 ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -944,7 +948,7 @@ echo ""
 # Pre-calculate plan path
 PLANS_DIR="${SPECS_DIR}/plans"
 PLAN_NUMBER="001"
-PLAN_FILENAME="${PLAN_NUMBER}_debug_strategy.md"
+PLAN_FILENAME="${PLAN_NUMBER}-debug-strategy.md"
 PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
 
 # Collect research report paths

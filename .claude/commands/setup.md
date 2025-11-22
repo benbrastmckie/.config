@@ -226,9 +226,226 @@ EOF
       exit 1
     fi
 
+    # Persist description for topic naming agent
+    ANALYSIS_DESCRIPTION="CLAUDE.md standards analysis"
+    TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+    echo "$ANALYSIS_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
+    export TOPIC_NAMING_INPUT_FILE
+
+    echo "Ready for topic naming"
+    ;;
+esac
+```
+
+**EXECUTE NOW** (analyze mode only): Invoke the topic-naming-agent to generate a semantic directory name.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Generate semantic topic directory name"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-naming-agent.md
+
+    You are generating a topic directory name for: /setup command
+
+    **Input**:
+    - User Prompt: CLAUDE.md standards analysis
+    - Command Name: /setup
+    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+
+    Execute topic naming according to behavioral guidelines:
+    1. Generate semantic topic name from user prompt
+    2. Validate format (^[a-z0-9_]{5,40}$)
+    3. Write topic name to OUTPUT_FILE_PATH using Write tool
+    4. Return completion signal: TOPIC_NAME_GENERATED: <generated_name>
+
+    If you encounter an error, return:
+    TASK_ERROR: <error_type> - <error_message>
+  "
+}
+
+**EXECUTE NOW**: Continue mode execution after topic naming.
+
+```bash
+set +H
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+  export CLAUDE_PROJECT_DIR
+fi
+
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load error-handling library" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || true
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || true
+
+# Initialize error log
+ensure_error_log_exists
+
+# Restore WORKFLOW_ID (best effort)
+if [ -z "${WORKFLOW_ID:-}" ]; then
+  WORKFLOW_ID="setup_$(date +%s)"
+fi
+
+case "$MODE" in
+  standard)
+    echo "Generating CLAUDE.md at: $CLAUDE_MD_PATH"
+    echo ""
+
+    # Detect testing framework
+    DETECT_OUTPUT=$("${LIB_DIR}/detect-testing.sh" "$PROJECT_DIR" 2>&1)
+    TEST_SCORE=$(echo "$DETECT_OUTPUT" | grep "^SCORE:" | cut -d: -f2 | tr -d ' ')
+    TEST_FRAMEWORKS=$(echo "$DETECT_OUTPUT" | grep "^FRAMEWORKS:" | cut -d: -f2-)
+
+    # Generate testing protocols
+    TESTING_SECTION=$("${LIB_DIR}/generate-testing-protocols.sh" "$TEST_SCORE" "$TEST_FRAMEWORKS" 2>&1)
+
+    # Create CLAUDE.md with all sections
+    cat > "$CLAUDE_MD_PATH" << 'EOF'
+# Project Configuration Index
+
+This CLAUDE.md serves as the central configuration and standards index for this project.
+
+## Code Standards
+[Used by: /implement, /refactor, /plan]
+
+### General Conventions
+- **Indentation**: 2 spaces (no tabs)
+- **Line Length**: ~100 characters (soft limit)
+- **Naming**: snake_case for files, language-appropriate for code
+- **Error Handling**: Use language-appropriate error handling patterns
+- **Documentation**: Every directory has README.md with purpose and module documentation
+
+### Language-Specific Standards
+Adapt conventions based on project language (JavaScript/TypeScript, Python, Rust, Go, etc.)
+
+EOF
+
+    echo "$TESTING_SECTION" >> "$CLAUDE_MD_PATH"
+
+    cat >> "$CLAUDE_MD_PATH" << 'EOF'
+
+## Documentation Policy
+[Used by: /document, /plan]
+
+### README Requirements
+Every subdirectory must have a README.md containing:
+- **Purpose**: Clear explanation of directory role
+- **Module Documentation**: Documentation for each file/module
+- **Usage Examples**: Code examples where applicable
+- **Navigation Links**: Links to parent and subdirectory READMEs
+
+### Documentation Format
+- Use clear, concise language
+- Include code examples with syntax highlighting
+- Use Unicode box-drawing for diagrams where appropriate
+- Follow CommonMark specification
+
+## Standards Discovery
+[Used by: all commands]
+
+### Discovery Method
+Commands discover standards by:
+1. Searching upward from current directory for CLAUDE.md
+2. Checking for subdirectory-specific CLAUDE.md files
+3. Merging/overriding: subdirectory standards extend parent standards
+
+### Fallback Behavior
+When CLAUDE.md not found or incomplete:
+- Use sensible language-specific defaults
+- Suggest creating/updating CLAUDE.md with `/setup`
+- Continue with graceful degradation
+
+## Notes
+This CLAUDE.md was automatically configured with the `/setup` command.
+For updates or improvements, run `/setup` again to analyze current configuration.
+EOF
+
+    # Verification: Check CLAUDE.md was created and is valid
+    if [ ! -f "$CLAUDE_MD_PATH" ]; then
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
+        "CLAUDE.md file not created at expected path" "standard_mode_generation" \
+        "{\"expected_path\": \"$CLAUDE_MD_PATH\"}"
+      echo "ERROR: CLAUDE.md not created" >&2
+      exit 1
+    fi
+
+    if [ ! -s "$CLAUDE_MD_PATH" ]; then
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
+        "CLAUDE.md file is empty" "standard_mode_validation" \
+        "{\"file_path\": \"$CLAUDE_MD_PATH\"}"
+      echo "ERROR: CLAUDE.md is empty" >&2
+      exit 1
+    fi
+
+    echo "CLAUDE.md created successfully"
+    ;;
+
+  analyze)
+    # Restore description from temp file
+    TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+    ANALYSIS_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null || echo "CLAUDE.md standards analysis")
+
+    # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
+    TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+    TOPIC_NAME="no_name_error"
+    NAMING_STRATEGY="fallback"
+
+    # Check if agent wrote output file
+    if [ -f "$TOPIC_NAME_FILE" ]; then
+      # Read topic name from file (agent writes only the name, one line)
+      TOPIC_NAME=$(cat "$TOPIC_NAME_FILE" 2>/dev/null | tr -d '\n' | tr -d ' ')
+
+      if [ -z "$TOPIC_NAME" ]; then
+        # File exists but is empty - agent failed
+        NAMING_STRATEGY="agent_empty_output"
+        TOPIC_NAME="no_name_error"
+      else
+        # Validate topic name format (exit code capture pattern)
+        echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
+        IS_VALID=$?
+        if [ $IS_VALID -ne 0 ]; then
+          # Invalid format - log and fall back
+          log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "validation_error" \
+            "Topic naming agent returned invalid format" "topic_validation" \
+            "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
+
+          NAMING_STRATEGY="validation_failed"
+          TOPIC_NAME="no_name_error"
+        else
+          # Valid topic name from LLM
+          NAMING_STRATEGY="llm_generated"
+        fi
+      fi
+    else
+      # File doesn't exist - agent failed to write
+      NAMING_STRATEGY="agent_no_output_file"
+    fi
+
+    # Log naming failure if we fell back to no_name_error
+    if [ "$TOPIC_NAME" = "no_name_error" ]; then
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "agent_error" \
+        "Topic naming agent failed or returned invalid name" "topic_naming" \
+        "$(jq -n --arg desc "$ANALYSIS_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" \
+           '{description: $desc, fallback_reason: $strategy}')"
+    fi
+
+    # Clean up temp files
+    rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
+    rm -f "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null || true
+
+    # Create classification result JSON for initialize_workflow_paths
+    CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
+
     # Initialize topic-based paths for analysis report
-    initialize_workflow_paths "CLAUDE.md standards analysis" "research" "2" ""
-    REPORT_PATH="${RESEARCH_DIR}/001_standards_analysis.md"
+    initialize_workflow_paths "$ANALYSIS_DESCRIPTION" "research" "2" "$CLASSIFICATION_JSON"
+    REPORT_PATH="${RESEARCH_DIR}/001-standards-analysis.md"
+
+    echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 
     # Validate structure - check required sections
     REQUIRED=("Code Standards" "Testing Protocols" "Documentation Policy" "Standards Discovery")
