@@ -531,7 +531,7 @@ Before finalizing spec updater operations:
 ## Best Practices
 
 ### Artifact Creation
-1. Always create topic directories with full subdirectory structure
+1. Create only the topic root directory (`specs/NNN_topic/`). Subdirectories (plans/, reports/, debug/, summaries/) are created lazily by agents when files are written. See [Directory Creation Anti-Patterns](../reference/standards/code-standards.md#directory-creation-anti-patterns) for details.
 2. Use consistent numbering within each subdirectory (001, 002, 003...)
 3. Include complete metadata in all artifacts
 4. Verify gitignore compliance for each category

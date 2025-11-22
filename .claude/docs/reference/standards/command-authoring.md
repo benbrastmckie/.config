@@ -564,6 +564,39 @@ See [Output Formatting Standards](output-formatting-standards.md) for:
 
 ---
 
+## Directory Creation
+
+Commands MUST follow the lazy directory creation pattern to prevent empty artifact directories.
+
+### Required Pattern
+
+- **DO**: Create only the topic root directory (`specs/NNN_topic/`)
+- **DO NOT**: Create artifact subdirectories (`reports/`, `plans/`, `debug/`, `summaries/`, `outputs/`)
+- **DELEGATE**: Let agents create subdirectories via `ensure_artifact_directory()` at write-time
+
+```bash
+# ✓ CORRECT: Command creates topic root only
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
+TOPIC_DIR=$(create_topic_structure "feature_name")  # Creates ONLY topic root
+
+# Agent handles subdirectory creation when writing files:
+# ensure_artifact_directory "${TOPIC_DIR}/reports/001_analysis.md"
+```
+
+```bash
+# ❌ ANTI-PATTERN: Command pre-creates subdirectories
+mkdir -p "${TOPIC_DIR}/reports"
+mkdir -p "${TOPIC_DIR}/plans"
+mkdir -p "${TOPIC_DIR}/debug"
+# If agent fails or produces no output, empty directories remain
+```
+
+This ensures directories exist only when they contain files. Empty directories indicate a lazy creation violation and are detected by the integration test suite.
+
+See [Directory Creation Anti-Patterns](code-standards.md#directory-creation-anti-patterns) for complete guidance and examples.
+
+---
+
 ## Prohibited Patterns
 
 ### Negation in Conditional Tests (if ! and elif !)

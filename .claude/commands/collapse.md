@@ -107,6 +107,22 @@ fi
 # Export for use by sourced libraries
 export CLAUDE_PROJECT_DIR
 
+# Source error-handling.sh for centralized error logging (MANDATORY fail-fast pattern)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Initialize error log and workflow metadata
+ensure_error_log_exists
+COMMAND_NAME="/collapse"
+WORKFLOW_ID="collapse_$(date +%s)"
+USER_ARGS="$*"
+export COMMAND_NAME WORKFLOW_ID USER_ARGS
+
+# Setup bash error trap for automatic error capture
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Source consolidated planning utilities
 source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/plan-core-bundle.sh"
 
@@ -120,12 +136,18 @@ if [[ -f "$plan_path" ]] && [[ "$plan_path" == *.md ]]; then
   if [[ -d "$plan_dir/$plan_base" ]]; then
     plan_path="$plan_dir/$plan_base"
   else
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+      "validation_error" "Plan has not been expanded - no directory found" "plan_validation" \
+      "$(jq -n --arg path "$plan_path" '{plan_path: $path}')"
     error "Plan has not been expanded (no directory found)"
   fi
 elif [[ -d "$plan_path" ]]; then
   # Directory provided - OK
   plan_base=$(basename "$plan_path")
 else
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "file_error" "Invalid plan path" "plan_validation" \
+    "$(jq -n --arg path "$plan_path" '{plan_path: $path}')"
   error "Invalid plan path: $plan_path"
 fi
 
@@ -133,12 +155,20 @@ fi
 structure_level=$(detect_structure_level "$plan_path")
 
 if [[ "$structure_level" != "1" ]]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" "Plan must be Level 1 for phase collapse" "structure_validation" \
+    "$(jq -n --arg level "$structure_level" '{current_level: $level, required_level: "1"}')"
   error "Plan must be Level 1 (phase expansion) to collapse phases. Current level: $structure_level"
 fi
 
 # Identify main plan file
 main_plan="$plan_path/$plan_base.md"
-[[ ! -f "$main_plan" ]] && error "Main plan file not found: $main_plan"
+if [[ ! -f "$main_plan" ]]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "file_error" "Main plan file not found" "plan_discovery" \
+    "$(jq -n --arg path "$main_plan" '{main_plan: $path}')"
+  error "Main plan file not found: $main_plan"
+fi
 ```
 
 **MANDATORY VERIFICATION - Structure Validated**:
@@ -481,6 +511,22 @@ fi
 # Export for use by sourced libraries
 export CLAUDE_PROJECT_DIR
 
+# Source error-handling.sh for centralized error logging (MANDATORY fail-fast pattern)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Initialize error log and workflow metadata
+ensure_error_log_exists
+COMMAND_NAME="/collapse"
+WORKFLOW_ID="collapse_$(date +%s)"
+USER_ARGS="$*"
+export COMMAND_NAME WORKFLOW_ID USER_ARGS
+
+# Setup bash error trap for automatic error capture
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Source utilities
 # Source consolidated planning utilities
 source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/plan-core-bundle.sh"
@@ -489,6 +535,9 @@ source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/auto-analysis-utils.sh"
 # Validate plan path
 if [[ ! -f "$PLAN_PATH" ]] && [[ ! -d "$PLAN_PATH" ]]; then
   echo "ERROR: Plan not found: $PLAN_PATH"
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "file_error" "Plan not found" "plan_validation" \
+    "$(jq -n --arg path "$PLAN_PATH" '{plan_path: $path}')"
   exit 1
 fi
 

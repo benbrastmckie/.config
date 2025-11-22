@@ -59,9 +59,26 @@ setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 ISSUE_DESCRIPTION="$1"
 
 if [ -z "$ISSUE_DESCRIPTION" ]; then
-  echo "ERROR: Issue description required"
-  echo "USAGE: /debug <issue-description>"
-  echo "EXAMPLE: /debug \"investigate authentication timeout errors in production logs\""
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Issue description is required" \
+    "bash_block_1" \
+    "$(jq -n --arg args "${*:-}" --argjson count ${#:-0} \
+       '{user_args: $args, provided_args_count: $count}')"
+
+  cat <<'EOF' >&2
+ERROR: Issue description required
+
+USAGE: /debug <issue-description> [--file <path>] [--complexity 1-4]
+
+EXAMPLES:
+  /debug "Build command fails with exit code 127"
+  /debug "Agent not returning expected output" --complexity 3
+  /debug "Parser error in test suite" --file tests/parser-test.sh
+EOF
   exit 1
 fi
 
@@ -77,6 +94,16 @@ fi
 echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"
 COMPLEXITY_VALID=$?
 if [ $COMPLEXITY_VALID -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Invalid research complexity value" \
+    "bash_block_1" \
+    "$(jq -n --arg value "$RESEARCH_COMPLEXITY" --arg valid "1-4" \
+       '{provided_value: $value, valid_range: $valid}')"
+
   echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
   exit 1
 fi
@@ -93,6 +120,16 @@ if [[ "$ISSUE_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
   fi
   # Validate file exists
   if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Prompt file not found" \
+      "bash_block_1" \
+      "$(jq -n --arg path "$ORIGINAL_PROMPT_FILE_PATH" \
+         '{file_path: $path, error: "file_not_found"}')"
+
     echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
     exit 1
   fi
@@ -102,6 +139,16 @@ if [[ "$ISSUE_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
     echo "WARNING: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
   fi
 elif [[ "$ISSUE_DESCRIPTION" =~ --file ]]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "--file flag requires a path argument" \
+    "bash_block_1" \
+    "$(jq -n --arg args "${ISSUE_DESCRIPTION}" \
+       '{user_args: $args, error: "missing_file_path"}')"
+
   echo "ERROR: --file flag requires a path argument" >&2
   echo "Usage: /debug --file /path/to/issue.md" >&2
   exit 1
@@ -141,10 +188,19 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # Source libraries in dependency order (Standard 15) with output suppression
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null || true
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
@@ -283,10 +339,24 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+# Re-source libraries for subprocess isolation (Three-Tier Pattern)
+# Tier 1: Critical Foundation (fail-fast required)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-initialization.sh" >&2
+  exit 1
+}
 
 # Load WORKFLOW_ID from file
 STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
@@ -351,6 +421,22 @@ if [ -f "$STATE_ID_FILE" ]; then
     echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
     exit 1
   fi
+fi
+
+# === DEFENSIVE CHECK: Verify initialize_workflow_paths available ===
+if ! type initialize_workflow_paths &>/dev/null; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "dependency_error" \
+    "initialize_workflow_paths function not available" \
+    "bash_block_2a" \
+    "$(jq -n '{missing_function: "initialize_workflow_paths", expected_library: "workflow-initialization.sh"}')"
+
+  echo "ERROR: initialize_workflow_paths function not available" >&2
+  echo "DIAGNOSTIC: workflow-initialization.sh library not properly sourced" >&2
+  exit 1
 fi
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
@@ -429,10 +515,26 @@ echo ""
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source unified-location-detection.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-initialization.sh" >&2
+  exit 1
+}
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
 STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
@@ -533,6 +635,22 @@ echo ""
 # Load classification result from state (persisted in Part 2a)
 CLASSIFICATION_JSON="${CLASSIFICATION_JSON:-}"
 
+# === DEFENSIVE CHECK: Verify initialize_workflow_paths available ===
+if ! type initialize_workflow_paths &>/dev/null; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "dependency_error" \
+    "initialize_workflow_paths function not available" \
+    "bash_block_3" \
+    "$(jq -n '{missing_function: "initialize_workflow_paths", expected_library: "workflow-initialization.sh"}')"
+
+  echo "ERROR: initialize_workflow_paths function not available" >&2
+  echo "DIAGNOSTIC: workflow-initialization.sh library not properly sourced" >&2
+  exit 1
+fi
+
 # Initialize workflow paths using semantic slug generation (Plan 777)
 # This uses the three-tier fallback: LLM slug -> extract_significant_words -> sanitize_topic_name
 initialize_workflow_paths "$ISSUE_DESCRIPTION" "debug-only" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"
@@ -611,8 +729,14 @@ set +H  # CRITICAL: Disable history expansion
 set -e  # Fail-fast per code-standards.md
 
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load WORKFLOW_ID from file
 STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
@@ -703,9 +827,18 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -858,8 +991,14 @@ set +H  # CRITICAL: Disable history expansion
 set -e  # Fail-fast per code-standards.md
 
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load WORKFLOW_ID from file
 STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
@@ -935,9 +1074,18 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
@@ -1072,8 +1220,14 @@ set +H  # CRITICAL: Disable history expansion
 set -e  # Fail-fast per code-standards.md
 
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load WORKFLOW_ID from file
 STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
@@ -1145,9 +1299,18 @@ fi
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load state from previous block
 source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true

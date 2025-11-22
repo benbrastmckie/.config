@@ -157,7 +157,7 @@
 
 ### Getting Help
 
-- Check [Command Reference](.claude/docs/reference/standards/command-reference.md) for quick syntax
+- Check [Command Reference](../../reference/standards/command-reference.md) for quick syntax
 - Review [Command Development Guide](../development/command-development/command-development-fundamentals.md) for pattern details
 - See related commands: `/related-command1`, `/related-command2`
 
@@ -165,6 +165,6 @@
 
 ## See Also
 
-- [Related Pattern 1](.claude/docs/concepts/patterns/pattern-name.md)
+- [Related Pattern 1](../../concepts/patterns/pattern-name.md) <!-- Update to actual pattern -->
 - [Related Guide 1](../README.md)
-- [Command Reference](.claude/docs/reference/standards/command-reference.md)
+- [Command Reference](../../reference/standards/command-reference.md)

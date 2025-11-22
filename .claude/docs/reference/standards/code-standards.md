@@ -31,6 +31,60 @@
 - **Robustness Patterns**: Apply systematic robustness patterns for reliable command development - See [Robustness Framework](.claude/docs/concepts/robustness-framework.md)
 - See [Command Architecture Standards](../architecture/overview.md) for complete guidelines
 
+### Mandatory Bash Block Sourcing Pattern
+[Used by: All commands with bash blocks]
+
+All bash blocks in `.claude/commands/` MUST follow the three-tier sourcing pattern. This is NOT optional - violations are caught by linter and pre-commit hooks.
+
+**Required Pattern (Every Bash Block)**:
+
+```bash
+# 1. Bootstrap: Detect project directory
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+# 2. Source Critical Libraries (Tier 1 - FAIL-FAST REQUIRED)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2; exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2; exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2; exit 1
+}
+
+# 3. Optional Libraries (Tier 2/3 - graceful degradation allowed)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/summary-formatting.sh" 2>/dev/null || true
+```
+
+**Three-Tier Library Classification**:
+
+| Tier | Libraries | Error Handling | Rationale |
+|------|-----------|----------------|-----------|
+| **Tier 1: Critical Foundation** | state-persistence.sh, workflow-state-machine.sh, error-handling.sh | Fail-fast required | Core state management; failure causes exit 127 later |
+| **Tier 2: Workflow Support** | workflow-initialization.sh, checkpoint-utils.sh, unified-logger.sh | Graceful degradation | Non-critical; commands can proceed without |
+| **Tier 3: Command-Specific** | checkbox-utils.sh, summary-formatting.sh | Optional | Feature-specific; missing causes partial functionality |
+
+**Enforcement**:
+- **Linter**: `.claude/scripts/lint/check-library-sourcing.sh` validates all commands
+- **Pre-commit**: Violations block commits (use `--no-verify` only with documented justification)
+- **CI**: Linter runs in validation pipeline before tests
+
+**Why This Pattern is Mandatory**:
+
+Each bash block in Claude Code runs in a **new subprocess**. Variables and functions from previous blocks are NOT available. Without re-sourcing libraries, function calls fail with exit code 127 ("command not found").
+
+See [Bash Block Execution Model](../../concepts/bash-block-execution-model.md) for complete subprocess isolation documentation and [Exit Code 127 Troubleshooting Guide](../../troubleshooting/exit-code-127-command-not-found.md) for debugging failures.
+
 ### Output Suppression Patterns
 [Used by: All commands and agents]
 
@@ -169,6 +223,142 @@ cp "$PLAN_PATH" "${BACKUP_DIR}/$(basename "$PLAN_PATH").backup_$(date +%s)"
 - [Command Development Guide](.claude/docs/guides/development/command-development/command-development-fundamentals.md) - Complete guide to creating and maintaining slash commands
 - [Agent Development Guide](.claude/docs/guides/development/agent-development/agent-development-fundamentals.md) - Complete guide to creating and maintaining specialized agents
 - [Model Selection Guide](.claude/docs/guides/development/model-selection-guide.md) - Guide to choosing Claude model tiers (Haiku/Sonnet/Opus) for agents with cost/quality optimization
+
+## Mandatory Patterns
+[Used by: /implement, /build, /plan]
+
+This section documents patterns that are MANDATORY and enforced by automated tooling. Violations will block commits and must be fixed.
+
+### Bash Library Sourcing
+
+**Requirement**: All bash blocks MUST follow the three-tier sourcing pattern.
+
+**Enforcement**: `check-library-sourcing.sh` linter, pre-commit hooks
+
+**Pattern**:
+```bash
+# Tier 1: Critical libraries - MUST have fail-fast handlers
+source "${CLAUDE_LIB}/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2; exit 1
+}
+source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2; exit 1
+}
+source "${CLAUDE_LIB}/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2; exit 1
+}
+
+# Tier 2/3: Non-critical libraries - graceful degradation allowed
+source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || true
+```
+
+**Why Mandatory**: Each bash block runs in a new subprocess. Functions from previous blocks are NOT available. Without re-sourcing, function calls fail with exit code 127.
+
+**NEVER**: Source critical libraries without fail-fast handlers:
+```bash
+# WRONG: Bare suppression hides failures
+source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null
+```
+
+See [Bash Block Execution Model](../../concepts/bash-block-execution-model.md) for complete subprocess isolation documentation.
+
+### Error Suppression Policy
+
+**Requirement**: State persistence functions MUST NOT have errors suppressed.
+
+**Enforcement**: `lint_error_suppression.sh`
+
+**NEVER**:
+```bash
+# WRONG: Suppresses state persistence errors
+save_completed_states_to_state 2>/dev/null
+save_completed_states_to_state || true
+```
+
+**ALWAYS**:
+```bash
+# CORRECT: Explicit error handling
+if ! save_completed_states_to_state 2>&1; then
+  echo "ERROR: State persistence failed" >&2
+  log_command_error "state_error" "State persistence failed" ""
+  exit 1
+fi
+```
+
+**NEVER**: Use deprecated state paths:
+```bash
+# WRONG: Deprecated paths
+STATE_FILE=".claude/data/states/workflow.sh"
+STATE_FILE=".claude/data/workflows/workflow.sh"
+
+# CORRECT: Standard path
+STATE_FILE=".claude/tmp/workflow_${WORKFLOW_ID}.sh"
+```
+
+### Directory Creation Policy
+
+**Requirement**: Commands MUST NOT create artifact subdirectories eagerly during setup.
+
+**Enforcement**: Manual review, agent behavioral guidelines
+
+**NEVER**:
+```bash
+# WRONG: Eager creation in command setup
+mkdir -p "$RESEARCH_DIR"
+mkdir -p "$DEBUG_DIR"
+mkdir -p "$PLANS_DIR"
+```
+
+**ALWAYS**: Use lazy directory creation in agents:
+```bash
+# CORRECT: In agent, immediately before Write tool
+ensure_artifact_directory "$REPORT_PATH" || exit 1
+# Write tool creates file (directory guaranteed to exist)
+```
+
+**Exception**: Atomic directory+file creation in same bash block is acceptable.
+
+See [Directory Creation Anti-Patterns](#directory-creation-anti-patterns) for complete documentation.
+
+## Enforcement
+[Used by: pre-commit hooks, CI validation]
+
+### Automated Validation
+
+The following validators enforce code standards:
+
+| Validator | Enforces | Severity |
+|-----------|----------|----------|
+| check-library-sourcing.sh | Bash three-tier sourcing, fail-fast handlers | ERROR |
+| lint_error_suppression.sh | Error suppression anti-patterns | ERROR |
+| lint_bash_conditionals.sh | Preprocessing-safe conditionals | ERROR |
+| validate-links.sh | Internal link validity | WARNING |
+
+### Validation Commands
+
+```bash
+# Run all validators
+bash .claude/scripts/validate-all-standards.sh --all
+
+# Run specific validators
+bash .claude/scripts/lint/check-library-sourcing.sh
+bash .claude/tests/utilities/lint_error_suppression.sh
+bash .claude/tests/utilities/lint_bash_conditionals.sh
+bash .claude/scripts/validate-links-quick.sh
+```
+
+### Pre-Commit Integration
+
+Pre-commit hooks automatically run validators on staged files. Violations block commits.
+
+Bypass with justification:
+```bash
+git commit --no-verify -m "Emergency: [documented reason for bypass]"
+```
+
+**Warning**: Bypassing should be rare and documented. Violations will be caught in CI.
+
+See [Enforcement Mechanisms Reference](enforcement-mechanisms.md) for complete enforcement details.
 
 ### Internal Link Conventions
 [Used by: /document, /plan, /implement, all documentation]

@@ -171,6 +171,11 @@ state_machine_refactor
 - NO quotes around the name
 - File path must match OUTPUT_FILE_PATH provided by command
 
+**OUTPUT FILE CREATION IS MANDATORY**:
+The invoking command validates that the output file exists and contains valid content.
+If the Write tool fails or you skip this step, the workflow will fall back to 'no_name'.
+ALWAYS use the Write tool before returning the completion signal.
+
 **Completion Signal**:
 After writing the file, return this signal:
 ```

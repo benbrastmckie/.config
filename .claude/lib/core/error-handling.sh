@@ -433,8 +433,12 @@ log_command_error() {
   # Detect execution environment (test vs production)
   local environment="production"
 
-  # Check for explicit test mode or test script indicators
-  if [[ -n "${CLAUDE_TEST_MODE:-}" ]] || [[ "${BASH_SOURCE[2]:-}" =~ /tests/ ]] || [[ "$0" =~ /tests/ ]]; then
+  # Check for explicit test mode, test script indicators, or test workflow ID patterns
+  # Added workflow_id pattern matching for test_* prefixed IDs to isolate test errors
+  if [[ -n "${CLAUDE_TEST_MODE:-}" ]] || \
+     [[ "${BASH_SOURCE[2]:-}" =~ /tests/ ]] || \
+     [[ "$0" =~ /tests/ ]] || \
+     [[ "$workflow_id" =~ ^test_ ]]; then
     environment="test"
   fi
 
@@ -1237,6 +1241,77 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f detect_error_type
   export -f extract_location
   export -f generate_suggestions
+# _is_benign_bash_error: Check if error is a benign pre-initialization failure
+# Usage: _is_benign_bash_error <failed_command> <exit_code>
+# Returns: 0 if error should be filtered (not logged), 1 if error should be logged
+# Note: These errors occur during bash environment pre-initialization before command code runs
+_is_benign_bash_error() {
+  local failed_command="${1:-}"
+  local exit_code="${2:-0}"
+
+  # Filter bashrc sourcing failures (system-level initialization, not command code)
+  # These occur in Claude Code's bash environment setup, not in our commands
+  case "$failed_command" in
+    *"/etc/bashrc"*|*"/etc/bash.bashrc"*|*"~/.bashrc"*|*".bashrc"*)
+      return 0  # Benign: bashrc sourcing failure
+      ;;
+    *"source /etc/bashrc"*|*". /etc/bashrc"*)
+      return 0  # Benign: explicit bashrc source
+      ;;
+  esac
+
+  # Filter exit code 127 (command not found) only for specific system initialization commands
+  if [ "$exit_code" = "127" ]; then
+    case "$failed_command" in
+      *"bashrc"*|*"profile"*|*"bash_completion"*)
+        return 0  # Benign: system initialization command not found
+        ;;
+    esac
+  fi
+
+  # Filter intentional return statements from core library files
+  # These are used for error propagation, not actual errors
+  case "$failed_command" in
+    "return 1"|"return 0"|"return"|"return "[0-9]*)
+      # Check if error originates from a core library file via call stack
+      local j=0
+      while true; do
+        local lib_caller_info
+        lib_caller_info=$(caller $j 2>/dev/null) || break
+        case "$lib_caller_info" in
+          *"/lib/core/"*|*"/lib/workflow/"*|*"/lib/plan/"*)
+            return 0  # Benign: intentional return from core library
+            ;;
+        esac
+        j=$((j + 1))
+        if [ $j -gt 5 ]; then
+          break
+        fi
+      done
+      ;;
+  esac
+
+  # Check call stack for errors originating from bashrc/profile files
+  # This catches errors from commands INSIDE these files, not just sourcing them
+  local i=0
+  while true; do
+    local caller_info
+    caller_info=$(caller $i 2>/dev/null) || break
+    case "$caller_info" in
+      *"/etc/bashrc"*|*"/etc/bash.bashrc"*|*"~/.bashrc"*|*".bashrc"*|*"/etc/profile"*|*".profile"*)
+        return 0  # Benign: error originated from system initialization file
+        ;;
+    esac
+    i=$((i + 1))
+    # Safety limit
+    if [ $i -gt 10 ]; then
+      break
+    fi
+  done
+
+  return 1  # Not benign: should be logged
+}
+
 # _log_bash_error: Internal ERR trap handler for bash-level error capture
 # Usage: Called by ERR trap, not invoked directly
 # Args: exit_code, line_no, failed_command, command_name, workflow_id, user_args
@@ -1251,6 +1326,12 @@ _log_bash_error() {
 
   # Mark that we've logged this error to prevent duplicate logging from EXIT trap
   _BASH_ERROR_LOGGED=1
+
+  # Filter benign errors (system initialization failures that aren't actionable)
+  if _is_benign_bash_error "$failed_command" "$exit_code"; then
+    # Exit without logging - these are expected in some environments (e.g., NixOS)
+    exit $exit_code
+  fi
 
   # Determine error type from exit code
   local error_type="execution_error"
@@ -1287,6 +1368,11 @@ _log_bash_exit() {
 
   # Only log if error occurred AND not already logged by ERR trap
   if [ $exit_code -ne 0 ] && [ -z "${_BASH_ERROR_LOGGED:-}" ]; then
+    # Filter benign errors (system initialization failures that aren't actionable)
+    if _is_benign_bash_error "$failed_command" "$exit_code"; then
+      return  # Skip logging for benign errors
+    fi
+
     # Determine error type from exit code
     local error_type="execution_error"
     case $exit_code in
@@ -1454,6 +1540,8 @@ validate_topic_name_format() {
   export -f handle_state_error
   export -f setup_bash_error_trap
   export -f _log_bash_exit
+  export -f _log_bash_error
+  export -f _is_benign_bash_error
   export -f validate_agent_output
   export -f validate_agent_output_with_retry
   export -f validate_topic_name_format

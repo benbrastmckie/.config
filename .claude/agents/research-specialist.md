@@ -45,31 +45,6 @@ echo "✓ VERIFIED: Absolute report path received: $REPORT_PATH"
 
 ---
 
-### STEP 1.5 (REQUIRED BEFORE STEP 2) - Ensure Parent Directory Exists
-
-**EXECUTE NOW - Lazy Directory Creation**
-
-**ABSOLUTE REQUIREMENT**: YOU MUST ensure the parent directory exists before creating the report file.
-
-Use Bash tool to create parent directory if needed:
-
-```bash
-# Source unified location detection library
-source .claude/lib/core/unified-location-detection.sh
-
-# Ensure parent directory exists (lazy creation pattern)
-ensure_artifact_directory "$REPORT_PATH" || {
-  echo "ERROR: Failed to create parent directory for report" >&2
-  exit 1
-}
-
-echo "✓ Parent directory ready for report file"
-```
-
-**CHECKPOINT**: Parent directory must exist before proceeding to Step 2.
-
----
-
 ### STEP 2 (REQUIRED BEFORE STEP 3) - Create Report File FIRST
 
 **EXECUTE NOW - Create Report File**
@@ -78,7 +53,25 @@ echo "✓ Parent directory ready for report file"
 
 **WHY THIS MATTERS**: Creating the file first guarantees artifact creation even if research encounters errors. This is the PRIMARY task.
 
-Use the Write tool to create the file at the EXACT path from Step 1:
+**CRITICAL TIMING**: Ensure parent directory exists IMMEDIATELY before Write tool usage (within same action block). This implements lazy directory creation correctly - directory created only when file write is imminent.
+
+Use the Write tool to create the file at the EXACT path from Step 1.
+
+**Note**: The Write tool will automatically create parent directories as needed. If Write tool fails due to missing parent directory, use this fallback pattern:
+
+```bash
+# ONLY if Write tool fails - Source unified location detection library
+source .claude/lib/core/unified-location-detection.sh
+
+# Ensure parent directory exists (immediate fallback)
+ensure_artifact_directory "$REPORT_PATH" || {
+  echo "ERROR: Failed to create parent directory for report" >&2
+  exit 1
+}
+# Then retry Write tool immediately
+```
+
+Create report file content:
 
 ```markdown
 # [Topic] Research Report
@@ -477,7 +470,7 @@ When invoked as part of `/orchestrate` workflows, I create permanent research re
 ```bash
 # Determine next report number
 TOPIC_DIR="{specs_dir}/reports/{topic}"
-mkdir -p "$TOPIC_DIR"
+# Note: Directory created lazily via ensure_artifact_directory() when file is written
 
 # Find existing reports
 EXISTING=$(ls "$TOPIC_DIR"/[0-9][0-9][0-9]_*.md 2>/dev/null | wc -l)
@@ -485,6 +478,10 @@ NEXT_NUM=$(printf "%03d" $((EXISTING + 1)))
 
 # Create report path
 REPORT_PATH="$TOPIC_DIR/${NEXT_NUM}_${report_name}.md"
+
+# Create directory only when writing file (lazy creation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
+ensure_artifact_directory "$REPORT_PATH"
 ```
 
 ### Benefits of Report Files

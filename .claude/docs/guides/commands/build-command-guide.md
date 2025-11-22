@@ -90,6 +90,89 @@ The `/build` command executes existing implementation plans through a complete b
 - **Debugging**: debug-analyst agent for test failure investigation
 - **Testing**: Auto-detects test frameworks (npm test, pytest, run_all_tests.sh)
 
+### Subprocess Isolation Architecture
+
+The /build command uses multiple bash blocks, each running as a **separate subprocess**. This architectural constraint requires careful library management.
+
+**Why Subprocess Isolation Matters**:
+
+```
+┌─────────────────────────────┐
+│ Bash Block 1 (PID: 12345)   │
+│ - Source libraries          │
+│ - Initialize state machine  │
+│ - Functions available here  │
+└─────────────────────────────┘
+           │
+           │ SUBPROCESS TERMINATES
+           │ All functions/variables LOST
+           ▼
+┌─────────────────────────────┐
+│ Bash Block 2 (PID: 12346)   │
+│ - Must RE-SOURCE libraries  │
+│ - Must RELOAD state         │
+│ - Functions NOT inherited   │
+└─────────────────────────────┘
+```
+
+**Three-Tier Sourcing Pattern**:
+
+Each bash block in /build follows this sourcing pattern:
+
+```bash
+# Tier 1: Critical Foundation (fail-fast required)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Tier 2: Workflow Support (graceful degradation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null || true
+
+# Tier 3: Command-Specific (optional)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || true
+```
+
+**State Flow Across Blocks**:
+
+```
+Block 1: Initialize               Block 2: Execute              Block 3: Complete
+┌──────────────────────┐         ┌──────────────────────┐      ┌──────────────────────┐
+│ sm_init()            │         │ load_workflow_state()│      │ load_workflow_state()│
+│ append_workflow_state│         │ (restores state)     │      │ (restores state)     │
+│ (persist to file)    │────────▶│ process_phases()     │─────▶│ display_summary()    │
+│                      │  FILE   │ save_completed_states│ FILE │ cleanup_temp_files() │
+└──────────────────────┘  I/O    └──────────────────────┘  I/O └──────────────────────┘
+```
+
+**Key Principle**: Files are the ONLY reliable cross-block communication channel.
+
+**Common Failure Pattern (Fixed)**:
+```bash
+# Block 1: Initialize state machine
+source workflow-state-machine.sh
+sm_init "build" "plan.md"  # Works
+
+# Block 2: WRONG - library not re-sourced
+save_completed_states_to_state  # EXIT 127: command not found
+
+# Block 2: CORRECT - re-source before use
+source workflow-state-machine.sh
+save_completed_states_to_state  # Works
+```
+
+**See Also**:
+- [Bash Block Execution Model](../../concepts/bash-block-execution-model.md) - Complete subprocess isolation documentation
+- [Exit Code 127 Troubleshooting](../../troubleshooting/exit-code-127-command-not-found.md) - Diagnostic flowchart
+
 ### Data Flow
 
 1. **Input**: Plan file path (or auto-detect from checkpoints/recent plans)
@@ -329,6 +412,115 @@ When tests fail, automatically transitions to debug phase. Debug-analyst investi
 ---
 
 ## Advanced Topics
+
+### Persistence Behavior (Iteration Loop)
+
+The `/build` command supports persistent iteration for large plans (10+ phases). This enables executing plans that exceed single-invocation context limits through automatic continuation.
+
+#### How Iteration Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    /build Iteration Loop                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   Iteration 1                Iteration 2                         │
+│   ┌─────────────┐           ┌─────────────┐                     │
+│   │ Phases 1-4  │──────────▶│ Phases 5-8  │──────────▶ ...      │
+│   │ (complete)  │  summary  │ (complete)  │  summary            │
+│   └─────────────┘           └─────────────┘                     │
+│         │                         │                              │
+│         ▼                         ▼                              │
+│   work_remaining: 5-12     work_remaining: 9-12                 │
+│                                                                  │
+│   Context check:           Context check:                        │
+│   ~60% (continue)          ~85% (continue)                      │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Configuration Options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--max-iterations` | 5 | Maximum iterations before halt |
+| `--context-threshold` | 90 | Context percentage threshold for graceful halt |
+| `--resume` | - | Resume from checkpoint file |
+
+**Examples**:
+```bash
+# Allow more iterations for very large plans
+/build plan.md --max-iterations=8
+
+# More aggressive context threshold (halt earlier)
+/build plan.md --context-threshold=80
+
+# Resume from checkpoint
+/build --resume ~/.claude/data/checkpoints/build_123_iteration_3.json
+```
+
+#### Context Threshold Halt
+
+When estimated context usage reaches the threshold (default 90%), /build:
+
+1. Saves a resumption checkpoint with iteration state
+2. Displays resumption instructions
+3. Exits cleanly (code 0)
+
+**Checkpoint Contents** (v2.1 schema):
+```json
+{
+  "version": "2.1",
+  "plan_path": "/path/to/plan.md",
+  "iteration": 3,
+  "max_iterations": 5,
+  "continuation_context": "/path/to/iteration_2_summary.md",
+  "work_remaining": "phase_8,phase_9,phase_10",
+  "context_estimate": 185000,
+  "halt_reason": "context_threshold"
+}
+```
+
+**Resumption**:
+```bash
+# Resume from checkpoint
+/build --resume ~/.claude/data/checkpoints/build_123_iteration_3.json
+
+# Or manually specify starting phase
+/build plan.md 8
+```
+
+#### Stuck Detection
+
+If `work_remaining` is unchanged for 2 consecutive iterations, /build detects a stuck state:
+
+**Symptoms**:
+- Same phases remain incomplete across iterations
+- Progress stalled despite multiple attempts
+
+**Behavior**:
+- Logs stuck error to error log
+- Halts with error message
+- Creates checkpoint for manual intervention
+
+**Recovery**:
+1. Review stuck phases in plan file
+2. Check for blocking issues (dependencies, failures)
+3. Manually resolve blocking issues
+4. Resume with `/build --resume <checkpoint>`
+
+#### Context Estimation Formula
+
+The context estimate is a heuristic calculation:
+
+```
+estimated_tokens = base(20k)
+                 + completed_phases * 15k
+                 + remaining_phases * 12k
+                 + continuation_context * 5k
+```
+
+**Tuning**: If context halts occur too early, increase `--context-threshold`. If overflows occur, decrease threshold.
 
 ### Performance Considerations
 

@@ -46,6 +46,54 @@ Command Execution (coordinate.md)
 - State persistence requires explicit file writes
 - Libraries must be re-sourced in each block
 
+## Mandatory Re-Sourcing Requirements
+
+**REQUIREMENT**: Every bash block MUST re-source all required libraries.
+
+This is NOT a recommendation - it is a mandatory requirement enforced by automated tooling.
+
+### Enforcement Mechanisms
+
+1. **Linter**: `.claude/scripts/lint/check-library-sourcing.sh` detects violations
+2. **Pre-commit hooks**: Block commits with violations (bypass with `--no-verify` and documented justification)
+3. **CI validation**: Linter runs before tests in validation pipeline
+
+### Function Availability Check
+
+Before calling any library function, add a defensive check:
+
+```bash
+if ! type save_completed_states_to_state &>/dev/null; then
+  echo "ERROR: save_completed_states_to_state not found" >&2
+  echo "DIAGNOSTIC: workflow-state-machine.sh not sourced in this block" >&2
+  exit 1
+fi
+```
+
+This check should appear within 10 lines before any critical function call.
+
+### Critical Functions Requiring Checks
+
+| Function | Library | Impact if Missing |
+|----------|---------|-------------------|
+| `save_completed_states_to_state` | workflow-state-machine.sh | Exit 127, state loss |
+| `append_workflow_state` | state-persistence.sh | Exit 127, state loss |
+| `load_workflow_state` | state-persistence.sh | Exit 127, state inaccessible |
+| `log_command_error` | error-handling.sh | Exit 127, errors not logged |
+| `ensure_error_log_exists` | error-handling.sh | Exit 127, log initialization fails |
+
+### Detection Methods
+
+1. **Error message**: `bash: FUNCTION_NAME: command not found` (exit code 127)
+2. **Linter**: `bash .claude/scripts/lint/check-library-sourcing.sh` detects this pattern
+3. **Defensive check**: Add `type FUNCTION_NAME &>/dev/null` before calls
+
+### Related Standards
+
+- [Code Standards - Mandatory Bash Block Sourcing Pattern](../reference/standards/code-standards.md#mandatory-bash-block-sourcing-pattern)
+- [Output Formatting Standards - MANDATORY Error Suppression](../reference/standards/output-formatting.md#mandatory-error-suppression-on-critical-libraries)
+- [Exit Code 127 Troubleshooting Guide](../troubleshooting/exit-code-127-command-not-found.md)
+
 ## Task Tool Subprocess Isolation
 
 ### Overview
@@ -977,6 +1025,87 @@ source "$UTILS_DIR/workflow-state-machine.sh"
 - Severity: Critical (commands completely non-functional)
 - Fixed in: Spec 732 (plan.md), remaining commands require separate fixes
 
+### Anti-Pattern 6: Missing Library Re-Sourcing
+
+**Problem**: Calling library function without re-sourcing in current block.
+
+**Example** (from /build Block 2 violation):
+
+```bash
+# Block 1
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
+save_completed_states_to_state  # Works
+
+# Block 2 (NEW SUBPROCESS)
+# Library NOT re-sourced - functions not available!
+save_completed_states_to_state  # Exit code 127: command not found
+```
+
+**Error Message**:
+```
+bash: save_completed_states_to_state: command not found
+```
+
+**Root Cause**: Each bash block runs in a new subprocess. Functions sourced in Block 1 do not exist in Block 2's process space.
+
+**Fix**: Re-source library in Block 2:
+
+```bash
+# Block 2 (NEW SUBPROCESS)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+save_completed_states_to_state  # Now works
+```
+
+**Detection Methods**:
+1. Error message: `bash: FUNCTION_NAME: command not found` (exit code 127)
+2. Linter: `bash .claude/scripts/lint/check-library-sourcing.sh` detects this pattern
+3. Defensive check: Add `type FUNCTION_NAME &>/dev/null` before calls
+
+**Real-World Impact**: This anti-pattern caused 57% of /build command failures. The function `save_completed_states_to_state()` was called in Block 2 without sourcing `workflow-state-machine.sh`, despite the library being correctly sourced in Block 1.
+
+**Prevention**: Follow the [Three-Tier Sourcing Pattern](../reference/standards/code-standards.md#three-tier-library-sourcing-pattern) in every bash block.
+
+### Anti-Pattern 7: Bare Error Suppression on Critical Libraries
+
+**Problem**: Using `2>/dev/null` without fail-fast handler hides sourcing failures.
+
+**Example**:
+
+```bash
+# ANTI-PATTERN: Bare suppression hides failure
+source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null
+# If file doesn't exist or has syntax error, execution continues silently
+# Function calls fail much later with exit code 127, far from root cause
+
+# CORRECT: Fail-fast pattern
+source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+```
+
+**Why Bare Suppression is Dangerous**:
+1. Hides file-not-found errors
+2. Hides syntax errors in library
+3. Hides permission errors
+4. Causes exit code 127 much later in execution
+5. Makes debugging extremely difficult
+
+**Critical Libraries Requiring Fail-Fast**:
+- `state-persistence.sh`
+- `workflow-state-machine.sh`
+- `error-handling.sh`
+- `library-version-check.sh`
+
+**Detection**: Linter flags `source.*2>/dev/null$` without fail-fast handler.
+
+**See Also**: [Exit Code 127 Troubleshooting Guide](../troubleshooting/exit-code-127-command-not-found.md)
+
+---
+
 ## Examples
 
 ### Example 1: Research Phase State Management
@@ -1172,6 +1301,228 @@ These patterns were discovered and validated through:
 - **Spec 630**: State persistence architecture, fixing report path loss across blocks (40+ fixes applied)
 
 Key lesson learned: **Code review alone is insufficient for bash block sequences**. Runtime testing with actual subprocess execution is mandatory to catch subprocess isolation issues.
+
+## Anti-Patterns Reference
+
+This section consolidates all anti-patterns for quick reference. Each entry includes an ID, detection method, and link to detailed documentation.
+
+### AP-001: PID-Based Cross-Block Filenames
+
+**ID**: AP-001
+**Severity**: ERROR
+**Detection**: Manual review, pattern search for `\$\$` in filenames
+
+**Description**: Using `$$` for filenames causes files to be inaccessible across bash blocks because process ID changes.
+
+**Example**:
+```bash
+# WRONG
+STATE_FILE="/tmp/workflow_$$.sh"
+# Block 1 creates: /tmp/workflow_12345.sh
+# Block 2 looks for: /tmp/workflow_12346.sh (not found)
+```
+
+**Correct Pattern**: Use fixed semantic filenames. See [Pattern 1: Fixed Semantic Filenames](#pattern-1-fixed-semantic-filenames).
+
+---
+
+### AP-002: Assuming Exports Persist
+
+**ID**: AP-002
+**Severity**: ERROR
+**Detection**: Pattern search for `export` followed by cross-block usage
+
+**Description**: Environment variables exported in one bash block do not persist to subsequent blocks due to subprocess isolation.
+
+**Example**:
+```bash
+# WRONG
+# Block 1
+export WORKFLOW_ID="coord_123"
+# Block 2
+echo "$WORKFLOW_ID"  # Empty - export lost
+```
+
+**Correct Pattern**: Use state persistence library. See [Pattern 4: State Persistence Library](#pattern-4-state-persistence-library).
+
+---
+
+### AP-003: Premature Trap Handlers
+
+**ID**: AP-003
+**Severity**: WARNING
+**Detection**: `trap.*EXIT` in early workflow blocks
+
+**Description**: Trap handlers fire at block exit, not workflow exit, causing premature cleanup.
+
+**Example**:
+```bash
+# WRONG: In Block 1
+trap 'rm -f /tmp/temp_*.txt' EXIT
+# Files deleted when Block 1 exits, not when workflow completes
+```
+
+**Correct Pattern**: Set cleanup traps only in final completion function. See [Pattern 6: Cleanup on Completion Only](#pattern-6-cleanup-on-completion-only).
+
+---
+
+### AP-004: Missing Library Re-Sourcing
+
+**ID**: AP-004
+**Severity**: ERROR
+**Detection**: `check-library-sourcing.sh` linter
+
+**Description**: Calling library functions without re-sourcing in current block causes exit code 127.
+
+**Example**:
+```bash
+# Block 1
+source lib.sh
+my_function  # Works
+# Block 2 (no source statement)
+my_function  # Exit 127: command not found
+```
+
+**Correct Pattern**: Re-source all required libraries at start of every bash block. See [Mandatory Re-Sourcing Requirements](#mandatory-re-sourcing-requirements).
+
+---
+
+### AP-005: BASH_SOURCE Directory Detection
+
+**ID**: AP-005
+**Severity**: ERROR
+**Detection**: Pattern search for `BASH_SOURCE`
+
+**Description**: `BASH_SOURCE[0]` is empty in Claude Code's bash block execution context.
+
+**Example**:
+```bash
+# WRONG
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# BASH_SOURCE is empty -> SCRIPT_DIR resolves incorrectly
+```
+
+**Correct Pattern**: Use git-based CLAUDE_PROJECT_DIR detection. See [Anti-Pattern 5](#anti-pattern-5-using-bash_source-for-script-directory-detection).
+
+---
+
+### AP-006: Bare Error Suppression on Critical Libraries
+
+**ID**: AP-006
+**Severity**: ERROR
+**Detection**: `check-library-sourcing.sh` linter
+
+**Description**: Using `2>/dev/null` on critical library sourcing without fail-fast handler hides failures.
+
+**Example**:
+```bash
+# WRONG: Bare suppression
+source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null
+# Silently fails, causes exit 127 later
+```
+
+**Correct Pattern**: Add fail-fast handler after suppression. See [Anti-Pattern 7](#anti-pattern-7-bare-error-suppression-on-critical-libraries).
+
+---
+
+### AP-007: State Persistence Error Suppression
+
+**ID**: AP-007
+**Severity**: ERROR
+**Detection**: `lint_error_suppression.sh`
+
+**Description**: Suppressing errors on state persistence functions hides critical failures.
+
+**Example**:
+```bash
+# WRONG
+save_completed_states_to_state 2>/dev/null
+save_completed_states_to_state || true
+```
+
+**Correct Pattern**: Use explicit error handling with logging. See [Code Standards - Error Suppression Policy](../reference/standards/code-standards.md#error-suppression-policy).
+
+---
+
+### AP-008: Deprecated State Paths
+
+**ID**: AP-008
+**Severity**: ERROR
+**Detection**: `lint_error_suppression.sh`
+
+**Description**: Using deprecated state directory paths causes state management failures.
+
+**Example**:
+```bash
+# WRONG: Deprecated paths
+STATE_FILE=".claude/data/states/workflow.sh"
+STATE_FILE=".claude/data/workflows/workflow.sh"
+```
+
+**Correct Pattern**: Use standard `.claude/tmp/workflow_*.sh` path.
+
+---
+
+### AP-009: Preprocessing-Unsafe Conditionals
+
+**ID**: AP-009
+**Severity**: ERROR
+**Detection**: `lint_bash_conditionals.sh`
+
+**Description**: Using `!` in `[[ ]]` conditionals causes preprocessing errors.
+
+**Example**:
+```bash
+# WRONG: Preprocessing-unsafe
+if [[ ! "$VAR" = value ]]; then
+```
+
+**Correct Pattern**: Use exit code capture pattern:
+```bash
+# CORRECT
+[[ "$VAR" = value ]]
+IS_MATCH=$?
+if [ $IS_MATCH -ne 0 ]; then
+```
+
+---
+
+### AP-010: Eager Directory Creation
+
+**ID**: AP-010
+**Severity**: WARNING
+**Detection**: `validate-agent-behavioral-file.sh`, manual review
+
+**Description**: Creating artifact directories at workflow startup leaves empty directories on failure.
+
+**Example**:
+```bash
+# WRONG: Eager creation in setup
+mkdir -p "$REPORTS_DIR"
+mkdir -p "$DEBUG_DIR"
+# If workflow fails, empty directories persist
+```
+
+**Correct Pattern**: Use lazy directory creation with `ensure_artifact_directory()` immediately before writing files. See [Code Standards - Directory Creation Anti-Patterns](../reference/standards/code-standards.md#directory-creation-anti-patterns).
+
+---
+
+### Anti-Pattern Detection Summary
+
+| ID | Anti-Pattern | Detection Tool | Enforcement |
+|----|--------------|----------------|-------------|
+| AP-001 | PID-based filenames | Manual | Pre-commit review |
+| AP-002 | Export persistence assumption | Manual | Pre-commit review |
+| AP-003 | Premature trap handlers | Manual | Pre-commit review |
+| AP-004 | Missing library re-sourcing | check-library-sourcing.sh | Pre-commit hook |
+| AP-005 | BASH_SOURCE detection | Manual | Pre-commit review |
+| AP-006 | Bare error suppression | check-library-sourcing.sh | Pre-commit hook |
+| AP-007 | State persistence suppression | lint_error_suppression.sh | Pre-commit hook |
+| AP-008 | Deprecated state paths | lint_error_suppression.sh | Pre-commit hook |
+| AP-009 | Preprocessing-unsafe conditionals | lint_bash_conditionals.sh | Pre-commit hook |
+| AP-010 | Eager directory creation | validate-agent-behavioral-file.sh | Manual |
+
+See [Enforcement Mechanisms Reference](../reference/standards/enforcement-mechanisms.md) for complete enforcement tooling documentation.
 
 ## Summary
 

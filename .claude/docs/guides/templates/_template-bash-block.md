@@ -24,33 +24,29 @@ set -euo pipefail
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 export CLAUDE_PROJECT_DIR
 
-LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+# === STEP 1: Source Libraries Using Three-Tier Pattern ===
+# Option A: Use source-libraries-inline.sh utility (recommended)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/source-libraries-inline.sh" || exit 1
+source_critical_libraries || exit 1
+source_workflow_libraries  # Graceful degradation
 
-# === STEP 1: Source State Machine and Persistence (FIRST) ===
-# Load state management libraries with output suppression
-
-source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
-
-source "${LIB_DIR}/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-
-# === STEP 2: Source Error Handling and Verification (BEFORE any function calls) ===
-# Load error handling libraries with output suppression
-
-source "${LIB_DIR}/error-handling.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source error-handling.sh" >&2
-  exit 1
-}
-
-source "${LIB_DIR}/verification-helpers.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source verification-helpers.sh" >&2
-  exit 1
-}
+# Option B: Inline three-tier pattern (if source-libraries-inline.sh unavailable)
+# Tier 1: Critical Foundation (fail-fast required)
+# source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+#   echo "ERROR: Failed to source state-persistence.sh" >&2
+#   exit 1
+# }
+# source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+#   echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+#   exit 1
+# }
+# source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+#   echo "ERROR: Failed to source error-handling.sh" >&2
+#   exit 1
+# }
+#
+# Tier 2: Workflow Support (graceful degradation)
+# source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null || true
 
 # === STEP 3: Verification Checkpoint (Standard 0) ===
 # Verify critical functions are available before proceeding
@@ -106,14 +102,15 @@ set -euo pipefail
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 export CLAUDE_PROJECT_DIR
 
-LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
+# === STEP 1: Source Libraries Using Three-Tier Pattern ===
+# CRITICAL: Each bash block runs in a NEW subprocess - all libraries must be re-sourced
 
-# === STEP 1: Source State Machine and Persistence (FIRST) ===
+# Option A: Use source-libraries-inline.sh utility (recommended)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/source-libraries-inline.sh" || exit 1
+source_critical_libraries || exit 1
+source_workflow_libraries  # Graceful degradation
 
-source "${LIB_DIR}/workflow-state-machine.sh"
-source "${LIB_DIR}/state-persistence.sh"
-
-# === STEP 2: Load Workflow State (BEFORE other libraries) ===
+# === STEP 2: Load Workflow State (AFTER library sourcing) ===
 # This prevents other libraries from resetting variables with conditional initialization
 
 # Load workflow ID from fixed semantic filename

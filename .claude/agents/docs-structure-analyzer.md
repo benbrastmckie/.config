@@ -60,36 +60,7 @@ echo "  REPORT_PATH: $REPORT_PATH"
 echo "  PROJECT_DIR: $PROJECT_DIR"
 ```
 
-**CHECKPOINT**: YOU MUST have absolute paths before proceeding to Step 1.5.
-
----
-
-### STEP 1.5 (REQUIRED BEFORE STEP 2) - Ensure Parent Directory Exists
-
-**EXECUTE NOW - Lazy Directory Creation**
-
-**ABSOLUTE REQUIREMENT**: YOU MUST ensure the parent directory exists before creating the report file.
-
-Use Bash tool to source unified location detection library and create directory:
-
-```bash
-# Source unified location detection library for directory creation
-CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || {
-  echo "ERROR: Failed to source unified-location-detection.sh" >&2
-  exit 1
-}
-
-# Ensure parent directory exists (lazy creation pattern)
-ensure_artifact_directory "$REPORT_PATH" || {
-  echo "ERROR: Failed to create parent directory for report" >&2
-  exit 1
-}
-
-echo "✓ Parent directory ready for report file"
-```
-
-**CHECKPOINT**: Parent directory must exist before proceeding to Step 2.
+**CHECKPOINT**: YOU MUST have absolute paths before proceeding to Step 2.
 
 ---
 
@@ -101,7 +72,29 @@ echo "✓ Parent directory ready for report file"
 
 **WHY THIS MATTERS**: Creating the file first guarantees artifact creation even if analysis encounters errors. This is the PRIMARY task.
 
-Use the Write tool to create the file at the EXACT path from Step 1:
+**CRITICAL TIMING**: Ensure parent directory exists IMMEDIATELY before Write tool usage (within same action block). This implements lazy directory creation correctly - directory created only when file write is imminent.
+
+Use the Write tool to create the file at the EXACT path from Step 1.
+
+**Note**: The Write tool will automatically create parent directories as needed. If Write tool fails due to missing parent directory, use this fallback pattern:
+
+```bash
+# ONLY if Write tool fails - Source unified location detection library
+CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || {
+  echo "ERROR: Failed to source unified-location-detection.sh" >&2
+  exit 1
+}
+
+# Ensure parent directory exists (immediate fallback)
+ensure_artifact_directory "$REPORT_PATH" || {
+  echo "ERROR: Failed to create parent directory for report" >&2
+  exit 1
+}
+# Then retry Write tool immediately
+```
+
+Create report file content:
 
 ```markdown
 # .claude/docs/ Structure Analysis

@@ -1,101 +1,135 @@
-> /research is running… "Research if the implementation to result from 
-/home/benjamin/.config/.claude/specs/871_error_analysis_and_repair/plans/001_error_analysis_and_repair_plan.md complies with 
-the standards in .claude/docs/, recommending changes to the plan if needed." 
+> /research is running… "Research the old plans .claude/specs/883_commands_o
+ptimize_refactor/plans/001_commands_optimize_refactor_plan.md and 
+.claude/specs/902_error_logging_infrastructure_completion/plans/001_error_lo
+gging_infrastructure_completion_plan.md in order to identify anything 
+missing from the new plan /home/benjamin/.config/.claude/specs/916_commands_
+docs_standards_review/plans/001_commands_docs_standards_review_plan.md that 
+would be helpful to include by fitting with the .claude/docs/ standards 
+without adding needless complexity or risking breaking functionality." 
   ⎿  Allowed 6 tools for this command
 
-● I'll execute the /research command to analyze whether the implementation plan complies with the standards in
-  .claude/docs/.
-
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Classification accepted: scope=research-only, complexity=2, topics=0
-     State machine initialized: scope=research-only, terminal=research
-     2
-     … +4 lines (ctrl+o to expand)
+  ⎿ Classification accepted: scope=research-only, complexity=2, topics=
+    0
+    State machine initialized: scope=research-only, terminal=research
+    … +5 lines (ctrl+o to expand)
+
 
 ● Task(Generate semantic topic directory name)
-  ⎿  Done (2 tool uses · 24.4k tokens · 27s)                                                                              
+  ⎿  Done (2 tool uses · 26.6k tokens · 14s)                           
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿  Error: Exit code 1
-     ERROR: State file not found: /home/benjamin/.claude/tmp/state_research_1763691685.sh
+     ERROR: State file not found: 
+     /home/benjamin/.claude/tmp/workflow_research_1763772011.sh
 
-● I need to correct the state file path - it should match the actual WORKFLOW_ID:
+● Bash(# Check what workflow IDs exist and find the correct state file
+      ls -la ~/.claude/tmp/workflow_*.sh 2>/dev/null | head -10…)
+  ⎿ -rw-r--r-- 1 benjamin users 7901 Nov 16 22:39 /home/benjamin/.claud
+    e/tmp/workflow_coordinate_1763350170.sh
+    -rwxr-xr-x 1 benjamin users 5030 Nov 21 09:40 /home/benjamin/.claud
+    … +82 lines (ctrl+o to expand)
+
+
+
+● The issue is that init_workflow_state uses a different ID prefix
+  (e.g., workflow_research_1747872214 based on date +%s at
+  initialization time). Let me check for the correct state file:
+
+● Bash(# Find the most recent research workflow state file
+      ls -lat ~/.claude/tmp/workflow_research_*.sh 2>/dev/null | head -5…)
+  ⎿  research_1763772011                         
+     Looking for: workflow_research_1763772011.sh
+     Not found
+
+● The init_workflow_state function didn't create the state file during
+  the first block. Let me check what init_workflow_state actually does
+  and reinitialize:
+
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿ Setup complete: research_1763772097 (research-only, complexity: 2) 
+    Research directory: /home/benjamin/.config/.claude/specs/917_plans_
+    research_docs_standards_gaps/reports
+    … +4 lines (ctrl+o to expand)
+
+
+● Now let me invoke the research-specialist agent to conduct the
+  research:
+
+● Task(Research plans for missing elements)
+  ⎿  Done (12 tool uses · 77.8k tokens · 1m 44s)                       
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿  Error: Exit code 127
-     /run/current-system/sw/bin/bash: line 198: !: command not found
-     /run/current-system/sw/bin/bash: line 203: TOPIC_PATH: unbound variable
 
-     WORKFLOW_ID: research_1763691685
-     STATE_FILE: /home/benjamin/.config/.claude/tmp/workflow_research_1763691685.sh
+     ❌ CRITICAL ERROR: Workflow state file not found
 
-● I need to remove the set -u flag that's causing the unbound variable error, and ensure TOPIC_PATH is set after
-  initialize_workflow_paths:
+     Context:
+       Expected state file: 
+     /home/benjamin/.config/.claude/tmp/workflow_research_1763772097.sh
+       Workflow ID: research_1763772097
+       Block type: Subsequent block (is_first_block=false)
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Setup complete: research_1763691685 (research-only, complexity: 2)                                   
-     Research directory: /home/benjamin/.config/.claude/specs/875_plan_compliance_standards_review/reports
-     Topic name: plan_compliance_standards_review (strategy: llm_generated)
+     This indicates a state persistence failure. The state file should
+     … +14 lines (ctrl+o to see all)
+
+● Let me check what was created and read the research report directly:
+
+● Bash(# Check what was created
+      ls -la /home/benjamin/.config/.claude/specs/917_plans_research_docs_st
+      andards_gaps/reports/ 2>/dev/null)
+  ⎿  total 20                                         
+     drwx------ 2 benjamin users  4096 Nov 21 16:43 .
+     drwxr-xr-x 3 benjamin users  4096 Nov 21 16:42 ..
      … +2 lines (ctrl+o to expand)
 
-● Task(Research plan compliance with standards)
-  ⎿  Done (10 tool uses · 97.6k tokens · 3m 13s)                                                                          
+● Read(.claude/specs/917_plans_research_docs_standards_gaps/reports/001_plan
+      s_gaps_analysis.md)
+  ⎿  Read 210 lines
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Verifying research artifacts...                                
-     /run/current-system/sw/bin/bash: line 176: !: command not found
-     … +10 lines (ctrl+o to expand)
+● Research complete. Here's the summary:
 
-● Research Complete
+  ---
+  Research Complete
 
-  The /research command has successfully analyzed Plan 871 for compliance with project standards and created a
-  comprehensive compliance report.
-
-  Summary
-
-  Workflow: research-only (complexity: 2)
-  Topic: plan_compliance_standards_review
-
-  Research Report: .claude/specs/875_plan_compliance_standards_review/reports/001_plan_871_compliance_analysis.md
+  Report: /home/benjamin/.config/.claude/specs/917_plans_research_docs_s
+  tandards_gaps/reports/001_plans_gaps_analysis.md
 
   Key Findings
 
-  Overall Compliance: 85% (23/27 criteria met) - Grade B
+  The analysis identified 3 valuable additions from the old plans (883,
+  902) that would benefit Plan 916:
 
-  Critical Issue Found (BLOCKING):
-  - Phase 0 Histexpand Remediation: The plan's approach using set +H 2>/dev/null || true contradicts the documented
-  standards. The Bash Tool Limitations documentation explicitly states that set +H is a runtime directive that cannot
-  prevent preprocessing-stage history expansion errors. The correct approach is the exit code capture pattern documented in
-   bash-tool-limitations.md.
+  | Gap                              | Value  | Recommendation
 
-  Compliance by Area:
-  - ✓ Code Standards (100%)
-  - ✓ Output Formatting (100%)
-  - ✓ Error Handling Pattern (100%)
-  - ✓ Directory Protocols (100%)
-  - ⚠ Testing Protocols (71%) - 2 minor issues
-  - ⚠ Bash Safety Standards (50%) - 1 critical + 1 medium issue
-  - ⚠ Documentation Standards (67%) - 1 minor clarification needed
+                          |
+  |----------------------------------|--------|-------------------------
+  ----------------------------------------------------------------------
+  ------------------------|
+  | Bash block consolidation targets | HIGH   | Add targets for /expand
+  (32 blocks) and /collapse (29 blocks) - both should target ≤8 blocks
+  per output-formatting.md |
+  | Command template creation        | MEDIUM | Create
+  commands/templates/workflow-command-template.md referencing all
+  standards                                      |
+  | State persistence testing        | MEDIUM | Add specific tests for
+  STATE_FILE integrity after pattern modifications
+                           |
 
-  Recommended Actions
+  Not Recommended to Add
 
-  1. REQUIRED - Revise Phase 0 entirely using the exit code capture pattern
-  2. OPTIONAL - Update Phase 2 test documentation task (redundancy fix)
-  3. OPTIONAL - Add test script validation enforcement to Phase 6
-  4. OPTIONAL - Clarify WHAT/WHY documentation standards in Phase 5
+  - Library evaluation (from Plan 883) - Adds significant complexity,
+  better as separate scope
+  - Helper functions (from Plan 902) - Already scoped in Plan 902,
+  explicitly marked optional
 
-  The report provides detailed before/after revisions for all four areas with complete rationale. Once Phase 0 is revised,
-  the plan will achieve 95% compliance.
+  Suggested Plan 916 Modifications
 
-  Next Steps
+  1. Phase 2 extension: Add bash block consolidation documentation for
+  /expand and /collapse
+  2. Phase 5 additions:
+    - Create command template
+    - Add state persistence testing tasks
 
-  1. Review the compliance report:
-  cat /home/benjamin/.config/.claude/specs/875_plan_compliance_standards_review/reports/001_plan_871_compliance_analysis.md
-  2. Revise Plan 871 to address findings:
-  /revise "Update 
-  /home/benjamin/.config/.claude/specs/871_error_analysis_and_repair/plans/001_error_analysis_and_repair_plan.md based on 
-  compliance findings in 
-  /home/benjamin/.config/.claude/specs/875_plan_compliance_standards_review/reports/001_plan_871_compliance_analysis.md"
-
-  The research identified one critical blocking issue that must be addressed before the plan can be implemented
-  successfully.
+  The report includes specific task markdown that can be copy-pasted
+  into Plan 916 if desired.

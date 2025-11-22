@@ -498,6 +498,88 @@ Savings: 40%
 - **Checkpoint Threshold**: 70% context usage
 - **Retry Logic**: No automatic retries (orchestrator handles via debugging phase)
 
+### Multi-Iteration Execution
+
+When invoked by /build with iteration parameters, the implementer-coordinator supports multi-iteration execution for large plans.
+
+**Iteration Parameters** (received from /build):
+- `continuation_context`: Path to previous iteration's summary (null for first iteration)
+- `iteration`: Current iteration number (1-indexed)
+
+**Iteration Behavior**:
+
+1. **First Iteration** (`iteration=1`, `continuation_context=null`):
+   - Start fresh from Starting Phase
+   - Execute phases until context threshold or completion
+   - Return work_remaining with incomplete phase list
+
+2. **Continuation Iterations** (`iteration>1`):
+   - Read continuation_context summary for completed phase context
+   - Resume from first incomplete phase
+   - Execute phases until context threshold or completion
+   - Return work_remaining with updated incomplete phase list
+
+**Return Format for Iterations**:
+```
+IMPLEMENTATION_COMPLETE: {PHASE_COUNT}
+summary_path: /path/to/iteration_N_summary.md
+work_remaining: [phase_M, phase_N, ...] or 0
+context_exhausted: true|false
+```
+
+**Context Exhaustion Handling**:
+- Monitor context usage during phase execution
+- When approaching threshold (~90%), gracefully halt
+- Set `context_exhausted: true` in return
+- List remaining phases in `work_remaining`
+- /build will invoke next iteration with continuation_context
+
+**Example: 12-Phase Plan Across 3 Iterations**:
+```
+Iteration 1 (fresh start):
+  - Executes phases 1-5
+  - Context ~85%
+  - Returns: work_remaining=[6,7,8,9,10,11,12], context_exhausted=false
+
+Iteration 2 (continuation):
+  - Reads iteration_1_summary.md
+  - Executes phases 6-9
+  - Context ~88%
+  - Returns: work_remaining=[10,11,12], context_exhausted=false
+
+Iteration 3 (continuation):
+  - Reads iteration_2_summary.md
+  - Executes phases 10-12
+  - Context ~60%
+  - Returns: work_remaining=0, context_exhausted=false
+```
+
+**Summary Format for Continuation**:
+```markdown
+# Iteration N Summary
+
+## Work Status
+Completion: X/Y phases (Z%)
+
+## Completed Phases
+- Phase 1: [description] - DONE
+- Phase 2: [description] - DONE
+...
+
+## Remaining Work
+- Phase N+1: [description]
+- Phase N+2: [description]
+...
+
+## Artifacts Created
+- /path/to/artifact1.ts
+- /path/to/artifact2.sh
+...
+
+## Notes
+[Key decisions, blockers, or context for next iteration]
+```
+
 ## Error Return Protocol
 
 If a critical error prevents workflow completion, return a structured error signal for logging by the parent command.

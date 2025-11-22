@@ -239,6 +239,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>
   echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
 }
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-initialization.sh" >&2
+  exit 1
+}
 
 # Initialize error logging
 ensure_error_log_exists
@@ -262,15 +266,26 @@ elif [ -n "$TYPE_FILTER" ]; then
   ERROR_DESCRIPTION="${TYPE_FILTER} error analysis"
 fi
 
-# Get topic number and directory using LLM agent
-TOPIC_NUMBER=$(get_next_topic_number)
-TOPIC_NAME=$(generate_topic_name "$ERROR_DESCRIPTION")
-TOPIC_DIR="${CLAUDE_PROJECT_DIR}/.claude/specs/${TOPIC_NUMBER}_${TOPIC_NAME}"
+# Initialize workflow paths using standard library
+# Uses fallback slug generation for topic directory naming
+initialize_workflow_paths "$ERROR_DESCRIPTION" "research-only" "2" ""
+INIT_EXIT=$?
+if [ $INIT_EXIT -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Failed to initialize workflow paths" \
+    "bash_block_1" \
+    "$(jq -n --arg desc "$ERROR_DESCRIPTION" '{description: $desc}')"
+  echo "ERROR: Failed to initialize workflow paths" >&2
+  exit 1
+fi
 
-# Create topic directory structure
-mkdir -p "${TOPIC_DIR}/reports" 2>/dev/null
-
-# Determine report path
+# Use exported TOPIC_PATH from initialize_workflow_paths()
+# Directory creation is lazy - handled by agent using ensure_artifact_directory()
+TOPIC_DIR="${TOPIC_PATH}"
 REPORT_PATH="${TOPIC_DIR}/reports/001_error_report.md"
 
 # Build filter arguments for agent

@@ -80,6 +80,13 @@ YOU MUST receive:
 
 **CRITICAL**: Use Write tool with the report path provided. File MUST exist before Step 3.
 
+**DIRECTORY CREATION**: Before writing, ensure the parent directory exists:
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
+ensure_artifact_directory "${REPORT_PATH}"
+```
+This creates the directory ONLY when a file is being written (lazy creation pattern).
+
 ---
 
 ### STEP 3 (REQUIRED BEFORE STEP 4) - Investigate and Update Report

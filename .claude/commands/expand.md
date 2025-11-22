@@ -105,6 +105,22 @@ fi
 # Export for use by sourced libraries
 export CLAUDE_PROJECT_DIR
 
+# Source error-handling.sh for centralized error logging (MANDATORY fail-fast pattern)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Initialize error log and workflow metadata
+ensure_error_log_exists
+COMMAND_NAME="/expand"
+WORKFLOW_ID="expand_$(date +%s)"
+USER_ARGS="$*"
+export COMMAND_NAME WORKFLOW_ID USER_ARGS
+
+# Setup bash error trap for automatic error capture
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Source consolidated planning utilities
 source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/plan-core-bundle.sh"
 
@@ -126,11 +142,14 @@ echo "✓ Structure level detected: $structure_level"
 
 ```bash
 if [ ! -f "$plan_file" ]; then
-  echo "❌ ERROR: Plan file not found: $plan_file"
+  echo "ERROR: Plan file not found: $plan_file"
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "file_error" "Plan file not found" "plan_verification" \
+    "$(jq -n --arg path "$plan_file" '{plan_file: $path}')"
   exit 1
 fi
 
-echo "✓ VERIFIED: Plan file exists: $plan_file"
+echo "VERIFIED: Plan file exists: $plan_file"
 ```
 
 ---
@@ -151,11 +170,14 @@ Read the specified phase from the main plan using `plan-core-bundle.sh` utilitie
 
 ```bash
 if [ -z "$phase_content" ]; then
-  echo "❌ ERROR: Phase $phase_num not found in plan"
+  echo "ERROR: Phase $phase_num not found in plan"
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" "Phase not found in plan" "phase_extraction" \
+    "$(jq -n --argjson num "$phase_num" --arg plan "$plan_file" '{phase_num: $num, plan_file: $plan}')"
   exit 1
 fi
 
-echo "✓ VERIFIED: Phase $phase_num content extracted (${#phase_content} bytes)"
+echo "VERIFIED: Phase $phase_num content extracted (${#phase_content} bytes)"
 ```
 
 ---
@@ -228,18 +250,24 @@ phase_file="$plan_dir/phase_${phase_num}_${phase_name}.md"
 
 ```bash
 if [ ! -f "$phase_file" ]; then
-  echo "❌ CRITICAL ERROR: Phase file not created: $phase_file"
+  echo "CRITICAL ERROR: Phase file not created: $phase_file"
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "file_error" "Phase file not created after expansion" "phase_file_creation" \
+    "$(jq -n --arg path "$phase_file" --argjson num "$phase_num" '{phase_file: $path, phase_num: $num}')"
   exit 1
 fi
 
 # Verify file has content
 file_size=$(wc -c < "$phase_file")
 if [ "$file_size" -lt 500 ]; then
-  echo "❌ ERROR: Phase file too small (${file_size} bytes), expected >500"
+  echo "ERROR: Phase file too small (${file_size} bytes), expected >500"
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" "Phase file too small after expansion" "phase_file_validation" \
+    "$(jq -n --arg path "$phase_file" --argjson size "$file_size" '{phase_file: $path, file_size: $size, expected_min: 500}')"
   exit 1
 fi
 
-echo "✓ VERIFIED: Phase file created: $phase_file (${file_size} bytes)"
+echo "VERIFIED: Phase file created: $phase_file (${file_size} bytes)"
 ```
 
 ---
@@ -623,6 +651,22 @@ fi
 # Export for use by sourced libraries
 export CLAUDE_PROJECT_DIR
 
+# Source error-handling.sh for centralized error logging (MANDATORY fail-fast pattern)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Initialize error log and workflow metadata
+ensure_error_log_exists
+COMMAND_NAME="/expand"
+WORKFLOW_ID="expand_$(date +%s)"
+USER_ARGS="$*"
+export COMMAND_NAME WORKFLOW_ID USER_ARGS
+
+# Setup bash error trap for automatic error capture
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Source utilities
 # Source consolidated planning utilities
 source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/plan-core-bundle.sh"
@@ -631,6 +675,9 @@ source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/auto-analysis-utils.sh"
 # Validate plan path
 if [[ ! -f "$PLAN_PATH" ]] && [[ ! -d "$PLAN_PATH" ]]; then
   echo "ERROR: Plan not found: $PLAN_PATH"
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "file_error" "Plan not found" "plan_validation" \
+    "$(jq -n --arg path "$PLAN_PATH" '{plan_path: $path}')"
   exit 1
 fi
 

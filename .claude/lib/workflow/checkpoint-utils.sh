@@ -1024,6 +1024,182 @@ load_state_machine_checkpoint() {
   fi
 }
 
+# ==============================================================================
+# Iteration Checkpoint Functions (v2.1 - Build Iteration Support)
+# ==============================================================================
+
+# validate_iteration_checkpoint: Validate iteration-specific fields in checkpoint
+# Usage: validate_iteration_checkpoint <checkpoint-file>
+# Returns: 0 if valid, 1 if invalid, 2 if warning (non-fatal)
+# Example: validate_iteration_checkpoint "/path/to/build_checkpoint.json"
+validate_iteration_checkpoint() {
+  local checkpoint_file="${1:-}"
+
+  if [ -z "$checkpoint_file" ]; then
+    echo "Usage: validate_iteration_checkpoint <checkpoint-file>" >&2
+    return 1
+  fi
+
+  if [ ! -f "$checkpoint_file" ]; then
+    echo "ERROR: Checkpoint file not found: $checkpoint_file" >&2
+    return 1
+  fi
+
+  if ! command -v jq &> /dev/null; then
+    echo "Warning: jq not found, skipping iteration validation" >&2
+    return 0
+  fi
+
+  # Validate JSON structure
+  if ! jq empty "$checkpoint_file" 2>/dev/null; then
+    echo "ERROR: Invalid JSON in checkpoint file" >&2
+    return 1
+  fi
+
+  local warnings=0
+  local errors=0
+
+  # Check iteration count
+  local iteration=$(jq -r '.iteration // 0' "$checkpoint_file")
+  local max_iterations=$(jq -r '.max_iterations // 5' "$checkpoint_file")
+
+  if [ "$iteration" -gt "$max_iterations" ]; then
+    echo "ERROR: iteration ($iteration) exceeds max_iterations ($max_iterations)" >&2
+    errors=$((errors + 1))
+  fi
+
+  # Check continuation_context file exists if specified
+  local continuation_context=$(jq -r '.continuation_context // ""' "$checkpoint_file")
+  if [ -n "$continuation_context" ] && [ "$continuation_context" != "null" ] && [ "$continuation_context" != "" ]; then
+    if [ ! -f "$continuation_context" ]; then
+      echo "WARNING: continuation_context file not found: $continuation_context" >&2
+      warnings=$((warnings + 1))
+    fi
+  fi
+
+  # Validate work_remaining format (should be string or array)
+  local work_remaining=$(jq -r '.work_remaining // ""' "$checkpoint_file")
+  local work_remaining_type=$(jq -r '.work_remaining | type' "$checkpoint_file" 2>/dev/null)
+
+  # Accept string, array, or null
+  if [ "$work_remaining_type" != "string" ] && [ "$work_remaining_type" != "array" ] && [ "$work_remaining_type" != "null" ]; then
+    echo "ERROR: work_remaining has invalid type: $work_remaining_type (expected string, array, or null)" >&2
+    errors=$((errors + 1))
+  fi
+
+  # Validate halt_reason is one of expected values
+  local halt_reason=$(jq -r '.halt_reason // ""' "$checkpoint_file")
+  if [ -n "$halt_reason" ] && [ "$halt_reason" != "null" ]; then
+    case "$halt_reason" in
+      context_threshold|max_iterations|stuck|completion|user_abort|error)
+        # Valid halt reasons
+        ;;
+      *)
+        echo "WARNING: Unknown halt_reason: $halt_reason" >&2
+        warnings=$((warnings + 1))
+        ;;
+    esac
+  fi
+
+  # Validate plan_path exists
+  local plan_path=$(jq -r '.plan_path // ""' "$checkpoint_file")
+  if [ -n "$plan_path" ] && [ "$plan_path" != "null" ]; then
+    if [ ! -f "$plan_path" ]; then
+      echo "ERROR: plan_path file not found: $plan_path" >&2
+      errors=$((errors + 1))
+    fi
+  fi
+
+  # Return based on errors/warnings
+  if [ $errors -gt 0 ]; then
+    return 1
+  elif [ $warnings -gt 0 ]; then
+    return 2
+  fi
+
+  return 0
+}
+
+# load_iteration_checkpoint: Load checkpoint with iteration field extraction
+# Usage: load_iteration_checkpoint <checkpoint-file>
+# Returns: JSON with iteration fields extracted to top level
+# Example: load_iteration_checkpoint "/path/to/build_checkpoint.json"
+load_iteration_checkpoint() {
+  local checkpoint_file="${1:-}"
+
+  if [ -z "$checkpoint_file" ]; then
+    echo "Usage: load_iteration_checkpoint <checkpoint-file>" >&2
+    return 1
+  fi
+
+  if [ ! -f "$checkpoint_file" ]; then
+    echo "ERROR: Checkpoint file not found: $checkpoint_file" >&2
+    return 1
+  fi
+
+  # Validate checkpoint before loading
+  if ! validate_iteration_checkpoint "$checkpoint_file"; then
+    echo "ERROR: Checkpoint validation failed" >&2
+    return 1
+  fi
+
+  # Extract and return key iteration fields
+  jq '{
+    version: .version,
+    plan_path: .plan_path,
+    topic_path: .topic_path,
+    iteration: .iteration,
+    max_iterations: .max_iterations,
+    continuation_context: .continuation_context,
+    work_remaining: .work_remaining,
+    last_work_remaining: .last_work_remaining,
+    context_estimate: .context_estimate,
+    halt_reason: .halt_reason,
+    workflow_id: .workflow_id,
+    timestamp: .timestamp
+  }' "$checkpoint_file"
+}
+
+# save_iteration_checkpoint: Save checkpoint with iteration fields (v2.1 format)
+# Usage: save_iteration_checkpoint <checkpoint-json>
+# Returns: Path to saved checkpoint file
+# Example: save_iteration_checkpoint '{"plan_path":"/path","iteration":2,...}'
+save_iteration_checkpoint() {
+  local checkpoint_json="${1:-}"
+
+  if [ -z "$checkpoint_json" ]; then
+    echo "Usage: save_iteration_checkpoint <checkpoint-json>" >&2
+    return 1
+  fi
+
+  # Validate JSON
+  if ! echo "$checkpoint_json" | jq empty 2>/dev/null; then
+    echo "ERROR: Invalid JSON provided" >&2
+    return 1
+  fi
+
+  # Extract workflow_id and iteration for filename
+  local workflow_id=$(echo "$checkpoint_json" | jq -r '.workflow_id // "unknown"')
+  local iteration=$(echo "$checkpoint_json" | jq -r '.iteration // 1')
+
+  # Create checkpoint file
+  local checkpoint_dir="${HOME}/.claude/data/checkpoints"
+  mkdir -p "$checkpoint_dir"
+
+  local checkpoint_file="${checkpoint_dir}/build_${workflow_id}_iteration_${iteration}.json"
+  local temp_file="${checkpoint_file}.tmp.$$"
+
+  # Add version and timestamp if not present
+  echo "$checkpoint_json" | jq \
+    --arg version "2.1" \
+    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '. + {version: ($version), timestamp: (if .timestamp then .timestamp else $timestamp end)}' \
+    > "$temp_file"
+
+  mv "$temp_file" "$checkpoint_file"
+  echo "$checkpoint_file"
+}
+
 # Export functions for use in other scripts
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f save_checkpoint
@@ -1041,4 +1217,7 @@ if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
   export -f get_skip_reason
   export -f save_state_machine_checkpoint
   export -f load_state_machine_checkpoint
+  export -f validate_iteration_checkpoint
+  export -f load_iteration_checkpoint
+  export -f save_iteration_checkpoint
 fi

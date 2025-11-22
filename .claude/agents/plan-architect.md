@@ -98,6 +98,14 @@ Tier Selection:
 - INCLUDE `[NOT STARTED]` markers on ALL phase headings (required for progress tracking)
 - WAIT for Write to complete before Step 3
 
+**DIRECTORY CREATION**: Before writing, ensure the parent directory exists:
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
+ensure_artifact_directory "${PLAN_PATH}"
+```
+This creates the directory ONLY when a file is being written (lazy creation pattern).
+Never call `mkdir -p` directly for artifact directories.
+
 **Example**:
 ```
 # Prompt will provide:

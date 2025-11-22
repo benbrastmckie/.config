@@ -297,11 +297,11 @@ YOU MUST perform these steps in order:
 
 1. REQUIRED: Extract research topics from workflow description
    - If no topics detected, exit with code 1 and diagnostic message
-2. REQUIRED: Create reports directory (specs/NNN_topic/reports/)
-   - If directory creation fails, exit with code 1
-3. REQUIRED: Generate research report for each topic
+2. REQUIRED: Generate research report for each topic
    - Use Read, Grep, Glob tools (NOT Bash commands)
-4. REQUIRED: Return completion signal
+   - Directory creation: Agents use `ensure_artifact_directory()` at write-time (lazy creation)
+   - Commands do NOT pre-create artifact subdirectories (reports/, plans/, debug/)
+3. REQUIRED: Return completion signal
    - Format: REPORT_CREATED: ${REPORT_PATH}
 
 STEP 1 REQUIRED BEFORE STEP 2 (fail-fast if skipped)

@@ -608,18 +608,77 @@ sm_transition() {
 
   # Fail-fast if STATE_FILE not loaded (Spec 787: State persistence bug fix)
   if [ -z "${STATE_FILE:-}" ]; then
+    # Log to centralized error log if available
+    if declare -f log_command_error &>/dev/null; then
+      log_command_error \
+        "${COMMAND_NAME:-/unknown}" \
+        "${WORKFLOW_ID:-unknown}" \
+        "${USER_ARGS:-}" \
+        "state_error" \
+        "STATE_FILE not set during sm_transition - load_workflow_state not called" \
+        "sm_transition" \
+        "$(jq -n --arg target "$next_state" '{target_state: $target}')"
+    fi
     echo "ERROR: STATE_FILE not set in sm_transition()" >&2
     echo "DIAGNOSTIC: Call load_workflow_state() before sm_transition()" >&2
     return 1
   fi
 
+  # Validate CURRENT_STATE is set (prevents undefined variable errors)
+  if [ -z "${CURRENT_STATE:-}" ]; then
+    if declare -f log_command_error &>/dev/null; then
+      log_command_error \
+        "${COMMAND_NAME:-/unknown}" \
+        "${WORKFLOW_ID:-unknown}" \
+        "${USER_ARGS:-}" \
+        "state_error" \
+        "CURRENT_STATE not set during sm_transition - state machine not initialized" \
+        "sm_transition" \
+        "$(jq -n --arg target "$next_state" '{target_state: $target}')"
+    fi
+    echo "ERROR: CURRENT_STATE not set in sm_transition()" >&2
+    echo "DIAGNOSTIC: Call sm_init() before sm_transition()" >&2
+    return 1
+  fi
+
   # Phase 1: Validate transition is allowed
-  local valid_transitions="${STATE_TRANSITIONS[$CURRENT_STATE]}"
+  local valid_transitions="${STATE_TRANSITIONS[$CURRENT_STATE]:-}"
+
+  # Check if valid_transitions is empty (indicates invalid current state)
+  if [ -z "$valid_transitions" ]; then
+    if declare -f log_command_error &>/dev/null; then
+      log_command_error \
+        "${COMMAND_NAME:-/unknown}" \
+        "${WORKFLOW_ID:-unknown}" \
+        "${USER_ARGS:-}" \
+        "state_error" \
+        "No valid transitions defined for current state: $CURRENT_STATE" \
+        "sm_transition" \
+        "$(jq -n --arg current "$CURRENT_STATE" --arg target "$next_state" \
+           '{current_state: $current, target_state: $target}')"
+    fi
+    echo "ERROR: No valid transitions defined for state: $CURRENT_STATE" >&2
+    return 1
+  fi
 
   # Check if next_state is in valid_transitions (comma-separated)
   if ! echo ",$valid_transitions," | grep -q ",$next_state,"; then
+    # Log invalid transition to centralized error log
+    if declare -f log_command_error &>/dev/null; then
+      log_command_error \
+        "${COMMAND_NAME:-/unknown}" \
+        "${WORKFLOW_ID:-unknown}" \
+        "${USER_ARGS:-}" \
+        "state_error" \
+        "Invalid state transition attempted: $CURRENT_STATE -> $next_state" \
+        "sm_transition" \
+        "$(jq -n --arg current "$CURRENT_STATE" --arg target "$next_state" --arg valid "$valid_transitions" \
+           '{current_state: $current, target_state: $target, valid_transitions: $valid}')"
+    fi
     echo "ERROR: Invalid transition: $CURRENT_STATE → $next_state" >&2
     echo "Valid transitions from $CURRENT_STATE: $valid_transitions" >&2
+    echo "DIAGNOSTIC: If CURRENT_STATE seems wrong, check state persistence between blocks" >&2
+    echo "DIAGNOSTIC: Verify load_workflow_state() was called and STATE_FILE is set" >&2
     return 1
   fi
 
@@ -635,7 +694,12 @@ sm_transition() {
   # This ensures subsequent bash blocks can read the correct state
   if command -v append_workflow_state &> /dev/null; then
     append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
+  else
+    echo "WARNING: append_workflow_state not available - state may not persist across blocks" >&2
   fi
+
+  # Export for immediate use in current block
+  export CURRENT_STATE
 
   # Add to completed states history (avoid duplicates)
   local already_completed=0
@@ -660,6 +724,38 @@ sm_transition() {
   fi
 
   echo "State transition: $CURRENT_STATE (completed: ${#COMPLETED_STATES[@]} states)" >&2
+  return 0
+}
+
+# sm_validate_state: Validate state machine is properly initialized
+# Usage: sm_validate_state || exit 1
+# Returns: 0 if valid, 1 if invalid
+sm_validate_state() {
+  local errors=0
+
+  if [ -z "${STATE_FILE:-}" ]; then
+    echo "ERROR: STATE_FILE not set" >&2
+    errors=$((errors + 1))
+  elif [ ! -f "$STATE_FILE" ]; then
+    echo "ERROR: STATE_FILE does not exist: $STATE_FILE" >&2
+    errors=$((errors + 1))
+  fi
+
+  if [ -z "${CURRENT_STATE:-}" ]; then
+    echo "ERROR: CURRENT_STATE not set" >&2
+    errors=$((errors + 1))
+  fi
+
+  if [ -z "${WORKFLOW_SCOPE:-}" ]; then
+    echo "WARNING: WORKFLOW_SCOPE not set" >&2
+    # Not a hard error, but worth noting
+  fi
+
+  if [ "$errors" -gt 0 ]; then
+    echo "State validation failed with $errors errors" >&2
+    return 1
+  fi
+
   return 0
 }
 
@@ -898,6 +994,7 @@ export -f sm_init
 export -f sm_load
 export -f sm_current_state
 export -f sm_transition
+export -f sm_validate_state
 export -f sm_execute
 export -f sm_save
 export -f map_phase_to_state
