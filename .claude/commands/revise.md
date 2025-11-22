@@ -41,7 +41,10 @@ set -e  # Fail-fast per code-standards.md
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
   if [ -f "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" ]; then
-    source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+    source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+      echo "ERROR: Failed to source error-handling.sh" >&2
+      exit 1
+    }
     ensure_error_log_exists 2>/dev/null
     setup_bash_error_trap "/revise" "revise_capture_$(date +%s)" "argument_capture" 2>/dev/null || true
   fi
@@ -79,7 +82,7 @@ fi
 
 # Source error handling early for trap setup
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
-  echo "ERROR: Cannot load error-handling library" >&2
+  echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 ensure_error_log_exists
@@ -201,7 +204,16 @@ if [ ! -f "$EXISTING_PLAN_PATH" ]; then
 fi
 
 # Extract revision details (everything after plan path)
-REVISION_DETAILS=$(echo "$REVISION_DESCRIPTION" | sed "s|.*$EXISTING_PLAN_PATH||" | xargs)
+# Escape regex special characters in plan path for safe sed processing
+ESCAPED_PLAN_PATH=$(printf '%s\n' "$EXISTING_PLAN_PATH" | sed 's/[[\.*^$()+?{|]/\\&/g')
+REVISION_DETAILS=$(echo "$REVISION_DESCRIPTION" | sed "s|.*$ESCAPED_PLAN_PATH||" | xargs) || true
+
+# Validate revision details are not empty after extraction
+if [ -z "$REVISION_DETAILS" ]; then
+  echo "WARNING: Could not extract revision details after plan path" >&2
+  echo "Using full description as revision context" >&2
+  REVISION_DETAILS="$REVISION_DESCRIPTION"
+fi
 
 echo "=== Research-and-Revise Workflow ==="
 echo "Existing Plan: $EXISTING_PLAN_PATH"
@@ -261,14 +273,24 @@ fi
 
 export CLAUDE_PROJECT_DIR
 
-# Source libraries in dependency order (Standard 15)
-# 1. State machine foundation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
-# 2. Library version checking
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh"
-# 3. Error handling
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh"
+# === SOURCE LIBRARIES (Three-Tier Pattern) ===
+# Tier 1: Critical Foundation (fail-fast required)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source library-version-check.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
@@ -367,9 +389,18 @@ echo ""
 set +H  # CRITICAL: Disable history expansion
 
 # Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
 STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
@@ -533,9 +564,20 @@ Task {
 set +H  # CRITICAL: Disable history expansion
 set -e  # Fail-fast per code-standards.md
 
-# Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+# Re-source libraries for subprocess isolation (Three-Tier Pattern)
+# Tier 1: Critical Foundation (state-persistence.sh, workflow-state-machine.sh, error-handling.sh)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load WORKFLOW_ID from file
 STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
@@ -796,9 +838,20 @@ Task {
 set +H  # CRITICAL: Disable history expansion
 set -e  # Fail-fast per code-standards.md
 
-# Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+# Re-source libraries for subprocess isolation (Three-Tier Pattern)
+# Tier 1: Critical Foundation (state-persistence.sh, workflow-state-machine.sh, error-handling.sh)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load WORKFLOW_ID from file
 STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
@@ -889,9 +942,18 @@ WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 export WORKFLOW_ID
 
 # Re-source required libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh"
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "$WORKFLOW_ID" false

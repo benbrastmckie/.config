@@ -160,7 +160,7 @@ ensure_artifact_directory_tracked() {
 
 ## Implementation Phases
 
-### Phase 1: Verify Spec 870 Fix Application [IN PROGRESS]
+### Phase 1: Verify Spec 870 Fix Application [COMPLETE]
 dependencies: []
 
 **Objective**: Determine if spec 870's fix was correctly applied and identify any reverted changes.
@@ -168,14 +168,14 @@ dependencies: []
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Read spec 870 implementation plan (file: /home/benjamin/.config/.claude/specs/870_fix_lazy_directory_creation_violations_across_6_co/plans/001_fix_lazy_directory_creation_violations_a_plan.md)
-- [ ] Read spec 870 implementation summary (file: /home/benjamin/.config/.claude/specs/870_fix_lazy_directory_creation_violations_across_6_co/summaries/001_implementation_complete.md)
-- [ ] Search all command files for eager mkdir patterns: `grep -rn 'mkdir -p "\$RESEARCH_DIR"' .claude/commands/*.md`
-- [ ] Search all command files for debug dir creation: `grep -rn 'mkdir -p "\$DEBUG_DIR"' .claude/commands/*.md`
-- [ ] Search all command files for plans dir creation: `grep -rn 'mkdir -p "\$PLANS_DIR"' .claude/commands/*.md`
-- [ ] Check git history for reverts: `git log --all --oneline --grep="870" -- .claude/commands/`
-- [ ] Verify current /debug command has no eager mkdir calls (file: /home/benjamin/.config/.claude/commands/debug.md)
-- [ ] Document findings in phase report
+- [x] Read spec 870 implementation plan (file: /home/benjamin/.config/.claude/specs/870_fix_lazy_directory_creation_violations_across_6_co/plans/001_fix_lazy_directory_creation_violations_a_plan.md)
+- [x] Read spec 870 implementation summary (file: /home/benjamin/.config/.claude/specs/870_fix_lazy_directory_creation_violations_across_6_co/summaries/001_implementation_complete.md)
+- [x] Search all command files for eager mkdir patterns: `grep -rn 'mkdir -p "\$RESEARCH_DIR"' .claude/commands/*.md`
+- [x] Search all command files for debug dir creation: `grep -rn 'mkdir -p "\$DEBUG_DIR"' .claude/commands/*.md`
+- [x] Search all command files for plans dir creation: `grep -rn 'mkdir -p "\$PLANS_DIR"' .claude/commands/*.md`
+- [x] Check git history for reverts: `git log --all --oneline --grep="870" -- .claude/commands/`
+- [x] Verify current /debug command has no eager mkdir calls (file: /home/benjamin/.config/.claude/commands/debug.md)
+- [x] Document findings in phase report
 
 **Testing**:
 ```bash
@@ -194,7 +194,7 @@ test_spec_870_applied() {
 
 **Expected Duration**: 2 hours
 
-### Phase 2: Identify Agent Directory Creation Patterns [NOT STARTED]
+### Phase 2: Identify Agent Directory Creation Patterns [COMPLETE]
 dependencies: [1]
 
 **Objective**: Find all agent files that call `ensure_artifact_directory()` prematurely.
@@ -202,14 +202,14 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] List all agent behavioral files: `find .claude/agents -name "*.md" -type f`
-- [ ] Search for ensure_artifact_directory calls: `grep -rn "ensure_artifact_directory" .claude/agents/*.md`
-- [ ] For each agent, determine line number of ensure_artifact_directory call
-- [ ] For each agent, determine line number where file write occurs (search for "Write tool")
-- [ ] Calculate line distance between directory creation and file write
-- [ ] Identify agents with >50 line gap (high risk for premature creation)
-- [ ] Create prioritized list of agents to fix (file: /home/benjamin/.config/.claude/specs/891_debug_command_empty_dir_infra/debug/agents_to_fix.txt)
-- [ ] Document current patterns in analysis report
+- [x] List all agent behavioral files: `find .claude/agents -name "*.md" -type f`
+- [x] Search for ensure_artifact_directory calls: `grep -rn "ensure_artifact_directory" .claude/agents/*.md`
+- [x] For each agent, determine line number of ensure_artifact_directory call
+- [x] For each agent, determine line number where file write occurs (search for "Write tool")
+- [x] Calculate line distance between directory creation and file write
+- [x] Identify agents with >50 line gap (high risk for premature creation)
+- [x] Create prioritized list of agents to fix (file: /home/benjamin/.config/.claude/specs/891_debug_command_empty_dir_infra/debug/agents_to_fix.txt)
+- [x] Document current patterns in analysis report
 
 **Testing**:
 ```bash
@@ -229,7 +229,7 @@ test_ensure_calls_found() {
 
 **Expected Duration**: 3 hours
 
-### Phase 3: Fix Agent Directory Creation Timing [NOT STARTED]
+### Phase 3: Fix Agent Directory Creation Timing [COMPLETE]
 dependencies: [2]
 
 **Objective**: Move `ensure_artifact_directory()` calls to immediately before file writes in all agents.
@@ -237,15 +237,15 @@ dependencies: [2]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Read debug-analyst.md to understand current structure (file: /home/benjamin/.config/.claude/agents/debug-analyst.md)
-- [ ] Identify ensure_artifact_directory call location in debug-analyst.md
-- [ ] Identify Write tool usage location in debug-analyst.md
-- [ ] Move ensure_artifact_directory to line immediately before Write tool call
-- [ ] Repeat for research-specialist.md (file: /home/benjamin/.config/.claude/agents/research-specialist.md)
-- [ ] Repeat for plan-architect.md (file: /home/benjamin/.config/.claude/agents/plan-architect.md)
-- [ ] Repeat for any other agents identified in Phase 2
-- [ ] Verify each agent's ensure_artifact_directory call is <5 lines before Write tool usage
-- [ ] Test each modified agent individually
+- [x] Read debug-analyst.md to understand current structure (file: /home/benjamin/.config/.claude/agents/debug-analyst.md)
+- [x] Identify ensure_artifact_directory call location in debug-analyst.md
+- [x] Identify Write tool usage location in debug-analyst.md
+- [x] Move ensure_artifact_directory to line immediately before Write tool call
+- [x] Repeat for research-specialist.md (file: /home/benjamin/.config/.claude/agents/research-specialist.md)
+- [x] Repeat for plan-architect.md (file: /home/benjamin/.config/.claude/agents/plan-architect.md)
+- [x] Repeat for any other agents identified in Phase 2
+- [x] Verify each agent's ensure_artifact_directory call is <5 lines before Write tool usage
+- [x] Test each modified agent individually
 
 **Testing**:
 ```bash
@@ -280,7 +280,7 @@ test_ensure_adjacent_to_write() {
 
 **Expected Duration**: 4 hours
 
-### Phase 4: Add Cleanup Trap for Failed Agent Executions [NOT STARTED]
+### Phase 4: Add Cleanup Trap for Failed Agent Executions [COMPLETE]
 dependencies: [3]
 
 **Objective**: Implement cleanup mechanism to remove empty directories when agents fail.
@@ -288,15 +288,15 @@ dependencies: [3]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read unified-location-detection.sh to understand current ensure_artifact_directory (file: /home/benjamin/.config/.claude/lib/core/unified-location-detection.sh)
-- [ ] Add tracked version: ensure_artifact_directory_tracked() function
-- [ ] Add cleanup trap template to agent behavioral file common section
-- [ ] Test cleanup trap in isolation (mock agent failure scenario)
-- [ ] Update debug-analyst.md to use tracked version
-- [ ] Update research-specialist.md to use tracked version
-- [ ] Update plan-architect.md to use tracked version
-- [ ] Test cleanup works when agent fails mid-execution
-- [ ] Document trap usage pattern for future agents
+- [x] Read unified-location-detection.sh to understand current ensure_artifact_directory (file: /home/benjamin/.config/.claude/lib/core/unified-location-detection.sh)
+- [x] Add tracked version: ensure_artifact_directory_tracked() function
+- [x] Add cleanup trap template to agent behavioral file common section
+- [x] Test cleanup trap in isolation (mock agent failure scenario)
+- [x] Update debug-analyst.md to use tracked version
+- [x] Update research-specialist.md to use tracked version
+- [x] Update plan-architect.md to use tracked version
+- [x] Test cleanup works when agent fails mid-execution
+- [x] Document trap usage pattern for future agents
 
 **Cleanup Trap Implementation**:
 ```bash
@@ -368,7 +368,7 @@ EOF
 
 **Expected Duration**: 3 hours
 
-### Phase 5: Clean Up Existing Empty Directories [NOT STARTED]
+### Phase 5: Clean Up Existing Empty Directories [COMPLETE]
 dependencies: [4]
 
 **Objective**: Remove the 6 existing empty debug/ directories from production.
@@ -376,14 +376,14 @@ dependencies: [4]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Find all empty debug directories: `find .claude/specs -name "debug" -type d -empty`
-- [ ] Verify each directory is truly empty (no hidden files)
-- [ ] Document which specs have empty debug directories
-- [ ] Remove empty debug directories: `find .claude/specs -name "debug" -type d -empty -delete`
-- [ ] Verify removal: `find .claude/specs -name "debug" -type d -empty` should return nothing
-- [ ] Check for other empty artifact directories: `find .claude/specs -type d -empty`
-- [ ] Remove other empty artifact directories if appropriate
-- [ ] Document cleanup actions in completion report
+- [x] Find all empty debug directories: `find .claude/specs -name "debug" -type d -empty`
+- [x] Verify each directory is truly empty (no hidden files)
+- [x] Document which specs have empty debug directories
+- [x] Remove empty debug directories: `find .claude/specs -name "debug" -type d -empty -delete`
+- [x] Verify removal: `find .claude/specs -name "debug" -type d -empty` should return nothing
+- [x] Check for other empty artifact directories: `find .claude/specs -type d -empty`
+- [x] Remove other empty artifact directories if appropriate
+- [x] Document cleanup actions in completion report
 
 **Testing**:
 ```bash
@@ -402,7 +402,7 @@ test_populated_dirs_preserved() {
 
 **Expected Duration**: 1 hour
 
-### Phase 6: Add Regression Tests [NOT STARTED]
+### Phase 6: Add Regression Tests [COMPLETE]
 dependencies: [5]
 
 **Objective**: Create automated tests to prevent empty directory bug from recurring.
@@ -410,14 +410,14 @@ dependencies: [5]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create test file: .claude/tests/integration/test_lazy_directory_creation.sh
-- [ ] Implement test_debug_command_no_premature_dirs()
-- [ ] Implement test_agent_failure_no_empty_dirs()
-- [ ] Implement test_ensure_artifact_directory_timing()
-- [ ] Add test to .claude/tests/run_all_tests.sh
-- [ ] Run full test suite to verify no regressions
-- [ ] Document test expectations and failure conditions
-- [ ] Update testing protocols in CLAUDE.md if needed
+- [x] Create test file: .claude/tests/integration/test_lazy_directory_creation.sh
+- [x] Implement test_debug_command_no_premature_dirs()
+- [x] Implement test_agent_failure_no_empty_dirs()
+- [x] Implement test_ensure_artifact_directory_timing()
+- [x] Add test to .claude/tests/run_all_tests.sh
+- [x] Run full test suite to verify no regressions
+- [x] Document test expectations and failure conditions
+- [x] Update testing protocols in CLAUDE.md if needed
 
 **Test Implementation**:
 ```bash

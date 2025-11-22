@@ -88,6 +88,11 @@ Common tasks and where to find guidance:
     → [Error Handling Pattern](concepts/patterns/error-handling.md)
     → [State-Based Orchestration](architecture/state-based-orchestration-overview.md)
 
+18. **Create reusable skills for autonomous capabilities**
+    → [Skills Authoring Standards](reference/standards/skills-authoring.md)
+    → [Skills README](../skills/README.md)
+    → [Document Converter Skill Guide](guides/skills/document-converter-skill-guide.md)
+
 ## Quick Navigation for Agents
 
 Looking to work on a specific area? Use these quick-start paths:
@@ -106,6 +111,11 @@ Looking to work on a specific area? Use these quick-start paths:
 → **Standards**: [Command Architecture Standards](reference/architecture/overview.md)
 → **Migration**: [Execution Enforcement Guide](guides/patterns/execution-enforcement/execution-enforcement-overview.md)
 → **Testing**: [Testing Patterns](guides/patterns/testing-patterns.md)
+
+### Working on Skills?
+→ **Start**: [Skills Authoring Standards](reference/standards/skills-authoring.md)
+→ **Patterns**: [Skills README](../skills/README.md)
+→ **Example**: [Document Converter Skill Guide](guides/skills/document-converter-skill-guide.md)
 
 ### Content Ownership
 

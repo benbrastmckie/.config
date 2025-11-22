@@ -119,10 +119,19 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === SOURCE LIBRARIES ===
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null || true
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
   echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
@@ -210,6 +219,25 @@ if [ $SM_TRANSITION_EXIT -ne 0 ]; then
   echo "ERROR: State transition to RESEARCH failed" >&2
   exit 1
 fi
+
+# Verify state was updated
+if [ "$CURRENT_STATE" != "$STATE_RESEARCH" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State not updated after transition: expected $STATE_RESEARCH, got $CURRENT_STATE" \
+    "bash_block_1" \
+    "$(jq -n --arg expected "$STATE_RESEARCH" --arg actual "${CURRENT_STATE:-UNSET}" \
+       '{expected_state: $expected, actual_state: $actual}')"
+
+  echo "ERROR: State machine state not updated" >&2
+  exit 1
+fi
+
+# Explicitly persist CURRENT_STATE (belt and suspenders)
+append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
 
 # Initialize workflow paths (uses fallback slug generation)
 initialize_workflow_paths "$ERROR_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" ""
@@ -303,15 +331,51 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Initialize DEBUG_LOG if not already set
 DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# === VERIFY CURRENT_STATE LOADED ===
+# The state machine's CURRENT_STATE must be restored from state file
+if [ -z "${CURRENT_STATE:-}" ]; then
+  # Attempt to read directly from state file
+  if [ -n "${STATE_FILE:-}" ] && [ -f "$STATE_FILE" ]; then
+    CURRENT_STATE=$(grep "^CURRENT_STATE=" "$STATE_FILE" 2>/dev/null | tail -1 | cut -d'=' -f2- | tr -d '"' || echo "")
+  fi
+fi
+
+# Final validation - if still empty, we have a persistence problem
+if [ -z "${CURRENT_STATE:-}" ]; then
+  log_command_error \
+    "${COMMAND_NAME:-/repair}" \
+    "${WORKFLOW_ID:-unknown}" \
+    "${USER_ARGS:-}" \
+    "state_error" \
+    "CURRENT_STATE not restored from workflow state - state persistence failure" \
+    "bash_block_2" \
+    "$(jq -n --arg file "${STATE_FILE:-MISSING}" '{state_file: $file}')"
+
+  echo "ERROR: State machine state not persisted from Block 1" >&2
+  echo "DIAGNOSTIC: STATE_FILE=${STATE_FILE:-MISSING}" >&2
+  exit 1
+fi
+
+echo "DEBUG: Current state after load: ${CURRENT_STATE:-NOT_SET}" >&2
 
 # === RESTORE ERROR LOGGING CONTEXT ===
 if [ -z "${COMMAND_NAME:-}" ]; then
@@ -419,6 +483,22 @@ append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
 echo "Research verified: $REPORT_COUNT reports"
 echo ""
 
+# === VALIDATE STATE MACHINE BEFORE TRANSITION ===
+if ! sm_validate_state; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State machine validation failed before PLAN transition" \
+    "bash_block_2" \
+    "$(jq -n --arg current "${CURRENT_STATE:-UNSET}" --arg state_file "${STATE_FILE:-UNSET}" \
+       '{current_state: $current, state_file: $state_file}')"
+
+  echo "ERROR: State machine not properly initialized" >&2
+  exit 1
+fi
+
 # === TRANSITION TO PLAN ===
 sm_transition "$STATE_PLAN" 2>&1
 SM_TRANSITION_EXIT=$?
@@ -519,9 +599,18 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Initialize DEBUG_LOG if not already set
 DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"

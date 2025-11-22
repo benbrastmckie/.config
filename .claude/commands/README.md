@@ -118,6 +118,7 @@ See [Errors Command Guide](../docs/guides/commands/errors-command-guide.md) and 
 ### Technical Advantages
 
 - **Agent-based execution**: Specialized agents for research, planning, implementation, and debugging
+- **Skills integration**: Commands delegate to autonomous skills for focused capabilities
 - **Topic organization**: All artifacts organized by `specs/{NNN_topic}/` structure
 - **Artifact separation**: Gitignored specs vs tracked debug reports for clean commits
 - **Full automation**: End-to-end workflow from research through implementation
@@ -175,6 +176,63 @@ See [Errors Command Guide](../docs/guides/commands/errors-command-guide.md) and 
 │ Logs:      .claude/data/logs/*.log                          │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+## Skills Integration
+
+Commands can delegate to skills for autonomous, model-invoked capabilities. Skills provide focused functionality that Claude automatically discovers and uses.
+
+### Skills vs Commands vs Agents
+
+| Aspect | Skills | Commands | Agents |
+|--------|--------|----------|--------|
+| Invocation | Autonomous (model-invoked) | Explicit (`/cmd`) | Task delegation |
+| Scope | Single focused capability | Quick shortcuts | Complex orchestration |
+| Discovery | Automatic | Manual | Manual |
+| Context | Main conversation | Main conversation | Separate context |
+| Composition | Auto-composition | Manual chaining | Coordinates skills |
+
+### Command Delegation Pattern
+
+Commands can delegate to skills when available, falling back to script mode when not:
+
+```markdown
+## STEP 0: Check Skill Availability
+
+```bash
+SKILL_AVAILABLE=false
+if [ -d ".claude/skills/<skill-name>" ] && [ -f ".claude/skills/<skill-name>/SKILL.md" ]; then
+  SKILL_AVAILABLE=true
+  echo "Skill <skill-name> available"
+fi
+```
+
+## STEP 3.5: Skill Delegation (after mode detection)
+
+If $SKILL_AVAILABLE is true, delegate to skill via natural language:
+
+"Use the <skill-name> skill to [perform task]"
+
+Otherwise, fall back to script mode (STEP 4).
+```
+
+### Commands with Skills Integration
+
+| Command | Integrated Skill | Delegation Mode |
+|---------|------------------|-----------------|
+| /convert-docs | document-converter | STEP 0/3.5 pattern |
+
+### Benefits
+
+- **Autonomous invocation**: Claude auto-invokes skills during workflows
+- **Composition**: Skills compose automatically (e.g., research + document conversion)
+- **Backward compatibility**: Commands fall back gracefully when skills unavailable
+- **Token efficiency**: Progressive disclosure loads skill only when needed
+
+### Documentation
+
+- [Skills README](../skills/README.md) - Complete skills guide
+- [Skills Authoring Standards](../docs/reference/standards/skills-authoring.md) - Standards compliance
+- [Document Converter Skill Guide](../docs/guides/skills/document-converter-skill-guide.md) - Example integration
 
 ## Available Commands
 
@@ -904,5 +962,7 @@ description: Brief description shown in picker
 ### Related
 - [Parent Directory](../README.md)
 - [Agents](../agents/README.md) - Agents used by commands
+- [Skills](../skills/README.md) - Model-invoked capabilities
 - [Specs](../specs/README.md) - Command outputs
 - [Documentation](../docs/README.md) - Guides and references
+- [Skills Authoring Standards](../docs/reference/standards/skills-authoring.md) - Skills compliance

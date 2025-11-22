@@ -1,0 +1,171 @@
+# Agent Directory Creation Analysis
+# Generated: 2025-11-21
+
+## Agents with ensure_artifact_directory Calls
+
+### Pattern A: STEP 1.5 Directory Creation (PROBLEMATIC)
+These agents call ensure_artifact_directory in a separate Bash block (STEP 1.5)
+BEFORE the Write tool is used (STEP 2). If agent fails validation or analysis,
+directory exists but file was never created.
+
+1. research-specialist.md
+   - ensure_artifact_directory: Line 61 (STEP 1.5)
+   - Write tool: Line 81+ (STEP 2)
+   - Line distance: ~20 lines
+   - Risk: HIGH - If agent fails between STEP 1.5 and STEP 2, empty directory persists
+
+2. errors-analyst.md
+   - ensure_artifact_directory: Line 61 (STEP 1.5)
+   - Write tool: Line 81+ (STEP 2)
+   - Line distance: ~20 lines
+   - Risk: HIGH - Same pattern as research-specialist
+
+3. claude-md-analyzer.md
+   - ensure_artifact_directory: Line 80 (STEP 1.5 equivalent)
+   - Write tool: Line ~100+ (STEP 2 equivalent)
+   - Line distance: ~20 lines
+   - Risk: HIGH
+
+4. cleanup-plan-architect.md
+   - ensure_artifact_directory: Line 114
+   - Write tool: Line ~134+ (estimated)
+   - Line distance: ~20 lines
+   - Risk: HIGH
+
+5. docs-accuracy-analyzer.md
+   - ensure_artifact_directory: Line 92
+   - Write tool: Line ~112+ (estimated)
+   - Line distance: ~20 lines
+   - Risk: HIGH
+
+6. docs-bloat-analyzer.md
+   - ensure_artifact_directory: Line 90
+   - Write tool: Line ~110+ (estimated)
+   - Line distance: ~20 lines
+   - Risk: HIGH
+
+7. docs-structure-analyzer.md
+   - ensure_artifact_directory: Line 84
+   - Write tool: Line ~104+ (estimated)
+   - Line distance: ~20 lines
+   - Risk: HIGH
+
+### Pattern B: No Directory Creation (INCORRECT)
+These agents don't call ensure_artifact_directory at all, relying on commands
+to pre-create directories. This violates lazy creation pattern.
+
+1. debug-analyst.md
+   - ensure_artifact_directory: NOT FOUND
+   - Write tool: Line 81+ (STEP 2)
+   - Risk: LOW for empty dirs (doesn't create), HIGH for spec 870 violation
+
+### Pattern C: Plan Architect (UNKNOWN)
+Need to verify plan-architect.md pattern.
+
+1. plan-architect.md
+   - ensure_artifact_directory: Line 114 (from grep)
+   - Write tool: Need to verify
+   - Risk: UNKNOWN - requires inspection
+
+## Root Cause Analysis
+
+**Problem**: Agents execute ensure_artifact_directory in STEP 1.5 as a separate
+Bash block, which creates the directory immediately. If the agent:
+1. Fails validation checks (STEP 1)
+2. Encounters errors during analysis (STEP 3)
+3. Is interrupted before Write tool execution (STEP 2)
+
+Then the directory exists but contains no files.
+
+**Why This Happens**:
+- Agents follow "create file first" philosophy to guarantee artifact creation
+- Directory must exist BEFORE Write tool can succeed
+- STEP 1.5 is positioned BEFORE STEP 2 to satisfy this requirement
+- BUT: STEP 1.5 uses Bash tool, which executes immediately
+- If agent fails anywhere after STEP 1.5, directory persists empty
+
+**Timeline of Bug**:
+1. Agent invoked by command
+2. STEP 1: Receive inputs (can fail here, no dir created - GOOD)
+3. STEP 1.5: Run Bash block with ensure_artifact_directory (DIR CREATED)
+4. STEP 2: Use Write tool to create file (may never reach here)
+5. If agent fails between 1.5 and 2, empty directory persists
+
+**Evidence from Spec 889**:
+- debug/ directory: 2025-11-21 08:40:53
+- Topic root: 2025-11-21 09:00:35
+- Directory created 20 minutes BEFORE topic root
+- This suggests agent was invoked, created directory, then failed
+
+## Fix Strategy
+
+### Option 1: Move ensure_artifact_directory to Write Tool Block (RECOMMENDED)
+Instead of separate Bash block in STEP 1.5, inline the directory creation
+with the Write tool usage:
+
+```markdown
+### STEP 2 - Create Report File
+
+Use Bash tool to ensure directory, then Write tool to create file:
+
+```bash
+source .claude/lib/core/unified-location-detection.sh
+ensure_artifact_directory "$REPORT_PATH" || exit 1
+```
+
+Now use Write tool immediately:
+[Write tool usage]
+```
+
+**Advantage**: Directory created only if Write tool is about to execute
+**Disadvantage**: Requires restructuring agent behavioral files
+
+### Option 2: Cleanup Trap (DEFENSIVE)
+Add cleanup trap to remove empty directories if agent fails:
+
+```bash
+# In STEP 1.5
+CREATED_DIRS=()
+cleanup_empty_dirs_on_failure() {
+  local exit_code=$?
+  if [ "$exit_code" -ne 0 ] && [ ${#CREATED_DIRS[@]} -gt 0 ]; then
+    for dir in "${CREATED_DIRS[@]}"; do
+      if [ -d "$dir" ] && [ -z "$(ls -A "$dir")" ]; then
+        rmdir "$dir" 2>/dev/null || true
+      fi
+    done
+  fi
+}
+trap cleanup_empty_dirs_on_failure EXIT
+```
+
+**Advantage**: Non-invasive, adds safety net
+**Disadvantage**: Doesn't prevent directory creation, just cleans up
+
+### Option 3: Hybrid Approach (BEST)
+Combine both:
+1. Move ensure_artifact_directory closer to Write tool (reduce time window)
+2. Add cleanup trap as failsafe (catch any remaining edge cases)
+
+## Recommended Fix Priority
+
+1. **HIGH**: research-specialist.md - Used by all workflows
+2. **HIGH**: errors-analyst.md - New agent, should follow best practices
+3. **MEDIUM**: plan-architect.md - Used by all planning workflows
+4. **MEDIUM**: docs-* analyzers (4 files) - Used by cleanup workflows
+5. **LOW**: claude-md-analyzer.md - Used by analyze workflows
+6. **LOW**: cleanup-plan-architect.md - Used by cleanup workflows
+
+## Agents NOT Requiring Fixes
+
+1. debug-analyst.md - Doesn't call ensure_artifact_directory (but violates lazy creation)
+2. topic-naming-agent.md - No grep match (likely doesn't create directories)
+3. implementation-executor.md - No grep match
+4. implementer-coordinator.md - No grep match
+5. All files in agents/prompts/ - Prompt templates, not executable agents
+6. All files in agents/shared/ - Shared libraries, not agents
+7. All files in agents/templates/ - Templates, not agents
+
+## Total Agents Requiring Fixes: 8
+- 7 agents with premature ensure_artifact_directory
+- 1 agent missing ensure_artifact_directory (debug-analyst.md)

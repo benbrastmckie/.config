@@ -29,6 +29,8 @@ Detailed guides for creating AI agents:
 - [Model Selection Guide](model-selection-guide.md) - Choosing appropriate models
 - [Model Rollback Guide](model-rollback-guide.md) - Rollback procedures
 - [Using Utility Libraries](using-utility-libraries.md) - Library integration patterns
+- [Pre-Commit Hooks](pre-commit-hooks.md) - Automated validation before commits
+- [Topic Naming with LLM](topic-naming-with-llm.md) - LLM-based naming system
 
 ## Quick Start
 

@@ -166,9 +166,23 @@ validate_and_generate_filename_slugs() {
   local research_topics
   research_topics=$(echo "$classification_result" | jq -c '.research_topics // []')
 
-  if [ "$research_topics" = "[]" ] || [ -z "$research_topics" ]; then
-    echo "ERROR: validate_and_generate_filename_slugs: research_topics array empty or missing" >&2
-    return 1
+  if [ "$research_topics" = "[]" ] || [ -z "$research_topics" ] || [ "$research_topics" = "null" ]; then
+    # WARNING only (not error): Fallback behavior works correctly
+    # LLM classification agent sometimes returns valid topic_directory_slug with empty research_topics
+    # This is handled gracefully by generating sequential fallback slugs - no error logging needed
+    echo "WARNING: research_topics empty - generating fallback slugs" >&2
+
+    # Generate fallback topics based on complexity
+    local -a fallback_slugs=()
+    for ((i=1; i<=research_complexity; i++)); do
+      fallback_slugs+=("topic${i}")
+    done
+
+    # Output bash array declaration for eval by caller (matches line 266 format)
+    local slugs_str
+    slugs_str=$(printf '"%s" ' "${fallback_slugs[@]}")
+    echo "slugs=($slugs_str)"
+    return 0
   fi
 
   # Validate count matches complexity
@@ -176,8 +190,20 @@ validate_and_generate_filename_slugs() {
   topics_count=$(echo "$research_topics" | jq 'length')
 
   if [ "$topics_count" -ne "$research_complexity" ]; then
-    echo "ERROR: validate_and_generate_filename_slugs: topics count ($topics_count) != complexity ($research_complexity)" >&2
-    return 1
+    # Log mismatch warning (continue with available topics + fallbacks)
+    if declare -f log_command_error >/dev/null 2>&1; then
+      log_command_error \
+        "${COMMAND_NAME:-/unknown}" \
+        "${WORKFLOW_ID:-unknown}" \
+        "${USER_ARGS:-}" \
+        "validation_error" \
+        "research_topics count mismatch: expected $research_complexity, got $topics_count - adjusting" \
+        "validate_and_generate_filename_slugs" \
+        "$(jq -n --argjson expected "$research_complexity" --argjson actual "$topics_count" \
+           '{expected_count: $expected, actual_count: $actual, action: "adjusting_count"}')"
+    fi
+    echo "WARNING: topics count ($topics_count) != complexity ($research_complexity) - adjusting" >&2
+    # Continue processing with available topics (don't fail)
   fi
 
   # Generate validated slugs (three-tier fallback)
@@ -603,8 +629,9 @@ initialize_workflow_paths() {
   # Generate validated filename slugs if classification_result provided
   if [ -n "$classification_result" ]; then
     # Extract and validate filename slugs using three-tier fallback
+    # NOTE: Only capture stdout for eval - stderr warnings pass through without eval
     local slugs_declaration
-    if slugs_declaration=$(validate_and_generate_filename_slugs "$classification_result" "$research_complexity" 2>&1); then
+    if slugs_declaration=$(validate_and_generate_filename_slugs "$classification_result" "$research_complexity"); then
       # eval the array declaration: slugs=("slug1" "slug2" ...)
       eval "$slugs_declaration"
       validated_slugs=("${slugs[@]}")

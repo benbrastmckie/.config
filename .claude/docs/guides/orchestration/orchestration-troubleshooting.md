@@ -535,35 +535,29 @@ ls -la .claude/specs/NNN_topic/{reports,plans,summaries,debug}
 
 **Solution**:
 
-**Option 1**: Pre-create directory structure before agent invocation:
-```bash
-**EXECUTE NOW**: Create topic directory structure:
+**Correct Pattern**: Use lazy directory creation via `ensure_artifact_directory()` at write time:
 
 ```bash
-source .claude/lib/core/unified-location-detection.sh
-topic_dir=$(create_topic_structure "feature_name")
-echo "TOPIC_DIR: $topic_dir"
+# Agent writes file using ensure_artifact_directory() pattern
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
 
-# Verify structure
-ls -la "$topic_dir"
+# Directory created only when file is written (lazy creation)
+ensure_artifact_directory "${topic_dir}/reports/001_analysis.md"
+# Write file immediately after
 ```
 
-**Option 2**: Verify agent created directories, fail-fast if missing:
+**Verification**: After agent execution, verify FILES exist (not directories):
 ```bash
-**MANDATORY VERIFICATION**: After agent execution, verify directories:
-
-```bash
-if [ ! -d "$topic_dir/reports" ]; then
-  echo "ERROR: Agent failed to create reports directory"
-  echo "EXPECTED: $topic_dir/reports"
-  echo "DIAGNOSTIC: ls -la $topic_dir"
-  exit 1
+# Check for expected report files, not directories
+if [ -z "$(find "$topic_dir/reports" -name '*.md' 2>/dev/null)" ]; then
+  echo "WARNING: No report files created"
+  echo "DIAGNOSTIC: Agent may not have produced output"
 fi
 ```
 
-**DO NOT** manually create directories after agent failure (masks delegation problem).
+**DO NOT** pre-create empty directories. Directories should only exist when they contain files.
 
-**Prevention**: Either pre-create or verify, never fallback to manual creation.
+See [Directory Creation Anti-Patterns](../../reference/standards/code-standards.md#directory-creation-anti-patterns) for the correct pattern.
 
 ## Section 4: Error Handling
 

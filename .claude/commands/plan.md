@@ -115,19 +115,28 @@ fi
 
 export CLAUDE_PROJECT_DIR
 
-# === SOURCE LIBRARIES ===
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source unified-location-detection.sh" >&2
+# === SOURCE LIBRARIES (Three-Tier Pattern) ===
+# Tier 1: Critical Foundation (fail-fast required)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
 }
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-initialization.sh" >&2
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
   exit 1
 }
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source library-version-check.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Tier 2: Workflow Support (graceful degradation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || true
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || true
 
 # Verify library versions
 check_library_requirements "$(cat <<'EOF'
@@ -135,6 +144,12 @@ workflow-state-machine.sh: ">=2.0.0"
 state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
+
+# === PRE-FLIGHT FUNCTION VALIDATION ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+validate_library_functions "state-persistence" || exit 1
+validate_library_functions "workflow-state-machine" || exit 1
+validate_library_functions "error-handling" || exit 1
 
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
@@ -280,7 +295,8 @@ if [ -z "$WORKFLOW_ID" ]; then
   exit 1
 fi
 
-WORKFLOW_STATE_FILE="${HOME}/.claude/tmp/state_${WORKFLOW_ID}.sh"
+# State file naming convention: workflow_${WORKFLOW_ID}.sh (matches state-persistence.sh)
+WORKFLOW_STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
 if [ -f "$WORKFLOW_STATE_FILE" ]; then
   set +u  # Allow unbound variables during source
   source "$WORKFLOW_STATE_FILE"
@@ -317,12 +333,18 @@ export COMMAND_NAME USER_ARGS
 # Initialize error log
 ensure_error_log_exists
 
-# Validate topic naming agent output
+# Validate topic naming agent output with retry logic
 TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
 
-if ! validate_agent_output "topic-naming-agent" "$TOPIC_NAME_FILE" 5; then
-  echo "WARNING: Topic naming agent failed to create output file within 5s" >&2
+# Use validate_agent_output_with_retry with format validator
+# - 3 retries with 10-second timeout each (30 seconds total + backoff)
+# - Increased from 5s to 10s to allow Haiku agent more time for completion
+# - validate_topic_name_format checks content format after file creation
+if ! validate_agent_output_with_retry "topic-naming-agent" "$TOPIC_NAME_FILE" "validate_topic_name_format" 10 3; then
+  echo "WARNING: Topic naming agent failed to create valid output file after 3 attempts" >&2
   echo "         Falling back to 'no_name' directory structure" >&2
+  echo "         Expected output: $TOPIC_NAME_FILE" >&2
+  echo "         Workflow ID: $WORKFLOW_ID" >&2
   echo "         Check error log for diagnostic details: /errors --type agent_error --limit 5" >&2
 fi
 
@@ -345,14 +367,22 @@ if [ -z "$WORKFLOW_ID" ]; then
   exit 1
 fi
 
-# Restore workflow state file
-STATE_FILE="${HOME}/.claude/tmp/state_${WORKFLOW_ID}.sh"
+# Restore workflow state file (naming convention: workflow_${WORKFLOW_ID}.sh)
+STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
 if [ -f "$STATE_FILE" ]; then
+  set +u  # Allow unbound variables during source
   source "$STATE_FILE"
+  set -u  # Re-enable strict mode
 else
   echo "ERROR: State file not found: $STATE_FILE" >&2
   exit 1
 fi
+
+# === DEFENSIVE VARIABLE INITIALIZATION ===
+# Initialize potentially unbound variables with defaults to prevent unbound variable errors
+# These variables may not be set in state file depending on user input (e.g., --file flag not used)
+ORIGINAL_PROMPT_FILE_PATH="${ORIGINAL_PROMPT_FILE_PATH:-}"
+RESEARCH_COMPLEXITY="${RESEARCH_COMPLEXITY:-3}"
 
 # FEATURE_DESCRIPTION should be in state file, but also check temp file as backup
 TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
@@ -384,10 +414,26 @@ COMMAND_NAME="/plan"
 USER_ARGS="$FEATURE_DESCRIPTION"
 export COMMAND_NAME USER_ARGS
 
-# Source libraries
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null
+# Source libraries (Three-Tier Pattern)
+# Tier 1: Critical Foundation (fail-fast required)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Tier 2: Workflow Support (graceful degradation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || true
+
+# === PRE-FLIGHT FUNCTION VALIDATION ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+if ! declare -f append_workflow_state >/dev/null 2>&1; then
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
 
 # === SETUP BASH ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
@@ -444,6 +490,11 @@ if [ "$TOPIC_NAME" = "no_name" ]; then
     "bash_block_1c" \
     "$(jq -n --arg desc "$FEATURE_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" \
        '{feature: $desc, fallback_reason: $strategy}')"
+
+  # Diagnostic output for troubleshooting
+  echo "DEBUG: Topic naming agent fallback reason: $NAMING_STRATEGY" >&2
+  echo "DEBUG: Expected file: $TOPIC_NAME_FILE" >&2
+  ls -la "${HOME}/.claude/tmp/topic_name_"* 2>/dev/null || echo "DEBUG: No topic name files found" >&2
 fi
 
 # Clean up temp file
@@ -560,9 +611,31 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+# Source libraries (Three-Tier Pattern)
+# Tier 1: Critical Foundation (fail-fast required)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# === PRE-FLIGHT FUNCTION VALIDATION (Block 2) ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+if ! declare -f append_workflow_state >/dev/null 2>&1; then
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
+if ! declare -f save_completed_states_to_state >/dev/null 2>&1; then
+  echo "ERROR: save_completed_states_to_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
 
 # Initialize DEBUG_LOG if not already set
 DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
@@ -627,6 +700,16 @@ if [ ! -f "$STATE_FILE" ]; then
   echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
   exit 1
 fi
+
+# === DEFENSIVE VARIABLE INITIALIZATION ===
+# Initialize potentially unbound variables with defaults to prevent unbound variable errors
+TOPIC_PATH="${TOPIC_PATH:-}"
+RESEARCH_DIR="${RESEARCH_DIR:-}"
+PLANS_DIR="${PLANS_DIR:-}"
+TOPIC_NAME="${TOPIC_NAME:-no_name}"
+FEATURE_DESCRIPTION="${FEATURE_DESCRIPTION:-}"
+ORIGINAL_PROMPT_FILE_PATH="${ORIGINAL_PROMPT_FILE_PATH:-}"
+ARCHIVED_PROMPT_PATH="${ARCHIVED_PROMPT_PATH:-}"
 
 # Validate critical variables from Block 1
 if [ -z "$TOPIC_PATH" ] || [ -z "$RESEARCH_DIR" ]; then
@@ -810,9 +893,27 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null
+# Source libraries (Three-Tier Pattern)
+# Tier 1: Critical Foundation (fail-fast required)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# === PRE-FLIGHT FUNCTION VALIDATION (Block 3) ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+if ! declare -f save_completed_states_to_state >/dev/null 2>&1; then
+  echo "ERROR: save_completed_states_to_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
 
 # Initialize DEBUG_LOG if not already set
 DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
@@ -877,6 +978,12 @@ if [ ! -f "$STATE_FILE" ]; then
   echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
   exit 1
 fi
+
+# === DEFENSIVE VARIABLE INITIALIZATION ===
+# Initialize potentially unbound variables with defaults to prevent unbound variable errors
+PLAN_PATH="${PLAN_PATH:-}"
+REPORT_COUNT="${REPORT_COUNT:-0}"
+FEATURE_DESCRIPTION="${FEATURE_DESCRIPTION:-}"
 
 # Validate PLAN_PATH was set by Block 2
 if [ -z "$PLAN_PATH" ]; then

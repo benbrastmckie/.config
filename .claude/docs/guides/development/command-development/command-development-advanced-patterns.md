@@ -543,9 +543,10 @@ TIMESTAMP=$(date -Iseconds)
 SPEC_NUMBER=$(find .claude/specs -maxdepth 1 -type d -name "[0-9]*" | wc -l)
 SPEC_NUMBER=$((SPEC_NUMBER + 1))
 
-# Create directory structure
+# Create topic root directory only (lazy creation pattern)
+# Subdirectories are created by agents via ensure_artifact_directory() when files are written
 TARGET_DIR="${CLAUDE_PROJECT_DIR}/.claude/specs/${SPEC_NUMBER}_${SANITIZED_NAME}"
-mkdir -p "$TARGET_DIR"/{plans,reports,summaries,debug}
+mkdir -p "$TARGET_DIR"
 
 # Create README.md
 cat > "${TARGET_DIR}/README.md" <<EOF

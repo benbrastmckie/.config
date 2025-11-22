@@ -473,15 +473,16 @@ echo "Detected scope: $scope"  # Works for LLM and regex results
 
 ### Implementation Files
 
-- [workflow-llm-classifier.sh](../../lib/workflow/workflow-llm-classifier.sh) - LLM classification library
-- [workflow-scope-detection.sh](../../lib/workflow/workflow-scope-detection.sh) - Unified hybrid detection
-- [workflow-detection.sh](../../lib/workflow/workflow-detection.sh) - /supervise integration
+- [workflow-llm-classifier.sh](../../../lib/workflow/workflow-llm-classifier.sh) - LLM classification library
+- [workflow-scope-detection.sh](../../../lib/workflow/workflow-scope-detection.sh) - Unified hybrid detection
+- [workflow-detection.sh](../../../lib/workflow/workflow-detection.sh) - /supervise integration
 
 ### Testing Files
 
-- [test_llm_classifier.sh](../../../tests/test_llm_classifier.sh) - Unit tests (37 tests)
-- [test_scope_detection.sh](../../../tests/test_scope_detection.sh) - Integration tests (31 tests)
-- [test_scope_detection_ab.sh](../../../tests/test_scope_detection_ab.sh) - A/B testing (42 cases)
+- [test_workflow_classifier_agent.sh](../../../tests/integration/test_workflow_classifier_agent.sh) - Classifier agent tests
+- [test_scope_detection.sh](../../../tests/classification/test_scope_detection.sh) - Scope detection tests
+- [test_scope_detection_ab.sh](../../../tests/classification/test_scope_detection_ab.sh) - A/B testing (42 cases)
+- [test_workflow_detection.sh](../../../tests/classification/test_workflow_detection.sh) - Workflow detection tests
 
 ### Documentation
 

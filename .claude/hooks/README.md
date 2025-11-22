@@ -215,6 +215,34 @@ Triggered before context compaction.
 
 **Configuration**: See [../tts/README.md](../tts/README.md)
 
+---
+
+### pre-commit-library-sourcing.sh
+**Purpose**: Validate library sourcing patterns in staged command files
+
+**Triggered By**: Git pre-commit (manual installation required)
+
+**Input**: None (reads git staged files)
+
+**Actions**:
+1. Detect staged .claude/commands/*.md files
+2. Run library sourcing linter on staged files
+3. Block commit if violations found
+4. Output clear error messages with remediation steps
+
+**Features**:
+- Validates three-tier sourcing pattern
+- Detects bare error suppression on critical libraries
+- Warns on missing defensive function checks
+- Supports bypass with --no-verify
+
+**Installation**:
+```bash
+ln -sf ../../.claude/hooks/pre-commit-library-sourcing.sh .git/hooks/pre-commit
+```
+
+**Documentation**: See [Pre-Commit Hooks Guide](../docs/guides/development/pre-commit-hooks.md)
+
 ## Hook Input Format
 
 Claude Code passes hook data as JSON via stdin:
@@ -539,6 +567,7 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 ### Hook Scripts
 - [post-command-metrics.sh](post-command-metrics.sh) - Metrics collection
 - [tts-dispatcher.sh](tts-dispatcher.sh) - TTS notifications
+- [pre-commit-library-sourcing.sh](pre-commit-library-sourcing.sh) - Library sourcing validation (git pre-commit)
 
 ### Related
 - [← Parent Directory](../README.md)

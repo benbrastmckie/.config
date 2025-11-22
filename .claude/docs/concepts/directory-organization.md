@@ -15,6 +15,7 @@ Clear directory organization prevents file misplacement, reduces confusion, and 
 │   └── templates/  Plan templates (YAML) for /plan-from-template
 ├── agents/         Specialized AI assistant definitions
 │   └── templates/  Agent behavioral templates (sub-supervisor, etc.)
+├── skills/         Model-invoked autonomous capabilities
 ├── docs/           Integration guides and standards
 └── tests/          Test suites for system validation
 ```
@@ -74,7 +75,7 @@ Clear directory organization prevents file misplacement, reduces confusion, and 
 - ✓ Pure functions without side effects
 - ✓ General-purpose utilities (parsing, validation, transformation)
 
-**Documentation**: See [lib/README.md](.claude/lib/README.md)
+**Documentation**: See [lib/README.md](../../lib/README.md)
 
 ---
 
@@ -102,7 +103,7 @@ Clear directory organization prevents file misplacement, reduces confusion, and 
 - `plan.md` - Create implementation plans
 - `templates/crud-api.yaml` - CRUD API plan template
 
-**Documentation**: See [commands/README.md](.claude/commands/README.md)
+**Documentation**: See [commands/README.md](../../commands/README.md)
 
 ---
 
@@ -129,7 +130,53 @@ Clear directory organization prevents file misplacement, reduces confusion, and 
 - `debug-analyst.md` - Investigates root causes in parallel
 - `templates/sub-supervisor-template.md` - Template for hierarchical supervisors
 
-**Documentation**: See [agents/README.md](.claude/agents/README.md), [agents/templates/README.md](.claude/agents/templates/README.md)
+**Documentation**: See [agents/README.md](../../agents/README.md), [agents/templates/README.md](../../agents/templates/README.md)
+
+---
+
+### skills/ - Model-Invoked Capabilities
+
+**Purpose**: Autonomous capabilities that Claude automatically invokes when relevant needs are detected
+
+**Characteristics**:
+- **Autonomous**: Claude decides when to invoke (no explicit command needed)
+- **Progressive disclosure**: Metadata scanned first, full content loaded only when relevant
+- **Composable**: Multiple skills can work together automatically
+- **Token efficient**: SKILL.md under 500 lines, details in reference.md
+- Invoked via natural language or through command delegation
+
+**Naming Convention**: `kebab-case/` directory names with `SKILL.md` inside
+
+**Directory Structure**:
+```
+skills/<skill-name>/
+├── SKILL.md                    # Required: metadata + core instructions
+├── reference.md                # Optional: detailed documentation
+├── examples.md                 # Optional: usage examples
+├── scripts/                    # Optional: helper scripts (symlink to lib/)
+└── templates/                  # Optional: workflow templates
+```
+
+**Examples**:
+- `document-converter/` - Bidirectional document conversion (Markdown, DOCX, PDF)
+
+**When to Use**:
+- Task is a focused, single capability (not a complex workflow)
+- Claude should auto-invoke when detecting relevant needs
+- Multiple agents/commands would benefit from shared capability
+- Progressive disclosure improves token efficiency
+
+**When NOT to Use** (use commands/agents instead):
+- Task requires explicit user invocation (use commands/)
+- Task requires complex orchestration (use agents/)
+- Task is a complete end-to-end workflow (use commands/)
+
+**Integration Patterns**:
+1. **Autonomous**: Claude detects need and loads skill automatically
+2. **Command Delegation**: Commands check availability and delegate via STEP 0/STEP 3.5
+3. **Agent Auto-Loading**: Agents use `skills:` frontmatter field
+
+**Documentation**: See [skills/README.md](../../skills/README.md), [Skills Authoring Standards](../reference/standards/skills-authoring.md)
 
 ---
 
@@ -147,21 +194,24 @@ docs/
 └── troubleshooting/ Problem-solving guides
 ```
 
-**Documentation**: See [docs/README.md](.claude/docs/README.md)
+**Documentation**: See [docs/README.md](../README.md)
 
 ---
 
 ### File Placement Decision Matrix
 
-| Question | scripts/ | lib/ | commands/ | agents/ |
-|----------|----------|------|-----------|---------|
-| Standalone executable? | ✓ | ✗ | ✗ | ✗ |
-| Needs CLI arguments? | ✓ | ✗ | ✗ | ✗ |
-| Sourced by other code? | ✗ | ✓ | ✗ | ✗ |
-| Complete workflow? | ✓ | ✗ | ✓ | ✓ |
-| Reusable function? | ✗ | ✓ | ✗ | ✗ |
-| User-facing command? | ✗ | ✗ | ✓ | ✗ |
-| AI agent behavioral? | ✗ | ✗ | ✗ | ✓ |
+| Question | scripts/ | lib/ | commands/ | agents/ | skills/ |
+|----------|----------|------|-----------|---------|---------|
+| Standalone executable? | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Needs CLI arguments? | ✓ | ✗ | ✗ | ✗ | ✗ |
+| Sourced by other code? | ✗ | ✓ | ✗ | ✗ | ✗ |
+| Complete workflow? | ✓ | ✗ | ✓ | ✓ | ✗ |
+| Reusable function? | ✗ | ✓ | ✗ | ✗ | ✗ |
+| User-facing command? | ✗ | ✗ | ✓ | ✗ | ✗ |
+| AI agent behavioral? | ✗ | ✗ | ✗ | ✓ | ✗ |
+| Model-invoked capability? | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Auto-discoverable? | ✗ | ✗ | ✗ | ✗ | ✓ |
+| Single focused capability? | ✗ | ✗ | ✗ | ✗ | ✓ |
 
 ### Decision Process
 
@@ -173,11 +223,15 @@ docs/
 → YES: `agents/agent-name.md`
 → NO: Continue
 
-**3. Is it a standalone executable tool?**
+**3. Is it a model-invoked autonomous capability?**
+→ YES: `skills/skill-name/SKILL.md`
+→ NO: Continue
+
+**4. Is it a standalone executable tool?**
 → YES: `scripts/tool-name.sh`
 → NO: Continue
 
-**4. Is it a reusable function library?**
+**5. Is it a reusable function library?**
 → YES: `lib/library-name.sh`
 → NO: Consult with team
 
@@ -189,6 +243,8 @@ docs/
 - ✗ Validation scripts in `lib/` (should be `scripts/`)
 - ✗ Sourced libraries in `scripts/` (should be `lib/`)
 - ✗ Standalone executables in `lib/` (should be `scripts/`)
+- ✗ Skills without SKILL.md (should have `skills/<name>/SKILL.md`)
+- ✗ Skills in `commands/` (should be `skills/` for model-invoked capabilities)
 
 **Naming Violations**:
 - ✗ CamelCase for bash scripts (use kebab-case)
@@ -270,6 +326,8 @@ done
 
 - [scripts/README.md](../../scripts/README.md) - Standalone operational tools
 - [lib/README.md](../../lib/README.md) - Sourced function libraries (includes vs scripts/ comparison)
+- [skills/README.md](../../skills/README.md) - Model-invoked capabilities guide
 - [.claude/README.md](../../README.md) - Complete directory structure guide
 - [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - Creating slash commands
 - [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md) - Creating specialized agents
+- [Skills Authoring Standards](../reference/standards/skills-authoring.md) - Skills compliance requirements

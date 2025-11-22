@@ -69,7 +69,52 @@ See [Testing Protocols](.claude/docs/reference/standards/testing-protocols.md) f
 [Used by: /implement, /refactor, /plan]
 
 See [Code Standards](.claude/docs/reference/standards/code-standards.md) for complete coding conventions, language-specific standards, architectural requirements, and link conventions.
+
+**Quick Reference - Bash Sourcing**:
+- All bash blocks MUST follow three-tier sourcing pattern (enforced by linter and pre-commit hooks)
+- Tier 1 libraries (state-persistence.sh, workflow-state-machine.sh, error-handling.sh) require fail-fast handlers
+- See [Mandatory Bash Block Sourcing Pattern](.claude/docs/reference/standards/code-standards.md#mandatory-bash-block-sourcing-pattern)
 <!-- END_SECTION: code_standards -->
+
+<!-- SECTION: code_quality_enforcement -->
+## Code Quality Enforcement
+[Used by: all commands, pre-commit hooks, CI validation]
+
+Standards are enforced automatically via pre-commit hooks and unified validation scripts. Violations block commits.
+
+**Quick Reference**:
+- Pre-commit hook runs on all staged `.claude/` files
+- ERROR-level violations (sourcing, suppression, conditionals) block commits
+- WARNING-level issues (README, links) are informational only
+- Bypass with `git commit --no-verify` (document justification in commit message)
+
+**Validation Commands**:
+```bash
+# Run all validators
+bash .claude/scripts/validate-all-standards.sh --all
+
+# Run specific validator categories
+bash .claude/scripts/validate-all-standards.sh --sourcing      # Library sourcing
+bash .claude/scripts/validate-all-standards.sh --suppression   # Error suppression
+bash .claude/scripts/validate-all-standards.sh --conditionals  # Bash conditionals
+bash .claude/scripts/validate-all-standards.sh --readme        # README structure
+bash .claude/scripts/validate-all-standards.sh --links         # Link validity
+
+# Staged files only (pre-commit mode)
+bash .claude/scripts/validate-all-standards.sh --staged
+```
+
+**Enforcement Tools**:
+| Tool | Checks | Severity |
+|------|--------|----------|
+| check-library-sourcing.sh | Three-tier sourcing, fail-fast handlers | ERROR |
+| lint_error_suppression.sh | State persistence suppression, deprecated paths | ERROR |
+| lint_bash_conditionals.sh | Preprocessing-unsafe conditionals | ERROR |
+| validate-readmes.sh | README structure | WARNING |
+| validate-links-quick.sh | Internal link validity | WARNING |
+
+See [Enforcement Mechanisms Reference](.claude/docs/reference/standards/enforcement-mechanisms.md) for complete enforcement details, pre-commit hook installation, and adding new validators.
+<!-- END_SECTION: code_quality_enforcement -->
 
 <!-- SECTION: output_formatting -->
 ## Output Formatting Standards
@@ -119,7 +164,7 @@ See [Error Handling Pattern](.claude/docs/concepts/patterns/error-handling.md) f
 
 See [Directory Organization](.claude/docs/concepts/directory-organization.md) for complete directory structure, file placement rules, decision matrix, and anti-patterns.
 
-**Quick Summary**: `.claude/` contains scripts/ (standalone tools), lib/ (sourced functions), commands/ (slash commands), agents/ (AI assistants), docs/ (documentation), and tests/ (test suites).
+**Quick Summary**: `.claude/` contains scripts/ (standalone tools), lib/ (sourced functions), commands/ (slash commands), agents/ (AI assistants), skills/ (model-invoked capabilities), docs/ (documentation), and tests/ (test suites).
 <!-- END_SECTION: directory_organization -->
 
 <!-- SECTION: development_philosophy -->
@@ -156,6 +201,40 @@ See [Development Workflow](.claude/docs/concepts/development-workflow.md) for co
 
 See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical-agents.md) for complete patterns, utilities, templates, and troubleshooting.
 <!-- END_SECTION: hierarchical_agent_architecture -->
+
+<!-- SECTION: skills_architecture -->
+## Skills Architecture
+[Used by: all commands, all agents]
+
+Skills are model-invoked autonomous capabilities that Claude automatically uses when relevant needs are detected. Unlike commands (user-invoked) or agents (task delegation), skills enable autonomous composition and progressive discovery.
+
+**Skills vs Commands vs Agents**:
+
+| Aspect | Skills | Commands | Agents |
+|--------|--------|----------|--------|
+| Invocation | Autonomous (model-invoked) | Explicit (`/cmd`) | Task delegation |
+| Scope | Single focused capability | Quick shortcuts | Complex orchestration |
+| Discovery | Automatic | Manual | Manual delegation |
+| Composition | Auto-composition | Manual chaining | Coordinates skills |
+
+**Available Skills**:
+- `document-converter` - Bidirectional document conversion (Markdown, DOCX, PDF)
+
+**Integration Patterns**:
+1. **Autonomous**: Claude detects need and loads skill automatically
+2. **Command Delegation**: Commands check availability via STEP 0, delegate via STEP 3.5
+3. **Agent Auto-Loading**: Agents use `skills:` frontmatter field for auto-loading
+
+**Skill Availability Check** (for commands):
+```bash
+SKILL_AVAILABLE=false
+if [ -d ".claude/skills/<skill-name>" ] && [ -f ".claude/skills/<skill-name>/SKILL.md" ]; then
+  SKILL_AVAILABLE=true
+fi
+```
+
+See [Skills README](.claude/skills/README.md) for complete skills guide, and [Skills Authoring Standards](.claude/docs/reference/standards/skills-authoring.md) for compliance requirements.
+<!-- END_SECTION: skills_architecture -->
 
 <!-- SECTION: state_based_orchestration -->
 ## State-Based Orchestration Architecture

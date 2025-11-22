@@ -498,6 +498,74 @@ append_jsonl_log() {
 }
 
 # ==============================================================================
+# Pre-flight Function Validation
+# ==============================================================================
+
+# Validate required library functions are available after sourcing
+# Usage: validate_library_functions <library_name>
+# Returns: 0 if all required functions available, 1 if any missing
+# Example: validate_library_functions "state-persistence"
+#
+# This function catches exit code 127 "command not found" errors BEFORE they occur
+# by checking if required functions exist after library sourcing. If a library
+# fails to source correctly (e.g., due to PATH issues or source guard issues),
+# this function will report which functions are missing rather than failing
+# with a cryptic "command not found" error later in execution.
+validate_library_functions() {
+  local library_name="$1"
+  local -a missing_funcs=()
+
+  case "$library_name" in
+    state-persistence)
+      # Core functions for state-persistence.sh
+      local -a required=(append_workflow_state load_workflow_state init_workflow_state)
+      for func in "${required[@]}"; do
+        if ! declare -f "$func" >/dev/null 2>&1; then
+          missing_funcs+=("$func")
+        fi
+      done
+      ;;
+    workflow-state-machine)
+      # Core functions for workflow-state-machine.sh
+      local -a required=(sm_init sm_transition)
+      for func in "${required[@]}"; do
+        if ! declare -f "$func" >/dev/null 2>&1; then
+          missing_funcs+=("$func")
+        fi
+      done
+      ;;
+    error-handling)
+      # Core functions for error-handling.sh
+      local -a required=(log_command_error setup_bash_error_trap ensure_error_log_exists)
+      for func in "${required[@]}"; do
+        if ! declare -f "$func" >/dev/null 2>&1; then
+          missing_funcs+=("$func")
+        fi
+      done
+      ;;
+    *)
+      echo "WARNING: Unknown library for validation: $library_name" >&2
+      return 0  # Don't fail on unknown libraries
+      ;;
+  esac
+
+  if [ ${#missing_funcs[@]} -gt 0 ]; then
+    echo "" >&2
+    echo "ERROR: Library $library_name functions not available" >&2
+    echo "Missing functions: ${missing_funcs[*]}" >&2
+    echo "" >&2
+    echo "This typically indicates:" >&2
+    echo "  1. Library failed to source (check path and permissions)" >&2
+    echo "  2. Source guard prevented re-sourcing (restart bash if needed)" >&2
+    echo "  3. Library has syntax errors (run: bash -n <library_path>)" >&2
+    echo "" >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# ==============================================================================
 # State Validation Functions
 # ==============================================================================
 
@@ -520,8 +588,12 @@ validate_state_variables() {
     # Load error-handling library if available for logging
     if declare -f log_command_error >/dev/null 2>&1; then
       log_command_error \
+        "${COMMAND_NAME:-unknown}" \
+        "${WORKFLOW_ID:-unknown}" \
+        "${USER_ARGS:-}" \
         "state_error" \
         "Required state variables missing after load: ${missing_vars[*]}" \
+        "validate_state_variables" \
         "$(jq -n --arg vars "${missing_vars[*]}" '{missing_variables: $vars}')"
     fi
 

@@ -93,6 +93,55 @@ fi
 3. **Always provide**: Fail-fast alternative (`|| { exit 1 }`) for critical operations
 4. **Always check**: Return codes for operations that can fail
 
+### MANDATORY: Error Suppression on Critical Libraries
+
+The following libraries MUST use fail-fast pattern. Bare `2>/dev/null` is PROHIBITED:
+
+**Tier 1 Critical Libraries** (fail-fast required):
+- `state-persistence.sh`
+- `workflow-state-machine.sh`
+- `error-handling.sh`
+- `library-version-check.sh`
+
+**Prohibited Pattern** (will fail linter):
+```bash
+source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null
+```
+
+**Required Pattern** (linter-compliant):
+```bash
+source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+```
+
+**Rationale**: Bare suppression hides critical failures, causing exit code 127 errors much later in execution with no diagnostic information. Infrastructure fixes remediated 86+ instances of bare error suppression across 7 workflow commands (build.md, debug.md, plan.md, research.md, repair.md, revise.md, optimize-claude.md).
+
+**Detection**: Linter flags `source.*2>/dev/null$` without fail-fast handler on critical libraries.
+
+### Automated Detection: Library Sourcing Linter
+
+The library sourcing linter validates error suppression patterns:
+
+```bash
+bash .claude/scripts/lint/check-library-sourcing.sh
+```
+
+**Linter Detects**:
+- Bare error suppression on critical libraries (state-persistence.sh, workflow-state-machine.sh, error-handling.sh)
+- Function calls without library sourcing in same bash block
+- Missing defensive function availability checks
+
+**Remediation Statistics**: Infrastructure fixes remediated 86+ instances of bare error suppression across 7 workflow commands (build.md, debug.md, plan.md, research.md, repair.md, revise.md, optimize-claude.md).
+
+**Pre-Commit Enforcement**: The linter runs automatically via pre-commit hooks to prevent new violations.
+
+**See Also**:
+- [Exit Code 127 Troubleshooting Guide](../../troubleshooting/exit-code-127-command-not-found.md)
+- [Bash Block Execution Model - Anti-Patterns](../../concepts/bash-block-execution-model.md#anti-pattern-7-bare-error-suppression-on-critical-libraries)
+- [Linting Bash Sourcing Guide](../../guides/development/linting-bash-sourcing.md)
+
 ### Directory Operations Suppression
 
 **Problem**: mkdir, cp, mv operations produce unnecessary output.
