@@ -4,18 +4,21 @@
 
 ### In Progress
 
-- [ ] Optimize commands [/home/benjamin/.config/.claude/specs/916_commands_docs_standards_review/plans/001_commands_docs_standards_review_plan.md]
+- [ ] **Improve /convert-docs fidelity** - Gemini API integration for high-fidelity conversion [.claude/specs/895_convert_docs_fidelity_llm_practices/plans/001_convert_docs_fidelity_llm_practices_plan.md] (Complexity: 35)
+- [ ] **Refactor tests/ directory** - [/home/benjamin/.config/.claude/specs/919_test_refactor_organization/plans/001-test-refactor-organization-plan.md]
 
 ### Not Started
 
-- uniform directory naming [/home/benjamin/.config/.claude/specs/918_topic_naming_standards_kebab_case/plans/001_topic_naming_standards_kebab_case_plan.md]
+- **Polish Refactor** -
+  - update commands readme
+  - fix tests
 
 - **Improve Outputs** -
+  - [/home/benjamin/.config/.claude/build-output.md]
   - [/home/benjamin/.config/.claude/revise-output.md]
   - [/home/benjamin/.config/.claude/build-output.md]
 
 **Medium Priority (Optimization)**:
-- [ ] **Improve /convert-docs fidelity** - Gemini API integration for high-fidelity conversion [.claude/specs/895_convert_docs_fidelity_llm_practices/plans/001_convert_docs_fidelity_llm_practices_plan.md] (Complexity: 35)
 - [ ] **Optimize commands** - Reduce duplication, consolidate bash blocks across 12 commands [.claude/specs/883_commands_optimize_refactor/plans/001_commands_optimize_refactor_plan.md] (Complexity: 142)
   - [ ] **Error logging infrastructure completion** - Helper functions + convert-docs.md error logging [.claude/specs/902_error_logging_infrastructure_completion/plans/001_error_logging_infrastructure_completion_plan.md] (4 hours)
     - Preserved valuable elements from Plan 884
@@ -52,6 +55,9 @@
 - [~] **System-wide error logging gaps** - Phase 0 obsolete (function exists), Phase 2 duplicates Plan 2; valuable elements preserved in Plan 902 [.claude/specs/884_build_error_logging_discrepancy/plans/001_debug_strategy.md] → See [902_error_logging_infrastructure_completion](specs/902_error_logging_infrastructure_completion/reports/001_plan_884_preserved_elements.md)
 
 ### Completed
+
+- [x] Uniform directory naming [/home/benjamin/.config/.claude/specs/918_topic_naming_standards_kebab_case/plans/001_topic_naming_standards_kebab_case_plan.md]
+- [x] Optimize commands [/home/benjamin/.config/.claude/specs/916_commands_docs_standards_review/plans/001_commands_docs_standards_review_plan.md]
 
 - **Test Commands**:
 - /research [/home/benjamin/.config/.claude/specs/911_research_error_analysis/plans/001_research_error_analysis_repair_plan.md]

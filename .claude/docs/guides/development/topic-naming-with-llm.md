@@ -23,7 +23,8 @@ The topic naming system uses a Haiku LLM agent (topic-naming-agent) to generate 
 - Consistent formatting (snake_case, 5-40 characters)
 - Fast response time (<3 seconds average)
 - Low cost ($0.003 per topic, ~$2.16/year)
-- Clear failure visibility (no_name sentinel)
+- Clear failure visibility (`no_name_error` sentinel)
+- Uniform naming across all 7 directory-creating commands
 
 **System Components**:
 1. **topic-naming-agent** - Haiku LLM agent for semantic analysis
@@ -43,7 +44,9 @@ The topic naming system uses a Haiku LLM agent (topic-naming-agent) to generate 
                      │
                      ▼
 ┌──────────────────────────────────────────────────────────────┐
-│ Command Layer (/plan, /research, /debug, /optimize-claude)   │
+│ Command Layer (7 commands use topic-naming-agent):           │
+│ /plan, /research, /debug, /optimize-claude,                  │
+│ /errors, /setup, /repair                                     │
 │ - Sources error-handling library                             │
 │ - Invokes topic-naming-agent via Task tool                   │
 │ - Provides user prompt as context                            │
@@ -145,14 +148,14 @@ if echo "$AGENT_OUTPUT" | grep -q "TOPIC_NAME_GENERATED:"; then
     log_command_error "validation_error" \
       "Topic name validation failed" \
       "name=$TOPIC_NAME,pattern=^[a-z0-9_]{5,40}$"
-    TOPIC_NAME="no_name"
+    TOPIC_NAME="no_name_error"
   fi
 else
   # Agent failed to return completion signal
   log_command_error "agent_error" \
     "Topic naming agent failed to return completion signal" \
     "prompt=$USER_DESCRIPTION"
-  TOPIC_NAME="no_name"
+  TOPIC_NAME="no_name_error"
 fi
 
 # Handle timeout (if agent took >5s)
@@ -160,7 +163,7 @@ if [ -z "$TOPIC_NAME" ]; then
   log_command_error "timeout_error" \
     "Topic naming agent timeout" \
     "prompt=$USER_DESCRIPTION"
-  TOPIC_NAME="no_name"
+  TOPIC_NAME="no_name_error"
 fi
 
 # Atomically allocate topic directory
@@ -179,31 +182,33 @@ echo "Created topic: ${TOPIC_NUMBER}_${TOPIC_NAME}"
 
 ### Command-Specific Integration
 
-**`/plan` Command**:
+**All 7 Directory-Creating Commands**:
 ```markdown
-# In .claude/commands/plan.md
+# Commands using topic-naming-agent:
+# /plan, /research, /debug, /optimize-claude, /errors, /setup, /repair
 
 Source error-handling library and topic-utils.sh.
 Initialize error log with ensure_error_log_exists.
-Set COMMAND_NAME="/plan", WORKFLOW_ID, USER_ARGS.
+Set COMMAND_NAME="/command", WORKFLOW_ID, USER_ARGS.
 
 Invoke topic-naming-agent with user's feature description.
 Parse TOPIC_NAME_GENERATED signal.
 Validate format with validate_topic_name_format().
 On failure: log error (agent_error, validation_error, timeout_error).
-On failure: fall back to TOPIC_NAME="no_name".
+On failure: fall back to TOPIC_NAME="no_name_error".
 
 Pass topic name to allocate_and_create_topic().
 ```
 
-**`/research` Command**:
-Same pattern as /plan, with COMMAND_NAME="/research".
-
-**`/debug` Command**:
-Same pattern as /plan, with COMMAND_NAME="/debug".
-
-**`/optimize-claude` Command**:
-Same pattern as /plan, with COMMAND_NAME="/optimize-claude".
+| Command | COMMAND_NAME | Notes |
+|---------|--------------|-------|
+| /plan | "/plan" | Creates implementation plans |
+| /research | "/research" | Creates research reports |
+| /debug | "/debug" | Creates debug analysis |
+| /optimize-claude | "/optimize-claude" | Creates optimization analysis |
+| /errors | "/errors" | Creates error analysis reports |
+| /setup | "/setup" | Creates setup analysis (analyze mode only) |
+| /repair | "/repair" | Creates error repair plans |
 
 ## Error Handling
 
@@ -217,7 +222,7 @@ log_command_error "timeout_error" \
   "prompt=$USER_DESCRIPTION,duration=${ELAPSED_TIME}s"
 
 # Fallback to no_name
-TOPIC_NAME="no_name"
+TOPIC_NAME="no_name_error"
 ```
 
 **2. API Error (Haiku unavailable)**
@@ -232,7 +237,7 @@ if echo "$AGENT_OUTPUT" | grep -q "TASK_ERROR:"; then
     "error=$ERROR_MSG,prompt=$USER_DESCRIPTION"
 
   # Fallback to no_name
-  TOPIC_NAME="no_name"
+  TOPIC_NAME="no_name_error"
 fi
 ```
 
@@ -246,7 +251,7 @@ if ! validate_topic_name_format "$TOPIC_NAME"; then
     "name=$TOPIC_NAME,pattern=^[a-z0-9_]{5,40}$"
 
   # Fallback to no_name
-  TOPIC_NAME="no_name"
+  TOPIC_NAME="no_name_error"
 fi
 ```
 
@@ -254,7 +259,7 @@ fi
 ```bash
 # Skip agent invocation, use no_name directly
 if [ -z "$USER_DESCRIPTION" ]; then
-  TOPIC_NAME="no_name"
+  TOPIC_NAME="no_name_error"
   # No error logged (expected behavior)
 fi
 ```
@@ -269,7 +274,7 @@ if ! echo "$AGENT_OUTPUT" | grep -q "TOPIC_NAME_GENERATED:"; then
     "output=${AGENT_OUTPUT:0:200}"
 
   # Fallback to no_name
-  TOPIC_NAME="no_name"
+  TOPIC_NAME="no_name_error"
 fi
 ```
 
@@ -327,31 +332,31 @@ Use `check_no_name_directories.sh` to monitor naming failures:
 
 If failures exist:
 ```bash
-# Output shows no_name directories:
+# Output shows no_name_error directories:
 # ⚠ Found 2 topic naming failures:
 #
-#   867_no_name  (created: 2025-11-20 14:30)
-#   868_no_name  (created: 2025-11-20 15:15)
+#   867_no_name_error  (created: 2025-11-20 14:30)
+#   868_no_name_error  (created: 2025-11-20 15:15)
 #
 # To investigate failures:
 #   /errors --type agent_error --command /plan
 #
 # To rename manually:
-#   .claude/scripts/rename_no_name_directory.sh specs/867_no_name jwt_token_fix
+#   .claude/scripts/rename_no_name_directory.sh specs/867_no_name_error jwt_token_fix
 ```
 
 ### Manual Rename Helper
 
-Rename `no_name` directories with semantic names:
+Rename `no_name_error` directories with semantic names:
 
 ```bash
-# Rename a no_name directory
+# Rename a no_name_error directory
 .claude/scripts/rename_no_name_directory.sh \
-  /home/user/.config/.claude/specs/867_no_name \
+  /home/user/.config/.claude/specs/867_no_name_error \
   jwt_token_expiration_fix
 
 # Script validates:
-# - Source directory exists and is no_name
+# - Source directory exists and ends with _no_name_error
 # - New name matches format (^[a-z0-9_]{5,40}$)
 # - Target directory doesn't exist
 # - Prompts for confirmation before rename
@@ -359,7 +364,7 @@ Rename `no_name` directories with semantic names:
 
 ### Troubleshooting Common Issues
 
-**Issue: High no_name failure rate (>5%)**
+**Issue: High no_name_error failure rate (>5%)**
 
 Causes:
 - Agent timeout (Haiku API latency)

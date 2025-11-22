@@ -7,6 +7,8 @@ dependencies:
   - python3>=3.8
   - markitdown (optional, recommended)
   - pymupdf4llm (optional, recommended)
+  - google-genai (optional, for enhanced PDF conversion)
+  - pdf2docx (optional, for PDF to DOCX)
 model: haiku-4.5
 model-justification: Orchestrates external conversion tools with minimal AI reasoning required
 fallback-model: sonnet-4.5
@@ -18,15 +20,26 @@ Convert documents bidirectionally between Markdown, DOCX, and PDF formats. This 
 
 ## Core Capabilities
 
+### Conversion Modes
+
+The skill supports two conversion modes:
+
+**Default Mode (API)**: When GEMINI_API_KEY is set, PDF-to-Markdown conversions use Google Gemini API for significantly improved quality (+20-30% fidelity). Other conversions use local tools.
+
+**Offline Mode**: Use --no-api flag or set CONVERT_DOCS_OFFLINE=true to disable all API calls. All conversions use local tools only.
+
 ### Conversion Directions
 
 **TO Markdown** (text extraction from documents):
 - DOCX → Markdown (MarkItDown or Pandoc)
-- PDF → Markdown (MarkItDown or PyMuPDF4LLM)
+- PDF → Markdown (Gemini API, PyMuPDF4LLM, or MarkItDown)
 
 **FROM Markdown** (document generation):
 - Markdown → DOCX (Pandoc)
 - Markdown → PDF (Pandoc with Typst or XeLaTeX)
+
+**Direct Conversion**:
+- PDF → DOCX (pdf2docx - direct conversion preserves layout)
 
 ### Features
 
@@ -42,6 +55,32 @@ Convert documents bidirectionally between Markdown, DOCX, and PDF formats. This 
 
 The skill uses intelligent tool selection based on format and quality metrics:
 
+### PDF → Markdown (Mode-Dependent)
+
+**Gemini Mode** (when GEMINI_API_KEY is set):
+1. **Gemini API** (primary) - 95%+ fidelity
+   - Vision-based understanding of layout
+   - Semantic structure preservation
+   - Code block language detection
+   - 60 req/min, 1000 req/day free tier
+2. **PyMuPDF4LLM** (fallback) - 70-75% fidelity
+3. **MarkItDown** (fallback) - 65-70% fidelity
+
+**Offline Mode** (--no-api or no API key):
+1. **PyMuPDF4LLM** (primary) - 70-75% fidelity
+   - Zero configuration required
+   - Perfect Unicode preservation
+   - Good for simple PDFs
+2. **MarkItDown** (fallback) - 65-70% fidelity
+   - Consistent quality across document types
+   - Easy to configure
+
+### PDF → DOCX
+1. **pdf2docx** (only option) - 80-85% fidelity
+   - Direct conversion (no intermediate format)
+   - Preserves images and layout better than Gemini->Pandoc
+   - Fast processing
+
 ### DOCX → Markdown
 1. **MarkItDown** (primary) - 75-80% fidelity
    - Perfect table preservation (pipe-style markdown)
@@ -50,15 +89,6 @@ The skill uses intelligent tool selection based on format and quality metrics:
 2. **Pandoc** (fallback) - 68% fidelity
    - Reliable baseline conversion
    - Tables converted to grid format
-
-### PDF → Markdown
-1. **MarkItDown** (primary) - Best for most PDFs
-   - Consistent quality across document types
-   - Easy to configure
-2. **PyMuPDF4LLM** (fallback) - Fast alternative
-   - Zero configuration required
-   - Perfect Unicode preservation
-   - Good for simple PDFs
 
 ### Markdown → DOCX
 1. **Pandoc** (only option) - 95%+ quality preservation
@@ -242,6 +272,8 @@ The skill relies on conversion scripts in the project:
 - **Core orchestration**: `.claude/lib/convert/convert-core.sh`
 - **DOCX functions**: `.claude/lib/convert/convert-docx.sh`
 - **PDF functions**: `.claude/lib/convert/convert-pdf.sh`
+- **Gemini wrapper**: `.claude/lib/convert/convert-gemini.sh`
+- **Gemini Python**: `.claude/lib/convert/convert_gemini.py`
 - **Markdown utilities**: `.claude/lib/convert/convert-markdown.sh`
 
 Scripts are symlinked in the skill's `scripts/` directory for easy access.
@@ -289,6 +321,19 @@ pip install markitdown
 **PyMuPDF4LLM** (optional):
 ```bash
 pip install pymupdf4llm
+```
+
+**pdf2docx** (optional, for PDF to DOCX):
+```bash
+pip install pdf2docx
+```
+
+**google-genai** (optional, for Gemini API):
+```bash
+pip install google-genai
+
+# Set API key (free tier available at https://aistudio.google.com/)
+export GEMINI_API_KEY="your-api-key"
 ```
 
 **Pandoc** (required):

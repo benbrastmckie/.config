@@ -199,7 +199,10 @@ See [Development Workflow](.claude/docs/concepts/development-workflow.md) for co
 ## Hierarchical Agent Architecture
 [Used by: /build, /implement, /plan, /debug]
 
-See [Hierarchical Agent Architecture Guide](.claude/docs/concepts/hierarchical-agents.md) for complete patterns, utilities, templates, and troubleshooting.
+See [Hierarchical Agent Architecture Overview](.claude/docs/concepts/hierarchical-agents-overview.md) for complete patterns, utilities, templates, and troubleshooting. Documentation is split into focused modules:
+- [Coordination](.claude/docs/concepts/hierarchical-agents-coordination.md) - Multi-agent coordination patterns
+- [Communication](.claude/docs/concepts/hierarchical-agents-communication.md) - Agent communication protocols
+- [Patterns](.claude/docs/concepts/hierarchical-agents-patterns.md) - Design patterns and best practices
 <!-- END_SECTION: hierarchical_agent_architecture -->
 
 <!-- SECTION: skills_architecture -->

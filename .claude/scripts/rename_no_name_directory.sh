@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# rename_no_name_directory.sh - Interactive helper to rename no_name topic directories
+# rename_no_name_directory.sh - Interactive helper to rename no_name_error topic directories
 # Purpose: Fix topic naming failures by renaming directories to semantic names
-# Usage: rename_no_name_directory.sh <no_name_directory> <new_name>
+# Usage: rename_no_name_directory.sh <no_name_error_directory> <new_name>
 
 set -euo pipefail
 
@@ -23,24 +23,24 @@ NC='\033[0m' # No Color
 # Usage information
 usage() {
   cat <<EOF
-Usage: $(basename "$0") <no_name_directory> <new_name>
+Usage: $(basename "$0") <no_name_error_directory> <new_name>
 
-Rename a no_name topic directory to a semantic name.
+Rename a no_name_error topic directory to a semantic name.
 
 ARGUMENTS:
-  no_name_directory  Path to directory ending in _no_name
-  new_name           New semantic name (5-40 chars, a-z0-9_ only)
+  no_name_error_directory  Path to directory ending in _no_name_error
+  new_name                 New semantic name (5-40 chars, a-z0-9_ only)
 
 EXAMPLES:
-  # Rename topic 867_no_name to 867_jwt_auth_fix
-  $0 /path/to/specs/867_no_name jwt_auth_fix
+  # Rename topic 867_no_name_error to 867_jwt_auth_fix
+  $0 /path/to/specs/867_no_name_error jwt_auth_fix
 
   # Rename with relative path
-  $0 .claude/specs/867_no_name oauth_integration
+  $0 .claude/specs/867_no_name_error oauth_integration
 
 VALIDATION:
   - New name must match format: ^[a-z0-9_]{5,40}$
-  - Directory must exist and end with _no_name
+  - Directory must exist and end with _no_name_error
   - Preserves topic number from original directory
 
 EXIT CODES:
@@ -66,9 +66,9 @@ if [ ! -d "$NO_NAME_DIR" ]; then
   exit 1
 fi
 
-# Validate directory ends with _no_name
-if [[ ! "$NO_NAME_DIR" =~ _no_name$ ]]; then
-  echo -e "${RED}ERROR: Directory must end with _no_name${NC}"
+# Validate directory ends with _no_name_error
+if [[ ! "$NO_NAME_DIR" =~ _no_name_error$ ]]; then
+  echo -e "${RED}ERROR: Directory must end with _no_name_error${NC}"
   echo "Got: $NO_NAME_DIR"
   exit 1
 fi
@@ -91,12 +91,12 @@ if ! validate_topic_name_format "$NEW_NAME"; then
 fi
 
 # Extract topic number from directory name
-TOPIC_NUM=$(basename "$NO_NAME_DIR" | sed 's/_no_name$//')
+TOPIC_NUM=$(basename "$NO_NAME_DIR" | sed 's/_no_name_error$//')
 
 # Validate topic number format (NNN)
 if [[ ! "$TOPIC_NUM" =~ ^[0-9]{3}$ ]]; then
   echo -e "${RED}ERROR: Could not extract valid topic number from: $NO_NAME_DIR${NC}"
-  echo "Expected format: NNN_no_name"
+  echo "Expected format: NNN_no_name_error"
   exit 1
 fi
 
@@ -158,7 +158,7 @@ if mv "$NO_NAME_DIR" "$NEW_DIR"; then
     if [ -n "$PLAN_FILES" ]; then
       echo ""
       echo "Note: Plan files found in renamed directory."
-      echo "Review these files for any references to 'no_name' that should be updated:"
+      echo "Review these files for any references to 'no_name_error' that should be updated:"
       echo "$PLAN_FILES" | sed 's/^/  - /'
     fi
   fi

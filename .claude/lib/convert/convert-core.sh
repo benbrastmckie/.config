@@ -36,6 +36,14 @@ if [[ -n "${CLAUDE_PROJECT_DIR:-}" ]]; then
   fi
 fi
 
+# Summary formatting integration (optional - for standardized console output)
+SUMMARY_FORMATTING_AVAILABLE=false
+if [[ -n "${CLAUDE_PROJECT_DIR:-}" ]]; then
+  if source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/summary-formatting.sh" 2>/dev/null; then
+    SUMMARY_FORMATTING_AVAILABLE=true
+  fi
+fi
+
 # Wrapper function for conversion error logging
 log_conversion_error() {
   local error_type="${1:-execution_error}"
@@ -78,6 +86,14 @@ PANDOC_AVAILABLE=false
 PYMUPDF_AVAILABLE=false
 TYPST_AVAILABLE=false
 XELATEX_AVAILABLE=false
+GEMINI_AVAILABLE=false
+PDF2DOCX_AVAILABLE=false
+
+# Conversion mode (gemini or offline)
+CONVERSION_MODE="offline"
+
+# API test cache to avoid repeated connectivity checks
+_GEMINI_API_TESTED=""
 
 # Conversion counters
 docx_success=0
@@ -103,7 +119,7 @@ LOG_FILE=""
 #
 # Sets global flags for tool availability:
 #   MARKITDOWN_AVAILABLE, PANDOC_AVAILABLE, PYMUPDF_AVAILABLE,
-#   TYPST_AVAILABLE, XELATEX_AVAILABLE
+#   TYPST_AVAILABLE, XELATEX_AVAILABLE, GEMINI_AVAILABLE, PDF2DOCX_AVAILABLE
 #
 detect_tools() {
   # MarkItDown
@@ -130,6 +146,100 @@ detect_tools() {
   if command -v xelatex &>/dev/null; then
     XELATEX_AVAILABLE=true
   fi
+
+  # google-genai for Gemini API
+  if python3 -c "from google import genai" 2>/dev/null; then
+    GEMINI_AVAILABLE=true
+  fi
+
+  # pdf2docx for PDF→DOCX direct conversion
+  if python3 -c "import pdf2docx" 2>/dev/null; then
+    PDF2DOCX_AVAILABLE=true
+  fi
+}
+
+#
+# test_gemini_api - Test Gemini API connectivity
+#
+# Returns:
+#   0 - API is available and working
+#   1 - API is not available or key is invalid
+#
+# Uses cached result to avoid repeated connectivity checks
+#
+test_gemini_api() {
+  # Return cached result if available
+  if [[ -n "$_GEMINI_API_TESTED" ]]; then
+    return "$_GEMINI_API_TESTED"
+  fi
+
+  # Check if API key is set
+  if [[ -z "${GEMINI_API_KEY:-}" ]]; then
+    _GEMINI_API_TESTED=1
+    return 1
+  fi
+
+  # Check if google-genai is installed
+  if [[ "$GEMINI_AVAILABLE" != "true" ]]; then
+    _GEMINI_API_TESTED=1
+    return 1
+  fi
+
+  # Test API connectivity with minimal request
+  if python3 -c "
+from google import genai
+try:
+    client = genai.Client()
+    # Just verify we can create a client - don't make actual requests
+    exit(0)
+except Exception as e:
+    exit(1)
+" 2>/dev/null; then
+    _GEMINI_API_TESTED=0
+    return 0
+  else
+    _GEMINI_API_TESTED=1
+    return 1
+  fi
+}
+
+#
+# detect_conversion_mode - Determine conversion mode based on flags and environment
+#
+# Arguments:
+#   $1 - OFFLINE_FLAG (true/false)
+#
+# Sets global variable: CONVERSION_MODE (gemini or offline)
+#
+# Priority:
+#   1. Explicit --no-api flag
+#   2. CONVERT_DOCS_OFFLINE environment variable
+#   3. Gemini API availability check
+#   4. Default to offline
+#
+detect_conversion_mode() {
+  local offline_flag="${1:-false}"
+
+  # Priority 1: Explicit --no-api flag
+  if [[ "$offline_flag" == "true" ]]; then
+    CONVERSION_MODE="offline"
+    return 0
+  fi
+
+  # Priority 2: Environment variable
+  if [[ "${CONVERT_DOCS_OFFLINE:-false}" == "true" ]]; then
+    CONVERSION_MODE="offline"
+    return 0
+  fi
+
+  # Priority 3: Check for Gemini API availability
+  if [[ -n "${GEMINI_API_KEY:-}" ]] && test_gemini_api; then
+    CONVERSION_MODE="gemini"
+    return 0
+  fi
+
+  # Default: offline mode
+  CONVERSION_MODE="offline"
 }
 
 #
@@ -746,43 +856,65 @@ show_tool_detection() {
   echo ""
   echo "Document Conversion (DOCX/PDF → Markdown):"
   if [[ "$MARKITDOWN_AVAILABLE" == "true" ]]; then
-    echo "  ✓ MarkItDown (primary, 75-80% fidelity for DOCX and PDF)"
+    echo "  [OK] MarkItDown (primary, 75-80% fidelity for DOCX and PDF)"
   else
-    echo "  ✗ MarkItDown not found"
+    echo "  [--] MarkItDown not found"
   fi
   if [[ "$PANDOC_AVAILABLE" == "true" ]]; then
-    echo "  ✓ Pandoc (fallback for DOCX, 68% fidelity)"
+    echo "  [OK] Pandoc (fallback for DOCX, 68% fidelity)"
   else
-    echo "  ✗ Pandoc not found"
+    echo "  [--] Pandoc not found"
   fi
   if [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
-    echo "  ✓ PyMuPDF4LLM (backup for PDF, fast)"
+    echo "  [OK] PyMuPDF4LLM (backup for PDF, fast)"
   else
-    echo "  ✗ PyMuPDF4LLM not found"
+    echo "  [--] PyMuPDF4LLM not found"
+  fi
+  echo ""
+  echo "API-Based Conversion (PDF → Markdown):"
+  if [[ "$GEMINI_AVAILABLE" == "true" ]]; then
+    echo "  [OK] Gemini API (google-genai SDK installed)"
+    if [[ -n "${GEMINI_API_KEY:-}" ]]; then
+      echo "       GEMINI_API_KEY: configured"
+    else
+      echo "       GEMINI_API_KEY: not set (set to enable)"
+    fi
+  else
+    echo "  [--] Gemini API (pip install google-genai)"
+  fi
+  echo ""
+  echo "PDF → DOCX Conversion:"
+  if [[ "$PDF2DOCX_AVAILABLE" == "true" ]]; then
+    echo "  [OK] pdf2docx (direct conversion)"
+  else
+    echo "  [--] pdf2docx not found (pip install pdf2docx)"
   fi
   echo ""
   echo "Markdown Export:"
   if [[ "$PANDOC_AVAILABLE" == "true" ]]; then
-    echo "  ✓ Pandoc (MD→DOCX/PDF, 95%+ quality)"
+    echo "  [OK] Pandoc (MD→DOCX/PDF, 95%+ quality)"
   else
-    echo "  ✗ Pandoc not found"
+    echo "  [--] Pandoc not found"
   fi
   if [[ "$TYPST_AVAILABLE" == "true" ]]; then
-    echo "  ✓ Typst (PDF engine, primary)"
+    echo "  [OK] Typst (PDF engine, primary)"
   else
-    echo "  ✗ Typst not found"
+    echo "  [--] Typst not found"
   fi
   if [[ "$XELATEX_AVAILABLE" == "true" ]]; then
-    echo "  ✓ XeLaTeX (PDF engine, fallback)"
+    echo "  [OK] XeLaTeX (PDF engine, fallback)"
   else
-    echo "  ✗ XeLaTeX not found"
+    echo "  [--] XeLaTeX not found"
   fi
   echo ""
+  echo "Conversion Mode: $CONVERSION_MODE"
+  echo ""
   echo "Selected Tools:"
-  echo "  DOCX→MD: $(select_docx_tool)"
-  echo "  PDF→MD:  $(select_pdf_tool)"
-  echo "  MD→DOCX: $(if [[ "$PANDOC_AVAILABLE" == "true" ]]; then echo "pandoc"; else echo "none"; fi)"
-  echo "  MD→PDF:  $(if [[ "$TYPST_AVAILABLE" == "true" ]] || [[ "$XELATEX_AVAILABLE" == "true" ]]; then echo "pandoc"; else echo "none"; fi)"
+  echo "  PDF→MD:   $(if [[ "$CONVERSION_MODE" == "gemini" ]]; then echo "gemini (with fallback)"; else echo "$(select_pdf_tool)"; fi)"
+  echo "  PDF→DOCX: $(if [[ "$PDF2DOCX_AVAILABLE" == "true" ]]; then echo "pdf2docx"; else echo "none"; fi)"
+  echo "  DOCX→MD:  $(select_docx_tool)"
+  echo "  MD→DOCX:  $(if [[ "$PANDOC_AVAILABLE" == "true" ]]; then echo "pandoc"; else echo "none"; fi)"
+  echo "  MD→PDF:   $(if [[ "$TYPST_AVAILABLE" == "true" ]] || [[ "$XELATEX_AVAILABLE" == "true" ]]; then echo "pandoc"; else echo "none"; fi)"
 }
 
 #
@@ -926,53 +1058,34 @@ convert_file() {
       # Check for output filename collision and resolve if necessary
       output_file="$(check_output_collision "$output_file")"
 
-      # Try MarkItDown first
-      if [[ "$MARKITDOWN_AVAILABLE" == "true" ]]; then
-        echo "  Converting: $basename (MarkItDown)"
-        convert_pdf_markitdown "$input_file" "$output_file"
-        local exit_code=$?
-        if [[ $exit_code -eq 0 ]]; then
-          tool_used="markitdown"
-          conversion_success=true
-          pdf_success=$((pdf_success + 1))
-        elif [[ $exit_code -eq 124 ]]; then
-          echo "    MarkItDown timed out (${TIMEOUT_PDF_TO_MD}s), trying PyMuPDF4LLM fallback..."
-          # Fall back to PyMuPDF4LLM
-          if [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
-            if convert_pdf_pymupdf "$input_file" "$output_file"; then
-              tool_used="pymupdf4llm"
-              conversion_success=true
-              pdf_success=$((pdf_success + 1))
-            fi
-          fi
-        else
-          echo "    MarkItDown failed, trying PyMuPDF4LLM fallback..."
-          # Fall back to PyMuPDF4LLM
-          if [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
-            if convert_pdf_pymupdf "$input_file" "$output_file"; then
-              tool_used="pymupdf4llm"
-              conversion_success=true
-              pdf_success=$((pdf_success + 1))
-            fi
-          fi
-        fi
-      # Try PyMuPDF4LLM if MarkItDown unavailable
+      # Determine tool based on conversion mode
+      if [[ "$CONVERSION_MODE" == "gemini" ]]; then
+        echo "  Converting: $basename (Gemini API)"
+        tool_used="gemini"
       elif [[ "$PYMUPDF_AVAILABLE" == "true" ]]; then
         echo "  Converting: $basename (PyMuPDF4LLM)"
-        if convert_pdf_pymupdf "$input_file" "$output_file"; then
-          tool_used="pymupdf4llm"
-          conversion_success=true
-          pdf_success=$((pdf_success + 1))
-        fi
+        tool_used="pymupdf4llm"
+      elif [[ "$MARKITDOWN_AVAILABLE" == "true" ]]; then
+        echo "  Converting: $basename (MarkItDown)"
+        tool_used="markitdown"
+      else
+        echo "  Converting: $basename (no tool available)"
+        tool_used="none"
       fi
 
-      if [[ "$conversion_success" == "false" ]]; then
-        echo "    ✗ Failed to convert $basename"
-        log_conversion_error "execution_error" "PDF conversion failed" "{\"input_file\": \"$input_file\", \"basename\": \"$basename\", \"output_file\": \"$output_file\"}"
-        pdf_failed=$((pdf_failed + 1))
+      # Use the unified convert_pdf_to_md function with automatic fallback
+      if convert_pdf_to_md "$input_file" "$output_file"; then
+        conversion_success=true
+        pdf_success=$((pdf_success + 1))
+        echo "    [OK] Converted to $(basename "$output_file") (using $tool_used)"
       else
-        echo "    ✓ Converted to $(basename "$output_file") (using $tool_used)"
-        # Validate output
+        echo "    [--] Failed to convert $basename"
+        log_conversion_error "execution_error" "PDF conversion failed" "{\"input_file\": \"$input_file\", \"basename\": \"$basename\", \"output_file\": \"$output_file\", \"mode\": \"$CONVERSION_MODE\"}"
+        pdf_failed=$((pdf_failed + 1))
+      fi
+
+      # Validate output if conversion succeeded
+      if [[ "$conversion_success" == "true" ]]; then
         if ! validate_output "$output_file"; then
           report_validation_warnings "$output_file" "md"
         fi
@@ -1157,43 +1270,18 @@ show_missing_tools() {
 # generate_summary - Print conversion summary
 #
 generate_summary() {
-  echo "======================================"
-  echo "Conversion Summary"
-  echo "======================================"
-  echo ""
-  echo "DOCX → MD:"
-  echo "  Success: $docx_success"
-  echo "  Failed:  $docx_failed"
-  echo ""
-  echo "PDF → MD:"
-  echo "  Success: $pdf_success"
-  echo "  Failed:  $pdf_failed"
-  echo ""
-  echo "MD → DOCX:"
-  echo "  Success: $md_to_docx_success"
-  echo "  Failed:  $md_to_docx_failed"
-  echo ""
-  echo "MD → PDF:"
-  echo "  Success: $md_to_pdf_success"
-  echo "  Failed:  $md_to_pdf_failed"
-  echo ""
-  if [[ $collisions_resolved -gt 0 ]]; then
-    echo "Filename collisions resolved: $collisions_resolved"
-    echo ""
-  fi
-  if [[ $timeouts_occurred -gt 0 ]]; then
-    echo "Timeouts occurred: $timeouts_occurred"
-    echo ""
-  fi
-  if [[ $validation_failures -gt 0 ]]; then
-    echo "Validation: $validation_failures files skipped (see log)"
-    echo ""
-  fi
-  echo "Output directory: $OUTPUT_DIR"
-  echo "Conversion log: $LOG_FILE"
-  echo ""
+  # Calculate totals
+  local total_success=$((docx_success + pdf_success + md_to_docx_success + md_to_pdf_success))
+  local total_failed=$((docx_failed + pdf_failed + md_to_docx_failed + md_to_pdf_failed))
+  local total_processed=$((total_success + total_failed))
 
-  # Write summary to log
+  # Determine conversion mode text
+  local mode_text="offline"
+  if [[ "${CONVERSION_MODE:-offline}" == "gemini" ]]; then
+    mode_text="gemini"
+  fi
+
+  # Write summary to log first
   echo "" >> "$LOG_FILE"
   echo "======================================" >> "$LOG_FILE"
   echo "Conversion Summary" >> "$LOG_FILE"
@@ -1211,6 +1299,64 @@ generate_summary() {
   if [[ $validation_failures -gt 0 ]]; then
     echo "Validation failures: $validation_failures files" >> "$LOG_FILE"
   fi
+
+  # Use standardized summary format if available
+  if [[ "$SUMMARY_FORMATTING_AVAILABLE" == "true" ]] && type print_artifact_summary &>/dev/null; then
+    local summary_text="Converted $total_success of $total_processed documents in $mode_text mode."
+    if [[ $total_failed -gt 0 ]]; then
+      summary_text="$summary_text $total_failed files failed (see log for details)."
+    fi
+
+    local artifacts=""
+    artifacts+="  Output: $OUTPUT_DIR ($total_success files)"
+    artifacts+="\n  Log: $LOG_FILE"
+
+    local next_steps=""
+    next_steps+="  - Review: ls -lh $OUTPUT_DIR"
+    next_steps+="\n  - Check log: cat $LOG_FILE"
+    if [[ $total_failed -gt 0 ]]; then
+      next_steps+="\n  - Debug failures: grep FAILED $LOG_FILE"
+    fi
+
+    print_artifact_summary "Convert" "$summary_text" "" "$(echo -e "$artifacts")" "$(echo -e "$next_steps")"
+  else
+    # Fallback to legacy format if summary-formatting.sh not available
+    echo "======================================"
+    echo "Conversion Summary"
+    echo "======================================"
+    echo ""
+    echo "DOCX → MD:"
+    echo "  Success: $docx_success"
+    echo "  Failed:  $docx_failed"
+    echo ""
+    echo "PDF → MD:"
+    echo "  Success: $pdf_success"
+    echo "  Failed:  $pdf_failed"
+    echo ""
+    echo "MD → DOCX:"
+    echo "  Success: $md_to_docx_success"
+    echo "  Failed:  $md_to_docx_failed"
+    echo ""
+    echo "MD → PDF:"
+    echo "  Success: $md_to_pdf_success"
+    echo "  Failed:  $md_to_pdf_failed"
+    echo ""
+    if [[ $collisions_resolved -gt 0 ]]; then
+      echo "Filename collisions resolved: $collisions_resolved"
+      echo ""
+    fi
+    if [[ $timeouts_occurred -gt 0 ]]; then
+      echo "Timeouts occurred: $timeouts_occurred"
+      echo ""
+    fi
+    if [[ $validation_failures -gt 0 ]]; then
+      echo "Validation: $validation_failures files skipped (see log)"
+      echo ""
+    fi
+    echo "Output directory: $OUTPUT_DIR"
+    echo "Conversion log: $LOG_FILE"
+    echo ""
+  fi
 }
 
 #
@@ -1219,23 +1365,29 @@ generate_summary() {
 # This function is exported so convert-docs.md can call it directly
 #
 main_conversion() {
-  # Parse arguments with proper --parallel support
+  # Parse arguments with proper --parallel and --no-api support
   INPUT_DIR=""
   OUTPUT_DIR="./converted_output"
   DRY_RUN=false
   PARALLEL_MODE=false
   PARALLEL_WORKERS=1
+  OFFLINE_FLAG=false
 
   # Parse command-line arguments
   while [[ $# -gt 0 ]]; do
     case "$1" in
       --detect-tools)
         detect_tools
+        detect_conversion_mode "false"
         show_tool_detection
         exit 0
         ;;
       --dry-run)
         DRY_RUN=true
+        shift
+        ;;
+      --no-api|--offline)
+        OFFLINE_FLAG=true
         shift
         ;;
       --parallel)
@@ -1254,6 +1406,22 @@ main_conversion() {
           fi
           shift
         fi
+        ;;
+      --help|-h)
+        echo "Usage: convert-core.sh [INPUT_DIR] [OUTPUT_DIR] [OPTIONS]"
+        echo ""
+        echo "Options:"
+        echo "  --detect-tools   Show available conversion tools and exit"
+        echo "  --dry-run        Show files that would be converted without converting"
+        echo "  --no-api         Disable API-based conversion (use offline mode)"
+        echo "  --offline        Alias for --no-api"
+        echo "  --parallel [N]   Enable parallel conversion with N workers (default: auto)"
+        echo "  --help, -h       Show this help message"
+        echo ""
+        echo "Environment Variables:"
+        echo "  GEMINI_API_KEY        Gemini API key for PDF conversion (optional)"
+        echo "  CONVERT_DOCS_OFFLINE  Set to 'true' to disable API calls"
+        exit 0
         ;;
       *)
         if [ -z "$INPUT_DIR" ]; then
@@ -1290,6 +1458,10 @@ main_conversion() {
   # Detect tools
   detect_tools
 
+  # Detect conversion mode (gemini or offline)
+  detect_conversion_mode "$OFFLINE_FLAG"
+  echo "Conversion Mode: $CONVERSION_MODE"
+
   # Discover files
   discover_files "$INPUT_DIR"
 
@@ -1319,6 +1491,7 @@ main_conversion() {
   echo "Input Directory: $INPUT_DIR" >> "$LOG_FILE"
   echo "Output Directory: $OUTPUT_DIR" >> "$LOG_FILE"
   echo "Conversion Direction: $CONVERSION_DIRECTION" >> "$LOG_FILE"
+  echo "Conversion Mode: $CONVERSION_MODE" >> "$LOG_FILE"
   echo "" >> "$LOG_FILE"
 
   # Check disk space (warnings only, doesn't prevent conversion)

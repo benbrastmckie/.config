@@ -76,6 +76,8 @@ Transform a brief 30-50 line phase outline into a detailed 300-500+ line impleme
 **EXECUTE NOW - Detect Plan Structure**:
 
 ```bash
+set +H  # CRITICAL: Disable history expansion
+
 # STANDARD 13: Detect project directory using CLAUDE_PROJECT_DIR (git-based detection)
 # Bootstrap CLAUDE_PROJECT_DIR detection (inline, no library dependency)
 # This eliminates the bootstrap paradox where we need detect-project-dir.sh to find
@@ -105,7 +107,8 @@ fi
 # Export for use by sourced libraries
 export CLAUDE_PROJECT_DIR
 
-# Source error-handling.sh for centralized error logging (MANDATORY fail-fast pattern)
+# === SOURCE LIBRARIES (Three-Tier Pattern) ===
+# Tier 1: Critical Foundation (fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
@@ -651,7 +654,8 @@ fi
 # Export for use by sourced libraries
 export CLAUDE_PROJECT_DIR
 
-# Source error-handling.sh for centralized error logging (MANDATORY fail-fast pattern)
+# === SOURCE LIBRARIES (Three-Tier Pattern) ===
+# Tier 1: Critical Foundation (fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
