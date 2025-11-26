@@ -1,0 +1,232 @@
+# Error Analysis Report
+
+## Metadata
+- **Date**: 2025-11-23
+- **Agent**: repair-analyst
+- **Error Count**: 7
+- **Time Range**: 2025-11-21T06:17:35Z to 2025-11-24T03:37:05Z
+- **Report Type**: Error Log Analysis
+- **Command Filter**: /debug
+- **Error Log Path**: /home/benjamin/.config/.claude/data/logs/errors.jsonl
+
+## Executive Summary
+
+Analysis of 7 errors from the `/debug` command reveals that **71% are execution errors** (exit code 127 - command not found), primarily caused by missing function definitions (`initialize_workflow_paths`, `save_completed_states_to_state`). The remaining errors are state machine transition failures and agent errors. Immediate priority should be given to ensuring required library functions are properly sourced before use in the debug command.
+
+## Error Overview
+
+| Metric | Value |
+|--------|-------|
+| Total Errors | 7 |
+| Unique Workflow IDs | 4 |
+| Time Span | ~3 days |
+| Most Common Type | execution_error (5 occurrences, 71%) |
+
+## Error Patterns
+
+### Pattern 1: Missing Function Definition - initialize_workflow_paths
+- **Frequency**: 2 errors (29% of total)
+- **Error Type**: execution_error
+- **Exit Code**: 127 (command not found)
+- **Commands Affected**: /debug
+- **Time Range**: 2025-11-21T06:17:35Z to 2025-11-21T23:45:20Z
+- **Example Error**:
+  ```
+  Bash error at line 96: exit code 127
+  Command: initialize_workflow_paths "$ISSUE_DESCRIPTION" "debug-only" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"
+  ```
+- **Root Cause Hypothesis**: The `initialize_workflow_paths` function from `workflow-initialization.sh` is not being sourced before it is called in the debug command. The library sourcing may be missing or occurring after the function call.
+- **Proposed Fix**: Ensure `workflow-initialization.sh` is sourced with fail-fast handlers at the beginning of the debug command bash block, following the three-tier sourcing pattern.
+- **Priority**: High
+- **Effort**: Low
+
+### Pattern 2: Missing Function Definition - save_completed_states_to_state
+- **Frequency**: 1 error (14% of total)
+- **Error Type**: execution_error
+- **Exit Code**: 127 (command not found)
+- **Commands Affected**: /debug
+- **Time Range**: 2025-11-24T02:49:00Z
+- **Example Error**:
+  ```
+  Bash error at line 129: exit code 127
+  Command: save_completed_states_to_state 2>&1 < /dev/null
+  ```
+- **Root Cause Hypothesis**: The `save_completed_states_to_state` function from `state-persistence.sh` is not being sourced before it is called. This is part of the Tier 1 library requirements.
+- **Proposed Fix**: Verify that `state-persistence.sh` is properly sourced with fail-fast handlers following the mandatory sourcing pattern.
+- **Priority**: High
+- **Effort**: Low
+
+### Pattern 3: Bashrc Sourcing Noise
+- **Frequency**: 1 error (14% of total)
+- **Error Type**: execution_error
+- **Exit Code**: 127 (command not found)
+- **Commands Affected**: /debug
+- **Time Range**: 2025-11-21T16:47:46Z
+- **Example Error**:
+  ```
+  Bash error at line 1: exit code 127
+  Command: . /etc/bashrc
+  ```
+- **Root Cause Hypothesis**: The bash environment is attempting to source `/etc/bashrc` which may not exist or has issues. This is a benign environmental error that should be filtered by the error logging system.
+- **Proposed Fix**: The benign error filter should catch this pattern. Verify the filter includes `. /etc/bashrc` pattern. This error is environmental and not a bug in the debug command itself.
+- **Priority**: Low
+- **Effort**: Low
+
+### Pattern 4: Invalid State Machine Transition
+- **Frequency**: 1 error (14% of total)
+- **Error Type**: state_error
+- **Commands Affected**: /debug
+- **Time Range**: 2025-11-24T02:51:39Z
+- **Example Error**:
+  ```
+  Invalid state transition attempted: plan -> debug
+  Current State: plan
+  Target State: debug
+  Valid Transitions: implement,complete
+  ```
+- **Root Cause Hypothesis**: The debug workflow attempted to transition to a `debug` state from a `plan` state, but the state machine does not define this as a valid transition. The debug command may be using incorrect state transitions or the workflow was in an unexpected state from a previous run.
+- **Proposed Fix**:
+  1. Review the debug workflow state machine definition to ensure `debug` is a valid target state from `plan`
+  2. Alternatively, if the workflow should skip the state machine for debug-only mode, add conditional logic to bypass state transitions
+  3. Consider adding `debug` as a valid transition from `plan` state if this is a legitimate workflow path
+- **Priority**: Medium
+- **Effort**: Medium
+
+### Pattern 5: Test-Generated Agent Error
+- **Frequency**: 1 error (14% of total)
+- **Error Type**: agent_error
+- **Commands Affected**: /debug
+- **Time Range**: 2025-11-24T03:37:05Z
+- **Example Error**:
+  ```
+  Debug error
+  Source: bash_block
+  Stack: test_query_errors_filter tests/unit/test_error_logging.sh
+  ```
+- **Root Cause Hypothesis**: This error was generated by unit tests (`test_error_logging.sh`) to validate error logging functionality. It is not a production error but rather a test artifact with `workflow_id: debug_1`.
+- **Proposed Fix**: No fix needed - this is expected test behavior. Consider filtering test-generated errors (workflow_id patterns like `debug_1`, `test_*`) from production error analysis.
+- **Priority**: Low (informational)
+- **Effort**: N/A
+
+### Pattern 6: Return Statement Error
+- **Frequency**: 1 error (14% of total)
+- **Error Type**: execution_error
+- **Exit Code**: 1
+- **Commands Affected**: /debug
+- **Time Range**: 2025-11-21T16:48:02Z
+- **Example Error**:
+  ```
+  Bash error at line 52: exit code 1
+  Command: return 1
+  ```
+- **Root Cause Hypothesis**: A function returned with exit code 1, which was caught by the error trap. This indicates an intentional error return (failure path) rather than an unexpected crash. The error occurred shortly after the bashrc sourcing issue, suggesting it may be a cascading failure from the environment setup.
+- **Proposed Fix**: Review the debug command flow to determine if this is an expected error path that should be handled without logging, or if it indicates a real failure that needs correction.
+- **Priority**: Medium
+- **Effort**: Low
+
+## Root Cause Analysis
+
+### Root Cause 1: Library Sourcing Failures
+- **Related Patterns**: Pattern 1 (initialize_workflow_paths), Pattern 2 (save_completed_states_to_state)
+- **Impact**: 3 commands affected (43% of errors)
+- **Evidence**: Exit code 127 consistently indicates "command not found", meaning function definitions are missing when called
+- **Analysis**: The debug command is not properly sourcing required libraries before using their functions. This violates the three-tier sourcing pattern documented in code standards:
+  - Tier 1: `state-persistence.sh`, `workflow-state-machine.sh`, `error-handling.sh`
+  - Required: `workflow-initialization.sh` for `initialize_workflow_paths`
+- **Fix Strategy**: Audit the debug command's bash blocks to ensure all required libraries are sourced at the start with fail-fast handlers:
+  ```bash
+  source "$CLAUDE_LIB/workflow/workflow-initialization.sh" 2>/dev/null || {
+    echo "Error: Cannot load workflow-initialization library" >&2
+    exit 1
+  }
+  ```
+
+### Root Cause 2: State Machine Configuration Gap
+- **Related Patterns**: Pattern 4 (plan -> debug transition)
+- **Impact**: 1 error (14% of errors)
+- **Evidence**: The state machine explicitly rejected `plan -> debug` transition, listing only `implement,complete` as valid
+- **Analysis**: The debug workflow is designed for a "debug-only" path (`initialize_workflow_paths "$ISSUE_DESCRIPTION" "debug-only" ...`), but when a previous workflow leaves state in `plan`, the debug command cannot proceed properly.
+- **Fix Strategy**: Either:
+  1. Add `debug` as a valid transition from `plan` state in the state machine definition
+  2. Implement state reset logic for debug-only workflows that bypass normal state progression
+  3. Add validation at debug command start to check/handle existing workflow state
+
+### Root Cause 3: Environmental Noise in Error Logs
+- **Related Patterns**: Pattern 3 (bashrc sourcing)
+- **Impact**: 1 error (14% of errors)
+- **Evidence**: Error from `. /etc/bashrc` is unrelated to debug command logic
+- **Analysis**: The error trap is catching environmental setup issues that are outside the control of the debug command. The benign error filter should handle these cases.
+- **Fix Strategy**: Verify the benign error filter in `error-handling.sh` includes patterns for:
+  - `. /etc/bashrc`
+  - `source /etc/bashrc`
+  - `[ -n "$__ETC_BASHRC_SOURCED" ]`
+
+## Recommendations
+
+### 1. Add Missing Library Sources to Debug Command (Priority: High, Effort: Low)
+- **Description**: Ensure the debug command properly sources `workflow-initialization.sh` and `state-persistence.sh` before calling their functions
+- **Rationale**: 43% of errors are caused by missing function definitions, which are critical for debug workflow operation
+- **Implementation**:
+  1. Open `/home/benjamin/.config/.claude/commands/debug.md`
+  2. Verify the bash block includes proper sourcing with fail-fast handlers
+  3. Ensure sourcing occurs before any function calls
+  4. Follow the three-tier sourcing pattern from code standards
+- **Dependencies**: None
+- **Impact**: Should eliminate 3 of 7 errors (43% reduction)
+- **Files to Modify**: `/home/benjamin/.config/.claude/commands/debug.md`
+
+### 2. Add Debug State Transition to State Machine (Priority: Medium, Effort: Medium)
+- **Description**: Update the workflow state machine to allow transitioning to `debug` state from `plan` state
+- **Rationale**: The debug workflow legitimately needs to operate from various starting states including `plan`
+- **Implementation**:
+  1. Open `/home/benjamin/.config/.claude/lib/workflow/workflow-state-machine.sh`
+  2. Locate the state transition definitions for `plan` state
+  3. Add `debug` to the list of valid transitions from `plan`
+  4. Alternatively, implement state reset logic for debug-only workflows
+- **Dependencies**: Understanding of intended debug workflow state paths
+- **Impact**: Should eliminate state transition errors
+- **Files to Modify**: `/home/benjamin/.config/.claude/lib/workflow/workflow-state-machine.sh`
+
+### 3. Verify Benign Error Filter Coverage (Priority: Low, Effort: Low)
+- **Description**: Confirm the benign error filter catches environmental noise like bashrc sourcing errors
+- **Rationale**: These errors pollute the error log without indicating real debug command issues
+- **Implementation**:
+  1. Review `/home/benjamin/.config/.claude/lib/core/error-handling.sh`
+  2. Check the `is_benign_error` function or equivalent
+  3. Ensure patterns include bashrc-related strings
+  4. Add test coverage for these benign patterns
+- **Dependencies**: None
+- **Impact**: Cleaner error logs, more accurate error analysis
+- **Files to Modify**: `/home/benjamin/.config/.claude/lib/core/error-handling.sh`
+
+### 4. Add Test Error Filtering for Analysis (Priority: Low, Effort: Low)
+- **Description**: Filter out test-generated errors from production error analysis
+- **Rationale**: Test errors with obvious patterns (workflow_id like `debug_1`, `test_*`) should not be counted in production analysis
+- **Implementation**:
+  1. Add workflow_id pattern validation in error analysis queries
+  2. Exclude errors where `workflow_id` matches test patterns
+  3. Consider adding an `environment: test` flag for test-generated errors
+- **Dependencies**: None
+- **Impact**: More accurate error metrics and root cause analysis
+- **Files to Modify**: Error analysis queries in `/repair` command
+
+## Code Locations Requiring Changes
+
+| File | Line/Section | Change Required |
+|------|--------------|-----------------|
+| `.claude/commands/debug.md` | Bash block start | Add library sourcing with fail-fast |
+| `.claude/lib/workflow/workflow-state-machine.sh` | State definitions | Add debug transition from plan |
+| `.claude/lib/core/error-handling.sh` | Benign filter | Verify bashrc patterns included |
+
+## References
+
+- **Error Log File**: `/home/benjamin/.config/.claude/data/logs/errors.jsonl`
+- **Total Errors Analyzed**: 7 (filtered from 107 total errors in log)
+- **Filter Criteria**: `command contains "/debug"`
+- **Analysis Timestamp**: 2025-11-23
+- **Affected Workflow IDs**:
+  - debug_1763705783
+  - debug_1763743176
+  - debug_1763768667
+  - debug_1763952158
+  - debug_1 (test-generated)
