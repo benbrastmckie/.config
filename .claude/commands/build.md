@@ -95,6 +95,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
 
+# === SETUP EARLY BASH ERROR TRAP ===
+# Trap must be set BEFORE variable initialization to catch early failures
+setup_bash_error_trap "/build" "build_early_$(date +%s)" "early_init"
+
 # Tier 2: Workflow Support (graceful degradation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null || true
 
@@ -310,7 +314,7 @@ COMMAND_NAME="/build"
 USER_ARGS="$PLAN_FILE"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# === SETUP BASH ERROR TRAP ===
+# === UPDATE BASH ERROR TRAP WITH ACTUAL VALUES ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Initialize workflow state file (creates .claude/tmp/workflow_${WORKFLOW_ID}.sh)
@@ -519,31 +523,11 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# === POST-LOAD VERIFICATION ===
-# Critical variables must be set after load_workflow_state
-# Fallback: Source state file directly if variables empty (addresses variable propagation gap)
-if [[ -z "${PLAN_FILE:-}" || -z "${TOPIC_PATH:-}" || -z "${MAX_ITERATIONS:-}" ]]; then
-  echo "WARNING: Critical variables empty after load_workflow_state, attempting fallback sourcing" >&2
-  STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-  if [[ -f "$STATE_FILE" ]]; then
-    source "$STATE_FILE" 2>/dev/null || true
-    echo "Fallback sourcing completed from: $STATE_FILE" >&2
-  fi
-fi
-
-# Validate critical variables after fallback
-if [[ -z "${PLAN_FILE:-}" ]]; then
-  log_command_error \
-    "${COMMAND_NAME:-/build}" \
-    "$WORKFLOW_ID" \
-    "${USER_ARGS:-}" \
-    "state_error" \
-    "PLAN_FILE empty after load_workflow_state and fallback" \
-    "iteration_check" \
-    "$(jq -n --arg wid "$WORKFLOW_ID" '{workflow_id: $wid}')"
-  echo "ERROR: PLAN_FILE not set - state persistence failure" >&2
+# Validate critical variables restored from state
+validate_state_restoration "PLAN_FILE" "TOPIC_PATH" "MAX_ITERATIONS" "COMMAND_NAME" "USER_ARGS" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
   exit 1
-fi
+}
 
 # === RESTORE ERROR LOGGING CONTEXT ===
 COMMAND_NAME="${COMMAND_NAME:-/build}"
@@ -870,59 +854,16 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit $EXIT_CODE
 fi
 
-# === RESTORE ERROR LOGGING CONTEXT ===
-if [ -z "${COMMAND_NAME:-}" ]; then
-  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/build")
-fi
-if [ -z "${USER_ARGS:-}" ]; then
-  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-fi
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "PLAN_FILE" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
+
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === SETUP BASH ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
-
-# === VALIDATE STATE AFTER LOAD ===
-if [ -z "$STATE_FILE" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "State file path not set after load" \
-    "bash_block_1b" \
-    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
-
-  {
-    echo "[$(date)] ERROR: State file path not set"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: STATE_FILE variable empty after load"
-    echo "WHERE: Phase update block"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
-  exit 1
-fi
-
-if [ ! -f "$STATE_FILE" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "file_error" \
-    "State file not found after load" \
-    "bash_block_1b" \
-    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
-
-  {
-    echo "[$(date)] ERROR: State file not found"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: File does not exist at expected path"
-    echo "WHERE: Phase update block"
-    echo "PATH: $STATE_FILE"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
-  exit 1
-fi
 
 [ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state from: $STATE_FILE" >&2
 echo "Phase update: State validated"
@@ -1095,14 +1036,19 @@ fi
 load_workflow_state "$WORKFLOW_ID" false
 
 # Extract paths from state with defensive defaults
-PLAN_FILE=$(grep "^PLAN_FILE=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-TOPIC_PATH=$(grep "^TOPIC_PATH=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
+  PLAN_FILE=$(grep "^PLAN_FILE=" "$STATE_FILE" | cut -d'=' -f2- || echo "")
+  TOPIC_PATH=$(grep "^TOPIC_PATH=" "$STATE_FILE" | cut -d'=' -f2- || echo "")
+else
+  PLAN_FILE=""
+  TOPIC_PATH=""
+fi
 
 # Validate extracted paths
 if [ -z "$PLAN_FILE" ]; then
   echo "WARNING: PLAN_FILE not found in state file, workflow state may be incomplete" >&2
 fi
-if [ -z "$TOPIC_PATH" ]; then
+if [ -z "${TOPIC_PATH:-}" ]; then
   echo "WARNING: TOPIC_PATH not found in state file, workflow state may be incomplete" >&2
 fi
 
@@ -1241,81 +1187,16 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit $EXIT_CODE
 fi
 
-# === RESTORE ERROR LOGGING CONTEXT ===
-if [ -z "${COMMAND_NAME:-}" ]; then
-  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/build")
-fi
-if [ -z "${USER_ARGS:-}" ]; then
-  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-fi
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "CURRENT_STATE" "PLAN_FILE" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
+
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === SETUP BASH ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
-
-# === VALIDATE STATE AFTER LOAD ===
-if [ -z "$STATE_FILE" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "State file path not set after load" \
-    "bash_block_2" \
-    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
-
-  {
-    echo "[$(date)] ERROR: State file path not set"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: STATE_FILE variable empty after load"
-    echo "WHERE: Block 2, testing phase initialization"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
-  exit 1
-fi
-
-if [ ! -f "$STATE_FILE" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "file_error" \
-    "State file not found after load" \
-    "bash_block_2" \
-    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
-
-  {
-    echo "[$(date)] ERROR: State file not found"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: File does not exist at expected path"
-    echo "WHERE: Block 2, testing phase initialization"
-    echo "PATH: $STATE_FILE"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
-  exit 1
-fi
-
-if [ -z "${CURRENT_STATE:-}" ] || [ "$CURRENT_STATE" = "initialize" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "State restoration failed - CURRENT_STATE invalid" \
-    "bash_block_2" \
-    "$(jq -n --arg state "${CURRENT_STATE:-empty}" \
-       '{current_state: $state, expected: "implement"}')"
-
-  {
-    echo "[$(date)] ERROR: State restoration failed"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: CURRENT_STATE not properly restored (expected: implement, got: ${CURRENT_STATE:-empty})"
-    echo "WHERE: Block 2, testing phase initialization"
-    echo "PATH: $STATE_FILE"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State restoration failed (see $DEBUG_LOG)" >&2
-  exit 1
-fi
 
 [ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state: $CURRENT_STATE" >&2
 echo "Block 2: State validated ($CURRENT_STATE)"
@@ -1357,7 +1238,7 @@ echo ""
 # Find the most recent test result artifact
 TEST_OUTPUT_PATH=$(ls -t "${TOPIC_PATH}/outputs/test_results_"*.md 2>/dev/null | head -1 || echo "")
 
-if [ -z "$TEST_OUTPUT_PATH" ] || [ ! -f "$TEST_OUTPUT_PATH" ]; then
+if [ -z "${TEST_OUTPUT_PATH:-}" ] || [ ! -f "${TEST_OUTPUT_PATH:-}" ]; then
   echo "WARNING: Test artifact not found, test-executor may have failed"
   echo "Attempting fallback: inline test execution"
 
@@ -1550,80 +1431,16 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit $EXIT_CODE
 fi
 
-# === RESTORE ERROR LOGGING CONTEXT ===
-if [ -z "${COMMAND_NAME:-}" ]; then
-  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/build")
-fi
-if [ -z "${USER_ARGS:-}" ]; then
-  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-fi
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "CURRENT_STATE" "TOPIC_PATH" "TESTS_PASSED" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
+
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === SETUP BASH ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
-
-# === VALIDATE STATE AFTER LOAD ===
-if [ -z "$STATE_FILE" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "State file path not set after load" \
-    "bash_block_3" \
-    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
-
-  {
-    echo "[$(date)] ERROR: State file path not set"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: STATE_FILE variable empty after load"
-    echo "WHERE: Block 3, debug/document phase initialization"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
-  exit 1
-fi
-
-if [ ! -f "$STATE_FILE" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "file_error" \
-    "State file not found after load" \
-    "bash_block_3" \
-    "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
-
-  {
-    echo "[$(date)] ERROR: State file not found"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: File does not exist at expected path"
-    echo "WHERE: Block 3, debug/document phase initialization"
-    echo "PATH: $STATE_FILE"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
-  exit 1
-fi
-
-if [ -z "${CURRENT_STATE:-}" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "State restoration failed - CURRENT_STATE empty" \
-    "bash_block_3" \
-    "$(jq -n '{current_state: "empty"}')"
-
-  {
-    echo "[$(date)] ERROR: State restoration failed"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: CURRENT_STATE not properly restored (got: empty)"
-    echo "WHERE: Block 3, debug/document phase initialization"
-    echo "PATH: $STATE_FILE"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State restoration failed (see $DEBUG_LOG)" >&2
-  exit 1
-fi
 
 [ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state: $CURRENT_STATE" >&2
 echo "Block 3: State validated ($CURRENT_STATE)"
@@ -1792,6 +1609,9 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null || true
 ensure_error_log_exists
 
+# Tier 3: Command-Specific (graceful degradation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || true
+
 # === LOAD STATE WITH RECOVERY ===
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
@@ -1817,10 +1637,18 @@ fi
 
 # === RESTORE ERROR LOGGING CONTEXT ===
 if [ -z "${COMMAND_NAME:-}" ]; then
-  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/build")
+  if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" | cut -d'=' -f2- || echo "/build")
+  else
+    COMMAND_NAME="/build"
+  fi
 fi
 if [ -z "${USER_ARGS:-}" ]; then
-  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+  if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" | cut -d'=' -f2- || echo "")
+  else
+    USER_ARGS=""
+  fi
 fi
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
@@ -1960,6 +1788,32 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit 1
 fi
 
+# === PERSIST STATE TRANSITIONS ===
+# CRITICAL: Save state before any cleanup operations (matches plan.md pattern)
+# Defensive check: Verify save_completed_states_to_state function available
+type save_completed_states_to_state &>/dev/null
+TYPE_CHECK=$?
+if [ $TYPE_CHECK -ne 0 ]; then
+  echo "ERROR: save_completed_states_to_state function not found" >&2
+  echo "DIAGNOSTIC: workflow-state-machine.sh library not sourced in this block" >&2
+  exit 1
+fi
+
+save_completed_states_to_state
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to persist state transitions" \
+    "bash_block_4" \
+    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: State persistence failed" >&2
+  exit 1
+fi
+
 # === VALIDATE SUMMARY PLAN LINK ===
 # Check if summary was created and includes plan link
 SUMMARIES_DIR="${TOPIC_PATH}/summaries"
@@ -2026,12 +1880,14 @@ fi
 # Print standardized summary
 print_artifact_summary "Build" "$SUMMARY_TEXT" "$PHASES" "$ARTIFACTS" "$NEXT_STEPS"
 
-# Update metadata status if all phases complete
+# CRITICAL: Update metadata status if all phases complete - must not be skipped
 if type check_all_phases_complete &>/dev/null && type update_plan_status &>/dev/null; then
   if check_all_phases_complete "$PLAN_FILE"; then
-    if update_plan_status "$PLAN_FILE" "COMPLETE" 2>/dev/null; then
+    if update_plan_status "$PLAN_FILE" "COMPLETE"; then
       echo ""
-      echo "✓ Plan metadata status updated to [COMPLETE]"
+      echo "Plan metadata status updated to [COMPLETE]"
+    else
+      echo "WARNING: Could not update plan status to COMPLETE" >&2
     fi
   fi
 fi
