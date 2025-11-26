@@ -14,6 +14,7 @@
 # - Atomic two-phase commit for state transitions (pre + post checkpoints)
 # - Workflow scope integration (maps scope to terminal state)
 # - State history tracking (completed_states array)
+# - Idempotent transitions: Same-state transitions succeed immediately (early-exit optimization)
 #
 # Dependencies:
 # - workflow-scope-detection.sh: detect_workflow_scope() [primary - supports revision patterns]
@@ -55,7 +56,7 @@ readonly STATE_COMPLETE="complete"           # Phase 7: Finalization, cleanup
 declare -gA STATE_TRANSITIONS=(
   [initialize]="research,implement" # Can go to research or directly to implement (for /build)
   [research]="plan,complete"        # Can skip to complete for research-only
-  [plan]="implement,complete"       # Can skip to complete for research-and-plan
+  [plan]="implement,complete,debug" # Can skip to complete for research-and-plan, or debug for debug-only workflows
   [implement]="test"
   [test]="debug,document"           # Conditional: debug if failed, document if passed
   [debug]="test,complete"           # Retry testing or complete if unfixable
@@ -639,6 +640,12 @@ sm_transition() {
     echo "ERROR: CURRENT_STATE not set in sm_transition()" >&2
     echo "DIAGNOSTIC: Call sm_init() before sm_transition()" >&2
     return 1
+  fi
+
+  # Idempotent: Same-state transitions succeed immediately (no-op)
+  if [ "${CURRENT_STATE:-}" = "$next_state" ]; then
+    echo "INFO: Already in state '$next_state', transition skipped (idempotent)" >&2
+    return 0  # Success, no error
   fi
 
   # Phase 1: Validate transition is allowed
