@@ -4,7 +4,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLAUDE_ROOT="$(dirname "$SCRIPT_DIR")"
+CLAUDE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 source "$CLAUDE_ROOT/lib/plan/topic-decomposition.sh"
 

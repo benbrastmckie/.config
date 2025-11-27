@@ -24,7 +24,9 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 
 # Script path
-SCRIPT_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/convert/convert-core.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLAUDE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+SCRIPT_PATH="$CLAUDE_ROOT/lib/convert/convert-core.sh"
 
 # Test directory
 TEST_DIR="/tmp/convert-docs-test-$$"

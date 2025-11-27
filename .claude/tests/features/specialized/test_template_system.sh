@@ -17,7 +17,9 @@ TESTS_FAILED=0
 
 # Test directory
 TEST_DIR="/tmp/template_system_tests_$$"
-LIB_DIR="$(dirname "$0")/../lib"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CLAUDE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+LIB_DIR="$CLAUDE_ROOT/lib"
 
 # Setup test environment
 setup() {
