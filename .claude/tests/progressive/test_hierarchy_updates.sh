@@ -8,10 +8,23 @@ set -euo pipefail
 
 # Detect project directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  export CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  export CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+CLAUDE_LIB="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
 # Source the checkbox utilities
-source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || {
+source "$CLAUDE_LIB/plan/checkbox-utils.sh" 2>/dev/null || {
   echo "ERROR: Failed to source checkbox-utils.sh"
   exit 1
 }

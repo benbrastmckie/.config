@@ -132,7 +132,53 @@ After using Write tool, verify:
 2. **Parse and Filter**: Use Bash with jq to filter errors based on provided criteria
 3. **Group Errors**: Compute error patterns inline using jq queries
 4. **Analyze Root Causes**: Identify common failure patterns and root causes
-5. **Document**: Use Edit tool to update the report file with findings
+5. **Analyze Workflow Output** (if provided): Read WORKFLOW_OUTPUT_FILE for runtime errors
+6. **Document**: Use Edit tool to update the report file with findings
+
+### STEP 3.5 (CONDITIONAL) - Workflow Output File Analysis
+
+**IF WORKFLOW_OUTPUT_FILE is provided and non-empty in your prompt context**, YOU MUST:
+
+1. **Read the Workflow Output File**: Use Read tool to access the file at the provided path
+2. **Detect Runtime Errors**: Look for patterns indicating actual runtime failures:
+   - Path mismatch patterns: References to files at paths that differ from expected locations
+   - State file errors: "State file not found", "STATE_FILE variable empty", "WORKFLOW_ID file not found"
+   - Bash execution errors: "command not found", "exit code", "ERR trap", line number references
+   - Variable unset errors: "unbound variable", variable names referenced but not defined
+   - Permission errors: "Permission denied", "cannot access"
+3. **Correlate with Error Log**: Match workflow output errors to logged errors in errors.jsonl
+4. **Extract Debugging Context**: Capture file paths, line numbers, and variable values from output
+
+**Pattern Detection for Workflow Output**:
+```bash
+# Detect state file errors
+grep -E "(State file not found|STATE_FILE.*empty|WORKFLOW_ID.*not found)" "$WORKFLOW_OUTPUT_FILE"
+
+# Detect path mismatch patterns
+grep -E "(expected.*path|actual.*path|not found at)" "$WORKFLOW_OUTPUT_FILE"
+
+# Detect bash execution errors
+grep -E "(exit code [0-9]+|line [0-9]+:|command not found)" "$WORKFLOW_OUTPUT_FILE"
+```
+
+**Include in Report**: If workflow output analysis reveals errors, add a "Workflow Output Analysis" section:
+```markdown
+## Workflow Output Analysis
+
+### File Analyzed
+- Path: [WORKFLOW_OUTPUT_FILE path]
+- Size: [file size]
+
+### Runtime Errors Detected
+- [Error type]: [Description and context]
+- [Error type]: [Description and context]
+
+### Path Mismatches
+- Expected: [path], Actual: [path]
+
+### Correlation with Error Log
+- [How workflow output errors relate to logged errors]
+```
 
 **CRITICAL**: Write findings DIRECTLY into the report file using Edit tool. DO NOT accumulate findings in memory - update the file incrementally.
 
@@ -375,6 +421,21 @@ jq -s 'group_by(.details.file // "unknown") | map({file: .[0].details.file, coun
 ### Pattern 2: [Descriptive Name]
 [Same structure as Pattern 1]
 
+## Workflow Output Analysis (if WORKFLOW_OUTPUT_FILE provided)
+
+### File Analyzed
+- Path: [WORKFLOW_OUTPUT_FILE path]
+- Size: [file size in bytes]
+
+### Runtime Errors Detected
+- [Error type]: [Description with line numbers and context]
+
+### Path Mismatches
+- Expected: [path], Actual: [path]
+
+### Correlation with Error Log
+- [How workflow output errors relate to entries in errors.jsonl]
+
 ## Root Cause Analysis
 
 ### Root Cause 1: [Underlying Issue]
@@ -435,9 +496,11 @@ Before completing your task, YOU MUST verify ALL of these criteria are met:
 - [x] STEP 1.5 completed: Parent directory created
 - [x] STEP 2 completed: Report file created FIRST (before analysis)
 - [x] STEP 3 completed: Error analysis conducted and file updated incrementally
+- [x] STEP 3.5 completed (if applicable): Workflow output file analyzed when provided
 - [x] STEP 4 completed: File verified to exist and contain complete content
 - [x] All progress markers emitted at required milestones
 - [x] No verification checkpoints skipped
+- [x] Workflow Output Analysis section included (if WORKFLOW_OUTPUT_FILE was provided)
 
 ### Return Format (STRICT REQUIREMENT)
 - [x] Return format is EXACTLY: `REPORT_CREATED: [absolute-path]`

@@ -45,6 +45,9 @@ COMMAND_NAME="/setup"
 WORKFLOW_ID="setup_$(date +%s)"
 USER_ARGS="$*"
 
+# Setup bash error trap for automatic error logging
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Parse arguments (only --force flag supported)
 FORCE=false
 PROJECT_DIR=""
@@ -228,7 +231,8 @@ EOF
 
     # Persist description for topic naming agent
     ANALYSIS_DESCRIPTION="CLAUDE.md standards analysis"
-    TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+    # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+    TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
     echo "$ANALYSIS_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
     export TOPIC_NAMING_INPUT_FILE
 
@@ -251,7 +255,7 @@ Task {
     **Input**:
     - User Prompt: CLAUDE.md standards analysis
     - Command Name: /setup
-    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
 
     Execute topic naming according to behavioral guidelines:
     1. Generate semantic topic name from user prompt
@@ -387,11 +391,13 @@ EOF
 
   analyze)
     # Restore description from temp file
-    TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+    # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+    TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
     ANALYSIS_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null || echo "CLAUDE.md standards analysis")
 
     # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
-    TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+    # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+    TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
     TOPIC_NAME="no_name_error"
     NAMING_STRATEGY="fallback"
 

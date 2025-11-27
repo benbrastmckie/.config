@@ -25,7 +25,19 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)" pwd)"
+# Find project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR}/.claude"
 
 # Test counters
 TESTS_RUN=0
@@ -70,7 +82,7 @@ test_preprocessing_safe_conditionals() {
   local all_safe=true
 
   for cmd in "${commands[@]}"; do
-    local cmd_path="$PROJECT_ROOT/.claude/commands/$cmd"
+    local cmd_path="$PROJECT_ROOT/commands/$cmd"
 
     if [ ! -f "$cmd_path" ]; then
       echo "  ERROR: Command file not found: $cmd_path"
@@ -122,7 +134,7 @@ test_library_sourcing_in_all_blocks() {
   local all_have_sourcing=true
 
   for cmd in "${commands[@]}"; do
-    local cmd_path="$PROJECT_ROOT/.claude/commands/$cmd"
+    local cmd_path="$PROJECT_ROOT/commands/$cmd"
 
     if [ ! -f "$cmd_path" ]; then
       echo "  ERROR: Command file not found: $cmd_path"
@@ -150,7 +162,7 @@ test_function_availability_after_sourcing() {
   # This simulates what commands do in each block
 
   # Source the library
-  if ! source "$PROJECT_ROOT/.claude/lib/core/state-persistence.sh" 2>/dev/null; then
+  if ! source "$PROJECT_ROOT/lib/core/state-persistence.sh" 2>/dev/null; then
     echo "  ERROR: Failed to source state-persistence library"
     return 1
   fi
@@ -184,7 +196,7 @@ test_error_context_persistence() {
   local all_persist=true
 
   for cmd in "${commands[@]}"; do
-    local cmd_path="$PROJECT_ROOT/.claude/commands/$cmd"
+    local cmd_path="$PROJECT_ROOT/commands/$cmd"
 
     if [ ! -f "$cmd_path" ]; then
       echo "  ERROR: Command file not found: $cmd_path"
@@ -217,7 +229,7 @@ test_error_context_restoration() {
   local all_restore=true
 
   for cmd in "${commands[@]}"; do
-    local cmd_path="$PROJECT_ROOT/.claude/commands/$cmd"
+    local cmd_path="$PROJECT_ROOT/commands/$cmd"
 
     if [ ! -f "$cmd_path" ]; then
       echo "  ERROR: Command file not found: $cmd_path"
@@ -243,7 +255,7 @@ test_error_context_restoration() {
 
 test_state_persistence_roundtrip() {
   # Integration test: persist and restore variables
-  source "$PROJECT_ROOT/.claude/lib/core/state-persistence.sh" 2>/dev/null || return 1
+  source "$PROJECT_ROOT/lib/core/state-persistence.sh" 2>/dev/null || return 1
 
   local test_workflow_id="test_$$"
 
@@ -292,7 +304,7 @@ test_explicit_error_handling() {
   local all_explicit=true
 
   for cmd in "${commands[@]}"; do
-    local cmd_path="$PROJECT_ROOT/.claude/commands/$cmd"
+    local cmd_path="$PROJECT_ROOT/commands/$cmd"
 
     if [ ! -f "$cmd_path" ]; then
       echo "  ERROR: Command file not found: $cmd_path"
@@ -324,7 +336,7 @@ test_state_file_verification() {
   local all_verify=true
 
   for cmd in "${commands[@]}"; do
-    local cmd_path="$PROJECT_ROOT/.claude/commands/$cmd"
+    local cmd_path="$PROJECT_ROOT/commands/$cmd"
 
     if [ ! -f "$cmd_path" ]; then
       echo "  ERROR: Command file not found: $cmd_path"
@@ -350,7 +362,7 @@ test_error_logging_integration() {
   local all_log=true
 
   for cmd in "${commands[@]}"; do
-    local cmd_path="$PROJECT_ROOT/.claude/commands/$cmd"
+    local cmd_path="$PROJECT_ROOT/commands/$cmd"
 
     if [ ! -f "$cmd_path" ]; then
       echo "  ERROR: Command file not found: $cmd_path"
@@ -376,7 +388,7 @@ test_no_deprecated_paths() {
   local no_deprecated=true
 
   for cmd in "${commands[@]}"; do
-    local cmd_path="$PROJECT_ROOT/.claude/commands/$cmd"
+    local cmd_path="$PROJECT_ROOT/commands/$cmd"
 
     if [ ! -f "$cmd_path" ]; then
       echo "  ERROR: Command file not found: $cmd_path"

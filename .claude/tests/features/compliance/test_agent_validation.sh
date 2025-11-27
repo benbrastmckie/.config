@@ -17,10 +17,22 @@ TESTS_FAILED=0
 
 # Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)" pwd)"
+# Find project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR}/.claude"
 
 # Pre-flight check for required agent
-AGENT_FILE="$PROJECT_ROOT/.claude/agents/plan-structure-manager.md"
+AGENT_FILE="$PROJECT_ROOT/agents/plan-structure-manager.md"
 if [ ! -f "$AGENT_FILE" ]; then
   echo "SKIP: plan-structure-manager agent not found (may have been archived or renamed)"
   exit 0  # Exit successfully to indicate skip
@@ -48,61 +60,61 @@ test_case() {
 # Validation functions
 validate_agent_file_exists() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   [ -f "$agent_file" ]
 }
 
 validate_agent_has_role() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   grep -q "^## Role" "$agent_file"
 }
 
 validate_agent_has_guidelines() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   grep -q "^## Behavioral Guidelines" "$agent_file"
 }
 
 validate_agent_has_workflow() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   grep -q "Workflow" "$agent_file"
 }
 
 validate_agent_has_tools() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   grep -q "Tools Available" "$agent_file"
 }
 
 validate_agent_has_constraints() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   grep -q "Constraints" "$agent_file"
 }
 
 validate_agent_has_artifact_format() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   grep -q "Artifact Format" "$agent_file"
 }
 
 validate_agent_has_error_handling() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   grep -q "Error Handling" "$agent_file"
 }
 
 validate_agent_has_success_criteria() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   grep -q -E "Success Criteria|COMPLETION CRITERIA" "$agent_file"
 }
 
 validate_agent_has_examples() {
   local agent_name="$1"
-  local agent_file="$PROJECT_ROOT/.claude/agents/${agent_name}.md"
+  local agent_file="$PROJECT_ROOT/agents/${agent_name}.md"
   grep -q "Example" "$agent_file"
 }
 

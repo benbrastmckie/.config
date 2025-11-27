@@ -135,20 +135,32 @@ When pressing `<C-s>` to save a command globally:
 
 #### Batch Loading (`[Load All Artifacts]`)
 When selecting the `[Load All Artifacts]` entry:
-- **Scans**: All global artifacts in ~/.config/.claude/ (11 categories)
+- **Scans**: All global artifacts in ~/.config/.claude/ (12 categories)
+- **Recursive Scanning**: Copies all files including nested subdirectories
+  - lib/ directory: All 49+ files including lib/core/, lib/plan/, etc.
+  - docs/ directory: All 238+ files including docs/architecture/, docs/guides/, etc.
+  - tests/ directory: All 100+ test files including tests/unit/, tests/integration/, etc.
+  - scripts/ directory: All files including scripts/lint/, scripts/validate/, etc.
+  - skills/ directory: All skill modules with nested structure
 - **Artifact Categories**:
-  - Commands (*.md)
-  - Agents (*.md)
-  - Hooks (*.sh)
-  - TTS Files (*.sh from hooks/ and tts/)
-  - Templates (*.yaml)
-  - Library Utilities (*.sh from lib/)
-  - Documentation (*.md from docs/)
-  - Agent Protocols (*.md from agents/prompts/, agents/shared/)
-  - Standards (*.md from specs/standards/)
-  - Data Documentation (README.md from data subdirs)
-  - Settings (settings.local.json)
+  - Commands (*.md) - top-level only
+  - Agents (*.md) - top-level only
+  - Hooks (*.sh) - top-level only
+  - TTS Files (*.sh from hooks/ and tts/) - top-level only
+  - Templates (*.yaml) - top-level only
+  - Library Utilities (*.sh from lib/) - **recursive, all subdirectories**
+  - Documentation (*.md from docs/) - **recursive, all subdirectories**
+  - Agent Protocols (*.md from agents/prompts/, agents/shared/) - **recursive**
+  - Standards (*.md from specs/standards/) - **recursive**
+  - Data Documentation (README.md from data subdirs) - **recursive**
+  - Scripts (*.sh from scripts/) - **recursive, all subdirectories**
+  - Tests (test_*.sh from tests/) - **recursive, all subdirectories**
+  - Skills (*.lua, *.md, *.yaml from skills/) - **recursive, all skill modules**
+  - Settings (settings.local.json) - top-level only
 - **README Coverage**: Syncs README.md files from all .claude/ directories
+- **Subdirectory Preservation**: Maintains exact directory structure in destination
+- **Dynamic Directory Creation**: Creates parent directories automatically for nested files
+- **Completeness**: Copies 450+ files (previously only ~60 top-level files)
 - **Always Shows Sync Strategy Choice**:
   - Displays detailed breakdown: X new, Y conflicts per category
   - **If conflicts exist** (local versions present):
@@ -524,6 +536,104 @@ The indentation creates consistent visual hierarchy while distinguishing differe
 - Smart command insertion with feedkeys for reliability
 - Automatic directory creation when copying global commands to local
 - Comprehensive error notifications using `neotex.util.notifications`
+
+## Troubleshooting
+
+### Recursive Scanning Issues
+
+**Problem**: "Load All Artifacts" not finding nested files
+
+**Symptoms**:
+- Only top-level files copied (60 files instead of 450+)
+- Missing lib/core/, docs/architecture/, tests/unit/ subdirectories
+- Skills directory not synced
+
+**Solution**:
+1. Verify Neovim version supports `**` glob pattern (Neovim 0.5+)
+2. Check that source directories exist:
+   ```bash
+   ls -la ~/.config/.claude/lib/core/
+   ls -la ~/.config/.claude/docs/architecture/
+   ls -la ~/.config/.claude/skills/
+   ```
+3. Test glob pattern manually:
+   ```vim
+   :lua print(vim.inspect(vim.fn.glob("~/.config/.claude/lib/**/*.sh", false, true)))
+   ```
+
+**Expected Output**: Should show all nested .sh files in lib directory
+
+### Glob Pattern Compatibility
+
+The recursive scanning uses Neovim's built-in `vim.fn.glob()` with `**` pattern:
+
+**Pattern Format**:
+- `dir/**/*.sh` - Matches all .sh files in subdirectories (recursive)
+- `dir/*.sh` - Matches only top-level .sh files (non-recursive)
+
+**Known Limitations**:
+- Neovim < 0.5: `**` pattern may not work correctly
+- Very large directories (10,000+ files): May be slow
+- Symlinks: Followed by default (may cause duplicates)
+
+**Workarounds**:
+- Upgrade to Neovim 0.7+ for best compatibility
+- Use `recursive=false` parameter to disable recursive scanning
+- Add exclusion patterns for runtime directories (future enhancement)
+
+### File Permission Issues
+
+**Problem**: Shell scripts in subdirectories not executable after sync
+
+**Cause**: Permission preservation only applies to .sh files
+
+**Solution**: Permissions are automatically preserved for all .sh files (top-level and nested)
+
+**Verification**:
+```bash
+ls -la .claude/lib/core/*.sh  # Should show +x permissions
+ls -la .claude/tests/unit/*.sh  # Should show +x permissions
+```
+
+### Missing Skills Directory
+
+**Problem**: Skills not appearing in sync
+
+**Symptoms**:
+- Skills count shows 0 in sync report
+- skills/ directory not created in local project
+
+**Solution**:
+1. Verify global skills directory exists:
+   ```bash
+   ls -la ~/.config/.claude/skills/
+   ```
+2. Check for skill files:
+   ```bash
+   find ~/.config/.claude/skills -type f
+   ```
+3. Re-run "Load All Artifacts" operation
+
+**Expected**: Skills directory created with all .lua, .md, and .yaml files
+
+### Sync Count Accuracy
+
+**Problem**: Reported sync count doesn't match actual files
+
+**Cause**: Count now includes subdirectory files with depth breakdown
+
+**New Format**:
+```
+Synced 450 artifacts (including conflicts):
+  Commands: 14 | Agents: 30 | Hooks: 4 | TTS: 3 | Templates: 0
+  49 lib (49 nested) | 238 docs (237 nested) | Protocols: 2 | Standards: 0
+  Data: 3 | Settings: 1 | 12 scripts (3 nested) | 102 tests (102 nested) | 5 skills (5 nested)
+```
+
+**Interpretation**:
+- "49 lib (49 nested)" = 49 total files, all in subdirectories
+- "238 docs (237 nested)" = 238 total, 237 in subdirectories, 1 top-level
+- "102 tests (102 nested)" = All test files in subdirectories
 
 ## Navigation
 - [← Parent Directory](../README.md)

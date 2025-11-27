@@ -473,31 +473,27 @@ Choose tools based on use case:
 
 ### Backward Compatibility
 
-The `/convert-docs` command is fully backward compatible:
+The `/convert-docs` command uses agent-first architecture:
 
 ```
-STEP 0: Check skill availability
+STEP 1: Environment initialization and error logging
 ↓
-STEP 1: Parse arguments
+STEP 2: Parse arguments (--no-api, --sequential)
 ↓
-STEP 2: Verify input path
+STEP 3: Verify input path
 ↓
-STEP 3: Detect mode (script/agent)
+STEP 4: Invoke converter agent (agent has skills: document-converter)
 ↓
-STEP 3.5: [NEW] Skill delegation (if available)
-↓
-STEP 4: Script mode (fallback)
-↓
-STEP 5: Agent mode (if requested)
+STEP 5: Script fallback (if agent fails)
 ↓
 STEP 6: Verification and return
 ```
 
-**Zero Breaking Changes**:
-- Existing workflows work unchanged
-- Script mode performance unchanged
-- Agent mode quality unchanged
-- Fallback path always available
+**Architecture Benefits**:
+- Agent auto-loads skill via `skills:` frontmatter field
+- Parallel processing enabled by default
+- Script fallback ensures reliability
+- No breaking changes to existing workflows
 
 ## Best Practices
 

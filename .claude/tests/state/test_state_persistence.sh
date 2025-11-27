@@ -49,10 +49,23 @@ section() {
 
 # Setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+CLAUDE_LIB="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
 # Source the library under test
-source "${PROJECT_ROOT}/.claude/lib/core/state-persistence.sh"
+source "${CLAUDE_LIB}/core/state-persistence.sh"
 
 # Test 1: init_workflow_state creates state file
 section "Test 1: init_workflow_state creates state file"
@@ -116,7 +129,7 @@ fi
 section "Test 5: load_workflow_state graceful degradation"
 ((TESTS_RUN++))
 TEST_WORKFLOW_ID="test_fallback_$$"
-NONEXISTENT_FILE="${PROJECT_ROOT}/.claude/tmp/workflow_${TEST_WORKFLOW_ID}.sh"
+NONEXISTENT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${TEST_WORKFLOW_ID}.sh"
 
 # Ensure file doesn't exist
 rm -f "$NONEXISTENT_FILE"
@@ -178,7 +191,7 @@ STATE_FILE=$(init_workflow_state "$TEST_WORKFLOW_ID")
 TEST_JSON='{"topics": 4, "reports": ["r1.md", "r2.md"]}'
 save_json_checkpoint "test_checkpoint" "$TEST_JSON"
 
-CHECKPOINT_FILE="${PROJECT_ROOT}/.claude/tmp/test_checkpoint.json"
+CHECKPOINT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/test_checkpoint.json"
 if [ -f "$CHECKPOINT_FILE" ]; then
   pass "save_json_checkpoint created checkpoint file"
   rm -f "$CHECKPOINT_FILE"
@@ -196,9 +209,9 @@ STATE_FILE=$(init_workflow_state "$TEST_WORKFLOW_ID")
 TEST_JSON='{"test": "atomic"}'
 save_json_checkpoint "test_atomic" "$TEST_JSON"
 
-CHECKPOINT_FILE="${PROJECT_ROOT}/.claude/tmp/test_atomic.json"
+CHECKPOINT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/test_atomic.json"
 # Check no .tmp files left behind (atomic write cleanup)
-TEMP_FILES=$(find "${PROJECT_ROOT}/.claude/tmp" -name "test_atomic.json.*" 2>/dev/null | wc -l)
+TEMP_FILES=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "test_atomic.json.*" 2>/dev/null | wc -l)
 
 if [ "$TEMP_FILES" -eq 0 ]; then
   pass "save_json_checkpoint cleaned up temp files (atomic write)"
@@ -221,7 +234,7 @@ LOADED_JSON=$(load_json_checkpoint "test_load")
 
 if [ "$LOADED_JSON" == "$TEST_JSON" ]; then
   pass "load_json_checkpoint read correct data"
-  rm -f "${PROJECT_ROOT}/.claude/tmp/test_load.json"
+  rm -f "${CLAUDE_PROJECT_DIR}/.claude/tmp/test_load.json"
   rm -f "$STATE_FILE"
 else
   fail "load_json_checkpoint returned wrong data" "Expected: $TEST_JSON, Got: $LOADED_JSON"
@@ -251,7 +264,7 @@ STATE_FILE=$(init_workflow_state "$TEST_WORKFLOW_ID")
 LOG_ENTRY='{"phase": "research", "duration_ms": 12500}'
 append_jsonl_log "test_log" "$LOG_ENTRY"
 
-LOG_FILE="${PROJECT_ROOT}/.claude/tmp/test_log.jsonl"
+LOG_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/test_log.jsonl"
 if [ -f "$LOG_FILE" ]; then
   pass "append_jsonl_log created log file"
   rm -f "$LOG_FILE"
@@ -270,7 +283,7 @@ append_jsonl_log "test_multi" '{"phase": "research", "duration": 100}'
 append_jsonl_log "test_multi" '{"phase": "plan", "duration": 200}'
 append_jsonl_log "test_multi" '{"phase": "implement", "duration": 300}'
 
-LOG_FILE="${PROJECT_ROOT}/.claude/tmp/test_multi.jsonl"
+LOG_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/test_multi.jsonl"
 LINE_COUNT=$(wc -l < "$LOG_FILE")
 
 if [ "$LINE_COUNT" -eq 3 ]; then
@@ -289,8 +302,8 @@ STATE_FILE=$(init_workflow_state "$TEST_WORKFLOW_ID")
 append_workflow_state "SUBPROCESS_TEST" "initial"
 
 # Simulate subprocess (new bash invocation) with CLAUDE_PROJECT_DIR exported
-RESULT=$(CLAUDE_PROJECT_DIR="$PROJECT_ROOT" bash -c "
-  source '${PROJECT_ROOT}/.claude/lib/core/state-persistence.sh'
+RESULT=$(CLAUDE_PROJECT_DIR="$CLAUDE_PROJECT_DIR" bash -c "
+  source '${CLAUDE_LIB}/core/state-persistence.sh'
   load_workflow_state '$TEST_WORKFLOW_ID' >/dev/null 2>&1
   echo \"\${SUBPROCESS_TEST:-missing}\"
 ")

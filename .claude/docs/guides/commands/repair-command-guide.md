@@ -50,6 +50,18 @@ The `/repair` command provides an error analysis and repair planning workflow th
 3. **Analysis-Informed Planning**: Plan-architect uses error analysis reports for context
 4. **Complexity-Aware Analysis**: Adjustable analysis depth (default: 2 for error analysis)
 5. **Pattern-Based Fixes**: Groups related errors for systemic solutions
+6. **Comprehensive Error Capture**: 80%+ error logging coverage ensures reliable analysis (Spec 945)
+
+### Error Coverage and Reliability
+
+As of Spec 945, the `/repair` command benefits from comprehensive error logging coverage:
+
+- **80%+ Coverage Target**: All commands maintain minimum 80% error logging coverage
+- **Automatic Detection**: Bash error traps catch unhandled errors (exit 127, unbound variables)
+- **State Restoration Validation**: `validate_state_restoration()` logs state persistence failures
+- **Enforcement**: Pre-commit hooks prevent coverage regressions
+
+This comprehensive coverage means repair analyses capture the vast majority of actual errors, leading to more accurate fix plans and fewer missed error patterns.
 
 ### Patterns Used
 
@@ -372,6 +384,44 @@ Set analysis depth (default: 2).
 ```
 
 **Use Case**: Adjust thoroughness based on error volume and complexity.
+
+---
+
+#### --file PATH
+
+Provide a workflow output file for comprehensive error analysis. The repair-analyst agent will read and analyze this file for runtime errors, path mismatches, state file errors, and bash execution errors in addition to the error log.
+
+**Format**: Absolute or relative file path
+
+**Examples**:
+```bash
+# Analyze workflow output from a failed /plan command
+/repair --file .claude/plan-output.md --type state_error
+
+# Analyze research output with path mismatch errors
+/repair --file .claude/research-output.md --since 2025-11-20
+
+# Combine with other filters for targeted analysis
+/repair --file .claude/debug-output.md --command /build --complexity 3
+```
+
+**Use Case**:
+- **Runtime error analysis**: When errors.jsonl entries lack sufficient context and the actual workflow output contains more detailed error messages
+- **Path mismatch debugging**: When state files reference incorrect paths (e.g., HOME vs CLAUDE_PROJECT_DIR mismatches)
+- **Correlation analysis**: Matching logged errors to actual runtime output for more accurate root cause identification
+
+**What gets analyzed**:
+- State file errors ("State file not found", "STATE_FILE variable empty")
+- Path mismatch patterns ("expected path", "actual path", "not found at")
+- Bash execution errors ("exit code", "line N:", "command not found")
+- Variable unset errors ("unbound variable")
+- Permission errors ("Permission denied", "cannot access")
+
+**Report output**: When --file is provided, the error analysis report includes a "Workflow Output Analysis" section with:
+- File path and size analyzed
+- Runtime errors detected with line numbers and context
+- Path mismatches identified
+- Correlation with error log entries
 
 ---
 

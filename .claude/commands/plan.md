@@ -73,20 +73,20 @@ ORIGINAL_PROMPT_FILE_PATH=""
 if [[ "$FEATURE_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
   ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
   # Convert to absolute path if relative (preprocessing-safe pattern)
-  [[ "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]
+  [[ "${ORIGINAL_PROMPT_FILE_PATH:-}" = /* ]]
   IS_ABSOLUTE_PATH=$?
   if [ $IS_ABSOLUTE_PATH -ne 0 ]; then
-    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/${ORIGINAL_PROMPT_FILE_PATH:-}"
   fi
   # Validate file exists
-  if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
-    echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
+  if [ ! -f "${ORIGINAL_PROMPT_FILE_PATH:-}" ]; then
+    echo "ERROR: Prompt file not found: ${ORIGINAL_PROMPT_FILE_PATH:-}" >&2
     exit 1
   fi
   # Read file content into FEATURE_DESCRIPTION
-  FEATURE_DESCRIPTION=$(cat "$ORIGINAL_PROMPT_FILE_PATH")
+  FEATURE_DESCRIPTION=$(cat "${ORIGINAL_PROMPT_FILE_PATH:-}")
   if [ -z "$FEATURE_DESCRIPTION" ]; then
-    echo "WARNING: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    echo "WARNING: Prompt file is empty: ${ORIGINAL_PROMPT_FILE_PATH:-}" >&2
   fi
 elif [[ "$FEATURE_DESCRIPTION" =~ --file ]]; then
   echo "ERROR: --file flag requires a path argument" >&2
@@ -154,6 +154,10 @@ validate_library_functions "error-handling" || exit 1
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
 
+# === SETUP EARLY BASH ERROR TRAP ===
+# Trap must be set BEFORE variable initialization to catch early failures
+setup_bash_error_trap "/plan" "plan_early_$(date +%s)" "early_init"
+
 # === INITIALIZE STATE ===
 WORKFLOW_TYPE="research-and-plan"
 TERMINAL_STATE="plan"
@@ -162,12 +166,13 @@ USER_ARGS="$FEATURE_DESCRIPTION"
 export COMMAND_NAME USER_ARGS
 
 WORKFLOW_ID="plan_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
-# === SETUP BASH ERROR TRAP ===
+# === UPDATE BASH ERROR TRAP WITH ACTUAL VALUES ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Capture state file path for append_workflow_state
@@ -245,7 +250,8 @@ if [ $EXIT_CODE -ne 0 ]; then
 fi
 
 # Persist FEATURE_DESCRIPTION for topic naming agent
-TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 echo "$FEATURE_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
 export TOPIC_NAMING_INPUT_FILE
 
@@ -268,7 +274,7 @@ Task {
     **Input**:
     - User Prompt: ${FEATURE_DESCRIPTION}
     - Command Name: /plan
-    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
 
     Execute topic naming according to behavioral guidelines:
     1. Generate semantic topic name from user prompt
@@ -287,7 +293,8 @@ Task {
 set +H  # CRITICAL: Disable history expansion
 
 # Load state for validation
-STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
 WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
 
 if [ -z "$WORKFLOW_ID" ]; then
@@ -296,7 +303,8 @@ if [ -z "$WORKFLOW_ID" ]; then
 fi
 
 # State file naming convention: workflow_${WORKFLOW_ID}.sh (matches state-persistence.sh)
-WORKFLOW_STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+# CRITICAL: Use CLAUDE_PROJECT_DIR to match init_workflow_state() path
+WORKFLOW_STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
 if [ -f "$WORKFLOW_STATE_FILE" ]; then
   set +u  # Allow unbound variables during source
   source "$WORKFLOW_STATE_FILE"
@@ -334,7 +342,8 @@ export COMMAND_NAME USER_ARGS
 ensure_error_log_exists
 
 # Validate topic naming agent output with retry logic
-TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
 
 # Use validate_agent_output_with_retry with format validator
 # - 3 retries with 10-second timeout each (30 seconds total + backoff)
@@ -361,7 +370,8 @@ echo "Agent output validation complete"
 set +H  # CRITICAL: Disable history expansion
 
 # === RESTORE STATE FROM BLOCK 1A ===
-STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
 WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
 
 if [ -z "$WORKFLOW_ID" ]; then
@@ -370,7 +380,8 @@ if [ -z "$WORKFLOW_ID" ]; then
 fi
 
 # Restore workflow state file (naming convention: workflow_${WORKFLOW_ID}.sh)
-STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+# CRITICAL: Use CLAUDE_PROJECT_DIR to match init_workflow_state() path
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
 if [ -f "$STATE_FILE" ]; then
   set +u  # Allow unbound variables during source
   source "$STATE_FILE"
@@ -387,7 +398,8 @@ ORIGINAL_PROMPT_FILE_PATH="${ORIGINAL_PROMPT_FILE_PATH:-}"
 RESEARCH_COMPLEXITY="${RESEARCH_COMPLEXITY:-3}"
 
 # FEATURE_DESCRIPTION should be in state file, but also check temp file as backup
-TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 if [ -z "$FEATURE_DESCRIPTION" ] && [ -f "$TOPIC_NAMING_INPUT_FILE" ]; then
   FEATURE_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null)
 fi
@@ -443,7 +455,8 @@ fi
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
-TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
 TOPIC_NAME="no_name_error"
 NAMING_STRATEGY="fallback"
 
@@ -498,7 +511,7 @@ if [ "$TOPIC_NAME" = "no_name_error" ]; then
   # Diagnostic output for troubleshooting
   echo "DEBUG: Topic naming agent fallback reason: $NAMING_STRATEGY" >&2
   echo "DEBUG: Expected file: $TOPIC_NAME_FILE" >&2
-  ls -la "${HOME}/.claude/tmp/topic_name_"* 2>/dev/null || echo "DEBUG: No topic name files found" >&2
+  ls -la "${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_"* 2>/dev/null || echo "DEBUG: No topic name files found" >&2
 fi
 
 # Clean up temp file
@@ -530,10 +543,10 @@ PLANS_DIR="${TOPIC_PATH}/plans"
 
 # === ARCHIVE PROMPT FILE (if --file was used) ===
 ARCHIVED_PROMPT_PATH=""
-if [ -n "$ORIGINAL_PROMPT_FILE_PATH" ] && [ -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+if [ -n "${ORIGINAL_PROMPT_FILE_PATH:-}" ] && [ -f "${ORIGINAL_PROMPT_FILE_PATH:-}" ]; then
   mkdir -p "${TOPIC_PATH}/prompts"
-  ARCHIVED_PROMPT_PATH="${TOPIC_PATH}/prompts/$(basename "$ORIGINAL_PROMPT_FILE_PATH")"
-  mv "$ORIGINAL_PROMPT_FILE_PATH" "$ARCHIVED_PROMPT_PATH"
+  ARCHIVED_PROMPT_PATH="${TOPIC_PATH}/prompts/$(basename "${ORIGINAL_PROMPT_FILE_PATH:-}")"
+  mv "${ORIGINAL_PROMPT_FILE_PATH:-}" "$ARCHIVED_PROMPT_PATH"
   echo "Prompt file archived: $ARCHIVED_PROMPT_PATH"
 fi
 
@@ -550,7 +563,7 @@ append_workflow_state "TOPIC_NAME" "$TOPIC_NAME"
 append_workflow_state "TOPIC_NUM" "$TOPIC_NUM"
 append_workflow_state "FEATURE_DESCRIPTION" "$FEATURE_DESCRIPTION"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
-append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "$ORIGINAL_PROMPT_FILE_PATH"
+append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "${ORIGINAL_PROMPT_FILE_PATH:-}"
 append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
 
 echo "Setup complete: $WORKFLOW_ID (research-and-plan, complexity: $RESEARCH_COMPLEXITY)"
@@ -595,7 +608,8 @@ Task {
 set +H  # CRITICAL: Disable history expansion
 
 # === LOAD STATE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found" >&2
   exit 1
@@ -646,7 +660,8 @@ if [ $FUNCTION_CHECK -ne 0 ]; then
 fi
 
 # Initialize DEBUG_LOG if not already set
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
@@ -720,7 +735,7 @@ ORIGINAL_PROMPT_FILE_PATH="${ORIGINAL_PROMPT_FILE_PATH:-}"
 ARCHIVED_PROMPT_PATH="${ARCHIVED_PROMPT_PATH:-}"
 
 # Validate critical variables from Block 1
-if [ -z "$TOPIC_PATH" ] || [ -z "$RESEARCH_DIR" ]; then
+if [ -z "${TOPIC_PATH:-}" ] || [ -z "${RESEARCH_DIR:-}" ]; then
   # Log to centralized error log
   log_command_error \
     "$COMMAND_NAME" \
@@ -881,7 +896,8 @@ Task {
 set +H  # CRITICAL: Disable history expansion
 
 # === LOAD STATE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/plan_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found" >&2
   exit 1
@@ -926,7 +942,8 @@ if [ $FUNCTION_CHECK -ne 0 ]; then
 fi
 
 # Initialize DEBUG_LOG if not already set
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
@@ -996,7 +1013,7 @@ REPORT_COUNT="${REPORT_COUNT:-0}"
 FEATURE_DESCRIPTION="${FEATURE_DESCRIPTION:-}"
 
 # Validate PLAN_PATH was set by Block 2
-if [ -z "$PLAN_PATH" ]; then
+if [ -z "${PLAN_PATH:-}" ]; then
   # Log to centralized error log
   log_command_error \
     "$COMMAND_NAME" \

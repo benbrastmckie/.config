@@ -76,6 +76,19 @@ See [Code Standards](.claude/docs/reference/standards/code-standards.md) for com
 - See [Mandatory Bash Block Sourcing Pattern](.claude/docs/reference/standards/code-standards.md#mandatory-bash-block-sourcing-pattern)
 <!-- END_SECTION: code_standards -->
 
+<!-- SECTION: clean_break_development -->
+## Clean-Break Development Standard
+[Used by: /refactor, /implement, /plan, all development commands]
+
+See [Clean-Break Development Standard](.claude/docs/reference/standards/clean-break-development.md) for complete guidelines on when and how to apply clean-break refactoring patterns.
+
+**Quick Reference**:
+- Internal tooling changes: ALWAYS use clean-break (no deprecation periods)
+- State machine/workflow changes: Atomic migration, then delete old code
+- Interface changes: Unified implementation, no compatibility wrappers
+- Documentation: Already enforced via Writing Standards
+<!-- END_SECTION: clean_break_development -->
+
 <!-- SECTION: code_quality_enforcement -->
 ## Code Quality Enforcement
 [Used by: all commands, pre-commit hooks, CI validation]
@@ -225,16 +238,16 @@ Skills are model-invoked autonomous capabilities that Claude automatically uses 
 
 **Integration Patterns**:
 1. **Autonomous**: Claude detects need and loads skill automatically
-2. **Command Delegation**: Commands check availability via STEP 0, delegate via STEP 3.5
-3. **Agent Auto-Loading**: Agents use `skills:` frontmatter field for auto-loading
+2. **Agent Auto-Loading**: Agents use `skills:` frontmatter field for auto-loading
 
-**Skill Availability Check** (for commands):
-```bash
-SKILL_AVAILABLE=false
-if [ -d ".claude/skills/<skill-name>" ] && [ -f ".claude/skills/<skill-name>/SKILL.md" ]; then
-  SKILL_AVAILABLE=true
-fi
+**Command-to-Agent-to-Skill Pattern** (preferred):
+```markdown
+# Commands invoke agents via Task tool
+# Agents have skills: field in frontmatter
+# Agents automatically receive skill context
 ```
+
+Example: `/convert-docs` invokes `doc-converter` agent which has `skills: document-converter` in frontmatter.
 
 See [Skills README](.claude/skills/README.md) for complete skills guide, and [Skills Authoring Standards](.claude/docs/reference/standards/skills-authoring.md) for compliance requirements.
 <!-- END_SECTION: skills_architecture -->
@@ -244,6 +257,8 @@ See [Skills README](.claude/skills/README.md) for complete skills guide, and [Sk
 [Used by: /build, custom orchestrators]
 
 See [State-Based Orchestration Overview](.claude/docs/architecture/state-based-orchestration-overview.md) for complete architecture, migration guide, and performance metrics.
+
+**Idempotent State Transitions**: The workflow state machine handles same-state transitions gracefully with early-exit optimization. See [Idempotent State Transitions Standard](.claude/docs/reference/standards/idempotent-state-transitions.md) for behavior details, use cases, and examples. Commands benefit from safe retry/resume scenarios without state transition errors.
 <!-- END_SECTION: state_based_orchestration -->
 
 <!-- SECTION: configuration_portability -->

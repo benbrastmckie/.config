@@ -214,13 +214,63 @@ get_next_topic_number() {
   # Lock automatically released when block exits
 }
 
+# canonicalize_path(path)
+# Purpose: Resolve any path to canonical absolute form
+# Arguments:
+#   $1 - path: Path to canonicalize (can be relative, absolute, symlink, or non-existent)
+# Returns:
+#   Canonical absolute path on stdout
+# Exit Codes:
+#   0: Success (path canonicalized)
+#   1: Failure (path unresolvable - parent doesn't exist)
+# Notes:
+#   - Resolves symlinks to real paths
+#   - Converts relative paths to absolute
+#   - Normalizes trailing slashes
+#   - For non-existent paths: canonicalizes parent + appends basename
+#   - Uses readlink -f for symlink resolution
+# Example:
+#   CANON_PATH=$(canonicalize_path "/tmp/test/../specs")  # Returns /tmp/specs
+#   CANON_PATH=$(canonicalize_path "relative/path")       # Returns /full/path/to/relative/path
+canonicalize_path() {
+  local path="$1"
+
+  # Use readlink -f to resolve symlinks and canonicalize
+  # If path exists, readlink -f handles everything
+  if [ -e "$path" ]; then
+    readlink -f "$path" || return 1
+  else
+    # For non-existent paths: canonicalize parent + append basename
+    local parent_path=$(dirname "$path")
+    local basename=$(basename "$path")
+
+    # Canonicalize parent
+    local canon_parent
+    canon_parent=$(canonicalize_path "$parent_path") || return 1
+
+    # Return parent + basename (handle root case to avoid //)
+    if [[ "$canon_parent" == "/" ]]; then
+      echo "/${basename}"
+    else
+      echo "${canon_parent}/${basename}"
+    fi
+  fi
+}
+
 # allocate_and_create_topic(specs_root, topic_name)
 # Purpose: Atomically allocate topic number AND create directory (eliminates race condition)
 # Arguments:
-#   $1: specs_root - Absolute path to specs directory
+#   $1: specs_root - Path to specs directory (can be relative, absolute, or symlink)
 #   $2: topic_name - Sanitized topic name (snake_case)
 # Returns: Pipe-delimited string "topic_number|topic_path"
 # Logic: Hold exclusive lock through BOTH number calculation and directory creation
+#
+# Path Canonicalization (NEW):
+#   - Canonicalizes specs_root on entry to ensure consistent lock file paths
+#   - Resolves symlinks to real paths
+#   - Converts relative paths to absolute
+#   - Validates result is absolute path (starts with /)
+#   - Checks for multiple lock files (warns if path inconsistency detected)
 #
 # Atomic Operation Guarantee:
 #   This function eliminates the race condition between get_next_topic_number()
@@ -243,10 +293,47 @@ get_next_topic_number() {
 #
 # Exit Codes:
 #   0: Success (directory created, number allocated)
-#   1: Failure (lock acquisition or mkdir failed)
+#   1: Failure (canonicalization, lock acquisition, or mkdir failed)
 allocate_and_create_topic() {
   local specs_root="$1"
   local topic_name="$2"
+
+  # STEP 0: Conditional error logging integration
+  local ENABLE_ERROR_LOGGING=0
+  if declare -f log_command_error >/dev/null 2>&1; then
+    ENABLE_ERROR_LOGGING=1
+  fi
+
+  # STEP 1: Canonicalize specs_root to ensure consistent lock file paths
+  specs_root=$(canonicalize_path "$specs_root") || {
+    local error_msg="Cannot canonicalize specs_root: $1"
+    echo "ERROR: $error_msg" >&2
+    if [[ $ENABLE_ERROR_LOGGING -eq 1 ]]; then
+      log_command_error "validation_error" "$error_msg" "{\"original_path\":\"$1\"}"
+    fi
+    return 1
+  }
+
+  # STEP 2: Validate specs_root is absolute path
+  if [[ ! "$specs_root" =~ ^/ ]]; then
+    local error_msg="specs_root must be absolute path, got: $specs_root"
+    echo "ERROR: $error_msg" >&2
+    if [[ $ENABLE_ERROR_LOGGING -eq 1 ]]; then
+      log_command_error "validation_error" "$error_msg" "{\"specs_root\":\"$specs_root\"}"
+    fi
+    return 1
+  fi
+
+  # STEP 3: Check for multiple lock files (warns if path inconsistency detected)
+  # Note: Only check direct children to avoid expensive recursive search
+  local lock_count
+  lock_count=$(find "$specs_root" -maxdepth 1 -name ".topic_number.lock" 2>/dev/null | wc -l)
+  if [[ $lock_count -gt 1 ]]; then
+    echo "WARNING: Multiple lock files detected ($lock_count) - possible path inconsistency" >&2
+    echo "WARNING: Lock files found:" >&2
+    find "$specs_root" -maxdepth 1 -name ".topic_number.lock" 2>/dev/null >&2
+  fi
+
   local lockfile="${specs_root}/.topic_number.lock"
 
   # Create specs root if it doesn't exist (for lock file)
@@ -272,30 +359,69 @@ allocate_and_create_topic() {
       topic_number=$(printf "%03d" "$next_num")
     fi
 
+    # DEBUG: Log max_num calculation
+    if [[ "${DEBUG:-0}" == "1" ]]; then
+      echo "DEBUG: max_num=$max_num, calculated topic_number=$topic_number" >&2
+    fi
+
     # Construct topic path
     local topic_path="${specs_root}/${topic_number}_${topic_name}"
 
     # Handle collision when rolling over (find next available number)
     # Check if ANY directory with this number prefix exists, not just exact path match
-    local attempts=0
-    while ls -d "${specs_root}/${topic_number}_"* >/dev/null 2>&1 && [ $attempts -lt 1000 ]; do
+    local collision_count=0
+    while ls -d "${specs_root}/${topic_number}_"* >/dev/null 2>&1 && [ $collision_count -lt 1000 ]; do
       # A directory with this number prefix exists (collision)
+      if [[ "${DEBUG:-0}" == "1" ]]; then
+        echo "DEBUG: Topic number collision detected for ${topic_number}, existing dirs:" >&2
+        ls -d "${specs_root}/${topic_number}_"* 2>&1 | head -3 >&2
+      fi
+
       local next_num=$(( (10#$topic_number + 1) % 1000 ))
       topic_number=$(printf "%03d" "$next_num")
       topic_path="${specs_root}/${topic_number}_${topic_name}"
-      ((attempts++))
+      ((collision_count++))
     done
 
-    if [ $attempts -ge 1000 ]; then
-      echo "ERROR: All 1000 topic numbers exhausted in $specs_root" >&2
+    # DEBUG: Log collision summary
+    if [[ $collision_count -gt 0 && "${DEBUG:-0}" == "1" ]]; then
+      echo "DEBUG: Resolved $collision_count collisions, final topic_number=$topic_number" >&2
+    fi
+
+    if [ $collision_count -ge 1000 ]; then
+      local error_msg="All 1000 topic numbers exhausted in $specs_root"
+      echo "ERROR: $error_msg" >&2
+      if [[ $ENABLE_ERROR_LOGGING -eq 1 ]]; then
+        log_command_error "state_error" "$error_msg" "{\"specs_root\":\"$specs_root\",\"collision_count\":$collision_count}"
+      fi
       return 1
     fi
 
     # Create topic directory INSIDE LOCK (atomic operation)
     mkdir -p "$topic_path" || {
-      echo "ERROR: Failed to create topic directory: $topic_path" >&2
+      local error_msg="Failed to create topic directory: $topic_path"
+      echo "ERROR: $error_msg" >&2
+      if [[ $ENABLE_ERROR_LOGGING -eq 1 ]]; then
+        log_command_error "file_error" "$error_msg" "{\"topic_path\":\"$topic_path\",\"topic_number\":\"$topic_number\"}"
+      fi
       return 1
     }
+
+    # Post-creation duplicate verification (detect if duplicates slipped through)
+    local duplicate_count
+    duplicate_count=$(ls -1d "${specs_root}/${topic_number}_"* 2>/dev/null | wc -l)
+    if [[ $duplicate_count -gt 1 ]]; then
+      local error_msg="Duplicate topic number detected after creation!"
+      echo "CRITICAL: $error_msg" >&2
+      echo "CRITICAL: Topic number $topic_number has $duplicate_count directories:" >&2
+      ls -1d "${specs_root}/${topic_number}_"* 2>&1 >&2
+      if [[ $ENABLE_ERROR_LOGGING -eq 1 ]]; then
+        local duplicate_dirs=$(ls -1d "${specs_root}/${topic_number}_"* 2>/dev/null | tr '\n' ',' | sed 's/,$//')
+        log_command_error "state_error" "$error_msg" "{\"topic_number\":\"$topic_number\",\"duplicate_count\":$duplicate_count,\"directories\":\"$duplicate_dirs\"}"
+      fi
+      # Continue execution (directory was created successfully)
+      # This is a critical error for investigation, not a failure
+    fi
 
     # Return pipe-delimited result for parsing
     echo "${topic_number}|${topic_path}"

@@ -2,6 +2,7 @@
 
 ## Metadata
 - **Date**: 2025-11-20
+- **Revised**: 2025-11-26
 - **Feature**: Hook-based automatic buffer opening for Claude Code workflow artifacts
 - **Scope**: Claude Code hooks + Neovim Lua module integration
 - **Estimated Phases**: 6
@@ -13,7 +14,20 @@
 - **Research Reports**:
   - [Hook-Based Buffer Opening Research](/home/benjamin/.config/.claude/specs/851_001_buffer_opening_integration_planmd_the_claude/reports/001_hook_based_buffer_opening_research.md)
   - [/optimize-claude and /revise Integration Research](/home/benjamin/.config/.claude/specs/851_001_buffer_opening_integration_planmd_the_claude/reports/002_optimize_revise_integration_research.md)
+  - [Infrastructure Changes Analysis (Revision)](/home/benjamin/.config/.claude/specs/851_001_buffer_opening_integration_planmd_the_claude/reports/003_infrastructure_changes_analysis.md)
 - **Supersedes**: /home/benjamin/.config/.claude/specs/848_when_using_claude_code_neovim_greggh_plugin/plans/001_buffer_opening_integration_plan.md
+
+### Revision Summary (2025-11-26)
+
+This plan was revised to account for infrastructure changes since the original creation date. Key updates:
+
+1. **Build Command Signal**: Changed from `SUMMARY_CREATED` to `IMPLEMENTATION_COMPLETE` with `summary_path:` field extraction
+2. **Debug Command Signals**: Clarified that /debug can emit either `PLAN_CREATED` or `DEBUG_REPORT_CREATED`
+3. **Errors Command**: Added `/errors` command which emits `REPORT_CREATED`
+4. **Regex Patterns**: Updated Phase 4 with correct patterns for multi-line parsing
+5. **Testing**: Expanded test cases to cover new signal formats
+
+The core architecture remains valid. Hook infrastructure is stable and proven patterns are available for reuse.
 
 ## Overview
 
@@ -35,11 +49,12 @@ Key findings from hook-based buffer opening research:
 2. **Completion Signal Protocol**: All workflow agents return standardized completion signals as final output:
    - `/plan` → `PLAN_CREATED: /path/to/plan.md`
    - `/research` → `REPORT_CREATED: /path/to/report.md`
-   - `/build` → `SUMMARY_CREATED: /path/to/summary.md`
-   - `/debug` → `DEBUG_REPORT_CREATED: /path/to/report.md`
+   - `/build` → `IMPLEMENTATION_COMPLETE: N` (with `summary_path: /path/to/summary.md` field)
+   - `/debug` → `PLAN_CREATED: /path/to/plan.md` or `DEBUG_REPORT_CREATED: /path/to/report.md`
    - `/repair` → `PLAN_CREATED: /path/to/plan.md`
    - `/revise` → `PLAN_REVISED: /path/to/plan.md`
    - `/optimize-claude` → `PLAN_CREATED: /path/to/plan.md`
+   - `/errors` → `REPORT_CREATED: /path/to/report.md`
 
    **Clarification**: This protocol documents the **primary completion signal** for each command. Multi-artifact commands (like `/plan`, `/repair`, `/revise`, `/optimize-claude`) emit additional `REPORT_CREATED` signals for intermediate research reports, but the primary signal indicates the command's main output artifact. The hook opens only the primary artifact using priority logic (see Multi-Artifact Commands section).
 
@@ -76,7 +91,7 @@ Key findings from /optimize-claude and /revise integration research:
 - [ ] Debouncing prevents duplicate opens for same file
 - [ ] Configuration allows disabling feature
 - [ ] No performance impact (hook execution < 100ms)
-- [ ] Feature works across workflow commands (/plan, /research, /build, /debug, /repair, /revise, /optimize-claude)
+- [ ] Feature works across workflow commands (/plan, /research, /build, /debug, /repair, /revise, /optimize-claude, /errors)
 - [ ] Documentation explicitly states one-file-per-command constraint
 
 ## Technical Design
@@ -142,11 +157,11 @@ Commands create different types of artifacts with varying priority levels. Multi
 
 | Priority | Signal Type | Commands | Purpose |
 |----------|-------------|----------|---------|
-| 1 (Highest) | `PLAN_CREATED` | /plan, /repair, /optimize-claude | Implementation plans |
+| 1 (Highest) | `PLAN_CREATED` | /plan, /repair, /optimize-claude, /debug | Implementation plans |
 | 1 (Highest) | `PLAN_REVISED` | /revise | Revised implementation plans |
-| 2 | `SUMMARY_CREATED` | /build | Implementation summaries |
+| 2 | `IMPLEMENTATION_COMPLETE` (extract `summary_path:` field) | /build | Implementation summaries |
 | 3 | `DEBUG_REPORT_CREATED` | /debug | Debug analysis reports |
-| 4 (Lowest) | `REPORT_CREATED` | /research, /plan, /repair, /revise, /optimize-claude | Research reports (intermediate) |
+| 4 (Lowest) | `REPORT_CREATED` | /research, /errors, /plan, /repair, /revise, /optimize-claude | Research reports (intermediate) |
 
 **Multi-Artifact Commands**:
 - `/plan`: Creates 1-4 research reports, then 1 implementation plan → Opens **plan only**
@@ -322,12 +337,31 @@ dependencies: [3]
 **Tasks**:
 - [ ] Implement efficient terminal buffer reading (last 100 lines only)
 - [ ] Add timeout protection for RPC calls (5 second timeout)
-- [ ] Implement completion signal regex patterns for all workflow commands (including PLAN_REVISED)
-- [ ] Implement priority extraction (plans/plan_revised > summaries > reports)
+- [ ] Implement completion signal regex patterns for all workflow commands (including PLAN_REVISED, IMPLEMENTATION_COMPLETE)
+- [ ] Implement priority extraction (plans/plan_revised > IMPLEMENTATION_COMPLETE summary_path > debug_report > reports)
 - [ ] Add handling for multiple completion signals in same output
-- [ ] Test with various command outputs (/plan, /research, /build, /debug, /repair, /revise, /optimize-claude)
+- [ ] Implement multi-line parsing for /build command (extract summary_path: field from IMPLEMENTATION_COMPLETE block)
+- [ ] Test with various command outputs (/plan, /research, /build, /debug, /repair, /revise, /optimize-claude, /errors)
 - [ ] Add fallback for commands without completion signals (silent failure)
 - [ ] Optimize RPC call to minimize latency
+
+**Regex Patterns**:
+```bash
+# Priority 1: Plan signals
+PLAN_CREATED_PATTERN='PLAN_CREATED:\s*(.+)'
+PLAN_REVISED_PATTERN='PLAN_REVISED:\s*(.+)'
+
+# Priority 2: Build signal (multi-line format, extract summary_path field)
+# /build returns: IMPLEMENTATION_COMPLETE: N
+#                 summary_path: /path/to/summary.md
+BUILD_SUMMARY_PATTERN='summary_path:\s*(.+)'
+
+# Priority 3: Debug report signals
+DEBUG_REPORT_PATTERN='DEBUG_REPORT_CREATED:\s*(.+)'
+
+# Priority 4: Research report signals
+REPORT_CREATED_PATTERN='REPORT_CREATED:\s*(.+)'
+```
 
 **Testing**:
 ```bash
@@ -349,9 +383,17 @@ nvim -c "ClaudeCode"
 # Run: /research "test topic"
 # Verify research report opens
 
-# Test /build command (single signal: SUMMARY_CREATED)
+# Test /build command (multi-line IMPLEMENTATION_COMPLETE with summary_path field)
 # Run: /build <plan-path>
-# Verify summary opens
+# Verify summary opens (extracted from summary_path: field)
+
+# Test /errors command (single signal: REPORT_CREATED)
+# Run: /errors --summary
+# Verify error report opens
+
+# Test /debug command (can emit either PLAN_CREATED or DEBUG_REPORT_CREATED)
+# Run: /debug "investigate issue"
+# Verify correct artifact opens based on signal type
 
 # Test command without completion signal
 # Run: /help
@@ -372,11 +414,12 @@ dependencies: [4]
 **Tasks**:
 - [ ] Test complete /plan workflow (research → planning phases)
 - [ ] Test /research workflow with multiple report creation
-- [ ] Test /build workflow with summary generation
-- [ ] Test /debug workflow with debug report creation
+- [ ] Test /build workflow with summary generation (extract summary_path from IMPLEMENTATION_COMPLETE)
+- [ ] Test /debug workflow with debug report creation (handles both PLAN_CREATED and DEBUG_REPORT_CREATED)
 - [ ] Test /repair workflow (error analysis + repair plan)
 - [ ] Test /optimize-claude workflow (4 research reports + optimization plan)
 - [ ] Test /revise workflow (research reports + PLAN_REVISED signal)
+- [ ] Test /errors workflow (error analysis report)
 - [ ] Test rapid command succession (debouncing, if needed)
 - [ ] Test with Neovim not running (graceful failure)
 - [ ] Test with external terminal (no $NVIM, should fail silently)
@@ -480,6 +523,18 @@ echo "PLAN_CREATED: /path/to/plan.md" | \
 OUTPUT="REPORT_CREATED: /path/to/report.md
 PLAN_CREATED: /path/to/plan.md"
 # Should extract plan, not report
+
+# Test /build multi-line output parsing
+BUILD_OUTPUT="IMPLEMENTATION_COMPLETE: 3
+summary_path: /path/to/summary.md
+work_remaining: 0"
+echo "$BUILD_OUTPUT" | grep -oP 'summary_path:\s*\K.*'
+# Should extract /path/to/summary.md
+
+# Test /debug dual signal handling
+DEBUG_OUTPUT_PLAN="PLAN_CREATED: /path/to/debug-plan.md"
+DEBUG_OUTPUT_REPORT="DEBUG_REPORT_CREATED: /path/to/debug-report.md"
+# Both formats should be handled correctly
 ```
 
 **Neovim Module Tests**:
@@ -577,7 +632,7 @@ Claude Code workflow commands emit **completion signals** to indicate artifact c
 
 The hook monitors terminal output and automatically opens only the **primary artifact** (at most one file) based on priority rules:
 - Plans (PLAN_CREATED, PLAN_REVISED) - highest priority
-- Summaries (SUMMARY_CREATED) - medium priority
+- Summaries (IMPLEMENTATION_COMPLETE with summary_path field) - medium priority
 - Debug reports (DEBUG_REPORT_CREATED) - medium-low priority
 - Research reports (REPORT_CREATED) - lowest priority (typically intermediate)
 
@@ -594,11 +649,12 @@ Intermediate artifacts remain accessible via the command picker (`<leader>ac`) b
 |---------|-------------------|------------------------|
 | /plan | 1-4 research reports + 1 plan | Plan only |
 | /optimize-claude | 4 research reports + 1 plan | Plan only |
-| /build | 1 summary | Summary |
+| /build | 1 summary (via IMPLEMENTATION_COMPLETE) | Summary (from summary_path field) |
 | /revise | 0-N research reports + 1 plan | Revised plan only |
 | /research | 1 research report | Research report |
-| /debug | 1 debug report | Debug report |
+| /debug | 1 debug plan or debug report | Plan or report (priority based) |
 | /repair | 1 error analysis + 1 plan | Plan only |
+| /errors | 1 error analysis report | Error report |
 
 **One-File Guarantee**: The hook ensures exactly one buffer opens, even for multi-artifact
 commands. Intermediate artifacts (research reports) remain accessible via command picker.
@@ -611,7 +667,7 @@ commands. Intermediate artifacts (research reports) remain accessible via comman
 The hook uses priority logic to ensure only one file opens:
 
 1. **Plans** (PLAN_CREATED, PLAN_REVISED) - Highest priority
-2. **Summaries** (SUMMARY_CREATED) - Second priority
+2. **Summaries** (IMPLEMENTATION_COMPLETE with summary_path) - Second priority
 3. **Debug Reports** (DEBUG_REPORT_CREATED) - Third priority
 4. **Research Reports** (REPORT_CREATED) - Lowest priority (usually intermediate)
 
@@ -646,11 +702,13 @@ Required content:
 #   6. Open selected artifact in Neovim via RPC (if available)
 #
 # Priority Logic:
-#   PLAN_CREATED/PLAN_REVISED (priority 1) > SUMMARY_CREATED (priority 2) >
+#   PLAN_CREATED/PLAN_REVISED (priority 1) > IMPLEMENTATION_COMPLETE/summary_path (priority 2) >
 #   DEBUG_REPORT_CREATED (priority 3) > REPORT_CREATED (priority 4)
 #
 #   Example: /optimize-claude creates 4 REPORT_CREATED + 1 PLAN_CREATED
 #            → Hook opens ONLY the plan (priority 1 wins)
+#   Example: /build returns IMPLEMENTATION_COMPLETE with summary_path: /path/to/summary.md
+#            → Hook extracts and opens the summary path
 #
 # Requirements:
 #   - $NVIM environment variable (set by Neovim terminal)

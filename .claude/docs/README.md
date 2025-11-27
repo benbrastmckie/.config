@@ -23,7 +23,7 @@ Common tasks and where to find guidance:
 
 2. **Build a specialized agent**
    → [Agent Development Guide](guides/development/agent-development/agent-development-fundamentals.md)
-   → [Agent Reference](reference/agent-reference.md)
+   → [Agent Reference](reference/standards/agent-reference.md)
 
 3. **Run multi-phase workflows**
    → [Orchestration Best Practices](guides/orchestration/orchestration-best-practices.md)
@@ -100,12 +100,12 @@ Looking to work on a specific area? Use these quick-start paths:
 ### Working on Commands?
 → **Start**: [Command Development Guide](guides/development/command-development/command-development-fundamentals.md)
 → **Patterns**: [Behavioral Injection Pattern](concepts/patterns/behavioral-injection.md)
-→ **Reference**: [Command Reference](reference/command-reference.md)
+→ **Reference**: [Command Reference](reference/standards/command-reference.md)
 
 ### Working on Agents?
 → **Start**: [Agent Development Guide](guides/development/agent-development/agent-development-fundamentals.md)
 → **Architecture**: [Hierarchical Agents](concepts/hierarchical-agents.md)
-→ **Reference**: [Agent Reference](reference/agent-reference.md)
+→ **Reference**: [Agent Reference](reference/standards/agent-reference.md)
 
 ### Refactoring .claude/?
 → **Standards**: [Command Architecture Standards](reference/architecture/overview.md)
@@ -121,8 +121,8 @@ Looking to work on a specific area? Use these quick-start paths:
 
 **Single Source of Truth**:
 - **Patterns**: `concepts/patterns/` catalog is authoritative for architectural patterns
-- **Command Syntax**: `reference/command-reference.md` is authoritative for command usage
-- **Agent Syntax**: `reference/agent-reference.md` is authoritative for agent capabilities
+- **Command Syntax**: `reference/standards/command-reference.md` is authoritative for command usage
+- **Agent Syntax**: `reference/standards/agent-reference.md` is authoritative for agent capabilities
 - **Architecture**: `concepts/hierarchical-agents.md` is authoritative for system design
 
 Guides should cross-reference these authoritative sources rather than duplicating content.
@@ -375,8 +375,8 @@ Savings: 40 min (27%)
 Quick lookup for commands, agents, schemas, and syntax. Use when you know what you're looking for and need exact syntax or parameter details.
 
 **Key Documents**:
-- [Command Reference](reference/command-reference.md) - Complete catalog of all available commands
-- [Agent Reference](reference/agent-reference.md) - Directory of specialized agents with capabilities
+- [Command Reference](reference/standards/command-reference.md) - Complete catalog of all available commands
+- [Agent Reference](reference/standards/agent-reference.md) - Directory of specialized agents with capabilities
 - [CLAUDE.md Section Schema](reference/claude-md-section-schema.md) - Section format specification
 - [Command Architecture Standards](reference/architecture/overview.md) - Architecture requirements for commands/agents
 - [Phase Dependencies](reference/workflows/phase-dependencies.md) - Wave-based parallel execution syntax
@@ -420,8 +420,8 @@ Learning-oriented step-by-step tutorials. Use when you're learning a new feature
 
 ### For New Users
 1. [Orchestration Guide](workflows/orchestration-guide.md) - Learn multi-agent workflows
-2. [Command Reference](reference/command-reference.md) - Browse available commands
-3. [Agent Reference](reference/agent-reference.md) - See what agents can do
+2. [Command Reference](reference/standards/command-reference.md) - Browse available commands
+3. [Agent Reference](reference/standards/agent-reference.md) - See what agents can do
 
 ### For Command Developers
 1. [Creating Commands](guides/development/command-development/command-development-fundamentals.md) - Complete development guide
@@ -432,7 +432,7 @@ Learning-oriented step-by-step tutorials. Use when you're learning a new feature
 ### For Agent Developers
 1. [Creating Agents](guides/development/agent-development/agent-development-fundamentals.md) - Agent development guide
 2. [Using Agents](guides/development/agent-development/agent-development-fundamentals.md) - Agent invocation patterns
-3. [Agent Reference](reference/agent-reference.md) - Existing agent catalog
+3. [Agent Reference](reference/standards/agent-reference.md) - Existing agent catalog
 
 ### For Contributors
 1. [CLAUDE.md Section Schema](reference/claude-md-section-schema.md) - Section format specification
@@ -571,8 +571,8 @@ Before committing:
 ### By Document Type
 
 **Reference Documentation**:
-- [Command Reference](reference/command-reference.md) - Command catalog
-- [Agent Reference](reference/agent-reference.md) - Agent catalog
+- [Command Reference](reference/standards/command-reference.md) - Command catalog
+- [Agent Reference](reference/standards/agent-reference.md) - Agent catalog
 - [CLAUDE.md Section Schema](reference/claude-md-section-schema.md) - Section schema
 - [Command Architecture Standards](reference/architecture/overview.md) - Architecture standards
 - [Phase Dependencies](reference/workflows/phase-dependencies.md) - Wave-based execution
@@ -606,8 +606,8 @@ Before committing:
 
 **Orchestration**:
 - [Orchestration Guide](workflows/orchestration-guide.md)
-- [Command Reference](reference/command-reference.md)
-- [Agent Reference](reference/agent-reference.md)
+- [Command Reference](reference/standards/command-reference.md)
+- [Agent Reference](reference/standards/agent-reference.md)
 
 **Planning**:
 - [Adaptive Planning Guide](workflows/adaptive-planning-guide.md)
@@ -627,12 +627,12 @@ Before committing:
 **Agents**:
 - [Creating Agents](guides/development/agent-development/agent-development-fundamentals.md)
 - [Using Agents](guides/development/agent-development/agent-development-fundamentals.md)
-- [Agent Reference](reference/agent-reference.md)
+- [Agent Reference](reference/standards/agent-reference.md)
 - [Hierarchical Agents](concepts/hierarchical-agents.md)
 
 **Commands**:
 - [Creating Commands](guides/development/command-development/command-development-fundamentals.md)
-- [Command Reference](reference/command-reference.md)
+- [Command Reference](reference/standards/command-reference.md)
 - [Command Patterns](guides/patterns/command-patterns/command-patterns-overview.md)
 
 **TTS**:
@@ -726,9 +726,9 @@ See: [Standards Integration](guides/patterns/standards-integration.md)
 
 ### Orchestration and Workflows
 - [Orchestration Guide](workflows/orchestration-guide.md)
-- [Agent Reference](reference/agent-reference.md)
+- [Agent Reference](reference/standards/agent-reference.md)
 - [Using Agents](guides/development/agent-development/agent-development-fundamentals.md)
-- [Command Reference](reference/command-reference.md)
+- [Command Reference](reference/standards/command-reference.md)
 
 ### Implementation Planning
 - [Adaptive Planning Guide](workflows/adaptive-planning-guide.md)
@@ -746,13 +746,13 @@ See: [Standards Integration](guides/patterns/standards-integration.md)
 ### Agent System
 - [Creating Agents](guides/development/agent-development/agent-development-fundamentals.md)
 - [Using Agents](guides/development/agent-development/agent-development-fundamentals.md)
-- [Agent Reference](reference/agent-reference.md)
+- [Agent Reference](reference/standards/agent-reference.md)
 - [Hierarchical Agents](concepts/hierarchical-agents.md)
 - [../agents/README.md](../agents/README.md)
 
 ### Command System
 - [Creating Commands](guides/development/command-development/command-development-fundamentals.md)
-- [Command Reference](reference/command-reference.md)
+- [Command Reference](reference/standards/command-reference.md)
 - [Command Patterns](guides/patterns/command-patterns/command-patterns-overview.md)
 - [../commands/README.md](../../commands/README.md)
 

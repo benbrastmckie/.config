@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Run all test suites and aggregate results
-# Usage: ./run_all_tests.sh [--verbose]
+# Usage: ./run_all_tests.sh [--verbose] [--python]
+#
+# Options:
+#   --verbose  Show full test output
+#   --python   Include Python tests (requires pytest or python3)
 
 set -euo pipefail
 
@@ -10,9 +14,19 @@ set -euo pipefail
 export WORKFLOW_CLASSIFICATION_TEST_MODE=1
 
 VERBOSE=false
-if [ "${1:-}" = "--verbose" ]; then
-  VERBOSE=true
-fi
+INCLUDE_PYTHON=false
+
+# Parse arguments
+for arg in "$@"; do
+  case "$arg" in
+    --verbose)
+      VERBOSE=true
+      ;;
+    --python)
+      INCLUDE_PYTHON=true
+      ;;
+  esac
+done
 
 # Test directory
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -126,6 +140,49 @@ for test_file in $ALL_TEST_FILES; do
 
   echo ""
 done
+
+# Run Python tests if requested
+if [ "$INCLUDE_PYTHON" = true ]; then
+  echo -e "${BLUE}Running Python Tests${NC}"
+  echo "────────────────────────────────────────────────"
+
+  # Find Python test files
+  PYTHON_FILES=$(find "$TEST_DIR" -name "test_*.py" -type f 2>/dev/null | sort)
+
+  if [ -n "$PYTHON_FILES" ]; then
+    for py_file in $PYTHON_FILES; do
+      py_name=$(basename "$py_file" .py)
+      echo -e "${BLUE}Running: $py_name${NC}"
+
+      # Try pytest first, then direct python execution
+      if command -v pytest &>/dev/null; then
+        if pytest "$py_file" -v --tb=short 2>&1; then
+          echo -e "${GREEN}✓ $py_name PASSED${NC}"
+          PASSED_TESTS=$((PASSED_TESTS + 1))
+        else
+          echo -e "${RED}✗ $py_name FAILED${NC}"
+          FAILED_TESTS=$((FAILED_TESTS + 1))
+        fi
+      elif command -v python3 &>/dev/null; then
+        if python3 "$py_file" 2>&1; then
+          echo -e "${GREEN}✓ $py_name PASSED${NC}"
+          PASSED_TESTS=$((PASSED_TESTS + 1))
+        else
+          echo -e "${RED}✗ $py_name FAILED${NC}"
+          FAILED_TESTS=$((FAILED_TESTS + 1))
+        fi
+      else
+        echo -e "${YELLOW}⊘ SKIPPING: $py_name${NC}"
+        echo "  Reason: No Python interpreter found (pytest or python3)"
+        SKIPPED_SUITES=$((SKIPPED_SUITES + 1))
+      fi
+      echo ""
+    done
+  else
+    echo "No Python test files found"
+    echo ""
+  fi
+fi
 
 # Post-test pollution detection
 if [[ $BEFORE_EMPTY_COUNT -ge 0 && -d "$SPECS_DIR" ]]; then

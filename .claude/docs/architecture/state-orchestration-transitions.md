@@ -43,6 +43,23 @@ else
 fi
 ```
 
+### Idempotent Transition (Same-State)
+
+```bash
+# Safe to call even if already in target state
+sm_transition "$STATE_RESEARCH"
+# If already in research state: logs INFO message, returns success (exit 0)
+# If not in research state: performs normal transition
+
+# Useful for retry/resume scenarios
+for attempt in 1 2 3; do
+  sm_transition "$STATE_IMPLEMENT"  # Idempotent on subsequent attempts
+  if run_implementation; then
+    break
+  fi
+done
+```
+
 ## Selective State Persistence
 
 ### Persistence Library

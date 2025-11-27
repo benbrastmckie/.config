@@ -430,6 +430,17 @@ log_command_error() {
     context_json="{}"
   fi
 
+  # Enhance context with environment paths for path-related error types
+  # This helps debug path mismatches between expected and actual file locations
+  case "$error_type" in
+    state_error|file_error)
+      context_json=$(echo "$context_json" | jq \
+        --arg home "${HOME:-}" \
+        --arg project_dir "${CLAUDE_PROJECT_DIR:-}" \
+        '. + {home: $home, claude_project_dir: $project_dir}')
+      ;;
+  esac
+
   # Detect execution environment (test vs production)
   local environment="production"
 
@@ -479,6 +490,7 @@ log_command_error() {
   fi
 
   # Build and append JSON entry (compact format for JSONL)
+  # Include status field (default: ERROR) and status_updated_at (null for new entries)
   local json_entry
   json_entry=$(jq -c -n \
     --arg timestamp "$timestamp" \
@@ -501,7 +513,10 @@ log_command_error() {
       error_message: $message,
       source: $source,
       stack: $stack,
-      context: $context
+      context: $context,
+      status: "ERROR",
+      status_updated_at: null,
+      repair_plan_path: null
     }')
 
   # Append to JSONL log file
@@ -598,14 +613,128 @@ ensure_error_log_exists() {
   return 0
 }
 
+# log_early_error: Log error before error logging infrastructure fully initialized
+# Usage: log_early_error <error_message> [error_context_json]
+# Returns: Always 0 (failure is silent to avoid breaking initialization)
+# Context: Used for errors before COMMAND_NAME, WORKFLOW_ID, USER_ARGS available
+# Example: log_early_error "Failed to source library" '{"library":"error-handling.sh"}'
+log_early_error() {
+  local error_msg="${1:-Unknown early error}"
+  local error_context="${2:-{}}"
+
+  # Minimal logging without USER_ARGS dependency
+  local ts=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "unknown")
+  local cmd="${COMMAND_NAME:-unknown}"
+  local wf="${WORKFLOW_ID:-unknown_$(date +%s 2>/dev/null || echo 'unknown')}"
+
+  # Ensure error log exists before writing
+  local log_dir="${ERROR_LOG_DIR:-${CLAUDE_PROJECT_DIR:-.}/.claude/data/logs}"
+  local log_file="${log_dir}/errors.jsonl"
+  mkdir -p "$log_dir" 2>/dev/null || true
+
+  # Build JSON and append to log (silent failure if jq unavailable)
+  jq -n \
+    --arg ts "$ts" \
+    --arg cmd "$cmd" \
+    --arg wf "$wf" \
+    --arg msg "$error_msg" \
+    --argjson ctx "$error_context" \
+    '{
+      timestamp: $ts,
+      environment: "production",
+      command: $cmd,
+      workflow_id: $wf,
+      user_args: "",
+      error_type: "initialization_error",
+      error_message: $msg,
+      source: "early_initialization",
+      stack: [],
+      context: $ctx,
+      status: "ERROR",
+      status_updated_at: null,
+      repair_plan_path: null
+    }' >> "$log_file" 2>/dev/null || true
+
+  return 0
+}
+
+# validate_state_restoration: Validate required variables restored from state file
+# Usage: validate_state_restoration <var1> [var2] [var3] ...
+# Returns: 0 if all variables set, 1 if any missing (logs error before return)
+# Context: Call after load_workflow_state in multi-block workflows
+# Example: validate_state_restoration "COMMAND_NAME" "WORKFLOW_ID" "PLAN_PATH"
+validate_state_restoration() {
+  local required_vars=("$@")
+  local missing_vars=()
+
+  # Temporarily allow unset for variable checking
+  set +u
+
+  # Check each required variable
+  for var in "${required_vars[@]}"; do
+    if [ -z "${!var:-}" ]; then
+      missing_vars+=("$var")
+    fi
+  done
+
+  # Re-enable unset variable checking
+  set -u
+
+  # If any variables missing, log error and return failure
+  if [ ${#missing_vars[@]} -gt 0 ]; then
+    local missing_list=$(printf '%s,' "${missing_vars[@]}")
+    missing_list="${missing_list%,}"  # Remove trailing comma
+
+    log_command_error \
+      "${COMMAND_NAME:-unknown}" \
+      "${WORKFLOW_ID:-unknown}" \
+      "${USER_ARGS:-}" \
+      "state_error" \
+      "State restoration incomplete: missing ${missing_list}" \
+      "state_validation" \
+      "$(jq -n --arg vars "$missing_list" '{missing_variables: $vars}')"
+
+    return 1
+  fi
+
+  return 0
+}
+
+# check_unbound_vars: Check if variables are set before use (defensive pattern)
+# Usage: check_unbound_vars <var1> [var2] [var3] ...
+# Returns: 0 if all variables set, 1 if any missing (does NOT log error)
+# Context: Use for optional variables where missing is not an error
+# Example: check_unbound_vars "OPTIONAL_FILE" || OPTIONAL_FILE=""
+check_unbound_vars() {
+  local vars_to_check=("$@")
+
+  # Temporarily allow unset for variable checking
+  set +u
+
+  # Check each variable
+  for var in "${vars_to_check[@]}"; do
+    if [ -z "${!var:-}" ]; then
+      set -u
+      return 1
+    fi
+  done
+
+  # Re-enable unset variable checking
+  set -u
+
+  return 0
+}
+
 # query_errors: Query errors from JSONL log with filters
-# Usage: query_errors [--command CMD] [--since TIME] [--type TYPE] [--limit N] [--workflow-id ID]
+# Usage: query_errors [--command CMD] [--since TIME] [--type TYPE] [--status STATUS] [--limit N] [--workflow-id ID]
 # Returns: Filtered JSONL entries on stdout
-# Example: query_errors --command /build --limit 10
+# Note: Backward compatible - entries missing status field are treated as "ERROR"
+# Example: query_errors --command /build --status ERROR --limit 10
 query_errors() {
   local command_filter=""
   local since_filter=""
   local type_filter=""
+  local status_filter=""
   local workflow_filter=""
   local limit=50
   local log_file="${ERROR_LOG_DIR}/errors.jsonl"
@@ -623,6 +752,10 @@ query_errors() {
         ;;
       --type)
         type_filter="$2"
+        shift 2
+        ;;
+      --status)
+        status_filter="$2"
         shift 2
         ;;
       --limit)
@@ -648,8 +781,9 @@ query_errors() {
     return 0
   fi
 
-  # Build jq filter
-  local jq_filter="."
+  # Build jq filter with backward compatibility for status field
+  # Entries without status field default to "ERROR"
+  local jq_filter=". | if .status == null then . + {status: \"ERROR\"} else . end"
 
   if [ -n "$command_filter" ]; then
     jq_filter="$jq_filter | select(.command == \"$command_filter\")"
@@ -657,6 +791,10 @@ query_errors() {
 
   if [ -n "$type_filter" ]; then
     jq_filter="$jq_filter | select(.error_type == \"$type_filter\")"
+  fi
+
+  if [ -n "$status_filter" ]; then
+    jq_filter="$jq_filter | select(.status == \"$status_filter\")"
   fi
 
   if [ -n "$workflow_filter" ]; then
@@ -674,6 +812,7 @@ query_errors() {
 # recent_errors: Display recent errors in human-readable format
 # Usage: recent_errors [count]
 # Returns: Formatted error list on stdout
+# Note: Displays status field with backward compatibility (defaults to "ERROR" if missing)
 # Example: recent_errors 5
 recent_errors() {
   local count="${1:-10}"
@@ -695,17 +834,21 @@ recent_errors() {
 
   tail -n "$count" "$ERROR_LOG_FILE" | while IFS= read -r line; do
     if [ -n "$line" ]; then
-      local timestamp command error_type message user_args workflow_id
+      local timestamp command error_type message user_args workflow_id status repair_plan
       timestamp=$(echo "$line" | jq -r '.timestamp // "unknown"' 2>/dev/null)
       command=$(echo "$line" | jq -r '.command // "unknown"' 2>/dev/null)
       error_type=$(echo "$line" | jq -r '.error_type // "unknown"' 2>/dev/null)
       message=$(echo "$line" | jq -r '.error_message // "No message"' 2>/dev/null)
       user_args=$(echo "$line" | jq -r '.user_args // ""' 2>/dev/null)
       workflow_id=$(echo "$line" | jq -r '.workflow_id // "unknown"' 2>/dev/null)
+      # Backward compatibility: default to ERROR if status field missing
+      status=$(echo "$line" | jq -r '.status // "ERROR"' 2>/dev/null)
+      repair_plan=$(echo "$line" | jq -r '.repair_plan_path // ""' 2>/dev/null)
 
       echo ""
       echo "[$timestamp] $command"
       echo "  Type: $error_type"
+      echo "  Status: $status"
       echo "  Message: $message"
       if [ -n "$user_args" ]; then
         # Truncate long args
@@ -715,6 +858,9 @@ recent_errors() {
         echo "  Args: $user_args"
       fi
       echo "  Workflow: $workflow_id"
+      if [ -n "$repair_plan" ] && [ "$repair_plan" != "null" ]; then
+        echo "  Repair Plan: $repair_plan"
+      fi
     fi
   done
 
@@ -768,6 +914,212 @@ error_summary() {
   echo "  First: $first_error"
   echo "  Last:  $last_error"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+# ==============================================================================
+# Error Status Updates
+# ==============================================================================
+
+# Status constants for error lifecycle
+readonly ERROR_STATUS_ERROR="ERROR"
+readonly ERROR_STATUS_FIX_PLANNED="FIX_PLANNED"
+readonly ERROR_STATUS_RESOLVED="RESOLVED"
+
+# update_error_status: Update a single error entry by workflow_id and timestamp
+# Usage: update_error_status <workflow_id> <timestamp> <new_status> [repair_plan_path]
+# Returns: 0 on success, 1 on failure
+# Example: update_error_status "build_123" "2025-11-23T10:00:00Z" "FIX_PLANNED" "/path/to/plan.md"
+update_error_status() {
+  local workflow_id="${1:-}"
+  local timestamp="${2:-}"
+  local new_status="${3:-}"
+  local repair_plan_path="${4:-}"
+
+  # Validate required arguments
+  if [[ -z "$workflow_id" ]] || [[ -z "$timestamp" ]] || [[ -z "$new_status" ]]; then
+    echo "ERROR: update_error_status requires workflow_id, timestamp, and new_status" >&2
+    return 1
+  fi
+
+  # Validate status value
+  case "$new_status" in
+    "$ERROR_STATUS_ERROR"|"$ERROR_STATUS_FIX_PLANNED"|"$ERROR_STATUS_RESOLVED")
+      ;;
+    *)
+      echo "ERROR: Invalid status '$new_status'. Must be ERROR, FIX_PLANNED, or RESOLVED" >&2
+      return 1
+      ;;
+  esac
+
+  local log_file="${ERROR_LOG_FILE:-$ERROR_LOG_DIR/errors.jsonl}"
+
+  # Check if log file exists
+  if [[ ! -f "$log_file" ]]; then
+    echo "ERROR: Log file not found: $log_file" >&2
+    return 1
+  fi
+
+  # Generate status update timestamp
+  local status_updated_at
+  status_updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  # Create temporary file for atomic update
+  local temp_file="${log_file}.tmp.$$"
+
+  # Process each line, updating matching entries
+  local updated=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ -z "$line" ]]; then
+      continue
+    fi
+
+    local entry_workflow entry_timestamp
+    entry_workflow=$(echo "$line" | jq -r '.workflow_id // ""' 2>/dev/null)
+    entry_timestamp=$(echo "$line" | jq -r '.timestamp // ""' 2>/dev/null)
+
+    if [[ "$entry_workflow" == "$workflow_id" ]] && [[ "$entry_timestamp" == "$timestamp" ]]; then
+      # Update this entry
+      local updated_entry
+      if [[ -n "$repair_plan_path" ]]; then
+        updated_entry=$(echo "$line" | jq -c \
+          --arg status "$new_status" \
+          --arg updated_at "$status_updated_at" \
+          --arg plan_path "$repair_plan_path" \
+          '. + {status: $status, status_updated_at: $updated_at, repair_plan_path: $plan_path}')
+      else
+        updated_entry=$(echo "$line" | jq -c \
+          --arg status "$new_status" \
+          --arg updated_at "$status_updated_at" \
+          '. + {status: $status, status_updated_at: $updated_at}')
+      fi
+      echo "$updated_entry" >> "$temp_file"
+      updated=1
+    else
+      echo "$line" >> "$temp_file"
+    fi
+  done < "$log_file"
+
+  if [[ $updated -eq 0 ]]; then
+    rm -f "$temp_file"
+    echo "WARNING: No matching entry found for workflow_id=$workflow_id, timestamp=$timestamp" >&2
+    return 1
+  fi
+
+  # Atomic rename
+  mv "$temp_file" "$log_file"
+  return 0
+}
+
+# mark_errors_fix_planned: Bulk update errors matching filter criteria with FIX_PLANNED status
+# Usage: mark_errors_fix_planned <plan_path> [--command CMD] [--type TYPE] [--since TIME]
+# Returns: Number of updated entries (stdout), 0 on no matches
+# Example: mark_errors_fix_planned "/path/to/plan.md" --command /build --since 2025-11-23
+mark_errors_fix_planned() {
+  local plan_path="${1:-}"
+  shift
+
+  # Validate plan path
+  if [[ -z "$plan_path" ]]; then
+    echo "ERROR: mark_errors_fix_planned requires plan_path as first argument" >&2
+    return 1
+  fi
+
+  # Parse filter arguments
+  local command_filter=""
+  local type_filter=""
+  local since_filter=""
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --command)
+        command_filter="$2"
+        shift 2
+        ;;
+      --type)
+        type_filter="$2"
+        shift 2
+        ;;
+      --since)
+        since_filter="$2"
+        shift 2
+        ;;
+      *)
+        shift
+        ;;
+    esac
+  done
+
+  local log_file="${ERROR_LOG_FILE:-$ERROR_LOG_DIR/errors.jsonl}"
+
+  # Check if log file exists
+  if [[ ! -f "$log_file" ]]; then
+    echo "0"
+    return 0
+  fi
+
+  # Generate status update timestamp
+  local status_updated_at
+  status_updated_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  # Create temporary file for atomic update
+  local temp_file="${log_file}.tmp.$$"
+
+  # Process each line, updating matching entries
+  local updated_count=0
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ -z "$line" ]]; then
+      continue
+    fi
+
+    # Extract fields for filtering
+    local entry_command entry_type entry_timestamp entry_status
+    entry_command=$(echo "$line" | jq -r '.command // ""' 2>/dev/null)
+    entry_type=$(echo "$line" | jq -r '.error_type // ""' 2>/dev/null)
+    entry_timestamp=$(echo "$line" | jq -r '.timestamp // ""' 2>/dev/null)
+    entry_status=$(echo "$line" | jq -r '.status // "ERROR"' 2>/dev/null)
+
+    # Only update entries with ERROR status (not already planned/resolved)
+    local matches=true
+    if [[ "$entry_status" != "ERROR" ]]; then
+      matches=false
+    fi
+
+    # Apply command filter
+    if [[ -n "$command_filter" ]] && [[ "$entry_command" != "$command_filter" ]]; then
+      matches=false
+    fi
+
+    # Apply type filter
+    if [[ -n "$type_filter" ]] && [[ "$entry_type" != "$type_filter" ]]; then
+      matches=false
+    fi
+
+    # Apply since filter (timestamp comparison)
+    if [[ -n "$since_filter" ]] && [[ "$entry_timestamp" < "$since_filter" ]]; then
+      matches=false
+    fi
+
+    if [[ "$matches" == "true" ]]; then
+      # Update this entry
+      local updated_entry
+      updated_entry=$(echo "$line" | jq -c \
+        --arg status "$ERROR_STATUS_FIX_PLANNED" \
+        --arg updated_at "$status_updated_at" \
+        --arg plan_path "$plan_path" \
+        '. + {status: $status, status_updated_at: $updated_at, repair_plan_path: $plan_path}')
+      echo "$updated_entry" >> "$temp_file"
+      updated_count=$((updated_count + 1))
+    else
+      echo "$line" >> "$temp_file"
+    fi
+  done < "$log_file"
+
+  # Atomic rename
+  mv "$temp_file" "$log_file"
+
+  # Return count of updated entries
+  echo "$updated_count"
+  return 0
 }
 
 # ==============================================================================
@@ -1419,6 +1771,9 @@ setup_bash_error_trap() {
   export -f parse_subagent_error
   export -f rotate_error_log
   export -f ensure_error_log_exists
+  export -f log_early_error
+  export -f validate_state_restoration
+  export -f check_unbound_vars
 # ==============================================================================
 # Agent Output Validation
 # ==============================================================================
@@ -1528,6 +1883,8 @@ validate_topic_name_format() {
   export -f query_errors
   export -f recent_errors
   export -f error_summary
+  export -f update_error_status
+  export -f mark_errors_fix_planned
   export -f escalate_to_user
   export -f escalate_to_user_parallel
   export -f try_with_fallback

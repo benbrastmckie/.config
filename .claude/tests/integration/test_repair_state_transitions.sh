@@ -50,7 +50,7 @@ test_research_and_plan_transitions() {
   sm_init "test error repair" "/repair" "research-and-plan" "2" "[]" >/dev/null 2>&1
 
   if [ "$CURRENT_STATE" != "initialize" ]; then
-    echo "FAIL: $test_name - Expected initialize, got $CURRENT_STATE"
+    echo "✗ FAIL: $test_name - Expected initialize, got $CURRENT_STATE"
     TEST_FAILED=$((TEST_FAILED + 1))
     rm -f "$STATE_FILE"
     return 1
@@ -58,14 +58,14 @@ test_research_and_plan_transitions() {
 
   # Transition to research (Block 1 end)
   if ! sm_transition "$STATE_RESEARCH" 2>&1; then
-    echo "FAIL: $test_name - Failed transition initialize -> research"
+    echo "✗ FAIL: $test_name - Failed transition initialize -> research"
     TEST_FAILED=$((TEST_FAILED + 1))
     rm -f "$STATE_FILE"
     return 1
   fi
 
   if [ "$CURRENT_STATE" != "research" ]; then
-    echo "FAIL: $test_name - Expected research, got $CURRENT_STATE"
+    echo "✗ FAIL: $test_name - Expected research, got $CURRENT_STATE"
     TEST_FAILED=$((TEST_FAILED + 1))
     rm -f "$STATE_FILE"
     return 1
@@ -75,7 +75,7 @@ test_research_and_plan_transitions() {
   local persisted_state
   persisted_state=$(grep "CURRENT_STATE=" "$STATE_FILE" | tail -1 | sed 's/.*CURRENT_STATE="//' | tr -d '"')
   if [ "$persisted_state" != "research" ]; then
-    echo "FAIL: $test_name - State not persisted after initialize->research transition"
+    echo "✗ FAIL: $test_name - State not persisted after initialize->research transition"
     TEST_FAILED=$((TEST_FAILED + 1))
     rm -f "$STATE_FILE"
     return 1
@@ -91,7 +91,7 @@ test_research_and_plan_transitions() {
   fi
 
   if [ "${CURRENT_STATE:-}" != "research" ]; then
-    echo "FAIL: $test_name - State not restored: expected research, got ${CURRENT_STATE:-EMPTY}"
+    echo "✗ FAIL: $test_name - State not restored: expected research, got ${CURRENT_STATE:-EMPTY}"
     TEST_FAILED=$((TEST_FAILED + 1))
     rm -f "$STATE_FILE"
     return 1
@@ -99,14 +99,14 @@ test_research_and_plan_transitions() {
 
   # Transition to plan (Block 2)
   if ! sm_transition "$STATE_PLAN" 2>&1; then
-    echo "FAIL: $test_name - Failed transition research -> plan"
+    echo "✗ FAIL: $test_name - Failed transition research -> plan"
     TEST_FAILED=$((TEST_FAILED + 1))
     rm -f "$STATE_FILE"
     return 1
   fi
 
   if [ "$CURRENT_STATE" != "plan" ]; then
-    echo "FAIL: $test_name - Expected plan, got $CURRENT_STATE"
+    echo "✗ FAIL: $test_name - Expected plan, got $CURRENT_STATE"
     TEST_FAILED=$((TEST_FAILED + 1))
     rm -f "$STATE_FILE"
     return 1
@@ -114,13 +114,13 @@ test_research_and_plan_transitions() {
 
   # Transition to complete (Block 3)
   if ! sm_transition "$STATE_COMPLETE" 2>&1; then
-    echo "FAIL: $test_name - Failed transition plan -> complete"
+    echo "✗ FAIL: $test_name - Failed transition plan -> complete"
     TEST_FAILED=$((TEST_FAILED + 1))
     rm -f "$STATE_FILE"
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   TEST_PASSED=$((TEST_PASSED + 1))
 
   # Cleanup
@@ -141,13 +141,13 @@ test_invalid_transition_rejected() {
 
   # Attempt invalid transition (this should fail)
   if sm_transition "$STATE_PLAN" 2>/dev/null; then
-    echo "FAIL: $test_name - Invalid transition was allowed"
+    echo "✗ FAIL: $test_name - Invalid transition was allowed"
     rm -f "$STATE_FILE"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   TEST_PASSED=$((TEST_PASSED + 1))
 
   # Cleanup
@@ -168,7 +168,7 @@ test_sm_validate_state_integration() {
 
   # Should pass validation
   if ! sm_validate_state 2>/dev/null; then
-    echo "FAIL: $test_name - Validation should pass for initialized state machine"
+    echo "✗ FAIL: $test_name - Validation should pass for initialized state machine"
     rm -f "$STATE_FILE"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
@@ -180,14 +180,14 @@ test_sm_validate_state_integration() {
 
   # Should fail validation
   if sm_validate_state 2>/dev/null; then
-    echo "FAIL: $test_name - Validation should fail with empty CURRENT_STATE"
+    echo "✗ FAIL: $test_name - Validation should fail with empty CURRENT_STATE"
     CURRENT_STATE="$saved_state"
     rm -f "$STATE_FILE"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   TEST_PASSED=$((TEST_PASSED + 1))
 
   # Cleanup

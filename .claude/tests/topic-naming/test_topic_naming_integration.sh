@@ -5,10 +5,24 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+CLAUDE_LIB="${CLAUDE_PROJECT_DIR}/.claude/lib"
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR}/.claude"
 
 # Source required libraries
-source "$PROJECT_ROOT/.claude/lib/plan/topic-utils.sh" 2>/dev/null || {
+source "$CLAUDE_LIB/plan/topic-utils.sh" 2>/dev/null || {
   echo "ERROR: Cannot load topic-utils library"
   exit 1
 }
@@ -44,7 +58,7 @@ echo ""
 # ==============================================================================
 echo "Test 1: Agent file existence and accessibility"
 
-AGENT_FILE="$PROJECT_ROOT/.claude/agents/topic-naming-agent.md"
+AGENT_FILE="$PROJECT_ROOT/agents/topic-naming-agent.md"
 if [ -f "$AGENT_FILE" ]; then
   pass "Agent file exists: $AGENT_FILE"
 else
@@ -126,7 +140,7 @@ fi
 echo ""
 echo "Test 4: Error handling library integration"
 
-ERROR_HANDLING_LIB="$PROJECT_ROOT/.claude/lib/core/error-handling.sh"
+ERROR_HANDLING_LIB="$PROJECT_ROOT/lib/core/error-handling.sh"
 if [ -f "$ERROR_HANDLING_LIB" ]; then
   pass "Error handling library exists"
 else
@@ -161,7 +175,7 @@ echo "Test 5: Command integration points"
 
 # Check that commands reference the topic-naming-agent
 for cmd in plan research debug optimize-claude; do
-  CMD_FILE="$PROJECT_ROOT/.claude/commands/${cmd}.md"
+  CMD_FILE="$PROJECT_ROOT/commands/${cmd}.md"
   if [ -f "$CMD_FILE" ]; then
     if grep -q "topic-naming-agent" "$CMD_FILE"; then
       pass "/${cmd} command integrated with topic-naming-agent"
@@ -180,13 +194,13 @@ echo ""
 echo "Test 6: Topic allocation function availability"
 
 # Check for topic number allocation function
-if grep -q "get_next_topic_number" "$PROJECT_ROOT/.claude/lib/plan/topic-utils.sh"; then
+if grep -q "get_next_topic_number" "$PROJECT_ROOT/lib/plan/topic-utils.sh"; then
   pass "get_next_topic_number function defined"
 else
   fail "get_next_topic_number not found" "Required for topic creation"
 fi
 
-if grep -q "get_or_create_topic_number" "$PROJECT_ROOT/.claude/lib/plan/topic-utils.sh"; then
+if grep -q "get_or_create_topic_number" "$PROJECT_ROOT/lib/plan/topic-utils.sh"; then
   pass "get_or_create_topic_number function defined"
 else
   fail "get_or_create_topic_number not found" "Required for idempotent topic creation"

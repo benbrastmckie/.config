@@ -11,5 +11,5 @@ This directory contains command guides that have been archived due to command re
 ## Note
 
 These guides are preserved for historical reference only. For active command documentation, see:
-- [Command Reference](../../reference/command-reference.md)
+- [Command Reference](../../reference/standards/command-reference.md)
 - [Guides Directory](../../guides/README.md)

@@ -47,7 +47,7 @@ test_state_persists_after_transition() {
 
   # Verify initial state
   if [ "$CURRENT_STATE" != "initialize" ]; then
-    echo "FAIL: $test_name - Initial state not 'initialize': $CURRENT_STATE"
+    echo "✗ FAIL: $test_name - Initial state not 'initialize': $CURRENT_STATE"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
   fi
@@ -57,7 +57,7 @@ test_state_persists_after_transition() {
 
   # Verify state updated
   if [ "$CURRENT_STATE" != "research" ]; then
-    echo "FAIL: $test_name - State not updated to 'research': $CURRENT_STATE"
+    echo "✗ FAIL: $test_name - State not updated to 'research': $CURRENT_STATE"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
   fi
@@ -67,7 +67,7 @@ test_state_persists_after_transition() {
   persisted_state=$(grep "CURRENT_STATE=" "$STATE_FILE" | tail -1 | sed 's/.*CURRENT_STATE="//' | tr -d '"')
 
   if [ "$persisted_state" != "research" ]; then
-    echo "FAIL: $test_name - State not persisted correctly: $persisted_state"
+    echo "✗ FAIL: $test_name - State not persisted correctly: $persisted_state"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
   fi
@@ -83,12 +83,12 @@ test_state_persists_after_transition() {
   fi
 
   if [ "${CURRENT_STATE:-}" != "research" ]; then
-    echo "FAIL: $test_name - State not restored after load: ${CURRENT_STATE:-EMPTY}"
+    echo "✗ FAIL: $test_name - State not restored after load: ${CURRENT_STATE:-EMPTY}"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   TEST_PASSED=$((TEST_PASSED + 1))
 
   # Cleanup
@@ -105,7 +105,7 @@ test_sm_validate_state_function() {
 
   # Should fail validation
   if sm_validate_state 2>/dev/null; then
-    echo "FAIL: $test_name - Should have failed with no STATE_FILE"
+    echo "✗ FAIL: $test_name - Should have failed with no STATE_FILE"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
   fi
@@ -119,13 +119,13 @@ test_sm_validate_state_function() {
 
   # Should pass validation
   if ! sm_validate_state 2>/dev/null; then
-    echo "FAIL: $test_name - Should have passed with valid state"
+    echo "✗ FAIL: $test_name - Should have passed with valid state"
     rm -f "$STATE_FILE"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   TEST_PASSED=$((TEST_PASSED + 1))
 
   # Cleanup
@@ -146,14 +146,14 @@ test_append_workflow_state_exports_correctly() {
 
   # Verify it's in the file with correct format
   if ! grep -q '^export CURRENT_STATE="research"' "$STATE_FILE"; then
-    echo "FAIL: $test_name - CURRENT_STATE not found with correct format in state file"
+    echo "✗ FAIL: $test_name - CURRENT_STATE not found with correct format in state file"
     cat "$STATE_FILE" >&2
     rm -f "$STATE_FILE"
     TEST_FAILED=$((TEST_FAILED + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   TEST_PASSED=$((TEST_PASSED + 1))
 
   # Cleanup

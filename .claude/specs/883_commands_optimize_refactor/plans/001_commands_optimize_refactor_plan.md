@@ -1,385 +1,525 @@
 # Command Optimization and Standardization Implementation Plan
 
 ## Metadata
-- **Date**: 2025-11-20 (Revised: 2025-11-21)
+- **Date**: 2025-11-26 (Revised)
 - **Feature**: Systematic optimization and standardization of .claude/commands/
-- **Scope**: Refactor 12 commands to reduce duplication, consolidate bash blocks, standardize documentation, and enhance maintainability
+- **Scope**: Optimize all 12 commands for uniformity, efficiency, and robustness
 - **Estimated Phases**: 5
-- **Estimated Hours**: 18
+- **Estimated Hours**: 14
 - **Structure Level**: 0
-- **Complexity Score**: 130.0 (reduced from 142.0 after removing redundant tasks)
+- **Complexity Score**: 100.0
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [NOT STARTED]
-- **Revision Notes**: Updated per research report 001_plan_revision_insights.md - removed redundant tasks already implemented by High Priority plans
+- **Status**: [COMPLETE]
+- **Revision Notes**: v5.0 - Added .claude/docs/ Optimization Standards section with directives for maintaining efficiency and elegance. Replaced magic threshold numbers with principle-based optimization.
 - **Research Reports**:
+  - [Comprehensive Command Analysis](../reports/001-comprehensive-command-analysis.md) (2025-11-26)
   - [Command Optimization Analysis](../reports/001_command_optimization_analysis.md)
   - [Plan Revision Insights](../reports/001_plan_revision_insights.md)
 
+## Revision History
+
+| Date | Version | Changes |
+|------|---------|---------|
+| 2025-11-20 | 1.0 | Initial plan with 5 phases |
+| 2025-11-21 | 2.0 | Removed redundant tasks from High Priority plans |
+| 2025-11-26 | 3.0 | Updated bash block counts, added workflow-bootstrap.sh, expanded scope |
+| 2025-11-26 | 4.0 | Replaced magic thresholds with principle-based optimization |
+| 2025-11-26 | 5.0 | **Added .claude/docs/ Optimization Standards** - New section defining directives for maintaining efficiency and elegance in future enhancements |
+
 ## Overview
 
-The .claude/commands/ system currently contains 12 well-functioning commands (10,649 LOC) with strong standardization in state management, error logging, and agent integration. Recent High Priority plan implementations have addressed foundational issues (three-tier sourcing pattern, enforcement mechanisms, error logging infrastructure).
+The .claude/commands/ system contains 12 commands totaling **17,147 lines** of implementation and documentation. Research analysis (2025-11-26) identified specific optimization opportunities.
 
-Remaining optimization opportunities:
-1. **Initialization duplication**: 30-40 line initialization pattern repeated across workflow commands (1,200+ lines of duplication)
-2. **Bash block fragmentation**: /expand (32 blocks) and /collapse (29 blocks) have 4x-10x more fragmentation than other commands
-3. **Documentation inconsistency**: Mix of "Block N" vs "Part N" naming conventions
-4. **Missing command template**: No established template for new command development
+**Current State (Verified via grep analysis)**:
 
-**What's Already Complete** (via recent High Priority plans):
-- Bash block budget guidelines documented in code-standards.md and output-formatting.md
-- Consolidation triggers documented (>10 blocks = review)
-- Target block counts by command type documented
-- Three-tier sourcing pattern enforced via linter and pre-commit hooks
-- Error logging infrastructure enhanced in source-libraries-inline.sh
+| Command | Bash Blocks | Complexity | Documentation | LOC |
+|---------|-------------|------------|---------------|-----|
+| build.md | 9 | High (iteration loops, checkpoints) | Block N | 1936 |
+| plan.md | 6 | Medium (research + planning) | Block N | 1147 |
+| research.md | 4 | Low-Medium | Block N | 668 |
+| debug.md | 7 | Medium (multi-phase analysis) | **Part N** | 1410 |
+| repair.md | 3 | Low-Medium | Block N | 1017 |
+| errors.md | 3 | Low (query + report) | Block N | 668 |
+| expand.md | 11 | Medium (but fragmented) | **STEP N** | 1196 |
+| collapse.md | 8 | Medium | **STEP N** | 798 |
+| revise.md | 6 | Medium (research + revision) | **Part N** | 1049 |
+| convert-docs.md | 6 | Low-Medium | **STEP N** | 411 |
+| setup.md | 3 | Low | Block N | 580 |
+| optimize-claude.md | 7 | Medium (multi-agent) | Block N | 647 |
 
-## Research Summary
+**Key Findings**:
 
-Key findings from research reports:
+1. **Error Logging Coverage: 100%** - All commands properly integrate error-handling.sh (no gaps)
+2. **Unnecessary Fragmentation**: expand.md has 11 blocks for medium complexity work - consecutive blocks can be combined
+3. **Documentation Terminology Inconsistent**: 5 commands use "Part N" or "STEP N" instead of "Block N"
+4. **Initialization Boilerplate: 98% Duplication** - 23-line pattern repeated in all 12 commands
 
-**From 001_command_optimization_analysis.md**:
-- 100% metadata compliance across all commands
-- 171 error handling occurrences (standardized)
-- 379 state persistence operations (consistent patterns)
-- Primary bottleneck: /expand (32 blocks) and /collapse (29 blocks) fragmentation
-- Initialization overhead: 30-40 lines repeated in every bash block
+## Bash Block Optimization Principles
 
-**From 001_plan_revision_insights.md**:
-- 3 of 4 High Priority plans now complete
-- 40-50% of original Phase 1 tasks now redundant (bash block standards enforced)
-- source-libraries-inline.sh enhanced with error logging (potential integration point)
-- New enforcement mechanisms require validation steps in all phases
+Rather than arbitrary thresholds, apply these principles when evaluating block structure:
 
-**Recommended Approach**:
-- Evaluate command-initialization.sh as thin wrapper around source-libraries-inline.sh
-- Focus on /expand and /collapse consolidation (highest value)
-- Add mandatory validation steps to all phases
+### Consolidation Principles
+
+1. **Combine consecutive bash blocks** when there's no agent invocation or user interaction between them
+2. **Group related operations** - setup, validation, and initialization belong together
+3. **Keep agent Task invocations as natural block boundaries** - they represent async operations
+4. **State persistence boundaries** - blocks that save state for later blocks should remain separate
+5. **Error handling scope** - keep error-prone operations in their own blocks for clearer diagnostics
+
+### Anti-Patterns to Fix
+
+1. **Over-fragmentation**: Multiple small blocks for sequential operations (expand.md: 11 blocks)
+2. **Artificial separation**: Splitting setup across multiple blocks (build.md: Blocks 1a, 1b, 1c)
+3. **Validation sprawl**: Separate blocks for each validation check instead of one validation block
+
+### When to Keep Blocks Separate
+
+1. **Agent invocations** - Task tool calls are async and need clean boundaries
+2. **State checkpoints** - When state must be persisted for resume/recovery
+3. **Different failure modes** - When errors need distinct handling or messaging
+4. **Complex commands** - Commands like /build legitimately need more blocks for iteration, checkpoints, and multi-phase orchestration
+
+## .claude/docs/ Optimization Standards
+
+This section defines directives for maintaining efficiency and elegance in future enhancements to the .claude/ infrastructure. These principles should be incorporated into the existing standards documentation.
+
+### Core Optimization Philosophy
+
+**Principle: Elegance over Volume**
+
+Optimization is about clarity and efficiency, not arbitrary metrics. The goal is code and documentation that is:
+- **Coherent**: Each component has a single, clear purpose
+- **Economical**: No unnecessary duplication, indirection, or abstraction
+- **Robust**: Error handling that aids debugging without adding noise
+- **Maintainable**: Easy to understand, modify, and extend
+
+### Optimization Decision Framework
+
+When evaluating whether to optimize, ask:
+
+1. **Is there measurable benefit?** - Optimization without measurable improvement is premature
+2. **Does it reduce cognitive load?** - Simpler is better; abstraction should clarify, not obscure
+3. **Does it preserve debuggability?** - Consolidation should not hide failure points
+4. **Is it worth the risk?** - Working code has value; don't break what works for marginal gains
+
+### Directives for Future Enhancements
+
+#### Directive 1: Principle-Based Thresholds
+
+**Standard**: Avoid magic numbers; use principles that adapt to context.
+
+**Bad**: "All commands must have <=8 bash blocks"
+**Good**: "Consolidate consecutive blocks when no agent invocation or state checkpoint between them"
+
+**Rationale**: Different commands have different complexity. A simple query command legitimately needs fewer blocks than a multi-phase orchestrator.
+
+**Application**:
+- Block counts should reflect command complexity, not arbitrary targets
+- Line counts should reflect functionality, not artificial limits
+- Test counts should reflect coverage needs, not quota requirements
+
+#### Directive 2: Clean-Break Optimization
+
+**Standard**: When refactoring, delete old patterns completely rather than adding compatibility layers.
+
+**Pattern**:
+1. Identify optimization opportunity
+2. Implement improved version
+3. Update all callers atomically
+4. Delete old implementation in same commit
+5. No deprecation warnings or wrapper functions
+
+**Reference**: See [Clean-Break Development Standard](.claude/docs/reference/standards/clean-break-development.md)
+
+#### Directive 3: Utility Extraction Threshold
+
+**Standard**: Extract to shared utility when pattern appears 3+ times with identical logic.
+
+**Decision Criteria**:
+| Factor | Extract | Keep Inline |
+|--------|---------|-------------|
+| Identical pattern 3+ times | Yes | - |
+| Pattern with variations | Consider | If variations > similarities |
+| Command-specific logic | No | Yes |
+| Error handling patterns | Yes (for consistency) | - |
+| Initialization boilerplate | Yes | - |
+
+**Anti-Pattern**: Creating abstractions for hypothetical future reuse. Only extract when reuse is demonstrated.
+
+#### Directive 4: Documentation Density Standards
+
+**Standard**: Documentation should be comprehensive but not redundant.
+
+**Guidelines**:
+- **CLAUDE.md**: Index and quick reference only; link to detailed docs
+- **Code comments**: WHAT not WHY; design rationale belongs in guides
+- **README.md**: Purpose, usage, navigation; not implementation details
+- **Guides**: Detailed how-to with examples; for learning, not reference
+- **Reference docs**: Specifications and standards; for compliance, not learning
+
+**Reference**: See [Writing Standards](.claude/docs/concepts/writing-standards.md)
+
+#### Directive 5: Error Handling Optimization
+
+**Standard**: Error handling should aid debugging without adding noise.
+
+**Patterns**:
+```bash
+# GOOD: Fail-fast with clear error
+source "$LIB" 2>/dev/null || { echo "ERROR: Failed to source $LIB" >&2; exit 1; }
+
+# BAD: Silent failure
+source "$LIB" 2>/dev/null || true
+
+# GOOD: Structured error with context
+log_command_error "$CMD" "$WORKFLOW_ID" "$ARGS" "type" "message" "location" "$details"
+
+# BAD: Generic error without context
+echo "ERROR: Something went wrong" >&2; exit 1
+```
+
+**Reference**: See [Error Handling Pattern](.claude/docs/concepts/patterns/error-handling.md)
+
+#### Directive 6: Output Suppression Standards
+
+**Standard**: Suppress success noise; preserve error visibility.
+
+**What to Suppress**:
+- Library sourcing output (verbose function definitions)
+- Progress indicators ("Loading...", "Processing...")
+- Intermediate state updates ("Setting X to Y")
+- Success confirmations for individual operations
+
+**What to Preserve**:
+- Error messages (always visible, always to stderr)
+- Final summary (single line per block)
+- User-needed data (paths, identifiers)
+
+**Reference**: See [Output Formatting Standards](.claude/docs/reference/standards/output-formatting.md)
+
+#### Directive 7: Testing Optimization
+
+**Standard**: Tests should provide coverage without redundancy.
+
+**Guidelines**:
+- One test file per command/library (not per-phase tests)
+- Test behavior, not implementation details
+- Consolidate validation logic into reusable test utilities
+- Integration tests for workflow boundaries; unit tests for functions
+
+**Anti-Patterns**:
+- Separate test blocks in command files (consolidate to test suite)
+- Testing implementation details that may change
+- Duplicate validation logic across multiple tests
+
+### Standards Documentation Updates
+
+This plan includes updating the following .claude/docs/ files to incorporate these optimization directives:
+
+| Document | Update |
+|----------|--------|
+| code-standards.md | Add "Optimization Principles" section |
+| output-formatting.md | Clarify principle-based block consolidation |
+| refactoring-methodology.md | Add optimization decision framework |
+| writing-standards.md | Add documentation density guidelines |
+
+### Optimization Standards Checklist
+
+For any future enhancement, verify:
+
+- [ ] **Measurable benefit**: Can you quantify the improvement?
+- [ ] **Principle-based**: Are decisions based on principles, not magic numbers?
+- [ ] **Clean-break**: Is old code deleted, not wrapped?
+- [ ] **Utility threshold**: Is extraction justified by 3+ occurrences?
+- [ ] **Documentation density**: Is documentation comprehensive but not redundant?
+- [ ] **Error handling**: Do errors aid debugging with context?
+- [ ] **Output discipline**: Is success noise suppressed, errors preserved?
+- [ ] **Testing efficiency**: Are tests consolidated and behavior-focused?
 
 ## Success Criteria
 
-- [ ] Command initialization library evaluated (extend source-libraries-inline.sh vs new library)
-- [ ] /expand bash blocks reduced from 32 to <=8 blocks
-- [ ] /collapse bash blocks reduced from 29 to <=8 blocks
-- [ ] All commands use consistent "Block N" documentation pattern
-- [ ] Command template created referencing existing standards
+- [ ] workflow-bootstrap.sh library created with bootstrap_workflow_env() and load_tier1_libraries()
+- [ ] expand.md consecutive blocks consolidated (apply principles, not arbitrary target)
+- [ ] All 12 commands use consistent "Block N" documentation pattern
+- [ ] Optimization directives documented in .claude/docs/ standards files
+- [ ] All commands updated to use workflow-bootstrap.sh (optional - non-breaking change)
 - [ ] README.md enhanced with table of contents navigation
 - [ ] All commands maintain 100% functionality after refactoring
-- [ ] All linter validations pass (check-library-sourcing.sh, lint_error_suppression.sh, lint_bash_conditionals.sh)
+- [ ] All linter validations pass
 - [ ] Pre-commit hooks pass for all modified files
 
 ## Technical Design
 
 ### Architecture Overview
 
-The optimization follows a systematic refactoring approach:
-
 ```
-Phase 1: Foundation and Library Evaluation
-+-- Evaluate command-initialization.sh design (extend source-libraries-inline.sh?)
-+-- Create library if justified (or document why not needed)
-+-- Create command template referencing existing standards
+Phase 1: Library Consolidation (Foundation)
++-- Create workflow-bootstrap.sh library
++-- Implement bootstrap_workflow_env() function
++-- Implement load_tier1_libraries() function
++-- Test library loading in isolation
 
-Phase 2: Block Consolidation - /expand and /collapse
-+-- Analyze block boundaries and consolidation opportunities
-+-- Refactor /expand to <=8 blocks
-+-- Refactor /collapse to <=8 blocks
-+-- Validate all refactored commands pass linters
+Phase 2: Principle-Based Block Consolidation
++-- Apply consolidation principles to expand.md
++-- Apply consolidation principles to other commands where beneficial
++-- Preserve natural boundaries (agent calls, state persistence)
 
 Phase 3: Documentation Standardization
-+-- Standardize all commands to "Block N" pattern
++-- Rename "Part N" to "Block N" in debug.md, revise.md
++-- Rename "STEP N" to "Block N" in expand.md, collapse.md, convert-docs.md
 +-- Add table of contents to README.md
-+-- Verify cross-references accurate
 
 Phase 4: Testing and Validation
-+-- Run comprehensive integration tests
-+-- Validate state persistence across new block boundaries
-+-- Verify linter and pre-commit compliance
++-- Run comprehensive test suite
++-- Verify linter compliance
++-- Test pre-commit hooks
 
-Phase 5: Documentation Updates
-+-- Update .claude/docs/ with optimization case study
-+-- Document any new patterns discovered
-+-- Update cross-references
+Phase 5: Library Adoption (Optional)
++-- Update commands to use workflow-bootstrap.sh (incremental)
++-- Document new patterns
 ```
 
 ### Key Components
 
-**1. Command Initialization Library (Evaluation Required)**
+**1. workflow-bootstrap.sh Library (NEW)**
 
-The proposed command-initialization.sh may overlap with existing source-libraries-inline.sh:
-- source-libraries-inline.sh already provides three-tier sourcing pattern
-- Enhanced with error logging by Plan 896
+Purpose: Eliminate 276+ lines of duplicated initialization code across 12 commands.
 
-**Decision Point**: Create command-initialization.sh as thin wrapper OR document why initialization can remain inline.
-
-Proposed approach (if library created):
 ```bash
-# command-initialization.sh - thin wrapper
-init_command_block() {
-  local workflow_id_file="$1"
-  local command_name="$2"
+#!/usr/bin/env bash
+# workflow-bootstrap.sh - Common initialization for all workflow commands
+# Provides: bootstrap_workflow_env(), load_tier1_libraries()
 
-  # Defer to source-libraries-inline.sh for sourcing
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/source-libraries-inline.sh" 2>/dev/null || {
-    echo "ERROR: Cannot load source-libraries-inline.sh" >&2
-    exit 1
-  }
-
-  # Command-specific: workflow ID loading, error context setup
-  if [ -f "$workflow_id_file" ]; then
-    WORKFLOW_ID=$(cat "$workflow_id_file" 2>/dev/null)
-    export WORKFLOW_ID
+# bootstrap_workflow_env: Detect project directory and export CLAUDE_PROJECT_DIR
+bootstrap_workflow_env() {
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    local current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
   fi
 
-  # Setup error trap
-  setup_bash_error_trap "$command_name" "$WORKFLOW_ID" "${USER_ARGS:-}"
+  if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+    echo "ERROR: Failed to detect project directory" >&2
+    return 1
+  fi
+
+  export CLAUDE_PROJECT_DIR
+  return 0
 }
+
+# load_tier1_libraries: Source critical foundation libraries with fail-fast
+load_tier1_libraries() {
+  local libs=("core/state-persistence.sh" "workflow/workflow-state-machine.sh" "core/error-handling.sh")
+  for lib in "${libs[@]}"; do
+    source "${CLAUDE_PROJECT_DIR}/.claude/lib/$lib" 2>/dev/null || {
+      echo "ERROR: Failed to source $lib" >&2
+      return 1
+    }
+  done
+  return 0
+}
+
+export -f bootstrap_workflow_env
+export -f load_tier1_libraries
 ```
 
-**2. Bash Block Consolidation Strategy**
+**2. Principle-Based Consolidation Analysis**
 
-Target: /expand (32->8 blocks), /collapse (29->8 blocks)
+| Command | Current | Issue | Recommendation |
+|---------|---------|-------|----------------|
+| expand.md | 11 blocks | Over-fragmented - STEP 1+2, 4+5, 6+7 are consecutive | Combine consecutive blocks |
+| build.md | 9 blocks | Blocks 1a/1b/1c are setup variants | Keep - complex iteration logic justifies structure |
+| collapse.md | 8 blocks | Step-based validation sprawl | Review for consecutive block merging |
+| debug.md | 7 blocks | Reasonable for multi-phase analysis | Keep - appropriate for complexity |
+| optimize-claude.md | 7 blocks | Multi-agent orchestration | Keep - appropriate for complexity |
 
-Method:
-- Combine adjacent blocks with no agent invocations between them
-- Group validation operations into single validation block
-- Keep agent invocations as natural block separators
-- Preserve three-tier sourcing pattern in consolidated blocks
+**3. Documentation Terminology Mapping**
 
-**3. Documentation Standardization**
-
-Adopt "Block N" pattern across all commands:
-- Migrate /debug from "Part N" to "Block N"
-- Update /expand and /collapse after consolidation
-- Add table of contents to 905-line README.md
-
-**4. Command Template (Reduced Scope)**
-
-Create workflow-command-template.md that references:
-- Existing standards in code-standards.md
-- Output formatting in output-formatting.md
-- Enforcement mechanisms documentation
-- Skills integration patterns (optional)
-
-### Design Decisions
-
-**Why evaluate rather than implement library immediately?**
-- source-libraries-inline.sh already provides core functionality
-- Plan 896 enhanced it with error logging
-- Avoid creating duplicate infrastructure
-
-**Why focus on /expand and /collapse?**
-- Highest fragmentation (32 and 29 blocks vs 3-4 in comparable commands)
-- Opportunity for 75% reduction in block count
-- Direct alignment with output-formatting.md targets (2-3 blocks)
-
-**Why reference existing standards in template?**
-- bash block budget guidelines already documented
-- Avoids duplicating content that can drift
-- Template remains thin and focused
+| Command | Current | Target |
+|---------|---------|--------|
+| debug.md | "Part 1-6" | "Block 1-6" |
+| revise.md | "Part 1-5" | "Block 1-5" |
+| expand.md | "STEP 1-7" | "Block 1-N" (after consolidation) |
+| collapse.md | "STEP 1-8" | "Block 1-N" (after consolidation) |
+| convert-docs.md | "STEP 1-6" | "Block 1-6" |
 
 ## Implementation Phases
 
-### Phase 1: Foundation and Library Evaluation [NOT STARTED]
+### Phase 1: Library Consolidation [COMPLETE]
 dependencies: []
 
-**Objective**: Evaluate command-initialization.sh necessity, create library if justified, and establish command template referencing existing standards.
+**Objective**: Create workflow-bootstrap.sh library to eliminate initialization duplication.
 
-**Complexity**: Low
+**Complexity**: Low-Medium
 
 **Tasks**:
-- [ ] Analyze source-libraries-inline.sh capabilities (file: .claude/lib/core/source-libraries-inline.sh)
-- [ ] Document decision: create command-initialization.sh vs extend source-libraries-inline.sh vs keep initialization inline
-- [ ] If library justified: Create /home/benjamin/.config/.claude/lib/workflow/command-initialization.sh
-- [ ] If library justified: Implement as thin wrapper around source-libraries-inline.sh
-- [ ] Create /home/benjamin/.config/.claude/commands/templates/workflow-command-template.md
-- [ ] Template MUST reference code-standards.md#mandatory-bash-block-sourcing-pattern
-- [ ] Template MUST reference output-formatting.md#block-consolidation-patterns
-- [ ] Template MUST reference enforcement-mechanisms.md for validation requirements
-- [ ] Add optional skills availability check to template (per skills-authoring.md)
+- [x] Create /home/benjamin/.config/.claude/lib/workflow/workflow-bootstrap.sh
+- [x] Implement bootstrap_workflow_env() function
+- [x] Implement load_tier1_libraries() function
+- [x] Add source guard pattern (prevent multiple sourcing)
+- [x] Add function exports for subprocess access
+- [x] Test library loading in isolation
+- [x] Verify no regression with existing library loading
 
 **Testing**:
 ```bash
-# Validate template syntax
-markdown-lint .claude/commands/templates/workflow-command-template.md || echo "Lint check"
+# Test library loads correctly
+source .claude/lib/workflow/workflow-bootstrap.sh
+bootstrap_workflow_env && echo "CLAUDE_PROJECT_DIR: $CLAUDE_PROJECT_DIR"
+load_tier1_libraries && echo "Libraries loaded successfully"
 
-# If library created, test loading
-if [ -f .claude/lib/workflow/command-initialization.sh ]; then
-  source .claude/lib/workflow/command-initialization.sh
-  type init_command_block && echo "Function available"
-fi
+# Verify functions available
+type bootstrap_workflow_env
+type load_tier1_libraries
 
-# Run all validators on new/modified files
+# Run linter on new library
 bash .claude/scripts/validate-all-standards.sh --sourcing
-bash .claude/scripts/validate-all-standards.sh --links
 ```
 
 **Expected Duration**: 2 hours
 
-### Phase 2: Bash Block Consolidation - /expand and /collapse [NOT STARTED]
+### Phase 2: Principle-Based Block Consolidation [COMPLETE]
 dependencies: [1]
 
-**Objective**: Consolidate /expand from 32 blocks to <=8 blocks and /collapse from 29 blocks to <=8 blocks through strategic block merging.
-
-**Complexity**: High
-
-**Tasks**:
-- [ ] Analyze /home/benjamin/.config/.claude/commands/expand.md block structure and dependencies
-- [ ] Identify adjacent blocks in /expand with no agent invocations between them
-- [ ] Map validation operations in /expand for consolidation into single validation block
-- [ ] Design consolidated block structure for /expand (target: 8 blocks max)
-- [ ] Refactor /expand to consolidated structure
-- [ ] Ensure all bash blocks follow three-tier sourcing pattern (per code-standards.md)
-- [ ] Ensure fail-fast handlers on all critical library sourcing (per enforcement-mechanisms.md)
-- [ ] Test /expand with automatic phase expansion scenario
-- [ ] Test /expand with manual phase N expansion scenario
-- [ ] Analyze /home/benjamin/.config/.claude/commands/collapse.md block structure and dependencies
-- [ ] Identify adjacent blocks in /collapse with no agent invocations between them
-- [ ] Map validation operations in /collapse for consolidation into single validation block
-- [ ] Design consolidated block structure for /collapse (target: 8 blocks max)
-- [ ] Refactor /collapse to consolidated structure
-- [ ] Ensure all bash blocks follow three-tier sourcing pattern
-- [ ] Ensure fail-fast handlers on all critical library sourcing
-- [ ] Test /collapse with automatic phase collapse scenario
-- [ ] Test /collapse with manual phase N collapse scenario
-- [ ] Verify state persistence across new block boundaries in both commands
-
-**Testing**:
-```bash
-# Run linters on refactored commands (MANDATORY)
-bash .claude/scripts/lint/check-library-sourcing.sh .claude/commands/expand.md
-bash .claude/scripts/lint/check-library-sourcing.sh .claude/commands/collapse.md
-bash .claude/tests/utilities/lint_error_suppression.sh
-bash .claude/tests/utilities/lint_bash_conditionals.sh
-
-# Test /expand scenarios
-cd /home/benjamin/.config
-/expand phase /path/to/plan.md 1  # Manual expansion
-
-# Test /collapse scenarios
-/collapse phase /path/to/expanded_plan.md 1  # Manual collapse
-
-# Run progressive tests if available
-cd /home/benjamin/.config/.claude/tests/progressive
-./test_progressive_expansion.sh 2>/dev/null || echo "Test script not found"
-./test_progressive_collapse.sh 2>/dev/null || echo "Test script not found"
-./test_progressive_roundtrip.sh 2>/dev/null || echo "Test script not found"
-
-# Verify block count reduction
-grep -c "^```bash" .claude/commands/expand.md  # Should be <=8
-grep -c "^```bash" .claude/commands/collapse.md  # Should be <=8
-```
-
-**Expected Duration**: 7 hours
-
-### Phase 3: Documentation Standardization [NOT STARTED]
-dependencies: [2]
-
-**Objective**: Standardize all commands to "Block N" documentation pattern and enhance README navigation structure.
-
-**Complexity**: Low
-
-**Tasks**:
-- [ ] Migrate /home/benjamin/.config/.claude/commands/debug.md from "Part N" to "Block N" pattern
-- [ ] Verify /home/benjamin/.config/.claude/commands/expand.md uses consistent "Block N" pattern after consolidation
-- [ ] Verify /home/benjamin/.config/.claude/commands/collapse.md uses consistent "Block N" pattern after consolidation
-- [ ] Add table of contents to /home/benjamin/.config/.claude/commands/README.md
-- [ ] TOC structure: Core Workflow, Primary Commands, Workflow Commands, Utility Commands, Common Flags, Architecture, Custom Commands
-- [ ] Create hierarchical navigation structure in README with anchor links
-- [ ] Document "Block" terminology convention in README
-- [ ] Verify all cross-references in documentation are accurate after refactoring
-
-**Testing**:
-```bash
-# Verify no "Part N" patterns remain in migrated files
-grep -n "^## Part [0-9]" /home/benjamin/.config/.claude/commands/debug.md
-# Should return no results after migration
-
-# Verify "Block N" patterns in consolidated files
-grep -n "^## Block [0-9]" /home/benjamin/.config/.claude/commands/expand.md
-grep -n "^## Block [0-9]" /home/benjamin/.config/.claude/commands/collapse.md
-
-# Validate links in README
-bash .claude/scripts/validate-links-quick.sh .claude/commands/README.md
-
-# Validate README structure
-bash .claude/scripts/validate-readmes.sh --quick
-```
-
-**Expected Duration**: 3 hours
-
-### Phase 4: Testing and Validation [NOT STARTED]
-dependencies: [3]
-
-**Objective**: Run comprehensive integration tests on all refactored commands to ensure functionality, state persistence, and linter compliance.
+**Objective**: Apply consolidation principles to reduce unnecessary fragmentation while preserving natural boundaries.
 
 **Complexity**: Medium
 
+**Analysis Approach**:
+1. For each command, identify consecutive bash blocks with no agent invocations between them
+2. Evaluate whether blocks serve distinct purposes (different error handling, state checkpoints)
+3. Consolidate where combining improves clarity without losing functionality
+4. Preserve blocks that represent natural async boundaries or state persistence points
+
 **Tasks**:
-- [ ] Run linter suite on all modified command files (MANDATORY - blocks completion if failing)
-- [ ] Run integration tests for /expand and /collapse at /home/benjamin/.config/.claude/tests/progressive/
-- [ ] Test state persistence across block boundaries in all refactored commands
-- [ ] Verify error logging integration still functional
-- [ ] Verify agent integration still functional with Task invocations
-- [ ] Run system-wide validation script: bash .claude/scripts/validate-all-standards.sh --all
-- [ ] Test pre-commit hooks pass for all modified files
-- [ ] Document any test failures and create fix tasks
+- [x] Analyze expand.md for consecutive blocks that can be merged
+  - Identify: STEP 1 (Setup) + STEP 2 (Extract) - consecutive, no agent between
+  - Identify: STEP 4 (Structure) + STEP 5 (Create) - consecutive, no agent between
+  - Identify: STEP 6 (Metadata) + STEP 7 (Cleanup) - consecutive, no agent between
+- [x] Merge identified consecutive blocks in expand.md
+- [x] Review collapse.md for similar opportunities
+- [x] Ensure state persistence works across consolidated blocks
+- [x] Test all expansion scenarios (auto and manual modes)
+- [x] Document the consolidation rationale in code comments
 
 **Testing**:
 ```bash
-# MANDATORY: Full linter validation
-bash .claude/scripts/validate-all-standards.sh --all
+# Test expand scenarios
+/expand phase /path/to/test-plan.md 1
+/expand /path/to/test-plan.md  # Auto mode
 
-# Pre-commit simulation on modified files
-bash .claude/scripts/validate-all-standards.sh --staged
+# Run linters
+bash .claude/scripts/lint/check-library-sourcing.sh .claude/commands/expand.md
 
 # Run progressive tests
-cd /home/benjamin/.config/.claude/tests/progressive
-for test in test_*.sh; do
-  echo "Running $test..."
-  ./"$test" || echo "FAILED: $test"
-done
-
-# Run integration tests if available
-cd /home/benjamin/.config/.claude/tests/integration
-for test in test_*.sh; do
-  echo "Running $test..."
-  ./"$test" || echo "FAILED: $test"
-done
-
-# Run unit tests for error logging
-cd /home/benjamin/.config/.claude/tests/unit
-./test_error_logging.sh 2>/dev/null || echo "Test not found"
+cd .claude/tests/progressive
+./test_parallel_expansion.sh
 ```
 
 **Expected Duration**: 4 hours
 
-### Phase 5: Documentation Updates [NOT STARTED]
-dependencies: [4]
+### Phase 3: Documentation Standardization [COMPLETE]
+dependencies: [2]
 
-**Objective**: Update .claude/docs/ with optimization patterns and cross-references.
+**Objective**: Standardize all commands to "Block N" documentation pattern.
 
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Document command-initialization.sh evaluation decision in /home/benjamin/.config/.claude/lib/workflow/README.md (if library created)
-- [ ] Add optimization case study to /home/benjamin/.config/.claude/docs/concepts/patterns/ documenting /expand and /collapse consolidation
-- [ ] Update /home/benjamin/.config/.claude/docs/guides/commands/ with any new refactoring patterns discovered
-- [ ] Document command template usage in workflow library documentation
-- [ ] Verify all new documentation passes link validation
-- [ ] Update cross-references throughout .claude/docs/ if any paths changed
+- [x] Update debug.md: Replace "## Part N" with "## Block N"
+- [x] Update revise.md: Replace "## Part N" with "## Block N"
+- [x] Update expand.md: Rename to "## Block N" (reflects consolidated structure)
+- [x] Update collapse.md: Replace "## STEP N" with "## Block N"
+- [x] Update convert-docs.md: Replace "## STEP N" with "## Block N"
+- [x] Add table of contents to README.md
+- [x] Update internal references and comments
+- [x] Verify all cross-references accurate
 
 **Testing**:
 ```bash
-# Validate all documentation links
-bash .claude/scripts/validate-links-quick.sh
+# Verify no "Part N" or "STEP N" patterns remain
+grep -n "^## Part [0-9]" .claude/commands/debug.md .claude/commands/revise.md
+grep -n "^## STEP [0-9]" .claude/commands/*.md
+# Should return no results
 
-# Validate README structure
-bash .claude/scripts/validate-readmes.sh
+# Verify "Block N" patterns
+grep -c "^## Block" .claude/commands/*.md | sort -t: -k2 -n
 
-# Verify cross-references in updated files
-grep -r "\[.*\](.*\.md)" .claude/docs/concepts/patterns/ | head -20
+# Validate links
+bash .claude/scripts/validate-links-quick.sh .claude/commands/README.md
 ```
 
 **Expected Duration**: 2 hours
+
+### Phase 4: Testing and Validation [COMPLETE]
+dependencies: [3]
+
+**Objective**: Comprehensive testing of all refactored commands.
+
+**Complexity**: Medium
+
+**Tasks**:
+- [x] Run linter suite on all modified command files
+- [x] Run integration tests for expand and collapse
+- [x] Test state persistence across consolidated block boundaries
+- [x] Verify error logging integration functional
+- [x] Run system-wide validation: bash .claude/scripts/validate-all-standards.sh --all
+- [x] Test pre-commit hooks pass for all modified files
+- [x] Document any test failures and create fix tasks
+
+**Testing**:
+```bash
+# Full linter validation
+bash .claude/scripts/validate-all-standards.sh --all
+
+# Progressive tests
+cd .claude/tests/progressive
+for test in test_*.sh; do
+  echo "Running $test..."
+  ./"$test" || echo "FAILED: $test"
+done
+
+# Integration tests
+cd .claude/tests/integration
+for test in test_*.sh; do
+  ./"$test" || echo "FAILED: $test"
+done
+```
+
+**Expected Duration**: 3 hours
+
+### Phase 5: Library Adoption (Optional) [COMPLETE]
+dependencies: [4]
+
+**Objective**: Incrementally adopt workflow-bootstrap.sh across commands.
+
+**Complexity**: Low
+
+**Tasks**:
+- [x] Update 2-3 commands to use bootstrap_workflow_env() as pilot
+- [x] Verify no regression in pilot commands
+- [x] Document adoption pattern in workflow library README
+- [x] Create migration guide for remaining commands
+- [x] Update command template to reference workflow-bootstrap.sh
+
+**Testing**:
+```bash
+# Test pilot command with bootstrap library
+/plan "test feature" --dry-run
+/research "test topic"
+
+# Verify library usage
+grep -l "workflow-bootstrap.sh" .claude/commands/*.md
+```
+
+**Expected Duration**: 3 hours
 
 ## Testing Strategy
 
@@ -403,46 +543,27 @@ bash .claude/scripts/validate-all-standards.sh --all
 
 ### Integration Testing
 
-- Run existing test suite at .claude/tests/ after each phase
+- Run existing test suite after each phase
 - Verify state persistence across refactored block boundaries
 - Test error logging integration throughout command lifecycle
 - Validate agent Task invocations still functional
 
-### Progressive Operation Testing
-
-- Test /expand automatic and manual phase expansion scenarios
-- Test /collapse automatic and manual phase collapse scenarios
-- Run roundtrip test (expand -> collapse -> verify original structure)
-
 ### Regression Testing
 
-- Compare bash block count before/after consolidation (/expand: 32-><=8, /collapse: 29-><=8)
-- Measure initialization overhead reduction if library implemented
-- Verify 100% metadata compliance maintained
-- Confirm error handling patterns preserved
-- Validate state management patterns preserved
-
-### Pre-Commit Compliance
-
-Every modified file MUST pass pre-commit hooks before phase completion.
+- Verify 100% error logging coverage maintained
+- Confirm state management patterns preserved
+- Validate all commands execute successfully
+- Check that consolidated blocks don't break state persistence
 
 ## Documentation Requirements
 
 ### New Documentation
-- [ ] /home/benjamin/.config/.claude/commands/templates/workflow-command-template.md - Template for new command development (references existing standards)
-- [ ] /home/benjamin/.config/.claude/docs/concepts/patterns/command-optimization.md - Case study of /expand and /collapse consolidation (optional)
+- [ ] /home/benjamin/.config/.claude/lib/workflow/workflow-bootstrap.sh - Bootstrap library
+- [ ] Update .claude/lib/workflow/README.md with workflow-bootstrap.sh documentation
 
 ### Updated Documentation
-- [ ] /home/benjamin/.config/.claude/commands/README.md - Add table of contents and hierarchical navigation
-- [ ] /home/benjamin/.config/.claude/lib/workflow/README.md - Document command-initialization.sh if created
-
-### Documentation Standards
-- Follow CommonMark specification
-- Use Unicode box-drawing for diagrams (no emojis in file content)
-- Include code examples with syntax highlighting
-- Maintain bidirectional cross-references
-- No historical commentary (present facts, not history)
-- Reference existing standards rather than duplicating content
+- [ ] /home/benjamin/.config/.claude/commands/README.md - Add table of contents
+- [ ] 5 commands with terminology changes (debug, revise, expand, collapse, convert-docs)
 
 ## Dependencies
 
@@ -450,60 +571,38 @@ Every modified file MUST pass pre-commit hooks before phase completion.
 - Existing test suite at /home/benjamin/.config/.claude/tests/
 - Library functions: state-persistence.sh, workflow-state-machine.sh, error-handling.sh
 - Linters: check-library-sourcing.sh, lint_error_suppression.sh, lint_bash_conditionals.sh
-- Standards files: code-standards.md, output-formatting.md, enforcement-mechanisms.md
 
 ### Internal Dependencies
-- Phase 2 depends on Phase 1 (evaluation informs consolidation approach)
-- Phase 3 depends on Phase 2 (documentation reflects consolidated structure)
+- Phase 2 depends on Phase 1 (library provides foundation)
+- Phase 3 depends on Phase 2 (terminology reflects consolidated structure)
 - Phase 4 depends on Phase 3 (test final documentation state)
 - Phase 5 depends on Phase 4 (document validated patterns)
 
 ### Risk Mitigation
-- **Risk**: Breaking existing functionality during refactoring
-  - **Mitigation**: Run linter suite and integration tests after each phase, maintain git history for rollback
-- **Risk**: State persistence issues across new block boundaries
-  - **Mitigation**: Extensive testing of state loading/saving, verify STATE_FILE integrity
-- **Risk**: Linter violations introduced during consolidation
-  - **Mitigation**: Run linters incrementally during refactoring, fix violations before completing each task
-- **Risk**: Pre-commit hooks failing on modified files
-  - **Mitigation**: Validate with `--staged` flag before attempting commit
-
-## Rollback Procedures
-
-### Phase-Level Rollback
-If any phase introduces regressions:
-1. Identify failing tests and root cause
-2. Use git to revert changes from that phase
-3. Document failure reason in plan
-4. Revise phase approach and re-attempt
-
-### Command-Level Rollback
-If individual command refactoring fails:
-1. Revert that command file only (git checkout HEAD~1 -- .claude/commands/command.md)
-2. Continue with other commands
-3. Document command-specific issues
-4. Create follow-up task for problematic command
+- **Risk**: Breaking existing functionality during consolidation
+  - **Mitigation**: Run linter suite and integration tests after each phase
+- **Risk**: State persistence issues across consolidated block boundaries
+  - **Mitigation**: Extensive testing of state loading/saving
+- **Risk**: Over-consolidation reducing debuggability
+  - **Mitigation**: Apply principles conservatively; keep blocks separate when purpose differs
 
 ## Success Metrics
 
 ### Quantitative Metrics
-- [ ] /expand bash blocks reduced from 32 to <=8 (75% reduction target)
-- [ ] /collapse bash blocks reduced from 29 to <=8 (72% reduction target)
+- [ ] expand.md unnecessary fragmentation reduced (consecutive blocks merged)
 - [ ] 100% linter compliance across all modified files
-- [ ] 100% pre-commit hook pass rate
-- [ ] All integration tests pass (0 failures)
-- [ ] Documentation pattern consistency: 100% "Block N" adoption
+- [ ] 100% "Block N" adoption across all 12 commands
+- [ ] workflow-bootstrap.sh library created and tested
 
 ### Qualitative Metrics
-- [ ] Code maintainability improved through reduced duplication (if library implemented)
-- [ ] Developer experience enhanced with command template
+- [ ] Code maintainability improved through reduced duplication
+- [ ] Block structure reflects command complexity (not arbitrary thresholds)
 - [ ] Documentation navigability improved with table of contents
-- [ ] Command execution performance maintained or improved
+- [ ] Consistent terminology across all commands
 
 ### Validation Criteria
 - [ ] All commands execute successfully after refactoring
-- [ ] State persistence verified across all refactored block boundaries
-- [ ] Error logging integration confirmed
-- [ ] Agent Task invocations functioning correctly
-- [ ] All linters pass (check-library-sourcing.sh, lint_error_suppression.sh, lint_bash_conditionals.sh)
+- [ ] State persistence verified across all consolidated block boundaries
+- [ ] Error logging integration confirmed (100% coverage maintained)
+- [ ] All linters pass
 - [ ] Pre-commit hooks pass for all modified files

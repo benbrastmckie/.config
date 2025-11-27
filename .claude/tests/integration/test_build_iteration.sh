@@ -27,10 +27,10 @@ assert_equals() {
   local test_name="$3"
 
   if [ "$expected" = "$actual" ]; then
-    echo "PASS: $test_name"
+    echo "✓ PASS: $test_name"
     TESTS_PASSED=$((TESTS_PASSED + 1))
   else
-    echo "FAIL: $test_name"
+    echo "✗ FAIL: $test_name"
     echo "  Expected: $expected"
     echo "  Actual: $actual"
     TESTS_FAILED=$((TESTS_FAILED + 1))
@@ -42,10 +42,10 @@ assert_file_exists() {
   local test_name="$2"
 
   if [ -f "$file_path" ]; then
-    echo "PASS: $test_name"
+    echo "✓ PASS: $test_name"
     TESTS_PASSED=$((TESTS_PASSED + 1))
   else
-    echo "FAIL: $test_name (file not found: $file_path)"
+    echo "✗ FAIL: $test_name (file not found: $file_path)"
     TESTS_FAILED=$((TESTS_FAILED + 1))
   fi
 }
@@ -85,10 +85,10 @@ RESULT=$(bash -c "
 EXIT_CODE=$?
 
 if [ "$EXIT_CODE" -ne 0 ] && echo "$RESULT" | grep -q "plan_path file not found"; then
-  echo "PASS: validate_iteration_checkpoint detects missing plan_path"
+  echo "✓ PASS: validate_iteration_checkpoint detects missing plan_path"
   TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-  echo "FAIL: validate_iteration_checkpoint should detect missing plan_path (exit=$EXIT_CODE)"
+  echo "✗ FAIL: validate_iteration_checkpoint should detect missing plan_path (exit=$EXIT_CODE)"
   TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
@@ -161,10 +161,10 @@ RESULT=$(bash -c "
 EXIT_CODE=$?
 
 if echo "$RESULT" | grep -q "iteration.*exceeds max_iterations"; then
-  echo "PASS: validate_iteration_checkpoint detects iteration > max_iterations"
+  echo "✓ PASS: validate_iteration_checkpoint detects iteration > max_iterations"
   TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-  echo "FAIL: validate_iteration_checkpoint should detect iteration > max_iterations"
+  echo "✗ FAIL: validate_iteration_checkpoint should detect iteration > max_iterations"
   TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
@@ -185,7 +185,7 @@ if [ -n "$LOADED_JSON" ]; then
   LOADED_WORK=$(echo "$LOADED_JSON" | jq -r '.work_remaining')
   assert_equals "phase_3" "$LOADED_WORK" "load_iteration_checkpoint extracts work_remaining"
 else
-  echo "FAIL: load_iteration_checkpoint returned empty"
+  echo "✗ FAIL: load_iteration_checkpoint returned empty"
   TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
@@ -212,7 +212,7 @@ SAVED_PATH=$(bash -c "
 " 2>&1)
 
 if [ -n "$SAVED_PATH" ] && [ -f "$SAVED_PATH" ]; then
-  echo "PASS: save_iteration_checkpoint creates checkpoint file"
+  echo "✓ PASS: save_iteration_checkpoint creates checkpoint file"
   TESTS_PASSED=$((TESTS_PASSED + 1))
 
   # Verify version added
@@ -222,7 +222,7 @@ if [ -n "$SAVED_PATH" ] && [ -f "$SAVED_PATH" ]; then
   # Clean up saved checkpoint
   rm -f "$SAVED_PATH"
 else
-  echo "FAIL: save_iteration_checkpoint did not create file ($SAVED_PATH)"
+  echo "✗ FAIL: save_iteration_checkpoint did not create file ($SAVED_PATH)"
   TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
@@ -251,10 +251,10 @@ EOF
   " 2>&1 | tail -1)
 
   if [ "$EXIT_CODE" = "0" ]; then
-    echo "PASS: halt_reason '$halt_reason' accepted"
+    echo "✓ PASS: halt_reason '$halt_reason' accepted"
     TESTS_PASSED=$((TESTS_PASSED + 1))
   else
-    echo "FAIL: halt_reason '$halt_reason' should be accepted"
+    echo "✗ FAIL: halt_reason '$halt_reason' should be accepted"
     TESTS_FAILED=$((TESTS_FAILED + 1))
   fi
 done

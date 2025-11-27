@@ -7,7 +7,7 @@
 - **Estimated Phases**: 2
 - **Estimated Hours**: 2.5
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [NOT STARTED]
+- **Status**: [ABANDONED]
 - **Structure Level**: 0
 - **Complexity Score**: 18
 - **Research Reports**:
@@ -310,3 +310,18 @@ These helper functions are available for use but NOT mandatory. Commands may cho
 3. Use `validate_required_functions` in defensive programming scenarios
 
 No retrofitting of existing commands is required or recommended at this time.
+
+---
+
+## Abandoned
+
+**Date Abandoned**: 2025-11-26
+
+**Reason**: After comprehensive analysis of the .claude/ infrastructure (see [Infrastructure Optimization Analysis](/home/benjamin/.config/.claude/specs/949_commands_infrastructure_research/reports/001_infrastructure_optimization_analysis.md)), this plan was determined to add **needless complexity** without solving an active problem:
+
+1. **Error logging infrastructure is already 100% complete** - All 12 commands have full `log_command_error` integration and `setup_bash_error_trap` coverage
+2. **`setup_bash_error_trap` already catches function-not-found errors** - The proposed `validate_required_functions()` duplicates existing functionality
+3. **Helper functions would trade context-specific error messages for generic ones** - A net negative for debugging
+4. **Zero adoption pattern exists** - No commands currently use these patterns, and retrofitting is explicitly not recommended
+
+**Alternative Approach**: Focus optimization efforts on Plan 883 (Commands Optimize Refactor) which addresses measurable fragmentation in /expand (32 blocks) and /collapse (29 blocks) commands.

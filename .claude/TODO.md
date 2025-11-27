@@ -4,43 +4,23 @@
 
 ### In Progress
 
-- [ ] **Improve /convert-docs fidelity** - Gemini API integration for high-fidelity conversion [.claude/specs/895_convert_docs_fidelity_llm_practices/plans/001_convert_docs_fidelity_llm_practices_plan.md] (Complexity: 35)
-- [ ] **Refactor tests/ directory** - [/home/benjamin/.config/.claude/specs/919_test_refactor_organization/plans/001-test-refactor-organization-plan.md]
+(none)
 
 ### Not Started
 
-- **Polish Refactor** -
-  - update commands readme
-  - fix tests
-
-- **Improve Outputs** -
-  - [/home/benjamin/.config/.claude/build-output.md]
-  - [/home/benjamin/.config/.claude/revise-output.md]
-  - [/home/benjamin/.config/.claude/build-output.md]
-
-**Medium Priority (Optimization)**:
-- [ ] **Optimize commands** - Reduce duplication, consolidate bash blocks across 12 commands [.claude/specs/883_commands_optimize_refactor/plans/001_commands_optimize_refactor_plan.md] (Complexity: 142)
-  - [ ] **Error logging infrastructure completion** - Helper functions + convert-docs.md error logging [.claude/specs/902_error_logging_infrastructure_completion/plans/001_error_logging_infrastructure_completion_plan.md] (4 hours)
-    - Preserved valuable elements from Plan 884
-    - Adds validate_required_functions() and execute_with_logging() to error-handling.sh
-    - Adds error logging to convert-docs.md (completes orchestrator coverage)
-- [ ] **Skills documentation standards** - Update skills authoring docs [.claude/specs/882_no_name/plans/001_skills_documentation_standards_update_plan.md]
-
 **Lower Priority (Features)**:
 - [ ] **Automatic buffer open hook** - Neovim integration for auto-opening buffers [.claude/specs/851_001_buffer_opening_integration_planmd_the_claude/plans/001_001_buffer_opening_integration_planmd_th_plan.md]
-- [ ] **Refactor .claude/docs/** - Dependency-safe documentation restructure [.claude/specs/850_so_that_no_dependencies_break_create_a_detailed/plans/001_so_that_no_dependencies_break_create_a_d_plan.md]
 
 ### Ideas/Backlog
 
 **Refactoring/Enhancement Ideas**:
+* Retry semantic directory topic names and other fail-points
 * Refactor subagent applications throughout commands
   * [20251121_convert_docs_plan_improvements_research](specs/20251121_convert_docs_plan_improvements_research/) - Haiku subagents, orchestrator patterns, skills integration
   * Incorporate skills throughout commands
 * Make /plan, /build, /revise, /debug follow appropriate standards consistently
 * Make commands update TODO.md automatically
 * Make metadata and summary outputs uniform across artifacts (include directory project numbers)
-* make /repair update the errors that have been addressed in the logs
-* change --report to --file in /repair
 * /repair to check agreement with .claude/docs/ standards
 
 **Related Research**:
@@ -54,48 +34,72 @@
 - [~] **Unified repair implementation** - Superseded by ordered High Priority plans (1, 2, 3) which provide same coverage with better sequencing [.claude/specs/885_repair_plans_research_analysis/plans/001_repair_plans_research_analysis_plan.md] → See [repair_plans_priority_analysis](specs/repair_plans_priority_analysis/reports/001_repair_plans_priority_analysis.md)
 - [~] **System-wide error logging gaps** - Phase 0 obsolete (function exists), Phase 2 duplicates Plan 2; valuable elements preserved in Plan 902 [.claude/specs/884_build_error_logging_discrepancy/plans/001_debug_strategy.md] → See [902_error_logging_infrastructure_completion](specs/902_error_logging_infrastructure_completion/reports/001_plan_884_preserved_elements.md)
 
+### Abandoned
+
+- [x] **Error logging infrastructure completion** - Helper functions (validate_required_functions, execute_with_logging) deemed unnecessary after comprehensive analysis [.claude/specs/902_error_logging_infrastructure_completion/plans/001_error_logging_infrastructure_completion_plan.md]
+  - **Reason**: Error logging infrastructure already 100% complete across all 12 commands
+  - **Analysis**: setup_bash_error_trap already catches function-not-found errors; helper functions would trade context-specific error messages for generic ones (net negative)
+  - **Alternative**: Focus on Plan 883 (Commands Optimize Refactor) for measurable improvements
+  - See [Infrastructure Optimization Analysis](specs/949_commands_infrastructure_research/reports/001_infrastructure_optimization_analysis.md)
+
 ### Completed
 
-- [x] Uniform directory naming [/home/benjamin/.config/.claude/specs/918_topic_naming_standards_kebab_case/plans/001_topic_naming_standards_kebab_case_plan.md]
-- [x] Optimize commands [/home/benjamin/.config/.claude/specs/916_commands_docs_standards_review/plans/001_commands_docs_standards_review_plan.md]
+**November 26, 2025**:
+- [x] **Documentation cleanup** - Remove legacy content, fix broken links, establish archive policy [.claude/specs/850_so_that_no_dependencies_break_create_a_detailed/plans/001_so_that_no_dependencies_break_create_a_d_plan.md]
+  - All 3 phases complete: legacy content removal, broken link fixes, archive policy documentation
+  - Removed ~3,926 lines of duplicate legacy content from index files
+  - hierarchical-agents.md: 2206 → 23 lines; state-based-orchestration-overview.md: 1765 → 22 lines
+  - Fixed 17 broken link references (agent-reference.md, command-reference.md paths)
+  - Added comprehensive archive retention policy with annual review process
+- [x] **Commands optimize refactor** - Reduce duplication, consolidate bash blocks, standardize terminology [.claude/specs/883_commands_optimize_refactor/plans/001_commands_optimize_refactor_plan.md]
+  - All 5 phases complete: library consolidation, block consolidation analysis, documentation standardization, testing/validation, library adoption
+  - Created `workflow-bootstrap.sh` with `bootstrap_workflow_env()` and `load_tier1_libraries()` functions
+  - Standardized all commands to "Block N" terminology (replaced "Part N" and "STEP N")
+  - Added table of contents to commands/README.md
+  - Core validations passed: library sourcing linter, 80.2% test pass rate
+- [x] **/build errors repair** - Fix remaining build command errors [.claude/specs/934_build_errors_repair/plans/001-build-errors-repair-plan.md]
+  - All 4 phases complete: library sourcing, state transitions, defensive patterns, validation
+  - Fixed: test→complete transition, defensive grep patterns for state files
+  - Resolved 12 errors (6 function calls, 3 transitions, 2 parsing, 1 benign)
+  - Git commit: fca28ea8
+- [x] **/debug errors repair** - Fix debug command errors [.claude/specs/941_debug_errors_repair/plans/001-debug-errors-repair-plan.md]
+  - All 4 phases complete: library audit, state transitions, benign filter, validation
+  - Fixed: Added plan→debug transition to STATE_TRANSITIONS table
+  - Git commit: 6b1ab8e4
+- [x] **Load All Artifacts completeness** - Fix recursive scanning to copy 100% of artifacts [.claude/specs/948_load_artifacts_completeness_refactor/plans/001-load-artifacts-completeness-refactor-plan.md]
+  - All 5 phases complete: recursive scanning foundation, skills directory support, dynamic directory creation, enhanced reporting, testing/documentation
+  - Fixed flat glob pattern to recursive `**` pattern for complete artifact synchronization
+  - Added skills directory to artifact scanning, deduplication, is_subdir tracking
 
-- **Test Commands**:
-- /research [/home/benjamin/.config/.claude/specs/911_research_error_analysis/plans/001_research_error_analysis_repair_plan.md]
-  - output [/home/benjamin/.config/.claude/research-output.md]
-  - errors [/home/benjamin/.config/.claude/specs/911_research_error_analysis/reports/001_error_report.md]
+**November 23-24, 2025**:
+- [x] **Idempotent state transitions** - Same-state transition handling for retry/resume scenarios [.claude/specs/947_idempotent_state_transitions/plans/001-idempotent-state-transitions-plan.md]
+  - All 4 phases complete: state machine implementation, documentation, test coverage, validation
+  - sm_transition() now handles same-state transitions gracefully with early-exit optimization
+  - Benefits /build checkpoint resume and all workflow commands
+- [x] **Fix spec directory numbering collision** - Path canonicalization fix [.claude/specs/946_errors_spec_numbering_fix/plans/001-errors-spec-numbering-fix-plan.md]
+  - All 5 phases complete: canonicalization, allocation enhancement, collision logging, error integration, testing
+  - Prevents duplicate topic numbers (e.g., two 923_* directories) via path normalization
+- [x] **Fix /repair command state machine** - State transition sequence and validation [.claude/specs/943_errors_repair/plans/001-errors-repair-plan.md]
+  - All 5 issues fixed: state transitions, defensive validation, error logging, standards conformance
+  - Research confirmed implementation complete, plan marked COMPLETE
+- [x] **Error logging coverage refactor** - Comprehensive error logging across all commands [.claude/specs/945_errors_logging_refactor/plans/001-errors-logging-refactor-plan.md]
+  - Phases 1-5 complete: unbound variables, validation logging, infrastructure, state restoration, testing
+- [x] **Fix /errors directory numbering** - Fixed project directory numbering [.claude/specs/933_error_numbering_increment_fix/plans/001-error-numbering-increment-fix-plan.md]
+- [x] **Fix /repair --file flag** - Error logging file flag support [.claude/specs/930_error_logging_file_flag_repair/plans/001-error-logging-file-flag-repair-plan.md]
+- [x] **Debug test coverage quality** - Improved debug strategy [.claude/specs/929_debug_test_coverage_quality/plans/001-debug-strategy.md]
+- [x] **Clean-break refactor standard** - Documentation standard [.claude/specs/928_clean_break_refactor_standard/plans/001-clean-break-refactor-standard-plan.md]
+- [x] **/build metadata refactor** - Workflow metadata updates [.claude/specs/927_build_workflow_metadata_refactor/plans/001-build-workflow-metadata-refactor-plan.md]
+- [x] **Fix /research command** - Repair research plan refactor [.claude/specs/925_repair_research_plan_refactor/plans/001-repair-research-plan-refactor-plan.md]
+- [x] **Refactor /repair command** - Error status refactor with --file flag [.claude/specs/924_repair_error_status_refactor/plans/001-repair-error-status-refactor-plan.md]
+- [x] **Refactor /convert-docs** - Subagent converter skill strategy [.claude/specs/923_subagent_converter_skill_strategy/plans/001-subagent-converter-refactor-plan.md]
+- [x] **Tests directory refactor** - Test organization [.claude/specs/919_test_refactor_organization/plans/001-test-refactor-organization-plan.md]
 
-- [ ] **Test /plan command** - [/home/benjamin/.config/.claude/specs/908_plan_error_analysis/plans/001_plan_error_analysis_fix_plan.md]
-  - [/home/benjamin/.config/.claude/specs/908_plan_error_analysis/reports/001_error_report.md]
-  - [/home/benjamin/.config/.claude/plan-output.md]
+**November 22, 2025**:
+- [x] **Uniform directory naming** - Topic naming standards kebab-case [.claude/specs/918_topic_naming_standards_kebab_case/plans/001_topic_naming_standards_kebab_case_plan.md]
+- [x] **Optimize commands** - Commands docs standards review [.claude/specs/916_commands_docs_standards_review/plans/001_commands_docs_standards_review_plan.md]
+- [x] **Improve /convert-docs fidelity** - Gemini API integration [.claude/specs/895_convert_docs_fidelity_llm_practices/plans/001_convert_docs_fidelity_llm_practices_plan.md]
 
-- **Test /repairs command** - [/home/benjamin/.config/.claude/specs/915_repair_error_state_machine_fix/plans/001_repair_error_state_machine_fix_plan.md]
-  - [/home/benjamin/.config/.claude/repair-output.md]
-  - [/home/benjamin/.config/.claude/specs/914_repair_error_analysis/reports/001_error_report.md]
-
-- **Test /research command** - [/home/benjamin/.config/.claude/specs/913_911_research_error_analysis_repair/plans/001_911_research_error_analysis_repair_plan.md]
-  - [/home/benjamin/.config/.claude/research-output.md]
-  - [/home/benjamin/.config/.claude/specs/research_error_analysis/reports/001_error_report.md]
-
-- **Test /debug command** - [/home/benjamin/.config/.claude/specs/912_debug_error_analysis/plans/001_debug_error_analysis_repair_plan.md]
-  - [/home/benjamin/.config/.claude/debug-output.md]
-
-- **Test /build command** - [/home/benjamin/.config/.claude/specs/1039_build_errors_repair/plans/001_build_errors_repair_plan.md]
-  - [/home/benjamin/.config/.claude/build-output.md]
-
-- **Test /plan command** - [/home/benjamin/.config/.claude/specs/909_plan_command_error_repair/plans/001_plan_command_error_repair_plan.md]
-  - [/home/benjamin/.config/.claude/plan-output.md]
-  - [/home/benjamin/.config/.claude/specs/908_plan_error_analysis/reports/001_plan_error_report.md]
-  - IMPLEMENTED [/home/benjamin/.config/.claude/specs/904_plan_command_errors_repair/plans/001_plan_command_errors_repair_plan.md]
-    - [/home/benjamin/.config/.claude/specs/errors_plan_analysis/reports/001_plan_error_report.md]
-
-- [x] **Test /errors command** - [/home/benjamin/.config/.claude/specs/907_001_error_report_repair/plans/001_001_error_report_repair_plan.md]
-  - [/home/benjamin/.config/.claude/errors-output.md]
-  - [/home/benjamin/.config/.claude/specs/905_error_command_directory_protocols/reports/001_error_command_directory_protocols.md]
-
-- [x] **Test /revise command** - [/home/benjamin/.config/.claude/specs/122_revise_errors_repair/plans/001_revise_errors_repair_plan.md]
-  - Console output: [/home/benjamin/.config/.claude/revise-output.md]
-
-1. [x] **Error analysis and repair** - Fix library sourcing (exit code 127) across commands [.claude/specs/20251121_error_analysis_repair/plans/001_error_analysis_repair_plan.md] (5.5 hours) **COMPLETE**
+1. [x] **Error analysis and repair** - Fix library sourcing (exit code 127) across commands [.claude/specs/20251121_error_analysis_repair/plans/001_error_analysis_repair_plan.md] **COMPLETE**
    - Fixed foundation: three-tier sourcing pattern in /build, /errors, /plan, /revise, /research
    - All phases marked complete in plan file
 

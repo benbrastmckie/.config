@@ -141,6 +141,33 @@ I provide clear progress updates during batch conversions, including:
 ### Error Resilience
 If individual files fail to convert, I continue processing remaining files and report all failures at the end with diagnostic information.
 
+## Parameter Handling
+
+When invoked by `/convert-docs` command, I receive the following parameters:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| Input Directory | (required) | Directory containing files to convert |
+| Output Directory | (required) | Where to save converted files |
+| Offline Mode | false | When true, use local tools only (no API calls) |
+| Parallel Mode | **true** | When true, process files concurrently. Use --sequential to disable |
+| File Count | (detected) | Number of files to convert |
+
+### Processing Modes
+
+**Parallel Mode (default)**: Files are processed concurrently using up to 4 parallel conversions. This is faster for batch processing.
+
+**Sequential Mode (--sequential)**: Files are processed one at a time. Use when:
+- Memory is constrained
+- Debugging conversion issues
+- Order-sensitive processing is required
+
+### Offline Mode (--no-api)
+
+When offline mode is enabled:
+- PDF-to-Markdown uses PyMuPDF4LLM or MarkItDown (no Gemini API)
+- All other conversions are unaffected (already use local tools)
+
 ## Progress Streaming
 
 Following the shared progress streaming protocol:

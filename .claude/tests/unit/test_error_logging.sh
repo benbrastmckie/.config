@@ -12,12 +12,25 @@
 set -euo pipefail
 
 # Test configuration
-TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CLAUDE_PROJECT_DIR="$(dirname "$TEST_DIR")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
 export CLAUDE_PROJECT_DIR
+CLAUDE_LIB="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
 # Source library
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh"
+source "${CLAUDE_LIB}/core/error-handling.sh"
 
 # Test counters
 TESTS_PASSED=0
@@ -30,10 +43,10 @@ assert_equals() {
   local test_name="$3"
 
   if [ "$expected" = "$actual" ]; then
-    echo "PASS: $test_name"
+    echo "✓ PASS: $test_name"
     TESTS_PASSED=$((TESTS_PASSED + 1))
   else
-    echo "FAIL: $test_name"
+    echo "✗ FAIL: $test_name"
     echo "  Expected: $expected"
     echo "  Actual:   $actual"
     TESTS_FAILED=$((TESTS_FAILED + 1))
@@ -46,10 +59,10 @@ assert_contains() {
   local test_name="$3"
 
   if echo "$actual" | grep -q "$expected"; then
-    echo "PASS: $test_name"
+    echo "✓ PASS: $test_name"
     TESTS_PASSED=$((TESTS_PASSED + 1))
   else
-    echo "FAIL: $test_name"
+    echo "✗ FAIL: $test_name"
     echo "  Expected to contain: $expected"
     echo "  Actual: $actual"
     TESTS_FAILED=$((TESTS_FAILED + 1))
@@ -61,10 +74,10 @@ assert_not_empty() {
   local test_name="$2"
 
   if [ -n "$actual" ]; then
-    echo "PASS: $test_name"
+    echo "✓ PASS: $test_name"
     TESTS_PASSED=$((TESTS_PASSED + 1))
   else
-    echo "FAIL: $test_name"
+    echo "✗ FAIL: $test_name"
     echo "  Expected non-empty value"
     TESTS_FAILED=$((TESTS_FAILED + 1))
   fi
@@ -95,10 +108,10 @@ test_log_command_error() {
 
   # Should have at least 1 line (may have extra from setup)
   if [ "$line_count" -ge 1 ]; then
-    echo "PASS: log_command_error adds entry to log"
+    echo "✓ PASS: log_command_error adds entry to log"
     TESTS_PASSED=$((TESTS_PASSED + 1))
   else
-    echo "FAIL: log_command_error should add entry"
+    echo "✗ FAIL: log_command_error should add entry"
     TESTS_FAILED=$((TESTS_FAILED + 1))
   fi
 
@@ -107,10 +120,10 @@ test_log_command_error() {
   last_entry=$(tail -1 "${CLAUDE_PROJECT_DIR}/.claude/tests/logs/test-errors.jsonl")
 
   if echo "$last_entry" | jq empty 2>/dev/null; then
-    echo "PASS: Entry is valid JSON"
+    echo "✓ PASS: Entry is valid JSON"
     TESTS_PASSED=$((TESTS_PASSED + 1))
   else
-    echo "FAIL: Entry is not valid JSON"
+    echo "✗ FAIL: Entry is not valid JSON"
     TESTS_FAILED=$((TESTS_FAILED + 1))
   fi
 
@@ -191,10 +204,10 @@ test_query_errors_filter() {
   non_build_count=$(echo "$non_build_count" | tr -d ' ' | head -1)
 
   if [ "$non_build_count" -eq 0 ]; then
-    echo "PASS: Filter returns only /build errors"
+    echo "✓ PASS: Filter returns only /build errors"
     TESTS_PASSED=$((TESTS_PASSED + 1))
   else
-    echo "FAIL: Filter returned non-/build errors"
+    echo "✗ FAIL: Filter returned non-/build errors"
     TESTS_FAILED=$((TESTS_FAILED + 1))
   fi
 }

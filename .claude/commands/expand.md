@@ -71,7 +71,7 @@ Transform a brief 30-50 line phase outline into a detailed 300-500+ line impleme
 
 ### Phase Expansion Process
 
-**STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Current Structure**
+**Block 1 (REQUIRED BEFORE Block 2) - Analyze Current Structure**
 
 **EXECUTE NOW - Detect Plan Structure**:
 
@@ -157,7 +157,7 @@ echo "VERIFIED: Plan file exists: $plan_file"
 
 ---
 
-**STEP 2 (REQUIRED BEFORE STEP 3) - Extract Phase Content**
+**Block 2 (REQUIRED BEFORE Block 3) - Extract Phase Content**
 
 **EXECUTE NOW - Parse Phase from Plan**:
 
@@ -185,7 +185,7 @@ echo "VERIFIED: Phase $phase_num content extracted (${#phase_content} bytes)"
 
 ---
 
-**STEP 3 (REQUIRED BEFORE STEP 4) - Complexity Detection**
+**Block 3 (REQUIRED BEFORE Block 4) - Complexity Detection**
 
 **EXECUTE NOW - Analyze Phase Complexity**:
 
@@ -225,7 +225,7 @@ fi
 
 ---
 
-**STEP 4 (REQUIRED BEFORE STEP 5) - Create File Structure**
+**Block 4 (REQUIRED BEFORE Block 5) - Create File Structure**
 
 **EXECUTE NOW - Create Directory Structure** (if Level 0):
 
@@ -275,7 +275,7 @@ echo "VERIFIED: Phase file created: $phase_file (${file_size} bytes)"
 
 ---
 
-**STEP 5 (REQUIRED) - Update Metadata**
+**Block 5 (REQUIRED) - Update Metadata**
 
 **EXECUTE NOW - Update Main Plan Metadata**:
 
@@ -356,7 +356,7 @@ Progressive stage expansion: Extract stage content from phase file to dedicated 
 
 ### Stage Expansion Process
 
-**STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Current Structure**
+**Block 1 (REQUIRED BEFORE Block 2) - Analyze Current Structure**
 
 **EXECUTE NOW - Normalize Phase Path and Detect Structure**:
 
@@ -402,7 +402,7 @@ echo "✓ VERIFIED: Phase file exists: $phase_file"
 
 ---
 
-**STEP 2 (REQUIRED BEFORE STEP 3) - Extract Stage Content**
+**Block 2 (REQUIRED BEFORE Block 3) - Extract Stage Content**
 
 **EXECUTE NOW - Parse Stage from Phase File**:
 
@@ -424,7 +424,7 @@ echo "✓ VERIFIED: Stage $stage_num content extracted"
 
 ---
 
-**STEP 3 (REQUIRED BEFORE STEP 4) - Complexity Detection**
+**Block 3 (REQUIRED BEFORE Block 4) - Complexity Detection**
 
 **EXECUTE NOW - Analyze Stage Complexity**:
 
@@ -445,7 +445,7 @@ echo "✓ Stage complexity: $stage_complexity"
 
 ---
 
-**STEP 4 (REQUIRED BEFORE STEP 5) - Create Phase Directory Structure**
+**Block 4 (REQUIRED BEFORE Block 5) - Create Phase Directory Structure**
 
 **EXECUTE NOW - Create Phase Subdirectory** (if first stage expansion):
 
@@ -465,7 +465,7 @@ fi
 
 ---
 
-**STEP 5 (REQUIRED BEFORE STEP 6) - Create Stage File**
+**Block 5 (REQUIRED BEFORE Block 6) - Create Stage File**
 
 **EXECUTE NOW - Write Stage File**:
 
@@ -493,7 +493,7 @@ echo "✓ VERIFIED: Stage file created: $stage_file (${file_size} bytes)"
 
 ---
 
-**STEP 6 (REQUIRED) - Update Three-Way Metadata**
+**Block 6 (REQUIRED) - Update Three-Way Metadata**
 
 **EXECUTE NOW - Update All Three Levels**:
 

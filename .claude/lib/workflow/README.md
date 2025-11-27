@@ -73,6 +73,31 @@ Workflow scope detection using pattern matching.
 **Key Functions:**
 - `detect_scope()` - Detect workflow scope from description
 
+### workflow-bootstrap.sh
+Common initialization for all workflow commands.
+
+**Purpose:** Eliminate duplicated initialization boilerplate across 12 commands (276+ lines of duplication).
+
+**Key Functions:**
+- `bootstrap_workflow_env()` - Detect project directory and export CLAUDE_PROJECT_DIR
+- `load_tier1_libraries()` - Source critical foundation libraries with fail-fast
+
+**Usage:**
+```bash
+source "$CLAUDE_LIB/workflow/workflow-bootstrap.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load workflow-bootstrap library" >&2
+  exit 1
+}
+bootstrap_workflow_env || exit 1
+load_tier1_libraries || exit 1
+```
+
+**Features:**
+- Git-based project detection with upward directory traversal fallback
+- Fail-fast error handling for missing libraries
+- Source guard to prevent multiple sourcing
+- Automatic export of CLAUDE_PROJECT_DIR for subprocess access
+
 ### workflow-state-machine.sh
 State machine orchestration for workflow execution.
 

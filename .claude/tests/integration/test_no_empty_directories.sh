@@ -55,7 +55,7 @@ fi
 TOPIC_COUNT=$(find "$SPECS_DIR" -maxdepth 1 -type d -name '[0-9]*_*' 2>/dev/null | wc -l)
 ARTIFACT_DIR_COUNT=$(find "$SPECS_DIR" -type d \( -name "reports" -o -name "plans" -o -name "debug" -o -name "summaries" -o -name "outputs" \) 2>/dev/null | wc -l)
 
-echo "PASS: No empty artifact directories found"
+echo "✓ PASS: No empty artifact directories found"
 echo ""
 echo "Statistics:"
 echo "  - Topic directories: $TOPIC_COUNT"

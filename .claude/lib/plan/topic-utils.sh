@@ -4,8 +4,21 @@
 # Purpose: Topic directory creation and validation for LLM-based naming system
 # Used by: /plan, /research, /debug, /optimize-claude commands
 #
+# DEPRECATION NOTICE (Spec 933):
+#   The following functions are DEPRECATED for new code:
+#     - get_next_topic_number() - Non-atomic, causes race conditions
+#     - get_or_create_topic_number() - Non-atomic, causes duplicate topic numbers
+#
+#   For concurrent-safe topic allocation, use instead:
+#     allocate_and_create_topic() from unified-location-detection.sh
+#
+#   These functions are retained for backward compatibility with existing callers
+#   but should NOT be used in new code. See Spec 933 research reports for details
+#   on the race condition that caused duplicate-numbered directories (820, 822, 923).
+#
 # Functions:
-#   get_next_topic_number(specs_root)       - Find max topic number and increment
+#   get_next_topic_number(specs_root)       - [DEPRECATED] Find max topic number and increment
+#   get_or_create_topic_number(specs_root, topic_name) - [DEPRECATED] Idempotent but non-atomic
 #   validate_topic_name_format(topic_name)  - Validate LLM-generated topic name format (^[a-z0-9_]{5,40}$)
 #   create_topic_structure(topic_path)      - Create topic subdirectories with verification
 #   find_matching_topic(topic_desc)         - Search for existing related topics (optional)
@@ -19,6 +32,10 @@
 
 set -eo pipefail  # Match workflow-initialization.sh: removed -u for defensive variable refs
 
+# DEPRECATED: Use allocate_and_create_topic() from unified-location-detection.sh instead
+# This function is non-atomic and causes race conditions under concurrent access.
+# Retained for backward compatibility only - do NOT use in new code.
+#
 # Get the next sequential topic number in the specs directory
 # Usage: get_next_topic_number "/path/to/specs"
 # Returns: "001" for empty directory, or next number (e.g., "006" if max is 005)
@@ -40,6 +57,11 @@ get_next_topic_number() {
   fi
 }
 
+# DEPRECATED: Use allocate_and_create_topic() from unified-location-detection.sh instead
+# This function is non-atomic - while idempotent for exact matches, it causes race
+# conditions for new topic creation under concurrent access.
+# Retained for backward compatibility only - do NOT use in new code.
+#
 # Get topic number for a given topic name (idempotent - reuses existing if found)
 # Usage: get_or_create_topic_number "/path/to/specs" "research_auth_patterns"
 # Returns: Existing topic number if topic with matching name exists, otherwise next number

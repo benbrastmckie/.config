@@ -11,15 +11,21 @@ set -uo pipefail
 
 # Get script directory for relative paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
-# Manually detect project root
-if [ -d "${PROJECT_DIR}/lib" ]; then
-  # PROJECT_DIR is .claude directory
-  PROJECT_ROOT="$(dirname "$PROJECT_DIR")"
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
-  PROJECT_ROOT="$PROJECT_DIR"
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
 fi
+PROJECT_ROOT="$CLAUDE_PROJECT_DIR"
+CLAUDE_ROOT="${CLAUDE_PROJECT_DIR}/.claude"
 
 # Test counters
 TESTS_RUN=0

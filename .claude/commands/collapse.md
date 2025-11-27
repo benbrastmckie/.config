@@ -75,7 +75,7 @@ Reverse phase expansion by merging expanded phase content back into the main pla
 
 **EXECUTE NOW**: Follow these steps in EXACT sequential order.
 
-#### STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Current Structure
+#### Block 1 (REQUIRED BEFORE Block 2) - Analyze Current Structure
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -182,7 +182,7 @@ fi
 echo "✓ VERIFIED: Structure valid for collapse"
 ```
 
-#### STEP 2 (REQUIRED BEFORE STEP 3) - Validate Collapse Operation
+#### Block 2 (REQUIRED BEFORE Block 3) - Validate Collapse Operation
 
 ```bash
 # Construct phase file path
@@ -211,7 +211,7 @@ fi
 - [ ] Phase file exists and is unique
 - [ ] Phase has no expanded stages
 
-#### STEP 3 (REQUIRED BEFORE STEP 4) - Read Phase Content
+#### Block 3 (REQUIRED BEFORE Block 4) - Read Phase Content
 
 ```bash
 # Read expanded phase content
@@ -223,7 +223,7 @@ phase_objective=$(grep "^**Objective" "$phase_file" | head -1 | sed 's/\*\*Objec
 phase_status=$(grep "^**Status" "$phase_file" | head -1 | sed 's/\*\*Status\*\*: //')
 ```
 
-#### STEP 4 (REQUIRED BEFORE STEP 5) - Merge Content into Main Plan
+#### Block 4 (REQUIRED BEFORE Block 5) - Merge Content into Main Plan
 
 ```bash
 # Find phase section in main plan
@@ -233,7 +233,7 @@ phase_status=$(grep "^**Status" "$phase_file" | head -1 | sed 's/\*\*Status\*\*:
 # Use Edit tool to replace phase summary with full content
 ```
 
-#### STEP 5 (REQUIRED BEFORE STEP 6) - Update Metadata
+#### Block 5 (REQUIRED BEFORE Block 6) - Update Metadata
 
 **Remove from Expanded Phases list:**
 ```bash
@@ -253,7 +253,7 @@ else
 fi
 ```
 
-#### STEP 6 (REQUIRED BEFORE STEP 7) - Delete Phase File
+#### Block 6 (REQUIRED BEFORE Block 7) - Delete Phase File
 
 ```bash
 # Delete expanded phase file
@@ -261,7 +261,7 @@ rm "$phase_file"
 echo "Deleted: $phase_file"
 ```
 
-#### STEP 7 (FINAL STEP) - Convert to Level 0 (If Last Phase)
+#### Block 7 (FINAL STEP) - Convert to Level 0 (If Last Phase)
 
 ```bash
 if [[ $convert_to_level_0 == true ]]; then
@@ -298,7 +298,7 @@ Reverse stage expansion by merging expanded stage content back into the phase fi
 
 **EXECUTE NOW**: Follow these steps in EXACT sequential order.
 
-#### STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Current Structure
+#### Block 1 (REQUIRED BEFORE Block 2) - Analyze Current Structure
 
 ```bash
 # Normalize phase path (handle both directory and file paths)
@@ -346,7 +346,7 @@ phase_num=$(echo "$phase_base" | grep -oP 'phase_\K\d+' | head -1)
 - [ ] Main plan file exists
 - [ ] Phase number extracted correctly
 
-#### STEP 2 (REQUIRED BEFORE STEP 3) - Validate Collapse Operation
+#### Block 2 (REQUIRED BEFORE Block 3) - Validate Collapse Operation
 
 ```bash
 # Construct stage file path
