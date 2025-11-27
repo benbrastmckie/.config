@@ -8,7 +8,7 @@
 - **Estimated Phases**: 6
 - **Estimated Hours**: 14-16
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETE]
 - **Structure Level**: 0
 - **Complexity Score**: 78.0
 - **Research Reports**:
@@ -26,8 +26,23 @@ This plan was revised to account for infrastructure changes since the original c
 3. **Errors Command**: Added `/errors` command which emits `REPORT_CREATED`
 4. **Regex Patterns**: Updated Phase 4 with correct patterns for multi-line parsing
 5. **Testing**: Expanded test cases to cover new signal formats
+6. **Graceful Degradation**: Emphasized fail-fast environment detection and zero-overhead when outside Neovim
 
 The core architecture remains valid. Hook infrastructure is stable and proven patterns are available for reuse.
+
+### Design Philosophy: Zero Overhead Outside Neovim
+
+This implementation follows a strict **fail-fast, fail-silent** design:
+
+1. **No Neovim Dependency**: Claude Code works identically whether run inside Neovim terminal or external terminal. The buffer opening feature is purely additive.
+
+2. **Environment Detection First**: The hook checks `$NVIM` as its **first operation** (< 1ms). If unset, it exits immediately with code 0. No JSON parsing, no file I/O, no RPC attempts.
+
+3. **Zero Undo Impact**: Buffer opening operates entirely outside Neovim's undo system. Opening a new buffer does not modify any existing buffer's undo tree or create undo entries.
+
+4. **No Neovim-Side Complexity**: When running outside Neovim, zero resources are consumed - no watchers, no Lua modules loaded, no state maintained. The hook simply doesn't execute meaningful work.
+
+5. **Silent Failures**: All error conditions (missing socket, RPC timeout, no completion signal) result in silent exit 0. Users running outside Neovim experience no difference from pre-implementation behavior.
 
 ## Overview
 
@@ -78,6 +93,7 @@ Key findings from /optimize-claude and /revise integration research:
 
 ## Success Criteria
 
+### Core Functionality
 - [ ] Hook script registered in `.claude/settings.local.json` for Stop event
 - [ ] Hook correctly parses JSON input from Claude Code (command, status, cwd)
 - [ ] Hook accesses command output to extract completion signals
@@ -87,12 +103,22 @@ Key findings from /optimize-claude and /revise integration research:
 - [ ] Intermediate artifacts (research reports) do not auto-open for multi-artifact commands
 - [ ] Neovim buffer opens via RPC when `$NVIM` socket available
 - [ ] Context-aware opening (vertical split in terminal, replace in normal buffer)
-- [ ] Graceful fallback when Neovim not running (silent exit)
 - [ ] Debouncing prevents duplicate opens for same file
-- [ ] Configuration allows disabling feature
-- [ ] No performance impact (hook execution < 100ms)
 - [ ] Feature works across workflow commands (/plan, /research, /build, /debug, /repair, /revise, /optimize-claude, /errors)
+
+### Graceful Degradation (CRITICAL)
+- [ ] **Fail-fast `$NVIM` check**: Hook exits immediately (< 1ms) when `$NVIM` unset
+- [ ] **Zero overhead outside Neovim**: No JSON parsing, no file I/O when `$NVIM` unset
+- [ ] **Silent failure on all errors**: RPC timeout, missing signal, invalid path - all exit 0 silently
+- [ ] **Zero undo impact**: Buffer opening does not modify any existing buffer's undo tree
+- [ ] **No Neovim-side complexity when disabled**: No watchers, no modules loaded, no state
+- [ ] **Configuration allows disabling**: `BUFFER_OPENER_ENABLED=false` disables completely
+- [ ] **No performance impact**: Hook execution < 100ms when active, < 1ms when inactive
+
+### Documentation
 - [ ] Documentation explicitly states one-file-per-command constraint
+- [ ] Documentation describes zero-overhead design philosophy
+- [ ] Documentation covers graceful degradation behavior
 
 ## Technical Design
 
@@ -212,29 +238,47 @@ Commands create different types of artifacts with varying priority levels. Multi
 
 ## Implementation Phases
 
-### Phase 1: Hook Script Implementation [NOT STARTED]
+### Phase 1: Hook Script Implementation [COMPLETE]
 dependencies: []
 
-**Objective**: Create post-buffer-opener.sh hook with JSON parsing, output access, and completion signal extraction
+**Objective**: Create post-buffer-opener.sh hook with fail-fast environment detection, JSON parsing, output access, and completion signal extraction
 
 **Complexity**: Medium-High
 
 **Tasks**:
-- [ ] Create `/home/benjamin/.config/.claude/hooks/post-buffer-opener.sh`
-- [ ] Implement JSON input parsing (with jq and fallback)
-- [ ] Implement eligibility checks (Stop event, success status, eligible commands)
-- [ ] Implement terminal output access via Neovim RPC (`nvim --remote-expr`)
-- [ ] Implement completion signal extraction with priority logic (PLAN/PLAN_REVISED > SUMMARY > DEBUG_REPORT > REPORT)
-- [ ] Implement artifact path validation
-- [ ] Implement Neovim socket detection (`$NVIM` environment variable)
-- [ ] Implement buffer opening via RPC (`nvim --server "$NVIM" --remote-send`)
-- [ ] Add error handling with silent failures (exit 0 always)
-- [ ] Add debug logging (optional, controlled by environment variable)
-- [ ] Make script executable (`chmod +x`)
+- [x] Create `/home/benjamin/.config/.claude/hooks/post-buffer-opener.sh`
+- [x] **FIRST**: Implement fail-fast `$NVIM` check at script start (exit 0 immediately if unset/empty - no other work done)
+- [x] Implement feature toggle check (`BUFFER_OPENER_ENABLED` - exit 0 if explicitly disabled)
+- [x] Implement JSON input parsing (with jq and fallback)
+- [x] Implement eligibility checks (Stop event, success status, eligible commands)
+- [x] Implement terminal output access via Neovim RPC (`nvim --remote-expr`)
+- [x] Implement completion signal extraction with priority logic (PLAN/PLAN_REVISED > SUMMARY > DEBUG_REPORT > REPORT)
+- [x] Implement artifact path validation
+- [x] Implement buffer opening via RPC (`nvim --server "$NVIM" --remote-send`)
+- [x] Add error handling with silent failures (exit 0 always)
+- [x] Add debug logging (optional, controlled by environment variable)
+- [x] Make script executable (`chmod +x`)
 
 **Testing**:
 ```bash
-# Test JSON parsing
+# Test fail-fast environment detection (CRITICAL - must be < 1ms)
+time (unset NVIM && echo '{}' | .claude/hooks/post-buffer-opener.sh)
+# Should exit 0 immediately with no output
+
+# Test outside Neovim (graceful silent failure)
+unset NVIM
+echo '{"hook_event_name":"Stop","command":"/plan","status":"success"}' | \
+  .claude/hooks/post-buffer-opener.sh
+# Should exit 0 silently with no JSON parsing
+
+# Test feature disabled
+export NVIM=/tmp/test.sock
+export BUFFER_OPENER_ENABLED=false
+echo '{"hook_event_name":"Stop","command":"/plan","status":"success"}' | \
+  .claude/hooks/post-buffer-opener.sh
+# Should exit 0 silently
+
+# Test JSON parsing (inside Neovim only)
 echo '{"hook_event_name":"Stop","command":"/plan","status":"success","cwd":"/home/benjamin/.config"}' | \
   .claude/hooks/post-buffer-opener.sh
 
@@ -243,19 +287,13 @@ cd /home/benjamin/.config
 nvim -c "ClaudeCode"
 # In terminal: /research "test topic"
 # Verify hook triggers and extracts path
-
-# Test outside Neovim (should fail gracefully)
-unset NVIM
-echo '{"hook_event_name":"Stop","command":"/plan","status":"success"}' | \
-  .claude/hooks/post-buffer-opener.sh
-# Should exit 0 silently
 ```
 
 **Expected Duration**: 4-5 hours
 
 ---
 
-### Phase 2: Neovim Buffer Opener Module [NOT STARTED]
+### Phase 2: Neovim Buffer Opener Module [COMPLETE]
 dependencies: [1]
 
 **Objective**: Create Lua module for context-aware buffer opening with notification integration
@@ -263,15 +301,15 @@ dependencies: [1]
 **Complexity**: Low-Medium
 
 **Tasks**:
-- [ ] Create `/home/benjamin/.config/nvim/lua/neotex/plugins/ai/claude/util/buffer-opener.lua`
-- [ ] Implement `M.open_artifact(filepath)` - Main function for opening artifacts
-- [ ] Implement context detection (terminal vs normal buffer)
-- [ ] Implement split decision logic (vsplit in terminal, edit otherwise)
-- [ ] Integrate with `neotex.util.notifications` for user feedback
-- [ ] Add path escaping with `vim.fn.fnameescape()`
-- [ ] Add file existence validation
-- [ ] Add error handling for invalid paths
-- [ ] Document module with inline comments (purpose, API, usage)
+- [x] Create `/home/benjamin/.config/nvim/lua/neotex/plugins/ai/claude/util/buffer-opener.lua`
+- [x] Implement `M.open_artifact(filepath)` - Main function for opening artifacts
+- [x] Implement context detection (terminal vs normal buffer)
+- [x] Implement split decision logic (vsplit in terminal, edit otherwise)
+- [x] Integrate with `neotex.util.notifications` for user feedback
+- [x] Add path escaping with `vim.fn.fnameescape()`
+- [x] Add file existence validation
+- [x] Add error handling for invalid paths
+- [x] Document module with inline comments (purpose, API, usage)
 
 **Testing**:
 ```lua
@@ -292,7 +330,7 @@ dependencies: [1]
 
 ---
 
-### Phase 3: Hook Registration and Configuration [NOT STARTED]
+### Phase 3: Hook Registration and Configuration [COMPLETE]
 dependencies: [1, 2]
 
 **Objective**: Register hook in settings.local.json and add configuration options
@@ -300,12 +338,12 @@ dependencies: [1, 2]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Add hook entry to `/home/benjamin/.config/.claude/settings.local.json` in hooks.Stop array
-- [ ] Use wildcard matcher (`"matcher": ".*"`)
-- [ ] Use `$CLAUDE_PROJECT_DIR` variable for portable path
-- [ ] Test hook registration (verify hook executes on command completion)
-- [ ] Add configuration section to hook script (feature toggle via environment variable)
-- [ ] Document configuration in hook script comments
+- [x] Add hook entry to `/home/benjamin/.config/.claude/settings.local.json` in hooks.Stop array
+- [x] Use wildcard matcher (`"matcher": ".*"`)
+- [x] Use `$CLAUDE_PROJECT_DIR` variable for portable path
+- [x] Test hook registration (verify hook executes on command completion)
+- [x] Add configuration section to hook script (feature toggle via environment variable)
+- [x] Document configuration in hook script comments
 
 **Testing**:
 ```bash
@@ -327,7 +365,7 @@ export BUFFER_OPENER_ENABLED=false
 
 ---
 
-### Phase 4: Terminal Output Access Refinement [NOT STARTED]
+### Phase 4: Terminal Output Access Refinement [COMPLETE]
 dependencies: [3]
 
 **Objective**: Optimize terminal output access and implement robust completion signal parsing
@@ -335,15 +373,15 @@ dependencies: [3]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Implement efficient terminal buffer reading (last 100 lines only)
-- [ ] Add timeout protection for RPC calls (5 second timeout)
-- [ ] Implement completion signal regex patterns for all workflow commands (including PLAN_REVISED, IMPLEMENTATION_COMPLETE)
-- [ ] Implement priority extraction (plans/plan_revised > IMPLEMENTATION_COMPLETE summary_path > debug_report > reports)
-- [ ] Add handling for multiple completion signals in same output
-- [ ] Implement multi-line parsing for /build command (extract summary_path: field from IMPLEMENTATION_COMPLETE block)
-- [ ] Test with various command outputs (/plan, /research, /build, /debug, /repair, /revise, /optimize-claude, /errors)
-- [ ] Add fallback for commands without completion signals (silent failure)
-- [ ] Optimize RPC call to minimize latency
+- [x] Implement efficient terminal buffer reading (last 100 lines only)
+- [x] Add timeout protection for RPC calls (5 second timeout)
+- [x] Implement completion signal regex patterns for all workflow commands (including PLAN_REVISED, IMPLEMENTATION_COMPLETE)
+- [x] Implement priority extraction (plans/plan_revised > IMPLEMENTATION_COMPLETE summary_path > debug_report > reports)
+- [x] Add handling for multiple completion signals in same output
+- [x] Implement multi-line parsing for /build command (extract summary_path: field from IMPLEMENTATION_COMPLETE block)
+- [x] Test with various command outputs (/plan, /research, /build, /debug, /repair, /revise, /optimize-claude, /errors)
+- [x] Add fallback for commands without completion signals (silent failure)
+- [x] Optimize RPC call to minimize latency
 
 **Regex Patterns**:
 ```bash
@@ -404,7 +442,7 @@ nvim -c "ClaudeCode"
 
 ---
 
-### Phase 5: Integration Testing and Edge Cases [NOT STARTED]
+### Phase 5: Integration Testing and Edge Cases [COMPLETE]
 dependencies: [4]
 
 **Objective**: Test across real workflows and handle edge cases
@@ -412,22 +450,22 @@ dependencies: [4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Test complete /plan workflow (research → planning phases)
-- [ ] Test /research workflow with multiple report creation
-- [ ] Test /build workflow with summary generation (extract summary_path from IMPLEMENTATION_COMPLETE)
-- [ ] Test /debug workflow with debug report creation (handles both PLAN_CREATED and DEBUG_REPORT_CREATED)
-- [ ] Test /repair workflow (error analysis + repair plan)
-- [ ] Test /optimize-claude workflow (4 research reports + optimization plan)
-- [ ] Test /revise workflow (research reports + PLAN_REVISED signal)
-- [ ] Test /errors workflow (error analysis report)
-- [ ] Test rapid command succession (debouncing, if needed)
-- [ ] Test with Neovim not running (graceful failure)
-- [ ] Test with external terminal (no $NVIM, should fail silently)
-- [ ] Test with paths containing spaces
-- [ ] Test with missing artifacts (file not created)
-- [ ] Monitor performance during heavy usage (10+ commands)
-- [ ] Test across different worktrees
-- [ ] Verify no interference with existing hooks (metrics, TTS)
+- [x] Test complete /plan workflow (research → planning phases)
+- [x] Test /research workflow with multiple report creation
+- [x] Test /build workflow with summary generation (extract summary_path from IMPLEMENTATION_COMPLETE)
+- [x] Test /debug workflow with debug report creation (handles both PLAN_CREATED and DEBUG_REPORT_CREATED)
+- [x] Test /repair workflow (error analysis + repair plan)
+- [x] Test /optimize-claude workflow (4 research reports + optimization plan)
+- [x] Test /revise workflow (research reports + PLAN_REVISED signal)
+- [x] Test /errors workflow (error analysis report)
+- [x] Test rapid command succession (debouncing, if needed)
+- [x] Test with Neovim not running (graceful failure)
+- [x] Test with external terminal (no $NVIM, should fail silently)
+- [x] Test with paths containing spaces
+- [x] Test with missing artifacts (file not created)
+- [x] Monitor performance during heavy usage (10+ commands)
+- [x] Test across different worktrees
+- [x] Verify no interference with existing hooks (metrics, TTS)
 
 **Testing**:
 ```bash
@@ -464,7 +502,7 @@ mkdir -p "/tmp/Test Project/.claude/specs/001_test/reports"
 
 ---
 
-### Phase 6: Documentation and User Guide [NOT STARTED]
+### Phase 6: Documentation and User Guide [COMPLETE]
 dependencies: [5]
 
 **Objective**: Create comprehensive documentation for users and developers
@@ -472,21 +510,21 @@ dependencies: [5]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Add "Automatic Artifact Opening" section to `/home/benjamin/.config/nvim/lua/neotex/plugins/ai/claude/README.md`
-- [ ] **Document one-file-per-command constraint explicitly in Feature Overview**
-- [ ] Document how hook-based opening works
-- [ ] Document behavior in different contexts (Neovim terminal vs external)
-- [ ] **Document primary artifact selection logic with one-file guarantee**
-- [ ] Add configuration reference (enabling/disabling feature)
-- [ ] Add troubleshooting section:
+- [x] Add "Automatic Artifact Opening" section to `/home/benjamin/.config/nvim/lua/neotex/plugins/ai/claude/README.md`
+- [x] **Document one-file-per-command constraint explicitly in Feature Overview**
+- [x] Document how hook-based opening works
+- [x] Document behavior in different contexts (Neovim terminal vs external)
+- [x] **Document primary artifact selection logic with one-file guarantee**
+- [x] Add configuration reference (enabling/disabling feature)
+- [x] Add troubleshooting section:
   - Artifacts not opening automatically
   - **Wrong file opens (should never be more than one)**
   - Hook execution errors
   - Performance issues
-- [ ] Document how to check hook execution (debug logs)
-- [ ] Document differences from file watcher approach (migration notes)
-- [ ] **Add developer documentation to hook script with one-file constraint explanation**
-- [ ] **Update `.claude/hooks/README.md` with post-buffer-opener.sh entry including one-file guarantee**
+- [x] Document how to check hook execution (debug logs)
+- [x] Document differences from file watcher approach (migration notes)
+- [x] **Add developer documentation to hook script with one-file constraint explanation**
+- [x] **Update `.claude/hooks/README.md` with post-buffer-opener.sh entry including one-file guarantee**
 
 **Testing**:
 ```bash
@@ -691,15 +729,23 @@ Required content:
 # Post-Buffer-Opener Hook
 # Purpose: Automatically open primary workflow artifacts in Neovim after command completion
 #
+# DESIGN PHILOSOPHY: Zero Overhead Outside Neovim
+#   This hook follows fail-fast, fail-silent design. When running outside Neovim,
+#   it exits immediately (< 1ms) with no side effects. No JSON parsing, no file I/O,
+#   no RPC attempts. Claude Code works identically with or without this hook.
+#
 # One-File Guarantee: Hook ensures at most one buffer opens per command execution
 #
+# Zero Undo Impact: Opening a new buffer does not affect existing buffers' undo trees
+#
 # Architecture:
-#   1. Claude Code Stop hook triggers after command completes
+#   0. FIRST: Check $NVIM environment variable - exit 0 immediately if unset
+#   1. Check BUFFER_OPENER_ENABLED - exit 0 if explicitly disabled
 #   2. Parse JSON input to get command name and status
 #   3. Access terminal buffer output via Neovim RPC
 #   4. Extract ALL completion signals from output
 #   5. Apply priority logic to select PRIMARY artifact only (one file)
-#   6. Open selected artifact in Neovim via RPC (if available)
+#   6. Open selected artifact in Neovim via RPC
 #
 # Priority Logic:
 #   PLAN_CREATED/PLAN_REVISED (priority 1) > IMPLEMENTATION_COMPLETE/summary_path (priority 2) >
@@ -710,14 +756,23 @@ Required content:
 #   Example: /build returns IMPLEMENTATION_COMPLETE with summary_path: /path/to/summary.md
 #            → Hook extracts and opens the summary path
 #
-# Requirements:
-#   - $NVIM environment variable (set by Neovim terminal)
+# Requirements (only when running inside Neovim terminal):
+#   - $NVIM environment variable (set automatically by Neovim terminal)
 #   - nvim command in PATH
 #   - Command must output completion signal (PLAN_CREATED, etc.)
 #
 # Configuration:
 #   - Set BUFFER_OPENER_ENABLED=false to disable
 #   - Set BUFFER_OPENER_DEBUG=true for debug logging
+
+# === FAIL-FAST: Exit immediately if not in Neovim terminal ===
+# This check MUST be first - ensures zero overhead when running outside Neovim
+[[ -z "${NVIM:-}" ]] && exit 0
+
+# === Feature toggle check ===
+[[ "${BUFFER_OPENER_ENABLED:-true}" == "false" ]] && exit 0
+
+# ... rest of implementation only runs inside Neovim terminal ...
 ```
 
 ### Hook Documentation
@@ -731,26 +786,37 @@ Add entry:
 
 **Triggered By**: Stop event
 
+**Design Philosophy**: Zero overhead outside Neovim. The hook checks `$NVIM` as its first operation
+and exits immediately (< 1ms) if not in a Neovim terminal. No JSON parsing, no file operations,
+no side effects. Claude Code works identically whether this hook is present or not.
+
+**Graceful Degradation**: All failure modes result in silent exit 0. Running outside Neovim,
+RPC failures, missing completion signals - all handled silently with no user-visible errors.
+
+**Zero Undo Impact**: Buffer opening creates a new buffer; it does not modify any existing
+buffer's undo tree or create undo entries in any buffer.
+
 **One-File Guarantee**: Opens at most one file per command execution, selecting the primary
 artifact via priority logic (plans > summaries > debug reports > research reports).
 
-**Input** (via JSON stdin):
+**Input** (via JSON stdin, only parsed if $NVIM is set):
 - `hook_event_name`: "Stop"
 - `command`: Command that was executed
 - `status`: "success" or "error"
 - `cwd`: Working directory
 
-**Actions**:
-1. Check if running inside Neovim terminal ($NVIM)
-2. Access terminal buffer output via RPC
-3. Extract ALL completion signals (may be multiple)
-4. Select PRIMARY artifact only (one file) using priority logic
-5. Open selected artifact in Neovim with context-aware behavior
+**Actions** (only when inside Neovim terminal):
+1. Check `$NVIM` - exit 0 immediately if unset (FIRST CHECK)
+2. Check `BUFFER_OPENER_ENABLED` - exit 0 if disabled
+3. Access terminal buffer output via RPC
+4. Extract ALL completion signals (may be multiple)
+5. Select PRIMARY artifact only (one file) using priority logic
+6. Open selected artifact in Neovim with context-aware behavior
 
 **Example**: When /optimize-claude creates 4 research reports + 1 plan, hook opens only the plan.
 
-**Requirements**:
-- Neovim with Claude Code running in terminal mode
+**Requirements** (only when inside Neovim):
+- `$NVIM` environment variable (set automatically by Neovim terminal)
 - Commands that output completion signals
 
 **Configuration**:
