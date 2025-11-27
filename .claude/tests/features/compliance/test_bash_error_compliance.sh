@@ -45,7 +45,7 @@ declare -A DOC_BLOCKS=(
   ["debug"]=1
   ["repair"]=0
   ["revise"]=0
-  ["research"]=1
+  ["research"]=0
 )
 
 # Track overall stats
