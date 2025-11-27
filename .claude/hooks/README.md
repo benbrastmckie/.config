@@ -49,6 +49,7 @@ Triggered when Claude completes a response and is ready for input.
 **Example Hooks**:
 - `post-command-metrics.sh`
 - `tts-dispatcher.sh`
+- `post-buffer-opener.sh`
 
 ---
 
@@ -214,6 +215,58 @@ Triggered before context compaction.
 - Debug logging
 
 **Configuration**: See [../tts/README.md](../tts/README.md)
+
+---
+
+### post-buffer-opener.sh
+**Purpose**: Automatically open workflow artifacts in Neovim after command completion
+
+**Triggered By**: Stop event
+
+**Design Philosophy**: Zero overhead outside Neovim. The hook checks `$NVIM` as its first operation
+and exits immediately (< 1ms) if not in a Neovim terminal. No JSON parsing, no file operations,
+no side effects. Claude Code works identically whether this hook is present or not.
+
+**Graceful Degradation**: All failure modes result in silent exit 0. Running outside Neovim,
+RPC failures, missing completion signals - all handled silently with no user-visible errors.
+
+**Zero Undo Impact**: Buffer opening creates a new buffer; it does not modify any existing
+buffer's undo tree or create undo entries in any buffer.
+
+**One-File Guarantee**: Opens at most one file per command execution, selecting the primary
+artifact via priority logic (plans > summaries > debug reports > research reports).
+
+**Input** (via JSON stdin, only parsed if $NVIM is set):
+- `hook_event_name`: "Stop"
+- `command`: Command that was executed
+- `status`: "success" or "error"
+- `cwd`: Working directory
+
+**Actions** (only when inside Neovim terminal):
+1. Check `$NVIM` - exit 0 immediately if unset (FIRST CHECK)
+2. Check `BUFFER_OPENER_ENABLED` - exit 0 if disabled
+3. Access terminal buffer output via RPC
+4. Extract ALL completion signals (may be multiple)
+5. Select PRIMARY artifact only (one file) using priority logic
+6. Open selected artifact in Neovim with context-aware behavior
+
+**Priority Logic**:
+| Priority | Signal Type | Commands |
+|----------|-------------|----------|
+| 1 (Highest) | PLAN_CREATED, PLAN_REVISED | /plan, /repair, /optimize-claude, /revise |
+| 2 | IMPLEMENTATION_COMPLETE (summary_path) | /build |
+| 3 | DEBUG_REPORT_CREATED | /debug |
+| 4 (Lowest) | REPORT_CREATED | /research, /errors |
+
+**Example**: When /optimize-claude creates 4 research reports + 1 plan, hook opens only the plan.
+
+**Requirements** (only when inside Neovim):
+- `$NVIM` environment variable (set automatically by Neovim terminal)
+- Commands that output completion signals
+
+**Configuration**:
+- `BUFFER_OPENER_ENABLED`: Enable/disable feature (default: true)
+- `BUFFER_OPENER_DEBUG`: Enable debug logging (default: false)
 
 ---
 
@@ -567,6 +620,7 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 ### Hook Scripts
 - [post-command-metrics.sh](post-command-metrics.sh) - Metrics collection
 - [tts-dispatcher.sh](tts-dispatcher.sh) - TTS notifications
+- [post-buffer-opener.sh](post-buffer-opener.sh) - Automatic artifact opening in Neovim
 - [pre-commit-library-sourcing.sh](pre-commit-library-sourcing.sh) - Library sourcing validation (git pre-commit)
 
 ### Related
