@@ -465,8 +465,8 @@ else
   done
   echo ""
 
-  local success_rate=$((TESTS_PASSED * 100 / TESTS_RUN))
-  local failure_rate=$((TESTS_FAILED * 100 / TESTS_RUN))
+  success_rate=$((TESTS_PASSED * 100 / TESTS_RUN))
+  failure_rate=$((TESTS_FAILED * 100 / TESTS_RUN))
 
   echo "Success Rate: $success_rate%"
   echo "Failure Rate: $failure_rate%"
