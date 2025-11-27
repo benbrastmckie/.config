@@ -21,8 +21,21 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-COMMANDS_DIR="$PROJECT_ROOT/.claude/commands"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+PROJECT_ROOT="$CLAUDE_PROJECT_DIR"
+COMMANDS_DIR="${CLAUDE_PROJECT_DIR}/.claude/commands"
 
 # Track violations
 VIOLATION_COUNT=0

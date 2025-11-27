@@ -87,9 +87,24 @@ Every error logged to environment-specific log files follows this schema:
     "expected_path": "/path/to/state.sh",
     "phase": 3,
     "retry_count": 1
-  }
+  },
+  "status": "ERROR",
+  "status_updated_at": null,
+  "repair_plan_path": null
 }
 ```
+
+**Error Lifecycle Status**
+
+Error entries include status tracking for repair workflow integration:
+
+| Status | Description |
+|--------|-------------|
+| `ERROR` | New error, default status when logged |
+| `FIX_PLANNED` | Set by `/repair` when plan created for this error |
+| `RESOLVED` | Set when repair plan completes successfully |
+
+The `/repair` command updates matching error entries with `FIX_PLANNED` status and links them to the generated repair plan via `repair_plan_path`.
 
 The `environment` field is automatically set to `"test"` when errors are logged from scripts in `.claude/tests/`, and `"production"` for all other contexts.
 
@@ -479,6 +494,65 @@ if [ "$error_type" = "fatal" ]; then
   # Exit immediately - cannot proceed
   exit 1
 fi
+```
+
+### Helper Functions (Spec 945)
+
+The error-handling library provides specialized helper functions for common error scenarios:
+
+**log_early_error()**
+
+Logs errors before error logging infrastructure is fully initialized (e.g., before COMMAND_NAME, WORKFLOW_ID, USER_ARGS available):
+
+```bash
+# Early initialization error (before workflow metadata)
+log_early_error "Failed to source required library" \
+  '{"library": "state-persistence.sh", "path": "/path/to/lib"}'
+
+# Returns 0 (silent failure) to avoid breaking initialization
+# Automatically creates error log directory if missing
+# Uses placeholder workflow_id: "unknown_<timestamp>"
+```
+
+**validate_state_restoration()**
+
+Validates required variables restored from state file after `load_workflow_state`:
+
+```bash
+# Load state from previous bash block
+load_workflow_state "$WORKFLOW_ID" false
+
+# Validate critical variables restored
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "PLAN_PATH" || {
+  echo "ERROR: State restoration failed" >&2
+  exit 1
+}
+
+# Now safe to use variables - guaranteed to be set
+echo "Processing: $PLAN_PATH"
+```
+
+Function behavior:
+- Temporarily disables `set -u` for safe variable checking
+- Logs `state_error` with missing variable list if any variables unset
+- Returns 0 if all variables set, 1 if any missing
+- Includes JSON context with comma-separated list of missing variables
+
+**check_unbound_vars()**
+
+Checks if variables are set before use (defensive pattern for optional variables):
+
+```bash
+# Check optional variable without logging error
+check_unbound_vars "OPTIONAL_FILE" || OPTIONAL_FILE=""
+
+# Check multiple optional variables
+check_unbound_vars "DEBUG_MODE" "VERBOSE" || {
+  DEBUG_MODE=false
+  VERBOSE=false
+}
+
+# Returns 0 if all variables set, 1 if any missing (does NOT log error)
 ```
 
 ## Usage Examples

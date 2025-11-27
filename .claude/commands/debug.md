@@ -21,7 +21,7 @@ YOU ARE EXECUTING a debug-focused workflow that investigates issues through rese
 **Terminal State**: debug (after debug analysis complete)
 **Expected Output**: Debug reports, strategy plan, and root cause analysis
 
-## Part 1: Capture Issue Description
+## Block 1: Capture Issue Description
 
 **EXECUTE NOW**: Capture and validate the issue description:
 
@@ -113,13 +113,13 @@ ORIGINAL_PROMPT_FILE_PATH=""
 if [[ "$ISSUE_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
   ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
   # Convert to absolute path if relative (preprocessing-safe pattern)
-  [[ "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]
+  [[ "${ORIGINAL_PROMPT_FILE_PATH:-}" = /* ]]
   IS_ABSOLUTE_PATH=$?
   if [ $IS_ABSOLUTE_PATH -ne 0 ]; then
-    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/${ORIGINAL_PROMPT_FILE_PATH:-}"
   fi
   # Validate file exists
-  if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+  if [ ! -f "${ORIGINAL_PROMPT_FILE_PATH:-}" ]; then
     log_command_error \
       "$COMMAND_NAME" \
       "$WORKFLOW_ID" \
@@ -127,16 +127,16 @@ if [[ "$ISSUE_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
       "validation_error" \
       "Prompt file not found" \
       "bash_block_1" \
-      "$(jq -n --arg path "$ORIGINAL_PROMPT_FILE_PATH" \
+      "$(jq -n --arg path "${ORIGINAL_PROMPT_FILE_PATH:-}" \
          '{file_path: $path, error: "file_not_found"}')"
 
-    echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    echo "ERROR: Prompt file not found: ${ORIGINAL_PROMPT_FILE_PATH:-}" >&2
     exit 1
   fi
   # Read file content into ISSUE_DESCRIPTION
-  ISSUE_DESCRIPTION=$(cat "$ORIGINAL_PROMPT_FILE_PATH")
+  ISSUE_DESCRIPTION=$(cat "${ORIGINAL_PROMPT_FILE_PATH:-}")
   if [ -z "$ISSUE_DESCRIPTION" ]; then
-    echo "WARNING: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    echo "WARNING: Prompt file is empty: ${ORIGINAL_PROMPT_FILE_PATH:-}" >&2
   fi
 elif [[ "$ISSUE_DESCRIPTION" =~ --file ]]; then
   log_command_error \
@@ -160,7 +160,7 @@ echo "Research Complexity: $RESEARCH_COMPLEXITY"
 echo ""
 ```
 
-## Part 2: State Machine Initialization
+## Block 2: State Machine Initialization
 
 **EXECUTE NOW**: Initialize state machine and source required libraries:
 
@@ -228,7 +228,8 @@ COMMAND_NAME="debug"
 
 # Generate WORKFLOW_ID for state persistence
 WORKFLOW_ID="debug_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
@@ -305,7 +306,7 @@ append_workflow_state "ISSUE_DESCRIPTION" "$ISSUE_DESCRIPTION"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
 ```
 
-## Part 2a: Topic Name Generation
+## Block 2a: Topic Name Generation
 
 **EXECUTE NOW**: USE the Task tool to invoke the topic-naming-agent for semantic topic directory naming.
 
@@ -321,7 +322,7 @@ Task {
     **Input**:
     - User Prompt: ${ISSUE_DESCRIPTION}
     - Command Name: /debug
-    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
 
     Execute topic naming according to behavioral guidelines:
     1. Generate semantic topic name from user prompt
@@ -359,68 +360,27 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2
 }
 
 # Load WORKFLOW_ID from file
-STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
 
-  # === RESTORE ERROR LOGGING CONTEXT ===
-  if [ -z "${COMMAND_NAME:-}" ]; then
-    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
-  fi
-  if [ -z "${USER_ARGS:-}" ]; then
-    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-  fi
+  # Validate critical variables restored from state
+  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
+    echo "ERROR: State restoration failed - critical variables missing" >&2
+    exit 1
+  }
+
   export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
   # === SETUP BASH ERROR TRAP ===
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
-  # === VALIDATE STATE AFTER LOAD ===
-  DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+  # Initialize DEBUG_LOG using CLAUDE_PROJECT_DIR for consistent path
+  DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
   mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
-
-  if [ -z "$STATE_FILE" ]; then
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "state_error" \
-      "State file path not set after load" \
-      "bash_block_2a" \
-      "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
-
-    {
-      echo "[$(date)] ERROR: State file path not set"
-      echo "WHICH: load_workflow_state"
-      echo "WHAT: STATE_FILE variable empty after load"
-      echo "WHERE: Block 2a, topic naming verification"
-    } >> "$DEBUG_LOG"
-    echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
-    exit 1
-  fi
-
-  if [ ! -f "$STATE_FILE" ]; then
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "file_error" \
-      "State file not found after load" \
-      "bash_block_2a" \
-      "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
-
-    {
-      echo "[$(date)] ERROR: State file not found"
-      echo "WHICH: load_workflow_state"
-      echo "WHAT: File does not exist at expected path"
-      echo "WHERE: Block 2a, topic naming verification"
-      echo "PATH: $STATE_FILE"
-    } >> "$DEBUG_LOG"
-    echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
-    exit 1
-  fi
 fi
 
 # === DEFENSIVE CHECK: Verify initialize_workflow_paths available ===
@@ -442,7 +402,8 @@ if [ $TYPE_CHECK -ne 0 ]; then
 fi
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
-TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
 TOPIC_NAME="no_name_error"
 NAMING_STRATEGY="fallback"
 
@@ -510,7 +471,7 @@ echo "✓ Topic naming complete: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 echo ""
 ```
 
-## Part 3: Research Phase (Issue Investigation)
+## Block 3: Research Phase (Issue Investigation)
 
 **EXECUTE NOW**: Transition to research state and allocate topic directory:
 
@@ -539,68 +500,27 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2
 }
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
-STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
 
-  # === RESTORE ERROR LOGGING CONTEXT ===
-  if [ -z "${COMMAND_NAME:-}" ]; then
-    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
-  fi
-  if [ -z "${USER_ARGS:-}" ]; then
-    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-  fi
+  # Validate critical variables restored from state
+  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "ISSUE_DESCRIPTION" || {
+    echo "ERROR: State restoration failed - critical variables missing" >&2
+    exit 1
+  }
+
   export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
   # === SETUP BASH ERROR TRAP ===
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
-  # === VALIDATE STATE AFTER LOAD ===
-  DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+  # Initialize DEBUG_LOG using CLAUDE_PROJECT_DIR for consistent path
+  DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
   mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
-
-  if [ -z "$STATE_FILE" ]; then
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "state_error" \
-      "State file path not set after load" \
-      "bash_block_3" \
-      "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
-
-    {
-      echo "[$(date)] ERROR: State file path not set"
-      echo "WHICH: load_workflow_state"
-      echo "WHAT: STATE_FILE variable empty after load"
-      echo "WHERE: Block 3, research phase setup"
-    } >> "$DEBUG_LOG"
-    echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
-    exit 1
-  fi
-
-  if [ ! -f "$STATE_FILE" ]; then
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "file_error" \
-      "State file not found after load" \
-      "bash_block_3" \
-      "$(jq -n --arg path "$STATE_FILE" '{state_file_path: $path}')"
-
-    {
-      echo "[$(date)] ERROR: State file not found"
-      echo "WHICH: load_workflow_state"
-      echo "WHAT: File does not exist at expected path"
-      echo "WHERE: Block 3, research phase setup"
-      echo "PATH: $STATE_FILE"
-    } >> "$DEBUG_LOG"
-    echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
-    exit 1
-  fi
 fi
 
 # Transition to research state with return code verification
@@ -674,19 +594,20 @@ TOPIC_SLUG="$TOPIC_NAME"
 
 # === ARCHIVE PROMPT FILE (if --file was used) ===
 ARCHIVED_PROMPT_PATH=""
-if [ -n "$ORIGINAL_PROMPT_FILE_PATH" ] && [ -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+if [ -n "${ORIGINAL_PROMPT_FILE_PATH:-}" ] && [ -f "${ORIGINAL_PROMPT_FILE_PATH:-}" ]; then
   mkdir -p "${TOPIC_PATH}/prompts"
-  ARCHIVED_PROMPT_PATH="${TOPIC_PATH}/prompts/$(basename "$ORIGINAL_PROMPT_FILE_PATH")"
-  mv "$ORIGINAL_PROMPT_FILE_PATH" "$ARCHIVED_PROMPT_PATH"
+  ARCHIVED_PROMPT_PATH="${TOPIC_PATH}/prompts/$(basename "${ORIGINAL_PROMPT_FILE_PATH:-}")"
+  mv "${ORIGINAL_PROMPT_FILE_PATH:-}" "$ARCHIVED_PROMPT_PATH"
   echo "Prompt file archived: $ARCHIVED_PROMPT_PATH"
 fi
 
 # Persist variables for next block and agent (legacy format for compatibility)
-echo "SPECS_DIR=$SPECS_DIR" > "${HOME}/.claude/tmp/debug_state_$$.txt"
-echo "RESEARCH_DIR=$RESEARCH_DIR" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
-echo "DEBUG_DIR=$DEBUG_DIR" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
-echo "ISSUE_DESCRIPTION=$ISSUE_DESCRIPTION" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
-echo "RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+echo "SPECS_DIR=$SPECS_DIR" > "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
+echo "RESEARCH_DIR=$RESEARCH_DIR" >> "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
+echo "DEBUG_DIR=$DEBUG_DIR" >> "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
+echo "ISSUE_DESCRIPTION=$ISSUE_DESCRIPTION" >> "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
+echo "RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY" >> "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
 
 # Also persist to workflow state for better isolation
 append_workflow_state "SPECS_DIR" "$SPECS_DIR"
@@ -694,7 +615,7 @@ append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
 append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
 append_workflow_state "TOPIC_SLUG" "$TOPIC_SLUG"
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
-append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "$ORIGINAL_PROMPT_FILE_PATH"
+append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "${ORIGINAL_PROMPT_FILE_PATH:-}"
 append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
 ```
 
@@ -743,7 +664,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Load WORKFLOW_ID from file
-STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
@@ -763,7 +685,8 @@ if [ -f "$STATE_ID_FILE" ]; then
 fi
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+source "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # MANDATORY VERIFICATION
 echo "Verifying research artifacts..."
@@ -824,7 +747,7 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
 fi
 ```
 
-## Part 4: Planning Phase (Debug Strategy)
+## Block 4: Planning Phase (Debug Strategy)
 
 **EXECUTE NOW**: Transition to planning state and prepare for plan creation:
 
@@ -845,7 +768,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+source "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 3 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
@@ -863,7 +787,8 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 if [ -z "$STATE_FILE" ]; then
@@ -956,8 +881,9 @@ REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 
 # Persist additional state for agent
-echo "PLAN_PATH=$PLAN_PATH" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
-echo "REPORT_PATHS_JSON='$REPORT_PATHS_JSON'" >> "${HOME}/.claude/tmp/debug_state_$$.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+echo "PLAN_PATH=$PLAN_PATH" >> "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
+echo "REPORT_PATHS_JSON='$REPORT_PATHS_JSON'" >> "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
@@ -1005,7 +931,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Load WORKFLOW_ID from file
-STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
@@ -1025,7 +952,8 @@ if [ -f "$STATE_ID_FILE" ]; then
 fi
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+source "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # MANDATORY VERIFICATION
 echo "Verifying plan artifacts..."
@@ -1071,7 +999,7 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
 fi
 ```
 
-## Part 5: Debug Phase (Root Cause Analysis)
+## Block 5: Debug Phase (Root Cause Analysis)
 
 **EXECUTE NOW**: Transition to debug state and prepare for root cause analysis:
 
@@ -1092,7 +1020,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+source "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 4 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
@@ -1110,7 +1039,8 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 if [ -z "$STATE_FILE" ]; then
@@ -1234,7 +1164,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Load WORKFLOW_ID from file
-STATE_ID_FILE="${HOME}/.claude/tmp/debug_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
@@ -1254,7 +1185,8 @@ if [ -f "$STATE_ID_FILE" ]; then
 fi
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+source "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # MANDATORY VERIFICATION
 echo "Verifying debug artifacts..."
@@ -1296,7 +1228,7 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
 fi
 ```
 
-## Part 6: Completion & Cleanup
+## Block 6: Completion & Cleanup
 
 **EXECUTE NOW**: Complete workflow and cleanup state:
 
@@ -1317,7 +1249,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Load state from previous block
-source "${HOME}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+source "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
 
 # Load workflow state from Part 5 (subprocess isolation)
 load_workflow_state "${WORKFLOW_ID:-$$}" false
@@ -1335,7 +1268,8 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 if [ -z "$STATE_FILE" ]; then
@@ -1444,7 +1378,8 @@ print_artifact_summary "Debug" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
 echo ""
 
 # Cleanup temp state file
-rm -f "${HOME}/.claude/tmp/debug_state_$$.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+rm -f "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
 
 exit 0
 ```

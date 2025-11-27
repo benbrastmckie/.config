@@ -7,13 +7,26 @@ set -uo pipefail
 
 # Source the error handling library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+CLAUDE_LIB="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
 # Disable errexit before sourcing to prevent error-handling.sh's set -e from affecting us
 set +e
-source "$PROJECT_ROOT/lib/core/error-handling.sh" 2>/dev/null
+source "$CLAUDE_LIB/core/error-handling.sh" 2>/dev/null
 if [ $? -ne 0 ]; then
-  echo "FAIL: Cannot source error-handling.sh"
+  echo "✗ FAIL: Cannot source error-handling.sh"
   exit 1
 fi
 
@@ -35,10 +48,10 @@ test_filter() {
   fi
 
   if [ "$is_benign" = "$expected_benign" ]; then
-    echo "PASS: $test_name"
+    echo "✓ PASS: $test_name"
     PASSED=$((PASSED + 1))
   else
-    echo "FAIL: $test_name (got benign=$is_benign, expected=$expected_benign)"
+    echo "✗ FAIL: $test_name (got benign=$is_benign, expected=$expected_benign)"
     FAILED=$((FAILED + 1))
   fi
 }

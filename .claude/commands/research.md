@@ -72,20 +72,20 @@ ORIGINAL_PROMPT_FILE_PATH=""
 if [[ "$WORKFLOW_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
   ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
   # Convert to absolute path if relative (preprocessing-safe pattern)
-  [[ "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]
+  [[ "${ORIGINAL_PROMPT_FILE_PATH:-}" = /* ]]
   IS_ABSOLUTE_PATH=$?
   if [ $IS_ABSOLUTE_PATH -ne 0 ]; then
-    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/${ORIGINAL_PROMPT_FILE_PATH:-}"
   fi
   # Validate file exists
-  if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
-    echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
+  if [ ! -f "${ORIGINAL_PROMPT_FILE_PATH:-}" ]; then
+    echo "ERROR: Prompt file not found: ${ORIGINAL_PROMPT_FILE_PATH:-}" >&2
     exit 1
   fi
   # Read file content into WORKFLOW_DESCRIPTION
-  WORKFLOW_DESCRIPTION=$(cat "$ORIGINAL_PROMPT_FILE_PATH")
+  WORKFLOW_DESCRIPTION=$(cat "${ORIGINAL_PROMPT_FILE_PATH:-}")
   if [ -z "$WORKFLOW_DESCRIPTION" ]; then
-    echo "WARNING: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    echo "WARNING: Prompt file is empty: ${ORIGINAL_PROMPT_FILE_PATH:-}" >&2
   fi
 elif [[ "$WORKFLOW_DESCRIPTION" =~ --file ]]; then
   echo "ERROR: --file flag requires a path argument" >&2
@@ -147,6 +147,10 @@ EOF
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
 
+# === SETUP EARLY BASH ERROR TRAP ===
+# Trap must be set BEFORE variable initialization to catch early failures
+setup_bash_error_trap "/research" "research_early_$(date +%s)" "early_init"
+
 # === INITIALIZE STATE ===
 WORKFLOW_TYPE="research-only"
 TERMINAL_STATE="research"
@@ -155,12 +159,13 @@ USER_ARGS="$WORKFLOW_DESCRIPTION"
 export COMMAND_NAME USER_ARGS
 
 WORKFLOW_ID="research_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/research_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/research_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
-# === SETUP BASH ERROR TRAP ===
+# === UPDATE BASH ERROR TRAP WITH ACTUAL VALUES ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Capture state file path for append_workflow_state
@@ -217,7 +222,8 @@ if [ $SM_TRANSITION_EXIT -ne 0 ]; then
 fi
 
 # Persist WORKFLOW_DESCRIPTION for topic naming agent
-TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches Block 1c)
+TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 echo "$WORKFLOW_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
 export TOPIC_NAMING_INPUT_FILE
 
@@ -240,7 +246,7 @@ Task {
     **Input**:
     - User Prompt: ${WORKFLOW_DESCRIPTION}
     - Command Name: /research
-    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
 
     Execute topic naming according to behavioral guidelines:
     1. Generate semantic topic name from user prompt
@@ -260,36 +266,7 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# === RESTORE STATE FROM BLOCK 1A ===
-STATE_ID_FILE="${HOME}/.claude/tmp/research_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
-  exit 1
-fi
-
-# Restore workflow state file (naming convention: workflow_${WORKFLOW_ID}.sh)
-STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
-
-# WORKFLOW_DESCRIPTION should be in state file, but also check temp file as backup
-TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
-if [ -z "$WORKFLOW_DESCRIPTION" ] && [ -f "$TOPIC_NAMING_INPUT_FILE" ]; then
-  WORKFLOW_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null)
-fi
-
-if [ -z "$WORKFLOW_DESCRIPTION" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_DESCRIPTION from Block 1a" >&2
-  exit 1
-fi
-
-# Restore environment
+# === DETECT PROJECT DIRECTORY FIRST (required for state file path) ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -303,7 +280,45 @@ else
   done
 fi
 
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1A ===
+# Use CLAUDE_PROJECT_DIR for consistent path (matches init_workflow_state)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/research_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
+  exit 1
+fi
+
+# Restore workflow state file (naming convention: workflow_${WORKFLOW_ID}.sh)
+# CRITICAL: Use CLAUDE_PROJECT_DIR to match init_workflow_state() path
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+# WORKFLOW_DESCRIPTION should be in state file, but also check temp file as backup
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+if [ -z "$WORKFLOW_DESCRIPTION" ] && [ -f "$TOPIC_NAMING_INPUT_FILE" ]; then
+  WORKFLOW_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null)
+fi
+
+if [ -z "$WORKFLOW_DESCRIPTION" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_DESCRIPTION from Block 1a" >&2
+  exit 1
+fi
+
 COMMAND_NAME="/research"
 USER_ARGS="$WORKFLOW_DESCRIPTION"
 export COMMAND_NAME USER_ARGS
@@ -316,7 +331,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || true
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
-TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
 TOPIC_NAME="no_name_error"
 NAMING_STRATEGY="fallback"
 
@@ -396,10 +412,10 @@ RESEARCH_DIR="${TOPIC_PATH}/reports"
 
 # === ARCHIVE PROMPT FILE (if --file was used) ===
 ARCHIVED_PROMPT_PATH=""
-if [ -n "$ORIGINAL_PROMPT_FILE_PATH" ] && [ -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
+if [ -n "${ORIGINAL_PROMPT_FILE_PATH:-}" ] && [ -f "${ORIGINAL_PROMPT_FILE_PATH:-}" ]; then
   mkdir -p "${TOPIC_PATH}/prompts"
-  ARCHIVED_PROMPT_PATH="${TOPIC_PATH}/prompts/$(basename "$ORIGINAL_PROMPT_FILE_PATH")"
-  mv "$ORIGINAL_PROMPT_FILE_PATH" "$ARCHIVED_PROMPT_PATH"
+  ARCHIVED_PROMPT_PATH="${TOPIC_PATH}/prompts/$(basename "${ORIGINAL_PROMPT_FILE_PATH:-}")"
+  mv "${ORIGINAL_PROMPT_FILE_PATH:-}" "$ARCHIVED_PROMPT_PATH"
   echo "Prompt file archived: $ARCHIVED_PROMPT_PATH"
 fi
 
@@ -410,7 +426,7 @@ append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
 append_workflow_state "TOPIC_NAME" "$TOPIC_NAME"
 append_workflow_state "WORKFLOW_DESCRIPTION" "$WORKFLOW_DESCRIPTION"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
-append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "$ORIGINAL_PROMPT_FILE_PATH"
+append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "${ORIGINAL_PROMPT_FILE_PATH:-}"
 append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
 append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
 append_workflow_state "USER_ARGS" "$USER_ARGS"
@@ -456,16 +472,7 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# === LOAD STATE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/research_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Detect project directory
+# === DETECT PROJECT DIRECTORY FIRST (required for state file path) ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -475,7 +482,23 @@ else
     current_dir="$(dirname "$current_dir")"
   done
 fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 export CLAUDE_PROJECT_DIR
+
+# === LOAD STATE ===
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches Block 1a)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/research_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
@@ -491,68 +514,24 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Initialize DEBUG_LOG if not already set
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
-# === RESTORE ERROR LOGGING CONTEXT ===
-if [ -z "${COMMAND_NAME:-}" ]; then
-  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/research")
-fi
-if [ -z "${USER_ARGS:-}" ]; then
-  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-fi
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "RESEARCH_DIR" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
+
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === SETUP BASH ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
-# === VALIDATE STATE AFTER LOAD ===
-if [ -z "$STATE_FILE" ]; then
-  # Log to centralized error log
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "State file path not set after load" \
-    "bash_block_2" \
-    "$(jq -n --arg workflow "$WORKFLOW_ID" '{workflow_id: $workflow}')"
-
-  # Also log to DEBUG_LOG
-  {
-    echo "[$(date)] ERROR: State file path not set"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: STATE_FILE variable empty after load"
-    echo "WHERE: Block 2, research verification"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State file path not set (see $DEBUG_LOG)" >&2
-  exit 1
-fi
-
-if [ ! -f "$STATE_FILE" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "file_error" \
-    "State file not found at expected path" \
-    "bash_block_2" \
-    "$(jq -n --arg path "$STATE_FILE" '{expected_path: $path}')"
-
-  {
-    echo "[$(date)] ERROR: State file not found"
-    echo "WHICH: load_workflow_state"
-    echo "WHAT: File does not exist at expected path"
-    echo "WHERE: Block 2, research verification"
-    echo "PATH: $STATE_FILE"
-  } >> "$DEBUG_LOG"
-  echo "ERROR: State file not found (see $DEBUG_LOG)" >&2
-  exit 1
-fi
-
-# Validate critical variables from Block 1
+# Validate RESEARCH_DIR is non-empty (additional check beyond state restoration)
 if [ -z "$RESEARCH_DIR" ]; then
   log_command_error \
     "$COMMAND_NAME" \
@@ -685,3 +664,4 @@ exit 0
 - **Complexity too low**: Use `--complexity 3` or `--complexity 4` for more comprehensive research
 - **File not found error**: Ensure --file path is correct and file exists; relative paths are resolved from current directory
 - **Empty file warning**: The prompt file exists but has no content; add content to the file
+- **State file not found (path mismatch)**: This error occurs when CLAUDE_PROJECT_DIR differs from HOME. All STATE_FILE paths must use `${CLAUDE_PROJECT_DIR}/.claude/tmp/`, not `${HOME}/.claude/tmp/`. Ensure CLAUDE_PROJECT_DIR detection happens before STATE_FILE path construction.

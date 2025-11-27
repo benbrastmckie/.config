@@ -1,1 +1,0 @@
-No test failures - 100% passing (41/41 test suites, 294 individual tests)

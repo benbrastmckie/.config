@@ -37,13 +37,13 @@ declare -a FAILED_TESTS=()
 # Helper functions
 pass() {
   ((TESTS_PASSED++))
-  echo "PASS: $1"
+  echo "✓ PASS: $1"
 }
 
 fail() {
   ((TESTS_FAILED++))
   FAILED_TESTS+=("$1")
-  echo "FAIL: $1"
+  echo "✗ FAIL: $1"
   if [ -n "${2:-}" ]; then
     echo "      Reason: $2"
   fi
@@ -51,7 +51,20 @@ fail() {
 
 # Find the actual library location
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REAL_LIB_DIR="$(dirname "$SCRIPT_DIR")/lib"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_ROOT="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_ROOT" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_ROOT/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_ROOT="$(dirname "$CLAUDE_PROJECT_ROOT")"
+  done
+fi
+REAL_LIB_DIR="${CLAUDE_PROJECT_ROOT}/.claude/lib"
 
 # Check if library exists
 if [ ! -f "$REAL_LIB_DIR/workflow/argument-capture.sh" ]; then

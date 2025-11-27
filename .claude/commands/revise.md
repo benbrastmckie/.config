@@ -21,7 +21,7 @@ YOU ARE EXECUTING a research-and-revise workflow that creates research reports b
 **Terminal State**: plan (after plan revision complete)
 **Expected Output**: Research reports + revised plan (with backup of original)
 
-## Part 1: Capture Revision Description
+## Block 1: Capture Revision Description
 
 **EXECUTE NOW**: The user invoked `/revise "<revision-description-with-plan-path>"`. Capture that description.
 
@@ -61,7 +61,7 @@ echo "$TEMP_FILE" > "${HOME}/.claude/tmp/revise_arg_path.txt"
 echo "Revision description captured to $TEMP_FILE"
 ```
 
-## Part 2: Read and Validate Revision Description
+## Block 2: Read and Validate Revision Description
 
 **EXECUTE NOW**: Read the captured description, extract plan path, and validate:
 
@@ -157,29 +157,29 @@ if [[ "$REVISION_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
   REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--file[[:space:]]*[^[:space:]]*//' | xargs)
 
   # Convert relative path to absolute (preprocessing-safe pattern)
-  [[ "$ORIGINAL_PROMPT_FILE_PATH" = /* ]]
+  [[ "${ORIGINAL_PROMPT_FILE_PATH:-}" = /* ]]
   IS_ABSOLUTE_PATH=$?
   if [ $IS_ABSOLUTE_PATH -ne 0 ]; then
-    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/$ORIGINAL_PROMPT_FILE_PATH"
+    ORIGINAL_PROMPT_FILE_PATH="$(pwd)/${ORIGINAL_PROMPT_FILE_PATH:-}"
   fi
 
   # Validate file exists
-  if [ ! -f "$ORIGINAL_PROMPT_FILE_PATH" ]; then
-    echo "ERROR: Prompt file not found: $ORIGINAL_PROMPT_FILE_PATH" >&2
+  if [ ! -f "${ORIGINAL_PROMPT_FILE_PATH:-}" ]; then
+    echo "ERROR: Prompt file not found: ${ORIGINAL_PROMPT_FILE_PATH:-}" >&2
     echo "DIAGNOSTIC: Ensure --file path is correct and file exists" >&2
     exit 1
   fi
 
   # Read file content as revision description
-  FILE_CONTENT=$(cat "$ORIGINAL_PROMPT_FILE_PATH")
+  FILE_CONTENT=$(cat "${ORIGINAL_PROMPT_FILE_PATH:-}")
   if [ -z "$FILE_CONTENT" ]; then
-    echo "ERROR: Prompt file is empty: $ORIGINAL_PROMPT_FILE_PATH" >&2
+    echo "ERROR: Prompt file is empty: ${ORIGINAL_PROMPT_FILE_PATH:-}" >&2
     echo "DIAGNOSTIC: The prompt file must contain both the plan path and revision details" >&2
     exit 1
   fi
 
   REVISION_DESCRIPTION="$FILE_CONTENT"
-  echo "Loaded revision description from file: $ORIGINAL_PROMPT_FILE_PATH"
+  echo "Loaded revision description from file: ${ORIGINAL_PROMPT_FILE_PATH:-}"
 elif [[ "$REVISION_DESCRIPTION" =~ --file$ ]] || [[ "$REVISION_DESCRIPTION" =~ --file[[:space:]]*$ ]]; then
   echo "ERROR: --file flag requires a path argument" >&2
   echo "USAGE: /revise \"--file /path/to/prompt.md\"" >&2
@@ -191,7 +191,7 @@ fi
 EXISTING_PLAN_PATH=$(echo "$REVISION_DESCRIPTION" | grep -oE '[./][^ ]+\.md' | head -1)
 
 # Validate plan path exists
-if [ -z "$EXISTING_PLAN_PATH" ]; then
+if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
   echo "ERROR: No plan path found in revision description" >&2
   echo "USAGE: /revise \"revise plan at /path/to/plan.md based on INSIGHTS\"" >&2
   exit 1
@@ -244,7 +244,7 @@ if [ "$DRY_RUN" = "true" ]; then
 fi
 ```
 
-## Part 3: State Machine Initialization
+## Block 3: State Machine Initialization
 
 **EXECUTE NOW**: Initialize the state machine and source required libraries:
 
@@ -314,7 +314,8 @@ COMMAND_NAME="revise"
 
 # Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
 WORKFLOW_ID="revise_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
@@ -381,7 +382,7 @@ echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
 echo ""
 ```
 
-## Part 3: Research Phase Execution
+## Block 4: Research Phase Execution
 
 **EXECUTE NOW**: Transition to research state and prepare research directory:
 
@@ -403,7 +404,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
-STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
@@ -428,7 +430,8 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 if [ -z "$STATE_FILE" ]; then
@@ -473,7 +476,7 @@ if [ ! -f "$STATE_FILE" ]; then
 fi
 
 # Validate critical variables
-if [ -z "$EXISTING_PLAN_PATH" ]; then
+if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -580,7 +583,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Load WORKFLOW_ID from file
-STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
@@ -650,14 +654,15 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
 fi
 ```
 
-## Part 4: Plan Revision Phase
+## Block 5: Plan Revision Phase
 
 **EXECUTE NOW**: Transition to planning state and create backup:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
-STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
@@ -682,7 +687,8 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 if [ -z "$STATE_FILE" ]; then
@@ -727,7 +733,7 @@ if [ ! -f "$STATE_FILE" ]; then
 fi
 
 # Validate critical variables
-if [ -z "$EXISTING_PLAN_PATH" ]; then
+if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -854,7 +860,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Load WORKFLOW_ID from file
-STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
   export WORKFLOW_ID
@@ -924,7 +931,7 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
 fi
 ```
 
-## Part 5: Completion & Cleanup
+## Block 6: Completion & Cleanup
 
 **EXECUTE NOW**: Complete the workflow and display summary:
 
@@ -932,7 +939,8 @@ fi
 set +H  # CRITICAL: Disable history expansion
 
 # Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
-STATE_ID_FILE="${HOME}/.claude/tmp/revise_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2

@@ -12,6 +12,7 @@ This directory contains the core standards documentation that governs command au
 | agent-reference.md | Agent catalog with roles and capabilities |
 | testing-protocols.md | Test discovery, patterns, and coverage requirements |
 | code-standards.md | Coding conventions and architectural requirements |
+| clean-break-development.md | Clean-break refactoring patterns and anti-patterns |
 | documentation-standards.md | README.md structure requirements and directory classification |
 | output-formatting.md | Output suppression and formatting standards |
 | command-authoring.md | Command development standards |

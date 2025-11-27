@@ -1,12 +1,28 @@
 #!/usr/bin/env bash
 # state-persistence.sh - GitHub Actions-style state persistence for .claude/ workflows
 #
-# Version: 1.5.0
-# Last Modified: 2025-11-17
+# Version: 1.6.0
+# Last Modified: 2025-11-23
 #
 # This library implements selective file-based state persistence following the GitHub Actions
 # pattern ($GITHUB_OUTPUT, $GITHUB_STATE). It provides fast, reliable state management for
 # critical state items where file-based persistence outperforms stateless recalculation.
+#
+# IMPORTANT: State File Path Pattern
+# ==================================
+# State files are ALWAYS created at:
+#   ${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh
+#
+# Commands MUST construct STATE_FILE paths using ${CLAUDE_PROJECT_DIR}, NOT ${HOME}.
+# When HOME != CLAUDE_PROJECT_DIR, using ${HOME} causes "State file not found" errors.
+#
+# CORRECT pattern (in command bash blocks AFTER CLAUDE_PROJECT_DIR detection):
+#   STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+#
+# INCORRECT pattern (causes PATH MISMATCH bug):
+#   STATE_FILE="${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+#
+# Use validate_state_file_path() to detect this mismatch at runtime.
 #
 # Source guard: Prevent multiple sourcing within same bash process
 # NOTE: Do NOT export this variable - each bash block is a separate process
@@ -15,7 +31,7 @@ if [ -n "${STATE_PERSISTENCE_SOURCED:-}" ]; then
   return 0
 fi
 STATE_PERSISTENCE_SOURCED=1
-export STATE_PERSISTENCE_VERSION="1.5.0"
+export STATE_PERSISTENCE_VERSION="1.6.0"
 #
 # Key Features:
 # - Selective state persistence (7 critical items identified via decision criteria)
@@ -293,6 +309,67 @@ load_workflow_state() {
       return 2  # Exit code 2 = configuration error (distinct from normal failures)
     fi
   fi
+}
+
+# Validate state file path consistency
+#
+# Checks that the STATE_FILE variable points to the correct path based on
+# CLAUDE_PROJECT_DIR and WORKFLOW_ID. This detects mismatches where a command
+# constructs STATE_FILE using ${HOME} instead of ${CLAUDE_PROJECT_DIR}.
+#
+# IMPORTANT: This function exists because of a historical bug where commands
+# constructed STATE_FILE as ${HOME}/.claude/tmp/workflow_${WORKFLOW_ID}.sh
+# while init_workflow_state() creates files at ${CLAUDE_PROJECT_DIR}/.claude/tmp/
+# When HOME != CLAUDE_PROJECT_DIR, this causes "State file not found" errors.
+#
+# The CORRECT pattern is:
+#   STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+#
+# Usage:
+#   validate_state_file_path "$WORKFLOW_ID"
+#   # OR
+#   validate_state_file_path "$WORKFLOW_ID" "$STATE_FILE"
+#
+# Args:
+#   $1 - workflow_id: The workflow identifier
+#   $2 - state_file (optional): STATE_FILE to validate (defaults to STATE_FILE env var)
+#
+# Returns:
+#   0 if STATE_FILE path is correct (matches CLAUDE_PROJECT_DIR pattern)
+#   1 if STATE_FILE path is incorrect (likely using HOME instead of CLAUDE_PROJECT_DIR)
+#
+# Side Effects:
+#   - Prints error message to stderr if mismatch detected
+#
+# Reference: Spec 925 (PATH MISMATCH fix)
+validate_state_file_path() {
+  local workflow_id="$1"
+  local state_file="${2:-${STATE_FILE:-}}"
+  local expected_path="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${workflow_id}.sh"
+
+  # Skip validation if no STATE_FILE to check
+  if [ -z "$state_file" ]; then
+    return 0
+  fi
+
+  if [ "$state_file" != "$expected_path" ]; then
+    echo "" >&2
+    echo "⚠️  STATE_FILE PATH MISMATCH DETECTED" >&2
+    echo "" >&2
+    echo "  Current STATE_FILE:  $state_file" >&2
+    echo "  Expected STATE_FILE: $expected_path" >&2
+    echo "" >&2
+    echo "  CLAUDE_PROJECT_DIR: ${CLAUDE_PROJECT_DIR:-UNSET}" >&2
+    echo "  HOME: ${HOME:-UNSET}" >&2
+    echo "" >&2
+    echo "This error typically occurs when STATE_FILE is constructed using" >&2
+    echo "\${HOME} instead of \${CLAUDE_PROJECT_DIR}. The correct pattern is:" >&2
+    echo "  STATE_FILE=\"\${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_\${WORKFLOW_ID}.sh\"" >&2
+    echo "" >&2
+    return 1
+  fi
+
+  return 0
 }
 
 # Append workflow state (GitHub Actions $GITHUB_OUTPUT pattern)

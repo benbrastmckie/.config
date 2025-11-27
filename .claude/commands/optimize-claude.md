@@ -141,7 +141,8 @@ for report_file in "${ADDITIONAL_REPORTS[@]}"; do
 done
 
 # Persist OPTIMIZATION_DESCRIPTION for topic naming agent
-TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 echo "$OPTIMIZATION_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
 export TOPIC_NAMING_INPUT_FILE
 
@@ -208,7 +209,7 @@ Task {
     **Input**:
     - User Prompt: ${OPTIMIZATION_DESCRIPTION}
     - Command Name: /optimize-claude
-    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
 
     Execute topic naming according to behavioral guidelines:
     1. Generate semantic topic name from user prompt
@@ -265,7 +266,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
-TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
 TOPIC_NAME="no_name_error"
 NAMING_STRATEGY="fallback"
 

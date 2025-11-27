@@ -54,6 +54,18 @@ The `/errors` command provides two modes for working with the centralized error 
 5. **Query Interface**: Filter by command, time, type, workflow ID
 6. **Multiple Views**: Structured reports, recent errors, filtered queries, summary statistics, raw JSONL
 7. **Automatic Rotation**: 10MB log rotation with 5 backup files
+8. **Comprehensive Coverage**: 80%+ error logging coverage enforced via linters (Spec 945)
+
+### Error Logging Coverage
+
+As of Spec 945 (Error Logging Coverage Refactor), all commands maintain 80%+ error logging coverage:
+
+- **Bash Error Traps**: Automatic logging of unhandled errors (exit 127, command failures)
+- **State Restoration Validation**: `validate_state_restoration()` logs missing variables
+- **Explicit Logging**: `log_command_error` calls before validation exits
+- **Enforcement**: Pre-commit hooks prevent coverage regressions below 80%
+
+This ensures the `/errors` command captures the vast majority of errors that occur in practice, making error analysis and repair workflows highly effective.
 
 ### Patterns Used
 
@@ -229,9 +241,36 @@ Each error log entry contains:
   "error_message": "State file not found",
   "execution_context": "bash_block",
   "additional_context": {"plan_file": "/path/to/plan.md"},
-  "stack_trace": ["caller1", "caller2", "..."]
+  "stack_trace": ["caller1", "caller2", "..."],
+  "status": "ERROR",
+  "status_updated_at": null,
+  "repair_plan_path": null
 }
 ```
+
+### Error Status Lifecycle
+
+Error entries track their resolution status:
+
+| Status | Description | When Set |
+|--------|-------------|----------|
+| `ERROR` | New error, not yet addressed | When error is first logged |
+| `FIX_PLANNED` | Repair plan created for this error | After `/repair` creates a plan |
+| `RESOLVED` | Error has been fixed | After `/build` completes repair plan |
+
+**Filter by status**:
+```bash
+# View new errors that need attention
+/errors --query --status ERROR --limit 10
+
+# View errors with repair plans in progress
+/errors --query --status FIX_PLANNED
+
+# View resolved errors (for verification)
+/errors --query --status RESOLVED --since 24h
+```
+
+**Note**: Entries without a status field (created before this feature) default to "ERROR" when queried.
 
 ### Output Format Options
 

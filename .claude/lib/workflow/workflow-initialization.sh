@@ -40,6 +40,18 @@ else
   exit 1
 fi
 
+# Source unified-location-detection.sh for atomic allocate_and_create_topic() function
+# This function provides atomic topic number allocation AND directory creation under
+# exclusive file lock, eliminating race conditions in concurrent workflows.
+# See unified-location-detection.sh:247-305 for implementation details.
+if [ -f "$SCRIPT_DIR/../core/unified-location-detection.sh" ]; then
+  source "$SCRIPT_DIR/../core/unified-location-detection.sh"
+else
+  echo "ERROR: unified-location-detection.sh not found" >&2
+  echo "Expected location: $SCRIPT_DIR/../core/unified-location-detection.sh" >&2
+  exit 1
+fi
+
 # ==============================================================================
 # Helper Function: extract_topic_from_plan_path
 # ==============================================================================
@@ -458,11 +470,12 @@ initialize_workflow_paths() {
     mkdir -p "$specs_root"
   fi
 
-  # Calculate topic metadata using utility functions
-  # Note: Calculate topic_name first, then use get_or_create_topic_number for idempotency
-  # This prevents topic number incrementing on each bash block invocation
+  # Calculate topic metadata
+  # Uses atomic allocate_and_create_topic() for concurrent safety, eliminating race conditions
+  # that caused duplicate topic numbers (see Spec 933 for details)
   local topic_num
   local topic_name
+  local topic_path
 
   # Use LLM-generated topic_directory_slug if classification_result provided (Spec 771)
   # Otherwise fall back to basic sanitization for backward compatibility
@@ -474,38 +487,24 @@ initialize_workflow_paths() {
     topic_name=$(echo "$workflow_description" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | sed 's/[^a-z0-9_]//g' | sed 's/__*/_/g' | sed 's/^_*//;s/_*$//' | cut -c1-50)
   fi
 
-  topic_num=$(get_or_create_topic_number "$specs_root" "$topic_name")
-
-  # Validate required fields
-  if [ -z "$project_root" ] || [ -z "$topic_num" ] || [ -z "$topic_name" ]; then
+  # Validate topic_name is set
+  if [ -z "$topic_name" ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-    echo "DIAGNOSTIC INFO: Location Metadata Calculation Failed" >&2
+    echo "DIAGNOSTIC INFO: Topic Name Calculation Failed" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     echo "" >&2
-    echo "ERROR: Failed to calculate location metadata" >&2
-    echo "" >&2
-    echo "Calculated Values:" >&2
-    echo "  PROJECT_ROOT: '${project_root:-<empty>}'" >&2
-    echo "  TOPIC_NUM: '${topic_num:-<empty>}'" >&2
-    echo "  TOPIC_NAME: '${topic_name:-<empty>}'" >&2
+    echo "ERROR: Failed to calculate topic name" >&2
     echo "" >&2
     echo "Source Values:" >&2
-    echo "  SPECS_ROOT: '${specs_root:-<empty>}'" >&2
     echo "  WORKFLOW_DESCRIPTION: '${workflow_description:-<empty>}'" >&2
-    echo "" >&2
-    echo "Functions Used:" >&2
-    echo "  get_or_create_topic_number() - from topic-utils.sh (idempotent)" >&2
-    echo "  validate_topic_directory_slug() - from workflow-initialization.sh" >&2
+    echo "  CLASSIFICATION_RESULT: '${classification_result:+<provided>}'" >&2
     echo "" >&2
     return 1
   fi
 
-  # Path calculation silent - coordinate.md will display summary
-
   # Calculate topic path - conditional based on workflow scope
-  local topic_path
   if [ "${workflow_scope:-}" = "research-and-revise" ]; then
-    # research-and-revise: Reuse existing plan's topic directory
+    # research-and-revise: Reuse existing plan's topic directory (NO atomic allocation needed)
     if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
       echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
       echo "CRITICAL ERROR: research-and-revise requires EXISTING_PLAN_PATH" >&2
@@ -545,65 +544,92 @@ initialize_workflow_paths() {
 
     echo "Using existing topic directory: $topic_path (research-and-revise mode)" >&2
   else
-    # All other workflow scopes: Create new topic directory
-    topic_path="${specs_root}/${topic_num}_${topic_name}"
+    # ============================================================================
+    # All other workflow scopes: ATOMIC topic allocation AND directory creation
+    # Uses allocate_and_create_topic() for concurrent safety under file lock
+    # This eliminates race conditions that caused duplicate topic numbers (Spec 933)
+    # ============================================================================
+
+    # Check if topic directory already exists (idempotent behavior)
+    local existing_topic
+    existing_topic=$(ls -1d "${specs_root}"/[0-9][0-9][0-9]_"${topic_name}" 2>/dev/null | head -1 || echo "")
+
+    if [ -n "$existing_topic" ]; then
+      # Existing topic found - reuse it (idempotent behavior preserved)
+      topic_path="$existing_topic"
+      topic_num=$(basename "$topic_path" | grep -oE '^[0-9]+')
+    else
+      # No existing topic - use ATOMIC allocation to prevent race conditions
+      # allocate_and_create_topic() holds exclusive file lock through BOTH
+      # number calculation AND directory creation, preventing collisions
+      local allocation_result
+      allocation_result=$(allocate_and_create_topic "$specs_root" "$topic_name")
+
+      if [ -z "$allocation_result" ]; then
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "CRITICAL ERROR: Atomic topic allocation failed" >&2
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+        echo "" >&2
+        echo "SPECS_ROOT: $specs_root" >&2
+        echo "TOPIC_NAME: $topic_name" >&2
+        echo "" >&2
+        echo "This indicates a failure in allocate_and_create_topic() from unified-location-detection.sh" >&2
+        echo "" >&2
+        return 1
+      fi
+
+      # Parse pipe-delimited result: "topic_number|topic_path"
+      topic_num="${allocation_result%|*}"
+      topic_path="${allocation_result#*|}"
+    fi
   fi
 
-  # ============================================================================
-  # STEP 3: Directory Structure Creation (Silent - verification occurs, no output)
-  # ============================================================================
-
-  # Create topic structure using utility function (creates only root directory)
-  # Skip creation for research-and-revise (directory already exists)
-  if [ "${workflow_scope:-}" = "research-and-revise" ]; then
-    # Verify directory exists (already checked above, but defensive)
-    if [ ! -d "$topic_path" ]; then
-      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-      echo "CRITICAL ERROR: Topic directory disappeared between validation checks" >&2
-      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-      echo "" >&2
-      echo "This should never happen. Topic path: $topic_path" >&2
-      echo "" >&2
-      return 1
-    fi
-  elif ! create_topic_structure "$topic_path"; then
+  # Validate required fields
+  if [ -z "$project_root" ] || [ -z "$topic_num" ] || [ -z "$topic_name" ] || [ -z "$topic_path" ]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-    echo "CRITICAL ERROR: Topic root directory creation failed" >&2
+    echo "DIAGNOSTIC INFO: Location Metadata Calculation Failed" >&2
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
     echo "" >&2
-    echo "Attempted Path: $topic_path" >&2
+    echo "ERROR: Failed to calculate location metadata" >&2
     echo "" >&2
-    echo "Parent Directory Status:" >&2
-    if [ -d "$(dirname "$topic_path")" ]; then
-      echo "  Exists: Yes" >&2
-      echo "  Permissions: $(ls -ld "$(dirname "$topic_path")" 2>/dev/null | awk '{print $1}')" >&2
-      echo "  Owner: $(ls -ld "$(dirname "$topic_path")" 2>/dev/null | awk '{print $3":"$4}')" >&2
-    else
-      echo "  Exists: No" >&2
-      echo "  Issue: Parent directory does not exist" >&2
-    fi
+    echo "Calculated Values:" >&2
+    echo "  PROJECT_ROOT: '${project_root:-<empty>}'" >&2
+    echo "  TOPIC_NUM: '${topic_num:-<empty>}'" >&2
+    echo "  TOPIC_NAME: '${topic_name:-<empty>}'" >&2
+    echo "  TOPIC_PATH: '${topic_path:-<empty>}'" >&2
     echo "" >&2
-    echo "Diagnostic commands:" >&2
-    echo "  # Check parent directory" >&2
-    echo "  ls -ld \"$(dirname "$topic_path")\"" >&2
+    echo "Source Values:" >&2
+    echo "  SPECS_ROOT: '${specs_root:-<empty>}'" >&2
+    echo "  WORKFLOW_DESCRIPTION: '${workflow_description:-<empty>}'" >&2
     echo "" >&2
-    echo "  # Check permissions" >&2
-    echo "  touch \"$(dirname "$topic_path")/test.tmp\" && rm \"$(dirname "$topic_path")/test.tmp\"" >&2
+    echo "Functions Used:" >&2
+    echo "  allocate_and_create_topic() - from unified-location-detection.sh (atomic)" >&2
+    echo "  validate_topic_directory_slug() - from workflow-initialization.sh" >&2
     echo "" >&2
-    echo "  # Check disk space" >&2
-    echo "  df -h \"$(dirname "$topic_path")\"" >&2
-    echo "" >&2
-    echo "Possible causes:" >&2
-    echo "  - Insufficient permissions to create directory" >&2
-    echo "  - Read-only filesystem" >&2
-    echo "  - Disk full" >&2
-    echo "  - Path contains invalid characters" >&2
-    echo "" >&2
-    echo "Workflow TERMINATED (fail-fast: no fallback mechanisms)" >&2
     return 1
   fi
 
-  # Verification checkpoint silent - errors go to stderr
+  # ============================================================================
+  # STEP 3: Directory Structure Verification
+  # ============================================================================
+  # Note: Directory creation is now handled atomically by allocate_and_create_topic()
+  # for new topics, or directory already exists for research-and-revise and idempotent cases
+
+  # Verify topic directory exists (already created by atomic allocation or exists for idempotent case)
+  if [ ! -d "$topic_path" ]; then
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "CRITICAL ERROR: Topic directory does not exist after allocation" >&2
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+    echo "" >&2
+    echo "Topic path: $topic_path" >&2
+    echo "" >&2
+    echo "This should never happen - allocate_and_create_topic() creates the directory atomically" >&2
+    echo "" >&2
+    return 1
+  fi
+
+  # Directory verification passed - no separate create_topic_structure() call needed
+  # (directory created atomically by allocate_and_create_topic() or already existed)
 
   # ============================================================================
   # Pre-calculate ALL artifact paths (exported to calling script)

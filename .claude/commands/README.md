@@ -100,6 +100,30 @@ See [Commands](#commands) for complete command documentation.
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## Table of Contents
+
+- [Primary Workflow](#primary-workflow)
+- [Features](#features)
+- [Command Architecture](#command-architecture)
+- [Commands](#commands)
+  - [Primary Commands](#primary-commands)
+    - [/build](#build) - Build-from-plan workflow
+    - [/debug](#debug) - Debug-focused workflow
+    - [/plan](#plan) - Research and create implementation plan
+    - [/research](#research) - Research-only workflow
+    - [/revise](#revise) - Research and revise existing plan
+    - [/collapse](#collapse) - Collapse expanded phases/stages
+    - [/expand](#expand) - Expand phases/stages into detailed files
+  - [Utility Commands](#utility-commands)
+    - [/convert-docs](#convert-docs) - Convert between Markdown, DOCX, PDF
+    - [/errors](#errors) - Query error logs and generate reports
+    - [/repair](#repair) - Research error patterns and create fix plan
+    - [/setup](#setup) - Setup or analyze CLAUDE.md configuration
+    - [/optimize-claude](#optimize-claude) - Optimize .claude/ structure
+- [Command Guidelines](#command-guidelines)
+- [Command Relationships](#command-relationships)
+- [Documentation](#documentation)
+
 ## Commands
 
 ### Primary Commands
@@ -370,7 +394,7 @@ See [Commands](#commands) for complete command documentation.
 #### /repair
 **Purpose**: Research error patterns and create implementation plan to fix them
 
-**Usage**: `/repair [--since TIME] [--type TYPE] [--command CMD] [--severity LEVEL] [--complexity 1-4]`
+**Usage**: `/repair [--since TIME] [--type TYPE] [--command CMD] [--severity LEVEL] [--complexity 1-4] [--file PATH]`
 
 **Type**: utility
 

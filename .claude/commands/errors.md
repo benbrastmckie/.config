@@ -1,7 +1,7 @@
 ---
 allowed-tools: Task, Write, Glob, Bash, Read
 description: Query error logs and generate error analysis reports via errors-analyst agent
-argument-hint: [--command CMD] [--since TIME] [--type TYPE] [--limit N] [--query] [--summary]
+argument-hint: [--command CMD] [--since TIME] [--type TYPE] [--status STATUS] [--limit N] [--query] [--summary]
 command-type: utility
 dependent-agents:
   - errors-analyst
@@ -41,6 +41,7 @@ When invoked with `--query` flag, displays error logs directly (backward compati
 - `--command CMD` - Filter by command name (e.g., /build, /plan)
 - `--since TIME` - Filter errors since timestamp (ISO 8601 format, e.g., 2025-11-19)
 - `--type TYPE` - Filter by error type (state_error, validation_error, agent_error, etc.)
+- `--status STATUS` - Filter by error status (ERROR, FIX_PLANNED, RESOLVED)
 - `--limit N` - Limit number of results (default: 10 for query mode, all for report mode)
 - `--workflow-id ID` - Filter by workflow ID
 - `--log-file PATH` - Log file path (default: .claude/data/logs/errors.jsonl)
@@ -74,6 +75,11 @@ When invoked with `--query` flag, displays error logs directly (backward compati
 
 # Query mode: Combine filters
 /errors --query --command /build --type state_error --limit 3
+
+# Filter by status (ERROR, FIX_PLANNED, RESOLVED)
+/errors --query --status ERROR --limit 10
+/errors --query --status FIX_PLANNED
+/errors --query --status RESOLVED --command /build
 ```
 
 ## EXECUTE NOW: Block 1 - Setup and Mode Detection
@@ -85,6 +91,7 @@ set +H  # CRITICAL: Disable history expansion
 COMMAND_FILTER=""
 SINCE_FILTER=""
 TYPE_FILTER=""
+STATUS_FILTER=""
 WORKFLOW_FILTER=""
 LOG_FILE_ARG=""
 LIMIT="10"
@@ -104,6 +111,10 @@ while [ $# -gt 0 ]; do
       ;;
     --type)
       TYPE_FILTER="$2"
+      shift 2
+      ;;
+    --status)
+      STATUS_FILTER="$2"
       shift 2
       ;;
     --limit)
@@ -177,6 +188,7 @@ if [ "$QUERY_MODE" = "true" ]; then
     [ -n "$COMMAND_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --command $COMMAND_FILTER"
     [ -n "$SINCE_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --since $SINCE_FILTER"
     [ -n "$TYPE_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --type $TYPE_FILTER"
+    [ -n "$STATUS_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --status $STATUS_FILTER"
     [ -n "$WORKFLOW_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --workflow-id $WORKFLOW_FILTER"
     [ -n "$LOG_FILE_ARG" ] && QUERY_ARGS="$QUERY_ARGS --log-file $LOG_FILE_ARG"
     [ -n "$LIMIT" ] && QUERY_ARGS="$QUERY_ARGS --limit $LIMIT"
@@ -184,12 +196,13 @@ if [ "$QUERY_MODE" = "true" ]; then
     query_errors $QUERY_ARGS
   else
     # Check for filters
-    if [ -n "$COMMAND_FILTER" ] || [ -n "$SINCE_FILTER" ] || [ -n "$TYPE_FILTER" ] || [ -n "$WORKFLOW_FILTER" ] || [ -n "$LOG_FILE_ARG" ]; then
+    if [ -n "$COMMAND_FILTER" ] || [ -n "$SINCE_FILTER" ] || [ -n "$TYPE_FILTER" ] || [ -n "$STATUS_FILTER" ] || [ -n "$WORKFLOW_FILTER" ] || [ -n "$LOG_FILE_ARG" ]; then
       # Use query_errors with filters
       QUERY_ARGS=""
       [ -n "$COMMAND_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --command $COMMAND_FILTER"
       [ -n "$SINCE_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --since $SINCE_FILTER"
       [ -n "$TYPE_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --type $TYPE_FILTER"
+      [ -n "$STATUS_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --status $STATUS_FILTER"
       [ -n "$WORKFLOW_FILTER" ] && QUERY_ARGS="$QUERY_ARGS --workflow-id $WORKFLOW_FILTER"
       [ -n "$LOG_FILE_ARG" ] && QUERY_ARGS="$QUERY_ARGS --log-file $LOG_FILE_ARG"
       [ -n "$LIMIT" ] && QUERY_ARGS="$QUERY_ARGS --limit $LIMIT"
@@ -209,12 +222,18 @@ if [ "$QUERY_MODE" = "true" ]; then
             error_type=$(echo "$line" | jq -r '.error_type // "unknown"' 2>/dev/null)
             message=$(echo "$line" | jq -r '.error_message // "No message"' 2>/dev/null)
             workflow_id=$(echo "$line" | jq -r '.workflow_id // "unknown"' 2>/dev/null)
+            status=$(echo "$line" | jq -r '.status // "ERROR"' 2>/dev/null)
+            repair_plan=$(echo "$line" | jq -r '.repair_plan_path // ""' 2>/dev/null)
 
             echo ""
             echo "[$timestamp] $command"
             echo "  Type: $error_type"
+            echo "  Status: $status"
             echo "  Message: $message"
             echo "  Workflow: $workflow_id"
+            if [ -n "$repair_plan" ] && [ "$repair_plan" != "null" ]; then
+              echo "  Repair Plan: $repair_plan"
+            fi
           fi
         done
         echo ""
@@ -270,7 +289,8 @@ elif [ -n "$TYPE_FILTER" ]; then
 fi
 
 # Persist ERROR_DESCRIPTION for topic naming agent
-TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 echo "$ERROR_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
 export TOPIC_NAMING_INPUT_FILE
 
@@ -291,7 +311,7 @@ Task {
     **Input**:
     - User Prompt: ${ERROR_DESCRIPTION}
     - Command Name: /errors
-    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
 
     Execute topic naming according to behavioral guidelines:
     1. Generate semantic topic name from user prompt
@@ -336,10 +356,11 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2
 }
 
 # Restore state - find most recent errors workflow state
-WORKFLOW_ID=$(ls -t "${HOME}/.claude/tmp/topic_naming_input_errors_"* 2>/dev/null | head -1 | sed 's/.*input_//' | sed 's/\.txt//')
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+WORKFLOW_ID=$(ls -t "${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_errors_"* 2>/dev/null | head -1 | sed 's/.*input_//' | sed 's/\.txt//')
 if [ -z "$WORKFLOW_ID" ]; then
   # Fallback: find by topic name file
-  WORKFLOW_ID=$(ls -t "${HOME}/.claude/tmp/topic_name_errors_"* 2>/dev/null | head -1 | sed 's/.*name_//' | sed 's/\.txt//')
+  WORKFLOW_ID=$(ls -t "${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_errors_"* 2>/dev/null | head -1 | sed 's/.*name_//' | sed 's/\.txt//')
 fi
 
 # If still empty, use a fresh ID (shouldn't happen)
@@ -353,12 +374,17 @@ export COMMAND_NAME WORKFLOW_ID
 # Initialize error log
 ensure_error_log_exists
 
+# Setup bash error trap for automatic error logging
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}"
+
 # Restore ERROR_DESCRIPTION from temp file
-TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 ERROR_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null || echo "error analysis")
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
-TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
 TOPIC_NAME="no_name_error"
 NAMING_STRATEGY="fallback"
 
@@ -450,7 +476,8 @@ FILTER_ARGS=""
 [ -n "$LOG_FILE_ARG" ] && FILTER_ARGS="${FILTER_ARGS}--log-file ${LOG_FILE_ARG} "
 
 # Persist variables for Block 2
-STATE_FILE="${HOME}/.claude/tmp/errors_state_${WORKFLOW_ID}.sh"
+# CRITICAL: Use CLAUDE_PROJECT_DIR to match init_workflow_state() path
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/errors_state_${WORKFLOW_ID}.sh"
 mkdir -p "$(dirname "$STATE_FILE")"
 cat > "$STATE_FILE" << EOF
 REPORT_PATH="${REPORT_PATH}"
@@ -495,7 +522,8 @@ Wait for agent to return REPORT_CREATED signal, then proceed to Block 2.
 
 ```bash
 # === RESTORE STATE ===
-WORKFLOW_ID_FILE="${HOME}/.claude/tmp/errors_state_*.sh"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+WORKFLOW_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/errors_state_*.sh"
 LATEST_STATE=$(ls -t $WORKFLOW_ID_FILE 2>/dev/null | head -1)
 
 if [ -z "$LATEST_STATE" ] || [ ! -f "$LATEST_STATE" ]; then
@@ -554,7 +582,7 @@ if [ -n "$SINCE_FILTER" ]; then
 fi
 echo ""
 echo "View full report: cat $REPORT_PATH"
-echo "Use with /repair: /repair --report $REPORT_PATH"
+echo "Use with /repair: /repair --file $REPORT_PATH"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 

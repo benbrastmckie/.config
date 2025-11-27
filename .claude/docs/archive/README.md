@@ -40,6 +40,47 @@ The following documents were removed as obsolete during Plan 082 refactoring:
 - **specs_migration_guide.md** - Specs directory migration guide (topic-based structure now standard, migration complete)
 - **architecture.md** - Phase 7 modularization architecture (superseded by current concepts/ documentation)
 
+## Retention Policy
+
+### Retention Period
+
+Archived documentation follows these retention guidelines:
+
+- **Migration Guides**: 12 months after migration completion
+- **Consolidated Content**: 12 months after consolidation date
+- **Historical Architecture**: Permanent (or until system fully deprecated)
+- **Removed Features**: 12 months after feature removal
+
+### Review Process
+
+The archive undergoes periodic review:
+
+1. **Annual Review** (October): Evaluate all archived content for continued relevance
+2. **Criteria for Retention**:
+   - Provides unique historical context not available elsewhere
+   - Contains architectural insights valuable for future decisions
+   - Documents critical design rationale for major features
+   - Serves as audit trail for compliance or troubleshooting
+3. **Criteria for Removal**:
+   - Content fully consolidated into current documentation
+   - No unique information beyond current docs
+   - Migration/feature fully deprecated >12 months
+   - No references or queries in past 12 months
+
+### Archive Workflow
+
+**Adding to Archive**:
+1. Move file to appropriate archive subdirectory
+2. Update archive README with entry (date, reason, superseding doc)
+3. Add redirect stub at old location (optional, for critical docs)
+4. Update main docs README to remove references
+
+**Removing from Archive**:
+1. Verify content is fully consolidated or obsolete
+2. Remove file from archive directory
+3. Update archive README to note removal
+4. Document removal date in commit message
+
 ## When to Use Archive
 
 Use archived documents when:

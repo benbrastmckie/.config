@@ -33,23 +33,56 @@ end
 --- @param local_dir string Local base directory (e.g., current project)
 --- @param subdir string Subdirectory to scan (e.g., "commands", "hooks")
 --- @param extension string File extension pattern (e.g., "*.md", "*.sh")
---- @return table Array of file sync info {name, global_path, local_path, action}
-function M.scan_directory_for_sync(global_dir, local_dir, subdir, extension)
+--- @param recursive boolean Enable recursive scanning with ** pattern (default: true)
+--- @return table Array of file sync info {name, global_path, local_path, action, is_subdir}
+function M.scan_directory_for_sync(global_dir, local_dir, subdir, extension, recursive)
+  if recursive == nil then recursive = true end
+
   local global_path = global_dir .. "/.claude/" .. subdir
   local local_path = local_dir .. "/.claude/" .. subdir
-  local global_files = vim.fn.glob(global_path .. "/" .. extension, false, true)
+
+  local all_files = {}
+  local seen = {}  -- Deduplication table to prevent copying same file twice
+
+  if recursive then
+    -- Scan nested subdirectories with ** pattern (e.g., lib/core/utils.sh, docs/architecture/design.md)
+    -- This is critical for copying all infrastructure files, not just top-level files
+    local recursive_files = vim.fn.glob(global_path .. "/**/" .. extension, false, true)
+    for _, global_file in ipairs(recursive_files) do
+      seen[global_file] = true
+      table.insert(all_files, global_file)
+    end
+
+    -- Scan top-level files separately (e.g., lib/README.md)
+    -- **/ pattern doesn't match files directly in base directory, so we need both scans
+    local top_level_files = vim.fn.glob(global_path .. "/" .. extension, false, true)
+    for _, global_file in ipairs(top_level_files) do
+      if not seen[global_file] then  -- Skip if already found by recursive scan
+        seen[global_file] = true
+        table.insert(all_files, global_file)
+      end
+    end
+  else
+    -- Original behavior: top-level only (for backward compatibility)
+    all_files = vim.fn.glob(global_path .. "/" .. extension, false, true)
+  end
 
   local files = {}
-  for _, global_file in ipairs(global_files) do
-    local filename = vim.fn.fnamemodify(global_file, ":t")
-    local local_file = local_path .. "/" .. filename
+  for _, global_file in ipairs(all_files) do
+    -- Calculate relative path from global_path base (e.g., "core/utils.sh" from "/path/lib/core/utils.sh")
+    local rel_path = global_file:sub(#global_path + 2)
+    local local_file = local_path .. "/" .. rel_path
+
+    -- Detect if file is in subdirectory (for reporting depth breakdown)
+    local is_subdir = rel_path:match("/") ~= nil
 
     local action = vim.fn.filereadable(local_file) == 1 and "replace" or "copy"
     table.insert(files, {
-      name = filename,
+      name = vim.fn.fnamemodify(global_file, ":t"),
       global_path = global_file,
       local_path = local_file,
       action = action,
+      is_subdir = is_subdir,
     })
   end
 

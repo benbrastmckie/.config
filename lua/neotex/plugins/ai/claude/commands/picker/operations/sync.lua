@@ -7,6 +7,40 @@ local M = {}
 local scan = require("neotex.plugins.ai.claude.commands.picker.utils.scan")
 local helpers = require("neotex.plugins.ai.claude.commands.picker.utils.helpers")
 
+--- Count files by depth (top-level vs subdirectory)
+--- @param files table Array of file sync info with is_subdir field
+--- @return number top_level_count Number of top-level files
+--- @return number subdir_count Number of files in subdirectories
+local function count_by_depth(files)
+  local top_level_count = 0
+  local subdir_count = 0
+  for _, file in ipairs(files) do
+    if file.is_subdir then
+      subdir_count = subdir_count + 1
+    else
+      top_level_count = top_level_count + 1
+    end
+  end
+  return top_level_count, subdir_count
+end
+
+--- Count operations by action type
+--- @param files table Array of file sync info
+--- @return number copy_count Number of copy operations
+--- @return number replace_count Number of replace operations
+local function count_actions(files)
+  local copy_count = 0
+  local replace_count = 0
+  for _, file in ipairs(files) do
+    if file.action == "copy" then
+      copy_count = copy_count + 1
+    else
+      replace_count = replace_count + 1
+    end
+  end
+  return copy_count, replace_count
+end
+
 --- Sync files from global to local directory
 --- @param files table List of file sync info
 --- @param preserve_perms boolean Preserve execute permissions for shell scripts
@@ -21,6 +55,10 @@ local function sync_files(files, preserve_perms, merge_only)
     if merge_only and file.action == "replace" then
       goto continue
     end
+
+    -- Ensure parent directory exists (dynamic creation for subdirectories)
+    local parent_dir = vim.fn.fnamemodify(file.local_path, ":h")
+    helpers.ensure_directory(parent_dir)
 
     -- Read global file
     local content = helpers.read_file(file.global_path)
@@ -67,27 +105,13 @@ end
 --- @param settings table Settings to sync
 --- @param scripts table Scripts to sync
 --- @param tests table Tests to sync
+--- @param skills table Skills to sync
 --- @param merge_only boolean If true, only add new files (skip conflicts)
 --- @return number total_synced Total number of artifacts synced
 local function load_all_with_strategy(project_dir, commands, agents, hooks, all_tts, templates,
                                       lib_utils, docs, all_agent_protocols, standards,
-                                      all_data_docs, settings, scripts, tests, merge_only)
-  -- Create local directories if needed
-  helpers.ensure_directory(project_dir .. "/.claude/commands")
-  helpers.ensure_directory(project_dir .. "/.claude/agents")
-  helpers.ensure_directory(project_dir .. "/.claude/agents/prompts")
-  helpers.ensure_directory(project_dir .. "/.claude/agents/shared")
-  helpers.ensure_directory(project_dir .. "/.claude/hooks")
-  helpers.ensure_directory(project_dir .. "/.claude/tts")
-  helpers.ensure_directory(project_dir .. "/.claude/templates")
-  helpers.ensure_directory(project_dir .. "/.claude/lib")
-  helpers.ensure_directory(project_dir .. "/.claude/docs")
-  helpers.ensure_directory(project_dir .. "/.claude/scripts")
-  helpers.ensure_directory(project_dir .. "/.claude/tests")
-  helpers.ensure_directory(project_dir .. "/.claude/specs/standards")
-  helpers.ensure_directory(project_dir .. "/.claude/data/commands")
-  helpers.ensure_directory(project_dir .. "/.claude/data/agents")
-  helpers.ensure_directory(project_dir .. "/.claude/data/templates")
+                                      all_data_docs, settings, scripts, tests, skills, merge_only)
+  -- Create base .claude directory (subdirectories created dynamically by sync_files)
   helpers.ensure_directory(project_dir .. "/.claude")
 
   -- Sync all artifact types with merge_only flag
@@ -104,42 +128,44 @@ local function load_all_with_strategy(project_dir, commands, agents, hooks, all_
   local set_count = sync_files(settings, false, merge_only)
   local script_count = sync_files(scripts, true, merge_only)
   local test_count = sync_files(tests, true, merge_only)
+  local skill_count = sync_files(skills, true, merge_only)
 
   local total_synced = cmd_count + agt_count + hook_count + tts_count + tmpl_count + lib_count + doc_count +
-                       proto_count + std_count + data_count + set_count + script_count + test_count
+                       proto_count + std_count + data_count + set_count + script_count + test_count + skill_count
 
-  -- Report results
+  -- Report results with depth breakdown
   if total_synced > 0 then
     local strategy_msg = merge_only and " (new only, conflicts preserved)" or " (including conflicts)"
+
+    -- Calculate subdirectory counts for key directories
+    local _, lib_subdir = count_by_depth(lib_utils)
+    local _, doc_subdir = count_by_depth(docs)
+    local _, test_subdir = count_by_depth(tests)
+    local _, script_subdir = count_by_depth(scripts)
+    local _, skill_subdir = count_by_depth(skills)
+
+    -- Build notification message with subdirectory info
+    local lib_msg = lib_count > 0 and string.format("%d lib (%d nested)", lib_count, lib_subdir) or string.format("%d lib", lib_count)
+    local doc_msg = doc_count > 0 and string.format("%d docs (%d nested)", doc_count, doc_subdir) or string.format("%d docs", doc_count)
+    local test_msg = test_count > 0 and string.format("%d tests (%d nested)", test_count, test_subdir) or string.format("%d tests", test_count)
+    local script_msg = script_count > 0 and string.format("%d scripts (%d nested)", script_count, script_subdir) or string.format("%d scripts", script_count)
+    local skill_msg = skill_count > 0 and string.format("%d skills (%d nested)", skill_count, skill_subdir) or string.format("%d skills", skill_count)
+
     helpers.notify(
       string.format(
-        "Synced %d artifacts%s: %d commands, %d agents, %d hooks, %d TTS, %d templates, %d lib, %d docs, " ..
-        "%d protocols, %d standards, %d data, %d settings, %d scripts, %d tests",
-        total_synced, strategy_msg, cmd_count, agt_count, hook_count, tts_count, tmpl_count, lib_count, doc_count,
-        proto_count, std_count, data_count, set_count, script_count, test_count
+        "Synced %d artifacts%s:\n" ..
+        "  Commands: %d | Agents: %d | Hooks: %d | TTS: %d | Templates: %d\n" ..
+        "  %s | %s | Protocols: %d | Standards: %d\n" ..
+        "  Data: %d | Settings: %d | %s | %s | %s",
+        total_synced, strategy_msg, cmd_count, agt_count, hook_count, tts_count, tmpl_count,
+        lib_msg, doc_msg, proto_count, std_count,
+        data_count, set_count, script_msg, test_msg, skill_msg
       ),
       "INFO"
     )
   end
 
   return total_synced
-end
-
---- Count operations by action type
---- @param files table Array of file sync info
---- @return number copy_count Number of copy operations
---- @return number replace_count Number of replace operations
-local function count_actions(files)
-  local copy_count = 0
-  local replace_count = 0
-  for _, file in ipairs(files) do
-    if file.action == "copy" then
-      copy_count = copy_count + 1
-    else
-      replace_count = replace_count + 1
-    end
-  end
-  return copy_count, replace_count
 end
 
 --- Load all global artifacts locally
@@ -171,6 +197,11 @@ function M.load_all_globally()
   local templates = scan.scan_directory_for_sync(global_dir, project_dir, "templates", "*.yaml")
   local lib_utils = scan.scan_directory_for_sync(global_dir, project_dir, "lib", "*.sh")
   local docs = scan.scan_directory_for_sync(global_dir, project_dir, "docs", "*.md")
+
+  -- Scan skills directory (*.lua, *.md, *.yaml files)
+  local skills_lua = scan.scan_directory_for_sync(global_dir, project_dir, "skills", "*.lua")
+  local skills_md = scan.scan_directory_for_sync(global_dir, project_dir, "skills", "*.md")
+  local skills_yaml = scan.scan_directory_for_sync(global_dir, project_dir, "skills", "*.yaml")
 
   -- Scan README files for all directories
   local hooks_readme = scan.scan_directory_for_sync(global_dir, project_dir, "hooks", "README.md")
@@ -243,9 +274,21 @@ function M.load_all_globally()
     table.insert(all_data_docs, file)
   end
 
+  -- Merge skills files
+  local all_skills = {}
+  for _, file in ipairs(skills_lua) do
+    table.insert(all_skills, file)
+  end
+  for _, file in ipairs(skills_md) do
+    table.insert(all_skills, file)
+  end
+  for _, file in ipairs(skills_yaml) do
+    table.insert(all_skills, file)
+  end
+
   -- Check if any artifacts found
   local total_files = #commands + #agents + #hooks + #all_tts + #templates + #lib_utils + #docs +
-                      #all_agent_protocols + #standards + #all_data_docs + #settings + #scripts + #tests
+                      #all_agent_protocols + #standards + #all_data_docs + #settings + #scripts + #tests + #all_skills
   if total_files == 0 then
     helpers.notify("No global artifacts found in ~/.config/.claude/", "WARN")
     return 0
@@ -264,11 +307,12 @@ function M.load_all_globally()
   local set_copy, set_replace = count_actions(settings)
   local script_copy, script_replace = count_actions(scripts)
   local test_copy, test_replace = count_actions(tests)
+  local skill_copy, skill_replace = count_actions(all_skills)
 
   local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy + tmpl_copy + lib_copy + doc_copy +
-                     proto_copy + std_copy + data_copy + set_copy + script_copy + test_copy
+                     proto_copy + std_copy + data_copy + set_copy + script_copy + test_copy + skill_copy
   local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace + tmpl_replace + lib_replace +
-                        doc_replace + proto_replace + std_replace + data_replace + set_replace + script_replace + test_replace
+                        doc_replace + proto_replace + std_replace + data_replace + set_replace + script_replace + test_replace + skill_replace
 
   -- Skip if no operations needed
   if total_copy + total_replace == 0 then
@@ -285,18 +329,14 @@ function M.load_all_globally()
       "Load all artifacts from global directory?\n\n" ..
       "New artifacts: %d\n" ..
       "Conflicts (local versions exist): %d\n\n" ..
-      "Choose sync strategy:",
-      total_copy, total_replace
+      "Choose sync strategy:\n" ..
+      "  1: Replace + add new (%d total)\n" ..
+      "  2: Add new only (%d new)\n" ..
+      "  3: Interactive  4: Preview diff\n" ..
+      "  5: Clean copy   6: Cancel",
+      total_copy, total_replace, total_copy + total_replace, total_copy
     )
-    buttons = string.format(
-      "&1: Replace existing + add new (%d total)\n" ..
-      "&2: Add new only (%d new)\n" ..
-      "&3: Interactive per-file\n" ..
-      "&4: Preview diff\n" ..
-      "&5: Clean copy (DELETE local-only)\n" ..
-      "&Cancel",
-      total_copy + total_replace, total_copy
-    )
+    buttons = "&1 Replace\n&2 New only\n&3 Interactive\n&4 Preview\n&5 Clean\n&6 Cancel"
     default_choice = 6  -- Default to Cancel for safety
   else
     -- No conflicts - only new artifacts
@@ -307,10 +347,7 @@ function M.load_all_globally()
       "All artifacts will be added to local .claude/",
       total_copy
     )
-    buttons = string.format(
-      "&Add all (%d new)\n&Cancel",
-      total_copy
-    )
+    buttons = "&Add all\n&Cancel"
     default_choice = 2
   end
 
@@ -351,7 +388,7 @@ function M.load_all_globally()
   -- Execute the sync operation
   return load_all_with_strategy(
     project_dir, commands, agents, hooks, all_tts, templates, lib_utils, docs,
-    all_agent_protocols, standards, all_data_docs, settings, scripts, tests, merge_only
+    all_agent_protocols, standards, all_data_docs, settings, scripts, tests, all_skills, merge_only
   )
 end
 

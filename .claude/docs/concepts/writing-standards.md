@@ -44,6 +44,8 @@ When refactoring, prefer to:
 
 Backward compatibility is secondary to these goals.
 
+**Scope Note**: This section covers documentation philosophy (temporal markers, migration language, timeless writing). For technical code refactoring patterns, implementation anti-patterns, and enforcement mechanisms, see [Clean-Break Development Standard](../reference/standards/clean-break-development.md).
+
 ## Documentation Standards
 
 ### Present-Focused Writing

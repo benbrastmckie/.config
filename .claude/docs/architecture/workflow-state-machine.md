@@ -113,7 +113,7 @@ sm_transition() {
 - Crash recovery: Pre-transition checkpoint allows rollback
 - Audit trail: Both pre and post checkpoints saved
 - Atomicity: Transition completes or fails entirely
-- Idempotent: Safe to retry failed transitions
+- Idempotent: Same-state transitions succeed immediately (early-exit optimization)
 
 ## State Machine API
 

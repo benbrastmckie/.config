@@ -5,10 +5,23 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+CLAUDE_LIB="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
 # Source required libraries
-source "$PROJECT_ROOT/.claude/lib/plan/topic-utils.sh" 2>/dev/null || {
+source "$CLAUDE_LIB/plan/topic-utils.sh" 2>/dev/null || {
   echo "ERROR: Cannot load topic-utils library"
   exit 1
 }

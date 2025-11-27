@@ -71,6 +71,8 @@ VALIDATORS=(
   "library-sourcing|${LINT_DIR}/check-library-sourcing.sh|ERROR|*.md"
   "error-suppression|${TESTS_UTILS_DIR}/lint_error_suppression.sh|ERROR|*.md"
   "bash-conditionals|${TESTS_UTILS_DIR}/lint_bash_conditionals.sh|ERROR|*.sh,*.md"
+  "error-logging-coverage|${LINT_DIR}/check-error-logging-coverage.sh|ERROR|*.md"
+  "unbound-variables|${LINT_DIR}/check-unbound-variables.sh|ERROR|*.md"
   "readme-structure|${SCRIPTS_DIR}/validate-readmes.sh|WARNING|README.md"
   "link-validity|${SCRIPTS_DIR}/validate-links-quick.sh|WARNING|*.md"
 )
@@ -86,6 +88,8 @@ RUN_ALL=false
 RUN_SOURCING=false
 RUN_SUPPRESSION=false
 RUN_CONDITIONALS=false
+RUN_ERROR_LOGGING=false
+RUN_UNBOUND_VARS=false
 RUN_README=false
 RUN_LINKS=false
 STAGED_ONLY=false
@@ -104,6 +108,8 @@ OPTIONS:
   --sourcing         Run library sourcing linter only
   --suppression      Run error suppression linter only
   --conditionals     Run bash conditionals linter only
+  --error-logging    Run error logging coverage linter only
+  --unbound-vars     Run unbound variables linter only
   --readme           Run README structure validation only
   --links            Run link validation only
   --staged           Check only staged files (for pre-commit)
@@ -111,11 +117,13 @@ OPTIONS:
   --help             Show this help message
 
 VALIDATORS:
-  library-sourcing   Validates bash three-tier sourcing pattern (ERROR)
-  error-suppression  Detects error suppression anti-patterns (ERROR)
-  bash-conditionals  Detects preprocessing-unsafe conditionals (ERROR)
-  readme-structure   Validates README.md structure (WARNING)
-  link-validity      Validates internal markdown links (WARNING)
+  library-sourcing      Validates bash three-tier sourcing pattern (ERROR)
+  error-suppression     Detects error suppression anti-patterns (ERROR)
+  bash-conditionals     Detects preprocessing-unsafe conditionals (ERROR)
+  error-logging-coverage Validates error logging coverage >= 80% (ERROR)
+  unbound-variables     Detects unsafe variable expansions (ERROR)
+  readme-structure      Validates README.md structure (WARNING)
+  link-validity         Validates internal markdown links (WARNING)
 
 SEVERITY:
   ERROR   - Blocking: commit rejected, must be fixed
@@ -162,6 +170,12 @@ parse_args() {
       --conditionals)
         RUN_CONDITIONALS=true
         ;;
+      --error-logging)
+        RUN_ERROR_LOGGING=true
+        ;;
+      --unbound-vars)
+        RUN_UNBOUND_VARS=true
+        ;;
       --readme)
         RUN_README=true
         ;;
@@ -188,7 +202,7 @@ parse_args() {
   done
 
   # If specific validators selected, don't run all
-  if $RUN_SOURCING || $RUN_SUPPRESSION || $RUN_CONDITIONALS || $RUN_README || $RUN_LINKS; then
+  if $RUN_SOURCING || $RUN_SUPPRESSION || $RUN_CONDITIONALS || $RUN_ERROR_LOGGING || $RUN_UNBOUND_VARS || $RUN_README || $RUN_LINKS; then
     RUN_ALL=false
   fi
 }
@@ -210,6 +224,12 @@ should_run_validator() {
       ;;
     bash-conditionals)
       $RUN_CONDITIONALS && return 0
+      ;;
+    error-logging-coverage)
+      $RUN_ERROR_LOGGING && return 0
+      ;;
+    unbound-variables)
+      $RUN_UNBOUND_VARS && return 0
       ;;
     readme-structure)
       $RUN_README && return 0

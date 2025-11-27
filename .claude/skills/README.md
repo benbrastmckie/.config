@@ -161,14 +161,18 @@ Force skill usage with explicit language:
 
 ### From Commands
 
-Commands can delegate to skills when available:
+Commands delegate to agents that load skills:
 
 ```bash
 /convert-docs ./documents ./output
-→ Checks for document-converter skill
-→ Delegates to skill if available
-→ Falls back to script mode if not
+# 1. Command invokes doc-converter agent via Task tool
+# 2. Agent has skills: document-converter in frontmatter
+# 3. Agent loads skill and executes conversion
+# 4. Falls back to script mode if agent fails
 ```
+
+Commands do NOT load skills directly. Skill context is loaded
+by agents via the `skills:` frontmatter field.
 
 ### From Agents
 
@@ -236,10 +240,10 @@ mkdir -p .claude/skills/document-converter/{scripts,templates}
 cd .claude/skills/document-converter/scripts
 ln -s ../../../lib/convert/convert-core.sh .
 
-# 4. Enhance /convert-docs command with skill check
-# Add STEP 0: Check for skill availability
+# 4. Update doc-converter agent with skills: document-converter
+# Agent will auto-load skill via frontmatter
 
-# 5. Update doc-converter agent with skills: document-converter
+# 5. Update /convert-docs command to invoke agent (agent loads skill)
 
 # 6. Test autonomous invocation and command delegation
 ```

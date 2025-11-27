@@ -232,26 +232,31 @@ Test skill discovery with these prompts:
 
 ### Command Delegation Pattern
 
-Commands that delegate to skills MUST follow this pattern:
+Commands delegate to agents that load skills. This is the **preferred** pattern for skill integration:
 
 ```markdown
-**STEP 0**: Check for skill availability
-
-```bash
-SKILL_AVAILABLE=false
-if [ -d ".claude/skills/<skill-name>" ] && [ -f ".claude/skills/<skill-name>/SKILL.md" ]; then
-  SKILL_AVAILABLE=true
-  echo "Skill <skill-name> available"
-fi
+# Command invokes agent via Task tool
+# Agent has skills: field in frontmatter
+# Agent automatically receives skill context
 ```
 
-**STEP 3.5**: Delegate to skill if available (between mode detection and script mode)
-
-If $SKILL_AVAILABLE is true, delegate conversion to skill via natural language:
-"Use the <skill-name> skill to [perform task]"
-
-Otherwise, fall back to script mode.
+**Example** (convert-docs):
+```yaml
+# .claude/agents/doc-converter.md
+---
+skills: document-converter
+---
 ```
+
+```markdown
+# .claude/commands/convert-docs.md (STEP 4)
+Task {
+  subagent_type: "general-purpose"
+  prompt: "Read and follow: .claude/agents/doc-converter.md ..."
+}
+```
+
+Commands do NOT load skills directly. Skill context is loaded by agents via the `skills:` frontmatter field.
 
 ### Agent Auto-Loading Pattern
 
@@ -357,9 +362,8 @@ Before committing a new skill, verify:
 
 ### Integration
 
-- [ ] Commands using skill include STEP 0 availability check
-- [ ] Commands using skill include STEP 3.5 delegation
-- [ ] Agents using skill have correct `skills:` field
+- [ ] Commands delegate to agents that load skills (via Task tool)
+- [ ] Agents using skill have correct `skills:` field in frontmatter
 - [ ] Cross-references validated (no broken links)
 
 ### Documentation

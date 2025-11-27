@@ -6,13 +6,28 @@ set -uo pipefail
 
 # Test framework setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+CLAUDE_LIB="${CLAUDE_PROJECT_DIR}/.claude/lib"
+
 TEST_RESULTS=()
 TESTS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
 
 # Pre-flight check - coordinate.md was archived
-COORDINATE_CMD="${SCRIPT_DIR}/../commands/coordinate.md"
+COORDINATE_CMD="${CLAUDE_PROJECT_DIR}/.claude/commands/coordinate.md"
 if [ ! -f "$COORDINATE_CMD" ]; then
   echo "SKIP: coordinate.md not found (was archived)"
   echo "This test validates orchestration commands including coordinate."
@@ -194,12 +209,12 @@ test_coordinate_plan_naming() {
   local test_name="Coordinate plan naming pattern"
 
   # Source topic-utils.sh to access sanitize_topic_name()
-  if [[ ! -f "$SCRIPT_DIR/../lib/plan/topic-utils.sh" ]]; then
+  if [[ ! -f "$CLAUDE_LIB/plan/topic-utils.sh" ]]; then
     record_test "$test_name" "FAIL" "topic-utils.sh not found"
     return 1
   fi
 
-  source "$SCRIPT_DIR/../lib/plan/topic-utils.sh"
+  source "$CLAUDE_LIB/plan/topic-utils.sh"
 
   # Test workflow description
   local workflow_desc="fix authentication bug"

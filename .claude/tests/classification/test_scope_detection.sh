@@ -41,7 +41,20 @@ info() {
 
 # Find lib directory
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-LIB_DIR=$(cd "$SCRIPT_DIR/../lib" && pwd)
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+LIB_DIR="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
 # Source unified workflow scope detection
 source "$LIB_DIR/workflow/workflow-scope-detection.sh"

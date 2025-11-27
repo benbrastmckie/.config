@@ -173,8 +173,7 @@ skills/<skill-name>/
 
 **Integration Patterns**:
 1. **Autonomous**: Claude detects need and loads skill automatically
-2. **Command Delegation**: Commands check availability and delegate via STEP 0/STEP 3.5
-3. **Agent Auto-Loading**: Agents use `skills:` frontmatter field
+2. **Agent Auto-Loading**: Agents use `skills:` frontmatter field to auto-load skills
 
 **Documentation**: See [skills/README.md](../../skills/README.md), [Skills Authoring Standards](../reference/standards/skills-authoring.md)
 

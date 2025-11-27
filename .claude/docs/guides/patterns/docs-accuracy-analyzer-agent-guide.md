@@ -64,7 +64,7 @@ The docs-accuracy-analyzer performs semantic documentation quality analysis usin
 **Detection Methods**:
 - Build required documentation matrix:
   - commands/*.md → guides/*-command-guide.md
-  - agents/*.md → reference/agent-reference.md entries
+  - agents/*.md → reference/standards/agent-reference.md entries
   - concepts/patterns/*.md → README.md descriptions
 - Calculate completeness percentage (actual/required)
 - Identify missing high-priority documentation
@@ -149,7 +149,7 @@ For each documentation file:
 ```
 Build documentation matrix:
   commands/*.md → guides/*-command-guide.md
-  agents/*.md → reference/agent-reference.md
+  agents/*.md → reference/standards/agent-reference.md
   patterns/*.md → README.md descriptions
 
 For each category:

@@ -85,6 +85,80 @@ Each bash block in Claude Code runs in a **new subprocess**. Variables and funct
 
 See [Bash Block Execution Model](../../concepts/bash-block-execution-model.md) for complete subprocess isolation documentation and [Exit Code 127 Troubleshooting Guide](../../troubleshooting/exit-code-127-command-not-found.md) for debugging failures.
 
+### Error Logging Requirements
+[Used by: All commands and agents]
+
+All commands MUST integrate centralized error logging for queryable error tracking and cross-workflow debugging. Error logging enables the `/errors` and `/repair` commands to analyze failure patterns and generate fix plans.
+
+**Mandatory Pattern (Every Command)**:
+
+```bash
+# 1. Source error-handling library (Tier 1 - fail-fast required)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load error-handling library" >&2
+  exit 1
+}
+
+# 2. Initialize error log
+ensure_error_log_exists
+
+# 3. Set workflow metadata
+COMMAND_NAME="/command"
+WORKFLOW_ID="command_$(date +%s)"
+USER_ARGS="$*"
+
+# 4. Setup bash error trap (catches unlogged errors automatically)
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# 5. Log errors before exit (for validation failures)
+if [ -z "$REQUIRED_ARG" ]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" "Required argument missing" "argument_validation" \
+    "$(jq -n --arg provided "$*" '{provided_args: $provided}')"
+  echo "ERROR: Required argument missing" >&2
+  exit 1
+fi
+```
+
+**Error Type Selection Guide**:
+
+| Error Type | When to Use | Example |
+|------------|-------------|---------|
+| `validation_error` | Invalid user input (arguments, flags) | Missing required arg, invalid flag |
+| `file_error` | File I/O failures (missing, unreadable) | File not found, permission denied |
+| `state_error` | State management failures (missing state, restoration) | State file missing, variable not restored |
+| `agent_error` | Subagent invocation failures | Agent timeout, agent returned error signal |
+| `parse_error` | Output parsing failures | Invalid JSON, unexpected format |
+| `execution_error` | General execution failures | Command not found, library function failed |
+| `initialization_error` | Early initialization failures (pre-trap) | Error before error-handling.sh loaded |
+
+**Error Logging Coverage Target**: 80%+ of error exit points MUST call `log_command_error` before `exit 1`.
+
+**Bash Error Trap Automatic Coverage**: The `setup_bash_error_trap` function automatically logs:
+- Command failures (exit code 127, "command not found")
+- Unbound variable errors (`set -u` violations)
+- All bash-level errors not explicitly logged
+
+**State Restoration Validation** (multi-block commands):
+
+```bash
+# Block 2+ (after load_workflow_state)
+load_workflow_state "$WORKFLOW_ID" false
+
+# Validate critical variables restored
+validate_state_restoration "COMMAND_NAME" "WORKFLOW_ID" "PLAN_PATH" || {
+  echo "ERROR: State restoration failed" >&2
+  exit 1
+}
+```
+
+**Enforcement**:
+- **Linter**: `.claude/scripts/lint/check-error-logging-coverage.sh` validates 80% coverage threshold
+- **Pre-commit**: Coverage violations block commits
+- **Bash Error Traps**: Catch unlogged errors automatically
+
+See [Error Handling Pattern](../../concepts/patterns/error-handling.md) for complete integration requirements and [Errors Command Guide](../../guides/commands/errors-command-guide.md) for error consumption workflow.
+
 ### Output Suppression Patterns
 [Used by: All commands and agents]
 

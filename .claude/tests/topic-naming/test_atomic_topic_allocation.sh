@@ -13,10 +13,23 @@ set -euo pipefail
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Detect project root using git or walk-up pattern
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    CLAUDE_PROJECT_DIR="$(dirname "$CLAUDE_PROJECT_DIR")"
+  done
+fi
+CLAUDE_LIB="${CLAUDE_PROJECT_DIR}/.claude/lib"
 
 # Source the unified location detection library
-source "${PROJECT_ROOT}/.claude/lib/core/unified-location-detection.sh"
+source "${CLAUDE_LIB}/core/unified-location-detection.sh"
 
 # Reset error handling after sourcing library (library sets -e)
 set +e
@@ -430,6 +443,44 @@ test_multiple_collisions() {
   rm -rf "$test_root"
 }
 
+# Test 14: Increment past duplicate numbered directories (Spec 933 regression test)
+# This test simulates the production bug where duplicate-numbered directories existed
+# (e.g., 923_topic_a and 923_topic_b created due to race conditions).
+# The fix ensures new allocations correctly skip past ALL existing numbered directories.
+test_increment_past_duplicates() {
+  local test_name="Increment past duplicate numbers (Spec 933 bug)"
+  local test_root="/tmp/test_dups_$$"
+
+  # Setup: simulate existing duplicates like production bug (923_topic_a and 923_topic_b)
+  # This scenario occurred when race conditions caused same topic number to be allocated twice
+  mkdir -p "$test_root/921_topic_before"
+  mkdir -p "$test_root/923_topic_a"        # First directory with number 923
+  mkdir -p "$test_root/923_topic_b"        # Duplicate! Same number, different name
+  mkdir -p "$test_root/924_topic_c"
+
+  # Execute: allocate next topic using atomic function
+  local result
+  result=$(allocate_and_create_topic "$test_root" "new_topic")
+  local topic_num="${result%|*}"
+  local topic_path="${result#*|}"
+
+  # Verify: next topic is 925 (incremented past ALL existing directories including duplicates)
+  # The atomic function finds max as 924, increments to 925
+  if [ "$topic_num" = "925" ]; then
+    pass "$test_name"
+  else
+    fail "$test_name - Expected 925, got $topic_num (should skip past duplicate 923s)"
+  fi
+
+  # Additional verification: directory was created
+  if [ ! -d "$topic_path" ]; then
+    fail "$test_name - Directory not created: $topic_path"
+  fi
+
+  # Cleanup
+  rm -rf "$test_root"
+}
+
 # Run all tests
 run_all_tests() {
   echo "=== Atomic Topic Allocation Test Suite ==="
@@ -451,6 +502,7 @@ run_all_tests() {
   test_rollover
   test_collision_detection
   test_multiple_collisions
+  test_increment_past_duplicates
 
   echo ""
   echo "=== Test Summary ==="

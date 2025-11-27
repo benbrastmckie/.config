@@ -1,6 +1,6 @@
 ---
 allowed-tools: Task, TodoWrite, Bash, Read, Grep, Glob, Write
-argument-hint: [--since TIME] [--type TYPE] [--command CMD] [--severity LEVEL] [--complexity 1-4]
+argument-hint: [--since TIME] [--type TYPE] [--command CMD] [--severity LEVEL] [--complexity 1-4] [--file PATH]
 description: Research error patterns and create implementation plan to fix them
 command-type: utility
 dependent-agents:
@@ -74,9 +74,30 @@ if [[ "$ARGS_STRING" =~ --complexity[[:space:]]+([1-4]) ]]; then
   ARGS_STRING=$(echo "$ARGS_STRING" | sed 's/--complexity[[:space:]]*[1-4]//' | xargs)
 fi
 
+# Parse --file flag for workflow output file analysis
+# This passes the file path to repair-analyst for direct reading and pattern detection
+WORKFLOW_OUTPUT_FILE=""
+if [[ "$ARGS_STRING" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
+  WORKFLOW_OUTPUT_FILE="${BASH_REMATCH[1]}"
+  # Convert to absolute path if relative
+  [[ "$WORKFLOW_OUTPUT_FILE" = /* ]]
+  IS_ABSOLUTE_PATH=$?
+  if [ $IS_ABSOLUTE_PATH -ne 0 ]; then
+    WORKFLOW_OUTPUT_FILE="$(pwd)/$WORKFLOW_OUTPUT_FILE"
+  fi
+  ARGS_STRING=$(echo "$ARGS_STRING" | sed 's/--file[[:space:]]*[^[:space:]]*//' | xargs)
+
+  # Validate file exists (warning only, allow workflow to continue)
+  if [ ! -f "$WORKFLOW_OUTPUT_FILE" ]; then
+    echo "WARNING: Workflow output file not found: $WORKFLOW_OUTPUT_FILE" >&2
+    WORKFLOW_OUTPUT_FILE=""
+  fi
+fi
+
 echo "$RESEARCH_COMPLEXITY" | grep -Eq "^[1-4]$"
 COMPLEXITY_VALID=$?
 if [ $COMPLEXITY_VALID -ne 0 ]; then
+  # Log via log_early_error after error-handling.sh loaded below
   echo "ERROR: Invalid research complexity: $RESEARCH_COMPLEXITY (must be 1-4)" >&2
   exit 1
 fi
@@ -151,6 +172,10 @@ EOF
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
 
+# === SETUP EARLY BASH ERROR TRAP ===
+# Trap must be set BEFORE variable initialization to catch early failures
+setup_bash_error_trap "/repair" "repair_early_$(date +%s)" "early_init"
+
 # === INITIALIZE STATE ===
 WORKFLOW_TYPE="research-and-plan"
 TERMINAL_STATE="plan"
@@ -159,12 +184,13 @@ USER_ARGS="$(printf '%s' "$@")"
 export COMMAND_NAME USER_ARGS
 
 WORKFLOW_ID="repair_$(date +%s)"
-STATE_ID_FILE="${HOME}/.claude/tmp/repair_state_id.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
 mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
-# === SETUP BASH ERROR TRAP ===
+# === UPDATE BASH ERROR TRAP WITH ACTUAL VALUES ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Capture state file path for append_workflow_state
@@ -240,7 +266,8 @@ fi
 append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
 
 # Persist ERROR_DESCRIPTION for topic naming agent
-TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 echo "$ERROR_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
 export TOPIC_NAMING_INPUT_FILE
 
@@ -261,7 +288,7 @@ Task {
     **Input**:
     - User Prompt: ${ERROR_DESCRIPTION}
     - Command Name: /repair
-    - OUTPUT_FILE_PATH: ${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
 
     Execute topic naming according to behavioral guidelines:
     1. Generate semantic topic name from user prompt
@@ -279,16 +306,7 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# === RESTORE STATE FROM PREVIOUS BLOCK ===
-STATE_ID_FILE="${HOME}/.claude/tmp/repair_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Detect project directory
+# === DETECT PROJECT DIRECTORY FIRST (required for state file path) ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -301,7 +319,23 @@ else
     current_dir="$(dirname "$current_dir")"
   done
 fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM PREVIOUS BLOCK ===
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches Block 1a)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
 
 # Source libraries
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
@@ -327,11 +361,13 @@ ensure_error_log_exists
 load_workflow_state "$WORKFLOW_ID" false
 
 # Restore ERROR_DESCRIPTION from temp file
-TOPIC_NAMING_INPUT_FILE="${HOME}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 ERROR_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null || echo "error analysis and repair")
 
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
-TOPIC_NAME_FILE="${HOME}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
 TOPIC_NAME="no_name_error"
 NAMING_STRATEGY="fallback"
 
@@ -428,8 +464,12 @@ append_workflow_state "TOPIC_NUM" "$TOPIC_NUM"
 append_workflow_state "ERROR_DESCRIPTION" "$ERROR_DESCRIPTION"
 append_workflow_state "ERROR_FILTERS" "$ERROR_FILTERS"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+append_workflow_state "WORKFLOW_OUTPUT_FILE" "$WORKFLOW_OUTPUT_FILE"
 
 echo "Setup complete: $WORKFLOW_ID (research-and-plan, complexity: $RESEARCH_COMPLEXITY)"
+if [ -n "$WORKFLOW_OUTPUT_FILE" ]; then
+  echo "Workflow output file: $WORKFLOW_OUTPUT_FILE"
+fi
 echo "Research directory: $RESEARCH_DIR"
 echo "Plans directory: $PLANS_DIR"
 ```
@@ -451,6 +491,10 @@ Task {
     - Output Directory: ${RESEARCH_DIR}
     - Workflow Type: research-and-plan
     - Error Log Path: ${CLAUDE_PROJECT_DIR}/.claude/data/logs/errors.jsonl
+    - Workflow Output File: ${WORKFLOW_OUTPUT_FILE}
+
+    If WORKFLOW_OUTPUT_FILE is provided and non-empty, read and analyze it for runtime errors,
+    path mismatches, state file errors, and bash execution errors in addition to the error log.
 
     Execute error analysis according to behavioral guidelines and return completion signal:
     REPORT_CREATED: [path to created report]
@@ -464,16 +508,7 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# === LOAD STATE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/repair_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Detect project directory
+# === DETECT PROJECT DIRECTORY FIRST (required for state file path) ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -483,7 +518,23 @@ else
     current_dir="$(dirname "$current_dir")"
   done
 fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 export CLAUDE_PROJECT_DIR
+
+# === LOAD STATE ===
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
@@ -499,7 +550,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Initialize DEBUG_LOG if not already set
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
@@ -589,7 +641,7 @@ if [ ! -f "$STATE_FILE" ]; then
 fi
 
 # Validate critical variables from Block 1
-if [ -z "$TOPIC_PATH" ] || [ -z "$RESEARCH_DIR" ]; then
+if [ -z "${TOPIC_PATH:-}" ] || [ -z "${RESEARCH_DIR:-}" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -734,16 +786,7 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# === LOAD STATE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/repair_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Detect project directory
+# === DETECT PROJECT DIRECTORY FIRST (required for state file path) ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -753,7 +796,23 @@ else
     current_dir="$(dirname "$current_dir")"
   done
 fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 export CLAUDE_PROJECT_DIR
+
+# === LOAD STATE ===
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: WORKFLOW_ID file not found" >&2
+  exit 1
+fi
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
 
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
@@ -769,7 +828,8 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 
 # Initialize DEBUG_LOG if not already set
-DEBUG_LOG="${DEBUG_LOG:-${HOME}/.claude/tmp/workflow_debug.log}"
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
@@ -832,7 +892,7 @@ if [ ! -f "$STATE_FILE" ]; then
 fi
 
 # Validate PLAN_PATH was set by Block 2
-if [ -z "$PLAN_PATH" ]; then
+if [ -z "${PLAN_PATH:-}" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -871,6 +931,31 @@ fi
 echo "Plan verified: $FILE_SIZE bytes"
 echo ""
 
+# === UPDATE ERROR LOG STATUS (Block 3.5) ===
+echo "Updating error log entries..."
+
+# Load error filters from persisted state
+ERROR_FILTERS_JSON=$(grep "^ERROR_FILTERS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo '{}')
+if [ -z "$ERROR_FILTERS_JSON" ] || [ "$ERROR_FILTERS_JSON" = '{}' ]; then
+  ERROR_FILTERS_JSON='{"since":"","type":"","command":"","severity":""}'
+fi
+
+# Build filter arguments from JSON
+FILTER_ARGS=""
+ERROR_COMMAND_FILTER=$(echo "$ERROR_FILTERS_JSON" | jq -r '.command // ""' 2>/dev/null || echo "")
+ERROR_TYPE_FILTER=$(echo "$ERROR_FILTERS_JSON" | jq -r '.type // ""' 2>/dev/null || echo "")
+ERROR_SINCE_FILTER=$(echo "$ERROR_FILTERS_JSON" | jq -r '.since // ""' 2>/dev/null || echo "")
+
+[ -n "$ERROR_COMMAND_FILTER" ] && FILTER_ARGS="$FILTER_ARGS --command $ERROR_COMMAND_FILTER"
+[ -n "$ERROR_TYPE_FILTER" ] && FILTER_ARGS="$FILTER_ARGS --type $ERROR_TYPE_FILTER"
+[ -n "$ERROR_SINCE_FILTER" ] && FILTER_ARGS="$FILTER_ARGS --since $ERROR_SINCE_FILTER"
+
+# Mark matching errors as FIX_PLANNED with plan path
+ERRORS_UPDATED=$(mark_errors_fix_planned "$PLAN_PATH" $FILTER_ARGS)
+
+echo "Updated $ERRORS_UPDATED error entries with FIX_PLANNED status"
+append_workflow_state "ERRORS_UPDATED" "$ERRORS_UPDATED"
+
 # === COMPLETE WORKFLOW ===
 sm_transition "$STATE_COMPLETE" 2>&1
 SM_TRANSITION_EXIT=$?
@@ -907,16 +992,23 @@ source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || {
   exit 1
 }
 
-# Build summary text
-SUMMARY_TEXT="Analyzed error patterns and created $REPORT_COUNT analysis reports with fix implementation plan. Plan provides structured approach to resolving identified issues."
+# Restore ERRORS_UPDATED from state (may have been persisted)
+if [ -z "${ERRORS_UPDATED:-}" ]; then
+  ERRORS_UPDATED=$(grep "^ERRORS_UPDATED=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "0")
+fi
+
+# Build summary text with error update count
+SUMMARY_TEXT="Analyzed error patterns and created $REPORT_COUNT analysis reports with fix implementation plan. Marked $ERRORS_UPDATED error log entries as FIX_PLANNED."
 
 # Build artifacts section
 ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)
-  📄 Plan: $PLAN_PATH"
+  📄 Plan: $PLAN_PATH
+  📝 Errors Updated: $ERRORS_UPDATED entries marked as FIX_PLANNED"
 
 # Build next steps
 NEXT_STEPS="  • Review fix plan: cat $PLAN_PATH
   • Review error analysis: ls -lh $RESEARCH_DIR/
+  • Check updated errors: /errors --status FIX_PLANNED
   • Implement fixes: /build $PLAN_PATH"
 
 # Print standardized summary (no phases for repair command)

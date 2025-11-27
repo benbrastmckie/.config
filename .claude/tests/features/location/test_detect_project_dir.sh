@@ -6,6 +6,21 @@ set -euo pipefail
 
 # Test framework setup
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Detect project root using git for this test file
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  TEST_CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  TEST_CLAUDE_PROJECT_DIR="$SCRIPT_DIR"
+  while [ "$TEST_CLAUDE_PROJECT_DIR" != "/" ]; do
+    if [ -d "$TEST_CLAUDE_PROJECT_DIR/.claude" ]; then
+      break
+    fi
+    TEST_CLAUDE_PROJECT_DIR="$(dirname "$TEST_CLAUDE_PROJECT_DIR")"
+  done
+fi
+CLAUDE_LIB="${TEST_CLAUDE_PROJECT_DIR}/.claude/lib"
+
 TESTS_PASSED=0
 TESTS_FAILED=0
 
@@ -44,7 +59,7 @@ echo ""
 echo "Test 1: Detection in main git repository"
 reset_env
 cd "$SCRIPT_DIR/.."  # Go to .claude directory (inside git repo)
-source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+source "$CLAUDE_LIB/core/detect-project-dir.sh"
 
 EXPECTED_ROOT="$(git rev-parse --show-toplevel)"
 if [ "$CLAUDE_PROJECT_DIR" = "$EXPECTED_ROOT" ]; then
@@ -57,7 +72,7 @@ fi
 echo "Test 2: CLAUDE_PROJECT_DIR is exported"
 reset_env
 cd "$SCRIPT_DIR/.."
-source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+source "$CLAUDE_LIB/core/detect-project-dir.sh"
 
 EXPORT_TEST=$(bash -c 'echo ${CLAUDE_PROJECT_DIR:-}')
 if [ -n "$EXPORT_TEST" ]; then
@@ -70,7 +85,7 @@ fi
 echo "Test 3: Respect pre-set CLAUDE_PROJECT_DIR"
 reset_env
 export CLAUDE_PROJECT_DIR="/custom/override/path"
-source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+source "$CLAUDE_LIB/core/detect-project-dir.sh"
 
 if [ "$CLAUDE_PROJECT_DIR" = "/custom/override/path" ]; then
   pass "Respects manually set CLAUDE_PROJECT_DIR"
@@ -87,7 +102,7 @@ TEST_DIR=$(mktemp -d)
 cd "$TEST_DIR"
 
 # Source detection utility (should fallback to pwd)
-source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+source "$CLAUDE_LIB/core/detect-project-dir.sh"
 
 if [ "$CLAUDE_PROJECT_DIR" = "$TEST_DIR" ]; then
   pass "Falls back to pwd outside git repository"
@@ -108,7 +123,7 @@ if command -v git &>/dev/null; then
 
   # Test git detection
   cd "$SCRIPT_DIR/.."
-  source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+  source "$CLAUDE_LIB/core/detect-project-dir.sh"
 
   if [ -n "$CLAUDE_PROJECT_DIR" ]; then
     pass "Detection succeeds with git available"
@@ -131,7 +146,7 @@ TEST_WORKTREE="/tmp/test-worktree-detection-$$"
 if git worktree add "$TEST_WORKTREE" HEAD &>/dev/null 2>&1; then
   # Worktree created successfully
   cd "$TEST_WORKTREE"
-  source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+  source "$CLAUDE_LIB/core/detect-project-dir.sh"
 
   if [ "$CLAUDE_PROJECT_DIR" = "$TEST_WORKTREE" ]; then
     pass "Detects worktree root (not main repo root)"
@@ -157,10 +172,10 @@ fi
 echo "Test 7: Idempotent behavior (repeated sourcing)"
 reset_env
 cd "$SCRIPT_DIR/.."
-source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+source "$CLAUDE_LIB/core/detect-project-dir.sh"
 FIRST_VALUE="$CLAUDE_PROJECT_DIR"
 
-source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+source "$CLAUDE_LIB/core/detect-project-dir.sh"
 SECOND_VALUE="$CLAUDE_PROJECT_DIR"
 
 if [ "$FIRST_VALUE" = "$SECOND_VALUE" ]; then
@@ -173,7 +188,7 @@ fi
 echo "Test 8: Detection returns absolute path"
 reset_env
 cd "$SCRIPT_DIR/.."
-source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+source "$CLAUDE_LIB/core/detect-project-dir.sh"
 
 if [[ "$CLAUDE_PROJECT_DIR" = /* ]]; then
   pass "Returns absolute path"
@@ -185,7 +200,7 @@ fi
 echo "Test 9: No trailing slash in path"
 reset_env
 cd "$SCRIPT_DIR/.."
-source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+source "$CLAUDE_LIB/core/detect-project-dir.sh"
 
 if [[ ! "$CLAUDE_PROJECT_DIR" =~ /$ ]]; then
   pass "No trailing slash in path"
@@ -197,7 +212,7 @@ fi
 echo "Test 10: Detection from subdirectory"
 reset_env
 cd "$SCRIPT_DIR"  # tests/ subdirectory
-source "$SCRIPT_DIR/../lib/core/detect-project-dir.sh"
+source "$CLAUDE_LIB/core/detect-project-dir.sh"
 
 EXPECTED_ROOT="$(git rev-parse --show-toplevel)"
 if [ "$CLAUDE_PROJECT_DIR" = "$EXPECTED_ROOT" ]; then

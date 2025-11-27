@@ -49,11 +49,11 @@ test_agent_exists() {
   TEST_COUNT=$((TEST_COUNT + 1))
 
   if [ -f "${PROJECT_ROOT}/.claude/agents/errors-analyst.md" ]; then
-    echo "PASS: $test_name"
+    echo "✓ PASS: $test_name"
     PASS_COUNT=$((PASS_COUNT + 1))
     return 0
   else
-    echo "FAIL: $test_name - Agent file not found"
+    echo "✗ FAIL: $test_name - Agent file not found"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
@@ -67,18 +67,18 @@ test_agent_frontmatter() {
   local agent_file="${PROJECT_ROOT}/.claude/agents/errors-analyst.md"
 
   if ! grep -q "model: claude-3-5-haiku-20241022" "$agent_file"; then
-    echo "FAIL: $test_name - Missing or incorrect model field"
+    echo "✗ FAIL: $test_name - Missing or incorrect model field"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "allowed-tools: Read, Write, Grep, Glob, Bash" "$agent_file"; then
-    echo "FAIL: $test_name - Missing or incorrect allowed-tools"
+    echo "✗ FAIL: $test_name - Missing or incorrect allowed-tools"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
@@ -91,30 +91,30 @@ test_agent_process() {
   local agent_file="${PROJECT_ROOT}/.claude/agents/errors-analyst.md"
 
   if ! grep -q "### STEP 1" "$agent_file"; then
-    echo "FAIL: $test_name - Missing STEP 1"
+    echo "✗ FAIL: $test_name - Missing STEP 1"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "### STEP 2" "$agent_file"; then
-    echo "FAIL: $test_name - Missing STEP 2"
+    echo "✗ FAIL: $test_name - Missing STEP 2"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "### STEP 3" "$agent_file"; then
-    echo "FAIL: $test_name - Missing STEP 3"
+    echo "✗ FAIL: $test_name - Missing STEP 3"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "### STEP 4" "$agent_file"; then
-    echo "FAIL: $test_name - Missing STEP 4"
+    echo "✗ FAIL: $test_name - Missing STEP 4"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
@@ -130,11 +130,11 @@ test_agent_completion_criteria() {
   local criteria_count=$(grep -cP '^\s*-\s*\[\s*\]\s*\d+\.' "$agent_file" || echo "0")
 
   if [ "$criteria_count" -ge 28 ]; then
-    echo "PASS: $test_name (found $criteria_count criteria)"
+    echo "✓ PASS: $test_name (found $criteria_count criteria)"
     PASS_COUNT=$((PASS_COUNT + 1))
     return 0
   else
-    echo "FAIL: $test_name - Found $criteria_count criteria, expected 28"
+    echo "✗ FAIL: $test_name - Found $criteria_count criteria, expected 28"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
@@ -148,24 +148,24 @@ test_command_frontmatter() {
   local cmd_file="${PROJECT_ROOT}/.claude/commands/errors.md"
 
   if ! grep -q "dependent-agents:" "$cmd_file"; then
-    echo "FAIL: $test_name - Missing dependent-agents field"
+    echo "✗ FAIL: $test_name - Missing dependent-agents field"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "errors-analyst" "$cmd_file"; then
-    echo "FAIL: $test_name - Missing errors-analyst in dependent-agents"
+    echo "✗ FAIL: $test_name - Missing errors-analyst in dependent-agents"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "allowed-tools: Task" "$cmd_file"; then
-    echo "FAIL: $test_name - Missing Task in allowed-tools"
+    echo "✗ FAIL: $test_name - Missing Task in allowed-tools"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
@@ -178,18 +178,18 @@ test_command_query_flag() {
   local cmd_file="${PROJECT_ROOT}/.claude/commands/errors.md"
 
   if ! grep -q "QUERY_MODE" "$cmd_file"; then
-    echo "FAIL: $test_name - Missing QUERY_MODE variable"
+    echo "✗ FAIL: $test_name - Missing QUERY_MODE variable"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "\-\-query)" "$cmd_file"; then
-    echo "FAIL: $test_name - Missing --query case statement"
+    echo "✗ FAIL: $test_name - Missing --query case statement"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
@@ -202,18 +202,18 @@ test_command_dual_mode() {
   local cmd_file="${PROJECT_ROOT}/.claude/commands/errors.md"
 
   if ! grep -q "QUERY MODE (LEGACY BEHAVIOR)" "$cmd_file"; then
-    echo "FAIL: $test_name - Missing query mode section"
+    echo "✗ FAIL: $test_name - Missing query mode section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "REPORT GENERATION MODE (DEFAULT)" "$cmd_file"; then
-    echo "FAIL: $test_name - Missing report mode section"
+    echo "✗ FAIL: $test_name - Missing report mode section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
@@ -226,18 +226,18 @@ test_agent_reference() {
   local ref_file="${PROJECT_ROOT}/.claude/docs/reference/standards/agent-reference.md"
 
   if ! grep -q "### errors-analyst" "$ref_file"; then
-    echo "FAIL: $test_name - Missing errors-analyst section"
+    echo "✗ FAIL: $test_name - Missing errors-analyst section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "claude-3-5-haiku-20241022" "$ref_file"; then
-    echo "FAIL: $test_name - Missing model specification"
+    echo "✗ FAIL: $test_name - Missing model specification"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
@@ -250,18 +250,18 @@ test_command_reference() {
   local ref_file="${PROJECT_ROOT}/.claude/docs/reference/standards/command-reference.md"
 
   if ! grep -q "Report Mode" "$ref_file"; then
-    echo "FAIL: $test_name - Missing Report Mode documentation"
+    echo "✗ FAIL: $test_name - Missing Report Mode documentation"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "errors-analyst" "$ref_file"; then
-    echo "FAIL: $test_name - Missing errors-analyst reference"
+    echo "✗ FAIL: $test_name - Missing errors-analyst reference"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
@@ -274,18 +274,18 @@ test_errors_guide() {
   local guide_file="${PROJECT_ROOT}/.claude/docs/guides/commands/errors-command-guide.md"
 
   if ! grep -q "Report Generation (Default Mode)" "$guide_file"; then
-    echo "FAIL: $test_name - Missing report generation section"
+    echo "✗ FAIL: $test_name - Missing report generation section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "Agent Delegation" "$guide_file"; then
-    echo "FAIL: $test_name - Missing agent delegation documentation"
+    echo "✗ FAIL: $test_name - Missing agent delegation documentation"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
@@ -299,19 +299,19 @@ test_backward_compatibility() {
 
   # Check that query_errors function is still called in query mode
   if ! grep -q "query_errors" "$cmd_file"; then
-    echo "FAIL: $test_name - Missing query_errors function calls"
+    echo "✗ FAIL: $test_name - Missing query_errors function calls"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   # Check that recent_errors function is still available
   if ! grep -q "recent_errors" "$cmd_file"; then
-    echo "FAIL: $test_name - Missing recent_errors function call"
+    echo "✗ FAIL: $test_name - Missing recent_errors function call"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
@@ -325,42 +325,42 @@ test_report_structure() {
 
   # Check for required report sections
   if ! grep -q "## Metadata" "$agent_file"; then
-    echo "FAIL: $test_name - Missing Metadata section"
+    echo "✗ FAIL: $test_name - Missing Metadata section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "## Executive Summary" "$agent_file"; then
-    echo "FAIL: $test_name - Missing Executive Summary section"
+    echo "✗ FAIL: $test_name - Missing Executive Summary section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "## Error Overview" "$agent_file"; then
-    echo "FAIL: $test_name - Missing Error Overview section"
+    echo "✗ FAIL: $test_name - Missing Error Overview section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "## Top Errors by Frequency" "$agent_file"; then
-    echo "FAIL: $test_name - Missing Top Errors section"
+    echo "✗ FAIL: $test_name - Missing Top Errors section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "## Error Distribution" "$agent_file"; then
-    echo "FAIL: $test_name - Missing Error Distribution section"
+    echo "✗ FAIL: $test_name - Missing Error Distribution section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
   if ! grep -q "## Recommendations" "$agent_file"; then
-    echo "FAIL: $test_name - Missing Recommendations section"
+    echo "✗ FAIL: $test_name - Missing Recommendations section"
     FAIL_COUNT=$((FAIL_COUNT + 1))
     return 1
   fi
 
-  echo "PASS: $test_name"
+  echo "✓ PASS: $test_name"
   PASS_COUNT=$((PASS_COUNT + 1))
   return 0
 }
