@@ -6,6 +6,8 @@ This directory contains the comprehensive test suite for the Claude Code agentia
 
 ```
 tests/
+├── agents/             # Agent behavioral compliance tests (2 files)
+├── commands/           # Slash command functionality tests (5 files)
 ├── unit/               # Library function unit tests (7 files)
 ├── integration/        # Workflow and command integration tests (10 files)
 ├── state/              # Checkpoint and persistence tests (9 files)
@@ -25,6 +27,17 @@ tests/
 ```
 
 ## Test Categories
+
+### [Agent Tests](agents/README.md)
+Agent behavioral compliance and revision capabilities:
+- Plan architect revision mode
+- Agent invocation pattern validation
+
+### [Command Tests](commands/README.md)
+Slash command functionality and error handling:
+- /build task delegation
+- /revise error recovery and validation
+- Input handling and plan preservation
 
 ### Unit Tests (`unit/`)
 Library function unit testing for core functionality:
@@ -82,13 +95,12 @@ Feature-specific testing organized by domain:
 - **location/**: Project directory detection, empty directory detection
 - **specialized/**: Error recovery, library management, template system, parallel agents
 
-### Utilities (`utilities/`)
+### [Utilities](utilities/README.md)
 Non-test utilities for development:
-- `lint_bash_conditionals.sh` - Bash conditional linting
-- `lint_error_suppression.sh` - Error suppression pattern validation
-- `bench_workflow_classification.sh` - Classification performance benchmarks
-- `manual_e2e_hybrid_classification.sh` - Manual end-to-end testing
+- Linting scripts for bash conditionals and error suppression
 - Validation scripts for command standards and artifact organization
+- **[Benchmarks](utilities/benchmarks/README.md)**: Performance benchmarking
+- **[Manual](utilities/manual/README.md)**: Interactive testing tools
 
 ## Running Tests
 
@@ -210,29 +222,10 @@ See `COVERAGE_REPORT.md` for detailed library coverage analysis:
 
 ## Navigation
 
+- [← Parent Directory](../README.md)
 - [Testing Protocols](./../docs/reference/standards/testing-protocols.md)
 - [Test Isolation Standards](./../docs/reference/standards/test-isolation.md)
 - [Coverage Report](./COVERAGE_REPORT.md)
 - [Archive Directory](./../archive/tests/cleanup-2025-11-20/README.md)
 - [Fixtures Documentation](./fixtures/README.md)
 
-## Recent Changes
-
-**2025-11-20 Reorganization**:
-- Reorganized from flat structure (92 files) to 7-category hierarchy
-- Removed 6 obsolete tests (archived with rationale)
-- Enhanced test runner with recursive subdirectory support
-- Fixed build.md test discovery path
-- Updated 7 test files for correct relative paths after relocation
-- Pass rate improved to 78.6% (up from planned 64%)
-- Total reduction: 3 files (92 → 89), focusing on organization over consolidation
-
-**Test Discovery Enhancement**:
-- `run_all_tests.sh` now recursively searches subdirectories
-- Excludes fixtures/, logs/, validation_results/, tmp/, scripts/
-- Supports `--category` flag for selective execution
-- Supports `--list` flag to display all tests
-
-**Build Command Integration**:
-- Fixed `.claude/run_all_tests.sh` → `.claude/tests/run_all_tests.sh`
-- Enables automatic test discovery in `/build` workflow

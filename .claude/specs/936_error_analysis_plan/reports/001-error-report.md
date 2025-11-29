@@ -1,143 +1,277 @@
-# Error Analysis Report
+# Error Analysis Report: /plan Command
 
-## Metadata
-- **Date**: 2025-11-23
-- **Agent**: errors-analyst
-- **Analysis Type**: Error log analysis
-- **Filters Applied**: --command /plan
-- **Time Range**: 2025-11-21T06:13:55Z to 2025-11-24T03:37:05Z
+## Report Metadata
+
+- **Generated**: 2025-11-27
+- **Filter Applied**: command = "/plan"
+- **Total Errors**: 23
+- **Unique Workflows**: 13
+- **Date Range**: 2025-11-21T06:13:55Z to 2025-11-24T03:37:05Z
+- **Status**: All errors marked as FIX_PLANNED
+- **Repair Plan**: /home/benjamin/.config/.claude/specs/941_debug_errors_repair/plans/001-debug-errors-repair-plan.md
 
 ## Executive Summary
 
-Analyzed 22 errors from the `/plan` command over a 3-day period. The most prevalent error types are `execution_error` (9 occurrences, 41%), `agent_error` (8 occurrences, 36%), and `validation_error` (3 occurrences, 14%). The primary issues stem from topic naming agent failures and bash execution errors related to missing functions (`exit code 127`) and workflow state management.
+The `/plan` command has logged 23 errors across 13 unique workflow executions over a 3-day period. The error distribution reveals three primary categories:
 
-## Error Overview
+1. **Agent Errors (48%)**: 11 occurrences - mostly test-related agent validation failures and topic naming agent issues
+2. **Execution Errors (39%)**: 9 occurrences - bash errors from missing files, exit codes 127 and 1
+3. **Validation/Parse Errors (13%)**: 3 occurrences - research topics array issues
 
-| Metric | Value |
-|--------|-------|
-| Total Errors | 22 |
-| Unique Error Types | 4 |
-| Time Range | 2025-11-21T06:13:55Z to 2025-11-24T03:37:05Z |
-| Commands Affected | 1 (/plan) |
-| Most Frequent Type | execution_error (9 occurrences) |
+The most critical production issues involve:
+- Topic naming agent failures (4 occurrences) causing fallback to generic names
+- Bash exit code 127 errors (5 occurrences) from sourcing `/etc/bashrc`
+- Research topics array parsing failures (2 occurrences)
 
-## Top Errors by Frequency
-
-### 1. agent_error - Topic naming agent failed or returned invalid name
-- **Occurrences**: 7
-- **Affected Commands**: /plan
-- **Example**:
-  - Timestamp: 2025-11-21T06:16:44Z
-  - Command: /plan
-  - Workflow ID: plan_1763705583
-  - Context:
-    - `fallback_reason`: agent_no_output_file
-    - `feature`: User-provided feature description
-  - Stack: [] (empty - error occurred at application level)
-- **Pattern**: The topic naming agent consistently fails to produce an output file, triggering fallback behavior. This occurs across multiple workflow IDs with different user inputs.
-
-### 2. execution_error - Bash error at line 1: exit code 127 (. /etc/bashrc)
-- **Occurrences**: 4
-- **Affected Commands**: /plan
-- **Example**:
-  - Timestamp: 2025-11-21T06:13:55Z
-  - Command: /plan
-  - Workflow ID: plan_1763705583
-  - Context:
-    - `line`: 1
-    - `exit_code`: 127
-    - `command`: `. /etc/bashrc`
-  - Stack: ["1300 _log_bash_exit /home/benjamin/.config/.claude/lib/core/error-handling.sh"]
-- **Pattern**: Benign errors from bash initialization attempting to source `/etc/bashrc` which may not exist. These are filtered noise, not actual workflow failures.
-
-### 3. execution_error - Bash error with append_workflow_state function
-- **Occurrences**: 3
-- **Affected Commands**: /plan
-- **Example**:
-  - Timestamp: 2025-11-21T06:17:10Z
-  - Command: /plan
-  - Workflow ID: plan_1763705583
-  - Context:
-    - `line`: 319
-    - `exit_code`: 127
-    - `command`: `append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"`
-  - Stack: ["319 _log_bash_error /home/benjamin/.config/.claude/lib/core/error-handling.sh"]
-- **Pattern**: Missing `append_workflow_state` function - exit code 127 indicates command not found. State persistence library likely not sourced correctly.
-
-### 4. validation_error - research_topics array empty or missing
-- **Occurrences**: 2
-- **Affected Commands**: /plan
-- **Example**:
-  - Timestamp: 2025-11-21T23:18:27Z
-  - Command: /plan
-  - Workflow ID: plan_1763767106
-  - Context:
-    - `classification_result`: `{"topic_directory_slug": "errors_command_directory_protocols"}`
-    - `research_topics`: `[]`
-  - Stack: ["173 validate_and_generate_filename_slugs ...", "633 initialize_workflow_paths ..."]
-- **Pattern**: Classification agent returns valid slug but empty research_topics array, causing validation to fail or use fallback defaults.
-
-### 5. agent_error - Agent did not create output file within timeout
-- **Occurrences**: 6
-- **Affected Commands**: /plan
-- **Example**:
-  - Timestamp: 2025-11-21T23:20:07Z
-  - Command: /plan
-  - Workflow ID: test_2171
-  - Context:
-    - `agent`: test-agent
-    - `expected_file`: /tmp/nonexistent_agent_output_3847.txt
-  - Stack: ["1401 validate_agent_output /home/benjamin/.config/.claude/lib/core/error-handling.sh"]
-- **Pattern**: Test-related agent validation errors. These appear to be from test suites validating error handling rather than production failures.
+Test-related errors (7 occurrences with "test-agent") represent intentional test scenarios and are not production concerns.
 
 ## Error Distribution
 
-#### By Error Type
+### By Error Type
+
 | Error Type | Count | Percentage |
 |------------|-------|------------|
-| execution_error | 9 | 40.9% |
-| agent_error | 8 | 36.4% |
-| validation_error | 3 | 13.6% |
-| parse_error | 2 | 9.1% |
+| agent_error | 11 | 47.8% |
+| execution_error | 9 | 39.1% |
+| validation_error | 2 | 8.7% |
+| parse_error | 1 | 4.3% |
 
-#### By Error Source
-| Source | Count | Percentage |
-|--------|-------|------------|
-| bash_trap | 9 | 40.9% |
-| bash_block_1c | 4 | 18.2% |
-| validate_agent_output | 6 | 27.3% |
-| validate_and_generate_filename_slugs | 3 | 13.6% |
+### By Error Source
 
-#### By Exit Code (execution_error only)
-| Exit Code | Count | Meaning |
-|-----------|-------|---------|
-| 127 | 7 | Command not found |
-| 1 | 2 | General failure |
+| Source | Count | Description |
+|--------|-------|-------------|
+| bash_trap | 5 | Bash error trap from error-handling.sh |
+| bash_block_1c | 4 | Topic naming agent invocation block |
+| validate_agent_output | 7 | Agent output validation (test scenarios) |
+| validate_and_generate_filename_slugs | 2 | Research topics validation |
+| bash_block | 1 | Generic bash block (test scenario) |
+
+### By Workflow
+
+| Workflow ID | Error Count | Context |
+|-------------|-------------|---------|
+| plan_1763705583 | 5 | Command optimization research |
+| plan_1763707476 | 2 | /errors command refactor |
+| plan_1763707955 | 2 | Skills documentation update |
+| plan_1763742651 | 3 | /convert-doc README update |
+| plan_1763764140 | 1 | Unified implementation plan |
+| plan_1763767106 | 1 | /errors directory protocols |
+| test_* (7 workflows) | 8 | Test scenarios |
+| plan_1763770464 | 1 | Commands/docs standards review |
+
+## Top Error Patterns
+
+### Pattern 1: Test Agent Validation Failures (7 occurrences, 30%)
+
+**Error Message**: "Agent test-agent did not create output file within 1s"
+
+**Characteristics**:
+- All errors from `validate_agent_output` function
+- Workflow IDs contain "test_" prefix
+- Expected file paths in `/tmp/nonexistent_agent_output_*.txt`
+- Part of unit/integration test suite
+
+**Analysis**: These are intentional test scenarios validating agent timeout and missing output handling. Not production errors.
+
+**Recommendation**: No action required - tests functioning as designed.
+
+---
+
+### Pattern 2: Bash Exit Code 127 Errors (5 occurrences, 22%)
+
+**Error Message**: "Bash error at line 1: exit code 127" or similar
+
+**Characteristics**:
+- Exit code 127 indicates "command not found"
+- Line 1 errors from `. /etc/bashrc` sourcing
+- Other line numbers (183, 319, 323) from `append_workflow_state` calls
+- Caught by bash error trap in error-handling.sh
+
+**Analysis**:
+- `/etc/bashrc` sourcing failures suggest environment initialization issues
+- `append_workflow_state` failures indicate state-persistence.sh library not loaded
+- Exit code 127 suggests missing commands or library functions
+
+**Root Causes**:
+1. `/etc/bashrc` may not exist on all systems (not POSIX standard)
+2. State persistence library not sourced before calling `append_workflow_state`
+3. Potential library sourcing order issues
+
+**Recommendations**:
+1. **High Priority**: Make `/etc/bashrc` sourcing conditional and non-fatal
+   ```bash
+   [ -f /etc/bashrc ] && . /etc/bashrc 2>/dev/null || true
+   ```
+2. **High Priority**: Verify state-persistence.sh is sourced before state function calls
+3. **Medium Priority**: Add library dependency checks at command initialization
+4. **Low Priority**: Consider removing `/etc/bashrc` sourcing if not essential
+
+---
+
+### Pattern 3: Topic Naming Agent Failures (4 occurrences, 17%)
+
+**Error Message**: "Topic naming agent failed or returned invalid name"
+
+**Characteristics**:
+- Source: bash_block_1c (topic naming agent invocation)
+- Fallback reason: "agent_no_output_file"
+- Occurred with legitimate user feature descriptions
+- Results in fallback to generic topic names
+
+**Analysis**: The topic naming agent (Haiku LLM) failed to generate output files for complex feature descriptions, forcing the system to use fallback "no_name" directory naming.
+
+**Affected Features**:
+1. Command optimization research (very long description)
+2. Skills documentation update (reference to existing plan file)
+3. /convert-doc README update (simple task)
+
+**Root Causes**:
+1. Agent timeout for complex prompts
+2. Agent output file not created before validation check
+3. Possible agent prompt/context issues
+
+**Recommendations**:
+1. **High Priority**: Increase timeout for topic naming agent
+2. **High Priority**: Add retry logic with simplified prompt on failure
+3. **Medium Priority**: Validate agent prompt template handles long descriptions
+4. **Medium Priority**: Log agent stderr/stdout for debugging when output file missing
+5. **Low Priority**: Consider pre-processing user input to extract key phrases
+
+---
+
+### Pattern 4: Research Topics Array Validation (2 occurrences, 9%)
+
+**Error Message**:
+- "research_topics array empty or missing after parsing classification result"
+- "research_topics array empty or missing - using fallback defaults"
+
+**Characteristics**:
+- Source: `validate_and_generate_filename_slugs` function
+- Occurs in workflow-initialization.sh
+- Classification result contains only `topic_directory_slug`, missing `research_topics`
+- System uses fallback behavior
+
+**Analysis**: The classification agent (responsible for parsing user input) returns incomplete JSON structure with only the directory slug but no research topics array.
+
+**Affected Workflows**:
+1. `/errors` command directory protocols refactor
+2. Commands/docs standards review
+
+**Root Cause**: Classification agent output schema mismatch - returns `{"topic_directory_slug": "..."}` but validation expects `research_topics` array field.
+
+**Recommendations**:
+1. **High Priority**: Update classification agent prompt to always include `research_topics` array
+2. **Medium Priority**: Add schema validation with clear error messages about missing fields
+3. **Medium Priority**: Make `research_topics` optional with documented fallback behavior
+4. **Low Priority**: Consider separating topic naming from research topic extraction
+
+---
+
+### Pattern 5: Bash Error at line 252: exit code 1 (1 occurrence)
+
+**Error Message**: "Bash error at line 252: exit code 1"
+
+**Characteristics**:
+- Single occurrence in workflow plan_1763707955
+- Command context: `return 1` (explicit error return)
+- Part of topic naming fallback logic
+
+**Analysis**: Intentional error return caught by bash error trap, likely part of error handling flow.
+
+**Recommendation**: Low priority - verify this is expected behavior and doesn't indicate logic flaw.
+
+## Error Context Analysis
+
+### Production vs Test Errors
+
+| Category | Count | Percentage |
+|----------|-------|------------|
+| Production errors | 15 | 65.2% |
+| Test errors | 8 | 34.8% |
+
+### Production Error Breakdown
+
+| Issue Type | Count | Severity |
+|------------|-------|----------|
+| Bash sourcing/state errors | 9 | High |
+| Topic naming failures | 4 | Medium |
+| Research topics validation | 2 | Medium |
+
+### Workflow Success Impact
+
+Of 13 unique workflows:
+- **6 test workflows** (46%): Intentional failures
+- **7 production workflows** (54%): All experienced errors
+
+**Production workflow failure rate**: 100% of sampled workflows had at least one error
+
+**Error clustering**: Production workflows average 2.1 errors per workflow, suggesting cascading failures from initialization issues.
 
 ## Recommendations
 
-1. **Topic Naming Agent Reliability**
-   - Rationale: 7 errors (32%) are caused by the topic naming agent failing to produce output files. This is the most impactful issue affecting `/plan` command reliability.
-   - Action: Investigate agent timeout settings, output file path configuration, and add retry logic with exponential backoff. Consider logging agent stdout/stderr for debugging failed invocations.
+### Critical Priority (Fix Immediately)
 
-2. **State Persistence Library Sourcing**
-   - Rationale: Multiple errors with `append_workflow_state` and `save_completed_states_to_state` returning exit code 127 indicate the state persistence functions are not available when called.
-   - Action: Ensure `state-persistence.sh` is sourced before any workflow state functions are called. Add explicit source verification checks with fail-fast behavior.
+1. **Fix /etc/bashrc sourcing** (affects 5 workflows)
+   - Location: /plan command initialization
+   - Solution: Add conditional sourcing with error suppression
+   - Impact: Eliminates 22% of all errors
 
-3. **Benign Error Filtering**
-   - Rationale: 4 errors (18%) are from `. /etc/bashrc` sourcing failures which are benign initialization noise, not actual workflow problems.
-   - Action: Add source-based filtering in the error logging system to exclude benign bash initialization errors, or mark them with a `severity: info` field rather than logging as errors.
+2. **Verify library sourcing order** (affects 4 workflows)
+   - Location: /plan command initialization
+   - Solution: Ensure state-persistence.sh loaded before state function calls
+   - Impact: Eliminates bash exit code 127 errors from `append_workflow_state`
 
-4. **Classification Agent Output Validation**
-   - Rationale: The classification agent returns valid `topic_directory_slug` but empty `research_topics` arrays, causing downstream validation failures.
-   - Action: Update the classification agent prompt to ensure `research_topics` is always populated with at least one topic, or make the field optional with graceful fallback handling.
+3. **Fix topic naming agent reliability** (affects 4 workflows)
+   - Location: Topic naming agent invocation (bash_block_1c)
+   - Solution: Add timeout increase, retry logic, better error capture
+   - Impact: Prevents fallback to generic "no_name" directories
 
-5. **Test Error Segregation**
-   - Rationale: 6 errors from `validate_agent_output` with test workflow IDs (test_2171, test_12345, etc.) pollute production error analysis.
-   - Action: Add environment tagging (test vs production) to error logging, and filter test errors from production reports by default.
+### High Priority (Fix Soon)
 
-## References
+4. **Fix research_topics array schema** (affects 2 workflows)
+   - Location: workflow-initialization.sh validation
+   - Solution: Update classification agent to always return `research_topics` array
+   - Impact: Prevents validation errors and ensures proper topic classification
 
-- **Error Log**: /home/benjamin/.config/.claude/data/logs/errors.jsonl
-- **Analysis Date**: 2025-11-23
-- **Agent**: errors-analyst (claude-sonnet-4-5-20250929)
+5. **Add library dependency checks**
+   - Location: /plan command initialization
+   - Solution: Validate all required libraries are sourced before proceeding
+   - Impact: Fail-fast with clear error messages instead of cascading failures
+
+### Medium Priority (Improve Robustness)
+
+6. **Enhanced agent debugging**
+   - Solution: Capture and log agent stderr/stdout when output file missing
+   - Impact: Easier troubleshooting of agent failures
+
+7. **Standardize error handling**
+   - Solution: Review all bash error traps to ensure appropriate logging
+   - Impact: Better error diagnostics, reduced noise from expected errors
+
+### Low Priority (Future Enhancements)
+
+8. **Agent prompt optimization**
+   - Solution: Test topic naming agent with various input lengths
+   - Impact: Better handling of complex feature descriptions
+
+9. **Error pattern monitoring**
+   - Solution: Create periodic error analysis reports
+   - Impact: Proactive identification of emerging issues
+
+## Conclusion
+
+The `/plan` command's error log reveals systemic initialization issues rather than diverse failure modes. The primary problems cluster around:
+
+1. **Environment initialization** (/etc/bashrc sourcing, library loading)
+2. **Agent reliability** (topic naming, classification)
+3. **Schema validation** (research topics array)
+
+The high concentration of errors in a small number of patterns (3 patterns account for 69% of errors) suggests that fixing the top 3 issues would dramatically improve stability. The 100% error rate across production workflows indicates these are not edge cases but fundamental reliability issues.
+
+Immediate focus should be on the bash sourcing/state persistence fixes (Pattern 2), which represent the most frequent and earliest-occurring errors in workflow execution.
+
+---
+
+**Report Generated By**: errors-analyst agent
+**Report Path**: /home/benjamin/.config/.claude/specs/936_error_analysis_plan/reports/001-error-report.md
+**Next Steps**: Review recommendations and create implementation plan via `/repair` command

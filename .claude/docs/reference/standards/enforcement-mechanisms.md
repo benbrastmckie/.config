@@ -16,6 +16,7 @@ This document serves as the **single source of truth** for all standards enforce
 | check-library-sourcing.sh | scripts/lint/ | Bash three-tier sourcing pattern, fail-fast handlers | ERROR | Yes |
 | lint_error_suppression.sh | tests/utilities/ | Error suppression anti-patterns, deprecated state paths | ERROR | Yes |
 | lint_bash_conditionals.sh | tests/utilities/ | Preprocessing-unsafe bash conditionals | ERROR | Yes |
+| validate-hard-barrier-compliance.sh | scripts/ | Hard barrier subagent delegation pattern | ERROR | Yes |
 | validate-readmes.sh | scripts/ | README structure, required sections | WARNING | Yes (quick) |
 | validate-links.sh | scripts/ | Internal link validity, broken references | WARNING | Yes (quick) |
 | validate-agent-behavioral-file.sh | scripts/ | Agent frontmatter/behavior consistency | WARNING | Manual |
@@ -95,6 +96,40 @@ bash .claude/tests/utilities/lint_bash_conditionals.sh
 ```
 
 **Related Standard**: [bash-block-execution-model.md](../../concepts/bash-block-execution-model.md#anti-patterns-reference), [bash-tool-limitations.md](../../troubleshooting/bash-tool-limitations.md)
+
+### validate-hard-barrier-compliance.sh
+
+**Purpose**: Validates commands implement the hard barrier subagent delegation pattern.
+
+**Checks Performed**:
+1. **Block structure**: Verifies Na/Nb/Nc pattern (e.g., 4a/4b/4c)
+2. **CRITICAL BARRIER labels**: Execute blocks must have explicit barrier labels
+3. **Task invocations**: Execute blocks contain Task tool invocations
+4. **Fail-fast verification**: Verify blocks use `exit 1` on failures
+5. **Error logging**: Verify blocks call `log_command_error`
+6. **Checkpoint reporting**: Setup and verify blocks report checkpoints
+7. **State transitions**: Setup blocks call `sm_transition`
+8. **Variable persistence**: Setup blocks use `append_workflow_state`
+9. **Recovery instructions**: Verify blocks include recovery guidance
+10. **Delegation warnings**: Execute blocks include "CANNOT be bypassed" warning
+
+**Exit Codes**:
+- `0`: All commands 100% compliant
+- `1`: One or more compliance failures
+
+**Usage**:
+```bash
+# Validate all orchestrator commands
+bash .claude/scripts/validate-hard-barrier-compliance.sh
+
+# Validate specific command
+bash .claude/scripts/validate-hard-barrier-compliance.sh --command revise
+
+# Verbose output
+bash .claude/scripts/validate-hard-barrier-compliance.sh --verbose
+```
+
+**Related Standard**: [hard-barrier-subagent-delegation.md](../../concepts/patterns/hard-barrier-subagent-delegation.md)
 
 ### validate-readmes.sh
 
@@ -177,6 +212,7 @@ This matrix shows which enforcement tools verify each standard document:
 | command-authoring.md | check-library-sourcing.sh, validate-agent-behavioral-file.sh |
 | agent-behavioral-guidelines.md | validate-agent-behavioral-file.sh |
 | bash-block-execution-model.md | check-library-sourcing.sh, lint_bash_conditionals.sh |
+| hard-barrier-subagent-delegation.md | validate-hard-barrier-compliance.sh |
 
 ## Pre-Commit Integration
 

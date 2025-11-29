@@ -87,11 +87,53 @@ The `/revise` command provides a research-and-revise workflow that creates resea
 1. **Input**: Revision description with embedded plan path + optional complexity (default: 2)
 2. **Plan Path Extraction**: Extracts /path/to/plan.md from description
 3. **State Initialization**: sm_init() with workflow_type="research-and-revise"
-4. **Research Phase**: research-specialist investigates new insights
+4. **Research Phase** (Hard Barrier Pattern):
+   - **Block 4a (Setup)**: State transition to RESEARCH, variable persistence
+   - **Block 4b (Execute)**: Task invocation for research-specialist (MANDATORY)
+   - **Block 4c (Verify)**: Artifact existence check, fail-fast on missing reports
 5. **Backup Creation**: Original plan backed up to plans/backups/
-6. **Revision Phase**: plan-architect modifies existing plan using Edit tool
-7. **Change Verification**: Ensures plan actually changed (fails if identical to backup)
+6. **Revision Phase** (Hard Barrier Pattern):
+   - **Block 5a (Setup)**: Backup creation, state transition to PLAN
+   - **Block 5b (Execute)**: Task invocation for plan-architect (MANDATORY)
+   - **Block 5c (Verify)**: Plan modification check, backup verification
+7. **Completion**: State transition to COMPLETE, 4-section summary
 8. **Output**: Revised plan + backup + research reports
+
+### Hard Barrier Architecture
+
+The `/revise` command uses the **Setup → Execute → Verify** pattern to enforce subagent delegation:
+
+```
+Block 4: Research Phase
+├── Block 4a: Research Setup
+│   ├── State transition: RESEARCH (fail-fast)
+│   ├── Variable persistence (RESEARCH_DIR, SPECS_DIR)
+│   └── Checkpoint: "Ready for research-specialist"
+├── Block 4b: Research Execution [CRITICAL BARRIER]
+│   └── Task invocation: research-specialist (MANDATORY)
+└── Block 4c: Research Verification
+    ├── Directory existence check (fail-fast)
+    ├── Report count check (>= 1 required)
+    └── Error logging on failure
+
+Block 5: Plan Revision Phase
+├── Block 5a: Plan Revision Setup
+│   ├── Backup creation (BEFORE subagent)
+│   ├── Backup verification (file size, existence)
+│   └── State transition: PLAN (fail-fast)
+├── Block 5b: Plan Revision Execution [CRITICAL BARRIER]
+│   └── Task invocation: plan-architect (MANDATORY)
+└── Block 5c: Plan Revision Verification
+    ├── Plan modification check (timestamp vs backup)
+    ├── Backup re-verification
+    └── Revision history update
+```
+
+**Key Design Features**:
+- Bash blocks between Task invocations make bypass impossible
+- State transitions serve as gates preventing phase skipping
+- Fail-fast verification blocks exit on missing artifacts
+- Error logging with recovery instructions on all failures
 
 ---
 
@@ -405,6 +447,9 @@ Write permissions issue or disk space problem.
 ls -ld plans/backups/
 mkdir -p plans/backups/
 
+# Check disk space
+df -h .
+
 # Verify disk space
 df -h
 
@@ -433,6 +478,95 @@ This is often normal behavior. The command will proceed using existing reports.
 
 # Or provide more specific revision details
 /revise"revise plan at plans/001.md based on newly discovered WebSocket security vulnerability CVE-2025-1234"
+```
+
+#### Issue 6: Research Verification Failed (Block 4c)
+
+**Symptoms**:
+- Error: "VERIFICATION FAILED: Research directory not found"
+- Error: "VERIFICATION FAILED: No research reports found"
+- Exit code 1 immediately after research phase
+
+**Cause**:
+The research-specialist subagent failed to create reports, or reports directory is missing.
+
+**Solution**:
+```bash
+# Check if research directory was created
+ls -la .claude/specs/*/reports/
+
+# Verify research-specialist agent ran successfully
+# Look for error logs
+/errors --command /revise --since 1h --type agent_error
+
+# Check state file for research phase completion
+grep "WORKFLOW_STATE" ~/.claude/data/state/revise_*.state
+
+# Re-run /revise after fixing research-specialist issues
+/revise"revise plan at path/to/plan.md based on same details"
+```
+
+**Recovery**:
+1. Check error logs: `/errors --command /revise`
+2. Verify specs directory structure exists
+3. Manually create reports directory if missing: `mkdir -p .claude/specs/NNN/reports/`
+4. Re-run command (state machine allows resume)
+
+#### Issue 7: Plan Revision Verification Failed (Block 5c)
+
+**Symptoms**:
+- Error: "VERIFICATION FAILED: Plan was not modified"
+- Error: "VERIFICATION FAILED: Backup not found"
+- Exit after plan-architect invocation
+
+**Cause**:
+The plan-architect subagent failed to modify the plan, or backup creation failed.
+
+**Solution**:
+```bash
+# Verify backup exists
+ls -la plans/backups/*.backup.*
+
+# Check if plan was modified (compare with backup)
+diff plans/001.md plans/backups/001.md.backup.TIMESTAMP
+
+# Check plan-architect error logs
+/errors --command /revise --type agent_error
+
+# Verify plan-architect has Edit tool access
+grep "allowed-tools" .claude/agents/plan-architect.md
+```
+
+**Recovery**:
+1. Restore from backup if plan was corrupted: `cp plans/backups/BACKUP.md plans/001.md`
+2. Check plan-architect agent logs for failures
+3. Ensure plan-architect uses Edit tool (not Write) for revisions
+4. Re-run /revise with clearer revision details
+
+#### Issue 8: State Transition Failed
+
+**Symptoms**:
+- Error: "State transition failed with exit code: 1"
+- Error logged as "state_error" type
+- Command stops mid-execution
+
+**Cause**:
+workflow-state-machine.sh reported failure during state transition.
+
+**Solution**:
+```bash
+# Check state machine library version
+grep "version" .claude/lib/workflow/workflow-state-machine.sh
+
+# Verify state file permissions
+ls -l ~/.claude/data/state/revise_*.state
+
+# Check for state file corruption
+cat ~/.claude/data/state/revise_*.state
+
+# Clean up corrupted state files
+rm ~/.claude/data/state/revise_*.state
+# Then re-run /revise
 ```
 
 ### Debug Mode

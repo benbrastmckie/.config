@@ -32,6 +32,44 @@
 
 set -eo pipefail  # Match workflow-initialization.sh: removed -u for defensive variable refs
 
+# Extract significant words from user description for fallback slug generation
+# Usage: extract_significant_words "I want to research authentication patterns"
+# Returns: "research_authentication_patterns" (first 4 significant words, max 40 chars)
+# Note: This is a fallback when LLM topic naming fails. Filters common words.
+extract_significant_words() {
+  local description="$1"
+
+  # Common words to filter out (articles, prepositions, pronouns, etc.)
+  local stopwords="the|a|an|and|or|but|in|on|at|to|for|of|with|by|from|up|about|into|through|during|before|after|above|below|between|among|under|over|again|further|then|once|here|there|when|where|why|how|all|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|can|will|just|should|now|i|you|he|she|it|we|they|them|their|what|which|who|whom|this|that|these|those|am|is|are|was|were|be|been|being|have|has|had|do|does|did|would|could|may|might|must|shall"
+
+  # Extract words: lowercase, remove punctuation, filter stopwords and paths
+  local words=$(echo "$description" | \
+    tr '[:upper:]' '[:lower:]' | \
+    sed 's/[^a-z0-9 ]/ /g' | \
+    tr -s ' ' '\n' | \
+    grep -vE "^($stopwords)$" | \
+    grep -vE '^[0-9]+$' | \
+    grep -E '^[a-z][a-z0-9]{2,}$' | \
+    head -4)
+
+  # Join with underscores
+  local slug=$(echo "$words" | tr '\n' '_' | sed 's/_$//')
+
+  # If empty (all stopwords), default to "topic"
+  if [ -z "$slug" ]; then
+    slug="topic"
+  fi
+
+  # Truncate to 40 chars if needed
+  slug="${slug:0:40}"
+
+  # Remove trailing underscore if truncation created one
+  slug="${slug%_}"
+
+  echo "$slug"
+}
+export -f extract_significant_words
+
 # DEPRECATED: Use allocate_and_create_topic() from unified-location-detection.sh instead
 # This function is non-atomic and causes race conditions under concurrent access.
 # Retained for backward compatibility only - do NOT use in new code.

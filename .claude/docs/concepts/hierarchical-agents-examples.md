@@ -382,6 +382,166 @@ Task {
 
 ---
 
+## Example 6: Hard Barrier Pattern (/revise Command)
+
+### Scenario
+
+Enforce subagent delegation using hard context barriers to prevent bypass.
+
+### Problem
+
+Without barriers, orchestrators may bypass Task invocation and perform work directly due to permissive tool access (Read, Edit, Grep, Glob).
+
+### Solution: Setup → Execute → Verify Pattern
+
+```
+Block N: Phase Name
+├── Block Na: Setup
+│   ├── State transition (fail-fast)
+│   ├── Variable persistence
+│   └── Checkpoint reporting
+├── Block Nb: Execute [CRITICAL BARRIER]
+│   └── Task invocation (MANDATORY)
+└── Block Nc: Verify
+    ├── Artifact existence check
+    ├── Fail-fast on missing outputs
+    └── Error logging with recovery hints
+```
+
+### Implementation: /revise Command
+
+```markdown
+## Block 4a: Research Setup
+
+```bash
+# State transition blocks progression until complete
+sm_transition "RESEARCH" || {
+  log_command_error "state_error" "Failed to transition to RESEARCH" "..."
+  exit 1
+}
+
+# Pre-calculate paths for subagent
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+mkdir -p "$RESEARCH_DIR"
+
+# Persist for next block
+append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
+
+echo "[CHECKPOINT] Ready for research-specialist invocation"
+```
+
+## Block 4b: Research Execution
+
+**CRITICAL BARRIER**: This block MUST invoke research-specialist via Task tool.
+Verification block (4c) will FAIL if reports not created.
+
+**EXECUTE NOW**: Invoke research-specialist
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research revision insights"
+  prompt: |
+    Read and follow: .claude/agents/research-specialist.md
+
+    Revision Details: ${REVISION_DETAILS}
+    Output Directory: ${RESEARCH_DIR}
+
+    Create research reports analyzing:
+    - Impact of proposed changes
+    - Dependencies affected
+    - Recommended implementation approach
+}
+
+## Block 4c: Research Verification
+
+```bash
+# Fail-fast if directory missing
+if [[ ! -d "$RESEARCH_DIR" ]]; then
+  log_command_error "verification_error" \
+    "Research directory not found: $RESEARCH_DIR" \
+    "research-specialist should have created this directory"
+  echo "ERROR: Research verification failed"
+  exit 1
+fi
+
+# Fail-fast if no reports created
+REPORT_COUNT=$(find "$RESEARCH_DIR" -name "*.md" -type f | wc -l)
+if [[ "$REPORT_COUNT" -eq 0 ]]; then
+  log_command_error "verification_error" \
+    "No research reports found in $RESEARCH_DIR" \
+    "research-specialist should have created at least one report"
+  echo "ERROR: Research verification failed"
+  exit 1
+fi
+
+# Persist report count for next phase
+append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
+
+echo "[CHECKPOINT] Research verified: $REPORT_COUNT reports created"
+```
+```
+
+### Key Design Features
+
+1. **Bash Blocks Between Task Invocations**: Makes bypass impossible
+   - Claude cannot skip bash verification block
+   - Fail-fast errors prevent progression without artifacts
+
+2. **State Transitions as Gates**: Explicit state changes prevent phase skipping
+   - `sm_transition` returns exit code
+   - Non-zero exit code triggers error logging and exits
+
+3. **Mandatory Task Invocation**: CRITICAL BARRIER label emphasizes requirement
+   - Verification block depends on Task execution
+   - No alternative path available
+
+4. **Fail-Fast Verification**: Exits immediately on missing artifacts
+   - Directory existence check
+   - File count check (>= 1 required)
+   - Timestamp checks (for modifications)
+
+5. **Error Logging with Recovery**: All failures logged for debugging
+   - `log_command_error` with error type
+   - Recovery hints in error details
+   - Queryable via `/errors` command
+
+### Results
+
+**Before Hard Barriers** (Phases 1-4 baseline):
+- 40-60% context usage in orchestrator performing subagent work directly
+- Inconsistent delegation (sometimes bypassed)
+- No reusability of inline work
+
+**After Hard Barriers** (Phases 2-4 implementation):
+- Context reduction: orchestrator only coordinates
+- 100% delegation success (bypass impossible)
+- Modular architecture with focused agent responsibilities
+- Predictable workflow execution
+
+### When to Use
+
+Apply hard barrier pattern when:
+- Orchestrator has permissive tool access (Read, Edit, Write, Grep, Glob)
+- Subagent work must be isolated and reusable
+- Delegation enforcement is critical
+- Error recovery needs explicit checkpoints
+
+### Anti-Patterns
+
+**Don't**:
+- Merge bash + Task in single block (bypass possible)
+- Use soft verification (warnings instead of exit 1)
+- Skip checkpoint reporting
+- Omit error logging
+
+**Do**:
+- Split into 3 sub-blocks (Setup → Execute → Verify)
+- Use fail-fast verification (exit 1 on failure)
+- Log errors with recovery instructions
+- Add [CHECKPOINT] markers for debugging
+
+---
+
 ## Related Documentation
 
 - [Overview](hierarchical-agents-overview.md)

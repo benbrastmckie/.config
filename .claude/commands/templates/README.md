@@ -75,3 +75,9 @@ See [Command Development Guide](../../docs/guides/development/command-developmen
 - `/plan-from-template` command: `.claude/commands/plan-from-template.md`
 - Planning workflow: `.claude/docs/concepts/development-workflow.md`
 - Directory protocols: `.claude/docs/concepts/directory-protocols.md`
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Agent Templates](../../agents/templates/README.md)
+- [Related: Command Development](../../docs/guides/development/command-development/README.md)

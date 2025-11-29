@@ -25,9 +25,10 @@ setup_test_env() {
   export CLAUDE_PROJECT_DIR="$PROJECT_ROOT"
 
   # Ensure error log directory exists
-  ERROR_LOG_DIR="${CLAUDE_PROJECT_DIR}/.claude/data/logs"
+  # Since workflow IDs start with "test_", errors route to test-errors.jsonl (see error-handling.sh line 448-453)
+  ERROR_LOG_DIR="${CLAUDE_PROJECT_DIR}/.claude/tests/logs"
   mkdir -p "$ERROR_LOG_DIR"
-  ERROR_LOG_FILE="${ERROR_LOG_DIR}/errors.jsonl"
+  ERROR_LOG_FILE="${ERROR_LOG_DIR}/test-errors.jsonl"
 
   # Count initial entries for test isolation
   INITIAL_LOG_LINES=$(wc -l < "$ERROR_LOG_FILE" 2>/dev/null || echo 0)
@@ -170,22 +171,25 @@ test_validation_error_logging() {
 
   echo "Test: $test_name"
 
-  # Call main_conversion with invalid directory in a subshell
-  (
-    export CLAUDE_PROJECT_DIR="${PROJECT_ROOT}"
-    export COMMAND_NAME="/convert-docs"
-    export WORKFLOW_ID="test_validation_$(date +%s)"
-    export USER_ARGS="/nonexistent/directory"
+  # Call main_conversion with invalid directory in a subshell (with timeout)
+  echo "  Starting subshell execution..." >&2
+  timeout 10 bash -c "
+    export CLAUDE_PROJECT_DIR='${PROJECT_ROOT}'
+    export COMMAND_NAME='/convert-docs'
+    export WORKFLOW_ID='test_validation_$(date +%s)'
+    export USER_ARGS='/nonexistent/directory'
 
     set +e  # Allow errors to continue
-    source "${PROJECT_ROOT}/.claude/lib/convert/convert-core.sh" 2>/dev/null
-    main_conversion '/nonexistent/directory' "${TEST_OUTPUT_DIR}" 2>&1
+    source '${PROJECT_ROOT}/.claude/lib/convert/convert-core.sh' 2>/dev/null
+    main_conversion '/nonexistent/directory' '${TEST_OUTPUT_DIR}' 2>&1
     exit 0
-  ) >/dev/null 2>&1
+  " >/dev/null 2>&1 || true  # Prevent set -e from triggering
+  echo "  Subshell completed" >&2
 
   # Give a moment for file I/O to complete
   sleep 0.1
 
+  echo "  Checking log entries..." >&2
   assert_log_entry_exists "validation_error" "Input directory not found" "Validation error logged"
 }
 
@@ -235,18 +239,18 @@ test_log_entry_structure() {
 
   echo "Test: $test_name"
 
-  # Trigger validation error in a subshell
-  (
-    export CLAUDE_PROJECT_DIR="${PROJECT_ROOT}"
-    export COMMAND_NAME="/convert-docs"
-    export WORKFLOW_ID="test_workflow_$(date +%s)"
-    export USER_ARGS="/test/path"
+  # Trigger validation error in a subshell (with timeout)
+  timeout 10 bash -c "
+    export CLAUDE_PROJECT_DIR='${PROJECT_ROOT}'
+    export COMMAND_NAME='/convert-docs'
+    export WORKFLOW_ID='test_workflow_$(date +%s)'
+    export USER_ARGS='/test/path'
 
     set +e  # Allow errors to continue
-    source "${PROJECT_ROOT}/.claude/lib/convert/convert-core.sh" 2>/dev/null
-    main_conversion '/nonexistent/directory' "${TEST_OUTPUT_DIR}" 2>&1
+    source '${PROJECT_ROOT}/.claude/lib/convert/convert-core.sh' 2>/dev/null
+    main_conversion '/nonexistent/directory' '${TEST_OUTPUT_DIR}' 2>&1
     exit 0
-  ) >/dev/null 2>&1
+  " >/dev/null 2>&1 || true  # Prevent set -e from triggering
 
   # Give a moment for file I/O to complete
   sleep 0.1

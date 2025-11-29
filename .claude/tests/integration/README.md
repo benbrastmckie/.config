@@ -42,3 +42,9 @@ Integration tests follow the isolation pattern from testing-protocols.md:
 - Create isolated test environments using `mktemp -d`
 - Clean up test directories with `trap` handlers
 - Export scoped `CLAUDE_PROJECT_DIR` variables
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Unit Tests](../unit/README.md)
+- [Related: State Tests](../state/README.md)

@@ -8,9 +8,24 @@ set -euo pipefail
 export CLAUDE_TEST_MODE=1
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLAUDE_DIR="$(dirname "$SCRIPT_DIR")"
-TEST_LOG_DIR="${SCRIPT_DIR}/logs"
-ERROR_LOG_DIR="${CLAUDE_DIR}/data/logs"
+
+# Detect project root
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$SCRIPT_DIR"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      PROJECT_ROOT="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Use centralized test log directory (matches error-handling.sh)
+TEST_LOG_DIR="${PROJECT_ROOT}/.claude/tests/logs"
+ERROR_LOG_DIR="${PROJECT_ROOT}/.claude/data/logs"
 ERROR_LOG_FILE="${TEST_LOG_DIR}/test-errors.jsonl"
 
 # Backup existing error log

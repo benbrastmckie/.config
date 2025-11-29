@@ -36,3 +36,9 @@ bash tests/progressive/test_progressive_expansion.sh
 - Level 0: Single file with all phases inline
 - Level 1: Phase files in plan subdirectory
 - Level 2: Stage files in phase subdirectories
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: State Tests](../state/README.md)
+- [Related: Integration Tests](../integration/README.md)

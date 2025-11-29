@@ -30,10 +30,10 @@ NC='\033[0m' # No Color
 
 # Expected block counts from plan (total blocks including documentation/usage examples)
 declare -A EXPECTED_BLOCKS=(
-  ["plan"]=4
-  ["build"]=6
+  ["plan"]=5
+  ["build"]=8
   ["debug"]=11
-  ["repair"]=3
+  ["repair"]=4
   ["revise"]=8
   ["research"]=3
 )
@@ -79,8 +79,17 @@ check_command_compliance() {
   # Count bash blocks
   local bash_blocks=$(grep -c '```bash' "$cmd_file" 2>/dev/null || echo "0")
 
-  # Count trap calls
-  local trap_calls=$(grep -c 'setup_bash_error_trap' "$cmd_file" 2>/dev/null || echo "0")
+  # Count blocks with at least one trap (not total trap calls - a block may have multiple)
+  local trap_calls=$(awk '
+    /```bash/ { in_block=1; has_trap=0; next }
+    in_block && /setup_bash_error_trap/ { has_trap=1 }
+    in_block && /^```$/ {
+      if (has_trap) count++
+      in_block=0
+      next
+    }
+    END { print count+0 }
+  ' "$cmd_file" 2>/dev/null || echo "0")
 
   TOTAL_COMMANDS=$((TOTAL_COMMANDS + 1))
   TOTAL_BLOCKS=$((TOTAL_BLOCKS + bash_blocks))

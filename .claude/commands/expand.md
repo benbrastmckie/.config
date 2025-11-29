@@ -1,5 +1,6 @@
 ---
 allowed-tools: Read, Write, Edit, Bash, Glob, Task
+tool-usage-note: Orchestrator uses Edit only for metadata updates after plan-architect completes expansion. plan-architect performs all content generation via Task delegation (hard barrier pattern enforced).
 argument-hint: <path> OR [phase|stage] <path> <number>
 description: Expand phases/stages automatically or expand a specific phase/stage into detailed file
 command-type: workflow
@@ -185,35 +186,28 @@ echo "VERIFIED: Phase $phase_num content extracted (${#phase_content} bytes)"
 
 ---
 
-**Block 3 (REQUIRED BEFORE Block 4) - Complexity Detection**
+**Block 3a: Complexity Detection Setup**
 
 **EXECUTE NOW - Analyze Phase Complexity**:
 
-Analyze the phase to determine if agent-assisted research is needed:
-
 ```bash
+set +H
+set -e
+
+# Source error handling
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
 # Count tasks
-task_count=$(echo "$phase_content" | grep -c "^- \[ \]")
+task_count=$(echo "$phase_content" | grep -c "^- \[ \]" || echo "0")
 
 # Extract file references
-file_refs=$(echo "$phase_content" | grep -oE "[a-zA-Z0-9_/.-]+\.(md|sh|lua|js|py|ts)" | sort -u)
-file_count=$(echo "$file_refs" | wc -l)
+file_refs=$(echo "$phase_content" | grep -oE "[a-zA-Z0-9_/.-]+\.(md|sh|lua|js|py|ts)" | sort -u || echo "")
+file_count=$(echo "$file_refs" | wc -l | tr -d ' ')
 
-# Complex if: >5 tasks OR >10 files OR contains "consolidate/refactor/migrate"
-```
-
-**Complex phases** (>5 tasks, >10 files, or refactor keywords):
-- Use `Task` tool with `general-purpose` agent for research
-- Agent reads referenced files and synthesizes detailed specification
-- Target: 300-500+ lines with concrete examples
-
-**Simple phases** (<5 tasks, <10 files):
-- Expand directly with detailed task breakdown
-- Target: 200-300 lines with specific guidance
-
-**MANDATORY VERIFICATION - Complexity Determined**:
-
-```bash
+# Determine complexity
 if [ "$task_count" -gt 5 ] || [ "$file_count" -gt 10 ]; then
   complexity="high"
   echo "✓ Phase complexity: HIGH ($task_count tasks, $file_count files)"
@@ -221,6 +215,100 @@ else
   complexity="low"
   echo "✓ Phase complexity: LOW ($task_count tasks, $file_count files)"
 fi
+
+# Prepare phase file path
+phase_file="$plan_dir/phase_${phase_num}_${phase_name}.md"
+
+# Persist variables for verification block
+echo "PHASE_FILE=$phase_file" >> ~/.claude/data/state/expand_*.state 2>/dev/null || true
+echo "COMPLEXITY=$complexity" >> ~/.claude/data/state/expand_*.state 2>/dev/null || true
+
+echo "[CHECKPOINT] Complexity detection complete - ready for plan-architect invocation"
+```
+
+---
+
+**Block 3b: Phase Expansion Execution [CRITICAL BARRIER]**
+
+**CRITICAL BARRIER**: This block MUST invoke plan-architect via Task tool.
+Verification block (3c) will FAIL if phase file not created.
+
+**EXECUTE NOW**: Invoke plan-architect subagent for phase expansion
+
+Complex phases (high complexity):
+- Use `Task` tool with `general-purpose` agent for research-backed expansion
+- Agent reads referenced files and synthesizes detailed specification
+- Target: 300-500+ lines with concrete examples
+
+Simple phases (low complexity):
+- Use `Task` tool with `general-purpose` agent for direct expansion
+- Target: 200-300 lines with specific guidance
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Expand phase ${phase_num} for plan"
+  prompt: |
+    Read and follow ALL instructions in: ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    Operation Mode: phase expansion
+    Phase Number: ${phase_num}
+    Phase Name: ${phase_name}
+    Plan Path: ${plan_file}
+    Target Phase File: ${phase_file}
+    Complexity: ${complexity}
+
+    Phase Content:
+    ${phase_content}
+
+    Create detailed expanded phase file at: ${phase_file}
+    Use Write tool to create file.
+    Include concrete implementation details, specific code examples, and testing specifications.
+
+    Return PHASE_EXPANDED signal when done.
+}
+
+---
+
+**Block 3c: Phase File Verification**
+
+```bash
+set +H
+set -e
+
+# Source error handling
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Restore persisted variables
+source ~/.claude/data/state/expand_*.state 2>/dev/null || true
+
+# Fail-fast if phase file not created
+if [[ ! -f "$PHASE_FILE" ]]; then
+  log_command_error "verification_error" \
+    "Phase file not created: $PHASE_FILE" \
+    "plan-architect should have created this file during expansion"
+  echo "ERROR: VERIFICATION FAILED - Phase file not created"
+  echo "Expected: $PHASE_FILE"
+  echo "Recovery: Check plan-architect output, verify expansion completed, re-run command"
+  exit 1
+fi
+
+# Verify file has content (minimum size check)
+file_size=$(wc -c < "$PHASE_FILE" 2>/dev/null || echo "0")
+if [ "$file_size" -lt 500 ]; then
+  log_command_error "verification_error" \
+    "Phase file too small (${file_size} bytes), expected >500" \
+    "plan-architect may have created minimal or empty file"
+  echo "ERROR: VERIFICATION FAILED - Phase file too small"
+  echo "File: $PHASE_FILE"
+  echo "Size: ${file_size} bytes (expected >500)"
+  echo "Recovery: Review plan-architect output, ensure detailed expansion occurred"
+  exit 1
+fi
+
+echo "[CHECKPOINT] Phase file verification complete - ${file_size} bytes created at $PHASE_FILE"
 ```
 
 ---
@@ -424,23 +512,122 @@ echo "✓ VERIFIED: Stage $stage_num content extracted"
 
 ---
 
-**Block 3 (REQUIRED BEFORE Block 4) - Complexity Detection**
+**Block 3a: Stage Complexity Detection Setup**
 
 **EXECUTE NOW - Analyze Stage Complexity**:
 
-Similar to phase expansion:
-- Complex stages (>3 tasks, >5 files): Use agent research
-- Simple stages: Direct expansion with detailed task breakdown
+```bash
+set +H
+set -e
 
-**MANDATORY VERIFICATION - Complexity Determined**:
+# Source error handling
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Count tasks in stage
+stage_task_count=$(echo "$stage_content" | grep -c "^- \[ \]" || echo "0")
+
+# Extract file references
+stage_file_refs=$(echo "$stage_content" | grep -oE "[a-zA-Z0-9_/.-]+\.(md|sh|lua|js|py|ts)" | sort -u || echo "")
+stage_file_count=$(echo "$stage_file_refs" | wc -l | tr -d ' ')
+
+# Determine stage complexity
+# Complex stages: >3 tasks, >5 files
+if [ "$stage_task_count" -gt 3 ] || [ "$stage_file_count" -gt 5 ]; then
+  stage_complexity="high"
+  echo "✓ Stage complexity: HIGH ($stage_task_count tasks, $stage_file_count files)"
+else
+  stage_complexity="low"
+  echo "✓ Stage complexity: LOW ($stage_task_count tasks, $stage_file_count files)"
+fi
+
+# Prepare stage file path
+stage_file="$phase_subdir/stage_${stage_num}_${stage_name}.md"
+
+# Persist variables for verification block
+echo "STAGE_FILE=$stage_file" >> ~/.claude/data/state/expand_*.state 2>/dev/null || true
+echo "STAGE_COMPLEXITY=$stage_complexity" >> ~/.claude/data/state/expand_*.state 2>/dev/null || true
+
+echo "[CHECKPOINT] Stage complexity detection complete - ready for plan-architect invocation"
+```
+
+---
+
+**Block 3b: Stage Expansion Execution [CRITICAL BARRIER]**
+
+**CRITICAL BARRIER**: This block MUST invoke plan-architect via Task tool.
+Verification block (3c) will FAIL if stage file not created.
+
+**EXECUTE NOW**: Invoke plan-architect subagent for stage expansion
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Expand stage ${stage_num} for phase ${phase_num}"
+  prompt: |
+    Read and follow ALL instructions in: ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    Operation Mode: stage expansion
+    Phase Number: ${phase_num}
+    Stage Number: ${stage_num}
+    Stage Name: ${stage_name}
+    Phase File: ${phase_file}
+    Target Stage File: ${stage_file}
+    Complexity: ${stage_complexity}
+
+    Stage Content:
+    ${stage_content}
+
+    Create detailed expanded stage file at: ${stage_file}
+    Use Write tool to create file.
+    Include specific implementation steps, concrete examples, and testing details.
+
+    Return STAGE_EXPANDED signal when done.
+}
+
+---
+
+**Block 3c: Stage File Verification**
 
 ```bash
-if [ -z "$stage_complexity" ]; then
-  echo "❌ ERROR: Stage complexity not determined"
+set +H
+set -e
+
+# Source error handling
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Restore persisted variables
+source ~/.claude/data/state/expand_*.state 2>/dev/null || true
+
+# Fail-fast if stage file not created
+if [[ ! -f "$STAGE_FILE" ]]; then
+  log_command_error "verification_error" \
+    "Stage file not created: $STAGE_FILE" \
+    "plan-architect should have created this file during stage expansion"
+  echo "ERROR: VERIFICATION FAILED - Stage file not created"
+  echo "Expected: $STAGE_FILE"
+  echo "Recovery: Check plan-architect output, verify expansion completed, re-run command"
   exit 1
 fi
 
-echo "✓ Stage complexity: $stage_complexity"
+# Verify file has content (minimum size check)
+stage_file_size=$(wc -c < "$STAGE_FILE" 2>/dev/null || echo "0")
+if [ "$stage_file_size" -lt 200 ]; then
+  log_command_error "verification_error" \
+    "Stage file too small (${stage_file_size} bytes), expected >200" \
+    "plan-architect may have created minimal or empty file"
+  echo "ERROR: VERIFICATION FAILED - Stage file too small"
+  echo "File: $STAGE_FILE"
+  echo "Size: ${stage_file_size} bytes (expected >200)"
+  echo "Recovery: Review plan-architect output, ensure detailed expansion occurred"
+  exit 1
+fi
+
+echo "[CHECKPOINT] Stage file verification complete - ${stage_file_size} bytes created at $STAGE_FILE"
 ```
 
 ---

@@ -24,7 +24,7 @@ Skills are **model-invoked** capabilities that Claude automatically uses when it
 
 ## Available Skills
 
-### document-converter
+### [document-converter](document-converter/README.md)
 
 **Description**: Convert between Markdown, DOCX, and PDF formats bidirectionally. Handles text extraction from PDF/DOCX, markdown to document conversion.
 
@@ -334,3 +334,10 @@ skills: skill-name  # Must match .claude/skills/skill-name/
 - Enhanced /convert-docs command with skill delegation
 - Updated doc-converter agent with skills: field
 - Established migration pattern for future skills
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Subdirectory: document-converter/](document-converter/README.md)
+- [Related: Commands](../commands/README.md)
+- [Related: Agents](../agents/README.md)

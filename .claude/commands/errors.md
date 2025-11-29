@@ -87,6 +87,10 @@ When invoked with `--query` flag, displays error logs directly (backward compati
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
+# === PRE-TRAP ERROR BUFFER ===
+# Initialize error buffer BEFORE any library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
 # === PARSE ARGUMENTS ===
 COMMAND_FILTER=""
 SINCE_FILTER=""
@@ -175,6 +179,17 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   exit 1
 }
 
+# === INITIALIZE ERROR LOGGING ===
+ensure_error_log_exists
+
+# === SETUP EARLY BASH ERROR TRAP ===
+# CRITICAL FIX: Add early trap to catch errors in the 194-line gap before full trap setup
+# This trap uses temporary metadata, will be replaced with actual values later
+setup_bash_error_trap "/errors" "errors_early_$(date +%s)" "early_init"
+
+# Flush any early errors captured before trap was active
+_flush_early_errors
+
 # === MODE DETECTION AND EXECUTION ===
 
 # If --query flag is set, use legacy query mode
@@ -252,22 +267,11 @@ fi
 
 # === SOURCE ADDITIONAL LIBRARIES (Three-Tier Pattern) ===
 # Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
-# Tier 2: Workflow Support (fail-fast for report mode)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source unified-location-detection.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-initialization.sh" >&2
-  exit 1
-}
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 
-# Initialize error logging
-ensure_error_log_exists
+# Tier 2: Workflow Support (fail-fast for report mode)
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" || exit 1
 
 # === INITIALIZE STATE ===
 COMMAND_NAME="/errors"
@@ -277,8 +281,11 @@ export COMMAND_NAME USER_ARGS
 WORKFLOW_ID="errors_$(date +%s)"
 export WORKFLOW_ID
 
-# Setup bash error trap
+# Setup bash error trap with actual metadata (replaces early trap)
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# Flush any errors captured during library sourcing
+_flush_early_errors
 
 # Create topic description based on filters
 ERROR_DESCRIPTION="error analysis"
@@ -329,6 +336,15 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
+# === PRE-TRAP ERROR BUFFER ===
+# Initialize error buffer BEFORE any library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch early errors
+trap 'echo "ERROR: Block 2 initialization failed at line $LINENO: $BASH_COMMAND (exit code: $?)" >&2; exit 1' ERR
+trap 'local exit_code=$?; if [ $exit_code -ne 0 ]; then echo "ERROR: Block 2 initialization exited with code $exit_code" >&2; fi' EXIT
+
 # === RESTORE STATE FROM PREVIOUS BLOCK ===
 # Detect project directory
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
@@ -345,15 +361,14 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-# Source error handling library
+# Source error handling library FIRST to enable validation and diagnostics
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Cannot load error-handling library" >&2
   exit 1
 }
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
-  echo "ERROR: Cannot load workflow-initialization library" >&2
-  exit 1
-}
+
+# Source remaining libraries with diagnostics
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" || exit 1
 
 # Restore state - find most recent errors workflow state
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -368,6 +383,9 @@ if [ -z "$WORKFLOW_ID" ]; then
   WORKFLOW_ID="errors_$(date +%s)"
 fi
 
+# Validate and correct WORKFLOW_ID if needed
+WORKFLOW_ID=$(validate_workflow_id "$WORKFLOW_ID" "errors")
+
 COMMAND_NAME="/errors"
 export COMMAND_NAME WORKFLOW_ID
 
@@ -375,7 +393,13 @@ export COMMAND_NAME WORKFLOW_ID
 ensure_error_log_exists
 
 # Setup bash error trap for automatic error logging
+# Clear defensive trap before setting up full trap
+_clear_defensive_trap
+
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}"
+
+# Flush any early errors captured before trap was active
+_flush_early_errors
 
 # Restore ERROR_DESCRIPTION from temp file
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -490,37 +514,88 @@ WORKFLOW_ID="${WORKFLOW_ID}"
 CLAUDE_PROJECT_DIR="${CLAUDE_PROJECT_DIR}"
 EOF
 
-echo "Generating error analysis report..."
+# Source barrier utilities for verification
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/barrier-utils.sh" 2>/dev/null || {
+  echo "WARNING: barrier-utils.sh not found, verification will use basic checks" >&2
+}
+
+# Checkpoint reporting
+echo ""
+echo "[CHECKPOINT] Error analysis setup complete - ready for errors-analyst invocation"
+echo "  Workflow ID: $WORKFLOW_ID"
+echo "  Topic directory: $TOPIC_DIR"
+echo "  Report path: $REPORT_PATH"
+echo "  Filters: ${FILTER_ARGS:-none}"
+echo "  State file: $STATE_FILE"
+echo "  Variables persisted: ✓"
+echo "  Ready for: errors-analyst invocation (Block 1b)"
+echo ""
 ```
 
-Now invoke the errors-analyst agent using Task tool with the following prompt:
+## Block 1b: Error Analysis Execute
 
-```
-You are the errors-analyst agent. Generate an error analysis report.
+**CRITICAL BARRIER**: This block MUST invoke errors-analyst via Task tool.
+Verification block (Block 2) will FAIL if error report not created.
 
-REPORT_PATH="${REPORT_PATH}"
+**EXECUTE NOW**: Invoke errors-analyst subagent for error log analysis.
 
-FILTERS="${FILTER_ARGS}"
+Task {
+  subagent_type: "general-purpose"
+  description: "Generate error analysis report"
+  prompt: "
+    You are the errors-analyst agent. Generate an error analysis report.
 
-Instructions:
-1. Create error analysis report at: ${REPORT_PATH}
-2. Apply filters: ${FILTER_ARGS}
-3. Read error log from: .claude/data/logs/errors.jsonl
-4. Parse JSONL format and analyze error patterns
-5. Group by error type, command, and frequency
-6. Generate structured report with metadata, executive summary, error overview, top patterns, distribution, and recommendations
-7. Return: REPORT_CREATED: [absolute_path]
+    REPORT_PATH: ${REPORT_PATH}
+    FILTERS: ${FILTER_ARGS}
 
-Follow your 4-step process with 28 completion criteria verification.
-```
+    Instructions:
+    1. Create error analysis report at: ${REPORT_PATH}
+    2. Apply filters: ${FILTER_ARGS}
+    3. Read error log from: .claude/data/logs/errors.jsonl
+    4. Parse JSONL format and analyze error patterns
+    5. Group by error type, command, and frequency
+    6. Generate structured report with metadata, executive summary, error overview, top patterns, distribution, and recommendations
+    7. Return: REPORT_CREATED: [absolute_path]
 
-Wait for agent to return REPORT_CREATED signal, then proceed to Block 2.
+    Follow your 4-step process with 28 completion criteria verification.
+  "
+}
 
-## Block 2: Verification and Summary
+## Block 2: Error Report Verification and Summary
 
-**EXECUTE NOW**: After errors-analyst agent returns REPORT_CREATED signal, verify the report and display summary.
+**EXECUTE NOW**: Verify errors-analyst created error report and display summary.
 
 ```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === SOURCE LIBRARIES (Three-Tier Pattern) ===
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+ensure_error_log_exists
+
 # === RESTORE STATE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
 WORKFLOW_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/errors_state_*.sh"
@@ -528,24 +603,65 @@ LATEST_STATE=$(ls -t $WORKFLOW_ID_FILE 2>/dev/null | head -1)
 
 if [ -z "$LATEST_STATE" ] || [ ! -f "$LATEST_STATE" ]; then
   echo "ERROR: State file not found" >&2
+  log_command_error "verification_error" \
+    "State file not found in .claude/tmp/" \
+    "Expected errors_state_*.sh file"
   exit 1
 fi
 
 source "$LATEST_STATE"
 
-# === VERIFY REPORT EXISTS ===
-if [ ! -f "$REPORT_PATH" ]; then
-  echo "ERROR: Report file not created at expected path: $REPORT_PATH" >&2
-  log_command_error \
-    "/errors" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "file_error" \
-    "Report file not found after agent completion" \
-    "bash_block_2" \
-    "$(jq -n --arg path "$REPORT_PATH" '{expected_path: $path}')"
+# === VERIFY ERRORS-ANALYST EXECUTION ===
+# This verification block ensures errors-analyst was invoked via Task
+# and created the expected artifacts (error analysis report)
+
+echo ""
+echo "=== Error Report Verification ==="
+echo ""
+
+# Check if topic directory exists
+if [[ ! -d "$TOPIC_DIR" ]]; then
+  log_command_error "verification_error" \
+    "Topic directory not found: $TOPIC_DIR" \
+    "errors-analyst should have created this directory"
+  echo "ERROR: VERIFICATION FAILED - Topic directory missing" >&2
+  echo "DIAGNOSTIC: Expected directory: $TOPIC_DIR" >&2
+  echo "RECOVERY: Check errors-analyst delegation, verify Block 1b Task invocation occurred" >&2
   exit 1
 fi
+
+# Verify report file exists
+if [ ! -f "$REPORT_PATH" ]; then
+  log_command_error "verification_error" \
+    "Report file not created at expected path: $REPORT_PATH" \
+    "errors-analyst should have created error analysis report"
+  echo "ERROR: VERIFICATION FAILED - Error report not found" >&2
+  echo "DIAGNOSTIC: Expected report: $REPORT_PATH" >&2
+  echo "RECOVERY: Verify errors-analyst completed successfully, check for agent errors" >&2
+  exit 1
+fi
+
+# Verify report file has minimum content (not empty)
+REPORT_SIZE=$(stat -f%z "$REPORT_PATH" 2>/dev/null || stat -c%s "$REPORT_PATH" 2>/dev/null || echo "0")
+if [[ "$REPORT_SIZE" -lt 100 ]]; then
+  log_command_error "verification_error" \
+    "Report file too small: $REPORT_PATH ($REPORT_SIZE bytes)" \
+    "errors-analyst may have created empty or minimal report"
+  echo "ERROR: VERIFICATION FAILED - Report file too small ($REPORT_SIZE bytes)" >&2
+  echo "DIAGNOSTIC: Expected minimum 100 bytes, got $REPORT_SIZE bytes" >&2
+  echo "RECOVERY: Re-run with higher --limit, check if error log has sufficient data" >&2
+  exit 1
+fi
+
+echo ""
+echo "[CHECKPOINT] Error analysis verification complete - report created"
+echo "  Report created: ✓"
+echo "  Report path: $REPORT_PATH"
+echo "  Report size: $REPORT_SIZE bytes"
+echo "  Topic directory: $TOPIC_DIR"
+echo "  All verifications: ✓"
+echo "  Proceeding to: Summary display"
+echo ""
 
 # Verify file size
 FILE_SIZE=$(stat -c%s "$REPORT_PATH" 2>/dev/null || stat -f%z "$REPORT_PATH" 2>/dev/null)
@@ -585,6 +701,14 @@ echo "View full report: cat $REPORT_PATH"
 echo "Use with /repair: /repair --file $REPORT_PATH"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# === RETURN REPORT_CREATED SIGNAL ===
+# Signal enables buffer-opener hook and orchestrator detection
+if [ -n "$REPORT_PATH" ] && [ -f "$REPORT_PATH" ]; then
+  echo ""
+  echo "REPORT_CREATED: $REPORT_PATH"
+  echo ""
+fi
 
 # Cleanup temporary state file
 rm -f "$LATEST_STATE" 2>/dev/null

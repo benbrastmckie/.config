@@ -158,3 +158,9 @@ The test runner (`run_all_tests.sh`) counts tests by grepping for:
 - `[X] FAIL` pattern (from `fail` function)
 
 Using this library ensures accurate test counts.
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Unit Tests](../unit/README.md)
+- [Related: Integration Tests](../integration/README.md)

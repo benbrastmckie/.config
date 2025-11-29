@@ -35,6 +35,10 @@ Execute this bash block with your substitution:
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
+# === PRE-TRAP ERROR BUFFER ===
+# Initialize error buffer BEFORE any library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
 # === CAPTURE WORKFLOW DESCRIPTION ===
 mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
 TEMP_FILE="${HOME}/.claude/tmp/research_arg_$(date +%s%N).txt"
@@ -116,22 +120,16 @@ export CLAUDE_PROJECT_DIR
 
 # === SOURCE LIBRARIES (Three-Tier Pattern) ===
 # Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source library-version-check.sh" >&2
-  exit 1
-}
+# Source error-handling.sh FIRST to enable diagnostic functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+
+# Source remaining Tier 1 libraries with diagnostics
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" || exit 1
 
 # Tier 2: Workflow Support (graceful degradation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || true
@@ -150,6 +148,9 @@ ensure_error_log_exists
 # === SETUP EARLY BASH ERROR TRAP ===
 # Trap must be set BEFORE variable initialization to catch early failures
 setup_bash_error_trap "/research" "research_early_$(date +%s)" "early_init"
+
+# Flush any early errors captured before trap was active
+_flush_early_errors
 
 # === INITIALIZE STATE ===
 WORKFLOW_TYPE="research-only"
@@ -330,6 +331,9 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 }
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || true
 
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
 TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
@@ -439,7 +443,9 @@ echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 
 ## Block 1d: Research Initiation
 
-**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+**CRITICAL BARRIER - Research Delegation**
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent. This invocation is MANDATORY. The orchestrator MUST NOT perform research work directly. Block 2 verification will FAIL if research artifacts are not created by the specialist.
 
 Task {
   subagent_type: "general-purpose"
@@ -472,6 +478,15 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
+# === PRE-TRAP ERROR BUFFER ===
+# Initialize error buffer BEFORE any library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch early errors
+trap 'echo "ERROR: Block 2 initialization failed at line $LINENO: $BASH_COMMAND (exit code: $?)" >&2; exit 1' ERR
+trap 'local exit_code=$?; if [ $exit_code -ne 0 ]; then echo "ERROR: Block 2 initialization exited with code $exit_code" >&2; fi' EXIT
+
 # === DETECT PROJECT DIRECTORY FIRST (required for state file path) ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -498,20 +513,20 @@ if [ ! -f "$STATE_ID_FILE" ]; then
   exit 1
 fi
 WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
+# Source error-handling.sh FIRST to enable validation functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+
+# Validate and correct WORKFLOW_ID if needed
+WORKFLOW_ID=$(validate_workflow_id "$WORKFLOW_ID" "research")
+export WORKFLOW_ID
+
+# Source remaining libraries with diagnostics
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 
 # Initialize DEBUG_LOG if not already set
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -526,10 +541,31 @@ validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "RESEARCH_DIR
   exit 1
 }
 
+# === RESTORE ERROR LOGGING CONTEXT ===
+if [ -z "${COMMAND_NAME:-}" ]; then
+  if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" | cut -d'=' -f2- || echo "/research")
+  else
+    COMMAND_NAME="/research"
+  fi
+fi
+if [ -z "${USER_ARGS:-}" ]; then
+  if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" | cut -d'=' -f2- || echo "")
+  else
+    USER_ARGS=""
+  fi
+fi
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === SETUP BASH ERROR TRAP ===
+# Clear defensive trap before setting up full trap
+_clear_defensive_trap
+
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# Flush any early errors captured before trap was active
+_flush_early_errors
 
 # Validate RESEARCH_DIR is non-empty (additional check beyond state restoration)
 if [ -z "$RESEARCH_DIR" ]; then
@@ -650,6 +686,16 @@ NEXT_STEPS="  • Review reports: ls -lh $RESEARCH_DIR/
 
 # Print standardized summary (no phases for research command)
 print_artifact_summary "Research" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
+
+# === RETURN REPORT_CREATED SIGNAL ===
+# Signal enables buffer-opener hook and orchestrator detection
+# Get most recent report from research directory
+LATEST_REPORT=$(ls -t "$RESEARCH_DIR"/*.md 2>/dev/null | head -1)
+if [ -n "$LATEST_REPORT" ] && [ -f "$LATEST_REPORT" ]; then
+  echo ""
+  echo "REPORT_CREATED: $LATEST_REPORT"
+  echo ""
+fi
 
 exit 0
 ```

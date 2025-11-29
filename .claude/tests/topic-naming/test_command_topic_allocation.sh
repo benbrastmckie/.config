@@ -27,6 +27,7 @@ else
   done
 fi
 CLAUDE_LIB="${CLAUDE_PROJECT_DIR}/.claude/lib"
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR}"
 
 # Source the unified location detection library
 source "${CLAUDE_LIB}/core/unified-location-detection.sh"
@@ -46,12 +47,12 @@ NC='\033[0m' # No Color
 
 pass() {
   echo -e "${GREEN}PASS${NC}: $1"
-  ((TESTS_PASSED++))
+  ((TESTS_PASSED++)) || true
 }
 
 fail() {
   echo -e "${RED}FAIL${NC}: $1"
-  ((TESTS_FAILED++))
+  ((TESTS_FAILED++)) || true
 }
 
 warn() {
@@ -142,9 +143,12 @@ test_error_handling() {
 
   for cmd in "${commands[@]}"; do
     local cmd_path="${PROJECT_ROOT}/.claude/commands/$cmd"
-    # Check for error handling after initialize_workflow_paths (modern pattern)
-    # The pattern uses "if ! initialize_workflow_paths" for error handling
-    if ! grep -q '! initialize_workflow_paths' "$cmd_path"; then
+    # Check for error handling after initialize_workflow_paths
+    # Accept either pattern:
+    # - "if ! initialize_workflow_paths" (inline error check)
+    # - "INIT_EXIT=$?" followed by "if [ $INIT_EXIT -ne 0 ]" (exit code capture)
+    if ! grep -q '! initialize_workflow_paths' "$cmd_path" && \
+       ! grep -q 'INIT_EXIT=\$?' "$cmd_path"; then
       fail "$test_name - $cmd missing error handling"
       failed=true
     fi

@@ -109,6 +109,21 @@ Directories containing workflow artifacts organized by topic (specs/, plans/, re
 
 **Rationale**: Topic-based structure is self-documenting through consistent subdirectory organization. READMEs in each topic would duplicate information without adding value.
 
+#### Test Fixture Directories
+
+Directories containing test input data, mock files, or fixture structures for testing.
+
+**Examples**: `tests/fixtures/`, `tests/fixtures/plans/test_adaptive/`, `tests/features/data/`
+
+**README Requirement**: ROOT ONLY
+- Root directory requires README.md explaining fixture organization, naming conventions, and usage
+- Fixture subdirectories do NOT require individual READMEs (follow consistent patterns documented in root)
+- Document how to add new fixtures and maintain existing ones
+
+**Template**: Use [Template A](#template-a-top-level-directory) (Top-level) for root directory
+
+**Rationale**: Fixture subdirectories follow consistent patterns (sample input files, expected outputs, mock data). Individual READMEs would duplicate the same structural information without adding value.
+
 ### Directory Classification Decision Tree
 
 Use this decision tree to determine the correct classification for any directory:
@@ -322,7 +337,20 @@ All documentation (READMEs, guides, references) must follow these format standar
 
 ### Content Standards
 
-**No Emojis**: Avoid emojis in file content due to UTF-8 encoding issues across different terminals and editors.
+#### Unicode Character Usage
+
+**Allowed Unicode Characters**:
+- Box-drawing (U+2500-U+257F): ├ │ └ ─ ┌ ┐ ┤ ┬ ┴ ┼
+- Arrows (U+2190-U+21FF): ← → ↔ ↑ ↓
+- Mathematical operators (U+2200-U+22FF): ≥ ≤ × ≠ ± ∞
+- Bullets and punctuation (U+2000-U+206F): • – — … ‹ ›
+- Geometric shapes (U+25A0-U+25FF): ▼ ▲ ■ □ ◆
+- Miscellaneous symbols (U+2600-U+26FF): ⚠ ✓ ☐ ☑ ★
+
+**Prohibited Characters**:
+- Emoji characters (U+1F300-U+1F9FF): 😀 🎉 ✨ 📝 🚀 ❌
+
+**Rationale**: Unicode symbols are standard technical notation used in diagrams, lists, and documentation. Emojis cause UTF-8 encoding issues across different terminals and editors.
 
 **Unicode Box-Drawing**: Use Unicode box-drawing characters for diagrams:
 - Corners: ┌ ┐ └ ┘

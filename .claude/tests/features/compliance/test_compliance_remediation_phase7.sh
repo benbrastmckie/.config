@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-CLAUDE_PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+CLAUDE_PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 export CLAUDE_PROJECT_DIR
 
 COMMANDS=(

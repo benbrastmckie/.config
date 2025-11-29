@@ -1,6 +1,8 @@
 # Utility Libraries
 
-Miscellaneous utility functions for git, testing, validation, and other tasks.
+## Purpose
+
+Miscellaneous utility functions for git, testing, validation, and other tasks. This directory provides backup and rollback utilities for command files, dependency graph analysis for wave-based execution, test environment detection and protocol generation, git commit utilities, CLAUDE.md optimization, real-time progress dashboard rendering, and agent invocation validation.
 
 ## Libraries
 
@@ -95,4 +97,4 @@ Agent invocation validation.
 
 ## Navigation
 
-- [Parent Directory (lib/)](../README.md)
+- [← Parent Directory](../README.md)

@@ -44,6 +44,10 @@ Detailed guides for creating AI agents:
 - [Agent Reference](../../reference/standards/agent-reference.md)
 - [Patterns](../patterns/) - Reusable implementation patterns
 
----
+## Navigation
 
-**Parent**: [Guides Index](../README.md)
+- [← Parent Directory](../README.md)
+- [Subdirectory: command-development/](command-development/README.md)
+- [Subdirectory: agent-development/](agent-development/README.md)
+- [Related: Command Guides](../commands/README.md)
+- [Related: Patterns](../patterns/README.md)

@@ -4,7 +4,7 @@ This directory contains troubleshooting guides for common issues in the .claude/
 
 ## Core Troubleshooting Guides
 
-### [Agent Delegation Troubleshooting](./agent-delegation-troubleshooting.md) ⭐ START HERE
+### [Agent Delegation Troubleshooting](./agent-delegation-troubleshooting.md) - START HERE
 - **Problem**: All agent delegation-related issues (unified guide)
 - **Category**: Implementation/Configuration
 - **Coverage**: Commands not delegating, 0% delegation rate, path mismatches, context bloat, recursion risks, topic organization
@@ -114,3 +114,9 @@ Follow [Prevention Guidelines](./agent-delegation-troubleshooting.md#prevention-
 ## Archive
 
 Files that have been consolidated are archived in [archive/troubleshooting/](../archive/troubleshooting/) with redirect READMEs.
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Command Guides](../guides/commands/README.md)
+- [Related: Patterns](../concepts/patterns/README.md)

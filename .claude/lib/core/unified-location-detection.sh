@@ -191,8 +191,9 @@ get_next_topic_number() {
   mkdir -p "$specs_root"
 
   # Use flock in a subshell with proper file descriptor isolation
+  # Add 5 second timeout to prevent infinite wait on stale locks
   {
-    flock -x 200 || return 1
+    flock -x -w 5 200 || return 1
 
     # Find maximum existing topic number
     local max_num
@@ -340,8 +341,9 @@ allocate_and_create_topic() {
   mkdir -p "$specs_root"
 
   # ATOMIC OPERATION: Hold lock through number calculation AND directory creation
+  # Add 5 second timeout to prevent infinite wait on stale locks
   {
-    flock -x 200 || return 1
+    flock -x -w 5 200 || return 1
 
     # Find maximum existing topic number (same logic as get_next_topic_number)
     local max_num

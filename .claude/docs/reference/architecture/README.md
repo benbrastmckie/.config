@@ -19,5 +19,6 @@ This directory contains architecture standards documentation for command and com
 
 ## Navigation
 
-- Parent: [Reference Documentation](../README.md)
-- Related: [Standards](../standards/README.md), [Workflows](../workflows/README.md)
+- [← Parent Directory](../README.md)
+- [Related: Standards](../standards/README.md)
+- [Related: Workflows](../workflows/README.md)

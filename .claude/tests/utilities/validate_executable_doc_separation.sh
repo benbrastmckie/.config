@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # Validate executable/documentation separation
 
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+cd "$PROJECT_ROOT"
+
 FAILED=0
 
 echo "Validating command file sizes..."
@@ -9,10 +15,17 @@ for cmd in .claude/commands/*.md; do
   if [[ "$cmd" == *"README"* ]]; then continue; fi
 
   lines=$(wc -l < "$cmd")
-  # Set limits: coordinate.md needs higher limit (2200), other orchestrators 1200, regular commands 300
-  max_lines=1200
-  if [[ "$cmd" == *"coordinate.md" ]]; then
-    max_lines=3000  # coordinate.md is large due to state-based orchestration complexity
+  # Set limits based on command type
+  # build.md is the most complex orchestrator with iteration logic
+  # Other orchestrators (debug, revise) handle state machines
+  # Regular commands should stay under 800 lines
+  max_lines=800
+  if [[ "$cmd" == *"build.md" ]]; then
+    max_lines=2100  # build.md includes iteration logic and barrier patterns
+  elif [[ "$cmd" == *"debug.md" ]] || [[ "$cmd" == *"revise.md" ]] || [[ "$cmd" == *"expand.md" ]]; then
+    max_lines=1500  # Orchestrators with state machines or multi-agent coordination (expand.md orchestrates complexity-estimator and plan-architect)
+  elif [[ "$cmd" == *"plan.md" ]] || [[ "$cmd" == *"repair.md" ]] || [[ "$cmd" == *"collapse.md" ]]; then
+    max_lines=1200  # Complex commands with multi-phase workflows (includes collapse.md due to state machine orchestration)
   fi
 
   if [ "$lines" -gt "$max_lines" ]; then
@@ -47,7 +60,12 @@ done
 
 echo ""
 echo "Validating cross-references..."
-for guide in .claude/docs/guides/*-command-guide.md; do
+for guide in .claude/docs/guides/commands/*-command-guide.md; do
+  if [[ ! -e "$guide" ]]; then
+    echo "⊘ SKIP: No command guide files found"
+    break
+  fi
+
   basename=$(basename "$guide" -command-guide.md)
   cmd=".claude/commands/${basename}.md"
 

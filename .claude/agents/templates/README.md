@@ -75,3 +75,9 @@ When creating a new agent template:
 - Invoked via /plan-from-template command
 
 Both types of templates serve different purposes and should not be confused.
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Agent Development Guide](../../docs/guides/development/agent-development/README.md)
+- [Related: Command Templates](../../commands/templates/README.md)

@@ -19,6 +19,11 @@ Scripts provide **task-specific command-line utilities** for:
 - Return meaningful exit codes
 - Complete operational tasks end-to-end
 
+## Subdirectories
+
+### [lint/](lint/README.md)
+Code quality validation scripts for standards compliance (library sourcing, error logging, unbound variables).
+
 ## Current Scripts
 
 ### Configuration Files
@@ -219,3 +224,9 @@ When creating a new script in this directory:
 6. **Handle errors gracefully** - Meaningful error messages
 7. **Make executable** - `chmod +x script-name.sh`
 8. **Follow naming conventions** - `kebab-case-names.sh`
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Subdirectory: lint/](lint/README.md)
+- [Related: lib/](../lib/README.md)

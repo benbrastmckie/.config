@@ -1,6 +1,8 @@
 # Core Libraries
 
-Essential infrastructure libraries required by most commands.
+## Purpose
+
+Essential infrastructure libraries required by most commands. This directory contains foundational utilities including base utilities for error handling and logging, project directory detection, centralized error classification and recovery strategies, library sourcing with deduplication, version validation, state persistence for workflows, unified location detection, and structured logging interfaces.
 
 ## Libraries
 
@@ -99,4 +101,4 @@ Unified logging interface for all operation types.
 
 ## Navigation
 
-- [Parent Directory (lib/)](../README.md)
+- [← Parent Directory](../README.md)

@@ -1,6 +1,8 @@
 # Plan Libraries
 
-Plan parsing, management, and complexity analysis libraries.
+## Purpose
+
+Plan parsing, management, and complexity analysis libraries. This directory provides utilities for automatic complexity analysis and expansion recommendations, checkbox manipulation for progress tracking, complexity scoring and threshold detection, template parsing, core plan structure parsing and metadata management, topic decomposition for research workflows, and topic directory naming and creation.
 
 ## Libraries
 
@@ -101,4 +103,4 @@ Topic directory management and naming.
 
 ## Navigation
 
-- [Parent Directory (lib/)](../README.md)
+- [← Parent Directory](../README.md)

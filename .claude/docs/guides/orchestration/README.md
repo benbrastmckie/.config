@@ -38,6 +38,8 @@ Orchestration guides cover the patterns and practices for coordinating complex w
 - [State-Based Orchestration Architecture](../../architecture/state-based-orchestration-overview.md)
 - [Build Command Guide](../commands/build-command-guide.md) - Main orchestration command
 
----
+## Navigation
 
-**Parent**: [Guides Index](../README.md)
+- [← Parent Directory](../README.md)
+- [Related: Command Guides](../commands/README.md)
+- [Related: Patterns](../patterns/README.md)

@@ -75,7 +75,7 @@ teardown_test() {
 pass() {
   local test_name="${1:-unnamed_test}"
   echo -e "${_GREEN}✓ PASS${_NC}: ${test_name}"
-  ((TESTS_PASSED++))
+  ((TESTS_PASSED++)) || true
 }
 
 # Mark test as failed
@@ -89,7 +89,7 @@ fail() {
   else
     echo -e "${_RED}✗ FAIL${_NC}: ${test_name}"
   fi
-  ((TESTS_FAILED++))
+  ((TESTS_FAILED++)) || true
   FAILED_TESTS+=("${test_name}")
   return 1
 }
@@ -104,7 +104,7 @@ skip() {
   else
     echo -e "${_YELLOW}⊘ SKIP${_NC}: ${test_name}"
   fi
-  ((TESTS_SKIPPED++))
+  ((TESTS_SKIPPED++)) || true
 }
 
 # Assert two values are equal

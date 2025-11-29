@@ -257,6 +257,8 @@ test_marker_lifecycle() {
   fi
 
   # Phase 1: IN PROGRESS -> COMPLETE
+  # First mark all tasks in Phase 1 as complete
+  sed -i '/^### Phase 1:/,/^### Phase 2:/ s/- \[ \]/- [x]/' "$test_file"
   add_complete_marker "$test_file" "1"
   if grep -q "Phase 1.*\[COMPLETE\]" "$test_file"; then
     test_pass "Lifecycle: Phase 1 IN PROGRESS -> COMPLETE"

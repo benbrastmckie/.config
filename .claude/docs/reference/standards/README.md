@@ -23,8 +23,10 @@ This directory contains the core standards documentation that governs command au
 | plan-progress.md | Plan progress tracking patterns |
 | enforcement-mechanisms.md | Standards enforcement tools and pre-commit integration |
 | agent-behavioral-guidelines.md | Agent-specific policies and Task tool isolation constraints |
+| todo-organization-standards.md | TODO.md file organization, sections, checkboxes, and artifact inclusion |
 
 ## Navigation
 
-- Parent: [Reference Documentation](../README.md)
-- Related: [Architecture](../architecture/README.md), [Templates](../templates/README.md)
+- [← Parent Directory](../README.md)
+- [Related: Architecture](../architecture/README.md)
+- [Related: Templates](../templates/README.md)

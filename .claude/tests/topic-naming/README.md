@@ -58,3 +58,9 @@ The topic naming system uses a three-tier approach:
   - `test_directory_naming_integration.sh` - tested deprecated sanitization
   - `test_semantic_slug_commands.sh` - had path resolution bugs
 - **2025-11-22**: Fixed path resolution bugs in 3 remaining tests
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Classification Tests](../classification/README.md)
+- [Related: Unit Tests](../unit/README.md)
