@@ -21,9 +21,9 @@ YOU ARE EXECUTING a build-from-plan workflow that takes an existing implementati
 **Expected Input**: Existing plan file path
 **Expected Output**: Implemented features with passing tests and updated documentation
 
-## Block 1: Consolidated Setup
+## Block 1a: Implementation Setup
 
-**EXECUTE NOW**: The user invoked `/build [plan-file] [starting-phase] [--dry-run]`. Capture those arguments.
+**EXECUTE NOW**: The user invoked `/build [plan-file] [starting-phase] [--dry-run]`. Capture those arguments and initialize the workflow.
 
 In the **bash block below**, replace `YOUR_BUILD_ARGS_HERE` with the actual build arguments (or leave empty for auto-resume).
 
@@ -37,6 +37,10 @@ Execute this bash block with your substitution:
 set +H 2>/dev/null || true
 set +o histexpand 2>/dev/null || true
 set -e  # Fail-fast per code-standards.md
+
+# === PRE-TRAP ERROR BUFFER ===
+# Initialize error buffer BEFORE any library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
 
 # DEBUG_LOG initialization per spec 778
 DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
@@ -73,24 +77,16 @@ fi
 
 export CLAUDE_PROJECT_DIR
 
-# === SOURCE LIBRARIES (Three-Tier Pattern) ===
-# Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source library-version-check.sh" >&2
-  exit 1
-}
+# Source error-handling.sh FIRST to enable diagnostic functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+
+# Replace remaining library sourcing with diagnostic wrapper
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" || exit 1
 
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
@@ -99,8 +95,11 @@ ensure_error_log_exists
 # Trap must be set BEFORE variable initialization to catch early failures
 setup_bash_error_trap "/build" "build_early_$(date +%s)" "early_init"
 
+# Flush any early errors captured before trap was active
+_flush_early_errors
+
 # Tier 2: Workflow Support (graceful degradation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null || true
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" || true
 
 check_library_requirements "$(cat <<'EOF'
 workflow-state-machine.sh: ">=2.0.0"
@@ -410,15 +409,35 @@ BUILD_WORKSPACE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_${WORKFLOW_ID}"
 mkdir -p "$BUILD_WORKSPACE"
 append_workflow_state "BUILD_WORKSPACE" "$BUILD_WORKSPACE"
 
-echo "Setup complete: $WORKFLOW_ID"
-echo "Topic path: $TOPIC_PATH"
-echo "Max iterations: $MAX_ITERATIONS"
-echo "Context threshold: ${CONTEXT_THRESHOLD}%"
+# Prepare summaries directory for verification
+SUMMARIES_DIR="${TOPIC_PATH}/summaries"
+mkdir -p "$SUMMARIES_DIR"
+append_workflow_state "SUMMARIES_DIR" "$SUMMARIES_DIR"
+
+# Source barrier utilities for verification
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/barrier-utils.sh" 2>/dev/null || {
+  echo "WARNING: barrier-utils.sh not found, verification will use basic checks" >&2
+}
+
+# Checkpoint reporting
+echo ""
+echo "[CHECKPOINT] Implementation setup complete"
+echo "  Workflow ID: $WORKFLOW_ID"
+echo "  Topic path: $TOPIC_PATH"
+echo "  Max iterations: $MAX_ITERATIONS"
+echo "  Context threshold: ${CONTEXT_THRESHOLD}%"
+echo "  Ready for implementer-coordinator invocation"
+echo ""
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent.
+## Block 1b: Implementation Execute
 
-**Iteration Context**: The coordinator will be passed iteration parameters. After it returns, check work_remaining to determine if another iteration is needed.
+**CRITICAL BARRIER**: This block MUST invoke implementer-coordinator via Task tool.
+Verification block (1c) will FAIL if implementation summary not created.
+
+**EXECUTE NOW**: Invoke implementer-coordinator subagent for implementation phase.
+
+**Iteration Context**: The coordinator will be passed iteration parameters. After it returns, verification block will check work_remaining to determine if another iteration is needed.
 
 Task {
   subagent_type: "general-purpose"
@@ -468,12 +487,18 @@ Task {
   "
 }
 
-**EXECUTE NOW**: After implementer-coordinator completes, check work_remaining and determine if iteration continues.
+## Block 1c: Implementation Verification
+
+**EXECUTE NOW**: Verify implementer-coordinator created implementation summary and check iteration status.
 
 ```bash
 set +H 2>/dev/null || true
 set +o histexpand 2>/dev/null || true
 set -e  # Fail-fast per code-standards.md
+
+# === PRE-TRAP ERROR BUFFER ===
+# Initialize error buffer BEFORE any library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
 
 # DEBUG_LOG initialization per spec 778
 DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
@@ -496,21 +521,30 @@ if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
 fi
 export CLAUDE_PROJECT_DIR
 
-# === SOURCE LIBRARIES (Three-Tier Pattern) ===
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch sourcing failures
+trap 'echo "ERROR: Library sourcing failed at line $LINENO: $BASH_COMMAND" >&2; exit 1' ERR
+trap 'if [ $? -ne 0 ]; then echo "ERROR: Block initialization failed" >&2; fi' EXIT
+
+# Source error-handling.sh FIRST to enable diagnostic functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+
+# Replace remaining library sourcing with diagnostic wrapper
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
 ensure_error_log_exists
 
 # === LOAD WORKFLOW STATE ===
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+  # Validate WORKFLOW_ID format
+  validate_workflow_id "$WORKFLOW_ID" "/build" || {
+    WORKFLOW_ID="build_$(date +%s)_recovered"
+  }
 else
   echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
   exit 1
@@ -533,9 +567,73 @@ validate_state_restoration "PLAN_FILE" "TOPIC_PATH" "MAX_ITERATIONS" "COMMAND_NA
 COMMAND_NAME="${COMMAND_NAME:-/build}"
 USER_ARGS="${USER_ARGS:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === CLEAR DEFENSIVE TRAP ===
+_clear_defensive_trap
+
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
+# Flush any early errors captured before trap was active
+_flush_early_errors
+
+# === VERIFY IMPLEMENTER-COORDINATOR EXECUTION ===
+# This verification block ensures implementer-coordinator was invoked via Task
+# and created the expected artifacts (implementation summary)
+
 echo ""
+echo "=== Implementation Verification ==="
+echo ""
+
+# Check if summaries directory exists and has content
+if [[ ! -d "$SUMMARIES_DIR" ]]; then
+  log_command_error "verification_error" \
+    "Summaries directory not found: $SUMMARIES_DIR" \
+    "implementer-coordinator should have created this directory"
+  echo "ERROR: VERIFICATION FAILED - Summaries directory missing"
+  echo "Recovery: Check implementer-coordinator logs, ensure Task was invoked"
+  exit 1
+fi
+
+# Count summary files (should have at least one from this iteration)
+SUMMARY_COUNT=$(find "$SUMMARIES_DIR" -name "*.md" -type f 2>/dev/null | wc -l)
+if [[ "$SUMMARY_COUNT" -eq 0 ]]; then
+  log_command_error "verification_error" \
+    "No summary files found in $SUMMARIES_DIR" \
+    "implementer-coordinator should have created at least one summary"
+  echo "ERROR: VERIFICATION FAILED - No implementation summary found"
+  echo "Recovery: Verify implementer-coordinator completed successfully"
+  exit 1
+fi
+
+# Find the most recent summary (by modification time)
+LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -exec ls -t {} + 2>/dev/null | head -1)
+if [[ -z "$LATEST_SUMMARY" ]] || [[ ! -f "$LATEST_SUMMARY" ]]; then
+  log_command_error "verification_error" \
+    "Could not find latest summary in $SUMMARIES_DIR" \
+    "Expected at least one summary file"
+  echo "ERROR: VERIFICATION FAILED - Latest summary not accessible"
+  exit 1
+fi
+
+# Verify summary file has minimum content (not empty)
+SUMMARY_SIZE=$(stat -f%z "$LATEST_SUMMARY" 2>/dev/null || stat -c%s "$LATEST_SUMMARY" 2>/dev/null || echo "0")
+if [[ "$SUMMARY_SIZE" -lt 100 ]]; then
+  log_command_error "verification_error" \
+    "Summary file too small: $LATEST_SUMMARY ($SUMMARY_SIZE bytes)" \
+    "implementer-coordinator may have created empty or minimal summary"
+  echo "WARNING: Summary file suspiciously small ($SUMMARY_SIZE bytes)"
+  echo "Proceeding with caution - review summary quality"
+fi
+
+# Persist summary path for next blocks
+append_workflow_state "LATEST_SUMMARY" "$LATEST_SUMMARY"
+append_workflow_state "SUMMARY_COUNT" "$SUMMARY_COUNT"
+
+echo "[CHECKPOINT] Implementation verification complete"
+echo "  Summary count: $SUMMARY_COUNT"
+echo "  Latest summary: $(basename "$LATEST_SUMMARY")"
+echo ""
+
 echo "=== Iteration Check (${ITERATION}/${MAX_ITERATIONS}) ==="
 echo ""
 
@@ -615,7 +713,12 @@ if [ -n "${CONTINUATION_CONTEXT:-}" ] && [ -f "${CONTINUATION_CONTEXT:-}" ]; the
   HAS_CONTINUATION="true"
 fi
 
-CONTEXT_ESTIMATE=$(estimate_context_usage "$COMPLETED_PHASES" "$REMAINING_PHASES" "$HAS_CONTINUATION")
+# Estimate context usage with fallback for function failure
+if type -t estimate_context_usage &>/dev/null; then
+  CONTEXT_ESTIMATE=$(estimate_context_usage "$COMPLETED_PHASES" "$REMAINING_PHASES" "$HAS_CONTINUATION" 2>/dev/null) || CONTEXT_ESTIMATE=50000
+else
+  CONTEXT_ESTIMATE=50000  # Fallback estimate if function not available
+fi
 CONTEXT_USAGE_PERCENT=$((CONTEXT_ESTIMATE * 100 / MAX_CONTEXT))
 
 echo "Context estimate: ${CONTEXT_ESTIMATE} tokens (~${CONTEXT_USAGE_PERCENT}%)"
@@ -1020,6 +1123,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
   echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
 }
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
 
 # Load workflow state with recovery
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
@@ -1034,6 +1141,11 @@ else
 fi
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# Setup bash error trap
+COMMAND_NAME="${COMMAND_NAME:-/build}"
+USER_ARGS="${USER_ARGS:-}"
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Extract paths from state with defensive defaults
 if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
@@ -1127,6 +1239,9 @@ set +H 2>/dev/null || true
 set +o histexpand 2>/dev/null || true
 set -e  # Fail-fast per code-standards.md
 
+# === PRE-TRAP ERROR BUFFER ===
+declare -a _EARLY_ERROR_BUFFER=()
+
 # DEBUG_LOG initialization per spec 778
 DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
@@ -1148,26 +1263,27 @@ if [ -z "$CLAUDE_PROJECT_DIR" ]; then
 fi
 export CLAUDE_PROJECT_DIR
 
-# === SOURCE LIBRARIES (Three-Tier Pattern) ===
-# Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
+# === DEFENSIVE TRAP SETUP ===
+trap 'echo "ERROR: Library sourcing failed at line $LINENO: $BASH_COMMAND" >&2; exit 1' ERR
+trap 'if [ $? -ne 0 ]; then echo "ERROR: Block initialization failed" >&2; fi' EXIT
+
+# Source error-handling.sh FIRST
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 ensure_error_log_exists
 
 # === LOAD STATE WITH RECOVERY ===
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+  validate_workflow_id "$WORKFLOW_ID" "/build" || {
+    WORKFLOW_ID="build_$(date +%s)_recovered"
+  }
 else
   # Recovery: Find most recent build workflow state file
   LATEST_STATE=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "workflow_build_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
@@ -1195,8 +1311,14 @@ validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "CURRENT_STAT
 
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
+# === CLEAR DEFENSIVE TRAP ===
+_clear_defensive_trap
+
 # === SETUP BASH ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# Flush any early errors captured before trap was active
+_flush_early_errors
 
 [ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state: $CURRENT_STATE" >&2
 echo "Block 2: State validated ($CURRENT_STATE)"
@@ -1259,8 +1381,11 @@ if [ -z "${TEST_OUTPUT_PATH:-}" ] || [ ! -f "${TEST_OUTPUT_PATH:-}" ]; then
 
   if [ -n "$TEST_COMMAND" ]; then
     echo "Running tests: $TEST_COMMAND"
+    # Disable error trap for test execution (test failures are expected workflow events)
+    set +e
     TEST_OUTPUT=$($TEST_COMMAND 2>&1)
     TEST_EXIT_CODE=$?
+    set -e
     echo "$TEST_OUTPUT"
 
     if [ $TEST_EXIT_CODE -ne 0 ]; then
@@ -1890,6 +2015,15 @@ if type check_all_phases_complete &>/dev/null && type update_plan_status &>/dev/
       echo "WARNING: Could not update plan status to COMPLETE" >&2
     fi
   fi
+fi
+
+# === RETURN IMPLEMENTATION_COMPLETE SIGNAL ===
+# Signal enables buffer-opener hook to open summary
+if [ -n "$LATEST_SUMMARY" ] && [ -f "$LATEST_SUMMARY" ]; then
+  echo ""
+  echo "IMPLEMENTATION_COMPLETE"
+  echo "  summary_path: $LATEST_SUMMARY"
+  echo ""
 fi
 
 # Cleanup checkpoints if tests passed
