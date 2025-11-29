@@ -32,3 +32,12 @@ a logical grouping for feature-specific test coverage.
 1. Create test file in appropriate subdirectory
 2. Follow naming convention: `test_<feature>_<aspect>.sh`
 3. Update subdirectory README with test description
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Subdirectory: commands/](commands/README.md)
+- [Subdirectory: compliance/](compliance/README.md)
+- [Subdirectory: convert-docs/](convert-docs/README.md)
+- [Subdirectory: location/](location/README.md)
+- [Subdirectory: specialized/](specialized/README.md)

@@ -37,3 +37,9 @@ bash tests/state/test_build_state_transitions.sh
 - States: initialize, research, plan, implement, test, debug, document, complete
 - Valid transitions are defined in workflow-state-machine.sh
 - Invalid transitions should be rejected with appropriate error messages
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Integration Tests](../integration/README.md)
+- [Related: Progressive Tests](../progressive/README.md)

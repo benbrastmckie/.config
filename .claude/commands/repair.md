@@ -265,173 +265,39 @@ fi
 # Explicitly persist CURRENT_STATE (belt and suspenders)
 append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
 
-# Persist ERROR_DESCRIPTION for topic naming agent
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
-echo "$ERROR_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
-export TOPIC_NAMING_INPUT_FILE
-
 echo "Ready for topic naming"
+
+# === GENERATE TIMESTAMP-BASED TOPIC NAME ===
+# Generate timestamp-based topic name directly (bypasses topic-naming-agent)
+# This ensures unique allocation for each /repair run (historical error tracking)
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+if [ -n "$ERROR_COMMAND" ]; then
+  # Include command context: /repair --command /build → repair_build_20251129_143022
+  COMMAND_SLUG=$(echo "$ERROR_COMMAND" | sed 's:^/::' | tr '-' '_')
+  TOPIC_NAME="repair_${COMMAND_SLUG}_${TIMESTAMP}"
+elif [ -n "$ERROR_TYPE" ]; then
+  # Include error type: /repair --type state_error → repair_state_error_20251129_143022
+  ERROR_TYPE_SLUG=$(echo "$ERROR_TYPE" | tr '-' '_')
+  TOPIC_NAME="repair_${ERROR_TYPE_SLUG}_${TIMESTAMP}"
+else
+  # Generic repair: /repair → repair_20251129_143022
+  TOPIC_NAME="repair_${TIMESTAMP}"
+fi
+
+NAMING_STRATEGY="timestamp_direct"
+echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 ```
 
-**EXECUTE NOW**: Invoke the topic-naming-agent to generate a semantic directory name.
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Generate semantic topic directory name"
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-naming-agent.md
-
-    You are generating a topic directory name for: /repair command
-
-    **Input**:
-    - User Prompt: ${ERROR_DESCRIPTION}
-    - Command Name: /repair
-    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
-
-    Execute topic naming according to behavioral guidelines:
-    1. Generate semantic topic name from user prompt
-    2. Validate format (^[a-z0-9_]{5,40}$)
-    3. Write topic name to OUTPUT_FILE_PATH using Write tool
-    4. Return completion signal: TOPIC_NAME_GENERATED: <generated_name>
-
-    If you encounter an error, return:
-    TASK_ERROR: <error_type> - <error_message>
-  "
-}
-
-**EXECUTE NOW**: Validate agent output file and initialize workflow paths.
+**EXECUTE NOW**: Initialize workflow paths with timestamp-based topic name.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# === DETECT PROJECT DIRECTORY FIRST (required for state file path) ===
-if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-else
-  current_dir="$(pwd)"
-  while [ "$current_dir" != "/" ]; do
-    if [ -d "$current_dir/.claude" ]; then
-      CLAUDE_PROJECT_DIR="$current_dir"
-      break
-    fi
-    current_dir="$(dirname "$current_dir")"
-  done
-fi
-
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
-fi
-
-export CLAUDE_PROJECT_DIR
-
-# === RESTORE STATE FROM PREVIOUS BLOCK ===
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches Block 1a)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
-# Source libraries
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
-  echo "ERROR: Cannot load error-handling library" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
-  echo "ERROR: Cannot load workflow-initialization library" >&2
-  exit 1
-}
-
-COMMAND_NAME="/repair"
-export COMMAND_NAME
-
-# Initialize error log
-ensure_error_log_exists
-
-# Load workflow state
-load_workflow_state "$WORKFLOW_ID" false
-
-# Setup bash error trap
-USER_ARGS="${ERROR_DESCRIPTION:-}"
-setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
-
-# Restore ERROR_DESCRIPTION from temp file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
-ERROR_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null || echo "error analysis and repair")
-
-# === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
-TOPIC_NAME="no_name_error"
-NAMING_STRATEGY="fallback"
-
-# Check if agent wrote output file
-if [ -f "$TOPIC_NAME_FILE" ]; then
-  # Read topic name from file (agent writes only the name, one line)
-  TOPIC_NAME=$(cat "$TOPIC_NAME_FILE" 2>/dev/null | tr -d '\n' | tr -d ' ')
-
-  if [ -z "$TOPIC_NAME" ]; then
-    # File exists but is empty - agent failed
-    NAMING_STRATEGY="agent_empty_output"
-    TOPIC_NAME="no_name_error"
-  else
-    # Validate topic name format (exit code capture pattern)
-    echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
-    IS_VALID=$?
-    if [ $IS_VALID -ne 0 ]; then
-      # Invalid format - log and fall back
-      log_command_error \
-        "$COMMAND_NAME" \
-        "$WORKFLOW_ID" \
-        "${USER_ARGS:-}" \
-        "validation_error" \
-        "Topic naming agent returned invalid format" \
-        "topic_validation" \
-        "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
-
-      NAMING_STRATEGY="validation_failed"
-      TOPIC_NAME="no_name_error"
-    else
-      # Valid topic name from LLM
-      NAMING_STRATEGY="llm_generated"
-    fi
-  fi
-else
-  # File doesn't exist - agent failed to write
-  NAMING_STRATEGY="agent_no_output_file"
-fi
-
-# Log naming failure if we fell back to no_name_error
-if [ "$TOPIC_NAME" = "no_name_error" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "${USER_ARGS:-}" \
-    "agent_error" \
-    "Topic naming agent failed or returned invalid name" \
-    "topic_naming" \
-    "$(jq -n --arg desc "$ERROR_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" \
-       '{description: $desc, fallback_reason: $strategy}')"
-fi
-
-# Clean up temp files
-rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
-rm -f "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null || true
-
 # Create classification result JSON for initialize_workflow_paths
 CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
 
-# Initialize workflow paths with LLM-generated name (or fallback)
+# Initialize workflow paths with timestamp-based name
 initialize_workflow_paths "$ERROR_DESCRIPTION" "research-and-plan" "$RESEARCH_COMPLEXITY" "$CLASSIFICATION_JSON"
 INIT_EXIT=$?
 if [ $INIT_EXIT -ne 0 ]; then

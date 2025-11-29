@@ -1,6 +1,8 @@
 # Specialized Feature Tests
 
-Tests for specialized features and edge cases.
+## Purpose
+
+Tests for specialized features and edge cases. This directory contains tests for advanced functionality including error recovery, library management, template systems, parallel agent execution, wave-based parallelism, and progress dashboard rendering.
 
 ## Test Files
 
@@ -28,3 +30,9 @@ Tests for specialized features and edge cases.
 ```bash
 bash tests/features/specialized/test_parallel_waves.sh
 ```
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Command Tests](../commands/README.md)
+- [Related: Compliance Tests](../compliance/README.md)

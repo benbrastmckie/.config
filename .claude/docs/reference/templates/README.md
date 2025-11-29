@@ -15,5 +15,6 @@ This directory contains template and structure documentation for consistent arti
 
 ## Navigation
 
-- Parent: [Reference Documentation](../README.md)
-- Related: [Standards](../standards/README.md), [Architecture](../architecture/README.md)
+- [← Parent Directory](../README.md)
+- [Related: Standards](../standards/README.md)
+- [Related: Architecture](../architecture/README.md)

@@ -166,6 +166,10 @@ echo ""
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+
+# Initialize pre-trap error buffer BEFORE library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
 # Detect project directory
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -187,32 +191,30 @@ fi
 
 export CLAUDE_PROJECT_DIR
 
-# Source libraries in dependency order (Standard 15) with output suppression
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null || true
+# Source error-handling.sh FIRST to enable diagnostic functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 
+# Source remaining libraries with diagnostics
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" || exit 1
+
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
 
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source unified-location-detection.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-initialization.sh" >&2
-  exit 1
-}
+# === SETUP EARLY BASH ERROR TRAP ===
+# CRITICAL FIX: Add early trap to catch errors in the 85-line gap before full trap setup
+# This trap uses temporary metadata, will be replaced with actual values later
+setup_bash_error_trap "/debug" "debug_early_$(date +%s)" "early_init"
+
+# Flush any early errors captured before trap was active
+_flush_early_errors
+
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" || exit 1
 
 # Verify library versions
 check_library_requirements "$(cat <<'EOF'
@@ -249,7 +251,11 @@ append_workflow_state "USER_ARGS" "$USER_ARGS"
 append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
 
 # === SETUP BASH ERROR TRAP ===
+# Replace early trap with actual metadata
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# Flush any errors captured during initialization
+_flush_early_errors
 
 # Validate state file creation
 if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
@@ -340,30 +346,36 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# Re-source libraries for subprocess isolation (Three-Tier Pattern)
-# Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
+# Initialize pre-trap error buffer BEFORE library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch sourcing failures
+trap 'echo "ERROR: Library sourcing failed at line $LINENO: $BASH_COMMAND" >&2; exit 1' ERR
+trap 'if [ $? -ne 0 ]; then echo "ERROR: Block initialization failed" >&2; fi' EXIT
+
+# Source error-handling.sh FIRST to enable diagnostic functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-initialization.sh" >&2
-  exit 1
-}
+
+# Replace remaining library sourcing with diagnostic wrapper
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" || exit 1
 
 # Load WORKFLOW_ID from file
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
+  # Validate WORKFLOW_ID format
+  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
+    WORKFLOW_ID="debug_$(date +%s)_recovered"
+  }
+
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
 
@@ -375,8 +387,14 @@ if [ -f "$STATE_ID_FILE" ]; then
 
   export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
+  # === CLEAR DEFENSIVE TRAP ===
+  _clear_defensive_trap
+
   # === SETUP BASH ERROR TRAP ===
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+  # Flush any early errors captured before trap was active
+  _flush_early_errors
 
   # Initialize DEBUG_LOG using CLAUDE_PROJECT_DIR for consistent path
   DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
@@ -477,33 +495,38 @@ echo ""
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
-# Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
+
+# Initialize pre-trap error buffer BEFORE library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch sourcing failures
+trap 'echo "ERROR: Library sourcing failed at line $LINENO: $BASH_COMMAND" >&2; exit 1' ERR
+trap 'if [ $? -ne 0 ]; then echo "ERROR: Block initialization failed" >&2; fi' EXIT
+
+# Source error-handling.sh FIRST to enable diagnostic functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source unified-location-detection.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-initialization.sh" >&2
-  exit 1
-}
+
+# Replace remaining library sourcing with diagnostic wrapper
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" || exit 1
 
 # Load WORKFLOW_ID from file (fail-fast pattern)
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
+  # Validate WORKFLOW_ID format
+  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
+    WORKFLOW_ID="debug_$(date +%s)_recovered"
+  }
+
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
 
@@ -515,8 +538,14 @@ if [ -f "$STATE_ID_FILE" ]; then
 
   export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
+  # === CLEAR DEFENSIVE TRAP ===
+  _clear_defensive_trap
+
   # === SETUP BASH ERROR TRAP ===
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+  # Flush any early errors captured before trap was active
+  _flush_early_errors
 
   # Initialize DEBUG_LOG using CLAUDE_PROJECT_DIR for consistent path
   DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
@@ -619,7 +648,9 @@ append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "${ORIGINAL_PROMPT_FILE_PATH:-
 append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+**CRITICAL BARRIER - Research Delegation**
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent. This invocation is MANDATORY. The orchestrator MUST NOT perform research work directly. Verification blocks will FAIL if research artifacts are not created by the specialist.
 
 Task {
   subagent_type: "general-purpose"
@@ -753,38 +784,56 @@ fi
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
-# Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
+
+# Initialize pre-trap error buffer BEFORE library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch sourcing failures
+trap 'echo "ERROR: Library sourcing failed at line $LINENO: $BASH_COMMAND" >&2; exit 1' ERR
+trap 'if [ $? -ne 0 ]; then echo "ERROR: Block initialization failed" >&2; fi' EXIT
+
+# Source error-handling.sh FIRST to enable diagnostic functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 
-# Load state from previous block
+# Replace remaining library sourcing with diagnostic wrapper
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+
+# Load WORKFLOW_ID from file
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-source "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 
-# Load workflow state from Part 3 (subprocess isolation)
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+  # Validate WORKFLOW_ID format
+  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
+    WORKFLOW_ID="debug_$(date +%s)_recovered"
+  }
 
-# === RESTORE ERROR LOGGING CONTEXT ===
-if [ -z "${COMMAND_NAME:-}" ]; then
-  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+
+  # Validate critical variables restored from state
+  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
+    echo "ERROR: State restoration failed - critical variables missing" >&2
+    exit 1
+  }
+
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # === CLEAR DEFENSIVE TRAP ===
+  _clear_defensive_trap
+
+  # === SETUP BASH ERROR TRAP ===
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+  # Flush any early errors captured before trap was active
+  _flush_early_errors
 fi
-if [ -z "${USER_ARGS:-}" ]; then
-  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-fi
-export COMMAND_NAME USER_ARGS WORKFLOW_ID
-
-# === SETUP BASH ERROR TRAP ===
-setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -886,7 +935,9 @@ echo "PLAN_PATH=$PLAN_PATH" >> "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$
 echo "REPORT_PATHS_JSON='$REPORT_PATHS_JSON'" >> "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
+**CRITICAL BARRIER - Planning Delegation**
+
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent. This invocation is MANDATORY. The orchestrator MUST NOT create plans directly. Verification blocks will FAIL if plan artifacts are not created by the architect.
 
 Task {
   subagent_type: "general-purpose"
@@ -1005,38 +1056,56 @@ fi
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
-# Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
+
+# Initialize pre-trap error buffer BEFORE library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch sourcing failures
+trap 'echo "ERROR: Library sourcing failed at line $LINENO: $BASH_COMMAND" >&2; exit 1' ERR
+trap 'if [ $? -ne 0 ]; then echo "ERROR: Block initialization failed" >&2; fi' EXIT
+
+# Source error-handling.sh FIRST to enable diagnostic functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 
-# Load state from previous block
+# Replace remaining library sourcing with diagnostic wrapper
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+
+# Load WORKFLOW_ID from file
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-source "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 
-# Load workflow state from Part 4 (subprocess isolation)
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+  # Validate WORKFLOW_ID format
+  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
+    WORKFLOW_ID="debug_$(date +%s)_recovered"
+  }
 
-# === RESTORE ERROR LOGGING CONTEXT ===
-if [ -z "${COMMAND_NAME:-}" ]; then
-  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+
+  # Validate critical variables restored from state
+  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
+    echo "ERROR: State restoration failed - critical variables missing" >&2
+    exit 1
+  }
+
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # === CLEAR DEFENSIVE TRAP ===
+  _clear_defensive_trap
+
+  # === SETUP BASH ERROR TRAP ===
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+  # Flush any early errors captured before trap was active
+  _flush_early_errors
 fi
-if [ -z "${USER_ARGS:-}" ]; then
-  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-fi
-export COMMAND_NAME USER_ARGS WORKFLOW_ID
-
-# === SETUP BASH ERROR TRAP ===
-setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -1123,7 +1192,9 @@ echo "=== Phase 3: Debug (Root Cause Analysis) ==="
 echo ""
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent.
+**CRITICAL BARRIER - Debug Analysis Delegation**
+
+**EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent. This invocation is MANDATORY. The orchestrator MUST NOT perform debug analysis directly. Verification blocks will FAIL if debug artifacts are not created by the analyst.
 
 Task {
   subagent_type: "general-purpose"
@@ -1234,38 +1305,56 @@ fi
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
-# Re-source libraries for subprocess isolation
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
+
+# Initialize pre-trap error buffer BEFORE library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch sourcing failures
+trap 'echo "ERROR: Library sourcing failed at line $LINENO: $BASH_COMMAND" >&2; exit 1' ERR
+trap 'if [ $? -ne 0 ]; then echo "ERROR: Block initialization failed" >&2; fi' EXIT
+
+# Source error-handling.sh FIRST to enable diagnostic functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 
-# Load state from previous block
+# Replace remaining library sourcing with diagnostic wrapper
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+
+# Load WORKFLOW_ID from file
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-source "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt" 2>/dev/null || true
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 
-# Load workflow state from Part 5 (subprocess isolation)
-load_workflow_state "${WORKFLOW_ID:-$$}" false
+  # Validate WORKFLOW_ID format
+  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
+    WORKFLOW_ID="debug_$(date +%s)_recovered"
+  }
 
-# === RESTORE ERROR LOGGING CONTEXT ===
-if [ -z "${COMMAND_NAME:-}" ]; then
-  COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+
+  # Validate critical variables restored from state
+  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
+    echo "ERROR: State restoration failed - critical variables missing" >&2
+    exit 1
+  }
+
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # === CLEAR DEFENSIVE TRAP ===
+  _clear_defensive_trap
+
+  # === SETUP BASH ERROR TRAP ===
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+  # Flush any early errors captured before trap was active
+  _flush_early_errors
 fi
-if [ -z "${USER_ARGS:-}" ]; then
-  USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
-fi
-export COMMAND_NAME USER_ARGS WORKFLOW_ID
-
-# === SETUP BASH ERROR TRAP ===
-setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === VALIDATE STATE AFTER LOAD ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -1358,7 +1447,6 @@ source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || {
 
 # Build summary text
 SUMMARY_TEXT="Analyzed issue through root cause investigation with $REPORT_COUNT research reports and created debug strategy plan. Debug artifacts include analysis findings and recommended resolution approach."
-
 # Build artifacts section
 ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)
   📄 Plan: $PLAN_PATH"
@@ -1366,16 +1454,21 @@ if [ "$DEBUG_ARTIFACT_COUNT" -gt 0 ]; then
   ARTIFACTS="${ARTIFACTS}
   🔧 Debug: $DEBUG_DIR/ ($DEBUG_ARTIFACT_COUNT files)"
 fi
-
 # Build next steps
 NEXT_STEPS="  • Review debug strategy: cat $PLAN_PATH
   • Review debug artifacts: ls -lh $DEBUG_DIR/
   • Apply fixes identified in analysis
   • Re-run tests to verify fix"
-
 # Print standardized summary (no phases for debug command)
 print_artifact_summary "Debug" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
-echo ""
+
+# === RETURN DEBUG_REPORT_CREATED SIGNAL ===
+# Signal enables buffer-opener hook and orchestrator detection
+if [ -n "$PLAN_PATH" ] && [ -f "$PLAN_PATH" ]; then
+  echo ""
+  echo "DEBUG_REPORT_CREATED: $PLAN_PATH"
+  echo ""
+fi
 
 # Cleanup temp state file
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -1383,8 +1476,6 @@ rm -f "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
 
 exit 0
 ```
-
----
 
 **Troubleshooting**:
 

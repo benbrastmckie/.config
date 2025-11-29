@@ -46,3 +46,9 @@ All unit tests should:
 4. Call `setup_test` at start and `teardown_test` at end
 
 See [test-helpers.sh](../lib/README.md) for the complete testing API.
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Integration Tests](../integration/README.md)
+- [Related: Test Helper Library](../lib/README.md)

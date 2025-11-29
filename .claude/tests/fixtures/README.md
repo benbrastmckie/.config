@@ -34,5 +34,13 @@ assert_equals "$expected" "$actual" "process_produces_expected_output"
 ## Adding Fixtures
 
 1. Create fixture in appropriate subdirectory
-2. Document fixture purpose in this README or subdirectory README
+2. Document fixture purpose in this README if it's a new category
 3. Use descriptive filenames indicating test scenario
+
+**Note**: Fixture subdirectories do not require individual READMEs per documentation standards. This root README documents the overall organization and usage patterns for all fixtures.
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Unit Tests](../unit/README.md)
+- [Related: Integration Tests](../integration/README.md)

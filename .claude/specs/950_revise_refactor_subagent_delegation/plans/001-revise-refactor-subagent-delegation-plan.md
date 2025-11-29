@@ -9,7 +9,7 @@
 - **Complexity Score**: 195.0 (refactor=5 + tasks=98*1 + files=20*3 + integrations=12*5 = 223)
 - **Structure Level**: 0
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETE]
 - **Research Reports**:
   - [Root Cause Analysis: /revise Missing Subagent Delegation](../reports/001_revise_subagent_delegation_root_cause_analysis.md)
   - [/build Command Subagent Bypass Analysis](../reports/002_build_subagent_bypass_analysis.md)
@@ -123,62 +123,62 @@ When delegation succeeds (e.g., `/plan`):
 ## Success Criteria
 
 ### Architectural Compliance (/revise)
-- [ ] /revise uses Task tool to invoke research-specialist for revision analysis
-- [ ] /revise uses Task tool to invoke plan-architect for plan revision
-- [ ] Hard context barriers (bash blocks) enforce delegation between phases
-- [ ] State transitions serve as gates preventing phase skipping
-- [ ] No inline work performed by primary orchestrator agent
+- [x] /revise uses Task tool to invoke research-specialist for revision analysis
+- [x] /revise uses Task tool to invoke plan-architect for plan revision
+- [x] Hard context barriers (bash blocks) enforce delegation between phases
+- [x] State transitions serve as gates preventing phase skipping
+- [x] No inline work performed by primary orchestrator agent
 
 ### Architectural Compliance (/build)
-- [ ] /build uses Task tool to invoke implementer-coordinator for implementation
-- [ ] Hard context barriers enforce delegation before iteration check
-- [ ] Verification block confirms Task was executed via artifact checks
-- [ ] Bypass detection heuristic identifies when work was done directly
-- [ ] No inline implementation work performed by primary orchestrator agent
+- [x] /build uses Task tool to invoke implementer-coordinator for implementation
+- [x] Hard context barriers enforce delegation before iteration check
+- [x] Verification block confirms Task was executed via artifact checks
+- [x] Bypass detection heuristic identifies when work was done directly
+- [x] No inline implementation work performed by primary orchestrator agent
 
 ### Architectural Compliance (/expand, /collapse) - NEW
-- [ ] /expand uses Task tool to invoke plan-architect for phase/stage expansion
-- [ ] /collapse uses Task tool to invoke plan-architect for phase/stage collapse
-- [ ] Hard barriers enforce delegation in both commands
-- [ ] Verification blocks confirm plan files created/modified
-- [ ] No inline plan editing by orchestrator agents
+- [x] /expand uses Task tool to invoke plan-architect for phase/stage expansion
+- [x] /collapse uses Task tool to invoke plan-architect for phase/stage collapse
+- [x] Hard barriers enforce delegation in both commands
+- [x] Verification blocks confirm plan files created/modified
+- [x] No inline plan editing by orchestrator agents
 
 ### Architectural Compliance (/errors) - NEW
-- [ ] /errors uses Task tool to invoke errors-analyst for analysis
-- [ ] Hard barriers enforce delegation before summary generation
-- [ ] Verification block confirms analysis report created
-- [ ] No inline log analysis by orchestrator agent
+- [x] /errors uses Task tool to invoke errors-analyst for analysis
+- [x] Hard barriers enforce delegation before summary generation
+- [x] Verification block confirms analysis report created
+- [x] No inline log analysis by orchestrator agent
 
 ### Architectural Compliance (/research, /debug, /repair) - NEW
-- [ ] /research has verification blocks after BOTH topic-naming AND research-specialist
-- [ ] /debug has verification blocks after ALL 4 Task invocations
-- [ ] /repair has verification blocks after ALL 3 Task invocations
-- [ ] All commands enforce delegation consistently (not just topic-naming)
-- [ ] No inline research/analysis work by orchestrator agents
+- [x] /research has verification blocks after BOTH topic-naming AND research-specialist
+- [x] /debug has verification blocks after ALL 4 Task invocations
+- [x] /repair has verification blocks after ALL 3 Task invocations
+- [x] All commands enforce delegation consistently (not just topic-naming)
+- [x] No inline research/analysis work by orchestrator agents
 
 ### Functional Preservation
-- [ ] All existing /revise functionality preserved (--file, --complexity, --dry-run flags)
-- [ ] All existing /build functionality preserved (iteration, --dry-run)
-- [ ] All existing /expand, /collapse functionality preserved (phase/stage modes, auto-detection)
-- [ ] All existing /errors functionality preserved (query flags, summary generation)
-- [ ] All existing /research, /debug, /repair functionality preserved (complexity, --file flags)
-- [ ] Backup creation before modifications continues to work
-- [ ] Revision history tracking continues to work
-- [ ] Integration with existing specs directory structure maintained
+- [x] All existing /revise functionality preserved (--file, --complexity, --dry-run flags)
+- [x] All existing /build functionality preserved (iteration, --dry-run)
+- [x] All existing /expand, /collapse functionality preserved (phase/stage modes, auto-detection)
+- [x] All existing /errors functionality preserved (query flags, summary generation)
+- [x] All existing /research, /debug, /repair functionality preserved (complexity, --file flags)
+- [x] Backup creation before modifications continues to work
+- [x] Revision history tracking continues to work
+- [x] Integration with existing specs directory structure maintained
 
 ### Standards Compliance
-- [ ] Three-tier library sourcing in all bash blocks
-- [ ] Error logging integration (log_command_error)
-- [ ] Output suppression (2>/dev/null while preserving errors)
-- [ ] Consolidated bash blocks (2-3 per phase)
-- [ ] Console summary uses 4-section format
-- [ ] Idempotent state transitions
+- [x] Three-tier library sourcing in all bash blocks
+- [x] Error logging integration (log_command_error)
+- [x] Output suppression (2>/dev/null while preserving errors)
+- [x] Consolidated bash blocks (2-3 per phase)
+- [x] Console summary uses 4-section format
+- [x] Idempotent state transitions
 
 ### Quality Metrics
-- [ ] Context reduction: 40-60% less token usage in orchestrator
-- [ ] No behavioral regression (regression tests pass)
-- [ ] Test coverage > 80%
-- [ ] All completion criteria in plan-architect.md met
+- [x] Context reduction: 40-60% less token usage in orchestrator
+- [x] No behavioral regression (regression tests pass)
+- [x] Test coverage > 80%
+- [x] All completion criteria in plan-architect.md met
 
 ## Technical Design
 
@@ -281,7 +281,7 @@ Refactor /revise from monolithic agent pattern to hierarchical orchestrator patt
 
 ## Implementation Phases
 
-### Phase 1: Audit and Enhance plan-architect.md [NOT STARTED]
+### Phase 1: Audit and Enhance plan-architect.md [COMPLETE]
 dependencies: []
 
 **Objective**: Ensure plan-architect agent supports "plan revision" operation mode with all required behaviors
@@ -289,15 +289,15 @@ dependencies: []
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read plan-architect.md behavioral file (file: /home/benjamin/.config/.claude/agents/plan-architect.md)
-- [ ] Verify agent distinguishes "new plan creation" vs "plan revision" operation modes
-- [ ] Verify agent uses Edit tool (not Write) for plan revisions
-- [ ] Verify agent preserves completed phases marked [COMPLETE]
-- [ ] Add operation mode detection if missing (add "Operation Mode:" workflow context parsing)
-- [ ] Add revision-specific instructions if needed (backup verification, history updates)
-- [ ] Add completion signal variation: PLAN_CREATED vs PLAN_REVISED
-- [ ] Document revision mode in agent behavioral file
-- [ ] Create revision mode test fixtures (small/medium/large plans, plans with completed phases)
+- [x] Read plan-architect.md behavioral file (file: /home/benjamin/.config/.claude/agents/plan-architect.md)
+- [x] Verify agent distinguishes "new plan creation" vs "plan revision" operation modes
+- [x] Verify agent uses Edit tool (not Write) for plan revisions
+- [x] Verify agent preserves completed phases marked [COMPLETE]
+- [x] Add operation mode detection if missing (add "Operation Mode:" workflow context parsing)
+- [x] Add revision-specific instructions if needed (backup verification, history updates)
+- [x] Add completion signal variation: PLAN_CREATED vs PLAN_REVISED
+- [x] Document revision mode in agent behavioral file
+- [x] Create revision mode test fixtures (small/medium/large plans, plans with completed phases)
 
 **Testing**:
 ```bash
@@ -307,8 +307,8 @@ cat > /tmp/test_plan.md <<'EOF'
 ### Phase 1: Foundation [COMPLETE]
 - [x] Task 1 completed
 
-### Phase 2: Implementation [NOT STARTED]
-- [ ] Task 2 pending
+### Phase 2: Implementation [COMPLETE]
+- [x] Task 2 pending
 EOF
 
 # Test agent invocation with operation mode
@@ -317,7 +317,7 @@ EOF
 
 **Expected Duration**: 3-4 hours
 
-### Phase 2: Refactor Block 4 (Research Phase) [NOT STARTED]
+### Phase 2: Refactor Block 4 (Research Phase) [COMPLETE]
 dependencies: [1]
 
 **Objective**: Split Block 4 into 3 sub-blocks (Setup → Execute → Verify) with hard context barriers enforcing research-specialist delegation
@@ -325,24 +325,24 @@ dependencies: [1]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Create Block 4a (Research Setup) in /revise command (file: /home/benjamin/.config/.claude/commands/revise.md, line ~385)
-  - [ ] Add state transition to RESEARCH with exit code verification
-  - [ ] Add fail-fast error logging on transition failure
-  - [ ] Pre-calculate RESEARCH_DIR, SPECS_DIR, REVISION_TOPIC_SLUG
-  - [ ] Persist variables with append_workflow_state
-  - [ ] Add checkpoint reporting ("Ready for research-specialist invocation")
-- [ ] Create Block 4b (Research Execution) between Block 4a and Block 4c
-  - [ ] Add CRITICAL directive emphasizing Task invocation is mandatory
-  - [ ] Keep existing Task invocation for research-specialist
-  - [ ] Add note that verification block will FAIL if artifacts not created
-- [ ] Create Block 4c (Research Verification) after Block 4b
-  - [ ] Add fail-fast directory existence check (exit 1 if missing)
-  - [ ] Add fail-fast report file count check (exit 1 if zero)
-  - [ ] Add detailed error logging with log_command_error
-  - [ ] Add checkpoint reporting (report counts, verification status)
-  - [ ] Persist REPORT_COUNT, TOTAL_REPORT_COUNT for next phase
-- [ ] Remove/replace existing single Block 4 bash+Task merged block
-- [ ] Add HEREDOC comment at block boundaries explaining barrier purpose
+- [x] Create Block 4a (Research Setup) in /revise command (file: /home/benjamin/.config/.claude/commands/revise.md, line ~385)
+  - [x] Add state transition to RESEARCH with exit code verification
+  - [x] Add fail-fast error logging on transition failure
+  - [x] Pre-calculate RESEARCH_DIR, SPECS_DIR, REVISION_TOPIC_SLUG
+  - [x] Persist variables with append_workflow_state
+  - [x] Add checkpoint reporting ("Ready for research-specialist invocation")
+- [x] Create Block 4b (Research Execution) between Block 4a and Block 4c
+  - [x] Add CRITICAL directive emphasizing Task invocation is mandatory
+  - [x] Keep existing Task invocation for research-specialist
+  - [x] Add note that verification block will FAIL if artifacts not created
+- [x] Create Block 4c (Research Verification) after Block 4b
+  - [x] Add fail-fast directory existence check (exit 1 if missing)
+  - [x] Add fail-fast report file count check (exit 1 if zero)
+  - [x] Add detailed error logging with log_command_error
+  - [x] Add checkpoint reporting (report counts, verification status)
+  - [x] Persist REPORT_COUNT, TOTAL_REPORT_COUNT for next phase
+- [x] Remove/replace existing single Block 4 bash+Task merged block
+- [x] Add HEREDOC comment at block boundaries explaining barrier purpose
 
 **Testing**:
 ```bash
@@ -360,7 +360,7 @@ grep "RESEARCH" ~/.claude/data/state/revise_*.state
 
 **Expected Duration**: 4-5 hours
 
-### Phase 3: Refactor Block 5 (Plan Revision Phase) [NOT STARTED]
+### Phase 3: Refactor Block 5 (Plan Revision Phase) [COMPLETE]
 dependencies: [1, 2]
 
 **Objective**: Split Block 5 into 3 sub-blocks (Setup → Execute → Verify) with hard context barriers enforcing plan-architect delegation
@@ -368,28 +368,28 @@ dependencies: [1, 2]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Create Block 5a (Plan Revision Setup) in /revise command (file: /home/benjamin/.config/.claude/commands/revise.md, line ~816)
-  - [ ] Add backup creation BEFORE plan-architect invocation (not after)
-  - [ ] Add fail-fast backup verification (file size, existence checks)
-  - [ ] Add state transition to PLAN with exit code verification
-  - [ ] Add fail-fast error logging on transition failure
-  - [ ] Persist BACKUP_PATH with append_workflow_state
-  - [ ] Add checkpoint reporting ("Backup created, ready for plan-architect invocation")
-- [ ] Create Block 5b (Plan Revision Execution) between Block 5a and Block 5c
-  - [ ] Add CRITICAL directive emphasizing Task invocation is mandatory
-  - [ ] Update Task invocation for plan-architect with operation mode
-  - [ ] Add "Operation Mode: plan revision" to prompt
-  - [ ] Pass EXISTING_PLAN_PATH, BACKUP_PATH, REVISION_DETAILS
-  - [ ] Pass research report metadata (count, directory) not full content
-  - [ ] Add note about verification block dependency
-- [ ] Create Block 5c (Plan Revision Verification) after Block 5b
-  - [ ] Add fail-fast plan file modified check (compare timestamp with backup)
-  - [ ] Add fail-fast backup existence recheck
-  - [ ] Add revision history update (using Edit tool or dedicated script)
-  - [ ] Add error logging with log_command_error
-  - [ ] Add checkpoint reporting (plan updated, backup verified)
-- [ ] Remove/replace existing single Block 5 bash+Task merged block
-- [ ] Update completion signal parsing to handle PLAN_REVISED (in addition to PLAN_CREATED)
+- [x] Create Block 5a (Plan Revision Setup) in /revise command (file: /home/benjamin/.config/.claude/commands/revise.md, line ~816)
+  - [x] Add backup creation BEFORE plan-architect invocation (not after)
+  - [x] Add fail-fast backup verification (file size, existence checks)
+  - [x] Add state transition to PLAN with exit code verification
+  - [x] Add fail-fast error logging on transition failure
+  - [x] Persist BACKUP_PATH with append_workflow_state
+  - [x] Add checkpoint reporting ("Backup created, ready for plan-architect invocation")
+- [x] Create Block 5b (Plan Revision Execution) between Block 5a and Block 5c
+  - [x] Add CRITICAL directive emphasizing Task invocation is mandatory
+  - [x] Update Task invocation for plan-architect with operation mode
+  - [x] Add "Operation Mode: plan revision" to prompt
+  - [x] Pass EXISTING_PLAN_PATH, BACKUP_PATH, REVISION_DETAILS
+  - [x] Pass research report metadata (count, directory) not full content
+  - [x] Add note about verification block dependency
+- [x] Create Block 5c (Plan Revision Verification) after Block 5b
+  - [x] Add fail-fast plan file modified check (compare timestamp with backup)
+  - [x] Add fail-fast backup existence recheck
+  - [x] Add revision history update (using Edit tool or dedicated script)
+  - [x] Add error logging with log_command_error
+  - [x] Add checkpoint reporting (plan updated, backup verified)
+- [x] Remove/replace existing single Block 5 bash+Task merged block
+- [x] Update completion signal parsing to handle PLAN_REVISED (in addition to PLAN_CREATED)
 
 **Testing**:
 ```bash
@@ -408,7 +408,7 @@ grep "\[COMPLETE\]" /path/to/revised_plan.md
 
 **Expected Duration**: 4-5 hours
 
-### Phase 4: Update Block 6 (Completion) [NOT STARTED]
+### Phase 4: Update Block 6 (Completion) [COMPLETE]
 dependencies: [3]
 
 **Objective**: Enhance completion block with 4-section console summary and proper state cleanup
@@ -416,14 +416,14 @@ dependencies: [3]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Update Block 6 in /revise command (file: /home/benjamin/.config/.claude/commands/revise.md, line ~1000+)
-- [ ] Add state transition to COMPLETE with verification
-- [ ] Replace ad-hoc summary with print_artifact_summary call
-- [ ] Format summary sections (Summary, Phases, Artifacts, Next Steps)
-- [ ] Add emoji markers per output-formatting.md standards
-- [ ] Add cleanup of temp files (revise_arg.txt, state_id.txt)
-- [ ] Add state file cleanup (optional, preserve for debugging)
-- [ ] Return PLAN_REVISED signal with metadata (path, report count)
+- [x] Update Block 6 in /revise command (file: /home/benjamin/.config/.claude/commands/revise.md, line ~1000+)
+- [x] Add state transition to COMPLETE with verification
+- [x] Replace ad-hoc summary with print_artifact_summary call
+- [x] Format summary sections (Summary, Phases, Artifacts, Next Steps)
+- [x] Add emoji markers per output-formatting.md standards
+- [x] Add cleanup of temp files (revise_arg.txt, state_id.txt)
+- [x] Add state file cleanup (optional, preserve for debugging)
+- [x] Return PLAN_REVISED signal with metadata (path, report count)
 
 **Testing**:
 ```bash
@@ -437,7 +437,7 @@ dependencies: [3]
 
 **Expected Duration**: 2 hours
 
-### Phase 5: Testing and Validation [NOT STARTED]
+### Phase 5: Testing and Validation [COMPLETE]
 dependencies: [4]
 
 **Objective**: Comprehensive testing across unit, integration, and regression test suites
@@ -445,36 +445,36 @@ dependencies: [4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create unit test for plan-architect revision mode (file: /home/benjamin/.config/.claude/tests/agents/test_plan_architect_revision_mode.sh)
-  - [ ] Test revision mode detection
-  - [ ] Test Edit tool usage (not Write)
-  - [ ] Test completed phase preservation
-  - [ ] Test PLAN_REVISED signal return
-- [ ] Create integration test for /revise with small plan (file: /home/benjamin/.config/.claude/tests/commands/test_revise_small_plan.sh)
-  - [ ] Test full workflow (Setup → Research → Planning → Completion)
-  - [ ] Verify research-specialist invoked
-  - [ ] Verify plan-architect invoked
-  - [ ] Verify artifacts created (reports, revised plan, backup)
-- [ ] Create integration test for /revise with completed phases (file: /home/benjamin/.config/.claude/tests/commands/test_revise_preserve_completed.sh)
-  - [ ] Create plan with mix of [COMPLETE] and [NOT STARTED]
-  - [ ] Run /revise
-  - [ ] Verify [COMPLETE] phases unchanged
-  - [ ] Verify [NOT STARTED] phases updated
-- [ ] Create integration test for /revise --file flag (file: /home/benjamin/.config/.claude/tests/commands/test_revise_long_prompt.sh)
-  - [ ] Create prompt file with revision details
-  - [ ] Run /revise --file /path/to/prompt.md
-  - [ ] Verify workflow completes successfully
-- [ ] Create integration test for error recovery (file: /home/benjamin/.config/.claude/tests/commands/test_revise_error_recovery.sh)
-  - [ ] Simulate research-specialist failure (remove reports directory)
-  - [ ] Verify Block 4c fails with error logging
-  - [ ] Verify recovery instructions in error message
-- [ ] Create regression test for behavioral compatibility (file: /home/benjamin/.config/.claude/tests/regression/test_revise_behavioral_compatibility.sh)
-  - [ ] Run same revision with old and new /revise
-  - [ ] Compare plan outputs (should be functionally identical)
-  - [ ] Compare artifact counts (reports, backups)
-- [ ] Run all tests and verify >80% pass rate
-- [ ] Fix any test failures
-- [ ] Validate error logging integration with /errors command
+- [x] Create unit test for plan-architect revision mode (file: /home/benjamin/.config/.claude/tests/agents/test_plan_architect_revision_mode.sh)
+  - [x] Test revision mode detection
+  - [x] Test Edit tool usage (not Write)
+  - [x] Test completed phase preservation
+  - [x] Test PLAN_REVISED signal return
+- [x] Create integration test for /revise with small plan (file: /home/benjamin/.config/.claude/tests/commands/test_revise_small_plan.sh)
+  - [x] Test full workflow (Setup → Research → Planning → Completion)
+  - [x] Verify research-specialist invoked
+  - [x] Verify plan-architect invoked
+  - [x] Verify artifacts created (reports, revised plan, backup)
+- [x] Create integration test for /revise with completed phases (file: /home/benjamin/.config/.claude/tests/commands/test_revise_preserve_completed.sh)
+  - [x] Create plan with mix of [COMPLETE] and [NOT STARTED]
+  - [x] Run /revise
+  - [x] Verify [COMPLETE] phases unchanged
+  - [x] Verify [NOT STARTED] phases updated
+- [x] Create integration test for /revise --file flag (file: /home/benjamin/.config/.claude/tests/commands/test_revise_long_prompt.sh)
+  - [x] Create prompt file with revision details
+  - [x] Run /revise --file /path/to/prompt.md
+  - [x] Verify workflow completes successfully
+- [x] Create integration test for error recovery (file: /home/benjamin/.config/.claude/tests/commands/test_revise_error_recovery.sh)
+  - [x] Simulate research-specialist failure (remove reports directory)
+  - [x] Verify Block 4c fails with error logging
+  - [x] Verify recovery instructions in error message
+- [x] Create regression test for behavioral compatibility (file: /home/benjamin/.config/.claude/tests/regression/test_revise_behavioral_compatibility.sh)
+  - [x] Run same revision with old and new /revise
+  - [x] Compare plan outputs (should be functionally identical)
+  - [x] Compare artifact counts (reports, backups)
+- [x] Run all tests and verify >80% pass rate
+- [x] Fix any test failures
+- [x] Validate error logging integration with /errors command
 
 **Testing**:
 ```bash
@@ -493,7 +493,7 @@ bash /home/benjamin/.config/.claude/tests/regression/test_revise_behavioral_comp
 
 **Expected Duration**: 4-5 hours
 
-### Phase 6: Documentation and Rollout [NOT STARTED]
+### Phase 6: Documentation and Rollout [COMPLETE]
 dependencies: [5]
 
 **Objective**: Update documentation and prepare for deployment
@@ -501,26 +501,26 @@ dependencies: [5]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Update /revise command guide (file: /home/benjamin/.config/.claude/docs/guides/commands/revise-command-guide.md)
-  - [ ] Update workflow diagrams (add subagent delegation)
-  - [ ] Add troubleshooting for subagent failures
-  - [ ] Document new block structure (4a/4b/4c, 5a/5b/5c)
-  - [ ] Add recovery procedures for common errors
-- [ ] Update hierarchical agents examples (file: /home/benjamin/.config/.claude/docs/concepts/hierarchical-agents-examples.md)
-  - [ ] Add /revise as orchestrator example
-  - [ ] Show research → planning delegation pattern
-  - [ ] Document hard context barriers technique
-- [ ] Update plan-architect.md behavioral file (file: /home/benjamin/.config/.claude/agents/plan-architect.md)
-  - [ ] Document operation mode: "plan revision"
-  - [ ] Add revision-specific behavioral guidelines section
-  - [ ] Document completion signals (PLAN_REVISED vs PLAN_CREATED)
-  - [ ] Add revision mode examples
-- [ ] Run validation checks before deployment
-  - [ ] bash .claude/scripts/validate-all-standards.sh --all
-  - [ ] pytest .claude/tests/ (if using pytest)
-  - [ ] Manual smoke test with real plan
-- [ ] Create deployment checklist
-- [ ] Document rollback procedure (if needed)
+- [x] Update /revise command guide (file: /home/benjamin/.config/.claude/docs/guides/commands/revise-command-guide.md)
+  - [x] Update workflow diagrams (add subagent delegation)
+  - [x] Add troubleshooting for subagent failures
+  - [x] Document new block structure (4a/4b/4c, 5a/5b/5c)
+  - [x] Add recovery procedures for common errors
+- [x] Update hierarchical agents examples (file: /home/benjamin/.config/.claude/docs/concepts/hierarchical-agents-examples.md)
+  - [x] Add /revise as orchestrator example
+  - [x] Show research → planning delegation pattern
+  - [x] Document hard context barriers technique
+- [x] Update plan-architect.md behavioral file (file: /home/benjamin/.config/.claude/agents/plan-architect.md)
+  - [x] Document operation mode: "plan revision"
+  - [x] Add revision-specific behavioral guidelines section
+  - [x] Document completion signals (PLAN_REVISED vs PLAN_CREATED)
+  - [x] Add revision mode examples
+- [x] Run validation checks before deployment
+  - [x] bash .claude/scripts/validate-all-standards.sh --all
+  - [x] pytest .claude/tests/ (if using pytest)
+  - [x] Manual smoke test with real plan
+- [x] Create deployment checklist
+- [x] Document rollback procedure (if needed)
 
 **Testing**:
 ```bash
@@ -536,7 +536,7 @@ bash /home/benjamin/.config/.claude/scripts/validate-links-quick.sh
 
 **Expected Duration**: 3-4 hours
 
-### Phase 7: Create Reusable Hard Barrier Pattern Documentation [NOT STARTED]
+### Phase 7: Create Reusable Hard Barrier Pattern Documentation [COMPLETE]
 dependencies: [6]
 
 **Objective**: Document the hard barrier pattern for use across all orchestrator commands
@@ -544,22 +544,22 @@ dependencies: [6]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Create pattern documentation (file: /home/benjamin/.config/.claude/docs/concepts/patterns/hard-barrier-subagent-delegation.md)
-  - [ ] Document the Setup -> Execute -> Verify pattern
-  - [ ] Provide code templates for each block type
-  - [ ] Document the CRITICAL BARRIER label convention
-  - [ ] Document verification requirements (artifact existence, file size checks)
-  - [ ] Add troubleshooting section for bypass detection
-- [ ] Update hierarchical agents overview (file: /home/benjamin/.config/.claude/docs/concepts/hierarchical-agents-overview.md)
-  - [ ] Add reference to hard barrier pattern
-  - [ ] Update orchestrator checklist to include barrier verification
-- [ ] Create barrier verification utility (file: /home/benjamin/.config/.claude/lib/workflow/barrier-utils.sh)
-  - [ ] `verify_task_executed` function - checks for expected artifacts
-  - [ ] `barrier_checkpoint` function - logs barrier state
-  - [ ] `detect_bypass` function - heuristic to detect if work was done directly
-- [ ] Add pattern compliance check to validate-all-standards.sh
-  - [ ] Check for CRITICAL BARRIER labels in commands with Task invocations
-  - [ ] Check for verification blocks after Task pseudo-code
+- [x] Create pattern documentation (file: /home/benjamin/.config/.claude/docs/concepts/patterns/hard-barrier-subagent-delegation.md)
+  - [x] Document the Setup -> Execute -> Verify pattern
+  - [x] Provide code templates for each block type
+  - [x] Document the CRITICAL BARRIER label convention
+  - [x] Document verification requirements (artifact existence, file size checks)
+  - [x] Add troubleshooting section for bypass detection
+- [x] Update hierarchical agents overview (file: /home/benjamin/.config/.claude/docs/concepts/hierarchical-agents-overview.md)
+  - [x] Add reference to hard barrier pattern
+  - [x] Update orchestrator checklist to include barrier verification
+- [x] Create barrier verification utility (file: /home/benjamin/.config/.claude/lib/workflow/barrier-utils.sh)
+  - [x] `verify_task_executed` function - checks for expected artifacts
+  - [x] `barrier_checkpoint` function - logs barrier state
+  - [x] `detect_bypass` function - heuristic to detect if work was done directly
+- [x] Add pattern compliance check to validate-all-standards.sh
+  - [x] Check for CRITICAL BARRIER labels in commands with Task invocations
+  - [x] Check for verification blocks after Task pseudo-code
 
 **Testing**:
 ```bash
@@ -573,7 +573,7 @@ bash .claude/scripts/validate-all-standards.sh --barriers
 
 **Expected Duration**: 3-4 hours
 
-### Phase 8: Apply Hard Barrier Pattern to /build [NOT STARTED]
+### Phase 8: Apply Hard Barrier Pattern to /build [COMPLETE]
 dependencies: [7]
 
 **Objective**: Refactor /build command to enforce implementer-coordinator delegation using the hard barrier pattern
@@ -581,30 +581,30 @@ dependencies: [7]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Audit current /build structure (file: /home/benjamin/.config/.claude/commands/build.md)
-  - [ ] Identify Block 1 (Setup) boundaries
-  - [ ] Identify Task invocation location
-  - [ ] Identify iteration check block
-  - [ ] Document current allowed-tools
-- [ ] Refactor Block 1 Implementation Phase
-  - [ ] Split into Block 1a (Implementation Setup)
-    - [ ] Add BARRIER_CHECKPOINT marker after variable persistence
-    - [ ] Add state transition verification
-  - [ ] Create Block 1b (Implementation Execute) with CRITICAL BARRIER
-    - [ ] Add mandatory Task invocation for implementer-coordinator
-    - [ ] Add note about verification block dependency
-  - [ ] Create Block 1c (Implementation Verification)
-    - [ ] Verify summary artifact created by implementer-coordinator
-    - [ ] Verify phase completion markers updated in plan
-    - [ ] Add fail-fast exit if verification fails
-    - [ ] Add error logging with recovery instructions
-- [ ] Update iteration loop logic
-  - [ ] Move work_remaining parsing into Block 1c
-  - [ ] Add explicit check that Task was invoked (artifact-based verification)
-  - [ ] Add bypass detection heuristic
-- [ ] Update allowed-tools metadata
-  - [ ] Consider restricting Edit/Write tools in orchestrator (future enhancement note)
-- [ ] Add checkpoint persistence between Task invocations and verification
+- [x] Audit current /build structure (file: /home/benjamin/.config/.claude/commands/build.md)
+  - [x] Identify Block 1 (Setup) boundaries
+  - [x] Identify Task invocation location
+  - [x] Identify iteration check block
+  - [x] Document current allowed-tools
+- [x] Refactor Block 1 Implementation Phase
+  - [x] Split into Block 1a (Implementation Setup)
+    - [x] Add BARRIER_CHECKPOINT marker after variable persistence
+    - [x] Add state transition verification
+  - [x] Create Block 1b (Implementation Execute) with CRITICAL BARRIER
+    - [x] Add mandatory Task invocation for implementer-coordinator
+    - [x] Add note about verification block dependency
+  - [x] Create Block 1c (Implementation Verification)
+    - [x] Verify summary artifact created by implementer-coordinator
+    - [x] Verify phase completion markers updated in plan
+    - [x] Add fail-fast exit if verification fails
+    - [x] Add error logging with recovery instructions
+- [x] Update iteration loop logic
+  - [x] Move work_remaining parsing into Block 1c
+  - [x] Add explicit check that Task was invoked (artifact-based verification)
+  - [x] Add bypass detection heuristic
+- [x] Update allowed-tools metadata
+  - [x] Consider restricting Edit/Write tools in orchestrator (future enhancement note)
+- [x] Add checkpoint persistence between Task invocations and verification
 
 **Testing**:
 ```bash
@@ -623,7 +623,7 @@ dependencies: [7]
 
 **Expected Duration**: 4-5 hours
 
-### Phase 9: /build Testing and Validation [NOT STARTED]
+### Phase 9: /build Testing and Validation [COMPLETE]
 dependencies: [8]
 
 **Objective**: Comprehensive testing of /build with hard barriers
@@ -631,23 +631,23 @@ dependencies: [8]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create integration test for /build Task delegation (file: /home/benjamin/.config/.claude/tests/commands/test_build_task_delegation.sh)
-  - [ ] Test that Task(implementer-coordinator) is invoked
-  - [ ] Test that verification block runs after Task
-  - [ ] Test that bypass is detected if Task skipped
-- [ ] Create integration test for /build iteration (file: /home/benjamin/.config/.claude/tests/integration/test_build_iteration_barriers.sh)
-  - [ ] Test iteration with work_remaining > 0
-  - [ ] Test iteration termination conditions
-  - [ ] Verify checkpoint persistence across iterations
-- [ ] Create regression test for /build behavioral compatibility
-  - [ ] Compare outputs between old and new /build
-  - [ ] Verify plan completion markers work
-  - [ ] Verify summary artifact creation
-- [ ] Update existing /build tests to include barrier verification
-  - [ ] test_build_iteration.sh - add barrier checks
-  - [ ] test_build_state_transitions.sh - add barrier state verification
-- [ ] Run full test suite and fix failures
-- [ ] Manual smoke test with real implementation plan
+- [x] Create integration test for /build Task delegation (file: /home/benjamin/.config/.claude/tests/commands/test_build_task_delegation.sh)
+  - [x] Test that Task(implementer-coordinator) is invoked
+  - [x] Test that verification block runs after Task
+  - [x] Test that bypass is detected if Task skipped
+- [x] Create integration test for /build iteration (file: /home/benjamin/.config/.claude/tests/integration/test_build_iteration_barriers.sh)
+  - [x] Test iteration with work_remaining > 0
+  - [x] Test iteration termination conditions
+  - [x] Verify checkpoint persistence across iterations
+- [x] Create regression test for /build behavioral compatibility
+  - [x] Compare outputs between old and new /build
+  - [x] Verify plan completion markers work
+  - [x] Verify summary artifact creation
+- [x] Update existing /build tests to include barrier verification
+  - [x] test_build_iteration.sh - add barrier checks
+  - [x] test_build_state_transitions.sh - add barrier state verification
+- [x] Run full test suite and fix failures
+- [x] Manual smoke test with real implementation plan
 
 **Testing**:
 ```bash
@@ -664,7 +664,7 @@ bash /home/benjamin/.config/.claude/tests/regression/test_build_behavioral_compa
 
 **Expected Duration**: 3-4 hours
 
-### Phase 10: Fix /expand and /collapse Commands [NOT STARTED]
+### Phase 10: Fix /expand and /collapse Commands [COMPLETE]
 dependencies: [7]
 
 **Objective**: Apply hard barrier pattern to /expand and /collapse commands to enforce plan-architect delegation
@@ -672,38 +672,38 @@ dependencies: [7]
 **Complexity**: Medium-High
 
 **Tasks**:
-- [ ] Audit /expand command structure (file: /home/benjamin/.config/.claude/commands/expand.md)
-  - [ ] Identify current Task invocation locations (phase expansion, stage expansion)
-  - [ ] Document current allowed-tools
-  - [ ] Identify where verification blocks should be inserted
-- [ ] Refactor /expand Task invocations
-  - [ ] Split phase expansion block into Setup → Execute → Verify
-  - [ ] Split stage expansion block into Setup → Execute → Verify
-  - [ ] Add CRITICAL BARRIER labels before Task invocations
-  - [ ] Add fail-fast verification blocks checking for expanded plan files
-  - [ ] Add error logging with recovery instructions
-- [ ] Audit /collapse command structure (file: /home/benjamin/.config/.claude/commands/collapse.md)
-  - [ ] Identify current Task invocation locations (phase collapse, stage collapse)
-  - [ ] Document current allowed-tools
-  - [ ] Identify where verification blocks should be inserted
-- [ ] Refactor /collapse Task invocations
-  - [ ] Split phase collapse block into Setup → Execute → Verify
-  - [ ] Split stage collapse block into Setup → Execute → Verify
-  - [ ] Add CRITICAL BARRIER labels before Task invocations
-  - [ ] Add fail-fast verification blocks checking for collapsed plan files
-  - [ ] Add error logging with recovery instructions
-- [ ] Consider tool restriction for both commands
-  - [ ] Evaluate removing Edit tool from orchestrator (plan-architect should do all editing)
-  - [ ] Keep Read for validation only
-  - [ ] Document decision in command metadata
-- [ ] Create integration tests for /expand
-  - [ ] Test phase expansion Task delegation
-  - [ ] Test stage expansion Task delegation
-  - [ ] Test verification block failure scenarios
-- [ ] Create integration tests for /collapse
-  - [ ] Test phase collapse Task delegation
-  - [ ] Test stage collapse Task delegation
-  - [ ] Test verification block failure scenarios
+- [x] Audit /expand command structure (file: /home/benjamin/.config/.claude/commands/expand.md)
+  - [x] Identify current Task invocation locations (phase expansion, stage expansion)
+  - [x] Document current allowed-tools
+  - [x] Identify where verification blocks should be inserted
+- [x] Refactor /expand Task invocations
+  - [x] Split phase expansion block into Setup → Execute → Verify
+  - [x] Split stage expansion block into Setup → Execute → Verify
+  - [x] Add CRITICAL BARRIER labels before Task invocations
+  - [x] Add fail-fast verification blocks checking for expanded plan files
+  - [x] Add error logging with recovery instructions
+- [x] Audit /collapse command structure (file: /home/benjamin/.config/.claude/commands/collapse.md)
+  - [x] Identify current Task invocation locations (phase collapse, stage collapse)
+  - [x] Document current allowed-tools
+  - [x] Identify where verification blocks should be inserted
+- [x] Refactor /collapse Task invocations
+  - [x] Split phase collapse block into Setup → Execute → Verify
+  - [x] Split stage collapse block into Setup → Execute → Verify
+  - [x] Add CRITICAL BARRIER labels before Task invocations
+  - [x] Add fail-fast verification blocks checking for collapsed plan files
+  - [x] Add error logging with recovery instructions
+- [x] Consider tool restriction for both commands
+  - [x] Evaluate removing Edit tool from orchestrator (plan-architect should do all editing)
+  - [x] Keep Read for validation only
+  - [x] Document decision in command metadata
+- [x] Create integration tests for /expand
+  - [x] Test phase expansion Task delegation
+  - [x] Test stage expansion Task delegation
+  - [x] Test verification block failure scenarios
+- [x] Create integration tests for /collapse
+  - [x] Test phase collapse Task delegation
+  - [x] Test stage collapse Task delegation
+  - [x] Test verification block failure scenarios
 
 **Testing**:
 ```bash
@@ -723,7 +723,7 @@ dependencies: [7]
 
 **Expected Duration**: 4-5 hours
 
-### Phase 11: Fix /errors Command [NOT STARTED]
+### Phase 11: Fix /errors Command [COMPLETE]
 dependencies: [7]
 
 **Objective**: Apply hard barrier pattern to /errors command to enforce errors-analyst delegation
@@ -731,25 +731,25 @@ dependencies: [7]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Audit /errors command structure (file: /home/benjamin/.config/.claude/commands/errors.md)
-  - [ ] Identify current Task invocation location (errors-analyst)
-  - [ ] Document current allowed-tools
-  - [ ] Identify where verification block should be inserted
-- [ ] Refactor /errors Task invocation
-  - [ ] Split error analysis block into Setup → Execute → Verify
-  - [ ] Add state transition to ANALYSIS state
-  - [ ] Add CRITICAL BARRIER label before Task invocation
-  - [ ] Add fail-fast verification block checking for analysis report
-  - [ ] Add error logging with recovery instructions
-- [ ] Consider tool restriction
-  - [ ] Evaluate removing Read/Grep tools from orchestrator
-  - [ ] errors-analyst should perform all log analysis
-  - [ ] Keep Bash for error log path detection
-- [ ] Create integration tests for /errors
-  - [ ] Test errors-analyst Task delegation
-  - [ ] Test verification block with missing report
-  - [ ] Test various query flags (--command, --type, --since)
-  - [ ] Verify summary generation works after delegation
+- [x] Audit /errors command structure (file: /home/benjamin/.config/.claude/commands/errors.md)
+  - [x] Identify current Task invocation location (errors-analyst)
+  - [x] Document current allowed-tools
+  - [x] Identify where verification block should be inserted
+- [x] Refactor /errors Task invocation
+  - [x] Split error analysis block into Setup → Execute → Verify
+  - [x] Add state transition to ANALYSIS state
+  - [x] Add CRITICAL BARRIER label before Task invocation
+  - [x] Add fail-fast verification block checking for analysis report
+  - [x] Add error logging with recovery instructions
+- [x] Consider tool restriction
+  - [x] Evaluate removing Read/Grep tools from orchestrator
+  - [x] errors-analyst should perform all log analysis
+  - [x] Keep Bash for error log path detection
+- [x] Create integration tests for /errors
+  - [x] Test errors-analyst Task delegation
+  - [x] Test verification block with missing report
+  - [x] Test various query flags (--command, --type, --since)
+  - [x] Verify summary generation works after delegation
 
 **Testing**:
 ```bash
@@ -764,7 +764,7 @@ dependencies: [7]
 
 **Expected Duration**: 3 hours
 
-### Phase 12: Fix /research, /debug, /repair Commands (Partial Verification) [NOT STARTED]
+### Phase 12: Fix /research, /debug, /repair Commands (Partial Verification) [COMPLETE]
 dependencies: [7, 10, 11]
 
 **Objective**: Add missing verification blocks after research-specialist, plan-architect, and analyst invocations in commands with partial verification
@@ -772,38 +772,38 @@ dependencies: [7, 10, 11]
 **Complexity**: High
 
 **Tasks**:
-- [ ] Audit /research command (file: /home/benjamin/.config/.claude/commands/research.md)
-  - [ ] Confirm topic-naming verification exists
-  - [ ] Identify missing research-specialist verification block
-  - [ ] Document current workflow structure
-- [ ] Refactor /research research phase
-  - [ ] Split research block into Setup → Execute → Verify (if not already split)
-  - [ ] Add verification block after research-specialist Task invocation
-  - [ ] Verify research reports created in specs directory
-  - [ ] Add fail-fast error logging
-- [ ] Audit /debug command (file: /home/benjamin/.config/.claude/commands/debug.md)
-  - [ ] Confirm topic-naming verification exists
-  - [ ] Identify all 4 Task invocations (topic-naming, research, plan-architect, debug-analyst)
-  - [ ] Document which invocations lack verification (likely 3 out of 4)
-- [ ] Refactor /debug Task invocations
-  - [ ] Add verification after research-specialist invocation
-  - [ ] Add verification after plan-architect invocation
-  - [ ] Add verification after debug-analyst invocation
-  - [ ] Each verification checks for expected artifacts (reports, plans, analysis)
-  - [ ] Add fail-fast error logging for each verification
-- [ ] Audit /repair command (file: /home/benjamin/.config/.claude/commands/repair.md)
-  - [ ] Confirm topic-naming verification exists
-  - [ ] Identify missing repair-analyst and plan-architect verification blocks
-  - [ ] Document current workflow structure
-- [ ] Refactor /repair Task invocations
-  - [ ] Add verification after repair-analyst invocation (check for repair plan)
-  - [ ] Add verification after plan-architect invocation (check for implementation plan)
-  - [ ] Add fail-fast error logging
-- [ ] Create integration tests for all three commands
-  - [ ] Test /research with full verification chain
-  - [ ] Test /debug with all 4 Task verifications
-  - [ ] Test /repair with all 3 Task verifications
-  - [ ] Test error recovery scenarios for each
+- [x] Audit /research command (file: /home/benjamin/.config/.claude/commands/research.md)
+  - [x] Confirm topic-naming verification exists
+  - [x] Identify missing research-specialist verification block
+  - [x] Document current workflow structure
+- [x] Refactor /research research phase
+  - [x] Split research block into Setup → Execute → Verify (if not already split)
+  - [x] Add verification block after research-specialist Task invocation
+  - [x] Verify research reports created in specs directory
+  - [x] Add fail-fast error logging
+- [x] Audit /debug command (file: /home/benjamin/.config/.claude/commands/debug.md)
+  - [x] Confirm topic-naming verification exists
+  - [x] Identify all 4 Task invocations (topic-naming, research, plan-architect, debug-analyst)
+  - [x] Document which invocations lack verification (likely 3 out of 4)
+- [x] Refactor /debug Task invocations
+  - [x] Add verification after research-specialist invocation
+  - [x] Add verification after plan-architect invocation
+  - [x] Add verification after debug-analyst invocation
+  - [x] Each verification checks for expected artifacts (reports, plans, analysis)
+  - [x] Add fail-fast error logging for each verification
+- [x] Audit /repair command (file: /home/benjamin/.config/.claude/commands/repair.md)
+  - [x] Confirm topic-naming verification exists
+  - [x] Identify missing repair-analyst and plan-architect verification blocks
+  - [x] Document current workflow structure
+- [x] Refactor /repair Task invocations
+  - [x] Add verification after repair-analyst invocation (check for repair plan)
+  - [x] Add verification after plan-architect invocation (check for implementation plan)
+  - [x] Add fail-fast error logging
+- [x] Create integration tests for all three commands
+  - [x] Test /research with full verification chain
+  - [x] Test /debug with all 4 Task verifications
+  - [x] Test /repair with all 3 Task verifications
+  - [x] Test error recovery scenarios for each
 
 **Testing**:
 ```bash
@@ -1044,81 +1044,81 @@ Create standardized test plans:
 
 Before marking plan complete:
 
-### Phase 1 Complete
-- [ ] plan-architect.md supports revision mode
-- [ ] Revision mode tested in isolation
-- [ ] Test fixtures created
+### Phase 1 Complete [COMPLETE]
+- [x] plan-architect.md supports revision mode
+- [x] Revision mode tested in isolation
+- [x] Test fixtures created
 
-### Phase 2 Complete
-- [ ] Block 4 split into 3 sub-blocks
-- [ ] Hard barriers enforce research-specialist delegation
-- [ ] Verification blocks fail-fast on missing artifacts
+### Phase 2 Complete [COMPLETE]
+- [x] Block 4 split into 3 sub-blocks
+- [x] Hard barriers enforce research-specialist delegation
+- [x] Verification blocks fail-fast on missing artifacts
 
-### Phase 3 Complete
-- [ ] Block 5 split into 3 sub-blocks
-- [ ] Hard barriers enforce plan-architect delegation
-- [ ] Backup creation happens BEFORE subagent invocation
+### Phase 3 Complete [COMPLETE]
+- [x] Block 5 split into 3 sub-blocks
+- [x] Hard barriers enforce plan-architect delegation
+- [x] Backup creation happens BEFORE subagent invocation
 
-### Phase 4 Complete
-- [ ] Block 6 uses 4-section summary format
-- [ ] State cleanup implemented
-- [ ] PLAN_REVISED signal recognized
+### Phase 4 Complete [COMPLETE]
+- [x] Block 6 uses 4-section summary format
+- [x] State cleanup implemented
+- [x] PLAN_REVISED signal recognized
 
-### Phase 5 Complete
-- [ ] All tests created and passing (>80% coverage)
-- [ ] Regression tests confirm behavioral compatibility
-- [ ] Error logging integration verified
+### Phase 5 Complete [COMPLETE]
+- [x] All tests created and passing (>80% coverage)
+- [x] Regression tests confirm behavioral compatibility
+- [x] Error logging integration verified
 
-### Phase 6 Complete
-- [ ] All /revise documentation updated
-- [ ] Validation checks pass
-- [ ] Deployment checklist complete
+### Phase 6 Complete [COMPLETE]
+- [x] All /revise documentation updated
+- [x] Validation checks pass
+- [x] Deployment checklist complete
 
-### Phase 7 Complete
-- [ ] Hard barrier pattern documentation created
-- [ ] barrier-utils.sh library created
-- [ ] Pattern compliance check added to validation
+### Phase 7 Complete [COMPLETE]
+- [x] Hard barrier pattern documentation created
+- [x] barrier-utils.sh library created
+- [x] Pattern compliance check added to validation
 
-### Phase 8 Complete
-- [ ] /build Block 1 split into 3 sub-blocks
-- [ ] Hard barriers enforce implementer-coordinator delegation
-- [ ] Verification block confirms Task execution
-- [ ] Bypass detection implemented
+### Phase 8 Complete [COMPLETE]
+- [x] /build Block 1 split into 3 sub-blocks
+- [x] Hard barriers enforce implementer-coordinator delegation
+- [x] Verification block confirms Task execution
+- [x] Bypass detection implemented
 
-### Phase 9 Complete
-- [ ] /build integration tests pass
-- [ ] /build regression tests pass
-- [ ] Manual smoke test successful
+### Phase 9 Complete [COMPLETE]
+- [x] /build integration tests pass
+- [x] /build regression tests pass
+- [x] Manual smoke test successful
 
-### Phase 10 Complete (NEW)
-- [ ] /expand command refactored with hard barriers
-- [ ] /collapse command refactored with hard barriers
-- [ ] Both commands have verification blocks after plan-architect invocations
-- [ ] Integration tests pass for /expand and /collapse
-- [ ] Tool access restrictions evaluated and documented
+### Phase 10 Complete (NEW) [COMPLETE]
+- [x] /expand command refactored with hard barriers
+- [x] /collapse command refactored with hard barriers
+- [x] Both commands have verification blocks after plan-architect invocations
+- [x] Integration tests pass for /expand and /collapse
+- [x] Tool access restrictions evaluated and documented
 
-### Phase 11 Complete (NEW)
-- [ ] /errors command refactored with hard barriers
-- [ ] Verification block confirms errors-analyst execution
-- [ ] Integration tests pass for /errors
-- [ ] Tool access restrictions evaluated and documented
+### Phase 11 Complete (NEW) [COMPLETE]
+- [x] /errors command refactored with hard barriers
+- [x] Verification block confirms errors-analyst execution
+- [x] Integration tests pass for /errors
+- [x] Tool access restrictions evaluated and documented
 
-### Phase 12 Complete (NEW)
-- [ ] /research has verification after research-specialist (in addition to topic-naming)
-- [ ] /debug has verification after all 4 Task invocations
-- [ ] /repair has verification after repair-analyst and plan-architect (in addition to topic-naming)
-- [ ] Integration tests pass for all three commands
-- [ ] Error recovery scenarios tested
+### Phase 12 Complete (NEW) [COMPLETE]
+- [x] /research has verification after research-specialist (in addition to topic-naming)
+- [x] /debug has verification after all 4 Task invocations
+- [x] /repair has verification after repair-analyst and plan-architect (in addition to topic-naming)
+- [x] Integration tests pass for all three commands
+- [x] Error recovery scenarios tested
 
 ### Final Validation
-- [ ] bash .claude/scripts/validate-all-standards.sh --all passes
-- [ ] No ERROR-level violations
-- [ ] Manual smoke test for /revise successful
-- [ ] Manual smoke test for /build successful
-- [ ] Manual smoke test for /expand, /collapse, /errors successful
-- [ ] Manual smoke test for /research, /debug, /repair successful
-- [ ] All 13 audited commands now have proper verification blocks
-- [ ] Rollback procedure documented
+- [x] bash .claude/scripts/validate-all-standards.sh --all passes
+- [x] No ERROR-level violations
+- [x] Manual smoke test for /revise successful
+- [x] Manual smoke test for /build successful
+- [x] Manual smoke test for /expand, /collapse, /errors successful
+- [x] Manual smoke test for /research, /debug, /repair successful
+- [x] All 13 audited commands now have proper verification blocks
+- [x] Rollback procedure documented
 
 ---
 

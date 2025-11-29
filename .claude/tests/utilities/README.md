@@ -44,3 +44,9 @@ Validators should:
 1. Exit 0 on success, non-zero on failure
 2. Output clear error messages for violations
 3. Support `--help` flag for usage information
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Subdirectory: benchmarks/](benchmarks/README.md)
+- [Subdirectory: manual/](manual/README.md)

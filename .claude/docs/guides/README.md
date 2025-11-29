@@ -26,6 +26,8 @@ guides/
 ├── patterns/                   Reusable patterns (22 files)
 │   ├── command-patterns/       Command implementation patterns
 │   └── execution-enforcement/  Execution reliability patterns
+├── setup/                      Setup and configuration guides
+├── skills/                     Skills development guides
 └── templates/                  File templates (3 files)
 ```
 
@@ -55,8 +57,8 @@ Detailed documentation for each slash command:
 
 ### [Development](development/)
 Guides for creating commands and agents:
-- **Command Development**: Architecture, patterns, testing, troubleshooting
-- **Agent Development**: Fundamentals, patterns, testing, advanced topics
+- **[Command Development](development/command-development/)**: Architecture, patterns, testing, troubleshooting
+- **[Agent Development](development/agent-development/)**: Fundamentals, patterns, testing, advanced topics
 - Model selection and utility library guides
 
 ### [Orchestration](orchestration/)
@@ -67,9 +69,20 @@ Workflow orchestration documentation:
 
 ### [Patterns](patterns/)
 Reusable implementation patterns:
-- **Command Patterns**: Agent invocation, checkpoints, integration
-- **Execution Enforcement**: Ensuring reliable execution
+- **[Command Patterns](patterns/command-patterns/)**: Agent invocation, checkpoints, integration
+- **[Execution Enforcement](patterns/execution-enforcement/)**: Ensuring reliable execution
 - Logging, testing, error handling, performance patterns
+
+### [Setup](setup/)
+Setup and configuration guides:
+- Setup command modes and analysis
+- Standards extraction strategies
+- Bloat detection and cleanup
+
+### [Skills](skills/)
+Skills development and usage guides:
+- Document converter skill development
+- Skills architecture and authoring
 
 ### [Templates](templates/)
 File templates for new components:
@@ -77,22 +90,13 @@ File templates for new components:
 - Command guide templates
 - Executable command templates
 
-## Document Migration Note
 
-This directory was restructured in November 2025. Files were moved from a flat structure into organized subdirectories for improved discoverability. If you're looking for a specific guide:
+## Navigation
 
-1. **Command guides** (e.g., build-command-guide.md) → [commands/](commands/)
-2. **Agent development guides** → [development/agent-development/](development/agent-development/)
-3. **Command development guides** → [development/command-development/](development/command-development/)
-4. **Orchestration guides** → [orchestration/](orchestration/)
-5. **Pattern guides** → [patterns/](patterns/)
-6. **Template files** → [templates/](templates/)
-
-Archived files (redirect stubs and unused content) are in [../archive/guides/](../archive/guides/).
-
-## Related Documentation
-
-- [Command Reference](../reference/standards/command-reference.md) - Complete command catalog
-- [Agent Reference](../reference/standards/agent-reference.md) - Complete agent catalog
-- [Command Architecture Standards](../reference/architecture/overview.md)
-- [Patterns Catalog](../concepts/patterns/README.md) - Architectural patterns
+- [← Parent Directory](../README.md)
+- [Subdirectory: commands/](commands/README.md)
+- [Subdirectory: development/](development/README.md)
+- [Subdirectory: orchestration/](orchestration/README.md)
+- [Subdirectory: patterns/](patterns/README.md)
+- [Related: Reference](../reference/README.md)
+- [Related: Concepts](../concepts/README.md)

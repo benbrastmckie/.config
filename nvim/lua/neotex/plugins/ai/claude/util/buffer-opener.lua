@@ -19,8 +19,6 @@ end
 
 -- Configuration
 M.config = {
-  -- Split direction when opening from terminal
-  split_direction = 'vsplit',  -- 'vsplit' or 'split'
   -- Focus the new buffer after opening
   focus_new_buffer = true,
   -- Show notification on artifact open
@@ -38,6 +36,20 @@ end
 local function is_terminal_buffer()
   local buftype = vim.bo.buftype
   return buftype == 'terminal'
+end
+
+-- Find a non-terminal window in the current tabpage to open buffers in
+-- Returns window handle or nil if no suitable window found
+local function find_editor_window()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    local buftype = vim.api.nvim_get_option_value('buftype', { buf = buf })
+    -- Look for normal buffers (not terminal, not special buffers)
+    if buftype == '' or buftype == 'acwrite' then
+      return win
+    end
+  end
+  return nil
 end
 
 -- Show notification using the unified notification system
@@ -69,8 +81,8 @@ local function notify_error(message)
 end
 
 -- Open artifact file with context-aware behavior
--- In terminal buffer: opens in vertical split
--- In normal buffer: replaces current buffer
+-- In terminal buffer: opens as new tab in editor pane (not splitting terminal)
+-- In normal buffer: opens as new tab
 function M.open_artifact(filepath)
   -- Validate filepath
   if not filepath or filepath == '' then
@@ -87,29 +99,28 @@ function M.open_artifact(filepath)
   -- Escape the filepath for vim commands
   local escaped_path = vim.fn.fnameescape(filepath)
 
-  -- Determine opening strategy based on current buffer context
-  local open_command
-  if is_terminal_buffer() then
-    -- In terminal: open in split to preserve terminal
-    open_command = M.config.split_direction .. ' ' .. escaped_path
-  else
-    -- In normal buffer: replace current buffer
-    open_command = 'edit ' .. escaped_path
-  end
-
-  -- Execute the open command
+  -- Execute the open command with context-aware strategy
   local success, err = pcall(function()
-    vim.cmd(open_command)
+    if is_terminal_buffer() then
+      -- When called from terminal context, find editor window first
+      local editor_win = find_editor_window()
+      if editor_win then
+        -- Switch to editor window, then open as new tab
+        vim.api.nvim_set_current_win(editor_win)
+        vim.cmd('tabedit ' .. escaped_path)
+      else
+        -- Fallback: create new tab (tab will be in editor area)
+        vim.cmd('tabnew ' .. escaped_path)
+      end
+    else
+      -- In normal buffer: open as new tab
+      vim.cmd('tabedit ' .. escaped_path)
+    end
   end)
 
   if not success then
     notify_error('Buffer opener: Failed to open file: ' .. tostring(err))
     return false
-  end
-
-  -- Optionally focus the new buffer (already focused by default)
-  if M.config.focus_new_buffer then
-    -- The vim command already focuses the new buffer
   end
 
   -- Extract filename for notification
@@ -119,13 +130,34 @@ function M.open_artifact(filepath)
   return true
 end
 
--- Open artifact in a specific split direction (override config)
+-- Open artifact in a specific split direction (for explicit split requests)
 function M.open_artifact_split(filepath, direction)
-  local original_direction = M.config.split_direction
-  M.config.split_direction = direction or 'vsplit'
-  local result = M.open_artifact(filepath)
-  M.config.split_direction = original_direction
-  return result
+  if not filepath or filepath == '' then
+    notify_error('Buffer opener: No file path provided')
+    return false
+  end
+
+  if vim.fn.filereadable(filepath) == 0 then
+    notify_error('Buffer opener: File not found: ' .. filepath)
+    return false
+  end
+
+  local escaped_path = vim.fn.fnameescape(filepath)
+  local split_cmd = (direction or 'vsplit') .. ' ' .. escaped_path
+
+  local success, err = pcall(function()
+    vim.cmd(split_cmd)
+  end)
+
+  if not success then
+    notify_error('Buffer opener: Failed to open file: ' .. tostring(err))
+    return false
+  end
+
+  local filename = vim.fn.fnamemodify(filepath, ':t')
+  notify('Opened artifact: ' .. filename)
+
+  return true
 end
 
 -- Open artifact in vertical split (convenience function)

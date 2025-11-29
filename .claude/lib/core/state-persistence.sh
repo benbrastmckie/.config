@@ -701,3 +701,81 @@ validate_block_state() {
       ;;
   esac
 }
+
+# ==============================================================================
+# Workflow ID Validation
+# ==============================================================================
+# Validates WORKFLOW_ID format and generates fallback IDs when corruption detected
+
+# validate_workflow_id: Validate WORKFLOW_ID format with fallback generation
+# Usage: validate_workflow_id <workflow_id> <command_name>
+# Returns: 0 if valid, prints corrected ID to stdout if invalid
+# Example: WORKFLOW_ID=$(validate_workflow_id "$WORKFLOW_ID" "$COMMAND_NAME")
+validate_workflow_id() {
+  local workflow_id="${1:-}"
+  local command_name="${2:-unknown}"
+
+  # Check if WORKFLOW_ID is empty
+  if [ -z "$workflow_id" ]; then
+    # Generate fallback ID
+    local fallback_id="${command_name}_$(date +%s)_recovered"
+
+    # Log validation failure if error-handling available
+    if declare -f _buffer_early_error >/dev/null 2>&1; then
+      _buffer_early_error "$LINENO" 1 "Empty WORKFLOW_ID, generated fallback: $fallback_id"
+    fi
+
+    echo "$fallback_id"
+    return 0
+  fi
+
+  # Validate format: command_timestamp or command_timestamp_suffix
+  # Examples: plan_1732741234, debug_1732741234_recovered
+  if [[ "$workflow_id" =~ ^[a-z_]+_[0-9]+(_[a-z_]+)?$ ]]; then
+    # Valid format
+    echo "$workflow_id"
+    return 0
+  else
+    # Invalid format: generate fallback
+    local fallback_id="${command_name}_$(date +%s)_recovered"
+
+    # Log validation failure
+    if declare -f _buffer_early_error >/dev/null 2>&1; then
+      _buffer_early_error "$LINENO" 1 "Invalid WORKFLOW_ID format '$workflow_id', generated fallback: $fallback_id"
+    fi
+
+    echo "WARNING: Invalid WORKFLOW_ID format '$workflow_id', using fallback: $fallback_id" >&2
+
+    echo "$fallback_id"
+    return 0
+  fi
+}
+
+# validate_state_restoration: Validate critical variables after state restoration
+# Usage: validate_state_restoration <var1> <var2> ... <varN>
+# Returns: 0 if all variables valid, 1 if any missing
+# Example: validate_state_restoration "COMMAND_NAME" "WORKFLOW_ID" "STATE_FILE"
+validate_state_restoration() {
+  local required_vars=("$@")
+  local missing=()
+
+  for var in "${required_vars[@]}"; do
+    if [ -z "${!var:-}" ]; then
+      missing+=("$var")
+    fi
+  done
+
+  if [ ${#missing[@]} -gt 0 ]; then
+    local error_msg="State restoration incomplete: ${missing[*]}"
+
+    # Log error if error-handling available
+    if declare -f _buffer_early_error >/dev/null 2>&1; then
+      _buffer_early_error "$LINENO" 1 "$error_msg"
+    fi
+
+    echo "ERROR: $error_msg" >&2
+    return 1
+  fi
+
+  return 0
+}

@@ -16,5 +16,6 @@ This directory contains API reference documentation for the shell library functi
 
 ## Navigation
 
-- Parent: [Reference Documentation](../README.md)
-- Related: [Standards](../standards/README.md), [Architecture](../architecture/README.md)
+- [← Parent Directory](../README.md)
+- [Related: Standards](../standards/README.md)
+- [Related: Architecture](../architecture/README.md)

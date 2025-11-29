@@ -32,6 +32,8 @@ Templates provide consistent starting points for new files, ensuring they follow
 - [Command Development Fundamentals](../development/command-development/command-development-fundamentals.md)
 - [Command Architecture Standards](../../reference/architecture/overview.md)
 
----
+## Navigation
 
-**Parent**: [Guides Index](../README.md)
+- [← Parent Directory](../README.md)
+- [Related: Command Development](../development/command-development/README.md)
+- [Related: Patterns](../patterns/README.md)

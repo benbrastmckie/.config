@@ -1,8 +1,6 @@
 # Shared Utility Libraries
 
-This directory contains 42 modular utility libraries organized into 6 functional subdirectories. This organization was established during the November 2025 refactor to improve discoverability and maintainability.
-
-**Recent Cleanup (November 2025)**: 19 unused scripts archived to `.claude/archive/lib/cleanup-2025-11-19/` (see [Archive Manifest](../archive/lib/cleanup-2025-11-19/README.md) for details).
+This directory contains 43 modular utility libraries organized into 7 functional subdirectories for improved discoverability and maintainability.
 
 ## Directory Structure
 
@@ -14,7 +12,11 @@ This directory contains 42 modular utility libraries organized into 6 functional
   plan/               # Plan management (7 libraries)
   artifact/           # Artifact management (5 libraries)
   convert/            # Document conversion (4 libraries)
+  todo/               # TODO.md management (1 library)
   util/               # Miscellaneous utilities (9 libraries)
+  fixtures/           # Test fixtures for orchestration
+  test_data/          # Test data for library validation
+  tmp/                # Temporary files
 ```
 
 ## Subdirectory Overview
@@ -112,6 +114,19 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/convert/convert-core.sh"
 # convert-core.sh automatically sources the other convert libraries
 ```
 
+### TODO Libraries (1 file) - `todo/`
+TODO.md project tracking and generation.
+
+| Library | Purpose |
+|---------|---------|
+| `todo-functions.sh` | Project scanning, plan status classification, TODO.md generation |
+
+**Sourcing Example:**
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh"
+TOPICS=$(scan_project_directories)
+```
+
 ### Utility Libraries (9 files) - `util/`
 Miscellaneous utility functions.
 
@@ -161,6 +176,7 @@ Some libraries have internal dependencies:
 | Plan parsing/manipulation | `plan/` |
 | Creating artifacts | `artifact/` |
 | Document conversion | `convert/` |
+| TODO.md management | `todo/` |
 | Git, testing, utilities | `util/` |
 
 ## vs scripts/ (Standalone Operational Scripts)
@@ -184,13 +200,21 @@ for f in .claude/lib/*/*.sh; do bash -n "$f"; done
 bash .claude/tests/test_semantic_slug_commands.sh
 ```
 
+## Test Support
+
+### [fixtures/](fixtures/README.md)
+Test plan fixtures for orchestration and parsing system validation. Includes end-to-end orchestration fixtures and wave execution dependency patterns.
+
+### [test_data/](test_data/README.md)
+Test data for library validation and analysis feature testing. Includes sample plans for complexity scoring and structural analysis.
+
 ## Archived Libraries
 
-19 libraries with zero external references were archived on 2025-11-19. See the [Archive Manifest](../archive/lib/cleanup-2025-11-19/README.md) for details and restoration instructions.
+19 libraries with zero external references were archived. See the [Archive Manifest](../archive/lib/cleanup-2025-11-19/README.md) for details and restoration instructions.
 
 ## Navigation
 
-- [Parent Directory](../README.md)
+- [← Parent Directory](../README.md)
 - [Scripts (Standalone)](../scripts/README.md)
 - [Commands](../commands/)
 - [Tests](../tests/)

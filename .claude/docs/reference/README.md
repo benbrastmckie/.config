@@ -210,3 +210,12 @@ reference/
 - [Commands](../../commands/) - Command implementation files
 - [Agents](../../agents/) - Agent implementation files
 - [Libraries](../../lib/) - Utility libraries referenced in standards
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Subdirectory: architecture/](architecture/README.md)
+- [Subdirectory: standards/](standards/README.md)
+- [Subdirectory: workflows/](workflows/README.md)
+- [Subdirectory: library-api/](library-api/README.md)
+- [Subdirectory: decision-trees/](decision-trees/README.md)

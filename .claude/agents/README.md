@@ -2,7 +2,7 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 15 active agents
+**Current Agent Count**: 16 active agents
 
 ## Purpose
 
@@ -90,6 +90,9 @@ Quick reference for which agents are invoked by each command and their roles:
 #### /convert-docs
 - **doc-converter** - Convert Word/PDF documents to Markdown
 
+#### /todo
+- **todo-analyzer** - Classify plan status for TODO.md organization
+
 ### Model Selection Patterns
 
 Agents use different models based on task requirements:
@@ -103,6 +106,7 @@ Fast classification, deterministic operations, parsing:
 - **doc-converter** - Reliable format conversion operations
 - **claude-md-analyzer** - Fast structural analysis
 - **docs-structure-analyzer** - Rapid documentation scanning
+- **todo-analyzer** - Fast plan status classification for batch processing
 
 #### sonnet-4.5
 Complex reasoning, research, coordination:
@@ -495,6 +499,29 @@ Architectural decisions, complex debugging, semantic analysis:
 - Classifying feature complexity level
 - Resource allocation guidance
 
+---
+
+### todo-analyzer.md
+**Purpose**: Fast plan status classification for TODO.md organization
+**Model**: haiku-4.5 (fast batch processing)
+
+**Used By Commands**: /todo
+
+**Capabilities**:
+- Plan metadata extraction (title, status, description)
+- Status field classification (COMPLETE, IN PROGRESS, NOT STARTED, etc.)
+- Phase completion counting (fallback when status missing)
+- Structured JSON output for batch processing
+
+**Dependencies**: None (read-only)
+
+**Allowed Tools**: Read
+
+**Typical Use Cases**:
+- Batch classification of 100+ plans for TODO.md updates
+- Determining plan status from metadata or phase markers
+- Providing structured data for TODO.md section organization
+
 ## Agent Definition Format
 
 Each agent is defined in a markdown file with frontmatter metadata:
@@ -817,6 +844,7 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 
 **Utility Agents**:
 - [doc-converter.md](doc-converter.md) - Convert Word/PDF to Markdown
+- [todo-analyzer.md](todo-analyzer.md) - Plan status classification for TODO.md
 
 ### Subdirectories
 - [prompts/](prompts/README.md) - Agent evaluation prompt templates

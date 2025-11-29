@@ -259,6 +259,7 @@ When implementation encounters issues, revise the plan and rebuild:
 | /revise | [revise-command-guide.md](revise-command-guide.md) | Revise existing plans with new insights |
 | /setup | [setup-command-guide.md](setup-command-guide.md) | Project setup and configuration |
 | /test | [test-command-guide.md](test-command-guide.md) | Test execution and validation |
+| /todo | [todo-command-guide.md](todo-command-guide.md) | Scan specs and update TODO.md project status |
 
 ## Related Documentation
 
@@ -266,6 +267,8 @@ When implementation encounters issues, revise the plan and rebuild:
 - [Command Development](../development/command-development/) - How to create commands
 - [Orchestration Guides](../orchestration/) - Workflow orchestration patterns
 
----
+## Navigation
 
-**Parent**: [Guides Index](../README.md)
+- [← Parent Directory](../README.md)
+- [Related: Development Guides](../development/README.md)
+- [Related: Orchestration Guides](../orchestration/README.md)

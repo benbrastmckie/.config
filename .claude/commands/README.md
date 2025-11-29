@@ -2,7 +2,7 @@
 
 Custom slash command definitions for Claude Code. Each command extends Claude's capabilities with specialized workflows for development, documentation, testing, and project management.
 
-**Current Command Count**: 12 active commands
+**Current Command Count**: 13 active commands
 
 ## Primary Workflow
 
@@ -419,6 +419,35 @@ See [Commands](#commands) for complete command documentation.
 
 ---
 
+#### /todo
+**Purpose**: Scan specs directories and update TODO.md with current project status
+
+**Usage**: `/todo [--clean] [--dry-run]`
+
+**Type**: utility
+
+**Example**:
+```bash
+/todo
+/todo --clean --dry-run
+```
+
+**Dependencies**:
+- **Agents**: todo-analyzer
+- **Libraries**: error-handling.sh, unified-location-detection.sh, todo-functions.sh
+
+**Features**:
+- Automatic project discovery via specs directory scanning
+- Fast plan status classification using Haiku model
+- Hierarchical TODO.md organization (6 sections)
+- Artifact linking (reports, summaries as indented bullets)
+- --clean flag for cleanup plan generation
+- Preserves manually curated Backlog section
+
+**Documentation**: [TODO Command Guide](../docs/guides/commands/todo-command-guide.md)
+
+---
+
 #### /setup
 **Purpose**: Setup or analyze CLAUDE.md with automatic mode detection for initialization and diagnostics
 
@@ -814,6 +843,36 @@ Commands can log to `.claude/data/logs/`:
 - **Comprehensive**: Provide complete information concisely
 - **Commit**: Commit changes with a descriptive message
 
+## Commands Using Hard Barriers
+
+The following commands enforce mandatory subagent delegation using the **hard barrier pattern**. This architectural pattern ensures 100% delegation success by using bash verification blocks as context barriers that prevent bypass.
+
+**Commands with Hard Barrier Compliance**:
+- `/build` (implementer-coordinator) - Implementation orchestrator
+- `/collapse` (plan-architect) - Phase/stage collapse
+- `/debug` (debug-analyst, plan-architect) - Debug workflow
+- `/errors` (errors-analyst) - Error log analysis
+- `/expand` (plan-architect) - Phase/stage expansion
+- `/plan` (research-specialist, plan-architect) - Research and planning
+- `/repair` (repair-analyst, plan-architect) - Error pattern repair
+- `/research` (research-specialist) - Research-only workflow
+- `/revise` (research-specialist, plan-architect) - Plan revision
+- `/todo` (todo-analyzer) - TODO.md status classification
+
+**Why Hard Barriers**:
+- **100% Delegation**: Structurally impossible to bypass subagent invocation
+- **Context Efficiency**: 40-60% reduction in orchestrator token usage
+- **Reusable Agents**: Agents can be called from multiple workflows
+- **Fail-Fast**: Verification blocks catch missing outputs immediately
+- **Observable**: Checkpoint markers trace execution flow
+
+**Pattern Structure**: Each delegation phase splits into 3 sub-blocks:
+1. **Setup (Block Na)**: State transition, variable persistence, checkpoint
+2. **Execute (Block Nb)**: MANDATORY Task tool invocation (CRITICAL BARRIER label)
+3. **Verify (Block Nc)**: Fail-fast artifact checks, error logging, recovery hints
+
+See [Hard Barrier Subagent Delegation Pattern](../docs/concepts/patterns/hard-barrier-subagent-delegation.md) for complete documentation, templates, and troubleshooting.
+
 ## Neovim Integration
 
 Commands in this directory are integrated with the Neovim artifact picker for visual browsing and quick access.
@@ -887,7 +946,7 @@ description: Brief description shown in picker
 - [setup.md](setup.md) - CLAUDE.md setup and optimization
 
 ### Related
-- [Parent Directory](../README.md)
+- [← Parent Directory](../README.md)
 - [Agents](../agents/README.md) - Agents used by commands
 - [Skills](../skills/README.md) - Model-invoked capabilities
 - [Specs](../specs/README.md) - Command outputs

@@ -36,6 +36,7 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 - [/setup](#setup)
 - [/test](#test)
 - [/test-all](#test-all)
+- [/todo](#todo)
 
 ### Archived Commands
 - [/coordinate](#coordinate-archived)
@@ -538,6 +539,38 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 ---
 
+### /todo
+**Purpose**: Scan specs directories and update TODO.md with current project status
+
+**Usage**: `/todo [--clean] [--dry-run]`
+
+**Type**: utility
+
+**Arguments**:
+- `--clean` (optional): Generate cleanup plan for completed projects
+- `--dry-run` (optional): Preview changes without modifying files
+
+**Agents Used**: todo-analyzer (Haiku model for fast batch classification)
+
+**Output**:
+- **Default Mode**: Updated `.claude/TODO.md` with current project status
+- **Clean Mode**: Cleanup plan for completed projects older than 30 days
+
+**Features**:
+- Automatic project discovery via specs directory scanning
+- Fast plan status classification using Haiku model
+- Hierarchical TODO.md organization (6 sections)
+- Artifact linking (reports, summaries as indented bullets)
+- Preserves manually curated Backlog section
+- Date grouping for Completed section
+
+**See**:
+- [TODO Command Guide](../guides/commands/todo-command-guide.md) - Comprehensive usage guide
+- [todo.md](../../commands/todo.md) - Executable command file
+- [TODO Organization Standards](todo-organization-standards.md) - TODO.md structure standards
+
+---
+
 ### /update
 **Purpose**: ⚠️ DEPRECATED - Use `/revise` instead
 
@@ -595,6 +628,7 @@ Maintenance and setup commands:
 - **/example-with-agent** - Agent invocation template
 - **/list** - List implementation artifacts
 - **/setup** - Configure or update CLAUDE.md
+- **/todo** - Scan specs and update TODO.md
 
 ---
 

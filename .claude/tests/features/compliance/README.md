@@ -1,6 +1,8 @@
 # Compliance Tests
 
-Tests for code standards and compliance requirements.
+## Purpose
+
+Tests for code standards and compliance requirements. This directory contains tests that verify adherence to coding standards, including bash error handling patterns, argument capture, history expansion safety, and compliance remediation validation.
 
 ## Test Files
 
@@ -20,3 +22,9 @@ Tests for code standards and compliance requirements.
 ```bash
 bash tests/features/compliance/test_bash_error_compliance.sh
 ```
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Command Tests](../commands/README.md)
+- [Related: Specialized Tests](../specialized/README.md)

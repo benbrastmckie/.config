@@ -53,6 +53,9 @@ Reusable patterns for various use cases:
 - [Development Guides](../development/) - Creating commands and agents
 - [Templates](../templates/) - File templates
 
----
+## Navigation
 
-**Parent**: [Guides Index](../README.md)
+- [← Parent Directory](../README.md)
+- [Subdirectory: command-patterns/](command-patterns/README.md)
+- [Subdirectory: execution-enforcement/](execution-enforcement/README.md)
+- [Related: Development Guides](../development/README.md)

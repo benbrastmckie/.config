@@ -1,6 +1,8 @@
 # Command Tests
 
-Tests for specific slash commands.
+## Purpose
+
+Tests for specific slash commands. This directory contains tests that verify individual slash command functionality, including error handling, standards compliance, orchestration patterns, and error logging integration.
 
 ## Test Files
 
@@ -18,3 +20,9 @@ Tests for specific slash commands.
 ```bash
 bash tests/features/commands/test_errors_report_generation.sh
 ```
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Compliance Tests](../compliance/README.md)
+- [Related: Specialized Tests](../specialized/README.md)

@@ -382,7 +382,9 @@ echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
 echo ""
 ```
 
-## Block 4: Research Phase Execution
+## Block 4a: Research Phase Setup
+
+**CRITICAL BARRIER**: This bash block creates a hard context barrier enforcing research-specialist delegation. The block MUST be executed BEFORE the research-specialist Task invocation in Block 4b.
 
 **EXECUTE NOW**: Transition to research state and prepare research directory:
 
@@ -536,7 +538,46 @@ RESEARCH_DIR="${SPECS_DIR}/reports"
 REVISION_TOPIC_SLUG=$(echo "$REVISION_DETAILS" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g' | sed 's/__*/_/g' | sed 's/^_//;s/_$//' | cut -c1-30)
 REVISION_NUMBER=$(find "$RESEARCH_DIR" -name 'revision_*.md' 2>/dev/null | wc -l | xargs)
 REVISION_NUMBER=$((REVISION_NUMBER + 1))
+
+# Persist variables for Block 4b and 4c (subprocess isolation)
+append_workflow_state "SPECS_DIR" "$SPECS_DIR"
+append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
+append_workflow_state "REVISION_TOPIC_SLUG" "$REVISION_TOPIC_SLUG"
+append_workflow_state "REVISION_NUMBER" "$REVISION_NUMBER"
+append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
+append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
+append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+
+# Persist completed state with return code verification
+save_completed_states_to_state 2>&1
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to persist research setup state" \
+    "bash_block_4a" \
+    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: Failed to persist research setup state" >&2
+  exit 1
+fi
+
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Research phase setup complete"
+echo "- State transition: RESEARCH ✓"
+echo "- Research directory: $RESEARCH_DIR"
+echo "- Revision topic: $REVISION_TOPIC_SLUG"
+echo "- Variables persisted: ✓"
+echo "- Ready for: research-specialist invocation (Block 4b)"
+echo ""
 ```
+
+## Block 4b: Research Phase Execution
+
+**CRITICAL BARRIER**: This section invokes the research-specialist agent via Task tool. The Task invocation is MANDATORY and CANNOT be bypassed. The verification block (Block 4c) will FAIL if research artifacts are not created by the subagent.
 
 **EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
 
@@ -560,6 +601,10 @@ Task {
     REPORT_CREATED: [path to created report]
   "
 }
+
+## Block 4c: Research Phase Verification
+
+**CRITICAL BARRIER**: This bash block verifies that the research-specialist agent completed successfully by checking for artifact existence. If artifacts are missing, the block MUST fail with exit code 1 and detailed error logging.
 
 **EXECUTE NOW**: Verify research artifacts were created:
 
@@ -603,12 +648,23 @@ if [ -f "$STATE_ID_FILE" ]; then
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 fi
 
-# MANDATORY VERIFICATION
+# MANDATORY VERIFICATION (fail-fast pattern)
 echo "Verifying research artifacts..."
 
+# Fail-fast: Check research directory exists
 if [ ! -d "$RESEARCH_DIR" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Research-specialist failed to create reports directory" \
+    "bash_block_4c" \
+    "$(jq -n --arg dir "$RESEARCH_DIR" '{expected_directory: $dir}')"
+
   echo "ERROR: Research phase failed to create reports directory" >&2
   echo "DIAGNOSTIC: Expected directory: $RESEARCH_DIR" >&2
+  echo "RECOVERY: Verify research-specialist agent was invoked correctly in Block 4b" >&2
   exit 1
 fi
 
@@ -621,6 +677,23 @@ if [ "$NEW_REPORT_COUNT" -eq 0 ]; then
 fi
 
 TOTAL_REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
+
+# Fail-fast: Check at least some reports exist
+if [ "$TOTAL_REPORT_COUNT" -eq 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Research-specialist created no reports" \
+    "bash_block_4c" \
+    "$(jq -n --arg dir "$RESEARCH_DIR" '{reports_directory: $dir, report_count: 0}')"
+
+  echo "ERROR: Research phase created no reports" >&2
+  echo "DIAGNOSTIC: Reports directory exists but is empty: $RESEARCH_DIR" >&2
+  echo "RECOVERY: Check research-specialist output for errors" >&2
+  exit 1
+fi
 
 # CHECKPOINT REPORTING
 echo ""
@@ -644,8 +717,15 @@ append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
 save_completed_states_to_state 2>&1
 SAVE_EXIT=$?
 if [ $SAVE_EXIT -ne 0 ]; then
-  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
-  echo "ERROR: Failed to persist completed state" >&2
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to persist research verification state" \
+    "bash_block_4c" \
+    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: Failed to persist research verification state" >&2
   exit 1
 fi
 
@@ -654,7 +734,9 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
 fi
 ```
 
-## Block 5: Plan Revision Phase
+## Block 5a: Plan Revision Setup
+
+**CRITICAL BARRIER**: This bash block creates a hard context barrier enforcing plan-architect delegation. The block MUST be executed BEFORE the plan-architect Task invocation in Block 5b.
 
 **EXECUTE NOW**: Transition to planning state and create backup:
 
@@ -812,7 +894,46 @@ echo ""
 # Collect research report paths
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
+
+# Persist variables for Block 5b and 5c (subprocess isolation)
+append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
+append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
+append_workflow_state "BACKUP_DIR" "$BACKUP_DIR"
+append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
+append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
+append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
+
+# Persist completed state with return code verification
+save_completed_states_to_state 2>&1
+SAVE_EXIT=$?
+if [ $SAVE_EXIT -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to persist plan revision setup state" \
+    "bash_block_5a" \
+    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: Failed to persist plan revision setup state" >&2
+  exit 1
+fi
+
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Plan revision setup complete"
+echo "- State transition: PLAN ✓"
+echo "- Backup created: $BACKUP_PATH"
+echo "- Backup verified: ✓ ($(wc -c < "$BACKUP_PATH") bytes)"
+echo "- Research reports collected: $(echo "$REPORT_PATHS" | wc -l)"
+echo "- Variables persisted: ✓"
+echo "- Ready for: plan-architect invocation (Block 5b)"
+echo ""
 ```
+
+## Block 5b: Plan Revision Execution
+
+**CRITICAL BARRIER**: This section invokes the plan-architect agent via Task tool in revision mode. The Task invocation is MANDATORY and CANNOT be bypassed. The verification block (Block 5c) will FAIL if plan is not modified by the subagent.
 
 **EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
 
@@ -837,6 +958,10 @@ Task {
     PLAN_REVISED: ${EXISTING_PLAN_PATH}
   "
 }
+
+## Block 5c: Plan Revision Verification
+
+**CRITICAL BARRIER**: This bash block verifies that the plan-architect agent completed successfully by checking for plan file modifications. If plan is unchanged, the block MUST fail with exit code 1 and detailed error logging.
 
 **EXECUTE NOW**: Verify plan revision was successful:
 
@@ -880,25 +1005,70 @@ if [ -f "$STATE_ID_FILE" ]; then
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 fi
 
-# MANDATORY VERIFICATION
+# MANDATORY VERIFICATION (fail-fast pattern)
 echo "Verifying plan revision..."
 
+# Fail-fast: Check plan file still exists
 if [ ! -f "$EXISTING_PLAN_PATH" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Plan-architect caused plan file to disappear" \
+    "bash_block_5c" \
+    "$(jq -n --arg path "$EXISTING_PLAN_PATH" --arg backup "$BACKUP_PATH" '{plan_path: $path, backup_path: $backup}')"
+
   echo "ERROR: Plan file disappeared during revision: $EXISTING_PLAN_PATH" >&2
   echo "DIAGNOSTIC: Restore from backup: $BACKUP_PATH" >&2
+  echo "RECOVERY: cp \"$BACKUP_PATH\" \"$EXISTING_PLAN_PATH\"" >&2
+  exit 1
+fi
+
+# Fail-fast: Verify backup still exists
+if [ ! -f "$BACKUP_PATH" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Backup file disappeared during revision" \
+    "bash_block_5c" \
+    "$(jq -n --arg path "$BACKUP_PATH" '{backup_path: $path}')"
+
+  echo "ERROR: Backup file disappeared: $BACKUP_PATH" >&2
+  echo "DIAGNOSTIC: Cannot verify plan changes without backup" >&2
   exit 1
 fi
 
 # Verify plan was actually modified (must be different from backup)
 if cmp -s "$EXISTING_PLAN_PATH" "$BACKUP_PATH"; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Plan-architect did not modify plan file" \
+    "bash_block_5c" \
+    "$(jq -n --arg path "$EXISTING_PLAN_PATH" '{plan_path: $path}')"
+
   echo "ERROR: Plan file not modified (identical to backup)" >&2
   echo "DIAGNOSTIC: Plan revision must make changes based on research insights" >&2
-  echo "SOLUTION: Review research reports and ensure agent applies revisions" >&2
+  echo "RECOVERY: Verify plan-architect was invoked in revision mode (Block 5b)" >&2
   exit 1
 fi
 
 FILE_SIZE=$(wc -c < "$EXISTING_PLAN_PATH")
 if [ "$FILE_SIZE" -lt 500 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Plan-architect produced suspiciously small plan file" \
+    "bash_block_5c" \
+    "$(jq -n --arg size "$FILE_SIZE" --arg backup "$BACKUP_PATH" '{file_size_bytes: $size, backup_path: $backup}')"
+
   echo "ERROR: Plan file too small after revision ($FILE_SIZE bytes)" >&2
   echo "DIAGNOSTIC: Plan may have been corrupted, restore from: $BACKUP_PATH" >&2
   exit 1
@@ -914,15 +1084,23 @@ echo "- All verifications: ✓"
 echo "- Proceeding to: Completion"
 echo ""
 
-# Persist variables for Part 5 (subprocess isolation)
+# Persist variables for Part 6 (subprocess isolation)
 append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
+append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
 
 # Persist completed state with return code verification
 save_completed_states_to_state 2>&1
 SAVE_EXIT=$?
 if [ $SAVE_EXIT -ne 0 ]; then
-  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
-  echo "ERROR: Failed to persist completed state" >&2
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to persist plan revision verification state" \
+    "bash_block_5c" \
+    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  echo "ERROR: Failed to persist plan revision verification state" >&2
   exit 1
 fi
 
@@ -1029,6 +1207,26 @@ NEXT_STEPS="  • Review revised plan: cat $EXISTING_PLAN_PATH
 
 # Print standardized summary (no phases for revise command)
 print_artifact_summary "Revise" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
+echo ""
+
+# === CLEANUP TEMP FILES ===
+# Clean up temporary state ID file
+if [ -f "$STATE_ID_FILE" ]; then
+  rm -f "$STATE_ID_FILE" 2>/dev/null || true
+fi
+
+# Clean up argument file if it exists
+REVISE_ARG_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_arg.txt"
+if [ -f "$REVISE_ARG_FILE" ]; then
+  rm -f "$REVISE_ARG_FILE" 2>/dev/null || true
+fi
+
+# Note: State file preserved in ~/.claude/data/state/ for debugging
+
+# === RETURN PLAN_REVISED SIGNAL ===
+# This signal allows orchestrator commands to recognize plan revision success
+echo ""
+echo "PLAN_REVISED: $EXISTING_PLAN_PATH"
 echo ""
 
 exit 0

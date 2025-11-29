@@ -33,6 +33,26 @@ The topic naming system uses a Haiku LLM agent (topic-naming-agent) to generate 
 4. **Monitoring scripts** - Failure detection and reporting
 5. **Rename helper** - Manual correction for no_name directories
 
+### Exception: /repair Command
+
+The `/repair` command is the **only command** that does NOT use the LLM-based topic-naming-agent. Instead, it uses **timestamp-based naming** to ensure unique directory allocation for each repair run.
+
+**Rationale**:
+- Each repair run represents error analysis at a different point in time
+- Historical tracking requires separate directories (no idempotent reuse)
+- Timestamp uniqueness guarantees new allocation every time
+- Zero latency (<10ms) vs 2-3 seconds for LLM invocation
+- Zero failure rate vs ~2-5% LLM failure rate
+
+**Naming Pattern**:
+```bash
+/repair                        → specs/962_repair_20251129_143022/
+/repair --command /build       → specs/963_repair_build_20251129_143530/
+/repair --type state_error     → specs/964_repair_state_error_20251129_143105/
+```
+
+See [Repair Command Guide](../commands/repair-command-guide.md#timestamp-based-spec-directory-naming) for complete details on timestamp-based naming implementation.
+
 ## Architecture
 
 ### Naming Workflow
@@ -44,11 +64,12 @@ The topic naming system uses a Haiku LLM agent (topic-naming-agent) to generate 
                      │
                      ▼
 ┌──────────────────────────────────────────────────────────────┐
-│ Command Layer (7 commands use topic-naming-agent):           │
+│ Command Layer (6 commands use topic-naming-agent):           │
 │ /plan, /research, /debug, /optimize-claude,                  │
-│ /errors, /setup, /repair                                     │
+│ /errors, /setup                                              │
+│ EXCEPTION: /repair uses timestamp-based naming (no LLM)      │
 │ - Sources error-handling library                             │
-│ - Invokes topic-naming-agent via Task tool                   │
+│ - Invokes topic-naming-agent via Task tool (except /repair)  │
 │ - Provides user prompt as context                            │
 └────────────────────┬─────────────────────────────────────────┘
                      │

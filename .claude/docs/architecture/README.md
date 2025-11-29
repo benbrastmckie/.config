@@ -45,4 +45,6 @@ Add architecture documentation when:
 
 ## Navigation
 
-See [.claude/docs/README.md](../README.md) for complete documentation index.
+- [← Parent Directory](../README.md)
+- [Related: Concepts](../concepts/README.md)
+- [Related: Reference](../reference/README.md)

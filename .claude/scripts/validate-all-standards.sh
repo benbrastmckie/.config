@@ -73,6 +73,7 @@ VALIDATORS=(
   "bash-conditionals|${TESTS_UTILS_DIR}/lint_bash_conditionals.sh|ERROR|*.sh,*.md"
   "error-logging-coverage|${LINT_DIR}/check-error-logging-coverage.sh|ERROR|*.md"
   "unbound-variables|${LINT_DIR}/check-unbound-variables.sh|ERROR|*.md"
+  "hard-barrier-compliance|${SCRIPTS_DIR}/validate-hard-barrier-compliance.sh|ERROR|commands/*.md"
   "readme-structure|${SCRIPTS_DIR}/validate-readmes.sh|WARNING|README.md"
   "link-validity|${SCRIPTS_DIR}/validate-links-quick.sh|WARNING|*.md"
 )
@@ -90,6 +91,7 @@ RUN_SUPPRESSION=false
 RUN_CONDITIONALS=false
 RUN_ERROR_LOGGING=false
 RUN_UNBOUND_VARS=false
+RUN_HARD_BARRIER=false
 RUN_README=false
 RUN_LINKS=false
 STAGED_ONLY=false
@@ -110,6 +112,7 @@ OPTIONS:
   --conditionals     Run bash conditionals linter only
   --error-logging    Run error logging coverage linter only
   --unbound-vars     Run unbound variables linter only
+  --hard-barrier     Run hard barrier compliance validator only
   --readme           Run README structure validation only
   --links            Run link validation only
   --staged           Check only staged files (for pre-commit)
@@ -122,6 +125,7 @@ VALIDATORS:
   bash-conditionals     Detects preprocessing-unsafe conditionals (ERROR)
   error-logging-coverage Validates error logging coverage >= 80% (ERROR)
   unbound-variables     Detects unsafe variable expansions (ERROR)
+  hard-barrier-compliance Validates hard barrier subagent delegation (ERROR)
   readme-structure      Validates README.md structure (WARNING)
   link-validity         Validates internal markdown links (WARNING)
 
@@ -176,6 +180,9 @@ parse_args() {
       --unbound-vars)
         RUN_UNBOUND_VARS=true
         ;;
+      --hard-barrier)
+        RUN_HARD_BARRIER=true
+        ;;
       --readme)
         RUN_README=true
         ;;
@@ -202,7 +209,7 @@ parse_args() {
   done
 
   # If specific validators selected, don't run all
-  if $RUN_SOURCING || $RUN_SUPPRESSION || $RUN_CONDITIONALS || $RUN_ERROR_LOGGING || $RUN_UNBOUND_VARS || $RUN_README || $RUN_LINKS; then
+  if $RUN_SOURCING || $RUN_SUPPRESSION || $RUN_CONDITIONALS || $RUN_ERROR_LOGGING || $RUN_UNBOUND_VARS || $RUN_HARD_BARRIER || $RUN_README || $RUN_LINKS; then
     RUN_ALL=false
   fi
 }
@@ -230,6 +237,9 @@ should_run_validator() {
       ;;
     unbound-variables)
       $RUN_UNBOUND_VARS && return 0
+      ;;
+    hard-barrier-compliance)
+      $RUN_HARD_BARRIER && return 0
       ;;
     readme-structure)
       $RUN_README && return 0

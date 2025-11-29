@@ -19,5 +19,6 @@ This directory contains workflow phase documentation for understanding the compl
 
 ## Navigation
 
-- Parent: [Reference Documentation](../README.md)
-- Related: [Architecture](../architecture/README.md), [Standards](../standards/README.md)
+- [← Parent Directory](../README.md)
+- [Related: Architecture](../architecture/README.md)
+- [Related: Standards](../standards/README.md)

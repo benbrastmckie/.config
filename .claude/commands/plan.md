@@ -115,24 +115,22 @@ fi
 
 export CLAUDE_PROJECT_DIR
 
+# === PRE-TRAP ERROR BUFFER ===
+# Initialize error buffer BEFORE any library sourcing to capture early errors
+declare -a _EARLY_ERROR_BUFFER=()
+
 # === SOURCE LIBRARIES (Three-Tier Pattern) ===
 # Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source library-version-check.sh" >&2
-  exit 1
-}
+# NOTE: error-handling.sh MUST be sourced first to enable _buffer_early_error
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+
+# Now use _source_with_diagnostics for remaining libraries
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version-check.sh" || exit 1
 
 # Tier 2: Workflow Support (graceful degradation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || true
@@ -174,6 +172,10 @@ export WORKFLOW_ID
 
 # === UPDATE BASH ERROR TRAP WITH ACTUAL VALUES ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === FLUSH PRE-TRAP ERROR BUFFER ===
+# Transfer any early errors buffered before trap was initialized to errors.jsonl
+_flush_early_errors
 
 # Capture state file path for append_workflow_state
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
@@ -340,6 +342,9 @@ export COMMAND_NAME USER_ARGS
 
 # Initialize error log
 ensure_error_log_exists
+
+# Setup bash error trap for this validation block
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Validate topic naming agent output with retry logic
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -607,6 +612,15 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
+# === PRE-TRAP ERROR BUFFER ===
+# Initialize error buffer BEFORE any library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch early errors
+trap 'echo "ERROR: Block 2 initialization failed at line $LINENO: $BASH_COMMAND (exit code: $?)" >&2; exit 1' ERR
+trap 'local exit_code=$?; if [ $exit_code -ne 0 ]; then echo "ERROR: Block 2 initialization exited with code $exit_code" >&2; fi' EXIT
+
 # === LOAD STATE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
@@ -615,9 +629,9 @@ if [ ! -f "$STATE_ID_FILE" ]; then
   exit 1
 fi
 WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
 
-# Detect project directory
+# === VALIDATE WORKFLOW_ID ===
+# Detect project directory first (needed for library sourcing)
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -629,20 +643,19 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-# Source libraries (Three-Tier Pattern)
-# Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
+# Source error-handling.sh FIRST to enable validation functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+
+# Validate and correct WORKFLOW_ID if needed
+WORKFLOW_ID=$(validate_workflow_id "$WORKFLOW_ID" "plan")
+export WORKFLOW_ID
+
+# Source remaining libraries with diagnostics
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 
 # === PRE-FLIGHT FUNCTION VALIDATION (Block 2) ===
 # Verify required functions are available before using them (prevents exit 127 errors)
@@ -676,7 +689,13 @@ fi
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === SETUP BASH ERROR TRAP ===
+# Clear defensive trap before setting up full trap
+_clear_defensive_trap
+
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# Flush any early errors captured before trap was active
+_flush_early_errors
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -895,6 +914,15 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
+# === PRE-TRAP ERROR BUFFER ===
+# Initialize error buffer BEFORE any library sourcing
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DEFENSIVE TRAP SETUP ===
+# Set minimal trap BEFORE library sourcing to catch early errors
+trap 'echo "ERROR: Block 3 initialization failed at line $LINENO: $BASH_COMMAND (exit code: $?)" >&2; exit 1' ERR
+trap 'local exit_code=$?; if [ $exit_code -ne 0 ]; then echo "ERROR: Block 3 initialization exited with code $exit_code" >&2; fi' EXIT
+
 # === LOAD STATE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
@@ -903,9 +931,8 @@ if [ ! -f "$STATE_ID_FILE" ]; then
   exit 1
 fi
 WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
 
-# Detect project directory
+# Detect project directory first (needed for library sourcing)
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -917,20 +944,19 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-# Source libraries (Three-Tier Pattern)
-# Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
+# Source error-handling.sh FIRST to enable validation functions
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+
+# Validate and correct WORKFLOW_ID if needed
+WORKFLOW_ID=$(validate_workflow_id "$WORKFLOW_ID" "plan")
+export WORKFLOW_ID
+
+# Source remaining libraries with diagnostics
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 
 # === PRE-FLIGHT FUNCTION VALIDATION (Block 3) ===
 # Verify required functions are available before using them (prevents exit 127 errors)
@@ -958,7 +984,13 @@ fi
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === SETUP BASH ERROR TRAP ===
+# Clear defensive trap before setting up full trap
+_clear_defensive_trap
+
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# Flush any early errors captured before trap was active
+_flush_early_errors
 
 # === VALIDATE STATE AFTER LOAD ===
 if [ -z "$STATE_FILE" ]; then
@@ -1126,6 +1158,14 @@ NEXT_STEPS="  • Review plan: cat $PLAN_PATH
 
 # Print standardized summary (no phases for plan command)
 print_artifact_summary "Plan" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
+
+# === RETURN PLAN_CREATED SIGNAL ===
+# Signal enables buffer-opener hook and orchestrator detection
+if [ -n "$PLAN_PATH" ] && [ -f "$PLAN_PATH" ]; then
+  echo ""
+  echo "PLAN_CREATED: $PLAN_PATH"
+  echo ""
+fi
 
 exit 0
 ```

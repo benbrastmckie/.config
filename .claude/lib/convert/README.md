@@ -1,6 +1,8 @@
 # Convert Libraries
 
-Document conversion libraries for DOCX, PDF, and Markdown transformations.
+## Purpose
+
+Document conversion libraries for DOCX, PDF, and Markdown transformations. This directory provides the core conversion orchestration, format-specific converters for DOCX and PDF, and Markdown validation utilities. Used by the `/convert-docs` command for bidirectional document format conversion.
 
 ## Libraries
 
@@ -73,4 +75,4 @@ When using document conversion, only source `convert-core.sh`.
 
 ## Navigation
 
-- [Parent Directory (lib/)](../README.md)
+- [← Parent Directory](../README.md)

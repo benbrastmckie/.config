@@ -31,3 +31,9 @@ bash tests/classification/test_workflow_detection.sh
 
 - Workflow types: research, plan, build, debug, repair
 - Scope detection: project, file, directory, topic
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Integration Tests](../integration/README.md)
+- [Related: Features Tests](../features/README.md)

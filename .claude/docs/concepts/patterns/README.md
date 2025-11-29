@@ -139,3 +139,9 @@ These patterns have demonstrated:
 - [Command Architecture Standards](../../reference/architecture/overview.md)
 - [Orchestration Guide](../../workflows/orchestration-guide.md)
 - [Development Workflow](../development-workflow.md)
+
+## Navigation
+
+- [← Parent Directory](../README.md)
+- [Related: Troubleshooting](../../troubleshooting/README.md)
+- [Related: Pattern Guides](../../guides/patterns/README.md)

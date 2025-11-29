@@ -316,6 +316,16 @@ See [Documentation Standards](.claude/docs/reference/standards/documentation-sta
 - Keep examples current with implementation
 - Document breaking changes prominently
 - Remove any historical markers when updating existing docs
+
+### TODO.md Standards
+
+See [TODO Organization Standards](.claude/docs/reference/standards/todo-organization-standards.md) for complete TODO.md file organization, section hierarchy, checkbox conventions, and artifact inclusion rules.
+
+**Quick Reference**:
+- 6-section hierarchy: In Progress -> Not Started -> Backlog -> Superseded -> Abandoned -> Completed
+- Checkboxes: `[ ]` (not started), `[x]` (in progress/completed/abandoned), `[~]` (superseded)
+- Backlog section is manually curated and preserved by /todo command
+- Completed section uses date-grouped entries (newest first)
 <!-- END_SECTION: documentation_policy -->
 
 <!-- SECTION: standards_discovery -->

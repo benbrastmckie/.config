@@ -5,11 +5,26 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLAUDE_DIR="$(dirname "$SCRIPT_DIR")"
-TEST_LOG_DIR="${SCRIPT_DIR}/logs"
-# Error log is in .claude/data/logs (relative to project root)
-ERROR_LOG_DIR="${CLAUDE_DIR}/data/logs"
-ERROR_LOG_FILE="${ERROR_LOG_DIR}/errors.jsonl"
+
+# Detect project root
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$SCRIPT_DIR"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      PROJECT_ROOT="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+# Use centralized test log directory (matches error-handling.sh)
+# When running with test_ workflow IDs, errors go to test-errors.jsonl not errors.jsonl
+TEST_LOG_DIR="${PROJECT_ROOT}/.claude/tests/logs"
+ERROR_LOG_DIR="${PROJECT_ROOT}/.claude/data/logs"
+ERROR_LOG_FILE="${TEST_LOG_DIR}/test-errors.jsonl"
 
 # Create test log directory
 mkdir -p "$TEST_LOG_DIR"
@@ -70,12 +85,12 @@ check_error_logged() {
   fi
 
   # Check if error with pattern exists in last 10 entries
-  local found=$(tail -10 "$ERROR_LOG_FILE" | grep -c "$search_pattern" || echo "0")
+  local found=$(tail -10 "$ERROR_LOG_FILE" | grep -c "$search_pattern" || true)
 
   if [ "$found" -gt 0 ]; then
     # If error_type specified, validate it
     if [ -n "$error_type" ]; then
-      local type_found=$(tail -10 "$ERROR_LOG_FILE" | jq -r "select(.error_message | contains(\"$search_pattern\")) | .error_type" | grep -c "$error_type" || echo "0")
+      local type_found=$(tail -10 "$ERROR_LOG_FILE" | jq -r "select(.error_message | contains(\"$search_pattern\")) | .error_type" | grep -c "$error_type" || true)
       if [ "$type_found" -gt 0 ]; then
         echo "FOUND_WITH_TYPE"
         return 0
@@ -102,7 +117,7 @@ test_t1_syntax_error() {
   local test_file=$(mktemp)
   cat > "$test_file" << EOF
 #!/usr/bin/env bash
-cd "${CLAUDE_DIR}/.."
+cd "$PROJECT_ROOT"
 source ./.claude/lib/core/error-handling.sh 2>/dev/null
 ensure_error_log_exists
 setup_bash_error_trap "/test-t1" "test_t1_\$\$" "syntax test"
@@ -149,15 +164,15 @@ test_t2_unbound_variable() {
   echo "Running T2: Unbound variable capture..."
 
   local test_file=$(mktemp)
-  cat > "$test_file" << 'EOF'
+  cat > "$test_file" << EOF
 #!/usr/bin/env bash
 set -u
-source ~/.config/.claude/lib/core/error-handling.sh 2>/dev/null
+source $PROJECT_ROOT/.claude/lib/core/error-handling.sh 2>/dev/null
 ensure_error_log_exists
-setup_bash_error_trap "/test-t2" "test_t2_$$" "unbound test"
+setup_bash_error_trap "/test-t2" "test_t2_\$\$" "unbound test"
 
 # Reference unbound variable
-echo "$UNDEFINED_VARIABLE"
+echo "\$UNDEFINED_VARIABLE"
 EOF
 
   chmod +x "$test_file"
@@ -192,12 +207,12 @@ test_t3_command_not_found() {
   echo "Running T3: Command not found capture..."
 
   local test_file=$(mktemp)
-  cat > "$test_file" << 'EOF'
+  cat > "$test_file" << EOF
 #!/usr/bin/env bash
 set -e
-source ~/.config/.claude/lib/core/error-handling.sh 2>/dev/null
+source $PROJECT_ROOT/.claude/lib/core/error-handling.sh 2>/dev/null
 ensure_error_log_exists
-setup_bash_error_trap "/test-t3" "test_t3_$$" "cmd-not-found test"
+setup_bash_error_trap "/test-t3" "test_t3_\$\$" "cmd-not-found test"
 
 # Call nonexistent command
 nonexistent_command_xyz123
@@ -235,12 +250,12 @@ test_t4_function_not_found() {
   echo "Running T4: Function not found capture..."
 
   local test_file=$(mktemp)
-  cat > "$test_file" << 'EOF'
+  cat > "$test_file" << EOF
 #!/usr/bin/env bash
 set -e
-source ~/.config/.claude/lib/core/error-handling.sh 2>/dev/null
+source $PROJECT_ROOT/.claude/lib/core/error-handling.sh 2>/dev/null
 ensure_error_log_exists
-setup_bash_error_trap "/test-t4" "test_t4_$$" "func-not-found test"
+setup_bash_error_trap "/test-t4" "test_t4_\$\$" "func-not-found test"
 
 # Call nonexistent function
 nonexistent_function_abc789
@@ -278,7 +293,7 @@ test_t5_library_sourcing_failure() {
   echo "Running T5: Library sourcing failure (expected limitation)..."
 
   local test_file=$(mktemp)
-  cat > "$test_file" << 'EOF'
+  cat > "$test_file" << EOF
 #!/usr/bin/env bash
 set -e
 
@@ -286,8 +301,8 @@ set -e
 source /nonexistent/path/to/library.sh
 
 # Trap setup would happen here, but we never get here
-source ~/.config/.claude/lib/core/error-handling.sh 2>/dev/null
-setup_bash_error_trap "/test-t5" "test_t5_$$" "sourcing test"
+source $PROJECT_ROOT/.claude/lib/core/error-handling.sh 2>/dev/null
+setup_bash_error_trap "/test-t5" "test_t5_\$\$" "sourcing test"
 EOF
 
   chmod +x "$test_file"
@@ -299,11 +314,12 @@ EOF
 
   rm -f "$test_file"
 
-  local check_result=$(check_error_logged "Bash error")
+  # Check for test_t5 specifically (not just any "Bash error")
+  local check_result=$(grep -c "test_t5" "$ERROR_LOG_FILE" 2>/dev/null || true)
 
-  # This test should ALWAYS fail (known limitation)
-  if [ "$check_result" = "NOT_FOUND" ]; then
-    print_test_result 5 "Library sourcing failure" "FAIL" "Expected limitation (error before trap setup)"
+  # This test validates the known limitation is correctly demonstrated
+  if [ "$check_result" -eq 0 ]; then
+    print_test_result 5 "Library sourcing failure" "PASS" "Expected limitation (error before trap setup)"
   else
     print_test_result 5 "Library sourcing failure" "FAIL" "Unexpected capture (should be impossible)"
   fi
@@ -318,30 +334,30 @@ test_t6_state_file_missing() {
   # We'll check if conditional error checks still function
 
   local test_file=$(mktemp)
-  cat > "$test_file" << 'EOF'
+  cat > "$test_file" << EOF
 #!/usr/bin/env bash
 set -e
-source ~/.config/.claude/lib/core/error-handling.sh 2>/dev/null
+source $PROJECT_ROOT/.claude/lib/core/error-handling.sh 2>/dev/null
 ensure_error_log_exists
 
 COMMAND_NAME="/test-t6"
-WORKFLOW_ID="test_t6_$$"
+WORKFLOW_ID="test_t6_\$\$"
 USER_ARGS="state-missing test"
 
-setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+setup_bash_error_trap "\$COMMAND_NAME" "\$WORKFLOW_ID" "\$USER_ARGS"
 
 # Simulate state file check (existing error handling)
 STATE_FILE="/nonexistent/state.sh"
 
-if [ ! -f "$STATE_FILE" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "file_error" \
-    "State file not found" \
-    "test" \
-    '{"path": "'$STATE_FILE'"}'
+if [ ! -f "\$STATE_FILE" ]; then
+  log_command_error \\
+    "\$COMMAND_NAME" \\
+    "\$WORKFLOW_ID" \\
+    "\$USER_ARGS" \\
+    "file_error" \\
+    "State file not found" \\
+    "test" \\
+    '{"path": "'\$STATE_FILE'"}'
   exit 1
 fi
 EOF

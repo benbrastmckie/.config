@@ -1,6 +1,8 @@
 # Artifact Libraries
 
-Artifact creation, registration, and management libraries.
+## Purpose
+
+Artifact creation, registration, and management libraries. This directory provides utilities for creating topic artifacts, registering artifacts in a central registry for querying, synthesizing overviews from multiple reports, performing variable substitution in templates, and integrating with the template system for plan generation.
 
 ## Libraries
 
@@ -76,4 +78,4 @@ generate_plan_from_template "crud-feature" "$VARS_JSON"
 
 ## Navigation
 
-- [Parent Directory (lib/)](../README.md)
+- [← Parent Directory](../README.md)

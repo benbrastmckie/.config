@@ -76,8 +76,9 @@ check_readme_structure() {
     fi
 
     # Check for emojis (UTF-8 encoding issues)
-    if grep -P '[^\x00-\x7F]' "$readme_path" | grep -v -E '(box-drawing|arrows|←|→|↔)' > /dev/null 2>&1; then
-        echo "  ⚠ Contains non-ASCII characters (possible emojis)" >> "$REPORT_FILE"
+    # Only flag actual emojis (U+1F300-U+1F9FF), not Unicode symbols
+    if grep -P '[\x{1F300}-\x{1F9FF}]' "$readme_path" > /dev/null 2>&1; then
+        echo "  ⚠ Contains emoji characters (UTF-8 encoding issues)" >> "$REPORT_FILE"
         has_issues=true
         issues_found=$((issues_found + 1))
     fi
@@ -123,7 +124,7 @@ echo "Scanning for README.md files in $CLAUDE_DIR..."
 print_status "$BLUE" "Starting README validation..."
 echo ""
 
-# Exclude archive, specs, and tmp directories as per plan
+# Exclude archive, specs, tmp, logs, and backups directories as per plan
 # Use process substitution to avoid subshell issues with counters
 while IFS= read -r readme; do
     check_readme_structure "$readme"
@@ -131,6 +132,7 @@ done < <(find "$CLAUDE_DIR" -type f -name "README.md" \
     ! -path "*/archive/*" \
     ! -path "*/specs/*" \
     ! -path "*/tmp/*" \
+    ! -path "*/logs/*" \
     ! -path "*/backups/*" \
     | sort)
 
@@ -175,8 +177,8 @@ print_status "$BLUE" "Checking for missing READMEs in key directories..."
 missing_count=0
 
 # Check backups directory
-if [[ ! -f "$CLAUDE_DIR/backups/README.md" ]]; then
-    print_status "$YELLOW" "  Missing: backups/README.md"
+if [[ ! -f "$CLAUDE_DIR/data/backups/README.md" ]]; then
+    print_status "$YELLOW" "  Missing: data/backups/README.md"
     missing_count=$((missing_count + 1))
 fi
 

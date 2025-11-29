@@ -1,5 +1,6 @@
 ---
 allowed-tools: Read, Write, Edit, Bash, Task
+tool-usage-note: Orchestrator uses Edit only for metadata updates after plan-architect completes collapse. plan-architect performs all content merging via Task delegation (hard barrier pattern enforced).
 argument-hint: <path> OR [phase|stage] <path> <number>
 description: Collapse expanded phases/stages automatically or collapse specific phase/stage back into parent
 command-type: workflow
@@ -223,14 +224,103 @@ phase_objective=$(grep "^**Objective" "$phase_file" | head -1 | sed 's/\*\*Objec
 phase_status=$(grep "^**Status" "$phase_file" | head -1 | sed 's/\*\*Status\*\*: //')
 ```
 
-#### Block 4 (REQUIRED BEFORE Block 5) - Merge Content into Main Plan
+#### Block 4a: Merge Setup
 
 ```bash
-# Find phase section in main plan
-# Replace summary link with full expanded content
-# Preserve heading, update status if changed
+set +H
+set -e
 
-# Use Edit tool to replace phase summary with full content
+# Source error handling
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Prepare merge parameters
+# Find phase section in main plan for replacement
+MERGE_TARGET="$main_plan"
+PHASE_ID="phase_${phase_num}"
+
+# Persist variables for verification block
+echo "MERGE_TARGET=$MERGE_TARGET" >> ~/.claude/data/state/collapse_*.state 2>/dev/null || true
+echo "PHASE_FILE=$phase_file" >> ~/.claude/data/state/collapse_*.state 2>/dev/null || true
+echo "PHASE_NUM=$phase_num" >> ~/.claude/data/state/collapse_*.state 2>/dev/null || true
+
+echo "[CHECKPOINT] Merge setup complete - ready for plan-architect invocation"
+```
+
+---
+
+#### Block 4b: Phase Collapse Execution [CRITICAL BARRIER]
+
+**CRITICAL BARRIER**: This block MUST invoke plan-architect via Task tool.
+Verification block (4c) will FAIL if phase content not merged into parent plan.
+
+**EXECUTE NOW**: Invoke plan-architect subagent for phase collapse
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Collapse phase ${phase_num} back into main plan"
+  prompt: |
+    Read and follow ALL instructions in: ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    Operation Mode: phase collapse
+    Phase Number: ${phase_num}
+    Phase File: ${phase_file}
+    Main Plan: ${main_plan}
+
+    Phase Content:
+    ${phase_content}
+
+    Merge expanded phase content back into main plan.
+    Use Edit tool to replace phase summary with full content.
+    Preserve all completion status markers.
+    Update phase heading and status as needed.
+
+    Return PHASE_COLLAPSED signal when done.
+}
+
+---
+
+#### Block 4c: Merge Verification
+
+```bash
+set +H
+set -e
+
+# Source error handling
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Restore persisted variables
+source ~/.claude/data/state/collapse_*.state 2>/dev/null || true
+
+# Verify main plan was modified
+# Check that phase content is now in main plan (not just summary link)
+grep -q "### Phase ${PHASE_NUM}:" "$MERGE_TARGET" 2>/dev/null
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  log_command_error "verification_error" \
+    "Phase ${PHASE_NUM} not found in main plan after collapse" \
+    "plan-architect should have merged phase content into main plan"
+  echo "ERROR: VERIFICATION FAILED - Phase content not merged"
+  echo "Main Plan: $MERGE_TARGET"
+  echo "Recovery: Check plan-architect output, verify merge completed, re-run command"
+  exit 1
+fi
+
+# Verify phase file still exists (not deleted yet - will be deleted in Block 6)
+if [[ ! -f "$PHASE_FILE" ]]; then
+  log_command_error "verification_error" \
+    "Phase file missing before deletion step: $PHASE_FILE" \
+    "File should exist until verification completes"
+  echo "ERROR: VERIFICATION FAILED - Phase file prematurely deleted"
+  exit 1
+fi
+
+echo "[CHECKPOINT] Phase collapse verified - content merged into $MERGE_TARGET"
 ```
 
 #### Block 5 (REQUIRED BEFORE Block 6) - Update Metadata
@@ -383,12 +473,103 @@ stage_objective=$(grep "^**Objective" "$stage_file" | head -1)
 stage_status=$(grep "^**Status" "$stage_file" | head -1)
 ```
 
-#### STEP 4 (REQUIRED BEFORE STEP 5) - Merge Content into Phase File
+#### STEP 4a: Stage Merge Setup
 
 ```bash
-# Find stage section in phase file
-# Replace summary link with full expanded content
-# Preserve heading, update status if changed
+set +H
+set -e
+
+# Source error handling
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Prepare merge parameters
+STAGE_MERGE_TARGET="$phase_file"
+STAGE_ID="stage_${stage_num}"
+
+# Persist variables for verification block
+echo "STAGE_MERGE_TARGET=$STAGE_MERGE_TARGET" >> ~/.claude/data/state/collapse_*.state 2>/dev/null || true
+echo "STAGE_FILE=$stage_file" >> ~/.claude/data/state/collapse_*.state 2>/dev/null || true
+echo "STAGE_NUM=$stage_num" >> ~/.claude/data/state/collapse_*.state 2>/dev/null || true
+
+echo "[CHECKPOINT] Stage merge setup complete - ready for plan-architect invocation"
+```
+
+---
+
+#### STEP 4b: Stage Collapse Execution [CRITICAL BARRIER]
+
+**CRITICAL BARRIER**: This block MUST invoke plan-architect via Task tool.
+Verification block (4c) will FAIL if stage content not merged into phase file.
+
+**EXECUTE NOW**: Invoke plan-architect subagent for stage collapse
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Collapse stage ${stage_num} back into phase file"
+  prompt: |
+    Read and follow ALL instructions in: ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
+
+    Operation Mode: stage collapse
+    Phase Number: ${phase_num}
+    Stage Number: ${stage_num}
+    Stage File: ${stage_file}
+    Phase File: ${phase_file}
+
+    Stage Content:
+    ${stage_content}
+
+    Merge expanded stage content back into phase file.
+    Use Edit tool to replace stage summary with full content.
+    Preserve all completion status markers.
+    Update stage heading and status as needed.
+
+    Return STAGE_COLLAPSED signal when done.
+}
+
+---
+
+#### STEP 4c: Stage Merge Verification
+
+```bash
+set +H
+set -e
+
+# Source error handling
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Restore persisted variables
+source ~/.claude/data/state/collapse_*.state 2>/dev/null || true
+
+# Verify phase file was modified
+# Check that stage content is now in phase file (not just summary link)
+grep -q "#### Stage ${STAGE_NUM}:" "$STAGE_MERGE_TARGET" 2>/dev/null
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  log_command_error "verification_error" \
+    "Stage ${STAGE_NUM} not found in phase file after collapse" \
+    "plan-architect should have merged stage content into phase file"
+  echo "ERROR: VERIFICATION FAILED - Stage content not merged"
+  echo "Phase File: $STAGE_MERGE_TARGET"
+  echo "Recovery: Check plan-architect output, verify merge completed, re-run command"
+  exit 1
+fi
+
+# Verify stage file still exists (not deleted yet - will be deleted in STEP 6)
+if [[ ! -f "$STAGE_FILE" ]]; then
+  log_command_error "verification_error" \
+    "Stage file missing before deletion step: $STAGE_FILE" \
+    "File should exist until verification completes"
+  echo "ERROR: VERIFICATION FAILED - Stage file prematurely deleted"
+  exit 1
+fi
+
+echo "[CHECKPOINT] Stage collapse verified - content merged into $STAGE_MERGE_TARGET"
 ```
 
 #### STEP 5 (REQUIRED BEFORE STEP 6) - Update Three-Way Metadata

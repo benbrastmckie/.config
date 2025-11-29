@@ -165,6 +165,12 @@ REPORTS=$(echo "$METADATA" | jq -r '.reports[]')
 
 ## Related Documentation
 
+- [Coordination](hierarchical-agents-coordination.md) - Multi-agent coordination patterns
+- [Communication](hierarchical-agents-communication.md) - Agent communication protocols
+- [Patterns](hierarchical-agents-patterns.md) - Design patterns and best practices
+- [Examples](hierarchical-agents-examples.md) - Reference implementations (includes hard barrier pattern)
+- [Troubleshooting](hierarchical-agents-troubleshooting.md) - Common issues and solutions
+- [Hard Barrier Pattern](patterns/hard-barrier-subagent-delegation.md) - Enforcing mandatory subagent delegation
 - [State-Based Orchestration](../architecture/state-based-orchestration-overview.md)
 - [Agent Development Guide](../guides/development/agent-development/agent-development-fundamentals.md)
 - [Behavioral Injection Pattern](patterns/behavioral-injection.md)

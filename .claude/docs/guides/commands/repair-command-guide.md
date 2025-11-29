@@ -541,6 +541,70 @@ jq -s 'group_by(.message) | map(select(length > 1))' errors.jsonl
 
 ---
 
+### Timestamp-Based Spec Directory Naming
+
+The `/repair` command uses **timestamp-based naming** for spec directories, making it the only command that bypasses the LLM-based topic-naming-agent. This design ensures unique directory allocation for each repair run, enabling historical error tracking.
+
+**Naming Pattern**:
+```bash
+# Generic repair (no filters)
+/repair
+→ specs/962_repair_20251129_143022/
+
+# With --command filter
+/repair --command /build
+→ specs/963_repair_build_20251129_143530/
+
+# With --type filter
+/repair --type state_error
+→ specs/964_repair_state_error_20251129_143105/
+```
+
+**Key Characteristics**:
+- **Format**: `repair_[context_]YYYYMMDD_HHMMSS`
+- **Context**: Includes `--command` or `--type` filter when provided
+- **Length**: 22-34 characters (well within 40-character validation limit)
+- **Uniqueness**: Timestamp guarantees unique name for each invocation
+- **Performance**: <10ms generation vs 2-3s for LLM-based naming
+- **Reliability**: Zero failure rate vs ~2-5% LLM failure rate
+
+**Why Timestamp-Based?**
+
+1. **Historical Tracking**: Each repair run represents error analysis at a specific point in time. Reusing directories would lose historical context.
+2. **No Idempotent Reuse**: Unlike `/plan` or `/research`, `/repair` should always create new spec directories.
+3. **Zero Latency**: Direct timestamp generation eliminates 2-3 second LLM invocation overhead.
+4. **Guaranteed Uniqueness**: Second-precision timestamps ensure no conflicts.
+5. **Chronological Sorting**: Numeric timestamp enables natural time-based sorting.
+
+**Comparison with Other Commands**:
+
+| Command | Naming Strategy | Idempotent Reuse | Rationale |
+|---------|----------------|------------------|-----------|
+| /repair | Timestamp-direct | No (always new) | Historical error tracking |
+| /plan | LLM-generated | Yes (same feature) | Semantic clarity, feature consolidation |
+| /research | LLM-generated | Yes (same topic) | Topic-based organization |
+
+**Implementation Details**:
+
+The timestamp-based naming is implemented directly in bash (no agent invocation):
+```bash
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+if [ -n "$ERROR_COMMAND" ]; then
+  COMMAND_SLUG=$(echo "$ERROR_COMMAND" | sed 's:^/::' | tr '-' '_')
+  TOPIC_NAME="repair_${COMMAND_SLUG}_${TIMESTAMP}"
+elif [ -n "$ERROR_TYPE" ]; then
+  ERROR_TYPE_SLUG=$(echo "$ERROR_TYPE" | tr '-' '_')
+  TOPIC_NAME="repair_${ERROR_TYPE_SLUG}_${TIMESTAMP}"
+else
+  TOPIC_NAME="repair_${TIMESTAMP}"
+fi
+```
+
+This code runs in Block 1 of the /repair command, replacing the topic-naming-agent Task invocation entirely.
+
+---
+
 ## Troubleshooting
 
 ### Issue: No errors found

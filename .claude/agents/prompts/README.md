@@ -284,7 +284,6 @@ Evaluate prompt effectiveness:
 
 ## Navigation
 
-- **Parent**: [.claude/agents/README.md](../README.md) - Agent system overview
-- **Grandparent**: [.claude/README.md](../../README.md) - Claude Code configuration
-- **Related**: [.claude/commands/README.md](../../commands/README.md) - Commands using these prompts
-- **Related**: [.claude/docs/concepts/adaptive-planning.md](../../docs/concepts/adaptive-planning.md) - Adaptive planning system
+- [← Parent Directory](../README.md)
+- [Related: Commands](../../commands/README.md)
+- [Related: Adaptive Planning](../../docs/concepts/adaptive-planning.md)
