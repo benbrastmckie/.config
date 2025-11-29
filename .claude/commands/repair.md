@@ -360,6 +360,10 @@ ensure_error_log_exists
 # Load workflow state
 load_workflow_state "$WORKFLOW_ID" false
 
+# Setup bash error trap
+USER_ARGS="${ERROR_DESCRIPTION:-}"
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
 # Restore ERROR_DESCRIPTION from temp file
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
 TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
@@ -474,7 +478,9 @@ echo "Research directory: $RESEARCH_DIR"
 echo "Plans directory: $PLANS_DIR"
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the repair-analyst agent.
+**CRITICAL BARRIER - Repair Analysis Delegation**
+
+**EXECUTE NOW**: USE the Task tool to invoke the repair-analyst agent. This invocation is MANDATORY. The orchestrator MUST NOT perform error analysis directly. Verification blocks will FAIL if repair analysis artifacts are not created by the analyst.
 
 Task {
   subagent_type: "general-purpose"
@@ -756,7 +762,9 @@ echo "Plan will be created at: $PLAN_PATH"
 echo "Using $REPORT_COUNT research reports"
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
+**CRITICAL BARRIER - Planning Delegation**
+
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent. This invocation is MANDATORY. The orchestrator MUST NOT create plans directly. Verification blocks will FAIL if plan artifacts are not created by the architect.
 
 Task {
   subagent_type: "general-purpose"
@@ -773,6 +781,28 @@ Task {
     - Research Reports: ${REPORT_PATHS_JSON}
     - Workflow Type: research-and-plan
     - Operation Mode: new plan creation
+
+    **REPAIR-SPECIFIC REQUIREMENT**:
+    Since this is a repair plan addressing logged errors, you MUST include a final phase
+    titled 'Update Error Log Status' as the last phase (after all fix phases) with:
+
+    dependencies: [all previous phases]
+
+    **Objective**: Update error log entries from FIX_PLANNED to RESOLVED
+
+    Tasks:
+    - [ ] Verify all fixes are working (tests pass, no new errors generated)
+    - [ ] Update error log entries to RESOLVED status:
+      \`\`\`bash
+      source .claude/lib/core/error-handling.sh
+      RESOLVED_COUNT=\$(mark_errors_resolved_for_plan \"\${PLAN_PATH}\")
+      echo \"Resolved \$RESOLVED_COUNT error log entries\"
+      \`\`\`
+    - [ ] Verify no FIX_PLANNED errors remain for this plan:
+      \`\`\`bash
+      REMAINING=\$(query_errors --status FIX_PLANNED | jq -r '.repair_plan_path' | grep -c \"\$(basename \"\$(dirname \"\$(dirname \"\${PLAN_PATH}\")\")\" )\" || echo \"0\")
+      [ \"\$REMAINING\" -eq 0 ] && echo \"All errors resolved\" || echo \"WARNING: \$REMAINING errors still FIX_PLANNED\"
+      \`\`\`
 
     Execute planning according to behavioral guidelines and return completion signal:
     PLAN_CREATED: ${PLAN_PATH}
@@ -1013,4 +1043,12 @@ NEXT_STEPS="  • Review fix plan: cat $PLAN_PATH
 
 # Print standardized summary (no phases for repair command)
 print_artifact_summary "Repair" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
+
+# === RETURN PLAN_CREATED SIGNAL ===
+# Signal enables buffer-opener hook and orchestrator detection
+if [ -n "$PLAN_PATH" ] && [ -f "$PLAN_PATH" ]; then
+  echo ""
+  echo "PLAN_CREATED: $PLAN_PATH"
+  echo ""
+fi
 ```

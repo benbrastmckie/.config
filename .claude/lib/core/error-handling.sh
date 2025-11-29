@@ -11,6 +11,177 @@ export ERROR_HANDLING_SOURCED=1
 set -euo pipefail
 
 # ==============================================================================
+# Pre-Trap Error Buffering
+# ==============================================================================
+# These functions capture errors that occur BEFORE the bash error trap is fully
+# initialized. Errors are buffered in memory and flushed to errors.jsonl once
+# the logging infrastructure is available.
+
+# Pre-trap error buffer (array of error entries)
+declare -a _EARLY_ERROR_BUFFER=()
+
+# Maximum buffer size to prevent memory issues
+readonly _MAX_EARLY_ERROR_BUFFER_SIZE=100
+
+# _buffer_early_error: Buffer an error that occurred before trap initialization
+# Usage: _buffer_early_error <line_number> <exit_code> <error_message>
+# Returns: 0 if buffered, 1 if buffer full
+# Example: _buffer_early_error "$LINENO" "$?" "Failed to source library"
+_buffer_early_error() {
+  local line_number="${1:-unknown}"
+  local exit_code="${2:-1}"
+  local error_message="${3:-Unknown error}"
+
+  # Check buffer size limit
+  if [ ${#_EARLY_ERROR_BUFFER[@]} -ge $_MAX_EARLY_ERROR_BUFFER_SIZE ]; then
+    echo "WARNING: Early error buffer full (${_MAX_EARLY_ERROR_BUFFER_SIZE} entries), discarding oldest" >&2
+    # Remove oldest entry (first element)
+    _EARLY_ERROR_BUFFER=("${_EARLY_ERROR_BUFFER[@]:1}")
+  fi
+
+  # Create buffer entry: "timestamp|line|code|message"
+  local timestamp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "unknown")
+  local entry="${timestamp}|${line_number}|${exit_code}|${error_message}"
+
+  # Add to buffer
+  _EARLY_ERROR_BUFFER+=("$entry")
+
+  return 0
+}
+
+# _flush_early_errors: Flush buffered errors to errors.jsonl
+# Usage: _flush_early_errors
+# Returns: 0 always (best-effort flush)
+# Example: _flush_early_errors  # Call after setup_bash_error_trap
+_flush_early_errors() {
+  # Skip if buffer is empty
+  if [ ${#_EARLY_ERROR_BUFFER[@]} -eq 0 ]; then
+    return 0
+  fi
+
+  # Check if log_command_error function is available
+  if ! type log_command_error >/dev/null 2>&1; then
+    echo "WARNING: Cannot flush early errors - log_command_error not available" >&2
+    return 0
+  fi
+
+  # Flush each buffered error
+  local entry
+  for entry in "${_EARLY_ERROR_BUFFER[@]}"; do
+    # Parse entry: timestamp|line|code|message
+    local timestamp line_number exit_code error_message
+    IFS='|' read -r timestamp line_number exit_code error_message <<< "$entry"
+
+    # Log to errors.jsonl with initialization_error type
+    log_command_error \
+      "${COMMAND_NAME:-/unknown}" \
+      "${WORKFLOW_ID:-unknown}" \
+      "${USER_ARGS:-}" \
+      "initialization_error" \
+      "Early error at line $line_number (exit $exit_code): $error_message" \
+      "pre_trap_buffer" \
+      "$(jq -n \
+        --arg ts "$timestamp" \
+        --arg line "$line_number" \
+        --arg code "$exit_code" \
+        --arg msg "$error_message" \
+        '{timestamp: $ts, line: $line, exit_code: $code, message: $msg}')" 2>/dev/null || true
+  done
+
+  # Clear buffer after flush
+  _EARLY_ERROR_BUFFER=()
+
+  return 0
+}
+
+# ==============================================================================
+# Defensive Trap Setup
+# ==============================================================================
+# These functions provide minimal error traps that can be set BEFORE library
+# sourcing and state restoration, ensuring errors are captured even during
+# initialization. Used in Block 2+ to prevent 40-68 line vulnerability windows.
+
+# _setup_defensive_trap: Set minimal ERR/EXIT traps before library sourcing
+# Usage: _setup_defensive_trap
+# Returns: 0 always
+# Example: _setup_defensive_trap  # Call before sourcing libraries in Block 2+
+_setup_defensive_trap() {
+  # Minimal ERR trap: Print diagnostic to stderr and exit
+  # This catches errors during library sourcing and state restoration
+  trap 'echo "ERROR: Block initialization failed at line $LINENO: $BASH_COMMAND (exit code: $?)" >&2; exit 1' ERR
+
+  # Minimal EXIT trap: Report non-zero exit during initialization
+  # This catches unexpected exits during critical initialization code
+  trap 'local exit_code=$?; if [ $exit_code -ne 0 ]; then echo "ERROR: Block initialization exited with code $exit_code" >&2; fi' EXIT
+
+  return 0
+}
+
+# _clear_defensive_trap: Clear defensive traps before setting full trap
+# Usage: _clear_defensive_trap
+# Returns: 0 always
+# Example: _clear_defensive_trap  # Call before setup_bash_error_trap
+_clear_defensive_trap() {
+  # Clear ERR and EXIT traps (reset to default behavior)
+  trap - ERR
+  trap - EXIT
+
+  return 0
+}
+
+# ==============================================================================
+# Library Sourcing Diagnostics
+# ==============================================================================
+# These functions replace `2>/dev/null` suppression with diagnostic wrappers
+# that capture and report sourcing errors with full context.
+
+# _source_with_diagnostics: Source a library file with error diagnostics
+# Usage: _source_with_diagnostics <library_path>
+# Returns: 0 if sourcing succeeded, 1 if sourcing failed
+# Example: _source_with_diagnostics "$CLAUDE_LIB/core/error-handling.sh"
+_source_with_diagnostics() {
+  local lib_path="$1"
+
+  # Create temporary file for stderr capture
+  local stderr_file
+  stderr_file=$(mktemp 2>/dev/null) || {
+    echo "ERROR: Cannot create temp file for sourcing diagnostics" >&2
+    _buffer_early_error "$LINENO" 1 "mktemp failed for sourcing diagnostics"
+    return 1
+  }
+
+  # Attempt to source library, capturing stderr
+  if source "$lib_path" 2>"$stderr_file"; then
+    # Success: clean up and return
+    rm -f "$stderr_file" 2>/dev/null
+    return 0
+  else
+    # Failure: capture exit code and stderr
+    local exit_code=$?
+    local stderr_output
+    stderr_output=$(cat "$stderr_file" 2>/dev/null)
+
+    # Build diagnostic error message
+    local error_msg="Failed to source $lib_path (exit code: $exit_code)"
+    if [ -n "$stderr_output" ]; then
+      error_msg="$error_msg - Error: $stderr_output"
+    fi
+
+    # Buffer error (trap may not be initialized yet)
+    _buffer_early_error "$LINENO" "$exit_code" "$error_msg"
+
+    # Also print to stderr for immediate visibility
+    echo "ERROR: $error_msg" >&2
+
+    # Clean up temp file
+    rm -f "$stderr_file" 2>/dev/null
+
+    return 1
+  fi
+}
+
+# ==============================================================================
 # Error Classification
 # ==============================================================================
 
@@ -1122,6 +1293,46 @@ mark_errors_fix_planned() {
   return 0
 }
 
+# mark_errors_resolved_for_plan: Update all FIX_PLANNED errors linked to a plan to RESOLVED
+# Usage: mark_errors_resolved_for_plan <plan_path>
+# Returns: Number of resolved entries (stdout), 0 on no matches
+# Example: mark_errors_resolved_for_plan "/path/to/repair-plan.md"
+mark_errors_resolved_for_plan() {
+  local plan_path="${1:-}"
+
+  if [[ -z "$plan_path" ]]; then
+    echo "ERROR: mark_errors_resolved_for_plan requires plan_path argument" >&2
+    return 1
+  fi
+
+  local log_file="${ERROR_LOG_FILE:-$ERROR_LOG_DIR/errors.jsonl}"
+
+  if [[ ! -f "$log_file" ]]; then
+    echo "0"
+    return 0
+  fi
+
+  local count=0
+  local temp_file="${log_file}.tmp.$$"
+  local now=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+  while IFS= read -r line; do
+    local entry_plan=$(echo "$line" | jq -r '.repair_plan_path // ""')
+    local entry_status=$(echo "$line" | jq -r '.status // "ERROR"')
+
+    if [[ "$entry_plan" == "$plan_path" ]] && [[ "$entry_status" == "FIX_PLANNED" ]]; then
+      echo "$line" | jq --arg status "RESOLVED" --arg ts "$now" \
+        '.status = $status | .status_updated_at = $ts' >> "$temp_file"
+      ((count++))
+    else
+      echo "$line" >> "$temp_file"
+    fi
+  done < "$log_file"
+
+  mv "$temp_file" "$log_file"
+  echo "$count"
+}
+
 # ==============================================================================
 # User Escalation
 # ==============================================================================
@@ -1621,20 +1832,39 @@ _is_benign_bash_error() {
     esac
   fi
 
-  # Filter intentional return statements from core library files
-  # These are used for error propagation, not actual errors
+  # Filter intentional return statements from WHITELISTED core library functions
+  # Whitelist approach: Only filter return statements from specific safe functions
+  # Other library functions (e.g., validate_library_functions) should be logged
   case "$failed_command" in
     "return 1"|"return 0"|"return"|"return "[0-9]*)
-      # Check if error originates from a core library file via call stack
-      local j=0
+      # Extract caller function name from call stack
+      local caller_func=""
+      local j=1
       while true; do
         local lib_caller_info
         lib_caller_info=$(caller $j 2>/dev/null) || break
+
+        # Extract function name (format: "line_num function_name file")
+        caller_func=$(echo "$lib_caller_info" | awk '{print $2}')
+
+        # Check if caller is in core library directory
         case "$lib_caller_info" in
           *"/lib/core/"*|*"/lib/workflow/"*|*"/lib/plan/"*)
-            return 0  # Benign: intentional return from core library
+            # Whitelist of safe functions where returns are intentional
+            case "$caller_func" in
+              classify_error|suggest_recovery|detect_error_type|extract_location|\
+              _is_benign_bash_error|_buffer_early_error|_flush_early_errors|\
+              _setup_defensive_trap|_clear_defensive_trap)
+                return 0  # Benign: intentional return from whitelisted function
+                ;;
+              validate_library_functions|validate_workflow_id|validate_state_restoration)
+                # Validation failures should be logged, not filtered
+                return 1  # Not benign: validation error should be logged
+                ;;
+            esac
             ;;
         esac
+
         j=$((j + 1))
         if [ $j -gt 5 ]; then
           break
@@ -1880,11 +2110,17 @@ validate_topic_name_format() {
   return 1
 }
 
+  export -f _buffer_early_error
+  export -f _flush_early_errors
+  export -f _setup_defensive_trap
+  export -f _clear_defensive_trap
+  export -f _source_with_diagnostics
   export -f query_errors
   export -f recent_errors
   export -f error_summary
   export -f update_error_status
   export -f mark_errors_fix_planned
+  export -f mark_errors_resolved_for_plan
   export -f escalate_to_user
   export -f escalate_to_user_parallel
   export -f try_with_fallback
