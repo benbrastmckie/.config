@@ -715,56 +715,26 @@ validate_todo_structure() {
 # ============================================================================
 
 # filter_completed_projects()
-# Purpose: Filter completed projects older than specified age threshold
+# Purpose: Filter projects by cleanup-eligible status (completed, superseded, abandoned)
 # Arguments:
 #   $1 - JSON array of classified plans
-#   $2 - Age threshold in days (default: 30)
-# Returns: JSON array of completed projects meeting age criteria
+# Returns: JSON array of cleanup-eligible projects (all three statuses, no age filtering)
+# Note: Previously filtered by age threshold, now includes all eligible projects regardless of age
 #
 filter_completed_projects() {
   local plans_json="$1"
-  local age_threshold="${2:-30}"
 
   if ! command -v jq &>/dev/null; then
     echo "[]"
     return 1
   fi
 
-  local current_epoch
-  current_epoch=$(date +%s)
-  local threshold_epoch=$((current_epoch - age_threshold * 86400))
+  # Filter for cleanup-eligible statuses: completed, superseded, abandoned
+  # No age-based filtering applied - all eligible projects included
+  local eligible_projects
+  eligible_projects=$(echo "$plans_json" | jq -r '[.[] | select(.status == "completed" or .status == "superseded" or .status == "abandoned")]')
 
-  # Filter for completed status
-  local completed_projects
-  completed_projects=$(echo "$plans_json" | jq -r '[.[] | select(.status == "completed")]')
-
-  # Further filter by age (based on plan file modification time)
-  local filtered_projects="["
-  local first=true
-
-  while IFS= read -r plan_path; do
-    [ -z "$plan_path" ] || [ "$plan_path" = "null" ] && continue
-    [ ! -f "$plan_path" ] && continue
-
-    local file_epoch
-    file_epoch=$(stat -c %Y "$plan_path" 2>/dev/null || stat -f %m "$plan_path" 2>/dev/null || echo "$current_epoch")
-
-    if [ "$file_epoch" -lt "$threshold_epoch" ]; then
-      local plan_obj
-      plan_obj=$(echo "$completed_projects" | jq -r --arg path "$plan_path" '.[] | select(.plan_path == $path)')
-      if [ -n "$plan_obj" ] && [ "$plan_obj" != "null" ]; then
-        if [ "$first" = "true" ]; then
-          first=false
-        else
-          filtered_projects+=","
-        fi
-        filtered_projects+="$plan_obj"
-      fi
-    fi
-  done < <(echo "$completed_projects" | jq -r '.[].plan_path')
-
-  filtered_projects+="]"
-  echo "$filtered_projects"
+  echo "$eligible_projects"
 }
 
 # generate_cleanup_plan()
