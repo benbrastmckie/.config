@@ -2,14 +2,62 @@
 
 ## In Progress
 
-(No plans currently in progress)
+- [x] **Broken Links Fix** - Fix 102+ broken links after reference directory restructuring [.claude/specs/823_broken_links_after_quick_reference_integration/plans/001_broken_links_fix_plan.md]
+  - 5/5 phases complete
+- [x] **Dead Links Fix** - Fix 80+ broken links from lib directory reorganization [.claude/specs/825_summaries_001_implementation_summarymd_to/plans/001_dead_links_fix_plan.md]
+  - 4/4 phases complete
+- [x] **Fix Failing Tests After Library Refactoring** - Fix 29 failing test suites after .claude/lib/ reorganization [.claude/specs/826_refactoring_claude_including_libraries_this/plans/001_refactoring_claude_including_libraries_t_plan.md]
+  - 5/5 phases complete
+- [x] **Error Logging Documentation Integration** - Integrate error logging documentation into ecosystem with standards sections [.claude/specs/840_infrastructure_and_want_to_make_sure_that_its/plans/001_infrastructure_and_want_to_make_sure_tha_plan.md]
+  - 6/6 phases complete
+- [x] **Remove Redundant doc-converter-usage.md** - Delete orphaned documentation and fix broken references [.claude/specs/844_docconverterusagemd_if_anything_and_can_this_file/plans/001_docconverterusagemd_if_anything_and_can__plan.md]
+  - 4/4 phases complete
+- [x] **Documentation Updates for Error Logging** - Update Commands README and CLAUDE.md for error logging infrastructure [.claude/specs/855_commands_readmemd_and_any_other_relevant/plans/001_commands_readmemd_and_any_other_relevant_plan.md]
+  - 3/5 phases complete
+- [x] **Directory Naming Infrastructure Improvement** - Enhanced topic name sanitization and standards enforcement [.claude/specs/862_infrastructure_to_improve_the_names_that_will_be/plans/001_infrastructure_to_improve_the_names_that_plan.md]
+  - 3/6 phases complete
+- [x] **ERR Trap Error Logging Validation** - Proof-of-concept ERR trap integration for error logging validation [.claude/specs/863_plans_001_build_command_use_this_research_to/plans/001_plans_001_build_command_use_this_researc_plan.md]
+  - 2/4 phases complete
 
 ## Not Started
 
-- [ ] **Commands README update** - Update README.md to reflect current command catalog [.claude/specs/788_commands_readme_update/plans/001_commands_readme_update_plan.md]
-- [ ] **Plan standards alignment** - Align plan generation with updated standards [.claude/specs/968_plan_standards_alignment/plans/001-plan-standards-alignment-plan.md]
-- [ ] **Refactor /todo --clean command** - Implement cleanup mode for completed projects [.claude/specs/971_refactor_todo_clean_command/plans/001-refactor-todo-clean-command-plan.md]
-- [x] **/revise command error repair** - Fix /revise command runtime errors [.claude/specs/972_repair_revise_20251129_165201/plans/001-repair-revise-20251129-165201-plan.md]
+- [ ] **State Machine Persistence Bug Fix** - Fix STATE_FILE and CURRENT_STATE persistence across bash subprocess boundaries [.claude/specs/787_state_machine_persistence_bug/plans/001_state_machine_persistence_fix_plan.md]
+- [ ] **Commands README Update** - Update README.md to reflect current command catalog [.claude/specs/788_commands_readme_update/plans/001_commands_readme_update_plan.md]
+- [ ] **Plan Metadata Update Patterns** - Extend plan-architect agent and checkbox-utils.sh with status markers [.claude/specs/792_standards_appropriately_to_include_these_new_plan/plans/001_standards_appropriately_to_include_these_plan.md]
+- [ ] **Coordinate Command Archival** - Archive /coordinate command and all its exclusive dependencies [.claude/specs/799_coordinate_command_all_its_dependencies_order/plans/001_coordinate_command_all_its_dependencies__plan.md]
+- [ ] **Fix /revise Command Errors** - Fix bash history expansion and library sourcing errors in revise.md [.claude/specs/822_claude_reviseoutputmd_which_i_want_you_to/plans/001_claude_reviseoutputmd_which_i_want_you_t_plan.md]
+- [ ] **Quick Reference Integration** - Move quick-reference directory into reference/decision-trees subdirectory [.claude/specs/822_quick_reference_integration/plans/001_quick_reference_integration_plan.md]
+- [ ] **Command Protocols Disposition** - Decision plan for unimplemented command-protocols.md file [.claude/specs/830_specs_standards_commandprotocolsmd_was_created/plans/001_command_protocols_disposition_plan.md]
+- [ ] **Error Logging Infrastructure Improvements** - Implement recommendations to improve error log management and analysis [.claude/specs/841_error_analysis_repair/plans/001_error_analysis_repair_plan.md]
+- [ ] **Neovim Buffer Opening Integration** - Automatic artifact buffer opening after workflow command completion [.claude/specs/848_when_using_claude_code_neovim_greggh_plugin/plans/001_buffer_opening_integration_plan.md]
+- [ ] **Build Phase Progress Metadata Enhancement** - Display current phase number in plan metadata status field [.claude/specs/857_command_order_make_update_metadata_specify_phase/plans/001_build_phase_progress_metadata_plan.md]
+- [ ] **README Documentation Updates** - Update README files for documentation standards compliance [.claude/specs/858_readmemd_files_throughout_claude_order_improve/plans/001_readmemd_files_throughout_claude_order_i_plan.md]
+- [ ] **Cleanup Bloated Spec Directory** - Remove obsolete and abandoned spec directories [.claude/specs/868_directory_has_become_bloated/plans/001_directory_has_become_bloated_plan.md]
+- [ ] **Debug Directory Creation Bug** - Debug strategy for directory creation issues [.claude/specs/869_debug_directory_creation_bug/plans/001_debug_strategy.md]
+- [ ] **Fix Lazy Directory Creation Violations** - Fix lazy directory creation violations in 6 command files [.claude/specs/870_fix_lazy_directory_creation_violations_across_6_co/plans/001_fix_lazy_directory_creation_violations_a_plan.md]
+- [ ] **Error Analysis and Repair** - Error analysis and repair implementation [.claude/specs/871_error_analysis_and_repair/plans/001_error_analysis_and_repair_plan.md]
+- [ ] **Artifact Console Summary Format** - Standardize artifact console summary format [.claude/specs/878_artifact_console_summary_format/plans/001_artifact_console_summary_format_plan.md]
+- [ ] **Build Persistent Workflow Refactor** - Refactor build command persistent workflow [.claude/specs/881_build_persistent_workflow_refactor/plans/001_build_persistent_workflow_refactor_plan.md]
+- [ ] **Debug Build Error Logging Discrepancy** - Debug strategy for error logging discrepancies [.claude/specs/884_build_error_logging_discrepancy/plans/001_debug_strategy.md]
+- [ ] **Repair Plans Research Analysis** - Research analysis for repair command planning [.claude/specs/885_repair_plans_research_analysis/plans/001_repair_plans_research_analysis_plan.md]
+- [ ] **Errors Command Report** - Report implementation for errors command [.claude/specs/886_errors_command_report/plans/001_errors_command_report_plan.md]
+- [ ] **Debug Command Empty Dir Infrastructure** - Debug strategy for empty directory infrastructure issues [.claude/specs/891_debug_command_empty_dir_infra/plans/001_debug_strategy.md]
+- [ ] **Errors Command Directory Protocols** - Directory protocols for errors command output [.claude/specs/906_errors_command_directory_protocols/plans/001_errors_command_directory_protocols_plan.md]
+- [ ] **Debug Directory Numbering Bug** - Debug strategy for directory numbering issues [.claude/specs/910_repair_directory_numbering_bug/plans/001_debug_strategy.md]
+- [ ] **Debug Error Analysis Repair** - Debug repair strategy for error analysis [.claude/specs/912_debug_error_analysis/plans/001_debug_error_analysis_repair_plan.md]
+- [ ] **Research Error Analysis Repair** - Research-based error analysis repair plan [.claude/specs/913_911_research_error_analysis_repair/plans/001_911_research_error_analysis_repair_plan.md]
+- [ ] **Repair Error State Machine Fix** - Fix for error state machine repairs [.claude/specs/915_repair_error_state_machine_fix/plans/001_repair_error_state_machine_fix_plan.md]
+- [ ] **Topic Naming Standards Kebab Case** - Implement kebab-case naming standards for topics [.claude/specs/918_topic_naming_standards_kebab_case/plans/001_topic_naming_standards_kebab_case_plan.md]
+- [ ] **Research Command Error Repair** - Repair plan for research command errors [.claude/specs/921_no_name_error/plans/001-research-command-error-repair-plan.md]
+- [ ] **Errors Repair Research** - Research plan for errors repair workflow [.claude/specs/935_errors_repair_research/plans/001-errors-repair-research-plan.md]
+- [ ] **Optimize Plan Command Performance** - Performance optimization for /plan command [.claude/specs/965_optimize_plan_command_performance/plans/001-optimize-plan-command-performance-plan.md]
+- [ ] **Plan Standards Alignment** - Align plan generation with current standards [.claude/specs/968_plan_standards_alignment/plans/001-plan-standards-alignment-plan.md]
+- [ ] **Refactor /todo --clean Command** - Refactor cleanup functionality for /todo command [.claude/specs/971_refactor_todo_clean_command/plans/001-refactor-todo-clean-command-plan.md]
+- [ ] **Cleanup Completed Projects** - Clean up directories for completed projects [.claude/specs/977_cleanup_completed_projects/plans/001-cleanup-completed-projects-plan.md]
+- [ ] **Todo Clean Refactor Direct Removal** - Direct removal refactoring for /todo --clean [.claude/specs/979_todo_clean_refactor_direct_removal/plans/001-todo-clean-refactor-direct-removal-plan.md]
+- [ ] **Revert Research Buffer Hook** - Revert research buffer hook integration [.claude/specs/980_revert_research_buffer_hook/plans/001-revert-research-buffer-hook-plan.md]
+- [ ] **Research Subagents Performance Fix** - Performance optimization for research subagents [.claude/specs/981_research_subagents_performance_fix/plans/001-research-subagents-performance-fix-plan.md]
+- [ ] **Todo Clean Refactor Removal** - Remove deprecated todo cleanup functionality [.claude/specs/982_todo_clean_refactor_removal/plans/001-todo-clean-refactor-removal-plan.md]
 
 ## Backlog
 
@@ -120,6 +168,13 @@
   - Core objectives (error capture, state persistence, preprocessing safety) already achieved
 
 ## Completed
+
+**November 30, 2025**:
+
+- [x] **Build Command Phase Update Integration** - Fix missing phase completion updates in build workflow [.claude/specs/789_docs_standards_in_order_to_create_a_plan_to_fix/plans/001_docs_standards_in_order_to_create_a_plan_plan.md]
+  - 4/4 phases complete
+- [x] **Plan Status Metadata Implementation** - Add [NOT STARTED] status to plan metadata in plan-architect agent [.claude/specs/805_when_plans_created_command_want_metadata_include/plans/001_when_plans_created_command_want_metadata_plan.md]
+  - 3/3 phases complete
 
 **November 29, 2025**:
 
