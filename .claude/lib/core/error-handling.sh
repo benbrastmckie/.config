@@ -582,14 +582,26 @@ EOF
 # Usage: log_command_error <command> <workflow_id> <user_args> <error_type> <message> <source> [context_json]
 # Returns: 0 on success, 1 on failure
 # Example: log_command_error "/build" "build_123" "plan.md 3" "state_error" "State file not found" "bash_block" '{"state_file": "/path"}'
+#
+# DEFENSIVE: Parameter count validation (Spec 976 Phase 4)
+# Function expects 6-7 parameters. Parameter 7 (context_json) is optional.
+# Accessing unset $7 causes "unbound variable" error (bash set -u mode).
 log_command_error() {
+  # Validate minimum parameter count (6 required, 7th optional)
+  if [ $# -lt 6 ]; then
+    echo "ERROR: log_command_error requires at least 6 parameters (got $#)" >&2
+    echo "Usage: log_command_error <command> <workflow_id> <user_args> <error_type> <message> <source> [context_json]" >&2
+    echo "Received parameters: $*" >&2
+    return 1
+  fi
+
   local command="${1:-unknown}"
   local workflow_id="${2:-unknown}"
   local user_args="${3:-}"
   local error_type="${4:-unknown}"
   local message="${5:-}"
   local source="${6:-unknown}"
-  local context_json="$7"
+  local context_json="${7:-}"  # Optional parameter, default to empty string if not provided
 
   # Default to empty object if not provided or invalid
   if [ -z "$context_json" ]; then

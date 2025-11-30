@@ -2,14 +2,14 @@
 
 ## In Progress
 
-- [x] **Optimize /plan command performance** - Reduce execution time by 30-40% through state consolidation, bash block reduction, library sourcing optimization [.claude/specs/965_optimize_plan_command_performance/plans/001-optimize-plan-command-performance-plan.md]
-  - 9 phases: Error remediation, variable initialization, state consolidation, block reduction, library guards, validation streamlining, timeout tuning, testing, documentation
-- [x] **/build Errors Repair** - Fix 5% unresolved logged errors + eliminate 3 critical runtime errors bypassing error logging [.claude/specs/966_repair_build_20251129_150219/plans/001-repair-build-20251129-150219-plan.md]
+(No plans currently in progress)
 
 ## Not Started
 
 - [ ] **Commands README update** - Update README.md to reflect current command catalog [.claude/specs/788_commands_readme_update/plans/001_commands_readme_update_plan.md]
-- [ ] **Neovim buffer opening integration** - Integration for workflow commands [.claude/specs/848_when_using_claude_code_neovim_greggh_plugin/plans/001_buffer_opening_integration_plan.md]
+- [ ] **Plan standards alignment** - Align plan generation with updated standards [.claude/specs/968_plan_standards_alignment/plans/001-plan-standards-alignment-plan.md]
+- [ ] **Refactor /todo --clean command** - Implement cleanup mode for completed projects [.claude/specs/971_refactor_todo_clean_command/plans/001-refactor-todo-clean-command-plan.md]
+- [ ] **/revise command error repair** - Fix /revise command runtime errors [.claude/specs/972_repair_revise_20251129_165201/plans/001-repair-revise-20251129-165201-plan.md]
 
 ## Backlog
 
@@ -34,9 +34,10 @@
 
 ## Superseded
 
-- [~] **Make /build persistent** - Superseded by Plan 899 (Build iteration infrastructure) [.claude/specs/881_build_persistent_workflow_refactor/plans/001_build_persistent_workflow_refactor_plan.md] → See [901_plan_integration_overlap_analysis](specs/901_plan_integration_overlap_analysis/reports/001_plan_integration_overlap_analysis.md)
-- [~] **Unified repair implementation** - Superseded by ordered High Priority plans (1, 2, 3) which provide same coverage with better sequencing [.claude/specs/885_repair_plans_research_analysis/plans/001_repair_plans_research_analysis_plan.md] → See [repair_plans_priority_analysis](specs/repair_plans_priority_analysis/reports/001_repair_plans_priority_analysis.md)
-- [~] **System-wide error logging gaps** - Phase 0 obsolete (function exists), Phase 2 duplicates Plan 2; valuable elements preserved in Plan 902 [.claude/specs/884_build_error_logging_discrepancy/plans/001_debug_strategy.md] → See [902_error_logging_infrastructure_completion](specs/902_error_logging_infrastructure_completion/reports/001_plan_884_preserved_elements.md)
+- [~] **Neovim buffer opening integration** - Superseded by Plan 851 (Hook-based buffer opening) which is complete [.claude/specs/848_when_using_claude_code_neovim_greggh_plugin/plans/001_buffer_opening_integration_plan.md] -> See [851_hook_based_buffer_opening](specs/851_001_buffer_opening_integration_planmd_the_claude/plans/001_001_buffer_opening_integration_planmd_th_plan.md)
+- [~] **Make /build persistent** - Superseded by Plan 899 (Build iteration infrastructure) [.claude/specs/881_build_persistent_workflow_refactor/plans/001_build_persistent_workflow_refactor_plan.md] -> See [901_plan_integration_overlap_analysis](specs/901_plan_integration_overlap_analysis/reports/001_plan_integration_overlap_analysis.md)
+- [~] **Unified repair implementation** - Superseded by ordered High Priority plans (1, 2, 3) which provide same coverage with better sequencing [.claude/specs/885_repair_plans_research_analysis/plans/001_repair_plans_research_analysis_plan.md] -> See [repair_plans_priority_analysis](specs/repair_plans_priority_analysis/reports/001_repair_plans_priority_analysis.md)
+- [~] **System-wide error logging gaps** - Phase 0 obsolete (function exists), Phase 2 duplicates Plan 2; valuable elements preserved in Plan 902 [.claude/specs/884_build_error_logging_discrepancy/plans/001_debug_strategy.md] -> See [902_error_logging_infrastructure_completion](specs/902_error_logging_infrastructure_completion/reports/001_plan_884_preserved_elements.md)
 
 ## Abandoned
 
@@ -122,6 +123,16 @@
 
 **November 29, 2025**:
 
+- [x] **Build command streamlining** - Consolidate bash blocks, inline verifications, improve code quality [.claude/specs/970_build_command_streamline/plans/001-build-command-streamline-plan.md]
+  - All phases complete: Bash block consolidation, verification inlining, code quality improvements
+- [x] **/plan command error repair** - Fix exit code 127 errors, library sourcing issues, environment bootstrap failures [.claude/specs/969_repair_plan_20251129_155633/plans/001-repair-plan-20251129-155633-plan.md]
+  - All phases complete: Library sourcing, environment bootstrap, agent validation
+- [x] **/todo command error logging repair** - Fix 3 runtime errors, improve error logging integration [.claude/specs/967_repair_todo_20251129_151024/plans/001-repair-todo-20251129-151024-plan.md]
+  - All phases complete: Error logging, execution tracking, observability
+- [x] **/build errors repair** - Fix 5% unresolved logged errors + eliminate 3 critical runtime errors [.claude/specs/966_repair_build_20251129_150219/plans/001-repair-build-20251129-150219-plan.md]
+  - All phases complete: Error logging, runtime error elimination
+- [x] **Optimize /plan command performance** - Reduce execution time by 30-40% through state consolidation [.claude/specs/965_optimize_plan_command_performance/plans/001-optimize-plan-command-performance-plan.md]
+  - 9 phases complete: Error remediation, variable initialization, state consolidation, block reduction, library guards, validation streamlining, timeout tuning, testing, documentation
 - [x] **Fix /repair command spec numbering** - Implement timestamp-based topic naming for unique spec directories [.claude/specs/961_repair_spec_numbering_allocation/plans/001-repair-spec-numbering-allocation-plan.md]
   - 4 phases complete: Direct timestamp naming replaces LLM-based naming (eliminates 2-3s latency + API cost)
 - [x] **Fix 4 failing test compliance issues** - Error logging, if negation patterns, empty directories, executable/doc separation [.claude/specs/962_fix_failing_tests_compliance/plans/001-fix-failing-tests-compliance-plan.md]

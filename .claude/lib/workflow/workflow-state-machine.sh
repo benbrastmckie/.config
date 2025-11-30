@@ -57,9 +57,9 @@ declare -gA STATE_TRANSITIONS=(
   [initialize]="research,implement" # Can go to research or directly to implement (for /build)
   [research]="plan,complete"        # Can skip to complete for research-only
   [plan]="implement,complete,debug" # Can skip to complete for research-and-plan, or debug for debug-only workflows
-  [implement]="test"
+  [implement]="test"                # MUST go through testing phase (enforce test→complete sequence)
   [test]="debug,document,complete"  # Conditional: debug if failed, document if passed, complete if skipping documentation
-  [debug]="test,complete"           # Retry testing or complete if unfixable
+  [debug]="test,document,complete"  # Can retry testing, go to documentation, or complete if unfixable
   [document]="complete"
   [complete]=""                     # Terminal state
 )
@@ -602,10 +602,15 @@ sm_current_state() {
 }
 
 # sm_transition: Validate and execute state transition
-# Usage: sm_transition <next-state>
-# Example: sm_transition "$STATE_RESEARCH"
+# Usage: sm_transition <next-state> [transition-reason]
+# Parameters:
+#   next-state: Target state constant (e.g., $STATE_RESEARCH)
+#   transition-reason: Optional reason for transition (for audit trail and debugging)
+# Example: sm_transition "$STATE_RESEARCH" "user requested research phase"
+# Example: sm_transition "$STATE_DEBUG" "test-executor recommendation"
 sm_transition() {
   local next_state="$1"
+  local transition_reason="${2:-}" # Optional transition reason for audit trail
 
   # Fail-fast if STATE_FILE not loaded (Spec 787: State persistence bug fix)
   if [ -z "${STATE_FILE:-}" ]; then
@@ -693,17 +698,27 @@ sm_transition() {
   if ! echo ",$valid_transitions," | grep -q ",$next_state,"; then
     # Log invalid transition to centralized error log
     if declare -f log_command_error &>/dev/null; then
+      local error_details
+      if [ -n "$transition_reason" ]; then
+        error_details="$(jq -n --arg current "$CURRENT_STATE" --arg target "$next_state" --arg valid "$valid_transitions" --arg reason "$transition_reason" \
+           '{current_state: $current, target_state: $target, valid_transitions: $valid, transition_reason: $reason}')"
+      else
+        error_details="$(jq -n --arg current "$CURRENT_STATE" --arg target "$next_state" --arg valid "$valid_transitions" \
+           '{current_state: $current, target_state: $target, valid_transitions: $valid}')"
+      fi
       log_command_error \
         "${COMMAND_NAME:-/unknown}" \
         "${WORKFLOW_ID:-unknown}" \
         "${USER_ARGS:-}" \
         "state_error" \
-        "Invalid state transition attempted: $CURRENT_STATE -> $next_state" \
+        "Invalid state transition attempted: $CURRENT_STATE -> $next_state${transition_reason:+ (reason: $transition_reason)}" \
         "sm_transition" \
-        "$(jq -n --arg current "$CURRENT_STATE" --arg target "$next_state" --arg valid "$valid_transitions" \
-           '{current_state: $current, target_state: $target, valid_transitions: $valid}')"
+        "$error_details"
     fi
     echo "ERROR: Invalid transition: $CURRENT_STATE → $next_state" >&2
+    if [ -n "$transition_reason" ]; then
+      echo "Transition reason: $transition_reason" >&2
+    fi
     echo "Valid transitions from $CURRENT_STATE: $valid_transitions" >&2
     echo "DIAGNOSTIC: If CURRENT_STATE seems wrong, check state persistence between blocks" >&2
     echo "DIAGNOSTIC: Verify load_workflow_state() was called and STATE_FILE is set" >&2
@@ -713,7 +728,11 @@ sm_transition() {
   # Phase 2: Save pre-transition checkpoint (atomic state transition)
   # Note: Actual checkpoint save requires checkpoint-utils.sh integration
   # This is a placeholder for checkpoint coordination
-  echo "DEBUG: Pre-transition checkpoint (state=$CURRENT_STATE → $next_state)" >&2
+  if [ -n "$transition_reason" ]; then
+    echo "DEBUG: Pre-transition checkpoint (state=$CURRENT_STATE → $next_state, reason: $transition_reason)" >&2
+  else
+    echo "DEBUG: Pre-transition checkpoint (state=$CURRENT_STATE → $next_state)" >&2
+  fi
 
   # Phase 3: Update state
   CURRENT_STATE="$next_state"
@@ -743,7 +762,11 @@ sm_transition() {
   fi
 
   # Phase 4: Save post-transition checkpoint
-  echo "DEBUG: Post-transition checkpoint (state=$CURRENT_STATE)" >&2
+  if [ -n "$transition_reason" ]; then
+    echo "DEBUG: Post-transition checkpoint (state=$CURRENT_STATE, reason: $transition_reason)" >&2
+  else
+    echo "DEBUG: Post-transition checkpoint (state=$CURRENT_STATE)" >&2
+  fi
 
   # Spec 672 Phase 2: Persist COMPLETED_STATES array to workflow state
   # Save after state update so subsequent bash blocks can restore state history
@@ -751,7 +774,11 @@ sm_transition() {
     save_completed_states_to_state || true  # Non-critical, continue on failure
   fi
 
-  echo "State transition: $CURRENT_STATE (completed: ${#COMPLETED_STATES[@]} states)" >&2
+  if [ -n "$transition_reason" ]; then
+    echo "State transition: $CURRENT_STATE (reason: $transition_reason, completed: ${#COMPLETED_STATES[@]} states)" >&2
+  else
+    echo "State transition: $CURRENT_STATE (completed: ${#COMPLETED_STATES[@]} states)" >&2
+  fi
   return 0
 }
 

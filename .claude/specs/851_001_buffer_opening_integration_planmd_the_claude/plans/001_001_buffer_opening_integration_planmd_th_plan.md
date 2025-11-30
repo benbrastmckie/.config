@@ -961,6 +961,43 @@ This plan **supersedes** the file watcher plan (spec 848). Key changes:
 3. Document differences in user guide
 4. No user action required (new feature)
 
+## Lessons Learned (Post-Implementation)
+
+**Critical Discovery: Stop Hook Timing and Multi-Block Commands**
+
+After initial implementation (Plan 851), testing revealed a timing race condition that prevented automatic buffer opening. This was diagnosed and fixed in Plan 975.
+
+**Root Cause**: The Stop hook fires when **Claude finishes responding**, not when bash blocks finish executing.
+
+**Execution Timeline**:
+```
+1. Command starts (Block 1a-1c: setup, state init, topic naming)
+2. Task tool delegation (Block 1d: invoke research-specialist/plan-architect/etc.)
+3. Claude finishes responding → Stop hook fires
+4. [After Claude's response] Block 2 executes (verification and signal output)
+```
+
+**Problem**: Stop hook fires at step 3, but completion signals (REPORT_CREATED, PLAN_CREATED) are output in Block 2 at step 4. When the hook reads the terminal buffer, Block 2 hasn't executed yet, so the signal is absent.
+
+**Solution**: Implement 300ms delay before reading terminal buffer (BUFFER_OPENER_DELAY configuration variable). This gives Block 2 time to execute and flush completion signals to the terminal buffer.
+
+**Implementation Changes** (added in Plan 975):
+- Added BUFFER_OPENER_DELAY environment variable (default: 0.3 seconds)
+- Added configurable delay before terminal buffer read
+- Added comprehensive diagnostic logging for timing verification
+- Documented tuning guidance for different system speeds (0.2s to 0.8s)
+
+**Key Insight**: Multi-block bash commands execute AFTER Claude's response completes, not during. This affects any hook-based automation that depends on command output.
+
+**Success Metrics** (from Plan 975):
+- ≥95% success rate with 300ms delay
+- <500ms latency from completion to buffer open
+- Works consistently across all workflow commands (/research, /plan, /debug, /repair, /revise)
+
+**References**:
+- [Plan 975: Hook Buffer Opening Fix](/home/benjamin/.config/.claude/specs/975_hook_buffer_opening_issue/plans/001-hook-buffer-opening-issue-plan.md)
+- [Hook Buffer Opening Root Cause Analysis](/home/benjamin/.config/.claude/specs/975_hook_buffer_opening_issue/reports/001-hook-buffer-opening-root-cause-analysis.md)
+
 ## Notes
 
 - Hook-based approach trades **universal support** (works anywhere) for **simplicity and reliability** (works perfectly in Neovim terminal)

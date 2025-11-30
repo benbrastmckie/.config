@@ -320,13 +320,25 @@ TEST_COMPLETE:
   exit_code: 1
   execution_time: "2m 34s"
   coverage: "87%"|"N/A"
-  retry_count: 0
+  retry_count: 0  # Number of retries executed (if retry_on_failure enabled)
+  next_state: "DEBUG"|"DOCUMENT"  # DEBUG if failures, DOCUMENT if all passed
 ```
 
 **Status Values**:
 - **passed**: All tests passed (exit_code 0, tests_failed 0)
 - **failed**: Some tests failed (exit_code 1, tests_failed > 0)
 - **error**: Execution error (exit_code != 0 and != 1)
+
+**Next State Recommendation** (New in Phase 2):
+- **next_state**: Recommended workflow state transition
+  - "DEBUG" if status="failed" or status="error" (test failures require debugging)
+  - "DOCUMENT" if status="passed" (tests passed, ready for documentation)
+- Parent workflow MUST use this recommendation for state transitions
+- Prevents invalid transitions (e.g., TEST → DOCUMENT when tests failed)
+
+**Valid Transitions from TEST State**:
+- TEST → DEBUG (if tests failed or errored)
+- TEST → DOCUMENT (if all tests passed)
 
 **Context Efficiency**:
 - Signal contains only metadata (~200 tokens)

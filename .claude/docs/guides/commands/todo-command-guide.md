@@ -287,10 +287,70 @@ The `--clean` flag generates a cleanup plan via the plan-architect agent with th
 **TODO.md**: Preserved and NOT modified during cleanup (re-run `/todo` after cleanup to update)
 
 **Workflow**:
-1. `/todo --clean` - Generate cleanup plan
-2. Review generated plan file
-3. `/build <plan-file>` - Execute cleanup
-4. `/todo` - Rescan and update TODO.md
+1. `/todo --clean --dry-run` - Preview cleanup candidates
+2. `/todo --clean` - Generate cleanup plan
+3. Review generated plan file
+4. `/build <plan-file>` - Execute cleanup
+5. `/todo` - Rescan and update TODO.md
+
+### Clean Mode Output Format
+
+The `/todo --clean` command produces a standardized 4-section console summary (matching /plan and /build output format):
+
+**Example Output**:
+```
+=== /todo --clean Complete ===
+
+Summary: Generated cleanup plan for 193 eligible projects from Completed, Abandoned, and Superseded sections. Plan includes git commit (pre-cleanup snapshot), archive creation with timestamp, and directory removal phases.
+
+Artifacts:
+  📄 Cleanup Plan: /home/user/.config/.claude/specs/cleanup_20251129/plans/001-cleanup-plan.md
+
+Next Steps:
+  • Review plan: cat /home/user/.config/.claude/specs/cleanup_20251129/plans/001-cleanup-plan.md
+  • Execute cleanup: /build /home/user/.config/.claude/specs/cleanup_20251129/plans/001-cleanup-plan.md
+  • Rescan projects: /todo
+
+CLEANUP_PLAN_CREATED: /home/user/.config/.claude/specs/cleanup_20251129/plans/001-cleanup-plan.md
+```
+
+**Output Sections**:
+1. **Summary**: 2-3 sentences describing what was accomplished (eligible count, sections included, plan phases)
+2. **Artifacts**: Emoji-prefixed path to generated cleanup plan (📄 for plan files)
+3. **Next Steps**: Three actionable commands (review, execute, rescan)
+4. **Completion Signal**: `CLEANUP_PLAN_CREATED: <path>` for orchestrator parsing
+
+**Dry-Run Preview Output**:
+```
+=== Cleanup Preview (Dry Run) ===
+
+Eligible projects: 193
+
+Cleanup candidates (would be archived):
+  - 102_plan_command_error_analysis: Fix /plan command error handling
+  - 787_state_machine_persistence_bug: Repair state persistence bug
+  - 788_commands_readme_update: Update commands README
+  ... (190 more)
+
+To generate cleanup plan, run: /todo --clean
+```
+
+**Default Mode Output**:
+```
+=== /todo Complete ===
+
+Summary: Scanned 245 project directories and updated TODO.md with current status. Projects organized by status: In Progress, Not Started, Backlog, Superseded, Abandoned, Completed.
+
+Artifacts:
+  📄 TODO.md: /home/user/.config/.claude/TODO.md
+
+Next Steps:
+  • Review changes: cat /home/user/.config/.claude/TODO.md
+  • Generate cleanup plan: /todo --clean
+  • Preview cleanup: /todo --clean --dry-run
+
+TODO_UPDATED: /home/user/.config/.claude/TODO.md
+```
 
 ---
 

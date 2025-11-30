@@ -1,322 +1,330 @@
-# Refactor /todo --clean Command Implementation Plan
+# Refactor /todo --clean Output Standardization Plan
 
 ## Metadata
-- **Date**: 2025-11-29 (Revised)
-- **Feature**: Refactor /todo --clean to remove age threshold and expand cleanup targets
-- **Scope**: Maintain plan-generation approach while removing 30-day age threshold and targeting Completed, Superseded, and Abandoned sections
+- **Date**: 2025-11-29
+- **Feature**: Standardize /todo --clean output format and enhance git verification
+- **Scope**: Adopt 4-section console summary pattern used by /plan, /build, /research commands. Ensure generated cleanup plans include proper git verification phases. No changes to execution model (plan-generation approach is correct).
 - **Estimated Phases**: 3
-- **Estimated Hours**: 5
+- **Estimated Hours**: 4
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [IN PROGRESS]
+- **Status**: [COMPLETE]
 - **Structure Level**: 0
-- **Complexity Score**: 22.0
+- **Complexity Score**: 18.0
 - **Research Reports**:
-  - [Refactor /todo --clean Command Research](/home/benjamin/.config/.claude/specs/974_todo_clean_refactor/reports/001-todo-clean-refactor-research.md)
-  - [Plan Revision Insights](/home/benjamin/.config/.claude/specs/974_todo_clean_refactor/reports/002-plan-revision-insights.md)
+  - [/home/benjamin/.config/.claude/specs/974_todo_clean_refactor/reports/001-todo-clean-refactor-research.md](/home/benjamin/.config/.claude/specs/974_todo_clean_refactor/reports/001-todo-clean-refactor-research.md)
+  - [/home/benjamin/.config/.claude/specs/974_todo_clean_refactor/reports/002-plan-revision-insights.md](/home/benjamin/.config/.claude/specs/974_todo_clean_refactor/reports/002-plan-revision-insights.md)
+  - [/home/benjamin/.config/.claude/specs/974_todo_clean_refactor/reports/003-todo-clean-output-standardization.md](/home/benjamin/.config/.claude/specs/974_todo_clean_refactor/reports/003-todo-clean-output-standardization.md)
 
 ## Overview
 
-Refactor the `/todo --clean` command to maintain the plan-generation approach while removing the 30-day age threshold and expanding cleanup targets. The command will continue to invoke the plan-architect agent to generate cleanup plans, but will now target ALL projects in Completed, Superseded, and Abandoned sections regardless of age. The generated plan is then executed via `/build` command.
+Refactor the `/todo --clean` command output to adopt the standardized 4-section console summary format used by other artifact-producing commands (/plan, /build, /research). The current implementation correctly generates cleanup plans via plan-architect agent but lacks standardized output formatting. This plan adds proper completion signals, emoji markers, absolute artifact paths, and actionable next steps while maintaining the existing plan-generation architecture.
 
 **Key Changes**:
-1. **Execution Model**: Plan generation (maintains current architecture)
-2. **Age Filtering**: Removed (clean all eligible projects regardless of age)
-3. **Target Sections**: Completed + Abandoned + Superseded (not just Completed)
-4. **Plan Scope**: Generated plan includes git verification, archiving, and directory removal phases
-5. **Workflow**: `/todo --clean` → generates plan → `/build <plan>` → executes cleanup
+1. **Output Format**: Replace generic completion message with 4-section console summary (Summary, Phases, Artifacts, Next Steps)
+2. **Completion Signal**: Add `CLEANUP_PLAN_CREATED: <path>` signal for orchestrator parsing
+3. **Emoji Markers**: Add visual markers (📄 for plans) for terminal scanning
+4. **Git Verification**: Enhance plan-architect prompt to explicitly specify git verification phase behavior
+5. **Dry-Run Support**: Add `--dry-run` preview mode for cleanup candidates
+6. **No --execute Flag**: Already satisfied (flag doesn't exist, no action needed)
 
 ## Research Summary
 
-Research identified that the current `/todo --clean` implementation generates a cleanup plan via plan-architect agent, applies a 30-day age threshold, and only targets completed projects. The plan-generation approach is working well and should be preserved.
+Research identified that `/todo --clean` currently generates cleanup plans via plan-architect agent (correct architecture) but outputs a generic completion message that doesn't follow the standardized 4-section console summary pattern. Commands like /plan, /build, and /research use a consistent output format with completion signals, emoji markers, absolute paths, and actionable next steps.
 
 **Key Findings from Research**:
-- Current implementation uses plan-generation approach (maintained architecture)
-- Existing `filter_completed_projects()` function filters only "completed" status with 30-day age threshold
-- TODO.md has 6 sections with ~193 eligible projects across target sections
-- plan-architect agent already handles plan generation for cleanup operations
-- Archive approach is safer than deletion (full recovery possible)
+- Current output lacks standardized format (no emoji markers, no clear artifact paths)
+- Other commands use 4-section pattern: Summary, Phases (optional), Artifacts, Next Steps
+- Completion signals enable orchestrator parsing (e.g., `PLAN_CREATED:`, `REPORT_CREATED:`)
+- No `--execute` flag exists (requirement already satisfied)
+- Git verification should be in generated plan phases (not /todo command itself)
+- Dry-run preview mode missing for cleanup candidates
+- Plan-generation approach is architecturally correct (maintain as-is)
 
 **Recommended Approach**:
-- KEEP plan-generation workflow (generates plan → `/build` executes)
-- REMOVE 30-day age threshold from filtering logic
-- EXPAND target sections from Completed-only to Completed + Abandoned + Superseded
-- Update `filter_completed_projects()` function to accept three statuses without age filtering
-- Update plan-architect prompt to include all three section types
+- Add standardized 4-section console summary output to Clean Mode
+- Include `CLEANUP_PLAN_CREATED:` completion signal
+- Use emoji markers from approved vocabulary (📄 for plan files)
+- Enhance plan-architect prompt with explicit git verification requirements
+- Add dry-run preview support
+- Update documentation to reflect standardized output
 
 ## Success Criteria
 
-- [ ] `/todo --clean` generates a cleanup plan (maintains current architecture)
-- [ ] Generated plan targets Completed, Abandoned, AND Superseded sections
-- [ ] No age-based filtering applied (all eligible projects included in plan)
-- [ ] `filter_completed_projects()` function updated to accept three statuses
-- [ ] plan-architect prompt updated to remove age threshold requirement
-- [ ] Generated plan includes git verification phase
-- [ ] Generated plan includes archiving to timestamped directory
-- [ ] Generated plan preserves TODO.md (no modification during cleanup)
-- [ ] Plan can be executed via `/build <plan>` command
-- [ ] Documentation updated with new behavior
-- [ ] Function changes maintain backward compatibility where possible
+- [ ] `/todo --clean` outputs 4-section console summary format
+- [ ] Completion signal `CLEANUP_PLAN_CREATED: <path>` emitted with absolute path
+- [ ] Emoji markers used for visual scanning (📄 for plan artifact)
+- [ ] Summary section describes WHAT was accomplished and WHY it matters (2-3 sentences)
+- [ ] Artifacts section lists cleanup plan with absolute path
+- [ ] Next Steps section provides actionable commands (review plan, execute via /build, rescan)
+- [ ] plan-architect prompt explicitly specifies git verification phase behavior
+- [ ] Dry-run mode added (`/todo --clean --dry-run` previews candidates without generating plan)
+- [ ] Output format matches /plan, /build, /research patterns
+- [ ] Documentation updated with example output and workflow
+- [ ] Standards compliance maintained (library sourcing, error handling)
 
 ## Technical Design
 
 ### Architecture
 
-The refactored implementation maintains the plan-generation pattern in the `/todo` command with modifications to the filtering library function and plan-architect prompt.
+The refactored implementation adds a new completion block (Block 5) after the plan-architect invocation in Clean Mode. This block reads the plan path from the agent's return signal and formats a standardized 4-section console summary.
 
 **Component Structure**:
 
 ```
 /todo command (todo.md)
 ├── Block 1-4: Default Mode (TODO.md generation) - UNCHANGED
-└── Clean Mode Section (Plan Generation) - MODIFIED
-    ├── Invoke plan-architect agent
-    ├── Filter projects using updated filter function
-    └── Generate cleanup plan with expanded scope
-
-todo-functions.sh library
-├── filter_completed_projects() - MODIFIED
-    ├── Accept three statuses: completed, superseded, abandoned
-    └── Remove age-based filtering logic
+└── Clean Mode Section - MODIFIED
+    ├── Dry-Run Check (NEW Block 4a)
+    │   └── Preview cleanup candidates, exit before plan generation
+    ├── Plan Generation (Existing Block, Enhanced Prompt)
+    │   └── Invoke plan-architect with enhanced git verification requirements
+    └── Completion Output (NEW Block 5)
+        ├── Parse CLEANUP_PLAN_CREATED signal
+        ├── Generate 4-section console summary
+        └── Emit completion signal for orchestrator
 ```
 
 **Workflow Flow**:
 
 ```
-/todo --clean
+/todo --clean [--dry-run]
     ↓
-Clean Mode Section
+Block 4a: Dry-Run Check (NEW)
     ↓
-1. Filter eligible projects using updated filter_completed_projects()
-    ├─→ Include status: completed, superseded, abandoned
-    └─→ Remove age threshold check
+IF --dry-run:
+    ├─→ Filter eligible projects
+    ├─→ Display preview (count, project list)
+    └─→ Exit (no plan generation)
     ↓
-2. Invoke plan-architect agent with filtered projects
+ELSE (execute clean mode):
     ↓
-3. plan-architect generates cleanup plan with phases:
-    ├─→ Phase 1: Git verification (check uncommitted changes)
-    ├─→ Phase 2: Archive creation (timestamped directory)
-    ├─→ Phase 3: Directory removal (move to archive)
-    └─→ Phase 4: Verification (confirm cleanup success)
+Invoke plan-architect (Enhanced Prompt)
+    ├─→ Filter eligible projects (completed, superseded, abandoned)
+    ├─→ Generate cleanup plan with explicit git verification phase
+    ├─→ Return signal: CLEANUP_PLAN_CREATED: <path>
     ↓
-4. Save plan to specs/{NNN_topic}/plans/
-    ↓
-User executes: /build <plan-file>
-    ↓
-5. Build command executes cleanup phases
+Block 5: Standardized Output (NEW)
+    ├─→ Parse plan path from signal
+    ├─→ Count eligible projects
+    ├─→ Generate 4-section console summary
+    │   ├─→ Summary: What was accomplished, why it matters
+    │   ├─→ Artifacts: 📄 Plan path (absolute)
+    │   └─→ Next Steps: Review, execute, rescan
+    └─→ Emit CLEANUP_PLAN_CREATED signal
 ```
 
 **Key Decisions**:
 
-1. **Plan Generation**: Maintain current plan-architect approach (generates plan for `/build` execution)
-2. **Age Filtering**: Remove 30-day threshold completely from filter logic
-3. **Target Sections**: Expand from Completed-only to Completed + Abandoned + Superseded
-4. **Backward Compatibility**: Keep `filter_completed_projects()` function name, extend logic
-5. **Generated Plan**: Includes git verification, archiving, and TODO.md preservation phases
+1. **Output Format**: Adopt 4-section console summary pattern for consistency
+2. **Completion Signal**: Use `CLEANUP_PLAN_CREATED:` prefix for orchestrator parsing
+3. **Emoji Markers**: Use 📄 for plan files (from approved vocabulary in output-formatting.md)
+4. **Git Verification**: Specify in plan-architect prompt (not in /todo command)
+5. **Dry-Run Preview**: Add preview mode before plan generation (skip-and-exit pattern)
+6. **Backward Compatibility**: Maintain plan-generation approach (no execution model change)
 
 ### Data Flow
 
-**TODO.md Entry Structure**:
-```markdown
-- [x] **Feature Title** - Description
-  [.claude/specs/961_repair_spec_numbering/plans/001-plan.md]
-  - 4 phases complete: Summary
+**plan-architect Return Signal**:
+```bash
+# plan-architect agent returns completion signal
+CLEANUP_PLAN_CREATED: /home/user/.config/.claude/specs/975_cleanup/plans/001-cleanup-plan.md
 ```
 
-**Directory Extraction Pattern**:
+**Block 5 Signal Parsing**:
 ```bash
-# Input: TODO.md entry line
-entry="- [x] **Title** [.claude/specs/961_test/plans/001.md]"
+# Parse plan path from agent output
+CLEANUP_PLAN_PATH=$(echo "$AGENT_OUTPUT" | grep "^CLEANUP_PLAN_CREATED:" | cut -d' ' -f2-)
 
-# Extract topic directory
-topic=$(echo "$entry" | grep -oP '\.claude/specs/\K[0-9]{3}_[^/]+')
-# Result: "961_test"
-
-# Construct full path
-dir_path="${SPECS_ROOT}/${topic}"
-# Result: "/home/user/.claude/specs/961_test"
-```
-
-**Git Status Check**:
-```bash
-# Change to project root
-cd "$CLAUDE_PROJECT_DIR"
-
-# Get relative path
-rel_path="${dir_path#$CLAUDE_PROJECT_DIR/}"
-
-# Check for uncommitted changes
-git_status=$(git status --porcelain "$rel_path" 2>/dev/null)
-
-if [ -n "$git_status" ]; then
-  # Uncommitted changes → skip directory
-  skipped_dirs+=("$topic")
-else
-  # Clean → proceed with removal
-  safe_dirs+=("$topic")
+# Validate path exists
+if [ -z "$CLEANUP_PLAN_PATH" ] || [ ! -f "$CLEANUP_PLAN_PATH" ]; then
+  echo "ERROR: Cleanup plan not created" >&2
+  exit 1
 fi
 ```
 
-**Archive Structure**:
+**4-Section Console Summary Output**:
+```bash
+=== /todo --clean Complete ===
+
+Summary: Generated cleanup plan for 193 eligible projects from Completed, Abandoned, and Superseded sections. Plan includes git verification, timestamped archival, and directory removal phases.
+
+Artifacts:
+  📄 Cleanup Plan: /home/user/.config/.claude/specs/975_cleanup/plans/001-cleanup-plan.md
+
+Next Steps:
+  • Review plan: cat /home/user/.config/.claude/specs/975_cleanup/plans/001-cleanup-plan.md
+  • Execute cleanup: /build /home/user/.config/.claude/specs/975_cleanup/plans/001-cleanup-plan.md
+  • Rescan projects: /todo
+
+CLEANUP_PLAN_CREATED: /home/user/.config/.claude/specs/975_cleanup/plans/001-cleanup-plan.md
 ```
-.claude/
-├── archive/
-│   └── cleaned_20251129_172530/
-│       ├── 102_plan_command_error_analysis/
-│       ├── 787_state_machine_persistence_bug/
-│       └── ... (archived directories)
-└── specs/
-    ├── 969_repair_plan_20251129_155633/  (preserved)
-    └── ... (remaining projects)
+
+**Dry-Run Preview Output**:
+```bash
+=== Cleanup Preview (Dry Run) ===
+
+Eligible projects: 193
+
+Cleanup candidates (would be archived):
+  - 102_plan_command_error_analysis: Fix /plan command error handling
+  - 787_state_machine_persistence_bug: Repair state persistence bug
+  - 788_commands_readme_update: Update commands README
+  ... (190 more)
+
+To generate cleanup plan, run: /todo --clean
 ```
 
 ### Integration Points
 
 1. **plan-architect Agent**:
    - Already integrated in Clean Mode section (lines 624-651 of todo.md)
-   - Receives filtered project list from updated filter function
-   - Generates multi-phase cleanup plan
+   - Receives filtered project list
+   - Returns `CLEANUP_PLAN_CREATED:` signal (NEW requirement)
+   - Enhanced prompt specifies git verification behavior
 
-2. **Library Functions**:
-   - `filter_completed_projects()`: Extend to accept three statuses, remove age check
-   - `scan_project_directories()`: Unchanged (discovers topic directories)
-   - `find_plans_in_topic()`: Unchanged (finds plan files)
-   - `categorize_plan()`: Unchanged (maps status to section)
+2. **State Persistence**:
+   - Block 5 restores state from plan-architect barrier
+   - Reads `DISCOVERED_PROJECTS` variable for eligible count
+   - Preserves workflow ID for error logging
 
-3. **Existing Functions** (no changes needed):
-   - All discovery and classification functions remain as-is
-   - Only filtering logic modified in `filter_completed_projects()`
+3. **Output Formatting Standards**:
+   - Follows 4-section pattern from output-formatting.md (lines 378-403)
+   - Uses emoji vocabulary from approved list (lines 462-470)
+   - Meets length targets: 15-25 lines total (lines 513-522)
 
 ## Implementation Phases
 
-### Phase 1: Update Filter Function [COMPLETE]
+### Phase 1: Add Dry-Run Preview Mode [COMPLETE]
 dependencies: []
 
-**Objective**: Modify `filter_completed_projects()` function in `todo-functions.sh` to accept three statuses (completed, superseded, abandoned) and remove age-based filtering.
+**Objective**: Add `--dry-run` preview mode to Clean Mode that displays cleanup candidates without generating a plan.
 
 **Complexity**: Low
 
 Tasks:
-- [x] Locate `filter_completed_projects()` function (file: /home/benjamin/.config/.claude/lib/todo/todo-functions.sh, lines 717-768)
-- [x] Remove age threshold parameter and logic
-  - Remove `age_threshold_days` parameter
-  - Remove `stat` command checking file modification time
-  - Remove age comparison logic
-- [x] Expand status filtering to three types
-  - Change status filter from `status == "completed"` to `status in ["completed", "superseded", "abandoned"]`
-  - Use jq filter: `select(.status == "completed" or .status == "superseded" or .status == "abandoned")`
-- [x] Update function documentation header
-  - Update Purpose: "Filter projects by cleanup-eligible status (completed, superseded, abandoned)"
-  - Remove age threshold from Arguments section
-  - Add note about expanded status coverage
-- [x] Maintain backward compatibility
-  - Keep function name as `filter_completed_projects()`
-  - Ensure return format matches existing contract (JSON array)
-- [x] Add inline comments explaining status expansion
+- [x] Add Block 4a after existing discovery blocks (file: /home/benjamin/.config/.claude/commands/todo.md, after line 617)
+- [x] Check if both `CLEAN_MODE=true` and `DRY_RUN=true`
+  - If both true: Display preview and exit
+  - If only CLEAN_MODE true: Continue to plan generation
+- [x] Restore state from Block 2c hard barrier
+  - Source state file: `STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)`
+  - Load variables: `CLASSIFIED_RESULTS`, `SPECS_ROOT`
+- [x] Filter eligible projects using `filter_completed_projects()`
+  - Call: `ELIGIBLE_PROJECTS=$(filter_completed_projects "$CLASSIFIED_RESULTS")`
+  - Count: `ELIGIBLE_COUNT=$(echo "$ELIGIBLE_PROJECTS" | jq 'length')`
+- [x] Display preview output
+  - Header: `=== Cleanup Preview (Dry Run) ===`
+  - Count: `Eligible projects: $ELIGIBLE_COUNT`
+  - List: Use jq to format project names and titles
+  - Footer: `To generate cleanup plan, run: /todo --clean`
+- [x] Exit after preview (don't continue to plan generation)
+  - Use `exit 0` to terminate cleanly
 
 Testing:
 ```bash
-# Test filtering with three statuses
-bash .claude/tests/unit/test_filter_completed_projects.sh
+# Test dry-run preview
+/todo --clean --dry-run
 
-# Verify no age-based filtering applied
-# Verify all three statuses included
-# Verify JSON output format maintained
+# Verify output shows eligible count
+# Verify output lists project names
+# Verify no plan file created
+# Verify exit code 0
+```
+
+**Expected Duration**: 1 hour
+
+---
+
+### Phase 2: Add Standardized Completion Output [COMPLETE]
+dependencies: [1]
+
+**Objective**: Replace generic completion message in Clean Mode with standardized 4-section console summary format.
+
+**Complexity**: Medium
+
+Tasks:
+- [x] Add Block 5 after plan-architect invocation (file: /home/benjamin/.config/.claude/commands/todo.md, after line 651)
+- [x] Parse plan path from plan-architect signal
+  - Extract path from `CLEANUP_PLAN_CREATED:` prefix
+  - Validate path exists and is readable
+  - Store in `CLEANUP_PLAN_PATH` variable
+- [x] Restore state for eligible project count
+  - Source state file from Block 2c
+  - Read `DISCOVERED_PROJECTS` for filtering
+  - Calculate `ELIGIBLE_COUNT` using `filter_completed_projects()`
+- [x] Generate 4-section console summary
+  - **Summary**: 2-3 sentences describing what was accomplished and why it matters
+  - **Artifacts**: Single line with 📄 emoji, "Cleanup Plan:", and absolute path
+  - **Next Steps**: Three bullets (review plan, execute via /build, rescan)
+- [x] Use heredoc for clean formatting
+  - Pattern: `cat << EOF ... EOF`
+  - Ensures proper line breaks and indentation
+- [x] Emit completion signal after summary
+  - Format: `CLEANUP_PLAN_CREATED: $CLEANUP_PLAN_PATH`
+  - Absolute path required
+- [x] Remove old generic completion message (lines 659-671)
+  - Delete entire old completion block
+  - Replace with Block 5 implementation
+
+Testing:
+```bash
+# Test standardized output
+/todo --clean
+
+# Verify 4-section format displayed
+# Verify emoji markers present
+# Verify absolute paths used
+# Verify completion signal emitted
+# Verify actionable next steps
 ```
 
 **Expected Duration**: 1.5 hours
 
 ---
 
-### Phase 2: Update plan-architect Prompt [COMPLETE]
-dependencies: [1]
-
-**Objective**: Update the plan-architect agent invocation in Clean Mode section to remove age threshold requirement and expand target sections.
-
-**Complexity**: Low
-
-Tasks:
-- [x] Update Clean Mode description (file: /home/benjamin/.config/.claude/commands/todo.md, lines 618-622)
-  - Change "completed projects older than 30 days" to "projects in Completed, Abandoned, and Superseded sections"
-  - Update to: "generates a cleanup plan for all projects marked as cleanup-eligible"
-- [x] Update plan-architect Task prompt (lines 624-651)
-  - Remove age_threshold parameter: Delete line `- age_threshold: 30 days`
-  - Update input description to include three sections:
-    - `- completed_projects: Projects with status=completed`
-    - `- superseded_projects: Projects with status=superseded`
-    - `- abandoned_projects: Projects with status=abandoned`
-  - Update archive path from `archive/completed_$(date +%Y%m%d)/` to `archive/cleaned_$(date +%Y%m%d)/`
-  - Update plan phases description to clarify git verification phase
-- [x] Update filter function call
-  - Call `filter_completed_projects()` with updated logic (no age parameter)
-  - Pass result to plan-architect agent
-- [x] Verify plan-architect prompt includes:
-  - Git verification phase (check uncommitted changes)
-  - Archive creation phase (timestamped directory)
-  - Directory removal phase (move to archive)
-  - TODO.md preservation (no modification during cleanup)
-
-Testing:
-```bash
-# Test plan generation
-/todo --clean
-
-# Verify plan file created
-# Verify plan includes all three section types
-# Verify no age filtering mentioned
-# Verify plan has git verification phase
-```
-
-**Expected Duration**: 2 hours
-
----
-
-### Phase 3: Update Documentation and Testing [COMPLETE]
+### Phase 3: Enhance plan-architect Prompt and Documentation [COMPLETE]
 dependencies: [2]
 
-**Objective**: Update command documentation to reflect removal of age threshold and expansion of target sections. Add validation tests.
+**Objective**: Update plan-architect prompt with explicit git verification requirements and update documentation to reflect standardized output format.
 
 **Complexity**: Low
 
 Tasks:
-- [x] Update todo-command-guide.md Clean Mode section (file: /home/benjamin/.config/.claude/docs/guides/commands/todo-command-guide.md)
-  - Update description: "generates cleanup plan for Completed, Abandoned, and Superseded sections"
-  - Remove references to 30-day age threshold
-  - Document expanded target sections
-  - Clarify plan-generation workflow: `/todo --clean` → review plan → `/build <plan>`
-- [x] Update inline documentation in todo.md (file: /home/benjamin/.config/.claude/commands/todo.md)
+- [x] Update plan-architect prompt (file: /home/benjamin/.config/.claude/commands/todo.md, lines 635-651)
+  - Add explicit git verification phase requirements
+  - Specify skip-and-warn behavior for uncommitted changes
+  - Document that plan should preserve TODO.md (no modification)
+  - Clarify archive approach (move, not delete)
+  - Update expected plan phases section
+- [x] Ensure prompt requests `CLEANUP_PLAN_CREATED:` signal
+  - Add instruction for plan-architect to return signal
+  - Format: "Return completion signal: CLEANUP_PLAN_CREATED: <plan-path>"
+- [x] Update todo-command-guide.md (file: /home/benjamin/.config/.claude/docs/guides/commands/todo-command-guide.md)
+  - Add "Clean Mode Output Format" section (after line 294)
+  - Include example output (4-section console summary)
+  - Document workflow: dry-run → clean → build → rescan
+  - Add troubleshooting section for common issues
+- [x] Update inline documentation in todo.md
   - Update Clean Mode description (lines 618-622)
-  - Remove age threshold mention
-  - Add examples showing plan generation output
-- [x] Update function documentation in todo-functions.sh (file: /home/benjamin/.config/.claude/lib/todo/todo-functions.sh)
-  - Update `filter_completed_projects()` header
-  - Remove age threshold from Arguments
-  - Document three status types in Purpose
-- [x] Create validation test for filter function
-  - Test completed status filtering
-  - Test superseded status filtering
-  - Test abandoned status filtering
-  - Verify no age filtering applied
-  - Verify JSON output format
-- [x] Test plan generation workflow
-  - Execute `/todo --clean` on test environment
-  - Verify plan file created
-  - Verify plan includes all three section types
-  - Verify plan has expected phases (git verification, archive, removal)
+  - Add examples of standardized output
+  - Document dry-run preview mode
 - [x] Verify standards compliance
-  - Run library sourcing validator on modified files
+  - Run library sourcing validator: `bash .claude/scripts/validate-all-standards.sh --staged`
+  - Run error suppression validator
+  - Run conditionals validator
   - Ensure no violations introduced
 
 Testing:
 ```bash
-# Test filter function
-bash .claude/tests/unit/test_filter_completed_projects.sh
-
-# Test plan generation
+# Test enhanced prompt
 /todo --clean
-# Review generated plan for correctness
+# Review generated plan for git verification phase
+# Verify plan includes skip-and-warn behavior
+# Verify plan preserves TODO.md
 
 # Standards compliance
 bash .claude/scripts/validate-all-standards.sh --staged
+# Verify no violations
 ```
 
 **Expected Duration**: 1.5 hours
@@ -327,193 +335,186 @@ bash .claude/scripts/validate-all-standards.sh --staged
 
 ### Unit Testing (Phase 1)
 
-Test modified library function:
+Test dry-run preview mode:
 
-1. **filter_completed_projects()**:
-   - Filter projects with status="completed"
-   - Filter projects with status="superseded"
-   - Filter projects with status="abandoned"
-   - Verify no age-based filtering applied (all ages included)
-   - Verify JSON output format maintained
-   - Test with empty project list
-   - Test with mixed status types
+1. **Dry-Run Output**:
+   - Execute `/todo --clean --dry-run`
+   - Verify eligible project count displayed
+   - Verify project list formatted correctly
+   - Verify no plan file created
+   - Verify exit code 0
+   - Verify guidance message displayed
 
-### Integration Testing (Phase 3)
+### Integration Testing (Phase 2)
 
-Test complete plan-generation workflow:
+Test standardized output format:
 
-1. **Plan Generation**:
+1. **4-Section Console Summary**:
    - Execute `/todo --clean`
-   - Verify plan file created in specs/{NNN_topic}/plans/
-   - Verify plan includes all three section types
-   - Verify no age threshold mentioned in plan
-   - Verify plan has expected phases (git verification, archive, removal, verification)
+   - Verify Summary section present (2-3 sentences)
+   - Verify Artifacts section has 📄 emoji and absolute path
+   - Verify Next Steps section has 3 actionable bullets
+   - Verify completion signal emitted with absolute path
 
-2. **Plan Content Validation**:
-   - Verify plan targets correct directories (from three sections)
+2. **Signal Parsing**:
+   - Verify `CLEANUP_PLAN_CREATED:` signal correctly parsed
+   - Verify plan path extracted and validated
+   - Verify error handling if plan not created
+
+### Workflow Testing (Phase 3)
+
+Test complete cleanup workflow:
+
+1. **Full Workflow Execution**:
+   - Execute `/todo --clean --dry-run` (preview)
+   - Execute `/todo --clean` (generate plan)
+   - Review plan file content
+   - Execute `/build <plan-path>` (cleanup execution)
+   - Execute `/todo` (rescan and update TODO.md)
+
+2. **Generated Plan Content**:
    - Verify plan includes git verification phase
+   - Verify plan specifies skip-and-warn for uncommitted changes
    - Verify plan includes archive creation with timestamp
-   - Verify plan preserves TODO.md (no modification phase)
+   - Verify plan preserves TODO.md (no modification)
+   - Verify plan has verification phase
 
-3. **Standards Compliance**:
-   - Library sourcing validation
-   - Error suppression validation
-   - Conditionals validation
-   - No violations detected
+### Standards Compliance Testing
+
+- **Library Sourcing**: Verify three-tier sourcing pattern maintained
+- **Error Handling**: Verify error logging integration
+- **Output Formatting**: Verify 4-section pattern compliance
+- **Documentation**: Verify README structure and link validity
 
 ### Test Coverage Requirements
 
-- **Unit Tests**: Modified filter function tested (all three statuses, no age filtering)
-- **Integration Tests**: Plan generation workflow tested (output, content, phases)
-- **Validation Tests**: Standards compliance verified
+- **Unit Tests**: Dry-run preview mode tested
+- **Integration Tests**: Output format and signal parsing tested
+- **Workflow Tests**: Complete cleanup workflow validated
+- **Standards Tests**: All validators pass
 
 ## Documentation Requirements
 
 ### Files to Update
 
 1. **Command Documentation**:
-   - `/home/benjamin/.config/.claude/commands/todo.md`: Replace Clean Mode section, add Block 5
-   - `/home/benjamin/.config/.claude/docs/guides/commands/todo-command-guide.md`: Update Clean Mode description, add troubleshooting
+   - `/home/benjamin/.config/.claude/commands/todo.md`: Add Block 4a (dry-run), Block 5 (output), update prompt
+   - `/home/benjamin/.config/.claude/docs/guides/commands/todo-command-guide.md`: Add Clean Mode Output Format section
 
-2. **Library Documentation**:
-   - `/home/benjamin/.config/.claude/lib/todo/todo-functions.sh`: Add function headers for 4 new functions
+2. **Standards Documentation**:
+   - No updates needed (follows existing output-formatting.md standards)
 
-3. **Standards Documentation**:
-   - `/home/benjamin/.config/.claude/docs/reference/standards/todo-organization-standards.md`: Update "Usage by Commands" section
-
-4. **Test Documentation**:
-   - Test scripts: Inline documentation for setup, execution, verification
+3. **Test Documentation**:
+   - Inline documentation in test scripts (if tests created)
 
 ### Documentation Standards
 
 - Follow CommonMark specification
 - Use clear, concise language
 - Include code examples with syntax highlighting
-- No emojis in file content
+- No emojis in file content (only in terminal output)
 - Document WHAT code does (not WHY)
-- Use 4-section format for summaries (Summary, Phases, Artifacts, Next Steps)
+- Use 4-section format for command completion summaries
 
 ### Required Sections
 
 1. **Command Guide Updates**:
-   - Clean Mode behavior (direct execution)
-   - Target sections (Completed, Abandoned, Superseded)
-   - Git verification (skip-and-warn pattern)
-   - Archive management (timestamped directories)
-   - Recovery procedures (restore from archive)
-   - Troubleshooting (uncommitted changes, permission errors)
+   - Clean Mode Output Format (example output, 4-section breakdown)
+   - Workflow description (dry-run → clean → build → rescan)
+   - Troubleshooting section (plan not created, signal parsing errors)
 
-2. **Function Documentation**:
-   - Purpose (one-line description)
-   - Arguments (with types and descriptions)
-   - Returns (exit codes and output format)
-   - Usage examples (typical invocations)
-
-3. **Standards Documentation**:
-   - `/todo --clean` behavior summary
-   - TODO.md preservation clarification
-   - Workflow: cleanup → rescan
+2. **Inline Documentation**:
+   - Block 4a purpose (dry-run preview)
+   - Block 5 purpose (standardized output)
+   - plan-architect prompt updates (git verification requirements)
 
 ## Dependencies
 
 ### External Dependencies
 
 - **bash**: Shell execution environment (required)
-- **git**: Git status verification (optional, graceful degradation if not available)
-- **jq**: JSON parsing (already used in existing code, required)
-- **sed**: TODO.md section parsing (required)
-- **grep**: Pattern extraction (required)
-- **date**: Timestamp generation (required)
-- **mkdir**: Archive directory creation (required)
-- **mv**: Directory moves (required)
+- **jq**: JSON parsing for eligible project count (required)
+- **cat**: Heredoc output formatting (required)
+- **grep**: Signal parsing (required)
+- **cut**: Path extraction (required)
+- **ls**: State file discovery (required)
 
 ### Internal Dependencies
 
 1. **Libraries**:
-   - `/home/benjamin/.config/.claude/lib/core/state-persistence.sh`: State restoration
-   - `/home/benjamin/.config/.claude/lib/core/error-handling.sh`: Error logging
-   - `/home/benjamin/.config/.claude/lib/todo/todo-functions.sh`: Cleanup functions
+   - `/home/benjamin/.config/.claude/lib/core/state-persistence.sh`: State restoration (Block 5)
+   - `/home/benjamin/.config/.claude/lib/todo/todo-functions.sh`: `filter_completed_projects()` function
 
 2. **Command Blocks**:
-   - Block 1: Setup and discovery (provides `SPECS_ROOT`, `CLAUDE_PROJECT_DIR`)
    - Block 2c: Hard barrier (provides state file for restoration)
+   - plan-architect Task block: Returns `CLEANUP_PLAN_CREATED:` signal
 
-3. **Data Files**:
-   - `/home/benjamin/.config/.claude/TODO.md`: Source of cleanup candidates
-   - State files: `~/.claude/data/state/todo_*.state`
+3. **Standards Files**:
+   - `/home/benjamin/.config/.claude/docs/reference/standards/output-formatting.md`: 4-section format specification
 
 ### Phase Dependencies
 
-- Phase 2 depends on Phase 1 (filter function must be updated before prompt modification)
-- Phase 3 depends on Phase 2 (documentation describes updated behavior)
+- Phase 2 depends on Phase 1 (completion output needs dry-run to be skippable)
+- Phase 3 depends on Phase 2 (documentation describes implemented behavior)
 
-**Note**: All phases are sequential in this simplified plan.
+**Note**: All phases are sequential in this plan.
 
 ## Risk Management
 
 ### Technical Risks
 
-1. **Risk**: Git verification may fail on non-git environments
-   - **Mitigation**: Graceful degradation (skip git check if not available)
-   - **Impact**: Low (log warning, proceed with cleanup)
+1. **Risk**: plan-architect may not return `CLEANUP_PLAN_CREATED:` signal in expected format
+   - **Mitigation**: Add signal parsing validation with error handling
+   - **Impact**: Medium (fallback to error message, no plan displayed)
 
-2. **Risk**: Archive directory creation may fail (disk full, permission denied)
-   - **Mitigation**: Check available space, validate permissions before cleanup
-   - **Impact**: High (fatal error, abort cleanup)
+2. **Risk**: State restoration may fail in Block 5
+   - **Mitigation**: Graceful degradation (use default count if state missing)
+   - **Impact**: Low (eligible count may be inaccurate but plan still created)
 
-3. **Risk**: Directory move operations may fail mid-cleanup
-   - **Mitigation**: Continue-on-error pattern (log and proceed with next directory)
-   - **Impact**: Medium (partial cleanup, user must retry)
-
-4. **Risk**: TODO.md parsing may fail on malformed entries
-   - **Mitigation**: Skip malformed entries, log warnings
-   - **Impact**: Low (some directories missed, manual cleanup needed)
+3. **Risk**: Dry-run preview may display incorrect eligible count
+   - **Mitigation**: Test filtering logic thoroughly, verify against TODO.md sections
+   - **Impact**: Low (preview only, no data modification)
 
 ### Operational Risks
 
-1. **Risk**: User accidentally removes directories with valuable uncommitted work
-   - **Mitigation**: Git verification with skip-and-warn, dry-run preview
-   - **Impact**: Low (uncommitted directories skipped)
+1. **Risk**: Users may expect immediate execution instead of plan generation
+   - **Mitigation**: Clear documentation emphasizing review-before-execute pattern
+   - **Impact**: Low (users can still review plan before executing)
 
-2. **Risk**: Archive directory grows large over time
-   - **Mitigation**: Document archive management, suggest rotation policy
-   - **Impact**: Low (disk space usage, manual cleanup needed)
-
-3. **Risk**: Concurrent execution of `/todo` and `/todo --clean`
-   - **Mitigation**: Separate workflow IDs, independent state files
-   - **Impact**: Low (race condition possible but operations independent)
+2. **Risk**: Output format changes may break downstream tooling
+   - **Mitigation**: Maintain completion signal format for programmatic parsing
+   - **Impact**: Low (signal format unchanged, only human-readable output enhanced)
 
 ### Recovery Procedures
 
-1. **Restore single directory**: `mv archive/cleaned_*/NNN_topic/ specs/`
-2. **Restore all directories**: `mv archive/cleaned_*/* specs/`
-3. **Verify restoration**: `/todo` to regenerate TODO.md
-4. **Commit changes**: Address uncommitted changes, re-run cleanup
+1. **Rollback Output Format**: Revert Block 5, restore old completion message
+2. **Disable Dry-Run**: Comment out Block 4a, default to plan generation
+3. **Restore Plan-Architect Prompt**: Revert prompt changes if issues detected
 
 ## Rollback Strategy
 
 If issues are discovered post-deployment:
 
 1. **Immediate Rollback**:
-   - Revert commit containing refactored implementation
-   - Restore previous plan-generation behavior
+   - Revert commit containing output format changes
+   - Restore previous generic completion message
    - Notify users of rollback
 
 2. **Partial Rollback**:
-   - Keep new library functions
-   - Revert Block 5 to plan-generation
-   - Maintain git verification additions
+   - Keep dry-run preview (Block 4a)
+   - Revert standardized output (Block 5)
+   - Keep enhanced plan-architect prompt
 
-3. **Data Recovery**:
-   - All removed directories archived (no data loss)
-   - Archive restore procedures documented
-   - Git history provides additional recovery option
+3. **No Data Loss**:
+   - Output format changes don't affect data or plan generation
+   - Safe to rollback without data recovery concerns
 
 ## Notes
 
-- This plan maintains the plan-generation approach (not direct execution)
-- Removes 30-day age threshold completely from filtering logic
-- Expands cleanup targets from Completed-only to Completed + Abandoned + Superseded
-- Generated plan will be executed via `/build` command (two-step workflow preserved)
-- Git verification, archiving, and TODO.md preservation are handled in the generated plan phases
-- Plan 971 exists but targets different approach (also plan-generation but with different scope)
+- This plan maintains the plan-generation approach (no execution model change)
+- Focuses on output standardization and user experience improvements
+- No --execute flag removal needed (flag doesn't exist)
+- Git verification strategy handled in generated plan (not /todo command)
+- Dry-run preview enhances safety by allowing users to preview before plan generation
+- Completion signal enables orchestrator parsing for workflow automation
+- Follows output-formatting.md standards for consistency across commands
