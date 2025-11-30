@@ -130,7 +130,10 @@ RESEARCH_COMPLEXITY="$DEFAULT_COMPLEXITY"
 if [[ "$REVISION_DESCRIPTION" =~ --complexity[[:space:]]+([1-4]) ]]; then
   RESEARCH_COMPLEXITY="${BASH_REMATCH[1]}"
   # Strip flag from revision description
-  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--complexity[[:space:]]*[1-4]//' | xargs)
+  # Use bash parameter expansion instead of xargs for quote-safe trimming
+  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--complexity[[:space:]]*[1-4]//')
+  REVISION_DESCRIPTION="${REVISION_DESCRIPTION#"${REVISION_DESCRIPTION%%[![:space:]]*}"}"
+  REVISION_DESCRIPTION="${REVISION_DESCRIPTION%"${REVISION_DESCRIPTION##*[![:space:]]}"}"
 fi
 
 # Validation: reject invalid complexity values
@@ -146,7 +149,10 @@ DRY_RUN="false"
 if [[ "$REVISION_DESCRIPTION" =~ --dry-run ]]; then
   DRY_RUN="true"
   # Strip flag from revision description
-  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--dry-run//' | xargs)
+  # Use bash parameter expansion instead of xargs for quote-safe trimming
+  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--dry-run//')
+  REVISION_DESCRIPTION="${REVISION_DESCRIPTION#"${REVISION_DESCRIPTION%%[![:space:]]*}"}"
+  REVISION_DESCRIPTION="${REVISION_DESCRIPTION%"${REVISION_DESCRIPTION##*[![:space:]]}"}"
 fi
 
 # Parse optional --file flag for long prompt handling
@@ -154,7 +160,10 @@ ORIGINAL_PROMPT_FILE_PATH=""
 if [[ "$REVISION_DESCRIPTION" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
   ORIGINAL_PROMPT_FILE_PATH="${BASH_REMATCH[1]}"
   # Strip --file flag and path from description
-  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--file[[:space:]]*[^[:space:]]*//' | xargs)
+  # Use bash parameter expansion instead of xargs for quote-safe trimming
+  REVISION_DESCRIPTION=$(echo "$REVISION_DESCRIPTION" | sed 's/--file[[:space:]]*[^[:space:]]*//')
+  REVISION_DESCRIPTION="${REVISION_DESCRIPTION#"${REVISION_DESCRIPTION%%[![:space:]]*}"}"
+  REVISION_DESCRIPTION="${REVISION_DESCRIPTION%"${REVISION_DESCRIPTION##*[![:space:]]}"}"
 
   # Convert relative path to absolute (preprocessing-safe pattern)
   [[ "${ORIGINAL_PROMPT_FILE_PATH:-}" = /* ]]
@@ -206,7 +215,10 @@ fi
 # Extract revision details (everything after plan path)
 # Escape regex special characters in plan path for safe sed processing
 ESCAPED_PLAN_PATH=$(printf '%s\n' "$EXISTING_PLAN_PATH" | sed 's/[[\.*^$()+?{|]/\\&/g')
-REVISION_DETAILS=$(echo "$REVISION_DESCRIPTION" | sed "s|.*$ESCAPED_PLAN_PATH||" | xargs) || true
+# Use bash parameter expansion instead of xargs for quote-safe trimming
+REVISION_DETAILS=$(echo "$REVISION_DESCRIPTION" | sed "s|.*$ESCAPED_PLAN_PATH||") || true
+REVISION_DETAILS="${REVISION_DETAILS#"${REVISION_DETAILS%%[![:space:]]*}"}"
+REVISION_DETAILS="${REVISION_DETAILS%"${REVISION_DETAILS##*[![:space:]]}"}"
 
 # Validate revision details are not empty after extraction
 if [ -z "$REVISION_DETAILS" ]; then
@@ -306,6 +318,32 @@ workflow-state-machine.sh: ">=2.0.0"
 state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
+
+# === DEFINE STATE VERIFICATION HELPER ===
+# Validates state load success and required variables
+verify_state_loaded() {
+  local required_vars="$1"  # Space-separated list
+
+  if [ -z "${STATE_FILE:-}" ]; then
+    echo "ERROR: STATE_FILE not set after load_workflow_state" >&2
+    return 1
+  fi
+
+  if [ ! -f "$STATE_FILE" ]; then
+    echo "ERROR: State file not found: $STATE_FILE" >&2
+    return 1
+  fi
+
+  for var in $required_vars; do
+    local var_value="${!var:-}"
+    if [ -z "$var_value" ]; then
+      echo "ERROR: Required variable $var not restored after state load" >&2
+      return 1
+    fi
+  done
+
+  return 0
+}
 
 # Hardcode workflow type
 WORKFLOW_TYPE="research-and-revise"
@@ -499,6 +537,20 @@ if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
   exit 1
 fi
 
+# Validate STATE_FILE is set before state transition (defensive check)
+if [ -z "${STATE_FILE:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "STATE_FILE not set before sm_transition" \
+    "bash_block_4a" \
+    "$(jq -n --arg workflow "${WORKFLOW_ID:-unknown}" '{workflow_id: $workflow}')"
+  echo "ERROR: STATE_FILE not set. Call load_workflow_state first." >&2
+  exit 1
+fi
+
 # Transition to research state with return code verification
 sm_transition "$STATE_RESEARCH" 2>&1
 SM_TRANSITION_EXIT=$?
@@ -548,21 +600,8 @@ append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
 append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
 
-# Persist completed state with return code verification
-save_completed_states_to_state 2>&1
-SAVE_EXIT=$?
-if [ $SAVE_EXIT -ne 0 ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "Failed to persist research setup state" \
-    "bash_block_4a" \
-    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
-  echo "ERROR: Failed to persist research setup state" >&2
-  exit 1
-fi
+# Removed: save_completed_states_to_state does not exist in library
+# State machine already persists completed states via sm_transition
 
 # CHECKPOINT REPORTING
 echo ""
@@ -713,21 +752,8 @@ append_workflow_state "TOTAL_REPORT_COUNT" "$TOTAL_REPORT_COUNT"
 append_workflow_state "NEW_REPORT_COUNT" "$NEW_REPORT_COUNT"
 append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
 
-# Persist completed state with return code verification
-save_completed_states_to_state 2>&1
-SAVE_EXIT=$?
-if [ $SAVE_EXIT -ne 0 ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "Failed to persist research verification state" \
-    "bash_block_4c" \
-    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
-  echo "ERROR: Failed to persist research verification state" >&2
-  exit 1
-fi
+# Removed: save_completed_states_to_state does not exist in library
+# State machine already persists completed states via sm_transition
 
 if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
   echo "WARNING: State file not found after save: $STATE_FILE" >&2
@@ -836,6 +862,20 @@ if [ -z "${EXISTING_PLAN_PATH:-}" ]; then
   exit 1
 fi
 
+# Validate STATE_FILE is set before state transition (defensive check)
+if [ -z "${STATE_FILE:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "STATE_FILE not set before sm_transition" \
+    "bash_block_5a" \
+    "$(jq -n --arg workflow "${WORKFLOW_ID:-unknown}" '{workflow_id: $workflow}')"
+  echo "ERROR: STATE_FILE not set. Call load_workflow_state first." >&2
+  exit 1
+fi
+
 # Transition to plan state with return code verification
 sm_transition "$STATE_PLAN" 2>&1
 SM_TRANSITION_EXIT=$?
@@ -903,21 +943,8 @@ append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
 append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
 append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
 
-# Persist completed state with return code verification
-save_completed_states_to_state 2>&1
-SAVE_EXIT=$?
-if [ $SAVE_EXIT -ne 0 ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "Failed to persist plan revision setup state" \
-    "bash_block_5a" \
-    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
-  echo "ERROR: Failed to persist plan revision setup state" >&2
-  exit 1
-fi
+# Removed: save_completed_states_to_state does not exist in library
+# State machine already persists completed states via sm_transition
 
 # CHECKPOINT REPORTING
 echo ""
@@ -1088,21 +1115,8 @@ echo ""
 append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
 append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
 
-# Persist completed state with return code verification
-save_completed_states_to_state 2>&1
-SAVE_EXIT=$?
-if [ $SAVE_EXIT -ne 0 ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "state_error" \
-    "Failed to persist plan revision verification state" \
-    "bash_block_5c" \
-    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
-  echo "ERROR: Failed to persist plan revision verification state" >&2
-  exit 1
-fi
+# Removed: save_completed_states_to_state does not exist in library
+# State machine already persists completed states via sm_transition
 
 if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
   echo "WARNING: State file not found after save: $STATE_FILE" >&2
@@ -1155,6 +1169,20 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 # === SETUP BASH ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# Validate STATE_FILE is set before state transition (defensive check)
+if [ -z "${STATE_FILE:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "STATE_FILE not set before sm_transition" \
+    "bash_block_6" \
+    "$(jq -n --arg workflow "${WORKFLOW_ID:-unknown}" '{workflow_id: $workflow}')"
+  echo "ERROR: STATE_FILE not set. Call load_workflow_state first." >&2
+  exit 1
+fi
 
 # Research-and-revise workflow: terminate after plan revision with return code verification
 sm_transition "$STATE_COMPLETE" 2>&1
@@ -1210,10 +1238,12 @@ print_artifact_summary "Revise" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
 echo ""
 
 # === CLEANUP TEMP FILES ===
-# Clean up temporary state ID file
-if [ -f "$STATE_ID_FILE" ]; then
-  rm -f "$STATE_ID_FILE" 2>/dev/null || true
-fi
+# Note: STATE_ID_FILE cleanup omitted to preserve WORKFLOW_ID for error handlers
+# System cleanup handles tmp/ directory files automatically
+# Clean up temporary state ID file (DEFERRED - preserve for error handlers)
+# if [ -f "$STATE_ID_FILE" ]; then
+#   rm -f "$STATE_ID_FILE" 2>/dev/null || true
+# fi
 
 # Clean up argument file if it exists
 REVISE_ARG_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_arg.txt"
