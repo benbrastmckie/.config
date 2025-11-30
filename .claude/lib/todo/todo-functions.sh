@@ -384,6 +384,54 @@ get_topic_path() {
   echo "${specs_root}/${topic_name}"
 }
 
+# format_research_entry()
+# Purpose: Format a research-only directory entry for TODO.md Research section
+# Arguments:
+#   $1 - Topic name (e.g., "991_repair_research_20251130_115356")
+#   $2 - Topic path (absolute)
+# Returns: Formatted entry string linking to directory
+# Usage:
+#   ENTRY=$(format_research_entry "991_repair_research" "/path/to/specs/991")
+#
+format_research_entry() {
+  local topic_name="$1"
+  local topic_path="$2"
+  local specs_root="${CLAUDE_SPECS_ROOT:-${CLAUDE_PROJECT_DIR}/.claude/specs}"
+
+  # Extract title from first report file (if exists)
+  local title="$topic_name"
+  local description=""
+  local reports_dir="${topic_path}/reports"
+
+  if [ -d "$reports_dir" ]; then
+    local first_report
+    first_report=$(find "$reports_dir" -maxdepth 1 -type f -name "*.md" 2>/dev/null | sort | head -1)
+
+    if [ -n "$first_report" ] && [ -f "$first_report" ]; then
+      # Extract title from first heading
+      local report_title
+      report_title=$(grep -m1 "^# " "$first_report" | sed 's/^# //' | head -c 100 || echo "")
+      if [ -n "$report_title" ]; then
+        title="$report_title"
+      fi
+
+      # Extract description from second non-empty line or first paragraph
+      description=$(sed -n '/^# /,/^$/{/^# /d; /^$/d; p;}' "$first_report" | head -1 | head -c 100 || echo "Research analysis")
+    fi
+  fi
+
+  # Use fallback description if empty
+  [ -z "$description" ] && description="Research-only project (no implementation plan)"
+
+  # Get relative path to topic directory
+  local rel_path
+  rel_path=$(get_relative_path "$topic_path")
+
+  # Format entry with directory link
+  local checkbox="[ ]"
+  echo "- ${checkbox} **${title}** - ${description} [${rel_path}/]"
+}
+
 # ============================================================================
 # SECTION 6: TODO.md File Operations
 # ============================================================================
@@ -404,6 +452,24 @@ extract_backlog_section() {
 
   # Extract content between ## Backlog and next ## header
   sed -n '/^## Backlog$/,/^## /p' "$todo_path" | sed '1d;$d'
+}
+
+# extract_saved_section()
+# Purpose: Extract existing Saved section content for preservation
+# Arguments:
+#   $1 - Path to TODO.md file
+# Returns: Saved section content (empty if not found)
+#
+extract_saved_section() {
+  local todo_path="$1"
+
+  if [ ! -f "$todo_path" ]; then
+    echo ""
+    return 0
+  fi
+
+  # Extract content between ## Saved and next ## header
+  sed -n '/^## Saved$/,/^## /p' "$todo_path" | sed '1d;$d'
 }
 
 # format_plan_entry()
@@ -483,14 +549,210 @@ format_plan_entry() {
   echo -e "$entry"
 }
 
+# extract_completed_section()
+# Purpose: Extract existing Completed section content for preservation
+# Arguments:
+#   $1 - Path to TODO.md file
+# Returns: Completed section content with date headers and entries (empty if not found)
+#
+extract_completed_section() {
+  local todo_path="$1"
+
+  if [ ! -f "$todo_path" ]; then
+    echo ""
+    return 0
+  fi
+
+  # Extract content between ## Completed and end of file (or next ## header if exists)
+  sed -n '/^## Completed$/,$ p' "$todo_path" | sed '1d'
+}
+
+# parse_completed_entries()
+# Purpose: Parse Completed section content to extract date-grouped entries
+# Arguments:
+#   $1 - Completed section content (from extract_completed_section)
+# Returns: JSON array of objects with {date: "YYYY-MM-DD", entries: ["entry1", "entry2"]}
+#
+parse_completed_entries() {
+  local content="$1"
+
+  if [ -z "$content" ]; then
+    echo "[]"
+    return 0
+  fi
+
+  # Use awk to parse date headers and collect entries
+  # Date headers match pattern: **Month Day, Year**: or **Month Day-Day, Year**:
+  local json_output
+  json_output=$(echo "$content" | awk '
+    BEGIN {
+      current_date = ""
+      entry_buffer = ""
+      first_group = 1
+    }
+
+    # Match date headers like **November 30, 2025**: or **November 27-29, 2025**:
+    /^\*\*[A-Z][a-z]+ [0-9]/ {
+      # Save previous group if exists
+      if (current_date != "" && entry_buffer != "") {
+        if (!first_group) printf ","
+        first_group = 0
+        # Escape quotes in entries
+        gsub(/"/, "\\\"", entry_buffer)
+        # Remove trailing newlines
+        gsub(/\n+$/, "", entry_buffer)
+        printf "{\"date\":\"%s\",\"entries\":\"%s\"}", current_date, entry_buffer
+      }
+
+      # Parse new date header
+      # Extract date from **November 30, 2025**: format
+      match($0, /\*\*([A-Z][a-z]+ [0-9]+(-[0-9]+)?, [0-9]+)\*\*:/, arr)
+      if (arr[1] != "") {
+        # Convert to YYYY-MM-DD format for sorting
+        # For now, store the original format and convert later
+        current_date = arr[1]
+      }
+      entry_buffer = ""
+      next
+    }
+
+    # Collect entry lines (skip empty lines)
+    /^- \[/ {
+      if (entry_buffer != "") entry_buffer = entry_buffer "\\n"
+      entry_buffer = entry_buffer $0
+      next
+    }
+
+    # Collect continuation lines (indented lines starting with spaces)
+    /^  / {
+      entry_buffer = entry_buffer "\\n" $0
+      next
+    }
+
+    END {
+      # Save last group
+      if (current_date != "" && entry_buffer != "") {
+        if (!first_group) printf ","
+        gsub(/"/, "\\\"", entry_buffer)
+        gsub(/\n+$/, "", entry_buffer)
+        printf "{\"date\":\"%s\",\"entries\":\"%s\"}", current_date, entry_buffer
+      }
+    }
+  ')
+
+  echo "[${json_output}]"
+}
+
+# detect_date_ranges()
+# Purpose: Group consecutive dates into ranges
+# Arguments:
+#   $1 - JSON array of date strings in YYYY-MM-DD format
+# Returns: JSON array of objects with {start: "YYYY-MM-DD", end: "YYYY-MM-DD"}
+#
+detect_date_ranges() {
+  local dates_json="$1"
+
+  if [ -z "$dates_json" ] || [ "$dates_json" = "[]" ]; then
+    echo "[]"
+    return 0
+  fi
+
+  # Use jq to sort dates and group consecutive ones
+  if command -v jq &>/dev/null; then
+    echo "$dates_json" | jq -r '
+      sort | reverse |  # Newest first
+      reduce .[] as $date (
+        [];
+        if length == 0 then
+          [{start: $date, end: $date}]
+        else
+          . as $ranges |
+          ($ranges | last) as $last_range |
+          ($date | split("-") | map(tonumber)) as $date_parts |
+          ($last_range.end | split("-") | map(tonumber)) as $last_parts |
+
+          # Calculate if dates are consecutive (diff = 1 day)
+          ($last_parts[0] * 10000 + $last_parts[1] * 100 + $last_parts[2]) as $last_num |
+          ($date_parts[0] * 10000 + $date_parts[1] * 100 + $date_parts[2]) as $date_num |
+
+          # Check if dates differ by exactly 1 day
+          # This is a simplified check - proper implementation would handle month/year boundaries
+          if ($last_num - $date_num == 1) then
+            # Extend current range
+            $ranges[:-1] + [{start: $date, end: $last_range.end}]
+          else
+            # Start new range
+            $ranges + [{start: $date, end: $date}]
+          end
+        end
+      )
+    '
+  else
+    # Fallback: no grouping, just return individual dates
+    echo "$dates_json" | sed 's/\[//;s/\]//;s/"//g' | tr ',' '\n' | while read -r date; do
+      [ -z "$date" ] && continue
+      echo "{\"start\":\"$date\",\"end\":\"$date\"}"
+    done | jq -s '.'
+  fi
+}
+
+# format_date_range_header()
+# Purpose: Generate date header for Completed section (single date or range)
+# Arguments:
+#   $1 - Start date (YYYY-MM-DD format)
+#   $2 - End date (YYYY-MM-DD format, optional - omit for single date)
+# Returns: Formatted date header (e.g., "**November 29, 2025**:" or "**November 27-29, 2025**:")
+#
+format_date_range_header() {
+  local start_date="$1"
+  local end_date="${2:-}"
+
+  # Convert YYYY-MM-DD to readable format
+  local start_formatted
+  start_formatted=$(date -d "$start_date" "+%B %-d, %Y" 2>/dev/null || date -j -f "%Y-%m-%d" "$start_date" "+%B %-d, %Y" 2>/dev/null)
+
+  if [ -z "$end_date" ] || [ "$start_date" = "$end_date" ]; then
+    # Single date
+    echo "**${start_formatted}**:"
+  else
+    # Date range
+    local end_formatted
+    end_formatted=$(date -d "$end_date" "+%B %-d, %Y" 2>/dev/null || date -j -f "%Y-%m-%d" "$end_date" "+%B %-d, %Y" 2>/dev/null)
+
+    # Extract components
+    local start_month start_day start_year
+    start_month=$(echo "$start_formatted" | cut -d' ' -f1)
+    start_day=$(echo "$start_formatted" | cut -d' ' -f2 | tr -d ',')
+    start_year=$(echo "$start_formatted" | cut -d' ' -f3)
+
+    local end_month end_day end_year
+    end_month=$(echo "$end_formatted" | cut -d' ' -f1)
+    end_day=$(echo "$end_formatted" | cut -d' ' -f2 | tr -d ',')
+    end_year=$(echo "$end_formatted" | cut -d' ' -f3)
+
+    # Format based on month/year boundaries
+    if [ "$start_year" != "$end_year" ]; then
+      # Year boundary: "December 31, 2024 - January 1, 2025"
+      echo "**${start_month} ${start_day}, ${start_year} - ${end_month} ${end_day}, ${end_year}**:"
+    elif [ "$start_month" != "$end_month" ]; then
+      # Month boundary: "October 31 - November 1, 2025"
+      echo "**${start_month} ${start_day} - ${end_month} ${end_day}, ${end_year}**:"
+    else
+      # Same month: "November 27-29, 2025"
+      echo "**${start_month} ${start_day}-${end_day}, ${start_year}**:"
+    fi
+  fi
+}
+
 # generate_completed_date_header()
-# Purpose: Generate date header for Completed section
+# Purpose: Generate date header for Completed section (legacy compatibility)
 # Returns: Formatted date header (e.g., "**November 29, 2025**:")
+# Note: This function is deprecated in favor of format_date_range_header()
 #
 generate_completed_date_header() {
-  local date_str
-  date_str=$(date "+%B %d, %Y")
-  echo "**${date_str}**:"
+  local today
+  today=$(date "+%Y-%m-%d")
+  format_date_range_header "$today"
 }
 
 # update_todo_file()
@@ -506,18 +768,51 @@ update_todo_file() {
   local plans_json="$2"
   local dry_run="${3:-false}"
 
-  # Extract existing Backlog section to preserve
+  # Extract existing Backlog and Saved sections to preserve
   local existing_backlog=""
+  local existing_saved=""
   if [ -f "$todo_path" ]; then
     existing_backlog=$(extract_backlog_section "$todo_path")
+    existing_saved=$(extract_saved_section "$todo_path")
   fi
 
   # Initialize section arrays
   local in_progress_entries=()
   local not_started_entries=()
+  local research_entries=()
   local superseded_entries=()
   local abandoned_entries=()
   local completed_entries=()
+
+  # Scan for research-only directories (have reports/ but no plans/)
+  local specs_root="${CLAUDE_SPECS_ROOT:-${CLAUDE_PROJECT_DIR}/.claude/specs}"
+  if [ -d "$specs_root" ]; then
+    while IFS= read -r topic_name; do
+      [ -z "$topic_name" ] && continue
+
+      local topic_path="${specs_root}/${topic_name}"
+      local reports_dir="${topic_path}/reports"
+      local plans_dir="${topic_path}/plans"
+
+      # Check if directory has reports/ but no plans/ (or empty plans/)
+      if [ -d "$reports_dir" ]; then
+        local has_plans=false
+        if [ -d "$plans_dir" ]; then
+          # Check if plans directory has any .md files
+          if ls "$plans_dir"/*.md >/dev/null 2>&1; then
+            has_plans=true
+          fi
+        fi
+
+        # If no plans, this is a research-only directory
+        if [ "$has_plans" = "false" ]; then
+          local research_entry
+          research_entry=$(format_research_entry "$topic_name" "$topic_path")
+          research_entries+=("$research_entry")
+        fi
+      fi
+    done < <(scan_project_directories)
+  fi
 
   # Process each plan
   if command -v jq &>/dev/null && [ -n "$plans_json" ] && [ "$plans_json" != "[]" ]; then
@@ -606,25 +901,38 @@ update_todo_file() {
     done
   fi
 
-  # Backlog section (preserved)
+  # Research section (auto-populated from research-only directories)
+  content+="## Research\n\n"
+  if [ ${#research_entries[@]} -gt 0 ]; then
+    for entry in "${research_entries[@]}"; do
+      content+="${entry}\n\n"
+    done
+  fi
+
+  # Saved section (manually curated, preserved)
+  content+="## Saved\n\n"
+  if [ -n "$existing_saved" ]; then
+    content+="${existing_saved}\n"
+  fi
+  content+="\n"
+
+  # Backlog section (manually curated, preserved)
   content+="## Backlog\n\n"
   if [ -n "$existing_backlog" ]; then
     content+="${existing_backlog}\n"
   fi
   content+="\n"
 
-  # Superseded section
-  content+="## Superseded\n\n"
-  if [ ${#superseded_entries[@]} -gt 0 ]; then
-    for entry in "${superseded_entries[@]}"; do
-      content+="${entry}\n\n"
-    done
-  fi
-
-  # Abandoned section
+  # Abandoned section (includes superseded entries merged with [~] checkbox)
   content+="## Abandoned\n\n"
   if [ ${#abandoned_entries[@]} -gt 0 ]; then
     for entry in "${abandoned_entries[@]}"; do
+      content+="${entry}\n\n"
+    done
+  fi
+  # Add superseded entries to Abandoned section (migration compatibility)
+  if [ ${#superseded_entries[@]} -gt 0 ]; then
+    for entry in "${superseded_entries[@]}"; do
       content+="${entry}\n\n"
     done
   fi
@@ -682,22 +990,32 @@ validate_todo_structure() {
   local content
   content=$(cat "$todo_path" 2>/dev/null)
 
-  # Check required sections exist
-  local required_sections=("## In Progress" "## Not Started" "## Backlog" "## Superseded" "## Abandoned" "## Completed")
+  # Check required sections exist (7 sections per standards)
+  local required_sections=("## In Progress" "## Not Started" "## Research" "## Saved" "## Backlog" "## Abandoned" "## Completed")
   for section in "${required_sections[@]}"; do
     if ! echo "$content" | grep -q "^${section}"; then
       errors+=("Missing section: $section")
     fi
   done
 
-  # Check section order (In Progress should come before Completed)
-  local in_progress_line completed_line
-  in_progress_line=$(echo "$content" | grep -n "^## In Progress" | head -1 | cut -d: -f1 || echo "0")
-  completed_line=$(echo "$content" | grep -n "^## Completed" | head -1 | cut -d: -f1 || echo "0")
+  # Check section order (all 7 sections in canonical order)
+  local canonical_sections=("## In Progress" "## Not Started" "## Research" "## Saved" "## Backlog" "## Abandoned" "## Completed")
+  local prev_line=0
+  local prev_section=""
 
-  if [ "$in_progress_line" -gt "$completed_line" ] && [ "$completed_line" -gt 0 ]; then
-    errors+=("Section order violation: 'In Progress' should come before 'Completed'")
-  fi
+  for section in "${canonical_sections[@]}"; do
+    local section_line
+    section_line=$(echo "$content" | grep -n "^${section}" | head -1 | cut -d: -f1 || echo "0")
+
+    if [ "$section_line" -gt 0 ]; then
+      # Check if this section appears after previous section
+      if [ "$prev_line" -gt 0 ] && [ "$section_line" -lt "$prev_line" ]; then
+        errors+=("Section order violation: '${section}' (line ${section_line}) appears before '${prev_section}' (line ${prev_line})")
+      fi
+      prev_line="$section_line"
+      prev_section="$section"
+    fi
+  done
 
   # Report errors
   if [ ${#errors[@]} -gt 0 ]; then
@@ -713,6 +1031,128 @@ validate_todo_structure() {
 # ============================================================================
 # SECTION 7: Cleanup Direct Execution (--clean mode)
 # ============================================================================
+
+# parse_todo_sections()
+# Purpose: Parse TODO.md and extract entries from cleanup-eligible sections
+# Arguments:
+#   $1 - Path to TODO.md file
+# Returns: JSON array with topic_name, topic_path, plan_path, section fields
+# Note: This function reads directly from TODO.md sections rather than
+#       relying on plan file classification, ensuring manual categorization
+#       in TODO.md is honored during cleanup.
+#
+# Example output:
+# [
+#   {"topic_name": "902_error_logging", "topic_path": "/path/to/specs/902_error_logging",
+#    "plan_path": ".claude/specs/902_error_logging/plans/001.md", "section": "Abandoned"},
+#   ...
+# ]
+#
+parse_todo_sections() {
+  local todo_path="$1"
+  local specs_root="${CLAUDE_SPECS_ROOT:-${CLAUDE_PROJECT_DIR}/.claude/specs}"
+
+  # Validate TODO.md exists
+  if [ ! -f "$todo_path" ]; then
+    echo "[]"
+    return 0
+  fi
+
+  # Read TODO.md content
+  local content
+  content=$(cat "$todo_path" 2>/dev/null)
+  if [ -z "$content" ]; then
+    echo "[]"
+    return 0
+  fi
+
+  # Initialize JSON array builder
+  local json_entries=""
+
+  # Process each cleanup-eligible section (note: Superseded merged into Abandoned per standards)
+  local sections=("Completed" "Abandoned")
+
+  for section in "${sections[@]}"; do
+    # Extract section content between ## Section and next ## header
+    # Using awk for more reliable multi-line extraction
+    local section_content
+    section_content=$(echo "$content" | awk -v section="## $section" '
+      $0 == section { found=1; next }
+      /^## / && found { exit }
+      found { print }
+    ')
+
+    # Skip if section is empty
+    [ -z "$section_content" ] && continue
+
+    # Extract entries from section
+    # Pattern: - [x] or - [~] followed by **Title** ... [path/to/specs/NNN_topic/...]
+    # Topic number can be in title (NNN) OR in the plan path
+    while IFS= read -r line; do
+      # Skip sub-bullets (indented lines)
+      [[ "$line" =~ ^[[:space:]] ]] && continue
+
+      # Match entry lines starting with - [x] or - [~] with bold title
+      if echo "$line" | grep -qE '^- \[[x~]\] \*\*'; then
+        # First, try to extract topic number from parentheses: (NNN)
+        local topic_num
+        topic_num=$(echo "$line" | grep -oE '\([0-9]+\)' | head -1 | tr -d '()')
+
+        # If not found in title, try to extract from plan path: specs/NNN_topic/
+        if [ -z "$topic_num" ]; then
+          topic_num=$(echo "$line" | grep -oE 'specs/[0-9]+_' | head -1 | sed 's/specs\///' | tr -d '_')
+        fi
+
+        # Skip if no topic number found
+        [ -z "$topic_num" ] && continue
+
+        # Extract plan path from brackets at end: [.claude/specs/NNN_topic/plans/001.md]
+        # Anchored regex matches only plan paths starting with .claude/specs/
+        local plan_path
+        plan_path=$(echo "$line" | grep -oE '\[\.claude/specs/[^]]+\.md\]' | tail -1 | tr -d '[]')
+
+        # Find matching topic directory
+        local topic_dir
+        topic_dir=$(find "$specs_root" -maxdepth 1 -type d -name "${topic_num}_*" 2>/dev/null | head -1)
+
+        # Skip if topic directory not found (already removed)
+        if [ -z "$topic_dir" ]; then
+          # Log info: topic directory not found
+          [ "${DEBUG:-}" = "1" ] && echo "INFO: Topic directory not found for $topic_num (may already be removed)" >&2
+          continue
+        fi
+
+        local topic_name
+        topic_name=$(basename "$topic_dir")
+        local topic_path="$topic_dir"
+
+        # Build JSON entry
+        # Escape special characters for JSON
+        local escaped_plan_path
+        escaped_plan_path=$(echo "$plan_path" | sed 's/"/\\"/g')
+
+        local entry="{\"topic_name\": \"$topic_name\", \"topic_path\": \"$topic_path\", \"plan_path\": \"$escaped_plan_path\", \"section\": \"$section\"}"
+
+        if [ -n "$json_entries" ]; then
+          json_entries="${json_entries}, ${entry}"
+        else
+          json_entries="$entry"
+        fi
+      fi
+    done <<< "$section_content"
+  done
+
+  # Build final JSON array
+  local result="[${json_entries}]"
+
+  # Validation logging: count parsed entries
+  local parsed_count
+  parsed_count=$(echo "$result" | jq -r 'length' 2>/dev/null || echo "0")
+  [ "${DEBUG:-}" = "1" ] && echo "INFO: Parsed $parsed_count eligible projects from TODO.md" >&2
+
+  # Return JSON array
+  echo "$result"
+}
 
 # filter_completed_projects()
 # Purpose: Filter projects by cleanup-eligible status (completed, superseded, abandoned)
@@ -916,11 +1356,14 @@ export -f classify_status_from_metadata
 export -f get_checkbox_for_section
 export -f get_relative_path
 export -f get_topic_path
+export -f format_research_entry
 export -f extract_backlog_section
+export -f extract_saved_section
 export -f format_plan_entry
 export -f generate_completed_date_header
 export -f update_todo_file
 export -f validate_todo_structure
+export -f parse_todo_sections
 export -f filter_completed_projects
 export -f has_uncommitted_changes
 export -f create_cleanup_git_commit

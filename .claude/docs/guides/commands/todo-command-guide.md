@@ -24,7 +24,7 @@
 The `/todo` command provides two modes for managing the `.claude/TODO.md` project tracking file:
 
 1. **Update Mode** (default): Scans all specs/ directories, classifies plan status, and updates TODO.md with current project status
-2. **Clean Mode** (`--clean` flag): Identifies all cleanup-eligible projects (Completed, Abandoned, and Superseded sections) and generates a cleanup plan for archival (no age threshold)
+2. **Clean Mode** (`--clean` flag): Identifies all cleanup-eligible projects (Completed and Abandoned sections) and generates a cleanup plan for archival (no age threshold)
 
 ### When to Use
 
@@ -46,19 +46,21 @@ The `/todo` command provides two modes for managing the `.claude/TODO.md` projec
 ### Design Principles
 
 1. **Fast Classification**: Haiku model for batch plan status classification
-2. **Backlog Preservation**: Manual Backlog entries are never auto-modified
-3. **6-Section Hierarchy**: Consistent organization across all TODO.md files
-4. **Artifact Linking**: Automatic discovery and linking of reports/summaries
-5. **Date Grouping**: Completed section uses date-grouped entries
+2. **Section Preservation**: Manual Backlog and Saved entries are never auto-modified
+3. **7-Section Hierarchy**: Consistent organization per TODO Organization Standards
+4. **Research Auto-Detection**: Auto-populates research-only directories
+5. **Artifact Linking**: Automatic discovery and linking of reports/summaries
+6. **Date Grouping**: Completed section uses date-grouped entries
 
 ### Section Hierarchy
 
 ```
 ## In Progress     [x] checkbox - actively being worked on
 ## Not Started     [ ] checkbox - planned but not started
-## Backlog         Manual curation - preserved by /todo
-## Superseded      [~] checkbox - replaced by newer plans
-## Abandoned       [x] checkbox - intentionally stopped
+## Research        [ ] checkbox - research-only directories (auto-detected)
+## Saved           [ ] checkbox - manually demoted items (preserved)
+## Backlog         [ ] checkbox - manual prioritization queue (preserved)
+## Abandoned       [x]/[~] checkbox - intentionally stopped or superseded
 ## Completed       [x] checkbox - date-grouped entries
 ```
 
@@ -91,11 +93,20 @@ The `/todo` command provides two modes for managing the `.claude/TODO.md` projec
 6. **Preservation**: Extract and preserve existing Backlog content
 7. **Output**: Write updated TODO.md (or display preview if --dry-run)
 
-**Clean Mode**:
-1. **Discovery**: Same as Update Mode
-2. **Filtering**: Filter cleanup-eligible projects (status=completed, superseded, or abandoned) - no age threshold
-3. **Direct Execution**: Create git commit, verify uncommitted changes, remove eligible directories
-4. **Output**: Display execution summary with git commit hash and recovery instructions
+**Clean Mode** (Section-Based):
+1. **TODO.md Parsing**: Parse TODO.md directly to extract entries from Completed and Abandoned sections
+2. **Section-Based Filtering**: Extract topic numbers from TODO.md entries (not plan file classification)
+3. **Directory Mapping**: Map topic numbers to existing specs/ directories
+4. **Direct Execution**: Create git commit, verify uncommitted changes, remove eligible directories
+5. **Output**: Display execution summary with git commit hash and recovery instructions
+
+**Research Auto-Detection**:
+- Scans specs/ for directories with reports/ but no plans/ (or empty plans/)
+- Extracts title/description from first report file
+- Adds entry to Research section linking to directory
+- Typical use case: /research and /errors command outputs
+
+**Key Insight**: Clean mode honors manual categorization in TODO.md (e.g., moving a plan to Abandoned section) rather than relying on plan file metadata. This ensures user intent is respected during cleanup.
 
 ### Hard Barrier Pattern
 
@@ -273,22 +284,41 @@ Artifacts are linked in the entry as indented bullets:
   - Related summaries: [001-summary](summaries/001-summary.md)
 ```
 
-### Direct Cleanup Execution
+### Direct Cleanup Execution (Section-Based)
 
 The `--clean` flag directly removes eligible project directories after creating a mandatory git commit for recovery:
 
-1. **Git Commit**: Create pre-cleanup snapshot with message "chore: pre-cleanup snapshot before /todo --clean (N projects)"
-2. **Git Verification**: Check for uncommitted changes after commit (warn if detected)
-3. **Directory Removal**: Remove eligible project directories (skip those with uncommitted changes)
-4. **Summary**: Display removal counts (removed, skipped, failed) and git commit hash
+**Section-Based Approach**: Cleanup parses TODO.md sections directly rather than relying on plan file classification. This means:
+- Manual categorization in TODO.md is honored (e.g., moving a plan to Abandoned section triggers cleanup)
+- No dependency on plan file `**Status**:` metadata field
+- Entries missing from TODO.md (already removed) are skipped automatically
 
-**Target Sections**: Completed, Abandoned, and Superseded projects
-**Age Filtering**: None - all eligible projects are included regardless of age
+**Execution Steps**:
+1. **Parse TODO.md**: Extract all entries from Completed, Abandoned, and Superseded sections
+2. **Extract Topic Numbers**: Parse topic numbers from entry format (`**Title (NNN)**`) or plan path (`specs/NNN_topic/`)
+3. **Map Directories**: Find existing specs/ directories matching topic numbers
+4. **Git Commit**: Create pre-cleanup snapshot with message "chore: pre-cleanup snapshot before /todo --clean (N projects)"
+5. **Uncommitted Check**: Skip directories with uncommitted changes
+6. **Directory Removal**: Remove eligible project directories
+7. **Summary**: Display removal counts (removed, skipped, failed) and git commit hash
+
+**Target Sections**: Completed, Abandoned, and Superseded entries in TODO.md
+**Age Filtering**: None - all entries in target sections are included regardless of age
 **TODO.md**: Preserved and NOT modified during cleanup (re-run `/todo` after cleanup to update)
 **Recovery**: Use `git revert <commit-hash>` to restore removed directories
 
-**Workflow**:
-1. `/todo --clean --dry-run` - Preview cleanup candidates
+**Manual Categorization Workflow**:
+```bash
+# 1. Manually move a plan to Abandoned section in TODO.md
+# 2. Add reason note under the entry
+# 3. Run cleanup to remove it
+/todo --clean
+# 4. Rescan to update TODO.md
+/todo
+```
+
+**Standard Cleanup Workflow**:
+1. `/todo --clean --dry-run` - Preview cleanup candidates (grouped by section)
 2. `/todo --clean` - Execute cleanup with git commit
 3. `/todo` - Rescan and update TODO.md
 
@@ -329,17 +359,33 @@ CLEANUP_COMPLETED: removed=193 skipped=2 failed=0 commit=a1b2c3d4567890abcdef123
 3. **Next Steps**: Four actionable commands (rescan, review, log, recovery)
 4. **Completion Signal**: `CLEANUP_COMPLETED: removed=N skipped=N failed=N commit=<hash>` for orchestrator parsing
 
-**Dry-Run Preview Output**:
+**Dry-Run Preview Output** (Section-Based):
 ```
 === Cleanup Preview (Dry Run) ===
 
-Eligible projects: 193
+Eligible projects: 40
 
-Cleanup candidates (would be archived):
-  - 102_plan_command_error_analysis: Fix /plan command error handling
-  - 787_state_machine_persistence_bug: Repair state persistence bug
-  - 788_commands_readme_update: Update commands README
-  ... (190 more)
+Cleanup candidates (grouped by section):
+
+Completed (22 projects):
+  - 965_optimize_plan_command_performance
+  - 787_state_machine_persistence_bug
+  - 822_quick_reference_integration
+  - 918_topic_naming_standards_kebab_case
+  ... (12 more)
+
+Abandoned (14 projects):
+  - 902_error_logging_infrastructure_completion
+  - 122_revise_errors_repair
+  - 799_coordinate_command_all_its_dependencies_order
+  - 805_when_plans_created_command_want_metadata_include
+  ... (4 more)
+
+Superseded (4 projects):
+  - 848_when_using_claude_code_neovim_greggh_plugin
+  - 881_build_persistent_workflow_refactor
+  - 885_repair_plans_research_analysis
+  - 884_build_error_logging_discrepancy
 
 To execute cleanup (with git commit), run: /todo --clean
 ```

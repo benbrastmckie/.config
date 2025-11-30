@@ -31,12 +31,73 @@ documentation: See .claude/docs/guides/commands/todo-command-guide.md for comple
 ### Default Mode (Update TODO.md)
 When invoked without `--clean` flag, scans all specs/ directories, classifies plan status, and updates TODO.md.
 
+### Sections and Classification
+
+TODO.md is organized into seven sections following strict hierarchy as defined in [TODO Organization Standards](../.claude/docs/reference/standards/todo-organization-standards.md):
+
+| Section | Purpose | Checkbox | Auto-Updated | Preservation Policy |
+|---------|---------|----------|--------------|---------------------|
+| **In Progress** | Active implementation | `[x]` | Yes | Regenerated from plan status |
+| **Not Started** | Planned but not begun | `[ ]` | Yes | Regenerated from plan status |
+| **Research** | Research-only projects (no plans) | `[ ]` | Yes | Auto-detected from directory scan |
+| **Saved** | Intentionally demoted items | `[ ]` | No | **Preserved** (manual curation) |
+| **Backlog** | Manual prioritization queue | `[ ]` | No | **Preserved** (manual curation) |
+| **Abandoned** | Intentionally discontinued | `[x]` or `[~]` | Yes | Regenerated from plan status |
+| **Completed** | Successfully finished | `[x]` | Yes | **Regenerated** with today's date |
+
+**Status Classification Algorithm**:
+
+Plans are classified using a two-tier algorithm:
+1. **Primary**: Check plan metadata `Status:` field for explicit values (COMPLETE, IN PROGRESS, NOT STARTED, SUPERSEDED, ABANDONED)
+2. **Fallback**: Analyze phase completion markers if Status field is missing or ambiguous
+
+**Research Section Auto-Detection**:
+
+The Research section is auto-populated from research-only directories:
+- Directory has `reports/` subdirectory with markdown files
+- Directory has NO `plans/` subdirectory (or plans/ is empty)
+- Entry links to topic directory (not plan file)
+- Title and description extracted from first report file
+- Typical sources: `/research` and `/errors` command outputs
+
+**Saved Section Preservation Policy**:
+
+The Saved section is manually curated for intentional item demotion:
+- Items moved here manually when temporarily deprioritized
+- Content is **never regenerated** - preserved verbatim
+- Useful for "not abandoned but not active" items
+- Distinguishes from permanent abandonment
+
+**Backlog Preservation Policy**:
+
+The Backlog section is manually curated and **never regenerated**. When /todo updates TODO.md:
+- Existing Backlog content is extracted and preserved verbatim
+- Structure within Backlog is user-defined (categories, priorities, etc.)
+- /todo only updates the other auto-updated sections based on plan classification
+
+**Completed Section Behavior**:
+
+The Completed section is **completely regenerated** each time /todo runs:
+- All entries are grouped under the current date
+- Historical completion dates are not preserved
+- Previous Completed section content is replaced
+- This ensures Completed section reflects current classification results
+
+**Related Artifacts**:
+
+Each plan entry includes related artifacts as indented bullets:
+- Reports: Analysis and research documents from the plan's topic
+- Summaries: Implementation summaries documenting completion status
+- Format: `  - [Report|Summary]: {relative-path}`
+
+See [TODO Organization Standards](../.claude/docs/reference/standards/todo-organization-standards.md) for complete specification.
+
 ### Clean Mode
-When invoked with `--clean` flag, identifies all cleanup-eligible projects (Completed, Abandoned, and Superseded sections) and directly removes them after creating a git commit. Recovery is possible via git revert. No age threshold applied.
+When invoked with `--clean` flag, identifies all cleanup-eligible projects (Completed and Abandoned sections) and directly removes them after creating a git commit. Recovery is possible via git revert. No age threshold applied. Note: Superseded entries are merged into Abandoned section per 7-section standards.
 
 ## Options
 
-- `--clean` - Directly remove cleanup-eligible projects (Completed, Abandoned, Superseded) after git commit
+- `--clean` - Directly remove cleanup-eligible projects (Completed, Abandoned) after git commit
 - `--dry-run` - Preview changes without modifying files (no git commit, no directory removal)
 
 ## Examples
@@ -508,11 +569,34 @@ echo "Reading classified plans from: $CLASSIFIED_RESULTS"
 echo "TODO.md path: $TODO_PATH"
 echo ""
 
+# === DETECT MIGRATION NEED (6-section to 7-section) ===
+TODO_MIGRATION_NEEDED="false"
+if [ -f "$TODO_PATH" ]; then
+  # Check if TODO.md is missing Research or Saved sections
+  if ! grep -q "^## Research" "$TODO_PATH" || ! grep -q "^## Saved" "$TODO_PATH"; then
+    TODO_MIGRATION_NEEDED="true"
+    echo "Detected old 6-section format - migration required"
+    echo "Missing sections: Research and/or Saved"
+    echo ""
+  fi
+fi
+
 # === BACKUP EXISTING TODO.MD ===
 if [ -f "$TODO_PATH" ]; then
-  cp "$TODO_PATH" "${TODO_PATH}.backup"
-  echo "Backed up existing TODO.md"
+  if [ "$TODO_MIGRATION_NEEDED" = "true" ]; then
+    # Create migration backup
+    cp "$TODO_PATH" "${TODO_PATH}.pre-migration-backup"
+    echo "Created migration backup: ${TODO_PATH}.pre-migration-backup"
+    echo "Recovery: cp ${TODO_PATH}.pre-migration-backup $TODO_PATH"
+  else
+    # Standard backup
+    cp "$TODO_PATH" "${TODO_PATH}.backup"
+    echo "Backed up existing TODO.md"
+  fi
 fi
+
+# === PERSIST MIGRATION FLAG ===
+append_workflow_state "TODO_MIGRATION_NEEDED" "$TODO_MIGRATION_NEEDED"
 
 echo ""
 echo "TODO.md generation ready"
@@ -526,17 +610,19 @@ echo "Proceeding to write file..."
 Based on the classified plans from todo-analyzer, generate the TODO.md content with proper section organization:
 
 1. Read classified plans from Block 2 output
-2. Group plans by section (In Progress, Not Started, Backlog, Superseded, Abandoned, Completed)
-3. Preserve existing Backlog section content
-4. Generate entries with proper checkbox conventions
-5. Include related artifacts (reports, summaries) as indented bullets
-6. Write to TODO.md (or display if --dry-run)
+2. Auto-detect research-only directories (reports/ but no plans/)
+3. Group plans by section (In Progress, Not Started, Research, Saved, Backlog, Abandoned, Completed)
+4. Preserve existing Backlog and Saved section content
+5. Generate entries with proper checkbox conventions
+6. Include related artifacts (reports, summaries) as indented bullets
+7. Write to TODO.md (or display if --dry-run)
 
 Generate the TODO.md content following the standards in `.claude/docs/reference/standards/todo-organization-standards.md`:
 
-- Section order: In Progress -> Not Started -> Backlog -> Superseded -> Abandoned -> Completed
-- Checkboxes: [ ] for Not Started, [x] for In Progress/Completed/Abandoned, [~] for Superseded
+- Section order: In Progress -> Not Started -> Research -> Saved -> Backlog -> Abandoned -> Completed
+- Checkboxes: [ ] for Not Started/Research/Saved/Backlog, [x] for In Progress/Completed/Abandoned, [~] for Superseded (merged into Abandoned)
 - Entry format: `- [checkbox] **{Title}** - {Description} [{path}]`
+- Research entries link to directory: `[.claude/specs/NNN_topic/]`
 - Artifacts as indented bullets under each plan
 - Date grouping for Completed section
 
@@ -617,7 +703,7 @@ echo "  dry_run: $DRY_RUN"
 
 ## Clean Mode (--clean flag)
 
-If CLEAN_MODE is true, instead of updating TODO.md, directly remove all projects marked as cleanup-eligible (Completed, Abandoned, and Superseded sections) after creating a mandatory git commit for recovery. TODO.md is NOT modified during cleanup - it reflects the current filesystem state after next scan.
+If CLEAN_MODE is true, instead of updating TODO.md, directly remove all projects marked as cleanup-eligible (Completed and Abandoned sections) after creating a mandatory git commit for recovery. TODO.md is NOT modified during cleanup - it reflects the current filesystem state after next scan. Note: Superseded entries are now merged into Abandoned section per 7-section standards.
 
 ### Block 4a: Dry-Run Preview (Clean Mode)
 
@@ -662,26 +748,38 @@ if [ "$CLEAN_MODE" = "true" ] && [ "$DRY_RUN" = "true" ]; then
   echo "=== Cleanup Preview (Dry Run) ==="
   echo ""
 
-  # Filter eligible projects using filter_completed_projects()
-  if [ -f "$CLASSIFIED_RESULTS" ]; then
-    CLASSIFIED_JSON=$(cat "$CLASSIFIED_RESULTS")
-    ELIGIBLE_PROJECTS=$(filter_completed_projects "$CLASSIFIED_JSON")
+  # Parse TODO.md sections directly (section-based cleanup)
+  TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
+  if [ -f "$TODO_PATH" ]; then
+    ELIGIBLE_PROJECTS=$(parse_todo_sections "$TODO_PATH")
     ELIGIBLE_COUNT=$(echo "$ELIGIBLE_PROJECTS" | jq 'length')
 
     echo "Eligible projects: $ELIGIBLE_COUNT"
     echo ""
 
     if [ "$ELIGIBLE_COUNT" -gt 0 ]; then
-      echo "Cleanup candidates (would be archived):"
+      echo "Cleanup candidates (grouped by section):"
+      echo ""
 
-      # Display project list with titles
-      echo "$ELIGIBLE_PROJECTS" | jq -r '.[] | "  - \(.topic_name): \(.title // "Untitled")"' | head -20
+      # Display entries grouped by section
+      for section in "Completed" "Abandoned" "Superseded"; do
+        SECTION_PROJECTS=$(echo "$ELIGIBLE_PROJECTS" | jq -c "[.[] | select(.section == \"$section\")]")
+        SECTION_COUNT=$(echo "$SECTION_PROJECTS" | jq 'length')
 
-      # If more than 20, show count of remaining
-      if [ "$ELIGIBLE_COUNT" -gt 20 ]; then
-        REMAINING=$((ELIGIBLE_COUNT - 20))
-        echo "  ... ($REMAINING more)"
-      fi
+        if [ "$SECTION_COUNT" -gt 0 ]; then
+          echo "$section ($SECTION_COUNT projects):"
+
+          # Display first 10 entries per section
+          echo "$SECTION_PROJECTS" | jq -r '.[:10][] | "  - \(.topic_name)"'
+
+          # If more than 10, show count of remaining
+          if [ "$SECTION_COUNT" -gt 10 ]; then
+            REMAINING=$((SECTION_COUNT - 10))
+            echo "  ... ($REMAINING more)"
+          fi
+          echo ""
+        fi
+      done
     else
       echo "No cleanup candidates found."
       echo "All projects are either In Progress, Not Started, or in Backlog."
@@ -691,7 +789,7 @@ if [ "$CLEAN_MODE" = "true" ] && [ "$DRY_RUN" = "true" ]; then
     echo "To execute cleanup (with git commit), run: /todo --clean"
     exit 0
   else
-    echo "ERROR: Classified results not found" >&2
+    echo "ERROR: TODO.md not found at $TODO_PATH" >&2
     exit 1
   fi
 fi
@@ -757,15 +855,17 @@ else
   exit 1
 fi
 
-# === FILTER ELIGIBLE PROJECTS ===
-if [ ! -f "$CLASSIFIED_RESULTS" ]; then
-  log_command_error "file_error" "Classified results file not found: $CLASSIFIED_RESULTS" "Block4b:FileCheck"
-  echo "ERROR: Classified results not found" >&2
+# === PARSE TODO.md SECTIONS FOR CLEANUP ===
+# Section-based cleanup: Reads directly from TODO.md sections (Completed, Abandoned, Superseded)
+# This honors manual categorization in TODO.md rather than relying on plan file classification
+TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
+if [ ! -f "$TODO_PATH" ]; then
+  log_command_error "file_error" "TODO.md not found: $TODO_PATH" "Block4b:FileCheck"
+  echo "ERROR: TODO.md not found at $TODO_PATH" >&2
   exit 1
 fi
 
-CLASSIFIED_JSON=$(cat "$CLASSIFIED_RESULTS")
-ELIGIBLE_PROJECTS=$(filter_completed_projects "$CLASSIFIED_JSON")
+ELIGIBLE_PROJECTS=$(parse_todo_sections "$TODO_PATH")
 ELIGIBLE_COUNT=$(echo "$ELIGIBLE_PROJECTS" | jq 'length')
 
 # === EXIT IF NO ELIGIBLE PROJECTS ===
@@ -802,9 +902,240 @@ persist_state COMMIT_HASH REMOVED_COUNT SKIPPED_COUNT FAILED_COUNT ELIGIBLE_COUN
 echo "<!-- checkpoint: cleanup_execution_complete -->"
 ```
 
+### Block 4c: Regenerate TODO.md After Cleanup (Clean Mode)
+
+**EXECUTE AFTER Block 4b completes**: Regenerate TODO.md to reflect current filesystem state.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+# === THREE-TIER LIBRARY SOURCING ===
+# Tier 1: Core libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "Error: Cannot load error-handling library" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "Error: Cannot load state-persistence library" >&2
+  exit 1
+}
+
+# Tier 3: Domain libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || {
+  echo "Error: Cannot load todo-functions library" >&2
+  exit 1
+}
+
+# === RESTORE STATE ===
+STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE" 2>/dev/null || {
+    log_command_error "state_error" "Failed to restore state from $STATE_FILE" "Block4c:StateRestore"
+    echo "ERROR: Failed to restore state" >&2
+    exit 1
+  }
+else
+  log_command_error "state_error" "State file not found" "Block4c:StateRestore"
+  echo "ERROR: State file not found" >&2
+  exit 1
+fi
+
+# === REGENERATE TODO.MD ===
+# After cleanup removes directories, rescan filesystem and regenerate TODO.md
+# This ensures TODO.md only contains entries for existing projects
+
+TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
+
+# Only regenerate if cleanup removed projects
+if [ "${REMOVED_COUNT:-0}" -gt 0 ]; then
+  echo ""
+  echo "Regenerating TODO.md to reflect current filesystem state..."
+
+  # Extract and preserve Backlog section before regeneration
+  EXISTING_BACKLOG=$(extract_backlog_section "$TODO_PATH")
+
+  # Rescan project directories
+  SPECS_ROOT="${CLAUDE_PROJECT_DIR}/.claude/specs"
+  SCANNED_PROJECTS=$(scan_project_directories "$SPECS_ROOT")
+  SCANNED_COUNT=$(echo "$SCANNED_PROJECTS" | jq 'length')
+
+  echo "Found $SCANNED_COUNT remaining projects"
+
+  # Save scanned projects to temporary file for classification
+  TEMP_DISCOVERED="${CLAUDE_PROJECT_DIR}/.claude/tmp/todo_rescan_${WORKFLOW_ID}.json"
+  echo "$SCANNED_PROJECTS" > "$TEMP_DISCOVERED"
+
+  # Save temp file path for Block 4c-2 (todo-analyzer invocation)
+  persist_state TEMP_DISCOVERED TODO_PATH REMOVED_COUNT SCANNED_COUNT
+
+  echo "✓ Projects rescanned, ready for classification"
+else
+  echo ""
+  echo "No projects removed, skipping TODO.md regeneration"
+
+  # Persist state for Block 5 even when skipping
+  persist_state TODO_PATH REMOVED_COUNT SKIPPED_COUNT FAILED_COUNT ELIGIBLE_COUNT COMMIT_HASH
+fi
+
+echo "<!-- checkpoint: todo_rescan_complete -->"
+```
+
+### Block 4c-2: Classify Remaining Projects (Clean Mode)
+
+**CRITICAL BARRIER**: This block MUST invoke todo-analyzer via Task tool if cleanup removed projects.
+**EXECUTE IF REMOVED_COUNT > 0**: Invoke todo-analyzer to classify remaining projects after cleanup.
+
+Task {
+  subagent_type: "general-purpose"
+  model: "haiku"
+  description: "Classify remaining projects after cleanup"
+  prompt: |
+    Read and follow ALL instructions in: .claude/agents/todo-analyzer.md
+
+    **YOUR TASK**: Classify status for ALL remaining plans after cleanup.
+
+    Input Files:
+    - Plans File: ${TEMP_DISCOVERED}
+
+    Output File:
+    - Classified Results: ${CLAUDE_PROJECT_DIR}/.claude/tmp/todo_classified_rescan_${WORKFLOW_ID}.json
+
+    **EXECUTION STEPS**:
+    1. Read the plans file at ${TEMP_DISCOVERED} (JSON array of remaining plans)
+    2. For EACH plan in the array:
+       a. Read the plan file using Read tool
+       b. Extract metadata (title, status, description, phases)
+       c. Classify status using algorithm in todo-analyzer.md
+       d. Determine TODO.md section (Completed, In Progress, Not Started, Superseded, Abandoned)
+    3. Build a JSON array of ALL classified results
+    4. Write the complete array to ${CLAUDE_PROJECT_DIR}/.claude/tmp/todo_classified_rescan_${WORKFLOW_ID}.json
+
+    **OUTPUT FORMAT**:
+    Write JSON array to output file with this structure:
+    [
+      {
+        "topic_name": "027_auth_implementation",
+        "plan_path": ".claude/specs/027_auth_implementation/plans/027_auth_implementation.md",
+        "status": "in_progress",
+        "title": "Authentication System",
+        "description": "Brief description",
+        "phases_complete": 2,
+        "phases_total": 5
+      },
+      ...
+    ]
+
+    IMPORTANT: Process ALL plans and write complete results array.
+}
+
+### Block 4c-3: Generate and Write TODO.md (Clean Mode)
+
+**EXECUTE AFTER Block 4c-2 completes**: Generate TODO.md content and write file.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+# === THREE-TIER LIBRARY SOURCING ===
+# Tier 1: Core libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "Error: Cannot load error-handling library" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "Error: Cannot load state-persistence library" >&2
+  exit 1
+}
+
+# Tier 3: Domain libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || {
+  echo "Error: Cannot load todo-functions library" >&2
+  exit 1
+}
+
+# === RESTORE STATE ===
+STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE" 2>/dev/null || {
+    log_command_error "state_error" "Failed to restore state from $STATE_FILE" "Block4c3:StateRestore"
+    echo "ERROR: Failed to restore state" >&2
+    exit 1
+  }
+else
+  log_command_error "state_error" "State file not found" "Block4c3:StateRestore"
+  echo "ERROR: State file not found" >&2
+  exit 1
+fi
+
+# === GENERATE AND WRITE TODO.MD ===
+# Only execute if projects were removed in Block 4b
+if [ "${REMOVED_COUNT:-0}" -gt 0 ]; then
+  TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
+  CLASSIFIED_RESULTS="${CLAUDE_PROJECT_DIR}/.claude/tmp/todo_classified_rescan_${WORKFLOW_ID}.json"
+
+  # Verify classified results exist
+  if [ ! -f "$CLASSIFIED_RESULTS" ]; then
+    log_command_error "file_error" "Classified results not found: $CLASSIFIED_RESULTS" "Block4c3:FileCheck"
+    echo "ERROR: Classified results file not found" >&2
+    exit 1
+  fi
+
+  # Extract and preserve Backlog section
+  EXISTING_BACKLOG=$(extract_backlog_section "$TODO_PATH")
+
+  # Generate TODO.md content
+  TODO_CONTENT=$(generate_todo_content "$(cat "$CLASSIFIED_RESULTS")" "$EXISTING_BACKLOG")
+
+  # Write TODO.md
+  echo "$TODO_CONTENT" > "$TODO_PATH"
+
+  echo "✓ TODO.md regenerated successfully"
+  echo "✓ Removed stale entries for deleted projects"
+else
+  echo ""
+  echo "No projects removed, skipping TODO.md regeneration"
+fi
+
+# === PERSIST STATE FOR BLOCK 5 ===
+persist_state TODO_PATH REMOVED_COUNT SKIPPED_COUNT FAILED_COUNT ELIGIBLE_COUNT COMMIT_HASH
+
+echo "<!-- checkpoint: todo_regeneration_complete -->"
+```
+
 ### Block 5: Standardized Completion Output (Clean Mode)
 
-**EXECUTE AFTER Block 4b completes**: Generate 4-section console summary with execution results.
+**EXECUTE AFTER Block 4c-3 completes**: Generate 4-section console summary with execution results.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -857,14 +1188,16 @@ if [ -z "$COMMIT_HASH" ]; then
   • Check project statuses in TODO.md"
 else
   # Cleanup executed
-  SUMMARY_TEXT="Removed ${REMOVED_COUNT:-0} eligible projects after git commit ${COMMIT_HASH:0:8}. Skipped ${SKIPPED_COUNT:-0} projects with uncommitted changes. Failed: ${FAILED_COUNT:-0}."
+  SUMMARY_TEXT="Removed ${REMOVED_COUNT:-0} eligible projects after git commit ${COMMIT_HASH:0:8}. TODO.md regenerated to reflect current filesystem state. Skipped ${SKIPPED_COUNT:-0} projects with uncommitted changes. Failed: ${FAILED_COUNT:-0}."
 
+  TODO_PATH="${TODO_PATH:-${CLAUDE_PROJECT_DIR}/.claude/TODO.md}"
   ARTIFACTS="  📝 Git Commit: $COMMIT_HASH
   ✓ Removed: ${REMOVED_COUNT:-0} projects
+  📄 TODO.md: $TODO_PATH (updated)
   ⚠ Skipped: ${SKIPPED_COUNT:-0} projects (uncommitted changes)
   ✗ Failed: ${FAILED_COUNT:-0} projects"
 
-  NEXT_STEPS="  • Rescan projects: /todo
+  NEXT_STEPS="  • Review TODO.md sections (In Progress, Not Started, Backlog)
   • Review changes: git show $COMMIT_HASH
   • View commit log: git log --oneline -5
   • Recovery (if needed): git revert $COMMIT_HASH"
