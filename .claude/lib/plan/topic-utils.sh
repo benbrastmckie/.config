@@ -4,6 +4,12 @@
 # Purpose: Topic directory creation and validation for LLM-based naming system
 # Used by: /plan, /research, /debug, /optimize-claude commands
 #
+# Source guard: Prevent multiple sourcing
+if [ -n "${TOPIC_UTILS_SOURCED:-}" ]; then
+  return 0
+fi
+export TOPIC_UTILS_SOURCED=1
+#
 # DEPRECATION NOTICE (Spec 933):
 #   The following functions are DEPRECATED for new code:
 #     - get_next_topic_number() - Non-atomic, causes race conditions

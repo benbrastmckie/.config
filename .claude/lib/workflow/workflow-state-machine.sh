@@ -648,6 +648,27 @@ sm_transition() {
     return 0  # Success, no error
   fi
 
+  # Terminal State Protection: Prevent transitions from terminal states
+  TERMINAL_STATES=("complete" "abandoned")
+  for terminal in "${TERMINAL_STATES[@]}"; do
+    if [ "${CURRENT_STATE:-}" = "$terminal" ]; then
+      if declare -f log_command_error &>/dev/null; then
+        log_command_error \
+          "${COMMAND_NAME:-/unknown}" \
+          "${WORKFLOW_ID:-unknown}" \
+          "${USER_ARGS:-}" \
+          "state_error" \
+          "Cannot transition from terminal state: $CURRENT_STATE -> $next_state" \
+          "sm_transition" \
+          "$(jq -n --arg current "$CURRENT_STATE" --arg target "$next_state" \
+             '{current_state: $current, target_state: $target, error: "Terminal state transition blocked"}')"
+      fi
+      echo "ERROR: Cannot transition from terminal state: $CURRENT_STATE" >&2
+      echo "Terminal states are final - workflow must be restarted for new transitions" >&2
+      return 1
+    fi
+  done
+
   # Phase 1: Validate transition is allowed
   local valid_transitions="${STATE_TRANSITIONS[$CURRENT_STATE]:-}"
 

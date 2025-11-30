@@ -294,11 +294,33 @@ Task {
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# Load state for validation
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# === RESTORE PROJECT DIRECTORY ===
+# CRITICAL: Detect project directory FIRST before using CLAUDE_PROJECT_DIR
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
 
+# Load state for validation
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
+  exit 1
+fi
+
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: Failed to restore WORKFLOW_ID for validation" >&2
   exit 1
@@ -403,7 +425,26 @@ ORIGINAL_PROMPT_FILE_PATH="${ORIGINAL_PROMPT_FILE_PATH:-}"
 RESEARCH_COMPLEXITY="${RESEARCH_COMPLEXITY:-3}"
 
 # FEATURE_DESCRIPTION should be in state file, but also check temp file as backup
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+# CRITICAL: Initialize BEFORE any reference to prevent unbound variable error with set -u
+FEATURE_DESCRIPTION="${FEATURE_DESCRIPTION:-}"
+
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (restore if needed first)
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      if [ -d "$current_dir/.claude" ]; then
+        CLAUDE_PROJECT_DIR="$current_dir"
+        break
+      fi
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
 TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 if [ -z "$FEATURE_DESCRIPTION" ] && [ -f "$TOPIC_NAMING_INPUT_FILE" ]; then
   FEATURE_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null)
@@ -555,21 +596,24 @@ if [ -n "${ORIGINAL_PROMPT_FILE_PATH:-}" ] && [ -f "${ORIGINAL_PROMPT_FILE_PATH:
   echo "Prompt file archived: $ARCHIVED_PROMPT_PATH"
 fi
 
-# === PERSIST FOR BLOCK 2 ===
-append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
-append_workflow_state "USER_ARGS" "$USER_ARGS"
-append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
-append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
-append_workflow_state "SPECS_DIR" "$SPECS_DIR"
-append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
-append_workflow_state "PLANS_DIR" "$PLANS_DIR"
-append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
-append_workflow_state "TOPIC_NAME" "$TOPIC_NAME"
-append_workflow_state "TOPIC_NUM" "$TOPIC_NUM"
-append_workflow_state "FEATURE_DESCRIPTION" "$FEATURE_DESCRIPTION"
-append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
-append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "${ORIGINAL_PROMPT_FILE_PATH:-}"
-append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
+# === PERSIST FOR BLOCK 2 (BULK OPERATION) ===
+# Use bulk append to reduce I/O overhead from 14 writes to 1 write
+append_workflow_state_bulk <<EOF
+COMMAND_NAME=$COMMAND_NAME
+USER_ARGS=$USER_ARGS
+WORKFLOW_ID=$WORKFLOW_ID
+CLAUDE_PROJECT_DIR=$CLAUDE_PROJECT_DIR
+SPECS_DIR=$SPECS_DIR
+RESEARCH_DIR=$RESEARCH_DIR
+PLANS_DIR=$PLANS_DIR
+TOPIC_PATH=$TOPIC_PATH
+TOPIC_NAME=$TOPIC_NAME
+TOPIC_NUM=$TOPIC_NUM
+FEATURE_DESCRIPTION=$FEATURE_DESCRIPTION
+RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY
+ORIGINAL_PROMPT_FILE_PATH=${ORIGINAL_PROMPT_FILE_PATH:-}
+ARCHIVED_PROMPT_PATH=${ARCHIVED_PROMPT_PATH:-}
+EOF
 
 echo "Setup complete: $WORKFLOW_ID (research-and-plan, complexity: $RESEARCH_COMPLEXITY)"
 echo "Research directory: $RESEARCH_DIR"
@@ -616,13 +660,39 @@ set +H  # CRITICAL: Disable history expansion
 # Initialize error buffer BEFORE any library sourcing
 declare -a _EARLY_ERROR_BUFFER=()
 
-# === DEFENSIVE TRAP SETUP ===
-# Set minimal trap BEFORE library sourcing to catch early errors
-trap 'echo "ERROR: Block 2 initialization failed at line $LINENO: $BASH_COMMAND (exit code: $?)" >&2; exit 1' ERR
-trap 'local exit_code=$?; if [ $exit_code -ne 0 ]; then echo "ERROR: Block 2 initialization exited with code $exit_code" >&2; fi' EXIT
+# === DETECT PROJECT DIRECTORY ===
+# CRITICAL: Detect project directory FIRST before using CLAUDE_PROJECT_DIR
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; then
+      [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
+# === SOURCE LIBRARIES IN CORRECT ORDER ===
+# CRITICAL: Source libraries BEFORE any function calls or trap setup
+# Order matters: error-handling -> state-persistence -> workflow-state-machine
+
+# 1. Source error-handling.sh FIRST (provides setup_bash_error_trap and logging)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# 2. Source state-persistence.sh SECOND (provides validate_workflow_id, append_workflow_state)
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+
+# 3. Source workflow-state-machine.sh THIRD (depends on state-persistence.sh)
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 
 # === LOAD STATE ===
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found" >&2
@@ -631,31 +701,15 @@ fi
 WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 
 # === VALIDATE WORKFLOW_ID ===
-# Detect project directory first (needed for library sourcing)
-if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-else
-  current_dir="$(pwd)"
-  while [ "$current_dir" != "/" ]; do
-    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
-    current_dir="$(dirname "$current_dir")"
-  done
-fi
-export CLAUDE_PROJECT_DIR
-
-# Source error-handling.sh FIRST to enable validation functions
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source error-handling.sh" >&2
-  exit 1
-}
-
-# Validate and correct WORKFLOW_ID if needed
+# CRITICAL: Call validate_workflow_id AFTER state-persistence.sh is sourced
 WORKFLOW_ID=$(validate_workflow_id "$WORKFLOW_ID" "plan")
 export WORKFLOW_ID
 
-# Source remaining libraries with diagnostics
-_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
-_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+# === SETUP BASH ERROR TRAP ===
+# CRITICAL: Setup trap AFTER libraries loaded (replaces broken defensive trap pattern)
+COMMAND_NAME="/plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-plan_workflow}"
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === PRE-FLIGHT FUNCTION VALIDATION (Block 2) ===
 # Verify required functions are available before using them (prevents exit 127 errors)
@@ -688,12 +742,8 @@ if [ -z "${USER_ARGS:-}" ]; then
 fi
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# === SETUP BASH ERROR TRAP ===
-# Clear defensive trap before setting up full trap
-_clear_defensive_trap
-
-setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
-
+# === BASH ERROR TRAP ALREADY ACTIVE ===
+# Trap was setup earlier in this block - no need to setup again
 # Flush any early errors captured before trap was active
 _flush_early_errors
 
@@ -860,9 +910,12 @@ PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 
-# === PERSIST FOR BLOCK 3 ===
-append_workflow_state "PLAN_PATH" "$PLAN_PATH"
-append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
+# === PERSIST FOR BLOCK 3 (BULK OPERATION) ===
+# Use bulk append to reduce I/O overhead from 2 writes to 1 write
+append_workflow_state_bulk <<EOF
+PLAN_PATH=$PLAN_PATH
+REPORT_PATHS_JSON=$REPORT_PATHS_JSON
+EOF
 
 save_completed_states_to_state
 SAVE_EXIT=$?
@@ -918,13 +971,39 @@ set +H  # CRITICAL: Disable history expansion
 # Initialize error buffer BEFORE any library sourcing
 declare -a _EARLY_ERROR_BUFFER=()
 
-# === DEFENSIVE TRAP SETUP ===
-# Set minimal trap BEFORE library sourcing to catch early errors
-trap 'echo "ERROR: Block 3 initialization failed at line $LINENO: $BASH_COMMAND (exit code: $?)" >&2; exit 1' ERR
-trap 'local exit_code=$?; if [ $exit_code -ne 0 ]; then echo "ERROR: Block 3 initialization exited with code $exit_code" >&2; fi' EXIT
+# === DETECT PROJECT DIRECTORY ===
+# CRITICAL: Detect project directory FIRST before using CLAUDE_PROJECT_DIR
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
+# === SOURCE LIBRARIES IN CORRECT ORDER ===
+# CRITICAL: Source libraries BEFORE any function calls or trap setup
+# Order matters: error-handling -> state-persistence -> workflow-state-machine
+
+# 1. Source error-handling.sh FIRST (provides setup_bash_error_trap and logging)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# 2. Source state-persistence.sh SECOND (provides validate_workflow_id, save_completed_states_to_state)
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+
+# 3. Source workflow-state-machine.sh THIRD (depends on state-persistence.sh)
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 
 # === LOAD STATE ===
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
 if [ ! -f "$STATE_ID_FILE" ]; then
   echo "ERROR: WORKFLOW_ID file not found" >&2
@@ -932,31 +1011,16 @@ if [ ! -f "$STATE_ID_FILE" ]; then
 fi
 WORKFLOW_ID=$(cat "$STATE_ID_FILE")
 
-# Detect project directory first (needed for library sourcing)
-if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-else
-  current_dir="$(pwd)"
-  while [ "$current_dir" != "/" ]; do
-    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
-    current_dir="$(dirname "$current_dir")"
-  done
-fi
-export CLAUDE_PROJECT_DIR
-
-# Source error-handling.sh FIRST to enable validation functions
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source error-handling.sh" >&2
-  exit 1
-}
-
-# Validate and correct WORKFLOW_ID if needed
+# === VALIDATE WORKFLOW_ID ===
+# CRITICAL: Call validate_workflow_id AFTER state-persistence.sh is sourced
 WORKFLOW_ID=$(validate_workflow_id "$WORKFLOW_ID" "plan")
 export WORKFLOW_ID
 
-# Source remaining libraries with diagnostics
-_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
-_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+# === SETUP BASH ERROR TRAP ===
+# CRITICAL: Setup trap AFTER libraries loaded (replaces broken defensive trap pattern)
+COMMAND_NAME="/plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-plan_workflow}"
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # === PRE-FLIGHT FUNCTION VALIDATION (Block 3) ===
 # Verify required functions are available before using them (prevents exit 127 errors)
@@ -983,12 +1047,8 @@ if [ -z "${USER_ARGS:-}" ]; then
 fi
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# === SETUP BASH ERROR TRAP ===
-# Clear defensive trap before setting up full trap
-_clear_defensive_trap
-
-setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
-
+# === BASH ERROR TRAP ALREADY ACTIVE ===
+# Trap was setup earlier in this block - no need to setup again
 # Flush any early errors captured before trap was active
 _flush_early_errors
 

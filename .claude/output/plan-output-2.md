@@ -1,129 +1,100 @@
-> /plan is running… "research the /plan command and the .claude/docs/ 
-standards to see if there are any systematic optimizations or improvements 
-that can be made to streamline this command to make it run more efficiently,
- providing a more robust performance." 
+> /plan is running… "research the /build command and the .claude/docs/ 
+standards in order to come up with a plan to streamline the command to 
+increase efficiency and the robustness of performance without compromising 
+functionality." 
   ⎿  Allowed 7 tools for this command
-
-● I'll execute the /plan command to research optimizations for the /plan
-   command itself. Let me start by setting up the workflow.
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿ ✓ State file validated: /home/benjamin/.config/.claude/tmp/workflow
-    _plan_1764455666.sh
+    _plan_1764460770.sh
     Classification accepted: scope=research-and-plan, complexity=3, top
     … +7 lines (ctrl+o to expand)
 
 
 
 ● Task(Generate semantic topic directory name)
-  ⎿  Done (3 tool uses · 29.8k tokens · 11s)                           
+  ⎿  Done (2 tool uses · 25.1k tokens · 12s)                           
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿  Agent output validation complete
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Error: Exit code 127
-     /run/current-system/sw/bin/bash: line 236: FEATURE_DESCRIPTION: unbound
- 
-     variable
-
-
-● Let me fix the unbound variable issue:
-
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ Setup complete: plan_1764455666 (research-and-plan, complexity: 3) 
-    Research directory: /home/benjamin/.config/.claude/specs/965_optimi
-    ze_plan_command_performance/reports
-    … +5 lines (ctrl+o to expand)
-
-
-● Task(Research /plan command optimizations)
-  ⎿  Done (13 tool uses · 99.1k tokens · 2m 32s)                       
-
-● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿  Error: Exit code 1
-     /run/current-system/sw/bin/bash: line 165: validate_workflow_id: comman
-d
-      not found
-     ERROR: Block 2 initialization failed at line 165: 
-     WORKFLOW_ID=$(validate_workflow_id "$WORKFLOW_ID" "plan") (exit code: 
-     127)
-     /run/current-system/sw/bin/bash: line 1: local: can only be used in a 
-     function
-     /run/current-system/sw/bin/bash: line 1: exit_code: unbound variable
+     ERROR: Failed to restore WORKFLOW_ID from Block 1a
+
+● Let me restore the state ID and retry:
+
+● Bash(cat /home/benjamin/.config/.claude/tmp/plan_state_id.txt 2>/dev/null
+      || echo "NOT_FOUND")
+  ⎿  plan_1764460770
+
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿ Setup complete: plan_1764460770 (research-and-plan, complexity: 3) 
+    Research directory: /home/benjamin/.config/.claude/specs/970_build_
+    command_streamline/reports
+    … +4 lines (ctrl+o to expand)
+
+
+● Now let me invoke the research-specialist agent:
+
+● Task(Research /build command for optimization plan)
+  ⎿  Done (18 tool uses · 93.8k tokens · 2m 40s)                       
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿  Verifying research artifacts...
      Research verified: 1 reports
-     … +9 lines (ctrl+o to expand)
+     … +12 lines (ctrl+o to expand)
 
-● Task(Create implementation plan for /plan optimizations)
-  ⎿  Done (12 tool uses · 53.2k tokens · 2m 53s)                       
+● Task(Create /build optimization implementation plan)
+  ⎿  Done (9 tool uses · 51.0k tokens · 2m 37s)                        
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿  Verifying plan artifacts...   
-     Plan verified: 26206 bytes
-     … +29 lines (ctrl+o to expand)
+     Plan verified: 20787 bytes
+     … +26 lines (ctrl+o to expand)
 
-● The /plan workflow completed successfully. Let me read the generated
-  plan to provide you with a summary of the optimization
-  recommendations:
+● The research and planning workflow is complete. Let me show you the
+  key details:
 
-● Read(.claude/specs/965_optimize_plan_command_performance/plans/001-optimiz
-      e-plan-command-performance-plan.md)
-  ⎿  Read 561 lines
+  Plan Created Successfully
 
-● Summary
+  A comprehensive 6-phase implementation plan has been created to
+  streamline the /build command for improved efficiency and robustness.
 
-  The /plan workflow completed successfully. Here's what was created:
+  Artifacts:
+  - Research Report: .claude/specs/970_build_command_streamline/reports/
+  001-build-command-analysis.md
+  - Implementation Plan: .claude/specs/970_build_command_streamline/plan
+  s/001-build-command-streamline-plan.md
 
-  Research Report: .claude/specs/965_optimize_plan_command_performance/r
-  eports/001-plan-command-performance-analysis.md
+  Plan Overview (6 Phases):
 
-  Implementation Plan: .claude/specs/965_optimize_plan_command_performan
-  ce/plans/001-optimize-plan-command-performance-plan.md
-
-  Key Optimization Findings
-
-  The research identified 10 optimization opportunities across three
-  impact levels:
-
-  High-Impact Optimizations (30-40% improvement potential):
-
-  1. State Persistence Consolidation: 13 individual
-  append_workflow_state() calls trigger separate disk writes. Batch
-  these into 2-3 bulk operations.
-  2. Bash Block Reduction: 3 bash blocks force complete environment
-  reconstruction. Merge blocks 1a/1b/1c into a single consolidated
-  block.
-  3. Library Sourcing Guards: Libraries sourced 4+ times redundantly
-  (~4000 lines parsed repeatedly). Add source guards.
-
-  Medium-Impact Optimizations (10-20% improvement):
-
-  4. Validation Streamlining: 6 validation checkpoints with JSON error
-  construction. Consolidate to 2-3.
-  5. Agent Timeout Tuning: Topic naming agent timeout set to 10s (3x
-  expected completion time). Reduce to 5s.
-
-  Implementation Plan Structure (7 Phases, ~24 hours):
-
-  1. Performance Instrumentation - Establish baseline metrics
-  2. State Operation Consolidation - Batch disk writes
-  3. Bash Block Consolidation - Eliminate environment reconstruction
+  1. Library Bundling Foundation - Create single-source bundled
+  libraries to eliminate cascading sourcing failures and reduce I/O
   overhead
-  4. Library Sourcing Optimization - Add source guards
-  5. Validation Streamlining - Deduplicate validation logic
-  6. Agent Timeout Optimization - Tune timeout values
-  7. Performance Validation - Verify 30-40% improvement
+  2. Checkpoint-Based State Management - Implement resumable checkpoints
+   instead of simple state flags for robust mid-workflow recovery
+  3. Agent Invocation Optimization - Add caching for repeated agent
+  calls and implement parallel execution where dependencies allow
+  4. Unified Error Handling Pipeline - Consolidate error logging with
+  batch writes and structured retry mechanisms
+  5. Context Estimation Improvements - Add caching and early-exit for
+  context size calculations to reduce redundant computations
+  6. Integration Testing & Documentation - Validate all optimizations
+  and update documentation
 
-  Target Improvements:
+  Key Optimizations Identified:
+  - Bundle ~15 library sourcing operations into 2-3 consolidated sources
+  - Add checkpoint-based recovery for mid-workflow resumption
+  - Implement parallel phase execution for independent phases
+  - Cache repeated computations (context estimates, agent outputs)
+  - Batch state file writes to reduce I/O operations
 
-  - Execution time reduced by 30-40%
-  - State file writes reduced from 6+ to 2-3
-  - Library sourcing operations reduced by 60%+
-  - Validation checkpoints reduced from 6 to 3
+  Next Steps:
+  # Review the plan:
+  cat /home/benjamin/.config/.claude/specs/970_build_command_streamline/
+  plans/001-build-command-streamline-plan.md
 
-  To begin implementation, run:
-  /build /home/benjamin/.config/.claude/specs/965_optimize_plan_command_
-  performance/plans/001-optimize-plan-command-performance-plan.md
+  # Begin implementation:
+  /build /home/benjamin/.config/.claude/specs/970_build_command_streamli
+  ne/plans/001-build-command-streamline-plan.md

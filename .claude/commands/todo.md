@@ -115,18 +115,14 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>
   echo "ERROR: Failed to source unified-location-detection.sh" >&2
   exit 1
 }
-
-# Tier 2: Workflow Orchestration (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/state-persistence.sh" 2>/dev/null || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
 }
 
-# Tier 3: Command-Specific (graceful degradation)
+# Tier 2: Command-Specific (graceful degradation)
+# NOTE: /todo is a utility command - does NOT require workflow-state-machine.sh
+# Research state machine (sm_init/sm_transition) is only for research workflows
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || {
   echo "ERROR: Failed to source todo-functions.sh" >&2
   exit 1
@@ -149,9 +145,10 @@ SPECS_ROOT="${CLAUDE_SPECS_ROOT:-${CLAUDE_PROJECT_DIR}/.claude/specs}"
 TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
 
 if [ ! -d "$SPECS_ROOT" ]; then
-  log_command_error "file_error" \
-    "Specs directory not found: $SPECS_ROOT" \
-    "Expected .claude/specs/ directory for project tracking"
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "file_error" "Specs directory not found: $SPECS_ROOT" \
+    "Block1:SpecsValidation" \
+    '{"expected_dir":"'"$SPECS_ROOT"'"}'
   echo "ERROR: Specs directory not found: $SPECS_ROOT" >&2
   exit 1
 fi
@@ -205,25 +202,10 @@ done <<< "$TOPICS"
 echo "Found $PROJECT_INDEX plan files to analyze"
 echo ""
 
-# === INITIALIZE STATE MACHINE ===
-# Initialize state machine for workflow progression tracking
-WORKFLOW_DESC="Update TODO.md with project status classification"
-sm_init "$WORKFLOW_DESC" "/todo" "utility" "1" "[]" || {
-  log_command_error "state_error" \
-    "Failed to initialize state machine" \
-    '{"workflow_id":"'"$WORKFLOW_ID"'","command":"/todo"}'
-  echo "ERROR: State machine initialization failed" >&2
-  exit 1
-}
-
-# Transition to DISCOVER state (current phase)
-sm_transition "DISCOVER" || {
-  log_command_error "state_error" \
-    "Failed to transition to DISCOVER state" \
-    '{"workflow_id":"'"$WORKFLOW_ID"'","expected_state":"DISCOVER"}'
-  echo "ERROR: State transition failed" >&2
-  exit 1
-}
+# === NOTE: /todo is a utility command ===
+# Utility commands do NOT use the research state machine (sm_init/sm_transition)
+# State machine is for research workflows: research-only, research-and-plan, full-implementation
+# Error handling is already configured via setup_bash_error_trap above
 
 # Output for next block
 echo "WORKFLOW_ID=$WORKFLOW_ID"
@@ -256,30 +238,17 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === SOURCE LIBRARIES (Three-Tier Pattern) ===
-# Tier 2: Workflow Orchestration (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
 # Tier 1: Critical Foundation (fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
-
-# === STATE TRANSITION ===
-# Transition to CLASSIFY state (enforces workflow progression)
-sm_transition "CLASSIFY" || {
-  log_command_error "state_error" \
-    "Failed to transition to CLASSIFY state" \
-    '{"workflow_id":"'"$WORKFLOW_ID"'","expected_state":"CLASSIFY"}'
-  echo "ERROR: State transition failed" >&2
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
 }
+
+# NOTE: /todo is a utility command - does NOT use research state machine (sm_init/sm_transition)
 
 # === PRE-CALCULATE PATHS ===
 # Pre-calculate paths for todo-analyzer subagent
@@ -387,7 +356,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/state-persistence.sh" 2>/dev/null || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
 }
@@ -398,8 +367,13 @@ STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
 if [ -f "$STATE_FILE" ]; then
   source "$STATE_FILE" 2>/dev/null || true
 else
-  log_command_error "state_error" \
-    "State file not found - cannot restore variables" \
+  # State file not found - log error with proper signature
+  COMMAND_NAME="/todo"
+  WORKFLOW_ID="todo_unknown"
+  USER_ARGS=""
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "state_error" "State file not found - cannot restore variables" \
+    "Block2c:StateRestore" \
     '{"expected_pattern":"~/.claude/data/state/todo_*.state"}'
   echo "ERROR: State file not found" >&2
   exit 1
@@ -411,9 +385,10 @@ echo ""
 
 # === VERIFY CLASSIFIED RESULTS FILE EXISTS ===
 if [ ! -f "$CLASSIFIED_RESULTS" ]; then
-  log_command_error "verification_error" \
-    "Classified results file not found: $CLASSIFIED_RESULTS" \
-    '{"expected_file":"'"$CLASSIFIED_RESULTS"'","recovery":"Re-run /todo command, check todo-analyzer agent completion"}'
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "verification_error" "Classified results file not found: $CLASSIFIED_RESULTS" \
+    "Block2c:Verification" \
+    '{"expected_file":"'"$CLASSIFIED_RESULTS"'","recovery":"Re-run /todo command"}'
   echo "ERROR: VERIFICATION FAILED - Classified results file missing" >&2
   echo "Expected: $CLASSIFIED_RESULTS" >&2
   echo "Recovery: Re-run /todo command, check todo-analyzer agent logs" >&2
@@ -423,9 +398,10 @@ fi
 # === VERIFY FILE SIZE ===
 FILE_SIZE=$(stat -f%z "$CLASSIFIED_RESULTS" 2>/dev/null || stat -c%s "$CLASSIFIED_RESULTS" 2>/dev/null || echo "0")
 if [ "$FILE_SIZE" -lt 10 ]; then
-  log_command_error "verification_error" \
-    "Classified results file is too small: $FILE_SIZE bytes" \
-    '{"file":"'"$CLASSIFIED_RESULTS"'","size":'"$FILE_SIZE"',"minimum":10,"recovery":"Verify todo-analyzer completed successfully"}'
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "verification_error" "Classified results file is too small: $FILE_SIZE bytes" \
+    "Block2c:Verification" \
+    '{"file":"'"$CLASSIFIED_RESULTS"'","size":'"$FILE_SIZE"',"minimum":10}'
   echo "ERROR: VERIFICATION FAILED - Classified results file is empty or too small" >&2
   echo "File: $CLASSIFIED_RESULTS" >&2
   echo "Size: $FILE_SIZE bytes (expected > 10)" >&2
@@ -435,9 +411,10 @@ fi
 
 # === VERIFY JSON VALIDITY ===
 if ! jq empty "$CLASSIFIED_RESULTS" 2>/dev/null; then
-  log_command_error "verification_error" \
-    "Classified results file contains invalid JSON" \
-    '{"file":"'"$CLASSIFIED_RESULTS"'","recovery":"Check todo-analyzer output format"}'
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "verification_error" "Classified results file contains invalid JSON" \
+    "Block2c:Verification" \
+    '{"file":"'"$CLASSIFIED_RESULTS"'"}'
   echo "ERROR: VERIFICATION FAILED - Invalid JSON in classified results" >&2
   echo "File: $CLASSIFIED_RESULTS" >&2
   echo "Recovery: Check todo-analyzer output format, validate JSON syntax" >&2
@@ -447,9 +424,7 @@ fi
 # === COUNT CLASSIFIED PLANS ===
 PLAN_COUNT=$(jq 'length' "$CLASSIFIED_RESULTS" 2>/dev/null || echo "0")
 if [ "$PLAN_COUNT" -eq 0 ]; then
-  log_command_error "verification_error" \
-    "No plans found in classified results" \
-    '{"file":"'"$CLASSIFIED_RESULTS"'","recovery":"Verify DISCOVERED_PROJECTS contained plans"}'
+  # This is a warning, not an error - empty specs/ directory is valid
   echo "WARNING: No plans classified (empty result set)" >&2
   echo "This may be normal if specs/ directory has no plans" >&2
 fi
@@ -488,9 +463,8 @@ export CLAUDE_PROJECT_DIR
 
 # Source libraries
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || exit 1
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/state-persistence.sh" 2>/dev/null || exit 1
 
 # === RESTORE STATE ===
 # Restore variables from Block 2c
@@ -498,21 +472,18 @@ STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
 if [ -f "$STATE_FILE" ]; then
   source "$STATE_FILE" 2>/dev/null || true
 else
-  log_command_error "state_error" \
-    "State file not found - cannot restore variables" \
+  COMMAND_NAME="/todo"
+  WORKFLOW_ID="todo_unknown"
+  USER_ARGS=""
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "state_error" "State file not found - cannot restore variables" \
+    "Block3:StateRestore" \
     '{"expected_pattern":"~/.claude/data/state/todo_*.state"}'
   echo "ERROR: State file not found" >&2
   exit 1
 fi
 
-# === STATE TRANSITION ===
-sm_transition "GENERATE" || {
-  log_command_error "state_error" \
-    "Failed to transition to GENERATE state" \
-    '{"workflow_id":"'"$WORKFLOW_ID"'","expected_state":"GENERATE"}'
-  echo "ERROR: State transition failed" >&2
-  exit 1
-}
+# NOTE: /todo is a utility command - does NOT use research state machine (sm_transition)
 
 TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
 
@@ -523,9 +494,10 @@ echo ""
 # === VERIFY CLASSIFIED RESULTS AVAILABLE ===
 # Fail-fast if classified results missing (hard barrier enforcement)
 if [ ! -f "$CLASSIFIED_RESULTS" ]; then
-  log_command_error "verification_error" \
-    "Classified results file not found: $CLASSIFIED_RESULTS" \
-    '{"expected_file":"'"$CLASSIFIED_RESULTS"'","recovery":"Re-run /todo command from beginning"}'
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "verification_error" "Classified results file not found: $CLASSIFIED_RESULTS" \
+    "Block3:Verification" \
+    '{"expected_file":"'"$CLASSIFIED_RESULTS"'"}'
   echo "ERROR: Classified results file missing" >&2
   echo "Expected: $CLASSIFIED_RESULTS" >&2
   echo "Recovery: Re-run /todo command, verify Block 2c completed successfully" >&2
@@ -591,30 +563,26 @@ export CLAUDE_PROJECT_DIR
 
 # Source libraries
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || exit 1
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/state-persistence.sh" 2>/dev/null || exit 1
 
 # === RESTORE STATE ===
 STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
 if [ -f "$STATE_FILE" ]; then
   source "$STATE_FILE" 2>/dev/null || true
 else
-  log_command_error "state_error" \
-    "State file not found - cannot restore variables" \
-    '{"expected_pattern":"~/.claude/data/state/todo_*.state","recovery":"Re-run /todo command from beginning"}'
+  COMMAND_NAME="/todo"
+  WORKFLOW_ID="todo_unknown"
+  USER_ARGS=""
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "state_error" "State file not found - cannot restore variables" \
+    "Block4:StateRestore" \
+    '{"expected_pattern":"~/.claude/data/state/todo_*.state"}'
   echo "ERROR: State file not found" >&2
   exit 1
 fi
 
-# === STATE TRANSITION ===
-sm_transition "COMPLETE" || {
-  log_command_error "state_error" \
-    "Failed to transition to COMPLETE state" \
-    '{"workflow_id":"'"$WORKFLOW_ID"'","expected_state":"COMPLETE"}'
-  echo "ERROR: State transition failed" >&2
-  exit 1
-}
+# NOTE: /todo is a utility command - does NOT use research state machine (sm_transition)
 
 TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
 DRY_RUN="${DRY_RUN:-false}"
@@ -625,9 +593,10 @@ echo ""
 
 # Verify classified results still available
 if [ ! -f "$CLASSIFIED_RESULTS" ]; then
-  log_command_error "file_error" \
-    "Classified results file not found: $CLASSIFIED_RESULTS" \
-    '{"expected_file":"'"$CLASSIFIED_RESULTS"'","recovery":"Re-run /todo command from beginning"}'
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "file_error" "Classified results file not found: $CLASSIFIED_RESULTS" \
+    "Block4:Verification" \
+    '{"expected_file":"'"$CLASSIFIED_RESULTS"'"}'
   echo "ERROR: Classified results file missing" >&2
   exit 1
 fi

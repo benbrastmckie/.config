@@ -34,6 +34,10 @@ In the **bash block below**, replace `YOUR_BUILD_ARGS_HERE` with the actual buil
 Execute this bash block with your substitution:
 
 ```bash
+# === PREPROCESSING SAFETY ===
+# Disable history expansion to prevent preprocessing-unsafe syntax errors
+# (e.g., [[ ! ... ]] → [[ \! ... ]] causing exit code 2)
+# This must be set BEFORE any bash conditionals with ! operator
 set +H 2>/dev/null || true
 set +o histexpand 2>/dev/null || true
 set -e  # Fail-fast per code-standards.md
@@ -138,7 +142,7 @@ for i in "${!ARGS_ARRAY[@]}"; do
   fi
 done
 
-if [[ "$STARTING_PHASE" == "--dry-run" ]]; then
+if [ "$STARTING_PHASE" = "--dry-run" ]; then
   STARTING_PHASE="1"
   DRY_RUN="true"
 fi
@@ -224,7 +228,7 @@ if [ -z "$PLAN_FILE" ]; then
   fi
 
   if [ -z "$PLAN_FILE" ]; then
-    PLAN_FILE=$(find "$CLAUDE_PROJECT_DIR/.claude/specs" -path "*/plans/[0-9]*_*.md" -type f -exec ls -t {} + 2>/dev/null | head -1)
+    PLAN_FILE=$(find "$CLAUDE_PROJECT_DIR/.claude/specs" -path "*/plans/[0-9]*_*.md" -type f -exec ls -t {} + 2>/dev/null | head -1 || true)
 
     if [ -z "$PLAN_FILE" ]; then
       echo "ERROR: No plan file found in specs/*/plans/" >&2
@@ -585,7 +589,7 @@ echo "=== Implementation Verification ==="
 echo ""
 
 # Check if summaries directory exists and has content
-if [[ ! -d "$SUMMARIES_DIR" ]]; then
+if [ ! -d "$SUMMARIES_DIR" ]; then
   log_command_error "verification_error" \
     "Summaries directory not found: $SUMMARIES_DIR" \
     "implementer-coordinator should have created this directory"
@@ -596,7 +600,7 @@ fi
 
 # Count summary files (should have at least one from this iteration)
 SUMMARY_COUNT=$(find "$SUMMARIES_DIR" -name "*.md" -type f 2>/dev/null | wc -l)
-if [[ "$SUMMARY_COUNT" -eq 0 ]]; then
+if [ "$SUMMARY_COUNT" -eq 0 ]; then
   log_command_error "verification_error" \
     "No summary files found in $SUMMARIES_DIR" \
     "implementer-coordinator should have created at least one summary"
@@ -606,8 +610,8 @@ if [[ "$SUMMARY_COUNT" -eq 0 ]]; then
 fi
 
 # Find the most recent summary (by modification time)
-LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -exec ls -t {} + 2>/dev/null | head -1)
-if [[ -z "$LATEST_SUMMARY" ]] || [[ ! -f "$LATEST_SUMMARY" ]]; then
+LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -exec ls -t {} + 2>/dev/null | head -1 || true)
+if [ -z "$LATEST_SUMMARY" ] || [ ! -f "$LATEST_SUMMARY" ]; then
   log_command_error "verification_error" \
     "Could not find latest summary in $SUMMARIES_DIR" \
     "Expected at least one summary file"
@@ -617,7 +621,7 @@ fi
 
 # Verify summary file has minimum content (not empty)
 SUMMARY_SIZE=$(stat -f%z "$LATEST_SUMMARY" 2>/dev/null || stat -c%s "$LATEST_SUMMARY" 2>/dev/null || echo "0")
-if [[ "$SUMMARY_SIZE" -lt 100 ]]; then
+if [ "$SUMMARY_SIZE" -lt 100 ]; then
   log_command_error "verification_error" \
     "Summary file too small: $LATEST_SUMMARY ($SUMMARY_SIZE bytes)" \
     "implementer-coordinator may have created empty or minimal summary"
@@ -715,9 +719,14 @@ fi
 
 # Estimate context usage with fallback for function failure
 if type -t estimate_context_usage &>/dev/null; then
-  CONTEXT_ESTIMATE=$(estimate_context_usage "$COMPLETED_PHASES" "$REMAINING_PHASES" "$HAS_CONTINUATION" 2>/dev/null) || CONTEXT_ESTIMATE=50000
+  CONTEXT_ESTIMATE=$(estimate_context_usage "$COMPLETED_PHASES" "$REMAINING_PHASES" "$HAS_CONTINUATION" 2>/dev/null)
+  if [ $? -ne 0 ] || [ -z "$CONTEXT_ESTIMATE" ]; then
+    echo "WARNING: Context estimation failed, using fallback value" >&2
+    CONTEXT_ESTIMATE=50000
+  fi
 else
-  CONTEXT_ESTIMATE=50000  # Fallback estimate if function not available
+  echo "WARNING: estimate_context_usage function not available, using fallback" >&2
+  CONTEXT_ESTIMATE=50000
 fi
 CONTEXT_USAGE_PERCENT=$((CONTEXT_ESTIMATE * 100 / MAX_CONTEXT))
 
@@ -1116,6 +1125,13 @@ else
     current_dir="$(dirname "$current_dir")"
   done
 fi
+
+# Validate CLAUDE_PROJECT_DIR before use
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 export CLAUDE_PROJECT_DIR
 
 # Source state-persistence library with fail-fast
@@ -1148,7 +1164,7 @@ USER_ARGS="${USER_ARGS:-}"
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Extract paths from state with defensive defaults
-if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
+if [ -f "$STATE_FILE" ] && [ -s "$STATE_FILE" ]; then
   PLAN_FILE=$(grep "^PLAN_FILE=" "$STATE_FILE" | cut -d'=' -f2- || echo "")
   TOPIC_PATH=$(grep "^TOPIC_PATH=" "$STATE_FILE" | cut -d'=' -f2- || echo "")
 else
@@ -1358,7 +1374,10 @@ echo ""
 # The test-executor subagent was invoked before this block
 # It should have created a test artifact at ${TOPIC_PATH}/outputs/test_results_*.md
 # Find the most recent test result artifact
-TEST_OUTPUT_PATH=$(ls -t "${TOPIC_PATH}/outputs/test_results_"*.md 2>/dev/null | head -1 || echo "")
+TEST_OUTPUT_PATH=$(ls -t "${TOPIC_PATH}/outputs/test_results_"*.md 2>/dev/null | head -1 || true)
+if [ -z "$TEST_OUTPUT_PATH" ]; then
+  TEST_OUTPUT_PATH=""
+fi
 
 if [ -z "${TEST_OUTPUT_PATH:-}" ] || [ ! -f "${TEST_OUTPUT_PATH:-}" ]; then
   echo "WARNING: Test artifact not found, test-executor may have failed"
@@ -1762,14 +1781,14 @@ fi
 
 # === RESTORE ERROR LOGGING CONTEXT ===
 if [ -z "${COMMAND_NAME:-}" ]; then
-  if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
+  if [ -f "$STATE_FILE" ] && [ -s "$STATE_FILE" ]; then
     COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" | cut -d'=' -f2- || echo "/build")
   else
     COMMAND_NAME="/build"
   fi
 fi
 if [ -z "${USER_ARGS:-}" ]; then
-  if [[ -f "$STATE_FILE" && -s "$STATE_FILE" ]]; then
+  if [ -f "$STATE_FILE" ] && [ -s "$STATE_FILE" ]; then
     USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" | cut -d'=' -f2- || echo "")
   else
     USER_ARGS=""
