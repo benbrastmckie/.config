@@ -18,7 +18,7 @@ documentation: See .claude/docs/guides/commands/todo-command-guide.md for comple
 
 **YOU MUST** determine the operation mode based on flags provided:
 - **Default Mode** (no --clean flag): Scan projects and update TODO.md
-- **Clean Mode** (--clean flag): Generate cleanup plan for completed projects
+- **Clean Mode** (--clean flag): Generate cleanup plan for cleanup-eligible projects (Completed, Abandoned, Superseded)
 
 ## Usage
 
@@ -32,11 +32,11 @@ documentation: See .claude/docs/guides/commands/todo-command-guide.md for comple
 When invoked without `--clean` flag, scans all specs/ directories, classifies plan status, and updates TODO.md.
 
 ### Clean Mode
-When invoked with `--clean` flag, identifies completed projects older than 30 days and generates a cleanup plan.
+When invoked with `--clean` flag, identifies all cleanup-eligible projects (Completed, Abandoned, and Superseded sections) and generates a cleanup plan. No age threshold applied.
 
 ## Options
 
-- `--clean` - Generate cleanup plan for completed projects
+- `--clean` - Generate cleanup plan for cleanup-eligible projects (Completed, Abandoned, Superseded)
 - `--dry-run` - Preview changes without modifying files
 
 ## Examples
@@ -617,35 +617,35 @@ echo "  dry_run: $DRY_RUN"
 
 ## Clean Mode (--clean flag)
 
-If CLEAN_MODE is true, instead of updating TODO.md, generate a cleanup plan for completed projects older than 30 days.
+If CLEAN_MODE is true, instead of updating TODO.md, generate a cleanup plan for all projects marked as cleanup-eligible (Completed, Abandoned, and Superseded sections).
 
 **EXECUTE IF CLEAN_MODE=true**: Generate cleanup plan via plan-architect agent.
 
 Task {
   subagent_type: "general-purpose"
-  description: "Generate cleanup plan for completed projects"
+  description: "Generate cleanup plan for cleanup-eligible projects"
   prompt: "
     Read and follow behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
 
-    Generate a cleanup plan for completed projects.
+    Generate a cleanup plan for cleanup-eligible projects.
 
     Input:
-    - completed_projects: List of projects with status=completed
-    - age_threshold: 30 days
-    - archive_path: ${CLAUDE_PROJECT_DIR}/.claude/archive/completed_$(date +%Y%m%d)/
+    - eligible_projects: Projects with status=completed, superseded, or abandoned
+    - archive_path: ${CLAUDE_PROJECT_DIR}/.claude/archive/cleaned_$(date +%Y%m%d_%H%M%S)/
 
     Create a plan with phases:
-    1. Create archive manifest
-    2. Move completed project directories to archive
-    3. Update TODO.md (move entries to Completed section)
-    4. Verify cleanup success
+    1. Git verification (check for uncommitted changes in each project directory)
+    2. Archive creation (create timestamped archive directory)
+    3. Directory removal (move eligible projects to archive)
+    4. Verification (confirm cleanup success)
 
     Safety requirements:
-    - Dry-run by default
-    - Create backup of TODO.md
-    - Archive (don't delete) projects
-    - Log all operations
+    - Check git status for each directory (skip if uncommitted changes)
+    - Archive (don't delete) all projects
+    - Preserve TODO.md (no modification during cleanup)
+    - Log all operations with skipped directories
+    - Include recovery instructions in plan
 
     Return: CLEANUP_PLAN_CREATED: {plan_path}
   "

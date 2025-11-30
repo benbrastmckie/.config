@@ -24,7 +24,7 @@
 The `/todo` command provides two modes for managing the `.claude/TODO.md` project tracking file:
 
 1. **Update Mode** (default): Scans all specs/ directories, classifies plan status, and updates TODO.md with current project status
-2. **Clean Mode** (`--clean` flag): Identifies completed projects older than 30 days and generates a cleanup plan for archival
+2. **Clean Mode** (`--clean` flag): Identifies all cleanup-eligible projects (Completed, Abandoned, and Superseded sections) and generates a cleanup plan for archival (no age threshold)
 
 ### When to Use
 
@@ -93,9 +93,9 @@ The `/todo` command provides two modes for managing the `.claude/TODO.md` projec
 
 **Clean Mode**:
 1. **Discovery**: Same as Update Mode
-2. **Filtering**: Filter completed projects older than 30 days
-3. **Plan Generation**: Generate cleanup plan with archive phases
-4. **Output**: Write cleanup plan to specs/ for execution via /build
+2. **Filtering**: Filter cleanup-eligible projects (status=completed, superseded, or abandoned) - no age threshold
+3. **Plan Generation**: Generate cleanup plan via plan-architect agent with git verification, archive, and removal phases
+4. **Output**: Write cleanup plan to specs/ for review and execution via /build
 
 ### Hard Barrier Pattern
 
@@ -160,10 +160,10 @@ Previous versions included fallback logic that would bypass the todo-analyzer ag
 # Preview changes without modifying files
 /todo --dry-run
 
-# Generate cleanup plan for completed projects
+# Generate cleanup plan for eligible projects (Completed, Abandoned, Superseded)
 /todo --clean
 
-# Preview cleanup plan
+# Preview cleanup plan (dry-run)
 /todo --clean --dry-run
 ```
 
@@ -179,9 +179,10 @@ Previous versions included fallback logic that would bypass the todo-analyzer ag
 # 3. Review updated TODO.md
 cat .claude/TODO.md
 
-# 4. Periodically clean up old completed projects
+# 4. Periodically clean up eligible projects (Completed, Abandoned, Superseded)
 /todo --clean
 /build <cleanup-plan-path>
+/todo  # Rescan to update TODO.md after cleanup
 ```
 
 ### Integration with Other Commands
@@ -196,9 +197,10 @@ cat .claude/TODO.md
 /todo  # Update TODO.md to include new plan
 
 # Cleanup workflow
-/todo --clean --dry-run    # Preview cleanup candidates
-/todo --clean              # Generate cleanup plan
-/build <cleanup-plan>      # Execute cleanup
+/todo --clean --dry-run    # Preview cleanup candidates (Completed, Abandoned, Superseded)
+/todo --clean              # Generate cleanup plan (no age filtering)
+/build <cleanup-plan>      # Execute cleanup (git verification, archive, removal)
+/todo                      # Rescan to update TODO.md
 ```
 
 ---
@@ -273,14 +275,22 @@ Artifacts are linked in the entry as indented bullets:
 
 ### Cleanup Plan Generation
 
-The `--clean` flag generates a 4-phase cleanup plan:
+The `--clean` flag generates a cleanup plan via the plan-architect agent with the following phases:
 
-1. **Create Archive Directory**: Prepare archive with manifest
-2. **Archive Projects**: Move each completed project directory
-3. **Update TODO.md**: Remove archived entries from Completed section
+1. **Git Verification**: Check for uncommitted changes in each project directory (skip directories with uncommitted work)
+2. **Archive Creation**: Create timestamped archive directory (e.g., `.claude/archive/cleaned_20251129_172530/`)
+3. **Directory Removal**: Move eligible project directories to archive
 4. **Verification**: Confirm all operations succeeded
 
-Cleanup only targets completed projects older than 30 days.
+**Target Sections**: Completed, Abandoned, and Superseded projects
+**Age Filtering**: None - all eligible projects are included regardless of age
+**TODO.md**: Preserved and NOT modified during cleanup (re-run `/todo` after cleanup to update)
+
+**Workflow**:
+1. `/todo --clean` - Generate cleanup plan
+2. Review generated plan file
+3. `/build <plan-file>` - Execute cleanup
+4. `/todo` - Rescan and update TODO.md
 
 ---
 
