@@ -1,155 +1,111 @@
-> /plan is running… "I just ran /todo with output 
-/home/benjamin/.config/.claude/output/todo-output.md however see that 
-/home/benjamin/.config/.claude/TODO.md has completed plans in the 'In Progress' section. 
-Research why /todo failed to move these to the 'Completed' section, creating a plan to fix this
- issue while complying with all .claude/docs/ standards. It is also important that as much as 
-possible, the /todo command use subagents to do work as in the other commands." 
+> /plan is running… "I want the /plan command to look up the relevant 
+standards from CLAUDE.md in order to make sure that the plan architect 
+subagent creates a plan that aligns with those standards, or if there is 
+well-motivated divergence, including a first phase to revise and improve the
+ standards in a principled and well-integrated way, making sure to warn the 
+user that the plan proposes a change to the project standards." 
   ⎿  Allowed 7 tools for this command
 
-● I'll execute the /plan command to research why /todo failed to properly classify
-  completed plans and create a fix plan.
-
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ ✓ State file validated: /home/benjamin/.config/.claude/tmp/workflow_plan_1764455499.sh
-    Classification accepted: scope=research-and-plan, complexity=3, topics=0
-    State machine initialized: scope=research-and-plan, terminal=plan
+  ⎿ ✓ State file validated: /home/benjamin/.config/.claude/tmp/workflow
+    _plan_1764459370.sh
+    Classification accepted: scope=research-and-plan, complexity=3, top
     … +7 lines (ctrl+o to expand)
 
 
+
 ● Task(Generate semantic topic directory name)
-  ⎿  Done (2 tool uses · 28.3k tokens · 14s)                                              
+  ⎿  Done (2 tool uses · 25.3k tokens · 14s)                           
+
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿  Agent output validation complete
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿  Error: Exit code 1
-     ERROR: Failed to restore WORKFLOW_ID for validation
+     ERROR: Failed to restore WORKFLOW_ID from Block 1a
 
-● Bash(set +H…)
-  ⎿ WORKFLOW_ID=plan_1764455499                                                           
-    Topic name written to: /home/benjamin/.config/.claude/tmp/topic_name_plan_1764455499.t
-    xt
-    todo_status_classification_plan
+● Bash(# Check if state ID file exists and restore CLAUDE_PROJECT_DIR first
+      if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null
+      2>&1; then…)
+  ⎿ Looking for: /home/benjamin/.config/.claude/tmp/plan_state_id.txt  
+    -rw-r--r-- 1 benjamin users 16 Nov 29 15:36 /home/benjamin/.config/
+    .claude/tmp/plan_state_id.txt
+    plan_1764459370
 
+
+● The file exists. The issue is that CLAUDE_PROJECT_DIR wasn't set at
+  the start of the script. Let me run the block again with proper
+  initialization:
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Error: Exit code 127
-     /run/current-system/sw/bin/bash: line 170: FEATURE_DESCRIPTION: unbound variable
-
-● Bash(set +H
-      set +u  # Allow unbound variables temporarily…)
-  ⎿ Setup complete: plan_1764455499                                                       
-    Research directory: /home/benjamin/.config/.claude/specs/964_todo_status_classificatio
-    n_plan/reports
+  ⎿ Setup complete: plan_1764459370 (research-and-plan, complexity: 3) 
+    Research directory: /home/benjamin/.config/.claude/specs/968_plan_s
+    tandards_alignment/reports
     … +4 lines (ctrl+o to expand)
 
 
-● Now let me invoke the research-specialist agent to analyze why /todo failed:
+● Task(Research plan standards alignment feature)
+  ⎿  Done (16 tool uses · 82.0k tokens · 1m 59s)                                          
 
-● Task(Research /todo status classification failure)
-  ⎿  Done (12 tool uses · 97.3k tokens · 2m 58s)                                          
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿  Verifying research artifacts...
+     Research verified: 1 reports
+     … +11 lines (ctrl+o to expand)
 
-● Bash(set +H…)
-  ⎿  Error: Exit code 1
-     /run/current-system/sw/bin/bash: line 96: validate_workflow_id: command not found
+● Task(Create plan for standards alignment feature)
+  ⎿  Done (11 tool uses · 47.3k tokens · 2m 29s)                                          
 
-     ❌ CRITICAL ERROR: Workflow state file not found
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿  Verifying plan artifacts...   
+     Plan verified: 20353 bytes
+     … +25 lines (ctrl+o to expand)
 
-     Context:
-       Expected state file: /home/benjamin/.config/.claude/tmp/workflow_3084809.sh
-       Workflow ID: 3084809
-       Block type: Subsequent block (is_first_block=false)
+● Read(.claude/specs/968_plan_standards_alignment/plans/001-plan-standards-alignment-plan.md)
+  ⎿  Read 384 lines
 
-     … +15 lines (ctrl+o to see all)
+● The /plan workflow completed successfully. Here's a summary:
 
-● Let me fix the state restoration:
+  Plan Created: Standards-Aware Plan Generation
 
-● Bash(set +H
-      set +u…)
-  ⎿  WORKFLOW_ID from file: plan_1764455666                                    
-     STATE_FILE: /home/benjamin/.config/.claude/tmp/workflow_plan_1764455666.sh
-     State file sourced successfully
-     … +9 lines (ctrl+o to expand)
+  Plan Location: /home/benjamin/.config/.claude/specs/968_plan_standards_alignment/plans/00
+  1-plan-standards-alignment-plan.md
 
-● I see there was a state mismatch. Let me check the correct spec directory and research
-  report:
+  Research Report: /home/benjamin/.config/.claude/specs/968_plan_standards_alignment/report
+  s/001-plan-standards-integration-research.md
 
-● Bash(ls -la /home/benjamin/.config/.claude/specs/964_todo_status_classification_plan/)
-  ⎿  total 40                                                
-     drwxr-xr-x   3 benjamin users  4096 Nov 29 14:36 .
-     drwxr-xr-x 189 benjamin users 28672 Nov 29 14:36 ..
-     drwx------   2 benjamin users  4096 Nov 29 14:36 reports
+  Summary
 
-● Bash(ls -la
-      /home/benjamin/.config/.claude/specs/964_todo_status_classification_plan/reports/)
-  ⎿  total 32                                         
-     drwx------ 2 benjamin users  4096 Nov 29 14:36 .
-     drwxr-xr-x 3 benjamin users  4096 Nov 29 14:36 ..
-     … +2 lines (ctrl+o to expand)
+  The plan outlines a 5-phase implementation to integrate CLAUDE.md standards into the
+  /plan command:
 
-● The research report exists. Let me set up the correct paths and invoke the plan-architect
-   agent:
+  | Phase | Description                           | Dependencies |
+  |-------|---------------------------------------|--------------|
+  | 1     | Standards Extraction Library          | None         |
+  | 2     | Plan-Architect Behavioral Enhancement | None         |
+  | 3     | /plan Command Enhancement             | Phase 1      |
+  | 4     | Integration Testing                   | Phases 2, 3  |
+  | 5     | Documentation                         | Phase 4      |
 
-● Read(964_todo_status_classification_plan/reports/001-todo-status-classification-research.md)
-  ⎿  Read 100 lines
+  Key Features
 
-● Now let me create the plans directory and invoke the plan-architect agent:
+  1. Standards Extraction Library (.claude/lib/plan/standards-extraction.sh)
+    - Extracts planning-relevant sections using <!-- SECTION: name --> markers
+    - Reusable by other commands (/revise, /implement, /debug)
+  2. Plan-Architect Enhancement
+    - Standards content injected into agent prompt
+    - Three-tier divergence levels (Minor/Moderate/Major)
+    - Phase 0 template for standards revision proposals
+  3. Divergence Detection
+    - Plans proposing standards changes automatically include Phase 0
+    - User receives explicit warning in console output
+    - Metadata includes divergence flags
 
-● Bash(mkdir -p /home/benjamin/.config/.claude/specs/964_todo_status_classification_plan/plans
-      echo "Plans directory created")
-  ⎿  Plans directory created
+  Next Steps
 
-● Task(Create implementation plan for /todo fix)
-  ⎿  Done (10 tool uses · 70.3k tokens · 2m 36s)                                          
+  - Review the plan: cat /home/benjamin/.config/.claude/specs/968_plan_standards_alignment/
+  plans/001-plan-standards-alignment-plan.md
+  - Begin implementation: /build /home/benjamin/.config/.claude/specs/968_plan_standards_al
+  ignment/plans/001-plan-standards-alignment-plan.md
+  - Review research: The research report contains detailed analysis of CLAUDE.md structure
+  and plan-architect integration points
 
-● Bash(set +H…)
-  ⎿ Plan verified: 22599 bytes                                                            
-
-    Plan path: /home/benjamin/.config/.claude/specs/964_todo_status_classification_plan/pl
-    … +66 lines (ctrl+o to expand)
-
-
-● The plan was created successfully. Let me provide the completion summary:
-
-● Bash(set +H…)
-  ⎿  ==============================================
-     /plan Command Complete
-     ==============================================
-     … +23 lines (ctrl+o to expand)
-
-● /plan Command Complete
-
-  Summary: Created implementation plan for fixing the /todo command's status classification
-   issue.
-
-  Root Cause Identified: The /todo command's Block 2 uses pseudo-code Task invocation
-  instead of the hard barrier subagent delegation pattern, allowing Claude to bypass the
-  todo-analyzer agent.
-
-  Key Issues Found:
-  1. Block 2 uses pseudo-code format (Task { ... }) instead of proper Task tool invocation
-  2. Block 3 contains fallback logic that bypasses agent delegation when agent output is
-  empty
-  3. Missing state machine integration with state transitions
-  4. No verification block (Block 2c) to enforce agent execution
-
-  Implementation Plan (6 phases):
-  1. Refactor Block 2 into 2a/2b/2c structure with hard barriers
-  2. Remove fallback logic from Block 3 (fail-fast on missing agent output)
-  3. Add state machine integration with proper state transitions
-  4. Add comprehensive error logging
-  5. Update documentation for hard barrier compliance
-  6. Testing and validation
-
-  Artifacts Created:
-  - Research: .claude/specs/964_todo_status_classification_plan/reports/001-todo-status-cla
-  ssification-research.md
-  - Plan: .claude/specs/964_todo_status_classification_plan/plans/001-todo-status-classific
-  ation-plan-plan.md
-
-  Next Steps:
-  # Review the plan
-  cat .claude/specs/964_todo_status_classification_plan/plans/001-todo-status-classificatio
-  n-plan-plan.md
-
-  # Begin implementation
-  /build .claude/specs/964_todo_status_classification_plan/plans/001-todo-status-classifica
-  tion-plan-plan.md

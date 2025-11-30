@@ -7,7 +7,7 @@
 - **Estimated Phases**: 9
 - **Estimated Hours**: 37
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
-- **Status**: [NOT STARTED]
+- **Status**: [IN PROGRESS]
 - **Structure Level**: 0
 - **Complexity Score**: 142.0
 - **Research Reports**:
@@ -143,7 +143,7 @@ The optimization approach uses a phased implementation strategy that first fixes
 
 ## Implementation Phases
 
-### Phase 0: Error Remediation and Baseline Stabilization [NOT STARTED]
+### Phase 0: Error Remediation and Baseline Stabilization [COMPLETE]
 dependencies: []
 
 **Objective**: Fix existing execution errors in /plan command to establish stable baseline before optimization
@@ -151,16 +151,16 @@ dependencies: []
 **Complexity**: High
 
 Tasks:
-- [ ] Fix Block 1b WORKFLOW_ID restoration failure - validate CLAUDE_PROJECT_DIR available before reading state file (file: /home/benjamin/.config/.claude/commands/plan.md, lines 298-306)
-- [ ] Fix Block 1c FEATURE_DESCRIPTION unbound variable error - initialize variable BEFORE defensive check (lines 399-414)
-- [ ] Fix Block 2 validate_workflow_id missing function - move function call AFTER state-persistence.sh sourced (lines 646-667)
-- [ ] Fix Block 2 defensive trap syntax error - remove 'local' keyword from EXIT trap or replace with setup_bash_error_trap (lines 619-622)
-- [ ] Fix Block 3 defensive trap syntax error - same fix as Block 2 (lines 920-924)
-- [ ] Audit all blocks for library sourcing order - ensure error-handling.sh first, state-persistence.sh second, workflow-state-machine.sh third
-- [ ] Add pre-flight function availability checks before all function calls
-- [ ] Remove temporary `set +u` workarounds once variables properly initialized
-- [ ] Test all three bash blocks execute without exit code 1 or 127 errors
-- [ ] Document root causes and fixes for future reference
+- [x] Fix Block 1b WORKFLOW_ID restoration failure - validate CLAUDE_PROJECT_DIR available before reading state file (file: /home/benjamin/.config/.claude/commands/plan.md, lines 298-306)
+- [x] Fix Block 1c FEATURE_DESCRIPTION unbound variable error - initialize variable BEFORE defensive check (lines 399-414)
+- [x] Fix Block 2 validate_workflow_id missing function - move function call AFTER state-persistence.sh sourced (lines 646-667)
+- [x] Fix Block 2 defensive trap syntax error - remove 'local' keyword from EXIT trap or replace with setup_bash_error_trap (lines 619-622)
+- [x] Fix Block 3 defensive trap syntax error - same fix as Block 2 (lines 920-924)
+- [x] Audit all blocks for library sourcing order - ensure error-handling.sh first, state-persistence.sh second, workflow-state-machine.sh third
+- [x] Add pre-flight function availability checks before all function calls
+- [x] Remove temporary `set +u` workarounds once variables properly initialized
+- [x] Test all three bash blocks execute without exit code 1 or 127 errors
+- [x] Document root causes and fixes for future reference
 
 Testing:
 ```bash
@@ -189,7 +189,7 @@ bash .claude/tests/features/commands/test_plan_trap_syntax.sh
 
 **Expected Duration**: 6 hours
 
-### Phase 0.5: Variable Initialization Standardization [NOT STARTED]
+### Phase 0.5: Variable Initialization Standardization [COMPLETE]
 dependencies: [0]
 
 **Objective**: Establish consistent variable initialization patterns to eliminate unbound variable errors and remove `set +u` workarounds
@@ -197,15 +197,15 @@ dependencies: [0]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Document all variables that cross block boundaries and must be preserved (file: /home/benjamin/.config/.claude/commands/plan.md)
-- [ ] Create standard initialization pattern for optional variables using ${VAR:-default} syntax
-- [ ] Apply initialization pattern in Block 1c for FEATURE_DESCRIPTION (line 408), ORIGINAL_PROMPT_FILE_PATH (line 402), RESEARCH_COMPLEXITY (line 403)
-- [ ] Apply initialization pattern in Block 2 for TOPIC_PATH (line 748), RESEARCH_DIR (line 749), PLANS_DIR (line 750), ARCHIVED_PROMPT_PATH (line 754)
-- [ ] Replace all `set +u` workarounds with proper variable initialization BEFORE any reference
-- [ ] Add variable validation after state restoration (check critical variables are non-empty)
-- [ ] Test all blocks with `set -u` strict mode enabled (no temporary disabling)
-- [ ] Document variable initialization standards in code comments
-- [ ] Create test suite for variable initialization compliance
+- [x] Document all variables that cross block boundaries and must be preserved (file: /home/benjamin/.config/.claude/commands/plan.md)
+- [x] Create standard initialization pattern for optional variables using ${VAR:-default} syntax
+- [x] Apply initialization pattern in Block 1c for FEATURE_DESCRIPTION (line 408), ORIGINAL_PROMPT_FILE_PATH (line 402), RESEARCH_COMPLEXITY (line 403)
+- [x] Apply initialization pattern in Block 2 for TOPIC_PATH (line 748), RESEARCH_DIR (line 749), PLANS_DIR (line 750), ARCHIVED_PROMPT_PATH (line 754)
+- [x] Replace all `set +u` workarounds with proper variable initialization BEFORE any reference
+- [x] Add variable validation after state restoration (check critical variables are non-empty)
+- [x] Test all blocks with `set -u` strict mode enabled (no temporary disabling)
+- [x] Document variable initialization standards in code comments
+- [x] Create test suite for variable initialization compliance
 
 Testing:
 ```bash
@@ -241,7 +241,7 @@ fi
 
 **Expected Duration**: 3 hours
 
-### Phase 1: Performance Instrumentation and Baseline [NOT STARTED]
+### Phase 1: Performance Instrumentation and Baseline [COMPLETE]
 dependencies: [0, 0.5]
 
 **Objective**: Add timing instrumentation to measure current performance and establish baseline metrics for optimization validation
@@ -249,14 +249,14 @@ dependencies: [0, 0.5]
 **Complexity**: Low
 
 Tasks:
-- [ ] Add timing variables at start of each bash block in plan.md (file: /home/benjamin/.config/.claude/commands/plan.md, lines 160, 374, 612, 914)
-- [ ] Add timing output at end of each bash block to measure block duration
-- [ ] Create timing aggregation to measure total execution time
-- [ ] Add state I/O operation counter (track append_workflow_state calls)
-- [ ] Add library sourcing counter (track source operations)
-- [ ] Add validation checkpoint counter (track validation operations)
-- [ ] Run test execution of /plan command and capture baseline metrics
-- [ ] Document baseline: total time, per-block time, state writes, library sources, validations
+- [x] Add timing variables at start of each bash block in plan.md (file: /home/benjamin/.config/.claude/commands/plan.md, lines 160, 374, 612, 914)
+- [x] Add timing output at end of each bash block to measure block duration
+- [x] Create timing aggregation to measure total execution time
+- [x] Add state I/O operation counter (track append_workflow_state calls)
+- [x] Add library sourcing counter (track source operations)
+- [x] Add validation checkpoint counter (track validation operations)
+- [x] Run test execution of /plan command and capture baseline metrics
+- [x] Document baseline: total time, per-block time, state writes, library sources, validations
 
 Testing:
 ```bash
@@ -273,7 +273,7 @@ test -f /tmp/baseline-metrics.json || echo "ERROR: Metrics not captured"
 
 **Expected Duration**: 2 hours
 
-### Phase 2: State Operation Consolidation [NOT STARTED]
+### Phase 2: State Operation Consolidation [COMPLETE]
 dependencies: [1]
 
 **Objective**: Batch state persistence operations to reduce disk I/O from 6+ writes to 2-3 writes per execution
@@ -281,14 +281,14 @@ dependencies: [1]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Create `append_workflow_state_bulk()` function in state-persistence.sh (file: /home/benjamin/.config/.claude/lib/core/state-persistence.sh)
-- [ ] Implement bulk append using heredoc input pattern for multiple variables
-- [ ] Replace 13 individual append calls in plan.md Block 1c with single bulk append (lines 559-573)
-- [ ] Consolidate state saves in Block 2 (reduce from 2 calls to 1)
-- [ ] Consolidate state saves in Block 3 (reduce from 2 calls to 1)
-- [ ] Update state-persistence.sh tests to verify bulk append functionality
-- [ ] Run /plan command with consolidated state operations and measure I/O reduction
-- [ ] Verify state file integrity (all variables persisted correctly)
+- [x] Create `append_workflow_state_bulk()` function in state-persistence.sh (file: /home/benjamin/.config/.claude/lib/core/state-persistence.sh)
+- [x] Implement bulk append using heredoc input pattern for multiple variables
+- [x] Replace 13 individual append calls in plan.md Block 1c with single bulk append (lines 559-573)
+- [x] Consolidate state saves in Block 2 (reduce from 2 calls to 1)
+- [x] Consolidate state saves in Block 3 (reduce from 2 calls to 1)
+- [x] Update state-persistence.sh tests to verify bulk append functionality
+- [x] Run /plan command with consolidated state operations and measure I/O reduction
+- [x] Verify state file integrity (all variables persisted correctly)
 
 Testing:
 ```bash
@@ -310,7 +310,7 @@ bash .claude/tests/features/commands/test_plan_state_consolidation.sh
 
 **Expected Duration**: 4 hours
 
-### Phase 3: Bash Block Consolidation [NOT STARTED]
+### Phase 3: Bash Block Consolidation [COMPLETE]
 dependencies: [0, 2]
 
 **Objective**: Reduce bash block count from 3 to 2 by merging initialization blocks, eliminating environment reconstruction overhead
@@ -324,19 +324,19 @@ dependencies: [0, 2]
 - Variables properly initialized before reference
 
 Tasks:
-- [ ] Verify current blocks execute without errors (validate Phase 0 success)
-- [ ] Document current variable passing between blocks (what's exported, what's in state file)
-- [ ] Merge Block 1a (initialization) and Block 1b (topic naming) into single block (file: /home/benjamin/.config/.claude/commands/plan.md, lines 160-293)
-- [ ] Merge Block 1c (research agent) into consolidated Block 1 (lines 374-607)
-- [ ] Remove redundant project directory detection (keep only first occurrence)
-- [ ] Remove redundant library sourcing (keep only first occurrence)
-- [ ] Maintain correct library sourcing order in consolidated block (error-handling → state-persistence → workflow-state-machine)
-- [ ] Update variable exports to ensure context preserved throughout Block 1
-- [ ] Test agent invocations still work correctly in consolidated block
-- [ ] Verify error handling works in merged block (use setup_bash_error_trap, no broken defensive traps)
-- [ ] Verify no unbound variable errors with strict mode enabled
-- [ ] Update comments to reflect consolidated structure
-- [ ] Measure execution time reduction from block consolidation
+- [x] Verify current blocks execute without errors (validate Phase 0 success)
+- [x] Document current variable passing between blocks (what's exported, what's in state file)
+- [x] Merge Block 1a (initialization) and Block 1b (topic naming) into single block (file: /home/benjamin/.config/.claude/commands/plan.md, lines 160-293)
+- [x] Merge Block 1c (research agent) into consolidated Block 1 (lines 374-607)
+- [x] Remove redundant project directory detection (keep only first occurrence)
+- [x] Remove redundant library sourcing (keep only first occurrence)
+- [x] Maintain correct library sourcing order in consolidated block (error-handling → state-persistence → workflow-state-machine)
+- [x] Update variable exports to ensure context preserved throughout Block 1
+- [x] Test agent invocations still work correctly in consolidated block
+- [x] Verify error handling works in merged block (use setup_bash_error_trap, no broken defensive traps)
+- [x] Verify no unbound variable errors with strict mode enabled
+- [x] Update comments to reflect consolidated structure
+- [x] Measure execution time reduction from block consolidation
 
 Testing:
 ```bash
@@ -360,7 +360,7 @@ echo "Block 1 improvement: ${IMPROVEMENT}ms"
 
 **Expected Duration**: 8 hours (increased from 6 due to error remediation validation requirements)
 
-### Phase 4: Library Sourcing Optimization [NOT STARTED]
+### Phase 4: Library Sourcing Optimization [COMPLETE]
 dependencies: [3]
 
 **Objective**: Fix library sourcing order and eliminate redundant library sourcing by adding source guards to all core libraries
@@ -374,18 +374,18 @@ dependencies: [3]
 4. Other libraries after core three (workflow-initialization.sh, topic-utils.sh, plan-core-bundle.sh)
 
 Tasks:
-- [ ] Verify library sourcing order in all blocks follows requirements above
-- [ ] Ensure state-persistence.sh sourced BEFORE any validate_workflow_id calls
-- [ ] Ensure error-handling.sh sourced FIRST for _source_with_diagnostics availability
-- [ ] Add source guard to error-handling.sh (file: /home/benjamin/.config/.claude/lib/core/error-handling.sh, top of file)
-- [ ] Add source guard to state-persistence.sh (file: /home/benjamin/.config/.claude/lib/core/state-persistence.sh, top of file)
-- [ ] Add source guard to workflow-state-machine.sh (file: /home/benjamin/.config/.claude/lib/workflow/workflow-state-machine.sh, top of file)
-- [ ] Add source guard to workflow-initialization.sh (file: /home/benjamin/.config/.claude/lib/workflow/workflow-initialization.sh, top of file)
-- [ ] Add source guard to topic-utils.sh (file: /home/benjamin/.config/.claude/lib/plan/topic-utils.sh, top of file)
-- [ ] Add source guard to plan-core-bundle.sh (file: /home/benjamin/.config/.claude/lib/plan/plan-core-bundle.sh, top of file)
-- [ ] Verify source guards prevent redundant parsing across blocks while preserving error handling
-- [ ] Measure library sourcing time reduction
-- [ ] Run all library unit tests to ensure guards don't break functionality
+- [x] Verify library sourcing order in all blocks follows requirements above
+- [x] Ensure state-persistence.sh sourced BEFORE any validate_workflow_id calls
+- [x] Ensure error-handling.sh sourced FIRST for _source_with_diagnostics availability
+- [x] Add source guard to error-handling.sh (file: /home/benjamin/.config/.claude/lib/core/error-handling.sh, top of file)
+- [x] Add source guard to state-persistence.sh (file: /home/benjamin/.config/.claude/lib/core/state-persistence.sh, top of file)
+- [x] Add source guard to workflow-state-machine.sh (file: /home/benjamin/.config/.claude/lib/workflow/workflow-state-machine.sh, top of file)
+- [x] Add source guard to workflow-initialization.sh (file: /home/benjamin/.config/.claude/lib/workflow/workflow-initialization.sh, top of file)
+- [x] Add source guard to topic-utils.sh (file: /home/benjamin/.config/.claude/lib/plan/topic-utils.sh, top of file)
+- [x] Add source guard to plan-core-bundle.sh (file: /home/benjamin/.config/.claude/lib/plan/plan-core-bundle.sh, top of file)
+- [x] Verify source guards prevent redundant parsing across blocks while preserving error handling
+- [x] Measure library sourcing time reduction
+- [x] Run all library unit tests to ensure guards don't break functionality
 
 Testing:
 ```bash
@@ -411,7 +411,7 @@ bash .claude/tests/features/commands/test_plan_function_availability.sh
 
 **Expected Duration**: 4 hours (increased from 3 due to sourcing order fixes)
 
-### Phase 5: Validation Streamlining and Trap Cleanup [NOT STARTED]
+### Phase 5: Validation Streamlining and Trap Cleanup [COMPLETE]
 dependencies: [4]
 
 **Objective**: Reduce validation overhead by deduplicating validation checkpoints, removing broken defensive trap pattern, and fixing trap syntax errors
@@ -430,18 +430,18 @@ setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 ```
 
 Tasks:
-- [ ] Remove defensive traps with invalid syntax from Block 2 (file: /home/benjamin/.config/.claude/commands/plan.md, lines 618-622) - replace with setup_bash_error_trap
-- [ ] Remove defensive trap teardown from Block 2 (lines 692-693) - no longer needed with setup_bash_error_trap
-- [ ] Remove defensive traps with invalid syntax from Block 3 (lines 920-924) - replace with setup_bash_error_trap
-- [ ] Remove defensive trap teardown from Block 3 (lines 987-988) - no longer needed
-- [ ] Create `validate_workflow_state()` helper function in state-persistence.sh (file: /home/benjamin/.config/.claude/lib/core/state-persistence.sh)
-- [ ] Consolidate state file validation logic into helper (existence, readability, variable restoration)
-- [ ] Replace 3 validation blocks in Block 2 with single validation call (lines 700-780)
-- [ ] Replace 3 validation blocks in Block 3 with single validation call (lines 995-1070)
-- [ ] Simplify error logging (avoid JSON construction on success path)
-- [ ] Test validation still catches errors correctly
-- [ ] Verify no trap syntax errors remain in command
-- [ ] Measure validation overhead reduction
+- [x] Remove defensive traps with invalid syntax from Block 2 (file: /home/benjamin/.config/.claude/commands/plan.md, lines 618-622) - replace with setup_bash_error_trap
+- [x] Remove defensive trap teardown from Block 2 (lines 692-693) - no longer needed with setup_bash_error_trap
+- [x] Remove defensive traps with invalid syntax from Block 3 (lines 920-924) - replace with setup_bash_error_trap
+- [x] Remove defensive trap teardown from Block 3 (lines 987-988) - no longer needed
+- [x] Create `validate_workflow_state()` helper function in state-persistence.sh (file: /home/benjamin/.config/.claude/lib/core/state-persistence.sh)
+- [x] Consolidate state file validation logic into helper (existence, readability, variable restoration)
+- [x] Replace 3 validation blocks in Block 2 with single validation call (lines 700-780)
+- [x] Replace 3 validation blocks in Block 3 with single validation call (lines 995-1070)
+- [x] Simplify error logging (avoid JSON construction on success path)
+- [x] Test validation still catches errors correctly
+- [x] Verify no trap syntax errors remain in command
+- [x] Measure validation overhead reduction
 
 Testing:
 ```bash
@@ -469,7 +469,7 @@ bash .claude/tests/features/commands/test_plan_error_trap_integration.sh
 
 **Expected Duration**: 4 hours (increased from 3 due to trap cleanup requirements)
 
-### Phase 6: Agent Timeout Optimization [NOT STARTED]
+### Phase 6: Agent Timeout Optimization [COMPLETE]
 dependencies: [5]
 
 **Objective**: Optimize topic naming agent timeout and retry configuration to reduce worst-case scenario latency
@@ -477,13 +477,13 @@ dependencies: [5]
 **Complexity**: Low
 
 Tasks:
-- [ ] Reduce topic naming agent timeout from 10s to 5s (file: /home/benjamin/.config/.claude/commands/plan.md, line 357)
-- [ ] Reduce retry count from 3 to 2 for topic naming agent
-- [ ] Update timeout comment to reflect 5s timeout rationale (2x buffer over 3s expected)
-- [ ] Test topic naming agent with 5s timeout on various prompt complexities
-- [ ] Verify agent still completes successfully with reduced timeout
-- [ ] Measure worst-case scenario improvement (30s → 15s)
-- [ ] Document timeout tuning rationale in command comments
+- [x] Reduce topic naming agent timeout from 10s to 5s (file: /home/benjamin/.config/.claude/commands/plan.md, line 357)
+- [x] Reduce retry count from 3 to 2 for topic naming agent
+- [x] Update timeout comment to reflect 5s timeout rationale (2x buffer over 3s expected)
+- [x] Test topic naming agent with 5s timeout on various prompt complexities
+- [x] Verify agent still completes successfully with reduced timeout
+- [x] Measure worst-case scenario improvement (30s → 15s)
+- [x] Document timeout tuning rationale in command comments
 
 Testing:
 ```bash
@@ -503,7 +503,7 @@ grep -q "Topic naming timed out" /tmp/plan-test.log && echo "ERROR: Legitimate p
 
 **Expected Duration**: 2 hours
 
-### Phase 7: Performance Validation and Measurement [NOT STARTED]
+### Phase 7: Performance Validation and Measurement [COMPLETE]
 dependencies: [6]
 
 **Objective**: Validate all optimizations deliver expected performance gains with no regressions in functionality
@@ -511,16 +511,16 @@ dependencies: [6]
 **Complexity**: Medium
 
 Tasks:
-- [ ] Run full /plan command with all optimizations enabled
-- [ ] Measure total execution time and compare to baseline
-- [ ] Verify 30-40% improvement achieved (baseline vs optimized)
-- [ ] Measure state writes (should be 2-3, down from 6+)
-- [ ] Measure library sourcing operations (should be reduced by 60%+)
-- [ ] Measure validation checkpoints (should be 2, down from 6)
-- [ ] Run full test suite to verify no regressions
-- [ ] Document performance metrics in implementation summary
-- [ ] Create performance comparison report (baseline vs optimized)
-- [ ] Update /plan command documentation with optimization notes
+- [x] Run full /plan command with all optimizations enabled
+- [x] Measure total execution time and compare to baseline
+- [x] Verify 30-40% improvement achieved (baseline vs optimized)
+- [x] Measure state writes (should be 2-3, down from 6+)
+- [x] Measure library sourcing operations (should be reduced by 60%+)
+- [x] Measure validation checkpoints (should be 2, down from 6)
+- [x] Run full test suite to verify no regressions
+- [x] Document performance metrics in implementation summary
+- [x] Create performance comparison report (baseline vs optimized)
+- [x] Update /plan command documentation with optimization notes
 
 Testing:
 ```bash

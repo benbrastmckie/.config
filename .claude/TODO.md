@@ -2,10 +2,9 @@
 
 ## In Progress
 
-- [x] **Fix /repair command spec numbering** - Implement timestamp-based topic naming for unique spec directories [.claude/specs/961_repair_spec_numbering_allocation/plans/001-repair-spec-numbering-allocation-plan.md]
-  - Replace LLM-based naming with direct timestamp pattern (eliminates 2-3s latency + API cost)
-- [x] **Fix 4 failing test compliance issues** - Error logging, if negation patterns, empty directories, executable/doc separation [.claude/specs/962_fix_failing_tests_compliance/plans/001-fix-failing-tests-compliance-plan.md]
-  - 4 compliance failures: /todo missing log_command_error(), collapse.md `if !` patterns, 2 empty directories, 3 size violations
+- [x] **Optimize /plan command performance** - Reduce execution time by 30-40% through state consolidation, bash block reduction, library sourcing optimization [.claude/specs/965_optimize_plan_command_performance/plans/001-optimize-plan-command-performance-plan.md]
+  - 9 phases: Error remediation, variable initialization, state consolidation, block reduction, library guards, validation streamlining, timeout tuning, testing, documentation
+- [x] **/build Errors Repair** - Fix 5% unresolved logged errors + eliminate 3 critical runtime errors bypassing error logging [.claude/specs/966_repair_build_20251129_150219/plans/001-repair-build-20251129-150219-plan.md]
 
 ## Not Started
 
@@ -16,11 +15,11 @@
 
 **Refactoring/Enhancement Ideas**:
 
+- check relevant standards, updating as needed
 - Retry semantic directory topic names and other fail-points
 - Refactor subagent applications throughout commands
   - [20251121_convert_docs_plan_improvements_research](specs/20251121_convert_docs_plan_improvements_research/) - Haiku subagents, orchestrator patterns, skills integration
   - Incorporate skills throughout commands
-- Make /plan, /build, /revise, /debug update and follow appropriate standards consistently
 - Make commands update TODO.md automatically
 - Make all relevant commands update TODO.md
 - Make metadata and summary outputs uniform across artifacts (include directory project numbers)
@@ -123,6 +122,10 @@
 
 **November 29, 2025**:
 
+- [x] **Fix /repair command spec numbering** - Implement timestamp-based topic naming for unique spec directories [.claude/specs/961_repair_spec_numbering_allocation/plans/001-repair-spec-numbering-allocation-plan.md]
+  - 4 phases complete: Direct timestamp naming replaces LLM-based naming (eliminates 2-3s latency + API cost)
+- [x] **Fix 4 failing test compliance issues** - Error logging, if negation patterns, empty directories, executable/doc separation [.claude/specs/962_fix_failing_tests_compliance/plans/001-fix-failing-tests-compliance-plan.md]
+  - 6 phases complete: /todo log_command_error(), collapse.md exit code patterns, empty directory removal, size violations
 - [x] **README compliance audit updates** - Update 58 READMEs for Purpose/Navigation section compliance [.claude/specs/958_readme_compliance_audit_updates/plans/001-readme-compliance-audit-updates-plan.md]
   - All 9 phases complete: library subdirectories, top-level directories, validation
 - [x] **/todo command and project tracking** - Create /todo command with Haiku analysis [.claude/specs/959_todo_command_project_tracking_standards/plans/001-todo-command-project-tracking-standards-plan.md]

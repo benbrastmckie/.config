@@ -7,6 +7,12 @@
 # This bundle is created because these three utilities are always sourced together.
 # Total: ~1,143 lines (138 + 607 + 396)
 #
+# Source guard: Prevent multiple sourcing
+if [ -n "${PLAN_CORE_BUNDLE_SOURCED:-}" ]; then
+  return 0
+fi
+export PLAN_CORE_BUNDLE_SOURCED=1
+#
 # Functions from parse-plan-core.sh:
 #   - extract_phase_name() - Extract phase name from heading
 #   - extract_phase_content() - Extract full phase content
