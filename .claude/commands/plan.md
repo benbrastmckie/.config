@@ -476,14 +476,12 @@ export COMMAND_NAME USER_ARGS
 
 # Source libraries (Three-Tier Pattern)
 # Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
+# NOTE: error-handling.sh MUST be sourced first to enable _source_with_diagnostics
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
 
 # Tier 2: Workflow Support (graceful degradation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || true
@@ -1195,7 +1193,7 @@ fi
 
 # === CONSOLE SUMMARY ===
 # Source summary formatting library
-source "${CLAUDE_LIB}/core/summary-formatting.sh" 2>/dev/null || {
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/summary-formatting.sh" 2>/dev/null || {
   echo "ERROR: Failed to load summary-formatting library" >&2
   exit 1
 }
