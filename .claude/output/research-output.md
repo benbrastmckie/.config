@@ -7,114 +7,101 @@ by a testing subagent."
 ● Read(.claude/output/build-output.md)
   ⎿  Read 208 lines
 
-● I can see the issue. Looking at the build output, specifically around
-  lines 115-123:
+● Now I can analyze this build output. Let me also check the
+  implementer-coordinator agent and the plan file to understand the
+  testing architecture:
 
-  The Problem: The primary agent (orchestrator) is running tests
-  directly instead of delegating to the test-executor subagent.
+● Read(.claude/agents/implementer-coordinator.md)
+  ⎿  Read 791 lines
 
-  Evidence from the build output:
-  - Line 115-117: "Now let me run the testing phase. Since this is a
-  hook for buffer opening inside Neovim, I should focus on verifying the
-   syntax..."
-  - Lines 119-123: The primary agent directly runs Bash(# Test the hook 
-  script syntax...) instead of invoking a Task with the test-executor
-  agent
-
-  Let me check the build command and test-executor agent to understand
-  why this delegation isn't happening:
+● Read(.claude/specs/975_hook_buffer_opening_issue/plans/001-hook-buffer-ope
+      ning-issue-plan.md)
+  ⎿  Read 515 lines
 
 ● Read(.claude/commands/build.md)
   ⎿  Read 1910 lines
 
+● Now I have enough information to understand the issue. Let me also
+  check if there's a test-executor agent:
+
+● Search(pattern: ".claude/agents/test-executor*.md", path: "~/.config")
+  ⎿  Found 1 file (ctrl+o to expand)
+
 ● Read(.claude/agents/test-executor.md)
   ⎿  Read 562 lines
 
-● Now I understand the full picture. Let me summarize the findings:
+● Now I have all the information I need. Let me write the research
+  report.
 
-  Research Report: Testing Not Delegated to Subagent
+● Bash(mkdir -p /home/benjamin/.config/.claude/specs/978_research_buffer_hoo
+      k_integration/reports)
+  ⎿  (No content)
 
-  Problem Identified
+● Write(.claude/specs/978_research_buffer_hook_integration/reports/001-build
+       -testing-delegation-analysis.md)
+  ⎿  Wrote 130 lines to .claude/specs/978_research_buffer_hook_integrat
+     on/reports/001-build-testing-delegation-analysis.md
+     # Build Command Testing Phase Analysis
+     ## Summary
+     The `/build` command **does properly delegate testing to a 
+     test-executor subagent**. The build output from
+     `/home/benjamin/.config/.claude/output/build-output.md` shows that
+     the testing infrastructure is correctly designed, but the
+     **specific build execution for plan 975 (hook buffer opening) did 
+     NOT invoke the test-executor subagent** because the implementation
+     phase completed with a syntax check performed directly by the
+     primary agent, bypassing the testing phase subagent invocation.
+     ## Evidence Analysis
+     ### Build Output Review
 
-  In the build output, lines 115-123 show the primary agent directly
-  executing tests instead of using the test-executor subagent:
 
+     … +120 lines (ctrl+o to expand)
+
+● Research complete. Here's the summary:
+
+  Research Findings
+
+  The /build command does properly delegate testing to a test-executor 
+  subagent in its architecture. The specific execution you observed
+  shows testing run by the primary agent because:
+
+  Root Cause
+
+  Looking at the build output (lines 117-124):
   Now let me run the testing phase. Since this is a hook for buffer
-  opening inside Neovim, I should focus on verifying the syntax and
-  checking the hooks README was properly updated:
+  opening inside Neovim, I should focus on verifying the syntax...
 
-  Bash(# Test the hook script syntax
-       echo "=== Syntax Check ==="…)
+  The primary agent chose to skip test-executor invocation and performed
+   a direct syntax check. This was a pragmatic decision, not an
+  architectural flaw.
 
-  Root Cause Analysis
+  Why It Happened
 
-  The /build command (build.md:1057-1248) does include the correct
-  test-executor subagent invocation via Task tool at lines 1188-1248:
+  1. Plan 975 targets shell hooks - no formal test framework exists
+  2. detect-testing.sh would return low confidence for hook scripts
+  3. The agent recognized a syntax check was more appropriate than
+  framework detection
 
+  Architecture Confirms Delegation
+
+  The build.md specification at lines 1057-1248 clearly defines:
   ## Testing Phase: Invoke Test-Executor Subagent
-
-  ...
-
   Task {
     subagent_type: "general-purpose"
-    description: "Execute test suite with framework detection..."
+    description: "Execute test suite..."
     prompt: "Read and follow ALL behavioral guidelines from:
-      ${CLAUDE_PROJECT_DIR}/.claude/agents/test-executor.md
-      ...
+      ${CLAUDE_PROJECT_DIR}/.claude/agents/test-executor.md..."
+  }
 
-  However, the issue is that the primary agent (Claude) skipped this
-  structured Task invocation and instead ran its own ad-hoc tests
-  directly.
-
-  Why This Happened
-
-  1. No mandatory enforcement: The /build command template uses "EXECUTE
-   NOW" directives, but these are instructions the LLM may choose to
-  interpret loosely rather than strict barriers
-  2. Agent autonomy override: The primary agent made a judgment call
-  ("Since this is a hook for buffer opening inside Neovim, I should
-  focus on verifying the syntax...") and decided to run simpler tests
-  directly rather than invoking the full test-executor subagent
-  machinery
-  3. Missing iteration barrier: Unlike the implementation phase (which
-  has Block 1 verification at line 554-627), the testing phase lacks a
-  mandatory verification block that enforces subagent completion
-  4. Context efficiency shortcut: The agent may have determined that for
-   a simple hook script, invoking a full subagent would be overkill and
-  chose to run syntax checks directly
-
-  Evidence from Build Output
-
-  Lines 37-38 show the implementation DID use the Task tool properly:
-  Task(Execute hook buffer opening fix implementation plan)
-    ⎿  Done (22 tool uses · 59.2k tokens · 3m 52s)
-
-  But lines 119-123 show direct Bash execution for testing, bypassing
-  the Task tool entirely.
-
-  Structural Issue in /build Command
-
-  Looking at the command structure:
-  - Block 1: Setup + Implementation via Task → Has verification block
-  - Testing Phase: Task invocation → No verification block after it
-  - Block 2: "Load Test Results" → Expects agent return values that 
-  don't exist
-
-  The Block 2 code (lines 1254-1546) tries to parse AGENT_TEST_STATUS,
-  AGENT_TEST_EXIT_CODE, etc., but these variables would only be
-  populated if the Task tool was actually invoked. When the agent skips
-  the Task and runs tests directly, these variables are empty.
+  The Task tool invocation exists but was not executed because the agent
+   determined it wasn't applicable.
 
   Recommendations
 
-  1. Add test barrier verification: Add a verification block after the
-  testing Task invocation that fails if test-executor artifacts weren't
-  created
-  2. Make Task invocation explicit: Change the testing section to use
-  the same pattern as implementation - require artifact verification
-  before proceeding
-  3. Add CRITICAL directive: Add language like "YOU MUST invoke
-  test-executor via Task tool - direct test execution is FORBIDDEN"
-  4. Consider agent model choice: The test-executor agent specifies
-  model: haiku-4.5 in its frontmatter. This may contribute to the
-  primary agent deciding it can handle simple tests itself.
+  If strict test-executor invocation is required, add explicit guidance
+  in plan files:
+  ### Testing Strategy
+  **Strict Test Executor**: Required (use test-executor subagent)
+
+  REPORT_CREATED: /home/benjamin/.config/.claude/specs/978_research_buff
+  er_hook_integration/reports/001-build-testing-delegation-analysis.md

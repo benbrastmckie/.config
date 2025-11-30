@@ -349,6 +349,13 @@ export BUFFER_OPENER_ENABLED=false
 - Balance reliability vs latency based on success rate
 - Target: ≥95% success rate with <500ms latency
 
+**Signal extraction fails (debug log shows signal present but "No completion signal found")**:
+- Terminal buffer may contain ANSI escape codes that break pattern matching
+- The hook automatically strips ANSI codes before extraction (Plan 978 fix)
+- Debug log shows "removed X ANSI bytes" - if X is large, this was the issue
+- Fallback sed-based extraction activates if primary grep fails (logged as "Used sed fallback")
+- If still failing, check for unusual terminal formatting
+
 ---
 
 ### pre-commit-library-sourcing.sh

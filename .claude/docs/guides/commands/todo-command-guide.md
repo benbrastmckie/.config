@@ -94,8 +94,8 @@ The `/todo` command provides two modes for managing the `.claude/TODO.md` projec
 **Clean Mode**:
 1. **Discovery**: Same as Update Mode
 2. **Filtering**: Filter cleanup-eligible projects (status=completed, superseded, or abandoned) - no age threshold
-3. **Plan Generation**: Generate cleanup plan via plan-architect agent with git verification, archive, and removal phases
-4. **Output**: Write cleanup plan to specs/ for review and execution via /build
+3. **Direct Execution**: Create git commit, verify uncommitted changes, remove eligible directories
+4. **Output**: Display execution summary with git commit hash and recovery instructions
 
 ### Hard Barrier Pattern
 
@@ -273,25 +273,30 @@ Artifacts are linked in the entry as indented bullets:
   - Related summaries: [001-summary](summaries/001-summary.md)
 ```
 
-### Cleanup Plan Generation
+### Direct Cleanup Execution
 
-The `--clean` flag generates a cleanup plan via the plan-architect agent with the following phases:
+The `--clean` flag directly removes eligible project directories after creating a mandatory git commit for recovery:
 
-1. **Git Verification**: Check for uncommitted changes in each project directory (skip directories with uncommitted work)
-2. **Archive Creation**: Create timestamped archive directory (e.g., `.claude/archive/cleaned_20251129_172530/`)
-3. **Directory Removal**: Move eligible project directories to archive
-4. **Verification**: Confirm all operations succeeded
+1. **Git Commit**: Create pre-cleanup snapshot with message "chore: pre-cleanup snapshot before /todo --clean (N projects)"
+2. **Git Verification**: Check for uncommitted changes after commit (warn if detected)
+3. **Directory Removal**: Remove eligible project directories (skip those with uncommitted changes)
+4. **Summary**: Display removal counts (removed, skipped, failed) and git commit hash
 
 **Target Sections**: Completed, Abandoned, and Superseded projects
 **Age Filtering**: None - all eligible projects are included regardless of age
 **TODO.md**: Preserved and NOT modified during cleanup (re-run `/todo` after cleanup to update)
+**Recovery**: Use `git revert <commit-hash>` to restore removed directories
 
 **Workflow**:
 1. `/todo --clean --dry-run` - Preview cleanup candidates
-2. `/todo --clean` - Generate cleanup plan
-3. Review generated plan file
-4. `/build <plan-file>` - Execute cleanup
-5. `/todo` - Rescan and update TODO.md
+2. `/todo --clean` - Execute cleanup with git commit
+3. `/todo` - Rescan and update TODO.md
+
+**Recovery Workflow** (if needed):
+1. Get commit hash from cleanup output
+2. `git revert <commit-hash>` - Restore all removed directories
+3. Resolve any merge conflicts (unlikely)
+4. `/todo` - Rescan to update TODO.md
 
 ### Clean Mode Output Format
 
@@ -301,24 +306,28 @@ The `/todo --clean` command produces a standardized 4-section console summary (m
 ```
 === /todo --clean Complete ===
 
-Summary: Generated cleanup plan for 193 eligible projects from Completed, Abandoned, and Superseded sections. Plan includes git commit (pre-cleanup snapshot), archive creation with timestamp, and directory removal phases.
+Summary: Removed 193 eligible projects after git commit a1b2c3d4. Skipped 2 projects with uncommitted changes. Failed: 0.
 
 Artifacts:
-  📄 Cleanup Plan: /home/user/.config/.claude/specs/cleanup_20251129/plans/001-cleanup-plan.md
+  📝 Git Commit: a1b2c3d4567890abcdef1234567890abcdef1234
+  ✓ Removed: 193 projects
+  ⚠ Skipped: 2 projects (uncommitted changes)
+  ✗ Failed: 0 projects
 
 Next Steps:
-  • Review plan: cat /home/user/.config/.claude/specs/cleanup_20251129/plans/001-cleanup-plan.md
-  • Execute cleanup: /build /home/user/.config/.claude/specs/cleanup_20251129/plans/001-cleanup-plan.md
   • Rescan projects: /todo
+  • Review changes: git show a1b2c3d4
+  • View commit log: git log --oneline -5
+  • Recovery (if needed): git revert a1b2c3d4
 
-CLEANUP_PLAN_CREATED: /home/user/.config/.claude/specs/cleanup_20251129/plans/001-cleanup-plan.md
+CLEANUP_COMPLETED: removed=193 skipped=2 failed=0 commit=a1b2c3d4567890abcdef1234567890abcdef1234
 ```
 
 **Output Sections**:
-1. **Summary**: 2-3 sentences describing what was accomplished (eligible count, sections included, plan phases)
-2. **Artifacts**: Emoji-prefixed path to generated cleanup plan (📄 for plan files)
-3. **Next Steps**: Three actionable commands (review, execute, rescan)
-4. **Completion Signal**: `CLEANUP_PLAN_CREATED: <path>` for orchestrator parsing
+1. **Summary**: Execution results (removed count, git commit hash, skipped/failed counts)
+2. **Artifacts**: Git commit hash and removal statistics
+3. **Next Steps**: Four actionable commands (rescan, review, log, recovery)
+4. **Completion Signal**: `CLEANUP_COMPLETED: removed=N skipped=N failed=N commit=<hash>` for orchestrator parsing
 
 **Dry-Run Preview Output**:
 ```
@@ -332,7 +341,7 @@ Cleanup candidates (would be archived):
   - 788_commands_readme_update: Update commands README
   ... (190 more)
 
-To generate cleanup plan, run: /todo --clean
+To execute cleanup (with git commit), run: /todo --clean
 ```
 
 **Default Mode Output**:

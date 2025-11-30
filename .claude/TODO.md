@@ -9,7 +9,7 @@
 - [ ] **Commands README update** - Update README.md to reflect current command catalog [.claude/specs/788_commands_readme_update/plans/001_commands_readme_update_plan.md]
 - [ ] **Plan standards alignment** - Align plan generation with updated standards [.claude/specs/968_plan_standards_alignment/plans/001-plan-standards-alignment-plan.md]
 - [ ] **Refactor /todo --clean command** - Implement cleanup mode for completed projects [.claude/specs/971_refactor_todo_clean_command/plans/001-refactor-todo-clean-command-plan.md]
-- [ ] **/revise command error repair** - Fix /revise command runtime errors [.claude/specs/972_repair_revise_20251129_165201/plans/001-repair-revise-20251129-165201-plan.md]
+- [x] **/revise command error repair** - Fix /revise command runtime errors [.claude/specs/972_repair_revise_20251129_165201/plans/001-repair-revise-20251129-165201-plan.md]
 
 ## Backlog
 

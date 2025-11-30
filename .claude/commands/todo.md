@@ -18,7 +18,7 @@ documentation: See .claude/docs/guides/commands/todo-command-guide.md for comple
 
 **YOU MUST** determine the operation mode based on flags provided:
 - **Default Mode** (no --clean flag): Scan projects and update TODO.md
-- **Clean Mode** (--clean flag): Generate cleanup plan for cleanup-eligible projects (Completed, Abandoned, Superseded)
+- **Clean Mode** (--clean flag): Directly remove cleanup-eligible projects (Completed, Abandoned, Superseded) after git commit
 
 ## Usage
 
@@ -32,12 +32,12 @@ documentation: See .claude/docs/guides/commands/todo-command-guide.md for comple
 When invoked without `--clean` flag, scans all specs/ directories, classifies plan status, and updates TODO.md.
 
 ### Clean Mode
-When invoked with `--clean` flag, identifies all cleanup-eligible projects (Completed, Abandoned, and Superseded sections) and generates a cleanup plan. No age threshold applied.
+When invoked with `--clean` flag, identifies all cleanup-eligible projects (Completed, Abandoned, and Superseded sections) and directly removes them after creating a git commit. Recovery is possible via git revert. No age threshold applied.
 
 ## Options
 
-- `--clean` - Generate cleanup plan for cleanup-eligible projects (Completed, Abandoned, Superseded)
-- `--dry-run` - Preview changes without modifying files
+- `--clean` - Directly remove cleanup-eligible projects (Completed, Abandoned, Superseded) after git commit
+- `--dry-run` - Preview changes without modifying files (no git commit, no directory removal)
 
 ## Examples
 
@@ -48,10 +48,10 @@ When invoked with `--clean` flag, identifies all cleanup-eligible projects (Comp
 # Preview changes without modifying files
 /todo --dry-run
 
-# Generate cleanup plan for completed projects
+# Directly remove completed projects after git commit
 /todo --clean
 
-# Preview cleanup plan
+# Preview cleanup (shows eligible projects without removing)
 /todo --clean --dry-run
 ```
 
@@ -617,11 +617,11 @@ echo "  dry_run: $DRY_RUN"
 
 ## Clean Mode (--clean flag)
 
-If CLEAN_MODE is true, instead of updating TODO.md, generate a cleanup plan for all projects marked as cleanup-eligible (Completed, Abandoned, and Superseded sections).
+If CLEAN_MODE is true, instead of updating TODO.md, directly remove all projects marked as cleanup-eligible (Completed, Abandoned, and Superseded sections) after creating a mandatory git commit for recovery. TODO.md is NOT modified during cleanup - it reflects the current filesystem state after next scan.
 
 ### Block 4a: Dry-Run Preview (Clean Mode)
 
-**EXECUTE IF CLEAN_MODE=true AND DRY_RUN=true**: Preview cleanup candidates without generating plan.
+**EXECUTE IF CLEAN_MODE=true AND DRY_RUN=true**: Preview cleanup candidates without executing removal.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -688,7 +688,7 @@ if [ "$CLEAN_MODE" = "true" ] && [ "$DRY_RUN" = "true" ]; then
     fi
 
     echo ""
-    echo "To generate cleanup plan, run: /todo --clean"
+    echo "To execute cleanup (with git commit), run: /todo --clean"
     exit 0
   else
     echo "ERROR: Classified results not found" >&2
@@ -697,52 +697,9 @@ if [ "$CLEAN_MODE" = "true" ] && [ "$DRY_RUN" = "true" ]; then
 fi
 ```
 
-### Block 4b: Plan Generation (Clean Mode)
+### Block 4b: Direct Cleanup Execution (Clean Mode)
 
-**EXECUTE IF CLEAN_MODE=true AND DRY_RUN=false**: Generate cleanup plan via plan-architect agent.
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Generate cleanup plan for cleanup-eligible projects"
-  prompt: "
-    Read and follow behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/plan-architect.md
-
-    Generate a cleanup plan for cleanup-eligible projects.
-
-    Input:
-    - eligible_projects: Projects with status=completed, superseded, or abandoned
-    - archive_path: ${CLAUDE_PROJECT_DIR}/.claude/archive/cleaned_$(date +%Y%m%d_%H%M%S)/
-    - output_path: ${CLAUDE_PROJECT_DIR}/.claude/specs/cleanup_$(date +%Y%m%d)/plans/001-cleanup-plan.md
-
-    Create a plan with phases:
-    1. **Git Commit Phase**: First, commit ALL changes to git repository before any cleanup
-       - Run 'git add .' to stage all changes
-       - Create commit with message 'chore: pre-cleanup snapshot before /todo --clean'
-       - This ensures a recovery point exists before any deletions
-       - CRITICAL: Do NOT skip this step - it enables rollback if cleanup fails
-    2. Git verification (check for any remaining uncommitted changes after commit)
-    3. Archive creation (create timestamped archive directory)
-    4. Directory removal (move eligible projects to archive)
-    5. Verification (confirm cleanup success)
-
-    Safety requirements:
-    - MANDATORY: Commit all changes to git BEFORE any cleanup operations
-    - Check git status after commit for any remaining uncommitted changes
-    - Skip directories with uncommitted changes that couldn't be committed
-    - Archive (don't delete) all projects
-    - Preserve TODO.md (no modification during cleanup)
-    - Log all operations with skipped directories
-    - Include recovery instructions in plan (git revert if needed)
-
-    CRITICAL: Return completion signal after creating plan file:
-    CLEANUP_PLAN_CREATED: <absolute-path-to-plan>
-  "
-}
-
-### Block 5: Standardized Completion Output (Clean Mode)
-
-**EXECUTE AFTER plan-architect returns CLEANUP_PLAN_CREATED signal**: Generate 4-section console summary.
+**EXECUTE IF CLEAN_MODE=true AND DRY_RUN=false**: Directly remove eligible projects after git commit.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -763,11 +720,127 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-# Source libraries
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/summary-formatting.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || exit 1
+# === THREE-TIER LIBRARY SOURCING ===
+# Tier 1: Core libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "Error: Cannot load error-handling library" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "Error: Cannot load state-persistence library" >&2
+  exit 1
+}
+
+# Tier 3: Domain libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || {
+  echo "Error: Cannot load todo-functions library" >&2
+  exit 1
+}
+
+# === INITIALIZE ERROR LOGGING ===
+ensure_error_log_exists
+COMMAND_NAME="/todo"
+WORKFLOW_ID="todo_cleanup_$(date +%s)"
+USER_ARGS="--clean"
+
+# === RESTORE STATE ===
+STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE" 2>/dev/null || {
+    log_command_error "state_error" "Failed to restore state from $STATE_FILE" "Block4b:StateRestore"
+    echo "ERROR: Failed to restore state" >&2
+    exit 1
+  }
+else
+  log_command_error "state_error" "State file not found" "Block4b:StateRestore"
+  echo "ERROR: State file not found" >&2
+  exit 1
+fi
+
+# === FILTER ELIGIBLE PROJECTS ===
+if [ ! -f "$CLASSIFIED_RESULTS" ]; then
+  log_command_error "file_error" "Classified results file not found: $CLASSIFIED_RESULTS" "Block4b:FileCheck"
+  echo "ERROR: Classified results not found" >&2
+  exit 1
+fi
+
+CLASSIFIED_JSON=$(cat "$CLASSIFIED_RESULTS")
+ELIGIBLE_PROJECTS=$(filter_completed_projects "$CLASSIFIED_JSON")
+ELIGIBLE_COUNT=$(echo "$ELIGIBLE_PROJECTS" | jq 'length')
+
+# === EXIT IF NO ELIGIBLE PROJECTS ===
+if [ "$ELIGIBLE_COUNT" -eq 0 ]; then
+  echo "No cleanup candidates found."
+  echo "All projects are either In Progress, Not Started, or in Backlog."
+
+  # Persist state for Block 5
+  REMOVED_COUNT=0
+  SKIPPED_COUNT=0
+  FAILED_COUNT=0
+  COMMIT_HASH=""
+  persist_state REMOVED_COUNT SKIPPED_COUNT FAILED_COUNT COMMIT_HASH ELIGIBLE_COUNT
+
+  exit 0
+fi
+
+echo "Found $ELIGIBLE_COUNT cleanup-eligible projects"
+echo ""
+
+# === EXECUTE CLEANUP REMOVAL ===
+# This function creates git commit, verifies status, removes directories
+if ! execute_cleanup_removal "$ELIGIBLE_PROJECTS" "${CLAUDE_PROJECT_DIR}/.claude/specs"; then
+  log_command_error "execution_error" "Cleanup removal failed" "Block4b:ExecuteCleanup" \
+    "{\"eligible_count\":$ELIGIBLE_COUNT}"
+  echo "ERROR: Cleanup execution failed" >&2
+  exit 1
+fi
+
+# === PERSIST STATE FOR BLOCK 5 ===
+# execute_cleanup_removal sets: COMMIT_HASH, REMOVED_COUNT, SKIPPED_COUNT, FAILED_COUNT
+persist_state COMMIT_HASH REMOVED_COUNT SKIPPED_COUNT FAILED_COUNT ELIGIBLE_COUNT
+
+echo "<!-- checkpoint: cleanup_execution_complete -->"
+```
+
+### Block 5: Standardized Completion Output (Clean Mode)
+
+**EXECUTE AFTER Block 4b completes**: Generate 4-section console summary with execution results.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+set -e  # Fail-fast per code-standards.md
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
+# === THREE-TIER LIBRARY SOURCING ===
+# Tier 1: Core libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "Error: Cannot load error-handling library" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "Error: Cannot load state-persistence library" >&2
+  exit 1
+}
+
+# Tier 2: Workflow libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/summary-formatting.sh" 2>/dev/null || {
+  echo "Error: Cannot load summary-formatting library" >&2
+  exit 1
+}
 
 # === RESTORE STATE ===
 STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
@@ -775,44 +848,34 @@ if [ -f "$STATE_FILE" ]; then
   source "$STATE_FILE" 2>/dev/null || true
 fi
 
-# === PARSE CLEANUP_PLAN_CREATED SIGNAL FROM AGENT OUTPUT ===
-# The plan-architect agent returns: CLEANUP_PLAN_CREATED: <absolute-path>
-# This path is captured from the agent's return signal
-CLEANUP_PLAN_PATH="${AGENT_CLEANUP_PLAN_PATH:-}"
-
-# Validate plan path
-if [ -z "$CLEANUP_PLAN_PATH" ] || [ ! -f "$CLEANUP_PLAN_PATH" ]; then
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-    "verification_error" "Cleanup plan not created or path invalid: $CLEANUP_PLAN_PATH" \
-    "Block5:Verification" \
-    '{"expected_signal":"CLEANUP_PLAN_CREATED"}'
-  echo "ERROR: Cleanup plan not created" >&2
-  exit 1
-fi
-
-# === COUNT ELIGIBLE PROJECTS ===
-ELIGIBLE_COUNT=0
-if [ -f "$CLASSIFIED_RESULTS" ]; then
-  CLASSIFIED_JSON=$(cat "$CLASSIFIED_RESULTS")
-  ELIGIBLE_PROJECTS=$(filter_completed_projects "$CLASSIFIED_JSON")
-  ELIGIBLE_COUNT=$(echo "$ELIGIBLE_PROJECTS" | jq 'length')
-fi
-
 # === GENERATE 4-SECTION CONSOLE SUMMARY ===
-SUMMARY_TEXT="Generated cleanup plan for $ELIGIBLE_COUNT eligible projects from Completed, Abandoned, and Superseded sections. Plan includes git commit (pre-cleanup snapshot), archive creation with timestamp, and directory removal phases."
+if [ -z "$COMMIT_HASH" ]; then
+  # No cleanup executed (no eligible projects)
+  SUMMARY_TEXT="No cleanup performed. Found 0 eligible projects."
+  ARTIFACTS="  No artifacts generated"
+  NEXT_STEPS="  • Rescan projects: /todo
+  • Check project statuses in TODO.md"
+else
+  # Cleanup executed
+  SUMMARY_TEXT="Removed ${REMOVED_COUNT:-0} eligible projects after git commit ${COMMIT_HASH:0:8}. Skipped ${SKIPPED_COUNT:-0} projects with uncommitted changes. Failed: ${FAILED_COUNT:-0}."
 
-ARTIFACTS="  📄 Cleanup Plan: $CLEANUP_PLAN_PATH"
+  ARTIFACTS="  📝 Git Commit: $COMMIT_HASH
+  ✓ Removed: ${REMOVED_COUNT:-0} projects
+  ⚠ Skipped: ${SKIPPED_COUNT:-0} projects (uncommitted changes)
+  ✗ Failed: ${FAILED_COUNT:-0} projects"
 
-NEXT_STEPS="  • Review plan: cat $CLEANUP_PLAN_PATH
-  • Execute cleanup: /build $CLEANUP_PLAN_PATH
-  • Rescan projects: /todo"
+  NEXT_STEPS="  • Rescan projects: /todo
+  • Review changes: git show $COMMIT_HASH
+  • View commit log: git log --oneline -5
+  • Recovery (if needed): git revert $COMMIT_HASH"
+fi
 
 # Print standardized summary
 print_artifact_summary "/todo --clean" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
 
 # === EMIT COMPLETION SIGNAL ===
 echo ""
-echo "CLEANUP_PLAN_CREATED: $CLEANUP_PLAN_PATH"
+echo "CLEANUP_COMPLETED: removed=${REMOVED_COUNT:-0} skipped=${SKIPPED_COUNT:-0} failed=${FAILED_COUNT:-0} commit=${COMMIT_HASH:-none}"
 echo ""
 
 exit 0
