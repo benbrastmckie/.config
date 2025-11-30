@@ -396,8 +396,24 @@ echo "Agent output validation complete"
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
+# === DETECT PROJECT DIRECTORY FIRST ===
+# CRITICAL: Initialize CLAUDE_PROJECT_DIR BEFORE any reference to it
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+export CLAUDE_PROJECT_DIR
+
 # === RESTORE STATE FROM BLOCK 1A ===
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
 WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
 
@@ -428,23 +444,7 @@ RESEARCH_COMPLEXITY="${RESEARCH_COMPLEXITY:-3}"
 # CRITICAL: Initialize BEFORE any reference to prevent unbound variable error with set -u
 FEATURE_DESCRIPTION="${FEATURE_DESCRIPTION:-}"
 
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (restore if needed first)
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-  export CLAUDE_PROJECT_DIR
-fi
-
+# CLAUDE_PROJECT_DIR already initialized at block start, use directly
 TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
 if [ -z "$FEATURE_DESCRIPTION" ] && [ -f "$TOPIC_NAMING_INPUT_FILE" ]; then
   FEATURE_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null)
@@ -455,24 +455,10 @@ if [ -z "$FEATURE_DESCRIPTION" ]; then
   exit 1
 fi
 
-# Restore environment
-if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-else
-  current_dir="$(pwd)"
-  while [ "$current_dir" != "/" ]; do
-    if [ -d "$current_dir/.claude" ]; then
-      CLAUDE_PROJECT_DIR="$current_dir"
-      break
-    fi
-    current_dir="$(dirname "$current_dir")"
-  done
-fi
-
-export CLAUDE_PROJECT_DIR
+# CLAUDE_PROJECT_DIR already initialized at block start, set command context
 COMMAND_NAME="/plan"
 USER_ARGS="$FEATURE_DESCRIPTION"
-export COMMAND_NAME USER_ARGS
+export COMMAND_NAME USER_ARGS CLAUDE_PROJECT_DIR
 
 # Source libraries (Three-Tier Pattern)
 # Tier 1: Critical Foundation (fail-fast required)
@@ -665,7 +651,7 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
     CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
   else
     current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; then
+    while [ "$current_dir" != "/" ]; do
       [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
       current_dir="$(dirname "$current_dir")"
     done
