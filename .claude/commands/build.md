@@ -21,17 +21,15 @@ YOU ARE EXECUTING a build-from-plan workflow that takes an existing implementati
 **Expected Input**: Existing plan file path
 **Expected Output**: Implemented features with passing tests and updated documentation
 
-## Block 1a: Implementation Setup
+## Block 1: Setup + Execute + Verify (Consolidated)
 
-**EXECUTE NOW**: The user invoked `/build [plan-file] [starting-phase] [--dry-run]`. Capture those arguments and initialize the workflow.
+**EXECUTE NOW**: The user invoked `/build [plan-file] [starting-phase] [--dry-run]`. This consolidated block captures arguments, initializes workflow, executes implementation via Task, and verifies completion inline.
 
 In the **bash block below**, replace `YOUR_BUILD_ARGS_HERE` with the actual build arguments (or leave empty for auto-resume).
 
 **Examples**:
 - If user ran `/build plan.md 3 --dry-run`, change to: `echo "plan.md 3 --dry-run" > "$TEMP_FILE"`
 - If user ran `/build`, change to: `echo "" > "$TEMP_FILE"` (auto-resume mode)
-
-Execute this bash block with your substitution:
 
 ```bash
 # === PREPROCESSING SAFETY ===
@@ -110,6 +108,51 @@ workflow-state-machine.sh: ">=2.0.0"
 state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
+
+# === PRE-FLIGHT VALIDATION ===
+# Validates prerequisites before workflow execution
+validate_build_prerequisites() {
+  local validation_errors=0
+
+  # Check library sourcing (critical functions)
+  if ! declare -F save_completed_states_to_state >/dev/null 2>&1; then
+    echo "ERROR: Required function 'save_completed_states_to_state' not found" >&2
+    echo "  This indicates workflow-state-machine.sh was not sourced correctly" >&2
+    echo "  Troubleshooting: Check library sourcing in Block 1" >&2
+    validation_errors=$((validation_errors + 1))
+  fi
+
+  if ! declare -F append_workflow_state >/dev/null 2>&1; then
+    echo "ERROR: Required function 'append_workflow_state' not found" >&2
+    echo "  This indicates state-persistence.sh was not sourced correctly" >&2
+    echo "  Troubleshooting: Check library sourcing in Block 1" >&2
+    validation_errors=$((validation_errors + 1))
+  fi
+
+  if ! declare -F log_command_error >/dev/null 2>&1; then
+    echo "ERROR: Required function 'log_command_error' not found" >&2
+    echo "  This indicates error-handling.sh was not sourced correctly" >&2
+    echo "  Troubleshooting: Check library sourcing in Block 1" >&2
+    validation_errors=$((validation_errors + 1))
+  fi
+
+  # Return validation result
+  if [ $validation_errors -gt 0 ]; then
+    echo "Pre-flight validation failed: $validation_errors error(s) detected" >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# Run pre-flight validation immediately after library sourcing
+if ! validate_build_prerequisites; then
+  echo "FATAL: Pre-flight validation failed - cannot proceed" >&2
+  exit 1
+fi
+
+echo "Pre-flight validation passed"
+echo ""
 
 # === PARSE ARGUMENTS ===
 read -ra ARGS_ARRAY <<< "$BUILD_ARGS"
@@ -239,8 +282,25 @@ if [ -z "$PLAN_FILE" ]; then
   fi
 fi
 
+# Validate PLAN_FILE exists and is readable
+if [ -z "$PLAN_FILE" ]; then
+  echo "ERROR: No plan file specified and auto-detection failed" >&2
+  echo "  Usage: /build <plan-file> [starting-phase] [--dry-run]" >&2
+  exit 1
+fi
+
 if [ ! -f "$PLAN_FILE" ]; then
   echo "ERROR: Plan file not found: $PLAN_FILE" >&2
+  echo "  Troubleshooting:" >&2
+  echo "    1. Verify the file path is correct" >&2
+  echo "    2. Check if file exists: ls -l $PLAN_FILE" >&2
+  echo "    3. Ensure file is in specs/*/plans/ directory" >&2
+  exit 1
+fi
+
+if [ ! -r "$PLAN_FILE" ]; then
+  echo "ERROR: Plan file exists but is not readable: $PLAN_FILE" >&2
+  echo "  Fix permissions: chmod +r $PLAN_FILE" >&2
   exit 1
 fi
 
@@ -357,7 +417,7 @@ if [ $EXIT_CODE -ne 0 ]; then
 fi
 
 # === TRANSITION TO IMPLEMENT ===
-sm_transition "$STATE_IMPLEMENT" 2>&1
+sm_transition "$STATE_IMPLEMENT" "plan loaded, starting implementation" 2>&1
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
@@ -375,15 +435,12 @@ fi
 
 TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
 
-# === PERSIST FOR BLOCK 2 ===
-# Defensive check: Verify append_workflow_state function available
-type append_workflow_state &>/dev/null
-TYPE_CHECK=$?
-if [ $TYPE_CHECK -ne 0 ]; then
+# === PERSIST FOR NEXT BLOCK ===
+# Defensive check: Verify append_workflow_state function available before first call
+type append_workflow_state &>/dev/null || {
   echo "ERROR: append_workflow_state function not found" >&2
-  echo "DIAGNOSTIC: state-persistence.sh library not sourced in this block" >&2
   exit 1
-fi
+}
 
 append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
 append_workflow_state "USER_ARGS" "$USER_ARGS"
@@ -434,14 +491,9 @@ echo "  Ready for implementer-coordinator invocation"
 echo ""
 ```
 
-## Block 1b: Implementation Execute
+**EXECUTE NOW**: Invoke implementer-coordinator subagent for implementation phase, then verify completion inline.
 
-**CRITICAL BARRIER**: This block MUST invoke implementer-coordinator via Task tool.
-Verification block (1c) will FAIL if implementation summary not created.
-
-**EXECUTE NOW**: Invoke implementer-coordinator subagent for implementation phase.
-
-**Iteration Context**: The coordinator will be passed iteration parameters. After it returns, verification block will check work_remaining to determine if another iteration is needed.
+**Iteration Context**: The coordinator will be passed iteration parameters. After it returns, inline verification will check work_remaining to determine if another iteration is needed.
 
 Task {
   subagent_type: "general-purpose"
@@ -470,6 +522,8 @@ Task {
     - Workflow Type: full-implementation
     - Execution Mode: wave-based (parallel where possible)
     - Current Iteration: ${ITERATION}/${MAX_ITERATIONS}
+    - Max Iterations: ${MAX_ITERATIONS}
+    - Context Threshold: ${CONTEXT_THRESHOLD}%
 
     Progress Tracking Instructions:
     - Source checkbox-utils.sh: source ${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh
@@ -485,13 +539,17 @@ Task {
     - Return summary path in completion signal
 
     Return: IMPLEMENTATION_COMPLETE: {PHASE_COUNT}
+    plan_file: $PLAN_FILE
+    topic_path: $TOPIC_PATH
     summary_path: /path/to/summary
     work_remaining: 0 or list of incomplete phases
     context_exhausted: true|false
+    context_usage_percent: N%
+    checkpoint_path: /path/to/checkpoint (if created)
+    requires_continuation: true|false
+    stuck_detected: true|false
   "
 }
-
-## Block 1c: Implementation Verification
 
 **EXECUTE NOW**: Verify implementer-coordinator created implementation summary and check iteration status.
 
@@ -500,52 +558,44 @@ set +H 2>/dev/null || true
 set +o histexpand 2>/dev/null || true
 set -e  # Fail-fast per code-standards.md
 
-# === PRE-TRAP ERROR BUFFER ===
-# Initialize error buffer BEFORE any library sourcing
-declare -a _EARLY_ERROR_BUFFER=()
-
 # DEBUG_LOG initialization per spec 778
 DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
-# === DETECT PROJECT DIRECTORY ===
-if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-else
-  current_dir="$(pwd)"
-  while [ "$current_dir" != "/" ]; do
-    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
-    current_dir="$(dirname "$current_dir")"
-  done
+# Load project directory (already exported in previous block)
+if [ -z "$CLAUDE_PROJECT_DIR" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+
+  if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+    echo "ERROR: Failed to detect project directory" >&2
+    exit 1
+  fi
+  export CLAUDE_PROJECT_DIR
 fi
 
-if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
-  exit 1
-fi
-export CLAUDE_PROJECT_DIR
-
-# === DEFENSIVE TRAP SETUP ===
-# Set minimal trap BEFORE library sourcing to catch sourcing failures
-trap 'echo "ERROR: Library sourcing failed at line $LINENO: $BASH_COMMAND" >&2; exit 1' ERR
-trap 'if [ $? -ne 0 ]; then echo "ERROR: Block initialization failed" >&2; fi' EXIT
-
-# Source error-handling.sh FIRST to enable diagnostic functions
+# Load state-persistence for append_workflow_state
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
-
-# Replace remaining library sourcing with diagnostic wrapper
-_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 ensure_error_log_exists
 
-# === LOAD WORKFLOW STATE ===
+# Load workflow state
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-
-  # Validate WORKFLOW_ID format
   validate_workflow_id "$WORKFLOW_ID" "/build" || {
     WORKFLOW_ID="build_$(date +%s)_recovered"
   }
@@ -561,75 +611,106 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-# Validate critical variables restored from state
-validate_state_restoration "PLAN_FILE" "TOPIC_PATH" "MAX_ITERATIONS" "COMMAND_NAME" "USER_ARGS" || {
+# Validate critical variables restored
+validate_state_restoration "PLAN_FILE" "TOPIC_PATH" "MAX_ITERATIONS" "SUMMARIES_DIR" || {
   echo "ERROR: State restoration failed - critical variables missing" >&2
   exit 1
 }
 
-# === RESTORE ERROR LOGGING CONTEXT ===
+# Restore error logging context
 COMMAND_NAME="${COMMAND_NAME:-/build}"
 USER_ARGS="${USER_ARGS:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# === CLEAR DEFENSIVE TRAP ===
-_clear_defensive_trap
-
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
-# Flush any early errors captured before trap was active
-_flush_early_errors
-
-# === VERIFY IMPLEMENTER-COORDINATOR EXECUTION ===
-# This verification block ensures implementer-coordinator was invoked via Task
-# and created the expected artifacts (implementation summary)
-
+# === INLINE VERIFICATION (previously Block 1c) ===
 echo ""
 echo "=== Implementation Verification ==="
 echo ""
 
-# Check if summaries directory exists and has content
+# Defensive: Validate SUMMARIES_DIR variable is set
+if [ -z "$SUMMARIES_DIR" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "SUMMARIES_DIR variable not set" \
+    "verification_block" \
+    "$(jq -n '{error: "SUMMARIES_DIR empty after state load"}')"
+  echo "ERROR: SUMMARIES_DIR not set - state restoration failed"
+  exit 1
+fi
+
+# Verify summaries directory exists (with mkdir fallback)
 if [ ! -d "$SUMMARIES_DIR" ]; then
-  log_command_error "verification_error" \
-    "Summaries directory not found: $SUMMARIES_DIR" \
-    "implementer-coordinator should have created this directory"
-  echo "ERROR: VERIFICATION FAILED - Summaries directory missing"
-  echo "Recovery: Check implementer-coordinator logs, ensure Task was invoked"
-  exit 1
+  echo "WARNING: Summaries directory not found, creating: $SUMMARIES_DIR"
+  mkdir -p "$SUMMARIES_DIR" 2>/dev/null || {
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "file_error" \
+      "Cannot create summaries directory: $SUMMARIES_DIR" \
+      "verification_block" \
+      "$(jq -n --arg dir "$SUMMARIES_DIR" '{summaries_dir: $dir}')"
+    echo "ERROR: Cannot create summaries directory"
+    exit 1
+  }
 fi
 
-# Count summary files (should have at least one from this iteration)
-SUMMARY_COUNT=$(find "$SUMMARIES_DIR" -name "*.md" -type f 2>/dev/null | wc -l)
+# Count summary files (defensive: handle find errors)
+SUMMARY_COUNT=$(find "$SUMMARIES_DIR" -name "*.md" -type f 2>/dev/null | wc -l || echo "0")
 if [ "$SUMMARY_COUNT" -eq 0 ]; then
-  log_command_error "verification_error" \
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "verification_error" \
     "No summary files found in $SUMMARIES_DIR" \
-    "implementer-coordinator should have created at least one summary"
+    "verification_block" \
+    "$(jq -n --arg dir "$SUMMARIES_DIR" '{summaries_dir: $dir}')"
   echo "ERROR: VERIFICATION FAILED - No implementation summary found"
-  echo "Recovery: Verify implementer-coordinator completed successfully"
   exit 1
 fi
 
-# Find the most recent summary (by modification time)
-LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -exec ls -t {} + 2>/dev/null | head -1 || true)
-if [ -z "$LATEST_SUMMARY" ] || [ ! -f "$LATEST_SUMMARY" ]; then
-  log_command_error "verification_error" \
+# Find most recent summary (defensive: handle missing files)
+LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -exec ls -t {} + 2>/dev/null | head -1 || echo "")
+if [ -z "$LATEST_SUMMARY" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "verification_error" \
     "Could not find latest summary in $SUMMARIES_DIR" \
-    "Expected at least one summary file"
+    "verification_block" \
+    "$(jq -n --arg dir "$SUMMARIES_DIR" '{summaries_dir: $dir}')"
   echo "ERROR: VERIFICATION FAILED - Latest summary not accessible"
   exit 1
 fi
 
-# Verify summary file has minimum content (not empty)
-SUMMARY_SIZE=$(stat -f%z "$LATEST_SUMMARY" 2>/dev/null || stat -c%s "$LATEST_SUMMARY" 2>/dev/null || echo "0")
-if [ "$SUMMARY_SIZE" -lt 100 ]; then
-  log_command_error "verification_error" \
-    "Summary file too small: $LATEST_SUMMARY ($SUMMARY_SIZE bytes)" \
-    "implementer-coordinator may have created empty or minimal summary"
-  echo "WARNING: Summary file suspiciously small ($SUMMARY_SIZE bytes)"
-  echo "Proceeding with caution - review summary quality"
+if [ ! -f "$LATEST_SUMMARY" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Summary file does not exist: $LATEST_SUMMARY" \
+    "verification_block" \
+    "$(jq -n --arg file "$LATEST_SUMMARY" '{summary_file: $file}')"
+  echo "ERROR: VERIFICATION FAILED - Summary file missing"
+  exit 1
 fi
 
-# Persist summary path for next blocks
+# Verify summary has minimum content
+SUMMARY_SIZE=$(stat -f%z "$LATEST_SUMMARY" 2>/dev/null || stat -c%s "$LATEST_SUMMARY" 2>/dev/null || echo "0")
+if [ "$SUMMARY_SIZE" -lt 100 ]; then
+  echo "WARNING: Summary file suspiciously small ($SUMMARY_SIZE bytes): $LATEST_SUMMARY"
+  # Non-fatal - continue execution but log warning
+fi
+
+# Persist summary path
 append_workflow_state "LATEST_SUMMARY" "$LATEST_SUMMARY"
 append_workflow_state "SUMMARY_COUNT" "$SUMMARY_COUNT"
 
@@ -641,230 +722,92 @@ echo ""
 echo "=== Iteration Check (${ITERATION}/${MAX_ITERATIONS}) ==="
 echo ""
 
-# === CONTEXT ESTIMATION FUNCTION ===
-# Heuristic calculation of context usage to prevent overflow
-# Formula: base(20k) + completed_phases(15k) + remaining_phases(12k) + continuation(5k)
-estimate_context_usage() {
-  local completed_phases="$1"
-  local remaining_phases="$2"
-  local has_continuation="$3"
-
-  local base=20000  # Plan file + standards + system prompt
-  local completed_cost=$((completed_phases * 15000))
-  local remaining_cost=$((remaining_phases * 12000))
-  local continuation_cost=0
-
-  if [ "$has_continuation" = "true" ]; then
-    continuation_cost=5000
-  fi
-
-  echo $((base + completed_cost + remaining_cost + continuation_cost))
-}
-
-# === SAVE RESUMPTION CHECKPOINT FUNCTION ===
-# Creates checkpoint with iteration state for later resumption
-save_resumption_checkpoint() {
-  local halt_reason="$1"
-  local checkpoint_dir="${HOME}/.claude/data/checkpoints"
-  mkdir -p "$checkpoint_dir"
-
-  local checkpoint_file="${checkpoint_dir}/build_${WORKFLOW_ID}_iteration_${ITERATION}.json"
-  local temp_file="${checkpoint_file}.tmp.$$"
-
-  # Build checkpoint JSON with all iteration fields (v2.1 schema)
-  jq -n \
-    --arg version "2.1" \
-    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-    --arg plan_path "$PLAN_FILE" \
-    --arg topic_path "$TOPIC_PATH" \
-    --argjson iteration "$ITERATION" \
-    --argjson max_iterations "$MAX_ITERATIONS" \
-    --arg continuation_context "${CONTINUATION_CONTEXT:-}" \
-    --arg work_remaining "$WORK_REMAINING" \
-    --arg last_work_remaining "${LAST_WORK_REMAINING:-}" \
-    --argjson context_estimate "${CONTEXT_ESTIMATE:-0}" \
-    --arg halt_reason "$halt_reason" \
-    --arg workflow_id "$WORKFLOW_ID" \
-    '{
-      version: $version,
-      timestamp: $timestamp,
-      plan_path: $plan_path,
-      topic_path: $topic_path,
-      iteration: $iteration,
-      max_iterations: $max_iterations,
-      continuation_context: $continuation_context,
-      work_remaining: $work_remaining,
-      last_work_remaining: $last_work_remaining,
-      context_estimate: $context_estimate,
-      halt_reason: $halt_reason,
-      workflow_id: $workflow_id
-    }' > "$temp_file"
-
-  mv "$temp_file" "$checkpoint_file"
-  echo "$checkpoint_file"
-}
-
-# === CONTEXT THRESHOLD CHECK ===
-# Check context usage before continuing iteration
-MAX_CONTEXT=200000  # Claude Sonnet context window
-
-# Count completed and remaining phases from plan file
-COMPLETED_PHASES=$(grep -c "\[x\]" "$PLAN_FILE" 2>/dev/null || echo "0")
-TOTAL_PHASES=$(grep -c "^### Phase" "$PLAN_FILE" 2>/dev/null || echo "0")
-REMAINING_PHASES=$((TOTAL_PHASES - COMPLETED_PHASES))
-HAS_CONTINUATION="false"
-if [ -n "${CONTINUATION_CONTEXT:-}" ] && [ -f "${CONTINUATION_CONTEXT:-}" ]; then
-  HAS_CONTINUATION="true"
-fi
-
-# Estimate context usage with fallback for function failure
-if type -t estimate_context_usage &>/dev/null; then
-  CONTEXT_ESTIMATE=$(estimate_context_usage "$COMPLETED_PHASES" "$REMAINING_PHASES" "$HAS_CONTINUATION" 2>/dev/null)
-  if [ $? -ne 0 ] || [ -z "$CONTEXT_ESTIMATE" ]; then
-    echo "WARNING: Context estimation failed, using fallback value" >&2
-    CONTEXT_ESTIMATE=50000
-  fi
-else
-  echo "WARNING: estimate_context_usage function not available, using fallback" >&2
-  CONTEXT_ESTIMATE=50000
-fi
-CONTEXT_USAGE_PERCENT=$((CONTEXT_ESTIMATE * 100 / MAX_CONTEXT))
-
-echo "Context estimate: ${CONTEXT_ESTIMATE} tokens (~${CONTEXT_USAGE_PERCENT}%)"
-echo "Completed phases: $COMPLETED_PHASES / $TOTAL_PHASES"
-
-# Check if context threshold exceeded
-if [ "$CONTEXT_USAGE_PERCENT" -ge "$CONTEXT_THRESHOLD" ]; then
-  echo ""
-  echo "WARNING: Context threshold (${CONTEXT_THRESHOLD}%) reached at ${CONTEXT_USAGE_PERCENT}%"
-  echo "Saving resumption checkpoint..."
-
-  CHECKPOINT_FILE=$(save_resumption_checkpoint "context_threshold")
-
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "execution_error" \
-    "Context threshold halt at ${CONTEXT_USAGE_PERCENT}%" \
-    "context_check" \
-    "$(jq -n --argjson estimate "$CONTEXT_ESTIMATE" --argjson threshold "$CONTEXT_THRESHOLD" '{context_estimate: $estimate, threshold_percent: $threshold}')"
-
-  append_workflow_state "IMPLEMENTATION_STATUS" "context_halt"
-  append_workflow_state "HALT_REASON" "context_threshold"
-  append_workflow_state "CHECKPOINT_FILE" "$CHECKPOINT_FILE"
-  append_workflow_state "CONTEXT_ESTIMATE" "$CONTEXT_ESTIMATE"
-
-  echo ""
-  echo "=============================================="
-  echo "GRACEFUL HALT: Context threshold reached"
-  echo "=============================================="
-  echo "Checkpoint saved: $CHECKPOINT_FILE"
-  echo ""
-  echo "To resume:"
-  echo "  /build --resume $CHECKPOINT_FILE"
-  echo ""
-  echo "Or manually:"
-  echo "  /build $PLAN_FILE $((COMPLETED_PHASES + 1))"
-  echo "=============================================="
-  echo ""
-
-  # Exit cleanly - checkpoint allows resumption
-  exit 0
-fi
+# NOTE: Context estimation and checkpoint saving delegated to implementer-coordinator
+# The coordinator returns requires_continuation, context_usage_percent, and checkpoint_path
+# We trust the subagent's assessment instead of re-parsing
 
 # === CHECK IMPLEMENTER-COORDINATOR OUTPUT ===
 # The agent should have returned work_remaining in its output
 # Parse from the latest summary or direct signal
 
-# Check for work_remaining signal (agent should report this)
-# If work_remaining is empty or "0", implementation is complete
-# Otherwise, prepare for next iteration
-
+# Parse all fields from agent return signal
 WORK_REMAINING="${AGENT_WORK_REMAINING:-}"  # Captured from agent output
 CONTEXT_EXHAUSTED="${AGENT_CONTEXT_EXHAUSTED:-false}"
 SUMMARY_PATH="${AGENT_SUMMARY_PATH:-}"
+CONTEXT_USAGE_PERCENT="${AGENT_CONTEXT_USAGE_PERCENT:-0}"
+CHECKPOINT_PATH="${AGENT_CHECKPOINT_PATH:-}"
+REQUIRES_CONTINUATION="${AGENT_REQUIRES_CONTINUATION:-false}"
+STUCK_DETECTED="${AGENT_STUCK_DETECTED:-false}"
+
+# Parse state variables from agent return to avoid state persistence failures
+AGENT_PLAN_FILE="${AGENT_PLAN_FILE:-}"
+AGENT_TOPIC_PATH="${AGENT_TOPIC_PATH:-}"
+
+# If agent provided plan_file and topic_path, use them instead of state file
+if [ -n "$AGENT_PLAN_FILE" ]; then
+  PLAN_FILE="$AGENT_PLAN_FILE"
+  echo "Using plan_file from agent return: $PLAN_FILE"
+  append_workflow_state "PLAN_FILE" "$PLAN_FILE"
+fi
+if [ -n "$AGENT_TOPIC_PATH" ]; then
+  TOPIC_PATH="$AGENT_TOPIC_PATH"
+  echo "Using topic_path from agent return: $TOPIC_PATH"
+  append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+fi
+
+# Display iteration management status from agent
+echo "Context usage: ${CONTEXT_USAGE_PERCENT}%"
+echo "Work remaining: ${WORK_REMAINING:-none}"
+echo "Requires continuation: $REQUIRES_CONTINUATION"
+if [ "$STUCK_DETECTED" = "true" ]; then
+  echo "WARNING: Stuck detected - work_remaining unchanged across iterations"
+fi
+if [ -n "$CHECKPOINT_PATH" ]; then
+  echo "Checkpoint created: $CHECKPOINT_PATH"
+  append_workflow_state "CHECKPOINT_PATH" "$CHECKPOINT_PATH"
+fi
 
 # Fallback: Check summary file for work_remaining if not directly captured
 if [ -z "$WORK_REMAINING" ] && [ -n "$SUMMARY_PATH" ] && [ -f "$SUMMARY_PATH" ]; then
   WORK_REMAINING=$(grep -oP 'work_remaining:\s*\K.*' "$SUMMARY_PATH" 2>/dev/null | head -1 || echo "")
 fi
 
-# If no work_remaining detected, check plan file for incomplete phases
-if [ -z "$WORK_REMAINING" ]; then
-  INCOMPLETE_PHASES=$(grep -c "^\- \[ \]" "$PLAN_FILE" 2>/dev/null || echo "0")
-  if [ "$INCOMPLETE_PHASES" -gt 0 ]; then
-    WORK_REMAINING="$INCOMPLETE_PHASES incomplete tasks"
-  fi
-fi
-
-echo "Work remaining: ${WORK_REMAINING:-none}"
-echo "Context exhausted: $CONTEXT_EXHAUSTED"
-
 # === COMPLETION CHECK ===
-if [ -z "$WORK_REMAINING" ] || [ "$WORK_REMAINING" = "0" ] || [ "$WORK_REMAINING" = "[]" ]; then
-  echo "Implementation complete - all phases done"
-  append_workflow_state "IMPLEMENTATION_STATUS" "complete"
-  append_workflow_state "WORK_REMAINING" ""
-else
-  # === STUCK DETECTION ===
-  if [ "$WORK_REMAINING" = "$LAST_WORK_REMAINING" ]; then
-    STUCK_COUNT=$((STUCK_COUNT + 1))
-    echo "WARNING: Work remaining unchanged (stuck count: $STUCK_COUNT)"
+# Trust the implementer-coordinator's requires_continuation signal
+if [ "$REQUIRES_CONTINUATION" = "true" ]; then
+  echo "Coordinator reports continuation required"
 
-    if [ "$STUCK_COUNT" -ge 2 ]; then
-      log_command_error \
-        "$COMMAND_NAME" \
-        "$WORKFLOW_ID" \
-        "$USER_ARGS" \
-        "execution_error" \
-        "Iteration stuck - work_remaining unchanged for 2 iterations" \
-        "iteration_check" \
-        "$(jq -n --argjson iter "$ITERATION" --arg work "$WORK_REMAINING" '{iteration: $iter, work_remaining: $work}')"
+  # Prepare for next iteration
+  NEXT_ITERATION=$((ITERATION + 1))
+  CONTINUATION_CONTEXT="${BUILD_WORKSPACE}/iteration_${ITERATION}_summary.md"
 
-      echo "ERROR: Stuck - work_remaining unchanged for 2 iterations" >&2
-      append_workflow_state "IMPLEMENTATION_STATUS" "stuck"
-      append_workflow_state "HALT_REASON" "stuck"
-      # Continue to completion - let the workflow exit cleanly
-    fi
-  else
-    STUCK_COUNT=0
+  echo "Preparing iteration $NEXT_ITERATION..."
+
+  # Update state for next iteration
+  append_workflow_state "ITERATION" "$NEXT_ITERATION"
+  append_workflow_state "WORK_REMAINING" "$WORK_REMAINING"
+  append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
+  append_workflow_state "IMPLEMENTATION_STATUS" "continuing"
+
+  # Save current summary if exists
+  if [ -n "$SUMMARY_PATH" ] && [ -f "$SUMMARY_PATH" ]; then
+    cp "$SUMMARY_PATH" "$CONTINUATION_CONTEXT" 2>/dev/null || true
   fi
 
-  # === ITERATION LIMIT CHECK ===
-  if [ "$ITERATION" -ge "$MAX_ITERATIONS" ]; then
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "execution_error" \
-      "Max iterations exceeded" \
-      "iteration_check" \
-      "$(jq -n --argjson max "$MAX_ITERATIONS" --arg work "$WORK_REMAINING" '{max_iterations: $max, work_remaining: $work}')"
-
-    echo "WARNING: Max iterations ($MAX_ITERATIONS) reached with work remaining" >&2
+  echo "Next iteration will use continuation context: $CONTINUATION_CONTEXT"
+else
+  # No continuation required - implementation complete or halted
+  if [ -z "$WORK_REMAINING" ] || [ "$WORK_REMAINING" = "0" ] || [ "$WORK_REMAINING" = "[]" ]; then
+    echo "Implementation complete - all phases done"
+    append_workflow_state "IMPLEMENTATION_STATUS" "complete"
+  elif [ "$STUCK_DETECTED" = "true" ]; then
+    echo "Implementation halted - stuck detected by coordinator"
+    append_workflow_state "IMPLEMENTATION_STATUS" "stuck"
+    append_workflow_state "HALT_REASON" "stuck"
+  else
+    echo "Implementation halted - max iterations or other limit reached"
     append_workflow_state "IMPLEMENTATION_STATUS" "max_iterations"
     append_workflow_state "HALT_REASON" "max_iterations"
-  else
-    # Prepare for next iteration
-    NEXT_ITERATION=$((ITERATION + 1))
-    CONTINUATION_CONTEXT="${BUILD_WORKSPACE}/iteration_${ITERATION}_summary.md"
-
-    echo "Preparing iteration $NEXT_ITERATION..."
-
-    # Update state for next iteration
-    append_workflow_state "ITERATION" "$NEXT_ITERATION"
-    append_workflow_state "LAST_WORK_REMAINING" "$WORK_REMAINING"
-    append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
-    append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
-    append_workflow_state "IMPLEMENTATION_STATUS" "continuing"
-
-    # Save current summary if exists
-    if [ -n "$SUMMARY_PATH" ] && [ -f "$SUMMARY_PATH" ]; then
-      cp "$SUMMARY_PATH" "$CONTINUATION_CONTEXT" 2>/dev/null || true
-    fi
-
-    echo "Next iteration will use continuation context: $CONTINUATION_CONTEXT"
   fi
 
   append_workflow_state "WORK_REMAINING" "$WORK_REMAINING"
@@ -967,8 +910,11 @@ if [ $EXIT_CODE -ne 0 ]; then
 fi
 
 # Validate critical variables restored from state
-validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "PLAN_FILE" || {
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "PLAN_FILE" "TOPIC_PATH" || {
   echo "ERROR: State restoration failed - critical variables missing" >&2
+  log_command_error "state_error" "State restoration validation failed in Block 1d" \
+    "$(jq -n --arg cmd "${COMMAND_NAME:-}" --arg plan "${PLAN_FILE:-}" --arg topic "${TOPIC_PATH:-}" \
+    '{command: $cmd, plan_file: $plan, topic_path: $topic}')"
   exit 1
 }
 
@@ -1163,26 +1109,75 @@ COMMAND_NAME="${COMMAND_NAME:-/build}"
 USER_ARGS="${USER_ARGS:-}"
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
-# Extract paths from state with defensive defaults
-if [ -f "$STATE_FILE" ] && [ -s "$STATE_FILE" ]; then
-  PLAN_FILE=$(grep "^PLAN_FILE=" "$STATE_FILE" | cut -d'=' -f2- || echo "")
-  TOPIC_PATH=$(grep "^TOPIC_PATH=" "$STATE_FILE" | cut -d'=' -f2- || echo "")
+# Defensive: Validate STATE_FILE exists and is not empty before extraction
+if [ -z "$STATE_FILE" ]; then
+  echo "ERROR: STATE_FILE variable not set" >&2
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "STATE_FILE not set before extraction" \
+    "block_2a" \
+    "$(jq -n '{error: "STATE_FILE empty after load"}')"
+  exit 1
+fi
+
+if [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: STATE_FILE does not exist: $STATE_FILE" >&2
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "STATE_FILE not found: $STATE_FILE" \
+    "block_2a" \
+    "$(jq -n --arg file "$STATE_FILE" '{state_file: $file}')"
+  exit 1
+fi
+
+# Extract paths from state with fail-fast validation
+if [ -s "$STATE_FILE" ]; then
+  PLAN_FILE=$(grep "^PLAN_FILE=" "$STATE_FILE" | cut -d'=' -f2- 2>/dev/null || echo "")
+  TOPIC_PATH=$(grep "^TOPIC_PATH=" "$STATE_FILE" | cut -d'=' -f2- 2>/dev/null || echo "")
 else
+  echo "WARNING: STATE_FILE exists but is empty: $STATE_FILE" >&2
   PLAN_FILE=""
   TOPIC_PATH=""
 fi
 
-# Validate extracted paths
-if [ -z "$PLAN_FILE" ]; then
-  echo "WARNING: PLAN_FILE not found in state file, workflow state may be incomplete" >&2
-fi
-if [ -z "${TOPIC_PATH:-}" ]; then
-  echo "WARNING: TOPIC_PATH not found in state file, workflow state may be incomplete" >&2
+# Fail-fast validation: PLAN_FILE and TOPIC_PATH are critical for test execution
+validate_state_restoration "PLAN_FILE" "TOPIC_PATH" "WORKFLOW_ID" || {
+  echo "ERROR: State restoration failed - PLAN_FILE or TOPIC_PATH missing" >&2
+  echo "PLAN_FILE: ${PLAN_FILE:-<empty>}" >&2
+  echo "TOPIC_PATH: ${TOPIC_PATH:-<empty>}" >&2
+  log_command_error "state_error" \
+    "State restoration failed in Block 2a - critical variables missing" \
+    "$(jq -n --arg plan "${PLAN_FILE:-}" --arg topic "${TOPIC_PATH:-}" \
+    '{plan_file: $plan, topic_path: $topic, state_file: "'"$STATE_FILE"'"}')"
+  exit 1
+}
+
+# Pre-calculate test output path (ensure absolute path)
+if [[ ! "$TOPIC_PATH" = /* ]]; then
+  echo "ERROR: TOPIC_PATH is not an absolute path: $TOPIC_PATH" >&2
+  log_command_error "validation_error" \
+    "TOPIC_PATH must be absolute path" \
+    "$(jq -n --arg path "$TOPIC_PATH" '{topic_path: $path}')"
+  exit 1
 fi
 
-# Pre-calculate test output path
 TEST_OUTPUT_PATH="${TOPIC_PATH}/outputs/test_results_$(date +%s).md"
 mkdir -p "${TOPIC_PATH}/outputs" 2>/dev/null || true
+
+# Validate TEST_OUTPUT_PATH is absolute
+if [[ ! "$TEST_OUTPUT_PATH" = /* ]]; then
+  echo "ERROR: TEST_OUTPUT_PATH is not an absolute path: $TEST_OUTPUT_PATH" >&2
+  log_command_error "validation_error" \
+    "TEST_OUTPUT_PATH must be absolute path" \
+    "$(jq -n --arg path "$TEST_OUTPUT_PATH" '{test_output_path: $path}')"
+  exit 1
+fi
 
 # Output paths for Task tool
 echo "PLAN_FILE=$PLAN_FILE"
@@ -1239,6 +1234,12 @@ Task {
       exit_code: N
       execution_time: <duration>
       coverage: N%|N/A
+      retry_count: N
+      next_state: DEBUG|DOCUMENT  # DEBUG if failures, DOCUMENT if passed
+
+    Valid next_state values:
+    - DEBUG: Tests failed or errored (transition from TEST to DEBUG)
+    - DOCUMENT: All tests passed (transition from TEST to DOCUMENT)
 
     On error, return:
     ERROR_CONTEXT: {error details JSON}
@@ -1351,7 +1352,7 @@ echo "Implementation checkpoint: $COMMIT_COUNT recent commits"
 echo ""
 
 # === TRANSITION TO TEST ===
-sm_transition "$STATE_TEST" 2>&1
+sm_transition "$STATE_TEST" "implementation complete, running tests" 2>&1
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
@@ -1371,94 +1372,56 @@ echo "=== Phase 2: Testing - Parse Results ==="
 echo ""
 
 # === PARSE TEST-EXECUTOR RESPONSE ===
-# The test-executor subagent was invoked before this block
-# It should have created a test artifact at ${TOPIC_PATH}/outputs/test_results_*.md
-# Find the most recent test result artifact
-TEST_OUTPUT_PATH=$(ls -t "${TOPIC_PATH}/outputs/test_results_"*.md 2>/dev/null | head -1 || true)
-if [ -z "$TEST_OUTPUT_PATH" ]; then
-  TEST_OUTPUT_PATH=""
+# The test-executor subagent should have returned metadata in TEST_COMPLETE signal
+# Parse all fields from agent return (trust subagent, no re-parsing)
+TEST_STATUS="${AGENT_TEST_STATUS:-unknown}"
+TEST_EXIT_CODE="${AGENT_TEST_EXIT_CODE:-1}"
+TEST_FRAMEWORK="${AGENT_TEST_FRAMEWORK:-unknown}"
+TEST_COMMAND="${AGENT_TEST_COMMAND:-}"
+TESTS_FAILED="${AGENT_TESTS_FAILED:-0}"
+TESTS_PASSED_COUNT="${AGENT_TESTS_PASSED:-0}"
+EXECUTION_TIME="${AGENT_EXECUTION_TIME:-N/A}"
+TEST_ARTIFACT_PATH="${AGENT_TEST_OUTPUT_PATH:-}"
+NEXT_STATE="${AGENT_NEXT_STATE:-DEBUG}"  # Default to DEBUG for safety
+RETRY_COUNT="${AGENT_RETRY_COUNT:-0}"
+
+# Validate next_state value (must be DEBUG or DOCUMENT)
+if [ "$NEXT_STATE" != "DEBUG" ] && [ "$NEXT_STATE" != "DOCUMENT" ]; then
+  echo "ERROR: Invalid next_state from test-executor: $NEXT_STATE" >&2
+  log_command_error "validation_error" \
+    "test-executor returned invalid next_state" \
+    "$(jq -n --arg state "$NEXT_STATE" '{next_state: $state, expected: ["DEBUG", "DOCUMENT"]}')"
+  exit 1
 fi
 
-if [ -z "${TEST_OUTPUT_PATH:-}" ] || [ ! -f "${TEST_OUTPUT_PATH:-}" ]; then
-  echo "WARNING: Test artifact not found, test-executor may have failed"
-  echo "Attempting fallback: inline test execution"
+# Verify test artifact exists
+if [ -z "$TEST_ARTIFACT_PATH" ] || [ ! -f "$TEST_ARTIFACT_PATH" ]; then
+  echo "ERROR: Test artifact not found: ${TEST_ARTIFACT_PATH:-<empty>}" >&2
+  log_command_error "verification_error" \
+    "test-executor did not create expected artifact" \
+    "$(jq -n --arg path "${TEST_ARTIFACT_PATH:-}" '{test_output_path: $path}')"
+  exit 1
+fi
 
-  # Fallback to inline testing
-  TEST_COMMAND=$(grep -oE "(npm test|pytest|\.\/run_all_tests\.sh|:TestSuite)" "$PLAN_FILE" | head -1 || echo "")
+# Display test summary from agent return
+echo "Loading test results from: $TEST_ARTIFACT_PATH"
+echo ""
+echo "Test Framework: $TEST_FRAMEWORK"
+echo "Test Command: $TEST_COMMAND"
+echo "Status: $TEST_STATUS"
+echo "Exit Code: $TEST_EXIT_CODE"
+echo "Tests Passed: $TESTS_PASSED_COUNT"
+echo "Tests Failed: $TESTS_FAILED"
+echo "Execution Time: $EXECUTION_TIME"
+echo "Retry Count: $RETRY_COUNT"
+echo "Recommended Next State: $NEXT_STATE"
+echo ""
 
-  if [ -z "$TEST_COMMAND" ]; then
-    if [ -f "package.json" ] && grep -q '"test"' package.json; then
-      TEST_COMMAND="npm test"
-    elif [ -f "pytest.ini" ] || [ -f "setup.py" ]; then
-      TEST_COMMAND="pytest"
-    elif [ -f ".claude/tests/run_all_tests.sh" ]; then
-      TEST_COMMAND="./.claude/tests/run_all_tests.sh"
-    else
-      TEST_COMMAND=""
-    fi
-  fi
-
-  if [ -n "$TEST_COMMAND" ]; then
-    echo "Running tests: $TEST_COMMAND"
-    # Disable error trap for test execution (test failures are expected workflow events)
-    set +e
-    TEST_OUTPUT=$($TEST_COMMAND 2>&1)
-    TEST_EXIT_CODE=$?
-    set -e
-    echo "$TEST_OUTPUT"
-
-    if [ $TEST_EXIT_CODE -ne 0 ]; then
-      echo "Tests failed (exit code: $TEST_EXIT_CODE)"
-      TESTS_PASSED=false
-    else
-      echo "Tests passed"
-      TESTS_PASSED=true
-    fi
-  else
-    echo "Test phase skipped (no test command)"
-    TESTS_PASSED=true
-    TEST_EXIT_CODE=0
-  fi
+# Determine TESTS_PASSED for backward compatibility
+if [ "$TEST_STATUS" = "passed" ]; then
+  TESTS_PASSED=true
 else
-  echo "Loading test results from: $TEST_OUTPUT_PATH"
-  echo ""
-
-  # Extract metadata from test artifact
-  TEST_EXIT_CODE=$(grep "^- \*\*Exit Code\*\*:" "$TEST_OUTPUT_PATH" | grep -oE '[0-9]+' | head -1 || echo "0")
-  TEST_FRAMEWORK=$(grep "^- \*\*Test Framework\*\*:" "$TEST_OUTPUT_PATH" | cut -d':' -f2- | xargs || echo "unknown")
-  TEST_COMMAND=$(grep "^- \*\*Test Command\*\*:" "$TEST_OUTPUT_PATH" | cut -d':' -f2- | xargs || echo "")
-  TESTS_FAILED=$(grep "^- \*\*Failed\*\*:" "$TEST_OUTPUT_PATH" | grep -oE '[0-9]+' | head -1 || echo "0")
-  TESTS_PASSED_COUNT=$(grep "^- \*\*Passed\*\*:" "$TEST_OUTPUT_PATH" | grep -oE '[0-9]+' | head -1 || echo "0")
-  EXECUTION_TIME=$(grep "^- \*\*Execution Time\*\*:" "$TEST_OUTPUT_PATH" | cut -d':' -f2- | xargs || echo "N/A")
-
-  # Display test summary
-  echo "Test Framework: $TEST_FRAMEWORK"
-  echo "Test Command: $TEST_COMMAND"
-  echo "Exit Code: $TEST_EXIT_CODE"
-  echo "Tests Passed: $TESTS_PASSED_COUNT"
-  echo "Tests Failed: $TESTS_FAILED"
-  echo "Execution Time: $EXECUTION_TIME"
-  echo ""
-
-  # Determine overall test status
-  if [ "$TEST_EXIT_CODE" -ne 0 ] || [ "$TESTS_FAILED" -gt 0 ]; then
-    echo "Tests failed"
-    TESTS_PASSED=false
-
-    # Display failed test details if available
-    if [ "$TESTS_FAILED" -gt 0 ]; then
-      echo ""
-      echo "Failed Tests:"
-      sed -n '/^## Failed Tests/,/^## /p' "$TEST_OUTPUT_PATH" | grep -E '^[0-9]+\.' | head -10 || true
-      echo ""
-    fi
-  else
-    echo "Tests passed"
-    TESTS_PASSED=true
-  fi
-
-  # Store artifact path for potential debugging
-  TEST_ARTIFACT_PATH="$TEST_OUTPUT_PATH"
+  TESTS_PASSED=false
 fi
 
 # === PERSIST FOR BLOCK 3 ===
@@ -1500,156 +1463,56 @@ fi
 
 echo ""
 echo "Test result: $([ "$TESTS_PASSED" = "true" ] && echo "PASSED" || echo "FAILED")"
-echo "Proceeding to: $([ "$TESTS_PASSED" = "true" ] && echo "Documentation" || echo "Debug")"
-```
+echo "Proceeding to: $NEXT_STATE (recommended by test-executor)"
 
-## Block 3: Conditional Debug or Documentation
+# === STATE-DRIVEN TRANSITION (Phase 2 Simplification) ===
+# Trust test-executor's next_state recommendation instead of inline conditionals
+# This prevents invalid transitions (e.g., TEST → DOCUMENT when tests failed)
 
-**EXECUTE NOW**: Handle debug (if tests failed) or documentation (if tests passed):
-
-```bash
-set +H 2>/dev/null || true
-set +o histexpand 2>/dev/null || true
-set -e  # Fail-fast per code-standards.md
-
-# DEBUG_LOG initialization per spec 778
-DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
-mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
-
-# === DETECT PROJECT DIRECTORY ===
-if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+# Map next_state string to state machine constant
+if [ "$NEXT_STATE" = "DEBUG" ]; then
+  TARGET_STATE="$STATE_DEBUG"
+  PHASE_NAME="Debug (Tests Failed)"
+elif [ "$NEXT_STATE" = "DOCUMENT" ]; then
+  TARGET_STATE="$STATE_DOCUMENT"
+  PHASE_NAME="Documentation"
 else
-  current_dir="$(pwd)"
-  while [ "$current_dir" != "/" ]; do
-    [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
-    current_dir="$(dirname "$current_dir")"
-  done
-fi
-
-if [ -z "$CLAUDE_PROJECT_DIR" ]; then
-  echo "ERROR: Failed to detect project directory" >&2
+  echo "ERROR: Unknown next_state: $NEXT_STATE" >&2
   exit 1
 fi
-export CLAUDE_PROJECT_DIR
 
-# === SOURCE LIBRARIES (Three-Tier Pattern) ===
-# Tier 1: Critical Foundation (fail-fast required)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source state-persistence.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
-  exit 1
-}
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
-  echo "ERROR: Failed to source error-handling.sh" >&2
-  exit 1
-}
-
-# Tier 2: Workflow Support (graceful degradation)
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null || true
-ensure_error_log_exists
-
-# === LOAD STATE WITH RECOVERY ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-else
-  # Recovery: Find most recent build workflow state file
-  LATEST_STATE=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "workflow_build_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
-  if [ -n "$LATEST_STATE" ]; then
-    WORKFLOW_ID=$(basename "$LATEST_STATE" .sh | sed 's/^workflow_//')
-  else
-    echo "ERROR: Cannot recover WORKFLOW_ID" >&2
-    exit 1
-  fi
-fi
-export WORKFLOW_ID
-
-load_workflow_state "$WORKFLOW_ID" false
+# Single state transition using recommended next_state
+sm_transition "$TARGET_STATE" "test-executor recommendation" 2>&1
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
-  echo "ERROR: Failed to load workflow state" >&2
-  exit $EXIT_CODE
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to $NEXT_STATE failed" \
+    "bash_block_2c" \
+    "$(jq -n --arg state "$NEXT_STATE" --arg reason "test-executor recommendation" '{target_state: $state, transition_reason: $reason}')"
+
+  echo "ERROR: State transition to $NEXT_STATE failed" >&2
+  exit 1
 fi
 
-# Validate critical variables restored from state
-validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "CURRENT_STATE" "TOPIC_PATH" "TESTS_PASSED" || {
-  echo "ERROR: State restoration failed - critical variables missing" >&2
-  exit 1
-}
+echo "=== Phase 3: $PHASE_NAME ==="
+echo ""
 
-export COMMAND_NAME USER_ARGS WORKFLOW_ID
-
-# === SETUP BASH ERROR TRAP ===
-setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
-
-[ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state: $CURRENT_STATE" >&2
-echo "Block 3: State validated ($CURRENT_STATE)"
-
-# === CONDITIONAL BRANCHING ===
-if [ "$TESTS_PASSED" = "false" ]; then
-  # Tests failed -> Debug phase
-  sm_transition "$STATE_DEBUG" 2>&1
-  EXIT_CODE=$?
-  if [ $EXIT_CODE -ne 0 ]; then
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "state_error" \
-      "State transition to DEBUG failed" \
-      "bash_block_3" \
-      "$(jq -n --arg state "DEBUG" '{target_state: $state}')"
-
-    echo "ERROR: State transition to DEBUG failed" >&2
-    exit 1
-  fi
-
-  echo "=== Phase 3: Debug (Tests Failed) ==="
-  echo ""
-
+# Phase-specific setup based on target state
+if [ "$NEXT_STATE" = "DEBUG" ]; then
   DEBUG_DIR="${TOPIC_PATH}/debug"
-
   echo "Debug directory: $DEBUG_DIR"
   echo "Test command: $TEST_COMMAND"
   echo "Exit code: $TEST_EXIT_CODE"
+  echo "Test artifact: $TEST_ARTIFACT_PATH"
   echo ""
   echo "NOTE: After debug, re-run /build to retry tests"
 
-  # Defensive check: Verify append_workflow_state function available
-  type append_workflow_state &>/dev/null
-  TYPE_CHECK=$?
-  if [ $TYPE_CHECK -ne 0 ]; then
-    echo "ERROR: append_workflow_state function not found" >&2
-    echo "DIAGNOSTIC: state-persistence.sh library not sourced in this block" >&2
-    exit 1
-  fi
-
   append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
-else
-  # Tests passed -> Documentation phase
-  sm_transition "$STATE_DOCUMENT" 2>&1
-  EXIT_CODE=$?
-  if [ $EXIT_CODE -ne 0 ]; then
-    log_command_error \
-      "$COMMAND_NAME" \
-      "$WORKFLOW_ID" \
-      "$USER_ARGS" \
-      "state_error" \
-      "State transition to DOCUMENT failed" \
-      "bash_block_3" \
-      "$(jq -n --arg state "DOCUMENT" '{target_state: $state}')"
-
-    echo "ERROR: State transition to DOCUMENT failed" >&2
-    exit 1
-  fi
-
-  echo "=== Phase 3: Documentation ==="
-  echo ""
-
+elif [ "$NEXT_STATE" = "DOCUMENT" ]; then
   if git diff --name-only HEAD~${COMMIT_COUNT}..HEAD 2>/dev/null | grep -qE '(\.py|\.js|\.ts|\.go|\.rs)$'; then
     echo "NOTE: Code files modified, documentation update recommended"
   fi
@@ -1677,6 +1540,9 @@ fi
 if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
   echo "WARNING: State file not found after save: $STATE_FILE" >&2
 fi
+
+echo ""
+echo "Conditional branching complete"
 ```
 
 If tests failed, **EXECUTE NOW**: USE the Task tool to invoke the debug-analyst agent.
@@ -1865,58 +1731,11 @@ fi
 [ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state: $CURRENT_STATE" >&2
 echo "Block 4: State validated ($CURRENT_STATE)"
 
-# === VALIDATE PREDECESSOR STATE ===
-case "$CURRENT_STATE" in
-  document|debug)
-    # Valid - can transition to complete
-    ;;
-  test)
-    {
-      echo "[$(date)] ERROR: Invalid predecessor state for completion"
-      echo "WHICH: sm_transition to complete"
-      echo "WHAT: Cannot transition to complete from test state - Block 3 did not execute"
-      echo "WHERE: Block 4, workflow completion"
-      echo "CURRENT_STATE: $CURRENT_STATE"
-      echo ""
-      echo "TROUBLESHOOTING:"
-      echo "1. Check Block 3 for errors (debug/document phase)"
-      echo "2. Verify state file contains expected transitions"
-      echo "3. Check for history expansion errors in previous blocks"
-    } >> "$DEBUG_LOG"
-    echo "ERROR: Invalid predecessor state - Block 3 did not complete (see $DEBUG_LOG)" >&2
-    exit 1
-    ;;
-  implement)
-    {
-      echo "[$(date)] ERROR: Invalid predecessor state for completion"
-      echo "WHICH: sm_transition to complete"
-      echo "WHAT: Cannot transition to complete from implement state - Blocks 2 and 3 did not execute"
-      echo "WHERE: Block 4, workflow completion"
-      echo "CURRENT_STATE: $CURRENT_STATE"
-      echo ""
-      echo "TROUBLESHOOTING:"
-      echo "1. Check Block 2 for errors (testing phase)"
-      echo "2. Check Block 3 for errors (debug/document phase)"
-      echo "3. Verify state file contains expected transitions"
-    } >> "$DEBUG_LOG"
-    echo "ERROR: Invalid predecessor state - Blocks 2 and 3 did not complete (see $DEBUG_LOG)" >&2
-    exit 1
-    ;;
-  *)
-    {
-      echo "[$(date)] ERROR: Unexpected predecessor state"
-      echo "WHICH: sm_transition to complete"
-      echo "WHAT: Unrecognized state before completion"
-      echo "WHERE: Block 4, workflow completion"
-      echo "CURRENT_STATE: $CURRENT_STATE"
-    } >> "$DEBUG_LOG"
-    echo "ERROR: Unexpected predecessor state '$CURRENT_STATE' (see $DEBUG_LOG)" >&2
-    exit 1
-    ;;
-esac
-
 # === COMPLETE WORKFLOW ===
-sm_transition "$STATE_COMPLETE" 2>&1
+# NOTE: State machine validates predecessor states automatically
+# Valid transitions to complete: debug → complete, document → complete
+# Invalid transitions will be rejected by sm_transition with descriptive error
+sm_transition "$STATE_COMPLETE" "all phases successful" 2>&1
 EXIT_CODE=$?
 if [ $EXIT_CODE -ne 0 ]; then
   log_command_error \
@@ -1924,11 +1743,13 @@ if [ $EXIT_CODE -ne 0 ]; then
     "$WORKFLOW_ID" \
     "$USER_ARGS" \
     "state_error" \
-    "State transition to COMPLETE failed" \
+    "State transition to COMPLETE failed - invalid predecessor state $CURRENT_STATE" \
     "bash_block_4" \
-    "$(jq -n --arg state "COMPLETE" '{target_state: $state}')"
+    "$(jq -n --arg state "COMPLETE" --arg current "$CURRENT_STATE" '{target_state: $state, current_state: $current}')"
 
   echo "ERROR: State transition to COMPLETE failed" >&2
+  echo "DIAGNOSTIC: State machine rejected transition from $CURRENT_STATE to COMPLETE" >&2
+  echo "DIAGNOSTIC: Check that Block 3 (debug/document phase) completed successfully" >&2
   exit 1
 fi
 

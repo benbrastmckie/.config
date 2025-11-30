@@ -1,135 +1,120 @@
-> /research is running… "Research the old plans .claude/specs/883_commands_o
-ptimize_refactor/plans/001_commands_optimize_refactor_plan.md and 
-.claude/specs/902_error_logging_infrastructure_completion/plans/001_error_lo
-gging_infrastructure_completion_plan.md in order to identify anything 
-missing from the new plan /home/benjamin/.config/.claude/specs/916_commands_
-docs_standards_review/plans/001_commands_docs_standards_review_plan.md that 
-would be helpful to include by fitting with the .claude/docs/ standards 
-without adding needless complexity or risking breaking functionality." 
+> /research is running… "Use the output 
+/home/benjamin/.config/.claude/output/build-output.md from the /build 
+command to see why the testing is being run by the primary agent instead of 
+by a testing subagent." 
   ⎿  Allowed 6 tools for this command
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ Classification accepted: scope=research-only, complexity=2, topics=
-    0
-    State machine initialized: scope=research-only, terminal=research
-    … +5 lines (ctrl+o to expand)
+● Read(.claude/output/build-output.md)
+  ⎿  Read 208 lines
 
+● I can see the issue. Looking at the build output, specifically around
+  lines 115-123:
 
-● Task(Generate semantic topic directory name)
-  ⎿  Done (2 tool uses · 26.6k tokens · 14s)                           
+  The Problem: The primary agent (orchestrator) is running tests
+  directly instead of delegating to the test-executor subagent.
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Error: Exit code 1
-     ERROR: State file not found: 
-     /home/benjamin/.claude/tmp/workflow_research_1763772011.sh
+  Evidence from the build output:
+  - Line 115-117: "Now let me run the testing phase. Since this is a
+  hook for buffer opening inside Neovim, I should focus on verifying the
+   syntax..."
+  - Lines 119-123: The primary agent directly runs Bash(# Test the hook 
+  script syntax...) instead of invoking a Task with the test-executor
+  agent
 
-● Bash(# Check what workflow IDs exist and find the correct state file
-      ls -la ~/.claude/tmp/workflow_*.sh 2>/dev/null | head -10…)
-  ⎿ -rw-r--r-- 1 benjamin users 7901 Nov 16 22:39 /home/benjamin/.claud
-    e/tmp/workflow_coordinate_1763350170.sh
-    -rwxr-xr-x 1 benjamin users 5030 Nov 21 09:40 /home/benjamin/.claud
-    … +82 lines (ctrl+o to expand)
+  Let me check the build command and test-executor agent to understand
+  why this delegation isn't happening:
 
+● Read(.claude/commands/build.md)
+  ⎿  Read 1910 lines
 
+● Read(.claude/agents/test-executor.md)
+  ⎿  Read 562 lines
 
-● The issue is that init_workflow_state uses a different ID prefix
-  (e.g., workflow_research_1747872214 based on date +%s at
-  initialization time). Let me check for the correct state file:
+● Now I understand the full picture. Let me summarize the findings:
 
-● Bash(# Find the most recent research workflow state file
-      ls -lat ~/.claude/tmp/workflow_research_*.sh 2>/dev/null | head -5…)
-  ⎿  research_1763772011                         
-     Looking for: workflow_research_1763772011.sh
-     Not found
+  Research Report: Testing Not Delegated to Subagent
 
-● The init_workflow_state function didn't create the state file during
-  the first block. Let me check what init_workflow_state actually does
-  and reinitialize:
+  Problem Identified
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ Setup complete: research_1763772097 (research-only, complexity: 2) 
-    Research directory: /home/benjamin/.config/.claude/specs/917_plans_
-    research_docs_standards_gaps/reports
-    … +4 lines (ctrl+o to expand)
+  In the build output, lines 115-123 show the primary agent directly
+  executing tests instead of using the test-executor subagent:
 
+  Now let me run the testing phase. Since this is a hook for buffer
+  opening inside Neovim, I should focus on verifying the syntax and
+  checking the hooks README was properly updated:
 
-● Now let me invoke the research-specialist agent to conduct the
-  research:
+  Bash(# Test the hook script syntax
+       echo "=== Syntax Check ==="…)
 
-● Task(Research plans for missing elements)
-  ⎿  Done (12 tool uses · 77.8k tokens · 1m 44s)                       
+  Root Cause Analysis
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Error: Exit code 127
+  The /build command (build.md:1057-1248) does include the correct
+  test-executor subagent invocation via Task tool at lines 1188-1248:
 
-     ❌ CRITICAL ERROR: Workflow state file not found
+  ## Testing Phase: Invoke Test-Executor Subagent
 
-     Context:
-       Expected state file: 
-     /home/benjamin/.config/.claude/tmp/workflow_research_1763772097.sh
-       Workflow ID: research_1763772097
-       Block type: Subsequent block (is_first_block=false)
+  ...
 
-     This indicates a state persistence failure. The state file should
-     … +14 lines (ctrl+o to see all)
+  Task {
+    subagent_type: "general-purpose"
+    description: "Execute test suite with framework detection..."
+    prompt: "Read and follow ALL behavioral guidelines from:
+      ${CLAUDE_PROJECT_DIR}/.claude/agents/test-executor.md
+      ...
 
-● Let me check what was created and read the research report directly:
+  However, the issue is that the primary agent (Claude) skipped this
+  structured Task invocation and instead ran its own ad-hoc tests
+  directly.
 
-● Bash(# Check what was created
-      ls -la /home/benjamin/.config/.claude/specs/917_plans_research_docs_st
-      andards_gaps/reports/ 2>/dev/null)
-  ⎿  total 20                                         
-     drwx------ 2 benjamin users  4096 Nov 21 16:43 .
-     drwxr-xr-x 3 benjamin users  4096 Nov 21 16:42 ..
-     … +2 lines (ctrl+o to expand)
+  Why This Happened
 
-● Read(.claude/specs/917_plans_research_docs_standards_gaps/reports/001_plan
-      s_gaps_analysis.md)
-  ⎿  Read 210 lines
+  1. No mandatory enforcement: The /build command template uses "EXECUTE
+   NOW" directives, but these are instructions the LLM may choose to
+  interpret loosely rather than strict barriers
+  2. Agent autonomy override: The primary agent made a judgment call
+  ("Since this is a hook for buffer opening inside Neovim, I should
+  focus on verifying the syntax...") and decided to run simpler tests
+  directly rather than invoking the full test-executor subagent
+  machinery
+  3. Missing iteration barrier: Unlike the implementation phase (which
+  has Block 1 verification at line 554-627), the testing phase lacks a
+  mandatory verification block that enforces subagent completion
+  4. Context efficiency shortcut: The agent may have determined that for
+   a simple hook script, invoking a full subagent would be overkill and
+  chose to run syntax checks directly
 
-● Research complete. Here's the summary:
+  Evidence from Build Output
 
-  ---
-  Research Complete
+  Lines 37-38 show the implementation DID use the Task tool properly:
+  Task(Execute hook buffer opening fix implementation plan)
+    ⎿  Done (22 tool uses · 59.2k tokens · 3m 52s)
 
-  Report: /home/benjamin/.config/.claude/specs/917_plans_research_docs_s
-  tandards_gaps/reports/001_plans_gaps_analysis.md
+  But lines 119-123 show direct Bash execution for testing, bypassing
+  the Task tool entirely.
 
-  Key Findings
+  Structural Issue in /build Command
 
-  The analysis identified 3 valuable additions from the old plans (883,
-  902) that would benefit Plan 916:
+  Looking at the command structure:
+  - Block 1: Setup + Implementation via Task → Has verification block
+  - Testing Phase: Task invocation → No verification block after it
+  - Block 2: "Load Test Results" → Expects agent return values that 
+  don't exist
 
-  | Gap                              | Value  | Recommendation
+  The Block 2 code (lines 1254-1546) tries to parse AGENT_TEST_STATUS,
+  AGENT_TEST_EXIT_CODE, etc., but these variables would only be
+  populated if the Task tool was actually invoked. When the agent skips
+  the Task and runs tests directly, these variables are empty.
 
-                          |
-  |----------------------------------|--------|-------------------------
-  ----------------------------------------------------------------------
-  ------------------------|
-  | Bash block consolidation targets | HIGH   | Add targets for /expand
-  (32 blocks) and /collapse (29 blocks) - both should target ≤8 blocks
-  per output-formatting.md |
-  | Command template creation        | MEDIUM | Create
-  commands/templates/workflow-command-template.md referencing all
-  standards                                      |
-  | State persistence testing        | MEDIUM | Add specific tests for
-  STATE_FILE integrity after pattern modifications
-                           |
+  Recommendations
 
-  Not Recommended to Add
-
-  - Library evaluation (from Plan 883) - Adds significant complexity,
-  better as separate scope
-  - Helper functions (from Plan 902) - Already scoped in Plan 902,
-  explicitly marked optional
-
-  Suggested Plan 916 Modifications
-
-  1. Phase 2 extension: Add bash block consolidation documentation for
-  /expand and /collapse
-  2. Phase 5 additions:
-    - Create command template
-    - Add state persistence testing tasks
-
-  The report includes specific task markdown that can be copy-pasted
-  into Plan 916 if desired.
+  1. Add test barrier verification: Add a verification block after the
+  testing Task invocation that fails if test-executor artifacts weren't
+  created
+  2. Make Task invocation explicit: Change the testing section to use
+  the same pattern as implementation - require artifact verification
+  before proceeding
+  3. Add CRITICAL directive: Add language like "YOU MUST invoke
+  test-executor via Task tool - direct test execution is FORBIDDEN"
+  4. Consider agent model choice: The test-executor agent specifies
+  model: haiku-4.5 in its frontmatter. This may contribute to the
+  primary agent deciding it can handle simple tests itself.

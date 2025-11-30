@@ -31,6 +31,8 @@ You WILL receive:
 - **artifact_paths**: Pre-calculated paths for debug, outputs, checkpoints
 - **continuation_context**: (Optional) Path to previous summary for continuation after context exhaustion
 - **iteration**: (Optional) Current iteration number (1-5, for tracking continuation loops)
+- **max_iterations**: (Optional) Maximum iterations allowed (default: 5)
+- **context_threshold**: (Optional) Context usage percentage threshold for halting (default: 85)
 
 Example input:
 ```yaml
@@ -45,6 +47,8 @@ artifact_paths:
   checkpoints: /home/user/.claude/data/checkpoints/
 continuation_context: null  # Or path to previous summary for continuation
 iteration: 1  # Current iteration (1-5)
+max_iterations: 5  # Maximum iterations allowed
+context_threshold: 85  # Halt if context usage exceeds 85%
 ```
 
 ### STEP 1: Plan Structure Detection
@@ -121,7 +125,126 @@ fi
    ╚═══════════════════════════════════════════════════════╝
    ```
 
-### STEP 3: Wave Execution Loop
+### STEP 3: Iteration Management (New in Phase 1)
+
+Before beginning wave execution, implement iteration management:
+
+#### Context Estimation
+
+Estimate current context usage after each wave completion.
+
+**Defensive Error Handling Strategy**:
+- Validates input parameters are numeric (defaults: 0 for completed, 1 for remaining)
+- Wraps arithmetic in error handlers with conservative fallbacks
+- Sanity checks final estimate (valid range: 10k-300k tokens)
+- On estimation failure: Returns 100,000 (conservative 50% of 200k window)
+- Logs all fallback actions to stderr for diagnostics
+
+```bash
+estimate_context_usage() {
+  local completed_phases="$1"
+  local remaining_phases="$2"
+  local has_continuation="$3"
+
+  # Defensive: Validate inputs are numeric
+  if ! [[ "$completed_phases" =~ ^[0-9]+$ ]]; then
+    echo "WARNING: Invalid completed_phases '$completed_phases', defaulting to 0" >&2
+    completed_phases=0
+  fi
+  if ! [[ "$remaining_phases" =~ ^[0-9]+$ ]]; then
+    echo "WARNING: Invalid remaining_phases '$remaining_phases', defaulting to 1" >&2
+    remaining_phases=1
+  fi
+
+  # Defensive: Wrap calculation in error handling
+  local base=20000  # Plan file + standards + system prompt
+  local completed_cost=0
+  local remaining_cost=0
+  local continuation_cost=0
+
+  # Safe arithmetic with fallback
+  completed_cost=$((completed_phases * 15000)) || {
+    echo "WARNING: Context calculation failed for completed_phases, using default" >&2
+    completed_cost=$((completed_phases > 0 ? 20000 : 0))
+  }
+
+  remaining_cost=$((remaining_phases * 12000)) || {
+    echo "WARNING: Context calculation failed for remaining_phases, using default" >&2
+    remaining_cost=15000
+  }
+
+  if [ "$has_continuation" = "true" ]; then
+    continuation_cost=5000
+  fi
+
+  local total=$((base + completed_cost + remaining_cost + continuation_cost))
+
+  # Defensive: Ensure total is reasonable (sanity check)
+  if [ "$total" -lt 10000 ] || [ "$total" -gt 300000 ]; then
+    echo "WARNING: Context estimate out of range ($total tokens), using conservative 50% estimate" >&2
+    echo 100000  # Conservative 50% of 200k context window
+  else
+    echo "$total"
+  fi
+}
+```
+
+#### Checkpoint Saving
+
+If context threshold exceeded, save resumption checkpoint:
+
+```bash
+save_resumption_checkpoint() {
+  local halt_reason="$1"
+  local checkpoint_dir="${artifact_paths[checkpoints]}"
+  mkdir -p "$checkpoint_dir"
+
+  local checkpoint_file="${checkpoint_dir}/build_${workflow_id}_iteration_${iteration}.json"
+
+  jq -n \
+    --arg version "2.1" \
+    --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --arg plan_path "$plan_path" \
+    --arg topic_path "$topic_path" \
+    --argjson iteration "$iteration" \
+    --argjson max_iterations "$max_iterations" \
+    --arg continuation_context "${continuation_context:-}" \
+    --arg work_remaining "$work_remaining" \
+    --argjson context_estimate "$context_estimate" \
+    --arg halt_reason "$halt_reason" \
+    '{
+      version: $version,
+      timestamp: $timestamp,
+      plan_path: $plan_path,
+      topic_path: $topic_path,
+      iteration: $iteration,
+      max_iterations: $max_iterations,
+      continuation_context: $continuation_context,
+      work_remaining: $work_remaining,
+      context_estimate: $context_estimate,
+      halt_reason: $halt_reason
+    }' > "$checkpoint_file"
+
+  echo "$checkpoint_file"
+}
+```
+
+#### Stuck Detection
+
+Track work_remaining across iterations:
+
+- If work_remaining unchanged for 2 consecutive iterations, set stuck_detected: true
+- Include stuck warning in return signal
+- Parent workflow will decide whether to continue or halt
+
+#### Iteration Limit Enforcement
+
+Check if iteration >= max_iterations:
+
+- If true, set requires_continuation: false (halt after this iteration)
+- If false, determine requires_continuation based on context and work_remaining
+
+### STEP 4: Wave Execution Loop
 
 FOR EACH wave in wave structure:
 
@@ -391,14 +514,20 @@ Context Exhausted: {yes|no}
 ═══════════════════════════════════════════════════════
 ```
 
-**Structured Return for Continuation**:
+**Structured Return for Continuation** (Enhanced in Phase 1):
 ```yaml
 IMPLEMENTATION_COMPLETE:
   phase_count: N
+  plan_file: /path/to/plan.md
+  topic_path: /path/to/topic
   summary_path: /path/to/summaries/NNN_workflow_summary.md
   git_commits: [hash1, hash2, ...]
   context_exhausted: true|false
   work_remaining: 0|[list of incomplete phases]
+  context_usage_percent: N%
+  checkpoint_path: /path/to/checkpoint (if created)
+  requires_continuation: true|false
+  stuck_detected: true|false
 ```
 
 If failures:
@@ -522,6 +651,8 @@ When invoked by /build with iteration parameters, the implementer-coordinator su
 **Return Format for Iterations**:
 ```
 IMPLEMENTATION_COMPLETE: {PHASE_COUNT}
+plan_file: /path/to/plan.md
+topic_path: /path/to/topic
 summary_path: /path/to/iteration_N_summary.md
 work_remaining: [phase_M, phase_N, ...] or 0
 context_exhausted: true|false

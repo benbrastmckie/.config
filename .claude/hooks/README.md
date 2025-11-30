@@ -267,6 +267,87 @@ artifact via priority logic (plans > summaries > debug reports > research report
 **Configuration**:
 - `BUFFER_OPENER_ENABLED`: Enable/disable feature (default: true)
 - `BUFFER_OPENER_DEBUG`: Enable debug logging (default: false)
+- `BUFFER_OPENER_DELAY`: Delay before reading terminal buffer in seconds (default: 0.3)
+
+**Buffer Opening Configuration**
+
+The buffer opening feature uses a configurable delay to handle timing issues with multi-block bash commands. When Claude finishes responding, the Stop hook fires, but subsequent bash blocks may still be executing. The delay ensures completion signals are present in the terminal buffer before the hook reads it.
+
+**Timing Architecture**:
+```
+1. Command starts (Block 1: setup and Task tool delegation)
+2. Claude finishes responding → Stop hook fires
+3. [Delay period] Hook waits for remaining blocks to execute
+4. Hook reads terminal buffer (now includes Block 2 output)
+5. Hook finds completion signal and opens buffer
+```
+
+**Configuration Variables**:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BUFFER_OPENER_ENABLED` | `true` | Enable/disable automatic buffer opening |
+| `BUFFER_OPENER_DEBUG` | `false` | Enable diagnostic logging to `.claude/tmp/buffer-opener-debug.log` |
+| `BUFFER_OPENER_DELAY` | `0.3` | Delay in seconds before reading terminal buffer |
+
+**Tuning Guide** (adjust `BUFFER_OPENER_DELAY` for your system):
+
+| System Type | Recommended Delay | Notes |
+|-------------|-------------------|-------|
+| Fast local system | `0.2` | Modern hardware with fast I/O |
+| Normal system | `0.3` | Default - works for most systems |
+| Slow/loaded system | `0.5` | Heavy CPU load or slow I/O |
+| Remote/SSH connection | `0.8` | Network latency compensation |
+| Diagnostic mode | `0` | Disable delay to test timing issues |
+
+**Usage Examples**:
+
+```bash
+# Default configuration (300ms delay)
+export BUFFER_OPENER_DEBUG=false
+export BUFFER_OPENER_DELAY=0.3
+
+# Fast system optimization (200ms delay)
+export BUFFER_OPENER_DELAY=0.2
+
+# Slow system tuning (500ms delay)
+export BUFFER_OPENER_DELAY=0.5
+
+# Enable diagnostic mode (immediate read - expect failures)
+export BUFFER_OPENER_DEBUG=true
+export BUFFER_OPENER_DELAY=0
+
+# Disable feature entirely
+export BUFFER_OPENER_ENABLED=false
+```
+
+**Troubleshooting**
+
+**Buffers not opening automatically**:
+1. Enable debug logging: `export BUFFER_OPENER_DEBUG=true`
+2. Run a workflow command (e.g., `/research "test topic"`)
+3. Check debug log: `cat ~/.config/.claude/tmp/buffer-opener-debug.log`
+4. Look for:
+   - "Block 2 ABSENT" message - confirms timing race
+   - "REPORT_CREATED signal ABSENT" - signal not found
+5. If timing race confirmed, increase delay: `export BUFFER_OPENER_DELAY=0.5`
+6. Test again and examine debug log
+7. If Block 2 now present and signal found, buffer should open
+
+**Debug log shows "Failed to get terminal output"**:
+- Verify running inside Neovim terminal (check `$NVIM` is set)
+- Verify `nvim` command available in PATH
+- Check Neovim RPC is functional: `nvim --server $NVIM --remote-expr '1+1'`
+
+**Buffers open but at wrong file**:
+- Check priority logic (plans > summaries > debug reports > research reports)
+- Multiple signals may be present, hook selects highest priority
+- Example: `/optimize-claude` creates 4 research reports + 1 plan → opens plan only
+
+**High latency (>500ms) to buffer open**:
+- Reduce delay if system is fast: `export BUFFER_OPENER_DELAY=0.2`
+- Balance reliability vs latency based on success rate
+- Target: ≥95% success rate with <500ms latency
 
 ---
 

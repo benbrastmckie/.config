@@ -93,6 +93,37 @@ case "$COMMAND" in
     ;;
 esac
 
+# === Stop Hook Timing and Multi-Block Execution ===
+# CRITICAL INSIGHT: The Stop hook fires when Claude FINISHES RESPONDING, not when bash blocks finish executing.
+#
+# Execution Timeline:
+#   1. Command starts (Block 1a-1c: setup, state init, topic naming)
+#   2. Task tool delegation (Block 1d: invoke research-specialist/plan-architect/etc.)
+#   3. Claude finishes responding → Stop hook fires ← WE ARE HERE
+#   4. [After Claude's response] Block 2 executes (verification and signal output: "REPORT_CREATED: path")
+#
+# Problem: Stop hook fires at step 3, but REPORT_CREATED signal is output in step 4
+# Solution: Wait for Block 2 to execute before reading terminal buffer
+#
+# The BUFFER_OPENER_DELAY provides time for multi-block commands to complete execution
+# and flush their completion signals to the terminal buffer.
+#
+# Configuration:
+#   BUFFER_OPENER_DELAY=0.3  # Default: 300ms delay (suitable for most systems)
+#   BUFFER_OPENER_DELAY=0.2  # Fast systems with local Neovim
+#   BUFFER_OPENER_DELAY=0.5  # Slower systems or heavy load
+#   BUFFER_OPENER_DELAY=0.8  # Remote/SSH connections
+#   BUFFER_OPENER_DELAY=0    # Disable delay (diagnostic mode - expect failures)
+
+# Apply delay before reading terminal buffer (if enabled)
+DELAY="${BUFFER_OPENER_DELAY:-0.3}"
+if [[ "$DELAY" != "0" ]] && [[ "$DELAY" != "0.0" ]]; then
+  debug_log "Applying ${DELAY}s delay before reading terminal buffer (allows Block 2 execution)"
+  sleep "$DELAY"
+else
+  debug_log "Delay disabled (BUFFER_OPENER_DELAY=0) - reading terminal immediately"
+fi
+
 # === Access terminal buffer output via Neovim RPC ===
 # Get the last 100 lines of terminal output (sufficient for completion signals)
 TERMINAL_OUTPUT=$(timeout 5 nvim --server "$NVIM" --remote-expr 'join(getbufline(bufnr("%"), max([1, line("$")-100]), "$"), "\n")' 2>/dev/null)
@@ -103,6 +134,49 @@ if [[ -z "$TERMINAL_OUTPUT" ]]; then
 fi
 
 debug_log "Got terminal output (${#TERMINAL_OUTPUT} chars)"
+
+# === Diagnostic: Dump terminal output line-by-line to debug log ===
+# This helps diagnose timing issues where Block 2 may not have executed yet
+if [[ "${BUFFER_OPENER_DEBUG:-false}" == "true" ]]; then
+  debug_log "=== TERMINAL OUTPUT DUMP BEGIN ==="
+  debug_log "Total lines in terminal output:"
+  line_count=0
+  while IFS= read -r line; do
+    ((line_count++))
+    debug_log "Line $line_count: $line"
+  done <<< "$TERMINAL_OUTPUT"
+  debug_log "Total lines dumped: $line_count"
+  debug_log "=== TERMINAL OUTPUT DUMP END ==="
+
+  # Check for Block execution markers
+  debug_log "=== BLOCK EXECUTION MARKERS ==="
+  if echo "$TERMINAL_OUTPUT" | grep -q "Block 1d"; then
+    debug_log "✓ Block 1d PRESENT (Task tool delegation)"
+  else
+    debug_log "✗ Block 1d ABSENT"
+  fi
+
+  if echo "$TERMINAL_OUTPUT" | grep -q "Verifying research artifacts"; then
+    debug_log "✓ Block 2 PRESENT (Verification and signal output)"
+  else
+    debug_log "✗ Block 2 ABSENT (This confirms timing race - Block 2 hasn't executed yet)"
+  fi
+
+  # Check for REPORT_CREATED signal
+  debug_log "=== COMPLETION SIGNAL CHECK ==="
+  if echo "$TERMINAL_OUTPUT" | grep -q "REPORT_CREATED:"; then
+    debug_log "✓ REPORT_CREATED signal PRESENT"
+  else
+    debug_log "✗ REPORT_CREATED signal ABSENT (Expected if Block 2 hasn't executed)"
+  fi
+
+  if echo "$TERMINAL_OUTPUT" | grep -q "PLAN_CREATED:"; then
+    debug_log "✓ PLAN_CREATED signal PRESENT"
+  else
+    debug_log "✗ PLAN_CREATED signal ABSENT"
+  fi
+  debug_log "=== DIAGNOSTIC CHECKS COMPLETE ==="
+fi
 
 # === Extract completion signals with priority logic ===
 # Priority 1: PLAN_CREATED or PLAN_REVISED (highest)

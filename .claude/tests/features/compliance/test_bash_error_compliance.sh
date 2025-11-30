@@ -29,9 +29,10 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Expected block counts from plan (total blocks including documentation/usage examples)
+# Note: build.md was consolidated from 8 to 7 blocks (Block 1a/1b/1c -> Block 1)
 declare -A EXPECTED_BLOCKS=(
   ["plan"]=5
-  ["build"]=8
+  ["build"]=7
   ["debug"]=11
   ["repair"]=4
   ["revise"]=8

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Test: /build command Task delegation verification
-# Validates that implementer-coordinator is invoked via Task tool with hard barriers
+# Validates that implementer-coordinator is invoked via Task tool
+# Updated: Tests consolidated block structure (Block 1: Setup + Execute + Verify)
 
 set -uo pipefail
 
@@ -44,32 +45,39 @@ EOF
 test_task_invocation() {
     echo "Test 1: Verifying Task tool is invoked..."
 
-    # Mock /build execution (we'll check the command file for Task invocation pattern)
     local build_cmd="/home/benjamin/.config/.claude/commands/build.md"
 
-    if ! grep -q "CRITICAL BARRIER" "$build_cmd"; then
-        echo "FAIL: No CRITICAL BARRIER label found in /build"
-        return 1
-    fi
-
+    # Check for Task invocation for implementer-coordinator
     if ! grep -q "Task {" "$build_cmd"; then
         echo "FAIL: No Task invocation found in /build"
         return 1
     fi
 
-    echo "PASS: Task invocation pattern found with CRITICAL BARRIER"
+    # Check for implementer-coordinator reference
+    if ! grep -q "implementer-coordinator" "$build_cmd"; then
+        echo "FAIL: implementer-coordinator not referenced in Task"
+        return 1
+    fi
+
+    echo "PASS: Task invocation pattern found for implementer-coordinator"
     return 0
 }
 
-# Test 2: Verify verification block exists after Task
+# Test 2: Verify inline verification exists (consolidated structure)
 test_verification_block() {
-    echo "Test 2: Verifying verification block after Task..."
+    echo "Test 2: Verifying inline verification after Task..."
 
     local build_cmd="/home/benjamin/.config/.claude/commands/build.md"
 
-    # Check for Block 1c verification section
-    if ! grep -q "Block 1c: Implementation Verification" "$build_cmd"; then
-        echo "FAIL: Block 1c (verification) not found"
+    # Check for consolidated block structure (Block 1: Setup + Execute + Verify)
+    if ! grep -q "Block 1.*Setup.*Execute.*Verify" "$build_cmd"; then
+        echo "FAIL: Consolidated block structure not found"
+        return 1
+    fi
+
+    # Check for inline verification marker
+    if ! grep -q "INLINE VERIFICATION" "$build_cmd"; then
+        echo "FAIL: Inline verification marker not found"
         return 1
     fi
 
@@ -85,7 +93,7 @@ test_verification_block() {
         return 1
     fi
 
-    echo "PASS: Verification block exists with fail-fast checks"
+    echo "PASS: Inline verification exists with fail-fast checks"
     return 0
 }
 
