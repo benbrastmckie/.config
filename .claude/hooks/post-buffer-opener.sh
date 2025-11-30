@@ -54,6 +54,15 @@ debug_log() {
   fi
 }
 
+# === ANSI Code Stripping ===
+# Strip ANSI escape codes from input for reliable pattern matching
+# Handles: colors (\e[31m), cursor movement (\e[1A), reset (\e[0m), OSC sequences, etc.
+# Terminal buffers contain these codes which break regex pattern matching
+strip_ansi() {
+  # Remove CSI sequences (colors, cursor, etc.) and OSC sequences (title, etc.)
+  sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' | sed 's/\x1b\][0-9]*;[^\x07]*\x07//g'
+}
+
 debug_log "Hook triggered, NVIM=$NVIM"
 
 # === Parse JSON input from Claude Code ===
@@ -135,6 +144,12 @@ fi
 
 debug_log "Got terminal output (${#TERMINAL_OUTPUT} chars)"
 
+# === Strip ANSI codes for reliable pattern matching ===
+# Terminal buffer contains ANSI escape codes that break regex extraction
+CLEAN_OUTPUT=$(echo "$TERMINAL_OUTPUT" | strip_ansi)
+ANSI_BYTES_REMOVED=$((${#TERMINAL_OUTPUT} - ${#CLEAN_OUTPUT}))
+debug_log "Cleaned terminal output (${#CLEAN_OUTPUT} chars, removed $ANSI_BYTES_REMOVED ANSI bytes)"
+
 # === Diagnostic: Dump terminal output line-by-line to debug log ===
 # This helps diagnose timing issues where Block 2 may not have executed yet
 if [[ "${BUFFER_OPENER_DEBUG:-false}" == "true" ]]; then
@@ -179,12 +194,53 @@ if [[ "${BUFFER_OPENER_DEBUG:-false}" == "true" ]]; then
 fi
 
 # === Extract completion signals with priority logic ===
+# Uses CLEAN_OUTPUT (ANSI-stripped) for reliable pattern matching
+# Includes fallback patterns for robustness
+
+# Helper function: Extract path with primary and fallback patterns
+# Returns path if valid file exists, empty otherwise
+extract_signal_path() {
+  local signal_name="$1"
+  local input="$2"
+  local path=""
+
+  # Primary: Perl regex (grep -oP) - fast and precise
+  path=$(echo "$input" | grep -oP "${signal_name}:\s*\K[^\s]+" 2>/dev/null | tail -1)
+
+  # Fallback: sed-based extraction if grep -oP fails or returns empty
+  if [[ -z "$path" ]]; then
+    path=$(echo "$input" | sed -n "s/.*${signal_name}:[[:space:]]*\([^[:space:]]*\).*/\1/p" | tail -1)
+    if [[ -n "$path" ]]; then
+      debug_log "Used sed fallback for $signal_name"
+    fi
+  fi
+
+  # Validate path exists as a file
+  if [[ -n "$path" ]] && [[ -f "$path" ]]; then
+    echo "$path"
+    return
+  fi
+
+  # Path might have trailing garbage - try cleaning it
+  if [[ -n "$path" ]]; then
+    local cleaned_path="${path%%[^/a-zA-Z0-9._-]*}"
+    if [[ -n "$cleaned_path" ]] && [[ -f "$cleaned_path" ]]; then
+      debug_log "Cleaned path: $path -> $cleaned_path"
+      echo "$cleaned_path"
+      return
+    fi
+  fi
+
+  # No valid path found
+  echo ""
+}
+
 # Priority 1: PLAN_CREATED or PLAN_REVISED (highest)
 ARTIFACT_PATH=""
 
 # Check for PLAN_CREATED (highest priority)
 if [[ -z "$ARTIFACT_PATH" ]]; then
-  PLAN_PATH=$(echo "$TERMINAL_OUTPUT" | grep -oP 'PLAN_CREATED:\s*\K[^\s]+' | tail -1)
+  PLAN_PATH=$(extract_signal_path "PLAN_CREATED" "$CLEAN_OUTPUT")
   if [[ -n "$PLAN_PATH" ]]; then
     ARTIFACT_PATH="$PLAN_PATH"
     debug_log "Found PLAN_CREATED: $ARTIFACT_PATH"
@@ -193,7 +249,7 @@ fi
 
 # Check for PLAN_REVISED (same priority as PLAN_CREATED)
 if [[ -z "$ARTIFACT_PATH" ]]; then
-  REVISED_PATH=$(echo "$TERMINAL_OUTPUT" | grep -oP 'PLAN_REVISED:\s*\K[^\s]+' | tail -1)
+  REVISED_PATH=$(extract_signal_path "PLAN_REVISED" "$CLEAN_OUTPUT")
   if [[ -n "$REVISED_PATH" ]]; then
     ARTIFACT_PATH="$REVISED_PATH"
     debug_log "Found PLAN_REVISED: $ARTIFACT_PATH"
@@ -202,8 +258,7 @@ fi
 
 # Priority 2: IMPLEMENTATION_COMPLETE with summary_path (for /build)
 if [[ -z "$ARTIFACT_PATH" ]]; then
-  # /build returns multi-line format with summary_path field
-  SUMMARY_PATH=$(echo "$TERMINAL_OUTPUT" | grep -oP 'summary_path:\s*\K[^\s]+' | tail -1)
+  SUMMARY_PATH=$(extract_signal_path "summary_path" "$CLEAN_OUTPUT")
   if [[ -n "$SUMMARY_PATH" ]]; then
     ARTIFACT_PATH="$SUMMARY_PATH"
     debug_log "Found summary_path: $ARTIFACT_PATH"
@@ -212,7 +267,7 @@ fi
 
 # Priority 3: DEBUG_REPORT_CREATED
 if [[ -z "$ARTIFACT_PATH" ]]; then
-  DEBUG_PATH=$(echo "$TERMINAL_OUTPUT" | grep -oP 'DEBUG_REPORT_CREATED:\s*\K[^\s]+' | tail -1)
+  DEBUG_PATH=$(extract_signal_path "DEBUG_REPORT_CREATED" "$CLEAN_OUTPUT")
   if [[ -n "$DEBUG_PATH" ]]; then
     ARTIFACT_PATH="$DEBUG_PATH"
     debug_log "Found DEBUG_REPORT_CREATED: $ARTIFACT_PATH"
@@ -221,7 +276,7 @@ fi
 
 # Priority 4: REPORT_CREATED (lowest - research reports)
 if [[ -z "$ARTIFACT_PATH" ]]; then
-  REPORT_PATH=$(echo "$TERMINAL_OUTPUT" | grep -oP 'REPORT_CREATED:\s*\K[^\s]+' | tail -1)
+  REPORT_PATH=$(extract_signal_path "REPORT_CREATED" "$CLEAN_OUTPUT")
   if [[ -n "$REPORT_PATH" ]]; then
     ARTIFACT_PATH="$REPORT_PATH"
     debug_log "Found REPORT_CREATED: $ARTIFACT_PATH"
@@ -229,14 +284,9 @@ if [[ -z "$ARTIFACT_PATH" ]]; then
 fi
 
 # === Validate artifact path ===
+# Note: extract_signal_path already validates file existence
 if [[ -z "$ARTIFACT_PATH" ]]; then
-  debug_log "No completion signal found in output"
-  exit 0
-fi
-
-# Validate file exists
-if [[ ! -f "$ARTIFACT_PATH" ]]; then
-  debug_log "Artifact file not found: $ARTIFACT_PATH"
+  debug_log "No completion signal found in output (checked CLEAN_OUTPUT with $ANSI_BYTES_REMOVED ANSI bytes removed)"
   exit 0
 fi
 

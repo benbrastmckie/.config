@@ -711,7 +711,7 @@ validate_todo_structure() {
 }
 
 # ============================================================================
-# SECTION 7: Cleanup Plan Generation (--clean mode)
+# SECTION 7: Cleanup Direct Execution (--clean mode)
 # ============================================================================
 
 # filter_completed_projects()
@@ -737,129 +737,169 @@ filter_completed_projects() {
   echo "$eligible_projects"
 }
 
-# generate_cleanup_plan()
-# Purpose: Generate a cleanup plan for completed projects
+# has_uncommitted_changes()
+# Purpose: Check if directory has uncommitted git-tracked changes
 # Arguments:
-#   $1 - JSON array of completed projects to clean up
-#   $2 - Archive destination path
-#   $3 - Specs root path
-# Returns: Plan content as string
+#   $1 - Directory path to check
+# Returns: 0 if changes exist, 1 if clean
 #
-generate_cleanup_plan() {
-  local projects_json="$1"
-  local archive_path="$2"
-  local specs_root="$3"
+has_uncommitted_changes() {
+  local dir_path="$1"
 
+  # Check directory exists
+  if [ ! -d "$dir_path" ]; then
+    return 1  # Non-existent directory is "clean"
+  fi
+
+  # Check git status for uncommitted changes in this directory
+  local status_output
+  status_output=$(git status --porcelain "$dir_path" 2>/dev/null)
+
+  # Return 0 if changes exist, 1 if clean
+  if [ -n "$status_output" ]; then
+    return 0  # Has uncommitted changes
+  else
+    return 1  # Clean
+  fi
+}
+
+# create_cleanup_git_commit()
+# Purpose: Create pre-cleanup git commit for recovery
+# Arguments: None (uses global context)
+# Returns: 0 on success, 1 on failure
+# Side Effects: Creates git commit, sets COMMIT_HASH variable
+#
+create_cleanup_git_commit() {
+  local project_count="${1:-0}"
+
+  # Stage all changes
+  if ! git add . 2>/dev/null; then
+    echo "ERROR: Failed to stage changes for git commit" >&2
+    return 1
+  fi
+
+  # Create commit with standardized message
+  local commit_message="chore: pre-cleanup snapshot before /todo --clean (${project_count} projects)"
+  if ! git commit -m "$commit_message" 2>/dev/null; then
+    # Check if there were no changes to commit
+    if git diff --cached --quiet 2>/dev/null; then
+      echo "WARNING: No changes to commit (repository already clean)" >&2
+      COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null)
+      return 0
+    else
+      echo "ERROR: Failed to create git commit" >&2
+      return 1
+    fi
+  fi
+
+  # Get commit hash
+  COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null)
+  if [ -z "$COMMIT_HASH" ]; then
+    echo "ERROR: Failed to retrieve commit hash" >&2
+    return 1
+  fi
+
+  echo "Created pre-cleanup commit: $COMMIT_HASH"
+  echo "Recovery command: git revert $COMMIT_HASH"
+  return 0
+}
+
+# execute_cleanup_removal()
+# Purpose: Directly remove eligible project directories after git commit
+# Arguments:
+#   $1 - JSON array of eligible projects
+#   $2 - Specs root path
+# Returns: 0 on success, 1 on failure
+# Side Effects: Removes directories, sets REMOVED_COUNT, SKIPPED_COUNT, FAILED_COUNT
+#
+execute_cleanup_removal() {
+  local projects_json="$1"
+  local specs_root="$2"
+
+  # Initialize counters
+  REMOVED_COUNT=0
+  SKIPPED_COUNT=0
+  FAILED_COUNT=0
+
+  # Get project count
   local project_count
   project_count=$(echo "$projects_json" | jq -r 'length')
 
-  local timestamp
-  timestamp=$(date +%Y%m%d_%H%M%S)
+  if [ "$project_count" -eq 0 ]; then
+    echo "No eligible projects to remove"
+    return 0
+  fi
 
-  local plan_content="# TODO Cleanup Plan
+  # First pass: Check for uncommitted changes and collect removable projects
+  local -a removable_projects=()
+  local -a skipped_projects=()
 
-## Metadata
-- **Date**: $(date +%Y-%m-%d)
-- **Feature**: Archive completed projects from TODO.md
-- **Scope**: Move ${project_count} completed projects to archive directory
-- **Status**: [NOT STARTED]
-- **Archive Path**: ${archive_path}
+  echo "Checking for uncommitted changes in eligible projects..."
 
-## Overview
-
-This plan archives ${project_count} completed projects that are older than 30 days. Projects will be moved to the archive directory with a manifest for future reference.
-
-## Success Criteria
-
-- [ ] All ${project_count} projects archived successfully
-- [ ] Archive manifest created with project metadata
-- [ ] TODO.md updated to reflect archived projects
-- [ ] Verification confirms no data loss
-
-## Implementation Phases
-
-### Phase 1: Create Archive Directory and Manifest [NOT STARTED]
-dependencies: []
-
-**Objective**: Prepare archive directory and create manifest file
-
-Tasks:
-- [ ] Create archive directory: ${archive_path}
-- [ ] Generate archive manifest with project metadata
-- [ ] Verify directory permissions
-
----
-
-### Phase 2: Archive Project Directories [NOT STARTED]
-dependencies: [1]
-
-**Objective**: Move completed project directories to archive
-
-Tasks:
-"
-
-  # Add task for each project
-  local i=0
   while IFS= read -r topic_name; do
     [ -z "$topic_name" ] || [ "$topic_name" = "null" ] && continue
-    plan_content+="- [ ] Archive project: ${topic_name}\n"
-    i=$((i + 1))
+
+    local project_path="${specs_root}/${topic_name}"
+
+    # Check if directory exists
+    if [ ! -d "$project_path" ]; then
+      echo "  ⚠ SKIP: $topic_name (directory not found)"
+      skipped_projects+=("$topic_name")
+      continue
+    fi
+
+    # Check for uncommitted changes BEFORE git commit
+    if has_uncommitted_changes "$project_path"; then
+      echo "  ⚠ SKIP: $topic_name (uncommitted changes detected)"
+      skipped_projects+=("$topic_name")
+      continue
+    fi
+
+    removable_projects+=("$topic_name")
   done < <(echo "$projects_json" | jq -r '.[].topic_name')
 
-  plan_content+="
----
+  # Update skipped count
+  SKIPPED_COUNT=${#skipped_projects[@]}
 
-### Phase 3: Update TODO.md [NOT STARTED]
-dependencies: [2]
+  # If no projects can be removed, exit early
+  if [ ${#removable_projects[@]} -eq 0 ]; then
+    echo ""
+    echo "No projects eligible for removal (all have uncommitted changes or not found)"
+    echo "Skipped: $SKIPPED_COUNT"
+    return 0
+  fi
 
-**Objective**: Update TODO.md to reflect archived projects
+  # Create pre-cleanup git commit
+  if ! create_cleanup_git_commit "$project_count"; then
+    echo "ERROR: Failed to create pre-cleanup git commit. Aborting cleanup." >&2
+    return 1
+  fi
 
-Tasks:
-- [ ] Backup current TODO.md
-- [ ] Remove archived entries from Completed section
-- [ ] Add archive reference to Completed section header
+  # Second pass: Remove eligible projects
+  echo ""
+  echo "Removing eligible project directories..."
 
----
+  for topic_name in "${removable_projects[@]}"; do
+    local project_path="${specs_root}/${topic_name}"
 
-### Phase 4: Verification [NOT STARTED]
-dependencies: [3]
+    # Remove directory
+    if rm -rf "$project_path" 2>/dev/null; then
+      echo "  ✓ REMOVED: $topic_name"
+      REMOVED_COUNT=$((REMOVED_COUNT + 1))
+    else
+      echo "  ✗ FAILED: $topic_name (removal error)"
+      FAILED_COUNT=$((FAILED_COUNT + 1))
+    fi
+  done
 
-**Objective**: Verify cleanup completed successfully
+  echo ""
+  echo "Cleanup summary:"
+  echo "  Removed: $REMOVED_COUNT"
+  echo "  Skipped: $SKIPPED_COUNT"
+  echo "  Failed: $FAILED_COUNT"
+  echo ""
 
-Tasks:
-- [ ] Verify all project directories moved to archive
-- [ ] Verify manifest contains all project metadata
-- [ ] Verify TODO.md updated correctly
-- [ ] Generate cleanup summary report
-
-## Projects to Archive
-
-"
-
-  # List projects
-  while IFS= read -r line; do
-    local topic_name title
-    topic_name=$(echo "$line" | cut -d'|' -f1)
-    title=$(echo "$line" | cut -d'|' -f2)
-    [ -z "$topic_name" ] || [ "$topic_name" = "null" ] && continue
-    plan_content+="- **${title}** - ${specs_root}/${topic_name}\n"
-  done < <(echo "$projects_json" | jq -r '.[] | "\(.topic_name)|\(.title)"')
-
-  plan_content+="
-## Safety Measures
-
-- Archive (not delete) all projects
-- Create manifest with full metadata
-- Backup TODO.md before modifications
-- Log all operations for audit
-
-## Notes
-
-This plan was generated by /todo --clean command.
-Execute with /build to perform cleanup.
-"
-
-  echo -e "$plan_content"
+  return 0
 }
 
 # ============================================================================
@@ -882,4 +922,6 @@ export -f generate_completed_date_header
 export -f update_todo_file
 export -f validate_todo_structure
 export -f filter_completed_projects
-export -f generate_cleanup_plan
+export -f has_uncommitted_changes
+export -f create_cleanup_git_commit
+export -f execute_cleanup_removal
