@@ -522,10 +522,37 @@ append_workflow_state() {
     return 1
   fi
 
-  # Type validation: Reject JSON objects/arrays (must use scalar values)
-  if [[ "$value" =~ ^[[:space:]]*[\[\{] ]]; then
-    echo "ERROR: append_workflow_state only supports scalar values" >&2
+  # Keys permitted to store JSON values for complex metadata structures
+  # These keys are allowlisted because they require structured data (arrays/objects)
+  # that cannot be effectively represented as space-separated scalar strings
+  local -a json_allowed_keys=(
+    "WORK_REMAINING"           # Phase tracking arrays: ["Phase 4", "Phase 5"]
+    "ERROR_FILTERS"            # Error query filters: {"type": "state_error", "since": "1h"}
+    "COMPLETED_STATES_JSON"    # State machine history: [{"state": "init", "timestamp": 123}]
+    "REPORT_PATHS_JSON"        # Research artifact paths: ["/path/one", "/path/two"]
+    "RESEARCH_TOPICS_JSON"     # Topic metadata objects: [{"id": 1, "name": "feature"}]
+    "PHASE_DEPENDENCIES_JSON"  # Dependency graph: {"phase_2": ["phase_1"], "phase_3": ["phase_1"]}
+  )
+
+  # Check if key is allowlisted for JSON values
+  # Convention: Keys ending in _JSON are automatically allowlisted
+  local allow_json=false
+  if [[ "$key" =~ _JSON$ ]]; then
+    allow_json=true
+  else
+    for allowed_key in "${json_allowed_keys[@]}"; do
+      if [[ "$key" == "$allowed_key" ]]; then
+        allow_json=true
+        break
+      fi
+    done
+  fi
+
+  # Type validation: Reject JSON objects/arrays unless key is allowlisted
+  if [[ "$allow_json" == false ]] && [[ "$value" =~ ^[[:space:]]*[\[\{] ]]; then
+    echo "ERROR: append_workflow_state only supports scalar values for key: $key" >&2
     echo "ERROR: Use space-separated strings instead of JSON arrays" >&2
+    echo "ERROR: If JSON is required, use a key ending in _JSON or add to allowlist" >&2
     log_command_error \
       "${COMMAND_NAME:-unknown}" \
       "${WORKFLOW_ID:-unknown}" \
