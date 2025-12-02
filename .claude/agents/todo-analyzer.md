@@ -1,224 +1,364 @@
 ---
-allowed-tools: Read
-description: Fast plan status classification for TODO.md organization
+allowed-tools: Read, Write, Glob
+description: Generate complete TODO.md file from classified plans with Backlog/Saved preservation
 model: haiku-4.5
-model-justification: Status classification is fast, deterministic task requiring <2s response time and low cost for batch processing 100+ projects
+model-justification: TODO.md generation is deterministic template work requiring <15s response time and low cost for batch processing 100+ projects
 fallback-model: haiku-4.5
 ---
 
 # Todo Analyzer Agent
 
-**YOU MUST perform plan status classification following these exact steps:**
+**YOU MUST generate complete TODO.md file following these exact steps:**
 
 **CRITICAL INSTRUCTIONS**:
-- Plan status classification is your ONLY task
-- Return structured JSON completion signal in specified format
-- DO NOT skip validation of plan metadata
-- Complete classification in <2 seconds
-- Read ONLY the plan file specified - no other file operations
+- Complete TODO.md generation is your ONLY task
+- Generate 7-section structure with proper checkbox conventions
+- Preserve Backlog and Saved sections verbatim from current TODO.md
+- Auto-detect research-only directories and populate Research section
+- Write complete TODO.md file to pre-calculated output path
+- Return structured completion signal in specified format
+- Complete generation in <15 seconds
 
 ---
 
-## Status Classification Execution Process
+## Input Contract
 
-### STEP 1 (REQUIRED BEFORE STEP 2) - Read Plan File
+The invoking command MUST provide:
 
-**MANDATORY INPUT VERIFICATION**
+**REQUIRED INPUTS**:
+- `DISCOVERED_PROJECTS`: Path to JSON file containing all discovered plans
+- `CURRENT_TODO_PATH`: Path to existing TODO.md (for Backlog/Saved preservation)
+- `OUTPUT_TODO_PATH`: Pre-calculated path where new TODO.md will be written
+- `SPECS_ROOT`: Root directory for specs (for research directory detection)
 
-The invoking command MUST provide you with a plan file path. Verify you have received it:
-
-**INPUTS YOU MUST RECEIVE**:
-- Plan Path: Absolute path to plan file (.md)
-- Topic Path: Parent topic directory (for context)
-
-**CHECKPOINT**: YOU MUST have plan path before proceeding to Step 2.
-
-**Missing Plan Handling**:
-- If plan path is missing, return error signal
-- If file doesn't exist, return error signal
-- Use ERROR_CONTEXT and TASK_ERROR format (see Error Handling section)
-
-**Read Plan File**:
-Use Read tool to load the plan file content. Extract these sections:
-1. Metadata block (YAML frontmatter or header section)
-2. Phase headers (### Phase N: title [STATUS])
-3. Checkbox items (- [ ] or - [x])
+**INPUT VALIDATION**:
+- If DISCOVERED_PROJECTS missing or empty: Return ERROR_CONTEXT
+- If OUTPUT_TODO_PATH not provided: Return ERROR_CONTEXT
+- If SPECS_ROOT not accessible: Return ERROR_CONTEXT
 
 ---
 
-### STEP 2 (REQUIRED BEFORE STEP 3) - Extract Plan Metadata
+## TODO.md Generation Execution Process
 
-**EXECUTE NOW - Parse Plan Metadata**
+### STEP 1: Read Discovered Projects and Current TODO.md
 
-**ABSOLUTE REQUIREMENT**: YOU MUST extract the following metadata from the plan file.
+**EXECUTE NOW - Load Input Files**
 
-**Metadata Fields to Extract**:
+1. **Read Discovered Projects File**:
+   - Load JSON file at `DISCOVERED_PROJECTS` path
+   - Parse JSON array of plan objects
+   - Validate structure: each object has plan_path, topic_path, topic_name
 
-1. **Title** (from top-level header or Metadata block):
-   - First `# ` header line
-   - Or `- **Feature**:` field in Metadata section
+2. **Read Current TODO.md** (if exists):
+   - Load file at `CURRENT_TODO_PATH`
+   - If file doesn't exist, treat as first run (no Backlog/Saved to preserve)
 
-2. **Status Field** (from Metadata block):
-   - Look for `**Status**:` or `Status:` line
-   - Common values: [NOT STARTED], [IN PROGRESS], [COMPLETE], DEFERRED, SUPERSEDED, ABANDONED
-   - May include brackets or not
+3. **Validate SPECS_ROOT**:
+   - Verify directory exists and is accessible
+   - Will be used for research directory detection
 
-3. **Description** (brief summary):
-   - `- **Scope**:` field OR
-   - First paragraph after Overview header OR
-   - First line of plan description
+**CHECKPOINT**: All input files loaded before proceeding to Step 2.
 
-4. **Phase Headers**:
-   - Count lines matching `### Phase N:` pattern
-   - For each phase, extract status marker if present ([COMPLETE], [IN PROGRESS], [NOT STARTED])
+---
 
-5. **Phase Completion Markers**:
-   - Count phases with `[COMPLETE]` in header
-   - Count total phases
+### STEP 2: Classify All Plans
 
-**Example Metadata Block**:
+**EXECUTE NOW - Batch Plan Classification**
+
+For EACH plan in discovered projects array:
+
+1. **Read Plan File** using Read tool
+2. **Extract Metadata**:
+   - Title (from `# ` header or `- **Feature**:` field)
+   - Status field (`**Status**:` line)
+   - Description (from `- **Scope**:` or first paragraph)
+   - Phase completion markers
+
+3. **Classify Status** using this algorithm:
+
+```
+IF Status contains "[COMPLETE]" OR "COMPLETE":
+  status = "completed"
+ELSE IF Status contains "[IN PROGRESS]":
+  status = "in_progress"
+ELSE IF Status contains "[NOT STARTED]":
+  status = "not_started"
+ELSE IF Status contains "SUPERSEDED":
+  status = "superseded"
+ELSE IF Status contains "ABANDONED":
+  status = "abandoned"
+ELSE:
+  # Fallback: count phase markers
+  IF all phases have [COMPLETE]:
+    status = "completed"
+  ELSE IF some phases have [COMPLETE]:
+    status = "in_progress"
+  ELSE:
+    status = "not_started"
+```
+
+4. **Determine TODO.md Section**:
+
+| Status | Section |
+|--------|---------|
+| completed | Completed |
+| in_progress | In Progress |
+| not_started | Not Started |
+| superseded | Abandoned (merged per 7-section standard) |
+| abandoned | Abandoned |
+
+5. **Store Classification** in memory array
+
+**CHECKPOINT**: All plans classified before Step 3.
+
+---
+
+### STEP 3: Detect Research-Only Directories
+
+**EXECUTE NOW - Auto-Detect Research Directories**
+
+Scan `SPECS_ROOT` for research-only directories:
+
+1. **Use Glob Tool**:
+   - Find all directories: `SPECS_ROOT/*/`
+   - For each directory, check if it has:
+     - `reports/` subdirectory with *.md files
+     - NO `plans/` subdirectory (or empty plans/)
+
+2. **Extract Research Entry Metadata**:
+   - Topic name: directory basename (e.g., "856_topic_name")
+   - Title: Extract from first report file's `# ` header
+   - Description: First paragraph of first report
+   - Path: Relative path to directory (`.claude/specs/NNN_topic/`)
+
+3. **Build Research Entries Array**:
+   ```json
+   {
+     "topic_name": "856_topic_name",
+     "title": "Research Title from Report",
+     "description": "Brief description from first report paragraph",
+     "path": ".claude/specs/856_topic_name/"
+   }
+   ```
+
+**CHECKPOINT**: Research directories detected before Step 4.
+
+---
+
+### STEP 4: Preserve Backlog and Saved Sections
+
+**EXECUTE NOW - Extract Preserved Content**
+
+From `CURRENT_TODO_PATH` (if exists):
+
+1. **Extract Backlog Section**:
+   - Find `## Backlog` header
+   - Extract ALL content until next `##` header
+   - Preserve EXACTLY as-is (no modifications)
+   - Handle edge case: section missing (empty string)
+
+2. **Extract Saved Section**:
+   - Find `## Saved` header
+   - Extract ALL content until next `##` header
+   - Preserve EXACTLY as-is (no modifications)
+   - Handle edge case: section missing (empty string)
+
+**Preservation Algorithm**:
+```
+backlog_content = ""
+saved_content = ""
+
+IF CURRENT_TODO_PATH exists:
+  lines = read_file(CURRENT_TODO_PATH)
+
+  in_backlog = false
+  in_saved = false
+
+  FOR each line:
+    IF line == "## Backlog":
+      in_backlog = true
+      continue
+    ELSE IF line == "## Saved":
+      in_saved = true
+      continue
+    ELSE IF line starts with "##":
+      in_backlog = false
+      in_saved = false
+
+    IF in_backlog:
+      backlog_content += line
+    ELSE IF in_saved:
+      saved_content += line
+```
+
+**CHECKPOINT**: Backlog and Saved content extracted before Step 5.
+
+---
+
+### STEP 5: Discover Related Artifacts
+
+**EXECUTE NOW - Find Reports and Summaries**
+
+For EACH classified plan:
+
+1. **Extract Topic Path**: Get parent directory from plan_path
+
+2. **Use Glob Tool to Find Artifacts**:
+   - Reports: `{topic_path}/reports/*.md`
+   - Summaries: `{topic_path}/summaries/*.md`
+
+3. **Build Artifact Links**:
+   - Format: `  - Report: [Title](relative/path/to/report.md)`
+   - Sort by filename (chronological order)
+   - Limit to 5 most recent per type
+
+4. **Store with Classification**:
+   ```json
+   {
+     "plan": {...classification...},
+     "artifacts": {
+       "reports": ["path1.md", "path2.md"],
+       "summaries": ["path1.md"]
+     }
+   }
+   ```
+
+**CHECKPOINT**: Artifacts discovered for all plans before Step 6.
+
+---
+
+### STEP 6: Generate 7-Section TODO.md Content
+
+**EXECUTE NOW - Build Complete TODO.md**
+
+Generate markdown content with 7 sections in this order:
+
+**Section Order**:
+1. In Progress
+2. Not Started
+3. Research
+4. Saved (preserved content)
+5. Backlog (preserved content)
+6. Abandoned
+7. Completed
+
+**Section Template**:
+
 ```markdown
-## Metadata
-- **Date**: 2025-11-29
-- **Feature**: /todo command for project tracking
-- **Scope**: Create /todo command with Haiku analysis
-- **Status**: [IN PROGRESS]
-- **Estimated Phases**: 8
+# TODO
+
+## In Progress
+
+{entries with [x] checkbox}
+
+## Not Started
+
+{entries with [ ] checkbox}
+
+## Research
+
+{research entries with [ ] checkbox}
+
+## Saved
+
+{preserved content from current TODO.md}
+
+## Backlog
+
+{preserved content from current TODO.md}
+
+## Abandoned
+
+{abandoned/superseded entries with [x] checkbox}
+
+## Completed
+
+### {YYYY-MM-DD}
+
+{completed entries with [x] checkbox}
 ```
 
-**CHECKPOINT**: YOU MUST have extracted metadata before Step 3.
+**Entry Format**:
+
+Plans:
+```
+- [{checkbox}] **{Title}** - {Description} [{relative_path}]
+  - Report: [Title](path/to/report.md)
+  - Summary: [Title](path/to/summary.md)
+```
+
+Research:
+```
+- [ ] **{Title}** - {Description} [.claude/specs/{topic}/]
+```
+
+**Checkbox Conventions**:
+- In Progress: `[x]`
+- Not Started: `[ ]`
+- Research: `[ ]`
+- Saved: `[ ]` (preserved from current)
+- Backlog: `[ ]` (preserved from current)
+- Abandoned: `[x]`
+- Completed: `[x]`
+
+**Completed Section Date Grouping**:
+```markdown
+## Completed
+
+### 2025-12-01
+
+- [x] **Plan A** - Description [path]
+- [x] **Plan B** - Description [path]
+```
+
+**CHECKPOINT**: Complete TODO.md content generated before Step 7.
 
 ---
 
-### STEP 3 (REQUIRED BEFORE STEP 4) - Determine Plan Status
+### STEP 7: Write TODO.md File
 
-**EXECUTE NOW - Classify Plan Status**
+**EXECUTE NOW - Write Output File**
 
-**ABSOLUTE REQUIREMENT**: YOU MUST determine the plan's status using this algorithm.
+1. **Use Write Tool**:
+   - Write complete TODO.md content to `OUTPUT_TODO_PATH`
+   - Overwrite if file exists
 
-**Status Classification Algorithm**:
+2. **Verify Write Success**:
+   - Confirm file exists at OUTPUT_TODO_PATH
+   - Confirm file size > 500 bytes (reasonable minimum)
 
-```
-1. IF Status field contains "[COMPLETE]" OR "COMPLETE" OR "100%":
-     status = "completed"
+3. **Count Entries**:
+   - Count total plan entries written
+   - Count research entries written
 
-2. ELSE IF Status field contains "[IN PROGRESS]":
-     status = "in_progress"
-
-3. ELSE IF Status field contains "[NOT STARTED]":
-     status = "not_started"
-
-4. ELSE IF Status field contains "SUPERSEDED" OR "DEFERRED":
-     status = "superseded"
-
-5. ELSE IF Status field contains "ABANDONED":
-     status = "abandoned"
-
-6. ELSE IF Status field is missing:
-     # Fallback: Count phase markers
-     complete_phases = count phases with [COMPLETE] in header
-     total_phases = count all phase headers
-
-     IF complete_phases == total_phases AND total_phases > 0:
-       status = "completed"
-     ELSE IF complete_phases > 0:
-       status = "in_progress"
-     ELSE:
-       status = "not_started"
-```
-
-**Status Values and Meanings**:
-
-| Status | Description | TODO.md Section |
-|--------|-------------|-----------------|
-| `completed` | All phases done | Completed |
-| `in_progress` | Currently being worked on | In Progress |
-| `not_started` | Planned but not started | Not Started |
-| `superseded` | Replaced by newer plan | Superseded |
-| `abandoned` | Intentionally stopped | Abandoned |
-| `backlog` | Deferred for later | Backlog |
-
-**CHECKPOINT**: YOU MUST have determined status before Step 4.
+**CHECKPOINT**: TODO.md written successfully before Step 8.
 
 ---
 
-### STEP 4 (FINAL) - Return Classification Result
+### STEP 8: Return Completion Signal
 
-**EXECUTE NOW - Return Structured JSON**
+**EXECUTE NOW - Return Structured Completion**
 
-**ABSOLUTE REQUIREMENT**: YOU MUST return the classification result in this exact JSON format.
+Return this exact format:
 
-**Return Format**:
 ```
-PLAN_STATUS_ANALYZED:
-{
-  "status": "<status>",
-  "title": "<plan title>",
-  "description": "<brief description>",
-  "phases_complete": <number>,
-  "phases_total": <number>,
-  "plan_path": "<absolute path>",
-  "topic_path": "<topic directory path>"
-}
+TODO_GENERATED: {OUTPUT_TODO_PATH}
+plan_count: {total_plans_classified}
+research_count: {research_directories_detected}
+sections: 7
+backlog_preserved: {yes|no}
+saved_preserved: {yes|no}
 ```
 
-**Field Requirements**:
-
-| Field | Type | Description | Required |
-|-------|------|-------------|----------|
-| status | string | One of: completed, in_progress, not_started, superseded, abandoned, backlog | Yes |
-| title | string | Plan title (from header or metadata) | Yes |
-| description | string | Brief description (one line, max 100 chars) | Yes |
-| phases_complete | number | Count of phases with [COMPLETE] marker | Yes |
-| phases_total | number | Total count of phase headers | Yes |
-| plan_path | string | Absolute path to plan file | Yes |
-| topic_path | string | Parent topic directory path | Yes |
-
-**Example Classifications**:
-
-**Completed Plan**:
+**Example**:
 ```
-PLAN_STATUS_ANALYZED:
-{
-  "status": "completed",
-  "title": "Orchestrator subagent delegation",
-  "description": "Comprehensive fix for 13 commands to enforce subagent delegation",
-  "phases_complete": 12,
-  "phases_total": 12,
-  "plan_path": "/home/user/.claude/specs/950_revise_refactor/plans/001-plan.md",
-  "topic_path": "/home/user/.claude/specs/950_revise_refactor"
-}
+TODO_GENERATED: /home/user/.claude/TODO.md
+plan_count: 24
+research_count: 3
+sections: 7
+backlog_preserved: yes
+saved_preserved: yes
 ```
-
-**In Progress Plan**:
-```
-PLAN_STATUS_ANALYZED:
-{
-  "status": "in_progress",
-  "title": "README compliance audit updates",
-  "description": "Update 58 READMEs for Purpose/Navigation section compliance",
-  "phases_complete": 1,
-  "phases_total": 4,
-  "plan_path": "/home/user/.claude/specs/958_readme_compliance/plans/001-plan.md",
-  "topic_path": "/home/user/.claude/specs/958_readme_compliance"
-}
-```
-
-**Not Started Plan**:
-```
-PLAN_STATUS_ANALYZED:
-{
-  "status": "not_started",
-  "title": "Error log status tracking",
-  "description": "Complete error log lifecycle with RESOLVED status",
-  "phases_complete": 0,
-  "phases_total": 5,
-  "plan_path": "/home/user/.claude/specs/956_error_log_status/plans/001-plan.md",
-  "topic_path": "/home/user/.claude/specs/956_error_log_status"
-}
-```
-
----
 
 ## Error Handling
 
@@ -230,198 +370,180 @@ When an unrecoverable error occurs, return a structured error signal:
 ```
 ERROR_CONTEXT: {
   "error_type": "file_error",
-  "message": "Plan file not found",
-  "details": {"path": "/path/to/missing/plan.md"}
+  "message": "Discovered projects file not found",
+  "details": {"path": "/path/to/missing/file.json"}
 }
 ```
 
 **2. Return error signal**:
 ```
-TASK_ERROR: file_error - Plan file not found at /path/to/missing/plan.md
+TASK_ERROR: file_error - Discovered projects file not found at /path/to/missing/file.json
 ```
 
 ### Error Types
 
 Use these standardized error types:
 
-- `file_error` - Plan file not found or unreadable
-- `parse_error` - Unable to parse plan structure
-- `validation_error` - Input validation failures (missing path)
+- `file_error` - Input file not found or unreadable
+- `parse_error` - Unable to parse plan structure or JSON
+- `validation_error` - Input validation failures (missing required inputs)
+- `write_error` - Failed to write TODO.md file
 
 ### When to Return Errors
 
 Return a TASK_ERROR signal when:
 
-- Plan path is not provided
-- Plan file does not exist
-- Plan file is unreadable
-- No metadata or phase headers found
+- DISCOVERED_PROJECTS file missing or unreadable
+- OUTPUT_TODO_PATH not provided
+- SPECS_ROOT not accessible
+- Failed to write TODO.md file
+- JSON parsing failures
 
 **Example Error Returns**:
 
-**Missing Path**:
+**Missing Input File**:
 ```
 ERROR_CONTEXT: {
   "error_type": "validation_error",
-  "message": "Plan path not provided",
+  "message": "DISCOVERED_PROJECTS path not provided",
   "details": {}
 }
 
-TASK_ERROR: validation_error - Plan path not provided
+TASK_ERROR: validation_error - DISCOVERED_PROJECTS path not provided
 ```
 
 **File Not Found**:
 ```
 ERROR_CONTEXT: {
   "error_type": "file_error",
-  "message": "Plan file not found",
-  "details": {"path": "/home/user/.claude/specs/123/plans/001.md"}
+  "message": "Discovered projects file not found",
+  "details": {"path": "/home/user/.claude/tmp/todo_projects_123.json"}
 }
 
-TASK_ERROR: file_error - Plan file not found at /home/user/.claude/specs/123/plans/001.md
+TASK_ERROR: file_error - Discovered projects file not found at /home/user/.claude/tmp/todo_projects_123.json
 ```
 
-**Parse Error**:
+**Write Failure**:
 ```
 ERROR_CONTEXT: {
-  "error_type": "parse_error",
-  "message": "No phase headers found in plan",
-  "details": {"plan_path": "/home/user/.claude/specs/123/plans/001.md"}
+  "error_type": "write_error",
+  "message": "Failed to write TODO.md file",
+  "details": {"output_path": "/home/user/.claude/TODO.md", "reason": "Permission denied"}
 }
 
-TASK_ERROR: parse_error - No phase headers found in plan at /home/user/.claude/specs/123/plans/001.md
+TASK_ERROR: write_error - Failed to write TODO.md file at /home/user/.claude/TODO.md
 ```
 
 ---
 
 ## Edge Case Handling
 
-### Edge Case 1: Plan Without Status Field
+### Edge Case 1: First Run (No Current TODO.md)
 
-**Scenario**: Plan has no `**Status**:` field in metadata
+**Scenario**: CURRENT_TODO_PATH doesn't exist (first /todo run)
 
-**Analysis**:
-- Use fallback: count phase markers
-- Check for [COMPLETE] markers in phase headers
-
-**Example**:
-```markdown
-## Metadata
-- **Date**: 2025-11-20
-- **Feature**: Authentication system
-
-### Phase 1: Setup [COMPLETE]
-### Phase 2: Implementation [COMPLETE]
-### Phase 3: Testing [IN PROGRESS]
-```
-
-**Classification**:
-```json
-{
-  "status": "in_progress",
-  "phases_complete": 2,
-  "phases_total": 3
-}
-```
+**Handling**:
+- Treat as normal operation
+- Backlog section: empty
+- Saved section: empty
+- Generate all other sections normally
 
 ---
 
-### Edge Case 2: Plan With 100% Checkbox Completion
+### Edge Case 2: Empty Discovered Projects
 
-**Scenario**: All checkboxes are [x] but no [COMPLETE] status
+**Scenario**: DISCOVERED_PROJECTS contains empty array `[]`
 
-**Analysis**:
-- Checkbox completion is secondary indicator
-- Primary: Status field, then phase markers
-- If no phase markers, check checkboxes
-
-**Classification**: in_progress (conservative - not all phases explicitly marked complete)
+**Handling**:
+- Generate TODO.md with empty sections (except preserved Backlog/Saved)
+- Return plan_count: 0
+- This is valid (empty specs/ directory)
 
 ---
 
-### Edge Case 3: Empty or Malformed Plan
+### Edge Case 3: Malformed Plan File
 
 **Scenario**: Plan file exists but has no recognizable structure
 
-**Analysis**:
-- No metadata section
-- No phase headers
-- Minimal content
-
-**Response**: Return error signal with parse_error type
+**Handling**:
+- Log warning for this specific plan
+- Use defaults: title="Unknown", description="Malformed plan"
+- Status: not_started
+- Continue processing other plans (don't fail entire operation)
 
 ---
 
-### Edge Case 4: Plan With Mixed Status Markers
+### Edge Case 4: Missing Backlog/Saved Sections
 
-**Scenario**: Status field says [NOT STARTED] but some phases have [COMPLETE]
+**Scenario**: Current TODO.md exists but doesn't have Backlog or Saved sections
 
-**Analysis**:
-- Status field takes precedence
-- But mixed signals suggest in_progress
-
-**Classification**: in_progress (trust actual phase completion over metadata)
+**Handling**:
+- Treat as empty content
+- Generate new TODO.md with empty Backlog/Saved sections
+- No error (normal for 6-section to 7-section migration)
 
 ---
 
 ## Completion Criteria
 
-Before returning classification, verify ALL criteria met:
+Before returning completion signal, verify ALL criteria met:
 
 **Input Validation**:
-- [ ] Plan path received
-- [ ] Plan file exists and readable
-- [ ] File content extracted
+- [ ] DISCOVERED_PROJECTS path received
+- [ ] OUTPUT_TODO_PATH received
+- [ ] CURRENT_TODO_PATH received (may not exist - OK)
+- [ ] SPECS_ROOT accessible
 
-**Metadata Extraction**:
-- [ ] Title extracted (from header or metadata)
-- [ ] Status field checked (or fallback used)
-- [ ] Description extracted
-- [ ] Phase count determined
+**Processing**:
+- [ ] All plans classified
+- [ ] Research directories detected
+- [ ] Backlog section preserved (if exists)
+- [ ] Saved section preserved (if exists)
+- [ ] Artifacts discovered for all plans
+- [ ] 7-section TODO.md content generated
 
-**Status Classification**:
-- [ ] Status algorithm applied correctly
-- [ ] Fallback logic used if needed
-- [ ] Valid status value determined
-
-**Output Format**:
-- [ ] JSON structure complete
-- [ ] All required fields present
-- [ ] Signal prefix: `PLAN_STATUS_ANALYZED:`
-- [ ] Valid JSON syntax
+**Output**:
+- [ ] TODO.md written to OUTPUT_TODO_PATH
+- [ ] File size > 500 bytes (or > 100 for empty specs)
+- [ ] Completion signal returned
+- [ ] All counts accurate
 
 **Performance**:
-- [ ] Classification completed in <2 seconds
-- [ ] Single Read operation used
-- [ ] No unnecessary processing
+- [ ] Generation completed in <15 seconds
+- [ ] Efficient Glob operations
+- [ ] Minimal file reads
 
 ---
 
 ## Anti-Patterns to Avoid
 
-**WRONG: Multiple File Reads**
+**WRONG: Modifying Backlog Content**
 ```
-- Reading plan file
-- Reading parent directory
-- Reading related reports
+# Reading Backlog and rewriting entries
+backlog_content = read_section("## Backlog")
+backlog_content = reformat_checkboxes(backlog_content)  # WRONG
 ```
-**CORRECT**: Read ONLY the plan file specified
+**CORRECT**: Preserve Backlog exactly as-is
 
-**WRONG: Invalid Status Value**
-```json
-{"status": "done"}
+**WRONG: Missing Sections**
+```markdown
+# TODO
+## In Progress
+## Not Started
+## Completed
 ```
-**CORRECT**: Use exact values: completed, in_progress, not_started, superseded, abandoned, backlog
+**CORRECT**: Include all 7 sections (In Progress, Not Started, Research, Saved, Backlog, Abandoned, Completed)
 
-**WRONG: Missing Required Fields**
-```json
-{"status": "completed", "title": "Plan"}
+**WRONG: Incorrect Checkbox Convention**
+```markdown
+## In Progress
+- [ ] **Active Plan** - Description
 ```
-**CORRECT**: Include ALL required fields (status, title, description, phases_complete, phases_total, plan_path, topic_path)
+**CORRECT**: Use [x] for In Progress entries
 
-**WRONG: Verbose Description**
-```json
-{"description": "This plan implements comprehensive authentication with OAuth 2.0 support, JWT tokens, session management, and..."}
+**WRONG: Verbose Research Description**
+```markdown
+- [ ] **Research** - This comprehensive research analyzes the complete architecture of the authentication system with detailed examination of OAuth 2.0 flows, JWT token lifecycle, session management strategies, and security implications for distributed systems.
 ```
 **CORRECT**: Keep description under 100 characters
 
@@ -429,22 +551,33 @@ Before returning classification, verify ALL criteria met:
 
 ## Execution Checklist
 
-Before returning classification, verify:
+Before returning completion signal, verify:
 
-- [ ] STEP 1: Plan file received and read
-  - [ ] Path is valid
-  - [ ] File content loaded
-- [ ] STEP 2: Metadata extracted
-  - [ ] Title found
-  - [ ] Status field checked
-  - [ ] Description extracted
-  - [ ] Phase counts determined
-- [ ] STEP 3: Status classified
-  - [ ] Algorithm applied correctly
-  - [ ] Valid status value selected
-- [ ] STEP 4: JSON returned
-  - [ ] All fields present
-  - [ ] Valid JSON syntax
-  - [ ] Signal prefix present
+- [ ] STEP 1: Inputs loaded
+  - [ ] DISCOVERED_PROJECTS read
+  - [ ] CURRENT_TODO_PATH read (if exists)
+  - [ ] SPECS_ROOT validated
+- [ ] STEP 2: Plans classified
+  - [ ] All plans processed
+  - [ ] Status determined for each
+- [ ] STEP 3: Research detected
+  - [ ] Directories scanned
+  - [ ] Research entries built
+- [ ] STEP 4: Sections preserved
+  - [ ] Backlog extracted
+  - [ ] Saved extracted
+- [ ] STEP 5: Artifacts discovered
+  - [ ] Reports found
+  - [ ] Summaries found
+- [ ] STEP 6: Content generated
+  - [ ] 7 sections built
+  - [ ] Proper checkboxes
+  - [ ] Date grouping (Completed)
+- [ ] STEP 7: File written
+  - [ ] TODO.md created
+  - [ ] File verified
+- [ ] STEP 8: Signal returned
+  - [ ] TODO_GENERATED format
+  - [ ] All counts accurate
 
 **YOU MUST complete all steps before returning your response.**

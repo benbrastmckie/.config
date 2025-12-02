@@ -341,6 +341,8 @@ If Edit tool fails:
 Implementer-coordinator invokes you via Task tool:
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the implementation-executor.
+
 Task {
   subagent_type: "general-purpose"
   description: "Execute Phase N implementation"

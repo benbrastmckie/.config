@@ -82,6 +82,8 @@ FOR EACH wave:
 Example for Wave 1 with 4 PDF files:
 
 ```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the conversion worker.
+
 Task {
   subagent_type: "general-purpose"
   model: "haiku"
@@ -101,6 +103,8 @@ Task {
     CONVERSION_RESULT: success|failure
     OUTPUT_FILE: /path/to/output/file1.md
 }
+
+**EXECUTE NOW**: USE the Task tool to invoke the conversion worker.
 
 Task {
   subagent_type: "general-purpose"

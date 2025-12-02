@@ -136,6 +136,12 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || true
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || true
 
+# Tier 3: Helper utilities (graceful degradation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load validation-utils.sh - required for workflow validation" >&2
+  exit 1
+}
+
 # Verify library versions
 check_library_requirements "$(cat <<'EOF'
 workflow-state-machine.sh: ">=2.0.0"
@@ -179,6 +185,9 @@ _flush_early_errors
 
 # Capture state file path for append_workflow_state
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+
+# CRITICAL: Export STATE_FILE immediately to make it available for append_workflow_state
+# This prevents "command not found" (exit 127) errors in subsequent blocks
 export STATE_FILE
 
 # Validate state file creation
@@ -260,82 +269,16 @@ export TOPIC_NAMING_INPUT_FILE
 echo "✓ Setup complete, ready for topic naming"
 ```
 
-## Block 1b: Topic Name Generation
+## Block 1b: Topic Name File Path Pre-Calculation
 
-**EXECUTE NOW**: Invoke the topic-naming-agent to generate a semantic directory name.
+**EXECUTE NOW**: Pre-calculate the absolute topic name output file path BEFORE invoking topic-naming-agent.
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Generate semantic topic directory name"
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-naming-agent.md
-
-    You are generating a topic directory name for: /plan command
-
-    **Input**:
-    - User Prompt: ${FEATURE_DESCRIPTION}
-    - Command Name: /plan
-    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
-
-    Execute topic naming according to behavioral guidelines:
-    1. Generate semantic topic name from user prompt
-    2. Validate format (^[a-z0-9_]{5,40}$)
-    3. Write topic name to OUTPUT_FILE_PATH using Write tool
-    4. Return completion signal: TOPIC_NAME_GENERATED: <generated_name>
-
-    If you encounter an error, return:
-    TASK_ERROR: <error_type> - <error_message>
-  "
-}
-
-**EXECUTE NOW**: Validate agent output file was created.
+This implements the **Hard Barrier Pattern** - the output path is calculated BEFORE agent invocation, passed as an explicit contract, and validated AFTER return.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
-# === RESTORE PROJECT DIRECTORY ===
-# CRITICAL: Detect project directory FIRST before using CLAUDE_PROJECT_DIR
-if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      if [ -d "$current_dir/.claude" ]; then
-        CLAUDE_PROJECT_DIR="$current_dir"
-        break
-      fi
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-  export CLAUDE_PROJECT_DIR
-fi
-
-# Load state for validation
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
-  exit 1
-fi
-
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID for validation" >&2
-  exit 1
-fi
-
-# State file naming convention: workflow_${WORKFLOW_ID}.sh (matches state-persistence.sh)
-# CRITICAL: Use CLAUDE_PROJECT_DIR to match init_workflow_state() path
-WORKFLOW_STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$WORKFLOW_STATE_FILE" ]; then
-  set +u  # Allow unbound variables during source
-  source "$WORKFLOW_STATE_FILE"
-  set -u  # Re-enable strict mode
-fi
-
-# Restore environment
+# === DETECT PROJECT DIRECTORY ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
   CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
@@ -349,11 +292,305 @@ else
   done
 fi
 
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
 export CLAUDE_PROJECT_DIR
 
-# Source error handling library for validation
+# === RESTORE STATE FROM BLOCK 1A ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
+  exit 1
+fi
+
+# Restore workflow state file
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS
+
+# Source libraries
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
-  echo "ERROR: Cannot load error-handling library" >&2
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === PRE-CALCULATE TOPIC NAME FILE PATH ===
+# CRITICAL: Calculate exact path BEFORE agent invocation (Hard Barrier Pattern)
+# This path will be passed as literal text to the agent and validated after
+TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+
+# Validate path is absolute
+if [[ "$TOPIC_NAME_FILE" =~ ^/ ]]; then
+  : # Path is absolute, continue
+else
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Calculated TOPIC_NAME_FILE is not absolute" \
+    "bash_block_1b" \
+    "$(jq -n --arg path "$TOPIC_NAME_FILE" '{topic_name_file: $path}')"
+  echo "ERROR: TOPIC_NAME_FILE is not absolute: $TOPIC_NAME_FILE" >&2
+  exit 1
+fi
+
+# Ensure parent directory exists
+mkdir -p "$(dirname "$TOPIC_NAME_FILE")" 2>/dev/null || true
+
+# === PATH MISMATCH DIAGNOSTIC ===
+# Verify STATE_FILE uses CLAUDE_PROJECT_DIR (not HOME) to prevent exit 127 errors
+# Skip PATH MISMATCH check when PROJECT_DIR is subdirectory of HOME (valid configuration)
+if [[ "$CLAUDE_PROJECT_DIR" =~ ^${HOME}/ ]]; then
+  # PROJECT_DIR legitimately under HOME - skip PATH MISMATCH validation
+  :
+elif [[ "$STATE_FILE" =~ ^${HOME}/ ]]; then
+  # Only flag as error if PROJECT_DIR is NOT under HOME but STATE_FILE uses HOME
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "PATH MISMATCH detected: STATE_FILE uses HOME instead of CLAUDE_PROJECT_DIR" \
+    "bash_block_1b" \
+    "$(jq -n --arg state_file "$STATE_FILE" --arg home "$HOME" --arg project_dir "$CLAUDE_PROJECT_DIR" \
+       '{state_file: $state_file, home: $home, project_dir: $project_dir, issue: "STATE_FILE must use CLAUDE_PROJECT_DIR"}')"
+
+  echo "ERROR: PATH MISMATCH - STATE_FILE uses HOME instead of CLAUDE_PROJECT_DIR" >&2
+  echo "  Current: $STATE_FILE" >&2
+  echo "  Expected: ${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh" >&2
+  exit 1
+fi
+
+# Persist for Block 1b-exec and Block 1c
+append_workflow_state "TOPIC_NAME_FILE" "$TOPIC_NAME_FILE" || {
+  echo "export TOPIC_NAME_FILE=\"$TOPIC_NAME_FILE\"" >> "$STATE_FILE"
+}
+
+echo ""
+echo "=== Topic Name File Path Pre-Calculation ==="
+echo "  Topic Name File: $TOPIC_NAME_FILE"
+echo "  Workflow ID: $WORKFLOW_ID"
+echo ""
+echo "Ready for topic-naming-agent invocation"
+```
+
+## Block 1b-exec: Topic Name Generation (Hard Barrier Invocation)
+
+**EXECUTE NOW**: USE the Task tool to invoke the topic-naming-agent for semantic topic directory naming.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Generate semantic topic directory name"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-naming-agent.md
+
+    You are generating a topic directory name for: /plan command
+
+    **Input Contract (Hard Barrier Pattern)**:
+    - Output Path: ${TOPIC_NAME_FILE}
+    - User Prompt: ${FEATURE_DESCRIPTION}
+    - Command Name: /plan
+
+    **CRITICAL**: You MUST write the topic name to the EXACT path specified above.
+    The orchestrator has pre-calculated this path and will validate it exists after you return.
+    Do NOT derive or calculate your own path.
+
+    Execute topic naming according to behavioral guidelines:
+    1. Generate semantic topic name from user prompt
+    2. Validate format (^[a-z0-9_]{5,40}$)
+    3. Write topic name to the Output Path specified above using Write tool
+    4. Return completion signal: TOPIC_NAME_GENERATED: <generated_name>
+
+    If you encounter an error, return:
+    TASK_ERROR: <error_type> - <error_message>
+  "
+}
+
+## Block 1c: Hard Barrier Validation
+
+**EXECUTE NOW**: Validate that topic-naming-agent created the output file at the pre-calculated path.
+
+This is the **hard barrier** - the workflow CANNOT proceed unless the topic name file exists. This prevents path mismatch issues.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1B ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Source validation utilities for agent artifact validation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load validation-utils.sh - required for workflow validation" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+echo ""
+echo "=== Topic Name Hard Barrier Validation ==="
+echo ""
+
+# === HARD BARRIER VALIDATION ===
+# Validate TOPIC_NAME_FILE is set (from Block 1b)
+if [ -z "${TOPIC_NAME_FILE:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "TOPIC_NAME_FILE not restored from Block 1b state" \
+    "bash_block_1c" \
+    "$(jq -n '{topic_name_file: "missing"}')"
+  echo "ERROR: TOPIC_NAME_FILE not set - state restoration failed" >&2
+  exit 1
+fi
+
+echo "Expected topic name file: $TOPIC_NAME_FILE"
+
+# HARD BARRIER: Validate agent artifact using validation-utils.sh
+# validate_agent_artifact checks file existence and minimum size (10 bytes)
+if ! validate_agent_artifact "$TOPIC_NAME_FILE" 10 "topic name"; then
+  # Error already logged by validate_agent_artifact
+  echo "ERROR: HARD BARRIER FAILED - Topic naming agent validation failed" >&2
+  echo "" >&2
+  echo "This indicates the topic-naming-agent did not create valid output." >&2
+  echo "The workflow will fall back to 'no_name_error' directory." >&2
+  echo "" >&2
+  echo "To retry: Re-run the /plan command with the same arguments" >&2
+  echo "" >&2
+
+  # Unlike research reports, topic naming failure is non-fatal
+  # Continue with fallback but log the error
+  echo "Falling back to no_name_error directory..." >&2
+else
+  echo "✓ Hard barrier passed - topic name file validated"
+fi
+
+echo ""
+```
+
+## Block 1d: Topic Path Initialization
+
+**EXECUTE NOW**: Parse topic name from agent output and initialize workflow paths.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1C ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 
@@ -487,7 +724,11 @@ setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
 TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
-TOPIC_NAME="no_name_error"
+
+# Improved fallback naming: timestamp + sanitized prompt prefix (max 30 chars)
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+SANITIZED_PROMPT=$(echo "$FEATURE_DESCRIPTION" | head -c 30 | tr -cs '[:alnum:]_' '_' | sed 's/_*$//')
+TOPIC_NAME="${TIMESTAMP}_${SANITIZED_PROMPT}"
 NAMING_STRATEGY="fallback"
 
 # Check if agent wrote output file
@@ -496,9 +737,9 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
   TOPIC_NAME=$(cat "$TOPIC_NAME_FILE" 2>/dev/null | tr -d '\n' | tr -d ' ')
 
   if [ -z "$TOPIC_NAME" ]; then
-    # File exists but is empty - agent failed
+    # File exists but is empty - agent failed, use fallback
     NAMING_STRATEGY="agent_empty_output"
-    TOPIC_NAME="no_name_error"
+    TOPIC_NAME="${TIMESTAMP}_${SANITIZED_PROMPT}"
   else
     # Validate topic name format (exit code capture pattern)
     echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
@@ -515,7 +756,7 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
         "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
 
       NAMING_STRATEGY="validation_failed"
-      TOPIC_NAME="no_name_error"
+      TOPIC_NAME="${TIMESTAMP}_${SANITIZED_PROMPT}"
     else
       # Valid topic name from LLM
       NAMING_STRATEGY="llm_generated"
@@ -526,20 +767,20 @@ else
   NAMING_STRATEGY="agent_no_output_file"
 fi
 
-# Log naming failure if we fell back to no_name
-if [ "$TOPIC_NAME" = "no_name_error" ]; then
+# Log naming failure if we used fallback (not LLM-generated)
+if [ "$NAMING_STRATEGY" != "llm_generated" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
     "$USER_ARGS" \
     "agent_error" \
-    "Topic naming agent failed or returned invalid name" \
+    "Topic naming agent failed, using fallback naming: $TOPIC_NAME" \
     "bash_block_1c" \
-    "$(jq -n --arg desc "$FEATURE_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" \
-       '{feature: $desc, fallback_reason: $strategy}')"
+    "$(jq -n --arg desc "$FEATURE_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" --arg fallback "$TOPIC_NAME" \
+       '{feature: $desc, fallback_reason: $strategy, fallback_name: $fallback}')"
 
   # Diagnostic output for troubleshooting
-  echo "DEBUG: Topic naming agent fallback reason: $NAMING_STRATEGY" >&2
+  echo "DEBUG: Topic naming agent fallback reason: $NAMING_STRATEGY (using: $TOPIC_NAME)" >&2
   echo "DEBUG: Expected file: $TOPIC_NAME_FILE" >&2
   ls -la "${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_"* 2>/dev/null || echo "DEBUG: No topic name files found" >&2
 fi
@@ -717,6 +958,12 @@ mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
 
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "PLAN_FILE" "TOPIC_PATH" "RESEARCH_DIR" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
+
 # === RESTORE ERROR LOGGING CONTEXT ===
 if [ -z "${COMMAND_NAME:-}" ]; then
   COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/plan")
@@ -892,13 +1139,14 @@ PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
 
 # Collect research report paths
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
-REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
+# Convert to space-separated format for state persistence (append_workflow_state_bulk expects KEY=value format)
+REPORT_PATHS_LIST=$(echo "$REPORT_PATHS" | tr '\n' ' ')
 
 # === PERSIST FOR BLOCK 3 (BULK OPERATION) ===
 # Use bulk append to reduce I/O overhead from 2 writes to 1 write
 append_workflow_state_bulk <<EOF
 PLAN_PATH=$PLAN_PATH
-REPORT_PATHS_JSON=$REPORT_PATHS_JSON
+REPORT_PATHS_LIST=$REPORT_PATHS_LIST
 EOF
 
 save_completed_states_to_state
@@ -915,6 +1163,39 @@ fi
 
 echo "Plan will be created at: $PLAN_PATH"
 echo "Using $REPORT_COUNT research reports"
+
+# === EXTRACT PROJECT STANDARDS ===
+# Source standards extraction library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/standards-extraction.sh" 2>/dev/null || {
+  log_command_error "file_error" "Failed to source standards-extraction library" "$(jq -n --arg path "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/standards-extraction.sh" '{library_path: $path}')"
+  echo "WARNING: Standards extraction unavailable, proceeding without standards" >&2
+  FORMATTED_STANDARDS=""
+}
+
+# Extract and format standards for prompt injection
+if [ -z "${FORMATTED_STANDARDS:-}" ]; then
+  FORMATTED_STANDARDS=$(format_standards_for_prompt 2>/dev/null) || {
+    log_command_error "execution_error" "Standards extraction failed" "{}"
+    echo "WARNING: Standards extraction failed, proceeding without standards" >&2
+    FORMATTED_STANDARDS=""
+  }
+fi
+
+# Persist standards for Block 3 divergence detection
+append_workflow_state "FORMATTED_STANDARDS<<STANDARDS_EOF
+$FORMATTED_STANDARDS
+STANDARDS_EOF"
+
+if ! save_completed_states_to_state; then
+  echo "WARNING: Failed to persist COMPLETED_STATES to state file" >&2
+fi
+
+if [ -n "$FORMATTED_STANDARDS" ]; then
+  STANDARDS_COUNT=$(echo "$FORMATTED_STANDARDS" | grep -c "^###" || echo 0)
+  echo "Extracted $STANDARDS_COUNT standards sections for plan-architect"
+else
+  echo "No standards extracted (graceful degradation)"
+fi
 ```
 
 **EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
@@ -931,13 +1212,18 @@ Task {
     **Workflow-Specific Context**:
     - Feature Description: ${FEATURE_DESCRIPTION}
     - Output Path: ${PLAN_PATH}
-    - Research Reports: ${REPORT_PATHS_JSON}
+    - Research Reports: ${REPORT_PATHS_LIST}
     - Workflow Type: research-and-plan
     - Operation Mode: new plan creation
     - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
     - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
 
+    **Project Standards**:
+    ${FORMATTED_STANDARDS}
+
     If an archived prompt file is provided (not 'none'), reference it for complete context.
+
+    IMPORTANT: If your planned approach conflicts with provided standards for well-motivated reasons, include Phase 0 to revise standards with clear justification and user warning. See Standards Divergence Protocol in plan-architect.md.
 
     Execute planning according to behavioral guidelines and return completion signal:
     PLAN_CREATED: ${PLAN_PATH}
@@ -1021,6 +1307,12 @@ DEBUG_LOG="${DEBUG_LOG:-${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_debug.log}"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
 load_workflow_state "$WORKFLOW_ID" false
+
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "PLAN_FILE" "TOPIC_PATH" "RESEARCH_DIR" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
 
 # === RESTORE ERROR LOGGING CONTEXT ===
 if [ -z "${COMMAND_NAME:-}" ]; then
@@ -1146,6 +1438,33 @@ if [ "$FILE_SIZE" -lt 500 ]; then
 fi
 
 echo "Plan verified: $FILE_SIZE bytes"
+
+# === DETECT PHASE 0 (STANDARDS DIVERGENCE) ===
+PHASE_0_DETECTED=false
+if grep -q "^### Phase 0: Standards Revision" "$PLAN_PATH" 2>/dev/null; then
+  PHASE_0_DETECTED=true
+
+  # Extract divergence metadata
+  DIVERGENCE_JUSTIFICATION=$(grep "^\- \*\*Divergence Justification\*\*:" "$PLAN_PATH" | sed 's/.*: //' || echo "See Phase 0 for details")
+  AFFECTED_SECTIONS=$(grep "^\- \*\*Standards Sections Affected\*\*:" "$PLAN_PATH" | sed 's/.*: //' || echo "See Phase 0")
+
+  echo ""
+  echo "⚠️  STANDARDS DIVERGENCE DETECTED"
+  echo "This plan proposes changes to project standards (see Phase 0)."
+  echo "Review carefully before proceeding with implementation."
+  echo ""
+  echo "Affected Sections: $AFFECTED_SECTIONS"
+  echo "Justification: $DIVERGENCE_JUSTIFICATION"
+  echo ""
+
+  # Persist divergence flag for summary
+  append_workflow_state "PHASE_0_DETECTED=true"
+  append_workflow_state "DIVERGENCE_JUSTIFICATION=$DIVERGENCE_JUSTIFICATION"
+  if ! save_completed_states_to_state; then
+    echo "WARNING: Failed to persist COMPLETED_STATES to state file" >&2
+  fi
+fi
+
 echo ""
 
 # === COMPLETE WORKFLOW ===
@@ -1198,10 +1517,16 @@ ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)
 # Build next steps
 NEXT_STEPS="  • Review plan: cat $PLAN_PATH
   • Begin implementation: /build $PLAN_PATH
-  • Review research: ls -lh $RESEARCH_DIR/"
+  • Review research: ls -lh $RESEARCH_DIR/
+  • Run /todo to update TODO.md (adds plan to tracking)"
 
 # Print standardized summary (no phases for plan command)
 print_artifact_summary "Plan" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
+
+# Emit completion reminder
+echo ""
+echo "📋 Next Step: Run /todo to update TODO.md with this plan"
+echo ""
 
 # === RETURN PLAN_CREATED SIGNAL ===
 # Signal enables buffer-opener hook and orchestrator detection

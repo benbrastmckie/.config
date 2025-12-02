@@ -308,16 +308,21 @@ For each bloated section from CLAUDE.md analysis:
 **Bloat Risk**: [LOW|MEDIUM|HIGH] based on bloat analysis report
 
 **Tasks**:
-- [ ] **Size validation** (BEFORE extraction):
+- [ ] **Size validation and risk assessment** (BEFORE extraction):
   - Check current size of target file: .claude/docs/[category]/[filename].md
   - Calculate extraction size: [X] lines
   - Project post-merge size: [current] + [X] = [projected] lines
-  - **STOP if projected size >400 lines** (bloat threshold exceeded)
+  - **Risk Assessment**:
+    - <300 lines: LOW (optimal) → Proceed with merge
+    - 300-400 lines: MODERATE (monitor growth) → Proceed with merge
+    - 400-600 lines: HIGH (readability concerns) → Proceed with merge, add post-merge review task
+    - >600 lines: CRITICAL (maintainability risk) → Recommend split before merge OR extract to new file
+  - **Guidance**: Proceed with extraction regardless of risk level (thresholds are advisory)
 - [ ] Extract lines [start]-[end] from CLAUDE.md
 - [ ] [CREATE|MERGE] .claude/docs/[category]/[filename].md with full content
-- [ ] **Post-merge size check**:
-  - Verify actual file size ≤400 lines
-  - If >400 lines, consider split before continuing
+- [ ] **Post-merge size assessment**:
+  - Calculate actual file size
+  - If >600 lines, add Phase [N+1]: Review [filename].md for split opportunities
 - [ ] Add frontmatter and navigation to new/updated file
 - [ ] Replace CLAUDE.md lines with summary:
   ```markdown
@@ -336,10 +341,12 @@ For each bloated section from CLAUDE.md analysis:
 # Verify file created/updated
 test -f .claude/docs/[category]/[filename].md
 
-# Verify size within threshold (400 lines)
+# Assess size risk (advisory thresholds)
 FILE_SIZE=$(wc -l < .claude/docs/[category]/[filename].md)
-if (( FILE_SIZE > 400 )); then
-  echo "WARNING: File size ($FILE_SIZE lines) exceeds bloat threshold (400 lines)"
+if (( FILE_SIZE > 600 )); then
+  echo "NOTE: File size ($FILE_SIZE lines) may benefit from split - review for logical boundaries"
+elif (( FILE_SIZE > 400 )); then
+  echo "NOTE: File size ($FILE_SIZE lines) exceeds optimal threshold - monitor for readability"
 fi
 
 # Verify link in CLAUDE.md
@@ -350,13 +357,13 @@ grep -q "^## [Section Name]" CLAUDE.md
 grep -q "**Summary**:" CLAUDE.md
 ```
 
-**Rollback** (if bloat threshold exceeded):
+**Post-Merge Review** (if file >600 lines):
 ```bash
-# Restore previous version
-git checkout HEAD -- .claude/docs/[category]/[filename].md
+# Review file for logical split boundaries
+# No immediate rollback required - advisory threshold only
 
-# Consider split operation instead
-# Create Phase [N].1: Split [filename].md into smaller files
+# If split recommended after review:
+# Create Phase [N+1]: Split [filename].md into smaller files
 ```
 ```
 

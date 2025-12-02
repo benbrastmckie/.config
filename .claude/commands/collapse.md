@@ -256,7 +256,7 @@ echo "[CHECKPOINT] Merge setup complete - ready for plan-architect invocation"
 **CRITICAL BARRIER**: This block MUST invoke plan-architect via Task tool.
 Verification block (4c) will FAIL if phase content not merged into parent plan.
 
-**EXECUTE NOW**: Invoke plan-architect subagent for phase collapse
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent for phase collapse
 
 Task {
   subagent_type: "general-purpose"
@@ -504,7 +504,7 @@ echo "[CHECKPOINT] Stage merge setup complete - ready for plan-architect invocat
 **CRITICAL BARRIER**: This block MUST invoke plan-architect via Task tool.
 Verification block (4c) will FAIL if stage content not merged into phase file.
 
-**EXECUTE NOW**: Invoke plan-architect subagent for stage collapse
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent for stage collapse
 
 Task {
   subagent_type: "general-purpose"
@@ -740,6 +740,8 @@ fi
 
 Use complexity_estimator for batch analysis (same pattern as /expand):
 
+**EXECUTE NOW**: USE the Task tool to invoke the complexity-estimator agent for complexity analysis.
+
 ```
 Task {
   subagent_type: "general-purpose"
@@ -783,6 +785,8 @@ agent_tasks=$(invoke_collapse_agents_parallel "$PLAN_PATH" "$agent_response")
 ```
 
 **Invoke Task tool in parallel for all agents:**
+
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent for parallel phase/stage collapse (invoke once per phase/stage).
 
 ```
 For each agent task, invoke Task tool concurrently (single message, multiple Task calls):

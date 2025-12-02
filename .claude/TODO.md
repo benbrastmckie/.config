@@ -2,33 +2,32 @@
 
 ## In Progress
 
+- [x] **Error Repair Implementation** - Fix 140 logged errors across 7 patterns affecting 10 commands [.claude/specs/983_repair_20251130_100233/plans/001-repair-20251130-100233-plan.md]
+  - Report: [001_Error_Analysis](.claude/specs/983_repair_20251130_100233/reports/001_error_analysis.md)
+  - Report: [002_Simplification_Analysis](.claude/specs/983_repair_20251130_100233/reports/002_simplification_analysis.md)
+  - Summary: [001 Implementation Iteration 1 Summary](.claude/specs/983_repair_20251130_100233/summaries/001-implementation-iteration-1-summary.md)
+
 ## Not Started
 
 - [ ] **.claude/ Infrastructure Refactor** - Systematic refactor of .claude/ infrastructure aligned with Anthropic 2025 best practices [.claude/specs/000_claude_infrastructure_refactor/plans/001-claude-infrastructure-refactor-plan.md]
   - Report: [001 Infrastructure Refactor Analysis](.claude/specs/000_claude_infrastructure_refactor/reports/001-infrastructure-refactor-analysis.md)
-- [ ] **Git-Based TODO.md Backup Migration** - Replace file-based TODO.md backups with git commits for cleaner filesystem and better recovery [.claude/specs/001_git_backup_todo_cleanup/plans/001-git-backup-todo-cleanup-plan.md]
-  - Report: [001 Backup Patterns Analysis](.claude/specs/001_git_backup_todo_cleanup/reports/001-backup-patterns-analysis.md)
-  - Summary: [001 Implementation Summary](.claude/specs/001_git_backup_todo_cleanup/summaries/001-implementation-summary.md)
-- [ ] **/research Command Error Repair** - Fix systematic runtime errors in /research command affecting workflow initialization and state restoration [.claude/specs/005_repair_research_20251201_212513/plans/001-repair-research-20251201-212513-plan.md]
-  - Report: [001 Research Errors Repair](.claude/specs/005_repair_research_20251201_212513/reports/001-research-errors-repair.md)
-  - Summary: [001 Implementation Summary](.claude/specs/005_repair_research_20251201_212513/summaries/001-implementation-summary.md)
-- [ ] **Nested .claude/ Directory Creation Fix** - Fix incorrect CLAUDE_PROJECT_DIR path detection in test scripts [.claude/specs/012_nested_claude_dir_creation_fix/plans/001-nested-claude-dir-creation-fix-plan.md]
-  - Report: [001 Root Cause Analysis](.claude/specs/012_nested_claude_dir_creation_fix/reports/001-root-cause-analysis.md)
+- [ ] **Fix /repair Command Error Logging Issues** - Fix /repair command state persistence, error logging, and workflow transition issues [.claude/specs/018_repair_repair_20251202_120554/plans/001-repair-repair-20251202-120554-plan.md]
+  - Report: [001 Repair Errors Repair](.claude/specs/018_repair_repair_20251202_120554/reports/001-repair-errors-repair.md)
 
 ## Research
 
 Research-only projects (reports without implementation plans):
 
 - [ ] **TODO.md Update Integration Analysis** - Comprehensive analysis of TODO.md update integration across all artifact-creating commands [.claude/specs/002_todo_update_integration_gaps/]
-  - Report: [001-review-todomd-update-integration-across.md](.claude/specs/002_todo_update_integration_gaps/reports/001-review-todomd-update-integration-across.md)
+  - Report: [001 TODO.md Update Integration Analysis](.claude/specs/002_todo_update_integration_gaps/reports/001-review-todomd-update-integration-across.md)
 
 - [ ] **Command Infrastructure Uniformity Analysis** - Analysis of command infrastructure uniformity across .claude/commands/ [.claude/specs/989_no_name_error/]
-  - Report: [001-research-the-commands-in-claudecommand.md](.claude/specs/989_no_name_error/reports/001-research-the-commands-in-claudecommand.md)
-  - Report: [002-look-up-the-best-practices-for-prompt-an.md](.claude/specs/989_no_name_error/reports/002-look-up-the-best-practices-for-prompt-an.md)
-  - Report: [003-research-the-information-provided-in.md](.claude/specs/989_no_name_error/reports/003-research-the-information-provided-in.md)
+  - Report: [001 Research the Commands in Claude Commands](.claude/specs/989_no_name_error/reports/001-research-the-commands-in-claudecommand.md)
+  - Report: [002 Look Up Best Practices for Prompt Engineering](.claude/specs/989_no_name_error/reports/002-look-up-the-best-practices-for-prompt-an.md)
+  - Report: [003 Research the Information Provided In](.claude/specs/989_no_name_error/reports/003-research-the-information-provided-in.md)
 
 - [ ] **Command-Level TODO.md Tracking Integration Specification** - Specification for command TODO.md tracking integration via delegation pattern [.claude/specs/990_commands_todo_tracking_integration/]
-  - Report: [001-i-want-all-commands-in-claudecommands.md](.claude/specs/990_commands_todo_tracking_integration/reports/001-i-want-all-commands-in-claudecommands.md)
+  - Report: [001 I Want All Commands in Claude Commands](.claude/specs/990_commands_todo_tracking_integration/reports/001-i-want-all-commands-in-claudecommands.md)
 
 ## Saved
 
@@ -55,24 +54,35 @@ Research-only projects (reports without implementation plans):
 
 ## Completed
 
-### 2025-12-01
+### 2025-12-02
 
-- [x] **Repair Plan Standards Enforcement** - Enforce uniform plan metadata standards across all plan-generating commands [.claude/specs/010_repair_plan_standards_enforcement/plans/001-repair-plan-standards-enforcement-plan.md]
-  - Report: [001 Repair Plan Standards Analysis](.claude/specs/010_repair_plan_standards_enforcement/reports/001-repair-plan-standards-analysis.md)
-- [x] **Error Repair Implementation** - Fix 140 logged errors across 7 patterns affecting 10 commands [.claude/specs/983_repair_20251130_100233/plans/001-repair-20251130-100233-plan.md]
-  - Report: [001_Error_Analysis](.claude/specs/983_repair_20251130_100233/reports/001_error_analysis.md)
-  - Report: [002_Simplification_Analysis](.claude/specs/983_repair_20251130_100233/reports/002_simplification_analysis.md)
-  - Summary: [001 Implementation Iteration 1 Summary](.claude/specs/983_repair_20251130_100233/summaries/001-implementation-iteration-1-summary.md)
-
+- [x] **Git-Based TODO.md Backup Migration** - Replace file-based TODO.md backups with git commits for cleaner filesystem and better recovery [.claude/specs/001_git_backup_todo_cleanup/plans/001-git-backup-todo-cleanup-plan.md]
+  - Report: [001 Backup Patterns Analysis](.claude/specs/001_git_backup_todo_cleanup/reports/001-backup-patterns-analysis.md)
+  - Summary: [001 Implementation Summary](.claude/specs/001_git_backup_todo_cleanup/summaries/001-implementation-summary.md)
 - [x] **/todo Command Subagent Delegation** - Refactor /todo command to enforce hard barrier subagent delegation pattern [.claude/specs/004_todo_command_subagent_delegation/plans/001-todo-command-subagent-delegation-plan.md]
   - Report: [001 Todo Command Subagent Delegation Analysis](.claude/specs/004_todo_command_subagent_delegation/reports/001-todo-command-subagent-delegation-analysis.md)
   - Summary: [001 Implementation Summary](.claude/specs/004_todo_command_subagent_delegation/summaries/001-implementation-summary.md)
+- [x] **/research Command Error Repair** - Fix systematic runtime errors in /research command affecting workflow initialization and state restoration [.claude/specs/005_repair_research_20251201_212513/plans/001-repair-research-20251201-212513-plan.md]
+  - Report: [001 Research Errors Repair](.claude/specs/005_repair_research_20251201_212513/reports/001-research-errors-repair.md)
+  - Summary: [001 Implementation Summary](.claude/specs/005_repair_research_20251201_212513/summaries/001-implementation-summary.md)
 - [x] **Plan Command Orchestration Fix** - Fix pseudo-code Task invocations across all workflow commands (system-wide) [.claude/specs/006_plan_command_orchestration_fix/plans/001-plan-command-orchestration-fix-plan.md]
   - Report: [001 Plan Command Orchestration Failure](.claude/specs/006_plan_command_orchestration_fix/reports/001-plan-command-orchestration-failure.md)
 - [x] **Fix Lean Infoview Keybinding** - Fix non-functional Lean infoview toggle keybinding [.claude/specs/009_nvim_lean_keybinding_infoview/plans/001-nvim-lean-keybinding-infoview-plan.md]
-  - Report: [Research_Report](.claude/specs/009_nvim_lean_keybinding_infoview/reports/research_report.md)
+  - Report: [Research Report](.claude/specs/009_nvim_lean_keybinding_infoview/reports/research_report.md)
+- [x] **Repair Plan Standards Enforcement** - Enforce uniform plan metadata standards across all plan-generating commands [.claude/specs/010_repair_plan_standards_enforcement/plans/001-repair-plan-standards-enforcement-plan.md]
+  - Report: [001 Repair Plan Standards Analysis](.claude/specs/010_repair_plan_standards_enforcement/reports/001-repair-plan-standards-analysis.md)
 - [x] **/plan Errors Repair** - Repair /plan command error logging and state management issues [.claude/specs/011_repair_plan_20251202_090807/plans/001-repair-plan-20251202-090807-plan.md]
   - Report: [001 Plan Errors Repair](.claude/specs/011_repair_plan_20251202_090807/reports/001-plan-errors-repair.md)
+- [x] **Nested .claude/ Directory Creation Fix** - Fix incorrect CLAUDE_PROJECT_DIR path detection in test scripts [.claude/specs/012_nested_claude_dir_creation_fix/plans/001-nested-claude-dir-creation-fix-plan.md]
+  - Report: [001 Root Cause Analysis](.claude/specs/012_nested_claude_dir_creation_fix/reports/001-root-cause-analysis.md)
+- [x] **Plan Command Dropdown Duplicates** - Eliminate triple /plan command entries in Claude Code dropdown menu [.claude/specs/013_plan_command_dropdown_duplicates/plans/001-plan-command-dropdown-duplicates-plan.md]
+  - Report: [001 Plan Command Triplication Root Cause Analysis](.claude/specs/013_plan_command_dropdown_duplicates/reports/001-plan-command-triplication-root-cause-analysis.md)
+- [x] **/test Command Error Repair** - Fix /test command errors (ERR trap false positives and state machine complexity validation) [.claude/specs/014_repair_test_20251202_100545/plans/001-repair-test-20251202-100545-plan.md]
+  - Report: [001 Test Errors Repair](.claude/specs/014_repair_test_20251202_100545/reports/001-test-errors-repair.md)
+- [x] **Commands TODO.md Update Integration** - Systematic TODO.md update integration across all commands [.claude/specs/015_commands_todo_update_integration/plans/001-commands-todo-update-integration-plan.md]
+  - Report: [001 Commands TODO.md Update Integration Research](.claude/specs/015_commands_todo_update_integration/reports/001-commands-todo-update-integration.md)
+- [x] **TODO Command Invocation Fix** - Fix trigger_todo_update() to properly invoke /todo command [.claude/specs/016_todo_command_invocation_fix/plans/001-todo-command-invocation-fix-plan.md]
+  - Report: [001 TODO Command Invocation Analysis](.claude/specs/016_todo_command_invocation_fix/reports/001-todo-command-invocation-analysis.md)
 - [x] **/plan Command Error Fixes** - Fix /plan command bash syntax and state persistence errors [.claude/specs/019_repair_plan_20251201_211758/plans/001-repair-plan-20251201-211758-plan.md]
   - Report: [001 Plan Errors Repair](.claude/specs/019_repair_plan_20251201_211758/reports/001-plan-errors-repair.md)
   - Summary: [001 Implementation Summary](.claude/specs/019_repair_plan_20251201_211758/summaries/001-implementation-summary.md)
@@ -110,6 +120,9 @@ Research-only projects (reports without implementation plans):
 - [x] **TODO.md Update Pattern Fix** - Fix broken TODO.md update pattern across 5 commands [.claude/specs/997_todo_update_pattern_fix/plans/001-todo-update-pattern-fix-plan.md]
   - Report: [001 Todo Update Pattern Analysis](.claude/specs/997_todo_update_pattern_fix/reports/001-todo-update-pattern-analysis.md)
   - Summary: [001 Implementation Summary](.claude/specs/997_todo_update_pattern_fix/summaries/001-implementation-summary.md)
+- [x] **Fix /implement State Persistence Errors** - Fix /implement state persistence errors for WORK_REMAINING variable [.claude/specs/998_repair_implement_20251201_154205/plans/001-repair-implement-20251201-154205-plan.md]
+  - Report: [001 Implement Errors Repair](.claude/specs/998_repair_implement_20251201_154205/reports/001-implement-errors-repair.md)
+  - Report: [002 Plan Revision Insights](.claude/specs/998_repair_implement_20251201_154205/reports/002-plan-revision-insights.md)
 - [x] **/implement Command Persistence Enhancement** - Add /build-style persistence to /implement command [.claude/specs/999_build_implement_persistence/plans/001-build-implement-persistence-plan.md]
   - Report: [001 Build Implement Persistence Research](.claude/specs/999_build_implement_persistence/reports/001-build-implement-persistence-research.md)
   - Report: [002 Standards Compliance Review](.claude/specs/999_build_implement_persistence/reports/002-standards-compliance-review.md)

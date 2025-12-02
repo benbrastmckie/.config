@@ -35,10 +35,32 @@ Analyzes CLAUDE.md and .claude/docs/ structure to generate an optimization plan 
 
 ---
 
-## Block 1a: Setup and Initialization
+## Block 1a: Capture User Description
+
+**EXECUTE NOW**: Capture the user-provided description and flags.
+
+Replace `YOUR_DESCRIPTION_HERE` with the actual user input:
 
 ```bash
-set -euo pipefail
+set +H
+# Setup
+mkdir -p "${HOME}/.claude/tmp" 2>/dev/null || true
+TEMP_FILE="${HOME}/.claude/tmp/optimize_claude_arg_$(date +%s%N).txt"
+
+# Capture user description (Claude will substitute)
+echo "YOUR_DESCRIPTION_HERE" > "$TEMP_FILE"
+echo "$TEMP_FILE" > "${HOME}/.claude/tmp/optimize_claude_arg_path.txt"
+echo "Description captured to $TEMP_FILE"
+```
+
+---
+
+## Block 1b: Validate and Parse Arguments
+
+**EXECUTE NOW**: Read captured description, parse flags, and validate:
+
+```bash
+set +H
 
 # Project detection
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
@@ -61,46 +83,6 @@ fi
 
 export CLAUDE_PROJECT_DIR
 
-# Parse arguments
-THRESHOLD="balanced"  # Default threshold
-DRY_RUN=false
-ADDITIONAL_REPORTS=()
-OPTIMIZATION_DESCRIPTION="Optimize CLAUDE.md structure and documentation"
-
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --threshold)
-      THRESHOLD="$2"
-      shift 2
-      ;;
-    --aggressive)
-      THRESHOLD="aggressive"
-      shift
-      ;;
-    --balanced)
-      THRESHOLD="balanced"
-      shift
-      ;;
-    --conservative)
-      THRESHOLD="conservative"
-      shift
-      ;;
-    --dry-run)
-      DRY_RUN=true
-      shift
-      ;;
-    --file)
-      ADDITIONAL_REPORTS+=("$2")
-      shift 2
-      ;;
-    *)
-      echo "ERROR: Unknown flag: $1" >&2
-      echo "Usage: /optimize-claude [--threshold <aggressive|balanced|conservative>] [--dry-run] [--file <path>]" >&2
-      exit 1
-      ;;
-  esac
-done
-
 # Source libraries with suppression
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Cannot load error-handling library" >&2
@@ -116,29 +98,120 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2
 ensure_error_log_exists
 COMMAND_NAME="/optimize-claude"
 WORKFLOW_ID="optimize_claude_$(date +%s)"
-USER_ARGS="$OPTIMIZATION_DESCRIPTION"
-export COMMAND_NAME USER_ARGS WORKFLOW_ID
+export COMMAND_NAME WORKFLOW_ID
 
-# Validate threshold value
-if [[ "$THRESHOLD" != "aggressive" && "$THRESHOLD" != "balanced" && "$THRESHOLD" != "conservative" ]]; then
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "validation_error" \
-    "Invalid threshold value: $THRESHOLD (must be aggressive|balanced|conservative)" "threshold_validation" \
-    "{\"provided_threshold\": \"$THRESHOLD\", \"valid_values\": [\"aggressive\", \"balanced\", \"conservative\"]}"
-  echo "ERROR: Invalid threshold value: $THRESHOLD" >&2
-  echo "Valid values: aggressive, balanced, conservative" >&2
+# Read captured description
+PATH_FILE="${HOME}/.claude/tmp/optimize_claude_arg_path.txt"
+if [ -f "$PATH_FILE" ]; then
+  TEMP_FILE=$(cat "$PATH_FILE")
+else
+  TEMP_FILE="${HOME}/.claude/tmp/optimize_claude_arg.txt"  # Legacy fallback
+fi
+
+if [ -f "$TEMP_FILE" ]; then
+  DESCRIPTION=$(cat "$TEMP_FILE")
+else
+  echo "ERROR: Argument file not found" >&2
+  echo "Usage: /optimize-claude \"[description] [--threshold <profile>] [--dry-run] [--file <path>]\"" >&2
   exit 1
 fi
 
-# Validate additional report files
-for report_file in "${ADDITIONAL_REPORTS[@]}"; do
-  if [ ! -f "$report_file" ]; then
-    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
-      "Additional report file not found: $report_file" "file_validation" \
-      "{\"report_file\": \"$report_file\"}"
-    echo "ERROR: Report file not found: $report_file" >&2
+# Use default if empty
+if [ -z "$DESCRIPTION" ]; then
+  DESCRIPTION="Optimize CLAUDE.md structure and documentation"
+fi
+
+# Parse flags from description
+THRESHOLD="balanced"  # Default
+DRY_RUN=false
+ADDITIONAL_REPORTS=()
+
+# Extract --threshold flag
+if echo "$DESCRIPTION" | grep -qE '\--threshold\s+\w+'; then
+  THRESHOLD=$(echo "$DESCRIPTION" | grep -oE '\--threshold\s+\w+' | awk '{print $2}')
+  DESCRIPTION=$(echo "$DESCRIPTION" | sed -E 's/--threshold\s+\w+//g')
+fi
+
+# Extract shorthand threshold flags
+if echo "$DESCRIPTION" | grep -q '\--aggressive'; then
+  THRESHOLD="aggressive"
+  DESCRIPTION=$(echo "$DESCRIPTION" | sed 's/--aggressive//g')
+fi
+if echo "$DESCRIPTION" | grep -q '\--balanced'; then
+  THRESHOLD="balanced"
+  DESCRIPTION=$(echo "$DESCRIPTION" | sed 's/--balanced//g')
+fi
+if echo "$DESCRIPTION" | grep -q '\--conservative'; then
+  THRESHOLD="conservative"
+  DESCRIPTION=$(echo "$DESCRIPTION" | sed 's/--conservative//g')
+fi
+
+# Extract --dry-run flag
+if echo "$DESCRIPTION" | grep -q '\--dry-run'; then
+  DRY_RUN=true
+  DESCRIPTION=$(echo "$DESCRIPTION" | sed 's/--dry-run//g')
+fi
+
+# Extract --file flags (repeatable)
+while echo "$DESCRIPTION" | grep -qE '\--file\s+\S+'; do
+  FILE_PATH=$(echo "$DESCRIPTION" | grep -oE '\--file\s+\S+' | head -1 | awk '{print $2}')
+  ADDITIONAL_REPORTS+=("$FILE_PATH")
+  DESCRIPTION=$(echo "$DESCRIPTION" | sed -E "s/--file\s+\S+//1")  # Remove first occurrence
+done
+
+# Clean whitespace
+DESCRIPTION=$(echo "$DESCRIPTION" | xargs)
+
+# Validate threshold
+if [[ "$THRESHOLD" =~ ^(aggressive|balanced|conservative)$ ]]; then
+  : # Valid threshold, continue
+else
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$DESCRIPTION" "validation_error" \
+    "Invalid threshold profile: $THRESHOLD" "argument_validation" \
+    "{\"threshold\": \"$THRESHOLD\", \"valid_values\": [\"aggressive\", \"balanced\", \"conservative\"]}"
+  echo "ERROR: Invalid threshold '$THRESHOLD'. Valid values: aggressive, balanced, conservative" >&2
+  exit 1
+fi
+
+# Validate --file paths if provided
+for report_path in "${ADDITIONAL_REPORTS[@]}"; do
+  if [ ! -f "$report_path" ]; then
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$DESCRIPTION" "file_error" \
+      "Additional report file not found: $report_path" "argument_validation" \
+      "{\"file_path\": \"$report_path\"}"
+    echo "ERROR: Report file not found: $report_path" >&2
     exit 1
   fi
 done
+
+OPTIMIZATION_DESCRIPTION="$DESCRIPTION"
+USER_ARGS="$DESCRIPTION"
+export USER_ARGS
+
+echo "[CHECKPOINT] Argument parsing complete"
+echo "Context: WORKFLOW_ID=${WORKFLOW_ID}, THRESHOLD=${THRESHOLD}, DRY_RUN=${DRY_RUN}"
+echo "Ready for: Topic naming agent invocation"
+```
+
+---
+
+## Block 1c: Invoke Topic Naming Agent
+
+**EXECUTE NOW**: USE the Task tool to invoke topic naming agent and initialize workflow paths:
+
+```bash
+set +H
+
+# Re-source libraries for subprocess isolation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load error-handling library" >&2
+  exit 1
+}
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-initialization.sh" >&2
+  exit 1
+}
 
 # Persist OPTIMIZATION_DESCRIPTION for topic naming agent
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -195,7 +268,7 @@ echo "=== /optimize-claude: CLAUDE.md Optimization Workflow ==="
 
 ## Block 1b: Topic Name Generation
 
-**EXECUTE NOW**: Invoke the topic-naming-agent to generate a semantic directory name.
+**EXECUTE NOW**: USE the Task tool to invoke the topic-naming-agent for generate a semantic directory name.
 
 Task {
   subagent_type: "general-purpose"
@@ -268,7 +341,7 @@ setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 # === READ TOPIC NAME FROM AGENT OUTPUT FILE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
 TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
-TOPIC_NAME="no_name_error"
+TOPIC_NAME=""
 NAMING_STRATEGY="fallback"
 
 # Check if agent wrote output file
@@ -279,7 +352,6 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
   if [ -z "$TOPIC_NAME" ]; then
     # File exists but is empty - agent failed
     NAMING_STRATEGY="agent_empty_output"
-    TOPIC_NAME="no_name_error"
   else
     # Validate topic name format (exit code capture pattern)
     echo "$TOPIC_NAME" | grep -Eq '^[a-z0-9_]{5,40}$'
@@ -296,7 +368,7 @@ if [ -f "$TOPIC_NAME_FILE" ]; then
         "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
 
       NAMING_STRATEGY="validation_failed"
-      TOPIC_NAME="no_name_error"
+      TOPIC_NAME=""
     else
       # Valid topic name from LLM
       NAMING_STRATEGY="llm_generated"
@@ -307,17 +379,20 @@ else
   NAMING_STRATEGY="agent_no_output_file"
 fi
 
-# Log naming failure if we fell back to no_name
-if [ "$TOPIC_NAME" = "no_name_error" ]; then
+# Generate timestamp-based fallback if agent failed
+if [ -z "$TOPIC_NAME" ]; then
+  TOPIC_NAME="optimize_claude_$(date +%Y%m%d_%H%M%S)"
+  echo "NOTE: Using timestamp-based fallback name (agent failed: $NAMING_STRATEGY)"
+
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
     "$USER_ARGS" \
     "agent_error" \
-    "Topic naming agent failed or returned invalid name" \
+    "Topic naming agent failed or returned invalid name - using timestamp fallback" \
     "bash_block_1c" \
-    "$(jq -n --arg desc "$OPTIMIZATION_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" \
-       '{feature: $desc, fallback_reason: $strategy}')"
+    "$(jq -n --arg desc "$OPTIMIZATION_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" --arg fallback "$TOPIC_NAME" \
+       '{feature: $desc, fallback_reason: $strategy, fallback_name: $fallback}')"
 fi
 
 # Clean up temp file
@@ -327,7 +402,7 @@ rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
 CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
 
 # Initialize workflow paths with LLM-generated name (or fallback)
-initialize_workflow_paths "$OPTIMIZATION_DESCRIPTION" "optimize-claude" "1" "$CLASSIFICATION_JSON"
+initialize_workflow_paths "$OPTIMIZATION_DESCRIPTION" "research-and-plan" "1" "$CLASSIFICATION_JSON"
 INIT_EXIT=$?
 if [ $INIT_EXIT -ne 0 ]; then
   log_command_error \
@@ -373,8 +448,9 @@ if [ ! -d "$DOCS_DIR" ]; then
 fi
 
 # Setup complete
-echo "✓ Topic path initialized: $TOPIC_PATH"
-echo "✓ Workflow ID: $WORKFLOW_ID"
+echo "[CHECKPOINT] Topic path initialized"
+echo "Context: TOPIC_PATH=${TOPIC_PATH}, WORKFLOW_ID=${WORKFLOW_ID}, THRESHOLD=${THRESHOLD}"
+echo "Ready for: Stage 1 research agents"
 ```
 
 ---
@@ -382,6 +458,8 @@ echo "✓ Workflow ID: $WORKFLOW_ID"
 ## Block 2: Agent Execution with Inline Verification
 
 **Stage 1: Parallel Research** - Invoke research agents and verify
+
+**EXECUTE NOW**: USE the Task tool to invoke the claude-md-analyzer agent for CLAUDE.md structure analysis.
 
 ```
 Task {
@@ -403,6 +481,8 @@ Task {
     - Completion signal: REPORT_CREATED: [exact absolute path]
   "
 }
+
+**EXECUTE NOW**: USE the Task tool to invoke the docs-structure-analyzer agent for documentation structure analysis (second parallel task).
 
 Task {
   subagent_type: "general-purpose"
@@ -457,12 +537,16 @@ if [ ! -f "$REPORT_PATH_2" ]; then
   exit 1
 fi
 
-echo "✓ Research complete: CLAUDE.md analysis and docs structure analyzed"
+echo "[CHECKPOINT] Research complete (2 reports)"
+echo "Context: CLAUDE_MD_REPORT=${CLAUDE_MD_REPORT}, DOCS_STRUCTURE_REPORT=${DOCS_STRUCTURE_REPORT}"
+echo "Ready for: Analysis phase (bloat + accuracy)"
 ```
 
 ---
 
 **Stage 2: Parallel Analysis** - Invoke analysis agents and verify
+
+**EXECUTE NOW**: USE the Task tool to invoke the docs-bloat-analyzer agent for documentation bloat analysis.
 
 ```
 Task {
@@ -490,6 +574,8 @@ Task {
     - Completion signal: REPORT_CREATED: [exact absolute path]
   "
 }
+
+**EXECUTE NOW**: USE the Task tool to invoke the docs-accuracy-analyzer agent for documentation accuracy analysis.
 
 Task {
   subagent_type: "general-purpose"
@@ -540,12 +626,16 @@ if [ ! -f "$ACCURACY_REPORT_PATH" ]; then
   exit 1
 fi
 
-echo "✓ Analysis complete: Bloat and accuracy reports generated"
+echo "[CHECKPOINT] Analysis complete (2 reports)"
+echo "Context: BLOAT_REPORT=${BLOAT_REPORT_PATH}, ACCURACY_REPORT=${ACCURACY_REPORT_PATH}"
+echo "Ready for: Planning phase (cleanup-plan-architect)"
 ```
 
 ---
 
 **Stage 3: Sequential Planning** - Invoke planning agent and verify
+
+**EXECUTE NOW**: USE the Task tool to invoke the cleanup-plan-architect agent for documentation cleanup planning.
 
 ```
 Task {
@@ -596,7 +686,9 @@ if [ ! -f "$PLAN_PATH" ]; then
   exit 1
 fi
 
-echo "✓ Planning complete: Implementation plan generated"
+echo "[CHECKPOINT] Planning complete (1 plan)"
+echo "Context: OPTIMIZATION_PLAN=${PLAN_PATH}"
+echo "Ready for: Results display and cleanup"
 ```
 
 ---

@@ -134,6 +134,8 @@ For each topic in the TOPIC_ARRAY, invoke a research-specialist worker:
 
 **Worker 1 - Authentication Research**:
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Research authentication patterns"
@@ -153,6 +155,8 @@ Task {
 
 **Worker 2 - Authorization Research**:
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Research authorization patterns"
@@ -172,6 +176,8 @@ Task {
 
 **Worker 3 - Session Research**:
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Research session management"
@@ -191,6 +197,8 @@ Task {
 
 **Worker 4 - Password Research**:
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Research password security"

@@ -89,6 +89,8 @@ COMMAND: N/A
 This prompt is used by commands like `/implement` and `/plan` when evaluating phases:
 
 ```yaml
+**EXECUTE NOW**: USE the Task tool to invoke the evaluator.
+
 Task {
   subagent_type: "general-purpose"
   prompt: "Read /home/benjamin/.config/.claude/agents/prompts/evaluate-phase-expansion.md

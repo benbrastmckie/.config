@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test suite for todo-functions.sh cleanup functions
-# Tests: has_uncommitted_changes(), create_cleanup_git_commit(), execute_cleanup_removal()
+# Tests: parse_todo_sections(), has_uncommitted_changes(), create_cleanup_git_commit(), execute_cleanup_removal()
 
 set -e
 
@@ -9,12 +9,222 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/test-helpers.sh"
 
 # Source library under test
-CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 export CLAUDE_PROJECT_DIR
-source "$CLAUDE_PROJECT_DIR/lib/todo/todo-functions.sh"
+source "$CLAUDE_PROJECT_DIR/.claude/lib/todo/todo-functions.sh"
 
 # Test suite
 test_suite="todo_functions_cleanup"
+
+# ============================================================================
+# Test: parse_todo_sections()
+# ============================================================================
+
+test_parse_todo_sections_empty_file() {
+  local test_name="parse_todo_sections_empty_file"
+
+  # Create empty TODO.md
+  local test_dir="/tmp/test_todo_cleanup_$$"
+  mkdir -p "$test_dir/.claude"
+  local todo_path="$test_dir/.claude/TODO.md"
+  touch "$todo_path"
+
+  # Test: Empty file should return empty JSON array
+  CLAUDE_PROJECT_DIR="$test_dir"
+  local result
+  result=$(parse_todo_sections "$todo_path")
+
+  if [ "$result" != "[]" ]; then
+    echo "FAIL: $test_name - Expected [], got $result"
+    rm -rf "$test_dir"
+    return 1
+  fi
+
+  echo "PASS: $test_name"
+  rm -rf "$test_dir"
+  return 0
+}
+
+test_parse_todo_sections_nonexistent_file() {
+  local test_name="parse_todo_sections_nonexistent_file"
+
+  # Test: Non-existent file should return empty JSON array
+  local result
+  result=$(parse_todo_sections "/tmp/nonexistent_todo_$$.md")
+
+  if [ "$result" != "[]" ]; then
+    echo "FAIL: $test_name - Expected [], got $result"
+    return 1
+  fi
+
+  echo "PASS: $test_name"
+  return 0
+}
+
+test_parse_todo_sections_with_entries() {
+  local test_name="parse_todo_sections_with_entries"
+
+  # Create test directory structure
+  local test_dir="/tmp/test_todo_cleanup_$$"
+  mkdir -p "$test_dir/.claude/specs/001_test_completed"
+  mkdir -p "$test_dir/.claude/specs/002_test_abandoned"
+  mkdir -p "$test_dir/.claude/specs/003_test_superseded"
+
+  # Create TODO.md with entries in each section
+  local todo_path="$test_dir/.claude/TODO.md"
+  cat > "$todo_path" << 'EOF'
+# TODO
+
+## In Progress
+
+(No plans currently in progress)
+
+## Not Started
+
+- [ ] **Test Not Started** - Description [.claude/specs/099_not_started/plans/001.md]
+
+## Backlog
+
+Some backlog items
+
+## Superseded
+
+- [~] **Test Superseded** - Description [.claude/specs/003_test_superseded/plans/001.md]
+
+## Abandoned
+
+- [x] **Test Abandoned (002)** - Description [.claude/specs/002_test_abandoned/plans/001.md]
+
+## Completed
+
+- [x] **Test Completed (001)** - Description [.claude/specs/001_test_completed/plans/001.md]
+EOF
+
+  # Set CLAUDE_PROJECT_DIR for the function
+  CLAUDE_PROJECT_DIR="$test_dir"
+
+  # Test: Should find entries in Completed, Abandoned, Superseded sections
+  local result
+  result=$(parse_todo_sections "$todo_path")
+
+  local count
+  count=$(echo "$result" | jq 'length')
+
+  if [ "$count" -ne 3 ]; then
+    echo "FAIL: $test_name - Expected 3 entries, got $count"
+    echo "Result: $result"
+    rm -rf "$test_dir"
+    return 1
+  fi
+
+  # Verify sections
+  local completed_count
+  completed_count=$(echo "$result" | jq '[.[] | select(.section == "Completed")] | length')
+  if [ "$completed_count" -ne 1 ]; then
+    echo "FAIL: $test_name - Expected 1 Completed entry, got $completed_count"
+    rm -rf "$test_dir"
+    return 1
+  fi
+
+  local abandoned_count
+  abandoned_count=$(echo "$result" | jq '[.[] | select(.section == "Abandoned")] | length')
+  if [ "$abandoned_count" -ne 1 ]; then
+    echo "FAIL: $test_name - Expected 1 Abandoned entry, got $abandoned_count"
+    rm -rf "$test_dir"
+    return 1
+  fi
+
+  local superseded_count
+  superseded_count=$(echo "$result" | jq '[.[] | select(.section == "Superseded")] | length')
+  if [ "$superseded_count" -ne 1 ]; then
+    echo "FAIL: $test_name - Expected 1 Superseded entry, got $superseded_count"
+    rm -rf "$test_dir"
+    return 1
+  fi
+
+  echo "PASS: $test_name"
+  rm -rf "$test_dir"
+  return 0
+}
+
+test_parse_todo_sections_extracts_from_path() {
+  local test_name="parse_todo_sections_extracts_from_path"
+
+  # Create test directory (no parentheses in title)
+  local test_dir="/tmp/test_todo_cleanup_$$"
+  mkdir -p "$test_dir/.claude/specs/999_path_only"
+
+  # Create TODO.md with entry that only has topic number in path
+  local todo_path="$test_dir/.claude/TODO.md"
+  cat > "$todo_path" << 'EOF'
+# TODO
+
+## Completed
+
+- [x] **No Parens Title** - Desc [.claude/specs/999_path_only/plans/001.md]
+EOF
+
+  CLAUDE_PROJECT_DIR="$test_dir"
+  local result
+  result=$(parse_todo_sections "$todo_path")
+
+  local count
+  count=$(echo "$result" | jq 'length')
+
+  if [ "$count" -ne 1 ]; then
+    echo "FAIL: $test_name - Expected 1 entry, got $count"
+    rm -rf "$test_dir"
+    return 1
+  fi
+
+  # Verify topic_name was extracted from path
+  local topic_name
+  topic_name=$(echo "$result" | jq -r '.[0].topic_name')
+  if [ "$topic_name" != "999_path_only" ]; then
+    echo "FAIL: $test_name - Expected topic_name='999_path_only', got '$topic_name'"
+    rm -rf "$test_dir"
+    return 1
+  fi
+
+  echo "PASS: $test_name"
+  rm -rf "$test_dir"
+  return 0
+}
+
+test_parse_todo_sections_skips_missing_directories() {
+  local test_name="parse_todo_sections_skips_missing_directories"
+
+  # Create test directory WITHOUT the referenced spec directory
+  local test_dir="/tmp/test_todo_cleanup_$$"
+  mkdir -p "$test_dir/.claude/specs"
+
+  # Create TODO.md with entry referencing non-existent directory
+  local todo_path="$test_dir/.claude/TODO.md"
+  cat > "$todo_path" << 'EOF'
+# TODO
+
+## Completed
+
+- [x] **Missing Dir (888)** - Desc [.claude/specs/888_missing/plans/001.md]
+EOF
+
+  CLAUDE_PROJECT_DIR="$test_dir"
+  local result
+  result=$(parse_todo_sections "$todo_path")
+
+  local count
+  count=$(echo "$result" | jq 'length')
+
+  if [ "$count" -ne 0 ]; then
+    echo "FAIL: $test_name - Expected 0 entries (dir missing), got $count"
+    rm -rf "$test_dir"
+    return 1
+  fi
+
+  echo "PASS: $test_name"
+  rm -rf "$test_dir"
+  return 0
+}
 
 # ============================================================================
 # Test: has_uncommitted_changes()
@@ -376,6 +586,37 @@ main() {
 
   local passed=0
   local failed=0
+
+  # Test parse_todo_sections()
+  if test_parse_todo_sections_empty_file; then
+    passed=$((passed + 1))
+  else
+    failed=$((failed + 1))
+  fi
+
+  if test_parse_todo_sections_nonexistent_file; then
+    passed=$((passed + 1))
+  else
+    failed=$((failed + 1))
+  fi
+
+  if test_parse_todo_sections_with_entries; then
+    passed=$((passed + 1))
+  else
+    failed=$((failed + 1))
+  fi
+
+  if test_parse_todo_sections_extracts_from_path; then
+    passed=$((passed + 1))
+  else
+    failed=$((failed + 1))
+  fi
+
+  if test_parse_todo_sections_skips_missing_directories; then
+    passed=$((passed + 1))
+  else
+    failed=$((failed + 1))
+  fi
 
   # Test has_uncommitted_changes()
   if test_has_uncommitted_changes_clean_directory; then

@@ -342,16 +342,6 @@ fi
 if type update_plan_status &>/dev/null; then
   if update_plan_status "$PLAN_FILE" "IN PROGRESS" 2>/dev/null; then
     echo "Plan metadata status updated to [IN PROGRESS]"
-
-    # Source todo-functions.sh for trigger_todo_update()
-    source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || {
-      echo "WARNING: Failed to source todo-functions.sh for TODO.md update" >&2
-    }
-
-    # Trigger TODO.md update (non-blocking)
-    if type trigger_todo_update &>/dev/null; then
-      trigger_todo_update "implementation phase started"
-    fi
   fi
 fi
 echo ""
@@ -1249,16 +1239,6 @@ if type check_all_phases_complete &>/dev/null && type update_plan_status &>/dev/
   if check_all_phases_complete "$PLAN_FILE"; then
     update_plan_status "$PLAN_FILE" "COMPLETE" 2>/dev/null && \
       echo "Plan metadata status updated to [COMPLETE]"
-
-    # Source todo-functions.sh for trigger_todo_update()
-    source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || {
-      echo "WARNING: Failed to source todo-functions.sh for TODO.md update" >&2
-    }
-
-    # Trigger TODO.md update (non-blocking)
-    if type trigger_todo_update &>/dev/null; then
-      trigger_todo_update "implementation phase completed"
-    fi
   fi
 fi
 ```
@@ -1437,10 +1417,16 @@ fi
 # Build next steps - emphasize running /test
 NEXT_STEPS="  • Review implementation: cat $LATEST_SUMMARY
   • Run tests: /test $PLAN_FILE
-  • Run tests with summary: /test --file $LATEST_SUMMARY"
+  • Run tests with summary: /test --file $LATEST_SUMMARY
+  • Run /todo to update TODO.md (adds implementation to tracking)"
 
 # Print standardized summary
 print_artifact_summary "Implementation" "$SUMMARY_TEXT" "$PHASES" "$ARTIFACTS" "$NEXT_STEPS"
+
+# Emit completion reminder
+echo ""
+echo "📋 Next Step: Run /todo to update TODO.md with this implementation"
+echo ""
 
 # === RETURN IMPLEMENTATION_COMPLETE SIGNAL ===
 # Signal enables buffer-opener hook to open summary

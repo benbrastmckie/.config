@@ -78,13 +78,17 @@ for cmd in "$COMMANDS_DIR"/*.md; do
 
   # Count total error exits (exit 1 statements)
   total_exits=$(grep -c 'exit 1' "$cmd" 2>/dev/null || echo 0)
+  total_exits=${total_exits:-0}
 
   # Count exits with logging (log_command_error within 5 lines before exit 1)
   # Also count bash error traps (setup_bash_error_trap) which provide automatic coverage
-  logged_exits=$(grep -B5 'exit 1' "$cmd" | grep -c 'log_command_error\|log_early_error' 2>/dev/null || echo 0)
+  logged_exits=$(grep -B5 'exit 1' "$cmd" 2>/dev/null | grep -c 'log_command_error\|log_early_error' 2>/dev/null)
+  # Ensure numeric value (grep -c always returns a number, but may be empty on error)
+  logged_exits=${logged_exits:-0}
 
   # Count bash error traps (each trap provides coverage for unlogged errors)
   trap_count=$(grep -c 'setup_bash_error_trap' "$cmd" 2>/dev/null || echo 0)
+  trap_count=${trap_count:-0}
 
   # Bash traps provide automatic coverage for ~40% of exits on average
   # Add trap bonus to logged_exits (conservative estimate: 30% of total exits per trap)
@@ -95,6 +99,11 @@ for cmd in "$COMMANDS_DIR"/*.md; do
     max_trap_bonus=$((total_exits * 60 / 100))
     [ "$trap_bonus" -gt "$max_trap_bonus" ] && trap_bonus=$max_trap_bonus
   fi
+
+  # Ensure all variables are numeric before arithmetic
+  logged_exits=${logged_exits:-0}
+  trap_bonus=${trap_bonus:-0}
+  total_exits=${total_exits:-0}
 
   effective_logged=$((logged_exits + trap_bonus))
 

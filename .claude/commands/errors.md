@@ -178,6 +178,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source todo-functions.sh" >&2
+  exit 1
+}
 
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
@@ -304,7 +308,7 @@ export TOPIC_NAMING_INPUT_FILE
 echo "Ready for topic naming"
 ```
 
-**EXECUTE NOW**: Invoke the topic-naming-agent to generate a semantic directory name.
+**EXECUTE NOW**: USE the Task tool to invoke the topic-naming-agent for semantic topic directory naming.
 
 Task {
   subagent_type: "general-purpose"
@@ -537,7 +541,7 @@ echo ""
 **CRITICAL BARRIER**: This block MUST invoke errors-analyst via Task tool.
 Verification block (Block 2) will FAIL if error report not created.
 
-**EXECUTE NOW**: Invoke errors-analyst subagent for error log analysis.
+**EXECUTE NOW**: USE the Task tool to invoke the errors-analyst agent for error log analysis and report generation.
 
 Task {
   subagent_type: "general-purpose"
@@ -699,6 +703,8 @@ fi
 echo ""
 echo "View full report: cat $REPORT_PATH"
 echo "Use with /repair: /repair --file $REPORT_PATH"
+echo ""
+echo "📋 Next Step: Run /todo to update TODO.md with this error analysis"
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 

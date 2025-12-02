@@ -61,6 +61,9 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2; exit 1
 }
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source validation-utils.sh" >&2; exit 1
+}
 
 # 3. Optional Libraries (Tier 2/3 - graceful degradation allowed)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/summary-formatting.sh" 2>/dev/null || true
@@ -70,7 +73,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/summary-formatting.sh" 2>/dev/nul
 
 | Tier | Libraries | Error Handling | Rationale |
 |------|-----------|----------------|-----------|
-| **Tier 1: Critical Foundation** | state-persistence.sh, workflow-state-machine.sh, error-handling.sh | Fail-fast required | Core state management; failure causes exit 127 later |
+| **Tier 1: Critical Foundation** | state-persistence.sh, workflow-state-machine.sh, error-handling.sh, validation-utils.sh | Fail-fast required | Core state management and validation; failure causes exit 127 later or data integrity issues |
 | **Tier 2: Workflow Support** | workflow-initialization.sh, checkpoint-utils.sh, unified-logger.sh | Graceful degradation | Non-critical; commands can proceed without |
 | **Tier 3: Command-Specific** | checkbox-utils.sh, summary-formatting.sh | Optional | Feature-specific; missing causes partial functionality |
 
@@ -393,6 +396,36 @@ ensure_artifact_directory "$REPORT_PATH" || exit 1
 **Exception**: Atomic directory+file creation in same bash block is acceptable.
 
 See [Directory Creation Anti-Patterns](#directory-creation-anti-patterns) for complete documentation.
+
+### TODO.md Backup Pattern
+
+**Standard**: Use git commits for TODO.md backups, not file-based backups.
+
+- Create git commit before modifying TODO.md
+- Include workflow context in commit message
+- Check for uncommitted changes before committing
+- See [Backup Policy](../templates/backup-policy.md#git-based-backup-for-todomd) for complete pattern
+
+**Example**:
+```bash
+# Check for uncommitted changes
+if ! git diff --quiet "$TODO_PATH" 2>/dev/null; then
+  git add "$TODO_PATH"
+  git commit -m "chore: snapshot TODO.md before /todo update
+
+Workflow ID: ${WORKFLOW_ID}
+Command: /todo ${USER_ARGS}"
+fi
+```
+
+**Recovery**:
+```bash
+# View recent commits
+git log --oneline .claude/TODO.md
+
+# Restore from commit
+git checkout <commit-hash> -- .claude/TODO.md
+```
 
 ## Enforcement
 [Used by: pre-commit hooks, CI validation]

@@ -181,6 +181,20 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
   exit 1
 }
 
+# Early trap setup: Capture errors during initialization before WORKFLOW_ID is available.
+# This follows the dual trap pattern used by /build, /plan, and /repair commands.
+# The trap will be updated later with actual workflow context (see late trap setup below).
+setup_bash_error_trap "/todo" "todo_early_$(date +%s)" "early_init"
+
+# Flush any errors that occurred before error-handling.sh was sourced.
+_flush_early_errors
+
+# Validate trap is active - fail fast if error logging is broken.
+if ! trap -p ERR | grep -q "_log_bash_error"; then
+  echo "ERROR: ERR trap not active - error logging will fail" >&2
+  exit 1
+fi
+
 # Tier 2: Command-Specific (graceful degradation)
 # NOTE: /todo is a utility command - does NOT require workflow-state-machine.sh
 # Research state machine (sm_init/sm_transition) is only for research workflows
@@ -198,8 +212,30 @@ COMMAND_NAME="/todo"
 USER_ARGS="$([ "$CLEAN_MODE" = "true" ] && echo "--clean")$([ "$DRY_RUN" = "true" ] && echo " --dry-run")"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# === SETUP BASH ERROR TRAP ===
+# === SETUP BASH ERROR TRAP (Late Trap Update) ===
+# Update trap with actual workflow context now that WORKFLOW_ID is available.
+# This replaces the early trap setup from initialization (see above).
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === INITIALIZE WORKFLOW STATE ===
+# Call init_workflow_state() to create STATE_FILE
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+
+# Verify state file creation
+if [ ! -f "$STATE_FILE" ]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "state_error" "Failed to initialize state file: $STATE_FILE" \
+    "Block1:StateInit" \
+    '{"workflow_id":"'"$WORKFLOW_ID"'"}'
+  echo "ERROR: Failed to initialize workflow state" >&2
+  exit 1
+fi
+
+# Export for subprocesses
+export STATE_FILE
+
+# === SETUP EXIT TRAP FOR STATE CLEANUP ===
+trap 'rm -f "$STATE_FILE" 2>/dev/null || true' EXIT
 
 # === LOCATE TODO.MD AND SPECS ROOT ===
 SPECS_ROOT="${CLAUDE_SPECS_ROOT:-${CLAUDE_PROJECT_DIR}/.claude/specs}"
@@ -277,7 +313,7 @@ echo "CLEAN_MODE=$CLEAN_MODE"
 echo "DRY_RUN=$DRY_RUN"
 ```
 
-## Block 2a: Status Classification Setup
+## Block 2a: Pre-Calculate Output Paths
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -311,86 +347,122 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 
 # NOTE: /todo is a utility command - does NOT use research state machine (sm_init/sm_transition)
 
-# === PRE-CALCULATE PATHS ===
-# Pre-calculate paths for todo-analyzer subagent
-CLASSIFIED_RESULTS="${CLAUDE_PROJECT_DIR}/.claude/tmp/todo_classified_${WORKFLOW_ID}.json"
-mkdir -p "$(dirname "$CLASSIFIED_RESULTS")"
+# === INITIALIZE WORKFLOW STATE ===
+# Call init_workflow_state() to create/regenerate STATE_FILE for Block 2a
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 
-# Initialize results file
-echo "[]" > "$CLASSIFIED_RESULTS"
+# Verify state file creation
+if [ ! -f "$STATE_FILE" ]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "state_error" "Failed to initialize state file: $STATE_FILE" \
+    "Block2a:StateInit" \
+    '{"workflow_id":"'"$WORKFLOW_ID"'"}'
+  echo "ERROR: Failed to initialize workflow state" >&2
+  exit 1
+fi
 
-# === PERSIST VARIABLES ===
-# Persist variables for Block 2c verification
+# Export for subprocesses
+export STATE_FILE
+
+# === SET ERROR LOGGING CONTEXT ===
+COMMAND_NAME="/todo"
+USER_ARGS="$([ "$CLEAN_MODE" = "true" ] && echo "--clean")$([ "$DRY_RUN" = "true" ] && echo " --dry-run")"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# === PRE-CALCULATE OUTPUT PATHS ===
+# Pre-calculate ALL paths before agent invocation (hard barrier pattern)
+TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
+NEW_TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/tmp/TODO_new_${WORKFLOW_ID}.md"
+
+# Create tmp directory
+mkdir -p "$(dirname "$NEW_TODO_PATH")"
+
+# Validate paths are absolute
+if [[ "$TODO_PATH" =~ ^/ ]] && [[ "$NEW_TODO_PATH" =~ ^/ ]]; then
+  : # Paths are absolute, continue
+else
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" "Paths must be absolute" \
+    "Block2a:PathValidation" \
+    '{"TODO_PATH":"'"$TODO_PATH"'","NEW_TODO_PATH":"'"$NEW_TODO_PATH"'"}'
+  echo "ERROR: Paths must be absolute" >&2
+  exit 1
+fi
+
+# === PERSIST ALL REQUIRED VARIABLES ===
+# Persist variables for Block 2c verification and agent access
+append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
+append_workflow_state "USER_ARGS" "$USER_ARGS"
+append_workflow_state "CLEAN_MODE" "$CLEAN_MODE"
+append_workflow_state "DRY_RUN" "$DRY_RUN"
 append_workflow_state "DISCOVERED_PROJECTS" "$DISCOVERED_PROJECTS"
-append_workflow_state "CLASSIFIED_RESULTS" "$CLASSIFIED_RESULTS"
 append_workflow_state "SPECS_ROOT" "$SPECS_ROOT"
+append_workflow_state "TODO_PATH" "$TODO_PATH"
+append_workflow_state "NEW_TODO_PATH" "$NEW_TODO_PATH"
 append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
 
 echo ""
-echo "=== Status Classification Setup ==="
+echo "=== Pre-Calculate Output Paths ==="
+echo "Current TODO.md: $TODO_PATH"
+echo "New TODO.md (temp): $NEW_TODO_PATH"
 echo "Discovered projects: $DISCOVERED_PROJECTS"
-echo "Classification output: $CLASSIFIED_RESULTS"
+echo "Specs root: $SPECS_ROOT"
 echo ""
-echo "[CHECKPOINT] Setup complete - ready for todo-analyzer invocation"
+echo "[CHECKPOINT] Path pre-calculation complete - ready for todo-analyzer invocation"
 ```
 
-## Block 2b: Status Classification Execution
+## Block 2b: TODO.md Generation Execution
 
 **CRITICAL BARRIER**: This block MUST invoke todo-analyzer via Task tool.
-Verification block (2c) will FAIL if classified results not created.
+Verification block (2c) will FAIL if TODO.md not created at NEW_TODO_PATH.
 
-**EXECUTE NOW**: Invoke todo-analyzer subagent for batch plan classification.
+**EXECUTE NOW**: USE the Task tool to invoke the todo-analyzer agent to generate complete TODO.md file.
 
-The todo-analyzer must process ALL plans discovered in Block 1. Read the plans file at ${DISCOVERED_PROJECTS}, classify each plan's status, and write results to ${CLASSIFIED_RESULTS}.
+The todo-analyzer must generate complete TODO.md with 7-section structure, preserve Backlog/Saved sections, auto-detect research directories, and write to pre-calculated output path.
 
 Task {
   subagent_type: "general-purpose"
   model: "haiku"
-  description: "Classify plan statuses for TODO.md organization"
+  description: "Generate complete TODO.md file from classified plans"
   prompt: |
     Read and follow ALL instructions in: .claude/agents/todo-analyzer.md
 
-    **YOUR TASK**: Classify status for ALL plans in the discovered projects file.
+    **YOUR TASK**: Generate complete TODO.md file with 7-section structure.
 
-    Input Files:
-    - Plans File: ${DISCOVERED_PROJECTS}
-    - Specs Root: ${SPECS_ROOT}
-    - Output File: ${CLASSIFIED_RESULTS}
+    **REQUIRED INPUTS** (you MUST receive these):
+    - DISCOVERED_PROJECTS: ${DISCOVERED_PROJECTS}
+    - CURRENT_TODO_PATH: ${TODO_PATH}
+    - OUTPUT_TODO_PATH: ${NEW_TODO_PATH}
+    - SPECS_ROOT: ${SPECS_ROOT}
+
+    **CONTRACT REQUIREMENTS**:
+    You MUST create TODO.md file at the EXACT path specified in OUTPUT_TODO_PATH.
+    You MUST preserve Backlog and Saved sections verbatim from CURRENT_TODO_PATH.
+    You MUST generate 7-section structure: In Progress, Not Started, Research, Saved, Backlog, Abandoned, Completed.
+    You MUST follow checkbox conventions per TODO Organization Standards.
+    You MUST auto-detect research-only directories (reports/ but no plans/).
 
     **EXECUTION STEPS**:
-    1. Read the plans file at ${DISCOVERED_PROJECTS} (JSON array of discovered plans)
-    2. For EACH plan in the array:
-       a. Read the plan file using Read tool
-       b. Extract metadata (title, status, description, phases)
-       c. Classify status using algorithm in todo-analyzer.md
-       d. Determine TODO.md section (Completed, In Progress, Not Started, Superseded, Abandoned)
-    3. Build a JSON array of ALL classified results
-    4. Write the complete array to ${CLASSIFIED_RESULTS}
-
-    **OUTPUT FORMAT**:
-    Write a JSON array to ${CLASSIFIED_RESULTS} with this structure:
-    [
-      {
-        "plan_path": "/absolute/path/to/plan.md",
-        "topic_path": "/absolute/path/to/topic",
-        "topic_name": "NNN_topic_name",
-        "title": "Plan Title",
-        "description": "Brief description (max 100 chars)",
-        "status": "completed|in_progress|not_started|superseded|abandoned",
-        "phases_complete": <number>,
-        "phases_total": <number>,
-        "section": "Completed|In Progress|Not Started|Superseded|Abandoned"
-      },
-      ...
-    ]
+    1. Read discovered projects from ${DISCOVERED_PROJECTS}
+    2. Read current TODO.md from ${TODO_PATH} (if exists)
+    3. Classify ALL plans (read plan files, extract metadata, determine status)
+    4. Detect research-only directories in ${SPECS_ROOT}
+    5. Preserve Backlog and Saved sections from current TODO.md
+    6. Discover related artifacts (reports, summaries) for each plan
+    7. Generate 7-section TODO.md content with proper checkboxes
+    8. Write complete TODO.md to ${NEW_TODO_PATH}
 
     **RETURN SIGNAL**:
-    After writing the results file, return:
-    PLANS_CLASSIFIED: ${CLASSIFIED_RESULTS}
+    After writing TODO.md, return:
+    TODO_GENERATED: ${NEW_TODO_PATH}
     plan_count: <number of plans classified>
+    research_count: <number of research directories detected>
+    sections: 7
+    backlog_preserved: yes|no
+    saved_preserved: yes|no
 }
 
-## Block 2c: Status Classification Verification
+## Block 2c: TODO.md Semantic Verification
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -441,67 +513,118 @@ else
 fi
 
 echo ""
-echo "=== Status Classification Verification ==="
+echo "=== TODO.md Semantic Verification ==="
 echo ""
 
-# === VERIFY CLASSIFIED RESULTS FILE EXISTS ===
-if [ ! -f "$CLASSIFIED_RESULTS" ]; then
+# === VERIFY FILE EXISTENCE ===
+if [ ! -f "$NEW_TODO_PATH" ]; then
   log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-    "verification_error" "Classified results file not found: $CLASSIFIED_RESULTS" \
-    "Block2c:Verification" \
-    '{"expected_file":"'"$CLASSIFIED_RESULTS"'","recovery":"Re-run /todo command"}'
-  echo "ERROR: VERIFICATION FAILED - Classified results file missing" >&2
-  echo "Expected: $CLASSIFIED_RESULTS" >&2
+    "verification_error" "TODO.md file not found: $NEW_TODO_PATH" \
+    "Block2c:FileExistence" \
+    '{"expected_file":"'"$NEW_TODO_PATH"'","recovery":"Re-run /todo command"}'
+  echo "ERROR: VERIFICATION FAILED - TODO.md file missing" >&2
+  echo "Expected: $NEW_TODO_PATH" >&2
   echo "Recovery: Re-run /todo command, check todo-analyzer agent logs" >&2
   exit 1
 fi
 
 # === VERIFY FILE SIZE ===
-FILE_SIZE=$(stat -f%z "$CLASSIFIED_RESULTS" 2>/dev/null || stat -c%s "$CLASSIFIED_RESULTS" 2>/dev/null || echo "0")
-if [ "$FILE_SIZE" -lt 10 ]; then
+FILE_SIZE=$(stat -f%z "$NEW_TODO_PATH" 2>/dev/null || stat -c%s "$NEW_TODO_PATH" 2>/dev/null || echo "0")
+if [ "$FILE_SIZE" -lt 500 ]; then
   log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-    "verification_error" "Classified results file is too small: $FILE_SIZE bytes" \
-    "Block2c:Verification" \
-    '{"file":"'"$CLASSIFIED_RESULTS"'","size":'"$FILE_SIZE"',"minimum":10}'
-  echo "ERROR: VERIFICATION FAILED - Classified results file is empty or too small" >&2
-  echo "File: $CLASSIFIED_RESULTS" >&2
-  echo "Size: $FILE_SIZE bytes (expected > 10)" >&2
+    "verification_error" "TODO.md file is too small: $FILE_SIZE bytes" \
+    "Block2c:FileSize" \
+    '{"file":"'"$NEW_TODO_PATH"'","size":'"$FILE_SIZE"',"minimum":500}'
+  echo "ERROR: VERIFICATION FAILED - TODO.md file is empty or too small" >&2
+  echo "File: $NEW_TODO_PATH" >&2
+  echo "Size: $FILE_SIZE bytes (expected > 500)" >&2
   echo "Recovery: Verify todo-analyzer completed successfully, check for errors" >&2
   exit 1
 fi
 
-# === VERIFY JSON VALIDITY ===
-if ! jq empty "$CLASSIFIED_RESULTS" 2>/dev/null; then
+# === VERIFY 7-SECTION STRUCTURE ===
+MISSING_SECTIONS=""
+for section in "In Progress" "Not Started" "Research" "Saved" "Backlog" "Abandoned" "Completed"; do
+  if ! grep -q "^## $section" "$NEW_TODO_PATH"; then
+    MISSING_SECTIONS="${MISSING_SECTIONS}${section}, "
+  fi
+done
+
+if [ -n "$MISSING_SECTIONS" ]; then
   log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-    "verification_error" "Classified results file contains invalid JSON" \
-    "Block2c:Verification" \
-    '{"file":"'"$CLASSIFIED_RESULTS"'"}'
-  echo "ERROR: VERIFICATION FAILED - Invalid JSON in classified results" >&2
-  echo "File: $CLASSIFIED_RESULTS" >&2
-  echo "Recovery: Check todo-analyzer output format, validate JSON syntax" >&2
+    "verification_error" "TODO.md missing required sections: ${MISSING_SECTIONS%, }" \
+    "Block2c:SectionStructure" \
+    '{"file":"'"$NEW_TODO_PATH"'","missing":"'"${MISSING_SECTIONS%, }"'"}'
+  echo "ERROR: VERIFICATION FAILED - TODO.md missing sections" >&2
+  echo "Missing: ${MISSING_SECTIONS%, }" >&2
+  echo "Recovery: Check todo-analyzer 7-section generation logic" >&2
   exit 1
 fi
 
-# === COUNT CLASSIFIED PLANS ===
-PLAN_COUNT=$(jq 'length' "$CLASSIFIED_RESULTS" 2>/dev/null || echo "0")
-if [ "$PLAN_COUNT" -eq 0 ]; then
-  # This is a warning, not an error - empty specs/ directory is valid
-  echo "WARNING: No plans classified (empty result set)" >&2
-  echo "This may be normal if specs/ directory has no plans" >&2
+# === VERIFY BACKLOG PRESERVATION (if current TODO.md exists) ===
+if [ -f "$TODO_PATH" ] && grep -q "^## Backlog" "$TODO_PATH"; then
+  # Extract Backlog section from both files
+  ORIGINAL_BACKLOG=$(sed -n '/^## Backlog/,/^## /p' "$TODO_PATH" | sed '$d' || echo "")
+  NEW_BACKLOG=$(sed -n '/^## Backlog/,/^## /p' "$NEW_TODO_PATH" | sed '$d' || echo "")
+
+  if [ "$ORIGINAL_BACKLOG" != "$NEW_BACKLOG" ]; then
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+      "verification_error" "Backlog section content modified by agent" \
+      "Block2c:BacklogPreservation" \
+      '{"original_path":"'"$TODO_PATH"'","new_path":"'"$NEW_TODO_PATH"'"}'
+    echo "ERROR: VERIFICATION FAILED - Backlog section modified" >&2
+    echo "Backlog content must be preserved verbatim" >&2
+    echo "Recovery: Fix todo-analyzer preservation algorithm" >&2
+    exit 1
+  fi
 fi
 
-# === PERSIST PLAN COUNT ===
-append_workflow_state "PLAN_COUNT" "$PLAN_COUNT"
+# === VERIFY SAVED PRESERVATION (if current TODO.md exists) ===
+if [ -f "$TODO_PATH" ] && grep -q "^## Saved" "$TODO_PATH"; then
+  # Extract Saved section from both files
+  ORIGINAL_SAVED=$(sed -n '/^## Saved/,/^## /p' "$TODO_PATH" | sed '$d' || echo "")
+  NEW_SAVED=$(sed -n '/^## Saved/,/^## /p' "$NEW_TODO_PATH" | sed '$d' || echo "")
 
-echo "Classified results verified: $CLASSIFIED_RESULTS"
-echo "Plan count: $PLAN_COUNT"
+  if [ "$ORIGINAL_SAVED" != "$NEW_SAVED" ]; then
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+      "verification_error" "Saved section content modified by agent" \
+      "Block2c:SavedPreservation" \
+      '{"original_path":"'"$TODO_PATH"'","new_path":"'"$NEW_TODO_PATH"'"}'
+    echo "ERROR: VERIFICATION FAILED - Saved section modified" >&2
+    echo "Saved content must be preserved verbatim" >&2
+    echo "Recovery: Fix todo-analyzer preservation algorithm" >&2
+    exit 1
+  fi
+fi
+
+# === VERIFY CHECKBOX CONVENTIONS ===
+# Check for common violations (sample check, not exhaustive)
+if grep -q "^## In Progress" "$NEW_TODO_PATH"; then
+  IN_PROGRESS_VIOLATIONS=$(sed -n '/^## In Progress/,/^## /p' "$NEW_TODO_PATH" | grep -c "^- \[ \]" || echo "0")
+  if [ "$IN_PROGRESS_VIOLATIONS" -gt 0 ]; then
+    echo "WARNING: In Progress section has [ ] checkboxes (should be [x])" >&2
+  fi
+fi
+
+# === COUNT ENTRIES ===
+ENTRY_COUNT=$(grep -c "^- \[" "$NEW_TODO_PATH" || echo "0")
+
+echo "TODO.md verification passed:"
+echo "  File: $NEW_TODO_PATH"
+echo "  Size: $FILE_SIZE bytes"
+echo "  Sections: 7 (all present)"
+echo "  Entries: $ENTRY_COUNT"
+echo "  Backlog preservation: $([ -f "$TODO_PATH" ] && grep -q "^## Backlog" "$TODO_PATH" && echo "verified" || echo "n/a")"
+echo "  Saved preservation: $([ -f "$TODO_PATH" ] && grep -q "^## Saved" "$TODO_PATH" && echo "verified" || echo "n/a")"
 echo ""
-echo "[CHECKPOINT] Verification complete - $PLAN_COUNT plans classified"
+echo "[CHECKPOINT] Verification complete - TODO.md ready for atomic replace"
 ```
 
-## Block 3: Generate TODO.md
+## Block 3: Atomic File Replace
 
-**EXECUTE NOW**: Generate the updated TODO.md content based on classified plans.
+**EXECUTE NOW**: Perform atomic file replacement with backup strategy.
+
+Agent has generated complete TODO.md at NEW_TODO_PATH and Block 2c has verified it. Now perform file operations only: backup current TODO.md (if exists), then atomic replace.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -525,10 +648,8 @@ export CLAUDE_PROJECT_DIR
 # Source libraries
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || exit 1
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || exit 1
 
 # === RESTORE STATE ===
-# Restore variables from Block 2c
 STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
 if [ -f "$STATE_FILE" ]; then
   source "$STATE_FILE" 2>/dev/null || true
@@ -544,161 +665,94 @@ else
   exit 1
 fi
 
-# NOTE: /todo is a utility command - does NOT use research state machine (sm_transition)
-
-TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
-
-echo ""
-echo "=== Generating TODO.md ==="
-echo ""
-
-# === VERIFY CLASSIFIED RESULTS AVAILABLE ===
-# Fail-fast if classified results missing (hard barrier enforcement)
-if [ ! -f "$CLASSIFIED_RESULTS" ]; then
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-    "verification_error" "Classified results file not found: $CLASSIFIED_RESULTS" \
-    "Block3:Verification" \
-    '{"expected_file":"'"$CLASSIFIED_RESULTS"'"}'
-  echo "ERROR: Classified results file missing" >&2
-  echo "Expected: $CLASSIFIED_RESULTS" >&2
-  echo "Recovery: Re-run /todo command, verify Block 2c completed successfully" >&2
-  exit 1
-fi
-
-echo "Reading classified plans from: $CLASSIFIED_RESULTS"
-echo "TODO.md path: $TODO_PATH"
-echo ""
-
-# === DETECT MIGRATION NEED (6-section to 7-section) ===
-TODO_MIGRATION_NEEDED="false"
-if [ -f "$TODO_PATH" ]; then
-  # Check if TODO.md is missing Research or Saved sections
-  if ! grep -q "^## Research" "$TODO_PATH" || ! grep -q "^## Saved" "$TODO_PATH"; then
-    TODO_MIGRATION_NEEDED="true"
-    echo "Detected old 6-section format - migration required"
-    echo "Missing sections: Research and/or Saved"
-    echo ""
-  fi
-fi
-
-# === BACKUP EXISTING TODO.MD ===
-if [ -f "$TODO_PATH" ]; then
-  if [ "$TODO_MIGRATION_NEEDED" = "true" ]; then
-    # Create migration backup
-    cp "$TODO_PATH" "${TODO_PATH}.pre-migration-backup"
-    echo "Created migration backup: ${TODO_PATH}.pre-migration-backup"
-    echo "Recovery: cp ${TODO_PATH}.pre-migration-backup $TODO_PATH"
-  else
-    # Standard backup
-    cp "$TODO_PATH" "${TODO_PATH}.backup"
-    echo "Backed up existing TODO.md"
-  fi
-fi
-
-# === PERSIST MIGRATION FLAG ===
-append_workflow_state "TODO_MIGRATION_NEEDED" "$TODO_MIGRATION_NEEDED"
-
-echo ""
-echo "TODO.md generation ready"
-echo "Proceeding to write file..."
-```
-
-## Block 4: Write TODO.md File
-
-**EXECUTE NOW**: Write the generated TODO.md content to file.
-
-Based on the classified plans from todo-analyzer, generate the TODO.md content with proper section organization:
-
-1. Read classified plans from Block 2 output
-2. Auto-detect research-only directories (reports/ but no plans/)
-3. Group plans by section (In Progress, Not Started, Research, Saved, Backlog, Abandoned, Completed)
-4. Preserve existing Backlog and Saved section content
-5. Generate entries with proper checkbox conventions
-6. Include related artifacts (reports, summaries) as indented bullets
-7. Write to TODO.md (or display if --dry-run)
-
-Generate the TODO.md content following the standards in `.claude/docs/reference/standards/todo-organization-standards.md`:
-
-- Section order: In Progress -> Not Started -> Research -> Saved -> Backlog -> Abandoned -> Completed
-- Checkboxes: [ ] for Not Started/Research/Saved/Backlog, [x] for In Progress/Completed/Abandoned, [~] for Superseded (merged into Abandoned)
-- Entry format: `- [checkbox] **{Title}** - {Description} [{path}]`
-- Research entries link to directory: `[.claude/specs/NNN_topic/]`
-- Artifacts as indented bullets under each plan
-- Date grouping for Completed section
-
-If --dry-run is set, display the generated content instead of writing.
-
-```bash
-set +H  # CRITICAL: Disable history expansion
-set -e  # Fail-fast
-
-# === DETECT PROJECT DIRECTORY ===
-if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-else
-  current_dir="$(pwd)"
-  while [ "$current_dir" != "/" ]; do
-    if [ -d "$current_dir/.claude" ]; then
-      CLAUDE_PROJECT_DIR="$current_dir"
-      break
-    fi
-    current_dir="$(dirname "$current_dir")"
-  done
-fi
-export CLAUDE_PROJECT_DIR
-
-# Source libraries
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || exit 1
-
-# === RESTORE STATE ===
-STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE" 2>/dev/null || true
-else
-  COMMAND_NAME="/todo"
-  WORKFLOW_ID="todo_unknown"
-  USER_ARGS=""
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-    "state_error" "State file not found - cannot restore variables" \
-    "Block4:StateRestore" \
-    '{"expected_pattern":"~/.claude/data/state/todo_*.state"}'
-  echo "ERROR: State file not found" >&2
-  exit 1
-fi
-
-# NOTE: /todo is a utility command - does NOT use research state machine (sm_transition)
-
-TODO_PATH="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
 DRY_RUN="${DRY_RUN:-false}"
 
 echo ""
-echo "=== Writing TODO.md ==="
+echo "=== Atomic File Replace ==="
 echo ""
 
-# Verify classified results still available
-if [ ! -f "$CLASSIFIED_RESULTS" ]; then
+# === DRY-RUN MODE ===
+if [ "$DRY_RUN" = "true" ]; then
+  echo "[DRY RUN] Would perform:"
+  echo "  1. Create git snapshot of TODO.md (if uncommitted changes exist)"
+  echo "  2. Replace: $NEW_TODO_PATH -> $TODO_PATH"
+  echo ""
+  echo "Preview location: $NEW_TODO_PATH"
+  echo "You can inspect the generated file before committing"
+  exit 0
+fi
+
+# === RE-VERIFY NEW TODO.md EXISTS ===
+# Extra safety check before file operations
+if [ ! -f "$NEW_TODO_PATH" ]; then
   log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-    "file_error" "Classified results file not found: $CLASSIFIED_RESULTS" \
-    "Block4:Verification" \
-    '{"expected_file":"'"$CLASSIFIED_RESULTS"'"}'
-  echo "ERROR: Classified results file missing" >&2
+    "file_error" "New TODO.md file not found: $NEW_TODO_PATH" \
+    "Block3:PreReplaceCheck" \
+    '{"expected_file":"'"$NEW_TODO_PATH"'"}'
+  echo "ERROR: New TODO.md file missing before replace" >&2
+  echo "Expected: $NEW_TODO_PATH" >&2
+  echo "Recovery: Re-run /todo command" >&2
   exit 1
 fi
 
-if [ "$DRY_RUN" = "true" ]; then
-  echo "[DRY RUN] Would write to: $TODO_PATH"
-  echo "Preview of changes would be shown here"
+# === CREATE GIT SNAPSHOT OF TODO.md ===
+# Only commit if there are uncommitted changes to TODO.md
+if [ -f "$TODO_PATH" ]; then
+  if ! git diff --quiet "$TODO_PATH" 2>/dev/null; then
+    echo "Creating git snapshot of TODO.md before update"
+
+    # Stage TODO.md
+    if ! git add "$TODO_PATH" 2>/dev/null; then
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+        "state_error" "Failed to stage TODO.md for git commit" \
+        "Block3:GitSnapshot" \
+        '{"path":"'"$TODO_PATH"'"}'
+      echo "WARNING: Could not create git snapshot, proceeding without backup" >&2
+    else
+      # Create commit with workflow context
+      COMMIT_MSG="chore: snapshot TODO.md before /todo update
+
+Preserving current state for recovery if needed.
+
+Workflow ID: ${WORKFLOW_ID}
+Command: /todo ${USER_ARGS:-<no args>}"
+
+      if git commit -m "$COMMIT_MSG" 2>/dev/null; then
+        COMMIT_HASH=$(git rev-parse HEAD 2>/dev/null)
+        echo "Created snapshot commit: $COMMIT_HASH"
+        echo "Recovery command: git checkout $COMMIT_HASH -- .claude/TODO.md"
+      else
+        # Commit failed - might be no changes after staging
+        echo "No snapshot needed (TODO.md unchanged)"
+      fi
+    fi
+  else
+    echo "TODO.md already committed, no snapshot needed"
+  fi
 else
-  echo "TODO.md updated successfully"
-  echo "Path: $TODO_PATH"
+  echo "No existing TODO.md to snapshot (first run)"
+fi
+
+# === ATOMIC REPLACE ===
+echo "Replacing: $NEW_TODO_PATH -> $TODO_PATH"
+mv "$NEW_TODO_PATH" "$TODO_PATH"
+
+# Verify replace succeeded
+if [ ! -f "$TODO_PATH" ]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "file_error" "Atomic replace failed - TODO.md not at expected location" \
+    "Block3:AtomicReplace" \
+    '{"expected":"'"$TODO_PATH"'","source":"'"$NEW_TODO_PATH"'"}'
+  echo "ERROR: Atomic replace failed" >&2
+  echo "Recovery: Restore from git: git log --oneline .claude/TODO.md" >&2
+  exit 1
 fi
 
 echo ""
-echo "TODO_UPDATED"
-echo "  path: $TODO_PATH"
-echo "  dry_run: $DRY_RUN"
+echo "TODO.md updated successfully"
+echo "  Path: $TODO_PATH"
+echo ""
+echo "[CHECKPOINT] Atomic replace complete"
 ```
 
 ## Clean Mode (--clean flag)
@@ -999,7 +1053,7 @@ echo "<!-- checkpoint: todo_rescan_complete -->"
 ### Block 4c-2: Classify Remaining Projects (Clean Mode)
 
 **CRITICAL BARRIER**: This block MUST invoke todo-analyzer via Task tool if cleanup removed projects.
-**EXECUTE IF REMOVED_COUNT > 0**: Invoke todo-analyzer to classify remaining projects after cleanup.
+**EXECUTE IF REMOVED_COUNT > 0**: USE the Task tool to invoke the todo-analyzer agent to classify remaining projects after cleanup.
 
 Task {
   subagent_type: "general-purpose"

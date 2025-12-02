@@ -415,6 +415,8 @@ This marks all checkboxes in Phase 2 as complete across all hierarchy levels.
 
 **Invocation Pattern**:
 ```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the spec-updater.
+
 Task {
   subagent_type: "general-purpose"
   description: "Update plan hierarchy after Phase N completion"
@@ -465,6 +467,8 @@ Verification:
 
 **Invocation Pattern**:
 ```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the spec-updater.
+
 Task {
   subagent_type: "general-purpose"
   description: "Update plan hierarchy after workflow completion"
@@ -747,6 +751,8 @@ propagate_checkbox_update "$PLAN_PATH" "$PHASE_NUM" "$TASK_PATTERN" "x"
 ### From /orchestrate (Debugging Phase)
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the spec-updater.
+
 Task {
   subagent_type: "general-purpose"
   description: "Create debug report in topic-based structure using spec-updater protocol"
@@ -785,6 +791,8 @@ Task {
 ### From /plan (Creating Topic Structure)
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the spec-updater.
+
 Task {
   subagent_type: "general-purpose"
   description: "Initialize topic directory structure using spec-updater protocol"
@@ -821,6 +829,8 @@ Task {
 ### From /document (Creating Summary)
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the spec-updater.
+
 Task {
   subagent_type: "general-purpose"
   description: "Create implementation summary in topic directory using spec-updater protocol"

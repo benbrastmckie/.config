@@ -770,6 +770,8 @@ Next steps:
 This agent can be invoked by custom commands for document processing workflows:
 
 ```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the doc-converter.
+
 Task {
   subagent_type: "general-purpose"
   description: "Convert documents to Markdown using doc-converter protocol"

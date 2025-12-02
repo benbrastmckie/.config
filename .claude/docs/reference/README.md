@@ -73,6 +73,7 @@ Core standards documentation governing command authoring, testing, code quality,
 
 **Contents**:
 - `command-reference.md` - Complete command catalog with syntax and examples
+- `command-patterns-quick-reference.md` - Quick reference for common command patterns
 - `agent-reference.md` - Agent catalog with roles and capabilities
 - `testing-protocols.md` - Test discovery, patterns, and coverage requirements
 - `code-standards.md` - Coding conventions and architectural requirements

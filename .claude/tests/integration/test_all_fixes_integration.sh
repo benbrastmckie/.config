@@ -11,7 +11,7 @@ SUITE_VERSION="2.0.0"
 
 # Detect project directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+export CLAUDE_PROJECT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Colors
 GREEN='\033[0;32m'

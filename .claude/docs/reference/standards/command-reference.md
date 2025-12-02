@@ -26,10 +26,12 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 - [/example-with-agent](#example-with-agent)
 - [/expand](#expand)
 - [/list](#list)
+- [/optimize-claude](#optimize-claude)
 - [/plan](#plan)
 - [/plan-from-template](#plan-from-template)
 - [/plan-wizard](#plan-wizard)
 - [/refactor](#refactor)
+- [/repair](#repair)
 - [/report](#report)
 - [/research](#research)
 - [/revise](#revise)
@@ -84,6 +86,8 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 **Output**: Implemented features with commits, test results, debug analysis or documentation
 
 **Workflow**: `implement → test → [debug OR document] → complete`
+
+**Automatically updates TODO.md**: Yes (at START when marking plan IN PROGRESS, and at COMPLETION when marking plan COMPLETE)
 
 **See**: [build.md](../../commands/build.md)
 
@@ -269,6 +273,8 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 **Workflow**: `research → plan (debug strategy) → debug → complete`
 
+**Automatically updates TODO.md**: Yes (after debug report creation)
+
 **See**: [debug.md](../../commands/debug.md)
 
 ---
@@ -302,6 +308,39 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 **Output**: Formatted list with metadata
 
 **See**: [list.md](../../commands/list.md)
+
+---
+
+### /optimize-claude
+**Purpose**: Analyze CLAUDE.md and .claude/docs/ structure to generate optimization plan for documentation bloat reduction and quality improvement
+
+**Usage**: `/optimize-claude "[description] [--threshold <profile>] [--dry-run] [--file <report>]"`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `description` (optional): Custom description of optimization focus (default: "Optimize CLAUDE.md structure and documentation")
+- `--threshold <profile>` (optional): Bloat detection threshold profile - aggressive (50/30 lines), balanced (80/50 lines), conservative (120/80 lines) (default: balanced)
+- `--aggressive`: Shorthand for --threshold aggressive
+- `--balanced`: Shorthand for --threshold balanced (default)
+- `--conservative`: Shorthand for --threshold conservative
+- `--dry-run` (optional): Preview workflow stages without executing agents
+- `--file <path>` (optional, repeatable): Additional report file for context-aware analysis
+
+**Agents Used**:
+- `claude-md-analyzer` (Haiku 4.5): Analyze CLAUDE.md structure and identify bloated sections
+- `docs-structure-analyzer` (Haiku 4.5): Analyze .claude/docs/ organization and identify integration opportunities
+- `docs-bloat-analyzer` (Opus 4.5): Perform semantic bloat analysis and assess extraction risks using soft guidance model
+- `docs-accuracy-analyzer` (Opus 4.5): Evaluate documentation quality across 6 dimensions (accuracy, completeness, consistency, timeliness, usability, clarity)
+- `cleanup-plan-architect` (Sonnet 4.5): Synthesize research reports and generate implementation plan with advisory size guidance
+
+**Output**: Optimization plan with CLAUDE.md extraction phases, bloat prevention tasks (soft guidance, not hard blockers), accuracy fixes, and quality improvements
+
+**Workflow**: `setup → research (parallel: claude-md + docs-structure) → analysis (parallel: bloat + accuracy) → planning (cleanup-plan-architect) → display`
+
+**Automatically updates TODO.md**: No (manual plan tracking via /build)
+
+**See**: [optimize-claude.md](../../commands/optimize-claude.md)
 
 ---
 
@@ -370,6 +409,32 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 ---
 
+### /repair
+**Purpose**: Research error patterns and create implementation plan to fix them
+
+**Usage**: `/repair [--since TIME] [--type TYPE] [--command CMD] [--severity LEVEL] [--complexity 1-4]`
+
+**Type**: orchestrator
+
+**Arguments**:
+- `--since` (optional): Filter errors since timestamp (e.g., "1h", "2025-01-01")
+- `--type` (optional): Filter by error type (state_error, validation_error, agent_error, etc.)
+- `--command` (optional): Filter by command name (e.g., `/build`, `/plan`)
+- `--severity` (optional): Filter by severity level
+- `--complexity` (optional): Research depth 1-4 (default: 2)
+
+**Agents Used**: research-specialist, research-sub-supervisor, plan-architect
+
+**Output**: Research reports + repair plan
+
+**Workflow**: `research (error analysis) → plan (repair strategy) → complete`
+
+**Automatically updates TODO.md**: Yes (after repair plan creation)
+
+**See**: [repair.md](../../commands/repair.md)
+
+---
+
 ### /report
 **Purpose**: Research topics and create comprehensive reports
 
@@ -406,6 +471,8 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 **Workflow**: `research → plan → complete`
 
+**Automatically updates TODO.md**: Yes (after new plan creation)
+
 **See**: [plan.md](../../commands/plan.md)
 
 ---
@@ -428,6 +495,8 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 **Workflow**: `research → complete`
 
+**Automatically updates TODO.md**: Yes (after report creation)
+
 **See**: [research.md](../../commands/research.md)
 
 ---
@@ -448,6 +517,8 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 **Output**: Research reports + revised plan (with backup)
 
 **Workflow**: `research → plan revision → complete`
+
+**Automatically updates TODO.md**: Yes (after plan modification)
 
 **See**: [revise.md](../../commands/revise.md)
 
@@ -503,17 +574,25 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 ---
 
 ### /test
-**Purpose**: Run project-specific tests based on CLAUDE.md protocols
+**Purpose**: Test and debug workflow - Execute test suite with coverage loop until quality threshold met
 
-**Usage**: `/test <feature/module/file> [test-type]`
+**Usage**: `/test [plan-file] [--file <summary>] [--coverage-threshold=N] [--max-iterations=N]`
 
 **Type**: primary
 
 **Arguments**:
-- `feature/module/file`: Test target
-- `test-type` (optional): Type of test to run
+- `plan-file`: Path to implementation plan (optional if using --file)
+- `--file <summary>`: Explicit path to implementation summary (auto-discovery if omitted)
+- `--coverage-threshold=N`: Coverage percentage threshold (default: 80)
+- `--max-iterations=N`: Maximum test iterations for coverage loop (default: 5)
 
-**Output**: Test results and analysis
+**Agents Used**:
+- test-executor: Execute test suite with framework detection and structured reporting
+- debug-analyst: Analyze test failures and coverage gaps (conditional, on failure)
+
+**TODO.md Integration**: Automatically updates TODO.md after successful test completion (all tests passed AND coverage threshold met)
+
+**Output**: Test results with coverage metrics, optional debug reports in `.claude/specs/NNN_*/outputs/` and `.claude/specs/NNN_*/debug/`
 
 **See Also**:
 - [/test Command Guide](../guides/commands/test-command-guide.md) - Comprehensive usage, multi-framework testing, error analysis

@@ -427,7 +427,7 @@ Found 0 topic directories
 
 **Cause**: If Backlog section header is missing or malformed.
 
-**Solution**: Ensure `## Backlog` header exists exactly as shown. Backup is created at `TODO.md.backup`.
+**Solution**: Ensure `## Backlog` header exists exactly as shown. Git snapshot created before update.
 
 #### Status Misclassification
 
@@ -479,11 +479,30 @@ ERROR: VERIFICATION FAILED - Invalid JSON in classified results
 
 ### Recovery Options
 
-```bash
-# Restore from backup
-cp .claude/TODO.md.backup .claude/TODO.md
+The `/todo` command creates git commits before modifying TODO.md. To recover:
 
-# Manual validation
+**View Recent Changes**:
+```bash
+git log --oneline -5 .claude/TODO.md
+```
+
+**Restore Previous Version**:
+```bash
+# Find the snapshot commit (message starts with "chore: snapshot TODO.md")
+git log --oneline .claude/TODO.md
+
+# Restore from that commit
+git checkout <commit-hash> -- .claude/TODO.md
+```
+
+**Common Scenarios**:
+
+1. **Undo last /todo update**: `git checkout HEAD~1 -- .claude/TODO.md`
+2. **Compare current vs previous**: `git diff HEAD~1 .claude/TODO.md`
+3. **Restore specific section**: View diff, manually cherry-pick changes
+
+**Manual Validation** (after recovery):
+```bash
 bash -c 'source .claude/lib/todo/todo-functions.sh && validate_todo_structure .claude/TODO.md'
 ```
 

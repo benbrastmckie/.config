@@ -11,7 +11,8 @@ Mandatory standards for creating and maintaining executable command files in `.c
 5. [Validation and Testing](#validation-and-testing)
 6. [Argument Capture Patterns](#argument-capture-patterns)
 7. [Output Suppression Requirements](#output-suppression-requirements)
-8. [Prohibited Patterns](#prohibited-patterns)
+8. [Command Integration Patterns](#command-integration-patterns)
+9. [Prohibited Patterns](#prohibited-patterns)
 
 ---
 
@@ -162,6 +163,68 @@ Task {
     Return: [SIGNAL_NAME]: ${OUTPUT_PATH}
   "
 }
+```
+
+### Edge Case Patterns
+
+#### Iteration Loop Invocations
+
+When Task invocations occur inside iteration loops, each invocation point requires its own imperative directive:
+
+```markdown
+## Block 5: Initial Invocation
+
+**EXECUTE NOW**: USE the Task tool to invoke implementer-coordinator.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Implement phase ${STARTING_PHASE}"
+  prompt: "..."
+}
+
+## Block 7: Iteration Loop Re-Invocation
+
+```bash
+if [ "$WORK_REMAINING" != "0" ]; then
+  ITERATION=$((ITERATION + 1))
+fi
+```
+
+**EXECUTE NOW**: USE the Task tool to re-invoke implementer-coordinator for iteration ${ITERATION}.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Continue implementation (iteration ${ITERATION})"
+  prompt: "..."
+}
+```
+
+**Key Point**: Both invocation points (initial and loop) require separate imperative directives.
+
+#### Conditional Invocations
+
+When Task invocations depend on runtime conditions, use conditional imperative directives:
+
+```markdown
+**EXECUTE IF** coverage below threshold: USE the Task tool to invoke test-executor.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Run test suite"
+  prompt: "..."
+}
+```
+
+**Alternative** (explicit bash conditional):
+```bash
+if [ "$COVERAGE" -lt "$THRESHOLD" ]; then
+  echo "Coverage insufficient - invoking test-executor"
+fi
+```
+
+**EXECUTE NOW**: USE the Task tool to invoke test-executor.
+
+Task { ... }
 ```
 
 ---
@@ -369,40 +432,18 @@ Before committing command file changes, verify:
 
 Commands receive user arguments that must be captured reliably. Two patterns are available:
 
-### Pattern 1: Direct $1 Capture (Recommended for Simple Arguments)
+### Standardized 2-Block Argument Capture Pattern (Recommended)
 
-Use for file paths, numeric IDs, or short strings without special characters:
+The standardized 2-block pattern separates mechanical capture (Block 1) from parsing/validation logic (Block 2), improving debuggability and maintainability.
 
-```bash
-PLAN_FILE="$1"
-STARTING_PHASE="${2:-1}"  # With default
-
-if [ -z "$PLAN_FILE" ]; then
-  echo "ERROR: Plan file required"
-  exit 1
-fi
-```
-
-**When to use**:
-- File paths (e.g., `/implement`, `/build`)
-- Simple identifiers
-- Arguments that don't need shell expansion
-
-**Pros**: Simple, automatic, no user intervention
-**Cons**: May fail with complex characters (quotes, `!`, `$`)
-
-### Pattern 2: Two-Step Capture with Library (Recommended for Complex Input)
-
-Use the `argument-capture.sh` library for reliable argument capture with special characters. The library reduces boilerplate from 15-25 lines to 3-5 lines per command.
-
-**Part 1 block** (with explicit substitution by Claude):
+**Block 1: Mechanical Capture** (with explicit substitution by Claude):
 
 ```markdown
-## Part 1: Capture Workflow Description
+## Block 1: Capture User Argument
 
-**EXECUTE NOW**: Capture the workflow description.
+**EXECUTE NOW**: Capture the user-provided argument.
 
-Replace `YOUR_DESCRIPTION_HERE` with the actual description:
+Replace `YOUR_DESCRIPTION_HERE` with the actual argument value:
 
 ```bash
 set +H
@@ -414,12 +455,12 @@ echo "Argument captured to $TEMP_FILE"
 ```
 ```
 
-**Part 2 block** (reads captured argument):
+**Block 2: Validation and Parsing** (reads and validates captured argument):
 
 ```markdown
-## Part 2: Read and Validate Argument
+## Block 2: Validate and Parse Argument
 
-**EXECUTE NOW**: Read the captured description and validate:
+**EXECUTE NOW**: Read the captured argument and validate:
 
 ```bash
 set +H
@@ -434,38 +475,83 @@ fi
 if [ -f "$TEMP_FILE" ]; then
   DESCRIPTION=$(cat "$TEMP_FILE")
 else
-  echo "ERROR: Argument file not found"
-  echo "Usage: /mycommand \"<description>\""
+  echo "ERROR: Argument file not found" >&2
+  echo "Usage: /mycommand \"<description>\"" >&2
   exit 1
 fi
 
 if [ -z "$DESCRIPTION" ]; then
-  echo "ERROR: Argument is empty"
+  echo "ERROR: Argument is empty" >&2
   exit 1
 fi
 
+# Parse flags if applicable
+DRY_RUN=false
+COMPLEXITY=2
+if echo "$DESCRIPTION" | grep -q '\--dry-run'; then
+  DRY_RUN=true
+  DESCRIPTION=$(echo "$DESCRIPTION" | sed 's/--dry-run//g')
+fi
+if echo "$DESCRIPTION" | grep -Eq '\--complexity [0-9]'; then
+  COMPLEXITY=$(echo "$DESCRIPTION" | grep -oE '\--complexity [0-9]' | awk '{print $2}')
+  DESCRIPTION=$(echo "$DESCRIPTION" | sed 's/--complexity [0-9]//g')
+fi
+
+# Clean whitespace
+DESCRIPTION=$(echo "$DESCRIPTION" | xargs)
+
 echo "Description: $DESCRIPTION"
+[ "$DRY_RUN" = true ] && echo "Dry run: enabled"
+echo "Complexity: $COMPLEXITY"
 ```
+```
+
+**Benefits of 2-Block Pattern**:
+- **Separation of Concerns**: Capture mechanics isolated from validation logic
+- **Debuggability**: Can inspect capture step independently of validation
+- **Maintainability**: Flag parsing logic consolidated in single location
+- **Visibility**: User sees intermediate capture confirmation before validation
+
+**When to Use**:
+- Commands with complex argument parsing (multiple flags)
+- Commands requiring user verification of captured value
+- Commands with special character handling needs
+- All new command development (standardized approach)
+
+**Reference Commands**: See `/coordinate`, `/research`, `/plan`, `/revise`, `/repair` for working examples.
+
+### Pattern 1: Direct $1 Capture (Legacy)
+
+Use for file paths, numeric IDs, or short strings without special characters:
+
+```bash
+PLAN_FILE="$1"
+STARTING_PHASE="${2:-1}"  # With default
+
+if [ -z "$PLAN_FILE" ]; then
+  echo "ERROR: Plan file required" >&2
+  exit 1
+fi
 ```
 
 **When to use**:
-- Complex workflow descriptions (e.g., `/coordinate`, `/plan`)
-- Arguments with quotes, special characters, or shell metacharacters
-- When user verification of captured value is important
+- File paths (e.g., `/implement`, `/build`)
+- Simple identifiers without flags
+- Arguments that don't need shell expansion
 
-**Pros**: Handles all character types, user sees captured value, concurrent-safe, legacy fallback
-**Cons**: Requires manual substitution, two bash blocks instead of one
+**Pros**: Simple, automatic, no user intervention
+**Cons**: May fail with complex characters (quotes, `!`, `$`), no flag parsing support
 
-**Reference Commands**: See `/coordinate`, `/research`, `/plan`, `/revise` for working examples.
+**Migration Path**: New commands should use 2-block pattern. Existing commands using direct capture may remain unless flag support is needed.
 
 ### Recommendation Summary
 
 | Argument Type | Recommended Pattern | Example Commands |
 |--------------|---------------------|------------------|
-| File paths | Direct $1 | `/implement`, `/build` |
-| Issue descriptions | Direct $1 | `/debug`, `/debug` |
-| Complex workflows | Two-step | `/coordinate` |
-| Feature descriptions | Either (project choice) | `/plan`, `/plan` |
+| File paths (no flags) | Direct $1 (legacy) | `/implement`, `/build` |
+| Complex descriptions | 2-block (standard) | `/research`, `/plan` |
+| Commands with flags | 2-block (standard) | `/repair`, `/debug` |
+| New command development | 2-block (standard) | All new commands |
 
 ### Concurrent Execution Safety
 
@@ -476,6 +562,182 @@ TEMP_FILE="${HOME}/.claude/tmp/command_$(date +%s%N).txt"
 ```
 
 This prevents conflicts when multiple commands run simultaneously.
+
+---
+
+## Path Initialization Patterns
+
+Commands must initialize directory paths for topic organization and artifact storage. Three distinct patterns exist based on workflow requirements.
+
+### Pattern A: Topic Naming Agent (For New Topics with Semantic Naming)
+
+Use when creating new topic directories with LLM-generated semantic names.
+
+**When to Use**:
+- Commands that create new specs (e.g., `/research`, `/plan`, `/debug`)
+- Workflows requiring human-readable directory names
+- Features where topic name isn't predetermined
+
+**Implementation**:
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source unified-location-detection.sh" >&2
+  exit 1
+}
+
+# Invoke topic naming agent with user description
+TOPIC_DIR=$(create_topic_structure "$DESCRIPTION") || {
+  echo "ERROR: Topic directory creation failed" >&2
+  exit 1
+}
+
+# Parse topic number and name from returned path
+TOPIC_NUMBER=$(basename "$TOPIC_DIR" | grep -oE '^[0-9]+')
+TOPIC_NAME=$(basename "$TOPIC_DIR" | sed 's/^[0-9]*_//')
+
+echo "Topic allocated: $TOPIC_NUMBER ($TOPIC_NAME)"
+echo "Topic directory: $TOPIC_DIR"
+```
+
+**Behavior**:
+- Invokes Haiku LLM agent via `create_topic_structure()` function
+- Agent analyzes user description and generates semantic name
+- Returns path like `/home/user/.config/.claude/specs/NNN_semantic_topic_name/`
+- Falls back to `no_name` if agent fails (never blocks workflow)
+
+**Reference Commands**: `/research`, `/plan`, `/debug`
+
+### Pattern B: Direct Naming (For Timestamp-Based Allocation)
+
+Use when topic directories need timestamp-based or explicit naming without LLM involvement.
+
+**When to Use**:
+- Commands operating on topics without semantic naming
+- Workflows requiring immediate directory allocation
+- Testing or debugging scenarios
+
+**Implementation**:
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source unified-location-detection.sh" >&2
+  exit 1
+}
+
+# Get next topic number
+SPECS_ROOT="${CLAUDE_PROJECT_DIR}/.claude/specs"
+NEXT_NUMBER=$(get_next_topic_number "$SPECS_ROOT")
+
+# Create topic with explicit or timestamp name
+TOPIC_NAME="issue_${TIMESTAMP}"  # Or other naming scheme
+TOPIC_DIR="${SPECS_ROOT}/${NEXT_NUMBER}_${TOPIC_NAME}"
+mkdir -p "$TOPIC_DIR" || {
+  echo "ERROR: Failed to create topic directory" >&2
+  exit 1
+}
+
+echo "Topic directory: $TOPIC_DIR"
+```
+
+**Behavior**:
+- No LLM agent invocation (deterministic allocation)
+- Uses `get_next_topic_number()` for sequential numbering
+- Explicit naming control by command author
+- Faster execution (no agent round-trip)
+
+**Reference Commands**: Legacy commands, testing utilities
+
+### Pattern C: Path Derivation (For Operations on Existing Topics)
+
+Use when operating on existing topic directories or artifacts.
+
+**When to Use**:
+- Commands that modify existing plans (e.g., `/revise`, `/expand`, `/collapse`)
+- Commands that operate on existing specs (e.g., `/build`)
+- Any workflow reading or updating artifacts in known locations
+
+**Implementation**:
+```bash
+# Validate input path
+PLAN_FILE="$1"
+if [ -z "$PLAN_FILE" ]; then
+  echo "ERROR: Plan file path required" >&2
+  exit 1
+fi
+
+if [ ! -f "$PLAN_FILE" ]; then
+  echo "ERROR: Plan file not found: $PLAN_FILE" >&2
+  exit 1
+fi
+
+# Derive topic directory from plan path
+TOPIC_DIR=$(dirname "$(dirname "$PLAN_FILE")")  # plans/file.md -> topic/
+
+# Derive artifact paths
+REPORTS_DIR="${TOPIC_DIR}/reports"
+SUMMARIES_DIR="${TOPIC_DIR}/summaries"
+DEBUG_DIR="${TOPIC_DIR}/debug"
+
+echo "Operating on topic: $TOPIC_DIR"
+```
+
+**Behavior**:
+- Derives paths from input arguments (file or directory)
+- No directory creation (operates on existing structure)
+- Validates paths exist before operations
+- Uses standard artifact subdirectory layout
+
+**Reference Commands**: `/build`, `/revise`, `/expand`, `/collapse`
+
+### Decision Tree: Which Pattern to Use?
+
+```
+Does command create new topic?
+├─ YES: Does it need semantic naming?
+│   ├─ YES: Use Pattern A (Topic Naming Agent)
+│   └─ NO: Use Pattern B (Direct Naming)
+└─ NO: Use Pattern C (Path Derivation)
+```
+
+### Common Patterns Summary
+
+| Pattern | LLM Agent | When to Use | Example Commands |
+|---------|-----------|-------------|------------------|
+| A: Topic Naming Agent | Yes | New topics, semantic names | `/research`, `/plan`, `/debug` |
+| B: Direct Naming | No | Explicit naming, testing | Legacy commands, utilities |
+| C: Path Derivation | No | Existing topics/artifacts | `/build`, `/revise`, `/expand` |
+
+### Error Handling
+
+All patterns MUST handle path initialization failures:
+
+```bash
+# Pattern A
+TOPIC_DIR=$(create_topic_structure "$DESCRIPTION") || {
+  echo "ERROR: Topic directory creation failed" >&2
+  exit 1
+}
+
+# Pattern B
+mkdir -p "$TOPIC_DIR" || {
+  echo "ERROR: Failed to create topic directory" >&2
+  exit 1
+}
+
+# Pattern C
+if [ ! -d "$TOPIC_DIR" ]; then
+  echo "ERROR: Topic directory not found: $TOPIC_DIR" >&2
+  exit 1
+fi
+```
+
+### Lazy Subdirectory Creation
+
+All patterns follow lazy directory creation for artifact subdirectories:
+
+- **Commands create**: Only topic root directory (`specs/NNN_topic/`)
+- **Agents create**: Artifact subdirectories at write-time via `ensure_artifact_directory()`
+
+See [Directory Creation](#directory-creation) section for complete lazy creation guidance.
 
 ---
 
@@ -542,7 +804,11 @@ echo "ERROR: Configuration invalid" >&2
 echo "Setup complete: $WORKFLOW_ID"
 ```
 
-### Block Count Target
+### Block Consolidation Strategy
+
+Commands should balance clarity with execution efficiency by consolidating related operations into fewer bash blocks.
+
+#### Target Block Count
 
 Commands SHOULD use 2-3 bash blocks maximum to minimize display noise:
 
@@ -552,13 +818,154 @@ Commands SHOULD use 2-3 bash blocks maximum to minimize display noise:
 | **Execute** | Main workflow logic |
 | **Cleanup** | Verify, complete, summary |
 
-See [Bash Block Execution Model - Pattern 8](../concepts/bash-block-execution-model.md#pattern-8-block-count-minimization) for detailed consolidation patterns.
+#### When to Consolidate vs. Separate
+
+**Consolidate blocks when**:
+- Operations are sequential dependencies (A must complete before B)
+- No intermediate user visibility needed
+- Operations share same error handling strategy
+- Workflow is linear (<5 phases)
+
+**Separate blocks when**:
+- Operations need explicit checkpoints (user progress visibility)
+- Different error handling strategies required
+- Agent invocations needed (Task tool requires visible response)
+- Complex workflows (>5 phases) benefit from phase boundaries
+
+#### Decision Matrix
+
+| Workflow Type | Phase Count | Block Strategy | Rationale |
+|--------------|-------------|----------------|-----------|
+| Simple commands | 1-2 phases | 2 blocks (Setup + Execute) | Minimal overhead, clear flow |
+| Linear workflows | 3-5 phases | 2-3 blocks with checkpoints | Balance visibility and noise |
+| Complex workflows | 6+ phases | 3-4 blocks with phase groups | Logical grouping, clear progress |
+| Agent-heavy workflows | Any | Separate blocks per agent | Task tool visibility requirement |
+
+#### Consolidation Examples
+
+**Before** (6 blocks - excessive):
+```markdown
+Block 1: mkdir output dir
+Block 2: source libraries
+Block 3: validate config
+Block 4: init state machine
+Block 5: allocate workflow ID
+Block 6: persist state
+```
+
+**After** (2 blocks - optimized):
+```markdown
+Block 1 (Setup):
+- mkdir output dir (silent)
+- source libraries (with fail-fast)
+- validate config (exit on failure)
+- init state machine (explicit check)
+- allocate workflow ID
+- persist state
+- echo "Setup complete: $WORKFLOW_ID"
+
+Block 2 (Execute):
+- main workflow logic
+```
+
+**Benefits**:
+- 67% reduction in display noise (6 → 2 blocks)
+- Faster execution (fewer subprocess spawns)
+- Single summary per logical phase
+- Easier debugging (logical groupings)
+
+#### Performance vs. Clarity Trade-offs
+
+| Factor | Fewer Blocks (Consolidated) | More Blocks (Discrete) |
+|--------|----------------------------|------------------------|
+| **Execution Speed** | Faster (fewer subprocess spawns) | Slower (more overhead) |
+| **User Visibility** | Less granular checkpoints | More progress markers |
+| **Debugging** | Harder to isolate failures | Easier step-by-step debugging |
+| **Code Clarity** | Requires good comments | Self-documenting via separation |
+
+**Recommendation**: Start with consolidation (2-3 blocks), add separation only when debugging issues arise.
+
+#### Block Consolidation Template
+
+```bash
+# Block 1: Consolidated Setup
+set +H  # CRITICAL: First line
+mkdir -p "${OUTPUT_DIR}" 2>/dev/null || true
+
+# Source all required libraries with fail-fast
+source "${LIB_DIR}/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${LIB_DIR}/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Initialize state machine with explicit check
+sm_init "$DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE"
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: State machine initialization failed" >&2
+  exit 1
+fi
+
+# Allocate workflow ID and persist
+WORKFLOW_ID=$(allocate_workflow_id) || exit 1
+append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID" || exit 1
+
+# Single summary line
+echo "Setup complete: $WORKFLOW_ID"
+```
+
+#### Anti-Patterns
+
+**Anti-Pattern 1: Over-Separation**
+```markdown
+# WRONG: Each line in separate block
+Block 1: mkdir dir
+Block 2: source lib1
+Block 3: source lib2
+Block 4: init state
+```
+
+**Anti-Pattern 2: Monolithic Block**
+```markdown
+# WRONG: Everything in one block including agent invocation
+Block 1: Setup + validation + agent invocation + cleanup + summary
+# Agent response not visible due to subprocess isolation
+```
+
+**Anti-Pattern 3: No Checkpoints in Complex Workflows**
+```markdown
+# WRONG: 10-phase workflow in 2 blocks with no progress visibility
+Block 1: Setup
+Block 2: Phases 1-10 (user sees nothing for 5+ minutes)
+```
+
+#### Integration with Checkpoint Format
+
+Consolidated blocks should include checkpoints at logical boundaries:
+
+```bash
+# Block 1: Multi-phase setup
+set +H
+source_libraries || exit 1
+init_state_machine || exit 1
+allocate_paths || exit 1
+
+echo "[CHECKPOINT] Setup complete"
+echo "Context: WORKFLOW_ID=${WORKFLOW_ID}, PATHS_ALLOCATED=true"
+echo "Ready for: Agent delegation"
+```
+
+See [Checkpoint Reporting Format](output-formatting.md#checkpoint-reporting-format) for complete checkpoint standards.
 
 ### Complete Reference
 
-See [Output Formatting Standards](output-formatting-standards.md) for:
+See [Output Formatting Standards](output-formatting.md) for:
 - All output suppression patterns
-- Block consolidation rules
+- Detailed block consolidation rules and examples
 - Comment standards (WHAT not WHY)
 - Output vs error distinction
 
@@ -597,7 +1004,248 @@ See [Directory Creation Anti-Patterns](code-standards.md#directory-creation-anti
 
 ---
 
+## Command Integration Patterns
+
+Commands often need to integrate with other commands via file-based handoff. The summary-based handoff pattern enables decoupled state passing between commands.
+
+### Summary-Based Handoff Pattern
+
+When Command A produces artifacts that Command B consumes, use summary files as the integration point instead of direct state files.
+
+**Pattern Benefits**:
+- Decoupled state (commands don't share state files)
+- Human-readable integration (summaries are markdown)
+- Auditable workflow (summaries document what was done)
+- Flexible timing (Command B can run immediately or later)
+
+### --file Flag Pattern
+
+Commands that consume summaries from other commands should support a `--file` flag for explicit summary path specification.
+
+**Implementation**:
+
+```bash
+# In argument parsing block
+SUMMARY_FILE=""
+if [[ "$COMMAND_ARGS" =~ --file[[:space:]]+([^[:space:]]+) ]]; then
+  SUMMARY_FILE="${BASH_REMATCH[1]}"
+fi
+
+# Validate summary file exists
+if [ -n "$SUMMARY_FILE" ] && [ ! -f "$SUMMARY_FILE" ]; then
+  log_command_error "validation_error" \
+    "Summary file not found" \
+    "Path: $SUMMARY_FILE"
+  exit 1
+fi
+
+# Extract data from summary
+if [ -n "$SUMMARY_FILE" ]; then
+  # Example: Extract plan path from summary metadata
+  PLAN_FILE=$(grep "^- \*\*Plan\*\*:" "$SUMMARY_FILE" | sed 's/.*: //')
+  TEST_CONTEXT="summary"
+fi
+```
+
+**Usage Example**:
+```bash
+# Command A produces summary
+/implement plan.md
+# Creates: summaries/001-iteration-1-implementation-summary.md
+
+# Command B consumes summary via --file flag
+/test --file summaries/001-iteration-1-implementation-summary.md
+```
+
+### Auto-Discovery Pattern
+
+Commands should support auto-discovery of latest summary when --file flag not provided, with graceful fallback.
+
+**Implementation**:
+
+```bash
+# Auto-discovery if --file not provided but plan file given
+if [ -z "$SUMMARY_FILE" ] && [ -n "$PLAN_FILE" ]; then
+  # Derive topic path from plan file
+  TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
+  SUMMARIES_DIR="${TOPIC_PATH}/summaries"
+
+  # Find latest summary by modification time
+  if [ -d "$SUMMARIES_DIR" ]; then
+    LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+
+    if [ -n "$LATEST_SUMMARY" ]; then
+      SUMMARY_FILE="$LATEST_SUMMARY"
+      TEST_CONTEXT="auto-discovered"
+    else
+      # Graceful fallback: no summary found
+      echo "WARNING: No summary found in $SUMMARIES_DIR (proceeding without summary context)"
+      TEST_CONTEXT="no-summary"
+    fi
+  fi
+fi
+```
+
+**Usage Example**:
+```bash
+# Auto-discovery from plan file
+/test plan.md
+# Automatically finds latest summary in plan's topic directory
+```
+
+### Required Summary Metadata
+
+Commands producing summaries for consumption by other commands must include metadata section for parsing.
+
+**Metadata Format**:
+```markdown
+## Metadata
+
+- **Date**: 2025-12-01
+- **Plan**: /absolute/path/to/plan.md
+- **Topic Path**: /absolute/path/to/topic
+- **Iteration**: 1
+```
+
+This enables downstream commands to extract paths without relying on state files.
+
+### Integration Examples
+
+#### /implement → /test Workflow
+
+```bash
+# /implement creates summary with Testing Strategy section
+/implement specs/042_auth/plans/001_auth_plan.md
+# Creates: specs/042_auth/summaries/001-iteration-1-implementation-summary.md
+# Summary includes: Testing Strategy section with test files, commands, coverage target
+
+# /test consumes summary (auto-discovery)
+/test specs/042_auth/plans/001_auth_plan.md
+# Reads Testing Strategy from auto-discovered summary
+# Executes tests with coverage loop
+```
+
+#### /research → /plan Workflow
+
+```bash
+# /research creates research report
+/research "authentication feature"
+# Creates: specs/042_auth/reports/001-auth-research.md
+
+# /plan consumes research report via --file flag
+/plan --file specs/042_auth/reports/001-auth-research.md
+# Reads research findings and creates implementation plan
+```
+
+### State File vs Summary File
+
+**State Files** (`.state/*.sh`):
+- Bash-sourceable variable assignments
+- Machine-readable only
+- Temporary (deleted on completion)
+- Command-specific (not for cross-command handoff)
+
+**Summary Files** (`summaries/*.md`):
+- Human-readable markdown
+- Auditable workflow documentation
+- Persistent (kept for history)
+- Cross-command handoff mechanism
+
+**When to Use Each**:
+- Use state files for intra-command state (between blocks in same command)
+- Use summary files for inter-command state (between different commands)
+
+See [Implement-Test Workflow Guide](./../../guides/workflows/implement-test-workflow.md) for complete summary-based handoff examples.
+
+---
+
 ## Prohibited Patterns
+
+### Naked Task Blocks Without Imperative Directives
+
+Commands MUST NOT use Task blocks without explicit imperative instructions. Pseudo-code syntax or instructional text patterns are PROHIBITED and will be detected by lint-task-invocation-pattern.sh.
+
+**❌ PROHIBITED Pattern 1: Naked Task Block**
+
+```markdown
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic"
+  prompt: "..."
+}
+```
+
+**Problem**: No imperative directive tells Claude to USE the Task tool. Claude interprets this as documentation.
+
+**❌ PROHIBITED Pattern 2: Instructional Text Without Task Invocation**
+
+```markdown
+## Phase 3: Agent Delegation
+
+Use the Task tool to invoke the research-specialist agent with the calculated paths.
+The agent will create the report at ${REPORT_PATH}.
+```
+
+**Problem**: Instructional text describes what SHOULD happen but doesn't invoke the Task tool. No action occurs.
+
+**❌ PROHIBITED Pattern 3: Incomplete EXECUTE NOW Directive**
+
+```markdown
+**EXECUTE NOW**: Invoke the research-specialist agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic"
+  prompt: "..."
+}
+```
+
+**Problem**: Missing "USE the Task tool" phrase. Directive is not explicit enough.
+
+**✅ REQUIRED Pattern: Imperative Task Directive**
+
+```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research ${TOPIC} with mandatory file creation"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
+
+    **Workflow-Specific Context**:
+    - Research Topic: ${TOPIC}
+    - Output Path: ${REPORT_PATH}
+
+    Execute research per behavioral guidelines.
+    Return: REPORT_CREATED: ${REPORT_PATH}
+  "
+}
+```
+
+**Required Elements**:
+1. Imperative instruction: "**EXECUTE NOW**: USE the Task tool..."
+2. Agent name specified: "...to invoke the [AGENT_NAME] agent"
+3. No code block wrapper around Task block
+4. Inline prompt with variable interpolation
+5. Completion signal in prompt
+
+**Validation**:
+
+All command files are validated by the automated linter:
+
+```bash
+# Run Task invocation pattern linter
+bash .claude/scripts/lint-task-invocation-pattern.sh <command-file>
+
+# Linter detects:
+# - ERROR: Task { without EXECUTE NOW directive
+# - ERROR: Instructional text without actual Task invocation
+# - ERROR: Incomplete EXECUTE NOW directive (missing 'Task tool')
+```
+
+See [Hard Barrier Subagent Delegation Pattern](../../concepts/patterns/hard-barrier-subagent-delegation.md#task-invocation-requirements) for complete Task invocation requirements and edge case patterns.
 
 ### Negation in Conditional Tests (if ! and elif !)
 

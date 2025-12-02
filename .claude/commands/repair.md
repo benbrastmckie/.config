@@ -20,7 +20,7 @@ YOU ARE EXECUTING an error analysis workflow that reads error logs, groups them 
 **Terminal State**: plan (after planning phase complete)
 **Expected Output**: Error analysis reports + fix implementation plan in .claude/specs/NNN_topic/
 
-## Block 1: Consolidated Setup
+## Block 1a: Initial Setup
 
 **EXECUTE NOW**: The user invoked `/repair` with optional filters. Parse arguments and initialize workflow.
 
@@ -102,13 +102,12 @@ if [ $COMPLEXITY_VALID -ne 0 ]; then
   exit 1
 fi
 
-# Create error filters JSON
-ERROR_FILTERS=$(jq -n \
-  --arg since "$ERROR_SINCE" \
-  --arg type "$ERROR_TYPE" \
-  --arg command "$ERROR_COMMAND" \
-  --arg severity "$ERROR_SEVERITY" \
-  '{since: $since, type: $type, command: $command, severity: $severity}')
+# Store error filters as flat keys for state persistence
+# (State persistence library rejects JSON; use individual keys instead)
+ERROR_FILTER_SINCE="$ERROR_SINCE"
+ERROR_FILTER_TYPE="$ERROR_TYPE"
+ERROR_FILTER_COMMAND="$ERROR_COMMAND"
+ERROR_FILTER_SEVERITY="$ERROR_SEVERITY"
 
 # Create description for workflow
 ERROR_DESCRIPTION="error analysis and repair"
@@ -159,6 +158,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>
 }
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || {
   echo "ERROR: Failed to source workflow-initialization.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source todo-functions.sh" >&2
   exit 1
 }
 
@@ -332,7 +335,10 @@ append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
 append_workflow_state "TOPIC_NAME" "$TOPIC_NAME"
 append_workflow_state "TOPIC_NUM" "$TOPIC_NUM"
 append_workflow_state "ERROR_DESCRIPTION" "$ERROR_DESCRIPTION"
-append_workflow_state "ERROR_FILTERS" "$ERROR_FILTERS"
+append_workflow_state "ERROR_FILTER_SINCE" "$ERROR_FILTER_SINCE"
+append_workflow_state "ERROR_FILTER_TYPE" "$ERROR_FILTER_TYPE"
+append_workflow_state "ERROR_FILTER_COMMAND" "$ERROR_FILTER_COMMAND"
+append_workflow_state "ERROR_FILTER_SEVERITY" "$ERROR_FILTER_SEVERITY"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
 append_workflow_state "WORKFLOW_OUTPUT_FILE" "$WORKFLOW_OUTPUT_FILE"
 
@@ -342,11 +348,176 @@ if [ -n "$WORKFLOW_OUTPUT_FILE" ]; then
 fi
 echo "Research directory: $RESEARCH_DIR"
 echo "Plans directory: $PLANS_DIR"
+echo ""
+echo "[CHECKPOINT] Block 1a setup complete"
 ```
 
-**CRITICAL BARRIER - Repair Analysis Delegation**
+## Block 1b: Report Path Pre-Calculation
 
-**EXECUTE NOW**: USE the Task tool to invoke the repair-analyst agent. This invocation is MANDATORY. The orchestrator MUST NOT perform error analysis directly. Verification blocks will FAIL if repair analysis artifacts are not created by the analyst.
+**EXECUTE NOW**: Pre-calculate the absolute report path before invoking repair-analyst.
+
+This implements the **hard barrier pattern** - the report path is calculated BEFORE subagent invocation, passed as an explicit contract, and validated AFTER return.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1A ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/repair"
+USER_ARGS="${ERROR_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === CALCULATE REPORT PATH ===
+# Validate RESEARCH_DIR is set
+if [ -z "${RESEARCH_DIR:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "RESEARCH_DIR not set from Block 1a" \
+    "bash_block_1b" \
+    "$(jq -n '{research_dir: "missing"}')"
+  echo "ERROR: RESEARCH_DIR not set" >&2
+  exit 1
+fi
+
+# Defensive: Ensure RESEARCH_DIR exists before find command
+if [ ! -d "$RESEARCH_DIR" ]; then
+  mkdir -p "$RESEARCH_DIR" || {
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "file_error" \
+      "Failed to create RESEARCH_DIR" \
+      "bash_block_1b" \
+      "$(jq -n --arg dir "$RESEARCH_DIR" '{research_dir: $dir}')"
+    echo "ERROR: Failed to create $RESEARCH_DIR" >&2
+    exit 1
+  }
+  echo "Created research directory: $RESEARCH_DIR"
+fi
+
+# Calculate report number (001, 002, 003...)
+EXISTING_REPORTS=$(find "$RESEARCH_DIR" -name '[0-9][0-9][0-9]-*.md' 2>/dev/null | wc -l | tr -d ' ' || echo "0")
+REPORT_NUMBER=$(printf "%03d" $((EXISTING_REPORTS + 1)))
+
+# Generate report slug from error description or filters (max 40 chars, kebab-case)
+if [ -n "$ERROR_COMMAND" ]; then
+  # Use command filter for slug: /repair --command /build → build-errors-repair
+  COMMAND_SLUG=$(echo "$ERROR_COMMAND" | sed 's:^/::' | tr '_' '-')
+  REPORT_SLUG="${COMMAND_SLUG}-errors-repair"
+elif [ -n "$ERROR_TYPE" ]; then
+  # Use type filter for slug: /repair --type state_error → state-error-repair
+  TYPE_SLUG=$(echo "$ERROR_TYPE" | tr '_' '-')
+  REPORT_SLUG="${TYPE_SLUG}-repair"
+else
+  # Generic: error-analysis
+  REPORT_SLUG="error-analysis"
+fi
+
+# Truncate to 40 chars and sanitize
+REPORT_SLUG=$(echo "$REPORT_SLUG" | head -c 40 | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//')
+
+# Fallback if slug is empty after sanitization
+if [ -z "$REPORT_SLUG" ]; then
+  REPORT_SLUG="error-analysis"
+fi
+
+# Construct absolute report path
+REPORT_PATH="${RESEARCH_DIR}/${REPORT_NUMBER}-${REPORT_SLUG}.md"
+
+# Validate path is absolute
+if [[ "$REPORT_PATH" =~ ^/ ]]; then
+  : # Path is absolute, continue
+else
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Calculated REPORT_PATH is not absolute" \
+    "bash_block_1b" \
+    "$(jq -n --arg path "$REPORT_PATH" '{report_path: $path}')"
+  echo "ERROR: REPORT_PATH is not absolute: $REPORT_PATH" >&2
+  exit 1
+fi
+
+# Ensure parent directory exists
+mkdir -p "$(dirname "$REPORT_PATH")" 2>/dev/null || true
+
+# Persist for Block 1c validation
+append_workflow_state "REPORT_PATH" "$REPORT_PATH"
+append_workflow_state "REPORT_NUMBER" "$REPORT_NUMBER"
+append_workflow_state "REPORT_SLUG" "$REPORT_SLUG"
+
+echo ""
+echo "=== Report Path Pre-Calculation ==="
+echo "  Report Number: $REPORT_NUMBER"
+echo "  Report Slug: $REPORT_SLUG"
+echo "  Report Path: $REPORT_PATH"
+echo ""
+echo "[CHECKPOINT] Report path pre-calculated"
+```
+
+## Block 1b-exec: Repair Analysis Delegation
+
+**HARD BARRIER - Repair Analysis Delegation**
+
+**EXECUTE NOW**: USE the Task tool to invoke the repair-analyst agent. This invocation is MANDATORY. The orchestrator MUST NOT perform error analysis directly. After the agent returns, Block 1c will verify the report was created at the pre-calculated path.
+
+**WARNING**: Block 1c will FAIL if report not created at pre-calculated path.
 
 Task {
   subagent_type: "general-purpose"
@@ -357,23 +528,151 @@ Task {
 
     You are conducting error analysis for: repair workflow
 
-    **Workflow-Specific Context**:
+    **Input Contract (Hard Barrier Pattern)**:
+    - Report Path: ${REPORT_PATH}
+    - Output Directory: ${RESEARCH_DIR}
     - Error Filters: ${ERROR_FILTERS}
     - Research Complexity: ${RESEARCH_COMPLEXITY}
-    - Output Directory: ${RESEARCH_DIR}
     - Workflow Type: research-and-plan
     - Error Log Path: ${CLAUDE_PROJECT_DIR}/.claude/data/logs/errors.jsonl
     - Workflow Output File: ${WORKFLOW_OUTPUT_FILE}
+
+    **CRITICAL**: You MUST create the report file at the EXACT path specified above.
+    The orchestrator has pre-calculated this path and will validate it exists after you return.
 
     If WORKFLOW_OUTPUT_FILE is provided and non-empty, read and analyze it for runtime errors,
     path mismatches, state file errors, and bash execution errors in addition to the error log.
 
     Execute error analysis according to behavioral guidelines and return completion signal:
-    REPORT_CREATED: [path to created report]
+    REPORT_CREATED: ${REPORT_PATH}
   "
 }
 
-## Block 2: Research Verification and Planning Setup
+## Block 1c: Error Analysis Verification
+
+**EXECUTE NOW**: Validate that repair-analyst created the report at the pre-calculated path.
+
+This is the **hard barrier** - the workflow CANNOT proceed to Block 2a unless the report file exists. This architectural enforcement prevents the primary agent from bypassing subagent delegation.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === PRE-TRAP ERROR BUFFER ===
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1B ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/repair"
+USER_ARGS="${ERROR_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+echo ""
+echo "=== Agent Output Validation (Hard Barrier) ==="
+echo ""
+
+# === HARD BARRIER VALIDATION ===
+# Validate REPORT_PATH is set (from Block 1b)
+if [ -z "${REPORT_PATH:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "REPORT_PATH not restored from Block 1b state" \
+    "bash_block_1c" \
+    "$(jq -n '{report_path: "missing"}')"
+  echo "ERROR: REPORT_PATH not set - state restoration failed" >&2
+  echo "RECOVERY: Re-run /repair with same filters" >&2
+  exit 1
+fi
+
+echo "Expected report path: $REPORT_PATH"
+
+# HARD BARRIER: Report file MUST exist
+if [ ! -f "$REPORT_PATH" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "repair-analyst failed to create report file" \
+    "bash_block_1c" \
+    "$(jq -n --arg path "$REPORT_PATH" '{expected_path: $path}')"
+
+  echo "ERROR: HARD BARRIER FAILED - Report file not found at: $REPORT_PATH" >&2
+  echo "RECOVERY: Check repair-analyst agent output for errors" >&2
+  exit 1
+fi
+
+# Validate file size (minimum 100 bytes)
+REPORT_SIZE=$(wc -c < "$REPORT_PATH" 2>/dev/null || echo "0")
+if [ "$REPORT_SIZE" -lt 100 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Report file too small (< 100 bytes)" \
+    "bash_block_1c" \
+    "$(jq -n --arg path "$REPORT_PATH" --argjson size "$REPORT_SIZE" '{report_path: $path, file_size: $size}')"
+
+  echo "ERROR: Report file too small: $REPORT_SIZE bytes" >&2
+  echo "RECOVERY: Check repair-analyst agent for partial output" >&2
+  exit 1
+fi
+
+echo "Report validated: $REPORT_SIZE bytes"
+echo ""
+echo "[CHECKPOINT] Agent output validated"
+```
+
+## Block 2a: Planning Setup
 
 **EXECUTE NOW**: Verify research artifacts and prepare for planning:
 
@@ -598,39 +897,292 @@ fi
 
 echo "=== Phase 2: Planning ==="
 echo ""
+echo "[CHECKPOINT] Block 2a planning setup complete"
+```
 
-# === PREPARE PLAN PATH ===
+## Block 2a-standards: Extract Project Standards
+
+**EXECUTE NOW**: Extract project standards for plan-architect agent.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 2A ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID from Block 2a" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/repair"
+USER_ARGS="${ERROR_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === EXTRACT PROJECT STANDARDS ===
+# Source standards extraction library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/standards-extraction.sh" 2>/dev/null || {
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Failed to source standards-extraction library" \
+    "bash_block_2a_standards" \
+    "$(jq -n --arg path "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/standards-extraction.sh" '{library_path: $path}')"
+  echo "WARNING: Standards extraction unavailable, proceeding without standards" >&2
+  FORMATTED_STANDARDS=""
+}
+
+# Extract and format standards for prompt injection
+if [ -z "${FORMATTED_STANDARDS:-}" ]; then
+  FORMATTED_STANDARDS=$(format_standards_for_prompt 2>/dev/null) || {
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "execution_error" \
+      "Standards extraction failed" \
+      "bash_block_2a_standards" \
+      "{}"
+    echo "WARNING: Standards extraction failed, proceeding without standards" >&2
+    FORMATTED_STANDARDS=""
+  }
+fi
+
+# Persist standards for Block 2b-exec
+append_workflow_state "FORMATTED_STANDARDS<<STANDARDS_EOF
+$FORMATTED_STANDARDS
+STANDARDS_EOF"
+
+if [ -n "$FORMATTED_STANDARDS" ]; then
+  STANDARDS_COUNT=$(echo "$FORMATTED_STANDARDS" | grep -c "^###" || echo 0)
+  echo "Extracted $STANDARDS_COUNT standards sections for plan-architect"
+else
+  echo "No standards extracted (graceful degradation)"
+fi
+
+echo ""
+echo "[CHECKPOINT] Standards extraction complete"
+```
+
+## Block 2b: Plan Path Pre-Calculation
+
+**EXECUTE NOW**: Pre-calculate the absolute plan path before invoking plan-architect.
+
+This implements the **hard barrier pattern** - the plan path is calculated BEFORE subagent invocation, passed as an explicit contract, and validated AFTER return.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 2A ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID from Block 2a" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/repair"
+USER_ARGS="${ERROR_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === CALCULATE PLAN PATH ===
+# Validate PLANS_DIR and TOPIC_NAME are set
+if [ -z "${PLANS_DIR:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "PLANS_DIR not set from Block 2a" \
+    "bash_block_2b" \
+    "$(jq -n '{plans_dir: "missing"}')"
+  echo "ERROR: PLANS_DIR not set" >&2
+  exit 1
+fi
+
+if [ -z "${TOPIC_NAME:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "TOPIC_NAME not set from Block 2a" \
+    "bash_block_2b" \
+    "$(jq -n '{topic_name: "missing"}')"
+  echo "ERROR: TOPIC_NAME not set" >&2
+  exit 1
+fi
+
+# Calculate plan number (always 001 for repair)
 PLAN_NUMBER="001"
+
+# Generate plan filename from topic name (kebab-case, max 40 chars)
 PLAN_FILENAME="${PLAN_NUMBER}-$(echo "$TOPIC_NAME" | tr '_' '-' | cut -c1-40)-plan.md"
+
+# Construct absolute plan path
 PLAN_PATH="${PLANS_DIR}/${PLAN_FILENAME}"
 
-# Collect research report paths
+# Validate path is absolute
+if [[ "$PLAN_PATH" =~ ^/ ]]; then
+  : # Path is absolute, continue
+else
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Calculated PLAN_PATH is not absolute" \
+    "bash_block_2b" \
+    "$(jq -n --arg path "$PLAN_PATH" '{plan_path: $path}')"
+  echo "ERROR: PLAN_PATH is not absolute: $PLAN_PATH" >&2
+  exit 1
+fi
+
+# Collect research report paths for plan creation
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
-REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
+# Convert to space-separated format matching /plan command
+REPORT_PATHS_LIST=$(echo "$REPORT_PATHS" | tr '\n' ' ')
 
-# === PERSIST FOR BLOCK 3 ===
+# Build error filters context for plan metadata
+ERROR_FILTERS=""
+[ -n "$ERROR_SINCE" ] && ERROR_FILTERS+="--since $ERROR_SINCE "
+[ -n "$ERROR_TYPE" ] && ERROR_FILTERS+="--type $ERROR_TYPE "
+[ -n "$ERROR_COMMAND" ] && ERROR_FILTERS+="--command $ERROR_COMMAND "
+ERROR_FILTERS=$(echo "$ERROR_FILTERS" | sed 's/ $//')  # Trim trailing space
+
+# Ensure parent directory exists
+mkdir -p "$(dirname "$PLAN_PATH")" 2>/dev/null || true
+
+# Persist for Block 2c validation
 append_workflow_state "PLAN_PATH" "$PLAN_PATH"
-append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
+append_workflow_state "PLAN_NUMBER" "$PLAN_NUMBER"
+append_workflow_state "PLAN_FILENAME" "$PLAN_FILENAME"
+append_workflow_state "REPORT_PATHS_LIST" "$REPORT_PATHS_LIST"
+append_workflow_state "ERROR_FILTERS" "$ERROR_FILTERS"
 
+# Persist state transitions
 save_completed_states_to_state
 SAVE_EXIT=$?
 if [ $SAVE_EXIT -ne 0 ]; then
-  log_command_error "state_error" "Failed to persist state transitions" "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "Failed to persist state transitions" \
+    "bash_block_2b" \
+    "$(jq -n --arg file "${STATE_FILE:-unknown}" '{state_file: $file}')"
   echo "ERROR: State persistence failed" >&2
   exit 1
 fi
 
-if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
-  echo "WARNING: State file not found after save: $STATE_FILE" >&2
-fi
-
-echo "Plan will be created at: $PLAN_PATH"
-echo "Using $REPORT_COUNT research reports"
+echo ""
+echo "=== Plan Path Pre-Calculation ==="
+echo "  Plan Number: $PLAN_NUMBER"
+echo "  Plan Filename: $PLAN_FILENAME"
+echo "  Plan Path: $PLAN_PATH"
+echo "  Using $REPORT_COUNT research reports"
+echo ""
+echo "[CHECKPOINT] Plan path pre-calculated"
 ```
 
-**CRITICAL BARRIER - Planning Delegation**
+## Block 2b-exec: Plan Creation Delegation
 
-**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent. This invocation is MANDATORY. The orchestrator MUST NOT create plans directly. Verification blocks will FAIL if plan artifacts are not created by the architect.
+**HARD BARRIER - Plan Creation Delegation**
+
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent. This invocation is MANDATORY. The orchestrator MUST NOT create plans directly. After the agent returns, Block 2c will verify the plan was created at the pre-calculated path.
+
+**WARNING**: Block 2c will FAIL if plan not created at pre-calculated path.
 
 Task {
   subagent_type: "general-purpose"
@@ -641,12 +1193,20 @@ Task {
 
     You are creating an implementation plan for: repair workflow
 
-    **Workflow-Specific Context**:
+    **Input Contract (Hard Barrier Pattern)**:
+    - Plan Path: ${PLAN_PATH}
     - Feature Description: ${ERROR_DESCRIPTION}
-    - Output Path: ${PLAN_PATH}
-    - Research Reports: ${REPORT_PATHS_JSON}
+    - Research Reports: ${REPORT_PATHS_LIST}
+    - Command Context: repair
     - Workflow Type: research-and-plan
     - Operation Mode: new plan creation
+    - Error Log Query: ${ERROR_FILTERS}
+
+    **Project Standards**:
+    ${FORMATTED_STANDARDS}
+
+    **CRITICAL**: You MUST create the plan file at the EXACT path specified above.
+    The orchestrator has pre-calculated this path and will validate it exists after you return.
 
     **REPAIR-SPECIFIC REQUIREMENT**:
     Since this is a repair plan addressing logged errors, you MUST include a final phase
@@ -675,9 +1235,133 @@ Task {
   "
 }
 
-## Block 3: Plan Verification and Completion
+## Block 2c: Plan Verification
 
-**EXECUTE NOW**: Verify plan artifacts and complete workflow:
+**EXECUTE NOW**: Validate that plan-architect created the plan at the pre-calculated path.
+
+This is the **hard barrier** - the workflow CANNOT proceed to Block 3 unless the plan file exists. This architectural enforcement prevents the primary agent from bypassing subagent delegation.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === PRE-TRAP ERROR BUFFER ===
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 2B ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/repair"
+USER_ARGS="${ERROR_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+echo ""
+echo "=== Plan Verification (Hard Barrier) ==="
+echo ""
+
+# === HARD BARRIER VALIDATION ===
+# Validate PLAN_PATH is set (from Block 2b)
+if [ -z "${PLAN_PATH:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "PLAN_PATH not restored from Block 2b state" \
+    "bash_block_2c" \
+    "$(jq -n '{plan_path: "missing"}')"
+  echo "ERROR: PLAN_PATH not set - state restoration failed" >&2
+  echo "RECOVERY: Re-run /repair with same filters" >&2
+  exit 1
+fi
+
+echo "Expected plan path: $PLAN_PATH"
+
+# HARD BARRIER: Plan file MUST exist
+if [ ! -f "$PLAN_PATH" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "plan-architect failed to create plan file" \
+    "bash_block_2c" \
+    "$(jq -n --arg path "$PLAN_PATH" '{expected_path: $path}')"
+
+  echo "ERROR: HARD BARRIER FAILED - Plan file not found at: $PLAN_PATH" >&2
+  echo "RECOVERY: Check plan-architect agent output for errors" >&2
+  exit 1
+fi
+
+# Validate file size (minimum 500 bytes)
+FILE_SIZE=$(wc -c < "$PLAN_PATH" 2>/dev/null || echo "0")
+if [ "$FILE_SIZE" -lt 500 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Plan file too small (< 500 bytes)" \
+    "bash_block_2c" \
+    "$(jq -n --arg path "$PLAN_PATH" --argjson size "$FILE_SIZE" '{plan_path: $path, file_size: $size}')"
+
+  echo "ERROR: Plan file too small: $FILE_SIZE bytes" >&2
+  echo "RECOVERY: Check plan-architect agent for partial output" >&2
+  exit 1
+fi
+
+echo "Plan validated: $FILE_SIZE bytes"
+echo ""
+echo "[CHECKPOINT] Plan verification complete"
+```
+
+## Block 3: Error Log Update and Completion
+
+**EXECUTE NOW**: Update error log status and complete workflow:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -830,21 +1514,14 @@ echo ""
 # === UPDATE ERROR LOG STATUS (Block 3.5) ===
 echo "Updating error log entries..."
 
-# Load error filters from persisted state
-ERROR_FILTERS_JSON=$(grep "^ERROR_FILTERS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo '{}')
-if [ -z "$ERROR_FILTERS_JSON" ] || [ "$ERROR_FILTERS_JSON" = '{}' ]; then
-  ERROR_FILTERS_JSON='{"since":"","type":"","command":"","severity":""}'
-fi
+# Load error filters from persisted flat keys (restored from state file)
+# Variables restored: ERROR_FILTER_SINCE, ERROR_FILTER_TYPE, ERROR_FILTER_COMMAND, ERROR_FILTER_SEVERITY
 
-# Build filter arguments from JSON
+# Build filter arguments from flat keys
 FILTER_ARGS=""
-ERROR_COMMAND_FILTER=$(echo "$ERROR_FILTERS_JSON" | jq -r '.command // ""' 2>/dev/null || echo "")
-ERROR_TYPE_FILTER=$(echo "$ERROR_FILTERS_JSON" | jq -r '.type // ""' 2>/dev/null || echo "")
-ERROR_SINCE_FILTER=$(echo "$ERROR_FILTERS_JSON" | jq -r '.since // ""' 2>/dev/null || echo "")
-
-[ -n "$ERROR_COMMAND_FILTER" ] && FILTER_ARGS="$FILTER_ARGS --command $ERROR_COMMAND_FILTER"
-[ -n "$ERROR_TYPE_FILTER" ] && FILTER_ARGS="$FILTER_ARGS --type $ERROR_TYPE_FILTER"
-[ -n "$ERROR_SINCE_FILTER" ] && FILTER_ARGS="$FILTER_ARGS --since $ERROR_SINCE_FILTER"
+[ -n "$ERROR_FILTER_COMMAND" ] && FILTER_ARGS="$FILTER_ARGS --command $ERROR_FILTER_COMMAND"
+[ -n "$ERROR_FILTER_TYPE" ] && FILTER_ARGS="$FILTER_ARGS --type $ERROR_FILTER_TYPE"
+[ -n "$ERROR_FILTER_SINCE" ] && FILTER_ARGS="$FILTER_ARGS --since $ERROR_FILTER_SINCE"
 
 # Mark matching errors as FIX_PLANNED with plan path
 ERRORS_UPDATED=$(mark_errors_fix_planned "$PLAN_PATH" $FILTER_ARGS)
@@ -905,10 +1582,16 @@ ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)
 NEXT_STEPS="  • Review fix plan: cat $PLAN_PATH
   • Review error analysis: ls -lh $RESEARCH_DIR/
   • Check updated errors: /errors --status FIX_PLANNED
-  • Implement fixes: /build $PLAN_PATH"
+  • Implement fixes: /build $PLAN_PATH
+  • Run /todo to update TODO.md (adds repair plan to tracking)"
 
 # Print standardized summary (no phases for repair command)
 print_artifact_summary "Repair" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
+
+# Emit completion reminder
+echo ""
+echo "📋 Next Step: Run /todo to update TODO.md with this repair plan"
+echo ""
 
 # === RETURN PLAN_CREATED SIGNAL ===
 # Signal enables buffer-opener hook and orchestrator detection

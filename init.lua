@@ -52,6 +52,7 @@ end
 -- Set leader key BEFORE loading lazy or any other plugins
 -- This is critical and must happen first
 vim.g.mapleader = " " -- Space as leader key
+vim.g.maplocalleader = "," -- Comma as local leader for filetype-specific mappings (e.g., Lean)
 
 -- Use the Nix-installed MCP-Hub binary if available
 local mcp_hub_path = os.getenv("MCP_HUB_PATH")

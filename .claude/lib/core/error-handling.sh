@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 # Error handling and recovery utilities
 # Provides functions for error classification, recovery, retry logic, and escalation
+#
+# Test Context Detection:
+#   - ERR trap automatically detects test execution contexts to prevent false positives
+#   - Test context patterns: WORKFLOW_ID=test_*, /tmp/test_*.sh scripts, SUPPRESS_ERR_LOGGING=1
+#   - Usage: export SUPPRESS_ERR_LOGGING=1 before running test scripts to skip error logging
+#   - Effect: Intentional test failures won't be logged as real errors in errors.jsonl
 
 # Source guard: Prevent multiple sourcing
 if [ -n "${ERROR_HANDLING_SOURCED:-}" ]; then
@@ -196,6 +202,36 @@ readonly ERROR_TYPE_LLM_API_ERROR="llm_api_error"
 readonly ERROR_TYPE_LLM_LOW_CONFIDENCE="llm_low_confidence"
 readonly ERROR_TYPE_LLM_PARSE_ERROR="llm_parse_error"
 readonly ERROR_TYPE_INVALID_MODE="invalid_mode"
+
+# is_test_context: Detect if current execution context is a test framework
+# Usage: is_test_context
+# Returns: 0 if test context detected, 1 otherwise
+# Effect: Used to suppress error logging for intentional test framework errors
+# Test Detection Methods:
+#   1. Workflow ID pattern: WORKFLOW_ID matches ^test_
+#   2. Script path pattern: Calling script matches /tmp/test_.*\.sh$
+#   3. Environment variable: SUPPRESS_ERR_LOGGING=1
+# Example: if is_test_context; then skip_logging; fi
+is_test_context() {
+  # Check 1: Workflow ID pattern (test_*)
+  if [[ "${WORKFLOW_ID:-}" =~ ^test_ ]]; then
+    return 0
+  fi
+
+  # Check 2: Calling script in /tmp/test_*.sh
+  # BASH_SOURCE[2] is the script that called the error trap function
+  local caller_script="${BASH_SOURCE[2]:-}"
+  if [[ "$caller_script" =~ /tmp/test_.*\.sh$ ]]; then
+    return 0
+  fi
+
+  # Check 3: Environment variable override
+  if [ "${SUPPRESS_ERR_LOGGING:-0}" = "1" ]; then
+    return 0
+  fi
+
+  return 1
+}
 
 # classify_error: Classify error based on error message
 # Usage: classify_error <error-message>
@@ -1811,6 +1847,7 @@ handle_state_error() {
 
 # Export functions for use in other scripts
 if [ "${BASH_SOURCE[0]}" != "${0}" ]; then
+  export -f is_test_context
   export -f classify_error
   export -f suggest_recovery
   export -f detect_error_type
@@ -1926,6 +1963,13 @@ _log_bash_error() {
     return 0  # Return without logging or exiting
   fi
 
+  # Skip error logging for test framework contexts
+  # Prevents false positive errors from intentional test failures
+  if is_test_context; then
+    [ "${DEBUG:-0}" = "1" ] && echo "DEBUG: Skipping error log (test context detected)" >&2
+    exit $exit_code
+  fi
+
   # Mark that we've logged this error to prevent duplicate logging from EXIT trap
   _BASH_ERROR_LOGGED=1
 
@@ -1970,6 +2014,13 @@ _log_bash_exit() {
 
   # Only log if error occurred AND not already logged by ERR trap
   if [ $exit_code -ne 0 ] && [ -z "${_BASH_ERROR_LOGGED:-}" ]; then
+    # Skip error logging for test framework contexts
+    # Prevents false positive errors from intentional test failures
+    if is_test_context; then
+      [ "${DEBUG:-0}" = "1" ] && echo "DEBUG: Skipping error log (test context detected)" >&2
+      return
+    fi
+
     # Filter benign errors (system initialization failures that aren't actionable)
     if _is_benign_bash_error "$failed_command" "$exit_code"; then
       return  # Skip logging for benign errors

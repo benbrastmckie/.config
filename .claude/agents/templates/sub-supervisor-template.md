@@ -141,6 +141,8 @@ echo "✓ Supervisor inputs parsed: ${#TASKS[@]} tasks"
 **Worker 1 - {{TASK_1_DESCRIPTION}}**:
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the worker.
+
 Task {
   subagent_type: "general-purpose"
   description: "{{TASK_1_DESCRIPTION}}"
@@ -161,6 +163,8 @@ Task {
 **Worker 2 - {{TASK_2_DESCRIPTION}}**:
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the worker.
+
 Task {
   subagent_type: "general-purpose"
   description: "{{TASK_2_DESCRIPTION}}"
@@ -181,6 +185,8 @@ Task {
 **Worker 3 - {{TASK_3_DESCRIPTION}}**:
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the worker.
+
 Task {
   subagent_type: "general-purpose"
   description: "{{TASK_3_DESCRIPTION}}"
@@ -201,6 +207,8 @@ Task {
 **Worker 4 - {{TASK_4_DESCRIPTION}}**:
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the worker.
+
 Task {
   subagent_type: "general-purpose"
   description: "{{TASK_4_DESCRIPTION}}"

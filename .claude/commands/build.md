@@ -21,9 +21,9 @@ YOU ARE EXECUTING a build-from-plan workflow that takes an existing implementati
 **Expected Input**: Existing plan file path
 **Expected Output**: Implemented features with passing tests and updated documentation
 
-## Block 1: Setup + Execute + Verify (Consolidated)
+## Block 1a: Implementation Phase Setup
 
-**EXECUTE NOW**: The user invoked `/build [plan-file] [starting-phase] [--dry-run]`. This consolidated block captures arguments, initializes workflow, executes implementation via Task, and verifies completion inline.
+**EXECUTE NOW**: The user invoked `/build [plan-file] [starting-phase] [--dry-run]`. This block captures arguments, initializes workflow state, and prepares for implementer-coordinator invocation.
 
 In the **bash block below**, replace `YOUR_BUILD_ARGS_HERE` with the actual build arguments (or leave empty for auto-resume).
 
@@ -480,20 +480,27 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/barrier-utils.sh" 2>/dev/null
   echo "WARNING: barrier-utils.sh not found, verification will use basic checks" >&2
 }
 
-# Checkpoint reporting
+# CHECKPOINT REPORTING
 echo ""
-echo "[CHECKPOINT] Implementation setup complete"
-echo "  Workflow ID: $WORKFLOW_ID"
-echo "  Topic path: $TOPIC_PATH"
-echo "  Max iterations: $MAX_ITERATIONS"
-echo "  Context threshold: ${CONTEXT_THRESHOLD}%"
-echo "  Ready for implementer-coordinator invocation"
+echo "CHECKPOINT: Implementation phase setup complete"
+echo "- State transition: IMPLEMENT [OK]"
+echo "- Plan file: $PLAN_FILE"
+echo "- Topic path: $TOPIC_PATH"
+echo "- Iteration: ${ITERATION}/${MAX_ITERATIONS}"
+echo "- Variables persisted: [OK]"
+echo "- Ready for: implementer-coordinator invocation (Block 1b)"
 echo ""
 ```
 
-**EXECUTE NOW**: Invoke implementer-coordinator subagent for implementation phase, then verify completion inline.
+## Block 1b: Implementer-Coordinator Invocation [CRITICAL BARRIER]
 
-**Iteration Context**: The coordinator will be passed iteration parameters. After it returns, inline verification will check work_remaining to determine if another iteration is needed.
+**HARD BARRIER - Implementer-Coordinator Invocation**
+
+**CRITICAL BARRIER**: This block MUST invoke implementer-coordinator via Task tool. The Task invocation is MANDATORY and CANNOT be bypassed. The verification block (Block 1c) will FAIL if implementation summary is not created by the subagent.
+
+**EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent. DO NOT perform implementation work directly. This Task invocation CANNOT be bypassed - the bash verification block enforces mandatory delegation. After the agent returns, Block 1c will verify artifacts were created.
+
+**Iteration Context**: The coordinator will be passed iteration parameters. After it returns, Block 1c verification will check work_remaining to determine if another iteration is needed.
 
 Task {
   subagent_type: "general-purpose"
@@ -504,9 +511,10 @@ Task {
 
     You are executing the implementation phase for: build workflow
 
-    Input:
+    **Input Contract (Hard Barrier Pattern)**:
     - plan_path: $PLAN_FILE
     - topic_path: $TOPIC_PATH
+    - summaries_dir: ${TOPIC_PATH}/summaries/
     - artifact_paths:
       - reports: ${TOPIC_PATH}/reports/
       - plans: ${TOPIC_PATH}/plans/
@@ -516,6 +524,9 @@ Task {
       - checkpoints: ${HOME}/.claude/data/checkpoints/
     - continuation_context: ${CONTINUATION_CONTEXT:-null}
     - iteration: ${ITERATION}
+
+    **CRITICAL**: You MUST create implementation summary at ${TOPIC_PATH}/summaries/
+    The orchestrator will validate the summary exists after you return.
 
     Workflow-Specific Context:
     - Starting Phase: ${STARTING_PHASE}
@@ -551,18 +562,25 @@ Task {
   "
 }
 
-**EXECUTE NOW**: Verify implementer-coordinator created implementation summary and check iteration status.
+## Block 1c: Implementation Phase Verification (Hard Barrier)
+
+**EXECUTE NOW**: Validate that implementer-coordinator created the summary at the expected path.
+
+This is the **hard barrier** - the workflow CANNOT proceed unless the summary file exists. This architectural enforcement prevents the primary agent from bypassing subagent delegation.
 
 ```bash
 set +H 2>/dev/null || true
 set +o histexpand 2>/dev/null || true
 set -e  # Fail-fast per code-standards.md
 
+# === PRE-TRAP ERROR BUFFER ===
+declare -a _EARLY_ERROR_BUFFER=()
+
 # DEBUG_LOG initialization per spec 778
 DEBUG_LOG="${HOME}/.claude/tmp/workflow_debug.log"
 mkdir -p "$(dirname "$DEBUG_LOG")" 2>/dev/null
 
-# Load project directory (already exported in previous block)
+# === DETECT PROJECT DIRECTORY (subprocess isolation) ===
 if [ -z "$CLAUDE_PROJECT_DIR" ]; then
   if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
     CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
@@ -581,7 +599,7 @@ if [ -z "$CLAUDE_PROJECT_DIR" ]; then
   export CLAUDE_PROJECT_DIR
 fi
 
-# Load state-persistence for append_workflow_state
+# === SOURCE CRITICAL LIBRARIES (Tier 1 - fail-fast required) ===
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
@@ -590,9 +608,13 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
   echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
 }
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
 ensure_error_log_exists
 
-# Load workflow state
+# === RESTORE VARIABLES FROM BLOCK 1a STATE ===
 STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/build_state_id.txt"
 if [ -f "$STATE_ID_FILE" ]; then
   WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
@@ -624,9 +646,9 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
-# === INLINE VERIFICATION (previously Block 1c) ===
+# === MANDATORY VERIFICATION (hard barrier pattern) ===
 echo ""
-echo "=== Implementation Verification ==="
+echo "=== Hard Barrier Verification: Implementation Summary ==="
 echo ""
 
 # Defensive: Validate SUMMARIES_DIR variable is set
@@ -637,7 +659,7 @@ if [ -z "$SUMMARIES_DIR" ]; then
     "$USER_ARGS" \
     "state_error" \
     "SUMMARIES_DIR variable not set" \
-    "verification_block" \
+    "bash_block_1c" \
     "$(jq -n '{error: "SUMMARIES_DIR empty after state load"}')"
   echo "ERROR: SUMMARIES_DIR not set - state restoration failed"
   exit 1
@@ -653,70 +675,74 @@ if [ ! -d "$SUMMARIES_DIR" ]; then
       "$USER_ARGS" \
       "file_error" \
       "Cannot create summaries directory: $SUMMARIES_DIR" \
-      "verification_block" \
+      "bash_block_1c" \
       "$(jq -n --arg dir "$SUMMARIES_DIR" '{summaries_dir: $dir}')"
     echo "ERROR: Cannot create summaries directory"
     exit 1
   }
 fi
 
-# Count summary files (defensive: handle find errors)
-SUMMARY_COUNT=$(find "$SUMMARIES_DIR" -name "*.md" -type f 2>/dev/null | wc -l || echo "0")
-if [ "$SUMMARY_COUNT" -eq 0 ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "verification_error" \
-    "No summary files found in $SUMMARIES_DIR" \
-    "verification_block" \
-    "$(jq -n --arg dir "$SUMMARIES_DIR" '{summaries_dir: $dir}')"
-  echo "ERROR: VERIFICATION FAILED - No implementation summary found"
-  exit 1
-fi
-
-# Find most recent summary (defensive: handle missing files)
+# HARD BARRIER: Summary file MUST exist
 LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -exec ls -t {} + 2>/dev/null | head -1 || echo "")
-if [ -z "$LATEST_SUMMARY" ]; then
+if [ -z "$LATEST_SUMMARY" ] || [ ! -f "$LATEST_SUMMARY" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
     "$USER_ARGS" \
-    "verification_error" \
-    "Could not find latest summary in $SUMMARIES_DIR" \
-    "verification_block" \
-    "$(jq -n --arg dir "$SUMMARIES_DIR" '{summaries_dir: $dir}')"
-  echo "ERROR: VERIFICATION FAILED - Latest summary not accessible"
+    "agent_error" \
+    "implementer-coordinator failed to create summary file" \
+    "bash_block_1c" \
+    "$(jq -n --arg dir "${SUMMARIES_DIR}" '{expected_directory: $dir}')"
+
+  echo "ERROR: HARD BARRIER FAILED - Implementation summary not found" >&2
+  echo "" >&2
+  echo "This indicates the implementer-coordinator subagent did not create the expected artifact." >&2
+  echo "The workflow cannot proceed without the implementation summary." >&2
+  echo "" >&2
+  echo "Troubleshooting:" >&2
+  echo "  1. Check implementer-coordinator agent output for errors" >&2
+  echo "  2. Verify Task invocation in Block 1b executed correctly" >&2
+  echo "  3. Run /errors --command /build for detailed error logs" >&2
   exit 1
 fi
 
-if [ ! -f "$LATEST_SUMMARY" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "file_error" \
-    "Summary file does not exist: $LATEST_SUMMARY" \
-    "verification_block" \
-    "$(jq -n --arg file "$LATEST_SUMMARY" '{summary_file: $file}')"
-  echo "ERROR: VERIFICATION FAILED - Summary file missing"
-  exit 1
-fi
-
-# Verify summary has minimum content
-SUMMARY_SIZE=$(stat -f%z "$LATEST_SUMMARY" 2>/dev/null || stat -c%s "$LATEST_SUMMARY" 2>/dev/null || echo "0")
+# Validate summary is not empty or too small
+SUMMARY_SIZE=$(wc -c < "$LATEST_SUMMARY" 2>/dev/null || echo 0)
 if [ "$SUMMARY_SIZE" -lt 100 ]; then
-  echo "WARNING: Summary file suspiciously small ($SUMMARY_SIZE bytes): $LATEST_SUMMARY"
-  # Non-fatal - continue execution but log warning
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Summary file too small (agent may have failed during write)" \
+    "bash_block_1c" \
+    "$(jq -n --arg path "$LATEST_SUMMARY" --argjson size "$SUMMARY_SIZE" \
+       '{summary_path: $path, size_bytes: $size, min_required: 100}')"
+
+  echo "ERROR: Summary file exists but is too small ($SUMMARY_SIZE bytes)" >&2
+  echo "  Expected: >100 bytes for valid summary" >&2
+  exit 1
 fi
+
+# Count total summary files
+SUMMARY_COUNT=$(find "$SUMMARIES_DIR" -name "*.md" -type f 2>/dev/null | wc -l || echo "0")
+
+echo "[OK] Agent output validated: Summary file exists ($SUMMARY_SIZE bytes)"
+echo "  Path: $LATEST_SUMMARY"
+echo ""
 
 # Persist summary path
 append_workflow_state "LATEST_SUMMARY" "$LATEST_SUMMARY"
 append_workflow_state "SUMMARY_COUNT" "$SUMMARY_COUNT"
 
-echo "[CHECKPOINT] Implementation verification complete"
-echo "  Summary count: $SUMMARY_COUNT"
-echo "  Latest summary: $(basename "$LATEST_SUMMARY")"
+# CHECKPOINT REPORTING
+echo ""
+echo "CHECKPOINT: Implementation phase verification complete"
+echo "  [OK] Summary file exists: $LATEST_SUMMARY"
+echo "  [OK] Summary size valid: $SUMMARY_SIZE bytes"
+echo "  [OK] Hard barrier passed"
+echo ""
+echo "Ready for: Iteration check and workflow continuation"
 echo ""
 
 echo "=== Iteration Check (${ITERATION}/${MAX_ITERATIONS}) ==="
@@ -1021,6 +1047,15 @@ fi
 
 echo ""
 echo "Phase update complete"
+
+# Update plan status to COMPLETE if all phases done
+# checkbox-utils.sh already sourced in this block (line 891)
+if type check_all_phases_complete &>/dev/null && type update_plan_status &>/dev/null; then
+  if check_all_phases_complete "$PLAN_FILE"; then
+    update_plan_status "$PLAN_FILE" "COMPLETE" 2>/dev/null && \
+      echo "Plan metadata status updated to [COMPLETE]"
+  fi
+fi
 ```
 
 If the above checkbox-utils approach failed for any phase, **EXECUTE NOW**: USE the Task tool to invoke the spec-updater agent as a fallback for more comprehensive plan hierarchy updates.
@@ -1185,7 +1220,7 @@ echo "TOPIC_PATH=$TOPIC_PATH"
 echo "TEST_OUTPUT_PATH=$TEST_OUTPUT_PATH"
 ```
 
-Now invoke test-executor subagent via Task tool:
+**EXECUTE NOW**: USE the Task tool to invoke the test-executor agent for test suite execution.
 
 Task {
   subagent_type: "general-purpose"
@@ -1835,27 +1870,22 @@ fi
 if [ "$TESTS_PASSED" = "true" ]; then
   NEXT_STEPS="  • Review summary: cat $LATEST_SUMMARY
   • Check git commits: git log --oneline -5
-  • Review plan updates: cat $PLAN_FILE"
+  • Review plan updates: cat $PLAN_FILE
+  • Run /todo to update TODO.md (adds completed plan to tracking)"
 else
   NEXT_STEPS="  • Review debug output: cat $LATEST_SUMMARY
   • Fix remaining issues and re-run: /build $PLAN_FILE
-  • Check test failures: see summary for details"
+  • Check test failures: see summary for details
+  • Run /todo to update TODO.md when complete"
 fi
 
 # Print standardized summary
 print_artifact_summary "Build" "$SUMMARY_TEXT" "$PHASES" "$ARTIFACTS" "$NEXT_STEPS"
 
-# CRITICAL: Update metadata status if all phases complete - must not be skipped
-if type check_all_phases_complete &>/dev/null && type update_plan_status &>/dev/null; then
-  if check_all_phases_complete "$PLAN_FILE"; then
-    if update_plan_status "$PLAN_FILE" "COMPLETE"; then
-      echo ""
-      echo "Plan metadata status updated to [COMPLETE]"
-    else
-      echo "WARNING: Could not update plan status to COMPLETE" >&2
-    fi
-  fi
-fi
+# Emit completion reminder
+echo ""
+echo "📋 Next Step: Run /todo to update TODO.md with this build"
+echo ""
 
 # === RETURN IMPLEMENTATION_COMPLETE SIGNAL ===
 # Signal enables buffer-opener hook to open summary

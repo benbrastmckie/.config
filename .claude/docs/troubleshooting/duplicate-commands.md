@@ -361,6 +361,169 @@ This complete cleanup approach is ideal when:
 
 **Alternative**: For selective cleanup, see "Systematic Cleanup (Multiple Duplicates)" section above.
 
+## Case Study 3: Parent Directory Scanning (Triple/Quadruple Entries)
+
+**Problem**: Multiple identical `/plan` entries appearing in Claude Code dropdown, all labeled "(project)", making them indistinguishable.
+
+**User Report**: Initially 3 identical entries, then 4 entries after partial cleanup, despite Philosophy directories not being in parent chain.
+
+**Investigation**:
+
+### Discovery Mechanism Research
+
+Based on web research and official documentation, Claude Code has DIFFERENT discovery mechanisms for CLAUDE.md vs .claude/commands:
+
+1. **CLAUDE.md Files**: Recursive discovery
+   - Scans UP from CWD to root (/)
+   - Scans DOWN into subdirectories
+   - Merges all discovered files
+
+2. **.claude/commands Directories**: Limited discovery (DIFFERENT from CLAUDE.md)
+   - Current working directory (CWD) only
+   - User home directory (~/.claude/commands/)
+   - NO parent directory scanning for commands
+   - NO monorepo support for cascading commands
+
+**Key Insight**: Unlike CLAUDE.md which scans parent directories recursively, `.claude/commands` directories are ONLY discovered in the CWD and ~/.claude/.
+
+### Directory Audit Results
+
+Parent chain scan from `/home/benjamin/.config` to `/`:
+```
+/home/benjamin/.config/.claude/commands/ ✓ (16 commands including plan.md)
+/home/benjamin/.claude/commands/ ✓ (EMPTY - 0 commands)
+/home/benjamin/ (no .claude/)
+/home/ (no .claude/)
+```
+
+Other findings:
+- `.dotfiles/.claude/` - REMOVED (user deleted entire directory)
+- Philosophy directories (Documents/Philosophy/*) - NOT in parent chain (sibling directories)
+- Subdirectories (commands/templates/, commands/shared/) - Only YAML templates and READMEs, no .md commands
+- No symlinks in commands/ directory
+
+**Expected Count**: 1 entry (only .config/.claude/commands/plan.md should be discovered)
+
+### Root Cause Analysis
+
+Given directory structure cleanup and documentation review:
+
+**Unlikely Causes** (ruled out):
+- ❌ Parent directory scanning (commands don't scan parents per docs)
+- ❌ Philosophy directories (not in parent chain)
+- ❌ Subdirectory recursion (no command files in subdirs)
+- ❌ Dotfiles directory (already removed)
+
+**Likely Causes**:
+1. **Claude Code cache** - Not cleared after .dotfiles removal
+2. **Nvim picker vs native dropdown** - Different discovery mechanisms
+3. **Claude Code bug** - Multiple invocations of same discovery logic
+4. **Documentation gap** - Actual behavior differs from documented behavior
+
+### Nvim Picker Analysis
+
+The nvim custom picker (lua/neotex/plugins/ai/claude/commands/parser.lua) has specific behavior:
+- Hardcodes `global_dir = ~/.config` (line 729)
+- When CWD = /home/benjamin/.config, project_dir == global_dir
+- Has deduplication logic (lines 260-268) that should handle this case
+- Returns early with single set of commands marked as is_local = true
+
+**Expected**: Nvim picker should show 1 entry when CWD == ~/.config
+
+### Solution Steps
+
+#### Step 1: Verify Clean Directory Structure
+```bash
+# Check parent chain for .claude/commands directories
+current_dir="$(pwd)"
+while [ "$current_dir" != "/" ]; do
+  if [ -d "$current_dir/.claude/commands" ]; then
+    cmd_count=$(find "$current_dir/.claude/commands" -maxdepth 1 -name "*.md" -type f 2>/dev/null | wc -l)
+    echo "$current_dir/.claude/commands: $cmd_count command files"
+  fi
+  current_dir=$(dirname "$current_dir")
+done
+
+# Should show only your project .claude/commands/
+```
+
+#### Step 2: Clear Claude Code Cache
+```bash
+# Restart Claude Code completely
+# This clears any cached command discovery state
+```
+
+#### Step 3: Test Discovery Mechanisms Separately
+```bash
+# Test 1: Native Claude Code dropdown
+# Open Claude Code, type /plan
+# Count number of entries
+
+# Test 2: Nvim picker (if using)
+# In nvim, use <leader>ac (or your command picker binding)
+# Count number of entries
+
+# Compare counts to isolate issue
+```
+
+#### Step 4: Verify Expected Behavior
+After restart, you should see:
+- **1 entry** for /plan in dropdown
+- Label: "(project)"
+- Source: .claude/commands/plan.md (from CWD)
+
+### Resolution
+
+**If still seeing duplicates after restart**:
+1. Document exact CWD when issue occurs
+2. Check if using native Claude Code or nvim picker
+3. May indicate Claude Code bug (report to Anthropic)
+4. Consider filing GitHub issue with reproduction steps
+
+### Prevention
+
+**Best Practices for Directory Structure**:
+1. **Project commands**: Keep in project `.claude/commands/` only
+2. **User commands**: Use `~/.claude/commands/` only for cross-project utilities
+3. **NO commands in parent directories**: Avoid `.claude/commands/` in parent chain above your projects
+4. **Subdirectories**: Use for organization (templates/, shared/) but don't put .md command files there
+
+**Directory Structure Recommendation**:
+```
+/home/username/
+├── .claude/
+│   └── commands/          # Empty or cross-project only
+├── .config/
+│   └── .claude/
+│       └── commands/      # Project-specific (if .config is your project)
+└── projects/
+    └── myproject/
+        └── .claude/
+            └── commands/  # Project-specific
+```
+
+### Web Research Citations
+
+Documentation consulted:
+1. [Slash commands - Claude Code Docs](https://code.claude.com/docs/en/slash-commands)
+2. [Working Directory in Claude Code](https://claudelog.com/faqs/what-is-working-directory-in-claude-code/)
+3. [CLAUDE.md discovery - GitHub Issue #722](https://github.com/anthropics/claude-code/issues/722)
+4. [Duplicate commands from subdirectories - GitHub Issue #231](https://github.com/SuperClaude-Org/SuperClaude_Framework/issues/231)
+5. [Using CLAUDE.MD files](https://www.claude.com/blog/using-claude-md-files)
+6. [Claude Code Best Practices](https://www.anthropic.com/engineering/claude-code-best-practices)
+
+**Key Finding**: Official documentation shows limited command discovery (CWD + user-level only), contradicting earlier assumption about parent directory scanning for commands.
+
+### When This Case Study Applies
+
+This scenario is relevant when:
+- Seeing 3+ identical entries (all labeled same scope)
+- Directory cleanup doesn't reduce duplicates
+- No obvious duplicate files in discoverable locations
+- May indicate cache or discovery mechanism issue
+
+**Next Step**: Restart Claude Code and verify whether issue persists with clean directory structure.
+
 ## FAQ
 
 ### Q: Can I prioritize project commands over user commands?

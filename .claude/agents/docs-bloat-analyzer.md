@@ -117,7 +117,7 @@ Create report file content:
 
 ## Current Bloat State
 
-### Bloated Files (>400 lines)
+### Files Requiring Review (>400 lines)
 [TO BE ANALYZED IN STEP 4]
 
 ### Critical Files (>800 lines)
@@ -196,7 +196,7 @@ Use Read tool to read both input reports and extract findings:
 **File Size Thresholds**:
 - **Optimal**: <300 lines
 - **Moderate**: 300-400 lines
-- **Bloated**: >400 lines (warning threshold)
+- **Bloated**: >400 lines (readability concern - review guidance)
 - **Critical**: >800 lines (requires split)
 
 **Semantic Analysis Process**:
@@ -213,25 +213,25 @@ Use Read tool to read both input reports and extract findings:
      - Find target file from docs structure report
      - Get current target file size
      - Project post-merge size = current size + extraction size
-     - Flag if projected size >400 lines (HIGH RISK)
-     - Flag if projected size >800 lines (CRITICAL RISK)
+     - Assess risk if projected size >400 lines (see Risk Matrix below)
+     - Flag CRITICAL if projected size >800 lines
 
 3. **Consolidation Opportunities**:
    - Identify files with >40% content overlap
    - Analyze navigation redundancy across files
    - Detect duplicate architectural explanations
-   - **ONLY recommend merge if combined size ≤400 lines**
+   - **Prefer merge for combined size ≤400 lines, but MODERATE risk (300-400) and HIGH risk (400-600) acceptable if cohesive**
 
 4. **Split Recommendations**:
    - Identify files >800 lines requiring immediate split
    - Suggest logical split boundaries
    - Project post-split file sizes
-   - Ensure all split results <400 lines
+   - Target split results <400 lines (or <600 if logically cohesive)
 
 5. **Size Validation Tasks**:
    - Generate pre-extraction size check tasks
    - Generate post-merge size validation tasks
-   - Generate bloat rollback procedures
+   - Generate post-merge review procedures for HIGH/CRITICAL risks
    - Generate final verification phase tasks
 
 **Update Report Sections**:
@@ -249,7 +249,7 @@ Use Edit tool to replace placeholder sections with actual analysis:
 **Report Format Guidelines**:
 
 ```markdown
-### Bloated Files (>400 lines)
+### Files Requiring Review (>400 lines)
 | File Path | Current Size | Severity | Recommendation |
 |-----------|--------------|----------|----------------|
 | .claude/docs/guides/development/command-development/command-development-fundamentals.md | 3980 lines | CRITICAL | Split into 4 files |
@@ -336,8 +336,26 @@ echo "REPORT_CREATED: $BLOAT_REPORT_PATH"
 **Bloat Prevention Philosophy**:
 - Prevention > remediation (stop bloat before creation)
 - Size validation in every extraction task
-- Rollback procedures for bloat-inducing merges
+- Post-merge review tasks for high-risk operations
 - Final verification phase catches accumulated bloat
+
+## Risk Assessment Matrix
+
+Use this matrix to assess post-merge file size risks:
+
+| Projected Size | Risk Level | Recommendation | Action |
+|----------------|------------|----------------|--------|
+| <300 lines | LOW | Optimal - proceed with merge | None required |
+| 300-400 lines | MODERATE | Acceptable if logically cohesive | Monitor growth |
+| 400-600 lines | HIGH | Readability concerns | Add post-merge review task |
+| >600 lines | CRITICAL | Maintainability risk | Recommend split before merge OR extract to new file |
+
+**Important**: Risk levels are advisory only. HIGH and CRITICAL risks do not block merge operations - they add follow-up review tasks to ensure maintainability.
+
+**Decision Criteria**:
+- **Proceed with merge**: If content is logically cohesive and splitting would harm readability
+- **Split before merge**: If logical boundaries exist and split improves navigation
+- **Extract to new file**: If content is independent topic deserving separate file
 
 ---
 
@@ -354,7 +372,7 @@ If any step fails:
 ## Success Criteria
 
 - [x] Bloat report file created at exact path
-- [x] All bloated files identified (>400 lines)
+- [x] All files requiring review identified (>400 lines with risk assessment)
 - [x] All extraction risks assessed (projected post-merge sizes)
 - [x] Consolidation opportunities with size projections
 - [x] Split recommendations for critical files (>800 lines)

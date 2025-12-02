@@ -65,11 +65,44 @@ This comprehensive coverage means repair analyses capture the vast majority of a
 
 ### Patterns Used
 
+- **Hard Barrier Subagent Delegation**: (hard-barrier-subagent-delegation.md) Setup/Execute/Verify pattern for delegation enforcement
 - **State-Based Orchestration**: (state-based-orchestration-overview.md) Two-state workflow
 - **Behavioral Injection**: (behavioral-injection.md) Agent behavior separated from orchestration
 - **Fail-Fast Verification**: (Standard 0) File and size verification
 - **Topic-Based Structure**: (directory-protocols.md) Numbered topic directories with plans/ and reports/
 - **Inline Analysis**: repair-analyst uses jq queries inline (no library modifications)
+
+### Hard Barrier Pattern Implementation
+
+The `/repair` command implements the hard barrier subagent delegation pattern to ensure all analysis and planning work is delegated to specialized agents (repair-analyst and plan-architect). This architectural enforcement prevents the orchestrator from bypassing delegation.
+
+**Block Structure**:
+
+**Research Phase**:
+- Block 1a: Initial setup, argument parsing, workflow initialization
+- Block 1b: Report path pre-calculation (REPORT_PATH computed before agent invocation)
+- Block 1b-exec: Repair-analyst Task invocation with REPORT_PATH contract
+- Block 1c: Report verification (fail-fast if REPORT_PATH not created)
+
+**Planning Phase**:
+- Block 2a: Planning setup, state transition to PLAN
+- Block 2b: Plan path pre-calculation (PLAN_PATH computed before agent invocation)
+- Block 2b-exec: Plan-architect Task invocation with PLAN_PATH contract
+- Block 2c: Plan verification (fail-fast if PLAN_PATH not created)
+
+**Path Pre-Calculation**:
+- Report path: `${RESEARCH_DIR}/${REPORT_NUMBER}-${REPORT_SLUG}.md`
+- Plan path: `${PLANS_DIR}/${PLAN_NUMBER}-${PLAN_FILENAME}.md`
+- Both paths validated as absolute before persistence
+- Paths passed to agents via explicit Input Contract sections
+
+**Verification Strategy**:
+- All verification blocks re-source libraries (subprocess isolation)
+- Fail-fast checks on pre-calculated paths (exit 1 on failure)
+- Error logging via `log_command_error` for all failures
+- Recovery instructions echoed to stderr
+
+See [Hard Barrier Subagent Delegation Pattern](../../concepts/patterns/hard-barrier-subagent-delegation.md) for complete pattern specification.
 
 ### Workflow States
 

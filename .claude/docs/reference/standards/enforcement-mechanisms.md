@@ -16,6 +16,7 @@ This document serves as the **single source of truth** for all standards enforce
 | check-library-sourcing.sh | scripts/lint/ | Bash three-tier sourcing pattern, fail-fast handlers | ERROR | Yes |
 | lint_error_suppression.sh | tests/utilities/ | Error suppression anti-patterns, deprecated state paths | ERROR | Yes |
 | lint_bash_conditionals.sh | tests/utilities/ | Preprocessing-unsafe bash conditionals | ERROR | Yes |
+| lint-task-invocation-pattern.sh | scripts/ | Task tool invocation patterns, imperative directives | ERROR | Yes |
 | validate-hard-barrier-compliance.sh | scripts/ | Hard barrier subagent delegation pattern | ERROR | Yes |
 | validate-readmes.sh | scripts/ | README structure, required sections | WARNING | Yes (quick) |
 | validate-links.sh | scripts/ | Internal link validity, broken references | WARNING | Yes (quick) |
@@ -96,6 +97,61 @@ bash .claude/tests/utilities/lint_bash_conditionals.sh
 ```
 
 **Related Standard**: [bash-block-execution-model.md](../../concepts/bash-block-execution-model.md#anti-patterns-reference), [bash-tool-limitations.md](../../troubleshooting/bash-tool-limitations.md)
+
+### lint-task-invocation-pattern.sh
+
+**Purpose**: Validates Task tool invocations have mandatory imperative directives. Prevents pseudo-code syntax and instructional text patterns that cause delegation bypass.
+
+**Checks Performed**:
+1. **Naked Task blocks**: Detects `Task {` without "EXECUTE NOW: USE the Task tool" or "EXECUTE IF...Task tool" within 5 lines before
+2. **Instructional text patterns**: Detects "Use the Task tool to invoke..." comments without actual Task block within 10 lines after
+3. **Incomplete directives**: Detects "EXECUTE NOW: Invoke..." without "USE the Task tool" phrase
+
+**Exit Codes**:
+- `0`: No violations (all Task invocations have imperative directives)
+- `1`: Violations found (ERROR-level)
+
+**Usage**:
+```bash
+# Check all commands
+bash .claude/scripts/lint-task-invocation-pattern.sh
+
+# Check specific file
+bash .claude/scripts/lint-task-invocation-pattern.sh .claude/commands/build.md
+
+# Check staged files (pre-commit mode)
+bash .claude/scripts/lint-task-invocation-pattern.sh --staged
+```
+
+**Exclusions**:
+- README.md files (documentation)
+- docs/ directory (documentation examples)
+
+**Example Violations**:
+
+```markdown
+# ❌ VIOLATION: Naked Task block
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic"
+  prompt: "..."
+}
+
+# ❌ VIOLATION: Instructional text without Task block
+Use the Task tool to invoke the research-specialist agent.
+
+# ❌ VIOLATION: Incomplete directive
+**EXECUTE NOW**: Invoke the research-specialist agent.
+Task { ... }
+
+# ✅ CORRECT: Imperative directive
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+Task { ... }
+```
+
+**Related Standards**:
+- [command-authoring.md](command-authoring.md#task-tool-invocation-patterns)
+- [hard-barrier-subagent-delegation.md](../../concepts/patterns/hard-barrier-subagent-delegation.md#task-invocation-requirements)
 
 ### validate-hard-barrier-compliance.sh
 
@@ -209,21 +265,23 @@ This matrix shows which enforcement tools verify each standard document:
 | code-standards.md | check-library-sourcing.sh, lint_error_suppression.sh, lint_bash_conditionals.sh, validate-links.sh |
 | output-formatting.md | lint_error_suppression.sh |
 | documentation-standards.md | validate-readmes.sh |
-| command-authoring.md | check-library-sourcing.sh, validate-agent-behavioral-file.sh |
+| command-authoring.md | check-library-sourcing.sh, lint-task-invocation-pattern.sh, validate-agent-behavioral-file.sh |
 | agent-behavioral-guidelines.md | validate-agent-behavioral-file.sh |
 | bash-block-execution-model.md | check-library-sourcing.sh, lint_bash_conditionals.sh |
-| hard-barrier-subagent-delegation.md | validate-hard-barrier-compliance.sh |
+| hard-barrier-subagent-delegation.md | validate-hard-barrier-compliance.sh, lint-task-invocation-pattern.sh |
 
 ## Pre-Commit Integration
 
 The pre-commit hook at `.claude/hooks/pre-commit` runs critical validators on staged files:
 
 ```bash
-# Current pre-commit behavior (after Phase 6 implementation):
+# Current pre-commit behavior:
 # 1. Run check-library-sourcing.sh on staged .claude/commands/*.md
 # 2. Run lint_error_suppression.sh on staged command files
-# 3. Run validate-links-quick.sh on staged .md files
-# 4. Run validate-readmes.sh --quick on staged README.md files
+# 3. Run lint_bash_conditionals.sh on staged command files
+# 4. Run lint-task-invocation-pattern.sh on staged command files
+# 5. Run validate-links-quick.sh on staged .md files
+# 6. Run validate-readmes.sh --quick on staged README.md files
 ```
 
 ### Bypass Mechanism
