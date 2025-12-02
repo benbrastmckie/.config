@@ -89,6 +89,25 @@ export STATE_PERSISTENCE_VERSION="1.6.0"
 # - Recalculation is expensive (>30ms) or impossible
 # - Phase dependencies require prior phase outputs
 #
+# Common Pitfall: Agent Output Serialization
+# ==========================================
+# When persisting data from agent outputs, ensure values are scalar strings:
+#
+#   ✓ Correct: append_workflow_state "WORK_REMAINING" "Phase_4 Phase_5 Phase_6"
+#   ✗ Wrong:   append_workflow_state "WORK_REMAINING" "[Phase 4, Phase 5, Phase 6]"
+#
+# The append_workflow_state() function enforces scalar-only values because state files
+# use bash export statements. JSON arrays in export statements cause parsing issues
+# when the state file is sourced.
+#
+# For array-like data, use space-separated strings:
+#   PHASES="Phase_4 Phase_5 Phase_6"
+#   append_workflow_state "PHASES" "$PHASES"
+#
+# Or use the array helper function:
+#   append_workflow_state_array "PHASES" "Phase_4" "Phase_5" "Phase_6"
+#   # Results in: export PHASES="Phase_4 Phase_5 Phase_6"
+#
 # State File Locations (Spec 752 Phase 9):
 # - STANDARD: .claude/tmp/workflow_*.sh (temporary workflow state, auto-cleanup)
 # - STANDARD: .claude/tmp/*.json (JSON checkpoints, atomic writes)
@@ -187,14 +206,78 @@ EOF
 # Load workflow state (Blocks 2+)
 #
 # Sources the workflow state file to restore exported variables.
+# validate_state_file - Validate state file integrity before restoration
+#
+# Performs file-level validation checks to complement variable-level validation
+# in load_workflow_state(). This two-phase approach prevents attempting to source
+# corrupted or incomplete state files.
+#
+# Validation Checks (FILE-LEVEL only):
+#   1. File exists and is readable
+#   2. File has minimum content (not empty or truncated)
+#
+# NOTE: Variable-level validation (required vars present) is handled separately
+# by load_workflow_state() after sourcing. This function ONLY validates file
+# integrity before attempting to source.
+#
+# Args:
+#   $1 - state_file: Absolute path to state file
+#
+# Returns:
+#   0 if valid (file exists, readable, minimum size)
+#   1 if invalid (file missing, unreadable, or too small)
+#
+# Example:
+#   if ! validate_state_file "$STATE_FILE"; then
+#     echo "ERROR: State file validation failed" >&2
+#     return 1
+#   fi
+#   source "$STATE_FILE"
+#
+# Reference: Spec 995 Phase 5 (state file validation checkpoints)
+validate_state_file() {
+  local state_file="$1"
+
+  # File exists and is readable
+  if [[ ! -f "$state_file" ]]; then
+    echo "State file does not exist: $state_file" >&2
+    return 1
+  fi
+  if [[ ! -r "$state_file" ]]; then
+    echo "State file not readable: $state_file" >&2
+    return 1
+  fi
+
+  # File has minimum content (not empty or truncated)
+  # State files typically contain at least:
+  #   - WORKFLOW_ID=... (minimum ~25 chars)
+  #   - COMMAND_NAME=... (minimum ~20 chars)
+  # Total minimum: ~50 bytes is reasonable threshold
+  local file_size
+  file_size=$(wc -c < "$state_file" 2>/dev/null || echo 0)
+  if [[ "$file_size" -lt 50 ]]; then
+    echo "State file too small (possible corruption): $file_size bytes" >&2
+    echo "State file location: $state_file" >&2
+    echo "Expected minimum: 50 bytes" >&2
+    return 1
+  fi
+
+  return 0
+}
+
 # Spec 672 Phase 3: Added fail-fast validation mode to distinguish expected
 # vs unexpected missing state files.
+#
+# Spec 995 Phase 5: Added two-phase validation (file integrity + variable presence)
 #
 # Behavior:
 # - is_first_block=true: Missing state file is expected, initialize gracefully
 # - is_first_block=false: Missing state file is CRITICAL ERROR, fail-fast
+# - Phase 1 (NEW): FILE validation before sourcing (validate_state_file)
+# - Phase 2: VARIABLE validation after sourcing (existing logic)
 #
 # Performance:
+# - File validation: <1ms (file existence + size check)
 # - File read: ~15ms (much faster than git rev-parse at ~50ms)
 # - Fallback recalculation: ~50ms (same as init_workflow_state, first block only)
 # - Fail-fast diagnostic: <1ms (immediate error message and exit)
@@ -209,11 +292,13 @@ EOF
 #   0 if state file loaded successfully
 #   1 if state file missing and is_first_block=true (graceful init)
 #   2 if state file missing and is_first_block=false (CRITICAL ERROR)
+#   3 if state file validation failed (corruption detected)
 #
 # Side Effects:
 #   - Sources state file (exports all variables)
 #   - If missing and first block: calls init_workflow_state
 #   - If missing and subsequent block: prints diagnostic and returns error
+#   - If corrupted: attempts recovery (recreate with minimal metadata)
 #
 # Examples:
 #   # First bash block (Block 1)
@@ -224,7 +309,7 @@ EOF
 #   # OR (default is false)
 #   load_workflow_state "coordinate_$$"
 #
-# Reference: Spec 672 Phase 3 (fail-fast state validation), Spec 752 Phase 3 (variable validation)
+# Reference: Spec 672 Phase 3 (fail-fast state validation), Spec 752 Phase 3 (variable validation), Spec 995 Phase 5 (file validation)
 load_workflow_state() {
   local workflow_id="${1:-$$}"
   local is_first_block="${2:-false}"  # Spec 672 Phase 3: Fail-fast validation mode
@@ -233,9 +318,35 @@ load_workflow_state() {
   local state_file="${CLAUDE_PROJECT_DIR:-$HOME}/.claude/tmp/workflow_${workflow_id}.sh"
 
   if [ -f "$state_file" ]; then
-    # State file exists - source it to restore variables
+    # Spec 995 Phase 5: Phase 1 - FILE validation (before attempting to source)
+    if ! validate_state_file "$state_file"; then
+      # File validation failed (corrupted or truncated)
+      # Attempt recovery: recreate with minimal metadata
+      echo "Attempting state file recovery..." >&2
+      echo "WORKFLOW_ID=${workflow_id}" > "$state_file"
+      echo "COMMAND_NAME=${COMMAND_NAME:-UNKNOWN}" >> "$state_file"
+
+      # Log error if error handling context is available
+      if declare -F log_command_error >/dev/null 2>&1; then
+        if [ -n "${COMMAND_NAME:-}" ] && [ -n "${WORKFLOW_ID:-}" ]; then
+          log_command_error \
+            "${COMMAND_NAME}" \
+            "${WORKFLOW_ID}" \
+            "${USER_ARGS:-}" \
+            "state_error" \
+            "State file validation failed - file corruption detected" \
+            "load_workflow_state" \
+            "$(jq -n --arg path "$state_file" '{state_file: $path, recovery: "attempted"}')"
+        fi
+      fi
+
+      return 3  # Exit code 3 = file validation error
+    fi
+
+    # Phase 1 passed - proceed with sourcing
     source "$state_file"
 
+    # Spec 995 Phase 5: Phase 2 - VARIABLE validation (after sourcing)
     # Spec 752 Phase 3: Variable validation (if required variables specified)
     if [ ${#required_vars[@]} -gt 0 ]; then
       local missing_vars=()
@@ -377,24 +488,31 @@ validate_state_file_path() {
 # Appends a new key-value pair to the workflow state file.
 # This follows the GitHub Actions pattern where outputs accumulate across steps.
 #
+# IMPORTANT: Only scalar values are supported. JSON arrays/objects will be rejected
+# with a type validation error. Use space-separated strings or append_workflow_state_array()
+# for multi-value data.
+#
 # Performance:
 # - Append operation: <1ms (simple echo >> redirect)
 # - No file locks needed (single writer per workflow)
 #
 # Args:
 #   $1 - key: Variable name to export
-#   $2 - value: Variable value
+#   $2 - value: Scalar string value (NO JSON arrays/objects)
+#
+# Returns:
+#   0 on success, 1 on validation failure (JSON detected)
 #
 # Side Effects:
 #   - Appends export statement to state file
 #   - Exported in subsequent load_workflow_state calls
+#   - Logs state_error if JSON array/object detected
 #
-# Example:
+# Examples:
 #   append_workflow_state "RESEARCH_COMPLETE" "true"
 #   append_workflow_state "REPORTS_CREATED" "4"
-#   # State file now contains:
-#   # export RESEARCH_COMPLETE="true"
-#   # export REPORTS_CREATED="4"
+#   append_workflow_state "PHASES" "Phase_1 Phase_2 Phase_3"  # Space-separated OK
+#   # WRONG: append_workflow_state "PHASES" "[Phase 1, Phase 2]"  # JSON array fails
 append_workflow_state() {
   local key="$1"
   local value="$2"
@@ -404,12 +522,45 @@ append_workflow_state() {
     return 1
   fi
 
+  # Type validation: Reject JSON objects/arrays (must use scalar values)
+  if [[ "$value" =~ ^[[:space:]]*[\[\{] ]]; then
+    echo "ERROR: append_workflow_state only supports scalar values" >&2
+    echo "ERROR: Use space-separated strings instead of JSON arrays" >&2
+    log_command_error \
+      "${COMMAND_NAME:-unknown}" \
+      "${WORKFLOW_ID:-unknown}" \
+      "${USER_ARGS:-}" \
+      "state_error" \
+      "Type validation failed: JSON detected" \
+      "append_workflow_state" \
+      "$(jq -n --arg key "$key" --arg value "$value" '{key: $key, value: $value}')"
+    return 1
+  fi
+
   # Escape special characters in value for safe shell export
   # Replace backslashes first (to avoid double-escaping), then quotes
   local escaped_value="${value//\\/\\\\}"  # \ -> \\
   escaped_value="${escaped_value//\"/\\\"}"  # " -> \"
 
   echo "export ${key}=\"${escaped_value}\"" >> "$STATE_FILE"
+}
+
+# Append array as space-separated string to workflow state
+#
+# Converts multiple arguments into a space-separated scalar string for state persistence.
+# This is the recommended way to store multiple values when you need array-like data.
+#
+# Args:
+#   $1 - Key name (must be valid shell variable name)
+#   $@ - Array elements (remaining arguments)
+#
+# Example:
+#   append_workflow_state_array "PATHS" "/path/one" "/path/two" "/path/three"
+#   # Results in: export PATHS="/path/one /path/two /path/three"
+append_workflow_state_array() {
+  local key="$1"
+  shift
+  append_workflow_state "$key" "$*"
 }
 
 # Bulk append multiple key-value pairs to workflow state file
