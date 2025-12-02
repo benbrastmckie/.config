@@ -698,24 +698,57 @@ fi
 # HARD BARRIER: Summary file MUST exist
 LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -exec ls -t {} + 2>/dev/null | head -1 || echo "")
 if [ -z "$LATEST_SUMMARY" ] || [ ! -f "$LATEST_SUMMARY" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "agent_error" \
-    "implementer-coordinator failed to create summary file" \
-    "bash_block_1c" \
-    "$(jq -n --arg dir "${SUMMARIES_DIR}" '{expected_directory: $dir}')"
-
-  echo "ERROR: HARD BARRIER FAILED - Implementation summary not found" >&2
+  echo "❌ HARD BARRIER FAILED - Implementation summary not found" >&2
   echo "" >&2
-  echo "This indicates the implementer-coordinator subagent did not create the expected artifact." >&2
+  echo "Expected: Summary file in $SUMMARIES_DIR" >&2
+  echo "" >&2
+
+  # Enhanced diagnostics: Search for file in parent and topic directories
+  local summary_pattern="*implement*summary*.md"
+  local topic_dir="$TOPIC_PATH"
+  local found_files=$(find "$topic_dir" -name "$summary_pattern" -type f 2>/dev/null || true)
+
+  if [[ -n "$found_files" ]]; then
+    echo "📍 Found summary file(s) at alternate location(s):" >&2
+    echo "$found_files" | while read -r file; do
+      echo "  - $file" >&2
+    done
+    echo "" >&2
+    echo "⚠️  This indicates implementer-coordinator created the file but not in the expected directory." >&2
+
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "agent_error" \
+      "implementer-coordinator created file at wrong location" \
+      "bash_block_1c" \
+      "$(jq -n --arg expected "${SUMMARIES_DIR}" --arg found "$found_files" \
+         '{expected_directory: $expected, found_locations: $found}')"
+  else
+    echo "❌ Summary file not found anywhere in topic directory: $topic_dir" >&2
+    echo "" >&2
+    echo "⚠️  This indicates implementer-coordinator failed to create the summary file." >&2
+
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "agent_error" \
+      "implementer-coordinator failed to create summary file" \
+      "bash_block_1c" \
+      "$(jq -n --arg expected "${SUMMARIES_DIR}" --arg topic "$topic_dir" \
+         '{expected_directory: $expected, topic_directory: $topic, searched_pattern: "'"$summary_pattern"'"}')"
+  fi
+
+  echo "" >&2
   echo "The workflow cannot proceed without the implementation summary." >&2
   echo "" >&2
   echo "Troubleshooting:" >&2
   echo "  1. Check implementer-coordinator agent output for errors" >&2
   echo "  2. Verify Task invocation in Block 1b executed correctly" >&2
-  echo "  3. Run /errors --command /implement for detailed error logs" >&2
+  echo "  3. Verify agent has write permissions to $SUMMARIES_DIR" >&2
+  echo "  4. Run /errors --command /implement --since 1h for detailed error logs" >&2
   exit 1
 fi
 
