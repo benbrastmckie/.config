@@ -311,7 +311,7 @@ echo "Ready for: Phase 2 hard barrier diagnostics"
 
 ---
 
-### Phase 4: Add State Machine Initialization Guard [NOT STARTED]
+### Phase 4: Add State Machine Initialization Guard [COMPLETE]
 **Objective**: Make sm_transition self-healing by auto-initializing state machine if STATE_FILE is unset
 
 **Rationale**: Prevents 9 "STATE_FILE not set" errors by making state machine robust to initialization gaps in command authoring.
@@ -668,7 +668,7 @@ bash .claude/tests/run_all_tests.sh
   git diff HEAD .claude/lib/core/error-handling.sh .claude/lib/core/state-persistence.sh
   ```
 
-### Phase 4 Rollback
+### Phase 4 Rollback [COMPLETE]
 - Revert workflow-state-machine.sh auto-init guard
 - Remove linter check from validate-all-standards.sh
 - Risk: Medium (changes core state machine behavior)

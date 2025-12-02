@@ -337,24 +337,46 @@ test_state_machine_auto_init() {
 
   # Create a state file first
   local original_state_file=$(init_workflow_state "$WORKFLOW_ID")
+  echo "State file created: $original_state_file"
 
   # Unset STATE_FILE to simulate missing initialization
   unset STATE_FILE
+  echo "STATE_FILE unset to simulate initialization gap"
 
   # Try to transition - should trigger auto-init
-  local transition_output=$(sm_transition "implementing" 2>&1 || true)
+  # Use a valid transition from initialize state (e.g., "research" or "implement")
+  echo "Attempting sm_transition to 'research'..."
 
-  if [[ "$transition_output" == *"Warning: Auto-initializing state machine"* ]]; then
+  # Redirect output to a temp file instead of command substitution
+  # This preserves STATE_FILE assignment in the current shell
+  local output_file="$TEST_ROOT/sm_transition_output.txt"
+  sm_transition "research" >"$output_file" 2>&1
+  local transition_status=$?
+
+  local transition_output=$(cat "$output_file")
+  echo "Transition output:"
+  echo "$transition_output"
+  echo "Transition status: $transition_status"
+
+  if [[ "$transition_output" == *"WARNING: Auto-initializing state machine"* ]]; then
     echo "  ✓ Auto-initialization warning issued"
   else
-    echo "  ℹ Auto-initialization may have succeeded without warning"
+    echo "  ℹ Auto-initialization output may differ from expected"
   fi
 
   # Verify state file was loaded
   if [[ -n "${STATE_FILE:-}" ]]; then
-    echo "  ✓ STATE_FILE set after auto-initialization"
+    echo "  ✓ STATE_FILE set after auto-initialization: $STATE_FILE"
   else
     echo "  ✗ STATE_FILE still unset after auto-init"
+    passed=false
+  fi
+
+  # Verify transition succeeded
+  if [[ $transition_status -eq 0 ]]; then
+    echo "  ✓ sm_transition succeeded after auto-initialization"
+  else
+    echo "  ✗ sm_transition failed (status: $transition_status)"
     passed=false
   fi
 
@@ -366,8 +388,10 @@ test_state_machine_auto_init() {
     if grep -q "sm_transition called before initialization" "$error_log" 2>/dev/null; then
       echo "  ✓ Auto-initialization error logged for monitoring"
     else
-      echo "  ℹ Auto-initialization error not found (may not be in test mode)"
+      echo "  ℹ Auto-initialization error not found (may not be in test mode or logged differently)"
     fi
+  else
+    echo "  ℹ Error log not found at $error_log"
   fi
 
   if $passed; then
