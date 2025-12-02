@@ -1918,6 +1918,14 @@ _log_bash_error() {
   local workflow_id=$5
   local user_args=$6
 
+  # Check suppression flag for expected validation failures
+  # This prevents cascading ERR trap logging for legitimate validation errors
+  # that are already logged by library functions (e.g., state_error, validation_error)
+  if [[ "${SUPPRESS_ERR_TRAP:-0}" == "1" ]]; then
+    SUPPRESS_ERR_TRAP=0  # Auto-reset flag to prevent suppressing subsequent real errors
+    return 0  # Return without logging or exiting
+  fi
+
   # Mark that we've logged this error to prevent duplicate logging from EXIT trap
   _BASH_ERROR_LOGGED=1
 

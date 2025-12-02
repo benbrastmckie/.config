@@ -519,6 +519,7 @@ append_workflow_state() {
 
   if [ -z "${STATE_FILE:-}" ]; then
     echo "ERROR: STATE_FILE not set. Call init_workflow_state first." >&2
+    SUPPRESS_ERR_TRAP=1  # Suppress ERR trap for this validation failure
     return 1
   fi
 
@@ -553,6 +554,11 @@ append_workflow_state() {
     echo "ERROR: append_workflow_state only supports scalar values for key: $key" >&2
     echo "ERROR: Use space-separated strings instead of JSON arrays" >&2
     echo "ERROR: If JSON is required, use a key ending in _JSON or add to allowlist" >&2
+
+    # Suppress ERR trap for this expected validation failure
+    # This prevents cascading execution_error log entries for validation failures
+    SUPPRESS_ERR_TRAP=1
+
     log_command_error \
       "${COMMAND_NAME:-unknown}" \
       "${WORKFLOW_ID:-unknown}" \
