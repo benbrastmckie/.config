@@ -57,7 +57,7 @@ declare -gA STATE_TRANSITIONS=(
   [initialize]="research,implement" # Can go to research or directly to implement (for /build)
   [research]="plan,complete"        # Can skip to complete for research-only
   [plan]="implement,complete,debug" # Can skip to complete for research-and-plan, or debug for debug-only workflows
-  [implement]="test"                # MUST go through testing phase (enforce test→complete sequence)
+  [implement]="test,complete"       # Can go to testing or complete (implement-only workflows)
   [test]="debug,document,complete"  # Conditional: debug if failed, document if passed, complete if skipping documentation
   [debug]="test,document,complete"  # Can retry testing, go to documentation, or complete if unfixable
   [document]="complete"
@@ -104,13 +104,12 @@ COMMAND_NAME="${COMMAND_NAME:-}"
 #   serializes the array to JSON and saves via state-persistence.sh.
 #
 # Dependencies:
-#   - jq (JSON processing)
 #   - state-persistence.sh: append_workflow_state()
 #
 # Effects:
-#   Writes to workflow state file:
-#   - COMPLETED_STATES_JSON: JSON array of completed state names
+#   Writes to workflow state file using indexed variables pattern:
 #   - COMPLETED_STATES_COUNT: Integer count for validation
+#   - COMPLETED_STATE_0, COMPLETED_STATE_1, ...: Individual state names
 #
 # Returns:
 #   0 on success, 1 on error
@@ -119,17 +118,14 @@ COMMAND_NAME="${COMMAND_NAME:-}"
 #   COMPLETED_STATES=("initialize" "research" "plan")
 #   save_completed_states_to_state
 #   # State file now contains:
-#   #   export COMPLETED_STATES_JSON='["initialize","research","plan"]'
 #   #   export COMPLETED_STATES_COUNT=3
+#   #   export COMPLETED_STATE_0="initialize"
+#   #   export COMPLETED_STATE_1="research"
+#   #   export COMPLETED_STATE_2="plan"
 #
 # Reference: Spec 672 Phase 2 (state machine array persistence)
 #
 save_completed_states_to_state() {
-  # Check if jq is available
-  if ! command -v jq &> /dev/null; then
-    echo "WARNING: jq not available, skipping COMPLETED_STATES persistence" >&2
-    return 1
-  fi
 
   # Check if state persistence function is available
   if ! command -v append_workflow_state &> /dev/null; then
@@ -137,17 +133,15 @@ save_completed_states_to_state() {
     return 1
   fi
 
-  # Serialize array to JSON (handle empty array explicitly)
-  local completed_states_json
-  if [ "${#COMPLETED_STATES[@]}" -eq 0 ]; then
-    completed_states_json="[]"
-  else
-    completed_states_json=$(printf '%s\n' "${COMPLETED_STATES[@]}" | jq -R . | jq -s .)
-  fi
-
-  # Save to workflow state
-  append_workflow_state "COMPLETED_STATES_JSON" "$completed_states_json"
+  # Save completed states using indexed variables pattern (scalar-only storage)
+  # Store count first
   append_workflow_state "COMPLETED_STATES_COUNT" "${#COMPLETED_STATES[@]}"
+
+  # Store each state with indexed key (COMPLETED_STATE_0, COMPLETED_STATE_1, etc.)
+  local i
+  for i in "${!COMPLETED_STATES[@]}"; do
+    append_workflow_state "COMPLETED_STATE_${i}" "${COMPLETED_STATES[$i]}"
+  done
 
   return 0
 }
@@ -155,15 +149,14 @@ save_completed_states_to_state() {
 # load_completed_states_from_state: Reconstruct COMPLETED_STATES array from workflow state
 #
 # Loads the COMPLETED_STATES array from the GitHub Actions-style state file
-# using the generic defensive reconstruction pattern (Spec 672 Phase 1).
+# using indexed variables pattern (scalar-only storage).
 #
 # Purpose:
 #   Restore completed states history after bash block boundaries. Used in
 #   orchestration commands when re-sourcing state machine library.
 #
 # Dependencies:
-#   - jq (JSON processing)
-#   - workflow-initialization.sh: reconstruct_array_from_indexed_vars() (optional fallback)
+#   None (uses bash built-ins only)
 #
 # Effects:
 #   Sets global COMPLETED_STATES array from state file
@@ -174,8 +167,9 @@ save_completed_states_to_state() {
 #
 # Example:
 #   # State file contains:
-#   #   export COMPLETED_STATES_JSON='["initialize","research"]'
 #   #   export COMPLETED_STATES_COUNT=2
+#   #   export COMPLETED_STATE_0="initialize"
+#   #   export COMPLETED_STATE_1="research"
 #   load_completed_states_from_state
 #   # Result: COMPLETED_STATES=("initialize" "research")
 #
@@ -185,32 +179,27 @@ load_completed_states_from_state() {
   # Defensive: Initialize empty array first
   COMPLETED_STATES=()
 
-  # Check if COMPLETED_STATES_JSON exists in state
-  if [ -z "${COMPLETED_STATES_JSON:-}" ]; then
+  # Check if COMPLETED_STATES_COUNT exists in state
+  if [ -z "${COMPLETED_STATES_COUNT:-}" ]; then
     # Not an error - initial workflow won't have completed states yet
     return 0
   fi
 
-  # Check if jq is available
-  if ! command -v jq &> /dev/null; then
-    echo "WARNING: jq not available, cannot load COMPLETED_STATES" >&2
-    return 0  # Graceful degradation
-  fi
-
-  # Validate JSON before parsing
-  if ! echo "$COMPLETED_STATES_JSON" | jq empty 2>/dev/null; then
-    echo "WARNING: COMPLETED_STATES_JSON is invalid, defaulting to empty array" >&2
-    return 0
-  fi
-
-  # Reconstruct array from JSON
-  mapfile -t COMPLETED_STATES < <(echo "$COMPLETED_STATES_JSON" | jq -r '.[]' 2>/dev/null || true)
-
-  # Validate against count (if available)
-  if [ -n "${COMPLETED_STATES_COUNT:-}" ]; then
-    if [ "${#COMPLETED_STATES[@]}" -ne "$COMPLETED_STATES_COUNT" ]; then
-      echo "WARNING: COMPLETED_STATES count mismatch (expected $COMPLETED_STATES_COUNT, got ${#COMPLETED_STATES[@]})" >&2
+  # Reconstruct array from indexed variables (COMPLETED_STATE_0, COMPLETED_STATE_1, etc.)
+  local i
+  for i in $(seq 0 $((COMPLETED_STATES_COUNT - 1))); do
+    local var_name="COMPLETED_STATE_${i}"
+    local value="${!var_name:-}"
+    if [ -n "$value" ]; then
+      COMPLETED_STATES+=("$value")
+    else
+      echo "WARNING: Missing indexed state variable $var_name" >&2
     fi
+  done
+
+  # Validate reconstructed array matches count
+  if [ "${#COMPLETED_STATES[@]}" -ne "$COMPLETED_STATES_COUNT" ]; then
+    echo "WARNING: COMPLETED_STATES count mismatch (expected $COMPLETED_STATES_COUNT, got ${#COMPLETED_STATES[@]})" >&2
   fi
 
   return 0
@@ -418,12 +407,12 @@ sm_init() {
 
   # Validate workflow_type enum
   case "$workflow_type" in
-    research-only|research-and-plan|research-and-revise|full-implementation|debug-only)
+    research-only|research-and-plan|research-and-revise|full-implementation|debug-only|implement-only|test-and-debug)
       : # Valid
       ;;
     *)
       echo "ERROR: Invalid workflow_type: $workflow_type" >&2
-      echo "  Valid types: research-only, research-and-plan, research-and-revise, full-implementation, debug-only" >&2
+      echo "  Valid types: research-only, research-and-plan, research-and-revise, full-implementation, debug-only, implement-only, test-and-debug" >&2
       return 1
       ;;
   esac
@@ -451,12 +440,12 @@ sm_init() {
   export RESEARCH_COMPLEXITY
   export RESEARCH_TOPICS_JSON
 
-  # Persist classification variables to state file (following COMPLETED_STATES pattern)
-  # This ensures verification checkpoints can validate state file persistence
+  # Persist classification variables to state file (scalar values only)
+  # RESEARCH_TOPICS_JSON is kept in memory only (not persisted due to JSON format)
   if command -v append_workflow_state &> /dev/null; then
     append_workflow_state "WORKFLOW_SCOPE" "$WORKFLOW_SCOPE"
     append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
-    append_workflow_state "RESEARCH_TOPICS_JSON" "$RESEARCH_TOPICS_JSON"
+    # RESEARCH_TOPICS_JSON skipped - JSON format incompatible with scalar-only state persistence
   else
     echo "WARNING: append_workflow_state not available, skipping classification persistence" >&2
   fi
@@ -480,6 +469,12 @@ sm_init() {
       ;;
     debug-only)
       TERMINAL_STATE="$STATE_DEBUG"
+      ;;
+    implement-only)
+      TERMINAL_STATE="$STATE_IMPLEMENT"
+      ;;
+    test-and-debug)
+      TERMINAL_STATE="$STATE_COMPLETE"
       ;;
     *)
       echo "WARNING: Unknown workflow scope '$WORKFLOW_SCOPE', defaulting to full-implementation" >&2
@@ -546,6 +541,8 @@ sm_load() {
       research-and-plan) TERMINAL_STATE="$STATE_PLAN" ;;
       full-implementation) TERMINAL_STATE="$STATE_COMPLETE" ;;
       debug-only) TERMINAL_STATE="$STATE_DEBUG" ;;
+      implement-only) TERMINAL_STATE="$STATE_IMPLEMENT" ;;
+      test-and-debug) TERMINAL_STATE="$STATE_COMPLETE" ;;
       *) TERMINAL_STATE="$STATE_COMPLETE" ;;
     esac
   elif echo "$(cat "$checkpoint_file")" | jq -e '.current_state' &> /dev/null; then
@@ -564,6 +561,8 @@ sm_load() {
       research-and-plan) TERMINAL_STATE="$STATE_PLAN" ;;
       full-implementation) TERMINAL_STATE="$STATE_COMPLETE" ;;
       debug-only) TERMINAL_STATE="$STATE_DEBUG" ;;
+      implement-only) TERMINAL_STATE="$STATE_IMPLEMENT" ;;
+      test-and-debug) TERMINAL_STATE="$STATE_COMPLETE" ;;
       *) TERMINAL_STATE="$STATE_COMPLETE" ;;
     esac
   else
@@ -1069,6 +1068,6 @@ export -f load_completed_states_from_state
 
 # Conditionally load COMPLETED_STATES from state on library re-sourcing
 # This preserves state history across bash subprocess boundaries
-if [ "${#COMPLETED_STATES[@]}" -eq 0 ] && [ -n "${COMPLETED_STATES_JSON:-}" ]; then
+if [ "${#COMPLETED_STATES[@]}" -eq 0 ] && [ -n "${COMPLETED_STATES_COUNT:-}" ]; then
   load_completed_states_from_state
 fi
