@@ -17,6 +17,7 @@ interactions.
 | `test_command_integration.sh` | Test command pipeline execution |
 | `test_no_empty_directories.sh` | Verify lazy directory creation |
 | `test_recovery_integration.sh` | Test error recovery flows |
+| `test_repair_delegation.sh` | Test /repair hard barrier delegation pattern enforcement |
 | `test_repair_state_transitions.sh` | Test repair workflow state machine |
 | `test_repair_workflow.sh` | Test full repair workflow |
 | `test_revise_automode.sh` | Test revision auto-mode detection |

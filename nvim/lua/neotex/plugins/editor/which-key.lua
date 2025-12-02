@@ -192,10 +192,6 @@ return {
       return vim.bo.filetype == "ipynb" or vim.bo.filetype == "python"
     end
 
-    local function is_lean()
-      return vim.bo.filetype == "lean"
-    end
-
     local function is_pandoc_compatible()
       return vim.tbl_contains({ "markdown", "md", "tex", "latex", "org", "rst", "html", "docx" }, vim.bo.filetype)
     end
@@ -601,7 +597,7 @@ return {
       { "<leader>rh", "<cmd>LocalHighlightToggle<CR>", desc = "highlight", icon = "󰠷" },
       { "<leader>rk", "<cmd>BufDeleteFile<CR>", desc = "kill file and buffer", icon = "󰆴" },
       { "<leader>rK", "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy && rm -f ~/.config/nvim/lazy-lock.json' open=0<CR>", desc = "wipe plugins and lock file", icon = "󰩺" },
-      { "<leader>ri", "<cmd>LeanInfoviewToggle<CR>", desc = "lean info", icon = "󰊕", cond = is_lean },
+      { "<leader>ri", function() require('lean.infoview').toggle() end, desc = "toggle infoview", icon = "󰊕" },
       { "<leader>rm", "<cmd>lua RunModelChecker()<CR>", desc = "model checker", icon = "󰐊", mode = "n" },
       { "<leader>rM", "<cmd>lua Snacks.notifier.show_history()<cr>", desc = "show messages", icon = "󰍡" },
       { "<leader>ro", "za", desc = "toggle fold under cursor", icon = "󰘖" },

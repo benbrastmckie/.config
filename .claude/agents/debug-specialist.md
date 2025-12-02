@@ -383,6 +383,8 @@ DEBUG_REPORT_PATH: $DEBUG_REPORT_PATH
 ### From /debug Command
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the debug-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Investigate authentication failure using debug-specialist protocol"
@@ -420,6 +422,8 @@ Task {
 ### From /orchestrate Command (Debugging Phase)
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the debug-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Analyze test failures after refactoring using debug-specialist protocol"
@@ -456,6 +460,8 @@ Task {
 ### Integration Testing Failure
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the debug-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Debug integration test timeout using debug-specialist protocol"
@@ -667,6 +673,8 @@ DEBUG_REPORT_PATH: debug/phase1_failures/001_config_initialization.md
 ### Orchestrate Integration Example
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the debug-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Create debug report for test failures using debug-specialist protocol"

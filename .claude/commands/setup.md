@@ -241,7 +241,7 @@ EOF
 esac
 ```
 
-**EXECUTE NOW** (analyze mode only): Invoke the topic-naming-agent to generate a semantic directory name.
+**EXECUTE NOW** (analyze mode only): USE the Task tool to invoke the topic-naming-agent for semantic topic directory naming.
 
 Task {
   subagent_type: "general-purpose"

@@ -37,6 +37,111 @@ Commands should check CLAUDE.md in priority order:
 - Critical paths require integration tests
 - Regression tests for all bug fixes
 
+### Test Writing Responsibility
+
+Tests should be written DURING implementation (not during test execution). This separation enables:
+- Better separation of concerns (implementation vs validation)
+- Test-driven development patterns
+- Independent test execution without reimplementation
+
+**During /implement Command**:
+- Tests are written in Testing phases of the plan
+- Test files created and committed with implementation
+- Testing Strategy section documents test requirements in summary
+- Tests NOT executed (written only)
+
+**During /test Command**:
+- Tests are executed (not written)
+- Test executor reads Testing Strategy from implementation summary
+- Runs tests and calculates coverage metrics
+- Iterates until coverage threshold met
+
+**Example Plan Structure**:
+```markdown
+### Phase 2: Authentication Implementation
+- [ ] Implement JWT token generation
+- [ ] Implement token validation
+- [ ] Add error handling
+
+### Phase 3: Testing
+- [ ] Write unit tests for token generation (test_token_gen.sh)
+- [ ] Write integration tests for auth flow (test_auth_flow.sh)
+- [ ] Document test execution in Testing Strategy
+```
+
+See [Implement-Test Workflow Guide](./../guides/workflows/implement-test-workflow.md) for complete workflow patterns.
+
+### Test Execution Loops
+
+The /test command implements a coverage loop pattern to automatically iterate until quality threshold met.
+
+**Loop Configuration**:
+- Coverage threshold: 80% (default, configurable via `--coverage-threshold`)
+- Max iterations: 5 (default, configurable via `--max-iterations`)
+- Stuck threshold: 2 iterations without progress
+
+**Exit Conditions**:
+
+1. **Success**: `all_passed=true` AND `coverage≥threshold`
+   - Next state: COMPLETE
+   - Console: "All tests passed with 85% coverage after 3 iterations"
+
+2. **Stuck**: No coverage progress for 2 consecutive iterations
+   - Next state: DEBUG
+   - Console: "Coverage loop stuck (no progress). Final coverage: 75%"
+
+3. **Max Iterations**: Iteration count ≥ max_iterations
+   - Next state: DEBUG
+   - Console: "Max iterations (5) reached. Final coverage: 78%"
+
+**Iteration Artifacts**:
+Each iteration creates a separate test result artifact for audit trail:
+- `test_results_iter1_{timestamp}.md`
+- `test_results_iter2_{timestamp}.md`
+- `test_results_iter3_{timestamp}.md`
+
+**Loop Flow Example**:
+```
+Iteration 1: 60% coverage, 2 failed → Continue
+Iteration 2: 75% coverage, 1 failed → Continue
+Iteration 3: 85% coverage, all passed → SUCCESS
+```
+
+See [Implement-Test Workflow Guide](./../guides/workflows/implement-test-workflow.md) for complete coverage loop patterns.
+
+### Summary-Based Test Execution
+
+The /test command uses summary-based handoff to extract test execution requirements from implementation summaries.
+
+**Testing Strategy Section Format** (in implementation summary):
+```markdown
+## Testing Strategy
+
+### Test Files Created
+- `/path/to/test_auth.sh` - Authentication unit tests
+- `/path/to/test_api.sh` - API integration tests
+
+### Test Execution Requirements
+- **Framework**: Bash test framework (existing .claude/tests/ patterns)
+- **Test Command**: `bash /path/to/test_auth.sh && bash /path/to/test_api.sh`
+- **Coverage Target**: 80%
+- **Expected Tests**: 15 unit tests, 8 integration tests
+
+### Coverage Measurement
+Coverage calculated via test execution output parsing.
+```
+
+**Test Execution Pattern**:
+```bash
+# Explicit summary path
+/test --file /path/to/summaries/001-implementation-summary.md
+
+# Auto-discovery from plan
+/test /path/to/plan.md
+```
+
+See [Output Formatting Standards](./output-formatting.md) for Testing Strategy section format requirements.
+
 ### Agent Behavioral Compliance Testing
 
 Agent behavioral compliance tests validate that agents follow execution procedures, create required files, and return properly formatted results. These tests prevent workflow failures caused by agent behavioral violations.

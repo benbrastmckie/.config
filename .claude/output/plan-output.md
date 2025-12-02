@@ -1,111 +1,140 @@
-> /plan is running… "I want the /plan command to look up the relevant 
-standards from CLAUDE.md in order to make sure that the plan architect 
-subagent creates a plan that aligns with those standards, or if there is 
-well-motivated divergence, including a first phase to revise and improve the
- standards in a principled and well-integrated way, making sure to warn the 
-user that the plan proposes a change to the project standards." 
+> /plan is running… "Fix trigger_todo_update function to properly invoke /todo command. The current implementation tries to 
+execute '/todo' as a bash command (bash -c '/todo'), but slash commands are markdown files processed by Claude Code via the
+SlashCommand tool. Research the correct invocation pattern and implement a solution that: 1) Properly delegates to /todo command
+using SlashCommand tool or equivalent mechanism, 2) Maintains non-blocking design with graceful degradation, 3) Preserves
+enhanced checkpoint format, 4) Integrates with existing error logging, 5) Updates all 9 commands that use trigger_todo_update(),
+6) Creates tests to verify the fix works" --complexity 2 
   ⎿  Allowed 7 tools for this command
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ ✓ State file validated: /home/benjamin/.config/.claude/tmp/workflow
-    _plan_1764459370.sh
-    Classification accepted: scope=research-and-plan, complexity=3, top
-    … +7 lines (ctrl+o to expand)
+● I'll execute the /plan command to create a research and implementation plan for fixing the trigger_todo_update function.
 
+● Bash(set +H…)
+  ⎿  ✓ State file validated: /home/benjamin/.config/.claude/tmp/workflow_plan_1764704605.sh
+     Classification accepted: scope=research-and-plan, complexity=2, topics=0
+     State machine initialized: scope=research-and-plan, terminal=plan
+     … +5 lines (ctrl+o to expand)
 
+● Now I'll continue with topic name generation:
+
+● Bash(set +H…)
+  ⎿  === Topic Name File Path Pre-Calculation ===                                        
+       Topic Name File: /home/benjamin/.config/.claude/tmp/topic_name_plan_1764704605.txt
+       Workflow ID: plan_1764704605
+     … +2 lines (ctrl+o to expand)
+
+● Now I'll invoke the topic-naming-agent:
 
 ● Task(Generate semantic topic directory name)
-  ⎿  Done (2 tool uses · 25.3k tokens · 14s)                           
+  ⎿  Done (2 tool uses · 28.1k tokens · 24s)                                                                                
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Agent output validation complete
+● Good! Now I'll verify the topic name file and continue with path initialization:
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
+● Bash(set +H…)
+  ⎿  Error: Exit code 2
+     /run/current-system/sw/bin/bash: eval: line 87: syntax error near unexpected token `done'
+     /run/current-system/sw/bin/bash: eval: line 87: `  done'
+
+● Bash(set +H…)
+  ⎿  === Topic Name Hard Barrier Validation ===       
+
+     ✓ Hard barrier passed - topic name file validated
+
+● Great! Now let me initialize the topic path:
+
+● Bash(set +H
+      set +u…)
   ⎿  Error: Exit code 1
-     ERROR: Failed to restore WORKFLOW_ID from Block 1a
+     /run/current-system/sw/bin/bash: line 105: FEATURE_DESCRIPTION: unbound variable
 
-● Bash(# Check if state ID file exists and restore CLAUDE_PROJECT_DIR first
-      if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null
-      2>&1; then…)
-  ⎿ Looking for: /home/benjamin/.config/.claude/tmp/plan_state_id.txt  
-    -rw-r--r-- 1 benjamin users 16 Nov 29 15:36 /home/benjamin/.config/
-    .claude/tmp/plan_state_id.txt
-    plan_1764459370
+● Bash(set +H
+      set +u…)
+  ⎿  Setup complete                                                                                  
+     Research directory: /home/benjamin/.config/.claude/specs/016_todo_command_invocation_fix/reports
+     Plans directory: /home/benjamin/.config/.claude/specs/016_todo_command_invocation_fix/plans
+     … +2 lines (ctrl+o to expand)
 
+● Excellent! Now I'll invoke the research-specialist agent:
 
-● The file exists. The issue is that CLAUDE_PROJECT_DIR wasn't set at
-  the start of the script. Let me run the block again with proper
-  initialization:
+● Task(Research trigger_todo_update invocation pattern)
+  ⎿  Done (15 tool uses · 90.5k tokens · 3m 7s)                                                                             
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ Setup complete: plan_1764459370 (research-and-plan, complexity: 3) 
-    Research directory: /home/benjamin/.config/.claude/specs/968_plan_s
-    tandards_alignment/reports
-    … +4 lines (ctrl+o to expand)
+● Excellent research! Now let me verify the research artifacts and proceed to planning:
 
+● Bash(set +H
+      set +u…)
+  ⎿  Error: Exit code 127
+     /home/benjamin/.config/.claude/lib/core/state-persistence.sh: line 518: $2: unbound variable
 
-● Task(Research plan standards alignment feature)
-  ⎿  Done (16 tool uses · 82.0k tokens · 1m 59s)                                          
-
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Verifying research artifacts...
+     Verifying research artifacts...
      Research verified: 1 reports
-     … +11 lines (ctrl+o to expand)
+     DEBUG: Pre-transition checkpoint (state=research → plan)
+     DEBUG: Post-transition checkpoint (state=plan)
+     State transition: plan (completed: 2 states)
+     === Phase 2: Planning ===
+     Plan will be created at: 
+     /home/benjamin/.config/.claude/specs/016_todo_command_invocation_fix/plans/001-todo-command-invocation-fix-plan.md
+     … +1 line (ctrl+o to see all)
 
-● Task(Create plan for standards alignment feature)
-  ⎿  Done (11 tool uses · 47.3k tokens · 2m 29s)                                          
+● The error is non-fatal. Let me continue with the plan-architect invocation:
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Verifying plan artifacts...   
-     Plan verified: 20353 bytes
-     … +25 lines (ctrl+o to expand)
+● Task(Create implementation plan for TODO.md invocation fix)
+  ⎿  Done (12 tool uses · 59.6k tokens · 3m 8s)                                                                             
 
-● Read(.claude/specs/968_plan_standards_alignment/plans/001-plan-standards-alignment-plan.md)
-  ⎿  Read 384 lines
+● Perfect! Now let me verify the plan and complete the workflow:
 
-● The /plan workflow completed successfully. Here's a summary:
+● Bash(set +H
+      set +u…)
+  ⎿  Verifying plan artifacts...                             
+     Plan verified: 21982 bytes
+     DEBUG: Pre-transition checkpoint (state=plan → complete)
+     … +21 lines (ctrl+o to expand)
 
-  Plan Created: Standards-Aware Plan Generation
+● Perfect! The plan has been created successfully. Let me show you a summary of what was discovered and planned:
 
-  Plan Location: /home/benjamin/.config/.claude/specs/968_plan_standards_alignment/plans/00
-  1-plan-standards-alignment-plan.md
+  Investigation Complete
 
-  Research Report: /home/benjamin/.config/.claude/specs/968_plan_standards_alignment/report
-  s/001-plan-standards-integration-research.md
+  I've successfully researched and created an implementation plan to fix the trigger_todo_update() function issue.
 
-  Summary
+  Key Findings
 
-  The plan outlines a 5-phase implementation to integrate CLAUDE.md standards into the
-  /plan command:
+  The Problem: The function tries to execute /todo as a bash command using bash -c '/todo', but this fundamentally cannot
+  work because:
+  - Slash commands are markdown files processed by Claude Code, not executable scripts
+  - The SlashCommand tool is only available to Claude AI during conversation, not to bash scripts
+  - All attempts to invoke /todo from bash have been silently failing (suppressed by 2>/dev/null)
 
-  | Phase | Description                           | Dependencies |
-  |-------|---------------------------------------|--------------|
-  | 1     | Standards Extraction Library          | None         |
-  | 2     | Plan-Architect Behavioral Enhancement | None         |
-  | 3     | /plan Command Enhancement             | Phase 1      |
-  | 4     | Integration Testing                   | Phases 2, 3  |
-  | 5     | Documentation                         | Phase 4      |
+  Affected Commands: All 9 commands that create/modify artifacts:
+  - /build, /plan, /implement, /research, /debug, /repair, /errors, /revise, /test
 
-  Key Features
+  Recommended Solution
 
-  1. Standards Extraction Library (.claude/lib/plan/standards-extraction.sh)
-    - Extracts planning-relevant sections using <!-- SECTION: name --> markers
-    - Reusable by other commands (/revise, /implement, /debug)
-  2. Plan-Architect Enhancement
-    - Standards content injected into agent prompt
-    - Three-tier divergence levels (Minor/Moderate/Major)
-    - Phase 0 template for standards revision proposals
-  3. Divergence Detection
-    - Plans proposing standards changes automatically include Phase 0
-    - User receives explicit warning in console output
-    - Metadata includes divergence flags
+  The research report recommends removing automatic TODO.md updates entirely because:
+
+  1. Architectural constraint: Bash code blocks cannot invoke Claude slash commands
+  2. Honesty over magic: Silent failures violate user expectations
+  3. Simplicity: Explicit manual workflow is clearer than broken automatic workflow
+  4. Alignment with standards: Manual delegation matches existing patterns
+
+  The Plan
+
+  5 phases to cleanly remove the broken integration:
+
+  1. Remove trigger_todo_update() calls from all 9 commands
+  2. Add completion reminders directing users to run /todo
+  3. Remove the function from todo-functions.sh
+  4. Update documentation to reflect manual workflow
+  5. Create tests to verify TODO.md is NOT updated automatically
+
+  Artifacts Created
+
+  - Research Report: .claude/specs/016_todo_command_invocation_fix/reports/001-todo-command-invocation-analysis.md
+  - Implementation Plan: .claude/specs/016_todo_command_invocation_fix/plans/001-todo-command-invocation-fix-plan.md
 
   Next Steps
 
-  - Review the plan: cat /home/benjamin/.config/.claude/specs/968_plan_standards_alignment/
-  plans/001-plan-standards-alignment-plan.md
-  - Begin implementation: /build /home/benjamin/.config/.claude/specs/968_plan_standards_al
-  ignment/plans/001-plan-standards-alignment-plan.md
-  - Review research: The research report contains detailed analysis of CLAUDE.md structure
-  and plan-architect integration points
+  You can:
+  1. Review the plan: cat .claude/specs/016_todo_command_invocation_fix/plans/001-todo-command-invocation-fix-plan.md
+  2. Review the research: cat .claude/specs/016_todo_command_invocation_fix/reports/001-todo-command-invocation-analysis.md
+  3. Start implementation: /build .claude/specs/016_todo_command_invocation_fix/plans/001-todo-command-invocation-fix-plan.md
 
+  The plan provides a clean, honest solution that aligns with the architectural constraints of the system.

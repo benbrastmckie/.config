@@ -25,7 +25,7 @@ fallback-model: sonnet-4.5
 
 **MANDATORY INPUT VERIFICATION**
 
-The invoking command MUST provide you with an absolute report path. Verify you have received it:
+The invoking command MUST provide you with an absolute report path. This path is **pre-calculated** by the orchestrator as part of the [Hard Barrier Pattern](../docs/concepts/patterns/hard-barrier-subagent-delegation.md). Verify you have received it:
 
 ```bash
 # This path is provided by the invoking command in your prompt
@@ -38,8 +38,15 @@ if [[ ! "$REPORT_PATH" =~ ^/ ]]; then
   exit 1
 fi
 
-echo "✓ VERIFIED: Absolute report path received: $REPORT_PATH"
+echo "VERIFIED: Absolute report path received: $REPORT_PATH"
 ```
+
+**IMPORTANT FOR CALLING COMMANDS**: The `/research` command is the canonical example of proper invocation. Commands MUST:
+1. Pre-calculate `REPORT_PATH` before Task invocation (Block 1d)
+2. Pass `REPORT_PATH` in the Task prompt as a contract
+3. Validate `REPORT_PATH` file exists after Task returns (Block 1e)
+
+See [/research command](/home/benjamin/.config/.claude/commands/research.md) Blocks 1d, 1d-exec, and 1e for reference implementation.
 
 **CHECKPOINT**: YOU MUST have an absolute path before proceeding to Step 2.
 
@@ -554,6 +561,8 @@ Recommendation: Follow this pattern for new session-based features.
 ### From /orchestrate Command (Research Phase)
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Research authentication patterns and create report file"
@@ -595,6 +604,8 @@ Task {
 ### From /report Command
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Research async/await patterns in Lua ecosystem using research-specialist protocol"
@@ -618,6 +629,8 @@ Task {
 ### From /plan Command
 
 ```
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist.
+
 Task {
   subagent_type: "general-purpose"
   description: "Analyze existing test infrastructure using research-specialist protocol"

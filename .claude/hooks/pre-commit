@@ -6,6 +6,8 @@
 # - Library sourcing pattern validation
 # - Error suppression anti-pattern detection
 # - Bash conditional safety checks
+# - Task invocation pattern validation
+# - Plan metadata compliance validation
 # - README structure validation (warnings only)
 # - Internal link validation (warnings only)
 #
@@ -129,6 +131,59 @@ if [ -f "$CONDITIONALS_PATH" ]; then
   if echo "$CONDITIONALS_OUTPUT" | grep -q "No violations found"; then
     echo -e "  ${GREEN}PASS${NC}"
   fi
+fi
+
+# Validator 4: Task invocation pattern (ERROR level - blocking)
+TASK_INVOCATION_PATH="$PROJECT_DIR/.claude/scripts/lint-task-invocation-pattern.sh"
+if [ -n "$STAGED_COMMANDS" ] && [ -f "$TASK_INVOCATION_PATH" ]; then
+  echo -e "Running: task-invocation linter"
+
+  # Convert to absolute paths
+  STAGED_CMD_FILES=""
+  for file in $STAGED_COMMANDS; do
+    STAGED_CMD_FILES="$STAGED_CMD_FILES $PROJECT_DIR/$file"
+  done
+
+  TASK_OUTPUT=$(bash "$TASK_INVOCATION_PATH" --staged 2>&1) || {
+    echo -e "  ${RED}FAIL${NC}: Task invocation pattern violations detected"
+    echo ""
+    echo "$TASK_OUTPUT" | sed 's/^/    /'
+    echo ""
+    FINAL_EXIT=1
+  }
+
+  if [ $? -eq 0 ]; then
+    echo -e "  ${GREEN}PASS${NC}"
+  fi
+else
+  echo -e "Skipping: task-invocation (no command files staged)"
+fi
+
+# Validator 5: Plan metadata validation (ERROR level - blocking)
+STAGED_PLANS=$(echo "$STAGED_FILES" | grep '^\\.claude/specs/.*/plans/.*\\.md$' || true)
+PLAN_METADATA_PATH="$PROJECT_DIR/.claude/scripts/lint/validate-plan-metadata.sh"
+
+if [ -n "$STAGED_PLANS" ] && [ -f "$PLAN_METADATA_PATH" ]; then
+  echo -e "Running: plan-metadata validator"
+
+  # Validate each staged plan file
+  PLAN_VALIDATION_FAILED=false
+  for plan_file in $STAGED_PLANS; do
+    PLAN_FULL_PATH="$PROJECT_DIR/$plan_file"
+    PLAN_OUTPUT=$(bash "$PLAN_METADATA_PATH" "$PLAN_FULL_PATH" 2>&1) || {
+      echo -e "  ${RED}FAIL${NC}: $plan_file"
+      echo "$PLAN_OUTPUT" | sed 's/^/    /'
+      echo ""
+      PLAN_VALIDATION_FAILED=true
+      FINAL_EXIT=1
+    }
+  done
+
+  if [ "$PLAN_VALIDATION_FAILED" = false ]; then
+    echo -e "  ${GREEN}PASS${NC}"
+  fi
+else
+  echo -e "Skipping: plan-metadata (no plan files staged)"
 fi
 
 echo ""

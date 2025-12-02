@@ -6,16 +6,17 @@ This document defines the comprehensive standards for organizing and maintaining
 
 ## Section Hierarchy
 
-The TODO.md file follows a strict 6-section hierarchy that reflects project lifecycle status:
+The TODO.md file follows a strict 7-section hierarchy that reflects project lifecycle status:
 
 ### Section Order (Required)
 
 1. **In Progress** - Actively being worked on
 2. **Not Started** - Planned but not yet started
-3. **Backlog** - Manually curated ideas and future enhancements
-4. **Superseded** - Replaced by newer plans
-5. **Abandoned** - Intentionally stopped (with documented reasons)
-6. **Completed** - Successfully finished (date-grouped)
+3. **Research** - Research-only projects (no plans) from `/research` or `/errors` commands
+4. **Saved** - Demoted items from "Not Started" or "In Progress" to revisit later
+5. **Backlog** - Manually curated ideas and future enhancements
+6. **Abandoned** - Intentionally stopped, superseded, or discontinued (with documented reasons)
+7. **Completed** - Successfully finished (date-grouped)
 
 ### Section Definitions
 
@@ -23,27 +24,28 @@ The TODO.md file follows a strict 6-section hierarchy that reflects project life
 |---------|---------|--------------|----------|
 | In Progress | Plans currently being implemented | Yes | `[x]` |
 | Not Started | Plans created but not started | Yes | `[ ]` |
+| Research | Research-only projects without plans | Yes | `[ ]` |
+| Saved | Demoted items to revisit later | No (manual) | `[ ]` |
 | Backlog | Manually curated future ideas | No (preserved) | None or `[ ]` |
-| Superseded | Replaced by newer plans | Yes | `[~]` |
-| Abandoned | Intentionally stopped | Yes | `[x]` |
+| Abandoned | Intentionally stopped or superseded | Yes | `[x]` |
 | Completed | Successfully finished | Yes | `[x]` |
 
 ## Checkbox Conventions
 
 ### Standard Checkboxes
 
-- `[ ]` - Not started (used in "Not Started" section)
-- `[x]` - Started, in progress, or complete (used in "In Progress", "Completed", "Abandoned" sections)
-- `[~]` - Superseded (used in "Superseded" section)
+- `[ ]` - Not started (used in "Not Started", "Research", "Saved" sections)
+- `[x]` - Started, in progress, complete, or abandoned (used in "In Progress", "Completed", "Abandoned" sections)
 
 ### Usage Rules
 
 1. **Not Started** section entries MUST use `[ ]` checkbox
 2. **In Progress** section entries MUST use `[x]` checkbox
-3. **Completed** section entries MUST use `[x]` checkbox
-4. **Superseded** section entries MUST use `[~]` checkbox
-5. **Abandoned** section entries MUST use `[x]` checkbox
-6. **Backlog** section entries may use `[ ]` or no checkbox (manual curation)
+3. **Research** section entries MUST use `[ ]` checkbox
+4. **Saved** section entries MUST use `[ ]` checkbox
+5. **Completed** section entries MUST use `[x]` checkbox
+6. **Abandoned** section entries MUST use `[x]` checkbox (includes superseded items)
+7. **Backlog** section entries may use `[ ]` or no checkbox (manual curation)
 
 ## Entry Format
 
@@ -83,16 +85,27 @@ The TODO.md file follows a strict 6-section hierarchy that reflects project life
   - Created reusable hard barrier pattern documentation and barrier-utils.sh library
 ```
 
-**Superseded Entry**:
-```markdown
-- [~] **Make /build persistent** - Superseded by Plan 899 (Build iteration infrastructure) [.claude/specs/881_build_persistent_workflow_refactor/plans/001_build_persistent_workflow_refactor_plan.md] -> See [901_plan_integration_overlap_analysis](specs/901_plan_integration_overlap_analysis/reports/001_plan_integration_overlap_analysis.md)
-```
-
-**Abandoned Entry**:
+**Abandoned Entry** (includes superseded items):
 ```markdown
 - [x] **Error logging infrastructure completion** - Helper functions deemed unnecessary after comprehensive analysis [.claude/specs/902_error_logging_infrastructure_completion/plans/001_error_logging_infrastructure_completion_plan.md]
   - **Reason**: Error logging infrastructure already 100% complete across all 12 commands
   - **Alternative**: Focus on Plan 883 (Commands Optimize Refactor) for measurable improvements
+
+- [x] **Make /build persistent** - Superseded by Plan 899 (Build iteration infrastructure) [.claude/specs/881_build_persistent_workflow_refactor/plans/001_build_persistent_workflow_refactor_plan.md]
+  - **Reason**: Superseded by [901_plan_integration_overlap_analysis](specs/901_plan_integration_overlap_analysis/reports/001_plan_integration_overlap_analysis.md)
+```
+
+**Research Entry** (no plan, reports only):
+```markdown
+- [ ] **Error patterns analysis** - Error log analysis from /errors command [.claude/specs/935_errors_repair_research/]
+  - Reports: [Error Analysis](.claude/specs/935_errors_repair_research/reports/001_error_analysis.md)
+```
+
+**Saved Entry** (demoted from Not Started or In Progress):
+```markdown
+- [ ] **Buffer Hook Reversion** - Systematic removal of buffer-hook integration from research workflow [.claude/specs/980_revert_research_buffer_hook/plans/001-revert-research-buffer-hook-plan.md]
+  - **Demoted from**: Not Started (2025-11-30)
+  - **Reason**: Lower priority; revisit after core workflow improvements complete
 ```
 
 ## Artifact Inclusion Rules
@@ -147,6 +160,82 @@ Completed entries are grouped by date ranges with headers:
 3. Group by consecutive days when work occurred
 4. Single-day groups use single date (e.g., `**November 26, 2025**:`)
 
+## Research Section
+
+### Purpose
+
+The Research section tracks spec directories that contain research reports but no implementation plans. These are typically created by:
+- `/research` command (research-only workflows)
+- `/errors` command (error analysis reports)
+
+### Auto-Detection Rules
+
+The `/todo` command identifies Research entries by:
+1. Directory exists in `specs/` with `reports/` subdirectory
+2. Directory has NO files in `plans/` subdirectory (or no `plans/` subdirectory)
+3. Directory is not manually placed in other sections
+
+### Entry Format
+
+Research entries link to the directory (not a plan file):
+
+```markdown
+- [ ] **{Topic Title}** - {Brief description from report} [.claude/specs/{NNN_topic}/]
+  - Reports: [Report Title](.claude/specs/{NNN_topic}/reports/001-report.md)
+```
+
+### Example Research Section
+
+```markdown
+## Research
+
+- [ ] **Error patterns analysis** - Analysis of command error patterns [.claude/specs/935_errors_repair_research/]
+  - Reports: [Error Analysis](.claude/specs/935_errors_repair_research/reports/001_error_analysis.md)
+
+- [ ] **Haiku subagent patterns** - Research on parallel subagent orchestration [.claude/specs/20251121_convert_docs_plan_improvements_research/]
+  - Reports: [Haiku Parallel Subagents](.claude/specs/20251121_convert_docs_plan_improvements_research/reports/001_haiku_parallel_subagents.md)
+  - Reports: [Orchestrator Command Standards](.claude/specs/20251121_convert_docs_plan_improvements_research/reports/002_orchestrator_command_standards.md)
+```
+
+## Saved Section
+
+### Purpose
+
+The Saved section holds items demoted from "Not Started" or "In Progress" that the user wants to revisit later. Unlike Abandoned items, Saved items are intentionally preserved for future consideration.
+
+### Manual Curation
+
+The Saved section is manually curated and NOT auto-updated by the `/todo` command.
+
+### Preservation Rules
+
+1. `/todo` command MUST preserve existing Saved content
+2. Items are moved manually from "Not Started" or "In Progress"
+3. Each entry SHOULD include "Demoted from" and "Reason" metadata
+4. Items can be promoted back to "Not Started" when ready
+
+### Entry Format
+
+```markdown
+- [ ] **{Plan Title}** - {Brief description} [{plan-path}]
+  - **Demoted from**: {Not Started|In Progress} ({date})
+  - **Reason**: {Why this was saved for later}
+```
+
+### Example Saved Section
+
+```markdown
+## Saved
+
+- [ ] **Buffer Hook Reversion** - Systematic removal of buffer-hook integration [.claude/specs/980_revert_research_buffer_hook/plans/001-revert-research-buffer-hook-plan.md]
+  - **Demoted from**: Not Started (2025-11-30)
+  - **Reason**: Lower priority; revisit after core workflow improvements complete
+
+- [ ] **README compliance audit** - Update 58 READMEs for compliance [.claude/specs/958_readme_compliance_audit_updates/plans/001-readme-compliance-audit-updates-plan.md]
+  - **Demoted from**: In Progress (2025-11-28)
+  - **Reason**: Paused for higher-priority error repair work
+```
+
 ## Backlog Preservation
 
 ### Policy
@@ -190,8 +279,17 @@ The `/todo` command uses plan metadata to classify status:
 | `[IN PROGRESS]` | In Progress |
 | `[NOT STARTED]` | Not Started |
 | `DEFERRED` | Backlog |
-| `SUPERSEDED` | Superseded |
+| `SAVED` | Saved |
+| `SUPERSEDED` | Abandoned |
 | `ABANDONED` | Abandoned |
+| (no plan file) | Research |
+
+### Research Detection (Special Case)
+
+Directories with reports but no plans are classified as Research:
+1. Has `reports/` subdirectory with `.md` files
+2. Has NO `plans/` subdirectory OR `plans/` is empty
+3. Not manually placed in Saved/Backlog sections
 
 ### Fallback Detection
 
@@ -206,7 +304,7 @@ The following are checked by validation scripts:
 
 ### Structure Validation
 
-- [ ] All 6 sections present in correct order
+- [ ] All 7 sections present in correct order
 - [ ] Each section uses correct header format (`## Section Name`)
 - [ ] Completed section has date grouping headers
 
@@ -225,23 +323,26 @@ The following are checked by validation scripts:
 
 ## Usage by Commands
 
+### Automatic TODO.md Updates
+
+Six commands automatically update TODO.md when creating or modifying plans and reports:
+
+- **/build**: Updates at START (→ In Progress) and COMPLETION (→ Completed)
+- **/plan**: Updates after new plan creation (→ Not Started)
+- **/research**: Updates after report creation (→ Research)
+- **/debug**: Updates after debug report creation (→ Research)
+- **/repair**: Updates after repair plan creation (→ Not Started)
+- **/revise**: Updates after plan modification (status unchanged)
+
+All commands use the signal-triggered delegation pattern, delegating to `/todo` for consistent classification and formatting. See [Command-TODO Integration Guide](/home/benjamin/.config/.claude/docs/guides/development/command-todo-integration-guide.md) for implementation details.
+
 ### /todo Command
 
 - Scans specs/ directories
 - Classifies plans by status
-- Updates TODO.md (preserving Backlog)
+- Updates TODO.md (preserving Backlog and Saved sections)
 - Includes related artifacts
-
-### /build Command
-
-- May update TODO.md on completion
-- Moves entries from "Not Started" to "In Progress"
-- On completion, moves to "Completed" section
-
-### /plan Command
-
-- Creates new entries in "Not Started" section
-- Follows entry format standards
+- Can be invoked manually or triggered automatically by other commands
 
 ## Anti-Patterns
 

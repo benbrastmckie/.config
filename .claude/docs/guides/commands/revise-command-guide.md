@@ -122,18 +122,40 @@ Block 5: Plan Revision Phase
 │   ├── Backup verification (file size, existence)
 │   └── State transition: PLAN (fail-fast)
 ├── Block 5b: Plan Revision Execution [CRITICAL BARRIER]
-│   └── Task invocation: plan-architect (MANDATORY)
+│   ├── Task invocation: plan-architect (MANDATORY)
+│   ├── **Workflow-Specific Context** header (7 fields)
+│   ├── **CRITICAL INSTRUCTIONS FOR PLAN REVISION** section (5 steps)
+│   └── Expected return signal: PLAN_REVISED with path
 └── Block 5c: Plan Revision Verification
-    ├── Plan modification check (timestamp vs backup)
-    ├── Backup re-verification
-    └── Revision history update
+    ├── Plan existence check (fail-fast if disappeared)
+    ├── Backup verification (fail-fast if disappeared)
+    ├── Plan modification check (fail-fast if unchanged)
+    ├── File size validation (fail-fast if <500 bytes)
+    ├── Structure validation (fail-fast if no phase headings)
+    └── Enhanced error logging with recovery instructions
 ```
 
 **Key Design Features**:
 - Bash blocks between Task invocations make bypass impossible
 - State transitions serve as gates preventing phase skipping
 - Fail-fast verification blocks exit on missing artifacts
+- Enhanced Task context ensures plan-architect operation mode detection
+- Multiple verification checks catch agent failures and corruption
 - Error logging with recovery instructions on all failures
+
+**Block 5b Task Context** (ensures plan-architect detects plan_revision mode):
+- Existing Plan Path, Backup Path, Revision Details, Research Reports
+- Workflow Type: research-and-revise
+- Operation Mode: plan revision (triggers STEP 1-REV workflow)
+- CRITICAL INSTRUCTIONS: 5-step workflow (Edit tool, preserve COMPLETE, update metadata)
+
+**Block 5c Verification Checks** (6 checks total):
+1. Plan file exists (agent didn't delete it)
+2. Backup file exists (wasn't lost during revision)
+3. Plan was modified (different from backup)
+4. File size ≥500 bytes (not corrupted/truncated)
+5. Phase count ≥1 (valid plan structure)
+6. Checkpoint reporting (file size, phase count, backup path)
 
 ---
 
@@ -432,7 +454,37 @@ cat .claude/specs/*/reports/*.md
 diff plans/backups/BACKUP.md plans/PLAN.md
 ```
 
-#### Issue 4: Backup Creation Failed
+#### Issue 4: Agent Operation Mode Detection Failed
+
+**Symptoms**:
+- Plan-architect doesn't execute STEP 1-REV workflow
+- Agent uses Write tool instead of Edit tool
+- Agent creates new plan instead of revising existing one
+
+**Cause**:
+Plan-architect didn't detect plan_revision mode from Task prompt context.
+
+**Solution**:
+Verify Block 5b Task prompt includes required mode detection triggers:
+
+```bash
+# Check Task prompt has operation mode signal
+grep -A 30 "Block 5b: Plan Revision Execution" .claude/commands/revise.md | grep "Operation Mode: plan revision"
+
+# Verify CRITICAL INSTRUCTIONS section present
+grep -A 30 "Block 5b: Plan Revision Execution" .claude/commands/revise.md | grep "CRITICAL INSTRUCTIONS FOR PLAN REVISION"
+
+# Confirm Workflow-Specific Context header exists
+grep -A 30 "Block 5b: Plan Revision Execution" .claude/commands/revise.md | grep "Workflow-Specific Context"
+```
+
+**Recovery**:
+1. Restore plan from backup: `cp plans/backups/BACKUP.md plans/001.md`
+2. Check error logs: `/errors --command /revise --type agent_error`
+3. Verify plan-architect.md operation mode detection (lines 41-48)
+4. Re-run /revise after confirming Task prompt format
+
+#### Issue 5: Backup Creation Failed
 
 **Symptoms**:
 - Error: "Backup creation failed at /path/to/backup"
@@ -460,7 +512,7 @@ ls -l plans/
 cp plans/001.md plans/backups/001_manual_backup.md
 ```
 
-#### Issue 5: Research Creates No New Reports
+#### Issue 6: Research Creates No New Reports
 
 **Symptoms**:
 - Warning: "No new research reports created"
@@ -480,7 +532,7 @@ This is often normal behavior. The command will proceed using existing reports.
 /revise"revise plan at plans/001.md based on newly discovered WebSocket security vulnerability CVE-2025-1234"
 ```
 
-#### Issue 6: Research Verification Failed (Block 4c)
+#### Issue 7: Research Verification Failed (Block 4c)
 
 **Symptoms**:
 - Error: "VERIFICATION FAILED: Research directory not found"
@@ -512,7 +564,7 @@ grep "WORKFLOW_STATE" ~/.claude/data/state/revise_*.state
 3. Manually create reports directory if missing: `mkdir -p .claude/specs/NNN/reports/`
 4. Re-run command (state machine allows resume)
 
-#### Issue 7: Plan Revision Verification Failed (Block 5c)
+#### Issue 8: Plan Revision Verification Failed (Block 5c)
 
 **Symptoms**:
 - Error: "VERIFICATION FAILED: Plan was not modified"
@@ -543,7 +595,7 @@ grep "allowed-tools" .claude/agents/plan-architect.md
 3. Ensure plan-architect uses Edit tool (not Write) for revisions
 4. Re-run /revise with clearer revision details
 
-#### Issue 8: State Transition Failed
+#### Issue 9: State Transition Failed
 
 **Symptoms**:
 - Error: "State transition failed with exit code: 1"

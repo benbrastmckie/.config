@@ -196,6 +196,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-functions.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source todo-functions.sh" >&2
+  exit 1
+}
 
 # Source remaining libraries with diagnostics
 _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
@@ -1458,9 +1462,15 @@ fi
 NEXT_STEPS="  • Review debug strategy: cat $PLAN_PATH
   • Review debug artifacts: ls -lh $DEBUG_DIR/
   • Apply fixes identified in analysis
-  • Re-run tests to verify fix"
+  • Re-run tests to verify fix
+  • Run /todo to update TODO.md (adds debug report to tracking)"
 # Print standardized summary (no phases for debug command)
 print_artifact_summary "Debug" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
+
+# Emit completion reminder
+echo ""
+echo "📋 Next Step: Run /todo to update TODO.md with this debug report"
+echo ""
 
 # === RETURN DEBUG_REPORT_CREATED SIGNAL ===
 # Signal enables buffer-opener hook and orchestrator detection
@@ -1468,6 +1478,17 @@ if [ -n "$PLAN_PATH" ] && [ -f "$PLAN_PATH" ]; then
   echo ""
   echo "DEBUG_REPORT_CREATED: $PLAN_PATH"
   echo ""
+fi
+
+# === STATUS MESSAGE ===
+# Handle standalone debug (no plan) case with context-aware message
+TOPIC_PATH=$(dirname "$(dirname "$PLAN_PATH")")
+PLAN_FILE=$(find "$TOPIC_PATH/plans" -name '*.md' -type f 2>/dev/null | head -1)
+
+if [ -n "$PLAN_FILE" ] && [ -f "$PLAN_FILE" ]; then
+  echo "Debug report linked to plan: $(basename "$PLAN_FILE")"
+else
+  echo "Debug report is standalone (no plan in topic)"
 fi
 
 # Cleanup temp state file

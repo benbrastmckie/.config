@@ -135,6 +135,12 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/library-version
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" 2>/dev/null || true
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || true
 
+# Tier 3: Helper utilities (graceful degradation)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load validation-utils.sh - required for workflow validation" >&2
+  exit 1
+}
+
 # Verify library versions
 check_library_requirements "$(cat <<'EOF'
 workflow-state-machine.sh: ">=2.0.0"
@@ -171,6 +177,9 @@ setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 # Capture state file path for append_workflow_state
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+
+# CRITICAL: Export STATE_FILE immediately to make it available for append_workflow_state
+# This prevents "command not found" (exit 127) errors in subsequent blocks
 export STATE_FILE
 
 # Validate state file creation
@@ -231,9 +240,130 @@ export TOPIC_NAMING_INPUT_FILE
 echo "✓ Setup complete, ready for topic naming"
 ```
 
-## Block 1b: Topic Name Generation
+## Block 1b: Topic Name File Path Pre-Calculation
 
-**EXECUTE NOW**: Invoke the topic-naming-agent to generate a semantic directory name.
+**EXECUTE NOW**: Pre-calculate the absolute topic name output file path BEFORE invoking topic-naming-agent.
+
+This implements the **Hard Barrier Pattern** - the output path is calculated BEFORE agent invocation, passed as an explicit contract, and validated AFTER return.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1A ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/research_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
+  exit 1
+fi
+
+# Restore workflow state file
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/research"
+USER_ARGS="${WORKFLOW_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === PRE-CALCULATE TOPIC NAME FILE PATH ===
+# CRITICAL: Calculate exact path BEFORE agent invocation (Hard Barrier Pattern)
+# This path will be passed as literal text to the agent and validated after
+TOPIC_NAME_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt"
+
+# Validate path is absolute
+if [[ "$TOPIC_NAME_FILE" =~ ^/ ]]; then
+  : # Path is absolute, continue
+else
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Calculated TOPIC_NAME_FILE is not absolute" \
+    "bash_block_1b" \
+    "$(jq -n --arg path "$TOPIC_NAME_FILE" '{topic_name_file: $path}')"
+  echo "ERROR: TOPIC_NAME_FILE is not absolute: $TOPIC_NAME_FILE" >&2
+  exit 1
+fi
+
+# Ensure parent directory exists
+mkdir -p "$(dirname "$TOPIC_NAME_FILE")" 2>/dev/null || true
+
+# === PATH MISMATCH DIAGNOSTIC ===
+# Verify STATE_FILE uses CLAUDE_PROJECT_DIR (not HOME) to prevent exit 127 errors
+if [[ "$STATE_FILE" =~ ^${HOME}/ ]]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "PATH MISMATCH detected: STATE_FILE uses HOME instead of CLAUDE_PROJECT_DIR" \
+    "bash_block_1b" \
+    "$(jq -n --arg state_file "$STATE_FILE" --arg home "$HOME" --arg project_dir "$CLAUDE_PROJECT_DIR" \
+       '{state_file: $state_file, home: $home, project_dir: $project_dir, issue: "STATE_FILE must use CLAUDE_PROJECT_DIR"}')"
+
+  echo "ERROR: PATH MISMATCH - STATE_FILE uses HOME instead of CLAUDE_PROJECT_DIR" >&2
+  echo "  Current: $STATE_FILE" >&2
+  echo "  Expected: ${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh" >&2
+  exit 1
+fi
+
+# Persist for Block 1b-exec and Block 1c
+append_workflow_state "TOPIC_NAME_FILE" "$TOPIC_NAME_FILE" || {
+  echo "export TOPIC_NAME_FILE=\"$TOPIC_NAME_FILE\"" >> "$STATE_FILE"
+}
+
+echo ""
+echo "=== Topic Name File Path Pre-Calculation ==="
+echo "  Topic Name File: $TOPIC_NAME_FILE"
+echo "  Workflow ID: $WORKFLOW_ID"
+echo ""
+echo "Ready for topic-naming-agent invocation"
+```
+
+## Block 1b-exec: Topic Name Generation (Hard Barrier Invocation)
+
+**EXECUTE NOW**: USE the Task tool to invoke the topic-naming-agent for semantic topic directory naming.
 
 Task {
   subagent_type: "general-purpose"
@@ -244,15 +374,19 @@ Task {
 
     You are generating a topic directory name for: /research command
 
-    **Input**:
+    **Input Contract (Hard Barrier Pattern)**:
+    - Output Path: ${TOPIC_NAME_FILE}
     - User Prompt: ${WORKFLOW_DESCRIPTION}
     - Command Name: /research
-    - OUTPUT_FILE_PATH: ${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_name_${WORKFLOW_ID}.txt
+
+    **CRITICAL**: You MUST write the topic name to the EXACT path specified above.
+    The orchestrator has pre-calculated this path and will validate it exists after you return.
+    Do NOT derive or calculate your own path.
 
     Execute topic naming according to behavioral guidelines:
     1. Generate semantic topic name from user prompt
     2. Validate format (^[a-z0-9_]{5,40}$)
-    3. Write topic name to OUTPUT_FILE_PATH using Write tool
+    3. Write topic name to the Output Path specified above using Write tool
     4. Return completion signal: TOPIC_NAME_GENERATED: <generated_name>
 
     If you encounter an error, return:
@@ -260,7 +394,117 @@ Task {
   "
 }
 
-## Block 1c: Topic Path Initialization
+## Block 1c: Hard Barrier Validation
+
+**EXECUTE NOW**: Validate that topic-naming-agent created the output file at the pre-calculated path.
+
+This is the **hard barrier** - the workflow CANNOT proceed unless the topic name file exists. This prevents path mismatch issues.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1B ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/research_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/research"
+USER_ARGS="${WORKFLOW_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Source validation utilities for agent artifact validation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load validation-utils.sh - required for workflow validation" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+echo ""
+echo "=== Topic Name Hard Barrier Validation ==="
+echo ""
+
+# === HARD BARRIER VALIDATION ===
+# Validate TOPIC_NAME_FILE is set (from Block 1b)
+if [ -z "${TOPIC_NAME_FILE:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "TOPIC_NAME_FILE not restored from Block 1b state" \
+    "bash_block_1c" \
+    "$(jq -n '{topic_name_file: "missing"}')"
+  echo "ERROR: TOPIC_NAME_FILE not set - state restoration failed" >&2
+  exit 1
+fi
+
+echo "Expected topic name file: $TOPIC_NAME_FILE"
+
+# HARD BARRIER: Validate agent artifact using validation-utils.sh
+# validate_agent_artifact checks file existence and minimum size (10 bytes)
+if ! validate_agent_artifact "$TOPIC_NAME_FILE" 10 "topic name"; then
+  # Error already logged by validate_agent_artifact
+  echo "ERROR: HARD BARRIER FAILED - Topic naming agent validation failed" >&2
+  echo "" >&2
+  echo "This indicates the topic-naming-agent did not create valid output." >&2
+  echo "The workflow will fall back to 'no_name_error' directory." >&2
+  echo "" >&2
+  echo "To retry: Re-run the /research command with the same arguments" >&2
+  echo "" >&2
+
+  # Unlike research reports, topic naming failure is non-fatal
+  # Continue with fallback but log the error
+  echo "Falling back to no_name_error directory..." >&2
+else
+  echo "✓ Hard barrier passed - topic name file validated"
+fi
+
+echo ""
+```
+
+## Block 1d: Topic Path Initialization
 
 **EXECUTE NOW**: Parse topic name from agent output and initialize workflow paths.
 
@@ -310,13 +554,14 @@ fi
 
 # WORKFLOW_DESCRIPTION should be in state file, but also check temp file as backup
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+# NOTE: Use ${WORKFLOW_DESCRIPTION:-} pattern to prevent unbound variable error
 TOPIC_NAMING_INPUT_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topic_naming_input_${WORKFLOW_ID}.txt"
-if [ -z "$WORKFLOW_DESCRIPTION" ] && [ -f "$TOPIC_NAMING_INPUT_FILE" ]; then
+if [ -z "${WORKFLOW_DESCRIPTION:-}" ] && [ -f "$TOPIC_NAMING_INPUT_FILE" ]; then
   WORKFLOW_DESCRIPTION=$(cat "$TOPIC_NAMING_INPUT_FILE" 2>/dev/null)
 fi
 
-if [ -z "$WORKFLOW_DESCRIPTION" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_DESCRIPTION from Block 1a" >&2
+if [ -z "${WORKFLOW_DESCRIPTION:-}" ]; then
+  echo "ERROR: WHICH: WORKFLOW_DESCRIPTION | WHAT: Variable not restored from state file or backup | WHERE: /research Block 1c" >&2
   exit 1
 fi
 
@@ -324,12 +569,25 @@ COMMAND_NAME="/research"
 USER_ARGS="$WORKFLOW_DESCRIPTION"
 export COMMAND_NAME USER_ARGS
 
-# Source libraries
+# Source libraries (three-tier pattern)
+# Tier 1: Critical Foundation (fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Tier 2: Workflow Support (graceful degradation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" 2>/dev/null || true
+
+# Validate append_workflow_state is available (fail-fast)
+type append_workflow_state >/dev/null 2>&1 || {
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+}
 
 # Setup bash error trap
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
@@ -441,11 +699,144 @@ echo "Research directory: $RESEARCH_DIR"
 echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 ```
 
-## Block 1d: Research Initiation
+## Block 1d: Report Path Pre-Calculation
 
-**CRITICAL BARRIER - Research Delegation**
+**EXECUTE NOW**: Pre-calculate the absolute report path before invoking research-specialist.
 
-**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent. This invocation is MANDATORY. The orchestrator MUST NOT perform research work directly. Block 2 verification will FAIL if research artifacts are not created by the specialist.
+This implements the **hard barrier pattern** - the report path is calculated BEFORE subagent invocation, passed as an explicit contract, and validated AFTER return.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1C ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/research_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID from Block 1c" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/research"
+USER_ARGS="${WORKFLOW_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === CALCULATE REPORT PATH ===
+# Validate RESEARCH_DIR is set
+if [ -z "${RESEARCH_DIR:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "RESEARCH_DIR not set from Block 1c" \
+    "bash_block_1d" \
+    "$(jq -n '{research_dir: "missing"}')"
+  echo "ERROR: RESEARCH_DIR not set" >&2
+  exit 1
+fi
+
+# Calculate report number (001, 002, 003...)
+# Validate directory exists before find command
+if ! validate_directory_var "RESEARCH_DIR" "research reports"; then
+  EXISTING_REPORTS=0
+else
+  EXISTING_REPORTS=$(find "$RESEARCH_DIR" -name '[0-9][0-9][0-9]-*.md' 2>/dev/null | wc -l | tr -d ' ')
+fi
+REPORT_NUMBER=$(printf "%03d" $((EXISTING_REPORTS + 1)))
+
+# Generate report slug from workflow description (max 40 chars, kebab-case)
+REPORT_SLUG=$(echo "${WORKFLOW_DESCRIPTION:-research}" | head -c 40 | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//')
+
+# Fallback if slug is empty after sanitization
+if [ -z "$REPORT_SLUG" ]; then
+  REPORT_SLUG="research-report"
+fi
+
+# Construct absolute report path
+REPORT_PATH="${RESEARCH_DIR}/${REPORT_NUMBER}-${REPORT_SLUG}.md"
+
+# Validate path is absolute
+if [[ "$REPORT_PATH" =~ ^/ ]]; then
+  : # Path is absolute, continue
+else
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Calculated REPORT_PATH is not absolute" \
+    "bash_block_1d" \
+    "$(jq -n --arg path "$REPORT_PATH" '{report_path: $path}')"
+  echo "ERROR: REPORT_PATH is not absolute: $REPORT_PATH" >&2
+  exit 1
+fi
+
+# Ensure parent directory exists
+mkdir -p "$(dirname "$REPORT_PATH")" 2>/dev/null || true
+
+# Persist for Block 1e validation
+append_workflow_state "REPORT_PATH" "$REPORT_PATH"
+append_workflow_state "REPORT_NUMBER" "$REPORT_NUMBER"
+append_workflow_state "REPORT_SLUG" "$REPORT_SLUG"
+
+echo ""
+echo "=== Report Path Pre-Calculation ==="
+echo "  Report Number: $REPORT_NUMBER"
+echo "  Report Slug: $REPORT_SLUG"
+echo "  Report Path: $REPORT_PATH"
+echo ""
+echo "Ready for research-specialist invocation"
+```
+
+## Block 1d-exec: Research Specialist Invocation
+
+**HARD BARRIER - Research Specialist Invocation**
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent. This invocation is MANDATORY. The orchestrator MUST NOT perform research work directly. After the agent returns, Block 1e will verify the report was created at the pre-calculated path.
 
 Task {
   subagent_type: "general-purpose"
@@ -456,20 +847,173 @@ Task {
 
     You are conducting research for: research workflow
 
-    **Workflow-Specific Context**:
+    **Input Contract (Hard Barrier Pattern)**:
+    - Report Path: ${REPORT_PATH}
+    - Output Directory: ${RESEARCH_DIR}
     - Research Topic: ${WORKFLOW_DESCRIPTION}
     - Research Complexity: ${RESEARCH_COMPLEXITY}
-    - Output Directory: ${RESEARCH_DIR}
     - Workflow Type: research-only
     - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
     - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
 
+    **CRITICAL**: You MUST create the report file at the EXACT path specified above.
+    The orchestrator has pre-calculated this path and will validate it exists after you return.
+
     If an archived prompt file is provided (not 'none'), read it for complete context.
 
     Execute research according to behavioral guidelines and return completion signal:
-    REPORT_CREATED: [path to created report]
+    REPORT_CREATED: ${REPORT_PATH}
   "
 }
+
+## Block 1e: Agent Output Validation (Hard Barrier)
+
+**EXECUTE NOW**: Validate that research-specialist created the report at the pre-calculated path.
+
+This is the **hard barrier** - the workflow CANNOT proceed to Block 2 unless the report file exists. This architectural enforcement prevents the primary agent from bypassing subagent delegation.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === PRE-TRAP ERROR BUFFER ===
+declare -a _EARLY_ERROR_BUFFER=()
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1D ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/research_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/research"
+USER_ARGS="${WORKFLOW_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# Flush any early errors
+_flush_early_errors
+
+echo ""
+echo "=== Agent Output Validation (Hard Barrier) ==="
+echo ""
+
+# === HARD BARRIER VALIDATION ===
+# Validate REPORT_PATH is set (from Block 1d)
+if [ -z "${REPORT_PATH:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "REPORT_PATH not restored from Block 1d state" \
+    "bash_block_1e" \
+    "$(jq -n '{report_path: "missing"}')"
+  echo "ERROR: REPORT_PATH not set - state restoration failed" >&2
+  exit 1
+fi
+
+echo "Expected report path: $REPORT_PATH"
+
+# HARD BARRIER: Report file MUST exist
+if [ ! -f "$REPORT_PATH" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "research-specialist failed to create report file" \
+    "bash_block_1e" \
+    "$(jq -n --arg path "$REPORT_PATH" '{expected_path: $path}')"
+
+  echo "ERROR: HARD BARRIER FAILED - Report file not found at: $REPORT_PATH" >&2
+  echo "" >&2
+  echo "This indicates the research-specialist subagent did not create the expected artifact." >&2
+  echo "The workflow cannot proceed without the research report." >&2
+  echo "" >&2
+  echo "Troubleshooting:" >&2
+  echo "  1. Check research-specialist agent output for errors" >&2
+  echo "  2. Verify Task invocation in Block 1d-exec executed correctly" >&2
+  echo "  3. Run /errors --command /research for detailed error logs" >&2
+  exit 1
+fi
+
+# Validate report is not empty or too small
+REPORT_SIZE=$(wc -c < "$REPORT_PATH" 2>/dev/null || echo 0)
+if [ "$REPORT_SIZE" -lt 100 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Report file too small (agent may have failed during write)" \
+    "bash_block_1e" \
+    "$(jq -n --arg path "$REPORT_PATH" --argjson size "$REPORT_SIZE" '{report_path: $path, size_bytes: $size, min_required: 100}')"
+
+  echo "ERROR: Report file exists but is too small ($REPORT_SIZE bytes)" >&2
+  echo "  Expected: >100 bytes for valid report" >&2
+  exit 1
+fi
+
+# Validate report contains required sections (basic content check)
+if ! grep -q "## Findings" "$REPORT_PATH" 2>/dev/null; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Report file missing required '## Findings' section" \
+    "bash_block_1e" \
+    "$(jq -n --arg path "$REPORT_PATH" '{report_path: $path, missing_section: "Findings"}')"
+
+  echo "WARNING: Report may be incomplete - missing '## Findings' section" >&2
+  # Non-fatal: continue but log warning
+fi
+
+echo "✓ Agent output validated: Report file exists ($REPORT_SIZE bytes)"
+echo "  Path: $REPORT_PATH"
+echo ""
+echo "Hard barrier passed - proceeding to Block 2"
+```
 
 ## Block 2: Verification and Completion
 
@@ -589,9 +1133,12 @@ if [ -z "$RESEARCH_DIR" ]; then
   exit 1
 fi
 
-# === VERIFY ARTIFACTS ===
-echo "Verifying research artifacts..."
+# === VERIFY ARTIFACTS (Defensive Validation) ===
+# NOTE: Block 1e provides primary hard barrier validation for REPORT_PATH.
+# This block provides secondary defensive checks for edge cases and directory-level verification.
+echo "Verifying research artifacts (defensive validation)..."
 
+# Defensive: Directory existence check
 if [ ! -d "$RESEARCH_DIR" ]; then
   log_command_error \
     "$COMMAND_NAME" \
@@ -606,6 +1153,7 @@ if [ ! -d "$RESEARCH_DIR" ]; then
   exit 1
 fi
 
+# Defensive: General file existence check (Block 1e validated specific REPORT_PATH)
 if [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
   log_command_error \
     "$COMMAND_NAME" \
@@ -620,6 +1168,7 @@ if [ -z "$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null)" ]; then
   exit 1
 fi
 
+# Defensive: Undersized file check (catches edge cases Block 1e might miss)
 UNDERSIZED_FILES=$(find "$RESEARCH_DIR" -name '*.md' -type f -size -100c 2>/dev/null)
 if [ -n "$UNDERSIZED_FILES" ]; then
   log_command_error \
@@ -682,10 +1231,16 @@ ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)"
 # Build next steps
 NEXT_STEPS="  • Review reports: ls -lh $RESEARCH_DIR/
   • Create implementation plan: /plan \"${WORKFLOW_DESCRIPTION}\"
-  • Run full workflow: /coordinate \"${WORKFLOW_DESCRIPTION}\""
+  • Run full workflow: /coordinate \"${WORKFLOW_DESCRIPTION}\"
+  • Run /todo to update TODO.md (adds research to tracking)"
 
 # Print standardized summary (no phases for research command)
 print_artifact_summary "Research" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
+
+# Emit completion reminder
+echo ""
+echo "📋 Next Step: Run /todo to update TODO.md with this research"
+echo ""
 
 # === RETURN REPORT_CREATED SIGNAL ===
 # Signal enables buffer-opener hook and orchestrator detection

@@ -16,6 +16,11 @@
 # - State history tracking (completed_states array)
 # - Idempotent transitions: Same-state transitions succeed immediately (early-exit optimization)
 #
+# Complexity Normalization:
+# - Automatically normalizes complexity scores to 1-4 range during sm_init
+# - Legacy scores (e.g., 78.5) mapped to valid range: <30→1, 30-49→2, 50-69→3, ≥70→4
+# - Invalid inputs default to 2 with WARNING, ensuring initialization always succeeds
+#
 # Dependencies:
 # - workflow-scope-detection.sh: detect_workflow_scope() [primary - supports revision patterns]
 # - workflow-detection.sh: detect_workflow_scope() [fallback - for /supervise compatibility]
@@ -88,6 +93,57 @@ COMMAND_NAME="${COMMAND_NAME:-}"
 # ==============================================================================
 # Core State Machine Functions
 # ==============================================================================
+
+# normalize_complexity: Normalize complexity score to valid 1-4 range
+# Usage: normalize_complexity <complexity_score>
+# Returns: Normalized complexity (1-4) on stdout
+# Effect: Preserves valid 1-4 values unchanged, maps legacy scores to 1-4 range
+# Complexity Mapping:
+#   1-4   → unchanged (valid values pass through)
+#   <30   → 1 (Low)
+#   30-49 → 2 (Medium)
+#   50-69 → 3 (High)
+#   ≥70   → 4 (Very High)
+#   Invalid → 2 (default with WARNING)
+# Examples:
+#   normalize_complexity "2"    # Returns "2" (unchanged)
+#   normalize_complexity "78.5" # Returns "4" (normalized)
+normalize_complexity() {
+  local input="$1"
+
+  # Validate numeric input (integer or decimal)
+  if ! [[ "$input" =~ ^[0-9]+\.?[0-9]*$ ]]; then
+    echo "WARNING: Invalid complexity '$input', using default 2" >&2
+    echo "2"
+    return 0
+  fi
+
+  # Convert to integer (truncate decimals)
+  local value=${input%.*}
+
+  # Early return: Valid 1-4 values pass through unchanged
+  if [ "$value" -ge 1 ] && [ "$value" -le 4 ]; then
+    echo "$value"
+    return 0
+  fi
+
+  # Map legacy/out-of-range values to 1-4 range
+  local normalized
+  if [ "$value" -lt 30 ]; then
+    normalized="1"
+  elif [ "$value" -lt 50 ]; then
+    normalized="2"
+  elif [ "$value" -lt 70 ]; then
+    normalized="3"
+  else
+    normalized="4"
+  fi
+
+  # Emit INFO message for normalization (only for out-of-range values)
+  echo "INFO: Normalized complexity $input → $normalized" >&2
+
+  echo "$normalized"
+}
 
 # ==============================================================================
 # COMPLETED_STATES Array Persistence (Spec 672, Phase 2)
@@ -341,8 +397,14 @@ generate_descriptive_topics_from_description() {
 #   $1 - workflow_desc: Description of the workflow/task
 #   $2 - command_name: Name of the command invoking sm_init (e.g., "coordinate")
 #   $3 - workflow_type: Workflow scope (research-only|research-and-plan|research-and-revise|full-implementation|debug-only)
-#   $4 - research_complexity: Integer 1-4 indicating research depth
+#   $4 - research_complexity: Integer 1-4 indicating research depth (auto-normalized from legacy values)
 #   $5 - research_topics_json: JSON array of research topics
+#
+# Complexity Normalization:
+#   research_complexity is automatically normalized to 1-4 range:
+#   - Legacy scores (e.g., 78.5) mapped to valid range
+#   - Invalid inputs default to 2 with WARNING
+#   - Graceful degradation ensures initialization always succeeds
 #
 # Environment Exports:
 #   WORKFLOW_SCOPE - Workflow type (same as workflow_type parameter)
@@ -417,10 +479,21 @@ sm_init() {
       ;;
   esac
 
-  # Validate research_complexity range
-  if ! [[ "$research_complexity" =~ ^[0-9]+$ ]] || [ "$research_complexity" -lt 1 ] || [ "$research_complexity" -gt 4 ]; then
-    echo "ERROR: research_complexity must be integer 1-4, got: $research_complexity" >&2
-    return 1
+  # Normalize complexity score to 1-4 range
+  # Handles legacy scores (e.g., 78.5) and out-of-range values
+  local normalized_complexity
+  normalized_complexity=$(normalize_complexity "$research_complexity")
+
+  # Update research_complexity to use normalized value
+  research_complexity="$normalized_complexity"
+
+  # Validate normalized complexity with graceful degradation
+  # Defensive check with fallback to ensure initialization always succeeds
+  if ! [[ "$research_complexity" =~ ^[1-4]$ ]]; then
+    echo "WARNING: Complexity validation failed after normalization, using default 2" >&2
+    echo "  Got: $research_complexity (original: $4)" >&2
+    research_complexity="2"  # Safe default for degraded initialization
+    # Continue with initialization instead of failing
   fi
 
   # Validate research_topics_json is valid JSON array

@@ -233,7 +233,7 @@ echo "[CHECKPOINT] Complexity detection complete - ready for plan-architect invo
 **CRITICAL BARRIER**: This block MUST invoke plan-architect via Task tool.
 Verification block (3c) will FAIL if phase file not created.
 
-**EXECUTE NOW**: Invoke plan-architect subagent for phase expansion
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent for phase expansion
 
 Complex phases (high complexity):
 - Use `Task` tool with `general-purpose` agent for research-backed expansion
@@ -243,6 +243,8 @@ Complex phases (high complexity):
 Simple phases (low complexity):
 - Use `Task` tool with `general-purpose` agent for direct expansion
 - Target: 200-300 lines with specific guidance
+
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent for phase expansion.
 
 Task {
   subagent_type: "general-purpose"
@@ -560,7 +562,7 @@ echo "[CHECKPOINT] Stage complexity detection complete - ready for plan-architec
 **CRITICAL BARRIER**: This block MUST invoke plan-architect via Task tool.
 Verification block (3c) will FAIL if stage file not created.
 
-**EXECUTE NOW**: Invoke plan-architect subagent for stage expansion
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent for stage expansion
 
 Task {
   subagent_type: "general-purpose"
@@ -891,6 +893,8 @@ echo "Current structure level: $structure_level"
 
 YOU MUST use THIS EXACT TEMPLATE (No modifications, no paraphrasing):
 
+**EXECUTE NOW**: USE the Task tool to invoke the complexity-estimator agent for complexity analysis.
+
 ```
 Task {
   subagent_type: "general-purpose"
@@ -931,7 +935,7 @@ Task {
 
 **YOU MUST invoke expansion agents in parallel. This is NOT optional.**
 
-**EXECUTE NOW - Invoke Parallel Expansion Agents**
+**EXECUTE NOW - Invoke Parallel Expansion Agents**: USE the Task tool to invoke parallel expansion agents.
 
 **ABSOLUTE REQUIREMENT**: YOU MUST invoke all expansion agents in a SINGLE message with multiple Task calls. This is NOT optional.
 
@@ -958,6 +962,8 @@ agent_tasks=$(invoke_expansion_agents_parallel "$PLAN_PATH" "$agent_response")
 YOU MUST use THIS EXACT TEMPLATE for each expansion agent (No modifications, no paraphrasing):
 
 **CRITICAL**: All Task tool calls MUST be in a SINGLE message for true parallel execution.
+
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent for parallel phase expansion (invoke once per phase).
 
 ```
 For each agent task in agent_tasks array, invoke Task tool:

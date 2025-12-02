@@ -194,6 +194,54 @@ validate_command() {
     log_verbose "    ✓ Delegation warning found"
   fi
 
+  # Check 11: Imperative Task Directives
+  log_verbose "  Checking imperative Task directives..."
+  local task_line_numbers=$(grep -n '^Task {' "$cmd_file" 2>/dev/null | cut -d: -f1 || true)
+  local missing_directive=false
+
+  for line_num in $task_line_numbers; do
+    # Check lines [line_num-5 to line_num-1] for EXECUTE NOW or EXECUTE IF
+    local start_line=$((line_num - 5))
+    if [ $start_line -lt 1 ]; then
+      start_line=1
+    fi
+
+    local has_execute=$(sed -n "${start_line},$((line_num-1))p" "$cmd_file" | \
+                       grep -c -E 'EXECUTE (NOW|IF).*Task tool' 2>/dev/null || echo 0)
+
+    if [ "$has_execute" -eq 0 ]; then
+      log_error "Task block at line $line_num missing imperative directive (EXECUTE NOW/IF)"
+      failures=$((failures + 1))
+      missing_directive=true
+    fi
+  done
+
+  if [ "$missing_directive" = false ] && [ -n "$task_line_numbers" ]; then
+    log_verbose "    ✓ All Task blocks have imperative directives"
+  elif [ -z "$task_line_numbers" ]; then
+    log_verbose "    ⚠ No Task blocks found (may be acceptable for utility commands)"
+  fi
+
+  # Check 12: No Instructional Text Patterns
+  log_verbose "  Checking for instructional text patterns..."
+  local instructional_lines=$(grep -n 'Use the Task tool to invoke' "$cmd_file" 2>/dev/null | cut -d: -f1 || true)
+
+  for line_num in $instructional_lines; do
+    # Check if there's a Task block within 10 lines after this line
+    local end_line=$((line_num + 10))
+    local has_task=$(sed -n "${line_num},${end_line}p" "$cmd_file" | \
+                    grep -c '^Task {' 2>/dev/null || echo 0)
+
+    if [ "$has_task" -eq 0 ]; then
+      log_error "Instructional text at line $line_num without actual Task invocation"
+      failures=$((failures + 1))
+    fi
+  done
+
+  if [ -z "$instructional_lines" ]; then
+    log_verbose "    ✓ No instructional text patterns found"
+  fi
+
   if [ "$failures" -eq 0 ]; then
     log_success "/$cmd - COMPLIANT (all checks passed)"
     return 0

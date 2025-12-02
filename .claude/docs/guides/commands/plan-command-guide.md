@@ -277,6 +277,83 @@ Researches GraphQL migration approaches, patterns, and gotchas. Creates phased m
 /plan "implement OAuth2 authentication"
 ```
 
+### Standards Integration
+
+The `/plan` command automatically extracts and injects project standards from CLAUDE.md into the plan-architect agent prompt. This ensures generated plans align with established conventions or explicitly propose standards changes.
+
+**How It Works**:
+1. Command extracts 6 planning-relevant sections from CLAUDE.md (code_standards, testing_protocols, documentation_policy, error_logging, clean_break_development, directory_organization)
+2. Standards formatted with markdown headers and injected into agent prompt
+3. Plan-architect references standards in Technical Design, Testing Strategy, Documentation Requirements
+4. If approach conflicts with standards, agent creates Phase 0 (standards revision)
+5. Command detects Phase 0 and displays warning to user
+
+**Standards-Compliant Plan** (typical case):
+```bash
+$ /plan "Add user authentication with JWT"
+
+Extracted 6 standards sections for plan-architect
+Plan will be created at: .claude/specs/042_auth/plans/001-auth-plan.md
+
+[plan-architect generates plan aligned with standards]
+
+Plan verified: 15234 bytes
+✓ Plan created successfully
+```
+
+**Divergent Plan** (Phase 0 required):
+```bash
+$ /plan "Refactor to TypeScript configuration system"
+
+Extracted 6 standards sections for plan-architect
+Plan will be created at: .claude/specs/043_typescript/plans/001-typescript-plan.md
+
+[plan-architect detects divergence from Bash/Lua standards]
+
+Plan verified: 18456 bytes
+
+⚠️  STANDARDS DIVERGENCE DETECTED
+This plan proposes changes to project standards (see Phase 0).
+Review carefully before proceeding with implementation.
+
+Affected Sections: code_standards, testing_protocols
+Justification: Current Bash-only standards prevent TypeScript adoption for improved type safety
+
+✓ Plan created with Phase 0 (standards revision required)
+```
+
+**What is Phase 0?**
+
+Phase 0 is a special pre-implementation phase that documents and justifies proposed changes to project-wide standards. It includes:
+- Divergence summary (current standard vs proposed change)
+- Detailed justification (limitations, benefits, migration path, risks)
+- Tasks to update CLAUDE.md and affected command/agent files
+- User warning about standards changes requiring review
+
+**When to Approve Phase 0**:
+- Justification addresses real limitations of current standards
+- Benefits outweigh migration costs
+- Migration path is feasible and documented
+- Risks are understood and acceptable
+
+**When to Reject Phase 0**:
+- Changes are unnecessary or overly ambitious
+- Migration would break existing workflows
+- Alternative approaches exist within current standards
+- Timing is poor (mid-project, insufficient resources)
+
+If you reject Phase 0, use `/revise` to modify the plan to work within existing standards.
+
+**Graceful Degradation**:
+
+If CLAUDE.md not found or extraction fails, command continues without standards (backward compatibility):
+```bash
+WARNING: CLAUDE.md not found, standards extraction skipped
+No standards extracted (graceful degradation)
+```
+
+For more details on the standards integration pattern, see [Standards Integration Pattern](.claude/docs/guides/patterns/standards-integration.md).
+
 ---
 
 ## Troubleshooting

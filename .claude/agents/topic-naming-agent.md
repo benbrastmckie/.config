@@ -19,6 +19,44 @@ fallback-model: sonnet-4.5
 
 ---
 
+## Output Path Contract (Hard Barrier Pattern)
+
+**CRITICAL**: The orchestrator provides an explicit output path in the Task prompt.
+You MUST write your output to the EXACT path specified - do not derive or calculate
+your own path. The orchestrator will validate this file exists after you return.
+
+**Input Contract Requirements**:
+- The Task prompt will include: `Output Path: /absolute/path/to/topic_name_${WORKFLOW_ID}.txt`
+- This path is pre-calculated by the orchestrator BEFORE invoking you
+- Use the Write tool to create the file at this exact path
+- Write ONLY the topic name (one line, no prefix)
+
+**CRITICAL COMPLETION REQUIREMENT**:
+You MUST create the output file at the exact path specified in the contract.
+The orchestrator will verify this file using validate_agent_artifact().
+
+Verification checks performed:
+1. File exists and is readable
+2. File has minimum content (10+ bytes)
+3. Content matches expected format: single line, no whitespace padding
+
+**Validation After Return**:
+- The orchestrator will check that the file exists at the pre-calculated path
+- The orchestrator validates file size meets minimum requirement (10 bytes)
+- If the file is missing or too small, the workflow will retry (max 2 retries)
+- After retry exhaustion, workflow falls back to `no_name_error` directory
+- This ensures path synchronization and prevents WORKFLOW_ID mismatches
+
+**Completion Signal**:
+After successfully writing the file, return:
+```
+TOPIC_NAME_CREATED: /absolute/path/to/topic_name_file.txt
+```
+
+This confirms the file was created at the expected location.
+
+---
+
 ## Topic Naming Execution Process
 
 ### STEP 1 (REQUIRED BEFORE STEP 2) - Receive and Verify User Prompt
@@ -134,10 +172,10 @@ The invoking command MUST provide you with a user prompt. Verify you have receiv
 
 **EXECUTE NOW - Write Topic Name to Output File**
 
-**ABSOLUTE REQUIREMENT**: YOU MUST write the validated topic name to the output file path provided by the invoking command.
+**ABSOLUTE REQUIREMENT**: YOU MUST write the validated topic name to the output file path provided by the invoking command (see Output Path Contract above).
 
-**Expected Input from Command**:
-- `OUTPUT_FILE_PATH`: Absolute path where topic name should be written
+**Expected Input from Command** (Hard Barrier Pattern):
+- `Output Path: /absolute/path/to/topic_name_${WORKFLOW_ID}.txt` - Pre-calculated by orchestrator
 
 **Output File Format**:
 Write a single line containing only the topic name (no signal prefix, no extra text):
@@ -164,25 +202,26 @@ state_machine_refactor
 
 **CRITICAL REQUIREMENTS**:
 - Use Write tool to write output file
+- Write to the EXACT path specified in "Output Path:" (do NOT calculate your own path)
 - Write ONLY the topic name (no `TOPIC_NAME_GENERATED:` prefix)
 - Single line, no trailing newline needed
 - NO additional commentary or explanation
 - NO JSON wrapping
 - NO quotes around the name
-- File path must match OUTPUT_FILE_PATH provided by command
+- File path must match the Output Path provided in the Task prompt
 
 **OUTPUT FILE CREATION IS MANDATORY**:
-The invoking command validates that the output file exists and contains valid content.
+The invoking command validates that the output file exists and contains valid content at the pre-calculated path.
 If the Write tool fails or you skip this step, the workflow will fall back to 'no_name_error'.
 ALWAYS use the Write tool before returning the completion signal.
 
-**Completion Signal**:
-After writing the file, return this signal:
+**Completion Signal** (Updated for Hard Barrier Pattern):
+After writing the file, return this signal with the actual file path:
 ```
-TOPIC_NAME_GENERATED: <topic_name>
+TOPIC_NAME_CREATED: /absolute/path/to/topic_name_file.txt
 ```
 
-This confirms the operation completed successfully.
+This confirms the operation completed successfully and the file was created at the expected location.
 
 ---
 

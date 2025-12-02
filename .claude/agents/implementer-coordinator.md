@@ -264,6 +264,8 @@ Example for Wave 2 with 2 phases:
 ```markdown
 I'm now invoking implementation-executor for Phase 2 and Phase 3 in parallel (Wave 2).
 
+**EXECUTE NOW**: USE the Task tool to invoke the implementation-executor.
+
 Task {
   subagent_type: "general-purpose"
   description: "Execute Phase 2 implementation"
@@ -293,6 +295,8 @@ Task {
     - work_remaining: 0 or list of incomplete tasks
     - summary_path: path if summary generated
 }
+
+**EXECUTE NOW**: USE the Task tool to invoke the implementation-executor.
 
 Task {
   subagent_type: "general-purpose"
@@ -515,6 +519,16 @@ Context Exhausted: {yes|no}
 ```
 
 **Structured Return for Continuation** (Enhanced in Phase 1):
+
+**IMPORTANT - Output Format Requirements**:
+- `work_remaining`: Space-separated string of phases (NOT JSON array)
+  - Correct: `work_remaining: Phase_4 Phase_5 Phase_6` ✓
+  - Correct: `work_remaining: 0` ✓ (no remaining work)
+  - Correct: `work_remaining: ""` ✓ (empty, no remaining work)
+  - WRONG: `work_remaining: [Phase 4, Phase 5, Phase 6]` ✗ (triggers state_error)
+- The parent workflow uses `append_workflow_state()` which only accepts scalar values
+- JSON arrays cause type validation failures and state_error log entries
+
 ```yaml
 IMPLEMENTATION_COMPLETE:
   phase_count: N
@@ -523,7 +537,7 @@ IMPLEMENTATION_COMPLETE:
   summary_path: /path/to/summaries/NNN_workflow_summary.md
   git_commits: [hash1, hash2, ...]
   context_exhausted: true|false
-  work_remaining: 0|[list of incomplete phases]
+  work_remaining: Phase_4 Phase_5 Phase_6  # Space-separated string, NOT JSON array
   context_usage_percent: N%
   checkpoint_path: /path/to/checkpoint (if created)
   requires_continuation: true|false
@@ -654,7 +668,7 @@ IMPLEMENTATION_COMPLETE: {PHASE_COUNT}
 plan_file: /path/to/plan.md
 topic_path: /path/to/topic
 summary_path: /path/to/iteration_N_summary.md
-work_remaining: [phase_M, phase_N, ...] or 0
+work_remaining: Phase_M Phase_N  # Space-separated (NOT JSON array), or 0 if none
 context_exhausted: true|false
 ```
 
@@ -670,19 +684,22 @@ context_exhausted: true|false
 Iteration 1 (fresh start):
   - Executes phases 1-5
   - Context ~85%
-  - Returns: work_remaining=[6,7,8,9,10,11,12], context_exhausted=false
+  - Returns: work_remaining: Phase_6 Phase_7 Phase_8 Phase_9 Phase_10 Phase_11 Phase_12
+             context_exhausted: false
 
 Iteration 2 (continuation):
   - Reads iteration_1_summary.md
   - Executes phases 6-9
   - Context ~88%
-  - Returns: work_remaining=[10,11,12], context_exhausted=false
+  - Returns: work_remaining: Phase_10 Phase_11 Phase_12
+             context_exhausted: false
 
 Iteration 3 (continuation):
   - Reads iteration_2_summary.md
   - Executes phases 10-12
   - Context ~60%
-  - Returns: work_remaining=0, context_exhausted=false
+  - Returns: work_remaining: 0
+             context_exhausted: false
 ```
 
 **Summary Format for Continuation**:

@@ -74,8 +74,12 @@ VALIDATORS=(
   "error-logging-coverage|${LINT_DIR}/check-error-logging-coverage.sh|ERROR|*.md"
   "unbound-variables|${LINT_DIR}/check-unbound-variables.sh|ERROR|*.md"
   "hard-barrier-compliance|${SCRIPTS_DIR}/validate-hard-barrier-compliance.sh|ERROR|commands/*.md"
+  "task-invocation|${SCRIPTS_DIR}/lint-task-invocation-pattern.sh|ERROR|*.md"
+  "argument-capture|${SCRIPTS_DIR}/lint-argument-capture.sh|WARNING|commands/*.md"
+  "checkpoint-format|${SCRIPTS_DIR}/lint-checkpoint-format.sh|WARNING|commands/*.md"
   "readme-structure|${SCRIPTS_DIR}/validate-readmes.sh|WARNING|README.md"
   "link-validity|${SCRIPTS_DIR}/validate-links-quick.sh|WARNING|*.md"
+  "plan-metadata|${LINT_DIR}/validate-plan-metadata.sh|ERROR|specs/*/plans/*.md"
 )
 
 # Counters
@@ -92,8 +96,12 @@ RUN_CONDITIONALS=false
 RUN_ERROR_LOGGING=false
 RUN_UNBOUND_VARS=false
 RUN_HARD_BARRIER=false
+RUN_TASK_INVOCATION=false
+RUN_ARGUMENT_CAPTURE=false
+RUN_CHECKPOINTS=false
 RUN_README=false
 RUN_LINKS=false
+RUN_PLANS=false
 STAGED_ONLY=false
 DRY_RUN=false
 
@@ -113,8 +121,12 @@ OPTIONS:
   --error-logging    Run error logging coverage linter only
   --unbound-vars     Run unbound variables linter only
   --hard-barrier     Run hard barrier compliance validator only
+  --task-invocation  Run task invocation pattern linter only
+  --argument-capture Run argument capture pattern linter only
+  --checkpoints      Run checkpoint format linter only
   --readme           Run README structure validation only
   --links            Run link validation only
+  --plans            Run plan metadata validation only
   --staged           Check only staged files (for pre-commit)
   --dry-run          Show what would be checked, don't run validators
   --help             Show this help message
@@ -126,8 +138,12 @@ VALIDATORS:
   error-logging-coverage Validates error logging coverage >= 80% (ERROR)
   unbound-variables     Detects unsafe variable expansions (ERROR)
   hard-barrier-compliance Validates hard barrier subagent delegation (ERROR)
+  task-invocation       Validates imperative Task tool invocation pattern (ERROR)
+  argument-capture      Validates 2-block argument capture pattern (WARNING)
+  checkpoint-format     Validates standardized checkpoint format (WARNING)
   readme-structure      Validates README.md structure (WARNING)
   link-validity         Validates internal markdown links (WARNING)
+  plan-metadata         Validates plan metadata compliance (ERROR)
 
 SEVERITY:
   ERROR   - Blocking: commit rejected, must be fixed
@@ -183,11 +199,23 @@ parse_args() {
       --hard-barrier)
         RUN_HARD_BARRIER=true
         ;;
+      --task-invocation)
+        RUN_TASK_INVOCATION=true
+        ;;
+      --argument-capture)
+        RUN_ARGUMENT_CAPTURE=true
+        ;;
+      --checkpoints)
+        RUN_CHECKPOINTS=true
+        ;;
       --readme)
         RUN_README=true
         ;;
       --links)
         RUN_LINKS=true
+        ;;
+      --plans)
+        RUN_PLANS=true
         ;;
       --staged)
         STAGED_ONLY=true
@@ -209,7 +237,7 @@ parse_args() {
   done
 
   # If specific validators selected, don't run all
-  if $RUN_SOURCING || $RUN_SUPPRESSION || $RUN_CONDITIONALS || $RUN_ERROR_LOGGING || $RUN_UNBOUND_VARS || $RUN_HARD_BARRIER || $RUN_README || $RUN_LINKS; then
+  if $RUN_SOURCING || $RUN_SUPPRESSION || $RUN_CONDITIONALS || $RUN_ERROR_LOGGING || $RUN_UNBOUND_VARS || $RUN_HARD_BARRIER || $RUN_TASK_INVOCATION || $RUN_ARGUMENT_CAPTURE || $RUN_CHECKPOINTS || $RUN_README || $RUN_LINKS; then
     RUN_ALL=false
   fi
 }
@@ -241,11 +269,23 @@ should_run_validator() {
     hard-barrier-compliance)
       $RUN_HARD_BARRIER && return 0
       ;;
+    task-invocation)
+      $RUN_TASK_INVOCATION && return 0
+      ;;
+    argument-capture)
+      $RUN_ARGUMENT_CAPTURE && return 0
+      ;;
+    checkpoint-format)
+      $RUN_CHECKPOINTS && return 0
+      ;;
     readme-structure)
       $RUN_README && return 0
       ;;
     link-validity)
       $RUN_LINKS && return 0
+      ;;
+    plan-metadata)
+      $RUN_PLANS && return 0
       ;;
   esac
 
@@ -321,7 +361,74 @@ run_validator() {
   local output
   local exit_code=0
 
-  output=$(bash "$script" 2>&1) || exit_code=$?
+  # Some validators need explicit file arguments
+  case "$name" in
+    argument-capture|checkpoint-format)
+      # These validators need file paths
+      local target_files
+      if $STAGED_ONLY; then
+        target_files=$(get_staged_files "$file_filter")
+        if [ -z "$target_files" ]; then
+          echo -e "  ${BLUE}SKIP${NC}: No staged files match $file_filter"
+          SKIP_COUNT=$((SKIP_COUNT + 1))
+          return 0
+        fi
+        output=$(bash "$script" $target_files 2>&1) || exit_code=$?
+      else
+        # Find all matching files in commands directory
+        target_files=$(find "$PROJECT_DIR/.claude/commands" -name "*.md" -type f 2>/dev/null || true)
+        if [ -z "$target_files" ]; then
+          echo -e "  ${BLUE}SKIP${NC}: No command files found"
+          SKIP_COUNT=$((SKIP_COUNT + 1))
+          return 0
+        fi
+        output=$(bash "$script" $target_files 2>&1) || exit_code=$?
+      fi
+      ;;
+    plan-metadata)
+      # Plan metadata validator checks one file at a time
+      local target_files
+      local all_output=""
+      local any_errors=false
+
+      if $STAGED_ONLY; then
+        target_files=$(get_staged_files "$file_filter")
+      else
+        # Find all plan files
+        target_files=$(find "$PROJECT_DIR/.claude/specs" -path "*/plans/*.md" -type f 2>/dev/null | sort || true)
+      fi
+
+      if [ -z "$target_files" ]; then
+        echo -e "  ${BLUE}SKIP${NC}: No plan files found"
+        SKIP_COUNT=$((SKIP_COUNT + 1))
+        return 0
+      fi
+
+      # Validate each plan file individually
+      for plan_file in $target_files; do
+        local plan_output
+        local plan_exit=0
+        plan_output=$(bash "$script" "$plan_file" 2>&1) || plan_exit=$?
+
+        if [ $plan_exit -ne 0 ]; then
+          any_errors=true
+          all_output+="$plan_file:\n$plan_output\n\n"
+        fi
+      done
+
+      if $any_errors; then
+        output="$all_output"
+        exit_code=1
+      else
+        output="All plan files validated successfully"
+        exit_code=0
+      fi
+      ;;
+    *)
+      # Most validators discover files themselves
+      output=$(bash "$script" 2>&1) || exit_code=$?
+      ;;
+  esac
 
   if [ $exit_code -eq 0 ]; then
     echo -e "  ${GREEN}PASS${NC}"

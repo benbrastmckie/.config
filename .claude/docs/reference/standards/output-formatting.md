@@ -274,6 +274,229 @@ echo "Setup complete: $WORKFLOW_ID"
 
 ---
 
+## Checkpoint Reporting Format
+
+Checkpoints are intermediate progress markers in multi-block workflows that provide visibility into workflow state without verbose logging.
+
+### Purpose and Scope
+
+Checkpoints serve three purposes:
+
+1. **Progress Visibility**: Show workflow advancement between bash blocks
+2. **Context Preservation**: Persist critical variables for cross-block access
+3. **Resume Readiness**: Indicate next phase or agent invocation
+
+**When to Use Checkpoints**:
+- Between major workflow phases (setup complete, validation complete, delegation ready)
+- Before agent invocations (all context prepared)
+- After state transitions (entering new phase, completing phase)
+
+**When NOT to Use Checkpoints**:
+- Within single bash blocks (use regular echo statements)
+- For error messages (use stderr with ERROR prefix)
+- For final completion (use Console Summary format instead)
+
+### Standard Checkpoint Format
+
+All checkpoints MUST use this structure:
+
+```bash
+echo "[CHECKPOINT] {Phase Name} complete"
+echo "Context: {KEY}={VALUE}, {KEY}={VALUE}"
+echo "Ready for: {Next Action}"
+```
+
+**Format Rules**:
+- First line: `[CHECKPOINT]` marker, phase name, "complete" status
+- Second line: "Context:" prefix followed by comma-separated KEY=VALUE pairs
+- Third line: "Ready for:" prefix describing next action
+
+### Checkpoint Template
+
+```bash
+# After completing setup phase
+echo "[CHECKPOINT] Setup phase complete"
+echo "Context: WORKFLOW_ID=${WORKFLOW_ID}, TOPIC_DIR=${TOPIC_DIR}, COMPLEXITY=${COMPLEXITY}"
+echo "Ready for: Agent delegation"
+
+# After validation
+echo "[CHECKPOINT] Validation complete"
+echo "Context: PLAN_FILE=${PLAN_FILE}, PHASE_COUNT=${PHASE_COUNT}, STARTING_PHASE=${STARTING_PHASE}"
+echo "Ready for: Implementation execution"
+
+# After state transition
+echo "[CHECKPOINT] Phase 1 complete"
+echo "Context: REPORTS_CREATED=${REPORT_COUNT}, NEXT_PHASE=2"
+echo "Ready for: Planning phase"
+```
+
+### Context Variable Guidelines
+
+**Include in Context Line**:
+- Workflow identifiers (WORKFLOW_ID, STATE_ID)
+- File paths needed by subsequent blocks (PLAN_FILE, TOPIC_DIR, REPORT_PATH)
+- Counters and indices (PHASE_COUNT, CURRENT_PHASE, ITERATION)
+- Configuration flags (DRY_RUN, COMPLEXITY, DEBUG_MODE)
+
+**Exclude from Context Line**:
+- Verbose descriptions or multi-line values
+- Internal implementation details
+- Temporary variables not persisted to state
+
+**Format**:
+```bash
+# Good: Concise, relevant, parseable
+echo "Context: WORKFLOW_ID=workflow_1234, PHASE=2, DRY_RUN=false"
+
+# Bad: Verbose, unparseable
+echo "Context: The workflow ID is workflow_1234 and we are in phase 2"
+```
+
+### Ready For Guidelines
+
+The "Ready for" line describes the next workflow action in human-readable terms:
+
+**Good Examples**:
+- "Ready for: Agent delegation to research-specialist"
+- "Ready for: Implementation of Phase 2"
+- "Ready for: Validation and testing"
+- "Ready for: State transition to build phase"
+
+**Bad Examples**:
+- "Ready for: Next step" (too vague)
+- "Ready for: Bash block 3 execution" (implementation detail)
+- "Ready for: See plan.md for details" (not actionable)
+
+### Checkpoint Placement
+
+Place checkpoints at natural workflow boundaries:
+
+```bash
+# Block 1: Setup
+set +H
+source libs.sh 2>/dev/null || exit 1
+sm_init "$DESC" "$CMD" "$TYPE" || exit 1
+WORKFLOW_ID=$(allocate_workflow_id) || exit 1
+
+echo "[CHECKPOINT] Setup complete"
+echo "Context: WORKFLOW_ID=${WORKFLOW_ID}, CMD=${CMD}"
+echo "Ready for: Argument validation"
+
+# Block 2: Validation
+set +H
+load_workflow_state "$WORKFLOW_ID"
+validate_args || exit 1
+
+echo "[CHECKPOINT] Validation complete"
+echo "Context: WORKFLOW_ID=${WORKFLOW_ID}, ARGS_VALID=true"
+echo "Ready for: Agent delegation"
+
+# Block 3: Agent Invocation
+# Task tool invocation here...
+```
+
+### Verbosity Balance
+
+**Minimal Checkpoint** (simple workflows):
+```bash
+echo "[CHECKPOINT] Setup complete"
+echo "Context: WORKFLOW_ID=${WORKFLOW_ID}"
+echo "Ready for: Execution"
+```
+
+**Detailed Checkpoint** (complex workflows):
+```bash
+echo "[CHECKPOINT] Multi-phase setup complete"
+echo "Context: WORKFLOW_ID=${WORKFLOW_ID}, TOPIC_DIR=${TOPIC_DIR}, REPORTS=${REPORTS_DIR}, PLANS=${PLANS_DIR}, COMPLEXITY=${COMPLEXITY}, ITERATION=${ITERATION}/5"
+echo "Ready for: Wave 1 agent delegation (3 parallel agents)"
+```
+
+**Guideline**: Include only variables that help user understand workflow state or debug issues.
+
+### Integration with State Persistence
+
+Checkpoints complement but don't replace state persistence:
+
+```bash
+# Persist to state file (for cross-block access)
+append_workflow_state "TOPIC_DIR" "$TOPIC_DIR"
+append_workflow_state "COMPLEXITY" "$COMPLEXITY"
+
+# Checkpoint for user visibility
+echo "[CHECKPOINT] Setup complete"
+echo "Context: TOPIC_DIR=${TOPIC_DIR}, COMPLEXITY=${COMPLEXITY}"
+echo "Ready for: Agent delegation"
+```
+
+**Division of Labor**:
+- **State Persistence**: All variables needed by subsequent bash blocks
+- **Checkpoints**: User-facing summary of persisted state
+
+### Anti-Patterns
+
+**Anti-Pattern 1: Checkpoint Without Context**
+```bash
+# Bad: No context variables
+echo "[CHECKPOINT] Setup complete"
+echo "Ready for: Next phase"
+```
+
+**Anti-Pattern 2: Verbose Context**
+```bash
+# Bad: Multi-line descriptions
+echo "[CHECKPOINT] Setup complete"
+echo "Context: The workflow has been initialized with ID workflow_1234"
+echo "and the topic directory is /path/to/topic which contains plans"
+echo "Ready for: Agent delegation"
+```
+
+**Anti-Pattern 3: Implementation Details**
+```bash
+# Bad: Exposes internal bash block numbering
+echo "[CHECKPOINT] Block 2 complete"
+echo "Context: About to run Block 3"
+echo "Ready for: Block 4 execution"
+```
+
+### Relationship to Console Summaries
+
+**Checkpoints** (this section):
+- Intermediate progress markers
+- 3 lines per checkpoint
+- Between bash blocks
+- Context variables
+
+**Console Summaries** (see [Console Summary Standards](#console-summary-standards)):
+- Final completion message
+- 15-25 lines total
+- At workflow end
+- Comprehensive artifacts listing
+
+**Example Flow**:
+```
+[User runs /build plan.md]
+  ↓
+[CHECKPOINT] Setup complete
+Context: WORKFLOW_ID=wf_123, PLAN_FILE=/path/plan.md
+Ready for: Phase 1 implementation
+  ↓
+[Task tool invokes implementer]
+  ↓
+[CHECKPOINT] Phase 1 complete
+Context: PHASE=1, FILES_MODIFIED=5
+Ready for: Phase 2 implementation
+  ↓
+[...phases 2-5...]
+  ↓
+=== Build Complete ===
+Summary: Implemented 5 phases across 23 files...
+Artifacts:
+  ✅ Summary: /path/summary.md
+  ...
+```
+
+---
+
 ## Comment Standards
 
 ### WHAT Not WHY Enforcement
@@ -623,6 +846,146 @@ EOF
 | /repair | 📊 Error Analysis, 📄 Repair Plan | None | Review analysis, run /build |
 | /expand | 📄 Expanded Phases | None | Review expanded phases, continue /build |
 | /collapse | 📄 Plan (collapsed) | None | Review collapsed plan, resume work |
+
+---
+
+## Testing Strategy Section Format
+
+Commands that write tests during implementation (e.g., /implement) should include a Testing Strategy section in their summary files to enable test-only execution by downstream commands (e.g., /test).
+
+### Required Fields
+
+The Testing Strategy section MUST include:
+
+1. **Test Files Created**: List of test file paths with descriptions
+2. **Test Execution Requirements**: Framework, test command, coverage target, expected tests
+3. **Coverage Measurement**: How coverage is calculated
+
+### Standard Format
+
+```markdown
+## Testing Strategy
+
+### Test Files Created
+- `/absolute/path/to/test_auth.sh` - Authentication unit tests (8 tests)
+- `/absolute/path/to/test_api.sh` - API integration tests (12 tests)
+- `/absolute/path/to/test_validation.sh` - Input validation tests (6 tests)
+
+### Test Execution Requirements
+- **Framework**: Bash test framework (existing .claude/tests/ patterns)
+- **Test Command**: `bash test_auth.sh && bash test_api.sh && bash test_validation.sh`
+- **Coverage Target**: 80%
+- **Expected Tests**: 26 total tests (8 unit, 12 integration, 6 validation)
+
+### Coverage Measurement
+Coverage calculated via test execution output parsing. Each test file reports passed/failed counts.
+```
+
+### Field Descriptions
+
+**Test Files Created**:
+- Use absolute paths (not relative)
+- Include test count and brief description
+- List all test files in execution order
+
+**Test Execution Requirements**:
+- Framework: Test framework used (bash, pytest, jest, etc.)
+- Test Command: Exact command to run all tests (must be runnable from project root)
+- Coverage Target: Percentage threshold (default: 80%)
+- Expected Tests: Total count and breakdown by type
+
+**Coverage Measurement**:
+- How coverage percentage is calculated
+- Framework-specific coverage tools if applicable
+- Fallback methods if coverage tool unavailable
+
+### Parsing by Downstream Commands
+
+Commands consuming Testing Strategy sections should use this parsing logic:
+
+```bash
+# Extract Testing Strategy section
+TEST_STRATEGY=$(sed -n '/^## Testing Strategy$/,/^## /p' "$SUMMARY_FILE" | head -n -1)
+
+# Extract test command
+TEST_COMMAND=$(echo "$TEST_STRATEGY" | grep "^\*\*Test Command\*\*:" | sed 's/.*: //' | tr -d '`')
+
+# Extract coverage target
+COVERAGE_TARGET=$(echo "$TEST_STRATEGY" | grep "^\*\*Coverage Target\*\*:" | sed 's/.*: //' | tr -d '%')
+
+# Extract test files
+TEST_FILES=$(echo "$TEST_STRATEGY" | sed -n '/^### Test Files Created$/,/^###/p' | grep "^- \`" | sed 's/.*`\(.*\)`.*/\1/')
+
+# Extract expected test count
+EXPECTED_TESTS=$(echo "$TEST_STRATEGY" | grep "^\*\*Expected Tests\*\*:" | sed 's/.*: //' | grep -oE '[0-9]+' | head -1)
+```
+
+### Validation
+
+Implementation commands should validate Testing Strategy section before returning:
+
+```bash
+# Check Testing Strategy section exists
+if ! grep -q "^## Testing Strategy$" "$SUMMARY_FILE"; then
+  echo "WARNING: Summary missing Testing Strategy section"
+  echo "         /test command may not be able to execute tests"
+fi
+
+# Check required fields present
+REQUIRED_FIELDS=("Test Files Created" "Test Command" "Coverage Target")
+for field in "${REQUIRED_FIELDS[@]}"; do
+  if ! grep -q "**${field}**:" "$SUMMARY_FILE"; then
+    echo "WARNING: Testing Strategy missing required field: $field"
+  fi
+done
+```
+
+### Example: /implement → /test Workflow
+
+**Step 1: /implement creates summary with Testing Strategy**
+```bash
+/implement specs/042_auth/plans/001_auth_plan.md
+# Creates: specs/042_auth/summaries/001-iteration-1-implementation-summary.md
+# Summary includes Testing Strategy section with test files and execution command
+```
+
+**Step 2: /test reads Testing Strategy and executes tests**
+```bash
+/test specs/042_auth/plans/001_auth_plan.md
+# Auto-discovers summary: 001-iteration-1-implementation-summary.md
+# Parses Testing Strategy section
+# Runs test command with coverage loop
+# Creates: outputs/test_results_iter1_*.md
+```
+
+### Anti-Patterns
+
+**Incomplete Testing Strategy** (missing fields):
+```markdown
+## Testing Strategy
+
+Tests are in test/ directory.
+```
+This lacks required fields and cannot be parsed by downstream commands.
+
+**Relative Paths** (non-portable):
+```markdown
+### Test Files Created
+- `../tests/test_auth.sh` - Authentication tests
+```
+Use absolute paths to avoid execution directory issues.
+
+**Non-Runnable Test Command** (requires manual edits):
+```markdown
+- **Test Command**: `bash test_*.sh` (expand glob manually)
+```
+Provide exact, runnable command string.
+
+### Related Documentation
+
+- [Testing Protocols](testing-protocols.md) - Complete test writing and execution standards
+- [Implement-Test Workflow Guide](./../../guides/workflows/implement-test-workflow.md) - Summary-based handoff patterns
+- [Command Integration Patterns](command-authoring.md#command-integration-patterns) - Summary-based handoff implementation
 
 ---
 

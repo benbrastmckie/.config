@@ -74,6 +74,12 @@ See [Code Standards](.claude/docs/reference/standards/code-standards.md) for com
 - All bash blocks MUST follow three-tier sourcing pattern (enforced by linter and pre-commit hooks)
 - Tier 1 libraries (state-persistence.sh, workflow-state-machine.sh, error-handling.sh) require fail-fast handlers
 - See [Mandatory Bash Block Sourcing Pattern](.claude/docs/reference/standards/code-standards.md#mandatory-bash-block-sourcing-pattern)
+
+**Quick Reference - Task Invocation**:
+- All Task tool invocations MUST use imperative directives: "**EXECUTE NOW**: USE the Task tool..."
+- Pseudo-code syntax `Task { ... }` without directive is PROHIBITED (enforced by linter)
+- Instructional text patterns without actual Task invocation are PROHIBITED
+- See [Task Tool Invocation Patterns](.claude/docs/reference/standards/command-authoring.md#task-tool-invocation-patterns)
 <!-- END_SECTION: code_standards -->
 
 <!-- SECTION: clean_break_development -->
@@ -201,6 +207,23 @@ See [Adaptive Planning Guide](.claude/docs/workflows/adaptive-planning-guide.md)
 See [Adaptive Planning Configuration](.claude/docs/reference/standards/adaptive-planning.md) for complexity thresholds, threshold adjustment guidelines, and configuration ranges.
 <!-- END_SECTION: adaptive_planning_config -->
 
+<!-- SECTION: plan_metadata_standard -->
+## Plan Metadata Standard
+[Used by: /plan, /repair, /revise, /debug, plan-architect]
+
+See [Plan Metadata Standard](.claude/docs/reference/standards/plan-metadata-standard.md) for complete field specifications, validation rules, workflow extensions, and integration points.
+
+**Required Fields Quick Reference** (ERROR if missing):
+1. **Date**: `YYYY-MM-DD` or `YYYY-MM-DD (Revised)` - Creation/revision date
+2. **Feature**: One-line description (50-100 chars) - What is being implemented
+3. **Status**: `[NOT STARTED]`, `[IN PROGRESS]`, `[COMPLETE]`, `[BLOCKED]` - Current plan status
+4. **Estimated Hours**: `{low}-{high} hours` - Time estimate as numeric range
+5. **Standards File**: `/absolute/path/to/CLAUDE.md` - Standards traceability
+6. **Research Reports**: Markdown links with relative paths or `none` if no research phase
+
+**Enforcement**: Automated validation via pre-commit hooks (ERROR-level for missing required fields), validate-all-standards.sh --plans category, and plan-architect self-validation.
+<!-- END_SECTION: plan_metadata_standard -->
+
 <!-- SECTION: development_workflow -->
 ## Development Workflow
 [Used by: /implement, /plan, /build]
@@ -273,6 +296,11 @@ See [Duplicate Commands Troubleshooting](.claude/docs/troubleshooting/duplicate-
 [Used by: all commands, /help]
 
 See [Command Reference](.claude/docs/reference/standards/command-reference.md) for complete catalog of slash commands with syntax and examples.
+
+**Command Development Standards**:
+- [Command Authoring](.claude/docs/reference/standards/command-authoring.md) - Complete command development patterns including 2-block argument capture, path initialization, and block consolidation
+- [Command Patterns Quick Reference](.claude/docs/reference/command-patterns-quick-reference.md) - Copy-paste templates for common command patterns
+- [Output Formatting](.claude/docs/reference/standards/output-formatting.md) - Checkpoint format, console summaries, and output suppression patterns
 <!-- END_SECTION: project_commands -->
 
 <!-- SECTION: quick_reference -->
@@ -280,6 +308,10 @@ See [Command Reference](.claude/docs/reference/standards/command-reference.md) f
 [Used by: all commands]
 
 See [Decision Trees](.claude/docs/reference/decision-trees/README.md) for decision flowcharts, and [Reference Documentation](.claude/docs/reference/README.md) for command/agent references and navigation links.
+
+**Quick Access**:
+- [Command Patterns Quick Reference](.claude/docs/reference/command-patterns-quick-reference.md) - Copy-paste templates for argument capture, state initialization, agent delegation, checkpoints, and validation
+- [Validation Utils Library](.claude/lib/workflow/validation-utils.sh) - Reusable validation functions for workflow prerequisites, agent artifacts, and path validation
 <!-- END_SECTION: quick_reference -->
 
 <!-- SECTION: documentation_policy -->

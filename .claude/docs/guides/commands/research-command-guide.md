@@ -52,9 +52,48 @@ The `/research` command provides a research-only workflow that creates comprehen
 ### Patterns Used
 
 - **State-Based Orchestration**: (state-based-orchestration-overview.md) Single-state workflow
+- **Hard Barrier Subagent Delegation**: (hard-barrier-subagent-delegation.md) Mandatory subagent invocation with validation
 - **Behavioral Injection**: (behavioral-injection.md) Agent behavior separated from orchestration
 - **Fail-Fast Verification**: (Standard 0) File-level verification with minimum size checks
 - **Topic-Based Structure**: (directory-protocols.md) Numbered topic directories
+
+### Subagent Delegation Architecture
+
+The `/research` command uses the **Hard Barrier Pattern** to enforce mandatory delegation to the research-specialist subagent:
+
+```
+Block 1c: Topic Path Initialization
+    │
+    ▼
+Block 1d: Report Path Pre-Calculation (bash)
+    │   • Calculate REPORT_PATH = ${RESEARCH_DIR}/001-${REPORT_SLUG}.md
+    │   • Persist REPORT_PATH to workflow state
+    ▼
+Block 1d-exec: Research Specialist Invocation (Task)
+    │   • Pass REPORT_PATH as explicit contract
+    │   • Agent receives absolute path requirement
+    ▼
+Block 1e: Agent Output Validation (bash) ← HARD BARRIER
+    │   • Verify REPORT_PATH file exists (exit 1 if missing)
+    │   • Validate report has minimum size
+    │   • Validate report contains required sections
+    ▼
+Block 2: Verification and Completion (defensive checks)
+```
+
+**Why This Pattern?**:
+1. **REPORT_PATH Pre-Calculation**: The orchestrator calculates the exact output path before invoking the subagent
+2. **Explicit Contract**: The Task prompt passes `REPORT_PATH` as a mandatory requirement
+3. **Hard Barrier**: Block 1e validates the exact pre-calculated path exists (not a search/find operation)
+4. **Fail-Fast**: If the report is missing, the workflow halts with error logging
+
+**Without This Pattern** (the problem this solves):
+- The primary agent bypasses Task invocation and performs research directly
+- This wastes context (40-60% more tokens used)
+- Research logic is not reusable across workflows
+- Subagent specialization is lost
+
+See [Hard Barrier Subagent Delegation Pattern](../../concepts/patterns/hard-barrier-subagent-delegation.md) for full documentation.
 
 ### Workflow States
 
@@ -256,7 +295,36 @@ Complexity 4 triggers hierarchical supervision with research-sub-supervisor coor
 
 ### Common Issues
 
-#### Issue 1: No Reports Created
+#### Issue 1: Hard Barrier Failed - Report Not Created
+
+**Symptoms**:
+- Error: "HARD BARRIER FAILED - Report file not found at: [path]"
+- Block 1e validation exits with agent_error
+
+**Cause**:
+Research-specialist subagent did not create the report at the pre-calculated `REPORT_PATH`. This usually means:
+1. Task invocation in Block 1d-exec was not executed
+2. Subagent encountered an error during file creation
+3. Subagent created the report at a different path
+
+**Solution**:
+```bash
+# Check recent error logs
+/errors --command /research --since 1h
+
+# Verify the expected report path was calculated
+grep "REPORT_PATH" ~/.claude/tmp/workflow_research_*.sh
+
+# Check if any report was created (different path)
+find .claude/specs -name "*.md" -mmin -5
+
+# Re-run with more specific description
+/research"specific topic description"
+```
+
+**Note**: This error is by design - it prevents the orchestrator from bypassing subagent delegation.
+
+#### Issue 2: No Reports Created (Block 2 Defensive Check)
 
 **Symptoms**:
 - Error: "Research phase failed to create report files"
@@ -277,7 +345,7 @@ Research-specialist agent failed or workflow description too vague.
 ls .claude/specs/
 ```
 
-#### Issue 2: Reports Too Small
+#### Issue 3: Reports Too Small
 
 **Symptoms**:
 - Error: "Research report(s) too small (< 100 bytes)"
@@ -296,7 +364,7 @@ Research-specialist encountered errors or found insufficient information.
 /research"topic --complexity 3"
 ```
 
-#### Issue 3: State Machine Initialization Failed
+#### Issue 4: State Machine Initialization Failed
 
 **Symptoms**:
 - Error: "State machine initialization failed"
@@ -313,7 +381,7 @@ grep VERSION= .claude/lib/workflow/workflow-state-machine.sh
 # Ensure version >=2.0.0
 ```
 
-#### Issue 4: Workflow Description Invalid
+#### Issue 5: Workflow Description Invalid
 
 **Symptoms**:
 - Error: "Workflow description required"

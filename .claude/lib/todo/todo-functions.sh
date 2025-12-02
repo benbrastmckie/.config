@@ -763,6 +763,10 @@ generate_completed_date_header() {
 #   $3 - Dry run flag (true/false)
 # Returns: 0 on success, 1 on failure
 #
+# NOTE: This function does NOT create backups. Callers are responsible for
+# creating git commits before calling this function if backup is needed.
+# See /todo command for git-based backup pattern.
+#
 update_todo_file() {
   local todo_path="$1"
   local plans_json="$2"
@@ -955,12 +959,7 @@ update_todo_file() {
     echo -e "$content"
     echo "=== END PREVIEW ==="
   else
-    # Backup existing file
-    if [ -f "$todo_path" ]; then
-      cp "$todo_path" "${todo_path}.backup"
-    fi
-
-    # Write new content
+    # Write new content (caller responsible for git backup)
     echo -e "$content" > "$todo_path"
     echo "TODO.md updated: $todo_path"
   fi
@@ -1029,7 +1028,89 @@ validate_todo_structure() {
 }
 
 # ============================================================================
-# SECTION 7: Cleanup Direct Execution (--clean mode)
+# SECTION 7: Query and Delegation Functions
+# ============================================================================
+
+# plan_exists_in_todo()
+# Purpose: Check if plan appears in TODO.md (any section)
+# Arguments:
+#   $1 - Plan path (absolute or relative)
+# Returns: 0 if found, 1 if not found
+# Usage:
+#   if plan_exists_in_todo "$plan_path"; then
+#     echo "Plan found in TODO.md"
+#   fi
+#
+plan_exists_in_todo() {
+  local plan_path="$1"
+  local todo_path="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
+
+  # Check TODO.md exists
+  if [ ! -f "$todo_path" ]; then
+    return 1  # TODO.md doesn't exist, plan not found
+  fi
+
+  # Normalize path for searching (handle both absolute and relative)
+  local search_path="$plan_path"
+  if [[ "$plan_path" == /* ]]; then
+    # Absolute path - convert to relative for TODO.md format
+    search_path=$(get_relative_path "$plan_path")
+  fi
+
+  # Search for plan path in TODO.md
+  if grep -qF "$search_path" "$todo_path" 2>/dev/null; then
+    return 0  # Found
+  else
+    return 1  # Not found
+  fi
+}
+
+# get_plan_current_section()
+# Purpose: Find which TODO.md section contains the plan
+# Arguments:
+#   $1 - Plan path (absolute or relative)
+# Returns: Section name (e.g., "Not Started", "In Progress") or empty string
+# Usage:
+#   SECTION=$(get_plan_current_section "$plan_path")
+#   [ -n "$SECTION" ] && echo "Plan is in: $SECTION"
+#
+get_plan_current_section() {
+  local plan_path="$1"
+  local todo_path="${CLAUDE_PROJECT_DIR}/.claude/TODO.md"
+
+  # Check TODO.md exists
+  if [ ! -f "$todo_path" ]; then
+    echo ""  # TODO.md doesn't exist
+    return 1
+  fi
+
+  # Normalize path for searching
+  local search_path="$plan_path"
+  if [[ "$plan_path" == /* ]]; then
+    # Absolute path - convert to relative
+    search_path=$(get_relative_path "$plan_path")
+  fi
+
+  # Use awk to find section containing the plan
+  local section_name
+  section_name=$(awk -v path="$search_path" '
+    /^## / {
+      # Extract section name (strip ## prefix)
+      current_section = substr($0, 4)
+    }
+    $0 ~ path {
+      # Found plan in this section
+      print current_section
+      exit
+    }
+  ' "$todo_path")
+
+  echo "$section_name"
+  [ -n "$section_name" ] && return 0 || return 1
+}
+
+# ============================================================================
+# SECTION 8: Cleanup Direct Execution (--clean mode)
 # ============================================================================
 
 # parse_todo_sections()
@@ -1343,7 +1424,7 @@ execute_cleanup_removal() {
 }
 
 # ============================================================================
-# SECTION 8: Export Functions
+# SECTION 9: Export Functions
 # ============================================================================
 
 # Export all public functions
@@ -1363,6 +1444,8 @@ export -f format_plan_entry
 export -f generate_completed_date_header
 export -f update_todo_file
 export -f validate_todo_structure
+export -f plan_exists_in_todo
+export -f get_plan_current_section
 export -f parse_todo_sections
 export -f filter_completed_projects
 export -f has_uncommitted_changes

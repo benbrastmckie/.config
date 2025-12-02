@@ -760,6 +760,92 @@ if [ -n "${STATE_FILE:-}" ] && [ ! -f "$STATE_FILE" ]; then
 fi
 ```
 
+## Block 4d: Extract Project Standards
+
+**EXECUTE NOW**: Extract project standards for plan-architect agent.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# Re-source libraries for subprocess isolation (Three-Tier Pattern)
+# Tier 1: Critical Foundation (state-persistence.sh, workflow-state-machine.sh, error-handling.sh)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Load WORKFLOW_ID from file
+# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
+if [ -f "$STATE_ID_FILE" ]; then
+  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+  export WORKFLOW_ID
+  load_workflow_state "$WORKFLOW_ID" false
+
+  # Restore error logging context
+  if [ -z "${COMMAND_NAME:-}" ]; then
+    COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/revise")
+  fi
+  if [ -z "${USER_ARGS:-}" ]; then
+    USER_ARGS=$(grep "^USER_ARGS=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "")
+  fi
+  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+  # Setup bash error trap
+  setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+fi
+
+# === EXTRACT PROJECT STANDARDS ===
+# Source standards extraction library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/standards-extraction.sh" 2>/dev/null || {
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Failed to source standards-extraction library" \
+    "bash_block_4d" \
+    "$(jq -n --arg path "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/standards-extraction.sh" '{library_path: $path}')"
+  echo "WARNING: Standards extraction unavailable, proceeding without standards" >&2
+  FORMATTED_STANDARDS=""
+}
+
+# Extract and format standards for prompt injection
+if [ -z "${FORMATTED_STANDARDS:-}" ]; then
+  FORMATTED_STANDARDS=$(format_standards_for_prompt 2>/dev/null) || {
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "execution_error" \
+      "Standards extraction failed" \
+      "bash_block_4d" \
+      "{}"
+    echo "WARNING: Standards extraction failed, proceeding without standards" >&2
+    FORMATTED_STANDARDS=""
+  }
+fi
+
+# Persist standards for Block 5b
+append_workflow_state "FORMATTED_STANDARDS<<STANDARDS_EOF
+$FORMATTED_STANDARDS
+STANDARDS_EOF"
+
+if [ -n "$FORMATTED_STANDARDS" ]; then
+  STANDARDS_COUNT=$(echo "$FORMATTED_STANDARDS" | grep -c "^###" || echo 0)
+  echo "Extracted $STANDARDS_COUNT standards sections for plan-architect"
+else
+  echo "No standards extracted (graceful degradation)"
+fi
+
+echo ""
+echo "[CHECKPOINT] Standards extraction complete"
+```
+
 ## Block 5a: Plan Revision Setup
 
 **CRITICAL BARRIER**: This bash block creates a hard context barrier enforcing plan-architect delegation. The block MUST be executed BEFORE the plan-architect Task invocation in Block 5b.
@@ -980,6 +1066,18 @@ Task {
     - Research Reports: ${REPORT_PATHS_JSON}
     - Workflow Type: research-and-revise
     - Operation Mode: plan revision
+    - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
+
+    **Project Standards**:
+    ${FORMATTED_STANDARDS}
+
+    **CRITICAL INSTRUCTIONS FOR PLAN REVISION**:
+    1. Use STEP 1-REV → STEP 2-REV → STEP 3-REV → STEP 4-REV workflow (revision flow)
+    2. Use Edit tool (NEVER Write) for all modifications to existing plan file
+    3. Preserve all [COMPLETE] phases unchanged (do not modify completed work)
+    4. Update plan metadata (Date, Estimated Hours, Phase count) to reflect revisions
+    5. **METADATA NORMALIZATION**: If metadata uses non-standard fields (Plan ID, Created, Revised, Workflow Type), convert to standard format (Date, Feature, Status, Standards File)
+    6. Maintain /implement compatibility (checkbox format, phase markers, dependency syntax)
 
     Execute plan revision according to behavioral guidelines and return completion signal:
     PLAN_REVISED: ${EXISTING_PLAN_PATH}
@@ -1098,6 +1196,25 @@ if [ "$FILE_SIZE" -lt 500 ]; then
 
   echo "ERROR: Plan file too small after revision ($FILE_SIZE bytes)" >&2
   echo "DIAGNOSTIC: Plan may have been corrupted, restore from: $BACKUP_PATH" >&2
+  echo "RECOVERY: cp \"$BACKUP_PATH\" \"$EXISTING_PLAN_PATH\"" >&2
+  exit 1
+fi
+
+# Verify plan has valid structure (at least one phase heading)
+PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$EXISTING_PLAN_PATH" || echo "0")
+if [ "$PHASE_COUNT" -lt 1 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Plan-architect produced plan with no phase headings" \
+    "bash_block_5c" \
+    "$(jq -n --arg path "$EXISTING_PLAN_PATH" --arg backup "$BACKUP_PATH" '{plan_path: $path, backup_path: $backup}')"
+
+  echo "ERROR: Plan file has no phase headings (invalid structure)" >&2
+  echo "DIAGNOSTIC: Plan revision must maintain phase structure" >&2
+  echo "RECOVERY: Restore from backup and retry revision: cp \"$BACKUP_PATH\" \"$EXISTING_PLAN_PATH\"" >&2
   exit 1
 fi
 
@@ -1105,7 +1222,8 @@ fi
 echo ""
 echo "CHECKPOINT: Plan revision complete"
 echo "- Revised plan: $EXISTING_PLAN_PATH"
-echo "- Plan size: $(wc -c < "$EXISTING_PLAN_PATH") bytes"
+echo "- File size: $FILE_SIZE bytes"
+echo "- Phase count: $PHASE_COUNT"
 echo "- Backup saved: $BACKUP_PATH"
 echo "- All verifications: ✓"
 echo "- Proceeding to: Completion"
@@ -1231,10 +1349,15 @@ ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($TOTAL_REPORT_COUNT files, $NEW_REPOR
 # Build next steps
 NEXT_STEPS="  • Review revised plan: cat $EXISTING_PLAN_PATH
   • Compare with backup: diff $BACKUP_PATH $EXISTING_PLAN_PATH
-  • Implement revised plan: /build $EXISTING_PLAN_PATH"
+  • Implement revised plan: /build $EXISTING_PLAN_PATH
+  • Run /todo to update TODO.md (adds revised plan to tracking)"
 
 # Print standardized summary (no phases for revise command)
 print_artifact_summary "Revise" "$SUMMARY_TEXT" "" "$ARTIFACTS" "$NEXT_STEPS"
+
+# Emit completion reminder
+echo ""
+echo "📋 Next Step: Run /todo to update TODO.md with this revised plan"
 echo ""
 
 # === CLEANUP TEMP FILES ===

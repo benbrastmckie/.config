@@ -98,6 +98,8 @@ COMMAND: /collapse-phase <plan> 4
 This prompt is used by `/implement` when evaluating completed expanded phases:
 
 ```yaml
+**EXECUTE NOW**: USE the Task tool to invoke the evaluator.
+
 Task {
   subagent_type: "general-purpose"
   prompt: "Read /home/benjamin/.config/.claude/agents/prompts/evaluate-phase-collapse.md

@@ -4,6 +4,45 @@
 
 Automated backups are created when modifying critical command files, plans, and configuration. This policy defines retention guidelines for backup files.
 
+## Git-Based Backup for TODO.md
+
+**Status**: Standard (as of 2025-12-01)
+
+The `/todo` command uses git commits for backup instead of file-based backups:
+
+**Backup Pattern**:
+- Automatic git commit created before TODO.md modification
+- Commit only created if uncommitted changes exist
+- Commit message includes workflow context and command arguments
+
+**Commit Message Format**:
+```
+chore: snapshot TODO.md before /todo update
+
+Preserving current state for recovery if needed.
+
+Workflow ID: ${WORKFLOW_ID}
+Command: /todo ${ARGS}
+```
+
+**Recovery Commands**:
+```bash
+# View recent TODO.md commits
+git log --oneline .claude/TODO.md
+
+# Restore TODO.md from specific commit
+git checkout <commit-hash> -- .claude/TODO.md
+
+# Revert entire TODO.md update commit
+git revert <commit-hash>
+
+# View diff between current and previous version
+git diff HEAD~1 .claude/TODO.md
+```
+
+**Deprecation Notice**:
+File-based backups (`.backup`, `.backup_${WORKFLOW_ID}`) are deprecated for TODO.md as of 2025-12-01. Git provides superior recovery with full history and context.
+
 ## Backup File Naming Convention
 
 All backup files follow this naming pattern:

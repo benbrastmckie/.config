@@ -88,6 +88,44 @@ Topic breakdown utilities for research workflows.
 - `decompose_topic()` - Break topic into subtopics
 - `prioritize_subtopics()` - Prioritize subtopics by importance
 
+### standards-extraction.sh
+Project standards extraction from CLAUDE.md for plan creation.
+
+**Key Functions:**
+- `extract_claude_section(section_name)` - Extract single named section from CLAUDE.md
+- `extract_planning_standards()` - Extract all 6 planning-relevant sections
+- `format_standards_for_prompt()` - Format sections for agent prompt injection
+- `validate_standards_extraction()` - Test standards extraction functionality
+
+**Planning-Relevant Sections:**
+- `code_standards` - Coding conventions and patterns
+- `testing_protocols` - Test discovery and coverage requirements
+- `documentation_policy` - Documentation standards and formats
+- `error_logging` - Error handling integration
+- `clean_break_development` - Refactoring approach
+- `directory_organization` - File placement rules
+
+**Usage:**
+```bash
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/standards-extraction.sh"
+
+# Extract single section
+content=$(extract_claude_section "code_standards")
+
+# Extract all planning standards
+standards=$(extract_planning_standards)
+
+# Format for agent prompt
+formatted=$(format_standards_for_prompt)
+echo "$formatted"  # Returns markdown with ### headers
+
+# Validate extraction works
+validate_standards_extraction
+```
+
+**Integration Pattern:**
+Used by `/plan`, `/revise`, and other planning commands to inject project standards into agent prompts. Enables automatic standards validation and divergence detection (Phase 0 protocol). See [Standards Integration Pattern](../../docs/guides/patterns/standards-integration.md) for complete usage.
+
 ### topic-utils.sh
 Topic directory management and naming.
 

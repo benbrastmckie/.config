@@ -320,9 +320,14 @@ The Lean 4 language server provides:
 **Configuration**: Automatic when `lean.nvim` plugin loaded
 
 **Commands**:
-- `:LeanInfoviewEnable` - Show infoview
-- `:LeanInfoviewDisable` - Hide infoview
-- `:LeanRestartServer` - Restart Lean LSP
+- `:LeanGoal` - Show goal state in preview window
+- `:LeanTermGoal` - Show term-mode type information
+
+**Keybindings**:
+- `<leader>ri` - Toggle infoview (custom keybinding)
+- `<LocalLeader>i` - Toggle infoview (native lean.nvim keybinding, requires maplocalleader configured)
+
+**Note**: The maplocalleader is configured as comma (`,`) in `init.lua`, enabling all native lean.nvim keybindings. See lean.nvim documentation for additional available keybindings.
 
 ### Custom LSP for Model Checkers
 
