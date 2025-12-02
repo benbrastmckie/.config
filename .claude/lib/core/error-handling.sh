@@ -2060,6 +2060,9 @@ validate_agent_output_with_retry() {
   local timeout_seconds="${4:-5}"
   local max_retries="${5:-3}"
 
+  # Track total execution time for diagnostics
+  local start_time=$(date +%s)
+
   for retry in $(seq 1 $max_retries); do
     local elapsed=0
     while [ $elapsed -lt $timeout_seconds ]; do
@@ -2069,6 +2072,10 @@ validate_agent_output_with_retry() {
           if $format_validator "$expected_file"; then
             return 0  # Success: file exists and passes validation
           else
+            # Get file size for diagnostics
+            local file_size=$(stat -c%s "$expected_file" 2>/dev/null || stat -f%z "$expected_file" 2>/dev/null || echo 0)
+            local execution_time=$(($(date +%s) - start_time))
+
             log_command_error \
               "${COMMAND_NAME:-/unknown}" \
               "${WORKFLOW_ID:-unknown}" \
@@ -2076,7 +2083,9 @@ validate_agent_output_with_retry() {
               "validation_error" \
               "Agent $agent_name output file failed format validation (retry $retry/$max_retries)" \
               "validate_agent_output_with_retry" \
-              "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" --argjson retry "$retry" '{agent: $agent, output_file: $file, retry: $retry}')"
+              "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" --argjson retry "$retry" \
+                --argjson file_size "$file_size" --argjson exec_time "$execution_time" \
+                '{agent: $agent, output_file: $file, retry: $retry, file_size_bytes: $file_size, execution_time_seconds: $exec_time}')"
 
             # Remove invalid file before retry
             rm -f "$expected_file" 2>/dev/null
@@ -2097,6 +2106,15 @@ validate_agent_output_with_retry() {
   done
 
   # All retries exhausted: file not created or validation failed
+  local execution_time=$(($(date +%s) - start_time))
+  local file_exists="false"
+  local file_size=0
+
+  if [ -f "$expected_file" ]; then
+    file_exists="true"
+    file_size=$(stat -c%s "$expected_file" 2>/dev/null || stat -f%z "$expected_file" 2>/dev/null || echo 0)
+  fi
+
   log_command_error \
     "${COMMAND_NAME:-/unknown}" \
     "${WORKFLOW_ID:-unknown}" \
@@ -2104,7 +2122,9 @@ validate_agent_output_with_retry() {
     "agent_error" \
     "Agent $agent_name did not create valid output file after $max_retries attempts" \
     "validate_agent_output_with_retry" \
-    "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" --argjson retries "$max_retries" '{agent: $agent, expected_file: $file, retries: $retries}')"
+    "$(jq -n --arg agent "$agent_name" --arg file "$expected_file" --argjson retries "$max_retries" \
+      --arg file_exists "$file_exists" --argjson file_size "$file_size" --argjson exec_time "$execution_time" \
+      '{agent: $agent, expected_file: $file, retries: $retries, file_exists: $file_exists, file_size_bytes: $file_size, execution_time_seconds: $exec_time}')"
 
   return 1
 }
