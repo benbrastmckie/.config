@@ -90,6 +90,58 @@ Tasks:
 EOF
 }
 
+create_test_plan_h2() {
+  local path="$1"
+  cat > "$path" <<'EOF'
+# Test Plan H2 Format
+
+## Implementation Phases
+
+## Phase 1: Setup [NOT STARTED]
+
+Tasks:
+- [ ] Task 1
+- [ ] Task 2
+
+## Phase 2: Implementation [NOT STARTED]
+
+Tasks:
+- [ ] Task 3
+- [ ] Task 4
+
+## Phase 3: Testing [NOT STARTED]
+
+Tasks:
+- [ ] Task 5
+EOF
+}
+
+create_test_plan_h3() {
+  local path="$1"
+  cat > "$path" <<'EOF'
+# Test Plan H3 Format
+
+## Implementation Phases
+
+### Phase 1: Setup [NOT STARTED]
+
+Tasks:
+- [ ] Task 1
+- [ ] Task 2
+
+### Phase 2: Implementation [NOT STARTED]
+
+Tasks:
+- [ ] Task 3
+- [ ] Task 4
+
+### Phase 3: Testing [NOT STARTED]
+
+Tasks:
+- [ ] Task 5
+EOF
+}
+
 # Test remove_status_marker
 test_remove_status_marker() {
   echo "Testing remove_status_marker..."
@@ -284,6 +336,117 @@ test_marker_lifecycle() {
   rm -f "$test_file"
 }
 
+# Test h2 format support
+test_h2_format_support() {
+  echo "Testing h2 format support..."
+
+  local test_file=$(mktemp)
+  create_test_plan_h2 "$test_file"
+
+  # Test add_in_progress_marker with h2 format
+  add_in_progress_marker "$test_file" "1"
+  if grep -q "## Phase 1.*\[IN PROGRESS\]" "$test_file" && ! grep -q "\[NOT STARTED\].*Phase 1" "$test_file"; then
+    test_pass "H2: add_in_progress_marker works with ## Phase format"
+  else
+    test_fail "H2: add_in_progress_marker works with ## Phase format"
+  fi
+
+  # Test add_complete_marker with h2 format
+  sed -i '/^## Phase 1:/,/^## Phase 2:/ s/- \[ \]/- [x]/' "$test_file"
+  add_complete_marker "$test_file" "1"
+  if grep -q "## Phase 1.*\[COMPLETE\]" "$test_file"; then
+    test_pass "H2: add_complete_marker works with ## Phase format"
+  else
+    test_fail "H2: add_complete_marker works with ## Phase format"
+  fi
+
+  # Test add_not_started_markers with h2 format
+  create_test_plan_h2 "$test_file"
+  sed -i 's/\[NOT STARTED\]//g' "$test_file"
+  add_not_started_markers "$test_file"
+  local count=$(grep -E -c "^## Phase.*\[NOT STARTED\]" "$test_file")
+  if [ "$count" -eq 3 ]; then
+    test_pass "H2: add_not_started_markers works with ## Phase format"
+  else
+    test_fail "H2: add_not_started_markers works with ## Phase format (got $count, expected 3)"
+  fi
+
+  # Test mark_phase_complete with h2 format
+  create_test_plan_h2 "$test_file"
+  mark_phase_complete "$test_file" "1"
+  if grep -q "## Phase 1" "$test_file" && grep -q -- "- \[x\] Task 1" "$test_file" && grep -q -- "- \[x\] Task 2" "$test_file"; then
+    test_pass "H2: mark_phase_complete works with ## Phase format"
+  else
+    test_fail "H2: mark_phase_complete works with ## Phase format"
+  fi
+
+  # Test verify_phase_complete with h2 format
+  create_test_plan_h2 "$test_file"
+  sed -i '/^## Phase 1:/,/^## Phase 2:/ s/- \[ \]/- [x]/' "$test_file"
+  if verify_phase_complete "$test_file" "1"; then
+    test_pass "H2: verify_phase_complete works with ## Phase format"
+  else
+    test_fail "H2: verify_phase_complete works with ## Phase format"
+  fi
+
+  # Test check_all_phases_complete with h2 format
+  create_test_plan_h2 "$test_file"
+  sed -i 's/\[NOT STARTED\]/[COMPLETE]/g' "$test_file"
+  if check_all_phases_complete "$test_file"; then
+    test_pass "H2: check_all_phases_complete works with ## Phase format"
+  else
+    test_fail "H2: check_all_phases_complete works with ## Phase format"
+  fi
+
+  rm -f "$test_file"
+}
+
+# Test h3 format backwards compatibility
+test_h3_backwards_compatibility() {
+  echo "Testing h3 format backwards compatibility..."
+
+  local test_file=$(mktemp)
+  create_test_plan_h3 "$test_file"
+
+  # Test add_in_progress_marker with h3 format
+  add_in_progress_marker "$test_file" "1"
+  if grep -q "### Phase 1.*\[IN PROGRESS\]" "$test_file"; then
+    test_pass "H3: add_in_progress_marker works with ### Phase format"
+  else
+    test_fail "H3: add_in_progress_marker works with ### Phase format"
+  fi
+
+  # Test add_complete_marker with h3 format
+  sed -i '/^### Phase 1:/,/^### Phase 2:/ s/- \[ \]/- [x]/' "$test_file"
+  add_complete_marker "$test_file" "1"
+  if grep -q "### Phase 1.*\[COMPLETE\]" "$test_file"; then
+    test_pass "H3: add_complete_marker works with ### Phase format"
+  else
+    test_fail "H3: add_complete_marker works with ### Phase format"
+  fi
+
+  # Test verify all functions work with h3 (backwards compatibility)
+  create_test_plan_h3 "$test_file"
+  add_not_started_markers "$test_file"
+  mark_phase_complete "$test_file" "1"
+  if verify_phase_complete "$test_file" "1"; then
+    test_pass "H3: Full workflow backwards compatible with ### Phase format"
+  else
+    test_fail "H3: Full workflow backwards compatible with ### Phase format"
+  fi
+
+  # Test check_all_phases_complete with h3 format
+  create_test_plan_h3 "$test_file"
+  sed -i 's/\[NOT STARTED\]/[COMPLETE]/g' "$test_file"
+  if check_all_phases_complete "$test_file"; then
+    test_pass "H3: check_all_phases_complete works with ### Phase format"
+  else
+    test_fail "H3: check_all_phases_complete works with ### Phase format"
+  fi
+
+  rm -f "$test_file"
+}
+
 # Test edge cases
 test_edge_cases() {
   echo "Testing edge cases..."
@@ -320,6 +483,12 @@ test_add_not_started_markers
 echo ""
 
 test_marker_lifecycle
+echo ""
+
+test_h2_format_support
+echo ""
+
+test_h3_backwards_compatibility
 echo ""
 
 test_edge_cases

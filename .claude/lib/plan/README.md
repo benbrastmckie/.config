@@ -21,19 +21,32 @@ RECOMMENDATIONS=$(run_auto_analysis "$PLAN_FILE")
 ```
 
 ### checkbox-utils.sh
-Plan checkbox manipulation for progress tracking.
+Plan checkbox manipulation for progress tracking. Supports both h2 (`## Phase`) and h3 (`### Phase`) heading formats.
 
 **Key Functions:**
 - `update_checkbox()` - Update checkbox state in file
 - `mark_phase_complete()` - Mark phase checkbox as complete
-- `add_in_progress_marker()` - Add [IN PROGRESS] marker
-- `add_complete_marker()` - Add [COMPLETE] marker
+- `add_in_progress_marker()` - Add [IN PROGRESS] marker to phase heading
+- `add_complete_marker()` - Add [COMPLETE] marker to phase heading
+- `add_not_started_markers()` - Add [NOT STARTED] markers to legacy plans
+- `verify_phase_complete()` - Verify all tasks in phase are checked
+- `check_all_phases_complete()` - Check if all phases have [COMPLETE] markers
+
+**Heading Format Support:**
+All functions use dynamic pattern matching (`^##+ Phase`) that works with both:
+- H2 format: `## Phase 1: Setup [NOT STARTED]`
+- H3 format: `### Phase 1: Setup [NOT STARTED]`
 
 **Usage:**
 ```bash
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh"
+
+# Works with both ## Phase and ### Phase headings
 mark_phase_complete "$PLAN_FILE" 3
 add_in_progress_marker "$PLAN_FILE" 4
+
+# Add markers to legacy plans (supports both formats)
+add_not_started_markers "$PLAN_FILE"
 ```
 
 ### complexity-utils.sh

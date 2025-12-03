@@ -3,21 +3,22 @@
 #
 # Utilities for updating checkboxes and status markers across plan hierarchy levels.
 # Supports progressive plan structures (Level 0/1/2).
+# Supports both h2 (## Phase) and h3 (### Phase) heading formats via dynamic pattern matching.
 #
 # Functions:
 #   - update_checkbox() - Update a single checkbox with fuzzy matching
 #   - propagate_checkbox_update() - Propagate checkbox state across hierarchy
 #   - verify_checkbox_consistency() - Verify all levels synchronized
-#   - mark_phase_complete() - Mark all tasks in a phase as complete
+#   - mark_phase_complete() - Mark all tasks in a phase as complete (h2/h3 compatible)
 #   - mark_stage_complete() - Mark all tasks in a stage as complete
 #   - propagate_progress_marker() - Propagate status marker to hierarchy
-#   - remove_status_marker() - Remove status marker from phase heading
-#   - add_in_progress_marker() - Add [IN PROGRESS] marker to phase heading
-#   - add_complete_marker() - Add [COMPLETE] marker to phase heading
-#   - add_not_started_markers() - Add [NOT STARTED] to legacy plans
-#   - verify_phase_complete() - Verify all tasks in phase are complete
+#   - remove_status_marker() - Remove status marker from phase heading (h2/h3 compatible)
+#   - add_in_progress_marker() - Add [IN PROGRESS] marker to phase heading (h2/h3 compatible)
+#   - add_complete_marker() - Add [COMPLETE] marker to phase heading (h2/h3 compatible)
+#   - add_not_started_markers() - Add [NOT STARTED] to legacy plans (h2/h3 compatible)
+#   - verify_phase_complete() - Verify all tasks in phase are complete (h2/h3 compatible)
 #   - update_plan_status() - Update metadata status field in plan
-#   - check_all_phases_complete() - Check if all phases have [COMPLETE] marker
+#   - check_all_phases_complete() - Check if all phases have [COMPLETE] marker (h2/h3 compatible)
 
 set -e
 
@@ -201,7 +202,7 @@ mark_phase_complete() {
     # Extract phase content and mark all tasks complete
     local temp_file=$(mktemp)
     awk -v phase="$phase_num" '
-      /^### Phase / {
+      /^##+ Phase / {
         phase_field = $3
         gsub(/:/, "", phase_field)
         if (phase_field == phase) {
@@ -212,7 +213,7 @@ mark_phase_complete() {
         print
         next
       }
-      /^## / && in_phase {
+      /^#+ / && !/^##+ Phase / && in_phase {
         in_phase = 0
         print
         next
@@ -246,7 +247,7 @@ mark_phase_complete() {
   # Mark all tasks in main plan for this phase as complete
   local temp_file=$(mktemp)
   awk -v phase="$phase_num" '
-    /^### Phase / {
+    /^##+ Phase / {
       phase_field = $3
       gsub(/:/, "", phase_field)
       if (phase_field == phase) {
@@ -257,7 +258,7 @@ mark_phase_complete() {
       print
       next
     }
-    /^## / && in_phase {
+    /^#+ / && !/^##+ Phase / && in_phase {
       in_phase = 0
       print
       next
@@ -417,7 +418,7 @@ remove_status_marker() {
   # Remove any existing status marker from phase heading
   local temp_file=$(mktemp)
   awk -v phase="$phase_num" '
-    /^### Phase / {
+    /^##+ Phase / {
       phase_field = $3
       gsub(/:/, "", phase_field)
       if (phase_field == phase) {
@@ -451,7 +452,7 @@ add_in_progress_marker() {
   # Add [IN PROGRESS] marker to phase heading
   local temp_file=$(mktemp)
   awk -v phase="$phase_num" '
-    /^### Phase / {
+    /^##+ Phase / {
       phase_field = $3
       gsub(/:/, "", phase_field)
       if (phase_field == phase && !/\[IN PROGRESS\]/) {
@@ -490,7 +491,7 @@ add_complete_marker() {
   # Add [COMPLETE] marker to phase heading
   local temp_file=$(mktemp)
   awk -v phase="$phase_num" '
-    /^### Phase / {
+    /^##+ Phase / {
       phase_field = $3
       gsub(/:/, "", phase_field)
       if (phase_field == phase && !/\[COMPLETE\]/) {
@@ -520,7 +521,7 @@ add_not_started_markers() {
   # Add [NOT STARTED] marker to phase headings that don't have any status marker
   local temp_file=$(mktemp)
   awk '
-    /^### Phase [0-9]+:/ {
+    /^##+ Phase [0-9]+:/ {
       # Check if line already has a status marker
       if (!/\[(NOT STARTED|IN PROGRESS|COMPLETE|BLOCKED|SKIPPED)\]/) {
         # Add [NOT STARTED] marker
@@ -535,7 +536,7 @@ add_not_started_markers() {
   mv "$temp_file" "$plan_path"
 
   # Log for user visibility
-  local count=$(grep -c "^### Phase.*\[NOT STARTED\]" "$plan_path" 2>/dev/null || echo "0")
+  local count=$(grep -E -c "^##+ Phase.*\[NOT STARTED\]" "$plan_path" 2>/dev/null || echo "0")
   if [[ "$count" -gt 0 ]]; then
     if type log &>/dev/null; then
       log "Added [NOT STARTED] markers to $count phases in legacy plan"
@@ -561,7 +562,7 @@ verify_phase_complete() {
   # Check if any unchecked boxes remain in the phase
   local unchecked_count
   unchecked_count=$(awk -v phase="$phase_num" '
-    /^### Phase / {
+    /^##+ Phase / {
       phase_field = $3
       gsub(/:/, "", phase_field)
       if (phase_field == phase) {
@@ -571,7 +572,7 @@ verify_phase_complete() {
       }
       next
     }
-    /^## / && in_phase {
+    /^#+ / && !/^##+ Phase / && in_phase {
       in_phase = 0
       next
     }
@@ -662,7 +663,7 @@ check_all_phases_complete() {
   fi
 
   # Count total phases
-  local total_phases=$(grep -c "^### Phase [0-9]" "$plan_path" 2>/dev/null || echo "0")
+  local total_phases=$(grep -E -c "^##+ Phase [0-9]" "$plan_path" 2>/dev/null || echo "0")
 
   if [[ "$total_phases" -eq 0 ]]; then
     # No phases found, consider complete
@@ -670,7 +671,7 @@ check_all_phases_complete() {
   fi
 
   # Count phases with [COMPLETE] marker
-  local complete_phases=$(grep -c "^### Phase [0-9].*\[COMPLETE\]" "$plan_path" 2>/dev/null || echo "0")
+  local complete_phases=$(grep -E -c "^##+ Phase [0-9].*\[COMPLETE\]" "$plan_path" 2>/dev/null || echo "0")
 
   if [[ "$complete_phases" -eq "$total_phases" ]]; then
     return 0
