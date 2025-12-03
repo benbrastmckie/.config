@@ -34,6 +34,7 @@ declare -A TEST_CATEGORIES=(
   ["System Validation - Commands"]="validate_command_behavioral_injection.sh"
   ["System Validation - Artifacts"]="validate_topic_based_artifacts.sh"
   ["E2E Tests - /implement"]="e2e_implement_plan_execution.sh"
+  ["Integration Tests - Progress Tracking"]="test_implement_progress_tracking.sh"
 )
 
 # Track test results
@@ -181,7 +182,8 @@ print_coverage_report() {
   echo "  - Component Tests: 1 suite (implement)"
   echo "  - System Validation: 3 suites (agents, commands, artifacts)"
   echo "  - E2E Tests: 1 suite (implement execution)"
-  echo "  - Total: 6 test suites"
+  echo "  - Integration Tests: 1 suite (progress tracking)"
+  echo "  - Total: 7 test suites"
   echo ""
 
   echo "Coverage Metrics:"
@@ -216,6 +218,9 @@ main() {
 
   section_header "Phase 4: End-to-End Integration Tests"
   run_test_suite "E2E Tests - /implement" "e2e_implement_plan_execution.sh"
+
+  section_header "Phase 5: Progress Tracking Tests"
+  run_test_suite "Integration Tests - Progress Tracking" "test_implement_progress_tracking.sh"
 
   # Results summary
   print_results_table

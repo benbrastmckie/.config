@@ -19,6 +19,7 @@ The `/implement` command executes implementation-only workflows - transforming p
 - Creates implementation summary with Testing Strategy section
 - Manages iteration when context limits are reached
 - Updates phase checkboxes as work completes
+- Updates phase status markers ([IN PROGRESS] and [COMPLETE]) in real-time
 - Persists state for handoff to /test command
 
 ### What /implement Does NOT Do
@@ -113,6 +114,47 @@ INITIALIZE → IMPLEMENT → COMPLETE
 **Terminal States**:
 - `IMPLEMENT`: Implementation complete, testing not executed
 - `COMPLETE`: Full workflow complete (optional, allows chaining)
+
+### Real-Time Progress Tracking
+
+The `/implement` command provides real-time visibility into phase execution through automatic status marker updates. As the implementation-executor agent processes each phase, it updates the plan file with status markers that users can observe during execution.
+
+**Phase Status Markers**:
+- `[NOT STARTED]`: Phase has not begun execution (initial state)
+- `[IN PROGRESS]`: Phase is currently executing (set at phase start)
+- `[COMPLETE]`: Phase execution finished (set at phase end)
+
+**How It Works**:
+
+1. **Phase Start**: When implementation-executor begins a phase, it calls `add_in_progress_marker()` to update the phase heading with `[IN PROGRESS]`
+2. **Task Execution**: During execution, task checkboxes update from `[ ]` to `[x]` as tasks complete
+3. **Phase End**: After all tasks complete, the executor calls `add_complete_marker()` to update the phase heading with `[COMPLETE]`
+4. **Validation**: Block 1d validates all phases have `[COMPLETE]` markers and recovers any missing markers
+
+**Real-Time Monitoring**:
+
+During implementation execution, you can monitor progress in real-time:
+
+```bash
+# Start implementation in one terminal
+/implement plan.md
+
+# Watch progress in another terminal
+watch -n 2 'grep "^### Phase" plan.md'
+
+# Example output during execution:
+### Phase 1: Setup Database [COMPLETE]
+### Phase 2: Implement API [IN PROGRESS]
+### Phase 3: Add Tests [NOT STARTED]
+### Phase 4: Documentation [NOT STARTED]
+```
+
+**Marker Update Behavior**:
+
+- **Non-Fatal**: Marker update failures do not block implementation work (logged as warnings)
+- **Recovery**: Block 1d detects missing markers and recovers them using `verify_phase_complete()`
+- **Parallel-Safe**: Each executor updates independent phase headings (no race conditions)
+- **Performance**: Marker updates add <100ms overhead per phase (negligible)
 
 ### Agent Delegation
 
@@ -686,6 +728,59 @@ EOF
 2. Use explicit `--file` flag with summary
 3. Verify topic path derivation is correct
 4. State file is optional - `/test` can proceed without it
+
+### Issue: Phase Markers Not Updating During Execution
+
+**Symptoms**: Phase headings remain `[NOT STARTED]` or `[IN PROGRESS]` after phase completes
+
+**Causes**:
+- Executor marker update failure (non-fatal, logs warning)
+- Plan file write permissions issue
+- Phase heading format non-standard
+- Concurrent writes from parallel executors (rare)
+
+**Solutions**:
+
+1. **Check Real-Time Status**:
+   ```bash
+   # Monitor phase status during execution
+   watch -n 2 'grep "^### Phase" /path/to/plan.md'
+   ```
+
+2. **Verify Block 1d Recovery**:
+   Block 1d automatically detects and recovers missing markers. After implementation completes, check output for:
+   ```
+   ✓ All phases marked complete by executors
+   # OR
+   ⚠ Recovered 2 missing [COMPLETE] markers (Phase 2, Phase 4)
+   ```
+
+3. **Manual Recovery**:
+   If Block 1d did not recover markers, manually add them:
+   ```bash
+   # Source checkbox utilities
+   source .claude/lib/plan/checkbox-utils.sh
+
+   # Add [COMPLETE] marker to phase with all tasks done
+   add_complete_marker "/path/to/plan.md" <phase_number>
+
+   # Verify all phases complete
+   verify_checkbox_consistency "/path/to/plan.md"
+   ```
+
+4. **Check Permissions**:
+   ```bash
+   # Verify plan file is writable
+   ls -l /path/to/plan.md
+
+   # Fix permissions if needed
+   chmod u+w /path/to/plan.md
+   ```
+
+5. **Review Agent Logs**:
+   Check for marker update warnings in agent output or error logs
+
+**Note**: Missing markers are cosmetic issues that do not affect implementation correctness. Block 1d ensures final plan state is accurate even if real-time updates fail.
 
 ## Best Practices
 

@@ -23,9 +23,9 @@ Plans progress through three primary states:
 
 | Marker | Applied By | When Applied |
 |--------|------------|--------------|
-| `[NOT STARTED]` | plan-architect agent | Plan creation |
-| `[IN PROGRESS]` | /build command | Phase execution begins |
-| `[COMPLETE]` | /build command | Phase execution ends successfully |
+| `[NOT STARTED]` | plan-architect agent (plan creation) or /implement Block 1a (legacy compatibility) | Plan creation or initialization |
+| `[IN PROGRESS]` | implementation-executor agent (STEP 1) | Phase execution begins |
+| `[COMPLETE]` | implementation-executor agent (STEP 3) or /implement Block 1d (recovery) | Phase execution ends successfully |
 | `[BLOCKED]` | /build command | Phase cannot proceed due to failures |
 | `[SKIPPED]` | User/Agent | Phase intentionally skipped |
 
@@ -142,14 +142,49 @@ dependencies: []
 **Complexity**: Low
 ```
 
-### /build Command
+### /implement and /build Commands
 
-The build command manages marker transitions:
+Both commands initialize and validate progress markers:
 
-1. **Startup**: Sources `checkbox-utils.sh`
-2. **Legacy Detection**: Adds `[NOT STARTED]` to unmarked phases
-3. **Phase Start**: Calls `add_in_progress_marker()` for starting phase
-4. **Phase Complete**: Calls `add_complete_marker()` for finished phases
+1. **Block 1a (Setup)**: Sources `checkbox-utils.sh` and calls `add_not_started_markers()` for legacy plan compatibility
+2. **Block 1d (Validation)**: Validates all phases have `[COMPLETE]` markers and recovers any missing markers
+
+### implementation-executor Agent
+
+The implementation-executor agent is responsible for real-time marker updates during phase execution:
+
+**Phase Start (STEP 1)**:
+```bash
+# Source checkbox utilities
+source "$CLAUDE_LIB/plan/checkbox-utils.sh" 2>/dev/null || {
+    echo "Warning: Cannot load checkbox-utils.sh, progress tracking disabled"
+    PROGRESS_TRACKING_ENABLED=false
+}
+
+# Mark phase in progress
+if [[ "$PROGRESS_TRACKING_ENABLED" != "false" ]]; then
+    add_in_progress_marker "$PLAN_FILE" "$PHASE_NUM" 2>/dev/null || {
+        echo "Warning: Failed to mark Phase $PHASE_NUM as [IN PROGRESS]"
+    }
+fi
+```
+
+**Phase End (STEP 3)**:
+```bash
+# Mark phase complete
+if [[ "$PROGRESS_TRACKING_ENABLED" != "false" ]]; then
+    add_complete_marker "$PLAN_FILE" "$PHASE_NUM" 2>/dev/null || {
+        echo "Warning: Failed to mark Phase $PHASE_NUM as [COMPLETE]"
+        # Fallback to legacy mark_phase_complete (updates checkboxes only)
+        mark_phase_complete "$PLAN_FILE" "$PHASE_NUM" 2>/dev/null || true
+    }
+fi
+```
+
+**Error Handling**:
+- Marker update failures are non-fatal (logged as warnings)
+- Execution continues even if marker updates fail
+- Block 1d recovery ensures final plan state is correct
 
 ## Legacy Plan Compatibility
 

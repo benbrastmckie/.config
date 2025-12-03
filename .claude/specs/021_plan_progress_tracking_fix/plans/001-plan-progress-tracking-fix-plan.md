@@ -4,7 +4,7 @@
 - **Date**: 2025-12-02
 - **Feature**: Fix /implement plan file progress tracking to update phase markers in real-time during execution
 - **Scope**: Integrate checkbox-utils.sh into implementation-executor agent to mark phases [IN PROGRESS] and [COMPLETE] as they execute, replacing deferred batch updates with real-time progress visibility
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETE]
 - **Estimated Hours**: 11-13 hours
 - **Complexity Score**: 125 (Medium-High)
 - **Structure Level**: 0
@@ -82,7 +82,7 @@ Research recommends Solution 1 (Executor-Level Phase Tracking) as it provides re
 
 ## Implementation Phases
 
-### Phase 1: Update implementation-executor Agent [NOT STARTED]
+### Phase 1: Update implementation-executor Agent [COMPLETE]
 dependencies: []
 
 **Objective**: Add checkbox-utils.sh integration to implementation-executor for phase-level status markers
@@ -90,22 +90,22 @@ dependencies: []
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Add STEP 1 initialization: Source checkbox-utils.sh with error handling (file: .claude/agents/implementation-executor.md, after line 50)
-- [ ] Add STEP 1 marker update: Call `add_in_progress_marker()` for phase start (file: .claude/agents/implementation-executor.md, after sourcing block)
-- [ ] Add STEP 3 completion marker: Call `add_complete_marker()` after all tasks complete (file: .claude/agents/implementation-executor.md, before spec-updater invocation at line 109)
-- [ ] Add STEP 3 fallback logic: Use `mark_phase_complete()` if `add_complete_marker()` verification fails (file: .claude/agents/implementation-executor.md, in STEP 3)
-- [ ] Update STEP 5 return signal: Add `phase_marker_updated: true|false` field to PHASE_COMPLETE signal (file: .claude/agents/implementation-executor.md, return signal section)
-- [ ] Add error handling section: Document non-fatal marker update failures (file: .claude/agents/implementation-executor.md, error handling section)
+- [x] Add STEP 1 initialization: Source checkbox-utils.sh with error handling (file: .claude/agents/implementation-executor.md, after line 50)
+- [x] Add STEP 1 marker update: Call `add_in_progress_marker()` for phase start (file: .claude/agents/implementation-executor.md, after sourcing block)
+- [x] Add STEP 3 completion marker: Call `add_complete_marker()` after all tasks complete (file: .claude/agents/implementation-executor.md, before spec-updater invocation at line 109)
+- [x] Add STEP 3 fallback logic: Use `mark_phase_complete()` if `add_complete_marker()` verification fails (file: .claude/agents/implementation-executor.md, in STEP 3)
+- [x] Update STEP 5 return signal: Add `phase_marker_updated: true|false` field to PHASE_COMPLETE signal (file: .claude/agents/implementation-executor.md, return signal section)
+- [x] Add error handling section: Document non-fatal marker update failures (file: .claude/agents/implementation-executor.md, error handling section)
 
 **Testing**:
 ```bash
 # Create test plan with single phase
 cat > /tmp/test_plan.md <<'EOF'
-### Phase 1: Test Phase [NOT STARTED]
+### Phase 1: Test Phase [COMPLETE]
 
 **Tasks**:
-- [ ] Task 1
-- [ ] Task 2
+- [x] Task 1
+- [x] Task 2
 EOF
 
 # Manually invoke implementation-executor agent (via /implement)
@@ -122,7 +122,7 @@ cat /tmp/test_plan.md | grep "### Phase 1:"
 
 **Expected Duration**: 2-3 hours
 
-### Phase 2: Update implementer-coordinator Agent [NOT STARTED]
+### Phase 2: Update implementer-coordinator Agent [COMPLETE]
 dependencies: [1]
 
 **Objective**: Modify coordinator to expect and validate phase marker updates from executors
@@ -130,10 +130,10 @@ dependencies: [1]
 **Complexity**: Low-Medium
 
 **Tasks**:
-- [ ] Update STEP 4 progress monitoring: Add optional validation for phase [COMPLETE] markers (file: .claude/agents/implementer-coordinator.md, STEP 4 section around line 332)
-- [ ] Add marker validation bash block: Check if phase heading has [COMPLETE] marker after executor reports success (file: .claude/agents/implementer-coordinator.md, in STEP 4)
-- [ ] Update output format: Add `phases_with_markers: N` field to IMPLEMENTATION_COMPLETE signal (file: .claude/agents/implementer-coordinator.md, output format section around line 522)
-- [ ] Add non-fatal warning: Log warning if marker missing but do not fail (coordinator trusts Block 1d recovery)
+- [x] Update STEP 4 progress monitoring: Add optional validation for phase [COMPLETE] markers (file: .claude/agents/implementer-coordinator.md, STEP 4 section around line 332)
+- [x] Add marker validation bash block: Check if phase heading has [COMPLETE] marker after executor reports success (file: .claude/agents/implementer-coordinator.md, in STEP 4)
+- [x] Update output format: Add `phases_with_markers: N` field to IMPLEMENTATION_COMPLETE signal (file: .claude/agents/implementer-coordinator.md, output format section around line 522)
+- [x] Add non-fatal warning: Log warning if marker missing but do not fail (coordinator trusts Block 1d recovery)
 
 **Testing**:
 ```bash
@@ -148,7 +148,7 @@ grep "phases_with_markers" .claude/specs/*/summaries/*.md
 
 **Expected Duration**: 1-2 hours
 
-### Phase 3: Simplify /implement Block 1d [NOT STARTED]
+### Phase 3: Simplify /implement Block 1d [COMPLETE]
 dependencies: [1, 2]
 
 **Objective**: Convert Block 1d from batch-update to validation-and-recovery mode
@@ -156,12 +156,12 @@ dependencies: [1, 2]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Update Block 1d header: Change title from "Phase Marker Update" to "Phase Marker Validation and Recovery" (file: .claude/commands/implement.md, line 1041)
-- [ ] Refactor Block 1d logic: Replace batch marking loop with validation check (file: .claude/commands/implement.md, lines 1070-1180)
-- [ ] Add validation output: Count phases with [COMPLETE] marker vs total phases (file: .claude/commands/implement.md, Block 1d)
-- [ ] Add recovery logic: Mark phases with all checkboxes complete but missing [COMPLETE] marker (file: .claude/commands/implement.md, Block 1d)
-- [ ] Add verification step: Call `verify_checkbox_consistency()` after recovery (file: .claude/commands/implement.md, end of Block 1d)
-- [ ] Update Block 1d comments: Document validation-and-recovery rationale (file: .claude/commands/implement.md, Block 1d header)
+- [x] Update Block 1d header: Change title from "Phase Marker Update" to "Phase Marker Validation and Recovery" (file: .claude/commands/implement.md, line 1041)
+- [x] Refactor Block 1d logic: Replace batch marking loop with validation check (file: .claude/commands/implement.md, lines 1070-1180)
+- [x] Add validation output: Count phases with [COMPLETE] marker vs total phases (file: .claude/commands/implement.md, Block 1d)
+- [x] Add recovery logic: Mark phases with all checkboxes complete but missing [COMPLETE] marker (file: .claude/commands/implement.md, Block 1d)
+- [x] Add verification step: Call `verify_checkbox_consistency()` after recovery (file: .claude/commands/implement.md, end of Block 1d)
+- [x] Update Block 1d comments: Document validation-and-recovery rationale (file: .claude/commands/implement.md, Block 1d header)
 
 **Testing**:
 ```bash
@@ -182,7 +182,7 @@ cat test_plan.md | grep "### Phase 2:"
 
 **Expected Duration**: 2 hours
 
-### Phase 4: Update /build Command [NOT STARTED]
+### Phase 4: Update /build Command [COMPLETE]
 dependencies: [3]
 
 **Objective**: Apply the same fix to /build command for consistency
@@ -190,10 +190,10 @@ dependencies: [3]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Copy validation-and-recovery logic from /implement Block 1d (file: .claude/commands/build.md, Block 1d section around lines 980-1000)
-- [ ] Adjust variable names if needed: Change PLAN_FILE to match /build naming conventions (file: .claude/commands/build.md, Block 1d)
-- [ ] Verify implementer-coordinator integration: Confirm /build uses same coordinator agent (no changes needed)
-- [ ] Update Block 1d comments: Document validation behavior (file: .claude/commands/build.md, Block 1d)
+- [x] Copy validation-and-recovery logic from /implement Block 1d (file: .claude/commands/build.md, Block 1d section around lines 980-1000)
+- [x] Adjust variable names if needed: Change PLAN_FILE to match /build naming conventions (file: .claude/commands/build.md, Block 1d)
+- [x] Verify implementer-coordinator integration: Confirm /build uses same coordinator agent (no changes needed)
+- [x] Update Block 1d comments: Document validation behavior (file: .claude/commands/build.md, Block 1d)
 
 **Testing**:
 ```bash
@@ -211,7 +211,7 @@ grep "Phase Marker Validation" .claude/output/build-output.md
 
 **Expected Duration**: 1 hour
 
-### Phase 5: Create Integration Tests [NOT STARTED]
+### Phase 5: Create Integration Tests [COMPLETE]
 dependencies: [3, 4]
 
 **Objective**: Add comprehensive tests to prevent regression
@@ -219,13 +219,13 @@ dependencies: [3, 4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create test file: `.claude/tests/integration/test_implement_progress_tracking.sh`
-- [ ] Write test 1: Verify `add_in_progress_marker()` called at phase start
-- [ ] Write test 2: Verify `add_complete_marker()` called at phase end
-- [ ] Write test 3: Verify Block 1d recovery for missing markers
-- [ ] Write test 4: Verify parallel execution does not corrupt plan file
-- [ ] Add to test suite: Update `.claude/tests/integration/test_all_fixes_integration.sh` to include new test
-- [ ] Document test usage: Add test description to test file header
+- [x] Create test file: `.claude/tests/integration/test_implement_progress_tracking.sh`
+- [x] Write test 1: Verify `add_in_progress_marker()` called at phase start
+- [x] Write test 2: Verify `add_complete_marker()` called at phase end
+- [x] Write test 3: Verify Block 1d recovery for missing markers
+- [x] Write test 4: Verify parallel execution does not corrupt plan file
+- [x] Add to test suite: Update `.claude/tests/integration/test_all_fixes_integration.sh` to include new test
+- [x] Document test usage: Add test description to test file header
 
 **Testing**:
 ```bash
@@ -245,7 +245,7 @@ bash .claude/tests/integration/test_all_fixes_integration.sh
 
 **Expected Duration**: 3 hours
 
-### Phase 6: Update Documentation [NOT STARTED]
+### Phase 6: Update Documentation [COMPLETE]
 dependencies: [5]
 
 **Objective**: Document the progress tracking behavior and troubleshooting
@@ -253,11 +253,11 @@ dependencies: [5]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Update implementation-executor docs: Add "Progress Tracking" section documenting marker updates (file: .claude/agents/implementation-executor.md, new section after Core Responsibilities)
-- [ ] Update implement command guide: Add section on real-time progress tracking (file: .claude/docs/guides/commands/implement-command-guide.md, new section)
-- [ ] Update plan progress standards: Document executor responsibility for phase markers (file: .claude/docs/reference/standards/plan-progress.md, update responsibilities section)
-- [ ] Add troubleshooting section: Document missing marker recovery in implement command guide
-- [ ] Update CLAUDE.md if needed: Add reference to real-time tracking in relevant sections
+- [x] Update implementation-executor docs: Add "Progress Tracking" section documenting marker updates (file: .claude/agents/implementation-executor.md, new section after Core Responsibilities)
+- [x] Update implement command guide: Add section on real-time progress tracking (file: .claude/docs/guides/commands/implement-command-guide.md, new section)
+- [x] Update plan progress standards: Document executor responsibility for phase markers (file: .claude/docs/reference/standards/plan-progress.md, update responsibilities section)
+- [x] Add troubleshooting section: Document missing marker recovery in implement command guide
+- [x] Update CLAUDE.md if needed: Add reference to real-time tracking in relevant sections
 
 **Testing**:
 ```bash

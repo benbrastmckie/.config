@@ -196,6 +196,17 @@ export WORKFLOW_ID
 # === UPDATE BASH ERROR TRAP WITH ACTUAL VALUES ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
+# === CHECK FOR STALE STATE FILE ===
+# Detect and clean terminal state from previous workflow instances
+EXPECTED_STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$EXPECTED_STATE_FILE" ]; then
+  EXISTING_STATE=$(grep "^CURRENT_STATE=" "$EXPECTED_STATE_FILE" 2>/dev/null | tail -1 | cut -d'=' -f2- | tr -d '"' || echo "")
+  if [ "$EXISTING_STATE" = "complete" ] || [ "$EXISTING_STATE" = "failed" ]; then
+    echo "WARNING: Previous workflow already in terminal state ($EXISTING_STATE), reinitializing..." >&2
+    rm -f "$EXPECTED_STATE_FILE"  # Clean stale state
+  fi
+fi
+
 # Capture state file path for append_workflow_state
 STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
@@ -229,6 +240,21 @@ if [ $SM_INIT_EXIT -ne 0 ]; then
        '{workflow_type: $type, complexity: $complexity}')"
 
   echo "ERROR: State machine initialization failed" >&2
+  exit 1
+fi
+
+# === VERIFY INITIALIZATION ===
+# Defensive check: Ensure CURRENT_STATE is set before attempting transition
+if [ -z "${CURRENT_STATE:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State machine not initialized - CURRENT_STATE unset" \
+    "bash_block_1a" \
+    "$(jq -n --arg state_file "${STATE_FILE:-MISSING}" '{state_file: $state_file}')"
+  echo "ERROR: State machine not initialized" >&2
   exit 1
 fi
 

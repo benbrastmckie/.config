@@ -597,6 +597,7 @@ return {
       { "<leader>rh", "<cmd>LocalHighlightToggle<CR>", desc = "highlight", icon = "󰠷" },
       { "<leader>rk", "<cmd>BufDeleteFile<CR>", desc = "kill file and buffer", icon = "󰆴" },
       { "<leader>rK", "<cmd>TermExec cmd='rm -rf ~/.local/share/nvim/lazy && rm -f ~/.config/nvim/lazy-lock.json' open=0<CR>", desc = "wipe plugins and lock file", icon = "󰩺" },
+      { "<leader>rb", "<cmd>TermExec cmd='lake build'<CR>", desc = "lean build", icon = "󰐊" },
       { "<leader>ri", function() require('lean.infoview').toggle() end, desc = "toggle infoview", icon = "󰊕" },
       { "<leader>rm", "<cmd>lua RunModelChecker()<CR>", desc = "model checker", icon = "󰐊", mode = "n" },
       { "<leader>rM", "<cmd>lua Snacks.notifier.show_history()<cr>", desc = "show messages", icon = "󰍡" },

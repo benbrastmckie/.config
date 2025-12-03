@@ -1,191 +1,116 @@
-> /research is running… "I want to check that all of the 
-commands that create or modify artifacts also update the
-.claude/TODO.md file accordingly when they start (in the
-case of /implement and /build) or when they complete (in the
- case of all of them, including /implement and /build) so
-that I can keep track of what is in progress or completed,
-or not started, etc., by looking at the .claude/TODO.md for
-the project. Review the .claude/docs/ standards to see what
-has been put in place already, and what remains to be done
-to institute a systematic set of standards for all relevant
-commands to update the TODO.md for tracking. I have already
-tried to implement these changes but not sure they worked (I
- haven't been able to confirm functionality yet)." 
+> /research is running… "Ok, great, now lean-lsp-mcp is connected. What I want to know now is how to use the mcp server. In 
+particular, I'm wondering if it makes sense to define a command /lean similar to my other orchestrator commands which uses a
+lean-specialist subagent that is geared to use the lean-lsp to effectively write lean code given my specific aims. I will
+typically create a plan using /plan but will them implement the plan using /lean followed by the path to the plan or a
+description of the task. Research what my best options are." 
   ⎿  Allowed 6 tools for this command
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ Classification accepted: scope=research-only, compl
-    exity=2, topics=0
-    State machine initialized: scope=research-only, ter
-    … +7 lines (ctrl+o to expand)
-
-
+● I'll research the best approaches for integrating lean-lsp-mcp into your workflow and whether a dedicated /lean command
+  makes sense.
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Error: Exit code 2
-     /run/current-system/sw/bin/bash: eval: line 174: 
-     conditional binary operator expected
-     /run/current-system/sw/bin/bash: eval: line 174: syntax
- 
-     error near `"$TOPIC_NAME_FILE"'
-     /run/current-system/sw/bin/bash: eval: line 174: `if [[
- 
-     \! "$TOPIC_NAME_FILE" =~ ^/ ]]; then'
-
-
-
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ === Topic Name File Path Pre-Calculation ===       
-      Topic Name File: /home/benjamin/.config/.claude/t
-    mp/topic_name_research_1764652325.txt
-    … +3 lines (ctrl+o to expand)
-
-
-● Read(.claude/agents/topic-naming-agent.md)
-  ⎿  Read 539 lines
-
-● Now I'll invoke the topic-naming agent:
-
-● Task(Generate semantic topic directory name) Haiku 4.5
-  ⎿  Done (2 tool uses · 26.5k tokens · 10s)           
-
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ === Topic Name Hard Barrier Validation ===         
-
-    Expected topic name file: /home/benjamin/.config/.c
-    … +6 lines (ctrl+o to expand)
-
-
-● Bash(# Check if topic name file exists and has content
-      TOPIC_NAME_FILE="/home/benjamin/.config/.claude/tmp/to
-      pic_name_research_1764652325.txt"…)
-  ⎿  File exists. Content:       
-     todo_update_integration_gaps
-     Size: 28 bytes
-
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ Setup complete: research_1764652325 (research-only,
-     complexity: 2)
-    Research directory: /home/benjamin/.config/.claude/
-    … +5 lines (ctrl+o to expand)
-
-
+  ⎿  Classification accepted: scope=research-only, complexity=2, topics=0
+     State machine initialized: scope=research-only, terminal=research
+     2
+     … +4 lines (ctrl+o to expand)
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿  Error: Exit code 1
+     ERROR: PATH MISMATCH - STATE_FILE uses HOME instead of CLAUDE_PROJECT_DIR
+       Current: /home/benjamin/.config/.claude/tmp/workflow_research_1764720320.sh
+       Expected: /home/benjamin/.config/.claude/tmp/workflow_research_1764720320.sh
 
-● Bash(# Debug: Check what variables are available in state
-      file
-      STATE_FILE="/home/benjamin/.config/.claude/tmp/workflo
-      w_research_1764652325.sh"…)
-  ⎿  === State File Contents ===                       
+● Let me fix this - the paths are actually the same but the check is incorrectly detecting a mismatch:
+
+● Bash(set +H…)
+  ⎿  === Topic Name File Path Pre-Calculation ===                                            
+       Topic Name File: /home/benjamin/.config/.claude/tmp/topic_name_research_1764720320.txt
+       Workflow ID: research_1764720320
+     … +2 lines (ctrl+o to expand)
+
+● Now I'll invoke the topic-naming-agent:
+
+● Task(Generate semantic topic name)
+  ⎿  Done (1 tool use · 18.8k tokens · 6s)                                                                                
+
+● Bash(set +H…)
+  ⎿  === Topic Name Hard Barrier Validation ===                                                     
+
+     Expected topic name file: /home/benjamin/.config/.claude/tmp/topic_name_research_1764720320.txt
+     ✓ Hard barrier passed - topic name file validated
+
+● Bash(set +H…)
+  ⎿  Error: Exit code 2
+     /run/current-system/sw/bin/bash: eval: line 2: syntax error near unexpected token `('
+     /run/current-system/sw/bin/bash: eval: line 2: `set +H CLAUDE_PROJECT_DIR\=/home/benjamin/.config 
+     STATE_ID_FILE\=/.claude/tmp/research_state_id.txt WORKFLOW_ID\=\$ ( cat '' ) STATE_FILE\=/.claude/tmp/workflow_.sh source 
+     '' TOPIC_NAMING_INPUT_FILE\=/.claude/tmp/topic_naming_input_.txt if \[ -z '' \] && \[ -f '' \] ; then 
+     WORKFLOW_DESCRIPTION\=\$ ( cat '' ) fi COMMAND_NAME\=/research USER_ARGS\= export COMMAND_NAME USER_ARGS source 
+     /.claude/lib/core/error-handling.sh 2>/dev/null || exit 1 source /.claude/lib/core/state-persistence.sh 2>/dev/null || exi
+t
+      1 source /.claude/lib/workflow/workflow-initialization.sh 2>/dev/null || true setup_bash_error_trap '' '' '' 
+     TOPIC_NAME_FILE\=/.claude/tmp/topic_name_.txt TOPIC_NAME\=no_name_error NAMING_STRATEGY\=fallback if \[ -f '' \] ; then 
+     TOPIC_NAME\=\$ ( cat '' 2>/dev/null < /dev/null | tr -d '\n' | tr -d ' ' ) if \[ -z '' \] ; then 
+     NAMING_STRATEGY\=agent_empty_output TOPIC_NAME\=no_name_error else echo '' | grep -Eq \^\[a-z0-9_\]\{5\,40\}\$ IS_VALID\= 
+     if \[ '' -ne 0 \] ; then log_command_error '' '' '' validation_error '' 'Topic naming agent returned invalid format' 
+     bash_block_1d '' "\$(jq -n --arg name  '{invalid_name: }')" NAMING_STRATEGY\=validation_failed TOPIC_NAME\=no_name_error 
+     else NAMING_STRATEGY\=llm_generated fi fi else NAMING_STRATEGY\=agent_no_output_file fi if \[ '' \= no_name_error \] ; the
+n
+      log_command_error '' '' '' agent_error '' 'Topic naming agent failed or returned invalid name' bash_block_1d '' "\$(jq -n
+ 
+     --arg desc  --arg strategy  \\'
+
+● I see there's a preprocessing issue with the command substitutions. Let me fix this with proper quoting:
+
+● Bash(set +H…)
+  ⎿  Error: Exit code 127
+     /run/current-system/sw/bin/bash: line 77: WORKFLOW_DESCRIPTION: unbound variable
+
+     Topic name from agent: lean_mcp_command_orchestration_strategy
+
+● Let me fix the unbound variable issue:
+
+● Bash(set +H
+      set +u  # Allow unbound variables temporarily…)
+  ⎿  Topic name: lean_mcp_command_orchestration_strategy                                                         
+     Research directory: /home/benjamin/.config/.claude/specs/025_lean_mcp_command_orchestration_strategy/reports
+     Topic path: /home/benjamin/.config/.claude/specs/025_lean_mcp_command_orchestration_strategy
+     WARNING: research_topics empty - generating fallback slugs
+
+● Good! Now let me calculate the report path and invoke the research specialist:
+
+● Bash(set +H
+      set +u…)
+  ⎿  Error: Exit code 127
+     /run/current-system/sw/bin/bash: line 59: TOPIC_PATH: unbound variable
+
+● Let me check what's in the state file and restore TOPIC_PATH properly:
+
+● Bash(set +H
+      set +u…)
+  ⎿  State file contents:                              
      export CLAUDE_PROJECT_DIR="/home/benjamin/.config"
-     export WORKFLOW_ID="research_1764652325"
-     … +32 lines (ctrl+o to expand)
+     export WORKFLOW_ID="research_1764720320"
+     … +16 lines (ctrl+o to expand)
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ === Report Path Pre-Calculation ===                
-      Report Number: 001
-      Report Slug: review-todomd-update-integration-acr
-    … +6 lines (ctrl+o to expand)
+● I see - TOPIC_PATH wasn't persisted. Let me extract it from RESEARCH_DIR:
 
+● Bash(set +H
+      set +u…)
+  ⎿  Error: Exit code 1
 
-● Now I'll invoke the research-specialist agent to
-  analyze the TODO.md integration across commands:
+● The error trap is catching something. Let me be more careful:
 
-● Task(Research TODO.md integration gaps)
-  ⎿  Done (11 tool uses · 78.7k tokens · 2m 25s)       
+● Bash(set +H
+      set +u…)
+  ⎿  === Report Path Pre-Calculation ===        
+       Report Number: 001
+       Report Slug: lean-mcp-command-integration
+     … +5 lines (ctrl+o to expand)
 
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ === Agent Output Validation (Hard Barrier) ===     
+● Perfect! Now I'll invoke the research-specialist agent:
 
-    Expected report path: /home/benjamin/.config/.claud
-    … +11 lines (ctrl+o to expand)
-
-
-● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Verifying research artifacts...                   
-     DEBUG: Pre-transition checkpoint (state=research →
-     complete)
-     … +30 lines (ctrl+o to expand)
-  ⎿  Shell cwd was reset to /home/benjamin/.config
-
-● Read(.claude/specs/002_todo_update_integration_gaps/report
-      s/001-review-todomd-update-integration-across.md)
-  ⎿  Read 547 lines
-
-● The research report has been created successfully. Let
-   me provide you with a summary of the findings:
-
-  ---
-  Research Complete: TODO.md Update Integration Analysis
-
-  Summary
-
-  The analysis found that TODO.md update integration is 
-  ~70% complete across the 7 artifact-creating commands:
-
-  | Status     | Commands                 | Percentage |
-  |------------|--------------------------|------------|
-  | ✅ Complete | /build, /plan, /research | 43% (3/7)
-  |
-  | ⚠️ Partial | /implement, /revise      | 29% (2/7)  |
-  | ❌ Missing  | /repair, /debug          | 29% (2/7)
-  |
-
-  Key Findings
-
-  1. Infrastructure exists: The trigger_todo_update()
-  function in todo-functions.sh provides a robust
-  non-blocking delegation pattern. All commands already
-  source this library.
-  2. Working integrations (/build, /plan, /research):
-    - /build: Updates at START (→ In Progress) and
-  COMPLETION (→ Completed)
-    - /plan: Updates after plan creation (→ Not Started)
-    - /research: Updates after report creation (→
-  Research)
-  3. Gaps identified:
-    - /repair: Missing trigger_todo_update("repair plan 
-  created") in completion block
-    - /debug: Missing trigger_todo_update("debug report 
-  created") in completion block
-    - /revise: Integration uncertain (needs verification
-   beyond line 200)
-    - /implement: Terminal state ambiguity - COMPLETION
-  trigger may not execute for implement-only workflows
-
-  The Standard Pattern (working in /build, /plan, 
-  /research)
-
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/todo/todo-fu
-  nctions.sh" 2>/dev/null || {
-    echo "WARNING: Failed to source todo-functions.sh 
-  for TODO.md update" >&2
-  }
-
-  if type trigger_todo_update &>/dev/null; then
-    trigger_todo_update "descriptive reason"
-  fi
-
-  Next Steps
-
-  To complete the integration, implement these changes:
-
-  1. Add to /repair (completion block):
-  trigger_todo_update("repair plan created")
-  2. Add to /debug (completion block):
-  trigger_todo_update("debug report created")
-  3. Verify /revise has the integration in its
-  completion block
-  4. Clarify /implement terminal state behavior in
-  standards
-
-  ---
-  Report Location:
-  .claude/specs/002_todo_update_integration_gaps/reports
-  /001-review-todomd-update-integration-across.md
-
-  Would you like me to create an implementation plan to
-  fix the gaps, or would you prefer to review specific
-  commands in more detail first?
+  Task(Research lean-lsp-mcp integration options)
+  ⎿  Found 28 files
+     Read 887 lines
+     +11 more tool uses (ctrl+o to expand)

@@ -514,6 +514,14 @@ validate_state_file_path() {
 #   append_workflow_state "PHASES" "Phase_1 Phase_2 Phase_3"  # Space-separated OK
 #   # WRONG: append_workflow_state "PHASES" "[Phase 1, Phase 2]"  # JSON array fails
 append_workflow_state() {
+  # Parameter validation
+  if [ $# -lt 2 ]; then
+    echo "ERROR: ${FUNCNAME[0]} requires 2 parameters (key, value), got $#" >&2
+    echo "Usage: append_workflow_state <key> <value>" >&2
+    SUPPRESS_ERR_TRAP=1
+    return 1
+  fi
+
   local key="$1"
   local value="$2"
 
