@@ -357,17 +357,17 @@ Fail-fast verification detects when plan wasn't actually modified. Prevents no-o
 
 **Implementation → Revise Chain**:
 ```bash
-/build plans/001.md              # Start implementation
+/implement plans/001.md          # Start implementation
 # Discover issues during implementation
 /revise"revise plan at plans/001.md based on discovered API limitations"
-/build plans/001.md              # Continue with revised plan
+/implement plans/001.md          # Continue with revised plan
 ```
 
 **Review → Revise Chain**:
 ```bash
 # After code review
 /revise"revise plan at plans/001.md based on security review findings"
-/build plans/001.md              # Implement security improvements
+/implement plans/001.md          # Implement security improvements
 ```
 
 **Iterative Revision**:
@@ -676,4 +676,4 @@ echo $?  # 0 = identical (would fail), 1 = different (would pass)
 - [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md)
 - [Directory Protocols](../concepts/directory-protocols.md)
 - [Command Reference](../reference/standards/command-reference.md)
-- Related Commands: `/plan`, `/revise`, `/build`, `/implement`
+- Related Commands: `/plan`, `/revise`, `/implement`

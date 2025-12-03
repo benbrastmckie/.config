@@ -26,6 +26,98 @@ Use `/lean` when you need to:
 - Verify proof compilation and diagnostics
 - Document proof strategies with summaries
 
+## Lean File Discovery
+
+When using plan-based mode, the `/lean` command uses a **3-tier fallback discovery** mechanism to locate the Lean file:
+
+### Tier 1: Plan Metadata (Optional)
+
+Specify the Lean file explicitly in plan metadata:
+
+```markdown
+**Lean File**: /absolute/path/to/file.lean
+```
+
+**Example**:
+```markdown
+## Metadata
+- **Date**: 2025-12-03
+- **Feature**: TM Modal Axioms
+- **Lean File**: /home/user/lean-project/Axioms.lean
+```
+
+### Tier 2: Task Scanning
+
+If metadata is not present, the command scans phase tasks for `.lean` file references:
+
+```markdown
+### Phase 1: Axiom MT [NOT STARTED]
+- [ ] Prove MT axiom in /home/user/lean-project/Axioms.lean
+```
+
+The command extracts `/home/user/lean-project/Axioms.lean` from the task description.
+
+### Tier 3: Directory Search
+
+If no file is found via metadata or tasks, the command searches the topic directory:
+
+```bash
+# Finds first .lean file in topic directory
+find /path/to/specs/NNN_topic/ -name "*.lean" -type f | head -1
+```
+
+### Discovery Output
+
+The command displays which method was used:
+
+```
+Lean File: /path/to/file.lean (discovered via metadata)
+Lean File: /path/to/file.lean (discovered via task_scan)
+Lean File: /path/to/file.lean (discovered via directory_search)
+```
+
+### Backward Compatibility
+
+Plans with existing `**Lean File**` metadata continue to work unchanged. The metadata approach is still recommended for explicit clarity.
+
+## Real-Time Progress Tracking
+
+The `/lean` command now provides **real-time progress visibility** through plan file markers:
+
+### Progress Markers
+
+During theorem proving, phase status markers update automatically:
+
+1. **Before proving**: `### Phase 1: Axiom MT [NOT STARTED]`
+2. **During proving**: `### Phase 1: Axiom MT [IN PROGRESS]`
+3. **After completion**: `### Phase 1: Axiom MT [COMPLETE]`
+
+### Monitoring Progress
+
+Watch progress in real-time using `cat` or `watch`:
+
+```bash
+# Terminal 1: Run /lean command
+/lean plan.md --prove-all
+
+# Terminal 2: Monitor progress markers
+watch -n 1 "grep -E '^### Phase.*\[' plan.md"
+```
+
+**Output**:
+```
+### Phase 1: Axiom MT [IN PROGRESS]
+### Phase 2: Axiom M4 [NOT STARTED]
+### Phase 3: Axiom M5 [NOT STARTED]
+```
+
+### Graceful Degradation
+
+Progress tracking requires the `checkbox-utils.sh` library. If unavailable:
+- Warning logged: `"Progress tracking unavailable"`
+- Theorem proving continues normally (non-fatal)
+- No progress markers updated
+
 ## Workflow Integration
 
 ### /plan → /lean → /test Pattern
@@ -137,7 +229,7 @@ theorem mul_comm (a b : Nat) : a * b = b * a := by
 - Creates verification summary
 - No modifications to file
 
-### Example 3: Plan-Based Proving
+### Example 3: Plan-Based Proving (With Metadata)
 
 ```bash
 /lean .claude/specs/027_tm_logic/plans/001-tm-axioms.md --max-attempts=5
@@ -145,19 +237,49 @@ theorem mul_comm (a b : Nat) : a * b = b * a := by
 
 **Plan File Structure**:
 ```markdown
+## Metadata
+- **Date**: 2025-12-03
+- **Feature**: TM Modal Axioms
+- **Lean File**: /home/user/ProofChecker/TM/Axioms.lean
+
 ### Phase 1: Axiom MT [NOT STARTED]
 - [ ] Prove MT axiom: □(φ → ψ) → (◇φ → ◇ψ)
-- [ ] File: ProofChecker/TM/Axioms.lean
 
 ### Phase 2: Axiom M4 [NOT STARTED]
 - [ ] Prove M4 axiom: □□φ → □φ
 ```
 
 **Behavior**:
+- Lean file discovered via metadata
 - Processes each phase sequentially
-- Updates plan checkboxes as theorems complete
+- Updates plan markers: [NOT STARTED] → [IN PROGRESS] → [COMPLETE]
 - Creates aggregated summary
 - Allows up to 5 proof attempts per theorem
+
+### Example 4: Plan-Based Proving (Without Metadata)
+
+```bash
+/lean .claude/specs/028_logic/plans/001-modal.md --prove-all
+```
+
+**Plan File Structure** (no Lean File metadata):
+```markdown
+## Metadata
+- **Date**: 2025-12-03
+- **Feature**: Modal Logic Proofs
+
+### Phase 1: Necessitation [NOT STARTED]
+- [ ] Prove necessitation rule in /home/user/Modal.lean
+
+### Phase 2: Distribution [NOT STARTED]
+- [ ] Prove distribution axiom in /home/user/Modal.lean
+```
+
+**Behavior**:
+- Lean file discovered via task scanning: `/home/user/Modal.lean`
+- Display: `Lean File: /home/user/Modal.lean (discovered via task_scan)`
+- Real-time progress markers update during proving
+- Works identically to metadata-based plans
 
 ## Troubleshooting
 
@@ -236,6 +358,35 @@ ERROR: File not found: Test.lean
 - Use absolute paths: `/lean /home/user/project/Test.lean`
 - Or relative to project: `/lean src/Test.lean`
 - Verify file exists: `ls -la path/to/file.lean`
+
+### Lean File Discovery Failed
+
+**Error**:
+```
+ERROR: No Lean file found via any discovery method
+Please specify the Lean file using one of these methods:
+  1. Plan metadata: **Lean File**: /path/to/file.lean
+  2. Task description: - [ ] Prove theorem in /path/to/file.lean
+  3. Place .lean file in topic directory: /path/to/specs/NNN_topic/
+```
+
+**Solution (Option 1 - Add Metadata)**:
+```markdown
+## Metadata
+- **Lean File**: /absolute/path/to/file.lean
+```
+
+**Solution (Option 2 - Add Task Reference)**:
+```markdown
+### Phase 1: Prove Theorems [NOT STARTED]
+- [ ] Prove commutativity in /absolute/path/to/file.lean
+```
+
+**Solution (Option 3 - Place File in Topic)**:
+```bash
+# Copy .lean file to topic directory
+cp MyTheorems.lean /path/to/specs/028_logic/
+```
 
 ## Best Practices
 

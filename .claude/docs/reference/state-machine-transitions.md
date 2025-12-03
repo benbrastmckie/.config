@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the state transition rules for the workflow state machine used in /build, /plan, and other workflow commands. Understanding these transitions is critical for avoiding invalid state transition errors.
+This document describes the state transition rules for the workflow state machine used in /implement, /plan, and other workflow commands. Understanding these transitions is critical for avoiding invalid state transition errors.
 
 ## Core States
 
@@ -23,7 +23,7 @@ The following table defines all valid state transitions. Any transition not list
 
 | Current State | Valid Next States | Notes |
 |--------------|-------------------|-------|
-| initialize | research, implement | Can skip research for /build workflows |
+| initialize | research, implement | Can skip research for /implement workflows |
 | research | plan, complete | Can skip to complete for research-only |
 | plan | implement, complete, debug | Can skip to complete for research-and-plan, debug for debug-only |
 | implement | test | **MUST** transition to test (cannot skip to complete) |
@@ -95,12 +95,12 @@ sm_transition "$STATE_IMPLEMENT" "..."  # ERROR: Cannot transition from terminal
 
 ### Valid Transition Sequences
 
-**Full implementation workflow** (/build):
+**Full implementation workflow** (/implement):
 ```
 initialize → implement → test → document → complete
 ```
 
-**Failed tests with debug** (/build):
+**Failed tests with debug** (/test with debug loop):
 ```
 initialize → implement → test → debug → test → document → complete
 ```
@@ -214,7 +214,7 @@ tail -f ~/.claude/tmp/workflow_debug.log
 
 - [Workflow State Machine Library](../../lib/workflow/workflow-state-machine.sh) - Implementation
 - [State Persistence Library](../../lib/core/state-persistence.sh) - State file management
-- [Build Command Guide](../guides/commands/build-command-guide.md) - /build workflow details
+- [Implement Command Guide](../guides/commands/implement-command-guide.md) - /implement workflow details
 - [Error Handling Pattern](../concepts/patterns/error-handling.md) - Error logging integration
 
 ## Version History

@@ -449,14 +449,14 @@ See: `.claude/commands/research.md` (created in Phase 2)
 
 See: `.claude/commands/plan.md` (created in Phase 3)
 
-### Example 3: Build Command (/build)
+### Example 3: Build Command (/implement)
 
 **Workflow Type**: `full-implementation`
 **Terminal State**: `complete`
 **Phases**: Implement → Test → Debug/Document → Complete
 **Complexity**: 150-200 lines
 
-See: `.claude/commands/build.md` (created in Phase 4)
+See: `.claude/commands/implement.md` (created in Phase 4)
 
 ## Anti-Patterns
 

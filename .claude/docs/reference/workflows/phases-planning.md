@@ -168,7 +168,7 @@ Expected plan format:
   - [ ] Unit tests
   - [ ] Integration tests
 
-**Note**: Phase headings include status markers (`[NOT STARTED]`, `[IN PROGRESS]`, `[COMPLETE]`) for progress tracking. These are managed automatically by /plan and /build commands. See [Plan Progress Tracking](plan-progress-tracking.md) for details.
+**Note**: Phase headings include status markers (`[NOT STARTED]`, `[IN PROGRESS]`, `[COMPLETE]`) for progress tracking. These are managed automatically by /plan and /implement commands. See [Plan Progress Tracking](plan-progress-tracking.md) for details.
 
 ## Execution Waves
 - Wave 1: Phase 1

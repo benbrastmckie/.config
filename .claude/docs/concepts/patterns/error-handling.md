@@ -22,11 +22,11 @@ The pattern separates:
 
 Distributed error logging creates three critical problems:
 
-1. **Context Loss**: When errors are logged to separate files per command, workflow context is fragmented. You can't see that a `/build` failure was preceded by 3 `/plan` agent timeout errors.
+1. **Context Loss**: When errors are logged to separate files per command, workflow context is fragmented. You can't see that a `/implement` failure was preceded by 3 `/plan` agent timeout errors.
 
 2. **Discovery Difficulty**: Finding relevant errors requires knowing which log file to check. Did the error happen in research phase? Planning? Implementation? Each requires checking different locations.
 
-3. **Trend Blindness**: Without centralized aggregation, you can't identify patterns like "state_error occurs in 40% of /build runs" or "agent timeouts spike on Fridays".
+3. **Trend Blindness**: Without centralized aggregation, you can't identify patterns like "state_error occurs in 40% of /implement runs" or "agent timeouts spike on Fridays".
 
 Environment-based error logging solves these problems by:
 - Capturing full workflow context (command, workflow ID, user args, phase, state, environment)
@@ -76,13 +76,13 @@ Every error logged to environment-specific log files follows this schema:
 {
   "timestamp": "2025-10-19T15:30:45Z",
   "environment": "production",
-  "command": "/build",
+  "command": "/implement",
   "workflow_id": "build_20251019_153045",
   "user_args": "plan.md 3",
   "error_type": "state_error",
   "error_message": "State file not found at /path/to/state.sh",
   "source": "bash_block",
-  "stack": ["lib/workflow-state-machine.sh:42", "commands/build.md:156"],
+  "stack": ["lib/workflow-state-machine.sh:42", "commands/implement.md:156"],
   "context": {
     "expected_path": "/path/to/state.sh",
     "phase": 3,
@@ -162,7 +162,7 @@ source "${CLAUDE_CONFIG}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
 }
 
 # EARLY TRAP: Capture errors during initialization before WORKFLOW_ID is available
-setup_bash_error_trap "/build" "build_early_$(date +%s)" "early_init"
+setup_bash_error_trap "/implement" "implement_early_$(date +%s)" "early_init"
 
 # Flush any errors that occurred before error-handling.sh was sourced
 _flush_early_errors
@@ -179,7 +179,7 @@ fi
 ensure_error_log_exists
 
 # Generate actual workflow context
-COMMAND_NAME="/build"
+COMMAND_NAME="/implement"
 WORKFLOW_ID="build_$(date +%Y%m%d_%H%M%S)"
 USER_ARGS="$*"
 
@@ -205,7 +205,7 @@ The dual trap pattern solves this by:
 5. Updating trap with actual workflow context once WORKFLOW_ID is generated
 
 **Pattern Compliance**:
-- `/build`, `/plan`, `/repair`, `/todo` - Full dual trap implementation
+- `/implement`, `/plan`, `/repair`, `/todo` - Full dual trap implementation
 - All new commands MUST implement dual trap setup for 100% coverage
 
 **Logging Integration in Commands**
@@ -259,8 +259,8 @@ output=$(invoke_agent "plan-architect" "Create plan") || {
 Users query errors through the `/errors` command with support for both production and test logs:
 
 ```bash
-# Query recent /build errors (production log, default)
-/errors --command /build --limit 10
+# Query recent /implement errors (production log, default)
+/errors --command /implement --limit 10
 
 # Query test errors
 /errors --log-file .claude/tests/logs/test-errors.jsonl --limit 10
@@ -346,7 +346,7 @@ The `/repair` command provides systematic error pattern analysis and fix plan ge
 /repair --type state_error
 
 # Analyze command-specific failures
-/repair --command /build --complexity 3
+/repair --command /implement --complexity 3
 ```
 
 The `/repair` workflow:
@@ -354,7 +354,7 @@ The `/repair` workflow:
 2. Groups errors by pattern and root cause
 3. Creates error analysis report in `specs/{NNN_topic}/reports/`
 4. Generates implementation plan with fix phases in `specs/{NNN_topic}/plans/`
-5. Returns plan path for execution via `/build`
+5. Returns plan path for execution via `/implement`
 
 See [Repair Command Guide](../../guides/commands/repair-command-guide.md) for complete workflow details.
 
@@ -681,12 +681,12 @@ check_unbound_vars "DEBUG_MODE" "VERBOSE" || {
 
 ## Usage Examples
 
-### Example 1: /build Command Error Logging
+### Example 1: /implement Command Error Logging
 
 ```bash
-# /build command implementation
-COMMAND_NAME="/build"
-WORKFLOW_ID="build_$(date +%Y%m%d_%H%M%S)"
+# /implement command implementation
+COMMAND_NAME="/implement"
+WORKFLOW_ID="implement_$(date +%Y%m%d_%H%M%S)"
 USER_ARGS="$*"
 
 # Source error handling
@@ -705,7 +705,7 @@ if [ ! -f "$PLAN_FILE" ]; then
     "$(jq -n --arg path "$PLAN_FILE" '{plan_path: $path}')"
 
   echo "Error: Plan file not found"
-  echo "Use: /build <plan-file>"
+  echo "Use: /implement <plan-file>"
   exit 1
 fi
 
@@ -733,13 +733,13 @@ fi
 
 ```bash
 # User workflow
-$ /build plan.md
+$ /implement plan.md
 Error: State file not found
 
 # Query recent errors to diagnose
-$ /errors --command /build --limit 5
+$ /errors --command /implement --limit 5
 
-[2025-10-19T15:30:45Z] /build
+[2025-10-19T15:30:45Z] /implement
   Type: state_error
   Message: State file not found at /path/to/state.sh
   Args: plan.md 3
@@ -753,7 +753,7 @@ Error Summary
 Total Errors: 42
 
 By Command:
-  /build               15
+  /implement           15
   /plan                12
 
 By Type:
@@ -820,7 +820,7 @@ fi
 
 ```bash
 # DON'T: Create separate log files per command
-ERROR_LOG="/tmp/build_errors.log"
+ERROR_LOG="/tmp/implement_errors.log"
 echo "$error_message" >> "$ERROR_LOG"
 ```
 

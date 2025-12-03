@@ -474,7 +474,7 @@ echo "Ready for: Block 4 execution"
 
 **Example Flow**:
 ```
-[User runs /build plan.md]
+[User runs /implement plan.md]
   ↓
 [CHECKPOINT] Setup complete
 Context: WORKFLOW_ID=wf_123, PLAN_FILE=/path/plan.md
@@ -586,7 +586,7 @@ Output suppression applies to **success and progress output only**. Errors remai
 ---
 
 ## Console Summary Standards
-[Used by: /research, /plan, /debug, /build, /revise, /repair, /expand, /collapse]
+[Used by: /research, /plan, /debug, /implement, /revise, /repair, /expand, /collapse]
 
 ### Purpose and Scope
 
@@ -723,13 +723,13 @@ Artifacts:
 # Good: Specific, actionable, with paths
 Next Steps:
   • Review plan: cat /home/user/.config/.claude/specs/027_auth/plans/027_auth_plan.md
-  • Begin implementation: /build /home/user/.config/.claude/specs/027_auth/plans/027_auth_plan.md
+  • Begin implementation: /implement /home/user/.config/.claude/specs/027_auth/plans/027_auth_plan.md
   • Review research: cat /home/user/.config/.claude/specs/027_auth/reports/001_auth_strategies.md
 
 # Bad: Generic, no paths
 Next Steps:
   • Review the plan file
-  • Run /build if ready
+  • Run /implement if ready
   • Check the reports
 ```
 
@@ -759,7 +759,7 @@ Next Steps:
 
 **Division of Labor**:
 ```
-User completes /build
+User completes /implement
     ↓
 Console Summary (15-25 lines)
   • What was accomplished
@@ -839,12 +839,12 @@ EOF
 | Command | Primary Artifacts | Typical Phases | Next Steps Focus |
 |---------|------------------|---------------|------------------|
 | /research | 📊 Reports (1-3 files) | None | Review reports, run /plan |
-| /plan | 📊 Reports, 📄 Plan | None | Review plan, run /build |
-| /debug | 🔧 Debug, 📄 Plan | 3-4 phases | Review debug analysis, run /build |
-| /build | ✅ Summary, 📄 Plan | 3-5 phases | Review summary, check tests |
-| /revise | 📄 Plan (updated), 📁 Backup | None | Review changes, run /build |
-| /repair | 📊 Error Analysis, 📄 Repair Plan | None | Review analysis, run /build |
-| /expand | 📄 Expanded Phases | None | Review expanded phases, continue /build |
+| /plan | 📊 Reports, 📄 Plan | None | Review plan, run /implement |
+| /debug | 🔧 Debug, 📄 Plan | 3-4 phases | Review debug analysis, run /implement |
+| /implement | ✅ Summary, 📄 Plan | 3-5 phases | Review summary, check tests |
+| /revise | 📄 Plan (updated), 📁 Backup | None | Review changes, run /implement |
+| /repair | 📊 Error Analysis, 📄 Repair Plan | None | Review analysis, run /implement |
+| /expand | 📄 Expanded Phases | None | Review expanded phases, continue /implement |
 | /collapse | 📄 Plan (collapsed) | None | Review collapsed plan, resume work |
 
 ---

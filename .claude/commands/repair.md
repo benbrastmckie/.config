@@ -302,7 +302,7 @@ echo "Ready for topic naming"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 if [ -n "$ERROR_COMMAND" ]; then
-  # Include command context: /repair --command /build → repair_build_20251129_143022
+  # Include command context: /repair --command /implement → repair_implement_20251129_143022
   COMMAND_SLUG=$(echo "$ERROR_COMMAND" | sed 's:^/::' | tr '-' '_')
   TOPIC_NAME="repair_${COMMAND_SLUG}_${TIMESTAMP}"
 elif [ -n "$ERROR_TYPE" ]; then
@@ -481,7 +481,7 @@ REPORT_NUMBER=$(printf "%03d" $((EXISTING_REPORTS + 1)))
 
 # Generate report slug from error description or filters (max 40 chars, kebab-case)
 if [ -n "$ERROR_COMMAND" ]; then
-  # Use command filter for slug: /repair --command /build → build-errors-repair
+  # Use command filter for slug: /repair --command /implement → implement-errors-repair
   COMMAND_SLUG=$(echo "$ERROR_COMMAND" | sed 's:^/::' | tr '_' '-')
   REPORT_SLUG="${COMMAND_SLUG}-errors-repair"
 elif [ -n "$ERROR_TYPE" ]; then
@@ -1608,7 +1608,7 @@ ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)
 NEXT_STEPS="  • Review fix plan: cat $PLAN_PATH
   • Review error analysis: ls -lh $RESEARCH_DIR/
   • Check updated errors: /errors --status FIX_PLANNED
-  • Implement fixes: /build $PLAN_PATH
+  • Implement fixes: /implement $PLAN_PATH
   • Run /todo to update TODO.md (adds repair plan to tracking)"
 
 # Print standardized summary (no phases for repair command)

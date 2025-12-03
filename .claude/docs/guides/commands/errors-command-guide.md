@@ -115,7 +115,7 @@ This ensures the `/errors` command captures the vast majority of errors that occ
 /errors
 
 # Generate report for specific command errors
-/errors --command /build
+/errors --command /implement
 
 # Generate report for specific error type
 /errors --type execution_error
@@ -124,7 +124,7 @@ This ensures the `/errors` command captures the vast majority of errors that occ
 /errors --since 2025-11-20
 
 # Generate report with multiple filters
-/errors --command /build --type state_error --since 2025-11-19
+/errors --command /implement --type state_error --since 2025-11-19
 ```
 
 ### Query Mode (Legacy Behavior)
@@ -143,8 +143,8 @@ This ensures the `/errors` command captures the vast majority of errors that occ
 ### Query Mode - Filtering by Command
 
 ```bash
-# Show errors from /build command
-/errors --query --command /build
+# Show errors from /implement command
+/errors --query --command /implement
 
 # Show errors from /plan command
 /errors --query --command /plan --limit 20
@@ -160,7 +160,7 @@ This ensures the `/errors` command captures the vast majority of errors that occ
 /errors --query --since 2025-11-19T10:00:00Z
 
 # Combine with command filter
-/errors --query --command /build --since 2025-11-19 --limit 10
+/errors --query --command /implement --since 2025-11-19 --limit 10
 ```
 
 ### Query Mode - Filtering by Error Type
@@ -169,8 +169,8 @@ This ensures the `/errors` command captures the vast majority of errors that occ
 # Show validation errors only
 /errors --query --type validation_error
 
-# Show state errors from /build
-/errors --query --command /build --type state_error
+# Show state errors from /implement
+/errors --query --command /implement --type state_error
 
 # Show agent errors
 /errors --query --type agent_error --limit 15
@@ -193,14 +193,14 @@ This ensures the `/errors` command captures the vast majority of errors that occ
 /errors --query --raw --limit 5
 
 # Filter and get raw output
-/errors --query --command /build --type state_error --raw
+/errors --query --command /implement --type state_error --raw
 ```
 
 ### Query Mode - Complex Filters
 
 ```bash
 # Multiple filters combined
-/errors --query --command /build --type state_error --since 2025-11-19 --limit 5
+/errors --query --command /implement --type state_error --since 2025-11-19 --limit 5
 
 # Recent errors of specific type
 /errors --query --type validation_error --limit 10
@@ -234,8 +234,8 @@ Each error log entry contains:
 ```json
 {
   "timestamp": "2025-11-19T14:30:00Z",
-  "command": "/build",
-  "workflow_id": "build_1732023400",
+  "command": "/implement",
+  "workflow_id": "implement_1732023400",
   "user_args": "plan.md 3",
   "error_type": "state_error",
   "error_message": "State file not found",
@@ -256,7 +256,7 @@ Error entries track their resolution status:
 |--------|-------------|----------|
 | `ERROR` | New error, not yet addressed | When error is first logged |
 | `FIX_PLANNED` | Repair plan created for this error | After `/repair` creates a plan |
-| `RESOLVED` | Error has been fixed | After `/build` completes repair plan |
+| `RESOLVED` | Error has been fixed | After `/implement` completes repair plan |
 
 **Filter by status**:
 ```bash
@@ -329,18 +329,18 @@ The `/errors` command is part of a comprehensive error management lifecycle that
 - Create repair analysis reports in `specs/{NNN_topic}/reports/`
 - Generate implementation plans with fix phases
 
-**4. Fix Implementation (/build)**
+**4. Fix Implementation (/implement)**
 - Execute repair plans with automatic testing
 - Create git commits for each fix phase
 - Verify fixes resolve logged errors
 
 ### Example Workflow
 
-After a failed `/build` command execution:
+After a failed `/implement` command execution:
 
 ```bash
 # Step 1: Generate error analysis report
-/errors --command /build --since 1h
+/errors --command /implement --since 1h
 
 # Output:
 # - Report: /path/.claude/specs/887_build_error_analysis/reports/001_error_report.md
@@ -349,22 +349,22 @@ After a failed `/build` command execution:
 
 # Step 2: Review report and create fix plan
 cat /path/.claude/specs/887_build_error_analysis/reports/001_error_report.md
-/repair --command /build --type state_error --complexity 2
+/repair --command /implement --type state_error --complexity 2
 
 # Creates:
-# - specs/888_build_state_errors/reports/001_build_state_error_analysis.md
-# - specs/888_build_state_errors/plans/001_build_state_error_fix_plan.md
+# - specs/888_implement_state_errors/reports/001_implement_state_error_analysis.md
+# - specs/888_implement_state_errors/plans/001_implement_state_error_fix_plan.md
 
 # Step 3: Review plan and implement fixes
-/build specs/888_build_state_errors/plans/001_build_state_error_fix_plan.md
+/implement specs/888_implement_state_errors/plans/001_implement_state_error_fix_plan.md
 
 # Step 4: Verify fixes resolved errors
-/errors --query --command /build --since 10m
+/errors --query --command /implement --since 10m
 
 # Output: No errors found (confirmation)
 
 # Alternative: Use report mode to verify
-/errors --command /build --since 10m
+/errors --command /implement --since 10m
 # Report shows 0 errors analyzed
 ```
 
@@ -372,7 +372,7 @@ cat /path/.claude/specs/887_build_error_analysis/reports/001_error_report.md
 
 - **Error Handling Pattern**: See [Error Handling Pattern](../../concepts/patterns/error-handling.md) for technical integration details
 - **Repair Command**: See [Repair Command Guide](repair-command-guide.md) for systematic error analysis workflow
-- **Build Command**: See [Build Command Guide](build-command-guide.md) for executing repair plans
+- **Build Command**: See [Build Command Guide](implement-command-guide.md) for executing repair plans
 
 ---
 
@@ -404,7 +404,7 @@ cat /path/.claude/specs/887_build_error_analysis/reports/001_error_report.md
 **Solutions**:
 - Use `--limit` to reduce results: `/errors --limit 10`
 - Filter by time: `/errors --since 2025-11-19`
-- Filter by command: `/errors --command /build`
+- Filter by command: `/errors --command /implement`
 - Consider rotating old logs manually
 
 ### Missing Workflow Context
@@ -439,7 +439,8 @@ cat /path/.claude/specs/887_build_error_analysis/reports/001_error_report.md
 
 - `/repair` - Error analysis and repair planning workflow
 - `/debug` - Debug workflow with root cause analysis
-- `/build` - Build workflow (uses error logging)
+- `/implement` - Implementation workflow (uses error logging)
+- `/test` - Test execution workflow (uses error logging)
 - `/plan` - Planning workflow (uses error logging)
 
 ### Related Patterns

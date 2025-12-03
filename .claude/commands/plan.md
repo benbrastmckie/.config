@@ -1516,7 +1516,7 @@ ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($REPORT_COUNT files)
 
 # Build next steps
 NEXT_STEPS="  • Review plan: cat $PLAN_PATH
-  • Begin implementation: /build $PLAN_PATH
+  • Begin implementation: /implement $PLAN_PATH
   • Review research: ls -lh $RESEARCH_DIR/
   • Run /todo to update TODO.md (adds plan to tracking)"
 

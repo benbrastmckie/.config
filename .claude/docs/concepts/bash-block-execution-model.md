@@ -1029,7 +1029,7 @@ source "$UTILS_DIR/workflow-state-machine.sh"
 
 **Problem**: Calling library function without re-sourcing in current block.
 
-**Example** (from /build Block 2 violation):
+**Example** (from /implement Block 2 violation):
 
 ```bash
 # Block 1
@@ -1064,7 +1064,7 @@ save_completed_states_to_state  # Now works
 2. Linter: `bash .claude/scripts/lint/check-library-sourcing.sh` detects this pattern
 3. Defensive check: Add `type FUNCTION_NAME &>/dev/null` before calls
 
-**Real-World Impact**: This anti-pattern caused 57% of /build command failures. The function `save_completed_states_to_state()` was called in Block 2 without sourcing `workflow-state-machine.sh`, despite the library being correctly sourced in Block 1.
+**Real-World Impact**: This anti-pattern caused 57% of implementation command failures. The function `save_completed_states_to_state()` was called in Block 2 without sourcing `workflow-state-machine.sh`, despite the library being correctly sourced in Block 1.
 
 **Prevention**: Follow the [Three-Tier Sourcing Pattern](../reference/standards/code-standards.md#three-tier-library-sourcing-pattern) in every bash block.
 
@@ -1291,7 +1291,7 @@ cat /tmp/temp_files_data.txt  # File not found (already deleted)
 - [State Machine Orchestrator Development](../guides/orchestration/state-machine-orchestrator-development.md) - Using these patterns in new orchestrators
 - [Command Development Guide](../guides/development/command-development/command-development-fundamentals.md) - General command development including bash block patterns
 - [Orchestration Best Practices](../guides/orchestration/orchestration-best-practices.md) - High-level orchestration patterns
-- [/coordinate Command Guide](../guides/commands/build-command-guide.md) - Real-world usage of these patterns
+- [/implement Command Guide](../guides/commands/implement-command-guide.md) - Real-world usage of these patterns
 
 ## Historical Context
 

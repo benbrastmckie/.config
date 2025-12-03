@@ -392,7 +392,7 @@ The revision-specialist agent follows 35+ completion criteria before returning. 
 ## Related Documentation
 
 - **Agent File**: [revision-specialist.md](../../agents/revision-specialist.md) - Behavioral execution script
-- **/coordinate Guide**: [coordinate-command-guide.md](../commands/build-command-guide.md) - Research-and-revise workflow integration
+- **/coordinate Guide**: [coordinate-command-guide.md](../commands/implement-command-guide.md) - Research-and-revise workflow integration
 - **Behavioral Injection Pattern**: [behavioral-injection.md](../concepts/patterns/behavioral-injection.md) - Agent invocation pattern
 - **State Machine Architecture**: [state-based-orchestration-overview.md](../architecture/state-based-orchestration-overview.md) - Workflow state management
 - **Testing**: `.claude/tests/test_revision_specialist.sh` - Comprehensive test suite

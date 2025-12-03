@@ -199,7 +199,7 @@ save_resumption_checkpoint() {
   local checkpoint_dir="${artifact_paths[checkpoints]}"
   mkdir -p "$checkpoint_dir"
 
-  local checkpoint_file="${checkpoint_dir}/build_${workflow_id}_iteration_${iteration}.json"
+  local checkpoint_file="${checkpoint_dir}/implement_${workflow_id}_iteration_${iteration}.json"
 
   jq -n \
     --arg version "2.1" \
@@ -665,9 +665,9 @@ Savings: 40%
 
 ### Multi-Iteration Execution
 
-When invoked by /build with iteration parameters, the implementer-coordinator supports multi-iteration execution for large plans.
+When invoked by /implement with iteration parameters, the implementer-coordinator supports multi-iteration execution for large plans.
 
-**Iteration Parameters** (received from /build):
+**Iteration Parameters** (received from /implement):
 - `continuation_context`: Path to previous iteration's summary (null for first iteration)
 - `iteration`: Current iteration number (1-indexed)
 
@@ -699,7 +699,7 @@ context_exhausted: true|false
 - When approaching threshold (~90%), gracefully halt
 - Set `context_exhausted: true` in return
 - List remaining phases in `work_remaining`
-- /build will invoke next iteration with continuation_context
+- /implement will invoke next iteration with continuation_context
 
 **Example: 12-Phase Plan Across 3 Iterations**:
 ```

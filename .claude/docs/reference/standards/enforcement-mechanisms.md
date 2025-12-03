@@ -52,7 +52,7 @@ This document serves as the **single source of truth** for all standards enforce
 bash .claude/scripts/lint/check-library-sourcing.sh
 
 # Check specific files
-bash .claude/scripts/lint/check-library-sourcing.sh .claude/commands/build.md .claude/commands/plan.md
+bash .claude/scripts/lint/check-library-sourcing.sh .claude/commands/implement.md .claude/commands/plan.md
 ```
 
 **Related Standard**: [code-standards.md](code-standards.md#mandatory-bash-block-sourcing-pattern)
@@ -117,7 +117,7 @@ bash .claude/tests/utilities/lint_bash_conditionals.sh
 bash .claude/scripts/lint-task-invocation-pattern.sh
 
 # Check specific file
-bash .claude/scripts/lint-task-invocation-pattern.sh .claude/commands/build.md
+bash .claude/scripts/lint-task-invocation-pattern.sh .claude/commands/implement.md
 
 # Check staged files (pre-commit mode)
 bash .claude/scripts/lint-task-invocation-pattern.sh --staged

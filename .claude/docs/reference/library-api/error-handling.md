@@ -25,7 +25,7 @@ The `error-handling.sh` library provides a centralized JSONL-based error logging
 - Integration with state machine for retry tracking
 - Subagent error parsing for hierarchical workflows
 
-**Commands using this library**: `/build`, `/plan`, `/research`, `/debug`, `/revise`, all orchestrators
+**Commands using this library**: `/implement`, `/plan`, `/research`, `/debug`, `/revise`, all orchestrators
 
 ---
 
@@ -41,7 +41,7 @@ log_command_error <command> <workflow_id> <user_args> <error_type> <message> <so
 ```
 
 **Arguments**:
-- `command` (string): Command name (e.g., `/build`, `/plan`)
+- `command` (string): Command name (e.g., `/implement`, `/plan`)
 - `workflow_id` (string): Unique workflow identifier
 - `user_args` (string): User-provided command arguments
 - `error_type` (string): Error type constant (see Error Type Constants)
@@ -64,7 +64,7 @@ The function automatically detects the execution environment and routes errors a
 ```bash
 # Production error (logged to .claude/data/logs/errors.jsonl)
 log_command_error \
-  "/build" \
+  "/implement" \
   "build_20251019_153045" \
   "plan.md 3" \
   "$ERROR_TYPE_STATE" \
@@ -88,7 +88,7 @@ log_command_error \
 {
   "timestamp": "2025-10-19T15:30:45Z",
   "environment": "production",
-  "command": "/build",
+  "command": "/implement",
   "workflow_id": "build_20251019_153045",
   "user_args": "plan.md 3",
   "error_type": "state_error",
@@ -220,8 +220,8 @@ query_errors [--command CMD] [--since TIME] [--type TYPE] [--limit N] [--workflo
 
 **Usage Example**:
 ```bash
-# Query recent /build errors (production log, default)
-query_errors --command /build --limit 10
+# Query recent /implement errors (production log, default)
+query_errors --command /implement --limit 10
 
 # Query test log errors
 query_errors --log-file .claude/tests/logs/test-errors.jsonl --limit 10
@@ -256,7 +256,7 @@ recent_errors [count]
 Recent Errors (last 10):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[2025-10-19T15:30:45Z] /build
+[2025-10-19T15:30:45Z] /implement
   Type: state_error
   Message: State file not found
   Args: plan.md 3
@@ -295,7 +295,7 @@ Error Summary
 Total Errors: 42
 
 By Command:
-  /build               15
+  /implement               15
   /plan                12
   /research            8
   /debug               7
@@ -594,7 +594,7 @@ ERROR_TYPE_INVALID_MODE="invalid_mode"          # Invalid LLM mode
 source "${CLAUDE_CONFIG}/.claude/lib/core/error-handling.sh" 2>/dev/null
 
 # Command metadata
-COMMAND_NAME="/build"
+COMMAND_NAME="/implement"
 WORKFLOW_ID="build_$(date +%Y%m%d_%H%M%S)"
 USER_ARGS="$*"
 
@@ -654,10 +654,10 @@ fi
 
 ```bash
 # Check for recent errors before operation
-recent_build_errors=$(query_errors --command /build --limit 5)
+recent_build_errors=$(query_errors --command /implement --limit 5)
 
 if [ -n "$recent_build_errors" ]; then
-  echo "Warning: Recent /build errors detected"
+  echo "Warning: Recent /implement errors detected"
   echo "$recent_build_errors" | jq -r '.error_message'
 fi
 

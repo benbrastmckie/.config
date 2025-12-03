@@ -61,11 +61,12 @@ Quick reference for which agents are invoked by each command and their roles:
 - **research-specialist** - Research updates needed for plan revision
 - **plan-architect** - Integrate changes into revised plan
 
-#### /build
+#### /implement
 - **implementer-coordinator** - Orchestrate wave-based parallel phase execution
-- **implementation-executor** - Execute individual phase tasks
-- **spec-updater** - Track progress via checkbox updates
-- **debug-analyst** - Investigate build failures
+
+#### /test
+- **test-executor** - Execute test suites with framework detection
+- **debug-analyst** - Investigate test failures
 
 #### /debug
 - **workflow-classifier** - Classify issue type
@@ -264,7 +265,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Parallel hypothesis testing for debugging
 **Model**: sonnet-4.5 (complex analysis)
 
-**Used By Commands**: /debug, /build
+**Used By Commands**: /debug, /test
 
 **Capabilities**:
 - Hypothesis generation and testing
@@ -287,7 +288,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Wave-based parallel phase execution orchestration
 **Model**: haiku-4.5 (deterministic coordination)
 
-**Used By Commands**: /build
+**Used By Commands**: /implement
 
 **Capabilities**:
 - Dependency analysis and wave structure building
@@ -304,7 +305,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Typical Use Cases**:
 - Orchestrating multi-phase implementations
 - Maximizing parallel execution (40-60% time savings)
-- Build workflow coordination
+- Implementation workflow coordination
 
 ---
 
@@ -312,7 +313,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Execute single phase implementation tasks
 **Model**: sonnet-4.5 (complex implementation reasoning)
 
-**Used By Commands**: /build (via implementer-coordinator)
+**Used By Commands**: /implement (via implementer-coordinator)
 
 **Capabilities**:
 - Phase task execution
@@ -337,7 +338,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Manage artifact updates and progress tracking
 **Model**: haiku-4.5 (deterministic updates)
 
-**Used By Commands**: /build
+**Used By Commands**: /implement
 
 **Capabilities**:
 - Checkbox state management
@@ -669,11 +670,12 @@ Commands orchestrate agents to accomplish complex workflows:
   ├── research-specialist → Gather context
   └── plan-architect → Create implementation plan
 
-/build
-  ├── implementer-coordinator → Orchestrate wave execution
-  │   └── implementation-executor → Execute phase tasks
-  │       └── spec-updater → Track progress
-  └── debug-analyst → Investigate failures
+/implement
+  └── implementer-coordinator → Orchestrate wave execution
+
+/test
+  ├── test-executor → Execute test suites
+  └── debug-analyst → Investigate failures (if tests fail)
 
 /debug
   ├── research-specialist → Analyze codebase

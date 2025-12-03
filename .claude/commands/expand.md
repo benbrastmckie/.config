@@ -1361,7 +1361,7 @@ Artifacts:
 
 Next Steps:
   • Review expanded files: ls -lh ${EXPANDED_DIR}/
-  • Continue implementation: /build ${PLAN_PATH}
+  • Continue implementation: /implement ${PLAN_PATH}
   • Further expand if needed: /expand [phase|stage] ${PLAN_PATH} ${NUM}
 ```
 

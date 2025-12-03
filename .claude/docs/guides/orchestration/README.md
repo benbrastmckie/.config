@@ -36,7 +36,7 @@ Orchestration guides cover the patterns and practices for coordinating complex w
 
 - [Orchestration Reference](../../reference/workflows/orchestration-reference.md) - Quick reference
 - [State-Based Orchestration Architecture](../../architecture/state-based-orchestration-overview.md)
-- [Build Command Guide](../commands/build-command-guide.md) - Main orchestration command
+- [Build Command Guide](../commands/implement-command-guide.md) - Main orchestration command
 
 ## Navigation
 

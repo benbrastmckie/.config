@@ -151,29 +151,49 @@ if [[ "$INPUT_FILE" == *.md ]]; then
     exit 1
   }
 
-  # Extract lean_file_path from plan metadata
-  # Look for pattern: **Lean File**: /path/to/file.lean or - **Lean File**: /path
+  # 3-Tier Lean File Discovery
+  # Tier 1: Extract from plan metadata (optional, backward compatible)
   LEAN_FILE=$(grep -E "^\*\*Lean File\*\*:|^- \*\*Lean File\*\*:" "$PLAN_FILE" | sed 's/^- \*\*Lean File\*\*:[[:space:]]*//' | sed 's/^\*\*Lean File\*\*:[[:space:]]*//' | head -1)
+  DISCOVERY_METHOD="metadata"
 
+  # Tier 2: Scan phase tasks for .lean file references
   if [ -z "$LEAN_FILE" ]; then
-    echo "ERROR: Plan file missing '**Lean File**: /path' metadata" >&2
+    LEAN_FILE=$(grep -oP '(?<=\s)/[^\s]+\.lean' "$PLAN_FILE" | head -1)
+    DISCOVERY_METHOD="task_scan"
+  fi
+
+  # Tier 3: Search topic directory for .lean files
+  if [ -z "$LEAN_FILE" ]; then
+    TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
+    LEAN_FILE=$(find "$TOPIC_PATH" -name "*.lean" -type f 2>/dev/null | head -1)
+    DISCOVERY_METHOD="directory_search"
+  fi
+
+  # Validate discovery succeeded
+  if [ -z "$LEAN_FILE" ]; then
+    echo "ERROR: No Lean file found via any discovery method" >&2
+    echo "Please specify the Lean file using one of these methods:" >&2
+    echo "  1. Plan metadata: **Lean File**: /path/to/file.lean" >&2
+    echo "  2. Task description: - [ ] Prove theorem in /path/to/file.lean" >&2
+    echo "  3. Place .lean file in topic directory: $TOPIC_PATH" >&2
     log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-      "validation_error" "Plan missing Lean File metadata" "bash_block" \
-      "{\"plan_file\": \"$PLAN_FILE\"}"
+      "validation_error" "No Lean file found via metadata, task scan, or directory search" "bash_block" \
+      "{\"plan_file\": \"$PLAN_FILE\", \"topic_path\": \"$TOPIC_PATH\"}"
     exit 1
   fi
 
+  # Validate discovered file exists
   if [ ! -f "$LEAN_FILE" ]; then
     echo "ERROR: Lean file not found: $LEAN_FILE" >&2
     log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-      "file_error" "Lean file from plan not found: $LEAN_FILE" "bash_block" \
-      "{\"plan_file\": \"$PLAN_FILE\", \"lean_file\": \"$LEAN_FILE\"}"
+      "file_error" "Lean file discovered but not found: $LEAN_FILE" "bash_block" \
+      "{\"plan_file\": \"$PLAN_FILE\", \"lean_file\": \"$LEAN_FILE\", \"discovery_method\": \"$DISCOVERY_METHOD\"}"
     exit 1
   fi
 
   echo "Execution Mode: plan-based"
   echo "Plan File: $PLAN_FILE"
-  echo "Lean File: $LEAN_FILE"
+  echo "Lean File: $LEAN_FILE (discovered via $DISCOVERY_METHOD)"
 
   # === LEGACY PLAN DETECTION ===
   # Add [NOT STARTED] markers to phases without status markers
@@ -316,11 +336,11 @@ else
 fi
 ```
 
-**EXECUTE NOW**: USE the Task tool to invoke either lean-coordinator (plan-based) or lean-implementer (file-based).
-
 ### Plan-Based Mode: lean-coordinator
 
 **Condition**: When EXECUTION_MODE=plan-based, invoke lean-coordinator for wave-based parallel execution.
+
+**EXECUTE NOW**: USE the Task tool to invoke the lean-coordinator agent for plan-based mode.
 
 Task {
   subagent_type: "general-purpose"
@@ -369,6 +389,8 @@ Task {
 ### File-Based Mode: lean-implementer
 
 **Condition**: When EXECUTION_MODE=file-based, invoke lean-implementer for sequential theorem proving.
+
+**EXECUTE NOW**: USE the Task tool to invoke the lean-implementer agent for file-based mode.
 
 Task {
   subagent_type: "general-purpose"

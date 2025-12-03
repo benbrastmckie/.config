@@ -16,7 +16,7 @@ Start with these minimal examples:
 
 # Complete implementation pipeline
 /plan "add user auth"
-/build
+/implement
 ```
 
 For detailed explanations, see the workflow patterns below.
@@ -50,9 +50,9 @@ Use `/research` when you need to investigate a topic without implementing change
 
 **Default Complexity**: 2 (expected duration: 5-15 minutes)
 
-### Workflow Pattern 2: Plan-Build Pipeline
+### Workflow Pattern 2: Plan-Implement Pipeline
 
-Use this pipeline for complete feature implementation. The flow is: plan -> (optional) revise -> (optional) expand -> build.
+Use this pipeline for complete feature implementation. The flow is: plan -> (optional) revise -> (optional) expand -> implement.
 
 #### Step 1: /plan - Create Implementation Plan
 
@@ -133,33 +133,33 @@ Expands high-level phases into detailed task files for complex implementations.
 - Level 1: Phases in separate files (`plans/phase_N.md`)
 - Level 2: Stages in separate files (`plans/phase_N/stage_M.md`)
 
-#### Step 4: /build - Execute Implementation
+#### Step 4: /implement - Execute Implementation
 
-Executes the implementation plan with wave-based parallel execution.
+Executes the implementation plan phase by phase.
 
 **Syntax**:
 ```bash
-# Build from most recent plan
-/build
+# Implement from most recent plan
+/implement
 
-# Build from specific plan
-/build /path/to/plan.md
+# Implement from specific plan
+/implement /path/to/plan.md
 
 # Start from specific phase
-/build /path/to/plan.md 3
+/implement /path/to/plan.md 3
 
 # Dry run (show what would be executed)
-/build /path/to/plan.md --dry-run
+/implement /path/to/plan.md --dry-run
 ```
 
 **Examples**:
 
 ```bash
 # Execute the auth implementation plan
-/build /home/user/.claude/specs/027_auth/plans/001_auth_plan.md
+/implement /home/user/.claude/specs/027_auth/plans/001_auth_plan.md
 
 # Resume from phase 3 after fixing issues
-/build /home/user/.claude/specs/027_auth/plans/001_auth_plan.md 3
+/implement /home/user/.claude/specs/027_auth/plans/001_auth_plan.md 3
 ```
 
 **Workflow States**:
@@ -181,7 +181,7 @@ Start with research to understand the problem space, then create an implementati
 /plan "implement JWT authentication"
 ```
 
-#### Plan -> Build
+#### Plan -> Implement
 
 Create a plan and immediately execute it:
 
@@ -190,22 +190,22 @@ Create a plan and immediately execute it:
 /plan "add rate limiting to API"
 
 # Execute the plan
-/build
+/implement
 ```
 
-#### Build -> Revise -> Build (Debug Loop)
+#### Implement -> Revise -> Implement (Debug Loop)
 
-When implementation encounters issues, revise the plan and rebuild:
+When implementation encounters issues, revise the plan and re-implement:
 
 ```bash
-# Initial build attempt
-/build /path/to/plan.md
+# Initial implementation attempt
+/implement /path/to/plan.md
 
-# Build fails at phase 3 - revise the plan
+# Implementation fails at phase 3 - revise the plan
 /revise "fix database connection handling in phase 3"
 
-# Resume building from phase 3
-/build /path/to/plan.md 3
+# Resume implementation from phase 3
+/implement /path/to/plan.md 3
 ```
 
 #### Full Pipeline Example
@@ -220,12 +220,12 @@ When implementation encounters issues, revise the plan and rebuild:
 # 3. Expand complex phases (optional)
 /expand /home/user/.claude/specs/042_oauth/plans/001_oauth_plan.md
 
-# 4. Build the implementation
-/build
+# 4. Implement the plan
+/implement
 
-# 5. If issues arise, revise and rebuild
+# 5. If issues arise, revise and re-implement
 /revise "add refresh token rotation"
-/build
+/implement
 ```
 
 ### Choosing Complexity Level
@@ -246,7 +246,7 @@ When implementation encounters issues, revise the plan and rebuild:
 
 | Command | Guide | Description |
 |---------|-------|-------------|
-| /build | [build-command-guide.md](build-command-guide.md) | Full implementation workflow with wave-based execution |
+| /implement | [implement-command-guide.md](implement-command-guide.md) | Execute implementation plans phase by phase |
 | /collapse | [collapse-command-guide.md](collapse-command-guide.md) | Merge expanded phases back into parent plan |
 | /convert-docs | [convert-docs-command-guide.md](convert-docs-command-guide.md) | Convert between document formats |
 | /debug | [debug-command-guide.md](debug-command-guide.md) | Debug-focused workflow for root cause analysis |

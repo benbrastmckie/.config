@@ -8,7 +8,7 @@ Plan progress tracking uses status markers on phase headings to indicate executi
 
 - Visual tracking of implementation progress
 - Clear identification of current work
-- Automatic state management by /build command
+- Automatic state management by /implement command
 - Legacy plan compatibility
 - Flexible heading level (h2 or h3)
 
@@ -27,7 +27,7 @@ Plans progress through three primary states:
 | `[NOT STARTED]` | plan-architect agent (plan creation) or /implement Block 1a (legacy compatibility) | Plan creation or initialization |
 | `[IN PROGRESS]` | implementation-executor agent (STEP 1) | Phase execution begins |
 | `[COMPLETE]` | implementation-executor agent (STEP 3) or /implement Block 1d (recovery) | Phase execution ends successfully |
-| `[BLOCKED]` | /build command | Phase cannot proceed due to failures |
+| `[BLOCKED]` | /implement command | Phase cannot proceed due to failures |
 | `[SKIPPED]` | User/Agent | Phase intentionally skipped |
 
 ## Visual Example
@@ -165,7 +165,7 @@ dependencies: []
 **Complexity**: Low
 ```
 
-### /implement and /build Commands
+### /implement and /implement Commands
 
 Both commands initialize and validate progress markers:
 
@@ -240,7 +240,7 @@ grep "\[IN PROGRESS\]" plan.md
 
 ### Manual Status Updates
 
-While typically managed by /build, markers can be updated manually:
+While typically managed by /implement, markers can be updated manually:
 
 ```bash
 source .claude/lib/plan/checkbox-utils.sh
@@ -250,8 +250,8 @@ add_in_progress_marker "plan.md" "3"
 ## Best Practices
 
 1. **Always use plan-architect**: Ensure new plans have `[NOT STARTED]` markers
-2. **Let /build manage transitions**: Avoid manual marker updates during builds
-3. **Check for legacy plans**: The /build command handles this automatically
+2. **Let /implement manage transitions**: Avoid manual marker updates during builds
+3. **Check for legacy plans**: The /implement command handles this automatically
 4. **Use markers for visibility**: Quickly identify current work status
 5. **Choose heading level consistently**: Use either h2 or h3 format throughout a plan (mixing is supported but not recommended)
 
@@ -304,6 +304,6 @@ type add_in_progress_marker  # Should show function
 
 ## Related Documentation
 
-- [Build Command Guide](../guides/commands/build-command-guide.md) - Complete build workflow
+- [Build Command Guide](../guides/commands/implement-command-guide.md) - Complete implement workflow
 - [Workflow Phases Planning](workflow-phases-planning.md) - Phase structure standards
 - [Checkbox Utils Library](library-api-utilities.md) - Full function reference

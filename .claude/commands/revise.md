@@ -1349,7 +1349,7 @@ ARTIFACTS="  📊 Reports: $RESEARCH_DIR/ ($TOTAL_REPORT_COUNT files, $NEW_REPOR
 # Build next steps
 NEXT_STEPS="  • Review revised plan: cat $EXISTING_PLAN_PATH
   • Compare with backup: diff $BACKUP_PATH $EXISTING_PLAN_PATH
-  • Implement revised plan: /build $EXISTING_PLAN_PATH
+  • Implement revised plan: /implement $EXISTING_PLAN_PATH
   • Run /todo to update TODO.md (adds revised plan to tracking)"
 
 # Print standardized summary (no phases for revise command)

@@ -223,7 +223,7 @@ For command architecture standards and agent invocation patterns, see [Command A
 
 **Allowed Tools**: Read, Write, Grep, Glob, Bash, Task
 
-**Used By**: /build (wave-based implementation)
+**Used By**: /implement (wave-based implementation)
 
 **Definition**: [.claude/agents/implementer-coordinator.md](../../agents/implementer-coordinator.md)
 

@@ -182,7 +182,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 }
 
 # Early trap setup: Capture errors during initialization before WORKFLOW_ID is available.
-# This follows the dual trap pattern used by /build, /plan, and /repair commands.
+# This follows the dual trap pattern used by /implement, /plan, and /repair commands.
 # The trap will be updated later with actual workflow context (see late trap setup below).
 setup_bash_error_trap "/todo" "todo_early_$(date +%s)" "early_init"
 

@@ -183,7 +183,7 @@ Structure breakdown:
 
 YOU ARE EXECUTING AS the /orchestrate command.
 
-**Documentation**: See `.claude/docs/guides/commands/build-command-guide.md`
+**Documentation**: See `.claude/docs/guides/commands/orchestrate-command-guide.md`
 
 ---
 
@@ -599,11 +599,11 @@ The executable/documentation separation pattern combines with imperative languag
 Checking command files in .claude/commands/:
 
 ✓ coordinate.md: 1,084 lines (complex orchestrator, acceptable)
-  ✓ Guide exists: .claude/docs/guides/commands/build-command-guide.md
+  ✓ Guide exists: .claude/docs/guides/commands/coordinate-command-guide.md
   ✓ Cross-reference valid (bidirectional)
 
 ✓ orchestrate.md: 557 lines (under 1200 max)
-  ✓ Guide exists: .claude/docs/guides/commands/build-command-guide.md
+  ✓ Guide exists: .claude/docs/guides/commands/orchestrate-command-guide.md
   ✓ Cross-reference valid (bidirectional)
 
 ✓ implement.md: 220 lines (under 250 target)
