@@ -1,12 +1,14 @@
 ---
 allowed-tools: Task, Bash, Read, Grep, Glob
-argument-hint: [lean-file | plan-file] [--prove-all | --verify] [--max-attempts=N]
-description: Lean theorem proving workflow with lean-lsp-mcp integration
+argument-hint: [lean-file | plan-file] [--prove-all | --verify] [--max-attempts=N] [--max-iterations=N]
+description: Lean theorem proving workflow with lean-lsp-mcp integration and parallel orchestration
 command-type: primary
 dependent-agents:
   - lean-implementer
+  - lean-coordinator
 library-requirements:
   - error-handling.sh: ">=1.0.0"
+  - state-persistence.sh: ">=1.6.0"
 documentation: See .claude/docs/guides/commands/lean-command-guide.md for usage
 ---
 
@@ -18,15 +20,15 @@ YOU ARE EXECUTING a Lean 4 theorem proving workflow that uses the lean-implement
 **Expected Input**: Lean file path or plan file
 **Expected Output**: Completed proofs with summaries
 
-## Block 1a: Setup & Lean Project Detection
+## Block 1a: Setup & State Initialization
 
-**EXECUTE NOW**: The user invoked `/lean [lean-file | plan-file] [--prove-all | --verify] [--max-attempts=N]`. This block captures arguments, validates Lean project, and prepares for lean-implementer invocation.
+**EXECUTE NOW**: The user invoked `/lean [lean-file | plan-file] [--prove-all | --verify] [--max-attempts=N] [--max-iterations=N]`. This block captures arguments, validates Lean project, initializes workflow state, and prepares for coordinator/implementer invocation.
 
 In the **bash block below**, replace `YOUR_LEAN_ARGS_HERE` with the actual lean arguments.
 
 **Examples**:
 - If user ran `/lean Test.lean`, change to: `echo "Test.lean" > "$TEMP_FILE"`
-- If user ran `/lean plan.md --prove-all`, change to: `echo "plan.md --prove-all" > "$TEMP_FILE"`
+- If user ran `/lean plan.md --prove-all --max-iterations=3`, change to: `echo "plan.md --prove-all --max-iterations=3" > "$TEMP_FILE"`
 
 ```bash
 # === PREPROCESSING SAFETY ===
@@ -71,12 +73,22 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   exit 1
 }
 
+# Source state-persistence.sh
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# === INITIALIZE WORKFLOW STATE ===
+WORKFLOW_ID="lean_$(date +%s)"
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+trap "rm -f '$STATE_FILE'" EXIT
+
 # === INITIALIZE ERROR LOGGING ===
 ensure_error_log_exists
 
 # Set workflow metadata
 COMMAND_NAME="/lean"
-WORKFLOW_ID="lean_$(date +%s)"
 USER_ARGS="$LEAN_ARGS"
 
 echo "=== Lean Theorem Proving Workflow ==="
@@ -87,12 +99,16 @@ read -ra ARGS_ARRAY <<< "$LEAN_ARGS"
 INPUT_FILE="${ARGS_ARRAY[0]:-}"
 MODE="--prove-all"  # Default mode
 MAX_ATTEMPTS=3      # Default max attempts per theorem
+MAX_ITERATIONS=5    # Default max iterations for persistence loop
+CONTEXT_THRESHOLD=90  # Default context threshold percentage
 
 for arg in "${ARGS_ARRAY[@]:1}"; do
   case "$arg" in
     --prove-all) MODE="--prove-all" ;;
     --verify) MODE="--verify" ;;
     --max-attempts=*) MAX_ATTEMPTS="${arg#*=}" ;;
+    --max-iterations=*) MAX_ITERATIONS="${arg#*=}" ;;
+    --context-threshold=*) CONTEXT_THRESHOLD="${arg#*=}" ;;
   esac
 done
 
@@ -247,17 +263,112 @@ echo "Topic Path: $TOPIC_PATH"
 echo "Summaries Directory: $SUMMARIES_DIR"
 echo ""
 
-# Calculate summary output path
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-SUMMARY_PATH="$SUMMARIES_DIR/lean_proof_${TIMESTAMP}.md"
+# === ITERATION LOOP VARIABLES ===
+LEAN_WORKSPACE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_${WORKFLOW_ID}"
+mkdir -p "$LEAN_WORKSPACE" 2>/dev/null
 
-echo "Expected Summary: $SUMMARY_PATH"
+ITERATION=1
+CONTINUATION_CONTEXT=""
+WORK_REMAINING=""
+STUCK_COUNT=0
+
+# Persist iteration variables to state
+append_workflow_state "LEAN_WORKSPACE" "$LEAN_WORKSPACE"
+append_workflow_state "ITERATION" "$ITERATION"
+append_workflow_state "MAX_ITERATIONS" "$MAX_ITERATIONS"
+append_workflow_state "CONTEXT_THRESHOLD" "$CONTEXT_THRESHOLD"
+append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
+append_workflow_state "WORK_REMAINING" "$WORK_REMAINING"
+append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
+append_workflow_state "EXECUTION_MODE" "$EXECUTION_MODE"
+append_workflow_state "PLAN_FILE" "$PLAN_FILE"
+append_workflow_state "LEAN_FILE" "$LEAN_FILE"
+append_workflow_state "MODE" "$MODE"
+append_workflow_state "MAX_ATTEMPTS" "$MAX_ATTEMPTS"
+append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "SUMMARIES_DIR" "$SUMMARIES_DIR"
+append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
+
+echo "Lean Workspace: $LEAN_WORKSPACE"
+echo "Iteration: ${ITERATION}/${MAX_ITERATIONS}"
 echo ""
 ```
 
-## Block 1b: lean-implementer Invocation [HARD BARRIER]
+## Block 1b: Coordinator/Implementer Invocation [HARD BARRIER]
 
-**EXECUTE NOW**: USE the Task tool to invoke the lean-implementer agent.
+**ITERATION CHECK**: If continuing from Block 1c (iteration > 1), first load state:
+
+```bash
+# === LOAD STATE FOR CONTINUATION ===
+if [ -z "${ITERATION:-}" ] || [ "${ITERATION}" -eq 1 ]; then
+  # First iteration - state already loaded from Block 1a
+  echo "First iteration - using initial state"
+else
+  # Continuation iteration - restore state
+  load_workflow_state "$WORKFLOW_ID" 2>/dev/null || {
+    echo "ERROR: Failed to restore workflow state for continuation" >&2
+    exit 1
+  }
+  echo "Loaded state for iteration ${ITERATION}/${MAX_ITERATIONS}"
+  echo "Continuation context: ${CONTINUATION_CONTEXT}"
+  echo "Work remaining: ${WORK_REMAINING}"
+  echo ""
+fi
+```
+
+**EXECUTE NOW**: USE the Task tool to invoke either lean-coordinator (plan-based) or lean-implementer (file-based).
+
+### Plan-Based Mode: lean-coordinator
+
+**Condition**: When EXECUTION_MODE=plan-based, invoke lean-coordinator for wave-based parallel execution.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Wave-based parallel theorem proving orchestration (iteration ${ITERATION}/${MAX_ITERATIONS})"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/lean-coordinator.md
+
+    **Input Contract**:
+    - plan_path: ${PLAN_FILE}
+    - lean_file_path: ${LEAN_FILE}
+    - topic_path: ${TOPIC_PATH}
+    - artifact_paths:
+      - summaries: ${SUMMARIES_DIR}
+      - outputs: ${TOPIC_PATH}/outputs
+      - checkpoints: ${CLAUDE_PROJECT_DIR}/.claude/data/checkpoints
+    - continuation_context: ${CONTINUATION_CONTEXT:-null}
+    - iteration: ${ITERATION}
+    - max_iterations: ${MAX_ITERATIONS}
+    - context_threshold: ${CONTEXT_THRESHOLD}
+
+    **Context for Iteration ${ITERATION}**:
+    ${CONTINUATION_CONTEXT:+Previous iteration summary: ${CONTINUATION_CONTEXT}}
+    ${WORK_REMAINING:+Work remaining from previous iteration: ${WORK_REMAINING}}
+
+    Execute wave-based parallel proof development workflow.
+
+    **CRITICAL**: You MUST create a proof summary in ${SUMMARIES_DIR}/
+    The orchestrator will validate the summary exists after you return.
+
+    Return: PROOF_COMPLETE:
+    theorem_count: N
+    plan_file: ${PLAN_FILE}
+    lean_file: ${LEAN_FILE}
+    topic_path: ${TOPIC_PATH}
+    summary_path: /path/to/summary
+    context_exhausted: true|false
+    work_remaining: Phase_X Phase_Y (space-separated string, or 0 if all complete)
+    context_usage_percent: N%
+    checkpoint_path: /path/to/checkpoint (if created)
+    requires_continuation: true|false
+    stuck_detected: true|false
+  "
+}
+
+### File-Based Mode: lean-implementer
+
+**Condition**: When EXECUTION_MODE=file-based, invoke lean-implementer for sequential theorem proving.
 
 Task {
   subagent_type: "general-purpose"
@@ -273,17 +384,14 @@ Task {
       - summaries: ${SUMMARIES_DIR}
       - debug: ${DEBUG_DIR}
     - max_attempts: ${MAX_ATTEMPTS}
-    - plan_path: ${PLAN_FILE} (empty string if file-based mode)
-    - execution_mode: ${EXECUTION_MODE}
+    - plan_path: (empty - file-based mode)
+    - execution_mode: file-based
+    - theorem_tasks: [] (empty - process all sorry markers)
+    - rate_limit_budget: 3
 
     Execute proof development workflow for mode: ${MODE}
 
     ${MODE == '--verify' ? 'Verification mode: Check existing proofs without modification.' : 'Prove all unproven theorems (sorry markers).'}
-
-    **Plan-Based Mode Instructions**:
-    If plan_path is provided, you MUST update plan progress markers:
-    - After completing each theorem phase: mark_phase_complete '${PLAN_FILE}' <phase_num> && add_complete_marker '${PLAN_FILE}' <phase_num>
-    - Source checkbox-utils.sh at the start: source ${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh
 
     Return: IMPLEMENTATION_COMPLETE: 1
     summary_path: /path/to/summary
@@ -292,92 +400,281 @@ Task {
     tactics_used: [...]
     mathlib_theorems: [...]
     diagnostics: []
+    work_remaining: 0
   "
 }
 
-## Block 1c: Verification & Diagnostics
+## Block 1c: Verification & Iteration Decision
 
-**EXECUTE NOW**: Verify summary creation and parse lean-implementer output.
+**EXECUTE NOW**: Verify summary creation, parse agent output, and determine if iteration continuation is needed.
 
 ```bash
-# Re-source error-handling if needed
-if ! declare -F log_command_error >/dev/null 2>&1; then
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
-    echo "ERROR: Failed to re-source error-handling.sh" >&2
-    exit 1
-  fi
-fi
-
-# Re-initialize workflow metadata (subprocess isolation)
-COMMAND_NAME="/lean"
-WORKFLOW_ID="lean_$(date +%s)"
-USER_ARGS="$LEAN_ARGS"
+# === RESTORE STATE ===
+load_workflow_state "$WORKFLOW_ID" 2>/dev/null || {
+  echo "ERROR: Failed to restore workflow state" >&2
+  exit 1
+}
 
 # === VALIDATE SUMMARY EXISTENCE ===
 SUMMARY_FOUND="false"
+SUMMARY_PATH=""
 
-# Check for summary in expected location
-if [ -f "$SUMMARY_PATH" ] && [ $(stat -c%s "$SUMMARY_PATH" 2>/dev/null || echo "0") -ge 100 ]; then
+# Check for any recent summary in directory (last 5 minutes)
+LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -mmin -5 2>/dev/null | sort | tail -1)
+
+if [ -n "$LATEST_SUMMARY" ] && [ -f "$LATEST_SUMMARY" ] && [ $(stat -c%s "$LATEST_SUMMARY" 2>/dev/null || echo "0") -ge 100 ]; then
+  SUMMARY_PATH="$LATEST_SUMMARY"
   SUMMARY_FOUND="true"
-  echo "Summary validated: $SUMMARY_PATH"
+  echo "Summary found: $SUMMARY_PATH"
 else
-  # Check for any recent summary in directory
-  LATEST_SUMMARY=$(find "$SUMMARIES_DIR" -name "*.md" -type f -mmin -5 2>/dev/null | head -1)
-
-  if [ -n "$LATEST_SUMMARY" ] && [ $(stat -c%s "$LATEST_SUMMARY" 2>/dev/null || echo "0") -ge 100 ]; then
-    SUMMARY_PATH="$LATEST_SUMMARY"
-    SUMMARY_FOUND="true"
-    echo "Summary found: $SUMMARY_PATH"
-  else
-    echo "ERROR: Summary file not created or too small (<100 bytes)" >&2
-    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-      "agent_error" "lean-implementer did not create summary" "verification_block" \
-      "{\"expected_path\": \"$SUMMARY_PATH\", \"summaries_dir\": \"$SUMMARIES_DIR\"}"
-    exit 1
-  fi
+  echo "ERROR: Summary file not created or too small (<100 bytes)" >&2
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "agent_error" "Coordinator/implementer did not create summary" "verification_block" \
+    "{\"summaries_dir\": \"$SUMMARIES_DIR\"}"
+  exit 1
 fi
 
 echo ""
 
 # === PARSE OUTPUT SIGNAL ===
-# Extract key metrics from agent output (would be in agent response)
-# For now, we'll read from summary file
-
-THEOREMS_PROVEN=0
-THEOREMS_PARTIAL=0
-DIAGNOSTICS_COUNT=0
+# Extract work_remaining, context_exhausted, requires_continuation from summary
+WORK_REMAINING_NEW=""
+CONTEXT_EXHAUSTED="false"
+REQUIRES_CONTINUATION="false"
+CONTEXT_USAGE_PERCENT=0
 
 if [ -f "$SUMMARY_PATH" ]; then
-  # Parse summary for metrics
-  THEOREMS_PROVEN=$(grep -c "Status.*COMPLETE" "$SUMMARY_PATH" 2>/dev/null || echo "0")
-  THEOREMS_PARTIAL=$(grep -c "Status.*PARTIAL" "$SUMMARY_PATH" 2>/dev/null || echo "0")
+  # Parse summary for completion signal
+  # Look for "work_remaining: Phase_X Phase_Y" or "work_remaining: 0"
+  WORK_REMAINING_LINE=$(grep -E "^work_remaining:|^\*\*Work Remaining\*\*:" "$SUMMARY_PATH" | head -1)
+  if [ -n "$WORK_REMAINING_LINE" ]; then
+    WORK_REMAINING_NEW=$(echo "$WORK_REMAINING_LINE" | sed 's/^work_remaining:[[:space:]]*//' | sed 's/^\*\*Work Remaining\*\*:[[:space:]]*//')
+    if [ "$WORK_REMAINING_NEW" = "0" ] || [ -z "$WORK_REMAINING_NEW" ]; then
+      WORK_REMAINING_NEW=""
+    fi
+  fi
 
-  # Check for diagnostics section
-  if grep -q "## Diagnostics" "$SUMMARY_PATH"; then
-    DIAGNOSTICS_COUNT=$(sed -n '/## Diagnostics/,/##/p' "$SUMMARY_PATH" | grep -c "ERROR\|WARNING" 2>/dev/null || echo "0")
+  # Parse context_exhausted field
+  CONTEXT_EXHAUSTED_LINE=$(grep -E "^context_exhausted:|^\*\*Context Exhausted\*\*:" "$SUMMARY_PATH" | head -1)
+  if [ -n "$CONTEXT_EXHAUSTED_LINE" ]; then
+    CONTEXT_EXHAUSTED=$(echo "$CONTEXT_EXHAUSTED_LINE" | sed 's/^context_exhausted:[[:space:]]*//' | sed 's/^\*\*Context Exhausted\*\*:[[:space:]]*//')
+  fi
+
+  # Parse requires_continuation field
+  REQUIRES_CONTINUATION_LINE=$(grep -E "^requires_continuation:|^\*\*Requires Continuation\*\*:" "$SUMMARY_PATH" | head -1)
+  if [ -n "$REQUIRES_CONTINUATION_LINE" ]; then
+    REQUIRES_CONTINUATION=$(echo "$REQUIRES_CONTINUATION_LINE" | sed 's/^requires_continuation:[[:space:]]*//' | sed 's/^\*\*Requires Continuation\*\*:[[:space:]]*//')
+  fi
+
+  # Parse context_usage_percent
+  CONTEXT_USAGE_LINE=$(grep -E "^context_usage_percent:|^\*\*Context Usage\*\*:" "$SUMMARY_PATH" | head -1)
+  if [ -n "$CONTEXT_USAGE_LINE" ]; then
+    CONTEXT_USAGE_PERCENT=$(echo "$CONTEXT_USAGE_LINE" | sed 's/^context_usage_percent:[[:space:]]*//' | sed 's/^\*\*Context Usage\*\*:[[:space:]]*//' | sed 's/%//')
   fi
 fi
 
-echo "Theorems Proven: $THEOREMS_PROVEN"
-echo "Theorems Partial: $THEOREMS_PARTIAL"
-echo "Diagnostics: $DIAGNOSTICS_COUNT"
+echo "Work Remaining: ${WORK_REMAINING_NEW:-none}"
+echo "Context Exhausted: $CONTEXT_EXHAUSTED"
+echo "Context Usage: ${CONTEXT_USAGE_PERCENT}%"
+echo "Requires Continuation: $REQUIRES_CONTINUATION"
 echo ""
 
-# === VALIDATE PROOF COMPLETENESS ===
-SORRY_COUNT=$(grep -c "sorry" "$LEAN_FILE" 2>/dev/null || echo "0")
+# === STUCK DETECTION ===
+if [ -n "$WORK_REMAINING_NEW" ] && [ "$WORK_REMAINING_NEW" = "$WORK_REMAINING" ]; then
+  STUCK_COUNT=$((STUCK_COUNT + 1))
+  echo "WARNING: Work remaining unchanged (stuck count: $STUCK_COUNT)" >&2
 
-if [ "$MODE" = "--prove-all" ] && [ "$SORRY_COUNT" -gt 0 ]; then
-  echo "WARNING: $SORRY_COUNT sorry markers remain in file" >&2
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
-    "execution_error" "Proof incomplete: $SORRY_COUNT sorry remain" "verification_block" \
-    "{\"file\": \"$LEAN_FILE\", \"sorry_count\": $SORRY_COUNT}"
+  if [ "$STUCK_COUNT" -ge 2 ]; then
+    echo "ERROR: Stuck detected (no progress for 2 iterations)" >&2
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+      "execution_error" "Stuck: no progress for 2 iterations" "verification_block" \
+      "{\"work_remaining\": \"$WORK_REMAINING_NEW\", \"stuck_count\": $STUCK_COUNT}"
+
+    # Exit to Block 2 for final summary
+    append_workflow_state "REQUIRES_CONTINUATION" "false"
+    append_workflow_state "SUMMARY_PATH" "$SUMMARY_PATH"
+    exit 0
+  fi
+else
+  STUCK_COUNT=0  # Reset stuck counter on progress
 fi
 
-if [ "$DIAGNOSTICS_COUNT" -gt 0 ]; then
-  echo "WARNING: $DIAGNOSTICS_COUNT diagnostic issues detected" >&2
+# === ITERATION DECISION ===
+echo "=== Iteration Decision (${ITERATION}/${MAX_ITERATIONS}) ==="
+
+# Decision logic: Continue if work remaining AND not stuck AND iterations left
+if [ "$REQUIRES_CONTINUATION" = "true" ] && [ -n "$WORK_REMAINING_NEW" ] && [ "$ITERATION" -lt "$MAX_ITERATIONS" ]; then
+  NEXT_ITERATION=$((ITERATION + 1))
+  CONTINUATION_CONTEXT="${LEAN_WORKSPACE}/iteration_${ITERATION}_summary.md"
+
+  echo "Continuing to iteration $NEXT_ITERATION..."
+  echo "  - Work remaining: $WORK_REMAINING_NEW"
+  echo "  - Context usage: ${CONTEXT_USAGE_PERCENT}%"
+  echo ""
+
+  # Update state for next iteration
+  append_workflow_state "ITERATION" "$NEXT_ITERATION"
+  append_workflow_state "WORK_REMAINING" "$WORK_REMAINING_NEW"
+  append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
+  append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
+
+  # Copy summary to continuation context
+  if [ -f "$SUMMARY_PATH" ]; then
+    cp "$SUMMARY_PATH" "$CONTINUATION_CONTEXT" 2>/dev/null || true
+    echo "Continuation context saved: $CONTINUATION_CONTEXT"
+  fi
+
+  echo ""
+  echo "**ITERATION LOOP**: Return to Block 1b with updated state (iteration $NEXT_ITERATION)"
+  echo ""
+
+  # Note: You must manually loop back to Block 1b
+  # The state has been updated with:
+  # - ITERATION = $NEXT_ITERATION
+  # - CONTINUATION_CONTEXT = $CONTINUATION_CONTEXT
+  # - WORK_REMAINING = $WORK_REMAINING_NEW
+  #
+  # When you execute Block 1b again, it will load these updated values from state
+  exit 0
+else
+  # Work complete or max iterations reached
+  if [ -z "$WORK_REMAINING_NEW" ] || [ "$WORK_REMAINING_NEW" = "0" ]; then
+    echo "All work complete!"
+  elif [ "$ITERATION" -ge "$MAX_ITERATIONS" ]; then
+    echo "Max iterations ($MAX_ITERATIONS) reached"
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+      "execution_error" "Max iterations reached with work remaining" "verification_block" \
+      "{\"work_remaining\": \"$WORK_REMAINING_NEW\", \"iteration\": $ITERATION}"
+  else
+    echo "Continuation not required"
+  fi
+
+  # Save final summary path to state
+  append_workflow_state "SUMMARY_PATH" "$SUMMARY_PATH"
+  append_workflow_state "REQUIRES_CONTINUATION" "false"
+
+  echo "Proceeding to Block 1d (phase marker recovery)..."
+  echo ""
+fi
+```
+
+## Block 1d: Phase Marker Validation and Recovery
+
+**EXECUTE NOW**: Validate phase markers and recover any missing [COMPLETE] markers after coordinator/implementer updates. This block only applies to plan-based mode.
+
+**Skip Condition**: If EXECUTION_MODE=file-based, skip directly to Block 2.
+
+```bash
+set +H 2>/dev/null || true
+set +o histexpand 2>/dev/null || true
+set -e  # Fail-fast
+
+# === RESTORE STATE ===
+load_workflow_state "$WORKFLOW_ID" 2>/dev/null || {
+  echo "ERROR: Failed to restore workflow state" >&2
+  exit 1
+}
+
+# === SKIP IF FILE-BASED MODE ===
+if [ "$EXECUTION_MODE" = "file-based" ]; then
+  echo "File-based mode: Skipping phase marker recovery"
+  exit 0
 fi
 
-echo "Verification complete"
+# === VALIDATE PLAN FILE EXISTS ===
+if [ -z "$PLAN_FILE" ] || [ ! -f "$PLAN_FILE" ]; then
+  echo "WARNING: Plan file not found: $PLAN_FILE" >&2
+  echo "Skipping phase marker recovery"
+  exit 0
+fi
+
+echo ""
+echo "=== Phase Marker Validation and Recovery ==="
+echo ""
+
+# Source checkbox utilities
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source checkbox-utils.sh" >&2
+  exit 1
+}
+
+# Count total phases and phases with [COMPLETE] marker
+TOTAL_PHASES=$(grep -c "^### Phase" "$PLAN_FILE" 2>/dev/null || echo "0")
+PHASES_WITH_MARKER=$(grep -c "^### Phase.*\[COMPLETE\]" "$PLAN_FILE" 2>/dev/null || echo "0")
+
+echo "Plan File: $(basename "$PLAN_FILE")"
+echo "Total phases: $TOTAL_PHASES"
+echo "Phases with [COMPLETE] marker: $PHASES_WITH_MARKER"
+echo ""
+
+if [ "$TOTAL_PHASES" -eq 0 ]; then
+  echo "No phases found in plan (unexpected)"
+elif [ "$PHASES_WITH_MARKER" -eq "$TOTAL_PHASES" ]; then
+  echo "✓ All phases marked complete by coordinator/implementer"
+else
+  echo "⚠ Detecting phases missing [COMPLETE] marker..."
+  echo ""
+
+  # Recovery: Find phases with all checkboxes complete but missing [COMPLETE] marker
+  RECOVERED_COUNT=0
+  for phase_num in $(seq 1 "$TOTAL_PHASES"); do
+    # Check if phase already has [COMPLETE] marker
+    if grep -q "^### Phase ${phase_num}:.*\[COMPLETE\]" "$PLAN_FILE"; then
+      continue  # Already marked
+    fi
+
+    # Check if all tasks in phase are complete (no [ ] checkboxes)
+    if verify_phase_complete "$PLAN_FILE" "$phase_num" 2>/dev/null; then
+      echo "Recovering Phase $phase_num (all tasks complete but marker missing)..."
+
+      # Mark all tasks complete (idempotent operation)
+      mark_phase_complete "$PLAN_FILE" "$phase_num" 2>/dev/null || {
+        echo "  ⚠ Task marking failed for Phase $phase_num" >&2
+      }
+
+      # Add [COMPLETE] marker to phase heading
+      if add_complete_marker "$PLAN_FILE" "$phase_num" 2>/dev/null; then
+        echo "  ✓ [COMPLETE] marker added"
+        ((RECOVERED_COUNT++))
+      else
+        echo "  ⚠ [COMPLETE] marker failed for Phase $phase_num" >&2
+      fi
+    fi
+  done
+
+  if [ "$RECOVERED_COUNT" -gt 0 ]; then
+    echo ""
+    echo "✓ Recovered $RECOVERED_COUNT phase marker(s)"
+  else
+    echo ""
+    echo "No phases needed recovery (partial completion expected)"
+  fi
+fi
+
+# Verify checkbox consistency
+if verify_checkbox_consistency "$PLAN_FILE" 1 2>/dev/null; then
+  echo ""
+  echo "✓ Checkbox hierarchy synchronized"
+else
+  echo ""
+  echo "⚠ Checkbox hierarchy may need manual verification"
+fi
+
+# Check if all phases complete and update plan metadata
+if [ "$PHASES_WITH_MARKER" -eq "$TOTAL_PHASES" ] && [ "$TOTAL_PHASES" -gt 0 ]; then
+  # All phases complete - update plan metadata status
+  if check_all_phases_complete "$PLAN_FILE"; then
+    update_plan_status "$PLAN_FILE" "COMPLETE"
+    echo "✓ Plan metadata updated to COMPLETE"
+  fi
+fi
+
+# Persist validation results
+append_workflow_state "PHASES_WITH_MARKER" "$PHASES_WITH_MARKER"
+append_workflow_state "TOTAL_PHASES" "$TOTAL_PHASES"
+
+echo ""
+echo "Phase marker recovery complete"
 echo ""
 ```
 
@@ -386,9 +683,25 @@ echo ""
 **EXECUTE NOW**: Display completion summary and emit PROOF_COMPLETE signal.
 
 ```bash
-# Re-source error-handling if needed
-if ! declare -F log_command_error >/dev/null 2>&1; then
-  source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || true
+# === RESTORE STATE ===
+load_workflow_state "$WORKFLOW_ID" 2>/dev/null || {
+  echo "WARNING: Could not restore state, using defaults" >&2
+}
+
+# === PARSE FINAL METRICS ===
+THEOREMS_PROVEN=0
+THEOREMS_PARTIAL=0
+SORRY_COUNT=0
+
+if [ -f "$SUMMARY_PATH" ]; then
+  # Parse summary for metrics
+  THEOREMS_PROVEN=$(grep -c "Status.*COMPLETE\|✅" "$SUMMARY_PATH" 2>/dev/null || echo "0")
+  THEOREMS_PARTIAL=$(grep -c "Status.*PARTIAL\|⚠" "$SUMMARY_PATH" 2>/dev/null || echo "0")
+fi
+
+# Count remaining sorry markers
+if [ -n "$LEAN_FILE" ] && [ -f "$LEAN_FILE" ]; then
+  SORRY_COUNT=$(grep -c "sorry" "$LEAN_FILE" 2>/dev/null || echo "0")
 fi
 
 # === CONSOLE SUMMARY ===
@@ -398,18 +711,16 @@ cat << 'EOF'
 ╠═══════════════════════════════════════════════════════╣
 EOF
 
-echo "║ Summary: $THEOREMS_PROVEN theorems proven, $THEOREMS_PARTIAL partial"
+echo "║ Theorems Proven: $THEOREMS_PROVEN"
+echo "║ Theorems Partial: $THEOREMS_PARTIAL"
 echo "║ File: $(basename "$LEAN_FILE")"
-echo "║ Mode: $MODE"
+echo "║ Execution Mode: ${EXECUTION_MODE}"
+echo "║ Iterations: ${ITERATION}/${MAX_ITERATIONS}"
 
 if [ "$SORRY_COUNT" -eq 0 ]; then
   echo "║ Status: All proofs complete ✓"
 else
   echo "║ Status: $SORRY_COUNT sorry markers remain"
-fi
-
-if [ "$DIAGNOSTICS_COUNT" -gt 0 ]; then
-  echo "║ Diagnostics: $DIAGNOSTICS_COUNT issues"
 fi
 
 cat << 'EOF'
@@ -418,6 +729,10 @@ cat << 'EOF'
 EOF
 
 echo "║ └─ Summary: $(basename "$SUMMARY_PATH")"
+
+if [ -n "${CONTINUATION_CONTEXT:-}" ] && [ -f "$CONTINUATION_CONTEXT" ]; then
+  echo "║ └─ Continuation: $(basename "$CONTINUATION_CONTEXT")"
+fi
 
 cat << 'EOF'
 ╠═══════════════════════════════════════════════════════╣
@@ -431,15 +746,17 @@ EOF
 echo ""
 
 # === EMIT COMPLETION SIGNAL ===
-echo "PROOF_COMPLETE: $THEOREMS_PROVEN"
-echo "summary_path: $SUMMARY_PATH"
-echo "lean_file: $LEAN_FILE"
-echo "theorems_proven: $THEOREMS_PROVEN"
-echo "theorems_partial: $THEOREMS_PARTIAL"
-echo "diagnostics_count: $DIAGNOSTICS_COUNT"
-echo "sorry_remaining: $SORRY_COUNT"
+echo "PROOF_COMPLETE:"
+echo "  summary_path: $SUMMARY_PATH"
+echo "  lean_file: $LEAN_FILE"
+echo "  theorems_proven: $THEOREMS_PROVEN"
+echo "  theorems_partial: $THEOREMS_PARTIAL"
+echo "  sorry_remaining: $SORRY_COUNT"
+echo "  iterations_used: $ITERATION"
+echo "  execution_mode: $EXECUTION_MODE"
 
 # Cleanup
+TEMP_FILE="${HOME}/.claude/tmp/lean_arg_$(date +%s%N).txt"
 rm -f "$TEMP_FILE" "${HOME}/.claude/tmp/lean_arg_path.txt" 2>/dev/null
 
 echo ""

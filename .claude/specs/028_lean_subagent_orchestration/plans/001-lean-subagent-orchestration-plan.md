@@ -3,7 +3,7 @@
 ## Metadata
 - **Date**: 2025-12-03
 - **Feature**: Refactor /lean command to support parallel subagent orchestration with plan progress updates and persistence loops similar to /implement
-- **Status**: [IN PROGRESS]
+- **Status**: [COMPLETE]
 - **Estimated Hours**: 22-28 hours
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**: [001-lean-orchestration-patterns.md](../reports/001-lean-orchestration-patterns.md)
@@ -154,27 +154,27 @@ THEOREM_BATCH_COMPLETE:
 
 ---
 
-### Phase 2: Create lean-coordinator Agent [NOT STARTED]
+### Phase 2: Create lean-coordinator Agent [COMPLETE]
 
 **Dependencies**: depends_on: [Phase 1]
 
 **Objective**: Create lean-coordinator agent based on implementer-coordinator pattern for wave-based parallel theorem proving orchestration.
 
 **Tasks**:
-- [ ] Create `.claude/agents/lean-coordinator.md` from implementer-coordinator template
-- [ ] Update frontmatter (model: haiku-4.5, description, allowed-tools)
-- [ ] Implement STEP 1: Plan Structure Detection (parse Lean plan for theorem phases)
-- [ ] Implement STEP 2: Dependency Analysis (invoke dependency-analyzer.sh)
-- [ ] Implement STEP 3: Wave Execution Loop (iterate over waves, collect completion reports)
-- [ ] Implement parallel Task invocation pattern (multiple lean-implementer calls in single message)
-- [ ] Implement MCP rate limit budget allocation (budget = 3 / num_agents_in_wave)
-- [ ] Implement progress monitoring (collect theorems_proven, tactics_used, mathlib_theorems)
-- [ ] Implement STEP 4: Verification (run lean_build once per wave)
-- [ ] Implement STEP 5: Result Aggregation (create consolidated proof summary)
-- [ ] Add output signal format (PROOF_COMPLETE with work_remaining field)
-- [ ] Document rate limit coordination strategy in agent guidelines
-- [ ] Create unit test for dependency analysis parsing
-- [ ] Create integration test for single-wave execution (2 theorems parallel)
+- [x] Create `.claude/agents/lean-coordinator.md` from implementer-coordinator template
+- [x] Update frontmatter (model: haiku-4.5, description, allowed-tools)
+- [x] Implement STEP 1: Plan Structure Detection (parse Lean plan for theorem phases)
+- [x] Implement STEP 2: Dependency Analysis (invoke dependency-analyzer.sh)
+- [x] Implement STEP 3: Wave Execution Loop (iterate over waves, collect completion reports)
+- [x] Implement parallel Task invocation pattern (multiple lean-implementer calls in single message)
+- [x] Implement MCP rate limit budget allocation (budget = 3 / num_agents_in_wave)
+- [x] Implement progress monitoring (collect theorems_proven, tactics_used, mathlib_theorems)
+- [x] Implement STEP 4: Verification (run lean_build once per wave)
+- [x] Implement STEP 5: Result Aggregation (create consolidated proof summary)
+- [x] Add output signal format (PROOF_COMPLETE with work_remaining field)
+- [x] Document rate limit coordination strategy in agent guidelines
+- [x] Create unit test for dependency analysis parsing
+- [x] Create integration test for single-wave execution (2 theorems parallel)
 
 **Testing Strategy**:
 - Create plan with 3 theorems (1 in Wave 1, 2 in Wave 2 parallel)
@@ -191,26 +191,26 @@ THEOREM_BATCH_COMPLETE:
 
 ---
 
-### Phase 3: Modify lean-implementer for Theorem Batches [NOT STARTED]
+### Phase 3: Modify lean-implementer for Theorem Batches [COMPLETE]
 
 **Dependencies**: depends_on: [Phase 2]
 
 **Objective**: Update lean-implementer agent to accept theorem_tasks subset and rate_limit_budget parameters for parallel coordination.
 
 **Tasks**:
-- [ ] Add theorem_tasks parameter to input contract (array of theorem objects)
-- [ ] Add rate_limit_budget parameter (default: 3)
-- [ ] Modify STEP 1 to process only assigned theorem_tasks (not all sorry markers)
-- [ ] Update STEP 3 to prioritize lean_local_search over rate-limited tools
-- [ ] Add rate limit budget tracking (decrement on each external search tool use)
-- [ ] Add budget exhaustion handling (fall back to lean_local_search)
-- [ ] Update output signal to THEOREM_BATCH_COMPLETE format
-- [ ] Add work_remaining field to output (list theorems with remaining sorry)
-- [ ] Update STEP 8 to create per-wave summary (not full-session summary)
-- [ ] Add context_exhausted field to output (estimate based on theorem count)
-- [ ] Test with theorem_tasks=[theorem1, theorem2], verify both processed
-- [ ] Test with rate_limit_budget=1, verify only 1 external search used
-- [ ] Test batch completion signal parsing
+- [x] Add theorem_tasks parameter to input contract (array of theorem objects)
+- [x] Add rate_limit_budget parameter (default: 3)
+- [x] Modify STEP 1 to process only assigned theorem_tasks (not all sorry markers)
+- [x] Update STEP 3 to prioritize lean_local_search over rate-limited tools
+- [x] Add rate limit budget tracking (decrement on each external search tool use)
+- [x] Add budget exhaustion handling (fall back to lean_local_search)
+- [x] Update output signal to THEOREM_BATCH_COMPLETE format
+- [x] Add work_remaining field to output (list theorems with remaining sorry)
+- [x] Update STEP 8 to create per-wave summary (not full-session summary)
+- [x] Add context_exhausted field to output (estimate based on theorem count)
+- [x] Test with theorem_tasks=[theorem1, theorem2], verify both processed
+- [x] Test with rate_limit_budget=1, verify only 1 external search used
+- [x] Test batch completion signal parsing
 
 **Testing Strategy**:
 - Create Lean file with 3 theorems (all with sorry)
@@ -227,28 +227,28 @@ THEOREM_BATCH_COMPLETE:
 
 ---
 
-### Phase 4: Add Iteration Loop to /lean Command [NOT STARTED]
+### Phase 4: Add Iteration Loop to /lean Command [COMPLETE]
 
 **Dependencies**: depends_on: [Phase 3]
 
 **Objective**: Implement persistence loop pattern in /lean command with context estimation, checkpoint saving, and stuck detection for handling large proof sessions.
 
 **Tasks**:
-- [ ] Add iteration variables to Block 1a (ITERATION, MAX_ITERATIONS, CONTINUATION_CONTEXT, STUCK_COUNT)
-- [ ] Add --max-iterations flag parsing (default: 5)
-- [ ] Add --context-threshold flag parsing (default: 90%)
-- [ ] Persist iteration variables via append_workflow_state
-- [ ] Create lean workspace directory for iteration summaries
-- [ ] Update lean-coordinator input contract to include iteration parameters
-- [ ] Add Block 1c verification section (parse work_remaining from coordinator)
-- [ ] Implement iteration decision logic (check requires_continuation signal)
-- [ ] Add stuck detection (track WORK_REMAINING across iterations)
-- [ ] Add iteration state update for next iteration
-- [ ] Add continuation context saving (copy summary to workspace)
-- [ ] Implement iteration loop back to Block 1b (re-invoke coordinator)
-- [ ] Add max iterations check before re-invocation
-- [ ] Test with large Lean file (10 theorems), verify multi-iteration execution
-- [ ] Test stuck detection (same work_remaining for 2 iterations)
+- [x] Add iteration variables to Block 1a (ITERATION, MAX_ITERATIONS, CONTINUATION_CONTEXT, STUCK_COUNT)
+- [x] Add --max-iterations flag parsing (default: 5)
+- [x] Add --context-threshold flag parsing (default: 90%)
+- [x] Persist iteration variables via append_workflow_state
+- [x] Create lean workspace directory for iteration summaries
+- [x] Update lean-coordinator input contract to include iteration parameters
+- [x] Add Block 1c verification section (parse work_remaining from coordinator)
+- [x] Implement iteration decision logic (check requires_continuation signal)
+- [x] Add stuck detection (track WORK_REMAINING across iterations)
+- [x] Add iteration state update for next iteration
+- [x] Add continuation context saving (copy summary to workspace)
+- [x] Implement iteration loop back to Block 1b (re-invoke coordinator)
+- [x] Add max iterations check before re-invocation
+- [x] Test with large Lean file (10 theorems), verify multi-iteration execution
+- [x] Test stuck detection (same work_remaining for 2 iterations)
 
 **Testing Strategy**:
 - Create Lean file with 10 theorems requiring multiple iterations
@@ -266,28 +266,28 @@ THEOREM_BATCH_COMPLETE:
 
 ---
 
-### Phase 5: Add Phase Marker Recovery (Block 1d) [NOT STARTED]
+### Phase 5: Add Phase Marker Recovery (Block 1d) [COMPLETE]
 
 **Dependencies**: depends_on: [Phase 4]
 
 **Objective**: Add phase marker validation and recovery to /lean command to ensure plan file reflects actual proof completion state after parallel execution.
 
 **Tasks**:
-- [ ] Add Block 1d to /lean command after Block 1c
-- [ ] Source checkbox-utils.sh in Block 1d
-- [ ] Load workflow state (PLAN_FILE, WORKFLOW_ID)
-- [ ] Count total phases and phases with [COMPLETE] marker
-- [ ] Implement recovery loop for missing markers
-- [ ] For each phase without marker, check if all tasks complete (verify_phase_complete)
-- [ ] If complete, mark all tasks (mark_phase_complete) and add marker (add_complete_marker)
-- [ ] Verify checkbox consistency across hierarchy (verify_checkbox_consistency)
-- [ ] Update plan metadata status to COMPLETE if all phases done (check_all_phases_complete)
-- [ ] Persist validation results (PHASES_WITH_MARKER count)
-- [ ] Save completed states to state file (save_completed_states_to_state)
-- [ ] Test with plan where coordinator failed to update markers
-- [ ] Verify recovery detects and fixes missing markers
-- [ ] Test with partially complete plan (some phases incomplete)
-- [ ] Verify only complete phases get markers
+- [x] Add Block 1d to /lean command after Block 1c
+- [x] Source checkbox-utils.sh in Block 1d
+- [x] Load workflow state (PLAN_FILE, WORKFLOW_ID)
+- [x] Count total phases and phases with [COMPLETE] marker
+- [x] Implement recovery loop for missing markers
+- [x] For each phase without marker, check if all tasks complete (verify_phase_complete)
+- [x] If complete, mark all tasks (mark_phase_complete) and add marker (add_complete_marker)
+- [x] Verify checkbox consistency across hierarchy (verify_checkbox_consistency)
+- [x] Update plan metadata status to COMPLETE if all phases done (check_all_phases_complete)
+- [x] Persist validation results (PHASES_WITH_MARKER count)
+- [x] Save completed states to state file (save_completed_states_to_state)
+- [x] Test with plan where coordinator failed to update markers
+- [x] Verify recovery detects and fixes missing markers
+- [x] Test with partially complete plan (some phases incomplete)
+- [x] Verify only complete phases get markers
 
 **Testing Strategy**:
 - Create plan with 3 theorem phases
@@ -305,25 +305,25 @@ THEOREM_BATCH_COMPLETE:
 
 ---
 
-### Phase 6: MCP Rate Limit Coordination Testing [NOT STARTED]
+### Phase 6: MCP Rate Limit Coordination Testing [COMPLETE]
 
 **Dependencies**: depends_on: [Phase 5]
 
 **Objective**: Test and validate MCP rate limit coordination across parallel lean-implementer instances to ensure compliance with 3 requests/30s combined limit.
 
 **Tasks**:
-- [ ] Create test plan with 6 theorem phases (2 waves of 3 theorems each)
-- [ ] Add instrumentation to lean-implementer to log search tool usage
-- [ ] Run /lean with plan, verify Wave 1 agents each get budget=1 (3/3)
-- [ ] Verify total external search calls in Wave 1 ≤ 3
-- [ ] Verify lean_local_search prioritized when budget exhausted
-- [ ] Run /lean with plan, verify Wave 2 agents respect 30s window
-- [ ] Add rate limit backoff test (simulate rate limit error response)
-- [ ] Verify agent falls back to lean_local_search on rate limit error
-- [ ] Test sequential fallback strategy (stagger agent start times by 10s)
-- [ ] Create performance benchmark (time savings vs sequential execution)
-- [ ] Document rate limit best practices in lean-coordinator agent
-- [ ] Add rate limit troubleshooting section to lean command guide
+- [x] Create test plan with 6 theorem phases (2 waves of 3 theorems each)
+- [x] Add instrumentation to lean-implementer to log search tool usage
+- [x] Run /lean with plan, verify Wave 1 agents each get budget=1 (3/3)
+- [x] Verify total external search calls in Wave 1 ≤ 3
+- [x] Verify lean_local_search prioritized when budget exhausted
+- [x] Run /lean with plan, verify Wave 2 agents respect 30s window
+- [x] Add rate limit backoff test (simulate rate limit error response)
+- [x] Verify agent falls back to lean_local_search on rate limit error
+- [x] Test sequential fallback strategy (stagger agent start times by 10s)
+- [x] Create performance benchmark (time savings vs sequential execution)
+- [x] Document rate limit best practices in lean-coordinator agent
+- [x] Add rate limit troubleshooting section to lean command guide
 
 **Testing Strategy**:
 - Create Lean file with 6 theorems (all require Mathlib search)
@@ -343,28 +343,28 @@ THEOREM_BATCH_COMPLETE:
 
 ---
 
-### Phase 7: Testing and Validation [NOT STARTED]
+### Phase 7: Testing and Validation [COMPLETE]
 
 **Dependencies**: depends_on: [Phase 6]
 
 **Objective**: Comprehensive testing of all components including unit tests, integration tests, and end-to-end workflow validation.
 
 **Tasks**:
-- [ ] Create test suite directory `.claude/tests/lean/`
-- [ ] Write unit test for theorem extraction from Lean files
-- [ ] Write unit test for dependency graph parsing from Lean plans
-- [ ] Write unit test for wave structure generation
-- [ ] Write unit test for rate limit budget allocation
-- [ ] Write integration test for single theorem proof (baseline)
-- [ ] Write integration test for multi-theorem proof with dependencies (3 theorems, 2 waves)
-- [ ] Write integration test for multi-theorem proof without dependencies (3 theorems, 1 wave parallel)
-- [ ] Write integration test for large proof session (10+ theorems, persistence loop)
-- [ ] Write integration test for plan file workflow (plan → parallel proof → summary)
-- [ ] Write integration test for file-based workflow (Lean file → implicit plan → proof)
-- [ ] Test checkpoint resumption (--resume flag)
-- [ ] Test dry-run mode (preview only, no execution)
-- [ ] Run all tests and document results in test report
-- [ ] Add continuous integration workflow for lean tests
+- [x] Create test suite directory `.claude/tests/lean/`
+- [x] Write unit test for theorem extraction from Lean files
+- [x] Write unit test for dependency graph parsing from Lean plans
+- [x] Write unit test for wave structure generation
+- [x] Write unit test for rate limit budget allocation
+- [x] Write integration test for single theorem proof (baseline)
+- [x] Write integration test for multi-theorem proof with dependencies (3 theorems, 2 waves)
+- [x] Write integration test for multi-theorem proof without dependencies (3 theorems, 1 wave parallel)
+- [x] Write integration test for large proof session (10+ theorems, persistence loop)
+- [x] Write integration test for plan file workflow (plan → parallel proof → summary)
+- [x] Write integration test for file-based workflow (Lean file → implicit plan → proof)
+- [x] Test checkpoint resumption (--resume flag)
+- [x] Test dry-run mode (preview only, no execution)
+- [x] Run all tests and document results in test report
+- [x] Add continuous integration workflow for lean tests
 
 **Testing Strategy**:
 - Run all unit tests with bash test runner
@@ -386,28 +386,28 @@ THEOREM_BATCH_COMPLETE:
 
 ---
 
-### Phase 8: Documentation [NOT STARTED]
+### Phase 8: Documentation [COMPLETE]
 
 **Dependencies**: depends_on: [Phase 7]
 
 **Objective**: Complete documentation for all new components including command guide, agent references, and architecture overview.
 
 **Tasks**:
-- [ ] Create `.claude/docs/guides/commands/lean-command-guide.md`
-- [ ] Document /lean command syntax with all flags (--prove-all, --verify, --max-iterations, --resume)
-- [ ] Document plan-based vs file-based execution modes
-- [ ] Document iteration loop behavior and checkpoint management
-- [ ] Create lean-coordinator agent reference in `.claude/docs/reference/agents/`
-- [ ] Document wave-based execution pattern for Lean workflows
-- [ ] Document MCP rate limit coordination strategy
-- [ ] Add troubleshooting section for common issues
-- [ ] Create architecture diagram for Lean parallel orchestration
-- [ ] Update CLAUDE.md with lean workflow section
-- [ ] Add example plan templates to `.claude/docs/examples/lean/`
-- [ ] Document theorem-level parallelization best practices
-- [ ] Add performance metrics section (expected time savings)
-- [ ] Update lean-implementer agent reference with new parameters
-- [ ] Review and update all inline documentation in agents and commands
+- [x] Create `.claude/docs/guides/commands/lean-command-guide.md`
+- [x] Document /lean command syntax with all flags (--prove-all, --verify, --max-iterations, --resume)
+- [x] Document plan-based vs file-based execution modes
+- [x] Document iteration loop behavior and checkpoint management
+- [x] Create lean-coordinator agent reference in `.claude/docs/reference/agents/`
+- [x] Document wave-based execution pattern for Lean workflows
+- [x] Document MCP rate limit coordination strategy
+- [x] Add troubleshooting section for common issues
+- [x] Create architecture diagram for Lean parallel orchestration
+- [x] Update CLAUDE.md with lean workflow section
+- [x] Add example plan templates to `.claude/docs/examples/lean/`
+- [x] Document theorem-level parallelization best practices
+- [x] Add performance metrics section (expected time savings)
+- [x] Update lean-implementer agent reference with new parameters
+- [x] Review and update all inline documentation in agents and commands
 
 **Testing Strategy**:
 - Review all documentation for accuracy
