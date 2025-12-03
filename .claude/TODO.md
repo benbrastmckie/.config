@@ -3,16 +3,25 @@
 ## In Progress
 
 - [x] **Error Repair Implementation** - Fix 140 logged errors across 7 patterns affecting 10 commands [.claude/specs/983_repair_20251130_100233/plans/001-repair-20251130-100233-plan.md]
-  - Report: [001_Error_Analysis](.claude/specs/983_repair_20251130_100233/reports/001_error_analysis.md)
-  - Report: [002_Simplification_Analysis](.claude/specs/983_repair_20251130_100233/reports/002_simplification_analysis.md)
+  - Report: [001 Error Analysis](.claude/specs/983_repair_20251130_100233/reports/001_error_analysis.md)
+  - Report: [002 Simplification Analysis](.claude/specs/983_repair_20251130_100233/reports/002_simplification_analysis.md)
   - Summary: [001 Implementation Iteration 1 Summary](.claude/specs/983_repair_20251130_100233/summaries/001-implementation-iteration-1-summary.md)
+- [x] **Fix /repair Command Error Logging Issues** - Fix /repair command state persistence, error logging, and workflow transition issues [.claude/specs/018_repair_repair_20251202_120554/plans/001-repair-repair-20251202-120554-plan.md]
+  - Report: [001 Repair Errors Repair](.claude/specs/018_repair_repair_20251202_120554/reports/001-repair-errors-repair.md)
+  - Report: [002 Workflow State Analysis](.claude/specs/018_repair_repair_20251202_120554/reports/002-workflow-state-analysis.md)
+  - Summary: [001 Implementation Summary](.claude/specs/018_repair_repair_20251202_120554/summaries/001-implementation-summary.md)
+- [x] **Lean Command Orchestrator Implementation** - Dedicated /lean command orchestrator for AI-assisted Lean 4 theorem proving [.claude/specs/026_lean_command_orchestrator_implementation/plans/001-lean-command-orchestrator-implementation-plan.md]
+  - Report: [001 Lean Command Orchestrator Design](.claude/specs/026_lean_command_orchestrator_implementation/reports/001-lean-command-orchestrator-design.md)
+  - Summary: [001 Implementation Summary](.claude/specs/026_lean_command_orchestrator_implementation/summaries/001-implementation-summary.md)
 
 ## Not Started
 
 - [ ] **.claude/ Infrastructure Refactor** - Systematic refactor of .claude/ infrastructure aligned with Anthropic 2025 best practices [.claude/specs/000_claude_infrastructure_refactor/plans/001-claude-infrastructure-refactor-plan.md]
   - Report: [001 Infrastructure Refactor Analysis](.claude/specs/000_claude_infrastructure_refactor/reports/001-infrastructure-refactor-analysis.md)
-- [ ] **Fix /repair Command Error Logging Issues** - Fix /repair command state persistence, error logging, and workflow transition issues [.claude/specs/018_repair_repair_20251202_120554/plans/001-repair-repair-20251202-120554-plan.md]
-  - Report: [001 Repair Errors Repair](.claude/specs/018_repair_repair_20251202_120554/reports/001-repair-errors-repair.md)
+- [ ] **Plan Progress Tracking Fix** - Fix /implement plan file progress tracking to update phase markers in real-time [.claude/specs/021_plan_progress_tracking_fix/plans/001-plan-progress-tracking-fix-plan.md]
+  - Report: [001 Progress Tracking Analysis](.claude/specs/021_plan_progress_tracking_fix/reports/001-progress-tracking-analysis.md)
+  - Summary: [001 Iteration 1 Implementation Summary](.claude/specs/021_plan_progress_tracking_fix/summaries/001-iteration-1-implementation-summary.md)
+  - Summary: [002 Iteration 2 Implementation Summary](.claude/specs/021_plan_progress_tracking_fix/summaries/002-iteration-2-implementation-summary.md)
 
 ## Research
 
@@ -21,13 +30,22 @@ Research-only projects (reports without implementation plans):
 - [ ] **TODO.md Update Integration Analysis** - Comprehensive analysis of TODO.md update integration across all artifact-creating commands [.claude/specs/002_todo_update_integration_gaps/]
   - Report: [001 TODO.md Update Integration Analysis](.claude/specs/002_todo_update_integration_gaps/reports/001-review-todomd-update-integration-across.md)
 
+- [ ] **Error Analysis Report** - Detailed analysis of critical error patterns and repair strategy [.claude/specs/017_repair_plan_20251202_115442/]
+  - Report: [001 Error Analysis Report](.claude/specs/017_repair_plan_20251202_115442/reports/001-error-analysis-report.md)
+
+- [ ] **Lean MCP Command Integration Strategy** - Research on lean-lsp-mcp integration for theorem proving [.claude/specs/025_lean_mcp_command_orchestration_strategy/]
+  - Report: [001 Lean MCP Command Orchestration Strategy Research Report](.claude/specs/025_lean_mcp_command_orchestration_strategy/reports/001-lean-mcp-command-integration.md)
+
+- [ ] **Plan Orchestration Failure Analysis** - Analysis of task invocation failures across workflow commands [.claude/specs/678_coordinate_haiku_classification/]
+  - Report: [001 Research Report: Plan Orchestration Failure Analysis](.claude/specs/678_coordinate_haiku_classification/reports/001-plan-orchestration-failure-analysis.md)
+
 - [ ] **Command Infrastructure Uniformity Analysis** - Analysis of command infrastructure uniformity across .claude/commands/ [.claude/specs/989_no_name_error/]
-  - Report: [001 Research the Commands in Claude Commands](.claude/specs/989_no_name_error/reports/001-research-the-commands-in-claudecommand.md)
-  - Report: [002 Look Up Best Practices for Prompt Engineering](.claude/specs/989_no_name_error/reports/002-look-up-the-best-practices-for-prompt-an.md)
-  - Report: [003 Research the Information Provided In](.claude/specs/989_no_name_error/reports/003-research-the-information-provided-in.md)
+  - Report: [001 Command Infrastructure Uniformity Analysis](.claude/specs/989_no_name_error/reports/001-research-the-commands-in-claudecommand.md)
+  - Report: [002 Best Practices for Prompt Engineering](.claude/specs/989_no_name_error/reports/002-look-up-the-best-practices-for-prompt-an.md)
+  - Report: [003 Anthropic Best Practices Synthesis](.claude/specs/989_no_name_error/reports/003-research-the-information-provided-in.md)
 
 - [ ] **Command-Level TODO.md Tracking Integration Specification** - Specification for command TODO.md tracking integration via delegation pattern [.claude/specs/990_commands_todo_tracking_integration/]
-  - Report: [001 I Want All Commands in Claude Commands](.claude/specs/990_commands_todo_tracking_integration/reports/001-i-want-all-commands-in-claudecommands.md)
+  - Report: [001 Command-Level TODO.md Tracking Integration Specification](.claude/specs/990_commands_todo_tracking_integration/reports/001-i-want-all-commands-in-claudecommands.md)
 
 ## Saved
 
@@ -58,6 +76,7 @@ Research-only projects (reports without implementation plans):
 
 - [x] **Git-Based TODO.md Backup Migration** - Replace file-based TODO.md backups with git commits for cleaner filesystem and better recovery [.claude/specs/001_git_backup_todo_cleanup/plans/001-git-backup-todo-cleanup-plan.md]
   - Report: [001 Backup Patterns Analysis](.claude/specs/001_git_backup_todo_cleanup/reports/001-backup-patterns-analysis.md)
+  - Report: [002 Git Integration Implementation](.claude/specs/001_git_backup_todo_cleanup/reports/002-git-integration-implementation.md)
   - Summary: [001 Implementation Summary](.claude/specs/001_git_backup_todo_cleanup/summaries/001-implementation-summary.md)
 - [x] **/todo Command Subagent Delegation** - Refactor /todo command to enforce hard barrier subagent delegation pattern [.claude/specs/004_todo_command_subagent_delegation/plans/001-todo-command-subagent-delegation-plan.md]
   - Report: [001 Todo Command Subagent Delegation Analysis](.claude/specs/004_todo_command_subagent_delegation/reports/001-todo-command-subagent-delegation-analysis.md)
@@ -67,28 +86,59 @@ Research-only projects (reports without implementation plans):
   - Summary: [001 Implementation Summary](.claude/specs/005_repair_research_20251201_212513/summaries/001-implementation-summary.md)
 - [x] **Plan Command Orchestration Fix** - Fix pseudo-code Task invocations across all workflow commands (system-wide) [.claude/specs/006_plan_command_orchestration_fix/plans/001-plan-command-orchestration-fix-plan.md]
   - Report: [001 Plan Command Orchestration Failure](.claude/specs/006_plan_command_orchestration_fix/reports/001-plan-command-orchestration-failure.md)
+  - Report: [002 Cross-Command Analysis](.claude/specs/006_plan_command_orchestration_fix/reports/002-cross-command-analysis.md)
+  - Report: [003 Agent Violations Analysis](.claude/specs/006_plan_command_orchestration_fix/reports/003-agent-violations-analysis.md)
+  - Report: [004 Final Validation Report](.claude/specs/006_plan_command_orchestration_fix/reports/004-final-validation-report.md)
+  - Summary: [001 Implementation Summary](.claude/specs/006_plan_command_orchestration_fix/summaries/001-implementation-summary.md)
+  - Summary: [002 Implementation Summary](.claude/specs/006_plan_command_orchestration_fix/summaries/002-implementation-summary.md)
+  - Summary: [003 Implementation Summary](.claude/specs/006_plan_command_orchestration_fix/summaries/003-implementation-summary.md)
+  - Summary: [004 Implementation Summary](.claude/specs/006_plan_command_orchestration_fix/summaries/004-implementation-summary.md)
 - [x] **Fix Lean Infoview Keybinding** - Fix non-functional Lean infoview toggle keybinding [.claude/specs/009_nvim_lean_keybinding_infoview/plans/001-nvim-lean-keybinding-infoview-plan.md]
-  - Report: [Research Report](.claude/specs/009_nvim_lean_keybinding_infoview/reports/research_report.md)
+  - Report: [001 Research Report](.claude/specs/009_nvim_lean_keybinding_infoview/reports/001-research-report.md)
+  - Summary: [001 Implementation Summary](.claude/specs/009_nvim_lean_keybinding_infoview/summaries/001-implementation-summary.md)
 - [x] **Repair Plan Standards Enforcement** - Enforce uniform plan metadata standards across all plan-generating commands [.claude/specs/010_repair_plan_standards_enforcement/plans/001-repair-plan-standards-enforcement-plan.md]
   - Report: [001 Repair Plan Standards Analysis](.claude/specs/010_repair_plan_standards_enforcement/reports/001-repair-plan-standards-analysis.md)
+  - Report: [002 Plan Standards Documentation Architecture](.claude/specs/010_repair_plan_standards_enforcement/reports/002-revise-plan-standards-documentation.md)
+  - Summary: [001 Implementation Summary](.claude/specs/010_repair_plan_standards_enforcement/summaries/001-implementation-summary.md)
 - [x] **/plan Errors Repair** - Repair /plan command error logging and state management issues [.claude/specs/011_repair_plan_20251202_090807/plans/001-repair-plan-20251202-090807-plan.md]
   - Report: [001 Plan Errors Repair](.claude/specs/011_repair_plan_20251202_090807/reports/001-plan-errors-repair.md)
+  - Summary: [001 Implementation Summary](.claude/specs/011_repair_plan_20251202_090807/summaries/001-implementation-summary.md)
 - [x] **Nested .claude/ Directory Creation Fix** - Fix incorrect CLAUDE_PROJECT_DIR path detection in test scripts [.claude/specs/012_nested_claude_dir_creation_fix/plans/001-nested-claude-dir-creation-fix-plan.md]
   - Report: [001 Root Cause Analysis](.claude/specs/012_nested_claude_dir_creation_fix/reports/001-root-cause-analysis.md)
+  - Summary: [001 Implementation Summary](.claude/specs/012_nested_claude_dir_creation_fix/summaries/001-implementation-summary.md)
 - [x] **Plan Command Dropdown Duplicates** - Eliminate triple /plan command entries in Claude Code dropdown menu [.claude/specs/013_plan_command_dropdown_duplicates/plans/001-plan-command-dropdown-duplicates-plan.md]
   - Report: [001 Plan Command Triplication Root Cause Analysis](.claude/specs/013_plan_command_dropdown_duplicates/reports/001-plan-command-triplication-root-cause-analysis.md)
+  - Report: [002 Parent Directory Discovery Research](.claude/specs/013_plan_command_dropdown_duplicates/reports/002-parent-directory-discovery-research.md)
+  - Summary: [001 Implementation Summary](.claude/specs/013_plan_command_dropdown_duplicates/summaries/001-implementation-summary.md)
 - [x] **/test Command Error Repair** - Fix /test command errors (ERR trap false positives and state machine complexity validation) [.claude/specs/014_repair_test_20251202_100545/plans/001-repair-test-20251202-100545-plan.md]
   - Report: [001 Test Errors Repair](.claude/specs/014_repair_test_20251202_100545/reports/001-test-errors-repair.md)
+  - Summary: [001 Implementation Summary](.claude/specs/014_repair_test_20251202_100545/summaries/001-implementation-summary.md)
 - [x] **Commands TODO.md Update Integration** - Systematic TODO.md update integration across all commands [.claude/specs/015_commands_todo_update_integration/plans/001-commands-todo-update-integration-plan.md]
   - Report: [001 Commands TODO.md Update Integration Research](.claude/specs/015_commands_todo_update_integration/reports/001-commands-todo-update-integration.md)
+  - Summary: [001 Implementation Summary](.claude/specs/015_commands_todo_update_integration/summaries/001-implementation-summary.md)
 - [x] **TODO Command Invocation Fix** - Fix trigger_todo_update() to properly invoke /todo command [.claude/specs/016_todo_command_invocation_fix/plans/001-todo-command-invocation-fix-plan.md]
   - Report: [001 TODO Command Invocation Analysis](.claude/specs/016_todo_command_invocation_fix/reports/001-todo-command-invocation-analysis.md)
+  - Summary: [001 Implementation Summary](.claude/specs/016_todo_command_invocation_fix/summaries/001-implementation-summary.md)
 - [x] **/plan Command Error Fixes** - Fix /plan command bash syntax and state persistence errors [.claude/specs/019_repair_plan_20251201_211758/plans/001-repair-plan-20251201-211758-plan.md]
   - Report: [001 Plan Errors Repair](.claude/specs/019_repair_plan_20251201_211758/reports/001-plan-errors-repair.md)
   - Summary: [001 Implementation Summary](.claude/specs/019_repair_plan_20251201_211758/summaries/001-implementation-summary.md)
 - [x] **/implement Command Error Fixes** - /implement command error fixes addressing state persistence JSON validation and agent reliability [.claude/specs/020_repair_implement_20251202_003956/plans/001-repair-implement-20251202-003956-plan.md]
   - Report: [001 Implement Errors Repair](.claude/specs/020_repair_implement_20251202_003956/reports/001-implement-errors-repair.md)
+  - Report: [002 Standards Conformance Analysis](.claude/specs/020_repair_implement_20251202_003956/reports/002-standards-conformance-analysis.md)
   - Summary: [001 Implementation Summary](.claude/specs/020_repair_implement_20251202_003956/summaries/001-implementation-summary.md)
+  - Summary: [002 Implementation Summary](.claude/specs/020_repair_implement_20251202_003956/summaries/002-implementation-summary.md)
+- [x] **Lean LSP MCP Neovim Integration** - Integrate lean-lsp-mcp server for AI-assisted theorem proving in Neovim [.claude/specs/022_lean_lsp_mcp_neovim_integration/plans/001-lean-lsp-mcp-neovim-integration-plan.md]
+  - Report: [001 Lean LSP MCP Integration Research](.claude/specs/022_lean_lsp_mcp_neovim_integration/reports/001-lean-lsp-mcp-integration-research.md)
+  - Summary: [001 Implementation Summary](.claude/specs/022_lean_lsp_mcp_neovim_integration/summaries/001-implementation-summary.md)
+- [x] **/test Command Repair** - Fix critical errors blocking /test command execution [.claude/specs/023_repair_test_20251202_150525/plans/001-repair-test-20251202-150525-plan.md]
+  - Report: [001 Test Errors Repair](.claude/specs/023_repair_test_20251202_150525/reports/001-test-errors-repair.md)
+  - Summary: [001 Implementation Summary](.claude/specs/023_repair_test_20251202_150525/summaries/001-implementation-summary.md)
+- [x] **/repair Workflow Fix** - Fix state transitions, state persistence, and conditionals in /repair workflow [.claude/specs/024_repair_repair_20251202_152829/plans/001-repair-repair-20251202-152829-plan.md]
+  - Report: [001 Repair Errors Repair](.claude/specs/024_repair_repair_20251202_152829/reports/001-repair-errors-repair.md)
+  - Summary: [001 Implementation Summary](.claude/specs/024_repair_repair_20251202_152829/summaries/001-implementation-summary.md)
+- [x] **Checkbox Utils Phase Heading Support** - Add dual heading format support to checkbox-utils.sh [.claude/specs/027_checkbox_utils_phase_heading_support/plans/001-checkbox-utils-phase-heading-support-plan.md]
+  - Report: [001 Checkbox Utils Phase Heading Analysis](.claude/specs/027_checkbox_utils_phase_heading_support/reports/001-checkbox-utils-phase-heading-analysis.md)
+  - Summary: [001 Implementation Summary](.claude/specs/027_checkbox_utils_phase_heading_support/summaries/001-implementation-summary.md)
 - [x] **Commands TODO.md Integration Refactor** - Add TODO.md integration to /repair, /errors, /debug commands using delegation pattern [.claude/specs/991_commands_todo_tracking_refactor/plans/001-commands-todo-tracking-refactor-plan.md]
   - Report: [001 Gap Analysis And Implementation Strategy](.claude/specs/991_commands_todo_tracking_refactor/reports/001-gap-analysis-and-implementation-strategy.md)
   - Summary: [001 Implementation Summary](.claude/specs/991_commands_todo_tracking_refactor/summaries/001-implementation-summary.md)
@@ -123,6 +173,7 @@ Research-only projects (reports without implementation plans):
 - [x] **Fix /implement State Persistence Errors** - Fix /implement state persistence errors for WORK_REMAINING variable [.claude/specs/998_repair_implement_20251201_154205/plans/001-repair-implement-20251201-154205-plan.md]
   - Report: [001 Implement Errors Repair](.claude/specs/998_repair_implement_20251201_154205/reports/001-implement-errors-repair.md)
   - Report: [002 Plan Revision Insights](.claude/specs/998_repair_implement_20251201_154205/reports/002-plan-revision-insights.md)
+  - Summary: [001 Implementation Summary](.claude/specs/998_repair_implement_20251201_154205/summaries/001-implementation-summary.md)
 - [x] **/implement Command Persistence Enhancement** - Add /build-style persistence to /implement command [.claude/specs/999_build_implement_persistence/plans/001-build-implement-persistence-plan.md]
   - Report: [001 Build Implement Persistence Research](.claude/specs/999_build_implement_persistence/reports/001-build-implement-persistence-research.md)
   - Report: [002 Standards Compliance Review](.claude/specs/999_build_implement_persistence/reports/002-standards-compliance-review.md)

@@ -4,12 +4,13 @@ This document describes the plan progress tracking system that provides visibili
 
 ## Overview
 
-Plan progress tracking uses status markers on phase headings to indicate execution state. This system enables:
+Plan progress tracking uses status markers on phase headings to indicate execution state. Phase headings can use either h2 format (`## Phase N: Name`) or h3 format (`### Phase N: Name`). Both formats are fully supported. This system enables:
 
 - Visual tracking of implementation progress
 - Clear identification of current work
 - Automatic state management by /build command
 - Legacy plan compatibility
+- Flexible heading level (h2 or h3)
 
 ## Status Marker Lifecycle
 
@@ -31,7 +32,9 @@ Plans progress through three primary states:
 
 ## Visual Example
 
-### Plan Creation (by /plan command)
+### H3 Format (Standard)
+
+#### Plan Creation (by /plan command)
 
 ```markdown
 ### Phase 1: Setup [NOT STARTED]
@@ -39,7 +42,7 @@ Plans progress through three primary states:
 ### Phase 3: Testing [NOT STARTED]
 ```
 
-### During Phase 1 Execution
+#### During Phase 1 Execution
 
 ```markdown
 ### Phase 1: Setup [IN PROGRESS]
@@ -47,29 +50,41 @@ Plans progress through three primary states:
 ### Phase 3: Testing [NOT STARTED]
 ```
 
-### After Phase 1 Completes
-
-```markdown
-### Phase 1: Setup [COMPLETE]
-### Phase 2: Implementation [IN PROGRESS]
-### Phase 3: Testing [NOT STARTED]
-```
-
-### After Phase 2 Completes
-
-```markdown
-### Phase 1: Setup [COMPLETE]
-### Phase 2: Implementation [COMPLETE]
-### Phase 3: Testing [IN PROGRESS]
-```
-
-### After All Phases Complete
+#### After All Phases Complete
 
 ```markdown
 ### Phase 1: Setup [COMPLETE]
 ### Phase 2: Implementation [COMPLETE]
 ### Phase 3: Testing [COMPLETE]
 ```
+
+### H2 Format (Alternative)
+
+#### Plan Creation
+
+```markdown
+## Phase 1: Setup [NOT STARTED]
+## Phase 2: Implementation [NOT STARTED]
+## Phase 3: Testing [NOT STARTED]
+```
+
+#### During Phase 1 Execution
+
+```markdown
+## Phase 1: Setup [IN PROGRESS]
+## Phase 2: Implementation [NOT STARTED]
+## Phase 3: Testing [NOT STARTED]
+```
+
+#### After All Phases Complete
+
+```markdown
+## Phase 1: Setup [COMPLETE]
+## Phase 2: Implementation [COMPLETE]
+## Phase 3: Testing [COMPLETE]
+```
+
+**Note**: Both h2 and h3 formats are fully supported. Heading level is flexible and can be chosen based on document structure preferences.
 
 ## Implementation Functions
 
@@ -79,42 +94,50 @@ The following functions in `checkbox-utils.sh` manage progress markers:
 
 #### `remove_status_marker(plan_path, phase_num)`
 
-Removes any status marker from a phase heading.
+Removes any status marker from a phase heading. Works with both h2 and h3 formats.
 
 ```bash
 remove_status_marker "$PLAN_FILE" "1"
-# Before: ### Phase 1: Setup [IN PROGRESS]
-# After:  ### Phase 1: Setup
+# Before (h3): ### Phase 1: Setup [IN PROGRESS]
+# After:       ### Phase 1: Setup
+# Before (h2): ## Phase 1: Setup [IN PROGRESS]
+# After:       ## Phase 1: Setup
 ```
 
 #### `add_in_progress_marker(plan_path, phase_num)`
 
-Adds [IN PROGRESS] marker, automatically removing any existing marker.
+Adds [IN PROGRESS] marker, automatically removing any existing marker. Works with both h2 and h3 formats.
 
 ```bash
 add_in_progress_marker "$PLAN_FILE" "1"
-# Before: ### Phase 1: Setup [NOT STARTED]
-# After:  ### Phase 1: Setup [IN PROGRESS]
+# Before (h3): ### Phase 1: Setup [NOT STARTED]
+# After:       ### Phase 1: Setup [IN PROGRESS]
+# Before (h2): ## Phase 1: Setup [NOT STARTED]
+# After:       ## Phase 1: Setup [IN PROGRESS]
 ```
 
 #### `add_complete_marker(plan_path, phase_num)`
 
-Adds [COMPLETE] marker, automatically removing any existing marker.
+Adds [COMPLETE] marker, automatically removing any existing marker. Works with both h2 and h3 formats.
 
 ```bash
 add_complete_marker "$PLAN_FILE" "1"
-# Before: ### Phase 1: Setup [IN PROGRESS]
-# After:  ### Phase 1: Setup [COMPLETE]
+# Before (h3): ### Phase 1: Setup [IN PROGRESS]
+# After:       ### Phase 1: Setup [COMPLETE]
+# Before (h2): ## Phase 1: Setup [IN PROGRESS]
+# After:       ## Phase 1: Setup [COMPLETE]
 ```
 
 #### `add_not_started_markers(plan_path)`
 
-Adds [NOT STARTED] to all phases without status markers. Used for legacy plan compatibility.
+Adds [NOT STARTED] to all phases without status markers. Used for legacy plan compatibility. Works with both h2 and h3 formats.
 
 ```bash
 add_not_started_markers "$PLAN_FILE"
-# Before: ### Phase 1: Setup
-# After:  ### Phase 1: Setup [NOT STARTED]
+# Before (h3): ### Phase 1: Setup
+# After:       ### Phase 1: Setup [NOT STARTED]
+# Before (h2): ## Phase 1: Setup
+# After:       ## Phase 1: Setup [NOT STARTED]
 ```
 
 ### Hierarchy Functions
@@ -205,8 +228,8 @@ This ensures all plans benefit from progress tracking without manual updates.
 ### Monitoring Progress
 
 ```bash
-# View current phase status
-grep "^### Phase" plan.md
+# View current phase status (works with both h2 and h3)
+grep -E "^##+ Phase" plan.md
 
 # Count completed phases
 grep -c "\[COMPLETE\]" plan.md
@@ -230,6 +253,30 @@ add_in_progress_marker "plan.md" "3"
 2. **Let /build manage transitions**: Avoid manual marker updates during builds
 3. **Check for legacy plans**: The /build command handles this automatically
 4. **Use markers for visibility**: Quickly identify current work status
+5. **Choose heading level consistently**: Use either h2 or h3 format throughout a plan (mixing is supported but not recommended)
+
+## Heading Format Support
+
+All checkbox-utils.sh functions use dynamic pattern matching (`^##+ Phase`) that matches both h2 (`##`) and h3 (`###`) formats. The phase number field position is identical in both formats ($3), so field extraction logic is unified.
+
+**Pattern Matching**:
+```bash
+# Regex pattern matches both formats
+/^##+ Phase /  # Matches both "## Phase" and "### Phase"
+```
+
+**Field Extraction**:
+```
+## Phase 1: Setup [NOT STARTED]
+   $1    $2  $3
+   ##    Phase  1:
+
+### Phase 1: Setup [NOT STARTED]
+    $1     $2  $3
+    ###    Phase  1:
+```
+
+Both formats have phase number in field $3, enabling unified processing.
 
 ## Troubleshooting
 

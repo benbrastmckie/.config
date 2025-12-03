@@ -52,6 +52,8 @@ artifact_paths:
   summaries: /topic/summaries/
   debug: /topic/debug/
 max_attempts: 3  # Maximum proof attempts per theorem
+plan_path: ""  # Optional: Path to plan file for progress tracking (empty string if file-based mode)
+execution_mode: "file-based"  # "file-based" or "plan-based"
 ```
 
 ## Workflow
@@ -242,6 +244,41 @@ New content:
 ```
 
 **Important**: Use exact string matching from Read tool output to ensure correct replacement.
+
+**Plan-Based Mode Progress Tracking**:
+
+If `plan_path` is provided (plan-based mode), update progress markers after completing each theorem:
+
+```bash
+# Check if plan_path provided (not empty string)
+if [ -n "$plan_path" ]; then
+  # Source checkbox utilities
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || {
+    echo "WARNING: Failed to source checkbox-utils.sh, progress tracking disabled" >&2
+  }
+
+  # Determine phase number for this theorem
+  # Extract phase number from plan file based on theorem name or line number
+  THEOREM_NAME="add_comm"  # Extract from proof
+  PHASE_NUM=$(grep -n "theorem.*$THEOREM_NAME" "$plan_path" | grep -E "^##+ Phase ([0-9]+)" | sed -E 's/.*Phase ([0-9]+).*/\1/' | head -1)
+
+  if [ -n "$PHASE_NUM" ]; then
+    # Mark all tasks in phase complete
+    mark_phase_complete "$plan_path" "$PHASE_NUM"
+
+    # Add [COMPLETE] marker to phase heading
+    add_complete_marker "$plan_path" "$PHASE_NUM"
+
+    echo "Progress: Phase $PHASE_NUM marked complete"
+  fi
+fi
+```
+
+**Phase Number Detection Strategy**:
+1. Extract theorem name from Lean file (e.g., `theorem add_comm`)
+2. Search plan file for matching theorem reference in phase heading or tasks
+3. Extract phase number from heading pattern `## Phase N:` or `### Phase N:`
+4. Update both task checkboxes and phase status marker
 
 ### STEP 7: Verify Proof Completion
 
