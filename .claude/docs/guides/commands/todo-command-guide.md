@@ -35,7 +35,7 @@ The `/todo` command provides two modes for managing the `.claude/TODO.md` projec
 
 ### When NOT to Use
 
-- **Individual Plan Updates**: Use `/build` to update specific plan status
+- **Individual Plan Updates**: Use `/implement` to update specific plan status
 - **Creating New Plans**: Use `/plan` to create new implementation plans
 - **Manual TODO Tracking**: Backlog section is manually curated and preserved
 
@@ -149,7 +149,7 @@ Block 4: Write TODO.md File
 ```
 
 **Why Hard Barrier Pattern**:
-- **Architectural Compliance**: Consistent with other orchestrator commands (/build, /repair, /errors)
+- **Architectural Compliance**: Consistent with other orchestrator commands (/implement, /repair, /errors)
 - **100% Delegation**: Structurally impossible to bypass todo-analyzer invocation
 - **Reusable Agent**: todo-analyzer can be called from other workflows
 - **Fail-Fast**: Verification block catches missing agent outputs immediately
@@ -192,15 +192,15 @@ cat .claude/TODO.md
 
 # 4. Periodically clean up eligible projects (Completed, Abandoned, Superseded)
 /todo --clean
-/build <cleanup-plan-path>
+/implement <cleanup-plan-path>
 /todo  # Rescan to update TODO.md after cleanup
 ```
 
 ### Integration with Other Commands
 
 ```bash
-# After completing work with /build
-/build specs/plans/001_feature.md
+# After completing work with /implement
+/implement specs/plans/001_feature.md
 /todo  # Update TODO.md to reflect completion
 
 # After creating new plan with /plan
@@ -210,7 +210,7 @@ cat .claude/TODO.md
 # Cleanup workflow
 /todo --clean --dry-run    # Preview cleanup candidates (Completed, Abandoned, Superseded)
 /todo --clean              # Generate cleanup plan (no age filtering)
-/build <cleanup-plan>      # Execute cleanup (git verification, archive, removal)
+/implement <cleanup-plan>  # Execute cleanup (git verification, archive, removal)
 /todo                      # Rescan to update TODO.md
 ```
 
@@ -330,7 +330,7 @@ The `--clean` flag directly removes eligible project directories after creating 
 
 ### Clean Mode Output Format
 
-The `/todo --clean` command produces a standardized 4-section console summary (matching /plan and /build output format):
+The `/todo --clean` command produces a standardized 4-section console summary (matching /plan and /implement output format):
 
 **Example Output**:
 ```
@@ -521,7 +521,7 @@ Check for /todo command errors:
 - [TODO Organization Standards](../../reference/standards/todo-organization-standards.md) - Complete TODO.md formatting standards
 - [Command Reference](../../reference/standards/command-reference.md#todo) - Quick command reference
 - [/plan Command Guide](plan-command-guide.md) - Creating new plans
-- [/build Command Guide](build-command-guide.md) - Executing plans
+- [/implement Command Guide](implement-command-guide.md) - Executing plans
 - [todo-analyzer Agent](../../reference/standards/agent-reference.md#todo-analyzer) - Agent used for classification
 
 ---

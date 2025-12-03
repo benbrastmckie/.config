@@ -2,7 +2,7 @@
 
 **Path**: docs → guides → orchestration-best-practices.md
 
-[Used by: /build, /plan, /research, /debug, all workflow orchestration commands]
+[Used by: /implement, /plan, /research, /debug, all workflow orchestration commands]
 
 Comprehensive guide for implementing production-quality orchestration workflows using the unified 7-phase framework. This guide synthesizes best practices from Spec 508 unified framework, achieving 92-97% context reduction and 40-60% time savings through proven architectural patterns.
 
@@ -30,11 +30,11 @@ Orchestration commands coordinate multi-phase workflows through hierarchical age
 
 ### Maturity Status
 
-**Use /build for implementation workflows** - it is the stable, tested, and recommended orchestration command for executing implementation plans.
+**Use /implement for implementation workflows** - it is the stable, tested, and recommended orchestration command for executing implementation plans.
 
 | Command | Status | Recommendation |
 |---------|--------|----------------|
-| **/build** | **Production-Ready** | Stable, tested, recommended for implementation workflows. Use this by default. |
+| **/implement** | **Production-Ready** | Stable, tested, recommended for implementation workflows. Use this by default. |
 | **/plan** | **Production-Ready** | Stable, tested, recommended for research-driven planning. |
 | **/research** | **Production-Ready** | Stable, tested, recommended for investigation. |
 | **/debug** | **Production-Ready** | Stable, tested, recommended for issue investigation. |
@@ -46,7 +46,7 @@ Orchestration commands coordinate multi-phase workflows through hierarchical age
 ```
 Need orchestration workflow?
 │
-├─ Have an implementation plan? ──→ Use /build (recommended)
+├─ Have an implementation plan? ──→ Use /implement (recommended)
 │
 ├─ Need to create a plan? ──→ Use /plan (recommended)
 │
@@ -57,7 +57,7 @@ Need orchestration workflow?
 
 ### Feature Comparison Matrix
 
-| Feature | /build | /plan | /research | /debug | Maturity Status |
+| Feature | /implement | /plan | /research | /debug | Maturity Status |
 |---------|--------|-------|-----------|--------|-----------------|
 | **Wave-Based Parallel Execution** | ✓ (40-60% time savings) | ✗ | ✗ | ✗ | Production-ready |
 | **Research Phase** | ✗ | ✓ | ✓ | ✓ | Production-ready |
@@ -71,7 +71,7 @@ Need orchestration workflow?
 
 ### Command-Specific Capabilities
 
-#### /build (Production-Ready)
+#### /implement (Production-Ready)
 - **Focus**: Implementation phase execution
 - **Unique Features**:
   - Wave-based parallel implementation (40-60% time savings)
@@ -111,7 +111,7 @@ Need orchestration workflow?
 
 ### Use Case Recommendations
 
-**Implementation**: Use **/build** when you have:
+**Implementation**: Use **/implement** when you have:
 - An existing implementation plan to execute
 - Multiple phases that need parallel execution
 - Need for automatic testing and debugging
@@ -140,7 +140,7 @@ All commands share architectural compatibility:
 - **Shared Infrastructure**: Identical library dependencies and agent behavioral files
 - **Topic-Based Organization**: Artifacts organized under specs/{NNN_topic}/
 
-**Workflow**: Commands work together in sequence: `/plan` creates plans → `/build` executes them. Use `/research` for investigation-only workflows and `/debug` for issue diagnosis.
+**Workflow**: Commands work together in sequence: `/plan` creates plans → `/implement` executes them. Use `/research` for investigation-only workflows and `/debug` for issue diagnosis.
 
 ### Research Reference
 
@@ -871,7 +871,7 @@ echo "WORKFLOW_COMPLETE"
 
 ### Purpose
 
-Orchestration commands produce clean, concise output that minimizes context consumption while maintaining full diagnostic capability on failures. The /build command implements a comprehensive formatting architecture achieving 50-60% context reduction through library silence, concise verification, standardized progress markers, and simplified completion summaries.
+Orchestration commands produce clean, concise output that minimizes context consumption while maintaining full diagnostic capability on failures. The /implement command implements a comprehensive formatting architecture achieving 50-60% context reduction through library silence, concise verification, standardized progress markers, and simplified completion summaries.
 
 ### Architecture: Libraries Calculate, Commands Communicate
 

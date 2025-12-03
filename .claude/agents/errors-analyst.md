@@ -139,7 +139,7 @@ ERROR_LOG_PATH=".claude/data/logs/errors.jsonl"
 Parse JSONL format. Each line is a JSON object with fields:
 - `timestamp`: ISO 8601 format (e.g., "2025-11-21T06:02:36Z")
 - `environment`: "production" or other
-- `command`: Command that generated error (e.g., "/build")
+- `command`: Command that generated error (e.g., "/implement")
 - `workflow_id`: Unique workflow identifier
 - `user_args`: Arguments passed to command
 - `error_type`: Error category (e.g., "execution_error", "agent_error", "parse_error")
@@ -151,7 +151,7 @@ Parse JSONL format. Each line is a JSON object with fields:
 #### 3.2 - Apply Filters (if provided)
 
 The invoking command may provide filters:
-- `--command`: Filter by command name (e.g., "/build")
+- `--command`: Filter by command name (e.g., "/implement")
 - `--since`: Filter by time range (e.g., "1h", "24h", "7d")
 - `--type`: Filter by error_type (e.g., "agent_error")
 - `--workflow-id`: Filter by specific workflow
@@ -344,8 +344,8 @@ If you encounter errors during analysis:
 
 **Input**:
 ```
-REPORT_PATH="/home/user/.claude/specs/123_build_errors/reports/001_error_report.md"
-FILTERS="--command /build --since 24h --type execution_error"
+REPORT_PATH="/home/user/.claude/specs/123_implement_errors/reports/001_error_report.md"
+FILTERS="--command /implement --since 24h --type execution_error"
 ```
 
 **Process**:
@@ -353,7 +353,7 @@ FILTERS="--command /build --since 24h --type execution_error"
 2. Ensure parent directory exists ✓
 3. Create report file with template ✓
 4. Read error log from .claude/data/logs/errors.jsonl ✓
-5. Apply filters (command=/build, since=24h, type=execution_error) ✓
+5. Apply filters (command=/implement, since=24h, type=execution_error) ✓
 6. Parse 847 error entries, filter to 23 matching errors ✓
 7. Group by error message, identify top 5 patterns ✓
 8. Calculate statistics (23 total, 3 unique messages, 2 commands) ✓

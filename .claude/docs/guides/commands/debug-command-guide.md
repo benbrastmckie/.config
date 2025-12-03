@@ -32,7 +32,7 @@ The `/debug` command provides a debug-focused workflow for investigating issues 
 
 ### When NOT to Use
 
-- **Implementing features**: Use `/build` or `/coordinate` for implementation workflows
+- **Implementing features**: Use `/implement` for implementation workflows
 - **Creating plans**: Use `/plan` or `/plan` for implementation planning
 - **Research without fixes**: Use `/research` for investigation-only tasks
 - **Plan revision**: Use `/revise` for modifying existing plans
@@ -263,11 +263,11 @@ Performance issues are investigated with focus on latency analysis. Debug artifa
 
 ### Integration with Other Workflows
 
-**Fix → Build Chain**:
+**Fix → Implement Chain**:
 ```bash
 /debug"authentication bug"              # Investigate and identify root cause
 # Manually apply fixes
-/build                                 # Re-run implementation tests
+/implement                             # Re-run implementation tests
 ```
 
 **Research → Fix Chain**:
@@ -276,11 +276,11 @@ Performance issues are investigated with focus on latency analysis. Debug artifa
 /debug"authentication timeout errors"                    # Debug specific issue
 ```
 
-**Fix → Plan → Build Chain**:
+**Fix → Plan → Implement Chain**:
 ```bash
 /debug"database performance issues"     # Identify problems
 /plan "optimize database queries"      # Create fix implementation plan
-/build                                 # Implement fixes
+/implement                             # Implement fixes
 ```
 
 ---
@@ -469,7 +469,7 @@ find .claude/specs -path "*/reports/*.md" -size -100c
 
 - Check [Command Reference](../reference/standards/command-reference.md) for quick syntax
 - Review [Research-Specialist Agent](../../agents/research-specialist.md) for research patterns
-- See related commands: `/research`, `/debug`, `/build`
+- See related commands: `/research`, `/debug`, `/implement`
 - Review [State-Based Orchestration](../architecture/state-based-orchestration-overview.md) for workflow details
 
 ---
@@ -481,4 +481,4 @@ find .claude/specs -path "*/reports/*.md" -size -100c
 - [Debug-Analyst Agent](../../agents/debug-analyst.md)
 - [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md)
 - [Command Reference](../reference/standards/command-reference.md)
-- Related Commands: `/debug`, `/research`, `/build`, `/coordinate`
+- Related Commands: `/debug`, `/research`, `/implement`

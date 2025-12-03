@@ -186,9 +186,9 @@ save_completed_states_to_state
 
 ## Real-World Examples
 
-### Example 1: /build Command Block 2 Violation (Fixed)
+### Example 1: /implement Command Block 2 Violation (Fixed)
 
-**Original Error** (57% of /build errors):
+**Original Error** (57% of /implement errors):
 ```
 bash: save_completed_states_to_state: command not found
 ```

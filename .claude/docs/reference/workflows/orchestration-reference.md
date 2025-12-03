@@ -17,12 +17,12 @@ Comprehensive reference for all orchestration commands, patterns, and best pract
 
 | Command | Purpose | Phases | Delegation Rate | Use Case |
 |---------|---------|--------|-----------------|----------|
-| `/build` | Wave-based implementation | 4 | >90% | Execute implementation plans with parallel phases |
+| `/implement` | Wave-based implementation | 4 | >90% | Execute implementation plans with parallel phases |
 | `/plan` | Research-driven planning | 3 | >90% | Create implementation plans with research |
 | `/research` | Hierarchical research | 2 | >90% | Deep topic investigation with automatic decomposition |
 | `/debug` | Issue investigation | 3 | >90% | Root cause analysis and bug fixing |
 
-**Note**: `/coordinate`, `/orchestrate`, and `/supervise` have been archived. Use `/build` for implementation workflows.
+**Note**: `/coordinate`, `/orchestrate`, and `/supervise` have been archived. Use `/implement` for implementation workflows.
 
 **Common Features**:
 - Parallel research (2-4 agents)
@@ -41,7 +41,7 @@ Comprehensive reference for all orchestration commands, patterns, and best pract
 /plan "implement OAuth 2.0 authentication"
 
 # Build from plan
-/build specs/plans/NNN_oauth_implementation.md
+/implement specs/plans/NNN_oauth_implementation.md
 
 # Debug an issue
 /debug "authentication tokens expiring prematurely"
@@ -223,7 +223,7 @@ source .claude/lib/library-name.sh
 
 **For detailed command selection guidance with maturity status, see [Command Selection Guide](../guides/orchestration/orchestration-best-practices.md#command-selection)**
 
-**Quick Recommendation**: Use **/build** for implementation workflows and **/plan** for planning. The former `/coordinate` command has been archived - its functionality is now available through `/build` and `/plan`.
+**Quick Recommendation**: Use **/implement** for implementation workflows and **/plan** for planning. The former `/coordinate` command has been archived - its functionality is now available through `/implement` and `/plan`.
 
 ### Decision Matrix
 
@@ -285,8 +285,8 @@ Use this matrix to choose the right orchestration command for your workflow:
 - Architectural reference needed
 
 **Don't Use When**:
-- Production implementation workflows (use /build)
-- Speed is critical (use /build for parallel execution)
+- Production implementation workflows (use /implement)
+- Speed is critical (use /implement for parallel execution)
 
 **Output**: Full 7-phase workflow with reports, plan, implementation, tests, docs
 
@@ -300,8 +300,8 @@ Use this matrix to choose the right orchestration command for your workflow:
 - Evaluating comprehensive metrics collection
 
 **Don't Use When**:
-- Production implementation workflows (use /build)
-- Reliable delivery required (use /build)
+- Production implementation workflows (use /implement)
+- Reliable delivery required (use /implement)
 - Simple workflows (use /plan or /research)
 
 **Output**: Full workflow + PR (experimental) + dashboard (experimental) + metrics (experimental)

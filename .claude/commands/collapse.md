@@ -954,7 +954,7 @@ Artifacts:
 Next Steps:
   • Review consolidated plan: cat ${PARENT_PLAN_PATH}
   • Verify content preserved: grep -A 10 "Phase ${NUM}" ${PARENT_PLAN_PATH}
-  • Continue implementation: /build ${PARENT_PLAN_PATH}
+  • Continue implementation: /implement ${PARENT_PLAN_PATH}
 ```
 
 ### Return Format Specification

@@ -65,7 +65,7 @@ Task {
 4. Added explicit completion signal requirement
 5. Changed "instructions" to "behavioral guidelines" (standard terminology)
 
-**Commands Fixed**: `/build`, `/debug`, `/plan`, `/repair`, `/research`, `/revise`
+**Commands Fixed**: `/implement`, `/debug`, `/plan`, `/repair`, `/research`, `/revise`
 
 ### Pattern 2: Instructional Text Without Task Invocation
 
@@ -374,7 +374,7 @@ Pre-commit hook will validate the fix automatically.
 
 ## Command-by-Command Examples
 
-### /build Command
+### /implement Command
 
 **Fixed Components**: implementer-coordinator (1 invocation)
 
@@ -404,7 +404,7 @@ Task {
     - topic_path: ${TOPIC_PATH}
     - workflow_type: build
 
-    Execute build workflow per behavioral guidelines.
+    Execute implement workflow per behavioral guidelines.
     Return: BUILD_COMPLETE: ${SUMMARY_PATH}
   "
 }

@@ -47,7 +47,7 @@ The `/repair` command is the **only command** that does NOT use the LLM-based to
 **Naming Pattern**:
 ```bash
 /repair                        → specs/962_repair_20251129_143022/
-/repair --command /build       → specs/963_repair_build_20251129_143530/
+/repair --command /implement   → specs/963_repair_implement_20251129_143530/
 /repair --type state_error     → specs/964_repair_state_error_20251129_143105/
 ```
 

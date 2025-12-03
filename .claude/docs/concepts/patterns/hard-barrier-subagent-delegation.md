@@ -5,7 +5,7 @@
 The **Hard Barrier Pattern** enforces mandatory subagent delegation in orchestrator commands by using bash verification blocks as context barriers that prevent bypass. This pattern solves the architectural problem of orchestrators with permissive tool access performing subagent work directly instead of delegating via the Task tool.
 
 **Pattern Type**: Architectural constraint
-**Applies To**: Orchestrator commands (/ revise, /build, /expand, /collapse, /errors, /research, /debug, /repair)
+**Applies To**: Orchestrator commands (/revise, /implement, /expand, /collapse, /errors, /research, /debug, /repair)
 **Enforcement**: Structural (bash blocks make bypass impossible)
 
 ---
@@ -476,7 +476,7 @@ Apply hard barrier pattern when:
 4. **Error recovery needs explicit checkpoints**: For debugging and resume
 
 **Commands Requiring Hard Barriers**:
-- `/build` (implementer-coordinator)
+- `/implement` (implementer-coordinator)
 - `/collapse` (plan-architect)
 - `/debug` (debug-analyst, plan-architect)
 - `/errors` (errors-analyst)

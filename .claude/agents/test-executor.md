@@ -540,7 +540,7 @@ Track and log:
 
 ### Example Invocation
 
-From /build command Block 2:
+From /test command Block 2:
 
 ```bash
 # Pre-calculate test output path

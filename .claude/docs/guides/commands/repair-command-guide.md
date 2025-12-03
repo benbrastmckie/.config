@@ -37,7 +37,7 @@ The `/repair` command provides an error analysis and repair planning workflow th
 - **Single error debugging**: Use `/debug` for investigating specific issues
 - **Test failures**: Use `/debug` for test-specific root cause analysis
 - **Query errors**: Use `/errors` to query and view error logs without creating plans
-- **Direct fixes**: If you already know the fix, use `/build` with a manual plan
+- **Direct fixes**: If you already know the fix, use `/implement` with a manual plan
 
 ---
 
@@ -136,7 +136,7 @@ See [Hard Barrier Subagent Delegation Pattern](../../concepts/patterns/hard-barr
 2. **State Initialization**: sm_init() with workflow_type="research-and-plan"
 3. **Analysis Phase**: repair-analyst reads error logs, groups by patterns, creates analysis reports
 4. **Planning Phase**: plan-architect creates fix implementation plan from analysis
-5. **Output**: Error analysis reports + fix implementation plan ready for /build
+5. **Output**: Error analysis reports + fix implementation plan ready for /implement
 
 ---
 
@@ -162,7 +162,7 @@ The `/repair` command is part of a comprehensive error management lifecycle that
 - Generate implementation plans with fix phases via plan-architect agent
 - Return plan path ready for execution
 
-**4. Fix Implementation (/build)**
+**4. Fix Implementation (/implement)**
 - Execute repair plans with automatic testing after each phase
 - Create git commits for completed fix phases
 - Handle failures via debugging workflow if needed
@@ -193,7 +193,7 @@ Complete workflow from error discovery through resolution:
 # (Manual review of plan file to understand proposed fixes)
 
 # Step 4: Execute repair plan
-/build specs/857_state_error_patterns/plans/001_state_error_fix_plan.md
+/implement specs/857_state_error_patterns/plans/001_state_error_fix_plan.md
 
 # Step 5: Verify fixes resolved the errors
 /errors --type state_error --since 10m
@@ -205,7 +205,7 @@ Complete workflow from error discovery through resolution:
 
 - **Error Handling Pattern**: See [Error Handling Pattern](../../concepts/patterns/error-handling.md) for technical integration details
 - **Errors Command**: See [Errors Command Guide](errors-command-guide.md) for error querying and discovery workflow
-- **Build Command**: See [Build Command Guide](build-command-guide.md) for executing repair plans with testing
+- **Implement Command**: Use `/implement` to execute repair plans with testing
 
 ### When to Use /repair vs /debug
 
@@ -273,7 +273,7 @@ Fix Implementation Plan: .claude/specs/835_error_analysis_and_repair/plans/001_e
 
 Next Steps:
 - Review plan: cat .claude/specs/835_error_analysis_and_repair/plans/001_error_analysis_and_repair_plan.md
-- Implement fixes: /build .claude/specs/835_error_analysis_and_repair/plans/001_error_analysis_and_repair_plan.md
+- Implement fixes: /implement .claude/specs/835_error_analysis_and_repair/plans/001_error_analysis_and_repair_plan.md
 ```
 
 **Explanation**:
@@ -312,11 +312,11 @@ Uses ISO 8601 timestamp to filter errors by time. Useful for analyzing errors fr
 ### Example 4: Filter by Command and Severity
 
 ```bash
-/repair --command /build --severity high --complexity 3
+/repair --command /implement --severity high --complexity 3
 ```
 
 **Expected Output**:
-Analyzes high-severity errors from the /build command with deeper analysis (complexity 3).
+Analyzes high-severity errors from the /implement command with deeper analysis (complexity 3).
 
 **Explanation**:
 Combines multiple filters for targeted analysis. Higher complexity enables more thorough pattern detection and root cause analysis.
@@ -375,7 +375,7 @@ Filter by command that generated the error.
 
 **Examples**:
 ```bash
-/repair --command /build
+/repair --command /implement
 /repair --command /plan
 /repair --command /debug
 ```
@@ -435,7 +435,7 @@ Provide a workflow output file for comprehensive error analysis. The repair-anal
 /repair --file .claude/research-output.md --since 2025-11-20
 
 # Combine with other filters for targeted analysis
-/repair --file .claude/debug-output.md --command /build --complexity 3
+/repair --file .claude/debug-output.md --command /implement --complexity 3
 ```
 
 **Use Case**:
@@ -463,8 +463,8 @@ Provide a workflow output file for comprehensive error analysis. The repair-anal
 Multiple filters can be combined for precise targeting:
 
 ```bash
-# High-severity state errors from /build in last week
-/repair --type state_error --command /build --severity high --since 2025-11-12
+# High-severity state errors from /implement in last week
+/repair --type state_error --command /implement --severity high --since 2025-11-12
 
 # All validation errors with deep analysis
 /repair --type validation_error --complexity 3
@@ -531,7 +531,7 @@ The `/repair` command complements `/errors`:
 **Workflow**:
 1. Use `/errors` to explore error logs and identify patterns
 2. Use `/repair` with appropriate filters to create fix plans
-3. Use `/build` to execute fix implementation
+3. Use `/implement` to execute fix implementation
 
 **Example**:
 ```bash
@@ -542,7 +542,7 @@ The `/repair` command complements `/errors`:
 /repair --since 2025-11-19 --complexity 2
 
 # 3. Implement fixes
-/build .claude/specs/NNN_topic/plans/001_fix_plan.md
+/implement .claude/specs/NNN_topic/plans/001_fix_plan.md
 ```
 
 ---
@@ -585,7 +585,7 @@ The `/repair` command uses **timestamp-based naming** for spec directories, maki
 → specs/962_repair_20251129_143022/
 
 # With --command filter
-/repair --command /build
+/repair --command /implement
 → specs/963_repair_build_20251129_143530/
 
 # With --type filter
@@ -616,6 +616,7 @@ The `/repair` command uses **timestamp-based naming** for spec directories, maki
 | /repair | Timestamp-direct | No (always new) | Historical error tracking |
 | /plan | LLM-generated | Yes (same feature) | Semantic clarity, feature consolidation |
 | /research | LLM-generated | Yes (same topic) | Topic-based organization |
+| /implement | N/A (uses existing plan) | N/A | Executes existing plans |
 
 **Implementation Details**:
 
@@ -704,7 +705,7 @@ cat .claude/data/logs/errors.jsonl | jq .
 /repair --complexity 4
 
 # Use /debug for specific error investigation
-/debug "investigate state_error in /build command"
+/debug "investigate state_error in /implement command"
 
 # Manually review error log
 /errors --type state_error
@@ -718,7 +719,7 @@ cat .claude/data/logs/errors.jsonl | jq .
 
 - [/errors](errors-command-guide.md) - Query and view error logs
 - [/debug](debug-command-guide.md) - Debug-focused root cause analysis
-- [/build](build-command-guide.md) - Execute fix implementation plans
+- [/implement](implement-command-guide.md) - Execute fix implementation plans
 - [/plan](plan-command-guide.md) - Research and planning workflow pattern
 
 ### Related Concepts

@@ -535,7 +535,7 @@ fi
 ```
 
 **When to use**:
-- File paths (e.g., `/implement`, `/build`)
+- File paths (e.g., `/implement`, `/implement`)
 - Simple identifiers without flags
 - Arguments that don't need shell expansion
 
@@ -548,7 +548,7 @@ fi
 
 | Argument Type | Recommended Pattern | Example Commands |
 |--------------|---------------------|------------------|
-| File paths (no flags) | Direct $1 (legacy) | `/implement`, `/build` |
+| File paths (no flags) | Direct $1 (legacy) | `/implement`, `/implement` |
 | Complex descriptions | 2-block (standard) | `/research`, `/plan` |
 | Commands with flags | 2-block (standard) | `/repair`, `/debug` |
 | New command development | 2-block (standard) | All new commands |
@@ -652,7 +652,7 @@ Use when operating on existing topic directories or artifacts.
 
 **When to Use**:
 - Commands that modify existing plans (e.g., `/revise`, `/expand`, `/collapse`)
-- Commands that operate on existing specs (e.g., `/build`)
+- Commands that operate on existing specs (e.g., `/implement`)
 - Any workflow reading or updating artifacts in known locations
 
 **Implementation**:
@@ -686,7 +686,7 @@ echo "Operating on topic: $TOPIC_DIR"
 - Validates paths exist before operations
 - Uses standard artifact subdirectory layout
 
-**Reference Commands**: `/build`, `/revise`, `/expand`, `/collapse`
+**Reference Commands**: `/implement`, `/revise`, `/expand`, `/collapse`
 
 ### Decision Tree: Which Pattern to Use?
 
@@ -704,7 +704,7 @@ Does command create new topic?
 |---------|-----------|-------------|------------------|
 | A: Topic Naming Agent | Yes | New topics, semantic names | `/research`, `/plan`, `/debug` |
 | B: Direct Naming | No | Explicit naming, testing | Legacy commands, utilities |
-| C: Path Derivation | No | Existing topics/artifacts | `/build`, `/revise`, `/expand` |
+| C: Path Derivation | No | Existing topics/artifacts | `/implement`, `/revise`, `/expand` |
 
 ### Error Handling
 

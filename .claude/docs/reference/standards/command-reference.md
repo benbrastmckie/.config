@@ -18,13 +18,13 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 ### Active Commands
 - [/analyze](#analyze)
-- [/build](#build)
 - [/collapse](#collapse)
 - [/convert-docs](#convert-docs)
 - [/document](#document)
 - [/errors](#errors)
 - [/example-with-agent](#example-with-agent)
 - [/expand](#expand)
+- [/implement](#implement)
 - [/list](#list)
 - [/optimize-claude](#optimize-claude)
 - [/plan](#plan)
@@ -41,9 +41,9 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 - [/todo](#todo)
 
 ### Archived Commands
+- [/build](#build-archived)
 - [/coordinate](#coordinate-archived)
 - [/debug](#debug-archived)
-- [/implement](#implement-archived)
 - [/update](#update-archived)
 
 ---
@@ -69,30 +69,6 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 ---
 
-### /build
-**Purpose**: Build-from-plan workflow - Implementation, testing, debug, and documentation phases
-
-**Usage**: `/build [plan-file] [starting-phase] [--dry-run]`
-
-**Type**: orchestrator
-
-**Arguments**:
-- `plan-file` (optional): Path to implementation plan (auto-detects if omitted)
-- `starting-phase` (optional): Phase number to start from (default: 1)
-- `--dry-run`: Preview execution without running
-
-**Agents Used**: implementer-coordinator, debug-analyst
-
-**Output**: Implemented features with commits, test results, debug analysis or documentation
-
-**Workflow**: `implement → test → [debug OR document] → complete`
-
-**Automatically updates TODO.md**: Yes (at START when marking plan IN PROGRESS, and at COMPLETION when marking plan COMPLETE)
-
-**See**: [build.md](../../commands/build.md)
-
----
-
 ### /collapse
 **Purpose**: Merge expanded phase/stage back into parent plan (structural simplification)
 
@@ -112,6 +88,19 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 **Output**: Merged content in parent file, directory cleanup
 
 **See**: [collapse.md](../../commands/collapse.md)
+
+---
+
+### /build
+**Status**: ARCHIVED - Use `/implement` + `/test` instead
+
+**Purpose**: Build-from-plan workflow - Implementation, testing, debug, and documentation phases
+
+**Migration**: This command has been archived. Use `/implement` for implementation phases and `/test` for test execution with debug loop.
+
+**Reason for Removal**: The /build command combined too many responsibilities. Separating implementation (/implement) and testing (/test) provides clearer separation of concerns, more flexible execution, and better debugging isolation.
+
+**Archive Location**: Removed in clean-break refactoring (git history: commit removing build.md)
 
 ---
 
@@ -136,12 +125,12 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 ---
 
 ### /coordinate
-**Status**: ARCHIVED - Use `/build`, `/plan`, `/research`, `/debug`, or `/revise` instead
+**Status**: ARCHIVED - Use `/implement`, `/plan`, `/research`, `/debug`, or `/revise` instead
 
 **Purpose**: Clean multi-agent workflow orchestration with wave-based parallel implementation
 
 **Migration**: This command has been archived and its functionality split into dedicated commands:
-- `/build` - For implementation workflows
+- `/implement` - For implementation workflows
 - `/plan` - For research and planning workflows
 - `/research` - For research-only workflows
 - `/debug` - For debugging workflows
@@ -193,7 +182,7 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 - **Query Mode** (`--query` flag): Display error logs directly (backward compatible)
 
 **Arguments**:
-- `--command <cmd>` (optional): Filter by command name (e.g., `/build`, `/plan`)
+- `--command <cmd>` (optional): Filter by command name (e.g., `/implement`, `/plan`)
 - `--since <time>` (optional): Filter errors since timestamp (ISO 8601 format)
 - `--type <type>` (optional): Filter by error type (state_error, validation_error, agent_error, etc.)
 - `--workflow-id <id>` (optional): Filter by workflow ID
@@ -280,13 +269,25 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 ---
 
 ### /implement
-**Status**: ARCHIVED - Use `/build` instead
+**Status**: ACTIVE
 
-**Purpose**: Execute implementation plans with automated testing and commits
+**Purpose**: Execute implementation phases from plans with wave-based parallel execution
 
-**Migration**: This command has been archived. Use `/build` for plan implementation workflows.
+**Usage**: `/implement [plan-file] [starting-phase] [--dry-run] [--max-iterations=N]`
 
-**Archive Location**: `.claude/archive/legacy-workflow-commands/commands/implement.md`
+**Type**: orchestrator
+
+**Arguments**:
+- `plan-file` (optional): Path to implementation plan (auto-detects if omitted)
+- `starting-phase` (optional): Phase number to start from (default: 1)
+- `--dry-run`: Preview execution without running
+- `--max-iterations=N`: Maximum iteration count (default: 5)
+
+**Agents Used**: implementer-coordinator
+
+**Output**: Implementation summaries in topic summaries directory
+
+**See**: [implement.md](../../commands/implement.md)
 
 ---
 
@@ -338,7 +339,7 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 **Workflow**: `setup → research (parallel: claude-md + docs-structure) → analysis (parallel: bloat + accuracy) → planning (cleanup-plan-architect) → display`
 
-**Automatically updates TODO.md**: No (manual plan tracking via /build)
+**Automatically updates TODO.md**: No (manual plan tracking via /implement)
 
 **See**: [optimize-claude.md](../../commands/optimize-claude.md)
 
@@ -419,7 +420,7 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 **Arguments**:
 - `--since` (optional): Filter errors since timestamp (e.g., "1h", "2025-01-01")
 - `--type` (optional): Filter by error type (state_error, validation_error, agent_error, etc.)
-- `--command` (optional): Filter by command name (e.g., `/build`, `/plan`)
+- `--command` (optional): Filter by command name (e.g., `/implement`, `/plan`)
 - `--severity` (optional): Filter by severity level
 - `--complexity` (optional): Research depth 1-4 (default: 2)
 
@@ -669,19 +670,18 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 ### Primary Commands
 Core development workflow drivers:
-- **/build** - Build-from-plan workflow with testing and documentation
+- **/implement** - Execute implementation plans phase by phase
 - **/debug** - Debug-focused workflow for root cause analysis
 - **/plan** - Research and create implementation plans
 - **/research** - Research-only workflow for reports
 - **/revise** - Research and revise existing plans
-- **/test** - Run project-specific tests
-- **/test-all** - Run complete test suite
+- **/test** - Execute test suite with coverage loop
 
 ### Archived Commands
 Legacy commands that have been superseded:
-- **/coordinate** - ARCHIVED (use /build, /plan, /research, /debug, or /revise)
+- **/build** - ARCHIVED (use /implement + /test)
+- **/coordinate** - ARCHIVED (use /implement, /plan, /research, /debug, or /revise)
 - **/debug** - ARCHIVED (use /debug)
-- **/implement** - ARCHIVED (use /build)
 - **/plan** - ARCHIVED (use /plan)
 - **/research** - ARCHIVED (use /research or /plan)
 - **/revise** - ARCHIVED (use /revise)
@@ -726,10 +726,14 @@ Structured implementation planning:
 - **/revise** (complex plan changes)
 - **/debug** (debug strategy planning)
 
+### implementer-coordinator
+Wave-based implementation execution:
+- **/implement** (implementation phases)
+
 ### debug-analyst
 Issue investigation:
 - **/debug** (root cause analysis)
-- **/build** (conditional debugging)
+- **/test** (test failure debugging)
 
 ### doc-converter
 Document format conversion:

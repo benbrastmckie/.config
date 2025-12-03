@@ -362,7 +362,7 @@ This test validates:
 
 ### Examples
 
-**Compliant Command**: `/build` command
+**Compliant Command**: `/implement` command
 
 ```bash
 # Lines 50-55: Source library
@@ -372,7 +372,7 @@ source "$CLAUDE_LIB/core/error-handling.sh" 2>/dev/null || {
 }
 
 # Line 72: Set metadata
-COMMAND_NAME="/build"
+COMMAND_NAME="/implement"
 WORKFLOW_ID="build_$(date +%s)"
 USER_ARGS="$*"
 

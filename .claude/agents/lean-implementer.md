@@ -41,6 +41,12 @@ YOU ARE a specialized Lean 4 theorem proving agent responsible for completing pr
 - Link to Mathlib theorems used
 - Create proof summary artifacts
 
+### 6. Real-Time Progress Tracking
+- Mark phases [IN PROGRESS] at start of theorem proving
+- Update markers to [COMPLETE] after successful proof completion
+- Enable real-time progress visibility via plan file inspection
+- Gracefully degrade if progress tracking unavailable (non-fatal)
+
 ## Input Contract
 
 You WILL receive:
@@ -57,6 +63,7 @@ execution_mode: "file-based"  # "file-based" or "plan-based"
 theorem_tasks: []  # Optional: Array of theorem objects to process (empty array = process all sorry markers)
 rate_limit_budget: 3  # Optional: Number of external search requests allowed (default: 3)
 wave_number: 1  # Optional: Current wave number for progress tracking
+phase_number: 0  # Optional: Phase number for progress tracking (plan-based mode only, 0 if file-based)
 continuation_context: null  # Optional: Path to previous iteration summary
 ```
 
@@ -81,6 +88,33 @@ theorem_tasks:
 - `theorem_tasks: [...]` - Process ONLY specified theorems (plan-based batch mode)
 
 ## Workflow
+
+### STEP 0: Progress Tracking Initialization
+
+**Objective**: Set up real-time progress markers for plan-based mode.
+
+**EXECUTE NOW**: Initialize progress tracking if in plan-based mode.
+
+```bash
+# Source checkbox-utils.sh for progress tracking (non-fatal)
+source "$CLAUDE_LIB/plan/checkbox-utils.sh" 2>/dev/null || {
+  echo "Warning: Progress tracking unavailable (checkbox-utils.sh not found)" >&2
+}
+
+# Extract plan_path and phase_number from input contract
+PLAN_PATH="$5"  # From input contract (empty string if file-based mode)
+PHASE_NUMBER="$6"  # From input contract (0 if file-based mode)
+
+# Mark phase IN PROGRESS if plan-based mode and library available
+if [ -n "$PLAN_PATH" ] && [ "$PHASE_NUMBER" -gt 0 ] && type add_in_progress_marker &>/dev/null; then
+  add_in_progress_marker "$PLAN_PATH" "$PHASE_NUMBER" 2>/dev/null || {
+    echo "Warning: Failed to add [IN PROGRESS] marker for phase $PHASE_NUMBER" >&2
+  }
+  echo "Progress tracking enabled for phase $PHASE_NUMBER"
+else
+  echo "Progress tracking skipped (file-based mode or library unavailable)"
+fi
+```
 
 ### STEP 1: Identify Unproven Theorems
 
@@ -537,6 +571,30 @@ fi
 if [ -z "$theorems" ]; then
   echo "WARNING: No applicable theorems found for goal: $goal_type"
   # Add TODO comment in proof
+fi
+```
+
+### STEP 9: Mark Phase Complete
+
+**Objective**: Update progress markers to reflect phase completion.
+
+**EXECUTE NOW**: Mark phase COMPLETE if in plan-based mode.
+
+```bash
+# Mark phase COMPLETE if plan-based mode and library available
+if [ -n "$PLAN_PATH" ] && [ "$PHASE_NUMBER" -gt 0 ] && type add_complete_marker &>/dev/null; then
+  add_complete_marker "$PLAN_PATH" "$PHASE_NUMBER" 2>/dev/null || {
+    echo "Warning: add_complete_marker validation failed, trying fallback" >&2
+    # Fallback to mark_phase_complete (force marking)
+    if type mark_phase_complete &>/dev/null; then
+      mark_phase_complete "$PLAN_PATH" "$PHASE_NUMBER" 2>/dev/null || {
+        echo "Warning: All marker methods failed for phase $PHASE_NUMBER" >&2
+      }
+    fi
+  }
+  echo "Progress marker updated: Phase $PHASE_NUMBER marked COMPLETE"
+else
+  echo "Progress tracking skipped (file-based mode or library unavailable)"
 fi
 ```
 

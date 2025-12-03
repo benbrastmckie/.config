@@ -81,7 +81,7 @@ The TODO.md file follows a strict 7-section hierarchy that reflects project life
 **Completed Entry**:
 ```markdown
 - [x] **Orchestrator subagent delegation** - Comprehensive fix for 13 commands to enforce subagent delegation [.claude/specs/950_revise_refactor_subagent_delegation/plans/001-revise-refactor-subagent-delegation-plan.md]
-  - All 12 phases complete: /revise, /build, /expand, /collapse, /errors, /research, /debug, /repair fixed
+  - All 12 phases complete: /revise, /implement, /expand, /collapse, /errors, /research, /debug, /repair fixed
   - Created reusable hard barrier pattern documentation and barrier-utils.sh library
 ```
 
@@ -91,7 +91,7 @@ The TODO.md file follows a strict 7-section hierarchy that reflects project life
   - **Reason**: Error logging infrastructure already 100% complete across all 12 commands
   - **Alternative**: Focus on Plan 883 (Commands Optimize Refactor) for measurable improvements
 
-- [x] **Make /build persistent** - Superseded by Plan 899 (Build iteration infrastructure) [.claude/specs/881_build_persistent_workflow_refactor/plans/001_build_persistent_workflow_refactor_plan.md]
+- [x] **Make /implement persistent** - Superseded by Plan 899 (Build iteration infrastructure) [.claude/specs/881_build_persistent_workflow_refactor/plans/001_build_persistent_workflow_refactor_plan.md]
   - **Reason**: Superseded by [901_plan_integration_overlap_analysis](specs/901_plan_integration_overlap_analysis/reports/001_plan_integration_overlap_analysis.md)
 ```
 
@@ -327,7 +327,7 @@ The following are checked by validation scripts:
 
 Six commands automatically update TODO.md when creating or modifying plans and reports:
 
-- **/build**: Updates at START (→ In Progress) and COMPLETION (→ Completed)
+- **/implement**: Updates at START (→ In Progress) and COMPLETION (→ Completed)
 - **/plan**: Updates after new plan creation (→ Not Started)
 - **/research**: Updates after report creation (→ Research)
 - **/debug**: Updates after debug report creation (→ Research)

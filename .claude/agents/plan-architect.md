@@ -548,8 +548,8 @@ Phase headings MUST include status markers for progress tracking:
 
 **Status Marker Lifecycle**:
 1. **[NOT STARTED]**: Applied during plan creation (your responsibility)
-2. **[IN PROGRESS]**: Applied by /build when phase execution begins
-3. **[COMPLETE]**: Applied by /build when phase execution ends
+2. **[IN PROGRESS]**: Applied by /implement when phase execution begins
+3. **[COMPLETE]**: Applied by /implement when phase execution ends
 4. **[BLOCKED]**: Applied when phase cannot proceed due to failures
 
 **Examples**:
@@ -562,7 +562,7 @@ Phase headings MUST include status markers for progress tracking:
 **Important**:
 - ALL phase headings MUST include `[NOT STARTED]` when plan is created
 - This enables visibility into plan progress throughout implementation
-- The /build command manages marker transitions automatically
+- The /implement command manages marker transitions automatically
 - Do NOT omit status markers - they are required for progress tracking
 
 ## Standards Divergence Protocol

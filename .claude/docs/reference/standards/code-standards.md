@@ -302,7 +302,7 @@ cp "$PLAN_PATH" "${BACKUP_DIR}/$(basename "$PLAN_PATH").backup_$(date +%s)"
 - [Model Selection Guide](.claude/docs/guides/development/model-selection-guide.md) - Guide to choosing Claude model tiers (Haiku/Sonnet/Opus) for agents with cost/quality optimization
 
 ## Mandatory Patterns
-[Used by: /implement, /build, /plan]
+[Used by: /implement, /plan]
 
 This section documents patterns that are MANDATORY and enforced by automated tooling. Violations will block commits and must be fixed.
 

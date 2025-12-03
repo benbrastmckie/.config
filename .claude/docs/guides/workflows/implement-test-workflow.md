@@ -10,10 +10,10 @@ This separation enables independent execution, better separation of concerns, an
 
 ## Workflow Architecture
 
-### Traditional /build Workflow (Monolithic)
+### Traditional Monolithic Workflow (Archived)
 ```
 ┌─────────────────────────────────────┐
-│ /build plan.md                      │
+│ Monolithic command (archived)       │
 │ ├─ Implementation Phase             │
 │ │  └─ Write code + tests            │
 │ ├─ Testing Phase                    │
@@ -314,17 +314,16 @@ ITERATION="1"
 
 ## Integration with Existing Workflows
 
-### /build Command Relationship
+### Separated Workflow Architecture
 
-The /build command remains available but /implement + /test is preferred for new workflows.
+The /implement + /test workflow provides clearer separation of concerns than a monolithic approach.
 
-**Equivalence**:
+**Standard Workflow**:
 ```bash
-# Traditional approach
-/build plan.md
-
-# Equivalent with /implement + /test
+# Implementation phase
 /implement plan.md
+
+# Test execution phase
 /test plan.md
 ```
 
@@ -333,13 +332,6 @@ The /build command remains available but /implement + /test is preferred for new
 - Re-run tests without reimplementation (test-driven debugging)
 - Independent checkpoint/resume for each phase
 - Clearer separation of concerns
-
-### Migration Path
-
-Existing /build users can migrate incrementally:
-1. Continue using /build for simple workflows
-2. Try /implement + /test for complex workflows requiring test iteration
-3. Gradually adopt /implement + /test as primary workflow
 
 ## Troubleshooting
 

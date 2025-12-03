@@ -18,7 +18,7 @@ Nine commands implement the manual reminder pattern:
 
 | Command | Artifact Type | Reminder Location |
 |---------|--------------|-------------------|
-| `/build` | Build completion | Completion summary |
+| `/implement` | Implementation summary | Completion summary |
 | `/plan` | New plan | Completion summary |
 | `/research` | Research report | Completion summary |
 | `/debug` | Debug report | Completion summary |
@@ -26,7 +26,6 @@ Nine commands implement the manual reminder pattern:
 | `/errors` | Error analysis | Completion summary |
 | `/revise` | Revised plan | Completion summary |
 | `/test` | Test results | Completion summary |
-| `/implement` | Implementation summary | Completion summary |
 
 ## Manual Reminder Pattern
 
@@ -60,7 +59,7 @@ NEXT_STEPS="  • Review [artifact]: cat $ARTIFACT_PATH
 ```bash
 # Build next steps
 NEXT_STEPS="  • Review plan: cat $PLAN_PATH
-  • Begin implementation: /build $PLAN_PATH
+  • Begin implementation: /implement $PLAN_PATH
   • Review research: ls -lh $RESEARCH_DIR/
   • Run /todo to update TODO.md (adds plan to tracking)"
 
@@ -82,7 +81,7 @@ fi
 exit 0
 ```
 
-### Example 2: /build Command
+### Example 2: /implement Command
 
 ```bash
 # Build next steps
@@ -93,17 +92,17 @@ if [ "$TESTS_PASSED" = "true" ]; then
   • Run /todo to update TODO.md (adds completed plan to tracking)"
 else
   NEXT_STEPS="  • Review debug output: cat $LATEST_SUMMARY
-  • Fix remaining issues and re-run: /build $PLAN_FILE
+  • Fix remaining issues and re-run: /implement $PLAN_FILE
   • Check test failures: see summary for details
   • Run /todo to update TODO.md when complete"
 fi
 
 # Print standardized summary
-print_artifact_summary "Build" "$SUMMARY_TEXT" "$PHASES" "$ARTIFACTS" "$NEXT_STEPS"
+print_artifact_summary "Implementation" "$SUMMARY_TEXT" "$PHASES" "$ARTIFACTS" "$NEXT_STEPS"
 
 # Emit completion reminder
 echo ""
-echo "📋 Next Step: Run /todo to update TODO.md with this build"
+echo "📋 Next Step: Run /todo to update TODO.md with this implementation"
 echo ""
 
 # === RETURN IMPLEMENTATION_COMPLETE SIGNAL ===
@@ -189,7 +188,7 @@ Created implementation plan with 5 phases (estimated 4-6 hours).
 
 ## Next Steps
   • Review plan: cat /path/to/plan.md
-  • Begin implementation: /build /path/to/plan.md
+  • Begin implementation: /implement /path/to/plan.md
   • Review research: ls -lh /path/to/reports/
   • Run /todo to update TODO.md (adds plan to tracking)
 

@@ -47,7 +47,7 @@ sm_transition(next_state)
 
 ### Checkpoint Resume Scenarios
 
-The `/build` command's checkpoint resume feature can trigger same-state transitions when:
+The `/implement` command's checkpoint resume feature can trigger same-state transitions when:
 
 - Resuming from a checkpoint at the same state as `--starting-phase`
 - Retrying a failed phase that was already partially completed
@@ -56,10 +56,10 @@ The `/build` command's checkpoint resume feature can trigger same-state transiti
 Example:
 ```bash
 # Build interrupted during implement phase
-/build plan.md --starting-phase 3
+/implement plan.md --starting-phase 3
 
 # Resume from checkpoint (state is already "implement")
-/build plan.md --resume checkpoint.json --starting-phase 3
+/implement plan.md --resume checkpoint.json --starting-phase 3
 # Result: INFO message, no error, continues successfully
 ```
 
@@ -113,9 +113,9 @@ sm_transition "$STATE_RESEARCH" 2>/dev/null  # Suppress INFO output
 
 ## Commands Benefiting
 
-### Primary Beneficiary: /build
+### Primary Beneficiary: /implement
 
-The `/build` command gains the most benefit through:
+The `/implement` command gains the most benefit through:
 
 - Checkpoint resume with `--resume` flag (8 occurrences in build.md)
 - Multi-iteration execution for large plans

@@ -275,6 +275,24 @@ echo "Wave $wave_num: $wave_size parallel implementers, budget=$budget_per_imple
 
 Implementers prioritize lean_local_search (no rate limit) and use budget for critical theorems only.
 
+#### Phase Number Extraction
+
+Extract `phase_number` from each theorem's metadata for progress tracking:
+
+```bash
+# Each theorem in theorem_tasks includes phase_number
+# Example: {"name": "theorem_add_comm", "line": 42, "phase_number": 1}
+
+# Extract phase_number for current theorem
+phase_num=$(echo "$theorem_obj" | jq -r '.phase_number // 0')
+
+# Pass to lean-implementer for progress marker updates
+# - If phase_num > 0: Enable progress tracking (mark [IN PROGRESS] → [COMPLETE])
+# - If phase_num = 0: File-based mode, skip progress tracking
+```
+
+**Note**: `phase_number` is passed as a separate parameter to lean-implementer in addition to being in the `theorem_tasks` array. This enables the implementer to update plan file progress markers in real-time.
+
 #### Parallel Implementer Invocation
 
 For each theorem in wave, invoke lean-implementer subagent via Task tool.
@@ -304,10 +322,11 @@ Task {
     - rate_limit_budget: 1
     - execution_mode: "plan-based"
     - wave_number: 1
+    - phase_number: 1
     - continuation_context: null
 
     Process assigned theorem, prioritize lean_local_search, respect rate limit budget.
-    Update plan file with progress markers.
+    Update plan file with progress markers ([IN PROGRESS] → [COMPLETE]).
 
     Return THEOREM_BATCH_COMPLETE signal with:
     - theorems_completed, theorems_partial, tactics_used, mathlib_theorems
@@ -333,10 +352,11 @@ Task {
     - rate_limit_budget: 1
     - execution_mode: "plan-based"
     - wave_number: 1
+    - phase_number: 2
     - continuation_context: null
 
     Process assigned theorem, prioritize lean_local_search, respect rate limit budget.
-    Update plan file with progress markers.
+    Update plan file with progress markers ([IN PROGRESS] → [COMPLETE]).
 
     Return THEOREM_BATCH_COMPLETE signal with:
     - theorems_completed, theorems_partial, tactics_used, mathlib_theorems
@@ -362,10 +382,11 @@ Task {
     - rate_limit_budget: 1
     - execution_mode: "plan-based"
     - wave_number: 1
+    - phase_number: 3
     - continuation_context: null
 
     Process assigned theorem, prioritize lean_local_search, respect rate limit budget.
-    Update plan file with progress markers.
+    Update plan file with progress markers ([IN PROGRESS] → [COMPLETE]).
 
     Return THEOREM_BATCH_COMPLETE signal with:
     - theorems_completed, theorems_partial, tactics_used, mathlib_theorems

@@ -38,7 +38,7 @@ When invoked with `--query` flag, displays error logs directly (backward compati
 
 ## Options
 
-- `--command CMD` - Filter by command name (e.g., /build, /plan)
+- `--command CMD` - Filter by command name (e.g., /implement, /plan)
 - `--since TIME` - Filter errors since timestamp (ISO 8601 format, e.g., 2025-11-19)
 - `--type TYPE` - Filter by error type (state_error, validation_error, agent_error, etc.)
 - `--status STATUS` - Filter by error status (ERROR, FIX_PLANNED, RESOLVED)
@@ -56,7 +56,7 @@ When invoked with `--query` flag, displays error logs directly (backward compati
 /errors
 
 # Generate report with filters
-/errors --command /build --type execution_error
+/errors --command /implement --type execution_error
 
 # Generate report for errors since yesterday
 /errors --since 2025-11-20
@@ -68,18 +68,18 @@ When invoked with `--query` flag, displays error logs directly (backward compati
 /errors --query --limit 5
 
 # Query mode: Filter by command
-/errors --query --command /build
+/errors --query --command /implement
 
 # Query mode: Show error summary
 /errors --query --summary
 
 # Query mode: Combine filters
-/errors --query --command /build --type state_error --limit 3
+/errors --query --command /implement --type state_error --limit 3
 
 # Filter by status (ERROR, FIX_PLANNED, RESOLVED)
 /errors --query --status ERROR --limit 10
 /errors --query --status FIX_PLANNED
-/errors --query --status RESOLVED --command /build
+/errors --query --status RESOLVED --command /implement
 ```
 
 ## EXECUTE NOW: Block 1 - Setup and Mode Detection
@@ -740,11 +740,11 @@ Common error types you can filter by:
 Recent Errors (last 10):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[2025-11-19T14:30:00Z] /build
+[2025-11-19T14:30:00Z] /implement
   Type: state_error
   Message: State file not found
   Args: plan.md 3
-  Workflow: build_1732023400
+  Workflow: implement_1732023400
 
 [2025-11-19T14:25:00Z] /plan
   Type: validation_error
@@ -763,7 +763,7 @@ Error Summary
 Total Errors: 42
 
 By Command:
-  /build              18
+  /implement          18
   /plan               12
   /research            8
   /debug               4

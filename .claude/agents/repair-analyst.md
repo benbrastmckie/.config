@@ -186,7 +186,7 @@ grep -E "(exit code [0-9]+|line [0-9]+:|command not found)" "$WORKFLOW_OUTPUT_FI
 You will receive ERROR_FILTERS as JSON with these optional fields:
 - `since`: ISO 8601 timestamp (filter errors after this time)
 - `type`: Error type filter (state_error, validation_error, etc.)
-- `command`: Command filter (e.g., "/build", "/plan")
+- `command`: Command filter (e.g., "/implement", "/plan")
 - `severity`: Severity filter (low, medium, high, critical)
 
 **Inline Pattern Analysis with jq**:

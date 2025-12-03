@@ -55,7 +55,7 @@ Common tasks and where to find guidance:
    → [Directory Protocols](concepts/directory-protocols.md)
 
 10. **Execute implementation plans**
-    → [/build Command Guide](guides/commands/build-command-guide.md)
+    → [/implement Command Guide](guides/commands/implement-command-guide.md)
     → [Checkpoint Recovery Pattern](concepts/patterns/checkpoint-recovery.md)
 
 11. **Debug issues and create diagnostic reports**
@@ -71,7 +71,7 @@ Common tasks and where to find guidance:
     → [Documentation Standards](reference/claude-md-section-schema.md#documentation-policy)
 
 14. **Orchestrate complete workflows**
-    → [/build Command Guide](guides/commands/build-command-guide.md)
+    → [/implement Command Guide](guides/commands/implement-command-guide.md)
     → [Orchestration Best Practices](guides/orchestration/orchestration-best-practices.md)
 
 15. **Fix broken orchestration workflows**

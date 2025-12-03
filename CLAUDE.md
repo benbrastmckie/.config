@@ -137,7 +137,7 @@ See [Enforcement Mechanisms Reference](.claude/docs/reference/standards/enforcem
 
 <!-- SECTION: output_formatting -->
 ## Output Formatting Standards
-[Used by: /implement, /build, all commands and agents]
+[Used by: /implement, all commands and agents]
 
 See [Output Formatting Standards](.claude/docs/reference/standards/output-formatting.md) for output suppression patterns, block consolidation rules, comment standards (WHAT not WHY), and console summary format.
 
@@ -151,7 +151,7 @@ See [Output Formatting Standards](.claude/docs/reference/standards/output-format
 
 <!-- SECTION: error_logging -->
 ## Error Logging Standards
-[Used by: all commands, all agents, /implement, /build, /debug, /errors, /repair]
+[Used by: all commands, all agents, /implement, /debug, /errors, /repair]
 
 All commands and agents must integrate centralized error logging for queryable error tracking and cross-workflow debugging.
 
@@ -167,11 +167,11 @@ All commands and agents must integrate centralized error logging for queryable e
 **Error Consumption Workflow**:
 1. **Query errors**: `/errors [--command CMD] [--since TIME] [--type TYPE]` to view logged errors
 2. **Analyze patterns**: `/repair [--since TIME] [--type TYPE]` to group errors and create fix plan
-3. **Implement fixes**: `/build [plan-file]` to execute repair plan
+3. **Implement fixes**: `/implement [plan-file]` to execute repair plan, then `/test [plan-file]` to run tests
 
 **Quick Commands**:
 - View recent errors: `/errors --since 1h --summary`
-- Analyze command failures: `/repair --command /build --complexity 2`
+- Analyze command failures: `/repair --command /implement --complexity 2`
 - Debug specific error type: `/errors --type state_error --limit 10`
 
 See [Error Handling Pattern](.claude/docs/concepts/patterns/error-handling.md) for complete integration requirements, agent error return protocol, and troubleshooting workflows. See [Errors Command Guide](.claude/docs/guides/commands/errors-command-guide.md) and [Repair Command Guide](.claude/docs/guides/commands/repair-command-guide.md) for error management workflow details.
@@ -226,14 +226,14 @@ See [Plan Metadata Standard](.claude/docs/reference/standards/plan-metadata-stan
 
 <!-- SECTION: development_workflow -->
 ## Development Workflow
-[Used by: /implement, /plan, /build]
+[Used by: /implement, /plan]
 
 See [Development Workflow](.claude/docs/concepts/development-workflow.md) for complete workflow documentation with spec updater details.
 <!-- END_SECTION: development_workflow -->
 
 <!-- SECTION: hierarchical_agent_architecture -->
 ## Hierarchical Agent Architecture
-[Used by: /build, /implement, /plan, /debug]
+[Used by: /implement, /plan, /debug]
 
 See [Hierarchical Agent Architecture Overview](.claude/docs/concepts/hierarchical-agents-overview.md) for complete patterns, utilities, templates, and troubleshooting. Documentation is split into focused modules:
 - [Coordination](.claude/docs/concepts/hierarchical-agents-coordination.md) - Multi-agent coordination patterns
@@ -277,7 +277,7 @@ See [Skills README](.claude/skills/README.md) for complete skills guide, and [Sk
 
 <!-- SECTION: state_based_orchestration -->
 ## State-Based Orchestration Architecture
-[Used by: /build, custom orchestrators]
+[Used by: custom orchestrators]
 
 See [State-Based Orchestration Overview](.claude/docs/architecture/state-based-orchestration-overview.md) for complete architecture, migration guide, and performance metrics.
 

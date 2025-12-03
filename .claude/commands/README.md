@@ -2,11 +2,11 @@
 
 Custom slash command definitions for Claude Code. Each command extends Claude's capabilities with specialized workflows for development, documentation, testing, and project management.
 
-**Current Command Count**: 13 active commands
+**Current Command Count**: 16 active commands
 
 ## Primary Workflow
 
-The core development workflow follows this sequence: **/plan** -> **/revise** -> **/expand** -> **/build**
+The core development workflow follows this sequence: **/plan** -> **/revise** -> **/expand** -> **/implement** -> **/test**
 
 **/plan** (Research-Driven Planning):
 - Executes research phase, then creates implementation plans
@@ -23,11 +23,17 @@ The core development workflow follows this sequence: **/plan** -> **/revise** ->
 - On-demand complexity breakdown (Level 0 → 1 → 2)
 - Auto-analysis mode for intelligent expansion decisions
 
-**/build** (Implementation Orchestrator):
-- Executes plans with wave-based parallel phase execution
-- Automatic test execution after each phase
-- Git commits for completed phases
+**/implement** (Implementation Execution):
+- Executes implementation phases from plans
+- Wave-based parallel phase execution
 - Supports progressive plan structures (Level 0/1/2)
+- Iteration loop with context tracking
+
+**/test** (Test Execution & Debug Loop):
+- Runs test suites with framework detection
+- Automatic debug loop on test failures
+- Coverage tracking and reporting
+- Integration with debug-analyst agent
 
 **/debug** (Debug-Focused Workflow):
 - Root cause analysis and bug fixing
@@ -107,7 +113,6 @@ See [Commands](#commands) for complete command documentation.
 - [Command Architecture](#command-architecture)
 - [Commands](#commands)
   - [Primary Commands](#primary-commands)
-    - [/build](#build) - Build-from-plan workflow
     - [/debug](#debug) - Debug-focused workflow
     - [/plan](#plan) - Research and create implementation plan
     - [/research](#research) - Research-only workflow
@@ -127,34 +132,6 @@ See [Commands](#commands) for complete command documentation.
 ## Commands
 
 ### Primary Commands
-
-#### /build
-**Purpose**: Build-from-plan workflow - Implementation, testing, debug, and documentation phases
-
-**Usage**: `/build [plan-file] [starting-phase] [--dry-run]`
-
-**Type**: primary
-
-**Example**:
-```bash
-/build specs/plans/015_dashboard.md
-```
-
-**Dependencies**:
-- **Agents**: implementer-coordinator, debug-analyst
-- **Libraries**: workflow-state-machine.sh, state-persistence.sh, library-version-check.sh, error-handling.sh, checkpoint-utils.sh
-
-**Features**:
-- Wave-based parallel phase execution
-- Automatic test execution after each phase
-- Git commits for completed phases
-- Supports progressive plan structures (Level 0/1/2)
-- Dry-run mode for previewing execution
-- Auto-resume from interrupted builds
-
-**Documentation**: [Build Command Guide](../docs/guides/commands/build-command-guide.md)
-
----
 
 #### /debug
 **Purpose**: Debug-focused workflow - Root cause analysis and bug fixing
@@ -412,8 +389,8 @@ See [Commands](#commands) for complete command documentation.
 - Pattern-based error grouping and root cause analysis
 - Integration with /errors command for log queries
 - Complexity-aware analysis (default: 2 for error analysis)
-- Generated plans executed via /build workflow
-- Terminal state at plan creation (use /build to execute)
+- Generated plans executed via /implement + /test workflow
+- Terminal state at plan creation (use /implement and /test to execute)
 
 **Documentation**: [Repair Command Guide](../docs/guides/commands/repair-command-guide.md)
 
@@ -529,19 +506,19 @@ Set the research depth level for investigation phases.
 
 ### --dry-run
 
-**Supported by**: `/build`, `/revise`
+**Supported by**: `/implement`, `/revise`
 
 Preview mode that shows what would be done without making actual changes.
 
 **Syntax**: `--dry-run`
 
 **Behavior**:
-- `/build --dry-run`: Shows phases and tasks that would execute
+- `/implement --dry-run`: Shows phases and tasks that would execute
 - `/revise --dry-run`: Shows plan changes without modifying
 
 **Example**:
 ```bash
-/build specs/plans/007_feature.md --dry-run
+/implement specs/plans/007_feature.md --dry-run
 /revise "Add phase 5" specs/plans/015_api.md --dry-run
 ```
 
@@ -582,7 +559,7 @@ Plans grow organically as complexity emerges:
 /plan "Add dark mode toggle to settings"
 # Creates: specs/plans/007_dark_mode.md
 
-# Phase 2 proves complex during /build
+# Phase 2 proves complex during /implement
 /expand phase specs/plans/007_dark_mode.md 2
 # Creates: specs/plans/007_dark_mode/phase_2_components.md
 
@@ -657,9 +634,9 @@ Commands and agents automatically log errors to a centralized queryable log. The
                              │
                              ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│ FIX IMPLEMENTATION (/build)                                     │
+│ FIX IMPLEMENTATION (/implement + /test)                         │
 ├─────────────────────────────────────────────────────────────────┤
-│ Execute repair plan with tests and commits                     │
+│ Execute repair plan and run tests                              │
 │ Output: Git commits for fixes                                  │
 └────────────────────────────┬────────────────────────────────────┘
                              │
@@ -678,27 +655,31 @@ Commands and agents automatically log errors to a centralized queryable log. The
    ```bash
    /errors --since 1h --summary          # View recent error summary
    /repair --since 1h --complexity 2     # Analyze and create fix plan
-   /build <repair-plan>                  # Implement fixes
+   /implement <repair-plan>              # Implement fixes
+   /test <repair-plan>                   # Run tests
    ```
 
 2. **Systematic Error Cleanup**:
    ```bash
    /errors --type state_error --limit 20 # Identify error patterns
    /repair --type state_error            # Create comprehensive fix plan
-   /build <repair-plan>                  # Execute repairs
+   /implement <repair-plan>              # Execute repairs
+   /test <repair-plan>                   # Verify fixes
    ```
 
 3. **Targeted Command Analysis**:
    ```bash
-   /errors --command /build --summary    # Analyze specific command errors
-   /repair --command /build              # Create command-specific fix plan
-   /build <repair-plan>                  # Implement improvements
+   /errors --command /implement --summary # Analyze specific command errors
+   /repair --command /implement          # Create command-specific fix plan
+   /implement <repair-plan>              # Implement improvements
+   /test <repair-plan>                   # Verify improvements
    ```
 
 **Key Commands**:
 - **/errors**: Query error log with filters (time, type, command, severity)
 - **/repair**: Analyze error patterns and generate fix plans
-- **/build**: Execute repair plans with automatic testing
+- **/implement**: Execute repair plans with implementation phases
+- **/test**: Run tests with automatic debug loop on failures
 
 See [Errors Command Guide](../docs/guides/commands/errors-command-guide.md) and [Repair Command Guide](../docs/guides/commands/repair-command-guide.md) for complete workflow details.
 
@@ -717,12 +698,12 @@ Commands discover and apply project standards through CLAUDE.md and its linked d
 
 | Standard | Resource | Used By |
 |----------|----------|---------|
-| Code Standards | [Code Standards](../docs/reference/standards/code-standards.md) | /plan, /build |
-| Testing Protocols | [Testing Protocols](../docs/reference/standards/testing-protocols.md) | /build |
+| Code Standards | [Code Standards](../docs/reference/standards/code-standards.md) | /plan, /implement |
+| Testing Protocols | [Testing Protocols](../docs/reference/standards/testing-protocols.md) | /implement, /test |
 | Output Formatting | [Output Formatting](../docs/reference/standards/output-formatting.md) | All commands |
-| Directory Protocols | [Directory Protocols](../docs/concepts/directory-protocols.md) | /plan, /research, /build |
+| Directory Protocols | [Directory Protocols](../docs/concepts/directory-protocols.md) | /plan, /research, /implement |
 | Writing Standards | [Writing Standards](../docs/concepts/writing-standards.md) | /plan |
-| Adaptive Planning | [Adaptive Planning Guide](../docs/workflows/adaptive-planning-guide.md) | /expand, /collapse, /build |
+| Adaptive Planning | [Adaptive Planning Guide](../docs/workflows/adaptive-planning-guide.md) | /expand, /collapse, /implement |
 
 ### Documentation Standards
 
@@ -848,15 +829,16 @@ Commands can log to `.claude/data/logs/`:
 The following commands enforce mandatory subagent delegation using the **hard barrier pattern**. This architectural pattern ensures 100% delegation success by using bash verification blocks as context barriers that prevent bypass.
 
 **Commands with Hard Barrier Compliance**:
-- `/build` (implementer-coordinator) - Implementation orchestrator
 - `/collapse` (plan-architect) - Phase/stage collapse
 - `/debug` (debug-analyst, plan-architect) - Debug workflow
 - `/errors` (errors-analyst) - Error log analysis
 - `/expand` (plan-architect) - Phase/stage expansion
+- `/implement` (implementer-coordinator) - Implementation execution
 - `/plan` (research-specialist, plan-architect) - Research and planning
 - `/repair` (repair-analyst, plan-architect) - Error pattern repair
 - `/research` (research-specialist) - Research-only workflow
 - `/revise` (research-specialist, plan-architect) - Plan revision
+- `/test` (test-executor, debug-analyst) - Test execution and debug loop
 - `/todo` (todo-analyzer) - TODO.md status classification
 
 **Why Hard Barriers**:
@@ -904,9 +886,9 @@ Commands in this directory are integrated with the Neovim artifact picker for vi
 " Open picker
 :ClaudeCommands
 
-" Navigate to /build command
-" Press Return to insert "/build" in Claude Code
-" Or press <C-e> to edit build.md file
+" Navigate to /implement command
+" Press Return to insert "/implement" in Claude Code
+" Or press <C-e> to edit implement.md file
 ```
 
 ### Command File Structure
@@ -921,7 +903,7 @@ description: Brief description shown in picker
 ---
 ```
 
-**Primary commands** (e.g., `/build`, `/plan`) appear at the root level with their dependent commands nested below. **Dependent commands** can appear under multiple parents if referenced by multiple primary commands.
+**Primary commands** (e.g., `/implement`, `/plan`) appear at the root level with their dependent commands nested below. **Dependent commands** can appear under multiple parents if referenced by multiple primary commands.
 
 ### Documentation
 

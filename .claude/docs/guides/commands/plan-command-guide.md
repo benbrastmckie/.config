@@ -35,7 +35,7 @@ The `/plan` command provides a research-and-plan workflow that creates comprehen
 - **Research-only tasks**: Use `/research` if you don't need a plan
 - **Existing plan revision**: Use `/revise` to update existing plans
 - **Debugging**: Use `/debug` for debug-focused workflows
-- **Direct implementation**: Use `/build` if you already have a plan
+- **Direct implementation**: Use `/implement` if you already have a plan
 
 ---
 
@@ -88,7 +88,7 @@ The `/plan` command provides a research-and-plan workflow that creates comprehen
 2. **State Initialization**: sm_init() with workflow_type="research-and-plan"
 3. **Research Phase**: research-specialist creates investigation reports
 4. **Planning Phase**: plan-architect creates implementation plan from research
-5. **Output**: Research reports + implementation plan ready for /build or /implement
+5. **Output**: Research reports + implementation plan ready for /implement
 
 ---
 
@@ -143,7 +143,7 @@ Implementation Plan: .claude/specs/752_implement_user_authentication/plans/001_i
 Next Steps:
 - Review plan: cat .claude/specs/752_implement_user_authentication/plans/001_implement_user_authentication_plan.md
 - Implement plan: /implement .claude/specs/752_implement_user_authentication/plans/001_implement_user_authentication_plan.md
-- Use /build to execute implementation phases
+- Use /implement to execute implementation phases
 ```
 
 **Explanation**:
@@ -248,19 +248,19 @@ Researches GraphQL migration approaches, patterns, and gotchas. Creates phased m
 
 ### Integration with Other Workflows
 
-**Research-Plan → Build Chain**:
+**Research-Plan → Implement Chain**:
 ```bash
 /plan"implement caching layer"
 # Review plan
-/build  # Auto-detects and executes plan
+/implement  # Auto-detects and executes plan
 ```
 
-**Research-Plan → Review → Build**:
+**Research-Plan → Review → Implement**:
 ```bash
 /plan"add rate limiting"
 # Manual review of plan
 # Adjust plan if needed with /revise
-/build
+/implement
 ```
 
 **Iterative Research-Plan**:
@@ -491,7 +491,7 @@ cat ~/.claude/data/state/workflow_state.json | jq '.completed_states'
 
 - Check [Command Reference](../reference/standards/command-reference.md) for quick syntax
 - Review [Plan-Architect Agent](../../agents/plan-architect.md) for planning patterns
-- See related commands: `/research`, `/revise`, `/plan`
+- See related commands: `/research`, `/revise`, `/implement`
 - Review [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md) for plan structure
 
 ---
@@ -503,4 +503,4 @@ cat ~/.claude/data/state/workflow_state.json | jq '.completed_states'
 - [Adaptive Planning Guide](../workflows/adaptive-planning-guide.md)
 - [Directory Protocols](../concepts/directory-protocols.md)
 - [Command Reference](../reference/standards/command-reference.md)
-- Related Commands: `/research`, `/revise`, `/build`, `/implement`
+- Related Commands: `/research`, `/revise`, `/implement`
