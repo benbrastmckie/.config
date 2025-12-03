@@ -54,30 +54,79 @@ artifact_paths:
 max_attempts: 3  # Maximum proof attempts per theorem
 plan_path: ""  # Optional: Path to plan file for progress tracking (empty string if file-based mode)
 execution_mode: "file-based"  # "file-based" or "plan-based"
+theorem_tasks: []  # Optional: Array of theorem objects to process (empty array = process all sorry markers)
+rate_limit_budget: 3  # Optional: Number of external search requests allowed (default: 3)
+wave_number: 1  # Optional: Current wave number for progress tracking
+continuation_context: null  # Optional: Path to previous iteration summary
 ```
+
+### Theorem Tasks Format
+
+When `theorem_tasks` is provided (non-empty array), process ONLY the specified theorems:
+
+```yaml
+theorem_tasks:
+  - name: "theorem_add_comm"
+    line: 42
+    phase_number: 1
+    dependencies: []
+  - name: "theorem_mul_assoc"
+    line: 58
+    phase_number: 2
+    dependencies: [1]
+```
+
+**Empty Array vs All Theorems**:
+- `theorem_tasks: []` - Process ALL sorry markers in file (file-based mode)
+- `theorem_tasks: [...]` - Process ONLY specified theorems (plan-based batch mode)
 
 ## Workflow
 
 ### STEP 1: Identify Unproven Theorems
 
-**EXECUTE NOW**: Search for `sorry` markers to identify unproven theorems.
+**Mode Detection**: Check if `theorem_tasks` array is provided.
+
+**EXECUTE NOW**: Identify theorems to process based on mode.
 
 ```bash
-# Search for sorry markers in Lean file
+# Check execution mode based on theorem_tasks
 LEAN_FILE="$1"  # From input contract
+THEOREM_TASKS="$2"  # From input contract (JSON array or empty array)
 
-# Find all sorry instances with line numbers
-sorry_lines=$(grep -n "sorry" "$LEAN_FILE" 2>/dev/null || echo "")
+# Parse theorem_tasks to determine mode
+if echo "$THEOREM_TASKS" | jq -e 'length > 0' >/dev/null 2>&1; then
+  # Batch mode: Process only specified theorems
+  echo "Batch mode: Processing ${#THEOREM_TASKS[@]} specified theorems"
 
-if [ -z "$sorry_lines" ]; then
-  echo "No unproven theorems found (no sorry markers)"
-  exit 0
+  # Extract theorem line numbers from theorem_tasks
+  theorem_lines=$(echo "$THEOREM_TASKS" | jq -r '.[] | "\(.line):\(.name)"')
+
+  if [ -z "$theorem_lines" ]; then
+    echo "No theorems specified in batch"
+    exit 0
+  fi
+
+  # Display assigned theorems
+  echo "$theorem_lines" | while IFS=: read -r line_num theorem_name; do
+    echo "Assigned theorem: $theorem_name at line $line_num"
+  done
+else
+  # File-based mode: Process ALL sorry markers
+  echo "File-based mode: Processing all sorry markers"
+
+  # Find all sorry instances with line numbers
+  sorry_lines=$(grep -n "sorry" "$LEAN_FILE" 2>/dev/null || echo "")
+
+  if [ -z "$sorry_lines" ]; then
+    echo "No unproven theorems found (no sorry markers)"
+    exit 0
+  fi
+
+  # Extract line numbers
+  echo "$sorry_lines" | while IFS=: read -r line_num rest; do
+    echo "Found unproven theorem at line $line_num"
+  done
 fi
-
-# Extract line numbers
-echo "$sorry_lines" | while IFS=: read -r line_num rest; do
-  echo "Found unproven theorem at line $line_num"
-done
 ```
 
 ### STEP 2: Extract Proof Goals
@@ -127,32 +176,112 @@ fi
 
 Based on goal type, search for applicable theorems in Mathlib.
 
-**Rate Limits**: External search tools (`lean_leansearch`, `lean_loogle`, `lean_leanfinder`, `lean_state_search`, `lean_hammer_premise`) share **3 requests/30s combined limit**. Prioritize `lean_local_search` (no limit) when possible.
+**Rate Limits**: External search tools (`lean_leansearch`, `lean_loogle`, `lean_leanfinder`, `lean_state_search`, `lean_hammer_premise`) share **3 requests/30s combined limit**. The `rate_limit_budget` parameter specifies how many external requests this agent is allowed.
 
-**EXECUTE NOW**: Search for applicable theorems.
+**Budget Tracking**: Initialize budget counter and track consumption.
+
+**EXECUTE NOW**: Search for applicable theorems with budget awareness.
 
 ```bash
-# Natural language search (rate limited)
-search_results=$(uvx --from lean-lsp-mcp lean-leansearch "commutativity natural number addition" 2>&1)
+# Initialize rate limit budget tracking
+RATE_LIMIT_BUDGET="$3"  # From input contract (default: 3)
+BUDGET_CONSUMED=0
+WAVE_NUMBER="${4:-1}"  # From input contract (for logging)
 
-# Type-based search (rate limited)
-type_results=$(uvx --from lean-lsp-mcp lean-loogle "Nat → Nat → Nat" 2>&1)
+# Instrumentation: Create search tool log file
+LOG_DIR="${DEBUG_DIR}/search_tool_logs"
+mkdir -p "$LOG_DIR" 2>/dev/null || true
+SEARCH_LOG="${LOG_DIR}/wave_${WAVE_NUMBER}_agent_${THEOREM_NAME}.log"
 
-# Local search (no rate limit, preferred)
+# Log search session start
+echo "=== SEARCH SESSION START ===" >> "$SEARCH_LOG"
+echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$SEARCH_LOG"
+echo "Wave: $WAVE_NUMBER" >> "$SEARCH_LOG"
+echo "Theorem: ${THEOREM_NAME}" >> "$SEARCH_LOG"
+echo "Budget Allocated: $RATE_LIMIT_BUDGET" >> "$SEARCH_LOG"
+echo "" >> "$SEARCH_LOG"
+
+echo "Rate limit budget: $RATE_LIMIT_BUDGET external requests"
+
+# Search Strategy: Prioritize lean_local_search (no rate limit)
+
+# 1. Local search (no rate limit, always try first)
+echo "[$(date -u +%H:%M:%S)] Attempting lean_local_search (no budget consumed)" >> "$SEARCH_LOG"
 local_results=$(uvx --from lean-lsp-mcp lean-local-search "add_comm" 2>&1)
 
-# Parse search results
-if echo "$search_results" | jq -e . >/dev/null 2>&1; then
-  theorems=$(echo "$search_results" | jq -r '.results[].name')
-  echo "Found theorems: $theorems"
+if echo "$local_results" | jq -e '.results | length > 0' >/dev/null 2>&1; then
+  theorems=$(echo "$local_results" | jq -r '.results[].name')
+  result_count=$(echo "$local_results" | jq '.results | length')
+  echo "  SUCCESS: $result_count results found" >> "$SEARCH_LOG"
+  echo "  Theorems: $theorems" >> "$SEARCH_LOG"
+  echo "Found theorems via local search: $theorems"
+else
+  echo "  FAILURE: No results" >> "$SEARCH_LOG"
+  echo "No results from local search"
+
+  # 2. External search (rate limited, check budget)
+  if [ "$BUDGET_CONSUMED" -lt "$RATE_LIMIT_BUDGET" ]; then
+    echo "Using external search (budget: $((RATE_LIMIT_BUDGET - BUDGET_CONSUMED)) remaining)"
+    echo "[$(date -u +%H:%M:%S)] Attempting lean_leansearch (BUDGET CONSUMED)" >> "$SEARCH_LOG"
+
+    # Natural language search (rate limited)
+    search_results=$(uvx --from lean-lsp-mcp lean-leansearch "commutativity natural number addition" 2>&1)
+    BUDGET_CONSUMED=$((BUDGET_CONSUMED + 1))
+    echo "  Budget consumed: $BUDGET_CONSUMED / $RATE_LIMIT_BUDGET" >> "$SEARCH_LOG"
+
+    # Parse search results
+    if echo "$search_results" | jq -e . >/dev/null 2>&1; then
+      theorems=$(echo "$search_results" | jq -r '.results[].name')
+      result_count=$(echo "$search_results" | jq '.results | length')
+      echo "  SUCCESS: $result_count results found" >> "$SEARCH_LOG"
+      echo "  Theorems: $theorems" >> "$SEARCH_LOG"
+      echo "Found theorems via leansearch: $theorems"
+    else
+      echo "  FAILURE: No results" >> "$SEARCH_LOG"
+      echo "No results from leansearch"
+
+      # 3. Type-based search (rate limited, check budget again)
+      if [ "$BUDGET_CONSUMED" -lt "$RATE_LIMIT_BUDGET" ]; then
+        echo "[$(date -u +%H:%M:%S)] Attempting lean_loogle (BUDGET CONSUMED)" >> "$SEARCH_LOG"
+        type_results=$(uvx --from lean-lsp-mcp lean-loogle "Nat → Nat → Nat" 2>&1)
+        BUDGET_CONSUMED=$((BUDGET_CONSUMED + 1))
+        echo "  Budget consumed: $BUDGET_CONSUMED / $RATE_LIMIT_BUDGET" >> "$SEARCH_LOG"
+
+        if echo "$type_results" | jq -e . >/dev/null 2>&1; then
+          theorems=$(echo "$type_results" | jq -r '.results[].name')
+          result_count=$(echo "$type_results" | jq '.results | length')
+          echo "  SUCCESS: $result_count results found" >> "$SEARCH_LOG"
+          echo "  Theorems: $theorems" >> "$SEARCH_LOG"
+          echo "Found theorems via loogle: $theorems"
+        else
+          echo "  FAILURE: No results" >> "$SEARCH_LOG"
+        fi
+      else
+        echo "Budget exhausted, skipping loogle search"
+        echo "[$(date -u +%H:%M:%S)] lean_loogle SKIPPED: Budget exhausted" >> "$SEARCH_LOG"
+      fi
+    fi
+  else
+    echo "Rate limit budget exhausted, falling back to local-only search"
+    echo "[$(date -u +%H:%M:%S)] External search SKIPPED: Budget exhausted ($BUDGET_CONSUMED/$RATE_LIMIT_BUDGET)" >> "$SEARCH_LOG"
+  fi
 fi
+
+echo "Budget consumed: $BUDGET_CONSUMED / $RATE_LIMIT_BUDGET"
+
+# Log final budget consumption
+echo "" >> "$SEARCH_LOG"
+echo "=== SEARCH SESSION END ===" >> "$SEARCH_LOG"
+echo "Total Budget Consumed: $BUDGET_CONSUMED / $RATE_LIMIT_BUDGET" >> "$SEARCH_LOG"
+echo "External Requests Made: $BUDGET_CONSUMED" >> "$SEARCH_LOG"
 ```
 
-**Search Strategy**:
-1. Start with `lean_local_search` (no rate limit)
-2. If no results, use `lean_leansearch` for natural language search
-3. Fall back to `lean_loogle` for type-based search
-4. Rate limit backoff: wait 30 seconds if limit exceeded
+**Search Strategy with Budget**:
+1. **Always start with `lean_local_search`** (no rate limit, unlimited use)
+2. If no results and budget available, use `lean_leansearch` (consume 1 budget)
+3. If still no results and budget available, use `lean_loogle` (consume 1 budget)
+4. If budget exhausted, rely only on local search results
+5. **Rate limit backoff**: If rate limit error detected, fall back to local search
 
 ### STEP 4: Generate Candidate Tactics
 
@@ -314,11 +443,15 @@ fi
 
 ### STEP 8: Create Proof Summary
 
-After successful proof completion, create summary artifact.
+After proof completion (or partial completion), create summary artifact.
+
+**Summary Scope**:
+- **File-based mode**: Full session summary (all theorems processed)
+- **Batch mode**: Per-wave summary (only assigned theorems)
 
 **EXECUTE NOW**: Create proof summary in summaries directory.
 
-Use Write tool to create summary file at `${SUMMARIES_DIR}/NNN-proof-summary.md`:
+Use Write tool to create summary file at `${SUMMARIES_DIR}/NNN-proof-summary.md` or `${SUMMARIES_DIR}/wave_N_summary.md` for batch mode:
 
 ```markdown
 # Proof Summary: [Theorem Name]
@@ -409,8 +542,9 @@ fi
 
 ## Output Signal
 
-Return structured output signal for orchestrator:
+Return structured output signal for orchestrator.
 
+**File-Based Mode** (all theorems processed):
 ```yaml
 IMPLEMENTATION_COMPLETE: 1
 plan_file: /path/to/plan.md
@@ -422,14 +556,33 @@ theorems_partial: []
 tactics_used: ["exact", "rw"]
 mathlib_theorems: ["Nat.add_comm", "Nat.mul_comm"]
 diagnostics: []
+context_exhausted: false
+```
+
+**Batch Mode** (theorem_tasks subset processed):
+```yaml
+THEOREM_BATCH_COMPLETE:
+  theorems_completed: ["theorem_add_comm", "theorem_mul_assoc"]
+  theorems_partial: ["theorem_zero_add"]
+  tactics_used: ["exact", "ring", "simp"]
+  mathlib_theorems: ["Nat.add_comm", "Algebra.Ring.Basic"]
+  diagnostics: []
+  context_exhausted: false
+  work_remaining: Phase_3  # Space-separated list of incomplete phases (or 0)
+  wave_number: 1
+  budget_consumed: 2
 ```
 
 **Extended Fields** (Lean-specific):
-- `theorems_proven`: List of theorem names proven in this session
+- `theorems_completed`: List of theorem names fully proven (no sorry remaining)
 - `theorems_partial`: List of theorems with partial progress (some sorry remain)
 - `tactics_used`: List of unique tactics applied
 - `mathlib_theorems`: List of Mathlib theorems referenced
 - `diagnostics`: List of error/warning messages
+- `context_exhausted`: Boolean indicating if context threshold approached
+- `work_remaining`: Space-separated string of incomplete phase identifiers (NOT JSON array)
+- `wave_number`: Current wave number (batch mode only)
+- `budget_consumed`: Number of external search requests used (batch mode only)
 
 ## Lean Style Guide Compliance
 

@@ -55,6 +55,7 @@ Research-only projects (reports without implementation plans):
 
 **Refactoring/Enhancement Ideas**:
 
+- remove /build
 - the repair plans don't have the right metadata
 - check relevant standards, updating as needed
 - Retry semantic directory topic names and other fail-points
