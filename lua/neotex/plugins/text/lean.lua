@@ -1,3 +1,64 @@
+-- MCP Integration with lean-lsp-mcp
+-- ===================================
+-- This plugin integrates with lean-lsp-mcp Model Context Protocol server
+-- for AI-assisted theorem proving via Claude Code.
+--
+-- Configuration:
+--   - Create .mcp.json in Lean project root (see template below)
+--   - Invoke Claude Code with <leader>a mappings
+--   - MCP tools available: lean_file_outline, lean_diagnostic_messages,
+--     lean_goal, lean_hover, lean_leansearch, lean_loogle, lean_local_search, etc.
+--
+-- Example .mcp.json:
+--   {
+--     "mcpServers": {
+--       "lean-lsp": {
+--         "type": "stdio",
+--         "command": "uvx",
+--         "args": ["lean-lsp-mcp"],
+--         "env": {
+--           "LEAN_LOG_LEVEL": "WARNING",
+--           "LEAN_PROJECT_PATH": "${workspaceFolder}"
+--         }
+--       }
+--     }
+--   }
+--
+-- Example Claude Prompts:
+--   - "Show me the proof goals at line 42"
+--   - "Find theorems about list concatenation in Mathlib"
+--   - "Help me prove theorem add_comm: a + b = b + a"
+--   - "What errors are in this file?"
+--   - "Search local project for definitions of 'monad'"
+--
+-- Keybindings:
+--   - <leader>ri: Toggle Lean infoview (direct lean.nvim, faster than MCP)
+--   - <leader>a:  Invoke Claude Code (primary MCP interface)
+--
+-- Performance Tips:
+--   - Run `lake build` before MCP session to avoid timeout
+--   - Use local search (lean_local_search) first to avoid rate limits
+--   - External search tools limited to 3 requests/30 seconds
+--
+-- Troubleshooting:
+--   - MCP server not appearing: Verify .mcp.json in project root
+--   - Timeout on startup: Run `lake build` to compile project first
+--   - Rate limit errors: Wait 30 seconds between external search calls
+--   - Verbose logging: Set LEAN_LOG_LEVEL=INFO in .mcp.json
+--
+-- AI-Assisted Theorem Proving Workflow:
+-- 1. Open Lean file: nvim MyTheorem.lean
+-- 2. Verify project built: :!lake build
+-- 3. Toggle infoview: <leader>ri
+-- 4. Invoke Claude Code: <leader>a
+-- 5. Request assistance: "Help me prove this theorem"
+-- 6. Claude queries:
+--    - Current goal state (lean_goal)
+--    - Relevant theorems (lean_leansearch, lean_loogle)
+--    - Local definitions (lean_local_search)
+-- 7. Claude suggests proof tactics
+-- 8. User applies tactics, iterates
+
 return {
   'Julian/lean.nvim',
   event = { 'BufReadPre *.lean', 'BufNewFile *.lean' },
@@ -5,6 +66,16 @@ return {
     'nvim-lua/plenary.nvim',
     -- nvim-lspconfig removed - lean.nvim uses vim.lsp.config directly (Neovim 0.11+)
     -- nvim-cmp dependencies removed - project uses blink.cmp
+  },
+
+  -- Keybindings for Lean-specific operations
+  keys = {
+    {
+      "<leader>ri",
+      function() require('lean').infoview.toggle() end,
+      desc = "lean infoview",
+      ft = "lean"
+    },
   },
 
   -- Configuration options for lean.nvim

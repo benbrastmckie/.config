@@ -90,6 +90,12 @@ source "${CLAUDE_LIB}/core/state-persistence.sh" 2>/dev/null || {
   exit 1
 }
 
+# Tier 2.5: unified-location-detection.sh (artifact directory management)
+source "${CLAUDE_LIB}/core/unified-location-detection.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load unified-location-detection library" >&2
+  exit 1
+}
+
 # Tier 3: workflow-state-machine.sh (workflow orchestration)
 source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || {
   echo "ERROR: Cannot load workflow-state-machine library" >&2
@@ -185,7 +191,9 @@ fi
 
 # === PLAN FILE VALIDATION ===
 # Make plan file absolute if relative
-if [[ "$PLAN_FILE" =~ ^/ ]]; then
+result=0
+[[ "$PLAN_FILE" =~ ^/ ]] || result=1
+if [ "$result" -eq 0 ]; then
   : # Already absolute, continue
 else
   PLAN_FILE="$(pwd)/$PLAN_FILE"
@@ -268,17 +276,21 @@ fi
 ensure_artifact_directory "$OUTPUTS_DIR"
 ensure_artifact_directory "$DEBUG_DIR"
 
+# === WORKFLOW STATE INITIALIZATION ===
+# Initialize state file before sm_init (required for append_workflow_state)
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+
 # === STATE MACHINE INITIALIZATION ===
 sm_init \
-  "$WORKFLOW_ID" \
-  "test" \
+  "Test execution for $(basename "$PLAN_FILE")" \
+  "/test" \
   "test-and-debug" \
-  "$MAX_TEST_ITERATIONS" \
+  "2" \
   "[]" \
   2>/dev/null || {
     log_command_error "state_error" \
       "State machine initialization failed" \
-      "Workflow ID: $WORKFLOW_ID, Type: test-and-debug"
+      "Plan: $PLAN_FILE, Type: test-and-debug"
     exit 1
   }
 
@@ -290,11 +302,20 @@ if [ "$TERMINAL_STATE" != "complete" ]; then
   exit 1
 fi
 
-# === STATE TRANSITION TO TEST ===
-sm_transition "$STATE_TEST" "starting test phase" 2>/dev/null || {
+# === STATE TRANSITIONS (VALID PATH: initialize -> implement -> test) ===
+# Transition to implement (test discovery phase)
+sm_transition "$STATE_IMPLEMENT" "entering implement phase for test discovery" 2>/dev/null || {
+  log_command_error "state_error" \
+    "State transition to IMPLEMENT failed" \
+    "Current state: $(sm_get_state)"
+  exit 1
+}
+
+# Now transition to test
+sm_transition "$STATE_TEST" "starting test execution phase" 2>/dev/null || {
   log_command_error "state_error" \
     "State transition to TEST failed" \
-    "Current state: $CURRENT_STATE"
+    "Current state: $(sm_get_state)"
   exit 1
 }
 
@@ -304,8 +325,7 @@ PREVIOUS_COVERAGE=0
 STUCK_COUNT=0
 
 # === STATE PERSISTENCE ===
-STATE_ID_FILE="${HOME}/.claude/tmp/${WORKFLOW_ID}_state_id.txt"
-echo "${TOPIC_PATH}/.state/test_state.sh" > "$STATE_ID_FILE"
+# STATE_FILE already initialized by init_workflow_state above
 
 append_workflow_state "PLAN_FILE" "$PLAN_FILE"
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
@@ -344,20 +364,17 @@ source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || { echo 
 setup_bash_error_trap
 
 # === STATE RESTORATION ===
-STATE_ID_FILE="${HOME}/.claude/tmp/test_$(date +%s)_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  # Find most recent state ID file
-  STATE_ID_FILE=$(ls -t "${HOME}/.claude/tmp/test_*_state_id.txt" 2>/dev/null | head -1)
-fi
+# Load workflow state using standard pattern
+# Find most recent test workflow state file
+WORKFLOW_ID=$(ls -t "${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_test_"*.sh 2>/dev/null | head -1 | sed 's/.*workflow_\(.*\)\.sh/\1/')
 
-if [ -z "$STATE_ID_FILE" ] || [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: Cannot find state ID file" >&2
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Cannot find workflow state file for test command" >&2
   exit 1
 fi
 
-STATE_FILE=$(cat "$STATE_ID_FILE")
-source "$STATE_FILE" 2>/dev/null || {
-  echo "ERROR: Failed to load workflow state from $STATE_FILE" >&2
+load_workflow_state "$WORKFLOW_ID" false PLAN_FILE TOPIC_PATH ITERATION || {
+  echo "ERROR: Failed to load workflow state" >&2
   exit 1
 }
 
@@ -449,9 +466,18 @@ source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || { echo 
 setup_bash_error_trap
 
 # === STATE RESTORATION ===
-STATE_ID_FILE=$(ls -t "${HOME}/.claude/tmp/test_*_state_id.txt" 2>/dev/null | head -1)
-STATE_FILE=$(cat "$STATE_ID_FILE")
-source "$STATE_FILE"
+# Find most recent test workflow state file
+WORKFLOW_ID=$(ls -t "${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_test_"*.sh 2>/dev/null | head -1 | sed 's/.*workflow_\(.*\)\.sh/\1/')
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Cannot find workflow state file for test command" >&2
+  exit 1
+fi
+
+load_workflow_state "$WORKFLOW_ID" false TEST_OUTPUT_PATH COVERAGE_THRESHOLD ITERATION || {
+  echo "ERROR: Failed to load workflow state" >&2
+  exit 1
+}
 
 # === HARD BARRIER VERIFICATION ===
 result=0
@@ -477,12 +503,16 @@ TESTS_FAILED=$(grep "^tests_failed:" "$TEST_OUTPUT_PATH" 2>/dev/null | cut -d: -
 COVERAGE=$(grep "^coverage:" "$TEST_OUTPUT_PATH" 2>/dev/null | cut -d: -f2 | tr -d ' %' || echo "0")
 
 # Handle N/A coverage
-if [[ "$COVERAGE" == "N/A" ]]; then
+if [ "$COVERAGE" = "N/A" ]; then
   COVERAGE=0
-elif [[ "$COVERAGE" =~ ^[0-9]+$ ]]; then
-  : # Valid numeric coverage, continue
 else
-  COVERAGE=0
+  result=0
+  [[ "$COVERAGE" =~ ^[0-9]+$ ]] || result=1
+  if [ "$result" -eq 0 ]; then
+    : # Valid numeric coverage, continue
+  else
+    COVERAGE=0
+  fi
 fi
 
 # === CHECK SUCCESS CRITERIA ===
@@ -589,9 +619,18 @@ source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || { echo 
 setup_bash_error_trap
 
 # === STATE RESTORATION ===
-STATE_ID_FILE=$(ls -t "${HOME}/.claude/tmp/test_*_state_id.txt" 2>/dev/null | head -1)
-STATE_FILE=$(cat "$STATE_ID_FILE")
-source "$STATE_FILE"
+# Find most recent test workflow state file
+WORKFLOW_ID=$(ls -t "${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_test_"*.sh 2>/dev/null | head -1 | sed 's/.*workflow_\(.*\)\.sh/\1/')
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Cannot find workflow state file for test command" >&2
+  exit 1
+fi
+
+load_workflow_state "$WORKFLOW_ID" false NEXT_STATE DEBUG_DIR || {
+  echo "ERROR: Failed to load workflow state" >&2
+  exit 1
+}
 
 # === CONDITIONAL CHECK ===
 if [ "$NEXT_STATE" != "debug" ]; then
@@ -672,9 +711,18 @@ source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || { echo 
 setup_bash_error_trap
 
 # === STATE RESTORATION ===
-STATE_ID_FILE=$(ls -t "${HOME}/.claude/tmp/test_*_state_id.txt" 2>/dev/null | head -1)
-STATE_FILE=$(cat "$STATE_ID_FILE")
-source "$STATE_FILE"
+# Find most recent test workflow state file
+WORKFLOW_ID=$(ls -t "${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_test_"*.sh 2>/dev/null | head -1 | sed 's/.*workflow_\(.*\)\.sh/\1/')
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Cannot find workflow state file for test command" >&2
+  exit 1
+fi
+
+load_workflow_state "$WORKFLOW_ID" false PLAN_FILE TEST_OUTPUT_PATH NEXT_STATE || {
+  echo "ERROR: Failed to load workflow state" >&2
+  exit 1
+}
 
 # === STATE TRANSITION TO COMPLETE ===
 sm_transition "$STATE_COMPLETE" "test phase complete" 2>/dev/null || {
@@ -758,11 +806,6 @@ echo ""
 # Remove state file (workflow complete)
 if [ -f "$STATE_FILE" ]; then
   rm -f "$STATE_FILE" 2>/dev/null || true
-fi
-
-# Remove state ID file
-if [ -f "$STATE_ID_FILE" ]; then
-  rm -f "$STATE_ID_FILE" 2>/dev/null || true
 fi
 
 # Remove argument files

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "lean-lsp": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["lean-lsp-mcp"],
+      "env": {
+        "LEAN_LOG_LEVEL": "WARNING",
+        "LEAN_PROJECT_PATH": "/path/to/your/lean/project"
+      }
+    }
+  }
+}

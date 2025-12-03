@@ -1038,9 +1038,9 @@ After the Task returns, **proceed to Block 1c verification** to check for furthe
 
 **If IMPLEMENTATION_STATUS is "complete", "stuck", or "max_iterations"**: Proceed to Block 1d.
 
-## Block 1d: Phase Update
+## Block 1d: Phase Marker Validation and Recovery
 
-**EXECUTE NOW**: Parse the phase count and mark completed phases in the plan hierarchy.
+**EXECUTE NOW**: Validate phase markers and recover any missing [COMPLETE] markers after executor updates.
 
 ```bash
 set +H 2>/dev/null || true
@@ -1143,71 +1143,84 @@ export COMMAND_NAME USER_ARGS WORKFLOW_ID
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
 [ "${DEBUG:-}" = "1" ] && echo "DEBUG: Loaded state from: $STATE_FILE" >&2
-echo "Phase update: State validated"
+echo "Phase marker validation: State validated"
 
 echo ""
-echo "=== Phase Update: Marking Completed Phases ==="
+echo "=== Phase Marker Validation and Recovery ==="
 echo ""
 
-# Extract phase count from implementer-coordinator output
-# Default to detecting from plan file if not explicitly provided
-if [ -z "${COMPLETED_PHASE_COUNT:-}" ]; then
-  # Count phases in plan file
-  COMPLETED_PHASE_COUNT=$(grep -c "^### Phase" "$PLAN_FILE" 2>/dev/null || echo "0")
-fi
+# Count total phases and phases with [COMPLETE] marker
+TOTAL_PHASES=$(grep -c "^### Phase" "$PLAN_FILE" 2>/dev/null || echo "0")
+PHASES_WITH_MARKER=$(grep -c "^### Phase.*\[COMPLETE\]" "$PLAN_FILE" 2>/dev/null || echo "0")
 
-if [ "$COMPLETED_PHASE_COUNT" -gt 0 ]; then
-  echo "Phases to mark complete: $COMPLETED_PHASE_COUNT"
+echo "Total phases: $TOTAL_PHASES"
+echo "Phases with [COMPLETE] marker: $PHASES_WITH_MARKER"
+echo ""
+
+if [ "$TOTAL_PHASES" -eq 0 ]; then
+  echo "No phases found in plan (unexpected)"
+elif [ "$PHASES_WITH_MARKER" -eq "$TOTAL_PHASES" ]; then
+  echo "✓ All phases marked complete by executors"
+else
+  echo "⚠ Detecting phases missing [COMPLETE] marker..."
   echo ""
 
-  # Store completed phases for state persistence
-  COMPLETED_PHASES=""
+  # Recovery: Find phases with all checkboxes complete but missing [COMPLETE] marker
+  RECOVERED_COUNT=0
+  for phase_num in $(seq 1 "$TOTAL_PHASES"); do
+    # Check if phase already has [COMPLETE] marker
+    if grep -q "^### Phase ${phase_num}:.*\[COMPLETE\]" "$PLAN_FILE"; then
+      continue  # Already marked by executor
+    fi
 
-  for phase_num in $(seq 1 "$COMPLETED_PHASE_COUNT"); do
-    echo "Marking Phase $phase_num complete..."
+    # Check if all tasks in phase are complete (no [ ] checkboxes)
+    if verify_phase_complete "$PLAN_FILE" "$phase_num" 2>/dev/null; then
+      echo "Recovering Phase $phase_num (all tasks complete but marker missing)..."
 
-    # Try to mark phase complete using checkbox-utils.sh
-    if mark_phase_complete "$PLAN_FILE" "$phase_num" 2>/dev/null; then
-      echo "  ✓ Checkboxes marked complete"
+      # Mark all tasks complete (idempotent operation)
+      mark_phase_complete "$PLAN_FILE" "$phase_num" 2>/dev/null || {
+        echo "  ⚠ Task marking failed for Phase $phase_num" >&2
+      }
 
       # Add [COMPLETE] marker to phase heading
-      # Note: add_complete_marker automatically removes [NOT STARTED] and [IN PROGRESS] markers
       if add_complete_marker "$PLAN_FILE" "$phase_num" 2>/dev/null; then
         echo "  ✓ [COMPLETE] marker added"
+        ((RECOVERED_COUNT++))
       else
-        echo "  ⚠ [COMPLETE] marker failed"
+        echo "  ⚠ [COMPLETE] marker failed for Phase $phase_num" >&2
       fi
-
-      COMPLETED_PHASES="${COMPLETED_PHASES}${phase_num},"
     else
-      echo "  ⚠ Phase $phase_num update failed"
+      echo "  Phase $phase_num: Incomplete tasks (expected for partial completion)"
     fi
   done
 
-  # Defensive check: Verify append_workflow_state function available
-  type append_workflow_state &>/dev/null
-  TYPE_CHECK=$?
-  if [ $TYPE_CHECK -ne 0 ]; then
-    echo "ERROR: append_workflow_state function not found" >&2
-    echo "DIAGNOSTIC: state-persistence.sh library not sourced in this block" >&2
-    exit 1
-  fi
-
-  # Verify checkbox consistency
-  if verify_checkbox_consistency "$PLAN_FILE" 1 2>/dev/null; then
+  if [ "$RECOVERED_COUNT" -gt 0 ]; then
     echo ""
-    echo "✓ Checkbox hierarchy synchronized"
-  else
-    echo ""
-    echo "⚠ Checkbox hierarchy may need manual verification"
+    echo "✓ Recovered $RECOVERED_COUNT phase marker(s)"
   fi
-
-  # Persist completed phases
-  append_workflow_state "COMPLETED_PHASES" "$COMPLETED_PHASES"
-  append_workflow_state "COMPLETED_PHASE_COUNT" "$COMPLETED_PHASE_COUNT"
-else
-  echo "No phases to mark complete"
 fi
+
+# Defensive check: Verify append_workflow_state function available
+type append_workflow_state &>/dev/null
+TYPE_CHECK=$?
+if [ $TYPE_CHECK -ne 0 ]; then
+  echo "ERROR: append_workflow_state function not found" >&2
+  echo "DIAGNOSTIC: state-persistence.sh library not sourced in this block" >&2
+  exit 1
+fi
+
+# Verify checkbox consistency
+if verify_checkbox_consistency "$PLAN_FILE" 1 2>/dev/null; then
+  echo ""
+  echo "✓ Checkbox hierarchy synchronized"
+else
+  echo ""
+  echo "⚠ Checkbox hierarchy may need manual verification"
+fi
+
+# Persist validation results (phases_with_marker count for reporting)
+append_workflow_state "PHASES_WITH_MARKER" "$PHASES_WITH_MARKER"
+append_workflow_state "TOTAL_PHASES" "$TOTAL_PHASES"
 
 # Defensive check: Verify save_completed_states_to_state function available
 type save_completed_states_to_state &>/dev/null

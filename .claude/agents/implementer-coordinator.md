@@ -340,8 +340,14 @@ After invoking all executors in wave:
    - tests_passing: true | false
    - commit_hash: "abc123" (if completed)
    - checkpoint_path: "/path" (if created)
+   - phase_marker_updated: true | false (if [COMPLETE] marker was added)
 
-3. **Update Wave State**:
+3. **Validate Phase Markers** (Optional):
+   - Check if phase heading has [COMPLETE] marker for successful phases
+   - If phase_marker_updated: false, log warning but do not fail
+   - Trust Block 1d recovery in /implement command to fix missing markers
+
+4. **Update Wave State**:
    ```yaml
    wave_2:
      status: "completed"
@@ -350,18 +356,33 @@ After invoking all executors in wave:
          status: "completed"
          tasks_completed: 15
          commit_hash: "abc123"
+         marker_updated: true
        - phase_id: "phase_3"
          status: "completed"
          tasks_completed: 12
          commit_hash: "def456"
+         marker_updated: true
    ```
 
-4. **Display Progress** to user:
+5. **Display Progress** to user:
    ```
    ✓ Wave 2 Complete (2/2 phases succeeded)
    ├─ Phase 2: Backend Implementation ✓ (15/15 tasks, commit abc123)
    └─ Phase 3: Frontend Implementation ✓ (12/12 tasks, commit def456)
    ```
+
+**Optional Marker Validation Example**:
+```bash
+# After collecting executor reports, validate phase markers
+phases_with_markers=0
+for phase_num in "${completed_phases[@]}"; do
+  if grep -q "^### Phase ${phase_num}:.*\[COMPLETE\]" "$plan_path"; then
+    ((phases_with_markers++))
+  else
+    echo "Warning: Phase $phase_num missing [COMPLETE] marker (Block 1d will recover)" >&2
+  fi
+done
+```
 
 #### Wave Synchronization
 
@@ -542,6 +563,7 @@ IMPLEMENTATION_COMPLETE:
   checkpoint_path: /path/to/checkpoint (if created)
   requires_continuation: true|false
   stuck_detected: true|false
+  phases_with_markers: N  # Number of phases with [COMPLETE] marker (informational)
 ```
 
 If failures:

@@ -16,11 +16,26 @@ YOU ARE the single-phase implementation executor responsible for executing tasks
 
 1. **Task Execution**: Execute all tasks within the assigned phase
 2. **Plan Updates**: Automatically mark tasks complete with [x] in plan file
-3. **Hierarchy Propagation**: Invoke spec-updater for checkbox synchronization
-4. **Test Execution**: Run phase-specific tests
-5. **Git Commits**: Create standardized commits after phase completion
-6. **Context Monitoring**: Detect 70% context exhaustion threshold
-7. **Summary Generation**: Create summaries with Work Status at TOP
+3. **Progress Tracking**: Update phase status markers ([IN PROGRESS], [COMPLETE]) in real-time
+4. **Hierarchy Propagation**: Invoke spec-updater for checkbox synchronization
+5. **Test Execution**: Run phase-specific tests
+6. **Git Commits**: Create standardized commits after phase completion
+7. **Context Monitoring**: Detect 70% context exhaustion threshold
+8. **Summary Generation**: Create summaries with Work Status at TOP
+
+## Progress Tracking
+
+This executor provides real-time progress visibility by updating phase status markers:
+
+- **Phase Start**: Adds `[IN PROGRESS]` marker to phase heading
+- **Phase End**: Adds `[COMPLETE]` marker after all tasks finish
+- **Hierarchy Support**: Markers propagate to parent plans in Level 1/2 structures
+- **Non-Fatal**: Marker update failures log warnings but do not block execution
+- **Recovery**: /implement Block 1d validates and recovers any missing markers
+
+**User Benefit**: Users can `cat plan.md` during long implementations to see which phases are executing and which have completed, without waiting for batch updates after workflow finishes.
+
+**Integration**: Uses checkbox-utils.sh library functions (`add_in_progress_marker()`, `add_complete_marker()`) with graceful degradation if library unavailable.
 
 ## Workflow
 
@@ -49,16 +64,44 @@ continuation_context: null  # Or path to previous summary
 
 ### STEP 1: Initialization
 
-1. **Read Phase Content**: Load phase file to understand tasks
-2. **Check Continuation Context**: If continuation_context provided:
+1. **Source Progress Tracking Library**:
+   - Source checkbox-utils.sh for phase marker updates
+   - Handle errors gracefully (warn only, do not fail execution)
+
+2. **Mark Phase as In Progress**:
+   - Call `add_in_progress_marker()` to update phase heading with [IN PROGRESS]
+   - Updates both phase file and parent plan (if hierarchy exists)
+   - Non-fatal operation: log warning if marker update fails, continue execution
+
+3. **Read Phase Content**: Load phase file to understand tasks
+
+4. **Check Continuation Context**: If continuation_context provided:
    - Read previous summary
    - Parse Work Remaining section
    - Determine exact resume point (phase number, task number)
    - Skip already-completed tasks
-3. **Initialize Tracking**:
+
+5. **Initialize Tracking**:
    - Count total tasks in phase
    - Initialize completed task counter
    - Record start time
+
+**Progress Tracking Setup**:
+```bash
+# Source checkbox-utils.sh library
+CLAUDE_LIB="/home/user/.config/.claude/lib"
+source "$CLAUDE_LIB/plan/checkbox-utils.sh" 2>/dev/null || {
+  echo "Warning: Cannot load checkbox-utils.sh - phase markers will not be updated" >&2
+  # Non-fatal - continue execution without marker updates
+}
+
+# Mark phase as IN PROGRESS
+if type add_in_progress_marker &>/dev/null; then
+  add_in_progress_marker "$phase_file_path" "$phase_number" 2>/dev/null || {
+    echo "Warning: Failed to add [IN PROGRESS] marker to Phase $phase_number" >&2
+  }
+fi
+```
 
 **Continuation Handling**:
 ```yaml
@@ -106,7 +149,13 @@ FOR EACH task in phase (starting from resume point if continuing):
 
 After all tasks complete (or before context exhaustion):
 
-1. **Invoke Spec-Updater** for hierarchy propagation:
+1. **Mark Phase as Complete**:
+   - Call `add_complete_marker()` to update phase heading with [COMPLETE]
+   - Function verifies all tasks checked before adding marker
+   - Fallback: Use `mark_phase_complete()` if verification fails
+   - Non-fatal operation: log warning if marker update fails, continue execution
+
+2. **Invoke Spec-Updater** for hierarchy propagation:
    ```
    Task {
      subagent_type: "general-purpose"
@@ -126,15 +175,31 @@ After all tasks complete (or before context exhaustion):
    }
    ```
 
-2. **Run Phase Tests**:
+3. **Run Phase Tests**:
    - Execute phase-specific test commands
    - Capture test output
    - Determine pass/fail status
 
-3. **Create Git Commit** (if tests pass):
+4. **Create Git Commit** (if tests pass):
    - Format: `feat(NNN): complete Phase N - [Phase Name]`
    - Include all modified files
    - Verify commit created successfully
+
+**Phase Completion Marker**:
+```bash
+# Mark phase as COMPLETE after all tasks done
+if type add_complete_marker &>/dev/null; then
+  add_complete_marker "$phase_file_path" "$phase_number" 2>/dev/null || {
+    echo "Warning: Failed to add [COMPLETE] marker via add_complete_marker" >&2
+    # Fallback: Use mark_phase_complete to force update
+    if type mark_phase_complete &>/dev/null; then
+      mark_phase_complete "$phase_file_path" "$phase_number" 2>/dev/null || {
+        echo "Warning: Fallback mark_phase_complete also failed for Phase $phase_number" >&2
+      }
+    fi
+  }
+fi
+```
 
 **Commit Message Format**:
 ```bash
@@ -225,6 +290,7 @@ PHASE_COMPLETE:
   context_exhausted: true|false
   work_remaining: 0|[list of incomplete task descriptions]
   summary_path: /path/to/summary.md  # If summary generated
+  phase_marker_updated: true|false  # Whether [COMPLETE] marker was added
 ```
 
 **Example - Successful Completion**:
@@ -239,6 +305,7 @@ PHASE_COMPLETE:
   context_exhausted: false
   work_remaining: 0
   summary_path: null
+  phase_marker_updated: true
 ```
 
 **Example - Context Exhaustion**:
@@ -258,6 +325,7 @@ PHASE_COMPLETE:
     - "Task 11: Update API documentation"
     - "Task 12: Add usage examples"
   summary_path: /path/to/specs/027_auth/summaries/027_workflow_summary.md
+  phase_marker_updated: false  # Not all tasks complete
 ```
 
 ## Context Exhaustion Detection
@@ -302,6 +370,17 @@ When context exhaustion detected:
 5. **Return Signal**: Set context_exhausted: true in report
 
 ## Error Handling
+
+### Progress Marker Update Failures
+
+If marker updates fail (non-fatal):
+1. Log warning to stderr
+2. DO NOT fail execution
+3. Continue with task execution
+4. Report phase_marker_updated: false
+5. Block 1d recovery will detect and fix missing markers
+
+**Rationale**: Phase marker updates are cosmetic progress indicators. Implementation work should not fail due to marker update failures. The /implement command's Block 1d has validation-and-recovery logic to detect and fix any missing markers after execution completes.
 
 ### Task Execution Failures
 
