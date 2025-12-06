@@ -456,6 +456,46 @@ When `REQUIRES_CONTINUATION: true`:
 4. **Implementer-coordinator** receives continuation context
 5. **Cumulative progress** maintained across iterations
 
+### Defensive Validation
+
+The `/implement` command includes defensive validation to prevent agent bugs from causing workflow halts. Block 1c validates the relationship between `work_remaining` and `requires_continuation` signals:
+
+**Contract Invariant**:
+- If `work_remaining` contains phase identifiers → `requires_continuation` MUST be `true`
+- If `work_remaining` is empty/0/"[]" → `requires_continuation` can be `false`
+
+**Override Behavior**:
+
+If the implementer-coordinator returns `requires_continuation=false` with non-empty `work_remaining`, Block 1c will:
+
+1. Log a warning message to stderr
+2. Log a `validation_error` entry to errors.jsonl
+3. Override `requires_continuation` to `true` (defensive override)
+4. Continue to next iteration instead of halting
+
+**Example Override Output**:
+```
+=== Defensive Validation: Continuation Signal ===
+
+WARNING: Agent returned requires_continuation=false with non-empty work_remaining
+  work_remaining: Phase_4 Phase_5 Phase_6
+  OVERRIDING: Forcing continuation due to incomplete work
+Continuation requirement: OVERRIDDEN TO TRUE (defensive validation)
+```
+
+**Why This Matters**:
+
+Without defensive validation, agent bugs that set `requires_continuation=false` with incomplete work would cause the workflow to halt prematurely, requiring manual re-invocation. The defensive override ensures workflow robustness while logging violations for diagnostics.
+
+**Diagnostics**:
+
+To query agent contract violations:
+```bash
+/errors --type validation_error --command /implement
+```
+
+This shows all logged instances where the orchestrator detected and overridden incorrect continuation signals.
+
 ### Iteration Limits
 
 **Max Iterations** (default: 5):

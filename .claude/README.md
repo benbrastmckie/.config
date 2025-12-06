@@ -34,7 +34,7 @@ This directory provides a complete development workflow ecosystem:
 │   └── templates/      Reusable agent templates (sub-supervisor, etc.)
 ├── checkpoints/         Workflow state for interruption recovery
 ├── commands/            Slash commands for workflows
-│   └── templates/      Plan templates (YAML) for /plan-from-template
+│   └── templates/      Plan templates (YAML) for /create-plan-from-template
 ├── data/                Runtime data (gitignored)
 │   ├── agents/         Agent runtime data and metrics
 │   ├── checkpoints/    Workflow state persistence
@@ -64,7 +64,7 @@ The directory structure follows clear separation of concerns:
 
 1. **Templates Organization**:
    - **agents/templates/** - Agent behavioral templates (sub-supervisor-template.md)
-   - **commands/templates/** - Plan templates for /plan-from-template (YAML files)
+   - **commands/templates/** - Plan templates for /create-plan-from-template (YAML files)
    - These serve different purposes and should not be confused
 
 2. **Executable vs Sourced**:
@@ -151,7 +151,7 @@ The directory structure follows clear separation of concerns:
 - Invoked by user via `/command-name` syntax
 - May source lib/ utilities for implementation
 - Frontmatter specifies allowed tools and metadata
-- Examples: `/implement`, `/plan`, `/orchestrate`
+- Examples: `/implement`, `/create-plan`, `/orchestrate`
 
 **Structure**: Commands can reference shared documentation in `commands/shared/`
 
@@ -374,7 +374,7 @@ lib/base-utils.sh (~100 lines)
 ### Commands
 
 Comprehensive slash command system for all development workflows:
-- **Primary**: `/implement`, `/plan`, `/plan-wizard`, `/report`, `/test`, `/orchestrate`
+- **Primary**: `/implement`, `/create-plan`, `/plan-wizard`, `/report`, `/test`, `/orchestrate`
 - **Templates**: `/plan-from-template` for accelerated plan creation
 - **Analysis**: `/analyze`, `/refactor`, `/debug`
 - **Structure**: `/expand`, `/collapse` for progressive plan organization
@@ -536,7 +536,7 @@ Central configuration file for hook registrations and permissions.
 /report "Authentication best practices for Lua"
 
 # 2. Create plan (with or without template)
-/plan "Implement user authentication" specs/reports/025_auth_research.md
+/create-plan "Implement user authentication" specs/reports/025_auth_research.md
 # OR use template for faster planning:
 /plan-from-template crud-feature
 
@@ -557,7 +557,7 @@ Central configuration file for hook registrations and permissions.
 # → Component and scope analysis
 # → Optional research topic identification
 # → Complexity assessment
-# → Integration with /plan command
+# → Integration with /create-plan command
 ```
 
 ### Using Templates
@@ -578,7 +578,7 @@ ls .claude/templates/*.yaml
 
 ```bash
 /implement               # Execute plan (auto-resumes)
-/plan <description>      # Create implementation plan
+/create-plan <description>  # Create implementation plan
 /plan-wizard            # Interactive guided planning
 /plan-from-template     # Create plan from template
 /report <topic>         # Research and document

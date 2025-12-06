@@ -556,13 +556,41 @@ fallback_metadata=$(retry_with_fallback "$operation_name" "$attempt_number")
 ```bash
 # For centralized error logging
 ERROR_TYPE_STATE="state_error"          # Workflow state persistence issues
-ERROR_TYPE_VALIDATION="validation_error" # Input validation failures
+ERROR_TYPE_VALIDATION="validation_error" # Input validation failures (includes agent contract violations)
 ERROR_TYPE_AGENT="agent_error"          # Subagent execution failures
 ERROR_TYPE_PARSE="parse_error"          # Output parsing failures
 ERROR_TYPE_FILE="file_error"            # File system operations failures
 ERROR_TYPE_TIMEOUT_ERR="timeout_error"  # Operation timeout errors
 ERROR_TYPE_EXECUTION="execution_error"  # General execution failures
 ```
+
+**validation_error Use Cases**:
+1. **Input validation failures**: Missing required parameters, invalid argument formats
+2. **Agent contract violations**: Agent return signals violating contract invariants (e.g., `/implement` continuation override)
+3. **State validation failures**: Invalid state transitions, corrupt state files
+4. **Schema validation**: Malformed JSON/YAML, missing required fields
+
+**Example: Agent Contract Violation Log Entry**:
+```json
+{
+  "timestamp": "2025-12-05T10:30:45Z",
+  "environment": "production",
+  "command": "/implement",
+  "workflow_id": "implement_20251205_103040",
+  "user_args": "plan.md",
+  "error_type": "validation_error",
+  "error_message": "Agent contract violation: requires_continuation=false with work_remaining non-empty",
+  "source": "bash_block_1c_defensive_validation",
+  "stack": [],
+  "context": {
+    "work_remaining": "Phase_4 Phase_5 Phase_6",
+    "requires_continuation": "false",
+    "override": "forced_true"
+  }
+}
+```
+
+This log entry is created when `/implement` detects the implementer-coordinator agent returning `requires_continuation=false` with non-empty `work_remaining`, triggering the defensive override to prevent premature workflow halt.
 
 ### Legacy Error Types (for classify_error)
 

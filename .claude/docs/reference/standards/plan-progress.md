@@ -247,6 +247,108 @@ source .claude/lib/plan/checkbox-utils.sh
 add_in_progress_marker "plan.md" "3"
 ```
 
+## Phase Counting Standard
+
+### Required Regex Pattern
+
+All phase counting operations MUST use the following regex pattern with digit requirement:
+
+```bash
+# Count total phases (CORRECT - requires digit)
+grep -c "^### Phase [0-9]" "$PLAN_FILE"
+
+# Count completed phases (CORRECT - requires digit)
+grep -c "^### Phase [0-9].*\[COMPLETE\]" "$PLAN_FILE"
+
+# Check phase existence (CORRECT - requires digit)
+grep -q "^### Phase [0-9]" "$PLAN_FILE"
+```
+
+**NEVER use**:
+```bash
+# BUGGY - matches false positives like "### Phase Routing Summary"
+grep -c "^### Phase" "$PLAN_FILE"
+```
+
+### Pattern Components
+
+| Component | Purpose | Example Match | Example Non-Match |
+|-----------|---------|---------------|-------------------|
+| `^` | Line start anchor | `### Phase 1:` | `  ### Phase 1:` (indented) |
+| `###` | H3 heading marker | `### Phase 1:` | `## Phase 1:` (h2) |
+| ` Phase ` | Literal text with spaces | `### Phase 1:` | `### Phases` |
+| `[0-9]` | **Digit requirement** (critical) | `### Phase 1:`, `### Phase 12:` | `### Phase N:`, `### Phase Routing` |
+
+### Why Digit Requirement is Critical
+
+The digit requirement `[0-9]` prevents false positives from non-phase headings:
+
+**False Positive Examples** (matched by buggy pattern `^### Phase`):
+- `### Phase Routing Summary` - Summary section header
+- `### Phase N: [Example Template]` - Template placeholder text
+- `### Phase Dependencies` - Dependencies section header
+- `### Phase Classification` - Documentation header
+
+**Real-World Bug Example**:
+
+In implementation execution, the buggy pattern `^### Phase` counted 6 "phases" instead of 3:
+- 3 real phases: `### Phase 1:`, `### Phase 2:`, `### Phase 3:`
+- 2 false positives: `### Phase Routing Summary` (appeared twice in plan)
+- 1 false positive: `### Phase N:` (template example)
+
+This incorrect count triggered the recovery loop to process non-existent phases 4-6, causing:
+- Error messages about missing phases
+- Failed checkpoint validation
+- Prevented plan status updates from executing
+- Recovery loop processing phantom phases
+
+### Enforcement Requirements
+
+**Command Authors** must use the digit requirement pattern:
+- ✅ `grep -c "^### Phase [0-9]"` - Correct
+- ❌ `grep -c "^### Phase"` - Prohibited (causes false positives)
+
+**Authoritative Implementation**: The pattern `^### Phase [0-9]` is defined in `.claude/lib/plan/checkbox-utils.sh` (lines 672, 684) which serves as the canonical reference for all phase counting operations.
+
+**Files Using Correct Pattern** (as of 2025-12-04):
+- checkbox-utils.sh (authoritative library)
+- plan-architect.md (agent)
+- todo-functions.sh (library)
+- lean-plan.md (command)
+- create-plan.md (command)
+- phase-classifier.sh (library)
+- revise.md (command)
+- implement.md (command) - **Updated 2025-12-04**
+- lean-build.md (command) - **Updated 2025-12-04**
+- lean-implement.md (command) - **Updated 2025-12-04**
+- cleanup-plan-architect.md (agent) - **Updated 2025-12-04**
+
+### Alternative Patterns for Advanced Use Cases
+
+**Flexible Heading Level** (matches both h2 and h3):
+```bash
+# Matches both "## Phase 1:" and "### Phase 1:"
+grep -c "^##+ Phase [0-9]" "$PLAN_FILE"
+```
+
+**Specific Phase Number**:
+```bash
+# Match only Phase 2
+grep -q "^### Phase 2:" "$PLAN_FILE"
+```
+
+**Phase Range** (two-digit phases):
+```bash
+# Match phases 10-99
+grep -c "^### Phase [1-9][0-9]" "$PLAN_FILE"
+```
+
+**Any Valid Phase** (comprehensive):
+```bash
+# Match phases 0-9, 10-99, 100+
+grep -c "^### Phase [0-9]\+" "$PLAN_FILE"
+```
+
 ## Best Practices
 
 1. **Always use plan-architect**: Ensure new plans have `[NOT STARTED]` markers

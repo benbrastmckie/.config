@@ -850,8 +850,68 @@ if [ -n "$WORK_REMAINING" ] && [[ "$WORK_REMAINING" =~ ^[[:space:]]*\[ ]]; then
   WORK_REMAINING="$WORK_REMAINING_CLEAN"
 fi
 
+# === DEFENSIVE VALIDATION: Override requires_continuation if work remains ===
+# Contract invariant: If work_remaining is non-empty, continuation MUST be required
+# This defends against agent bugs where requires_continuation=false with work remaining
+
+echo ""
+echo "=== Defensive Validation: Continuation Signal ==="
+echo ""
+
+# Helper function: Check if work_remaining is truly empty
+is_work_remaining_empty() {
+  local work_remaining="${1:-}"
+
+  # Empty string
+  [ -z "$work_remaining" ] && return 0
+
+  # Literal "0"
+  [ "$work_remaining" = "0" ] && return 0
+
+  # Empty JSON array "[]"
+  [ "$work_remaining" = "[]" ] && return 0
+
+  # Contains only whitespace
+  [[ "$work_remaining" =~ ^[[:space:]]*$ ]] && return 0
+
+  # Work remains
+  return 1
+}
+
+# Check if work truly remains
+if ! is_work_remaining_empty "$WORK_REMAINING"; then
+  # Work remains - continuation is MANDATORY
+  if [ "$REQUIRES_CONTINUATION" != "true" ]; then
+    echo "WARNING: Agent returned requires_continuation=false with non-empty work_remaining" >&2
+    echo "  work_remaining: $WORK_REMAINING" >&2
+    echo "  OVERRIDING: Forcing continuation due to incomplete work" >&2
+
+    # Log agent contract violation for diagnostics
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Agent contract violation: requires_continuation=false with work_remaining non-empty" \
+      "bash_block_1c_defensive_validation" \
+      "$(jq -n --arg work "$WORK_REMAINING" --arg cont "$REQUIRES_CONTINUATION" \
+         '{work_remaining: $work, requires_continuation: $cont, override: "forced_true"}')"
+
+    # Override agent signal
+    REQUIRES_CONTINUATION="true"
+    echo "Continuation requirement: OVERRIDDEN TO TRUE (defensive validation)" >&2
+  else
+    echo "Continuation requirement: TRUE (work remains, agent agrees)" >&2
+  fi
+else
+  # No work remains - trust agent signal
+  echo "Continuation requirement: $REQUIRES_CONTINUATION (no work remaining, agent decision accepted)" >&2
+fi
+
+echo ""
+
 # === COMPLETION CHECK ===
-# Trust the implementer-coordinator's requires_continuation signal
+# Trust the implementer-coordinator's requires_continuation signal (now validated)
 if [ "$REQUIRES_CONTINUATION" = "true" ]; then
   echo "Coordinator reports continuation required"
 
@@ -1149,9 +1209,23 @@ echo ""
 echo "=== Phase Marker Validation and Recovery ==="
 echo ""
 
+# Force filesystem sync to ensure implementer-coordinator writes are visible
+# (Defensive pattern: prevents reading plan file before writes are fully synced)
+sync 2>/dev/null || true
+sleep 0.1  # 100ms delay for filesystem consistency
+
 # Count total phases and phases with [COMPLETE] marker
-TOTAL_PHASES=$(grep -c "^### Phase" "$PLAN_FILE" 2>/dev/null || echo "0")
-PHASES_WITH_MARKER=$(grep -c "^### Phase.*\[COMPLETE\]" "$PLAN_FILE" 2>/dev/null || echo "0")
+# Apply defensive sanitization pattern to prevent bash conditional syntax errors
+# from grep output containing embedded newlines (Pattern from complexity-utils.sh)
+TOTAL_PHASES=$(grep -c "^### Phase [0-9]" "$PLAN_FILE" 2>/dev/null || echo "0")
+TOTAL_PHASES=$(echo "$TOTAL_PHASES" | tr -d '\n' | tr -d ' ')
+TOTAL_PHASES=${TOTAL_PHASES:-0}
+[[ "$TOTAL_PHASES" =~ ^[0-9]+$ ]] || TOTAL_PHASES=0
+
+PHASES_WITH_MARKER=$(grep -c "^### Phase [0-9].*\[COMPLETE\]" "$PLAN_FILE" 2>/dev/null || echo "0")
+PHASES_WITH_MARKER=$(echo "$PHASES_WITH_MARKER" | tr -d '\n' | tr -d ' ')
+PHASES_WITH_MARKER=${PHASES_WITH_MARKER:-0}
+[[ "$PHASES_WITH_MARKER" =~ ^[0-9]+$ ]] || PHASES_WITH_MARKER=0
 
 echo "Total phases: $TOTAL_PHASES"
 echo "Phases with [COMPLETE] marker: $PHASES_WITH_MARKER"

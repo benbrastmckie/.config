@@ -331,7 +331,12 @@ mkdir -p "$(dirname "$TOPIC_NAME_FILE")" 2>/dev/null || true
 
 # === PATH MISMATCH DIAGNOSTIC ===
 # Verify STATE_FILE uses CLAUDE_PROJECT_DIR (not HOME) to prevent exit 127 errors
-if [[ "$STATE_FILE" =~ ^${HOME}/ ]]; then
+# Skip PATH MISMATCH check when PROJECT_DIR is subdirectory of HOME (valid configuration)
+if [[ "$CLAUDE_PROJECT_DIR" =~ ^${HOME}/ ]]; then
+  # PROJECT_DIR legitimately under HOME - skip PATH MISMATCH validation
+  :
+elif [[ "$STATE_FILE" =~ ^${HOME}/ ]]; then
+  # Only flag as error if PROJECT_DIR is NOT under HOME but STATE_FILE uses HOME
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -551,6 +556,13 @@ else
   echo "ERROR: State file not found: $STATE_FILE" >&2
   exit 1
 fi
+
+# === DEFENSIVE VARIABLE INITIALIZATION ===
+# Initialize potentially unbound variables with defaults to prevent unbound variable errors
+# These variables may not be set in state file depending on user input
+ORIGINAL_PROMPT_FILE_PATH="${ORIGINAL_PROMPT_FILE_PATH:-}"
+RESEARCH_COMPLEXITY="${RESEARCH_COMPLEXITY:-2}"
+WORKFLOW_DESCRIPTION="${WORKFLOW_DESCRIPTION:-}"
 
 # WORKFLOW_DESCRIPTION should be in state file, but also check temp file as backup
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
@@ -784,7 +796,11 @@ fi
 if ! validate_directory_var "RESEARCH_DIR" "research reports"; then
   EXISTING_REPORTS=0
 else
-  EXISTING_REPORTS=$(find "$RESEARCH_DIR" -name '[0-9][0-9][0-9]-*.md' 2>/dev/null | wc -l | tr -d ' ')
+  # Apply 4-step sanitization pattern (defensive-programming.md Section 6)
+  EXISTING_REPORTS=$(find "$RESEARCH_DIR" -name '[0-9][0-9][0-9]-*.md' 2>/dev/null | wc -l)
+  EXISTING_REPORTS=$(echo "$EXISTING_REPORTS" | tr -d '\n' | tr -d ' ')
+  EXISTING_REPORTS=${EXISTING_REPORTS:-0}
+  [[ "$EXISTING_REPORTS" =~ ^[0-9]+$ ]] || EXISTING_REPORTS=0
 fi
 REPORT_NUMBER=$(printf "%03d" $((EXISTING_REPORTS + 1)))
 
@@ -1184,7 +1200,11 @@ if [ -n "$UNDERSIZED_FILES" ]; then
   exit 1
 fi
 
+# Apply 4-step sanitization pattern (defensive-programming.md Section 6)
 REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
+REPORT_COUNT=$(echo "$REPORT_COUNT" | tr -d '\n' | tr -d ' ')
+REPORT_COUNT=${REPORT_COUNT:-0}
+[[ "$REPORT_COUNT" =~ ^[0-9]+$ ]] || REPORT_COUNT=0
 
 # === COMPLETE WORKFLOW ===
 sm_transition "$STATE_COMPLETE" 2>&1

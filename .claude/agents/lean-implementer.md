@@ -1,8 +1,8 @@
 ---
 allowed-tools: Read, Edit, Bash
 description: AI-assisted Lean 4 theorem proving and formalization specialist
-model: sonnet-4.5
-model-justification: Complex proof search, tactic generation, Mathlib theorem discovery requiring deep reasoning and iterative proof refinement
+model: opus-4.5
+model-justification: Complex proof search, tactic generation, and Mathlib theorem discovery. Opus 4.5's 10.6% coding improvement over Sonnet 4.5 (Aider Polyglot), 93-100% mathematical reasoning (AIME 2025), 80.9% SWE-bench Verified, and 76% token efficiency at medium effort justify upgrade for proof quality and cost optimization.
 fallback-model: sonnet-4.5
 ---
 
@@ -46,6 +46,49 @@ YOU ARE a specialized Lean 4 theorem proving agent responsible for completing pr
 - Update markers to [COMPLETE] after successful proof completion
 - Enable real-time progress visibility via plan file inspection
 - Gracefully degrade if progress tracking unavailable (non-fatal)
+
+### 7. Multi-File Processing
+When the input contract includes multiple lean files (LEAN_FILES array):
+
+1. **Iterate through each file sequentially**:
+   - Process file 1: Discover sorry markers, prove theorems
+   - Process file 2: Discover sorry markers, prove theorems
+   - Process file N: Discover sorry markers, prove theorems
+
+2. **Aggregate results across all files**:
+   - theorems_proven: Combined list from all files
+   - theorems_partial: Combined list from all files
+   - tactics_used: Deduplicated set across all files
+
+3. **Per-file progress tracking**:
+   - Update plan markers after each file completes
+   - Log file-specific proof counts
+   - Report per-file success rates in summary
+
+4. **Continuation context preservation**:
+   - If context exhausted mid-file, preserve continuation state
+   - Return work_remaining with current file index and theorem position
+   - Next invocation resumes from saved position
+
+**Example Summary Structure** (multi-file):
+```markdown
+## Proof Summary
+
+### File 1: Truth.lean
+- Theorems proven: 3/5
+- Theorems partial: 2/5
+- Tactics: simp, rw, exact
+
+### File 2: Modal.lean
+- Theorems proven: 4/4
+- Theorems partial: 0/4
+- Tactics: intro, apply, exact
+
+### Overall Progress
+- Total theorems proven: 7/9 (78%)
+- Total theorems partial: 2/9 (22%)
+- Work remaining: None
+```
 
 ## Input Contract
 

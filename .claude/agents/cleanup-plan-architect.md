@@ -501,7 +501,7 @@ if grep -q "placeholder\|Will be filled\|Will be added\|Will be calculated" "$PL
 fi
 
 # Verify /implement compatibility (has phases with checkboxes)
-if ! grep -q "^### Phase" "$PLAN_PATH"; then
+if ! grep -q "^### Phase [0-9]" "$PLAN_PATH"; then
   echo "ERROR: No phases found - plan not /implement-compatible"
   exit 1
 fi

@@ -453,26 +453,118 @@ After all waves complete (or halt due to blocking failure):
    time_savings = (sequential_time - parallel_time) / sequential_time * 100
    ```
 
-3. **Generate Implementation Report**:
-   ```yaml
-   implementation_report:
-     status: "completed" | "partial" | "failed"
-     waves_executed: N
-     total_phases: N
-     successful_phases: N
-     failed_phases: N
-     elapsed_time: "X hours"
-     estimated_sequential_time: "Y hours"
-     time_savings: "Z%"
-     git_commits: [list of commit hashes]
-     checkpoints: [list of checkpoint paths if any]
-     failed_phase_details:
-       - phase_id: "phase_2"
-         error_summary: "Tests failed"
-         test_output: "/path"
+3. **Generate Brief Summary**:
+   Create a concise single-line summary (max 150 characters) following the format:
+   ```
+   "Completed Wave X-Y (Phase A,B) with N tasks. Context: P%. Next: ACTION."
    ```
 
-4. **Return to Orchestrator**:
+   **Example Brief Summaries**:
+   - `"Completed Wave 1 (Phase 3,4) with 25 tasks. Context: 65%. Next: Continue Wave 2."`
+   - `"Completed Wave 1-2 (Phase 1,2,3) with 48 tasks. Context: 82%. Next: Complete."`
+   - `"Partial Wave 1 (Phase 1) with 8/15 tasks. Context: 75%. Next: Continue."`
+
+   **Brief Summary Components**:
+   - **Wave Range**: First and last wave number completed (e.g., "Wave 1-2")
+   - **Phase List**: Comma-separated phase numbers in parentheses (e.g., "(Phase 3,4)")
+   - **Work Metric**: Tasks completed or phases executed (e.g., "25 tasks")
+   - **Context Usage**: Current context percentage (e.g., "Context: 65%")
+   - **Next Action**: One of:
+     - "Next: Continue Wave N" (more waves remaining)
+     - "Next: Complete" (all waves done)
+     - "Next: Context limit" (context exhausted)
+
+   **Brief Summary Generation Logic**:
+   ```bash
+   # Determine wave range
+   WAVE_START=1
+   WAVE_END=$CURRENT_WAVE
+
+   # Build phase list
+   PHASES_COMPLETED=$(echo "$COMPLETED_PHASES" | tr ' ' ',')
+
+   # Count tasks
+   TASKS_COMPLETED=$(grep -c "\[x\]" "$PLAN_FILE" || echo 0)
+
+   # Get context usage
+   CONTEXT_PERCENT=$(estimate_context_usage)
+
+   # Determine next action
+   if [ "$WAVES_REMAINING" -gt 0 ]; then
+     NEXT_ACTION="Continue Wave $((WAVE_END + 1))"
+   elif [ "$CONTEXT_EXHAUSTED" = "true" ]; then
+     NEXT_ACTION="Context limit"
+   else
+     NEXT_ACTION="Complete"
+   fi
+
+   # Generate brief summary
+   SUMMARY_BRIEF="Completed Wave ${WAVE_START}-${WAVE_END} (Phase ${PHASES_COMPLETED}) with ${TASKS_COMPLETED} tasks. Context: ${CONTEXT_PERCENT}%. Next: ${NEXT_ACTION}."
+
+   # Truncate to 150 characters if needed
+   SUMMARY_BRIEF="${SUMMARY_BRIEF:0:150}"
+   ```
+
+4. **Create Implementation Summary**:
+   Save summary to artifact_paths.summaries directory.
+
+   **CRITICAL**: Summary MUST be created at summaries_dir for orchestrator validation.
+
+   **Summary File Template** (includes structured metadata at top for parsing):
+   ```markdown
+   coordinator_type: software
+   summary_brief: "Completed Wave 1 (Phase 3,4) with 25 tasks. Context: 65%. Next: Continue Wave 2."
+   phases_completed: [3, 4]
+   phase_count: 2
+   git_commits: [hash1, hash2]
+   work_remaining: Phase_5 Phase_6
+   context_exhausted: false
+   context_usage_percent: 65
+   requires_continuation: true
+
+   # Implementation Summary - Iteration {N}
+
+   ## Work Status
+
+   **Completion**: X/Y phases (Z%)
+
+   ## Completed Phases
+   - Phase 3: Authentication Module (8 tasks, 2 commits)
+   - Phase 4: Database Layer (12 tasks, 3 commits)
+
+   ## Failed Phases
+   - Phase 2: Partial completion (tests failed)
+
+   ## Remaining Work
+   - Phase 5: API endpoints
+   - Phase 6: Documentation
+
+   ## Implementation Metrics
+   - Total Tasks Completed: 25
+   - Git Commits: 5
+   - Time Savings: 40% (3 hrs vs 5 hrs sequential)
+
+   ## Artifacts Created
+   - Modified: src/auth.ts, src/db.ts, tests/auth.test.ts
+   - Commits: hash1, hash2, hash3, hash4, hash5
+   - Plan: /path/to/specs/027_auth/plans/001-auth-plan.md (markers updated)
+
+   ## Notes
+   [Context for next iteration, blockers, strategy adjustments]
+   ```
+
+   **Structured Metadata Fields** (lines 1-9 before markdown content):
+   - `coordinator_type: software` - Identifies coordinator type for aggregation filtering
+   - `summary_brief: "..."` - Brief summary for primary agent parsing (80 tokens vs 2,000)
+   - `phases_completed: [3, 4]` - Array of completed phase numbers
+   - `phase_count: 2` - Total phases completed in this iteration
+   - `git_commits: [hash1, hash2]` - Array of git commit hashes (for aggregation)
+   - `work_remaining: Phase_5 Phase_6` - Space-separated remaining phase identifiers
+   - `context_exhausted: false` - Whether context limit triggered halt
+   - `context_usage_percent: 65` - Current context usage percentage
+   - `requires_continuation: true` - Whether workflow needs another iteration
+
+5. **Return to Orchestrator**:
    Return ONLY the implementation report in the format specified in Output Format section below.
 
 ## Error Handling
@@ -549,14 +641,19 @@ Context Exhausted: {yes|no}
   - WRONG: `work_remaining: [Phase 4, Phase 5, Phase 6]` ✗ (triggers state_error)
 - The parent workflow uses `append_workflow_state()` which only accepts scalar values
 - JSON arrays cause type validation failures and state_error log entries
+- **CRITICAL**: The `work_remaining` and `requires_continuation` fields must satisfy the contract invariant (see "Return Signal Contract" section below)
+- Contract violations trigger defensive override by orchestrator with `validation_error` log entry
 
 ```yaml
 IMPLEMENTATION_COMPLETE:
+  coordinator_type: software
+  summary_path: /path/to/summaries/NNN_workflow_summary.md
+  summary_brief: "Completed Wave 1 (Phase 3,4) with 25 tasks. Context: 65%. Next: Continue Wave 2."
+  phases_completed: [3, 4]
   phase_count: N
+  git_commits: [hash1, hash2, ...]
   plan_file: /path/to/plan.md
   topic_path: /path/to/topic
-  summary_path: /path/to/summaries/NNN_workflow_summary.md
-  git_commits: [hash1, hash2, ...]
   context_exhausted: true|false
   work_remaining: Phase_4 Phase_5 Phase_6  # Space-separated string, NOT JSON array
   context_usage_percent: N%
@@ -565,6 +662,54 @@ IMPLEMENTATION_COMPLETE:
   stuck_detected: true|false
   phases_with_markers: N  # Number of phases with [COMPLETE] marker (informational)
 ```
+
+**New Fields for Brief Summary Pattern**:
+- `coordinator_type: software` - Identifies this as software coordinator output (for filtering in hybrid workflows)
+- `summary_brief: "..."` - Context-efficient brief summary (80 tokens vs 2,000 tokens full file)
+- `phases_completed: [3, 4]` - Array of phase numbers completed in this iteration
+
+**Backward Compatibility**: All existing fields preserved. New fields are additions only.
+
+### Return Signal Contract
+
+**CRITICAL INVARIANT**: The `requires_continuation` and `work_remaining` fields MUST satisfy this relationship:
+
+| work_remaining | requires_continuation | Valid? | Description |
+|----------------|----------------------|---------|-------------|
+| Non-empty (e.g., "Phase_4 Phase_5") | true | ✓ Valid | Work remains, continuation needed |
+| Empty/0/"[]" | false | ✓ Valid | No work remains, halt workflow |
+| Empty/0/"[]" | true | ⚠ Suboptimal | No work remains but requesting continuation (wastes iterations) |
+| Non-empty (e.g., "Phase_4 Phase_5") | false | ✗ INVALID | Contract violation - orchestrator will override |
+
+**Defensive Orchestrator Behavior**:
+
+The /implement orchestrator validates this invariant in Block 1c (defensive validation section). If `work_remaining` is non-empty and `requires_continuation=false`, the orchestrator will:
+
+1. Log a `validation_error` to errors.jsonl with details of the contract violation
+2. Override `requires_continuation` to `true` (defensive override)
+3. Continue to next iteration with warning message
+4. The workflow continues instead of halting prematurely
+
+This defensive pattern prevents agent bugs from causing workflow halt with incomplete work.
+
+**Implementation Note for Agent Developers**:
+
+Always set `requires_continuation=true` when `work_remaining` contains any phase identifiers. The relationship is simple:
+- If phases remain → `requires_continuation: true`
+- If no phases remain → `requires_continuation: false`
+
+Example of correct signal logic:
+```bash
+if [ -n "$WORK_REMAINING" ] && [ "$WORK_REMAINING" != "0" ] && [ "$WORK_REMAINING" != "[]" ]; then
+  REQUIRES_CONTINUATION="true"
+else
+  REQUIRES_CONTINUATION="false"
+fi
+```
+
+**Diagnostics**:
+
+If you see contract violations in error logs, use `/errors --type validation_error --command /implement` to query logged violations and identify agent bugs.
 
 If failures:
 ```

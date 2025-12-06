@@ -358,6 +358,16 @@ return {
           { config_path = config_path, yolo_enabled = yolo_enabled }
         )
       end, desc = "toggle yolo mode", icon = "󰒓" },
+
+      -- Goose AI commands (using available <leader>a letters)
+      { "<leader>ag", "<cmd>Goose<CR>", desc = "goose toggle", icon = "󰚩" },
+      { "<leader>ag", "<cmd>Goose<CR>", desc = "goose with selection", icon = "󰚩", mode = "v" },
+      { "<leader>ai", "<cmd>GooseOpenInput<CR>", desc = "goose input", icon = "󰭹" },
+      { "<leader>ao", "<cmd>GooseOpenOutput<CR>", desc = "goose output", icon = "󰆍" },
+      { "<leader>af", "<cmd>GooseToggleFullscreen<CR>", desc = "goose fullscreen", icon = "󰊓" },
+      { "<leader>ad", "<cmd>GooseDiff<CR>", desc = "goose diff", icon = "󰦓" },
+      { "<leader>ab", "<cmd>GooseConfigureProvider<CR>", desc = "goose backend/provider", icon = "󰒓" },
+      { "<leader>aq", "<cmd>GooseClose<CR>", desc = "goose quit", icon = "󰅖" },
     })
 
     -- ============================================================================

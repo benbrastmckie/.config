@@ -195,7 +195,7 @@ local function preview_load_all(self)
   local agents_prompts = scan_directory_for_sync(global_dir, project_dir, "agents/prompts", "*.md")
   local agents_shared = scan_directory_for_sync(global_dir, project_dir, "agents/shared", "*.md")
   local standards = scan_directory_for_sync(global_dir, project_dir, "specs/standards", "*.md")
-  local settings = scan_directory_for_sync(global_dir, project_dir, "", "settings.local.json")
+  local settings = scan_directory_for_sync(global_dir, project_dir, "", "settings.json")
 
   -- Merge TTS files
   local all_tts = {}

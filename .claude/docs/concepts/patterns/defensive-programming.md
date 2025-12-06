@@ -380,6 +380,164 @@ grep "ERROR:" script.sh | grep -q "Phase\|Step"
 - [Error Enhancement Guide](../../guides/patterns/error-enhancement-guide.md) → Complete error patterns
 - [Robustness Framework](../robustness-framework.md) → Pattern 7 (Error Context)
 
+## 6. Grep Output Sanitization
+
+**Pattern**: Sanitize grep output before using in bash conditionals to prevent syntax errors from embedded newlines or non-numeric corruption.
+
+### The Problem
+
+`grep -c` output can contain embedded newlines (e.g., `"0\n0"`) due to grep bugs or filesystem issues, causing bash conditional syntax errors when the variable is used in comparisons:
+
+```bash
+# ❌ BAD - Vulnerable to grep output corruption
+TOTAL_PHASES=$(grep -c "^### Phase" "$PLAN_FILE" 2>/dev/null || echo "0")
+if [[ "$TOTAL_PHASES" -eq 3 ]]; then  # FAILS if TOTAL_PHASES="0\n0"
+  echo "All phases found"
+fi
+# Error: [[: 0\n0: syntax error in expression
+```
+
+### The 4-Step Sanitization Pattern
+
+Apply this defensive pattern to all grep-based numeric variables used in conditionals:
+
+```bash
+# ✅ GOOD - Apply 4-step sanitization pattern
+# Step 1: Execute grep -c with fallback
+COUNT=$(grep -c "pattern" "$FILE" 2>/dev/null || echo "0")
+
+# Step 2: Strip newlines and spaces
+COUNT=$(echo "$COUNT" | tr -d '\n' | tr -d ' ')
+
+# Step 3: Apply default if empty
+COUNT=${COUNT:-0}
+
+# Step 4: Validate numeric and reset if invalid
+[[ "$COUNT" =~ ^[0-9]+$ ]] || COUNT=0
+```
+
+### Real-World Examples
+
+**Example - Phase Counting in implement.md**:
+```bash
+# Count total phases with defensive sanitization
+TOTAL_PHASES=$(grep -c "^### Phase" "$PLAN_FILE" 2>/dev/null || echo "0")
+TOTAL_PHASES=$(echo "$TOTAL_PHASES" | tr -d '\n' | tr -d ' ')
+TOTAL_PHASES=${TOTAL_PHASES:-0}
+[[ "$TOTAL_PHASES" =~ ^[0-9]+$ ]] || TOTAL_PHASES=0
+
+# Count complete phases with defensive sanitization
+PHASES_WITH_MARKER=$(grep -c "^### Phase.*\[COMPLETE\]" "$PLAN_FILE" 2>/dev/null || echo "0")
+PHASES_WITH_MARKER=$(echo "$PHASES_WITH_MARKER" | tr -d '\n' | tr -d ' ')
+PHASES_WITH_MARKER=${PHASES_WITH_MARKER:-0}
+[[ "$PHASES_WITH_MARKER" =~ ^[0-9]+$ ]] || PHASES_WITH_MARKER=0
+
+# Now safe to use in conditionals
+if [ "$TOTAL_PHASES" -eq 0 ]; then
+  echo "No phases found"
+elif [ "$PHASES_WITH_MARKER" -eq "$TOTAL_PHASES" ]; then
+  echo "All phases complete"
+fi
+```
+
+**Example - Function Return Value**:
+```bash
+check_all_phases_complete() {
+  local plan_path="$1"
+
+  # Count total phases with defensive sanitization
+  local total_phases=$(grep -E -c "^##+ Phase [0-9]" "$plan_path" 2>/dev/null || echo "0")
+  total_phases=$(echo "$total_phases" | tr -d '\n' | tr -d ' ')
+  total_phases=${total_phases:-0}
+  [[ "$total_phases" =~ ^[0-9]+$ ]] || total_phases=0
+
+  # Count complete phases with defensive sanitization
+  local complete_phases=$(grep -E -c "^##+ Phase [0-9].*\[COMPLETE\]" "$plan_path" 2>/dev/null || echo "0")
+  complete_phases=$(echo "$complete_phases" | tr -d '\n' | tr -d ' ')
+  complete_phases=${complete_phases:-0}
+  [[ "$complete_phases" =~ ^[0-9]+$ ]] || complete_phases=0
+
+  # Safe conditional comparison
+  if [[ "$complete_phases" -eq "$total_phases" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+```
+
+### Why Each Step Is Necessary
+
+1. **Fallback (`|| echo "0"`)**: Handles grep failures (file not found, permission denied)
+2. **Strip newlines/spaces (`tr -d '\n' | tr -d ' '`)**: Removes embedded newlines that cause syntax errors
+3. **Default value (`${COUNT:-0}`)**: Handles empty strings from tr if input was only whitespace
+4. **Regex validation (`[[ "$COUNT" =~ ^[0-9]+$ ]]`)**: Catches non-numeric corruption (e.g., "error", "grep:")
+
+### Edge Cases Handled
+
+| Input | After Step 2 | After Step 3 | After Step 4 | Notes |
+|-------|--------------|--------------|--------------|-------|
+| `"3"` | `"3"` | `"3"` | `"3"` | Normal case |
+| `"0\n0"` | `"00"` | `"00"` | `"00"` | Newline corruption → numeric |
+| `"3\n0"` | `"30"` | `"30"` | `"30"` | Newline corruption → numeric |
+| `" 5 "` | `"5"` | `"5"` | `"5"` | Whitespace stripped |
+| `""` | `""` | `"0"` | `"0"` | Empty → default |
+| `"error"` | `"error"` | `"error"` | `"0"` | Non-numeric → reset |
+| `"grep: file"` | `"grep:file"` | `"grep:file"` | `"0"` | Error message → reset |
+
+### When to Apply
+
+**Required**:
+- All grep -c output used in bash conditionals (`if`, `while`, `[[ ]]`, `[ ]`)
+- All numeric variables derived from command output used in arithmetic
+- All count variables used in comparisons
+
+**Not Required**:
+- grep output used only for display (echo, log messages)
+- grep -c output immediately compared with grep -q result
+- Variables used only in string operations (not arithmetic)
+
+### Validation
+
+```bash
+# Find vulnerable grep -c usage (missing sanitization)
+grep -n 'grep.*-c' script.sh | while read line; do
+  var_name=$(echo "$line" | sed -n 's/.*\([A-Z_]*\)=\$(grep.*/\1/p')
+  if ! grep -q "$var_name=.*tr -d" script.sh; then
+    echo "WARNING: $var_name on line $line needs sanitization"
+  fi
+done
+
+# Verify sanitization pattern applied correctly
+grep -A 4 'grep -c' script.sh | grep -q 'tr -d.*tr -d.*:-0.*=~'
+```
+
+### Reference Implementation
+
+The canonical reference implementation is in `complexity-utils.sh` (lines 55-72), which sanitizes `task_count`, `file_count`, and `code_blocks` variables:
+
+```bash
+# Reference from complexity-utils.sh
+local task_count
+task_count=$(echo "$phase_content" | grep -c "^- \[ \]" 2>/dev/null || echo "0")
+task_count=$(echo "$task_count" | tr -d '\n' | tr -d ' ')
+task_count=${task_count:-0}
+[[ "$task_count" =~ ^[0-9]+$ ]] || task_count=0
+```
+
+**When to Apply**:
+- All grep -c output used in conditionals
+- All numeric variables from external commands
+- All count operations that feed into comparisons
+- Before any arithmetic operations on command output
+
+**Cross-References**:
+- [Code Standards](../../reference/standards/code-standards.md) → Defensive Programming
+- [Robustness Framework](../robustness-framework.md) → Pattern 9 (Output Sanitization)
+- `/home/benjamin/.config/.claude/lib/plan/complexity-utils.sh` (lines 55-72) → Reference implementation
+- `/home/benjamin/.config/.claude/commands/implement.md` (Block 1d) → Production usage
+- `/home/benjamin/.config/.claude/lib/plan/checkbox-utils.sh` (check_all_phases_complete) → Production usage
+
 ## Pattern Application Guide
 
 **When building a new script**:
@@ -388,6 +546,7 @@ grep "ERROR:" script.sh | grep -q "Phase\|Step"
 3. Add Section 4 (Idempotent Operations) for directory and file operations
 4. Add Section 5 (Error Context) for all error messages
 5. Add Section 2 (Null Safety) for optional values and file operations
+6. Add Section 6 (Grep Output Sanitization) for all grep -c output used in conditionals
 
 **When refactoring existing code**:
 1. Add input validation at script entry point
@@ -395,6 +554,7 @@ grep "ERROR:" script.sh | grep -q "Phase\|Step"
 3. Convert mkdir to mkdir -p for idempotency
 4. Enhance error messages with WHICH/WHAT/WHERE
 5. Add null guards before file operations
+6. Apply 4-step sanitization pattern to grep -c output used in conditionals
 
 ## Common Anti-Patterns
 

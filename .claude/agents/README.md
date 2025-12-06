@@ -17,7 +17,7 @@ Agents enable modular, focused assistance by providing:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Command (/implement, /plan, /test, etc.)                   │
+│ Command (/implement, /create-plan, /test, etc.)            │
 │ Orchestrates workflow and task delegation                  │
 └──────────────────────────┬──────────────────────────────────┘
                            │
@@ -44,7 +44,7 @@ Agents enable modular, focused assistance by providing:
 
 Quick reference for which agents are invoked by each command and their roles:
 
-#### /plan
+#### /create-plan
 - **workflow-classifier** - Classify request type (feature, bugfix, research)
 - **plan-complexity-classifier** - Assess feature complexity for planning depth
 - **research-specialist** - Gather codebase context and best practices
@@ -185,7 +185,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Design implementation plans from requirements
 **Model**: opus-4.1 (architectural decisions)
 
-**Used By Commands**: /plan, /revise, /debug
+**Used By Commands**: /create-plan, /revise, /debug
 
 **Capabilities**:
 - Requirements analysis
@@ -211,7 +211,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Conduct research and generate comprehensive reports
 **Model**: sonnet-4.5 (complex reasoning and research)
 
-**Used By Commands**: /plan, /research, /revise, /debug
+**Used By Commands**: /create-plan, /research, /revise, /debug
 
 **Capabilities**:
 - Technology investigation
@@ -482,7 +482,7 @@ Architectural decisions, complex debugging, semantic analysis:
 **Purpose**: Classify feature complexity for planning
 **Model**: haiku (fast classification)
 
-**Used By Commands**: /plan
+**Used By Commands**: /create-plan
 
 **Capabilities**:
 - Feature complexity assessment
@@ -665,7 +665,7 @@ Agents provide:
 Commands orchestrate agents to accomplish complex workflows:
 
 ```
-/plan
+/create-plan
   ├── plan-complexity-classifier → Assess complexity
   ├── research-specialist → Gather context
   └── plan-architect → Create implementation plan

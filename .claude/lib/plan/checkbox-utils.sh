@@ -536,7 +536,11 @@ add_not_started_markers() {
   mv "$temp_file" "$plan_path"
 
   # Log for user visibility
+  # Apply defensive sanitization pattern to prevent bash conditional syntax errors
   local count=$(grep -E -c "^##+ Phase.*\[NOT STARTED\]" "$plan_path" 2>/dev/null || echo "0")
+  count=$(echo "$count" | tr -d '\n' | tr -d ' ')
+  count=${count:-0}
+  [[ "$count" =~ ^[0-9]+$ ]] || count=0
   if [[ "$count" -gt 0 ]]; then
     if type log &>/dev/null; then
       log "Added [NOT STARTED] markers to $count phases in legacy plan"
@@ -663,7 +667,12 @@ check_all_phases_complete() {
   fi
 
   # Count total phases
+  # Apply defensive sanitization pattern to prevent bash conditional syntax errors
+  # from grep output containing embedded newlines (Pattern from complexity-utils.sh)
   local total_phases=$(grep -E -c "^##+ Phase [0-9]" "$plan_path" 2>/dev/null || echo "0")
+  total_phases=$(echo "$total_phases" | tr -d '\n' | tr -d ' ')
+  total_phases=${total_phases:-0}
+  [[ "$total_phases" =~ ^[0-9]+$ ]] || total_phases=0
 
   if [[ "$total_phases" -eq 0 ]]; then
     # No phases found, consider complete
@@ -671,7 +680,11 @@ check_all_phases_complete() {
   fi
 
   # Count phases with [COMPLETE] marker
+  # Apply defensive sanitization pattern to prevent bash conditional syntax errors
   local complete_phases=$(grep -E -c "^##+ Phase [0-9].*\[COMPLETE\]" "$plan_path" 2>/dev/null || echo "0")
+  complete_phases=$(echo "$complete_phases" | tr -d '\n' | tr -d ' ')
+  complete_phases=${complete_phases:-0}
+  [[ "$complete_phases" =~ ^[0-9]+$ ]] || complete_phases=0
 
   if [[ "$complete_phases" -eq "$total_phases" ]]; then
     return 0

@@ -25,9 +25,13 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 - [/example-with-agent](#example-with-agent)
 - [/expand](#expand)
 - [/implement](#implement)
+- [/lean-build](#lean-build)
+- [/lean-implement](#lean-implement)
+- [/lean-plan](#lean-plan)
+- [/lean-update](#lean-update)
 - [/list](#list)
 - [/optimize-claude](#optimize-claude)
-- [/plan](#plan)
+- [/create-plan](#create-plan)
 - [/plan-from-template](#plan-from-template)
 - [/plan-wizard](#plan-wizard)
 - [/refactor](#refactor)
@@ -345,14 +349,27 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 
 ---
 
-### /plan
-**Status**: ARCHIVED - Use `/plan` instead
+### /create-plan
+**Purpose**: Research and create new implementation plan workflow
 
-**Purpose**: Create detailed implementation plans following project standards
+**Usage**: `/create-plan <feature-description> [--file <path>] [--complexity 1-4]`
 
-**Migration**: This command has been archived. Use `/plan` for planning workflows that include research.
+**Type**: orchestrator
 
-**Archive Location**: `.claude/archive/legacy-workflow-commands/commands/plan.md`
+**Arguments**:
+- `feature-description` (required): Feature to research and plan
+- `--file` (optional): Path to file containing long prompt (archived to specs/NNN_topic/prompts/)
+- `--complexity` (optional): Research depth 1-4 (default: 3)
+
+**Agents Used**: research-specialist, research-sub-supervisor, plan-architect
+
+**Output**: Research reports + implementation plan
+
+**Workflow**: `research → plan → complete`
+
+**Automatically updates TODO.md**: Yes (after new plan creation)
+
+**See**: [create-plan.md](../../commands/create-plan.md)
 
 ---
 
@@ -475,6 +492,169 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 **Automatically updates TODO.md**: Yes (after new plan creation)
 
 **See**: [plan.md](../../commands/plan.md)
+
+---
+
+### /lean-plan
+**Purpose**: Create Lean-specific implementation plan for theorem proving projects with Mathlib research and proof strategies
+
+**Usage**: `/lean-plan "<description>" [--file <path>] [--complexity 1-4] [--project <path>]`
+
+**Type**: orchestrator (Lean specialization)
+
+**Arguments**:
+- `description` (required): Natural language formalization goal
+- `--file` (optional): Path to file with detailed prompt (archived to specs/NNN_topic/prompts/)
+- `--complexity` (optional): Research depth 1-4 (default: 3)
+- `--project` (optional): Lean project path (auto-detect if omitted)
+
+**Agents Used**: topic-naming-agent, lean-research-specialist, lean-plan-architect
+
+**Output**: Research reports + Lean implementation plan with theorem specifications
+
+**Workflow**: `research → plan → complete`
+
+**Plan Features**:
+- Theorem-level granularity (individual theorems as tasks)
+- Mathlib theorem discovery and recommendations
+- Proof strategy specifications (tactics, approaches)
+- Dependency tracking for wave-based parallel proving
+- **Lean File** metadata for Tier 1 discovery
+- Goal specifications (Lean 4 type signatures)
+
+**Integration**: Plans execute with `/lean-build` or `/lean-implement` command for automated proving
+
+**See**: [lean-plan-command-guide.md](../../guides/commands/lean-plan-command-guide.md)
+
+---
+
+### /lean-update
+**Purpose**: Update Lean project maintenance documentation by scanning for sorry placeholders and synchronizing six-document ecosystem
+
+**Usage**: `/lean-update [--verify] [--with-build] [--dry-run]`
+
+**Type**: maintenance (Lean specialization)
+
+**Arguments**:
+- `--verify` (optional): Check cross-reference integrity without modifications
+- `--with-build` (optional): Include `lake build` and `lake test` verification
+- `--dry-run` (optional): Preview changes without applying updates
+
+**Agents Used**: lean-maintenance-analyzer
+
+**Output**: Updated maintenance documents (TODO.md, SORRY_REGISTRY.md, IMPLEMENTATION_STATUS.md, KNOWN_LIMITATIONS.md, MAINTENANCE.md, CLAUDE.md)
+
+**Modes**:
+1. **Scan Mode** (default): Update all maintenance documents based on current project state
+2. **Verify Mode** (`--verify`): Check cross-reference integrity without modifications
+3. **Build Mode** (`--with-build`): Include build/test verification
+4. **Dry-Run Mode** (`--dry-run`): Preview changes without applying
+
+**Key Features**:
+- Automated sorry placeholder detection via grep
+- Module completion percentage calculation
+- Cross-reference integrity validation
+- Preservation of manually-curated sections (Backlog, Saved, Resolved Placeholders)
+- Git snapshot before updates (recovery mechanism)
+- Multi-file atomic updates
+
+**Preservation Policy**:
+- TODO.md: Preserves Backlog and Saved sections
+- SORRY_REGISTRY.md: Preserves Resolved Placeholders section
+- IMPLEMENTATION_STATUS.md: Preserves lines with `<!-- MANUAL -->` comment
+- Other docs: Preserves sections marked with `<!-- CUSTOM -->` or `<!-- MANUAL -->`
+
+**Examples**:
+```bash
+# Standard workflow: Update all maintenance docs
+/lean-update
+
+# Check cross-references without modifying files
+/lean-update --verify
+
+# Preview changes before applying
+/lean-update --dry-run
+
+# Full verification including build/test
+/lean-update --with-build
+```
+
+**Recovery**:
+```bash
+# View changes since snapshot
+git diff <snapshot-hash>
+
+# Restore specific file
+git restore --source=<snapshot-hash> -- Documentation/ProjectInfo/SORRY_REGISTRY.md
+```
+
+**See**: [lean-update.md](../../commands/lean-update.md), [Lean Update Command Guide](../../docs/guides/commands/lean-update-command-guide.md)
+
+---
+
+### /lean-build
+**Purpose**: Build proofs for all sorry markers in Lean files using wave-based orchestration
+
+**Usage**: `/lean-build [lean-file | plan-file] [--prove-all | --verify] [--max-attempts=N] [--max-iterations=N]`
+
+**Type**: orchestrator (Lean specialization)
+
+**Arguments**:
+- `lean-file` (required): Path to .lean file or plan.md with lean_file metadata
+- `--prove-all`: Attempt to prove all sorry markers (default)
+- `--verify`: Verify existing proofs without modification
+- `--max-attempts=N`: Max proof attempts per theorem (default: 3)
+- `--max-iterations=N`: Max iteration loops (default: 5)
+
+**Agents Used**: lean-coordinator, lean-implementer
+
+**Output**: Proof summaries in topic summaries directory
+
+**Workflow**: `setup → coordinate → prove → summarize`
+
+**Features**:
+- Wave-based parallel theorem proving
+- MCP rate limit coordination (3 requests/30s)
+- Mathlib theorem search integration
+- Multi-file support for complex formalizations
+
+**See**: [lean-build.md](../../commands/lean-build.md)
+
+---
+
+### /lean-implement
+**Purpose**: Hybrid implementation command for mixed Lean/software plans with intelligent phase routing
+
+**Usage**: `/lean-implement <plan-file> [starting-phase] [--mode=MODE] [--max-iterations=N]`
+
+**Type**: orchestrator (hybrid Lean/software)
+
+**Arguments**:
+- `plan-file` (required): Path to implementation plan with mixed phases
+- `starting-phase` (optional): Phase number to start from (default: 1)
+- `--mode=MODE`: Execution mode - `auto`, `lean-only`, `software-only` (default: auto)
+- `--max-iterations=N`: Max iteration loops (default: 5)
+- `--dry-run`: Preview phase classification without executing
+
+**Agents Used**: lean-coordinator (for Lean phases), implementer-coordinator (for software phases)
+
+**Output**: Implementation and proof summaries in topic summaries directory
+
+**Workflow**: `setup → classify → route → verify → summarize`
+
+**Features**:
+- 2-tier phase classification (metadata + keyword analysis)
+- Intelligent routing to appropriate coordinator
+- Mode filtering (lean-only, software-only, auto)
+- Cross-coordinator iteration management
+- Aggregated metrics from both coordinator types
+
+**Phase Classification**:
+- Tier 1: `lean_file:` metadata (strongest signal)
+- Tier 2: Keywords (.lean, theorem, lemma) vs (.ts, .js, implement, create)
+- Default: software (conservative approach)
+
+**See**: [lean-implement-command-guide.md](../../guides/commands/lean-implement-command-guide.md)
 
 ---
 
@@ -672,7 +852,7 @@ See [Command Architecture Standards](../architecture/overview.md) for complete s
 Core development workflow drivers:
 - **/implement** - Execute implementation plans phase by phase
 - **/debug** - Debug-focused workflow for root cause analysis
-- **/plan** - Research and create implementation plans
+- **/create-plan** - Research and create implementation plans
 - **/research** - Research-only workflow for reports
 - **/revise** - Research and revise existing plans
 - **/test** - Execute test suite with coverage loop
@@ -680,10 +860,10 @@ Core development workflow drivers:
 ### Archived Commands
 Legacy commands that have been superseded:
 - **/build** - ARCHIVED (use /implement + /test)
-- **/coordinate** - ARCHIVED (use /implement, /plan, /research, /debug, or /revise)
+- **/coordinate** - ARCHIVED (use /implement, /create-plan, /research, /debug, or /revise)
 - **/debug** - ARCHIVED (use /debug)
-- **/plan** - ARCHIVED (use /plan)
-- **/research** - ARCHIVED (use /research or /plan)
+- **/plan** - ARCHIVED (use /create-plan)
+- **/research** - ARCHIVED (use /research or /create-plan)
 - **/revise** - ARCHIVED (use /revise)
 
 ### Support Commands
@@ -715,14 +895,14 @@ Maintenance and setup commands:
 
 ### research-specialist
 Research and codebase analysis:
-- **/plan** (research phase)
+- **/create-plan** (research phase)
 - **/research** (research phase)
 - **/plan-wizard** (optional research phase)
 - **/report**
 
 ### plan-architect
 Structured implementation planning:
-- **/plan** (planning phase)
+- **/create-plan** (planning phase)
 - **/revise** (complex plan changes)
 - **/debug** (debug strategy planning)
 

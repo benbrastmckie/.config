@@ -6,9 +6,9 @@ Custom slash command definitions for Claude Code. Each command extends Claude's 
 
 ## Primary Workflow
 
-The core development workflow follows this sequence: **/plan** -> **/revise** -> **/expand** -> **/implement** -> **/test**
+The core development workflow follows this sequence: **/create-plan** -> **/revise** -> **/expand** -> **/implement** -> **/test**
 
-**/plan** (Research-Driven Planning):
+**/create-plan** (Research-Driven Planning):
 - Executes research phase, then creates implementation plans
 - Research reports persist in topic directories for cross-referencing
 - Complexity-based depth adjustment (1-4, default 3)
@@ -114,7 +114,7 @@ See [Commands](#commands) for complete command documentation.
 - [Commands](#commands)
   - [Primary Commands](#primary-commands)
     - [/debug](#debug) - Debug-focused workflow
-    - [/plan](#plan) - Research and create implementation plan
+    - [/create-plan](#create-plan) - Research and create implementation plan
     - [/research](#research) - Research-only workflow
     - [/revise](#revise) - Research and revise existing plan
     - [/collapse](#collapse) - Collapse expanded phases/stages
@@ -160,16 +160,16 @@ See [Commands](#commands) for complete command documentation.
 
 ---
 
-#### /plan
+#### /create-plan
 **Purpose**: Research and create new implementation plan workflow
 
-**Usage**: `/plan <feature-description> [--file <path>] [--complexity 1-4]`
+**Usage**: `/create-plan <feature-description> [--file <path>] [--complexity 1-4]`
 
 **Type**: primary
 
 **Example**:
 ```bash
-/plan "Add dark mode toggle to settings"
+/create-plan "Add dark mode toggle to settings"
 ```
 
 **Dependencies**:
@@ -183,7 +183,7 @@ See [Commands](#commands) for complete command documentation.
 - LLM-based semantic topic naming
 - Complexity assessment
 
-**Documentation**: [Plan Command Guide](../docs/guides/commands/plan-command-guide.md)
+**Documentation**: [Create Plan Command Guide](../docs/guides/commands/create-plan-command-guide.md)
 
 ---
 
@@ -458,7 +458,7 @@ Several flags are shared across multiple commands. This section provides detaile
 
 ### --file
 
-**Supported by**: `/plan`, `/research`, `/debug`
+**Supported by**: `/create-plan`, `/research`, `/debug`
 
 Load the command description from a file instead of providing it inline. Useful for long prompts or pre-prepared requirements.
 
@@ -472,13 +472,13 @@ Load the command description from a file instead of providing it inline. Useful 
 
 **Example**:
 ```bash
-/plan --file /path/to/requirements.md
+/create-plan --file /path/to/requirements.md
 /debug --file /tmp/error-log.md
 ```
 
 ### --complexity
 
-**Supported by**: `/plan`, `/research`, `/debug`, `/revise`
+**Supported by**: `/create-plan`, `/research`, `/debug`, `/revise`
 
 Set the research depth level for investigation phases.
 
@@ -487,20 +487,20 @@ Set the research depth level for investigation phases.
 **Levels**:
 - **1**: Minimal research - Quick scan, basic context
 - **2**: Standard research - Default for `/research`, `/debug`, `/revise`
-- **3**: Comprehensive research - Default for `/plan`, thorough investigation
+- **3**: Comprehensive research - Default for `/create-plan`, thorough investigation
 - **4**: Deep investigation - Exhaustive analysis, multiple research angles
 
 **Default Values**:
 | Command | Default |
 |---------|---------|
-| `/plan` | 3 |
+| `/create-plan` | 3 |
 | `/research` | 2 |
 | `/debug` | 2 |
 | `/revise` | 2 |
 
 **Example**:
 ```bash
-/plan "Add authentication" --complexity 4
+/create-plan "Add authentication" --complexity 4
 /research "API design patterns" --complexity 1
 ```
 
@@ -556,7 +556,7 @@ Plans grow organically as complexity emerges:
 **Example Workflow**:
 ```bash
 # Start with Level 0 plan
-/plan "Add dark mode toggle to settings"
+/create-plan "Add dark mode toggle to settings"
 # Creates: specs/plans/007_dark_mode.md
 
 # Phase 2 proves complex during /implement
@@ -698,11 +698,11 @@ Commands discover and apply project standards through CLAUDE.md and its linked d
 
 | Standard | Resource | Used By |
 |----------|----------|---------|
-| Code Standards | [Code Standards](../docs/reference/standards/code-standards.md) | /plan, /implement |
+| Code Standards | [Code Standards](../docs/reference/standards/code-standards.md) | /create-plan, /implement |
 | Testing Protocols | [Testing Protocols](../docs/reference/standards/testing-protocols.md) | /implement, /test |
 | Output Formatting | [Output Formatting](../docs/reference/standards/output-formatting.md) | All commands |
-| Directory Protocols | [Directory Protocols](../docs/concepts/directory-protocols.md) | /plan, /research, /implement |
-| Writing Standards | [Writing Standards](../docs/concepts/writing-standards.md) | /plan |
+| Directory Protocols | [Directory Protocols](../docs/concepts/directory-protocols.md) | /create-plan, /research, /implement |
+| Writing Standards | [Writing Standards](../docs/concepts/writing-standards.md) | /create-plan |
 | Adaptive Planning | [Adaptive Planning Guide](../docs/workflows/adaptive-planning-guide.md) | /expand, /collapse, /implement |
 
 ### Documentation Standards
@@ -834,7 +834,7 @@ The following commands enforce mandatory subagent delegation using the **hard ba
 - `/errors` (errors-analyst) - Error log analysis
 - `/expand` (plan-architect) - Phase/stage expansion
 - `/implement` (implementer-coordinator) - Implementation execution
-- `/plan` (research-specialist, plan-architect) - Research and planning
+- `/create-plan` (research-specialist, plan-architect) - Research and planning
 - `/repair` (repair-analyst, plan-architect) - Error pattern repair
 - `/research` (research-specialist) - Research-only workflow
 - `/revise` (research-specialist, plan-architect) - Plan revision
@@ -917,11 +917,11 @@ description: Brief description shown in picker
 - [build.md](build.md) - Build from plan execution
 - [collapse.md](collapse.md) - Phase/stage collapse (Level 1 to 0, Level 2 to 1)
 - [convert-docs.md](convert-docs.md) - Document format conversion
+- [create-plan.md](create-plan.md) - Research and create implementation plans
 - [debug.md](debug.md) - Debug-focused workflow with root cause analysis
 - [errors.md](errors.md) - Query and display error logs
 - [expand.md](expand.md) - Phase/stage expansion (Level 0 to 1, Level 1 to 2)
 - [optimize-claude.md](optimize-claude.md) - CLAUDE.md optimization analysis
-- [plan.md](plan.md) - Research and create implementation plans
 - [repair.md](repair.md) - Error analysis and repair planning
 - [research.md](research.md) - Research-only workflow for reports
 - [revise.md](revise.md) - Research and revise existing plans

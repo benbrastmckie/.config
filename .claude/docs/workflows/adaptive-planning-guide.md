@@ -276,7 +276,7 @@ rm .claude/data/checkpoints/orchestrate_auth_system_*.json
 
 ### Planning Complex Features
 
-1. Use /plan to create initial plan (automatic tier selection)
+1. Use /create-plan to create initial plan (automatic tier selection)
 2. Review complexity score and tier assignment
 3. Begin /implement execution
 4. Checkpoints created automatically after each phase
@@ -295,7 +295,7 @@ If interrupted during implementation:
 
 ### Best Practices
 
-**Plan Early**: Use /plan to establish structure before implementation
+**Plan Early**: Use /create-plan to establish structure before implementation
 
 **Monitor Complexity**: Check if phases grow beyond ~10 tasks
 
@@ -472,5 +472,5 @@ cat .claude/data/checkpoints/orchestrate_*.json | jq '.current_phase'
 - [Command Reference](../reference/standards/command-reference.md) - Full command documentation
 - [Implementation Command](../../commands/implement.md) - Implementation details
 - [Orchestration Guide](orchestration-guide.md) - Multi-agent workflows
-- [Plan Command](../../commands/plan.md) - Plan creation details
+- [Plan Command](../../commands/create-plan.md) - Plan creation details
 - [Phase Dependencies](../reference/workflows/phase-dependencies.md) - Wave-based parallel execution

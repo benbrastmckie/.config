@@ -23,7 +23,7 @@ Create research reports for complex topics.
 Generate implementation plans based on research.
 
 ```bash
-/plan "implement OAuth authentication" specs/reports/001_auth_research.md
+/create-plan "implement OAuth authentication" specs/reports/001_auth_research.md
 ```
 
 **Output**: `specs/{NNN_topic}/plans/001_implementation_plan.md`

@@ -48,7 +48,7 @@ PATTERNS VALIDATED:
 EXAMPLES:
     $0 .claude/commands/*.md
     $0 --strict .claude/commands/repair.md
-    $0 .claude/commands/plan.md .claude/commands/research.md
+    $0 .claude/commands/create-plan.md .claude/commands/research.md
 
 EXIT CODES:
     0 - No violations found

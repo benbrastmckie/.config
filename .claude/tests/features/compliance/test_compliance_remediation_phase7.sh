@@ -19,7 +19,7 @@ COMMAND_PATHS=(
   "${CLAUDE_PROJECT_DIR}/.claude/commands/build.md"
   "${CLAUDE_PROJECT_DIR}/.claude/commands/debug.md"
   "${CLAUDE_PROJECT_DIR}/.claude/commands/research.md"
-  "${CLAUDE_PROJECT_DIR}/.claude/commands/plan.md"
+  "${CLAUDE_PROJECT_DIR}/.claude/commands/create-plan.md"
   "${CLAUDE_PROJECT_DIR}/.claude/commands/revise.md"
 )
 

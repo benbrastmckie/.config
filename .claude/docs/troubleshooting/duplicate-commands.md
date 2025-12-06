@@ -390,7 +390,7 @@ Based on web research and official documentation, Claude Code has DIFFERENT disc
 
 Parent chain scan from `/home/benjamin/.config` to `/`:
 ```
-/home/benjamin/.config/.claude/commands/ ✓ (16 commands including plan.md)
+/home/benjamin/.config/.claude/commands/ ✓ (16 commands including create-plan.md)
 /home/benjamin/.claude/commands/ ✓ (EMPTY - 0 commands)
 /home/benjamin/ (no .claude/)
 /home/ (no .claude/)
@@ -402,7 +402,7 @@ Other findings:
 - Subdirectories (commands/templates/, commands/shared/) - Only YAML templates and READMEs, no .md commands
 - No symlinks in commands/ directory
 
-**Expected Count**: 1 entry (only .config/.claude/commands/plan.md should be discovered)
+**Expected Count**: 1 entry (only .config/.claude/commands/create-plan.md should be discovered)
 
 ### Root Cause Analysis
 
@@ -468,9 +468,9 @@ done
 
 #### Step 4: Verify Expected Behavior
 After restart, you should see:
-- **1 entry** for /plan in dropdown
+- **1 entry** for /create-plan in dropdown
 - Label: "(project)"
-- Source: .claude/commands/plan.md (from CWD)
+- Source: .claude/commands/create-plan.md (from CWD)
 
 ### Resolution
 

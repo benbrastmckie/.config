@@ -155,6 +155,133 @@ After each phase:
 Benefit: Unlimited state storage, minimal context consumption
 ```
 
+### Technique 6: Brief Summary Return Pattern
+
+**Problem**: Coordinators return full summary files (2,000-4,000 tokens) that must be read by primary agents for continuation decisions. In multi-iteration workflows, reading N summary files consumes N × 2,000 tokens, exhausting context before workflow completion.
+
+**Solution**: Coordinators return brief summary fields (50-150 characters, ~80 tokens) in return signals alongside summary_path. Primary agents parse brief summaries from return signals for continuation decisions, only referencing full summaries when deep analysis needed.
+
+**Context Reduction**: 96% reduction per iteration (80 tokens parsed vs 2,000 tokens read)
+
+**Format**: Enhanced coordinator return signals with `summary_brief` field:
+
+```yaml
+# Lean Coordinator Return Signal
+ORCHESTRATION_COMPLETE:
+  coordinator_type: "lean"
+  summary_path: /path/to/summary.md
+  summary_brief: "Completed Wave 1-2 (Phase 1,2) with 15 theorems. Context: 72%. Next: Continue Wave 3."
+  phases_completed: [1, 2]
+  theorem_count: 15
+  work_remaining: Phase_3 Phase_4
+  context_exhausted: false
+  context_usage_percent: 72
+  requires_continuation: true
+
+# Implementer Coordinator Return Signal
+IMPLEMENTATION_COMPLETE:
+  coordinator_type: "software"
+  summary_path: /path/to/summary.md
+  summary_brief: "Completed Wave 1 (Phase 3,4) with 25 tasks. Context: 65%. Next: Continue Wave 2."
+  phases_completed: [3, 4]
+  phase_count: 2
+  git_commits: [hash1, hash2]
+  work_remaining: Phase_5 Phase_6
+  context_exhausted: false
+  context_usage_percent: 65
+  requires_continuation: true
+```
+
+**Brief Summary Format** (max 150 characters):
+```
+"Completed Wave X-Y (Phase A,B) with N items. Context: P%. Next: ACTION."
+```
+
+Components:
+- Wave range completed (e.g., "Wave 1-2")
+- Phase numbers in parentheses (e.g., "(Phase 1,2)")
+- Work metric (theorems proven, tasks completed, files changed)
+- Context usage percentage
+- Next action (Continue, Complete, Review)
+
+**Primary Agent Parsing Logic**:
+
+```bash
+# Parse brief summary from coordinator return signal (80 tokens)
+COORDINATOR_TYPE=$(grep -E "^coordinator_type:" "$COORDINATOR_OUTPUT" | sed 's/^coordinator_type:[[:space:]]*//')
+SUMMARY_BRIEF=$(grep -E "^summary_brief:" "$COORDINATOR_OUTPUT" | sed 's/^summary_brief:[[:space:]]*//' | tr -d '"')
+PHASES_COMPLETED=$(grep -E "^phases_completed:" "$COORDINATOR_OUTPUT" | sed 's/^phases_completed:[[:space:]]*//' | tr -d '[],"')
+
+# Fallback: Extract from first 10 lines of summary file (backward compatibility)
+if [ -z "$SUMMARY_BRIEF" ]; then
+  SUMMARY_BRIEF=$(head -10 "$SUMMARY_PATH" | grep "^\*\*Brief\*\*:" | sed 's/^\*\*Brief\*\*:[[:space:]]*//')
+fi
+
+# Display brief summary (no full file read required)
+echo "Coordinator: $COORDINATOR_TYPE"
+echo "Summary: ${SUMMARY_BRIEF:-No summary provided}"
+echo "Phases completed: ${PHASES_COMPLETED:-none}"
+echo "Full report: $SUMMARY_PATH"
+
+# Continuation decision based on brief summary (not full file)
+if grep -q "requires_continuation: true" <<< "$COORDINATOR_OUTPUT"; then
+  echo "Workflow incomplete - continuing to next iteration"
+  CONTINUE_WORKFLOW=true
+else
+  echo "Workflow complete"
+  CONTINUE_WORKFLOW=false
+fi
+```
+
+**Benefits**:
+- **Context Efficiency**: 96% reduction per iteration (80 tokens vs 2,000 tokens)
+- **Scalability**: Support 20+ iterations vs 3-4 iterations without pattern
+- **Backward Compatibility**: Fallback parsing for legacy summaries without `summary_brief` field
+- **Audit Trail**: Full summaries remain available for post-workflow analysis
+
+**Multi-Iteration Example**:
+
+Without Brief Summary Pattern:
+```
+Iteration 1: Read summary (2,000 tokens) - Total: 2,000 tokens
+Iteration 2: Read summary (2,000 tokens) - Total: 4,000 tokens
+Iteration 3: Read summary (2,000 tokens) - Total: 6,000 tokens
+Context exhausted at iteration 4 (8,000 tokens would exceed budget)
+```
+
+With Brief Summary Pattern:
+```
+Iteration 1: Parse brief (80 tokens) - Total: 80 tokens
+Iteration 2: Parse brief (80 tokens) - Total: 160 tokens
+Iteration 3: Parse brief (80 tokens) - Total: 240 tokens
+...
+Iteration 20: Parse brief (80 tokens) - Total: 1,600 tokens (still under budget)
+```
+
+**Implementation Requirements**:
+
+1. **Coordinator Enhancements**:
+   - Add `coordinator_type` field to return signal ("lean" or "software")
+   - Generate `summary_brief` field following 150-character format
+   - Add `phases_completed` field with array of completed phase numbers
+   - Include structured metadata in summary files for fallback parsing
+
+2. **Primary Agent Updates**:
+   - Parse brief summary from return signal (not full file)
+   - Implement fallback parsing for legacy summaries
+   - Use brief summary for continuation decisions
+   - Reference full summary path for audit trail
+
+3. **Validation**:
+   - Test brief summary generation for various workflows
+   - Verify fallback parsing works with legacy summaries
+   - Measure actual context reduction (target: 96%)
+
+**Cross-References**:
+- [Hybrid Coordinator Architecture](../../guides/commands/lean-implement-command-guide.md#hybrid-coordinator-architecture) - Primary implementation context
+- [Lean Coordinator Agent](../../agents/lean-coordinator.md) - Lean coordinator return protocol
+- [Implementer Coordinator Agent](../../agents/implementer-coordinator.md) - Software coordinator return protocol
+
 ### Code Example
 
 Real implementation from Plan 080 - /orchestrate with context management:

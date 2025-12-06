@@ -1,8 +1,8 @@
 ---
 allowed-tools: Read, Bash, Task
 description: Orchestrates wave-based parallel theorem proving with dependency analysis and MCP rate limit coordination
-model: haiku-4.5
-model-justification: Deterministic wave orchestration and state tracking, mechanical theorem batch coordination following explicit algorithm
+model: opus-4.5
+model-justification: Complex delegation logic, wave orchestration, and theorem batch coordination requiring sophisticated reasoning. Opus 4.5's 15% improvement on agentic tasks (Terminal Bench), 90.8% MMLU reasoning capability, and reliable Task tool delegation patterns address Haiku 4.5 delegation failure. 76% token efficiency at medium effort minimizes cost overhead.
 fallback-model: sonnet-4.5
 ---
 
@@ -50,6 +50,23 @@ iteration: 1  # Current iteration (1-5)
 max_iterations: 5  # Maximum iterations allowed
 context_threshold: 85  # Halt if context usage exceeds 85%
 ```
+
+### File-Based Mode Auto-Conversion
+
+When `execution_mode=file-based` (no plan file provided), the coordinator should:
+
+1. **Auto-generate single-phase wave structure**:
+   - Wave 1: All theorems in LEAN_FILE with no dependencies
+   - Single implementer invocation for entire file
+
+2. **Skip dependency analysis** (no plan structure to analyze)
+
+3. **Proceed with standard wave execution**:
+   - Invoke lean-implementer with all sorry markers from file
+   - Collect results and generate summary
+   - Return ORCHESTRATION_COMPLETE
+
+This ensures consistent coordinator/implementer architecture for ALL modes.
 
 ### STEP 1: Plan Structure Detection
 
@@ -293,6 +310,29 @@ phase_num=$(echo "$theorem_obj" | jq -r '.phase_number // 0')
 
 **Note**: `phase_number` is passed as a separate parameter to lean-implementer in addition to being in the `theorem_tasks` array. This enables the implementer to update plan file progress markers in real-time.
 
+#### Progress Tracking Instruction Forwarding
+
+When /lean-build provides Progress Tracking Instructions in the input prompt, the coordinator MUST forward these instructions to each lean-implementer invocation:
+
+**Instructions Received from /lean-build** (plan-based mode only):
+```markdown
+Progress Tracking Instructions (plan-based mode only):
+- Source checkbox utilities: source ${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh
+- Before proving each theorem phase: add_in_progress_marker '${PLAN_FILE}' <phase_num>
+- After completing each theorem proof: mark_phase_complete '${PLAN_FILE}' <phase_num> && add_complete_marker '${PLAN_FILE}' <phase_num>
+- This creates visible progress: [NOT STARTED] -> [IN PROGRESS] -> [COMPLETE]
+- Note: Progress tracking gracefully degrades if unavailable (non-fatal)
+- File-based mode: Skip progress tracking (phase_num = 0)
+```
+
+**Forwarding Pattern**:
+1. Include progress tracking instructions in each lean-implementer Task prompt
+2. Replace `<phase_num>` with actual phase number from theorem metadata
+3. Skip if `execution_mode=file-based` or `phase_number=0`
+4. Instructions are informational only (non-blocking if checkbox-utils unavailable)
+
+This ensures plan file markers update in real-time as theorems are proven, mirroring /implement command's pattern.
+
 #### Parallel Implementer Invocation
 
 For each theorem in wave, invoke lean-implementer subagent via Task tool.
@@ -514,12 +554,74 @@ After all waves complete (or halt due to context threshold):
    time_savings = (sequential_time - parallel_time) / sequential_time * 100
    ```
 
-3. **Create Proof Summary**:
+3. **Generate Brief Summary**:
+   Create a concise single-line summary (max 150 characters) following the format:
+   ```
+   "Completed Wave X-Y (Phase A,B) with N theorems. Context: P%. Next: ACTION."
+   ```
+
+   **Example Brief Summaries**:
+   - `"Completed Wave 1-2 (Phase 1,2) with 15 theorems. Context: 72%. Next: Continue Wave 3."`
+   - `"Completed Wave 1-3 (Phase 1,2,3) with 22 theorems. Context: 85%. Next: Complete."`
+   - `"Partial Wave 1 (Phase 1) with 5/10 theorems. Context: 68%. Next: Continue."`
+
+   **Brief Summary Components**:
+   - **Wave Range**: First and last wave number completed (e.g., "Wave 1-2")
+   - **Phase List**: Comma-separated phase numbers in parentheses (e.g., "(Phase 1,2)")
+   - **Work Metric**: Theorems proven (e.g., "15 theorems")
+   - **Context Usage**: Current context percentage (e.g., "Context: 72%")
+   - **Next Action**: One of:
+     - "Next: Continue Wave N" (more waves remaining)
+     - "Next: Complete" (all waves done)
+     - "Next: Context limit" (context exhausted)
+
+   **Brief Summary Generation Logic**:
+   ```bash
+   # Determine wave range
+   WAVE_START=1
+   WAVE_END=$CURRENT_WAVE
+
+   # Build phase list
+   PHASES_COMPLETED=$(echo "$COMPLETED_PHASES" | tr ' ' ',')
+
+   # Count theorems
+   THEOREMS_PROVEN=$(grep -c "PROVEN" "$PROOF_RESULTS" || echo 0)
+
+   # Get context usage
+   CONTEXT_PERCENT=$(estimate_context_usage)
+
+   # Determine next action
+   if [ "$WAVES_REMAINING" -gt 0 ]; then
+     NEXT_ACTION="Continue Wave $((WAVE_END + 1))"
+   elif [ "$CONTEXT_EXHAUSTED" = "true" ]; then
+     NEXT_ACTION="Context limit"
+   else
+     NEXT_ACTION="Complete"
+   fi
+
+   # Generate brief summary
+   SUMMARY_BRIEF="Completed Wave ${WAVE_START}-${WAVE_END} (Phase ${PHASES_COMPLETED}) with ${THEOREMS_PROVEN} theorems. Context: ${CONTEXT_PERCENT}%. Next: ${NEXT_ACTION}."
+
+   # Truncate to 150 characters if needed
+   SUMMARY_BRIEF="${SUMMARY_BRIEF:0:150}"
+   ```
+
+4. **Create Proof Summary**:
    Save summary to artifact_paths.summaries directory.
 
    **CRITICAL**: Summary MUST be created at summaries_dir for orchestrator validation.
 
+   **Summary File Template** (includes structured metadata at top for parsing):
    ```markdown
+   coordinator_type: lean
+   summary_brief: "Completed Wave 1-2 (Phase 1,2) with 15 theorems. Context: 72%. Next: Continue Wave 3."
+   phases_completed: [1, 2]
+   theorem_count: 15
+   work_remaining: Phase_3 Phase_4
+   context_exhausted: false
+   context_usage_percent: 72
+   requires_continuation: true
+
    # Lean Proof Summary - Iteration {N}
 
    ## Work Status
@@ -550,6 +652,16 @@ After all waves complete (or halt due to context threshold):
    ## Notes
    [Context for next iteration, blocked theorems, strategy adjustments]
    ```
+
+   **Structured Metadata Fields** (lines 1-8 before markdown content):
+   - `coordinator_type: lean` - Identifies coordinator type for aggregation filtering
+   - `summary_brief: "..."` - Brief summary for primary agent parsing (80 tokens vs 2,000)
+   - `phases_completed: [1, 2]` - Array of completed phase numbers
+   - `theorem_count: 15` - Total theorems proven in this iteration
+   - `work_remaining: Phase_3 Phase_4` - Space-separated remaining phase identifiers
+   - `context_exhausted: false` - Whether context limit triggered halt
+   - `context_usage_percent: 72` - Current context usage percentage
+   - `requires_continuation: true` - Whether workflow needs another iteration
 
 4. **Return to Orchestrator**:
    Return ONLY the proof report in the format specified in Output Format section below.
@@ -626,11 +738,14 @@ Context Exhausted: {yes|no}
 
 ```yaml
 PROOF_COMPLETE:
+  coordinator_type: lean
+  summary_path: /path/to/summaries/NNN_proof_summary.md
+  summary_brief: "Completed Wave 1-2 (Phase 1,2) with 15 theorems. Context: 72%. Next: Continue Wave 3."
+  phases_completed: [1, 2]
   theorem_count: N
   plan_file: /path/to/plan.md
   lean_file: /path/to/file.lean
   topic_path: /path/to/topic
-  summary_path: /path/to/summaries/NNN_proof_summary.md
   context_exhausted: true|false
   work_remaining: Phase_4 Phase_5 Phase_6  # Space-separated string, NOT JSON array
   context_usage_percent: N%
@@ -639,6 +754,13 @@ PROOF_COMPLETE:
   stuck_detected: true|false
   phases_with_markers: N  # Number of phases with [COMPLETE] marker (informational)
 ```
+
+**New Fields for Brief Summary Pattern**:
+- `coordinator_type: lean` - Identifies this as lean coordinator output (for filtering in hybrid workflows)
+- `summary_brief: "..."` - Context-efficient brief summary (80 tokens vs 2,000 tokens full file)
+- `phases_completed: [1, 2]` - Array of phase numbers completed in this iteration
+
+**Backward Compatibility**: All existing fields preserved. New fields are additions only.
 
 If partial proofs:
 ```

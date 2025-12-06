@@ -137,7 +137,7 @@ validate_standards_extraction
 ```
 
 **Integration Pattern:**
-Used by `/plan`, `/revise`, and other planning commands to inject project standards into agent prompts. Enables automatic standards validation and divergence detection (Phase 0 protocol). See [Standards Integration Pattern](../../docs/guides/patterns/standards-integration.md) for complete usage.
+Used by `/create-plan`, `/revise`, and other planning commands to inject project standards into agent prompts. Enables automatic standards validation and divergence detection (Phase 0 protocol). See [Standards Integration Pattern](../../docs/guides/patterns/standards-integration.md) for complete usage.
 
 ### topic-utils.sh
 Topic directory management and naming.

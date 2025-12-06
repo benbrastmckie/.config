@@ -416,6 +416,197 @@ validate_absolute_path() {
 }
 
 # ==============================================================================
+# Path Consistency Validation
+# ==============================================================================
+
+# validate_path_consistency: Validate STATE_FILE path is consistent with CLAUDE_PROJECT_DIR
+#
+# Validates that STATE_FILE path is consistent with CLAUDE_PROJECT_DIR, handling the
+# case where PROJECT_DIR is legitimately under HOME (e.g., ~/.config).
+#
+# This function prevents false positive PATH MISMATCH errors that occur when:
+# - CLAUDE_PROJECT_DIR is /home/user/.config (valid configuration)
+# - STATE_FILE is /home/user/.config/.claude/tmp/... (correct path)
+# - Old validation incorrectly flagged this as a mismatch
+#
+# Usage:
+#   validate_path_consistency "$STATE_FILE" "$CLAUDE_PROJECT_DIR" || exit 1
+#
+# Parameters:
+#   $1 - state_file: Path to the workflow state file
+#   $2 - project_dir: CLAUDE_PROJECT_DIR value
+#
+# Returns:
+#   0 on success (paths are consistent)
+#   1 on failure (path mismatch detected)
+#
+# Logs:
+#   state_error to centralized error log on failure
+validate_path_consistency() {
+  local state_file="${1:-}"
+  local project_dir="${2:-}"
+
+  # Validate parameters
+  if [ -z "$state_file" ]; then
+    echo "ERROR: state_file parameter required" >&2
+    return 1
+  fi
+
+  if [ -z "$project_dir" ]; then
+    echo "ERROR: project_dir parameter required" >&2
+    return 1
+  fi
+
+  # If project dir is under HOME, state file under HOME is valid
+  if [[ "$project_dir" =~ ^${HOME}/ ]]; then
+    return 0
+  fi
+
+  # Otherwise, state file should use project dir, not HOME
+  if [[ "$state_file" =~ ^${HOME}/ ]]; then
+    # Log error if error logging context is available
+    if declare -F log_command_error >/dev/null 2>&1; then
+      if [ -n "${COMMAND_NAME:-}" ] && [ -n "${WORKFLOW_ID:-}" ]; then
+        log_command_error \
+          "$COMMAND_NAME" \
+          "$WORKFLOW_ID" \
+          "${USER_ARGS:-}" \
+          "state_error" \
+          "PATH MISMATCH detected: STATE_FILE uses HOME instead of CLAUDE_PROJECT_DIR" \
+          "validate_path_consistency" \
+          "$(jq -n --arg state_file "$state_file" --arg home "$HOME" --arg project_dir "$project_dir" \
+            '{state_file: $state_file, home: $home, project_dir: $project_dir, issue: "STATE_FILE must use CLAUDE_PROJECT_DIR"}')"
+      fi
+    fi
+
+    echo "ERROR: PATH MISMATCH - STATE_FILE uses HOME instead of CLAUDE_PROJECT_DIR" >&2
+    echo "  Current: $state_file" >&2
+    echo "  Expected: ${project_dir}/.claude/tmp/..." >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# validate_state_variables: Validate critical variables after state restoration
+#
+# Checks that critical workflow variables are non-empty after sourcing a state file.
+# This detects state restoration failures early before they cause cascading errors.
+#
+# Usage:
+#   validate_state_variables WORKFLOW_DESCRIPTION TOPIC_PATH || exit 1
+#
+# Parameters:
+#   $@ - variable_names: List of variable names to validate (checked via indirect reference)
+#
+# Returns:
+#   0 on success (all variables are non-empty)
+#   1 on failure (one or more variables are empty)
+#
+# Logs:
+#   state_error to centralized error log on failure
+validate_state_variables() {
+  local variable_names=("$@")
+  local missing_vars=()
+
+  for var_name in "${variable_names[@]}"; do
+    # Use indirect reference to check if variable is empty
+    local var_value="${!var_name:-}"
+    if [ -z "$var_value" ]; then
+      missing_vars+=("$var_name")
+    fi
+  done
+
+  if [ ${#missing_vars[@]} -gt 0 ]; then
+    local missing_list
+    missing_list=$(printf "%s, " "${missing_vars[@]}")
+    missing_list="${missing_list%, }"  # Remove trailing comma
+
+    # Log error if error logging context is available
+    if declare -F log_command_error >/dev/null 2>&1; then
+      if [ -n "${COMMAND_NAME:-}" ] && [ -n "${WORKFLOW_ID:-}" ]; then
+        log_command_error \
+          "$COMMAND_NAME" \
+          "$WORKFLOW_ID" \
+          "${USER_ARGS:-}" \
+          "state_error" \
+          "State restoration incomplete: missing variables: $missing_list" \
+          "validate_state_variables" \
+          "$(jq -n --arg vars "$missing_list" '{missing_variables: $vars}')"
+      fi
+    fi
+
+    echo "ERROR: State restoration incomplete: missing variables: $missing_list" >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# validate_project_directory: Validate CLAUDE_PROJECT_DIR detection
+#
+# Validates that CLAUDE_PROJECT_DIR is set and points to a valid project directory
+# with a .claude subdirectory.
+#
+# Usage:
+#   validate_project_directory || exit 1
+#
+# Parameters:
+#   None (checks CLAUDE_PROJECT_DIR environment variable)
+#
+# Returns:
+#   0 on success (valid project directory)
+#   1 on failure (CLAUDE_PROJECT_DIR not set or invalid)
+#
+# Logs:
+#   validation_error to centralized error log on failure
+validate_project_directory() {
+  # Check if CLAUDE_PROJECT_DIR is set
+  if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+    # Log error if error logging context is available
+    if declare -F log_command_error >/dev/null 2>&1; then
+      if [ -n "${COMMAND_NAME:-}" ] && [ -n "${WORKFLOW_ID:-}" ]; then
+        log_command_error \
+          "$COMMAND_NAME" \
+          "$WORKFLOW_ID" \
+          "${USER_ARGS:-}" \
+          "validation_error" \
+          "CLAUDE_PROJECT_DIR not set" \
+          "validate_project_directory" \
+          "$(jq -n '{error: "CLAUDE_PROJECT_DIR_not_set"}')"
+      fi
+    fi
+
+    echo "ERROR: CLAUDE_PROJECT_DIR not set" >&2
+    echo "Cannot detect project directory" >&2
+    return 1
+  fi
+
+  # Check if .claude directory exists
+  if [ ! -d "${CLAUDE_PROJECT_DIR}/.claude" ]; then
+    # Log error if error logging context is available
+    if declare -F log_command_error >/dev/null 2>&1; then
+      if [ -n "${COMMAND_NAME:-}" ] && [ -n "${WORKFLOW_ID:-}" ]; then
+        log_command_error \
+          "$COMMAND_NAME" \
+          "$WORKFLOW_ID" \
+          "${USER_ARGS:-}" \
+          "validation_error" \
+          "Invalid project directory: .claude subdirectory not found" \
+          "validate_project_directory" \
+          "$(jq -n --arg dir "$CLAUDE_PROJECT_DIR" '{project_dir: $dir, error: ".claude_directory_not_found"}')"
+      fi
+    fi
+
+    echo "ERROR: Invalid project directory: $CLAUDE_PROJECT_DIR" >&2
+    echo ".claude subdirectory not found" >&2
+    return 1
+  fi
+
+  return 0
+}
+
+# ==============================================================================
 # Initialization
 # ==============================================================================
 

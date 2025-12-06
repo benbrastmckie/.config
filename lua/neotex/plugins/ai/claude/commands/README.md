@@ -156,7 +156,7 @@ When selecting the `[Load All Artifacts]` entry:
   - Scripts (*.sh from scripts/) - **recursive, all subdirectories**
   - Tests (test_*.sh from tests/) - **recursive, all subdirectories**
   - Skills (*.lua, *.md, *.yaml from skills/) - **recursive, all skill modules**
-  - Settings (settings.local.json) - top-level only
+  - Settings (settings.json from .claude/) - **portable hook configurations**
 - **README Coverage**: Syncs README.md files from all .claude/ directories
 - **Subdirectory Preservation**: Maintains exact directory structure in destination
 - **Dynamic Directory Creation**: Creates parent directories automatically for nested files
@@ -177,6 +177,83 @@ When selecting the `[Load All Artifacts]` entry:
 **Sync Strategies Explained**:
 - **Replace all + add new**: Replaces all local versions with global versions + adds new artifacts
 - **Add new only, preserve local**: Safe merge - only adds artifacts not already in local .claude/
+
+**Interactive Mode Workflow**:
+
+Interactive mode (option 3) provides fine-grained control over sync operations by prompting for each conflicting file individually. This mode is ideal when you want to review changes file-by-file and make selective decisions about which local customizations to preserve.
+
+When you choose Interactive mode, the system:
+1. Automatically syncs all new files (no prompts - files that exist in global but not in local)
+2. Prompts for each conflict (files that exist in both locations)
+3. Shows a diff viewer for detailed comparison
+4. Provides bulk action shortcuts to speed up remaining decisions
+
+**Per-File Decision Options** (7 choices for each conflict):
+
+1. **Keep local** - Preserve your local version, skip this file
+2. **Replace with global** - Overwrite local with global version
+3. **Skip** - Defer decision, file remains unchanged (same as "Keep local")
+4. **View diff** - Display side-by-side comparison of local vs global versions
+   - Uses Neovim's diff mode with vertical split
+   - Shows file paths and line counts in preview
+   - Returns to decision prompt after viewing
+5. **Keep ALL remaining** - Apply "Keep local" to this file and all remaining conflicts
+6. **Replace ALL remaining** - Apply "Replace with global" to this file and all remaining conflicts
+7. **Cancel** - Abort Interactive mode, no further changes applied
+
+**Bulk Action Shortcuts** (options 5-6):
+
+Options 5 and 6 provide efficiency when you've reviewed several files and want to apply the same decision to all remaining conflicts:
+- Use after reviewing initial files to understand the changes
+- Immediately applies decision to current file plus all remaining files
+- No additional prompts after bulk action chosen
+- Saves time when dealing with many conflicts
+
+**Automatic New File Handling**:
+
+Interactive mode only prompts for conflicts (files existing in both locations). New files that exist in global but not in local are automatically synced without prompting, streamlining the workflow for common sync scenarios.
+
+**When to Use Interactive Mode**:
+- **Selective sync**: You want to review and selectively accept/reject changes
+- **Mixed updates**: Some global changes should be adopted, others rejected
+- **Audit changes**: You need to see what's different before deciding
+- **Partial customization**: Your local project has specific overrides to preserve
+
+**When to Use Other Strategies**:
+- **Replace all + add new**: You trust global changes completely and want to adopt everything
+- **Add new only**: You want to preserve all local customizations and only get new artifacts
+
+### Settings File Handling
+
+The sync utility respects Claude Code's official settings hierarchy:
+
+**settings.json IS synced** as a regular artifact because:
+- It contains portable, team-shared configurations (hooks using $CLAUDE_PROJECT_DIR)
+- Should be version controlled and shared across projects
+- Enables automatic hook configuration in new projects
+- Works identically to other artifacts (commands, agents, etc.)
+
+**settings.local.json is NOT synced** because:
+- It's designed for personal, machine-specific preferences
+- Contains project-specific absolute paths that break in other projects
+- Should NOT be version controlled or shared between projects
+- Permissions accumulate during interactive sessions and aren't meant for long-term storage
+
+**Automatic Initialization**:
+When syncing to a project that doesn't have `.claude/settings.local.json`, the sync utility will automatically create it from the synced `.claude/settings.json` file. This ensures new projects get standard hook configurations in their local settings.
+
+**Recommended Settings Structure**:
+| File | Purpose | Synced? | Auto-Initialized? |
+|------|---------|---------|-------------------|
+| `~/.claude/settings.json` | User-wide defaults | N/A (user global) | No |
+| `.claude/settings.json` | Team-shared project config | Yes (as artifact) | No (synced from global) |
+| `.claude/settings.local.json` | Personal overrides | Never | Yes (from settings.json) |
+
+**How it works**:
+1. settings.json syncs from global to local (like commands, agents)
+2. If settings.local.json missing, it's created from settings.json
+3. Both files used by Claude Code (settings.local.json overrides settings.json)
+4. settings.local.json accumulates session permissions, stays local
 
 #### Editing Commands (`<C-e>`)
 When pressing `<C-e>` to edit a command:
@@ -624,10 +701,10 @@ ls -la .claude/tests/unit/*.sh  # Should show +x permissions
 
 **New Format**:
 ```
-Synced 450 artifacts (including conflicts):
+Synced 449 artifacts (including conflicts):
   Commands: 14 | Agents: 30 | Hooks: 4 | TTS: 3 | Templates: 0
   49 lib (49 nested) | 238 docs (237 nested) | Protocols: 2 | Standards: 0
-  Data: 3 | Settings: 1 | 12 scripts (3 nested) | 102 tests (102 nested) | 5 skills (5 nested)
+  Data: 3 | 12 scripts (3 nested) | 102 tests (102 nested) | 5 skills (5 nested)
 ```
 
 **Interpretation**:

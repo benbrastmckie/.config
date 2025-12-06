@@ -132,7 +132,7 @@ fi
 Commands do not automatically update TODO.md. Instead, users are prompted to manually run `/todo` after command completion. This manual workflow is required due to architectural constraints in Claude Code where bash blocks cannot invoke slash commands.
 
 **When to Run /todo**:
-- After creating a new plan (`/plan`, `/repair`, `/debug`)
+- After creating a new plan (`/create-plan`, `/repair`, `/debug`)
 - After modifying a plan (`/revise`)
 - After completing implementation (`/build`, `/implement`)
 - After generating research reports (`/research`)

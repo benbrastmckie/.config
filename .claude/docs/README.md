@@ -50,7 +50,7 @@ Common tasks and where to find guidance:
    → [Phase Dependencies Reference](reference/workflows/phase-dependencies.md)
 
 9. **Create implementation plans**
-   → [/plan Command Guide](guides/commands/plan-command-guide.md)
+   → [/create-plan Command Guide](guides/commands/create-plan-command-guide.md)
    → [Adaptive Planning Guide](workflows/adaptive-planning-guide.md)
    → [Directory Protocols](concepts/directory-protocols.md)
 

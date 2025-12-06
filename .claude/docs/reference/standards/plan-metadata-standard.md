@@ -122,6 +122,168 @@ These fields are recommended but not required. Missing fields generate INFO-leve
   - **Estimated Phases**: 5
   ```
 
+## Phase-Level Metadata (Optional)
+
+Phase-level metadata enables explicit orchestration control through unambiguous implementer type declaration, dependency tracking for wave-based parallelization, and Lean file associations for theorem proving phases.
+
+**When to Include**: Use phase-level metadata when:
+- Plans contain mixed Lean/software phases requiring different coordinators
+- Phase dependencies enable parallel wave execution
+- Explicit implementer declaration eliminates classification ambiguity
+
+**Format**: Add metadata fields immediately after phase heading, before tasks list:
+
+```markdown
+### Phase N: Phase Name [NOT STARTED]
+implementer: lean|software
+lean_file: /absolute/path/to/file.lean
+dependencies: [1, 2]
+
+Tasks:
+- [ ] Task 1
+- [ ] Task 2
+```
+
+### implementer
+
+- **Format**: `implementer: lean` or `implementer: software`
+- **Description**: Explicit phase type declaration for coordinator routing
+- **When to Include**: Mixed Lean/software plans requiring unambiguous phase classification
+- **Validation**: If present, value must be exactly "lean" or "software" (case-sensitive)
+- **Example**:
+  ```markdown
+  ### Phase 1: Core Theorem Implementation [NOT STARTED]
+  implementer: lean
+  lean_file: /home/user/project/theories/Core.lean
+  dependencies: []
+
+  Tasks:
+  - [ ] Prove associativity lemma
+  - [ ] Prove commutativity theorem
+  ```
+
+**Usage Notes**:
+- **3-Tier Detection**: Phase classification uses three tiers (strongest signal wins):
+  1. Tier 1: `implementer:` field (strongest - no ambiguity)
+  2. Tier 2: `lean_file:` field presence (backward compatibility)
+  3. Tier 3: Keyword analysis fallback (weakest - prone to misclassification)
+- **Coordinator Routing**: `/lean-implement` routes phases to appropriate coordinators:
+  - `implementer: lean` → `lean-coordinator.md` (theorem proving workflow)
+  - `implementer: software` → `implementer-coordinator.md` (software implementation workflow)
+
+### dependencies
+
+- **Format**: `dependencies: []` or `dependencies: [1, 2, 3]`
+- **Description**: Space-separated list of phase numbers that must complete before this phase
+- **When to Include**: Plans with independent phases enabling wave-based parallel execution
+- **Validation**: If present, format must be valid array notation with numeric phase numbers
+- **Example**:
+  ```markdown
+  ### Phase 3: Integration Layer [NOT STARTED]
+  implementer: software
+  dependencies: [1, 2]
+
+  Tasks:
+  - [ ] Integrate authentication module (depends on Phase 1)
+  - [ ] Integrate caching layer (depends on Phase 2)
+  ```
+
+**Usage Notes**:
+- **Wave Construction**: `/lean-implement` Block 1a builds execution waves from dependency graph
+- **Parallel Execution**: Phases with no mutual dependencies execute in parallel (40-60% time savings)
+- **Dependency Format**: Empty array `[]` indicates no dependencies (can start in Wave 1)
+- **Cross-Reference**: See [Wave-Based Parallelization Documentation](./../guides/commands/lean-implement-command-guide.md#wave-based-execution)
+
+### lean_file
+
+- **Format**: `lean_file: /absolute/path/to/file.lean`
+- **Description**: Absolute path to Lean source file for theorem proving phases
+- **When to Include**: All Lean theorem proving phases (enables proof validation and build verification)
+- **Validation**: If present, path must be absolute (starts with `/`) and end with `.lean` extension
+- **Example**:
+  ```markdown
+  ### Phase 2: Decidability Proofs [IN PROGRESS]
+  implementer: lean
+  lean_file: /home/user/project/theories/Decidable.lean
+  dependencies: [1]
+
+  Tasks:
+  - [ ] Prove decidability for equality
+  - [ ] Prove decidability for ordering
+  ```
+
+**Usage Notes**:
+- **Backward Compatibility**: Presence of `lean_file:` field triggers Tier 2 phase classification (Lean phase)
+- **Build Integration**: `/lean-build` uses `lean_file:` to locate source files for proof building
+- **Multiple Files**: If phase spans multiple files, use primary file path (others referenced in tasks)
+
+### Status Marker Lifecycle
+
+Phase headings support status markers tracking progress through implementation:
+
+**Marker Progression**:
+```
+[NOT STARTED] → [IN PROGRESS] → [COMPLETE]
+```
+
+**Format Support**:
+- **H2 Headings**: `## Phase 1: Phase Name [NOT STARTED]`
+- **H3 Headings**: `### Phase 1: Phase Name [NOT STARTED]`
+
+Both formats are valid. Choose H3 for consistency with optional metadata fields below headings.
+
+**Automated Updates**:
+- `add_in_progress_marker()` - Marks phase as IN PROGRESS when coordinator begins execution
+- `mark_phase_complete()` - Marks all tasks complete and adds COMPLETE marker
+- `add_complete_marker()` - Adds COMPLETE marker after verification
+
+**Cross-Reference**: See [Plan Progress Tracking](./plan-progress.md) for detailed status marker behavior and checkbox synchronization.
+
+### Heading Level Flexibility
+
+Phase headings support both H2 (`##`) and H3 (`###`) formats:
+
+**H2 Format** (Traditional):
+```markdown
+## Phase 1: Phase Name [NOT STARTED]
+
+Tasks:
+- [ ] Task 1
+```
+
+**H3 Format** (With Metadata):
+```markdown
+### Phase 1: Phase Name [NOT STARTED]
+implementer: lean
+lean_file: /path/to/file.lean
+dependencies: []
+
+Tasks:
+- [ ] Task 1
+```
+
+**Recommendation**: Use H3 format when including phase-level metadata (visual hierarchy: metadata indented under heading).
+
+### Validation Rules
+
+Phase-level metadata fields are **optional**. Validation only enforces format when fields are present:
+
+**Format Validation** (ERROR-level if field present but malformed):
+- `implementer:` must be exactly "lean" or "software"
+- `dependencies:` must be valid array notation: `[]` or `[N, N, N]` with numeric values
+- `lean_file:` must be absolute path ending with `.lean` extension
+
+**Omission Validation** (No errors):
+- Missing phase metadata fields are acceptable (fallback classification applies)
+- Plans without any phase metadata are valid (Tier 3 keyword-based classification used)
+
+**Examples of Mixed Lean/Software Plans**:
+
+See real-world examples:
+- [Spec 028: Lean Subagent Orchestration](../../specs/028_lean_subagent_orchestration/plans/001-lean-subagent-orchestration-plan.md) - Mixed plan with explicit `implementer:` fields
+- [Spec 032: Lean Plan Command](../../specs/032_lean_plan_command/plans/001-lean-plan-command-plan.md) - Pure Lean plan with `lean_file:` associations
+- [Spec 037: Lean Metadata Phase Refactor](../../specs/037_lean_metadata_phase_refactor/plans/001-lean-metadata-phase-refactor-plan.md) - Infrastructure plan with software phases only
+
 ## Workflow-Specific Optional Fields
 
 Workflow-specific fields extend the base standard without breaking validation.

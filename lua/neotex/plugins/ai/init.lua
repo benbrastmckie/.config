@@ -45,6 +45,7 @@ local plugins = {}
 local ai_plugins = {
   "avante",
   "claudecode",
+  "goose",
   "lectic",
   "mcp-hub",
 }

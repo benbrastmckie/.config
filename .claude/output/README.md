@@ -6,7 +6,7 @@ This directory contains generated output files from various .claude/ workflows a
 
 ### Workflow Outputs
 - `build-output.md` - Output from /build command execution
-- `plan-output.md` - Output from /plan command execution
+- `create-plan-output.md` - Output from /create-plan command execution
 - `research-output.md` - Output from /research command execution
 - `debug-output.md` - Output from /debug command execution
 - `repair-output.md` - Output from /repair command execution

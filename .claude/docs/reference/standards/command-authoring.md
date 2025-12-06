@@ -10,9 +10,10 @@ Mandatory standards for creating and maintaining executable command files in `.c
 4. [State Persistence Patterns](#state-persistence-patterns)
 5. [Validation and Testing](#validation-and-testing)
 6. [Argument Capture Patterns](#argument-capture-patterns)
-7. [Output Suppression Requirements](#output-suppression-requirements)
-8. [Command Integration Patterns](#command-integration-patterns)
-9. [Prohibited Patterns](#prohibited-patterns)
+7. [Path Validation Patterns](#path-validation-patterns)
+8. [Output Suppression Requirements](#output-suppression-requirements)
+9. [Command Integration Patterns](#command-integration-patterns)
+10. [Prohibited Patterns](#prohibited-patterns)
 
 ---
 
@@ -227,6 +228,66 @@ fi
 Task { ... }
 ```
 
+#### Model Specification
+
+When invoking subagents via Task tool, you can specify the model tier explicitly using the `model:` field. This enables orchestrator-level control over which model tier handles specific delegation logic.
+
+**Syntax**:
+
+```markdown
+Task {
+  subagent_type: "general-purpose"
+  model: "opus" | "sonnet" | "haiku"
+  description: "..."
+  prompt: "..."
+}
+```
+
+**Model Selection Guidelines**:
+- `"opus"`: Complex reasoning, proof search, sophisticated delegation logic
+- `"sonnet"`: Balanced orchestration, standard implementation tasks
+- `"haiku"`: Deterministic coordination, mechanical processing
+
+**Precedence Order**:
+1. Task invocation `model:` field (highest priority)
+2. Agent frontmatter `model:` field (fallback)
+3. System default model (last resort)
+
+**Example** (from todo.md):
+
+```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the todo-analyzer agent.
+
+Task {
+  subagent_type: "general-purpose"
+  model: "haiku"
+  description: "Generate TODO.md file"
+  prompt: |
+    Read and follow ALL instructions in: .claude/agents/todo-analyzer.md
+}
+```
+
+**Orchestration Example** (from lean-implement.md):
+
+```markdown
+**EXECUTE NOW**: USE the Task tool to invoke the lean-coordinator agent.
+
+Task {
+  subagent_type: "general-purpose"
+  model: "sonnet"
+  description: "Wave-based Lean theorem proving for phase ${CURRENT_PHASE}"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/lean-coordinator.md
+  "
+}
+```
+
+**When to Specify Model**:
+- **Required**: When orchestrator needs different tier than subagent (e.g., Sonnet for coordination, Opus for subagents)
+- **Optional**: When agent frontmatter already specifies correct tier
+- **Recommended**: For clear separation of orchestration vs. implementation model requirements
+
 ---
 
 ## Subprocess Isolation Requirements
@@ -331,6 +392,39 @@ Use parameter expansion to preserve loaded values:
 CURRENT_STATE="${CURRENT_STATE:-initialize}"
 WORKFLOW_SCOPE="${WORKFLOW_SCOPE:-}"
 ```
+
+### Defensive Variable Initialization After State Restoration
+
+After sourcing a state file, initialize potentially unbound variables with defensive defaults to prevent unbound variable errors:
+
+```bash
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+# === DEFENSIVE VARIABLE INITIALIZATION ===
+# Initialize potentially unbound variables with defaults to prevent unbound variable errors
+# These variables may not be set in state file depending on user input
+ORIGINAL_PROMPT_FILE_PATH="${ORIGINAL_PROMPT_FILE_PATH:-}"
+RESEARCH_COMPLEXITY="${RESEARCH_COMPLEXITY:-3}"
+FEATURE_DESCRIPTION="${FEATURE_DESCRIPTION:-}"
+```
+
+**When to Use**:
+- After any `source "$STATE_FILE"` operation
+- For variables that depend on optional user input (flags like `--file`, `--complexity`)
+- For variables used in conditional logic that may not exist in all execution paths
+
+**Pattern Benefits**:
+- Prevents `unbound variable` errors when `set -u` is enabled
+- Documents which variables are expected from state file
+- Provides sensible defaults for optional parameters
+- Makes state dependencies explicit
 
 ---
 
@@ -738,6 +832,96 @@ All patterns follow lazy directory creation for artifact subdirectories:
 - **Agents create**: Artifact subdirectories at write-time via `ensure_artifact_directory()`
 
 See [Directory Creation](#directory-creation) section for complete lazy creation guidance.
+
+---
+
+## Path Validation Patterns
+
+Commands must validate path consistency between CLAUDE_PROJECT_DIR and derived paths (e.g., STATE_FILE) to prevent false positive PATH MISMATCH errors.
+
+### PROJECT_DIR Under HOME (Valid Configuration)
+
+When `CLAUDE_PROJECT_DIR` is detected under `$HOME` (e.g., `~/.config`), this is a **VALID configuration**. Path validation MUST NOT treat this as an error.
+
+**Problem**: Legacy validation incorrectly assumed PROJECT_DIR is never under HOME, causing false positives when:
+- CLAUDE_PROJECT_DIR = `/home/user/.config` (valid)
+- STATE_FILE = `/home/user/.config/.claude/tmp/workflow_123.sh` (correct)
+- Old check flagged this as "PATH MISMATCH" (wrong)
+
+**Correct Pattern** (Using validation library):
+
+```bash
+# Source validation library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load validation-utils.sh" >&2
+  exit 1
+}
+
+# Use validate_path_consistency() from validation-utils.sh
+if ! validate_path_consistency "$STATE_FILE" "$CLAUDE_PROJECT_DIR"; then
+  # Error already logged by function
+  exit 1
+fi
+```
+
+**Inline Pattern** (Without library):
+
+```bash
+# Skip PATH MISMATCH check when PROJECT_DIR is subdirectory of HOME (valid configuration)
+if [[ "$CLAUDE_PROJECT_DIR" =~ ^${HOME}/ ]]; then
+  # PROJECT_DIR legitimately under HOME - skip PATH MISMATCH validation
+  :
+elif [[ "$STATE_FILE" =~ ^${HOME}/ ]]; then
+  # Only flag as error if PROJECT_DIR is NOT under HOME but STATE_FILE uses HOME
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "PATH MISMATCH detected: STATE_FILE uses HOME instead of CLAUDE_PROJECT_DIR" \
+    "bash_block" \
+    "$(jq -n --arg state_file "$STATE_FILE" --arg home "$HOME" --arg project_dir "$CLAUDE_PROJECT_DIR" \
+       '{state_file: $state_file, home: $home, project_dir: $project_dir, issue: "STATE_FILE must use CLAUDE_PROJECT_DIR"}')"
+
+  echo "ERROR: PATH MISMATCH - STATE_FILE uses HOME instead of CLAUDE_PROJECT_DIR" >&2
+  echo "  Current: $STATE_FILE" >&2
+  echo "  Expected: ${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh" >&2
+  exit 1
+fi
+```
+
+### Anti-Pattern (Causes False Positives)
+
+**WRONG**: This pattern assumes PROJECT_DIR is never under HOME:
+
+```bash
+# ❌ ANTI-PATTERN: Causes false positives when PROJECT_DIR is ~/.config
+if [[ "$STATE_FILE" =~ ^${HOME}/ ]]; then
+  echo "ERROR: PATH MISMATCH"  # FALSE POSITIVE when PROJECT_DIR is ~/.config
+  exit 1
+fi
+```
+
+### When to Use Path Validation
+
+**Use path validation when**:
+- Command uses state files in `.claude/tmp/`
+- Command derives paths from CLAUDE_PROJECT_DIR
+- Cross-block state persistence is required
+- Multiple bash blocks need consistent path roots
+
+**Pattern Benefits**:
+- Prevents false positive PATH MISMATCH errors
+- Handles valid HOME subdirectory projects
+- Catches actual path inconsistencies
+- Integrated with centralized error logging
+
+### Related Validation Functions
+
+See `validation-utils.sh` for additional path validation utilities:
+- `validate_path_consistency()` - Check STATE_FILE path consistency
+- `validate_project_directory()` - Validate CLAUDE_PROJECT_DIR detection
+- `validate_absolute_path()` - Check absolute path format and existence
 
 ---
 
@@ -1201,6 +1385,70 @@ Task {
 ```
 
 **Problem**: Missing "USE the Task tool" phrase. Directive is not explicit enough.
+
+**❌ PROHIBITED Pattern 4: Conditional Prefix Without EXECUTE Keyword**
+
+```markdown
+**If CONDITION**: USE the Task tool to invoke agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Process data"
+  prompt: "..."
+}
+```
+
+**Problem**: The conditional prefix "**If X**:" reads as descriptive documentation, not an imperative execution directive. Claude interprets this as guidance describing what SHOULD happen under certain conditions, not as a command to execute NOW.
+
+**Other Prohibited Conditional Prefixes**:
+- `**When CONDITION**: USE the Task tool...` (descriptive timing)
+- `**Based on CONDITION**: USE the Task tool...` (descriptive logic)
+- `**For CONDITION**: USE the Task tool...` (descriptive scope)
+
+**Why This Fails**: Conditional prefixes lack the explicit "EXECUTE" keyword that signals mandatory action. Without it, Claude cannot distinguish between:
+- Documentation: "When X happens, you should invoke agent" (guidance)
+- Imperative: "Execute agent invocation when X" (action)
+
+**✅ CORRECT Pattern (Option 1 - Separate Directive)**:
+
+```markdown
+**If CONDITION**:
+
+**EXECUTE NOW**: USE the Task tool to invoke agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Process data"
+  prompt: "..."
+}
+```
+
+**✅ CORRECT Pattern (Option 2 - Single Line)**:
+
+```markdown
+**EXECUTE IF CONDITION**: USE the Task tool to invoke agent.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Process data"
+  prompt: "..."
+}
+```
+
+**✅ CORRECT Pattern (Option 3 - Bash Conditional)**:
+
+```bash
+if [ "$CONDITION" = "true" ]; then
+  echo "Condition met - invoking agent"
+fi
+```
+
+**EXECUTE NOW**: USE the Task tool to invoke agent.
+
+Task { ... }
+```
+
+**Key Principle**: The word "EXECUTE" MUST appear in the directive to signal mandatory action vs. descriptive documentation.
 
 **✅ REQUIRED Pattern: Imperative Task Directive**
 

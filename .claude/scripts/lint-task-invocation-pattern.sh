@@ -15,6 +15,7 @@
 #   1. Naked Task blocks (Task { without EXECUTE NOW within 5 lines before)
 #   2. Instructional text ("Use the Task tool to invoke..." without actual Task block)
 #   3. Incomplete EXECUTE NOW (missing "USE the Task tool")
+#   4. Conditional prefixes without EXECUTE keyword (**If/When/Based on X**: without EXECUTE)
 
 set -e
 
@@ -123,6 +124,21 @@ check_file() {
       ERROR_COUNT=$((ERROR_COUNT + 1))
       file_errors=$((file_errors + 1))
     done <<< "$incomplete_execute"
+  fi
+
+  # Pattern 4: Find conditional prefixes without EXECUTE keyword
+  local conditional_patterns='(If|When|Based on|For)'
+  local conditional_without_execute=$(grep -n "\*\*${conditional_patterns}.*\*\*:.*USE the Task tool" "$file" 2>/dev/null | \
+                                     grep -v 'EXECUTE' || true)
+
+  if [ -n "$conditional_without_execute" ]; then
+    while IFS= read -r line; do
+      local line_num=$(echo "$line" | cut -d: -f1)
+      echo -e "${RED}ERROR${NC}: $file:$line_num - Conditional pattern without EXECUTE keyword (ambiguous directive)"
+      echo -e "  ${YELLOW}Suggestion:${NC} Add '**EXECUTE NOW**: USE the Task tool...' on separate line after conditional description"
+      ERROR_COUNT=$((ERROR_COUNT + 1))
+      file_errors=$((file_errors + 1))
+    done <<< "$conditional_without_execute"
   fi
 
   if [ $file_errors -gt 0 ]; then

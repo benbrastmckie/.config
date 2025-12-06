@@ -189,7 +189,7 @@ function M.scan_all_for_sync()
     agent_prompts = M.scan_directory_for_sync(global_dir, project_dir, "agents/prompts", "*.md"),
     agent_shared = M.scan_directory_for_sync(global_dir, project_dir, "agents/shared", "*.md"),
     standards = M.scan_directory_for_sync(global_dir, project_dir, "specs/standards", "*.md"),
-    settings = M.scan_directory_for_sync(global_dir, project_dir, "", "settings.local.json"),
+    settings = M.scan_directory_for_sync(global_dir, project_dir, "", "settings.json"),
   }
 end
 

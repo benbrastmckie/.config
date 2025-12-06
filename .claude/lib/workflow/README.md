@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Workflow orchestration and state machine libraries used by `/build`, `/plan`, `/debug`, `/research`, `/revise`. This directory provides argument parsing, checkpoint management for workflow resume capability, metadata extraction, workflow scope detection with pattern matching and LLM classification, bootstrap initialization, and the core state machine for workflow execution orchestration.
+Workflow orchestration and state machine libraries used by `/build`, `/create-plan`, `/debug`, `/research`, `/revise`. This directory provides argument parsing, checkpoint management for workflow resume capability, metadata extraction, workflow scope detection with pattern matching and LLM classification, bootstrap initialization, and the core state machine for workflow execution orchestration.
 
 ## Libraries
 
