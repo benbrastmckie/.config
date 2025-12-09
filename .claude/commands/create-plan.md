@@ -1477,11 +1477,176 @@ DO NOT perform research directly. DO NOT use Read/Grep/Glob for research purpose
 DO NOT use Write to create research reports directly.
 The Task tool invocation is MANDATORY.
 
-## Block 1f: Research Output Verification
+## Block 1e-validate: Coordinator Output Signal Validation
 
-**EXECUTE NOW**: Validate that research-specialist created the output file at the pre-calculated path.
+**EXECUTE NOW**: Validate research-coordinator output signal before hard barrier file checks.
 
-This is the **hard barrier** - the workflow CANNOT proceed unless the research report exists.
+This validation catches coordinator failures early (before wasting time on file checks).
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1E ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/create-plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries (Tier 1: error-handling for logging)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+echo ""
+echo "=== Coordinator Output Signal Validation ==="
+echo ""
+
+# Check if RESEARCH_COMPLETE signal is present in coordinator output
+# This signal indicates the coordinator successfully invoked research-specialist agents
+# Expected format: "RESEARCH_COMPLETE: {N}" where N is report count
+
+# The coordinator output should be in the most recent Task response
+# Since we can't directly access Task output, we check for evidence of completion
+# by looking at the reports directory
+
+# Validate reports directory exists and is not empty
+RESEARCH_DIR="${RESEARCH_DIR:-}"
+if [ -z "$RESEARCH_DIR" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "RESEARCH_DIR not restored from state - cannot validate coordinator output" \
+    "bash_block_1e_validate" \
+    "$(jq -n '{research_dir: "missing"}')"
+  echo "ERROR: RESEARCH_DIR not set - state restoration failed" >&2
+  exit 1
+fi
+
+# Count expected vs actual reports
+EXPECTED_REPORT_COUNT="${#REPORT_PATHS_ARRAY[@]:-0}"
+if [ "$EXPECTED_REPORT_COUNT" -eq 0 ]; then
+  # Reconstruct array from REPORT_PATHS_STRING if not available
+  if [ -n "${REPORT_PATHS_STRING:-}" ]; then
+    IFS=' ' read -ra TEMP_ARRAY <<< "$REPORT_PATHS_STRING"
+    EXPECTED_REPORT_COUNT=${#TEMP_ARRAY[@]}
+  fi
+fi
+
+ACTUAL_REPORT_COUNT=$(find "$RESEARCH_DIR" -name "[0-9][0-9][0-9]-*.md" -type f 2>/dev/null | wc -l)
+
+echo "Expected reports: $EXPECTED_REPORT_COUNT"
+echo "Found reports: $ACTUAL_REPORT_COUNT"
+
+# Early detection: If reports directory is empty, coordinator failed
+if [ "$ACTUAL_REPORT_COUNT" -eq 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "research-coordinator failed - no reports created (empty directory detected)" \
+    "bash_block_1e_validate" \
+    "$(jq -n --arg dir "$RESEARCH_DIR" --argjson expected "$EXPECTED_REPORT_COUNT" \
+       '{research_dir: $dir, expected_reports: $expected, actual_reports: 0}')"
+
+  echo "" >&2
+  echo "ERROR: Coordinator failure detected - reports directory is empty" >&2
+  echo "" >&2
+  echo "Root Cause Analysis:" >&2
+  echo "  - research-coordinator completed but created no reports" >&2
+  echo "  - This indicates Task tool invocations were skipped or failed" >&2
+  echo "" >&2
+  echo "Diagnostic Steps:" >&2
+  echo "  1. Review research-coordinator.md STEP 3 Task invocation patterns" >&2
+  echo "  2. Verify Task blocks have 'EXECUTE NOW: USE the Task tool' directives" >&2
+  echo "  3. Check for pseudo-code patterns or code block wrappers" >&2
+  echo "  4. Verify coordinator self-validation checkpoint (STEP 3.5)" >&2
+  echo "" >&2
+  echo "Recovery Action:" >&2
+  echo "  Re-run: /create-plan \"${FEATURE_DESCRIPTION}\"" >&2
+  echo "" >&2
+  exit 1
+fi
+
+# Partial success detection: Some reports created but not all
+if [ "$ACTUAL_REPORT_COUNT" -lt "$EXPECTED_REPORT_COUNT" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "research-coordinator partial failure - missing reports (expected: $EXPECTED_REPORT_COUNT, actual: $ACTUAL_REPORT_COUNT)" \
+    "bash_block_1e_validate" \
+    "$(jq -n --arg dir "$RESEARCH_DIR" --argjson expected "$EXPECTED_REPORT_COUNT" --argjson actual "$ACTUAL_REPORT_COUNT" \
+       '{research_dir: $dir, expected_reports: $expected, actual_reports: $actual}')"
+
+  echo "" >&2
+  echo "WARNING: Partial coordinator failure - some reports missing" >&2
+  echo "Expected: $EXPECTED_REPORT_COUNT reports" >&2
+  echo "Found: $ACTUAL_REPORT_COUNT reports" >&2
+  echo "" >&2
+  echo "This indicates some Task invocations failed or were skipped" >&2
+  echo "" >&2
+fi
+
+# Success case: Report count matches expected
+if [ "$ACTUAL_REPORT_COUNT" -ge "$EXPECTED_REPORT_COUNT" ]; then
+  echo "[OK] Coordinator output validation passed"
+  echo "     All expected reports present in directory"
+fi
+
+echo ""
+```
+
+## Block 1f: Research File Content Validation
+
+**EXECUTE NOW**: Validate research report file existence, size, and content structure.
+
+This block performs file-level hard barrier validation (existence, size, required sections).
+Coordinator-level validation (report count, empty directory detection) is handled in Block 1e-validate.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
