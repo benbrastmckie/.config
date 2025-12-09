@@ -329,7 +329,90 @@ IMPLEMENTATION_COMPLETE:
   work_remaining: 0
 ```
 
+## Context Management
+
+The `/lean-implement` command includes advanced context management features to handle long-running workflows gracefully.
+
+### Context Aggregation
+
+The command tracks context usage across iterations and saves checkpoints when thresholds are exceeded:
+
+1. **Context Monitoring**: Coordinators report `context_usage_percent` in each summary
+2. **Threshold Checking**: Compares usage against `CONTEXT_THRESHOLD` (default: 90%)
+3. **Checkpoint Creation**: Automatically saves workflow state when threshold exceeded
+4. **Graceful Halt**: Stops execution with clear message and checkpoint path
+
+### Configuration Options
+
+Set environment variables or command-line flags:
+
+```bash
+# Set custom context threshold (default: 90)
+/lean-implement plan.md --context-threshold=80
+
+# Increase max iterations (default: 5)
+/lean-implement plan.md --max-iterations=10
+```
+
+### Checkpoint Resume
+
+When a checkpoint is saved due to context threshold:
+
+```bash
+# Review checkpoint
+cat ~/.claude/data/checkpoints/lean_implement_<workflow_id>.json
+
+# Resume from last phase
+/lean-implement plan.md <last_phase_number>
+```
+
+The checkpoint contains:
+- Plan path and topic path
+- Current iteration count
+- Work remaining (phase list)
+- Context usage percentage
+- Halt reason: `context_threshold_exceeded`
+
+### Context Reduction Metrics
+
+The brief summary parsing pattern provides significant context savings:
+
+| Approach | Tokens/Iteration | 5 Iterations | Reduction |
+|----------|------------------|--------------|-----------|
+| Full file parsing | 2,000 | 10,000 | - |
+| Brief summary parsing | 80 | 400 | 96% |
+
+**Cumulative Savings**: 9,600 tokens saved per 5-iteration workflow
+
 ## Troubleshooting
+
+### Continuation Plans
+
+**Problem**: Phase number extraction fails with non-contiguous phase numbers.
+
+**Example**: Plan with phases 5, 7, 9 (continuation from previous implementation).
+
+**Root Cause**: Legacy code used `seq 1 $TOTAL_PHASES` which assumes contiguous numbering.
+
+**Solution**: The command now extracts actual phase numbers from plan file:
+```bash
+# Direct grep extraction handles non-contiguous phases
+PHASE_NUMBERS=$(grep -oE "^### Phase ([0-9]+):" "$PLAN_FILE" | grep -oE "[0-9]+" | sort -n)
+```
+
+This enables continuation plans where only incomplete phases remain.
+
+### Context Threshold Exceeded
+
+**Problem**: Command halts with "Context threshold exceeded - checkpoint saved".
+
+**Meaning**: The workflow accumulated high context usage and saved state to prevent exhaustion.
+
+**Resolution**:
+1. Review checkpoint: `cat ~/.claude/data/checkpoints/lean_implement_*.json`
+2. Check work remaining in checkpoint
+3. Resume from last phase: `/lean-implement plan.md <phase_num>`
+4. Or increase threshold: `/lean-implement plan.md --context-threshold=95`
 
 ### Hard Barrier Failures
 

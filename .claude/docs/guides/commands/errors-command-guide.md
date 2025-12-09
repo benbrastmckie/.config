@@ -334,6 +334,11 @@ The `/errors` command is part of a comprehensive error management lifecycle that
 - Create git commits for each fix phase
 - Verify fixes resolve logged errors
 
+**5. Error Resolution (Manual Status Update)**
+- After validating fixes in production, mark errors as RESOLVED
+- Update error log entries to prevent re-analysis
+- Document resolution details for audit trail
+
 ### Example Workflow
 
 After a failed `/implement` command execution:
@@ -366,6 +371,19 @@ cat /path/.claude/specs/887_build_error_analysis/reports/001_error_report.md
 # Alternative: Use report mode to verify
 /errors --command /implement --since 10m
 # Report shows 0 errors analyzed
+
+# Step 5: Mark errors as RESOLVED after production validation
+# Note: This is a manual step performed after confirming fixes work in production
+# Example using jq to update error status:
+jq -c 'select(.command == "/implement" and .timestamp >= "2025-12-04T00:00:00Z") |
+  .status = "RESOLVED" |
+  .resolved_date = "2025-12-08" |
+  .resolution_notes = "Fixed via repair plan: specs/888_implement_state_errors/plans/001_implement_state_error_fix_plan.md"' \
+  .claude/data/logs/errors.jsonl > .claude/tmp/errors_updated.jsonl
+mv .claude/tmp/errors_updated.jsonl .claude/data/logs/errors.jsonl
+
+# Verify resolved errors are marked correctly
+/errors --query --status RESOLVED --command /implement --since 7d
 ```
 
 ### Integration Points

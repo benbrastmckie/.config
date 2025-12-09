@@ -792,18 +792,76 @@ echo ""
 # The agent should have returned work_remaining in its output
 # Parse from the latest summary or direct signal
 
-# Parse all fields from agent return signal
-WORK_REMAINING="${AGENT_WORK_REMAINING:-}"  # Captured from agent output
-CONTEXT_EXHAUSTED="${AGENT_CONTEXT_EXHAUSTED:-false}"
-SUMMARY_PATH="${AGENT_SUMMARY_PATH:-}"
-CONTEXT_USAGE_PERCENT="${AGENT_CONTEXT_USAGE_PERCENT:-0}"
-CHECKPOINT_PATH="${AGENT_CHECKPOINT_PATH:-}"
-REQUIRES_CONTINUATION="${AGENT_REQUIRES_CONTINUATION:-false}"
-STUCK_DETECTED="${AGENT_STUCK_DETECTED:-false}"
+# Find the most recent summary file (agent should have created it)
+LATEST_SUMMARY=""
+if [ -d "$SUMMARIES_DIR" ]; then
+  LATEST_SUMMARY=$(ls -t "$SUMMARIES_DIR"/*.md 2>/dev/null | head -1)
+fi
 
-# Parse state variables from agent return to avoid state persistence failures
-AGENT_PLAN_FILE="${AGENT_PLAN_FILE:-}"
-AGENT_TOPIC_PATH="${AGENT_TOPIC_PATH:-}"
+# Parse all fields from agent return signal (from summary file metadata)
+if [ -n "$LATEST_SUMMARY" ] && [ -f "$LATEST_SUMMARY" ]; then
+  echo "Parsing agent return signal from: $LATEST_SUMMARY"
+
+  # Extract fields from summary metadata (lines before first markdown heading)
+  WORK_REMAINING=$(grep "^work_remaining:" "$LATEST_SUMMARY" | sed 's/work_remaining:[[:space:]]*//' | head -1 || echo "")
+  CONTEXT_EXHAUSTED=$(grep "^context_exhausted:" "$LATEST_SUMMARY" | sed 's/context_exhausted:[[:space:]]*//' | head -1 || echo "false")
+  SUMMARY_PATH="$LATEST_SUMMARY"
+  CONTEXT_USAGE_PERCENT=$(grep "^context_usage_percent:" "$LATEST_SUMMARY" | sed 's/context_usage_percent:[[:space:]]*//' | sed 's/%//' | head -1 || echo "0")
+  CHECKPOINT_PATH=$(grep "^checkpoint_path:" "$LATEST_SUMMARY" | sed 's/checkpoint_path:[[:space:]]*//' | head -1 || echo "")
+  REQUIRES_CONTINUATION=$(grep "^requires_continuation:" "$LATEST_SUMMARY" | sed 's/requires_continuation:[[:space:]]*//' | head -1 || echo "false")
+  STUCK_DETECTED=$(grep "^stuck_detected:" "$LATEST_SUMMARY" | sed 's/stuck_detected:[[:space:]]*//' | head -1 || echo "false")
+  AGENT_PLAN_FILE=$(grep "^plan_file:" "$LATEST_SUMMARY" | sed 's/plan_file:[[:space:]]*//' | head -1 || echo "")
+  AGENT_TOPIC_PATH=$(grep "^topic_path:" "$LATEST_SUMMARY" | sed 's/topic_path:[[:space:]]*//' | head -1 || echo "")
+
+  # Defensive: Log if any critical field missing
+  if [ -z "$SUMMARY_PATH" ]; then
+    echo "WARNING: Agent return missing summary_path (using discovered: $LATEST_SUMMARY)" >&2
+  fi
+
+  echo "✓ Agent return signal parsed successfully"
+else
+  echo "WARNING: No summary file found, using legacy detection" >&2
+
+  # Fallback to legacy behavior with defaults
+  WORK_REMAINING=""
+  CONTEXT_EXHAUSTED="false"
+  SUMMARY_PATH=""
+  CONTEXT_USAGE_PERCENT="0"
+  CHECKPOINT_PATH=""
+  REQUIRES_CONTINUATION="false"
+  STUCK_DETECTED="false"
+  AGENT_PLAN_FILE=""
+  AGENT_TOPIC_PATH=""
+fi
+
+# === VALIDATE AGENT RETURN SIGNAL ===
+PARSING_ERRORS=0
+
+if [ -z "$SUMMARY_PATH" ] || [ ! -f "$SUMMARY_PATH" ]; then
+  echo "ERROR: Agent return missing valid summary_path" >&2
+  ((PARSING_ERRORS++))
+fi
+
+if ! [[ "$CONTEXT_USAGE_PERCENT" =~ ^[0-9]+$ ]]; then
+  echo "WARNING: Agent return context_usage_percent invalid format: '$CONTEXT_USAGE_PERCENT'" >&2
+  CONTEXT_USAGE_PERCENT=0
+fi
+
+if [ "$REQUIRES_CONTINUATION" != "true" ] && [ "$REQUIRES_CONTINUATION" != "false" ]; then
+  echo "WARNING: Agent return requires_continuation invalid format: '$REQUIRES_CONTINUATION'" >&2
+  REQUIRES_CONTINUATION="false"
+fi
+
+if [ $PARSING_ERRORS -gt 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "implementer-coordinator return signal parsing failed" \
+    "bash_block_1c" \
+    "$(jq -n --argjson errors "$PARSING_ERRORS" '{parsing_errors: $errors}')"
+fi
 
 # If agent provided plan_file and topic_path, use them instead of state file
 if [ -n "$AGENT_PLAN_FILE" ]; then
@@ -1260,6 +1318,8 @@ else
       if add_complete_marker "$PLAN_FILE" "$phase_num" 2>/dev/null; then
         echo "  ✓ [COMPLETE] marker added"
         ((RECOVERED_COUNT++))
+        # Defensive: Propagate marker to expanded phase file if exists
+        propagate_progress_marker "$PLAN_FILE" "$phase_num" "COMPLETE" 2>/dev/null || true
       else
         echo "  ⚠ [COMPLETE] marker failed for Phase $phase_num" >&2
       fi
@@ -1273,6 +1333,81 @@ else
     echo "✓ Recovered $RECOVERED_COUNT phase marker(s)"
   fi
 fi
+
+# === SUCCESS CRITERIA VALIDATION ===
+echo ""
+echo "=== Success Criteria Validation ==="
+echo ""
+
+# Check if all phases complete
+if type check_all_phases_complete &>/dev/null && check_all_phases_complete "$PLAN_FILE"; then
+  echo "All phases complete, validating success criteria..."
+
+  # Attempt to mark success criteria complete
+  if type mark_success_criteria_complete &>/dev/null; then
+    mark_success_criteria_complete "$PLAN_FILE" 2>/dev/null && \
+      echo "✓ Success criteria marked complete" || \
+      echo "⚠ Could not update success criteria (non-fatal)"
+  else
+    echo "⚠ Success criteria update function not available"
+  fi
+else
+  echo "Phases incomplete, skipping success criteria validation"
+fi
+
+echo ""
+
+# === PLAN CONSISTENCY VALIDATION ===
+echo ""
+echo "=== Plan Consistency Validation ==="
+echo ""
+
+# Validate metadata status matches phase completion
+if type check_all_phases_complete &>/dev/null; then
+  if check_all_phases_complete "$PLAN_FILE"; then
+    # All phases complete, metadata should be COMPLETE
+    METADATA_STATUS=$(grep "^- \*\*Status\*\*:" "$PLAN_FILE" | grep -oE "\[(NOT STARTED|IN PROGRESS|COMPLETE|BLOCKED)\]" || echo "[UNKNOWN]")
+
+    if [ "$METADATA_STATUS" != "[COMPLETE]" ]; then
+      echo "⚠ Inconsistency detected: All phases COMPLETE but metadata shows $METADATA_STATUS"
+
+      # Auto-repair: Update metadata to match phase state
+      if type update_plan_status &>/dev/null; then
+        echo "Auto-repairing: Updating metadata status to COMPLETE..."
+        update_plan_status "$PLAN_FILE" "COMPLETE" 2>/dev/null && \
+          echo "✓ Metadata status updated to [COMPLETE]" || \
+          echo "✗ Failed to update metadata status"
+      fi
+    else
+      echo "✓ Metadata status consistent with phase completion"
+    fi
+  else
+    # Some phases incomplete
+    METADATA_STATUS=$(grep "^- \*\*Status\*\*:" "$PLAN_FILE" | grep -oE "\[(NOT STARTED|IN PROGRESS|COMPLETE|BLOCKED)\]" || echo "[UNKNOWN]")
+
+    if [ "$METADATA_STATUS" = "[COMPLETE]" ]; then
+      echo "⚠ Inconsistency detected: Phases incomplete but metadata shows COMPLETE"
+      echo "This indicates manual metadata modification or state corruption"
+
+      # Log error but don't auto-repair
+      log_command_error \
+        "$COMMAND_NAME" \
+        "$WORKFLOW_ID" \
+        "$USER_ARGS" \
+        "validation_error" \
+        "Plan metadata shows COMPLETE but phases remain incomplete" \
+        "bash_block_1d_consistency" \
+        "$(jq -n --arg status "$METADATA_STATUS" --argjson phases "$PHASES_WITH_MARKER" --argjson total "$TOTAL_PHASES" \
+           '{metadata_status: $status, complete_phases: $phases, total_phases: $total}')"
+    else
+      echo "✓ Metadata status consistent with incomplete phases"
+    fi
+  fi
+else
+  echo "⚠ Consistency validation skipped (check_all_phases_complete function unavailable)"
+fi
+
+echo ""
 
 # Defensive check: Verify append_workflow_state function available
 type append_workflow_state &>/dev/null
@@ -1377,6 +1512,7 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 
 # Tier 2: Workflow Support (graceful degradation)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/null || true
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || true
 ensure_error_log_exists
 
 # === LOAD STATE WITH RECOVERY ===
@@ -1443,6 +1579,15 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit 1
 fi
 
+# === UPDATE METADATA STATUS ===
+# Update plan metadata status to COMPLETE if all phases done
+if type check_all_phases_complete &>/dev/null && type update_plan_status &>/dev/null; then
+  if check_all_phases_complete "$PLAN_FILE"; then
+    update_plan_status "$PLAN_FILE" "COMPLETE" 2>/dev/null && \
+      echo "Plan metadata status updated to [COMPLETE]"
+  fi
+fi
+
 # === PERSIST STATE TRANSITIONS ===
 # CRITICAL: Save state before any cleanup operations
 type save_completed_states_to_state &>/dev/null
@@ -1468,27 +1613,36 @@ if [ $SAVE_EXIT -ne 0 ]; then
   exit 1
 fi
 
-# === CONSOLE SUMMARY ===
+# === CONSOLE SUMMARY (PLAN-DERIVED) ===
 # Source summary formatting library
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/summary-formatting.sh" 2>/dev/null || {
   echo "ERROR: Failed to load summary-formatting library" >&2
   exit 1
 }
 
-# Build summary text
-SUMMARY_TEXT="Completed implementation of ${COMPLETED_PHASE_COUNT:-0} phases (including test writing). Tests are written but NOT executed. Run /test to execute test suite."
+# Determine actual completion state from plan file
+TOTAL_PHASES=$(grep -E -c "^##+ Phase [0-9]" "$PLAN_FILE" 2>/dev/null || echo "0")
+COMPLETE_PHASES=$(grep -E -c "^##+ Phase [0-9].*\[COMPLETE\]" "$PLAN_FILE" 2>/dev/null || echo "0")
 
-# Build phases section
-PHASES=""
-if [ -n "${COMPLETED_PHASES:-}" ]; then
-  IFS=',' read -ra PHASE_ARRAY <<< "${COMPLETED_PHASES%,}"
-  for phase in "${PHASE_ARRAY[@]}"; do
-    if [ -n "$phase" ]; then
-      PHASES="${PHASES}  • Phase $phase: Complete
-"
-    fi
-  done
+# Build summary text based on actual completion
+if [ "$COMPLETE_PHASES" -eq "$TOTAL_PHASES" ]; then
+  SUMMARY_TEXT="Completed implementation of all $TOTAL_PHASES phases. Tests are written but NOT executed. Run /test to execute test suite."
+  COMPLETION_STATUS="complete"
+else
+  SUMMARY_TEXT="Completed implementation of $COMPLETE_PHASES/$TOTAL_PHASES phases. Remaining work: ${WORK_REMAINING:-unknown}. Run /test to execute tests for completed phases."
+  COMPLETION_STATUS="partial"
 fi
+
+# Build phases section with actual markers from plan
+PHASES=""
+for phase_num in $(seq 1 "$TOTAL_PHASES"); do
+  PHASE_HEADING=$(grep -E "^##+ Phase ${phase_num}:" "$PLAN_FILE" | head -1)
+  PHASE_STATUS=$(echo "$PHASE_HEADING" | grep -oE "\[(NOT STARTED|IN PROGRESS|COMPLETE|BLOCKED)\]" || echo "[UNKNOWN]")
+  PHASE_NAME=$(echo "$PHASE_HEADING" | sed -E 's/^##+ Phase [0-9]+: ([^[]+).*/\1/' | sed 's/[[:space:]]*$//')
+
+  PHASES="${PHASES}  • Phase $phase_num: $PHASE_NAME $PHASE_STATUS
+"
+done
 
 # Build artifacts section
 SUMMARIES_DIR="${TOPIC_PATH}/summaries"

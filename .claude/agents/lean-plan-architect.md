@@ -239,6 +239,31 @@ grep -c "sorry" path/to/file.lean
 ---
 ```
 
+**MANDATORY FIELD ORDER (parser enforced)**:
+
+The field order immediately after phase heading is CRITICAL for /lean-implement parser compatibility. Fields MUST appear in this exact sequence:
+
+1. Phase heading: `### Phase N: Title [NOT STARTED]`
+2. `implementer:` field (lean or software)
+3. `lean_file:` field (ONLY for lean phases - omit for software phases)
+4. `dependencies:` field (always required, use empty list `[]` if no dependencies)
+
+**WRONG ORDER EXAMPLE** (parser will fail):
+```markdown
+### Phase 1: Foundation [NOT STARTED]
+dependencies: []
+lean_file: /path/to/file.lean
+implementer: lean
+```
+
+**CORRECT ORDER EXAMPLE**:
+```markdown
+### Phase 1: Foundation [NOT STARTED]
+implementer: lean                    # Field 1: implementer type
+lean_file: /path/to/file.lean        # Field 2: lean file (lean phases only)
+dependencies: []                      # Field 3: dependencies (always last)
+```
+
 **Implementer Field Values**:
 - Use `implementer: lean` for theorem-proving phases (phases with `lean_file:` field and theorem lists)
 - Use `implementer: software` for infrastructure phases (tooling setup, test harness, documentation)
@@ -253,7 +278,7 @@ grep -c "sorry" path/to/file.lean
 - Metadata **Status** MUST be `[NOT STARTED]` (not [IN PROGRESS] or [COMPLETE])
 - Metadata fields MUST follow standard order: Date, Feature, Scope, Status, Estimated Hours, Complexity Score, Structure Level, Estimated Phases, Standards File, Research Reports, Lean File, Lean Project
 - Phase Routing Summary table MUST appear immediately after "## Implementation Phases" heading
-- ALL phase headings MUST use `### Phase N:` format (level 3, matching /create-plan standard)
+- CRITICAL: ALL phase headings MUST use exactly three hash marks: `### Phase N:` (level 3 heading, NOT ## which is level 2). This matches /create-plan standard and ensures parse compatibility with /lean-implement. Example: `### Phase 1: Foundation [NOT STARTED]` (correct) vs `## Phase 1: ...` (WRONG)
 - ALL phases MUST have `implementer:` field immediately after heading (values: "lean" or "software")
 - ALL phases MUST have `lean_file:` field after implementer (for lean phases - Tier 1 format)
 - ALL phase headings MUST include `[NOT STARTED]` marker
@@ -285,6 +310,34 @@ After creating plan with Write tool, YOU MUST verify the file was created succes
 3. **Verify Research Links**: Confirm research reports referenced
 4. **Verify Lean Metadata**: Check **Lean File** and **Lean Project** fields present
 5. **Verify Theorem Specifications**: All theorems have Goal, Strategy, Complexity
+
+**Metadata Validation** (MANDATORY - Execute Before Lean-Specific Checks):
+
+ALL plans must pass automated metadata validation before finalization. Execute the validation script:
+
+```bash
+bash /home/benjamin/.config/.claude/scripts/lint/validate-plan-metadata.sh "$PLAN_PATH"
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "ERROR: Plan metadata validation failed. Fix errors before proceeding."
+  exit 1
+fi
+
+echo "✓ Metadata validation passed"
+```
+
+**Required Metadata Fields** (validated by script):
+- **Date**: Format YYYY-MM-DD or YYYY-MM-DD (Revised)
+- **Feature**: One-line description (50-100 chars)
+- **Status**: Bracket notation: [NOT STARTED] for new plans
+- **Estimated Hours**: Numeric range with "hours" suffix (e.g., "10-15 hours")
+- **Standards File**: Absolute path to CLAUDE.md
+- **Research Reports**: Relative path markdown links or literal "none"
+- **Lean File**: Absolute path to target .lean file (Lean-specific)
+- **Lean Project**: Absolute path to Lean project root with lakefile.toml (Lean-specific)
+
+See [Plan Metadata Standard](.claude/docs/reference/standards/plan-metadata-standard.md) for complete field specifications.
 
 **Lean-Specific Verification**:
 
@@ -330,10 +383,36 @@ if [ "$GOAL_COUNT" -lt "$THEOREM_COUNT" ]; then
 fi
 ```
 
+**Phase Routing Summary Validation**:
+```bash
+# Verify Phase Routing Summary table exists
+if ! grep -q "### Phase Routing Summary" "$PLAN_PATH"; then
+  echo "ERROR: Phase Routing Summary section missing"
+  exit 1
+fi
+
+# Verify table has at least 2 rows (header + minimum one phase)
+TABLE_START=$(grep -n "### Phase Routing Summary" "$PLAN_PATH" | cut -d: -f1)
+TABLE_CONTENT=$(tail -n +$((TABLE_START + 1)) "$PLAN_PATH" | sed '/^$/q' | grep '^|')
+TABLE_ROWS=$(echo "$TABLE_CONTENT" | wc -l)
+
+if [ "$TABLE_ROWS" -lt 2 ]; then
+  echo "ERROR: Phase Routing Summary table incomplete (expected ≥2 rows, found $TABLE_ROWS)"
+  exit 1
+fi
+
+echo "✓ Phase Routing Summary table valid ($TABLE_ROWS rows)"
+```
+
 **Self-Verification Checklist**:
 - [ ] Plan file created at exact PLAN_PATH provided in prompt
 - [ ] File contains all required sections
 - [ ] Research reports listed in metadata
+- [ ] Metadata validation script executed and passed (EXIT_CODE=0)
+- [ ] Phase Routing Summary table present and valid (≥2 rows)
+- [ ] ALL phase headings use level 3 format: `### Phase N:` (three hashes, not two)
+- [ ] ALL phases have `implementer:` field immediately after heading
+- [ ] ALL phases have correct field order: heading → implementer → lean_file → dependencies
 - [ ] **Lean File** metadata field present (absolute path)
 - [ ] **Lean Project** metadata field present (absolute path)
 - [ ] All theorems have Goal specifications (Lean 4 types)
@@ -385,7 +464,7 @@ Metadata:
 
 ## Theorem Phase Format Template
 
-Use this template for each phase:
+Use this template for each phase (NOTE: heading is level 3 - three hashes ###):
 
 ```markdown
 ### Phase N: [Category Name] [NOT STARTED]
@@ -416,6 +495,8 @@ grep -c "sorry" path/to/file.lean  # Ensure no incomplete proofs
 
 ---
 ```
+
+**CRITICAL**: The phase heading above uses THREE hash marks (###) for level 3 heading. CORRECT: `### Phase 1: ...` (level 3). WRONG: `## Phase 1: ...` (level 2 - DO NOT USE). The level 3 format is required for /lean-implement parser compatibility.
 
 **Example Phase**:
 
@@ -592,6 +673,52 @@ A complete Lean implementation plan must include:
 5. **Dependency tracking**: Phase dependencies for wave execution
 6. **Lean metadata**: **Lean File** and **Lean Project** fields
 7. **Testing strategy**: lake build and verification commands
+
+**Lean Compiler as Automated Test Oracle** (MANDATORY):
+
+Lean proof validation phases MUST use the Lean compiler as an automated test oracle with programmatic validation:
+
+1. **Required Automation Metadata**:
+   - `automation_type`: Must be "automated" (Lean compiler validation is inherently automated)
+   - `validation_method`: Must be "programmatic" (compiler exit codes and sorry counting)
+   - `skip_allowed`: Must be `false` (proof validation is non-optional)
+   - `artifact_outputs`: Array including `["lake-build.log", "proof-verification.txt", "sorry-count.txt"]`
+
+2. **Lean Compiler Validation Pattern**:
+```markdown
+**Validation**:
+```bash
+# Build Lean project and capture exit code
+lake build > lake-build.log 2>&1
+BUILD_EXIT=$?
+test $BUILD_EXIT -eq 0 || { echo "ERROR: Lean compilation failed"; cat lake-build.log; exit 1; }
+
+# Verify no incomplete proofs (sorry count must be 0)
+SORRY_COUNT=$(grep -c "sorry" [LEAN_FILE_PATH] || echo 0)
+test $SORRY_COUNT -eq 0 || { echo "ERROR: Found $SORRY_COUNT incomplete proofs"; exit 1; }
+
+# Verify theorem count matches expected
+THEOREM_COUNT=$(grep -c "^theorem " [LEAN_FILE_PATH] || echo 0)
+[ "$THEOREM_COUNT" -eq [EXPECTED_COUNT] ] || { echo "ERROR: Expected [EXPECTED_COUNT] theorems, found $THEOREM_COUNT"; exit 1; }
+
+echo "✓ Lean proof validation passed: $THEOREM_COUNT theorems, 0 sorries"
+```
+```
+
+3. **Anti-Pattern Prohibition for Lean Proofs**:
+   - ❌ "Manually verify proofs compile"
+   - ❌ "Skip proof validation if time constrained"
+   - ❌ "Optionally run lake build"
+   - ❌ "Visually inspect compiler output"
+   - ❌ "Check for sorries manually if needed"
+
+4. **Lean-Specific Artifacts**:
+   - `lake-build.log`: Complete Lean compiler output (stdout + stderr)
+   - `proof-verification.txt`: Theorem count and sorry count summary
+   - `sorry-count.txt`: Per-file sorry count for tracking proof completion
+   - `.lake/build/`: Lean build artifacts (oleans, IR files)
+
+See [Non-Interactive Testing Standard](../docs/reference/standards/non-interactive-testing-standard.md) for complete automation requirements.
 
 **Minimum Plan Size**: 500 bytes
 **Recommended Plan Size**: 1000-3000 bytes (comprehensive theorem specifications)

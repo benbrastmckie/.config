@@ -14,12 +14,14 @@ This document serves as the **single source of truth** for all standards enforce
 | Script | Location | Checks Performed | Severity | Pre-Commit |
 |--------|----------|------------------|----------|------------|
 | check-library-sourcing.sh | scripts/lint/ | Bash three-tier sourcing pattern, fail-fast handlers | ERROR | Yes |
+| check-state-persistence-sourcing.sh | scripts/ | State persistence function sourcing validation | ERROR | Yes |
 | lint_error_suppression.sh | tests/utilities/ | Error suppression anti-patterns, deprecated state paths | ERROR | Yes |
 | lint_bash_conditionals.sh | tests/utilities/ | Preprocessing-unsafe bash conditionals | ERROR | Yes |
 | lint-task-invocation-pattern.sh | scripts/ | Task tool invocation patterns, imperative directives | ERROR | Yes |
 | validate-hard-barrier-compliance.sh | scripts/ | Hard barrier subagent delegation pattern | ERROR | Yes |
-| validate-readmes.sh | scripts/ | README structure, required sections | WARNING | Yes (quick) |
 | validate-links.sh | scripts/ | Internal link validity, broken references | WARNING | Yes (quick) |
+| validate-plan-metadata.sh | scripts/lint/ | Plan metadata format and required fields | ERROR | Yes |
+| validate-readmes.sh | scripts/ | README structure, required sections | WARNING | Yes (quick) |
 | validate-agent-behavioral-file.sh | scripts/ | Agent frontmatter/behavior consistency | WARNING | Manual |
 
 ### Severity Levels
@@ -53,6 +55,36 @@ bash .claude/scripts/lint/check-library-sourcing.sh
 
 # Check specific files
 bash .claude/scripts/lint/check-library-sourcing.sh .claude/commands/implement.md .claude/commands/plan.md
+```
+
+**Related Standard**: [code-standards.md](code-standards.md#mandatory-bash-block-sourcing-pattern)
+
+### check-state-persistence-sourcing.sh
+
+**Purpose**: Validates that state persistence functions (append_workflow_state, init_workflow_state, etc.) are only called after proper library sourcing.
+
+**Checks Performed**:
+1. **Missing sourcing detection**: Flags bash blocks that call state persistence functions without sourcing state-persistence.sh
+2. **Pre-flight validation**: Warns when sourcing exists but lacks validate_library_functions check
+
+**State Persistence Functions Monitored**:
+- `append_workflow_state`
+- `append_workflow_state_bulk`
+- `restore_workflow_state`
+- `init_workflow_state`
+- `save_completed_states_to_state`
+
+**Exit Codes**:
+- `0`: No violations (warnings may be present)
+- `1`: Violations found (missing sourcing)
+
+**Usage**:
+```bash
+# Check all command and agent files
+bash .claude/scripts/check-state-persistence-sourcing.sh --all
+
+# Check specific files
+bash .claude/scripts/check-state-persistence-sourcing.sh .claude/commands/create-plan.md
 ```
 
 **Related Standard**: [code-standards.md](code-standards.md#mandatory-bash-block-sourcing-pattern)
@@ -187,6 +219,33 @@ bash .claude/scripts/validate-hard-barrier-compliance.sh --verbose
 
 **Related Standard**: [hard-barrier-subagent-delegation.md](../../concepts/patterns/hard-barrier-subagent-delegation.md)
 
+### validate-plan-metadata.sh
+
+**Purpose**: Validates plan metadata compliance with plan-metadata-standard.md.
+
+**Checks Performed**:
+1. **Required fields**: Date, Feature, Status, Estimated Hours, Standards File, Research Reports
+2. **Date format**: YYYY-MM-DD or YYYY-MM-DD (Revised)
+3. **Status format**: Bracket notation with approved statuses ([NOT STARTED], [IN PROGRESS], [COMPLETE], [BLOCKED])
+4. **Estimated Hours**: Numeric range with "hours" suffix (e.g., "10-15 hours")
+5. **Standards File**: Absolute path validation
+6. **Research Reports**: Relative path markdown links or literal "none"
+
+**Exit Codes**:
+- `0`: Metadata validation passed
+- `1`: Validation failures found
+
+**Usage**:
+```bash
+# Validate single plan
+bash .claude/scripts/lint/validate-plan-metadata.sh /path/to/plan.md
+
+# Validate all plans in specs directory
+find .claude/specs -name "*.md" -path "*/plans/*" -exec bash .claude/scripts/lint/validate-plan-metadata.sh {} \;
+```
+
+**Related Standard**: [plan-metadata-standard.md](plan-metadata-standard.md)
+
 ### validate-readmes.sh
 
 **Purpose**: Validates README.md files have required structure and sections.
@@ -262,13 +321,14 @@ This matrix shows which enforcement tools verify each standard document:
 
 | Standard Document | Enforcement Tools |
 |-------------------|-------------------|
-| code-standards.md | check-library-sourcing.sh, lint_error_suppression.sh, lint_bash_conditionals.sh, validate-links.sh |
-| output-formatting.md | lint_error_suppression.sh |
-| documentation-standards.md | validate-readmes.sh |
-| command-authoring.md | check-library-sourcing.sh, lint-task-invocation-pattern.sh, validate-agent-behavioral-file.sh |
 | agent-behavioral-guidelines.md | validate-agent-behavioral-file.sh |
 | bash-block-execution-model.md | check-library-sourcing.sh, lint_bash_conditionals.sh |
+| code-standards.md | check-library-sourcing.sh, lint_error_suppression.sh, lint_bash_conditionals.sh, validate-links.sh |
+| command-authoring.md | check-library-sourcing.sh, lint-task-invocation-pattern.sh, validate-agent-behavioral-file.sh |
+| documentation-standards.md | validate-readmes.sh |
 | hard-barrier-subagent-delegation.md | validate-hard-barrier-compliance.sh, lint-task-invocation-pattern.sh |
+| output-formatting.md | lint_error_suppression.sh |
+| plan-metadata-standard.md | validate-plan-metadata.sh |
 
 ## Pre-Commit Integration
 
@@ -282,6 +342,7 @@ The pre-commit hook at `.claude/hooks/pre-commit` runs critical validators on st
 # 4. Run lint-task-invocation-pattern.sh on staged command files
 # 5. Run validate-links-quick.sh on staged .md files
 # 6. Run validate-readmes.sh --quick on staged README.md files
+# 7. Run validate-plan-metadata.sh on staged plan files in specs/*/plans/
 ```
 
 ### Bypass Mechanism
@@ -328,8 +389,9 @@ bash .claude/scripts/validate-all-standards.sh --all
 
 # Run specific validator categories
 bash .claude/scripts/validate-all-standards.sh --sourcing    # Library sourcing only
-bash .claude/scripts/validate-all-standards.sh --readme      # README validation only
 bash .claude/scripts/validate-all-standards.sh --links       # Link validation only
+bash .claude/scripts/validate-all-standards.sh --plans       # Plan metadata validation
+bash .claude/scripts/validate-all-standards.sh --readme      # README validation only
 
 # Staged files mode (for pre-commit)
 bash .claude/scripts/validate-all-standards.sh --staged

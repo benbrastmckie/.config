@@ -8,12 +8,16 @@ Mandatory standards for creating and maintaining executable command files in `.c
 2. [Task Tool Invocation Patterns](#task-tool-invocation-patterns)
 3. [Subprocess Isolation Requirements](#subprocess-isolation-requirements)
 4. [State Persistence Patterns](#state-persistence-patterns)
+   - [Pre-Flight Library Function Validation](#pre-flight-library-function-validation)
 5. [Validation and Testing](#validation-and-testing)
 6. [Argument Capture Patterns](#argument-capture-patterns)
 7. [Path Validation Patterns](#path-validation-patterns)
 8. [Output Suppression Requirements](#output-suppression-requirements)
-9. [Command Integration Patterns](#command-integration-patterns)
-10. [Prohibited Patterns](#prohibited-patterns)
+9. [Plan Metadata Standard Integration](#plan-metadata-standard-integration)
+10. [Command Integration Patterns](#command-integration-patterns)
+   - [Summary-Based Handoff Pattern](#summary-based-handoff-pattern)
+   - [Research Coordinator Delegation Pattern](#research-coordinator-delegation-pattern)
+11. [Prohibited Patterns](#prohibited-patterns)
 
 ---
 
@@ -425,6 +429,68 @@ FEATURE_DESCRIPTION="${FEATURE_DESCRIPTION:-}"
 - Documents which variables are expected from state file
 - Provides sensible defaults for optional parameters
 - Makes state dependencies explicit
+
+### Pre-Flight Library Function Validation
+
+**MANDATORY**: All bash blocks that call library functions MUST validate function availability immediately after sourcing. This prevents exit 127 "command not found" errors.
+
+**Root Cause**: The `source` command can succeed (return 0) even when a library file exists but the target function is not defined (e.g., file contains syntax errors, or function has a different name). This causes exit 127 when the function is called later.
+
+**Required Pattern**:
+
+```bash
+# After sourcing state-persistence.sh
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# === PRE-FLIGHT FUNCTION VALIDATION ===
+# Verify required functions are available before using them
+declare -f append_workflow_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "execution_error" \
+    "append_workflow_state function not available - library sourcing failed" \
+    "bash_block_name" \
+    "$(jq -n '{library: "state-persistence.sh", function: "append_workflow_state"}')"
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
+```
+
+**Anti-Pattern (PROHIBITED)**:
+
+```bash
+# WRONG: Direct source without function validation
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+append_workflow_state "KEY" "value"  # May fail with exit 127!
+```
+
+**When to Apply**:
+- Every bash block that calls `append_workflow_state` or `append_workflow_state_bulk`
+- Every bash block that calls `save_completed_states_to_state`
+- Every bash block that calls any library function immediately after sourcing
+
+**Alternative Pattern Using validate_library_functions**:
+
+For blocks that source multiple libraries, use the bulk validation helper:
+
+```bash
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
+
+# Validate all required functions at once
+validate_library_functions "state-persistence" || exit 1
+validate_library_functions "workflow-state-machine" || exit 1
+```
+
+**Enforcement**: This pattern is verified by pre-commit hooks (planned) and manual code review. Exit 127 errors in error logs indicate missing validation.
 
 ---
 
@@ -1188,6 +1254,294 @@ See [Directory Creation Anti-Patterns](code-standards.md#directory-creation-anti
 
 ---
 
+## Plan Metadata Standard Integration
+
+All plan-generating commands must inject plan metadata standards into agent context to ensure format compliance and reduce validation errors.
+
+### When to Inject Plan Metadata Standards
+
+Plan-generating commands MUST inject standards for:
+- `/create-plan` - General implementation planning
+- `/lean-plan` - Lean theorem proving plans
+- `/repair` - Error repair planning
+- `/revise` - Plan revision workflows
+- `/debug` - Debug workflow planning
+
+**Rationale**: Proactive compliance via agent context injection prevents format violations detected during post-generation validation.
+
+### How to Use format_standards_for_prompt()
+
+Source the standards extraction library and call the function to extract relevant metadata standard sections:
+
+```bash
+source "${CLAUDE_LIB}/plan/standards-extraction.sh" 2>/dev/null || {
+  echo "Warning: Cannot load standards-extraction library"
+}
+
+# Extract formatted standards for agent injection
+FORMATTED_STANDARDS=$(format_standards_for_prompt "$STANDARDS_FILE")
+
+# Graceful degradation: empty string on failure
+if [ -z "$FORMATTED_STANDARDS" ]; then
+  echo "Warning: Failed to extract plan metadata standards (agent will use defaults)"
+fi
+```
+
+**Function Behavior**:
+- **Source**: `.claude/lib/plan/standards-extraction.sh`
+- **Input**: Path to CLAUDE.md standards file
+- **Output**: Formatted metadata standard sections as string
+- **Failure Mode**: Returns empty string (graceful degradation)
+- **Integration Point**: Before Task tool invocation with plan-generating agent
+
+### Example Integration Pattern
+
+Reference implementation from `/create-plan` (lines 1888-1895):
+
+```bash
+# Source standards extraction library
+source "${CLAUDE_LIB}/plan/standards-extraction.sh" 2>/dev/null || {
+  log_command_error "dependency_error" \
+    "Cannot load standards-extraction library" \
+    "Path: ${CLAUDE_LIB}/plan/standards-extraction.sh"
+}
+
+# Extract plan metadata standards for agent
+FORMATTED_STANDARDS=$(format_standards_for_prompt "$STANDARDS_FILE")
+
+if [ -z "$FORMATTED_STANDARDS" ]; then
+  log_command_error "parse_error" \
+    "Failed to extract plan metadata standards" \
+    "Agent will use default format (may fail validation)"
+fi
+
+# Inject standards into agent prompt
+**EXECUTE NOW**: USE the Task tool to invoke plan-architect agent:
+
+Task Input:
+- Agent: plan-architect
+- Context:
+  - User request: "${FEATURE_DESCRIPTION}"
+  - Plan path: "${PLAN_PATH}"
+  - Standards: ${FORMATTED_STANDARDS}
+  - Research reports: [list of report paths]
+```
+
+### Validation Script Invocation
+
+After the agent returns the plan artifact, invoke the validation script:
+
+```bash
+# Validate plan metadata after agent returns
+if [ -f "$PLAN_PATH" ]; then
+  bash "${CLAUDE_PROJECT_DIR}/.claude/scripts/lint/validate-plan-metadata.sh" "$PLAN_PATH"
+  VALIDATION_EXIT=$?
+
+  if [ $VALIDATION_EXIT -ne 0 ]; then
+    log_command_error "validation_error" \
+      "Plan metadata validation failed" \
+      "Plan: $PLAN_PATH | Exit code: $VALIDATION_EXIT"
+    echo "WARNING: Plan has metadata format issues (see validation output)"
+    # Allow workflow to continue (validation errors logged)
+  fi
+fi
+```
+
+**Exit Code Handling**: Log validation errors but allow workflow continuation (plan is still usable, validation detects quality issues).
+
+### CLAUDE.md Section Metadata Updates
+
+When integrating plan metadata standards into a command, update the `plan_metadata_standard` section's "Used by" metadata:
+
+**Location**: CLAUDE.md line ~218 (in `<!-- SECTION: plan_metadata_standard -->`)
+
+**Before**:
+```markdown
+[Used by: /create-plan, /repair, /revise, /debug, plan-architect]
+```
+
+**After** (example adding /lean-plan):
+```markdown
+[Used by: /create-plan, /lean-plan, /repair, /revise, /debug, plan-architect]
+```
+
+Commands must be listed in alphabetical order for consistency.
+
+---
+
+## Non-Interactive Testing Standard Integration
+
+Plan-generating commands MUST inject non-interactive testing standards into agent context to ensure test phases are executable without manual intervention. This enables automated CI/CD execution, wave-based parallel testing, and consistent validation results.
+
+### When to Inject Non-Interactive Testing Standards
+
+Commands that generate plans with test phases MUST inject testing standards:
+- `/create-plan` - General implementation planning (includes testing phases)
+- `/lean-plan` - Lean theorem proving plans (includes proof validation phases)
+- `/repair` - Error repair planning (includes validation/testing phases)
+- `/debug` - Debug workflow planning (includes test reproduction phases)
+
+**Rationale**: Proactive injection prevents interactive anti-patterns (e.g., "manually verify", "skip if needed") that block automated execution.
+
+### Extension to format_standards_for_prompt()
+
+The `format_standards_for_prompt()` function supports optional non-interactive testing standards extraction:
+
+```bash
+source "${CLAUDE_LIB}/plan/standards-extraction.sh" 2>/dev/null || {
+  echo "Warning: Cannot load standards-extraction library"
+}
+
+# Extract both plan metadata AND non-interactive testing standards
+FORMATTED_STANDARDS=$(format_standards_for_prompt "$STANDARDS_FILE")
+TESTING_STANDARDS=$(extract_testing_standards "$NON_INTERACTIVE_TESTING_STANDARD_FILE")
+
+# Combine standards for agent injection
+COMBINED_STANDARDS="${FORMATTED_STANDARDS}
+
+### Non-Interactive Testing Requirements
+
+${TESTING_STANDARDS}"
+```
+
+**Function Parameters** (proposed extension):
+- **Input**: Path to non-interactive-testing-standard.md
+- **Output**: Formatted testing standard sections (Required Automation Fields, Anti-Patterns)
+- **Failure Mode**: Returns empty string (graceful degradation)
+
+### Example Integration Pattern from /create-plan
+
+Reference implementation showing standards injection for test phase generation:
+
+```bash
+# Source standards extraction library
+source "${CLAUDE_LIB}/plan/standards-extraction.sh" 2>/dev/null || {
+  log_command_error "dependency_error" \
+    "Cannot load standards-extraction library" \
+    "Path: ${CLAUDE_LIB}/plan/standards-extraction.sh"
+}
+
+# Extract plan metadata standards
+FORMATTED_STANDARDS=$(format_standards_for_prompt "$STANDARDS_FILE")
+
+# Extract non-interactive testing standards (if test phases expected)
+TESTING_STANDARD_PATH="${CLAUDE_DOCS}/reference/standards/non-interactive-testing-standard.md"
+if [ -f "$TESTING_STANDARD_PATH" ]; then
+  TESTING_STANDARDS=$(extract_testing_standards "$TESTING_STANDARD_PATH")
+
+  # Combine standards for comprehensive agent context
+  COMBINED_STANDARDS="${FORMATTED_STANDARDS}
+
+### Non-Interactive Testing Requirements
+
+All test phases MUST include automation metadata:
+- automation_type: automated (not manual)
+- validation_method: programmatic (not visual)
+- skip_allowed: false (mandatory execution)
+- artifact_outputs: [list of test artifacts]
+
+PROHIBITED patterns (ERROR-level violations):
+- \"manually verify\", \"skip if needed\", \"verify visually\"
+- \"inspect output\", \"optional\", \"check results\"
+
+${TESTING_STANDARDS}"
+else
+  COMBINED_STANDARDS="$FORMATTED_STANDARDS"
+  log_command_error "file_error" \
+    "Non-interactive testing standard not found" \
+    "Path: $TESTING_STANDARD_PATH | Agent will use defaults"
+fi
+
+# Inject combined standards into agent prompt
+**EXECUTE NOW**: USE the Task tool to invoke plan-architect agent:
+
+Task Input:
+- Agent: plan-architect
+- Context:
+  - User request: "${FEATURE_DESCRIPTION}"
+  - Plan path: "${PLAN_PATH}"
+  - Standards: ${COMBINED_STANDARDS}
+  - Research reports: [list of report paths]
+```
+
+### Validation After Plan Generation
+
+After the agent returns the plan, validate test phases for anti-patterns:
+
+```bash
+# Validate non-interactive testing compliance
+if [ -f "$PLAN_PATH" ]; then
+  bash "${CLAUDE_PROJECT_DIR}/.claude/scripts/validate-non-interactive-tests.sh" \
+    --file "$PLAN_PATH"
+  VALIDATION_EXIT=$?
+
+  if [ $VALIDATION_EXIT -ne 0 ]; then
+    log_command_error "validation_error" \
+      "Non-interactive testing validation failed" \
+      "Plan: $PLAN_PATH | Interactive anti-patterns detected"
+    echo "ERROR: Test phases contain interactive patterns (manual intervention required)"
+    echo "Run: bash .claude/scripts/validate-non-interactive-tests.sh --file $PLAN_PATH"
+    # Block workflow continuation (ERROR-level violations)
+    exit 1
+  fi
+fi
+```
+
+**Exit Code Handling**: Unlike plan metadata validation (WARNING-level), non-interactive testing violations are ERROR-level and MUST block workflow continuation.
+
+### Troubleshooting Standards Injection
+
+**Issue**: Agent generates test phases with interactive patterns despite standards injection
+**Diagnosis**:
+1. Verify standards extraction succeeded (non-empty TESTING_STANDARDS variable)
+2. Check agent behavioral guidelines include non-interactive testing requirements
+3. Validate standards context appears in agent prompt (add debug logging)
+
+**Resolution**:
+```bash
+# Debug standards extraction
+echo "DEBUG: Extracted testing standards length: ${#TESTING_STANDARDS}"
+echo "DEBUG: Standards content preview:"
+echo "$TESTING_STANDARDS" | head -20
+
+# Verify standards file exists and is readable
+if [ ! -f "$TESTING_STANDARD_PATH" ]; then
+  echo "ERROR: Testing standard file not found: $TESTING_STANDARD_PATH"
+  exit 1
+fi
+
+if [ ! -r "$TESTING_STANDARD_PATH" ]; then
+  echo "ERROR: Testing standard file not readable: $TESTING_STANDARD_PATH"
+  exit 1
+fi
+```
+
+### CLAUDE.md Section Metadata Updates
+
+When integrating non-interactive testing standards into a command, update the `non_interactive_testing` section's "Used by" metadata:
+
+**Location**: CLAUDE.md (in `<!-- SECTION: non_interactive_testing -->`)
+
+**Format**:
+```markdown
+[Used by: /create-plan, /lean-plan, /implement, /debug, /repair]
+```
+
+Commands must be listed in alphabetical order for consistency.
+
+### Cross-References
+
+**Related Standards**:
+- [Non-Interactive Testing Standard](./non-interactive-testing-standard.md) - Complete testing automation requirements
+- [Plan Metadata Standard](./plan-metadata-standard.md) - Plan metadata standard integration (parallel pattern)
+- [Testing Protocols](./testing-protocols.md) - Non-interactive execution requirements section
+
+**Related Documentation**:
+- [Plan-Architect Agent Guidelines](./../../agents/plan-architect.md) - Test phase generation behavioral requirements
+- [Enforcement Mechanisms](./enforcement-mechanisms.md) - Validator integration and bypass procedures
+
+---
+
 ## Command Integration Patterns
 
 Commands often need to integrate with other commands via file-based handoff. The summary-based handoff pattern enables decoupled state passing between commands.
@@ -1340,6 +1694,79 @@ This enables downstream commands to extract paths without relying on state files
 - Use summary files for inter-command state (between different commands)
 
 See [Implement-Test Workflow Guide](./../../guides/workflows/implement-test-workflow.md) for complete summary-based handoff examples.
+
+### Research Coordinator Delegation Pattern
+
+Commands requiring multi-topic research should use the research-coordinator agent to enable parallel research execution with metadata-only context passing (95% context reduction).
+
+**When to Use**:
+- Research complexity ≥ 3 (indicates 2+ distinct topics)
+- Feature description contains multiple domains or concerns
+- Commands: `/create-plan`, `/research`, `/repair`, `/debug`, `/revise`
+
+**Pattern Benefits**:
+- **Context Reduction**: 95% reduction via metadata-only passing (7,500 → 330 tokens for 3 topics)
+- **Parallel Execution**: 40-60% time savings (parallel vs sequential research)
+- **Hard Barrier Enforcement**: Path pre-calculation prevents coordinator bypass
+- **Metadata Aggregation**: Primary agent receives summaries, not full reports
+
+**Pattern Structure** (3-block sequence):
+
+1. **Block 1d-topics**: Topic Decomposition (heuristic or automated)
+2. **Block 1e-exec**: Research Coordinator Task Invocation
+3. **Block 1f**: Multi-Report Validation (hard barrier)
+
+**Integration Points**:
+- **Topic Decomposition** → saves TOPICS_LIST and REPORT_PATHS_LIST to state
+- **Coordinator Invocation** → passes topics and paths as contract
+- **Multi-Report Validation** → validates all reports with fail-fast policy
+- **Metadata Extraction** → aggregates findings count, recommendations for passing to next agent
+
+**Decision Criteria**:
+
+| Scenario | Pattern | Agent | Notes |
+|----------|---------|-------|-------|
+| Complexity 1-2, single topic | Direct invocation | research-specialist | No coordinator overhead |
+| Complexity 3-4, multi-topic | Coordinator pattern | research-coordinator | Enables parallelization |
+| Lean/Mathlib domain | Specialized direct | lean-research-specialist | Domain expertise required |
+
+See [Research Invocation Standards](./research-invocation-standards.md) for complete decision matrix and migration guidance.
+
+**Example Implementation**:
+
+See [Command Patterns Quick Reference](../command-patterns-quick-reference.md) for copy-paste templates including:
+- Template 6: Topic Decomposition Block (heuristic-based)
+- Template 7: Topic Detection Agent Invocation Block (automated)
+- Template 8: Research Coordinator Task Invocation Block
+- Template 9: Multi-Report Validation Loop
+- Template 10: Metadata Extraction and Aggregation
+
+**Troubleshooting**:
+
+**Issue**: Topic decomposition returns empty array
+- **Cause**: Ambiguous feature description, unclear topic boundaries
+- **Solution**: Fall back to single-topic mode (backward compatibility)
+- **Prevention**: Check RESEARCH_COMPLEXITY ≥ 3 before attempting decomposition
+
+**Issue**: topic-detection-agent fails or returns malformed JSON
+- **Cause**: Complex nested descriptions, timeout, JSON parsing error
+- **Solution**: Gracefully degrade to heuristic decomposition (Phase 1 logic)
+- **Prevention**: Validate JSON structure with `jq` before parsing
+
+**Issue**: research-coordinator reports missing (hard barrier failure)
+- **Cause**: Coordinator failed, path mismatch, file system error
+- **Solution**: Check error logs with `/errors --command /create-plan --type agent_error`
+- **Prevention**: Verify REPORT_PATHS_LIST persisted to state before invocation
+
+**Issue**: Metadata extraction parsing errors
+- **Cause**: Malformed report structure, missing "## Findings" section
+- **Solution**: Use filename as title fallback, log parsing error
+- **Prevention**: Validate report structure in multi-report validation loop
+
+**Related Documentation**:
+- [Research Invocation Standards](./research-invocation-standards.md) - Decision matrix for coordinator vs specialist
+- [Hierarchical Agents Examples](../../concepts/hierarchical-agents-examples.md) - Example 7: Research Coordinator Pattern
+- [Command Patterns Quick Reference](../command-patterns-quick-reference.md) - Copy-paste templates
 
 ---
 

@@ -120,6 +120,7 @@ setup_bash_error_trap "/lean-implement" "lean_implement_early_$(date +%s)" "earl
 _flush_early_errors
 
 # Tier 2: Workflow Support (graceful degradation)
+_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" || true
 _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" || true
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || true
 
@@ -131,35 +132,16 @@ EOF
 )" || exit 1
 
 # === PRE-FLIGHT VALIDATION ===
-validate_lean_implement_prerequisites() {
-  local validation_errors=0
-
-  if ! declare -F save_completed_states_to_state >/dev/null 2>&1; then
-    echo "ERROR: Required function 'save_completed_states_to_state' not found" >&2
-    validation_errors=$((validation_errors + 1))
-  fi
-
-  if ! declare -F append_workflow_state >/dev/null 2>&1; then
-    echo "ERROR: Required function 'append_workflow_state' not found" >&2
-    validation_errors=$((validation_errors + 1))
-  fi
-
-  if ! declare -F log_command_error >/dev/null 2>&1; then
-    echo "ERROR: Required function 'log_command_error' not found" >&2
-    validation_errors=$((validation_errors + 1))
-  fi
-
-  if [ $validation_errors -gt 0 ]; then
-    echo "Pre-flight validation failed: $validation_errors error(s) detected" >&2
-    return 1
-  fi
-
-  return 0
-}
-
-if ! validate_lean_implement_prerequisites; then
+# Use validation-utils.sh library for workflow prerequisites validation
+if ! validate_workflow_prerequisites; then
   echo "FATAL: Pre-flight validation failed - cannot proceed" >&2
   exit 1
+fi
+
+# Lean-specific graceful degradation: Check for lake command
+if ! command -v lake &>/dev/null; then
+  echo "WARNING: lake command not found - Lean theorem proving may be unavailable" >&2
+  echo "  To enable Lean support, ensure lake is in PATH" >&2
 fi
 
 echo "Pre-flight validation passed"
@@ -310,12 +292,36 @@ if [ $EXIT_CODE -ne 0 ]; then
   exit 1
 fi
 
-# === SETUP PATHS ===
+# === PRE-CALCULATE ALL ARTIFACT PATHS (Hard Barrier Pattern) ===
+# Calculate all artifact paths BEFORE coordinator invocation
+# This ensures consistent paths across all coordinators and enables hard barrier validation
+
 TOPIC_PATH=$(dirname "$(dirname "$PLAN_FILE")")
+
+# Artifact directories for coordinator input contract
 SUMMARIES_DIR="${TOPIC_PATH}/summaries"
 DEBUG_DIR="${TOPIC_PATH}/debug"
+OUTPUTS_DIR="${TOPIC_PATH}/outputs"
+CHECKPOINTS_DIR="${HOME}/.claude/data/checkpoints"
 
-mkdir -p "$SUMMARIES_DIR" "$DEBUG_DIR" 2>/dev/null
+# Validate all paths are absolute
+for PATH_VAR in "$SUMMARIES_DIR" "$DEBUG_DIR" "$OUTPUTS_DIR" "$CHECKPOINTS_DIR"; do
+  if [[ ! "$PATH_VAR" =~ ^/ ]]; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Artifact path is not absolute: $PATH_VAR" \
+      "bash_block_1a" \
+      "$(jq -n --arg path "$PATH_VAR" '{invalid_path: $path}')"
+    echo "ERROR: All artifact paths must be absolute (Hard Barrier Pattern)" >&2
+    exit 1
+  fi
+done
+
+# Create artifact directories (lazy creation pattern)
+mkdir -p "$SUMMARIES_DIR" "$DEBUG_DIR" "$OUTPUTS_DIR" "$CHECKPOINTS_DIR" 2>/dev/null
 
 # === MARK STARTING PHASE IN PROGRESS ===
 if type add_not_started_markers &>/dev/null; then
@@ -359,6 +365,8 @@ append_workflow_state "PLAN_FILE" "$PLAN_FILE"
 append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
 append_workflow_state "SUMMARIES_DIR" "$SUMMARIES_DIR"
 append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
+append_workflow_state "OUTPUTS_DIR" "$OUTPUTS_DIR"
+append_workflow_state "CHECKPOINTS_DIR" "$CHECKPOINTS_DIR"
 append_workflow_state "STARTING_PHASE" "$STARTING_PHASE"
 append_workflow_state "EXECUTION_MODE" "$EXECUTION_MODE"
 append_workflow_state "MAX_ITERATIONS" "$MAX_ITERATIONS"
@@ -459,13 +467,8 @@ detect_phase_type() {
   fi
 
   # Tier 3: Keyword and extension analysis (legacy fallback)
-  # Lean indicators
-  if echo "$phase_content" | grep -qiE '\.(lean)\b|theorem\b|lemma\b|sorry\b|tactic\b|mathlib\b|lean_(goal|build|leansearch)'; then
-    echo "lean"
-    return 0
-  fi
-
-  # Software indicators
+  # Check software indicators BEFORE .lean extension to prevent false positives
+  # (e.g., "Update Perpetuity.lean documentation" should classify as software)
   if echo "$phase_content" | grep -qE '\.(ts|js|py|sh|md|json|yaml|toml)\b'; then
     echo "software"
     return 0
@@ -473,6 +476,22 @@ detect_phase_type() {
 
   if echo "$phase_content" | grep -qiE 'implement\b|create\b|write tests\b|setup\b|configure\b|deploy\b|build\b'; then
     echo "software"
+    return 0
+  fi
+
+  # Lean indicators: Require proof-related context with .lean extension
+  # This prevents documentation tasks from being misclassified as Lean phases
+  if echo "$phase_content" | grep -qE '\.(lean)\b'; then
+    # Check if phase has proof-related keywords
+    if echo "$phase_content" | grep -qiE 'theorem\b|lemma\b|proof\b|sorry\b|tactic\b'; then
+      echo "lean"
+      return 0
+    fi
+  fi
+
+  # Pure Lean indicators without file extension
+  if echo "$phase_content" | grep -qiE 'mathlib\b|lean_(goal|build|leansearch)'; then
+    echo "lean"
     return 0
   fi
 
@@ -499,7 +518,10 @@ SOFTWARE_PHASES=""
 LEAN_COUNT=0
 SOFTWARE_COUNT=0
 
-for phase_num in $(seq 1 "$TOTAL_PHASES"); do
+# Extract actual phase numbers from plan (handles non-contiguous phase numbers)
+PHASE_NUMBERS=$(grep -oE "^### Phase ([0-9]+):" "$PLAN_FILE" | grep -oE "[0-9]+" | sort -n)
+
+for phase_num in $PHASE_NUMBERS; do
   # Extract phase content (from phase heading to next phase or EOF)
   PHASE_CONTENT=$(awk -v target="$phase_num" '
     BEGIN { in_phase=0; found=0 }
@@ -716,6 +738,9 @@ Based on the phase type, invoke the appropriate coordinator:
 
 **EXECUTE NOW**: USE the Task tool to invoke the lean-coordinator agent.
 
+**HARD BARRIER**: Coordinator delegation is MANDATORY (no conditionals, no bypass).
+The orchestrator MUST NOT perform implementation work directly.
+
 Task {
   subagent_type: "general-purpose"
   model: "sonnet"
@@ -724,14 +749,15 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/lean-coordinator.md
 
-    **Input Contract**:
+    **Input Contract (Hard Barrier Pattern)**:
     - lean_file_path: ${CURRENT_LEAN_FILE}
     - topic_path: ${TOPIC_PATH}
     - artifact_paths:
       - plans: ${TOPIC_PATH}/plans/
       - summaries: ${SUMMARIES_DIR}
-      - outputs: ${TOPIC_PATH}/outputs/
-      - checkpoints: ${HOME}/.claude/data/checkpoints/
+      - outputs: ${OUTPUTS_DIR}
+      - debug: ${DEBUG_DIR}
+      - checkpoints: ${CHECKPOINTS_DIR}
     - max_attempts: 3
     - plan_path: ${PLAN_FILE}
     - execution_mode: plan-based
@@ -766,6 +792,9 @@ Task {
 
 **EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent.
 
+**HARD BARRIER**: Coordinator delegation is MANDATORY (no conditionals, no bypass).
+The orchestrator MUST NOT perform implementation work directly.
+
 Task {
   subagent_type: "general-purpose"
   model: "sonnet"
@@ -774,7 +803,7 @@ Task {
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md
 
-    **Input Contract**:
+    **Input Contract (Hard Barrier Pattern)**:
     - plan_path: ${PLAN_FILE}
     - topic_path: ${TOPIC_PATH}
     - summaries_dir: ${SUMMARIES_DIR}
@@ -783,8 +812,8 @@ Task {
       - plans: ${TOPIC_PATH}/plans/
       - summaries: ${SUMMARIES_DIR}
       - debug: ${DEBUG_DIR}
-      - outputs: ${TOPIC_PATH}/outputs/
-      - checkpoints: ${HOME}/.claude/data/checkpoints/
+      - outputs: ${OUTPUTS_DIR}
+      - checkpoints: ${CHECKPOINTS_DIR}
     - continuation_context: ${CONTINUATION_CONTEXT:-null}
     - iteration: ${SOFTWARE_ITERATION}
     - max_iterations: ${MAX_ITERATIONS}
@@ -934,7 +963,8 @@ if grep -q "^TASK_ERROR:" "$LATEST_SUMMARY" 2>/dev/null; then
 fi
 
 # === PARSE COORDINATOR OUTPUT ===
-# Brief Summary Pattern: Parse 80 tokens (return signal) vs 2,000 tokens (full file) = 96% context reduction
+# Brief Summary Pattern: Parse from return signal (stdout) for 96% context reduction
+# Fallback to file parsing for backward compatibility with legacy coordinators
 WORK_REMAINING_NEW=""
 CONTEXT_EXHAUSTED="false"
 REQUIRES_CONTINUATION="false"
@@ -942,6 +972,10 @@ CONTEXT_USAGE_PERCENT=0
 COORDINATOR_TYPE=""
 SUMMARY_BRIEF=""
 PHASES_COMPLETED=""
+
+# Note: In the current implementation, coordinator output is captured via Task tool
+# and return signal fields are embedded in the summary file for simplicity.
+# This parsing strategy prioritizes the return signal fields at the top of the file.
 
 if [ -f "$LATEST_SUMMARY" ]; then
   # Parse coordinator_type (identifies coordinator: lean vs software)
@@ -954,10 +988,9 @@ if [ -f "$LATEST_SUMMARY" ]; then
   SUMMARY_BRIEF_LINE=$(grep -E "^summary_brief:" "$LATEST_SUMMARY" | head -1)
   if [ -n "$SUMMARY_BRIEF_LINE" ]; then
     SUMMARY_BRIEF=$(echo "$SUMMARY_BRIEF_LINE" | sed 's/^summary_brief:[[:space:]]*//' | tr -d '"')
-  fi
-
-  # Fallback: Extract brief summary from first 10 lines (backward compatibility with legacy summaries)
-  if [ -z "$SUMMARY_BRIEF" ]; then
+  else
+    # Fallback to file parsing when summary_brief field is missing (legacy coordinators)
+    echo "WARNING: Coordinator output missing summary_brief field, falling back to file parsing" >&2
     SUMMARY_BRIEF=$(head -10 "$LATEST_SUMMARY" | grep "^\*\*Brief\*\*:" | sed 's/^\*\*Brief\*\*:[[:space:]]*//' | head -1)
   fi
 
@@ -967,14 +1000,18 @@ if [ -f "$LATEST_SUMMARY" ]; then
     PHASES_COMPLETED=$(echo "$PHASES_COMPLETED_LINE" | sed 's/^phases_completed:[[:space:]]*//' | tr -d '[],"')
   fi
 
-  # Parse work_remaining
+  # Parse work_remaining with defensive JSON array handling
   WORK_REMAINING_LINE=$(grep -E "^work_remaining:" "$LATEST_SUMMARY" | head -1)
   if [ -n "$WORK_REMAINING_LINE" ]; then
     WORK_REMAINING_NEW=$(echo "$WORK_REMAINING_LINE" | sed 's/^work_remaining:[[:space:]]*//')
-    # Convert JSON array to space-separated if needed
-    if [[ "$WORK_REMAINING_NEW" =~ ^\[ ]]; then
+
+    # Defensive parsing: Detect and convert JSON array format to space-separated string
+    if [[ "$WORK_REMAINING_NEW" =~ ^[[:space:]]*\[ ]]; then
+      echo "INFO: Converting work_remaining from JSON array to space-separated string" >&2
+      # Strip brackets, remove commas, normalize whitespace
       WORK_REMAINING_NEW=$(echo "$WORK_REMAINING_NEW" | tr -d '[],"' | tr -s ' ')
     fi
+
     if [ "$WORK_REMAINING_NEW" = "0" ] || [ -z "$WORK_REMAINING_NEW" ]; then
       WORK_REMAINING_NEW=""
     fi
@@ -1015,6 +1052,58 @@ echo ""
 
 # Context reduction metric: 80 tokens parsed (return signal) vs 2,000 tokens read (full file) = 96% reduction
 
+# === CONTEXT AGGREGATION ===
+# Track cumulative context usage across iterations and compare against threshold
+if [[ "$CONTEXT_USAGE_PERCENT" =~ ^[0-9]+$ ]]; then
+  # Valid numeric format, check against threshold
+  if [ "$CONTEXT_USAGE_PERCENT" -ge "$CONTEXT_THRESHOLD" ]; then
+    echo "WARNING: Context usage at ${CONTEXT_USAGE_PERCENT}% (threshold: ${CONTEXT_THRESHOLD}%)" >&2
+    echo "  Context threshold exceeded - saving checkpoint..." >&2
+
+    # === CHECKPOINT SAVING ON CONTEXT THRESHOLD EXCEEDED ===
+    if type save_checkpoint &>/dev/null; then
+      # Build checkpoint data as JSON
+      CHECKPOINT_DATA=$(jq -n \
+        --arg plan_path "$PLAN_FILE" \
+        --arg topic_path "$TOPIC_PATH" \
+        --argjson iteration "$ITERATION" \
+        --argjson max_iterations "$MAX_ITERATIONS" \
+        --arg work_remaining "$WORK_REMAINING_NEW" \
+        --argjson context_usage "$CONTEXT_USAGE_PERCENT" \
+        --arg halt_reason "context_threshold_exceeded" \
+        '{
+          plan_path: $plan_path,
+          topic_path: $topic_path,
+          iteration: $iteration,
+          max_iterations: $max_iterations,
+          work_remaining: $work_remaining,
+          context_usage_percent: $context_usage,
+          halt_reason: $halt_reason
+        }')
+
+      # Save checkpoint
+      CHECKPOINT_FILE=$(save_checkpoint "lean_implement" "$WORKFLOW_ID" "$CHECKPOINT_DATA" 2>&1)
+      CHECKPOINT_SAVE_EXIT=$?
+
+      if [ $CHECKPOINT_SAVE_EXIT -eq 0 ] && [ -n "$CHECKPOINT_FILE" ]; then
+        echo "Checkpoint saved: $CHECKPOINT_FILE" >&2
+        append_workflow_state "CHECKPOINT_PATH" "$CHECKPOINT_FILE"
+      else
+        echo "WARNING: Failed to save checkpoint (exit code: $CHECKPOINT_SAVE_EXIT)" >&2
+      fi
+    else
+      echo "WARNING: save_checkpoint function not available - checkpoint not saved" >&2
+    fi
+
+    # Set flag to trigger halt in iteration decision
+    REQUIRES_CONTINUATION="false"
+  fi
+else
+  # Invalid format, log warning but continue
+  echo "WARNING: Invalid context_usage_percent format: '$CONTEXT_USAGE_PERCENT' (expected numeric)" >&2
+  CONTEXT_USAGE_PERCENT=0
+fi
+
 # === STUCK DETECTION ===
 if [ -n "$WORK_REMAINING_NEW" ] && [ "$WORK_REMAINING_NEW" = "$LAST_WORK_REMAINING" ]; then
   STUCK_COUNT=$((STUCK_COUNT + 1))
@@ -1034,7 +1123,17 @@ fi
 # === ITERATION DECISION ===
 echo "=== Iteration Decision (${ITERATION}/${MAX_ITERATIONS}) ==="
 
-if [ "$REQUIRES_CONTINUATION" = "true" ] && [ -n "$WORK_REMAINING_NEW" ] && [ "$ITERATION" -lt "$MAX_ITERATIONS" ] && [ "$STUCK_COUNT" -lt 2 ]; then
+# Check for context threshold halt (REQUIRES_CONTINUATION set to "false" by checkpoint logic)
+if [ "$REQUIRES_CONTINUATION" = "false" ] && [ "$CONTEXT_USAGE_PERCENT" -ge "$CONTEXT_THRESHOLD" ]; then
+  echo "Context threshold exceeded - halting workflow"
+  echo "  Context usage: ${CONTEXT_USAGE_PERCENT}% (threshold: ${CONTEXT_THRESHOLD}%)"
+  echo "  Checkpoint saved for resume"
+  append_workflow_state "IMPLEMENTATION_STATUS" "context_threshold_exceeded"
+  append_workflow_state "HALT_REASON" "context_threshold_exceeded"
+  append_workflow_state "WORK_REMAINING" "$WORK_REMAINING_NEW"
+  append_workflow_state "SUMMARY_PATH" "$LATEST_SUMMARY"
+  echo "Proceeding to Block 1d (phase marker recovery)..."
+elif [ "$REQUIRES_CONTINUATION" = "true" ] && [ -n "$WORK_REMAINING_NEW" ] && [ "$ITERATION" -lt "$MAX_ITERATIONS" ] && [ "$STUCK_COUNT" -lt 2 ]; then
   NEXT_ITERATION=$((ITERATION + 1))
   CONTINUATION_CONTEXT="${LEAN_IMPLEMENT_WORKSPACE}/iteration_${ITERATION}_summary.md"
 
@@ -1083,126 +1182,19 @@ fi
 echo ""
 ```
 
-## Block 1d: Phase Marker Validation and Recovery
+## Block 1d: Phase Marker Management (DELEGATED TO COORDINATORS)
 
-**EXECUTE NOW**: Validate phase markers and recover any missing [COMPLETE] markers.
+**NOTE**: Phase marker validation and recovery has been removed from the orchestrator.
 
-```bash
-set +H 2>/dev/null || true
-set +o histexpand 2>/dev/null || true
-set -e
+**Coordinator Responsibility**: Phase marker management (adding [IN PROGRESS] and [COMPLETE] markers) is handled by coordinators (lean-coordinator and implementer-coordinator) as part of their workflow. The orchestrator trusts coordinators to update phase markers correctly.
 
-# === DETECT PROJECT DIRECTORY ===
-if [ -z "$CLAUDE_PROJECT_DIR" ]; then
-  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
-    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
-  else
-    current_dir="$(pwd)"
-    while [ "$current_dir" != "/" ]; do
-      [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
-      current_dir="$(dirname "$current_dir")"
-    done
-  fi
-  export CLAUDE_PROJECT_DIR
-fi
+**Rationale**:
+- Eliminates redundant marker recovery logic in orchestrator
+- Reduces context consumption (saved ~120 lines of bash code)
+- Maintains single source of truth (coordinators control markers)
+- Simplifies orchestrator to pure routing and validation
 
-# === SOURCE LIBRARIES ===
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || exit 1
-source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || true
-
-ensure_error_log_exists
-
-# === RESTORE STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_implement_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-else
-  echo "ERROR: State ID file not found" >&2
-  exit 1
-fi
-
-load_workflow_state "$WORKFLOW_ID" false
-COMMAND_NAME="${COMMAND_NAME:-/lean-implement}"
-USER_ARGS="${USER_ARGS:-}"
-export COMMAND_NAME USER_ARGS WORKFLOW_ID
-
-setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
-
-echo ""
-echo "=== Phase Marker Validation and Recovery ==="
-echo ""
-
-# Count total phases and phases with [COMPLETE] marker
-TOTAL_PHASES=$(grep -c "^### Phase [0-9]" "$PLAN_FILE" 2>/dev/null || echo "0")
-PHASES_WITH_MARKER=$(grep -c "^### Phase [0-9].*\[COMPLETE\]" "$PLAN_FILE" 2>/dev/null || echo "0")
-
-echo "Total phases: $TOTAL_PHASES"
-echo "Phases with [COMPLETE] marker: $PHASES_WITH_MARKER"
-echo ""
-
-if [ "$TOTAL_PHASES" -eq 0 ]; then
-  echo "No phases found in plan"
-elif [ "$PHASES_WITH_MARKER" -eq "$TOTAL_PHASES" ]; then
-  echo "[OK] All phases marked complete"
-else
-  echo "Detecting phases missing [COMPLETE] marker..."
-  echo ""
-
-  RECOVERED_COUNT=0
-  for phase_num in $(seq 1 "$TOTAL_PHASES"); do
-    if grep -q "^### Phase ${phase_num}:.*\[COMPLETE\]" "$PLAN_FILE"; then
-      continue
-    fi
-
-    if type verify_phase_complete &>/dev/null && verify_phase_complete "$PLAN_FILE" "$phase_num" 2>/dev/null; then
-      echo "Recovering Phase $phase_num..."
-
-      if type mark_phase_complete &>/dev/null; then
-        mark_phase_complete "$PLAN_FILE" "$phase_num" 2>/dev/null || true
-      fi
-
-      if type add_complete_marker &>/dev/null; then
-        if add_complete_marker "$PLAN_FILE" "$phase_num" 2>/dev/null; then
-          echo "  [OK] [COMPLETE] marker added"
-          RECOVERED_COUNT=$((RECOVERED_COUNT + 1))
-        fi
-      fi
-    fi
-  done
-
-  if [ "$RECOVERED_COUNT" -gt 0 ]; then
-    echo ""
-    echo "[OK] Recovered $RECOVERED_COUNT phase marker(s)"
-  fi
-fi
-
-# Verify checkbox consistency
-if type verify_checkbox_consistency &>/dev/null; then
-  if verify_checkbox_consistency "$PLAN_FILE" 1 2>/dev/null; then
-    echo ""
-    echo "[OK] Checkbox hierarchy synchronized"
-  fi
-fi
-
-# Update plan status if all phases complete
-if type check_all_phases_complete &>/dev/null && type update_plan_status &>/dev/null; then
-  if check_all_phases_complete "$PLAN_FILE"; then
-    update_plan_status "$PLAN_FILE" "COMPLETE" 2>/dev/null
-    echo "[OK] Plan metadata updated to COMPLETE"
-  fi
-fi
-
-# Persist validation results
-append_workflow_state "PHASES_WITH_MARKER" "$PHASES_WITH_MARKER"
-
-save_completed_states_to_state 2>/dev/null || true
-
-echo ""
-echo "Phase marker recovery complete"
-echo ""
-```
+If phase markers are missing, check coordinator logs rather than running orchestrator recovery.
 
 ## Block 2: Completion & Summary
 
@@ -1266,6 +1258,17 @@ save_completed_states_to_state 2>/dev/null || true
 PLAN_COMPLETE=false
 if type check_all_phases_complete &>/dev/null; then
   check_all_phases_complete "$PLAN_FILE" && PLAN_COMPLETE=true || PLAN_COMPLETE=false
+fi
+
+# Update plan metadata status if all phases complete
+if [ "$PLAN_COMPLETE" = "true" ]; then
+  if type update_plan_status &>/dev/null; then
+    if update_plan_status "$PLAN_FILE" "COMPLETE" 2>/dev/null; then
+      echo "Plan metadata status updated to [COMPLETE]"
+    else
+      echo "WARNING: Could not update plan metadata status to COMPLETE" >&2
+    fi
+  fi
 fi
 
 # Initialize metric variables

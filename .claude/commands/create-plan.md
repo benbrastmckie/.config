@@ -4,8 +4,9 @@ argument-hint: <feature-description> [--file <path>] [--complexity 1-4]
 description: Research and create new implementation plan workflow
 command-type: primary
 dependent-agents:
-  - research-specialist
-  - research-sub-supervisor
+  - research-coordinator
+  - topic-naming-agent
+  - topic-detection-agent
   - plan-architect
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
@@ -176,6 +177,17 @@ mkdir -p "$(dirname "$STATE_ID_FILE")"
 echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
 export WORKFLOW_ID
 
+# === CLEANUP TERMINAL STATE FROM PREVIOUS RUNS ===
+# Check if state file from previous workflow run exists in terminal state
+EXISTING_STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$EXISTING_STATE_FILE" ]; then
+  source "$EXISTING_STATE_FILE" 2>/dev/null || true
+  if [[ "${CURRENT_STATE:-}" =~ ^(complete|abandoned)$ ]]; then
+    echo "Cleaning stale terminal state: $CURRENT_STATE"
+    rm -f "$EXISTING_STATE_FILE"
+  fi
+fi
+
 # === UPDATE BASH ERROR TRAP WITH ACTUAL VALUES ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
@@ -333,6 +345,23 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 
 # Setup bash error trap
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === PRE-FLIGHT FUNCTION VALIDATION (Block 1b) ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+declare -f append_workflow_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "execution_error" \
+    "append_workflow_state function not available - library sourcing failed" \
+    "bash_block_1b" \
+    "$(jq -n '{library: "state-persistence.sh", function: "append_workflow_state"}')"
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
 
 # === PRE-CALCULATE TOPIC NAME FILE PATH ===
 # CRITICAL: Calculate exact path BEFORE agent invocation (Hard Barrier Pattern)
@@ -846,9 +875,15 @@ echo "Plans directory: $PLANS_DIR"
 echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 ```
 
-## Block 1e: Research Setup and Context Barrier
+## Block 1d-topics-auto: Topic Detection Agent Invocation (Optional)
 
-**EXECUTE NOW**: Execute the bash block below to prepare for research delegation.
+**EXECUTE NOW**: If RESEARCH_COMPLEXITY >= 3, optionally invoke topic-detection-agent for automated semantic decomposition.
+
+**Condition**: This block should ONLY be executed when:
+- RESEARCH_COMPLEXITY >= 3 (multi-topic threshold)
+- User wants automated topic detection (default behavior for complexity >= 3)
+
+If RESEARCH_COMPLEXITY < 3, SKIP this block and proceed directly to Block 1d-topics.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -910,76 +945,533 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 # Setup bash error trap
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
-# === PRE-CALCULATE REPORT PATH (Hard Barrier Pattern) ===
-# Calculate exact path BEFORE agent invocation for hard barrier validation
-REPORT_NUMBER="001"
-REPORT_FILENAME="${REPORT_NUMBER}-$(echo "${TOPIC_NAME:-no_name}" | tr '_' '-' | cut -c1-40)-analysis.md"
-REPORT_PATH="${RESEARCH_DIR}/${REPORT_FILENAME}"
+# === PRE-FLIGHT FUNCTION VALIDATION (Block 1d-topics-auto) ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+declare -f append_workflow_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "execution_error" \
+    "append_workflow_state function not available - library sourcing failed" \
+    "bash_block_1d_topics_auto" \
+    "$(jq -n '{library: "state-persistence.sh", function: "append_workflow_state"}')"
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
 
-# Validate path is absolute
-if [[ "$REPORT_PATH" =~ ^/ ]]; then
-  : # Path is absolute, continue
+echo ""
+echo "=== Topic Detection Agent (Optional) ==="
+echo ""
+
+# === CHECK COMPLEXITY THRESHOLD ===
+if [ "${RESEARCH_COMPLEXITY:-3}" -lt 3 ]; then
+  echo "Complexity ${RESEARCH_COMPLEXITY} < 3: Skipping automated topic detection"
+  echo "Using heuristic decomposition in Block 1d-topics"
+  echo ""
+
+  # Signal that topic detection was skipped
+  append_workflow_state "TOPIC_DETECTION_SKIPPED" "true"
+
+  # Exit this block, proceed to Block 1d-topics
+  exit 0
+fi
+
+echo "Complexity ${RESEARCH_COMPLEXITY} >= 3: Running automated topic detection"
+
+# === PRE-CALCULATE TOPIC DETECTION OUTPUT PATH ===
+# CRITICAL: Calculate path BEFORE agent invocation (Hard Barrier Pattern)
+TOPICS_JSON_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topics_${WORKFLOW_ID}.json"
+
+# Ensure parent directory exists
+mkdir -p "$(dirname "$TOPICS_JSON_FILE")" 2>/dev/null || true
+
+# Persist for validation block
+append_workflow_state "TOPICS_JSON_FILE" "$TOPICS_JSON_FILE"
+
+echo "Topic detection output: $TOPICS_JSON_FILE"
+echo ""
+echo "CHECKPOINT: Ready for topic-detection-agent invocation"
+```
+
+## Block 1d-topics-auto-exec: Topic Detection Agent Task Invocation
+
+**EXECUTE NOW**: USE the Task tool to invoke the topic-detection-agent for automated semantic decomposition.
+
+**Condition**: Only execute if RESEARCH_COMPLEXITY >= 3 (check Block 1d-topics-auto outcome).
+
+You MUST use the Task tool with these EXACT parameters:
+- **subagent_type**: "general-purpose"
+- **description**: "Detect research topics for ${FEATURE_DESCRIPTION}"
+- **prompt**:
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-detection-agent.md
+
+    You are analyzing a feature description for topic decomposition in: /create-plan workflow
+
+    **Input Contract (Hard Barrier Pattern)**:
+    - FEATURE_DESCRIPTION: "${FEATURE_DESCRIPTION}"
+    - COMPLEXITY: ${RESEARCH_COMPLEXITY}
+    - OUTPUT_PATH: ${TOPICS_JSON_FILE}
+
+    **CRITICAL**: You MUST write the topic detection JSON to the EXACT path specified above.
+    The orchestrator has pre-calculated this path and will validate it exists after you return.
+    Do NOT derive or calculate your own path.
+
+    Execute topic detection according to behavioral guidelines:
+    1. Analyze FEATURE_DESCRIPTION for distinct research themes
+    2. Determine topic count based on COMPLEXITY (1-5 topics)
+    3. Generate topic definitions with title, scope, and slug
+    4. Validate topics or apply fallback if decomposition unclear
+    5. Write JSON output to OUTPUT_PATH using Write tool
+    6. Return completion signal: TOPIC_DETECTION_COMPLETE: <topic_count>
+
+    If you encounter an error, return:
+    TASK_ERROR: <error_type> - <error_message>
+
+The Task tool invocation is MANDATORY.
+
+## Block 1d-topics-auto-validate: Topic Detection Output Validation
+
+**EXECUTE NOW**: Validate that topic-detection-agent created valid JSON output at the pre-calculated path.
+
+This is the **hard barrier** - if the JSON file doesn't exist or is invalid, fall back to heuristic decomposition in Block 1d-topics.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
 else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE FROM BLOCK 1D-TOPICS-AUTO ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/create-plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load state-persistence library" >&2
+  exit 1
+}
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load validation-utils.sh - required for workflow validation" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === PRE-FLIGHT FUNCTION VALIDATION (Block 1d-topics-auto-validate) ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+declare -f append_workflow_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "execution_error" \
+    "append_workflow_state function not available - library sourcing failed" \
+    "bash_block_1d_topics_auto_validate" \
+    "$(jq -n '{library: "state-persistence.sh", function: "append_workflow_state"}')"
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
+
+echo ""
+echo "=== Topic Detection Output Validation ==="
+echo ""
+
+# === CHECK IF TOPIC DETECTION WAS SKIPPED ===
+if [ "${TOPIC_DETECTION_SKIPPED:-false}" = "true" ]; then
+  echo "Topic detection was skipped (complexity < 3)"
+  echo "Proceeding to heuristic decomposition in Block 1d-topics"
+  echo ""
+  exit 0
+fi
+
+# === HARD BARRIER VALIDATION ===
+# Validate TOPICS_JSON_FILE is set (from Block 1d-topics-auto)
+if [ -z "${TOPICS_JSON_FILE:-}" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "TOPICS_JSON_FILE not restored from Block 1d-topics-auto state" \
+    "bash_block_1d_topics_auto_validate" \
+    "$(jq -n '{topics_json_file: "missing"}')"
+  echo "ERROR: TOPICS_JSON_FILE not set - state restoration failed" >&2
+  echo "Falling back to heuristic decomposition" >&2
+  append_workflow_state "TOPIC_DETECTION_FAILED" "true"
+  exit 0  # Non-fatal, proceed to Block 1d-topics with fallback
+fi
+
+echo "Expected topics JSON file: $TOPICS_JSON_FILE"
+
+# HARD BARRIER: Validate agent artifact using validation-utils.sh
+# validate_agent_artifact checks file existence and minimum size (50 bytes for JSON)
+if ! validate_agent_artifact "$TOPICS_JSON_FILE" 50 "topics JSON"; then
+  # Error already logged by validate_agent_artifact
+  echo "WARNING: HARD BARRIER FAILED - Topic detection agent validation failed" >&2
+  echo "" >&2
+  echo "This indicates the topic-detection-agent did not create valid output." >&2
+  echo "Falling back to heuristic decomposition in Block 1d-topics" >&2
+  echo "" >&2
+
+  # Mark fallback for Block 1d-topics
+  append_workflow_state "TOPIC_DETECTION_FAILED" "true"
+  exit 0  # Non-fatal, proceed to Block 1d-topics
+fi
+
+# Validate JSON format
+if ! jq empty "$TOPICS_JSON_FILE" 2>/dev/null; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "parse_error" \
+    "Topic detection agent returned invalid JSON" \
+    "bash_block_1d_topics_auto_validate" \
+    "$(jq -n --arg path "$TOPICS_JSON_FILE" '{json_file: $path}')"
+
+  echo "WARNING: Invalid JSON format in topics file" >&2
+  echo "Falling back to heuristic decomposition" >&2
+  append_workflow_state "TOPIC_DETECTION_FAILED" "true"
+  exit 0  # Non-fatal, proceed to Block 1d-topics
+fi
+
+# Validate required JSON fields
+if ! jq -e '.topics | length > 0' "$TOPICS_JSON_FILE" >/dev/null 2>&1; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
     "$USER_ARGS" \
     "validation_error" \
-    "Calculated REPORT_PATH is not absolute" \
-    "bash_block_1e" \
-    "$(jq -n --arg path "$REPORT_PATH" '{report_path: $path}')"
-  echo "ERROR: REPORT_PATH is not absolute: $REPORT_PATH" >&2
+    "Topics JSON missing required 'topics' array or array is empty" \
+    "bash_block_1d_topics_auto_validate" \
+    "$(jq -n --arg path "$TOPICS_JSON_FILE" '{json_file: $path}')"
+
+  echo "WARNING: Topics array missing or empty in JSON" >&2
+  echo "Falling back to heuristic decomposition" >&2
+  append_workflow_state "TOPIC_DETECTION_FAILED" "true"
+  exit 0  # Non-fatal, proceed to Block 1d-topics
+fi
+
+echo "✓ Hard barrier passed - topics JSON file validated"
+
+# Mark success for Block 1d-topics to use
+append_workflow_state "TOPIC_DETECTION_SUCCESS" "true"
+
+echo ""
+echo "CHECKPOINT: Topic detection complete, ready for Block 1d-topics parsing"
+```
+
+## Block 1d-topics: Topic Decomposition
+
+**EXECUTE NOW**: Parse topics from topic-detection-agent JSON (if available) or use heuristic decomposition, then prepare topic array for research coordinator.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
   exit 1
 fi
 
-# Ensure parent directory exists
-mkdir -p "$(dirname "$REPORT_PATH")" 2>/dev/null || true
+export CLAUDE_PROJECT_DIR
 
-# Persist for Block 1e-exec and Block 1f
-append_workflow_state "REPORT_PATH" "$REPORT_PATH" || {
-  echo "export REPORT_PATH=\"$REPORT_PATH\"" >> "$STATE_FILE"
+# === RESTORE STATE FROM BLOCK 1D-TOPICS-AUTO-VALIDATE ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+# Restore workflow state
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/create-plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
 }
 
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+# === PRE-FLIGHT FUNCTION VALIDATION (Block 1d-topics) ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+declare -f append_workflow_state_bulk >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "execution_error" \
+    "append_workflow_state_bulk function not available - library sourcing failed" \
+    "bash_block_1d_topics" \
+    "$(jq -n '{library: "state-persistence.sh", function: "append_workflow_state_bulk"}')"
+  echo "ERROR: append_workflow_state_bulk function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
+
 echo ""
-echo "=== Research Setup Complete ==="
-echo "  Report Path: $REPORT_PATH"
-echo "  Workflow ID: $WORKFLOW_ID"
+echo "=== Topic Decomposition ==="
 echo ""
-echo "CHECKPOINT: Research setup complete, ready for Task invocation"
+
+TOPIC_COUNT=1
+declare -a TOPICS_ARRAY=()
+declare -a REPORT_PATHS_ARRAY=()
+
+# === CHECK IF TOPIC DETECTION SUCCEEDED ===
+if [ "${TOPIC_DETECTION_SUCCESS:-false}" = "true" ] && [ -n "${TOPICS_JSON_FILE:-}" ] && [ -f "${TOPICS_JSON_FILE:-}" ]; then
+  echo "Using automated topic detection (topic-detection-agent)"
+
+  # Parse JSON to extract topics
+  TOPIC_COUNT=$(jq -r '.topic_count' "$TOPICS_JSON_FILE" 2>/dev/null || echo "0")
+
+  if [ "$TOPIC_COUNT" -eq 0 ]; then
+    echo "WARNING: topic_count is 0 in JSON, falling back to heuristic" >&2
+    # Will continue to heuristic decomposition below
+  else
+    echo "Detected $TOPIC_COUNT topics from JSON"
+
+    # Build TOPICS_ARRAY from JSON
+    for i in $(seq 0 $((TOPIC_COUNT - 1))); do
+      # Extract topic title and scope for comprehensive topic description
+      TITLE=$(jq -r ".topics[$i].title" "$TOPICS_JSON_FILE" 2>/dev/null || echo "")
+      SCOPE=$(jq -r ".topics[$i].scope" "$TOPICS_JSON_FILE" 2>/dev/null || echo "")
+      SLUG=$(jq -r ".topics[$i].slug" "$TOPICS_JSON_FILE" 2>/dev/null || echo "")
+
+      if [ -n "$TITLE" ] && [ -n "$SCOPE" ]; then
+        # Use title and scope for research-specialist context
+        TOPICS_ARRAY+=("$TITLE: $SCOPE")
+      else
+        echo "WARNING: Missing title or scope for topic $i, using generic" >&2
+        TOPICS_ARRAY+=("${FEATURE_DESCRIPTION} - Topic $((i + 1))")
+      fi
+
+      # Calculate report paths using slugs
+      REPORT_NUM=$(printf "%03d" $((i + 1)))
+      if [ -n "$SLUG" ]; then
+        REPORT_FILENAME="${REPORT_NUM}-${SLUG}.md"
+      else
+        REPORT_FILENAME="${REPORT_NUM}-$(echo "${TOPIC_NAME:-no_name}" | tr '_' '-' | cut -c1-40)-part$((i + 1)).md"
+      fi
+      REPORT_PATHS_ARRAY+=("${RESEARCH_DIR}/${REPORT_FILENAME}")
+    done
+
+    echo "✓ Topics parsed from automated detection"
+  fi
+fi
+
+# === FALLBACK: HEURISTIC DECOMPOSITION ===
+# If topic detection was skipped, failed, or returned 0 topics
+if [ "${#TOPICS_ARRAY[@]}" -eq 0 ]; then
+  echo "Using heuristic decomposition (fallback mode)"
+
+  # Complexity-based topic allocation
+  # Complexity 1-2 → 1 topic (single focus)
+  # Complexity 3 → 2-3 topics (moderate breadth)
+  # Complexity 4 → 4-5 topics (comprehensive)
+
+  if [ "${RESEARCH_COMPLEXITY:-3}" -le 2 ]; then
+    TOPIC_COUNT=1
+    echo "Complexity ${RESEARCH_COMPLEXITY}: Using single-topic mode"
+  elif [ "${RESEARCH_COMPLEXITY:-3}" -eq 3 ]; then
+    # Check for multi-topic indicators
+    if echo "$FEATURE_DESCRIPTION" | grep -qiE '\b(and|or|with|including)\b|,'; then
+      TOPIC_COUNT=2
+      echo "Complexity 3 with conjunctions: Using 2-topic mode"
+    else
+      TOPIC_COUNT=1
+      echo "Complexity 3 without conjunctions: Using single-topic mode"
+    fi
+  else
+    # Complexity 4 → multi-topic
+    TOPIC_COUNT=3
+    echo "Complexity 4: Using 3-topic mode"
+  fi
+
+  # === PRE-CALCULATE TOPICS AND REPORT PATHS ===
+  if [ "$TOPIC_COUNT" -eq 1 ]; then
+    # Single topic mode (backward compatibility)
+    TOPICS_ARRAY=("${FEATURE_DESCRIPTION}")
+
+    # Calculate report path
+    REPORT_NUMBER="001"
+    REPORT_FILENAME="${REPORT_NUMBER}-$(echo "${TOPIC_NAME:-no_name}" | tr '_' '-' | cut -c1-40)-analysis.md"
+    REPORT_PATHS_ARRAY=("${RESEARCH_DIR}/${REPORT_FILENAME}")
+  else
+    # Multi-topic mode (heuristic decomposition)
+    # Simple heuristic decomposition (less sophisticated than topic-detection-agent)
+
+    if [ "$TOPIC_COUNT" -eq 2 ]; then
+      # Split on conjunctions or commas
+      TOPICS_ARRAY=(
+        "${FEATURE_DESCRIPTION} - Part 1"
+        "${FEATURE_DESCRIPTION} - Part 2"
+      )
+    else
+      # 3 topics
+      TOPICS_ARRAY=(
+        "${FEATURE_DESCRIPTION} - Core Implementation"
+        "${FEATURE_DESCRIPTION} - Integration Patterns"
+        "${FEATURE_DESCRIPTION} - Best Practices"
+      )
+    fi
+
+    # Calculate report paths for each topic
+    for i in "${!TOPICS_ARRAY[@]}"; do
+      REPORT_NUM=$(printf "%03d" $((i + 1)))
+      REPORT_FILENAME="${REPORT_NUM}-$(echo "${TOPIC_NAME:-no_name}" | tr '_' '-' | cut -c1-40)-part$((i + 1)).md"
+      REPORT_PATHS_ARRAY+=("${RESEARCH_DIR}/${REPORT_FILENAME}")
+    done
+  fi
+fi
+
+# === PERSIST TOPICS AND REPORT PATHS TO STATE FILE ===
+# Convert arrays to space-separated strings for state persistence
+TOPICS_STRING="${TOPICS_ARRAY[*]}"
+REPORT_PATHS_STRING="${REPORT_PATHS_ARRAY[*]}"
+
+append_workflow_state_bulk <<EOF
+TOPIC_COUNT=$TOPIC_COUNT
+TOPICS_STRING=$TOPICS_STRING
+REPORT_PATHS_STRING=$REPORT_PATHS_STRING
+EOF
+
+echo "Topic count: $TOPIC_COUNT"
+echo "Topics prepared for research coordinator"
+for i in "${!TOPICS_ARRAY[@]}"; do
+  echo "  Topic $((i + 1)): ${TOPICS_ARRAY[$i]}"
+  echo "  Report: ${REPORT_PATHS_ARRAY[$i]}"
+done
+echo ""
+echo "CHECKPOINT: Topic decomposition complete, ready for research coordinator invocation"
 ```
 
-## Block 1e-exec: Research Specialist Invocation
+## Block 1e-exec: Research Coordinator Invocation
 
-**CRITICAL BARRIER**: The bash block above MUST complete before proceeding.
+**CRITICAL BARRIER**: The topic decomposition block (Block 1d-topics) MUST complete before proceeding.
 
-**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+**EXECUTE NOW**: USE the Task tool to invoke the research-coordinator agent.
+
+This agent will orchestrate parallel research-specialist invocations based on the topics array prepared in Block 1d-topics.
 
 You MUST use the Task tool with these EXACT parameters:
 - **subagent_type**: "general-purpose"
-- **description**: "Research ${FEATURE_DESCRIPTION} with mandatory file creation"
+- **description**: "Coordinate multi-topic research for ${FEATURE_DESCRIPTION}"
 - **prompt**:
     Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-coordinator.md
 
-    You are conducting research for: plan workflow
+    You are coordinating research for: /create-plan workflow
 
-    **Workflow-Specific Context**:
-    - Research Topic: ${FEATURE_DESCRIPTION}
-    - Research Complexity: ${RESEARCH_COMPLEXITY}
-    - Output Directory: ${RESEARCH_DIR}
-    - Expected Output Path: ${REPORT_PATH}
-    - Workflow Type: research-and-plan
-    - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
-    - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
+    **Input Contract (Hard Barrier Pattern - Mode 2: Manual Pre-Decomposition)**:
+    - research_request: "${FEATURE_DESCRIPTION}"
+    - research_complexity: ${RESEARCH_COMPLEXITY}
+    - report_dir: ${RESEARCH_DIR}
+    - topic_path: ${TOPIC_PATH}
+    - topics: ${TOPICS_STRING}
+    - report_paths: ${REPORT_PATHS_STRING}
+    - context:
+        feature_description: "${FEATURE_DESCRIPTION}"
+        workflow_type: "research-and-plan"
+        original_prompt_file: "${ORIGINAL_PROMPT_FILE_PATH:-none}"
+        archived_prompt_file: "${ARCHIVED_PROMPT_PATH:-none}"
 
-    **CRITICAL**: You MUST write the research report to the EXACT path specified above.
-    The orchestrator has pre-calculated this path and will validate it exists after you return.
-    Do NOT derive or calculate your own path.
+    **CRITICAL**: You are receiving pre-calculated topics and report paths from the primary agent.
+    Use Mode 2 (Manual Pre-Decomposition) workflow:
+    - SKIP topic decomposition (topics already provided)
+    - SKIP report path calculation (paths already provided)
+    - Parse topics and report_paths from the input above
+    - Invoke research-specialist for each topic in parallel
+    - Validate all reports exist at pre-calculated paths (hard barrier)
+    - Extract metadata from each report (title, findings count, recommendations count)
+    - Return aggregated metadata
 
-    If an archived prompt file is provided (not 'none'), read it for complete context.
-
-    Execute research according to behavioral guidelines and return completion signal:
-    REPORT_CREATED: [path to created report]
+    Execute research coordination according to behavioral guidelines and return:
+    RESEARCH_COMPLETE: {REPORT_COUNT}
+    reports: [JSON array of report metadata]
+    total_findings: {N}
+    total_recommendations: {N}
 
 DO NOT perform research directly. DO NOT use Read/Grep/Glob for research purposes.
 DO NOT use Write to create research reports directly.
@@ -1037,9 +1529,15 @@ COMMAND_NAME="/create-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# Source libraries
+# Source libraries (three-tier pattern)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+
+# Tier 2: state-persistence.sh (required for append_workflow_state at line 1573)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load state-persistence library" >&2
   exit 1
 }
 
@@ -1052,59 +1550,123 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/n
 # Setup bash error trap
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
+# === PRE-FLIGHT FUNCTION VALIDATION (Block 1f) ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+declare -f append_workflow_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "execution_error" \
+    "append_workflow_state function not available - library sourcing failed" \
+    "bash_block_1f" \
+    "$(jq -n '{library: "state-persistence.sh", function: "append_workflow_state"}')"
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
+
 echo ""
 echo "=== Research Output Hard Barrier Validation ==="
 echo ""
 
-# === HARD BARRIER VALIDATION ===
-# Validate REPORT_PATH is set (from Block 1e)
-if [ -z "${REPORT_PATH:-}" ]; then
+# === HARD BARRIER VALIDATION - MULTI-REPORT MODE ===
+# Restore REPORT_PATHS_STRING from Block 1d-topics (space-separated paths)
+if [ -z "${REPORT_PATHS_STRING:-}" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
     "$USER_ARGS" \
     "state_error" \
-    "REPORT_PATH not restored from Block 1e state" \
+    "REPORT_PATHS_STRING not restored from Block 1d-topics state" \
     "bash_block_1f" \
-    "$(jq -n '{report_path: "missing"}')"
-  echo "ERROR: REPORT_PATH not set - state restoration failed" >&2
+    "$(jq -n '{report_paths_string: "missing"}')"
+  echo "ERROR: REPORT_PATHS_STRING not set - state restoration failed" >&2
   exit 1
 fi
 
-echo "Expected report file: $REPORT_PATH"
+# Reconstruct array from space-separated string
+IFS=' ' read -ra REPORT_PATHS_ARRAY <<< "$REPORT_PATHS_STRING"
 
-# HARD BARRIER: Validate agent artifact using validation-utils.sh
-# validate_agent_artifact checks file existence and minimum size (100 bytes)
-if ! validate_agent_artifact "$REPORT_PATH" 100 "research report"; then
-  # Error already logged by validate_agent_artifact
-  echo "ERROR: HARD BARRIER FAILED - Research specialist validation failed" >&2
+echo "Expected reports: ${#REPORT_PATHS_ARRAY[@]}"
+
+# Validate each report (fail-fast hard barrier)
+VALIDATION_FAILED=false
+for REPORT_PATH in "${REPORT_PATHS_ARRAY[@]}"; do
+  echo "  Validating: $REPORT_PATH"
+
+  # HARD BARRIER: Validate agent artifact using validation-utils.sh
+  # validate_agent_artifact checks file existence and minimum size (100 bytes)
+  if ! validate_agent_artifact "$REPORT_PATH" 100 "research report"; then
+    # Error already logged by validate_agent_artifact
+    echo "ERROR: HARD BARRIER FAILED - Report validation failed: $REPORT_PATH" >&2
+    VALIDATION_FAILED=true
+    break
+  fi
+
+  # Content validation: Check for findings section (flexible header format)
+  if ! grep -qE "^## (Findings|Executive Summary|Analysis)" "$REPORT_PATH"; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Research report missing required findings section (accepts: Findings, Executive Summary, Analysis)" \
+      "bash_block_1f" \
+      "$(jq -n --arg path "$REPORT_PATH" '{report_path: $path}')"
+    echo "ERROR: Research report missing required findings section: $REPORT_PATH" >&2
+    echo "Accepted section headers: ## Findings, ## Executive Summary, ## Analysis" >&2
+    VALIDATION_FAILED=true
+    break
+  fi
+
+  echo "  ✓ Validated"
+done
+
+if [ "$VALIDATION_FAILED" = "true" ]; then
   echo "" >&2
-  echo "This indicates the research-specialist did not create valid output." >&2
+  echo "This indicates the research-coordinator did not create valid output." >&2
   echo "" >&2
   echo "Recovery steps:" >&2
-  echo "1. Check research-specialist agent log for errors" >&2
-  echo "2. Verify research-specialist.md behavioral file compliance" >&2
+  echo "1. Check research-coordinator agent log for errors" >&2
+  echo "2. Verify research-coordinator.md behavioral file compliance" >&2
   echo "3. Re-run: /create-plan \"${FEATURE_DESCRIPTION}\"" >&2
   echo "" >&2
   exit 1
 fi
 
-# Content validation: Check for ## Findings section
-if ! grep -q "^## Findings" "$REPORT_PATH"; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "validation_error" \
-    "Research report missing required ## Findings section" \
-    "bash_block_1f" \
-    "$(jq -n --arg path "$REPORT_PATH" '{report_path: $path}')"
-  echo "ERROR: Research report missing ## Findings section" >&2
-  echo "Report path: $REPORT_PATH" >&2
-  exit 1
-fi
+# === EXTRACT METADATA FROM REPORTS ===
+# Build aggregated metadata for plan-architect (metadata-only context passing)
+declare -a METADATA_ARRAY=()
 
-echo "✓ Hard barrier passed - research report validated"
+for REPORT_PATH in "${REPORT_PATHS_ARRAY[@]}"; do
+  # Extract report title (first # heading)
+  REPORT_TITLE=$(grep "^# " "$REPORT_PATH" | head -1 | sed 's/^# //' || echo "$(basename "$REPORT_PATH")")
+
+  # Extract findings count (count ## Findings bullet points)
+  FINDINGS_COUNT=$(grep -A 1000 "^## Findings" "$REPORT_PATH" | grep -c "^- " || echo "0")
+
+  # Extract recommendations count (count ## Recommendations bullet points)
+  RECOMMENDATIONS_COUNT=$(grep -A 1000 "^## Recommendations" "$REPORT_PATH" | grep -c "^- " || echo "0")
+
+  # Build metadata entry (110 tokens per report format)
+  METADATA_ENTRY="Report: $REPORT_TITLE | Findings: $FINDINGS_COUNT | Recommendations: $RECOMMENDATIONS_COUNT | Path: $REPORT_PATH"
+  METADATA_ARRAY+=("$METADATA_ENTRY")
+
+  echo "  Metadata extracted: $REPORT_TITLE ($FINDINGS_COUNT findings, $RECOMMENDATIONS_COUNT recommendations)"
+done
+
+# Aggregate metadata into single variable for state persistence
+AGGREGATED_METADATA=$(printf "%s\n" "${METADATA_ARRAY[@]}")
+
+# Persist aggregated metadata for Block 2 (planning phase)
+append_workflow_state "AGGREGATED_METADATA<<METADATA_EOF
+$AGGREGATED_METADATA
+METADATA_EOF"
+
+echo ""
+echo "✓ Hard barrier passed - ${#REPORT_PATHS_ARRAY[@]} reports validated with metadata extracted"
 echo ""
 ```
 
@@ -1415,6 +1977,24 @@ if [ -z "${FORMATTED_STANDARDS:-}" ]; then
   }
 fi
 
+# === EXTRACT NON-INTERACTIVE TESTING STANDARDS ===
+# Extract testing standards for test phase automation requirements
+TESTING_STANDARD_PATH="${CLAUDE_PROJECT_DIR}/.claude/docs/reference/standards/non-interactive-testing-standard.md"
+if [ -f "$TESTING_STANDARD_PATH" ]; then
+  TESTING_STANDARDS=$(extract_testing_standards "$TESTING_STANDARD_PATH" 2>/dev/null) || {
+    log_command_error "execution_error" "Testing standards extraction failed" "{}"
+    echo "WARNING: Testing standards extraction failed, proceeding without testing standards" >&2
+    TESTING_STANDARDS=""
+  }
+
+  if [ -n "$TESTING_STANDARDS" ]; then
+    echo "Injecting non-interactive testing standards into plan generation workflow"
+  fi
+else
+  echo "Non-interactive testing standard not found, proceeding without testing standards"
+  TESTING_STANDARDS=""
+fi
+
 # Persist standards for Block 3 divergence detection
 append_workflow_state "FORMATTED_STANDARDS<<STANDARDS_EOF
 $FORMATTED_STANDARDS
@@ -1459,8 +2039,16 @@ You MUST use the Task tool with these EXACT parameters:
     - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
     - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
 
+    **Research Metadata** (110 tokens per report format):
+    ${AGGREGATED_METADATA}
+
+    **IMPORTANT**: You have received metadata summaries for each research report (title, findings count, recommendations count, path). This is metadata-only context passing for 95% context reduction. You MUST use the Read tool to access full report content at the paths provided above. Do NOT attempt to create the plan from metadata alone - read the full reports for comprehensive analysis.
+
     **Project Standards**:
     ${FORMATTED_STANDARDS}
+
+    **Testing Automation Standards**:
+    ${TESTING_STANDARDS}
 
     **CRITICAL**: You MUST write the plan to the EXACT path specified above.
     The orchestrator has pre-calculated this path and will validate it exists after you return.

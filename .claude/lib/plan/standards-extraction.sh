@@ -235,6 +235,97 @@ format_standards_for_prompt() {
   '
 }
 
+# extract_testing_standards - Extract non-interactive testing standards
+#
+# USAGE:
+#   testing_standards=$(extract_testing_standards "/path/to/non-interactive-testing-standard.md")
+#
+# ARGUMENTS:
+#   $1 - standards_file: Path to non-interactive-testing-standard.md
+#
+# RETURNS:
+#   Formatted testing standards for agent prompt injection
+#
+# OUTPUT FORMAT:
+#   ### Non-Interactive Testing Standards
+#
+#   **Required Automation Fields**:
+#   [content]
+#
+#   **Interactive Anti-Patterns**:
+#   [content]
+#
+# BEHAVIOR:
+#   - Extracts "Required Automation Fields" section
+#   - Extracts "Interactive Anti-Patterns" section
+#   - Formats for agent context injection
+#   - Returns empty string if file not found (graceful degradation)
+extract_testing_standards() {
+  local standards_file="$1"
+
+  if [ -z "$standards_file" ]; then
+    echo "ERROR: extract_testing_standards requires standards_file argument" >&2
+    return 1
+  fi
+
+  if [ ! -f "$standards_file" ]; then
+    echo "WARNING: Non-interactive testing standard file not found: $standards_file" >&2
+    return 0  # Graceful degradation
+  fi
+
+  # Extract Required Automation Fields section
+  local automation_fields
+  automation_fields=$(awk '
+    /^## Required Automation Fields/ {
+      in_section = 1
+      next
+    }
+    /^## / && in_section {
+      in_section = 0
+      exit
+    }
+    in_section {
+      print
+    }
+  ' "$standards_file")
+
+  # Extract Interactive Anti-Patterns section
+  local anti_patterns
+  anti_patterns=$(awk '
+    /^## Interactive Anti-Patterns/ {
+      in_section = 1
+      next
+    }
+    /^## / && in_section {
+      in_section = 0
+      exit
+    }
+    in_section {
+      print
+    }
+  ' "$standards_file")
+
+  # Format for agent injection
+  local output=""
+  output+="### Non-Interactive Testing Standards"
+  output+=$'\n\n'
+
+  if [ -n "$automation_fields" ]; then
+    output+="**Required Automation Fields**:"
+    output+=$'\n'
+    output+="$automation_fields"
+    output+=$'\n\n'
+  fi
+
+  if [ -n "$anti_patterns" ]; then
+    output+="**Interactive Anti-Patterns**:"
+    output+=$'\n'
+    output+="$anti_patterns"
+  fi
+
+  echo "$output"
+}
+
 # ═══════════════════════════════════════════════════════════════════════════
 # VALIDATION FUNCTIONS
 # ═══════════════════════════════════════════════════════════════════════════

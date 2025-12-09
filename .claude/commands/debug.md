@@ -227,6 +227,23 @@ state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
 
+# === PRE-FLIGHT FUNCTION VALIDATION (Block 1) ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+declare -f append_workflow_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
+  log_command_error \
+    "/debug" \
+    "debug_early_$(date +%s)" \
+    "" \
+    "execution_error" \
+    "append_workflow_state function not available - library sourcing failed" \
+    "bash_block_1" \
+    "$(jq -n '{library: "state-persistence.sh", function: "append_workflow_state"}')"
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
+
 # Hardcode workflow type
 WORKFLOW_TYPE="debug-only"
 TERMINAL_STATE="debug"

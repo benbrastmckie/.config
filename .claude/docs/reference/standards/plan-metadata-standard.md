@@ -316,6 +316,60 @@ Plans revised by /revise may include:
   - **Revision Reason**: Expand Phase 1 to include standards-extraction.sh integration
   ```
 
+### Automated Execution Contexts
+
+Plans with automated test execution requirements may include phase-level automation metadata. This enables non-interactive test execution, CI/CD integration, and wave-based parallel test orchestration.
+
+**When to Include**: Test phases should include automation metadata when:
+- Plan complexity >= 3 (multi-phase test workflows)
+- CI/CD integration required (automated validation gates)
+- Wave-based parallel execution used (independent test phases)
+
+**Phase-Level Automation Fields**:
+
+- **automation_type**: Execution mode (`automated` or `manual`)
+  ```markdown
+  automation_type: automated
+  ```
+
+- **validation_method**: Validation approach (`programmatic`, `visual`, or `artifact`)
+  ```markdown
+  validation_method: programmatic
+  ```
+
+- **skip_allowed**: Whether phase can be skipped (`true` or `false`)
+  ```markdown
+  skip_allowed: false
+  ```
+
+- **artifact_outputs**: Test artifacts generated (array of file paths)
+  ```markdown
+  artifact_outputs: [test-results.xml, coverage.json]
+  ```
+
+**Validation Rules**:
+- `automation_type` must be exactly "automated" or "manual" (case-sensitive)
+- `validation_method` must be "programmatic", "visual", or "artifact"
+- `skip_allowed` must be boolean literal `true` or `false`
+- `artifact_outputs` must be valid array notation (can be empty: `[]`)
+- Interactive anti-patterns (e.g., "manually verify", "skip if needed") trigger ERROR-level violations
+
+**Example Phase with Automation Metadata**:
+```markdown
+### Phase 3: Unit Testing [NOT STARTED]
+
+automation_type: automated
+validation_method: programmatic
+skip_allowed: false
+artifact_outputs: [test-results.xml, coverage.json]
+
+**Tasks**:
+- [ ] Execute test suite: `pytest tests/ --junitxml=test-results.xml || exit 1`
+- [ ] Validate coverage: `pytest --cov=src --cov-report=json:coverage.json || exit 1`
+```
+
+**Cross-Reference**: See [Non-Interactive Testing Standard](./non-interactive-testing-standard.md) for complete automation requirements, anti-pattern detection, and integration with planning commands.
+
 ## Metadata Section Placement
 
 The `## Metadata` section MUST:

@@ -8,6 +8,48 @@ Agent templates provide structured starting points for creating new specialized 
 
 ## Templates
 
+### coordinator-template.md
+
+Template for creating coordinator agents that implement the three-tier agent pattern (orchestrator -> coordinator -> specialist). Coordinators manage parallel specialist invocation, hard barrier validation, and metadata aggregation.
+
+**Use Cases**:
+- Testing coordination: Parallel test-specialist invocation for multi-module test suites
+- Debug coordination: Parallel investigation vectors for root cause analysis
+- Repair coordination: Parallel error dimension analysis for comprehensive fix plans
+
+**Key Features**:
+- Hard barrier pattern enforcement (path pre-calculation, artifact validation, fail-fast)
+- Parallel Task invocation for 40-60% time savings
+- Metadata-only context passing for 95% context reduction
+- Two invocation modes: automated decomposition vs pre-decomposed tasks
+- Structured error return protocol
+- Template variables for easy customization
+
+**Template Variables**:
+- `{{COORDINATOR_TYPE}}`: Name of coordinator (e.g., Testing Coordinator)
+- `{{SPECIALIST_TYPE}}`: Specialist agent type (e.g., test-specialist)
+- `{{ARTIFACT_TYPE}}`: Type of artifact produced (e.g., reports)
+- `{{METADATA_FIELDS}}`: Fields to extract (e.g., title, findings_count)
+- See template for complete variable list
+
+**Usage**:
+```bash
+# When creating a new coordinator agent
+cp .claude/agents/templates/coordinator-template.md .claude/agents/my-coordinator.md
+
+# Replace template variables:
+# 1. {{COORDINATOR_TYPE}} -> Testing Coordinator
+# 2. {{SPECIALIST_TYPE}} -> test-specialist
+# 3. {{ARTIFACT_TYPE}} -> results
+# 4. Configure metadata extraction and return format
+```
+
+**Related Documentation**:
+- [Three-Tier Agent Pattern Guide](../../docs/concepts/three-tier-agent-pattern.md)
+- [Research Coordinator](../research-coordinator.md) - Reference implementation
+
+---
+
 ### sub-supervisor-template.md
 
 Template for creating hierarchical supervisors that coordinate multiple specialized subagents.

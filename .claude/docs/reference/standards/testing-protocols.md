@@ -427,3 +427,210 @@ jq 'select(.field == "value" and (.message | contains("pattern")))'
 - `boolean (true/false) and string ("...") cannot have their containment checked` - Fix: Add parentheses around pipe operation
 - `Cannot iterate over null` - Fix: Use `// ""` or `// []` for default values
 - `Cannot index array with string` - Fix: Verify JSON structure matches filter expectations
+
+## Non-Interactive Execution Requirements
+
+All test phases MUST be executable without manual intervention, enabling automated execution in CI/CD pipelines, wave-based parallel execution, and consistent validation results. This section defines automation patterns, validation contracts, and anti-pattern detection rules.
+
+### Automation Patterns
+
+**Script-Based Test Execution**:
+All test commands must be executable via shell scripts with clear success/failure exit codes.
+
+```bash
+# Good: Script-based execution with exit code validation
+pytest tests/ --junitxml=test-results.xml || exit 1
+
+# Bad: Manual test execution instruction
+# "Run pytest and verify the output looks correct"
+```
+
+**Programmatic Validation**:
+Test validation must use programmatic assertions, not human judgment.
+
+```bash
+# Good: Programmatic threshold validation
+COVERAGE=$(jq '.totals.percent_covered' coverage.json)
+if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+    echo "Coverage $COVERAGE% below 80% threshold"
+    exit 1
+fi
+
+# Bad: Manual validation instruction
+# "Check that coverage is above 80%"
+```
+
+**Artifact Generation Requirements**:
+Tests must generate machine-readable artifacts for validation and audit trails.
+
+```bash
+# Good: Structured artifact generation
+pytest tests/ --junitxml=test-results.xml --cov=src --cov-report=json:coverage.json
+
+# Bad: Unstructured output
+# pytest tests/ > output.txt
+```
+
+### Validation Contracts
+
+**Exit Code Semantics**:
+- **Exit code 0**: All tests passed, validation criteria met
+- **Exit code non-zero**: Test failures or validation errors occurred
+
+**Test Report Schemas**:
+Use standardized, machine-readable test report formats:
+
+- **JUnit XML**: Standard test result format
+  ```xml
+  <testsuites>
+    <testsuite name="test_suite" tests="10" failures="0" errors="0">
+      <testcase name="test_example" classname="TestClass" time="0.123"/>
+    </testsuite>
+  </testsuites>
+  ```
+
+- **JSON Test Reports**: Structured test result data
+  ```json
+  {
+    "tests": 10,
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "duration": 1.23
+  }
+  ```
+
+- **Coverage Data Formats**: JSON, XML, LCOV formats
+  ```json
+  {
+    "totals": {
+      "percent_covered": 85.3,
+      "num_statements": 1000,
+      "num_covered": 853
+    }
+  }
+  ```
+
+**Threshold Validation**:
+Use programmatic comparisons for threshold enforcement:
+
+```bash
+# Coverage threshold validation
+COVERAGE=$(jq '.totals.percent_covered' coverage.json)
+if (( $(echo "$COVERAGE < 80" | bc -l) )); then
+    echo "ERROR: Coverage $COVERAGE% below 80% threshold"
+    exit 1
+fi
+
+# Test failure count validation
+FAILURES=$(xmllint --xpath 'sum(//testsuite/@failures)' test-results.xml)
+if (( FAILURES > 0 )); then
+    echo "ERROR: $FAILURES test failures detected"
+    exit 1
+fi
+```
+
+### Anti-Pattern Detection
+
+The following patterns indicate interactive/manual test phases and are PROHIBITED:
+
+**Interactive Anti-Pattern Regex Patterns**:
+1. `\b(manual|manually)\b` - Manual intervention keywords
+2. `\bskip\b(?!ped|ping|s)` - Skip directives
+3. `\bif needed\b` - Conditional/optional language
+4. `\bverify visually\b` - Human inspection requirements
+5. `\binspect (the )?output\b` - Manual output inspection
+6. `\boptional\b` - Optional execution indicators
+7. `\bcheck (the )?results\b` - Manual result checking
+
+**Remediation Guidance**:
+
+| Anti-Pattern | Compliant Alternative |
+|--------------|----------------------|
+| "Manually verify test output" | "Validate exit code is 0: `test $? -eq 0 \|\| exit 1`" |
+| "Skip integration tests if needed" | "Execute integration tests: `pytest tests/integration/ \|\| exit 1`" |
+| "Verify visually that coverage is above 80%" | "Validate coverage threshold: `jq '.totals.percent_covered >= 80' coverage.json \| grep -q true \|\| exit 1`" |
+| "Inspect the test results" | "Parse test results: `xmllint --xpath '//testcase[@status=\"failed\"]' test-results.xml`" |
+| "Optional: Run performance tests" | "Execute performance tests: `pytest tests/performance/ --benchmark-json=benchmark.json \|\| exit 1`" |
+| "Check the results look correct" | "Validate test count: `xmllint --xpath 'count(//testcase)' test-results.xml \| grep -q '^10$' \|\| exit 1`" |
+
+### Compliant Test Phase Examples
+
+**Example 1: Unit Testing with Coverage**:
+```markdown
+### Phase 3: Unit Testing [NOT STARTED]
+
+automation_type: automated
+validation_method: programmatic
+skip_allowed: false
+artifact_outputs: [test-results.xml, coverage.json]
+
+**Tasks**:
+- [ ] Execute unit test suite: `pytest tests/unit/ --junitxml=test-results.xml -v || exit 1`
+- [ ] Generate coverage report: `pytest tests/unit/ --cov=src --cov-report=json:coverage.json --cov-report=html:htmlcov/ || exit 1`
+- [ ] Validate coverage threshold (85% minimum): `jq '.totals.percent_covered >= 85' coverage.json | grep -q true || { echo "Coverage below 85% threshold"; exit 1; }`
+- [ ] Validate no skipped tests: `xmllint --xpath 'count(//testcase[@status="skipped"])' test-results.xml | grep -q '^0$' || { echo "Skipped tests detected"; exit 1; }`
+```
+
+**Example 2: Lean Proof Validation**:
+```markdown
+### Phase 4: Proof Validation [NOT STARTED]
+
+automation_type: automated
+validation_method: programmatic
+skip_allowed: false
+artifact_outputs: [build.log, proof-verification.txt]
+
+**Tasks**:
+- [ ] Build Lean project: `cd project/ && lake build 2>&1 | tee build.log || exit 1`
+- [ ] Verify no sorry markers: `rg -t lean 'sorry' src/ && { echo "Incomplete proofs detected"; exit 1; } || echo "All proofs complete"`
+- [ ] Validate theorem compilation: `lake build ProofTheorem.lean || exit 1`
+```
+
+**Example 3: Integration Testing with Service Orchestration**:
+```markdown
+### Phase 5: Integration Testing [NOT STARTED]
+
+automation_type: automated
+validation_method: artifact
+skip_allowed: false
+artifact_outputs: [integration-results.json, service-logs.txt]
+
+**Tasks**:
+- [ ] Start test services: `docker-compose -f docker-compose.test.yml up -d && sleep 5`
+- [ ] Execute integration tests: `pytest tests/integration/ --json-report --json-report-file=integration-results.json || { docker-compose -f docker-compose.test.yml down; exit 1; }`
+- [ ] Validate API health: `curl -f http://localhost:8080/health || exit 1`
+- [ ] Collect service logs: `docker-compose -f docker-compose.test.yml logs > service-logs.txt`
+- [ ] Teardown services: `docker-compose -f docker-compose.test.yml down`
+```
+
+### Integration with Planning Commands
+
+Planning commands inject non-interactive testing standards via `format_standards_for_prompt()` function:
+
+**Commands with Standards Injection**:
+- `/create-plan` - Standard software implementation plans
+- `/lean-plan` - Lean theorem proving plans
+- `/repair` - Error repair plans with validation phases
+- `/debug` - Debug workflow plans with test phases
+
+**Agent Integration**:
+The `plan-architect` and `lean-plan-architect` agents receive testing standards context and generate test phases with:
+1. Automation metadata fields (automation_type, validation_method, skip_allowed, artifact_outputs)
+2. Programmatic validation commands with exit code checking
+3. Structured artifact generation (JUnit XML, JSON, coverage data)
+4. No interactive anti-patterns
+
+**Validation Enforcement**:
+The `validate-non-interactive-tests.sh` validator scans test phases for anti-patterns and blocks commits with ERROR-level violations. See [Enforcement Mechanisms](./enforcement-mechanisms.md) for complete enforcement details.
+
+### Cross-References
+
+**Related Standards**:
+- [Non-Interactive Testing Standard](./non-interactive-testing-standard.md) - Complete automation requirements and integration points
+- [Plan Metadata Standard](./plan-metadata-standard.md) - Automation workflow extension fields
+- [Command Authoring Standards](./command-authoring.md) - Standards injection patterns
+
+**Related Documentation**:
+- [Plan-Architect Agent Guidelines](./../../agents/plan-architect.md) - Test phase generation behavioral requirements
+- [Output Formatting Standards](./output-formatting.md) - Testing Strategy section format in implementation summaries

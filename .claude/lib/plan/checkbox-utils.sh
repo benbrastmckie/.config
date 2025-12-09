@@ -183,7 +183,10 @@ verify_checkbox_consistency() {
   return 0
 }
 
-# Update all checkboxes in a phase to completed state
+# Update all checkboxes in a phase to completed state and add [COMPLETE] marker
+# Handles all plan structure levels (0, 1, 2) and synchronizes markers across hierarchical files
+# For Level 0 (inline): Marks checkboxes and adds heading marker to main plan
+# For Level 1/2 (expanded): Marks checkboxes and propagates [COMPLETE] marker to phase files
 # Usage: mark_phase_complete <plan_path> <phase_num>
 mark_phase_complete() {
   local plan_path="$1"
@@ -227,6 +230,16 @@ mark_phase_complete() {
     ' "$plan_file" > "$temp_file"
 
     mv "$temp_file" "$plan_file"
+
+    # Add [COMPLETE] marker to phase heading for Level 0 plans
+    add_complete_marker "$plan_file" "$phase_num" 2>/dev/null || {
+      if type warn &>/dev/null; then
+        warn "Failed to add [COMPLETE] marker for Phase $phase_num"
+      else
+        echo "WARNING: Failed to add [COMPLETE] marker for Phase $phase_num" >&2
+      fi
+    }
+
     return 0
   fi
 
@@ -272,6 +285,15 @@ mark_phase_complete() {
   ' "$main_plan" > "$temp_file"
 
   mv "$temp_file" "$main_plan"
+
+  # Propagate [COMPLETE] marker to expanded phase file (Level 1/2 structures)
+  propagate_progress_marker "$plan_path" "$phase_num" "COMPLETE" 2>/dev/null || {
+    if type warn &>/dev/null; then
+      warn "Failed to propagate [COMPLETE] marker for Phase $phase_num (hierarchy synchronization incomplete)"
+    else
+      echo "WARNING: Failed to propagate [COMPLETE] marker for Phase $phase_num" >&2
+    fi
+  }
 
   return 0
 }
@@ -418,7 +440,7 @@ remove_status_marker() {
   # Remove any existing status marker from phase heading
   local temp_file=$(mktemp)
   awk -v phase="$phase_num" '
-    /^##+ Phase / {
+    /^#+ Phase / {
       phase_field = $3
       gsub(/:/, "", phase_field)
       if (phase_field == phase) {
@@ -452,7 +474,7 @@ add_in_progress_marker() {
   # Add [IN PROGRESS] marker to phase heading
   local temp_file=$(mktemp)
   awk -v phase="$phase_num" '
-    /^##+ Phase / {
+    /^#+ Phase / {
       phase_field = $3
       gsub(/:/, "", phase_field)
       if (phase_field == phase && !/\[IN PROGRESS\]/) {
@@ -491,7 +513,7 @@ add_complete_marker() {
   # Add [COMPLETE] marker to phase heading
   local temp_file=$(mktemp)
   awk -v phase="$phase_num" '
-    /^##+ Phase / {
+    /^#+ Phase / {
       phase_field = $3
       gsub(/:/, "", phase_field)
       if (phase_field == phase && !/\[COMPLETE\]/) {
@@ -693,6 +715,101 @@ check_all_phases_complete() {
   fi
 }
 
+# Mark all success criteria checkboxes as complete
+# Usage: mark_success_criteria_complete <plan_path>
+# Returns: 0 on success, 1 if Success Criteria section not found
+mark_success_criteria_complete() {
+  local plan_path="$1"
+
+  if [[ ! -f "$plan_path" ]]; then
+    if type error &>/dev/null; then
+      error "Plan file not found: $plan_path"
+    else
+      echo "ERROR: Plan file not found: $plan_path" >&2
+    fi
+    return 1
+  fi
+
+  # Check if Success Criteria section exists
+  if ! grep -q "^## Success Criteria" "$plan_path"; then
+    if type warn &>/dev/null; then
+      warn "No Success Criteria section found in plan"
+    else
+      echo "WARNING: No Success Criteria section found in plan" >&2
+    fi
+    return 1
+  fi
+
+  # Mark all checkboxes in Success Criteria section as complete
+  local temp_file=$(mktemp)
+  awk '
+    /^## Success Criteria/ {
+      in_success_criteria = 1
+      print
+      next
+    }
+    /^## / && in_success_criteria {
+      in_success_criteria = 0
+      print
+      next
+    }
+    in_success_criteria && /^[[:space:]]*- \[[ ]\]/ {
+      gsub(/\[ \]/, "[x]")
+      print
+      next
+    }
+    { print }
+  ' "$plan_path" > "$temp_file"
+
+  mv "$temp_file" "$plan_path"
+  return 0
+}
+
+# Verify that all success criteria are complete (all checkboxes checked)
+# Usage: verify_success_criteria_complete <plan_path>
+# Returns: 0 if all complete, 1 if any incomplete or section missing
+verify_success_criteria_complete() {
+  local plan_path="$1"
+
+  if [[ ! -f "$plan_path" ]]; then
+    if type error &>/dev/null; then
+      error "Plan file not found: $plan_path"
+    else
+      echo "ERROR: Plan file not found: $plan_path" >&2
+    fi
+    return 1
+  fi
+
+  # Check if Success Criteria section exists
+  if ! grep -q "^## Success Criteria" "$plan_path"; then
+    # No Success Criteria section - treat as incomplete
+    return 1
+  fi
+
+  # Count unchecked criteria in Success Criteria section
+  local unchecked_count
+  unchecked_count=$(awk '
+    /^## Success Criteria/ {
+      in_success_criteria = 1
+      next
+    }
+    /^## / && in_success_criteria {
+      in_success_criteria = 0
+      next
+    }
+    in_success_criteria && /^[[:space:]]*- \[[ ]\]/ {
+      count++
+    }
+    END { print count+0 }
+  ' "$plan_path")
+
+  if [[ "$unchecked_count" -eq 0 ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 # Export all functions for sourcing
 export -f update_checkbox
 export -f propagate_checkbox_update
@@ -707,3 +824,5 @@ export -f add_not_started_markers
 export -f verify_phase_complete
 export -f update_plan_status
 export -f check_all_phases_complete
+export -f mark_success_criteria_complete
+export -f verify_success_criteria_complete

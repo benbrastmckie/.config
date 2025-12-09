@@ -1091,6 +1091,65 @@ Before creating plan:
 - Define success criteria clearly
 - Include both unit and integration tests
 
+**Non-Interactive Testing Requirements** (MANDATORY):
+
+All test phases MUST include automation metadata fields for non-interactive execution:
+
+1. **Required Automation Metadata Fields**:
+   - `automation_type`: Must be "automated" (not "manual")
+   - `validation_method`: Must be "programmatic" (not "visual")
+   - `skip_allowed`: Must be `false` (no optional testing)
+   - `artifact_outputs`: Array of test artifacts (JUnit XML, JSON reports, coverage data)
+
+2. **Anti-Pattern Prohibition** (NEVER use these phrases):
+   - "skip for now"
+   - "manually verify"
+   - "optional testing"
+   - "if needed"
+   - "verify visually"
+   - "inspect output"
+   - "check results"
+
+3. **Automation-First Patterns** (ALWAYS use):
+   - Script execution commands with exit code validation
+   - Programmatic validation assertions
+   - Artifact generation with schema validation
+   - Test report output in machine-readable formats
+
+4. **Test Phase Template Example**:
+```markdown
+### Phase N: Automated Unit Testing [NOT STARTED]
+
+**Objective**: Execute comprehensive unit test suite with coverage validation.
+
+**Automation Metadata**:
+- automation_type: automated
+- validation_method: programmatic
+- skip_allowed: false
+- artifact_outputs: ["test-results.xml", "coverage.lcov"]
+
+**Tasks**:
+- [ ] Run unit test suite: `npm test -- --coverage --ci`
+- [ ] Validate exit code 0 (all tests pass)
+- [ ] Generate JUnit XML report for CI integration
+- [ ] Verify coverage threshold ≥80% using coverage report parser
+- [ ] Archive test artifacts in CI artifact storage
+
+**Validation**:
+```bash
+# Execute tests and capture exit code
+npm test -- --coverage --ci --reporters=default --reporters=junit
+EXIT_CODE=$?
+test $EXIT_CODE -eq 0 || exit 1
+
+# Validate coverage threshold
+COVERAGE=$(node -e "const c=require('./coverage/coverage-summary.json'); console.log(c.total.lines.pct)")
+awk -v cov="$COVERAGE" 'BEGIN { exit (cov < 80) ? 1 : 0 }' || exit 1
+```
+```
+
+See [Non-Interactive Testing Standard](.claude/docs/reference/standards/non-interactive-testing-standard.md) for complete automation requirements and validation contracts.
+
 ### Documentation Planning
 - Plan for docs from the start
 - Update existing docs, don't create new unless needed

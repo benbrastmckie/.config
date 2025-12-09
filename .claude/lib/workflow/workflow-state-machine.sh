@@ -684,11 +684,35 @@ sm_transition() {
   local next_state="$1"
   local transition_reason="${2:-}" # Optional transition reason for audit trail
 
-  # Auto-initialization guard: Attempt to recover if STATE_FILE not set
-  # This prevents hard failures from command authoring gaps where load_workflow_state was omitted
+  # STATE_FILE validation: Log detailed error with caller context if not set
+  # This helps diagnose command authoring gaps where load_workflow_state was omitted
   if [ -z "${STATE_FILE:-}" ]; then
+    # Get caller information for debugging
+    local caller_function="${FUNCNAME[1]:-unknown}"
+    local caller_source="${BASH_SOURCE[1]:-unknown}"
+    local caller_line="${BASH_LINENO[0]:-unknown}"
+
+    # Log STATE_FILE validation error with caller context
+    if declare -f log_command_error &>/dev/null; then
+      log_command_error \
+        "${COMMAND_NAME:-/unknown}" \
+        "${WORKFLOW_ID:-unknown}" \
+        "${USER_ARGS:-}" \
+        "state_error" \
+        "STATE_FILE not set during sm_transition - load_workflow_state not called" \
+        "sm_transition" \
+        "$(jq -n --arg target "$next_state" \
+                 --arg caller "$caller_function" \
+                 --arg source "$caller_source" \
+                 --arg line "$caller_line" \
+           '{target_state: $target, caller: $caller, source: $source, line: $line, diagnostic: "Call load_workflow_state before sm_transition"}')"
+    fi
+
+    # Auto-initialization guard: Attempt to recover if STATE_FILE not set
+    # This prevents hard failures from command authoring gaps where load_workflow_state was omitted
     echo "⚠️  WARNING: Auto-initializing state machine (load_workflow_state not called explicitly)" >&2
     echo "  This is a fallback mechanism - commands should call load_workflow_state in Block 0" >&2
+    echo "  Caller: $caller_function at $caller_source:$caller_line" >&2
 
     # Log auto-initialization attempt for monitoring
     if declare -f log_command_error &>/dev/null; then
@@ -697,7 +721,7 @@ sm_transition() {
         "${WORKFLOW_ID:-unknown}" \
         "${USER_ARGS:-}" \
         "state_error" \
-        "sm_transition called before initialization - auto-initializing" \
+        "sm_transition attempting auto-initialization" \
         "sm_transition" \
         "$(jq -n --arg target "$next_state" '{target_state: $target, auto_init: true}')"
     fi

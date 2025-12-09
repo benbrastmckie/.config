@@ -319,6 +319,23 @@ state-persistence.sh: ">=1.5.0"
 EOF
 )" || exit 1
 
+# === PRE-FLIGHT FUNCTION VALIDATION ===
+# Verify required functions are available before using them (prevents exit 127 errors)
+declare -f append_workflow_state >/dev/null 2>&1
+FUNCTION_CHECK=$?
+if [ $FUNCTION_CHECK -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "revise_preflight" \
+    "$USER_ARGS" \
+    "execution_error" \
+    "append_workflow_state function not available - library sourcing failed" \
+    "bash_block_1" \
+    "$(jq -n '{library: "state-persistence.sh", function: "append_workflow_state"}')"
+  echo "ERROR: append_workflow_state function not available after sourcing state-persistence.sh" >&2
+  exit 1
+fi
+
 # === DEFINE STATE VERIFICATION HELPER ===
 # Validates state load success and required variables
 verify_state_loaded() {
@@ -417,6 +434,98 @@ if [ $SM_INIT_EXIT -ne 0 ]; then
 fi
 
 echo "✓ State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
+echo ""
+```
+
+## Block 3a: State Machine Initialization Verification
+
+**HARD BARRIER**: Validate state machine initialized before proceeding to research phase.
+
+**EXECUTE NOW**: This verification block ensures state machine was properly initialized. Workflow CANNOT proceed without valid state.
+
+```bash
+set +H 2>/dev/null || true
+set +o histexpand 2>/dev/null || true
+set -e  # Fail-fast per code-standards.md
+
+# === DETECT PROJECT DIRECTORY ===
+if [ -z "$CLAUDE_PROJECT_DIR" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+
+  if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+    echo "ERROR: Failed to detect project directory" >&2
+    exit 1
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
+
+# Re-source libraries (three-tier sourcing pattern)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load state-persistence library" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load error-handling library" >&2
+  exit 1
+}
+
+ensure_error_log_exists
+
+# Load workflow ID from file
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
+if [ ! -f "$STATE_ID_FILE" ]; then
+  log_command_error \
+    "/revise" \
+    "unknown" \
+    "${USER_ARGS:-}" \
+    "state_error" \
+    "HARD BARRIER FAILED: State ID file not found" \
+    "bash_block_3a" \
+    "$(jq -n --arg expected "$STATE_ID_FILE" '{expected_file: $expected}')"
+
+  echo "ERROR: HARD BARRIER FAILED - State machine not initialized" >&2
+  echo "DIAGNOSTIC: Block 3 should have created $STATE_ID_FILE" >&2
+  echo "CAUSE: State machine initialization was skipped or failed" >&2
+  exit 1
+fi
+
+WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+export WORKFLOW_ID
+
+# Validate state file exists
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ ! -f "$STATE_FILE" ]; then
+  log_command_error \
+    "/revise" \
+    "$WORKFLOW_ID" \
+    "${USER_ARGS:-}" \
+    "state_error" \
+    "HARD BARRIER FAILED: State file not found" \
+    "bash_block_3a" \
+    "$(jq -n --arg expected "$STATE_FILE" '{expected_file: $expected}')"
+
+  echo "ERROR: HARD BARRIER FAILED - State file not found: $STATE_FILE" >&2
+  echo "DIAGNOSTIC: Block 3 should have initialized state machine" >&2
+  exit 1
+fi
+
+# Setup error trap with restored context
+COMMAND_NAME="/revise"
+USER_ARGS="${USER_ARGS:-}"
+export COMMAND_NAME USER_ARGS
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+echo "[CHECKPOINT] Hard barrier passed: State machine initialized"
+echo "Workflow ID: $WORKFLOW_ID"
+echo "State file: $STATE_FILE"
 echo ""
 ```
 
@@ -591,6 +700,24 @@ REVISION_TOPIC_SLUG=$(echo "$REVISION_DETAILS" | tr '[:upper:]' '[:lower:]' | se
 REVISION_NUMBER=$(find "$RESEARCH_DIR" -name 'revision_*.md' 2>/dev/null | wc -l | xargs)
 REVISION_NUMBER=$((REVISION_NUMBER + 1))
 
+# Pre-calculate expected report path (Hard Barrier Pattern)
+EXPECTED_REPORT_PATH="${RESEARCH_DIR}/${REVISION_NUMBER}-${REVISION_TOPIC_SLUG}.md"
+
+# Validate path is absolute
+[[ "$EXPECTED_REPORT_PATH" = /* ]]
+IS_ABSOLUTE=$?
+if [ $IS_ABSOLUTE -ne 0 ]; then
+  log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" \
+    "EXPECTED_REPORT_PATH is not absolute" \
+    "bash_block_4a" \
+    "$(jq -n --arg path "$EXPECTED_REPORT_PATH" '{calculated_path: $path}')"
+  echo "ERROR: Expected report path is not absolute: $EXPECTED_REPORT_PATH" >&2
+  exit 1
+fi
+
+echo "Pre-calculated expected report path: $EXPECTED_REPORT_PATH"
+
 # Persist variables for Block 4b and 4c (subprocess isolation)
 append_workflow_state "SPECS_DIR" "$SPECS_DIR"
 append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
@@ -599,6 +726,7 @@ append_workflow_state "REVISION_NUMBER" "$REVISION_NUMBER"
 append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
 append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
 append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+append_workflow_state "EXPECTED_REPORT_PATH" "$EXPECTED_REPORT_PATH"
 
 # Removed: save_completed_states_to_state does not exist in library
 # State machine already persists completed states via sm_transition
@@ -609,16 +737,19 @@ echo "CHECKPOINT: Research phase setup complete"
 echo "- State transition: RESEARCH ✓"
 echo "- Research directory: $RESEARCH_DIR"
 echo "- Revision topic: $REVISION_TOPIC_SLUG"
+echo "- Expected report path: $EXPECTED_REPORT_PATH"
 echo "- Variables persisted: ✓"
 echo "- Ready for: research-specialist invocation (Block 4b)"
 echo ""
 ```
 
-## Block 4b: Research Phase Execution
+## Block 4b: Research Phase Execution [CRITICAL BARRIER]
 
-**CRITICAL BARRIER**: This section invokes the research-specialist agent via Task tool. The Task invocation is MANDATORY and CANNOT be bypassed. The verification block (Block 4c) will FAIL if research artifacts are not created by the subagent.
+**HARD BARRIER - Research-Specialist Invocation**
 
-**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent.
+**CRITICAL BARRIER**: This block MUST invoke research-specialist via Task tool. The Task invocation is MANDATORY and CANNOT be bypassed. The verification block (Block 4c) will FAIL if research report is not created at the pre-calculated path.
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent. DO NOT perform research work directly. This Task invocation CANNOT be bypassed - the bash verification block enforces mandatory delegation.
 
 Task {
   subagent_type: "general-purpose"
@@ -629,27 +760,54 @@ Task {
 
     You are conducting research for: revise workflow
 
-    **Workflow-Specific Context**:
+    **Input Contract (Hard Barrier Pattern)**:
     - Research Topic: Plan revision insights for: ${REVISION_DETAILS}
     - Research Complexity: ${RESEARCH_COMPLEXITY}
     - Output Directory: ${RESEARCH_DIR}
+    - Output Path: ${EXPECTED_REPORT_PATH}
     - Workflow Type: research-and-revise
     - Existing Plan: ${EXISTING_PLAN_PATH}
 
+    **CRITICAL**: You MUST write the research report to the EXACT path specified above:
+    ${EXPECTED_REPORT_PATH}
+
+    The orchestrator has pre-calculated this path and will validate it exists after you return.
+    Do NOT derive or calculate your own path.
+
     Execute research according to behavioral guidelines and return completion signal:
-    REPORT_CREATED: [path to created report]
+    REPORT_CREATED: ${EXPECTED_REPORT_PATH}
   "
 }
 
-## Block 4c: Research Phase Verification
+## Block 4c: Research Phase Verification (Hard Barrier)
 
-**CRITICAL BARRIER**: This bash block verifies that the research-specialist agent completed successfully by checking for artifact existence. If artifacts are missing, the block MUST fail with exit code 1 and detailed error logging.
+**HARD BARRIER**: This bash block verifies that the research-specialist agent completed successfully by checking for research report at the EXACT pre-calculated path. If the report is missing, the block MUST fail with exit code 1 and detailed error logging.
 
-**EXECUTE NOW**: Verify research artifacts were created:
+**EXECUTE NOW**: Validate that research-specialist created the report at the expected path.
 
 ```bash
-set +H  # CRITICAL: Disable history expansion
+set +H 2>/dev/null || true
+set +o histexpand 2>/dev/null || true
 set -e  # Fail-fast per code-standards.md
+
+# === DETECT PROJECT DIRECTORY (subprocess isolation) ===
+if [ -z "$CLAUDE_PROJECT_DIR" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+
+  if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+    echo "ERROR: Failed to detect project directory" >&2
+    exit 1
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
 
 # Re-source libraries for subprocess isolation (Three-Tier Pattern)
 # Tier 1: Critical Foundation (state-persistence.sh, workflow-state-machine.sh, error-handling.sh)
@@ -685,62 +843,81 @@ if [ -f "$STATE_ID_FILE" ]; then
 
   # Setup bash error trap
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
-fi
-
-# MANDATORY VERIFICATION (fail-fast pattern)
-echo "Verifying research artifacts..."
-
-# Fail-fast: Check research directory exists
-if [ ! -d "$RESEARCH_DIR" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "agent_error" \
-    "Research-specialist failed to create reports directory" \
-    "bash_block_4c" \
-    "$(jq -n --arg dir "$RESEARCH_DIR" '{expected_directory: $dir}')"
-
-  echo "ERROR: Research phase failed to create reports directory" >&2
-  echo "DIAGNOSTIC: Expected directory: $RESEARCH_DIR" >&2
-  echo "RECOVERY: Verify research-specialist agent was invoked correctly in Block 4b" >&2
+else
+  echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
   exit 1
 fi
 
-# Count new reports created (may already have existing reports)
-NEW_REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' -type f -newer "$EXISTING_PLAN_PATH" 2>/dev/null | wc -l)
+echo ""
+echo "=== Hard Barrier Verification: Research Report ==="
+echo ""
 
-if [ "$NEW_REPORT_COUNT" -eq 0 ]; then
-  echo "WARNING: No new research reports created"
-  echo "NOTE: Proceeding with plan revision using existing reports"
-fi
+echo "Expected report path: $EXPECTED_REPORT_PATH"
 
-TOTAL_REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
+# HARD BARRIER: Report file MUST exist at pre-calculated path
+if [ ! -f "$EXPECTED_REPORT_PATH" ]; then
+  # Enhanced diagnostics: Search for file in alternate locations
+  REPORT_NAME=$(basename "$EXPECTED_REPORT_PATH")
+  FOUND_FILES=$(find "$RESEARCH_DIR" -name "*.md" -type f 2>/dev/null | head -5 || true)
 
-# Fail-fast: Check at least some reports exist
-if [ "$TOTAL_REPORT_COUNT" -eq 0 ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "agent_error" \
-    "Research-specialist created no reports" \
-    "bash_block_4c" \
-    "$(jq -n --arg dir "$RESEARCH_DIR" '{reports_directory: $dir, report_count: 0}')"
+  if [ -n "$FOUND_FILES" ]; then
+    echo "❌ HARD BARRIER FAILED - Report at wrong location" >&2
+    echo "Expected: $EXPECTED_REPORT_PATH" >&2
+    echo "Found files in $RESEARCH_DIR:" >&2
+    echo "$FOUND_FILES" | while read -r file; do
+      echo "  - $file" >&2
+    done
+    log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
+      "agent_error" \
+      "research-specialist created report at wrong location" \
+      "bash_block_4c" \
+      "$(jq -n --arg expected "$EXPECTED_REPORT_PATH" --arg found "$FOUND_FILES" \
+         '{expected: $expected, found_files: $found}')"
+  else
+    echo "❌ HARD BARRIER FAILED - Report file not found anywhere" >&2
+    echo "Expected: $EXPECTED_REPORT_PATH" >&2
+    echo "Search directory: $RESEARCH_DIR" >&2
+    log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
+      "agent_error" \
+      "research-specialist failed to create report file" \
+      "bash_block_4c" \
+      "$(jq -n --arg expected "$EXPECTED_REPORT_PATH" --arg dir "$RESEARCH_DIR" \
+         '{expected: $expected, search_dir: $dir}')"
+  fi
 
-  echo "ERROR: Research phase created no reports" >&2
-  echo "DIAGNOSTIC: Reports directory exists but is empty: $RESEARCH_DIR" >&2
-  echo "RECOVERY: Check research-specialist output for errors" >&2
+  echo "" >&2
+  echo "DIAGNOSTIC: research-specialist agent should have created report in Block 4b" >&2
+  echo "RECOVERY: Re-run /revise command, check research-specialist logs" >&2
   exit 1
 fi
+
+# Validate report is not empty or too small
+REPORT_SIZE=$(wc -c < "$EXPECTED_REPORT_PATH" 2>/dev/null || echo 0)
+if [ "$REPORT_SIZE" -lt 100 ]; then
+  log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" \
+    "Report file too small ($REPORT_SIZE bytes)" \
+    "bash_block_4c" \
+    "$(jq -n --argjson size "$REPORT_SIZE" --arg path "$EXPECTED_REPORT_PATH" \
+       '{size_bytes: $size, report_path: $path}')"
+  echo "ERROR: Report file suspiciously small: $REPORT_SIZE bytes" >&2
+  exit 1
+fi
+
+echo "[OK] Research report validated at expected path"
+echo "  Path: $EXPECTED_REPORT_PATH"
+echo "  Size: $REPORT_SIZE bytes"
+echo ""
+
+# Count total reports for summary
+TOTAL_REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l || echo 1)
+NEW_REPORT_COUNT=1  # We just created one
 
 # CHECKPOINT REPORTING
-echo ""
-echo "CHECKPOINT: Research phase complete"
-echo "- Workflow type: research-and-revise"
-echo "- Existing plan: $EXISTING_PLAN_PATH"
-echo "- Total reports: $TOTAL_REPORT_COUNT (new: $NEW_REPORT_COUNT)"
-echo "- All files verified: ✓"
+echo "[CHECKPOINT] Hard barrier passed: Research report validated"
+echo "- Report path: $EXPECTED_REPORT_PATH"
+echo "- Report size: $REPORT_SIZE bytes"
+echo "- Total reports: $TOTAL_REPORT_COUNT"
 echo "- Proceeding to: Plan revision phase"
 echo ""
 
@@ -751,6 +928,7 @@ append_workflow_state "SPECS_DIR" "$SPECS_DIR"
 append_workflow_state "TOTAL_REPORT_COUNT" "$TOTAL_REPORT_COUNT"
 append_workflow_state "NEW_REPORT_COUNT" "$NEW_REPORT_COUNT"
 append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
+append_workflow_state "EXPECTED_REPORT_PATH" "$EXPECTED_REPORT_PATH"
 
 # Removed: save_completed_states_to_state does not exist in library
 # State machine already persists completed states via sm_transition
@@ -993,29 +1171,32 @@ fi
 echo "=== Phase 2: Plan Revision ==="
 echo ""
 
-# Create backup before revision
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-BACKUP_DIR="$(dirname "$EXISTING_PLAN_PATH")/backups"
-BACKUP_FILENAME="$(basename "$EXISTING_PLAN_PATH" .md)_${TIMESTAMP}.md"
-BACKUP_PATH="$BACKUP_DIR/$BACKUP_FILENAME"
-
+# Pre-calculate backup path (Hard Barrier Pattern)
+BACKUP_DIR="${SPECS_DIR}/backups"
 mkdir -p "$BACKUP_DIR"
-cp "$EXISTING_PLAN_PATH" "$BACKUP_PATH"
 
-# FAIL-FAST BACKUP VERIFICATION
-if [ ! -f "$BACKUP_PATH" ]; then
-  echo "ERROR: Backup creation failed at $BACKUP_PATH" >&2
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+PLAN_BASENAME=$(basename "$EXISTING_PLAN_PATH" .md)
+BACKUP_PATH="${BACKUP_DIR}/${PLAN_BASENAME}_backup_${TIMESTAMP}.md"
+
+# Validate backup path is absolute
+[[ "$BACKUP_PATH" = /* ]]
+IS_ABSOLUTE=$?
+if [ $IS_ABSOLUTE -ne 0 ]; then
+  log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" \
+    "BACKUP_PATH is not absolute" \
+    "bash_block_5a" \
+    "$(jq -n --arg path "$BACKUP_PATH" '{calculated_path: $path}')"
+  echo "ERROR: Backup path is not absolute: $BACKUP_PATH" >&2
   exit 1
 fi
 
-FILE_SIZE=$(wc -c < "$BACKUP_PATH")
-if [ "$FILE_SIZE" -lt 100 ]; then
-  echo "ERROR: Backup file too small ($FILE_SIZE bytes)" >&2
-  exit 1
-fi
+echo "Pre-calculated backup path: $BACKUP_PATH"
 
-echo "✓ Backup created: $BACKUP_PATH"
-echo ""
+# NOTE: Backup will be created by plan-architect agent in Block 5b
+# This allows verification block to confirm agent created the backup
+# Do NOT create backup here - agent creates it to enforce delegation
 
 # Collect research report paths
 REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
@@ -1036,19 +1217,20 @@ append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
 echo ""
 echo "CHECKPOINT: Plan revision setup complete"
 echo "- State transition: PLAN ✓"
-echo "- Backup created: $BACKUP_PATH"
-echo "- Backup verified: ✓ ($(wc -c < "$BACKUP_PATH") bytes)"
+echo "- Pre-calculated backup path: $BACKUP_PATH"
 echo "- Research reports collected: $(echo "$REPORT_PATHS" | wc -l)"
 echo "- Variables persisted: ✓"
 echo "- Ready for: plan-architect invocation (Block 5b)"
 echo ""
 ```
 
-## Block 5b: Plan Revision Execution
+## Block 5b: Plan Revision Execution [CRITICAL BARRIER]
 
-**CRITICAL BARRIER**: This section invokes the plan-architect agent via Task tool in revision mode. The Task invocation is MANDATORY and CANNOT be bypassed. The verification block (Block 5c) will FAIL if plan is not modified by the subagent.
+**HARD BARRIER - Plan-Architect Invocation**
 
-**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent.
+**CRITICAL BARRIER**: This block MUST invoke plan-architect via Task tool. The Task invocation is MANDATORY and CANNOT be bypassed. The verification block (Block 5c) will FAIL if backup is not created at the pre-calculated path AND if the plan is not modified.
+
+**EXECUTE NOW**: USE the Task tool to invoke the plan-architect agent. DO NOT perform plan revisions directly. This Task invocation CANNOT be bypassed - the bash verification block enforces mandatory delegation.
 
 Task {
   subagent_type: "general-purpose"
@@ -1059,7 +1241,7 @@ Task {
 
     You are revising an implementation plan for: revise workflow
 
-    **Workflow-Specific Context**:
+    **Input Contract (Hard Barrier Pattern)**:
     - Existing Plan Path: ${EXISTING_PLAN_PATH}
     - Backup Path: ${BACKUP_PATH}
     - Revision Details: ${REVISION_DETAILS}
@@ -1068,31 +1250,63 @@ Task {
     - Operation Mode: plan revision
     - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
 
-    **Project Standards**:
+    **Project Standards** (from CLAUDE.md):
     ${FORMATTED_STANDARDS}
 
     **CRITICAL INSTRUCTIONS FOR PLAN REVISION**:
     1. Use STEP 1-REV → STEP 2-REV → STEP 3-REV → STEP 4-REV workflow (revision flow)
-    2. Use Edit tool (NEVER Write) for all modifications to existing plan file
-    3. Preserve all [COMPLETE] phases unchanged (do not modify completed work)
-    4. Update plan metadata (Date, Estimated Hours, Phase count) to reflect revisions
-    5. **METADATA NORMALIZATION**: If metadata uses non-standard fields (Plan ID, Created, Revised, Workflow Type), convert to standard format (Date, Feature, Status, Standards File)
-    6. Maintain /implement compatibility (checkbox format, phase markers, dependency syntax)
+    2. Create backup at ${BACKUP_PATH} BEFORE making any changes
+       - Use Bash: cp '${EXISTING_PLAN_PATH}' '${BACKUP_PATH}'
+       - This is MANDATORY - verification block will fail if backup not created
+    3. Use Edit tool (NEVER Write) for all modifications to existing plan file
+    4. Preserve all [COMPLETE] phases unchanged (do not modify completed work)
+    5. Update plan metadata (Date, Estimated Hours, Phase count) to reflect revisions
+    6. **METADATA NORMALIZATION**: If metadata uses non-standard fields (Plan ID, Created, Revised, Workflow Type), convert to standard format (Date, Feature, Status, Standards File)
+    7. Maintain /implement compatibility (checkbox format, phase markers, dependency syntax)
+
+    The orchestrator has pre-calculated the backup path and will validate:
+    1. Backup exists at ${BACKUP_PATH}
+    2. Plan file has been modified (differs from backup)
 
     Execute plan revision according to behavioral guidelines and return completion signal:
     PLAN_REVISED: ${EXISTING_PLAN_PATH}
+    BACKUP_CREATED: ${BACKUP_PATH}
   "
 }
 
-## Block 5c: Plan Revision Verification
+## Block 5c: Plan Revision Verification (Hard Barrier)
 
-**CRITICAL BARRIER**: This bash block verifies that the plan-architect agent completed successfully by checking for plan file modifications. If plan is unchanged, the block MUST fail with exit code 1 and detailed error logging.
+**HARD BARRIER**: This bash block verifies that the plan-architect agent completed successfully by checking:
+1. Backup was created at the pre-calculated path
+2. Plan file was modified (differs from backup)
 
-**EXECUTE NOW**: Verify plan revision was successful:
+If either check fails, the block MUST fail with exit code 1 and detailed error logging.
+
+**EXECUTE NOW**: Validate that plan-architect created backup and modified plan.
 
 ```bash
-set +H  # CRITICAL: Disable history expansion
+set +H 2>/dev/null || true
+set +o histexpand 2>/dev/null || true
 set -e  # Fail-fast per code-standards.md
+
+# === DETECT PROJECT DIRECTORY (subprocess isolation) ===
+if [ -z "$CLAUDE_PROJECT_DIR" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+      current_dir="$(dirname "$current_dir")"
+    done
+  fi
+
+  if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+    echo "ERROR: Failed to detect project directory" >&2
+    exit 1
+  fi
+  export CLAUDE_PROJECT_DIR
+fi
 
 # Re-source libraries for subprocess isolation (Three-Tier Pattern)
 # Tier 1: Critical Foundation (state-persistence.sh, workflow-state-machine.sh, error-handling.sh)
@@ -1128,110 +1342,115 @@ if [ -f "$STATE_ID_FILE" ]; then
 
   # Setup bash error trap
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+else
+  echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
+  exit 1
 fi
 
-# MANDATORY VERIFICATION (fail-fast pattern)
-echo "Verifying plan revision..."
+echo ""
+echo "=== Hard Barrier Verification: Plan Revision ==="
+echo ""
 
-# Fail-fast: Check plan file still exists
+echo "Expected backup path: $BACKUP_PATH"
+
+# HARD BARRIER 1: Backup file MUST exist at pre-calculated path
+if [ ! -f "$BACKUP_PATH" ]; then
+  log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
+    "agent_error" \
+    "plan-architect failed to create backup before modification" \
+    "bash_block_5c" \
+    "$(jq -n --arg expected "$BACKUP_PATH" '{expected_backup: $expected}')"
+
+  echo "❌ HARD BARRIER FAILED - Backup not found: $BACKUP_PATH" >&2
+  echo "DIAGNOSTIC: plan-architect must create backup in STEP 1-REV" >&2
+  echo "RECOVERY: Re-run /revise command, ensure plan-architect creates backup" >&2
+  exit 1
+fi
+
+BACKUP_SIZE=$(wc -c < "$BACKUP_PATH" 2>/dev/null || echo 0)
+echo "[OK] Backup file exists at expected path"
+echo "  Path: $BACKUP_PATH"
+echo "  Size: $BACKUP_SIZE bytes"
+
+# HARD BARRIER 2: Plan file MUST still exist
 if [ ! -f "$EXISTING_PLAN_PATH" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
+  log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
     "agent_error" \
     "Plan-architect caused plan file to disappear" \
     "bash_block_5c" \
     "$(jq -n --arg path "$EXISTING_PLAN_PATH" --arg backup "$BACKUP_PATH" '{plan_path: $path, backup_path: $backup}')"
 
-  echo "ERROR: Plan file disappeared during revision: $EXISTING_PLAN_PATH" >&2
+  echo "❌ HARD BARRIER FAILED - Plan file disappeared during revision: $EXISTING_PLAN_PATH" >&2
   echo "DIAGNOSTIC: Restore from backup: $BACKUP_PATH" >&2
   echo "RECOVERY: cp \"$BACKUP_PATH\" \"$EXISTING_PLAN_PATH\"" >&2
   exit 1
 fi
 
-# Fail-fast: Verify backup still exists
-if [ ! -f "$BACKUP_PATH" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "file_error" \
-    "Backup file disappeared during revision" \
-    "bash_block_5c" \
-    "$(jq -n --arg path "$BACKUP_PATH" '{backup_path: $path}')"
-
-  echo "ERROR: Backup file disappeared: $BACKUP_PATH" >&2
-  echo "DIAGNOSTIC: Cannot verify plan changes without backup" >&2
-  exit 1
-fi
-
-# Verify plan was actually modified (must be different from backup)
+# HARD BARRIER 3: Plan MUST be different from backup (changes were made)
 if cmp -s "$EXISTING_PLAN_PATH" "$BACKUP_PATH"; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
+  log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
     "agent_error" \
-    "Plan-architect did not modify plan file" \
+    "plan-architect created backup but made no modifications to plan" \
     "bash_block_5c" \
-    "$(jq -n --arg path "$EXISTING_PLAN_PATH" '{plan_path: $path}')"
+    "$(jq -n --arg plan "$EXISTING_PLAN_PATH" --arg backup "$BACKUP_PATH" \
+       '{plan_path: $plan, backup_path: $backup, status: "identical"}')"
 
-  echo "ERROR: Plan file not modified (identical to backup)" >&2
-  echo "DIAGNOSTIC: Plan revision must make changes based on research insights" >&2
-  echo "RECOVERY: Verify plan-architect was invoked in revision mode (Block 5b)" >&2
+  echo "❌ HARD BARRIER FAILED - Plan unchanged after revision" >&2
+  echo "DIAGNOSTIC: Plan file identical to backup (no modifications made)" >&2
+  echo "RECOVERY: Re-run /revise command with more specific revision instructions" >&2
   exit 1
 fi
 
-FILE_SIZE=$(wc -c < "$EXISTING_PLAN_PATH")
-if [ "$FILE_SIZE" -lt 500 ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "agent_error" \
-    "Plan-architect produced suspiciously small plan file" \
-    "bash_block_5c" \
-    "$(jq -n --arg size "$FILE_SIZE" --arg backup "$BACKUP_PATH" '{file_size_bytes: $size, backup_path: $backup}')"
+echo "[OK] Plan file modified (differs from backup)"
 
-  echo "ERROR: Plan file too small after revision ($FILE_SIZE bytes)" >&2
-  echo "DIAGNOSTIC: Plan may have been corrupted, restore from: $BACKUP_PATH" >&2
-  echo "RECOVERY: cp \"$BACKUP_PATH\" \"$EXISTING_PLAN_PATH\"" >&2
+# Validate plan file size is reasonable
+PLAN_SIZE=$(wc -c < "$EXISTING_PLAN_PATH" 2>/dev/null || echo 0)
+if [ "$PLAN_SIZE" -lt 500 ]; then
+  log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" \
+    "Revised plan suspiciously small ($PLAN_SIZE bytes)" \
+    "bash_block_5c" \
+    "$(jq -n --argjson size "$PLAN_SIZE" --arg backup "$BACKUP_PATH" \
+       '{plan_size_bytes: $size, backup_path: $backup}')"
+  echo "ERROR: Revised plan too small: $PLAN_SIZE bytes" >&2
+  echo "RECOVERY: Restore from backup: cp \"$BACKUP_PATH\" \"$EXISTING_PLAN_PATH\"" >&2
   exit 1
 fi
+
+echo "[OK] Plan file size valid: $PLAN_SIZE bytes"
 
 # Verify plan has valid structure (at least one phase heading)
 PHASE_COUNT=$(grep -c "^### Phase [0-9]" "$EXISTING_PLAN_PATH" || echo "0")
 if [ "$PHASE_COUNT" -lt 1 ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
+  log_command_error "/revise" "$WORKFLOW_ID" "$USER_ARGS" \
     "validation_error" \
     "Plan-architect produced plan with no phase headings" \
     "bash_block_5c" \
-    "$(jq -n --arg path "$EXISTING_PLAN_PATH" --arg backup "$BACKUP_PATH" '{plan_path: $path, backup_path: $backup}')"
+    "$(jq -n --arg path "$EXISTING_PLAN_PATH" --arg backup "$BACKUP_PATH" \
+       '{plan_path: $path, backup_path: $backup}')"
 
   echo "ERROR: Plan file has no phase headings (invalid structure)" >&2
-  echo "DIAGNOSTIC: Plan revision must maintain phase structure" >&2
-  echo "RECOVERY: Restore from backup and retry revision: cp \"$BACKUP_PATH\" \"$EXISTING_PLAN_PATH\"" >&2
+  echo "RECOVERY: Restore from backup: cp \"$BACKUP_PATH\" \"$EXISTING_PLAN_PATH\"" >&2
   exit 1
 fi
 
-# CHECKPOINT REPORTING
+echo "[OK] Plan structure valid: $PHASE_COUNT phases"
 echo ""
-echo "CHECKPOINT: Plan revision complete"
-echo "- Revised plan: $EXISTING_PLAN_PATH"
-echo "- File size: $FILE_SIZE bytes"
+
+# CHECKPOINT REPORTING
+echo "[CHECKPOINT] Hard barrier passed: Plan revision validated"
+echo "- Backup path: $BACKUP_PATH"
+echo "- Plan path: $EXISTING_PLAN_PATH"
+echo "- Plan size: $PLAN_SIZE bytes"
 echo "- Phase count: $PHASE_COUNT"
-echo "- Backup saved: $BACKUP_PATH"
-echo "- All verifications: ✓"
 echo "- Proceeding to: Completion"
 echo ""
 
-# Persist variables for Part 6 (subprocess isolation)
+# Persist variables for Block 6 (subprocess isolation)
 append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
 append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
+append_workflow_state "PLAN_SIZE" "$PLAN_SIZE"
+append_workflow_state "PHASE_COUNT" "$PHASE_COUNT"
 
 # Removed: save_completed_states_to_state does not exist in library
 # State machine already persists completed states via sm_transition

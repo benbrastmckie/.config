@@ -106,9 +106,10 @@ validate_workflow_prerequisites() {
 # Agent Artifact Validation
 # ==============================================================================
 
-# validate_agent_artifact: Validate agent-produced artifact files
+# validate_agent_artifact: Validate agent-produced artifact files with retry
 #
 # Checks that an agent-produced artifact exists and meets minimum size requirements.
+# Includes retry logic with polling to handle agent completion timing.
 # This prevents silent failures when agents fail to produce expected output files.
 #
 # Usage:
@@ -119,10 +120,11 @@ validate_workflow_prerequisites() {
 #   $1 - artifact_path: Absolute path to artifact file
 #   $2 - min_size_bytes: Minimum expected file size in bytes (default: 10)
 #   $3 - artifact_type: Human-readable artifact description (default: "artifact")
+#   $4 - max_attempts: Maximum polling attempts (default: 10)
 #
 # Returns:
 #   0 on success (file exists and meets size requirement)
-#   1 on failure (file missing or too small)
+#   1 on failure (file missing or too small after retries)
 #
 # Logs:
 #   agent_error to centralized error log on failure
@@ -130,6 +132,7 @@ validate_agent_artifact() {
   local artifact_path="${1:-}"
   local min_size_bytes="${2:-10}"
   local artifact_type="${3:-artifact}"
+  local max_attempts="${4:-10}"
 
   # Validate parameters
   if [ -z "$artifact_path" ]; then
@@ -137,7 +140,18 @@ validate_agent_artifact() {
     return 1
   fi
 
-  # Check file existence
+  # Polling retry logic for agent artifact creation
+  local attempt=0
+  while [ $attempt -lt $max_attempts ]; do
+    if [ -f "$artifact_path" ]; then
+      # File exists, break out of polling loop
+      break
+    fi
+    attempt=$((attempt + 1))
+    sleep 1
+  done
+
+  # Check file existence after polling
   if [ ! -f "$artifact_path" ]; then
     # Log error if error logging context is available
     if declare -F log_command_error >/dev/null 2>&1; then
@@ -147,14 +161,15 @@ validate_agent_artifact() {
           "$WORKFLOW_ID" \
           "${USER_ARGS:-}" \
           "agent_error" \
-          "Agent failed to create $artifact_type" \
+          "Agent failed to create $artifact_type after ${max_attempts}s" \
           "validate_agent_artifact" \
           "$(jq -n --arg path "$artifact_path" --arg type "$artifact_type" \
-            '{artifact_path: $path, artifact_type: $type, error: "file_not_found"}')"
+            --argjson attempts "$max_attempts" \
+            '{artifact_path: $path, artifact_type: $type, max_attempts: $attempts, error: "file_not_found"}')"
       fi
     fi
 
-    echo "ERROR: Agent artifact not found: $artifact_path" >&2
+    echo "ERROR: Agent artifact not found after ${max_attempts}s: $artifact_path" >&2
     echo "Expected $artifact_type at this location" >&2
     return 1
   fi

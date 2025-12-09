@@ -168,7 +168,7 @@ The invoking command MUST provide you with a user prompt. Verify you have receiv
 
 ---
 
-### STEP 4 (FINAL) - Write Output and Return Completion Signal
+### STEP 4 (REQUIRED BEFORE STEP 5) - Write Output File
 
 **EXECUTE NOW - Write Topic Name to Output File**
 
@@ -215,8 +215,39 @@ The invoking command validates that the output file exists and contains valid co
 If the Write tool fails or you skip this step, the workflow will fall back to 'no_name_error'.
 ALWAYS use the Write tool before returning the completion signal.
 
+---
+
+### STEP 5 (FINAL) - Verify File Creation and Return Completion Signal
+
+**CRITICAL CHECKPOINT**: Before returning, verify the topic name file exists at the pre-calculated path.
+
+**HARD BARRIER**: The orchestrator validates file existence after you return. If the file does not exist, the workflow will fail with agent_no_output_file error.
+
+**File Creation Verification** (MANDATORY):
+
+```bash
+# Verify file exists at the specified path
+TOPIC_NAME_FILE="$OUTPUT_PATH"  # Path from Step 4
+
+if [ ! -f "$TOPIC_NAME_FILE" ]; then
+  echo "ERROR: Topic name file not created at: $TOPIC_NAME_FILE"
+  exit 1
+fi
+
+# Verify file contains valid slug (no spaces, special chars, reasonable length)
+TOPIC_SLUG=$(cat "$TOPIC_NAME_FILE")
+
+if [[ ! "$TOPIC_SLUG" =~ ^[a-z0-9_]{3,50}$ ]]; then
+  echo "ERROR: Invalid topic slug format: $TOPIC_SLUG"
+  exit 1
+fi
+
+echo "✓ Topic name file verified: $TOPIC_NAME_FILE"
+echo "✓ Topic slug validated: $TOPIC_SLUG"
+```
+
 **Completion Signal** (Updated for Hard Barrier Pattern):
-After writing the file, return this signal with the actual file path:
+After writing AND verifying the file, return this signal with the actual file path:
 ```
 TOPIC_NAME_CREATED: /absolute/path/to/topic_name_file.txt
 ```
@@ -422,12 +453,19 @@ Before returning your topic name, verify ALL criteria met:
 - [ ] Only lowercase, numbers, underscores
 - [ ] No special characters or spaces
 
+**File Creation Quality** (CRITICAL):
+- [ ] Topic name file exists at pre-calculated path ($TOPIC_NAME_FILE)
+- [ ] Topic slug matches format: ^[a-z0-9_]{3,50}$
+- [ ] File contains single-line slug with no whitespace
+- [ ] Slug is semantically meaningful (not "no_name" or generic)
+
 **Output Quality**:
-- [ ] Completion signal present: `TOPIC_NAME_GENERATED:`
+- [ ] Completion signal present: `TOPIC_NAME_CREATED:`
 - [ ] Single line output
 - [ ] No additional commentary
 - [ ] No JSON wrapping
 - [ ] No quotes around name
+- [ ] Return completion signal with verified path
 
 **Performance**:
 - [ ] Naming completed in <3 seconds
@@ -530,8 +568,14 @@ Before returning topic name, verify:
   - [ ] Quality validation passed
   - [ ] No consecutive underscores
   - [ ] Length 5-40 characters
-- [ ] STEP 4: Completion signal formatted
-  - [ ] Signal present: `TOPIC_NAME_GENERATED:`
+- [ ] STEP 4: Output file written
+  - [ ] Write tool used to create file
+  - [ ] File written to exact path from Output Path contract
+  - [ ] File contains only topic slug (no prefix/suffix)
+- [ ] STEP 5: File creation verified and completion signal formatted
+  - [ ] File exists at $TOPIC_NAME_FILE path
+  - [ ] File content matches format: ^[a-z0-9_]{3,50}$
+  - [ ] Signal present: `TOPIC_NAME_CREATED:`
   - [ ] Single line output
   - [ ] No additional commentary
 

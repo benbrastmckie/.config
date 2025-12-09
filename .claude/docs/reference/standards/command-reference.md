@@ -625,7 +625,7 @@ git restore --source=<snapshot-hash> -- Documentation/ProjectInfo/SORRY_REGISTRY
 ### /lean-implement
 **Purpose**: Hybrid implementation command for mixed Lean/software plans with intelligent phase routing
 
-**Usage**: `/lean-implement <plan-file> [starting-phase] [--mode=MODE] [--max-iterations=N]`
+**Usage**: `/lean-implement <plan-file> [starting-phase] [--mode=MODE] [--max-iterations=N] [--context-threshold=N]`
 
 **Type**: orchestrator (hybrid Lean/software)
 
@@ -634,25 +634,36 @@ git restore --source=<snapshot-hash> -- Documentation/ProjectInfo/SORRY_REGISTRY
 - `starting-phase` (optional): Phase number to start from (default: 1)
 - `--mode=MODE`: Execution mode - `auto`, `lean-only`, `software-only` (default: auto)
 - `--max-iterations=N`: Max iteration loops (default: 5)
+- `--context-threshold=N`: Context usage % threshold before checkpoint (default: 90)
 - `--dry-run`: Preview phase classification without executing
 
 **Agents Used**: lean-coordinator (for Lean phases), implementer-coordinator (for software phases)
 
 **Output**: Implementation and proof summaries in topic summaries directory
 
-**Workflow**: `setup → classify → route → verify → summarize`
+**Workflow**: `setup → classify → route → verify → aggregate context → summarize`
 
 **Features**:
-- 2-tier phase classification (metadata + keyword analysis)
-- Intelligent routing to appropriate coordinator
+- 3-tier phase classification (implementer field + lean_file metadata + keyword analysis)
+- Intelligent routing to appropriate coordinator (lean-coordinator vs implementer-coordinator)
 - Mode filtering (lean-only, software-only, auto)
-- Cross-coordinator iteration management
-- Aggregated metrics from both coordinator types
+- Cross-coordinator iteration management with context monitoring
+- Aggregated metrics from both coordinator types (theorems proven + git commits)
+- Context threshold management with automatic checkpoint creation
+- Brief summary parsing for 96% context reduction (80 tokens vs 2,000 tokens per iteration)
+- Continuation plan support with non-contiguous phase number extraction
 
 **Phase Classification**:
-- Tier 1: `lean_file:` metadata (strongest signal)
-- Tier 2: Keywords (.lean, theorem, lemma) vs (.ts, .js, implement, create)
+- Tier 1: `implementer:` field (strongest - no ambiguity)
+- Tier 2: `lean_file:` metadata (backward compatibility)
+- Tier 3: Keywords (.lean + proof terms) vs (.ts, .js, implement, create)
 - Default: software (conservative approach)
+
+**Context Management**:
+- Monitors context usage across iterations
+- Saves checkpoint when threshold exceeded (default: 90%)
+- Enables graceful halt with resume capability
+- Cumulative savings: 9,600 tokens per 5-iteration workflow
 
 **See**: [lean-implement-command-guide.md](../../guides/commands/lean-implement-command-guide.md)
 

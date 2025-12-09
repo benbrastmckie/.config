@@ -28,6 +28,12 @@ This document provides copy-paste templates for implementing standard patterns a
 4. [Checkpoint Reporting Pattern](#checkpoint-reporting-pattern)
 5. [Validation Patterns](#validation-patterns)
 6. [Complete Command Template](#complete-command-template)
+7. [Research Coordinator Patterns](#research-coordinator-patterns)
+   - [Template 6: Topic Decomposition Block](#template-6-topic-decomposition-block-heuristic-based)
+   - [Template 7: Topic Detection Agent Invocation](#template-7-topic-detection-agent-invocation-block-automated)
+   - [Template 8: Research Coordinator Task Invocation](#template-8-research-coordinator-task-invocation-block)
+   - [Template 9: Multi-Report Validation Loop](#template-9-multi-report-validation-loop)
+   - [Template 10: Metadata Extraction and Aggregation](#template-10-metadata-extraction-and-aggregation)
 
 ---
 
@@ -614,6 +620,395 @@ EOF
 - Replace `TYPE` with workflow type
 - Add actual workflow logic in Block 2
 - Customize console summary with actual paths
+
+---
+
+## Research Coordinator Patterns
+
+### Template 6: Topic Decomposition Block (Heuristic-Based)
+
+```markdown
+## Block 1d-topics: Topic Decomposition
+
+**EXECUTE NOW**: Analyze feature description and decompose into research topics:
+
+```bash
+set +H
+# Source state persistence for saving topics
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load state-persistence library" >&2
+  exit 1
+}
+
+# Read state for feature description and complexity
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/workflow_state_id.txt")
+load_workflow_state "$WORKFLOW_ID"
+
+# Determine topic count based on complexity
+case $RESEARCH_COMPLEXITY in
+  1|2) TOPIC_COUNT=1 ;;  # Single topic
+  3) TOPIC_COUNT=3 ;;    # 2-3 topics
+  4) TOPIC_COUNT=4 ;;    # 4-5 topics
+  *) TOPIC_COUNT=2 ;;    # Default
+esac
+
+# Heuristic decomposition: Check for multi-topic indicators
+MULTI_TOPIC_INDICATORS=0
+if echo "$FEATURE_DESCRIPTION" | grep -qE '\band\b|\bor\b|,'; then
+  ((MULTI_TOPIC_INDICATORS++))
+fi
+if [ "$RESEARCH_COMPLEXITY" -ge 3 ]; then
+  ((MULTI_TOPIC_INDICATORS++))
+fi
+
+# If no multi-topic indicators, fall back to single topic
+if [ "$MULTI_TOPIC_INDICATORS" -lt 2 ]; then
+  TOPIC_COUNT=1
+  echo "Single-topic mode: No multi-topic indicators found"
+fi
+
+# Simple topic decomposition (split by conjunctions or use full description)
+if [ "$TOPIC_COUNT" -eq 1 ]; then
+  TOPICS_LIST="$FEATURE_DESCRIPTION"
+else
+  # Split by " and ", " or ", or commas (heuristic)
+  TOPICS_LIST=$(echo "$FEATURE_DESCRIPTION" | sed 's/ and /|/g; s/ or /|/g; s/, /|/g')
+fi
+
+# Pre-calculate report paths (hard barrier pattern)
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+mkdir -p "$RESEARCH_DIR"
+
+# Find existing reports to determine starting number
+EXISTING_REPORTS=$(ls "$RESEARCH_DIR"/[0-9][0-9][0-9]-*.md 2>/dev/null | wc -l)
+START_NUM=$((EXISTING_REPORTS + 1))
+
+# Calculate paths for each topic
+REPORT_PATHS_LIST=""
+IFS='|' read -ra TOPICS_ARRAY <<< "$TOPICS_LIST"
+for i in "${!TOPICS_ARRAY[@]}"; do
+  REPORT_NUM=$(printf "%03d" $((START_NUM + i)))
+  TOPIC_SLUG=$(echo "${TOPICS_ARRAY[$i]}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')
+  REPORT_PATH="${RESEARCH_DIR}/${REPORT_NUM}-${TOPIC_SLUG}.md"
+
+  if [ -z "$REPORT_PATHS_LIST" ]; then
+    REPORT_PATHS_LIST="$REPORT_PATH"
+  else
+    REPORT_PATHS_LIST="${REPORT_PATHS_LIST}|${REPORT_PATH}"
+  fi
+done
+
+# Persist to state for coordinator and validation
+append_workflow_state "TOPICS_LIST" "$TOPICS_LIST"
+append_workflow_state "REPORT_PATHS_LIST" "$REPORT_PATHS_LIST"
+append_workflow_state "TOPIC_COUNT" "${#TOPICS_ARRAY[@]}"
+
+echo "[CHECKPOINT] Topic decomposition complete"
+echo "Context: TOPIC_COUNT=${#TOPICS_ARRAY[@]}, TOPICS_LIST=${TOPICS_LIST}"
+echo "Ready for: Research coordinator invocation"
+```
+\```
+
+**Substitutions**:
+- Replace `FEATURE_DESCRIPTION` with actual feature description variable
+- Replace `RESEARCH_COMPLEXITY` with complexity level (1-4)
+- Replace `TOPIC_PATH` with topic directory path
+- Adjust heuristic logic for domain-specific topic patterns
+
+---
+
+### Template 7: Topic Detection Agent Invocation Block (Automated)
+
+```markdown
+## Block 1d-topics-auto: Topic Detection Agent Invocation
+
+**EXECUTE NOW**: USE the Task tool to invoke topic-detection-agent for automated decomposition.
+
+Task {
+  subagent_type: "specialist"
+  description: "Detect and decompose research topics automatically"
+  prompt: |
+    Read and follow behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-detection-agent.md
+
+    **Input Contract**:
+    feature_description: "${FEATURE_DESCRIPTION}"
+    research_complexity: ${RESEARCH_COMPLEXITY}
+    output_path: ${TOPICS_JSON_PATH}
+
+    Analyze the feature description and identify 2-5 distinct research topics.
+    Output topics as JSON array with topic names and scope descriptions.
+
+    Return: TOPICS_DETECTED: ${TOPICS_JSON_PATH}
+}
+\```
+
+**Follow-up Validation Block**:
+
+```markdown
+## Block 1d-topics-parse: Parse Topic Detection Output
+
+**EXECUTE NOW**: Parse topic detection JSON and pre-calculate report paths:
+
+```bash
+set +H
+# Read state
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/workflow_state_id.txt")
+load_workflow_state "$WORKFLOW_ID"
+
+# Validate JSON output exists
+if [ ! -f "$TOPICS_JSON_PATH" ]; then
+  echo "WARNING: Topic detection failed, falling back to heuristic decomposition" >&2
+  # Fall back to Template 6 logic
+  exit 0
+fi
+
+# Parse JSON using jq
+TOPICS_LIST=$(jq -r '.topics[] .name' "$TOPICS_JSON_PATH" | paste -sd '|' -)
+TOPIC_COUNT=$(jq '.topics | length' "$TOPICS_JSON_PATH")
+
+# Validate topic count
+if [ -z "$TOPICS_LIST" ] || [ "$TOPIC_COUNT" -lt 2 ]; then
+  echo "WARNING: Topic detection returned <2 topics, falling back to single-topic mode" >&2
+  TOPICS_LIST="$FEATURE_DESCRIPTION"
+  TOPIC_COUNT=1
+fi
+
+# Pre-calculate report paths (same as Template 6)
+RESEARCH_DIR="${TOPIC_PATH}/reports"
+mkdir -p "$RESEARCH_DIR"
+EXISTING_REPORTS=$(ls "$RESEARCH_DIR"/[0-9][0-9][0-9]-*.md 2>/dev/null | wc -l)
+START_NUM=$((EXISTING_REPORTS + 1))
+
+REPORT_PATHS_LIST=""
+IFS='|' read -ra TOPICS_ARRAY <<< "$TOPICS_LIST"
+for i in "${!TOPICS_ARRAY[@]}"; do
+  REPORT_NUM=$(printf "%03d" $((START_NUM + i)))
+  TOPIC_SLUG=$(echo "${TOPICS_ARRAY[$i]}" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')
+  REPORT_PATH="${RESEARCH_DIR}/${REPORT_NUM}-${TOPIC_SLUG}.md"
+
+  if [ -z "$REPORT_PATHS_LIST" ]; then
+    REPORT_PATHS_LIST="$REPORT_PATH"
+  else
+    REPORT_PATHS_LIST="${REPORT_PATHS_LIST}|${REPORT_PATH}"
+  fi
+done
+
+# Persist to state
+append_workflow_state "TOPICS_LIST" "$TOPICS_LIST"
+append_workflow_state "REPORT_PATHS_LIST" "$REPORT_PATHS_LIST"
+append_workflow_state "TOPIC_COUNT" "$TOPIC_COUNT"
+
+echo "[CHECKPOINT] Topic detection and parsing complete"
+echo "Context: TOPIC_COUNT=${TOPIC_COUNT}, AUTOMATED=true"
+echo "Ready for: Research coordinator invocation"
+```
+\```
+
+**Substitutions**:
+- Replace `TOPICS_JSON_PATH` with calculated path to JSON output file
+- Replace `FEATURE_DESCRIPTION` with feature description variable
+- Replace `RESEARCH_COMPLEXITY` with complexity level
+- Replace `TOPIC_PATH` with topic directory path
+
+---
+
+### Template 8: Research Coordinator Task Invocation Block
+
+```markdown
+## Block 1e-exec: Research Coordinator Invocation
+
+**CRITICAL BARRIER**: This block MUST invoke research-coordinator via Task tool.
+Verification block (1f) will FAIL if reports not created.
+
+**EXECUTE NOW**: USE the Task tool to invoke research-coordinator.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Coordinate parallel research across multiple topics"
+  prompt: |
+    Read and follow behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-coordinator.md
+
+    You are acting as a Research Coordinator Agent with the tools and constraints
+    defined in that file.
+
+    **Input Contract (Mode 2: Pre-Decomposed)**:
+    research_request: "${FEATURE_DESCRIPTION}"
+    research_complexity: ${RESEARCH_COMPLEXITY}
+    report_dir: ${RESEARCH_DIR}
+    topics: ${TOPICS_LIST}
+    report_paths: ${REPORT_PATHS_LIST}
+
+    The topics are pipe-separated (|) strings. Parse and delegate to research-specialist
+    for each topic in parallel. Create reports at the pre-calculated paths.
+
+    Return: RESEARCH_COMPLETE: {REPORT_COUNT}
+}
+\```
+
+**Substitutions**:
+- Replace `FEATURE_DESCRIPTION` with feature description
+- Replace `RESEARCH_COMPLEXITY` with complexity level
+- Replace `RESEARCH_DIR` with reports directory path
+- Replace `TOPICS_LIST` with pipe-separated topic list from state
+- Replace `REPORT_PATHS_LIST` with pipe-separated report paths from state
+
+**Key Points**:
+- Uses Mode 2 contract (Pre-Decomposed) - topics already decomposed
+- research-coordinator parses pipe-separated lists
+- Coordinator invokes research-specialist in parallel for each topic
+- Hard barrier pattern: paths pre-calculated, validation follows
+
+---
+
+### Template 9: Multi-Report Validation Loop
+
+```markdown
+## Block 1f: Multi-Report Validation (Hard Barrier)
+
+**EXECUTE NOW**: Validate all research reports were created:
+
+```bash
+set +H
+# Source validation library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Cannot load validation-utils library" >&2
+  exit 1
+}
+
+# Read state for report paths
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/workflow_state_id.txt")
+load_workflow_state "$WORKFLOW_ID"
+
+# Parse report paths (pipe-separated)
+IFS='|' read -ra REPORT_PATHS_ARRAY <<< "$REPORT_PATHS_LIST"
+
+# Validate each report (hard barrier - fail-fast)
+TOTAL_REPORTS=${#REPORT_PATHS_ARRAY[@]}
+VALID_REPORTS=0
+
+for REPORT_PATH in "${REPORT_PATHS_ARRAY[@]}"; do
+  echo "Validating: $REPORT_PATH"
+
+  # File existence check
+  if [ ! -f "$REPORT_PATH" ]; then
+    echo "ERROR: Report not found at $REPORT_PATH" >&2
+    echo "HARD BARRIER FAILED: research-coordinator did not create all reports" >&2
+    exit 1
+  fi
+
+  # Minimum size check (100 bytes)
+  FILE_SIZE=$(stat -f%z "$REPORT_PATH" 2>/dev/null || stat -c%s "$REPORT_PATH" 2>/dev/null)
+  if [ "$FILE_SIZE" -lt 100 ]; then
+    echo "ERROR: Report at $REPORT_PATH too small ($FILE_SIZE bytes)" >&2
+    exit 1
+  fi
+
+  # Content check (must have Findings section)
+  if ! grep -q "## Findings" "$REPORT_PATH"; then
+    echo "WARNING: Report at $REPORT_PATH missing Findings section" >&2
+  fi
+
+  ((VALID_REPORTS++))
+done
+
+echo "[CHECKPOINT] Multi-report validation complete"
+echo "Context: VALID_REPORTS=${VALID_REPORTS}/${TOTAL_REPORTS}"
+echo "Ready for: Metadata extraction"
+```
+\```
+
+**Substitutions**:
+- Replace `REPORT_PATHS_LIST` with state variable containing pipe-separated report paths
+- Adjust size threshold (100 bytes) if needed
+- Customize content checks for domain-specific section names
+
+**Validation Criteria**:
+1. File existence (hard barrier)
+2. Minimum size (>100 bytes)
+3. Content structure (Findings section)
+4. Fail-fast on ANY validation failure
+
+---
+
+### Template 10: Metadata Extraction and Aggregation
+
+```markdown
+## Block 1f-metadata: Extract Metadata from Reports
+
+**EXECUTE NOW**: Extract metadata summaries from research reports:
+
+```bash
+set +H
+# Read state for report paths
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+WORKFLOW_ID=$(cat "${HOME}/.claude/tmp/workflow_state_id.txt")
+load_workflow_state "$WORKFLOW_ID"
+
+# Parse report paths
+IFS='|' read -ra REPORT_PATHS_ARRAY <<< "$REPORT_PATHS_LIST"
+IFS='|' read -ra TOPICS_ARRAY <<< "$TOPICS_LIST"
+
+# Extract metadata from each report
+METADATA_SUMMARY=""
+TOTAL_FINDINGS=0
+TOTAL_RECOMMENDATIONS=0
+
+for i in "${!REPORT_PATHS_ARRAY[@]}"; do
+  REPORT_PATH="${REPORT_PATHS_ARRAY[$i]}"
+  TOPIC="${TOPICS_ARRAY[$i]}"
+
+  # Extract title (first heading or use filename)
+  TITLE=$(grep -m 1 "^# " "$REPORT_PATH" | sed 's/^# //' || basename "$REPORT_PATH" .md)
+
+  # Count findings (lines starting with "- " in Findings section)
+  FINDINGS_COUNT=$(sed -n '/## Findings/,/^##/p' "$REPORT_PATH" | grep -c "^- " || echo 0)
+  TOTAL_FINDINGS=$((TOTAL_FINDINGS + FINDINGS_COUNT))
+
+  # Count recommendations (lines starting with "- " in Recommendations section)
+  RECOMMENDATIONS_COUNT=$(sed -n '/## Recommendations/,/^##/p' "$REPORT_PATH" | grep -c "^- " || echo 0)
+  TOTAL_RECOMMENDATIONS=$((TOTAL_RECOMMENDATIONS + RECOMMENDATIONS_COUNT))
+
+  # Aggregate metadata (110 tokens per report format)
+  METADATA_ENTRY="Topic ${i}: ${TOPIC}\nTitle: ${TITLE}\nFindings: ${FINDINGS_COUNT}\nRecommendations: ${RECOMMENDATIONS_COUNT}\nPath: ${REPORT_PATH}\n"
+
+  if [ -z "$METADATA_SUMMARY" ]; then
+    METADATA_SUMMARY="$METADATA_ENTRY"
+  else
+    METADATA_SUMMARY="${METADATA_SUMMARY}\n${METADATA_ENTRY}"
+  fi
+done
+
+# Persist aggregated metadata to state
+append_workflow_state "METADATA_SUMMARY" "$METADATA_SUMMARY"
+append_workflow_state "TOTAL_FINDINGS" "$TOTAL_FINDINGS"
+append_workflow_state "TOTAL_RECOMMENDATIONS" "$TOTAL_RECOMMENDATIONS"
+
+echo "[CHECKPOINT] Metadata extraction complete"
+echo "Context: TOTAL_FINDINGS=${TOTAL_FINDINGS}, TOTAL_RECOMMENDATIONS=${TOTAL_RECOMMENDATIONS}"
+echo "Ready for: Planning phase (metadata-only context)"
+```
+\```
+
+**Substitutions**:
+- Replace `REPORT_PATHS_LIST` and `TOPICS_LIST` with state variables
+- Customize metadata extraction logic for domain-specific sections
+- Adjust token target (110 tokens/report) if needed
+
+**Metadata Format** (per report):
+- Topic: Original topic name
+- Title: Extracted from report heading
+- Findings: Count of bullet points in Findings section
+- Recommendations: Count of bullet points in Recommendations section
+- Path: Absolute path to report file
+
+**Context Reduction**:
+- Full report: ~2,500 tokens
+- Metadata summary: ~110 tokens
+- Reduction: 95% (for 3 reports: 7,500 → 330 tokens)
 
 ---
 

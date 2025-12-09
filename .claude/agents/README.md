@@ -2,7 +2,7 @@
 
 Specialized AI agent definitions for Claude Code. Each agent is a focused assistant with specific capabilities, tool access, and expertise designed to handle particular aspects of development workflows.
 
-**Current Agent Count**: 16 active agents
+**Current Agent Count**: 19 active agents
 
 ## Purpose
 
@@ -51,6 +51,7 @@ Quick reference for which agents are invoked by each command and their roles:
 - **plan-architect** - Design implementation plan with phases and tasks
 
 #### /repair
+- **repair-coordinator** - Orchestrate parallel error dimension analysis
 - **repair-analyst** - Analyze error logs and identify root cause patterns
 - **plan-architect** - Create fix implementation plan based on error analysis
 
@@ -65,12 +66,14 @@ Quick reference for which agents are invoked by each command and their roles:
 - **implementer-coordinator** - Orchestrate wave-based parallel phase execution
 
 #### /test
+- **testing-coordinator** - Orchestrate parallel test category execution
 - **test-executor** - Execute test suites with framework detection
 - **debug-analyst** - Investigate test failures
 
 #### /debug
 - **workflow-classifier** - Classify issue type
 - **research-specialist** - Analyze codebase for issue context
+- **debug-coordinator** - Orchestrate parallel investigation vectors
 - **plan-architect** - Design fix plan if needed
 - **debug-analyst** - Test hypotheses in parallel
 - **debug-specialist** - Perform root cause analysis
@@ -114,6 +117,9 @@ Complex reasoning, research, coordination:
 - **research-specialist** - Deep codebase analysis and report generation
 - **implementation-executor** - Complex code generation and testing
 - **research-sub-supervisor** - Multi-worker coordination
+- **testing-coordinator** - Parallel test category coordination
+- **debug-coordinator** - Parallel investigation vector coordination
+- **repair-coordinator** - Parallel error dimension coordination
 - **debug-analyst** - Parallel hypothesis testing
 - **cleanup-plan-architect** - Planning reasoning for cleanup tasks
 
@@ -306,6 +312,84 @@ Architectural decisions, complex debugging, semantic analysis:
 - Orchestrating multi-phase implementations
 - Maximizing parallel execution (40-60% time savings)
 - Implementation workflow coordination
+
+---
+
+### testing-coordinator.md
+**Purpose**: Parallel test category execution orchestration
+**Model**: sonnet-4.5 (coordinator role with metadata aggregation)
+
+**Used By Commands**: /test
+
+**Capabilities**:
+- Test category decomposition (unit, integration, e2e)
+- Path pre-calculation (hard barrier pattern)
+- Parallel test-executor invocation
+- Metadata extraction and aggregation (86% context reduction)
+- Partial success mode (>=50% threshold)
+
+**Dependencies**: None (self-contained)
+
+**Allowed Tools**: Read, Bash, Task, Grep, Glob
+
+**Subagents Invoked**: test-executor
+
+**Typical Use Cases**:
+- Orchestrating multi-category test execution
+- Maximizing parallel test execution (40-60% time savings)
+- Test workflow coordination with coverage analysis
+
+---
+
+### debug-coordinator.md
+**Purpose**: Parallel investigation vector execution orchestration
+**Model**: sonnet-4.5 (coordinator role with finding aggregation)
+
+**Used By Commands**: /debug
+
+**Capabilities**:
+- Investigation vector decomposition (logs, code, dependencies, environment)
+- Path pre-calculation (hard barrier pattern)
+- Parallel debug-analyst invocation
+- Metadata extraction and aggregation (95% context reduction)
+- Confidence scoring and vector prioritization
+
+**Dependencies**: None (self-contained)
+
+**Allowed Tools**: Read, Bash, Task, Grep, Glob
+
+**Subagents Invoked**: debug-analyst
+
+**Typical Use Cases**:
+- Orchestrating multi-vector debug investigations
+- Maximizing parallel analysis (40-60% time savings)
+- Root cause investigation coordination
+
+---
+
+### repair-coordinator.md
+**Purpose**: Parallel error dimension analysis orchestration
+**Model**: sonnet-4.5 (coordinator role with pattern aggregation)
+
+**Used By Commands**: /repair
+
+**Capabilities**:
+- Error dimension decomposition (type, timeframe, command, severity)
+- Path pre-calculation (hard barrier pattern)
+- Parallel repair-analyst invocation
+- Metadata extraction and aggregation (94% context reduction)
+- Fix recommendation prioritization
+
+**Dependencies**: None (self-contained)
+
+**Allowed Tools**: Read, Bash, Task, Grep
+
+**Subagents Invoked**: repair-analyst
+
+**Typical Use Cases**:
+- Orchestrating multi-dimension error analysis
+- Maximizing parallel error pattern detection (40-60% time savings)
+- Repair workflow coordination with fix recommendations
 
 ---
 
@@ -579,7 +663,7 @@ Agents that gather external information:
 ### Coordination Agents
 Agents that orchestrate other agents:
 - **Tools**: Read, Bash, Task
-- **Examples**: implementer-coordinator
+- **Examples**: implementer-coordinator, testing-coordinator, debug-coordinator, repair-coordinator
 
 ### Classification Agents
 Agents with minimal/no tools for fast classification:
@@ -674,13 +758,13 @@ Commands orchestrate agents to accomplish complex workflows:
   └── implementer-coordinator → Orchestrate wave execution
 
 /test
-  ├── test-executor → Execute test suites
-  └── debug-analyst → Investigate failures (if tests fail)
+  └── testing-coordinator → Orchestrate parallel test category execution
+      └── test-executor → Execute test suites per category
 
 /debug
-  ├── research-specialist → Analyze codebase
-  ├── debug-analyst → Test hypotheses
-  └── debug-specialist → Root cause analysis
+  ├── research-specialist → Analyze codebase (if multi-topic)
+  └── debug-coordinator → Orchestrate parallel investigation vectors
+      └── debug-analyst → Investigate per vector (logs, code, dependencies, environment)
 
 /expand, /collapse
   └── complexity-estimator → Assess complexity
@@ -831,8 +915,13 @@ See [/home/benjamin/.config/nvim/docs/CODE_STANDARDS.md](../../nvim/docs/CODE_ST
 - [plan-architect.md](plan-architect.md) - Implementation planning
 - [cleanup-plan-architect.md](cleanup-plan-architect.md) - CLAUDE.md optimization plans
 
+**Coordination Agents**:
+- [implementer-coordinator.md](implementer-coordinator.md) - Wave-based parallel phase execution
+- [testing-coordinator.md](testing-coordinator.md) - Parallel test category execution
+- [debug-coordinator.md](debug-coordinator.md) - Parallel investigation vector execution
+- [repair-coordinator.md](repair-coordinator.md) - Parallel error dimension analysis
+
 **Implementation Agents**:
-- [implementer-coordinator.md](implementer-coordinator.md) - Wave-based parallel execution
 - [implementation-executor.md](implementation-executor.md) - Single phase execution
 - [spec-updater.md](spec-updater.md) - Artifact updates and progress
 

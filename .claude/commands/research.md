@@ -4,8 +4,7 @@ argument-hint: <workflow-description> [--file <path>] [--complexity 1-4]
 description: Research-only workflow - Creates comprehensive research reports without planning or implementation
 command-type: primary
 dependent-agents:
-  - research-specialist
-  - research-sub-supervisor
+  - research-coordinator
 library-requirements:
   - workflow-state-machine.sh: ">=2.0.0"
   - state-persistence.sh: ">=1.5.0"
@@ -34,6 +33,7 @@ Execute this bash block with your substitution:
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+shopt -u histexpand 2>/dev/null || true  # Additional protection against history expansion
 
 # === PRE-TRAP ERROR BUFFER ===
 # Initialize error buffer BEFORE any library sourcing
@@ -248,6 +248,7 @@ This implements the **Hard Barrier Pattern** - the output path is calculated BEF
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+shopt -u histexpand 2>/dev/null || true  # Additional protection against history expansion
 
 # === DETECT PROJECT DIRECTORY ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
@@ -302,6 +303,16 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
   exit 1
 }
 
+# Verify critical functions are available after sourcing
+type append_workflow_state >/dev/null 2>&1 || {
+  echo "ERROR: append_workflow_state function not defined after sourcing state-persistence.sh" >&2
+  exit 1
+}
+type setup_bash_error_trap >/dev/null 2>&1 || {
+  echo "ERROR: setup_bash_error_trap function not defined after sourcing error-handling.sh" >&2
+  exit 1
+}
+
 # Setup bash error trap
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
@@ -331,12 +342,12 @@ mkdir -p "$(dirname "$TOPIC_NAME_FILE")" 2>/dev/null || true
 
 # === PATH MISMATCH DIAGNOSTIC ===
 # Verify STATE_FILE uses CLAUDE_PROJECT_DIR (not HOME) to prevent exit 127 errors
-# Skip PATH MISMATCH check when PROJECT_DIR is subdirectory of HOME (valid configuration)
-if [[ "$CLAUDE_PROJECT_DIR" =~ ^${HOME}/ ]]; then
-  # PROJECT_DIR legitimately under HOME - skip PATH MISMATCH validation
+# Updated logic: Check if STATE_FILE is under CLAUDE_PROJECT_DIR (handles PROJECT_DIR under HOME correctly)
+if [[ "$STATE_FILE" == "$CLAUDE_PROJECT_DIR"* ]]; then
+  # STATE_FILE is under PROJECT_DIR - valid configuration
   :
-elif [[ "$STATE_FILE" =~ ^${HOME}/ ]]; then
-  # Only flag as error if PROJECT_DIR is NOT under HOME but STATE_FILE uses HOME
+elif [[ "$STATE_FILE" == "$HOME"* ]] && [[ "$STATE_FILE" != "$CLAUDE_PROJECT_DIR"* ]]; then
+  # STATE_FILE uses HOME but not PROJECT_DIR - invalid configuration
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -407,6 +418,7 @@ This is the **hard barrier** - the workflow CANNOT proceed unless the topic name
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+shopt -u histexpand 2>/dev/null || true  # Additional protection against history expansion
 
 # === DETECT PROJECT DIRECTORY ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
@@ -491,9 +503,34 @@ echo "Expected topic name file: $TOPIC_NAME_FILE"
 # validate_agent_artifact checks file existence and minimum size (10 bytes)
 if ! validate_agent_artifact "$TOPIC_NAME_FILE" 10 "topic name"; then
   # Error already logged by validate_agent_artifact
+  # Log additional context for debugging agent failures
+  AGENT_OUTPUT_EXISTS="false"
+  AGENT_FILE_SIZE=0
+  if [ -f "$TOPIC_NAME_FILE" ]; then
+    AGENT_OUTPUT_EXISTS="true"
+    AGENT_FILE_SIZE=$(wc -c < "$TOPIC_NAME_FILE" 2>/dev/null || echo 0)
+  fi
+
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "Topic naming agent failed to create valid output file" \
+    "bash_block_1c" \
+    "$(jq -n --arg path "$TOPIC_NAME_FILE" \
+             --arg exists "$AGENT_OUTPUT_EXISTS" \
+             --argjson size "$AGENT_FILE_SIZE" \
+             --arg min_size "10" \
+       '{expected_path: $path, file_exists: $exists, file_size_bytes: $size, min_required_bytes: $min_size, fallback: "no_name_error"}')"
+
   echo "ERROR: HARD BARRIER FAILED - Topic naming agent validation failed" >&2
   echo "" >&2
   echo "This indicates the topic-naming-agent did not create valid output." >&2
+  echo "  Expected path: $TOPIC_NAME_FILE" >&2
+  echo "  File exists: $AGENT_OUTPUT_EXISTS" >&2
+  echo "  File size: $AGENT_FILE_SIZE bytes (minimum: 10 bytes)" >&2
+  echo "" >&2
   echo "The workflow will fall back to 'no_name_error' directory." >&2
   echo "" >&2
   echo "To retry: Re-run the /research command with the same arguments" >&2
@@ -515,6 +552,7 @@ echo ""
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+shopt -u histexpand 2>/dev/null || true  # Additional protection against history expansion
 
 # === DETECT PROJECT DIRECTORY FIRST (required for state file path) ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
@@ -711,6 +749,191 @@ echo "Research directory: $RESEARCH_DIR"
 echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 ```
 
+## Block 1d-topics: Topic Decomposition
+
+**EXECUTE NOW**: Analyze research request for multi-topic indicators and decompose if needed.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+shopt -u histexpand 2>/dev/null || true  # Additional protection against history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+  CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+else
+  current_dir="$(pwd)"
+  while [ "$current_dir" != "/" ]; do
+    if [ -d "$current_dir/.claude" ]; then
+      CLAUDE_PROJECT_DIR="$current_dir"
+      break
+    fi
+    current_dir="$(dirname "$current_dir")"
+  done
+fi
+
+if [ -z "$CLAUDE_PROJECT_DIR" ] || [ ! -d "$CLAUDE_PROJECT_DIR/.claude" ]; then
+  echo "ERROR: Failed to detect project directory" >&2
+  exit 1
+fi
+
+export CLAUDE_PROJECT_DIR
+
+# === RESTORE STATE ===
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/research_state_id.txt"
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+
+if [ -z "$WORKFLOW_ID" ]; then
+  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+  exit 1
+fi
+
+STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+if [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"
+else
+  echo "ERROR: State file not found: $STATE_FILE" >&2
+  exit 1
+fi
+
+COMMAND_NAME="/research"
+USER_ARGS="${WORKFLOW_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+# Source libraries
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Setup bash error trap
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
+
+echo ""
+echo "=== Topic Decomposition ==="
+echo ""
+
+# === ANALYZE RESEARCH REQUEST FOR MULTI-TOPIC INDICATORS ===
+# Use complexity to determine if multi-topic decomposition is warranted
+USE_MULTI_TOPIC=false
+TOPIC_COUNT=1
+
+# Complexity-based topic count mapping
+if [ "${RESEARCH_COMPLEXITY:-2}" -ge 3 ]; then
+  USE_MULTI_TOPIC=true
+  if [ "${RESEARCH_COMPLEXITY:-2}" -eq 3 ]; then
+    TOPIC_COUNT=2  # 2-3 topics for complexity 3
+  else
+    TOPIC_COUNT=3  # 3-4 topics for complexity 4
+  fi
+fi
+
+# Additional heuristic checks for multi-topic indicators
+if [ "$USE_MULTI_TOPIC" = "false" ]; then
+  # Check for conjunctions or multi-topic patterns in description
+  if echo "$WORKFLOW_DESCRIPTION" | grep -qiE " and | or |, .+ and |, .+ or "; then
+    USE_MULTI_TOPIC=true
+    TOPIC_COUNT=2
+    echo "Detected multi-topic pattern in description (conjunctions found)"
+  fi
+fi
+
+echo "Research complexity: $RESEARCH_COMPLEXITY"
+echo "Multi-topic decomposition: $USE_MULTI_TOPIC"
+echo "Target topic count: $TOPIC_COUNT"
+
+# === DECOMPOSE TOPICS (simple heuristic-based) ===
+if [ "$USE_MULTI_TOPIC" = "true" ]; then
+  echo ""
+  echo "Decomposing research request into $TOPIC_COUNT topics..."
+
+  # Simple decomposition based on conjunctions and commas
+  # Convert to array by splitting on " and ", " or ", ","
+  TOPICS_ARRAY=()
+
+  # Split on common delimiters
+  IFS=',' read -ra PARTS <<< "$WORKFLOW_DESCRIPTION"
+  for part in "${PARTS[@]}"; do
+    # Further split on " and " and " or "
+    IFS=' and ' read -ra SUB_PARTS <<< "$part"
+    for subpart in "${SUB_PARTS[@]}"; do
+      IFS=' or ' read -ra SUB_SUB_PARTS <<< "$subpart"
+      for topic in "${SUB_SUB_PARTS[@]}"; do
+        # Trim whitespace and add to array
+        topic=$(echo "$topic" | xargs)
+        if [ -n "$topic" ] && [ ${#TOPICS_ARRAY[@]} -lt "$TOPIC_COUNT" ]; then
+          TOPICS_ARRAY+=("$topic")
+        fi
+      done
+    done
+  done
+
+  # If decomposition produced fewer topics than target, use single topic
+  if [ ${#TOPICS_ARRAY[@]} -lt 2 ]; then
+    echo "Decomposition produced ${#TOPICS_ARRAY[@]} topics (less than 2), falling back to single-topic mode"
+    USE_MULTI_TOPIC=false
+    TOPICS_ARRAY=("$WORKFLOW_DESCRIPTION")
+  else
+    echo "Decomposed into ${#TOPICS_ARRAY[@]} topics:"
+    for i in "${!TOPICS_ARRAY[@]}"; do
+      echo "  $((i+1)). ${TOPICS_ARRAY[$i]}"
+    done
+  fi
+else
+  # Single topic mode
+  TOPICS_ARRAY=("$WORKFLOW_DESCRIPTION")
+  echo "Using single-topic mode (complexity ${RESEARCH_COMPLEXITY:-2})"
+fi
+
+# === PRE-CALCULATE REPORT PATHS FOR EACH TOPIC ===
+echo ""
+echo "Pre-calculating report paths..."
+
+# Find existing reports to determine starting number
+EXISTING_REPORTS=$(find "$RESEARCH_DIR" -name '[0-9][0-9][0-9]-*.md' 2>/dev/null | wc -l)
+START_NUM=$((EXISTING_REPORTS + 1))
+
+REPORT_PATHS_ARRAY=()
+for i in "${!TOPICS_ARRAY[@]}"; do
+  TOPIC="${TOPICS_ARRAY[$i]}"
+  REPORT_NUM=$(printf "%03d" $((START_NUM + i)))
+
+  # Generate slug from topic (max 40 chars, kebab-case)
+  REPORT_SLUG=$(echo "$TOPIC" | head -c 40 | tr ' ' '-' | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]//g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//')
+
+  # Fallback if slug is empty
+  if [ -z "$REPORT_SLUG" ]; then
+    REPORT_SLUG="research-topic-$((i+1))"
+  fi
+
+  REPORT_PATH="${RESEARCH_DIR}/${REPORT_NUM}-${REPORT_SLUG}.md"
+  REPORT_PATHS_ARRAY+=("$REPORT_PATH")
+
+  echo "  $REPORT_NUM: $REPORT_PATH"
+done
+
+# === PERSIST FOR BLOCK 1d-exec ===
+# Save topics and paths to state
+append_workflow_state "USE_MULTI_TOPIC" "$USE_MULTI_TOPIC"
+append_workflow_state "TOPIC_COUNT" "${#TOPICS_ARRAY[@]}"
+
+# Save topics array (space-separated for state file)
+TOPICS_LIST=$(printf "%s|" "${TOPICS_ARRAY[@]}")
+TOPICS_LIST="${TOPICS_LIST%|}"  # Remove trailing pipe
+append_workflow_state "TOPICS_LIST" "$TOPICS_LIST"
+
+# Save report paths array (space-separated for state file)
+REPORT_PATHS_LIST=$(printf "%s|" "${REPORT_PATHS_ARRAY[@]}")
+REPORT_PATHS_LIST="${REPORT_PATHS_LIST%|}"  # Remove trailing pipe
+append_workflow_state "REPORT_PATHS_LIST" "$REPORT_PATHS_LIST"
+
+echo ""
+echo "✓ Topic decomposition complete (${#TOPICS_ARRAY[@]} topics, ${#REPORT_PATHS_ARRAY[@]} reports)"
+```
+
 ## Block 1d: Report Path Pre-Calculation
 
 **EXECUTE NOW**: Pre-calculate the absolute report path before invoking research-specialist.
@@ -719,6 +942,7 @@ This implements the **hard barrier pattern** - the report path is calculated BEF
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+shopt -u histexpand 2>/dev/null || true  # Additional protection against history expansion
 
 # === DETECT PROJECT DIRECTORY ===
 if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
@@ -773,6 +997,16 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
   exit 1
 }
 
+# Verify critical functions are available after sourcing
+type append_workflow_state >/dev/null 2>&1 || {
+  echo "ERROR: append_workflow_state function not defined after sourcing state-persistence.sh" >&2
+  exit 1
+}
+type setup_bash_error_trap >/dev/null 2>&1 || {
+  echo "ERROR: setup_bash_error_trap function not defined after sourcing error-handling.sh" >&2
+  exit 1
+}
+
 # Setup bash error trap
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 
@@ -792,6 +1026,20 @@ if [ -z "${RESEARCH_DIR:-}" ]; then
 fi
 
 # Calculate report number (001, 002, 003...)
+# Lazy directory creation: Create RESEARCH_DIR before find command to prevent exit code 1 errors
+mkdir -p "$RESEARCH_DIR" 2>/dev/null || {
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "file_error" \
+    "Failed to create RESEARCH_DIR" \
+    "bash_block_1d" \
+    "$(jq -n --arg dir "$RESEARCH_DIR" '{research_dir: $dir}')"
+  echo "WARNING: Failed to create RESEARCH_DIR: $RESEARCH_DIR" >&2
+  EXISTING_REPORTS=0
+}
+
 # Validate directory exists before find command
 if ! validate_directory_var "RESEARCH_DIR" "research reports"; then
   EXISTING_REPORTS=0
@@ -848,48 +1096,62 @@ echo ""
 echo "Ready for research-specialist invocation"
 ```
 
-## Block 1d-exec: Research Specialist Invocation
+## Block 1d-exec: Research Coordinator Invocation
 
-**HARD BARRIER - Research Specialist Invocation**
+**HARD BARRIER - Research Coordinator Invocation**
 
-**EXECUTE NOW**: USE the Task tool to invoke the research-specialist agent. This invocation is MANDATORY. The orchestrator MUST NOT perform research work directly. After the agent returns, Block 1e will verify the report was created at the pre-calculated path.
+**EXECUTE NOW**: USE the Task tool to invoke the research-coordinator agent. This invocation is MANDATORY. The orchestrator MUST NOT perform research work directly. After the agent returns, Block 1e will verify all reports were created at the pre-calculated paths.
 
 Task {
   subagent_type: "general-purpose"
-  description: "Research ${WORKFLOW_DESCRIPTION} with mandatory file creation"
+  description: "Coordinate multi-topic research for ${WORKFLOW_DESCRIPTION} with mandatory file creation"
   prompt: "
     Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-coordinator.md
 
-    You are conducting research for: research workflow
+    You are coordinating research for: research workflow
 
-    **Input Contract (Hard Barrier Pattern)**:
-    - Report Path: ${REPORT_PATH}
-    - Output Directory: ${RESEARCH_DIR}
-    - Research Topic: ${WORKFLOW_DESCRIPTION}
-    - Research Complexity: ${RESEARCH_COMPLEXITY}
+    **Input Contract (Hard Barrier Pattern - Mode 2: Pre-Decomposed)**:
+    - research_request: ${WORKFLOW_DESCRIPTION}
+    - research_complexity: ${RESEARCH_COMPLEXITY}
+    - report_dir: ${RESEARCH_DIR}
+    - topic_path: ${TOPIC_PATH}
+    - topics: ${TOPICS_LIST}
+    - report_paths: ${REPORT_PATHS_LIST}
     - Workflow Type: research-only
     - Original Prompt File: ${ORIGINAL_PROMPT_FILE_PATH:-none}
     - Archived Prompt File: ${ARCHIVED_PROMPT_PATH:-none}
 
-    **CRITICAL**: You MUST create the report file at the EXACT path specified above.
-    The orchestrator has pre-calculated this path and will validate it exists after you return.
+    **CRITICAL**: Topics and report paths have been pre-calculated by the primary agent.
+    Use Mode 2 (Pre-Decomposed) - parse TOPICS_LIST and REPORT_PATHS_LIST (pipe-separated).
+    You MUST coordinate research-specialist invocation for each topic and ensure report files
+    are created at the EXACT paths specified above.
 
-    If an archived prompt file is provided (not 'none'), read it for complete context.
+    The orchestrator has pre-calculated these paths and will validate they exist after you return.
 
-    Execute research according to behavioral guidelines and return completion signal:
-    REPORT_CREATED: ${REPORT_PATH}
+    If an archived prompt file is provided (not 'none'), pass it to research-specialist for complete context.
+
+    Execute research coordination according to behavioral guidelines:
+    1. Parse topics and report_paths from pipe-separated lists
+    2. Invoke research-specialist for each topic (parallel execution)
+    3. Validate all reports created (hard barrier)
+    4. Extract metadata from each report
+    5. Return completion signal with aggregated metadata
+
+    Return completion signal:
+    RESEARCH_COMPLETE: ${TOPIC_COUNT} reports created
   "
 }
 
 ## Block 1e: Agent Output Validation (Hard Barrier)
 
-**EXECUTE NOW**: Validate that research-specialist created the report at the pre-calculated path.
+**EXECUTE NOW**: Validate that research-coordinator created all reports at the pre-calculated paths.
 
-This is the **hard barrier** - the workflow CANNOT proceed to Block 2 unless the report file exists. This architectural enforcement prevents the primary agent from bypassing subagent delegation.
+This is the **hard barrier** - the workflow CANNOT proceed to Block 2 unless ALL report files exist. This architectural enforcement prevents the primary agent from bypassing subagent delegation.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+shopt -u histexpand 2>/dev/null || true  # Additional protection against history expansion
 
 # === PRE-TRAP ERROR BUFFER ===
 declare -a _EARLY_ERROR_BUFFER=()
@@ -953,80 +1215,105 @@ echo ""
 echo "=== Agent Output Validation (Hard Barrier) ==="
 echo ""
 
-# === HARD BARRIER VALIDATION ===
-# Validate REPORT_PATH is set (from Block 1d)
-if [ -z "${REPORT_PATH:-}" ]; then
+# === HARD BARRIER VALIDATION (MULTI-REPORT) ===
+# Validate REPORT_PATHS_LIST is set (from Block 1d-topics)
+if [ -z "${REPORT_PATHS_LIST:-}" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
     "$USER_ARGS" \
     "state_error" \
-    "REPORT_PATH not restored from Block 1d state" \
+    "REPORT_PATHS_LIST not restored from Block 1d-topics state" \
     "bash_block_1e" \
-    "$(jq -n '{report_path: "missing"}')"
-  echo "ERROR: REPORT_PATH not set - state restoration failed" >&2
+    "$(jq -n '{report_paths_list: "missing"}')"
+  echo "ERROR: REPORT_PATHS_LIST not set - state restoration failed" >&2
   exit 1
 fi
 
-echo "Expected report path: $REPORT_PATH"
+# Parse report paths from pipe-separated list
+IFS='|' read -ra REPORT_PATHS_ARRAY <<< "$REPORT_PATHS_LIST"
 
-# HARD BARRIER: Report file MUST exist
-if [ ! -f "$REPORT_PATH" ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "agent_error" \
-    "research-specialist failed to create report file" \
-    "bash_block_1e" \
-    "$(jq -n --arg path "$REPORT_PATH" '{expected_path: $path}')"
+echo "Expected ${#REPORT_PATHS_ARRAY[@]} report file(s):"
+for path in "${REPORT_PATHS_ARRAY[@]}"; do
+  echo "  - $path"
+done
+echo ""
 
-  echo "ERROR: HARD BARRIER FAILED - Report file not found at: $REPORT_PATH" >&2
+# === VALIDATE EACH REPORT (LOOP) ===
+VALIDATION_FAILED=false
+FAILED_REPORTS=()
+TOTAL_SIZE=0
+
+for REPORT_PATH in "${REPORT_PATHS_ARRAY[@]}"; do
+  echo "Validating: $REPORT_PATH"
+
+  # HARD BARRIER: Report file MUST exist
+  if [ ! -f "$REPORT_PATH" ]; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "agent_error" \
+      "research-coordinator failed to create report file" \
+      "bash_block_1e" \
+      "$(jq -n --arg path "$REPORT_PATH" '{expected_path: $path}')"
+
+    echo "  ✗ ERROR: Report file not found" >&2
+    VALIDATION_FAILED=true
+    FAILED_REPORTS+=("$REPORT_PATH")
+    continue
+  fi
+
+  # Validate report is not empty or too small
+  REPORT_SIZE=$(wc -c < "$REPORT_PATH" 2>/dev/null || echo 0)
+  if [ "$REPORT_SIZE" -lt 100 ]; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Report file too small (agent may have failed during write)" \
+      "bash_block_1e" \
+      "$(jq -n --arg path "$REPORT_PATH" --argjson size "$REPORT_SIZE" '{report_path: $path, size_bytes: $size, min_required: 100}')"
+
+    echo "  ✗ ERROR: Report file too small ($REPORT_SIZE bytes, expected >100)" >&2
+    VALIDATION_FAILED=true
+    FAILED_REPORTS+=("$REPORT_PATH")
+    continue
+  fi
+
+  # Validate report contains required sections (basic content check)
+  if ! grep -q "## Findings" "$REPORT_PATH" 2>/dev/null; then
+    echo "  ⚠ WARNING: Report missing '## Findings' section (may be incomplete)" >&2
+    # Non-fatal: continue but log warning
+  fi
+
+  TOTAL_SIZE=$((TOTAL_SIZE + REPORT_SIZE))
+  echo "  ✓ Valid ($REPORT_SIZE bytes)"
+done
+
+# === FAIL-FAST IF ANY REPORTS MISSING ===
+if [ "$VALIDATION_FAILED" = "true" ]; then
   echo "" >&2
-  echo "This indicates the research-specialist subagent did not create the expected artifact." >&2
-  echo "The workflow cannot proceed without the research report." >&2
+  echo "ERROR: HARD BARRIER FAILED - ${#FAILED_REPORTS[@]} report(s) missing or invalid" >&2
+  echo "" >&2
+  echo "Failed reports:" >&2
+  for failed in "${FAILED_REPORTS[@]}"; do
+    echo "  - $failed" >&2
+  done
+  echo "" >&2
+  echo "This indicates the research-coordinator did not create all expected artifacts." >&2
+  echo "The workflow cannot proceed without all research reports." >&2
   echo "" >&2
   echo "Troubleshooting:" >&2
-  echo "  1. Check research-specialist agent output for errors" >&2
+  echo "  1. Check research-coordinator agent output for errors" >&2
   echo "  2. Verify Task invocation in Block 1d-exec executed correctly" >&2
   echo "  3. Run /errors --command /research for detailed error logs" >&2
   exit 1
 fi
 
-# Validate report is not empty or too small
-REPORT_SIZE=$(wc -c < "$REPORT_PATH" 2>/dev/null || echo 0)
-if [ "$REPORT_SIZE" -lt 100 ]; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "validation_error" \
-    "Report file too small (agent may have failed during write)" \
-    "bash_block_1e" \
-    "$(jq -n --arg path "$REPORT_PATH" --argjson size "$REPORT_SIZE" '{report_path: $path, size_bytes: $size, min_required: 100}')"
-
-  echo "ERROR: Report file exists but is too small ($REPORT_SIZE bytes)" >&2
-  echo "  Expected: >100 bytes for valid report" >&2
-  exit 1
-fi
-
-# Validate report contains required sections (basic content check)
-if ! grep -q "## Findings" "$REPORT_PATH" 2>/dev/null; then
-  log_command_error \
-    "$COMMAND_NAME" \
-    "$WORKFLOW_ID" \
-    "$USER_ARGS" \
-    "validation_error" \
-    "Report file missing required '## Findings' section" \
-    "bash_block_1e" \
-    "$(jq -n --arg path "$REPORT_PATH" '{report_path: $path, missing_section: "Findings"}')"
-
-  echo "WARNING: Report may be incomplete - missing '## Findings' section" >&2
-  # Non-fatal: continue but log warning
-fi
-
-echo "✓ Agent output validated: Report file exists ($REPORT_SIZE bytes)"
-echo "  Path: $REPORT_PATH"
+echo ""
+echo "✓ All reports validated: ${#REPORT_PATHS_ARRAY[@]} files ($TOTAL_SIZE bytes total)"
 echo ""
 echo "Hard barrier passed - proceeding to Block 2"
 ```
@@ -1037,6 +1324,7 @@ echo "Hard barrier passed - proceeding to Block 2"
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
+shopt -u histexpand 2>/dev/null || true  # Additional protection against history expansion
 
 # === PRE-TRAP ERROR BUFFER ===
 # Initialize error buffer BEFORE any library sourcing

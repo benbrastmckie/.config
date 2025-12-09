@@ -78,7 +78,7 @@ ensure_artifact_directory "$REPORT_PATH" || {
 # Then retry Write tool immediately
 ```
 
-Create report file content:
+Create report file content using this EXACT template structure:
 
 ```markdown
 # [Topic] Research Report
@@ -91,20 +91,57 @@ Create report file content:
 
 ## Executive Summary
 
-[Will be filled after research - placeholder for now]
+[Will be filled after research - 2-3 sentences summarizing key findings and recommendations]
 
 ## Findings
 
+[REQUIRED SECTION - CANNOT BE OMITTED]
+[This section will be validated by the orchestrator]
+[Minimum 3 distinct findings required]
 [Research findings will be added during Step 3]
+
+### Finding 1: [Title]
+- **Description**: [What was found]
+- **Location**: [File path and line numbers]
+- **Evidence**: [Code snippet or concrete example]
+- **Impact**: [Significance or implications]
+
+### Finding 2: [Title]
+- **Description**: [What was found]
+- **Location**: [File path and line numbers]
+- **Evidence**: [Code snippet or concrete example]
+- **Impact**: [Significance or implications]
+
+### Finding 3: [Title]
+- **Description**: [What was found]
+- **Location**: [File path and line numbers]
+- **Evidence**: [Code snippet or concrete example]
+- **Impact**: [Significance or implications]
 
 ## Recommendations
 
-[Recommendations will be added during Step 3]
+[Minimum 3 actionable recommendations required]
+[Each should reference findings above]
+
+1. **[Recommendation Title]**: [Detailed recommendation with priority and rationale]
+2. **[Recommendation Title]**: [Detailed recommendation with priority and rationale]
+3. **[Recommendation Title]**: [Detailed recommendation with priority and rationale]
 
 ## References
 
-[File paths, line numbers, and sources will be added during Step 3]
+[All files analyzed with absolute paths]
+[External sources if web research was conducted]
+
+- [/absolute/path/to/file.ext] (lines X-Y)
+- [https://url.com/resource] - [Brief description]
 ```
+
+**CRITICAL TEMPLATE REQUIREMENTS**:
+- The "## Findings" header MUST be present (exact capitalization)
+- You may add more than 3 findings, but minimum is 3
+- All section headers must use ## (double hash) format
+- File paths must be absolute (not relative)
+- Line numbers must be specific (not ranges like "various lines")
 
 **MANDATORY VERIFICATION - File Created**:
 
@@ -136,45 +173,138 @@ After using Write tool, verify:
 - **Relevance**: Focus on information directly applicable to the task
 - **Evidence**: Support all conclusions with specific examples from codebase or authoritative sources
 
-**Report Sections YOU MUST Complete**:
-- **Executive Summary**: 2-3 sentences summarizing key findings
-- **Findings**: Detailed analysis with file paths and line numbers
-- **Recommendations**: Actionable insights (minimum 3 recommendations)
-- **References**: All files analyzed (full paths)
+**Report Sections YOU MUST Complete** (STRICT REQUIREMENT):
+
+ALL of these sections are MANDATORY and must be present in the final report:
+
+1. **Metadata Section** (## Metadata)
+   - Date, Agent, Topic, Report Type
+   - Format: Markdown bullet list with bold labels
+
+2. **Executive Summary** (## Executive Summary)
+   - 2-3 sentences summarizing key findings
+   - Written AFTER research is complete
+   - Must be concise and actionable
+
+3. **Findings Section** (## Findings) - REQUIRED, CANNOT BE OMITTED
+   - Detailed analysis with file paths and line numbers
+   - Minimum 3 distinct findings
+   - Each finding must include:
+     - Description of what was found
+     - File path(s) where evidence exists
+     - Line numbers for specific code references
+     - Impact or significance of the finding
+   - This section will be validated by the orchestrator
+   - Reports without "## Findings" header will fail validation
+
+4. **Recommendations** (## Recommendations)
+   - Actionable insights (minimum 3 recommendations)
+   - Each recommendation should reference a finding
+   - Prioritized by importance or impact
+
+5. **References** (## References)
+   - All files analyzed (full absolute paths)
+   - External sources (if web research was conducted)
+   - Line number ranges for key code sections
 
 ---
 
-### STEP 4 (ABSOLUTE REQUIREMENT) - Verify and Return Confirmation
+### STEP 4 (ABSOLUTE REQUIREMENT) - Pre-Return Section Structure Validation
+
+**CRITICAL CHECKPOINT**: Before returning, verify all required sections exist in the report.
+
+**HARD BARRIER**: The orchestrator validates section structure after you return. If required sections are missing, the workflow will fail with validation_error.
+
+**Section Structure Validation** (MANDATORY):
+
+```bash
+# Define required sections
+REQUIRED_SECTIONS=(
+  "## Metadata"
+  "## Executive Summary"
+  "## Findings"
+  "## Recommendations"
+  "## References"
+)
+
+# Verify each section exists
+MISSING_SECTIONS=()
+for section in "${REQUIRED_SECTIONS[@]}"; do
+  if ! grep -q "^${section}$" "$REPORT_PATH"; then
+    MISSING_SECTIONS+=("$section")
+  fi
+done
+
+# Fail if any sections missing
+if [ ${#MISSING_SECTIONS[@]} -gt 0 ]; then
+  echo "ERROR: Report missing required sections: ${MISSING_SECTIONS[*]}"
+  exit 1
+fi
+
+echo "✓ All required sections present in report"
+```
+
+**Section Content Quality Requirements**:
+- **Findings**: Minimum 3 research findings with evidence
+- **Methodology**: Clear description of research approach and sources
+- **Recommendations**: Actionable recommendations tied to findings
+- **References**: All sources cited with links or paths
+
+---
+
+### STEP 5 (FINAL) - Verify and Return Confirmation
 
 **MANDATORY VERIFICATION - Report File Complete**
 
-After completing all research and updates, YOU MUST verify the report file:
+After completing all research, updates, and section validation, YOU MUST verify the report file:
 
 **Verification Checklist** (ALL must be ✓):
 - [ ] Report file exists at $REPORT_PATH
-- [ ] Executive Summary completed (not placeholder)
-- [ ] Findings section has detailed content
+- [ ] File contains "## Metadata" section header
+- [ ] Executive Summary completed (not placeholder text)
+- [ ] **CRITICAL**: File contains "## Findings" section header (EXACT match)
+- [ ] Findings section has at least 3 distinct findings with details
 - [ ] Recommendations section has at least 3 items
 - [ ] References section lists all files analyzed
 - [ ] All file references include line numbers
 
-**Final Verification Code**:
+**Final Verification Code** (Self-Validation Before Return):
 ```bash
 # Verify file exists
 if [ ! -f "$REPORT_PATH" ]; then
-  echo "CRITICAL ERROR: Report file not found at: $REPORT_PATH"
-  echo "This should be impossible - file was created in Step 2"
+  echo "CRITICAL ERROR: Report file not found at: $REPORT_PATH" >&2
+  echo "This should be impossible - file was created in Step 2" >&2
   exit 1
 fi
 
 # Verify file is not empty
 FILE_SIZE=$(wc -c < "$REPORT_PATH" 2>/dev/null || echo 0)
 if [ "$FILE_SIZE" -lt 500 ]; then
-  echo "WARNING: Report file is too small (${FILE_SIZE} bytes)"
-  echo "Expected >500 bytes for a complete report"
+  echo "WARNING: Report file is too small (${FILE_SIZE} bytes)" >&2
+  echo "Expected >500 bytes for a complete report" >&2
+fi
+
+# CRITICAL: Verify "## Findings" section header is present
+if ! grep -q "^## Findings" "$REPORT_PATH" 2>/dev/null; then
+  echo "CRITICAL ERROR: Report missing required '## Findings' section header" >&2
+  echo "The orchestrator will reject reports without this section" >&2
+  echo "File: $REPORT_PATH" >&2
+  exit 1
+fi
+
+# Verify other required sections
+MISSING_SECTIONS=""
+grep -q "^## Metadata" "$REPORT_PATH" 2>/dev/null || MISSING_SECTIONS="$MISSING_SECTIONS Metadata"
+grep -q "^## Executive Summary" "$REPORT_PATH" 2>/dev/null || MISSING_SECTIONS="$MISSING_SECTIONS ExecutiveSummary"
+grep -q "^## Recommendations" "$REPORT_PATH" 2>/dev/null || MISSING_SECTIONS="$MISSING_SECTIONS Recommendations"
+grep -q "^## References" "$REPORT_PATH" 2>/dev/null || MISSING_SECTIONS="$MISSING_SECTIONS References"
+
+if [ -n "$MISSING_SECTIONS" ]; then
+  echo "WARNING: Report missing sections:$MISSING_SECTIONS" >&2
 fi
 
 echo "✓ VERIFIED: Report file complete and saved"
+echo "✓ VERIFIED: All required sections present including '## Findings'"
 ```
 
 **CHECKPOINT REQUIREMENT - Return Path Confirmation**
@@ -349,7 +479,8 @@ Before completing your task, YOU MUST verify ALL of these criteria are met:
 - [x] STEP 1 completed: Absolute path received and verified
 - [x] STEP 2 completed: Report file created FIRST (before research)
 - [x] STEP 3 completed: Research conducted and file updated incrementally
-- [x] STEP 4 completed: File verified to exist and contain complete content
+- [x] STEP 4 completed: Section structure validated before return
+- [x] STEP 5 completed: File verified to exist and contain complete content
 - [x] All progress markers emitted at required milestones
 - [x] No verification checkpoints skipped
 
