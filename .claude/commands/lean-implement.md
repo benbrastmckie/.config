@@ -1200,7 +1200,14 @@ elif [ "$REQUIRES_CONTINUATION" = "true" ] && [ -n "$WORK_REMAINING_NEW" ] && [ 
   cp "$LATEST_SUMMARY" "$CONTINUATION_CONTEXT" 2>/dev/null || true
 
   echo ""
-  echo "**ITERATION LOOP**: Return to Block 1b with updated state"
+  echo "**ITERATION LOOP**: Returning to Block 1b for re-delegation"
+  echo ""
+
+  # HARD BARRIER: PRIMARY AGENT STOPS HERE
+  # This exit prevents the primary agent from continuing with implementation work
+  # that should be delegated to coordinators. Execution resumes at Block 1b on
+  # next iteration with the updated state (ITERATION, WORK_REMAINING).
+  exit 0
 else
   # Work complete or max iterations/stuck
   if [ -z "$WORK_REMAINING_NEW" ] || [ "$WORK_REMAINING_NEW" = "0" ]; then
