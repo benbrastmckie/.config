@@ -823,6 +823,57 @@ Research coordination is successful if:
 - Aggregated metadata returned to primary agent
 - Context reduction 95%+ vs full report content
 
+### Common Pitfalls and Troubleshooting
+
+#### Pitfall 1: Empty Reports Directory
+
+**Symptom**: research-coordinator completes but reports directory is empty
+
+**Root Cause**: Task invocations in agent behavioral file use pseudo-code patterns that agent interprets as documentation
+
+**Diagnostic Signs**:
+- Coordinator completes with 7 tool uses but 0 Task invocations
+- "Error retrieving agent output" when command attempts to validate
+- Empty directory validation fails immediately
+- Workflow requires fallback to manual research-specialist invocations
+
+**Fix**: Verify research-coordinator.md STEP 3 uses standards-compliant Task invocation patterns:
+1. Each Task invocation has "**EXECUTE NOW**: USE the Task tool..." directive
+2. No code block wrappers (` ``` ` fences) around Task invocations
+3. No bash variable syntax (`${TOPICS[0]}`) - use concrete placeholders
+4. Checkpoint verification after each invocation
+
+**Prevention**: Run lint-task-invocation-pattern.sh on agent behavioral files before deployment
+
+#### Pitfall 2: Partial Report Creation
+
+**Symptom**: Some but not all expected reports created
+
+**Root Cause**: Task invocations skipped for some topics (e.g., only topics 0-2 invoked, but 4 topics expected)
+
+**Fix**:
+1. Review research-coordinator.md STEP 3 - ensure Task invocations exist for ALL topic indices
+2. Check coordinator STEP 3.5 self-validation - verify Task count matches topic count
+3. Add explicit checkpoints: "Did you just USE the Task tool for topic N?"
+
+**Prevention**: Add mandatory self-validation checkpoints in agent behavioral file
+
+#### Pitfall 3: Missing Coordinator Output Validation
+
+**Symptom**: Command proceeds to file validation before checking if coordinator succeeded
+
+**Root Cause**: No coordinator output signal validation between Task invocation and hard barrier file checks
+
+**Fix**: Add Block 1e-validate to commands using research-coordinator:
+1. Validate reports directory is not empty (early failure detection)
+2. Count expected vs actual reports
+3. Log structured error with agent context if mismatch
+4. Exit early with actionable diagnostics
+
+**Prevention**: Use Block 1e-validate pattern in all commands invoking coordinators
+
+**Reference**: See [Coordinator Agent Failures Troubleshooting](./../troubleshooting/coordinator-agent-failures.md) for complete diagnostic workflows.
+
 ---
 
 ## Example 8: Lean Command Coordinator Optimization

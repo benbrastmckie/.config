@@ -292,6 +292,55 @@ Task {
 - **Optional**: When agent frontmatter already specifies correct tier
 - **Recommended**: For clear separation of orchestration vs. implementation model requirements
 
+#### Agent Behavioral File Task Patterns
+
+When agent behavioral files (e.g., research-coordinator.md) contain Task invocations that the agent should execute, use the same standards-compliant pattern as commands:
+
+**CRITICAL REQUIREMENTS**:
+1. **No code block wrappers**: Task invocations must NOT be wrapped in ``` fences
+2. **Imperative directives**: Each Task invocation requires "**EXECUTE NOW**: USE the Task tool..." prefix
+3. **Concrete values**: Use actual topic strings and paths, not bash variable placeholders like `${TOPICS[0]}`
+4. **Checkpoint verification**: Add explicit "Did you just USE the Task tool?" checkpoints after invocations
+
+**Example** (from research-coordinator.md STEP 3):
+
+```markdown
+**CHECKPOINT AFTER TOPIC 0**: Did you just USE the Task tool for topic at index 0?
+
+**EXECUTE NOW**: USE the Task tool to invoke research-specialist for topic at index 0.
+
+Task {
+  subagent_type: "general-purpose"
+  description: "Research topic at index 0 with mandatory file creation"
+  prompt: "
+    Read and follow behavioral guidelines from:
+    (use CLAUDE_PROJECT_DIR)/.claude/agents/research-specialist.md
+
+    **CRITICAL - Hard Barrier Pattern**:
+    REPORT_PATH=(use REPORT_PATHS[0] - exact absolute path from array)
+
+    **Research Topic**: (use TOPICS[0] - exact topic string from array)
+
+    Execute research per behavioral guidelines.
+    Return: REPORT_CREATED: (REPORT_PATHS[0])
+  "
+}
+```
+
+**Anti-Patterns** (DO NOT USE):
+- ❌ Wrapping Task invocations in code blocks: ` ```Task { }``` `
+- ❌ Using bash variable syntax: `${TOPICS[0]}` (looks like documentation)
+- ❌ Separate logging code blocks: ` ```bash echo "..."``` ` before Task invocation
+- ❌ Pseudo-code notation without imperative directive
+
+**Why This Matters**:
+- Agents interpret code-fenced Task blocks as documentation examples
+- Bash variable syntax suggests shell interpolation, not actual execution
+- Missing imperative directives = agent skips invocation = empty output directories
+- Result: Coordinator completes with 0 Task invocations, workflow fails
+
+**Reference**: See [Hierarchical Agents Examples](../../concepts/hierarchical-agents-examples.md#example-7-research-coordinator) for complete research-coordinator implementation.
+
 ---
 
 ## Subprocess Isolation Requirements
