@@ -136,7 +136,7 @@ test $EXIT_CODE -eq 0 || exit 1
 
 ---
 
-### Phase 2: Add Delegation Contract Validation [NOT STARTED]
+### Phase 2: Add Delegation Contract Validation [COMPLETE]
 dependencies: [1]
 
 **Objective**: Implement tool usage audit in Block 1c to detect and block primary agent implementation operations that violate the delegation contract.
@@ -144,13 +144,13 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create validation function `validate_delegation_contract()` in lean-implement.md
-- [ ] Parse workflow log for prohibited tool patterns: Edit, lean-lsp, lean_goal, lean_multi_attempt
-- [ ] Add validation call in Block 1c after hard barrier verification (line ~962)
-- [ ] Log delegation violations via log_command_error with validation_error type
-- [ ] Include prohibited tool counts and categories in error details JSON
-- [ ] Exit with code 1 if delegation contract violated
-- [ ] Add allowed tool whitelist: Bash, Read (summary files only), Grep (logs only)
+- [x] Create validation function `validate_delegation_contract()` in lean-implement.md
+- [x] Parse workflow log for prohibited tool patterns: Edit, lean-lsp, lean_goal, lean_multi_attempt
+- [x] Add validation call in Block 1c after hard barrier verification (line ~962)
+- [x] Log delegation violations via log_command_error with validation_error type
+- [x] Include prohibited tool counts and categories in error details JSON
+- [x] Exit with code 1 if delegation contract violated
+- [x] Add allowed tool whitelist: Bash, Read (summary files only), Grep (logs only)
 
 **Automation Metadata**:
 - automation_type: automated
@@ -180,10 +180,10 @@ test $? -eq 0 || exit 1
 ```
 
 **Validation**:
-- [ ] Validation function detects all prohibited tool categories
-- [ ] Allowed tools (Bash orchestration, Read summary) pass validation
-- [ ] Error logging includes structured data with tool usage counts
-- [ ] Integration test confirms validation blocks workflow on violation
+- [x] Validation function detects all prohibited tool categories
+- [x] Allowed tools (Bash orchestration, Read summary) pass validation
+- [x] Error logging includes structured data with tool usage counts
+- [x] Integration test confirms validation blocks workflow on violation
 
 **Expected Duration**: 1 hour
 

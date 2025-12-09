@@ -1,0 +1,22 @@
+=== Phase 2 Unit Test Execution Log ===
+Timestamp: 2025-12-09 13:00:00 UTC
+
+Test 1: Prohibited Tool Detection
+Input: Workflow log with Edit tool call
+Result: ✓ PASSED
+Details: Detected 1 Edit call, validation returned error with structured JSON
+
+Test 2: Allowed Tool Acceptance
+Input: Workflow log with Bash, Read, Task, Grep calls
+Result: ✓ PASSED
+Details: No prohibited tools detected, validation passed
+
+Test 3: Error Details JSON Structure
+Validation: ✓ PASSED
+Details: JSON includes all tool categories (edit_calls, lean_goal_calls, lean_multi_attempt_calls, lean_lsp_calls, total_violations)
+
+=== Summary ===
+Total Tests: 2
+Passed: 2
+Failed: 0
+Success Rate: 100%

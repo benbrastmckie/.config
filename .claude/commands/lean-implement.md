@@ -25,6 +25,89 @@ YOU ARE EXECUTING a hybrid implementation workflow that intelligently routes pla
 **Expected Input**: Plan file with mixed Lean/software phases
 **Expected Output**: Completed implementation with proofs and code
 
+## Delegation Contract Validation
+
+This section defines validation utilities for auditing primary agent tool usage after coordinator delegation returns. The hard barrier (exit 0 after iteration decision) prevents delegation contract violations during normal execution. This validation function provides defense-in-depth for testing and manual auditing.
+
+### validate_delegation_contract()
+
+Parses a workflow execution log and detects prohibited tool patterns that violate the delegation contract (primary agent performing implementation work instead of delegating to coordinators).
+
+**Usage**:
+```bash
+validate_delegation_contract <workflow_log_file>
+```
+
+**Prohibited Tools** (primary agent must NOT use these after coordinator delegation):
+- `Edit` - File editing (implementation work)
+- `lean_goal` - Lean proof state inspection (theorem proving work)
+- `lean_multi_attempt` - Lean proof attempts (theorem proving work)
+- `lean-lsp` - Lean language server operations (theorem proving work)
+
+**Allowed Tools** (orchestration and monitoring):
+- `Bash` - Orchestration commands
+- `Read` - Reading summary files for parsing
+- `Grep` - Searching logs for validation
+- `Task` - Delegating to subagents (expected behavior)
+
+**Function Definition**:
+```bash
+validate_delegation_contract() {
+  local workflow_log="$1"
+
+  if [ ! -f "$workflow_log" ]; then
+    echo "ERROR: Workflow log not found: $workflow_log" >&2
+    return 1
+  fi
+
+  # Count prohibited tool usage (safe arithmetic with defaults)
+  local edit_count=0
+  local lean_goal_count=0
+  local lean_attempt_count=0
+  local lean_lsp_count=0
+
+  edit_count=$(grep -c "^● Edit(" "$workflow_log" 2>/dev/null) || edit_count=0
+  lean_goal_count=$(grep -c "^● lean_goal(" "$workflow_log" 2>/dev/null) || lean_goal_count=0
+  lean_attempt_count=$(grep -c "^● lean_multi_attempt(" "$workflow_log" 2>/dev/null) || lean_attempt_count=0
+  lean_lsp_count=$(grep -c "^● lean-lsp(" "$workflow_log" 2>/dev/null) || lean_lsp_count=0
+
+  local total_violations=$((edit_count + lean_goal_count + lean_attempt_count + lean_lsp_count))
+
+  if [ "$total_violations" -gt 0 ]; then
+    echo "Delegation contract violation detected in workflow log" >&2
+    echo "  Edit calls: $edit_count" >&2
+    echo "  lean_goal calls: $lean_goal_count" >&2
+    echo "  lean_multi_attempt calls: $lean_attempt_count" >&2
+    echo "  lean-lsp calls: $lean_lsp_count" >&2
+    echo "  Total violations: $total_violations" >&2
+
+    # Return structured error data for logging
+    local error_details
+    error_details=$(jq -n \
+      --argjson edit "$edit_count" \
+      --argjson lean_goal "$lean_goal_count" \
+      --argjson lean_attempt "$lean_attempt_count" \
+      --argjson lean_lsp "$lean_lsp_count" \
+      --argjson total "$total_violations" \
+      '{
+        edit_calls: $edit,
+        lean_goal_calls: $lean_goal,
+        lean_multi_attempt_calls: $lean_attempt,
+        lean_lsp_calls: $lean_lsp,
+        total_violations: $total
+      }')
+
+    echo "ERROR_DETAILS: $error_details" >&2
+    return 1
+  else
+    echo "Delegation contract validated (no prohibited tool usage detected)" >&2
+    return 0
+  fi
+}
+```
+
+**Note**: This validation function is currently used for testing and manual auditing. Automated workflow log capture for runtime validation is a future enhancement. The hard barrier enforcement (exit 0 after iteration decision) is the primary mechanism preventing delegation contract violations.
+
 ## Phase Classification
 
 The command uses a 2-tier detection algorithm to classify each phase:
