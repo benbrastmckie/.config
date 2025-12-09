@@ -1,5 +1,8 @@
 # NeoTex: AI-Powered NeoVim for Research, Development, and System Management
 
+[![Run in Smithery](https://smithery.ai/badge/skills/benbrastmckie)](https://smithery.ai/skills?ns=benbrastmckie&utm_source=github&utm_medium=badge)
+
+
 A modern NeoVim configuration built for **AI-assisted coding**, **LaTeX typesetting**, **formal verification with Lean**, **NixOS system management**, and **multi-language development** with comprehensive LSP support and Git workflow integration.
 
 ## Core Focus Areas
