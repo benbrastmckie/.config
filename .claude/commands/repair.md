@@ -323,6 +323,14 @@ echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 ```bash
 set +H  # CRITICAL: Disable history expansion
 
+# === SOURCE LIBRARIES (subprocess isolation requires re-sourcing) ===
+# This block is a continuation bash block that uses state persistence functions
+# Tier 1 libraries must be re-sourced per code-standards.md
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
 # Create classification result JSON for initialize_workflow_paths
 CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
 
@@ -430,13 +438,21 @@ COMMAND_NAME="/repair"
 USER_ARGS="${ERROR_DESCRIPTION:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# Source libraries
+# Source libraries (Three-Tier Pattern - fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source validation-utils.sh" >&2
   exit 1
 }
 
@@ -629,9 +645,21 @@ COMMAND_NAME="/repair"
 USER_ARGS="${ERROR_DESCRIPTION:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# Source libraries
+# Source libraries (Three-Tier Pattern - fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source validation-utils.sh" >&2
   exit 1
 }
 
@@ -976,13 +1004,21 @@ COMMAND_NAME="/repair"
 USER_ARGS="${ERROR_DESCRIPTION:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# Source libraries
+# Source libraries (Three-Tier Pattern - fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source validation-utils.sh" >&2
   exit 1
 }
 
@@ -1088,13 +1124,21 @@ COMMAND_NAME="/repair"
 USER_ARGS="${ERROR_DESCRIPTION:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# Source libraries
+# Source libraries (Three-Tier Pattern - fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source validation-utils.sh" >&2
   exit 1
 }
 
@@ -1316,9 +1360,21 @@ COMMAND_NAME="/repair"
 USER_ARGS="${ERROR_DESCRIPTION:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# Source libraries
+# Source libraries (Three-Tier Pattern - fail-fast required)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source workflow-state-machine.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source validation-utils.sh" >&2
   exit 1
 }
 

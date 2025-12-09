@@ -485,12 +485,17 @@ export CLAUDE_PROJECT_DIR
 
 # === SOURCE LIBRARIES ===
 # Re-source libraries (subprocess isolation requires re-sourcing)
+# NOTE: /todo is a utility command - does NOT require workflow-state-machine.sh
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source validation-utils.sh" >&2
   exit 1
 }
 
@@ -645,9 +650,10 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-# Source libraries
+# Source libraries (utility command - no workflow-state-machine.sh)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || exit 1
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || exit 1
 
 # === RESTORE STATE ===
 STATE_FILE=$(ls -t ~/.claude/data/state/todo_*.state 2>/dev/null | head -1)
@@ -1291,7 +1297,10 @@ else
 fi
 export CLAUDE_PROJECT_DIR
 
-# Source libraries
+# Source libraries (utility command - no workflow-state-machine.sh)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || exit 1
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/validation-utils.sh" 2>/dev/null || exit 1
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/summary-formatting.sh" 2>/dev/null || exit 1
 
 # === RESTORE STATE ===

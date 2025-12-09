@@ -207,6 +207,35 @@ fi
 PLAN_FILE="$(cd "$(dirname "$PLAN_FILE")" && pwd)/$(basename "$PLAN_FILE")"
 
 echo "Plan File: $PLAN_FILE"
+
+# === DETECT LOWEST INCOMPLETE PHASE ===
+# If no starting phase argument provided, find the lowest incomplete phase
+if [ "${ARGS_ARRAY[1]:-}" = "" ]; then
+  # Extract all phase numbers from plan file
+  PHASE_NUMBERS=$(grep -oE "^### Phase ([0-9]+):" "$PLAN_FILE" | grep -oE "[0-9]+" | sort -n)
+
+  # Find first phase without [COMPLETE] marker
+  LOWEST_INCOMPLETE_PHASE=""
+  for phase_num in $PHASE_NUMBERS; do
+    if ! grep -q "^### Phase ${phase_num}:.*\[COMPLETE\]" "$PLAN_FILE"; then
+      LOWEST_INCOMPLETE_PHASE="$phase_num"
+      break
+    fi
+  done
+
+  # Use lowest incomplete phase, or default to 1 if all complete
+  if [ -n "$LOWEST_INCOMPLETE_PHASE" ]; then
+    STARTING_PHASE="$LOWEST_INCOMPLETE_PHASE"
+    echo "Auto-detected starting phase: $STARTING_PHASE (lowest incomplete)"
+  else
+    # All phases complete - default to 1 (likely resumption scenario)
+    STARTING_PHASE="1"
+  fi
+else
+  # Explicit phase argument provided
+  STARTING_PHASE="${ARGS_ARRAY[1]}"
+fi
+
 echo "Starting Phase: $STARTING_PHASE"
 echo "Execution Mode: $EXECUTION_MODE"
 echo "Max Iterations: $MAX_ITERATIONS"
@@ -717,37 +746,16 @@ append_workflow_state "CURRENT_PHASE" "$CURRENT_PHASE"
 append_workflow_state "CURRENT_PHASE_TYPE" "$PHASE_TYPE"
 append_workflow_state "CURRENT_LEAN_FILE" "$LEAN_FILE_PATH"
 
-# === DETERMINE COORDINATOR NAME [HARD BARRIER] ===
+# === DETERMINE COORDINATOR NAME AND BUILD PROMPT [HARD BARRIER] ===
 # Based on phase type, determine which coordinator to invoke
 if [ "$PHASE_TYPE" = "lean" ]; then
   COORDINATOR_NAME="lean-coordinator"
-else
-  COORDINATOR_NAME="implementer-coordinator"
-fi
+  COORDINATOR_AGENT="${CLAUDE_PROJECT_DIR}/.claude/agents/lean-coordinator.md"
+  COORDINATOR_DESCRIPTION="Wave-based Lean theorem proving for phase ${CURRENT_PHASE}"
 
-# Persist coordinator name for verification in Block 1c
-append_workflow_state "COORDINATOR_NAME" "$COORDINATOR_NAME"
-
-echo "Routing to ${COORDINATOR_NAME}..."
-echo ""
-```
-
-Based on the phase type, invoke the appropriate coordinator:
-
-**If phase type is "lean", invoke lean-coordinator**:
-
-**EXECUTE NOW**: USE the Task tool to invoke the lean-coordinator agent.
-
-**HARD BARRIER**: Coordinator delegation is MANDATORY (no conditionals, no bypass).
-The orchestrator MUST NOT perform implementation work directly.
-
-Task {
-  subagent_type: "general-purpose"
-  model: "sonnet"
-  description: "Wave-based Lean theorem proving for phase ${CURRENT_PHASE}"
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/lean-coordinator.md
+  # Build lean-coordinator specific prompt
+  COORDINATOR_PROMPT="Read and follow ALL behavioral guidelines from:
+    ${COORDINATOR_AGENT}
 
     **Input Contract (Hard Barrier Pattern)**:
     - lean_file_path: ${CURRENT_LEAN_FILE}
@@ -784,24 +792,15 @@ Task {
     work_remaining: space-separated list of remaining phases OR 0
     context_exhausted: true|false
     context_usage_percent: N%
-    requires_continuation: true|false
-  "
-}
+    requires_continuation: true|false"
+else
+  COORDINATOR_NAME="implementer-coordinator"
+  COORDINATOR_AGENT="${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md"
+  COORDINATOR_DESCRIPTION="Wave-based software implementation for phase ${CURRENT_PHASE}"
 
-**If phase type is "software", invoke implementer-coordinator**:
-
-**EXECUTE NOW**: USE the Task tool to invoke the implementer-coordinator agent.
-
-**HARD BARRIER**: Coordinator delegation is MANDATORY (no conditionals, no bypass).
-The orchestrator MUST NOT perform implementation work directly.
-
-Task {
-  subagent_type: "general-purpose"
-  model: "sonnet"
-  description: "Wave-based software implementation for phase ${CURRENT_PHASE}"
-  prompt: "
-    Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md
+  # Build implementer-coordinator specific prompt
+  COORDINATOR_PROMPT="Read and follow ALL behavioral guidelines from:
+    ${COORDINATOR_AGENT}
 
     **Input Contract (Hard Barrier Pattern)**:
     - plan_path: ${PLAN_FILE}
@@ -838,8 +837,26 @@ Task {
     work_remaining: space-separated list of remaining phases OR 0
     context_exhausted: true|false
     context_usage_percent: N%
-    requires_continuation: true|false
-  "
+    requires_continuation: true|false"
+fi
+
+# Persist coordinator name for verification in Block 1c
+append_workflow_state "COORDINATOR_NAME" "$COORDINATOR_NAME"
+
+echo "Routing to ${COORDINATOR_NAME}..."
+echo ""
+```
+
+**EXECUTE NOW**: USE the Task tool to invoke the selected coordinator.
+
+**HARD BARRIER**: Coordinator delegation is MANDATORY (no conditionals, no bypass).
+The orchestrator MUST NOT perform implementation work directly.
+
+Task {
+  subagent_type: "general-purpose"
+  model: "sonnet"
+  description: "${COORDINATOR_DESCRIPTION}"
+  prompt: "${COORDINATOR_PROMPT}"
 }
 
 ## Block 1c: Verification & Continuation Decision
@@ -1051,6 +1068,27 @@ echo "Full report: $LATEST_SUMMARY"
 echo ""
 
 # Context reduction metric: 80 tokens parsed (return signal) vs 2,000 tokens read (full file) = 96% reduction
+
+# === DEFENSIVE CONTINUATION VALIDATION ===
+# Override requires_continuation if work_remaining non-empty (defensive pattern from /implement)
+if [ -n "$WORK_REMAINING_NEW" ] && [ "$WORK_REMAINING_NEW" != "0" ]; then
+  if [ "$REQUIRES_CONTINUATION" != "true" ]; then
+    echo "WARNING: Agent returned requires_continuation=false with non-empty work_remaining" >&2
+    echo "  work_remaining: $WORK_REMAINING_NEW" >&2
+    echo "  Overriding to requires_continuation=true (defensive validation)" >&2
+    REQUIRES_CONTINUATION="true"
+
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Agent contract violation: requires_continuation=false with work_remaining=$WORK_REMAINING_NEW" \
+      "bash_block_1c" \
+      "$(jq -n --arg coord "$COORDINATOR_NAME" --arg work "$WORK_REMAINING_NEW" \
+         '{coordinator: $coord, work_remaining: $work}')"
+  fi
+fi
 
 # === CONTEXT AGGREGATION ===
 # Track cumulative context usage across iterations and compare against threshold
@@ -1438,12 +1476,97 @@ exit 0
 - `--mode=software-only`: Skips all Lean phases
 - `--mode=auto`: Executes all phases with automatic routing (default)
 
+## Phase 0 Auto-Detection
+
+As of 2025-12-09, both `/lean-implement` and `/implement` commands automatically detect the lowest incomplete phase when no explicit starting phase is provided.
+
+### How It Works
+
+1. **Scan Plan File**: Extracts all phase numbers from phase headers
+2. **Check Completion**: Finds first phase without `[COMPLETE]` marker
+3. **Auto-Start**: Uses lowest incomplete phase as starting point
+4. **Override**: Explicit phase argument overrides auto-detection
+
+### Examples
+
+```bash
+# Plan with Phase 0 incomplete
+### Phase 0: Standards Revision [NOT STARTED]
+### Phase 1: Implementation [COMPLETE]
+### Phase 2: Testing [NOT STARTED]
+
+# Command: /lean-implement plan.md
+# Result: Auto-detected starting phase: 0 (lowest incomplete)
+```
+
+```bash
+# Plan without Phase 0
+### Phase 1: Setup [COMPLETE]
+### Phase 2: Implementation [NOT STARTED]
+
+# Command: /lean-implement plan.md
+# Result: Auto-detected starting phase: 2 (lowest incomplete)
+```
+
+```bash
+# Explicit override
+# Command: /lean-implement plan.md 5
+# Result: Uses phase 5 (override auto-detection)
+```
+
+### Why This Matters
+
+Before this feature, commands hardcoded `STARTING_PHASE=1`, causing Phase 0 (often Standards Revision phases) to be skipped. This fix ensures all phases are executed in dependency order.
+
+## Checkpoint Resume Workflow
+
+The command supports checkpoint-based resume for long-running implementations that exceed context thresholds.
+
+### Context Monitoring
+
+- **Default Threshold**: 90% context usage
+- **Configurable**: `--context-threshold=N` (percentage)
+- **Monitoring**: Parses `context_usage_percent` from coordinator summaries
+- **Defensive**: Invalid percentages default to 0 with warning
+
+### Checkpoint Save
+
+When context usage >= threshold:
+
+1. Creates checkpoint JSON in `.claude/data/checkpoints/`
+2. Saves: plan_path, iteration, max_iterations, work_remaining, context_usage_percent, completed_phases, coordinator_name
+3. Schema version: 2.1
+4. Emits checkpoint path in output
+
+### Checkpoint Resume
+
+To resume from checkpoint:
+
+```bash
+# Save checkpoint when context threshold exceeded
+/lean-implement plan.md --context-threshold=80
+# Output: Checkpoint saved: /path/to/checkpoint.json
+
+# Resume from checkpoint
+/lean-implement --resume=/path/to/checkpoint.json
+# Restores: PLAN_FILE, ITERATION, MAX_ITERATIONS, CONTINUATION_CONTEXT, COMPLETED_PHASES
+```
+
+### Iteration Control
+
+- **Default**: 5 iterations maximum
+- **Configurable**: `--max-iterations=N`
+- **Passed to Coordinators**: Both lean-coordinator and implementer-coordinator receive iteration context
+- **Prevents Infinite Loops**: Workflow halts at max iterations even if work remaining
+
 ## Success Criteria
 
 Workflow is successful if:
 - Phase classification correctly identifies Lean vs software phases
+- Phase 0 auto-detection finds lowest incomplete phase (including phase 0)
 - Appropriate coordinator invoked for each phase type
 - Summary created in summaries directory (>100 bytes)
 - Phase markers updated ([NOT STARTED] -> [IN PROGRESS] -> [COMPLETE])
+- Context usage tracked and checkpoints created when threshold exceeded
 - Aggregated metrics from both coordinator types
 - IMPLEMENTATION_COMPLETE signal emitted with all metrics

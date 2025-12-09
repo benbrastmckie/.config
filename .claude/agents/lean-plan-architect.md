@@ -24,6 +24,43 @@ fallback-model: sonnet-4.5
 
 ---
 
+## CRITICAL: Phase Metadata Requirements for /lean-implement Compatibility
+
+**EVERY PHASE MUST INCLUDE THESE THREE FIELDS** immediately after the phase heading:
+
+```markdown
+### Phase N: Phase Name [NOT STARTED]
+implementer: lean                    # REQUIRED: "lean" or "software"
+lean_file: /absolute/path/file.lean  # REQUIRED for lean phases (omit for software)
+dependencies: []                      # REQUIRED: array of prerequisite phase numbers
+```
+
+**Field Order is PARSER-ENFORCED** - /lean-implement will FAIL if fields are out of order:
+1. `implementer:` - First field after heading
+2. `lean_file:` - Second field (only for lean phases)
+3. `dependencies:` - Third field (always required)
+
+**DO NOT USE**:
+- `**Dependencies**: None` (wrong format - use `dependencies: []`)
+- `**Dependencies**: [Phase 0]` (wrong format - use `dependencies: [0]`)
+- Fields in wrong order
+- Missing `implementer:` field
+
+**Phase Routing Summary Table is REQUIRED** - Add immediately after "## Implementation Phases":
+```markdown
+## Implementation Phases
+
+### Phase Routing Summary
+| Phase | Type | Implementer Agent |
+|-------|------|-------------------|
+| 0 | software | implementer-coordinator |
+| 1 | lean | lean-implementer |
+```
+
+This enables /lean-implement to route phases correctly to lean vs software coordinators.
+
+---
+
 ## Lean Plan Creation Execution Process
 
 ### STEP 1 (REQUIRED BEFORE STEP 2) - Analyze Formalization Requirements
@@ -100,6 +137,31 @@ For each phase, you MUST specify the primary Lean file where theorems will be pr
 - **Fallback**: If uncertain, use the primary formalization file specified in project structure
 
 **Why This Matters**: The /lean-build command uses Tier 1 discovery to find phase-specific Lean files before falling back to global metadata. Per-phase file specifications enable efficient multi-file theorem proving workflows.
+
+**Phase Metadata Requirements** (CRITICAL for orchestration):
+
+Every phase MUST include these metadata fields immediately after the phase heading:
+
+```markdown
+### Phase N: Phase Name [NOT STARTED]
+implementer: lean
+lean_file: /absolute/path/to/file.lean
+dependencies: []
+
+Tasks:
+- [ ] Task 1
+```
+
+**Field Specifications**:
+- `implementer: lean` - Always "lean" for Lean theorem proving phases (never "software" unless infrastructure setup)
+- `lean_file: /absolute/path` - Absolute path to primary .lean file for this phase's theorems
+- `dependencies: []` - Array of phase numbers that must complete before this phase (empty for Wave 1)
+
+**Wave Structure Integration**:
+- Dependencies array must match wave structure from STEP 1 analysis
+- Wave 1 phases: `dependencies: []`
+- Wave 2 phases: `dependencies: [N]` where N is a Wave 1 phase number
+- Wave 3 phases: `dependencies: [N, M]` where N, M are Wave 1 or Wave 2 phase numbers
 
 **CHECKPOINT**: YOU MUST have theorem list, dependencies, wave structure, AND per-phase file assignments before Step 2.
 
@@ -405,21 +467,26 @@ echo "✓ Phase Routing Summary table valid ($TABLE_ROWS rows)"
 ```
 
 **Self-Verification Checklist**:
+
+**CRITICAL FOR /lean-implement COMPATIBILITY** (MUST verify these first):
+- [ ] ALL phases have `implementer:` field immediately after heading (values: `lean` or `software`)
+- [ ] ALL lean phases have `lean_file:` field with absolute path
+- [ ] ALL phases have `dependencies:` field (use `[]` for no dependencies, NOT `**Dependencies**: None`)
+- [ ] Field order is CORRECT: heading → implementer → lean_file → dependencies
+- [ ] Phase Routing Summary table present and valid (≥2 rows)
+- [ ] ALL phase headings use level 3 format: `### Phase N:` (three hashes, not two)
+
+**Standard Plan Validation**:
 - [ ] Plan file created at exact PLAN_PATH provided in prompt
 - [ ] File contains all required sections
 - [ ] Research reports listed in metadata
 - [ ] Metadata validation script executed and passed (EXIT_CODE=0)
-- [ ] Phase Routing Summary table present and valid (≥2 rows)
-- [ ] ALL phase headings use level 3 format: `### Phase N:` (three hashes, not two)
-- [ ] ALL phases have `implementer:` field immediately after heading
-- [ ] ALL phases have correct field order: heading → implementer → lean_file → dependencies
 - [ ] **Lean File** metadata field present (absolute path)
 - [ ] **Lean Project** metadata field present (absolute path)
 - [ ] All theorems have Goal specifications (Lean 4 types)
 - [ ] All theorems have Strategy specifications
 - [ ] All theorems have Complexity assessments
 - [ ] Dependency graph is acyclic (no circular dependencies)
-- [ ] Phase dependencies use `dependencies: [...]` format
 
 **CHECKPOINT**: All verifications must pass before Step 4.
 
@@ -466,8 +533,11 @@ Metadata:
 
 Use this template for each phase (NOTE: heading is level 3 - three hashes ###):
 
+**CRITICAL**: Field order MUST be: implementer → lean_file → dependencies
+
 ```markdown
 ### Phase N: [Category Name] [NOT STARTED]
+implementer: lean
 lean_file: /absolute/path/to/file.lean
 dependencies: [list of prerequisite phase numbers, or empty list]
 
@@ -502,6 +572,7 @@ grep -c "sorry" path/to/file.lean  # Ensure no incomplete proofs
 
 ```markdown
 ### Phase 1: Basic Commutativity Properties [NOT STARTED]
+implementer: lean
 lean_file: /home/user/lean-project/ProofChecker/Basics.lean
 dependencies: []
 

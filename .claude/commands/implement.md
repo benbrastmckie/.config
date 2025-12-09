@@ -304,6 +304,35 @@ if [ ! -r "$PLAN_FILE" ]; then
 fi
 
 echo "Plan: $PLAN_FILE"
+
+# === DETECT LOWEST INCOMPLETE PHASE ===
+# If no starting phase argument provided, find the lowest incomplete phase
+if [ "${ARGS_ARRAY[1]:-}" = "" ]; then
+  # Extract all phase numbers from plan file
+  PHASE_NUMBERS=$(grep -oE "^### Phase ([0-9]+):" "$PLAN_FILE" | grep -oE "[0-9]+" | sort -n)
+
+  # Find first phase without [COMPLETE] marker
+  LOWEST_INCOMPLETE_PHASE=""
+  for phase_num in $PHASE_NUMBERS; do
+    if ! grep -q "^### Phase ${phase_num}:.*\[COMPLETE\]" "$PLAN_FILE"; then
+      LOWEST_INCOMPLETE_PHASE="$phase_num"
+      break
+    fi
+  done
+
+  # Use lowest incomplete phase, or default to 1 if all complete
+  if [ -n "$LOWEST_INCOMPLETE_PHASE" ]; then
+    STARTING_PHASE="$LOWEST_INCOMPLETE_PHASE"
+    echo "Auto-detected starting phase: $STARTING_PHASE (lowest incomplete)"
+  else
+    # All phases complete - default to 1 (likely resumption scenario)
+    STARTING_PHASE="1"
+  fi
+else
+  # Explicit phase argument provided
+  STARTING_PHASE="${ARGS_ARRAY[1]}"
+fi
+
 echo "Starting Phase: $STARTING_PHASE"
 echo ""
 
@@ -1692,12 +1721,24 @@ exit 0
 
 ---
 
+**Phase 0 Auto-Detection**:
+
+As of 2025-12-09, `/implement` automatically detects the lowest incomplete phase when no explicit starting phase is provided:
+
+- **Auto-Detection**: Scans plan for first phase without `[COMPLETE]` marker
+- **Includes Phase 0**: Previously skipped phases (e.g., Phase 0: Standards Revision) now execute automatically
+- **Override**: Explicit phase argument overrides auto-detection
+- **Example**: Plan with Phase 0 incomplete starts at Phase 0, not Phase 1
+
+See `/lean-implement` documentation for complete auto-detection examples and checkpoint resume workflow patterns.
+
 **Troubleshooting**:
 
 - **No plan found**: Create a plan first using `/plan`
 - **Implementation incomplete**: Check implementer-coordinator agent logs
 - **Checkpoint issues**: Delete stale checkpoint: `rm ~/.claude/data/checkpoints/implement_checkpoint.json`
 - **State machine errors**: Ensure library versions compatible (workflow-state-machine.sh >=2.0.0)
+- **Phase 0 skipped**: Verify plan has phase headers with status markers ([NOT STARTED], [COMPLETE])
 
 **Usage Examples**:
 

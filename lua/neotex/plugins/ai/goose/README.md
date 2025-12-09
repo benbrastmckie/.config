@@ -1,6 +1,6 @@
 # goose.nvim Integration
 
-AI-assisted coding with Goose agent backend supporting multiple providers (Google Gemini, Claude Code).
+AI-assisted coding with Goose agent backend supporting multiple providers (Gemini CLI, Claude Code).
 
 ## Purpose
 
@@ -11,7 +11,7 @@ This module integrates [goose.nvim](https://github.com/azorng/goose.nvim) with t
 - **Persistent Sessions**: Conversations tied to workspace, preserved across Neovim restarts
 - **Automatic Context**: Captures current file, selections, and editor state
 - **Diff View**: Review and revert AI-generated changes before applying
-- **Provider-Agnostic**: Switch between Gemini (free) and Claude Code (Max subscription)
+- **Provider-Agnostic**: Switch between Gemini CLI (default) and Claude Code (Max subscription)
 - **Lazy Loading**: No impact on Neovim startup time
 - **Integrated Keybindings**: All AI tools under `<leader>a` namespace in which-key.lua
 
@@ -32,6 +32,7 @@ return {
     require("goose").setup({
       prefered_picker = "telescope",
       default_global_keymaps = false,  -- Managed by which-key.lua
+      default_mode = "auto",           -- Full agent capabilities by default
       ui = {
         window_width = 0.35,
         input_height = 0.15,
@@ -40,7 +41,7 @@ return {
         display_goose_mode = true,
       },
       providers = {
-        google = { "gemini-2.0-flash-exp" },
+        google = { "gemini-3.0-pro" },
       },
     })
   end,
@@ -55,26 +56,109 @@ All goose.nvim keybindings are defined in `which-key.lua` under the `<leader>a` 
 
 | Mapping | Mode | Description |
 |---------|------|-------------|
-| `<leader>ag` | Normal | Toggle goose interface |
+| `<leader>ag` | Normal | Toggle goose chat interface |
 | `<leader>ag` | Visual | Send selection to goose with prompt |
 | `<leader>ai` | Normal | Focus goose input window |
 | `<leader>ao` | Normal | Focus goose output window |
 | `<leader>af` | Normal | Toggle goose fullscreen mode |
 | `<leader>ad` | Normal | Open goose diff view |
+| `<leader>aA` | Normal | Switch to auto mode (full agent) |
+| `<leader>aC` | Normal | Switch to chat mode (no file edits) |
+| `<leader>aR` | Normal | Run recipe (Telescope picker) |
 | `<leader>ab` | Normal | Switch goose backend/provider |
 | `<leader>aq` | Normal | Close goose interface |
 
+## Recipe Picker
+
+The recipe picker (`<leader>aR`) provides a Telescope-based interface for discovering, previewing, and executing Goose recipes from both project-local and global directories.
+
+### Features
+
+- **Dual-Location Discovery**: Scans both `.goose/recipes/` (project) and `~/.config/goose/recipes/` (global)
+- **Rich Preview**: Shows recipe name, description, parameters, subrecipes, and execution command
+- **Parameter Prompting**: Interactive prompts with type validation (string, number, boolean)
+- **Context-Aware Keybindings**: Multiple actions available within the picker
+- **Location Labels**: Distinguishes `[Project]` vs `[Global]` recipes
+
+### Picker Keybindings
+
+When the recipe picker is open:
+
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<CR>` | Execute | Run selected recipe with parameter prompts |
+| `<C-e>` | Edit | Open recipe YAML file in buffer for editing |
+| `<C-p>` | Preview | Run recipe in preview mode (--explain flag) |
+| `<C-v>` | Validate | Validate recipe syntax using goose CLI |
+| `<C-r>` | Refresh | Reload recipe list without closing picker |
+| `<C-u>` | Scroll Up | Scroll preview window up (Telescope native) |
+| `<C-d>` | Scroll Down | Scroll preview window down (Telescope native) |
+
+### Recipe Discovery Paths
+
+The picker searches for recipes in the following order:
+
+1. **Project Recipes**: `.goose/recipes/` (searches upward from current directory)
+2. **Global Recipes**: `~/.config/goose/recipes/` (user-wide recipes)
+
+Project recipes take priority when duplicate names exist.
+
+### Usage Example
+
+1. Press `<leader>aR` to open the recipe picker
+2. Navigate recipes with arrow keys or fuzzy search
+3. Review recipe details in the preview window
+4. Press `<CR>` to execute the selected recipe
+5. Enter parameter values when prompted (with type validation)
+6. Recipe executes in ToggleTerm with interactive mode
+
+### Parameter Types
+
+The picker validates parameter types during prompting:
+
+- **string**: Non-empty text value
+- **number**: Numeric value (validated via `tonumber()`)
+- **boolean**: `true`/`false`/`yes`/`no`/`1`/`0`
+
+### Direct Invocation
+
+You can also invoke the picker programmatically:
+
+```lua
+-- Open recipe picker
+require("neotex.plugins.ai.goose.picker").show_recipe_picker()
+
+-- Or use the user command
+:GooseRecipes
+```
+
+### Architecture
+
+The picker module is organized into focused components:
+
+- **init.lua**: Telescope integration and keybinding orchestration
+- **discovery.lua**: Recipe file discovery from project and global directories
+- **metadata.lua**: YAML parsing for recipe metadata extraction
+- **previewer.lua**: Custom Telescope previewer for recipe details
+- **execution.lua**: Parameter prompting, validation, and ToggleTerm execution
+
+See [picker/README.md](picker/README.md) for complete API documentation.
+
 ### Backend Configuration
 
-#### Google Gemini (Free Tier)
+#### Gemini CLI (Default)
 
-1. Get API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
-2. Configure Goose:
+1. Install Gemini CLI: `npm install -g @anthropic-ai/gemini-cli` or via your package manager
+2. Authenticate:
+   ```bash
+   gemini auth login
+   # Follow browser authentication flow
+   ```
+3. Configure Goose:
    ```bash
    goose configure
-   # Select: Google Gemini
-   # Enter: GOOGLE_API_KEY
-   # Model: gemini-2.0-flash-exp
+   # Select: Gemini CLI
+   # Model: gemini-3.0-pro (or your preferred model)
    ```
 
 #### Claude Code (Max Subscription)
@@ -103,6 +187,148 @@ All goose.nvim keybindings are defined in `which-key.lua` under the `<leader>a` 
 
 - **In Neovim**: Press `<leader>ab` to open provider configuration
 - **In Terminal**: Run `goose configure` to reconfigure backend
+
+## Multi-Provider Configuration
+
+The goose.nvim integration automatically detects available providers based on authentication and enables seamless switching between Gemini CLI and Claude Code.
+
+### Automatic Detection
+
+The configuration dynamically detects providers on plugin load:
+
+1. **Gemini CLI Detection**:
+   - Checks `gemini` CLI authentication (Google account)
+   - Respects `GEMINI_MODEL` environment variable for model override
+
+2. **Claude Code Detection**:
+   - Checks `claude` CLI installation and authentication
+   - Validates Pro/Max subscription via `claude /status`
+   - Excludes if only Free tier or no subscription
+
+3. **Fallback Behavior**:
+   - If no providers detected, shows warning with setup instructions
+   - Use `:checkhealth goose` to diagnose configuration issues
+
+### Setup Instructions
+
+#### Gemini CLI Setup (Default)
+
+1. Install Gemini CLI via your package manager or npm
+2. Authenticate:
+   ```bash
+   gemini auth login
+   # Follow browser authentication flow
+   ```
+3. Verify with `:checkhealth goose`
+
+**Model Override** (Optional):
+```bash
+export GEMINI_MODEL="gemini-3.0-pro"
+# Add to ~/.bashrc or ~/.zshrc for persistence
+```
+
+#### Claude Code Setup (Pro/Max Subscription)
+
+**Prerequisites**: Active Claude Pro or Max subscription
+
+1. Subscribe at [claude.ai/upgrade](https://claude.ai/upgrade)
+2. Install claude CLI (NixOS: already installed)
+3. Authenticate:
+   ```bash
+   claude auth login
+   # Follow browser authentication flow
+   ```
+4. **CRITICAL**: Ensure `ANTHROPIC_API_KEY` is not set (causes API billing conflict):
+   ```bash
+   # Check for API key
+   env | grep ANTHROPIC_API_KEY
+
+   # If found, unset it
+   unset ANTHROPIC_API_KEY
+   ```
+5. Verify subscription status:
+   ```bash
+   claude /status
+   # Should show "Logged in" with Pro or Max subscription
+   ```
+6. Restart Neovim and verify with `:checkhealth goose`
+
+#### Environment Persistence
+
+**Fish Shell** (`~/.config/fish/conf.d/private.fish`):
+```fish
+# Gemini CLI Configuration (optional model override)
+# set -gx GEMINI_MODEL "gemini-3.0-pro"
+
+# Claude Code Configuration
+# Ensure ANTHROPIC_API_KEY is NOT set (conflicts with subscription)
+# set -e ANTHROPIC_API_KEY  # Uncomment if previously set
+```
+
+**Bash/Zsh** (`~/.bashrc` or `~/.zshrc`):
+```bash
+# Gemini CLI Configuration (optional model override)
+# export GEMINI_MODEL="gemini-3.0-pro"
+
+# Claude Code Configuration
+# Ensure ANTHROPIC_API_KEY is NOT set (conflicts with subscription)
+# unset ANTHROPIC_API_KEY  # Uncomment if previously set
+```
+
+**Verification Commands**:
+```bash
+# Check environment variables
+env | grep GEMINI
+env | grep ANTHROPIC
+
+# Verify CLIs
+gemini --version
+claude /status
+
+# Test in Neovim
+nvim
+:checkhealth goose
+```
+
+### Troubleshooting Multi-Provider
+
+#### No Providers Detected
+
+**Issue**: Warning "Goose: No providers configured" on plugin load
+
+**Solution**:
+1. Run `:checkhealth goose` to see detailed diagnostics
+2. For Gemini CLI: Authenticate with `gemini auth login`
+3. For Claude Code: Install `claude` CLI and run `claude auth login`
+4. Verify CLIs: `gemini --version` and `claude /status`
+5. Restart Neovim after configuration changes
+
+#### Provider Not Switching
+
+**Issue**: `<leader>ab` shows only one provider despite both configured
+
+**Solution**:
+1. Check health status: `:checkhealth goose`
+2. Verify both providers show OK status
+3. For Claude Code: Ensure Pro/Max subscription active (`claude /status`)
+4. Reload Neovim configuration: `:source $MYVIMRC`
+5. Test provider detection: `:lua print(vim.inspect(require('goose').config.providers))`
+
+#### API Key Conflict (Claude Code)
+
+**Issue**: Claude usage shows API billing instead of subscription
+
+**Solution**:
+1. Check for API key: `env | grep ANTHROPIC_API_KEY`
+2. If found, this overrides subscription billing
+3. Unset the variable:
+   ```bash
+   unset ANTHROPIC_API_KEY
+   ```
+4. Remove from shell profile (edit ~/.bashrc or ~/.zshrc)
+5. Re-authenticate: `claude auth login`
+6. Verify subscription: `claude /status` (should show Pro/Max)
+7. Run `:checkhealth goose` (should show ERROR if API key still set)
 
 ## Usage Workflows
 
@@ -147,19 +373,226 @@ All goose.nvim keybindings are defined in `which-key.lua` under the `<leader>a` 
 
 ## Goose Modes
 
-### Chat Mode (Default)
+### Auto Mode (Default)
+
+- Full agent capabilities with file editing
+- Can create, modify, and delete files
+- Executes tools and extensions autonomously
+- Review changes via diff view (`<leader>ad`)
+- Switch: `:GooseModeAuto` or `/mode auto`
+
+### Chat Mode
 
 - Conversation-only, no file edits
 - Safe for exploratory questions
 - Faster responses
-- Switch: `:GooseModeChat`
+- Switch: `:GooseModeChat` or `/mode chat`
 
-### Auto Mode
+## Recipes
 
-- Full agent capabilities with file editing
-- Can create, modify, and delete files
-- Requires review via diff view
-- Switch: `:GooseModeAuto`
+Recipes are reusable workflow configurations that package instructions, extensions, and parameters into shareable templates. They enable repeatable agentic workflows for common tasks.
+
+### Recipe Workflow Overview
+
+**Important**: The goose.nvim floating window (`<leader>ag`) is for interactive chat only. Recipes must be run via CLI or the recipe picker.
+
+| Action | Method |
+|--------|--------|
+| **Interactive chat** | Neovim: `<leader>ag` (floating window) |
+| **Run recipe from Neovim** | Neovim: `<leader>aR` (picker + ToggleTerm) |
+| **Run recipe from CLI** | Terminal: `goose run --recipe file.yaml` |
+| **Run recipe interactively** | Terminal: `goose run --recipe file.yaml --interactive` |
+| **Save current chat as recipe** | In-session: `/recipe filename.yaml` |
+
+### Running Recipes from Neovim
+
+Press `<leader>aR` to open the recipe picker:
+1. Shows all `.yaml` files in `.goose/recipes/`
+2. Select a recipe from the list
+3. Optionally enter parameters (e.g., `feature_description=Add dark mode,complexity=3`)
+4. Recipe runs in ToggleTerm with `--interactive` flag
+
+This opens goose in a terminal window where you can interact with the recipe execution.
+
+### Running Recipes (CLI)
+
+Recipes must be launched from the command line. Use a terminal split or run before opening Neovim:
+
+```bash
+# Run recipe (executes and exits)
+goose run --recipe ~/.config/goose/recipes/code-review.yaml
+
+# Run recipe interactively (stays in session after recipe completes)
+goose run --recipe code-review.yaml --interactive
+
+# Run with parameters
+goose run --recipe code-review.yaml --params focus_area=security
+
+# Preview what a recipe will do
+goose run --recipe code-review.yaml --explain
+
+# Validate recipe syntax
+goose recipe validate code-review.yaml
+```
+
+### Creating Recipes from Chat
+
+While in an active goose session (via `<leader>ag` or CLI), you can save your current conversation as a reusable recipe:
+
+```
+/recipe                        # Saves to ./recipe.yaml
+/recipe my-workflow.yaml       # Saves to custom filename
+```
+
+This captures your conversation's instructions, context, and workflow into a YAML file you can rerun later.
+
+### Slash Commands in Session
+
+These commands work in the goose floating window input:
+
+| Command | Description |
+|---------|-------------|
+| `/mode auto` | Switch to auto mode (file editing enabled) |
+| `/mode chat` | Switch to chat mode (conversation only) |
+| `/recipe [file]` | Save current conversation as recipe |
+| `/clear` | Clear chat history |
+| `/summarize` | Summarize conversation to reduce context |
+| `/plan [message]` | Enter planning mode |
+| `/endplan` | Exit planning mode |
+| `/exit` | End session |
+| `/?` | Show help |
+
+### Recipe Structure
+
+```yaml
+version: "1.0.0"
+title: "Code Review Assistant"
+description: "Automated code review with best practices"
+instructions: "Review code focusing on {{ focus_area }}"
+prompt: "Analyze the repository"
+parameters:
+  - key: focus_area
+    input_type: string
+    requirement: required
+    description: "Review focus (performance, security, etc.)"
+extensions:
+  - type: builtin
+    name: developer
+```
+
+### Recipe CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `goose recipe list` | List available recipes |
+| `goose recipe validate <file>` | Validate recipe syntax |
+| `goose recipe deeplink <file>` | Generate shareable link |
+| `goose recipe open <file>` | Open in Goose Desktop |
+
+### Recipe Storage
+
+- **Project recipes**: `.goose/recipes/` (project-specific workflows)
+- **Global recipes**: `~/.config/goose/recipes/`
+- **Scheduled recipes**: `~/.local/share/goose/scheduled_recipes/`
+- **Team recipes**: Set `GOOSE_RECIPE_GITHUB_REPO=user/repo` to share via GitHub
+
+### Testing Project Recipes
+
+For projects with recipes in `.goose/recipes/`, use this workflow:
+
+**List available recipes**:
+```bash
+# From project root
+ls -la .goose/recipes/
+goose recipe list
+```
+
+**Preview a recipe before running**:
+```bash
+goose run --recipe .goose/recipes/create-plan.yaml --explain
+```
+
+**Run a recipe**:
+```bash
+# Run and exit when complete
+goose run --recipe .goose/recipes/create-plan.yaml
+
+# Run interactively (continue chatting after recipe completes)
+goose run --recipe .goose/recipes/create-plan.yaml --interactive
+
+# Run with parameters
+goose run --recipe .goose/recipes/create-plan.yaml \
+  --params feature_description="Add user authentication" \
+  --params complexity=3
+```
+
+**Validate recipe syntax**:
+```bash
+goose recipe validate .goose/recipes/create-plan.yaml
+```
+
+**Test subrecipes**:
+```bash
+# Subrecipes are in .goose/recipes/subrecipes/
+goose run --recipe .goose/recipes/subrecipes/research-specialist.yaml --explain
+```
+
+**Debug recipe execution**:
+```bash
+# Enable debug output
+goose run --recipe .goose/recipes/create-plan.yaml --debug
+
+# Limit iterations for testing
+goose run --recipe .goose/recipes/create-plan.yaml --max-turns 5
+```
+
+**Example: Testing the create-plan workflow**:
+```bash
+cd ~/.config  # or your project root
+
+# 1. Preview what the recipe will do
+goose run --recipe .goose/recipes/create-plan.yaml --explain
+
+# 2. Run interactively to observe and intervene
+goose run --recipe .goose/recipes/create-plan.yaml --interactive \
+  --params feature_description="Implement dark mode toggle"
+
+# 3. Check outputs in specs/ directory
+ls -la .claude/specs/
+```
+
+### Creating Recipes from Scratch
+
+1. Create a YAML file with required fields (`version`, `title`, `description`)
+2. Add `instructions` or `prompt` (at least one required)
+3. Define `parameters` for dynamic values using `{{ param_name }}` syntax
+4. Specify required `extensions` (MCP servers)
+5. Validate with `goose recipe validate <file>`
+
+### Typical Workflows
+
+**Ad-hoc Chat** (most common):
+1. Press `<leader>ag` to open goose in Neovim
+2. Type questions/requests in the input window
+3. Review changes with `<leader>ad` (diff view)
+
+**Recipe-Based Workflow**:
+1. Create or obtain a recipe YAML file
+2. Run from terminal: `goose run --recipe file.yaml --interactive`
+3. Recipe executes its instructions, then you can continue chatting
+
+**Save Workflow as Recipe**:
+1. Have a productive goose session in Neovim
+2. Type `/recipe my-workflow.yaml` to save it
+3. Reuse later: `goose run --recipe my-workflow.yaml`
+
+### Recipe Use Cases
+
+- **Code Reviews**: Consistent review process across team
+- **Documentation**: Generate docs with standard format
+- **Security Audits**: Repeatable security analysis
+- **Onboarding**: Automate environment setup
+- **Testing**: Generate test suites with consistent patterns
 
 ## Troubleshooting
 
@@ -230,7 +663,7 @@ All goose.nvim keybindings are defined in `which-key.lua` under the `<leader>a` 
 Prompt: Review this function for performance and readability
 Context: @current_file or visual selection
 Mode: Chat mode
-Provider: Gemini (fast, free)
+Provider: Gemini CLI
 ```
 
 ### Refactoring Large Files
@@ -303,7 +736,7 @@ Review: Review generated tests in diff view
 
 ### Response Times
 
-- **Gemini 2.0 Flash**: 1-2 seconds for simple queries
+- **Gemini CLI**: 2-4 seconds for complex queries
 - **Claude Code**: 2-3 seconds for complex reasoning
 - **Context Size**: Larger context = longer response time
 - **Streaming**: Responses stream in real-time
@@ -314,28 +747,6 @@ Review: Review generated tests in diff view
 - **Chat vs Auto**: Chat mode is faster (no file operations)
 - **Model Selection**: Flash models faster, larger models more accurate
 - **Session History**: Long sessions increase context size
-
-## Cost Considerations
-
-### Gemini Free Tier
-
-- **Cost**: $0/month
-- **Rate Limits**: 15 requests/minute, 1500 requests/day
-- **Context**: 1M tokens (very generous)
-- **Best For**: Learning, quick questions, simple tasks
-
-### Claude Code Max Subscription
-
-- **Cost**: $100/month (5x) or $200/month (20x)
-- **Billing**: Flat monthly fee, no per-token charges
-- **Pass-through**: Uses subscription directly (no API key)
-- **Best For**: Production use, complex refactoring, large codebases
-
-### Hybrid Strategy
-
-- **Development**: Use Gemini for 80% of queries (free tier sufficient)
-- **Production**: Use Claude Code for complex tasks requiring deep reasoning
-- **Cost Savings**: Gemini free tier + Claude Max = predictable monthly cost
 
 ## References
 

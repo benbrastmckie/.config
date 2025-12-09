@@ -1,40 +1,51 @@
-> /create-plan is running… "research the NOTE tags in 
-/home/benjamin/Documents/Philosophy/Projects/ProofChecker/Do
-cumentation/README.md in order to create a plan that 
-addresses all of them systematically" --complexity 3 
+> /create-plan is running… "I recently implemented 
+/home/benjamin/.config/.claude/specs/046_goose_picker_utilit
+y_recipes/plans/001-goose-picker-utility-recipes-plan.md but
+ running <leader>gR and selecting a command gives me output 
+/home/benjamin/.config/.claude/output/goose-picker-output.md
+ which I want to avoid. I also would like to avoid running 
+everything in the terminal if possible, and so want you to 
+conduct research into the goose.nvim plugin to see if there 
+is a way to run recipes from within the goose sidebar in 
+neovim, or some other related method that provides high 
+quality and robust performance. Conduct this research and 
+create an implementation plan to improve the execution of 
+recipes from the <leader>aR picker." 
   ⎿  Allowed 7 tools for this command
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ ✓ State file validated: /home/benjamin/Documents/Ph
-    ilosophy/Projects/ProofChecker/.claude/tmp/workflow
-    _plan_1765263520.sh
-    … +10 lines (ctrl+o to expand)
+  ⎿ ✓ State file validated: /home/benjamin/.config/.cla
+    ude/tmp/workflow_plan_1765315557.sh
+    Classification accepted: scope=research-and-plan, c
+    … +9 lines (ctrl+o to expand)
 
 
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿ === Topic Name File Path Pre-Calculation ===       
-      Topic Name File: /home/benjamin/Documents/Philoso
-    phy/Projects/ProofChecker/.claude/tmp/topic_name_pl
-    … +4 lines (ctrl+o to expand)
+      Topic Name File: /home/benjamin/.config/.claude/t
+    mp/topic_name_plan_1765315557.txt
+    … +3 lines (ctrl+o to expand)
 
 
+● Read(.claude/agents/topic-naming-agent.md)
+  ⎿  Read 583 lines
 
 ● Task(Generate semantic topic directory name) Haiku 4.5
-  ⎿  Done (3 tool uses · 39.7k tokens · 12s)           
+  ⎿  Done (2 tool uses · 27.8k tokens · 11s)           
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿ === Topic Name Hard Barrier Validation ===         
 
-    Expected topic name file: /home/benjamin/Documents/
-    … +5 lines (ctrl+o to expand)
+    Expected topic name file: /home/benjamin/.config/.c
+    … +4 lines (ctrl+o to expand)
 
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿ Setup complete: plan_1765263520 (research-and-plan,
+  ⎿ Setup complete: plan_1765315557 (research-and-plan,
      complexity: 3)
-    Research directory: /home/benjamin/Documents/Philos
-    … +9 lines (ctrl+o to expand)
+    Research directory: /home/benjamin/.config/.claude/
+    … +7 lines (ctrl+o to expand)
 
 
 
@@ -42,170 +53,190 @@ addresses all of them systematically" --complexity 3
   ⎿ === Topic Detection Agent (Optional) ===           
 
     Complexity 3 >= 3: Running automated topic detectio
-    … +7 lines (ctrl+o to expand)
+    … +6 lines (ctrl+o to expand)
 
 
-● Task(Detect research topics for NOTE tags) Haiku 4.5
-  ⎿  Done (3 tool uses · 39.6k tokens · 21s)           
+● Read(.claude/agents/topic-detection-agent.md)
+  ⎿  Read 523 lines
+
+● Task(Detect research topics for goose.nvim recipe  Haiku 
+      execution)                                     4.5
+
+  ⎿  Done (2 tool uses · 27.4k tokens · 16s)           
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿ === Topic Detection Output Validation ===          
 
-    Expected topics JSON file: /home/benjamin/Documents
-    … +6 lines (ctrl+o to expand)
+    Expected topics JSON file: /home/benjamin/.config/.
+    … +5 lines (ctrl+o to expand)
 
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿ === Topic Decomposition ===                        
 
     Using automated topic detection (topic-detection-ag
-    … +43 lines (ctrl+o to expand)
+    … +32 lines (ctrl+o to expand)
 
 
-● Task(Coordinate multi-topic research for NOTE tags)
-  ⎿  Done (29 tool uses · 68.0k tokens · 4m 3s)        
+● Now I'll invoke the research coordinator to conduct
+  parallel research on all three topics.
+
+● Read(.claude/agents/research-coordinator.md)
+  ⎿  Read 901 lines
+
+● Task(Coordinate multi-topic research for goose.nvim recipe
+       execution)
+  ⎿  Done (48 tool uses · 76.7k tokens · 8m 35s)       
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Error: Exit code 127
-     /run/current-system/sw/bin/bash: line 317: 
-     append_workflow_state: command not found
-
-
-     === Research Output Hard Barrier Validation ===
+  ⎿  === Coordinator Output Signal Validation ===
 
      Expected reports: 3
-       Validating: /home/benjamin/Documents/Philosophy/Proje
-c
-     ts/ProofChecker/.claude/specs/049_documentation_readme_
-n
-     ote_tags_links/reports/001-doc-link-status-analysis.md
-       ✓ Validated
-       Validating: 
-     /home/benjamin/Documents/Philosophy/Projects/ProofCheck
-e
-     r/.claude/specs/049_documentation_readme_note_tags_link
-s
-     /reports/002-multi-section-link-conversion.md
+     … +25 lines (ctrl+o to expand)
 
-     … +6 lines (ctrl+o to see all)
+● It looks like the RESEARCH_DIR is pointing to an older
+   spec directory. Let me check the correct directory
+  and restore the proper state:
 
-● All reports validated successfully. The exit 127 error
-   is a non-fatal issue with state persistence at the
-  end - the reports are valid. Let me proceed with Block
-   2 to transition to planning:
+● Bash(ls -la /home/benjamin/.config/.claude/specs/049_goose
+      _nvim_recipe_execution/reports/ 2>/dev/null || echo
+      "Directory not found")
+  ⎿  total 68                                         
+     drwxr-xr-x 2 benjamin users  4096 Dec  9 13:38 .
+     drwxr-xr-x 3 benjamin users  4096 Dec  9 13:30 ..
+     … +8 lines (ctrl+o to expand)
+
+● The reports are in the correct directory. Let me
+  update the state and continue with validation:
+
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿  === Research Output Hard Barrier Validation ===
+
+     Expected reports: 3
+     … +24 lines (ctrl+o to expand)
+
+● The reports validated successfully. Let me update the
+  todo list and proceed to the planning phase:
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
   ⎿  Verifying research artifacts...
      Research verified: 3 reports
-     … +21 lines (ctrl+o to expand)
+     … +29 lines (ctrl+o to expand)
 
-● The planning setup is complete. The warnings about
-  append_workflow_state are non-critical - the key
-  values are in scope. Let me now invoke the
-  plan-architect agent:
+● Now let me read the research reports to understand the
+   context before invoking the plan-architect:
 
-● Read(.claude/specs/049_documentation_readme_note_tags_link
-      s/reports/001-doc-link-status-analysis.md)
-  ⎿  Read 134 lines
+● Read(.claude/specs/049_goose_nvim_recipe_execution/reports
+      /001-goose-nvim-architecture.md)
+  ⎿  Read 100 lines
 
-● Read(.claude/specs/049_documentation_readme_note_tags_link
-      s/reports/002-multi-section-link-conversion.md)
-  ⎿  Read 146 lines
+● Read(.claude/specs/049_goose_nvim_recipe_execution/reports
+      /002-sidebar-recipe-execution.md)
+  ⎿  Read 100 lines
 
-● Read(.claude/specs/049_documentation_readme_note_tags_link
-      s/reports/003-reference-link-integration.md)
-  ⎿  Read 113 lines
+● Read(.claude/specs/049_goose_nvim_recipe_execution/reports
+      /003-recipe-output-redirection.md)
+  ⎿  Read 100 lines
 
-● Now I have the research reports with all findings. Let
-   me invoke the plan-architect agent:
+● I have good context from the research reports. Now let
+   me invoke the plan-architect to create the
+  implementation plan:
 
-● Task(Create implementation plan for NOTE tags)
-  ⎿  Done (10 tool uses · 66.7k tokens · 2m 23s)       
+● Read(.claude/agents/plan-architect.md)
+  ⎿  Read 200 lines
+
+● Task(Create implementation plan for goose.nvim recipe
+      sidebar execution)
+  ⎿  Done (8 tool uses · 69.8k tokens · 3m 3s)         
 
 ● Bash(set +H  # CRITICAL: Disable history expansion…)
-  ⎿  Error: Exit code 1
-     ERROR: PLAN_PATH not set - state restoration failed
+  ⎿ === Planning Output Hard Barrier Validation ===    
+
+    Expected plan file: /home/benjamin/.config/.claude/
+    … +5 lines (ctrl+o to expand)
 
 
-     === Planning Output Hard Barrier Validation ===
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿  Verifying plan artifacts...   
+     Plan verified: 27397 bytes
+     … +42 lines (ctrl+o to expand)
 
-● Let me verify the plan file was created and manually
-  complete the validation:
+● Read(.claude/specs/049_goose_nvim_recipe_execution/plans/0
+      01-goose-nvim-recipe-execution-plan.md)
+  ⎿  Read 588 lines
 
-● Bash(set +H…)
-  ⎿ ✓ Plan file exists at: /home/benjamin/Documents/Phi
-    losophy/Projects/ProofChecker/.claude/specs/049_doc
-    umentation_readme_note_tags_links/plans/001-documen
-    … +8 lines (ctrl+o to expand)
+● The workflow is complete. Here's a summary of what was
+   accomplished:
 
+  ---
+  Plan Created Successfully
 
+  Plan Location: /home/benjamin/.config/.claude/specs/04
+  9_goose_nvim_recipe_execution/plans/001-goose-nvim-rec
+  ipe-execution-plan.md
 
+  Research Summary
 
-● Read(.claude/specs/049_documentation_readme_note_tags_link
-      s/plans/001-documentation-readme-note-tags-links-plan.
-      md)
-  ⎿  Read 383 lines
+  The research phase produced 3 comprehensive reports
+  analyzing:
 
-● The plan is complete and validated. Let me complete
-  the workflow:
+  1. goose.nvim Plugin Architecture and APIs -
+  Documented the plugin's modular structure, available
+  APIs (goose.api.run(), goose.core.run(),
+  goose.job.execute()), and how the sidebar handles
+  real-time streaming output via plenary.job callbacks.
+  2. Neovim Sidebar Recipe Execution Methods - Evaluated
+   three integration strategies and recommended the
+  hybrid approach - implementing run_recipe_in_sidebar()
+   in your picker's execution.lua using plenary.job
+  directly, without modifying goose.nvim core.
+  3. Recipe Output Handling and File Redirection -
+  Confirmed that goose-picker-output.md is NOT created 
+  by your picker code - it's a debugging artifact from
+  another workflow. ToggleTerm outputs to buffers, not
+  files.
 
-● Bash(set +H…)
-  ⎿ ╔══════════════════════════════════════════════════
-    ═════════════════════════╗
-    ║                        /CREATE-PLAN COMPLETE
-    … +47 lines (ctrl+o to expand)
+  Implementation Plan Overview
 
+  5 phases, estimated 8-12 hours:
 
-● /create-plan Complete
+  | Phase | Description
+                                | Duration |
+  |-------|---------------------------------------------
+  ------------------------------|----------|
+  | 1     | Implement run_recipe_in_sidebar() function
+  with plenary.job integration   | 4h       |
+  | 2     | Update picker keybindings (<CR> for sidebar,
+   <C-t> for terminal fallback) | 1h       |
+  | 3     | Update which-key.lua documentation
+                                | 0.5h     |
+  | 4     | Error handling and edge cases
+                                | 2.5h     |
+  | 5     | Documentation and comprehensive testing
+                                | 2h       |
 
-  I've researched the NOTE tags in
-  Documentation/README.md and created a comprehensive
-  implementation plan to address all 4 of them
-  systematically.
+  Key Architectural Decision
 
-  Summary
-
-  The research identified 4 NOTE tags (lines 23, 34, 44,
-   62) marking sections where plain text list items need
-   to be converted to markdown links:
-
-  | Section      | Links | Lines |
-  |--------------|-------|-------|
-  | Research/    | 4     | 24-28 |
-  | ProjectInfo/ | 3     | 35-38 |
-  | Development/ | 11    | 45-56 |
-  | Reference/   | 2     | 64-65 |
-  | Total        | 20    |       |
-
-  Created Artifacts
-
-  Research Reports (3):
-  - 001-doc-link-status-analysis.md - Identified all
-  NOTE tags and file inventory
-  - 002-multi-section-link-conversion.md -
-  Transformation pattern and execution order
-  - 003-reference-link-integration.md - Final section
-  conversion and validation
-
-  Implementation Plan:
-  - 001-documentation-readme-note-tags-links-plan.md - 5
-   phases, ~2-3 hours estimated
-
-  Plan Phases
-
-  1. Phase 1: Research/ Section (4 links)
-  2. Phase 2: ProjectInfo/ Section (3 links)
-  3. Phase 3: Development/ Section (11 links)
-  4. Phase 4: Reference/ Section + Final validation (2
-  links)
-  5. Phase 5: Documentation verification and consistency
-   check
+  The plan uses a hybrid adapter pattern that:
+  - Interfaces between your recipe picker and goose.nvim
+  - Does NOT modify goose.nvim core code
+  - Enables real-time streaming output in the sidebar
+  - Preserves ToggleTerm fallback via <C-t> keybinding
+  - Integrates with goose session management
+  automatically
 
   Next Steps
 
-  - Review the plan: cat .claude/specs/049_documentation
-  _readme_note_tags_links/plans/001-documentation-readme
-  -note-tags-links-plan.md
-  - Begin implementation: /implement .claude/specs/049_d
-  ocumentation_readme_note_tags_links/plans/001-document
-  ation-readme-note-tags-links-plan.md
+  # Review the complete plan
+  cat /home/benjamin/.config/.claude/specs/049_goose_nvi
+  m_recipe_execution/plans/001-goose-nvim-recipe-executi
+  on-plan.md
+
+  # Begin implementation
+  /implement /home/benjamin/.config/.claude/specs/049_go
+  ose_nvim_recipe_execution/plans/001-goose-nvim-recipe-
+  execution-plan.md
+
+  # Review research reports
+  ls -lh /home/benjamin/.config/.claude/specs/049_goose_
+  nvim_recipe_execution/reports/

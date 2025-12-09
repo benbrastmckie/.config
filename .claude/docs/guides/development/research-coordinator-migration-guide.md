@@ -709,6 +709,48 @@ grep -c "^## Phase" new_plan.md  # Phase count
 
 ---
 
+### Issue: research-coordinator returns empty reports directory
+
+**Symptoms**:
+- STEP 4 validation fails with "Reports directory is empty - no reports created"
+- No research-specialist invocation logs visible in output
+- Invocation trace file missing at `$REPORT_DIR/.invocation-trace.log`
+
+**Root Cause**:
+Agent interpreted Task invocation patterns in STEP 3 as documentation rather than executable directives.
+
+**Diagnostic Commands**:
+```bash
+# Check for empty directory validation error
+grep "Reports directory is empty" ~/.claude/output/create-plan-output.md
+
+# Verify execution enforcement markers present in behavioral file
+grep -c "EXECUTE NOW - DO NOT SKIP" ~/.config/.claude/agents/research-coordinator.md
+# Should return: 3 or more
+
+# Check for invocation trace file
+ls -la "$REPORT_DIR/.invocation-trace.log" 2>/dev/null || echo "Trace file not found - Task invocations did not execute"
+```
+
+**Solutions**:
+1. **Update behavioral file** with execution enforcement markers (if not already present)
+2. **Verify STEP 3.5 self-validation checkpoint** exists in `research-coordinator.md`
+3. **Run integration test** to confirm fixes: `bash ~/.config/.claude/tests/integration/test_research_coordinator_invocation.sh`
+4. **Check empty directory diagnostic output** for structured error information
+
+**Prevention**:
+- Ensure research-coordinator.md updated with latest execution enforcement markers (as of 2025-12-09)
+- Use "(EXECUTE)" suffix in all STEP headers
+- Separate command-author reference documentation from agent execution instructions
+- Include "File Structure (Read This First)" section in behavioral file
+
+**Resolution**:
+This issue was addressed in spec 037 with comprehensive execution enforcement markers, empty directory validation, and invocation trace logging. If using an older version of research-coordinator.md, update to the latest version.
+
+**Reference**: See [Hierarchical Agents Troubleshooting - Issue 16.5](../../concepts/hierarchical-agents-troubleshooting.md#issue-165-research-coordinator-task-invocations-not-executing-empty-reports-directory)
+
+---
+
 ## Related Documentation
 
 ### Standards

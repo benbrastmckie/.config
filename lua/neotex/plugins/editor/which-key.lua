@@ -366,7 +366,53 @@ return {
       { "<leader>ao", "<cmd>GooseOpenOutput<CR>", desc = "goose output", icon = "󰆍" },
       { "<leader>af", "<cmd>GooseToggleFullscreen<CR>", desc = "goose fullscreen", icon = "󰊓" },
       { "<leader>ad", "<cmd>GooseDiff<CR>", desc = "goose diff", icon = "󰦓" },
-      { "<leader>ab", "<cmd>GooseConfigureProvider<CR>", desc = "goose backend/provider", icon = "󰒓" },
+      { "<leader>aA", "<cmd>GooseModeAuto<CR>", desc = "goose auto mode", icon = "󰒓" },
+      { "<leader>aC", "<cmd>GooseModeChat<CR>", desc = "goose chat mode", icon = "󰭹" },
+      { "<leader>aR", function()
+        require("neotex.plugins.ai.goose.picker").show_recipe_picker()
+      end, desc = "goose run recipe (sidebar)", icon = "󰑮" },
+      { "<leader>ab", function()
+        -- Detect provider availability
+        local has_gemini_api = vim.env.GEMINI_API_KEY ~= nil and vim.env.GEMINI_API_KEY ~= ""
+        local has_gemini_cli = vim.fn.executable("gemini") == 1
+        local has_claude_cli = vim.fn.executable("claude") == 1
+
+        -- Build status message
+        local status = {}
+        local gemini_model = vim.env.GEMINI_MODEL or "gemini-2.0-flash-exp"
+        local tier_info = gemini_model == "gemini-2.0-flash-exp" and " (Free Tier)" or " (Paid Tier)"
+
+        if has_gemini_api or has_gemini_cli then
+          table.insert(status, "[OK] Gemini" .. tier_info)
+        else
+          table.insert(status, "[X] Gemini (not configured)")
+        end
+
+        if has_claude_cli then
+          local status_output = vim.fn.system("claude /status 2>&1")
+          local is_authenticated = status_output:match("Logged in") ~= nil
+          local has_subscription = status_output:match("Pro") ~= nil or status_output:match("Max") ~= nil
+          if is_authenticated and has_subscription then
+            table.insert(status, "[OK] Claude Code")
+          else
+            table.insert(status, "[X] Claude Code (not authenticated or no subscription)")
+          end
+        else
+          table.insert(status, "[X] Claude Code (CLI not installed)")
+        end
+
+        -- Display status notification
+        vim.notify(
+          "Provider Status:\n\n" .. table.concat(status, "\n"),
+          vim.log.levels.INFO,
+          { title = "Goose Multi-Provider Status" }
+        )
+
+        -- Open provider picker after delay
+        vim.defer_fn(function()
+          vim.cmd("GooseConfigureProvider")
+        end, 1000)
+      end, desc = "goose backend/provider", icon = "󰒓" },
       { "<leader>aq", "<cmd>GooseClose<CR>", desc = "goose quit", icon = "󰅖" },
     })
 

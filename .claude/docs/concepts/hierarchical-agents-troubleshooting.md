@@ -596,6 +596,94 @@ fi
 
 ---
 
+### Issue 16.5: research-coordinator Task Invocations Not Executing (Empty Reports Directory)
+
+**Symptom**: research-coordinator returns successfully but reports directory is empty, STEP 4 validation fails with "Reports directory is empty - no reports created" error.
+
+**Root Cause**: Agent interprets Task invocation patterns in STEP 3 as documentation/examples rather than executable directives, skipping research-specialist invocations entirely.
+
+**Diagnostic Indicators**:
+1. Error message: "CRITICAL ERROR: Reports directory is empty - no reports created"
+2. Error message: "This indicates Task tool invocations did not execute in STEP 3"
+3. No research-specialist invocation logs in output
+4. Invocation trace file missing at `$REPORT_DIR/.invocation-trace.log`
+
+**Solution 1: Check for Execution Enforcement Markers**
+
+The behavioral file (`/home/benjamin/.config/.claude/agents/research-coordinator.md`) must contain strong execution enforcement markers to prevent misinterpretation:
+
+```bash
+# Verify execution markers present
+grep -c "EXECUTE NOW - DO NOT SKIP" ~/.config/.claude/agents/research-coordinator.md
+# Should return: 3 or more (one per topic index)
+
+grep -q "THIS IS NOT DOCUMENTATION - EXECUTE NOW" ~/.config/.claude/agents/research-coordinator.md && echo "Pre-step warning found"
+
+grep -q "EXECUTION ZONE" ~/.config/.claude/agents/research-coordinator.md && echo "Execution zone marker found"
+```
+
+**Solution 2: Verify STEP 3.5 Self-Validation Checkpoint**
+
+Coordinator must self-validate Task invocations before proceeding to STEP 4:
+
+```bash
+# Check for self-validation checkpoint
+grep -A5 "STEP 3.5.*MANDATORY SELF-VALIDATION" ~/.config/.claude/agents/research-coordinator.md
+
+# Verify fail-fast instruction present
+grep -q "FAIL-FAST INSTRUCTION" ~/.config/.claude/agents/research-coordinator.md && echo "Fail-fast checkpoint found"
+```
+
+**Solution 3: Enable Invocation Trace Logging**
+
+The invocation trace file captures diagnostic information about Task invocations:
+
+```bash
+# After coordinator failure, check for trace file
+if [ -f "$REPORT_DIR/.invocation-trace.log" ]; then
+  echo "Trace file found - reviewing invocations:"
+  cat "$REPORT_DIR/.invocation-trace.log"
+else
+  echo "Trace file missing - indicates Task invocations never executed"
+fi
+```
+
+**Solution 4: Check Empty Directory Validation Diagnostic Output**
+
+When STEP 4 detects empty directory, it outputs structured diagnostic information:
+
+```markdown
+CRITICAL ERROR: Reports directory is empty - no reports created
+Expected: 3 reports
+This indicates Task tool invocations did not execute in STEP 3
+Root cause: Agent interpreted Task patterns as documentation, not executable directives
+Solution: Return to STEP 3 and execute Task tool invocations
+
+Diagnostic Information:
+  Topic Count: 3
+  Expected Reports: 3
+  Created Reports: 0
+  Missing Count: 3
+```
+
+**Prevention**:
+- Ensure `research-coordinator.md` has execution enforcement markers (updated as of 2025-12-09)
+- Use "EXECUTE NOW - DO NOT SKIP" directive before each Task invocation
+- Add "(EXECUTE)" suffix to all STEP headers
+- Separate command-author reference documentation from agent execution instructions
+- Include "File Structure (Read This First)" section explaining execution vs documentation
+
+**Resolution Steps**:
+1. Update `research-coordinator.md` with latest execution enforcement markers
+2. Run integration test: `bash ~/.config/.claude/tests/integration/test_research_coordinator_invocation.sh`
+3. Re-invoke coordinator with updated behavioral file
+4. Verify invocation trace file created during execution
+5. Confirm reports directory populated with expected number of reports
+
+**Reference**: See research-coordinator invocation fix implementation plan (spec 037)
+
+---
+
 ### Issue 17: research-coordinator Reports Missing (Hard Barrier Failure)
 
 **Symptom**: Multi-report validation fails with "Report not found at $REPORT_PATH".

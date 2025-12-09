@@ -129,7 +129,7 @@ GOOSE_MODEL: gemini-3.0-pro
 
 **Gemini API Key** (CONFIRMED):
 ```bash
-GEMINI_API_KEY=AIzaSyD6BiVzXhbhXFLqdbh_TmtAhiJG7EXFtqw
+GEMINI_API_KEY=<redacted>
 ```
 Status: Properly set and available to both goose CLI and gemini CLI.
 
@@ -706,13 +706,13 @@ GOOSE_MODE: auto
 ```bash
 # Goose Provider Configuration
 # Use GOOGLE_API_KEY for google provider (same value as GEMINI_API_KEY)
-export GOOGLE_API_KEY="${GEMINI_API_KEY:-AIzaSyD6BiVzXhbhXFLqdbh_TmtAhiJG7EXFtqw}"
+export GOOGLE_API_KEY="${GEMINI_API_KEY}"
 ```
 
 **Alternative** (if GEMINI_API_KEY not set elsewhere):
 ```bash
 # Set both for maximum compatibility
-export GEMINI_API_KEY="AIzaSyD6BiVzXhbhXFLqdbh_TmtAhiJG7EXFtqw"
+export GEMINI_API_KEY="<your-api-key>"
 export GOOGLE_API_KEY="$GEMINI_API_KEY"
 ```
 

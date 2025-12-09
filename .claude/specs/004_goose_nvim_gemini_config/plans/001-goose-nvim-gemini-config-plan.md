@@ -175,7 +175,7 @@ dependencies: [2]
 **Tasks**:
 - [x] Determine active shell (bash or zsh): `echo $SHELL`
 - [x] Add environment variable export to appropriate profile file
-- [x] Use format: `export GOOGLE_API_KEY="${GEMINI_API_KEY:-AIzaSyD6BiVzXhbhXFLqdbh_TmtAhiJG7EXFtqw}"`
+- [x] Use format: `export GOOGLE_API_KEY="${GEMINI_API_KEY}"`
 - [x] Add comment documenting purpose: `# Goose Provider Configuration - google provider uses GOOGLE_API_KEY`
 - [x] Source updated profile to apply changes: `source ~/.bashrc` or `source ~/.zshrc`
 - [x] Verify variable set in new shell session: Open new terminal and `echo $GOOGLE_API_KEY`
@@ -193,7 +193,7 @@ elif [ -n "$ZSH_VERSION" ]; then
 fi
 
 # Test in new shell
-bash -c 'echo $GOOGLE_API_KEY' | grep -q "AIza" && echo "✓ Variable persists in new bash session"
+bash -c '[ -n "$GOOGLE_API_KEY" ]' && echo "✓ Variable persists in new bash session"
 ```
 
 **Expected Duration**: 0.5 hours
@@ -365,7 +365,7 @@ mdl /home/benjamin/.config/nvim/lua/neotex/plugins/ai/goose/README.md 2>/dev/nul
 ### Configuration Prerequisites
 - Current goose CLI config backed up
 - Shell profile backed up
-- `GEMINI_API_KEY` currently set (verified: AIzaSyD6BiVzXhbhXFLqdbh_TmtAhiJG7EXFtqw)
+- `GEMINI_API_KEY` currently set (verified)
 - goose.nvim plugin configuration already correct (no changes needed)
 
 ## Risk Assessment
