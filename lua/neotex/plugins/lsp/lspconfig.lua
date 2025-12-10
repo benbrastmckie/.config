@@ -1,58 +1,14 @@
 return {
   "neovim/nvim-lspconfig",
-  event = { "BufReadPre", "BufNewFile" }, -- Only load when a file is opened
+  event = { "BufReadPre", "BufNewFile" },
   dependencies = {
-    { "antosha417/nvim-lsp-file-operations", event = "BufReadPost" }, -- Load when reading files
+    { "antosha417/nvim-lsp-file-operations", event = "BufReadPost" },
   },
   config = function()
-    -- Suppress the deprecation warning from nvim-lspconfig
-    -- This warning is about the plugin transitioning to vim.lsp.config in the future
-    -- We'll continue using nvim-lspconfig until the new API is stable and feature-complete
-    local original_notify = vim.notify
-    vim.notify = function(msg, ...)
-      if msg:match("framework.*deprecated") or msg:match("vim.lsp.config") then
-        return  -- Suppress this specific deprecation warning
-      end
-      return original_notify(msg, ...)
-    end
+    -- Neovim 0.11+ uses native vim.lsp.config API instead of lspconfig framework
+    -- See :help lspconfig-nvim-0.11 for migration details
 
-    -- Import lspconfig plugin (only loaded when the event triggers)
-    -- Using vim.lsp.config API as recommended in nvim 0.11+
-    local lspconfig = vim.F.npcall(require, "lspconfig")
-    if not lspconfig then
-      vim.notify("Failed to load lspconfig", vim.log.levels.ERROR)
-      return
-    end
-
-    -- Restore original notify function
-    vim.notify = original_notify
-
-    -- Disable stylua LSP setup (using formatter instead via conform.nvim)
-    -- This prevents the "Client stylua quit with exit code 2" error
-    if vim.lsp.handlers and vim.lsp.handlers["textDocument/didOpen"] then
-      local original_handler = vim.lsp.handlers["textDocument/didOpen"]
-      vim.lsp.handlers["textDocument/didOpen"] = function(err, result, ctx, config)
-        -- Skip stylua LSP client
-        local client = vim.lsp.get_client_by_id(ctx.client_id)
-        if client and client.name == "stylua" then
-          return
-        end
-        return original_handler(err, result, ctx, config)
-      end
-    end
-
-    -- Prevent stylua from being started as an LSP server
-    vim.api.nvim_create_autocmd("LspAttach", {
-      callback = function(args)
-        local client = vim.lsp.get_client_by_id(args.data.client_id)
-        if client and client.name == "stylua" then
-          vim.lsp.stop_client(client.id)
-        end
-      end,
-      desc = "Stop stylua LSP client (using formatter instead)"
-    })
-
-    -- Define diagnostics configuration before anything else
+    -- Define diagnostics configuration
     local signs = { Error = "", Warn = "", Hint = "󰠠", Info = "" }
     vim.diagnostic.config({
       signs = {
@@ -63,85 +19,72 @@ return {
           [vim.diagnostic.severity.INFO] = signs.Info,
         },
       },
-      -- Optimize diagnostic updates - don't update in insert mode
       update_in_insert = false,
-      -- Reduce diagnostic severity for better UX
       severity_sort = true,
     })
 
-    -- On-attach function to set up keymaps when an LSP connects
-    local on_attach = function(client, bufnr)
-      -- Your existing on_attach code can go here
+    -- Get capabilities (with blink.cmp enhancement if available)
+    local capabilities = vim.lsp.protocol.make_client_capabilities()
+    local ok, blink = pcall(require, "blink.cmp")
+    if ok then
+      capabilities = blink.get_lsp_capabilities(capabilities)
     end
 
-    -- Map of commonly used filetypes to their LSP servers
-    local filetype_servers = {
-      lua = "lua_ls",
-      python = "pyright", 
-      tex = "texlab",
-      latex = "texlab",
-    }
-
-    -- Minimal capabilities for LSP
-    local capabilities = vim.lsp.protocol.make_client_capabilities()
-
-    -- Lazy-load LSP servers based on filetype
-    vim.api.nvim_create_autocmd("FileType", {
-      pattern = {"lua", "python", "tex", "latex"},
-      callback = function()
-        -- Get current filetype
-        local ft = vim.bo.filetype
-        local server = filetype_servers[ft]
-        
-        -- Skip if no server mapped or already set up
-        if not server or not lspconfig[server] then return end
-
-        -- Get enhanced capabilities for completion (only load when needed)
-        local ok, blink = pcall(require, "blink.cmp")
-        if ok then
-          capabilities = blink.get_lsp_capabilities(capabilities)
-        end
-        
-        -- Configure specific LSP servers
-        if server == "lua_ls" then
-          lspconfig.lua_ls.setup({
-            capabilities = capabilities,
-            on_attach = on_attach,
-            settings = {
-              Lua = {
-                diagnostics = { globals = { "vim" } },
-                workspace = {
-                  library = {
-                    [vim.fn.expand("$VIMRUNTIME/lua")] = true,
-                    [vim.fn.stdpath("config") .. "/lua"] = true,
-                  },
-                },
-              },
+    -- Configure LSP servers using vim.lsp.config (Neovim 0.11+ native API)
+    vim.lsp.config("lua_ls", {
+      cmd = { "lua-language-server" },
+      filetypes = { "lua" },
+      root_markers = { ".luarc.json", ".luarc.jsonc", ".luacheckrc", ".stylua.toml", "stylua.toml", "selene.toml", "selene.yml", ".git" },
+      capabilities = capabilities,
+      settings = {
+        Lua = {
+          diagnostics = { globals = { "vim" } },
+          workspace = {
+            library = {
+              [vim.fn.expand("$VIMRUNTIME/lua")] = true,
+              [vim.fn.stdpath("config") .. "/lua"] = true,
             },
-          })
-        elseif server == "pyright" then
-          lspconfig.pyright.setup({
-            capabilities = capabilities,
-            on_attach = on_attach,
-          })
-        elseif server == "texlab" then
-          lspconfig.texlab.setup({
-            capabilities = capabilities,
-            on_attach = on_attach,
-            settings = {
-              texlab = {
-                build = { onSave = true },
-                chktex = {
-                  onEdit = false,
-                  onOpenAndSave = false,
-                },
-                diagnosticsDelay = 300,
-              },
-            },
-          })
-        end
-      end,
-      desc = "Set up LSP for detected filetypes",
+            checkThirdParty = false,
+          },
+          telemetry = { enable = false },
+        },
+      },
     })
+
+    vim.lsp.config("pyright", {
+      cmd = { "pyright-langserver", "--stdio" },
+      filetypes = { "python" },
+      root_markers = { "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", "Pipfile", "pyrightconfig.json", ".git" },
+      capabilities = capabilities,
+      settings = {
+        python = {
+          analysis = {
+            autoSearchPaths = true,
+            useLibraryCodeForTypes = true,
+            diagnosticMode = "openFilesOnly",
+          },
+        },
+      },
+    })
+
+    vim.lsp.config("texlab", {
+      cmd = { "texlab" },
+      filetypes = { "tex", "plaintex", "bib" },
+      root_markers = { ".latexmkrc", ".texlabroot", "texlabroot", "Tectonic.toml", ".git" },
+      capabilities = capabilities,
+      settings = {
+        texlab = {
+          build = { onSave = true },
+          chktex = {
+            onEdit = false,
+            onOpenAndSave = false,
+          },
+          diagnosticsDelay = 300,
+        },
+      },
+    })
+
+    -- Enable configured servers
+    vim.lsp.enable({ "lua_ls", "pyright", "texlab" })
   end,
 }

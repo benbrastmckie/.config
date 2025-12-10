@@ -177,7 +177,7 @@ for arg in "${ARGS_ARRAY[@]:2}"; do
 done
 
 # Handle --resume with separate argument
-for i in "${!ARGS_ARRAY[@]}"; do
+for i in $(seq 0 $((${#ARGS_ARRAY[@]} - 1))); do
   if [ "${ARGS_ARRAY[$i]}" = "--resume" ]; then
     RESUME_CHECKPOINT="${ARGS_ARRAY[$((i+1))]:-}"
     break
@@ -380,24 +380,8 @@ WORKFLOW_TYPE="implement-only"
 TERMINAL_STATE="$STATE_IMPLEMENT"
 COMMAND_NAME="implement"
 
-# Generate workflow ID with timestamp
-WORKFLOW_ID="implement_$(date +%s)"
-
-# Use persistent state ID file with atomic write for cross-block accessibility
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/implement_state_id.txt"
-mkdir -p "$(dirname "$STATE_ID_FILE")"
-
-# Atomic write using temp file + mv pattern
-TEMP_STATE_ID="${STATE_ID_FILE}.tmp.$$"
-echo "$WORKFLOW_ID" > "$TEMP_STATE_ID"
-mv "$TEMP_STATE_ID" "$STATE_ID_FILE"
-
-# Verify state ID file was created
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: Failed to create state ID file at $STATE_ID_FILE" >&2
-  exit 1
-fi
-
+# Generate workflow ID with nanosecond-precision timestamp for concurrent execution safety
+WORKFLOW_ID="implement_$(date +%s%N)"
 export WORKFLOW_ID
 
 # Set command metadata for error logging
@@ -470,13 +454,13 @@ type append_workflow_state &>/dev/null || {
   exit 1
 }
 
-append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
-append_workflow_state "USER_ARGS" "$USER_ARGS"
-append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
-append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
-append_workflow_state "PLAN_FILE" "$PLAN_FILE"
-append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
-append_workflow_state "STARTING_PHASE" "$STARTING_PHASE"
+append_workflow_state "COMMAND_NAME" "${COMMAND_NAME:-}"
+append_workflow_state "USER_ARGS" "${USER_ARGS:-}"
+append_workflow_state "WORKFLOW_ID" "${WORKFLOW_ID:-}"
+append_workflow_state "CLAUDE_PROJECT_DIR" "${CLAUDE_PROJECT_DIR:-}"
+append_workflow_state "PLAN_FILE" "${PLAN_FILE:-}"
+append_workflow_state "TOPIC_PATH" "${TOPIC_PATH:-}"
+append_workflow_state "STARTING_PHASE" "${STARTING_PHASE:-}"
 
 # === ITERATION LOOP VARIABLES ===
 # These enable persistent iteration for large plans
@@ -486,22 +470,22 @@ LAST_WORK_REMAINING=""
 STUCK_COUNT=0
 
 # Persist iteration variables for cross-block accessibility
-append_workflow_state "MAX_ITERATIONS" "$MAX_ITERATIONS"
-append_workflow_state "CONTEXT_THRESHOLD" "$CONTEXT_THRESHOLD"
-append_workflow_state "ITERATION" "$ITERATION"
-append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
-append_workflow_state "LAST_WORK_REMAINING" "$LAST_WORK_REMAINING"
-append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
+append_workflow_state "MAX_ITERATIONS" "${MAX_ITERATIONS:-}"
+append_workflow_state "CONTEXT_THRESHOLD" "${CONTEXT_THRESHOLD:-}"
+append_workflow_state "ITERATION" "${ITERATION:-}"
+append_workflow_state "CONTINUATION_CONTEXT" "${CONTINUATION_CONTEXT:-}"
+append_workflow_state "LAST_WORK_REMAINING" "${LAST_WORK_REMAINING:-}"
+append_workflow_state "STUCK_COUNT" "${STUCK_COUNT:-}"
 
 # Create implement workspace directory for iteration summaries
 IMPLEMENT_WORKSPACE="${CLAUDE_PROJECT_DIR}/.claude/tmp/implement_${WORKFLOW_ID}"
 mkdir -p "$IMPLEMENT_WORKSPACE"
-append_workflow_state "IMPLEMENT_WORKSPACE" "$IMPLEMENT_WORKSPACE"
+append_workflow_state "IMPLEMENT_WORKSPACE" "${IMPLEMENT_WORKSPACE:-}"
 
 # Prepare summaries directory for verification
 SUMMARIES_DIR="${TOPIC_PATH}/summaries"
 mkdir -p "$SUMMARIES_DIR"
-append_workflow_state "SUMMARIES_DIR" "$SUMMARIES_DIR"
+append_workflow_state "SUMMARIES_DIR" "${SUMMARIES_DIR:-}"
 
 # Source barrier utilities for verification
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/barrier-utils.sh" 2>/dev/null || {
@@ -647,16 +631,12 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>
 ensure_error_log_exists
 
 # === RESTORE VARIABLES FROM BLOCK 1a STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/implement_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-  validate_workflow_id "$WORKFLOW_ID" "/implement" || {
-    WORKFLOW_ID="implement_$(date +%s)_recovered"
-  }
-else
-  echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
+STATE_FILE=$(discover_latest_state_file "implement")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
+source "$STATE_FILE"  # WORKFLOW_ID restored from state file
 export WORKFLOW_ID
 
 load_workflow_state "$WORKFLOW_ID" false
@@ -797,8 +777,8 @@ echo "  Path: $LATEST_SUMMARY"
 echo ""
 
 # Persist summary path
-append_workflow_state "LATEST_SUMMARY" "$LATEST_SUMMARY"
-append_workflow_state "SUMMARY_COUNT" "$SUMMARY_COUNT"
+append_workflow_state "LATEST_SUMMARY" "${LATEST_SUMMARY:-}"
+append_workflow_state "SUMMARY_COUNT" "${SUMMARY_COUNT:-}"
 
 # CHECKPOINT REPORTING
 echo ""
@@ -896,12 +876,12 @@ fi
 if [ -n "$AGENT_PLAN_FILE" ]; then
   PLAN_FILE="$AGENT_PLAN_FILE"
   echo "Using plan_file from agent return: $PLAN_FILE"
-  append_workflow_state "PLAN_FILE" "$PLAN_FILE"
+  append_workflow_state "PLAN_FILE" "${PLAN_FILE:-}"
 fi
 if [ -n "$AGENT_TOPIC_PATH" ]; then
   TOPIC_PATH="$AGENT_TOPIC_PATH"
   echo "Using topic_path from agent return: $TOPIC_PATH"
-  append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+  append_workflow_state "TOPIC_PATH" "${TOPIC_PATH:-}"
 fi
 
 # Display iteration management status from agent
@@ -913,7 +893,7 @@ if [ "$STUCK_DETECTED" = "true" ]; then
 fi
 if [ -n "$CHECKPOINT_PATH" ]; then
   echo "Checkpoint created: $CHECKPOINT_PATH"
-  append_workflow_state "CHECKPOINT_PATH" "$CHECKPOINT_PATH"
+  append_workflow_state "CHECKPOINT_PATH" "${CHECKPOINT_PATH:-}"
 fi
 
 # Fallback: Check summary file for work_remaining if not directly captured
@@ -1009,9 +989,9 @@ if [ "$REQUIRES_CONTINUATION" = "true" ]; then
   echo "Preparing iteration $NEXT_ITERATION..."
 
   # Update state for next iteration
-  append_workflow_state "ITERATION" "$NEXT_ITERATION"
-  append_workflow_state "WORK_REMAINING" "$WORK_REMAINING"
-  append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
+  append_workflow_state "ITERATION" "${NEXT_ITERATION:-}"
+  append_workflow_state "WORK_REMAINING" "${WORK_REMAINING:-}"
+  append_workflow_state "CONTINUATION_CONTEXT" "${CONTINUATION_CONTEXT:-}"
   append_workflow_state "IMPLEMENTATION_STATUS" "continuing"
 
   # Save current summary if exists
@@ -1035,7 +1015,7 @@ else
     append_workflow_state "HALT_REASON" "max_iterations"
   fi
 
-  append_workflow_state "WORK_REMAINING" "$WORK_REMAINING"
+  append_workflow_state "WORK_REMAINING" "${WORK_REMAINING:-}"
 fi
 
 echo ""
@@ -1062,15 +1042,13 @@ set +o histexpand 2>/dev/null || true
 set -e
 
 # Load state to get updated ITERATION value (Block 1c saved NEXT_ITERATION as ITERATION)
-STATE_ID_FILE="${HOME}/.claude/tmp/implement_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-else
-  echo "ERROR: State ID file not found" >&2
+source "${HOME}/.config/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+STATE_FILE=$(discover_latest_state_file "implement")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
-
-source "${HOME}/.config/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+source "$STATE_FILE"  # WORKFLOW_ID restored
 source "${HOME}/.config/.claude/lib/core/error-handling.sh" 2>/dev/null || exit 1
 ensure_error_log_exists
 
@@ -1236,28 +1214,14 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null ||
 
 ensure_error_log_exists
 
-# === LOAD WORKFLOW STATE WITH RECOVERY ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/implement_state_id.txt"
-
-# Attempt to read WORKFLOW_ID from state ID file
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-else
-  # Recovery: Find most recent implement workflow state file
-  LATEST_STATE=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "workflow_implement_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
-
-  if [ -n "$LATEST_STATE" ] && [ -f "$LATEST_STATE" ]; then
-    # Extract WORKFLOW_ID from state file name
-    WORKFLOW_ID=$(basename "$LATEST_STATE" .sh | sed 's/^workflow_//')
-    echo "RECOVERY: State ID file missing, restored from most recent state file" >&2
-    echo "WORKFLOW_ID: $WORKFLOW_ID" >&2
-  else
-    echo "ERROR: Cannot recover WORKFLOW_ID - no state ID file and no workflow state files found" >&2
-    echo "Expected: $STATE_ID_FILE" >&2
-    echo "Search path: ${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_implement_*.sh" >&2
-    exit 1
-  fi
+# === LOAD WORKFLOW STATE ===
+STATE_FILE=$(discover_latest_state_file "implement")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  echo "Search path: ${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_implement_*.sh" >&2
+  exit 1
 fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
 
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: WORKFLOW_ID is empty after state recovery attempt" >&2
@@ -1457,8 +1421,8 @@ else
 fi
 
 # Persist validation results (phases_with_marker count for reporting)
-append_workflow_state "PHASES_WITH_MARKER" "$PHASES_WITH_MARKER"
-append_workflow_state "TOTAL_PHASES" "$TOTAL_PHASES"
+append_workflow_state "PHASES_WITH_MARKER" "${PHASES_WITH_MARKER:-}"
+append_workflow_state "TOTAL_PHASES" "${TOTAL_PHASES:-}"
 
 # Defensive check: Verify save_completed_states_to_state function available
 type save_completed_states_to_state &>/dev/null
@@ -1544,20 +1508,13 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/checkpoint-utils.sh" 2>/dev/n
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null || true
 ensure_error_log_exists
 
-# === LOAD STATE WITH RECOVERY ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/implement_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-else
-  # Recovery: Find most recent implement workflow state file
-  LATEST_STATE=$(find "${CLAUDE_PROJECT_DIR}/.claude/tmp" -name "workflow_implement_*.sh" -type f -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
-  if [ -n "$LATEST_STATE" ]; then
-    WORKFLOW_ID=$(basename "$LATEST_STATE" .sh | sed 's/^workflow_//')
-  else
-    echo "ERROR: Cannot recover WORKFLOW_ID" >&2
-    exit 1
-  fi
+# === LOAD STATE ===
+STATE_FILE=$(discover_latest_state_file "implement")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
 fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
 export WORKFLOW_ID
 
 load_workflow_state "$WORKFLOW_ID" false

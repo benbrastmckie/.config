@@ -391,15 +391,15 @@ fi
 
 # === PERSIST ALL REQUIRED VARIABLES ===
 # Persist variables for Block 2c verification and agent access
-append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
-append_workflow_state "USER_ARGS" "$USER_ARGS"
-append_workflow_state "CLEAN_MODE" "$CLEAN_MODE"
-append_workflow_state "DRY_RUN" "$DRY_RUN"
-append_workflow_state "DISCOVERED_PROJECTS" "$DISCOVERED_PROJECTS"
-append_workflow_state "SPECS_ROOT" "$SPECS_ROOT"
-append_workflow_state "TODO_PATH" "$TODO_PATH"
-append_workflow_state "NEW_TODO_PATH" "$NEW_TODO_PATH"
-append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
+append_workflow_state "COMMAND_NAME" "${COMMAND_NAME:-}"
+append_workflow_state "USER_ARGS" "${USER_ARGS:-}"
+append_workflow_state "CLEAN_MODE" "${CLEAN_MODE:-}"
+append_workflow_state "DRY_RUN" "${DRY_RUN:-}"
+append_workflow_state "DISCOVERED_PROJECTS" "${DISCOVERED_PROJECTS:-}"
+append_workflow_state "SPECS_ROOT" "${SPECS_ROOT:-}"
+append_workflow_state "TODO_PATH" "${TODO_PATH:-}"
+append_workflow_state "NEW_TODO_PATH" "${NEW_TODO_PATH:-}"
+append_workflow_state "WORKFLOW_ID" "${WORKFLOW_ID:-}"
 
 echo ""
 echo "=== Pre-Calculate Output Paths ==="

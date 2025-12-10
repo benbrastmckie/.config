@@ -406,6 +406,165 @@ sm_init "$DESCRIPTION" "$COMMAND_NAME" "$WORKFLOW_TYPE" || exit 1
 
 ---
 
+## Bash Block Size Limits and Prevention
+
+### Size Thresholds
+
+Bash blocks in command files have strict size limits to prevent preprocessing transformation bugs:
+
+| Zone | Line Count | Status | Action Required |
+|------|-----------|--------|----------------|
+| **Safe Zone** | <300 lines | ✅ Recommended | None - ideal for complex logic |
+| **Caution Zone** | 300-400 lines | ⚠️ Monitor | Review for split opportunities |
+| **Prohibited** | >400 lines | ❌ Error | **MUST SPLIT** - causes preprocessing bugs |
+
+### Technical Root Cause
+
+Claude's bash preprocessing applies transformations before execution:
+- Variable interpolation (`${VAR}` → actual values)
+- Command substitution (`$(cmd)` → command output)
+- Array expansion (`${arr[@]}` → element list)
+
+**Critical Issue**: These transformations are lossy and introduce subtle bugs when blocks exceed ~400 lines.
+
+**Common Symptoms** (>400 line threshold):
+- "bad substitution" errors during array operations
+- Conditional expression failures (`if [[ ... ]]` breaks)
+- Array expansion issues (unbound variable errors)
+- Variable interpolation corruption
+
+**Why 400 Lines?**: Empirical threshold where preprocessing complexity overwhelms transformation accuracy. Exact mechanism is opaque (Claude internal implementation), but symptoms are consistent across multiple commands.
+
+### Detection Methods
+
+**Manual Line Counting**:
+```bash
+# Count lines in specific bash block
+sed -n '/^```bash/,/^```/p' command.md | wc -l
+
+# Count all blocks in command file
+awk '/^```bash$/,/^```$/ {if (!/^```/) print}' command.md | wc -l
+```
+
+**Automated Validation**:
+```bash
+# Run block size validator (future tool)
+bash .claude/scripts/check-bash-block-size.sh command.md
+
+# Expected output: All blocks <400 lines
+```
+
+### Prevention Patterns
+
+#### Pattern 1: Split at Logical Boundaries
+
+Organize commands into 2-3 consolidated blocks based on workflow phases:
+
+```markdown
+## Block 1: Setup and Initialization (Target: <300 lines)
+**EXECUTE NOW**: Capture arguments, initialize state machine, persist state
+
+```bash
+# Argument capture
+# Library sourcing
+# State machine init
+# State persistence
+```
+
+## Block 2: Agent Invocation (Task tool - no bash block)
+**EXECUTE NOW**: USE the Task tool to invoke subagent
+
+Task { ... }
+
+## Block 3: Validation and Completion (Target: <250 lines)
+**EXECUTE NOW**: Validate outputs, transition state, generate summary
+
+```bash
+# Hard barrier validation
+# State transition
+# Console summary
+```
+```
+
+**Rationale**: Natural split points align with command workflow phases (setup → execution → validation).
+
+#### Pattern 2: Use State Persistence for Cross-Block Communication
+
+When splitting oversized blocks, use state persistence library for data flow:
+
+```bash
+# Block 1: Calculate and persist
+REPORT_PATHS_ARRAY=("path1" "path2" "path3")
+REPORT_PATHS_LIST=$(printf "%s|" "${REPORT_PATHS_ARRAY[@]}")
+append_workflow_state "REPORT_PATHS_LIST" "${REPORT_PATHS_LIST%|}"
+
+# Block 2: Restore and use
+IFS='|' read -ra REPORT_PATHS_ARRAY <<< "$REPORT_PATHS_LIST"
+echo "Restored ${#REPORT_PATHS_ARRAY[@]} paths"
+```
+
+**Why**: State files survive subprocess boundaries, enabling seamless data flow between split blocks.
+
+#### Pattern 3: Task Tool Invocations as Natural Split Points
+
+Task invocations don't require bash blocks, making them ideal split boundaries:
+
+```markdown
+## Block 1a: Setup (239 lines)
+```bash
+# Setup logic
+```
+
+## Block 1b: Agent Invocation (0 bash lines - just Task)
+**EXECUTE NOW**: USE the Task tool...
+
+Task { ... }
+
+## Block 1c: Post-Agent Processing (225 lines)
+```bash
+# Validation and continuation
+```
+```
+
+**Result**: Each segment stays well under 400-line limit, zero preprocessing issues.
+
+### Real-World Example: /research Command Refactor
+
+**Before** (BROKEN):
+```
+Block 1: 501 lines
+  → Symptoms: "bad substitution" errors in array operations
+  → Failure: Conditional expressions corrupt after preprocessing
+  → Impact: Command unusable for complexity ≥ 3
+```
+
+**After** (FIXED):
+```
+Block 1:  239 lines - Argument capture, state init
+Block 1b: Task invocation - Topic naming agent
+Block 1c: 225 lines - Decomposition, path pre-calculation
+Block 2:  Task invocation - Research coordination
+Block 2b: 172 lines - Hard barrier validation
+Block 3:  140 lines - Completion and summary
+```
+
+**Results**:
+- ✅ All blocks <400 lines (largest: 239)
+- ✅ Zero "bad substitution" errors
+- ✅ Array operations work correctly
+- ✅ Conditional expressions stable
+- ✅ Command fully functional for all complexity levels
+
+**Reference**: See `.claude/specs/010_research_conform_standards/reports/001-research-conform-standards-analysis.md` for complete refactoring details.
+
+### Cross-References
+
+- **Block Consolidation Guidelines**: See [Output Formatting Standards](./output-formatting.md#block-consolidation) for balancing readability with size limits
+- **Subprocess Isolation Patterns**: See [Bash Block Execution Model](../../concepts/bash-block-execution-model.md) for why state doesn't persist across blocks
+- **Troubleshooting Preprocessing Bugs**: See [Bash Tool Limitations](../../troubleshooting/bash-tool-limitations.md) for symptom diagnosis and mitigation
+
+---
+
 ## State Persistence Patterns
 
 ### File-Based Communication
@@ -540,6 +699,112 @@ validate_library_functions "workflow-state-machine" || exit 1
 ```
 
 **Enforcement**: This pattern is verified by pre-commit hooks (planned) and manual code review. Exit 127 errors in error logs indicate missing validation.
+
+---
+
+## Concurrent Execution Safety
+
+### Overview
+
+Commands MUST support concurrent execution of multiple instances without state interference. This enables users to run multiple command invocations simultaneously (e.g., two `/create-plan` commands in different terminals) without "Failed to restore WORKFLOW_ID" errors.
+
+### Required Pattern
+
+Commands MUST use the three-part concurrent-safe pattern:
+
+1. **Nanosecond-Precision WORKFLOW_ID**: Use `generate_unique_workflow_id()` for unique timestamps
+2. **No Shared State ID Files**: WORKFLOW_ID embedded in state file, no coordination file needed
+3. **State File Discovery**: Use `discover_latest_state_file()` for state restoration
+
+### Block 1: Initialization
+
+```bash
+# Source state persistence library
+source "$CLAUDE_LIB/core/state-persistence.sh" 2>/dev/null || {
+  echo "Error: Cannot load state-persistence library"
+  exit 1
+}
+
+# Generate unique WORKFLOW_ID (nanosecond precision)
+WORKFLOW_ID=$(generate_unique_workflow_id "command_name")
+
+# Initialize workflow state (WORKFLOW_ID embedded in file)
+STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
+```
+
+### Block 2+: State Restoration
+
+```bash
+# Source state persistence library
+source "$CLAUDE_LIB/core/state-persistence.sh" 2>/dev/null || {
+  echo "Error: Cannot load state-persistence library"
+  exit 1
+}
+
+# Discover latest state file by pattern matching
+STATE_FILE=$(discover_latest_state_file "command_name")
+
+if [ -z "$STATE_FILE" ]; then
+  echo "Error: Failed to discover state file for command_name"
+  exit 1
+fi
+
+# Source state file to restore WORKFLOW_ID and other variables
+source "$STATE_FILE"
+```
+
+### Anti-Pattern: Shared State ID Files
+
+**NEVER** use shared state ID files:
+
+```bash
+# ❌ WRONG: Shared state ID file (race condition)
+STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
+echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+
+# Block 2+
+WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)  # May read wrong ID
+```
+
+**Why This Fails**: Multiple concurrent instances overwrite the same file, causing the second instance to corrupt the first instance's WORKFLOW_ID.
+
+### Testing Requirements
+
+Commands MUST pass concurrent execution tests:
+
+- 2 instances: Basic race condition test
+- 3 instances: Multi-instance interference test
+- 5 instances: Standard concurrent workload test
+
+**Validation Criteria**:
+- No "Failed to restore WORKFLOW_ID" errors
+- All instances complete successfully
+- No orphaned state files
+- WORKFLOW_IDs unique across all instances
+
+### Validation
+
+The `lint-shared-state-files.sh` validator detects shared state ID file anti-pattern:
+
+```bash
+# Run validator
+bash .claude/scripts/lint/lint-shared-state-files.sh .claude/commands/*.md
+
+# Integrated validation
+bash .claude/scripts/validate-all-standards.sh --concurrency
+```
+
+### Documentation
+
+Commands using concurrent-safe pattern SHOULD document:
+
+- Behavior when multiple instances run
+- Troubleshooting for state discovery failures
+- "Concurrent Execution Safety" note in command documentation
+
+### Reference
+
+See [Concurrent Execution Safety Standard](./concurrent-execution-safety.md) for complete details, collision probability analysis, and troubleshooting guide.
 
 ---
 

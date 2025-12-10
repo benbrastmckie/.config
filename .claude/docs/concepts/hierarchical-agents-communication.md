@@ -5,6 +5,11 @@
 - [Coordination](hierarchical-agents-coordination.md) - Multi-agent coordination
 - [Patterns](hierarchical-agents-patterns.md) - Design patterns
 
+**Related Standards**:
+- [Coordinator Return Signals](../reference/standards/coordinator-return-signals.md) - Standardized return signal contracts
+- [Brief Summary Format](../reference/standards/brief-summary-format.md) - Brief summary format for context reduction
+- [Error Logging Standard](../reference/standards/error-logging-standard.md) - Error signal format (TASK_ERROR, ERROR_CONTEXT)
+
 ---
 
 ## Agent Communication Protocols

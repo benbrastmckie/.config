@@ -1104,6 +1104,63 @@ source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || {
 
 **See Also**: [Exit Code 127 Troubleshooting Guide](../troubleshooting/exit-code-127-command-not-found.md)
 
+### Anti-Pattern 8: Oversized Bash Blocks (>400 lines)
+
+**Problem**: Bash blocks exceeding 400 lines trigger preprocessing transformation bugs causing "bad substitution" errors, conditional failures, and array expansion issues.
+
+**Example** (from /research command before refactoring):
+
+```bash
+# Block 1: 501 lines
+# Contains: argument capture, state init, topic naming, decomposition, path calc
+# → Result: "bad substitution" errors during array operations
+# → Conditional expressions corrupt after preprocessing
+# → Array expansions fail with unbound variable errors
+```
+
+**Error Symptoms**:
+- `bash: bad substitution: no closing `)' in ...` during array operations
+- Conditional expression failures: `[[ ... ]]` produces unexpected results
+- Array element access errors: `unbound variable: ARRAY_NAME`
+- Variable interpolation corruption in complex expressions
+
+**Technical Root Cause**:
+Claude's bash preprocessing applies transformations (variable interpolation, command substitution, array expansion) before execution. These transformations become lossy and introduce subtle bugs when blocks exceed ~400 lines. Exact mechanism is opaque (Claude internal implementation), but symptoms are consistent.
+
+**Detection**:
+```bash
+# Manual line count
+awk '/^```bash$/,/^```$/ {if (!/^```/) print}' command.md | wc -l
+
+# Automated validation (future)
+bash .claude/scripts/check-bash-block-size.sh command.md
+```
+
+**Fix**: Split at logical boundaries (setup → execution → validation) using state persistence for cross-block communication.
+
+**Real-World Example** (/research command refactor):
+
+**Before** (BROKEN):
+```
+Block 1: 501 lines → preprocessing bugs, array failures
+```
+
+**After** (FIXED):
+```
+Block 1:  239 lines - Argument capture, state init
+Block 1b: Task invocation - Topic naming agent
+Block 1c: 225 lines - Decomposition, path pre-calculation
+Block 2:  Task invocation - Research coordination
+Block 2b: 172 lines - Hard barrier validation
+Block 3:  140 lines - Completion and summary
+
+Result: All blocks <400 lines, zero preprocessing errors
+```
+
+**Prevention**: See [Bash Block Size Limits](../reference/standards/command-authoring.md#bash-block-size-limits-and-prevention) for complete size thresholds, split patterns, and state persistence techniques.
+
+**Reference**: `.claude/specs/010_research_conform_standards/reports/001-research-conform-standards-analysis.md`
+
 ---
 
 ## Examples

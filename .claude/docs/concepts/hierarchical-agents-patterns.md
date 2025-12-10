@@ -5,6 +5,12 @@
 - [Coordination](hierarchical-agents-coordination.md) - Multi-agent coordination
 - [Examples](hierarchical-agents-examples.md) - Reference implementations
 
+**Related Standards**:
+- [Coordinator Patterns Standard](../reference/standards/coordinator-patterns-standard.md) - Five core coordinator patterns
+- [Three-Tier Coordination Pattern](three-tier-coordination-pattern.md) - Commands → Coordinators → Specialists
+- [Artifact Metadata Standard](../reference/standards/artifact-metadata-standard.md) - Metadata-only passing patterns
+- [Brief Summary Format](../reference/standards/brief-summary-format.md) - Context reduction via brief summaries
+
 ---
 
 ## Design Patterns

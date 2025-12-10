@@ -5,6 +5,11 @@
 - [Communication](hierarchical-agents-communication.md) - Agent communication protocols
 - [Patterns](hierarchical-agents-patterns.md) - Design patterns
 
+**Related Standards**:
+- [Three-Tier Coordination Pattern](three-tier-coordination-pattern.md) - Commands → Coordinators → Specialists model
+- [Coordinator Patterns Standard](../reference/standards/coordinator-patterns-standard.md) - Five core coordinator patterns
+- [State System Patterns](state-system-patterns.md) - Cross-block state persistence for coordination
+
 ---
 
 ## Multi-Agent Coordination Patterns

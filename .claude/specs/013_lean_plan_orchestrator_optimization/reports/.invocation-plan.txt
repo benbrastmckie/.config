@@ -1,0 +1,12 @@
+# Research Coordinator Invocation Plan
+# Generated: 2025-12-10T00:41:23Z
+
+Expected Invocations: 4
+
+Topics:
+[0] Lean Plan Output Analysis and Context Window Issues: Analyze /lean-plan-output.md to understand how the command used excessive context window and identify specific failure points in execution -> /home/benjamin/.config/.claude/specs/013_lean_plan_orchestrator_optimization/reports/001-lean-plan-output-analysis.md
+[1] Orchestrator Command Architecture Review: Research orchestrator command design patterns in .claude/commands/ (especially /implement) to understand command structure, context management, and agent coordination -> /home/benjamin/.config/.claude/specs/013_lean_plan_orchestrator_optimization/reports/002-orchestrator-command-architecture.md
+[2] Standards and Design Patterns Audit: Review .claude/docs/ standards documentation to identify architectural patterns, coordination mechanisms, and best practices for context efficiency -> /home/benjamin/.config/.claude/specs/013_lean_plan_orchestrator_optimization/reports/003-standards-design-patterns.md
+[3] Root Cause Analysis and Fix Strategy: Synthesize findings from output analysis, orchestrator patterns, and standards to identify root causes of context window overuse and develop solution plan -> /home/benjamin/.config/.claude/specs/013_lean_plan_orchestrator_optimization/reports/004-root-cause-fix-strategy.md
+
+Status: PLAN_CREATED (invocations pending)

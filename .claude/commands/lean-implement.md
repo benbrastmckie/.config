@@ -349,14 +349,8 @@ WORKFLOW_TYPE="implement-only"
 COMMAND_NAME="/lean-implement"
 USER_ARGS="$PLAN_FILE"
 
-WORKFLOW_ID="lean_implement_$(date +%s)"
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_implement_state_id.txt"
-mkdir -p "$(dirname "$STATE_ID_FILE")"
-
-# Atomic write
-TEMP_STATE_ID="${STATE_ID_FILE}.tmp.$$"
-echo "$WORKFLOW_ID" > "$TEMP_STATE_ID"
-mv "$TEMP_STATE_ID" "$STATE_ID_FILE"
+# Generate unique WORKFLOW_ID with nanosecond precision (concurrent-safe)
+WORKFLOW_ID="lean_implement_$(date +%s%N)"
 
 export WORKFLOW_ID COMMAND_NAME USER_ARGS
 
@@ -473,27 +467,27 @@ LEAN_IMPLEMENT_WORKSPACE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_implement_${WOR
 mkdir -p "$LEAN_IMPLEMENT_WORKSPACE"
 
 # === PERSIST STATE FOR NEXT BLOCK ===
-append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
-append_workflow_state "USER_ARGS" "$USER_ARGS"
-append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
-append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
-append_workflow_state "PLAN_FILE" "$PLAN_FILE"
-append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
-append_workflow_state "SUMMARIES_DIR" "$SUMMARIES_DIR"
-append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
-append_workflow_state "OUTPUTS_DIR" "$OUTPUTS_DIR"
-append_workflow_state "CHECKPOINTS_DIR" "$CHECKPOINTS_DIR"
-append_workflow_state "STARTING_PHASE" "$STARTING_PHASE"
-append_workflow_state "EXECUTION_MODE" "$EXECUTION_MODE"
-append_workflow_state "MAX_ITERATIONS" "$MAX_ITERATIONS"
-append_workflow_state "CONTEXT_THRESHOLD" "$CONTEXT_THRESHOLD"
-append_workflow_state "ITERATION" "$ITERATION"
-append_workflow_state "LEAN_ITERATION" "$LEAN_ITERATION"
-append_workflow_state "SOFTWARE_ITERATION" "$SOFTWARE_ITERATION"
-append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
-append_workflow_state "LAST_WORK_REMAINING" "$LAST_WORK_REMAINING"
-append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
-append_workflow_state "LEAN_IMPLEMENT_WORKSPACE" "$LEAN_IMPLEMENT_WORKSPACE"
+append_workflow_state "COMMAND_NAME" "${COMMAND_NAME:-}"
+append_workflow_state "USER_ARGS" "${USER_ARGS:-}"
+append_workflow_state "WORKFLOW_ID" "${WORKFLOW_ID:-}"
+append_workflow_state "CLAUDE_PROJECT_DIR" "${CLAUDE_PROJECT_DIR:-}"
+append_workflow_state "PLAN_FILE" "${PLAN_FILE:-}"
+append_workflow_state "TOPIC_PATH" "${TOPIC_PATH:-}"
+append_workflow_state "SUMMARIES_DIR" "${SUMMARIES_DIR:-}"
+append_workflow_state "DEBUG_DIR" "${DEBUG_DIR:-}"
+append_workflow_state "OUTPUTS_DIR" "${OUTPUTS_DIR:-}"
+append_workflow_state "CHECKPOINTS_DIR" "${CHECKPOINTS_DIR:-}"
+append_workflow_state "STARTING_PHASE" "${STARTING_PHASE:-}"
+append_workflow_state "EXECUTION_MODE" "${EXECUTION_MODE:-}"
+append_workflow_state "MAX_ITERATIONS" "${MAX_ITERATIONS:-}"
+append_workflow_state "CONTEXT_THRESHOLD" "${CONTEXT_THRESHOLD:-}"
+append_workflow_state "ITERATION" "${ITERATION:-}"
+append_workflow_state "LEAN_ITERATION" "${LEAN_ITERATION:-}"
+append_workflow_state "SOFTWARE_ITERATION" "${SOFTWARE_ITERATION:-}"
+append_workflow_state "CONTINUATION_CONTEXT" "${CONTINUATION_CONTEXT:-}"
+append_workflow_state "LAST_WORK_REMAINING" "${LAST_WORK_REMAINING:-}"
+append_workflow_state "STUCK_COUNT" "${STUCK_COUNT:-}"
+append_workflow_state "LEAN_IMPLEMENT_WORKSPACE" "${LEAN_IMPLEMENT_WORKSPACE:-}"
 
 echo "CHECKPOINT: Setup complete"
 echo "- State transition: IMPLEMENT [OK]"
@@ -532,15 +526,15 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
 
 # === RESTORE STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_implement_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-else
-  echo "ERROR: State ID file not found" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "lean_implement")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-load_workflow_state "$WORKFLOW_ID" false
+# Restore state from discovered file
+source "$STATE_FILE"
 COMMAND_NAME="${COMMAND_NAME:-/lean-implement}"
 USER_ARGS="${USER_ARGS:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
@@ -725,11 +719,11 @@ fi
 # Store routing map in workspace file (newline-separated is safer than shell variables)
 echo "$ROUTING_MAP" > "${LEAN_IMPLEMENT_WORKSPACE}/routing_map.txt"
 
-append_workflow_state "TOTAL_PHASES" "$TOTAL_PHASES"
+append_workflow_state "TOTAL_PHASES" "${TOTAL_PHASES:-}"
 append_workflow_state "LEAN_PHASES" "${LEAN_PHASES% }"
 append_workflow_state "SOFTWARE_PHASES" "${SOFTWARE_PHASES% }"
-append_workflow_state "LEAN_COUNT" "$LEAN_COUNT"
-append_workflow_state "SOFTWARE_COUNT" "$SOFTWARE_COUNT"
+append_workflow_state "LEAN_COUNT" "${LEAN_COUNT:-}"
+append_workflow_state "SOFTWARE_COUNT" "${SOFTWARE_COUNT:-}"
 
 echo "CHECKPOINT: Phase classification complete"
 echo "- Routing map saved: ${LEAN_IMPLEMENT_WORKSPACE}/routing_map.txt"
@@ -773,15 +767,15 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
 
 # === RESTORE STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_implement_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-else
-  echo "ERROR: State ID file not found" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "lean_implement")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-load_workflow_state "$WORKFLOW_ID" false
+# Restore state from discovered file
+source "$STATE_FILE"
 COMMAND_NAME="${COMMAND_NAME:-/lean-implement}"
 USER_ARGS="${USER_ARGS:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
@@ -839,7 +833,7 @@ fi
 echo ""
 
 # Persist plan type for continuation
-append_workflow_state "PLAN_TYPE" "$PLAN_TYPE"
+append_workflow_state "PLAN_TYPE" "${PLAN_TYPE:-}"
 
 # === DETERMINE COORDINATOR NAME AND BUILD PROMPT [HARD BARRIER] ===
 # Based on plan type, determine which coordinator to invoke for FULL PLAN execution
@@ -952,7 +946,7 @@ else
 fi
 
 # Persist coordinator name for verification in Block 1c
-append_workflow_state "COORDINATOR_NAME" "$COORDINATOR_NAME"
+append_workflow_state "COORDINATOR_NAME" "${COORDINATOR_NAME:-}"
 
 echo "Routing to ${COORDINATOR_NAME}..."
 echo ""
@@ -1003,15 +997,15 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
 ensure_error_log_exists
 
 # === RESTORE STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_implement_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-else
-  echo "ERROR: State ID file not found" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "lean_implement")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-load_workflow_state "$WORKFLOW_ID" false
+# Restore state from discovered file
+source "$STATE_FILE"
 COMMAND_NAME="${COMMAND_NAME:-/lean-implement}"
 USER_ARGS="${USER_ARGS:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
@@ -1277,7 +1271,7 @@ if [[ "$CONTEXT_USAGE_PERCENT" =~ ^[0-9]+$ ]]; then
 
       if [ $CHECKPOINT_SAVE_EXIT -eq 0 ] && [ -n "$CHECKPOINT_FILE" ]; then
         echo "Checkpoint saved: $CHECKPOINT_FILE" >&2
-        append_workflow_state "CHECKPOINT_PATH" "$CHECKPOINT_FILE"
+        append_workflow_state "CHECKPOINT_PATH" "${CHECKPOINT_FILE:-}"
       else
         echo "WARNING: Failed to save checkpoint (exit code: $CHECKPOINT_SAVE_EXIT)" >&2
       fi
@@ -1303,7 +1297,7 @@ if [ -n "$WORK_REMAINING_NEW" ] && [ "$WORK_REMAINING_NEW" = "$LAST_WORK_REMAINI
     echo "ERROR: Stuck detected (no progress for 2 iterations)" >&2
     append_workflow_state "IMPLEMENTATION_STATUS" "stuck"
     append_workflow_state "HALT_REASON" "stuck"
-    append_workflow_state "SUMMARY_PATH" "$LATEST_SUMMARY"
+    append_workflow_state "SUMMARY_PATH" "${LATEST_SUMMARY:-}"
     # Continue to Block 1d for phase marker recovery
   fi
 else
@@ -1320,7 +1314,7 @@ if [ "$REQUIRES_CONTINUATION" = "false" ] && [ "$CONTEXT_USAGE_PERCENT" -ge "$CO
   echo "  Checkpoint saved for resume"
   append_workflow_state "IMPLEMENTATION_STATUS" "context_threshold_exceeded"
   append_workflow_state "HALT_REASON" "context_threshold_exceeded"
-  append_workflow_state "WORK_REMAINING" "$WORK_REMAINING_NEW"
+  append_workflow_state "WORK_REMAINING" "${WORK_REMAINING_NEW:-}"
   append_workflow_state "SUMMARY_PATH" "$LATEST_SUMMARY"
   echo "Proceeding to Block 1d (phase marker recovery)..."
 elif [ "$REQUIRES_CONTINUATION" = "true" ] && [ -n "$WORK_REMAINING_NEW" ] && [ "$ITERATION" -lt "$MAX_ITERATIONS" ] && [ "$STUCK_COUNT" -lt 2 ]; then
@@ -1342,7 +1336,7 @@ elif [ "$REQUIRES_CONTINUATION" = "true" ] && [ -n "$WORK_REMAINING_NEW" ] && [ 
 
   # Update state for next iteration
   append_workflow_state "ITERATION" "$NEXT_ITERATION"
-  append_workflow_state "WORK_REMAINING" "$WORK_REMAINING_NEW"
+  append_workflow_state "WORK_REMAINING" "${WORK_REMAINING_NEW:-}"
   append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
   append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
   append_workflow_state "LAST_WORK_REMAINING" "$WORK_REMAINING_NEW"
@@ -1371,7 +1365,7 @@ else
     append_workflow_state "HALT_REASON" "max_iterations"
   fi
 
-  append_workflow_state "WORK_REMAINING" "$WORK_REMAINING_NEW"
+  append_workflow_state "WORK_REMAINING" "${WORK_REMAINING_NEW:-}"
   append_workflow_state "SUMMARY_PATH" "$LATEST_SUMMARY"
 
   echo "Proceeding to Block 1d (phase marker recovery)..."
@@ -1426,15 +1420,15 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh" 2>/dev/null ||
 ensure_error_log_exists
 
 # === RESTORE STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_implement_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-else
-  echo "ERROR: State ID file not found" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "lean_implement")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-load_workflow_state "$WORKFLOW_ID" false
+# Restore state from discovered file
+source "$STATE_FILE"
 COMMAND_NAME="${COMMAND_NAME:-/lean-implement}"
 USER_ARGS="${USER_ARGS:-}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
@@ -1448,7 +1442,13 @@ if [ $EXIT_CODE -ne 0 ]; then
   echo "WARNING: State transition to COMPLETE failed" >&2
 fi
 
-save_completed_states_to_state 2>/dev/null || true
+if ! save_completed_states_to_state 2>&1; then
+  log_command_error \
+    "state_error" \
+    "Failed to persist COMPLETED_STATES to state file" \
+    "bash_block_3 (completion phase)"
+  echo "WARNING: Failed to persist COMPLETED_STATES to state file" >&2
+fi
 
 # === AGGREGATE METRICS ===
 # Use checkbox-utils.sh for completion detection
@@ -1623,7 +1623,6 @@ echo "  work_remaining: ${WORK_REMAINING:-0}"
 
 # Cleanup
 delete_checkpoint "lean_implement" 2>/dev/null || true
-rm -f "$STATE_ID_FILE" 2>/dev/null || true
 
 exit 0
 ```

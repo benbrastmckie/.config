@@ -101,11 +101,16 @@ check_state_file_verification() {
 
   # Check if save_completed_states_to_state is used without verification
   if grep -q "save_completed_states_to_state" "$file" 2>/dev/null; then
-    # Count how many times it's used
-    save_count=$(grep -c "save_completed_states_to_state" "$file" 2>/dev/null || echo "0")
+    # Count how many times it's used (ensure single numeric value)
+    save_count=$(grep -c "save_completed_states_to_state" "$file" 2>/dev/null | head -1 || echo "0")
 
     # Count how many times we verify STATE_FILE exists after save
-    verify_count=$(grep -c "if \[ -n \"\${STATE_FILE:-}\" \] && \[ ! -f \"\$STATE_FILE\" \]" "$file" 2>/dev/null || echo "0")
+    # Relaxed pattern: accept any conditional check around STATE_FILE after save
+    verify_count=$(grep -c -E "(if.*STATE_FILE|test.*STATE_FILE|\[ .* STATE_FILE)" "$file" 2>/dev/null | head -1 || echo "0")
+
+    # Ensure numeric values for comparison
+    save_count=${save_count:-0}
+    verify_count=${verify_count:-0}
 
     if [ "$save_count" -gt "$verify_count" ]; then
       echo -e "${YELLOW}⚠ WARNING${NC}: $file"

@@ -186,11 +186,7 @@ COMMAND_NAME="/repair"
 USER_ARGS="$(printf '%s' "$@")"
 export COMMAND_NAME USER_ARGS
 
-WORKFLOW_ID="repair_$(date +%s)"
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
-mkdir -p "$(dirname "$STATE_ID_FILE")"
-echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+WORKFLOW_ID="repair_$(date +%s%N)"
 export WORKFLOW_ID
 
 # === UPDATE BASH ERROR TRAP WITH ACTUAL VALUES ===
@@ -292,7 +288,7 @@ if [ "$CURRENT_STATE" != "$STATE_RESEARCH" ]; then
 fi
 
 # Explicitly persist CURRENT_STATE (belt and suspenders)
-append_workflow_state "CURRENT_STATE" "$CURRENT_STATE"
+append_workflow_state "CURRENT_STATE" "${CURRENT_STATE:-}"
 
 echo "Ready for topic naming"
 
@@ -358,23 +354,23 @@ PLANS_DIR="${TOPIC_PATH}/plans"
 echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 
 # === PERSIST FOR BLOCK 2 ===
-append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
-append_workflow_state "USER_ARGS" "$USER_ARGS"
-append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
-append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
-append_workflow_state "SPECS_DIR" "$SPECS_DIR"
-append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
-append_workflow_state "PLANS_DIR" "$PLANS_DIR"
-append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
-append_workflow_state "TOPIC_NAME" "$TOPIC_NAME"
-append_workflow_state "TOPIC_NUM" "$TOPIC_NUM"
-append_workflow_state "ERROR_DESCRIPTION" "$ERROR_DESCRIPTION"
-append_workflow_state "ERROR_FILTER_SINCE" "$ERROR_FILTER_SINCE"
-append_workflow_state "ERROR_FILTER_TYPE" "$ERROR_FILTER_TYPE"
-append_workflow_state "ERROR_FILTER_COMMAND" "$ERROR_FILTER_COMMAND"
-append_workflow_state "ERROR_FILTER_SEVERITY" "$ERROR_FILTER_SEVERITY"
-append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
-append_workflow_state "WORKFLOW_OUTPUT_FILE" "$WORKFLOW_OUTPUT_FILE"
+append_workflow_state "COMMAND_NAME" "${COMMAND_NAME:-}"
+append_workflow_state "USER_ARGS" "${USER_ARGS:-}"
+append_workflow_state "WORKFLOW_ID" "${WORKFLOW_ID:-}"
+append_workflow_state "CLAUDE_PROJECT_DIR" "${CLAUDE_PROJECT_DIR:-}"
+append_workflow_state "SPECS_DIR" "${SPECS_DIR:-}"
+append_workflow_state "RESEARCH_DIR" "${RESEARCH_DIR:-}"
+append_workflow_state "PLANS_DIR" "${PLANS_DIR:-}"
+append_workflow_state "TOPIC_PATH" "${TOPIC_PATH:-}"
+append_workflow_state "TOPIC_NAME" "${TOPIC_NAME:-}"
+append_workflow_state "TOPIC_NUM" "${TOPIC_NUM:-}"
+append_workflow_state "ERROR_DESCRIPTION" "${ERROR_DESCRIPTION:-}"
+append_workflow_state "ERROR_FILTER_SINCE" "${ERROR_FILTER_SINCE:-}"
+append_workflow_state "ERROR_FILTER_TYPE" "${ERROR_FILTER_TYPE:-}"
+append_workflow_state "ERROR_FILTER_COMMAND" "${ERROR_FILTER_COMMAND:-}"
+append_workflow_state "ERROR_FILTER_SEVERITY" "${ERROR_FILTER_SEVERITY:-}"
+append_workflow_state "RESEARCH_COMPLEXITY" "${RESEARCH_COMPLEXITY:-}"
+append_workflow_state "WORKFLOW_OUTPUT_FILE" "${WORKFLOW_OUTPUT_FILE:-}"
 
 echo "Setup complete: $WORKFLOW_ID (research-and-plan, complexity: $RESEARCH_COMPLEXITY)"
 if [ -n "$WORKFLOW_OUTPUT_FILE" ]; then
@@ -417,8 +413,10 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1A ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+STATE_FILE=$(discover_latest_state_file "repair")
+[ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || exit 1
+source "$STATE_FILE"  # WORKFLOW_ID restored
 
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
@@ -540,9 +538,9 @@ fi
 mkdir -p "$(dirname "$REPORT_PATH")" 2>/dev/null || true
 
 # Persist for Block 1c validation
-append_workflow_state "REPORT_PATH" "$REPORT_PATH"
-append_workflow_state "REPORT_NUMBER" "$REPORT_NUMBER"
-append_workflow_state "REPORT_SLUG" "$REPORT_SLUG"
+append_workflow_state "REPORT_PATH" "${REPORT_PATH:-}"
+append_workflow_state "REPORT_NUMBER" "${REPORT_NUMBER:-}"
+append_workflow_state "REPORT_SLUG" "${REPORT_SLUG:-}"
 
 echo ""
 echo "=== Report Path Pre-Calculation ==="
@@ -624,8 +622,10 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1B ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+STATE_FILE=$(discover_latest_state_file "repair")
+[ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || exit 1
+source "$STATE_FILE"  # WORKFLOW_ID restored
 
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: Failed to restore WORKFLOW_ID" >&2
@@ -752,19 +752,17 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === LOAD STATE ===
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
 }
+STATE_FILE=$(discover_latest_state_file "repair")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
   echo "ERROR: Failed to source workflow-state-machine.sh" >&2
   exit 1
@@ -909,7 +907,7 @@ if [ -n "$UNDERSIZED_FILES" ]; then
 fi
 
 REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
-append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
+append_workflow_state "REPORT_COUNT" "${REPORT_COUNT:-}"
 
 echo "Research verified: $REPORT_COUNT reports"
 echo ""
@@ -983,8 +981,10 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 2A ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+STATE_FILE=$(discover_latest_state_file "repair")
+[ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || exit 1
+source "$STATE_FILE"  # WORKFLOW_ID restored
 
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: Failed to restore WORKFLOW_ID from Block 2a" >&2
@@ -1103,8 +1103,10 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 2A ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+STATE_FILE=$(discover_latest_state_file "repair")
+[ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || exit 1
+source "$STATE_FILE"  # WORKFLOW_ID restored
 
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: Failed to restore WORKFLOW_ID from Block 2a" >&2
@@ -1214,11 +1216,11 @@ ERROR_FILTERS=$(echo "$ERROR_FILTERS" | sed 's/ $//')  # Trim trailing space
 mkdir -p "$(dirname "$PLAN_PATH")" 2>/dev/null || true
 
 # Persist for Block 2c validation
-append_workflow_state "PLAN_PATH" "$PLAN_PATH"
-append_workflow_state "PLAN_NUMBER" "$PLAN_NUMBER"
-append_workflow_state "PLAN_FILENAME" "$PLAN_FILENAME"
-append_workflow_state "REPORT_PATHS_LIST" "$REPORT_PATHS_LIST"
-append_workflow_state "ERROR_FILTERS" "$ERROR_FILTERS"
+append_workflow_state "PLAN_PATH" "${PLAN_PATH:-}"
+append_workflow_state "PLAN_NUMBER" "${PLAN_NUMBER:-}"
+append_workflow_state "PLAN_FILENAME" "${PLAN_FILENAME:-}"
+append_workflow_state "REPORT_PATHS_LIST" "${REPORT_PATHS_LIST:-}"
+append_workflow_state "ERROR_FILTERS" "${ERROR_FILTERS:-}"
 
 # Persist state transitions
 save_completed_states_to_state
@@ -1339,8 +1341,10 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 2B ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || exit 1
+STATE_FILE=$(discover_latest_state_file "repair")
+[ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || exit 1
+source "$STATE_FILE"  # WORKFLOW_ID restored
 
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: Failed to restore WORKFLOW_ID" >&2
@@ -1467,19 +1471,17 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === LOAD STATE ===
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/repair_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
-  exit 1
-fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-export WORKFLOW_ID
-
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
   echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
 }
+STATE_FILE=$(discover_latest_state_file "repair")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" 2>/dev/null || {
   echo "ERROR: Failed to source workflow-state-machine.sh" >&2
   exit 1
@@ -1609,7 +1611,7 @@ FILTER_ARGS=""
 ERRORS_UPDATED=$(mark_errors_fix_planned "$PLAN_PATH" $FILTER_ARGS)
 
 echo "Updated $ERRORS_UPDATED error entries with FIX_PLANNED status"
-append_workflow_state "ERRORS_UPDATED" "$ERRORS_UPDATED"
+append_workflow_state "ERRORS_UPDATED" "${ERRORS_UPDATED:-}"
 
 # === COMPLETE WORKFLOW ===
 sm_transition "$STATE_COMPLETE" 2>&1

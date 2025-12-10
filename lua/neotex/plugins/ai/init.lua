@@ -48,6 +48,7 @@ local ai_plugins = {
   "goose",
   "lectic",
   "mcp-hub",
+  "opencode",
 }
 
 -- Load each AI plugin spec

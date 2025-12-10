@@ -256,6 +256,8 @@ Block 2 (Execute):
 - **50-67% reduction** in display noise (6 blocks to 2-3)
 - **Faster execution** (fewer subprocess spawns)
 - **Cleaner output** (single summary per block)
+
+**WARNING**: While consolidating blocks improves readability, always maintain the 400-line hard limit per block. Oversized blocks (>400 lines) cause bash preprocessing transformation bugs that manifest as "bad substitution" errors, conditional expression failures, and array expansion issues. See [Bash Block Size Limits and Prevention](command-authoring.md#bash-block-size-limits-and-prevention) for split patterns and real-world examples.
 - **Easier debugging** (logical groupings)
 
 ### Block Structure Template

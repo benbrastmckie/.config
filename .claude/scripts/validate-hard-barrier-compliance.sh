@@ -206,8 +206,13 @@ validate_command() {
       start_line=1
     fi
 
-    local has_execute=$(sed -n "${start_line},$((line_num-1))p" "$cmd_file" | \
-                       grep -c -E 'EXECUTE (NOW|IF).*Task tool' 2>/dev/null || echo 0)
+    # Check for EXECUTE directives in lines before Task block
+    # Use grep with exit code check instead of -c to avoid multiline output
+    local has_execute=0
+    if sed -n "${start_line},$((line_num-1))p" "$cmd_file" | \
+       grep -q -E 'EXECUTE (NOW|IF).*Task tool' 2>/dev/null; then
+      has_execute=1
+    fi
 
     if [ "$has_execute" -eq 0 ]; then
       log_error "Task block at line $line_num missing imperative directive (EXECUTE NOW/IF)"

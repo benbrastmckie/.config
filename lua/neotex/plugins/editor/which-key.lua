@@ -267,6 +267,17 @@ return {
       { "<leader>an", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", cond = is_lectic },
       { "<leader>ak", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
 
+      -- OpenCode AI commands (<leader>ao submenu)
+      { "<leader>ao", group = "opencode", icon = "󰚩" },
+      { "<leader>aoo", function() require("opencode").toggle() end, desc = "opencode toggle", icon = "󰚩" },
+      { "<leader>aoa", function() require("opencode").ask() end, desc = "opencode ask with context", icon = "󰘳", mode = { "n", "v" } },
+      { "<leader>aos", function() require("opencode").select() end, desc = "opencode select action", icon = "󰒋" },
+      { "<leader>aop", function() require("opencode").prompt() end, desc = "opencode add context", icon = "󰏪", mode = { "n", "v" } },
+      { "<leader>aob", function() require("opencode").prompt("@buffer") end, desc = "opencode buffer context", icon = "󰈙" },
+      { "<leader>aod", function() require("opencode").prompt("@diagnostics") end, desc = "opencode diagnostics context", icon = "󰒓" },
+      { "<leader>aon", function() require("opencode").command("session.new") end, desc = "opencode new session", icon = "󰐕" },
+      { "<leader>aol", function() require("opencode").command("session.list") end, desc = "opencode list sessions", icon = "󰆼" },
+
       -- TTS toggle - project-specific only (DISABLED: 2025-12-09 - User preference)
       -- { "<leader>at", function()
       --   local config_path = vim.fn.getcwd() .. "/.claude/tts/tts-config.sh"
@@ -356,83 +367,72 @@ return {
         )
       end, desc = "toggle yolo mode", icon = "󰒓" },
 
-      -- Goose AI commands (using available <leader>a letters)
-      { "<leader>aa", "<cmd>Goose<CR>", desc = "goose toggle", icon = "󰚩" },
-      { "<leader>aa", "<cmd>Goose<CR>", desc = "goose with selection", icon = "󰚩", mode = "v" },
-      { "<leader>ae", "<cmd>GooseOpenInput<CR>", desc = "goose input", icon = "󰭹" },
-      { "<leader>ao", "<cmd>GooseOpenOutput<CR>", desc = "goose output", icon = "󰆍" },
-      { "<leader>af", "<cmd>GooseToggleFullscreen<CR>", desc = "goose fullscreen", icon = "󰊓" },
-      { "<leader>ad", "<cmd>GooseDiff<CR>", desc = "goose diff", icon = "󰦓" },
-      { "<leader>am", function()
-        vim.ui.select({ "Auto (unassisted)", "Chat (human)" }, {
-          prompt = "Select Goose Mode:",
-        }, function(choice)
-          if choice == "Auto (unassisted)" then
-            vim.cmd("GooseModeAuto")
-          elseif choice == "Chat (human)" then
-            vim.cmd("GooseModeChat")
-          end
-        end)
-      end, desc = "goose mode picker", icon = "󰡨" },
-      { "<leader>aj", function()
-        require("neotex.plugins.ai.goose.picker").show_recipe_picker()
-      end, desc = "goose run recipe (sidebar)", icon = "󰑮" },
-      { "<leader>ap", function()
-        -- Detect provider availability
-        local has_gemini_api = vim.env.GEMINI_API_KEY ~= nil and vim.env.GEMINI_API_KEY ~= ""
-        local has_gemini_cli = vim.fn.executable("gemini") == 1
-        local has_claude_cli = vim.fn.executable("claude") == 1
+      -- Goose AI commands (COMMENTED OUT: 2025-12-10 - Pending removal)
+      -- { "<leader>ad", "<cmd>GooseDiff<CR>", desc = "goose diff", icon = "󰦓" },
+      -- { "<leader>ag", "<cmd>Goose<CR>", desc = "goose toggle", icon = "󰚩" },
+      -- { "<leader>ag", "<cmd>Goose<CR>", desc = "goose with selection", icon = "󰚩", mode = "v" },
+      -- { "<leader>ai", "<cmd>GooseInspectSession<CR>", desc = "goose inspect session", icon = "󰋼" },
+      -- { "<leader>aj", function()
+      --   require("neotex.plugins.ai.goose.picker").show_recipe_picker()
+      -- end, desc = "goose run recipe", icon = "󰑮" },
+      -- { "<leader>ak", "<cmd>GooseStop<CR>", desc = "goose kill", icon = "󰓛" },
+      -- { "<leader>am", function()
+      --   vim.ui.select({ "Auto (unassisted)", "Chat (human)" }, {
+      --     prompt = "Select Goose Mode:",
+      --   }, function(choice)
+      --     if choice == "Auto (unassisted)" then
+      --       vim.cmd("GooseModeAuto")
+      --     elseif choice == "Chat (human)" then
+      --       vim.cmd("GooseModeChat")
+      --     end
+      --   end)
+      -- end, desc = "goose mode picker", icon = "󰡨" },
+      -- { "<leader>an", "<cmd>GooseOpenInputNewSession<CR>", desc = "goose new session", icon = "󰐕" },
+      -- { "<leader>ap", function()
+      --   -- Detect provider availability
+      --   local has_gemini_api = vim.env.GEMINI_API_KEY ~= nil and vim.env.GEMINI_API_KEY ~= ""
+      --   local has_gemini_cli = vim.fn.executable("gemini") == 1
+      --   local has_claude_cli = vim.fn.executable("claude") == 1
 
-        -- Build status message
-        local status = {}
-        local gemini_model = vim.env.GEMINI_MODEL or "gemini-2.0-flash-exp"
-        local tier_info = gemini_model == "gemini-2.0-flash-exp" and " (Free Tier)" or " (Paid Tier)"
+      --   -- Build status message
+      --   local status = {}
+      --   local gemini_model = vim.env.GEMINI_MODEL or "gemini-2.0-flash-exp"
+      --   local tier_info = gemini_model == "gemini-2.0-flash-exp" and " (Free Tier)" or " (Paid Tier)"
 
-        if has_gemini_api or has_gemini_cli then
-          table.insert(status, "[OK] Gemini" .. tier_info)
-        else
-          table.insert(status, "[X] Gemini (not configured)")
-        end
+      --   if has_gemini_api or has_gemini_cli then
+      --     table.insert(status, "[OK] Gemini" .. tier_info)
+      --   else
+      --     table.insert(status, "[X] Gemini (not configured)")
+      --   end
 
-        if has_claude_cli then
-          local status_output = vim.fn.system("claude /status 2>&1")
-          local is_authenticated = status_output:match("Logged in") ~= nil
-          local has_subscription = status_output:match("Pro") ~= nil or status_output:match("Max") ~= nil
-          if is_authenticated and has_subscription then
-            table.insert(status, "[OK] Claude Code")
-          else
-            table.insert(status, "[X] Claude Code (not authenticated or no subscription)")
-          end
-        else
-          table.insert(status, "[X] Claude Code (CLI not installed)")
-        end
+      --   if has_claude_cli then
+      --     local status_output = vim.fn.system("claude /status 2>&1")
+      --     local is_authenticated = status_output:match("Logged in") ~= nil
+      --     local has_subscription = status_output:match("Pro") ~= nil or status_output:match("Max") ~= nil
+      --     if is_authenticated and has_subscription then
+      --       table.insert(status, "[OK] Claude Code")
+      --     else
+      --       table.insert(status, "[X] Claude Code (not authenticated or no subscription)")
+      --     end
+      --   else
+      --     table.insert(status, "[X] Claude Code (CLI not installed)")
+      --   end
 
-        -- Display status notification
-        vim.notify(
-          "Provider Status:\n\n" .. table.concat(status, "\n"),
-          vim.log.levels.INFO,
-          { title = "Goose Multi-Provider Status" }
-        )
+      --   -- Display status notification
+      --   vim.notify(
+      --     "Provider Status:\n\n" .. table.concat(status, "\n"),
+      --     vim.log.levels.INFO,
+      --     { title = "Goose Multi-Provider Status" }
+      --   )
 
-        -- Open provider picker after delay
-        vim.defer_fn(function()
-          vim.cmd("GooseConfigureProvider")
-        end, 1000)
-      end, desc = "goose backend/provider", icon = "󰒓" },
-      { "<leader>ax", "<cmd>GooseOpenInputNewSession<CR>", desc = "goose new session", icon = "󰐕" },
-      { "<leader>aq", "<cmd>GooseClose<CR>", desc = "goose quit", icon = "󰅖" },
-
-      -- Additional Goose commands (using free keys: b, g, h, i, r, t, u, v, w, z)
-      { "<leader>ab", "<cmd>GooseTogglePane<CR>", desc = "goose toggle pane", icon = "󰝘" },
-      { "<leader>ag", "<cmd>GooseRun<CR>", desc = "goose run", icon = "󰐊" },
-      { "<leader>ah", "<cmd>GooseToggleFocus<CR>", desc = "goose toggle focus", icon = "󰆿" },
-      { "<leader>ai", "<cmd>GooseInspectSession<CR>", desc = "goose inspect session", icon = "󰋼" },
-      { "<leader>ar", "<cmd>GooseRunNewSession<CR>", desc = "goose run new session", icon = "󰐕" },
-      { "<leader>at", "<cmd>GooseStop<CR>", desc = "goose stop", icon = "󰓛" },
-      { "<leader>au", "<cmd>GooseOpenConfig<CR>", desc = "goose config", icon = "󰒓" },
-      { "<leader>av", "<cmd>GooseSelectSession<CR>", desc = "goose select session", icon = "󰆼" },
-      { "<leader>aw", "<cmd>GooseRevertAll<CR>", desc = "goose revert all", icon = "󰕌" },
-      { "<leader>az", "<cmd>GooseRevertThis<CR>", desc = "goose revert this", icon = "󰕍" },
+      --   -- Open provider picker after delay
+      --   vim.defer_fn(function()
+      --     vim.cmd("GooseConfigureProvider")
+      --   end, 1000)
+      -- end, desc = "goose provider", icon = "󰒓" },
+      -- { "<leader>ar", "<cmd>GooseRevertThis<CR>", desc = "goose revert this", icon = "󰕍" },
+      -- { "<leader>as", "<cmd>GooseSelectSession<CR>", desc = "goose session", icon = "󰆼" },
+      -- { "<leader>au", "<cmd>GooseRevertAll<CR>", desc = "goose undo all", icon = "󰕌" },
     })
 
     -- ============================================================================

@@ -36,7 +36,8 @@ function M.parse(recipe_path)
   end
 
   -- Extract top-level fields
-  local name = M.extract_yaml_field(yaml_content, 'name')
+  -- Goose recipes use 'title', but check 'name' for backwards compatibility
+  local name = M.extract_yaml_field(yaml_content, 'title') or M.extract_yaml_field(yaml_content, 'name')
   local description = M.extract_yaml_field(yaml_content, 'description')
   local instructions = M.extract_yaml_field(yaml_content, 'instructions')
 
@@ -48,7 +49,7 @@ function M.parse(recipe_path)
 
   -- Validate required fields
   if not name or name == '' then
-    vim.notify('Recipe missing required field: name', vim.log.levels.ERROR)
+    vim.notify('Recipe missing required field: title (or name)', vim.log.levels.ERROR)
     return nil
   end
 

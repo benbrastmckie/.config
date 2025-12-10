@@ -140,7 +140,7 @@ if [[ -f "$plan_path" ]] && [[ "$plan_path" == *.md ]]; then
   if [[ -d "$plan_dir/$plan_base" ]]; then
     plan_path="$plan_dir/$plan_base"
   else
-    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
       "validation_error" "Plan has not been expanded - no directory found" "plan_validation" \
       "$(jq -n --arg path "$plan_path" '{plan_path: $path}')"
     error "Plan has not been expanded (no directory found)"
@@ -149,7 +149,7 @@ elif [[ -d "$plan_path" ]]; then
   # Directory provided - OK
   plan_base=$(basename "$plan_path")
 else
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
     "file_error" "Invalid plan path" "plan_validation" \
     "$(jq -n --arg path "$plan_path" '{plan_path: $path}')"
   error "Invalid plan path: $plan_path"
@@ -159,7 +159,7 @@ fi
 structure_level=$(detect_structure_level "$plan_path")
 
 if [[ "$structure_level" != "1" ]]; then
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
     "validation_error" "Plan must be Level 1 for phase collapse" "structure_validation" \
     "$(jq -n --arg level "$structure_level" '{current_level: $level, required_level: "1"}')"
   error "Plan must be Level 1 (phase expansion) to collapse phases. Current level: $structure_level"
@@ -168,7 +168,7 @@ fi
 # Identify main plan file
 main_plan="$plan_path/$plan_base.md"
 if [[ ! -f "$main_plan" ]]; then
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
     "file_error" "Main plan file not found" "plan_discovery" \
     "$(jq -n --arg path "$main_plan" '{main_plan: $path}')"
   error "Main plan file not found: $main_plan"
@@ -177,8 +177,16 @@ fi
 
 **MANDATORY VERIFICATION - Structure Validated**:
 ```bash
-[[ ! -d "$plan_path" ]] && echo "❌ ERROR: Plan path invalid" && exit 1
-[[ "$structure_level" != "1" ]] && echo "❌ ERROR: Must be Level 1" && exit 1
+if [[ ! -d "$plan_path" ]]; then
+  log_command_error "validation_error" "Plan path invalid: $plan_path" "Phase collapse requires valid plan directory"
+  echo "❌ ERROR: Plan path invalid"
+  exit 1
+fi
+if [[ "$structure_level" != "1" ]]; then
+  log_command_error "validation_error" "Invalid structure level: $structure_level" "Phase collapse requires Level 1 (phase expansion)"
+  echo "❌ ERROR: Must be Level 1"
+  exit 1
+fi
 [[ ! -f "$main_plan" ]] && echo "❌ ERROR: Main plan not found" && exit 1
 echo "✓ VERIFIED: Structure valid for collapse"
 ```
@@ -305,6 +313,9 @@ if [ $EXIT_CODE -ne 0 ]; then
   log_command_error "verification_error" \
     "Phase ${PHASE_NUM} not found in main plan after collapse" \
     "plan-architect should have merged phase content into main plan"
+  log_command_error "verification_error" \
+    "Phase content not merged into main plan" \
+    "Merge target: $MERGE_TARGET, Source: $PHASE_FILE"
   echo "ERROR: VERIFICATION FAILED - Phase content not merged"
   echo "Main Plan: $MERGE_TARGET"
   echo "Recovery: Check plan-architect output, verify merge completed, re-run command"
@@ -720,7 +731,7 @@ source "$CLAUDE_PROJECT_DIR/.claude/lib/plan/auto-analysis-utils.sh"
 # Validate plan path
 if [[ ! -f "$PLAN_PATH" ]] && [[ ! -d "$PLAN_PATH" ]]; then
   echo "ERROR: Plan not found: $PLAN_PATH"
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
     "file_error" "Plan not found" "plan_validation" \
     "$(jq -n --arg path "$PLAN_PATH" '{plan_path: $path}')"
   exit 1

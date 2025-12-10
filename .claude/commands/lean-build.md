@@ -167,7 +167,7 @@ done
 # === VALIDATE INPUT FILE ===
 if [ -z "$INPUT_FILE" ]; then
   echo "ERROR: No Lean file or plan file specified" >&2
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
     "validation_error" "No file specified" "bash_block" "{}"
   exit 1
 fi
@@ -179,7 +179,7 @@ if [ ! -f "$INPUT_FILE" ]; then
     INPUT_FILE="$CLAUDE_PROJECT_DIR/$INPUT_FILE"
   else
     echo "ERROR: File not found: $INPUT_FILE" >&2
-    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
       "file_error" "File not found: $INPUT_FILE" "bash_block" "{}"
     exit 1
   fi
@@ -271,7 +271,7 @@ if [[ "$INPUT_FILE" == *.md ]]; then
     echo "  3. Global metadata:" >&2
     echo "     **Lean File**: /path/to/file.lean" >&2
     echo "" >&2
-    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
       "validation_error" "No Lean file metadata found" "bash_block" \
       "{\"plan_file\": \"$PLAN_FILE\", \"starting_phase\": $STARTING_PHASE}"
     exit 1
@@ -281,7 +281,7 @@ if [[ "$INPUT_FILE" == *.md ]]; then
   IFS=',' read -ra LEAN_FILES <<< "$LEAN_FILE_RAW"
 
   # Trim whitespace from each file path
-  for i in "${!LEAN_FILES[@]}"; do
+  for i in $(seq 0 $((${#LEAN_FILES[@]} - 1))); do
     LEAN_FILES[$i]=$(echo "${LEAN_FILES[$i]}" | xargs)
   done
 
@@ -293,7 +293,7 @@ if [[ "$INPUT_FILE" == *.md ]]; then
     if [ ! -f "$LEAN_FILE_ITEM" ]; then
       echo "ERROR: Lean file not found: $LEAN_FILE_ITEM" >&2
       echo "Discovery method: $DISCOVERY_METHOD" >&2
-      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
         "file_error" "Lean file discovered but not found: $LEAN_FILE_ITEM" "bash_block" \
         "{\"plan_file\": \"$PLAN_FILE\", \"lean_file\": \"$LEAN_FILE_ITEM\", \"discovery_method\": \"$DISCOVERY_METHOD\", \"file_count\": $FILE_COUNT}"
       exit 1
@@ -304,8 +304,8 @@ if [[ "$INPUT_FILE" == *.md ]]; then
   # Store files array for coordinator invocation (use first file as primary)
   LEAN_FILE="${LEAN_FILES[0]}"
   LEAN_FILES_JSON=$(printf '%s\n' "${LEAN_FILES[@]}" | jq -R . | jq -s .)
-  append_workflow_state "LEAN_FILES" "$LEAN_FILES_JSON"
-  append_workflow_state "LEAN_FILE_COUNT" "$FILE_COUNT"
+  append_workflow_state "LEAN_FILES" "${LEAN_FILES_JSON:-}"
+  append_workflow_state "LEAN_FILE_COUNT" "${FILE_COUNT:-}"
 
   echo "Execution Mode: plan-based"
   echo "Plan File: $PLAN_FILE"
@@ -346,7 +346,7 @@ done
 
 if [ "$LEAN_PROJECT_DIR" = "/" ]; then
   echo "ERROR: Not a Lean 4 project (no lakefile.toml or lakefile.lean found)" >&2
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
     "validation_error" "Not a Lean project" "bash_block" \
     "{\"file\": \"$LEAN_FILE\"}"
   exit 1
@@ -359,7 +359,7 @@ echo ""
 if ! uvx --from lean-lsp-mcp --help >/dev/null 2>&1; then
   echo "ERROR: lean-lsp-mcp MCP server not available" >&2
   echo "  Install with: uvx --from lean-lsp-mcp" >&2
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
     "dependency_error" "lean-lsp-mcp not available" "bash_block" "{}"
   exit 1
 fi
@@ -409,21 +409,21 @@ WORK_REMAINING=""
 STUCK_COUNT=0
 
 # Persist iteration variables to state
-append_workflow_state "LEAN_WORKSPACE" "$LEAN_WORKSPACE"
-append_workflow_state "ITERATION" "$ITERATION"
-append_workflow_state "MAX_ITERATIONS" "$MAX_ITERATIONS"
-append_workflow_state "CONTEXT_THRESHOLD" "$CONTEXT_THRESHOLD"
-append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
-append_workflow_state "WORK_REMAINING" "$WORK_REMAINING"
-append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
-append_workflow_state "EXECUTION_MODE" "$EXECUTION_MODE"
-append_workflow_state "PLAN_FILE" "$PLAN_FILE"
-append_workflow_state "LEAN_FILE" "$LEAN_FILE"
-append_workflow_state "MODE" "$MODE"
-append_workflow_state "MAX_ATTEMPTS" "$MAX_ATTEMPTS"
-append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
-append_workflow_state "SUMMARIES_DIR" "$SUMMARIES_DIR"
-append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
+append_workflow_state "LEAN_WORKSPACE" "${LEAN_WORKSPACE:-}"
+append_workflow_state "ITERATION" "${ITERATION:-}"
+append_workflow_state "MAX_ITERATIONS" "${MAX_ITERATIONS:-}"
+append_workflow_state "CONTEXT_THRESHOLD" "${CONTEXT_THRESHOLD:-}"
+append_workflow_state "CONTINUATION_CONTEXT" "${CONTINUATION_CONTEXT:-}"
+append_workflow_state "WORK_REMAINING" "${WORK_REMAINING:-}"
+append_workflow_state "STUCK_COUNT" "${STUCK_COUNT:-}"
+append_workflow_state "EXECUTION_MODE" "${EXECUTION_MODE:-}"
+append_workflow_state "PLAN_FILE" "${PLAN_FILE:-}"
+append_workflow_state "LEAN_FILE" "${LEAN_FILE:-}"
+append_workflow_state "MODE" "${MODE:-}"
+append_workflow_state "MAX_ATTEMPTS" "${MAX_ATTEMPTS:-}"
+append_workflow_state "TOPIC_PATH" "${TOPIC_PATH:-}"
+append_workflow_state "SUMMARIES_DIR" "${SUMMARIES_DIR:-}"
+append_workflow_state "DEBUG_DIR" "${DEBUG_DIR:-}"
 
 echo "Lean Workspace: $LEAN_WORKSPACE"
 echo "Iteration: ${ITERATION}/${MAX_ITERATIONS}"
@@ -508,7 +508,7 @@ if [ -n "$LATEST_SUMMARY" ] && [ -f "$LATEST_SUMMARY" ] && [ $(stat -c%s "$LATES
   echo "Summary found: $SUMMARY_PATH"
 else
   echo "ERROR: Summary file not created or too small (<100 bytes)" >&2
-  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
     "agent_error" "Coordinator/implementer did not create summary" "verification_block" \
     "{\"summaries_dir\": \"$SUMMARIES_DIR\"}"
   exit 1
@@ -566,13 +566,13 @@ if [ -n "$WORK_REMAINING_NEW" ] && [ "$WORK_REMAINING_NEW" = "$WORK_REMAINING" ]
 
   if [ "$STUCK_COUNT" -ge 2 ]; then
     echo "ERROR: Stuck detected (no progress for 2 iterations)" >&2
-    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
       "execution_error" "Stuck: no progress for 2 iterations" "verification_block" \
       "{\"work_remaining\": \"$WORK_REMAINING_NEW\", \"stuck_count\": $STUCK_COUNT}"
 
     # Exit to Block 2 for final summary
     append_workflow_state "REQUIRES_CONTINUATION" "false"
-    append_workflow_state "SUMMARY_PATH" "$SUMMARY_PATH"
+    append_workflow_state "SUMMARY_PATH" "${SUMMARY_PATH:-}"
     exit 0
   fi
 else
@@ -593,10 +593,10 @@ if [ "$REQUIRES_CONTINUATION" = "true" ] && [ -n "$WORK_REMAINING_NEW" ] && [ "$
   echo ""
 
   # Update state for next iteration
-  append_workflow_state "ITERATION" "$NEXT_ITERATION"
-  append_workflow_state "WORK_REMAINING" "$WORK_REMAINING_NEW"
-  append_workflow_state "CONTINUATION_CONTEXT" "$CONTINUATION_CONTEXT"
-  append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
+  append_workflow_state "ITERATION" "${NEXT_ITERATION:-}"
+  append_workflow_state "WORK_REMAINING" "${WORK_REMAINING_NEW:-}"
+  append_workflow_state "CONTINUATION_CONTEXT" "${CONTINUATION_CONTEXT:-}"
+  append_workflow_state "STUCK_COUNT" "${STUCK_COUNT:-}"
 
   # Copy summary to continuation context
   if [ -f "$SUMMARY_PATH" ]; then
@@ -622,7 +622,7 @@ else
     echo "All work complete!"
   elif [ "$ITERATION" -ge "$MAX_ITERATIONS" ]; then
     echo "Max iterations ($MAX_ITERATIONS) reached"
-    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" \
       "execution_error" "Max iterations reached with work remaining" "verification_block" \
       "{\"work_remaining\": \"$WORK_REMAINING_NEW\", \"iteration\": $ITERATION}"
   else

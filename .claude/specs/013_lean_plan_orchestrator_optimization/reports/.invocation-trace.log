@@ -1,0 +1,7 @@
+# Research Coordinator Invocation Trace - 2025-12-10T08:41:38Z
+# Topics: 4
+
+[2025-12-10T08:41:43Z] Topic[0]: Lean Plan Output Analysis | Path: 001-lean-plan-output-analysis.md | Status: INVOKED
+[2025-12-10T08:41:48Z] Topic[1]: Orchestrator Command Architecture | Path: 002-orchestrator-command-architecture.md | Status: INVOKED
+[2025-12-10T08:41:48Z] Topic[2]: Standards and Design Patterns | Path: 003-standards-design-patterns.md | Status: INVOKED
+[2025-12-10T08:41:48Z] Topic[3]: Root Cause Analysis | Path: 004-root-cause-fix-strategy.md | Status: INVOKED

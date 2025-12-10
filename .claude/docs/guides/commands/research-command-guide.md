@@ -59,27 +59,38 @@ The `/research` command provides a research-only workflow that creates comprehen
 
 ### Subagent Delegation Architecture
 
-The `/research` command uses the **Hard Barrier Pattern** to enforce mandatory delegation to the research-specialist subagent:
+The `/research` command uses an **optimized 3-block architecture** with coordinator delegation for 95% context reduction:
 
 ```
-Block 1c: Topic Path Initialization
-    │
+Block 1: Setup and Path Pre-Calculation (consolidated)
+    │   • Argument capture and validation
+    │   • Topic naming via topic-naming-agent
+    │   • Topic decomposition (for complexity >= 3)
+    │   • Pre-calculate REPORT_PATHS array
     ▼
-Block 1d: Report Path Pre-Calculation (bash)
-    │   • Calculate REPORT_PATH = ${RESEARCH_DIR}/001-${REPORT_SLUG}.md
-    │   • Persist REPORT_PATH to workflow state
+Block 2: Research Coordination [CRITICAL BARRIER]
+    │   • Route to research-specialist (complexity < 3)
+    │   • Route to research-coordinator (complexity >= 3)
+    │   • Parallel research execution for multi-topic
     ▼
-Block 1d-exec: Research Specialist Invocation (Task)
-    │   • Pass REPORT_PATH as explicit contract
-    │   • Agent receives absolute path requirement
+Block 2b: Hard Barrier Validation (bash)
+    │   • Verify all REPORT_PATHS exist
+    │   • Partial success mode (>=50% threshold)
+    │   • Brief summary parsing
     ▼
-Block 1e: Agent Output Validation (bash) ← HARD BARRIER
-    │   • Verify REPORT_PATH file exists (exit 1 if missing)
-    │   • Validate report has minimum size
-    │   • Validate report contains required sections
-    ▼
-Block 2: Verification and Completion (defensive checks)
+Block 3: Verification and Completion
+    │   • State transition to COMPLETE
+    │   • Console summary with 4-section format
 ```
+
+**Routing Decision**:
+- **Complexity < 3**: Direct research-specialist invocation (single-topic, backward compatible)
+- **Complexity >= 3**: research-coordinator invocation (multi-topic, parallel execution)
+
+**Partial Success Mode**:
+- **<50% success**: Exit 1 with error
+- **>=50% success**: Continue with warning, report available findings
+- **100% success**: Normal completion
 
 **Why This Pattern?**:
 1. **REPORT_PATH Pre-Calculation**: The orchestrator calculates the exact output path before invoking the subagent
@@ -403,6 +414,45 @@ Empty or missing description argument.
 /research"React hooks best practices for state management"
 /research"database indexing strategies for PostgreSQL"
 ```
+
+#### Issue 6: Array-Related Errors ("bad substitution", "unbound variable")
+
+**Symptoms**:
+- Error: "bad substitution" during topic decomposition or report path calculation
+- Error: "unbound variable: TOPICS_ARRAY" or similar
+- Command crashes during array operations
+
+**Cause**:
+Array handling issues typically caused by:
+1. Missing explicit `declare -a` declarations for arrays
+2. Unquoted array expansions
+3. Bash blocks exceeding 400 lines (preprocessing transformation bugs)
+4. Accessing array indices without bounds checking
+
+**Solution**:
+```bash
+# Verify explicit array declarations exist
+grep "declare -a TOPICS_ARRAY" .claude/commands/research.md
+grep "declare -a REPORT_PATHS_ARRAY" .claude/commands/research.md
+
+# Check for unquoted array expansions
+grep '\${TOPICS_ARRAY\[' .claude/commands/research.md | grep -v '"'
+
+# Verify block sizes (must be <400 lines per block)
+awk '/^```bash$/,/^```$/' .claude/commands/research.md | \
+  awk 'BEGIN {count=0} /^```bash$/ {if (count > 0) print count; count=0; next} /^```$/ {next} {count++} END {print count}'
+
+# All counts should be <400
+```
+
+**Prevention**:
+The `/research` command has been refactored to follow array handling best practices:
+- Explicit `declare -a` for all arrays (TOPICS_ARRAY, REPORT_PATHS_ARRAY)
+- All array expansions properly quoted: `"${TOPICS_ARRAY[$i]}"`
+- Safe iteration patterns: `for i in "${!TOPICS_ARRAY[@]}"`
+- Bash blocks split to stay under 400-line threshold
+
+**Note**: Bash blocks over 400 lines trigger preprocessing transformation bugs that manifest as "bad substitution" errors. The refactored 3-block structure (Block 1, Block 1b, Block 1c) ensures all blocks stay within safe limits.
 
 ### Debug Mode
 

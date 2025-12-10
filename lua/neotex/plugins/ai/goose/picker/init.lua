@@ -11,6 +11,11 @@
 
 local M = {}
 
+-- Configuration with defaults
+M.config = {
+  execution_mode = 'terminal', -- 'terminal' or 'sidebar'
+}
+
 local pickers = require('telescope.pickers')
 local finders = require('telescope.finders')
 local conf = require('telescope.config').values
@@ -21,6 +26,7 @@ local discovery = require('neotex.plugins.ai.goose.picker.discovery')
 local metadata = require('neotex.plugins.ai.goose.picker.metadata')
 local previewer = require('neotex.plugins.ai.goose.picker.previewer')
 local execution = require('neotex.plugins.ai.goose.picker.execution')
+local modification = require('neotex.plugins.ai.goose.picker.modification')
 
 --- Show the Goose recipe picker with Telescope
 --- Opens a Telescope picker showing all discovered recipes from project and global
@@ -57,7 +63,7 @@ function M.show_recipe_picker(opts)
       sorter = conf.generic_sorter(opts),
       previewer = previewer.create_recipe_previewer(),
       attach_mappings = function(prompt_bufnr, map)
-        -- <CR>: Execute recipe in sidebar with parameter prompts
+        -- <CR>: Execute recipe with configured mode (terminal or sidebar)
         actions.select_default:replace(function()
           local selection = action_state.get_selected_entry()
           actions.close(prompt_bufnr)
@@ -65,7 +71,70 @@ function M.show_recipe_picker(opts)
           local recipe = selection.value
           local meta = metadata.parse(recipe.path)
           if meta then
-            execution.run_recipe_in_sidebar(recipe.path, meta)
+            -- Execute with configured mode
+            if M.config.execution_mode == 'terminal' then
+              execution.run_recipe_in_terminal(recipe.path, meta)
+            else
+              -- Sidebar execution with user_prompt parameter handling
+              local has_user_prompt = false
+              local user_prompt_param = nil
+              if meta.parameters and #meta.parameters > 0 then
+                for _, param in ipairs(meta.parameters) do
+                  if param.requirement == 'user_prompt' then
+                    has_user_prompt = true
+                    user_prompt_param = param
+                    break
+                  end
+                end
+              end
+
+              if has_user_prompt and user_prompt_param then
+                execution.prompt_in_sidebar(recipe.path, meta, user_prompt_param.key)
+              else
+                execution.run_recipe_in_sidebar(recipe.path, meta)
+              end
+            end
+          end
+        end)
+
+        -- <C-t>: Force terminal execution
+        map('i', '<C-t>', function()
+          local selection = action_state.get_selected_entry()
+          actions.close(prompt_bufnr)
+
+          local recipe = selection.value
+          local meta = metadata.parse(recipe.path)
+          if meta then
+            execution.run_recipe_in_terminal(recipe.path, meta)
+          end
+        end)
+
+        -- <C-s>: Force sidebar execution
+        map('i', '<C-s>', function()
+          local selection = action_state.get_selected_entry()
+          actions.close(prompt_bufnr)
+
+          local recipe = selection.value
+          local meta = metadata.parse(recipe.path)
+          if meta then
+            -- Sidebar execution with user_prompt parameter handling
+            local has_user_prompt = false
+            local user_prompt_param = nil
+            if meta.parameters and #meta.parameters > 0 then
+              for _, param in ipairs(meta.parameters) do
+                if param.requirement == 'user_prompt' then
+                  has_user_prompt = true
+                  user_prompt_param = param
+                  break
+                end
+              end
+            end
+
+            if has_user_prompt and user_prompt_param then
+              execution.prompt_in_sidebar(recipe.path, meta, user_prompt_param.key)
+            else
+              execution.run_recipe_in_sidebar(recipe.path, meta)
+            end
           end
         end)
 
@@ -104,6 +173,16 @@ function M.show_recipe_picker(opts)
           vim.notify('Recipe list refreshed', vim.log.levels.INFO)
         end)
 
+        -- <C-d>: Add/update description for recipe
+        map('i', '<C-d>', function()
+            local selection = action_state.get_selected_entry()
+            if selection and selection.value and selection.value.path then
+                modification.add_description(selection.value.path)
+            else
+                vim.notify("Could not determine recipe path.", vim.log.levels.ERROR)
+            end
+        end)
+
         return true
       end,
     })
@@ -134,8 +213,14 @@ end
 --- Setup function for picker initialization
 --- Called during plugin loading to register user commands and perform setup
 ---
+--- @param opts table|nil Optional configuration overrides
 --- @return nil
-function M.setup()
+function M.setup(opts)
+  -- Merge user configuration with defaults
+  if opts then
+    M.config = vim.tbl_deep_extend('force', M.config, opts)
+  end
+
   -- Register user command for direct invocation
   vim.api.nvim_create_user_command("GooseRecipes", function()
     M.show_recipe_picker()

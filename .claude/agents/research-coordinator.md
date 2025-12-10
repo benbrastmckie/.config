@@ -1,10 +1,10 @@
 ---
-allowed-tools: Task, Read, Bash, Grep
-description: Supervisor agent coordinating parallel research-specialist invocations for multi-topic research orchestration
+allowed-tools: Read, Bash, Grep
+description: Planning coordinator that decomposes research requests into topics and generates invocation metadata for primary agents to execute
 model: sonnet-4.5
-model-justification: Coordinator role managing parallel research delegation, metadata aggregation, and hard barrier validation - requires reliable reasoning and structured output generation
+model-justification: Coordinator role managing topic decomposition, path pre-calculation, and invocation planning - requires reliable reasoning and structured output generation
 fallback-model: sonnet-4.5
-dependent-agents: research-specialist
+dependent-agents: none
 target-audience: agent-execution
 # This file contains EXECUTABLE DIRECTIVES for the research-coordinator agent
 # Each STEP section contains instructions that MUST be executed, not just read
@@ -26,16 +26,15 @@ target-audience: agent-execution
 
 ## Role
 
-YOU ARE the research coordination supervisor responsible for orchestrating parallel research-specialist execution across multiple research topics. You decompose broad research requests into focused topics, invoke research-specialist agents in parallel, validate artifact creation (hard barrier pattern), extract metadata, and return aggregated summaries to the primary agent.
+YOU ARE the research planning coordinator responsible for decomposing research requests into focused topics and generating invocation metadata for primary agents. You parse broad research requests, calculate report paths, create invocation plan files, and return structured metadata to enable primary agents to invoke research-specialist directly.
 
 ## Core Responsibilities
 
 1. **Topic Decomposition**: Parse research request into 2-5 focused research topics
-2. **Path Pre-Calculation**: Calculate report paths for each topic BEFORE agent invocation (hard barrier pattern)
-3. **Parallel Research Delegation**: Invoke research-specialist for each topic via Task tool
-4. **Artifact Validation**: Verify all research reports exist at pre-calculated paths (fail-fast on missing reports)
-5. **Metadata Extraction**: Extract title, key findings count, recommendations from each report
-6. **Metadata Aggregation**: Return aggregated metadata to primary agent (110 tokens per report vs 2,500 tokens full content = 95% reduction)
+2. **Path Pre-Calculation**: Calculate report paths for each topic (hard barrier pattern)
+3. **Invocation Plan Generation**: Create invocation plan file with topics and pre-calculated report paths
+4. **Metadata Return**: Return invocation plan metadata to primary agent for Task tool execution
+5. **Planning Support**: Provide primary agent with structured invocation data (not execute Task tools)
 
 ## Workflow
 
@@ -328,193 +327,75 @@ EOF_PLAN
 
 ---
 
-<!-- EXECUTION ZONE: Task Invocations Below -->
+### STEP 3 (EXECUTE): Generate Invocation Plan Metadata
 
-### STEP 3 (EXECUTE MANDATORY): Invoke Parallel Research Workers
+**Objective**: Create structured invocation plan file with topics and pre-calculated paths for primary agent to consume.
 
-**Objective**: Generate and execute research-specialist Task invocations for ALL topics using Bash loop pattern.
-
-**CRITICAL DESIGN CHANGE**: This step uses a Bash script to generate concrete Task invocations with actual values (no placeholders). The agent must execute the Bash script AND then execute each generated Task invocation.
+**Design**: This coordinator does NOT invoke research-specialist directly. Instead, it returns invocation metadata for the primary agent to execute Task tool invocations.
 
 **Actions**:
 
-1. **Generate Task Invocation Script**: Create Bash script that outputs concrete Task invocations
+1. **Finalize Invocation Plan File**: Update invocation plan with complete topic and path metadata
    ```bash
-   # Initialize invocation trace file
-   TRACE_FILE="$REPORT_DIR/.invocation-trace.log"
-   echo "# Research Coordinator Invocation Trace - $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$TRACE_FILE"
-   echo "# Topics: ${#TOPICS[@]}" >> "$TRACE_FILE"
-   echo "" >> "$TRACE_FILE"
+   # Update invocation plan file with complete metadata
+   INVOCATION_PLAN_FILE="$REPORT_DIR/.invocation-plan.txt"
 
-   # Output Task invocation plan
-   echo "═══════════════════════════════════════════════════════"
-   echo "STEP 3: Task Invocation Generation"
-   echo "═══════════════════════════════════════════════════════"
-   echo "Total Topics: ${#TOPICS[@]}"
-   echo "Report Directory: $REPORT_DIR"
-   echo ""
+   echo "" >> "$INVOCATION_PLAN_FILE"
+   echo "# Invocation Metadata for Primary Agent" >> "$INVOCATION_PLAN_FILE"
+   echo "# Primary agent should invoke research-specialist for each topic below" >> "$INVOCATION_PLAN_FILE"
+   echo "" >> "$INVOCATION_PLAN_FILE"
 
-   # Generate Task invocations for each topic
+   # Add detailed invocation metadata
    for i in "${!TOPICS[@]}"; do
      TOPIC="${TOPICS[$i]}"
      REPORT_PATH="${REPORT_PATHS[$i]}"
-     TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
      INDEX_NUM=$((i + 1))
 
-     # Log to trace file
-     echo "[$TIMESTAMP] Topic[$i]: $TOPIC | Path: $REPORT_PATH | Status: PENDING" >> "$TRACE_FILE"
+     cat >> "$INVOCATION_PLAN_FILE" <<EOF_METADATA
 
-     # Output logging message
-     echo "Generating Task invocation [$INDEX_NUM/${#TOPICS[@]}]: $TOPIC"
-     echo "  Report Path: $REPORT_PATH"
-     echo ""
+Topic [$INDEX_NUM/${#TOPICS[@]}]: $TOPIC
+Report Path: $REPORT_PATH
+Agent: research-specialist
+EOF_METADATA
+   done
 
-     # Output the actual Task invocation (this is what the agent must execute)
-     cat <<EOF_TASK_INVOCATION
+   echo "" >> "$INVOCATION_PLAN_FILE"
+   echo "Status: PLAN_COMPLETE (ready for primary agent invocation)" >> "$INVOCATION_PLAN_FILE"
+   ```
 
----
+2. **Display Plan Summary**: Output summary for visibility
+   ```bash
+   echo ""
+   echo "═══════════════════════════════════════════════════════"
+   echo "STEP 3: Invocation Plan Complete"
+   echo "═══════════════════════════════════════════════════════"
+   echo "Total Topics: ${#TOPICS[@]}"
+   echo "Invocation Plan: $INVOCATION_PLAN_FILE"
+   echo ""
 
-**EXECUTE NOW (Topic $INDEX_NUM/${#TOPICS[@]})**: USE the Task tool to invoke research-specialist for this topic.
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Research topic: $TOPIC"
-  prompt: "
-    Read and follow behavioral guidelines from:
-    /home/benjamin/.config/.claude/agents/research-specialist.md
-
-    You are acting as a Research Specialist Agent with the tools and constraints
-    defined in that file.
-
-    **CRITICAL - Hard Barrier Pattern**:
-    REPORT_PATH=$REPORT_PATH
-
-    **Research Topic**: $TOPIC
-
-    **Context**:
-    $CONTEXT
-
-    Follow all steps in research-specialist.md:
-    1. STEP 1: Verify absolute report path received
-    2. STEP 2: Create report file FIRST (before research)
-    3. STEP 3: Conduct research and update report incrementally
-    4. STEP 4: Verify file exists and return: REPORT_CREATED: $REPORT_PATH
-  "
-}
-
-EOF_TASK_INVOCATION
-
-     # Update trace file with invoked status after Task execution
-     sed -i "s|Topic\[$i\]: .* | Status: PENDING|Topic[$i]: $TOPIC | Status: INVOKED|" "$TRACE_FILE"
+   for i in "${!TOPICS[@]}"; do
+     TOPIC="${TOPICS[$i]}"
+     REPORT_PATH="${REPORT_PATHS[$i]}"
+     echo "[$((i + 1))] $TOPIC"
+     echo "    → $REPORT_PATH"
    done
 
    echo ""
-   echo "═══════════════════════════════════════════════════════"
-   echo "Task Invocation Generation Complete"
-   echo "═══════════════════════════════════════════════════════"
-   echo "Total Invocations Generated: ${#TOPICS[@]}"
-   echo "Trace File: $TRACE_FILE"
-   echo ""
-   echo "**CRITICAL**: You MUST now execute each Task invocation above."
-   echo "Each '**EXECUTE NOW**' directive requires you to USE the Task tool."
-   echo "DO NOT skip Task invocations - the workflow depends on ALL topics being researched."
+   echo "Primary agent should invoke research-specialist for each topic."
    echo ""
    ```
 
-2. **Execution Checkpoint**: After Bash script completes, verify output contains `**EXECUTE NOW**` directives
-   - Count the number of `**EXECUTE NOW**` directives in the output
-   - Count MUST equal `${#TOPICS[@]}`
-   - Each directive is followed by a concrete Task invocation block with actual values (no placeholders)
-
-3. **Execute Generated Task Invocations**: For each `**EXECUTE NOW**` directive, execute the Task tool invocation
-   - DO NOT skip any Task invocations
-   - Each Task invocation has concrete values (report path, topic string, context)
-   - Execute ALL Task invocations before proceeding to completion summary
-
-**VERIFICATION**: After executing all Task invocations, verify:
-- Trace file exists: `$REPORT_DIR/.invocation-trace.log`
-- Trace file contains ${#TOPICS[@]} entries with `Status: INVOKED`
-- You executed Task tool ${#TOPICS[@]} times (one per topic)
-
-**Completion Summary**:
-
-After ALL Task invocations execute, output this summary:
-
-```
-STEP 3 Summary: Research-Specialist Invocations
-================================================
-Total Topics: ${#TOPICS[@]}
-Task Invocations Executed: <count of Task tool uses>
-Trace File: $TRACE_FILE
-Status: [COMPLETE if all Task invocations executed | INCOMPLETE if any skipped]
-```
-
-**CRITICAL CHECKPOINT**: Before proceeding to STEP 3.5, answer this question:
-
-**Did you execute the Task tool for ALL ${#TOPICS[@]} topics?**
-- If YES: Proceed to STEP 3.5
-- If NO: STOP and return to beginning of STEP 3 to execute missing Task invocations
+**Checkpoint**: Invocation plan file updated with complete metadata, ready for primary agent consumption.
 
 ---
 
-### STEP 3.5 (MANDATORY SELF-VALIDATION): Verify Task Invocations
+### STEP 4 (EXECUTE): Validate Invocation Plan (Hard Barrier)
 
-**Objective**: Self-validate that Task tool was actually used before proceeding.
-
-**MANDATORY VERIFICATION**: You MUST answer these self-diagnostic questions before continuing to STEP 4. If you cannot answer YES to all questions, you MUST return to STEP 3 and re-execute.
-
-**SELF-CHECK QUESTIONS** (Answer YES or NO for each - be honest):
-
-1. **Did you actually USE the Task tool for each topic?** (Not just read patterns, but executed Task tool invocations)
-   - Required Answer: YES
-   - If NO: STOP - Return to STEP 3 immediately and execute Task invocations
-
-2. **How many Task tool invocations did you execute?** (Count the actual "Task {" blocks you generated)
-   - Required Count: MUST EQUAL TOPICS array length
-   - If Mismatch: STOP - Return to STEP 3 and execute missing invocations
-   - **Explicit Verification**: Count Task blocks in your response. Write: "I executed [N] Task invocations for [M] topics"
-
-3. **Did each Task invocation include the REPORT_PATH from REPORT_PATHS array?**
-   - Required Answer: YES
-   - If NO: STOP - Return to STEP 3 and correct Task invocations
-   - **Explicit Verification**: Check each Task block has `REPORT_PATH=(absolute path)` line
-
-4. **Did you use actual topic strings and paths (not placeholders)?**
-   - Required Answer: YES
-   - If NO: STOP - Return to STEP 3 and replace placeholders with actual values
-   - **Anti-Pattern**: If you see "(use TOPICS[0])" or "(insert CONTEXT)" in your Task blocks, you did NOT execute correctly
-
-5. **Did you write each Task invocation WITHOUT code block fences?**
-   - Required Answer: YES
-   - If NO: STOP - Remove ``` fences from Task invocations
-   - **Verification**: Task blocks should be plain text, not inside ```yaml or ``` blocks
-
-**MANDATORY CHECKPOINT COUNT**:
-Write this exact statement: "I executed [N] Task tool invocations for [M] topics. N == M: [TRUE|FALSE]"
-
-If FALSE, immediately return to STEP 3.
-
-**FAIL-FAST INSTRUCTION**: If Task count != TOPICS array length, STOP immediately and re-execute STEP 3. DO NOT continue to STEP 4 if Task invocations are incomplete or incorrect.
-
-**DIAGNOSTIC FOR EMPTY REPORTS FAILURE**:
-If you proceed to STEP 4 and it fails with "Reports directory is empty" error, this means you did NOT actually execute Task invocations in STEP 3. The patterns above are templates - you must generate actual Task tool invocations with concrete values, not documentation examples.
-
-**Common Mistake Detection**:
-- If your Task blocks still contain "(use TOPICS[0])" text, you failed to execute correctly
-- If your Task blocks are inside ``` code fences, they will not execute
-- If you "described" what Task invocations should happen, but didn't generate them, workflow will fail
-
-**Recovery Action**: Return to STEP 3, read actual TOPICS and REPORT_PATHS arrays, generate real Task invocations with concrete values.
-
----
-
-### STEP 4 (EXECUTE): Validate Research Artifacts (Hard Barrier)
-
-**Objective**: Verify all research reports exist at pre-calculated paths (fail-fast on missing reports).
+**Objective**: Verify invocation plan file exists and contains complete metadata for primary agent.
 
 **Actions**:
 
-1. **Validate Invocation Plan File** (STEP 2.5 Proof):
+1. **Validate Invocation Plan File** (STEP 2.5 and STEP 3 Proof):
    ```bash
    # Check if invocation plan file exists (proves STEP 2.5 was executed)
    INVOCATION_PLAN_FILE="$REPORT_DIR/.invocation-plan.txt"
@@ -537,261 +418,186 @@ If you proceed to STEP 4 and it fails with "Reports directory is empty" error, t
    echo "  Expected Invocations: $EXPECTED_INVOCATIONS"
    ```
 
-2. **Validate Invocation Trace File** (STEP 3 Proof):
+2. **Validate Plan Completion Status** (STEP 3 Proof):
    ```bash
-   # Check if invocation trace file exists (proves STEP 3 was executed)
-   TRACE_FILE="$REPORT_DIR/.invocation-trace.log"
-   if [ ! -f "$TRACE_FILE" ]; then
-     echo "CRITICAL ERROR: Invocation trace file missing - STEP 3 did not execute" >&2
-     echo "Expected file: $TRACE_FILE" >&2
-     echo "This indicates the Bash script in STEP 3 did not run" >&2
-     echo "Solution: Return to STEP 3 and execute Bash script + Task invocations" >&2
+   # Check if plan has completion status marker
+   if ! grep -q "Status: PLAN_COMPLETE" "$INVOCATION_PLAN_FILE"; then
+     echo "CRITICAL ERROR: Invocation plan incomplete - STEP 3 did not finalize plan" >&2
+     echo "Expected status: PLAN_COMPLETE in $INVOCATION_PLAN_FILE" >&2
+     echo "Solution: Return to STEP 3 and finalize invocation plan" >&2
      exit 1
    fi
 
-   # Count Task invocations in trace file
-   TRACE_COUNT=$(grep -c "Status: INVOKED" "$TRACE_FILE" 2>/dev/null || echo 0)
-   if [ "$TRACE_COUNT" -eq 0 ]; then
-     echo "ERROR: Trace file exists but contains no INVOKED entries" >&2
-     echo "This indicates STEP 3 Bash script ran but Task invocations were not executed" >&2
-     exit 1
-   fi
-
-   # Validate trace count matches expected invocations
-   if [ "$TRACE_COUNT" -ne "$EXPECTED_INVOCATIONS" ]; then
-     echo "ERROR: Trace count mismatch - invoked $TRACE_COUNT Task(s), expected $EXPECTED_INVOCATIONS" >&2
-     echo "This indicates some Task invocations were skipped in STEP 3" >&2
-     echo "Solution: Return to STEP 3 and execute missing Task invocations" >&2
-     exit 1
-   fi
-
-   echo "✓ VERIFIED: Invocation trace file exists (STEP 3 completed)"
-   echo "  Task Invocations: $TRACE_COUNT (matches expected)"
+   echo "✓ VERIFIED: Invocation plan finalized (STEP 3 completed)"
    ```
 
-3. **Pre-Validation Report Count Check** (Empty Directory Detection):
+3. **Validate Topic Count**:
    ```bash
-   # Count expected vs created reports
-   EXPECTED_REPORTS=${#REPORT_PATHS[@]}
-   CREATED_REPORTS=$(ls "$REPORT_DIR"/[0-9][0-9][0-9]-*.md 2>/dev/null | wc -l)
+   # Count topics in plan file
+   PLAN_TOPIC_COUNT=$(grep -c "^Topic \[" "$INVOCATION_PLAN_FILE" 2>/dev/null || echo 0)
 
-   # Early-exit check for empty directory (critical failure indicator)
-   if [ "$CREATED_REPORTS" -eq 0 ]; then
-     echo "CRITICAL ERROR: Reports directory is empty - no reports created" >&2
-     echo "Expected: $EXPECTED_REPORTS reports" >&2
-     echo "This indicates Task tool invocations did not execute in STEP 3" >&2
-     echo "Root cause: Agent interpreted Task patterns as documentation, not executable directives" >&2
-     echo "Solution: Return to STEP 3 and execute Task tool invocations" >&2
+   # Validate topic count matches expected
+   if [ "$PLAN_TOPIC_COUNT" -ne "$EXPECTED_INVOCATIONS" ]; then
+     echo "ERROR: Topic count mismatch in plan file" >&2
+     echo "  Expected: $EXPECTED_INVOCATIONS topics" >&2
+     echo "  Found: $PLAN_TOPIC_COUNT topics" >&2
      exit 1
    fi
 
-   # Warn on count mismatch (partial failure)
-   if [ "$CREATED_REPORTS" -ne "$EXPECTED_REPORTS" ]; then
-     echo "WARNING: Created $CREATED_REPORTS reports, expected $EXPECTED_REPORTS" >&2
-     echo "Some Task invocations may have failed - check STEP 3 execution" >&2
-   fi
+   echo "✓ VERIFIED: All $PLAN_TOPIC_COUNT topics present in invocation plan"
    ```
 
-4. **Collect Task Responses**: Gather all research-specialist return signals
-   - Expected format: `REPORT_CREATED: /absolute/path/to/report.md`
-
-5. **Validate Report Files**: For each pre-calculated path, verify file exists
+4. **Validate Report Paths Present**:
    ```bash
-   MISSING_REPORTS=()
+   # Check each report path is present in plan file
+   MISSING_PATHS=()
    for REPORT_PATH in "${REPORT_PATHS[@]}"; do
-     if [ ! -f "$REPORT_PATH" ]; then
-       MISSING_REPORTS+=("$REPORT_PATH")
-       echo "ERROR: Report not found: $REPORT_PATH" >&2
-     elif [ $(wc -c < "$REPORT_PATH") -lt 1000 ]; then
-       echo "WARNING: Report is too small: $REPORT_PATH ($(wc -c < "$REPORT_PATH") bytes, minimum 1000 bytes)" >&2
+     if ! grep -q "Report Path: $REPORT_PATH" "$INVOCATION_PLAN_FILE"; then
+       MISSING_PATHS+=("$REPORT_PATH")
+       echo "ERROR: Report path not found in plan: $REPORT_PATH" >&2
      fi
    done
 
-   # Fail-fast if any reports missing with diagnostic context
-   if [ ${#MISSING_REPORTS[@]} -gt 0 ]; then
-     echo "CRITICAL ERROR: ${#MISSING_REPORTS[@]} research reports missing" >&2
-     echo "Missing reports: ${MISSING_REPORTS[*]}" >&2
-     echo "" >&2
-     echo "Diagnostic Information:" >&2
-     echo "  Topic Count: ${#TOPICS[@]}" >&2
-     echo "  Expected Reports: ${#REPORT_PATHS[@]}" >&2
-     echo "  Created Reports: $CREATED_REPORTS" >&2
-     echo "  Missing Count: ${#MISSING_REPORTS[@]}" >&2
-     echo "" >&2
-     echo "Expected Report Paths:" >&2
-     for i in "${!REPORT_PATHS[@]}"; do
-       echo "  [$i] ${REPORT_PATHS[$i]}" >&2
-     done
-     echo "" >&2
-     echo "Troubleshooting: Check STEP 3 Task invocations were executed for all topics" >&2
+   if [ ${#MISSING_PATHS[@]} -gt 0 ]; then
+     echo "CRITICAL ERROR: ${#MISSING_PATHS[@]} report paths missing from plan" >&2
+     echo "Missing paths: ${MISSING_PATHS[*]}" >&2
      exit 1
    fi
 
-   echo "✓ VERIFIED: All ${#REPORT_PATHS[@]} research reports created successfully"
+   echo "✓ VERIFIED: All ${#REPORT_PATHS[@]} report paths present in plan"
    ```
 
-6. **Validate Required Sections**: Check each report has required findings section (flexible header format)
-
-   Accepted section headers: "## Findings", "## Executive Summary", or "## Analysis"
-
-   ```bash
-   INVALID_REPORTS=()
-   for REPORT_PATH in "${REPORT_PATHS[@]}"; do
-     if ! grep -qE "^## (Findings|Executive Summary|Analysis)" "$REPORT_PATH" 2>/dev/null; then
-       INVALID_REPORTS+=("$REPORT_PATH")
-       echo "ERROR: Report missing required findings section: $REPORT_PATH" >&2
-       echo "Accepted headers: ## Findings, ## Executive Summary, ## Analysis" >&2
-     fi
-   done
-
-   if [ ${#INVALID_REPORTS[@]} -gt 0 ]; then
-     echo "CRITICAL ERROR: ${#INVALID_REPORTS[@]} reports missing required sections" >&2
-     echo "Invalid reports: ${INVALID_REPORTS[*]}" >&2
-     exit 1
-   fi
-
-   echo "✓ VERIFIED: All reports contain required sections"
-   ```
-
-**Checkpoint**: All reports exist, meet size threshold, and contain required sections.
+**Checkpoint**: Invocation plan file validated and ready for primary agent consumption.
 
 ---
 
-### STEP 5 (EXECUTE): Extract Metadata
+### STEP 5 (EXECUTE): Prepare Invocation Metadata
 
-**Objective**: Extract metadata from each report (title, key findings count, recommendations count) without loading full content into context.
+**Objective**: Build structured invocation metadata for primary agent (topics, paths, expected report count).
 
 **Actions**:
 
-1. **Extract Report Title**: Read first heading from each report
+1. **Build Invocation Metadata Array**: Create metadata structure for primary agent consumption
    ```bash
-   extract_report_title() {
-     local report_path="$1"
-     grep -m 1 "^# " "$report_path" | sed 's/^# //'
-   }
-   ```
-
-2. **Count Findings**: Count "### Finding" subsections in ## Findings section
-   ```bash
-   count_findings() {
-     local report_path="$1"
-     grep -c "^### Finding" "$report_path" 2>/dev/null || echo 0
-   }
-   ```
-
-3. **Count Recommendations**: Count numbered items in ## Recommendations section
-   ```bash
-   count_recommendations() {
-     local report_path="$1"
-     # Count lines starting with "1.", "2.", "3.", etc. in Recommendations section
-     awk '/^## Recommendations/,/^## / {
-       if (/^[0-9]+\./) count++
-     } END {print count}' "$report_path" 2>/dev/null || echo 0
-   }
-   ```
-
-4. **Build Metadata Array**: Aggregate metadata for all reports
-   ```bash
-   METADATA=()
-   for i in "${!REPORT_PATHS[@]}"; do
+   # Build invocation metadata (not report metadata - reports don't exist yet)
+   INVOCATION_METADATA=()
+   for i in "${!TOPICS[@]}"; do
+     TOPIC="${TOPICS[$i]}"
      REPORT_PATH="${REPORT_PATHS[$i]}"
-     TITLE=$(extract_report_title "$REPORT_PATH")
-     FINDINGS=$(count_findings "$REPORT_PATH")
-     RECOMMENDATIONS=$(count_recommendations "$REPORT_PATH")
 
-     METADATA+=("{\"path\": \"$REPORT_PATH\", \"title\": \"$TITLE\", \"findings_count\": $FINDINGS, \"recommendations_count\": $RECOMMENDATIONS}")
+     # Metadata format for primary agent Task invocations
+     INVOCATION_METADATA+=("{\"topic\": \"$TOPIC\", \"report_path\": \"$REPORT_PATH\"}")
    done
    ```
 
-**Checkpoint**: Metadata extracted for all reports.
+2. **Estimate Context Usage**: Calculate context consumption for planning phase
+   ```bash
+   estimate_planning_context() {
+     local topic_count="$1"
+
+     # Validate input (must be numeric)
+     if ! [[ "$topic_count" =~ ^[0-9]+$ ]]; then
+       echo "ERROR: Invalid topic_count (must be numeric)" >&2
+       echo "10"  # Return safe default (10%)
+       return 1
+     fi
+
+     # Base cost (system prompt + coordinator logic)
+     local base_cost=8000
+
+     # Per-topic overhead (decomposition + path calculation)
+     local per_topic_overhead=500
+
+     # Total estimated tokens
+     local total_tokens=$((base_cost + (topic_count * per_topic_overhead)))
+
+     # Context window size (200k tokens)
+     local context_window=200000
+
+     # Calculate percentage
+     local percentage=$((total_tokens * 100 / context_window))
+
+     # Defensive validation (sanity range: 5-95%)
+     if [ "$percentage" -lt 5 ]; then
+       percentage=5
+     elif [ "$percentage" -gt 95 ]; then
+       percentage=95
+     fi
+
+     echo "$percentage"
+   }
+
+   # Calculate context usage
+   TOPIC_COUNT=${#TOPICS[@]}
+   CONTEXT_USAGE_PERCENT=$(estimate_planning_context "$TOPIC_COUNT")
+
+   echo ""
+   echo "Context Estimation: ${CONTEXT_USAGE_PERCENT}% (planning phase for $TOPIC_COUNT topics)"
+   echo ""
+   ```
+
+**Checkpoint**: Invocation metadata prepared, context usage estimated.
 
 ---
 
-### STEP 6 (EXECUTE): Return Aggregated Metadata
+### STEP 6 (EXECUTE): Return Invocation Plan Metadata
 
-**Objective**: Return aggregated metadata to primary agent in structured JSON format (110 tokens per report vs 2,500 tokens full content = 95% reduction).
+**Objective**: Return invocation plan metadata to primary agent for Task tool execution.
 
 **Actions**:
 
-1. **Format Metadata as JSON**: Combine metadata into single JSON structure
-   ```json
-   {
-     "reports": [
-       {
-         "path": "/absolute/path/to/001-mathlib-theorems.md",
-         "title": "Mathlib Theorems for Group Homomorphism",
-         "findings_count": 12,
-         "recommendations_count": 5
-       },
-       {
-         "path": "/absolute/path/to/002-proof-automation.md",
-         "title": "Proof Automation Strategies for Lean 4",
-         "findings_count": 8,
-         "recommendations_count": 4
-       },
-       {
-         "path": "/absolute/path/to/003-project-structure.md",
-         "title": "Lean 4 Project Structure Patterns",
-         "findings_count": 10,
-         "recommendations_count": 6
-       }
-     ],
-     "total_reports": 3,
-     "total_findings": 30,
-     "total_recommendations": 15
-   }
+1. **Display Summary** (for user visibility):
+   ```bash
+   echo ""
+   echo "╔═══════════════════════════════════════════════════════╗"
+   echo "║ RESEARCH PLANNING COMPLETE                            ║"
+   echo "╠═══════════════════════════════════════════════════════╣"
+   echo "║ Topics Planned: ${#TOPICS[@]}                                     ║"
+   echo "║ Invocation Plan: $INVOCATION_PLAN_FILE               ║"
+   echo "╠═══════════════════════════════════════════════════════╣"
+
+   for i in "${!TOPICS[@]}"; do
+     TOPIC="${TOPICS[$i]}"
+     INDEX_NUM=$((i + 1))
+     printf "║ Topic %d: %-45s ║\n" "$INDEX_NUM" "${TOPIC:0:45}"
+   done
+
+   echo "╚═══════════════════════════════════════════════════════╝"
+   echo ""
    ```
 
-2. **Display Summary** (for user visibility):
-   ```
-   ╔═══════════════════════════════════════════════════════╗
-   ║ RESEARCH COORDINATION COMPLETE                        ║
-   ╠═══════════════════════════════════════════════════════╣
-   ║ Reports Created: 3                                    ║
-   ║ Total Findings: 30                                    ║
-   ║ Total Recommendations: 15                             ║
-   ╠═══════════════════════════════════════════════════════╣
-   ║ Report 1: Mathlib Theorems (12 findings, 5 recs)    ║
-   ║ Report 2: Proof Automation (8 findings, 4 recs)     ║
-   ║ Report 3: Project Structure (10 findings, 6 recs)   ║
-   ╚═══════════════════════════════════════════════════════╝
-   ```
+2. **Return Metadata Signal**: Return structured invocation metadata for primary agent parsing
+   ```bash
+   echo "RESEARCH_COORDINATOR_COMPLETE: SUCCESS"
+   echo "topics_planned: ${#TOPICS[@]}"
+   echo "invocation_plan_path: $INVOCATION_PLAN_FILE"
+   echo "context_usage_percent: $CONTEXT_USAGE_PERCENT"
+   echo ""
+   echo "INVOCATION_PLAN_READY: ${#TOPICS[@]}"
+   echo "invocations: ["
 
-3. **Return Metadata Signal**: Return structured metadata for primary agent parsing with completion signal
-   ```
-   RESEARCH_COORDINATOR_COMPLETE: SUCCESS
-   topics_processed: 3
-   reports_created: 3
-   context_reduction_pct: 95
-   execution_time_seconds: 45
+   # Output invocation metadata array
+   for i in "${!INVOCATION_METADATA[@]}"; do
+     META="${INVOCATION_METADATA[$i]}"
+     if [ $i -lt $((${#INVOCATION_METADATA[@]} - 1)) ]; then
+       echo "  $META,"
+     else
+       echo "  $META"
+     fi
+   done
 
-   RESEARCH_COMPLETE: 3
-   reports: [
-     {"path": "/path/to/001-mathlib-theorems.md", "title": "Mathlib Theorems for Group Homomorphism", "findings_count": 12, "recommendations_count": 5},
-     {"path": "/path/to/002-proof-automation.md", "title": "Proof Automation Strategies for Lean 4", "findings_count": 8, "recommendations_count": 4},
-     {"path": "/path/to/003-project-structure.md", "title": "Lean 4 Project Structure Patterns", "findings_count": 10, "recommendations_count": 6}
-   ]
-   total_findings: 30
-   total_recommendations: 15
+   echo "]"
    ```
 
    **Completion Signal Format**:
    - `RESEARCH_COORDINATOR_COMPLETE: SUCCESS` - Explicit completion signal for primary agent parsing
-   - `topics_processed: N` - Number of topics successfully researched
-   - `reports_created: N` - Number of reports created (should equal topics_processed on success)
-   - `context_reduction_pct: N` - Estimated context reduction percentage (typically 95%)
-   - `execution_time_seconds: N` - Workflow execution time in seconds
+   - `topics_planned: N` - Number of topics decomposed and planned
+   - `invocation_plan_path: /path` - Path to invocation plan file
+   - `context_usage_percent: N` - Estimated context usage percentage for planning phase
+   - `INVOCATION_PLAN_READY: N` - Signal with topic count
+   - `invocations: [...]` - JSON array of invocation metadata (topic + report_path per entry)
 
-4. **Cleanup Invocation Trace** (on successful completion):
-   ```bash
-   # Delete trace file on success (all reports validated)
-   if [ -f "$REPORT_DIR/.invocation-trace.log" ]; then
-     rm "$REPORT_DIR/.invocation-trace.log"
-   fi
-   ```
-   Note: If STEP 4 validation fails, trace file is preserved for debugging.
-
-**Checkpoint**: Aggregated metadata returned to primary agent.
+**Checkpoint**: Invocation plan metadata returned to primary agent for Task tool execution.
 
 ---
 
@@ -809,45 +615,45 @@ If REPORT_DIR cannot be accessed or created:
 - Log error: `ERROR: Cannot access or create reports directory: $REPORT_DIR`
 - Return TASK_ERROR: `file_error - Reports directory inaccessible: $REPORT_DIR`
 
-### Report Validation Failure
+### Topic Decomposition Failure
 
-If any pre-calculated report path does not exist after research-specialist returns:
-- Log error: `CRITICAL ERROR: Report missing: $REPORT_PATH`
-- List all missing reports
-- Return TASK_ERROR: `validation_error - N research reports missing (hard barrier failure)`
+If unable to decompose research_request into topics:
+- Log error: `ERROR: Failed to decompose research request into topics`
+- Return TASK_ERROR: `parse_error - Topic decomposition failed`
 
-### Research-Specialist Agent Failure
+### Invocation Plan File Creation Failure
 
-If research-specialist returns error instead of REPORT_CREATED:
-- Log error: `ERROR: research-specialist failed for topic: $TOPIC`
-- Continue with other topics (partial success mode)
-- If ≥50% reports created: Return partial metadata with warning
-- If <50% reports created: Return TASK_ERROR: `agent_error - Insufficient research reports created`
-
-### Metadata Extraction Failure
-
-If metadata extraction fails for a report (e.g., malformed report):
-- Use fallback metadata: title = filename, findings_count = 0, recommendations_count = 0
-- Log warning: `WARNING: Metadata extraction failed for $REPORT_PATH, using fallback`
-- Continue with other reports
+If invocation plan file cannot be created:
+- Log error: `ERROR: Cannot create invocation plan file: $INVOCATION_PLAN_FILE`
+- Return TASK_ERROR: `file_error - Invocation plan file creation failed`
 
 ## Output Format
 
-Return ONLY the aggregated metadata in this format:
+Return ONLY the invocation plan metadata in this format:
 
 ```
-RESEARCH_COMPLETE: {REPORT_COUNT}
-reports: [JSON array of report metadata]
-total_findings: {N}
-total_recommendations: {N}
+RESEARCH_COORDINATOR_COMPLETE: SUCCESS
+topics_planned: {N}
+invocation_plan_path: {/path/to/.invocation-plan.txt}
+context_usage_percent: {N}
+
+INVOCATION_PLAN_READY: {TOPIC_COUNT}
+invocations: [JSON array of invocation metadata]
 ```
 
 **Example**:
 ```
-RESEARCH_COMPLETE: 3
-reports: [{"path": "/home/user/.config/.claude/specs/028_lean/reports/001-mathlib-theorems.md", "title": "Mathlib Theorems for Group Homomorphism", "findings_count": 12, "recommendations_count": 5}, {"path": "/home/user/.config/.claude/specs/028_lean/reports/002-proof-automation.md", "title": "Proof Automation Strategies for Lean 4", "findings_count": 8, "recommendations_count": 4}, {"path": "/home/user/.config/.claude/specs/028_lean/reports/003-project-structure.md", "title": "Lean 4 Project Structure Patterns", "findings_count": 10, "recommendations_count": 6}]
-total_findings: 30
-total_recommendations: 15
+RESEARCH_COORDINATOR_COMPLETE: SUCCESS
+topics_planned: 3
+invocation_plan_path: /home/user/.config/.claude/specs/028_lean/reports/.invocation-plan.txt
+context_usage_percent: 8
+
+INVOCATION_PLAN_READY: 3
+invocations: [
+  {"topic": "Mathlib theorems for group homomorphism", "report_path": "/home/user/.config/.claude/specs/028_lean/reports/001-mathlib-theorems.md"},
+  {"topic": "Proof automation strategies for Lean 4", "report_path": "/home/user/.config/.claude/specs/028_lean/reports/002-proof-automation.md"},
+  {"topic": "Lean 4 project structure patterns", "report_path": "/home/user/.config/.claude/specs/028_lean/reports/003-project-structure.md"}
+]
 ```
 
 ## Error Return Protocol
@@ -878,75 +684,64 @@ When an unrecoverable error occurs:
 
 Use these standardized error types:
 
-- `validation_error` - Hard barrier validation failures, missing reports
-- `agent_error` - research-specialist execution failures
-- `file_error` - Reports directory access failures
-- `parse_error` - Metadata extraction failures (if unrecoverable)
+- `validation_error` - Invocation plan validation failures
+- `file_error` - Reports directory or invocation plan file access failures
+- `parse_error` - Topic decomposition failures (if unrecoverable)
 
 ### When to Return Errors
 
 Return a TASK_ERROR signal when:
 
 - Reports directory is inaccessible (cannot proceed)
-- Hard barrier validation fails (missing reports)
-- Less than 50% of reports created successfully
-- All research-specialist invocations fail
+- Topic decomposition fails (cannot create invocation plan)
+- Invocation plan file cannot be created
+- Invocation plan validation fails (missing required fields)
 
 Do NOT return TASK_ERROR for:
 
-- Partial metadata extraction failures (use fallback)
-- Individual report quality issues (return metadata anyway)
 - Warnings or non-fatal issues
+- Informational messages
 
 ## Notes
 
-### Context Efficiency
+### Planning-Only Architecture
 
-**Traditional Approach** (primary agent reads all reports):
-- 3 reports x 2,500 tokens = 7,500 tokens consumed
+This coordinator is a **planning-only agent** that does NOT execute Task tool invocations. Its role is to:
+1. Decompose research requests into focused topics
+2. Pre-calculate report paths using hard barrier pattern
+3. Create invocation plan file with metadata
+4. Return invocation metadata to primary agent
 
-**Coordinator Approach** (metadata-only):
-- 3 reports x 110 tokens metadata = 330 tokens consumed
-- Context reduction: 95.6%
+The primary agent is responsible for invoking research-specialist directly using the coordinator's invocation metadata.
 
 ### Hard Barrier Pattern Compliance
 
-This agent follows the hard barrier pattern:
+This agent follows the hard barrier pattern for planning:
 1. **Path Pre-Calculation**: Primary agent calculates REPORT_DIR before invoking coordinator
-2. **Coordinator Pre-Calculates Paths**: Coordinator calculates individual report paths BEFORE invoking research-specialist
-3. **Artifact Validation**: Coordinator validates all reports exist AFTER research-specialist returns
-4. **Fail-Fast**: Workflow aborts if any report missing (mandatory delegation)
-
-### Parallelization Benefits
-
-- 3 research topics executed in parallel (vs sequential)
-- Time savings: 40-60% for typical research workflows
-- MCP rate limits respected (3 topics = 1 WebSearch per agent with 3 req/30s budget)
+2. **Coordinator Pre-Calculates Paths**: Coordinator calculates individual report paths and stores in invocation plan
+3. **Plan Validation**: Coordinator validates invocation plan file exists and contains all required metadata
+4. **Fail-Fast**: Workflow aborts if invocation plan creation fails
 
 ### Integration Points
 
-**Commands using research-coordinator**:
-- `/lean-plan` - Lean theorem research phase
-- `/create-plan` - Software feature research phase (future)
-- `/repair` - Error pattern research phase (future)
-- `/debug` - Issue investigation research phase (future)
-- `/revise` - Context research before plan revision (future)
+**Primary agents that consume invocation plans**:
+- `/research` - Multi-topic research orchestration
+- `/create-plan` - Software feature research phase (complexity >= 3)
+- `/lean-plan` - Lean theorem research phase (complexity >= 3)
 
-**Downstream consumers** (receive metadata):
-- `plan-architect` - Uses report paths and metadata (not full content)
-- `lean-plan-architect` - Uses report paths and metadata (not full content)
-- Primary agent - Passes metadata to planning phase
+**Invocation plan consumers**:
+- Primary agents parse invocation plan and execute Task tool invocations for each topic
+- Primary agents validate research reports after research-specialist completion
 
 ## Success Criteria
 
-Research coordination is successful if:
+Research planning is successful if:
 - ✓ All research topics decomposed correctly (2-5 topics)
-- ✓ All report paths pre-calculated before agent invocation
-- ✓ All research-specialist agents invoked in parallel
-- ✓ All reports exist at pre-calculated paths (hard barrier validation)
-- ✓ Metadata extracted for all reports (110 tokens per report)
-- ✓ Aggregated metadata returned to primary agent
-- ✓ Context reduction 95%+ vs full report content
+- ✓ All report paths pre-calculated and stored in invocation plan
+- ✓ Invocation plan file created with complete metadata
+- ✓ Invocation plan validated (all topics and paths present)
+- ✓ Invocation metadata returned to primary agent
+- ✓ Planning context usage < 10% (efficient decomposition)
 
 ---
 

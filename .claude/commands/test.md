@@ -327,15 +327,15 @@ STUCK_COUNT=0
 # === STATE PERSISTENCE ===
 # STATE_FILE already initialized by init_workflow_state above
 
-append_workflow_state "PLAN_FILE" "$PLAN_FILE"
-append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "PLAN_FILE" "${PLAN_FILE:-}"
+append_workflow_state "TOPIC_PATH" "${TOPIC_PATH:-}"
 append_workflow_state "SUMMARY_FILE" "${SUMMARY_FILE:-none}"
-append_workflow_state "TEST_CONTEXT" "$TEST_CONTEXT"
-append_workflow_state "COVERAGE_THRESHOLD" "$COVERAGE_THRESHOLD"
-append_workflow_state "MAX_TEST_ITERATIONS" "$MAX_TEST_ITERATIONS"
-append_workflow_state "ITERATION" "$ITERATION"
-append_workflow_state "PREVIOUS_COVERAGE" "$PREVIOUS_COVERAGE"
-append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
+append_workflow_state "TEST_CONTEXT" "${TEST_CONTEXT:-}"
+append_workflow_state "COVERAGE_THRESHOLD" "${COVERAGE_THRESHOLD:-}"
+append_workflow_state "MAX_TEST_ITERATIONS" "${MAX_TEST_ITERATIONS:-}"
+append_workflow_state "ITERATION" "${ITERATION:-}"
+append_workflow_state "PREVIOUS_COVERAGE" "${PREVIOUS_COVERAGE:-}"
+append_workflow_state "STUCK_COUNT" "${STUCK_COUNT:-}"
 append_workflow_state "TEST_FILES" "${TEST_FILES:-}"
 append_workflow_state "TEST_COMMAND" "${TEST_COMMAND:-}"
 append_workflow_state "EXPECTED_TESTS" "${EXPECTED_TESTS:-}"
@@ -396,7 +396,7 @@ if [ "$result" -ne 0 ]; then
 fi
 
 # === STATE PERSISTENCE ===
-append_workflow_state "TEST_OUTPUT_PATH" "$TEST_OUTPUT_PATH"
+append_workflow_state "TEST_OUTPUT_PATH" "${TEST_OUTPUT_PATH:-}"
 
 # Checkpoint: Test path calculated
 echo "Test iteration $ITERATION/$MAX_TEST_ITERATIONS: $TEST_OUTPUT_PATH"
@@ -570,14 +570,14 @@ else
 fi
 
 # === STATE PERSISTENCE ===
-append_workflow_state "TEST_STATUS" "${ALL_PASSED}"
-append_workflow_state "NEXT_STATE" "$NEXT_STATE"
-append_workflow_state "ITERATION" "$ITERATION"
-append_workflow_state "PREVIOUS_COVERAGE" "$PREVIOUS_COVERAGE"
-append_workflow_state "STUCK_COUNT" "$STUCK_COUNT"
-append_workflow_state "FINAL_COVERAGE" "$COVERAGE"
-append_workflow_state "FINAL_TESTS_PASSED" "$TESTS_PASSED"
-append_workflow_state "FINAL_TESTS_FAILED" "$TESTS_FAILED"
+append_workflow_state "TEST_STATUS" "${ALL_PASSED:-}"
+append_workflow_state "NEXT_STATE" "${NEXT_STATE:-}"
+append_workflow_state "ITERATION" "${ITERATION:-}"
+append_workflow_state "PREVIOUS_COVERAGE" "${PREVIOUS_COVERAGE:-}"
+append_workflow_state "STUCK_COUNT" "${STUCK_COUNT:-}"
+append_workflow_state "FINAL_COVERAGE" "${COVERAGE:-}"
+append_workflow_state "FINAL_TESTS_PASSED" "${TESTS_PASSED:-}"
+append_workflow_state "FINAL_TESTS_FAILED" "${TESTS_FAILED:-}"
 
 # === LOOP CONTROL ===
 if [ "$NEXT_STATE" = "continue" ]; then
@@ -656,7 +656,7 @@ ISSUE_DESCRIPTION+="Iteration summary: ${ITERATION} iteration(s) executed. Final
 DEBUG_OUTPUT_PATH="${DEBUG_DIR}/debug_report_$(date +%s).md"
 
 # Persist debug path for completion block
-append_workflow_state "DEBUG_REPORT_PATH" "$DEBUG_OUTPUT_PATH"
+append_workflow_state "DEBUG_REPORT_PATH" "${DEBUG_OUTPUT_PATH:-}"
 
 echo "Invoking debug-analyst for test failure analysis..."
 ```

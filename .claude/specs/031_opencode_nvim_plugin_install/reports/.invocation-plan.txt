@@ -1,0 +1,29 @@
+# Research Coordinator Invocation Plan
+# Generated: 2025-12-10T18:34:54Z
+
+Expected Invocations: 3
+
+Topics:
+[0] Opencode.nvim Plugin Installation: Research and document the process of installing opencode.nvim plugin in Neovim, including dependencies, plugin manager setup, and installation verification -> /home/benjamin/.config/.claude/specs/031_opencode_nvim_plugin_install/reports/001-opencode-nvim-plugin-install.md
+[1] Neovim Configuration Integration: Investigate how to configure opencode.nvim within Neovim config (init.lua or init.vim), including plugin settings, key mappings, and module setup -> /home/benjamin/.config/.claude/specs/031_opencode_nvim_plugin_install/reports/002-neovim-config-integration.md
+[2] Opencode CLI Integration with Neovim: Research how the installed opencode CLI tool integrates with the opencode.nvim plugin, command execution, and workflow patterns -> /home/benjamin/.config/.claude/specs/031_opencode_nvim_plugin_install/reports/003-opencode-cli-nvim-integration.md
+
+Status: PLAN_CREATED (invocations pending)
+
+# Invocation Metadata for Primary Agent
+# Primary agent should invoke research-specialist for each topic below
+
+
+Topic [1/3]: Opencode.nvim Plugin Installation: Research and document the process of installing opencode.nvim plugin in Neovim, including dependencies, plugin manager setup, and installation verification
+Report Path: /home/benjamin/.config/.claude/specs/031_opencode_nvim_plugin_install/reports/001-opencode-nvim-plugin-install.md
+Agent: research-specialist
+
+Topic [2/3]: Neovim Configuration Integration: Investigate how to configure opencode.nvim within Neovim config (init.lua or init.vim), including plugin settings, key mappings, and module setup
+Report Path: /home/benjamin/.config/.claude/specs/031_opencode_nvim_plugin_install/reports/002-neovim-config-integration.md
+Agent: research-specialist
+
+Topic [3/3]: Opencode CLI Integration with Neovim: Research how the installed opencode CLI tool integrates with the opencode.nvim plugin, command execution, and workflow patterns
+Report Path: /home/benjamin/.config/.claude/specs/031_opencode_nvim_plugin_install/reports/003-opencode-cli-nvim-integration.md
+Agent: research-specialist
+
+Status: PLAN_COMPLETE (ready for primary agent invocation)

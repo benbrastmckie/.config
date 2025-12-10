@@ -7,6 +7,16 @@
 - [Examples](hierarchical-agents-examples.md) - Reference implementations
 - [Troubleshooting](hierarchical-agents-troubleshooting.md) - Common issues and solutions
 
+**Architecture Standards**:
+- [Choosing Agent Architecture](../guides/architecture/choosing-agent-architecture.md) - Decision framework for hierarchical vs flat models
+- [Three-Tier Coordination Pattern](three-tier-coordination-pattern.md) - Commands → Coordinators → Specialists
+- [Coordinator Patterns Standard](../reference/standards/coordinator-patterns-standard.md) - Five core coordinator patterns
+- [Coordinator Return Signals](../reference/standards/coordinator-return-signals.md) - Standardized return signal contracts
+- [Artifact Metadata Standard](../reference/standards/artifact-metadata-standard.md) - Metadata schema for context reduction
+- [Brief Summary Format](../reference/standards/brief-summary-format.md) - Brief summary format for 96% context reduction
+- [State System Patterns](state-system-patterns.md) - Workflow state machine patterns
+- [Error Logging Standard](../reference/standards/error-logging-standard.md) - Centralized error logging
+
 ---
 
 ## Purpose

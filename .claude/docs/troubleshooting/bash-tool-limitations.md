@@ -272,6 +272,7 @@ When writing command files:
 2. **Split proactively** if approaching 300 lines (buffer below threshold)
 3. **Test with indirect references** (`${!var}`) to catch transformation early
 4. **Use logical boundaries** for splits (setup, execution, cleanup)
+5. **Block Size Management**: Keep all bash blocks under 400 lines to avoid preprocessing transformation bugs. See [Bash Block Size Standard](../reference/standards/command-authoring.md#bash-block-size-limits-and-prevention) for thresholds and split patterns.
 
 ### Why This Works
 
@@ -458,6 +459,62 @@ Preprocessing safety patterns validated across specifications:
 4. **`set +H` executes** only after preprocessing completes (too late!)
 
 **Conclusion**: `set +H` protects against runtime history expansion but cannot prevent preprocessing-stage expansion triggered by Bash tool wrapper.
+
+## Array Iteration Patterns
+
+### The Problem: Indirect Array Expansion
+
+Bash preprocessing corrupts the indirect array expansion syntax `${!ARRAY[@]}` when iterating over array indices. This causes "bad substitution" errors that prevent command execution.
+
+**Symptoms**:
+```
+/run/current-system/sw/bin/bash: line 383: ${\!TOPICS_ARRAY[@]}: bad substitution
+```
+
+**Anti-Pattern (NEVER use)**:
+```bash
+# This breaks during preprocessing - causes bad substitution error
+for i in "${!TOPICS_ARRAY[@]}"; do
+  echo "${TOPICS_ARRAY[$i]}"
+done
+```
+
+The preprocessing stage inserts backslash escapes into the `!` character, transforming `${!ARRAY[@]}` into `${\!ARRAY[@]}`, which is invalid bash syntax.
+
+### The Solution: Seq-Based Iteration
+
+Use `seq` with array length to generate numeric indices that avoid preprocessing corruption:
+
+**Correct Pattern (always use)**:
+```bash
+# This works - no indirect expansion syntax to corrupt
+for i in $(seq 0 $((${#TOPICS_ARRAY[@]} - 1))); do
+  echo "${TOPICS_ARRAY[$i]}"
+done
+```
+
+**Why This Works**:
+- `${#ARRAY[@]}` (array length) is not affected by preprocessing
+- `seq 0 N` generates numeric indices (0, 1, 2, ..., N)
+- Direct array indexing `${ARRAY[$i]}` uses only standard syntax
+- No `!` character to trigger preprocessing corruption
+
+### Validated Commands Using This Pattern
+
+The following commands successfully use seq-based iteration:
+- `/create-plan` (line 1309) - topic iteration in multi-topic research
+- `/lean-plan` (line 919) - parallel research coordination
+- `/implement` (lines 1295, 1624) - phase dependency checking, wave execution
+- `/research` (lines 487, 508, 916) - fixed as of 2025-12-10
+
+### Automated Detection
+
+The array iteration anti-pattern is detected by:
+- **Linter**: `.claude/scripts/lint/lint-array-iteration.sh`
+- **Severity**: ERROR for command files, WARNING for agent files
+- **Integration**: `validate-all-standards.sh --array-iteration`
+
+**Prevention**: Pre-commit hooks automatically scan for `${!.*[@]}` patterns and block commits containing this anti-pattern.
 
 ## Related Documentation
 

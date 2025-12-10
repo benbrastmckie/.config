@@ -1,4 +1,4 @@
--- neotex.plugins.ai.claude.commands.picker.operations.sync
+-- neotex.plugins.ai.goose.commands.picker.operations.sync
 -- Load All Artifacts operation with sync functionality
 
 local M = {}
@@ -412,8 +412,8 @@ end
 --- @param global_dir string Global directory path
 --- @return boolean initialized True if file was created
 local function initialize_settings_from_template(project_dir, global_dir)
-  local local_settings = project_dir .. "/.claude/settings.local.json"
-  local global_template = global_dir .. "/.claude/settings.json"
+  local local_settings = project_dir .. "/.goose/settings.local.json"
+  local global_template = global_dir .. "/.goose/settings.json"
 
   -- Only initialize if local file doesn't exist
   if vim.fn.filereadable(local_settings) == 1 then
@@ -425,8 +425,8 @@ local function initialize_settings_from_template(project_dir, global_dir)
     return false
   end
 
-  -- Ensure .claude directory exists
-  helpers.ensure_directory(project_dir .. "/.claude")
+  -- Ensure .goose directory exists
+  helpers.ensure_directory(project_dir .. "/.goose")
 
   -- Copy template to local settings
   local content = helpers.read_file(global_template)
@@ -519,26 +519,26 @@ end
 --- @return boolean success true if all deletions succeeded
 --- @return table details Table with success and failed lists
 local function remove_artifact_directories(project_dir)
-  local claude_dir = project_dir .. "/.claude"
+  local goose_dir = project_dir .. "/.goose"
 
   -- Define all artifact directories to remove
   local artifact_dirs = {
-    claude_dir .. "/commands",
-    claude_dir .. "/agents",
-    claude_dir .. "/hooks",
-    claude_dir .. "/scripts",
-    claude_dir .. "/tests",
-    claude_dir .. "/lib",
-    claude_dir .. "/docs",
-    claude_dir .. "/skills",
-    claude_dir .. "/templates",
-    claude_dir .. "/tts",
-    claude_dir .. "/data/commands",
-    claude_dir .. "/data/agents",
-    claude_dir .. "/data/templates",
-    claude_dir .. "/agents/prompts",
-    claude_dir .. "/agents/shared",
-    claude_dir .. "/specs/standards",
+    goose_dir .. "/commands",
+    goose_dir .. "/agents",
+    goose_dir .. "/hooks",
+    goose_dir .. "/scripts",
+    goose_dir .. "/tests",
+    goose_dir .. "/lib",
+    goose_dir .. "/docs",
+    goose_dir .. "/skills",
+    goose_dir .. "/templates",
+    goose_dir .. "/tts",
+    goose_dir .. "/data/commands",
+    goose_dir .. "/data/agents",
+    goose_dir .. "/data/templates",
+    goose_dir .. "/agents/prompts",
+    goose_dir .. "/agents/shared",
+    goose_dir .. "/specs/standards",
   }
 
   local success_list = {}
@@ -638,8 +638,8 @@ end
 local function load_all_with_strategy(project_dir, commands, agents, hooks, all_tts, templates,
                                       lib_utils, docs, all_agent_protocols, standards,
                                       all_data_docs, scripts, tests, skills, settings, merge_only)
-  -- Create base .claude directory (subdirectories created dynamically by sync_files)
-  helpers.ensure_directory(project_dir .. "/.claude")
+  -- Create base .goose directory (subdirectories created dynamically by sync_files)
+  helpers.ensure_directory(project_dir .. "/.goose")
 
   -- Sync all artifact types with merge_only flag
   local cmd_count = sync_files(commands, false, merge_only)
@@ -958,7 +958,7 @@ function M.load_all_globally()
   local total_files = #commands + #agents + #hooks + #all_tts + #templates + #lib_utils + #docs +
                       #all_agent_protocols + #standards + #all_data_docs + #scripts + #tests + #all_skills + #settings
   if total_files == 0 then
-    helpers.notify("No global artifacts found in ~/.config/.claude/", "WARN")
+    helpers.notify("No global artifacts found in ~/.config/.goose/", "WARN")
     return 0
   end
 
@@ -1120,7 +1120,7 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
   end
 
   -- Find the global version
-  local global_filepath = global_dir .. "/.claude/" .. subdir .. "/" .. artifact.name
+  local global_filepath = global_dir .. "/.goose/" .. subdir .. "/" .. artifact.name
   if artifact_type == "command" or artifact_type == "agent" or artifact_type == "doc" then
     global_filepath = global_filepath .. ".md"
   elseif artifact_type == "hook" or artifact_type == "lib" or artifact_type == "tts_file" or
@@ -1142,7 +1142,7 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
   end
 
   -- Create local directory if needed
-  local local_dir = project_dir .. "/.claude/" .. subdir
+  local local_dir = project_dir .. "/.goose/" .. subdir
   helpers.ensure_directory(local_dir)
 
   -- Copy global file to local

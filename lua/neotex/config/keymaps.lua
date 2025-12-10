@@ -22,6 +22,7 @@ AI/ASSISTANT GLOBAL KEYBINDINGS                | DESCRIPTION
 ----------------------------------------------------------------------------------
 <C-c>                                          | Toggle Claude Code (overridden in Avante/Telescope)
 <C-g>                                          | Toggle Avante interface (all modes)
+<leader>aoo                                     | Toggle OpenCode interface (via which-key)
 
 ----------------------------------------------------------------------------------
 TERMINAL MODE KEYBINDINGS                      | DESCRIPTION
@@ -126,19 +127,33 @@ function M.setup()
     -- Lock terminal window to prevent buffer switching
     vim.wo.winfixbuf = true
 
-    -- Check if this is a Claude Code terminal
+    -- Check terminal type for specialized keybindings
     local bufname = vim.api.nvim_buf_get_name(0)
     local is_claude = bufname:match("claude") or bufname:match("ClaudeCode")
+    local is_opencode = vim.bo.filetype == "opencode_terminal"
 
     -- Terminal navigation
     -- Skip escape mapping for Claude Code to allow its internal normal mode
     if not is_claude then
-      buf_map(0, "t", "<esc>", "<C-\\><C-n>", "Exit terminal mode")
+      buf_map(0, "t", "<Esc>", "<C-\\><C-n>", "Exit terminal mode")
+      -- In normal mode, Esc sends escape to the terminal app (for closing menus)
+      buf_map(0, "n", "<Esc>", "i<Esc><C-\\><C-n>", "Send Esc to terminal app")
     end
-    buf_map(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", "Navigate left")
-    buf_map(0, "t", "<C-j>", "<Cmd>wincmd j<CR>", "Navigate down")
-    buf_map(0, "t", "<C-k>", "<Cmd>wincmd k<CR>", "Navigate up")
-    buf_map(0, "t", "<C-l>", "<Cmd>wincmd l<CR>", "Navigate right")
+
+    -- OpenCode terminals: Ctrl+j/k send arrow keys for menu navigation
+    -- Other terminals: Ctrl+hjkl for window navigation
+    if is_opencode then
+      buf_map(0, "t", "<C-j>", "<Down>", "Menu down")
+      buf_map(0, "t", "<C-k>", "<Up>", "Menu up")
+      buf_map(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", "Navigate left")
+      buf_map(0, "t", "<C-l>", "<Cmd>wincmd l<CR>", "Navigate right")
+      buf_map(0, "t", "<C-CR>", "<cmd>lua require('opencode').toggle()<CR>", "Toggle Opencode")
+    else
+      buf_map(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", "Navigate left")
+      buf_map(0, "t", "<C-j>", "<Cmd>wincmd j<CR>", "Navigate down")
+      buf_map(0, "t", "<C-k>", "<Cmd>wincmd k<CR>", "Navigate up")
+      buf_map(0, "t", "<C-l>", "<Cmd>wincmd l<CR>", "Navigate right")
+    end
 
     -- Terminal resizing
     buf_map(0, "t", "<M-Right>", "<Cmd>vertical resize -2<CR>", "Resize right")
@@ -315,6 +330,11 @@ function M.setup()
   map("i", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
   map("v", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
   map("t", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
+
+  -- OpenCode toggle
+  map({ "n", "i" }, "<C-CR>", function() require("opencode").toggle() end, {}, "Toggle Opencode")
+ 
+   -- OpenCode toggle: Use <leader>aoo via which-key (preserves <C-o> for jump list)
 
   ------------------------
   -- TEXT EDITING KEYS --

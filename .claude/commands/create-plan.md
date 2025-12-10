@@ -170,11 +170,8 @@ COMMAND_NAME="/create-plan"
 USER_ARGS="$FEATURE_DESCRIPTION"
 export COMMAND_NAME USER_ARGS
 
-WORKFLOW_ID="plan_$(date +%s)"
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-mkdir -p "$(dirname "$STATE_ID_FILE")"
-echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+# Generate unique WORKFLOW_ID with nanosecond precision for concurrent execution safety
+WORKFLOW_ID=$(generate_unique_workflow_id "plan")
 export WORKFLOW_ID
 
 # === CLEANUP TERMINAL STATE FROM PREVIOUS RUNS ===
@@ -312,28 +309,7 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1A ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
-
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
-  exit 1
-fi
-
-# Restore workflow state file
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
-
-COMMAND_NAME="/create-plan"
-USER_ARGS="${FEATURE_DESCRIPTION:-}"
-export COMMAND_NAME USER_ARGS
-
-# Source libraries
+# Source libraries first to access discovery function
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
@@ -342,6 +318,21 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null
   echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
 }
+
+# Discover most recent state file for this command
+STATE_FILE=$(discover_latest_state_file "plan")
+
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from Block 1a" >&2
+  exit 1
+fi
+
+# Load workflow state
+source "$STATE_FILE"
+
+COMMAND_NAME="/create-plan"
+USER_ARGS="${FEATURE_DESCRIPTION:-}"
+export COMMAND_NAME USER_ARGS
 
 # Setup bash error trap
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
@@ -412,8 +403,8 @@ elif [[ "$STATE_FILE" =~ ^${HOME}/ ]]; then
 fi
 
 # Persist for Block 1b-exec and Block 1c
-append_workflow_state "TOPIC_NAME_FILE" "$TOPIC_NAME_FILE" || {
-  echo "export TOPIC_NAME_FILE=\"$TOPIC_NAME_FILE\"" >> "$STATE_FILE"
+append_workflow_state "TOPIC_NAME_FILE" "${TOPIC_NAME_FILE:-}" || {
+  echo "export TOPIC_NAME_FILE=\"${TOPIC_NAME_FILE:-}\"" >> "$STATE_FILE"
 }
 
 echo ""
@@ -488,22 +479,22 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1B ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source libraries to access discovery function
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover most recent state file for this command
+STATE_FILE=$(discover_latest_state_file "plan")
+
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Load workflow state
+source "$STATE_FILE"
 
 COMMAND_NAME="/create-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -596,22 +587,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1C ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/create-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -680,8 +670,14 @@ export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1A ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library and discover state file
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+STATE_FILE=$(discover_latest_state_file "plan")
+[ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || { echo "ERROR: Failed to discover state file" >&2; exit 1; }
+source "$STATE_FILE"  # WORKFLOW_ID restored
 
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
@@ -910,22 +906,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1C ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/create-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -989,7 +984,7 @@ TOPICS_JSON_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/topics_${WORKFLOW_ID}.json"
 mkdir -p "$(dirname "$TOPICS_JSON_FILE")" 2>/dev/null || true
 
 # Persist for validation block
-append_workflow_state "TOPICS_JSON_FILE" "$TOPICS_JSON_FILE"
+append_workflow_state "TOPICS_JSON_FILE" "${TOPICS_JSON_FILE:-}"
 
 echo "Topic detection output: $TOPICS_JSON_FILE"
 echo ""
@@ -1064,22 +1059,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1D-TOPICS-AUTO ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/create-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -1239,22 +1233,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1D-TOPICS-AUTO-VALIDATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/create-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -1398,7 +1391,7 @@ if [ "${#TOPICS_ARRAY[@]}" -eq 0 ]; then
     fi
 
     # Calculate report paths for each topic
-    for i in "${!TOPICS_ARRAY[@]}"; do
+    for i in $(seq 0 $((${#TOPICS_ARRAY[@]} - 1))); do
       REPORT_NUM=$(printf "%03d" $((i + 1)))
       REPORT_FILENAME="${REPORT_NUM}-$(echo "${TOPIC_NAME:-no_name}" | tr '_' '-' | cut -c1-40)-part$((i + 1)).md"
       REPORT_PATHS_ARRAY+=("${RESEARCH_DIR}/${REPORT_FILENAME}")
@@ -1419,7 +1412,7 @@ EOF
 
 echo "Topic count: $TOPIC_COUNT"
 echo "Topics prepared for research coordinator"
-for i in "${!TOPICS_ARRAY[@]}"; do
+for i in $(seq 0 $((${#TOPICS_ARRAY[@]} - 1))); do
   echo "  Topic $((i + 1)): ${TOPICS_ARRAY[$i]}"
   echo "  Report: ${REPORT_PATHS_ARRAY[$i]}"
 done
@@ -1508,22 +1501,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1E ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/create-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -1673,22 +1665,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1E ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/create-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -1879,12 +1870,23 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-st
 
 # === LOAD STATE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Discover latest state file  
+STATE_FILE=$(discover_latest_state_file "plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
+# Restore state from discovered file
+source "$STATE_FILE"
+
+# WORKFLOW_ID now restored from state file
 
 # === VALIDATE WORKFLOW_ID ===
 # CRITICAL: Call validate_workflow_id AFTER state-persistence.sh is sourced
@@ -2068,7 +2070,7 @@ if [ -n "$UNDERSIZED_FILES" ]; then
 fi
 
 REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
-append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
+append_workflow_state "REPORT_COUNT" "${REPORT_COUNT:-}"
 
 echo "Research verified: $REPORT_COUNT reports"
 echo ""
@@ -2294,22 +2296,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 2 ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/create-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -2445,12 +2446,23 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-st
 
 # === LOAD STATE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Discover latest state file  
+STATE_FILE=$(discover_latest_state_file "plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
+# Restore state from discovered file
+source "$STATE_FILE"
+
+# WORKFLOW_ID now restored from state file
 
 # === VALIDATE WORKFLOW_ID ===
 # CRITICAL: Call validate_workflow_id AFTER state-persistence.sh is sourced
@@ -2630,7 +2642,7 @@ if grep -q "^### Phase 0: Standards Revision" "$PLAN_PATH" 2>/dev/null; then
 
   # Persist divergence flag for summary
   append_workflow_state "PHASE_0_DETECTED=true"
-  append_workflow_state "DIVERGENCE_JUSTIFICATION=$DIVERGENCE_JUSTIFICATION"
+  append_workflow_state "DIVERGENCE_JUSTIFICATION=${DIVERGENCE_JUSTIFICATION:-}"
   if ! save_completed_states_to_state; then
     echo "WARNING: Failed to persist COMPLETED_STATES to state file" >&2
   fi

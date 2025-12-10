@@ -48,7 +48,34 @@ echo "VERIFIED: Absolute report path received: $REPORT_PATH"
 
 See [/research command](/home/benjamin/.config/.claude/commands/research.md) Blocks 1d, 1d-exec, and 1e for reference implementation.
 
-**CHECKPOINT**: YOU MUST have an absolute path before proceeding to Step 2.
+**CHECKPOINT**: YOU MUST have an absolute path before proceeding to Step 1.5.
+
+---
+
+### STEP 1.5 (REQUIRED BEFORE STEP 2) - Prepare Metadata Fields
+
+**METADATA FIELD GENERATION**:
+
+After research is complete (in STEP 3), you MUST update the YAML frontmatter with accurate counts:
+
+```yaml
+---
+report_type: lean_research  # or codebase_analysis, best_practices, pattern_recognition
+topic: "Exact topic title from your research"
+findings_count: N  # Count of ### Finding sections in your report
+recommendations_count: M  # Count of numbered recommendations
+---
+```
+
+**Field Definitions**:
+- **report_type**: Type of research conducted (lean_research for Lean formalization research)
+- **topic**: Brief topic title (5-10 words, describes research focus)
+- **findings_count**: Integer count of distinct findings (minimum 3)
+- **recommendations_count**: Integer count of actionable recommendations (minimum 3)
+
+**Update Timing**: These fields are initialized to 0 in STEP 2, then updated to accurate counts after research completion in STEP 3, before validation in STEP 4.
+
+**CHECKPOINT**: Metadata format understood before proceeding to Step 2.
 
 ---
 
@@ -81,13 +108,20 @@ ensure_artifact_directory "$REPORT_PATH" || {
 Create report file content using this EXACT template structure:
 
 ```markdown
+---
+report_type: [lean_research|codebase_analysis|best_practices|pattern_recognition]
+topic: "[topic from your task description]"
+findings_count: 0
+recommendations_count: 0
+---
+
 # [Topic] Research Report
 
 ## Metadata
 - **Date**: [YYYY-MM-DD]
 - **Agent**: research-specialist
 - **Topic**: [topic from your task description]
-- **Report Type**: [codebase analysis|best practices|pattern recognition]
+- **Report Type**: [codebase analysis|best practices|pattern recognition|lean research]
 
 ## Executive Summary
 
@@ -173,6 +207,24 @@ After using Write tool, verify:
 - **Relevance**: Focus on information directly applicable to the task
 - **Evidence**: Support all conclusions with specific examples from codebase or authoritative sources
 
+**AFTER Research Complete - Update Metadata Counts**:
+
+Once you have completed all research and written all findings and recommendations, you MUST update the YAML frontmatter with accurate counts:
+
+```bash
+# Count findings (### Finding N: format)
+FINDINGS_COUNT=$(grep -c "^### Finding" "$REPORT_PATH")
+
+# Count recommendations (numbered list items in ## Recommendations section)
+RECOMMENDATIONS_COUNT=$(awk '/^## Recommendations$/,/^## [^R]/ {if (/^[0-9]+\./) count++} END {print count}' "$REPORT_PATH")
+
+# Update YAML frontmatter using Edit tool
+# Replace findings_count: 0 with findings_count: $FINDINGS_COUNT
+# Replace recommendations_count: 0 with recommendations_count: $RECOMMENDATIONS_COUNT
+```
+
+This metadata enables coordinator agents to extract brief summaries (80 tokens) instead of reading full reports (2,500 tokens) for 96% context reduction.
+
 **Report Sections YOU MUST Complete** (STRICT REQUIREMENT):
 
 ALL of these sections are MANDATORY and must be present in the final report:
@@ -218,6 +270,34 @@ ALL of these sections are MANDATORY and must be present in the final report:
 **Section Structure Validation** (MANDATORY):
 
 ```bash
+# Verify YAML frontmatter exists
+if ! grep -q "^---$" "$REPORT_PATH" | head -1; then
+  echo "ERROR: Report missing YAML frontmatter"
+  exit 1
+fi
+
+# Verify metadata fields are present
+REQUIRED_METADATA_FIELDS=("report_type:" "topic:" "findings_count:" "recommendations_count:")
+MISSING_METADATA=()
+for field in "${REQUIRED_METADATA_FIELDS[@]}"; do
+  if ! grep -q "^${field}" "$REPORT_PATH"; then
+    MISSING_METADATA+=("$field")
+  fi
+done
+
+if [ ${#MISSING_METADATA[@]} -gt 0 ]; then
+  echo "ERROR: Report missing required metadata fields: ${MISSING_METADATA[*]}"
+  exit 1
+fi
+
+# Verify metadata counts are non-zero (should be updated from initial 0)
+FINDINGS_COUNT=$(grep "^findings_count:" "$REPORT_PATH" | sed 's/^findings_count: *//')
+RECOMMENDATIONS_COUNT=$(grep "^recommendations_count:" "$REPORT_PATH" | sed 's/^recommendations_count: *//')
+
+if [ "$FINDINGS_COUNT" -eq 0 ] || [ "$RECOMMENDATIONS_COUNT" -eq 0 ]; then
+  echo "WARNING: Metadata counts not updated (findings=$FINDINGS_COUNT, recommendations=$RECOMMENDATIONS_COUNT)"
+fi
+
 # Define required sections
 REQUIRED_SECTIONS=(
   "## Metadata"
@@ -241,7 +321,7 @@ if [ ${#MISSING_SECTIONS[@]} -gt 0 ]; then
   exit 1
 fi
 
-echo "✓ All required sections present in report"
+echo "✓ All required sections and metadata fields present in report"
 ```
 
 **Section Content Quality Requirements**:

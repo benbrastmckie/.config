@@ -367,12 +367,8 @@ WORKFLOW_TYPE="research-and-revise"
 TERMINAL_STATE="plan"
 COMMAND_NAME="revise"
 
-# Generate deterministic WORKFLOW_ID and persist (fail-fast pattern)
-WORKFLOW_ID="revise_$(date +%s)"
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
-mkdir -p "$(dirname "$STATE_ID_FILE")"
-echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+# Generate WORKFLOW_ID with nanosecond-precision for concurrent execution safety
+WORKFLOW_ID="revise_$(date +%s%N)"
 export WORKFLOW_ID
 
 # Capture state file path for append_workflow_state
@@ -380,9 +376,9 @@ STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
 
 # === PERSIST ERROR LOGGING CONTEXT ===
-append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
-append_workflow_state "USER_ARGS" "$USER_ARGS"
-append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
+append_workflow_state "COMMAND_NAME" "${COMMAND_NAME:-}"
+append_workflow_state "USER_ARGS" "${USER_ARGS:-}"
+append_workflow_state "WORKFLOW_ID" "${WORKFLOW_ID:-}"
 
 # === SETUP BASH ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
@@ -479,29 +475,28 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
 
 ensure_error_log_exists
 
-# Load workflow ID from file
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "revise")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
   log_command_error \
     "/revise" \
     "unknown" \
     "${USER_ARGS:-}" \
     "state_error" \
-    "HARD BARRIER FAILED: State ID file not found" \
+    "HARD BARRIER FAILED: State file discovery failed" \
     "bash_block_3a" \
-    "$(jq -n --arg expected "$STATE_ID_FILE" '{expected_file: $expected}')"
+    "$(jq -n '{pattern: "workflow_revise_*.sh"}')"
 
-  echo "ERROR: HARD BARRIER FAILED - State machine not initialized" >&2
-  echo "DIAGNOSTIC: Block 3 should have created $STATE_ID_FILE" >&2
+  echo "ERROR: HARD BARRIER FAILED - Failed to discover state file from previous block" >&2
+  echo "DIAGNOSTIC: Block 3 should have created state file" >&2
   echo "CAUSE: State machine initialization was skipped or failed" >&2
   exit 1
 fi
 
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+source "$STATE_FILE"  # WORKFLOW_ID restored
 export WORKFLOW_ID
 
-# Validate state file exists
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
+# Validate state file still exists after sourcing
 if [ ! -f "$STATE_FILE" ]; then
   log_command_error \
     "/revise" \
@@ -552,15 +547,14 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   exit 1
 }
 
-# Load WORKFLOW_ID from file (fail-fast pattern)
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+# Restore state from previous block (fail-fast pattern)
+STATE_FILE=$(discover_latest_state_file "revise")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
   exit 1
 fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+source "$STATE_FILE"  # WORKFLOW_ID restored
 export WORKFLOW_ID
 
 # Load workflow state (subprocess isolation)
@@ -719,14 +713,14 @@ fi
 echo "Pre-calculated expected report path: $EXPECTED_REPORT_PATH"
 
 # Persist variables for Block 4b and 4c (subprocess isolation)
-append_workflow_state "SPECS_DIR" "$SPECS_DIR"
-append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
-append_workflow_state "REVISION_TOPIC_SLUG" "$REVISION_TOPIC_SLUG"
-append_workflow_state "REVISION_NUMBER" "$REVISION_NUMBER"
-append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
-append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
-append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
-append_workflow_state "EXPECTED_REPORT_PATH" "$EXPECTED_REPORT_PATH"
+append_workflow_state "SPECS_DIR" "${SPECS_DIR:-}"
+append_workflow_state "RESEARCH_DIR" "${RESEARCH_DIR:-}"
+append_workflow_state "REVISION_TOPIC_SLUG" "${REVISION_TOPIC_SLUG:-}"
+append_workflow_state "REVISION_NUMBER" "${REVISION_NUMBER:-}"
+append_workflow_state "EXISTING_PLAN_PATH" "${EXISTING_PLAN_PATH:-}"
+append_workflow_state "REVISION_DETAILS" "${REVISION_DETAILS:-}"
+append_workflow_state "RESEARCH_COMPLEXITY" "${RESEARCH_COMPLEXITY:-}"
+append_workflow_state "EXPECTED_REPORT_PATH" "${EXPECTED_REPORT_PATH:-}"
 
 # Removed: save_completed_states_to_state does not exist in library
 # State machine already persists completed states via sm_transition
@@ -824,11 +818,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   exit 1
 }
 
-# Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "revise")
+if [ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"  # WORKFLOW_ID restored
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
 
@@ -844,7 +837,7 @@ if [ -f "$STATE_ID_FILE" ]; then
   # Setup bash error trap
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 else
-  echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
@@ -922,13 +915,13 @@ echo "- Proceeding to: Plan revision phase"
 echo ""
 
 # Persist variables across bash blocks (subprocess isolation)
-append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
-append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
-append_workflow_state "SPECS_DIR" "$SPECS_DIR"
-append_workflow_state "TOTAL_REPORT_COUNT" "$TOTAL_REPORT_COUNT"
-append_workflow_state "NEW_REPORT_COUNT" "$NEW_REPORT_COUNT"
-append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
-append_workflow_state "EXPECTED_REPORT_PATH" "$EXPECTED_REPORT_PATH"
+append_workflow_state "EXISTING_PLAN_PATH" "${EXISTING_PLAN_PATH:-}"
+append_workflow_state "RESEARCH_DIR" "${RESEARCH_DIR:-}"
+append_workflow_state "SPECS_DIR" "${SPECS_DIR:-}"
+append_workflow_state "TOTAL_REPORT_COUNT" "${TOTAL_REPORT_COUNT:-}"
+append_workflow_state "NEW_REPORT_COUNT" "${NEW_REPORT_COUNT:-}"
+append_workflow_state "REVISION_DETAILS" "${REVISION_DETAILS:-}"
+append_workflow_state "EXPECTED_REPORT_PATH" "${EXPECTED_REPORT_PATH:-}"
 
 # Removed: save_completed_states_to_state does not exist in library
 # State machine already persists completed states via sm_transition
@@ -956,11 +949,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   exit 1
 }
 
-# Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "revise")
+if [ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"  # WORKFLOW_ID restored
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
 
@@ -1033,14 +1025,14 @@ echo "[CHECKPOINT] Standards extraction complete"
 ```bash
 set +H  # CRITICAL: Disable history expansion
 # Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "revise")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
   exit 1
 fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+source "$STATE_FILE"  # WORKFLOW_ID restored
 export WORKFLOW_ID
 
 # Load workflow state from Part 3 (subprocess isolation)
@@ -1203,12 +1195,12 @@ REPORT_PATHS=$(find "$RESEARCH_DIR" -name '*.md' -type f | sort)
 REPORT_PATHS_JSON=$(echo "$REPORT_PATHS" | jq -R . | jq -s .)
 
 # Persist variables for Block 5b and 5c (subprocess isolation)
-append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
-append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
-append_workflow_state "BACKUP_DIR" "$BACKUP_DIR"
-append_workflow_state "REVISION_DETAILS" "$REVISION_DETAILS"
-append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
-append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
+append_workflow_state "EXISTING_PLAN_PATH" "${EXISTING_PLAN_PATH:-}"
+append_workflow_state "BACKUP_PATH" "${BACKUP_PATH:-}"
+append_workflow_state "BACKUP_DIR" "${BACKUP_DIR:-}"
+append_workflow_state "REVISION_DETAILS" "${REVISION_DETAILS:-}"
+append_workflow_state "RESEARCH_DIR" "${RESEARCH_DIR:-}"
+append_workflow_state "REPORT_PATHS_JSON" "${REPORT_PATHS_JSON:-}"
 
 # Removed: save_completed_states_to_state does not exist in library
 # State machine already persists completed states via sm_transition
@@ -1323,11 +1315,10 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   exit 1
 }
 
-# Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "revise")
+if [ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ]; then
+  source "$STATE_FILE"  # WORKFLOW_ID restored
   export WORKFLOW_ID
   load_workflow_state "$WORKFLOW_ID" false
 
@@ -1343,7 +1334,7 @@ if [ -f "$STATE_ID_FILE" ]; then
   # Setup bash error trap
   setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS"
 else
-  echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
@@ -1447,10 +1438,10 @@ echo "- Proceeding to: Completion"
 echo ""
 
 # Persist variables for Block 6 (subprocess isolation)
-append_workflow_state "BACKUP_PATH" "$BACKUP_PATH"
-append_workflow_state "EXISTING_PLAN_PATH" "$EXISTING_PLAN_PATH"
-append_workflow_state "PLAN_SIZE" "$PLAN_SIZE"
-append_workflow_state "PHASE_COUNT" "$PHASE_COUNT"
+append_workflow_state "BACKUP_PATH" "${BACKUP_PATH:-}"
+append_workflow_state "EXISTING_PLAN_PATH" "${EXISTING_PLAN_PATH:-}"
+append_workflow_state "PLAN_SIZE" "${PLAN_SIZE:-}"
+append_workflow_state "PHASE_COUNT" "${PHASE_COUNT:-}"
 
 # Removed: save_completed_states_to_state does not exist in library
 # State machine already persists completed states via sm_transition
@@ -1468,14 +1459,14 @@ fi
 set +H  # CRITICAL: Disable history expansion
 
 # Load WORKFLOW_ID from file (fail-fast pattern - no fallback)
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found: $STATE_ID_FILE" >&2
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "revise")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   echo "DIAGNOSTIC: Part 3 (State Machine Initialization) may not have executed" >&2
   exit 1
 fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+source "$STATE_FILE"  # WORKFLOW_ID restored
 export WORKFLOW_ID
 
 # Re-source required libraries for subprocess isolation
@@ -1580,12 +1571,8 @@ echo "📋 Next Step: Run /todo to update TODO.md with this revised plan"
 echo ""
 
 # === CLEANUP TEMP FILES ===
-# Note: STATE_ID_FILE cleanup omitted to preserve WORKFLOW_ID for error handlers
-# System cleanup handles tmp/ directory files automatically
-# Clean up temporary state ID file (DEFERRED - preserve for error handlers)
-# if [ -f "$STATE_ID_FILE" ]; then
-#   rm -f "$STATE_ID_FILE" 2>/dev/null || true
-# fi
+# State files cleaned up by state-persistence library TTL mechanism
+# No manual cleanup required
 
 # Clean up argument file if it exists
 REVISE_ARG_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/revise_arg.txt"

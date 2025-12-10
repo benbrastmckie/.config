@@ -71,7 +71,7 @@ for arg in "$@"; do
       exit 1
       ;;
     --*)
-      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "validation_error" \
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" "validation_error" \
         "Unknown flag: $arg" "argument_parsing"
       echo "ERROR: Unknown flag: $arg"
       echo "Usage: /setup [directory] [--force]"
@@ -198,7 +198,7 @@ EOF
 
     # Verification: Check CLAUDE.md was created and is valid
     if [ ! -f "$CLAUDE_MD_PATH" ]; then
-      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" "file_error" \
         "CLAUDE.md file not created at expected path" "standard_mode_generation" \
         "{\"expected_path\": \"$CLAUDE_MD_PATH\"}"
       echo "ERROR: CLAUDE.md not created" >&2
@@ -206,7 +206,7 @@ EOF
     fi
 
     if [ ! -s "$CLAUDE_MD_PATH" ]; then
-      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" "file_error" \
         "CLAUDE.md file is empty" "standard_mode_validation" \
         "{\"file_path\": \"$CLAUDE_MD_PATH\"}"
       echo "ERROR: CLAUDE.md is empty" >&2
@@ -222,7 +222,7 @@ EOF
 
     # Validate CLAUDE.md exists
     if [ ! -f "$CLAUDE_MD_PATH" ]; then
-      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" "file_error" \
         "CLAUDE.md not found at $CLAUDE_MD_PATH" "analysis_mode"
       echo "ERROR: CLAUDE.md not found" >&2
       echo "Run /setup (without flags) to create initial CLAUDE.md"
@@ -371,7 +371,7 @@ EOF
 
     # Verification: Check CLAUDE.md was created and is valid
     if [ ! -f "$CLAUDE_MD_PATH" ]; then
-      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" "file_error" \
         "CLAUDE.md file not created at expected path" "standard_mode_generation" \
         "{\"expected_path\": \"$CLAUDE_MD_PATH\"}"
       echo "ERROR: CLAUDE.md not created" >&2
@@ -379,7 +379,7 @@ EOF
     fi
 
     if [ ! -s "$CLAUDE_MD_PATH" ]; then
-      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "file_error" \
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" "file_error" \
         "CLAUDE.md file is empty" "standard_mode_validation" \
         "{\"file_path\": \"$CLAUDE_MD_PATH\"}"
       echo "ERROR: CLAUDE.md is empty" >&2
@@ -416,7 +416,7 @@ EOF
         IS_VALID=$?
         if [ $IS_VALID -ne 0 ]; then
           # Invalid format - log and fall back
-          log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "validation_error" \
+          log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" "validation_error" \
             "Topic naming agent returned invalid format" "topic_validation" \
             "$(jq -n --arg name "$TOPIC_NAME" '{invalid_name: $name}')"
 
@@ -434,7 +434,7 @@ EOF
 
     # Log naming failure if we fell back to no_name_error
     if [ "$TOPIC_NAME" = "no_name_error" ]; then
-      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" "agent_error" \
+      log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}" "agent_error" \
         "Topic naming agent failed or returned invalid name" "topic_naming" \
         "$(jq -n --arg desc "$ANALYSIS_DESCRIPTION" --arg strategy "$NAMING_STRATEGY" \
            '{description: $desc, fallback_reason: $strategy}')"

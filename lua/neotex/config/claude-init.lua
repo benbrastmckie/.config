@@ -12,7 +12,7 @@ function M.setup()
   local ok, claude_ai = pcall(require, "neotex.plugins.ai.claude")
 
   if not ok then
-    vim.notify("Failed to load claude AI module", vim.log.levels.ERROR)
+    vim.notify("Failed to load claude AI module: " .. tostring(claude_ai), vim.log.levels.ERROR)
     return
   end
 

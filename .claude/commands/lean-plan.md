@@ -5,6 +5,7 @@ description: Create Lean-specific implementation plan for theorem proving projec
 command-type: primary
 dependent-agents:
   - topic-naming-agent
+  - topic-detection-agent
   - research-coordinator
   - lean-plan-architect
 library-requirements:
@@ -234,11 +235,8 @@ COMMAND_NAME="/lean-plan"
 USER_ARGS="$FEATURE_DESCRIPTION"
 export COMMAND_NAME USER_ARGS
 
-WORKFLOW_ID="lean_plan_$(date +%s)"
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-mkdir -p "$(dirname "$STATE_ID_FILE")"
-echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+# Generate unique WORKFLOW_ID with nanosecond precision (concurrent-safe)
+WORKFLOW_ID="lean_plan_$(date +%s%N)"
 export WORKFLOW_ID
 
 # === UPDATE BASH ERROR TRAP WITH ACTUAL VALUES ===
@@ -332,7 +330,7 @@ echo "$FEATURE_DESCRIPTION" > "$TOPIC_NAMING_INPUT_FILE"
 export TOPIC_NAMING_INPUT_FILE
 
 # Persist Lean project path for research and planning phases
-append_workflow_state "LEAN_PROJECT_PATH" "$LEAN_PROJECT_PATH"
+append_workflow_state "LEAN_PROJECT_PATH" "${LEAN_PROJECT_PATH:-}"
 
 echo "✓ Setup complete, ready for topic naming"
 echo "  Lean Project: $LEAN_PROJECT_PATH"
@@ -369,8 +367,14 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1A ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library and discover state file
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+[ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || { echo "ERROR: Failed to discover state file" >&2; exit 1; }
+source "$STATE_FILE"  # WORKFLOW_ID restored
 
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
@@ -452,8 +456,8 @@ elif [[ "$STATE_FILE" =~ ^${HOME}/ ]]; then
 fi
 
 # Persist for Block 1b-exec and Block 1c
-append_workflow_state "TOPIC_NAME_FILE" "$TOPIC_NAME_FILE" || {
-  echo "export TOPIC_NAME_FILE=\"$TOPIC_NAME_FILE\"" >> "$STATE_FILE"
+append_workflow_state "TOPIC_NAME_FILE" "${TOPIC_NAME_FILE:-}" || {
+  echo "export TOPIC_NAME_FILE=\"${TOPIC_NAME_FILE:-}\"" >> "$STATE_FILE"
 }
 
 echo ""
@@ -529,22 +533,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1B ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/lean-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -633,8 +636,14 @@ export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE FROM BLOCK 1A ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library and discover state file
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+[ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || { echo "ERROR: Failed to discover state file" >&2; exit 1; }
+source "$STATE_FILE"  # WORKFLOW_ID restored
 
 if [ -z "$WORKFLOW_ID" ]; then
   echo "ERROR: Failed to restore WORKFLOW_ID from Block 1a" >&2
@@ -831,9 +840,9 @@ echo "Topic name: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 echo "Lean project: $LEAN_PROJECT_PATH"
 ```
 
-## Block 1d-topics: Research Topics Classification
+## Block 1d-topics: Topic Detection Setup
 
-**EXECUTE NOW**: Classify research into focused topics based on complexity level.
+**EXECUTE NOW**: Prepare topic detection file path and persist for agent invocation.
 
 ```bash
 set +H  # CRITICAL: Disable history expansion
@@ -853,21 +862,14 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
 fi
 
 # === LOAD STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
   exit 1
-fi
+}
 
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: STATE_ID_FILE exists but is empty" >&2
-  exit 1
-fi
-
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ ! -f "$STATE_FILE" ]; then
-  echo "ERROR: Workflow state file not found: $STATE_FILE" >&2
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
@@ -876,62 +878,174 @@ source "$STATE_FILE" || {
   exit 1
 }
 
-# === RESTORE ERROR LOGGING CONTEXT ===
-# Ensure error logging variables are set after state restoration
 COMMAND_NAME="${COMMAND_NAME:-/lean-plan}"
 USER_ARGS="${USER_ARGS:-$FEATURE_DESCRIPTION}"
 export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
-# === SOURCE LIBRARIES ===
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
   echo "ERROR: Failed to source error-handling.sh" >&2
   exit 1
 }
-_source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" || exit 1
-
-# === SETUP ERROR TRAP ===
 setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}"
 
-# === COMPLEXITY-BASED TOPIC COUNT ===
-# Map research complexity to topic count for Lean research
-case "$RESEARCH_COMPLEXITY" in
-  1|2) TOPIC_COUNT=2 ;;
-  3)   TOPIC_COUNT=3 ;;
-  4)   TOPIC_COUNT=4 ;;
-  *)   TOPIC_COUNT=3 ;;  # Default fallback
-esac
+# === CALCULATE TOPICS FILE PATH ===
+TOPICS_FILE="${TOPIC_PATH}/topics_${WORKFLOW_ID}.json"
+append_workflow_state "TOPICS_FILE" "${TOPICS_FILE:-}"
 
-# === LEAN-SPECIFIC RESEARCH TOPICS ===
-# Define focused research areas for Lean formalization
-LEAN_TOPICS=(
-  "Mathlib Theorems"
-  "Proof Strategies"
-  "Project Structure"
-  "Style Guide"
-)
+echo ""
+echo "[CHECKPOINT] Topic detection prepared"
+echo "  Topics file: $TOPICS_FILE"
+echo "  Research complexity: $RESEARCH_COMPLEXITY"
+echo "  Feature: $FEATURE_DESCRIPTION"
+echo ""
+```
 
-# Select topics based on count (take first N topics)
-TOPICS=()
-for i in $(seq 0 $((TOPIC_COUNT - 1))); do
-  if [ $i -lt ${#LEAN_TOPICS[@]} ]; then
-    TOPICS+=("${LEAN_TOPICS[$i]}")
+## Block 1d-topics-exec: Topic Detection (Hard Barrier Invocation)
+
+**CRITICAL BARRIER**: This block MUST invoke topic-detection-agent via Task tool. Verification block will FAIL if topics JSON file is not created at pre-calculated path.
+
+**EXECUTE NOW**: USE the Task tool to invoke topic-detection-agent for dynamic Lean topic generation based on complexity level.
+
+Task {
+  subagent_type: "general-purpose"
+  model: "haiku"
+  description: "Detect research topics for Lean formalization (complexity ${RESEARCH_COMPLEXITY})"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/topic-detection-agent.md
+
+    **Input Parameters**:
+    - FEATURE_DESCRIPTION: ${FEATURE_DESCRIPTION}
+    - COMPLEXITY: ${RESEARCH_COMPLEXITY}
+    - OUTPUT_PATH: ${TOPICS_FILE}
+
+    **Domain Context**: Lean 4 theorem proving
+    **Domain Keywords**: Mathlib, tactics, proof automation, formalization, lakefile, project structure, style guide
+
+    **Lean-Specific Topic Priorities**:
+    1. Mathlib theorem search (theorems, lemmas, and proof patterns related to feature)
+    2. Proof automation strategies (tactics, simplifiers, simp lemmas, automation)
+    3. Project structure patterns (lakefile configuration, module organization)
+    4. Style guide compliance (naming conventions, formatting standards)
+
+    Generate topics array based on complexity and write to OUTPUT_PATH as JSON.
+    Return: TOPIC_DETECTION_COMPLETE: {topic_count}
+    output_path: ${TOPICS_FILE}
+  "
+}
+
+## Block 1d-topics-validate: Topic Detection Hard Barrier Validation
+
+**EXECUTE NOW**: Validate topic-detection-agent created topics file and pre-calculate report paths.
+
+```bash
+set +H  # CRITICAL: Disable history expansion
+
+# === DETECT PROJECT DIRECTORY ===
+if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
+  if command -v git &>/dev/null && git rev-parse --git-dir >/dev/null 2>&1; then
+    CLAUDE_PROJECT_DIR="$(git rev-parse --show-toplevel)"
+  else
+    current_dir="$(pwd)"
+    while [ "$current_dir" != "/" ]; do
+      [ -d "$current_dir/.claude" ] && { CLAUDE_PROJECT_DIR="$current_dir"; break; }
+      current_dir="$(dirname "$current_dir")"
+    done
   fi
-done
+  export CLAUDE_PROJECT_DIR
+fi
 
-# === CALCULATE REPORT PATHS ===
-# Pre-calculate absolute paths for each research topic
+# === LOAD STATE ===
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+
+source "$STATE_FILE" || {
+  echo "ERROR: Failed to restore workflow state from $STATE_FILE" >&2
+  exit 1
+}
+
+COMMAND_NAME="${COMMAND_NAME:-/lean-plan}"
+USER_ARGS="${USER_ARGS:-$FEATURE_DESCRIPTION}"
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
+
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source error-handling.sh" >&2
+  exit 1
+}
+setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}"
+
+echo ""
+echo "=== Topic Detection Hard Barrier Validation ==="
+echo ""
+
+# === HARD BARRIER: Validate topics file exists ===
+if [ ! -f "$TOPICS_FILE" ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "agent_error" \
+    "topic-detection-agent did not create topics file" \
+    "bash_block_1d_topics_validate" \
+    "$(jq -n --arg path "$TOPICS_FILE" '{expected_path: $path}')"
+  echo "ERROR: HARD BARRIER FAILED - Topics file not found: $TOPICS_FILE" >&2
+  echo "" >&2
+  echo "Troubleshooting:" >&2
+  echo "  1. Check topic-detection-agent Task invocation executed" >&2
+  echo "  2. Verify agent has write permissions to $TOPICS_FILE" >&2
+  exit 1
+fi
+
+# === PARSE TOPICS JSON ===
+TOPICS_JSON=$(cat "$TOPICS_FILE")
+TOPIC_COUNT=$(echo "$TOPICS_JSON" | jq -r '.topic_count // (.topics | length)')
+
+if [ -z "$TOPIC_COUNT" ] || [ "$TOPIC_COUNT" -eq 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Topics JSON array is empty or invalid" \
+    "bash_block_1d_topics_validate" \
+    "$(jq -n --arg json "$TOPICS_JSON" '{topics_json: $json}')"
+  echo "ERROR: No topics detected by agent" >&2
+  exit 1
+fi
+
+echo "[OK] Topics file validated: $TOPIC_COUNT topics"
+
+# === EXTRACT TOPICS AND BUILD ARRAYS ===
+TOPICS=()
 REPORT_PATHS=()
 REPORT_INDEX=1
 
-for TOPIC in "${TOPICS[@]}"; do
-  # Convert topic to slug (lowercase, spaces to hyphens)
-  SLUG=$(echo "$TOPIC" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+for i in $(seq 0 $((TOPIC_COUNT - 1))); do
+  # Extract topic title and slug from JSON
+  TOPIC_TITLE=$(echo "$TOPICS_JSON" | jq -r ".topics[$i].title")
+  TOPIC_SLUG=$(echo "$TOPICS_JSON" | jq -r ".topics[$i].slug")
+
+  # Validate slug exists
+  if [ -z "$TOPIC_SLUG" ] || [ "$TOPIC_SLUG" = "null" ]; then
+    # Fallback: generate slug from title
+    TOPIC_SLUG=$(echo "$TOPIC_TITLE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')
+  fi
+
+  TOPICS+=("$TOPIC_TITLE")
 
   # Zero-pad index to 3 digits
   PADDED_INDEX=$(printf "%03d" $REPORT_INDEX)
 
   # Calculate absolute report path
-  REPORT_FILE="${RESEARCH_DIR}/${PADDED_INDEX}-${SLUG}.md"
+  REPORT_FILE="${RESEARCH_DIR}/${PADDED_INDEX}-${TOPIC_SLUG}.md"
 
   # Validate path is absolute
   [[ "${REPORT_FILE:-}" = /* ]]
@@ -943,7 +1057,7 @@ for TOPIC in "${TOPICS[@]}"; do
       "$USER_ARGS" \
       "validation_error" \
       "Report path is not absolute" \
-      "bash_block_1d_topics" \
+      "bash_block_1d_topics_validate" \
       "$(jq -n --arg path "$REPORT_FILE" '{report_file: $path, expected: "absolute path starting with /"}')"
     echo "ERROR: Report path must be absolute: $REPORT_FILE" >&2
     exit 1
@@ -960,17 +1074,17 @@ mkdir -p "$RESEARCH_DIR" || {
 }
 
 # === PERSIST TOPICS AND PATHS ===
-# Use bulk append for efficiency
 {
   echo "TOPIC_COUNT=$TOPIC_COUNT"
+  echo "TOPICS_JSON='$TOPICS_JSON'"
   echo "TOPICS=("
   for TOPIC in "${TOPICS[@]}"; do
     echo "  \"$TOPIC\""
   done
   echo ")"
   echo "REPORT_PATHS=("
-  for PATH in "${REPORT_PATHS[@]}"; do
-    echo "  \"$PATH\""
+  for REPORT_PATH in "${REPORT_PATHS[@]}"; do
+    echo "  \"$REPORT_PATH\""
   done
   echo ")"
 } >> "$STATE_FILE"
@@ -981,53 +1095,54 @@ echo "Research Complexity: $RESEARCH_COMPLEXITY"
 echo "Topic Count: $TOPIC_COUNT"
 echo ""
 echo "Research Topics:"
-for i in "${!TOPICS[@]}"; do
+for i in $(seq 0 $((${#TOPICS[@]} - 1))); do
   echo "  $((i + 1)). ${TOPICS[$i]} -> ${REPORT_PATHS[$i]}"
 done
 echo ""
+echo "[CHECKPOINT] Topic detection complete, report paths pre-calculated"
 echo "Ready for research-coordinator invocation"
 echo ""
 ```
 
 ## Block 1e-exec: Research Coordination (research-coordinator Invocation)
 
-**EXECUTE NOW**: USE the Task tool to invoke the research-coordinator agent for parallel multi-topic research.
+**CRITICAL BARRIER**: This block MUST invoke research-coordinator via Task tool. Verification block (1e-validate) will FAIL if reports not created at pre-calculated paths.
+
+**EXECUTE NOW**: USE the Task tool to invoke the research-coordinator agent in Mode 2 (Pre-Decomposed) for parallel multi-topic research.
 
 Task {
   subagent_type: "general-purpose"
-  description: "Coordinate parallel Lean research across ${TOPIC_COUNT} topics: ${TOPICS[@]}"
+  description: "Orchestrate parallel Lean research across ${TOPIC_COUNT} topics"
   prompt: "
     Read and follow ALL behavioral guidelines from:
     ${CLAUDE_PROJECT_DIR}/.claude/agents/research-coordinator.md
 
-    You are coordinating parallel research for: lean-plan workflow
+    **Invocation Mode**: Mode 2 - Manual Pre-Decomposition (topics and paths pre-calculated)
 
-    **Input Contract (Hard Barrier Pattern - Mode 2: Pre-Decomposed)**:
-    - research_request: ${FEATURE_DESCRIPTION}
+    **Input Contract (Hard Barrier Pattern)**:
+    - research_request: Comprehensive Lean 4 research for ${FEATURE_DESCRIPTION}
     - research_complexity: ${RESEARCH_COMPLEXITY}
     - report_dir: ${RESEARCH_DIR}
     - topic_path: ${TOPIC_PATH}
-    - topics: [$(printf '\"%s\" ' \"${TOPICS[@]}\")]
-    - report_paths: [$(printf '\"%s\" ' \"${REPORT_PATHS[@]}\")]
+    - topics: ${TOPICS_JSON}
+    - report_paths: [${REPORT_PATHS[@]}]
     - context:
         feature_description: ${FEATURE_DESCRIPTION}
         lean_project_path: ${LEAN_PROJECT_PATH}
         workflow_type: research-and-plan (Lean specialization)
+        domain: Lean 4 theorem proving
+        keywords: Mathlib, tactics, proof automation, formalization
         original_prompt_file: ${ORIGINAL_PROMPT_FILE_PATH:-none}
         archived_prompt_file: ${ARCHIVED_PROMPT_PATH:-none}
 
-    **CRITICAL**:
-    - Topics and report paths have been PRE-CALCULATED by orchestrator (Mode 2: Manual Pre-Decomposition)
+    **CRITICAL - Mode 2 Requirements**:
+    - Topics and report paths have been PRE-CALCULATED by orchestrator
     - You MUST use the provided report_paths EXACTLY as specified
     - You MUST invoke research-specialist for EACH topic in parallel
-    - Each research-specialist receives Lean-specific context (LEAN_PROJECT_PATH, Mathlib focus)
+    - Each research-specialist receives Lean-specific context
     - Validate ALL reports exist at pre-calculated paths after delegation
-    - Return aggregated metadata (title, findings_count, recommendations_count) for each report
-
-    **Expected Topics** (${TOPIC_COUNT} total):
-$(for i in \"\${!TOPICS[@]}\"; do
-  echo \"    \$((i + 1)). \${TOPICS[\$i]} -> \${REPORT_PATHS[\$i]}\"
-done)
+    - Extract metadata from each report (title, findings_count, recommendations_count)
+    - Return aggregated metadata (95% context reduction vs full content)
 
     **Lean-Specific Research Context**:
     - Lean Project: ${LEAN_PROJECT_PATH}
@@ -1038,9 +1153,15 @@ done)
       3. Project architecture review (module structure, naming conventions)
       4. Documentation survey (LEAN_STYLE_GUIDE.md if exists)
 
-    Execute research coordination according to behavioral guidelines and return completion signal:
-    RESEARCH_COMPLETE: ${TOPIC_COUNT}
+    **Expected Return Signal Format**:
+    RESEARCH_COORDINATOR_COMPLETE: SUCCESS
+    topics_processed: ${TOPIC_COUNT}
+    reports_created: ${TOPIC_COUNT}
+    context_reduction_pct: 95
+    context_usage_percent: N
     reports: [{\"path\": \"...\", \"title\": \"...\", \"findings_count\": N, \"recommendations_count\": M}, ...]
+    total_findings: N
+    total_recommendations: N
   "
 }
 
@@ -1074,21 +1195,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/lean-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -1121,11 +1242,11 @@ if [ -z "$REPORT_DIR" ]; then
   exit 1
 fi
 
-# Count expected vs actual reports (Lean: always 4 topics)
-EXPECTED_LEAN_REPORTS=4
+# Count expected vs actual reports (dynamic based on topic-detection-agent)
+EXPECTED_REPORTS="${TOPIC_COUNT:-4}"  # Use TOPIC_COUNT from Block 1d-topics, fallback to 4
 ACTUAL_REPORT_COUNT=$(find "$REPORT_DIR" -name "[0-9][0-9][0-9]-*.md" -type f 2>/dev/null | wc -l)
 
-echo "Expected reports: $EXPECTED_LEAN_REPORTS (Lean standard topics)"
+echo "Expected reports: $EXPECTED_REPORTS (from topic detection)"
 echo "Found reports: $ACTUAL_REPORT_COUNT"
 
 # Early detection: If reports directory is empty, coordinator failed
@@ -1137,7 +1258,7 @@ if [ "$ACTUAL_REPORT_COUNT" -eq 0 ]; then
     "agent_error" \
     "research-coordinator failed - no reports created (empty directory detected)" \
     "bash_block_1e_validate" \
-    "$(jq -n --arg dir "$REPORT_DIR" --argjson expected "$EXPECTED_LEAN_REPORTS" \
+    "$(jq -n --arg dir "$REPORT_DIR" --argjson expected "$EXPECTED_REPORTS" \
        '{report_dir: $dir, expected_reports: $expected, actual_reports: 0}')"
 
   echo "" >&2
@@ -1160,28 +1281,28 @@ if [ "$ACTUAL_REPORT_COUNT" -eq 0 ]; then
 fi
 
 # Partial success detection
-if [ "$ACTUAL_REPORT_COUNT" -lt "$EXPECTED_LEAN_REPORTS" ]; then
+if [ "$ACTUAL_REPORT_COUNT" -lt "$EXPECTED_REPORTS" ]; then
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
     "$USER_ARGS" \
     "agent_error" \
-    "research-coordinator partial failure - missing Lean reports (expected: $EXPECTED_LEAN_REPORTS, actual: $ACTUAL_REPORT_COUNT)" \
+    "research-coordinator partial failure - missing reports (expected: $EXPECTED_REPORTS, actual: $ACTUAL_REPORT_COUNT)" \
     "bash_block_1e_validate" \
-    "$(jq -n --arg dir "$REPORT_DIR" --argjson expected "$EXPECTED_LEAN_REPORTS" --argjson actual "$ACTUAL_REPORT_COUNT" \
+    "$(jq -n --arg dir "$REPORT_DIR" --argjson expected "$EXPECTED_REPORTS" --argjson actual "$ACTUAL_REPORT_COUNT" \
        '{report_dir: $dir, expected_reports: $expected, actual_reports: $actual}')"
 
   echo "" >&2
-  echo "WARNING: Partial coordinator failure - some Lean reports missing" >&2
-  echo "Expected: $EXPECTED_LEAN_REPORTS reports" >&2
+  echo "WARNING: Partial coordinator failure - some reports missing" >&2
+  echo "Expected: $EXPECTED_REPORTS reports" >&2
   echo "Found: $ACTUAL_REPORT_COUNT reports" >&2
   echo "" >&2
 fi
 
 # Success case
-if [ "$ACTUAL_REPORT_COUNT" -ge "$EXPECTED_LEAN_REPORTS" ]; then
+if [ "$ACTUAL_REPORT_COUNT" -ge "$EXPECTED_REPORTS" ]; then
   echo "[OK] Coordinator output validation passed"
-  echo "     All expected Lean reports present in directory"
+  echo "     All expected reports present in directory"
 fi
 
 echo ""
@@ -1209,24 +1330,20 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
 fi
 
 # === LOAD STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: State ID file not found: $STATE_ID_FILE" >&2
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: STATE_ID_FILE exists but is empty" >&2
-  exit 1
-fi
-
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ ! -f "$STATE_FILE" ]; then
-  echo "ERROR: Workflow state file not found: $STATE_FILE" >&2
-  exit 1
-fi
-
+# Restore state from discovered file
 source "$STATE_FILE" || {
   echo "ERROR: Failed to restore workflow state from $STATE_FILE" >&2
   exit 1
@@ -1267,22 +1384,66 @@ if [ -z "${REPORT_PATHS:-}" ] || [ ${#REPORT_PATHS[@]} -eq 0 ]; then
 fi
 
 echo "Expected ${#REPORT_PATHS[@]} research reports:"
-for i in "${!REPORT_PATHS[@]}"; do
+for i in $(seq 0 $((${#REPORT_PATHS[@]} - 1))); do
   echo "  $((i + 1)). ${REPORT_PATHS[$i]}"
 done
 echo ""
 
-# === VALIDATE EACH REPORT ===
+# === LAYER 1: Empty Directory Detection ===
+if [ ${#REPORT_PATHS[@]} -eq 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "CRITICAL ERROR: Reports directory is empty (0 reports expected)" \
+    "bash_block_1f" \
+    "$(jq -n '{error: "No reports in REPORT_PATHS array"}')"
+  echo "CRITICAL ERROR: Reports directory is empty" >&2
+  exit 1
+fi
+
+# === MULTI-LAYER VALIDATION FOR EACH REPORT ===
 SUCCESSFUL_REPORTS=0
 FAILED_REPORTS=()
+VALIDATION_DETAILS=()
 
 for REPORT_PATH in "${REPORT_PATHS[@]}"; do
   REPORT_NAME=$(basename "$REPORT_PATH")
+  VALIDATION_PASS=true
+  FAILURE_REASON=""
 
-  # Validate report exists and meets minimum size (500 bytes)
-  if ! validate_agent_artifact "$REPORT_PATH" 500 "research report: $REPORT_NAME"; then
+  # === LAYER 2: File Existence Check ===
+  if [ ! -f "$REPORT_PATH" ]; then
+    VALIDATION_PASS=false
+    FAILURE_REASON="File does not exist"
+  fi
+
+  # === LAYER 3: Minimum Size Validation (500 bytes) ===
+  if [ "$VALIDATION_PASS" = true ]; then
+    FILE_SIZE=$(wc -c < "$REPORT_PATH" 2>/dev/null || echo "0")
+    if [ "$FILE_SIZE" -lt 500 ]; then
+      VALIDATION_PASS=false
+      FAILURE_REASON="File too small (${FILE_SIZE} bytes < 500 bytes)"
+    fi
+  fi
+
+  # === LAYER 4: Required Sections Check ===
+  if [ "$VALIDATION_PASS" = true ]; then
+    # Check for at least one required section marker (## Findings or ## Executive Summary or ## Analysis)
+    if ! grep -q "^## Findings" "$REPORT_PATH" 2>/dev/null && \
+       ! grep -q "^## Executive Summary" "$REPORT_PATH" 2>/dev/null && \
+       ! grep -q "^## Analysis" "$REPORT_PATH" 2>/dev/null; then
+      VALIDATION_PASS=false
+      FAILURE_REASON="Missing required sections (## Findings, ## Executive Summary, or ## Analysis)"
+    fi
+  fi
+
+  # === RECORD RESULTS ===
+  if [ "$VALIDATION_PASS" = false ]; then
     FAILED_REPORTS+=("$REPORT_PATH")
-    echo "  ✗ Failed: $REPORT_NAME (missing or < 500 bytes)"
+    VALIDATION_DETAILS+=("$REPORT_NAME: $FAILURE_REASON")
+    echo "  ✗ Failed: $REPORT_NAME ($FAILURE_REASON)"
   else
     SUCCESSFUL_REPORTS=$((SUCCESSFUL_REPORTS + 1))
     echo "  ✓ Validated: $REPORT_NAME"
@@ -1299,6 +1460,25 @@ echo "Validation Results: $SUCCESSFUL_REPORTS/$TOTAL_REPORTS reports (${SUCCESS_
 
 # Fail if <50% success
 if [ $SUCCESS_PERCENTAGE -lt 50 ]; then
+  # Build diagnostic context with failure details
+  FAILED_REPORTS_JSON="["
+  for i in $(seq 0 $((${#FAILED_REPORTS[@]} - 1))); do
+    if [ $i -gt 0 ]; then
+      FAILED_REPORTS_JSON+=","
+    fi
+    FAILED_REPORTS_JSON+="\"${FAILED_REPORTS[$i]}\""
+  done
+  FAILED_REPORTS_JSON+="]"
+
+  VALIDATION_DETAILS_JSON="["
+  for i in $(seq 0 $((${#VALIDATION_DETAILS[@]} - 1))); do
+    if [ $i -gt 0 ]; then
+      VALIDATION_DETAILS_JSON+=","
+    fi
+    VALIDATION_DETAILS_JSON+="\"${VALIDATION_DETAILS[$i]}\""
+  done
+  VALIDATION_DETAILS_JSON+="]"
+
   log_command_error \
     "$COMMAND_NAME" \
     "$WORKFLOW_ID" \
@@ -1306,13 +1486,29 @@ if [ $SUCCESS_PERCENTAGE -lt 50 ]; then
     "validation_error" \
     "Research validation failed: <50% success rate" \
     "bash_block_1f" \
-    "$(jq -n --argjson success "$SUCCESSFUL_REPORTS" --argjson total "$TOTAL_REPORTS" --argjson pct "$SUCCESS_PERCENTAGE" \
-       '{successful_reports: $success, total_reports: $total, success_percentage: $pct}')"
+    "$(jq -n \
+       --argjson success "$SUCCESSFUL_REPORTS" \
+       --argjson total "$TOTAL_REPORTS" \
+       --argjson pct "$SUCCESS_PERCENTAGE" \
+       --argjson failed "$FAILED_REPORTS_JSON" \
+       --argjson details "$VALIDATION_DETAILS_JSON" \
+       '{
+         successful_reports: $success,
+         total_reports: $total,
+         success_percentage: $pct,
+         failed_reports: $failed,
+         validation_details: $details,
+         recovery_hint: "Check research-coordinator output for errors. Retry with --complexity flag adjustment."
+       }')"
+
   echo "ERROR: HARD BARRIER FAILED - Less than 50% of reports created" >&2
   echo "Failed reports:" >&2
-  for FAILED_PATH in "${FAILED_REPORTS[@]}"; do
-    echo "  - $FAILED_PATH" >&2
+  for DETAIL in "${VALIDATION_DETAILS[@]}"; do
+    echo "  - $DETAIL" >&2
   done
+  echo "" >&2
+  echo "Recovery hint: Check research-coordinator output for errors." >&2
+  echo "Consider retrying with --complexity flag adjustment." >&2
   exit 1
 fi
 
@@ -1320,13 +1516,105 @@ fi
 if [ $SUCCESS_PERCENTAGE -lt 100 ]; then
   echo "WARNING: Partial research success (${SUCCESS_PERCENTAGE}%)" >&2
   echo "Failed reports:" >&2
-  for FAILED_PATH in "${FAILED_REPORTS[@]}"; do
-    echo "  - $FAILED_PATH" >&2
+  for DETAIL in "${VALIDATION_DETAILS[@]}"; do
+    echo "  - $DETAIL" >&2
   done
+  echo "" >&2
   echo "Proceeding with $SUCCESSFUL_REPORTS/$TOTAL_REPORTS reports..." >&2
 fi
 
 echo "✓ Hard barrier passed - research reports validated"
+
+# === CONTEXT USAGE TRACKING (Phase 3 Enhancement) ===
+# Parse context_usage_percent from research-coordinator return signal (if available)
+# This enables iteration tracking and workflow state monitoring
+
+# Check if coordinator returned context metrics
+if [ -n "${COORDINATOR_OUTPUT:-}" ]; then
+  # Parse context_usage_percent field
+  CONTEXT_USAGE_PERCENT=$(echo "$COORDINATOR_OUTPUT" | grep "^context_usage_percent:" | cut -d: -f2 | tr -d ' ' || echo "")
+
+  # Parse checkpoint_path field (optional)
+  CHECKPOINT_PATH=$(echo "$COORDINATOR_OUTPUT" | grep "^checkpoint_path:" | cut -d: -f2- | tr -d ' ' || echo "")
+
+  if [ -n "$CONTEXT_USAGE_PERCENT" ]; then
+    echo ""
+    echo "Context Usage: ${CONTEXT_USAGE_PERCENT}%"
+
+    # Log warning if approaching limit (≥85%)
+    if [ "$CONTEXT_USAGE_PERCENT" -ge 85 ]; then
+      echo "WARNING: Context usage approaching limit (${CONTEXT_USAGE_PERCENT}% ≥ 85%)" >&2
+
+      if [ -n "$CHECKPOINT_PATH" ] && [ -f "$CHECKPOINT_PATH" ]; then
+        echo "Checkpoint saved: $CHECKPOINT_PATH" >&2
+        # Persist checkpoint path in workflow state for iteration tracking
+        append_workflow_state "CONTEXT_CHECKPOINT_PATH" "${CHECKPOINT_PATH:-}"
+      fi
+    fi
+
+    # Persist context metrics in workflow state
+    append_workflow_state "RESEARCH_CONTEXT_USAGE_PERCENT" "${CONTEXT_USAGE_PERCENT:-}"
+  fi
+
+  # === DEFENSIVE VALIDATION (Phase 4 Enhancement) ===
+  # Validate coordinator return signal contract invariants
+  # Invariant: topics_remaining non-empty → requires_continuation MUST be true
+
+  # Helper function: Check if topics_remaining is empty
+  is_topics_remaining_empty() {
+    local topics_remaining="$1"
+
+    # Check for empty string
+    [ -z "$topics_remaining" ] && return 0
+
+    # Check for literal "0"
+    [ "$topics_remaining" = "0" ] && return 0
+
+    # Check for empty array "[]"
+    [ "$topics_remaining" = "[]" ] && return 0
+
+    # Check for whitespace-only
+    [[ "$topics_remaining" =~ ^[[:space:]]*$ ]] && return 0
+
+    # Non-empty
+    return 1
+  }
+
+  # Parse continuation fields (for future iteration loop support)
+  TOPICS_REMAINING=$(echo "$COORDINATOR_OUTPUT" | grep "^topics_remaining:" | cut -d: -f2- || echo "[]")
+  REQUIRES_CONTINUATION=$(echo "$COORDINATOR_OUTPUT" | grep "^requires_continuation:" | cut -d: -f2 | tr -d ' ' || echo "false")
+
+  # Validate invariant and apply defensive override if violated
+  if ! is_topics_remaining_empty "$TOPICS_REMAINING" && [ "$REQUIRES_CONTINUATION" = "false" ]; then
+    echo "WARNING: Coordinator contract violation detected" >&2
+    echo "  topics_remaining: $TOPICS_REMAINING" >&2
+    echo "  requires_continuation: $REQUIRES_CONTINUATION" >&2
+    echo "  OVERRIDING: Forcing continuation=true" >&2
+
+    # Log contract violation
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "Coordinator return signal contract violation" \
+      "bash_block_1f" \
+      "$(jq -n \
+         --arg topics "$TOPICS_REMAINING" \
+         --arg cont "$REQUIRES_CONTINUATION" \
+         '{
+           topics_remaining: $topics,
+           requires_continuation: $cont,
+           violation: "topics_remaining non-empty but requires_continuation=false",
+           action: "Overriding requires_continuation to true"
+         }')"
+
+    # Apply override
+    REQUIRES_CONTINUATION="true"
+    append_workflow_state "REQUIRES_CONTINUATION" "${REQUIRES_CONTINUATION:-}"
+  fi
+fi
+
 echo ""
 ```
 
@@ -1352,8 +1640,14 @@ if [ -z "${CLAUDE_PROJECT_DIR:-}" ]; then
 fi
 
 # === LOAD STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library and discover state file
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+[ -n "$STATE_FILE" ] && [ -f "$STATE_FILE" ] || { echo "ERROR: Failed to discover state file" >&2; exit 1; }
+source "$STATE_FILE"  # WORKFLOW_ID restored
 STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
 source "$STATE_FILE" 2>/dev/null || {
   echo "ERROR: Failed to restore workflow state" >&2
@@ -1378,13 +1672,13 @@ setup_bash_error_trap "$COMMAND_NAME" "$WORKFLOW_ID" "${USER_ARGS:-}"
 echo ""
 echo "=== Report Metadata Extraction ==="
 
-# === EXTRACT METADATA FROM COORDINATOR RETURN SIGNAL ===
-# NOTE: In actual execution, this would parse the coordinator's return signal
-# For now, we build metadata from report files directly (fallback pattern)
+# === EXTRACT METADATA FROM YAML FRONTMATTER ===
+# Primary pattern: Extract structured metadata from YAML frontmatter (96% context reduction)
+# Fallback pattern: Extract metadata from section headers (legacy reports without frontmatter)
 
 REPORT_METADATA_JSON="["
 
-for i in "${!REPORT_PATHS[@]}"; do
+for i in $(seq 0 $((${#REPORT_PATHS[@]} - 1))); do
   REPORT_PATH="${REPORT_PATHS[$i]}"
 
   # Skip if report doesn't exist (partial success mode)
@@ -1392,21 +1686,44 @@ for i in "${!REPORT_PATHS[@]}"; do
     continue
   fi
 
-  # Extract title from report (first # heading)
-  TITLE=$(grep -m 1 "^# " "$REPORT_PATH" 2>/dev/null | sed 's/^# //' || echo "Untitled Report")
+  # === PRIMARY: Extract from YAML frontmatter (first 10 lines) ===
+  YAML_BLOCK=$(head -10 "$REPORT_PATH" 2>/dev/null || echo "")
 
-  # Extract findings count (count ## Findings or ### Finding lines)
-  FINDINGS_COUNT=$(grep -c "^### Finding [0-9]" "$REPORT_PATH" 2>/dev/null || echo "0")
+  # Check if YAML frontmatter exists (starts with ---)
+  if echo "$YAML_BLOCK" | grep -q "^---$"; then
+    # Extract report_type field
+    REPORT_TYPE=$(echo "$YAML_BLOCK" | grep "^report_type:" | sed 's/^report_type:[[:space:]]*//' || echo "unknown")
 
-  # Extract recommendations count
-  RECOMMENDATIONS_COUNT=$(grep -c "^### Recommendation [0-9]" "$REPORT_PATH" 2>/dev/null || echo "0")
+    # Extract topic field (remove quotes if present)
+    TOPIC=$(echo "$YAML_BLOCK" | grep "^topic:" | sed 's/^topic:[[:space:]]*//' | tr -d '"' || echo "Untitled Report")
+
+    # Extract findings_count field
+    FINDINGS_COUNT=$(echo "$YAML_BLOCK" | grep "^findings_count:" | sed 's/^findings_count:[[:space:]]*//' || echo "0")
+
+    # Extract recommendations_count field
+    RECOMMENDATIONS_COUNT=$(echo "$YAML_BLOCK" | grep "^recommendations_count:" | sed 's/^recommendations_count:[[:space:]]*//' || echo "0")
+
+    TITLE="$TOPIC"
+  else
+    # === FALLBACK: Extract from report content (legacy pattern) ===
+    # Extract title from report (first # heading)
+    TITLE=$(grep -m 1 "^# " "$REPORT_PATH" 2>/dev/null | sed 's/^# //' || echo "Untitled Report")
+
+    REPORT_TYPE="legacy"
+
+    # Extract findings count (count ### Finding lines)
+    FINDINGS_COUNT=$(grep -c "^### Finding [0-9]" "$REPORT_PATH" 2>/dev/null || echo "0")
+
+    # Extract recommendations count (count numbered items in Recommendations section)
+    RECOMMENDATIONS_COUNT=$(awk '/^## Recommendations$/,/^## [^R]/ {if (/^[0-9]+\./) count++} END {print count}' "$REPORT_PATH" 2>/dev/null || echo "0")
+  fi
 
   # Build JSON entry
   if [ $i -gt 0 ]; then
     REPORT_METADATA_JSON+=","
   fi
 
-  REPORT_METADATA_JSON+="{\"path\":\"$REPORT_PATH\",\"title\":\"$TITLE\",\"findings_count\":$FINDINGS_COUNT,\"recommendations_count\":$RECOMMENDATIONS_COUNT}"
+  REPORT_METADATA_JSON+="{\"path\":\"$REPORT_PATH\",\"title\":\"$TITLE\",\"report_type\":\"$REPORT_TYPE\",\"findings_count\":$FINDINGS_COUNT,\"recommendations_count\":$RECOMMENDATIONS_COUNT}"
 
   echo "  Report $((i + 1)): $TITLE ($FINDINGS_COUNT findings, $RECOMMENDATIONS_COUNT recommendations)"
 done
@@ -1414,22 +1731,37 @@ done
 REPORT_METADATA_JSON+="]"
 
 # === FORMAT METADATA FOR PLANNING PHASE ===
-# Convert to human-readable format for plan-architect prompt
+# Convert to brief summary format for plan-architect prompt (metadata-only, 80 tokens per report)
 FORMATTED_METADATA="Research Reports: ${#REPORT_PATHS[@]} reports created
 
 "
-for i in "${!REPORT_PATHS[@]}"; do
+for i in $(seq 0 $((${#REPORT_PATHS[@]} - 1))); do
   REPORT_PATH="${REPORT_PATHS[$i]}"
 
   if [ ! -f "$REPORT_PATH" ]; then
     continue
   fi
 
-  TITLE=$(grep -m 1 "^# " "$REPORT_PATH" 2>/dev/null | sed 's/^# //' || echo "Untitled Report")
-  FINDINGS_COUNT=$(grep -c "^### Finding [0-9]" "$REPORT_PATH" 2>/dev/null || echo "0")
-  RECOMMENDATIONS_COUNT=$(grep -c "^### Recommendation [0-9]" "$REPORT_PATH" 2>/dev/null || echo "0")
+  # Extract metadata from YAML frontmatter (primary) or fallback to content parsing
+  YAML_BLOCK=$(head -10 "$REPORT_PATH" 2>/dev/null || echo "")
+
+  if echo "$YAML_BLOCK" | grep -q "^---$"; then
+    # Primary: YAML metadata
+    TOPIC=$(echo "$YAML_BLOCK" | grep "^topic:" | sed 's/^topic:[[:space:]]*//' | tr -d '"' || echo "Untitled Report")
+    REPORT_TYPE=$(echo "$YAML_BLOCK" | grep "^report_type:" | sed 's/^report_type:[[:space:]]*//' || echo "unknown")
+    FINDINGS_COUNT=$(echo "$YAML_BLOCK" | grep "^findings_count:" | sed 's/^findings_count:[[:space:]]*//' || echo "0")
+    RECOMMENDATIONS_COUNT=$(echo "$YAML_BLOCK" | grep "^recommendations_count:" | sed 's/^recommendations_count:[[:space:]]*//' || echo "0")
+    TITLE="$TOPIC"
+  else
+    # Fallback: Content parsing
+    TITLE=$(grep -m 1 "^# " "$REPORT_PATH" 2>/dev/null | sed 's/^# //' || echo "Untitled Report")
+    REPORT_TYPE="legacy"
+    FINDINGS_COUNT=$(grep -c "^### Finding [0-9]" "$REPORT_PATH" 2>/dev/null || echo "0")
+    RECOMMENDATIONS_COUNT=$(awk '/^## Recommendations$/,/^## [^R]/ {if (/^[0-9]+\./) count++} END {print count}' "$REPORT_PATH" 2>/dev/null || echo "0")
+  fi
 
   FORMATTED_METADATA+="Report $((i + 1)): $TITLE
+  - Type: $REPORT_TYPE
   - Findings: $FINDINGS_COUNT
   - Recommendations: $RECOMMENDATIONS_COUNT
   - Path: $REPORT_PATH (use Read tool to access full content)
@@ -1498,12 +1830,23 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-st
 
 # === LOAD STATE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Discover latest state file  
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
+# Restore state from discovered file
+source "$STATE_FILE"
+
+# WORKFLOW_ID now restored from state file
 
 # === VALIDATE WORKFLOW_ID ===
 # CRITICAL: Call validate_workflow_id AFTER state-persistence.sh is sourced
@@ -1688,7 +2031,7 @@ if [ -n "$UNDERSIZED_FILES" ]; then
 fi
 
 REPORT_COUNT=$(find "$RESEARCH_DIR" -name '*.md' 2>/dev/null | wc -l)
-append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
+append_workflow_state "REPORT_COUNT" "${REPORT_COUNT:-}"
 
 echo "Research verified: $REPORT_COUNT reports"
 echo ""
@@ -1998,22 +2341,21 @@ fi
 export CLAUDE_PROJECT_DIR
 
 # === RESTORE STATE ===
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-WORKFLOW_ID=$(cat "$STATE_ID_FILE" 2>/dev/null)
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
 
-if [ -z "$WORKFLOW_ID" ]; then
-  echo "ERROR: Failed to restore WORKFLOW_ID" >&2
+# Discover latest state file
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
 
-# Restore workflow state
-STATE_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/workflow_${WORKFLOW_ID}.sh"
-if [ -f "$STATE_FILE" ]; then
-  source "$STATE_FILE"
-else
-  echo "ERROR: State file not found: $STATE_FILE" >&2
-  exit 1
-fi
+# Restore state from discovered file
+source "$STATE_FILE"
 
 COMMAND_NAME="/lean-plan"
 USER_ARGS="${FEATURE_DESCRIPTION:-}"
@@ -2211,12 +2553,23 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-st
 
 # === LOAD STATE ===
 # CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (now guaranteed to be set)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/lean_plan_state_id.txt"
-if [ ! -f "$STATE_ID_FILE" ]; then
-  echo "ERROR: WORKFLOW_ID file not found" >&2
+# Source state persistence library
+source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persistence.sh" 2>/dev/null || {
+  echo "ERROR: Failed to source state-persistence.sh" >&2
+  exit 1
+}
+
+# Discover latest state file  
+STATE_FILE=$(discover_latest_state_file "lean_plan")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
   exit 1
 fi
-WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+
+# Restore state from discovered file
+source "$STATE_FILE"
+
+# WORKFLOW_ID now restored from state file
 
 # === VALIDATE WORKFLOW_ID ===
 # CRITICAL: Call validate_workflow_id AFTER state-persistence.sh is sourced
@@ -2430,7 +2783,7 @@ if grep -q "^### Phase 0: Standards Revision" "$PLAN_PATH" 2>/dev/null; then
 
   # Persist divergence flag for summary
   append_workflow_state "PHASE_0_DETECTED=true"
-  append_workflow_state "DIVERGENCE_JUSTIFICATION=$DIVERGENCE_JUSTIFICATION"
+  append_workflow_state "DIVERGENCE_JUSTIFICATION=${DIVERGENCE_JUSTIFICATION:-}"
   if ! save_completed_states_to_state; then
     echo "WARNING: Failed to persist COMPLETED_STATES to state file" >&2
   fi

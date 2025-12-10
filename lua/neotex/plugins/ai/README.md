@@ -25,8 +25,31 @@ MCP-Hub integration plugin configuration (`mcp-hub`) with cross-platform compati
 ### lectic.lua
 Configuration for the Lectic plugin (`gleachkr/lectic`) for markdown editing and management. Handles markdown and lectic.markdown filetypes with dependency installation and runtime path configuration.
 
+### opencode.lua
+Configuration for the OpenCode plugin (`NickvanDyke/opencode.nvim`). Provides embedded TUI experience for the OpenCode CLI with powerful context placeholders (@this, @buffer, @diagnostics), built-in prompt library, and statusline integration.
+
+**Key Features**:
+- Context placeholders for granular control (@this, @buffer, @diagnostics, @visible, @diff, @grapple)
+- Built-in prompt library (9 prompts: diagnostics, diff, document, explain, fix, implement, optimize, review, test)
+- Embedded TUI rendering within Neovim terminal
+- Automatic buffer reloading when OpenCode edits files
+- Session management with persistence
+
+**Configuration**:
+- Provider: snacks.nvim for UI components
+- Terminal window: right side, 40% width (user standard)
+- All default keymaps disabled to prevent conflicts
+- Custom keymaps defined in which-key.lua and keymaps.lua
+
+**Dependencies**:
+- `folke/snacks.nvim` (required) - UI provider for terminal, input, and picker
+- `cbochs/grapple.nvim` (optional) - For @grapple context placeholder
+- OpenCode CLI v0.9.1+ (currently using v1.0.119)
+
 ### goose/init.lua
 Configuration for the Goose AI agent plugin (`azorng/goose.nvim`). Provides multi-provider AI assistance (Gemini CLI, Claude Code backend) with split window integration, recipe-based workflows, and session persistence.
+
+**Note**: Goose keymaps commented out as of 2025-12-10, pending removal in favor of OpenCode.
 
 **Key Features**:
 - Split window mode with native Neovim navigation (`<C-h/j/k/l>`)
@@ -39,7 +62,7 @@ Configuration for the Goose AI agent plugin (`azorng/goose.nvim`). Provides mult
 - Window type: split (35% width, right sidebar)
 - Default mode: auto (full agent capabilities)
 - Preferred picker: telescope
-- Keybindings managed by which-key.lua
+- Keybindings managed by which-key.lua (currently commented out)
 
 ## Subdirectories
 
@@ -83,6 +106,33 @@ v}
 :ClaudeCommands      " Browse Claude command hierarchy
 :ClaudeSessions      " Open Claude session browser
 :MCPHub              " Launch MCP-Hub interface
+:Opencode toggle     " Toggle OpenCode TUI interface
+:checkhealth opencode " Run OpenCode health check
+```
+
+### OpenCode Context Placeholders
+```vim
+" Use context placeholders in prompts for granular control
+" Example 1: Fix errors using diagnostics
+"Fix errors in @this using @diagnostics"
+
+" Example 2: Explain selected code with buffer context
+(visual select code)
+<leader>aoa
+"Explain @this in the context of @buffer"
+
+" Example 3: Review changes using git diff
+"Review the changes in @diff and suggest improvements"
+
+" Available placeholders:
+" @this        - Current visual selection or cursor position
+" @buffer      - Current buffer content
+" @buffers     - All open buffers
+" @visible     - Visible text on screen
+" @diagnostics - Current buffer diagnostics
+" @quickfix    - Quickfix list entries
+" @diff        - Git diff of current file
+" @grapple     - Grapple-tagged files (if grapple.nvim installed)
 ```
 
 ### Session Management
@@ -95,20 +145,35 @@ ai.send_visual_to_claude_with_prompt() -- Visual selection with prompt
 
 ## Configuration
 
-### Keybindings (in which-key.lua)
+### Keybindings (in which-key.lua and keymaps.lua)
+
+**Global AI Toggles** (defined in keymaps.lua):
+- `<C-c>` - Toggle Claude Code (all modes)
+- `<C-g>` - Toggle Avante interface (all modes)
+- `<C-o>` - Toggle OpenCode interface (all modes)
+
+**Leader-based AI Commands** (defined in which-key.lua):
 - `<leader>a` - AI tools group
 - `<leader>ac` - Send selection to Claude (visual) / Claude commands (normal)
-- `<leader>aa` - Toggle Goose chat interface (normal) / Send selection to Goose (visual)
-- `<leader>ae` - Focus Goose input window (or Avante edit in visual mode)
 - `<leader>as` - Claude sessions
-- `<leader>av` - View worktrees (Claude) / Select Goose session
-- `<leader>aw` - Create worktree
-- `<leader>ar` - Restore worktree (Claude) / Run Goose session
-- `<leader>ad` - Open Goose diff view
-- `<leader>aR` - Goose recipe picker
-- `<leader>ap` - Goose provider status and switch
+- `<leader>ay` - Toggle Claude yolo mode (skip permissions)
 
-**Note**: Some keybindings overlap between Claude Code and Goose (`<leader>av`, `<leader>ar`). Both plugins can coexist; context determines which bindings are active.
+**OpenCode Commands** (`<leader>ao` submenu):
+- `<leader>aoo` - Toggle OpenCode interface
+- `<leader>aoa` - Ask with context (normal/visual mode)
+- `<leader>aos` - Select action from prompt library
+- `<leader>aop` - Add context to prompt (normal/visual mode)
+- `<leader>aob` - Inject buffer context (@buffer)
+- `<leader>aod` - Inject diagnostics context (@diagnostics)
+- `<leader>aon` - Create new session
+- `<leader>aol` - List sessions
+
+**Lectic Commands** (`<leader>al`, `<leader>an`, `<leader>ak`):
+- Only active in .lec and .md files
+
+**Goose Commands** (COMMENTED OUT as of 2025-12-10):
+- All Goose keymaps (`<leader>ad`, `<leader>ag`, `<leader>ai`, etc.) have been commented out
+- Pending removal in favor of OpenCode
 
 ### Plugin Dependencies
 - `nvim-lua/plenary.nvim` - Lua utilities
@@ -140,15 +205,26 @@ External Plugin Configs (ai/*.lua) ──→ Internal Systems (ai/claude/)
 - Verify dependencies are installed: `:checkhealth`
 - Test individual plugins: `:lua require('neotex.plugins.ai.avante')`
 
+### OpenCode Issues
+- Run health check: `:checkhealth opencode`
+- Verify OpenCode CLI version: `opencode --version` (requires v0.9.1+, currently using v1.0.119)
+- Check snacks.nvim dependency: `:Lazy` and search for "snacks"
+- Buffer auto-reload not working: Verify `vim.o.autoread = true` is set
+- Default keymaps still active: Verify `keys = {}` in plugin spec and `vim.g.opencode_opts.keys = {}`
+- Provider configuration: Ensure snacks.nvim is loaded with `input`, `picker`, and `terminal` options
+- Terminal not opening: Check `:messages` for errors, verify window position/width settings
+
 ### AI Service Connectivity
 - Verify API keys and authentication
 - Check network connectivity for external services
 - Test with `:ClaudeCommands` or `:AvanteAsk`
+- OpenCode CLI: Ensure opencode CLI is authenticated and functional in terminal
 
 ### Keybinding Conflicts
 - Verify which-key configuration: `:lua print(require('which-key'))`
 - Check for duplicate mappings in visual vs normal mode
 - Test mappings with `:map <leader>a`
+- Verify `<C-o>` OpenCode toggle doesn't conflict with Vim's jump-back command (jump-back preserved in normal mode)
 
 ## Navigation
 - [← Parent Directory](../README.md) - Plugins overview

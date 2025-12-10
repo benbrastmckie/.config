@@ -74,9 +74,11 @@ VALIDATORS=(
   "bash-conditionals|${TESTS_UTILS_DIR}/lint_bash_conditionals.sh|ERROR|*.sh,*.md"
   "error-logging-coverage|${LINT_DIR}/check-error-logging-coverage.sh|ERROR|*.md"
   "unbound-variables|${LINT_DIR}/check-unbound-variables.sh|ERROR|*.md"
+  "array-iteration|${LINT_DIR}/lint-array-iteration.sh|ERROR|*.md"
   "hard-barrier-compliance|${SCRIPTS_DIR}/validate-hard-barrier-compliance.sh|ERROR|commands/*.md"
   "task-invocation|${SCRIPTS_DIR}/lint-task-invocation-pattern.sh|ERROR|*.md"
   "path-validation|${SCRIPTS_DIR}/lint-path-validation.sh|ERROR|commands/*.md"
+  "concurrent-execution-safety|${LINT_DIR}/lint-shared-state-files.sh|ERROR|commands/*.md"
   "argument-capture|${SCRIPTS_DIR}/lint-argument-capture.sh|WARNING|commands/*.md"
   "checkpoint-format|${SCRIPTS_DIR}/lint-checkpoint-format.sh|WARNING|commands/*.md"
   "readme-structure|${SCRIPTS_DIR}/validate-readmes.sh|WARNING|README.md"
@@ -102,6 +104,7 @@ RUN_UNBOUND_VARS=false
 RUN_HARD_BARRIER=false
 RUN_TASK_INVOCATION=false
 RUN_PATH_VALIDATION=false
+RUN_CONCURRENCY=false
 RUN_ARGUMENT_CAPTURE=false
 RUN_CHECKPOINTS=false
 RUN_README=false
@@ -129,6 +132,7 @@ OPTIONS:
   --hard-barrier     Run hard barrier compliance validator only
   --task-invocation  Run task invocation pattern linter only
   --path-validation  Run path validation pattern linter only
+  --concurrency      Run concurrent execution safety linter only
   --argument-capture Run argument capture pattern linter only
   --checkpoints      Run checkpoint format linter only
   --readme           Run README structure validation only
@@ -149,6 +153,7 @@ VALIDATORS:
   hard-barrier-compliance  Validates hard barrier subagent delegation (ERROR)
   task-invocation          Validates imperative Task tool invocation pattern (ERROR)
   path-validation          Validates path validation patterns (ERROR)
+  concurrent-execution-safety Detects shared state ID file anti-pattern (ERROR)
   argument-capture         Validates 2-block argument capture pattern (WARNING)
   checkpoint-format        Validates standardized checkpoint format (WARNING)
   readme-structure         Validates README.md structure (WARNING)
@@ -216,6 +221,9 @@ parse_args() {
       --path-validation)
         RUN_PATH_VALIDATION=true
         ;;
+      --concurrency)
+        RUN_CONCURRENCY=true
+        ;;
       --argument-capture)
         RUN_ARGUMENT_CAPTURE=true
         ;;
@@ -254,7 +262,7 @@ parse_args() {
   done
 
   # If specific validators selected, don't run all
-  if $RUN_SOURCING || $RUN_SUPPRESSION || $RUN_CONDITIONALS || $RUN_ERROR_LOGGING || $RUN_UNBOUND_VARS || $RUN_HARD_BARRIER || $RUN_TASK_INVOCATION || $RUN_PATH_VALIDATION || $RUN_ARGUMENT_CAPTURE || $RUN_CHECKPOINTS || $RUN_README || $RUN_LINKS; then
+  if $RUN_SOURCING || $RUN_SUPPRESSION || $RUN_CONDITIONALS || $RUN_ERROR_LOGGING || $RUN_UNBOUND_VARS || $RUN_HARD_BARRIER || $RUN_TASK_INVOCATION || $RUN_PATH_VALIDATION || $RUN_CONCURRENCY || $RUN_ARGUMENT_CAPTURE || $RUN_CHECKPOINTS || $RUN_README || $RUN_LINKS; then
     RUN_ALL=false
   fi
 }
@@ -294,6 +302,9 @@ should_run_validator() {
       ;;
     path-validation)
       $RUN_PATH_VALIDATION && return 0
+      ;;
+    concurrent-execution-safety)
+      $RUN_CONCURRENCY && return 0
       ;;
     argument-capture)
       $RUN_ARGUMENT_CAPTURE && return 0
@@ -392,7 +403,7 @@ run_validator() {
 
   # Some validators need explicit file arguments
   case "$name" in
-    argument-capture|checkpoint-format|path-validation)
+    argument-capture|checkpoint-format|path-validation|concurrent-execution-safety)
       # These validators need file paths
       local target_files
       if $STAGED_ONLY; then

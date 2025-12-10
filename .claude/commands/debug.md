@@ -249,12 +249,8 @@ WORKFLOW_TYPE="debug-only"
 TERMINAL_STATE="debug"
 COMMAND_NAME="debug"
 
-# Generate WORKFLOW_ID for state persistence
-WORKFLOW_ID="debug_$(date +%s)"
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path (matches state file location)
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
-mkdir -p "$(dirname "$STATE_ID_FILE")"
-echo "$WORKFLOW_ID" > "$STATE_ID_FILE"
+# Generate WORKFLOW_ID with nanosecond-precision for concurrent execution safety
+WORKFLOW_ID="debug_$(date +%s%N)"
 export WORKFLOW_ID
 
 # Set command metadata for error logging
@@ -267,9 +263,9 @@ STATE_FILE=$(init_workflow_state "$WORKFLOW_ID")
 export STATE_FILE
 
 # === PERSIST ERROR LOGGING CONTEXT ===
-append_workflow_state "COMMAND_NAME" "$COMMAND_NAME"
-append_workflow_state "USER_ARGS" "$USER_ARGS"
-append_workflow_state "WORKFLOW_ID" "$WORKFLOW_ID"
+append_workflow_state "COMMAND_NAME" "${COMMAND_NAME:-}"
+append_workflow_state "USER_ARGS" "${USER_ARGS:-}"
+append_workflow_state "WORKFLOW_ID" "${WORKFLOW_ID:-}"
 
 # === SETUP BASH ERROR TRAP ===
 # Replace early trap with actual metadata
@@ -328,9 +324,9 @@ echo "State machine initialized (WORKFLOW_ID: $WORKFLOW_ID)"
 echo ""
 
 # Persist CLAUDE_PROJECT_DIR and ISSUE_DESCRIPTION for subsequent bash blocks
-append_workflow_state "CLAUDE_PROJECT_DIR" "$CLAUDE_PROJECT_DIR"
-append_workflow_state "ISSUE_DESCRIPTION" "$ISSUE_DESCRIPTION"
-append_workflow_state "RESEARCH_COMPLEXITY" "$RESEARCH_COMPLEXITY"
+append_workflow_state "CLAUDE_PROJECT_DIR" "${CLAUDE_PROJECT_DIR:-}"
+append_workflow_state "ISSUE_DESCRIPTION" "${ISSUE_DESCRIPTION:-}"
+append_workflow_state "RESEARCH_COMPLEXITY" "${RESEARCH_COMPLEXITY:-}"
 ```
 
 ## Block 2a: Topic Name Generation
@@ -387,26 +383,24 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-st
 _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" || exit 1
 
 # Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "debug")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 
-  # Validate WORKFLOW_ID format
-  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
-    WORKFLOW_ID="debug_$(date +%s)_recovered"
-  }
+load_workflow_state "$WORKFLOW_ID" false
 
-  export WORKFLOW_ID
-  load_workflow_state "$WORKFLOW_ID" false
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
 
-  # Validate critical variables restored from state
-  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
-    echo "ERROR: State restoration failed - critical variables missing" >&2
-    exit 1
-  }
-
-  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
   # === CLEAR DEFENSIVE TRAP ===
   _clear_defensive_trap
@@ -502,9 +496,9 @@ rm -f "$TOPIC_NAME_FILE" 2>/dev/null || true
 CLASSIFICATION_JSON=$(jq -n --arg slug "$TOPIC_NAME" '{topic_directory_slug: $slug}')
 
 # Persist classification for initialize_workflow_paths
-append_workflow_state "CLASSIFICATION_JSON" "$CLASSIFICATION_JSON"
-append_workflow_state "TOPIC_NAME" "$TOPIC_NAME"
-append_workflow_state "NAMING_STRATEGY" "$NAMING_STRATEGY"
+append_workflow_state "CLASSIFICATION_JSON" "${CLASSIFICATION_JSON:-}"
+append_workflow_state "TOPIC_NAME" "${TOPIC_NAME:-}"
+append_workflow_state "NAMING_STRATEGY" "${NAMING_STRATEGY:-}"
 
 echo "✓ Topic naming complete: $TOPIC_NAME (strategy: $NAMING_STRATEGY)"
 echo ""
@@ -537,27 +531,24 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-st
 _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh" || exit 1
 _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-initialization.sh" || exit 1
 
-# Load WORKFLOW_ID from file (fail-fast pattern)
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+# Restore state from previous block (fail-fast pattern)
+STATE_FILE=$(discover_latest_state_file "debug")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 
-  # Validate WORKFLOW_ID format
-  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
-    WORKFLOW_ID="debug_$(date +%s)_recovered"
-  }
+load_workflow_state "$WORKFLOW_ID" false
 
-  export WORKFLOW_ID
-  load_workflow_state "$WORKFLOW_ID" false
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "ISSUE_DESCRIPTION" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
 
-  # Validate critical variables restored from state
-  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" "ISSUE_DESCRIPTION" || {
-    echo "ERROR: State restoration failed - critical variables missing" >&2
-    exit 1
-  }
-
-  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
   # === CLEAR DEFENSIVE TRAP ===
   _clear_defensive_trap
@@ -660,11 +651,11 @@ echo "ISSUE_DESCRIPTION=$ISSUE_DESCRIPTION" >> "${CLAUDE_PROJECT_DIR}/.claude/tm
 echo "RESEARCH_COMPLEXITY=$RESEARCH_COMPLEXITY" >> "${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_$$.txt"
 
 # Also persist to workflow state for better isolation
-append_workflow_state "SPECS_DIR" "$SPECS_DIR"
-append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
-append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
-append_workflow_state "TOPIC_SLUG" "$TOPIC_SLUG"
-append_workflow_state "TOPIC_PATH" "$TOPIC_PATH"
+append_workflow_state "SPECS_DIR" "${SPECS_DIR:-}"
+append_workflow_state "RESEARCH_DIR" "${RESEARCH_DIR:-}"
+append_workflow_state "DEBUG_DIR" "${DEBUG_DIR:-}"
+append_workflow_state "TOPIC_SLUG" "${TOPIC_SLUG:-}"
+append_workflow_state "TOPIC_PATH" "${TOPIC_PATH:-}"
 append_workflow_state "ORIGINAL_PROMPT_FILE_PATH" "${ORIGINAL_PROMPT_FILE_PATH:-}"
 append_workflow_state "ARCHIVED_PROMPT_PATH" "${ARCHIVED_PROMPT_PATH:-}"
 ```
@@ -715,16 +706,19 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   exit 1
 }
 
-# Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-  export WORKFLOW_ID
-  load_workflow_state "$WORKFLOW_ID" false
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "debug")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 
-  # Restore error logging context
-  if [ -z "${COMMAND_NAME:-}" ]; then
+load_workflow_state "$WORKFLOW_ID" false
+
+# Restore error logging context
+if [ -z "${COMMAND_NAME:-}" ]; then
     COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
   fi
   if [ -z "${USER_ARGS:-}" ]; then
@@ -779,11 +773,11 @@ echo "- Proceeding to: Planning phase"
 echo ""
 
 # Persist variables across bash blocks (subprocess isolation)
-append_workflow_state "SPECS_DIR" "$SPECS_DIR"
-append_workflow_state "RESEARCH_DIR" "$RESEARCH_DIR"
-append_workflow_state "DEBUG_DIR" "$DEBUG_DIR"
-append_workflow_state "REPORT_COUNT" "$REPORT_COUNT"
-append_workflow_state "ISSUE_DESCRIPTION" "$ISSUE_DESCRIPTION"
+append_workflow_state "SPECS_DIR" "${SPECS_DIR:-}"
+append_workflow_state "RESEARCH_DIR" "${RESEARCH_DIR:-}"
+append_workflow_state "DEBUG_DIR" "${DEBUG_DIR:-}"
+append_workflow_state "REPORT_COUNT" "${REPORT_COUNT:-}"
+append_workflow_state "ISSUE_DESCRIPTION" "${ISSUE_DESCRIPTION:-}"
 
 # Persist completed state with return code verification
 save_completed_states_to_state 2>&1
@@ -825,26 +819,24 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persisten
 _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 
 # Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "debug")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 
-  # Validate WORKFLOW_ID format
-  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
-    WORKFLOW_ID="debug_$(date +%s)_recovered"
-  }
+load_workflow_state "$WORKFLOW_ID" false
 
-  export WORKFLOW_ID
-  load_workflow_state "$WORKFLOW_ID" false
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
 
-  # Validate critical variables restored from state
-  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
-    echo "ERROR: State restoration failed - critical variables missing" >&2
-    exit 1
-  }
-
-  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
   # === CLEAR DEFENSIVE TRAP ===
   _clear_defensive_trap
@@ -1002,16 +994,19 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   exit 1
 }
 
-# Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-  export WORKFLOW_ID
-  load_workflow_state "$WORKFLOW_ID" false
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "debug")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 
-  # Restore error logging context
-  if [ -z "${COMMAND_NAME:-}" ]; then
+load_workflow_state "$WORKFLOW_ID" false
+
+# Restore error logging context
+if [ -z "${COMMAND_NAME:-}" ]; then
     COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
   fi
   if [ -z "${USER_ARGS:-}" ]; then
@@ -1053,9 +1048,9 @@ echo "- Proceeding to: Debug phase"
 echo ""
 
 # Persist variables for Part 5 (subprocess isolation)
-append_workflow_state "PLANS_DIR" "$PLANS_DIR"
-append_workflow_state "PLAN_PATH" "$PLAN_PATH"
-append_workflow_state "REPORT_PATHS_JSON" "$REPORT_PATHS_JSON"
+append_workflow_state "PLANS_DIR" "${PLANS_DIR:-}"
+append_workflow_state "PLAN_PATH" "${PLAN_PATH:-}"
+append_workflow_state "REPORT_PATHS_JSON" "${REPORT_PATHS_JSON:-}"
 
 # Persist completed state with return code verification
 save_completed_states_to_state 2>&1
@@ -1097,26 +1092,24 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persisten
 _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 
 # Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "debug")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 
-  # Validate WORKFLOW_ID format
-  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
-    WORKFLOW_ID="debug_$(date +%s)_recovered"
-  }
+load_workflow_state "$WORKFLOW_ID" false
 
-  export WORKFLOW_ID
-  load_workflow_state "$WORKFLOW_ID" false
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
 
-  # Validate critical variables restored from state
-  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
-    echo "ERROR: State restoration failed - critical variables missing" >&2
-    exit 1
-  }
-
-  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
   # === CLEAR DEFENSIVE TRAP ===
   _clear_defensive_trap
@@ -1255,16 +1248,19 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/error-handling.sh" 2>/dev/null ||
   exit 1
 }
 
-# Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
-  export WORKFLOW_ID
-  load_workflow_state "$WORKFLOW_ID" false
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "debug")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 
-  # Restore error logging context
-  if [ -z "${COMMAND_NAME:-}" ]; then
+load_workflow_state "$WORKFLOW_ID" false
+
+# Restore error logging context
+if [ -z "${COMMAND_NAME:-}" ]; then
     COMMAND_NAME=$(grep "^COMMAND_NAME=" "$STATE_FILE" 2>/dev/null | cut -d'=' -f2- || echo "/debug")
   fi
   if [ -z "${USER_ARGS:-}" ]; then
@@ -1304,7 +1300,7 @@ echo "- Proceeding to: Completion"
 echo ""
 
 # Persist variables for Part 6 (subprocess isolation)
-append_workflow_state "DEBUG_ARTIFACT_COUNT" "$DEBUG_ARTIFACT_COUNT"
+append_workflow_state "DEBUG_ARTIFACT_COUNT" "${DEBUG_ARTIFACT_COUNT:-}"
 
 # Persist completed state with return code verification
 save_completed_states_to_state 2>&1
@@ -1346,26 +1342,24 @@ _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/core/state-persisten
 _source_with_diagnostics "${CLAUDE_PROJECT_DIR}/.claude/lib/workflow/workflow-state-machine.sh" || exit 1
 
 # Load WORKFLOW_ID from file
-# CRITICAL: Use CLAUDE_PROJECT_DIR for consistent path
-STATE_ID_FILE="${CLAUDE_PROJECT_DIR}/.claude/tmp/debug_state_id.txt"
-if [ -f "$STATE_ID_FILE" ]; then
-  WORKFLOW_ID=$(cat "$STATE_ID_FILE")
+# Restore state from previous block
+STATE_FILE=$(discover_latest_state_file "debug")
+if [ -z "$STATE_FILE" ] || [ ! -f "$STATE_FILE" ]; then
+  echo "ERROR: Failed to discover state file from previous block" >&2
+  exit 1
+fi
+source "$STATE_FILE"  # WORKFLOW_ID restored
+export WORKFLOW_ID
 
-  # Validate WORKFLOW_ID format
-  validate_workflow_id "$WORKFLOW_ID" "/debug" || {
-    WORKFLOW_ID="debug_$(date +%s)_recovered"
-  }
+load_workflow_state "$WORKFLOW_ID" false
 
-  export WORKFLOW_ID
-  load_workflow_state "$WORKFLOW_ID" false
+# Validate critical variables restored from state
+validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
+  echo "ERROR: State restoration failed - critical variables missing" >&2
+  exit 1
+}
 
-  # Validate critical variables restored from state
-  validate_state_restoration "COMMAND_NAME" "USER_ARGS" "STATE_FILE" || {
-    echo "ERROR: State restoration failed - critical variables missing" >&2
-    exit 1
-  }
-
-  export COMMAND_NAME USER_ARGS WORKFLOW_ID
+export COMMAND_NAME USER_ARGS WORKFLOW_ID
 
   # === CLEAR DEFENSIVE TRAP ===
   _clear_defensive_trap
