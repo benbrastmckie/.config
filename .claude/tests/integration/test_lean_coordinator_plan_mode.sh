@@ -260,26 +260,108 @@ test_wave_execution_orchestration() {
 # Test 4: Phase Number Extraction
 #=============================================================================
 test_phase_number_extraction() {
-  # TODO: Implement phase number extraction test
-  # Expected behavior:
-  # - Extract phase_number from theorem metadata
-  # - Pass to lean-implementer for progress tracking
-  # - Handle phase_number=0 (file-based mode)
+  # Test that phase_number extraction is documented in STEP 4
+  local coordinator_file="$PROJECT_DIR/.claude/agents/lean-coordinator.md"
 
-  skip "test_phase_number_extraction - Not implemented yet (Phase 8)"
+  if ! [ -f "$coordinator_file" ]; then
+    fail "test_phase_number_extraction - lean-coordinator.md not found"
+    return
+  fi
+
+  # Check for Phase Number Extraction section
+  if ! grep -q "Phase Number Extraction" "$coordinator_file"; then
+    fail "test_phase_number_extraction - Phase Number Extraction section not found"
+    return
+  fi
+
+  # Check for phase_number field in theorem metadata
+  if ! grep -q '"phase_number": [0-9]' "$coordinator_file"; then
+    fail "test_phase_number_extraction - phase_number field not documented"
+    return
+  fi
+
+  # Check for phase_num extraction logic
+  if ! grep -q 'phase_num=.*jq.*phase_number' "$coordinator_file"; then
+    fail "test_phase_number_extraction - phase_num extraction logic not documented"
+    return
+  fi
+
+  # Check for phase_number=0 handling (file-based mode)
+  if ! grep -q "phase_num = 0.*File-based mode" "$coordinator_file"; then
+    fail "test_phase_number_extraction - phase_number=0 handling not documented"
+    return
+  fi
+
+  # Check for phase_num > 0 handling (progress tracking)
+  if ! grep -q "phase_num > 0.*Enable progress tracking" "$coordinator_file"; then
+    fail "test_phase_number_extraction - phase_num>0 handling not documented"
+    return
+  fi
+
+  pass "test_phase_number_extraction - Phase number extraction documented correctly"
 }
 
 #=============================================================================
 # Test 5: Progress Tracking Forwarding
 #=============================================================================
 test_progress_tracking_forwarding() {
-  # TODO: Implement progress tracking forwarding test
-  # Expected behavior:
-  # - Forward progress tracking instructions to lean-implementer
-  # - Handle checkbox-utils unavailability gracefully
-  # - Skip in file-based mode
+  # Test that progress tracking forwarding is documented in STEP 4
+  local coordinator_file="$PROJECT_DIR/.claude/agents/lean-coordinator.md"
 
-  skip "test_progress_tracking_forwarding - Not implemented yet (Phase 8)"
+  if ! [ -f "$coordinator_file" ]; then
+    fail "test_progress_tracking_forwarding - lean-coordinator.md not found"
+    return
+  fi
+
+  # Check for Progress Tracking Instruction Forwarding section
+  if ! grep -q "Progress Tracking Instruction Forwarding" "$coordinator_file"; then
+    fail "test_progress_tracking_forwarding - Progress Tracking Instruction Forwarding section not found"
+    return
+  fi
+
+  # Check for checkbox-utils sourcing instruction
+  if ! grep -q "source.*checkbox-utils.sh" "$coordinator_file"; then
+    fail "test_progress_tracking_forwarding - checkbox-utils sourcing not documented"
+    return
+  fi
+
+  # Check for add_in_progress_marker instruction
+  if ! grep -q "add_in_progress_marker" "$coordinator_file"; then
+    fail "test_progress_tracking_forwarding - add_in_progress_marker not documented"
+    return
+  fi
+
+  # Check for mark_phase_complete instruction
+  if ! grep -q "mark_phase_complete" "$coordinator_file"; then
+    fail "test_progress_tracking_forwarding - mark_phase_complete not documented"
+    return
+  fi
+
+  # Check for add_complete_marker instruction
+  if ! grep -q "add_complete_marker" "$coordinator_file"; then
+    fail "test_progress_tracking_forwarding - add_complete_marker not documented"
+    return
+  fi
+
+  # Check for graceful degradation note
+  if ! grep -q "gracefully degrades.*unavailable.*non-fatal" "$coordinator_file"; then
+    fail "test_progress_tracking_forwarding - graceful degradation not documented"
+    return
+  fi
+
+  # Check for file-based mode skip
+  if ! grep -q "File-based mode.*Skip progress tracking" "$coordinator_file"; then
+    fail "test_progress_tracking_forwarding - file-based mode skip not documented"
+    return
+  fi
+
+  # Check for forwarding pattern
+  if ! grep -q "Forwarding Pattern" "$coordinator_file"; then
+    fail "test_progress_tracking_forwarding - forwarding pattern not documented"
+    return
+  fi
+
+  pass "test_progress_tracking_forwarding - Progress tracking forwarding documented correctly"
 }
 
 #=============================================================================
