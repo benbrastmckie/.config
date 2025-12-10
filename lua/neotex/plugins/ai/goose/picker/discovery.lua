@@ -46,21 +46,27 @@ function M.find_recipes()
     end
   end
 
-  -- Find global recipes directory
-  local global_recipes_dir = vim.fn.expand('~/.config/goose/recipes')
-  if vim.fn.isdirectory(global_recipes_dir) == 1 then
-    local files = vim.fn.glob(global_recipes_dir .. '/*.yaml', false, true)
-    for _, filepath in ipairs(files) do
-      local filename = vim.fn.fnamemodify(filepath, ':t')
-      local name = vim.fn.fnamemodify(filepath, ':t:r')
-      -- Only add if not already present from project
-      if not seen_names[name] then
-        table.insert(recipes, {
-          name = name,
-          path = vim.fn.fnamemodify(filepath, ':p'),
-          location = '[Global]',
-          priority = 2,
-        })
+  -- Find global recipes directory (check both ~/.config/goose/recipes and ~/.config/.goose/recipes)
+  local global_recipe_dirs = {
+    vim.fn.expand('~/.config/goose/recipes'),
+    vim.fn.expand('~/.config/.goose/recipes'),
+  }
+
+  for _, global_recipes_dir in ipairs(global_recipe_dirs) do
+    if vim.fn.isdirectory(global_recipes_dir) == 1 then
+      local files = vim.fn.glob(global_recipes_dir .. '/*.yaml', false, true)
+      for _, filepath in ipairs(files) do
+        local name = vim.fn.fnamemodify(filepath, ':t:r')
+        -- Only add if not already present from project or previous global dir
+        if not seen_names[name] then
+          table.insert(recipes, {
+            name = name,
+            path = vim.fn.fnamemodify(filepath, ':p'),
+            location = '[Global]',
+            priority = 2,
+          })
+          seen_names[name] = true
+        end
       end
     end
   end
@@ -104,8 +110,17 @@ function M.get_recipe_path(recipe_name, location)
       recipe_path = project_recipes_dir .. '/' .. filename
     end
   elseif location == 'global' then
-    -- Use global recipes directory
-    recipe_path = vim.fn.expand('~/.config/goose/recipes/' .. filename)
+    -- Use global recipes directory (check both locations)
+    local global_paths = {
+      vim.fn.expand('~/.config/goose/recipes/' .. filename),
+      vim.fn.expand('~/.config/.goose/recipes/' .. filename),
+    }
+    for _, path in ipairs(global_paths) do
+      if vim.fn.filereadable(path) == 1 then
+        recipe_path = path
+        break
+      end
+    end
   end
 
   -- Verify file exists

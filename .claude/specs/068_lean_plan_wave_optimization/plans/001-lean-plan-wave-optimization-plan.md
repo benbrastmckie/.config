@@ -5,7 +5,7 @@
 - **Date**: 2025-12-09 (Revised)
 - **Feature**: Enhance /lean-plan to generate dependency-aware plans optimized for parallel wave execution
 - **Scope**: Improve lean-plan-architect agent to analyze theorem dependencies and generate optimal phase dependency structures that enable /lean-implement to execute independent phases in parallel waves, achieving 40-60% time savings. Maintain efficiency through metadata completeness and standards compliance.
-- **Status**: [IN PROGRESS]
+- **Status**: [COMPLETE]
 - **Estimated Hours**: 10-14 hours (revised from 8-12 to reflect Phase 0 addition)
 - **Complexity Score**: 58.0
 - **Structure Level**: 0
@@ -258,7 +258,7 @@ grep "### Phase Routing Summary" "$PLAN_FILE"
 
 ---
 
-### Phase 1: Enhance Theorem Dependency Mapping in lean-plan-architect [IN PROGRESS]
+### Phase 1: Enhance Theorem Dependency Mapping in lean-plan-architect [COMPLETE]
 implementer: software
 dependencies: [0]
 
@@ -267,24 +267,24 @@ dependencies: [0]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read current lean-plan-architect.md STEP 1 Lean Planning Process section (lines 90-155)
-- [ ] Add theorem dependency graph data structure to STEP 1 analysis
-  - [ ] Define theorem_dependencies map: { theorem_name: [prerequisite_theorem1, prerequisite_theorem2] }
-  - [ ] Define theorem_to_phase map: { theorem_name: phase_number }
-- [ ] Enhance theorem dependency analysis to populate dependency graph
-  - [ ] For each theorem in plan, extract prerequisites from research reports and proof strategies
-  - [ ] Check if prerequisites exist in Mathlib (external) vs in plan (internal)
-  - [ ] Record internal dependencies in theorem_dependencies map
-  - [ ] Validate acyclicity using topological sort algorithm
-- [ ] Create phase dependency conversion function
-  - [ ] Input: theorem_dependencies map, theorem_to_phase map
-  - [ ] Output: phase_dependencies map: { phase_N: [prerequisite_phase1, prerequisite_phase2] }
-  - [ ] Algorithm: For each phase, lookup theorems in phase, lookup theorem dependencies, convert to phase numbers
-- [ ] Add validation rules
-  - [ ] No forward references (phase N cannot depend on phase M where M > N)
-  - [ ] No self-dependencies (phase N cannot depend on phase N)
-  - [ ] No circular dependencies (detect cycles in phase dependency graph)
-- [ ] Document data structures and algorithm in lean-plan-architect.md with examples
+- [x] Read current lean-plan-architect.md STEP 1 Lean Planning Process section (lines 90-155)
+- [x] Add theorem dependency graph data structure to STEP 1 analysis
+  - [x] Define theorem_dependencies map: { theorem_name: [prerequisite_theorem1, prerequisite_theorem2] }
+  - [x] Define theorem_to_phase map: { theorem_name: phase_number }
+- [x] Enhance theorem dependency analysis to populate dependency graph
+  - [x] For each theorem in plan, extract prerequisites from research reports and proof strategies
+  - [x] Check if prerequisites exist in Mathlib (external) vs in plan (internal)
+  - [x] Record internal dependencies in theorem_dependencies map
+  - [x] Validate acyclicity using topological sort algorithm
+- [x] Create phase dependency conversion function
+  - [x] Input: theorem_dependencies map, theorem_to_phase map
+  - [x] Output: phase_dependencies map: { phase_N: [prerequisite_phase1, prerequisite_phase2] }
+  - [x] Algorithm: For each phase, lookup theorems in phase, lookup theorem dependencies, convert to phase numbers
+- [x] Add validation rules
+  - [x] No forward references (phase N cannot depend on phase M where M > N)
+  - [x] No self-dependencies (phase N cannot depend on phase N)
+  - [x] No circular dependencies (detect cycles in phase dependency graph)
+- [x] Document data structures and algorithm in lean-plan-architect.md with examples
 
 **Testing**:
 ```bash
@@ -305,7 +305,7 @@ bash .claude/lib/util/dependency-analyzer.sh --validate-only plan.md
 
 ---
 
-### Phase 2: Implement Phase Dependency Array Generation [NOT STARTED]
+### Phase 2: Implement Phase Dependency Array Generation [COMPLETE]
 implementer: software
 dependencies: [1]
 
@@ -314,24 +314,24 @@ dependencies: [1]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Read current lean-plan-architect.md STEP 2 Plan File Creation section (lines 195-360)
-- [ ] Identify where phase metadata is written (dependencies: [] field generation)
-- [ ] Replace sequential dependency pattern with computed dependencies
-  - [ ] Current pattern: dependencies: [N-1] for all phases except Phase 1
-  - [ ] New pattern: dependencies: phase_dependencies[N] from Phase 1 analysis
-- [ ] Implement dependency array formatting
-  - [ ] Empty array for independent phases: dependencies: []
-  - [ ] Single dependency: dependencies: [M]
-  - [ ] Multiple dependencies: dependencies: [M1, M2, M3] (sorted order)
-- [ ] Add phase granularity optimization
-  - [ ] Default: One theorem per phase (maximize parallelization)
-  - [ ] Group only when theorems tightly coupled (theorem + helper lemma)
-  - [ ] Document grouping criteria in agent instructions
-- [ ] Add dependency validation checkpoint
-  - [ ] After generating all phase dependencies, validate graph
-  - [ ] Check no forward references, no cycles, no orphaned phases
-  - [ ] Log validation errors via log_command_error if issues detected
-- [ ] Update phase heading generation to maintain [NOT STARTED] markers
+- [x] Read current lean-plan-architect.md STEP 2 Plan File Creation section (lines 195-360)
+- [x] Identify where phase metadata is written (dependencies: [] field generation)
+- [x] Replace sequential dependency pattern with computed dependencies
+  - [x] Current pattern: dependencies: [N-1] for all phases except Phase 1
+  - [x] New pattern: dependencies: phase_dependencies[N] from Phase 1 analysis
+- [x] Implement dependency array formatting
+  - [x] Empty array for independent phases: dependencies: []
+  - [x] Single dependency: dependencies: [M]
+  - [x] Multiple dependencies: dependencies: [M1, M2, M3] (sorted order)
+- [x] Add phase granularity optimization
+  - [x] Default: One theorem per phase (maximize parallelization)
+  - [x] Group only when theorems tightly coupled (theorem + helper lemma)
+  - [x] Document grouping criteria in agent instructions
+- [x] Add dependency validation checkpoint
+  - [x] After generating all phase dependencies, validate graph
+  - [x] Check no forward references, no cycles, no orphaned phases
+  - [x] Log validation errors via log_command_error if issues detected
+- [x] Update phase heading generation to maintain [NOT STARTED] markers
 
 **Testing**:
 ```bash
@@ -412,7 +412,7 @@ ACTUAL=$(grep -c "^### Phase [0-9]" "$PLAN_FILE")
 
 ---
 
-### Phase 4: Implement Wave Structure Preview [NOT STARTED]
+### Phase 4: Implement Wave Structure Preview [COMPLETE]
 implementer: software
 dependencies: [2]
 
@@ -421,31 +421,31 @@ dependencies: [2]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Add wave calculation logic to lean-plan-architect STEP 2 (after plan creation)
-  - [ ] Extract phase dependencies from generated plan content
-  - [ ] Implement simplified Kahn's algorithm for wave assignment
-    - [ ] Build in-degree map from dependencies
-    - [ ] Assign phases with in-degree 0 to Wave 1
-    - [ ] Remove Wave 1 phases, decrement in-degrees, repeat
-  - [ ] Calculate parallelization metrics
-    - [ ] Sum phase durations for sequential time
-    - [ ] Sum max duration per wave for parallel time
-    - [ ] Calculate time savings percentage
-- [ ] Format wave structure preview
-  - [ ] Use console summary format with emoji markers
-  - [ ] Display waves with phase numbers and parallelism
-  - [ ] Show metrics (sequential time, parallel time, savings)
-  - [ ] Example format from design section above
-- [ ] Add wave structure as markdown comment in plan file
-  - [ ] Insert after Implementation Phases section
-  - [ ] Format as HTML comment for reference without cluttering display
-  - [ ] Include wave assignments and metrics
-- [ ] Handle edge cases
-  - [ ] Single phase plan: No wave preview (trivial case)
-  - [ ] All sequential: Show warning about no parallelization
-  - [ ] Circular dependencies: Already caught in Phase 2 validation
-- [ ] Update lean-plan-architect return signal to include wave count
-  - [ ] Add to metadata: Waves: N
+- [x] Add wave calculation logic to lean-plan-architect STEP 2 (after plan creation)
+  - [x] Extract phase dependencies from generated plan content
+  - [x] Implement simplified Kahn's algorithm for wave assignment
+    - [x] Build in-degree map from dependencies
+    - [x] Assign phases with in-degree 0 to Wave 1
+    - [x] Remove Wave 1 phases, decrement in-degrees, repeat
+  - [x] Calculate parallelization metrics
+    - [x] Sum phase durations for sequential time
+    - [x] Sum max duration per wave for parallel time
+    - [x] Calculate time savings percentage
+- [x] Format wave structure preview
+  - [x] Use console summary format with emoji markers
+  - [x] Display waves with phase numbers and parallelism
+  - [x] Show metrics (sequential time, parallel time, savings)
+  - [x] Example format from design section above
+- [x] Add wave structure as markdown comment in plan file
+  - [x] Insert after Implementation Phases section
+  - [x] Format as HTML comment for reference without cluttering display
+  - [x] Include wave assignments and metrics
+- [x] Handle edge cases
+  - [x] Single phase plan: No wave preview (trivial case)
+  - [x] All sequential: Show warning about no parallelization
+  - [x] Circular dependencies: Already caught in Phase 2 validation
+- [x] Update lean-plan-architect return signal to include wave count
+  - [x] Add to metadata: Waves: N
 
 **Testing**:
 ```bash
@@ -471,7 +471,7 @@ bash .claude/lib/util/dependency-analyzer.sh "$PLAN_FILE" --display-waves > /tmp
 
 ---
 
-### Phase 5: Integration Testing and Documentation [NOT STARTED]
+### Phase 5: Integration Testing and Documentation [COMPLETE]
 implementer: software
 dependencies: [0, 1, 2, 3, 4]
 
@@ -480,33 +480,33 @@ dependencies: [0, 1, 2, 3, 4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Create integration test suite for wave-optimized plans
-  - [ ] Test 1: Independent phases (fan-out) → verify parallel execution
-  - [ ] Test 2: Sequential phases (linear) → verify sequential execution
-  - [ ] Test 3: Mixed dependencies (diamond) → verify wave grouping
-  - [ ] Test 4: Complex multi-file plan → verify dependency propagation
-- [ ] Test /lean-plan to /lean-implement workflow
-  - [ ] Generate plan with /lean-plan (enhanced dependency generation)
-  - [ ] Execute with /lean-implement --dry-run (verify wave structure recognized)
-  - [ ] Execute actual implementation (verify parallel execution and time savings)
-  - [ ] Verify brief summary return pattern (96% context reduction)
-- [ ] Validate metadata completeness across test plans
-  - [ ] Run validate-plan-metadata.sh on all generated test plans
-  - [ ] Verify Complexity Score, Structure Level, Estimated Phases present
-  - [ ] Verify dependency arrays properly formatted
-- [ ] Update documentation
-  - [ ] Update lean-plan-command-guide.md with dependency generation details
-  - [ ] Add wave optimization section explaining theorem dependency analysis
-  - [ ] Update lean-plan-architect.md agent documentation with enhanced STEP 1 and STEP 2
-  - [ ] Add examples of dependency patterns (independent, sequential, mixed)
-  - [ ] Update CLAUDE.md hierarchical_agent_architecture section if needed
-- [ ] Update related documentation
-  - [ ] Verify phase-dependencies.md still accurate (should be compatible)
-  - [ ] Update lean-implement-command-guide.md if integration details changed
-  - [ ] Add reference to this optimization in plan-metadata-standard.md
-- [ ] Run validation suite
-  - [ ] bash .claude/scripts/validate-all-standards.sh --plans
-  - [ ] Verify no regressions in standards compliance
+- [x] Create integration test suite for wave-optimized plans
+  - [x] Test 1: Independent phases (fan-out) → verify parallel execution
+  - [x] Test 2: Sequential phases (linear) → verify sequential execution
+  - [x] Test 3: Mixed dependencies (diamond) → verify wave grouping
+  - [x] Test 4: Complex multi-file plan → verify dependency propagation
+- [x] Test /lean-plan to /lean-implement workflow
+  - [x] Generate plan with /lean-plan (enhanced dependency generation)
+  - [x] Execute with /lean-implement --dry-run (verify wave structure recognized)
+  - [x] Execute actual implementation (verify parallel execution and time savings)
+  - [x] Verify brief summary return pattern (96% context reduction)
+- [x] Validate metadata completeness across test plans
+  - [x] Run validate-plan-metadata.sh on all generated test plans
+  - [x] Verify Complexity Score, Structure Level, Estimated Phases present
+  - [x] Verify dependency arrays properly formatted
+- [x] Update documentation
+  - [x] Update lean-plan-command-guide.md with dependency generation details
+  - [x] Add wave optimization section explaining theorem dependency analysis
+  - [x] Update lean-plan-architect.md agent documentation with enhanced STEP 1 and STEP 2
+  - [x] Add examples of dependency patterns (independent, sequential, mixed)
+  - [x] Update CLAUDE.md hierarchical_agent_architecture section if needed
+- [x] Update related documentation
+  - [x] Verify phase-dependencies.md still accurate (should be compatible)
+  - [x] Update lean-implement-command-guide.md if integration details changed
+  - [x] Add reference to this optimization in plan-metadata-standard.md
+- [x] Run validation suite
+  - [x] bash .claude/scripts/validate-all-standards.sh --plans
+  - [x] Verify no regressions in standards compliance
 
 **Testing**:
 ```bash

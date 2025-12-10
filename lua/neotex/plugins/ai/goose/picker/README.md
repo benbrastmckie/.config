@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Goose Recipe Picker is a comprehensive Telescope-based interface for managing and executing Goose recipes. It provides recipe discovery, rich previews, and native sidebar execution using `goose.core.run()` with `/recipe:<name>` commands. Parameters are prompted conversationally in the goose chat interface.
+The Goose Recipe Picker is a comprehensive Telescope-based interface for managing and executing Goose recipes. It provides recipe discovery, rich previews, and native sidebar execution using direct CLI invocation with `goose run --recipe <path>`. Output streams to the goose.nvim sidebar.
 
 ## Architecture
 
@@ -24,7 +24,7 @@ nvim/lua/neotex/plugins/ai/goose/picker/
 - **discovery.lua**: Scans `.goose/recipes/` (project) and `~/.config/goose/recipes/` (global), returns merged recipe list
 - **metadata.lua**: Parses YAML to extract recipe name, description, parameters, subrecipes
 - **previewer.lua**: Custom Telescope previewer displaying recipe metadata in markdown format
-- **execution.lua**: Executes recipes via `goose.core.run()` with `/recipe:<name>` command in native sidebar
+- **execution.lua**: Executes recipes via direct `goose run --recipe <path>` CLI invocation with sidebar output
 
 ## Data Flow
 
@@ -43,13 +43,11 @@ User selects recipe, presses <CR>
   ↓
 execution.run_recipe_in_sidebar() called
   ↓
-goose.core.run("/recipe:<name>") executes
+goose run --recipe <path> executed via plenary.job
   ↓
-Goose sidebar opens with recipe context
+Goose sidebar opens with streaming output
   ↓
-Goose prompts for parameters conversationally
-  ↓
-Recipe executes with streaming output in sidebar
+Recipe executes with output rendered in sidebar
 ```
 
 ## API Reference
@@ -150,24 +148,27 @@ Format recipe metadata for preview display.
 
 #### `run_recipe_in_sidebar(recipe_path, metadata)`
 
-Run a recipe in goose.nvim sidebar using native `goose.core.run()`.
+Run a recipe in goose.nvim sidebar using direct CLI execution.
 
 **Parameters:**
-- `recipe_path` (string): Absolute path to recipe file (used for name extraction)
+- `recipe_path` (string): Absolute path to recipe file
 - `metadata` (table): Parsed recipe metadata
 
 **Returns:** nil
 
 **Side Effects:**
-- Executes `/recipe:<name>` command via `goose.core.run()`
+- Executes `goose run --recipe <path>` via plenary.job
 - Opens goose sidebar automatically
-- Goose handles parameter prompting conversationally
-- Recipe output streams to sidebar with markdown rendering
+- Recipe output streams to sidebar with real-time updates
+- Session state managed via goose.state module
 
 **Error Handling:**
+- Validates recipe file exists before execution
 - Validates goose.nvim is installed
-- Shows error notification if goose.core module unavailable
+- Shows error notification for job failures
 - Gracefully handles missing recipe metadata
+
+**Note:** This function bypasses goose.nvim's built-in job builder (which only supports `--text` flag) and directly invokes the Goose CLI with `--recipe` flag. This ensures recipes are executed as intended rather than sent as literal text to the LLM.
 
 #### `prompt_for_parameters(parameters)`
 
@@ -261,14 +262,15 @@ The recipe picker provides the following context-aware keybindings:
 
 ### Recipe Execution in Sidebar
 
-Recipes execute via goose.nvim's native `/recipe:<name>` command in the sidebar:
+Recipes execute via direct CLI invocation with `goose run --recipe <path>`:
 
-- **Native Integration**: Uses `goose.core.run()` for seamless sidebar execution
-- **Conversational Parameters**: Goose prompts for required parameters in the chat
-- **Markdown Rendering**: Code blocks, headers, and formatting automatically applied
+- **Direct CLI Execution**: Uses `goose run --recipe <path>` for proper recipe invocation
+- **Streaming Output**: Output streams to sidebar via plenary.job with real-time updates
 - **Session Integration**: Recipe executions create/resume goose sessions (`<leader>av`)
 - **Job Management**: Use `<leader>at` or `:GooseStop` to cancel running recipes
 - **Split Window**: Sidebar respects `window_type = "split"` configuration
+
+**Important**: The execution module bypasses goose.nvim's `job.build_args()` which only supports `--text` flag. This prevents recipes from being sent as literal text to the LLM (which would cause "I'm not familiar with..." errors).
 
 ## Integration Points
 
@@ -282,25 +284,41 @@ The picker uses Telescope's picker framework including:
 
 ### goose.nvim
 
-Recipe execution uses goose.nvim's native `goose.core.run()` function:
+Recipe execution uses direct CLI invocation with plenary.job:
 
 ```lua
--- Load goose.core module
+-- Load goose modules for UI integration
+local state = require('goose.state')
+local ui = require('goose.ui.ui')
 local goose_core = require('goose.core')
+local Job = require('plenary.job')
 
--- Build /recipe:<name> command
-local recipe_name = metadata.name or vim.fn.fnamemodify(recipe_path, ':t:r')
-local prompt = string.format('/recipe:%s', recipe_name)
+-- Open sidebar
+goose_core.open({ focus = 'output', new_session = true })
 
--- Execute via goose.core.run() - handles sidebar, job management, and streaming
-goose_core.run(prompt)
+-- Build CLI args: goose run --recipe <path>
+local args = { 'run', '--recipe', recipe_path }
+
+-- Execute via plenary.job with output streaming to sidebar
+state.goose_run_job = Job:new({
+  command = 'goose',
+  args = args,
+  on_stdout = function(_, out)
+    -- Handle streaming output
+  end,
+  on_exit = function()
+    state.goose_run_job = nil
+    ui.render_output()
+  end
+})
+state.goose_run_job:start()
 ```
 
 This approach:
-- Uses goose's native recipe command syntax (`/recipe:<name>`)
-- Lets goose handle parameter prompting conversationally in the chat
-- Leverages goose.nvim's built-in sidebar UI and session management
-- Integrates with `:GooseStop` for job cancellation
+- Uses proper Goose CLI `--recipe` flag for recipe execution
+- Bypasses goose.nvim's job builder which only supports `--text` (not `--recipe`)
+- Leverages goose.nvim's sidebar UI via state and ui modules
+- Integrates with `:GooseStop` for job cancellation via `state.goose_run_job`
 
 ### which-key
 
@@ -380,6 +398,19 @@ Integration tests verify end-to-end workflows:
 3. Verify sidebar can open: `<leader>aa` or `:Goose`
 4. Test goose.core module: `:lua print(vim.inspect(require('goose.core')))`
 5. Check `:messages` for Lua errors
+
+### LLM Says "I'm not familiar with /recipe:..."
+
+**Symptoms**: Gemini or other LLM responds with "I'm not familiar with the /recipe:create-plan command"
+
+**Cause**: This occurs when recipes are sent as literal text via `goose run --text "/recipe:name"` instead of proper CLI invocation with `goose run --recipe <path>`.
+
+**Solutions**:
+1. Verify you have the latest `execution.lua` with direct CLI execution
+2. Check the execution module uses `--recipe` flag: `grep -n "recipe" ~/.config/nvim/lua/neotex/plugins/ai/goose/picker/execution.lua`
+3. The fix should show `{ 'run', '--recipe', recipe_path }` in the args
+
+**Technical Background**: goose.nvim's `job.build_args()` only supports `--text` flag, so our execution module bypasses it and directly invokes the Goose CLI with `--recipe` flag via plenary.job.
 
 ### Sidebar Not Opening
 

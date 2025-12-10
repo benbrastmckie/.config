@@ -99,12 +99,107 @@ For each theorem to prove:
 2. **Check Mathlib Availability**: Can prerequisites use existing Mathlib theorems?
 3. **Build Dependency Graph**: Create edges from theorem → dependencies
 4. **Validate Acyclicity**: Ensure no circular dependencies
+5. **NEW - Map Theorem Dependencies to Phase Dependencies**:
+   - Build theorem-to-phase mapping: { theorem_name: phase_number }
+   - For each phase, identify which theorems it contains
+   - If Phase N contains theorem_X, Phase M contains theorem_Y
+   - And theorem_X depends on theorem_Y (internal dependency, not Mathlib)
+   - Then Phase N dependencies must include Phase M: dependencies: [..., M, ...]
+6. **NEW - Optimize for Parallelization**:
+   - Group independent theorems into separate phases (dependencies: [])
+   - Minimize sequential chains (maximize wave concurrency)
+   - Balance phase complexity (avoid wave bottlenecks - aim for similar durations)
+   - Default: One theorem per phase for maximum parallelization
+   - Exception: Group tightly coupled theorems (theorem + helper lemma)
 
-Example:
+Example Theorem Dependencies:
 ```
-theorem_mul_comm: []  # No dependencies
-theorem_add_comm: []  # No dependencies
-theorem_distributivity: [theorem_mul_comm, theorem_add_comm]  # Depends on both
+theorem_mul_comm: []  # No dependencies (Wave 1)
+theorem_add_comm: []  # No dependencies (Wave 1)
+theorem_distributivity: [theorem_mul_comm, theorem_add_comm]  # Depends on both (Wave 2)
+```
+
+Example Phase Dependency Mapping:
+```
+Phase 1: theorem_mul_comm → dependencies: []
+Phase 2: theorem_add_comm → dependencies: []
+Phase 3: theorem_distributivity → dependencies: [1, 2]  # Needs both Phase 1 and Phase 2
+```
+
+**Data Structures for Dependency Mapping**:
+
+YOU MUST build and maintain these data structures during STEP 1:
+
+1. **theorem_dependencies map**: Maps each theorem to its prerequisite theorems
+   ```
+   {
+     "theorem_mul_comm": [],
+     "theorem_add_comm": [],
+     "theorem_distributivity": ["theorem_mul_comm", "theorem_add_comm"]
+   }
+   ```
+
+2. **theorem_to_phase map**: Maps each theorem to its assigned phase number
+   ```
+   {
+     "theorem_mul_comm": 1,
+     "theorem_add_comm": 2,
+     "theorem_distributivity": 3
+   }
+   ```
+
+3. **phase_dependencies map**: Maps each phase to prerequisite phases (computed from above)
+   ```
+   {
+     1: [],
+     2: [],
+     3: [1, 2]
+   }
+   ```
+
+**Phase Dependency Conversion Algorithm**:
+
+For each phase N in the plan:
+1. Identify all theorems assigned to Phase N (from theorem_to_phase map)
+2. For each theorem T in Phase N:
+   - Look up T's dependencies in theorem_dependencies map
+   - For each dependency theorem D:
+     - If D is from Mathlib (external): Ignore (no phase dependency)
+     - If D is in this plan (internal): Look up D's phase number in theorem_to_phase map
+     - Add that phase number to Phase N's dependencies
+3. Remove duplicates and sort phase dependencies in ascending order
+4. Output as `dependencies: [...]` array in phase metadata
+
+**Dependency Validation Rules**:
+
+Before finalizing phase dependencies, YOU MUST validate:
+1. **No Forward References**: Phase N cannot depend on Phase M where M > N
+   - If detected: Reorder phases so dependencies come before dependents
+2. **No Self-Dependencies**: Phase N cannot depend on Phase N
+   - If detected: Remove self-reference (indicates grouping error)
+3. **No Circular Dependencies**: Detect cycles in phase dependency graph
+   - Algorithm: Use topological sort (Kahn's algorithm) on phase dependencies
+   - If cycle detected: Regroup theorems to break the cycle
+4. **No Orphaned Phases**: Every phase either has dependencies: [] OR is depended upon by another phase
+   - Exception: Final phases in a plan may have no dependents
+
+**Example Validation**:
+```
+# INVALID: Forward reference
+Phase 1: dependencies: [2]  # ERROR: Cannot depend on later phase
+
+# INVALID: Self-dependency
+Phase 2: dependencies: [1, 2]  # ERROR: Cannot depend on self
+
+# INVALID: Circular dependency
+Phase 1: dependencies: [3]
+Phase 2: dependencies: [1]
+Phase 3: dependencies: [2]  # ERROR: Cycle 1→3→2→1
+
+# VALID: Proper dependency chain
+Phase 1: dependencies: []
+Phase 2: dependencies: [1]
+Phase 3: dependencies: [1, 2]
 ```
 
 **Wave Structure Generation**:
@@ -164,6 +259,15 @@ Tasks:
 - Wave 3 phases: `dependencies: [N, M]` where N, M are Wave 1 or Wave 2 phase numbers
 
 **CHECKPOINT**: YOU MUST have theorem list, dependencies, wave structure, AND per-phase file assignments before Step 2.
+
+**REQUIRED OUTPUTS FROM STEP 1**:
+- ✓ Theorem list with complexity estimates
+- ✓ theorem_dependencies map (theorem → prerequisite theorems)
+- ✓ theorem_to_phase map (theorem → phase number)
+- ✓ phase_dependencies map (phase → prerequisite phases)
+- ✓ Dependency validation completed (no cycles, no forward refs, no self-deps)
+- ✓ Wave structure calculated from phase dependencies
+- ✓ Per-phase file assignments (lean_file: /absolute/path)
 
 ---
 
@@ -344,6 +448,75 @@ dependencies: []                      # Field 3: dependencies (always last)
 - `dependencies: [1]` for phases depending on Phase 1
 - `dependencies: [1, 2]` for phases depending on Phases 1 and 2
 
+**CRITICAL - Dependency Array Generation from STEP 1 Analysis**:
+
+DO NOT use sequential dependencies by default. Instead, YOU MUST generate dependencies from the phase_dependencies map created in STEP 1:
+
+**Current Pattern (DEPRECATED - DO NOT USE)**:
+```markdown
+Phase 1: dependencies: []
+Phase 2: dependencies: [1]  # Sequential by default - WRONG
+Phase 3: dependencies: [2]  # Sequential by default - WRONG
+```
+
+**New Pattern (MANDATORY - Use phase_dependencies map from STEP 1)**:
+```markdown
+Phase 1: dependencies: []      # From phase_dependencies[1] = []
+Phase 2: dependencies: []      # From phase_dependencies[2] = [] (independent theorem)
+Phase 3: dependencies: [1, 2]  # From phase_dependencies[3] = [1, 2] (depends on both)
+```
+
+**Dependency Generation Algorithm**:
+
+For each phase N being written in STEP 2:
+1. Look up phase N in the phase_dependencies map from STEP 1
+2. Retrieve the dependency array: phase_dependencies[N]
+3. Format as `dependencies: [...]` with proper array syntax
+4. Examples:
+   - phase_dependencies[1] = [] → Write `dependencies: []`
+   - phase_dependencies[2] = [1] → Write `dependencies: [1]`
+   - phase_dependencies[3] = [1, 2] → Write `dependencies: [1, 2]`
+
+**Dependency Array Formatting**:
+- Empty array for independent phases: `dependencies: []`
+- Single dependency: `dependencies: [M]` (no trailing comma)
+- Multiple dependencies: `dependencies: [M1, M2, M3]` (sorted ascending order, comma-separated, no trailing comma)
+
+**Phase Granularity Optimization**:
+
+Default strategy: **One theorem per phase** for maximum parallelization
+- Advantages: Enables wave-based parallel execution of independent theorems
+- Disadvantages: More phases to manage (acceptable tradeoff)
+
+Grouping exceptions (use one phase for multiple theorems only when):
+- Theorems are tightly coupled (e.g., theorem + helper lemma used nowhere else)
+- Theorems have identical dependencies (same phase_dependencies value)
+- Theorems together represent a single logical unit (e.g., equivalence bidirectional proofs)
+
+**Example Granularity Decision**:
+```
+# PREFERRED: Separate phases for independent theorems
+Phase 1: theorem_mul_comm (dependencies: [])
+Phase 2: theorem_add_comm (dependencies: [])
+Phase 3: theorem_distributivity (dependencies: [1, 2])
+
+# ACCEPTABLE: Group only when tightly coupled
+Phase 1: theorem_mul_comm + helper_mul_comm_aux (dependencies: [])
+Phase 2: theorem_add_comm (dependencies: [])
+Phase 3: theorem_distributivity (dependencies: [1, 2])
+```
+
+**Dependency Validation Checkpoint (Before Writing Plan File)**:
+
+After generating all phase dependencies, YOU MUST validate:
+1. Run validation checks from STEP 1 (no forward refs, no cycles, no self-deps)
+2. Verify all dependency phase numbers exist (no references to Phase 99 if plan has 5 phases)
+3. Verify dependency arrays are properly formatted (brackets, commas, ascending order)
+4. If validation fails:
+   - Log error via log_command_error with type: validation_error
+   - Include details: phase number, invalid dependency array, error reason
+   - Exit with error (do not create invalid plan)
+
 **CRITICAL FORMAT REQUIREMENTS FOR NEW PLANS**:
 - Metadata **Status** MUST be `[NOT STARTED]` (not [IN PROGRESS] or [COMPLETE])
 - Metadata fields MUST follow standard order: Date, Feature, Scope, Status, Estimated Hours, Complexity Score, Structure Level, Estimated Phases, Standards File, Research Reports, Lean File, Lean Project
@@ -364,7 +537,143 @@ source "${CLAUDE_PROJECT_DIR}/.claude/lib/core/unified-location-detection.sh"
 ensure_artifact_directory "${PLAN_PATH}"
 ```
 
-**CHECKPOINT**: Plan file created at provided path before Step 3.
+6. **Generate Wave Structure Preview (After Plan Creation)**:
+
+After creating the plan file with Write tool, YOU MUST calculate and display wave structure preview showing parallelization benefits:
+
+**Wave Calculation Algorithm (Kahn's Algorithm - Simplified)**:
+
+```
+1. Build in-degree map: For each phase, count how many phases it depends on
+   in_degree = {
+     1: 0,  # dependencies: []
+     2: 0,  # dependencies: []
+     3: 2   # dependencies: [1, 2]
+   }
+
+2. Assign phases to waves:
+   - Wave 1: All phases with in_degree = 0 (independent phases)
+   - Remove Wave 1 phases from dependency lists, decrement in-degrees
+   - Wave 2: All phases with new in_degree = 0
+   - Repeat until all phases assigned
+
+3. Example execution:
+   Initial: in_degree = {1: 0, 2: 0, 3: 2, 4: 1, 5: 2}
+   Wave 1: [1, 2] (in_degree = 0)
+   Update: in_degree = {3: 0, 4: 0, 5: 1} (removed phases 1,2)
+   Wave 2: [3, 4] (in_degree = 0)
+   Update: in_degree = {5: 0}
+   Wave 3: [5]
+```
+
+**Parallelization Metrics Calculation**:
+
+For each phase, estimate duration from STEP 1 complexity analysis:
+- Simple theorem: 0.5-1 hour (use 0.75 average)
+- Medium theorem: 1-3 hours (use 2 average)
+- Complex theorem: 3-6 hours (use 4.5 average)
+
+Calculate metrics:
+```
+Sequential Time = Sum of all phase durations
+Parallel Time = Sum of max duration per wave
+  (Wave time = duration of longest phase in wave)
+Time Savings = ((Sequential - Parallel) / Sequential) × 100%
+```
+
+**Wave Structure Preview Format**:
+
+Display wave structure in console output using this format:
+
+```
+═══════════════════════════════════════════════════════════
+                   WAVE STRUCTURE PREVIEW
+═══════════════════════════════════════════════════════════
+
+Wave 1 (Parallel): Phases 1, 2, 3
+  - 3 phases executing concurrently
+  - Wave duration: 2.0 hours (longest phase)
+
+Wave 2 (Parallel): Phases 4, 5
+  - 2 phases executing concurrently
+  - Wave duration: 3.0 hours (longest phase)
+
+Wave 3 (Sequential): Phase 6
+  - 1 phase (no parallelization)
+  - Wave duration: 1.5 hours
+
+─────────────────────────────────────────────────────────────
+PARALLELIZATION METRICS
+─────────────────────────────────────────────────────────────
+Sequential Execution Time: 12.0 hours (sum of all phases)
+Parallel Execution Time:    6.5 hours (wave-based)
+Time Savings:              45.8% (5.5 hours saved)
+
+Parallelization Efficiency: Good (3 concurrent phases in Wave 1)
+═══════════════════════════════════════════════════════════
+```
+
+**Wave Structure as Markdown Comment in Plan**:
+
+AFTER creating the plan file, append wave structure as HTML comment at the end of the file:
+
+```html
+<!--
+WAVE STRUCTURE (Generated by lean-plan-architect)
+
+Wave 1: Phases 1, 2, 3 (parallel - 3 phases)
+Wave 2: Phases 4, 5 (parallel - 2 phases)
+Wave 3: Phase 6 (sequential - 1 phase)
+
+Parallelization Metrics:
+- Sequential Time: 12.0 hours
+- Parallel Time: 6.5 hours
+- Time Savings: 45.8%
+
+Generated: YYYY-MM-DD HH:MM:SS
+-->
+```
+
+**Edge Cases to Handle**:
+
+1. **Single Phase Plan**: Skip wave preview (display message: "Single phase plan - no parallelization")
+2. **All Sequential Plan**: Display warning
+   ```
+   WARNING: All phases have sequential dependencies
+   Wave 1: Phase 1
+   Wave 2: Phase 2
+   Wave 3: Phase 3
+
+   Parallelization Metrics:
+   - Sequential Time: 12.0 hours
+   - Parallel Time: 12.0 hours
+   - Time Savings: 0%
+
+   RECOMMENDATION: Review theorem dependencies to identify parallelization opportunities
+   ```
+3. **All Parallel Plan**: Display success message
+   ```
+   OPTIMAL: All phases are independent (maximum parallelization)
+   Wave 1: Phases 1, 2, 3, 4, 5, 6
+
+   Parallelization Metrics:
+   - Sequential Time: 12.0 hours
+   - Parallel Time: 3.0 hours (longest phase)
+   - Time Savings: 75%
+   ```
+
+**Return Signal Enhancement**:
+
+Include wave count in PLAN_CREATED signal:
+
+```
+PLAN_CREATED: /absolute/path/to/plan.md
+WAVES: 3
+PARALLELIZATION: 45.8%
+PHASES: 6
+```
+
+**CHECKPOINT**: Wave structure preview displayed and added to plan file before Step 3.
 
 ---
 

@@ -5,9 +5,16 @@
 --- with type validation, CLI command construction with proper escaping, and
 --- integration with goose.nvim sidebar for streaming output.
 ---
+--- Recipe execution uses `goose run --recipe <path>` CLI syntax directly,
+--- bypassing goose.nvim's job builder which only supports `--text` flag.
+--- This ensures recipes are executed as intended rather than sent as text.
+---
 --- @module neotex.plugins.ai.goose.picker.execution
 
 local M = {}
+
+-- plenary.job for CLI execution with output streaming
+local Job = require('plenary.job')
 
 -- Internal helper for parameter serialization
 --- Serialize parameters table to key=value,key2=value2 format
@@ -25,14 +32,23 @@ function M._serialize_params(params)
   return table.concat(param_parts, ',')
 end
 
---- Run a recipe in goose.nvim sidebar using native goose.core.run()
---- Opens sidebar and sends /recipe:<name> command, letting Goose handle
---- parameter prompting conversationally within the chat interface
+--- Run a recipe in goose.nvim sidebar using direct CLI execution
+--- Executes `goose run --recipe <path>` directly, bypassing goose.nvim's
+--- job builder which only supports --text flag. Output streams to sidebar.
 ---
---- @param recipe_path string Absolute path to recipe file (unused, kept for API compatibility)
+--- @param recipe_path string Absolute path to recipe file
 --- @param metadata table Parsed recipe metadata from metadata.parse()
 --- @return nil
 function M.run_recipe_in_sidebar(recipe_path, metadata)
+  -- Validate recipe file exists
+  if not recipe_path or vim.fn.filereadable(recipe_path) ~= 1 then
+    vim.notify(
+      string.format('Recipe file not found: %s', recipe_path or 'nil'),
+      vim.log.levels.ERROR
+    )
+    return
+  end
+
   -- Ensure goose.nvim plugin is loaded (handles lazy.nvim lazy-loading)
   local goose_loaded, _ = pcall(require, 'goose')
   if not goose_loaded then
@@ -43,23 +59,13 @@ function M.run_recipe_in_sidebar(recipe_path, metadata)
     return
   end
 
-  -- Load goose.core for native run() function
-  local goose_core
-  local ok, err = pcall(function()
-    goose_core = require('goose.core')
-  end)
+  -- Load goose modules for UI integration
+  local state = require('goose.state')
+  local ui = require('goose.ui.ui')
+  local goose_core = require('goose.core')
 
-  if not ok then
-    vim.notify(
-      string.format('Failed to load goose.nvim core module: %s', tostring(err)),
-      vim.log.levels.ERROR
-    )
-    return
-  end
-
-  -- Build /recipe:<name> command - Goose will prompt for parameters conversationally
+  -- Recipe name for display
   local recipe_name = metadata.name or vim.fn.fnamemodify(recipe_path, ':t:r')
-  local prompt = string.format('/recipe:%s', recipe_name)
 
   -- Notify user
   vim.notify(
@@ -67,8 +73,71 @@ function M.run_recipe_in_sidebar(recipe_path, metadata)
     vim.log.levels.INFO
   )
 
-  -- Use goose.core.run() which handles sidebar opening and job management
-  goose_core.run(prompt)
+  -- Open sidebar if not already open (without starting a new session)
+  goose_core.open({ focus = 'output', new_session = true })
+
+  -- Build CLI args: goose run --recipe <path>
+  local args = { 'run', '--recipe', recipe_path }
+
+  -- Add session resume if active
+  if state.active_session then
+    table.insert(args, '--name')
+    table.insert(args, state.active_session.name)
+    table.insert(args, '--resume')
+  end
+
+  -- Execute recipe via direct CLI call with output streaming to sidebar
+  state.goose_run_job = Job:new({
+    command = 'goose',
+    args = args,
+    on_start = function()
+      vim.schedule(function()
+        -- Render initial output state
+        if state.windows then
+          ui.render_output()
+        end
+      end)
+    end,
+    on_stdout = function(_, out)
+      if out then
+        vim.schedule(function()
+          -- Reload modified file buffers
+          vim.cmd('checktime')
+
+          -- Capture session ID for new sessions
+          if not state.active_session then
+            local session_id = out:match("session id:%s*([%w_]+)")
+            if session_id then
+              vim.defer_fn(function()
+                local session_mod = require('goose.session')
+                state.active_session = session_mod.get_by_name(session_id)
+              end, 100)
+            end
+          end
+        end)
+      end
+    end,
+    on_stderr = function(_, err)
+      if err then
+        vim.schedule(function()
+          vim.notify(err, vim.log.levels.ERROR)
+        end)
+      end
+    end,
+    on_exit = function()
+      vim.schedule(function()
+        state.goose_run_job = nil
+        require('goose.review').check_cleanup_breakpoint()
+        -- Final render
+        if state.windows then
+          ui.render_output()
+          ui.scroll_to_bottom()
+        end
+      end)
+    end
+  })
+
+  state.goose_run_job:start()
 end
 
 --- Prompt user for recipe parameters
