@@ -117,14 +117,72 @@ test_plan_structure_detection() {
 # Test 2: Wave Extraction from Plan Metadata
 #=============================================================================
 test_wave_extraction() {
-  # TODO: Implement wave extraction test
-  # Expected behavior:
-  # - Parse dependencies: [] field from plan
-  # - Default to sequential (one phase per wave)
-  # - Handle parallel_wave: true + wave_id indicators
-  # - Gracefully handle missing metadata
+  # Test that STEP 2 documents wave extraction from plan metadata
+  local coordinator_file="$PROJECT_DIR/.claude/agents/lean-coordinator.md"
 
-  skip "test_wave_extraction - Not implemented yet (Phase 5)"
+  if ! [ -f "$coordinator_file" ]; then
+    fail "test_wave_extraction - lean-coordinator.md not found"
+    return
+  fi
+
+  # Check for STEP 2 presence
+  if ! grep -q "### STEP 2: Wave Extraction from Plan Metadata" "$coordinator_file"; then
+    fail "test_wave_extraction - STEP 2 not found"
+    return
+  fi
+
+  # Check that dependency-analyzer.sh is NOT invoked
+  if ! grep -q "Plan-driven mode does NOT invoke dependency-analyzer.sh" "$coordinator_file"; then
+    fail "test_wave_extraction - dependency-analyzer.sh removal not documented"
+    return
+  fi
+
+  # Check for dependencies field parsing
+  if ! grep -q 'dependencies:\s*\[\]' "$coordinator_file"; then
+    fail "test_wave_extraction - dependencies field parsing not documented"
+    return
+  fi
+
+  # Check for sequential default behavior
+  if ! grep -q "Sequential by Default" "$coordinator_file"; then
+    fail "test_wave_extraction - sequential default not documented"
+    return
+  fi
+
+  if ! grep -q "Each phase is its own wave" "$coordinator_file"; then
+    fail "test_wave_extraction - one phase per wave not documented"
+    return
+  fi
+
+  # Check for parallel wave detection
+  if ! grep -q "Parallel Wave Detection" "$coordinator_file"; then
+    fail "test_wave_extraction - parallel wave detection not documented"
+    return
+  fi
+
+  if ! grep -q "parallel_wave: true" "$coordinator_file"; then
+    fail "test_wave_extraction - parallel_wave indicator not documented"
+    return
+  fi
+
+  if ! grep -q "wave_id" "$coordinator_file"; then
+    fail "test_wave_extraction - wave_id indicator not documented"
+    return
+  fi
+
+  # Check for dependency ordering
+  if ! grep -q "Dependency Ordering" "$coordinator_file"; then
+    fail "test_wave_extraction - dependency ordering not documented"
+    return
+  fi
+
+  # Check for wave structure validation
+  if ! grep -q "Validate Wave Structure" "$coordinator_file"; then
+    fail "test_wave_extraction - wave structure validation not documented"
+    return
+  fi
+
+  pass "test_wave_extraction - Wave extraction from plan metadata documented correctly"
 }
 
 #=============================================================================

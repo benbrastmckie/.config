@@ -228,32 +228,32 @@ bash .claude/tests/integration/test_lean_plan_coordinator.sh
 
 ---
 
-### Phase 5: Wave Extraction from Plan Metadata [NOT STARTED]
+### Phase 5: Wave Extraction from Plan Metadata [COMPLETE]
 
 **Objective**: Extract waves from plan's `dependencies:` metadata WITHOUT dependency-analyzer utility
 
 **Dependencies**: [4]
 
 **Tasks**:
-- [ ] Remove STEP 2 (Dependency Analysis) invocation of dependency-analyzer.sh
-- [ ] Implement plan metadata parsing for `dependencies:` field per phase
-- [ ] Build wave groups: Default to sequential (one phase per wave)
-- [ ] Support parallel wave indicator: `parallel_wave: true` + `wave_id: "identifier"`
-- [ ] Handle missing metadata gracefully (default to sequential)
-- [ ] Update test_dependency_analysis_invocation: Verify metadata parsing (rename to test_wave_extraction)
-- [ ] Run test suite: 3/8 PASS expected
-- [ ] Run all 48 existing tests: Must pass
-- [ ] Commit wave extraction logic
+- [x] Remove STEP 2 (Dependency Analysis) invocation of dependency-analyzer.sh
+- [x] Implement plan metadata parsing for `dependencies:` field per phase
+- [x] Build wave groups: Default to sequential (one phase per wave)
+- [x] Support parallel wave indicator: `parallel_wave: true` + `wave_id: "identifier"`
+- [x] Handle missing metadata gracefully (default to sequential)
+- [x] Update test_dependency_analysis_invocation: Verify metadata parsing (rename to test_wave_extraction)
+- [x] Run test suite: 3/8 PASS expected
+- [x] Run all 48 existing tests: Must pass
+- [x] Commit wave extraction logic
 
 **Success Criteria**:
-- [ ] dependency-analyzer.sh invocation removed from lean-coordinator
-- [ ] dependencies: [] field parsed correctly (empty array = Wave 1)
-- [ ] dependencies: [1, 2] field parsed correctly (depends on Phase 1 and 2)
-- [ ] Sequential waves created by default (one phase per wave)
-- [ ] Parallel wave detection works when parallel_wave: true + wave_id present
-- [ ] Missing metadata defaults to sequential (fail-safe)
-- [ ] test_wave_extraction passes (3/8 PASS, 5/8 SKIP)
-- [ ] All 48 existing tests pass (no regression)
+- [x] dependency-analyzer.sh invocation removed from lean-coordinator
+- [x] dependencies: [] field parsed correctly (empty array = Wave 1)
+- [x] dependencies: [1, 2] field parsed correctly (depends on Phase 1 and 2)
+- [x] Sequential waves created by default (one phase per wave)
+- [x] Parallel wave detection works when parallel_wave: true + wave_id present
+- [x] Missing metadata defaults to sequential (fail-safe)
+- [x] test_wave_extraction passes (3/8 PASS, 5/8 SKIP)
+- [x] All 48 existing tests pass (no regression)
 
 **Validation**:
 ```bash
