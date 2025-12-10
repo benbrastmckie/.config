@@ -88,9 +88,98 @@ When `execution_mode=file-based` (no plan file provided), the coordinator should
 
 This ensures consistent coordinator/implementer architecture for ALL modes.
 
+### STEP 0: Execution Mode Detection
+
+**Objective**: Detect execution mode from input parameter and route workflow accordingly.
+
+1. **Parse execution_mode Parameter**:
+   ```bash
+   # Default to plan-based if not specified
+   EXECUTION_MODE="${execution_mode:-plan-based}"
+
+   # Validate mode value
+   if [ "$EXECUTION_MODE" != "file-based" ] && [ "$EXECUTION_MODE" != "plan-based" ]; then
+     echo "ERROR: Invalid execution_mode '$EXECUTION_MODE'. Must be 'file-based' or 'plan-based'" >&2
+     exit 1
+   fi
+
+   echo "Execution Mode: $EXECUTION_MODE"
+   ```
+
+2. **Conditional Workflow Routing**:
+   - **If execution_mode = "file-based"**:
+     - Skip STEP 1 (Plan Structure Detection)
+     - Skip STEP 2 (Wave Extraction)
+     - Auto-generate single-wave structure (all theorems in LEAN_FILE)
+     - Proceed to STEP 3 (Iteration Management) and STEP 4 (Wave Execution)
+     - Create brief summary in STEP 5 (consistent format across modes)
+
+   - **If execution_mode = "plan-based"**:
+     - Execute STEP 1 (Plan Structure Detection)
+     - Execute STEP 2 (Wave Extraction from Plan Metadata)
+     - Proceed to STEP 3 (Iteration Management) and STEP 4 (Wave Execution)
+     - Create brief summary in STEP 5
+
+3. **File-Based Mode Auto-Conversion** (executed only when execution_mode = "file-based"):
+   ```bash
+   if [ "$EXECUTION_MODE" = "file-based" ]; then
+     echo "File-based mode: Auto-converting to single-wave structure"
+
+     # Extract all sorry markers from LEAN_FILE
+     THEOREMS=$(grep -n "^theorem.*:=.*sorry" "$lean_file_path" | \
+                cut -d: -f1,2 | \
+                sed 's/:/ /' | \
+                awk '{print "{\"name\": \"theorem_line_" $1 "\", \"line\": " $1 ", \"phase_number\": 0}"}')
+
+     # Create single wave with all theorems
+     WAVE_STRUCTURE='[
+       {
+         "wave_id": 1,
+         "phases": ['"$(echo "$THEOREMS" | tr '\n' ',')"'],
+         "parallel": false
+       }
+     ]'
+
+     echo "Wave 1: All theorems ($(echo "$THEOREMS" | wc -l) theorems)"
+
+     # Skip to STEP 3
+     # (STEP 1-2 not executed in file-based mode)
+   fi
+   ```
+
+4. **Mode Detection Validation**:
+   - Confirm mode routing worked correctly
+   - Log execution mode to coordinator state
+   - Display mode banner to user:
+     ```
+     ╔═══════════════════════════════════════════════════════╗
+     ║ LEAN COORDINATOR - EXECUTION MODE: FILE-BASED         ║
+     ╠═══════════════════════════════════════════════════════╣
+     ║ Workflow: All theorems in single wave                ║
+     ║ Dependency Analysis: Skipped (file-based mode)       ║
+     ║ Plan Structure Detection: Skipped                    ║
+     ╚═══════════════════════════════════════════════════════╝
+     ```
+
+     OR for plan-based mode:
+     ```
+     ╔═══════════════════════════════════════════════════════╗
+     ║ LEAN COORDINATOR - EXECUTION MODE: PLAN-BASED         ║
+     ╠═══════════════════════════════════════════════════════╣
+     ║ Workflow: Wave extraction from plan metadata         ║
+     ║ Dependency Analysis: Plan metadata parsing           ║
+     ║ Plan Structure Detection: Enabled                    ║
+     ╚═══════════════════════════════════════════════════════╝
+     ```
+
+**Output**:
+- `EXECUTION_MODE` variable set to "file-based" or "plan-based"
+- Workflow routing determined (skip STEP 1-2 for file-based, execute all steps for plan-based)
+- Mode banner displayed to user
+
 ### STEP 1: Plan Structure Detection
 
-**Backward Compatibility Note**: This STEP is only executed in plan-based mode. File-based mode skips to STEP 3 (wave execution) after auto-converting to single-wave structure.
+**Backward Compatibility Note**: This STEP is only executed in plan-based mode. File-based mode skips to STEP 3 (Iteration Management) after auto-converting to single-wave structure in STEP 0.
 
 1. **Read Plan File**: Load plan to check structure
 2. **Detect Structure Level**:
@@ -119,7 +208,7 @@ fi
 
 ### STEP 2: Wave Extraction from Plan Metadata
 
-**Backward Compatibility Note**: This STEP is only executed in plan-based mode. File-based mode skips to STEP 3 (wave execution) after auto-converting to single-wave structure.
+**Backward Compatibility Note**: This STEP is only executed in plan-based mode. File-based mode skips to STEP 3 (Iteration Management) after auto-converting to single-wave structure in STEP 0.
 
 **IMPORTANT**: Plan-driven mode does NOT invoke dependency-analyzer.sh. Instead, wave structure is extracted directly from plan metadata.
 

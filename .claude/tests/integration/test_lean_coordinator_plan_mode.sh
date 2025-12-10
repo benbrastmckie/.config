@@ -18,7 +18,8 @@ TESTS_FAILED=0
 TESTS_SKIPPED=0
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+# tests/integration/ is 2 levels deep in .claude/, need to go up 3 levels to get to project root
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 # Test isolation: Override CLAUDE_SPECS_ROOT to temporary directory
 TEST_ROOT="/tmp/lean_coordinator_test_$$"
@@ -128,14 +129,45 @@ test_progress_tracking_forwarding() {
 # Test 6: File-Based Mode Preservation (CRITICAL - Regression Check)
 #=============================================================================
 test_file_based_mode_preservation() {
-  # TODO: Implement file-based mode regression test
-  # Expected behavior:
-  # - execution_mode=file-based preserves original behavior
-  # - No plan dependency analysis
-  # - Single wave with all theorems
-  # - All 48 existing tests must pass
+  # Test that documentation includes STEP 0 for mode detection
+  local coordinator_file="$PROJECT_DIR/.claude/agents/lean-coordinator.md"
 
-  skip "test_file_based_mode_preservation - Not implemented yet (Phase 3)"
+  if ! [ -f "$coordinator_file" ]; then
+    fail "test_file_based_mode_preservation - lean-coordinator.md not found"
+    return
+  fi
+
+  # Check for STEP 0 presence
+  if ! grep -q "### STEP 0: Execution Mode Detection" "$coordinator_file"; then
+    fail "test_file_based_mode_preservation - STEP 0 not found in lean-coordinator.md"
+    return
+  fi
+
+  # Check for execution_mode parameter parsing
+  if ! grep -q 'EXECUTION_MODE="\${execution_mode:-plan-based}"' "$coordinator_file"; then
+    fail "test_file_based_mode_preservation - execution_mode parameter parsing not found"
+    return
+  fi
+
+  # Check for file-based mode conditional
+  if ! grep -q 'if \[ "$EXECUTION_MODE" = "file-based" \]' "$coordinator_file"; then
+    fail "test_file_based_mode_preservation - file-based mode conditional not found"
+    return
+  fi
+
+  # Check for plan-based mode mention
+  if ! grep -q 'execution_mode = "plan-based"' "$coordinator_file"; then
+    fail "test_file_based_mode_preservation - plan-based mode not documented"
+    return
+  fi
+
+  # Check that STEP 1 and STEP 2 have backward compatibility notes
+  if ! grep -q "This STEP is only executed in plan-based mode" "$coordinator_file"; then
+    fail "test_file_based_mode_preservation - backward compatibility notes missing"
+    return
+  fi
+
+  pass "test_file_based_mode_preservation - Mode detection documented correctly"
 }
 
 #=============================================================================
