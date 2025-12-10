@@ -186,27 +186,27 @@ bash .claude/tests/integration/test_lean_plan_coordinator.sh
 
 ---
 
-### Phase 4: Plan Structure Detection Implementation [NOT STARTED]
+### Phase 4: Plan Structure Detection Implementation [COMPLETE]
 
 **Objective**: Implement STEP 1 for plan-based mode (detect Level 0 vs Level 1)
 
 **Dependencies**: [3]
 
 **Tasks**:
-- [ ] Implement plan structure detection: Level 0 (inline) vs Level 1 (phase files)
-- [ ] Build phase file list based on structure level
-- [ ] Extract phase numbers from plan/phase files
-- [ ] Update test_plan_structure_detection: Verify detection logic
-- [ ] Run test suite: 2/8 PASS expected
-- [ ] Run all 48 existing tests: Must pass
-- [ ] Commit plan structure detection
+- [x] Implement plan structure detection: Level 0 (inline) vs Level 1 (phase files)
+- [x] Build phase file list based on structure level
+- [x] Extract phase numbers from plan/phase files
+- [x] Update test_plan_structure_detection: Verify detection logic
+- [x] Run test suite: 2/8 PASS expected
+- [x] Run all 48 existing tests: Must pass
+- [x] Commit plan structure detection
 
 **Success Criteria**:
-- [ ] Level 0 detection works (inline plan, single file)
-- [ ] Level 1 detection works (phase files in dedicated directory)
-- [ ] Phase file list built correctly for both levels
-- [ ] test_plan_structure_detection passes (2/8 PASS, 6/8 SKIP)
-- [ ] All 48 existing tests pass (no regression)
+- [x] Level 0 detection works (inline plan, single file)
+- [x] Level 1 detection works (phase files in dedicated directory)
+- [x] Phase file list built correctly for both levels
+- [x] test_plan_structure_detection passes (2/8 PASS, 6/8 SKIP)
+- [x] All 48 existing tests pass (no regression)
 
 **Validation**:
 ```bash

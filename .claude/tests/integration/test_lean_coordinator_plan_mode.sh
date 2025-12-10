@@ -62,13 +62,55 @@ echo ""
 # Test 1: Plan Structure Detection
 #=============================================================================
 test_plan_structure_detection() {
-  # TODO: Implement plan structure detection test
-  # Expected behavior:
-  # - Level 0: Inline plan (single file)
-  # - Level 1: Phase files in dedicated directory
-  # - Build correct file list for each level
+  # Test that STEP 1 documents plan structure detection logic
+  local coordinator_file="$PROJECT_DIR/.claude/agents/lean-coordinator.md"
 
-  skip "test_plan_structure_detection - Not implemented yet (Phase 4)"
+  if ! [ -f "$coordinator_file" ]; then
+    fail "test_plan_structure_detection - lean-coordinator.md not found"
+    return
+  fi
+
+  # Check for STEP 1 presence
+  if ! grep -q "### STEP 1: Plan Structure Detection" "$coordinator_file"; then
+    fail "test_plan_structure_detection - STEP 1 not found"
+    return
+  fi
+
+  # Check for Level 0 and Level 1 detection documentation
+  if ! grep -q "Level 0: All theorem phases inline in single file" "$coordinator_file"; then
+    fail "test_plan_structure_detection - Level 0 detection not documented"
+    return
+  fi
+
+  if ! grep -q "Level 1: Phases in separate files" "$coordinator_file"; then
+    fail "test_plan_structure_detection - Level 1 detection not documented"
+    return
+  fi
+
+  # Check for detection method code block
+  if ! grep -q 'if \[ -d "$plan_dir" \]' "$coordinator_file"; then
+    fail "test_plan_structure_detection - Detection method not documented"
+    return
+  fi
+
+  # Check for STRUCTURE_LEVEL variable
+  if ! grep -q "STRUCTURE_LEVEL=1" "$coordinator_file"; then
+    fail "test_plan_structure_detection - STRUCTURE_LEVEL variable not found"
+    return
+  fi
+
+  if ! grep -q "STRUCTURE_LEVEL=0" "$coordinator_file"; then
+    fail "test_plan_structure_detection - STRUCTURE_LEVEL=0 not found"
+    return
+  fi
+
+  # Check for phase file list building logic
+  if ! grep -q 'ls "$plan_dir"/phase_\*.md' "$coordinator_file"; then
+    fail "test_plan_structure_detection - Phase file list building not documented"
+    return
+  fi
+
+  pass "test_plan_structure_detection - Plan structure detection documented correctly"
 }
 
 #=============================================================================
