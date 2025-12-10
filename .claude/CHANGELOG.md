@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Lean Coordinator Plan-Driven Mode** (2025-12-09): Optimized lean-coordinator for plan-driven wave execution without dependency analysis overhead
+  - **Feature**: Added plan-based execution mode to lean-coordinator with wave extraction from plan metadata
+  - **Context Reduction**: 96% reduction (80 tokens vs 2,000 tokens) via brief summary format with structured metadata fields
+  - **Wave Detection**: Reads `dependencies:` fields from plan metadata instead of invoking dependency-analyzer.sh (2-3 tool call overhead eliminated)
+  - **Sequential Default**: One phase per wave by default, with parallel wave support via `parallel_wave: true` + `wave_id` indicators
+  - **Backward Compatibility**: Dual-mode support (file-based for /lean-build, plan-based for /lean-implement) maintains existing workflows
+  - **Integration**: Updated /lean-implement command to pass `execution_mode: plan-based` parameter to lean-coordinator
+  - **Performance**: Immediate execution (no startup analysis), 10+ iterations possible (vs 3-4 before), 90% faster wave detection (<1s vs 5-10s)
+  - **Test Coverage**: 55 total tests (48 existing + 7 new plan-driven mode tests), 100% pass rate, zero regression
+  - **Documentation**: Updated hierarchical-agents-examples.md Example 8 with plan-driven mode subsection, lean-coordinator.md STEP 0-5 finalized
+  - **Reference**: Implementation plan in `.claude/specs/065_lean_coordinator_wave_optimization/plans/001-lean-coordinator-wave-optimization-plan.md`
+
 ### Fixed
 
 - **Research-Coordinator Task Invocation Skipping** (2025-12-09): Fixed critical bug where research-coordinator agent was skipping Task invocations in STEP 3, causing empty reports directories and expensive fallback behavior (5.3x cost multiplier)

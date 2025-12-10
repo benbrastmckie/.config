@@ -1055,7 +1055,22 @@ fi
 echo "[CHECKPOINT] Validation: $SUCCESS_PERCENTAGE% success rate"
 ```
 
-### Implementation: /lean-implement
+### Implementation: /lean-implement (Plan-Driven Mode)
+
+**Status**: IMPLEMENTED (as of 2025-12-09)
+
+The /lean-implement command uses plan-driven mode for wave-based orchestration with lean-coordinator. This mode eliminates dependency analysis overhead by reading wave structure directly from plan metadata.
+
+**execution_mode Parameter**: The lean-coordinator supports two modes:
+1. **file-based**: Legacy mode for /lean-build (single wave, all theorems)
+2. **plan-based**: Optimized mode for /lean-implement (wave extraction from plan metadata)
+
+The /lean-implement command passes `execution_mode: plan-based` to lean-coordinator, enabling:
+- Wave structure extracted from plan's `dependencies:` fields
+- Sequential execution by default (one phase per wave)
+- Parallel waves when `parallel_wave: true` + `wave_id` indicators present
+- Brief summary format (80 tokens vs 2,000 tokens = 96% context reduction)
+- NO dependency-analyzer.sh invocation (reads plan metadata directly)
 
 **Block 1b: Hard Barrier Enforcement**
 
@@ -1142,7 +1157,8 @@ echo "Full report: $LATEST_SUMMARY"
 **Integration Tests**:
 - `test_lean_plan_coordinator.sh`: 21 tests (100% pass rate)
 - `test_lean_implement_coordinator.sh`: 27 tests (100% pass rate)
-- Total: 48 tests, 0 failures
+- `test_lean_coordinator_plan_mode.sh`: 7 tests PASS, 1 test SKIP (optional)
+- Total: 55 tests (48 core + 7 plan-driven), 0 failures
 
 **Pre-commit Validation**:
 - Sourcing standards: PASS
