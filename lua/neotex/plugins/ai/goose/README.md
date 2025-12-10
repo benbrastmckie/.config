@@ -81,26 +81,35 @@ return {
   branch = "main",
   dependencies = {
     "nvim-lua/plenary.nvim",
-    "MeanderingProgrammer/render-markdown.nvim",
+    {
+      "MeanderingProgrammer/render-markdown.nvim",
+      opts = { anti_conceal = { enabled = false } },
+    },
   },
   config = function()
+    -- Dynamic multi-provider detection (Gemini CLI, Claude Code)
+    local providers = {}
+    -- ... provider detection logic (see init.lua for full implementation)
+
     require("goose").setup({
       prefered_picker = "telescope",
       default_global_keymaps = false,  -- Managed by which-key.lua
-      default_mode = "auto",           -- Full agent capabilities by default
+      default_mode = "auto",           -- Full agent capabilities
       ui = {
         window_type = "split",     -- Split window mode (not floating)
         window_width = 0.35,       -- 35% of screen width
         input_height = 0.15,       -- 15% for input area
         layout = "right",          -- Right sidebar positioning
         fullscreen = false,
-        display_model = true,
-        display_goose_mode = true,
+        floating_height = 0.8,     -- Retained for compatibility
+        display_model = true,      -- Show model in winbar
+        display_goose_mode = true, -- Show mode in winbar
       },
-      providers = {
-        google = { "gemini-3-pro-preview-11-2025" },
-      },
+      providers = providers,       -- Dynamically detected
     })
+
+    -- Autocmds for visible separator between output/input panes
+    -- ... (see init.lua for full implementation)
   end,
   cmd = { "Goose", "GooseOpenInput", "GooseClose" },
   keys = {},  -- Empty: keybindings in which-key.lua
@@ -111,19 +120,51 @@ return {
 
 All goose.nvim keybindings are defined in `which-key.lua` under the `<leader>a` namespace:
 
+#### Core Commands
+
 | Mapping | Mode | Description |
 |---------|------|-------------|
-| `<leader>ag` | Normal | Toggle goose chat interface |
-| `<leader>ag` | Visual | Send selection to goose with prompt |
-| `<leader>ai` | Normal | Focus goose input window |
+| `<leader>aa` | Normal | Toggle goose chat interface |
+| `<leader>aa` | Visual | Send selection to goose with prompt |
+| `<leader>ae` | Normal | Focus goose input window |
 | `<leader>ao` | Normal | Focus goose output window |
 | `<leader>af` | Normal | Toggle goose fullscreen mode |
 | `<leader>ad` | Normal | Open goose diff view |
-| `<leader>aA` | Normal | Switch to auto mode (full agent) |
-| `<leader>aC` | Normal | Switch to chat mode (no file edits) |
+| `<leader>am` | Normal | Mode picker (auto/chat) |
 | `<leader>aR` | Normal | Run recipe (Telescope picker) |
-| `<leader>ab` | Normal | Switch goose backend/provider |
+| `<leader>ap` | Normal | Provider status and switch |
 | `<leader>aq` | Normal | Close goose interface |
+
+#### Session Management
+
+| Mapping | Description |
+|---------|-------------|
+| `<leader>ax` | New session (opens fresh chat) |
+| `<leader>av` | Select session (switch between sessions) |
+| `<leader>ai` | Inspect session (view session details) |
+
+#### Execution Control
+
+| Mapping | Description |
+|---------|-------------|
+| `<leader>ag` | Goose run (execute current context) |
+| `<leader>ar` | Run new session (fresh execution) |
+| `<leader>at` | Stop goose (cancel running job) |
+
+#### Navigation and Layout
+
+| Mapping | Description |
+|---------|-------------|
+| `<leader>ab` | Toggle pane (switch focus) |
+| `<leader>ah` | Toggle focus (input/output) |
+
+#### Changes and Config
+
+| Mapping | Description |
+|---------|-------------|
+| `<leader>aw` | Revert all changes |
+| `<leader>az` | Revert this change |
+| `<leader>au` | Open goose config |
 
 ## Recipe Picker
 
@@ -166,8 +207,8 @@ Project recipes take priority when duplicate names exist.
 2. Navigate recipes with arrow keys or fuzzy search
 3. Review recipe details in the preview window
 4. Press `<CR>` to execute the selected recipe
-5. Enter parameter values when prompted (with type validation)
-6. Recipe executes in ToggleTerm with interactive mode
+5. Recipe executes in goose sidebar using `/recipe:<name>` command
+6. Goose prompts for parameters conversationally in the chat interface
 
 ### Parameter Types
 
@@ -197,52 +238,43 @@ The picker module is organized into focused components:
 - **discovery.lua**: Recipe file discovery from project and global directories
 - **metadata.lua**: YAML parsing for recipe metadata extraction
 - **previewer.lua**: Custom Telescope previewer for recipe details
-- **execution.lua**: Parameter prompting, validation, and ToggleTerm execution
+- **execution.lua**: Native sidebar execution using `goose.core.run()`
 
 See [picker/README.md](picker/README.md) for complete API documentation.
 
 ### Backend Configuration
 
-#### Gemini CLI (Default)
+goose.nvim dynamically detects available providers on startup. Configure your providers once and the plugin will automatically use them.
 
-1. Install Gemini CLI: `npm install -g @anthropic-ai/gemini-cli` or via your package manager
+#### Gemini (Default)
+
+1. Install Gemini CLI via your package manager or Google's installer
 2. Authenticate:
    ```bash
    gemini auth login
    # Follow browser authentication flow
    ```
-3. Configure Goose:
-   ```bash
-   goose configure
-   # Select: Gemini CLI
-   # Model: gemini-3.0-pro (or your preferred model)
-   ```
+3. Verify: `:checkhealth goose` should show Gemini as available
 
-#### Claude Code (Max Subscription)
+#### Claude Code (Pro/Max Subscription)
 
-1. Subscribe to Claude Max at [claude.ai/upgrade](https://claude.ai/upgrade)
-2. Install Claude Code CLI (already installed via NixOS)
+1. Subscribe to Claude Pro or Max at [claude.ai/upgrade](https://claude.ai/upgrade)
+2. Install Claude CLI (NixOS: already installed)
 3. Authenticate:
    ```bash
    claude auth login
    # IMPORTANT: Ensure ANTHROPIC_API_KEY is NOT set
    unset ANTHROPIC_API_KEY
    ```
-4. Configure Goose:
-   ```bash
-   goose configure
-   # Select: Claude Code
-   # Uses pass-through mode (no API key needed)
-   ```
-5. Verify subscription billing:
+4. Verify subscription status:
    ```bash
    claude /status
-   # Should show Max subscription info
+   # Should show Pro or Max subscription
    ```
 
 #### Switching Providers
 
-- **In Neovim**: Press `<leader>ab` to open provider configuration
+- **In Neovim**: Press `<leader>ap` to view provider status and switch
 - **In Terminal**: Run `goose configure` to reconfigure backend
 
 ## Multi-Provider Configuration
@@ -392,7 +424,7 @@ nvim
 ### Basic Chat Workflow
 
 1. Open Neovim in a project directory
-2. Press `<leader>ag` to toggle goose interface
+2. Press `<leader>aa` to toggle goose sidebar
 3. Type your question or request in the input area
 4. View AI response in the output area
 5. Press `<leader>aq` to close when done
@@ -400,14 +432,14 @@ nvim
 ### Code Generation with Context
 
 1. Select code in visual mode
-2. Press `<leader>ag` to send selection to goose
+2. Press `<leader>aa` to send selection to goose
 3. Type your request (e.g., "refactor this function")
 4. Review generated code in diff view (`<leader>ad`)
 5. Accept or revert changes
 
 ### File Context with @ Mentions
 
-1. Open goose input (`<leader>ai`)
+1. Open goose input (`<leader>ae`)
 2. Type `@` to trigger file picker
 3. Select files to include in context
 4. Write your prompt referencing the files
@@ -430,20 +462,22 @@ nvim
 
 ## Goose Modes
 
+Switch modes with `<leader>am` (mode picker) or slash commands in the input window.
+
 ### Auto Mode (Default)
 
 - Full agent capabilities with file editing
 - Can create, modify, and delete files
 - Executes tools and extensions autonomously
 - Review changes via diff view (`<leader>ad`)
-- Switch: `:GooseModeAuto` or `/mode auto`
+- Switch: `<leader>am` → Auto, or type `/mode auto`
 
 ### Chat Mode
 
 - Conversation-only, no file edits
 - Safe for exploratory questions
 - Faster responses
-- Switch: `:GooseModeChat` or `/mode chat`
+- Switch: `<leader>am` → Chat, or type `/mode chat`
 
 ## Recipes
 
@@ -451,12 +485,10 @@ Recipes are reusable workflow configurations that package instructions, extensio
 
 ### Recipe Workflow Overview
 
-**Important**: The goose.nvim floating window (`<leader>ag`) is for interactive chat only. Recipes must be run via CLI or the recipe picker.
-
 | Action | Method |
 |--------|--------|
-| **Interactive chat** | Neovim: `<leader>ag` (floating window) |
-| **Run recipe from Neovim** | Neovim: `<leader>aR` (picker + ToggleTerm) |
+| **Interactive chat** | Neovim: `<leader>aa` (sidebar split) |
+| **Run recipe from Neovim** | Neovim: `<leader>aR` (picker + sidebar) |
 | **Run recipe from CLI** | Terminal: `goose run --recipe file.yaml` |
 | **Run recipe interactively** | Terminal: `goose run --recipe file.yaml --interactive` |
 | **Save current chat as recipe** | In-session: `/recipe filename.yaml` |
@@ -464,12 +496,12 @@ Recipes are reusable workflow configurations that package instructions, extensio
 ### Running Recipes from Neovim
 
 Press `<leader>aR` to open the recipe picker:
-1. Shows all `.yaml` files in `.goose/recipes/`
-2. Select a recipe from the list
-3. Optionally enter parameters (e.g., `feature_description=Add dark mode,complexity=3`)
-4. Recipe runs in ToggleTerm with `--interactive` flag
+1. Shows all `.yaml` files in `.goose/recipes/` (project) and `~/.config/goose/recipes/` (global)
+2. Select a recipe from the list using fuzzy search
+3. Press `<CR>` to execute - recipe runs via `/recipe:<name>` in the sidebar
+4. Goose prompts for parameters conversationally in the chat interface
 
-This opens goose in a terminal window where you can interact with the recipe execution.
+This executes the recipe in the native goose sidebar with streaming output and markdown rendering.
 
 ### Running Recipes (CLI)
 
@@ -505,7 +537,7 @@ This captures your conversation's instructions, context, and workflow into a YAM
 
 ### Slash Commands in Session
 
-These commands work in the goose floating window input:
+These commands work in the goose sidebar input window:
 
 | Command | Description |
 |---------|-------------|
@@ -629,19 +661,19 @@ ls -la .claude/specs/
 ### Typical Workflows
 
 **Ad-hoc Chat** (most common):
-1. Press `<leader>ag` to open goose in Neovim
+1. Press `<leader>aa` to open goose sidebar
 2. Type questions/requests in the input window
 3. Review changes with `<leader>ad` (diff view)
 
 **Recipe-Based Workflow**:
-1. Create or obtain a recipe YAML file
-2. Run from terminal: `goose run --recipe file.yaml --interactive`
-3. Recipe executes its instructions, then you can continue chatting
+1. Press `<leader>aR` to open recipe picker
+2. Select recipe - executes in sidebar with `/recipe:<name>`
+3. Goose prompts for parameters, then executes
 
 **Save Workflow as Recipe**:
 1. Have a productive goose session in Neovim
 2. Type `/recipe my-workflow.yaml` to save it
-3. Reuse later: `goose run --recipe my-workflow.yaml`
+3. Reuse later via `<leader>aR` or `goose run --recipe my-workflow.yaml`
 
 ### Recipe Use Cases
 
@@ -775,59 +807,58 @@ ls -la .claude/specs/
 **Issue**: `<leader>a*` mappings not working
 
 **Solution**:
-1. Check for conflicts: `:verbose map <leader>a`
+1. Check for conflicts: `:verbose map <leader>aa`
 2. Verify which-key loaded: `:checkhealth which-key`
-3. Test specific mapping: Press `<leader>a` and check goose entries
+3. Test specific mapping: Press `<leader>a` and check goose entries in popup
 4. Review which-key.lua for duplicate mappings
+5. Verify goose commands exist: `:Goose<Tab>` (shows available commands)
 
 ## Common Workflows
 
 ### Code Review Assistant
 
 ```
-Prompt: Review this function for performance and readability
-Context: @current_file or visual selection
-Mode: Chat mode
-Provider: Gemini CLI
+1. Select code or type @filename in goose input
+2. Prompt: "Review this function for performance and readability"
+3. Mode: Chat mode (no file changes)
+4. Read suggestions in output window
 ```
 
 ### Refactoring Large Files
 
 ```
-Prompt: Refactor this module to use modern patterns
-Context: @file_to_refactor
-Mode: Auto mode
-Provider: Claude Code (better for complex refactoring)
-Review: Use <leader>ad to review all changes before accepting
+1. Open goose with <leader>aa
+2. Type @file_to_refactor to include context
+3. Prompt: "Refactor this module to use modern patterns"
+4. Review changes with <leader>ad (diff view)
+5. Revert with <leader>aw if needed
 ```
 
 ### Documentation Generation
 
 ```
-Prompt: Generate comprehensive JSDoc comments for all functions
-Context: @source_file
-Mode: Auto mode
-Provider: Either (simple task)
-Review: Check generated comments in diff view
+1. Type @source_file in goose input
+2. Prompt: "Generate comprehensive JSDoc comments for all functions"
+3. Review generated comments with <leader>ad
+4. Accept or revert individual changes with <leader>az
 ```
 
 ### Debugging Assistance
 
 ```
-Prompt: Explain this error and suggest fixes: [paste error]
-Context: @relevant_file
-Mode: Chat mode
-Provider: Claude Code (better reasoning)
+1. Open goose in chat mode (<leader>am → Chat)
+2. Prompt: "Explain this error and suggest fixes: [paste error]"
+3. Reference files with @filename syntax
+4. Safe - chat mode won't modify files
 ```
 
 ### Test Generation
 
 ```
-Prompt: Generate unit tests for all exported functions
-Context: @source_file
-Mode: Auto mode
-Provider: Claude Code (better test coverage)
-Review: Review generated tests in diff view
+1. Type @source_file in goose input
+2. Prompt: "Generate unit tests for all exported functions"
+3. Mode: Auto (to create test files)
+4. Review with <leader>ad before accepting
 ```
 
 ## Configuration Files

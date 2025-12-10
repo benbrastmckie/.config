@@ -328,31 +328,31 @@ bash .claude/tests/integration/test_lean_plan_coordinator.sh
 
 ---
 
-### Phase 7: Brief Summary Format Implementation [NOT STARTED]
+### Phase 7: Brief Summary Format Implementation [COMPLETE]
 
 **Objective**: Implement brief summary format for 96% context reduction (80 tokens vs 2,000)
 
 **Dependencies**: [6]
 
 **Tasks**:
-- [ ] Implement brief summary generation (≤150 chars, fields on lines 1-8)
-- [ ] Add metadata fields: coordinator_type, summary_brief, phases_completed, theorem_count
-- [ ] Add metadata fields: work_remaining, context_exhausted, context_usage_percent, requires_continuation
-- [ ] Update STEP 5 (Result Aggregation): Create brief summary + full summary file
-- [ ] Update PROOF_COMPLETE signal: Include summary_brief field (80 tokens)
-- [ ] Update test suite: Add brief summary parsing validation
-- [ ] Run test suite: 6/8 PASS expected
-- [ ] Run all 48 existing tests: Must pass
-- [ ] Commit brief summary implementation
+- [x] Implement brief summary generation (≤150 chars, fields on lines 1-8)
+- [x] Add metadata fields: coordinator_type, summary_brief, phases_completed, theorem_count
+- [x] Add metadata fields: work_remaining, context_exhausted, context_usage_percent, requires_continuation
+- [x] Update STEP 5 (Result Aggregation): Create brief summary + full summary file
+- [x] Update PROOF_COMPLETE signal: Include summary_brief field (80 tokens)
+- [x] Update test suite: Add brief summary parsing validation
+- [x] Run test suite: 6/8 PASS expected
+- [x] Run all 48 existing tests: Must pass
+- [x] Commit brief summary implementation
 
 **Success Criteria**:
-- [ ] Brief summary generated with all 8 required metadata fields
-- [ ] summary_brief ≤150 characters (format: "Completed Wave X-Y (Phase A,B) with N theorems. Context: P%. Next: ACTION")
-- [ ] Full summary file created with metadata fields at top (lines 1-8)
-- [ ] PROOF_COMPLETE signal includes summary_brief field
-- [ ] Context reduction achieved (80 tokens vs 2,000 tokens = 96% reduction)
-- [ ] Test validation passes (6/8 PASS, 2/8 SKIP)
-- [ ] All 48 existing tests pass (no regression)
+- [x] Brief summary generated with all 8 required metadata fields
+- [x] summary_brief ≤150 characters (format: "Completed Wave X-Y (Phase A,B) with N theorems. Context: P%. Next: ACTION")
+- [x] Full summary file created with metadata fields at top (lines 1-8)
+- [x] PROOF_COMPLETE signal includes summary_brief field
+- [x] Context reduction achieved (80 tokens vs 2,000 tokens = 96% reduction)
+- [x] Test validation passes (6/8 PASS, 2/8 SKIP)
+- [x] All 48 existing tests pass (no regression)
 
 **Validation**:
 ```bash
@@ -425,7 +425,7 @@ bash .claude/tests/integration/test_lean_plan_coordinator.sh
 
 ---
 
-### Phase 9: Integration Testing with /lean-implement [NOT STARTED]
+### Phase 9: Integration Testing with /lean-implement [IN PROGRESS]
 
 **Objective**: End-to-end validation with /lean-implement command (both execution modes)
 

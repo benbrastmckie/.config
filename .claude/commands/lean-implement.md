@@ -292,11 +292,12 @@ PLAN_FILE="$(cd "$(dirname "$PLAN_FILE")" && pwd)/$(basename "$PLAN_FILE")"
 echo "Plan File: $PLAN_FILE"
 
 # === EXECUTION MODE INITIALIZATION ===
-# Wave-based full plan delegation: Pass entire plan to coordinator
+# Wave-based plan delegation: Pass entire plan to coordinator
 # Coordinator analyzes dependencies and executes waves in parallel
-EXECUTION_MODE="full-plan"
+# Note: Coordinators expect "plan-based" mode (not "full-plan")
+EXECUTION_MODE="plan-based"
 
-echo "Execution Mode: Full plan delegation with wave-based orchestration"
+echo "Execution Mode: Plan-based delegation with wave-based orchestration"
 
 # Optional: Starting phase override (for manual wave targeting)
 # Default: Coordinator auto-detects lowest incomplete phase
