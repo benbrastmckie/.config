@@ -1,0 +1,6 @@
+# Research Coordinator Invocation Trace - 2025-12-10T01:26:01Z
+# Topics: 3
+
+[2025-12-10T01:26:01Z] Topic[0]: Primary Agent Usage Analysis: Investigate why lean-plan-output.md shows excessive primary agent invocations instead of delegating research tasks to specialized agents | Path: /home/benjamin/.config/.claude/specs/063_lean_plan_coordinator_delegation/reports/001-primary-agent-usage-analysis.md | Status: PENDING
+[2025-12-10T01:26:01Z] Topic[1]: Coordinator Research Delegation: Research how coordinator agents should be invoked for multi-topic research and why current implementation may be skipping this delegation step | Path: /home/benjamin/.config/.claude/specs/063_lean_plan_coordinator_delegation/reports/002-coordinator-delegation-patterns.md | Status: PENDING
+[2025-12-10T01:26:01Z] Topic[2]: Planning Subagent Architecture: Analyze planning subagent architecture and determine why plan-generating commands are not delegating to these subagents | Path: /home/benjamin/.config/.claude/specs/063_lean_plan_coordinator_delegation/reports/003-planning-subagent-architecture.md | Status: PENDING

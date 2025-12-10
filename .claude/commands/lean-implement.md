@@ -875,6 +875,14 @@ if [ "$PLAN_TYPE" = "lean" ]; then
     - context_threshold: ${CONTEXT_THRESHOLD}
     - continuation_context: ${CONTINUATION_CONTEXT:-null}
 
+    **Progress Tracking Instructions** (plan-based mode only):
+    - Source checkbox utilities: source ${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh
+    - Before proving each theorem phase: add_in_progress_marker '${PLAN_FILE}' <phase_num>
+    - After completing each theorem proof: mark_phase_complete '${PLAN_FILE}' <phase_num> && add_complete_marker '${PLAN_FILE}' <phase_num>
+    - This creates visible progress: [NOT STARTED] -> [IN PROGRESS] -> [COMPLETE]
+    - Note: Progress tracking gracefully degrades if unavailable (non-fatal)
+    - File-based mode: Skip progress tracking (phase_num = 0)
+
     **Workflow Instructions**:
     1. Analyze plan dependencies via dependency-analyzer.sh
     2. Calculate wave structure with parallelization metrics

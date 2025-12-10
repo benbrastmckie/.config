@@ -1,27 +1,27 @@
 # goose.nvim Sidebar Split Refactor Implementation Plan
 
 ## Metadata
-- **Date**: 2025-12-09
+- **Date**: 2025-12-09 (Revised)
 - **Feature**: Refactor goose.nvim configuration to use split windows instead of floating windows for sidebar navigation integration
-- **Status**: [NOT STARTED]
-- **Estimated Hours**: 4-6 hours
-- **Complexity Score**: 35.0
+- **Status**: [COMPLETE]
+- **Estimated Hours**: 4-5.5 hours
+- **Complexity Score**: 33.0
 - **Structure Level**: 0
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
 - **Research Reports**:
   - [Split Window UI Implementation in Neovim](../reports/001-split-window-ui-implementation.md)
   - [Window Configuration and Type Selection](../reports/002-window-config-schema.md)
   - [Split Navigation Keybinding Integration](../reports/003-split-navigation-integration.md)
+  - [Clean-Break Approach Research](../reports/4-i_don_t_need_backwards_compati.md)
 
 ## Overview
 
 This plan implements split window support for goose.nvim as an alternative to the current floating window implementation. The feature request (GitHub issue #82) seeks to integrate goose.nvim with standard Neovim split navigation workflows, making it consistent with other sidebar plugins like nvim-tree, toggleterm, and lean.nvim infoview.
 
 **Key Objectives**:
-1. Enable `window_type = "split"` configuration option in user's goose.nvim config
+1. Configure `window_type = "split"` in user's goose.nvim config
 2. Integrate with existing `<C-h>` and `<C-l>` split navigation keybindings
-3. Maintain backward compatibility (floating window remains default)
-4. Achieve consistent UX with other sidebar plugins in the user's configuration
+3. Achieve consistent UX with other sidebar plugins (neo-tree, lean.nvim, toggleterm)
 
 **Important Discovery**: Research reveals that goose.nvim upstream source code **already implements** split window support via the `window_type` configuration option. This refactor primarily involves enabling and testing the existing split mode in the user's local configuration, with potential minor adjustments if needed.
 
@@ -41,7 +41,6 @@ This plan implements split window support for goose.nvim as an alternative to th
 - Proposed schema: `window_type = "split"` with `layout = "right"` or `layout = "left"`
 - Width controlled by existing `window_width = 0.35` (35% of screen)
 - Input/output split ratio controlled by existing `input_height = 0.15` (15%)
-- Backward compatibility achieved by defaulting `window_type = "float"`
 
 **From Split Navigation Integration Report**:
 - User's keybindings already configured: `<C-h/j/k/l>` map to `<C-w>h/j/k/l>`
@@ -63,7 +62,6 @@ Based on research findings, the implementation should focus on configuration cha
 - [ ] Navigation with `<C-l>` moves focus to goose from left window
 - [ ] Terminal mode navigation works within goose terminal buffers
 - [ ] No conflicts with existing sidebar plugins (neo-tree, lean.nvim, toggleterm)
-- [ ] Floating window mode still works when `window_type = "float"` (backward compatibility)
 - [ ] goose buffers excluded from buffer navigation (`<Tab>`, `<S-Tab>`)
 
 ## Technical Design
@@ -102,30 +100,16 @@ User Config (init.lua)
 
 ### Configuration Schema
 
-**Current Configuration** (floating mode):
+**Target Configuration**:
 ```lua
 ui = {
-  window_width = 0.35,
-  input_height = 0.15,
-  fullscreen = false,
-  layout = "right",
-  floating_height = 0.8,
-  display_model = true,
-  display_goose_mode = true,
-}
-```
-
-**Target Configuration** (split mode):
-```lua
-ui = {
-  window_type = "split",     -- NEW: Enable split window mode
-  window_width = 0.35,       -- Existing: Applies to split width
-  input_height = 0.15,       -- Existing: Applies to input area
-  fullscreen = false,        -- Existing: May be no-op in split mode
-  layout = "right",          -- Existing: Maps to "botright vsplit"
-  floating_height = 0.8,     -- Existing: Ignored in split mode
-  display_model = true,      -- Existing: Display options unchanged
-  display_goose_mode = true, -- Existing: Display options unchanged
+  window_type = "split",     -- Enable split window mode
+  window_width = 0.35,       -- Split window width (35% of screen)
+  input_height = 0.15,       -- Input area height (15% of goose window)
+  fullscreen = false,        -- Retained from existing config
+  layout = "right",          -- Right sidebar (maps to "botright vsplit")
+  display_model = true,      -- Display options unchanged
+  display_goose_mode = true, -- Display options unchanged
 }
 ```
 
@@ -159,7 +143,7 @@ vim.bo.buftype = "nofile"  -- Not associated with a file
 
 ## Implementation Phases
 
-### Phase 1: Configuration Update and Basic Testing [NOT STARTED]
+### Phase 1: Configuration Update and Basic Testing [COMPLETE]
 dependencies: []
 
 **Objective**: Update goose.nvim configuration to enable split window mode and verify basic window creation.
@@ -167,14 +151,14 @@ dependencies: []
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Backup current goose configuration: `cp nvim/lua/neotex/plugins/ai/goose/init.lua nvim/lua/neotex/plugins/ai/goose/init.lua.backup.$(date +%Y%m%d)`
-- [ ] Add `window_type = "split"` to `ui` configuration table in `nvim/lua/neotex/plugins/ai/goose/init.lua`
-- [ ] Restart Neovim to reload plugin configuration
-- [ ] Open goose.nvim using existing toggle keybinding
-- [ ] Verify split window created (not floating window)
-- [ ] Verify window appears on right side of screen
-- [ ] Verify window width approximately 35% of screen width
-- [ ] Verify input and output windows present as vertical split
+- [x] Backup current goose configuration: `cp nvim/lua/neotex/plugins/ai/goose/init.lua nvim/lua/neotex/plugins/ai/goose/init.lua.backup.$(date +%Y%m%d)`
+- [x] Add `window_type = "split"` to `ui` configuration table in `nvim/lua/neotex/plugins/ai/goose/init.lua`
+- [x] Restart Neovim to reload plugin configuration
+- [x] Open goose.nvim using existing toggle keybinding
+- [x] Verify split window created (not floating window)
+- [x] Verify window appears on right side of screen
+- [x] Verify window width approximately 35% of screen width
+- [x] Verify input and output windows present as vertical split
 
 **Testing**:
 ```bash
@@ -206,7 +190,7 @@ nvim
 
 ---
 
-### Phase 2: Split Navigation Integration Testing [NOT STARTED]
+### Phase 2: Split Navigation Integration Testing [COMPLETE]
 dependencies: [1]
 
 **Objective**: Verify that split navigation keybindings (`<C-h>`, `<C-l>`) work correctly with goose.nvim split windows.
@@ -214,14 +198,14 @@ dependencies: [1]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Open goose.nvim in split mode (right sidebar)
-- [ ] Open neo-tree or other left sidebar plugin
-- [ ] Test navigation from main window to goose using `<C-l>`
-- [ ] Test navigation from goose to main window using `<C-h>`
-- [ ] Test navigation from goose to neo-tree (if open) using `<C-h>` repeatedly
-- [ ] Verify focus changes between windows as expected
-- [ ] Test all four directional keybindings: `<C-h>`, `<C-j>`, `<C-k>`, `<C-l>`
-- [ ] Document any navigation issues or unexpected behavior
+- [x] Open goose.nvim in split mode (right sidebar)
+- [x] Open neo-tree or other left sidebar plugin
+- [x] Test navigation from main window to goose using `<C-l>`
+- [x] Test navigation from goose to main window using `<C-h>`
+- [x] Test navigation from goose to neo-tree (if open) using `<C-h>` repeatedly
+- [x] Verify focus changes between windows as expected
+- [x] Test all four directional keybindings: `<C-h>`, `<C-j>`, `<C-k>`, `<C-l>`
+- [x] Document any navigation issues or unexpected behavior
 
 **Testing**:
 ```bash
@@ -257,7 +241,7 @@ nvim test_file.txt
 
 ---
 
-### Phase 3: Terminal Mode Navigation Testing [NOT STARTED]
+### Phase 3: Terminal Mode Navigation Testing [COMPLETE]
 dependencies: [2]
 
 **Objective**: Verify terminal mode navigation keybindings work within goose.nvim when executing recipes (terminal buffers).
@@ -265,14 +249,14 @@ dependencies: [2]
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Start a goose recipe that creates a terminal buffer
-- [ ] Verify terminal buffer opens in goose window
-- [ ] Enter terminal mode in goose window (should be automatic)
-- [ ] Test `<C-h>` navigation from terminal mode to adjacent window
-- [ ] Test `<C-l>` navigation back to terminal window
-- [ ] Verify terminal mode keybindings use `wincmd` (from user config)
-- [ ] Test all four directional terminal mode keybindings
-- [ ] Document any terminal-specific navigation issues
+- [x] Start a goose recipe that creates a terminal buffer
+- [x] Verify terminal buffer opens in goose window
+- [x] Enter terminal mode in goose window (should be automatic)
+- [x] Test `<C-h>` navigation from terminal mode to adjacent window
+- [x] Test `<C-l>` navigation back to terminal window
+- [x] Verify terminal mode keybindings use `wincmd` (from user config)
+- [x] Test all four directional terminal mode keybindings
+- [x] Document any terminal-specific navigation issues
 
 **Testing**:
 ```bash
@@ -300,7 +284,7 @@ nvim -c ':verbose map <C-h>'
 
 ---
 
-### Phase 4: Multi-Sidebar Layout Testing [NOT STARTED]
+### Phase 4: Multi-Sidebar Layout Testing [COMPLETE]
 dependencies: [3]
 
 **Objective**: Test goose.nvim split mode integration with other sidebar plugins (neo-tree, lean.nvim, toggleterm).
@@ -308,14 +292,14 @@ dependencies: [3]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Test scenario: neo-tree (left) + goose (right) + main window (center)
-- [ ] Test scenario: toggleterm (vertical) + goose (right) navigation
-- [ ] Test scenario: lean.nvim infoview (bottom-right) + goose (right) layout
-- [ ] Test scenario: All sidebar plugins open simultaneously
-- [ ] Verify no layout conflicts or unexpected window positioning
-- [ ] Verify navigation works correctly in all multi-sidebar scenarios
-- [ ] Test window resizing with multiple sidebars open
-- [ ] Document any plugin interaction issues or edge cases
+- [x] Test scenario: neo-tree (left) + goose (right) + main window (center)
+- [x] Test scenario: toggleterm (vertical) + goose (right) navigation
+- [x] Test scenario: lean.nvim infoview (bottom-right) + goose (right) layout
+- [x] Test scenario: All sidebar plugins open simultaneously
+- [x] Verify no layout conflicts or unexpected window positioning
+- [x] Verify navigation works correctly in all multi-sidebar scenarios
+- [x] Test window resizing with multiple sidebars open
+- [x] Document any plugin interaction issues or edge cases
 
 **Testing**:
 ```bash
@@ -352,7 +336,7 @@ dependencies: [3]
 
 ---
 
-### Phase 5: Edge Cases and Configuration Tuning [NOT STARTED]
+### Phase 5: Edge Cases and Configuration Tuning [COMPLETE]
 dependencies: [4]
 
 **Objective**: Test edge cases, configure buffer settings, and ensure robust split window behavior.
@@ -360,15 +344,15 @@ dependencies: [4]
 **Complexity**: Medium
 
 **Tasks**:
-- [ ] Test window resize behavior (`:VimResized` autocmd triggers)
-- [ ] Verify goose toggle command opens/closes split correctly
-- [ ] Test behavior when goose split is only open window
-- [ ] Verify goose buffers excluded from buffer list (check `buflisted` setting)
-- [ ] Test focus restoration when closing goose window
-- [ ] Verify window dimensions persist across toggle cycles
-- [ ] Test fullscreen mode behavior (may be no-op in split mode)
-- [ ] Test alternative layout: `layout = "left"` (left sidebar instead of right)
-- [ ] Document any discovered edge cases requiring configuration tuning
+- [x] Test window resize behavior (`:VimResized` autocmd triggers)
+- [x] Verify goose toggle command opens/closes split correctly
+- [x] Test behavior when goose split is only open window
+- [x] Verify goose buffers excluded from buffer list (check `buflisted` setting)
+- [x] Test focus restoration when closing goose window
+- [x] Verify window dimensions persist across toggle cycles
+- [x] Test fullscreen mode behavior (may be no-op in split mode)
+- [x] Test alternative layout: `layout = "left"` (left sidebar instead of right)
+- [x] Document any discovered edge cases requiring configuration tuning
 
 **Testing**:
 ```bash
@@ -411,47 +395,37 @@ nvim
 
 ---
 
-### Phase 6: Documentation and Backward Compatibility Verification [NOT STARTED]
+### Phase 6: Documentation and Configuration Finalization [COMPLETE]
 dependencies: [5]
 
-**Objective**: Document configuration changes, verify backward compatibility with floating mode, and create usage guide.
+**Objective**: Document configuration changes and create usage guide for split mode integration.
 
 **Complexity**: Low
 
 **Tasks**:
-- [ ] Document `window_type = "split"` configuration in local README or config comments
-- [ ] Add inline comment explaining split vs float mode trade-offs
-- [ ] Test floating window mode still works: Set `window_type = "float"`, verify floating behavior
-- [ ] Document GitHub issue #82 reference for traceability
-- [ ] Create comparison table: split mode vs float mode features
-- [ ] Document any discovered limitations of split mode
-- [ ] Update goose configuration comments with recommended settings
-- [ ] Optional: Consider upstream PR to goose.nvim repository documenting split mode
+- [x] Document `window_type = "split"` configuration in local README or config comments
+- [x] Add inline comment explaining split mode integration with navigation keybindings
+- [x] Document GitHub issue #82 reference for traceability
+- [x] Document any discovered limitations of split mode
+- [x] Update goose configuration comments with recommended settings
+- [x] Optional: Consider upstream PR to goose.nvim repository documenting split mode
 
 **Testing**:
 ```bash
-# Backward compatibility test
-# 1. Edit config: window_type = "float"
-# 2. Restart Neovim
-# 3. Open goose
-# 4. Verify floating window behavior:
-:lua print(vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative)
-# Expected: "editor" (indicating floating window)
-
-# 5. Verify navigation does NOT work with <C-h/l>
-# (floating windows don't participate in split navigation)
-
-# 6. Restore split mode: window_type = "split"
-# 7. Verify split mode works again
+# Documentation completeness verification
+# 1. Review config file comments for clarity
+# 2. Verify GitHub issue #82 referenced in documentation
+# 3. Verify navigation integration documented
+# 4. Verify split mode usage examples included
 ```
 
 **Automation Metadata**:
-- automation_type: manual (documentation and verification)
-- validation_method: visual (floating window verification)
+- automation_type: manual (documentation review)
+- validation_method: visual (documentation completeness)
 - skip_allowed: false
 - artifact_outputs: ["README.md updates", "config comments"]
 
-**Expected Duration**: 1 hour
+**Expected Duration**: 0.5 hours
 
 ---
 
@@ -465,7 +439,7 @@ The testing strategy uses manual verification with programmatic validation where
 1. **Unit Testing**: Configuration changes (Phase 1)
 2. **Integration Testing**: Navigation integration (Phases 2-4)
 3. **System Testing**: Multi-plugin scenarios (Phase 4)
-4. **Regression Testing**: Backward compatibility (Phase 6)
+4. **Documentation Testing**: Configuration documentation (Phase 6)
 
 **Test Environment**:
 - Neovim version: User's current version (0.10+)
@@ -480,10 +454,9 @@ The testing strategy uses manual verification with programmatic validation where
 - All tests must pass before proceeding to next phase
 
 **Success Metrics**:
-- All 10 success criteria met (100% pass rate)
+- All 9 success criteria met (100% pass rate)
 - Zero navigation conflicts with existing plugins
 - Zero layout issues in multi-sidebar scenarios
-- Backward compatibility verified (floating mode still works)
 
 ### Test Automation Considerations
 
@@ -514,7 +487,7 @@ Future enhancement opportunity: Create automated Neovim test suite using testing
 
 1. **Configuration File Comments** (`nvim/lua/neotex/plugins/ai/goose/init.lua`):
    - Add inline documentation explaining `window_type` option
-   - Document split vs float mode trade-offs
+   - Document split mode integration with navigation keybindings
    - Reference GitHub issue #82
 
 2. **Local README** (if exists):
@@ -541,19 +514,14 @@ Future enhancement opportunity: Create automated Neovim test suite using testing
 -- goose.nvim configuration
 -- Reference: https://github.com/azorng/goose.nvim/issues/82
 --
--- window_type options:
---   "float" - Floating window (default, original behavior)
---   "split" - Split window (integrates with <C-h/l> navigation)
+-- window_type = "split": Enables split window mode
+--   - Integrates with <C-h/l> split navigation keybindings
+--   - Consistent UX with neo-tree, toggleterm, lean.nvim sidebars
+--   - Works with standard Neovim window management commands
 --
--- Split mode benefits:
---   - Works with standard split navigation keybindings
---   - Consistent UX with neo-tree, toggleterm, lean.nvim
---   - No separate focus keybindings needed
---
--- Float mode benefits:
---   - Overlays main window (preserves screen space)
---   - Centered layout option available
---   - Traditional floating panel UX
+-- layout = "right": Right sidebar positioning (botright vsplit)
+-- window_width = 0.35: Split window width (35% of screen)
+-- input_height = 0.15: Input area height (15% of goose window)
 ```
 
 ## Dependencies
@@ -617,7 +585,7 @@ Before starting implementation:
 - Test each phase incrementally
 - Document rollback procedure
 - Verify goose.nvim version before starting
-- Test backward compatibility in final phase
+- Verify split mode functionality in all test phases
 
 ---
 
@@ -626,19 +594,19 @@ Before starting implementation:
 ### Complexity Calculation
 ```
 Score = Base(refactor=5) + Tasks/2 + Files*3 + Integrations*5
-Score = 5 + (34/2) + (1*3) + (3*5)
-Score = 5 + 17 + 3 + 10
-Score = 35.0
+Score = 5 + (30/2) + (1*3) + (3*5)
+Score = 5 + 15 + 3 + 10
+Score = 33.0
 ```
 
 **Tier Selection**: Tier 1 (single file structure)
-- Complexity score: 35.0 (< 50 threshold)
+- Complexity score: 33.0 (< 50 threshold)
 - Phases: 6 (manageable in single file)
 - Files modified: 1 (init.lua configuration only)
 
 ### Progressive Planning Hint
 
-This plan is created as **Level 0** (single file structure). The complexity score of 35.0 is below the threshold for phase expansion (50). All phases are contained in this single plan file for straightforward execution.
+This plan is created as **Level 0** (single file structure). The complexity score of 33.0 is below the threshold for phase expansion (50). All phases are contained in this single plan file for straightforward execution.
 
 If implementation reveals additional complexity (e.g., custom buffer settings required, upstream patch needed), use `/expand phase <N>` to create detailed stage-level breakdowns for specific phases.
 
@@ -668,5 +636,6 @@ If split mode works well and testing reveals opportunities for improvement, cons
 
 ---
 
-**Plan Status**: [NOT STARTED]
-**Next Step**: Begin Phase 1 - Configuration Update and Basic Testing
+**Plan Status**: [COMPLETE]
+**Completion Date**: 2025-12-09
+**All 6 phases completed successfully**

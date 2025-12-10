@@ -17,6 +17,61 @@ This module integrates [goose.nvim](https://github.com/azorng/goose.nvim) with t
 
 ## Configuration
 
+### Split Window Mode (GitHub Issue #82)
+
+As of 2025-12-09, goose.nvim uses split window mode instead of floating windows for better integration with Neovim's standard window navigation workflow.
+
+**Key Benefits**:
+- Seamless integration with `<C-h/j/k/l>` split navigation keybindings
+- Consistent UX with other sidebar plugins (neo-tree, toggleterm, lean.nvim)
+- Works with standard Neovim window management commands (`:wincmd`, `:split`, etc.)
+- Participates in Neovim's window layout system automatically
+
+**Window Layout**:
+```
+┌───────────────────┬──────────────┐
+│                   │              │
+│   Main Editor     │   Goose      │
+│   Window          │   Output     │
+│                   │   (35%)      │
+│                   ├──────────────┤
+│                   │   Goose      │
+│                   │   Input      │
+│                   │   (15%)      │
+└───────────────────┴──────────────┘
+```
+
+**Configuration Options**:
+```lua
+ui = {
+  window_type = "split",     -- Split window mode (not floating)
+  window_width = 0.35,       -- 35% of screen width
+  input_height = 0.15,       -- 15% for input area
+  layout = "right",          -- Right sidebar ("left" also supported)
+  fullscreen = false,
+  display_model = true,
+  display_goose_mode = true,
+}
+```
+
+**Navigation Integration**:
+- `<C-l>`: Move from main editor to goose output window
+- `<C-h>`: Move from goose to main editor
+- `<C-j>`: Move down (e.g., goose output → goose input)
+- `<C-k>`: Move up (e.g., goose input → goose output)
+
+**Multi-Sidebar Support**:
+```
+┌──────────┬───────────────────┬──────────────┐
+│ neo-tree │   Main Editor     │   Goose      │
+│ (left)   │                   │   (right)    │
+└──────────┴───────────────────┴──────────────┘
+```
+
+Navigation flows naturally: `neo-tree` ← `<C-h/l>` → `main` ← `<C-h/l>` → `goose`
+
+**Reference**: https://github.com/azorng/goose.nvim/issues/82
+
 ### Plugin Specification
 
 ```lua
@@ -34,14 +89,16 @@ return {
       default_global_keymaps = false,  -- Managed by which-key.lua
       default_mode = "auto",           -- Full agent capabilities by default
       ui = {
-        window_width = 0.35,
-        input_height = 0.15,
-        layout = "right",
+        window_type = "split",     -- Split window mode (not floating)
+        window_width = 0.35,       -- 35% of screen width
+        input_height = 0.15,       -- 15% for input area
+        layout = "right",          -- Right sidebar positioning
+        fullscreen = false,
         display_model = true,
         display_goose_mode = true,
       },
       providers = {
-        google = { "gemini-3.0-pro" },
+        google = { "gemini-3-pro-preview-11-2025" },
       },
     })
   end,
@@ -596,6 +653,74 @@ ls -la .claude/specs/
 
 ## Troubleshooting
 
+### Split Window Mode Issues
+
+#### goose Opens as Floating Window
+
+**Issue**: Split mode not activating despite `window_type = "split"` configuration.
+
+**Solution**:
+1. Verify configuration: `grep -n "window_type" ~/.config/nvim/lua/neotex/plugins/ai/goose/init.lua`
+2. Expected output: `window_type = "split"`
+3. Restart Neovim completely: `:qa` and reopen
+4. Check goose.nvim version supports split mode (requires recent version)
+5. Force reload plugin: `:Lazy reload goose.nvim`
+6. Verify with: `:lua print(vim.inspect(require('goose').config.ui))`
+
+#### Split Navigation Not Working
+
+**Issue**: `<C-h/j/k/l>` keybindings don't move between windows with goose open.
+
+**Solution**:
+1. Check keybinding configuration: `:verbose map <C-h>`
+   - Expected: Shows `<C-w>h` mapping in normal mode
+2. Test navigation manually: `:wincmd l` (should move to right window)
+3. Check for plugin conflicts: `:verbose map <C-l>`
+   - Look for other plugins overriding navigation keys
+4. Verify goose windows are splits, not floating:
+   ```vim
+   :lua print(vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative)
+   " Expected: empty string (indicates split window)
+   ```
+5. Check keymaps file loaded: `:scriptnames | grep keymaps.lua`
+
+#### Window Separator Not Visible
+
+**Issue**: Can't see separation line between goose output and input windows.
+
+**Solution**:
+1. Check autocmd loaded:
+   ```vim
+   :autocmd FileType goose-input
+   " Should show winbar autocmd
+   ```
+2. Verify `WinSeparator` highlight group defined:
+   ```vim
+   :highlight WinSeparator
+   " Should show color configuration
+   ```
+3. Try different colorscheme: `:colorscheme <another-theme>`
+4. Manually set highlight: `:highlight WinSeparator guifg=#444444`
+5. Check winbar in goose input window:
+   ```vim
+   " Focus goose input window, then:
+   :set winbar?
+   " Should show box-drawing character separator
+   ```
+
+#### Multi-Sidebar Layout Conflicts
+
+**Issue**: goose split conflicts with neo-tree or other sidebars.
+
+**Solution**:
+1. Open sidebars in correct order:
+   - Left sidebar first (neo-tree): `:Neotree toggle`
+   - Right sidebar second (goose): `<leader>ag`
+2. Check window layout: `:lua print(vim.fn.winnr('$'))` (total window count)
+3. Verify splitright option: `:set splitright?` (should be `splitright`)
+4. Test without other sidebars: Close neo-tree and test goose alone
+5. Check for custom window management plugins that might interfere
+
 ### Plugin Not Loading
 
 **Issue**: `:Goose` command not found
@@ -763,9 +888,10 @@ Review: Review generated tests in diff view
 - [revision_goose_nvim_integration_research.md](../../../.claude/specs/992_nvim_ai_agent_plugin_integration/reports/revision_goose_nvim_integration_research.md)
 - [002-which-key-ai-mapping-consolidation.md](../../../.claude/specs/992_nvim_ai_agent_plugin_integration/reports/002-which-key-ai-mapping-consolidation.md)
 
-### Implementation Plan
+### Implementation Plans
 
-- [001-nvim-ai-agent-plugin-integration-plan.md](../../../.claude/specs/992_nvim_ai_agent_plugin_integration/plans/001-nvim-ai-agent-plugin-integration-plan.md)
+- [001-nvim-ai-agent-plugin-integration-plan.md](../../../.claude/specs/992_nvim_ai_agent_plugin_integration/plans/001-nvim-ai-agent-plugin-integration-plan.md) - Initial goose.nvim integration
+- [001-goose-sidebar-split-refactor-plan.md](../../../.claude/specs/057_goose_sidebar_split_refactor/plans/001-goose-sidebar-split-refactor-plan.md) - Split window mode implementation (Issue #82)
 
 ## Navigation
 

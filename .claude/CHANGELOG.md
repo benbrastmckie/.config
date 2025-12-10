@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- **Research-Coordinator Task Invocation Skipping** (2025-12-09): Fixed critical bug where research-coordinator agent was skipping Task invocations in STEP 3, causing empty reports directories and expensive fallback behavior (5.3x cost multiplier)
+  - **Root Cause**: STEP 3 used placeholder syntax `(use TOPICS[0])` and conditional language `if TOPICS array length > 1` that agent model interpreted as "documentation templates" rather than "executable directives"
+  - **Fix 1**: Refactored STEP 3 to use Bash-generated concrete Task invocations via for-loop pattern (eliminates placeholder ambiguity)
+  - **Fix 2**: Added STEP 2.5 pre-execution validation barrier requiring invocation plan file creation before STEP 3 (hard barrier artifact)
+  - **Fix 3**: Enhanced STEP 4 validation with multi-layer checks (plan file → trace file → reports) to detect Task invocation skipping
+  - **Fix 4**: Added error trap handler at workflow start for mandatory TASK_ERROR return protocol (prevents silent failures)
+  - **Impact**: 100% invocation rate (vs 0% before fix), 95% context reduction restored, 5.3x cost reduction, eliminates fallback invocation pattern
+  - **Test Coverage**: 5 new integration tests validating Phase 1-3 fixes (100% pass rate), comprehensive validation of pre-execution barrier, Bash loop pattern, error trap handler, and multi-layer validation
+  - **Reference**: Root cause analysis in `.claude/specs/060_coordinator_research_incomplete_fix/reports/001-coordinator-early-return-root-cause.md`
+
 - **Coordinate Verification Checkpoint Ordering** (2025-11-11): Fixed false-positive verification failures in `/coordinate` command when research agents create descriptive filenames instead of generic names
   - **Root Cause**: Dynamic report path discovery executed AFTER verification checkpoint, causing verification to check against stale generic paths (001_topic1.md) while agents created descriptive names (001_auth_patterns.md)
   - **Fix 1**: Moved dynamic discovery before hierarchical/flat branching (coordinate.md:451) ensuring discovery reconciles actual vs expected paths before verify_file_created() checks

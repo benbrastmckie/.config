@@ -5,6 +5,8 @@ return {
   config = function()
     require("gruvbox").setup({
       overrides = {
+        -- Window separator: thin gray line between splits (consistent with gruvbox style)
+        WinSeparator = { fg = "#504945", bg = "NONE" },
         SignColumn = { bg = "#282828" },
         NvimTreeCutHL = { fg = "#fb4934", bg = "#282828" },
         NvimTreeCopiedHL = { fg = "#b8bb26", bg = "#282828" },

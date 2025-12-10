@@ -186,6 +186,132 @@ test_trace_file_cleanup() {
     fi
 }
 
+# Test 8: Verify STEP 2.5 pre-execution barrier exists
+test_step_25_preexecution_barrier() {
+    local test_name="STEP 2.5 pre-execution barrier implemented"
+    local behavioral_file="$PROJECT_DIR/agents/research-coordinator.md"
+
+    if [ ! -f "$behavioral_file" ]; then
+        fail_test "$test_name" "Behavioral file not found"
+        return
+    fi
+
+    local checks_found=0
+    grep -q "STEP 2.5 (MANDATORY PRE-EXECUTION BARRIER)" "$behavioral_file" && ((checks_found++))
+    grep -q ".invocation-plan.txt" "$behavioral_file" && ((checks_found++))
+    grep -q "EXPECTED_INVOCATIONS=.*#TOPICS" "$behavioral_file" && ((checks_found++))
+
+    if [ "$checks_found" -eq 3 ]; then
+        pass_test "$test_name"
+    else
+        fail_test "$test_name" "Missing STEP 2.5 elements: $checks_found/3"
+    fi
+}
+
+# Test 9: Verify Bash loop pattern for Task invocations
+test_bash_loop_pattern() {
+    local test_name="Bash loop pattern generates concrete Task invocations"
+    local behavioral_file="$PROJECT_DIR/agents/research-coordinator.md"
+
+    if [ ! -f "$behavioral_file" ]; then
+        fail_test "$test_name" "Behavioral file not found"
+        return
+    fi
+
+    local checks_found=0
+    grep -q 'for i in "${!TOPICS\[@\]}"' "$behavioral_file" && ((checks_found++))
+    grep -q "EXECUTE NOW (Topic" "$behavioral_file" && ((checks_found++))
+
+    # Verify anti-pattern warnings exist (proves old placeholders were removed)
+    if grep -q "Anti-Pattern.*use TOPICS\[0\]" "$behavioral_file"; then
+        ((checks_found++))
+    fi
+
+    if [ "$checks_found" -eq 3 ]; then
+        pass_test "$test_name"
+    else
+        fail_test "$test_name" "Bash loop pattern incomplete: $checks_found/3"
+    fi
+}
+
+# Test 10: Verify error trap handler exists
+test_error_trap_handler() {
+    local test_name="Error trap handler installed for fail-fast behavior"
+    local behavioral_file="$PROJECT_DIR/agents/research-coordinator.md"
+
+    if [ ! -f "$behavioral_file" ]; then
+        fail_test "$test_name" "Behavioral file not found"
+        return
+    fi
+
+    local checks_found=0
+    grep -q "trap 'handle_coordinator_error" "$behavioral_file" && ((checks_found++))
+    grep -q "handle_coordinator_error()" "$behavioral_file" && ((checks_found++))
+    grep -q "TASK_ERROR:" "$behavioral_file" && ((checks_found++))
+    grep -q "set -e" "$behavioral_file" && ((checks_found++))
+
+    if [ "$checks_found" -eq 4 ]; then
+        pass_test "$test_name"
+    else
+        fail_test "$test_name" "Missing error handling elements: $checks_found/4"
+    fi
+}
+
+# Test 11: Verify invocation trace validation in STEP 4
+test_invocation_trace_validation() {
+    local test_name="Invocation trace validation enforced in STEP 4"
+    local behavioral_file="$PROJECT_DIR/agents/research-coordinator.md"
+
+    if [ ! -f "$behavioral_file" ]; then
+        fail_test "$test_name" "Behavioral file not found"
+        return
+    fi
+
+    local checks_found=0
+    grep -q "TRACE_COUNT=.*grep -c.*INVOKED" "$behavioral_file" && ((checks_found++))
+    grep -q "TRACE_COUNT.*-ne.*EXPECTED_INVOCATIONS" "$behavioral_file" && ((checks_found++))
+
+    # Check that trace file is validated BEFORE report validation
+    if grep -B 60 "^5\. \*\*Validate Report Files\*\*" "$behavioral_file" | grep -q ".invocation-trace.log"; then
+        ((checks_found++))
+    fi
+
+    if [ "$checks_found" -eq 3 ]; then
+        pass_test "$test_name"
+    else
+        fail_test "$test_name" "Missing trace validation elements: $checks_found/3"
+    fi
+}
+
+# Test 12: Verify invocation plan file validation in STEP 4
+test_invocation_plan_validation() {
+    local test_name="Invocation plan file validated in STEP 4"
+    local behavioral_file="$PROJECT_DIR/agents/research-coordinator.md"
+
+    if [ ! -f "$behavioral_file" ]; then
+        fail_test "$test_name" "Behavioral file not found"
+        return
+    fi
+
+    local checks_found=0
+
+    # Check that STEP 4 validates plan file existence
+    if grep -A 50 "STEP 4" "$behavioral_file" | grep -q ".invocation-plan.txt"; then
+        ((checks_found++))
+    fi
+
+    # Check for fail-fast on missing plan file
+    if grep -A 50 "STEP 4" "$behavioral_file" | grep -q "exit 1"; then
+        ((checks_found++))
+    fi
+
+    if [ "$checks_found" -eq 2 ]; then
+        pass_test "$test_name"
+    else
+        fail_test "$test_name" "Missing plan validation elements: $checks_found/2"
+    fi
+}
+
 # Main test execution
 main() {
     echo "=========================================="
@@ -201,6 +327,11 @@ main() {
     test_documentation_clarity
     test_minimum_report_size
     test_trace_file_cleanup
+    test_step_25_preexecution_barrier
+    test_bash_loop_pattern
+    test_error_trap_handler
+    test_invocation_trace_validation
+    test_invocation_plan_validation
 
     # Summary
     echo ""

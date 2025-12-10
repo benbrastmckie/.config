@@ -823,9 +823,23 @@ Research coordination is successful if:
 - Aggregated metadata returned to primary agent
 - Context reduction 95%+ vs full report content
 
+### Reliability and Stability
+
+**Reliability Note** (Updated 2025-12-09): The research-coordinator agent has been significantly hardened against Task invocation skipping:
+
+1. **STEP 2.5 Pre-Execution Barrier**: Mandatory invocation plan file creation prevents silent skipping
+2. **Bash-Generated Task Invocations**: STEP 3 uses concrete for-loop pattern (no placeholders)
+3. **Multi-Layer Validation**: STEP 4 validates plan file → trace file → reports
+4. **Error Trap Handler**: Mandatory TASK_ERROR signal on any failure
+5. **100% Invocation Rate**: All topics processed, no partial failures
+
+These fixes eliminate the primary failure mode documented in Pitfall 1 below.
+
 ### Common Pitfalls and Troubleshooting
 
-#### Pitfall 1: Empty Reports Directory
+#### Pitfall 1: Empty Reports Directory (RESOLVED)
+
+**Status**: This pitfall was resolved in 2025-12-09 with the STEP 3 refactor and multi-layer validation.
 
 **Symptom**: research-coordinator completes but reports directory is empty
 
@@ -844,6 +858,8 @@ Research coordination is successful if:
 4. Checkpoint verification after each invocation
 
 **Prevention**: Run lint-task-invocation-pattern.sh on agent behavioral files before deployment
+
+**Current Status**: As of 2025-12-09, research-coordinator.md implements all recommended fixes via Bash-generated Task invocations with multi-layer validation barriers. This pitfall should no longer occur in production workflows.
 
 #### Pitfall 2: Partial Report Creation
 

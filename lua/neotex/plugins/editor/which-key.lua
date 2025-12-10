@@ -253,52 +253,49 @@ return {
         icon = "󰘳"
       },
       { "<leader>as", function() require("neotex.plugins.ai.claude").resume_session() end, desc = "claude sessions", icon = "󰑐" },
-      { "<leader>av", "<cmd>ClaudeSessions<CR>", desc = "view worktrees", icon = "󰔡" },
-      { "<leader>aw", "<cmd>ClaudeWorktree<CR>", desc = "create worktree", icon = "󰘬" },
-      { "<leader>ar", "<cmd>ClaudeRestoreWorktree<CR>", desc = "restore closed worktree", icon = "󰑐" },
 
-      -- Avante AI commands
-      { "<leader>aa", "<cmd>AvanteAsk<CR>", desc = "avante ask", icon = "󰚩" },
-      { "<leader>ae", "<cmd>AvanteEdit<CR>", desc = "avante edit", icon = "󱇧", mode = { "v" } },
-      { "<leader>ap", "<cmd>AvanteProvider<CR>", desc = "avante provider", icon = "󰜬" },
-      { "<leader>am", "<cmd>AvanteModel<CR>", desc = "avante model", icon = "󰡨" },
-      { "<leader>ax", "<cmd>MCPHubOpen<CR>", desc = "mcp hub", icon = "󰚩" },
+      -- Avante AI commands (REMOVED: 2025-12-09 - Avante plugin no longer used)
+      -- { "<leader>aa", "<cmd>AvanteAsk<CR>", desc = "avante ask", icon = "󰚩" },
+      -- { "<leader>ae", "<cmd>AvanteEdit<CR>", desc = "avante edit", icon = "󱇧", mode = { "v" } },
+      -- { "<leader>ap", "<cmd>AvanteProvider<CR>", desc = "avante provider", icon = "󰜬" },
+      -- { "<leader>am", "<cmd>AvanteModel<CR>", desc = "avante model", icon = "󰡨" },
+      -- { "<leader>ax", "<cmd>MCPHubOpen<CR>", desc = "mcp hub", icon = "󰚩" },
 
       -- Lectic actions (only for .lec and .md files)
       { "<leader>al", "<cmd>Lectic<CR>", desc = "lectic run", icon = "󰊠", cond = is_lectic },
       { "<leader>al", "<cmd>LecticSubmitSelection<CR>", desc = "lectic selection", icon = "󰚟", mode = { "v" }, cond = is_lectic },
       { "<leader>an", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", cond = is_lectic },
-      { "<leader>aP", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
+      { "<leader>ak", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
 
-      -- TTS toggle - project-specific only
-      { "<leader>at", function()
-        local config_path = vim.fn.getcwd() .. "/.claude/tts/tts-config.sh"
+      -- TTS toggle - project-specific only (DISABLED: 2025-12-09 - User preference)
+      -- { "<leader>at", function()
+      --   local config_path = vim.fn.getcwd() .. "/.claude/tts/tts-config.sh"
 
-        if vim.fn.filereadable(config_path) ~= 1 then
-          notify.editor(
-            "No TTS config found. Use <leader>ac to create project-specific config.",
-            notify.categories.ERROR,
-            { project_root = vim.fn.getcwd() }
-          )
-          return
-        end
+      --   if vim.fn.filereadable(config_path) ~= 1 then
+      --     notify.editor(
+      --       "No TTS config found. Use <leader>ac to create project-specific config.",
+      --       notify.categories.ERROR,
+      --       { project_root = vim.fn.getcwd() }
+      --     )
+      --     return
+      --   end
 
-        local success, message, error = toggle_tts_config(config_path)
+      --   local success, message, error = toggle_tts_config(config_path)
 
-        if success then
-          notify.editor(
-            message,
-            notify.categories.USER_ACTION,
-            { config_path = config_path }
-          )
-        else
-          notify.editor(
-            "Failed to toggle TTS: " .. error,
-            notify.categories.ERROR,
-            { config_path = config_path }
-          )
-        end
-      end, desc = "toggle tts", icon = "󰔊" },
+      --   if success then
+      --     notify.editor(
+      --       message,
+      --       notify.categories.USER_ACTION,
+      --       { config_path = config_path }
+      --     )
+      --   else
+      --     notify.editor(
+      --       "Failed to toggle TTS: " .. error,
+      --       notify.categories.ERROR,
+      --       { config_path = config_path }
+      --     )
+      --   end
+      -- end, desc = "toggle tts", icon = "󰔊" },
 
       -- Yolo mode toggle - enables/disables --dangerously-skip-permissions flag
       { "<leader>ay", function()
@@ -360,18 +357,27 @@ return {
       end, desc = "toggle yolo mode", icon = "󰒓" },
 
       -- Goose AI commands (using available <leader>a letters)
-      { "<leader>ag", "<cmd>Goose<CR>", desc = "goose toggle", icon = "󰚩" },
-      { "<leader>ag", "<cmd>Goose<CR>", desc = "goose with selection", icon = "󰚩", mode = "v" },
-      { "<leader>ai", "<cmd>GooseOpenInput<CR>", desc = "goose input", icon = "󰭹" },
+      { "<leader>aa", "<cmd>Goose<CR>", desc = "goose toggle", icon = "󰚩" },
+      { "<leader>aa", "<cmd>Goose<CR>", desc = "goose with selection", icon = "󰚩", mode = "v" },
+      { "<leader>ae", "<cmd>GooseOpenInput<CR>", desc = "goose input", icon = "󰭹" },
       { "<leader>ao", "<cmd>GooseOpenOutput<CR>", desc = "goose output", icon = "󰆍" },
       { "<leader>af", "<cmd>GooseToggleFullscreen<CR>", desc = "goose fullscreen", icon = "󰊓" },
       { "<leader>ad", "<cmd>GooseDiff<CR>", desc = "goose diff", icon = "󰦓" },
-      { "<leader>aA", "<cmd>GooseModeAuto<CR>", desc = "goose auto mode", icon = "󰒓" },
-      { "<leader>aC", "<cmd>GooseModeChat<CR>", desc = "goose chat mode", icon = "󰭹" },
-      { "<leader>aR", function()
+      { "<leader>am", function()
+        vim.ui.select({ "Auto (unassisted)", "Chat (human)" }, {
+          prompt = "Select Goose Mode:",
+        }, function(choice)
+          if choice == "Auto (unassisted)" then
+            vim.cmd("GooseModeAuto")
+          elseif choice == "Chat (human)" then
+            vim.cmd("GooseModeChat")
+          end
+        end)
+      end, desc = "goose mode picker", icon = "󰡨" },
+      { "<leader>aj", function()
         require("neotex.plugins.ai.goose.picker").show_recipe_picker()
       end, desc = "goose run recipe (sidebar)", icon = "󰑮" },
-      { "<leader>ab", function()
+      { "<leader>ap", function()
         -- Detect provider availability
         local has_gemini_api = vim.env.GEMINI_API_KEY ~= nil and vim.env.GEMINI_API_KEY ~= ""
         local has_gemini_cli = vim.fn.executable("gemini") == 1
@@ -413,7 +419,20 @@ return {
           vim.cmd("GooseConfigureProvider")
         end, 1000)
       end, desc = "goose backend/provider", icon = "󰒓" },
+      { "<leader>ax", "<cmd>GooseOpenInputNewSession<CR>", desc = "goose new session", icon = "󰐕" },
       { "<leader>aq", "<cmd>GooseClose<CR>", desc = "goose quit", icon = "󰅖" },
+
+      -- Additional Goose commands (using free keys: b, g, h, i, r, t, u, v, w, z)
+      { "<leader>ab", "<cmd>GooseTogglePane<CR>", desc = "goose toggle pane", icon = "󰝘" },
+      { "<leader>ag", "<cmd>GooseRun<CR>", desc = "goose run", icon = "󰐊" },
+      { "<leader>ah", "<cmd>GooseToggleFocus<CR>", desc = "goose toggle focus", icon = "󰆿" },
+      { "<leader>ai", "<cmd>GooseInspectSession<CR>", desc = "goose inspect session", icon = "󰋼" },
+      { "<leader>ar", "<cmd>GooseRunNewSession<CR>", desc = "goose run new session", icon = "󰐕" },
+      { "<leader>at", "<cmd>GooseStop<CR>", desc = "goose stop", icon = "󰓛" },
+      { "<leader>au", "<cmd>GooseOpenConfig<CR>", desc = "goose config", icon = "󰒓" },
+      { "<leader>av", "<cmd>GooseSelectSession<CR>", desc = "goose select session", icon = "󰆼" },
+      { "<leader>aw", "<cmd>GooseRevertAll<CR>", desc = "goose revert all", icon = "󰕌" },
+      { "<leader>az", "<cmd>GooseRevertThis<CR>", desc = "goose revert this", icon = "󰕍" },
     })
 
     -- ============================================================================
@@ -453,8 +472,11 @@ return {
       { "<leader>gj", "<cmd>Gitsigns next_hunk<CR>", desc = "next hunk", icon = "󰮰" },
       { "<leader>gl", "<cmd>Gitsigns blame_line<CR>", desc = "line blame", icon = "󰊢", mode = { "n", "v" } },
       { "<leader>gp", "<cmd>Gitsigns preview_hunk<CR>", desc = "preview hunk", icon = "󰆈" },
+      { "<leader>gr", "<cmd>ClaudeRestoreWorktree<CR>", desc = "restore claude worktree", icon = "󰑐" },
       { "<leader>gs", "<cmd>Telescope git_status<CR>", desc = "status", icon = "󰊢" },
       { "<leader>gt", "<cmd>Gitsigns toggle_current_line_blame<CR>", desc = "toggle blame", icon = "󰔡" },
+      { "<leader>gv", "<cmd>ClaudeSessions<CR>", desc = "view claude worktrees", icon = "󰔡" },
+      { "<leader>gw", "<cmd>ClaudeWorktree<CR>", desc = "create claude worktree", icon = "󰘬" },
     })
 
     -- ============================================================================

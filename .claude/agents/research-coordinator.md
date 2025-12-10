@@ -95,6 +95,55 @@ context:
   feature_description: "Implement OAuth2 authentication with session management and password security"
 ```
 
+### STEP 0.5 (EXECUTE FIRST): Error Handler Installation
+
+**Objective**: Install error trap handler to prevent silent failures and ensure mandatory error return protocol.
+
+**Actions**:
+
+1. **Install Error Trap Handler**: Set up fail-fast behavior and error trapping
+   ```bash
+   # Enable fail-fast behavior
+   set -e  # Exit on any command failure
+   set -u  # Exit on undefined variable reference
+
+   # Install error trap handler
+   handle_coordinator_error() {
+     local exit_code=$1
+     local line_number=$2
+
+     # Build diagnostic context
+     local topics_count=${#TOPICS[@]:-0}
+     local reports_created=$(ls "$REPORT_DIR"/[0-9][0-9][0-9]-*.md 2>/dev/null | wc -l || echo 0)
+     local trace_file_exists="false"
+     [ -f "$REPORT_DIR/.invocation-trace.log" ] && trace_file_exists="true"
+
+     # Output ERROR_CONTEXT for parent command logging
+     echo "ERROR_CONTEXT: {" >&2
+     echo "  \"error_type\": \"agent_error\"," >&2
+     echo "  \"message\": \"Research coordinator failed at line $line_number\"," >&2
+     echo "  \"details\": {" >&2
+     echo "    \"exit_code\": $exit_code," >&2
+     echo "    \"line_number\": $line_number," >&2
+     echo "    \"topics_count\": $topics_count," >&2
+     echo "    \"reports_created\": $reports_created," >&2
+     echo "    \"trace_file_exists\": $trace_file_exists" >&2
+     echo "  }" >&2
+     echo "}" >&2
+
+     # Return TASK_ERROR signal (mandatory error return protocol)
+     echo "TASK_ERROR: agent_error - Research coordinator failed at line $line_number (exit code: $exit_code, reports created: $reports_created/$topics_count)"
+     exit $exit_code
+   }
+
+   # Attach trap to ERR signal
+   trap 'handle_coordinator_error $? $LINENO' ERR
+   ```
+
+**Checkpoint**: Error handler installed, fail-fast mode enabled.
+
+---
+
 ### STEP 1 (EXECUTE): Receive and Verify Research Topics
 
 **Objective**: Parse the research request (if needed) and verify the reports directory is accessible.
@@ -214,218 +263,197 @@ context:
 
 ---
 
+### STEP 2.5 (MANDATORY PRE-EXECUTION BARRIER): Invocation Planning
+
+**Objective**: Force agent to declare expected invocation count and create invocation plan file BEFORE proceeding to Task invocations.
+
+**Design Purpose**: This hard barrier prevents the agent from skipping STEP 3 Task invocations by requiring explicit commitment to invocation count. The plan file becomes a validation artifact in STEP 4.
+
+**Actions**:
+
+1. **Calculate Expected Invocations**: Determine how many research-specialist invocations are required
+   ```bash
+   # Calculate expected Task invocations
+   EXPECTED_INVOCATIONS=${#TOPICS[@]}
+   echo "Expected Task invocations: $EXPECTED_INVOCATIONS"
+   ```
+
+2. **Create Invocation Plan File**: Write plan file to reports directory
+   ```bash
+   # Create invocation plan artifact
+   INVOCATION_PLAN_FILE="$REPORT_DIR/.invocation-plan.txt"
+   cat > "$INVOCATION_PLAN_FILE" <<EOF_PLAN
+# Research Coordinator Invocation Plan
+# Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+Expected Invocations: $EXPECTED_INVOCATIONS
+
+Topics:
+EOF_PLAN
+
+   # Append topic list
+   for i in "${!TOPICS[@]}"; do
+     TOPIC="${TOPICS[$i]}"
+     REPORT_PATH="${REPORT_PATHS[$i]}"
+     echo "[$i] $TOPIC -> $REPORT_PATH" >> "$INVOCATION_PLAN_FILE"
+   done
+
+   echo "" >> "$INVOCATION_PLAN_FILE"
+   echo "Status: PLAN_CREATED (invocations pending)" >> "$INVOCATION_PLAN_FILE"
+   ```
+
+3. **Output Checkpoint Message**: Confirm plan file creation
+   ```bash
+   echo ""
+   echo "═══════════════════════════════════════════════════════"
+   echo "INVOCATION PLAN CREATED"
+   echo "═══════════════════════════════════════════════════════"
+   echo "Expected Invocations: $EXPECTED_INVOCATIONS"
+   echo "Plan File: $INVOCATION_PLAN_FILE"
+   echo ""
+   echo "**MANDATORY**: The invocation plan file MUST exist before proceeding to STEP 3."
+   echo "STEP 4 will validate this file to ensure STEP 2.5 was not skipped."
+   echo ""
+   ```
+
+4. **Validation Directive**: Explicit instruction preventing STEP 2.5 bypass
+   ```
+   **CRITICAL REQUIREMENT**: You MUST create the invocation plan file before proceeding to STEP 3.
+
+   If STEP 4 detects missing invocation plan file, the workflow will FAIL with error:
+   "CRITICAL ERROR: Invocation plan file missing - STEP 2.5 was skipped"
+   ```
+
+**Checkpoint**: Invocation plan file created at `$REPORT_DIR/.invocation-plan.txt` with expected invocation count and topic list.
+
+---
+
 <!-- EXECUTION ZONE: Task Invocations Below -->
 
 ### STEP 3 (EXECUTE MANDATORY): Invoke Parallel Research Workers
 
-**Objective**: Invoke research-specialist agent for each topic in parallel using Task tool.
+**Objective**: Generate and execute research-specialist Task invocations for ALL topics using Bash loop pattern.
 
-**THIS IS NOT DOCUMENTATION - EXECUTE NOW**: The Task invocations below are EXECUTABLE DIRECTIVES, not examples to read. You MUST execute the following Task invocations. DO NOT treat these as examples - they are executable directives that you must perform.
+**CRITICAL DESIGN CHANGE**: This step uses a Bash script to generate concrete Task invocations with actual values (no placeholders). The agent must execute the Bash script AND then execute each generated Task invocation.
 
-**Invocation Trace File**: Create an invocation trace at `$REPORT_DIR/.invocation-trace.log` to record each Task invocation for debugging. Append one line per invocation with format:
-`[TIMESTAMP] Topic[INDEX]: <topic_name> | Path: <report_path> | Status: [INVOKED|COMPLETED|FAILED]`
+**Actions**:
 
-Example: `[2025-12-09_14:32:15] Topic[0]: OAuth2 authentication | Path: /path/to/reports/001-oauth2.md | Status: INVOKED`
+1. **Generate Task Invocation Script**: Create Bash script that outputs concrete Task invocations
+   ```bash
+   # Initialize invocation trace file
+   TRACE_FILE="$REPORT_DIR/.invocation-trace.log"
+   echo "# Research Coordinator Invocation Trace - $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$TRACE_FILE"
+   echo "# Topics: ${#TOPICS[@]}" >> "$TRACE_FILE"
+   echo "" >> "$TRACE_FILE"
 
-This file will be auto-deleted on successful completion (all reports validated), preserved on failure for post-mortem debugging.
+   # Output Task invocation plan
+   echo "═══════════════════════════════════════════════════════"
+   echo "STEP 3: Task Invocation Generation"
+   echo "═══════════════════════════════════════════════════════"
+   echo "Total Topics: ${#TOPICS[@]}"
+   echo "Report Directory: $REPORT_DIR"
+   echo ""
 
-**CRITICAL WARNING**: If you skip Task invocations in this step, the reports directory will be empty and the workflow will fail. The empty directory validation in STEP 4 will detect this failure and exit with error.
+   # Generate Task invocations for each topic
+   for i in "${!TOPICS[@]}"; do
+     TOPIC="${TOPICS[$i]}"
+     REPORT_PATH="${REPORT_PATHS[$i]}"
+     TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+     INDEX_NUM=$((i + 1))
 
-**MANDATORY EXECUTION**: You MUST invoke research-specialist for each topic in the TOPICS array using the Task tool. Generate one Task invocation per topic - do NOT skip or summarize this step.
+     # Log to trace file
+     echo "[$TIMESTAMP] Topic[$i]: $TOPIC | Path: $REPORT_PATH | Status: PENDING" >> "$TRACE_FILE"
 
-<!-- CRITICAL: Do NOT wrap Task invocations in code fences - they will not execute -->
+     # Output logging message
+     echo "Generating Task invocation [$INDEX_NUM/${#TOPICS[@]}]: $TOPIC"
+     echo "  Report Path: $REPORT_PATH"
+     echo ""
 
-**CRITICAL**: For each index `i` from 0 to `${#TOPICS[@]} - 1`, you MUST generate and execute a Task tool invocation. The following shows the required pattern for each topic:
-
-**CRITICAL INSTRUCTION**: For each topic in the TOPICS array, you MUST generate one Task tool invocation. Below are the patterns for topics at indices 0, 1, 2, 3, and 4. Execute ALL that apply based on the actual TOPICS array length.
-
-**Logging Format**: Before each Task invocation, output this line (replace placeholders with actual values):
-`Invoking research-specialist [INDEX/TOTAL]: <topic_name> | Report: <report_path> | Time: <timestamp>`
+     # Output the actual Task invocation (this is what the agent must execute)
+     cat <<EOF_TASK_INVOCATION
 
 ---
 
-**CHECKPOINT AFTER TOPIC 0**: Did you just USE the Task tool for topic at index 0? If NO, STOP and execute it now.
-
-**EXECUTE NOW**: USE the Task tool to invoke research-specialist for topic at index 0.
+**EXECUTE NOW (Topic $INDEX_NUM/${#TOPICS[@]})**: USE the Task tool to invoke research-specialist for this topic.
 
 Task {
   subagent_type: "general-purpose"
-  description: "Research topic at index 0 with mandatory file creation"
+  description: "Research topic: $TOPIC"
   prompt: "
     Read and follow behavioral guidelines from:
-    (use CLAUDE_PROJECT_DIR)/.claude/agents/research-specialist.md
+    /home/benjamin/.config/.claude/agents/research-specialist.md
 
     You are acting as a Research Specialist Agent with the tools and constraints
     defined in that file.
 
     **CRITICAL - Hard Barrier Pattern**:
-    REPORT_PATH=(use REPORT_PATHS[0] - exact absolute path from array)
+    REPORT_PATH=$REPORT_PATH
 
-    **Research Topic**: (use TOPICS[0] - exact topic string from array)
+    **Research Topic**: $TOPIC
 
     **Context**:
-    (insert CONTEXT variable content here)
+    $CONTEXT
 
     Follow all steps in research-specialist.md:
     1. STEP 1: Verify absolute report path received
     2. STEP 2: Create report file FIRST (before research)
     3. STEP 3: Conduct research and update report incrementally
-    4. STEP 4: Verify file exists and return: REPORT_CREATED: (REPORT_PATHS[0])
+    4. STEP 4: Verify file exists and return: REPORT_CREATED: $REPORT_PATH
   "
 }
 
----
+EOF_TASK_INVOCATION
 
-**CHECKPOINT AFTER TOPIC 1**: Did you just USE the Task tool for topic at index 1? If NO or if TOPICS array has only 1 element, skip to next section.
+     # Update trace file with invoked status after Task execution
+     sed -i "s|Topic\[$i\]: .* | Status: PENDING|Topic[$i]: $TOPIC | Status: INVOKED|" "$TRACE_FILE"
+   done
 
-**EXECUTE NOW**: USE the Task tool to invoke research-specialist for topic at index 1 (if TOPICS array length > 1).
+   echo ""
+   echo "═══════════════════════════════════════════════════════"
+   echo "Task Invocation Generation Complete"
+   echo "═══════════════════════════════════════════════════════"
+   echo "Total Invocations Generated: ${#TOPICS[@]}"
+   echo "Trace File: $TRACE_FILE"
+   echo ""
+   echo "**CRITICAL**: You MUST now execute each Task invocation above."
+   echo "Each '**EXECUTE NOW**' directive requires you to USE the Task tool."
+   echo "DO NOT skip Task invocations - the workflow depends on ALL topics being researched."
+   echo ""
+   ```
 
-Task {
-  subagent_type: "general-purpose"
-  description: "Research topic at index 1 with mandatory file creation"
-  prompt: "
-    Read and follow behavioral guidelines from:
-    (use CLAUDE_PROJECT_DIR)/.claude/agents/research-specialist.md
+2. **Execution Checkpoint**: After Bash script completes, verify output contains `**EXECUTE NOW**` directives
+   - Count the number of `**EXECUTE NOW**` directives in the output
+   - Count MUST equal `${#TOPICS[@]}`
+   - Each directive is followed by a concrete Task invocation block with actual values (no placeholders)
 
-    You are acting as a Research Specialist Agent with the tools and constraints
-    defined in that file.
+3. **Execute Generated Task Invocations**: For each `**EXECUTE NOW**` directive, execute the Task tool invocation
+   - DO NOT skip any Task invocations
+   - Each Task invocation has concrete values (report path, topic string, context)
+   - Execute ALL Task invocations before proceeding to completion summary
 
-    **CRITICAL - Hard Barrier Pattern**:
-    REPORT_PATH=(use REPORT_PATHS[1] - exact absolute path from array)
+**VERIFICATION**: After executing all Task invocations, verify:
+- Trace file exists: `$REPORT_DIR/.invocation-trace.log`
+- Trace file contains ${#TOPICS[@]} entries with `Status: INVOKED`
+- You executed Task tool ${#TOPICS[@]} times (one per topic)
 
-    **Research Topic**: (use TOPICS[1] - exact topic string from array)
+**Completion Summary**:
 
-    **Context**:
-    (insert CONTEXT variable content here)
-
-    Follow all steps in research-specialist.md:
-    1. STEP 1: Verify absolute report path received
-    2. STEP 2: Create report file FIRST (before research)
-    3. STEP 3: Conduct research and update report incrementally
-    4. STEP 4: Verify file exists and return: REPORT_CREATED: (REPORT_PATHS[1])
-  "
-}
-
----
-
-**CHECKPOINT AFTER TOPIC 2**: Did you just USE the Task tool for topic at index 2? If NO or if TOPICS array length <= 2, skip to next section.
-
-**EXECUTE NOW**: USE the Task tool to invoke research-specialist for topic at index 2 (if TOPICS array length > 2).
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Research topic at index 2 with mandatory file creation"
-  prompt: "
-    Read and follow behavioral guidelines from:
-    (use CLAUDE_PROJECT_DIR)/.claude/agents/research-specialist.md
-
-    You are acting as a Research Specialist Agent with the tools and constraints
-    defined in that file.
-
-    **CRITICAL - Hard Barrier Pattern**:
-    REPORT_PATH=(use REPORT_PATHS[2] - exact absolute path from array)
-
-    **Research Topic**: (use TOPICS[2] - exact topic string from array)
-
-    **Context**:
-    (insert CONTEXT variable content here)
-
-    Follow all steps in research-specialist.md:
-    1. STEP 1: Verify absolute report path received
-    2. STEP 2: Create report file FIRST (before research)
-    3. STEP 3: Conduct research and update report incrementally
-    4. STEP 4: Verify file exists and return: REPORT_CREATED: (REPORT_PATHS[2])
-  "
-}
-
----
-
-**CHECKPOINT AFTER TOPIC 3**: Did you just USE the Task tool for topic at index 3? If NO or if TOPICS array length <= 3, skip to next section.
-
-**EXECUTE NOW**: USE the Task tool to invoke research-specialist for topic at index 3 (if TOPICS array length > 3).
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Research topic at index 3 with mandatory file creation"
-  prompt: "
-    Read and follow behavioral guidelines from:
-    (use CLAUDE_PROJECT_DIR)/.claude/agents/research-specialist.md
-
-    You are acting as a Research Specialist Agent with the tools and constraints
-    defined in that file.
-
-    **CRITICAL - Hard Barrier Pattern**:
-    REPORT_PATH=(use REPORT_PATHS[3] - exact absolute path from array)
-
-    **Research Topic**: (use TOPICS[3] - exact topic string from array)
-
-    **Context**:
-    (insert CONTEXT variable content here)
-
-    Follow all steps in research-specialist.md:
-    1. STEP 1: Verify absolute report path received
-    2. STEP 2: Create report file FIRST (before research)
-    3. STEP 3: Conduct research and update report incrementally
-    4. STEP 4: Verify file exists and return: REPORT_CREATED: (REPORT_PATHS[3])
-  "
-}
-
----
-
-**CHECKPOINT AFTER TOPIC 4**: Did you just USE the Task tool for topic at index 4? If NO or if TOPICS array length <= 4, proceed to STEP 3 completion summary.
-
-**EXECUTE NOW**: USE the Task tool to invoke research-specialist for topic at index 4 (if TOPICS array length > 4).
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Research topic at index 4 with mandatory file creation"
-  prompt: "
-    Read and follow behavioral guidelines from:
-    (use CLAUDE_PROJECT_DIR)/.claude/agents/research-specialist.md
-
-    You are acting as a Research Specialist Agent with the tools and constraints
-    defined in that file.
-
-    **CRITICAL - Hard Barrier Pattern**:
-    REPORT_PATH=(use REPORT_PATHS[4] - exact absolute path from array)
-
-    **Research Topic**: (use TOPICS[4] - exact topic string from array)
-
-    **Context**:
-    (insert CONTEXT variable content here)
-
-    Follow all steps in research-specialist.md:
-    1. STEP 1: Verify absolute report path received
-    2. STEP 2: Create report file FIRST (before research)
-    3. STEP 3: Conduct research and update report incrementally
-    4. STEP 4: Verify file exists and return: REPORT_CREATED: (REPORT_PATHS[4])
-  "
-}
-
-**NOTE**: If TOPICS array has more than 5 elements (rare), continue this exact pattern for indices 5, 6, etc. Each additional topic requires its own "**EXECUTE NOW**: USE the Task tool..." directive and Task block.
-
-**STEP 3 COMPLETION SUMMARY**:
-
-After all Task invocations complete, output a summary:
+After ALL Task invocations execute, output this summary:
 
 ```
 STEP 3 Summary: Research-Specialist Invocations
 ================================================
-Total Topics: <TOPICS_ARRAY_LENGTH>
-Task Invocations Executed: <COUNT_OF_TASK_USES>
-Successful Responses: <COUNT_WITH_REPORT_CREATED_SIGNAL>
-Failed Invocations: <COUNT_WITHOUT_SIGNAL>
-
-Status: [SUCCESS if all responded | PARTIAL if some failed | FAILURE if none responded]
+Total Topics: ${#TOPICS[@]}
+Task Invocations Executed: <count of Task tool uses>
+Trace File: $TRACE_FILE
+Status: [COMPLETE if all Task invocations executed | INCOMPLETE if any skipped]
 ```
 
-**VERIFY NOW: Did you invoke Task tools for all topics in TOPICS array?**
+**CRITICAL CHECKPOINT**: Before proceeding to STEP 3.5, answer this question:
 
-STOP HERE and count your Task invocations. If the count does not equal TOPICS array length, you have skipped invocations. GO BACK to the beginning of STEP 3 and execute the missing Task invocations.
-
-**CRITICAL CONSEQUENCE**: Failure to execute Task invocations = empty reports directory = workflow failure detected by STEP 4 validation.
-
-**CHECKPOINT**: Before proceeding to STEP 4, verify you have invoked the Task tool for ALL topics. Count the Task tool invocations in your response - it MUST equal the length of the TOPICS array.
+**Did you execute the Task tool for ALL ${#TOPICS[@]} topics?**
+- If YES: Proceed to STEP 3.5
+- If NO: STOP and return to beginning of STEP 3 to execute missing Task invocations
 
 ---
 
@@ -486,7 +514,62 @@ If you proceed to STEP 4 and it fails with "Reports directory is empty" error, t
 
 **Actions**:
 
-1. **Pre-Validation Report Count Check** (Empty Directory Detection):
+1. **Validate Invocation Plan File** (STEP 2.5 Proof):
+   ```bash
+   # Check if invocation plan file exists (proves STEP 2.5 was executed)
+   INVOCATION_PLAN_FILE="$REPORT_DIR/.invocation-plan.txt"
+   if [ ! -f "$INVOCATION_PLAN_FILE" ]; then
+     echo "CRITICAL ERROR: Invocation plan file missing - STEP 2.5 was skipped" >&2
+     echo "Expected file: $INVOCATION_PLAN_FILE" >&2
+     echo "This indicates the pre-execution barrier (STEP 2.5) did not execute" >&2
+     echo "Solution: Return to STEP 2.5 and create invocation plan file" >&2
+     exit 1
+   fi
+
+   # Validate invocation plan file has expected invocation count
+   EXPECTED_INVOCATIONS=$(grep "^Expected Invocations:" "$INVOCATION_PLAN_FILE" | cut -d: -f2 | tr -d ' ')
+   if [ -z "$EXPECTED_INVOCATIONS" ]; then
+     echo "ERROR: Invocation plan file is malformed (missing expected invocation count)" >&2
+     exit 1
+   fi
+
+   echo "✓ VERIFIED: Invocation plan file exists (STEP 2.5 completed)"
+   echo "  Expected Invocations: $EXPECTED_INVOCATIONS"
+   ```
+
+2. **Validate Invocation Trace File** (STEP 3 Proof):
+   ```bash
+   # Check if invocation trace file exists (proves STEP 3 was executed)
+   TRACE_FILE="$REPORT_DIR/.invocation-trace.log"
+   if [ ! -f "$TRACE_FILE" ]; then
+     echo "CRITICAL ERROR: Invocation trace file missing - STEP 3 did not execute" >&2
+     echo "Expected file: $TRACE_FILE" >&2
+     echo "This indicates the Bash script in STEP 3 did not run" >&2
+     echo "Solution: Return to STEP 3 and execute Bash script + Task invocations" >&2
+     exit 1
+   fi
+
+   # Count Task invocations in trace file
+   TRACE_COUNT=$(grep -c "Status: INVOKED" "$TRACE_FILE" 2>/dev/null || echo 0)
+   if [ "$TRACE_COUNT" -eq 0 ]; then
+     echo "ERROR: Trace file exists but contains no INVOKED entries" >&2
+     echo "This indicates STEP 3 Bash script ran but Task invocations were not executed" >&2
+     exit 1
+   fi
+
+   # Validate trace count matches expected invocations
+   if [ "$TRACE_COUNT" -ne "$EXPECTED_INVOCATIONS" ]; then
+     echo "ERROR: Trace count mismatch - invoked $TRACE_COUNT Task(s), expected $EXPECTED_INVOCATIONS" >&2
+     echo "This indicates some Task invocations were skipped in STEP 3" >&2
+     echo "Solution: Return to STEP 3 and execute missing Task invocations" >&2
+     exit 1
+   fi
+
+   echo "✓ VERIFIED: Invocation trace file exists (STEP 3 completed)"
+   echo "  Task Invocations: $TRACE_COUNT (matches expected)"
+   ```
+
+3. **Pre-Validation Report Count Check** (Empty Directory Detection):
    ```bash
    # Count expected vs created reports
    EXPECTED_REPORTS=${#REPORT_PATHS[@]}
@@ -509,10 +592,10 @@ If you proceed to STEP 4 and it fails with "Reports directory is empty" error, t
    fi
    ```
 
-2. **Collect Task Responses**: Gather all research-specialist return signals
+4. **Collect Task Responses**: Gather all research-specialist return signals
    - Expected format: `REPORT_CREATED: /absolute/path/to/report.md`
 
-3. **Validate Report Files**: For each pre-calculated path, verify file exists
+5. **Validate Report Files**: For each pre-calculated path, verify file exists
    ```bash
    MISSING_REPORTS=()
    for REPORT_PATH in "${REPORT_PATHS[@]}"; do
@@ -547,7 +630,7 @@ If you proceed to STEP 4 and it fails with "Reports directory is empty" error, t
    echo "✓ VERIFIED: All ${#REPORT_PATHS[@]} research reports created successfully"
    ```
 
-4. **Validate Required Sections**: Check each report has required findings section (flexible header format)
+6. **Validate Required Sections**: Check each report has required findings section (flexible header format)
 
    Accepted section headers: "## Findings", "## Executive Summary", or "## Analysis"
 
@@ -674,8 +757,14 @@ If you proceed to STEP 4 and it fails with "Reports directory is empty" error, t
    ╚═══════════════════════════════════════════════════════╝
    ```
 
-3. **Return Metadata Signal**: Return structured metadata for primary agent parsing
+3. **Return Metadata Signal**: Return structured metadata for primary agent parsing with completion signal
    ```
+   RESEARCH_COORDINATOR_COMPLETE: SUCCESS
+   topics_processed: 3
+   reports_created: 3
+   context_reduction_pct: 95
+   execution_time_seconds: 45
+
    RESEARCH_COMPLETE: 3
    reports: [
      {"path": "/path/to/001-mathlib-theorems.md", "title": "Mathlib Theorems for Group Homomorphism", "findings_count": 12, "recommendations_count": 5},
@@ -685,6 +774,13 @@ If you proceed to STEP 4 and it fails with "Reports directory is empty" error, t
    total_findings: 30
    total_recommendations: 15
    ```
+
+   **Completion Signal Format**:
+   - `RESEARCH_COORDINATOR_COMPLETE: SUCCESS` - Explicit completion signal for primary agent parsing
+   - `topics_processed: N` - Number of topics successfully researched
+   - `reports_created: N` - Number of reports created (should equal topics_processed on success)
+   - `context_reduction_pct: N` - Estimated context reduction percentage (typically 95%)
+   - `execution_time_seconds: N` - Workflow execution time in seconds
 
 4. **Cleanup Invocation Trace** (on successful completion):
    ```bash
@@ -854,47 +950,14 @@ Research coordination is successful if:
 
 ---
 
-## Command-Author Reference (NOT FOR AGENT EXECUTION)
+## Command-Author Reference
 
-<!-- DOCUMENTATION ONLY - DO NOT EXECUTE -->
+**For command authors**: See [Research Coordinator Integration Guide](./../docs/guides/agents/research-coordinator-integration-guide.md) for:
+- Complete invocation patterns (Mode 1 and Mode 2)
+- Completion signal parsing examples
+- Troubleshooting workflows
+- Integration examples for /create-plan and /lean-plan
+- Fixed issues documentation
+- Best practices
 
-This section is for COMMAND AUTHORS who invoke this agent via the Task tool. The agent itself does NOT execute these examples - they show how commands should invoke the research-coordinator.
-
-### How Commands Invoke This Agent
-
-Commands invoke research-coordinator using the Task tool with structured parameters. The examples below show invocation patterns from the command's perspective, not the agent's execution perspective.
-
-**Example Invocation Pattern** (from command to agent):
-
-```markdown
-**EXECUTE NOW**: USE the Task tool to invoke the research-coordinator agent.
-
-Task {
-  subagent_type: "general-purpose"
-  description: "Coordinate parallel research across 3 topics"
-  prompt: "
-    Read and follow behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-coordinator.md
-
-    You are acting as a Research Coordinator Agent with the tools and constraints defined in that file.
-
-    research_request: 'OAuth2 authentication, session management, password security'
-    research_complexity: 3
-    report_dir: /home/user/.config/.claude/specs/045_auth/reports/
-    topic_path: /home/user/.config/.claude/specs/045_auth
-    context:
-      feature_description: 'Implement OAuth2 authentication with session management'
-  "
-}
-```
-
-**Note**: The input format examples shown earlier in this file (Mode 1, Mode 2) are also command-author reference material showing how to structure the research_request, topics, and report_paths parameters when invoking this agent.
-
-### Troubleshooting Agent Invocation
-
-If the research-coordinator returns an empty reports directory:
-1. Check that the command passed valid research_request and report_dir parameters
-2. Verify the command is using the Task tool correctly (not pseudo-code)
-3. Ensure STEP 3 execution markers are strong enough to prevent misinterpretation
-4. Check invocation trace file at `$REPORT_DIR/.invocation-trace.log` for diagnostic information
-5. Review STEP 4 empty directory validation error messages for root cause hints
+This agent file contains EXECUTABLE DIRECTIVES for the agent model. Command authors should consult the integration guide for invocation patterns and output parsing.

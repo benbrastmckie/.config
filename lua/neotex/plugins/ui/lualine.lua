@@ -38,14 +38,23 @@ return {
             "Avante",
             "AvanteInput",
             "AvanteAsk",
-            "AvanteEdit"
+            "AvanteEdit",
+            "goose-input",
+            "goose-output",
           },
           winbar = {
             "Avante",
             "AvanteInput",
             "AvanteAsk",
-            "AvanteEdit"
+            "AvanteEdit",
+            "goose-input",
+            "goose-output",
           },
+        },
+        -- Disable lualine for terminal buffers (goose, claude-code, toggleterm, etc.)
+        disabled_buftypes = {
+          statusline = { "terminal", "nofile" },
+          winbar = { "terminal", "nofile" },
         },
         ignore_focus = {},
         always_divide_middle = true,

@@ -74,18 +74,53 @@ return {
       default_mode = "auto",
 
       -- UI Settings
+      -- Reference: https://github.com/azorng/goose.nvim/issues/82
+      -- window_type = "split": Enables split window mode
+      --   - Integrates with <C-h/l> split navigation keybindings
+      --   - Consistent UX with neo-tree, toggleterm, lean.nvim sidebars
+      --   - Works with standard Neovim window management commands
       ui = {
+        window_type = "split", -- Enable split window mode (instead of floating)
         window_width = 0.35, -- 35% of screen width
         input_height = 0.15, -- 15% for input area
         fullscreen = false,
-        layout = "right", -- Sidebar on right
-        floating_height = 0.8,
+        layout = "right", -- Right sidebar positioning (botright vsplit)
+        floating_height = 0.8, -- Retained for compatibility
         display_model = true, -- Show model in winbar
         display_goose_mode = true, -- Show mode in winbar
       },
 
       -- Dynamic provider configuration
       providers = providers,
+    })
+
+    -- Fix: Add visible horizontal separator between goose output and input panes
+    -- The native WinSeparator is invisible by default, so we add a winbar to the
+    -- input window to create a visible thin divider line
+    local function set_goose_input_winbar()
+      local win = vim.api.nvim_get_current_win()
+      local width = vim.api.nvim_win_get_width(win)
+      -- Create line exactly fitting window width (no truncation needed)
+      vim.wo[win].winbar = "%#WinSeparator#" .. string.rep("─", width)
+    end
+
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "goose-input" },
+      callback = set_goose_input_winbar,
+    })
+
+    -- Update winbar on window resize
+    vim.api.nvim_create_autocmd("WinResized", {
+      callback = function()
+        for _, win in ipairs(vim.api.nvim_list_wins()) do
+          local buf = vim.api.nvim_win_get_buf(win)
+          local ft = vim.bo[buf].filetype
+          if ft == "goose-input" then
+            local width = vim.api.nvim_win_get_width(win)
+            vim.wo[win].winbar = "%#WinSeparator#" .. string.rep("─", width)
+          end
+        end
+      end,
     })
   end,
   cmd = { "Goose", "GooseOpenInput", "GooseClose" },
