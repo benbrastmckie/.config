@@ -1,0 +1,11 @@
+# Research Coordinator Invocation Plan
+# Generated: 2025-12-09T00:00:00Z
+
+Expected Invocations: 3
+
+Topics:
+[0] Current /lean-plan Command Architecture and Behavior Analysis: Examine the current implementation of the /lean-plan command, including its structure, input handling, output generation, interactions with Mathlib research, and integration points with /lean-implement. Identify current design patterns and constraints. -> /home/benjamin/.config/.claude/specs/068_lean_plan_wave_optimization/reports/001-lean-plan-command-analysis.md
+[1] Wave-Based Parallel Planning with Dependency Management: Research how /lean-plan can structure output to enable /lean-implement to execute phases in parallel waves based on dependency constraints. Focus on dependency declaration syntax, phase ordering strategies, and metadata structures that support parallel execution patterns. -> /home/benjamin/.config/.claude/specs/068_lean_plan_wave_optimization/reports/002-wave-parallel-planning-dependencies.md
+[2] Efficiency Optimization, Standards Compliance, and Infrastructure Integration: Investigate command performance optimization techniques, alignment with .claude/docs/ standards (metadata, output formatting, error handling), and seamless integration with existing infrastructure (research-coordinator, topic detection, state persistence, validation systems). -> /home/benjamin/.config/.claude/specs/068_lean_plan_wave_optimization/reports/003-efficiency-standards-infrastructure.md
+
+Status: PLAN_CREATED (invocations pending)
