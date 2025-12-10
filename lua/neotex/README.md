@@ -71,7 +71,10 @@ Legacy code preserved for reference or potential future use.
 
 Plugins are organized into categorical subdirectories:
 
-- **ai/** - AI-powered tooling (Copilot, GPT integration)
+- **ai/** - AI integration with multiple assistant options
+  - claude/ - Claude Code with session management and worktree integration
+  - goose/ - Multi-provider AI agent (Gemini, Claude backend) with recipes
+  - avante/ - AI assistant with MCP protocol and inline suggestions
 - **editor/** - Editor enhancements (coding utilities, formatting)
 - **lsp/** - Language Server Protocol configurations
 - **text/** - Text format-specific tools (LaTeX, Markdown, Jupyter)

@@ -77,8 +77,12 @@ notify.editor('Cache updated', notify.categories.BACKGROUND)
 
 -- Module-specific notifications
 notify.himalaya('Email sent', notify.categories.USER_ACTION)
-notify.ai('Model switched', notify.categories.USER_ACTION)
 notify.lsp('Formatting complete', notify.categories.USER_ACTION)
+
+-- AI assistant notifications
+notify.ai('Claude session restored', notify.categories.USER_ACTION)
+notify.ai('Goose recipe executed', notify.categories.USER_ACTION)
+notify.ai('Provider detection complete', notify.categories.BACKGROUND)
 ```
 
 ### Notification Commands

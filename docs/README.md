@@ -44,7 +44,7 @@ Welcome to the comprehensive documentation for this Neovim configuration. This d
 
 | Document | Purpose | Size |
 |----------|---------|------|
-| [AI_TOOLING.md](AI_TOOLING.md) | AI integration tools (Avante, Claude Code, MCP Hub) and configuration | 22K |
+| [AI_TOOLING.md](AI_TOOLING.md) | AI integration tools (Claude Code, Goose, Avante, MCP Hub) with provider comparison and workflow guidance | 22K |
 | [RESEARCH_TOOLING.md](RESEARCH_TOOLING.md) | Research workflows and tooling for academic and technical work | 14K |
 | [NIX_WORKFLOWS.md](NIX_WORKFLOWS.md) | Nix package manager workflows and integration | 11K |
 | [NOTIFICATIONS.md](NOTIFICATIONS.md) | Notification system configuration and usage | 18K |
@@ -86,7 +86,7 @@ Welcome to the comprehensive documentation for this Neovim configuration. This d
 - **Quick Reference**: [Claude Code Quick Ref](CLAUDE_CODE_QUICK_REF.md) - Common commands
 
 ### Using Features
-- **AI Integration**: [AI Tooling](AI_TOOLING.md) - Avante, Claude Code, MCP Hub
+- **AI Integration**: [AI Tooling](AI_TOOLING.md) - Claude Code, Goose, Avante, MCP Hub
 - **Research Workflows**: [Research Tooling](RESEARCH_TOOLING.md) - Academic and technical research
 - **Nix Integration**: [Nix Workflows](NIX_WORKFLOWS.md) - Package management
 - **Notifications**: [Notifications](NOTIFICATIONS.md) - Configure alerts and messages

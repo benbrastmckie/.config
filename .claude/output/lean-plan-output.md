@@ -1,251 +1,324 @@
-> /lean-plan is running… "Draw on the plan 
-/home/benjamin/Documents/Philosophy/Projects/ProofChecker/.c
-laude/specs/059_modal_theorems_s5_completion/plans/001-modal
--theorems-s5-completion-plan.md in order to research online 
-a better way to forward given the invalid lemmas that were 
-discovered in order to create a new lean implementation plan
- to complete the main theorems that we had intended to 
-complete." 
+> /lean-plan is running… "Research the remaining medium 
+priority tasks in /home/benjamin/Documents/Philosophy/Projec
+ts/ProofChecker/TODO.md in order to create a lean plan to 
+implement these changes systematically." 
   ⎿  Allowed 7 tools for this command
 
-● I need to analyze the existing plan and research
-  alternative approaches for the blocked theorems. Let
-  me start by reading the existing plan to understand
-  what was blocked and why.
+● I need to execute the /lean-plan command. Let me start
+   by reading the TODO.md file to understand what medium
+   priority tasks need to be researched, then execute
+  the workflow.
 
-● Read(.claude/specs/059_modal_theorems_s5_completion/plans/
-      001-modal-theorems-s5-completion-plan.md)
-  ⎿  Read 575 lines
+● Read(TODO.md)
+  ⎿  Read 354 lines
 
-● Now let me check the current state of the modal
-  theorem files to understand what's implemented and
-  what's blocked:
+● Now I understand the medium priority tasks. Tasks
+  21-29 are the remaining medium priority tasks - all
+  propositional theorem derivations in Lean. Let me
+  execute the /lean-plan workflow to create a systematic
+   implementation plan.
 
-● Read(Logos/Core/Theorems/ModalS5.lean)
-  ⎿  Read 612 lines
-
-● Read(Logos/Core/Theorems/ModalS4.lean)
-  ⎿  Read 248 lines
-
-● Now I understand the situation clearly. Let me
-  summarize the blocked theorems and then research
-  alternative approaches:
-
-  Blocked Theorems:
-  1. diamond_disj_iff - formula alignment complexity
-  with De Morgan laws
-  2. s4_diamond_box_conj - requires conditional diamond
-  monotonicity (NOT VALID)
-  3. s5_diamond_conj_diamond - requires diamond
-  distribution infrastructure
-
-  Key Discovery: The theorem diamond_mono_imp : (φ → ψ) 
-  → (◇φ → ◇ψ) is NOT valid as an object-level theorem in
-   modal logic. Only the meta-rule works.
-
-  Let me research alternative approaches for these
-  theorems in modal logic and Mathlib:
-
-● Web Search("Lean 4 Mathlib modal logic diamond
-            distribution proof strategies 2025")
-  ⎿  Did 1 search in 20s                               
-
-● Web Search("modal logic S5 diamond conjunction
-            distribution proof alternative approaches")
-  ⎿  Did 1 search in 26s                               
-
-● Web Search("Hilbert style modal logic box diamond
-            distribution proofs without object-level
-            monotonicity")
-  ⎿  Did 1 search in 21s                               
-
-● Let me search more specifically for the proof
-  approaches we need:
-
-● Web Search(""◇(A ∨ B) ↔ ◇A ∨ ◇B" modal logic proof
-             diamond disjunction")
-  ⎿  Did 1 search in 21s                               
-
-● Web Search("modal logic K axiom diamond monotonicity
-            derived rule necessitated implication")
-  ⎿  Did 1 search in 19s                               
-
-● lean-lsp - LeanSearch (MCP)(query: "diamond distributes
-                             over disjunction modal logic",
-                             num_results: 5)
-  ⎿ {                                                  
-      "result": "[\n  {\n    \"name\": \"Prop.instDistr
-    ibLattice\",\n    \"module_name\": \"Mathlib.Order.
-    … +55 lines (ctrl+o to expand)
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿ Auto-detected Lean project: /home/benjamin/Document
+    s/Philosophy/Projects/ProofChecker
+    Lean project validated: /home/benjamin/Documents/Ph
+    … +16 lines (ctrl+o to expand)
 
 
 
-● Web Search(""box diamond conjunction" modal S5 proof "(◇A
-            ∧ □B) → ◇(A ∧ □B)"")
-  ⎿  Did 1 search in 20s                               
-
-● lean-lsp - Loogle (MCP)(query: "□(A → B) → (◇A → ◇B)",
-                         num_results: 8)
-  ⎿  {                              
-       "result": "No results found."
-     }
-
-● Let me look at the FormalizedFormalLogic project for
-  modal logic patterns:
-
-● Fetch(https://github.com/FormalizedFormalLogic/Foundation)
-  ⎿  Received 331.7KB (200 OK)
-
-● Web Search("Hilbert style S5 modal logic proof "□(A → B) →
-             (◇A → ◇B)" diamond dual K axiom")
-  ⎿  Did 1 search in 18s                               
-
-● This is very helpful! I found the key insight: □(A → 
-  B) → (◇A → ◇B) is a valid theorem that can be derived
-  from axiom K. This is the alternative approach
-  mentioned in the plan. Let me fetch more details on
-  this proof and look at the Boxes and Diamonds
-  textbook:
-
-● Fetch(https://builds.openlogicproject.org/courses/boxes-an
-       d-diamonds/bd-screen.pdf)
-  ⎿  Received 6.5MB (200 OK)
-
-● Fetch(https://www3.cs.stonybrook.edu/~cse371/13(modal).pdf
-       )
-  ⎿  Received 98.4KB (200 OK)
-
-● Let me search for specific proof strategies:
-
-● Web Search("modal logic derive "□(A → B) → (◇A → ◇B)" from
-             K axiom contraposition duality proof")
-  ⎿  Did 1 search in 17s                               
-
-● Web Search("modal S5 "□B → □□B" axiom 4 combining with
-            diamond conjunction distribution proof")
-  ⎿  Did 1 search in 22s                               
-
-● Now I have a clear understanding of the alternative
-  approach. Let me create the plan based on my research.
-   First, let me set up the workflow state and create
-  the topic directory:
-
-● Bash(mkdir -p /home/benjamin/Documents/Philosophy/Projects
-      /ProofChecker/.claude/specs/060_modal_theorems_alterna
-      tive_proofs/{reports,plans})
-  ⎿  (No content)
-
-● Now let me create a research report summarizing my
-  findings:
-
-● Write(.claude/specs/060_modal_theorems_alternative_proofs/
-       reports/001-alternative-proof-strategies.md)
-  ⎿  Wrote 207 lines to                                
-     .claude/specs/060_modal_theorems_alternative_proofs
-     /reports/001-alternative-proof-strategies.md
-     # Research Report: Alternative Proof Strategies for
-      Blocked Modal Theorems
-     ## Executive Summary
-     This report documents alternative proof strategies
-     discovered through online research to complete the
-     blocked modal theorems from Plan 059. The key
-     insight is that `□(A → B) → (◇A → ◇B)` IS a valid
-     theorem (unlike the invalid `(A → B) → (◇A → ◇B)`),
-      and this provides a foundation for completing all
-     three blocked theorems.
-     ## Background: The Original Blocking Issue
-     Plan 059 discovered a fundamental limitation:
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿ === Topic Name File Path Pre-Calculation ===       
+      Topic Name File: /home/benjamin/Documents/Philoso
+    phy/Projects/ProofChecker/.claude/tmp/topic_name_le
+    … +4 lines (ctrl+o to expand)
 
 
-     … +197 lines (ctrl+o to expand)
 
-● Now let me create the new implementation plan:
+● Now I need to invoke the topic-naming-agent to
+  generate a semantic topic directory name:
 
-● Write(.claude/specs/060_modal_theorems_alternative_proofs/
-       plans/001-modal-theorems-alternative-proofs-plan.md)
-  ⎿  Wrote 464 lines to .claude/specs/060_modal_theorem
-     _alternative_proofs/plans/001-modal-theorems-altern
-     ative-proofs-plan.md
-     # Lean Implementation Plan: Modal Theorems
-     Alternative Proofs
-     ## Metadata
-     - **Date**: 2025-12-09
-     - **Feature**: Complete blocked modal theorems
-     using alternative proof strategies based on valid K
-      distribution
-     - **Scope**: Prove 3 remaining sorry placeholders
-     (diamond_disj_iff, s4_diamond_box_conj, 
-     s5_diamond_conj_diamond) using `□(A → B) → (◇A →
-     ◇B)` pattern
+● Task(Generate semantic topic directory name) Haiku 4.5
+  ⎿  Done (2 tool uses · 31.6k tokens · 12s)           
+
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿ === Topic Name Hard Barrier Validation ===         
+
+    Expected topic name file: /home/benjamin/Documents/
+    … +5 lines (ctrl+o to expand)
+
+
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿ Setup complete: lean_plan_1765336766 (Lean research
+    -and-plan, complexity: 3)
+    Research directory: /home/benjamin/Documents/Philos
+    … +11 lines (ctrl+o to expand)
+
+
+
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿  === Research Topics Classification ===
+     Research Complexity: 3
+     Topic Count: 3
+     … +6 lines (ctrl+o to expand)
+
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿  === Research Topics Classification ===
+     Research Complexity: 3
+     Topic Count: 3
+     … +16 lines (ctrl+o to expand)
+
+● Now I need to execute parallel research on the 3
+  topics. I'll launch 3 research specialists in
+  parallel:
+
+● 3 Task agents launched (ctrl+o to expand)
+   ├─ Research Mathlib theorems for propositional logic 
+   derivations · Running in background
+   │  ⎿  Launched
+   ├─ Research proof strategies for propositional 
+   derivations · Running in background
+   │  ⎿  Launched
+   └─ Research project structure for propositional module ·
+   Running in background
+      ⎿  Launched
+
+● While the research agents are running, let me read
+  some key files that will help with the planning phase:
+
+● Read(Logos/Core/ProofSystem/Axioms.lean)
+  ⎿  Read 222 lines
+
+● Read(Logos/Core/Theorems/Perpetuity.lean)
+  ⎿  Error: File content (35201 tokens) exceeds maximum 
+     allowed tokens (25000). Please use offset and limit 
+     parameters to read specific portions of the file, or use
+      the GrepTool to search for specific content.
+
+● Read(Logos/Core/Theorems/Perpetuity.lean)
+  ⎿  Read 300 lines
+
+● Search(pattern: "Logos/Core/Theorems/*.lean", path:
+        "~/Documents/Philosophy/Projects/ProofChecker")
+  ⎿  Found 4 files (ctrl+o to expand)
+
+● There's already a Propositional.lean file. Let me
+  check its contents and also check on the research
+  agents:
+
+● Read(Logos/Core/Theorems/Propositional.lean)
+  ⎿  Read 1282 lines
+
+● Agent Output(non-blocking) b76fbd02
+
+
+● Agent Output(non-blocking) 85c8b6b0
+
+
+● Agent Output(non-blocking) aaf50951
+
+
+● Excellent - I can see that Propositional.lean already
+  has many of the theorems from Tasks 21-29 implemented!
+   Looking at the file:
+  - Tasks 21-22 (RAA, EFQ): ✓ Already implemented
+  - Task 23 (LCE, RCE): ✓ Already implemented
+  - Task 24 (LDI, RDI): ✓ Already implemented
+  - Task 25 (RCP): ✓ Already implemented
+  - Task 26 (ECQ): ✓ Already implemented
+
+  The remaining tasks are:
+  - Task 27 (NE, NI): Not yet implemented
+  - Task 28 (DE - Disjunction Elimination): Not yet
+  implemented
+  - Task 29 (BI, LBE, RBE): Partially implemented
+  (iff_intro, iff_elim_left, iff_elim_right exist)
+
+  Let me check on the research agents and also look at
+  the ModalS5.lean and ModalS4.lean files for context:
+
+● Agent Output b76fbd02
+  ⎿  Research Mathlib theorems for propositional logic 
+derivations b76fbd02
+     Agent is still running
+
+● Agent Output 85c8b6b0
+  ⎿  Research proof strategies for propositional 
+derivations 85c8b6b0
+     Agent is still running
+
+● Agent Output aaf50951
+  ⎿  Research project structure for propositional 
+module aaf50951
+     Agent is still running
+
+● The research agents are still running. Let me wait a
+  bit more and check again:
+
+● Agent Output b76fbd02
+  ⎿  Research Mathlib theorems for propositional logic 
+derivations b76fbd02
+     Agent is still running
+
+● The research agents are taking a while. Let me check
+  if any reports have been written yet, and if not, I'll
+   proceed with creating the research reports myself
+  based on the codebase analysis I've already done:
+
+● Bash(ls -la /home/benjamin/Documents/Philosophy/Projects/P
+      roofChecker/.claude/specs/061_propositional_theorem_de
+      rivations/reports/ 2>/dev/null || echo "Reports
+      direc…)
+  ⎿  total 56                                         
+     drwxr-xr-x 2 benjamin users  4096 Dec  9 19:25 .
+     drwxr-xr-x 3 benjamin users  4096 Dec  9 19:21 ..
+     … +4 lines (ctrl+o to expand)
+
+● Two reports are done. The Mathlib theorems report
+  (001) is still being written. Let me wait for it and
+  then create the missing one if needed:
+
+● Agent Output b76fbd02
+  ⎿  Research Mathlib theorems for propositional logic 
+derivations (65 lines)
+     (ctrl+o to expand)
+
+● All three research reports are complete. Now let me
+  validate the reports and proceed to the planning
+  phase:
+
+● Bash(ls -la /home/benjamin/Documents/Philosophy/Projects/P
+      roofChecker/.claude/specs/061_propositional_theorem_de
+      rivations/reports/)
+  ⎿  total 88                                         
+     drwxr-xr-x 2 benjamin users  4096 Dec  9 19:28 .
+     drwxr-xr-x 3 benjamin users  4096 Dec  9 19:21 ..
+     … +6 lines (ctrl+o to expand)
+
+● All three research reports are complete. Let me update
+   the todo list and read the key findings from the
+  reports to understand what's actually remaining:
+
+● Read(.claude/specs/061_propositional_theorem_derivations/r
+      eports/002-proof-strategies.md)
+  ⎿  Read 200 lines
+
+● Excellent! The research is very comprehensive. Let me
+  now run the hard barrier validation and proceed to the
+   planning phase:
+
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿  === Research Reports Hard Barrier Validation ===
+
+     ✓ 001-mathlib-theorems.md: 32633 bytes
+     … +18 lines (ctrl+o to expand)
+
+● Now I need to create the implementation plan. Based on
+   the research, I found that Tasks 21-26 are already
+  complete in the codebase! The remaining work is Tasks
+  27-29 (NE, NI, DE, BI - though BI is partially done).
+  Let me create a focused plan:
+
+● Write(.claude/specs/061_propositional_theorem_derivations/
+       plans/001-propositional-theorem-derivations-plan.md)
+  ⎿  Wrote 351 lines to .claude/specs/061_propositional
+     theorem_derivations/plans/001-propositional-theorem
+     -derivations-plan.md
+     # Implementation Plan: Remaining Medium Priority
+     Propositional Theorem Derivations
      - **Status**: [NOT STARTED]
-     - **Estimated Hours**: 12-16 hours
-     - **Complexity Score**: 24
-     - **Structure Level**: 0
-     … +454 lines (ctrl+o to expand)
+     - **Created**: 2025-12-09
+     - **Workflow**: /lean-plan
+     - **Feature**: Complete remaining propositional
+     theorem derivations (Tasks 27-29)
+     - **Lean File**:
+     /home/benjamin/Documents/Philosophy/Projects/ProofC
+     hecker/Logos/Core/Theorems/Propositional.lean
+     - **Lean Project**: /home/benjamin/Documents/Philos
+     ophy/Projects/ProofChecker
+     ## Executive Summary
+     … +341 lines (ctrl+o to expand)
 
-● I've completed the research and created a new
-  implementation plan. Here's a summary:
+● Now let me validate the plan and complete the
+  workflow:
 
-  Summary
+● Bash(set +H  # CRITICAL: Disable history expansion…)
+  ⎿  === Plan Hard Barrier Validation ===
 
-  I analyzed the blocked theorems from Plan 059 and
-  researched alternative proof strategies online. The
-  key discovery is:
+     ✓ Plan file: 11945 bytes
+     … +15 lines (ctrl+o to expand)
 
-  The Problem
+● The /lean-plan workflow is complete. Let me provide a
+  summary:
 
-  Plan 059 discovered that (φ → ψ) → (◇φ → ◇ψ) is NOT 
-  valid as an object-level theorem (counter-model exists
-   in S5), which blocked three theorems.
+  ---
+  Lean Plan Complete
 
-  The Solution
+  Created implementation plan for propositional theorem 
+  derivations.
 
-  However, □(φ → ψ) → (◇φ → ◇ψ) IS valid and derivable
-  from the K axiom via duality and contraposition! This
-  is called k_dist_diamond.
+  Key Finding: Tasks 21-26 Already Complete
 
-  Proof sketch (from
-  https://plato.stanford.edu/entries/logic-modal/):
-  1. K axiom: □(A → B) → (□A → □B)
-  2. Substitute and use duality ◇X = ¬□¬X
-  3. Apply contraposition to get: □(A → B) → (◇A → ◇B)
+  Research revealed that most medium priority tasks from
+   TODO.md are already implemented in
+  Logos/Core/Theorems/Propositional.lean:
 
-  New Plan Created
+  | Task | Theorem                             | Status
+      |
+  |------|-------------------------------------|--------
+  ----|
+  | 21   | raa (Reductio ad Absurdum)          | ✓
+  Complete |
+  | 22   | efq (Ex Falso Quodlibet)            | ✓
+  Complete |
+  | 23   | lce, rce (Conjunction Elimination)  | ✓
+  Complete |
+  | 24   | ldi, rdi (Disjunction Introduction) | ✓
+  Complete |
+  | 25   | rcp (Reverse Contraposition)        | ✓
+  Complete |
+  | 26   | ecq (Ex Contradictione Quodlibet)   | ✓
+  Complete |
 
-  Location:
+  Remaining Work (Tasks 27-29)
+
+  The plan focuses on 4 remaining theorems:
+
+  1. Phase 1: ni - Negation Introduction (4-5 hrs)
+  2. Phase 2: ne - Negation Elimination (4-5 hrs)
+  3. Phase 3: de - Disjunction Elimination (5-7 hrs)
+  4. Phase 4: bi_imp - Biconditional Introduction (2-3
+  hrs)
+
+  Total Estimated: 12-18 hours (reduced from original
+  17-22 hours)
+
+  Artifacts Created
+
+  - 📊 Reports: .claude/specs/061_propositional_theorem_
+  derivations/reports/ (3 files, 75KB)
+  - 📄 Plan:
+  .claude/specs/061_propositional_theorem_derivations/pl
+  ans/001-propositional-theorem-derivations-plan.md
+
+  Next Steps
+
+  # Review plan
+  cat
   /home/benjamin/Documents/Philosophy/Projects/ProofChec
-  ker/.claude/specs/060_modal_theorems_alternative_proof
-  s/plans/001-modal-theorems-alternative-proofs-plan.md
+  ker/.claude/specs/061_propositional_theorem_derivation
+  s/plans/001-propositional-theorem-derivations-plan.md
 
-  5 Phases:
-  1. Phase 1: Prove k_dist_diamond (new infrastructure)
-  2. Phase 2: Biconditional helpers (contrapose_iff,
-  box_iff_intro)
-  3. Phase 3: Complete diamond_disj_iff using duality
-  chain
-  4. Phase 4: Complete s4_diamond_box_conj and
-  s5_diamond_conj_diamond
-  5. Phase 5: Documentation cleanup
-
-  Key Strategy: The pattern for all blocked theorems is:
-  1. From hypothesis, derive □(A → C) for target C
-  2. Apply k_dist_diamond: □(A → C) → (◇A → ◇C)
-  3. Use modus ponens
-
-  Research Report
-
-  Location:
+  # Begin proving with /lean-build
+  /lean-build
   /home/benjamin/Documents/Philosophy/Projects/ProofChec
-  ker/.claude/specs/060_modal_theorems_alternative_proof
-  s/reports/001-alternative-proof-strategies.md
+  ker/.claude/specs/061_propositional_theorem_derivation
+  s/plans/001-propositional-theorem-derivations-plan.md
+  --prove-all
 
-  Documents the full derivation strategy and specific
-  proof approaches for each blocked theorem.
+  # Review research
+  ls -lh /home/benjamin/Documents/Philosophy/Projects/Pr
+  oofChecker/.claude/specs/061_propositional_theorem_der
+  ivations/reports/
 
-  Sources
-
-  - https://plato.stanford.edu/entries/logic-modal/
-  - https://en.wikipedia.org/wiki/Modal_logic
-  - https://en.wikipedia.org/wiki/S5_(modal_logic)
-  - https://github.com/FormalizedFormalLogic/Foundation
-  - https://bd.openlogicproject.org/
+  PLAN_CREATED:
+  /home/benjamin/Documents/Philosophy/Projects/ProofChec

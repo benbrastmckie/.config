@@ -47,7 +47,11 @@ This Neovim configuration includes specialized support for:
 
 - **LaTeX Editing**: Comprehensive LaTeX support through VimTeX with custom templates, PDF viewing, citation management, LaTeX-specific text surrounds, and more
 - **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, markdown-specific text surrounds, and live preview
-- **AI Assistance**: AI integration for code completion and editing suggestions with Avante, MCP-Hub tools, and knowledge assistance with Lectic
+- **AI Assistance**: Multiple AI integration options for code completion and development workflows:
+  - [Claude Code](lua/neotex/plugins/ai/claude/README.md) - Official Claude integration with session management and worktree support
+  - [Goose](lua/neotex/plugins/ai/goose/README.md) - AI-assisted coding with multi-provider support (Gemini CLI, Claude Code)
+  - [Avante](lua/neotex/plugins/ai/avante/README.md) - AI assistant with MCP-Hub tools integration
+  - [Lectic](lua/neotex/plugins/ai/README.md#lectic) - AI-assisted writing for markdown files
 - **Jupyter Notebooks**: Interactive notebook support with cell execution, navigation, and conversion between formats
 - **NixOS Management**: Convenient commands for managing NixOS configurations, packages, and updates
 - **Development Tools**: LSP configuration, syntax highlighting, Git integration, and diagnostics

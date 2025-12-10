@@ -25,9 +25,26 @@ MCP-Hub integration plugin configuration (`mcp-hub`) with cross-platform compati
 ### lectic.lua
 Configuration for the Lectic plugin (`gleachkr/lectic`) for markdown editing and management. Handles markdown and lectic.markdown filetypes with dependency installation and runtime path configuration.
 
+### goose/init.lua
+Configuration for the Goose AI agent plugin (`azorng/goose.nvim`). Provides multi-provider AI assistance (Gemini CLI, Claude Code backend) with split window integration, recipe-based workflows, and session persistence.
+
+**Key Features**:
+- Split window mode with native Neovim navigation (`<C-h/j/k/l>`)
+- Dynamic provider detection and switching
+- Recipe picker for workflow automation
+- Session management tied to workspace
+- Diff view for reviewing AI changes
+
+**Configuration**:
+- Window type: split (35% width, right sidebar)
+- Default mode: auto (full agent capabilities)
+- Preferred picker: telescope
+- Keybindings managed by which-key.lua
+
 ## Subdirectories
 
 - [claude/](claude/README.md) - Comprehensive internal Claude AI integration system (9,626+ lines across 20 files)
+- [goose/](goose/README.md) - AI-assisted coding with multi-provider backend and recipe system
 
 ## Key Features
 
@@ -81,12 +98,17 @@ ai.send_visual_to_claude_with_prompt() -- Visual selection with prompt
 ### Keybindings (in which-key.lua)
 - `<leader>a` - AI tools group
 - `<leader>ac` - Send selection to Claude (visual) / Claude commands (normal)
-- `<leader>aa` - Avante ask
-- `<leader>ae` - Avante edit (visual mode)
+- `<leader>aa` - Toggle Goose chat interface (normal) / Send selection to Goose (visual)
+- `<leader>ae` - Focus Goose input window (or Avante edit in visual mode)
 - `<leader>as` - Claude sessions
-- `<leader>av` - View worktrees
+- `<leader>av` - View worktrees (Claude) / Select Goose session
 - `<leader>aw` - Create worktree
-- `<leader>ar` - Restore worktree
+- `<leader>ar` - Restore worktree (Claude) / Run Goose session
+- `<leader>ad` - Open Goose diff view
+- `<leader>aR` - Goose recipe picker
+- `<leader>ap` - Goose provider status and switch
+
+**Note**: Some keybindings overlap between Claude Code and Goose (`<leader>av`, `<leader>ar`). Both plugins can coexist; context determines which bindings are active.
 
 ### Plugin Dependencies
 - `nvim-lua/plenary.nvim` - Lua utilities

@@ -8,6 +8,20 @@ This directory contains Claude Code integration for Neovim, handling terminal se
 
 This module works in conjunction with the external `claude-code.nvim` plugin (configured in `../claudecode.lua`) to provide advanced Claude AI functionality.
 
+## AI Plugin Ecosystem
+
+This Neovim configuration integrates multiple AI assistants, each with distinct strengths for different workflows:
+
+- **Claude Code** (this module) - Official Claude integration with sophisticated session management and git worktree support for complex, long-running development workflows
+- **[Goose AI Agent](../goose/README.md)** - Multi-provider AI assistance (Gemini CLI, Claude Code backend) with recipe-based workflows and split window integration
+- **[Avante](../avante/README.md)** - AI assistant with MCP-Hub protocol integration and inline suggestions
+
+**When to Use Claude Code vs Goose**:
+- Choose Claude Code for: Long-running sessions with complex context, multi-branch development with worktrees, projects requiring sophisticated state management, teams using Claude as primary provider
+- Choose Goose for: Recipe-driven workflows, cross-provider flexibility (Gemini/Claude), integrated diff-based change review, consistent split window layout
+
+See [AI_TOOLING.md](../../../../docs/AI_TOOLING.md) for comprehensive comparison and workflow guidance.
+
 ## Architectural Overview
 
 This module represents the **internal system** for Claude Code integration, while `../claudecode.lua` serves as the **external plugin configuration layer**. This separation follows clean architecture principles:
@@ -514,7 +528,13 @@ Comprehensive documentation is maintained in `specs/`:
 
 ## Navigation
 
-- [← Parent Directory](../README.md) - AI plugins overview
+### AI Plugin Ecosystem
+- [AI Plugins Overview](../README.md) - Complete AI integration documentation
+- [Goose AI Agent](../goose/README.md) - Multi-provider AI with recipes
+- [Avante](../avante/README.md) - MCP-Hub integration
+- [AI Tools Comparison](../../../../docs/AI_TOOLING.md) - Feature comparison and workflow guidance
+
+### Claude Code Documentation
 - [External Plugin Config](../claudecode.lua) - `claude-code.nvim` configuration
 - [Core Modules](core/README.md) - Core business logic documentation
 - [UI Components](ui/README.md) - User interface documentation

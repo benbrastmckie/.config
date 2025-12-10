@@ -2,9 +2,9 @@
 
 ## Metadata
 - **Date**: 2025-12-09 (Revised)
-- **Feature**: Extract coordinator logic to library (Pattern A - Orchestrator Mode) with brief summary format and sequential-by-default execution
+- **Feature**: Extract coordinator logic to library (Pattern A - Orchestrator Mode) with hard barrier pattern and /lean-implement compatibility validation
 - **Status**: [NOT STARTED]
-- **Estimated Hours**: 8-12 hours
+- **Estimated Hours**: 10-14 hours
 - **Complexity Score**: 38
 - **Structure Level**: 0
 - **Standards File**: /home/benjamin/.config/CLAUDE.md
@@ -14,12 +14,26 @@
   - [Planning Subagent Architecture Analysis](../reports/003-planning-subagent-architecture.md)
   - [Orchestrator vs Direct Invocation Patterns](../../066_pattern_tradeoff_comparison/reports/001-orchestrator-vs-direct-invocation-patterns.md)
   - [Pattern A Consistency Analysis](../reports/004-pattern-a-consistency-analysis.md)
+  - [/lean-implement Compatibility Research](../reports/5-lean_implement_compatibility_research.md)
 
 ## Overview
 
 The lean-plan command is bypassing hierarchical agent delegation entirely, executing all research and planning operations in the primary agent instead of delegating to research-coordinator and lean-plan-architect subagents. Research has confirmed that **nested Task invocation** (coordinator -> specialist) is architecturally problematic and should be avoided.
 
 **Solution**: Implement **Pattern A (Orchestrator Mode)** - extract coordinator logic to a sourced library, allowing the primary agent to execute coordinator logic inline while invoking specialists directly via single-level Task calls.
+
+**CRITICAL SCOPE BOUNDARIES** (prevents /lean-implement confusion):
+
+**This plan modifies**:
+- `/lean-plan` command ONLY - research coordination logic
+- Creates new library: `.claude/lib/coordination/research-orchestrator.sh`
+
+**This plan does NOT modify**:
+- `/lean-implement` command - already working perfectly with implementer-coordinator
+- `lean-coordinator.md` agent - wave-based orchestration unchanged
+- `implementer-coordinator.md` agent - brief summary format unchanged
+
+**Compatibility Guarantee**: All changes are isolated to lean-plan's research phase. The `/lean-implement` command will continue to work exactly as before with its proven implementer-coordinator delegation pattern.
 
 **Pattern A Consistency** (aligned with Spec 065 - Lean Coordinator Wave Optimization):
 - **Brief Summary Format**: Aggregation returns 80 tokens (metadata fields) not 2,000 tokens (full content)
@@ -85,13 +99,20 @@ Research confirmed that **Pattern A (Orchestrator Mode)** is the recommended app
 - [ ] Library contains deterministic topic decomposition (complexity -> topic count mapping)
 - [ ] Library implements brief summary aggregation (80 tokens target, metadata on lines 1-8)
 - [ ] Library defaults to sequential specialist invocation (parallel requires explicit flag)
-- [ ] lean-plan command updated to source library and execute specialists directly
+- [ ] lean-plan command updated to use 3-block hard barrier pattern (Setup → Execute → Verify)
+- [ ] State machine integration with fail-fast validation (aligned with /implement)
+- [ ] Pre-calculated report paths before specialist invocation (hard barrier requirement)
+- [ ] Hard barrier validation with exit 1 on missing reports
+- [ ] Structured error logging for all validation failures
 - [ ] Single-level Task invocations working (primary -> specialist)
-- [ ] Delegation checkpoints implemented with trace file validation
 - [ ] Checkpoint support for partial research completion
 - [ ] Architecture Decision Record (ADR) created documenting Pattern A adoption
 - [ ] lean-plan-output.md shows successful specialist delegation when re-executed
 - [ ] Context consumption reduced from ~15k tokens to ~500 tokens
+- [ ] **CRITICAL: /lean-implement still works after lean-plan changes (no regression)**
+- [ ] implementer-coordinator brief summary format unchanged
+- [ ] Wave-based orchestration validated in /lean-implement
+- [ ] Scope boundaries validated: NO changes to /lean-implement, lean-coordinator, implementer-coordinator
 
 ## Technical Design
 
@@ -245,9 +266,40 @@ EOF
 }
 ```
 
-**lean-plan Integration Pattern**:
+**lean-plan Integration Pattern** (3-block hard barrier pattern from /implement):
+
+**Block 1a: Research Phase Setup**
 ```bash
-# Block 1e: Research Phase (Pattern A - Orchestrator Mode)
+# State transition with fail-fast validation (aligned with /implement)
+sm_transition "$STATE_RESEARCH" "plan loaded, starting research" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "state_error" \
+    "State transition to RESEARCH failed" \
+    "bash_block_1a" \
+    "$(jq -n --arg state "RESEARCH" '{target_state: $state}')"
+
+  echo "ERROR: State transition to RESEARCH failed" >&2
+  exit 1
+fi
+
+# Pre-calculate report paths (hard barrier requirement)
+REPORT_PATHS=()
+for i in $(seq 1 $TOPIC_COUNT); do
+  REPORT_PATHS+=("${REPORT_DIR}/${i}-topic.md")
+done
+
+append_workflow_state "REPORT_PATHS" "${REPORT_PATHS[@]}"
+echo "[CHECKPOINT] Research setup: $TOPIC_COUNT topics, ${#REPORT_PATHS[@]} report paths pre-calculated"
+```
+
+**Block 1e: Research Orchestration (Pattern A - Orchestrator Mode)**
+```bash
+# Source orchestrator library (Pattern A)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/coordination/research-orchestrator.sh" 2>/dev/null || {
   echo "ERROR: Failed to source research-orchestrator library" >&2
   exit 1
@@ -264,6 +316,40 @@ echo "[CHECKPOINT] Research orchestration: $TOPIC_COUNT topics, mode: $EXECUTION
 
 # Store prompts for Task invocation block
 append_workflow_state "SPECIALIST_PROMPTS" "$(echo "$ORCHESTRATION_OUTPUT" | sed -n '/^prompts:/,$p' | tail -n +2)"
+```
+
+**Block 1f: Research Verification (Hard Barrier)**
+```bash
+# Validate all pre-calculated report paths exist (fail-fast)
+MISSING_REPORTS=()
+for REPORT_PATH in "${REPORT_PATHS[@]}"; do
+  if [[ ! -f "$REPORT_PATH" ]]; then
+    MISSING_REPORTS+=("$REPORT_PATH")
+  fi
+done
+
+if [[ ${#MISSING_REPORTS[@]} -gt 0 ]]; then
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "${#MISSING_REPORTS[@]} research reports missing after specialist invocation" \
+    "bash_block_1f" \
+    "$(jq -n --argjson missing "$(printf '%s\n' "${MISSING_REPORTS[@]}" | jq -R . | jq -s .)" \
+       '{missing_reports: $missing}')"
+
+  echo "ERROR: Research verification failed - ${#MISSING_REPORTS[@]} reports missing"
+  echo "Missing reports: ${MISSING_REPORTS[*]}"
+  exit 1
+fi
+
+# Parse brief summary metadata (96% context reduction)
+AGGREGATION=$(aggregate_research_results "$REPORT_DIR")
+RESEARCH_STATUS=$(echo "$AGGREGATION" | grep "^research_status:" | cut -d' ' -f2)
+REPORTS_COMPLETED=$(echo "$AGGREGATION" | grep "^reports_completed:" | cut -d' ' -f2)
+
+echo "[CHECKPOINT] Research verification: status=$RESEARCH_STATUS, completed=$REPORTS_COMPLETED"
 ```
 
 ### Validation Strategy
@@ -359,49 +445,74 @@ dependencies: []
 - [ ] Library follows three-tier sourcing pattern
 - [ ] Brief summary format validated (< 100 tokens)
 
-### Phase 2: lean-plan Command Integration [NOT STARTED]
+### Phase 2: lean-plan Command Integration with Hard Barrier Pattern [NOT STARTED]
 dependencies: [1]
 
-**Objective**: Update lean-plan.md to source the orchestrator library and invoke specialists directly with sequential-by-default behavior.
+**Objective**: Update lean-plan.md to use 3-block hard barrier pattern (Setup → Execute → Verify) aligned with /implement success patterns.
 
 **Complexity**: Medium
 
 **Tasks**:
 - [ ] Read lean-plan.md Block 1e structure (research coordination)
-- [ ] Replace research-coordinator Task invocation with library sourcing
+- [ ] Implement Block 1a: Research Phase Setup with state machine integration
+- [ ] Add fail-fast state transition validation with structured error logging
+- [ ] Pre-calculate all report paths before specialist invocation (hard barrier requirement)
+- [ ] Replace research-coordinator Task invocation with library sourcing in Block 1e
 - [ ] Update Block 1e to call `orchestrate_research()` for topic decomposition
 - [ ] Implement sequential specialist invocation loop (default behavior)
 - [ ] Add parallel execution mode with explicit flag (complexity >= 3 only)
-- [ ] Update Block 1e verification to check specialist reports (not coordinator trace)
-- [ ] Add brief summary parsing after aggregation (80 tokens)
+- [ ] Implement Block 1f: Research Verification with hard barrier validation
+- [ ] Add brief summary parsing after aggregation (80 tokens metadata)
 - [ ] Verify lean-plan-architect invocation in Block 2b (single-level, should work)
 - [ ] Test updated lean-plan with simple feature description
 
-**Updated Block 1e Pattern**:
+**3-Block Hard Barrier Pattern** (aligned with /implement):
 ```bash
-# Block 1e: Research Phase (Pattern A - Orchestrator Mode)
+# Block 1a: Research Phase Setup (state transition + path pre-calculation)
+sm_transition "$STATE_RESEARCH" "plan loaded, starting research" 2>&1
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "state_error" "State transition to RESEARCH failed" "bash_block_1a" \
+    "$(jq -n --arg state "RESEARCH" '{target_state: $state}')"
+  exit 1
+fi
+
+# Pre-calculate report paths (mandatory for hard barrier)
+REPORT_PATHS=()
+for i in $(seq 1 $TOPIC_COUNT); do
+  REPORT_PATHS+=("${REPORT_DIR}/${i}-topic.md")
+done
+
+# Block 1e: Research Orchestration (Pattern A - inline coordination)
 source "${CLAUDE_PROJECT_DIR}/.claude/lib/coordination/research-orchestrator.sh" 2>/dev/null || {
   echo "ERROR: Failed to source research-orchestrator library" >&2
   exit 1
 }
-
-# Decompose topics and generate specialist prompts (deterministic)
 ORCHESTRATION=$(orchestrate_research "$FEATURE_DESCRIPTION" "$RESEARCH_COMPLEXITY" "$REPORT_DIR" "false")
 
-# Parse execution mode
-EXECUTION_MODE=$(echo "$ORCHESTRATION" | grep "^execution_mode:" | cut -d' ' -f2)
-TOPIC_COUNT=$(echo "$ORCHESTRATION" | grep "^topic_count:" | cut -d' ' -f2)
+# Block 1f: Research Verification (hard barrier - fail-fast on missing reports)
+MISSING_REPORTS=()
+for REPORT_PATH in "${REPORT_PATHS[@]}"; do
+  [[ ! -f "$REPORT_PATH" ]] && MISSING_REPORTS+=("$REPORT_PATH")
+done
 
-echo "[CHECKPOINT] Orchestration complete: $TOPIC_COUNT specialists, mode: $EXECUTION_MODE"
-
-# Store prompts for Task invocation block
-append_workflow_state "SPECIALIST_PROMPTS" "$(echo "$ORCHESTRATION" | sed -n '/^prompts:/,$p' | tail -n +2)"
+if [[ ${#MISSING_REPORTS[@]} -gt 0 ]]; then
+  log_command_error "$COMMAND_NAME" "$WORKFLOW_ID" "$USER_ARGS" \
+    "validation_error" "${#MISSING_REPORTS[@]} research reports missing" "bash_block_1f" \
+    "$(jq -n --argjson missing "$(printf '%s\n' "${MISSING_REPORTS[@]}" | jq -R . | jq -s .)" '{missing_reports: $missing}')"
+  exit 1
+fi
 ```
 
-**Expected Duration**: 2.5 hours
+**Expected Duration**: 3 hours (increased for hard barrier implementation)
 
 **Success Criteria**:
-- [ ] lean-plan sources orchestrator library successfully
+- [ ] lean-plan uses 3-block pattern (Setup → Execute → Verify)
+- [ ] State machine integration with fail-fast validation
+- [ ] Report paths pre-calculated before specialist invocation
+- [ ] Hard barrier validation catches missing reports (exit 1)
+- [ ] Structured error logging for all failure points
 - [ ] Topic decomposition executes inline (no coordinator Task)
 - [ ] Specialist Task invocations generated correctly
 - [ ] Sequential execution by default (parallel only when flag set)
@@ -455,34 +566,42 @@ Note: Only used when EXECUTION_MODE=true AND COMPLEXITY >= 3
 Invoke all specialists in parallel by including multiple Task invocations in a single response.
 ```
 
-**Expected Duration**: 2.5 hours
+**Expected Duration**: 3 hours (increased for checkpoint implementation)
 
 **Success Criteria**:
 - [ ] Specialists invoke via single-level Task (no nesting)
 - [ ] Sequential invocation works by default (one at a time)
 - [ ] Parallel invocation available for complexity >= 3 with flag
-- [ ] Reports created at expected paths
-- [ ] Hard barrier validation catches missing reports
+- [ ] Reports created at expected paths (pre-calculated paths validated)
+- [ ] Hard barrier validation catches missing reports (fail-fast)
+- [ ] Structured error logging for all validation failures
 - [ ] Checkpoint saved on partial completion
+- [ ] Checkpoint support validated with resumption test
 - [ ] Brief summary format validated (< 100 tokens)
 
-### Phase 4: Architecture Documentation and Testing [NOT STARTED]
+### Phase 4: Architecture Documentation and /lean-implement Compatibility Testing [NOT STARTED]
 dependencies: [3]
 
-**Objective**: Document Pattern A adoption with consistency notes, create ADR, and validate end-to-end.
+**Objective**: Document Pattern A adoption, validate /lean-implement still works, and confirm no regression in proven delegation patterns.
 
-**Complexity**: Low
+**Complexity**: Medium (increased for compatibility testing)
 
 **Tasks**:
 - [ ] Create ADR: `.claude/docs/architecture/adr/002-orchestrator-mode-adoption.md`
 - [ ] Document Pattern A decision rationale and tradeoffs
 - [ ] Document Pattern A consistency with Spec 065 (brief summary, deterministic, sequential-default)
+- [ ] Document scope boundaries (lean-plan ONLY, NOT lean-implement)
 - [ ] Update hierarchical-agents-examples.md with Pattern A example
 - [ ] Update research-coordinator.md with library extraction note
 - [ ] Re-execute lean-plan with test feature (complexity 2 - sequential)
 - [ ] Re-execute lean-plan with test feature (complexity 4 - parallel mode)
 - [ ] Validate context consumption reduced (~500 tokens target)
 - [ ] Measure execution time improvement (compare sequential vs parallel)
+- [ ] **CRITICAL: Test /lean-implement compatibility** (prove no regression)
+- [ ] Execute /lean-implement on existing Lean plan (verify delegation still works)
+- [ ] Validate implementer-coordinator brief summary format unchanged
+- [ ] Confirm wave-based orchestration still functions correctly
+- [ ] Validate lean-coordinator agent still works with /lean-implement
 - [ ] Update CHANGELOG.md with Pattern A implementation
 
 **ADR Content**:
@@ -497,16 +616,23 @@ Nested Task invocation (coordinator -> specialist) proved problematic in command
 Research into industry patterns (Anthropic, Google ADK, Microsoft) confirmed orchestrator mode
 as a valid alternative that preserves coordination logic.
 
+## Scope
+**This ADR applies to /lean-plan ONLY**. The /lean-implement command is NOT modified and
+continues to use implementer-coordinator delegation successfully.
+
 ## Decision
 Adopt Pattern A (Orchestrator Mode) with consistency across all implementations:
 - Extract coordinator logic to `.claude/lib/coordination/research-orchestrator.sh`
 - Commands source library and execute coordination logic inline
 - Specialists invoked via single-level Task (no nesting)
+- Use 3-block hard barrier pattern (Setup → Execute → Verify) aligned with /implement
 
 Pattern A Consistency (aligned with Spec 065 - Lean Coordinator Wave Optimization):
 1. Brief Summary Format: Aggregation returns 80 tokens (metadata fields)
 2. Deterministic Logic: No LLM reasoning in library functions
 3. Sequential-by-Default: Parallel execution requires explicit flag
+4. Hard Barrier Validation: Pre-calculated paths, fail-fast on missing artifacts
+5. State Machine Integration: Fail-fast state transitions with error logging
 
 ## Consequences
 - Eliminates nested Task constraint
@@ -514,22 +640,35 @@ Pattern A Consistency (aligned with Spec 065 - Lean Coordinator Wave Optimizatio
 - Reduces token overhead (no coordinator LLM reasoning)
 - Requires library extraction for coordinators
 - Consistent patterns across lean-coordinator and research-orchestrator
+- Aligns with /implement reliability patterns (hard barrier, state machine, error logging)
+- **NO impact on /lean-implement** - changes isolated to lean-plan research phase
+
+## Compatibility
+- /lean-implement continues to work unchanged (implementer-coordinator delegation preserved)
+- lean-coordinator agent unchanged (wave-based orchestration preserved)
+- implementer-coordinator agent unchanged (brief summary format preserved)
 
 ## Alternatives Rejected
 - Pattern B (Direct Specialist): Loses orchestration logic, code duplication
 - Nested Task Fix: Architectural constraint, not implementation bug
 ```
 
-**Expected Duration**: 2 hours
+**Expected Duration**: 3 hours (increased for /lean-implement compatibility testing)
 
 **Success Criteria**:
 - [ ] ADR created documenting Pattern A adoption with consistency notes
+- [ ] Scope boundaries documented (lean-plan ONLY, NOT lean-implement)
 - [ ] Documentation updated across affected files
 - [ ] lean-plan re-execution shows specialist Task invocations
 - [ ] Sequential execution works (default)
 - [ ] Parallel execution works (complexity >= 3 with flag)
 - [ ] Context consumption reduced to ~500 tokens
 - [ ] Brief summary format validated
+- [ ] **CRITICAL: /lean-implement still works after lean-plan changes**
+- [ ] implementer-coordinator brief summary format unchanged
+- [ ] Wave-based orchestration validated in /lean-implement
+- [ ] lean-coordinator agent functionality confirmed
+- [ ] No regression in proven /lean-implement delegation patterns
 - [ ] CHANGELOG.md entry added
 
 ## Testing Strategy
@@ -541,11 +680,16 @@ Pattern A Consistency (aligned with Spec 065 - Lean Coordinator Wave Optimizatio
 - Sequential-by-default validation: Parallel mode rejected for complexity < 3
 - Sourcing validation: Library sources without errors
 - Error handling: Functions return proper error codes on invalid input
+- State machine integration: Fail-fast validation catches invalid state transitions
 
 **Integration Testing**:
 - Phase 2: lean-plan library integration test (sources and executes inline)
+- Phase 2: Hard barrier validation test (missing reports cause exit 1)
+- Phase 2: State machine integration test (fail-fast on state errors)
 - Phase 3: Specialist invocation test (sequential and parallel modes)
+- Phase 3: Checkpoint save/resume test (partial completion scenarios)
 - Phase 4: Full lean-plan execution with Pattern A
+- Phase 4: **CRITICAL: /lean-implement compatibility test** (no regression)
 
 **Validation Metrics**:
 - Library function return codes (0 = success)
@@ -555,17 +699,29 @@ Pattern A Consistency (aligned with Spec 065 - Lean Coordinator Wave Optimizatio
 - Context token consumption (~500 tokens target, down from ~15k)
 - Execution time comparison (sequential vs parallel for complexity 4)
 - Report artifact creation at expected paths
+- Hard barrier validation: exit 1 on missing reports
+- State transition success rate (100% expected)
+- **CRITICAL: /lean-implement delegation success rate** (100% expected, no regression)
 
 **Pattern A Consistency Validation**:
 - Brief summary format matches lean-coordinator pattern (metadata on lines 1-8)
 - Topic decomposition is deterministic (no LLM reasoning)
 - Sequential execution by default (parallel requires explicit flag)
 
+**/lean-implement Compatibility Validation** (CRITICAL - prevents regression):
+- Execute /lean-implement on existing Lean plan (verify coordinator delegation works)
+- Validate implementer-coordinator brief summary format unchanged (80 tokens metadata)
+- Confirm wave-based orchestration functions correctly (parallel phase execution)
+- Validate lean-coordinator agent brief summary parsing works
+- Confirm no changes to /lean-implement command file (scope verification)
+- Confirm no changes to lean-coordinator.md agent file (scope verification)
+- Confirm no changes to implementer-coordinator.md agent file (scope verification)
+
 **Test Automation Metadata**:
 - automation_type: automated
 - validation_method: programmatic
 - skip_allowed: false
-- artifact_outputs: ["research-orchestrator.sh", "research reports", "adr-002-orchestrator-mode-adoption.md", "brief-summary-samples.txt"]
+- artifact_outputs: ["research-orchestrator.sh", "research reports", "adr-002-orchestrator-mode-adoption.md", "brief-summary-samples.txt", "lean-implement-compatibility-report.md"]
 
 ## Documentation Requirements
 
@@ -632,27 +788,43 @@ Pattern A Consistency (aligned with Spec 065 - Lean Coordinator Wave Optimizatio
 
 ## Notes
 
+**CRITICAL SCOPE BOUNDARIES**:
+This plan modifies `/lean-plan` ONLY. The following are NOT modified:
+- `/lean-implement` command - continues to work with implementer-coordinator delegation
+- `lean-coordinator.md` agent - wave-based orchestration unchanged
+- `implementer-coordinator.md` agent - brief summary format unchanged
+
+**Compatibility Guarantee**: All changes are isolated to lean-plan's research phase. The `/lean-implement` command's proven delegation patterns remain intact and functional.
+
 **Architecture Impact**: Pattern A adoption establishes a consistent pattern for coordinator agents. The library extraction approach can be applied to other coordinators:
 - research-coordinator -> research-orchestrator.sh (this plan)
-- implementer-coordinator -> implementer-orchestrator.sh (future)
-- lean-coordinator -> already optimized (Spec 065)
+- implementer-coordinator -> already working (Spec 065, no changes needed)
+- lean-coordinator -> already optimized (Spec 065, no changes needed)
 
 **Pattern A Consistency**: This plan is aligned with Spec 065 (Lean Coordinator Wave Optimization) which established:
 1. Brief summary format (80 tokens metadata)
 2. Deterministic logic (no runtime analysis)
 3. Sequential-by-default execution
+4. Hard barrier validation (from /implement)
+5. State machine integration (from /implement)
 
 These patterns are now applied uniformly to research-orchestrator.sh.
 
 **Migration Path**: Phased rollout for Pattern A adoption:
 1. **Phase 1**: lean-plan with research-orchestrator.sh (this plan)
 2. **Phase 2**: /create-plan, /research using same library
-3. **Phase 3**: Evaluate other coordinators for extraction
+3. **Phase 3**: Evaluate other coordinators for extraction (if needed)
 
 **Library Reuse**: The research-orchestrator.sh library can be shared across multiple commands:
 - lean-plan (primary target)
 - create-plan (research phase)
 - research (standalone research)
 - Any command needing multi-topic research orchestration
+
+**/lean-implement Compatibility Commitment**: Phase 4 includes mandatory compatibility testing to prove no regression in /lean-implement delegation patterns. This includes:
+- Executing /lean-implement on existing Lean plan
+- Validating implementer-coordinator brief summary format unchanged
+- Confirming wave-based orchestration still functions
+- Verifying NO changes to /lean-implement, lean-coordinator, implementer-coordinator files
 
 **Future Enhancement**: Consider implementing lean-plan-architect as a library if single-level Task continues to have issues. Current plan assumes single-level Task works correctly (depth 1 only).

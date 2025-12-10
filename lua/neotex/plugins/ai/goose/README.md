@@ -6,6 +6,32 @@ AI-assisted coding with Goose agent backend supporting multiple providers (Gemin
 
 This module integrates [goose.nvim](https://github.com/azorng/goose.nvim) with the Neovim configuration, providing seamless AI agent capabilities with persistent sessions, automatic context capture, and native diff review.
 
+## Architectural Overview
+
+Goose integration follows a clean separation between external plugin management and internal configuration:
+
+- **External Plugin** (`azorng/goose.nvim`) - Managed via lazy.nvim in `../init.lua`
+- **Internal Configuration** (this directory) - Neovim-specific integration, keybindings, and workflow customization
+- **Provider Backend** - Multi-provider architecture supporting Gemini CLI and Claude Code
+
+This architecture maintains clear boundaries between "what we use" (external goose.nvim plugin) and "what we configure" (Neovim-specific settings and integrations).
+
+## AI Plugin Ecosystem
+
+This Neovim configuration integrates multiple AI assistants, each with distinct strengths for different workflows:
+
+- **Goose AI Agent** (this module) - Multi-provider AI assistance with recipe-based workflows and split window integration
+- **[Claude Code](../claude/README.md)** - Official Claude integration with sophisticated session management and git worktree support
+- **[Avante](../avante/README.md)** - AI assistant with MCP-Hub protocol integration and inline suggestions
+
+**AI Ecosystem Context**: The Claude Code provider backend (used by Goose for Claude API access) is distinct from the internal `claude/` directory integration. Goose leverages Claude Code as a provider option while maintaining its own session management and UI.
+
+**When to Use Goose vs Claude Code**:
+- Choose Goose for: Recipe-driven workflows, cross-provider flexibility (Gemini/Claude), integrated diff-based change review, consistent split window layout
+- Choose Claude Code for: Long-running sessions with complex context, multi-branch development with worktrees, sophisticated state management
+
+See [AI_TOOLING.md](../../../../docs/AI_TOOLING.md) for comprehensive comparison and workflow guidance.
+
 ## Features
 
 - **Persistent Sessions**: Conversations tied to workspace, preserved across Neovim restarts
@@ -118,7 +144,9 @@ return {
 
 ### Keybindings
 
-All goose.nvim keybindings are defined in `which-key.lua` under the `<leader>a` namespace:
+All goose.nvim keybindings are defined in `which-key.lua` under the `<leader>a` namespace.
+
+**Keybinding Coordination**: Some keybindings overlap with Claude Code (`<leader>av`, `<leader>ar`, `<leader>at`). Both plugins can coexist; context determines which bindings are active. See [MAPPINGS.md](../../../../docs/MAPPINGS.md) for complete keybinding reference and overlap documentation.
 
 #### Core Commands
 
@@ -926,5 +954,12 @@ ls -la .claude/specs/
 
 ## Navigation
 
-- [AI Plugins](../README.md) - Parent directory
+### AI Plugin Ecosystem
+- [AI Plugins Overview](../README.md) - Complete AI integration documentation
+- [Claude Code](../claude/README.md) - Official Claude integration with worktrees
+- [Avante](../avante/README.md) - MCP-Hub integration
+- [AI Tools Comparison](../../../../docs/AI_TOOLING.md) - Feature comparison and workflow guidance
+
+### Configuration
 - [Neovim Configuration](../../../../README.md) - Root README
+- [Keybindings Reference](../../../../docs/MAPPINGS.md) - Complete keybinding documentation

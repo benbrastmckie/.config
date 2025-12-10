@@ -1,32 +1,114 @@
-# Advanced AI Tooling: Git Worktrees with OpenCode for Parallel Development
+# AI Development Tooling
 
-This guide provides comprehensive documentation for using Git Worktrees with OpenCode to enable parallel AI agent development workflows in a single repository.
+This configuration provides multiple AI assistant options integrated directly into Neovim, each with distinct strengths for different workflows.
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Git Worktrees Fundamentals](#git-worktrees-fundamentals)
-3. [OpenCode Multi-Agent Architecture](#opencode-multi-agent-architecture)
-4. [Integration Patterns](#integration-patterns)
-5. [Setup and Configuration](#setup-and-configuration)
-6. [Workflow Examples](#workflow-examples)
-7. [Best Practices](#best-practices)
-8. [Troubleshooting](#troubleshooting)
-9. [Advanced Automation](#advanced-automation)
+2. [AI Assistant Options](#ai-assistant-options)
+3. [Feature Comparison Matrix](#feature-comparison-matrix)
+4. [Advanced Workflows](#advanced-workflows)
 
 ## Overview
 
-Git Worktrees combined with OpenCode's multi-session capabilities enable a revolutionary parallel development workflow where multiple AI agents can work simultaneously on different aspects of the same repository without interference.
+This Neovim configuration integrates three AI assistants, each optimized for different development workflows. Choose the appropriate tool based on your project needs, preferred provider, and workflow requirements.
 
-### Key Benefits
+## AI Assistant Options
 
-- **Parallel Development**: Run multiple OpenCode sessions on different branches simultaneously
+### Claude Code
+
+[Complete documentation](../lua/neotex/plugins/ai/claude/README.md)
+
+Claude Code provides official Claude AI integration with sophisticated session management and git worktree support for complex, long-running development workflows.
+
+**Key Features**:
+- Persistent session management with workspace context
+- Git worktree integration for isolated development environments
+- Visual selection processing with custom prompts
+- Terminal detection for multi-terminal workflows
+- Command hierarchy browser with agent cross-referencing
+- Project-specific TTS notification support
+
+**Best For**:
+- Long-running development sessions with complex context
+- Multi-branch development with worktree isolation
+- Projects requiring sophisticated session state management
+- Teams using Claude as primary AI provider
+
+**Keybindings**: `<C-c>` (toggle), `<leader>ac` (commands/visual selection), `<leader>as` (sessions), `<leader>aw` (worktrees)
+
+### Goose AI Agent
+
+[Complete documentation](../lua/neotex/plugins/ai/goose/README.md)
+
+Goose provides AI-assisted coding with multi-provider support and recipe-based workflow automation, enabling flexible provider switching and repeatable agentic workflows.
+
+**Key Features**:
+- Split window mode with native Neovim integration
+- Multi-provider support (Gemini CLI, Claude Code backend)
+- Recipe system for repeatable agentic workflows
+- Session persistence across Neovim restarts
+- Diff view for reviewing AI-generated changes
+- Dynamic provider detection and switching
+
+**Best For**:
+- Recipe-driven development workflows
+- Cross-provider flexibility (switching between Gemini/Claude)
+- Integrated diff-based change review
+- Consistent window layout with split navigation
+- Projects requiring multiple AI provider options
+
+**Keybindings**: `<leader>aa` (toggle), `<leader>ae` (input focus), `<leader>ad` (diff view), `<leader>aR` (recipes), `<leader>ap` (provider)
+
+### Avante AI Assistant
+
+[Complete documentation](../lua/neotex/plugins/ai/avante/README.md)
+
+Avante provides AI assistance with MCP-Hub protocol integration and inline suggestions, offering access to 44+ external tools through Model Context Protocol.
+
+**Key Features**:
+- MCP-Hub integration with 44+ external tools
+- Multiple provider support (Claude, GPT, Gemini)
+- Inline suggestions and code completion
+- Session link sharing for collaboration
+- Floating and split window modes
+- Tool access via Model Context Protocol
+
+**Best For**:
+- Projects leveraging MCP tools and external integrations
+- Inline code suggestions and completions
+- Multi-provider workflows with tool access
+- Collaborative development with session sharing
+
+**Keybindings**: See [Avante documentation](../lua/neotex/plugins/ai/avante/README.md) for complete keybinding reference.
+
+## Feature Comparison Matrix
+
+| Feature | Claude Code | Goose | Avante |
+|---------|-------------|-------|--------|
+| **Window Mode** | Terminal | Split | Floating/Split |
+| **Providers** | Claude only | Gemini, Claude | Claude, GPT, Gemini |
+| **Sessions** | Sophisticated state mgmt | Workspace-based | Session links |
+| **Recipes** | Command hierarchy | Recipe YAML system | - |
+| **Worktrees** | Native integration | Manual workflow | - |
+| **Diff Review** | - | Native diff view | - |
+| **MCP Tools** | - | - | 44+ tools |
+| **Best Use Case** | Complex projects, worktrees | Recipe workflows, multi-provider | Inline suggestions, MCP tools |
+
+## Advanced Workflows
+
+### Git Worktrees with AI Agents
+
+Git Worktrees enable parallel development workflows where multiple AI agents can work simultaneously on different aspects of the same repository without interference. This pattern works with Claude Code's native worktree integration or can be applied manually with other AI assistants.
+
+**Key Benefits**:
+- **Parallel Development**: Run multiple AI sessions on different branches simultaneously
 - **Context Isolation**: Each agent maintains its own workspace and context
 - **No Context Switching**: Work on multiple features without stashing or committing incomplete work
 - **Reduced Conflicts**: Minimize merge conflicts through isolated workspaces
 - **Accelerated Velocity**: Complete multiple tasks in parallel rather than sequentially
 
-### Architecture Overview
+**Architecture Overview**
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

@@ -116,37 +116,68 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 ### AI/ASSISTANT (`<leader>a`)
 
 **Claude Code Integration**
-| Key | Action | Description |
-|-----|--------|-------------|
-| `<C-c>` | Toggle sidebar | Toggle Claude Code sidebar (any mode) |
-| `<leader>ac` | Continue Claude | Continue Claude conversation |
-| `<leader>ar` | Resume session | Open Claude session picker |
 
-**Claude Worktree Sessions**
-| Key | Action | Description |
-|-----|--------|-------------|
-| `<leader>av` | View worktrees | Browse worktrees with Telescope |
-| `<leader>aw` | Create worktree | Create new Claude worktree |
-| `<leader>ak` | Kill stale | Clean up orphaned sessions |
-| `<leader>ao` | Open session | Restore closed worktree session |
-| `<leader>aH` | Health check | Check session health report |
+| Key | Mode | Description |
+|-----|------|-------------|
+| `<C-c>` | All | Toggle Claude Code sidebar |
+| `<leader>ac` | Normal | Browse Claude commands hierarchy |
+| `<leader>ac` | Visual | Send selection to Claude with custom prompt |
+| `<leader>as` | Normal | Browse Claude sessions |
+| `<leader>at` | Normal | Toggle TTS notifications (project-specific) |
+| `<leader>av` | Normal | View git worktrees |
+| `<leader>aw` | Normal | Create new worktree with Claude session |
+| `<leader>ar` | Normal | Restore closed worktree session |
+| `<leader>ak` | Normal | Kill stale sessions |
+| `<leader>ao` | Normal | Open session |
+| `<leader>aH` | Normal | Health check |
+
+See [Claude Code documentation](../lua/neotex/plugins/ai/claude/README.md) for complete feature details.
+
+**Goose AI Agent**
+
+| Key | Mode | Description |
+|-----|------|-------------|
+| `<leader>aa` | Normal | Toggle Goose chat interface (split window) |
+| `<leader>aa` | Visual | Send selection to Goose with prompt |
+| `<leader>ae` | Normal | Focus Goose input window |
+| `<leader>ao` | Normal | Focus Goose output window |
+| `<leader>ad` | Normal | Open Goose diff view |
+| `<leader>am` | Normal | Mode picker (auto/chat) |
+| `<leader>aR` | Normal | Recipe picker (Telescope) |
+| `<leader>ap` | Normal | Provider status and switch |
+| `<leader>aq` | Normal | Close Goose interface |
+| `<leader>ax` | Normal | New Goose session |
+| `<leader>av` | Normal | Select Goose session |
+| `<leader>ar` | Normal | Run new Goose session |
+| `<leader>at` | Normal | Stop Goose execution |
+
+See [Goose documentation](../lua/neotex/plugins/ai/goose/README.md) for complete feature details and recipe workflows.
+
+**Keybinding Overlaps**:
+- `<leader>av`: View worktrees (Claude) vs Select session (Goose)
+- `<leader>ar`: Restore worktree (Claude) vs Run session (Goose)
+- `<leader>at`: Toggle TTS (Claude) vs Stop execution (Goose)
+- `<leader>aa`: Used by Goose (Avante moved to other bindings)
+- `<leader>ae`: Focus Goose input (or Avante edit in visual mode)
+
+Both Claude Code and Goose can coexist; context determines which bindings are active.
 
 **Avante AI Commands**
-| Key | Action | Description |
-|-----|--------|-------------|
-| `<leader>aa` | Avante ask | Open Avante to ask questions |
-| `<leader>ae` | Avante edit | Edit selected text with AI (visual mode) |
-| `<leader>ap` | Avante provider | Select AI provider (Claude, OpenAI, Gemini) |
-| `<leader>am` | Avante model | Select model for current provider |
+
+| Key | Mode | Description |
+|-----|------|-------------|
+| `<leader>aA` | Normal | Avante ask |
+| `<leader>ae` | Visual | Avante edit (edit selected text with AI) |
+| `<leader>aP` | Normal | Avante provider (Claude, OpenAI, Gemini) |
+| `<leader>aM` | Normal | Avante model (select model for current provider) |
 
 **Other AI Tools**
+
 | Key | Action | Description | Availability |
 |-----|--------|-------------|--------------|
-| `<leader>ax` | MCP Hub | Open MCP Hub interface | All files |
+| `<leader>aX` | MCP Hub | Open MCP Hub interface | All files |
 | `<leader>al` | Lectic run | Run Lectic AI | `.lec`/`.md` files |
 | `<leader>an` | New Lectic file | Create Lectic file | `.lec`/`.md` files |
-| `<leader>aP` | Lectic provider | Select Lectic provider | `.lec`/`.md` files |
-| `<leader>at` | Toggle TTS | Enable/disable Claude Code TTS (project-specific only) | All files |
 
 ### FIND (`<leader>f`)
 
