@@ -17,6 +17,97 @@ The `/lean-plan` command creates Lean-specific implementation plans for theorem 
 
 ---
 
+## Architecture
+
+### Agent Delegation Pattern
+
+The `/lean-plan` command enforces a **mandatory delegation pattern** where the primary orchestrator MUST invoke the `lean-plan-architect` agent via the Task tool to create plans. Direct plan creation using the Write tool is prohibited.
+
+**Why Delegation is Mandatory**:
+- **Theorem Dependency Analysis**: The agent analyzes theorem dependencies to generate optimal phase dependency structures for wave-based parallel execution
+- **Phase Metadata Generation**: The agent creates Phase Routing Summary tables and proper `implementer:` fields for /lean-implement integration
+- **Standards Validation**: The agent applies Plan Metadata Standard validation and Lean-specific format requirements
+- **Proof Strategy Design**: The agent designs proof approaches based on Mathlib research and complexity analysis
+
+**Delegation Flow**:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ /lean-plan Command (Primary Orchestrator)              │
+│                                                         │
+│ Block 1: Setup                                          │
+│   ├─ Parse arguments and validate Lean project         │
+│   ├─ Create topic directory structure                  │
+│   └─ Invoke research-coordinator for Mathlib research  │
+│                                                         │
+│ Block 2b: Plan Creation (HARD BARRIER)                 │
+│   └─ Task tool → lean-plan-architect                   │
+│       ├─ Input: PLAN_PATH (pre-calculated)             │
+│       ├─ Input: Research reports (metadata-only)       │
+│       ├─ Input: Standards (formatted sections)         │
+│       └─ Output: PLAN_CREATED: /path/to/plan.md        │
+│                                                         │
+│ Block 2c: Validation                                    │
+│   ├─ Verify PLAN_CREATED signal received               │
+│   ├─ Verify signal path matches PLAN_PATH              │
+│   ├─ Verify Phase Routing Summary exists               │
+│   ├─ Validate plan file size (≥500 bytes)              │
+│   └─ Run validate-plan-metadata.sh                     │
+│                                                         │
+│ Block 3: Completion                                     │
+│   └─ Return plan path to user                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Delegation Enforcement**:
+
+The command includes multiple verification layers to prevent delegation bypass:
+
+1. **Hard Barrier Warning** (Block 2b-exec):
+   - Explicit instructions to use Task tool
+   - Warning against Write tool usage
+   - Explanation of why delegation is required
+
+2. **Signal Verification** (Block 2c):
+   - Checks for `PLAN_CREATED:` signal in agent output
+   - Validates signal path matches expected PLAN_PATH
+   - Logs `validation_error` if signal missing
+
+3. **Metadata Verification** (Block 2c):
+   - Checks for Phase Routing Summary table
+   - Counts `implementer:` fields in phases
+   - Logs `validation_error` if metadata missing
+
+4. **Size Validation** (Block 2c):
+   - Validates plan file ≥500 bytes
+   - Fails hard barrier if file missing or too small
+
+**Common Bypass Anti-Patterns** (Prohibited):
+
+```markdown
+# WRONG: Direct Write tool usage
+Write {
+  file_path: ${PLAN_PATH}
+  content: "# Plan..."
+}
+
+# WRONG: Creating plan without Task invocation
+I'll create the plan directly using the provided template...
+
+# CORRECT: Mandatory Task invocation
+**EXECUTE NOW**: USE the Task tool to invoke lean-plan-architect
+Task {
+  subagent_type: "general-purpose"
+  prompt: "Read and follow ALL behavioral guidelines from lean-plan-architect.md..."
+}
+```
+
+**Related Documentation**:
+- See [Hierarchical Agents Examples](../../concepts/hierarchical-agents-examples.md) Example 8 for dual coordinator architecture details
+- See [Hard Barrier Pattern](../../concepts/patterns/hard-barrier-pattern.md) for pre-calculation and validation contract
+
+---
+
 ## Syntax
 
 ```bash

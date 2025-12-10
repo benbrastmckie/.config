@@ -216,8 +216,8 @@ Tasks:
    - **Scope**: Formalize group homomorphism preservation properties in abstract algebra. Prove 8 theorems covering identity preservation, inverse preservation, and composition. Output: ProofChecker/GroupHom.lean module with complete proofs.
    ```
 
-   **Complexity Score Calculation**:
-   Calculate complexity score based on formalization characteristics:
+   **Complexity Score Calculation** (MANDATORY - Calculate During STEP 1, Insert in STEP 2):
+   You MUST calculate complexity score based on formalization characteristics:
    ```
    Base (formalization type):
    - New formalization: 15
@@ -229,12 +229,20 @@ Tasks:
    + (Complex Proofs × 5)  # Theorems requiring custom lemmas or induction
    ```
 
-   **Example**: 8 theorems, 1 file, 2 complex proofs → 15 + (8×3) + (1×2) + (2×5) = 51
+   **Example**: 8 theorems, 1 file, 2 complex proofs → 15 + (8×3) + (1×2) + (2×5) = 51.0
 
-   **Structure Level for Lean Plans**:
-   - Lean formalization plans always use **Structure Level: 0** (single-file plans)
+   **CRITICAL**: Format as numeric value with .0 suffix: `- **Complexity Score**: 51.0`
+
+   **Structure Level for Lean Plans** (MANDATORY - Always Set to 0):
+   - Lean formalization plans ALWAYS use **Structure Level: 0** (single-file plans)
    - Phase expansion to Level 1 not supported for theorem-proving workflows
    - All phases remain in single plan file with per-phase `lean_file:` targeting
+   - **CRITICAL**: You MUST include `- **Structure Level**: 0` in metadata section
+
+   **Estimated Phases Calculation** (MANDATORY - Count Phases from STEP 1):
+   - Count the number of phases generated during STEP 1 theorem analysis
+   - Include this count in metadata: `- **Estimated Phases**: 6`
+   - This enables progress tracking and plan organization metrics
 
 4. **Add Phase Routing Summary**:
 
@@ -394,6 +402,9 @@ echo "✓ Metadata validation passed"
 - **Feature**: One-line description (50-100 chars)
 - **Status**: Bracket notation: [NOT STARTED] for new plans
 - **Estimated Hours**: Numeric range with "hours" suffix (e.g., "10-15 hours")
+- **Complexity Score**: Numeric value from STEP 1 calculation (MANDATORY for Lean plans)
+- **Structure Level**: Always 0 for Lean plans (MANDATORY - see lines 234-237)
+- **Estimated Phases**: Phase count from STEP 1 analysis (MANDATORY for Lean plans)
 - **Standards File**: Absolute path to CLAUDE.md
 - **Research Reports**: Relative path markdown links or literal "none"
 - **Lean File**: Absolute path to target .lean file (Lean-specific)

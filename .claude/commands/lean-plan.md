@@ -1875,6 +1875,13 @@ echo "Ready for lean-plan-architect invocation"
 
 **[HARD BARRIER]**: This is a MANDATORY delegation point. The orchestrator has pre-calculated PLAN_PATH and will validate the artifact exists after you return. Bypassing this Task invocation will cause hard barrier failure in Block 2c.
 
+**CRITICAL DELEGATION REQUIREMENTS**:
+- You MUST use the Task tool to invoke lean-plan-architect
+- DO NOT use Write tool directly to create the plan file
+- DO NOT bypass agent delegation with direct file creation
+- The agent performs theorem dependency analysis, phase metadata generation, and standards validation
+- Direct plan creation bypasses critical workflow steps and will fail validation
+
 Task {
   subagent_type: "general-purpose"
   description: "Create Lean implementation plan for ${FEATURE_DESCRIPTION} with theorem-level granularity"
@@ -2048,6 +2055,51 @@ fi
 
 echo "Expected plan file: $PLAN_PATH"
 
+# === AGENT DELEGATION VERIFICATION ===
+# Verify lean-plan-architect returned PLAN_CREATED signal
+# This ensures the plan was created by the agent, not via direct Write bypass
+AGENT_OUTPUT_PATH="${CLAUDE_PROJECT_DIR}/.claude/output/lean-plan-output.md"
+AGENT_SIGNAL=""
+
+if [ -f "$AGENT_OUTPUT_PATH" ]; then
+  # Extract PLAN_CREATED signal from agent output
+  AGENT_SIGNAL=$(grep "PLAN_CREATED:" "$AGENT_OUTPUT_PATH" 2>/dev/null | tail -1)
+
+  if [ -n "$AGENT_SIGNAL" ]; then
+    # Extract path from signal
+    SIGNAL_PATH=$(echo "$AGENT_SIGNAL" | sed 's/PLAN_CREATED: *//')
+
+    # Verify signal path matches expected PLAN_PATH
+    if [ "$SIGNAL_PATH" = "$PLAN_PATH" ]; then
+      echo "✓ Agent delegation verified - PLAN_CREATED signal received"
+    else
+      log_command_error \
+        "$COMMAND_NAME" \
+        "$WORKFLOW_ID" \
+        "$USER_ARGS" \
+        "validation_error" \
+        "Agent returned PLAN_CREATED with mismatched path" \
+        "delegation_verification" \
+        "$(jq -n --arg expected "$PLAN_PATH" --arg received "$SIGNAL_PATH" '{expected: $expected, received: $received}')"
+      echo "WARNING: Agent signal path mismatch (expected: $PLAN_PATH, received: $SIGNAL_PATH)" >&2
+    fi
+  else
+    # No PLAN_CREATED signal found - possible delegation bypass
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "validation_error" \
+      "PLAN_CREATED signal missing from agent output" \
+      "delegation_verification" \
+      "$(jq -n --arg path "$PLAN_PATH" '{expected_signal: "PLAN_CREATED", plan_path: $path}')"
+    echo "WARNING: PLAN_CREATED signal not found in agent output" >&2
+    echo "This may indicate the agent bypassed Task invocation" >&2
+  fi
+else
+  echo "⚠ Agent output file not found at $AGENT_OUTPUT_PATH, skipping signal verification"
+fi
+
 # HARD BARRIER: Validate agent artifact using validation-utils.sh
 # validate_agent_artifact checks file existence and minimum size (500 bytes for plans)
 if ! validate_agent_artifact "$PLAN_PATH" 500 "implementation plan"; then
@@ -2063,6 +2115,24 @@ if ! validate_agent_artifact "$PLAN_PATH" 500 "implementation plan"; then
 fi
 
 echo "✓ Hard barrier passed - plan file validated"
+
+# === VALIDATE PHASE METADATA PRESENCE ===
+# Check for Phase Routing Summary (proves agent-created plan with proper metadata)
+if grep -q "### Phase Routing Summary" "$PLAN_PATH"; then
+  IMPLEMENTER_COUNT=$(grep -c "^implementer:" "$PLAN_PATH" || echo 0)
+  echo "✓ Phase metadata verified - $IMPLEMENTER_COUNT phases with implementer field"
+else
+  log_command_error \
+    "$COMMAND_NAME" \
+    "$WORKFLOW_ID" \
+    "$USER_ARGS" \
+    "validation_error" \
+    "Plan missing Phase Routing Summary table" \
+    "phase_metadata_verification" \
+    "$(jq -n --arg path "$PLAN_PATH" '{plan_path: $path, missing: "Phase Routing Summary"}')"
+  echo "WARNING: Plan missing Phase Routing Summary" >&2
+  echo "This indicates the plan may not have proper phase metadata" >&2
+fi
 
 # === VALIDATE PLAN METADATA ===
 # Validate phase metadata format (non-blocking)
