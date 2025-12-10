@@ -189,14 +189,71 @@ test_wave_extraction() {
 # Test 3: Wave Execution Orchestration
 #=============================================================================
 test_wave_execution_orchestration() {
-  # TODO: Implement wave execution orchestration test
-  # Expected behavior:
-  # - Sequential wave execution (Wave 1 → Wave 2 → Wave 3)
-  # - Parallel implementer invocation within waves
-  # - Wave synchronization (hard barrier)
-  # - MCP rate limit budget allocation
+  # Test that STEP 4 documents wave execution orchestration
+  local coordinator_file="$PROJECT_DIR/.claude/agents/lean-coordinator.md"
 
-  skip "test_wave_execution_orchestration - Not implemented yet (Phase 6)"
+  if ! [ -f "$coordinator_file" ]; then
+    fail "test_wave_execution_orchestration - lean-coordinator.md not found"
+    return
+  fi
+
+  # Check for STEP 4 presence
+  if ! grep -q "### STEP 4: Wave Execution Loop" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - STEP 4 not found"
+    return
+  fi
+
+  # Check for wave initialization
+  if ! grep -q "Wave Initialization" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - wave initialization not documented"
+    return
+  fi
+
+  # Check for MCP rate limit budget allocation
+  if ! grep -q "MCP Rate Limit Budget Allocation" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - MCP rate limit budget allocation not documented"
+    return
+  fi
+
+  if ! grep -q "TOTAL_BUDGET=3" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - total budget value not found"
+    return
+  fi
+
+  if ! grep -q "budget_per_implementer" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - budget_per_implementer not documented"
+    return
+  fi
+
+  # Check for parallel implementer invocation
+  if ! grep -q "Parallel Implementer Invocation" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - parallel implementer invocation not documented"
+    return
+  fi
+
+  if ! grep -q "multiple invocations in single response" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - multiple invocations pattern not documented"
+    return
+  fi
+
+  # Check for wave synchronization (hard barrier)
+  if ! grep -q "Wave Synchronization" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - wave synchronization not documented"
+    return
+  fi
+
+  if ! grep -q "Wait for ALL implementers in wave to complete" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - hard barrier not documented"
+    return
+  fi
+
+  # Check for Task tool invocation pattern
+  if ! grep -q "Task {" "$coordinator_file"; then
+    fail "test_wave_execution_orchestration - Task tool invocation pattern not documented"
+    return
+  fi
+
+  pass "test_wave_execution_orchestration - Wave execution orchestration documented correctly"
 }
 
 #=============================================================================
@@ -274,13 +331,63 @@ test_file_based_mode_preservation() {
 # Test 7: Dual-Mode Compatibility
 #=============================================================================
 test_dual_mode_compatibility() {
-  # TODO: Implement dual-mode compatibility test
-  # Expected behavior:
-  # - No cross-contamination between modes
-  # - execution_mode parameter parsed correctly
-  # - Output format identical for both modes
+  # Test that documentation ensures dual-mode compatibility
+  local coordinator_file="$PROJECT_DIR/.claude/agents/lean-coordinator.md"
 
-  skip "test_dual_mode_compatibility - Not implemented yet (Phase 6)"
+  if ! [ -f "$coordinator_file" ]; then
+    fail "test_dual_mode_compatibility - lean-coordinator.md not found"
+    return
+  fi
+
+  # Check for execution_mode parameter in Input Format section
+  if ! grep -q "execution_mode.*file-based.*plan-based" "$coordinator_file"; then
+    fail "test_dual_mode_compatibility - execution_mode parameter not documented in Input Format"
+    return
+  fi
+
+  # Check for Execution Mode Behavior section
+  if ! grep -q "Execution Mode Behavior" "$coordinator_file"; then
+    fail "test_dual_mode_compatibility - Execution Mode Behavior section not found"
+    return
+  fi
+
+  # Check for file-based mode description
+  if ! grep -q "file-based mode.*Legacy mode" "$coordinator_file"; then
+    fail "test_dual_mode_compatibility - file-based mode not described"
+    return
+  fi
+
+  # Check for plan-based mode description
+  if ! grep -q "plan-based mode.*Optimized mode" "$coordinator_file"; then
+    fail "test_dual_mode_compatibility - plan-based mode not described"
+    return
+  fi
+
+  # Check for dual-mode output format consistency
+  if ! grep -q "Dual-Mode Behavior Note.*Output format is identical" "$coordinator_file"; then
+    fail "test_dual_mode_compatibility - output format consistency not documented"
+    return
+  fi
+
+  # Check for coordinator_type field in output
+  if ! grep -q "coordinator_type: lean" "$coordinator_file"; then
+    fail "test_dual_mode_compatibility - coordinator_type field not documented"
+    return
+  fi
+
+  # Check for summary_brief field in output
+  if ! grep -q "summary_brief" "$coordinator_file"; then
+    fail "test_dual_mode_compatibility - summary_brief field not documented"
+    return
+  fi
+
+  # Check for clean-break exception documentation
+  if ! grep -q "Clean-Break Exception" "$coordinator_file"; then
+    fail "test_dual_mode_compatibility - clean-break exception not documented"
+    return
+  fi
+
+  pass "test_dual_mode_compatibility - Dual-mode compatibility documented correctly"
 }
 
 #=============================================================================
