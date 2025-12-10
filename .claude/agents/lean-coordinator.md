@@ -700,6 +700,228 @@ After all waves complete (or halt due to context threshold):
   - Return error immediately (cannot proceed)
   - User MUST fix plan dependencies
 
+### STEP 5.5: Blocking Detection and Plan Revision Trigger
+
+After aggregating results from lean-implementer agents, detect blocking dependencies and trigger plan revision if context budget allows.
+
+#### Blocking Detection Logic
+
+Parse implementer output files for partial theorem indicators:
+
+```bash
+# Iterate through implementer output files from current wave
+for implementer_output in "${IMPLEMENTER_OUTPUTS[@]}"; do
+  # Extract theorems_partial field
+  PARTIAL_THEOREMS=$(grep "^theorems_partial:" "$implementer_output" | \
+                     sed 's/theorems_partial:[[:space:]]*//' | \
+                     tr -d '[],' | xargs)
+
+  # Extract diagnostic messages
+  BLOCKING_DIAGNOSTICS=$(sed -n '/^diagnostics:/,/^[a-z_]*:/p' "$implementer_output" | \
+                         grep '  -' | \
+                         sed 's/^  - "//' | \
+                         sed 's/"$//')
+
+  # Count partial theorems
+  if [ -n "$PARTIAL_THEOREMS" ]; then
+    PARTIAL_COUNT=$(echo "$PARTIAL_THEOREMS" | wc -w)
+    echo "Wave $CURRENT_WAVE: $PARTIAL_COUNT theorems blocked"
+    echo "Diagnostics: $BLOCKING_DIAGNOSTICS"
+  fi
+done
+```
+
+#### Context Budget Calculation
+
+Check remaining context tokens before triggering revision:
+
+```bash
+estimate_context_remaining() {
+  local current_wave="$1"
+  local total_waves="$2"
+  local completed_theorems="$3"
+  local has_continuation="$4"
+
+  # Defensive validation
+  if ! [[ "$current_wave" =~ ^[0-9]+$ ]] || ! [[ "$total_waves" =~ ^[0-9]+$ ]]; then
+    echo "WARNING: Invalid wave numbers, using conservative estimate" >&2
+    echo 50000  # Conservative 25% remaining
+    return 0
+  fi
+
+  # Context cost model
+  local base_cost=15000
+  local completed_cost=$((completed_theorems * 8000))
+  local remaining_waves=$((total_waves - current_wave))
+  local remaining_cost=$((remaining_waves * 6000))
+  local continuation_cost=0
+
+  if [ "$has_continuation" = "true" ]; then
+    continuation_cost=5000
+  fi
+
+  local total_used=$((base_cost + completed_cost + remaining_cost + continuation_cost))
+  local context_limit=200000
+  local remaining=$((context_limit - total_used))
+
+  # Sanity check
+  if [ "$remaining" -lt 0 ]; then
+    echo 5000  # Minimal remaining
+  elif [ "$remaining" -gt "$context_limit" ]; then
+    echo "$((context_limit / 2))"  # Conservative 50%
+  else
+    echo "$remaining"
+  fi
+}
+
+CONTEXT_REMAINING=$(estimate_context_remaining "$CURRENT_WAVE" "$TOTAL_WAVES" "$COMPLETED_COUNT" "$HAS_CONTINUATION")
+REVISION_VIABLE=$( [ "$CONTEXT_REMAINING" -ge 30000 ] && echo "true" || echo "false" )
+```
+
+#### Revision Depth Tracking
+
+Initialize and increment revision depth counter:
+
+```bash
+# In coordinator initialization (before wave loop)
+REVISION_DEPTH="${REVISION_DEPTH:-0}"
+MAX_REVISION_DEPTH=2
+
+# In blocking detection block
+if [ "$PARTIAL_COUNT" -gt 0 ] && [ "$REVISION_VIABLE" = "true" ]; then
+  if [ "$REVISION_DEPTH" -ge "$MAX_REVISION_DEPTH" ]; then
+    echo "WARNING: Revision depth limit reached ($REVISION_DEPTH/$MAX_REVISION_DEPTH)"
+    echo "Deferring plan revision - blocking dependencies require manual intervention"
+
+    # Log deferred revision
+    log_command_error "lean-coordinator" "$WORKFLOW_ID" "" \
+      "revision_limit_reached" \
+      "Plan revision depth limit reached: $REVISION_DEPTH revisions" \
+      "blocking_detection" \
+      "{\"partial_count\": $PARTIAL_COUNT, \"diagnostics\": \"$BLOCKING_DIAGNOSTICS\"}"
+
+    # Continue with partial success
+    REVISION_TRIGGERED="false"
+  else
+    # Increment revision depth
+    REVISION_DEPTH=$((REVISION_DEPTH + 1))
+    echo "Triggering plan revision (depth $REVISION_DEPTH/$MAX_REVISION_DEPTH)..."
+    REVISION_TRIGGERED="true"
+  fi
+else
+  REVISION_TRIGGERED="false"
+
+  if [ "$PARTIAL_COUNT" -gt 0 ]; then
+    echo "Revision not viable: context_remaining=$CONTEXT_REMAINING tokens (minimum 30000 required)"
+  fi
+fi
+```
+
+#### Task Invocation for lean-plan-updater
+
+When revision triggered, invoke specialized agent:
+
+**EXECUTE NOW**: USE the Task tool to invoke the lean-plan-updater agent.
+
+```
+Task {
+  subagent_type: "general-purpose"
+  description: "Update Lean plan to add infrastructure phases for blocking dependencies"
+  prompt: "
+    Read and follow ALL behavioral guidelines from:
+    ${CLAUDE_PROJECT_DIR}/.claude/agents/lean-plan-updater.md
+
+    You are executing a plan revision to address blocking dependencies detected in Wave ${CURRENT_WAVE}.
+
+    **Input Contract**:
+    - plan_path: ${PLAN_PATH}
+    - blocking_diagnostics: [${BLOCKING_DIAGNOSTICS}]
+    - partial_theorems: [${PARTIAL_THEOREMS}]
+    - context_budget: ${CONTEXT_REMAINING}
+    - lean_file_path: ${LEAN_FILE_PATH}
+    - current_wave: ${CURRENT_WAVE}
+    - completed_phases: ${COMPLETED_PHASES}
+
+    **Requirements**:
+    1. Parse blocking diagnostics to identify missing infrastructure (lemmas, definitions, instances)
+    2. Generate infrastructure phase(s) with correct Lean proof structure
+    3. Insert phases BEFORE lowest blocking theorem phase
+    4. Update dependency metadata for blocking theorem phases
+    5. Create backup before modification
+    6. Validate plan structure after mutation (no circular dependencies)
+
+    Return output signal with revision status and infrastructure added.
+  "
+}
+```
+
+#### Parse lean-plan-updater Output
+
+Extract revision results from agent response:
+
+```bash
+UPDATER_OUTPUT="$TASK_RESPONSE"
+
+# Parse revision status
+REVISION_STATUS=$(echo "$UPDATER_OUTPUT" | grep "^revision_status:" | sed 's/revision_status:[[:space:]]*//')
+NEW_PHASES=$(echo "$UPDATER_OUTPUT" | grep "^new_phases_added:" | sed 's/new_phases_added:[[:space:]]*//')
+BACKUP_PATH=$(echo "$UPDATER_OUTPUT" | grep "^backup_path:" | sed 's/backup_path:[[:space:]]*//')
+
+if [ "$REVISION_STATUS" = "success" ]; then
+  echo "✓ Plan revision successful: $NEW_PHASES infrastructure phases added"
+  echo "  Backup: $BACKUP_PATH"
+
+  # Recalculate wave dependencies
+  source "${CLAUDE_PROJECT_DIR}/.claude/lib/plan/dependency-recalculation.sh" 2>/dev/null || {
+    echo "ERROR: Cannot load dependency-recalculation.sh" >&2
+    exit 1
+  }
+
+  NEXT_WAVE_PHASES=$(recalculate_wave_dependencies "$PLAN_PATH" "$COMPLETED_PHASES")
+
+  if [ -n "$NEXT_WAVE_PHASES" ]; then
+    echo "  Next wave after revision: $NEXT_WAVE_PHASES"
+    DEPENDENCIES_RECALCULATED="true"
+  fi
+
+elif [ "$REVISION_STATUS" = "failed" ]; then
+  ERROR_DETAILS=$(echo "$UPDATER_OUTPUT" | grep "^error_details:" | sed 's/error_details:[[:space:]]*//')
+  echo "✗ Plan revision failed: $ERROR_DETAILS"
+
+  # Log revision failure
+  log_command_error "lean-coordinator" "$WORKFLOW_ID" "" \
+    "plan_revision_error" \
+    "Plan revision failed during blocking dependency resolution" \
+    "lean-plan-updater" \
+    "{\"error\": \"$ERROR_DETAILS\", \"backup\": \"$BACKUP_PATH\"}"
+
+elif [ "$REVISION_STATUS" = "deferred" ]; then
+  echo "⊘ Plan revision deferred: insufficient context budget"
+  echo "  Revision will retry on next iteration with checkpoint resume"
+fi
+```
+
+#### Update Output Signal
+
+Add revision metadata to coordinator output:
+
+```yaml
+# Existing fields
+summary_brief: "Wave $CURRENT_WAVE completed with $PARTIAL_COUNT blocking dependencies"
+phases_completed: "$COMPLETED_PHASES"
+work_remaining: "$REMAINING_WORK"
+context_usage_percent: 45
+requires_continuation: true
+
+# NEW: Revision metadata
+revision_triggered: true
+revision_status: "success"
+revision_depth: 1
+new_phases_added: 2
+dependencies_recalculated: true
+revised_plan_path: "$PLAN_PATH"
+```
+
 ## Output Format
 
 Return ONLY the proof report in this format:

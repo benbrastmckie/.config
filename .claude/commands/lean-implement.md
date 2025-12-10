@@ -291,38 +291,46 @@ PLAN_FILE="$(cd "$(dirname "$PLAN_FILE")" && pwd)/$(basename "$PLAN_FILE")"
 
 echo "Plan File: $PLAN_FILE"
 
-# === DETECT LOWEST INCOMPLETE PHASE ===
-# If no starting phase argument provided, find the lowest incomplete phase
-if [ "${ARGS_ARRAY[1]:-}" = "" ]; then
-  # Extract all phase numbers from plan file
-  PHASE_NUMBERS=$(grep -oE "^### Phase ([0-9]+):" "$PLAN_FILE" | grep -oE "[0-9]+" | sort -n)
+# === EXECUTION MODE INITIALIZATION ===
+# Wave-based full plan delegation: Pass entire plan to coordinator
+# Coordinator analyzes dependencies and executes waves in parallel
+EXECUTION_MODE="full-plan"
 
-  # Find first phase without [COMPLETE] marker
-  LOWEST_INCOMPLETE_PHASE=""
-  for phase_num in $PHASE_NUMBERS; do
-    if ! grep -q "^### Phase ${phase_num}:.*\[COMPLETE\]" "$PLAN_FILE"; then
-      LOWEST_INCOMPLETE_PHASE="$phase_num"
-      break
-    fi
-  done
+echo "Execution Mode: Full plan delegation with wave-based orchestration"
 
-  # Use lowest incomplete phase, or default to 1 if all complete
-  if [ -n "$LOWEST_INCOMPLETE_PHASE" ]; then
-    STARTING_PHASE="$LOWEST_INCOMPLETE_PHASE"
-    echo "Auto-detected starting phase: $STARTING_PHASE (lowest incomplete)"
-  else
-    # All phases complete - default to 1 (likely resumption scenario)
-    STARTING_PHASE="1"
-  fi
-else
-  # Explicit phase argument provided
+# Optional: Starting phase override (for manual wave targeting)
+# Default: Coordinator auto-detects lowest incomplete phase
+if [ -n "${ARGS_ARRAY[1]:-}" ] && [[ "${ARGS_ARRAY[1]}" =~ ^[0-9]+$ ]]; then
   STARTING_PHASE="${ARGS_ARRAY[1]}"
+  echo "Starting Phase Override: $STARTING_PHASE (manual specification)"
+else
+  echo "Starting Phase: Auto-detected by coordinator (lowest incomplete)"
+  STARTING_PHASE=""  # Empty signals coordinator to auto-detect
 fi
 
-echo "Starting Phase: $STARTING_PHASE"
-echo "Execution Mode: $EXECUTION_MODE"
 echo "Max Iterations: $MAX_ITERATIONS"
+echo "Context Threshold: ${CONTEXT_THRESHOLD}%"
 echo ""
+
+# === CONTEXT BUDGET MONITORING (Optional) ===
+# Track primary agent context usage for optimization validation
+PRIMARY_CONTEXT_BUDGET=${LEAN_IMPLEMENT_CONTEXT_BUDGET:-5000}  # tokens
+CURRENT_CONTEXT=0
+
+track_context_usage() {
+  local operation="$1"
+  local estimated_tokens="$2"
+
+  CURRENT_CONTEXT=$((CURRENT_CONTEXT + estimated_tokens))
+
+  if [ "${LEAN_IMPLEMENT_CONTEXT_TRACKING:-false}" = "true" ]; then
+    echo "Context: $operation (+$estimated_tokens tokens, total: $CURRENT_CONTEXT/$PRIMARY_CONTEXT_BUDGET)" >&2
+
+    if [ "$CURRENT_CONTEXT" -gt "$PRIMARY_CONTEXT_BUDGET" ]; then
+      echo "WARNING: Primary agent context budget exceeded ($CURRENT_CONTEXT/$PRIMARY_CONTEXT_BUDGET tokens)" >&2
+    fi
+  fi
+}
 
 # === DRY-RUN MODE ===
 if [ "$DRY_RUN" = "true" ]; then
@@ -435,17 +443,12 @@ done
 # Create artifact directories (lazy creation pattern)
 mkdir -p "$SUMMARIES_DIR" "$DEBUG_DIR" "$OUTPUTS_DIR" "$CHECKPOINTS_DIR" 2>/dev/null
 
-# === MARK STARTING PHASE IN PROGRESS ===
+# === MARK PLAN IN PROGRESS ===
+# Note: Individual phase marking delegated to coordinator (wave-based execution)
 if type add_not_started_markers &>/dev/null; then
   if grep -qE "^### Phase [0-9]+:" "$PLAN_FILE" && ! grep -qE "^### Phase [0-9]+:.*\[(NOT STARTED|IN PROGRESS|COMPLETE|BLOCKED|SKIPPED)\]" "$PLAN_FILE"; then
     echo "Legacy plan detected, adding [NOT STARTED] markers..."
     add_not_started_markers "$PLAN_FILE" 2>/dev/null || true
-  fi
-fi
-
-if type add_in_progress_marker &>/dev/null; then
-  if add_in_progress_marker "$PLAN_FILE" "$STARTING_PHASE" 2>/dev/null; then
-    echo "Marked Phase $STARTING_PHASE as [IN PROGRESS]"
   fi
 fi
 
@@ -796,92 +799,107 @@ fi
 
 ROUTING_MAP=$(cat "$ROUTING_MAP_FILE")
 
-# === DETERMINE CURRENT PHASE ===
-# Find first phase that is not complete (based on STARTING_PHASE or continuation)
-CURRENT_PHASE="$STARTING_PHASE"
+# === DETERMINE PLAN TYPE FROM ROUTING MAP ===
+# Classify the entire plan based on phase type distribution
+# If all phases are Lean → use lean-coordinator only
+# If all phases are software → use implementer-coordinator only
+# If mixed → currently unsupported (would require dual coordinator orchestration)
 
-# Get phase entry from routing map
-PHASE_ENTRY=$(echo "$ROUTING_MAP" | grep "^${CURRENT_PHASE}:" | head -1)
+LEAN_PHASE_COUNT=$(grep -c ":lean:" "$ROUTING_MAP_FILE" || echo "0")
+SOFTWARE_PHASE_COUNT=$(grep -c ":software:" "$ROUTING_MAP_FILE" || echo "0")
+TOTAL_PHASE_COUNT=$(wc -l < "$ROUTING_MAP_FILE")
 
-if [ -z "$PHASE_ENTRY" ]; then
-  echo "ERROR: Phase $CURRENT_PHASE not found in routing map" >&2
-  echo "Available phases:" >&2
-  echo "$ROUTING_MAP" | cut -d: -f1 >&2
-  exit 1
-fi
+echo "Plan classification:"
+echo "  Lean phases: $LEAN_PHASE_COUNT"
+echo "  Software phases: $SOFTWARE_PHASE_COUNT"
+echo "  Total phases: $TOTAL_PHASE_COUNT"
+echo ""
 
-# Parse phase entry: phase_num:type:lean_file:implementer
-PHASE_NUM=$(echo "$PHASE_ENTRY" | cut -d: -f1)
-PHASE_TYPE=$(echo "$PHASE_ENTRY" | cut -d: -f2)
-LEAN_FILE_PATH=$(echo "$PHASE_ENTRY" | cut -d: -f3)
-IMPLEMENTER_FROM_MAP=$(echo "$PHASE_ENTRY" | cut -d: -f4)
-
-echo "Current Phase: $PHASE_NUM"
-echo "Phase Type: $PHASE_TYPE"
-echo "Implementer: $IMPLEMENTER_FROM_MAP"
-if [ "$PHASE_TYPE" = "lean" ] && [ "$LEAN_FILE_PATH" != "none" ]; then
-  echo "Lean File: $LEAN_FILE_PATH"
+# Determine plan type
+if [ "$LEAN_PHASE_COUNT" -gt 0 ] && [ "$SOFTWARE_PHASE_COUNT" -eq 0 ]; then
+  PLAN_TYPE="lean"
+  echo "Plan type: Pure Lean (all phases are theorem proving)"
+elif [ "$SOFTWARE_PHASE_COUNT" -gt 0 ] && [ "$LEAN_PHASE_COUNT" -eq 0 ]; then
+  PLAN_TYPE="software"
+  echo "Plan type: Pure Software (all phases are implementation)"
+else
+  PLAN_TYPE="hybrid"
+  echo "Plan type: Hybrid (mixed Lean and software phases)"
+  echo "WARNING: Hybrid plans currently delegate to first phase type"
+  echo "  Lean phases: Using lean-coordinator"
+  echo "  Software phases: Using implementer-coordinator"
+  # Default to Lean if mixed
+  if [ "$LEAN_PHASE_COUNT" -ge "$SOFTWARE_PHASE_COUNT" ]; then
+    PLAN_TYPE="lean"
+  else
+    PLAN_TYPE="software"
+  fi
 fi
 echo ""
 
-# Persist current phase info
-append_workflow_state "CURRENT_PHASE" "$CURRENT_PHASE"
-append_workflow_state "CURRENT_PHASE_TYPE" "$PHASE_TYPE"
-append_workflow_state "CURRENT_LEAN_FILE" "$LEAN_FILE_PATH"
+# Persist plan type for continuation
+append_workflow_state "PLAN_TYPE" "$PLAN_TYPE"
 
 # === DETERMINE COORDINATOR NAME AND BUILD PROMPT [HARD BARRIER] ===
-# Based on phase type, determine which coordinator to invoke
-if [ "$PHASE_TYPE" = "lean" ]; then
+# Based on plan type, determine which coordinator to invoke for FULL PLAN execution
+if [ "$PLAN_TYPE" = "lean" ]; then
   COORDINATOR_NAME="lean-coordinator"
   COORDINATOR_AGENT="${CLAUDE_PROJECT_DIR}/.claude/agents/lean-coordinator.md"
-  COORDINATOR_DESCRIPTION="Wave-based Lean theorem proving for phase ${CURRENT_PHASE}"
+  COORDINATOR_DESCRIPTION="Wave-based full plan theorem proving orchestration"
 
-  # Build lean-coordinator specific prompt
+  # Extract primary lean file from first lean phase (if any)
+  FIRST_LEAN_ENTRY=$(grep ":lean:" "$ROUTING_MAP_FILE" | head -1)
+  PRIMARY_LEAN_FILE=$(echo "$FIRST_LEAN_ENTRY" | cut -d: -f3)
+  if [ "$PRIMARY_LEAN_FILE" = "none" ] || [ -z "$PRIMARY_LEAN_FILE" ]; then
+    PRIMARY_LEAN_FILE="${TOPIC_PATH}/Theorems.lean"  # Fallback
+  fi
+
+  # Build lean-coordinator full-plan prompt
   COORDINATOR_PROMPT="Read and follow ALL behavioral guidelines from:
     ${COORDINATOR_AGENT}
 
     **Input Contract (Hard Barrier Pattern)**:
-    - lean_file_path: ${CURRENT_LEAN_FILE}
+    - plan_path: ${PLAN_FILE}
+    - lean_file_path: ${PRIMARY_LEAN_FILE}
     - topic_path: ${TOPIC_PATH}
+    - execution_mode: full-plan
+    - routing_map_path: ${ROUTING_MAP_FILE}
     - artifact_paths:
       - plans: ${TOPIC_PATH}/plans/
       - summaries: ${SUMMARIES_DIR}
       - outputs: ${OUTPUTS_DIR}
       - debug: ${DEBUG_DIR}
       - checkpoints: ${CHECKPOINTS_DIR}
-    - max_attempts: 3
-    - plan_path: ${PLAN_FILE}
-    - execution_mode: plan-based
-    - starting_phase: ${CURRENT_PHASE}
-    - continuation_context: ${CONTINUATION_CONTEXT:-null}
+    - iteration: ${ITERATION}
     - max_iterations: ${MAX_ITERATIONS}
-    - iteration: ${LEAN_ITERATION}
+    - context_threshold: ${CONTEXT_THRESHOLD}
+    - continuation_context: ${CONTINUATION_CONTEXT:-null}
 
-    Execute theorem proving for Phase ${CURRENT_PHASE}.
+    **Workflow Instructions**:
+    1. Analyze plan dependencies via dependency-analyzer.sh
+    2. Calculate wave structure with parallelization metrics
+    3. Execute waves sequentially with parallel lean-implementer invocations per wave
+    4. Wait for ALL implementers in Wave N before starting Wave N+1 (hard barrier)
+    5. Aggregate results and return ORCHESTRATION_COMPLETE signal
 
-    Progress Tracking Instructions:
-    - Source checkbox utilities: source ${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh
-    - Before starting phase: add_in_progress_marker '${PLAN_FILE}' ${CURRENT_PHASE}
-    - After completing phase: mark_phase_complete '${PLAN_FILE}' ${CURRENT_PHASE} && add_complete_marker '${PLAN_FILE}' ${CURRENT_PHASE}
-    - This creates visible progress: [NOT STARTED] -> [IN PROGRESS] -> [COMPLETE]
-    - Note: Progress tracking gracefully degrades if unavailable (non-fatal)
+    **Expected Output Signal**:
+    - summary_brief: 80-token summary for context efficiency
+    - waves_completed: Number of waves finished
+    - total_waves: Total waves in plan
+    - phases_completed: List of phase numbers completed
+    - work_remaining: List of phase numbers still incomplete
+    - context_usage_percent: Estimated context usage (0-100)
+    - requires_continuation: Boolean indicating if more work remains
+    - parallelization_metrics: Time savings percentage, parallel phases count
 
-    **CRITICAL**: Create proof summary in ${SUMMARIES_DIR}/
-    The orchestrator will validate the summary exists after you return.
-
-    Return: ORCHESTRATION_COMPLETE
-    summary_path: /path/to/summary
-    phases_completed: [${CURRENT_PHASE}]
-    work_remaining: space-separated list of remaining phases OR 0
-    context_exhausted: true|false
-    context_usage_percent: N%
-    requires_continuation: true|false"
+    **CRITICAL**: Create wave execution summary in ${SUMMARIES_DIR}/
+    The orchestrator will validate the summary exists after you return."
 else
   COORDINATOR_NAME="implementer-coordinator"
   COORDINATOR_AGENT="${CLAUDE_PROJECT_DIR}/.claude/agents/implementer-coordinator.md"
-  COORDINATOR_DESCRIPTION="Wave-based software implementation for phase ${CURRENT_PHASE}"
+  COORDINATOR_DESCRIPTION="Wave-based full plan software implementation orchestration"
 
-  # Build implementer-coordinator specific prompt
+  # Build implementer-coordinator full-plan prompt
   COORDINATOR_PROMPT="Read and follow ALL behavioral guidelines from:
     ${COORDINATOR_AGENT}
 
@@ -889,6 +907,8 @@ else
     - plan_path: ${PLAN_FILE}
     - topic_path: ${TOPIC_PATH}
     - summaries_dir: ${SUMMARIES_DIR}
+    - execution_mode: full-plan
+    - routing_map_path: ${ROUTING_MAP_FILE}
     - artifact_paths:
       - reports: ${TOPIC_PATH}/reports/
       - plans: ${TOPIC_PATH}/plans/
@@ -896,31 +916,30 @@ else
       - debug: ${DEBUG_DIR}
       - outputs: ${OUTPUTS_DIR}
       - checkpoints: ${CHECKPOINTS_DIR}
-    - continuation_context: ${CONTINUATION_CONTEXT:-null}
-    - iteration: ${SOFTWARE_ITERATION}
+    - iteration: ${ITERATION}
     - max_iterations: ${MAX_ITERATIONS}
     - context_threshold: ${CONTEXT_THRESHOLD}
+    - continuation_context: ${CONTINUATION_CONTEXT:-null}
 
-    Execute implementation for Phase ${CURRENT_PHASE}.
+    **Workflow Instructions**:
+    1. Analyze plan dependencies via dependency-analyzer.sh
+    2. Calculate wave structure with parallelization metrics
+    3. Execute waves sequentially with parallel implementer invocations per wave
+    4. Wait for ALL implementers in Wave N before starting Wave N+1 (hard barrier)
+    5. Aggregate results and return ORCHESTRATION_COMPLETE signal
 
-    Progress Tracking Instructions:
-    - Source checkbox utilities: source ${CLAUDE_PROJECT_DIR}/.claude/lib/plan/checkbox-utils.sh
-    - Before starting phase: add_in_progress_marker '${PLAN_FILE}' ${CURRENT_PHASE}
-    - After completing phase: mark_phase_complete '${PLAN_FILE}' ${CURRENT_PHASE} && add_complete_marker '${PLAN_FILE}' ${CURRENT_PHASE}
-    - This creates visible progress: [NOT STARTED] -> [IN PROGRESS] -> [COMPLETE]
-    - Note: Progress tracking gracefully degrades if unavailable (non-fatal)
+    **Expected Output Signal**:
+    - summary_brief: 80-token summary for context efficiency
+    - waves_completed: Number of waves finished
+    - total_waves: Total waves in plan
+    - phases_completed: List of phase numbers completed
+    - work_remaining: List of phase numbers still incomplete
+    - context_usage_percent: Estimated context usage (0-100)
+    - requires_continuation: Boolean indicating if more work remains
+    - parallelization_metrics: Time savings percentage, parallel phases count
 
-    **CRITICAL**: Create implementation summary in ${SUMMARIES_DIR}/
-    The orchestrator will validate the summary exists after you return.
-
-    Return: IMPLEMENTATION_COMPLETE
-    summary_path: /path/to/summary
-    plan_path: ${PLAN_FILE}
-    topic_path: ${TOPIC_PATH}
-    work_remaining: space-separated list of remaining phases OR 0
-    context_exhausted: true|false
-    context_usage_percent: N%
-    requires_continuation: true|false"
+    **CRITICAL**: Create wave execution summary in ${SUMMARIES_DIR}/
+    The orchestrator will validate the summary exists after you return."
 fi
 
 # Persist coordinator name for verification in Block 1c
@@ -935,12 +954,15 @@ echo ""
 **HARD BARRIER**: Coordinator delegation is MANDATORY (no conditionals, no bypass).
 The orchestrator MUST NOT perform implementation work directly.
 
-Task {
-  subagent_type: "general-purpose"
-  model: "sonnet"
-  description: "${COORDINATOR_DESCRIPTION}"
-  prompt: "${COORDINATOR_PROMPT}"
-}
+You MUST use the Task tool with these EXACT parameters:
+
+- **subagent_type**: "general-purpose"
+- **model**: "opus-4.5"
+- **description**: "${COORDINATOR_DESCRIPTION}"
+- **prompt**: "${COORDINATOR_PROMPT}"
+
+The coordinator MUST create a summary file in ${SUMMARIES_DIR}.
+The orchestrator will validate the summary exists after you return.
 
 ## Block 1c: Verification & Continuation Decision
 
@@ -1151,6 +1173,44 @@ echo "Full report: $LATEST_SUMMARY"
 echo ""
 
 # Context reduction metric: 80 tokens parsed (return signal) vs 2,000 tokens read (full file) = 96% reduction
+
+# Track context usage for summary parsing (optional monitoring)
+track_context_usage "summary_parse_brief" 80
+
+# === VALIDATE DELEGATION CONTRACT ===
+# Primary agent MUST NOT perform implementation work after coordinator delegation
+# This validation provides defense-in-depth (hard barrier exit is primary enforcement)
+
+WORKFLOW_LOG="${CLAUDE_PROJECT_DIR}/.claude/output/lean-implement-output.md"
+
+if [ -f "$WORKFLOW_LOG" ] && [ "${SKIP_DELEGATION_VALIDATION:-false}" != "true" ]; then
+  echo "Validating delegation contract..."
+
+  if ! validate_delegation_contract "$WORKFLOW_LOG"; then
+    log_command_error \
+      "$COMMAND_NAME" \
+      "$WORKFLOW_ID" \
+      "$USER_ARGS" \
+      "delegation_error" \
+      "Primary agent performed implementation work (delegation contract violation)" \
+      "bash_block_1c" \
+      "$(jq -n --arg log "$WORKFLOW_LOG" '{workflow_log: $log}')"
+
+    echo "ERROR: Delegation contract violation detected" >&2
+    echo "  Primary agent used prohibited tools (Edit, lean_goal, lean_multi_attempt, lean-lsp)" >&2
+    echo "  See validation output above for details" >&2
+    exit 1
+  fi
+
+  echo "[OK] Delegation contract validated: No prohibited tool usage"
+  echo ""
+else
+  if [ ! -f "$WORKFLOW_LOG" ]; then
+    echo "INFO: Delegation contract validation skipped (no workflow log found)" >&2
+  else
+    echo "INFO: Delegation contract validation skipped (SKIP_DELEGATION_VALIDATION=true)" >&2
+  fi
+fi
 
 # === DEFENSIVE CONTINUATION VALIDATION ===
 # Override requires_continuation if work_remaining non-empty (defensive pattern from /implement)
@@ -1520,6 +1580,23 @@ fi
 echo ""
 echo "Next Step: Run /todo to update TODO.md with this implementation"
 echo ""
+
+# === CONTEXT BUDGET SUMMARY (Optional) ===
+if [ "${LEAN_IMPLEMENT_CONTEXT_TRACKING:-false}" = "true" ]; then
+  echo "=== Context Budget Summary ==="
+  echo "Total primary agent context: $CURRENT_CONTEXT tokens"
+  echo "Budget: $PRIMARY_CONTEXT_BUDGET tokens"
+  BUDGET_PERCENT=$((CURRENT_CONTEXT * 100 / PRIMARY_CONTEXT_BUDGET))
+  echo "Usage: ${BUDGET_PERCENT}% of budget"
+  if [ "$CURRENT_CONTEXT" -le 2000 ]; then
+    echo "Status: EXCELLENT (75% reduction achieved)"
+  elif [ "$CURRENT_CONTEXT" -le 3000 ]; then
+    echo "Status: GOOD (60%+ reduction)"
+  else
+    echo "Status: NEEDS OPTIMIZATION"
+  fi
+  echo ""
+fi
 
 # === EMIT COMPLETION SIGNAL ===
 echo "IMPLEMENTATION_COMPLETE:"

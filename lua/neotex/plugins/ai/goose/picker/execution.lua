@@ -25,26 +25,16 @@ function M._serialize_params(params)
   return table.concat(param_parts, ',')
 end
 
---- Run a recipe in goose.nvim sidebar with real-time streaming output
---- Prompts user for required parameters, validates types, opens/ensures sidebar,
---- executes recipe via plenary.job, and displays output in goose sidebar UI
+--- Run a recipe in goose.nvim sidebar using native goose.core.run()
+--- Opens sidebar and sends /recipe:<name> command, letting Goose handle
+--- parameter prompting conversationally within the chat interface
 ---
---- @param recipe_path string Absolute path to recipe file
+--- @param recipe_path string Absolute path to recipe file (unused, kept for API compatibility)
 --- @param metadata table Parsed recipe metadata from metadata.parse()
 --- @return nil
 function M.run_recipe_in_sidebar(recipe_path, metadata)
-  -- Validate recipe file exists
-  if vim.fn.filereadable(recipe_path) ~= 1 then
-    vim.notify(
-      string.format('Recipe file not found: %s', recipe_path),
-      vim.log.levels.ERROR
-    )
-    return
-  end
-
   -- Ensure goose.nvim plugin is loaded (handles lazy.nvim lazy-loading)
-  -- This triggers lazy.nvim to load the plugin if not already loaded
-  local goose_loaded, goose = pcall(require, 'goose')
+  local goose_loaded, _ = pcall(require, 'goose')
   if not goose_loaded then
     vim.notify(
       'goose.nvim required for recipe execution. Install plugin: azorng/goose.nvim',
@@ -53,146 +43,32 @@ function M.run_recipe_in_sidebar(recipe_path, metadata)
     return
   end
 
-  -- Now load goose.nvim modules (plugin is guaranteed loaded)
-  -- Note: goose.nvim's UI module is at goose.ui.ui (no init.lua in ui/)
-  local goose_core, goose_ui, goose_state
+  -- Load goose.core for native run() function
+  local goose_core
   local ok, err = pcall(function()
     goose_core = require('goose.core')
-    goose_ui = require('goose.ui.ui')
-    goose_state = require('goose.state')
   end)
 
   if not ok then
     vim.notify(
-      string.format('Failed to load goose.nvim modules: %s', tostring(err)),
+      string.format('Failed to load goose.nvim core module: %s', tostring(err)),
       vim.log.levels.ERROR
     )
     return
   end
 
-  -- Collect parameters
-  local params = M.prompt_for_parameters(metadata.parameters)
-  if not params then
-    vim.notify('Recipe execution cancelled', vim.log.levels.INFO)
-    return
-  end
+  -- Build /recipe:<name> command - Goose will prompt for parameters conversationally
+  local recipe_name = metadata.name or vim.fn.fnamemodify(recipe_path, ':t:r')
+  local prompt = string.format('/recipe:%s', recipe_name)
 
-  -- Ensure sidebar is open
-  if not goose_state.windows or not goose_state.windows.output then
-    local open_ok, open_err = pcall(goose_core.open)
-    if not open_ok then
-      -- Retry once
-      vim.schedule(function()
-        vim.defer_fn(function()
-          local retry_ok = pcall(goose_core.open)
-          if not retry_ok then
-            vim.notify(
-              'Failed to open goose sidebar. Try running :Goose first.',
-              vim.log.levels.ERROR
-            )
-          end
-        end, 100)
-      end)
-      return
-    end
-  end
+  -- Notify user
+  vim.notify(
+    string.format('Starting recipe: %s', recipe_name),
+    vim.log.levels.INFO
+  )
 
-  -- Stop any existing goose jobs
-  if goose_state.goose_run_job then
-    pcall(goose_core.stop)
-  end
-
-  -- Build recipe CLI arguments
-  local args = { 'run', '--recipe', recipe_path }
-
-  -- Add parameters if present
-  local params_str = M._serialize_params(params)
-  if params_str ~= '' then
-    table.insert(args, '--params')
-    table.insert(args, params_str)
-  end
-
-  -- Create plenary.job for recipe execution
-  local Job = require('plenary.job')
-  local job = Job:new({
-    command = 'goose',
-    args = args,
-    on_start = function()
-      vim.schedule(function()
-        -- Notify start
-        local param_count = vim.tbl_count(params)
-        vim.notify(
-          string.format(
-            'Executing recipe: %s (%d parameters) | Output: Goose sidebar',
-            metadata.name or 'Unknown',
-            param_count
-          ),
-          vim.log.levels.INFO
-        )
-
-        -- Initial render
-        pcall(goose_ui.render_output)
-        pcall(goose_ui.scroll_to_bottom)
-      end)
-    end,
-    on_stdout = function(_, line)
-      if not line then return end
-      vim.schedule(function()
-        -- Reload session file changes
-        vim.cmd('checktime')
-
-        -- Update sidebar output
-        pcall(goose_ui.render_output)
-        pcall(goose_ui.scroll_to_bottom)
-      end)
-    end,
-    on_stderr = function(_, line)
-      if not line then return end
-      vim.schedule(function()
-        -- Display error in notification and sidebar
-        vim.notify(
-          string.format('Recipe error: %s', line),
-          vim.log.levels.WARN
-        )
-
-        -- Still render in sidebar for full context
-        vim.cmd('checktime')
-        pcall(goose_ui.render_output)
-        pcall(goose_ui.scroll_to_bottom)
-      end)
-    end,
-    on_exit = function(_, return_code)
-      vim.schedule(function()
-        -- Clear job state
-        if goose_state.goose_run_job then
-          goose_state.goose_run_job = nil
-        end
-
-        -- Final render and notification
-        vim.cmd('checktime')
-        pcall(goose_ui.render_output)
-        pcall(goose_ui.scroll_to_bottom)
-
-        if return_code == 0 then
-          vim.notify(
-            string.format('Recipe completed: %s', metadata.name or 'Unknown'),
-            vim.log.levels.INFO
-          )
-        else
-          vim.notify(
-            string.format('Recipe failed with code %d: %s', return_code, metadata.name or 'Unknown'),
-            vim.log.levels.ERROR
-          )
-        end
-      end)
-    end,
-  })
-
-  -- Register job in goose state
-  goose_state.goose_run_job = job
-
-  -- Start job
-  job:start()
+  -- Use goose.core.run() which handles sidebar opening and job management
+  goose_core.run(prompt)
 end
 
 --- Prompt user for recipe parameters
