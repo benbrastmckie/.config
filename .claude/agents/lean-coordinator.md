@@ -31,6 +31,7 @@ You WILL receive:
 - **lean_file_path**: Absolute path to Lean source file
 - **topic_path**: Topic directory path for artifact organization
 - **artifact_paths**: Pre-calculated paths for summaries, outputs, checkpoints
+- **execution_mode**: (Optional) Execution mode: "file-based" or "plan-based" (default: "plan-based")
 - **continuation_context**: (Optional) Path to previous iteration summary
 - **iteration**: (Optional) Current iteration number (1-5, for tracking continuation loops)
 - **max_iterations**: (Optional) Maximum iterations allowed (default: 5)
@@ -45,11 +46,30 @@ artifact_paths:
   summaries: /path/to/specs/028_lean/summaries/
   outputs: /path/to/specs/028_lean/outputs/
   checkpoints: /home/user/.claude/data/checkpoints/
+execution_mode: plan-based  # "file-based" or "plan-based" (default: plan-based)
 continuation_context: null  # Or path to previous summary for continuation
 iteration: 1  # Current iteration (1-5)
 max_iterations: 5  # Maximum iterations allowed
 context_threshold: 85  # Halt if context usage exceeds 85%
 ```
+
+**Execution Mode Behavior**:
+
+1. **file-based mode**: Legacy mode for /lean-build command compatibility
+   - No plan file dependencies analyzed
+   - All theorems in LEAN_FILE executed as single wave
+   - Single lean-implementer invocation
+   - Skip STEP 1-2 (plan structure detection and dependency analysis)
+   - Proceed directly to STEP 3 (wave execution)
+
+2. **plan-based mode**: Optimized mode for /lean-implement command
+   - Plan file dependencies extracted from metadata (dependencies: [N])
+   - Wave structure built from plan metadata (no dependency-analyzer needed)
+   - Sequential execution by default (one phase per wave)
+   - Parallel waves when parallel_wave: true + wave_id indicators present
+   - Brief summary format for 96% context reduction (80 tokens vs 2,000)
+
+**Clean-Break Exception**: Dual-mode support is an exception to clean-break development standard for backward compatibility with /lean-build command. Future refactoring may consolidate modes once /lean-build adopts plan-driven architecture.
 
 ### File-Based Mode Auto-Conversion
 
@@ -69,6 +89,8 @@ When `execution_mode=file-based` (no plan file provided), the coordinator should
 This ensures consistent coordinator/implementer architecture for ALL modes.
 
 ### STEP 1: Plan Structure Detection
+
+**Backward Compatibility Note**: This STEP is only executed in plan-based mode. File-based mode skips to STEP 3 (wave execution) after auto-converting to single-wave structure.
 
 1. **Read Plan File**: Load plan to check structure
 2. **Detect Structure Level**:
@@ -95,22 +117,30 @@ else
 fi
 ```
 
-### STEP 2: Dependency Analysis
+### STEP 2: Wave Extraction from Plan Metadata
 
-1. **Invoke dependency-analyzer Utility**:
+**Backward Compatibility Note**: This STEP is only executed in plan-based mode. File-based mode skips to STEP 3 (wave execution) after auto-converting to single-wave structure.
+
+**IMPORTANT**: Plan-driven mode does NOT invoke dependency-analyzer.sh. Instead, wave structure is extracted directly from plan metadata.
+
+1. **Extract Dependencies from Plan Metadata**:
+   For each phase in plan, parse the `dependencies:` field:
    ```bash
-   bash /home/benjamin/.config/.claude/lib/util/dependency-analyzer.sh "$plan_path" > /tmp/dependency_analysis.json
+   # Example metadata in phase
+   # **Dependencies**: [1, 2]  # Depends on Phase 1 and Phase 2
+   # OR
+   # **Dependencies**: []      # Independent phase, goes in Wave 1
    ```
 
-2. **Parse Analysis Results**:
-   - Extract dependency graph (nodes, edges)
-   - Extract wave structure (wave_number, theorems per wave)
-   - Extract parallelization metrics (time savings estimate)
+2. **Build Wave Groups**:
+   - **Sequential by Default**: Each phase is its own wave (one phase per wave)
+   - **Parallel Wave Detection**: If parallel_wave: true + wave_id present, group phases
+   - **Dependency Ordering**: Respect dependencies: [] field for wave assignment
 
-3. **Validate Dependency Graph**:
-   - Check for cycles (circular dependencies)
-   - Verify all phase references valid
-   - Confirm at least 1 theorem in Wave 1 (starting point)
+3. **Validate Wave Structure**:
+   - Confirm at least 1 phase in Wave 1 (starting point)
+   - Verify all phase dependencies reference valid phase numbers
+   - Check for cycles if parallel waves detected (not applicable for sequential default)
 
 4. **Display Wave Structure** to user:
    ```
@@ -924,6 +954,8 @@ revised_plan_path: "$PLAN_PATH"
 
 ## Output Format
 
+**Dual-Mode Behavior Note**: Output format is identical for both file-based and plan-based modes. The `coordinator_type: lean` and `summary_brief` fields are present in both modes for consistency.
+
 Return ONLY the proof report in this format:
 
 ```
@@ -931,6 +963,7 @@ Return ONLY the proof report in this format:
 WAVE-BASED LEAN PROOF REPORT
 ═══════════════════════════════════════════════════════
 Status: {completed|partial|failed}
+Execution Mode: {file-based|plan-based}
 Waves Executed: {N}
 Total Theorems: {N}
 Proven: {N}
