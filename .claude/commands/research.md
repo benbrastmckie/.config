@@ -289,7 +289,7 @@ echo "CHECKPOINT: Block 1 setup complete, ready for topic-naming-agent"
 **EXECUTE NOW**: USE the Task tool to invoke the topic-naming-agent for semantic topic directory naming.
 
 Task {
-  subagent_type: "general-purpose"
+  subagent_type: "general"
   description: "Generate semantic topic directory name"
   prompt: "
     Read and follow ALL behavioral guidelines from:
@@ -564,7 +564,7 @@ echo "  Ready for: coordinator invocation (Block 2)"
 **For SINGLE-TOPIC research (complexity < 3)**:
 
 Task {
-  subagent_type: "general-purpose"
+  subagent_type: "general"
   description: "Research topic: ${WORKFLOW_DESCRIPTION}"
   prompt: "
     Read and follow ALL behavioral guidelines from:
@@ -588,7 +588,7 @@ Task {
 **For MULTI-TOPIC research (complexity >= 3)**:
 
 Task {
-  subagent_type: "general-purpose"
+  subagent_type: "general"
   description: "Coordinate multi-topic research for ${WORKFLOW_DESCRIPTION}"
   prompt: "
     Read and follow ALL behavioral guidelines from:
@@ -610,12 +610,11 @@ Task {
     **CRITICAL**: Topics and report paths have been pre-calculated.
     Use Mode 2 (Pre-Decomposed) - parse TOPICS_LIST and REPORT_PATHS_LIST (pipe-separated).
 
-    Execute research coordination:
-    1. Parse topics and report_paths from pipe-separated lists
-    2. Invoke research-specialist for each topic (parallel execution)
-    3. Validate all reports created (hard barrier)
-    4. Extract metadata from each report
-    5. Return completion signal with aggregated metadata
+    Execute research planning:
+    1. Parse topics and report_paths from pipe-separated lists.
+    2. Create an invocation plan file with the topics and pre-calculated report paths.
+    3. Validate the invocation plan file.
+    4. Return the invocation plan metadata to the primary agent as a completion signal. Do NOT invoke the research-specialist agent yourself.
 
     Return completion signal:
     RESEARCH_COMPLETE: {REPORT_COUNT}

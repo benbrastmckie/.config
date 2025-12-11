@@ -267,16 +267,15 @@ return {
       { "<leader>an", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", cond = is_lectic },
       { "<leader>ak", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
 
-      -- OpenCode AI commands (<leader>ao submenu)
-      { "<leader>ao", group = "opencode", icon = "󰚩" },
-      { "<leader>aoo", function() require("opencode").toggle() end, desc = "opencode toggle", icon = "󰚩" },
-      { "<leader>aoa", function() require("opencode").ask() end, desc = "opencode ask with context", icon = "󰘳", mode = { "n", "v" } },
-      { "<leader>aos", function() require("opencode").select() end, desc = "opencode select action", icon = "󰒋" },
-      { "<leader>aop", function() require("opencode").prompt() end, desc = "opencode add context", icon = "󰏪", mode = { "n", "v" } },
-      { "<leader>aob", function() require("opencode").prompt("@buffer") end, desc = "opencode buffer context", icon = "󰈙" },
-      { "<leader>aod", function() require("opencode").prompt("@diagnostics") end, desc = "opencode diagnostics context", icon = "󰒓" },
-      { "<leader>aon", function() require("opencode").command("session.new") end, desc = "opencode new session", icon = "󰐕" },
-      { "<leader>aol", function() require("opencode").command("session.list") end, desc = "opencode list sessions", icon = "󰆼" },
+      -- OpenCode AI commands
+      -- { "<leader>aa", function() require("opencode").ask() end, desc = "opencode ask", icon = "󰘳", mode = { "n", "v" } },
+      { "<leader>ab", function() require("opencode").prompt("@buffer") end, desc = "opencode buffer context", icon = "󰈙" },
+      { "<leader>ad", function() require("opencode").prompt("@diagnostics") end, desc = "opencode diagnostics", icon = "󰒓" },
+      { "<leader>as", function() require("opencode").select() end, desc = "opencode select", icon = "󰒋" },
+      { "<leader>ah", function() require("opencode").command("session.list") end, desc = "opencode history", icon = "󰆼" },
+      -- { "<leader>ai", function() require("opencode").command("session.new") end, desc = "opencode init session", icon = "󰐕" },
+      -- { "<leader>ao", function() require("opencode").toggle() end, desc = "opencode toggle", icon = "󰚩" },
+      -- { "<leader>ap", function() require("opencode").prompt("@this") end, desc = "opencode prompt", icon = "󰏪", mode = { "n", "v" } },
 
       -- TTS toggle - project-specific only (DISABLED: 2025-12-09 - User preference)
       -- { "<leader>at", function()
