@@ -261,7 +261,7 @@ case "$WORKFLOW_STATE" in
 esac
 ```
 
-**Examples**: `/research`, `/create-plan`, `/implement` (without testing)
+**Examples**: `research-mode`, `plan-mode`, `implement-mode` (without testing)
 
 ---
 

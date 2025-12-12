@@ -44,7 +44,7 @@ The `.claude/` system is a sophisticated multi-agent workflow orchestration fram
 │                    TIER 1: COMMANDS                             │
 │  (Orchestrators - State machine, workflow scope, coordination)  │
 │                                                                 │
-│  /create-plan  /implement  /test  /debug  /research  /repair   │
+│  /create-plan  /implement  /test  /debug  research-mode  /repair   │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -140,7 +140,7 @@ initialize → research → plan → implement → test → debug → complete
 | `/implement` | Execute plan phases | implementer-coordinator | 96% |
 | `/test` | Run tests, debug failures | testing-coordinator | 86% |
 | `/debug` | Root cause analysis | debug-coordinator | 95% |
-| `/research` | Investigation only | research-specialist | 92% |
+| `research-mode` | Investigation only | research-specialist | 92% |
 | `/repair` | Error pattern fixes | repair-coordinator | 94% |
 
 ### Core Agents (Model Selection)
@@ -148,7 +148,7 @@ initialize → research → plan → implement → test → debug → complete
 | Agent | Model | Purpose | Used By |
 |-------|-------|---------|---------|
 | **plan-architect** | opus-4.1 | Design implementation plans | /create-plan, /revise |
-| **research-specialist** | sonnet-4.5 | Conduct research | /create-plan, /research |
+| **research-specialist** | sonnet-4.5 | Conduct research | /create-plan, research-mode |
 | **implementer-coordinator** | haiku-4.5 | Wave-based execution | /implement |
 | **testing-coordinator** | sonnet-4.5 | Parallel test orchestration | /test |
 | **debug-coordinator** | sonnet-4.5 | Investigation orchestration | /debug |
@@ -432,7 +432,7 @@ specs/{NNN_topic}/
 | `/implement` | Primary | Execute plan phases (wave-based) |
 | `/test` | Primary | Test execution with debug loop |
 | `/debug` | Primary | Root cause analysis |
-| `/research` | Primary | Investigation-only workflow |
+| `research-mode` | Primary | Investigation-only workflow |
 | `/revise` | Primary | Update existing plans |
 | `/repair` | Primary | Error pattern analysis + fix |
 | `/expand` | Utility | Expand phases to detailed files |

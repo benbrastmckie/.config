@@ -84,7 +84,7 @@ echo "YOUR_WORKFLOW_DESCRIPTION_HERE" > "$WORKFLOW_TEMP_FILE"
 ```
 ```
 
-From `/research.md` (working command):
+From `research-mode.md` (working command):
 ```markdown
 **EXECUTE NOW**: USE the Bash tool to source libraries and decompose topic:
 
@@ -128,7 +128,7 @@ Task {
   description: "Research ${FEATURE_DESCRIPTION} with mandatory file creation"
   prompt: "
     Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
+    ${CLAUDE_PROJECT_DIR}/.claude/agentsresearch-mode-specialist.md
 
     **Workflow-Specific Context**:
     - Research Topic: ${FEATURE_DESCRIPTION}
@@ -314,7 +314,7 @@ Task {
   description: "Research topic at index 0 with mandatory file creation"
   prompt: "
     Read and follow behavioral guidelines from:
-    (use CLAUDE_PROJECT_DIR)/.claude/agents/research-specialist.md
+    (use CLAUDE_PROJECT_DIR)/.claude/agentsresearch-mode-specialist.md
 
     **CRITICAL - Hard Barrier Pattern**:
     REPORT_PATH=(use REPORT_PATHS[0] - exact absolute path from array)
@@ -528,7 +528,7 @@ Task { ... }
 
 **Result**: Each segment stays well under 400-line limit, zero preprocessing issues.
 
-### Real-World Example: /research Command Refactor
+### Real-World Example: research-mode Command Refactor
 
 **Before** (BROKEN):
 ```
@@ -992,7 +992,7 @@ echo "Complexity: $COMPLEXITY"
 - Commands with special character handling needs
 - All new command development (standardized approach)
 
-**Reference Commands**: See `/coordinate`, `/research`, `/plan`, `/revise`, `/repair` for working examples.
+**Reference Commands**: See `/coordinate`, `research-mode`, `/plan`, `/revise`, `/repair` for working examples.
 
 ### Pattern 1: Direct $1 Capture (Legacy)
 
@@ -1023,7 +1023,7 @@ fi
 | Argument Type | Recommended Pattern | Example Commands |
 |--------------|---------------------|------------------|
 | File paths (no flags) | Direct $1 (legacy) | `/implement`, `/implement` |
-| Complex descriptions | 2-block (standard) | `/research`, `/plan` |
+| Complex descriptions | 2-block (standard) | `research-mode`, `/plan` |
 | Commands with flags | 2-block (standard) | `/repair`, `/debug` |
 | New command development | 2-block (standard) | All new commands |
 
@@ -1048,7 +1048,7 @@ Commands must initialize directory paths for topic organization and artifact sto
 Use when creating new topic directories with LLM-generated semantic names.
 
 **When to Use**:
-- Commands that create new specs (e.g., `/research`, `/plan`, `/debug`)
+- Commands that create new specs (e.g., `research-mode`, `/plan`, `/debug`)
 - Workflows requiring human-readable directory names
 - Features where topic name isn't predetermined
 
@@ -1079,7 +1079,7 @@ echo "Topic directory: $TOPIC_DIR"
 - Returns path like `/home/user/.config/.claude/specs/NNN_semantic_topic_name/`
 - Falls back to `no_name` if agent fails (never blocks workflow)
 
-**Reference Commands**: `/research`, `/plan`, `/debug`
+**Reference Commands**: `research-mode`, `/plan`, `/debug`
 
 ### Pattern B: Direct Naming (For Timestamp-Based Allocation)
 
@@ -1176,7 +1176,7 @@ Does command create new topic?
 
 | Pattern | LLM Agent | When to Use | Example Commands |
 |---------|-----------|-------------|------------------|
-| A: Topic Naming Agent | Yes | New topics, semantic names | `/research`, `/plan`, `/debug` |
+| A: Topic Naming Agent | Yes | New topics, semantic names | `research-mode`, `/plan`, `/debug` |
 | B: Direct Naming | No | Explicit naming, testing | Legacy commands, utilities |
 | C: Path Derivation | No | Existing topics/artifacts | `/implement`, `/revise`, `/expand` |
 
@@ -1977,11 +1977,11 @@ This enables downstream commands to extract paths without relying on state files
 # Executes tests with coverage loop
 ```
 
-#### /research → /plan Workflow
+#### research-mode → /plan Workflow
 
 ```bash
-# /research creates research report
-/research "authentication feature"
+# research-mode creates research report
+research-mode "authentication feature"
 # Creates: specs/042_auth/reports/001-auth-research.md
 
 # /plan consumes research report via --file flag
@@ -2016,7 +2016,7 @@ Commands requiring multi-topic research should use the research-coordinator agen
 **When to Use**:
 - Research complexity ≥ 3 (indicates 2+ distinct topics)
 - Feature description contains multiple domains or concerns
-- Commands: `/create-plan`, `/research`, `/repair`, `/debug`, `/revise`
+- Commands: `/create-plan`, `research-mode`, `/repair`, `/debug`, `/revise`
 
 **Pattern Benefits**:
 - **Context Reduction**: 95% reduction via metadata-only passing (7,500 → 330 tokens for 3 topics)
@@ -2044,7 +2044,7 @@ Commands requiring multi-topic research should use the research-coordinator agen
 | Complexity 3-4, multi-topic | Coordinator pattern | research-coordinator | Enables parallelization |
 | Lean/Mathlib domain | Specialized direct | lean-research-specialist | Domain expertise required |
 
-See [Research Invocation Standards](./research-invocation-standards.md) for complete decision matrix and migration guidance.
+See [Research Invocation Standards](.research-mode-invocation-standards.md) for complete decision matrix and migration guidance.
 
 **Example Implementation**:
 
@@ -2078,7 +2078,7 @@ See [Command Patterns Quick Reference](../command-patterns-quick-reference.md) f
 - **Prevention**: Validate report structure in multi-report validation loop
 
 **Related Documentation**:
-- [Research Invocation Standards](./research-invocation-standards.md) - Decision matrix for coordinator vs specialist
+- [Research Invocation Standards](.research-mode-invocation-standards.md) - Decision matrix for coordinator vs specialist
 - [Hierarchical Agents Examples](../../concepts/hierarchical-agents-examples.md) - Example 7: Research Coordinator Pattern
 - [Command Patterns Quick Reference](../command-patterns-quick-reference.md) - Copy-paste templates
 
@@ -2201,7 +2201,7 @@ Task {
   description: "Research ${TOPIC} with mandatory file creation"
   prompt: "
     Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-specialist.md
+    ${CLAUDE_PROJECT_DIR}/.claude/agentsresearch-mode-specialist.md
 
     **Workflow-Specific Context**:
     - Research Topic: ${TOPIC}

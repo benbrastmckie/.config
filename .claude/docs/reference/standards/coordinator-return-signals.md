@@ -358,6 +358,6 @@ Coordinator return signals provide structured communication between coordinators
 - [Error Logging Standard](error-logging-standard.md) - Centralized error tracking
 
 ### Command Examples
-- `.claude/commands/research.md` - research-coordinator signal parsing
+- `.claude/agents/research-coordinator.md` - research-coordinator signal parsing
 - `.claude/commands/implement.md` - implementer-coordinator signal parsing
 - `.claude/commands/test.md` - testing-coordinator signal parsing

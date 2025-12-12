@@ -1,8 +1,8 @@
-# /research Command - Complete Guide
+# research-mode - Complete Guide
 
-**Executable**: `.claude/commands/research.md`
+**Agent**: `.claude/agents/research-coordinator.md`
 
-**Quick Start**: Run `/research "<topic>"` - creates research reports without planning or implementation.
+**Quick Start**: Activate `research-mode` and provide a topic (e.g., `research-mode "my topic"`) - creates research reports without planning or implementation.
 
 ---
 
@@ -21,7 +21,7 @@
 
 ### Purpose
 
-The `/research` command provides a research-only workflow that creates comprehensive research reports without planning or implementation phases. It's ideal for investigation, analysis, and understanding codebases or technologies before committing to implementation.
+The `research-mode` agent provides a research-only workflow that creates comprehensive research reports without planning or implementation phases. It's ideal for investigation, analysis, and understanding codebases or technologies before committing to implementation.
 
 ### When to Use
 
@@ -32,10 +32,10 @@ The `/research` command provides a research-only workflow that creates comprehen
 
 ### When NOT to Use
 
-- **Creating implementation plans**: Use `/plan` for research + planning
-- **Debugging issues**: Use `/debug` for debug-focused workflows
-- **Full implementation**: Use `/coordinate` for research + plan + implement
-- **Modifying plans**: Use `/revise` for plan revision with new research
+- **Creating implementation plans**: Use `plan-mode` for research + planning
+- **Debugging issues**: Use `debug-mode` for debug-focused workflows
+- **Full implementation**: Use `implement-mode` for research + plan + implement
+- **Modifying plans**: Use `revise-mode` for plan revision with new research
 
 ---
 
@@ -59,7 +59,7 @@ The `/research` command provides a research-only workflow that creates comprehen
 
 ### Subagent Delegation Architecture
 
-The `/research` command uses an **optimized 3-block architecture** with coordinator delegation for 95% context reduction:
+The `research-mode` agent uses an **optimized 3-block architecture** with coordinator delegation for 95% context reduction:
 
 ```
 Block 1: Setup and Path Pre-Calculation (consolidated)
@@ -140,7 +140,7 @@ See [Hard Barrier Subagent Delegation Pattern](../../concepts/patterns/hard-barr
 ### Example 1: Basic Research
 
 ```bash
-/research"authentication patterns in codebase"
+research-mode "authentication patterns in codebase"
 ```
 
 **Expected Output**:
@@ -171,8 +171,8 @@ Report Count: 4
 
 Next Steps:
 - Review reports in: .claude/specs/750_authentication_patterns/reports
-- Use /plan to create implementation plan from research
-- Use /coordinate for full workflow (research + plan + implement)
+- Use `plan-mode` to create an implementation plan from this research
+- Use `implement-mode` for a full workflow (research + plan + implement)
 ```
 
 **Explanation**:
@@ -181,7 +181,7 @@ Creates comprehensive research reports about authentication patterns. Reports sa
 ### Example 2: Higher Complexity Research
 
 ```bash
-/research"React performance optimization techniques --complexity 3"
+research-mode "React performance optimization techniques --complexity 3"
 ```
 
 **Expected Output**:
@@ -211,7 +211,7 @@ Higher complexity (3) produces more reports with deeper analysis. Useful for com
 ### Example 3: Hierarchical Supervision Mode
 
 ```bash
-/research"microservices architecture migration strategy --complexity 4"
+research-mode "microservices architecture migration strategy --complexity 4"
 ```
 
 **Expected Output**:
@@ -264,7 +264,7 @@ Complexity 4 triggers hierarchical supervision with research-sub-supervisor coor
 **Complexity Specification**:
 ```bash
 # Embedded in description (recommended)
-/research"topic --complexity 3"
+research-mode "topic --complexity 3"
 
 # Complexity defaults by research type:
 # - Quick exploration: Use complexity 1
@@ -282,22 +282,24 @@ Complexity 4 triggers hierarchical supervision with research-sub-supervisor coor
 
 **Research → Plan Chain**:
 ```bash
-/research"user authentication approaches"
+research-mode "user authentication approaches"
 # Review reports
-/plan "implement JWT authentication"  # Create plan based on research
+# Switch to plan-mode to create a plan based on the research
+plan-mode "implement JWT authentication"
 ```
 
 **Research → Research-Plan Chain**:
 ```bash
 # Alternative: Combined workflow
-/plan "implement JWT authentication"  # Does research + planning in one command
+# The plan-mode agent will perform research if necessary
+plan-mode "implement JWT authentication"
 ```
 
 **Iterative Research**:
 ```bash
-/research"API design patterns"           # Initial investigation
+research-mode "API design patterns"           # Initial investigation
 # Review findings, identify gaps
-/research"REST vs GraphQL comparison"    # Deeper dive on specific aspect
+research-mode "REST vs GraphQL comparison"    # Deeper dive on specific aspect
 ```
 
 ---
@@ -330,7 +332,7 @@ grep "REPORT_PATH" ~/.claude/tmp/workflow_research_*.sh
 find .claude/specs -name "*.md" -mmin -5
 
 # Re-run with more specific description
-/research"specific topic description"
+research-mode "specific topic description"
 ```
 
 **Note**: This error is by design - it prevents the orchestrator from bypassing subagent delegation.
@@ -347,10 +349,10 @@ Research-specialist agent failed or workflow description too vague.
 **Solution**:
 ```bash
 # Make description more specific
-/research"JWT authentication implementation in src/auth module"
+research-mode "JWT authentication implementation in src/auth module"
 
 # Increase complexity for better coverage
-/research"authentication patterns --complexity 3"
+research-mode "authentication patterns --complexity 3"
 
 # Check if research directory was created
 ls .claude/specs/
@@ -372,7 +374,7 @@ Research-specialist encountered errors or found insufficient information.
 # Good: "foo module architecture" (appropriate scope)
 
 # Increase complexity for deeper investigation
-/research"topic --complexity 3"
+research-mode "topic --complexity 3"
 ```
 
 #### Issue 4: State Machine Initialization Failed
@@ -404,15 +406,15 @@ Empty or missing description argument.
 **Solution**:
 ```bash
 # Provide description in quotes
-/research"topic description here"
+research-mode "topic description here"
 
 # Not:
 /research
 
 # Examples of good descriptions:
-/research"authentication patterns in Express.js applications"
-/research"React hooks best practices for state management"
-/research"database indexing strategies for PostgreSQL"
+research-mode "authentication patterns in Express.js applications"
+research-mode "React hooks best practices for state management"
+research-mode "database indexing strategies for PostgreSQL"
 ```
 
 #### Issue 6: Array-Related Errors ("bad substitution", "unbound variable")
@@ -432,21 +434,21 @@ Array handling issues typically caused by:
 **Solution**:
 ```bash
 # Verify explicit array declarations exist
-grep "declare -a TOPICS_ARRAY" .claude/commands/research.md
-grep "declare -a REPORT_PATHS_ARRAY" .claude/commands/research.md
+grep "declare -a TOPICS_ARRAY" .claude/agents/research-coordinator.md
+grep "declare -a REPORT_PATHS_ARRAY" .claude/agents/research-coordinator.md
 
 # Check for unquoted array expansions
-grep '\${TOPICS_ARRAY\[' .claude/commands/research.md | grep -v '"'
+grep '\${TOPICS_ARRAY\[' .claude/agents/research-coordinator.md | grep -v '"'
 
 # Verify block sizes (must be <400 lines per block)
-awk '/^```bash$/,/^```$/' .claude/commands/research.md | \
+awk '/^```bash$/,/^```$/' .claude/agents/research-coordinator.md | \
   awk 'BEGIN {count=0} /^```bash$/ {if (count > 0) print count; count=0; next} /^```$/ {next} {count++} END {print count}'
 
 # All counts should be <400
 ```
 
 **Prevention**:
-The `/research` command has been refactored to follow array handling best practices:
+The `research-mode` agent has been designed to follow array handling best practices:
 - Explicit `declare -a` for all arrays (TOPICS_ARRAY, REPORT_PATHS_ARRAY)
 - All array expansions properly quoted: `"${TOPICS_ARRAY[$i]}"`
 - Safe iteration patterns: `for i in "${!TOPICS_ARRAY[@]}"`
@@ -461,7 +463,7 @@ Enable verbose output:
 ```bash
 # Bash debugging
 set -x
-/research"topic"
+research-mode "topic"
 set +x
 ```
 
@@ -494,7 +496,7 @@ cat ~/.claude/data/state/workflow_state.json | jq '.workflow_type'
 
 - Check [Command Reference](../reference/standards/command-reference.md) for quick syntax
 - Review [Research-Specialist Agent](../../agents/research-specialist.md) for research patterns
-- See related commands: `/plan`, `/debug`, `/coordinate`
+- See related modes: `plan-mode`, `debug-mode`, `implement-mode`
 - Review [Directory Protocols](../concepts/directory-protocols.md) for specs organization
 
 ---
@@ -506,4 +508,4 @@ cat ~/.claude/data/state/workflow_state.json | jq '.workflow_type'
 - [Directory Protocols](../concepts/directory-protocols.md)
 - [State-Based Orchestration Overview](../architecture/state-based-orchestration-overview.md)
 - [Command Reference](../reference/standards/command-reference.md)
-- Related Commands: `/plan`, `/revise`, `/debug`, `/coordinate`
+- Related Modes: `plan-mode`, `revise-mode`, `debug-mode`, `implement-mode`

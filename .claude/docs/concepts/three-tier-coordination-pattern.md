@@ -2,7 +2,7 @@
 
 **Purpose**: Define the three-tier hierarchical agent coordination model with clear responsibility boundaries, delegation flows, and communication protocols.
 
-**Status**: Production-ready pattern (implemented in /research, /create-plan, /implement, /lean-plan, /lean-implement)
+**Status**: Production-ready pattern (implemented in research-mode, /create-plan, /implement, /lean-plan, /lean-implement)
 
 **Related Documentation**:
 - [Choosing Agent Architecture](../guides/architecture/choosing-agent-architecture.md) - Decision framework
@@ -113,7 +113,7 @@ Task {
   description: "Coordinate parallel research execution"
   prompt: |
     Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-coordinator.md
+    ${CLAUDE_PROJECT_DIR}/.claude/agentsresearch-mode-coordinator.md
 
     **Input Contract (Hard Barrier Pattern)**:
     - research_request: "${WORKFLOW_DESCRIPTION}"
@@ -172,14 +172,14 @@ done
 ### Examples
 
 **Command Examples**:
-- `/research` - Multi-topic research orchestration (research-coordinator)
+- `research-mode` - Multi-topic research orchestration (research-coordinator)
 - `/create-plan` - Research + planning orchestration (research-coordinator + plan-architect)
 - `/implement` - Wave-based implementation orchestration (implementer-coordinator)
 - `/lean-plan` - Lean research + planning orchestration (research-coordinator + lean-plan-architect)
 - `/lean-implement` - Hybrid Lean/software orchestration (dual coordinators)
 
 **Implementation Reference**:
-- `.claude/commands/research.md` (lines 1-400)
+- `.claude/commandsresearch-mode.md` (lines 1-400)
 - `.claude/commands/create-plan.md` (lines 1-400)
 - `.claude/commands/implement.md` (lines 1-500)
 
@@ -385,7 +385,7 @@ METADATA=$(jq -n \
 ### Examples
 
 **Coordinator Examples**:
-- `.claude/agents/research-coordinator.md` - Planning-only mode (returns invocation metadata)
+- `.claude/agentsresearch-mode-coordinator.md` - Planning-only mode (returns invocation metadata)
 - `.claude/agents/implementer-coordinator.md` - Supervisor mode (invokes specialists, extracts brief summaries)
 - `.claude/agents/testing-coordinator.md` - Supervisor mode (parallel test categories)
 
@@ -457,7 +457,7 @@ Task {
   description: "Research Mathlib theorems for group homomorphism"
   prompt: |
     Read and follow ALL behavioral guidelines from:
-    /home/user/.config/.claude/agents/research-specialist.md
+    /home/user/.config/.claude/agentsresearch-mode-specialist.md
 
     **Input Contract (Hard Barrier Pattern)**:
     - research_topic: "Mathlib theorems for group homomorphism in Lean 4"
@@ -561,7 +561,7 @@ status: complete
 ### Examples
 
 **Specialist Examples**:
-- `.claude/agents/research-specialist.md` - Research workflow (5-step pattern)
+- `.claude/agentsresearch-mode-specialist.md` - Research workflow (5-step pattern)
 - `.claude/agents/plan-architect.md` - Planning workflow (metadata-driven)
 - `.claude/agents/implementation-executor.md` - Implementation workflow (phase-driven)
 - `.claude/agents/lean-implementer.md` - Lean proof workflow (sorry markers, proof strategies)
@@ -581,7 +581,7 @@ status: complete
 
 **Flow**:
 ```
-Command (/research, /create-plan)
+Command (research-mode, /create-plan)
     |
     | 1. Pre-calculate report paths (hard barrier)
     | 2. Invoke research-coordinator
@@ -616,7 +616,7 @@ Workflow complete
 - Metadata-only passing (440 tokens vs 10,000)
 - 95-96% context reduction
 
-**Example**: `/research` with complexity ≥3 (4 research topics)
+**Example**: `research-mode` with complexity ≥3 (4 research topics)
 
 ---
 
@@ -1031,14 +1031,14 @@ The three-tier coordination pattern provides a structured approach to multi-agen
 - [Coordinator Return Signals](../reference/standards/coordinator-return-signals.md) - Signal contracts
 
 ### Agent Implementations
-- `.claude/agents/research-coordinator.md` - Planning-only coordinator
+- `.claude/agentsresearch-mode-coordinator.md` - Planning-only coordinator
 - `.claude/agents/implementer-coordinator.md` - Supervisor coordinator
-- `.claude/agents/research-specialist.md` - Research specialist
+- `.claude/agentsresearch-mode-specialist.md` - Research specialist
 - `.claude/agents/plan-architect.md` - Planning specialist
 - `.claude/agents/implementation-executor.md` - Implementation specialist
 
 ### Command Examples
-- `.claude/commands/research.md` - research-coordinator integration
+- `.claude/commandsresearch-mode.md` - research-coordinator integration
 - `.claude/commands/create-plan.md` - research-coordinator + plan-architect
 - `.claude/commands/implement.md` - implementer-coordinator integration
 - `.claude/commands/lean-plan.md` - research-coordinator (Lean mode)

@@ -30,7 +30,7 @@ When two instances run concurrently, Instance 2 overwrites Instance 1's WORKFLOW
 
 9 commands affected:
 - **CRITICAL** (3): `/create-plan`, `/lean-plan`, `/lean-implement`
-- **HIGH** (6): `/implement`, `/research`, `/debug`, `/repair`, `/revise`, `/lean-build`
+- **HIGH** (6): `/implement`, `research-mode`, `/debug`, `/repair`, `/revise`, `/lean-build`
 
 ## Solution Architecture
 
@@ -164,7 +164,7 @@ rm -f "$STATE_ID_FILE" 2>/dev/null || true
 - **Restoration Pattern**: Uses `load_workflow_state` after discovery
 - **Testing**: Test concurrent implementations of different plans
 
-### /research
+### research-mode
 
 - **Blocks Updated**: 2 (Block 1a, cleanup)
 - **Simple Pattern**: Only 2 bash blocks total
@@ -300,7 +300,7 @@ grep WORKFLOW_ID $(ls -t ~/.config/.claude/tmp/workflow_command_*.sh | head -1)
 | /lean-plan | 11 | 11 |  Complete |
 | /lean-implement | 6 | 6 |  Complete |
 | /implement | 20 | 4 |  Complete |
-| /research | 10 | 2 |  Complete |
+| research-mode | 10 | 2 |  Complete |
 | /debug | 27 | 8 |  Complete |
 | /repair | 19 | 3 |  Complete |
 | /revise | 34 | 10 |  Complete |

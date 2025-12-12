@@ -448,7 +448,7 @@ fi
 
 **Reference**: See [Command Authoring Standards](../reference/standards/command-authoring.md#pattern-2-two-step-capture-with-library-recommended-for-complex-input) for complete pattern documentation.
 
-**Commands Using This Pattern**: `/coordinate`, `/research`, `/plan`, `/revise`
+**Commands Using This Pattern**: `/coordinate`, `research-mode`, `/plan`, `/revise`
 
 ### Pattern 4: State Persistence Library
 
@@ -1108,7 +1108,7 @@ source "${CLAUDE_LIB}/workflow/workflow-state-machine.sh" 2>/dev/null || {
 
 **Problem**: Bash blocks exceeding 400 lines trigger preprocessing transformation bugs causing "bad substitution" errors, conditional failures, and array expansion issues.
 
-**Example** (from /research command before refactoring):
+**Example** (from research-mode command before refactoring):
 
 ```bash
 # Block 1: 501 lines
@@ -1138,7 +1138,7 @@ bash .claude/scripts/check-bash-block-size.sh command.md
 
 **Fix**: Split at logical boundaries (setup → execution → validation) using state persistence for cross-block communication.
 
-**Real-World Example** (/research command refactor):
+**Real-World Example** (research-mode command refactor):
 
 **Before** (BROKEN):
 ```

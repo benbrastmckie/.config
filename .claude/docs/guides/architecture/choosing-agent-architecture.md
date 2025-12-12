@@ -153,7 +153,7 @@ REPORT_PATH_2="${TOPIC_DIR}/reports/002_topic2.md"
 Task {
   subagent_type: "general-purpose"
   prompt: |
-    Read and follow: .claude/agents/research-specialist.md
+    Read and follow: .claude/agentsresearch-mode-specialist.md
     Topic: Topic 1
     Output: ${REPORT_PATH_1}
 }
@@ -161,7 +161,7 @@ Task {
 Task {
   subagent_type: "general-purpose"
   prompt: |
-    Read and follow: .claude/agents/research-specialist.md
+    Read and follow: .claude/agentsresearch-mode-specialist.md
     Topic: Topic 2
     Output: ${REPORT_PATH_2}
 }
@@ -183,7 +183,7 @@ done
 - **Agent Count**: 4+ research specialists (Mathlib, Proofs, Structure, Style)
 - **Context Without Coordinator**: 4 x 2,500 = 10,000 tokens
 - **Context With Coordinator**: 4 x 110 = 440 tokens (95.6% reduction)
-- **Commands**: `/research`, `/create-plan`, `/lean-plan`
+- **Commands**: `research-mode`, `/create-plan`, `/lean-plan`
 - **Coordinator**: research-coordinator (planning-only mode)
 
 **Use Case 2: Wave-Based Implementation** (IMPLEMENTED)
@@ -229,7 +229,7 @@ Task {
   description: "Coordinate parallel research execution"
   prompt: |
     Read and follow ALL behavioral guidelines from:
-    ${CLAUDE_PROJECT_DIR}/.claude/agents/research-coordinator.md
+    ${CLAUDE_PROJECT_DIR}/.claude/agentsresearch-mode-coordinator.md
 
     **Input Contract (Hard Barrier Pattern)**:
     - research_request: "${WORKFLOW_DESCRIPTION}"
@@ -255,7 +255,7 @@ while IFS='|' read -r topic report_path; do
     subagent_type: "general-purpose"
     description: "Research: $topic"
     prompt: |
-      Read and follow: .claude/agents/research-specialist.md
+      Read and follow: .claude/agentsresearch-mode-specialist.md
       Topic: $topic
       Output: $report_path
   }
@@ -291,7 +291,7 @@ AGGREGATED_METADATA=$(extract_coordinator_metadata "$COORDINATOR_OUTPUT")
 Task {
   subagent_type: "general-purpose"
   prompt: |
-    Read and follow: .claude/agents/research-coordinator.md
+    Read and follow: .claude/agentsresearch-mode-coordinator.md
 
     [Same input contract as supervisor mode]
 }
@@ -458,7 +458,7 @@ Large Outputs (2,500 tokens/worker):
 ## Use coordinator for 2 research topics
 Task {
   prompt: |
-    Read and follow: .claude/agents/research-coordinator.md
+    Read and follow: .claude/agentsresearch-mode-coordinator.md
     Topics: ["Topic 1", "Topic 2"]
 }
 ```
@@ -725,7 +725,7 @@ declare -a REPORT_PATHS=(...)
 
 Task {
   prompt: |
-    Read and follow: .claude/agents/research-coordinator.md
+    Read and follow: .claude/agentsresearch-mode-coordinator.md
     topics: [...]
     report_paths: [...]
 }
@@ -810,16 +810,16 @@ echo "Time Savings: ${TIME_SAVINGS}%"
 - [Brief Summary Format](../../reference/standards/brief-summary-format.md) - 96% context reduction format
 
 ### Command Examples
-- `/research` - research-coordinator integration (4+ topics)
+- `research-mode` - research-coordinator integration (4+ topics)
 - `/create-plan` - research-coordinator integration (complexity ≥3)
 - `/implement` - implementer-coordinator integration (wave-based)
 - `/lean-plan` - research-coordinator integration (Lean research)
 - `/lean-implement` - Dual coordinator integration (hybrid routing)
 
 ### Agent Implementations
-- `.claude/agents/research-coordinator.md` - Planning-only coordinator reference
+- `.claude/agentsresearch-mode-coordinator.md` - Planning-only coordinator reference
 - `.claude/agents/implementer-coordinator.md` - Supervisor coordinator reference
-- `.claude/agents/research-specialist.md` - Specialist reference
+- `.claude/agentsresearch-mode-specialist.md` - Specialist reference
 - `.claude/agents/implementation-executor.md` - Specialist reference
 
 ### Testing Standards

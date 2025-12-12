@@ -129,7 +129,7 @@ This pattern maintains optimal performance:
 
 All successful workflow commands follow this pattern:
 
-- `/research` - Pre-calculates all subtopic report paths before invoking research agents
+- `research-mode` - Pre-calculates all subtopic report paths before invoking research agents
 - `/report` - Pre-calculates report path in parent scope
 - `/plan` - Pre-calculates plan path before creating implementation plan
 - `/orchestrate` - Pre-calculates all artifact paths before delegating to agents
@@ -355,7 +355,7 @@ fi
 
 **Real-World Example: Path Validation in Commands**
 
-The `/plan`, `/revise`, `/debug`, and `/research` commands all use this pattern for relative-to-absolute path conversion:
+The `/plan`, `/revise`, `/debug`, and `research-mode` commands all use this pattern for relative-to-absolute path conversion:
 
 ```bash
 # BEFORE (vulnerable to preprocessing):
@@ -432,7 +432,7 @@ These commands have been updated to use preprocessing-safe patterns:
 - `/plan` - Uses exit code capture for path validation (line 74-78)
 - `/revise` - Uses exit code capture for path validation (line 115-119)
 - `/debug` - Uses exit code capture for path validation (line 58-62)
-- `/research` - Uses exit code capture for path validation (line 73-77)
+- `research-mode` - Uses exit code capture for path validation (line 73-77)
 - See Spec 717 for comprehensive analysis and implementation
 - See Spec 864 for preprocessing safety remediation across workflow commands
 
@@ -505,7 +505,7 @@ The following commands successfully use seq-based iteration:
 - `/create-plan` (line 1309) - topic iteration in multi-topic research
 - `/lean-plan` (line 919) - parallel research coordination
 - `/implement` (lines 1295, 1624) - phase dependency checking, wave execution
-- `/research` (lines 487, 508, 916) - fixed as of 2025-12-10
+- `research-mode` (lines 487, 508, 916) - fixed as of 2025-12-10
 
 ### Automated Detection
 

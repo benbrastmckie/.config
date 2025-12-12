@@ -288,6 +288,28 @@
       },
       "dependencies": [],
       "behavioral_file": ".claude/agents/implementer-coordinator.md"
+    },
+    "research-coordinator": {
+      "type": "hierarchical",
+      "category": "research",
+      "description": "Orchestrates multi-topic research by delegating to specialist agents",
+      "tools": [
+        "Read",
+        "Write",
+        "Bash",
+        "Task"
+      ],
+      "metrics": {
+        "total_invocations": 0,
+        "successful_invocations": 0,
+        "failed_invocations": 0,
+        "average_duration_seconds": 0.0,
+        "last_invocation": null
+      },
+      "dependencies": [
+        "research-specialist"
+      ],
+      "behavioral_file": ".claude/agents/research-coordinator.md"
     }
   }
 }

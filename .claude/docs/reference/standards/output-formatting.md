@@ -588,7 +588,7 @@ Output suppression applies to **success and progress output only**. Errors remai
 ---
 
 ## Console Summary Standards
-[Used by: /research, /plan, /debug, /implement, /revise, /repair, /expand, /collapse]
+[Used by: research-mode, /plan, /debug, /implement, /revise, /repair, /expand, /collapse]
 
 ### Purpose and Scope
 
@@ -667,7 +667,7 @@ Phases:
   • Phase 2: Complete
 ```
 
-**Omit entirely** if workflow has no phases (e.g., /research, /plan in single-phase mode).
+**Omit entirely** if workflow has no phases (e.g., research-mode, /plan in single-phase mode).
 
 #### Artifacts Section
 
@@ -840,7 +840,7 @@ EOF
 
 | Command | Primary Artifacts | Typical Phases | Next Steps Focus |
 |---------|------------------|---------------|------------------|
-| /research | 📊 Reports (1-3 files) | None | Review reports, run /plan |
+| research-mode | 📊 Reports (1-3 files) | None | Review reports, run /plan |
 | /plan | 📊 Reports, 📄 Plan | None | Review plan, run /implement |
 | /debug | 🔧 Debug, 📄 Plan | 3-4 phases | Review debug analysis, run /implement |
 | /implement | ✅ Summary, 📄 Plan | 3-5 phases | Review summary, check tests |
