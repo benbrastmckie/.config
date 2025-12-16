@@ -1,0 +1,9 @@
+# Project Number Lock File
+# This file tracks the next available project number for .opencode/specs/
+# Format: NNN (zero-padded 3-digit number)
+# 
+# Usage: Read this file, use the number, then increment and write back
+# The lock mechanism ensures unique project directory numbering
+#
+# Current next available number:
+002
