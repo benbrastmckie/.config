@@ -15,13 +15,12 @@ Organization:
 - Global keymaps use the `map()` function with descriptions
 - Buffer-specific maps use `buf_map()` in setup functions (e.g., `set_terminal_keymaps()`)
 - Plugin files should have empty `keys = {}` tables to prevent conflicting mappings
-- AI assistant toggles (Claude Code, Avante) are defined globally in this file
+- AI assistant toggles (Claude Code, OpenCode) are defined globally in this file
 
 ----------------------------------------------------------------------------------
 AI/ASSISTANT GLOBAL KEYBINDINGS                | DESCRIPTION
 ----------------------------------------------------------------------------------
-<C-c>                                          | Toggle Claude Code (overridden in Avante/Telescope)
-<C-g>                                          | Toggle Avante interface (all modes)
+<C-c>                                          | Toggle Claude Code (overridden in Telescope)
 <leader>aoo                                     | Toggle OpenCode interface (via which-key)
 
 ----------------------------------------------------------------------------------
@@ -77,17 +76,6 @@ dd                                             | Delete line and recalculate lis
 d (visual mode)                                | Delete selection and recalculate numbers
 <C-n>                                          | Toggle checkbox status ([ ] ↔ [x])
 <C-c>                                          | Toggle Claude Code (global binding, not autolist)
-
-----------------------------------------------------------------------------------
-AVANTE AI BUFFER KEYBINDINGS                   | DESCRIPTION
-----------------------------------------------------------------------------------
-<C-t>                                          | Toggle Avante interface
-<C-c>                                          | Reset/clear Avante content
-<C-m>                                          | Select model for current provider
-<C-p>                                          | Select provider and model
-<C-s>                                          | Stop AI generation
-<C-d>                                          | Select provider/model with default option
-<CR> (Enter)                                   | Create new line (prevents submission)
 --]]
 
 local M = {}
@@ -160,8 +148,6 @@ function M.setup()
     buf_map(0, "t", "<M-Left>", "<Cmd>vertical resize +2<CR>", "Resize left")
     buf_map(0, "t", "<M-l>", "<Cmd>vertical resize -2<CR>", "Resize right")
     buf_map(0, "t", "<M-h>", "<Cmd>vertical resize +2<CR>", "Resize left")
-
-    -- Note: AI keybindings (C-c for Claude Code, C-g for Avante) are defined globally in this file
   end
 
   -- Markdown-specific keybindings (called by markdown filetype autocmd)
@@ -229,36 +215,6 @@ function M.setup()
     end
   end
 
-  -- Avante AI buffer keybindings (called by Avante filetype autocmd)
-  function _G.set_avante_keymaps()
-    -- Convenience wrapper for Avante buffer-local mappings
-    local function avante_map(mode, key, cmd, description)
-      buf_map(0, mode, key, cmd, description)
-    end
-
-    -- Close Avante with q
-    -- avante_map("n", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-    -- avante_map("i", "<C-t>", "<cmd>AvanteToggle<CR>", "Toggle Avante interface")
-    avante_map("n", "q", "<cmd>AvanteToggle<CR>", "Close Avante")
-
-    -- Chat history management
-    avante_map("n", "<C-c>", "<cmd>AvanteClear history<CR>", "Clear chat history")
-    avante_map("i", "<C-c>", "<cmd>AvanteClear history<CR>", "Clear chat history")
-
-    -- AI model and provider selection
-    avante_map("n", "<C-m>", "<cmd>AvanteModel<CR>", "Select model")
-    avante_map("i", "<C-m>", "<cmd>AvanteModel<CR>", "Select model")
-    avante_map("n", "<C-s>", "<cmd>AvanteProvider<CR>", "Select provider")
-    avante_map("i", "<C-s>", "<cmd>AvanteProvider<CR>", "Select provider")
-
-    -- AI generation control
-    avante_map("n", "<C-x>", "<cmd>AvanteStop<CR>", "Stop generation")
-    avante_map("i", "<C-x>", "<cmd>AvanteStop<CR>", "Stop generation")
-
-    -- Override Enter to prevent accidental prompt submission
-    avante_map("i", "<CR>", "<CR>", "Create new line")
-  end
-
   ---------------------------------
   -- GLOBAL KEYBOARD MAPPINGS   --
   ---------------------------------
@@ -306,9 +262,7 @@ function M.setup()
   --------------------------------
 
   -- Claude Code toggle (smart session management)
-  -- Note: This global mapping is overridden by buffer-local mappings in:
-  --   - Avante buffers (<C-c> clears chat history)
-  --   - Telescope pickers (<C-c> closes picker)
+  -- Note: This global mapping is overridden by buffer-local mappings in Telescope pickers (<C-c> closes picker)
   map("n", "<C-c>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
@@ -324,12 +278,6 @@ function M.setup()
   map("t", "<C-c>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
-
-  -- Avante toggle
-  map("n", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
-  map("i", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
-  map("v", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
-  map("t", "<C-g>", "<cmd>AvanteToggle<CR>", {}, "Toggle Avante")
 
   -- OpenCode toggle
   map({ "n", "i" }, "<C-CR>", function() require("opencode").toggle() end, {}, "Toggle Opencode")

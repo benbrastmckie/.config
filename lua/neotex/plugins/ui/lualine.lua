@@ -35,18 +35,10 @@ return {
         section_separators = { left = '', right = '' },
         disabled_filetypes = {
           statusline = {
-            "Avante",
-            "AvanteInput",
-            "AvanteAsk",
-            "AvanteEdit",
             "goose-input",
             "goose-output",
           },
           winbar = {
-            "Avante",
-            "AvanteInput",
-            "AvanteAsk",
-            "AvanteEdit",
             "goose-input",
             "goose-output",
           },

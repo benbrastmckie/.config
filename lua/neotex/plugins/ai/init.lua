@@ -2,7 +2,7 @@
 -- AI Plugin Category
 --
 -- This module returns AI-related plugin specifications.
--- It includes all AI tools and integrations like Claude, Avante, etc.
+-- It includes all AI tools and integrations.
 -----------------------------------------------------------
 
 -- Helper function to require a module with error handling
@@ -43,7 +43,6 @@ local plugins = {}
 
 -- Load AI plugin specifications
 local ai_plugins = {
-  "avante",
   "claudecode",
   "goose",
   "lectic",

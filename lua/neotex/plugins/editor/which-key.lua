@@ -254,19 +254,6 @@ return {
       },
       { "<leader>as", function() require("neotex.plugins.ai.claude").resume_session() end, desc = "claude sessions", icon = "󰑐" },
 
-      -- Avante AI commands (REMOVED: 2025-12-09 - Avante plugin no longer used)
-      -- { "<leader>aa", "<cmd>AvanteAsk<CR>", desc = "avante ask", icon = "󰚩" },
-      -- { "<leader>ae", "<cmd>AvanteEdit<CR>", desc = "avante edit", icon = "󱇧", mode = { "v" } },
-      -- { "<leader>ap", "<cmd>AvanteProvider<CR>", desc = "avante provider", icon = "󰜬" },
-      -- { "<leader>am", "<cmd>AvanteModel<CR>", desc = "avante model", icon = "󰡨" },
-      -- { "<leader>ax", "<cmd>MCPHubOpen<CR>", desc = "mcp hub", icon = "󰚩" },
-
-      -- Lectic actions (only for .lec and .md files)
-      { "<leader>al", "<cmd>Lectic<CR>", desc = "lectic run", icon = "󰊠", cond = is_lectic },
-      { "<leader>al", "<cmd>LecticSubmitSelection<CR>", desc = "lectic selection", icon = "󰚟", mode = { "v" }, cond = is_lectic },
-      { "<leader>an", "<cmd>LecticCreateFile<CR>", desc = "new lectic file", icon = "󰈙", cond = is_lectic },
-      { "<leader>ak", "<cmd>LecticSelectProvider<CR>", desc = "provider select", icon = "󰚩", cond = is_lectic },
-
       -- OpenCode AI commands
       -- { "<leader>aa", function() require("opencode").ask() end, desc = "opencode ask", icon = "󰘳", mode = { "n", "v" } },
       { "<leader>ab", function() require("opencode").prompt("@buffer") end, desc = "opencode buffer context", icon = "󰈙" },

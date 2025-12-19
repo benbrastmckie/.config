@@ -20,27 +20,6 @@ function M.setup()
     }
   )
 
-  -- Handle Avante help markdown file specifically
-  api.nvim_create_autocmd(
-    "BufEnter",
-    {
-      pattern = "*/avante.nvim.md",
-      callback = function(ev)
-        vim.bo[ev.buf].filetype = "help" -- Set filetype to help
-        vim.wo.winfixbuf = true          -- Set as fixed buffer
-        vim.keymap.set("n", "q", ":close<CR>", { buffer = ev.buf, silent = true })
-      end,
-    }
-  )
-
-  -- Pre-emptively suppress terminal messages
-  api.nvim_create_autocmd({ "BufWinEnter", "WinEnter" }, {
-    pattern = { "term://*" },
-    callback = function()
-      vim.opt_local.shortmess:append("I")
-      vim.cmd([[silent! echo ""]])
-    end,
-  })
   
   -- Setup terminal keymaps and suppress native terminal message
   api.nvim_create_autocmd({ "TermOpen" }, {

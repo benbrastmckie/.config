@@ -60,31 +60,8 @@ Goose provides AI-assisted coding with multi-provider support and recipe-based w
 
 **Keybindings**: `<leader>aa` (toggle), `<leader>ae` (input focus), `<leader>ad` (diff view), `<leader>aR` (recipes), `<leader>ap` (provider)
 
-### Avante AI Assistant
-
-[Complete documentation](../lua/neotex/plugins/ai/avante/README.md)
-
-Avante provides AI assistance with MCP-Hub protocol integration and inline suggestions, offering access to 44+ external tools through Model Context Protocol.
-
-**Key Features**:
-- MCP-Hub integration with 44+ external tools
-- Multiple provider support (Claude, GPT, Gemini)
-- Inline suggestions and code completion
-- Session link sharing for collaboration
-- Floating and split window modes
-- Tool access via Model Context Protocol
-
-**Best For**:
-- Projects leveraging MCP tools and external integrations
-- Inline code suggestions and completions
-- Multi-provider workflows with tool access
-- Collaborative development with session sharing
-
-**Keybindings**: See [Avante documentation](../lua/neotex/plugins/ai/avante/README.md) for complete keybinding reference.
-
 ## Feature Comparison Matrix
 
-| Feature | Claude Code | Goose | Avante |
 |---------|-------------|-------|--------|
 | **Window Mode** | Terminal | Split | Floating/Split |
 | **Providers** | Claude only | Gemini, Claude | Claude, GPT, Gemini |

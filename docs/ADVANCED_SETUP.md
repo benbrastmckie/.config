@@ -197,7 +197,6 @@ Configure AI providers for enhanced features:
    - Set up OpenAI API key
    - Configure GPT model preferences
 
-3. **Avante AI**:
    - Configure AI assistant keybindings
    - Customize AI behavior
 

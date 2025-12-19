@@ -102,7 +102,6 @@ Plugins are organized by category in `lua/neotex/plugins/`:
 ```
 plugins/
 ├── ai/              # AI integration plugins
-│   ├── avante.lua       # Multi-provider AI assistant
 │   ├── claudecode.lua   # Claude Code integration
 │   ├── claude/          # Claude internal system
 │   └── mcphub.lua       # MCP Hub server
@@ -298,9 +297,7 @@ init.lua
 
 ```
 neotex.plugins.ai
-  ├── avante → plenary, telescope, which-key
   ├── claudecode → plenary, telescope
-  └── mcphub → avante (optional)
 
 neotex.plugins.lsp
   ├── lspconfig → mason, mason-lspconfig

@@ -157,19 +157,12 @@ See [Goose documentation](../lua/neotex/plugins/ai/goose/README.md) for complete
 - `<leader>av`: View worktrees (Claude) vs Select session (Goose)
 - `<leader>ar`: Restore worktree (Claude) vs Run session (Goose)
 - `<leader>at`: Toggle TTS (Claude) vs Stop execution (Goose)
-- `<leader>aa`: Used by Goose (Avante moved to other bindings)
-- `<leader>ae`: Focus Goose input (or Avante edit in visual mode)
 
 Both Claude Code and Goose can coexist; context determines which bindings are active.
 
-**Avante AI Commands**
 
 | Key | Mode | Description |
 |-----|------|-------------|
-| `<leader>aA` | Normal | Avante ask |
-| `<leader>ae` | Visual | Avante edit (edit selected text with AI) |
-| `<leader>aP` | Normal | Avante provider (Claude, OpenAI, Gemini) |
-| `<leader>aM` | Normal | Avante model (select model for current provider) |
 
 **Other AI Tools**
 
@@ -423,7 +416,6 @@ Active in terminal buffers (`:terminal` command or toggleterm).
 | `<Esc>` | Exit terminal mode | Switch from terminal to normal mode |
 | `<C-t>` | Toggle terminal | Close/open terminal window |
 | `<C-h>`, `<C-j>`, `<C-k>`, `<C-l>` | Navigate windows | Move between terminal and other windows |
-| `<C-a>` | Ask Avante | Ask Avante AI a question (non-lazygit only) |
 | `<M-h>`, `<M-l>`, `<M-Left>`, `<M-Right>` | Resize terminal | Adjust terminal window width |
 
 ### Markdown Buffers
@@ -442,24 +434,6 @@ Active in markdown files (`.md`, `.markdown` extensions).
 | `<C-n>` | n | Toggle checkbox | Cycle checkbox status ([ ] � [x]) |
 | `<C-c>` | n | Recalculate list | Fix all list numbering |
 | `>`, `<` | n | Indent/unindent | Adjust bullet indentation with recalculation |
-
-### Avante AI Buffers
-
-Active in Avante AI interface buffers.
-
-| Key | Mode | Action | Description |
-|-----|------|--------|-------------|
-| `<C-t>` | n,i | Toggle Avante | Show/hide Avante interface |
-| `q` | n | Toggle Avante | Quick exit from Avante |
-| `<C-c>` | n,i | Clear chat | Reset/clear Avante content |
-| `<C-m>` | n,i | Select model | Choose model for current provider |
-| `<C-s>` | n,i | Select provider | Choose provider and model |
-| `<C-x>` | n,i | Stop generation | Interrupt AI generation |
-| `<CR>` | i | New line | Prevent accidental submission |
-
----
-
-## Plugin-Specific Mappings
 
 ### Yanky (Clipboard Management)
 

@@ -156,12 +156,10 @@ Each docs/ file should:
 
 **Good Examples**:
 - "The LSP system provides code completion through blink.cmp"
-- "Avante integrates with Claude, GPT, and Gemini providers"
 - "Sessions persist automatically when exiting NeoVim"
 
 **Bad Examples**:
 - "We recently updated the LSP system to use blink.cmp"
-- "Avante now supports multiple providers including Claude"
 - "Sessions are automatically persisted (new feature!)"
 
 ### Code Examples
@@ -216,7 +214,6 @@ Keybindings should be documented:
 
 | Key | Mode | Description | Source |
 |-----|------|-------------|--------|
-| `<leader>aa` | n | Open Avante chat | `plugins/ai/avante.lua:45` |
 | `<C-c>` | n | Toggle Claude Code | `plugins/ai/claudecode.lua:23` |
 | `<leader>ac` | v | Send selection to Claude | `plugins/ai/claudecode.lua:67` |
 ```
@@ -236,7 +233,6 @@ For each plugin configuration:
 **Example**:
 
 ```markdown
-## Avante (yetone/avante.nvim)
 
 Multi-provider AI coding assistant with inline suggestions and chat interface.
 
@@ -254,7 +250,6 @@ Multi-provider AI coding assistant with inline suggestions and chat interface.
 - Diff style: Inline with unified view
 
 **Keybindings**:
-- `<leader>aa`: Open Avante chat
 - `<leader>at`: Toggle suggestions
 - `<leader>ar`: Refresh context
 

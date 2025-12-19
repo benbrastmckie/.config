@@ -7,8 +7,7 @@
 -- Features:
 -- 1. Cross-platform compatibility (NixOS and standard environments)
 -- 2. Automatic installation method detection
--- 3. Clean Avante integration with lazy loading
--- 4. Fallback to bundled installation when needed
+-- 3. Fallback to bundled installation when needed
 --
 -- Installation Methods:
 -- - NixOS/Nix users: Uses bundled installation (automatic)
@@ -28,7 +27,6 @@ return {
   },
   lazy = true,
   cmd = { "MCPHub", "MCPHubStatus", "MCPHubOpen" },
-  event = { "User AvantePreLoad" }, -- Only load when Avante needs it
   -- Keys removed - defined in which-key.lua as <leader>ah
   build = "bundled_build.lua", -- Use bundled installation
 
@@ -50,15 +48,6 @@ return {
       -- Use bundled binary for NixOS or when global install is not available
       use_bundled_binary = is_nixos or not has_global_mcphub,
 
-      -- Avante integration with auto-approval
-      extensions = {
-        avante = {
-          make_slash_commands = true,
-          auto_approve = true,
-          make_vars = true,
-          show_result_in_chat = true,
-        }
-      },
       
       -- Global auto-approval for MCP tools
       auto_approve = true,
