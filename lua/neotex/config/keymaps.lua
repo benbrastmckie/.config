@@ -262,20 +262,20 @@ function M.setup()
   --------------------------------
 
   -- Claude Code toggle (smart session management)
-  -- Note: This global mapping is overridden by buffer-local mappings in Telescope pickers (<C-c> closes picker)
-  map("n", "<C-c>", function()
+  -- Note: This global mapping is overridden by buffer-local mappings in Telescope pickers (<C-g> closes picker)
+  map("n", "<C-g>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
-  map("i", "<C-c>", function()
+  map("i", "<C-g>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
-  map("v", "<C-c>", function()
+  map("v", "<C-g>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
-  map("t", "<C-c>", function()
+  map("t", "<C-g>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
