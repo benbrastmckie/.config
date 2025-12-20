@@ -67,7 +67,7 @@ function M.setup()
     clipboard = "unnamedplus",      -- allows neovim to access the system clipboard
     mouse = "a",                    -- allow the mouse to be used in neovim
     mousefocus = true,              -- window focus follows mouse pointer (enables hover scrolling)
-    mousescroll = "ver:2,hor:4",    -- change the speed of the scroll wheel
+    mousescroll = "ver:1,hor:2",    -- change the speed of the scroll wheel
     ignorecase = true,              -- ignore case in search patterns
     smartcase = true,               -- smart case
     virtualedit = "block",          -- vitualblock mode doesn't get stuck at the end of line
