@@ -674,6 +674,9 @@ return {
       -- { "<leader>rt", "<cmd>HimalayaTest<cr>", desc = "test himalaya", icon = "󰙨" },
       { "<leader>rt", "<cmd>lua ToggleFoldingMethod()<CR>", desc = "toggle folding method", icon = "󰘖" },
       { "<leader>ru", "<cmd>cd %:p:h | Neotree reveal<CR>", desc = "update cwd", icon = "󰉖" },
+      { "<leader>rz", function()
+          require('neotex.util.sleep-inhibit').toggle()
+        end, desc = "toggle sleep inhibitor", icon = "󰒲" },
       { "<leader>rg", "<cmd>lua OpenUrlUnderCursor()<CR>", desc = "go to URL", icon = "󰖟" },
     })
 
