@@ -35,17 +35,22 @@
     {
       "project_number": 10,
       "project_name": "skill_context_file_references",
-      "status": "researched",
+      "status": "planned",
       "language": "meta",
       "priority": "medium",
       "created": "2026-01-10T23:23:46Z",
-      "last_updated": "2026-01-10T23:35:28Z",
+      "last_updated": "2026-01-10T23:37:54Z",
       "artifacts": [
         {
           "path": ".claude/specs/10_skill_context_file_references/reports/research-001.md",
           "type": "research"
+        },
+        {
+          "path": ".claude/specs/10_skill_context_file_references/plans/implementation-001.md",
+          "type": "plan"
         }
-      ]
+      ],
+      "plan_version": 1
     }
   ]
 }
