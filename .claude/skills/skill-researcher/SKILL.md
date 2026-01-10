@@ -2,7 +2,10 @@
 name: skill-researcher
 description: Conduct general research using web search, documentation, and codebase exploration. Invoke for non-Lean research tasks.
 allowed-tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch
-context: fork
+context:
+  - core/formats/report-format.md
+  - core/standards/documentation.md
+  - core/workflows/status-transitions.md
 ---
 
 # Researcher Skill

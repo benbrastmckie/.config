@@ -2,7 +2,10 @@
 name: skill-implementer
 description: Execute general implementation tasks following a plan. Invoke for non-Lean implementation work.
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-context: fork
+context:
+  - core/standards/code-patterns.md
+  - core/formats/summary-format.md
+  - core/standards/git-integration.md
 ---
 
 # Implementer Skill
