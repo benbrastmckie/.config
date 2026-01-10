@@ -1,8 +1,8 @@
 # Claude Agent System Documentation
 
-[Back to ModelChecker](../../README.md) | [Architecture](../ARCHITECTURE.md) | [CLAUDE.md](../CLAUDE.md)
+[Back to Config](../../README.md) | [Architecture](../ARCHITECTURE.md) | [CLAUDE.md](../CLAUDE.md)
 
-This documentation provides comprehensive coverage of the `.claude/` agent system for ModelChecker development.
+This documentation provides comprehensive coverage of the `.claude/` agent system for Neovim configuration development.
 
 ---
 
@@ -23,6 +23,7 @@ This documentation provides comprehensive coverage of the `.claude/` agent syste
 │   └── implementation-cycle.md # Research → Plan → Implement
 ├── guides/                      # How-to guides
 │   ├── user-installation.md    # Quick-start for new users
+│   ├── copy-claude-directory.md # Copy .claude/ to other projects
 │   ├── creating-commands.md    # How to create commands
 │   ├── creating-skills.md      # How to create skills
 │   └── context-management.md   # Context loading patterns
@@ -77,7 +78,7 @@ This documentation provides comprehensive coverage of the `.claude/` agent syste
 
 ## System Overview
 
-The `.claude/` directory implements a task management and automation system for ModelChecker development with Python/Z3.
+The `.claude/` directory implements a task management and automation system for Neovim configuration development with Lua.
 
 ### Core Components
 
@@ -136,7 +137,7 @@ Skills are specialized agents invoked by commands or the orchestrator.
 | Skill | Purpose |
 |-------|---------|
 | [skill-researcher](skills/README.md#skill-researcher) | General web and codebase research |
-| [skill-python-research](skills/README.md#skill-python-research) | Z3 API and pattern research |
+| [skill-neovim-research](skills/README.md#skill-neovim-research) | Neovim API and Lua pattern research |
 
 ### Implementation Skills
 
@@ -144,7 +145,7 @@ Skills are specialized agents invoked by commands or the orchestrator.
 |-------|---------|
 | [skill-planner](skills/README.md#skill-planner) | Create phased implementation plans |
 | [skill-implementer](skills/README.md#skill-implementer) | General implementation |
-| [skill-theory-implementation](skills/README.md#skill-theory-implementation) | TDD workflow for semantic theories |
+| [skill-neovim-implementation](skills/README.md#skill-neovim-implementation) | TDD workflow for Neovim plugins |
 
 See [skills/README.md](skills/README.md) for complete documentation.
 
@@ -216,7 +217,7 @@ Tasks route to specialized skills based on their `language` field:
 
 | Language | Research Skill | Implementation Skill |
 |----------|---------------|---------------------|
-| `python` | skill-python-research | skill-theory-implementation |
+| `lua` | skill-neovim-research | skill-neovim-implementation |
 | `general` | skill-researcher | skill-implementer |
 | `meta` | skill-researcher | skill-implementer |
 
@@ -224,7 +225,7 @@ Tasks route to specialized skills based on their `language` field:
 
 | Keywords in Description | Detected Language |
 |------------------------|-------------------|
-| Z3, pytest, theory, semantic, Python | python |
+| neovim, lua, plugin, lazy, telescope, lsp | lua |
 | agent, command, skill, meta | meta |
 | (default) | general |
 
@@ -300,35 +301,31 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 ---
 
-## Python/Z3 Development
+## Neovim/Lua Development
 
 ### Testing Commands
 
 ```bash
-# Run all tests
-PYTHONPATH=Code/src pytest Code/tests/ -v
+# Run all tests with plenary
+nvim --headless -c "PlenaryBustedDirectory tests/"
 
-# Run theory-specific tests
-PYTHONPATH=Code/src pytest Code/src/model_checker/theory_lib/logos/tests/ -v
-PYTHONPATH=Code/src pytest Code/src/model_checker/theory_lib/imposition/tests/ -v
+# Run specific test file
+nvim --headless -c "PlenaryBustedFile tests/picker/scan_recursive_spec.lua"
 
-# Run with coverage
-pytest --cov=model_checker --cov-report=term-missing
+# Run tests with minimal init
+nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/minimal_init.lua'}"
 
-# Development CLI
-cd Code && ./dev_cli.py examples/my_example.py
+# Check for Lua syntax errors
+luacheck lua/
 ```
 
-### Theory Structure
+### Plugin Structure
 
 ```
-theory_lib/{theory}/
-├── semantic.py      # Core semantic framework
-├── operators.py     # Operator registry
-├── examples.py      # Test cases
-├── iterate.py       # Theory-specific iteration
-├── __init__.py      # Public API
-└── tests/           # Unit & integration tests
+lua/neotex/plugins/{category}/
+├── init.lua         # Category loader
+├── plugin-name.lua  # Plugin configuration
+└── tests/           # Plugin-specific tests
 ```
 
 ---
@@ -336,9 +333,8 @@ theory_lib/{theory}/
 ## Related Documentation
 
 ### For New Users
-- [User Installation Guide](guides/user-installation.md) - Quick-start for Claude Code and ModelChecker
-- [Docs/installation/](../../Docs/installation/) - Comprehensive installation documentation
-- [Docs/installation/CLAUDE_CODE.md](../../Docs/installation/CLAUDE_CODE.md) - Full Claude Code guide
+- [User Installation Guide](guides/user-installation.md) - Quick-start for Claude Code
+- [Copy .claude/ Directory](guides/copy-claude-directory.md) - Copy agent system to other projects
 
 ### System Architecture
 - [ARCHITECTURE.md](../ARCHITECTURE.md) - Detailed system architecture
@@ -347,13 +343,12 @@ theory_lib/{theory}/
 ### Context Organization
 - [context/README.md](../context/README.md) - Context file organization
 - `context/core/` - Reusable patterns
-- `context/project/` - ModelChecker-specific context
+- `context/project/` - Project-specific context
 
-### ModelChecker Documentation
-- [README.md](../../README.md) - Main project documentation
-- [Code/docs/](../../Code/docs/) - Technical development standards
-- [Code/docs/core/TESTING_GUIDE.md](../../Code/docs/core/TESTING_GUIDE.md) - TDD requirements
+### Neovim Configuration
+- [nvim/CLAUDE.md](../../nvim/CLAUDE.md) - Neovim configuration guidelines
+- [nvim/docs/](../../nvim/docs/) - Neovim documentation
 
 ---
 
-[Back to ModelChecker](../../README.md) | [Architecture](../ARCHITECTURE.md) | [CLAUDE.md](../CLAUDE.md)
+[Back to Config](../../README.md) | [Architecture](../ARCHITECTURE.md) | [CLAUDE.md](../CLAUDE.md)

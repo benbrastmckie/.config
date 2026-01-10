@@ -24,17 +24,6 @@ priority_distribution:
 
 ## In Progress
 
-### 4. Create skill-neovim-research
-- **Effort**: 2 hours
-- **Status**: [IMPLEMENTING]
-- **Priority**: Medium
-- **Language**: meta
-- **Created**: 2026-01-10
-- **Dependencies**: Task 3
-- **Plan**: [implementation-001.md](.claude/specs/004_create_skill_neovim_research/plans/implementation-001.md)
-
-**Description**: Create skill-neovim-research for Neovim API research, plugin documentation, and Lua patterns. Replaces skill-python-research. Includes WebSearch, WebFetch, Read, Grep, Glob tools.
-
 ---
 
 ## High Priority
@@ -118,6 +107,21 @@ priority_distribution:
 ## Completed
 
 ### 2026-01-10
+
+### 4. Create skill-neovim-research
+- **Effort**: 2 hours
+- **Status**: [COMPLETED]
+- **Priority**: Medium
+- **Language**: meta
+- **Created**: 2026-01-10
+- **Completed**: 2026-01-10
+- **Dependencies**: Task 3
+- **Plan**: [implementation-001.md](.claude/specs/004_create_skill_neovim_research/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260110.md](.claude/specs/004_create_skill_neovim_research/summaries/implementation-summary-20260110.md)
+
+**Description**: Created skill-neovim-research for Neovim API research, plugin documentation, and Lua patterns. Replaces skill-python-research. Includes WebSearch, WebFetch, Read, Grep, Glob tools.
+
+---
 
 ### 3. Create neovim-lua.md Rule
 - **Effort**: 1.5 hours

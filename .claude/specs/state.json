@@ -19,10 +19,10 @@
     "last_assessed": "2026-01-10T19:00:00Z"
   },
   "task_counts": {
-    "active": 6,
-    "completed": 3,
+    "active": 5,
+    "completed": 4,
     "in_progress": 0,
-    "not_started": 6,
+    "not_started": 5,
     "abandoned": 0,
     "total": 9
   },
@@ -75,12 +75,12 @@
     {
       "project_number": 4,
       "project_name": "create_skill_neovim_research",
-      "status": "implementing",
+      "status": "completed",
       "language": "meta",
       "priority": "medium",
       "effort": "2 hours",
       "created": "2026-01-10T19:00:00Z",
-      "last_updated": "2026-01-10T21:45:00Z"
+      "last_updated": "2026-01-10T22:00:00Z"
     },
     {
       "project_number": 5,
