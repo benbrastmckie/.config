@@ -87,11 +87,12 @@ priority_distribution:
 
 ### 9. Create copy-claude-directory.md Guide
 - **Effort**: 1 hour
-- **Status**: [RESEARCHED]
+- **Status**: [PLANNED]
 - **Priority**: Medium
 - **Language**: meta
 - **Created**: 2026-01-10
 - **Research**: [research-001.md](.claude/specs/009_create_copy_claude_guide/reports/research-001.md)
+- **Plan**: [implementation-001.md](.claude/specs/009_create_copy_claude_guide/plans/implementation-001.md)
 
 **Description**: Create a copy-claude-directory.md guide adapted for this Neovim configuration project. Model after ModelChecker's guide, adapting for Neovim/Lua development context. Reference this project's GitHub repository. Update docs/README.md to include the new guide.
 
