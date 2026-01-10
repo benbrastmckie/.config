@@ -34,9 +34,10 @@ priority_distribution:
 
 ### 11. Fix task command implementation bug
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Priority**: Medium
 - **Language**: meta
+- **Research**: [research-001.md](.claude/specs/11_fix_task_command_implementation_bug/reports/research-001.md)
 
 **Description**: Use /home/benjamin/.config/.claude/specs/task-command-implementation-bug.md to fix this bug in an elegant way.
 

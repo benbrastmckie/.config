@@ -21,8 +21,8 @@
   "task_counts": {
     "active": 2,
     "completed": 1,
-    "in_progress": 0,
-    "not_started": 1,
+    "in_progress": 1,
+    "not_started": 0,
     "abandoned": 0,
     "total": 2
   },
@@ -35,11 +35,17 @@
     {
       "project_number": 11,
       "project_name": "fix_task_command_implementation_bug",
-      "status": "not_started",
+      "status": "researched",
       "language": "meta",
       "priority": "medium",
       "created": "2026-01-10T23:45:27Z",
-      "last_updated": "2026-01-10T23:45:27Z"
+      "last_updated": "2026-01-10T23:49:59Z",
+      "artifacts": [
+        {
+          "path": ".claude/specs/11_fix_task_command_implementation_bug/reports/research-001.md",
+          "type": "research"
+        }
+      ]
     },
     {
       "project_number": 10,
