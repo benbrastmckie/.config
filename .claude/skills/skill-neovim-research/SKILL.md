@@ -2,7 +2,10 @@
 name: skill-neovim-research
 description: Research Neovim APIs, plugin patterns, and Lua development. Invoke for lua-language research tasks.
 allowed-tools: Read, Glob, Grep, WebSearch, WebFetch
-context: fork
+context:
+  - project/neovim/domain/neovim-api.md
+  - project/neovim/domain/lua-patterns.md
+  - project/neovim/domain/plugin-ecosystem.md
 ---
 
 # Neovim Research Skill

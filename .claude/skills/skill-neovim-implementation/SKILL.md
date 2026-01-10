@@ -2,7 +2,10 @@
 name: skill-neovim-implementation
 description: Implement Neovim plugins and configurations with TDD. Invoke for lua-language implementation tasks.
 allowed-tools: Read, Write, Edit, Bash(nvim:*, luacheck)
-context: fork
+context:
+  - project/neovim/standards/lua-style-guide.md
+  - project/neovim/standards/testing-standards.md
+  - project/neovim/patterns/plugin-definition.md
 ---
 
 # Neovim Implementation Skill
