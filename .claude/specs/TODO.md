@@ -34,7 +34,7 @@ priority_distribution:
 
 ### 6. Update skill-orchestrator for Neovim Routing
 - **Effort**: 1 hour
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Priority**: High
 - **Language**: meta
 - **Created**: 2026-01-10
@@ -46,16 +46,6 @@ priority_distribution:
 ---
 
 ## Medium Priority
-
-### 7. Create Neovim Context Directory
-- **Effort**: 3 hours
-- **Status**: [IMPLEMENTING]
-- **Priority**: Medium
-- **Language**: meta
-- **Created**: 2026-01-10
-- **Plan**: [implementation-001.md](.claude/specs/007_create_neovim_context_directory/plans/implementation-001.md)
-
-**Description**: Create context/project/neovim/ directory with domain knowledge. Include subdirectories for domain concepts, standards, patterns, tools, and processes. Structure parallel to lean4/ context directory.
 
 ---
 
@@ -81,6 +71,20 @@ priority_distribution:
 ## Completed
 
 ### 2026-01-10
+
+### 7. Create Neovim Context Directory
+- **Effort**: 3 hours
+- **Status**: [COMPLETED]
+- **Priority**: Medium
+- **Language**: meta
+- **Created**: 2026-01-10
+- **Completed**: 2026-01-10
+- **Plan**: [implementation-001.md](.claude/specs/007_create_neovim_context_directory/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260110.md](.claude/specs/007_create_neovim_context_directory/summaries/implementation-summary-20260110.md)
+
+**Description**: Created context/project/neovim/ directory with domain knowledge. Includes domain concepts (4 files), standards (3 files), patterns (3 files), tools (3 files), and processes (3 files). Structure parallel to lean4/ context directory.
+
+---
 
 ### 5. Create skill-neovim-implementation
 - **Effort**: 2 hours

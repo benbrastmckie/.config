@@ -34,7 +34,7 @@ Route to appropriate skill based on task language:
 
 | Language | Research Skill | Implementation Skill |
 |----------|---------------|---------------------|
-| python | skill-python-research | skill-theory-implementation |
+| lua | skill-neovim-research | skill-neovim-implementation |
 | general | skill-researcher | skill-implementer |
 | meta | skill-researcher | skill-implementer |
 | markdown | skill-researcher | skill-implementer |
@@ -55,9 +55,9 @@ Before routing, validate task status allows the operation:
 Prepare context package for delegated skill:
 ```json
 {
-  "task_number": 259,
+  "task_number": 10,
   "task_name": "task_slug",
-  "language": "python",
+  "language": "lua",
   "status": "planned",
   "description": "Full task description",
   "artifacts": {
@@ -81,18 +81,18 @@ Prepare context package for delegated skill:
 8. Return result to caller
 ```
 
-## ModelChecker-Specific Routing
+## Neovim Configuration Routing
 
-### Python Tasks
-- **Research**: skill-python-research
-  - Z3 API exploration
-  - Codebase pattern discovery
-  - Theory implementation patterns
+### Lua Tasks
+- **Research**: skill-neovim-research
+  - Neovim API exploration
+  - Plugin documentation research
+  - Lua pattern discovery
 
-- **Implementation**: skill-theory-implementation
-  - TDD workflow enforcement
-  - pytest integration
-  - Theory component creation
+- **Implementation**: skill-neovim-implementation
+  - TDD workflow with busted/plenary
+  - lazy.nvim plugin patterns
+  - Module structure creation
 
 ### General Tasks
 - **Research**: skill-researcher
@@ -101,7 +101,15 @@ Prepare context package for delegated skill:
 
 - **Implementation**: skill-implementer
   - Direct code changes
-  - Non-theory modifications
+  - Non-Lua modifications
+
+### Language Detection Keywords
+
+| Keywords in Description | Detected Language |
+|------------------------|-------------------|
+| lua, neovim, nvim, plugin, lazy, telescope, lsp, config | lua |
+| agent, command, skill, meta, orchestrator | meta |
+| (default) | general |
 
 ## Return Format
 
