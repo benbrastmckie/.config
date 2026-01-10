@@ -1,8 +1,8 @@
 # Context Index - Lazy-Loading Quick Map
 
-**Version**: 3.0  
-**Created**: 2025-12-23  
-**Updated**: 2025-12-29 (Task 246 Phase 5 - Post-Consolidation)  
+**Version**: 4.0
+**Created**: 2025-12-23
+**Updated**: 2026-01-10 (Task 8 - Cleanup Lean/Python/Z3 artifacts, add Neovim context)
 **Purpose**: Quick reference map for on-demand context loading following OpenAgents patterns
 
 ---
@@ -47,7 +47,7 @@
 
 - **routing-logic.md** (250 lines) - Language extraction and agent mapping
   - Language extraction priority (state.json → TODO.md → default)
-  - Agent mapping tables (lean → lean-*, default → general)
+  - Agent mapping tables (lua → neovim-*, default → general)
   - Routing validation rules
   - Direct routing patterns
 
@@ -122,71 +122,35 @@ Load for: Creating new agents, commands, orchestrators
 
 Load only when needed for language-specific workflows:
 
-### Lean4 Context (project/lean4/)
+### Neovim Context (project/neovim/)
 
-Load for: Lean implementation tasks (Language: lean)
+Load for: Neovim configuration and Lua development tasks (Language: lua)
+
+**Domain**:
+- **neovim-api.md** - vim.api, vim.fn, vim.opt, vim.keymap patterns
+- **lua-patterns.md** - Module patterns, metatables, iterators, error handling
+- **plugin-ecosystem.md** - lazy.nvim, plugin categories, selection criteria
+- **lsp-integration.md** - nvim-lspconfig, mason.nvim, completion engines
 
 **Standards**:
-- **lean4-style-guide.md** - Lean 4 coding conventions
-- **proof-conventions-lean.md** - Lean-specific proof conventions
-- **proof-readability-criteria.md** - Proof readability standards
-
-**Tools**:
-- **leansearch-api.md** - LeanSearch REST API integration
-- **loogle-api.md** - Loogle CLI interface
-- **lsp-integration.md** - lean-lsp-mcp integration
-- **aesop-integration.md** - Aesop tactic integration
-- **mcp-tools-guide.md** - MCP tools overview
+- **lua-style-guide.md** - Indentation, naming, module structure
+- **documentation-requirements.md** - README format, function docs, no emojis
+- **testing-standards.md** - busted, plenary.nvim, assertion patterns
 
 **Patterns**:
-- **tactic-patterns.md** - Common tactic patterns
+- **plugin-definition.md** - lazy.nvim specs, lazy loading, dependencies
+- **keymapping.md** - vim.keymap.set, which-key, leader patterns
+- **autocommand.md** - autocmd groups, events, buffer-local
+
+**Tools**:
+- **lazy-nvim.md** - Package manager, specs, lock files
+- **telescope.md** - Pickers, finders, previewers, actions
+- **treesitter.md** - Parsers, queries, text objects
 
 **Processes**:
-- **end-to-end-proof-workflow.md** - Complete proof development workflow
-- **maintenance-workflow.md** - Proof maintenance procedures
-- **project-structure-best-practices.md** - Repository organization
-
-**Domain**:
-- **dependent-types.md** - Dependent type theory concepts
-- **key-mathematical-concepts.md** - Core mathematical concepts
-- **lean4-syntax.md** - Lean 4 syntax reference
-- **mathlib-overview.md** - Mathlib library overview
-
-**Templates**:
-- **definition-template.md** - Definition structure template
-- **new-file-template.md** - New Lean file template
-- **proof-structure-templates.md** - Proof structure templates
-- **maintenance-report-template.md** - Maintenance report template
-
-### Logic Context (project/logic/)
-
-Load for: Proof theory tasks
-
-**Standards**:
-- **proof-conventions.md** - Canonical proof principles
-- **notation-standards.md** - Notation conventions
-- **naming-conventions.md** - Naming standards
-
-**Processes**:
-- **modal-proof-strategies.md** - Modal logic proof strategies
-- **temporal-proof-strategies.md** - Temporal logic proof strategies
-- **proof-construction.md** - General proof construction
-- **verification-workflow.md** - Verification procedures
-
-**Domain**:
-- **kripke-semantics-overview.md** - Kripke semantics concepts
-- **metalogic-concepts.md** - Metalogic theory
-- **proof-theory-concepts.md** - Proof theory foundations
-- **task-semantics.md** - Task-based semantics
-
-### ModelChecker Context (project/modelchecker/)
-
-Load for: ModelChecker-specific assistance (installation, theories, Z3)
-
-- **installation.md** - Installation commands, documentation paths, troubleshooting
-- **architecture.md** - System architecture overview
-- **theories.md** - Semantic theory library documentation
-- **z3-patterns.md** - Z3 solver patterns
+- **plugin-development.md** - Structure, testing, publishing
+- **debugging.md** - Print debugging, logging, DAP, profiling
+- **maintenance.md** - Updates, performance, health checks
 
 ### Repo Context (project/repo/)
 
@@ -194,30 +158,6 @@ Load for: General markdown/documentation tasks (Language: markdown)
 
 - **project-overview.md** - Repository structure and organization
 - **self-healing-implementation-details.md** - Self-healing system details
-
-### Math Context (project/math/)
-
-Load for: Mathematical domain tasks
-
-**Algebra**:
-- **groups-and-monoids.md** - Group theory concepts
-- **rings-and-fields.md** - Ring and field theory
-
-**Order Theory**:
-- **partial-orders.md** - Partial order concepts
-
-**Lattice Theory**:
-- **lattices.md** - Lattice theory concepts
-
-**Topology**:
-- **topological-spaces.md** - Topology concepts
-
-### Physics Context (project/physics/)
-
-Load for: Physics domain tasks
-
-**Dynamical Systems**:
-- **dynamical-systems.md** - Dynamical systems concepts
 
 ---
 
@@ -273,12 +213,11 @@ Load selectively: Use grep extraction for specific tasks, avoid loading full fil
 Stage 4 loads:
 - @.claude/context/core/orchestration/delegation.md
 - @.claude/context/core/orchestration/state-management.md
-- @.claude/context/core/orchestration/state-management.md
 - grep -A 50 "^### {task_number}\." .claude/specs/TODO.md
 - @.claude/specs/state.json
 
 Language-specific:
-- If lean: @.claude/context/project/lean4/tools/leansearch-api.md
+- If lua: @.claude/context/project/neovim/domain/neovim-api.md
 - If markdown: (no additional context)
 ```
 
@@ -287,7 +226,6 @@ Language-specific:
 Stage 4 loads:
 - @.claude/context/core/orchestration/delegation.md
 - @.claude/context/core/formats/plan-format.md
-- @.claude/context/core/orchestration/state-management.md
 - @.claude/context/core/orchestration/state-management.md
 - grep -A 50 "^### {task_number}\." .claude/specs/TODO.md
 - @.claude/specs/state.json
@@ -299,15 +237,14 @@ Stage 4 loads:
 Stage 4 loads:
 - @.claude/context/core/orchestration/delegation.md
 - @.claude/context/core/orchestration/state-management.md
-- @.claude/context/core/orchestration/state-management.md
 - @.claude/context/core/system/git-commits.md
 - grep -A 50 "^### {task_number}\." .claude/specs/TODO.md
 - @.claude/specs/state.json
 - Plan file (if exists)
 
 Language-specific:
-- If lean: @.claude/context/project/lean4/standards/lean4-style-guide.md
-- If lean: @.claude/context/project/lean4/tools/lsp-integration.md
+- If lua: @.claude/context/project/neovim/standards/lua-style-guide.md
+- If lua: @.claude/context/project/neovim/standards/testing-standards.md
 ```
 
 ---
@@ -355,7 +292,7 @@ Language-specific:
 **For Git Commits**: → `core/system/git-commits.md`
 **For Task Format**: → `core/standards/tasks.md`
 **For Plan Format**: → `core/standards/plan.md`
-**For Installation Help**: → `project/modelchecker/installation.md`
-**For Z3 Patterns**: → `project/modelchecker/z3-patterns.md`
-**For Lean Style**: → `project/lean4/standards/lean4-style-guide.md`
-**For Proof Conventions**: → `project/logic/standards/proof-conventions.md`
+**For Lua Style**: → `project/neovim/standards/lua-style-guide.md`
+**For Neovim API**: → `project/neovim/domain/neovim-api.md`
+**For Testing Standards**: → `project/neovim/standards/testing-standards.md`
+**For Plugin Development**: → `project/neovim/processes/plugin-development.md`

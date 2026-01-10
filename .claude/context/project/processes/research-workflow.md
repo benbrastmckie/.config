@@ -16,24 +16,22 @@ This document describes the complete research workflow executed by the researche
 
 ### General Research
 
-**When**: Task language is markdown, python, or general  
-**Agent**: researcher  
+**When**: Task language is markdown, general, or meta
+**Agent**: researcher
 **Tools**:
 - Web search
 - Documentation review
 - File analysis
 - API exploration
 
-### Lean Research
+### Neovim/Lua Research
 
-**When**: Task language is lean  
-**Agent**: lean-research-agent  
+**When**: Task language is lua
+**Agent**: skill-neovim-research
 **Tools**:
-- LeanExplore (explore Mathlib)
-- Loogle (search by type signature)
-- LeanSearch (semantic search)
-- lean-lsp-mcp (LSP integration)
-- Web search
+- WebSearch (Neovim docs, plugin repos)
+- WebFetch (plugin documentation)
+- Read, Grep, Glob (codebase exploration)
 - Documentation review
 
 ---
@@ -54,12 +52,12 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 
 | Language | Agent | Tools Available |
 |----------|-------|----------------|
-| `lean` | `lean-research-agent` | LeanExplore, Loogle, LeanSearch, lean-lsp-mcp, web search |
+| `lua` | `skill-neovim-research` | WebSearch, WebFetch, Read, Grep, Glob |
 | `markdown` | `researcher` | Web search, documentation review |
-| `python` | `researcher` | Web search, documentation review, API docs |
 | `general` | `researcher` | Web search, documentation review |
+| `meta` | `researcher` | Read, Grep, Glob (codebase only) |
 
-**Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses Lean-specific tooling.
+**Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses language-specific tooling.
 
 ---
 
@@ -123,37 +121,34 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
    - Best practices
    - Potential pitfalls
 
-#### For Lean Research:
+#### For Neovim/Lua Research:
 
-**Action**: Conduct research using Lean-specific tools
+**Action**: Conduct research using Neovim-specific tools
 
 **Process**:
-1. Use LeanExplore to explore Mathlib:
-   - Search for relevant modules
-   - Explore type hierarchies
-   - Find related theorems
-2. Use Loogle for type-based search:
-   - Search by type signature
-   - Find functions with specific types
-   - Discover relevant lemmas
-3. Use LeanSearch for semantic search:
-   - Search by natural language description
-   - Find theorems by concept
-   - Discover related proofs
-4. Use lean-lsp-mcp for code analysis:
-   - Analyze existing code
-   - Check type information
-   - Explore dependencies
-5. Review Lean documentation:
-   - Mathlib docs
-   - Lean 4 manual
-   - Theorem proving guides
-6. Synthesize findings:
-   - Relevant Mathlib modules
-   - Applicable theorems
-   - Proof strategies
-   - Type definitions
-   - Tactic recommendations
+1. Web search for Neovim information:
+   - Search Neovim documentation
+   - Search plugin repositories
+   - Search for community guides
+   - Search for Lua patterns
+2. Fetch plugin documentation:
+   - Plugin README files
+   - API documentation
+   - Configuration examples
+3. Analyze existing codebase:
+   - Explore lua/neotex/ modules
+   - Check plugin configurations
+   - Review test patterns
+4. Review Neovim documentation:
+   - Neovim help files (:help)
+   - Plugin documentation
+   - Lua API reference
+5. Synthesize findings:
+   - Relevant vim.api functions
+   - Plugin configuration patterns
+   - Lua module structure
+   - Testing approaches
+   - Best practices
 
 **Checkpoint**: Research conducted
 
@@ -555,46 +550,6 @@ grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_numb
 
 ---
 
-## Lean-Specific Research Tools
-
-### LeanExplore
-
-**Purpose**: Explore Mathlib structure and contents  
-**Usage**: Browse modules, types, theorems  
-**Output**: Module structure, type hierarchies, theorem lists
-
-### Loogle
-
-**Purpose**: Search by type signature  
-**Usage**: Find functions/theorems with specific types  
-**Output**: Matching declarations with types and documentation
-
-**Example**:
-```
-Query: Nat → Nat → Nat
-Results: Nat.add, Nat.mul, Nat.sub, etc.
-```
-
-### LeanSearch
-
-**Purpose**: Semantic search for theorems  
-**Usage**: Search by natural language description  
-**Output**: Relevant theorems ranked by relevance
-
-**Example**:
-```
-Query: "commutativity of addition"
-Results: Nat.add_comm, Int.add_comm, etc.
-```
-
-### lean-lsp-mcp
-
-**Purpose**: LSP integration for code analysis  
-**Usage**: Type checking, go-to-definition, find references  
-**Output**: Type information, definitions, usage locations
-
----
-
 ## Performance Optimization
 
 ### Task Extraction
@@ -617,23 +572,19 @@ Load context on-demand:
 ### Tool Selection
 
 Use most appropriate tool for each research task:
-- Type-based search → Loogle
-- Semantic search → LeanSearch
-- Module exploration → LeanExplore
-- Code analysis → lean-lsp-mcp
-- General search → Web search
+- Neovim API documentation → WebSearch, WebFetch
+- Plugin research → WebSearch (GitHub, plugin repos)
+- Codebase exploration → Read, Grep, Glob
+- General web search → WebSearch
 
 ---
 
 ## References
 
-- **Command**: `.claude/command/research.md`
-- **Subagent**: `.claude/agent/subagents/researcher.md`
-- **Lean Research Agent**: `.claude/agent/subagents/lean-research-agent.md`
 - **Return Format**: `.claude/context/core/standards/subagent-return-format.md`
 - **Status Markers**: `.claude/context/core/standards/status-markers.md`
 - **Artifact Management**: `.claude/context/core/system/artifact-management.md`
-- **Lean Tools**:
-  - LeanSearch API: `.claude/context/project/lean4/tools/leansearch-api.md`
-  - Loogle API: `.claude/context/project/lean4/tools/loogle-api.md`
-  - LSP Integration: `.claude/context/project/lean4/tools/lsp-integration.md`
+- **Neovim Context**:
+  - Neovim API: `.claude/context/project/neovim/domain/neovim-api.md`
+  - Lua Patterns: `.claude/context/project/neovim/domain/lua-patterns.md`
+  - Plugin Ecosystem: `.claude/context/project/neovim/domain/plugin-ecosystem.md`

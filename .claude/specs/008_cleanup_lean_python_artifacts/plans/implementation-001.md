@@ -73,16 +73,16 @@ Final cleanup task to remove all Lean4, ModelChecker, Python/Z3, and other domai
   - [ ] Update context/project/README.md if it exists
 - **Timing:** 15 minutes
 
-### Phase 4: Update Context Index [NOT STARTED]
+### Phase 4: Update Context Index [COMPLETED]
 
 - **Goal:** Update context index to reflect changes
 - **Tasks:**
-  - [ ] Update .claude/context/index.md to remove references to deleted directories
-  - [ ] Update .claude/context/README.md to reflect new structure
-  - [ ] Ensure neovim/ context is properly indexed
+  - [x] Update .claude/context/index.md to remove references to deleted directories
+  - [x] Update .claude/context/project/processes/research-workflow.md to replace Lean references with Neovim/Lua
+  - [x] Ensure neovim/ context is properly indexed
 - **Timing:** 10 minutes
 
-### Phase 5: Final Verification [NOT STARTED]
+### Phase 5: Final Verification [IN PROGRESS]
 
 - **Goal:** Ensure no broken references remain
 - **Tasks:**
