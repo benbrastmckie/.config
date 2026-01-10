@@ -1,6 +1,0 @@
-===========================================
-Lazy Directory Creation Integration Tests
-===========================================
-
-Test Case 1: Topic structure creates only root directory
---------------------------------------------------------

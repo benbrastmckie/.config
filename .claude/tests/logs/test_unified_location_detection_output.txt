@@ -1,6 +1,0 @@
-===========================================
-Unified Location Detection Library Tests
-===========================================
-
-Section 1: Project Root Detection
------------------------------------

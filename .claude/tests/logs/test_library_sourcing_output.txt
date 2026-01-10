@@ -1,3 +1,0 @@
-Running library-sourcing.sh unit tests...
-==========================================
-[0;32m✓ PASS[0m: All 7 libraries sourced successfully

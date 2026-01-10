@@ -1,6 +1,0 @@
-==================================================
-Testing Overview Synthesis Decision Logic
-==================================================
-
-Test: research-only with 2 reports
-✓ PASS

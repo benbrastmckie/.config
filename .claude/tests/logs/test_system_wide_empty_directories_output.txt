@@ -1,8 +1,0 @@
-===========================================
-System-Wide Empty Directory Validation
-===========================================
-
-Checking: /home/benjamin/.config/.claude/specs
-
-Scanning topic directories...
-
