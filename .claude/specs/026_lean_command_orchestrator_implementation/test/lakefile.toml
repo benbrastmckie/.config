@@ -1,3 +1,0 @@
-# Minimal lakefile for testing
-name = "lean-test"
-defaultTargets = ["Test"]

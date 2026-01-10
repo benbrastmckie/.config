@@ -1,0 +1,6 @@
+{
+  "_schema_version": "1.0.0",
+  "_last_updated": "2025-12-26T00:00:00Z",
+  "_comment": "Centralized error tracking for .opencode system. Errors are logged here by commands and agents when failures occur. The /errors command analyzes this file to create fix plans.",
+  "errors": []
+}

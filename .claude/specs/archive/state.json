@@ -1,0 +1,6 @@
+{
+  "_schema_version": "1.0.0",
+  "_comment": "State tracking file for archived projects. Projects are moved here from specs/state.json when completed and archived.",
+  "_last_updated": "2026-01-09T02:30:00Z",
+  "archived_projects": []
+}
