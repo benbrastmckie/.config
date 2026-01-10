@@ -61,7 +61,7 @@ The orchestrator skill handles language-based routing. Currently routes python t
   - [ ] Remove python/lean rows
 - **Timing:** 15 minutes
 
-### Phase 3: Update Language Detection [NOT STARTED]
+### Phase 3: Update Language Detection [COMPLETED]
 
 - **Goal:** Update keyword-based language detection
 - **Tasks:**
@@ -74,7 +74,7 @@ The orchestrator skill handles language-based routing. Currently routes python t
   - [ ] Remove python, Z3, pytest, theory, semantic, lean, mathlib keywords
 - **Timing:** 15 minutes
 
-### Phase 4: Validate Routing [NOT STARTED]
+### Phase 4: Validate Routing [COMPLETED]
 
 - **Goal:** Ensure routing configuration is correct
 - **Tasks:**
