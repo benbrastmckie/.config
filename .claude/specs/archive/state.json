@@ -1,6 +1,106 @@
 {
   "_schema_version": "1.0.0",
   "_comment": "State tracking file for archived projects. Projects are moved here from specs/state.json when completed and archived.",
-  "_last_updated": "2026-01-09T02:30:00Z",
-  "archived_projects": []
+  "_last_updated": "2026-01-10T23:45:00Z",
+  "archived_projects": [
+    {
+      "project_number": 1,
+      "project_name": "update_claude_md_neovim",
+      "status": "completed",
+      "language": "meta",
+      "priority": "high",
+      "effort": "2 hours",
+      "created": "2026-01-10T19:00:00Z",
+      "last_updated": "2026-01-10T19:30:00Z",
+      "archived": "2026-01-10T23:45:00Z"
+    },
+    {
+      "project_number": 2,
+      "project_name": "update_architecture_md_neovim",
+      "status": "completed",
+      "language": "meta",
+      "priority": "high",
+      "effort": "2 hours",
+      "created": "2026-01-10T19:00:00Z",
+      "last_updated": "2026-01-10T19:45:00Z",
+      "archived": "2026-01-10T23:45:00Z"
+    },
+    {
+      "project_number": 3,
+      "project_name": "create_neovim_lua_rule",
+      "status": "completed",
+      "language": "meta",
+      "priority": "medium",
+      "effort": "1.5 hours",
+      "created": "2026-01-10T19:00:00Z",
+      "last_updated": "2026-01-10T21:30:00Z",
+      "archived": "2026-01-10T23:45:00Z"
+    },
+    {
+      "project_number": 4,
+      "project_name": "create_skill_neovim_research",
+      "status": "completed",
+      "language": "meta",
+      "priority": "medium",
+      "effort": "2 hours",
+      "created": "2026-01-10T19:00:00Z",
+      "last_updated": "2026-01-10T22:00:00Z",
+      "archived": "2026-01-10T23:45:00Z"
+    },
+    {
+      "project_number": 5,
+      "project_name": "create_skill_neovim_implementation",
+      "status": "completed",
+      "language": "meta",
+      "priority": "medium",
+      "effort": "2 hours",
+      "created": "2026-01-10T19:00:00Z",
+      "last_updated": "2026-01-10T22:47:56Z",
+      "archived": "2026-01-10T23:45:00Z"
+    },
+    {
+      "project_number": 6,
+      "project_name": "update_skill_orchestrator_neovim",
+      "status": "completed",
+      "language": "meta",
+      "priority": "high",
+      "effort": "1 hour",
+      "created": "2026-01-10T19:00:00Z",
+      "last_updated": "2026-01-10T22:52:21Z",
+      "archived": "2026-01-10T23:45:00Z"
+    },
+    {
+      "project_number": 7,
+      "project_name": "create_neovim_context_directory",
+      "status": "completed",
+      "language": "meta",
+      "priority": "medium",
+      "effort": "3 hours",
+      "created": "2026-01-10T19:00:00Z",
+      "last_updated": "2026-01-10T22:55:00Z",
+      "archived": "2026-01-10T23:45:00Z"
+    },
+    {
+      "project_number": 8,
+      "project_name": "cleanup_lean_python_artifacts",
+      "status": "completed",
+      "language": "meta",
+      "priority": "low",
+      "effort": "1 hour",
+      "created": "2026-01-10T19:00:00Z",
+      "last_updated": "2026-01-10T23:30:00Z",
+      "archived": "2026-01-10T23:45:00Z"
+    },
+    {
+      "project_number": 9,
+      "project_name": "create_copy_claude_guide",
+      "status": "completed",
+      "language": "meta",
+      "priority": "medium",
+      "effort": "1 hour",
+      "created": "2026-01-10T19:49:58Z",
+      "last_updated": "2026-01-10T21:57:38Z",
+      "archived": "2026-01-10T23:45:00Z"
+    }
+  ]
 }
