@@ -14,7 +14,7 @@ Replace the placeholder `context: fork` in all 8 SKILL.md files with explicit ar
 ### Phase 1: Update Core Workflow Skills
 
 **Estimated effort**: 30 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update skill-orchestrator with routing/delegation context

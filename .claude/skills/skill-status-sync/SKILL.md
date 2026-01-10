@@ -2,7 +2,9 @@
 name: skill-status-sync
 description: Atomically update task status across TODO.md and state.json. Invoke when task status changes.
 allowed-tools: Read, Write, Edit
-context: fork
+context:
+  - core/orchestration/state-management.md
+  - core/standards/status-markers.md
 ---
 
 # Status Sync Skill

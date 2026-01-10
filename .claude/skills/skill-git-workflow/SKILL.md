@@ -2,7 +2,9 @@
 name: skill-git-workflow
 description: Create scoped git commits for task operations. Invoke after task status changes or artifact creation.
 allowed-tools: Bash(git:*)
-context: fork
+context:
+  - core/standards/git-safety.md
+  - core/standards/git-integration.md
 ---
 
 # Git Workflow Skill
