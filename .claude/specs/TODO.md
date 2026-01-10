@@ -6,10 +6,10 @@ repository_health:
   production_readiness: initial
   last_assessed: 2026-01-10T19:00:00Z
 task_counts:
-  active: 6
-  completed: 3
+  active: 5
+  completed: 4
   in_progress: 0
-  not_started: 6
+  not_started: 5
   abandoned: 0
   total: 9
 priority_distribution:
