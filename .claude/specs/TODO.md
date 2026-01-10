@@ -1,6 +1,6 @@
 ---
 last_updated: 2026-01-10T23:45:00Z
-next_project_number: 11
+next_project_number: 12
 repository_health:
   overall_score: 0
   production_readiness: initial
@@ -31,6 +31,16 @@ priority_distribution:
 ---
 
 ## Medium Priority
+
+### 11. Fix task command implementation bug
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Priority**: Medium
+- **Language**: meta
+
+**Description**: Use /home/benjamin/.config/.claude/specs/task-command-implementation-bug.md to fix this bug in an elegant way.
+
+---
 
 ### 10. Replace 'context: fork' with explicit context file references in SKILL.md files
 - **Effort**: TBD
