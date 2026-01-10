@@ -1,20 +1,20 @@
 ---
 last_updated: 2026-01-10T19:00:00Z
-next_project_number: 9
+next_project_number: 10
 repository_health:
   overall_score: 0
   production_readiness: initial
   last_assessed: 2026-01-10T19:00:00Z
 task_counts:
-  active: 7
+  active: 8
   completed: 1
   in_progress: 0
-  not_started: 7
+  not_started: 8
   abandoned: 0
-  total: 8
+  total: 9
 priority_distribution:
   high: 3
-  medium: 4
+  medium: 5
   low: 1
 ---
 
@@ -105,6 +105,17 @@ priority_distribution:
 - **Plan**: [implementation-001.md](.claude/specs/007_create_neovim_context_directory/plans/implementation-001.md)
 
 **Description**: Create context/project/neovim/ directory with domain knowledge. Include subdirectories for domain concepts, standards, patterns, tools, and processes. Structure parallel to lean4/ context directory.
+
+---
+
+### 9. Create copy-claude-directory.md Guide
+- **Effort**: 1 hour
+- **Status**: [NOT STARTED]
+- **Priority**: Medium
+- **Language**: meta
+- **Created**: 2026-01-10
+
+**Description**: Create a copy-claude-directory.md guide adapted for this Neovim configuration project. Model after ModelChecker's guide, adapting for Neovim/Lua development context. Reference this project's GitHub repository. Update docs/README.md to include the new guide.
 
 ---
 
