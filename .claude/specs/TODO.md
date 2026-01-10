@@ -6,10 +6,10 @@ repository_health:
   production_readiness: initial
   last_assessed: 2026-01-10T19:00:00Z
 task_counts:
-  active: 8
-  completed: 1
+  active: 7
+  completed: 2
   in_progress: 0
-  not_started: 8
+  not_started: 7
   abandoned: 0
   total: 9
 priority_distribution:
@@ -29,17 +29,6 @@ priority_distribution:
 ## High Priority
 
 ---
-
-### 2. Update ARCHITECTURE.md for Neovim Configuration System
-- **Effort**: 2 hours
-- **Status**: [PLANNED]
-- **Priority**: High
-- **Language**: meta
-- **Created**: 2026-01-10
-- **Dependencies**: Task 1
-- **Plan**: [implementation-001.md](.claude/specs/002_update_architecture_md_neovim/plans/implementation-001.md)
-
-**Description**: Update ARCHITECTURE.md to describe Neovim configuration system instead of Python/Z3 semantic theory development. Replace skill descriptions, update language routing documentation, and replace testing sections with Lua/Neovim equivalents.
 
 ---
 
@@ -110,7 +99,7 @@ priority_distribution:
 
 ### 9. Create copy-claude-directory.md Guide
 - **Effort**: 1 hour
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHING]
 - **Priority**: Medium
 - **Language**: meta
 - **Created**: 2026-01-10
@@ -152,5 +141,19 @@ priority_distribution:
 - **Plan**: [implementation-001.md](.claude/specs/001_update_claude_md_neovim/plans/implementation-001.md)
 
 **Description**: Refactored CLAUDE.md from ModelChecker/Python/Z3 focus to Neovim configuration maintenance. Integrated standards from nvim/CLAUDE.md. Updated test commands, language routing, and project structure documentation for Lua/Neovim development.
+
+---
+
+### 2. Update ARCHITECTURE.md for Neovim Configuration System
+- **Effort**: 2 hours
+- **Status**: [COMPLETED]
+- **Priority**: High
+- **Language**: meta
+- **Created**: 2026-01-10
+- **Completed**: 2026-01-10
+- **Dependencies**: Task 1
+- **Plan**: [implementation-001.md](.claude/specs/002_update_architecture_md_neovim/plans/implementation-001.md)
+
+**Description**: Updated ARCHITECTURE.md to describe Neovim configuration system. Replaced skill descriptions with skill-neovim-research and skill-neovim-implementation. Updated language routing for lua/general/meta. Replaced Python/Z3 testing with Neovim/Lua testing commands.
 
 ---

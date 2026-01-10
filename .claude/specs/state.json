@@ -19,10 +19,10 @@
     "last_assessed": "2026-01-10T19:00:00Z"
   },
   "task_counts": {
-    "active": 8,
-    "completed": 1,
+    "active": 7,
+    "completed": 2,
     "in_progress": 0,
-    "not_started": 8,
+    "not_started": 7,
     "abandoned": 0,
     "total": 9
   },
@@ -35,12 +35,12 @@
     {
       "project_number": 9,
       "project_name": "create_copy_claude_guide",
-      "status": "not_started",
+      "status": "researching",
       "language": "meta",
       "priority": "medium",
       "effort": "1 hour",
       "created": "2026-01-10T19:49:58Z",
-      "last_updated": "2026-01-10T19:49:58Z"
+      "last_updated": "2026-01-10T20:00:33Z"
     },
     {
       "project_number": 1,
@@ -55,12 +55,12 @@
     {
       "project_number": 2,
       "project_name": "update_architecture_md_neovim",
-      "status": "planned",
+      "status": "completed",
       "language": "meta",
       "priority": "high",
       "effort": "2 hours",
       "created": "2026-01-10T19:00:00Z",
-      "last_updated": "2026-01-10T19:00:00Z"
+      "last_updated": "2026-01-10T19:45:00Z"
     },
     {
       "project_number": 3,
