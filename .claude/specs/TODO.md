@@ -1,6 +1,6 @@
 ---
 last_updated: 2026-01-10T23:45:00Z
-next_project_number: 10
+next_project_number: 11
 repository_health:
   overall_score: 0
   production_readiness: initial
@@ -31,6 +31,14 @@ priority_distribution:
 ---
 
 ## Medium Priority
+
+### 10. Replace 'context: fork' with explicit context file references in SKILL.md files
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Priority**: Medium
+- **Language**: meta
+
+**Description**: Replace 'context: fork' in various SKILL.md files with explicit loading of the correct context files from .claude/context/ that provide relevant information while avoiding bloat.
 
 ---
 
