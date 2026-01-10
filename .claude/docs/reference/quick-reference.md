@@ -2,7 +2,7 @@
 
 [Back to Docs](../README.md)
 
-Essential commands, paths, and patterns for the ModelChecker `.claude/` agent system.
+Essential commands, paths, and patterns for the Neovim configuration `.claude/` agent system.
 
 ---
 
@@ -88,7 +88,7 @@ Essential commands, paths, and patterns for the ModelChecker `.claude/` agent sy
 
 | Language | Research Skill | Implementation Skill |
 |----------|---------------|---------------------|
-| `python` | skill-python-research | skill-theory-implementation |
+| `lua` | skill-neovim-research | skill-neovim-implementation |
 | `general` | skill-researcher | skill-implementer |
 | `meta` | skill-researcher | skill-implementer |
 
@@ -96,7 +96,7 @@ Essential commands, paths, and patterns for the ModelChecker `.claude/` agent sy
 
 | Keywords | Language |
 |----------|----------|
-| Z3, pytest, theory, semantic, Python | python |
+| neovim, lua, plugin, telescope, lazy | lua |
 | agent, command, skill, meta | meta |
 | (default) | general |
 
@@ -139,35 +139,31 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 ---
 
-## Testing (Python/Z3)
+## Testing (Neovim/Lua)
 
 ```bash
-# All tests
-PYTHONPATH=Code/src pytest Code/tests/ -v
+# Run all tests with plenary
+nvim --headless -c "PlenaryBustedDirectory tests/"
 
-# Theory tests
-PYTHONPATH=Code/src pytest Code/src/model_checker/theory_lib/logos/tests/ -v
-PYTHONPATH=Code/src pytest Code/src/model_checker/theory_lib/imposition/tests/ -v
+# Run specific test file
+nvim --headless -c "PlenaryBustedFile tests/picker/scan_recursive_spec.lua"
 
-# With coverage
-pytest --cov=model_checker --cov-report=term-missing
+# Run tests with verbose output
+nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/minimal_init.lua'}"
 
-# Development CLI
-cd Code && ./dev_cli.py examples/my_example.py
+# Check for Lua syntax errors
+luacheck lua/
 ```
 
 ---
 
-## Theory Structure
+## Plugin Structure
 
 ```
-theory_lib/{theory}/
-├── semantic.py      # Core semantic framework
-├── operators.py     # Operator registry
-├── examples.py      # Test cases
-├── iterate.py       # Theory-specific iteration
-├── __init__.py      # Public API
-└── tests/           # Unit & integration tests
+lua/neotex/plugins/{category}/
+├── init.lua         # Category loader
+├── plugin-name.lua  # Plugin configuration
+└── utils.lua        # Category-specific utilities
 ```
 
 ---
@@ -187,7 +183,7 @@ theory_lib/{theory}/
 | Skill | Purpose |
 |-------|---------|
 | skill-researcher | General research |
-| skill-python-research | Z3/Python research |
+| skill-neovim-research | Neovim/Lua research |
 
 ### Implementation
 
@@ -195,7 +191,7 @@ theory_lib/{theory}/
 |-------|---------|
 | skill-planner | Create plans |
 | skill-implementer | General implementation |
-| skill-theory-implementation | TDD for theories |
+| skill-neovim-implementation | Neovim/Lua TDD |
 
 ---
 

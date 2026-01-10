@@ -20,7 +20,7 @@ The `context/` directory organizes domain knowledge and standards for the Claude
 
 **Structure**:
 - `core/` - Reusable patterns applicable to any project (41 files)
-- `project/` - ModelChecker-specific domain knowledge (54 files)
+- `project/` - Neovim configuration domain knowledge
 
 ---
 
@@ -39,13 +39,14 @@ The `context/` directory organizes domain knowledge and standards for the Claude
 │   ├── templates/                      # Reusable templates (5 files)
 │   └── schemas/                        # JSON/YAML schemas (2 files)
 │
-└── project/                            # ModelChecker-specific (54 files)
-    ├── modelchecker/                   # Core project context
+└── project/                            # Neovim configuration domain
+    ├── neovim/                         # Neovim/Lua domain knowledge
+    │   ├── domain/                     # Neovim API, Lua patterns
+    │   ├── standards/                  # Lua style, testing standards
+    │   ├── patterns/                   # Plugin, keymap, autocmd patterns
+    │   ├── tools/                      # lazy.nvim, telescope, treesitter
+    │   └── processes/                  # Plugin development, debugging
     ├── meta/                           # Meta-builder context
-    ├── logic/                          # Logic domain knowledge
-    ├── lean4/                          # Lean 4 knowledge (shared)
-    ├── math/                           # Math domain knowledge
-    ├── physics/                        # Physics domain knowledge
     ├── processes/                      # Development workflows
     └── repo/                           # Repository-specific
 ```
@@ -142,17 +143,37 @@ JSON and YAML schemas for validation.
 
 ## Project Context
 
-ModelChecker-specific domain knowledge and patterns.
+Neovim configuration domain knowledge and patterns.
 
-### modelchecker/ (3 files)
+### neovim/ (17 files)
 
-Core ModelChecker project context.
+Neovim/Lua development domain knowledge.
 
-| File | Purpose |
-|------|---------|
-| `architecture.md` | ModelChecker system architecture |
-| `theories.md` | Theory library overview (logos, exclusion, imposition, bimodal) |
-| `z3-patterns.md` | Z3 solver patterns and best practices |
+```
+neovim/
+├── README.md
+├── domain/                     # Core concepts (4 files)
+│   ├── neovim-api.md           # vim.api, vim.fn, vim.opt patterns
+│   ├── lua-patterns.md         # Module patterns, metatables, iterators
+│   ├── plugin-ecosystem.md     # lazy.nvim, plugin categories
+│   └── lsp-integration.md      # nvim-lspconfig, mason.nvim
+├── standards/                  # Style guides (3 files)
+│   ├── lua-style-guide.md      # Indentation, naming, module structure
+│   ├── documentation-requirements.md  # README format, no emojis
+│   └── testing-standards.md    # busted, plenary.nvim, assertions
+├── patterns/                   # Development patterns (3 files)
+│   ├── plugin-definition.md    # lazy.nvim specs, lazy loading
+│   ├── keymapping.md           # vim.keymap.set, which-key
+│   └── autocommand.md          # autocmd groups, events
+├── tools/                      # Tool guides (3 files)
+│   ├── lazy-nvim.md            # Package manager documentation
+│   ├── telescope.md            # Pickers, finders, previewers
+│   └── treesitter.md           # Parsers, queries, text objects
+└── processes/                  # Workflows (3 files)
+    ├── plugin-development.md   # Structure, testing, publishing
+    ├── debugging.md            # Print debugging, DAP, profiling
+    └── maintenance.md          # Updates, performance, health checks
+```
 
 ### meta/ (6 files)
 
@@ -166,63 +187,6 @@ Meta-builder context for creating agent systems.
 | `interview-patterns.md` | Interview patterns for system design |
 | `context-revision-guide.md` | Context revision guide |
 | `standards-checklist.md` | Standards compliance checklist |
-
-### logic/ (12 files)
-
-Logic domain knowledge for semantic theory development.
-
-```
-logic/
-├── README.md
-├── domain/                     # Core concepts
-│   ├── kripke-semantics-overview.md
-│   ├── metalogic-concepts.md
-│   ├── proof-theory-concepts.md
-│   └── task-semantics.md
-├── processes/                  # Proof workflows
-│   ├── modal-proof-strategies.md
-│   ├── proof-construction.md
-│   ├── temporal-proof-strategies.md
-│   └── verification-workflow.md
-└── standards/                  # Conventions
-    ├── naming-conventions.md
-    ├── notation-standards.md
-    └── proof-conventions.md
-```
-
-### lean4/ (22 files)
-
-Lean 4 theorem proving knowledge (shared from ProofChecker).
-
-```
-lean4/
-├── README.md
-├── domain/                     # Lean 4 concepts
-├── patterns/                   # Tactic patterns
-├── processes/                  # Proof workflows
-├── standards/                  # Style guides
-├── templates/                  # File templates
-└── tools/                      # Tool integration (LSP, LeanSearch, Loogle)
-```
-
-### math/ (5 files)
-
-Mathematical domain knowledge.
-
-| Directory | Topics |
-|-----------|--------|
-| `algebra/` | Groups, monoids, rings, fields |
-| `lattice-theory/` | Lattice structures |
-| `order-theory/` | Partial orders |
-| `topology/` | Topological spaces |
-
-### physics/ (1 file)
-
-Physics domain knowledge.
-
-| Directory | Topics |
-|-----------|--------|
-| `dynamical-systems/` | Dynamical systems concepts |
 
 ### processes/ (3 files)
 
@@ -263,7 +227,7 @@ Context is loaded based on operation type to minimize context window usage.
 
 **Tier 3: Skills (Domain-Specific)**
 - Budget: 60-80% context window (~120-160KB)
-- Files: `project/modelchecker/*`, `project/logic/*`
+- Files: `project/neovim/*`, `project/meta/*`
 - Purpose: Domain-specific work with full context
 
 ### Performance Note
@@ -304,19 +268,19 @@ Add to `core/` in the appropriate subdirectory:
 | Templates | `core/templates/` |
 | Schemas | `core/schemas/` |
 
-### For ModelChecker-Specific Context
+### For Neovim-Specific Context
 
 Add to `project/` in the appropriate subdirectory:
 
 | Type | Directory |
 |------|-----------|
-| Project architecture | `project/modelchecker/` |
+| Neovim/Lua domain | `project/neovim/domain/` |
+| Lua standards | `project/neovim/standards/` |
+| Development patterns | `project/neovim/patterns/` |
+| Tool documentation | `project/neovim/tools/` |
+| Development workflows | `project/neovim/processes/` |
 | Meta-builder | `project/meta/` |
-| Logic domain | `project/logic/` |
-| Lean 4 knowledge | `project/lean4/` |
-| Math concepts | `project/math/` |
-| Physics concepts | `project/physics/` |
-| Workflows | `project/processes/` |
+| Process workflows | `project/processes/` |
 | Repository-specific | `project/repo/` |
 
 ---

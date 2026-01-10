@@ -93,7 +93,7 @@ Conduct research on a task and create research reports.
 1. Validates task exists and status allows research
 2. Updates status to [RESEARCHING]
 3. Routes to skill based on task language:
-   - `python` → skill-python-research
+   - `lua` → skill-neovim-research
    - `general`/`meta` → skill-researcher
 4. Creates research report in `.claude/specs/{N}_{SLUG}/reports/`
 5. Updates status to [RESEARCHED]
@@ -150,7 +150,7 @@ Execute implementation with resume support.
 3. Loads implementation plan
 4. Detects resume point (phases marked [PARTIAL])
 5. Routes to skill based on language:
-   - `python` → skill-theory-implementation (TDD workflow)
+   - `lua` → skill-neovim-implementation (TDD workflow)
    - `general`/`meta` → skill-implementer
 6. Executes phases sequentially
 7. Creates git commit after each phase
@@ -253,7 +253,7 @@ Interactive system builder for agent architectures.
 **Usage**:
 ```bash
 /meta                        # Start interactive interview
-/meta "Python/Z3 development"  # Direct domain specification
+/meta "Neovim/Lua development"  # Direct domain specification
 /meta --analyze              # Analyze existing .claude/ structure
 /meta --generate             # Generate from previous interview
 ```

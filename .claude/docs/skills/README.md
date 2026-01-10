@@ -14,10 +14,10 @@ Skills are specialized agents that execute specific types of work. They are invo
 | [skill-status-sync](#skill-status-sync) | Core | Atomic multi-file status updates |
 | [skill-git-workflow](#skill-git-workflow) | Core | Scoped git commits |
 | [skill-researcher](#skill-researcher) | Research | General web and codebase research |
-| [skill-python-research](#skill-python-research) | Research | Z3 API and pattern research |
+| [skill-neovim-research](#skill-neovim-research) | Research | Neovim API and plugin research |
 | [skill-planner](#skill-planner) | Implementation | Create phased implementation plans |
 | [skill-implementer](#skill-implementer) | Implementation | General implementation |
-| [skill-theory-implementation](#skill-theory-implementation) | Implementation | TDD for semantic theories |
+| [skill-neovim-implementation](#skill-neovim-implementation) | Implementation | Neovim/Lua TDD workflow |
 
 ---
 
@@ -46,7 +46,7 @@ Central routing intelligence for the task management system.
 
 | Language | Research Skill | Implementation Skill |
 |----------|---------------|---------------------|
-| `python` | skill-python-research | skill-theory-implementation |
+| `lua` | skill-neovim-research | skill-neovim-implementation |
 | `general` | skill-researcher | skill-implementer |
 | `meta` | skill-researcher | skill-implementer |
 
@@ -167,32 +167,32 @@ General web and codebase research.
 
 ---
 
-### skill-python-research
+### skill-neovim-research
 
-Specialized Z3 API and Python pattern research.
+Specialized Neovim API and plugin pattern research.
 
-**Definition**: [.claude/skills/skill-python-research/SKILL.md](../../skills/skill-python-research/SKILL.md)
+**Definition**: [.claude/skills/skill-neovim-research/SKILL.md](../../skills/skill-neovim-research/SKILL.md)
 
 **Tools**: WebSearch, WebFetch, Read, Grep, Glob
 
 **Trigger Conditions**:
-- `/research` on python language tasks
-- Z3 API exploration needed
-- Theory implementation pattern discovery
+- `/research` on lua language tasks
+- Neovim API exploration needed
+- Plugin configuration pattern discovery
 
 **Research Targets**:
-- Z3 API patterns and solver strategies
-- Existing codebase patterns in `theory_lib/`
-- Theory implementation approaches
-- Testing strategies for semantic theories
+- Neovim API patterns (vim.api, vim.fn, vim.opt)
+- Plugin documentation and configuration
+- Lua module patterns
+- Testing strategies with plenary.nvim
 
 **Output**: `reports/research-{NNN}.md`
 
-**ModelChecker-Specific Focus**:
-- Z3 constraint patterns
-- Semantic theory structures
-- Model iteration patterns
-- pytest integration
+**Neovim-Specific Focus**:
+- vim.keymap.set patterns
+- lazy.nvim plugin specs
+- Telescope picker development
+- busted/plenary.nvim testing
 
 ---
 
@@ -268,7 +268,7 @@ General implementation skill.
 
 **Trigger Conditions**:
 - `/implement` on general or meta language tasks
-- Non-Python implementation needed
+- Non-Lua implementation needed
 
 **Responsibilities**:
 1. Load implementation plan
@@ -281,26 +281,26 @@ General implementation skill.
 
 ---
 
-### skill-theory-implementation
+### skill-neovim-implementation
 
-TDD workflow for semantic theories (Python/Z3).
+TDD workflow for Neovim plugins and configuration (Lua).
 
-**Definition**: [.claude/skills/skill-theory-implementation/SKILL.md](../../skills/skill-theory-implementation/SKILL.md)
+**Definition**: [.claude/skills/skill-neovim-implementation/SKILL.md](../../skills/skill-neovim-implementation/SKILL.md)
 
-**Tools**: Read, Write, Edit, Bash(pytest), Bash(python)
+**Tools**: Read, Write, Edit, Bash(nvim), Bash(luacheck)
 
 **Trigger Conditions**:
-- `/implement` on python language tasks
-- Semantic theory implementation
-- Z3-based code changes
+- `/implement` on lua language tasks
+- Neovim plugin implementation
+- Lua module development
 
 **TDD Workflow**:
 ```
 1. Load implementation plan
 2. For each phase:
-   a. Write failing test first
+   a. Write failing test first (busted/plenary.nvim)
    b. Implement minimal code to pass
-   c. Run tests to verify
+   c. Run tests: nvim --headless -c "PlenaryBustedFile tests/..."
    d. Refactor while tests pass
    e. Mark phase complete
    f. Git commit
@@ -311,22 +311,22 @@ TDD workflow for semantic theories (Python/Z3).
 **Testing Commands**:
 ```bash
 # Run all tests
-PYTHONPATH=Code/src pytest Code/tests/ -v
+nvim --headless -c "PlenaryBustedDirectory tests/"
 
-# Run theory-specific tests
-PYTHONPATH=Code/src pytest Code/src/model_checker/theory_lib/logos/tests/ -v
+# Run specific test file
+nvim --headless -c "PlenaryBustedFile tests/picker/scan_recursive_spec.lua"
 
-# Run with coverage
-pytest --cov=model_checker --cov-report=term-missing
+# Check Lua syntax
+luacheck lua/
 ```
 
 **Output**: `summaries/implementation-summary-{DATE}.md`
 
-**ModelChecker-Specific Patterns**:
-- Theory structure: semantic.py, operators.py, examples.py
-- Z3 constraint patterns
-- Model iteration integration
-- pytest fixtures for theories
+**Neovim-Specific Patterns**:
+- Plugin structure: init.lua, config.lua, utils.lua
+- lazy.nvim plugin specs
+- vim.keymap.set for keymaps
+- plenary.nvim test fixtures
 
 ---
 
@@ -349,9 +349,9 @@ context: fork
 
 | Field | Purpose | Example |
 |-------|---------|---------|
-| `name` | Skill identifier | `skill-python-research` |
-| `description` | Brief description | "Z3 API research" |
-| `allowed-tools` | Tools the skill can use | `Read, Write, Bash(pytest)` |
+| `name` | Skill identifier | `skill-neovim-research` |
+| `description` | Brief description | "Neovim API research" |
+| `allowed-tools` | Tools the skill can use | `Read, Write, Bash(nvim)` |
 | `context` | Context handling | `fork` |
 
 ---
