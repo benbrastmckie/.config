@@ -49,7 +49,7 @@ priority_distribution:
 
 ### 5. Create skill-neovim-implementation
 - **Effort**: 2 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Priority**: Medium
 - **Language**: meta
 - **Created**: 2026-01-10

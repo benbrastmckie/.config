@@ -85,12 +85,12 @@
     {
       "project_number": 5,
       "project_name": "create_skill_neovim_implementation",
-      "status": "planned",
+      "status": "implementing",
       "language": "meta",
       "priority": "medium",
       "effort": "2 hours",
       "created": "2026-01-10T19:00:00Z",
-      "last_updated": "2026-01-10T19:00:00Z"
+      "last_updated": "2026-01-10T22:09:43Z"
     },
     {
       "project_number": 6,
