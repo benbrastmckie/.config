@@ -6,10 +6,10 @@ repository_health:
   production_readiness: initial
   last_assessed: 2026-01-10T19:00:00Z
 task_counts:
-  active: 7
-  completed: 2
+  active: 6
+  completed: 3
   in_progress: 0
-  not_started: 7
+  not_started: 6
   abandoned: 0
   total: 9
 priority_distribution:
@@ -46,18 +46,6 @@ priority_distribution:
 ---
 
 ## Medium Priority
-
-### 3. Create neovim-lua.md Rule
-- **Effort**: 1.5 hours
-- **Status**: [PLANNED]
-- **Priority**: Medium
-- **Language**: meta
-- **Created**: 2026-01-10
-- **Plan**: [implementation-001.md](.claude/specs/003_create_neovim_lua_rule/plans/implementation-001.md)
-
-**Description**: Create neovim-lua.md rule with path scope `**/*.lua` to replace python-z3.md. Document Lua code style, module structure, lazy.nvim patterns, testing with busted/plenary.nvim, and error handling patterns.
-
----
 
 ### 4. Create skill-neovim-research
 - **Effort**: 2 hours
@@ -131,6 +119,20 @@ priority_distribution:
 ## Completed
 
 ### 2026-01-10
+
+### 3. Create neovim-lua.md Rule
+- **Effort**: 1.5 hours
+- **Status**: [COMPLETED]
+- **Priority**: Medium
+- **Language**: meta
+- **Created**: 2026-01-10
+- **Completed**: 2026-01-10
+- **Plan**: [implementation-001.md](.claude/specs/003_create_neovim_lua_rule/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260110.md](.claude/specs/003_create_neovim_lua_rule/summaries/implementation-summary-20260110.md)
+
+**Description**: Created neovim-lua.md rule with path scope `**/*.lua` to replace python-z3.md. Documented Lua code style, module structure, lazy.nvim patterns, testing with busted/plenary.nvim, and error handling patterns.
+
+---
 
 ### 1. Update CLAUDE.md for Neovim Configuration Focus
 - **Effort**: 2 hours
