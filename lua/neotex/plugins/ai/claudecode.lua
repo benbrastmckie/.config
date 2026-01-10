@@ -89,7 +89,7 @@ return {
         -- Hide from buffer lists
         vim.bo.bufhidden = "hide"
 
-        -- Note: <C-g> mapping for Claude Code toggle is defined in keymaps.lua
+        -- Note: <C-CR> mapping for Claude Code toggle is defined in keymaps.lua
       end,
     })
 

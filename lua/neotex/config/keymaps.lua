@@ -135,7 +135,7 @@ function M.setup()
       buf_map(0, "t", "<C-k>", "<Up>", "Menu up")
       buf_map(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", "Navigate left")
       buf_map(0, "t", "<C-l>", "<Cmd>wincmd l<CR>", "Navigate right")
-      buf_map(0, "t", "<C-CR>", "<cmd>lua require('opencode').toggle()<CR>", "Toggle Opencode")
+      buf_map(0, "t", "<C-g>", "<cmd>lua require('opencode').toggle()<CR>", "Toggle Opencode")
     else
       buf_map(0, "t", "<C-h>", "<Cmd>wincmd h<CR>", "Navigate left")
       buf_map(0, "t", "<C-j>", "<Cmd>wincmd j<CR>", "Navigate down")
@@ -262,25 +262,25 @@ function M.setup()
   --------------------------------
 
   -- Claude Code toggle (smart session management)
-  -- Note: This global mapping is overridden by buffer-local mappings in Telescope pickers (<C-g> closes picker)
-  map("n", "<C-g>", function()
+  map("n", "<C-CR>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
-  map("i", "<C-g>", function()
+  map("i", "<C-CR>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
-  map("v", "<C-g>", function()
+  map("v", "<C-CR>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
-  map("t", "<C-g>", function()
+  map("t", "<C-CR>", function()
     require("neotex.plugins.ai.claude").smart_toggle()
   end, {}, "Toggle Claude Code")
 
   -- OpenCode toggle
-  map({ "n", "i" }, "<C-CR>", function() require("opencode").toggle() end, {}, "Toggle Opencode")
+  -- Note: This global mapping is overridden by buffer-local mappings in Telescope pickers (<C-g> closes picker)
+  map({ "n", "i" }, "<C-g>", function() require("opencode").toggle() end, {}, "Toggle Opencode")
  
    -- OpenCode toggle: Use <leader>aoo via which-key (preserves <C-o> for jump list)
 

@@ -1,7 +1,8 @@
 -- Sleep Inhibitor for Neovim
 --
--- Prevents system sleep and idle suspension during active editing sessions
--- using systemd-inhibit. Provides manual control and automatic cleanup on exit.
+-- Prevents system sleep during active editing sessions using systemd-inhibit.
+-- Screen blanking (idle) is still allowed - only sleep is inhibited.
+-- Provides manual control and automatic cleanup on exit.
 
 local M = {}
 
@@ -14,7 +15,7 @@ M._state = {
 -- Constants
 local INHIBIT_COMMAND = {
   "systemd-inhibit",
-  "--what=sleep:idle",
+  "--what=sleep",
   "--who=Neovim",
   "--why=Preventing sleep during editing",
   "--mode=block",
@@ -23,8 +24,8 @@ local INHIBIT_COMMAND = {
 
 --- Enable sleep inhibitor
 ---
---- Starts a background systemd-inhibit process to prevent system sleep
---- and idle suspension. Only one inhibitor can be active at a time.
+--- Starts a background systemd-inhibit process to prevent system sleep.
+--- Screen blanking (idle) is still allowed. Only one inhibitor can be active at a time.
 ---
 ---@return boolean success True if inhibitor started successfully
 function M.enable()
@@ -95,7 +96,7 @@ end
 --- Disable sleep inhibitor
 ---
 --- Stops the background systemd-inhibit process and allows normal
---- system sleep and idle suspension behavior.
+--- system sleep behavior.
 ---
 ---@return boolean success True if inhibitor stopped successfully
 function M.disable()

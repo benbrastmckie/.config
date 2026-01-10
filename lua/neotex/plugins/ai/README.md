@@ -148,9 +148,8 @@ ai.send_visual_to_claude_with_prompt() -- Visual selection with prompt
 ### Keybindings (in which-key.lua and keymaps.lua)
 
 **Global AI Toggles** (defined in keymaps.lua):
-- `<C-c>` - Toggle Claude Code (all modes)
-- `<C-g>` - Toggle Avante interface (all modes)
-- `<C-o>` - Toggle OpenCode interface (all modes)
+- `<C-CR>` - Toggle Claude Code (all modes)
+- `<C-g>` - Toggle OpenCode interface (all modes)
 
 **Leader-based AI Commands** (defined in which-key.lua):
 - `<leader>a` - AI tools group

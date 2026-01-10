@@ -311,16 +311,16 @@ function M.show_session_picker()
   
   local options = {
     {
-      display = "Restore previous session" .. (age_text ~= "" and " (" .. age_text .. ")" or ""),
-      value = "continue",
-      icon = "󰊢",
-      desc = "Resume your most recent Claude conversation"
-    },
-    {
       display = "Create new session",
       value = "new",
       icon = "󰈔",
       desc = "Begin a fresh Claude conversation"
+    },
+    {
+      display = "Restore previous session" .. (age_text ~= "" and " (" .. age_text .. ")" or ""),
+      value = "continue",
+      icon = "󰊢",
+      desc = "Resume your most recent Claude conversation"
     },
     {
       display = "Browse all sessions",
