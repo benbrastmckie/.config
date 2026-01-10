@@ -59,7 +59,9 @@ Create `SKILL.md` in that directory.
 name: skill-{name}
 description: {Description}. Invoke when {trigger condition}.
 allowed-tools: Read, Write, Edit, Bash(pytest)
-context: fork
+context:
+  - core/formats/report-format.md
+  - core/standards/documentation.md
 ---
 ```
 
@@ -70,7 +72,9 @@ context: fork
 | `name` | Skill identifier | `skill-python-research` |
 | `description` | Description with trigger | "Research Z3 patterns. Invoke for python tasks." |
 | `allowed-tools` | Available tools | `Read, Write, Bash(pytest)` |
-| `context` | Context handling | `fork` |
+| `context` | Context file paths | Array of paths from `.claude/context/` |
+
+**Context Selection**: Choose only the context files your skill actually needs. See `.claude/context/index.md` for the full catalog. Keep context minimal to preserve context window budget.
 
 ### Step 4: Define Trigger Conditions
 
@@ -191,7 +195,10 @@ grep "350" .claude/specs/TODO.md
 name: skill-{domain}-research
 description: Research {domain} patterns. Invoke for {language} research tasks.
 allowed-tools: WebSearch, WebFetch, Read, Grep, Glob
-context: fork
+context:
+  - core/formats/report-format.md
+  - core/standards/documentation.md
+  - core/workflows/status-transitions.md
 ---
 ```
 
@@ -210,7 +217,10 @@ context: fork
 name: skill-{domain}-implementation
 description: Implement {domain} code. Invoke for {language} implementation.
 allowed-tools: Read, Write, Edit, Bash(pytest), Bash(python)
-context: fork
+context:
+  - core/standards/code-patterns.md
+  - core/formats/summary-format.md
+  - core/standards/git-integration.md
 ---
 ```
 
@@ -229,7 +239,10 @@ context: fork
 name: skill-planner
 description: Create implementation plans. Invoke for /plan command.
 allowed-tools: Read, Write
-context: fork
+context:
+  - core/formats/plan-format.md
+  - core/standards/task-management.md
+  - core/workflows/status-transitions.md
 ---
 ```
 
@@ -248,7 +261,8 @@ context: fork
 name: skill-{utility}
 description: {Utility function}. Invoke when {condition}.
 allowed-tools: Read, Write
-context: fork
+context:
+  - core/orchestration/state-management.md
 ---
 ```
 
@@ -377,7 +391,7 @@ Before committing:
 - [ ] `name` follows `skill-{name}` convention
 - [ ] `description` includes trigger condition
 - [ ] `allowed-tools` lists all needed tools
-- [ ] `context` is set
+- [ ] `context` lists relevant files from `.claude/context/`
 
 ### Documentation
 - [ ] Trigger conditions documented
@@ -410,7 +424,9 @@ Before committing:
 name: skill-code-analyzer
 description: Analyze code quality and patterns. Invoke for /analyze command.
 allowed-tools: Read, Grep, Glob, Write
-context: fork
+context:
+  - core/standards/code-patterns.md
+  - core/standards/documentation.md
 ---
 
 # Code Analyzer Skill

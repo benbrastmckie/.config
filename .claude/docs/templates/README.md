@@ -82,7 +82,9 @@ model: claude-opus-4-5-20251101
 name: skill-name
 description: Brief skill description
 allowed-tools: Read, Write, Edit, Bash(pytest)
-context: fork
+context:
+  - core/formats/report-format.md
+  - core/standards/documentation.md
 ---
 ```
 

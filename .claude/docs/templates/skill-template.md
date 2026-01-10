@@ -15,7 +15,9 @@ Create directory `.claude/skills/skill-{name}/` and add `SKILL.md`:
 name: skill-{name}
 description: {Brief description}. Invoke when {trigger condition}.
 allowed-tools: {Tool1, Tool2, ...}
-context: fork
+context:
+  - {category}/{context-file-1}.md
+  - {category}/{context-file-2}.md
 ---
 
 # {Skill Name} Skill
@@ -115,7 +117,23 @@ This skill activates when:
 | `name` | Yes | Skill identifier | `skill-python-research` |
 | `description` | Yes | Brief description with trigger | "Research Z3 patterns. Invoke for python research tasks." |
 | `allowed-tools` | Yes | Tools the skill can use | `Read, Write, Bash(pytest)` |
-| `context` | Yes | Context handling mode | `fork` |
+| `context` | Yes | Array of context file paths from `.claude/context/` | `[core/formats/report-format.md, core/standards/documentation.md]` |
+
+### Context Selection Guide
+
+Choose context files based on skill responsibilities:
+
+| Skill Type | Recommended Context |
+|------------|---------------------|
+| Orchestrator | `core/orchestration/routing.md`, `core/orchestration/delegation.md` |
+| Research | `core/formats/report-format.md`, `core/standards/documentation.md` |
+| Planning | `core/formats/plan-format.md`, `core/standards/task-management.md` |
+| Implementation | `core/standards/code-patterns.md`, `core/formats/summary-format.md` |
+| Git | `core/standards/git-safety.md`, `core/standards/git-integration.md` |
+| Status Sync | `core/orchestration/state-management.md`, `core/standards/status-markers.md` |
+| Neovim/Lua | `project/neovim/domain/*.md`, `project/neovim/standards/*.md` |
+
+See `.claude/context/index.md` for the full context file catalog.
 
 ### Common Tool Sets
 
@@ -136,7 +154,9 @@ This skill activates when:
 name: skill-code-analyzer
 description: Analyze code quality and patterns. Invoke when code analysis needed.
 allowed-tools: Read, Grep, Glob, Write
-context: fork
+context:
+  - core/standards/code-patterns.md
+  - core/standards/documentation.md
 ---
 
 # Code Analyzer Skill
@@ -258,7 +278,9 @@ This skill activates when:
 name: skill-python-research
 description: Research Z3 API and Python patterns. Invoke for python research tasks.
 allowed-tools: WebSearch, WebFetch, Read, Grep, Glob
-context: fork
+context:
+  - core/formats/report-format.md
+  - core/standards/documentation.md
 ---
 ```
 
@@ -275,7 +297,10 @@ context: fork
 name: skill-theory-implementation
 description: Implement semantic theories with TDD. Invoke for python implementation.
 allowed-tools: Read, Write, Edit, Bash(pytest), Bash(python)
-context: fork
+context:
+  - core/standards/code-patterns.md
+  - core/formats/summary-format.md
+  - core/standards/git-integration.md
 ---
 ```
 
@@ -300,7 +325,7 @@ Before committing a new skill:
 - [ ] `name` follows `skill-{name}` convention
 - [ ] `description` includes trigger condition
 - [ ] `allowed-tools` lists all needed tools
-- [ ] `context` is set to `fork`
+- [ ] `context` lists relevant files from `.claude/context/`
 
 ### Documentation
 - [ ] Trigger conditions documented

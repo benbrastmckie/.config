@@ -341,7 +341,9 @@ All skills have YAML frontmatter defining their behavior:
 name: skill-name
 description: Brief skill description
 allowed-tools: Read, Write, Edit, Bash(pytest)
-context: fork
+context:
+  - core/formats/report-format.md
+  - core/standards/documentation.md
 ---
 ```
 
@@ -352,7 +354,7 @@ context: fork
 | `name` | Skill identifier | `skill-neovim-research` |
 | `description` | Brief description | "Neovim API research" |
 | `allowed-tools` | Tools the skill can use | `Read, Write, Bash(nvim)` |
-| `context` | Context handling | `fork` |
+| `context` | Context files from `.claude/context/` | `[core/formats/report-format.md]` |
 
 ---
 

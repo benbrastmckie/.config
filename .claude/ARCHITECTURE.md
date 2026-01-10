@@ -435,7 +435,9 @@ The architecture supports extension through:
    name: skill-{name}
    description: What the skill does
    allowed-tools: Tool1, Tool2
-   context: fork
+   context:
+     - core/formats/relevant-format.md
+     - core/standards/relevant-standard.md
    ---
    ```
 2. Define trigger conditions and workflow
