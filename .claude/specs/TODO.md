@@ -47,19 +47,6 @@ priority_distribution:
 
 ## Medium Priority
 
-### 5. Create skill-neovim-implementation
-- **Effort**: 2 hours
-- **Status**: [IMPLEMENTING]
-- **Priority**: Medium
-- **Language**: meta
-- **Created**: 2026-01-10
-- **Dependencies**: Tasks 3, 4
-- **Plan**: [implementation-001.md](.claude/specs/005_create_skill_neovim_implementation/plans/implementation-001.md)
-
-**Description**: Create skill-neovim-implementation for Neovim plugin and config development with TDD. Replaces skill-theory-implementation. Documents busted testing workflow, lazy.nvim patterns, and Lua module structure.
-
----
-
 ### 7. Create Neovim Context Directory
 - **Effort**: 3 hours
 - **Status**: [IMPLEMENTING]
