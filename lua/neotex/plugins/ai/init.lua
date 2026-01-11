@@ -44,7 +44,6 @@ local plugins = {}
 -- Load AI plugin specifications
 local ai_plugins = {
   "claudecode",
-  "goose",
   "lectic",
   "mcp-hub",
   "opencode",

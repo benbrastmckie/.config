@@ -34,7 +34,7 @@ priority_distribution:
 
 ### 12. Remove all goose.nvim traces
 - **Effort**: 1.5 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Priority**: Medium
 - **Language**: lua
 - **Research**: [research-001.md](.claude/specs/12_remove_goose_nvim_traces/reports/research-001.md)
