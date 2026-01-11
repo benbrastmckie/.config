@@ -43,7 +43,7 @@ Refactor the `<leader>ac` Claude artifacts picker to align with the refactored .
 ### Phase 2: Remove Agent Infrastructure
 
 **Estimated effort**: 30 minutes
-**Status**: [NOT STARTED]
+**Status**: [IN PROGRESS]
 
 **Objectives**:
 1. Remove agent scanning from parser.lua (agents/ directory doesn't exist)

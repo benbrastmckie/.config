@@ -8,55 +8,12 @@ local scan = require("neotex.plugins.ai.claude.commands.picker.utils.scan")
 local metadata = require("neotex.plugins.ai.claude.commands.picker.artifacts.metadata")
 local helpers = require("neotex.plugins.ai.claude.commands.picker.utils.helpers")
 
---- Format TTS file entry for display
---- @param file table TTS file data
---- @param indent_char string Tree character (├─ or └─)
---- @return string Formatted display string
-local function format_tts_file(file, indent_char)
-  local prefix = file.is_local and "*" or " "
-  local role_short = ({
-    config = "[C]",
-    dispatcher = "[D]",
-    library = "[L]",
-  })[file.role] or "[?]"
-
-  return string.format(
-    "%s %s %-38s %s %s",
-    prefix,
-    indent_char,
-    file.name,
-    role_short,
-    file.description or ""
-  )
-end
-
---- Format agent entry for display
---- @param agent table Agent data
---- @param indent_char string Tree character (├─ or └─)
---- @return string Formatted display string
-local function format_agent(agent, indent_char)
-  local prefix = agent.is_local and "*" or " "
-
-  -- Strip redundant "Specialized in " prefix if present
-  local description = agent.description or ""
-  description = description:gsub("^Specialized in ", "")
-
-  return string.format(
-    "%s %s %-38s %s",
-    prefix,
-    indent_char,
-    agent.name,
-    description
-  )
-end
-
 --- Format hook event header for display
 --- @param event_name string Hook event name
 --- @param indent_char string Tree character (├─ or └─)
 --- @param event_hooks table Array of hooks associated with this event
 --- @return string Formatted display string
 local function format_hook_event(event_name, indent_char, event_hooks)
-  -- Determine if event has any local hooks
   local has_local_hook = false
   if event_hooks then
     for _, hook in ipairs(event_hooks) do
@@ -118,31 +75,6 @@ local function format_command(command, indent_char, is_dependent)
   end
 end
 
---- Get agents for a specific command
---- @param command_name string Name of the command
---- @param agent_deps table Agent dependencies map
---- @param agents table All agents
---- @return table Array of agents used by this command
-local function get_agents_for_command(command_name, agent_deps, agents)
-  local command_agents = {}
-  local agent_names = agent_deps[command_name] or {}
-
-  for _, agent_name in ipairs(agent_names) do
-    for _, agent in ipairs(agents) do
-      if agent.name == agent_name then
-        table.insert(command_agents, agent)
-        break
-      end
-    end
-  end
-
-  table.sort(command_agents, function(a, b)
-    return a.name < b.name
-  end)
-
-  return command_agents
-end
-
 --- Create entries for docs section
 --- @return table Array of entries
 function M.create_docs_entries()
@@ -157,7 +89,6 @@ function M.create_docs_entries()
   if #all_docs > 0 then
     table.sort(all_docs, function(a, b) return a.name < b.name end)
 
-    -- Insert doc items FIRST (appear last in descending sort)
     for i, doc in ipairs(all_docs) do
       local is_first = (i == 1)
       local indent_char = helpers.get_tree_char(is_first)
@@ -178,7 +109,6 @@ function M.create_docs_entries()
       })
     end
 
-    -- Insert heading LAST (appears at TOP)
     table.insert(entries, {
       is_heading = true,
       name = "~~~docs_heading",
@@ -375,111 +305,6 @@ function M.create_tests_entries()
   return entries
 end
 
---- Create entries for TTS files section
---- @param tts_files table TTS files from parser
---- @return table Array of entries
-function M.create_tts_entries(tts_files)
-  local entries = {}
-
-  if #tts_files > 0 then
-    -- Sort TTS files by role (config, dispatcher, library) then name
-    table.sort(tts_files, function(a, b)
-      if a.role ~= b.role then
-        local role_order = { config = 1, dispatcher = 2, library = 3 }
-        return (role_order[a.role] or 99) < (role_order[b.role] or 99)
-      end
-      return a.name < b.name
-    end)
-
-    for i, file in ipairs(tts_files) do
-      local is_first = (i == 1)
-      local indent_char = helpers.get_tree_char(is_first)
-
-      entries[#entries + 1] = {
-        display = format_tts_file(file, indent_char),
-        entry_type = "tts_file",
-        name = file.name,
-        description = file.description,
-        filepath = file.filepath,
-        is_local = file.is_local,
-        role = file.role,
-        directory = file.directory,
-        variables = file.variables,
-        line_count = file.line_count,
-        ordinal = "zzzz_tts_" .. file.name
-      }
-    end
-
-    table.insert(entries, {
-      is_heading = true,
-      name = "~~~tts_heading",
-      display = string.format("%-40s %s", "[TTS Files]", "Text-to-speech system files"),
-      entry_type = "heading",
-      ordinal = "tts"
-    })
-  end
-
-  return entries
-end
-
---- Create entries for standalone agents section
---- @param structure table Extended structure from parser
---- @return table Array of entries
-function M.create_standalone_agents_entries(structure)
-  local entries = {}
-
-  -- Identify agents not associated with any command
-  local used_agents = {}
-  for _, primary_data in pairs(structure.primary_commands) do
-    local command_agents = get_agents_for_command(
-      primary_data.command.name,
-      structure.agent_dependencies or {},
-      structure.agents or {}
-    )
-    for _, agent in ipairs(command_agents) do
-      used_agents[agent.name] = true
-    end
-  end
-
-  -- Find standalone agents
-  local standalone_agents = {}
-  for _, agent in ipairs(structure.agents or {}) do
-    if not used_agents[agent.name] then
-      table.insert(standalone_agents, agent)
-    end
-  end
-
-  table.sort(standalone_agents, function(a, b)
-    return a.name < b.name
-  end)
-
-  if #standalone_agents > 0 then
-    for i, agent in ipairs(standalone_agents) do
-      local is_first = (i == 1)
-      local indent_char = helpers.get_tree_char(is_first)
-
-      table.insert(entries, {
-        name = agent.name,
-        display = format_agent(agent, indent_char),
-        agent = agent,
-        is_primary = true,
-        entry_type = "agent",
-        ordinal = "agent_" .. agent.name
-      })
-    end
-
-    table.insert(entries, {
-      is_heading = true,
-      name = "~~~agents_heading",
-      display = string.format("%-40s %s", "[Agents]", "Standalone AI agents"),
-      entry_type = "heading",
-      ordinal = "agents"
-    })
-  end
-
-  return entries
-end
-
 --- Create entries for hooks section
 --- @param structure table Extended structure from parser
 --- @return table Array of entries
@@ -498,7 +323,6 @@ function M.create_hooks_entries(structure)
     for i, event_name in ipairs(sorted_event_names) do
       local event_hook_names = hook_events[event_name]
 
-      -- Get full hook data for this event
       local event_hooks = {}
       for _, hook_name in ipairs(event_hook_names) do
         for _, hook in ipairs(hooks) do
@@ -539,48 +363,20 @@ end
 function M.create_commands_entries(structure)
   local entries = {}
 
-  -- Collect and sort primary command names
   local sorted_primary_names = {}
   for primary_name, _ in pairs(structure.primary_commands) do
     table.insert(sorted_primary_names, primary_name)
   end
   table.sort(sorted_primary_names)
 
-  -- Add primary commands with their dependents AND agents
   for _, primary_name in ipairs(sorted_primary_names) do
     local primary_data = structure.primary_commands[primary_name]
     local primary_command = primary_data.command
-
-    -- Get agents for this command
-    local command_agents = get_agents_for_command(
-      primary_name,
-      structure.agent_dependencies or {},
-      structure.agents or {}
-    )
-
     local dependents = primary_data.dependents
-    local total_items = #dependents + #command_agents
 
-    -- Insert agents FIRST (appear LAST in command tree)
-    for i, agent in ipairs(command_agents) do
-      local agent_position = #dependents + i
-      local is_last = (agent_position == total_items)
-      local tree_char = is_last and "└─" or "├─"
-
-      table.insert(entries, {
-        name = agent.name,
-        display = format_agent(agent, tree_char),
-        command = primary_command,
-        agent = agent,
-        is_primary = false,
-        entry_type = "agent",
-        ordinal = "command_" .. primary_name .. "_agent_" .. agent.name
-      })
-    end
-
-    -- Insert dependents AFTER agents
+    -- Insert dependents
     for i, dep in ipairs(dependents) do
-      local is_last = (i == #dependents and #command_agents == 0)
+      local is_last = (i == #dependents)
       local tree_char = is_last and "└─" or "├─"
 
       table.insert(entries, {
@@ -594,8 +390,8 @@ function M.create_commands_entries(structure)
       })
     end
 
-    -- Insert primary command LAST (appears FIRST in tree)
-    local has_children = total_items > 0
+    -- Insert primary command
+    local has_children = #dependents > 0
     local tree_char = has_children and "├─" or "└─"
 
     table.insert(entries, {
@@ -608,7 +404,6 @@ function M.create_commands_entries(structure)
     })
   end
 
-  -- Add [Commands] heading
   table.insert(entries, {
     is_heading = true,
     name = "~~~commands_heading",
@@ -625,20 +420,18 @@ end
 function M.create_special_entries()
   local entries = {}
 
-  -- Load all artifacts entry (appears at bottom)
   table.insert(entries, {
     is_load_all = true,
     name = "~~~load_all",
     display = string.format(
       "%-40s %s",
       "[Load All Artifacts]",
-      "Sync commands, agents, hooks, TTS files"
+      "Sync commands, hooks, skills, docs, lib"
     ),
     command = nil,
     entry_type = "special"
   })
 
-  -- Keyboard shortcuts help entry
   table.insert(entries, {
     is_help = true,
     name = "~~~help",
@@ -699,25 +492,13 @@ function M.create_picker_entries(structure)
     table.insert(all_entries, entry)
   end
 
-  -- 7. TTS files section
-  local tts = M.create_tts_entries(structure.tts_files or {})
-  for _, entry in ipairs(tts) do
-    table.insert(all_entries, entry)
-  end
-
-  -- 8. Standalone agents section
-  local standalone_agents = M.create_standalone_agents_entries(structure)
-  for _, entry in ipairs(standalone_agents) do
-    table.insert(all_entries, entry)
-  end
-
-  -- 9. Hooks section
+  -- 7. Hooks section
   local hooks = M.create_hooks_entries(structure)
   for _, entry in ipairs(hooks) do
     table.insert(all_entries, entry)
   end
 
-  -- 10. Commands section (appears at top)
+  -- 8. Commands section (appears at top)
   local commands = M.create_commands_entries(structure)
   for _, entry in ipairs(commands) do
     table.insert(all_entries, entry)

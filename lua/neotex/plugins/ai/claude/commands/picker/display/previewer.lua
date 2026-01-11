@@ -5,7 +5,6 @@ local M = {}
 
 -- Dependencies
 local previewers = require("telescope.previewers")
-local helpers = require("neotex.plugins.ai.claude.commands.picker.utils.helpers")
 
 -- Maximum lines for doc previews (to avoid performance issues)
 local MAX_PREVIEW_LINES = 150
@@ -62,7 +61,6 @@ local function preview_heading(self, entry)
   local ordinal = entry.value.ordinal or "Unknown"
   local readme_path = nil
 
-  -- Try local project first, then global
   local local_path = vim.fn.getcwd() .. "/.claude/" .. ordinal .. "/README.md"
   local global_path = vim.fn.expand("~/.config/.claude/" .. ordinal .. "/README.md")
 
@@ -73,7 +71,6 @@ local function preview_heading(self, entry)
   end
 
   if readme_path then
-    -- Read README content with line limit
     local success, file = pcall(io.open, readme_path, "r")
     if success and file then
       local lines = {}
@@ -87,7 +84,6 @@ local function preview_heading(self, entry)
       end
       file:close()
 
-      -- Get total line count to check if truncation needed
       local total_lines = #vim.fn.readfile(readme_path)
       if total_lines > MAX_PREVIEW_LINES then
         table.insert(lines, "")
@@ -104,7 +100,6 @@ local function preview_heading(self, entry)
     end
   end
 
-  -- Fallback to generic text
   vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {
     "Category: " .. ordinal,
     "",
@@ -143,32 +138,32 @@ local function preview_help(self)
     "Artifact Types:",
     "  [Commands]     - Claude Code slash commands",
     "    Primary        - Main workflow commands",
-    "    ├─ command     - Supporting commands called by primary",
-    "    └─ agent       - Agents used by this command",
-    "",
-    "  [Agents]       - Custom AI agent definitions",
-    "    Standalone agents",
-    "    Also shown under commands that use them",
+    "    └─ command     - Supporting commands called by primary",
     "",
     "  [Hook Events]  - Event triggers for hooks",
     "    Hook files displayed in metadata preview area",
     "",
-    "  [TTS Files]    - Text-to-speech system files",
-    "    config.json    - Configuration",
-    "    dispatcher.sh  - Event router",
-    "    library.sh     - Message generator",
+    "  [Skills]       - SKILL.md files for model-invoked capabilities",
+    "",
+    "  [Docs]         - Integration guides and documentation",
+    "",
+    "  [Lib]          - Utility libraries for sourcing",
+    "",
+    "  [Scripts]      - Standalone CLI tools",
+    "",
+    "  [Tests]        - Test suites",
     "",
     "Indicators:",
     "  *       - Artifact defined locally in project (.claude/)",
     "            Otherwise a global artifact from ~/.config/.claude/",
     "",
     "File Operations:",
-    "  Ctrl-l/u/s  - Commands, Agents, Hooks, TTS, Templates, Lib, Docs",
+    "  Ctrl-l/u/s  - Commands, Hooks, Skills, Templates, Lib, Docs",
     "  Ctrl-e      - Edit file (all artifact types)",
     "                Preserves executable permissions for .sh files",
     "",
     "  [Load All] - Batch synchronizes all artifact types",
-    "               including commands, agents, hooks, and TTS files.",
+    "               including commands, hooks, skills, and docs.",
     "               Replaces local with global artifacts with the same",
     "               name while preserving local-only artifacts.",
     "",
@@ -183,53 +178,33 @@ local function preview_load_all(self)
   local project_dir = vim.fn.getcwd()
   local global_dir = vim.fn.expand("~/.config")
 
-  -- Scan all artifact types
   local commands = scan_directory_for_sync(global_dir, project_dir, "commands", "*.md")
-  local agents = scan_directory_for_sync(global_dir, project_dir, "agents", "*.md")
   local hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "*.sh")
-  local tts_hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "tts-*.sh")
-  local tts_files = scan_directory_for_sync(global_dir, project_dir, "tts", "*.sh")
+  local skills = scan_directory_for_sync(global_dir, project_dir, "skills", "*.md")
   local templates = scan_directory_for_sync(global_dir, project_dir, "templates", "*.yaml")
   local lib_utils = scan_directory_for_sync(global_dir, project_dir, "lib", "*.sh")
   local docs = scan_directory_for_sync(global_dir, project_dir, "docs", "*.md")
-  local agents_prompts = scan_directory_for_sync(global_dir, project_dir, "agents/prompts", "*.md")
-  local agents_shared = scan_directory_for_sync(global_dir, project_dir, "agents/shared", "*.md")
-  local standards = scan_directory_for_sync(global_dir, project_dir, "specs/standards", "*.md")
+  local scripts = scan_directory_for_sync(global_dir, project_dir, "scripts", "*.sh")
+  local tests = scan_directory_for_sync(global_dir, project_dir, "tests", "test_*.sh")
+  local rules = scan_directory_for_sync(global_dir, project_dir, "rules", "*.md")
   local settings = scan_directory_for_sync(global_dir, project_dir, "", "settings.json")
 
-  -- Merge TTS files
-  local all_tts = {}
-  for _, file in ipairs(tts_hooks) do
-    table.insert(all_tts, file)
-  end
-  for _, file in ipairs(tts_files) do
-    table.insert(all_tts, file)
-  end
-
-  -- Merge agent protocols
-  local all_protocols = {}
-  for _, file in ipairs(agents_prompts) do
-    table.insert(all_protocols, file)
-  end
-  for _, file in ipairs(agents_shared) do
-    table.insert(all_protocols, file)
-  end
-
   local cmd_copy, cmd_replace = count_actions(commands)
-  local agt_copy, agt_replace = count_actions(agents)
   local hook_copy, hook_replace = count_actions(hooks)
-  local tts_copy, tts_replace = count_actions(all_tts)
+  local skill_copy, skill_replace = count_actions(skills)
   local tmpl_copy, tmpl_replace = count_actions(templates)
   local lib_copy, lib_replace = count_actions(lib_utils)
   local doc_copy, doc_replace = count_actions(docs)
-  local proto_copy, proto_replace = count_actions(all_protocols)
-  local std_copy, std_replace = count_actions(standards)
+  local script_copy, script_replace = count_actions(scripts)
+  local test_copy, test_replace = count_actions(tests)
+  local rule_copy, rule_replace = count_actions(rules)
   local set_copy, set_replace = count_actions(settings)
 
-  local total_copy = cmd_copy + agt_copy + hook_copy + tts_copy + tmpl_copy + lib_copy + doc_copy +
-                     proto_copy + std_copy + set_copy
-  local total_replace = cmd_replace + agt_replace + hook_replace + tts_replace + tmpl_replace +
-                        lib_replace + doc_replace + proto_replace + std_replace + set_replace
+  local total_copy = cmd_copy + hook_copy + skill_copy + tmpl_copy + lib_copy +
+                     doc_copy + script_copy + test_copy + rule_copy + set_copy
+  local total_replace = cmd_replace + hook_replace + skill_replace + tmpl_replace +
+                        lib_replace + doc_replace + script_replace + test_replace +
+                        rule_replace + set_replace
 
   local lines = {
     "Load All Artifacts",
@@ -241,16 +216,16 @@ local function preview_load_all(self)
 
   if total_copy + total_replace > 0 then
     table.insert(lines, "**Operations by Type:**")
-    table.insert(lines, string.format("  Commands:        %d new, %d replace", cmd_copy, cmd_replace))
-    table.insert(lines, string.format("  Agents:          %d new, %d replace", agt_copy, agt_replace))
-    table.insert(lines, string.format("  Hooks:           %d new, %d replace", hook_copy, hook_replace))
-    table.insert(lines, string.format("  TTS Files:       %d new, %d replace", tts_copy, tts_replace))
-    table.insert(lines, string.format("  Templates:       %d new, %d replace", tmpl_copy, tmpl_replace))
-    table.insert(lines, string.format("  Lib Utils:       %d new, %d replace", lib_copy, lib_replace))
-    table.insert(lines, string.format("  Docs:            %d new, %d replace", doc_copy, doc_replace))
-    table.insert(lines, string.format("  Agent Protocols: %d new, %d replace", proto_copy, proto_replace))
-    table.insert(lines, string.format("  Standards:       %d new, %d replace", std_copy, std_replace))
-    table.insert(lines, string.format("  Settings:        %d new, %d replace", set_copy, set_replace))
+    table.insert(lines, string.format("  Commands:   %d new, %d replace", cmd_copy, cmd_replace))
+    table.insert(lines, string.format("  Hooks:      %d new, %d replace", hook_copy, hook_replace))
+    table.insert(lines, string.format("  Skills:     %d new, %d replace", skill_copy, skill_replace))
+    table.insert(lines, string.format("  Templates:  %d new, %d replace", tmpl_copy, tmpl_replace))
+    table.insert(lines, string.format("  Lib:        %d new, %d replace", lib_copy, lib_replace))
+    table.insert(lines, string.format("  Docs:       %d new, %d replace", doc_copy, doc_replace))
+    table.insert(lines, string.format("  Scripts:    %d new, %d replace", script_copy, script_replace))
+    table.insert(lines, string.format("  Tests:      %d new, %d replace", test_copy, test_replace))
+    table.insert(lines, string.format("  Rules:      %d new, %d replace", rule_copy, rule_replace))
+    table.insert(lines, string.format("  Settings:   %d new, %d replace", set_copy, set_replace))
     table.insert(lines, "")
     table.insert(lines, string.format("**Total:** %d new, %d replace", total_copy, total_replace))
     table.insert(lines, "")
@@ -268,51 +243,6 @@ local function preview_load_all(self)
   table.insert(lines, "Press Enter to proceed with confirmation, or Escape to cancel.")
 
   vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-end
-
---- Create preview for agent entries
---- @param self table Telescope previewer state
---- @param entry table Telescope entry
-local function preview_agent(self, entry)
-  local agent = entry.value.agent
-  if not agent then
-    vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {"No agent data available"})
-    return
-  end
-
-  local lines = {
-    "# Agent: " .. agent.name,
-    "",
-    "**Description**: " .. (agent.description or "N/A"),
-    "",
-    "**Allowed Tools**: " .. (agent.allowed_tools and #agent.allowed_tools > 0
-      and table.concat(agent.allowed_tools, ", ") or "N/A"),
-    "",
-  }
-
-  -- Show commands that use this agent
-  if agent.parent_commands and #agent.parent_commands > 0 then
-    table.insert(lines, "**Commands that use this agent**:")
-    for i, cmd_name in ipairs(agent.parent_commands) do
-      local tree_char = (i == #agent.parent_commands) and "└─" or "├─"
-      table.insert(lines, "   " .. tree_char .. " " .. cmd_name)
-    end
-  else
-    if entry.value.parent then
-      table.insert(lines, "**Commands that use this agent**:")
-      table.insert(lines, "   └─ " .. entry.value.parent)
-    else
-      table.insert(lines, "**Commands that use this agent**: None")
-    end
-  end
-
-  table.insert(lines, "")
-  table.insert(lines, "**File**: " .. agent.filepath)
-  table.insert(lines, "")
-  table.insert(lines, agent.is_local and "[Local] Local override" or "[Global] Global definition")
-
-  vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
 end
 
 --- Create preview for hook event entries
@@ -348,37 +278,6 @@ local function preview_hook_event(self, entry)
   vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
 end
 
---- Create preview for TTS file entries
---- @param self table Telescope previewer state
---- @param entry table Telescope entry
-local function preview_tts_file(self, entry)
-  local tts = entry.value
-  if not tts then
-    vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {"No TTS data available"})
-    return
-  end
-
-  local lines = {
-    "# TTS File: " .. tts.name,
-    "",
-    "**Description**: " .. (tts.description or "N/A"),
-    "",
-    "**Role**: " .. (tts.role or "N/A"),
-    "",
-    "**Directory**: " .. (tts.directory or "N/A"),
-    "",
-    "**Variables**: " .. (tts.variables and #tts.variables > 0
-      and table.concat(tts.variables, ", ") or "None"),
-    "",
-    "**File**: " .. tts.name,
-    "",
-    tts.is_local and "[Local] Local override" or "[Global] Global configuration"
-  }
-
-  vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
-end
-
 --- Create preview for script entries (shell scripts)
 --- @param self table Telescope previewer state
 --- @param entry table Telescope entry
@@ -391,13 +290,11 @@ local function preview_script(self, entry)
 
   local lines = vim.fn.readfile(filepath)
 
-  -- Add metadata footer
   table.insert(lines, "")
   table.insert(lines, "# " .. string.rep("=", 60))
   table.insert(lines, "")
   table.insert(lines, "# File: " .. entry.value.name)
 
-  -- Get permissions
   local perms = vim.fn.getfperm(filepath)
   table.insert(lines, "# Permissions: " .. (perms or "N/A"))
 
@@ -420,13 +317,11 @@ local function preview_test(self, entry)
 
   local lines = vim.fn.readfile(filepath)
 
-  -- Add metadata footer
   table.insert(lines, "")
   table.insert(lines, "# " .. string.rep("=", 60))
   table.insert(lines, "")
   table.insert(lines, "# File: " .. entry.value.name)
 
-  -- Get permissions
   local perms = vim.fn.getfperm(filepath)
   table.insert(lines, "# Permissions: " .. (perms or "N/A"))
 
@@ -449,13 +344,11 @@ local function preview_lib(self, entry)
 
   local lines = vim.fn.readfile(filepath)
 
-  -- Add metadata footer
   table.insert(lines, "")
   table.insert(lines, "# " .. string.rep("=", 60))
   table.insert(lines, "")
   table.insert(lines, "# File: " .. entry.value.name)
 
-  -- Get permissions
   local perms = vim.fn.getfperm(filepath)
   table.insert(lines, "# Permissions: " .. (perms or "N/A"))
 
@@ -477,7 +370,6 @@ local function preview_template(self, entry)
 
   local lines = vim.fn.readfile(filepath)
 
-  -- Add metadata footer
   table.insert(lines, "")
   table.insert(lines, "# " .. string.rep("=", 60))
   table.insert(lines, "")
@@ -515,7 +407,6 @@ local function preview_doc(self, entry)
   end
   file:close()
 
-  -- Check if truncation needed
   local total_lines = #vim.fn.readfile(filepath)
   if total_lines > MAX_PREVIEW_LINES then
     table.insert(lines, "")
@@ -526,7 +417,6 @@ local function preview_doc(self, entry)
     ))
   end
 
-  -- Add metadata footer
   table.insert(lines, "")
   table.insert(lines, "---")
   table.insert(lines, "")
@@ -549,10 +439,8 @@ local function preview_command(self, entry)
 
   local lines = {}
 
-  -- Header
-  table.insert(lines, string.format("━━━ %s ━━━", command.name))
+  table.insert(lines, string.format("# %s", command.name))
 
-  -- Basic info
   table.insert(lines, "")
   table.insert(lines, "**Type**: " .. (command.command_type == "primary" and "Primary Command" or "Dependent Command"))
 
@@ -560,45 +448,41 @@ local function preview_command(self, entry)
     table.insert(lines, "**Parent**: " .. entry.value.parent)
   end
 
-  -- Description
   if command.description and command.description ~= "" then
     table.insert(lines, "")
     table.insert(lines, "**Description**:")
     table.insert(lines, command.description)
   end
 
-  -- Arguments
   if command.argument_hint and command.argument_hint ~= "" then
     table.insert(lines, "")
     table.insert(lines, "**Usage**: /" .. command.name .. " " .. command.argument_hint)
   end
 
-  -- Dependencies
   if command.command_type == "primary" and #command.dependent_commands > 0 then
     table.insert(lines, "")
     table.insert(lines, "**Dependent Commands**:")
     for _, dep in ipairs(command.dependent_commands) do
-      table.insert(lines, "  • " .. dep)
+      table.insert(lines, "  - " .. dep)
     end
   elseif command.command_type == "dependent" and #command.parent_commands > 0 then
     table.insert(lines, "")
     table.insert(lines, "**Used By**:")
     for _, parent in ipairs(command.parent_commands) do
-      table.insert(lines, "  • " .. parent)
+      table.insert(lines, "  - " .. parent)
     end
   end
 
-  -- Tools
   if command.allowed_tools and type(command.allowed_tools) == "table" and #command.allowed_tools > 0 then
     table.insert(lines, "")
     table.insert(lines, "**Allowed Tools**:")
     table.insert(lines, table.concat(command.allowed_tools, ", "))
   end
 
-  -- File path
   table.insert(lines, "")
-  table.insert(lines, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+  table.insert(lines, "---")
   table.insert(lines, "**File**: " .. (command.filepath or "Unknown"))
+  table.insert(lines, "**Status**: " .. (command.is_local and "[Local]" or "[Global]"))
 
   vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
@@ -610,19 +494,14 @@ function M.create_command_previewer()
   return previewers.new_buffer_previewer({
     title = "Command Details",
     define_preview = function(self, entry, status)
-      -- Route to appropriate preview function based on entry type
       if entry.value.is_heading then
         preview_heading(self, entry)
       elseif entry.value.is_help then
         preview_help(self)
       elseif entry.value.is_load_all then
         preview_load_all(self)
-      elseif entry.value.entry_type == "agent" then
-        preview_agent(self, entry)
       elseif entry.value.entry_type == "hook_event" then
         preview_hook_event(self, entry)
-      elseif entry.value.entry_type == "tts_file" then
-        preview_tts_file(self, entry)
       elseif entry.value.entry_type == "lib" then
         preview_lib(self, entry)
       elseif entry.value.entry_type == "script" then
