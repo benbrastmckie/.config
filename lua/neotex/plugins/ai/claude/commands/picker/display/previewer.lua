@@ -245,6 +245,44 @@ local function preview_load_all(self)
   vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
 end
 
+--- Create preview for skill entries
+--- @param self table Telescope previewer state
+--- @param entry table Telescope entry
+local function preview_skill(self, entry)
+  local lines = {
+    "# Skill: " .. entry.value.name,
+    "",
+  }
+
+  if entry.value.description and entry.value.description ~= "" then
+    table.insert(lines, "**Description**: " .. entry.value.description)
+    table.insert(lines, "")
+  end
+
+  if entry.value.allowed_tools and #entry.value.allowed_tools > 0 then
+    table.insert(lines, "**Allowed Tools**:")
+    table.insert(lines, table.concat(entry.value.allowed_tools, ", "))
+    table.insert(lines, "")
+  end
+
+  if entry.value.context and #entry.value.context > 0 then
+    table.insert(lines, "**Context Files**:")
+    for _, ctx in ipairs(entry.value.context) do
+      table.insert(lines, "  - " .. ctx)
+    end
+    table.insert(lines, "")
+  end
+
+  table.insert(lines, "---")
+  table.insert(lines, "")
+  table.insert(lines, "**Directory**: " .. (entry.value.dirname or "Unknown"))
+  table.insert(lines, "**File**: " .. (entry.value.filepath or "Unknown"))
+  table.insert(lines, "**Status**: " .. (entry.value.is_local and "[Local]" or "[Global]"))
+
+  vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, lines)
+  vim.api.nvim_buf_set_option(self.state.bufnr, "filetype", "markdown")
+end
+
 --- Create preview for hook event entries
 --- @param self table Telescope previewer state
 --- @param entry table Telescope entry
@@ -500,6 +538,8 @@ function M.create_command_previewer()
         preview_help(self)
       elseif entry.value.is_load_all then
         preview_load_all(self)
+      elseif entry.value.entry_type == "skill" then
+        preview_skill(self, entry)
       elseif entry.value.entry_type == "hook_event" then
         preview_hook_event(self, entry)
       elseif entry.value.entry_type == "lib" then

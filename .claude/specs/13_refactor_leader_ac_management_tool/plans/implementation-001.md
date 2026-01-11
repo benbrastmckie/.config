@@ -43,7 +43,7 @@ Refactor the `<leader>ac` Claude artifacts picker to align with the refactored .
 ### Phase 2: Remove Agent Infrastructure
 
 **Estimated effort**: 30 minutes
-**Status**: [IN PROGRESS]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Remove agent scanning from parser.lua (agents/ directory doesn't exist)
@@ -85,7 +85,7 @@ Refactor the `<leader>ac` Claude artifacts picker to align with the refactored .
 ### Phase 3: Add Skills Support
 
 **Estimated effort**: 45 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Add skill discovery to parser.lua

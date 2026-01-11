@@ -376,6 +376,105 @@ function M.build_hook_dependencies(hooks, settings_path)
   return hook_events
 end
 
+--- Scan .claude/skills/ directory for skill definitions
+--- @param skills_dir string Path to skills directory
+--- @return table Array of skill metadata
+function M.scan_skills_directory(skills_dir)
+  local skills_path = plenary_path:new(skills_dir)
+
+  if not skills_path:exists() then
+    return {}
+  end
+
+  local skills = {}
+  local scandir_ok, subdirs = pcall(vim.fn.readdir, skills_dir)
+  if not scandir_ok then
+    return {}
+  end
+
+  for _, dirname in ipairs(subdirs) do
+    -- Look for skill-* directories
+    if dirname:match("^skill%-") then
+      local skill_file = skills_dir .. "/" .. dirname .. "/SKILL.md"
+      local path = plenary_path:new(skill_file)
+
+      if path:exists() then
+        local content = path:read()
+        if content then
+          local metadata = parse_frontmatter(content)
+          if metadata then
+            local function ensure_array(value)
+              if type(value) == "string" then
+                return { value }
+              elseif type(value) == "table" then
+                return value
+              else
+                return {}
+              end
+            end
+
+            table.insert(skills, {
+              name = metadata.name or dirname,
+              description = metadata.description or "",
+              allowed_tools = ensure_array(metadata.allowed_tools),
+              context = ensure_array(metadata.context),
+              filepath = skill_file,
+              dirname = dirname,
+              is_local = false,
+            })
+          end
+        end
+      end
+    end
+  end
+
+  return skills
+end
+
+--- Parse skills from both local and global directories with local priority
+--- @param project_skills_dir string Path to project-specific skills directory
+--- @param global_skills_dir string Path to global skills directory
+--- @return table Merged skills with is_local flag
+local function parse_skills_with_fallback(project_skills_dir, global_skills_dir)
+  local merged_skills = {}
+  local local_skill_names = {}
+
+  -- Special case: when in .config/
+  if project_skills_dir and project_skills_dir == global_skills_dir then
+    if vim.fn.isdirectory(project_skills_dir) == 1 then
+      local skills = M.scan_skills_directory(project_skills_dir)
+      for _, skill in ipairs(skills) do
+        skill.is_local = true
+        table.insert(merged_skills, skill)
+      end
+    end
+    return merged_skills
+  end
+
+  -- Normal case: Parse local skills first
+  if vim.fn.isdirectory(project_skills_dir) == 1 then
+    local local_skills = M.scan_skills_directory(project_skills_dir)
+    for _, skill in ipairs(local_skills) do
+      skill.is_local = true
+      table.insert(merged_skills, skill)
+      local_skill_names[skill.name] = true
+    end
+  end
+
+  -- Parse global skills
+  if vim.fn.isdirectory(global_skills_dir) == 1 then
+    local global_skills = M.scan_skills_directory(global_skills_dir)
+    for _, skill in ipairs(global_skills) do
+      if not local_skill_names[skill.name] then
+        skill.is_local = false
+        table.insert(merged_skills, skill)
+      end
+    end
+  end
+
+  return merged_skills
+end
+
 --- Parse hooks from both local and global directories with local priority
 --- @param project_hooks_dir string Path to project-specific hooks directory
 --- @param global_hooks_dir string Path to global hooks directory
@@ -420,8 +519,8 @@ local function parse_hooks_with_fallback(project_hooks_dir, global_hooks_dir)
   return merged_hooks
 end
 
---- Get extended structure with commands and hooks
---- @return table Structure with commands, hooks, and dependencies
+--- Get extended structure with commands, hooks, and skills
+--- @return table Structure with commands, hooks, skills, and dependencies
 function M.get_extended_structure()
   local project_dir = vim.fn.getcwd()
   local global_dir = vim.fn.expand("~/.config")
@@ -438,6 +537,11 @@ function M.get_extended_structure()
   local global_hooks_dir = global_dir .. "/.claude/hooks"
   local hooks = parse_hooks_with_fallback(project_hooks_dir, global_hooks_dir)
 
+  -- Get skills
+  local project_skills_dir = project_dir .. "/.claude/skills"
+  local global_skills_dir = global_dir .. "/.claude/skills"
+  local skills = parse_skills_with_fallback(project_skills_dir, global_skills_dir)
+
   -- Build hook dependencies
   local settings_path = project_dir .. "/.claude/settings.local.json"
   if vim.fn.filereadable(settings_path) ~= 1 then
@@ -450,6 +554,7 @@ function M.get_extended_structure()
     dependent_commands = sorted_hierarchy.dependent_commands,
     hooks = hooks,
     hook_events = hook_events,
+    skills = skills,
   }
 end
 

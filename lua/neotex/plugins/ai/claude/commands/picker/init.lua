@@ -102,9 +102,9 @@ function M.show_commands_picker(opts)
         if selection.value.command then
           actions.close(prompt_bufnr)
           terminal.send_command_to_terminal(selection.value.command)
-        elseif selection.value.entry_type == "agent" and selection.value.agent then
+        elseif selection.value.entry_type == "skill" and selection.value.filepath then
           actions.close(prompt_bufnr)
-          edit.edit_artifact_file(selection.value.agent.filepath)
+          edit.edit_artifact_file(selection.value.filepath)
         elseif selection.value.entry_type == "doc" and selection.value.filepath then
           actions.close(prompt_bufnr)
           edit.edit_artifact_file(selection.value.filepath)
@@ -119,9 +119,6 @@ function M.show_commands_picker(opts)
           if #selection.value.hooks > 0 then
             edit.edit_artifact_file(selection.value.hooks[1].filepath)
           end
-        elseif selection.value.entry_type == "tts_file" and selection.value.filepath then
-          actions.close(prompt_bufnr)
-          edit.edit_artifact_file(selection.value.filepath)
         elseif selection.value.entry_type == "script" and selection.value.filepath then
           actions.close(prompt_bufnr)
           edit.edit_artifact_file(selection.value.filepath)
@@ -142,12 +139,10 @@ function M.show_commands_picker(opts)
         local artifact_type = selection.value.entry_type
         if selection.value.command then
           artifact_type = "command"
-        elseif selection.value.agent then
-          artifact_type = "agent"
         end
 
         -- Load artifact
-        local artifact = selection.value.command or selection.value.agent or selection.value
+        local artifact = selection.value.command or selection.value
         edit.load_artifact_locally(artifact, artifact_type, parser)
 
         -- Refresh picker
@@ -168,12 +163,10 @@ function M.show_commands_picker(opts)
         local artifact_type = selection.value.entry_type
         if selection.value.command then
           artifact_type = "command"
-        elseif selection.value.agent then
-          artifact_type = "agent"
         end
 
         -- Update artifact
-        local artifact = selection.value.command or selection.value.agent or selection.value
+        local artifact = selection.value.command or selection.value
         sync.update_artifact_from_global(artifact, artifact_type, false)
 
         -- Refresh picker
@@ -194,12 +187,10 @@ function M.show_commands_picker(opts)
         local artifact_type = selection.value.entry_type
         if selection.value.command then
           artifact_type = "command"
-        elseif selection.value.agent then
-          artifact_type = "agent"
         end
 
         -- Save artifact
-        local artifact = selection.value.command or selection.value.agent or selection.value
+        local artifact = selection.value.command or selection.value
         edit.save_artifact_to_global(artifact, artifact_type)
 
         -- Refresh picker
@@ -222,8 +213,6 @@ function M.show_commands_picker(opts)
         local filepath = nil
         if selection.value.command then
           filepath = selection.value.command.filepath
-        elseif selection.value.agent then
-          filepath = selection.value.agent.filepath
         elseif selection.value.filepath then
           filepath = selection.value.filepath
         elseif selection.value.entry_type == "hook_event" and selection.value.hooks and #selection.value.hooks > 0 then

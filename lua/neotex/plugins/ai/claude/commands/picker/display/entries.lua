@@ -305,6 +305,63 @@ function M.create_tests_entries()
   return entries
 end
 
+--- Format skill entry for display
+--- @param skill table Skill data
+--- @param indent_char string Tree character (├─ or └─)
+--- @return string Formatted display string
+local function format_skill(skill, indent_char)
+  local prefix = skill.is_local and "*" or " "
+  local description = skill.description or ""
+
+  return string.format(
+    "%s %s %-38s %s",
+    prefix,
+    indent_char,
+    skill.name,
+    description
+  )
+end
+
+--- Create entries for skills section
+--- @param structure table Extended structure from parser
+--- @return table Array of entries
+function M.create_skills_entries(structure)
+  local entries = {}
+  local skills = structure.skills or {}
+
+  if #skills > 0 then
+    table.sort(skills, function(a, b) return a.name < b.name end)
+
+    for i, skill in ipairs(skills) do
+      local is_first = (i == 1)
+      local indent_char = helpers.get_tree_char(is_first)
+
+      table.insert(entries, {
+        display = format_skill(skill, indent_char),
+        entry_type = "skill",
+        name = skill.name,
+        description = skill.description,
+        allowed_tools = skill.allowed_tools,
+        context = skill.context,
+        filepath = skill.filepath,
+        dirname = skill.dirname,
+        is_local = skill.is_local,
+        ordinal = "zzzz_skill_" .. skill.name
+      })
+    end
+
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~skills_heading",
+      display = string.format("%-40s %s", "[Skills]", "Model-invoked capabilities"),
+      entry_type = "heading",
+      ordinal = "skills"
+    })
+  end
+
+  return entries
+end
+
 --- Create entries for hooks section
 --- @param structure table Extended structure from parser
 --- @return table Array of entries
@@ -498,7 +555,13 @@ function M.create_picker_entries(structure)
     table.insert(all_entries, entry)
   end
 
-  -- 8. Commands section (appears at top)
+  -- 8. Skills section
+  local skills = M.create_skills_entries(structure)
+  for _, entry in ipairs(skills) do
+    table.insert(all_entries, entry)
+  end
+
+  -- 9. Commands section (appears at top)
   local commands = M.create_commands_entries(structure)
   for _, entry in ipairs(commands) do
     table.insert(all_entries, entry)
