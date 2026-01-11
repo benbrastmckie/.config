@@ -20,9 +20,9 @@
   },
   "task_counts": {
     "active": 2,
-    "completed": 1,
+    "completed": 2,
     "in_progress": 0,
-    "not_started": 1,
+    "not_started": 0,
     "abandoned": 1,
     "total": 2
   },
@@ -35,11 +35,11 @@
     {
       "project_number": 12,
       "project_name": "remove_goose_nvim_traces",
-      "status": "implementing",
+      "status": "completed",
       "language": "lua",
       "priority": "medium",
       "created": "2026-01-11T00:01:41Z",
-      "last_updated": "2026-01-11T00:22:26Z",
+      "last_updated": "2026-01-11T00:30:58Z",
       "artifacts": [
         {
           "path": ".claude/specs/12_remove_goose_nvim_traces/reports/research-001.md",
@@ -48,9 +48,14 @@
         {
           "path": ".claude/specs/12_remove_goose_nvim_traces/plans/implementation-001.md",
           "type": "plan"
+        },
+        {
+          "path": ".claude/specs/12_remove_goose_nvim_traces/summaries/implementation-summary-20260111.md",
+          "type": "summary"
         }
       ],
-      "plan_version": 1
+      "plan_version": 1,
+      "completed": "2026-01-11T00:30:58Z"
     },
     {
       "project_number": 10,
