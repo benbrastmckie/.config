@@ -34,16 +34,10 @@ return {
         component_separators = { left = '', right = '' },
         section_separators = { left = '', right = '' },
         disabled_filetypes = {
-          statusline = {
-            "goose-input",
-            "goose-output",
-          },
-          winbar = {
-            "goose-input",
-            "goose-output",
-          },
+          statusline = {},
+          winbar = {},
         },
-        -- Disable lualine for terminal buffers (goose, claude-code, toggleterm, etc.)
+        -- Disable lualine for terminal buffers (claude-code, toggleterm, etc.)
         disabled_buftypes = {
           statusline = { "terminal", "nofile" },
           winbar = { "terminal", "nofile" },

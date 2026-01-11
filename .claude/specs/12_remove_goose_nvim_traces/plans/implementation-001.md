@@ -47,7 +47,7 @@ Systematically remove all goose.nvim plugin files, references, documentation, an
 ### Phase 2: UI and Keymap Cleanup
 
 **Estimated effort**: 15 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Remove goose filetypes from lualine disabled list
