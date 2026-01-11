@@ -35,7 +35,7 @@ priority_distribution:
 ### 13. Refactor leader-ac management tool
 - **Started**: 2026-01-11
 - **Effort**: 2-3 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Priority**: Medium
 - **Language**: lua
 - **Research**: [research-001.md](.claude/specs/13_refactor_leader_ac_management_tool/reports/research-001.md)

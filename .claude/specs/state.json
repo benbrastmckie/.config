@@ -35,11 +35,11 @@
     {
       "project_number": 13,
       "project_name": "refactor_leader_ac_management_tool",
-      "status": "planned",
+      "status": "implementing",
       "language": "lua",
       "priority": "medium",
       "created": "2026-01-11T00:47:43Z",
-      "last_updated": "2026-01-11T01:03:25Z",
+      "last_updated": "2026-01-11T01:06:47Z",
       "artifacts": [
         {
           "path": ".claude/specs/13_refactor_leader_ac_management_tool/reports/research-001.md",
