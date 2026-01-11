@@ -132,7 +132,7 @@ Refactor the `<leader>ac` Claude artifacts picker to align with the refactored .
 ### Phase 4: Simplify Categories and Test
 
 **Estimated effort**: 30 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Remove TTS Files section (integrated into hooks)

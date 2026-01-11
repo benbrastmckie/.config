@@ -20,15 +20,15 @@ M.ARTIFACT_TYPES = {
     sync_enabled = true,
   },
 
-  agent = {
-    name = "agent",
-    plural = "Agents",
+  skill = {
+    name = "skill",
+    plural = "Skills",
     extension = ".md",
-    subdirs = { "agents" },
+    subdirs = { "skills" },
     preserve_permissions = false,
-    description_parser = "parse_agent_description",
-    heading = "[Agents]",
-    heading_description = "AI assistants",
+    description_parser = "parse_skill_description",
+    heading = "[Skills]",
+    heading_description = "Model-invoked capabilities",
     tree_indent = " ",
     picker_visible = true,
     sync_enabled = true,
@@ -48,22 +48,6 @@ M.ARTIFACT_TYPES = {
     sync_enabled = true,
     -- Special: hooks are grouped by event name
     group_by_event = true,
-  },
-
-  tts_file = {
-    name = "tts_file",
-    plural = "TTS Files",
-    extension = ".sh",
-    subdirs = { "tts", "hooks" },  -- Multiple scan directories
-    preserve_permissions = true,
-    description_parser = "parse_script_description",
-    heading = "[TTS Files]",
-    heading_description = "Text-to-speech scripts",
-    tree_indent = " ",
-    picker_visible = true,
-    sync_enabled = true,
-    -- Special: filter for tts-*.sh pattern
-    pattern_filter = "^tts%-",
   },
 
   template = {
@@ -147,20 +131,6 @@ M.ARTIFACT_TYPES = {
   },
 
   -- Artifact types used by sync but not displayed in picker
-  agent_protocol = {
-    name = "agent_protocol",
-    plural = "Agent Protocols",
-    extension = ".md",
-    subdirs = { "agents" },
-    preserve_permissions = false,
-    description_parser = "parse_doc_description",
-    heading = "[Agent Protocols]",
-    heading_description = "Agent protocol files",
-    tree_indent = " ",
-    picker_visible = false,
-    sync_enabled = true,
-  },
-
   standard = {
     name = "standard",
     plural = "Standards",
@@ -267,7 +237,7 @@ function M.format_artifact(artifact, type_name, indent_char)
   description = description:gsub("^Specialized in ", "")
 
   -- Format: "* ├─ artifact-name     Description text"
-  -- Standard 1-space indent (agents, templates, lib, docs, commands)
+  -- Standard 1-space indent (skills, templates, lib, docs, commands)
   -- Exception: hook events use 2-space indent (distinguishing marker)
   local indent_spaces = config.tree_indent or " "
 

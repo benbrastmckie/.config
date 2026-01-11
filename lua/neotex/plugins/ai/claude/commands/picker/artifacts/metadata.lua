@@ -106,14 +106,16 @@ function M.parse_doc_description(filepath)
 end
 
 --- Get description parser function for artifact type
---- @param type_name string Artifact type (command, agent, etc.)
+--- @param type_name string Artifact type (command, skill, etc.)
 --- @return function|nil Parser function or nil if not found
 function M.get_parser_for_type(type_name)
   local parsers = {
     template = M.parse_template_description,
-    tts_file = M.parse_script_description,
+    skill = M.parse_doc_description,
     lib = M.parse_script_description,
     hook_event = M.parse_script_description,
+    script = M.parse_script_description,
+    test = M.parse_script_description,
     doc = M.parse_doc_description,
   }
 

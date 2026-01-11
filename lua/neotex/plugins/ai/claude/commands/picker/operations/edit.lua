@@ -53,12 +53,13 @@ function M.save_artifact_to_global(artifact, artifact_type)
   -- Determine target directory based on artifact type
   local subdir_map = {
     command = "commands",
-    agent = "agents",
+    skill = "skills",
     hook = "hooks",
     lib = "lib",
     doc = "docs",
     template = "templates",
-    tts_file = "tts",
+    script = "scripts",
+    test = "tests",
   }
 
   local subdir = subdir_map[artifact_type]
@@ -88,7 +89,7 @@ function M.save_artifact_to_global(artifact, artifact_type)
   end
 
   -- Preserve permissions for shell scripts
-  if artifact_type == "hook" or artifact_type == "lib" or artifact_type == "tts_file" then
+  if artifact_type == "hook" or artifact_type == "lib" or artifact_type == "script" or artifact_type == "test" then
     helpers.copy_file_permissions(artifact.filepath, global_filepath)
   end
 
@@ -123,12 +124,13 @@ function M.load_artifact_locally(artifact, artifact_type, parser)
   -- Determine source and target directories
   local subdir_map = {
     command = "commands",
-    agent = "agents",
+    skill = "skills",
     hook = "hooks",
     lib = "lib",
     doc = "docs",
     template = "templates",
-    tts_file = "tts",
+    script = "scripts",
+    test = "tests",
   }
 
   local subdir = subdir_map[artifact_type]
@@ -148,9 +150,9 @@ function M.load_artifact_locally(artifact, artifact_type, parser)
   else
     -- Construct global filepath
     global_filepath = global_dir .. "/.claude/" .. subdir .. "/" .. artifact.name
-    if artifact_type == "command" or artifact_type == "agent" or artifact_type == "doc" then
+    if artifact_type == "command" or artifact_type == "skill" or artifact_type == "doc" then
       global_filepath = global_filepath .. ".md"
-    elseif artifact_type == "hook" or artifact_type == "lib" or artifact_type == "tts_file" then
+    elseif artifact_type == "hook" or artifact_type == "lib" or artifact_type == "script" or artifact_type == "test" then
       global_filepath = global_filepath .. ".sh"
     elseif artifact_type == "template" then
       global_filepath = global_filepath .. ".yaml"
@@ -183,7 +185,7 @@ function M.load_artifact_locally(artifact, artifact_type, parser)
   end
 
   -- Preserve permissions for shell scripts
-  if artifact_type == "hook" or artifact_type == "lib" or artifact_type == "tts_file" then
+  if artifact_type == "hook" or artifact_type == "lib" or artifact_type == "script" or artifact_type == "test" then
     helpers.copy_file_permissions(global_filepath, local_filepath)
   end
 

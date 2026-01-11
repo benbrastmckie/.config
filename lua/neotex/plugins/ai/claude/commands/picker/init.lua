@@ -24,7 +24,7 @@ local helpers = require("neotex.plugins.ai.claude.commands.picker.utils.helpers"
 function M.show_commands_picker(opts)
   opts = opts or {}
 
-  -- Get extended structure with all commands, agents, hooks
+  -- Get extended structure with all commands, skills, hooks
   local structure = parser.get_extended_structure()
 
   if not structure or not structure.primary_commands or vim.tbl_isempty(structure.primary_commands) then

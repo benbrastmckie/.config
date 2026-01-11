@@ -170,27 +170,4 @@ function M.scan_artifacts_for_picker(type_config)
   return M.merge_artifacts(local_artifacts, global_artifacts)
 end
 
---- Scan all artifact types for sync operation
---- @return table Map of artifact_type -> array of sync files
-function M.scan_all_for_sync()
-  local dirs = M.get_directories()
-  local global_dir = dirs.global_dir
-  local project_dir = dirs.project_dir
-
-  return {
-    commands = M.scan_directory_for_sync(global_dir, project_dir, "commands", "*.md"),
-    agents = M.scan_directory_for_sync(global_dir, project_dir, "agents", "*.md"),
-    hooks = M.scan_directory_for_sync(global_dir, project_dir, "hooks", "*.sh"),
-    tts_hooks = M.scan_directory_for_sync(global_dir, project_dir, "hooks", "tts-*.sh"),
-    tts_files = M.scan_directory_for_sync(global_dir, project_dir, "tts", "*.sh"),
-    templates = M.scan_directory_for_sync(global_dir, project_dir, "templates", "*.yaml"),
-    lib_utils = M.scan_directory_for_sync(global_dir, project_dir, "lib", "*.sh"),
-    docs = M.scan_directory_for_sync(global_dir, project_dir, "docs", "*.md"),
-    agent_prompts = M.scan_directory_for_sync(global_dir, project_dir, "agents/prompts", "*.md"),
-    agent_shared = M.scan_directory_for_sync(global_dir, project_dir, "agents/shared", "*.md"),
-    standards = M.scan_directory_for_sync(global_dir, project_dir, "specs/standards", "*.md"),
-    settings = M.scan_directory_for_sync(global_dir, project_dir, "", "settings.json"),
-  }
-end
-
 return M
