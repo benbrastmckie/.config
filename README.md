@@ -49,7 +49,6 @@ This Neovim configuration includes specialized support for:
 - **Markdown Writing**: Enhanced Markdown editing with smart list handling, checkboxes, markdown-specific text surrounds, and live preview
 - **AI Assistance**: Multiple AI integration options for code completion and development workflows:
   - [Claude Code](lua/neotex/plugins/ai/claude/README.md) - Official Claude integration with session management and worktree support
-  - [Goose](lua/neotex/plugins/ai/goose/README.md) - AI-assisted coding with multi-provider support (Gemini CLI, Claude Code)
   - [Avante](lua/neotex/plugins/ai/avante/README.md) - AI assistant with MCP-Hub tools integration
   - [Lectic](lua/neotex/plugins/ai/README.md#lectic) - AI-assisted writing for markdown files
 - **Jupyter Notebooks**: Interactive notebook support with cell execution, navigation, and conversion between formats

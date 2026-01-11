@@ -73,7 +73,6 @@ Plugins are organized into categorical subdirectories:
 
 - **ai/** - AI integration with multiple assistant options
   - claude/ - Claude Code with session management and worktree integration
-  - goose/ - Multi-provider AI agent (Gemini, Claude backend) with recipes
   - avante/ - AI assistant with MCP protocol and inline suggestions
 - **editor/** - Editor enhancements (coding utilities, formatting)
 - **lsp/** - Language Server Protocol configurations

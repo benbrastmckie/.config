@@ -133,37 +133,6 @@ All leader-based mappings use `<Space>` as the leader key and are organized into
 
 See [Claude Code documentation](../lua/neotex/plugins/ai/claude/README.md) for complete feature details.
 
-**Goose AI Agent**
-
-| Key | Mode | Description |
-|-----|------|-------------|
-| `<leader>aa` | Normal | Toggle Goose chat interface (split window) |
-| `<leader>aa` | Visual | Send selection to Goose with prompt |
-| `<leader>ae` | Normal | Focus Goose input window |
-| `<leader>ao` | Normal | Focus Goose output window |
-| `<leader>ad` | Normal | Open Goose diff view |
-| `<leader>am` | Normal | Mode picker (auto/chat) |
-| `<leader>aR` | Normal | Recipe picker (Telescope) |
-| `<leader>ap` | Normal | Provider status and switch |
-| `<leader>aq` | Normal | Close Goose interface |
-| `<leader>ax` | Normal | New Goose session |
-| `<leader>av` | Normal | Select Goose session |
-| `<leader>ar` | Normal | Run new Goose session |
-| `<leader>at` | Normal | Stop Goose execution |
-
-See [Goose documentation](../lua/neotex/plugins/ai/goose/README.md) for complete feature details and recipe workflows.
-
-**Keybinding Overlaps**:
-- `<leader>av`: View worktrees (Claude) vs Select session (Goose)
-- `<leader>ar`: Restore worktree (Claude) vs Run session (Goose)
-- `<leader>at`: Toggle TTS (Claude) vs Stop execution (Goose)
-
-Both Claude Code and Goose can coexist; context determines which bindings are active.
-
-
-| Key | Mode | Description |
-|-----|------|-------------|
-
 **Other AI Tools**
 
 | Key | Action | Description | Availability |

@@ -81,7 +81,6 @@ notify.lsp('Formatting complete', notify.categories.USER_ACTION)
 
 -- AI assistant notifications
 notify.ai('Claude session restored', notify.categories.USER_ACTION)
-notify.ai('Goose recipe executed', notify.categories.USER_ACTION)
 notify.ai('Provider detection complete', notify.categories.BACKGROUND)
 ```
 

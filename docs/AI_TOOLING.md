@@ -37,40 +37,17 @@ Claude Code provides official Claude AI integration with sophisticated session m
 
 **Keybindings**: `<C-c>` (toggle), `<leader>ac` (commands/visual selection), `<leader>as` (sessions), `<leader>aw` (worktrees)
 
-### Goose AI Agent
-
-[Complete documentation](../lua/neotex/plugins/ai/goose/README.md)
-
-Goose provides AI-assisted coding with multi-provider support and recipe-based workflow automation, enabling flexible provider switching and repeatable agentic workflows.
-
-**Key Features**:
-- Split window mode with native Neovim integration
-- Multi-provider support (Gemini CLI, Claude Code backend)
-- Recipe system for repeatable agentic workflows
-- Session persistence across Neovim restarts
-- Diff view for reviewing AI-generated changes
-- Dynamic provider detection and switching
-
-**Best For**:
-- Recipe-driven development workflows
-- Cross-provider flexibility (switching between Gemini/Claude)
-- Integrated diff-based change review
-- Consistent window layout with split navigation
-- Projects requiring multiple AI provider options
-
-**Keybindings**: `<leader>aa` (toggle), `<leader>ae` (input focus), `<leader>ad` (diff view), `<leader>aR` (recipes), `<leader>ap` (provider)
-
 ## Feature Comparison Matrix
 
-|---------|-------------|-------|--------|
-| **Window Mode** | Terminal | Split | Floating/Split |
-| **Providers** | Claude only | Gemini, Claude | Claude, GPT, Gemini |
-| **Sessions** | Sophisticated state mgmt | Workspace-based | Session links |
-| **Recipes** | Command hierarchy | Recipe YAML system | - |
-| **Worktrees** | Native integration | Manual workflow | - |
-| **Diff Review** | - | Native diff view | - |
-| **MCP Tools** | - | - | 44+ tools |
-| **Best Use Case** | Complex projects, worktrees | Recipe workflows, multi-provider | Inline suggestions, MCP tools |
+| Feature | Claude Code | OpenCode |
+|---------|-------------|----------|
+| **Window Mode** | Terminal | Floating/Split |
+| **Providers** | Claude only | Claude, GPT, Gemini |
+| **Sessions** | Sophisticated state mgmt | Session links |
+| **Recipes** | Command hierarchy | - |
+| **Worktrees** | Native integration | - |
+| **MCP Tools** | - | 44+ tools |
+| **Best Use Case** | Complex projects, worktrees | Inline suggestions, MCP tools |
 
 ## Advanced Workflows
 

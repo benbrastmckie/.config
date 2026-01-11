@@ -46,28 +46,9 @@ Configuration for the OpenCode plugin (`NickvanDyke/opencode.nvim`). Provides em
 - `cbochs/grapple.nvim` (optional) - For @grapple context placeholder
 - OpenCode CLI v0.9.1+ (currently using v1.0.119)
 
-### goose/init.lua
-Configuration for the Goose AI agent plugin (`azorng/goose.nvim`). Provides multi-provider AI assistance (Gemini CLI, Claude Code backend) with split window integration, recipe-based workflows, and session persistence.
-
-**Note**: Goose keymaps commented out as of 2025-12-10, pending removal in favor of OpenCode.
-
-**Key Features**:
-- Split window mode with native Neovim navigation (`<C-h/j/k/l>`)
-- Dynamic provider detection and switching
-- Recipe picker for workflow automation
-- Session management tied to workspace
-- Diff view for reviewing AI changes
-
-**Configuration**:
-- Window type: split (35% width, right sidebar)
-- Default mode: auto (full agent capabilities)
-- Preferred picker: telescope
-- Keybindings managed by which-key.lua (currently commented out)
-
 ## Subdirectories
 
 - [claude/](claude/README.md) - Comprehensive internal Claude AI integration system (9,626+ lines across 20 files)
-- [goose/](goose/README.md) - AI-assisted coding with multi-provider backend and recipe system
 
 ## Key Features
 
@@ -169,10 +150,6 @@ ai.send_visual_to_claude_with_prompt() -- Visual selection with prompt
 
 **Lectic Commands** (`<leader>al`, `<leader>an`, `<leader>ak`):
 - Only active in .lec and .md files
-
-**Goose Commands** (COMMENTED OUT as of 2025-12-10):
-- All Goose keymaps (`<leader>ad`, `<leader>ag`, `<leader>ai`, etc.) have been commented out
-- Pending removal in favor of OpenCode
 
 ### Plugin Dependencies
 - `nvim-lua/plenary.nvim` - Lua utilities

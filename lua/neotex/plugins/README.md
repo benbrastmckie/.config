@@ -75,7 +75,6 @@ Plugins are organized into the following categories with dedicated directories:
 - **ai/**: AI tooling and integration ([detailed documentation](ai/README.md))
   - avante.lua: AI assistants integration with 44+ MCP tools (uses blink.cmp)
   - claudecode.lua: Official Claude Code integration with session management and worktrees
-  - goose/: AI agent backend with multi-provider support (Gemini CLI, Claude Code)
   - lectic.lua: AI-assisted writing for markdown
   - mcp-hub.lua: Model Context Protocol hub for external AI tools
 
