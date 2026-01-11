@@ -35,11 +35,13 @@ priority_distribution:
 ### 13. Refactor leader-ac management tool
 - **Started**: 2026-01-11
 - **Effort**: 2-3 hours
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Priority**: Medium
 - **Language**: lua
+- **Completed**: 2026-01-11
 - **Research**: [research-001.md](.claude/specs/13_refactor_leader_ac_management_tool/reports/research-001.md)
 - **Plan**: [implementation-001.md](.claude/specs/13_refactor_leader_ac_management_tool/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260111.md](.claude/specs/13_refactor_leader_ac_management_tool/summaries/implementation-summary-20260111.md)
 
 **Description**: Refactor the `<leader>ac` management tool in accordance with the extensively refactored .claude/ agent system, improving the implementation as appropriate but without making unnecessary or overly complex changes. The aim is quality and functionality with minimal complexity.
 
