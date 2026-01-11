@@ -35,17 +35,22 @@
     {
       "project_number": 12,
       "project_name": "remove_goose_nvim_traces",
-      "status": "researched",
+      "status": "planned",
       "language": "lua",
       "priority": "medium",
       "created": "2026-01-11T00:01:41Z",
-      "last_updated": "2026-01-11T00:10:33Z",
+      "last_updated": "2026-01-11T00:16:59Z",
       "artifacts": [
         {
           "path": ".claude/specs/12_remove_goose_nvim_traces/reports/research-001.md",
           "type": "research"
+        },
+        {
+          "path": ".claude/specs/12_remove_goose_nvim_traces/plans/implementation-001.md",
+          "type": "plan"
         }
-      ]
+      ],
+      "plan_version": 1
     },
     {
       "project_number": 10,

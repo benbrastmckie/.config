@@ -33,11 +33,12 @@ priority_distribution:
 ## Medium Priority
 
 ### 12. Remove all goose.nvim traces
-- **Effort**: 2-3 hours
-- **Status**: [RESEARCHED]
+- **Effort**: 1.5 hours
+- **Status**: [PLANNED]
 - **Priority**: Medium
 - **Language**: lua
 - **Research**: [research-001.md](.claude/specs/12_remove_goose_nvim_traces/reports/research-001.md)
+- **Plan**: [implementation-001.md](.claude/specs/12_remove_goose_nvim_traces/plans/implementation-001.md)
 
 **Description**: Systematically remove all traces of goose.nvim from Neovim config, documentation, code comments, etc.
 
