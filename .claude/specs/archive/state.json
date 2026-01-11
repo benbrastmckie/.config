@@ -4,6 +4,17 @@
   "_last_updated": "2026-01-10T23:45:00Z",
   "archived_projects": [
     {
+      "project_number": 11,
+      "project_name": "fix_task_command_implementation_bug",
+      "status": "abandoned",
+      "language": "meta",
+      "priority": "medium",
+      "created": "2026-01-10T23:45:27Z",
+      "last_updated": "2026-01-10T23:58:07Z",
+      "archived": "2026-01-10T23:58:07Z",
+      "reason": "Bug already fixed in repository"
+    },
+    {
       "project_number": 1,
       "project_name": "update_claude_md_neovim",
       "status": "completed",
