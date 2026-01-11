@@ -1,6 +1,6 @@
 ---
 last_updated: 2026-01-10T23:45:00Z
-next_project_number: 12
+next_project_number: 13
 repository_health:
   overall_score: 0
   production_readiness: initial
@@ -31,6 +31,16 @@ priority_distribution:
 ---
 
 ## Medium Priority
+
+### 12. Remove all goose.nvim traces
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Priority**: Medium
+- **Language**: lua
+
+**Description**: Systematically remove all traces of goose.nvim from Neovim config, documentation, code comments, etc.
+
+---
 
 ### 11. Fix task command implementation bug
 - **Effort**: TBD
