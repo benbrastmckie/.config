@@ -131,6 +131,8 @@ if ok_wk then
   })
 end
 
+
+
 -- -- LSP menu to preserve vimtex citation data
 -- require('cmp').setup.buffer {
 --   formatting = {

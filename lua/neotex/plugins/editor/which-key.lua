@@ -384,7 +384,7 @@ return {
       { "<leader>g", group = "git", icon = "󰊢", mode = { "n", "v" } },
       { "<leader>gb", "<cmd>Telescope git_branches<CR>", desc = "branches", icon = "󰘬" },
       { "<leader>gc", "<cmd>Telescope git_commits<CR>", desc = "commits", icon = "󰜘" },
-      { "<leader>gd", "<cmd>Gitsigns diffthis HEAD<CR>", desc = "diff HEAD", icon = "󰦓" },
+      { "<leader>gd", "<cmd>lua vim.lsp.buf.definition()<CR>", desc = "definition", icon = "󰳦" },
       -- { "<leader>gf", "<cmd>Telescope git_worktree create_git_worktree<CR>", desc = "new feature", icon = "󰊕" },
       { "<leader>gg", function() require("snacks").lazygit() end, desc = "lazygit", icon = "󰊢" },
       { "<leader>gh", "<cmd>Gitsigns prev_hunk<CR>", desc = "prev hunk", icon = "󰮲" },
