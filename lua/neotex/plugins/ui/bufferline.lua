@@ -1,3 +1,45 @@
+-- Smart buffer deletion that prevents switching to sidebar buffers (Claude, terminals)
+-- Pre-selects next buffer BEFORE deletion to avoid Neovim's jump list selection
+local function smart_bufdelete(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+
+  -- Find a suitable next buffer: must be listed and a normal file
+  local current_win = vim.api.nvim_get_current_win()
+  local next_buf = nil
+
+  -- Get all listed buffers
+  local buffers = vim.fn.getbufinfo({ buflisted = 1 })
+
+  -- Filter to valid targets (not current, not terminal, is loaded)
+  local valid_buffers = {}
+  for _, buf in ipairs(buffers) do
+    if buf.bufnr ~= bufnr and vim.bo[buf.bufnr].buftype == "" then
+      table.insert(valid_buffers, buf)
+    end
+  end
+
+  -- Sort by lastused (most recent first)
+  table.sort(valid_buffers, function(a, b)
+    return (a.lastused or 0) > (b.lastused or 0)
+  end)
+
+  if #valid_buffers > 0 then
+    next_buf = valid_buffers[1].bufnr
+  else
+    -- No other buffers - create a new empty buffer
+    next_buf = vim.api.nvim_create_buf(true, false)
+  end
+
+  -- Switch to next buffer FIRST (prevents Neovim from selecting Claude)
+  vim.api.nvim_win_set_buf(current_win, next_buf)
+
+  -- Now delete the original buffer
+  vim.api.nvim_buf_delete(bufnr, { force = true })
+end
+
+-- Make it globally available for bufferline
+_G.smart_bufdelete = smart_bufdelete
+
 return {
   "akinsho/bufferline.nvim",
   lazy = true,
@@ -123,8 +165,12 @@ return {
             return true
           end,
           separator_style = "slant",
-          close_command = "bdelete! %d",
-          right_mouse_command = "bdelete! %d",
+          close_command = function(bufnr)
+            smart_bufdelete(bufnr)
+          end,
+          right_mouse_command = function(bufnr)
+            smart_bufdelete(bufnr)
+          end,
           diagnostics = false,
           diagnostics_update_in_insert = false,
           show_tab_indicators = false,

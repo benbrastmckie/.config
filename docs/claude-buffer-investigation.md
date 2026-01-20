@@ -233,7 +233,7 @@ require("stickybuf").setup({
 })
 ```
 
-### New Option F: Use stickybuf.nvim (Recommended)
+### Option F: Use stickybuf.nvim - IMPLEMENTED
 
 **Pros:**
 - Purpose-built solution for this exact problem
@@ -252,17 +252,128 @@ require("stickybuf").setup({
 
 There's an [open issue](https://github.com/greggh/claude-code.nvim/issues/38) on claude-code.nvim about window management integration with edgy.nvim. The proposed solution is a buffer-centric architecture where the plugin manages buffers and external tools (edgy, stickybuf) manage windows.
 
-## Updated Recommendation
+## Implementation Status
 
-**Option F (stickybuf.nvim)** is the recommended approach for these reasons:
+### Attempt 1: stickybuf.nvim with buffer pinning
 
-1. **It's what toggleterm.nvim recommends** - The maintainer explicitly points users to stickybuf.nvim for this exact problem ([Issue #389](https://github.com/akinsho/toggleterm.nvim/issues/389))
+First attempt pinned Claude buffer to its window:
+```lua
+if buftype == "terminal" and bufname:match("claude") then
+  return "bufnr"  -- Pin by buffer number
+end
+```
 
-2. **nvim-tree uses `buftype=nofile`** which isn't possible for Claude Code since it needs terminal functionality
+**Result:** Did not work. This prevents OTHER buffers from appearing in Claude's window, but does NOT prevent Claude from appearing in other windows.
 
-3. **It solves the problem at the correct level** - Preventing the buffer from appearing in the wrong window, rather than trying to fix buffer selection logic after the fact
+### Attempt 2: stickybuf.nvim with buftype pinning
 
-4. **Options A-E all failed or had significant drawbacks** - Buffer deletion logic changes didn't help because the issue is window-level, not buffer-level
+Second attempt pinned windows by buftype:
+```lua
+if buftype == "terminal" or buftype == "" then
+  return "buftype"  -- Pin by buftype
+end
+```
+
+**Result:** Partial success. When closing the second buffer:
+1. Neovim still selects Claude as the next buffer (root cause not fixed)
+2. stickybuf detects the buftype mismatch (terminal in a file window)
+3. stickybuf redirects by **creating a split** instead of an empty buffer
+
+**Current behavior:** Claude appears in a new split window rather than the main editor.
+
+### Core Problem Analysis
+
+The user's requirement: "I don't want it to even get so far as trying to jump to claude code"
+
+**Why Neovim selects Claude despite `buflisted=false`:**
+
+The `buflisted` flag only affects buffer list commands (`:buffers`, `:bnext`). It does NOT prevent:
+1. The buffer from being in the **jump list** (navigation history)
+2. The buffer from being the **alternate buffer** (`#`)
+3. Neovim's **fallback selection** when no other buffers exist
+
+When user interacts with Claude (focuses sidebar), Claude enters the jump list and becomes the alternate buffer. When closing the last file buffer, Neovim's selection algorithm finds Claude through these paths.
+
+**Why nvim-tree doesn't have this problem:**
+- Uses `buftype=nofile` (not `terminal`) - treated as non-buffer by selection algorithm
+- Uses `bufhidden=wipe` - buffer is deleted when hidden, can't be selected
+
+**Why we can't use the same approach:**
+- Claude needs `buftype=terminal` for terminal functionality
+- Claude needs `bufhidden=hide` to keep the session alive when sidebar is closed
+
+### Remaining Options
+
+1. **Ensure `buflisted=false` is set correctly** - Verify our TermOpen autocmd is actually running
+2. **Create custom buffer delete** - Wrapper that pre-selects fallback buffer before deletion
+3. **Configure stickybuf redirect behavior** - Make it create empty buffer instead of split
+4. **Accept the split behavior** - Less bad than Claude in main editor
+
+## Final Solution: Smart Buffer Delete (2026-01-19)
+
+### Root Cause Summary
+
+The fundamental issue is that Neovim's buffer selection algorithm (jump list → alternate → any) doesn't respect `buflisted=false`. When Claude is focused (sidebar click), it enters the jump list and becomes the alternate buffer. Solutions like stickybuf can catch the mismatch but must redirect somewhere, causing splits.
+
+### Solution: Pre-Selection Pattern
+
+Instead of trying to prevent Neovim from selecting Claude, **pre-select the next buffer BEFORE deletion**:
+
+```lua
+local function smart_bufdelete(bufnr)
+  bufnr = bufnr or vim.api.nvim_get_current_buf()
+  local current_win = vim.api.nvim_get_current_win()
+
+  -- Find suitable next buffer: listed + buftype=""
+  local buffers = vim.fn.getbufinfo({ buflisted = 1 })
+  local valid_buffers = {}
+  for _, buf in ipairs(buffers) do
+    if buf.bufnr ~= bufnr and vim.bo[buf.bufnr].buftype == "" then
+      table.insert(valid_buffers, buf)
+    end
+  end
+
+  -- Sort by lastused (MRU)
+  table.sort(valid_buffers, function(a, b)
+    return (a.lastused or 0) > (b.lastused or 0)
+  end)
+
+  local next_buf
+  if #valid_buffers > 0 then
+    next_buf = valid_buffers[1].bufnr
+  else
+    -- No valid buffers - create empty
+    next_buf = vim.api.nvim_create_buf(true, false)
+  end
+
+  -- Switch FIRST, then delete
+  vim.api.nvim_win_set_buf(current_win, next_buf)
+  vim.api.nvim_buf_delete(bufnr, { force = true })
+end
+```
+
+### Why This Works
+
+1. We explicitly find valid buffers (listed + buftype="")
+2. We switch to the next buffer BEFORE deletion
+3. Neovim never needs to select a buffer - we've already done it
+4. Claude can never be selected because we filter by buftype
+
+### Integration
+
+```lua
+-- In bufferline.lua
+close_command = function(bufnr)
+  smart_bufdelete(bufnr)
+end,
+right_mouse_command = function(bufnr)
+  smart_bufdelete(bufnr)
+end,
+```
+
+### stickybuf.nvim Status
+
+**Removed** - The `smart_bufdelete` solution fully resolves the issue by pre-selecting the next buffer before deletion. stickybuf.nvim is no longer needed.
 
 ## Technical References
 
