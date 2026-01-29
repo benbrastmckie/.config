@@ -304,7 +304,6 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('STTToggle', M.toggle_recording, { desc = 'Toggle STT recording' })
   vim.api.nvim_create_user_command('STTHealth', M.health, { desc = 'Check STT dependencies' })
 
-  notify("STT plugin loaded. Use <leader>vr to start, <leader>vs to stop.", vim.log.levels.INFO)
 end
 
 return M
