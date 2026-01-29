@@ -692,6 +692,18 @@ return {
     })
 
     -- ============================================================================
+    -- <leader>v - VOICE GROUP (STT)
+    -- ============================================================================
+
+    wk.add({
+      { "<leader>v", group = "voice", icon = "󰍬" },
+      { "<leader>vh", function() require('neotex.plugins.tools.stt').health() end, desc = "health check", icon = "󰸉" },
+      { "<leader>vr", function() require('neotex.plugins.tools.stt').start_recording() end, desc = "start recording", icon = "󰑊" },
+      { "<leader>vs", function() require('neotex.plugins.tools.stt').stop_recording() end, desc = "stop recording", icon = "󰓛" },
+      { "<leader>vt", function() require('neotex.plugins.tools.stt').toggle_recording() end, desc = "toggle recording", icon = "󰔊" },
+    })
+
+    -- ============================================================================
     -- <leader>y - YANK GROUP
     -- ============================================================================
 
