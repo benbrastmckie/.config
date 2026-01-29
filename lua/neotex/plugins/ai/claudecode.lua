@@ -89,6 +89,13 @@ return {
         -- Hide from buffer lists
         vim.bo.bufhidden = "hide"
 
+        -- Buffer-local terminal mode keybinding for STT toggle
+        vim.keymap.set('t', '<C-\\>', '<Cmd>STTToggle<CR>', {
+          buffer = 0,
+          silent = true,
+          desc = 'STT: Toggle recording (terminal mode)'
+        })
+
         -- Note: <C-CR> mapping for Claude Code toggle is defined in keymaps.lua
       end,
     })
