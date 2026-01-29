@@ -306,8 +306,8 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('STTHealth', M.health, { desc = 'Check STT dependencies' })
 
   -- Global Ctrl-\ toggle mapping (works in Claude Code and regular Neovim)
-  -- This is always set, independent of which-key availability
-  vim.keymap.set('n', '<C-\\>', M.toggle_recording, {
+  -- Uses :STTToggle command to work in Claude Code's chat input
+  vim.keymap.set('n', '<C-\\>', '<Cmd>STTToggle<CR>', {
     noremap = true,
     silent = true,
     desc = 'STT: Toggle recording (Ctrl-\\)'
