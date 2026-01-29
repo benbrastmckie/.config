@@ -14,7 +14,7 @@
 -- Usage:
 --   <leader>vr - Start recording
 --   <leader>vs - Stop recording and transcribe
---   <leader>vt - Toggle recording (start if not recording, stop if recording)
+--   <leader>vv - Toggle recording (start if not recording, stop if recording)
 --
 -- Author: Claude Code Integration
 -- License: MIT
@@ -293,7 +293,7 @@ function M.setup(opts)
       local keymap_opts = { noremap = true, silent = true }
       vim.keymap.set('n', '<leader>vr', M.start_recording, vim.tbl_extend("force", keymap_opts, { desc = "STT: Start recording" }))
       vim.keymap.set('n', '<leader>vs', M.stop_recording, vim.tbl_extend("force", keymap_opts, { desc = "STT: Stop recording" }))
-      vim.keymap.set('n', '<leader>vt', M.toggle_recording, vim.tbl_extend("force", keymap_opts, { desc = "STT: Toggle recording" }))
+      vim.keymap.set('n', '<leader>vv', M.toggle_recording, vim.tbl_extend("force", keymap_opts, { desc = "STT: Toggle recording" }))
       vim.keymap.set('n', '<leader>vh', M.health, vim.tbl_extend("force", keymap_opts, { desc = "STT: Health check" }))
     end
   end

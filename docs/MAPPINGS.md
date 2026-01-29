@@ -387,7 +387,7 @@ Speech-to-text input using Vosk offline recognition.
 |-----|--------|-------------|
 | `<leader>vr` | Start recording | Begin audio capture for transcription |
 | `<leader>vs` | Stop recording | Stop capture and insert transcribed text at cursor |
-| `<leader>vt` | Toggle recording | Start recording if stopped, stop if recording |
+| `<leader>vv` | Toggle recording | Start recording if stopped, stop if recording |
 | `<leader>vh` | Health check | Verify STT dependencies and model availability |
 
 **Commands**: `:STTStart`, `:STTStop`, `:STTToggle`, `:STTHealth`

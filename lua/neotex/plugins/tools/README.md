@@ -290,7 +290,7 @@ gD          -- Delete
 -- Voice command keymaps
 <leader>vr  -- Start recording audio
 <leader>vs  -- Stop recording and transcribe
-<leader>vt  -- Toggle recording on/off
+<leader>vv  -- Toggle recording on/off
 <leader>vh  -- Health check (verify dependencies)
 
 -- User commands
