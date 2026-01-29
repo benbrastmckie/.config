@@ -25,15 +25,17 @@ tools/
 │   ├── init.lua       # Main snacks configuration
 │   ├── dashboard.lua  # Dashboard setup
 │   └── utils.lua      # Snacks utilities
-└── himalaya/          # Email client integration
-    ├── README.md      # Himalaya documentation
-    ├── INSTALLATION.md # Complete setup guide
-    ├── init.lua       # Main plugin interface
-    ├── config.lua     # Configuration management
-    ├── commands.lua   # Command definitions
-    ├── ui.lua         # Email interface
-    ├── picker.lua     # Telescope integration
-    └── utils.lua      # CLI utilities
+├── himalaya/          # Email client integration
+│   ├── README.md      # Himalaya documentation
+│   ├── INSTALLATION.md # Complete setup guide
+│   ├── init.lua       # Main plugin interface
+│   ├── config.lua     # Configuration management
+│   ├── commands.lua   # Command definitions
+│   ├── ui.lua         # Email interface
+│   ├── picker.lua     # Telescope integration
+│   └── utils.lua      # CLI utilities
+└── stt/               # Speech-to-text input
+    └── init.lua       # STT plugin implementation
 ```
 
 ## Overview
@@ -52,12 +54,14 @@ The tools module is organized into individual plugin configurations and speciali
 | **yanky** | `yanky.lua` | Enhanced yank/paste with history |
 | **todo-comments** | `todo-comments.lua` | TODO comment highlighting and navigation |
 | **luasnip** | `luasnip.lua` | Snippet engine configuration |
+| **stt** | `stt/` | Speech-to-text input with Vosk offline recognition |
 
 ### Specialized Subdirectories
 
 - **[`autolist/`](autolist/README.md)** - Smart list handling for markdown and note-taking
 - **[`snacks/`](snacks/README.md)** - Collection of UI enhancements and utilities
 - **[`himalaya/`](himalaya/README.md)** - Complete email client integration with local storage
+- **`stt/`** - Speech-to-text input using Vosk for offline voice transcription
 
 ## Plugin Categories
 
@@ -115,6 +119,15 @@ The tools module is organized into individual plugin configurations and speciali
   - Offline email access and composition
   - OAuth2 authentication with secure keyring storage
 
+### Voice Input
+- **stt**: Speech-to-text input with Vosk
+  - Offline voice recognition (no cloud services)
+  - Insert transcribed text directly at cursor position
+  - Async transcription processing
+  - `<leader>v` keybinding group for voice commands
+  - User commands: `:STTStart`, `:STTStop`, `:STTToggle`, `:STTHealth`
+  - Vosk model: vosk-model-small-en-us (~50MB)
+
 ### Code Completion & Snippets
 - **luasnip**: Advanced snippet engine
   - Custom snippet definitions
@@ -145,6 +158,7 @@ return {
   autopairs_module,
   luasnip_module,
   himalaya_module,
+  stt_module,
 }
 ```
 
@@ -271,6 +285,36 @@ gf          -- Forward
 gD          -- Delete
 ```
 
+### Voice Input (Speech-to-Text)
+```lua
+-- Voice command keymaps
+<leader>vr  -- Start recording audio
+<leader>vs  -- Stop recording and transcribe
+<leader>vt  -- Toggle recording on/off
+<leader>vh  -- Health check (verify dependencies)
+
+-- User commands
+:STTStart   -- Begin audio recording
+:STTStop    -- Stop and insert transcribed text
+:STTToggle  -- Toggle recording state
+:STTHealth  -- Verify Vosk model and dependencies
+```
+
+**Workflow**:
+1. Position cursor where text should be inserted
+2. Press `<leader>vr` to start recording
+3. Speak clearly (supports up to 30 seconds by default)
+4. Press `<leader>vs` to stop and transcribe
+5. Transcribed text appears at cursor position
+
+**Configuration**:
+```lua
+-- Optional: customize in init.lua or ftplugin
+vim.g.stt_model_path = "~/.local/share/vosk/vosk-model-small-en-us"
+vim.g.stt_record_timeout = 30  -- Max recording duration in seconds
+vim.g.stt_sample_rate = 16000  -- Audio sample rate (Hz)
+```
+
 ## Completion Integration
 
 ### Autopairs and Completion System
@@ -321,6 +365,10 @@ This shows the TOOLS category with all configured plugins. See [`scripts/README.
 - **Himalaya CLI**: Required for email client functionality
 - **mbsync**: Required for email synchronization
 - **GNOME Keyring**: Required for secure email credential storage
+- **PulseAudio/PipeWire**: Required for STT audio capture (parecord command)
+- **Python 3**: Required for STT transcription
+- **Vosk**: Required for STT speech recognition (Python package)
+- **vosk-transcribe.py**: Required for STT processing (helper script)
 
 ### Internal Dependencies
 - **Treesitter**: Enhances autopairs and mini.ai functionality
