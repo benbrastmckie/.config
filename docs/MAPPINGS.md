@@ -389,6 +389,7 @@ Speech-to-text input using Vosk offline recognition.
 | `<leader>vs` | Stop recording | Stop capture and insert transcribed text at cursor |
 | `<leader>vv` | Toggle recording | Start recording if stopped, stop if recording |
 | `<leader>vh` | Health check | Verify STT dependencies and model availability |
+| `<C-\>` | Toggle recording | Alternative toggle (works in Claude Code) |
 
 **Commands**: `:STTStart`, `:STTStop`, `:STTToggle`, `:STTHealth`
 

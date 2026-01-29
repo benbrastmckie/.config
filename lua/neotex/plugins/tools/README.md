@@ -292,6 +292,7 @@ gD          -- Delete
 <leader>vs  -- Stop recording and transcribe
 <leader>vv  -- Toggle recording on/off
 <leader>vh  -- Health check (verify dependencies)
+<C-\>       -- Toggle recording (alternative, works in Claude Code)
 
 -- User commands
 :STTStart   -- Begin audio recording

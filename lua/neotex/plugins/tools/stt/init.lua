@@ -15,6 +15,7 @@
 --   <leader>vr - Start recording
 --   <leader>vs - Stop recording and transcribe
 --   <leader>vv - Toggle recording (start if not recording, stop if recording)
+--   <C-\>      - Toggle recording (works in Claude Code)
 --
 -- Author: Claude Code Integration
 -- License: MIT
@@ -303,6 +304,14 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('STTStop', M.stop_recording, { desc = 'Stop STT recording' })
   vim.api.nvim_create_user_command('STTToggle', M.toggle_recording, { desc = 'Toggle STT recording' })
   vim.api.nvim_create_user_command('STTHealth', M.health, { desc = 'Check STT dependencies' })
+
+  -- Global Ctrl-\ toggle mapping (works in Claude Code and regular Neovim)
+  -- This is always set, independent of which-key availability
+  vim.keymap.set('n', '<C-\\>', M.toggle_recording, {
+    noremap = true,
+    silent = true,
+    desc = 'STT: Toggle recording (Ctrl-\\)'
+  })
 
 end
 
