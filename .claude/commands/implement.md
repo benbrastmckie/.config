@@ -1,13 +1,13 @@
 ---
 description: Execute implementation with resume support
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash, Task, TodoWrite, mcp__lean-lsp__*
+allowed-tools: Skill, Bash(jq:*), Bash(git:*), Read, Edit, Glob
 argument-hint: TASK_NUMBER
 model: claude-opus-4-5-20251101
 ---
 
 # /implement Command
 
-Execute implementation plan with automatic resume support.
+Execute implementation plan with automatic resume support by delegating to the appropriate implementation skill/subagent.
 
 ## Arguments
 
@@ -16,164 +16,151 @@ Execute implementation plan with automatic resume support.
 
 ## Execution
 
-### 1. Parse and Validate
+**MCP Safety**: Do not call `lean_diagnostic_messages` or `lean_file_outline` - they hang. Delegate to skills.
 
+### CHECKPOINT 1: GATE IN
+
+1. **Generate Session ID**
+   ```
+   session_id = sess_{timestamp}_{random}
+   ```
+
+2. **Lookup Task**
+   ```bash
+   task_data=$(jq -r --arg num "$task_number" \
+     '.active_projects[] | select(.project_number == ($num | tonumber))' \
+     specs/state.json)
+   ```
+
+3. **Validate**
+   - Task exists (ABORT if not)
+   - Status allows implementation: planned, implementing, partial, researched, not_started
+   - If completed: ABORT unless --force
+   - If abandoned: ABORT "Recover task first"
+
+4. **Load Implementation Plan**
+   Find latest: `specs/{N}_{SLUG}/plans/implementation-{LATEST}.md`
+
+   If no plan: ABORT "No implementation plan found. Run /plan {N} first."
+
+5. **Detect Resume Point**
+   Scan plan for phase status markers:
+   - [NOT STARTED] → Start here
+   - [IN PROGRESS] → Resume here
+   - [COMPLETED] → Skip
+   - [PARTIAL] → Resume here
+
+   If all [COMPLETED]: Task already done
+
+**ABORT** if any validation fails.
+
+**On GATE IN success**: Task validated. **IMMEDIATELY CONTINUE** to STAGE 2 below.
+
+### STAGE 2: DELEGATE
+
+**EXECUTE NOW**: After CHECKPOINT 1 passes, immediately invoke the Skill tool.
+
+**Language-Based Routing**:
+
+| Language | Skill to Invoke |
+|----------|-----------------|
+| `lean` | `skill-lean-implementation` |
+| `latex` | `skill-latex-implementation` |
+| `general`, `meta`, `markdown` | `skill-implementer` |
+
+**Invoke the Skill tool NOW** with:
 ```
-task_number = first token from $ARGUMENTS
-force_mode = "--force" in $ARGUMENTS
+skill: "{skill-name from table above}"
+args: "task_number={N} plan_path={path to implementation plan} resume_phase={phase number} session_id={session_id}"
 ```
 
-Read .claude/specs/state.json:
-- Find task by project_number
-- Extract: language, status, project_name, description
-- If not found: Error "Task {N} not found"
+The skill will spawn the appropriate agent which executes plan phases sequentially, updates phase markers, creates commits per phase, and returns a structured result.
 
-### 2. Validate Status
+**On DELEGATE success**: Implementation complete. **IMMEDIATELY CONTINUE** to CHECKPOINT 2 below.
 
-Allowed: planned, implementing, partial, researched, not_started
-- If completed: Error unless --force
-- If abandoned: Error "Recover task first"
-- If implementing: Resume from last incomplete phase
+### CHECKPOINT 2: GATE OUT
 
-### 3. Load Implementation Plan
+1. **Validate Return**
+   Required fields: status, summary, artifacts, metadata (phases_completed, phases_total)
 
-Find latest plan:
-```
-.claude/specs/{N}_{SLUG}/plans/implementation-{LATEST}.md
-```
+2. **Verify Artifacts**
+   Check summary file exists on disk (if implemented)
 
-Parse plan to extract:
-- Phases with status markers
-- Files to modify per phase
-- Steps and verification criteria
+3. **Verify Status Updated**
+   The skill handles status updates internally (preflight and postflight).
 
-### 4. Detect Resume Point
+   **If result.status == "implemented":**
+   Confirm status is now "completed" in state.json.
 
-Scan phases for first incomplete:
-- [NOT STARTED] → Start here
-- [IN PROGRESS] → Resume here
-- [COMPLETED] → Skip
-- [PARTIAL] → Resume here
+   **If result.status == "partial":**
+   Confirm status is still "implementing", resume point noted.
 
-If all phases [COMPLETED]: Task already done
+4. **Populate Completion Summary (if implemented)**
 
-### 5. Update Status to IMPLEMENTING
+   **Only when result.status == "implemented":**
 
-Update both files atomically:
-1. state.json: status = "implementing"
-2. TODO.md: Status: [IMPLEMENTING]
+   Extract the summary from the skill result and update state.json:
+   ```bash
+   # Get completion summary from skill result (result.summary field)
+   completion_summary="$result_summary"
 
-### 6. Execute Phases
+   # Update state.json with completion_summary field
+   jq --arg num "$task_number" \
+      --arg summary "$completion_summary" \
+      '(.active_projects[] | select(.project_number == ($num | tonumber))) += {
+        completion_summary: $summary
+      }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+   ```
 
-For each phase starting from resume point:
+   **Update TODO.md with Summary line:**
+   Add a `- **Summary**: {completion_summary}` line to the task entry in TODO.md, after the Completed date line.
 
-**A. Mark Phase In Progress**
-Update plan file: Phase N status → [IN PROGRESS]
+   **Skip if result.status == "partial":**
+   Partial implementations do not get completion summaries.
 
-**B. Execute Steps**
+**RETRY** skill if validation fails.
 
-Route by language:
+**On GATE OUT success**: Artifacts and completion summary verified. **IMMEDIATELY CONTINUE** to CHECKPOINT 3 below.
 
-**Lean tasks:**
-- Use lean-lsp MCP tools
-- `lean_goal` - Check proof state constantly
-- `lean_diagnostic_messages` - Verify no errors
-- `lean_hover_info` - Check types
-- `lean_multi_attempt` - Try multiple tactics
-- Write/Edit .lean files
-- Run `lake build` to verify
+### CHECKPOINT 3: COMMIT
 
-**General tasks:**
-- Read/Write/Edit source files
-- Run tests if applicable
-- Verify changes work
-
-**C. Verify Phase**
-Check verification criteria from plan
-
-**D. Mark Phase Complete**
-Update plan file: Phase N status → [COMPLETED]
-
-**E. Git Commit for Phase**
+**On completion:**
 ```bash
 git add -A
-git commit -m "task {N} phase {P}: {phase_name}"
+git commit -m "$(cat <<'EOF'
+task {N}: complete implementation
+
+Session: {session_id}
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+EOF
+)"
 ```
 
-### 7. Handle Errors/Timeouts
+**On partial:**
+```bash
+git add -A
+git commit -m "$(cat <<'EOF'
+task {N}: partial implementation (phases 1-{M} of {total})
 
-**On Error:**
-- Keep phase as [IN PROGRESS]
-- Log error details
-- Return partial status
-- Next /implement will resume
+Session: {session_id}
 
-**On Timeout:**
-- Mark phase [PARTIAL]
-- Preserve all progress
-- Git commit partial work
-- Next /implement will resume
-
-### 8. Complete Implementation
-
-After all phases done:
-
-1. **Update Status to COMPLETED**
-   - state.json: status = "completed"
-   - TODO.md: Status: [COMPLETED], add Completed date
-
-2. **Create Summary**
-   Write to `.claude/specs/{N}_{SLUG}/summaries/implementation-summary-{DATE}.md`:
-   ```markdown
-   # Implementation Summary: Task #{N}
-
-   **Completed**: {ISO_DATE}
-   **Duration**: {total time}
-
-   ## Changes Made
-
-   {Summary of all changes}
-
-   ## Files Modified
-
-   - `path/to/file` - {change description}
-
-   ## Verification
-
-   - {What was verified}
-   - {Test results}
-
-   ## Notes
-
-   {Any additional notes or follow-up items}
-   ```
-
-3. **Final Git Commit**
-   ```bash
-   git add -A
-   git commit -m "task {N}: complete implementation"
-   ```
-
-### 9. Output
-
-**During Execution:**
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+EOF
+)"
 ```
-Implementing Task #{N}: {title}
 
-Phase 1: {name} [IN PROGRESS]
-  Step 1: {description}... done
-  Step 2: {description}... done
-Phase 1: [COMPLETED]
+Commit failure is non-blocking (log and continue).
 
-Phase 2: {name} [IN PROGRESS]
-...
-```
+## Output
 
 **On Completion:**
 ```
 Implementation complete for Task #{N}
 
-Summary: .claude/specs/{N}_{SLUG}/summaries/implementation-summary-{DATE}.md
+Summary: {artifact_path from skill result}
+
+Phases completed: {phases_completed}/{phases_total}
 
 Status: [COMPLETED]
 ```
@@ -182,9 +169,29 @@ Status: [COMPLETED]
 ```
 Implementation paused for Task #{N}
 
-Completed: Phases 1-2
-Remaining: Phase 3
+Completed: Phases 1-{M}
+Remaining: Phase {M+1}
 
 Status: [IMPLEMENTING]
-Next: /implement {N} (will resume from Phase 3)
+Next: /implement {N} (will resume from Phase {M+1})
 ```
+
+## Error Handling
+
+### GATE IN Failure
+- Task not found: Return error with guidance
+- No plan found: Return error "Run /plan {N} first"
+- Invalid status: Return error with current status
+
+### DELEGATE Failure
+- Skill fails: Keep [IMPLEMENTING], log error
+- Timeout: Progress preserved in plan phase markers, user can re-run
+
+### GATE OUT Failure
+- Missing artifacts: Log warning, continue with available
+- Link failure: Non-blocking warning
+
+### Build Errors
+- Skill returns partial/failed status
+- Error details included in result
+- User can fix issues and re-run /implement

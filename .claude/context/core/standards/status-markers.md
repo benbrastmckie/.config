@@ -1,6 +1,5 @@
 # Status Markers Convention
 
-**Version**: 1.0  
 **Status**: Active  
 **Created**: 2026-01-05  
 **Purpose**: Single source of truth for status markers across TODO.md and state.json
@@ -168,6 +167,23 @@ This document defines the complete set of status markers used throughout the Pro
 - `- **Abandoned**: YYYY-MM-DD` timestamp
 - `- **Abandonment Reason**: {reason}`
 
+#### `[EXPANDED]`
+**TODO.md Format**: `- **Status**: [EXPANDED]`
+**state.json Value**: `"status": "expanded"`
+**Meaning**: Parent task has been expanded into subtasks; work continues in subtasks.
+
+**Valid Transitions**:
+- `[NOT STARTED]` → `[EXPANDED]` (when task is divided into subtasks)
+- `[RESEARCHED]` → `[EXPANDED]` (when researched task is divided)
+- `[PLANNED]` → `[EXPANDED]` (when planned task is divided)
+- Any non-terminal status → `[EXPANDED]` (when divided)
+
+**Note**: `[EXPANDED]` is terminal-like. The parent delegates work to subtasks.
+
+**Required Information**:
+- `- **Subtasks**: {list}` in TODO.md
+- `"subtasks": [...]` array in state.json
+
 ---
 
 ## TODO.md vs state.json Mapping
@@ -186,6 +202,7 @@ This document defines the complete set of status markers used throughout the Pro
 | `[PARTIAL]` | `partial` | Implementation partially complete |
 | `[BLOCKED]` | `blocked` | Task blocked |
 | `[ABANDONED]` | `abandoned` | Task abandoned |
+| `[EXPANDED]` | `expanded` | Task expanded into subtasks |
 
 **Conversion Rules**:
 - TODO.md uses uppercase with underscores in brackets: `[NOT STARTED]`
@@ -231,11 +248,13 @@ This document defines the complete set of status markers used throughout the Pro
                     ├────> [COMPLETED] (all phases done)       │
                     ├────> [PARTIAL] (some phases done)        │
                     └────> [BLOCKED] (cannot proceed) ─────────┘
-                                     
+
     ┌──────────────────────────────────────────────────────────┘
     │ (work abandoned)
     ▼
 [ABANDONED]
+
+Any non-terminal ──(/task --expand)──> [EXPANDED] (delegates to subtasks)
 ```
 
 ---
@@ -278,7 +297,7 @@ This document defines the complete set of status markers used throughout the Pro
   "validated_artifacts": [
     {
       "type": "research_report",
-      "path": ".claude/specs/321_topic/reports/research-001.md",
+      "path": "specs/321_topic/reports/research-001.md",
       "summary": "Research findings",
       "validated": true
     }
@@ -304,19 +323,20 @@ status-sync-manager updates atomically:
 ### Status Transition Validation
 
 **Valid Transitions**:
-- `[NOT STARTED]` → `[RESEARCHING]`, `[PLANNING]`, `[IMPLEMENTING]`, `[BLOCKED]`
+- `[NOT STARTED]` → `[RESEARCHING]`, `[PLANNING]`, `[IMPLEMENTING]`, `[BLOCKED]`, `[EXPANDED]`
 - `[RESEARCHING]` → `[RESEARCHED]`, `[BLOCKED]`, `[ABANDONED]`
-- `[RESEARCHED]` → `[PLANNING]`, `[IMPLEMENTING]`, `[BLOCKED]`
+- `[RESEARCHED]` → `[PLANNING]`, `[IMPLEMENTING]`, `[BLOCKED]`, `[EXPANDED]`
 - `[PLANNING]` → `[PLANNED]`, `[BLOCKED]`, `[ABANDONED]`
-- `[PLANNED]` → `[REVISING]`, `[IMPLEMENTING]`, `[BLOCKED]`
+- `[PLANNED]` → `[REVISING]`, `[IMPLEMENTING]`, `[BLOCKED]`, `[EXPANDED]`
 - `[REVISING]` → `[REVISED]`, `[BLOCKED]`, `[ABANDONED]`
-- `[REVISED]` → `[IMPLEMENTING]`, `[REVISING]`, `[BLOCKED]`
+- `[REVISED]` → `[IMPLEMENTING]`, `[REVISING]`, `[BLOCKED]`, `[EXPANDED]`
 - `[IMPLEMENTING]` → `[COMPLETED]`, `[PARTIAL]`, `[BLOCKED]`, `[ABANDONED]`
 - `[PARTIAL]` → `[IMPLEMENTING]`, `[COMPLETED]`, `[ABANDONED]`
-- `[BLOCKED]` → `[RESEARCHING]`, `[PLANNING]`, `[IMPLEMENTING]`, `[ABANDONED]`
+- `[BLOCKED]` → `[RESEARCHING]`, `[PLANNING]`, `[IMPLEMENTING]`, `[ABANDONED]`, `[EXPANDED]`
 
 **Invalid Transitions**:
 - `[COMPLETED]` → any (completed is terminal)
+- `[EXPANDED]` → any (expanded is terminal-like, work in subtasks)
 - `[NOT STARTED]` → `[COMPLETED]` (must go through work phases)
 - `[NOT STARTED]` → `[ABANDONED]` (cannot abandon work never started)
 - `[ABANDONED]` → `[COMPLETED]` (abandoned work not complete)
@@ -330,6 +350,10 @@ status-sync-manager updates atomically:
 **For `[ABANDONED]` status**:
 - MUST include `abandonment_reason` parameter
 - MUST include `- **Abandoned**: YYYY-MM-DD` timestamp in TODO.md
+
+**For `[EXPANDED]` status**:
+- MUST include `subtasks` array with subtask numbers
+- MUST include `- **Subtasks**: {list}` in TODO.md
 
 **For completion statuses** (`[RESEARCHED]`, `[PLANNED]`, `[REVISED]`, `[COMPLETED]`):
 - MUST include `validated_artifacts` array with artifact paths

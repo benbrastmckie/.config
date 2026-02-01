@@ -10,6 +10,7 @@ return {
         "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline",
         "python", "bash", "nix", "json", "yaml", "toml", "gitignore",
         "c", "haskell", "css", "html", "javascript", "scss", "regex",
+        "typst",
       }
 
       -- Filetypes to disable treesitter for

@@ -71,7 +71,7 @@ permissions:
     - read: ["**/*.md", ".claude/**/*", "Documentation/**/*"]
     
     # File write permissions (glob patterns)
-    - write: [".claude/specs/**/*"]
+    - write: ["specs/**/*"]
     
     # Bash command whitelist (exact command names)
     - bash: ["grep", "find", "wc", "date", "mkdir"]

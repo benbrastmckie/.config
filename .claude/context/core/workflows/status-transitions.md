@@ -1,5 +1,15 @@
 # Status Transitions
 
+---
+
+> **DEPRECATED** (2026-01-19): This file is redundant. Use these instead:
+> - `orchestration/state-management.md` - Status markers, transitions, synchronization
+> - `standards/status-markers.md` - Complete status definitions (if more detail needed)
+>
+> This file is preserved for reference but should not be loaded for new development.
+
+---
+
 **Note**: For complete status marker definitions, see `.claude/context/core/standards/status-markers.md` (authoritative source).
 
 ## Status Markers (Quick Reference)
@@ -18,6 +28,7 @@
 | Partial | `[PARTIAL]` | Implementation partially complete |
 | Blocked | `[BLOCKED]` | Task blocked by dependency |
 | Abandoned | `[ABANDONED]` | Task abandoned |
+| Expanded | `[EXPANDED]` | Task expanded into subtasks |
 
 ## Valid Transitions
 
@@ -33,6 +44,8 @@
 - `[RESEARCHED]` → `[IMPLEMENTING]` (skip planning)
 
 **Any status** → `[BLOCKED]` or `[ABANDONED]`
+
+**Any non-terminal** → `[EXPANDED]` (when task is expanded into subtasks via `/task --expand`)
 
 ## Command → Status Mapping
 
@@ -57,7 +70,7 @@
   "new_status": "researched",
   "timestamp": "2025-12-29T08:13:37Z",
   "artifacts": [
-    ".claude/specs/244_phase_1/reports/research-001.md"
+    "specs/244_phase_1/reports/research-001.md"
   ]
 }
 ```

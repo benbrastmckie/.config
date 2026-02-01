@@ -1,8 +1,15 @@
 # Routing Guide - Lightweight Command Routing Context
 
-**Version**: 1.0  
-**Created**: 2025-12-29 (Task 244 Phase 1)  
+**Created**: 2025-12-29 (Task 244 Phase 1)
 **Purpose**: Lightweight routing context for orchestrator Stages 1-3 (command parsing and delegation preparation)
+
+---
+
+> **DEPRECATED** (2026-01-19): This file has been consolidated into:
+> - `orchestration-core.md` - Command->Agent mapping, language extraction, routing validation
+> - `orchestration-reference.md` - Troubleshooting routing issues
+>
+> This file is preserved for reference but should not be loaded for new development.
 
 ---
 
@@ -49,7 +56,7 @@ Extract language from task entry in TODO.md:
 
 ```bash
 # Extract language field from task entry
-language=$(grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed 's/\*\*Language\*\*: //')
+language=$(grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*Language\*\*: //')
 
 # Validate extraction succeeded
 if [ -z "$language" ]; then
@@ -200,7 +207,7 @@ if ! [[ "$task_number" =~ ^[0-9]+$ ]]; then
 fi
 
 # Verify task exists in TODO.md
-if ! grep -q "^### ${task_number}\." .claude/specs/TODO.md; then
+if ! grep -q "^### ${task_number}\." specs/TODO.md; then
   echo "[FAIL] Task ${task_number} not found in TODO.md"
   exit 1
 fi
@@ -216,7 +223,7 @@ Some commands support flags:
 | `/plan` | `--phased` | Create phased implementation plan |
 | `/implement` | `--resume` | Resume from incomplete phase |
 | `/task` | `--recover` | Unarchive tasks from archive/ (supports ranges/lists) |
-| `/task` | `--divide` | Divide existing task into subtasks (single task only) |
+| `/task` | `--expand` | Expand existing task into subtasks (single task only) |
 | `/task` | `--sync` | Synchronize TODO.md and state.json (git blame conflict resolution) |
 | `/task` | `--abandon` | Abandon tasks to archive/ (supports ranges/lists) |
 
@@ -230,9 +237,9 @@ The `/task` command uses flag-based routing to different operations:
 if [[ "$ARGUMENTS" =~ --recover ]]; then
   operation="recover"
   args="${ARGUMENTS#*--recover }"  # Extract task ranges
-elif [[ "$ARGUMENTS" =~ --divide ]]; then
-  operation="divide"
-  args="${ARGUMENTS#*--divide }"  # Extract task number and optional prompt
+elif [[ "$ARGUMENTS" =~ --expand ]]; then
+  operation="expand"
+  args="${ARGUMENTS#*--expand }"  # Extract task number and optional prompt
 elif [[ "$ARGUMENTS" =~ --sync ]]; then
   operation="sync"
   args="${ARGUMENTS#*--sync }"  # Extract optional task ranges
@@ -319,7 +326,7 @@ Commands update task status using text-based markers:
   "new_status": "researched",
   "timestamp": "2025-12-29T08:13:37Z",
   "artifacts": [
-    ".claude/specs/244_phase_1_context_index_and_research_frontmatter_prototype/reports/research-001.md"
+    "specs/244_phase_1_context_index_and_research_frontmatter_prototype/reports/research-001.md"
   ]
 }
 ```
@@ -352,7 +359,7 @@ Commands update task status using text-based markers:
     "message": "Task 244 not found in TODO.md",
     "code": "TASK_NOT_FOUND",
     "recoverable": false,
-    "recommendation": "Verify task number exists in .claude/specs/TODO.md"
+    "recommendation": "Verify task number exists in specs/TODO.md"
   }],
   "metadata": {
     "session_id": "sess_1735460684_a1b2c3",
@@ -470,7 +477,6 @@ Error: Routing mismatch: Lean task must route to lean-* agent
    ### 258. Resolve Truth.lean sorries
    - **Status**: [NOT STARTED]
    - **Language**: lean
-   - **Priority**: High
    ```
 2. Re-run command
 
@@ -556,7 +562,7 @@ fi
 
 ```bash
 # Extract task entry (20 lines after task header)
-task_entry=$(grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md)
+task_entry=$(grep -A 20 "^### ${task_number}\." specs/TODO.md)
 
 # Extract Language field
 language=$(echo "$task_entry" | grep "Language" | sed 's/\*\*Language\*\*: //' | tr -d ' ')

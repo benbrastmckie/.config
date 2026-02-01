@@ -1,6 +1,5 @@
 # XML Pattern Guide for Agent Prompts
 
-**Version**: 1.0.0  
 **Created**: 2025-12-29  
 **Purpose**: Define optimal XML structure patterns for agent prompts based on research-backed best practices
 

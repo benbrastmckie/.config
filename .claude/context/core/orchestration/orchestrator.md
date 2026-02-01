@@ -1,8 +1,15 @@
 # Orchestrator Design
 
-**Version**: 5.0  
-**Created**: 2025-12-29  
+**Created**: 2025-12-29
 **Purpose**: Document the smart coordinator pattern and orchestrator architecture
+
+---
+
+> **DEPRECATED** (2026-01-19): This file has been consolidated into:
+> - `orchestration-core.md` - Session tracking, delegation safety, return format, routing
+> - `orchestration-reference.md` - Examples and troubleshooting
+>
+> This file is preserved for reference but should not be loaded for new development.
 
 ---
 
@@ -61,7 +68,7 @@ It does NOT handle:
    # Lookup task in state.json (8x faster than TODO.md)
    task_data=$(jq -r --arg num "$task_number" \
      '.active_projects[] | select(.project_number == ($num | tonumber))' \
-     .claude/specs/state.json)
+     specs/state.json)
    
    # Extract language
    language=$(echo "$task_data" | jq -r '.language // "general"')
@@ -79,7 +86,7 @@ It does NOT handle:
 
 **Output**: Target agent name
 
-**Note**: Command files now use state.json for all task lookups. See `.claude/context/core/system/state-lookup.md` for patterns.
+**Note**: Command files now use state.json for all task lookups. See `state-management.md` for patterns.
 
 ---
 
@@ -179,7 +186,7 @@ Without loading:
 ## Language Extraction Logic
 
 ### Priority 1: Project state.json
-**Path**: `.claude/specs/{task_number}_{slug}/state.json`
+**Path**: `specs/{task_number}_{slug}/state.json`
 
 **Field**: `language`
 
@@ -197,7 +204,7 @@ Without loading:
 ---
 
 ### Priority 2: TODO.md
-**Path**: `.claude/specs/TODO.md`
+**Path**: `specs/TODO.md`
 
 **Field**: `**Language**:` in task entry
 
@@ -378,7 +385,6 @@ Agents own workflows, orchestrator just coordinates
 - `.claude/agent/orchestrator.md` - Orchestrator implementation
 # Orchestrator Guide - Examples and Troubleshooting
 
-**Version**: 1.0  
 **Created**: 2025-12-29 (Task 245 Phase 5)  
 **Purpose**: Examples, troubleshooting, and detailed guidance for orchestrator usage
 

@@ -1,8 +1,6 @@
 # Agent Templates for System Generation
 
 **Purpose**: Standard templates for different agent types
-
-**Version**: 1.0  
 **Last Updated**: 2025-12-29
 
 ---
@@ -97,7 +95,7 @@ tools:
 permissions:
   allow:
     - read: ["**/*"]
-    - write: [".claude/specs/**/*"]
+    - write: ["specs/**/*"]
   deny: []
 context_loading:
   strategy: lazy
@@ -206,7 +204,7 @@ tools:
 permissions:
   allow:
     - read: ["**/*"]
-    - write: [".claude/specs/**/*"]
+    - write: ["specs/**/*"]
   deny: []
 context_loading:
   strategy: lazy

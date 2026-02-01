@@ -1,303 +1,123 @@
-# Command Template
-
-[Back to Templates](README.md) | [Commands Reference](../commands/README.md)
-
-Use this template when creating new slash commands for the ModelChecker `.claude/` system.
-
+---
+agent: <agent-name>
 ---
 
-## Template
+# /<command-name> Command
 
-Copy this template to `.claude/commands/{command-name}.md`:
+## Purpose
 
-```markdown
+[Brief description of what this command does and when to use it]
+
+**Use this command when you need to**: [specific use case]
+
 ---
-description: {Brief description of what this command does}
-allowed-tools: {Comma-separated list: Read, Write, Edit, Bash(git:*)}
-argument-hint: {REQUIRED_ARG [optional_arg]}
-model: claude-opus-4-5-20251101
----
-
-# /{command-name} Command
-
-{Brief description of what this command does and when to use it.}
 
 ## Usage
 
-\`\`\`bash
-/{command-name} REQUIRED_ARG              # Basic usage
-/{command-name} REQUIRED_ARG "optional"   # With optional arg
-\`\`\`
+```
+/<command-name> <required-arg> [optional-arg]
+```
 
 ### Arguments
 
-| Argument | Required | Description |
-|----------|----------|-------------|
-| `REQUIRED_ARG` | Yes | {Description} |
-| `optional_arg` | No | {Description} (default: {value}) |
+- `<required-arg>`: [Description of required argument]
+- `[optional-arg]`: [Description of optional argument] (optional)
 
-## What This Does
+### Examples
 
-1. {Step 1 - e.g., Validates arguments}
-2. {Step 2 - e.g., Updates status}
-3. {Step 3 - e.g., Routes to skill}
-4. {Step 4 - e.g., Creates artifacts}
-5. {Step 5 - e.g., Creates git commit}
+```
+# Example 1: [Description]
+/<command-name> example-value
 
-## Language-Based Routing
-
-| Language | Skill |
-|----------|-------|
-| `python` | {skill for python tasks} |
-| `general` | {skill for general tasks} |
-| `meta` | {skill for meta tasks} |
-
-## Artifacts
-
-| Artifact | Location | Description |
-|----------|----------|-------------|
-| {Type} | `.claude/specs/{N}_{SLUG}/{path}` | {Description} |
-
-## Status Transitions
-
-| From | To |
-|------|-----|
-| `{starting_status}` | `{in_progress_status}` |
-| `{in_progress_status}` | `{completed_status}` |
-
-## Prerequisites
-
-- {Prerequisite 1}
-- {Prerequisite 2}
-
-## Examples
-
-### Example 1: {Description}
-
-\`\`\`bash
-/{command-name} 350
-\`\`\`
-
-Result: {Expected outcome}
-
-### Example 2: {Description}
-
-\`\`\`bash
-/{command-name} 350 "focus area"
-\`\`\`
-
-Result: {Expected outcome}
-
-## Related Commands
-
-| Command | Relationship |
-|---------|-------------|
-| `/{related}` | {How they relate} |
-
-## See Also
-
-- [Skill Definition](../../skills/{skill-name}/SKILL.md)
-- [Commands Reference](../../docs/commands/README.md)
-- [Workflows](../../docs/workflows/README.md)
+# Example 2: [Description with optional arg]
+/<command-name> example-value --option
 ```
 
 ---
 
-## Field Reference
+## Workflow
 
-### Frontmatter Fields
+This command delegates to the `<agent-name>` agent, which executes the following workflow:
 
-| Field | Required | Description | Example |
-|-------|----------|-------------|---------|
-| `description` | Yes | Brief description for help | "Conduct research on a task" |
-| `allowed-tools` | Yes | Tools the command can use | `Read, Write, Bash(git:*)` |
-| `argument-hint` | Yes | Argument syntax | `TASK_NUMBER [focus]` |
-| `model` | No | Model to use | `claude-opus-4-5-20251101` |
-
-### Common Tool Sets
-
-| Command Type | Typical Tools |
-|--------------|---------------|
-| Read-only | `Read, Grep, Glob` |
-| Research | `Read, Grep, Glob, WebSearch, WebFetch` |
-| Modification | `Read, Write, Edit, Bash(git:*)` |
-| Implementation | `Read, Write, Edit, Bash(pytest), Bash(git:*)` |
+1. **Input Validation**: Validates command arguments and prerequisites
+2. **Context Loading**: Loads required context files on-demand
+3. **Core Execution**: [Brief description of core work]
+4. **Output Generation**: [Brief description of output]
+5. **Artifact Creation**: Creates [artifact type] in `specs/<task-number>_<topic>/`
+6. **Return Formatting**: Formats response following subagent-return-format.md
+7. **Artifact Validation**: Validates artifacts, updates TODO.md, state.json, creates git commit
+8. **Cleanup**: Performs any necessary cleanup
 
 ---
-
-## Example: /analyze Command
-
-```markdown
----
-description: Analyze code patterns and quality
-allowed-tools: Read, Grep, Glob, Write
-argument-hint: TASK_NUMBER [scope]
-model: claude-opus-4-5-20251101
----
-
-# /analyze Command
-
-Analyze code patterns and quality for a task, identifying issues and improvement opportunities.
-
-## Usage
-
-\`\`\`bash
-/analyze 350                    # Analyze task scope
-/analyze 350 "theory_lib"       # Analyze specific area
-\`\`\`
-
-### Arguments
-
-| Argument | Required | Description |
-|----------|----------|-------------|
-| `TASK_NUMBER` | Yes | Task to analyze for |
-| `scope` | No | Limit analysis to area (default: full codebase) |
-
-## What This Does
-
-1. Validates task exists
-2. Determines analysis scope from task or argument
-3. Routes to skill-analyzer
-4. Scans code for patterns
-5. Creates analysis report
-
-## Language-Based Routing
-
-| Language | Skill |
-|----------|-------|
-| `python` | skill-python-analyzer |
-| `general` | skill-analyzer |
 
 ## Artifacts
 
-| Artifact | Location | Description |
-|----------|----------|-------------|
-| Analysis Report | `.claude/specs/{N}_{SLUG}/reports/analysis-001.md` | Quality findings |
+This command creates the following artifacts:
 
-## Status Transitions
+- **[Artifact Type]**: `specs/<task-number>_<topic>/<artifact-path>`
+  - [Description of artifact]
+  - [Required sections or format]
 
-| From | To |
-|------|-----|
-| Any | (no status change) |
+---
 
 ## Prerequisites
 
-- Task must exist in TODO.md/state.json
+- [Prerequisite 1]
+- [Prerequisite 2]
 
-## Examples
-
-### Example 1: Full Analysis
-
-\`\`\`bash
-/analyze 350
-\`\`\`
-
-Result: Creates analysis report covering task scope
-
-### Example 2: Focused Analysis
-
-\`\`\`bash
-/analyze 350 "model_checker/theory_lib/logos"
-\`\`\`
-
-Result: Creates analysis report for logos theory only
+---
 
 ## Related Commands
 
-| Command | Relationship |
-|---------|-------------|
-| `/review` | Similar but broader scope |
-| `/research` | Precedes analysis for context |
+- `/<related-command-1>`: [Brief description of relationship]
+- `/<related-command-2>`: [Brief description of relationship]
+
+---
 
 ## See Also
 
-- [Skills Reference](../../docs/skills/README.md)
-- [Commands Reference](../../docs/commands/README.md)
-```
+- **Agent**: `.claude/skills/<agent-name>.md`
+- **Workflow Standard**: `.claude/context/core/standards/agent-workflow.md`
+- **Return Format**: `.claude/context/core/standards/subagent-return-format.md`
 
 ---
 
 ## Validation Checklist
 
-Before committing a new command:
+Use this checklist when creating a new command:
 
 ### Frontmatter
-- [ ] `description` is clear and concise
-- [ ] `allowed-tools` lists all needed tools
-- [ ] `argument-hint` shows proper syntax
-- [ ] Model specified if non-default
+- [ ] Frontmatter includes `agent:` field
+- [ ] Agent name matches agent file (without `.md` extension)
+- [ ] Agent file exists in `.claude/skills/`
 
 ### Documentation
-- [ ] Purpose clearly stated
-- [ ] Usage with examples
-- [ ] All arguments documented
-- [ ] Workflow steps listed
-- [ ] Artifacts documented
-- [ ] Status transitions shown
-- [ ] Prerequisites listed
-- [ ] Related commands linked
+- [ ] Purpose section clearly describes command use case
+- [ ] Usage section includes syntax and examples
+- [ ] Workflow section describes 8-stage workflow
+- [ ] Artifacts section lists all created artifacts
+- [ ] Prerequisites section lists all requirements
 
-### Quality
-- [ ] Under 300 lines
-- [ ] No embedded execution logic
-- [ ] Delegates to skill(s)
-- [ ] Consistent formatting
+### File Size
+- [ ] Command file is <250 lines (target)
+- [ ] Command file is <300 lines (maximum)
+- [ ] No embedded routing logic (delegated to agent)
+- [ ] No embedded workflow execution (delegated to agent)
 
 ### Testing
-- [ ] Works with valid arguments
-- [ ] Handles invalid arguments gracefully
-- [ ] Creates expected artifacts
-- [ ] Status updates correctly
-- [ ] Git commits created
+- [ ] Command tested with valid arguments
+- [ ] Command tested with invalid arguments (error handling)
+- [ ] Artifacts created successfully
+- [ ] Stage 7 execution verified (TODO.md, state.json, git commit)
+
+### Documentation Quality
+- [ ] All sections complete (no placeholders)
+- [ ] Examples are realistic and helpful
+- [ ] Related commands documented
+- [ ] See Also section includes relevant links
 
 ---
 
-## Common Patterns
-
-### Task-Based Command
-
-Most commands operate on tasks:
-
-```yaml
-argument-hint: TASK_NUMBER [options]
-```
-
-Workflow:
-1. Parse task number from arguments
-2. Validate task exists in state.json
-3. Check status allows operation
-4. Route to appropriate skill
-5. Update status and commit
-
-### Flag-Based Command
-
-Some commands use flags:
-
-```yaml
-argument-hint: --flag [value]
-```
-
-Examples: `/task --sync`, `/task --abandon 123`
-
-### No-Argument Command
-
-Simple operations:
-
-```yaml
-argument-hint: (no arguments)
-```
-
-Examples: `/todo`, `/errors`
-
----
-
-## Related Documentation
-
-- [Creating Commands Guide](../guides/creating-commands.md)
-- [Skill Template](skill-template.md)
-- [Commands Reference](../commands/README.md)
-- [ARCHITECTURE.md](../../ARCHITECTURE.md)
-
----
-
-[Back to Templates](README.md) | [Commands Reference](../commands/README.md)
+**Template Version**: 1.0  
+**Last Updated**: 2025-12-29  
+**Maintained By**: ProofChecker Development Team

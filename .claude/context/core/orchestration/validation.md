@@ -1,5 +1,14 @@
 # Validation Strategy
 
+---
+
+> **DEPRECATED** (2026-01-19): This file has been consolidated into:
+> - `orchestration-validation.md` - Validation philosophy, return validation, error codes
+>
+> This file is preserved for reference but should not be loaded for new development.
+
+---
+
 ## Orchestrator Validation Philosophy
 
 The orchestrator validates **structural correctness** and **safety constraints**, not business logic or domain-specific rules.
@@ -158,7 +167,7 @@ The orchestrator validates **structural correctness** and **safety constraints**
 # Count flags present
 flag_count=0
 [[ "$ARGUMENTS" =~ --recover ]] && ((flag_count++))
-[[ "$ARGUMENTS" =~ --divide ]] && ((flag_count++))
+[[ "$ARGUMENTS" =~ --expand ]] && ((flag_count++))
 [[ "$ARGUMENTS" =~ --sync ]] && ((flag_count++))
 [[ "$ARGUMENTS" =~ --abandon ]] && ((flag_count++))
 
@@ -683,7 +692,7 @@ These validation rules are now ACTIVELY ENFORCED by command files Stage 3 (Valid
 ## See Also
 
 - **Command Files Stage 3**: `.claude/command/*.md` Stage 3 (ValidateReturn) - Executable validation logic
-- **Validation Template**: `.claude/specs/280_fix_orchestrator_stage_4_validation/validation-template.md` - Reusable validation section
+- **Validation Template**: `specs/280_fix_orchestrator_stage_4_validation/validation-template.md` - Reusable validation section
 - Delegation Standard: `.claude/context/core/standards/delegation.md`
 - Subagent Return Format: `.claude/context/core/standards/subagent-return-format.md`
 - State Management: `.claude/context/core/system/state-management.md`

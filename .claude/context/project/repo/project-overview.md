@@ -43,7 +43,7 @@ LogosTest/                 # Test suite
 │   └── Automation/
 └── Integration/           # End-to-end tests
 
-Documentation/             # Project documentation
+docs/             # Project documentation
 ├── UserGuide/            # Tutorials, examples, integration
 ├── Development/          # Contributing, style guides, standards
 ├── ProjectInfo/          # Status, maintenance
@@ -88,7 +88,7 @@ Documentation/             # Project documentation
 3. **Implementation**: Write LEAN 4 code with tactics/term-mode
 4. **Verification**: Check with `lake build`, fix errors
 5. **Testing**: Run test suite with `lake exe test`
-6. **Documentation**: Update inline docs and Documentation/
+6. **Documentation**: Update inline docs and docs/
 
 ### AI-Assisted Workflow
 
@@ -105,7 +105,7 @@ See [.claude/README.md](../../README.md) for AI system details.
 
 ### LEAN 4 Code Quality
 
-- **Style**: Follow [LEAN Style Guide](../../../Documentation/Development/LEAN_STYLE_GUIDE.md)
+- **Style**: Follow [LEAN Style Guide](../../../docs/development/LEAN_STYLE_GUIDE.md)
 - **Proof Readability**: Clear tactic sequences, meaningful names
 - **Documentation**: Inline doc comments for all public definitions
 - **Testing**: Comprehensive test coverage in LogosTest/
@@ -196,19 +196,19 @@ lake update                  # Update dependencies
 - Advanced automation
 - Integration with Model-Checker
 
-See [IMPLEMENTATION_STATUS.md](../../../Documentation/ProjectInfo/IMPLEMENTATION_STATUS.md) for details.
+See [IMPLEMENTATION_STATUS.md](../../../docs/project-info/IMPLEMENTATION_STATUS.md) for details.
 
 ## Related Resources
 
 **Documentation**:
 - [Project README](../../../README.md) - Overview and theoretical foundations
-- [Architecture Guide](../../../Documentation/UserGuide/ARCHITECTURE.md) - System architecture
-- [Tutorial](../../../Documentation/UserGuide/TUTORIAL.md) - Getting started
-- [Examples](../../../Documentation/UserGuide/EXAMPLES.md) - Example proofs
+- [Architecture Guide](../../../docs/user-guide/README.md) - System architecture
+- [Tutorial](../../../docs/user-guide/TUTORIAL.md) - Getting started
+- [Examples](../../../docs/user-guide/EXAMPLES.md) - Example proofs
 
 **AI System**:
 - [.claude/README.md](../../README.md) - AI system overview
-- [.claude/ARCHITECTURE.md](../../ARCHITECTURE.md) - Agent system architecture
+- [.claude/README.md](../../README.md) - Agent system architecture
 - [.claude/QUICK-START.md](../../QUICK-START.md) - AI workflow guide
 
 **External**:

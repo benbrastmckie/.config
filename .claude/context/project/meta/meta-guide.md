@@ -44,7 +44,7 @@ This launches an interactive interview that guides you through:
 │   ├── {command-1}.md
 │   └── {command-2}.md
 ├── README.md                         # System overview
-├── ARCHITECTURE.md                   # Architecture guide
+├── README.md                   # Architecture guide
 ├── TESTING.md                        # Testing checklist
 └── QUICK-START.md                    # Usage examples
 ```
@@ -409,7 +409,7 @@ After generation, you can customize:
 
 ### Getting Help
 
-1. Review generated documentation (README.md, ARCHITECTURE.md)
+1. Review generated documentation (README.md, README.md)
 2. Check TESTING.md for testing guidance
 3. Review QUICK-START.md for usage examples
 4. Examine template files for patterns
@@ -452,7 +452,7 @@ After your system is generated:
 
 - **Templates**: `.claude/context/core/templates/`
 - **Meta Agent**: `.claude/agent/subagents/meta.md`
-- **Documentation**: `.claude/README.md`, `.claude/ARCHITECTURE.md`
+- **Documentation**: `.claude/README.md`, `.claude/README.md`
 - **Patterns**: Review template files for best practices
 
 ---

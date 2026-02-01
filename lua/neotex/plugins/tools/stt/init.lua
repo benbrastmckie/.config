@@ -15,7 +15,8 @@
 --   <leader>vr - Start recording
 --   <leader>vs - Stop recording and transcribe
 --   <leader>vv - Toggle recording (start if not recording, stop if recording)
---   <C-\>      - Toggle recording (works in Claude Code)
+--   <C-\>      - Toggle recording (normal mode)
+--   <C-'>      - Toggle recording (terminal mode, for Claude Code sidebar)
 --
 -- Author: Claude Code Integration
 -- License: MIT
@@ -103,7 +104,7 @@ function M.start_recording()
 
   if recording_job_id > 0 then
     is_recording = true
-    notify("Recording started... Press <leader>vs to stop", vim.log.levels.INFO)
+    notify("[STT] Recording started", vim.log.levels.INFO)
 
     -- Set up auto-stop timeout
     vim.defer_fn(function()
@@ -127,7 +128,7 @@ function M.stop_recording()
   -- Send SIGTERM to parecord to stop gracefully
   vim.fn.jobstop(recording_job_id)
   -- Note: on_exit callback will handle transcription
-  notify("Stopping recording...", vim.log.levels.INFO)
+  notify("[STT] Stopped recording", vim.log.levels.INFO)
 end
 
 -- Toggle recording state
@@ -161,7 +162,7 @@ function M.transcribe_and_insert()
     return
   end
 
-  notify("Transcribing...", vim.log.levels.INFO)
+  -- notify("Transcribing...", vim.log.levels.INFO)  -- Removed for cleaner UX
 
   -- Save current position for insertion
   local cursor_pos = vim.api.nvim_win_get_cursor(0)
@@ -217,7 +218,7 @@ function M.transcribe_and_insert()
           -- Insert after cursor position
           vim.api.nvim_win_set_cursor(0, cursor_pos)
           vim.api.nvim_put({text}, 'c', true, true)
-          notify("Inserted: " .. string.sub(text, 1, 50) .. (string.len(text) > 50 and "..." or ""), vim.log.levels.INFO)
+          -- notify("Inserted: " .. string.sub(text, 1, 50) .. (string.len(text) > 50 and "..." or ""), vim.log.levels.INFO)  -- Removed for cleaner UX
         else
           -- Different buffer, use unnamed register
           vim.fn.setreg('"', text)
@@ -311,6 +312,22 @@ function M.setup(opts)
     noremap = true,
     silent = true,
     desc = 'STT: Toggle recording (Ctrl-\\)'
+  })
+
+  -- Terminal-mode mapping for Ctrl-' (required for Claude Code sidebar)
+  -- Note: <C-\> is reserved by Neovim in terminal mode, so we use <C-'> instead
+  vim.keymap.set('t', "<C-'>", function()
+    -- Exit terminal mode temporarily to allow STT to function
+    vim.cmd('stopinsert')
+    M.toggle_recording()
+    -- Return to terminal mode after toggle completes
+    vim.schedule(function()
+      vim.cmd('startinsert')
+    end)
+  end, {
+    noremap = true,
+    silent = true,
+    desc = "STT: Toggle recording (terminal mode, Ctrl-')"
   })
 
 end

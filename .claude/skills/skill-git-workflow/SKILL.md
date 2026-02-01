@@ -2,14 +2,18 @@
 name: skill-git-workflow
 description: Create scoped git commits for task operations. Invoke after task status changes or artifact creation.
 allowed-tools: Bash(git:*)
-context:
-  - core/standards/git-safety.md
-  - core/standards/git-integration.md
+# Context loaded on-demand via @-references (see Context Loading section)
 ---
 
 # Git Workflow Skill
 
 Create properly scoped git commits for task operations.
+
+## Context Loading
+
+Load context on-demand when needed:
+- `@.claude/context/core/standards/git-safety.md` - Git safety rules and best practices
+- `@.claude/context/index.md` - Full context discovery index
 
 ## Trigger Conditions
 
@@ -22,14 +26,15 @@ This skill activates when:
 
 ### Task Operations
 
-| Operation | Format |
-|-----------|--------|
-| Create task | `task {N}: create {title}` |
-| Complete research | `task {N}: complete research` |
-| Create plan | `task {N}: create implementation plan` |
-| Complete phase | `task {N} phase {P}: {phase_name}` |
-| Complete task | `task {N}: complete implementation` |
-| Revise plan | `task {N}: revise plan (v{V})` |
+| Operation | Format | CI Triggered |
+|-----------|--------|--------------|
+| Create task | `task {N}: create {title}` | No |
+| Complete research | `task {N}: complete research` | No |
+| Create plan | `task {N}: create implementation plan` | No |
+| Complete phase | `task {N} phase {P}: {phase_name}` | No |
+| Complete task | `task {N}: complete implementation` | No |
+| Complete task (with CI) | `task {N}: complete implementation [ci]` | Yes |
+| Revise plan | `task {N}: revise plan (v{V})` | No |
 
 ### System Operations
 
@@ -69,9 +74,9 @@ This skill activates when:
 ### Task-Specific Commits
 Include only task-related files:
 ```
-.claude/specs/TODO.md
-.claude/specs/state.json
-.claude/specs/{N}_{SLUG}/**
+specs/TODO.md
+specs/state.json
+specs/{N}_{SLUG}/**
 ```
 
 ### Implementation Commits
@@ -110,6 +115,51 @@ Updated plan with phase status
 Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 ```
 
+## CI Triggering
+
+### Overview
+
+CI is **skipped by default** on push events. To trigger CI, add `[ci]` marker to the commit message.
+
+### trigger_ci Parameter
+
+When creating commits, the `trigger_ci` parameter controls whether CI runs:
+
+| Value | Behavior | Use Case |
+|-------|----------|----------|
+| `false` (default) | No CI marker added | Routine commits, research, planning |
+| `true` | Append `[ci]` to message | Lean changes, implementation completion |
+
+### CI Decision Criteria
+
+Trigger CI (`trigger_ci: true`) when:
+- **Lean files modified** (.lean) - Ensures build passes
+- **Implementation completed** - Final verification before merge
+- **CI configuration changed** (.github/workflows/) - Validate workflow changes
+- **Mathlib dependencies updated** (lakefile.lean, lake-manifest.json) - Ensure compatibility
+- **Critical bug fixes** - Verify fix works
+
+Skip CI (default) when:
+- Documentation changes only (.md files)
+- Research/planning artifacts
+- Configuration changes (non-CI)
+- Routine task management operations
+
+### Commit Message with CI Marker
+
+```
+task {N}: complete implementation [ci]
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+```
+
+### When CI Always Runs
+
+CI runs regardless of marker on:
+- Pull request events (all PRs run CI)
+- Manual workflow_dispatch trigger
+- Commits with `[ci]` marker
+
 ## Execution Commands
 
 ### Standard Commit
@@ -125,7 +175,7 @@ EOF
 
 ### Task Commit
 ```bash
-git add .claude/specs/
+git add specs/
 git commit -m "$(cat <<'EOF'
 task {N}: {action}
 
@@ -145,7 +195,8 @@ EOF
     "path/to/file1",
     "path/to/file2"
   ],
-  "message": "Full commit message"
+  "message": "Full commit message",
+  "ci_triggered": true|false
 }
 ```
 
@@ -154,7 +205,7 @@ EOF
 ### Nothing to Commit
 ```json
 {
-  "status": "completed",
+  "status": "committed",
   "summary": "No changes to commit",
   "commit_hash": null
 }

@@ -1,13 +1,13 @@
 ---
 description: Research a task and create reports
-allowed-tools: Read, Write, Edit, Glob, Grep, WebSearch, WebFetch, Bash(git:*), TodoWrite, mcp__lean-lsp__lean_leansearch, mcp__lean-lsp__lean_loogle, mcp__lean-lsp__lean_leanfinder, mcp__lean-lsp__lean_local_search
+allowed-tools: Skill, Bash(jq:*), Bash(git:*), Read, Edit
 argument-hint: TASK_NUMBER [FOCUS]
 model: claude-opus-4-5-20251101
 ---
 
 # /research Command
 
-Conduct research for a task and create a research report.
+Conduct research for a task by delegating to the appropriate research skill/subagent.
 
 ## Arguments
 
@@ -16,134 +16,107 @@ Conduct research for a task and create a research report.
 
 ## Execution
 
-### 1. Parse and Validate
+**MCP Safety**: Do not call `lean_diagnostic_messages` or `lean_file_outline` - they hang. Delegate to skills.
 
+### CHECKPOINT 1: GATE IN
+
+1. **Generate Session ID**
+   ```
+   session_id = sess_{timestamp}_{random}
+   ```
+
+2. **Lookup Task**
+   ```bash
+   task_data=$(jq -r --arg num "$task_number" \
+     '.active_projects[] | select(.project_number == ($num | tonumber))' \
+     specs/state.json)
+   ```
+
+3. **Validate**
+   - Task exists (ABORT if not)
+   - Status allows research: not_started, planned, partial, blocked, researched
+   - If completed/abandoned: ABORT with recommendation
+
+**ABORT** if any validation fails.
+
+**On GATE IN success**: Task validated. **IMMEDIATELY CONTINUE** to STAGE 2 below.
+
+### STAGE 2: DELEGATE
+
+**EXECUTE NOW**: After CHECKPOINT 1 passes, immediately invoke the Skill tool.
+
+**Language-Based Routing**:
+
+| Language | Skill to Invoke |
+|----------|-----------------|
+| `lean` | `skill-lean-research` |
+| `general`, `meta`, `markdown`, `latex` | `skill-researcher` |
+
+**Invoke the Skill tool NOW** with:
 ```
-task_number = first token from $ARGUMENTS
-focus_prompt = remaining tokens (optional)
-```
-
-Read .claude/specs/state.json:
-- Find task by project_number
-- Extract: language, status, project_name, description
-- If not found: Error "Task {N} not found"
-
-### 2. Validate Status
-
-Allowed statuses: not_started, planned, partial, blocked
-- If completed/abandoned: Error with recommendation
-- If researching: Warn about stale status
-- If already researched: Note existing report, offer --force
-
-### 3. Update Status to RESEARCHING
-
-Update both files atomically:
-1. state.json: status = "researching"
-2. TODO.md: Status: [RESEARCHING]
-
-### 4. Route by Language
-
-**If language == "lean":**
-Use Lean-specific search tools:
-- `lean_leansearch` - Natural language queries about Mathlib
-- `lean_loogle` - Type signature pattern matching
-- `lean_leanfinder` - Semantic concept search
-- `lean_local_search` - Check local declarations
-
-Search strategy:
-1. Search for relevant theorems/lemmas
-2. Find similar proofs in Mathlib
-3. Identify required imports
-4. Note proof patterns and tactics
-
-**If language == "general" or other:**
-Use web and codebase search:
-- `WebSearch` - External documentation/tutorials
-- `WebFetch` - Retrieve specific pages
-- `Read`, `Grep`, `Glob` - Codebase exploration
-
-Search strategy:
-1. Search for relevant documentation
-2. Find similar implementations
-3. Identify patterns and best practices
-4. Note dependencies and considerations
-
-### 5. Create Research Report
-
-Create directory if needed:
-```
-mkdir -p .claude/specs/{N}_{SLUG}/reports/
+skill: "{skill-name from table above}"
+args: "task_number={N} focus={focus_prompt} session_id={session_id}"
 ```
 
-Find next report number (research-001.md, research-002.md, etc.)
+The skill will spawn the appropriate agent to conduct research and create a report.
 
-Write report to `.claude/specs/{N}_{SLUG}/reports/research-{NNN}.md`:
+**On DELEGATE success**: Research complete. **IMMEDIATELY CONTINUE** to CHECKPOINT 2 below.
 
-```markdown
-# Research Report: Task #{N}
+### CHECKPOINT 2: GATE OUT
 
-**Task**: {title}
-**Date**: {ISO_DATE}
-**Focus**: {focus_prompt or "General research"}
+1. **Validate Return**
+   Required fields: status, summary, artifacts
 
-## Summary
+2. **Verify Artifacts**
+   Check each artifact path exists on disk
 
-{2-3 sentence overview of findings}
+3. **Verify Status Updated**
+   The skill handles status updates internally (preflight and postflight).
+   Confirm status is now "researched" in state.json.
 
-## Findings
+**RETRY** skill if validation fails.
 
-### {Topic 1}
+**On GATE OUT success**: Artifacts verified. **IMMEDIATELY CONTINUE** to CHECKPOINT 3 below.
 
-{Detailed findings}
-
-### {Topic 2}
-
-{Detailed findings}
-
-## Recommendations
-
-1. {Approach recommendation}
-2. {Key considerations}
-3. {Potential challenges}
-
-## References
-
-- {Source 1}
-- {Source 2}
-
-## Next Steps
-
-{Suggested next actions for planning/implementation}
-```
-
-### 6. Update Status to RESEARCHED
-
-Update both files atomically:
-1. state.json:
-   - status = "researched"
-   - artifacts = [{path, type: "research"}]
-2. TODO.md:
-   - Status: [RESEARCHED]
-   - Add Research link
-
-### 7. Git Commit
+### CHECKPOINT 3: COMMIT
 
 ```bash
-git add .claude/specs/
-git commit -m "task {N}: complete research"
+git add -A
+git commit -m "$(cat <<'EOF'
+task {N}: complete research
+
+Session: {session_id}
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+EOF
+)"
 ```
 
-### 8. Output
+Commit failure is non-blocking (log and continue).
+
+## Output
 
 ```
 Research completed for Task #{N}
 
-Report: .claude/specs/{N}_{SLUG}/reports/research-{NNN}.md
+Report: {artifact_path from skill result}
 
-Key findings:
-- {finding 1}
-- {finding 2}
+Summary: {summary from skill result}
 
 Status: [RESEARCHED]
 Next: /plan {N}
 ```
+
+## Error Handling
+
+### GATE IN Failure
+- Task not found: Return error with guidance
+- Invalid status: Return error with current status
+
+### DELEGATE Failure
+- Skill fails: Keep [RESEARCHING], log error
+- Timeout: Partial research preserved, user can re-run
+
+### GATE OUT Failure
+- Missing artifacts: Log warning, continue with available
+- Link failure: Non-blocking warning

@@ -1,9 +1,8 @@
 # Context Index - Lazy-Loading Quick Map
 
-**Version**: 4.0
 **Created**: 2025-12-23
-**Updated**: 2026-01-10 (Task 8 - Cleanup Lean/Python/Z3 artifacts, add Neovim context)
-**Purpose**: Quick reference map for on-demand context loading following OpenAgents patterns
+**Updated**: 2026-01-28 (Task 702 - Added Typst context section)
+**Purpose**: Quick reference map for on-demand context loading following checkpoint-based execution
 
 ---
 
@@ -21,6 +20,48 @@
 
 ---
 
+## Core Checkpoints (core/checkpoints/) **NEW**
+
+**Checkpoint-based execution model** - Reference during command execution
+
+- **checkpoint-gate-in.md** (~200 tokens) - GATE IN preflight validation
+  - Session ID generation
+  - Task existence validation
+  - Status transition validation
+  - Preflight status update via skill-status-sync (direct execution)
+
+- **checkpoint-gate-out.md** (~250 tokens) - GATE OUT postflight validation
+  - Return structure validation
+  - Artifact existence verification
+  - Postflight status update with artifact linking
+  - Idempotency checks for artifact links
+
+- **checkpoint-commit.md** (~150 tokens) - COMMIT finalization
+  - Git commit with session ID
+  - Non-blocking error handling
+  - Final return composition
+
+- **README.md** - Checkpoint model overview
+
+---
+
+## Core Routing/Validation (core/) **NEW**
+
+**Minimal context files for tiered loading**
+
+- **routing.md** (~200 tokens) - Command-level routing
+  - Language → Skill mapping table
+  - Status transitions by command
+  - Session ID format
+
+- **validation.md** (~300 tokens) - Skill-level validation
+  - Return schema (required fields)
+  - Input requirements
+  - Artifact validation patterns
+  - Idempotency checks
+
+---
+
 ## Core Standards (core/standards/)
 
 **Consolidated files** - Load for delegation, return format, validation
@@ -34,28 +75,143 @@
 
 ---
 
-## Core System (core/system/)
+## Core Orchestration (core/orchestration/)
 
-**Consolidated files** - Load for state management, artifacts, git, routing, validation
+**Consolidated files** (2026-01-19) - Load for orchestration, delegation, validation
 
-- **state-management.md** (535 lines) - Unified state management standard
+- **orchestration-core.md** (~250 lines) - Essential orchestration patterns
+  - Session ID format and tracking
+  - Delegation safety (depth limits, cycle detection, timeouts)
+  - Return format schema
+  - Command->Agent routing and language extraction
+  - **LOAD for any delegation operation**
+
+- **orchestration-validation.md** (~200 lines) - Validation patterns
+  - Return validation steps (JSON, fields, status, artifacts)
+  - Error codes and handling
+  - /task flag validation
+  - **LOAD when validating agent returns**
+
+- **orchestration-reference.md** (~200 lines) - Examples and troubleshooting
+  - Command execution flow examples
+  - Bulk operation patterns
+  - Troubleshooting guide
+  - **LOAD when debugging orchestration issues**
+
+- **state-management.md** (~300 lines) - Unified state management
   - Status markers and transition rules
-  - State schemas (main, archive, maintenance, project)
-  - Timestamp formats
-  - Status synchronization mechanisms
-  - Replaces: status-markers.md, state-schema.md
+  - State schemas
+  - Fast jq lookup patterns
+  - **LOAD for state queries and updates**
 
-- **routing-logic.md** (250 lines) - Language extraction and agent mapping
-  - Language extraction priority (state.json → TODO.md → default)
-  - Agent mapping tables (lua → neovim-*, default → general)
-  - Routing validation rules
-  - Direct routing patterns
+- **architecture.md** (~750 lines) - Three-layer architecture overview
+  - Command->Skill->Agent delegation pattern
+  - Layer responsibilities
+  - **LOAD for understanding system design**
 
-- **validation-rules.md** (200 lines) - Return format and artifact validation
-  - Required field validation
-  - Artifact existence checks (prevents phantom research)
+- **preflight-pattern.md** (~220 lines) - Pre-delegation process
+  - **LOAD when implementing preflight**
+
+- **postflight-pattern.md** (~340 lines) - Post-completion process
+  - **LOAD when implementing postflight**
+
+**Deprecated files** (still available for reference):
+- orchestrator.md -> orchestration-core.md, orchestration-reference.md
+- delegation.md -> orchestration-core.md, orchestration-validation.md
+- routing.md -> orchestration-core.md
+- validation.md -> orchestration-validation.md
+- subagent-validation.md -> orchestration-validation.md
+- sessions.md -> orchestration-core.md
+
+---
+
+## Core Architecture (core/architecture/) **NEW**
+
+Load for: Architecture understanding, component generation, /meta agent use
+
+- **system-overview.md** (~300 lines) - Three-layer architecture overview
+  - Command -> Skill -> Agent delegation pattern
+  - Component responsibilities matrix
+  - Delegation flow diagrams
+  - Checkpoint model reference
+  - **MUST load when understanding system architecture or generating components**
+
+- **component-checklist.md** (~250 lines) - Component creation decision tree
+  - When to create command vs skill vs agent
+  - Checklists for each component type
+  - Common component combinations
+  - Naming conventions
+  - **MUST load when creating new components via /meta**
+
+- **generation-guidelines.md** (~350 lines) - Templates for /meta agent
+  - Command generation template
+  - Skill generation template (thin wrapper pattern)
+  - Agent generation template
+  - Anti-stop patterns reference
+  - Post-generation verification
+  - **MUST load when /meta generates new components**
+
+---
+
+## Core Patterns (core/patterns/)
+
+Load for: Behavior patterns that apply across all agents/skills
+
+- **anti-stop-patterns.md** (~150 lines) - Critical patterns to prevent workflow early stop
+  - Forbidden status values ("completed", "done", "finished")
+  - Safe contextual alternatives ("researched", "planned", "implemented")
+  - Forbidden phrases in summaries/next_steps
+  - Enforcement points and validation commands
+  - **MUST load when creating new agents or skills via /meta**
+
+- **skill-lifecycle.md** (~100 lines) - Self-contained skill pattern
+  - Skills own preflight → delegate → postflight lifecycle
+  - Eliminates multiple skill invocations per workflow
+  - Reduces halt risk from 3 skill calls to 1
+  - **MUST load when refactoring workflow skills**
+
+- **inline-status-update.md** (~200 lines) - Reusable status update snippets
+  - Preflight patterns for research/planning/implementation
+  - Postflight patterns with artifact linking
+  - TODO.md edit patterns
   - Error handling patterns
-  - Validation summary logging
+  - **MUST load when adding status management to skills**
+
+- **jq-escaping-workarounds.md** (~150 lines) - jq command escaping bug workarounds
+  - Documents Claude Code Issue #1132 (Bash tool jq escaping)
+  - Two-step approach for artifact updates
+  - Pattern templates for research/planning/implementation postflight
+  - Testing checklist for new jq patterns
+  - **MUST load when adding jq commands that use map(select(!=)) patterns**
+
+- **thin-wrapper-skill.md** (~120 lines) - Quick reference for thin wrapper skill pattern
+  - Frontmatter requirements
+  - Execution pattern (5 steps)
+  - Task tool invocation (NOT Skill tool)
+  - When to use vs direct execution
+
+- **metadata-file-return.md** (~100 lines) - Quick reference for agent return via metadata file
+  - File location pattern
+  - Schema quick reference
+  - Status values (contextual, never "completed")
+  - Agent writing and skill reading patterns
+
+- **checkpoint-execution.md** (~180 lines) - Quick reference for command checkpoint pattern
+  - Three-checkpoint model (GATE IN, DELEGATE, GATE OUT, COMMIT)
+  - Status transitions by command
+  - Session ID tracking
+  - Error handling at each checkpoint
+
+---
+
+## Core Formats (core/formats/)
+
+Load for: Artifact creation
+
+- **subagent-return.md** - Return format schema for all agents (includes anti-stop warning)
+- **plan-format.md** - Implementation plan structure
+- **report-format.md** - Research report structure
+- **summary-format.md** - Implementation summary structure
 
 ---
 
@@ -63,12 +219,19 @@
 
 Load for: Task validation, artifact creation, documentation standards
 
-- **status-markers.md** (350 lines) - Status marker definitions and transitions
+- **status-markers.md** (350 lines) - **Complete** status marker reference
   - Standard status markers (NOT STARTED, RESEARCHING, PLANNED, etc.)
   - TODO.md vs state.json mapping
   - Command → Status mapping
   - Valid transition rules and diagrams
   - Atomic synchronization protocol
+  - **Note**: For most use cases, `orchestration/state-management.md` is sufficient.
+    Load status-markers.md only when you need detailed transition validation rules.
+- **ci-workflow.md** (140 lines) - CI workflow standards and trigger criteria
+  - Skip-by-default behavior with `[ci]` marker
+  - Decision criteria for triggering CI
+  - Language-based defaults (lean triggers, meta/markdown skip)
+  - Task lifecycle CI triggers
 - **tasks.md** (227 lines) - Task entry format, required fields, validation rules
 - **documentation.md** (178 lines) - Documentation standards, NO EMOJI policy
 - **plan.md** (104 lines) - Implementation plan structure and requirements
@@ -109,6 +272,7 @@ Load for: Review, task breakdown, sessions
 
 Load for: Creating new agents, commands, orchestrators
 
+- **thin-wrapper-skill.md** - Template for creating new skills (thin wrapper pattern)
 - **subagent-template.md** - Template for creating new agents
 - **command-template.md** - Template for creating new commands
 - **orchestrator-template.md** - Template for orchestrator patterns
@@ -118,39 +282,134 @@ Load for: Creating new agents, commands, orchestrators
 
 ---
 
+## Documentation Guides (docs/guides/)
+
+Load for: Component development and architecture understanding
+
+**Component Development**:
+- **component-selection.md** - Decision tree for command vs skill vs agent
+- **creating-commands.md** - Step-by-step command creation
+- **creating-skills.md** - Step-by-step skill creation (thin wrapper pattern)
+- **creating-agents.md** - Step-by-step agent creation (8-stage workflow)
+
+**Context Loading**:
+- **context-loading-best-practices.md** - Lazy loading patterns
+
+**Examples**:
+- **examples/research-flow-example.md** - End-to-end /research command flow
+
+**When to Load**:
+- Load component-selection.md when deciding what to create
+- Load creating-*.md when implementing new component
+- Load research-flow-example.md for understanding flow patterns
+
+---
+
 ## Project Context (project/)
 
 Load only when needed for language-specific workflows:
 
-### Neovim Context (project/neovim/)
+### Lean4 Context (project/lean4/)
 
-Load for: Neovim configuration and Lua development tasks (Language: lua)
-
-**Domain**:
-- **neovim-api.md** - vim.api, vim.fn, vim.opt, vim.keymap patterns
-- **lua-patterns.md** - Module patterns, metatables, iterators, error handling
-- **plugin-ecosystem.md** - lazy.nvim, plugin categories, selection criteria
-- **lsp-integration.md** - nvim-lspconfig, mason.nvim, completion engines
+Load for: Lean implementation tasks (Language: lean)
 
 **Standards**:
-- **lua-style-guide.md** - Indentation, naming, module structure
-- **documentation-requirements.md** - README format, function docs, no emojis
-- **testing-standards.md** - busted, plenary.nvim, assertion patterns
-
-**Patterns**:
-- **plugin-definition.md** - lazy.nvim specs, lazy loading, dependencies
-- **keymapping.md** - vim.keymap.set, which-key, leader patterns
-- **autocommand.md** - autocmd groups, events, buffer-local
+- **lean4-style-guide.md** - Lean 4 coding conventions
+- **proof-conventions-lean.md** - Lean-specific proof conventions
+- **proof-readability-criteria.md** - Proof readability standards
 
 **Tools**:
-- **lazy-nvim.md** - Package manager, specs, lock files
-- **telescope.md** - Pickers, finders, previewers, actions
-- **treesitter.md** - Parsers, queries, text objects
+- **leansearch-api.md** - LeanSearch REST API integration
+- **loogle-api.md** - Loogle CLI interface
+- **lsp-integration.md** - lean-lsp-mcp integration
+- **aesop-integration.md** - Aesop tactic integration
+- **mcp-tools-guide.md** - MCP tools overview
+
+**Patterns**:
+- **tactic-patterns.md** - Common tactic patterns
+
+**Agents** (project/lean4/agents/):
+- **lean-research-flow.md** (~250 lines) - Detailed execution flow for lean-research-agent
+  - Stages 1-7: Parse context, search strategy, execute searches, synthesize, report, metadata, return
+  - Error handling patterns and MCP recovery
+  - Search fallback chain and partial result guidelines
+  - **MUST load after Stage 0 in lean-research-agent**
+- **lean-implementation-flow.md** (~340 lines) - Detailed execution flow for lean-implementation-agent
+  - Stages 1-8: Parse context, load plan, find resume, proof loop, verify, summary, metadata, return
+  - Phase checkpoint protocol
+  - Proof development loop details (tactic selection, when stuck)
+  - Error handling and MCP recovery
+  - **MUST load after Stage 0 in lean-implementation-agent**
 
 **Processes**:
-- **plugin-development.md** - Structure, testing, publishing
-- **debugging.md** - Print debugging, logging, DAP, profiling
-- **maintenance.md** - Updates, performance, health checks
+- **end-to-end-proof-workflow.md** - Complete proof development workflow
+- **project-structure-best-practices.md** - Repository organization
+
+**Domain**:
+- **dependent-types.md** - Dependent type theory concepts
+- **key-mathematical-concepts.md** - Core mathematical concepts
+- **lean4-syntax.md** - Lean 4 syntax reference
+- **mathlib-overview.md** - Mathlib library overview
+
+**Templates**:
+- **definition-template.md** - Definition structure template
+- **new-file-template.md** - New Lean file template
+- **proof-structure-templates.md** - Proof structure templates
+
+### Logic Context (project/logic/)
+
+Load for: Proof theory tasks
+
+**Standards**:
+- **proof-conventions.md** - Canonical proof principles
+- **notation-standards.md** - Notation conventions
+- **naming-conventions.md** - Naming standards
+
+**Processes**:
+- **modal-proof-strategies.md** - Modal logic proof strategies
+- **temporal-proof-strategies.md** - Temporal logic proof strategies
+- **proof-construction.md** - General proof construction
+- **verification-workflow.md** - Verification procedures
+
+**Domain**:
+- **kripke-semantics-overview.md** - Kripke semantics concepts
+- **metalogic-concepts.md** - Metalogic theory
+- **proof-theory-concepts.md** - Proof theory foundations
+- **task-semantics.md** - Task-based semantics
+
+### Typst Context (project/typst/)
+
+Load for: Typst implementation tasks (Language: typst)
+
+**Overview**:
+- **README.md** (~80 lines) - Directory overview and loading strategy
+
+**Standards**:
+- **typst-style-guide.md** (~230 lines) - Document setup, typography, show rules
+  - Page layout and margins (1.5in x 1.25in, matching LaTeX)
+  - URLblue hyperlink styling (rgb(0, 0, 150))
+  - URL text formatting with raw() (texttt equivalent)
+  - Heading spacing (above: 1.4em, below: 1em)
+- **notation-conventions.md** - shared-notation.typ and theory-specific modules
+- **document-structure.md** - Main document and chapter organization
+
+**Patterns**:
+- **theorem-environments.md** - thmbox setup and usage
+- **cross-references.md** - Labels, refs, Lean cross-references
+
+**Templates**:
+- **chapter-template.md** - Boilerplate for new chapters
+
+**Tools**:
+- **compilation-guide.md** - `typst compile` and `typst watch` usage
+
+**When to Load**:
+- Load README.md for overview on any Typst task
+- Load typst-style-guide.md when setting up document formatting
+- Load theorem-environments.md when working with definitions/theorems
+- Load chapter-template.md when creating new chapters
+
+---
 
 ### Repo Context (project/repo/)
 
@@ -158,6 +417,30 @@ Load for: General markdown/documentation tasks (Language: markdown)
 
 - **project-overview.md** - Repository structure and organization
 - **self-healing-implementation-details.md** - Self-healing system details
+
+### Math Context (project/math/)
+
+Load for: Mathematical domain tasks
+
+**Algebra**:
+- **groups-and-monoids.md** - Group theory concepts
+- **rings-and-fields.md** - Ring and field theory
+
+**Order Theory**:
+- **partial-orders.md** - Partial order concepts
+
+**Lattice Theory**:
+- **lattices.md** - Lattice theory concepts
+
+**Topology**:
+- **topological-spaces.md** - Topology concepts
+
+### Physics Context (project/physics/)
+
+Load for: Physics domain tasks
+
+**Dynamical Systems**:
+- **dynamical-systems.md** - Dynamical systems concepts
 
 ---
 
@@ -172,11 +455,17 @@ Load for: Orchestrator and routing patterns
 
 ## Meta Context (Integrated into core/)
 
-Load for: /meta command and system-builder workflows
+Load for: /meta command and meta-builder-agent workflows
 
-**When to Load**: Only when executing /meta command or meta subagents (domain-analyzer, agent-generator, workflow-designer, command-creator, context-organizer)
+**When to Load**: Only when executing /meta command via meta-builder-agent
 
-**Note**: Meta context files have been integrated into core/ subdirectories for better organization (Task 267, 2026-01-03)
+**Note**: /meta now uses the skill-meta -> meta-builder-agent delegation pattern (Task 429, 2026-01-12)
+
+**Component Development Guides** (docs/guides/):
+- **component-selection.md** - Decision tree for what to create (command vs skill vs agent)
+- **creating-commands.md** - Step-by-step command creation guide
+- **creating-skills.md** - Step-by-step skill creation guide (thin wrapper pattern)
+- **creating-agents.md** - Step-by-step agent creation guide (8-stage workflow)
 
 **Interview Patterns** (core/workflows/):
 - **interview-patterns.md** (226 lines) - Progressive disclosure, adaptive questioning, validation checkpoints
@@ -188,11 +477,11 @@ Load for: /meta command and system-builder workflows
 **Agent Templates** (core/templates/):
 - **agent-templates.md** (336 lines) - Orchestrator, research, validation, processing, and generation templates
 
-**Loading Strategy**:
-- Load core/workflows/interview-patterns.md for domain-analyzer (Stage 4)
-- Load core/standards/architecture-principles.md for workflow-designer and agent-generator (Stage 4)
-- Load core/standards/domain-patterns.md for domain-analyzer (Stage 4)
-- Load core/templates/agent-templates.md for agent-generator (Stage 4)
+**Loading Strategy for meta-builder-agent**:
+- **Interactive mode**: Load component-selection.md during interview Stage 2
+- **Prompt mode**: Load component-selection.md for analysis
+- **Analyze mode**: Load CLAUDE.md and index.md for system inventory
+- Load creating-*.md guides when specific component types are being discussed
 - Never load during routing (Stages 1-3)
 
 ---
@@ -211,41 +500,50 @@ Load selectively: Use grep extraction for specific tasks, avoid loading full fil
 **Research Workflow (researcher.md)**:
 ```
 Stage 4 loads:
-- @.claude/context/core/orchestration/delegation.md
+- @.claude/context/core/orchestration/orchestration-core.md
 - @.claude/context/core/orchestration/state-management.md
-- grep -A 50 "^### {task_number}\." .claude/specs/TODO.md
-- @.claude/specs/state.json
+- grep -A 50 "^### {task_number}\." specs/TODO.md
+- @specs/state.json
 
 Language-specific:
-- If lua: @.claude/context/project/neovim/domain/neovim-api.md
+- If lean: @.claude/context/project/lean4/tools/leansearch-api.md
 - If markdown: (no additional context)
 ```
 
 **Planning Workflow (planner.md)**:
 ```
 Stage 4 loads:
-- @.claude/context/core/orchestration/delegation.md
+- @.claude/context/core/orchestration/orchestration-core.md
 - @.claude/context/core/formats/plan-format.md
 - @.claude/context/core/orchestration/state-management.md
-- grep -A 50 "^### {task_number}\." .claude/specs/TODO.md
-- @.claude/specs/state.json
+- grep -A 50 "^### {task_number}\." specs/TODO.md
+- @specs/state.json
 - Research artifacts from task (if exist)
 ```
 
 **Implementation Workflow (implementer.md, task-executor.md)**:
 ```
 Stage 4 loads:
-- @.claude/context/core/orchestration/delegation.md
+- @.claude/context/core/orchestration/orchestration-core.md
 - @.claude/context/core/orchestration/state-management.md
 - @.claude/context/core/system/git-commits.md
-- grep -A 50 "^### {task_number}\." .claude/specs/TODO.md
-- @.claude/specs/state.json
+- grep -A 50 "^### {task_number}\." specs/TODO.md
+- @specs/state.json
 - Plan file (if exists)
 
 Language-specific:
-- If lua: @.claude/context/project/neovim/standards/lua-style-guide.md
-- If lua: @.claude/context/project/neovim/standards/testing-standards.md
+- If lean: @.claude/context/project/lean4/standards/lean4-style-guide.md
+- If lean: @.claude/context/project/lean4/tools/lsp-integration.md
 ```
+
+**Meta Workflow (meta-builder-agent)**:
+
+See `.claude/agents/meta-builder-agent.md` for complete stage-by-stage context loading guidance.
+
+Quick reference:
+- Interactive/Prompt modes: component-selection.md + on-demand component guides
+- Analyze mode: CLAUDE.md + index.md (read-only analysis)
+- All modes: subagent-return.md (always)
 
 ---
 
@@ -262,14 +560,14 @@ Language-specific:
 **Completed**:
 - ✓ Delegation files merged: 1,003 → 510 lines (50% reduction)
 - ✓ State management files merged: 1,574 → 535 lines (66% reduction)
-- ✓ command-lifecycle.md removed: 1,138 lines eliminated (100% reduction)
+- ✓ command-lifecycle.md deprecated: 1,138 lines pending removal
 - ✓ Total reduction: 3,715 → 1,045 lines (72% reduction, 2,670 lines saved)
 
-**Deprecated Files** (1-month deprecation period until 2025-01-29):
-- subagent-return-format.md → core/standards/delegation.md#return-format
-- subagent-delegation-guide.md → core/standards/delegation.md#delegation-patterns
-- state-schema.md → core/system/state-management.md#state-schemas
-- command-lifecycle.md → (removed, see agent files for execution patterns)
+**Deprecated Files** (deprecation period ended 2025-01-29, now removed):
+- subagent-return-format.md → core/standards/delegation.md#return-format (removed)
+- subagent-delegation-guide.md → core/standards/delegation.md#delegation-patterns (removed)
+- state-schema.md → core/system/state-management.md#state-schemas (removed)
+- command-lifecycle.md → see agent files for execution patterns (pending removal)
 
 **Note**: status-markers.md has been moved from core/system/ to core/standards/ (2026-01-08) as it defines standards/conventions rather than system implementation.
 
@@ -286,13 +584,19 @@ Language-specific:
 
 ## Quick Navigation
 
-**For Delegation**: → `core/standards/delegation.md`
-**For State Management**: → `core/system/state-management.md`
-**For Artifacts**: → `core/system/artifact-management.md`
-**For Git Commits**: → `core/system/git-commits.md`
-**For Task Format**: → `core/standards/tasks.md`
-**For Plan Format**: → `core/standards/plan.md`
-**For Lua Style**: → `project/neovim/standards/lua-style-guide.md`
-**For Neovim API**: → `project/neovim/domain/neovim-api.md`
-**For Testing Standards**: → `project/neovim/standards/testing-standards.md`
-**For Plugin Development**: → `project/neovim/processes/plugin-development.md`
+**For Component Development**:
+- **Component Selection**: → `docs/guides/component-selection.md`
+- **Creating Commands**: → `docs/guides/creating-commands.md`
+- **Creating Skills**: → `docs/guides/creating-skills.md`
+- **Creating Agents**: → `docs/guides/creating-agents.md`
+- **Skill Template**: → `core/templates/thin-wrapper-skill.md`
+
+**For Standards**:
+- **For Delegation**: → `core/standards/delegation.md`
+- **For State Management**: → `core/system/state-management.md`
+- **For Artifacts**: → `core/system/artifact-management.md`
+- **For Git Commits**: → `core/system/git-commits.md`
+- **For Task Format**: → `core/standards/tasks.md`
+- **For Plan Format**: → `core/standards/plan.md`
+- **For Lean Style**: → `project/lean4/standards/lean4-style-guide.md`
+- **For Proof Conventions**: → `project/logic/standards/proof-conventions.md`

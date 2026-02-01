@@ -1,326 +1,208 @@
-# Neovim Configuration Development System
+# ProofChecker Development System
 
-A structured task management and agent orchestration system for Neovim configuration maintenance, specializing in Lua development, plugin management, and editor customization.
+Task management and agent orchestration for Lean 4 theorem proving. For comprehensive documentation, see @.claude/README.md.
 
 ## Quick Reference
 
-- **Task List**: @.claude/specs/TODO.md
-- **Machine State**: @.claude/specs/state.json
-- **Error Tracking**: @.claude/specs/errors.json
-- **Architecture**: @.claude/ARCHITECTURE.md
+- **Task List**: @specs/TODO.md
+- **Machine State**: @specs/state.json
+- **Error Tracking**: @specs/errors.json
+- **Architecture**: @.claude/README.md
 
-## System Overview
-
-This system manages the development and maintenance of a comprehensive Neovim configuration. The development workflow uses numbered tasks with structured research → plan → implement cycles.
-
-### Project Structure
+## Project Structure
 
 ```
-nvim/
-├── init.lua                     # Main entry point
-├── lua/neotex/                  # Main configuration namespace
-│   ├── bootstrap.lua            # Plugin system initialization
-│   ├── config/                  # Core settings (options, keymaps, autocmds)
-│   ├── core/                    # Fundamental utilities
-│   ├── plugins/                 # Plugin configurations by category
-│   │   ├── ai/                  # AI integrations (Claude, Goose, Avante)
-│   │   ├── editor/              # Editor enhancements (telescope, which-key)
-│   │   ├── lsp/                 # Language server integration
-│   │   ├── text/                # Format-specific tools (LaTeX, Markdown)
-│   │   ├── tools/               # Development tools (git, snippets)
-│   │   └── ui/                  # UI components (neo-tree, lualine)
-│   └── util/                    # Utility functions
-├── after/                       # Post-load configurations (ftplugin)
-├── docs/                        # Documentation
-├── tests/                       # Test suites
-└── .claude/specs/               # Task management artifacts
+Theories/                 # Lean 4 source code
+├── Bimodal/             # Modal logic theories
+├── PropositionalLogic/  # Classical propositional logic
+└── Shared/              # Common definitions
+docs/                    # Project documentation
+specs/                   # Task management artifacts
+.claude/                 # Claude Code configuration
 ```
 
 ## Task Management
 
 ### Status Markers
-Tasks progress through these states:
 - `[NOT STARTED]` - Initial state
-- `[RESEARCHING]` → `[RESEARCHED]` - Research phase
-- `[PLANNING]` → `[PLANNED]` - Planning phase
-- `[IMPLEMENTING]` → `[COMPLETED]` - Implementation phase
-- `[BLOCKED]`, `[ABANDONED]`, `[PARTIAL]` - Terminal/exception states
+- `[RESEARCHING]` -> `[RESEARCHED]` - Research phase
+- `[PLANNING]` -> `[PLANNED]` - Planning phase
+- `[IMPLEMENTING]` -> `[COMPLETED]` - Implementation phase
+- `[BLOCKED]`, `[ABANDONED]`, `[PARTIAL]`, `[EXPANDED]` - Terminal/exception states
 
-### Task Artifact Paths
+### Artifact Paths
 ```
-.claude/specs/{NUMBER}_{SLUG}/
-├── reports/                    # Research artifacts
-│   └── research-{NNN}.md
-├── plans/                      # Implementation plans
-│   └── implementation-{NNN}.md
-└── summaries/                  # Completion summaries
-    └── implementation-summary-{DATE}.md
+specs/{N}_{SLUG}/
+├── reports/research-{NNN}.md
+├── plans/implementation-{NNN}.md
+└── summaries/implementation-summary-{DATE}.md
 ```
+`{N}` = unpadded task number, `{NNN}` = 3-digit padded version, `{DATE}` = YYYYMMDD.
 
 ### Language-Based Routing
 
-Tasks have a `Language` field that determines tool selection:
-
 | Language | Research Tools | Implementation Tools |
 |----------|----------------|---------------------|
-| `lua` | WebSearch, WebFetch, Read, Grep | Read, Write, Edit, Bash(nvim:*) |
+| `lean` | lean_leansearch, lean_loogle, lean_leanfinder | lean_goal, lean_hover_info, lean_multi_attempt |
+| `latex` | WebSearch, WebFetch, Read | Read, Write, Edit, Bash (pdflatex) |
+| `typst` | WebSearch, WebFetch, Read | Read, Write, Edit, Bash (typst compile) |
 | `general` | WebSearch, WebFetch, Read | Read, Write, Edit, Bash |
 | `meta` | Read, Grep, Glob | Write, Edit |
 
-## Command Workflows
+## Command Reference
 
-### /task - Create or manage tasks
-```
-/task "Description"          # Create new task
-/task --recover 343-345      # Recover from archive
-/task --divide 326           # Split into subtasks
-/task --sync                 # Sync TODO.md with state.json
-/task --abandon 343-345      # Archive tasks
-```
+All commands use checkpoint-based execution: GATE IN (preflight) -> DELEGATE (skill/agent) -> GATE OUT (postflight) -> COMMIT.
 
-### /research N [focus] - Research a task
-1. Validate task exists
-2. Update status to [RESEARCHING]
-3. Execute research (language-routed)
-4. Create report in .claude/specs/{N}_{SLUG}/reports/
-5. Update status to [RESEARCHED]
-6. Git commit
+| Command | Usage | Description |
+|---------|-------|-------------|
+| `/task` | `/task "Description"` | Create task |
+| `/task` | `/task --recover N`, `--expand N`, `--sync`, `--abandon N` | Manage tasks |
+| `/research` | `/research N [focus]` | Research task, route by language |
+| `/plan` | `/plan N` | Create implementation plan |
+| `/implement` | `/implement N` | Execute plan, resume from incomplete phase |
+| `/revise` | `/revise N` | Create new plan version |
+| `/review` | `/review` | Analyze codebase |
+| `/todo` | `/todo` | Archive completed/abandoned tasks, sync repository metrics |
+| `/errors` | `/errors` | Analyze error patterns, create fix plans |
+| `/meta` | `/meta` | System builder for .claude/ changes |
+| `/learn` | `/learn [PATH...]` | Scan for FIX:/NOTE:/TODO: tags |
+| `/lake` | `/lake [--clean] [--max-retries N]` | Build with automatic error repair |
+| `/refresh` | `/refresh [--dry-run] [--force]` | Clean orphaned processes and old files |
 
-### /plan N - Create implementation plan
-1. Validate task is [RESEARCHED] or [NOT STARTED]
-2. Update status to [PLANNING]
-3. Create phased plan with steps
-4. Write to .claude/specs/{N}_{SLUG}/plans/
-5. Update status to [PLANNED]
-6. Git commit
+### Utility Scripts
 
-### /implement N - Execute implementation
-1. Validate task is [PLANNED] or [IMPLEMENTING]
-2. Load plan, find resume point
-3. Update status to [IMPLEMENTING]
-4. Execute phases sequentially
-5. Update status to [COMPLETED]
-6. Create summary, git commit
-
-### /revise N - Create new plan version
-Increments plan version (implementation-002.md, etc.)
-
-### /review - Analyze codebase
-Code review and architecture analysis
-
-### /todo - Archive completed tasks
-Moves completed/abandoned tasks to archive/
-
-### /errors - Analyze error patterns
-Reads errors.json, creates fix plans
-
-### /meta - System builder
-Interactive agent system generator
+- `.claude/scripts/export-to-markdown.sh` - Export .claude/ directory to consolidated markdown file
 
 ## State Synchronization
 
-**Critical**: TODO.md and state.json must stay synchronized.
-
-### Two-Phase Update Pattern
-1. Read both files
-2. Prepare updates in memory
-3. Write state.json first (machine state)
-4. Write TODO.md second (user-facing)
-5. If either fails, log error
+TODO.md and state.json must stay synchronized. Update state.json first (machine state), then TODO.md (user-facing).
 
 ### state.json Structure
 ```json
 {
-  "next_project_number": 9,
-  "active_projects": [
-    {
-      "project_number": 1,
-      "project_name": "task_slug",
-      "status": "planned",
-      "language": "lua",
-      "priority": "high"
-    }
-  ]
+  "next_project_number": 346,
+  "active_projects": [{
+    "project_number": 334,
+    "project_name": "task_slug",
+    "status": "planned",
+    "language": "lean",
+    "completion_summary": "Required when status=completed",
+    "roadmap_items": ["Optional explicit roadmap items"]
+  }],
+  "repository_health": {
+    "last_assessed": "ISO8601 timestamp",
+    "sorry_count": 295,
+    "axiom_count": 10,
+    "build_errors": 0,
+    "status": "manageable"
+  }
 }
 ```
+
+### Completion Workflow
+- Non-meta tasks: `completion_summary` + optional `roadmap_items` -> /todo annotates ROAD_MAP.md
+- Meta tasks: `completion_summary` + `claudemd_suggestions` -> /todo displays for user review
 
 ## Git Commit Conventions
 
-Commits are scoped to task operations:
+Format: `task {N}: {action}` with session ID in body.
 ```
-task {N}: create {title}
-task {N}: complete research
-task {N}: create implementation plan
-task {N} phase {P}: {phase_name}
-task {N}: complete implementation
-todo: archive {N} completed tasks
-errors: create fix plan for {N} errors
+task 334: complete research
+
+Session: sess_1736700000_abc123
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 ```
 
-## Neovim/Lua Development
+Standard actions: `create`, `complete research`, `create implementation plan`, `phase {P}: {name}`, `complete implementation`.
 
-### Essential Commands
-```bash
-# Run all tests with plenary
-nvim --headless -c "PlenaryBustedDirectory tests/"
+## Lean 4 Integration
 
-# Run specific test file
-nvim --headless -c "PlenaryBustedFile tests/picker/scan_recursive_spec.lua"
+### CRITICAL: Blocked MCP Tools - NEVER CALL THESE
 
-# Run tests with verbose output
-nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/minimal_init.lua'}"
+**DO NOT call these tools under any circumstances.** They have known bugs that cause incorrect behavior.
 
-# Check for Lua syntax errors
-luacheck lua/
-```
+| Tool | Bug | Alternative |
+|------|-----|-------------|
+| `lean_diagnostic_messages` | lean-lsp-mcp #118 | `lean_goal` or `lake build` |
+| `lean_file_outline` | lean-lsp-mcp #115 | `Read` + `lean_hover_info` |
 
-### Test-Driven Development
-All implementations follow TDD:
-1. Write failing test first
-2. Implement minimal code to pass
-3. Refactor while tests pass
+**Full documentation**: @.claude/context/core/patterns/blocked-mcp-tools.md
 
-### Lua Code Style
-- **Indentation**: 2 spaces, expandtab
-- **Line length**: ~100 characters
-- **Imports**: At the top of the file, ordered by dependency
-- **Module structure**: Organized in `neotex.core` and `neotex.plugins` namespaces
-- **Plugin definitions**: Table-based with lazy.nvim format
-- **Function style**: Use local functions where possible
-- **Error handling**: Use pcall for operations that might fail
-- **Naming**: Descriptive, lowercase names with underscores
+### MCP Tools (via lean-lsp server)
+`lean_goal`, `lean_hover_info`, `lean_completions`, `lean_leansearch`, `lean_loogle`, `lean_leanfinder`, `lean_multi_attempt`, `lean_local_search`, `lean_state_search`, `lean_hammer_premise`
 
-### Module Pattern
-```lua
--- lua/neotex/plugins/category/plugin-name.lua
-return {
-  "author/plugin-name",
-  event = "VeryLazy",  -- or specific events
-  dependencies = { "dep/plugin" },
-  opts = {
-    -- configuration options
-  },
-  config = function(_, opts)
-    require("plugin-name").setup(opts)
-  end,
-}
-```
+### Search Decision Tree
+1. "Does X exist locally?" -> lean_local_search
+2. "I need a lemma that says X" -> lean_leansearch
+3. "Find lemma with type pattern" -> lean_loogle
+4. "What's the Lean name for concept X?" -> lean_leanfinder
+5. "What closes this goal?" -> lean_state_search
 
-### Plugin Directory Structure
-```
-lua/neotex/plugins/
-├── ai/                  # AI integrations
-│   ├── init.lua         # Category loader
-│   ├── claude.lua       # Claude Code integration
-│   └── goose.lua        # Goose AI integration
-├── editor/              # Editor enhancements
-├── lsp/                 # Language server configs
-├── text/                # Format-specific (LaTeX, Markdown)
-├── tools/               # Development tools
-└── ui/                  # UI components
-```
+### MCP Configuration
+Configure lean-lsp in user scope (`~/.claude.json`) for subagent access. Run `.claude/scripts/setup-lean-mcp.sh`.
 
-## Testing Patterns
+## Skill-to-Agent Mapping
 
-### Framework
-- **Busted**: Primary Lua testing framework
-- **plenary.nvim**: Neovim-specific testing utilities
-
-### Assertion Patterns
-```lua
--- Correct: Use is_nil/is_not_nil for string:match()
-assert.is_not_nil(str:match("pattern"))   -- Match found
-assert.is_nil(str:match("pattern"))       -- Match not found
-
--- WRONG: match() returns string/nil, not boolean
--- assert.is_true(str:match("pattern"))   -- FAILS
--- assert.is_false(str:match("pattern"))  -- FAILS
-```
-
-### Test File Organization
-- Test files: `*_spec.lua` or `test_*.lua`
-- Test location: `tests/` directory
-- Test framework: busted with plenary.nvim
+| Skill | Agent | Purpose |
+|-------|-------|---------|
+| skill-lean-research | lean-research-agent | Lean 4/Mathlib research |
+| skill-lean-implementation | lean-implementation-agent | Lean proof implementation |
+| skill-researcher | general-research-agent | General web/codebase research |
+| skill-planner | planner-agent | Implementation plan creation |
+| skill-implementer | general-implementation-agent | General file implementation |
+| skill-latex-implementation | latex-implementation-agent | LaTeX document implementation |
+| skill-typst-implementation | typst-implementation-agent | Typst document implementation |
+| skill-meta | meta-builder-agent | System building and task creation |
+| skill-document-converter | document-converter-agent | Document format conversion |
+| skill-status-sync | (direct execution) | Atomic status updates |
+| skill-refresh | (direct execution) | Process and file cleanup |
+| skill-lake-repair | (direct execution) | Build with error repair |
 
 ## Rules References
 
-Core rules (automatically applied based on file paths):
-- @.claude/rules/state-management.md - Task state patterns (paths: .claude/specs/**)
+Core rules (auto-applied by file path):
+- @.claude/rules/state-management.md - Task state patterns (specs/**)
 - @.claude/rules/git-workflow.md - Commit conventions
-- @.claude/rules/neovim-lua.md - Neovim/Lua development patterns (paths: **/*.lua)
-- @.claude/rules/error-handling.md - Error recovery patterns (paths: .claude/**)
-- @.claude/rules/artifact-formats.md - Report/plan formats (paths: .claude/specs/**)
-- @.claude/rules/workflows.md - Command lifecycle patterns (paths: .claude/**)
+- @.claude/rules/lean4.md - Lean development (**/*.lean)
+- @.claude/rules/error-handling.md - Error recovery (.claude/**)
+- @.claude/rules/artifact-formats.md - Report/plan formats (specs/**)
+- @.claude/rules/workflows.md - Command lifecycle (.claude/**)
 
-## Project Context Imports
+## Context Imports
 
 Domain knowledge (load as needed):
-- @.claude/context/project/neovim/domain/neovim-api.md - Neovim API patterns
-- @.claude/context/project/neovim/domain/lua-patterns.md - Lua idioms
-- @.claude/context/project/neovim/domain/plugin-ecosystem.md - Plugin selection
-- @.claude/context/project/neovim/tools/lazy-nvim.md - Plugin manager
-
-## Documentation Requirements
-
-### README per Directory
-Every subdirectory must contain a README.md with:
-- **Purpose**: Clear explanation of directory's role
-- **Module Documentation**: Documentation for each file
-- **Usage Examples**: Code examples where applicable
-- **Navigation Links**: Links to parent and subdirectories
-
-### Character Encoding
-- **UTF-8 encoding** for all files
-- **NO EMOJIS in file content** - causes encoding issues
-- Use Unicode box-drawing characters for diagrams (┌─┐│└┘├┤┬┴┼)
-- Plain text alternatives: `[DONE]`, `[FAIL]`, `[WARN]`, `[INFO]`
+- @.claude/context/project/lean4/tools/mcp-tools-guide.md
+- @.claude/context/project/lean4/patterns/tactic-patterns.md
+- @.claude/context/project/logic/domain/kripke-semantics-overview.md
+- @.claude/context/project/repo/project-overview.md
 
 ## Error Handling
 
-### On Command Failure
-- Keep task in current status (don't regress)
-- Log error to errors.json if persistent
-- Preserve partial progress for resume
+- **On failure**: Keep task in current status, log to errors.json, preserve partial progress
+- **On timeout**: Mark phase [PARTIAL], next /implement resumes
+- **On MCP error**: Retry once, try alternative tool, continue with available info
+- **Git failures**: Non-blocking (logged, not fatal)
 
-### On Timeout
-- Mark current phase [PARTIAL]
-- Next /implement resumes from incomplete phase
+## jq Command Safety
 
-## Session Patterns
+Claude Code Issue #1132 causes jq parse errors when using `!=` operator (escaped as `\!=`).
 
-### Starting Work on a Task
-```
-1. Read TODO.md to find task
-2. Check current status
-3. Use appropriate command (/research, /plan, /implement)
-```
+**Safe pattern**: Use `select(.type == "X" | not)` instead of `select(.type != "X")`
 
-### Resuming Interrupted Work
-```
-1. /implement N automatically detects resume point
-2. Continues from last incomplete phase
-3. No manual intervention needed
+```bash
+# SAFE - use "| not" pattern
+select(.type == "plan" | not)
+
+# UNSAFE - gets escaped as \!=
+select(.type != "plan")
 ```
 
-## Key Development Principles
-
-- **TDD Mandatory**: Write tests BEFORE implementation
-- **No Backwards Compatibility**: Clean breaks when improving
-- **Fail-Fast**: Early validation, clear error messages
-- **Explicit Data Flow**: No hidden state
-- **Graceful Degradation**: Use pcall, provide fallbacks
-
-### Quality Standards
-- All new Lua modules must have test coverage
-- Public APIs require comprehensive tests
-- All subdirectories require README.md
-- Documentation must be present-state (no historical markers)
+Full documentation: @.claude/context/core/patterns/jq-escaping-workarounds.md
 
 ## Important Notes
 
-- Always update status BEFORE starting work (preflight)
-- Always update status AFTER completing work (postflight)
-- State.json is source of truth for machine operations
-- TODO.md is source of truth for user visibility
-- Git commits are non-blocking (failures logged, not fatal)
-- Neovim-specific standards in nvim/CLAUDE.md extend this file
+- Update status BEFORE starting work (preflight) and AFTER completing (postflight)
+- state.json = machine truth, TODO.md = user visibility
+- All skills use lazy context loading via @-references
+- Session ID format: `sess_{timestamp}_{random}` - generated at GATE IN, included in commits

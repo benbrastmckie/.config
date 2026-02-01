@@ -1,9 +1,9 @@
 #!/bin/bash
 # Validate state.json and TODO.md are synchronized
-# Called after writes to .claude/specs/
+# Called after writes to specs/
 
-STATE_FILE=".claude/specs/state.json"
-TODO_FILE=".claude/specs/TODO.md"
+STATE_FILE="specs/state.json"
+TODO_FILE="specs/TODO.md"
 
 # Check both files exist
 if [[ ! -f "$STATE_FILE" ]]; then

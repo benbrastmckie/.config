@@ -1,8 +1,8 @@
 # User Installation Guide
 
-[Back to Docs](../README.md) | [Detailed Installation](../../../Docs/installation/README.md)
+[Back to Docs](../README.md) | [Detailed Installation](../../../docs/installation/README.md)
 
-A quick-start guide for installing Claude Code and using it to set up ModelChecker.
+A quick-start guide for installing Claude Code and using it to work with ProofChecker.
 
 ---
 
@@ -10,11 +10,12 @@ A quick-start guide for installing Claude Code and using it to set up ModelCheck
 
 This guide helps you:
 1. Install Claude Code (Anthropic's AI CLI)
-2. Use Claude Code to install ModelChecker
-3. Create and modify Logos projects
-4. Set up GitHub CLI for issue reporting
+2. Clone and set up ProofChecker
+3. Set up Claude agent commands (optional)
+4. Work with Lean 4 proofs
+5. Set up GitHub CLI for issue reporting
 
-**New to the terminal?** See [Getting Started: Using the Terminal](../../../Docs/installation/GETTING_STARTED.md) first.
+**New to the terminal?** See your operating system's documentation for terminal basics.
 
 ---
 
@@ -22,30 +23,17 @@ This guide helps you:
 
 Claude Code is Anthropic's command-line interface for AI-assisted development.
 
-**Official Documentation**: [Claude Code on GitHub](https://github.com/anthropics/claude-code)
-
 ### Quick Installation
 
 **macOS:**
-
-First, ensure you have Homebrew installed. If not, install it:
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-Then install Claude Code:
 ```bash
 brew install anthropics/claude/claude-code
 ```
 
 **Windows (PowerShell as Administrator):**
-
-The `irm` (Invoke-RestMethod) command is built into PowerShell 3.0+, which comes pre-installed on Windows 10 and later. Open PowerShell as Administrator and run:
 ```powershell
 irm https://raw.githubusercontent.com/anthropics/claude-code/main/install.ps1 | iex
 ```
-
-If you're on an older Windows version, first [install PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows).
 
 **Linux:**
 ```bash
@@ -58,9 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/anthropics/claude-code/main/install
 claude --version
 ```
 
-You should see a version number. If not, see [Troubleshooting](../../../Docs/installation/TROUBLESHOOTING.md).
-
-**For detailed platform-specific instructions**, see the full [Claude Code Installation Guide](../../../Docs/installation/CLAUDE_CODE.md#installation).
+You should see a version number.
 
 ---
 
@@ -81,109 +67,166 @@ claude auth status
 
 ---
 
-## Installing ModelChecker with Claude Code
+## Setting Up ProofChecker with Claude Code
 
-Instead of running installation commands manually, let Claude do it for you.
-
-### Step 1: Navigate to Your Workspace
+### Step 1: Clone the Repository
 
 ```bash
 mkdir -p ~/Documents/Projects
 cd ~/Documents/Projects
+git clone https://github.com/benbrastmckie/ProofChecker.git
+cd ProofChecker
 ```
 
-### Step 2: Start Claude Code
+### Step 2: Install Lean 4 and Mathlib
+
+ProofChecker requires Lean 4 and Mathlib. Install elan (Lean version manager):
+
+```bash
+# macOS/Linux
+curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
+
+# Windows - download from https://github.com/leanprover/elan/releases
+```
+
+After installation, restart your terminal and verify:
+
+```bash
+elan --version
+lake --version
+```
+
+### Step 3: Build the Project
+
+```bash
+cd ~/Documents/Projects/ProofChecker
+lake build
+```
+
+This may take several minutes on first build as it downloads Mathlib cache.
+
+### Step 4: Start Claude Code
 
 ```bash
 claude
 ```
 
-### Step 3: Request Installation
+### Step 5: Verify Setup
 
-Paste this prompt to Claude:
+Ask Claude:
 
 ```
-Please follow the installation instructions at
-Docs/installation/BASIC_INSTALLATION.md to install ModelChecker.
-After installation, verify it works by running model-checker --version.
-```
-
-**What Claude Will Do:**
-- Check your Python version (requires 3.8+)
-- Install ModelChecker via pip
-- Verify the installation works
-
-### Alternative: Direct Installation
-
-If you prefer to install manually:
-
-```bash
-pip install model-checker
-```
-
-Or with Jupyter support:
-
-```bash
-pip install model-checker[jupyter]
-```
-
-**Verify:**
-```bash
-model-checker --version
+Please verify the ProofChecker setup by:
+1. Checking that lake build succeeds
+2. Running lean_goal on a proof in Theories/Bimodal/Soundness.lean
+3. Confirming the Lean LSP tools are available
 ```
 
 ---
 
-## Creating Logos Projects
+## Setting Up Claude Agent Commands (Optional)
 
-Once ModelChecker is installed, create projects with Claude Code's help.
+The ProofChecker repository includes a `.claude/` agent system that provides enhanced task management and workflow commands for Claude Code.
 
-### Create a New Project
+### What the Agent System Provides
+
+- **Task Management**: Create, track, and archive development tasks
+- **Structured Workflow**: `/research` -> `/plan` -> `/implement` cycle
+- **Specialized Skills**: Language-specific agents for Lean 4 development
+- **Context Files**: Domain knowledge for logic, semantics, and theorem proving
+- **State Persistence**: Track progress across Claude Code sessions
+- **Lean MCP Tools**: Integration with lean-lsp for proof assistance
+
+### Installation
+
+To install the agent system, paste this URL into Claude Code:
+
+```
+https://raw.githubusercontent.com/benbrastmckie/ProofChecker/main/.claude/docs/guides/copy-claude-directory.md
+```
+
+Then give Claude this prompt:
+
+```
+Please read the instructions at the URL above and follow them to copy
+the .claude/ directory into my current working directory.
+```
+
+**Alternative**: Follow the instructions in the guide manually.
+
+### After Installation
+
+1. **Restart Claude Code** - Exit and restart for commands to be available
+2. **Test the setup** - Try creating a test task:
+   ```
+   /task "Test task"
+   ```
+3. **Learn the commands** - Read the full command reference:
+   ```
+   https://raw.githubusercontent.com/benbrastmckie/ProofChecker/main/.claude/docs/commands/README.md
+   ```
+
+### Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/task` | Create and manage tasks |
+| `/research` | Conduct research on a task |
+| `/plan` | Create implementation plan |
+| `/implement` | Execute implementation |
+| `/todo` | Archive completed tasks |
+
+For complete documentation, see the [Commands Reference](../commands/README.md).
+
+---
+
+## Working with Lean 4 Proofs
+
+Once ProofChecker is set up, use Claude Code to assist with theorem proving.
+
+### Explore the Codebase
 
 In Claude Code, ask:
 
 ```
-Create a new ModelChecker project using the logos theory to test
-whether contraposition is valid.
+Show me the structure of the Logos/ directory and explain
+the layered logic system.
 ```
 
 Claude will:
-1. Run `model-checker` to generate a project
-2. Navigate to the project directory
-3. Modify the example file for your test
-4. Run the model checker
-5. Explain the results
+1. Navigate the Layer0/Layer1/Layer2 structure
+2. Explain the propositional, modal, and temporal logic layers
+3. Show how proofs are organized
 
-### Manual Project Creation
+### Working on Proofs
 
-```bash
-# Create a logos project
-model-checker
-
-# Or specify a theory
-model-checker -l imposition
-```
-
-This creates a project directory with:
-- `examples.py` - Your main working file
-- `semantic.py` - Theory definitions
-- `operators.py` - Logical operators
-- `README.md` - Theory documentation
-
-### Modifying Examples
-
-Ask Claude to help:
+Ask Claude to help with specific proofs:
 
 ```
-Help me add a validity check for modus ponens to my examples.py file.
+Help me understand the proof of Deduction Theorem in
+Logos/Layer0/Propositional.lean
 ```
 
 Or:
 
 ```
-I'm getting unexpected results. Can you review my premises and
-conclusions and help debug?
+I'm trying to prove a modal logic theorem. Can you help me
+find relevant lemmas in Mathlib using leansearch?
 ```
+
+### Using Lean MCP Tools
+
+Claude has access to specialized Lean tools:
+
+| Tool | Purpose |
+|------|---------|
+| `lean_goal` | See proof state at a position |
+| `lean_hover_info` | Get type signatures |
+| `lean_leansearch` | Search Mathlib by natural language |
+| `lean_loogle` | Search by type signature |
+| `lake build` | Check for compiler errors (via Bash) |
+
+**Note**: Some MCP tools are blocked due to known bugs. See `.claude/context/core/patterns/blocked-mcp-tools.md` for details.
 
 ---
 
@@ -232,15 +275,15 @@ gh auth status
 
 ---
 
-## Opening Issues on ModelChecker
+## Opening Issues on ProofChecker
 
 When you encounter bugs or have suggestions, Claude Code can help create issues.
 
 ### Using Claude Code
 
 ```
-I'm getting an error when running model-checker with N=5.
-Help me create an issue on the ModelChecker repository
+I'm getting an error when building the project.
+Help me create an issue on the ProofChecker repository
 with the error details.
 ```
 
@@ -252,15 +295,15 @@ Claude will:
 ### Manual Issue Creation
 
 ```bash
-gh issue create --repo benbrastmckie/ModelChecker \
+gh issue create --repo benbrastmckie/ProofChecker \
   --title "Brief description" \
   --body "Detailed description of the issue"
 ```
 
 ### What to Include in Issues
 
-- ModelChecker version (`model-checker --version`)
-- Python version (`python --version`)
+- Lean version (`lean --version`)
+- Lake version (`lake --version`)
 - Operating system
 - Steps to reproduce
 - Expected vs actual behavior
@@ -279,42 +322,49 @@ claude --version
 # Authenticate
 claude auth login
 
-# Create workspace and start Claude
+# Clone and set up project
 mkdir -p ~/Documents/Projects && cd ~/Documents/Projects
+git clone https://github.com/benbrastmckie/ProofChecker.git
+cd ProofChecker
+
+# Build (first time takes a while)
+lake build
+
+# Start Claude
 claude
 ```
 
 In Claude Code:
 ```
 Please help me:
-1. Install ModelChecker
-2. Create a project testing the validity of disjunctive syllogism
-3. Run the model checker and explain the results
+1. Verify the Lean 4 setup is working
+2. Explore the Logos/ directory structure
+3. Run diagnostics on a sample proof file
 ```
 
-### Working with Existing Projects
+### Working with Existing Proofs
 
 ```bash
-cd ~/Documents/Projects/my_project
+cd ~/Documents/Projects/ProofChecker
 claude
 ```
 
 Ask Claude:
 ```
-Review my examples.py and suggest additional test cases
-for my modal logic formulas.
+Review Logos/Layer1/Modal.lean and explain the key theorems
+and how they relate to Kripke semantics.
 ```
 
-### Debugging Issues
+### Debugging Build Issues
 
 ```bash
-cd ~/Documents/Projects/my_project
+cd ~/Documents/Projects/ProofChecker
 claude
 ```
 
 ```
-I ran model-checker examples.py and got unexpected results.
-Please review my configuration and help diagnose the issue.
+I ran lake build and got an error.
+Please diagnose the issue and suggest fixes.
 ```
 
 ---
@@ -334,26 +384,28 @@ claude auth logout
 claude auth login
 ```
 
-### ModelChecker Issues
+### Lean/Lake Issues
 
-**"model-checker: command not found":**
-- Ensure Python scripts are in PATH
-- Try: `python -m model_checker --version`
-- Use virtual environment
+**"lake: command not found":**
+- Ensure elan is installed
+- Restart terminal after elan installation
+- Check: `elan show` to see installed toolchains
 
-**Import errors:**
-- Check Python version: `python --version` (requires 3.8+)
-- Reinstall: `pip install --upgrade model-checker`
+**Build errors:**
+- Run `lake clean` then `lake build`
+- Ensure you're using the correct Lean version (check `lean-toolchain`)
+- Download Mathlib cache: `lake exe cache get`
 
-For more solutions, see [Troubleshooting Guide](../../../Docs/installation/TROUBLESHOOTING.md).
+**Slow builds:**
+- First builds are slow due to Mathlib compilation
+- Use `lake exe cache get` to download prebuilt cache
 
-### When to Open an Issue
+### Lean LSP Issues
 
-Open an issue on GitHub if:
-- You've followed all troubleshooting steps
-- The error appears to be a bug in ModelChecker
-- You have a feature request
-- Documentation is unclear or incorrect
+**MCP tools not working:**
+- Ensure the lean-lsp MCP server is configured
+- Check Claude Code settings for MCP configuration
+- Verify Lean project builds successfully first
 
 ---
 
@@ -361,21 +413,20 @@ Open an issue on GitHub if:
 
 ### Documentation
 
-- **[Full Claude Code Guide](../../../Docs/installation/CLAUDE_CODE.md)** - Complete feature reference
-- **[Getting Started](../../../Docs/installation/GETTING_STARTED.md)** - Terminal and editor basics
-- **[Usage Guide](../../../Docs/usage/README.md)** - Using ModelChecker features
+- **[Architecture](../../README.md)** - System architecture overview
+- **[CLAUDE.md](../../CLAUDE.md)** - Quick reference for the agent system
+- **[Commands Reference](../commands/README.md)** - Full command documentation
 
-### Theory Documentation
+### Project Documentation
 
-- **[Theory Library](../../../Code/src/model_checker/theory_lib/README.md)** - Available theories
-- **[Logos Theory](../../../Code/src/model_checker/theory_lib/logos/README.md)** - Hyperintensional semantics
-- **[Examples Guide](../../../Docs/usage/EXAMPLES.md)** - Creating test cases
+- **[docs/](../../../docs/)** - Project documentation
+- **[Logos/](../../../Logos/)** - Lean 4 source code
 
 ### Contributing
 
-- **[GitHub Setup](../../../Docs/installation/GIT_GOING.md)** - Git and GitHub basics
-- **[Developer Setup](../../../Docs/installation/DEVELOPER_SETUP.md)** - Contributing to ModelChecker
+- **[GitHub Setup](https://docs.github.com/en/get-started)** - Git and GitHub basics
+- Open issues for bugs or feature requests
 
 ---
 
-[Back to Docs](../README.md) | [Detailed Installation](../../../Docs/installation/README.md)
+[Back to Docs](../README.md) | [Copy .claude/ Directory](copy-claude-directory.md)

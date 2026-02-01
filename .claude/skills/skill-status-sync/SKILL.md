@@ -1,205 +1,294 @@
 ---
 name: skill-status-sync
-description: Atomically update task status across TODO.md and state.json. Invoke when task status changes.
-allowed-tools: Read, Write, Edit
-context:
-  - core/orchestration/state-management.md
-  - core/standards/status-markers.md
+description: Atomically update task status across TODO.md and state.json. For standalone use only.
+allowed-tools: Bash, Edit, Read
 ---
 
-# Status Sync Skill
+# Status Sync Skill (Direct Execution)
 
-Atomic status updates across TODO.md and state.json.
+Direct execution skill for atomic status synchronization across TODO.md and state.json. This skill executes inline without spawning a subagent, avoiding memory issues.
+
+## Context References
+
+Reference (do not load eagerly):
+- Path: `.claude/context/core/patterns/jq-escaping-workarounds.md` - jq escaping patterns (Issue #1132)
+
+## Standalone Use Only
+
+**IMPORTANT**: This skill is for STANDALONE USE ONLY.
+
+Workflow skills (skill-researcher, skill-planner, skill-implementer, etc.) now handle their own preflight/postflight status updates inline. This eliminates the multi-skill halt boundary problem where Claude may pause between skill invocations.
+
+**Use this skill for**:
+- Manual task status corrections
+- Standalone scripts that need to update task state
+- Recovery operations when workflow skills fail
+- Testing status update behavior in isolation
+
+**Do NOT use this skill in workflow commands** (/research, /plan, /implement, /revise) - those commands now invoke a single skill that handles its own status updates.
 
 ## Trigger Conditions
 
 This skill activates when:
-- Task status needs to change
-- Artifacts are added to a task
-- Task metadata needs updating
+- Manual status correction is needed
+- Artifacts need to be linked outside normal workflow
+- Status synchronization recovery is needed between TODO.md and state.json
 
-## Two-Phase Commit Pattern
+## API Operations
 
-### Phase 1: Prepare
+This skill exposes three primary operations:
 
-1. **Read Current State** (using jq/grep for efficiency)
-   ```bash
-   # Read task from state.json via jq (fast, ~12ms)
-   task_data=$(jq -r --arg num "$task_number" \
-     '.active_projects[] | select(.project_number == ($num | tonumber))' \
-     .claude/specs/state.json)
+| Operation | Purpose | When to Use |
+|-----------|---------|-------------|
+| `preflight_update` | Set in-progress status | GATE IN checkpoint |
+| `postflight_update` | Set final status + link artifacts | GATE OUT checkpoint |
+| `artifact_link` | Add single artifact link (idempotent) | Post-artifact creation |
 
-   # Read next_project_number for create operations
-   next_num=$(jq -r '.next_project_number' .claude/specs/state.json)
+---
 
-   # Find task section in TODO.md via grep
-   task_line=$(grep -n "^### ${task_number}\." .claude/specs/TODO.md | cut -d: -f1)
-   ```
+## Execution
 
-2. **Validate Task Exists**
-   - Check task_data is not empty (state.json)
-   - Check task_line is found (TODO.md)
-   - If not in both: Error
+### 1. Input Validation
 
-3. **Prepare Updates**
-   - Calculate new status
-   - Prepare jq update for state.json
-   - Prepare Edit for TODO.md task entry
-   - For create operations: also prepare frontmatter update
-   - Validate both are consistent
+Validate required inputs based on operation type:
 
-### Phase 2: Commit
+**For preflight_update**:
+- `task_number` - Must be provided and exist in state.json
+- `target_status` - Must be an in-progress variant (researching, planning, implementing)
+- `session_id` - Must be provided for traceability
 
-1. **Write state.json First**
-   - Machine state is source of truth
-   - Faster to query and validate
+**For postflight_update**:
+- `task_number` - Must be provided and exist
+- `target_status` - Must be a final variant (researched, planned, implemented, partial)
+- `artifacts` - Array of {path, type} to link
+- `session_id` - Must be provided
 
-2. **Write TODO.md Second**
-   - User-facing representation
-   - May have formatting variations
+**For artifact_link**:
+- `task_number` - Must be provided and exist
+- `artifact_path` - Relative path to artifact
+- `artifact_type` - One of: research, plan, summary
 
-3. **Verify Both Updated**
-   - Re-read both files
-   - Confirm changes applied
+### 2. Execute Operation Directly
 
-### Rollback (if needed)
+Route to appropriate operation and execute using Bash (jq) and Edit tools.
 
-If any write fails:
-1. Log the failure
-2. Attempt to restore original state
-3. Return error with details
+---
 
-## Status Mapping
+## Operation: preflight_update
 
-| Operation | Old Status | New Status |
-|-----------|------------|------------|
-| Start research | not_started | researching |
-| Complete research | researching | researched |
-| Start planning | researched | planning |
-| Complete planning | planning | planned |
-| Start implement | planned | implementing |
-| Complete implement | implementing | completed |
-| Block task | any | blocked |
-| Abandon task | any | abandoned |
+**Purpose**: Set in-progress status at GATE IN checkpoint
 
-## Task Creation (Special Case)
+**Execution**:
 
-When creating a new task, BOTH files require additional updates beyond task entries:
-
-### state.json Updates
+1. **Validate task exists**:
 ```bash
+task_data=$(jq -r --arg num "{task_number}" \
+  '.active_projects[] | select(.project_number == ($num | tonumber))' \
+  specs/state.json)
+
+if [ -z "$task_data" ]; then
+  echo "Error: Task {task_number} not found"
+  exit 1
+fi
+```
+
+2. **Update state.json**:
+```bash
+jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg status "{target_status}" \
+  '(.active_projects[] | select(.project_number == {task_number})) |= . + {
+    status: $status,
+    last_updated: $ts
+  }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+```
+
+3. **Update TODO.md status marker**:
+   - Find task entry: `grep -n "^### {task_number}\." specs/TODO.md`
+   - Use Edit tool to change `[OLD_STATUS]` to `[NEW_STATUS]`
+
+**Status Mapping**:
+| state.json | TODO.md |
+|------------|---------|
+| not_started | [NOT STARTED] |
+| researching | [RESEARCHING] |
+| planning | [PLANNING] |
+| implementing | [IMPLEMENTING] |
+
+**Return**: JSON object with status "synced" and previous/new status fields.
+
+---
+
+## Operation: postflight_update
+
+**Purpose**: Set final status and link artifacts at GATE OUT checkpoint
+
+**Execution**:
+
+1. **Update state.json status and timestamp**:
+```bash
+jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg status "{target_status}" \
+  '(.active_projects[] | select(.project_number == {task_number})) |= . + {
+    status: $status,
+    last_updated: $ts
+  }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+```
+
+2. **Add artifacts to state.json** (for each artifact):
+
+**IMPORTANT**: Use two-step jq pattern to avoid Issue #1132 escaping bug. See `jq-escaping-workarounds.md`.
+
+```bash
+# Step 1: Update timestamp
 jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-  '.next_project_number = ($next_num | tonumber) + 1 |
-   .active_projects = [{new_task_object}] + .active_projects' \
-  .claude/specs/state.json > /tmp/state.json && \
-  mv /tmp/state.json .claude/specs/state.json
+  '(.active_projects[] | select(.project_number == {task_number})) |= . + {
+    last_updated: $ts
+  }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+
+# Step 2: Add artifact (append to array)
+jq --arg path "{artifact_path}" \
+   --arg type "{artifact_type}" \
+  '(.active_projects[] | select(.project_number == {task_number})).artifacts += [{"path": $path, "type": $type}]' \
+  specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
 ```
 
-### TODO.md Updates (TWO parts)
-1. **Frontmatter**: Update `next_project_number` in YAML frontmatter
-   ```bash
-   # Use sed or Edit to update frontmatter
-   sed -i 's/^next_project_number: [0-9]*/next_project_number: NEW_NUM/' \
-     .claude/specs/TODO.md
-   ```
+3. **Update TODO.md status marker**:
+   - Use Edit to change status: `[RESEARCHING]` -> `[RESEARCHED]`
 
-2. **Task Entry**: Add entry under appropriate priority section
+4. **Link artifacts in TODO.md**:
+   - Add research/plan/summary links in appropriate location
 
-**CRITICAL**: `next_project_number` MUST match in both files after creation.
+**Status Mapping**:
+| state.json | TODO.md |
+|------------|---------|
+| researched | [RESEARCHED] |
+| planned | [PLANNED] |
+| implemented | [IMPLEMENTED] |
+| partial | [PARTIAL] |
 
-## Update Formats
+**Return**: JSON object with target_status and artifacts_linked fields.
 
-### state.json Update
-```json
-{
-  "project_number": N,
-  "status": "new_status",
-  "last_updated": "ISO_TIMESTAMP",
-  "artifacts": [
-    {"path": "...", "type": "research|plan|summary"}
-  ]
-}
+---
+
+## Operation: artifact_link
+
+**Purpose**: Add single artifact link (idempotent)
+
+**Execution**:
+
+1. **Idempotency check**:
+```bash
+if grep -A 30 "^### {task_number}\." specs/TODO.md | grep -q "{artifact_path}"; then
+  echo "Link already exists"
+  # Return "skipped" status
+fi
 ```
 
-### TODO.md Update
-```markdown
-### {N}. {Title}
-- **Status**: [{NEW_STATUS}]
-- **{Artifact}**: [link](path)
+2. **Add to state.json artifacts array**:
+
+**IMPORTANT**: Use two-step jq pattern to avoid Issue #1132 escaping bug. See `jq-escaping-workarounds.md`.
+
+```bash
+# Step 1: Update timestamp
+jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  '(.active_projects[] | select(.project_number == {task_number})) |= . + {
+    last_updated: $ts
+  }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+
+# Step 2: Add artifact (append to array)
+jq --arg path "{artifact_path}" \
+   --arg type "{artifact_type}" \
+  '(.active_projects[] | select(.project_number == {task_number})).artifacts += [{"path": $path, "type": $type}]' \
+  specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
 ```
 
-## Execution Flow
+3. **Add link to TODO.md** using Edit tool:
 
-```
-1. Receive update request:
-   - task_number
-   - new_status
-   - artifacts (optional)
-   - metadata (optional)
+| Type | Format in TODO.md |
+|------|-------------------|
+| research | `- **Research**: [research-{NNN}.md]({path})` |
+| plan | `- **Plan**: [implementation-{NNN}.md]({path})` |
+| summary | `- **Summary**: [implementation-summary-{DATE}.md]({path})` |
 
-2. Phase 1 - Prepare:
-   - Read both files
-   - Validate task exists
-   - Prepare updates
+**Insertion order**:
+- research: after Language line
+- plan: after Research line (or Language if no Research)
+- summary: after Plan line
 
-3. Phase 2 - Commit:
-   - Write state.json
-   - Write TODO.md
-   - Verify success
+**Return**: JSON object with status "linked" or "skipped".
 
-4. Return result
-```
+---
 
 ## Return Format
 
+### preflight_update returns:
 ```json
 {
-  "status": "completed|failed",
-  "summary": "Updated task #N to [STATUS]",
-  "task_number": N,
-  "old_status": "previous",
-  "new_status": "current",
-  "files_updated": [
-    ".claude/specs/state.json",
-    ".claude/specs/TODO.md"
-  ]
+  "status": "synced",
+  "summary": "Updated task #{N} to [{STATUS}]",
+  "previous_status": "not_started",
+  "new_status": "researching"
 }
 ```
+
+### postflight_update returns:
+```json
+{
+  "status": "{target_status}",
+  "summary": "Updated task #{N} to [{STATUS}] with {M} artifacts",
+  "artifacts_linked": ["path1", "path2"],
+  "previous_status": "researching",
+  "new_status": "researched"
+}
+```
+
+### artifact_link returns:
+```json
+{
+  "status": "linked|skipped",
+  "summary": "Linked artifact to task #{N}" | "Link already exists",
+  "artifact_path": "path/to/artifact.md",
+  "artifact_type": "research"
+}
+```
+
+---
 
 ## Error Handling
 
-### File Read Error
-```json
-{
-  "status": "failed",
-  "error": "Could not read state.json",
-  "recovery": "Check file exists and permissions"
-}
-```
-
 ### Task Not Found
-```json
-{
-  "status": "failed",
-  "error": "Task #N not found",
-  "recovery": "Verify task number, check if archived"
-}
+Return failed status with recommendation to verify task number.
+
+### Invalid Status Transition
+Return failed status with current status and allowed transitions.
+
+### File Write Failure
+Return failed status with recommendation to check permissions.
+
+### jq Parse Failure
+If jq commands fail with INVALID_CHARACTER or syntax error (Issue #1132):
+1. Log to errors.json with session_id and original command
+2. Retry with two-step pattern from `jq-escaping-workarounds.md`
+3. If retry succeeds, log recovery action
+
+---
+
+## Integration Notes
+
+**For Workflow Commands**: Do NOT use this skill directly. Workflow skills now handle their own status updates inline.
+
+**For Manual Operations**: Use this skill for standalone status corrections:
+
+```
+### Manual Status Correction
+Invoke skill-status-sync with:
+- operation: preflight_update or postflight_update
+- task_number: {N}
+- target_status: {valid_status}
+- session_id: manual_correction
+- artifacts: [{path, type}, ...] (for postflight only)
 ```
 
-### Write Failure
-```json
-{
-  "status": "failed",
-  "error": "Failed to write TODO.md",
-  "recovery": "Check permissions, state.json may be updated"
-}
-```
-
-### Inconsistency Detected
-```json
-{
-  "status": "failed",
-  "error": "TODO.md and state.json inconsistent",
-  "recovery": "Run /task --sync to reconcile"
-}
-```
+This skill ensures:
+- Atomic updates across both files
+- Consistent jq/Edit patterns
+- Proper error handling
+- Direct execution without subagent overhead

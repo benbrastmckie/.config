@@ -1,6 +1,5 @@
 # Subagent YAML Frontmatter Standard
 
-**Version**: 1.0.0  
 **Created**: 2025-12-29  
 **Purpose**: Comprehensive standard for subagent YAML frontmatter configuration  
 **Scope**: All subagent files in `.claude/agent/subagents/`
@@ -278,7 +277,7 @@ tools:
 permissions:
   allow:
     - read: ["**/*.md", ".claude/**/*"]
-    - write: [".claude/specs/**/*"]
+    - write: ["specs/**/*"]
     - bash: ["grep", "find", "wc"]
   deny:
     - bash: ["rm -rf", "sudo", "chmod +x", "dd"]
@@ -498,8 +497,8 @@ tools:
   - glob
 permissions:
   allow:
-    - read: ["**/*.md", ".claude/**/*", "Documentation/**/*"]
-    - write: [".claude/specs/**/*"]
+    - read: ["**/*.md", ".claude/**/*", "docs/**/*"]
+    - write: ["specs/**/*"]
     - bash: ["grep", "find", "wc", "date", "mkdir"]
   deny:
     - bash: ["rm -rf", "sudo", "chmod +x", "dd", "wget"]

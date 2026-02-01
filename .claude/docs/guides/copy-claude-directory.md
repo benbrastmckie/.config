@@ -2,7 +2,7 @@
 
 [Back to Docs](../README.md) | [User Installation](user-installation.md) | [Commands Reference](../commands/README.md)
 
-Instructions for copying the `.claude/` agent system directory from this Neovim configuration repository into your project.
+Instructions for copying the `.claude/` agent system directory from the ProofChecker repository into your project.
 
 ---
 
@@ -11,9 +11,10 @@ Instructions for copying the `.claude/` agent system directory from this Neovim 
 The `.claude/` directory provides an agent system for Claude Code that enhances your development workflow with:
 
 - **Task Management Commands**: `/task`, `/research`, `/plan`, `/implement` - structured workflow for development tasks
-- **Specialized Skills**: Language-specific agents for Neovim/Lua development, general research, and implementation
-- **Context Files**: Domain knowledge for Neovim API patterns, plugin ecosystems, and Lua idioms
+- **Specialized Skills**: Language-specific agents for Lean 4 theorem proving
+- **Context Files**: Domain knowledge for logic, semantics, and formal verification
 - **State Tracking**: TODO.md and state.json for persistent task tracking across sessions
+- **Lean MCP Integration**: Tools for proof state inspection, lemma search, and diagnostics
 
 Once installed, you can create numbered tasks, conduct research, create implementation plans, and execute them with automatic progress tracking.
 
@@ -53,22 +54,22 @@ The simplest approach - clone the full repository and copy the directory:
 # Navigate to a temporary location
 cd /tmp
 
-# Clone the .config repository
-git clone https://github.com/benbrastmckie/.config.git
+# Clone the ProofChecker repository
+git clone https://github.com/benbrastmckie/ProofChecker.git
 
 # Copy .claude/ to your project (replace YOUR_PROJECT_PATH)
-cp -r .config/.claude YOUR_PROJECT_PATH/
+cp -r ProofChecker/.claude YOUR_PROJECT_PATH/
 
 # Clean up
-rm -rf .config
+rm -rf ProofChecker
 ```
 
-**Example** - if your project is at `~/Documents/Projects/my-neovim-project`:
+**Example** - if your project is at `~/Documents/Projects/my-project`:
 ```bash
 cd /tmp
-git clone https://github.com/benbrastmckie/.config.git
-cp -r .config/.claude ~/Documents/Projects/my-neovim-project/
-rm -rf .config
+git clone https://github.com/benbrastmckie/ProofChecker.git
+cp -r ProofChecker/.claude ~/Documents/Projects/my-project/
+rm -rf ProofChecker
 ```
 
 #### Method 2: Sparse Checkout (Minimal Download)
@@ -80,10 +81,10 @@ For users who want to minimize download size:
 cd /tmp
 
 # Clone with sparse checkout (downloads minimal data)
-git clone --filter=blob:none --sparse https://github.com/benbrastmckie/.config.git
+git clone --filter=blob:none --sparse https://github.com/benbrastmckie/ProofChecker.git
 
 # Set sparse checkout to only include .claude/
-cd .config
+cd ProofChecker
 git sparse-checkout set .claude
 
 # Copy to your project
@@ -91,7 +92,7 @@ cp -r .claude YOUR_PROJECT_PATH/
 
 # Clean up
 cd /tmp
-rm -rf .config
+rm -rf ProofChecker
 ```
 
 ---
@@ -104,22 +105,22 @@ rm -rf .config
 # Navigate to a temporary location
 cd $env:TEMP
 
-# Clone the .config repository
-git clone https://github.com/benbrastmckie/.config.git
+# Clone the ProofChecker repository
+git clone https://github.com/benbrastmckie/ProofChecker.git
 
 # Copy .claude/ to your project (replace YOUR_PROJECT_PATH)
-Copy-Item -Recurse .config\.claude YOUR_PROJECT_PATH\
+Copy-Item -Recurse ProofChecker\.claude YOUR_PROJECT_PATH\
 
 # Clean up
-Remove-Item -Recurse -Force .config
+Remove-Item -Recurse -Force ProofChecker
 ```
 
-**Example** - if your project is at `C:\Users\YourName\Projects\my-neovim-project`:
+**Example** - if your project is at `C:\Users\YourName\Projects\my-project`:
 ```powershell
 cd $env:TEMP
-git clone https://github.com/benbrastmckie/.config.git
-Copy-Item -Recurse .config\.claude C:\Users\YourName\Projects\my-neovim-project\
-Remove-Item -Recurse -Force .config
+git clone https://github.com/benbrastmckie/ProofChecker.git
+Copy-Item -Recurse ProofChecker\.claude C:\Users\YourName\Projects\my-project\
+Remove-Item -Recurse -Force ProofChecker
 ```
 
 #### Method 2: Sparse Checkout (Minimal Download)
@@ -129,10 +130,10 @@ Remove-Item -Recurse -Force .config
 cd $env:TEMP
 
 # Clone with sparse checkout
-git clone --filter=blob:none --sparse https://github.com/benbrastmckie/.config.git
+git clone --filter=blob:none --sparse https://github.com/benbrastmckie/ProofChecker.git
 
 # Set sparse checkout
-cd .config
+cd ProofChecker
 git sparse-checkout set .claude
 
 # Copy to your project
@@ -140,7 +141,7 @@ Copy-Item -Recurse .claude YOUR_PROJECT_PATH\
 
 # Clean up
 cd $env:TEMP
-Remove-Item -Recurse -Force .config
+Remove-Item -Recurse -Force ProofChecker
 ```
 
 ---
@@ -150,7 +151,7 @@ Remove-Item -Recurse -Force .config
 You can ask Claude Code to perform the installation for you. Paste this prompt into Claude Code:
 
 ```
-Please clone the .config repository from https://github.com/benbrastmckie/.config.git
+Please clone the ProofChecker repository from https://github.com/benbrastmckie/ProofChecker.git
 to a temporary location, then copy the .claude/ directory to the current working directory.
 After copying, remove the cloned repository to clean up.
 ```
@@ -185,7 +186,7 @@ You should see directories including:
 
 ```bash
 # macOS/Linux
-ls .claude/specs/TODO.md .claude/specs/state.json
+ls specs/TODO.md specs/state.json
 
 # Windows PowerShell
 Test-Path .claude\specs\TODO.md, .claude\specs\state.json
@@ -275,6 +276,29 @@ Remove-Item -Recurse -Force .claude.backup
 1. Ensure you restarted Claude Code after copying
 2. Verify you're in the correct directory (where `.claude/` was copied)
 3. Check that `.claude/commands/` contains `.md` files
+
+---
+
+## Customization Notes
+
+### Adapting for Non-Lean Projects
+
+The ProofChecker `.claude/` system is optimized for Lean 4 theorem proving. If you're using it for other projects:
+
+1. **Language routing**: The system routes Lean tasks to specialized Lean agents. Update `state.json` task language field for your needs.
+
+2. **Context files**: The `context/project/lean4/` directory contains Lean-specific knowledge. You may want to add context for your domain.
+
+3. **MCP tools**: Lean MCP tools (`lean_goal`, `lean_leansearch`, etc.) require the lean-lsp MCP server. For non-Lean projects, these tools won't be available.
+
+### Key Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `.claude/CLAUDE.md` | Main entry point, quick reference |
+| `specs/state.json` | Machine-readable task state |
+| `specs/TODO.md` | Human-readable task list |
+| `.claude/settings.json` | Claude Code settings |
 
 ---
 

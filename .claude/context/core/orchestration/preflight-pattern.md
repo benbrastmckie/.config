@@ -124,7 +124,7 @@ echo "Preflight: Verifying status update succeeded"
 # Read state.json to check current status
 actual_status=$(jq -r --arg num "$task_number" \
   '.active_projects[] | select(.project_number == ($num | tonumber)) | .status' \
-  .claude/specs/state.json)
+  specs/state.json)
 
 # Compare with expected status
 if [ "$actual_status" != "$target_status" ]; then
@@ -212,6 +212,6 @@ Command files MUST execute this preflight in Stage 1.5 after Stage 1 (ParseAndVa
 
 ## References
 
-- `.claude/specs/workflow-command-refactor-plan.md` - Root cause analysis
+- `specs/workflow-command-refactor-plan.md` - Root cause analysis
 - `.claude/context/core/orchestration/state-management.md` - State management patterns
 - `.claude/agent/subagents/status-sync-manager.md` - Status sync manager specification

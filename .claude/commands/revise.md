@@ -1,13 +1,13 @@
 ---
-description: Create new version of implementation plan
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*), TodoWrite
+description: Create new version of implementation plan, or update task description if no plan exists
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(jq:*), Bash(git:*), TodoWrite
 argument-hint: TASK_NUMBER [REASON]
 model: claude-opus-4-5-20251101
 ---
 
 # /revise Command
 
-Create a new version of an implementation plan, incorporating lessons learned.
+Create a new version of an implementation plan, or update task description if no plan exists.
 
 ## Arguments
 
@@ -16,118 +16,156 @@ Create a new version of an implementation plan, incorporating lessons learned.
 
 ## Execution
 
-### 1. Parse and Validate
+### CHECKPOINT 1: GATE IN
 
-```
-task_number = first token from $ARGUMENTS
-revision_reason = remaining tokens (optional)
-```
+1. **Generate Session ID**
+   ```
+   session_id = sess_{timestamp}_{random}
+   ```
 
-Read .claude/specs/state.json:
-- Find task by project_number
-- Extract: language, status, project_name
-- If not found: Error "Task {N} not found"
+2. **Lookup Task**
+   ```bash
+   task_data=$(jq -r --arg num "$task_number" \
+     '.active_projects[] | select(.project_number == ($num | tonumber))' \
+     specs/state.json)
+   ```
 
-### 2. Validate Status
+3. **Validate and Route**
+   - Task exists (ABORT if not)
+   - Route based on status:
 
-Allowed: planned, implementing, partial, blocked
-- If not_started: Error "No plan to revise, use /plan first"
-- If completed: Error "Task completed, no revision needed"
-- If researched: Note "Consider /plan instead for initial plan"
+   | Status | Action |
+   |--------|--------|
+   | planned, implementing, partial, blocked | → Plan Revision (Stage 2A) |
+   | not_started, researched | → Description Update (Stage 2B) |
+   | completed | ABORT "Task completed, no revision needed" |
+   | abandoned | ABORT "Task abandoned, use /task --recover first" |
 
-### 3. Load Current Context
+**ABORT** if any validation fails. **PROCEED** to appropriate stage.
 
-1. **Current plan** from .claude/specs/{N}_{SLUG}/plans/implementation-{LATEST}.md
-   - Extract phase statuses (what's done, what's remaining)
-   - Note which phases succeeded/failed
+---
 
-2. **Research reports** if any
+### STAGE 2A: Plan Revision
 
-3. **Implementation progress** - what was learned during partial implementation
+For tasks with existing plans (planned, implementing, partial, blocked):
 
-### 4. Analyze What Changed
+1. **Load Current Context**
+   - Current plan from `specs/{N}_{SLUG}/plans/implementation-{LATEST}.md`
+   - Research reports if any
+   - Implementation progress (phase statuses)
 
-Compare original plan assumptions vs reality:
-- What phases succeeded?
-- What phases failed and why?
-- What new information emerged?
-- What dependencies weren't anticipated?
+2. **Analyze What Changed**
+   - What phases succeeded/failed?
+   - What new information emerged?
+   - What dependencies weren't anticipated?
 
-### 5. Create Revised Plan
+3. **Create Revised Plan**
+   Increment version: implementation-002.md, implementation-003.md, etc.
 
-Increment version: implementation-002.md, implementation-003.md, etc.
+   Write to `specs/{N}_{SLUG}/plans/implementation-{NEW_VERSION}.md`
 
-Write to `.claude/specs/{N}_{SLUG}/plans/implementation-{NEW_VERSION}.md`:
+4. **Update Status Inline** (two-step to avoid jq escaping bug - see `jq-escaping-workarounds.md`)
+   Update state.json to "planned" status and add plan artifact:
+   ```bash
+   # Step 1: Update status and timestamps
+   jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      --arg status "planned" \
+     '(.active_projects[] | select(.project_number == {task_number})) |= . + {
+       status: $status,
+       last_updated: $ts,
+       planned: $ts
+     }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
 
-```markdown
-# Implementation Plan: Task #{N}
+   # Step 2: Add artifact (use "| not" pattern to avoid != escaping - Issue #1132)
+   jq --arg path "{new_plan_path}" \
+     '(.active_projects[] | select(.project_number == {task_number})).artifacts =
+       ([(.active_projects[] | select(.project_number == {task_number})).artifacts // [] | .[] | select(.type == "plan" | not)] + [{"path": $path, "type": "plan"}])' \
+     specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+   ```
 
-**Task**: {title}
-**Version**: {NEW_VERSION}
-**Created**: {ISO_DATE}
-**Revision of**: implementation-{PREV_VERSION}.md
-**Reason**: {revision_reason or "Plan adjustment based on implementation feedback"}
+   Update TODO.md status marker using Edit tool.
 
-## Revision Summary
+-> Continue to CHECKPOINT 2 (Plan Revision)
 
-{What changed from previous version and why}
+---
 
-### Previous Plan Status
-- Phase 1: [COMPLETED] - {outcome}
-- Phase 2: [PARTIAL] - {what happened}
-- Phase 3: [NOT STARTED] - {now revised}
+### STAGE 2B: Description Update
 
-### Key Changes
-1. {Change 1 and rationale}
-2. {Change 2 and rationale}
+For tasks without plans (not_started, researched):
 
-## Overview
+1. **Read Current Description**
+   ```bash
+   old_description=$(echo "$task_data" | jq -r '.description // ""')
+   ```
 
-{Updated implementation approach}
+2. **Validate Revision Reason**
+   If no revision_reason provided: ABORT "No revision reason provided. Usage: /revise N \"new description\""
 
-## Phases
+3. **Update state.json**
+   ```bash
+   jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg desc "$new_description" \
+     '(.active_projects[] | select(.project_number == '$task_number')) |= . + {
+       description: $desc,
+       last_updated: $ts
+     }' specs/state.json > /tmp/state.json && \
+     mv /tmp/state.json specs/state.json
+   ```
 
-### Phase 1: {Name} [COMPLETED]
-{Preserved from previous - already done}
+4. **Update TODO.md**
+   Use Edit tool to replace description
 
-### Phase 2: {Revised Name}
-**Status**: [NOT STARTED]
-**Estimated effort**: {revised estimate}
+→ Continue to CHECKPOINT 2 (Description Update)
 
-{Revised steps based on learnings}
+---
 
-### Phase 3: {New/Revised}
-...
+### CHECKPOINT 2: GATE OUT
 
-## Risks and Mitigations
+**For Plan Revision (Stage 2A):**
+1. Verify new plan file exists
+2. Verify status is "planned"
+3. Verify plan link updated in TODO.md
 
-{Updated based on experience}
+**For Description Update (Stage 2B):**
+1. Verify description updated in state.json
+2. Verify description updated in TODO.md
 
-## Success Criteria
+**PROCEED** to commit.
 
-{Potentially revised criteria}
-```
+---
 
-### 6. Update Status
+### CHECKPOINT 3: COMMIT
 
-Update both files atomically:
-1. state.json:
-   - status = "planned" (reset for re-implementation)
-   - plan_version = NEW_VERSION
-   - artifacts += [{path, type: "plan"}]
-2. TODO.md:
-   - Status: [PLANNED]
-   - Update Plan link to new version
-
-### 7. Git Commit
-
+**For Plan Revision:**
 ```bash
-git add .claude/specs/
-git commit -m "task {N}: revise plan (v{NEW_VERSION})"
+git add -A
+git commit -m "$(cat <<'EOF'
+task {N}: revise plan (v{NEW_VERSION})
+
+Session: {session_id}
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+EOF
+)"
 ```
 
-### 8. Output
+**For Description Update:**
+```bash
+git add -A
+git commit -m "$(cat <<'EOF'
+task {N}: revise description
 
+Session: {session_id}
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+EOF
+)"
+```
+
+Commit failure is non-blocking (log and continue).
+
+## Output
+
+**Plan Revision:**
 ```
 Plan revised for Task #{N}
 
@@ -144,3 +182,29 @@ Revised phases: 2-3
 Status: [PLANNED]
 Next: /implement {N}
 ```
+
+**Description Update:**
+```
+Description updated for Task #{N}
+
+Previous: {old_description}
+New: {new_description}
+
+Status: [{current_status}]
+```
+
+## Error Handling
+
+### GATE IN Failure
+- Task not found: Return error with guidance
+- Invalid status: Return error with current status
+
+### STAGE Failure
+- Missing plan for revision: Fall back to description update
+- Write failure: Log error, preserve original
+
+### GATE OUT Failure
+- Verification failure: Log warning, continue
+
+### COMMIT Failure
+- Non-blocking: Log warning, continue with success

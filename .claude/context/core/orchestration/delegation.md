@@ -1,9 +1,17 @@
 # Delegation Standard
 
-**Version**: 2.0  
-**Status**: Active  
-**Created**: 2025-12-29  
+**Status**: Active
+**Created**: 2025-12-29
 **Purpose**: Unified delegation standard defining return format, delegation patterns, and safety mechanisms
+
+---
+
+> **DEPRECATED** (2026-01-19): This file has been consolidated into:
+> - `orchestration-core.md` - Return format, delegation context, safety mechanisms
+> - `orchestration-validation.md` - Validation framework
+> - `orchestration-reference.md` - Bulk operation patterns, examples
+>
+> This file is preserved for reference but should not be loaded for new development.
 
 ---
 
@@ -425,7 +433,7 @@ Standardized error codes for consistent error handling:
   "artifacts": [
     {
       "type": "research",
-      "path": ".claude/specs/195_lean_tools/reports/research-001.md",
+      "path": "specs/195_lean_tools/reports/research-001.md",
       "summary": "Detailed API specifications"
     }
   ],
@@ -704,7 +712,7 @@ The status-sync-manager subagent now supports these additional operations:
 
 - Status Management: `.claude/context/core/system/state-management.md`
 - Artifact Management: `.claude/context/core/system/artifact-management.md`
-- Task 191 Research: `.claude/specs/191_fix_subagent_delegation_hang/reports/research-001.md`
+- Task 191 Research: `specs/191_fix_subagent_delegation_hang/reports/research-001.md`
 # Delegation Guide
 
 ## Session ID Tracking

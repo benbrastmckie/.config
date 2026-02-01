@@ -11,7 +11,7 @@ All state-changing operations MUST create git commits for traceability and rollb
 Create git commits for:
 - Task creation (`/task "description"`)
 - Task recovery (`/task --recover`)
-- Task division (`/task --divide`)
+- Task expansion (`/task --expand`)
 - Task synchronization (`/task --sync`)
 - Task abandonment (`/task --abandon`)
 - Status updates (`/implement`, `/research`, `/plan`, etc.)

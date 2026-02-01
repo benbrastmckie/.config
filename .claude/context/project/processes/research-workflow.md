@@ -1,6 +1,5 @@
 # Research Workflow
 
-**Version**: 1.0.0  
 **Created**: 2025-12-29  
 **Purpose**: Detailed research workflow for conducting research and creating reports
 
@@ -16,22 +15,24 @@ This document describes the complete research workflow executed by the researche
 
 ### General Research
 
-**When**: Task language is markdown, general, or meta
-**Agent**: researcher
+**When**: Task language is markdown, python, or general  
+**Agent**: researcher  
 **Tools**:
 - Web search
 - Documentation review
 - File analysis
 - API exploration
 
-### Neovim/Lua Research
+### Lean Research
 
-**When**: Task language is lua
-**Agent**: skill-neovim-research
+**When**: Task language is lean  
+**Agent**: lean-research-agent  
 **Tools**:
-- WebSearch (Neovim docs, plugin repos)
-- WebFetch (plugin documentation)
-- Read, Grep, Glob (codebase exploration)
+- LeanExplore (explore Mathlib)
+- Loogle (search by type signature)
+- LeanSearch (semantic search)
+- lean-lsp-mcp (LSP integration)
+- Web search
 - Documentation review
 
 ---
@@ -43,7 +44,7 @@ This document describes the complete research workflow executed by the researche
 Language is extracted from task entry in TODO.md:
 
 ```bash
-grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed 's/\*\*Language\*\*: //'
+grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*Language\*\*: //'
 ```
 
 **Fallback**: If extraction fails, defaults to "general" with warning logged.
@@ -52,12 +53,12 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 
 | Language | Agent | Tools Available |
 |----------|-------|----------------|
-| `lua` | `skill-neovim-research` | WebSearch, WebFetch, Read, Grep, Glob |
+| `lean` | `lean-research-agent` | LeanExplore, Loogle, LeanSearch, lean-lsp-mcp, web search |
 | `markdown` | `researcher` | Web search, documentation review |
+| `python` | `researcher` | Web search, documentation review, API docs |
 | `general` | `researcher` | Web search, documentation review |
-| `meta` | `researcher` | Read, Grep, Glob (codebase only) |
 
-**Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses language-specific tooling.
+**Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses Lean-specific tooling.
 
 ---
 
@@ -70,7 +71,7 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 **Process**:
 1. Read task from TODO.md using grep (selective loading):
    ```bash
-   grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_number}.md
+   grep -A 50 "^### ${task_number}\." specs/TODO.md > /tmp/task-${task_number}.md
    ```
 2. Extract task metadata:
    - Task number
@@ -121,34 +122,37 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
    - Best practices
    - Potential pitfalls
 
-#### For Neovim/Lua Research:
+#### For Lean Research:
 
-**Action**: Conduct research using Neovim-specific tools
+**Action**: Conduct research using Lean-specific tools
 
 **Process**:
-1. Web search for Neovim information:
-   - Search Neovim documentation
-   - Search plugin repositories
-   - Search for community guides
-   - Search for Lua patterns
-2. Fetch plugin documentation:
-   - Plugin README files
-   - API documentation
-   - Configuration examples
-3. Analyze existing codebase:
-   - Explore lua/neotex/ modules
-   - Check plugin configurations
-   - Review test patterns
-4. Review Neovim documentation:
-   - Neovim help files (:help)
-   - Plugin documentation
-   - Lua API reference
-5. Synthesize findings:
-   - Relevant vim.api functions
-   - Plugin configuration patterns
-   - Lua module structure
-   - Testing approaches
-   - Best practices
+1. Use LeanExplore to explore Mathlib:
+   - Search for relevant modules
+   - Explore type hierarchies
+   - Find related theorems
+2. Use Loogle for type-based search:
+   - Search by type signature
+   - Find functions with specific types
+   - Discover relevant lemmas
+3. Use LeanSearch for semantic search:
+   - Search by natural language description
+   - Find theorems by concept
+   - Discover related proofs
+4. Use lean-lsp-mcp for code analysis:
+   - Analyze existing code
+   - Check type information
+   - Explore dependencies
+5. Review Lean documentation:
+   - Mathlib docs
+   - Lean 4 manual
+   - Theorem proving guides
+6. Synthesize findings:
+   - Relevant Mathlib modules
+   - Applicable theorems
+   - Proof strategies
+   - Type definitions
+   - Tactic recommendations
 
 **Checkpoint**: Research conducted
 
@@ -158,7 +162,7 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 
 **Process**:
 1. Create research report file:
-   - Path: `.claude/specs/{number}_{slug}/reports/research-001.md`
+   - Path: `specs/{number}_{slug}/reports/research-001.md`
    - Directory created lazily when writing
 2. Write report sections:
    - **Overview**: Research objective and scope
@@ -200,7 +204,7 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
    - If report is long (>500 lines): Create summary
    - If report is concise (<500 lines): No summary needed
 2. If summary needed:
-   - Path: `.claude/specs/{number}_{slug}/summaries/research-summary.md`
+   - Path: `specs/{number}_{slug}/summaries/research-summary.md`
    - Content: 3-5 sentence overview of findings
    - Token limit: <100 tokens (~400 characters)
    - Purpose: Protect orchestrator context window
@@ -421,7 +425,7 @@ Researcher loads context on-demand per `.claude/context/index.md`:
 ### Task Not Found
 
 ```
-Error: Task {task_number} not found in .claude/specs/TODO.md
+Error: Task {task_number} not found in specs/TODO.md
 
 Recommendation: Verify task number exists in TODO.md
 ```
@@ -527,7 +531,7 @@ Error: {git_error}
 ### Lazy Directory Creation
 
 Directories created only when writing artifacts:
-- `.claude/specs/{task_number}_{slug}/` created when writing first artifact
+- `specs/{task_number}_{slug}/` created when writing first artifact
 - `reports/` subdirectory created when writing research-001.md
 - `summaries/` NOT created (summary is metadata, not artifact)
 
@@ -536,7 +540,7 @@ Directories created only when writing artifacts:
 Extract only specific task entry from TODO.md to reduce context load:
 
 ```bash
-grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_number}.md
+grep -A 50 "^### ${task_number}\." specs/TODO.md > /tmp/task-${task_number}.md
 ```
 
 **Impact**: Reduces context from 109KB (full TODO.md) to ~2KB (task entry only), 98% reduction.
@@ -550,6 +554,46 @@ grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_numb
 
 ---
 
+## Lean-Specific Research Tools
+
+### LeanExplore
+
+**Purpose**: Explore Mathlib structure and contents  
+**Usage**: Browse modules, types, theorems  
+**Output**: Module structure, type hierarchies, theorem lists
+
+### Loogle
+
+**Purpose**: Search by type signature  
+**Usage**: Find functions/theorems with specific types  
+**Output**: Matching declarations with types and documentation
+
+**Example**:
+```
+Query: Nat → Nat → Nat
+Results: Nat.add, Nat.mul, Nat.sub, etc.
+```
+
+### LeanSearch
+
+**Purpose**: Semantic search for theorems  
+**Usage**: Search by natural language description  
+**Output**: Relevant theorems ranked by relevance
+
+**Example**:
+```
+Query: "commutativity of addition"
+Results: Nat.add_comm, Int.add_comm, etc.
+```
+
+### lean-lsp-mcp
+
+**Purpose**: LSP integration for code analysis  
+**Usage**: Type checking, go-to-definition, find references  
+**Output**: Type information, definitions, usage locations
+
+---
+
 ## Performance Optimization
 
 ### Task Extraction
@@ -557,7 +601,7 @@ grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_numb
 Extract only specific task entry from TODO.md to reduce context load:
 
 ```bash
-grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_number}.md
+grep -A 50 "^### ${task_number}\." specs/TODO.md > /tmp/task-${task_number}.md
 ```
 
 **Impact**: Reduces context from 109KB (full TODO.md) to ~2KB (task entry only), 98% reduction.
@@ -572,19 +616,23 @@ Load context on-demand:
 ### Tool Selection
 
 Use most appropriate tool for each research task:
-- Neovim API documentation → WebSearch, WebFetch
-- Plugin research → WebSearch (GitHub, plugin repos)
-- Codebase exploration → Read, Grep, Glob
-- General web search → WebSearch
+- Type-based search → Loogle
+- Semantic search → LeanSearch
+- Module exploration → LeanExplore
+- Code analysis → lean-lsp-mcp
+- General search → Web search
 
 ---
 
 ## References
 
+- **Command**: `.claude/command/research.md`
+- **Subagent**: `.claude/agent/subagents/researcher.md`
+- **Lean Research Agent**: `.claude/agent/subagents/lean-research-agent.md`
 - **Return Format**: `.claude/context/core/standards/subagent-return-format.md`
 - **Status Markers**: `.claude/context/core/standards/status-markers.md`
 - **Artifact Management**: `.claude/context/core/system/artifact-management.md`
-- **Neovim Context**:
-  - Neovim API: `.claude/context/project/neovim/domain/neovim-api.md`
-  - Lua Patterns: `.claude/context/project/neovim/domain/lua-patterns.md`
-  - Plugin Ecosystem: `.claude/context/project/neovim/domain/plugin-ecosystem.md`
+- **Lean Tools**:
+  - LeanSearch API: `.claude/context/project/lean4/tools/leansearch-api.md`
+  - Loogle API: `.claude/context/project/lean4/tools/loogle-api.md`
+  - LSP Integration: `.claude/context/project/lean4/tools/lsp-integration.md`

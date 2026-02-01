@@ -1,8 +1,6 @@
 # Domain Patterns for System Generation
 
 **Purpose**: Common domain patterns and their typical agent/context structures
-
-**Version**: 1.0  
 **Last Updated**: 2025-12-29
 
 ---

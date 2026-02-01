@@ -15,8 +15,9 @@ next_project_number: 21
 
 ### 19. Adapt Claude agent system for stock Neovim configuration
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Language**: meta
+- **Research**: [research-001.md](specs/19_adapt_claude_system_for_stock_neovim/reports/research-001.md)
 
 **Description**: Adapt the current .claude/ agent system (designed for Lean codebase) to produce a stock .claude/ agent system for Neovim configuration maintenance that can be systematically extended for specific applications
 

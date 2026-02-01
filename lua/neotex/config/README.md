@@ -81,6 +81,7 @@ The autocommands module sets up automatic behaviors for different events:
 - **Cursor Position Restoration**: Resume editing at last cursor position
 - **Auto-Formatting on Save**: Format code before writing (configurable per filetype)
 - **Efficient File Reload**: Detect external file changes using FocusGained and BufEnter events
+- **WezTerm Integration**: OSC escape sequence emission for tab title updates
 
 ### Performance Optimizations
 - **No CursorHold Events**: Removed CursorHold/CursorHoldI autocmds for file reload detection
@@ -88,6 +89,105 @@ The autocommands module sets up automatic behaviors for different events:
   - Reduced autocmd fires by 98%
   - FocusGained and BufEnter events are sufficient for detecting external changes
 - **Minimal Event Listening**: Only essential autocmds are registered for better responsiveness
+
+## WezTerm Integration
+
+The autocmds module provides WezTerm terminal integration via OSC escape sequences. Features are only active when running inside WezTerm (detected via `WEZTERM_PANE` environment variable).
+
+### OSC 7 Directory Updates
+
+Neovim emits OSC 7 escape sequences to update WezTerm tab titles with the current working directory:
+
+| Event | Behavior |
+|-------|----------|
+| `VimEnter` | Emit initial directory on startup |
+| `DirChanged` | Emit on `:cd`, `:lcd`, `:tcd`, or autochdir |
+| `BufEnter` | Emit when entering non-terminal buffers |
+
+The `BufEnter` handler only fires for non-terminal buffers to avoid conflicts with the shell's own OSC 7 emission.
+
+### Claude Code Task Number Monitoring
+
+Neovim monitors Claude Code terminal buffers for task-related commands and updates WezTerm tab titles:
+
+**Pattern Detection**:
+- `/research N`, `/plan N`, `/implement N`, `/revise N`
+
+**Implementation**:
+1. `TermOpen` autocmd detects Claude Code terminals (buffers matching `claude` or `ClaudeCode`)
+2. `nvim_buf_attach` monitors buffer changes for command patterns
+3. Task numbers are emitted via `neotex.lib.wezterm.set_task_number()`
+4. Debouncing (100ms) prevents rapid updates during typing
+
+**Cleanup**:
+- Task number clears when the Claude terminal buffer closes
+- Buffer state cleanup on `BufDelete`/`BufWipeout`
+
+### WezTerm Library Module
+
+The `neotex.lib.wezterm` module provides the OSC 1337 emission API:
+
+```lua
+local wezterm = require('neotex.lib.wezterm')
+
+-- Check if WezTerm integration is available
+if wezterm.is_available() then
+  -- Set task number (displayed as #N in tab title)
+  wezterm.set_task_number(792)
+
+  -- Clear task number
+  wezterm.clear_task_number()
+
+  -- Set arbitrary user variable
+  wezterm.emit_user_var('VARIABLE_NAME', 'value')
+end
+```
+
+**API Reference**:
+
+| Function | Parameters | Description |
+|----------|------------|-------------|
+| `is_available()` | none | Returns true if running in WezTerm |
+| `set_task_number(n)` | number or string | Set TASK_NUMBER user variable |
+| `clear_task_number()` | none | Clear TASK_NUMBER user variable |
+| `emit_user_var(name, value)` | string, string or nil | Set or clear any user variable |
+| `clear_user_var(name)` | string | Clear a user variable |
+
+### Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Neovim                                                      │
+│                                                             │
+│  ┌─────────────────┐    ┌─────────────────────────────────┐│
+│  │ autocmds.lua    │    │ lib/wezterm.lua                 ││
+│  │                 │    │                                 ││
+│  │ DirChanged ─────┼───>│ emit_osc7() ──────────────────┐ ││
+│  │ VimEnter        │    │                               │ ││
+│  │ BufEnter        │    │ set_task_number() ────────────┤ ││
+│  │                 │    │   (via emit_user_var)         │ ││
+│  │ Claude monitor ─┼───>│                               │ ││
+│  │   TermOpen      │    │                               │ ││
+│  │   nvim_buf_attach    │                               │ ││
+│  └─────────────────┘    └───────────────────────────────┼─┘│
+│                                                         │  │
+└─────────────────────────────────────────────────────────┼──┘
+                                                          │
+                                                          ▼
+                                              ┌───────────────────┐
+                                              │ WezTerm           │
+                                              │                   │
+                                              │ OSC 7 ─> Tab dir  │
+                                              │ OSC 1337 ─> User  │
+                                              │            vars   │
+                                              └───────────────────┘
+```
+
+### Related Documentation
+
+- **WezTerm configuration**: `~/.dotfiles/docs/terminal.md`
+- **Claude Code hooks**: Project-specific `.claude/hooks/` directory
+- **Notification system**: [NOTIFICATIONS.md](../../docs/NOTIFICATIONS.md)
 
 ## Usage
 

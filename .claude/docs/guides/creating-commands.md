@@ -1,447 +1,329 @@
 # Creating Commands Guide
 
-[Back to Docs](../README.md) | [Command Template](../templates/command-template.md)
-
-How to create new slash commands for the ModelChecker `.claude/` agent system.
-
----
-
 ## Overview
 
-Commands are user-facing operations invoked with `/command` syntax. They delegate to skills for execution.
-
-### Key Principles
-
-1. **Commands delegate, skills execute**: Commands route to skills, don't execute directly
-2. **Keep commands simple**: Under 300 lines, focused on documentation
-3. **Language-based routing**: Route to appropriate skill based on task language
-4. **Consistent structure**: Follow the standard template
-
----
-
-## Step-by-Step Process
-
-### Step 1: Plan the Command
-
-Before creating the command file, answer:
-
-1. **What does this command do?**
-   - Clear, single purpose
-   - Fits the task lifecycle
-
-2. **What arguments does it need?**
-   - Task number? Options? Flags?
-   - Required vs optional
-
-3. **Which skills will it use?**
-   - Different skills for different languages?
-   - New skill needed?
-
-4. **What artifacts does it create?**
-   - Reports, plans, summaries?
-   - Where in `.claude/specs/`?
-
-### Step 2: Create Command File
-
-Create `.claude/commands/{command-name}.md`:
-
-```markdown
----
-description: Brief description of command
-allowed-tools: Read, Write, Edit, Bash(git:*)
-argument-hint: TASK_NUMBER [options]
-model: claude-opus-4-5-20251101
----
-
-# /{command-name} Command
-
-{Description of what this command does.}
-
-## Usage
-
-```bash
-/{command-name} TASK_NUMBER
-/{command-name} TASK_NUMBER "optional focus"
-```
-
-## What This Does
-
-1. Validates task exists and status allows operation
-2. Updates status to {in-progress variant}
-3. Routes to skill based on task language
-4. Creates artifacts
-5. Updates status to {completed variant}
-6. Creates git commit
-
-## Language-Based Routing
-
-| Language | Skill |
-|----------|-------|
-| `python` | skill-{python-variant} |
-| `general` | skill-{general-variant} |
-
-## Artifacts
-
-| Type | Location |
-|------|----------|
-| {Type} | `.claude/specs/{N}_{SLUG}/{path}` |
+This guide provides a streamlined walkthrough for creating new task-based commands in the ProofChecker .opencode system.
 
 ## Prerequisites
 
-- Task must exist in TODO.md/state.json
-- Task status must be: {allowed statuses}
-```
+Before creating a new command, understand:
 
-### Step 3: Define Frontmatter
+1. **Task-Based Pattern**: ProofChecker uses task numbers from TODO.md, not topics
+2. **Orchestrator-Mediated**: All task-based commands route through orchestrator
+3. **Hybrid Architecture**: Orchestrator validates, subagents execute
+4. **Language Routing**: Lean tasks route to lean-specific agents
 
-The frontmatter controls command behavior:
+**Required Reading**:
+- `.claude/skills/skill-orchestrator/SKILL.md` - Orchestrator skill
+- `.claude/context/core/formats/subagent-return.md` - Subagent return format
+- [Creating Skills](creating-skills.md) - For skill delegation patterns
+- [Creating Agents](creating-agents.md) - For agent implementation
 
-```yaml
----
-description: Brief description for help text
-allowed-tools: Read, Write, Edit, Bash(git:*)
-argument-hint: TASK_NUMBER [focus]
-model: claude-opus-4-5-20251101
----
-```
+## ProofChecker vs OpenAgents
 
-**Fields**:
-| Field | Purpose | Example |
-|-------|---------|---------|
-| `description` | Shown in help | "Conduct research on a task" |
-| `allowed-tools` | Tools available | `Read, Write, Bash(git:*)` |
-| `argument-hint` | Usage syntax | `TASK_NUMBER [focus]` |
-| `model` | Model to use | `claude-opus-4-5-20251101` |
+**IMPORTANT**: ProofChecker has a different command pattern than OpenAgents.
 
-### Step 4: Document Workflow
+| Aspect | ProofChecker | OpenAgents |
+|--------|--------------|------------|
+| **Arguments** | Task numbers (integers) | Topics (natural language) |
+| **Workflow** | Task exists first | Creates new projects |
+| **Validation** | TODO.md lookup required | No validation needed |
+| **Routing** | Language-based (lean vs general) | Keyword-based |
+| **Example** | `/research 259` | `/research "modal logic"` |
 
-Explain the command workflow clearly:
+**You cannot copy OpenAgents patterns directly to ProofChecker.**
 
-```markdown
-## What This Does
+## Step-by-Step Process
 
-1. **Validate**: Check task exists and status allows operation
-2. **Preflight**: Update status to [RESEARCHING]
-3. **Route**: Determine skill based on task language
-4. **Execute**: Invoke skill with task context
-5. **Postflight**: Update status to [RESEARCHED]
-6. **Commit**: Create git commit with artifacts
-```
+### Step 1: Understand the Hybrid Architecture
 
-### Step 5: Add Examples
+ProofChecker uses a **hybrid architecture** (v6.1):
 
-Include practical examples:
+**Orchestrator Responsibilities**:
+1. Extract task number from `$ARGUMENTS`
+2. Validate task exists in TODO.md
+3. Extract language from task metadata
+4. Route to appropriate subagent (lean vs general)
+5. Pass validated context to subagent
 
-```markdown
-## Examples
+**Subagent Responsibilities**:
+1. Receive validated inputs (task_number, language, task_description)
+2. Update task status
+3. Execute workflow
+4. Return standardized result
 
-### Basic Usage
+**Why This Pattern?**:
+- Only orchestrator has access to `$ARGUMENTS`
+- Task validation prevents errors
+- Language extraction enables routing
+- Subagents receive clean, pre-validated inputs
 
-```bash
-/research 350
-```
+### Step 2: Create Command File
 
-Creates research report at `.claude/specs/350_task_name/reports/research-001.md`
+Create `.claude/commands/{command-name}.md` with this structure:
 
-### With Focus
-
-```bash
-/research 350 "Z3 bitvector operations"
-```
-
-Creates research report focused on Z3 bitvector patterns.
-```
-
-### Step 6: Test the Command
-
-Test with both valid and invalid inputs:
-
-```bash
-# Test with valid task
-/command 350
-
-# Test with non-existent task
-/command 999
-
-# Test with wrong status
-# (e.g., /implement on NOT STARTED task)
-
-# Verify artifacts created
-ls .claude/specs/350_*/
-
-# Verify status updated
-grep "350" .claude/specs/TODO.md
-```
-
----
-
-## Command Patterns
-
-### Task-Based Command
-
-Most commands operate on tasks:
-
-```yaml
-argument-hint: TASK_NUMBER [options]
-```
-
-**Workflow**:
-1. Parse task number from arguments
-2. Look up task in state.json
-3. Validate status allows operation
-4. Route to skill by language
-5. Update status and commit
-
-**Example**: `/research`, `/plan`, `/implement`
-
-### Flag-Based Command
-
-Commands with mode flags:
-
-```yaml
-argument-hint: --flag [value]
-```
-
-**Example**: `/task`
-- `/task "description"` - Create new task
-- `/task --sync` - Sync TODO.md with state.json
-- `/task --abandon 123` - Abandon task
-
-### No-Argument Command
-
-Simple utility commands:
-
-```yaml
-argument-hint: (no arguments)
-```
-
-**Example**: `/todo`, `/errors`
-
----
-
-## Language-Based Routing
-
-Commands that operate on tasks should route to appropriate skills:
+**Task-Based Command Template**:
 
 ```markdown
-## Language-Based Routing
-
-| Language | Skill |
-|----------|-------|
-| `python` | skill-python-research |
-| `general` | skill-researcher |
-| `meta` | skill-researcher |
-```
-
-The orchestrator handles routing based on the task's `language` field in state.json.
-
+---
+name: {command-name}
+agent: orchestrator
+description: "{Brief description with status}"
+timeout: 3600
+routing:
+  language_based: true
+  lean: lean-{command}-agent
+  default: {command}er
 ---
 
-## Integration with Skills
+# /{command-name} - {Title}
 
-### Creating a New Skill
-
-If your command needs a new skill:
-
-1. Create skill at `.claude/skills/skill-{name}/SKILL.md`
-2. Define trigger conditions
-3. Implement workflow
-4. Add to orchestrator routing
-
-See [Creating Skills Guide](creating-skills.md).
-
-### Using Existing Skills
-
-For task-based commands, the orchestrator routes automatically:
-
-| Language | Research | Implementation |
-|----------|----------|----------------|
-| `python` | skill-python-research | skill-theory-implementation |
-| `general` | skill-researcher | skill-implementer |
-| `meta` | skill-researcher | skill-implementer |
-
----
-
-## Common Mistakes
-
-### Mistake 1: Embedding Execution Logic
-
-**Wrong**:
-```markdown
-## What This Does
-
-1. Read the file at {path}
-2. Parse the content
-3. Extract patterns using grep...
-```
-
-**Right**:
-```markdown
-## What This Does
-
-1. Validates task exists
-2. Routes to skill-analyzer
-3. Skill creates analysis report
-```
-
-Commands delegate to skills; they don't execute.
-
-### Mistake 2: Missing Status Transitions
-
-**Wrong**: No mention of status changes
-
-**Right**:
-```markdown
-## Status Transitions
-
-| From | To |
-|------|-----|
-| `not_started` | `researching` |
-| `researching` | `researched` |
-```
-
-### Mistake 3: No Error Handling Documentation
-
-**Wrong**: Only happy path documented
-
-**Right**:
-```markdown
-## Error Handling
-
-| Error | Response |
-|-------|----------|
-| Task not found | Error with suggestion to check task number |
-| Wrong status | Error with current status and allowed operations |
-```
-
----
-
-## Validation Checklist
-
-Before committing:
-
-### Frontmatter
-- [ ] `description` is clear and concise
-- [ ] `allowed-tools` lists all needed tools
-- [ ] `argument-hint` shows proper syntax
-
-### Documentation
-- [ ] Purpose clearly stated
-- [ ] Usage with examples
-- [ ] All arguments documented
-- [ ] Workflow steps listed
-- [ ] Artifacts documented
-- [ ] Status transitions shown
-- [ ] Prerequisites listed
-- [ ] Error handling documented
-
-### Quality
-- [ ] Under 300 lines
-- [ ] No embedded execution logic
-- [ ] Delegates to skills
-- [ ] Consistent with other commands
-
-### Testing
-- [ ] Works with valid arguments
-- [ ] Handles invalid arguments gracefully
-- [ ] Creates expected artifacts
-- [ ] Status updates correctly
-- [ ] Git commits created
-
----
-
-## Example: Complete Command
-
-```markdown
----
-description: Analyze code patterns and quality
-allowed-tools: Read, Grep, Glob, Write
-argument-hint: TASK_NUMBER [scope]
-model: claude-opus-4-5-20251101
----
-
-# /analyze Command
-
-Analyze code patterns and quality for a task.
+{Brief description of what this command does}
 
 ## Usage
 
-```bash
-/analyze 350                    # Analyze task scope
-/analyze 350 "theory_lib"       # Focus on area
-```
-
-### Arguments
-
-| Argument | Required | Description |
-|----------|----------|-------------|
-| `TASK_NUMBER` | Yes | Task to analyze for |
-| `scope` | No | Limit to path (default: full) |
+\`\`\`bash
+/{command-name} TASK_NUMBER [PROMPT]
+/{command-name} 196
+/{command-name} 196 "Custom focus"
+\`\`\`
 
 ## What This Does
 
-1. Validates task exists
-2. Routes to skill-code-analyzer
-3. Skill scans code for patterns
-4. Creates analysis report
+1. Routes to appropriate agent based on task language
+2. Agent executes workflow
+3. Creates artifacts
+4. Updates task status to [{STATUS}]
 5. Creates git commit
 
 ## Language-Based Routing
 
-| Language | Skill |
-|----------|-------|
-| `python` | skill-python-analyzer |
-| `general` | skill-analyzer |
+| Language | Agent | Tools |
+|----------|-------|-------|
+| lean | lean-{command}-agent | {lean-specific tools} |
+| general | {command}er | {general tools} |
 
-## Artifacts
+See `.claude/agents/{agent}.md` for details.
+```
 
-| Type | Location |
-|------|----------|
-| Analysis Report | `.claude/specs/{N}_{SLUG}/reports/analysis-001.md` |
+**Key Points**:
+- **MUST use `agent: orchestrator`** (not `agent: implementer` or direct agent!)
+- Include `routing` configuration for language-based routing
+- Keep documentation concise (<50 lines)
 
-## Prerequisites
+### Step 3: Create or Update Subagent
 
-- Task must exist
+If creating a new subagent, follow this pattern:
+
+**Step 0 Template** (Receives Validated Inputs):
+
+```xml
+<step_0_preflight>
+  <action>Preflight: Extract validated inputs and update status</action>
+  <process>
+    1. Extract task inputs from delegation context (already validated by orchestrator):
+       - task_number: Integer (already validated to exist in TODO.md)
+       - language: String (already extracted from task metadata)
+       - task_description: String (already extracted from TODO.md)
+       - Example: task_number=259, language="lean", task_description="..."
+       
+       NOTE: Orchestrator has already:
+       - Validated task_number exists in TODO.md
+       - Extracted language from task metadata
+       - Extracted task description
+       - Performed language-based routing
+       
+       No re-parsing or re-validation needed!
+    
+    2. Update status to [{STATUS}]:
+       - Delegate to status-sync-manager
+       - Validate status update succeeded
+    
+    3. Proceed to execution with validated inputs
+  </process>
+  <checkpoint>Task inputs extracted from validated context, status updated</checkpoint>
+</step_0_preflight>
+```
+
+**Workflow Steps** (Steps 1-N):
+
+Implement your specific workflow. Subagent has access to:
+- `task_number`: Validated integer
+- `language`: String ("lean", "general", etc.)
+- `task_description`: Full description from TODO.md
+
+**Return Format**:
+
+Must return JSON matching `subagent-return-format.md` schema:
+```json
+{
+  "status": "completed|partial|failed|blocked",
+  "summary": "Brief summary <100 tokens",
+  "artifacts": [{"type": "...", "path": "...", "summary": "..."}],
+  "metadata": {
+    "session_id": "...",
+    "duration_seconds": 123,
+    "agent_type": "...",
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "agent"]
+  },
+  "errors": [],
+  "next_steps": "What user should do next"
+}
+```
+
+### Step 4: Test Command
+
+Test your new command:
+
+```bash
+# Find a test task
+grep "^###" specs/TODO.md | head -5
+
+# Test command
+/{command-name} {task-number}
+
+# Verify:
+# 1. Orchestrator extracts task number from $ARGUMENTS
+# 2. Orchestrator validates task exists
+# 3. Orchestrator extracts language from TODO.md
+# 4. Orchestrator routes to correct agent
+# 5. Subagent receives validated context
+# 6. Artifacts created
+# 7. Status updated
+# 8. Git commit created
+```
+
+## Architecture Flow
+
+### How Commands Work (v6.1 Hybrid)
+
+```
+User types: /implement 259
+  ↓
+OpenCode reads command file: agent: orchestrator
+  ↓
+OpenCode invokes orchestrator with $ARGUMENTS = "259"
+  ↓
+Orchestrator Stage 1 (ExtractAndValidate):
+  - Parse task_number from $ARGUMENTS: 259
+  - Validate task 259 exists in TODO.md
+  - Extract language: "lean"
+  - Extract task_description: "Implement automation tactics"
+  ↓
+Orchestrator Stage 2 (Route):
+  - Check routing config: language_based = true
+  - Map language "lean" → agent "lean-implementation-agent"
+  - Prepare delegation context
+  ↓
+Orchestrator Stage 3 (Delegate):
+  - Invoke lean-implementation-agent with validated context:
+    * task_number = 259
+    * language = "lean"
+    * task_description = "Implement automation tactics"
+  ↓
+Subagent Step 0:
+  - Extract validated inputs from delegation context
+  - Update status to [IMPLEMENTING]
+  - Proceed with validated inputs (no parsing!)
+  ↓
+Subagent executes workflow, returns result
+  ↓
+Orchestrator relays result to user
+```
+
+## Key Principles
+
+1. **Orchestrator-Mediated**: All task-based commands route through orchestrator
+2. **Validate Once**: Orchestrator validates, subagent receives clean inputs
+3. **No Re-Parsing**: Subagent uses validated context, doesn't re-parse prompts
+4. **Language Routing**: Orchestrator extracts language, routes to correct agent
+5. **Clean Separation**: Orchestrator validates/routes, subagent executes
+6. **No Version History**: NEVER add version history sections to commands or agents (useless cruft)
+
+## Common Mistakes
+
+### ❌ WRONG: Direct Invocation
+
+```markdown
+---
+name: implement
+agent: implementer  # WRONG! Bypasses orchestrator
+---
+```
+
+**Problem**: OpenCode directly invokes implementer, bypassing orchestrator.
+Implementer has no access to `$ARGUMENTS`, cannot extract task number.
+
+### ❌ WRONG: Subagent Parses Prompt
+
+```xml
+<step_0_preflight>
+  <process>
+    1. Parse task number from prompt string  # WRONG! Orchestrator already did this
+    2. Validate task exists  # WRONG! Already validated
+  </process>
+</step_0_preflight>
+```
+
+**Problem**: Duplicate parsing, duplicate validation. Fragile and inefficient.
+
+### ✅ CORRECT: Use Validated Inputs
+
+```markdown
+---
+name: implement
+agent: orchestrator  # CORRECT! Routes through orchestrator
+routing:
+  language_based: true
+  lean: lean-implementation-agent
+  default: implementer
+---
+```
+
+```xml
+<step_0_preflight>
+  <process>
+    1. Extract validated inputs from delegation context  # CORRECT!
+       - task_number, language, task_description
+    2. Update status
+    3. Proceed with validated inputs
+  </process>
+</step_0_preflight>
+```
 
 ## Examples
 
-### Full Analysis
+See existing implementations:
+- `.claude/commands/implement.md` - Language-based command
+- `.claude/commands/research.md` - Language-based command
+- `.claude/commands/plan.md` - Language-based command
+- `.claude/skills/skill-orchestrator/SKILL.md` - Orchestrator skill
+- `.claude/skills/skill-implementer/SKILL.md` - General implementer skill
+- `.claude/agents/general-implementation-agent.md` - General implementation agent
+- `.claude/agents/lean-implementation-agent.md` - Lean-specific agent
 
-```bash
-/analyze 350
-```
+## Related Guides
 
-Analyzes full task scope.
+- [Component Selection](component-selection.md) - When to create a command vs skill vs agent
+- [Creating Skills](creating-skills.md) - How to create skills that commands delegate to
+- [Creating Agents](creating-agents.md) - How to create agents that skills invoke
 
-### Focused Analysis
+## Troubleshooting
 
-```bash
-/analyze 350 "model_checker/theory_lib"
-```
+**"Task number not provided"**:
+- Check command file has `agent: orchestrator` (not direct agent)
+- Orchestrator extracts from `$ARGUMENTS`, subagent receives validated context
 
-Analyzes only theory_lib directory.
+**"Task not found"**:
+- Task number doesn't exist in TODO.md
+- Orchestrator validates this in Stage 1
 
-## Related Commands
+**Wrong agent invoked**:
+- Check routing configuration in command frontmatter
+- Check language field in TODO.md task entry
+- Orchestrator uses language to route to correct agent
 
-- `/review` - Broader code review
-- `/research` - Research before analysis
-
-## See Also
-
-- [skill-analyzer](../../skills/skill-analyzer/SKILL.md)
-- [Commands Reference](../docs/commands/README.md)
-```
-
----
-
-## Related Documentation
-
-- [Command Template](../templates/command-template.md)
-- [Creating Skills Guide](creating-skills.md)
-- [Commands Reference](../commands/README.md)
-- [Skills Reference](../skills/README.md)
-- [ARCHITECTURE.md](../../ARCHITECTURE.md)
-
----
-
-[Back to Docs](../README.md) | [Command Template](../templates/command-template.md)
+**Subagent can't access task_number**:
+- Check Step 0 extracts from delegation_context
+- Orchestrator passes validated context as parameters

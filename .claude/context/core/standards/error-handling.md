@@ -267,13 +267,13 @@ Example: /research 197
 ```
 Error: Failed to read file
 
-File: .claude/specs/TODO.md
+File: specs/TODO.md
 Reason: No such file or directory
 
 Recovery:
 1. Verify the file path is correct
-2. Check if the file exists: ls -la .claude/specs/
-3. Create the file if needed: touch .claude/specs/TODO.md
+2. Check if the file exists: ls -la specs/
+3. Create the file if needed: touch specs/TODO.md
 ```
 
 ### 3. Delegation Errors
@@ -1052,6 +1052,5 @@ validation:
 
 ## Version
 
-**Version**: 1.0.0  
 **Last Updated**: 2025-12-29  
 **Status**: Active

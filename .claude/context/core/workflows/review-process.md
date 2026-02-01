@@ -27,7 +27,7 @@ The /review command follows the standard 8-stage workflow defined in @.claude/co
 **Stage 3 (InvokeReviewer)**: Delegate to reviewer subagent with review scope and registry context
 **Stage 4 (ReceiveResults)**: Validate reviewer return against subagent-return-format.md
 **Stage 5 (ProcessResults)**: Extract artifacts, metrics, identified tasks from reviewer return
-**Stage 6 (CreateTasks)**: Create .claude/specs/TODO.md tasks from identified_tasks, map placeholder numbers to actual numbers
+**Stage 6 (CreateTasks)**: Create specs/TODO.md tasks from identified_tasks, map placeholder numbers to actual numbers
 **Stage 7 (Postflight)**: Replace placeholders in review summary, delegate to status-sync-manager for atomic updates, create review task entry, git commit
 **Stage 8 (ReturnSuccess)**: Return brief summary and artifact path to user
 

@@ -389,13 +389,15 @@ Speech-to-text input using Vosk offline recognition.
 | `<leader>vs` | Stop recording | Stop capture and insert transcribed text at cursor |
 | `<leader>vv` | Toggle recording | Start recording if stopped, stop if recording |
 | `<leader>vh` | Health check | Verify STT dependencies and model availability |
-| `<C-\>` | Toggle recording | Alternative toggle (works in Claude Code) |
+| `<C-\>` | Toggle recording | Works in both normal and terminal modes (Claude Code sidebar) |
 
 **Commands**: `:STTStart`, `:STTStop`, `:STTToggle`, `:STTHealth`
 
 **Dependencies**: `parecord` (PulseAudio/PipeWire), Python 3, Vosk package, vosk-transcribe.py script
 
 **Configuration**: `lua/neotex/plugins/tools/stt/`
+
+**Note**: In terminal buffers like Claude Code, `<C-\>` exits terminal mode temporarily to allow STT to function, then resumes after recording stops.
 
 ### YANK (`<leader>y`)
 
@@ -426,6 +428,7 @@ Active in terminal buffers (`:terminal` command or toggleterm).
 | `<C-t>` | Toggle terminal | Close/open terminal window |
 | `<C-h>`, `<C-j>`, `<C-k>`, `<C-l>` | Navigate windows | Move between terminal and other windows |
 | `<M-h>`, `<M-l>`, `<M-Left>`, `<M-Right>` | Resize terminal | Adjust terminal window width |
+| `<C-\>` | Toggle STT recording | Start/stop speech-to-text recording (exits terminal mode temporarily) |
 
 ### Markdown Buffers
 

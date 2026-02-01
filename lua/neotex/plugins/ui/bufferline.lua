@@ -1,3 +1,47 @@
+-- Find a suitable window for buffer operations (one without winfixbuf)
+-- Returns the window ID or nil if none found
+local function find_suitable_window()
+  local current_win = vim.api.nvim_get_current_win()
+
+  -- If current window is suitable, use it
+  if not vim.wo[current_win].winfixbuf then
+    return current_win
+  end
+
+  -- Find another window without winfixbuf
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    local buftype = vim.bo[buf].buftype
+    -- Skip terminals, floating windows, and winfixbuf windows
+    if buftype ~= "terminal"
+       and not vim.wo[win].winfixbuf
+       and vim.api.nvim_win_get_config(win).relative == "" then
+      return win
+    end
+  end
+
+  return nil
+end
+
+-- Smart buffer switch that handles winfixbuf windows
+-- Used for clicking on bufferline tabs when in a terminal/sidebar
+local function smart_buffer_switch(bufnr)
+  local target_win = find_suitable_window()
+
+  if target_win then
+    -- Switch to the suitable window first
+    vim.api.nvim_set_current_win(target_win)
+    -- Then switch buffer
+    vim.api.nvim_set_current_buf(bufnr)
+  else
+    -- Fallback: try direct switch (may fail if no suitable window)
+    pcall(vim.api.nvim_set_current_buf, bufnr)
+  end
+end
+
+-- Make it globally available for bufferline
+_G.smart_buffer_switch = smart_buffer_switch
+
 -- Smart buffer deletion that prevents switching to sidebar buffers (Claude, terminals)
 -- Pre-selects next buffer BEFORE deletion to avoid Neovim's jump list selection
 local function smart_bufdelete(bufnr)
@@ -72,7 +116,10 @@ return {
         diagnostics_update_in_insert = false,
         show_tab_indicators = false,
         show_close_icon = false,
-        
+        -- Handle clicks from winfixbuf windows (e.g., Claude terminal sidebar)
+        left_mouse_command = function(bufnr)
+          smart_buffer_switch(bufnr)
+        end,
         -- Simple filter to exclude quickfix windows and claude-code terminals
         custom_filter = function(buf_number, buf_numbers)
           local buf_ft = vim.bo[buf_number].filetype
@@ -165,6 +212,9 @@ return {
             return true
           end,
           separator_style = "slant",
+          left_mouse_command = function(bufnr)
+            smart_buffer_switch(bufnr)
+          end,
           close_command = function(bufnr)
             smart_bufdelete(bufnr)
           end,
