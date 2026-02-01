@@ -4,11 +4,20 @@
     {
       "project_number": 20,
       "project_name": "update_specs_readme_overview",
-      "status": "not_started",
+      "status": "researched",
       "language": "general",
       "description": "Update specs/README.md to provide a brief overview of the directory contents, noting that numbered project directories accumulate and are archived to specs/archive/ by the /todo command",
       "created": "2026-02-01T22:14:54Z",
-      "last_updated": "2026-02-01T22:14:54Z"
+      "last_updated": "2026-02-01T22:40:58Z",
+      "session_id": "sess_1738447085_c2d8f1",
+      "researched": "2026-02-01T22:40:58Z",
+      "artifacts": [
+        {
+          "path": "specs/20_update_specs_readme_overview/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report identifying gaps in specs/README.md including missing archive documentation, outdated project numbering conventions, and absence of state file documentation"
+        }
+      ]
     },
     {
       "project_number": 19,
