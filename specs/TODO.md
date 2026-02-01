@@ -8,10 +8,11 @@ next_project_number: 21
 
 ### 20. Update specs/README.md with directory overview
 - **Effort**: 0.5-1 hours
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
 - **Language**: general
 - **Research**: [research-001.md](specs/20_update_specs_readme_overview/reports/research-001.md)
 - **Plan**: [implementation-001.md](specs/20_update_specs_readme_overview/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260201.md](specs/20_update_specs_readme_overview/summaries/implementation-summary-20260201.md)
 
 **Description**: Update specs/README.md to provide a brief overview of the directory contents, noting that numbered project directories accumulate and are archived to specs/archive/ by the /todo command
 

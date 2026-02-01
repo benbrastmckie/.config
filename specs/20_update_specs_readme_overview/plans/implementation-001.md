@@ -1,7 +1,7 @@
 # Implementation Plan: Task #20
 
 - **Task**: 20 - Update specs/README.md with directory overview
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 0.5-1 hours
 - **Dependencies**: None
 - **Research Inputs**: specs/20_update_specs_readme_overview/reports/research-001.md
@@ -45,7 +45,7 @@ The research report identified several gaps and inaccuracies:
 
 ## Implementation Phases
 
-### Phase 1: Fix Project Numbering and Remove Lockfile [NOT STARTED]
+### Phase 1: Fix Project Numbering and Remove Lockfile [COMPLETED]
 
 **Goal**: Correct the outdated project numbering format and remove the non-existent .lockfile reference
 
@@ -67,7 +67,7 @@ The research report identified several gaps and inaccuracies:
 
 ---
 
-### Phase 2: Add Archive and State Management Documentation [NOT STARTED]
+### Phase 2: Add Archive and State Management Documentation [COMPLETED]
 
 **Goal**: Document the archive directory, state management files, and /todo archival workflow
 
