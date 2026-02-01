@@ -1,0 +1,21 @@
+{
+  "next_project_number": 20,
+  "active_projects": [
+    {
+      "project_number": 19,
+      "project_name": "adapt_claude_system_for_stock_neovim",
+      "status": "not_started",
+      "language": "meta",
+      "description": "Adapt the current .claude/ agent system (designed for Lean codebase) to produce a stock .claude/ agent system for Neovim configuration maintenance that can be systematically extended for specific applications",
+      "created": "2026-02-01T22:12:28Z",
+      "last_updated": "2026-02-01T22:12:28Z"
+    }
+  ],
+  "repository_health": {
+    "last_assessed": "2026-02-01T22:15:00Z",
+    "sorry_count": 0,
+    "axiom_count": 0,
+    "build_errors": 0,
+    "status": "manageable"
+  }
+}
