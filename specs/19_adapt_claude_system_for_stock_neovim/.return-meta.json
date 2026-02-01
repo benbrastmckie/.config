@@ -1,20 +1,21 @@
 {
-  "status": "researched",
-  "summary": "Analyzed .claude/ system structure and categorized ~70% as reusable core components and ~30% as Lean-specific. Identified architecture patterns (thin wrapper skills, forked subagent pattern, checkpoint execution) and designed a layered approach for stock Neovim system: Core Base + Neovim Domain Context + Neovim-specific agents/skills.",
+  "status": "planned",
+  "summary": "Created 7-phase implementation plan for adapting .claude/ system to stock Neovim configuration maintenance, estimated 14-21 hours total effort.",
   "artifacts": [
     {
-      "type": "report",
-      "path": "specs/19_adapt_claude_system_for_stock_neovim/reports/research-001.md",
-      "summary": "Comprehensive research report with component categorization, architecture analysis, proposed Neovim system design, and 7-task implementation plan (14-21 hours estimated)"
+      "type": "plan",
+      "path": "specs/19_adapt_claude_system_for_stock_neovim/plans/implementation-001.md",
+      "summary": "7-phase plan covering core extraction, Neovim context creation, agents, skills, rules, routing integration, and documentation"
     }
   ],
-  "next_steps": "Run /plan 19 to create implementation plan",
+  "next_steps": "Run /implement 19 to execute the plan",
   "metadata": {
-    "session_id": "sess_1769984182_0d2ff4",
-    "agent_type": "general-research-agent",
-    "duration_seconds": 1800,
+    "session_id": "sess_1769985142_589f4c",
+    "agent_type": "planner-agent",
+    "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "general-research-agent"],
-    "findings_count": 7
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 7,
+    "estimated_hours": "14-21"
   }
 }
