@@ -1,10 +1,17 @@
 ---
-next_project_number: 20
+next_project_number: 21
 ---
 
 # TODO
 
 ## Tasks
+
+### 20. Update specs/README.md with directory overview
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: general
+
+**Description**: Update specs/README.md to provide a brief overview of the directory contents, noting that numbered project directories accumulate and are archived to specs/archive/ by the /todo command
 
 ### 19. Adapt Claude agent system for stock Neovim configuration
 - **Effort**: TBD

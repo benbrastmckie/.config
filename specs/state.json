@@ -1,6 +1,15 @@
 {
-  "next_project_number": 20,
+  "next_project_number": 21,
   "active_projects": [
+    {
+      "project_number": 20,
+      "project_name": "update_specs_readme_overview",
+      "status": "not_started",
+      "language": "general",
+      "description": "Update specs/README.md to provide a brief overview of the directory contents, noting that numbered project directories accumulate and are archived to specs/archive/ by the /todo command",
+      "created": "2026-02-01T22:14:54Z",
+      "last_updated": "2026-02-01T22:14:54Z"
+    },
     {
       "project_number": 19,
       "project_name": "adapt_claude_system_for_stock_neovim",
