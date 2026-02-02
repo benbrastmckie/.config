@@ -1,3 +1,103 @@
 {
-  "completed_projects": []
+  "completed_projects": [
+    {
+      "project_number": 19,
+      "project_name": "adapt_claude_system_for_stock_neovim",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T21:27:47Z",
+      "completion_summary": "Transformed .claude/ system from Lean 4 theorem proving to stock Neovim configuration. Created 17 Neovim context files, 2 specialized agents, 2 skills, and neovim-lua rule."
+    },
+    {
+      "project_number": 20,
+      "project_name": "update_specs_readme_overview",
+      "status": "completed",
+      "language": "general",
+      "archived": "2026-02-02T21:27:47Z",
+      "completion_summary": "Updated specs/README.md to document the directory lifecycle, state management files, and archival workflow."
+    },
+    {
+      "project_number": 21,
+      "project_name": "update_claude_docs_neovim_focus",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T21:27:47Z",
+      "completion_summary": "Systematically updated .claude/ documentation to remove 587+ Lean references across 88 files."
+    },
+    {
+      "project_number": 22,
+      "project_name": "review_claude_directory_neovim_improvements",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T21:27:47Z",
+      "completion_summary": "Completed Lean-to-Neovim transition in .claude/context/ by updating 20+ files."
+    },
+    {
+      "project_number": 23,
+      "project_name": "leader_ac_picker_claude_directory_management",
+      "status": "completed",
+      "language": "neovim",
+      "archived": "2026-02-02T21:27:47Z",
+      "completion_summary": "Added agents/ directory support to the <leader>ac picker."
+    },
+    {
+      "project_number": 24,
+      "project_name": "add_root_files_to_leader_ac_picker",
+      "status": "completed",
+      "language": "neovim",
+      "archived": "2026-02-02T21:27:47Z",
+      "completion_summary": "Added [Root Files] section to <leader>ac picker displaying .gitignore, README.md, CLAUDE.md, and settings.local.json."
+    },
+    {
+      "project_number": 25,
+      "project_name": "migrate_git_repo_to_nvim_directory",
+      "status": "completed",
+      "language": "general",
+      "archived": "2026-02-02T21:27:47Z",
+      "completion_summary": "Migrated git repository from ~/.config/ to ~/.config/nvim/ using git-filter-repo, preserving 2,401 commits."
+    },
+    {
+      "project_number": 26,
+      "project_name": "fix_specs_path_references",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T21:27:47Z",
+      "completion_summary": "Fixed .claude/specs/ path references in nvim/.claude/ directory. Only 2 files had incorrect references."
+    },
+    {
+      "project_number": 27,
+      "project_name": "migrate_specs_to_project_root",
+      "status": "abandoned",
+      "language": "meta",
+      "archived": "2026-02-02T21:27:47Z",
+      "abandoned_reason": "No longer needed - specs/ already at project root"
+    },
+    {
+      "project_number": 28,
+      "project_name": "reconcile_duplicate_specs_data",
+      "status": "abandoned",
+      "language": "meta",
+      "archived": "2026-02-02T21:27:47Z",
+      "abandoned_reason": "No longer needed - duplicate data issue resolved during task migration"
+    },
+    {
+      "project_number": 1,
+      "project_name": "status_tracking_enhancement",
+      "status": "orphan_archived",
+      "archived": "2026-02-02T21:27:47Z",
+      "source": "orphan_recovery",
+      "detected_artifacts": [
+        "plans/",
+        "summaries/"
+      ]
+    },
+    {
+      "project_number": 18,
+      "project_name": "agent_modes_vs_commands",
+      "status": "orphan_archived",
+      "archived": "2026-02-02T21:27:47Z",
+      "source": "orphan_recovery",
+      "detected_artifacts": []
+    }
+  ]
 }

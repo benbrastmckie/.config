@@ -124,10 +124,10 @@
     }
   ],
   "repository_health": {
-    "last_assessed": "2026-02-01T22:15:00Z",
-    "sorry_count": 0,
-    "axiom_count": 0,
+    "last_assessed": "2026-02-02T21:28:26Z",
+    "todo_count": 45,
+    "fixme_count": 2,
     "build_errors": 0,
-    "status": "manageable"
+    "status": "healthy"
   }
 }
