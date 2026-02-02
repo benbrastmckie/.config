@@ -23,16 +23,14 @@ This document describes the complete research workflow executed by the researche
 - File analysis
 - API exploration
 
-### Lean Research
+### Neovim Research
 
-**When**: Task language is lean  
-**Agent**: lean-research-agent  
+**When**: Task language is neovim
+**Agent**: neovim-research-agent
 **Tools**:
-- LeanExplore (explore Mathlib)
-- Loogle (search by type signature)
-- LeanSearch (semantic search)
-- lean-lsp-mcp (LSP integration)
-- Web search
+- WebSearch (plugin documentation)
+- WebFetch (plugin READMEs)
+- Read (codebase exploration)
 - Documentation review
 
 ---
@@ -53,12 +51,12 @@ grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*
 
 | Language | Agent | Tools Available |
 |----------|-------|----------------|
-| `lean` | `lean-research-agent` | LeanExplore, Loogle, LeanSearch, lean-lsp-mcp, web search |
+| `neovim` | `neovim-research-agent` | WebSearch, WebFetch, Read, documentation review |
 | `markdown` | `researcher` | Web search, documentation review |
 | `python` | `researcher` | Web search, documentation review, API docs |
 | `general` | `researcher` | Web search, documentation review |
 
-**Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses Lean-specific tooling.
+**Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses language-specific tooling.
 
 ---
 
@@ -122,37 +120,33 @@ grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*
    - Best practices
    - Potential pitfalls
 
-#### For Lean Research:
+#### For Neovim Research:
 
-**Action**: Conduct research using Lean-specific tools
+**Action**: Conduct research using Neovim-specific tools
 
 **Process**:
-1. Use LeanExplore to explore Mathlib:
-   - Search for relevant modules
-   - Explore type hierarchies
-   - Find related theorems
-2. Use Loogle for type-based search:
-   - Search by type signature
-   - Find functions with specific types
-   - Discover relevant lemmas
-3. Use LeanSearch for semantic search:
-   - Search by natural language description
-   - Find theorems by concept
-   - Discover related proofs
-4. Use lean-lsp-mcp for code analysis:
-   - Analyze existing code
-   - Check type information
+1. Use WebSearch to find plugin documentation:
+   - Search for plugin READMEs
+   - Find configuration examples
+   - Discover related plugins
+2. Use WebFetch to retrieve documentation:
+   - Fetch plugin documentation
+   - Get configuration guides
+   - Access API references
+3. Use Read to explore codebase:
+   - Analyze existing configuration
+   - Check module structure
    - Explore dependencies
-5. Review Lean documentation:
-   - Mathlib docs
-   - Lean 4 manual
-   - Theorem proving guides
-6. Synthesize findings:
-   - Relevant Mathlib modules
-   - Applicable theorems
-   - Proof strategies
-   - Type definitions
-   - Tactic recommendations
+4. Review Neovim documentation:
+   - Neovim API docs
+   - lazy.nvim guide
+   - Plugin documentation
+5. Synthesize findings:
+   - Relevant plugins
+   - Configuration patterns
+   - Lua module structure
+   - Keymap conventions
+   - API recommendations
 
 **Checkpoint**: Research conducted
 
@@ -173,11 +167,11 @@ grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*
    - **Technical Details**: Specific APIs, functions, theorems, etc.
    - **Considerations**: Potential issues, trade-offs, alternatives
    - **Next Steps**: Recommended actions
-3. For Lean research, include:
-   - Mathlib modules to use
-   - Relevant theorems and lemmas
-   - Type definitions needed
-   - Tactic strategies
+3. For Neovim research, include:
+   - Plugins to use
+   - Configuration patterns
+   - Lua module structure
+   - Keymap conventions
    - Example code snippets
 4. Validate report:
    - All research questions addressed
@@ -413,7 +407,7 @@ Researcher loads context on-demand per `.claude/context/index.md`:
 - `state.json` (project state)
 
 **Language-specific context**:
-- If lean: `project/lean4/tools/leansearch-api.md`, `project/lean4/tools/loogle-api.md`
+- If neovim: `project/neovim/domain/neovim-api.md`, `project/neovim/patterns/plugin-spec.md`
 - If markdown: (no additional context)
 
 **Optimization**: Task extraction reduces context from 109KB to ~2KB, 98% reduction.
@@ -554,43 +548,37 @@ grep -A 50 "^### ${task_number}\." specs/TODO.md > /tmp/task-${task_number}.md
 
 ---
 
-## Lean-Specific Research Tools
+## Neovim-Specific Research Tools
 
-### LeanExplore
+### WebSearch
 
-**Purpose**: Explore Mathlib structure and contents  
-**Usage**: Browse modules, types, theorems  
-**Output**: Module structure, type hierarchies, theorem lists
-
-### Loogle
-
-**Purpose**: Search by type signature  
-**Usage**: Find functions/theorems with specific types  
-**Output**: Matching declarations with types and documentation
+**Purpose**: Find plugin documentation and examples
+**Usage**: Search for plugin READMEs, configuration guides
+**Output**: Relevant documentation links
 
 **Example**:
 ```
-Query: Nat → Nat → Nat
-Results: Nat.add, Nat.mul, Nat.sub, etc.
+Query: "telescope.nvim configuration"
+Results: Plugin README, wiki pages, configuration examples
 ```
 
-### LeanSearch
+### WebFetch
 
-**Purpose**: Semantic search for theorems  
-**Usage**: Search by natural language description  
-**Output**: Relevant theorems ranked by relevance
+**Purpose**: Retrieve plugin documentation
+**Usage**: Fetch README files, API documentation
+**Output**: Full documentation content
 
 **Example**:
 ```
-Query: "commutativity of addition"
-Results: Nat.add_comm, Int.add_comm, etc.
+URL: https://github.com/nvim-telescope/telescope.nvim
+Results: Full README with configuration examples
 ```
 
-### lean-lsp-mcp
+### Read
 
-**Purpose**: LSP integration for code analysis  
-**Usage**: Type checking, go-to-definition, find references  
-**Output**: Type information, definitions, usage locations
+**Purpose**: Explore existing codebase
+**Usage**: Analyze configuration, check module structure
+**Output**: File contents for analysis
 
 ---
 
@@ -616,11 +604,11 @@ Load context on-demand:
 ### Tool Selection
 
 Use most appropriate tool for each research task:
-- Type-based search → Loogle
-- Semantic search → LeanSearch
-- Module exploration → LeanExplore
-- Code analysis → lean-lsp-mcp
-- General search → Web search
+- Plugin documentation → WebSearch
+- Full documentation → WebFetch
+- Codebase exploration → Read
+- Configuration patterns → Grep
+- General search → WebSearch
 
 ---
 
@@ -628,11 +616,11 @@ Use most appropriate tool for each research task:
 
 - **Command**: `.claude/command/research.md`
 - **Subagent**: `.claude/agent/subagents/researcher.md`
-- **Lean Research Agent**: `.claude/agent/subagents/lean-research-agent.md`
+- **Neovim Research Agent**: `.claude/agent/subagents/neovim-research-agent.md`
 - **Return Format**: `.claude/context/core/standards/subagent-return-format.md`
 - **Status Markers**: `.claude/context/core/standards/status-markers.md`
 - **Artifact Management**: `.claude/context/core/system/artifact-management.md`
-- **Lean Tools**:
-  - LeanSearch API: `.claude/context/project/lean4/tools/leansearch-api.md`
-  - Loogle API: `.claude/context/project/lean4/tools/loogle-api.md`
-  - LSP Integration: `.claude/context/project/lean4/tools/lsp-integration.md`
+- **Neovim Tools**:
+  - Neovim API: `.claude/context/project/neovim/domain/neovim-api.md`
+  - Plugin Patterns: `.claude/context/project/neovim/patterns/plugin-spec.md`
+  - lazy.nvim Guide: `.claude/context/project/neovim/tools/lazy-nvim-guide.md`

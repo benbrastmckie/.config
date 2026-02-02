@@ -58,7 +58,7 @@ When multiple TODO items are selected, the command analyzes them for semantic to
 **Example topic groups**:
 ```
 Group: "S5 Theorems" (2 items)
-  - Add completeness theorem for S5
+  - Add LSP configuration for S5
   - Add soundness theorem for S5
 
 Group: "Utility Optimization" (1 item)
@@ -87,7 +87,7 @@ This dependency is only added when both task types are selected for NOTE: tags. 
 
 | File Type | Comment Prefix | Example |
 |-----------|----------------|---------|
-| Lean (`.lean`) | `--` | `-- FIX: Handle edge case` |
+| Lua (`.lua`) | `--` | `-- FIX: Handle edge case` |
 | LaTeX (`.tex`) | `%` | `% NOTE: Document this pattern` |
 | Markdown (`.md`) | `<!--` | `<!-- TODO: Add section -->` |
 | Python/Shell/YAML | `#` | `# FIX: Optimize loop` |
@@ -101,12 +101,12 @@ The skill scans specified paths and displays findings:
 ```
 ## Tag Scan Results
 
-**Files Scanned**: Logos/, docs/
+**Files Scanned**: nvim/lua/, docs/
 **Tags Found**: 15
 
 ### FIX: Tags (5)
-- `src/module.lean:23` - Handle edge case in parser
-- `src/module.lean:45` - Fix off-by-one error
+- `src/module.lua:23` - Handle edge case in parser
+- `src/module.lua:45` - Fix off-by-one error
 ...
 
 ### NOTE: Tags (3)
@@ -114,7 +114,7 @@ The skill scans specified paths and displays findings:
 ...
 
 ### TODO: Tags (7)
-- `Logos/Layer1/Modal.lean:67` - Add completeness theorem
+- `nvim/lua/Layer1/Modal.lua:67` - Add LSP configuration
 ...
 ```
 
@@ -139,8 +139,8 @@ If "TODO tasks" is selected, user picks individual items:
 [TODO Selection]
 Select TODO items to create as tasks:
 
-[ ] Add completeness theorem (Logos/Layer1/Modal.lean:67)
-[ ] Implement helper function (Shared/Utils.lean:23)
+[ ] Add LSP configuration (nvim/lua/Layer1/Modal.lua:67)
+[ ] Implement helper function (utils/helpers.lua:23)
 ...
 ```
 
@@ -174,8 +174,8 @@ Selected tasks are created in TODO.md and state.json.
 **Tags Found**: 15
 
 ### FIX: Tags (5)
-- `src/module.lean:23` - Handle edge case in parser
-- `src/module.lean:45` - Fix off-by-one error
+- `src/module.lua:23` - Handle edge case in parser
+- `src/module.lua:45` - Fix off-by-one error
 - `docs/guide.tex:56` - Update outdated reference
 
 ### NOTE: Tags (3)
@@ -183,8 +183,8 @@ Selected tasks are created in TODO.md and state.json.
 - `.claude/agents/foo.md:12` - Update context routing
 
 ### TODO: Tags (7)
-- `Logos/Layer1/Modal.lean:67` - Add completeness theorem
-- `Logos/Shared/Utils.lean:23` - Implement helper function
+- `nvim/lua/Layer1/Modal.lua:67` - Add LSP configuration
+- `nvim/lua/utils/helpers.lua:23` - Implement helper function
 ...
 
 ---
@@ -201,10 +201,10 @@ Selected tasks are created in TODO.md and state.json.
 
 | # | Type | Title | Priority | Language |
 |---|------|-------|----------|----------|
-| 650 | fix-it | Fix issues from FIX:/NOTE: tags | High | lean |
+| 650 | fix-it | Fix issues from FIX:/NOTE: tags | High | neovim |
 | 651 | learn-it | Update context files from NOTE: tags | Medium | meta |
-| 652 | todo | Add completeness theorem | Medium | lean |
-| 653 | todo | Implement helper function | Medium | lean |
+| 652 | todo | Add LSP configuration | Medium | neovim |
+| 653 | todo | Implement helper function | Medium | neovim |
 
 ---
 
@@ -219,7 +219,7 @@ Selected tasks are created in TODO.md and state.json.
 ```
 ## No Tags Found
 
-Scanned files in: Logos/
+Scanned files in: nvim/lua/
 No FIX:, NOTE:, or TODO: tags detected.
 
 Nothing to create.
@@ -243,13 +243,13 @@ No task types selected. No tasks created.
 /learn
 
 # Scan specific directory
-/learn Logos/Layer1/
+/learn nvim/lua/Layer1/
 
 # Scan specific file
 /learn docs/04-Metalogic.tex
 
 # Scan multiple paths
-/learn Logos/ .claude/agents/
+/learn nvim/lua/ .claude/agents/
 ```
 
 ## Notes

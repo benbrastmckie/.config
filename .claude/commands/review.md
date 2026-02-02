@@ -1,6 +1,6 @@
 ---
 description: Review code and create analysis reports
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*), TodoWrite, AskUserQuestion, mcp__lean-lsp__*
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(git:*), TodoWrite, AskUserQuestion
 argument-hint: [SCOPE] [--create-tasks]
 model: claude-opus-4-5-20251101
 ---
@@ -45,11 +45,11 @@ fi
 
 ### 2. Gather Context
 
-**For Lean files (.lean):**
-- Run `lake build` to check for errors
-- Check for `sorry`, axioms, admitted proofs
-- Identify incomplete theorems
-- Check import organization
+**For Lua files (.lua):**
+- Run `nvim --headless` to check for errors
+- Check for TODO/FIXME comments
+- Identify incomplete configurations
+- Check module organization
 
 **For general code:**
 - Check for TODO/FIXME comments
@@ -94,7 +94,7 @@ Build `roadmap_state` structure:
     {
       "component": "Soundness",
       "status": "PROVEN",
-      "location": "Soundness/Soundness.lean"
+      "location": "nvim/lua/plugins/lsp.lua"
     }
   ]
 }
@@ -126,10 +126,10 @@ jq '.active_projects[] | select(.status == "completed")' specs/state.json
 # E.g., docs/architecture/proof-structure.md
 ```
 
-**4. Count sorries in Lean files:**
+**4. Count TODOs in Lua files:**
 ```bash
-# Current sorry count for metrics (exclude Boneyard/ and Examples/)
-grep -r "sorry" Theories/ --include="*.lean" | grep -v "/Boneyard/" | grep -v "/Examples/" | wc -l
+# Current TODO count for metrics
+grep -r "TODO" nvim/lua/ --include="*.lua" | wc -l
 ```
 
 **Match roadmap items to completed work:**
@@ -248,9 +248,8 @@ Write to `specs/reviews/review-{DATE}.md`:
 
 | Metric | Value | Status |
 |--------|-------|--------|
-| Sorry count | {N} | {OK/Warning/Critical} |
-| Axiom count | {N} | {OK/Warning} |
 | TODO count | {N} | {Info} |
+| FIXME count | {N} | {OK/Warning} |
 | Build status | {Pass/Fail} | {Status} |
 
 ## Roadmap Progress
@@ -341,7 +340,7 @@ Combine issues from review findings and incomplete roadmap items:
 ```json
 {
   "source": "review",
-  "file_path": "Theories/Bimodal/Soundness.lean",
+  "file_path": "nvim/lua/plugins/lsp.lua",
   "line": 42,
   "severity": "high",
   "description": "Missing case in pattern match",
@@ -368,7 +367,7 @@ For each issue, extract grouping indicators:
 
 | Indicator | Extraction Rule |
 |-----------|-----------------|
-| `file_section` | Path prefix up to first-level directory (e.g., `Theories/Bimodal/` from `Theories/Bimodal/Soundness.lean:42`) |
+| `file_section` | Path prefix up to first-level directory (e.g., `nvim/lua/plugins/` from `nvim/lua/plugins/lsp.lua:42`) |
 | `issue_type` | Map severity: Critical/High -> "fix", Medium -> "quality", Low -> "improvement". For roadmap: "roadmap" |
 | `priority` | Direct from severity (Critical=4, High=3, Medium=2, Low=1) or phase priority |
 | `key_terms` | Extract significant words (>4 chars, not stopwords) from description |
@@ -376,7 +375,7 @@ For each issue, extract grouping indicators:
 **Example extracted indicators:**
 ```json
 {
-  "file_section": "Theories/Bimodal/",
+  "file_section": "nvim/lua/plugins/",
   "issue_type": "fix",
   "priority": 3,
   "key_terms": ["pattern", "match", "evaluation", "incomplete"]
@@ -581,7 +580,7 @@ When "Keep as grouped tasks" is selected, create one task per group:
 **Language inference by majority file type in group:**
 | File pattern | Language |
 |--------------|----------|
-| `*.lean` | lean |
+| `nvim/**/*.lua` | neovim |
 | `*.md`, `*.json`, `.claude/**` | meta |
 | `*.tex` | latex |
 | `*.typ` | typst |

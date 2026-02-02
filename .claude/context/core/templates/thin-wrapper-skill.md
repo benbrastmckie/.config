@@ -211,22 +211,22 @@ Return partial status if subagent times out.
 
 ```yaml
 ---
-name: skill-lean-research
-description: Research Lean 4 and Mathlib for theorem proving tasks.
+name: skill-neovim-research
+description: Research Neovim plugins and configuration patterns.
 allowed-tools: Task
 context: fork
-agent: lean-research-agent
+agent: neovim-research-agent
 ---
 ```
 
 ```markdown
-# Lean Research Skill
+# Neovim Research Skill
 
-Specialized research for Lean 4 theorem proving tasks.
+Specialized research for Neovim configuration tasks.
 
 ## Trigger Conditions
-- Task language is "lean"
-- Research involves Mathlib, theorems, or proofs
+- Task language is "neovim"
+- Research involves plugins, configuration, or Lua patterns
 
 ## Execution
 
@@ -247,12 +247,12 @@ Prepare delegation context with task details.
 ```
 Tool: Task (NOT Skill)
 Parameters:
-  - subagent_type: "lean-research-agent"
+  - subagent_type: "neovim-research-agent"
   - prompt: [Include task_context, delegation_context, focus_prompt if present]
-  - description: "Execute Lean research for task {N}"
+  - description: "Execute Neovim research for task {N}"
 ```
 
-**DO NOT** use `Skill(lean-research-agent)` - this will FAIL.
+**DO NOT** use `Skill(neovim-research-agent)` - this will FAIL.
 
 ### 4. Return Validation
 Validate return matches subagent-return.md schema.

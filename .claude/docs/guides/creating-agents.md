@@ -1,6 +1,6 @@
 # Creating Agents Guide
 
-This guide explains how to create new agents in the ProofChecker agent system that handle full workflow execution and artifact creation.
+This guide explains how to create new agents in the Neovim Configuration agent system that handle full workflow execution and artifact creation.
 
 ---
 
@@ -72,10 +72,10 @@ Agents are located in `.claude/agents/{name}-agent.md`:
 ```
 .claude/agents/
 ├── general-research-agent.md
-├── lean-research-agent.md
+├── neovim-research-agent.md
 ├── planner-agent.md
 ├── general-implementation-agent.md
-├── lean-implementation-agent.md
+├── neovim-implementation-agent.md
 └── latex-implementation-agent.md
 ```
 
@@ -252,7 +252,7 @@ List context files to load on-demand:
 **Load When Needed**:
 - `@.claude/context/core/formats/report-format.md` (for research)
 - `@.claude/context/core/standards/plan.md` (for planning)
-- `@.claude/context/project/lean4/tools/mcp-tools-guide.md` (for Lean)
+- `@.claude/context/project/neovim/tools/lazy-nvim-guide.md` (for Lean)
 ```
 
 ### Step 4: Implement 8-Stage Workflow
@@ -293,7 +293,7 @@ Load context based on task language:
 | Language | Context Files |
 |----------|---------------|
 | python | `project/python/tools.md` |
-| lean | `project/lean4/tools/mcp-tools-guide.md` |
+| neovim | `project/neovim/tools/lazy-nvim-guide.md` |
 | general | `project/repo/project-overview.md` |
 ```
 
@@ -666,10 +666,10 @@ Research completed successfully. Found 5 patterns. See report at ...
 | Agent | Purpose | Invoked By |
 |-------|---------|------------|
 | `general-research-agent` | Web/codebase research | skill-researcher |
-| `lean-research-agent` | Lean 4/Mathlib research | skill-lean-research |
+| `neovim-research-agent` | Neovim/plugin research | skill-neovim-research |
 | `planner-agent` | Implementation planning | skill-planner |
 | `general-implementation-agent` | General file implementation | skill-implementer |
-| `lean-implementation-agent` | Lean proof implementation | skill-lean-implementation |
+| `neovim-implementation-agent` | Neovim configuration implementation | skill-neovim-implementation |
 | `latex-implementation-agent` | LaTeX document implementation | skill-latex-implementation |
 
 ---
@@ -686,4 +686,4 @@ Research completed successfully. Found 5 patterns. See report at ...
 
 **Document Version**: 1.0
 **Created**: 2026-01-12
-**Maintained By**: ProofChecker Development Team
+**Maintained By**: Neovim Configuration Development Team

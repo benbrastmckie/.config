@@ -1,12 +1,12 @@
 # Integration Example: Learn Flow
 
-This example traces a complete `/learn` command execution through the ProofChecker agent system, showing how the command scans for tags, presents findings interactively, and creates user-selected tasks.
+This example traces a complete `/learn` command execution through the Neovim Configuration agent system, showing how the command scans for tags, presents findings interactively, and creates user-selected tasks.
 
 ---
 
 ## Scenario
 
-A user runs `/learn Logos/` to scan the Logos directory for embedded tags. The system displays findings, then prompts the user to select which task types to create.
+A user runs `/learn nvim/lua/` to scan the Neovim Lua configuration directory for embedded tags. The system displays findings, then prompts the user to select which task types to create.
 
 ---
 
@@ -27,7 +27,7 @@ The `/learn` command recognizes three tag types in source code comments:
 ## Complete Flow Diagram
 
 ```
-User Input: /learn Logos/
+User Input: /learn nvim/lua/
        |
        v
 [Layer 1: Command] .claude/commands/learn.md
@@ -36,7 +36,7 @@ User Input: /learn Logos/
        v
 [Layer 2: Skill] skill-learn/SKILL.md (DIRECT EXECUTION)
        |
-       | 1. Parse arguments -> paths = ["Logos/"]
+       | 1. Parse arguments -> paths = ["nvim/lua/"]
        | 2. Generate session ID
        | 3. Execute tag extraction (grep patterns)
        | 4. Display tag summary to user
@@ -59,7 +59,7 @@ Output: Created N tasks from M tags
 ### Step 1: User Invokes Command
 
 ```bash
-/learn Logos/
+/learn nvim/lua/
 ```
 
 Claude Code reads `.claude/commands/learn.md` and sees:
@@ -79,7 +79,7 @@ The skill (`skill-learn/SKILL.md`) executes directly (no subagent).
 **Skill Step 1: Parse Arguments**
 
 ```bash
-paths="Logos/"
+paths="nvim/lua/"
 session_id="sess_1768940708_a1b2c3"
 ```
 
@@ -88,30 +88,30 @@ session_id="sess_1768940708_a1b2c3"
 Execute grep patterns for each file type:
 
 ```bash
-# Lean files
-grep -rn --include="*.lean" "-- FIX:" Logos/ 2>/dev/null
-grep -rn --include="*.lean" "-- NOTE:" Logos/ 2>/dev/null
-grep -rn --include="*.lean" "-- TODO:" Logos/ 2>/dev/null
+# Lua files
+grep -rn --include="*.lua" "-- FIX:" nvim/lua/ 2>/dev/null
+grep -rn --include="*.lua" "-- NOTE:" nvim/lua/ 2>/dev/null
+grep -rn --include="*.lua" "-- TODO:" nvim/lua/ 2>/dev/null
 
 # Example output:
-Logos/Layer1/Modal.lean:67:-- TODO: Add completeness theorem for S5
-Logos/Layer1/Modal.lean:89:-- FIX: Handle edge case in frame validation
-Logos/Layer2/Temporal.lean:45:-- NOTE: This pattern should be documented
-Logos/Shared/Utils.lean:23:-- TODO: Optimize this function
+nvim/lua/plugins/lsp.lua:67:-- TODO: Add language server for Go
+nvim/lua/plugins/lsp.lua:89:-- FIX: Handle edge case in completion setup
+nvim/lua/config/keymaps.lua:45:-- NOTE: This pattern should be documented
+nvim/lua/utils/helpers.lua:23:-- TODO: Optimize this function
 ```
 
 **Skill Step 3: Parse and Categorize**
 
 ```
 fix_tags = [
-  {file: "Logos/Layer1/Modal.lean", line: 89, content: "Handle edge case in frame validation"}
+  {file: "nvim/lua/plugins/lsp.lua", line: 89, content: "Handle edge case in completion setup"}
 ]
 note_tags = [
-  {file: "Logos/Layer2/Temporal.lean", line: 45, content: "This pattern should be documented"}
+  {file: "nvim/lua/config/keymaps.lua", line: 45, content: "This pattern should be documented"}
 ]
 todo_tags = [
-  {file: "Logos/Layer1/Modal.lean", line: 67, content: "Add completeness theorem for S5"},
-  {file: "Logos/Shared/Utils.lean", line: 23, content: "Optimize this function"}
+  {file: "nvim/lua/plugins/lsp.lua", line: 67, content: "Add language server for Go"},
+  {file: "nvim/lua/utils/helpers.lua", line: 23, content: "Optimize this function"}
 ]
 ```
 
@@ -122,18 +122,18 @@ User sees:
 ```
 ## Tag Scan Results
 
-**Files Scanned**: Logos/
+**Files Scanned**: nvim/lua/
 **Tags Found**: 4
 
 ### FIX: Tags (1)
-- `Logos/Layer1/Modal.lean:89` - Handle edge case in frame validation
+- `nvim/lua/plugins/lsp.lua:89` - Handle edge case in completion setup
 
 ### NOTE: Tags (1)
-- `Logos/Layer2/Temporal.lean:45` - This pattern should be documented
+- `nvim/lua/config/keymaps.lua:45` - This pattern should be documented
 
 ### TODO: Tags (2)
-- `Logos/Layer1/Modal.lean:67` - Add completeness theorem for S5
-- `Logos/Shared/Utils.lean:23` - Optimize this function
+- `nvim/lua/plugins/lsp.lua:67` - Add language server for Go
+- `nvim/lua/utils/helpers.lua:23` - Optimize this function
 ```
 
 ### Step 4: Interactive Task Type Selection
@@ -188,12 +188,12 @@ Since "TODO tasks" was selected, the skill prompts for individual TODO item sele
       "multiSelect": true,
       "options": [
         {
-          "label": "Add completeness theorem for S5",
-          "description": "From Logos/Layer1/Modal.lean:67"
+          "label": "Add language server for Go",
+          "description": "From nvim/lua/plugins/lsp.lua:67"
         },
         {
           "label": "Optimize this function",
-          "description": "From Logos/Shared/Utils.lean:23"
+          "description": "From nvim/lua/utils/helpers.lua:23"
         }
       ]
     }
@@ -202,8 +202,8 @@ Since "TODO tasks" was selected, the skill prompts for individual TODO item sele
 ```
 
 User selects:
-- ✓ Add completeness theorem for S5
-- ✓ Add soundness theorem for S5
+- ✓ Add language server for Go
+- ✓ Add language server for Rust
 - ✓ Optimize this function
 
 ### Step 5.5: Topic Grouping (New Feature)
@@ -214,23 +214,23 @@ Since multiple TODOs were selected (3 items), the skill analyzes them for topic 
 
 ```
 TODO analysis:
-  "Add completeness theorem for S5" at Logos/Layer1/Modal.lean:67
-    → key_terms: ["completeness", "theorem", "S5"]
-    → file_section: "Logos/Layer1/"
+  "Add language server for Go" at nvim/lua/plugins/lsp.lua:67
+    → key_terms: ["language", "server", "Go"]
+    → file_section: "nvim/lua/plugins/"
     → action_type: "implementation"
 
-  "Add soundness theorem for S5" at Logos/Layer1/Modal.lean:89
-    → key_terms: ["soundness", "theorem", "S5"]
-    → file_section: "Logos/Layer1/"
+  "Add language server for Rust" at nvim/lua/plugins/lsp.lua:89
+    → key_terms: ["language", "server", "Rust"]
+    → file_section: "nvim/lua/plugins/"
     → action_type: "implementation"
 
-  "Optimize this function" at Logos/Shared/Utils.lean:23
+  "Optimize this function" at nvim/lua/utils/helpers.lua:23
     → key_terms: ["optimize", "function"]
-    → file_section: "Logos/Shared/"
+    → file_section: "nvim/lua/utils/"
     → action_type: "improvement"
 
 Clustering result:
-  Group 1: "S5 Theorems" - 2 items (shared: S5, theorem, implementation)
+  Group 1: "LSP Configuration" - 2 items (shared: language server, implementation)
   Group 2: "Utility Optimization" - 1 item
 ```
 
@@ -248,7 +248,7 @@ Since there's at least one group with 2+ items, the skill presents grouping opti
       "options": [
         {
           "label": "Accept suggested topic groups",
-          "description": "Creates 2 grouped tasks: S5 Theorems (2 items), Utility Optimization (1 item)"
+          "description": "Creates 2 grouped tasks: LSP Configuration (2 items), Utility Optimization (1 item)"
         },
         {
           "label": "Keep as separate tasks",
@@ -284,7 +284,7 @@ If user selected both "Fix-it task" and "Learn-it task" for NOTE: tags:
   "status": "not_started",
   "language": "meta",
   "priority": "medium",
-  "description": "Update 1 context files based on learnings:\n\n- Logos/Layer2/Temporal.lean:45 - This pattern should be documented"
+  "description": "Update 1 context files based on learnings:\n\n- nvim/lua/Layer2/Temporal.lua:45 - This pattern should be documented"
 }
 ```
 
@@ -294,10 +294,10 @@ If user selected both "Fix-it task" and "Learn-it task" for NOTE: tags:
   "project_number": 651,
   "project_name": "fix_issues_from_tags",
   "status": "not_started",
-  "language": "lean",
+  "language": "neovim",
   "priority": "high",
   "dependencies": [650],
-  "description": "Address 2 items from embedded tags:\n\n- Logos/Layer1/Modal.lean:89 - Handle edge case in frame validation\n- Logos/Layer2/Temporal.lean:45 - This pattern should be documented"
+  "description": "Address 2 items from embedded tags:\n\n- nvim/lua/Layer1/Modal.lua:89 - Handle edge case in frame validation\n- nvim/lua/Layer2/Temporal.lua:45 - This pattern should be documented"
 }
 ```
 
@@ -314,12 +314,12 @@ When user selects "Accept suggested topic groups" in Step 5.6:
 ```json
 {
   "project_number": 650,
-  "project_name": "s5_theorems_2_todo_items",
+  "project_name": "lsp_configuration_2_todo_items",
   "status": "not_started",
-  "language": "lean",
+  "language": "neovim",
   "priority": "medium",
   "effort": "1.5 hours",
-  "description": "Address TODO items related to S5 Theorems:\n\n- [ ] Add completeness theorem for S5 (`Logos/Layer1/Modal.lean:67`)\n- [ ] Add soundness theorem for S5 (`Logos/Layer1/Modal.lean:89`)\n\n---\n\nShared context: Related to S5 modal logic theorems"
+  "description": "Address TODO items related to LSP Configuration:\n\n- [ ] Add language server for Go (`nvim/lua/Layer1/Modal.lua:67`)\n- [ ] Add language server for Rust (`nvim/lua/Layer1/Modal.lua:89`)\n\n---\n\nShared context: Related to LSP language servers"
 }
 ```
 
@@ -329,15 +329,15 @@ When user selects "Accept suggested topic groups" in Step 5.6:
   "project_number": 651,
   "project_name": "utility_optimization_1_todo_item",
   "status": "not_started",
-  "language": "lean",
+  "language": "neovim",
   "priority": "medium",
   "effort": "1 hour",
-  "description": "Address TODO items related to Utility Optimization:\n\n- [ ] Optimize this function (`Logos/Shared/Utils.lean:23`)\n\n---\n\nShared context: Performance improvement in shared utilities"
+  "description": "Address TODO items related to Utility Optimization:\n\n- [ ] Optimize this function (`nvim/lua/Shared/Utils.lua:23`)\n\n---\n\nShared context: Performance improvement in shared utilities"
 }
 ```
 
 **Effort scaling applied**:
-- S5 Theorems: 2 items = 1h + 30min = 1.5 hours
+- LSP Configuration: 2 items = 1h + 30min = 1.5 hours
 - Utility Optimization: 1 item = 1 hour (base)
 
 **Example C: Separate TODO tasks (original behavior)**
@@ -348,11 +348,11 @@ When user selects "Keep as separate tasks":
 ```json
 {
   "project_number": 650,
-  "project_name": "add_completeness_theorem_s5",
+  "project_name": "add_go_language_server",
   "status": "not_started",
-  "language": "lean",
+  "language": "neovim",
   "priority": "medium",
-  "description": "Add completeness theorem for S5\n\nSource: Logos/Layer1/Modal.lean:67"
+  "description": "Add language server for Go\n\nSource: nvim/lua/Layer1/Modal.lua:67"
 }
 ```
 
@@ -383,8 +383,8 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 | # | Type | Title | Priority | Language | Dependencies |
 |---|------|-------|----------|----------|--------------|
 | 650 | learn-it | Update context files from NOTE: tags | Medium | meta | - |
-| 651 | fix-it | Fix issues from FIX:/NOTE: tags | High | lean | 650 |
-| 652 | todo | Add completeness theorem for S5 | Medium | lean | - |
+| 651 | fix-it | Fix issues from FIX:/NOTE: tags | High | neovim | 650 |
+| 652 | todo | Add language server for Go | Medium | neovim | - |
 ```
 
 **Example output with topic-grouped TODO tasks (new feature)**:
@@ -398,9 +398,9 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 | # | Type | Title | Priority | Language | Effort |
 |---|------|-------|----------|----------|--------|
-| 650 | fix-it | Fix issues from FIX:/NOTE: tags | High | lean | 2-4h |
-| 651 | todo (grouped) | S5 Theorems: 2 TODO items | Medium | lean | 1.5h |
-| 652 | todo (grouped) | Utility Optimization: 1 TODO item | Medium | lean | 1h |
+| 650 | fix-it | Fix issues from FIX:/NOTE: tags | High | neovim | 2-4h |
+| 651 | todo (grouped) | LSP Configuration: 2 TODO items | Medium | neovim | 1.5h |
+| 652 | todo (grouped) | Utility Optimization: 1 TODO item | Medium | neovim | 1h |
 
 ---
 
@@ -421,17 +421,17 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 
 | # | Type | Title | Priority | Language |
 |---|------|-------|----------|----------|
-| 650 | fix-it | Fix issues from FIX:/NOTE: tags | High | lean |
-| 651 | todo | Add completeness theorem for S5 | Medium | lean |
-| 652 | todo | Add soundness theorem for S5 | Medium | lean |
-| 653 | todo | Optimize this function | Medium | lean |
+| 650 | fix-it | Fix issues from FIX:/NOTE: tags | High | neovim |
+| 651 | todo | Add language server for Go | Medium | neovim |
+| 652 | todo | Add language server for Rust | Medium | neovim |
+| 653 | todo | Optimize this function | Medium | neovim |
 ```
 
 ---
 
 ## Tag Detection Examples
 
-### Lean Files (.lean)
+### Lean Files (.lua)
 
 ```lean
 -- FIX: This needs to handle the empty frame case
@@ -474,7 +474,7 @@ NOTE: tags are special because they can create both fix-it and learn-it tasks. T
 | `.claude/agents/*.md` | `.claude/context/core/agents/` |
 | `.claude/skills/*/SKILL.md` | `.claude/context/core/skills/` |
 | `.claude/commands/*.md` | `.claude/context/core/commands/` |
-| `Logos/**/*.lean` | `.claude/context/project/lean4/` |
+| `nvim/lua/**/*.lua` | `.claude/context/project/neovim/` |
 | `docs/*.tex` | `.claude/context/project/logic/` |
 
 ---
@@ -483,12 +483,12 @@ NOTE: tags are special because they can create both fix-it and learn-it tasks. T
 
 ### Scenario A: No Tags Found
 
-If user runs `/learn Logos/` but no tags exist:
+If user runs `/learn nvim/lua/` but no tags exist:
 
 ```
 ## No Tags Found
 
-Scanned files in: Logos/
+Scanned files in: nvim/lua/
 No FIX:, NOTE:, or TODO: tags detected.
 
 Nothing to create.
@@ -545,13 +545,13 @@ Exits gracefully without creating tasks or git commits.
 ### Old Pattern (Deprecated)
 
 ```
-User runs: /learn Logos/ --dry-run
+User runs: /learn nvim/lua/ --dry-run
   → skill-learn (thin wrapper)
     → learn-agent (subagent via Task tool)
       → Returns JSON metadata to skill
     → skill reads metadata, displays preview
 User reviews preview
-User runs: /learn Logos/ (without --dry-run)
+User runs: /learn nvim/lua/ (without --dry-run)
   → Same delegation flow, but creates tasks automatically
 ```
 
@@ -563,7 +563,7 @@ User runs: /learn Logos/ (without --dry-run)
 ### New Pattern (Current)
 
 ```
-User runs: /learn Logos/
+User runs: /learn nvim/lua/
   → skill-learn (direct execution)
     → Scans tags inline
     → Displays findings
@@ -613,4 +613,4 @@ The `/learn` command provides:
 
 **Document Version**: 2.0 (Updated 2026-01-20)
 **Created**: 2026-01-20
-**Maintained By**: ProofChecker Development Team
+**Maintained By**: Neovim Configuration Team

@@ -29,14 +29,14 @@ This document provides detailed explanations of the system architecture for user
 
 ## System Overview
 
-The .claude system is a task management and automation framework designed for software development projects, with specialized support for Lean 4 theorem proving. This document describes the architecture of the version 2.0 system, which represents a complete clean-break refactor from the previous version.
+The .claude system is a task management and automation framework designed for software development projects, with specialized support for Neovim configuration development. This document describes the architecture of the version 2.0 system, which represents a complete clean-break refactor from the previous version.
 
 ### Purpose and Goals
 
 - Provide structured task management with research, planning, and implementation workflows
 - Prevent delegation hangs and infinite loops through explicit return handling
 - Enable atomic state synchronization across multiple tracking files
-- Support language-specific routing (Lean vs general development)
+- Support language-specific routing (Neovim vs general development)
 - Track and analyze errors for continuous improvement
 - Automate git commits with clear, scoped changes
 
@@ -112,11 +112,11 @@ Status changes are synchronized atomically across multiple files using the statu
 
 Tasks are routed to appropriate agents based on the Language field:
 
-- `Language: lean` → lean-implementation-agent, lean-research-agent
+- `Language: neovim` → neovim-implementation-agent, neovim-research-agent
 - `Language: markdown` → general agents (researcher, implementer)
 - `Language: python` → general agents (future: python-specific agents)
 
-This enables specialized tooling integration (e.g., lean-lsp-mcp for Lean tasks).
+This enables specialized tooling integration for Neovim configuration tasks.
 
 ### 5. Error Tracking and Recovery
 
@@ -154,16 +154,13 @@ Context files are organized into `core/` (reusable) and `project/` (domain-speci
 - `templates/` - Command and agent templates
 
 **project/**:
-- `lean4/` - Lean 4 theorem proving (syntax, tools, patterns)
-- `logic/` - Modal and temporal logic domain knowledge
-- `math/` - Mathematical domains (algebra, topology, etc.)
-- `physics/` - Physics domains (dynamical systems)
+- `neovim/` - Neovim configuration (plugins, keymaps, patterns)
 - `repo/` - Repository-specific knowledge
 
 This enables:
 - **Three-Tier Loading**: Orchestrator (minimal), Commands (targeted), Agents (domain-specific)
 - **Context Budget Enforcement**: Each tier has defined size limits
-- **Clear Separation**: Core context is reusable, project context is ProofChecker-specific
+- **Clear Separation**: Core context is reusable, project context is Neovim configuration-specific
 
 See `.claude/context/core/system/context-loading-strategy.md` for details.
 
@@ -252,14 +249,14 @@ All commands that invoke subagents follow this workflow:
 **Core Subagents**:
 - `atomic-task-numberer`: Thread-safe task number allocation
 - `status-sync-manager`: Atomic multi-file status updates
-- `researcher`: General research for non-Lean tasks
+- `researcher`: General research for non-Neovim tasks
 - `planner`: Implementation plan creation
 - `implementer`: Direct implementation for simple tasks
 - `task-executor`: Multi-phase plan execution with resume support
 
-**Lean-Specific Subagents**:
-- `lean-implementation-agent`: Lean proof implementation using lean-lsp-mcp
-- `lean-research-agent`: Lean library research (LeanExplore, Loogle, LeanSearch)
+**Neovim-Specific Subagents**:
+- `neovim-implementation-agent`: Neovim configuration implementation
+- `neovim-research-agent`: Plugin and configuration research
 
 **Support Subagents**:
 - `error-diagnostics-agent`: Error pattern analysis and fix recommendations
@@ -506,11 +503,11 @@ Commands check the `Language` field in TODO.md to determine routing:
 
 ```python
 def route_to_agent(task_language, operation):
-    if task_language == "lean":
+    if task_language == "neovim":
         if operation == "research":
-            return "lean-research-agent"
+            return "neovim-research-agent"
         elif operation == "implement":
-            return "lean-implementation-agent"
+            return "neovim-implementation-agent"
     else:
         if operation == "research":
             return "researcher"
@@ -518,20 +515,20 @@ def route_to_agent(task_language, operation):
             return "implementer"
 ```
 
-### Lean-Specific Integration
+### Neovim-Specific Integration
 
-Lean tasks use specialized agents that integrate with lean-lsp-mcp:
+Neovim tasks use specialized agents:
 
-**lean-implementation-agent**:
-- Checks for lean-lsp-mcp availability in .mcp.json
-- Uses lean-lsp-mcp for compilation and diagnostics
-- Falls back to direct file modification if tool unavailable
-- Logs tool unavailability to errors.json
+**neovim-implementation-agent**:
+- Modifies Lua configuration files
+- Uses nvim --headless for validation
+- Follows plugin specification patterns
+- Logs errors to errors.json
 
-**lean-research-agent**:
-- Integrates with LeanExplore, Loogle, LeanSearch (planned)
-- Falls back to web search for Lean documentation
-- Loads context from .claude/context/project/lean4/
+**neovim-research-agent**:
+- Searches plugin documentation
+- Analyzes Neovim API usage
+- Loads context from .claude/context/project/neovim/
 
 ### Future Language Support
 
@@ -548,9 +545,9 @@ The architecture supports adding language-specific agents for:
 ### Error Types
 
 - `delegation_hang`: Command hung waiting for subagent
-- `tool_failure`: External tool (lean-lsp-mcp) unavailable or failed
+- `tool_failure`: External tool unavailable or failed
 - `status_sync_failure`: Failed to update TODO.md/state.json atomically
-- `build_error`: Compilation or build failed
+- `build_error`: Build or validation failed
 - `git_commit_failure`: Git commit failed
 - `timeout`: Operation exceeded timeout
 - `validation_failed`: Input validation failed
@@ -632,14 +629,14 @@ Test safety mechanisms:
 ### Language Routing Testing
 
 Test language-specific routing:
-- Lean tasks → lean agents
+- Neovim tasks → neovim agents
 - Markdown tasks → general agents
 - Mixed-language projects
 
 ### Error Recovery Testing
 
 Test error handling:
-- Tool unavailable: Remove lean-lsp-mcp
+- Tool unavailable: Remove required tools
 - Status sync failures: Concurrent updates
 - Git commit failures: Nothing to commit
 - Partial completion: Timeout during phase
@@ -691,7 +688,7 @@ Two-phase commit ensures:
 3. **Progress Tracking**: Real-time progress updates during long operations
 4. **Batch Task Execution**: Execute multiple tasks in sequence or parallel
 5. **Advanced Error Analysis**: Machine learning for error pattern detection
-6. **Tool Integration**: Additional tool integrations (Loogle, LeanExplore, etc.)
+6. **Tool Integration**: Additional tool integrations for development workflows
 7. **Language Support**: Python, JavaScript, Rust-specific agents
 8. **Performance Profiling**: Track and optimize slow operations
 
@@ -833,7 +830,7 @@ The system builder applies Stanford/Anthropic research patterns:
 ### Use Cases
 
 **Extend Existing System**:
-Add new capabilities to the ProofChecker system for a different domain while preserving existing work.
+Add new capabilities to the existing system for a different domain while preserving existing work.
 
 **Create Separate System**:
 Build a completely separate .claude system for a different project or domain.
@@ -841,9 +838,9 @@ Build a completely separate .claude system for a different project or domain.
 **Build New System**:
 Create a fresh .claude architecture from scratch for a new project.
 
-### Integration with ProofChecker
+### Integration with Neovim Configuration
 
-The meta system builder is fully integrated into ProofChecker's .claude system:
+The meta system builder is fully integrated into the .claude system:
 - Respects existing delegation safety patterns
 - Follows standardized return format
 - Uses atomic state synchronization
@@ -907,11 +904,11 @@ agent: {subagent-name}        # Target subagent to spawn
 
 | Skill | Agent | Domain |
 |-------|-------|--------|
-| skill-lean-research | lean-research-agent | Lean 4/Mathlib research |
+| skill-neovim-research | neovim-research-agent | Neovim/plugin research |
 | skill-researcher | general-research-agent | General web/codebase research |
 | skill-planner | planner-agent | Implementation planning |
 | skill-implementer | general-implementation-agent | General implementation |
-| skill-lean-implementation | lean-implementation-agent | Lean proof implementation |
+| skill-neovim-implementation | neovim-implementation-agent | Neovim configuration implementation |
 | skill-latex-implementation | latex-implementation-agent | LaTeX document implementation |
 
 ### Thin Wrapper Execution Flow
@@ -1036,36 +1033,11 @@ Custom subagents (spawned via Task tool) cannot access project-scoped MCP server
 
 ### Workaround
 
-Configure lean-lsp in user scope (`~/.claude.json`) instead of project scope:
+For MCP servers that need to be accessible to subagents, configure them in user scope (`~/.claude.json`) instead of project scope.
 
-```bash
-# Run the setup script from project root
-.claude/scripts/setup-lean-mcp.sh
-
-# Or with custom project path
-.claude/scripts/setup-lean-mcp.sh --project /path/to/ProofChecker
-
-# Verify configuration
-.claude/scripts/verify-lean-mcp.sh
-```
-
-After setup, restart Claude Code for changes to take effect.
+After any MCP configuration changes, restart Claude Code for changes to take effect.
 
 **Note**: The project `.mcp.json` file is kept for documentation purposes and works correctly for the main conversation - only subagents have the access limitation.
-
-### Lean Agent Delegation Restoration (January 2026)
-
-The Lean skills (`skill-lean-research`, `skill-lean-implementation`) were temporarily refactored to direct execution due to MCP bugs (#15945, #13254, #4580) causing indefinite hanging. These issues have been resolved, and the skills now use the standard thin wrapper delegation pattern, routing to `lean-research-agent` and `lean-implementation-agent` respectively.
-
-### Multi-Instance Optimization
-
-Running multiple concurrent Claude sessions can cause MCP AbortError -32001 due to resource contention. Key prevention strategies:
-
-1. **Pre-build**: Run `lake build` before starting multiple sessions
-2. **Environment variables**: Configure `LEAN_LOG_LEVEL: "WARNING"` in `~/.claude.json`
-3. **Session throttling**: Limit concurrent Lean implementation tasks
-
-See `.claude/context/project/lean4/operations/multi-instance-optimization.md` for detailed guidance.
 
 ---
 

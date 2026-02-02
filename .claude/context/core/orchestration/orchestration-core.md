@@ -8,7 +8,7 @@
 
 ## Overview
 
-This document defines the core orchestration patterns for ProofChecker's command-skill-agent architecture:
+This document defines the core orchestration patterns for Neovim Configuration's command-skill-agent architecture:
 
 - **Session Tracking**: Unique identifiers for delegation chains
 - **Delegation Safety**: Depth limits, cycle detection, timeouts
@@ -180,9 +180,9 @@ Every delegation MUST include this context:
 
 | Command | Language-Based | Agent(s) |
 |---------|---------------|----------|
-| /research | Yes | lean: lean-research-agent, default: general-research-agent |
+| /research | Yes | neovim: neovim-research-agent, default: general-research-agent |
 | /plan | No | planner-agent |
-| /implement | Yes | lean: lean-implementation-agent, default: general-implementation-agent |
+| /implement | Yes | neovim: neovim-implementation-agent, default: general-implementation-agent |
 | /revise | No | planner-agent |
 | /review | No | reviewer-agent |
 | /meta | No | meta-builder-agent |
@@ -210,9 +210,9 @@ Priority order for extracting task language:
 Validate language/agent compatibility before delegation:
 
 ```bash
-# Lean tasks must route to lean-* agents
-if [ "$language" == "lean" ] && [[ ! "$agent" =~ ^lean- ]]; then
-  echo "Error: Lean task must route to lean-* agent"
+# Neovim tasks must route to neovim-* agents
+if [ "$language" == "neovim" ] && [[ ! "$agent" =~ ^neovim- ]]; then
+  echo "Error: Neovim task must route to neovim-* agent"
   exit 1
 fi
 ```

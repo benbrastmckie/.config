@@ -16,7 +16,7 @@ Execute implementation plan with automatic resume support by delegating to the a
 
 ## Execution
 
-**MCP Safety**: Do not call `lean_diagnostic_messages` or `lean_file_outline` - they hang. Delegate to skills.
+**Note**: Delegate to skills for language-specific implementation.
 
 ### CHECKPOINT 1: GATE IN
 
@@ -64,7 +64,7 @@ Execute implementation plan with automatic resume support by delegating to the a
 
 | Language | Skill to Invoke |
 |----------|-----------------|
-| `lean` | `skill-lean-implementation` |
+| `neovim` | `skill-neovim-implementation` |
 | `latex` | `skill-latex-implementation` |
 | `general`, `meta`, `markdown` | `skill-implementer` |
 

@@ -249,6 +249,5 @@ Session ID links all operations in a single command execution:
 - @.claude/context/core/patterns/skill-lifecycle.md - Skill lifecycle pattern
 - @.claude/context/core/patterns/inline-status-update.md - Status update patterns
 - @.claude/context/core/patterns/early-metadata-pattern.md - Early metadata creation for interruption recovery
-- @.claude/context/core/patterns/mcp-tool-recovery.md - MCP error recovery patterns
 - @.claude/rules/git-workflow.md - Git commit conventions
 - @.claude/rules/error-handling.md - Error types including delegation_interrupted

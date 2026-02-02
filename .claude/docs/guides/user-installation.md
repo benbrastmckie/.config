@@ -2,7 +2,7 @@
 
 [Back to Docs](../README.md) | [Detailed Installation](../../../docs/installation/README.md)
 
-A quick-start guide for installing Claude Code and using it to work with ProofChecker.
+A quick-start guide for installing Claude Code and using it to work with Neovim configuration projects.
 
 ---
 
@@ -10,9 +10,9 @@ A quick-start guide for installing Claude Code and using it to work with ProofCh
 
 This guide helps you:
 1. Install Claude Code (Anthropic's AI CLI)
-2. Clone and set up ProofChecker
+2. Set up a Neovim configuration project
 3. Set up Claude agent commands (optional)
-4. Work with Lean 4 proofs
+4. Work with Neovim configuration files
 5. Set up GitHub CLI for issue reporting
 
 **New to the terminal?** See your operating system's documentation for terminal basics.
@@ -67,92 +67,53 @@ claude auth status
 
 ---
 
-## Setting Up ProofChecker with Claude Code
+## Setting Up a Neovim Configuration Project with Claude Code
 
-### Step 1: Clone the Repository
-
-```bash
-mkdir -p ~/Documents/Projects
-cd ~/Documents/Projects
-git clone https://github.com/benbrastmckie/ProofChecker.git
-cd ProofChecker
-```
-
-### Step 2: Install Lean 4 and Mathlib
-
-ProofChecker requires Lean 4 and Mathlib. Install elan (Lean version manager):
+### Step 1: Navigate to Your Configuration
 
 ```bash
-# macOS/Linux
-curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh
-
-# Windows - download from https://github.com/leanprover/elan/releases
+cd ~/.config/nvim
+# Or wherever your Neovim configuration lives
 ```
 
-After installation, restart your terminal and verify:
+### Step 2: Initialize Git (if not already done)
 
 ```bash
-elan --version
-lake --version
+git init
+git add .
+git commit -m "Initial commit"
 ```
 
-### Step 3: Build the Project
-
-```bash
-cd ~/Documents/Projects/ProofChecker
-lake build
-```
-
-This may take several minutes on first build as it downloads Mathlib cache.
-
-### Step 4: Start Claude Code
+### Step 3: Start Claude Code
 
 ```bash
 claude
 ```
 
-### Step 5: Verify Setup
+### Step 4: Verify Setup
 
 Ask Claude:
 
 ```
-Please verify the ProofChecker setup by:
-1. Checking that lake build succeeds
-2. Running lean_goal on a proof in Theories/Bimodal/Soundness.lean
-3. Confirming the Lean LSP tools are available
+Please verify my Neovim configuration by:
+1. Checking the overall structure of the configuration
+2. Identifying the plugin manager in use
+3. Confirming the Lua modules are properly organized
 ```
 
 ---
 
 ## Setting Up Claude Agent Commands (Optional)
 
-The ProofChecker repository includes a `.claude/` agent system that provides enhanced task management and workflow commands for Claude Code.
+The repository includes a `.claude/` agent system that provides enhanced task management and workflow commands for Claude Code.
 
 ### What the Agent System Provides
 
 - **Task Management**: Create, track, and archive development tasks
 - **Structured Workflow**: `/research` -> `/plan` -> `/implement` cycle
-- **Specialized Skills**: Language-specific agents for Lean 4 development
-- **Context Files**: Domain knowledge for logic, semantics, and theorem proving
+- **Specialized Skills**: Language-specific agents for Neovim development
+- **Context Files**: Domain knowledge for Neovim, plugins, and Lua
 - **State Persistence**: Track progress across Claude Code sessions
-- **Lean MCP Tools**: Integration with lean-lsp for proof assistance
-
-### Installation
-
-To install the agent system, paste this URL into Claude Code:
-
-```
-https://raw.githubusercontent.com/benbrastmckie/ProofChecker/main/.claude/docs/guides/copy-claude-directory.md
-```
-
-Then give Claude this prompt:
-
-```
-Please read the instructions at the URL above and follow them to copy
-the .claude/ directory into my current working directory.
-```
-
-**Alternative**: Follow the instructions in the guide manually.
 
 ### After Installation
 
@@ -161,10 +122,7 @@ the .claude/ directory into my current working directory.
    ```
    /task "Test task"
    ```
-3. **Learn the commands** - Read the full command reference:
-   ```
-   https://raw.githubusercontent.com/benbrastmckie/ProofChecker/main/.claude/docs/commands/README.md
-   ```
+3. **Learn the commands** - See the Commands Reference
 
 ### Available Commands
 
@@ -180,53 +138,39 @@ For complete documentation, see the [Commands Reference](../commands/README.md).
 
 ---
 
-## Working with Lean 4 Proofs
+## Working with Neovim Configuration
 
-Once ProofChecker is set up, use Claude Code to assist with theorem proving.
+Once your configuration is set up, use Claude Code to assist with Neovim development.
 
 ### Explore the Codebase
 
 In Claude Code, ask:
 
 ```
-Show me the structure of the Logos/ directory and explain
-the layered logic system.
+Show me the structure of my Neovim configuration and explain
+how the modules are organized.
 ```
 
 Claude will:
-1. Navigate the Layer0/Layer1/Layer2 structure
-2. Explain the propositional, modal, and temporal logic layers
-3. Show how proofs are organized
+1. Navigate the lua/ directory structure
+2. Explain the plugin specifications
+3. Show how keymaps and options are configured
 
-### Working on Proofs
+### Working on Configuration
 
-Ask Claude to help with specific proofs:
+Ask Claude to help with specific configurations:
 
 ```
-Help me understand the proof of Deduction Theorem in
-Logos/Layer0/Propositional.lean
+Help me understand how the LSP is configured in my
+nvim/lua/plugins/lsp.lua file
 ```
 
 Or:
 
 ```
-I'm trying to prove a modal logic theorem. Can you help me
-find relevant lemmas in Mathlib using leansearch?
+I want to add a new plugin for git integration. Can you help me
+find popular options and configure one?
 ```
-
-### Using Lean MCP Tools
-
-Claude has access to specialized Lean tools:
-
-| Tool | Purpose |
-|------|---------|
-| `lean_goal` | See proof state at a position |
-| `lean_hover_info` | Get type signatures |
-| `lean_leansearch` | Search Mathlib by natural language |
-| `lean_loogle` | Search by type signature |
-| `lake build` | Check for compiler errors (via Bash) |
-
-**Note**: Some MCP tools are blocked due to known bugs. See `.claude/context/core/patterns/blocked-mcp-tools.md` for details.
 
 ---
 
@@ -275,42 +219,6 @@ gh auth status
 
 ---
 
-## Opening Issues on ProofChecker
-
-When you encounter bugs or have suggestions, Claude Code can help create issues.
-
-### Using Claude Code
-
-```
-I'm getting an error when building the project.
-Help me create an issue on the ProofChecker repository
-with the error details.
-```
-
-Claude will:
-1. Gather error information
-2. Format a clear issue report
-3. Create the issue via `gh issue create`
-
-### Manual Issue Creation
-
-```bash
-gh issue create --repo benbrastmckie/ProofChecker \
-  --title "Brief description" \
-  --body "Detailed description of the issue"
-```
-
-### What to Include in Issues
-
-- Lean version (`lean --version`)
-- Lake version (`lake --version`)
-- Operating system
-- Steps to reproduce
-- Expected vs actual behavior
-- Error messages (if any)
-
----
-
 ## Example Workflows
 
 ### Complete First-Time Setup
@@ -322,13 +230,8 @@ claude --version
 # Authenticate
 claude auth login
 
-# Clone and set up project
-mkdir -p ~/Documents/Projects && cd ~/Documents/Projects
-git clone https://github.com/benbrastmckie/ProofChecker.git
-cd ProofChecker
-
-# Build (first time takes a while)
-lake build
+# Navigate to your configuration
+cd ~/.config/nvim
 
 # Start Claude
 claude
@@ -337,33 +240,33 @@ claude
 In Claude Code:
 ```
 Please help me:
-1. Verify the Lean 4 setup is working
-2. Explore the Logos/ directory structure
-3. Run diagnostics on a sample proof file
+1. Verify my Neovim configuration is properly structured
+2. Explore the lua/ directory and identify plugins
+3. Check for any common issues or improvements
 ```
 
-### Working with Existing Proofs
+### Adding a New Plugin
 
 ```bash
-cd ~/Documents/Projects/ProofChecker
+cd ~/.config/nvim
 claude
 ```
 
 Ask Claude:
 ```
-Review Logos/Layer1/Modal.lean and explain the key theorems
-and how they relate to Kripke semantics.
+Help me add telescope.nvim to my configuration with
+proper keybindings for file finding and live grep.
 ```
 
-### Debugging Build Issues
+### Debugging Configuration Issues
 
 ```bash
-cd ~/Documents/Projects/ProofChecker
+cd ~/.config/nvim
 claude
 ```
 
 ```
-I ran lake build and got an error.
+I'm getting an error when Neovim starts.
 Please diagnose the issue and suggest fixes.
 ```
 
@@ -384,28 +287,21 @@ claude auth logout
 claude auth login
 ```
 
-### Lean/Lake Issues
+### Neovim Issues
 
-**"lake: command not found":**
-- Ensure elan is installed
-- Restart terminal after elan installation
-- Check: `elan show` to see installed toolchains
+**Plugins not loading:**
+- Run `:Lazy sync` to update plugins
+- Check for errors: `:messages`
+- Verify plugin specifications are correct
 
-**Build errors:**
-- Run `lake clean` then `lake build`
-- Ensure you're using the correct Lean version (check `lean-toolchain`)
-- Download Mathlib cache: `lake exe cache get`
+**LSP not working:**
+- Check LSP is installed: `:LspInfo`
+- Ensure language servers are installed via Mason
+- Check for errors: `:LspLog`
 
-**Slow builds:**
-- First builds are slow due to Mathlib compilation
-- Use `lake exe cache get` to download prebuilt cache
-
-### Lean LSP Issues
-
-**MCP tools not working:**
-- Ensure the lean-lsp MCP server is configured
-- Check Claude Code settings for MCP configuration
-- Verify Lean project builds successfully first
+**Configuration errors:**
+- Run `nvim --headless -c 'checkhealth' -c 'qa'` to check health
+- Look for syntax errors in lua files
 
 ---
 
@@ -419,8 +315,7 @@ claude auth login
 
 ### Project Documentation
 
-- **[docs/](../../../docs/)** - Project documentation
-- **[Logos/](../../../Logos/)** - Lean 4 source code
+- **[nvim/](../../../nvim/)** - Neovim configuration source
 
 ### Contributing
 

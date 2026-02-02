@@ -183,19 +183,19 @@ If validation fails:
 ```json
 {
   "status": "failed",
-  "summary": "Research failed due to network timeout when accessing LeanSearch API. No research artifacts created.",
+  "summary": "Research failed due to network timeout when accessing external API API. No research artifacts created.",
   "artifacts": [],
   "metadata": {
     "session_id": "sess_1735460684_xyz789",
     "duration_seconds": 30,
-    "agent_type": "lean-research-agent",
+    "agent_type": "neovim-research-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "lean-research-agent"]
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"]
   },
   "errors": [
     {
       "type": "timeout",
-      "message": "LeanSearch API request timed out after 30s",
+      "message": "external API API request timed out after 30s",
       "recoverable": true,
       "recommendation": "Check network connection and retry with /research 245"
     }
@@ -212,12 +212,12 @@ If validation fails:
   "artifacts": [
     {
       "type": "implementation",
-      "path": "src/module_a.lean",
+      "path": "nvim/lua/plugins/lsp.lua",
       "summary": "Phase 1 implementation"
     },
     {
       "type": "implementation",
-      "path": "src/module_b.lean",
+      "path": "nvim/lua/plugins/treesitter.lua",
       "summary": "Phase 2 implementation"
     },
     {
@@ -229,9 +229,9 @@ If validation fails:
   "metadata": {
     "session_id": "sess_1735460684_abc123",
     "duration_seconds": 7200,
-    "agent_type": "lean-implementation-agent",
+    "agent_type": "neovim-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "implement", "lean-implementation-agent"]
+    "delegation_path": ["orchestrator", "implement", "neovim-implementation-agent"]
   },
   "errors": [
     {

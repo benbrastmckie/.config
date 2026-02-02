@@ -230,7 +230,7 @@ Load for: Task validation, artifact creation, documentation standards
 - **ci-workflow.md** (140 lines) - CI workflow standards and trigger criteria
   - Skip-by-default behavior with `[ci]` marker
   - Decision criteria for triggering CI
-  - Language-based defaults (lean triggers, meta/markdown skip)
+  - Language-based defaults (neovim triggers, meta/markdown skip)
   - Task lifecycle CI triggers
 - **tasks.md** (227 lines) - Task entry format, required fields, validation rules
 - **documentation.md** (178 lines) - Documentation standards, NO EMOJI policy
@@ -366,7 +366,7 @@ Load for: Typst implementation tasks (Language: typst)
 
 **Patterns**:
 - **theorem-environments.md** - thmbox setup and usage
-- **cross-references.md** - Labels, refs, Lean cross-references
+- **cross-references.md** - Labels, refs, code cross-references
 
 **Templates**:
 - **chapter-template.md** - Boilerplate for new chapters

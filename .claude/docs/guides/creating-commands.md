@@ -2,16 +2,16 @@
 
 ## Overview
 
-This guide provides a streamlined walkthrough for creating new task-based commands in the ProofChecker .opencode system.
+This guide provides a streamlined walkthrough for creating new task-based commands in the Neovim Configuration .opencode system.
 
 ## Prerequisites
 
 Before creating a new command, understand:
 
-1. **Task-Based Pattern**: ProofChecker uses task numbers from TODO.md, not topics
+1. **Task-Based Pattern**: Neovim Configuration uses task numbers from TODO.md, not topics
 2. **Orchestrator-Mediated**: All task-based commands route through orchestrator
 3. **Hybrid Architecture**: Orchestrator validates, subagents execute
-4. **Language Routing**: Lean tasks route to lean-specific agents
+4. **Language Routing**: Lean tasks route to neovim-specific agents
 
 **Required Reading**:
 - `.claude/skills/skill-orchestrator/SKILL.md` - Orchestrator skill
@@ -19,31 +19,31 @@ Before creating a new command, understand:
 - [Creating Skills](creating-skills.md) - For skill delegation patterns
 - [Creating Agents](creating-agents.md) - For agent implementation
 
-## ProofChecker vs OpenAgents
+## Neovim Configuration vs OpenAgents
 
-**IMPORTANT**: ProofChecker has a different command pattern than OpenAgents.
+**IMPORTANT**: Neovim Configuration has a different command pattern than OpenAgents.
 
-| Aspect | ProofChecker | OpenAgents |
+| Aspect | Neovim Configuration | OpenAgents |
 |--------|--------------|------------|
 | **Arguments** | Task numbers (integers) | Topics (natural language) |
 | **Workflow** | Task exists first | Creates new projects |
 | **Validation** | TODO.md lookup required | No validation needed |
-| **Routing** | Language-based (lean vs general) | Keyword-based |
+| **Routing** | Language-based (neovim vs general) | Keyword-based |
 | **Example** | `/research 259` | `/research "modal logic"` |
 
-**You cannot copy OpenAgents patterns directly to ProofChecker.**
+**You cannot copy OpenAgents patterns directly to Neovim Configuration.**
 
 ## Step-by-Step Process
 
 ### Step 1: Understand the Hybrid Architecture
 
-ProofChecker uses a **hybrid architecture** (v6.1):
+Neovim Configuration uses a **hybrid architecture** (v6.1):
 
 **Orchestrator Responsibilities**:
 1. Extract task number from `$ARGUMENTS`
 2. Validate task exists in TODO.md
 3. Extract language from task metadata
-4. Route to appropriate subagent (lean vs general)
+4. Route to appropriate subagent (neovim vs general)
 5. Pass validated context to subagent
 
 **Subagent Responsibilities**:
@@ -72,7 +72,7 @@ description: "{Brief description with status}"
 timeout: 3600
 routing:
   language_based: true
-  lean: lean-{command}-agent
+  neovim: neovim-{command}-agent
   default: {command}er
 ---
 
@@ -100,7 +100,7 @@ routing:
 
 | Language | Agent | Tools |
 |----------|-------|-------|
-| lean | lean-{command}-agent | {lean-specific tools} |
+| neovim | neovim-{command}-agent | {neovim-specific tools} |
 | general | {command}er | {general tools} |
 
 See `.claude/agents/{agent}.md` for details.
@@ -125,7 +125,7 @@ If creating a new subagent, follow this pattern:
        - task_number: Integer (already validated to exist in TODO.md)
        - language: String (already extracted from task metadata)
        - task_description: String (already extracted from TODO.md)
-       - Example: task_number=259, language="lean", task_description="..."
+       - Example: task_number=259, language="neovim", task_description="..."
        
        NOTE: Orchestrator has already:
        - Validated task_number exists in TODO.md
@@ -149,7 +149,7 @@ If creating a new subagent, follow this pattern:
 
 Implement your specific workflow. Subagent has access to:
 - `task_number`: Validated integer
-- `language`: String ("lean", "general", etc.)
+- `language`: String ("neovim", "general", etc.)
 - `task_description`: Full description from TODO.md
 
 **Return Format**:
@@ -208,19 +208,19 @@ OpenCode invokes orchestrator with $ARGUMENTS = "259"
 Orchestrator Stage 1 (ExtractAndValidate):
   - Parse task_number from $ARGUMENTS: 259
   - Validate task 259 exists in TODO.md
-  - Extract language: "lean"
-  - Extract task_description: "Implement automation tactics"
+  - Extract language: "neovim"
+  - Extract task_description: "Configure LSP settings"
   ↓
 Orchestrator Stage 2 (Route):
   - Check routing config: language_based = true
-  - Map language "lean" → agent "lean-implementation-agent"
+  - Map language "neovim" → agent "neovim-implementation-agent"
   - Prepare delegation context
   ↓
 Orchestrator Stage 3 (Delegate):
-  - Invoke lean-implementation-agent with validated context:
+  - Invoke neovim-implementation-agent with validated context:
     * task_number = 259
-    * language = "lean"
-    * task_description = "Implement automation tactics"
+    * language = "neovim"
+    * task_description = "Configure LSP settings"
   ↓
 Subagent Step 0:
   - Extract validated inputs from delegation context
@@ -276,7 +276,7 @@ name: implement
 agent: orchestrator  # CORRECT! Routes through orchestrator
 routing:
   language_based: true
-  lean: lean-implementation-agent
+  neovim: neovim-implementation-agent
   default: implementer
 ---
 ```
@@ -301,7 +301,7 @@ See existing implementations:
 - `.claude/skills/skill-orchestrator/SKILL.md` - Orchestrator skill
 - `.claude/skills/skill-implementer/SKILL.md` - General implementer skill
 - `.claude/agents/general-implementation-agent.md` - General implementation agent
-- `.claude/agents/lean-implementation-agent.md` - Lean-specific agent
+- `.claude/agents/neovim-implementation-agent.md` - Lean-specific agent
 
 ## Related Guides
 

@@ -67,7 +67,7 @@ agent: orchestrator
 description: Conduct research for a task
 routing:
   language_based: true
-  lean: skill-lean-research
+  neovim: skill-neovim-research
   default: skill-researcher
 ---
 ```
@@ -106,7 +106,7 @@ Extracted:
 ```
 Language: "meta"
 Routing rules from command frontmatter:
-  lean -> skill-lean-research
+  neovim -> skill-neovim-research
   default -> skill-researcher
 
 Decision: "meta" matches default -> invoke skill-researcher
@@ -305,17 +305,17 @@ Input: /research 427 (task language = "meta")
 
 Command frontmatter:
   routing:
-    lean: skill-lean-research
+    neovim: skill-neovim-research
     default: skill-researcher
 
 Decision tree:
-  Is language "lean"? NO
+  Is language "neovim"? NO
   -> Use default: skill-researcher
 ```
 
-If task 427 had `language: "lean"`, the flow would be:
+If task 427 had `language: "neovim"`, the flow would be:
 ```
-orchestrator -> skill-lean-research -> lean-research-agent
+orchestrator -> skill-neovim-research -> neovim-research-agent
 ```
 
 ### Context Loading Decision
@@ -401,22 +401,22 @@ Return:
 
 ### Scenario C: Lean Task Routing
 
-If user runs `/research 259` where task 259 has `language: "lean"`:
+If user runs `/research 259` where task 259 has `language: "neovim"`:
 
 ```
 Orchestrator Stage 2:
-  Lookup task 259 -> language = "lean"
+  Lookup task 259 -> language = "neovim"
 
 Orchestrator Stage 3:
-  Routing: lean -> skill-lean-research
+  Routing: neovim -> skill-neovim-research
 
 Flow:
-  orchestrator -> skill-lean-research -> lean-research-agent
+  orchestrator -> skill-neovim-research -> neovim-research-agent
 
 Agent uses:
-  - lean_leansearch tool
-  - lean_loogle tool
-  - lean_leanfinder tool
+  - neovim_neovimsearch tool
+  - neovim_loogle tool
+  - neovim_neovimfinder tool
   - Mathlib documentation context
 ```
 
@@ -456,7 +456,7 @@ This example demonstrated:
 6. **Status Updates**: state.json and TODO.md updated after completion
 
 The three-layer architecture provides:
-- Clean separation of concerns
+- Cneovim separation of concerns
 - Token-efficient context loading
 - Language-based routing
 - Standardized return format

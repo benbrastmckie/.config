@@ -6,7 +6,7 @@ Token budget: ~200 tokens
 
 | Language | Research Skill | Implementation Skill |
 |----------|---------------|---------------------|
-| lean | skill-lean-research | skill-lean-implementation |
+| neovim | skill-neovim-research | skill-neovim-implementation |
 | latex | skill-researcher | skill-latex-implementation |
 | general | skill-researcher | skill-implementer |
 | meta | skill-researcher | skill-implementer |

@@ -133,7 +133,7 @@ permissions:
 - read: ["**/*.md"]
 
 # Multiple patterns
-- read: ["**/*.md", "**/*.lean", ".claude/**/*"]
+- read: ["**/*.md", "**/*.lua", ".claude/**/*"]
 ```
 
 ### Bash Command Patterns
@@ -171,7 +171,7 @@ tools:
 permissions:
   allow:
     # Read access to documentation and code
-    - read: ["**/*.md", ".claude/**/*", "docs/**/*", "**/*.lean"]
+    - read: ["**/*.md", ".claude/**/*", "docs/**/*", "**/*.lua"]
     
     # Write access to research outputs
     - write: ["specs/**/*", "docs/research/**/*"]
@@ -238,56 +238,56 @@ permissions:
     - read: ["**/*"]
     
     # Write access to code and specs
-    - write: ["**/*.lean", "**/*.md", "specs/**/*"]
+    - write: ["**/*.lua", "**/*.md", "specs/**/*"]
     
     # Edit access (safer than write)
-    - edit: ["**/*.lean", "**/*.md"]
+    - edit: ["**/*.lua", "**/*.md"]
     
     # Development commands
-    - bash: ["git", "lake", "grep", "find", "wc", "jq"]
+    - bash: ["git", "nvim", "grep", "find", "wc", "jq"]
   
   deny:
     # Dangerous operations
     - bash: ["rm -rf", "sudo", "chmod +x", "dd"]
     
     # Protected files
-    - write: [".git/**/*", "lakefile.lean", "lean-toolchain"]
+    - write: [".git/**/*", "init.lua", "lazy-lock.json"]
 ```
 
-### Lean Implementation Agent
+### Neovim Implementation Agent
 
-**Purpose**: Implement Lean proofs with LSP integration
+**Purpose**: Implement Neovim configurations with LSP integration
 
 ```yaml
-name: "lean-implementation-agent"
+name: "neovim-implementation-agent"
 tools:
   - read
   - write
   - edit
   - bash
   - git
-  - lean-lsp  # Special tool for Lean LSP integration
+  - nvim-lua  # Special tool for Neovim Lua integration
 
 permissions:
   allow:
     # Read access to Lean codebase
-    - read: ["**/*.lean", "**/*.md", ".claude/**/*"]
+    - read: ["**/*.lua", "**/*.md", ".claude/**/*"]
     
     # Write access to Lean files
-    - write: ["**/*.lean", "specs/**/*"]
+    - write: ["**/*.lua", "specs/**/*"]
     
     # Edit access for Lean files
-    - edit: ["**/*.lean"]
+    - edit: ["**/*.lua"]
     
     # Lean development commands
-    - bash: ["git", "lake", "lean"]
+    - bash: ["git", "nvim", "lean"]
   
   deny:
     # Dangerous operations
     - bash: ["rm -rf", "sudo", "chmod +x"]
     
     # Protected files
-    - write: [".git/**/*", "lakefile.lean", "lean-toolchain"]
+    - write: [".git/**/*", "init.lua", "lazy-lock.json"]
 ```
 
 ### Utility Agent (Status Sync Manager)
@@ -414,8 +414,8 @@ Permission denials are logged to `.claude/logs/errors.json`:
   "agent": "researcher",
   "error_type": "permission_denied",
   "operation": "write",
-  "path": "lakefile.lean",
-  "reason": "Path matches deny pattern: lakefile.lean"
+  "path": "init.lua",
+  "reason": "Path matches deny pattern: init.lua"
 }
 ```
 
@@ -495,11 +495,11 @@ permissions:
 permissions:
   allow:
     - read: ["**/*"]
-    - write: ["**/*.lean", "**/*.md", "specs/**/*"]
-    - edit: ["**/*.lean", "**/*.md"]
-    - bash: ["git", "lake", "lean"]
+    - write: ["**/*.lua", "**/*.md", "specs/**/*"]
+    - edit: ["**/*.lua", "**/*.md"]
+    - bash: ["git", "nvim", "lean"]
   deny:
-    - write: [".git/**/*", "lakefile.lean", "lean-toolchain"]
+    - write: [".git/**/*", "init.lua", "lazy-lock.json"]
     - bash: ["rm -rf", "sudo", "chmod +x"]
 ```
 
@@ -704,14 +704,14 @@ Add comments to agent frontmatter:
 permissions:
   allow:
     # Research agents need read access to analyze codebase
-    - read: ["**/*.md", "**/*.lean"]
+    - read: ["**/*.md", "**/*.lua"]
     
     # Write access limited to research outputs
     - write: ["specs/**/*"]
   
   deny:
     # Prevent modification of build configuration
-    - write: ["lakefile.lean", "lean-toolchain"]
+    - write: ["init.lua", "lazy-lock.json"]
 ```
 
 ### 5. Monitor Permission Denials

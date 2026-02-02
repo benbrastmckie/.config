@@ -14,7 +14,7 @@ Where:
 - `{N}` = Task number (unpadded)
 - `{SLUG}` = Task slug in snake_case
 
-Example: `specs/259_prove_completeness/.return-meta.json`
+Example: `specs/1_setup_lsp_config/.return-meta.json`
 
 ## Schema
 
@@ -24,17 +24,17 @@ Example: `specs/259_prove_completeness/.return-meta.json`
   "artifacts": [
     {
       "type": "report|plan|summary|implementation",
-      "path": "specs/259_prove_completeness/reports/research-001.md",
+      "path": "specs/1_setup_lsp_config/reports/research-001.md",
       "summary": "Brief 1-sentence description of artifact"
     }
   ],
-  "next_steps": "Run /plan 259 to create implementation plan",
+  "next_steps": "Run /plan 1 to create implementation plan",
   "metadata": {
     "session_id": "sess_1736700000_abc123",
-    "agent_type": "lean-research-agent",
+    "agent_type": "neovim-research-agent",
     "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "lean-research-agent"]
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"]
   },
   "errors": [
     {
@@ -94,7 +94,7 @@ Each artifact object:
 | Field | Required | Description |
 |-------|----------|-------------|
 | `session_id` | Yes | Session ID from delegation context |
-| `agent_type` | Yes | Name of agent (e.g., `lean-research-agent`) |
+| `agent_type` | Yes | Name of agent (e.g., `neovim-research-agent`) |
 | `duration_seconds` | No | Execution time |
 | `delegation_depth` | Yes | Nesting depth in delegation chain |
 | `delegation_path` | Yes | Array of delegation steps |
@@ -159,7 +159,7 @@ Each error object:
 |-------|------|----------|-------------|
 | `type` | string | Yes | Error category |
 | `message` | string | Yes | Human-readable error message |
-| `recoverable` | boolean | Yes | Whether retry may succeed |
+| `recoverable` | booneovim | Yes | Whether retry may succeed |
 | `recommendation` | string | Yes | How to fix or proceed |
 
 ## Agent Instructions
@@ -185,10 +185,10 @@ mkdir -p "specs/${task_number}_${task_slug}"
 
 3. Return a brief summary (NOT JSON) to the console:
 ```
-Research completed for task 259:
-- Found 5 relevant Mathlib theorems
-- Identified proof strategy using structural induction
-- Created report at specs/259_prove_completeness/reports/research-001.md
+Research completed for task 1:
+- Found 5 relevant lazy.nvim plugin patterns
+- Identified configuration strategy using modular approach
+- Created report at specs/1_setup_lsp_config/reports/research-001.md
 ```
 
 ### Reading Metadata (Skill Postflight)
@@ -205,7 +205,7 @@ if [ -f "$metadata_file" ]; then
 fi
 ```
 
-### Cleanup
+### Cneovimup
 
 After postflight, delete the metadata file:
 
@@ -223,17 +223,17 @@ rm -f "specs/${task_number}_${task_slug}/.return-meta.json"
   "artifacts": [
     {
       "type": "report",
-      "path": "specs/259_prove_completeness/reports/research-001.md",
-      "summary": "Research report with 5 Mathlib theorem findings and proof strategy"
+      "path": "specs/1_setup_lsp_config/reports/research-001.md",
+      "summary": "Research report with 5 plugin patterns and configuration strategy"
     }
   ],
-  "next_steps": "Run /plan 259 to create implementation plan",
+  "next_steps": "Run /plan 1 to create implementation plan",
   "metadata": {
     "session_id": "sess_1736700000_abc123",
-    "agent_type": "lean-research-agent",
+    "agent_type": "neovim-research-agent",
     "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "lean-research-agent"],
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
     "findings_count": 5
   }
 }
@@ -247,26 +247,26 @@ rm -f "specs/${task_number}_${task_slug}/.return-meta.json"
   "artifacts": [
     {
       "type": "implementation",
-      "path": "Logos/Layer1/Modal/Completeness.lean",
-      "summary": "Completeness theorem with 4 supporting lemmas"
+      "path": "nvim/lua/plugins/lsp.lua",
+      "summary": "LSP configuration with 4 language servers"
     },
     {
       "type": "summary",
-      "path": "specs/259_prove_completeness/summaries/implementation-summary-20260118.md",
+      "path": "specs/1_setup_lsp_config/summaries/implementation-summary-20260118.md",
       "summary": "Implementation summary with verification results"
     }
   ],
   "completion_data": {
-    "completion_summary": "Proved the completeness theorem for modal logic using canonical model construction. Implemented 4 supporting lemmas including truth lemma and existence lemma.",
-    "roadmap_items": ["Prove completeness theorem for K modal logic"]
+    "completion_summary": "Configured LSP for 4 language servers with mason.nvim integration. Implemented keymaps for code actions, hover, and go-to-definition.",
+    "roadmap_items": ["Configure LSP for Neovim"]
   },
   "next_steps": "Review implementation and verify with /test",
   "metadata": {
     "session_id": "sess_1736700000_def456",
-    "agent_type": "lean-implementation-agent",
+    "agent_type": "neovim-implementation-agent",
     "duration_seconds": 3600,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "implement", "lean-implementation-agent"],
+    "delegation_path": ["orchestrator", "implement", "neovim-implementation-agent"],
     "phases_completed": 4,
     "phases_total": 4
   }
@@ -325,7 +325,7 @@ rm -f "specs/${task_number}_${task_slug}/.return-meta.json"
     }
   ],
   "completion_data": {
-    "completion_summary": "Created utility.sh script for automated cleanup operations.",
+    "completion_summary": "Created utility.sh script for automated cneovimup operations.",
     "claudemd_suggestions": "none"
   },
   "next_steps": "Test script execution",
@@ -349,22 +349,22 @@ rm -f "specs/${task_number}_${task_slug}/.return-meta.json"
   "artifacts": [
     {
       "type": "implementation",
-      "path": "Logos/Layer1/Modal/Completeness.lean",
-      "summary": "Partial completeness theorem (phases 1-2 of 4)"
+      "path": "nvim/lua/plugins/lsp.lua",
+      "summary": "Partial LSP configuration (phases 1-2 of 4)"
     },
     {
       "type": "summary",
-      "path": "specs/259_prove_completeness/summaries/implementation-summary-20260118.md",
+      "path": "specs/1_setup_lsp_config/summaries/implementation-summary-20260118.md",
       "summary": "Implementation summary with partial progress"
     }
   ],
-  "next_steps": "Run /implement 259 to resume from phase 3",
+  "next_steps": "Run /implement 1 to resume from phase 3",
   "metadata": {
     "session_id": "sess_1736700000_def456",
-    "agent_type": "lean-implementation-agent",
+    "agent_type": "neovim-implementation-agent",
     "duration_seconds": 3600,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "implement", "lean-implementation-agent"],
+    "delegation_path": ["orchestrator", "implement", "neovim-implementation-agent"],
     "phases_completed": 2,
     "phases_total": 4
   },
@@ -373,7 +373,7 @@ rm -f "specs/${task_number}_${task_slug}/.return-meta.json"
       "type": "timeout",
       "message": "Implementation timed out after 1 hour",
       "recoverable": true,
-      "recommendation": "Resume with /implement 259"
+      "recommendation": "Resume with /implement 1"
     }
   ]
 }
@@ -387,11 +387,11 @@ rm -f "specs/${task_number}_${task_slug}/.return-meta.json"
   "artifacts": [
     {
       "type": "plan",
-      "path": "specs/259_prove_completeness/plans/implementation-001.md",
-      "summary": "4-phase implementation plan for completeness theorem"
+      "path": "specs/1_setup_lsp_config/plans/implementation-001.md",
+      "summary": "4-phase implementation plan for LSP configuration"
     }
   ],
-  "next_steps": "Run /implement 259 to execute the plan",
+  "next_steps": "Run /implement 1 to execute the plan",
   "metadata": {
     "session_id": "sess_1736700000_ghi789",
     "agent_type": "planner-agent",
@@ -419,9 +419,9 @@ Written at Stage 0, before substantive work begins:
   },
   "metadata": {
     "session_id": "sess_1736700000_abc123",
-    "agent_type": "lean-research-agent",
+    "agent_type": "neovim-research-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "lean-research-agent"]
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"]
   }
 }
 ```
@@ -437,19 +437,19 @@ Written after significant progress, before completion:
   "artifacts": [
     {
       "type": "report",
-      "path": "specs/259_prove_completeness/reports/research-001.md",
+      "path": "specs/1_setup_lsp_config/reports/research-001.md",
       "summary": "Partial research report (in progress)"
     }
   ],
   "partial_progress": {
     "stage": "searches_completed",
-    "details": "Completed 3 searches, found 5 theorems. Starting synthesis."
+    "details": "Completed 3 searches, found 5 patterns. Starting synthesis."
   },
   "metadata": {
     "session_id": "sess_1736700000_abc123",
-    "agent_type": "lean-research-agent",
+    "agent_type": "neovim-research-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "lean-research-agent"]
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"]
   }
 }
 ```
@@ -471,9 +471,9 @@ For implementation agents tracking phase progress:
   },
   "metadata": {
     "session_id": "sess_1736700000_def456",
-    "agent_type": "lean-implementation-agent",
+    "agent_type": "neovim-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "implement", "lean-implementation-agent"]
+    "delegation_path": ["orchestrator", "implement", "neovim-implementation-agent"]
   }
 }
 ```
@@ -488,7 +488,7 @@ This file-based format complements `subagent-return.md`:
 | Location | Agent's stdout | `specs/{N}_{SLUG}/.return-meta.json` |
 | Consumer | Skill validation logic | Skill postflight operations |
 | When | Before file-based pattern | With file-based pattern |
-| Cleanup | N/A | Deleted after postflight |
+| Cneovimup | N/A | Deleted after postflight |
 
 **Migration path**: Skills migrate from validating console JSON to reading file metadata. The schema is nearly identical for compatibility.
 
@@ -498,6 +498,5 @@ This file-based format complements `subagent-return.md`:
 - `.claude/context/core/patterns/postflight-control.md` - Marker file protocol
 - `.claude/context/core/patterns/file-metadata-exchange.md` - File I/O patterns
 - `.claude/context/core/patterns/early-metadata-pattern.md` - Early metadata creation pattern
-- `.claude/context/core/patterns/mcp-tool-recovery.md` - MCP error recovery patterns
 - `.claude/rules/state-management.md` - State update patterns
 - `.claude/rules/error-handling.md` - Error types including mcp_abort_error and delegation_interrupted

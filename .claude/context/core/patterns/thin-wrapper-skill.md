@@ -113,20 +113,20 @@ Return validated result to caller without modification.
 
 ```markdown
 ---
-name: skill-lean-research
-description: Research Lean 4 and Mathlib for theorem proving tasks.
+name: skill-neovim-research
+description: Research Neovim plugins and configuration patterns tasks.
 allowed-tools: Task
 context: fork
-agent: lean-research-agent
+agent: neovim-research-agent
 ---
 
-# Lean Research Skill
+# Neovim Research Skill
 
-Specialized research for Lean 4 theorem proving tasks.
+Specialized research for Neovim configuration tasks.
 
 ## Trigger Conditions
-- Task language is "lean"
-- Research involves Mathlib, theorems, or proofs
+- Task language is "neovim"
+- Research involves plugins, LSP, or configuration patterns
 
 ## Execution
 
@@ -137,7 +137,7 @@ Extract task_number. Validate task exists.
 Generate session_id. Prepare delegation context.
 
 ### 3. Invoke Subagent
-Use Task tool with subagent_type: lean-research-agent
+Use Task tool with subagent_type: neovim-research-agent
 
 ### 4. Return Validation
 Validate return matches subagent-return.md schema.
@@ -160,11 +160,9 @@ Direct execution skills use:
 allowed-tools: Bash, Edit, Read
 ```
 
-### Lean Skills (Standard Pattern)
+### Neovim Skills (Standard Pattern)
 
-The Lean skills (`skill-lean-research`, `skill-lean-implementation`) follow the standard thin wrapper pattern, delegating to `lean-research-agent` and `lean-implementation-agent` respectively.
-
-**Note**: These skills were temporarily refactored to direct execution in January 2026 due to MCP tool hanging issues (bugs #15945, #13254, #4580). The issues have been resolved, and the skills have been restored to the standard delegation pattern.
+The Neovim skills (`skill-neovim-research`, `skill-neovim-implementation`) follow the standard thin wrapper pattern, delegating to `neovim-research-agent` and `neovim-implementation-agent` respectively.
 
 ---
 

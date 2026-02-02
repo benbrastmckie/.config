@@ -95,8 +95,8 @@ When $ARGUMENTS contains a description (no flags):
 
    **Edge Cases**:
    - Input with quotes: `Add "hello world" test` -> No change to quoted content
-   - Input with file path: `Fix bug in src/Modal.lean` -> Preserve path exactly
-   - Input with version: `Update to lean4 v4.5.0` -> Preserve version identifier
+   - Input with file path: `Fix bug in nvim/lua/plugins/lsp.lua` -> Preserve path exactly
+   - Input with version: `Update to neovim v0.10.0` -> Preserve version identifier
    - Input with issue ref: `Fix #123 memory leak` -> Preserve issue reference
    - CamelCase preserved: `prove_CoherentConstruction_complete` -> `Prove CoherentConstruction complete`
 
@@ -107,7 +107,7 @@ When $ARGUMENTS contains a description (no flags):
    - **Implement**: (default for unrecognized patterns)
 
 4. **Detect language** from keywords:
-   - "lean", "theorem", "proof", "lemma", "Mathlib" → lean
+   - "neovim", "plugin", "nvim", "lua" → neovim
    - "meta", "agent", "command", "skill" → meta
    - Otherwise → general
 

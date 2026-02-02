@@ -9,7 +9,7 @@
 
 ## Three-Layer Architecture
 
-The ProofChecker agent system implements a three-layer delegation pattern separating concerns into distinct execution layers.
+The Neovim Configuration agent system implements a three-layer delegation pattern separating concerns into distinct execution layers.
 
 ```
                          USER INPUT
@@ -24,14 +24,14 @@ The ProofChecker agent system implements a three-layer delegation pattern separa
                               ▼
                     ┌─────────────────┐
      Layer 2:       │     Skills      │  Thin wrappers with validation
-     (Skills)       │ (skill-lean-    │  Prepare delegation context
+     (Skills)       │ (skill-neovim-    │  Prepare delegation context
                     │  research, etc.)│  Invoke agents via Task tool
                     └────────┬────────┘
                               │
                               ▼
                     ┌─────────────────┐
      Layer 3:       │     Agents      │  Full execution components
-     (Agents)       │ (lean-research- │  Load context on-demand
+     (Agents)       │ (neovim-research- │  Load context on-demand
                     │  agent, etc.)   │  Create artifacts
                     └────────┬────────┘
                               │
@@ -78,7 +78,7 @@ The ProofChecker agent system implements a three-layer delegation pattern separa
 ```yaml
 ---
 routing:
-  lean: skill-lean-research
+  neovim: skill-neovim-research
   general: skill-researcher
   default: skill-researcher
 ---
@@ -164,7 +164,7 @@ Skills implement three distinct architecture patterns based on their execution n
 
 ### Pattern A: Delegating Skills with Internal Postflight
 
-**Used by**: skill-researcher, skill-lean-research, skill-planner, skill-implementer, skill-lean-implementation, skill-latex-implementation, skill-meta, skill-document-converter (8 skills)
+**Used by**: skill-researcher, skill-neovim-research, skill-planner, skill-implementer, skill-neovim-implementation, skill-latex-implementation, skill-meta, skill-document-converter (8 skills)
 
 **Characteristics**:
 - Frontmatter: `allowed-tools: Task, Bash, Edit, Read, Write`
@@ -261,12 +261,12 @@ User: "/research 259"
          ▼
 ┌───────────────────┐
 │ 1. Command parses │  Extract task_number=259
-│    $ARGUMENTS     │  Determine language=lean
+│    $ARGUMENTS     │  Determine language=neovim
 └─────────┬─────────┘
           │
           ▼
 ┌───────────────────┐
-│ 2. Route to skill │  language=lean → skill-lean-research
+│ 2. Route to skill │  language=neovim → skill-neovim-research
 │    by language    │
 └─────────┬─────────┘
           │
@@ -279,7 +279,7 @@ User: "/research 259"
           │
           ▼
 ┌───────────────────┐
-│ 4. Skill invokes  │  Task tool with subagent_type: lean-research-agent
+│ 4. Skill invokes  │  Task tool with subagent_type: neovim-research-agent
 │    agent via Task │  Pass: task_context, delegation_context
 └─────────┬─────────┘
           │
@@ -380,7 +380,7 @@ Tasks route to specialized skills/agents based on their `language` field:
 
 | Language | Research | Planning | Implementation |
 |----------|----------|----------|----------------|
-| `lean` | skill-lean-research → lean-research-agent | skill-planner → planner-agent | skill-lean-implementation → lean-implementation-agent |
+| `neovim` | skill-neovim-research → neovim-research-agent | skill-planner → planner-agent | skill-neovim-implementation → neovim-implementation-agent |
 | `general` | skill-researcher → general-research-agent | skill-planner → planner-agent | skill-implementer → general-implementation-agent |
 | `meta` | skill-researcher → general-research-agent | skill-planner → planner-agent | skill-implementer → general-implementation-agent |
 | `latex` | skill-researcher → general-research-agent | skill-planner → planner-agent | skill-latex-implementation → latex-implementation-agent |
@@ -393,9 +393,9 @@ Complete mapping of all commands to their skill and agent paths:
 
 | Command | Routing Type | Skill(s) | Agent(s) | Pattern |
 |---------|--------------|----------|----------|---------|
-| `/research` | Language-based | lean: skill-lean-research, other: skill-researcher | lean-research-agent, general-research-agent | A |
+| `/research` | Language-based | neovim: skill-neovim-research, other: skill-researcher | neovim-research-agent, general-research-agent | A |
 | `/plan` | Single | skill-planner | planner-agent | A |
-| `/implement` | Language-based | lean: skill-lean-implementation, latex: skill-latex-implementation, other: skill-implementer | lean-implementation-agent, latex-implementation-agent, general-implementation-agent | A |
+| `/implement` | Language-based | neovim: skill-neovim-implementation, latex: skill-latex-implementation, other: skill-implementer | neovim-implementation-agent, latex-implementation-agent, general-implementation-agent | A |
 | `/revise` | Single | skill-planner (new version) | planner-agent | A |
 | `/meta` | Single | skill-meta | meta-builder-agent | A |
 | `/convert` | Single | skill-document-converter | document-converter-agent | A |

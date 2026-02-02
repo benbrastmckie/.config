@@ -255,7 +255,6 @@ Add this to agent execution flow after Stage 1 (Parse Delegation Context):
 
 ## Related Documentation
 
-- `.claude/context/core/patterns/mcp-tool-recovery.md` - MCP error handling
 - `.claude/context/core/formats/return-metadata-file.md` - Metadata file schema
 - `.claude/context/core/patterns/checkpoint-execution.md` - Checkpoint pattern
 - `.claude/rules/error-handling.md` - Error logging patterns

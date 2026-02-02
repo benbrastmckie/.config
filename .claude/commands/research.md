@@ -16,7 +16,7 @@ Conduct research for a task by delegating to the appropriate research skill/suba
 
 ## Execution
 
-**MCP Safety**: Do not call `lean_diagnostic_messages` or `lean_file_outline` - they hang. Delegate to skills.
+**Note**: Delegate to skills for language-specific research.
 
 ### CHECKPOINT 1: GATE IN
 
@@ -49,7 +49,7 @@ Conduct research for a task by delegating to the appropriate research skill/suba
 
 | Language | Skill to Invoke |
 |----------|-----------------|
-| `lean` | `skill-lean-research` |
+| `neovim` | `skill-neovim-research` |
 | `general`, `meta`, `markdown`, `latex` | `skill-researcher` |
 
 **Invoke the Skill tool NOW** with:

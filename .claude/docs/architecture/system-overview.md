@@ -2,13 +2,13 @@
 
 **Last Verified**: 2026-01-19
 
-This document provides a high-level overview of the ProofChecker agent system architecture for users and developers.
+This document provides a high-level overview of the Neovim Configuration agent system architecture for users and developers.
 
 ---
 
 ## Three-Layer Architecture
 
-The ProofChecker agent system uses a three-layer architecture that separates user interaction, routing, and execution:
+The agent system uses a three-layer architecture that separates user interaction, routing, and execution:
 
 ```
                            USER
@@ -31,7 +31,7 @@ The ProofChecker agent system uses a three-layer architecture that separates use
     |                   LAYER 2: SKILLS                    |
     |                                                      |
     |   .claude/skills/skill-*/SKILL.md                   |
-    |   ├── skill-lean-research/     Validate inputs      |
+    |   ├── skill-neovim-research/   Validate inputs      |
     |   ├── skill-researcher/        Prepare context      |
     |   ├── skill-planner/           Invoke agents        |
     |   └── ...                                            |
@@ -43,7 +43,7 @@ The ProofChecker agent system uses a three-layer architecture that separates use
     |                   LAYER 3: AGENTS                    |
     |                                                      |
     |   .claude/agents/*.md                               |
-    |   ├── lean-research-agent.md   Full execution       |
+    |   ├── neovim-research-agent.md Full execution       |
     |   ├── general-research-agent.md  Create artifacts   |
     |   ├── planner-agent.md         Return JSON          |
     |   └── ...                                            |
@@ -100,11 +100,11 @@ Skills are thin wrappers that validate inputs and delegate to agents. They:
 **Key skills**:
 | Skill | Agent | Purpose |
 |-------|-------|---------|
-| skill-lean-research | lean-research-agent | Lean 4/Mathlib research |
+| skill-neovim-research | neovim-research-agent | Neovim/plugin research |
 | skill-researcher | general-research-agent | General web/codebase research |
 | skill-planner | planner-agent | Create implementation plans |
 | skill-implementer | general-implementation-agent | General file implementation |
-| skill-lean-implementation | lean-implementation-agent | Lean proof implementation |
+| skill-neovim-implementation | neovim-implementation-agent | Neovim configuration implementation |
 | skill-latex-implementation | latex-implementation-agent | LaTeX document implementation |
 
 ### Agents (Layer 3)
@@ -121,24 +121,24 @@ Agents are execution components that do the actual work. They:
 
 ## Execution Flow Example
 
-When you run `/research 259`:
+When you run `/research 1`:
 
 ```
 1. Command: research.md
-   - Parse: task_number = 259
-   - Lookup: language = "lean" (from state.json)
-   - Route: skill-lean-research
+   - Parse: task_number = 1
+   - Lookup: language = "neovim" (from state.json)
+   - Route: skill-neovim-research
 
-2. Skill: skill-lean-research
+2. Skill: skill-neovim-research
    - Generate session_id: sess_1736700000_abc123
    - Validate: task exists, status allows research
    - Prepare: delegation context
-   - Invoke: lean-research-agent via Task tool
+   - Invoke: neovim-research-agent via Task tool
 
-3. Agent: lean-research-agent
-   - Load: Lean 4 context files
-   - Execute: Use MCP tools (lean_leansearch, etc.)
-   - Create: specs/259_{slug}/reports/research-001.md
+3. Agent: neovim-research-agent
+   - Load: Neovim context files
+   - Execute: Search documentation, analyze plugins
+   - Create: specs/1_{slug}/reports/research-001.md
    - Return: {"status": "researched", "artifacts": [...]}
 
 4. Postflight:
@@ -180,7 +180,7 @@ Tasks route to specialized skills based on their `language` field:
 
 | Language | Research | Implementation |
 |----------|----------|----------------|
-| `lean` | skill-lean-research | skill-lean-implementation |
+| `neovim` | skill-neovim-research | skill-neovim-implementation |
 | `general` | skill-researcher | skill-implementer |
 | `meta` | skill-researcher | skill-implementer |
 | `latex` | skill-researcher | skill-latex-implementation |
@@ -214,11 +214,11 @@ Updates use two-phase commit:
 │   ├── plan.md
 │   └── ...
 ├── skills/             # Layer 2: Skills
-│   ├── skill-lean-research/
+│   ├── skill-neovim-research/
 │   │   └── SKILL.md
 │   └── ...
 ├── agents/             # Layer 3: Agents
-│   ├── lean-research-agent.md
+│   ├── neovim-research-agent.md
 │   └── ...
 ├── rules/              # Automatic behavior rules
 ├── context/            # Domain knowledge

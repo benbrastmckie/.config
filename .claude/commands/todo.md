@@ -842,21 +842,21 @@ Track suggestion operations for output reporting:
 
 ### 5.7. Sync Repository Metrics
 
-Update repository-wide technical debt metrics in both state.json and TODO.md header.
+Update repository-wide metrics in both state.json and TODO.md header.
 
 **Step 5.7.1: Compute current metrics**:
 ```bash
-# Count sorries (active Theories/ files, excluding Boneyard/ and Examples/)
-sorry_count=$(grep -r "sorry" Theories/ --include="*.lean" | grep -v "/Boneyard/" | grep -v "/Examples/" | wc -l)
+# Count TODOs in Lua files
+todo_count=$(grep -r "TODO" nvim/lua/ --include="*.lua" | wc -l)
 
-# Count axiom declarations
-axiom_count=$(grep -E "^axiom " Theories/ -r --include="*.lean" | wc -l)
+# Count FIXME markers
+fixme_count=$(grep -r "FIXME" nvim/lua/ --include="*.lua" | wc -l)
 
 # Get current timestamp
 ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-# Build errors (0 if last lake build succeeded, check for .lake/build/*)
-if [ -f ".lake/build/lib/Theories.olean" ]; then
+# Build errors (0 if nvim starts successfully)
+if nvim --headless -c "quit" 2>/dev/null; then
   build_errors=0
 else
   build_errors=1
@@ -865,16 +865,16 @@ fi
 
 **Step 5.7.2: Update state.json repository_health**:
 ```bash
-jq --arg sorry "$sorry_count" \
-   --arg axiom "$axiom_count" \
+jq --arg todo "$todo_count" \
+   --arg fixme "$fixme_count" \
    --arg ts "$ts" \
    --arg errors "$build_errors" \
    '.repository_health = {
      "last_assessed": $ts,
-     "sorry_count": ($sorry | tonumber),
-     "axiom_count": ($axiom | tonumber),
+     "todo_count": ($todo | tonumber),
+     "fixme_count": ($fixme | tonumber),
      "build_errors": ($errors | tonumber),
-     "status": (if ($sorry | tonumber) < 100 then "good" elif ($sorry | tonumber) < 300 then "manageable" else "concerning" end)
+     "status": (if ($build_errors | tonumber) == 0 then "healthy" else "needs_attention" end)
    }' specs/state.json > specs/state.json.tmp && mv specs/state.json.tmp specs/state.json
 ```
 
@@ -890,8 +890,8 @@ Read TODO.md and update the YAML frontmatter `technical_debt` section to match s
 The technical_debt block should be updated to:
 ```yaml
 technical_debt:
-  sorry_count: {sorry_count}
-  axiom_count: {axiom_count}
+  todo_count: {todo_count}
+  fixme_count: {fixme_count}
   build_errors: {build_errors}
   status: {status}
 ```
@@ -906,8 +906,8 @@ repository_health:
 
 **Step 5.7.4: Report metrics sync**:
 Track for output:
-- `metrics_sorry_count`: Current sorry count
-- `metrics_axiom_count`: Current axiom count
+- `metrics_todo_count`: Current TODO count
+- `metrics_fixme_count`: Current FIXME count
 - `metrics_build_errors`: Current build errors
 - `metrics_synced`: true/false indicating if sync was performed
 
@@ -990,8 +990,8 @@ Skipped (no directory): {N}
 Active tasks remaining: {N}
 
 Repository metrics updated:
-- sorry_count: {N}
-- axiom_count: {N}
+- todo_count: {N}
+- fixme_count: {N}
 - build_errors: {N}
 - last_assessed: {timestamp}
 

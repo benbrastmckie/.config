@@ -21,7 +21,7 @@ Errors in state management:
 ### External Errors
 Errors from external systems:
 - `git_commit_failure` - Git operation failed
-- `build_error` - Lean/lake build failed
+- `build_error` - Build command failed
 - `tool_unavailable` - MCP tool not responding
 - `mcp_abort_error` - MCP tool aborted or timed out (error code -32001)
 - `delegation_interrupted` - Agent interrupted before completion (metadata shows in_progress)
@@ -146,15 +146,13 @@ See `.claude/context/core/patterns/jq-escaping-workarounds.md` for full document
 ```
 1. Log the error with tool name and context
 2. Retry once after 5-second delay
-3. Try alternative tool if available (see mcp-tool-recovery.md)
+3. Try alternative tool if available
 4. Write partial status to metadata file with partial_progress
 5. Continue with available information or return partial
 ```
 
-**Note**: MCP AbortError -32001 is often caused by resource contention from multiple concurrent
-lean-lsp-mcp instances. See `.claude/context/core/patterns/mcp-tool-recovery.md` for recovery
-patterns and `.claude/context/project/lean4/operations/multi-instance-optimization.md` for
-prevention strategies.
+**Note**: MCP AbortError -32001 is often caused by resource contention. Retry the operation
+after a brief delay.
 
 ### Delegation Interrupted Recovery
 ```

@@ -1,12 +1,12 @@
 # Component Selection Guide
 
-This guide helps you decide which component type to create when adding new capabilities to the ProofChecker agent system.
+This guide helps you decide which component type to create when adding new capabilities to the Neovim Configuration agent system.
 
 ---
 
 ## Overview: Three-Layer Architecture
 
-The ProofChecker system uses a three-layer architecture where each layer has distinct responsibilities:
+The Neovim Configuration system uses a three-layer architecture where each layer has distinct responsibilities:
 
 ```
 Layer 1: Commands         User-facing entry points (/research, /plan, /implement)
@@ -109,7 +109,7 @@ You need to add routing logic or input validation for execution.
 **Examples**:
 | Skill | Purpose |
 |-------|---------|
-| `skill-lean-research` | Lean 4/Mathlib research with MCP tools |
+| `skill-neovim-research` | Neovim/plugin research via web search |
 | `skill-researcher` | General web/codebase research |
 | `skill-status-sync` | Atomic multi-file status updates |
 
@@ -130,7 +130,7 @@ You need to implement actual execution logic that creates artifacts.
 **Examples**:
 | Agent | Purpose |
 |-------|---------|
-| `lean-research-agent` | Lean 4 research with MCP tools |
+| `neovim-research-agent` | Neovim configuration research via web search |
 | `general-implementation-agent` | General file implementation |
 | `planner-agent` | Implementation plan creation |
 
@@ -250,8 +250,8 @@ Creates: Agent only (skill routes to it)
 | Component | Pattern | Example |
 |-----------|---------|---------|
 | Command | `{verb}.md` | `research.md`, `implement.md` |
-| Skill | `skill-{purpose}/SKILL.md` | `skill-lean-research/SKILL.md` |
-| Agent | `{domain}-{purpose}-agent.md` | `lean-research-agent.md` |
+| Skill | `skill-{purpose}/SKILL.md` | `skill-neovim-research/SKILL.md` |
+| Agent | `{domain}-{purpose}-agent.md` | `neovim-research-agent.md` |
 
 ---
 
@@ -262,7 +262,7 @@ Creates: Agent only (skill routes to it)
 | Command | Skill(s) Used |
 |---------|---------------|
 | /task | skill-status-sync |
-| /research | skill-researcher, skill-lean-research |
+| /research | skill-researcher, skill-neovim-research |
 | /plan | skill-planner |
 | /implement | skill-implementer, skill-lean-implementation, skill-latex-implementation |
 | /revise | skill-planner |
@@ -279,7 +279,7 @@ Creates: Agent only (skill routes to it)
 | skill-status-sync | (direct execution) |
 | skill-git-workflow | (direct execution) |
 | skill-researcher | general-research-agent |
-| skill-lean-research | lean-research-agent |
+| skill-neovim-research | neovim-research-agent |
 | skill-planner | planner-agent |
 | skill-implementer | general-implementation-agent |
 | skill-lean-implementation | lean-implementation-agent |
@@ -290,7 +290,7 @@ Creates: Agent only (skill routes to it)
 | Agent | Purpose |
 |-------|---------|
 | general-research-agent | General web/codebase research |
-| lean-research-agent | Lean 4/Mathlib research |
+| neovim-research-agent | Lean 4/Mathlib research |
 | planner-agent | Implementation planning |
 | general-implementation-agent | General file implementation |
 | lean-implementation-agent | Lean proof implementation |
@@ -400,4 +400,4 @@ Research completed successfully. Found 5 patterns.
 
 **Document Version**: 1.0
 **Created**: 2026-01-12
-**Maintained By**: ProofChecker Development Team
+**Maintained By**: Neovim Configuration Development Team

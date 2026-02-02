@@ -66,7 +66,7 @@ Prepare context package for delegated skill:
 {
   "task_number": 259,
   "task_name": "task_slug",
-  "language": "lean",
+  "language": "neovim",
   "status": "planned",
   "description": "Full task description",
   "artifacts": {

@@ -71,7 +71,7 @@ fi
 
 | Language | Research Agent | Implementation Agent | Notes |
 |----------|---------------|---------------------|-------|
-| `lean` | `lean-research-agent` | `lean-implementation-agent` | Lean 4 proof development with LSP/Loogle/LeanSearch |
+| `neovim` | `neovim-research-agent` | `neovim-implementation-agent` | Neovim plugin and configuration development |
 | `markdown` | `researcher` | `implementer` | Documentation and markdown files |
 | `python` | `researcher` | `implementer` | Python code (future: python-specific agents) |
 | `general` | `researcher` | `implementer` | Default for unspecified language |
@@ -83,14 +83,14 @@ fi
 Before delegating to agent, verify routing is correct:
 
 ```bash
-# Validate lean routing
-if [ "$language" == "lean" ] && [[ ! "$agent" =~ ^lean- ]]; then
-  echo "[FAIL] Routing validation failed: language=lean but agent=${agent}"
+# Validate neovim routing
+if [ "$language" == "neovim" ] && [[ ! "$agent" =~ ^neovim- ]]; then
+  echo "[FAIL] Routing validation failed: language=neovim but agent=${agent}"
   exit 1
 fi
 
-# Validate non-lean routing
-if [ "$language" != "lean" ] && [[ "$agent" =~ ^lean- ]]; then
+# Validate non-neovim routing
+if [ "$language" != "neovim" ] && [[ "$agent" =~ ^neovim- ]]; then
   echo "[FAIL] Routing validation failed: language=${language} but agent=${agent}"
   exit 1
 fi
@@ -116,8 +116,8 @@ echo "[PASS] Routing validation succeeded"
 - ✅ Validation logging ([PASS]/[FAIL])
 
 **Commands with Language-Based Routing:**
-- ✅ /research (lean → lean-research-agent, default → researcher)
-- ✅ /implement (lean → lean-implementation-agent, default → implementer)
+- ✅ /research (neovim → neovim-research-agent, default → researcher)
+- ✅ /implement (neovim → neovim-implementation-agent, default → implementer)
 
 ---
 
@@ -441,19 +441,19 @@ Error: Phantom research detected: status=completed but no artifacts
 
 ### Language Routing Mismatch
 
-**Symptom:** Lean task routed to general researcher (or vice versa).
+**Symptom:** Neovim task routed to general researcher (or vice versa).
 
 **Root Cause:** Language extraction failed or routing validation skipped.
 
 **Detection:** Stage 2 routing validation catches this:
 ```
-[FAIL] Routing validation failed: language=lean but agent=researcher
-Error: Routing mismatch: Lean task must route to lean-* agent
+[FAIL] Routing validation failed: language=neovim but agent=researcher
+Error: Routing mismatch: Neovim task must route to neovim-* agent
 ```
 
 **Prevention:** Orchestrator Stage 2 now validates:
-1. If language="lean": Agent must start with "lean-"
-2. If language!="lean": Agent must NOT start with "lean-"
+1. If language="neovim": Agent must start with "neovim-"
+2. If language!="neovim": Agent must NOT start with "neovim-"
 
 **Recovery:**
 1. Verify **Language** field in TODO.md task entry
@@ -474,9 +474,9 @@ Error: Routing mismatch: Lean task must route to lean-* agent
 **Fix:**
 1. Add **Language** field to task entry in TODO.md:
    ```markdown
-   ### 258. Resolve Truth.lean sorries
+   ### 258. Resolve Truth.neovim sorries
    - **Status**: [NOT STARTED]
-   - **Language**: lean
+   - **Language**: neovim
    ```
 2. Re-run command
 
@@ -488,7 +488,7 @@ Error: Routing mismatch: Lean task must route to lean-* agent
 
 **Detection:** Stage 2 agent file validation:
 ```
-[FAIL] Agent file not found: lean-research-agent
+[FAIL] Agent file not found: neovim-research-agent
 ```
 
 **Fix:**
@@ -498,10 +498,10 @@ Error: Routing mismatch: Lean task must route to lean-* agent
 
 ### Routing Logs
 
-**Example successful routing (Lean task):**
+**Example successful routing (Neovim task):**
 ```
-[INFO] Task 258 language: lean
-[INFO] Routing to lean-research-agent (language=lean)
+[INFO] Task 258 language: neovim
+[INFO] Routing to neovim-research-agent (language=neovim)
 [PASS] Routing validation succeeded
 ```
 
@@ -514,10 +514,10 @@ Error: Routing mismatch: Lean task must route to lean-* agent
 
 **Example failed routing (mismatch):**
 ```
-[INFO] Task 258 language: lean
-[INFO] Routing to researcher (language=lean)
-[FAIL] Routing validation failed: language=lean but agent=researcher
-Error: Routing mismatch: Lean task must route to lean-* agent
+[INFO] Task 258 language: neovim
+[INFO] Routing to researcher (language=neovim)
+[FAIL] Routing validation failed: language=neovim but agent=researcher
+Error: Routing mismatch: Neovim task must route to neovim-* agent
 ```
 
 ---
@@ -527,7 +527,7 @@ Error: Routing mismatch: Lean task must route to lean-* agent
 
 ## Overview
 
-This standard defines how the orchestrator determines which agent to route commands to, including language-based routing for Lean-specific tasks.
+This standard defines how the orchestrator determines which agent to route commands to, including language-based routing for Neovim-specific tasks.
 
 ## Language Extraction
 
@@ -593,7 +593,7 @@ Commands define routing in frontmatter:
 ```yaml
 routing:
   language_based: true
-  lean: lean-research-agent      # Agent for Lean tasks
+  neovim: neovim-research-agent      # Agent for Neovim tasks
   default: researcher             # Agent for all other tasks
 ```
 
@@ -601,13 +601,13 @@ routing:
 
 ```bash
 # Read routing table from command frontmatter
-lean_agent=$(yq '.routing.lean' .claude/command/${command}.md)
+neovim_agent=$(yq '.routing.neovim' .claude/command/${command}.md)
 default_agent=$(yq '.routing.default' .claude/command/${command}.md)
 
 # Map language to agent
-if [ "$language" == "lean" ]; then
-  target_agent="$lean_agent"
-  echo "[INFO] Routing to ${target_agent} (language=lean)"
+if [ "$language" == "neovim" ]; then
+  target_agent="$neovim_agent"
+  echo "[INFO] Routing to ${target_agent} (language=neovim)"
 else
   target_agent="$default_agent"
   echo "[INFO] Routing to ${target_agent} (language=${language})"
@@ -618,13 +618,13 @@ fi
 
 | Command | Language | Agent |
 |---------|----------|-------|
-| /research | lean | lean-research-agent |
+| /research | neovim | neovim-research-agent |
 | /research | general | researcher |
-| /plan | lean | lean-planner |
+| /plan | neovim | neovim-planner |
 | /plan | general | planner |
-| /revise | lean | lean-planner |
+| /revise | neovim | neovim-planner |
 | /revise | general | planner |
-| /implement | lean | lean-implementation-agent |
+| /implement | neovim | neovim-implementation-agent |
 | /implement | general | implementer |
 | /review | any | reviewer (no language-based routing) |
 
@@ -648,17 +648,17 @@ Validate routing decision before delegation.
 
 2. **Verify language matches agent capabilities**
    ```bash
-   # Lean tasks must route to lean-* agents
-   if [ "$language" == "lean" ] && [[ ! "$target_agent" =~ ^lean- ]]; then
-     echo "[FAIL] Routing validation failed: language=lean but agent=${target_agent}"
-     echo "Error: Lean task must route to lean-* agent"
+   # Neovim tasks must route to neovim-* agents
+   if [ "$language" == "neovim" ] && [[ ! "$target_agent" =~ ^neovim- ]]; then
+     echo "[FAIL] Routing validation failed: language=neovim but agent=${target_agent}"
+     echo "Error: Neovim task must route to neovim-* agent"
      exit 1
    fi
    
-   # Non-lean tasks must NOT route to lean-* agents
-   if [ "$language" != "lean" ] && [[ "$target_agent" =~ ^lean- ]]; then
+   # Non-neovim tasks must NOT route to neovim-* agents
+   if [ "$language" != "neovim" ] && [[ "$target_agent" =~ ^neovim- ]]; then
      echo "[FAIL] Routing validation failed: language=${language} but agent=${target_agent}"
-     echo "Error: Non-lean task cannot route to lean-* agent"
+     echo "Error: Non-neovim task cannot route to neovim-* agent"
      exit 1
    fi
    
@@ -713,7 +713,7 @@ language=${language:-general}
 echo "[WARN] Language not found for task ${task_number}, defaulting to 'general'"
 ```
 
-**Impact**: Task routes to general agent instead of Lean-specific agent
+**Impact**: Task routes to general agent instead of Neovim-specific agent
 
 **Resolution**: Add **Language** field to task entry in TODO.md
 
@@ -740,7 +740,7 @@ exit 1
 
 ```bash
 echo "[FAIL] Routing validation failed: language=${language} but agent=${target_agent}"
-echo "Error: Lean task must route to lean-* agent"
+echo "Error: Neovim task must route to neovim-* agent"
 exit 1
 ```
 
@@ -761,9 +761,9 @@ All routing decisions are logged for debugging.
 ### Example Log
 
 ```
-[INFO] Task 258 language: lean
-[INFO] Routing to lean-research-agent (language=lean)
-[PASS] Agent file exists: .claude/agent/subagents/lean-research-agent.md
+[INFO] Task 258 language: neovim
+[INFO] Routing to neovim-research-agent (language=neovim)
+[PASS] Agent file exists: .claude/agent/subagents/neovim-research-agent.md
 [PASS] Routing validation succeeded
 ```
 
