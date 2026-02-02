@@ -139,112 +139,27 @@ function M.setup()
       desc = "WezTerm: Restore tab title when leaving terminal buffer",
     })
 
-    -- Claude Code task number integration for WezTerm tab title
-    -- Monitors Claude Code terminal buffers for /research N, /plan N, /implement N, /revise N commands
-    -- and emits TASK_NUMBER user variable to WezTerm via OSC 1337
+    -- Claude Code task number integration for WezTerm tab title (task 795)
     --
-    -- Related: Task 791 - Extends wezterm-task-number.sh hook to work from within Neovim
+    -- Simplified architecture:
+    -- - Shell hook (wezterm-task-number.sh): Handles set/clear on UserPromptSubmit
+    --   - Workflow commands (/research N, /plan N, /implement N, /revise N) -> Set
+    --   - Non-workflow commands -> Clear
+    --   - Claude output (no hook event) -> No change (preserves)
+    -- - Neovim monitor (this file): Only handles terminal close cleanup
     --
-    -- This works alongside the shell-level wezterm-task-number.sh hook:
-    -- - Shell hook: Works for standalone Claude Code (uses CLAUDE_USER_PROMPT env var)
-    -- - This monitor: Works for Claude Code inside Neovim (emits OSC directly to WezTerm)
-    -- Both set the same TASK_NUMBER user variable, so they coexist without conflict.
+    -- This separation ensures task numbers persist correctly during Claude's
+    -- responses and only change when the user submits a new prompt.
     local wezterm = require('neotex.lib.wezterm')
 
-    -- Buffer-local state for tracking Claude Code terminals
-    -- Key: buffer number, Value: { last_task_number, debounce_timer }
-    local claude_buffer_state = {}
-
-    -- Function to parse task number from a line of text
-    local function parse_task_number(line)
-      if not line or line == '' then
-        return nil
-      end
-      -- Use Lua pattern matching (slightly different from POSIX regex)
-      -- Note: Removed ^ anchor to match anywhere in line (handles terminal prompts)
-      local task_num = line:match('/?%s*[rR][eE][sS][eE][aA][rR][cC][hH]%s+(%d+)')
-        or line:match('/?%s*[pP][lL][aA][nN]%s+(%d+)')
-        or line:match('/?%s*[iI][mM][pP][lL][eE][mM][eE][nN][tT]%s+(%d+)')
-        or line:match('/?%s*[rR][eE][vV][iI][sS][eE]%s+(%d+)')
-      return task_num
-    end
+    -- Track which buffers are Claude Code terminals for cleanup on close
+    local claude_terminal_buffers = {}
 
     -- Function to check if a buffer is a Claude Code terminal
     local function is_claude_terminal(bufnr)
       local bufname = api.nvim_buf_get_name(bufnr)
-      -- Match pattern used by claude-code.nvim plugin (just "claude", not "claude-code")
+      -- Match pattern used by claude-code.nvim plugin
       return bufname:match('claude') or bufname:match('ClaudeCode')
-    end
-
-    -- Function to update task number with debouncing
-    local function update_task_number(bufnr, task_number)
-      local state = claude_buffer_state[bufnr]
-      if not state then
-        return
-      end
-
-      -- Cancel any pending debounce timer
-      if state.debounce_timer then
-        vim.fn.timer_stop(state.debounce_timer)
-        state.debounce_timer = nil
-      end
-
-      -- Debounce: wait 100ms before emitting to avoid rapid updates during typing
-      state.debounce_timer = vim.fn.timer_start(100, function()
-        state.debounce_timer = nil
-
-        -- Only emit if task number actually changed
-        if state.last_task_number ~= task_number then
-          if task_number then
-            wezterm.set_task_number(task_number)
-          else
-            wezterm.clear_task_number()
-          end
-          state.last_task_number = task_number
-        end
-      end)
-    end
-
-    -- Setup monitoring for a Claude Code terminal buffer
-    local function setup_claude_monitor(bufnr)
-      if claude_buffer_state[bufnr] then
-        return -- Already monitoring
-      end
-
-      claude_buffer_state[bufnr] = {
-        last_task_number = nil,
-        debounce_timer = nil,
-      }
-
-      -- Attach to buffer to monitor changes
-      api.nvim_buf_attach(bufnr, false, {
-        on_lines = function(_, _, _, first_line, last_line, _, _, _, _)
-          -- Only process if buffer is still valid
-          if not api.nvim_buf_is_valid(bufnr) then
-            return true -- Detach
-          end
-
-          -- Get the changed lines
-          local lines = api.nvim_buf_get_lines(bufnr, first_line, last_line, false)
-
-          -- Check each changed line for task patterns
-          for _, line in ipairs(lines) do
-            local task_num = parse_task_number(line)
-            if task_num then
-              update_task_number(bufnr, task_num)
-              return -- Found a task number, stop processing
-            end
-          end
-        end,
-        on_detach = function()
-          -- Cleanup buffer state on detach
-          local state = claude_buffer_state[bufnr]
-          if state and state.debounce_timer then
-            vim.fn.timer_stop(state.debounce_timer)
-          end
-          claude_buffer_state[bufnr] = nil
-        end,
-      })
     end
 
     -- TermOpen autocmd to detect Claude Code terminals
@@ -254,29 +169,38 @@ function M.setup()
         -- Defer to next tick to ensure buffer name is set
         vim.defer_fn(function()
           if is_claude_terminal(ev.buf) then
-            setup_claude_monitor(ev.buf)
+            claude_terminal_buffers[ev.buf] = true
           end
         end, 10)
       end,
-      desc = 'WezTerm: Setup task number monitoring for Claude Code terminals',
+      desc = 'WezTerm: Track Claude Code terminal for cleanup',
     })
 
-    -- BufDelete/BufWipeout to cleanup state
+    -- BufDelete/BufWipeout to cleanup state when terminal closes
     api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
       pattern = '*',
       callback = function(ev)
-        local state = claude_buffer_state[ev.buf]
-        if state then
-          if state.debounce_timer then
-            vim.fn.timer_stop(state.debounce_timer)
-          end
-          claude_buffer_state[ev.buf] = nil
-
+        if claude_terminal_buffers[ev.buf] then
+          claude_terminal_buffers[ev.buf] = nil
           -- Clear task number when Claude terminal closes
           wezterm.clear_task_number()
         end
       end,
-      desc = 'WezTerm: Cleanup Claude Code terminal state',
+      desc = 'WezTerm: Clear task number when Claude Code terminal closes',
+    })
+
+    -- VimLeavePre to clear task number when Neovim exits with Claude terminal
+    -- This handles the case where Neovim is closed (:qa, window close) while
+    -- a Claude Code terminal is open with an active task number displayed
+    api.nvim_create_autocmd('VimLeavePre', {
+      callback = function()
+        -- Clear task number if any Claude terminal was active
+        for bufnr, _ in pairs(claude_terminal_buffers) do
+          wezterm.clear_task_number()
+          break  -- Only need to clear once
+        end
+      end,
+      desc = 'WezTerm: Clear task number when Neovim exits with Claude terminal',
     })
   end
 

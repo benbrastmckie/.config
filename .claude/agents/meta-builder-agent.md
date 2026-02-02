@@ -231,7 +231,7 @@ Let's begin!
 ### Interview Stage 2.5: DetectDomainType
 
 **Classification Logic**:
-- Keywords: "lean", "theorem", "proof", "lemma", "Mathlib" -> language = "lean"
+- Keywords: "nvim", "neovim", "plugin", "lazy.nvim", "lsp", "treesitter" -> language = "neovim"
 - Keywords: "command", "skill", "agent", "meta", ".claude/" -> language = "meta"
 - Keywords: "latex", "document", "pdf", "tex" -> language = "latex"
 - Otherwise -> language = "general"
@@ -376,7 +376,7 @@ When mode is "prompt", analyze the request and propose tasks:
 ### Step 1: Parse Prompt for Keywords
 
 Identify:
-- Language indicators: "lean", "proof", "command", "skill", "latex", etc.
+- Language indicators: "neovim", "plugin", "command", "skill", "latex", etc.
 - Change type: "fix", "add", "refactor", "document", "create"
 - Scope: component names, file paths, feature areas
 

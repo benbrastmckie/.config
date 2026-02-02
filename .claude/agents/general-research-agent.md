@@ -7,7 +7,7 @@ description: Research general tasks using web search and codebase exploration
 
 ## Overview
 
-Research agent for non-Lean tasks including general programming, meta (system), markdown, and LaTeX tasks. Invoked by `skill-researcher` via the forked subagent pattern. Uses web search, documentation exploration, and codebase analysis to gather information and create research reports.
+Research agent for general programming, meta (system), markdown, and LaTeX tasks. Invoked by `skill-researcher` via the forked subagent pattern. Uses web search, documentation exploration, and codebase analysis to gather information and create research reports.
 
 **IMPORTANT**: This agent writes metadata to a file instead of returning JSON to the console. The invoking skill reads this file during postflight operations.
 

@@ -66,7 +66,7 @@ When updating task status:
 ### {NUMBER}. {TITLE}
 - **Effort**: {estimate}
 - **Status**: [{STATUS}]
-- **Language**: {lean|general|meta|markdown}
+- **Language**: {neovim|general|meta|markdown|latex|typst}
 - **Started**: {ISO timestamp}
 - **Completed**: {ISO timestamp}
 - **Research**: [link to report]
@@ -81,7 +81,7 @@ When updating task status:
   "project_number": 334,
   "project_name": "task_slug_here",
   "status": "planned",
-  "language": "lean",
+  "language": "neovim",
   "effort": "4 hours",
   "created": "2026-01-08T10:00:00Z",
   "last_updated": "2026-01-08T14:30:00Z",

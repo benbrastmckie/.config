@@ -1,6 +1,6 @@
 ---
 name: skill-implementer
-description: Execute general implementation tasks following a plan. Invoke for non-Lean implementation work.
+description: Execute general implementation tasks following a plan. Invoke for general implementation work.
 allowed-tools: Task, Bash, Edit, Read, Write
 # Original context (now loaded by subagent):
 #   - .claude/context/core/formats/summary-format.md

@@ -24,8 +24,11 @@ if [[ -z "${WEZTERM_PANE:-}" ]]; then
     exit_success
 fi
 
-# Get user prompt from Claude Code hook input
-PROMPT="${CLAUDE_USER_PROMPT:-}"
+# Read hook input from stdin (Claude Code provides JSON)
+HOOK_INPUT=$(cat)
+
+# Parse user prompt from JSON input
+PROMPT=$(echo "$HOOK_INPUT" | jq -r '.prompt // ""' 2>/dev/null || echo "")
 
 # Extract task number from Claude commands
 # Matches: /research N, /plan N, /implement N, /revise N
@@ -49,10 +52,13 @@ if [[ -n "$TASK_NUMBER" ]]; then
     # Format: OSC 1337 ; SetUserVar=name=base64_value ST
     TASK_VALUE=$(echo -n "$TASK_NUMBER" | base64 | tr -d '\n')
     printf '\033]1337;SetUserVar=TASK_NUMBER=%s\007' "$TASK_VALUE" > "$PANE_TTY"
+else
+    # Clear TASK_NUMBER on non-workflow commands (task 795)
+    # This implements the correct behavior:
+    # - Workflow commands (/research N, /plan N, /implement N, /revise N) -> Set
+    # - Non-workflow commands (anything else) -> Clear
+    # - Claude output (no UserPromptSubmit event) -> No change (preserves)
+    printf '\033]1337;SetUserVar=TASK_NUMBER=\007' > "$PANE_TTY"
 fi
-# Note: We don't clear TASK_NUMBER when pattern doesn't match to allow
-# persistence during Claude Code sessions. The Neovim integration (task 791)
-# handles clearing on terminal close. This prevents conflicts between the
-# shell hook and Neovim's task number monitoring.
 
 exit_success

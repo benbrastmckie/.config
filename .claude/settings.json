@@ -56,6 +56,15 @@
     ],
     "SessionStart": [
       {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/wezterm-clear-task-number.sh 2>/dev/null || echo '{}'"
+          }
+        ]
+      },
+      {
         "matcher": "startup",
         "hooks": [
           {

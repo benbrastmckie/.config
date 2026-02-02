@@ -41,8 +41,9 @@ Route to appropriate skill based on task language:
 
 | Language | Research Skill | Implementation Skill |
 |----------|---------------|---------------------|
-| lean | skill-lean-research | skill-lean-implementation |
+| neovim | skill-neovim-research | skill-neovim-implementation |
 | latex | skill-researcher | skill-latex-implementation |
+| typst | skill-researcher | skill-typst-implementation |
 | general | skill-researcher | skill-implementer |
 | meta | skill-researcher | skill-implementer |
 | markdown | skill-researcher | skill-implementer |

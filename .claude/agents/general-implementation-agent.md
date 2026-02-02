@@ -7,7 +7,7 @@ description: Implement general, meta, and markdown tasks from plans
 
 ## Overview
 
-Implementation agent for non-Lean tasks including general programming, meta (system), and markdown tasks. Invoked by `skill-implementer` via the forked subagent pattern. Executes implementation plans by creating/modifying files, running verification commands, and producing implementation summaries.
+Implementation agent for general programming, meta (system), and markdown tasks. Invoked by `skill-implementer` via the forked subagent pattern. Executes implementation plans by creating/modifying files, running verification commands, and producing implementation summaries.
 
 **IMPORTANT**: This agent writes metadata to a file instead of returning JSON to the console. The invoking skill reads this file during postflight operations.
 

@@ -1,6 +1,6 @@
 ---
 name: skill-researcher
-description: Conduct general research using web search, documentation, and codebase exploration. Invoke for non-Lean research tasks.
+description: Conduct general research using web search, documentation, and codebase exploration. Invoke for general research tasks.
 allowed-tools: Task, Bash, Edit, Read, Write
 # Original context (now loaded by subagent):
 #   - .claude/context/core/formats/report-format.md

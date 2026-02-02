@@ -309,73 +309,44 @@ Load for: Component development and architecture understanding
 
 Load only when needed for language-specific workflows:
 
-### Lean4 Context (project/lean4/)
+### Neovim Context (project/neovim/)
 
-Load for: Lean implementation tasks (Language: lean)
+Load for: Neovim implementation tasks (Language: neovim)
 
-**Standards**:
-- **lean4-style-guide.md** - Lean 4 coding conventions
-- **proof-conventions-lean.md** - Lean-specific proof conventions
-- **proof-readability-criteria.md** - Proof readability standards
+**Overview**:
+- **README.md** (~80 lines) - Directory overview and loading strategy
 
-**Tools**:
-- **leansearch-api.md** - LeanSearch REST API integration
-- **loogle-api.md** - Loogle CLI interface
-- **lsp-integration.md** - lean-lsp-mcp integration
-- **aesop-integration.md** - Aesop tactic integration
-- **mcp-tools-guide.md** - MCP tools overview
+**Domain**:
+- **lua-patterns.md** - Lua idioms for Neovim
+- **plugin-ecosystem.md** - lazy.nvim, common plugins
+- **lsp-overview.md** - LSP concepts, mason, nvim-lspconfig
+- **neovim-api.md** - vim.api, vim.fn, vim.opt patterns
 
 **Patterns**:
-- **tactic-patterns.md** - Common tactic patterns
-
-**Agents** (project/lean4/agents/):
-- **lean-research-flow.md** (~250 lines) - Detailed execution flow for lean-research-agent
-  - Stages 1-7: Parse context, search strategy, execute searches, synthesize, report, metadata, return
-  - Error handling patterns and MCP recovery
-  - Search fallback chain and partial result guidelines
-  - **MUST load after Stage 0 in lean-research-agent**
-- **lean-implementation-flow.md** (~340 lines) - Detailed execution flow for lean-implementation-agent
-  - Stages 1-8: Parse context, load plan, find resume, proof loop, verify, summary, metadata, return
-  - Phase checkpoint protocol
-  - Proof development loop details (tactic selection, when stuck)
-  - Error handling and MCP recovery
-  - **MUST load after Stage 0 in lean-implementation-agent**
-
-**Processes**:
-- **end-to-end-proof-workflow.md** - Complete proof development workflow
-- **project-structure-best-practices.md** - Repository organization
-
-**Domain**:
-- **dependent-types.md** - Dependent type theory concepts
-- **key-mathematical-concepts.md** - Core mathematical concepts
-- **lean4-syntax.md** - Lean 4 syntax reference
-- **mathlib-overview.md** - Mathlib library overview
-
-**Templates**:
-- **definition-template.md** - Definition structure template
-- **new-file-template.md** - New Lean file template
-- **proof-structure-templates.md** - Proof structure templates
-
-### Logic Context (project/logic/)
-
-Load for: Proof theory tasks
+- **plugin-spec.md** - lazy.nvim plugin specification
+- **keymap-patterns.md** - vim.keymap.set, which-key
+- **autocommand-patterns.md** - vim.api.nvim_create_autocmd
+- **ftplugin-patterns.md** - after/ftplugin structure
 
 **Standards**:
-- **proof-conventions.md** - Canonical proof principles
-- **notation-standards.md** - Notation conventions
-- **naming-conventions.md** - Naming standards
+- **lua-style-guide.md** - Lua conventions
+- **testing-patterns.md** - plenary.nvim testing
 
-**Processes**:
-- **modal-proof-strategies.md** - Modal logic proof strategies
-- **temporal-proof-strategies.md** - Temporal logic proof strategies
-- **proof-construction.md** - General proof construction
-- **verification-workflow.md** - Verification procedures
+**Tools**:
+- **lazy-nvim-guide.md** - lazy.nvim usage
+- **treesitter-guide.md** - Tree-sitter configuration
+- **telescope-guide.md** - Telescope patterns
 
-**Domain**:
-- **kripke-semantics-overview.md** - Kripke semantics concepts
-- **metalogic-concepts.md** - Metalogic theory
-- **proof-theory-concepts.md** - Proof theory foundations
-- **task-semantics.md** - Task-based semantics
+**Templates**:
+- **plugin-template.md** - New plugin spec template
+- **ftplugin-template.md** - New ftplugin template
+
+**When to Load**:
+- Load README.md for overview on any Neovim task
+- Load lua-style-guide.md when setting up Lua modules
+- Load plugin-spec.md when working with plugin configuration
+- Load keymap-patterns.md when defining keybindings
+- Load autocommand-patterns.md when working with autocmds
 
 ### Typst Context (project/typst/)
 
@@ -417,30 +388,6 @@ Load for: General markdown/documentation tasks (Language: markdown)
 
 - **project-overview.md** - Repository structure and organization
 - **self-healing-implementation-details.md** - Self-healing system details
-
-### Math Context (project/math/)
-
-Load for: Mathematical domain tasks
-
-**Algebra**:
-- **groups-and-monoids.md** - Group theory concepts
-- **rings-and-fields.md** - Ring and field theory
-
-**Order Theory**:
-- **partial-orders.md** - Partial order concepts
-
-**Lattice Theory**:
-- **lattices.md** - Lattice theory concepts
-
-**Topology**:
-- **topological-spaces.md** - Topology concepts
-
-### Physics Context (project/physics/)
-
-Load for: Physics domain tasks
-
-**Dynamical Systems**:
-- **dynamical-systems.md** - Dynamical systems concepts
 
 ---
 
@@ -506,7 +453,7 @@ Stage 4 loads:
 - @specs/state.json
 
 Language-specific:
-- If lean: @.claude/context/project/lean4/tools/leansearch-api.md
+- If neovim: @.claude/context/project/neovim/domain/neovim-api.md
 - If markdown: (no additional context)
 ```
 
@@ -532,8 +479,8 @@ Stage 4 loads:
 - Plan file (if exists)
 
 Language-specific:
-- If lean: @.claude/context/project/lean4/standards/lean4-style-guide.md
-- If lean: @.claude/context/project/lean4/tools/lsp-integration.md
+- If neovim: @.claude/context/project/neovim/standards/lua-style-guide.md
+- If neovim: @.claude/context/project/neovim/tools/lazy-nvim-guide.md
 ```
 
 **Meta Workflow (meta-builder-agent)**:
@@ -598,5 +545,5 @@ Quick reference:
 - **For Git Commits**: → `core/system/git-commits.md`
 - **For Task Format**: → `core/standards/tasks.md`
 - **For Plan Format**: → `core/standards/plan.md`
-- **For Lean Style**: → `project/lean4/standards/lean4-style-guide.md`
-- **For Proof Conventions**: → `project/logic/standards/proof-conventions.md`
+- **For Neovim Lua Style**: → `project/neovim/standards/lua-style-guide.md`
+- **For Plugin Patterns**: → `project/neovim/patterns/plugin-spec.md`
