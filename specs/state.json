@@ -181,17 +181,17 @@
       "researched": "2026-02-02T10:05:42Z",
       "artifacts": [
         {
-          "path": "specs/25_migrate_git_repo_to_nvim_directory/reports/research-001.md",
+          "path": "specs/025_migrate_git_repo_to_nvim_directory/reports/research-001.md",
           "type": "research",
           "summary": "Research report covering 3 migration approaches (git-filter-repo, simple .git move, subdirectory filter), with recommendation to use git-filter-repo --subdirectory-filter for clean history rewrite"
         },
         {
-          "path": "specs/25_migrate_git_repo_to_nvim_directory/plans/implementation-001.md",
+          "path": "specs/025_migrate_git_repo_to_nvim_directory/plans/implementation-001.md",
           "type": "plan",
           "summary": "6-phase implementation plan for git repository migration from .config/ to nvim/"
         },
         {
-          "path": "specs/25_migrate_git_repo_to_nvim_directory/summaries/implementation-summary-20260202.md",
+          "path": "specs/025_migrate_git_repo_to_nvim_directory/summaries/implementation-summary-20260202.md",
           "type": "summary",
           "summary": "Implementation summary with verification results and migration details"
         }
@@ -212,13 +212,13 @@
       "planned": "2026-02-02T09:43:35Z",
       "artifacts": [
         {
-          "path": "specs/24_add_root_files_to_leader_ac_picker/plans/implementation-001.md",
+          "path": "specs/024_add_root_files_to_leader_ac_picker/plans/implementation-001.md",
           "type": "plan",
           "summary": "Implementation plan for adding root files to picker"
         },
         {
           "type": "summary",
-          "path": "specs/24_add_root_files_to_leader_ac_picker/summaries/implementation-summary-20260202.md",
+          "path": "specs/024_add_root_files_to_leader_ac_picker/summaries/implementation-summary-20260202.md",
           "summary": "Implementation summary with verification results"
         }
       ],
@@ -236,17 +236,17 @@
       "artifacts": [
         {
           "type": "research",
-          "path": "specs/23_leader_ac_picker_claude_directory_management/reports/research-001.md",
+          "path": "specs/023_leader_ac_picker_claude_directory_management/reports/research-001.md",
           "summary": "Research report analyzing picker coverage, gap analysis, and implementation recommendations"
         },
         {
-          "path": "specs/23_leader_ac_picker_claude_directory_management/plans/implementation-001.md",
+          "path": "specs/023_leader_ac_picker_claude_directory_management/plans/implementation-001.md",
           "type": "plan",
           "summary": "Implementation plan for adding agents/ directory support to <leader>ac picker with 5 phases"
         },
         {
           "type": "summary",
-          "path": "specs/23_leader_ac_picker_claude_directory_management/summaries/implementation-summary-20260202.md",
+          "path": "specs/023_leader_ac_picker_claude_directory_management/summaries/implementation-summary-20260202.md",
           "summary": "Implementation summary documenting agents/ directory support addition"
         }
       ],
@@ -266,17 +266,17 @@
       "researched": "2026-02-02T02:12:50Z",
       "artifacts": [
         {
-          "path": "specs/22_review_claude_directory_neovim_improvements/reports/research-001.md",
+          "path": "specs/022_review_claude_directory_neovim_improvements/reports/research-001.md",
           "type": "research",
           "summary": "Comprehensive review of .claude/context directory identifying 61 files with Lean references, 19 files with ProofChecker references, and 16 prioritized recommendations for Neovim adaptation"
         },
         {
-          "path": "specs/22_review_claude_directory_neovim_improvements/plans/implementation-002.md",
+          "path": "specs/022_review_claude_directory_neovim_improvements/plans/implementation-002.md",
           "type": "plan",
           "summary": "4-phase implementation plan for updating .claude/ directory from Lean to Neovim context (CI workflow removed per user request)"
         },
         {
-          "path": "specs/22_review_claude_directory_neovim_improvements/summaries/implementation-summary-20260202.md",
+          "path": "specs/022_review_claude_directory_neovim_improvements/summaries/implementation-summary-20260202.md",
           "type": "summary",
           "summary": "Implementation summary documenting all file changes across 4 phases"
         }
@@ -299,17 +299,17 @@
       "researched": "2026-02-02T01:33:43Z",
       "artifacts": [
         {
-          "path": "specs/21_update_claude_docs_neovim_focus/reports/research-001.md",
+          "path": "specs/021_update_claude_docs_neovim_focus/reports/research-001.md",
           "type": "research",
           "summary": "Comprehensive analysis of 88 files with Lean references, categorized by priority with specific change recommendations"
         },
         {
-          "path": "specs/21_update_claude_docs_neovim_focus/plans/implementation-001.md",
+          "path": "specs/021_update_claude_docs_neovim_focus/plans/implementation-001.md",
           "type": "plan",
           "summary": "7-phase implementation plan for updating .claude/ documentation to remove Lean references and reflect Neovim focus"
         },
         {
-          "path": "specs/21_update_claude_docs_neovim_focus/summaries/implementation-summary-20260202.md",
+          "path": "specs/021_update_claude_docs_neovim_focus/summaries/implementation-summary-20260202.md",
           "type": "summary",
           "summary": "Implementation summary documenting all 7 phases of documentation updates"
         }
@@ -332,17 +332,17 @@
       "researched": "2026-02-01T22:40:58Z",
       "artifacts": [
         {
-          "path": "specs/20_update_specs_readme_overview/reports/research-001.md",
+          "path": "specs/020_update_specs_readme_overview/reports/research-001.md",
           "type": "research",
           "summary": "Research report identifying gaps in specs/README.md including missing archive documentation, outdated project numbering conventions, and absence of state file documentation"
         },
         {
-          "path": "specs/20_update_specs_readme_overview/plans/implementation-001.md",
+          "path": "specs/020_update_specs_readme_overview/plans/implementation-001.md",
           "type": "plan",
           "summary": "2-phase implementation plan to update specs/README.md with corrected project numbering and archive documentation"
         },
         {
-          "path": "specs/20_update_specs_readme_overview/summaries/implementation-summary-20260201.md",
+          "path": "specs/020_update_specs_readme_overview/summaries/implementation-summary-20260201.md",
           "type": "summary",
           "summary": "Implementation summary documenting all changes made to specs/README.md"
         }
@@ -364,17 +364,17 @@
       "researched": "2026-02-01T22:20:08Z",
       "artifacts": [
         {
-          "path": "specs/19_adapt_claude_system_for_stock_neovim/reports/research-001.md",
+          "path": "specs/019_adapt_claude_system_for_stock_neovim/reports/research-001.md",
           "type": "research",
           "summary": "Comprehensive research report with component categorization, architecture analysis, proposed Neovim system design, and 7-task implementation plan (14-21 hours estimated)"
         },
         {
-          "path": "specs/19_adapt_claude_system_for_stock_neovim/plans/implementation-001.md",
+          "path": "specs/019_adapt_claude_system_for_stock_neovim/plans/implementation-001.md",
           "type": "plan",
           "summary": "7-phase plan covering core extraction, Neovim context creation, agents, skills, rules, routing integration, and documentation"
         },
         {
-          "path": "specs/19_adapt_claude_system_for_stock_neovim/summaries/implementation-summary-20260202.md",
+          "path": "specs/019_adapt_claude_system_for_stock_neovim/summaries/implementation-summary-20260202.md",
           "type": "summary",
           "summary": "Implementation summary with full change list"
         }
