@@ -1,0 +1,20 @@
+{
+  "status": "planned",
+  "summary": "4-phase plan to add root-level .claude/ files to <leader>ac picker",
+  "artifacts": [
+    {
+      "type": "plan",
+      "path": "specs/24_add_root_files_to_leader_ac_picker/plans/implementation-001.md",
+      "summary": "Implementation plan for adding .gitignore, README.md, CLAUDE.md, settings.local.json to picker"
+    }
+  ],
+  "next_steps": "Run /implement 24 to execute the plan",
+  "metadata": {
+    "session_id": "sess_1738488012_d6f7g4",
+    "agent_type": "planner-agent",
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 4,
+    "estimated_hours": "1-2"
+  }
+}

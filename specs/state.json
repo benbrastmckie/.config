@@ -4,10 +4,19 @@
     {
       "project_number": 24,
       "project_name": "add_root_files_to_leader_ac_picker",
-      "status": "not_started",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-02T09:37:37Z",
-      "last_updated": "2026-02-02T09:37:37Z"
+      "last_updated": "2026-02-02T09:43:35Z",
+      "session_id": "sess_1738488012_d6f7g4",
+      "planned": "2026-02-02T09:43:35Z",
+      "artifacts": [
+        {
+          "path": "specs/24_add_root_files_to_leader_ac_picker/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "Implementation plan for adding root files to picker"
+        }
+      ]
     },
     {
       "project_number": 23,

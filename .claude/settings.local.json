@@ -1,0 +1,13 @@
+{
+  "model": "sonnet",
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "lean-lsp"
+  ],
+  "_comment": "Personal project overrides - not committed to git",
+  "permissions": {
+    "allow": [
+      "Bash(echo:*)"
+    ]
+  }
+}
