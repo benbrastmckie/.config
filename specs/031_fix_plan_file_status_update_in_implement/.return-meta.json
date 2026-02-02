@@ -1,17 +1,15 @@
 {
-  "status": "researched",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/031_fix_plan_file_status_update_in_implement/reports/research-001.md",
-      "summary": "Analysis of plan file status update gaps in /implement GATE OUT and skills Stage 7, with recommendations for verification and fixes"
+      "type": "plan",
+      "path": "specs/031_fix_plan_file_status_update_in_implement/plans/implementation-001.md",
+      "summary": "3-phase plan to fix plan file status updates in /implement command and implementation skills"
     }
   ],
-  "summary": "Found that plan file status updates are documented in 3 of 4 implementation skills but not verified. The /implement GATE OUT checkpoint lacks plan file verification, and skill-neovim-implementation is missing plan file update code entirely. Recommended adding defensive verification to GATE OUT and improving sed commands with error checking.",
   "metadata": {
-    "session_id": "sess_1770073293_544198",
-    "agent_type": "general-research-agent",
-    "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "general-research-agent"]
-  }
+    "phase_count": 3,
+    "estimated_hours": "1.5-2.5"
+  },
+  "summary": "Created implementation plan with 3 phases: (1) Add plan file verification to implement.md GATE OUT as defensive backup, (2) Add missing plan file updates to skill-neovim-implementation, (3) Improve sed commands in all implementation skills with verification output and dual-pattern support."
 }
