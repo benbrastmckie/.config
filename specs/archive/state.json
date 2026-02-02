@@ -98,6 +98,62 @@
       "archived": "2026-02-02T21:27:47Z",
       "source": "orphan_recovery",
       "detected_artifacts": []
+    },
+    {
+      "project_number": 30,
+      "project_name": "migrate_existing_directories_padded",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T22:59:22Z",
+      "completion_summary": "Created migrate-directory-padding.sh script for renaming task directories to 3-digit padded format. Verified all 19 existing directories already compliant. No migrations required."
+    },
+    {
+      "project_number": 29,
+      "project_name": "update_documentation_padded_paths",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T22:59:22Z",
+      "completion_summary": "Updated 20+ documentation files to use 3-digit padded directory format ({NNN}_{SLUG}) instead of unpadded ({N}_{SLUG}). Updated user guides, context patterns, commands, and architecture docs."
+    },
+    {
+      "project_number": 18,
+      "project_name": "update_agents_padded_paths",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T22:59:22Z",
+      "completion_summary": "Verified all 9 agent files already use {NNN}_{SLUG} format for task directories. No changes were required as the agents were already compliant with the padded directory standard."
+    },
+    {
+      "project_number": 17,
+      "project_name": "update_skills_padded_paths",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T22:59:22Z",
+      "completion_summary": "Updated 8 skill files (research, planner, implementer, neovim-implementation, latex-implementation, typst-implementation, git-workflow) to use {NNN}_{SLUG} format in path templates for directory numbers."
+    },
+    {
+      "project_number": 16,
+      "project_name": "update_workflow_commands_padded_paths",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T22:59:22Z",
+      "completion_summary": "Updated all workflow commands (/research, /plan, /implement, /revise, /todo) to use 3-digit padded directory numbers. Skills construct paths with printf %03d, agents document {NNN}_{SLUG} pattern, commands maintain backward compatibility."
+    },
+    {
+      "project_number": 15,
+      "project_name": "update_task_command_padded_dirs",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T22:59:22Z",
+      "completion_summary": "Updated /task command with 3-digit zero-padded directory naming. All modes (Create, Recover, Review, Abandon) now use padded format and handle legacy unpadded directories for backward compatibility."
+    },
+    {
+      "project_number": 14,
+      "project_name": "update_rules_padded_directory_numbers",
+      "status": "completed",
+      "language": "meta",
+      "archived": "2026-02-02T22:59:22Z",
+      "completion_summary": "Defined 3-digit zero-padded directory numbering standard in artifact-formats.md, state-management.md, and CLAUDE.md. All path templates now use {NNN}_{SLUG} pattern with printf guidance for implementation."
     }
   ]
 }
