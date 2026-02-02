@@ -37,7 +37,9 @@ Check $ARGUMENTS for flags:
 
 ## Create Task Mode (Default)
 
-When $ARGUMENTS contains a description (no flags):
+When $ARGUMENTS contains a description (no flags).
+
+**Directory Naming**: When artifacts are created, directories use 3-digit zero-padded task numbers (e.g., `015_task_name`). The padding is applied by artifact-writing agents using `printf "%03d" $task_num`. TODO.md and state.json use unpadded task numbers for readability.
 
 ### Steps
 
@@ -166,7 +168,9 @@ When $ARGUMENTS contains a description (no flags):
    Task #{N} created: {TITLE}
    Status: [NOT STARTED]
    Language: {language}
+   Artifacts path: specs/{NNN}_{SLUG}/  (created on first artifact)
    ```
+   Note: `{NNN}` is the 3-digit padded task number (e.g., `015` for task 15). Directories are created lazily when the first artifact is written.
 
 ## Recover Mode (--recover)
 
@@ -203,12 +207,17 @@ Parse task ranges after --recover (e.g., "343-345", "337, 343"):
      mv /tmp/state.json specs/state.json
    ```
 
-   **Move project directory from archive** (if it exists):
+   **Move project directory from archive** (handle both legacy unpadded and new padded formats):
    ```bash
+   PADDED_NUM=$(printf "%03d" "$task_number")
+   # Check legacy unpadded format first (e.g., 15_slug), then padded (e.g., 015_slug)
    if [ -d "specs/archive/${task_number}_${slug}" ]; then
-     mv "specs/archive/${task_number}_${slug}" "specs/${task_number}_${slug}"
+     mv "specs/archive/${task_number}_${slug}" "specs/${PADDED_NUM}_${slug}"
+   elif [ -d "specs/archive/${PADDED_NUM}_${slug}" ]; then
+     mv "specs/archive/${PADDED_NUM}_${slug}" "specs/${PADDED_NUM}_${slug}"
    fi
    ```
+   Note: Recovered directories always use 3-digit padding regardless of source format.
 
    **Update TODO.md**: Prepend recovered task entry to `## Tasks` section
 
@@ -305,10 +314,26 @@ language=$(echo "$task_data" | jq -r '.language // "general"')
 
 ### Step 2: Load Task Artifacts
 
+**Find task directory** (handle both legacy unpadded and new padded formats):
+```bash
+PADDED_NUM=$(printf "%03d" "$task_number")
+# Check padded format first (new), then unpadded (legacy)
+if [ -d "specs/${PADDED_NUM}_${slug}" ]; then
+  task_dir="specs/${PADDED_NUM}_${slug}"
+elif [ -d "specs/${task_number}_${slug}" ]; then
+  task_dir="specs/${task_number}_${slug}"
+else
+  task_dir=""  # No directory exists yet
+fi
+```
+
 **Find and load plan file**:
 ```bash
-plan_dir="specs/${task_number}_${slug}/plans"
-plan_file=$(ls -t "$plan_dir"/implementation-*.md 2>/dev/null | head -1)
+plan_file=""
+if [ -n "$task_dir" ]; then
+  plan_dir="${task_dir}/plans"
+  plan_file=$(ls -t "$plan_dir"/implementation-*.md 2>/dev/null | head -1)
+fi
 
 if [ -z "$plan_file" ]; then
   echo "No implementation plan found for task $task_number"
@@ -319,14 +344,20 @@ fi
 
 **Find and load summary file** (if exists):
 ```bash
-summary_dir="specs/${task_number}_${slug}/summaries"
-summary_file=$(ls -t "$summary_dir"/implementation-summary-*.md 2>/dev/null | head -1)
+summary_file=""
+if [ -n "$task_dir" ]; then
+  summary_dir="${task_dir}/summaries"
+  summary_file=$(ls -t "$summary_dir"/implementation-summary-*.md 2>/dev/null | head -1)
+fi
 ```
 
 **Find research reports** (for context):
 ```bash
-reports_dir="specs/${task_number}_${slug}/reports"
-research_files=$(ls "$reports_dir"/research-*.md 2>/dev/null)
+research_files=""
+if [ -n "$task_dir" ]; then
+  reports_dir="${task_dir}/reports"
+  research_files=$(ls "$reports_dir"/research-*.md 2>/dev/null)
+fi
 ```
 
 ### Step 3: Parse Plan Phases
@@ -518,13 +549,18 @@ Parse task ranges:
 
    **Update TODO.md**: Remove the task entry (abandoned tasks should not appear in TODO.md)
 
-   **Move task directory to archive** (if it exists):
+   **Move task directory to archive** (handle both legacy unpadded and new padded formats):
    ```bash
    slug=$(echo "$task_data" | jq -r '.project_name')
-   if [ -d "specs/${task_number}_${slug}" ]; then
-     mv "specs/${task_number}_${slug}" "specs/archive/${task_number}_${slug}"
+   PADDED_NUM=$(printf "%03d" "$task_number")
+   # Check padded format first (new), then unpadded (legacy)
+   if [ -d "specs/${PADDED_NUM}_${slug}" ]; then
+     mv "specs/${PADDED_NUM}_${slug}" "specs/archive/${PADDED_NUM}_${slug}"
+   elif [ -d "specs/${task_number}_${slug}" ]; then
+     mv "specs/${task_number}_${slug}" "specs/archive/${PADDED_NUM}_${slug}"
    fi
    ```
+   Note: Archived directories always use 3-digit padding regardless of source format.
 
 2. Git commit: "task: abandon tasks {ranges}"
 

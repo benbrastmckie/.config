@@ -14,7 +14,7 @@ Update the `/task` command to create task directories with 3-digit zero-padded n
 ### Phase 1: Update task.md command - Create Mode
 
 **Estimated effort**: 20 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Add padding logic for directory creation
@@ -53,7 +53,7 @@ Update the `/task` command to create task directories with 3-digit zero-padded n
 ### Phase 2: Update task.md command - Recover Mode
 
 **Estimated effort**: 10 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update directory move operations to handle both padded and unpadded source directories
@@ -85,7 +85,7 @@ Update the `/task` command to create task directories with 3-digit zero-padded n
 ### Phase 3: Update task.md command - Abandon Mode
 
 **Estimated effort**: 10 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update directory archival to handle both formats
