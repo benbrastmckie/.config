@@ -50,7 +50,8 @@ Create a new version of an implementation plan, or update task description if no
 For tasks with existing plans (planned, implementing, partial, blocked):
 
 1. **Load Current Context**
-   - Current plan from `specs/{N}_{SLUG}/plans/implementation-{LATEST}.md`
+   - Current plan from `specs/{NNN}_{SLUG}/plans/implementation-{LATEST}.md`
+     (Check padded directory first, fall back to unpadded for legacy tasks)
    - Research reports if any
    - Implementation progress (phase statuses)
 
@@ -62,7 +63,8 @@ For tasks with existing plans (planned, implementing, partial, blocked):
 3. **Create Revised Plan**
    Increment version: implementation-002.md, implementation-003.md, etc.
 
-   Write to `specs/{N}_{SLUG}/plans/implementation-{NEW_VERSION}.md`
+   Write to `specs/{NNN}_{SLUG}/plans/implementation-{NEW_VERSION}.md`
+   (Always use padded directory for new plans)
 
 4. **Update Status Inline** (two-step to avoid jq escaping bug - see `jq-escaping-workarounds.md`)
    Update state.json to "planned" status and add plan artifact:
