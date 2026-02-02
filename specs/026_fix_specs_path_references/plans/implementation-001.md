@@ -254,7 +254,15 @@ The parent .claude/ system at ~/.config/.claude/ correctly uses `specs/` relativ
 
 ## Success Criteria
 
-- [ ] `grep -r "\.claude/specs/" .claude/` returns only task artifact files (plans, reports, summaries)
-- [ ] All commands, skills, rules reference `specs/` at root
-- [ ] CLAUDE.md shows correct project structure
-- [ ] Hook scripts use correct paths
+- [x] `grep -r "\.claude/specs/" .claude/` returns only task artifact files (plans, reports, summaries)
+- [x] All commands, skills, rules reference `specs/` at root
+- [x] CLAUDE.md shows correct project structure
+- [x] Hook scripts use correct paths
+
+## Implementation Notes
+
+Upon investigation, most files already used the correct `specs/` path. Only 2 files required changes:
+1. `.claude/docs/guides/permission-configuration.md` - Updated documentation example
+2. `.claude/context/core/orchestration/routing.md` - Fixed `find` command path
+
+All verification checks pass as of 2026-02-02.
