@@ -11,10 +11,11 @@
 
 ## Executive Summary
 
-- **Recommended approach**: Use `git filter-repo --path nvim/ --path .claude/ --path specs/ --path-rename nvim/:` to create a clean repository focused on nvim/ as root while preserving .claude/ task management
+- **Recommended approach**: Use `git filter-repo --path nvim/ --path .claude/ --path specs/ --path CLAUDE.md --path-rename nvim/:` to make nvim/ the new root while preserving .claude/ and specs/ directories with full history
 - The current repository has 2725 commits total; 927 touch nvim/, 1516 touch .claude/
 - `git-filter-repo` is the modern, safe replacement for `git filter-branch` - available via `nix-shell -p git-filter-repo`
-- Alternative simpler approach: Move .git into nvim/ and adjust paths without history rewrite (requires `git log --follow`)
+- Final structure: nvim/ contents at root, .claude/ and specs/ preserved as subdirectories
+- All commit history fully preserved (927 commits for nvim/, 1516 for .claude/)
 
 ## Context and Scope
 
@@ -29,7 +30,9 @@
 
 **Migration Goal**:
 - New repository root: `/home/benjamin/.config/nvim/`
-- Preserve full commit history for nvim configuration
+- Make nvim/ contents the new root (init.lua, lua/, etc. at top level)
+- Move .claude/, specs/, and CLAUDE.md into nvim/ directory structure
+- Preserve full commit history for nvim/ (927 commits), .claude/ (1516 commits), and specs/
 - Everything else in .config/ is now managed by .dotfiles/ via home-manager/NixOS
 
 **Tracked Content Analysis** (git ls-files):
@@ -113,7 +116,10 @@ mv /tmp/nvim-config/.git /home/benjamin/.config/nvim/.git
 cd /home/benjamin/.config/nvim
 git checkout .
 
-# Update remote
+# Verify structure
+ls -la  # Should show: init.lua, lua/, after/, .claude/, specs/, CLAUDE.md
+
+# Update remote (optional - can keep same remote or create new one)
 git remote set-url origin git@github.com:benbrastmckie/nvim.git
 git push --force --all
 git push --force --tags
@@ -171,16 +177,14 @@ nix-shell -p git-filter-repo --run "git-filter-repo --subdirectory-filter nvim/"
 
 ### Recommendations
 
-**Recommended: Approach 3 (Subdirectory Filter) with modifications**
+**Recommended: Multi-path filter with task management preservation**
 
-Given the requirements, I recommend a hybrid approach:
+Use `git filter-repo` with multiple `--path` arguments to:
+1. Make nvim/ contents the new repository root
+2. Preserve .claude/ and specs/ directories with full commit history
+3. Keep CLAUDE.md at root level
 
-1. **Primary content**: Use `--subdirectory-filter nvim/` to make nvim/ the new root
-2. **Task management**: Decide whether to:
-   - (a) Keep .claude/ and specs/ in the new repo (for continued task management)
-   - (b) Start fresh with task management (cleaner separation)
-
-**If keeping task management (Option a)**:
+**Implementation**:
 ```bash
 cd /tmp
 git clone git@github.com:benbrastmckie/.config.git nvim-config
@@ -194,30 +198,28 @@ nix-shell -p git-filter-repo --run "git-filter-repo \
   --path CLAUDE.md \
   --path-rename nvim/:"
 
-# Result: nvim contents at root, .claude/ and specs/ preserved
+# Result:
+# - nvim/ contents at root (init.lua, lua/, after/, etc.)
+# - .claude/ preserved as subdirectory (1516 commits)
+# - specs/ preserved as subdirectory (all task artifacts)
+# - CLAUDE.md at root
 ```
 
-**If fresh start (Option b - cleanest)**:
-```bash
-cd /tmp
-git clone git@github.com:benbrastmckie/.config.git nvim-only
-cd nvim-only
-
-nix-shell -p git-filter-repo --run "git-filter-repo --subdirectory-filter nvim/"
-
-# Copy .claude/ framework fresh (without historical tasks)
-cp -r /home/benjamin/.config/.claude .
-mkdir specs
-git add .
-git commit -m "Initialize task management framework"
-```
+**Why this approach**:
+- Preserves all 927 commits touching nvim/ files
+- Preserves all 1516 commits touching .claude/ files
+- Maintains task management continuity (no loss of specs/ artifacts)
+- Clean history: files appear at correct paths in all commits
+- Standard git operations work without `--follow` flag
 
 ## Decisions
 
 1. **Use git-filter-repo**: Modern, safe, fast - available via nix-shell
 2. **Work on fresh clone**: Safety feature prevents accidental history corruption
-3. **Keep .claude/ and specs/**: Preserves 1516 commits of task management history
-4. **Create new remote**: Rename from .config to nvim for clarity
+3. **Multi-path filter**: Keep nvim/, .claude/, specs/, and CLAUDE.md with full history
+4. **Path rename**: Use `--path-rename nvim/:` to make nvim/ contents the new root
+5. **New repository structure**: .config/nvim/ becomes the root with .claude/ and specs/ as subdirectories
+6. **Create new remote**: Rename from .config to nvim for clarity (optional)
 
 ## Risks and Mitigations
 
@@ -280,9 +282,13 @@ pip install git-filter-repo
 ### Post-Migration Checklist
 
 - [ ] Verify history: `git log --oneline -20`
-- [ ] Verify file structure: `ls -la`
-- [ ] Update remote URL: `git remote set-url origin <new-url>`
+- [ ] Verify file structure: `ls -la` (should show init.lua, lua/, .claude/, specs/)
+- [ ] Verify .claude/ preserved: `ls -la .claude/`
+- [ ] Verify specs/ preserved: `ls -la specs/`
+- [ ] Check nvim/ history: `git log --oneline -- lua/ | wc -l` (should show ~927 commits)
+- [ ] Check .claude/ history: `git log --oneline -- .claude/ | wc -l` (should show ~1516 commits)
+- [ ] Update remote URL: `git remote set-url origin <new-url>` (optional)
 - [ ] Force push all branches: `git push --force --all`
 - [ ] Force push tags: `git push --force --tags`
-- [ ] Update CLAUDE.md paths if needed
 - [ ] Test nvim loads correctly: `nvim --headless -c "q"`
+- [ ] Verify task management: `cat specs/TODO.md`
