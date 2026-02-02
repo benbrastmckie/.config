@@ -1,10 +1,17 @@
 ---
-next_project_number: 24
+next_project_number: 25
 ---
 
 # TODO
 
 ## Tasks
+
+### 24. Add .gitignore, README.md, CLAUDE.md, and settings.local.json to leader-ac picker
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Add .gitignore, README.md, CLAUDE.md, and settings.local.json to `<leader>ac` picker for complete .claude/ directory management.
 
 ### 23. Check leader-ac picker manages all .claude/ contents by directory
 - **Effort**: 2-3 hours

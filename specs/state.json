@@ -1,6 +1,14 @@
 {
-  "next_project_number": 24,
+  "next_project_number": 25,
   "active_projects": [
+    {
+      "project_number": 24,
+      "project_name": "add_root_files_to_leader_ac_picker",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-02T09:37:37Z",
+      "last_updated": "2026-02-02T09:37:37Z"
+    },
     {
       "project_number": 23,
       "project_name": "leader_ac_picker_claude_directory_management",
