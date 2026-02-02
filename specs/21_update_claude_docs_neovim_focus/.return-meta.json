@@ -1,25 +1,20 @@
 {
-  "status": "researched",
+  "status": "planned",
   "artifacts": [
     {
-      "path": "specs/21_update_claude_docs_neovim_focus/reports/research-001.md",
-      "type": "research",
-      "summary": "Comprehensive analysis of 88 files with Lean references, categorized by priority with specific change recommendations"
+      "type": "plan",
+      "path": "specs/21_update_claude_docs_neovim_focus/plans/implementation-001.md",
+      "summary": "7-phase implementation plan for updating .claude/ documentation to remove Lean references and reflect Neovim focus"
     }
   ],
-  "next_steps": "Run /plan 21 to create implementation plan for updating documentation",
+  "next_steps": "Run /implement 21 to execute the plan",
   "metadata": {
-    "session_id": "sess_1769995823_d194ac",
-    "agent_type": "general-research-agent",
-    "duration_seconds": 180,
+    "session_id": "sess_1769996112_b8264c",
+    "agent_type": "planner-agent",
+    "duration_seconds": 120,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "general-research-agent"],
-    "findings_count": 88,
-    "lean_references": 587,
-    "proofchecker_references": 372,
-    "files_to_delete": 2,
-    "high_priority_files": 6,
-    "medium_priority_files": 8,
-    "low_priority_files": 74
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 7,
+    "estimated_hours": "6-8"
   }
 }

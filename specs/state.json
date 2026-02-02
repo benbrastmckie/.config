@@ -4,20 +4,26 @@
     {
       "project_number": 21,
       "project_name": "update_claude_docs_neovim_focus",
-      "status": "researched",
+      "status": "planned",
       "language": "meta",
       "description": "Update .claude/ documentation to remove Lean references and reflect Neovim focus. Found 128+ files with Lean/theorem/proof references including: .claude/README.md (51 refs), docs/architecture/system-overview.md (14 refs), context/index.md (4 refs), plus extensive refs in docs/guides/, context/core/, context/project/, skills/, agents/, commands/, and rules/. Need systematic review to replace Lean examples with Neovim examples, update architecture descriptions, fix outdated language routing tables, and ensure all documentation accurately reflects the stock Neovim configuration system.",
       "created": "2026-02-02T01:27:35Z",
-      "last_updated": "2026-02-02T01:33:43Z",
-      "session_id": "sess_1769995823_d194ac",
+      "last_updated": "2026-02-02T01:38:01Z",
+      "session_id": "sess_1769996112_b8264c",
       "researched": "2026-02-02T01:33:43Z",
       "artifacts": [
         {
           "path": "specs/21_update_claude_docs_neovim_focus/reports/research-001.md",
           "type": "research",
           "summary": "Comprehensive analysis of 88 files with Lean references, categorized by priority with specific change recommendations"
+        },
+        {
+          "path": "specs/21_update_claude_docs_neovim_focus/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "7-phase implementation plan for updating .claude/ documentation to remove Lean references and reflect Neovim focus"
         }
-      ]
+      ],
+      "planned": "2026-02-02T01:38:01Z"
     },
     {
       "project_number": 20,
