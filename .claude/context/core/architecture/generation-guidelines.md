@@ -289,7 +289,7 @@ Load required context files based on task.
 
 Write artifacts to proper locations:
 ```
-specs/{N}_{SLUG}/{artifact_type}/{filename}
+specs/{NNN}_{SLUG}/{artifact_type}/{filename}
 ```
 
 ### Stage 5: Return Structured JSON
@@ -303,7 +303,7 @@ Return ONLY valid JSON:
   "artifacts": [
     {
       "type": "{type}",
-      "path": "specs/{N}_{SLUG}/{path}",
+      "path": "specs/{NNN}_{SLUG}/{path}",
       "summary": "Description of artifact"
     }
   ],
@@ -428,7 +428,7 @@ When generating components, ensure integration with:
 
 ### State Management
 - Read task data from `specs/state.json`
-- Task artifacts go in `specs/{N}_{SLUG}/`
+- Task artifacts go in `specs/{NNN}_{SLUG}/`
 - Use skill-status-sync for status updates
 
 ### Git Workflow

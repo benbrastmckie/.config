@@ -38,7 +38,7 @@ Create a phased implementation plan for a task by delegating to the planner skil
 
 4. **Load Context**
    - Task description from state.json
-   - Research reports from `specs/{N}_{SLUG}/reports/` (if any)
+   - Research reports from `specs/{NNN}_{SLUG}/reports/` (if any)
 
 **ABORT** if any validation fails.
 
@@ -54,7 +54,7 @@ skill: "skill-planner"
 args: "task_number={N} research_path={path to research report if exists} session_id={session_id}"
 ```
 
-The skill spawns `planner-agent` which analyzes task requirements and research findings, decomposes into logical phases, identifies risks and mitigations, and creates a plan in `specs/{N}_{SLUG}/plans/`.
+The skill spawns `planner-agent` which analyzes task requirements and research findings, decomposes into logical phases, identifies risks and mitigations, and creates a plan in `specs/{NNN}_{SLUG}/plans/`.
 
 **On DELEGATE success**: Plan created. **IMMEDIATELY CONTINUE** to CHECKPOINT 2 below.
 

@@ -18,7 +18,7 @@ Agents write structured metadata to files instead of returning JSON to the conso
 ## File Location
 
 ```
-specs/{N}_{SLUG}/.return-meta.json
+specs/{NNN}_{SLUG}/.return-meta.json
 ```
 
 Where:
@@ -110,7 +110,7 @@ EOF
 Or use the Write tool:
 ```
 Write tool:
-  - Path: specs/{N}_{SLUG}/.return-meta.json
+  - Path: specs/{NNN}_{SLUG}/.return-meta.json
   - Content: Valid JSON matching schema
 ```
 

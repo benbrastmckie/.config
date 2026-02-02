@@ -173,7 +173,7 @@ Based on task language and purpose:
 ### Stage 5: Artifact Creation
 
 Create directory and write artifacts:
-- Path: `specs/{N}_{SLUG}/{type}/`
+- Path: `specs/{NNN}_{SLUG}/{type}/`
 - Verify artifacts are non-empty
 
 ### Stage 6: Return Structured JSON
@@ -342,7 +342,7 @@ Format outputs according to standards:
 
 Create directory structure:
 ```
-specs/{N}_{SLUG}/
+specs/{NNN}_{SLUG}/
 ├── reports/
 │   └── research-{NNN}.md
 ├── plans/
@@ -371,7 +371,7 @@ Return ONLY valid JSON matching this schema:
   "artifacts": [
     {
       "type": "report|plan|summary|implementation",
-      "path": "specs/{N}_{SLUG}/{type}/{file}.md",
+      "path": "specs/{NNN}_{SLUG}/{type}/{file}.md",
       "summary": "Brief artifact description"
     }
   ],

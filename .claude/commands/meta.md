@@ -111,7 +111,7 @@ Created {N} task(s) for {domain}:
 
 **High Priority**:
 - Task #{N}: {title}
-  Path: specs/{N}_{slug}/
+  Path: specs/{NNN}_{slug}/
 
 **Next Steps**:
 1. Review tasks in TODO.md

@@ -54,7 +54,7 @@ The agent system uses a three-layer architecture that separates user interaction
     +-----------------------------------------------------+
     |                     ARTIFACTS                        |
     |                                                      |
-    |   specs/{N}_{SLUG}/                                  |
+    |   specs/{NNN}_{SLUG}/                                  |
     |   ├── reports/research-001.md                       |
     |   ├── plans/implementation-001.md                   |
     |   └── summaries/implementation-summary-{DATE}.md    |

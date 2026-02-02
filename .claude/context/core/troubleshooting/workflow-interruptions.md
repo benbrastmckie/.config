@@ -141,7 +141,7 @@ ls -la "specs/${task_num}_${task_slug}/.return-meta.json"
 
 **Fix**:
 1. Check agent instructions include:
-   - "Write metadata to `specs/{N}_{SLUG}/.return-meta.json`"
+   - "Write metadata to `specs/{NNN}_{SLUG}/.return-meta.json`"
    - "Return brief text summary, NOT JSON"
 
 2. Verify agent loaded correct context:

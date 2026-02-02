@@ -7,7 +7,7 @@ Agents write structured metadata to files instead of returning JSON to the conso
 ## File Location
 
 ```
-specs/{N}_{SLUG}/.return-meta.json
+specs/{NNN}_{SLUG}/.return-meta.json
 ```
 
 Where:
@@ -175,7 +175,7 @@ mkdir -p "specs/${task_number}_${task_slug}"
 
 2. Write the JSON:
 ```json
-// Write to specs/{N}_{SLUG}/.return-meta.json
+// Write to specs/{NNN}_{SLUG}/.return-meta.json
 {
   "status": "researched",
   "artifacts": [...],
@@ -485,7 +485,7 @@ This file-based format complements `subagent-return.md`:
 | Aspect | subagent-return.md | return-metadata-file.md |
 |--------|-------------------|------------------------|
 | Purpose | Console JSON return | File-based metadata |
-| Location | Agent's stdout | `specs/{N}_{SLUG}/.return-meta.json` |
+| Location | Agent's stdout | `specs/{NNN}_{SLUG}/.return-meta.json` |
 | Consumer | Skill validation logic | Skill postflight operations |
 | When | Before file-based pattern | With file-based pattern |
 | Cneovimup | N/A | Deleted after postflight |

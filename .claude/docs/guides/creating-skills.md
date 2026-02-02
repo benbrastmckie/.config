@@ -384,7 +384,7 @@ The subagent will:
 - Search for Python-specific documentation
 - Analyze package dependencies
 - Review asyncio patterns and best practices
-- Create research report in `specs/{N}_{SLUG}/reports/`
+- Create research report in `specs/{NNN}_{SLUG}/reports/`
 - Return standardized JSON result
 
 ### 4. Return Validation

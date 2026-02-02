@@ -188,7 +188,7 @@ Conduct research on a task and create reports.
 - `lean` tasks -> Uses Lean MCP tools (leansearch, loogle, leanfinder)
 - Other tasks -> Uses web search, documentation, codebase exploration
 
-**Output**: Creates `specs/{N}_{SLUG}/reports/research-{NNN}.md`
+**Output**: Creates `specs/{NNN}_{SLUG}/reports/research-{NNN}.md`
 
 **Repeatable**: Yes. Run multiple times to gather additional research. Each run creates a new numbered report (001, 002, etc.).
 
@@ -204,7 +204,7 @@ Create an implementation plan for a task.
 
 **Prerequisites**: Task should exist (ideally researched first, but not required).
 
-**Output**: Creates `specs/{N}_{SLUG}/plans/implementation-{NNN}.md`
+**Output**: Creates `specs/{NNN}_{SLUG}/plans/implementation-{NNN}.md`
 
 **Plan Structure**:
 - **Phases**: Logical groupings of related work
@@ -248,7 +248,7 @@ Create a new plan version or update task description.
 /revise 45   # Interactive revision
 ```
 
-**Output for Plan Revision**: Creates `specs/{N}_{SLUG}/plans/implementation-{NNN}.md` with incremented version number.
+**Output for Plan Revision**: Creates `specs/{NNN}_{SLUG}/plans/implementation-{NNN}.md` with incremented version number.
 
 ---
 
@@ -278,7 +278,7 @@ Execute an implementation plan.
 - `[COMPLETED]` -> Finished successfully
 - `[PARTIAL]` -> Partially complete (interrupted)
 
-**Output**: Creates `specs/{N}_{SLUG}/summaries/implementation-summary-{DATE}.md`
+**Output**: Creates `specs/{NNN}_{SLUG}/summaries/implementation-summary-{DATE}.md`
 
 ---
 
@@ -591,7 +591,7 @@ Convert documents between formats.
 **Solutions**:
 1. Verify task is planned: Status should be `[PLANNED]`
 2. Check for missing plan: Run `/plan N` first
-3. Check plan file exists: `specs/{N}_{SLUG}/plans/implementation-001.md`
+3. Check plan file exists: `specs/{NNN}_{SLUG}/plans/implementation-001.md`
 
 #### Stuck in Implementing Status
 

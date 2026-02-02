@@ -167,7 +167,7 @@ Load these on-demand:
 [Compile discoveries]
 
 ### Stage 5: Create Research Report
-[Write report to specs/{N}_{SLUG}/reports/]
+[Write report to specs/{NNN}_{SLUG}/reports/]
 
 ### Stage 6: Write Metadata File
 [Write to .return-meta.json]
@@ -226,7 +226,7 @@ your-tool --check
 [Verify all changes work]
 
 ### Stage 6: Create Implementation Summary
-[Write summary to specs/{N}_{SLUG}/summaries/]
+[Write summary to specs/{NNN}_{SLUG}/summaries/]
 
 ### Stage 7: Write Metadata File
 [Write to .return-meta.json]

@@ -45,7 +45,7 @@ nvim/
 specs/                       # Task management
 ├── TODO.md                 # Task list
 ├── state.json              # Task state
-└── {N}_{SLUG}/             # Task artifacts
+└── {NNN}_{SLUG}/             # Task artifacts
     ├── reports/
     ├── plans/
     └── summaries/

@@ -29,7 +29,7 @@ Claude Code skill returns can bypass the invoking skill and return directly to t
 ### Location
 
 ```
-specs/{N}_{SLUG}/.postflight-pending
+specs/{NNN}_{SLUG}/.postflight-pending
 ```
 
 Where `{N}` is the task number and `{SLUG}` is the project name (e.g., `specs/259_prove_completeness/.postflight-pending`).
@@ -118,7 +118,7 @@ The hook at `.claude/hooks/subagent-postflight.sh`:
 ### Loop Guard
 
 To prevent infinite loops, the hook maintains a counter in the task directory:
-- Location: `specs/{N}_{SLUG}/.postflight-loop-guard` (same directory as marker)
+- Location: `specs/{NNN}_{SLUG}/.postflight-loop-guard` (same directory as marker)
 - Incremented on each blocked stop
 - After 3 continuations, cleanup and allow stop
 - Reset when marker is removed normally

@@ -14,7 +14,7 @@ Update CLAUDE.md, ARCHITECTURE.md, user guides, templates, and context files to 
 ### Phase 1: Update CLAUDE.md files
 
 **Estimated effort**: 20 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update nvim/.claude/CLAUDE.md artifact paths section
@@ -47,7 +47,7 @@ Update CLAUDE.md, ARCHITECTURE.md, user guides, templates, and context files to 
 ### Phase 2: Update ARCHITECTURE.md
 
 **Estimated effort**: 10 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update any directory structure diagrams
@@ -69,7 +69,7 @@ Update CLAUDE.md, ARCHITECTURE.md, user guides, templates, and context files to 
 ### Phase 3: Update user guide
 
 **Estimated effort**: 15 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update command examples with correct paths
@@ -91,7 +91,7 @@ Update CLAUDE.md, ARCHITECTURE.md, user guides, templates, and context files to 
 ### Phase 4: Update templates
 
 **Estimated effort**: 15 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update command-template.md
@@ -115,7 +115,7 @@ Update CLAUDE.md, ARCHITECTURE.md, user guides, templates, and context files to 
 ### Phase 5: Update context files
 
 **Estimated effort**: 20 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update context files that reference specs paths

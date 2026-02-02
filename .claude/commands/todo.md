@@ -1031,7 +1031,7 @@ If no suggestions were skipped (all selected or "Skip all" not chosen):
 ## Notes
 
 ### Task Archival
-- Artifacts (plans, reports, summaries) are preserved in archive/{N}_{SLUG}/
+- Artifacts (plans, reports, summaries) are preserved in archive/{NNN}_{SLUG}/
 - Tasks can be recovered with `/task --recover N`
 - Archive is append-only (for audit trail)
 - Run periodically to keep TODO.md and specs/ manageable

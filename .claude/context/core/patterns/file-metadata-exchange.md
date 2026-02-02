@@ -9,7 +9,7 @@ This document provides patterns for reading and writing metadata files between a
 ### Metadata File Location
 
 ```
-specs/{N}_{SLUG}/.return-meta.json
+specs/{NNN}_{SLUG}/.return-meta.json
 ```
 
 Where:
@@ -99,7 +99,7 @@ For agents using Claude tools directly:
 
 ```
 Use the Write tool to create the metadata file:
-- Path: specs/{N}_{SLUG}/.return-meta.json
+- Path: specs/{NNN}_{SLUG}/.return-meta.json
 - Content: Valid JSON matching the schema
 ```
 
