@@ -4,12 +4,12 @@
     {
       "project_number": 31,
       "project_name": "fix_plan_file_status_update_in_implement",
-      "status": "planned",
+      "status": "completed",
       "language": "meta",
       "description": "Add plan file status verification to /implement GATE OUT checkpoint and make implementation skills more explicit about plan file updates. Currently plan files are not reliably updated to [COMPLETED] status after implementation finishes (documented in skills but not executed). Fix: (1) Add verification step in implement.md GATE OUT that checks plan file status matches task status and updates if needed (defensive backup), (2) Make the sed command in skills Stage 7 more explicit with error checking and verification output.",
       "created": "2026-02-02T21:27:26Z",
-      "last_updated": "2026-02-02T23:13:35Z",
-      "session_id": "sess_1770073803_486ffa",
+      "last_updated": "2026-02-02T23:19:05Z",
+      "session_id": "sess_1770077399_a9d3c8",
       "researched": "2026-02-02T23:04:37Z",
       "artifacts": [
         {
@@ -21,9 +21,18 @@
           "path": "specs/031_fix_plan_file_status_update_in_implement/plans/implementation-001.md",
           "type": "plan",
           "summary": "3-phase plan to fix plan file status updates in /implement command and implementation skills"
+        },
+        {
+          "path": "specs/031_fix_plan_file_status_update_in_implement/summaries/implementation-summary-20260202.md",
+          "type": "summary",
+          "summary": "Implementation summary documenting changes to implement.md and 4 implementation skills"
         }
       ],
-      "planned": "2026-02-02T23:13:35Z"
+      "planned": "2026-02-02T23:13:35Z",
+      "started": "2026-02-02T23:14:43Z",
+      "completed": "2026-02-02T23:19:05Z",
+      "completion_summary": "Added plan file status verification to /implement GATE OUT as defensive backup, and improved sed commands in skill-neovim-implementation, skill-implementer, skill-latex-implementation, and skill-typst-implementation with dual pattern support (bullet and non-bullet), verification output, and graceful missing file handling.",
+      "claudemd_suggestions": "Modified .claude/commands/implement.md (added step 5 to GATE OUT), .claude/skills/skill-neovim-implementation/SKILL.md (added preflight and postflight plan updates), .claude/skills/skill-implementer/SKILL.md, .claude/skills/skill-latex-implementation/SKILL.md, .claude/skills/skill-typst-implementation/SKILL.md (improved sed commands in all three)"
     }
   ],
   "repository_health": {

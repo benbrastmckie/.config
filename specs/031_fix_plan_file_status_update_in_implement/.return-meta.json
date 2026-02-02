@@ -1,15 +1,24 @@
 {
-  "status": "planned",
+  "status": "implemented",
+  "summary": "Fixed plan file status update reliability by adding defensive verification to /implement GATE OUT and improving sed commands in all implementation skills with both bullet and non-bullet pattern support, verification output, and graceful missing file handling.",
   "artifacts": [
     {
-      "type": "plan",
-      "path": "specs/031_fix_plan_file_status_update_in_implement/plans/implementation-001.md",
-      "summary": "3-phase plan to fix plan file status updates in /implement command and implementation skills"
+      "type": "summary",
+      "path": "specs/031_fix_plan_file_status_update_in_implement/summaries/implementation-summary-20260202.md",
+      "summary": "Implementation summary documenting changes to implement.md and 4 implementation skills"
     }
   ],
-  "metadata": {
-    "phase_count": 3,
-    "estimated_hours": "1.5-2.5"
+  "completion_data": {
+    "completion_summary": "Added plan file status verification to /implement GATE OUT as defensive backup, and improved sed commands in skill-neovim-implementation, skill-implementer, skill-latex-implementation, and skill-typst-implementation with dual pattern support (bullet and non-bullet), verification output, and graceful missing file handling.",
+    "claudemd_suggestions": "Modified .claude/commands/implement.md (added step 5 to GATE OUT), .claude/skills/skill-neovim-implementation/SKILL.md (added preflight and postflight plan updates), .claude/skills/skill-implementer/SKILL.md, .claude/skills/skill-latex-implementation/SKILL.md, .claude/skills/skill-typst-implementation/SKILL.md (improved sed commands in all three)"
   },
-  "summary": "Created implementation plan with 3 phases: (1) Add plan file verification to implement.md GATE OUT as defensive backup, (2) Add missing plan file updates to skill-neovim-implementation, (3) Improve sed commands in all implementation skills with verification output and dual-pattern support."
+  "metadata": {
+    "session_id": "sess_1770077399_a9d3c8",
+    "agent_type": "general-implementation-agent",
+    "delegation_depth": 2,
+    "delegation_path": ["orchestrator", "implement", "skill-implementer", "general-implementation-agent"],
+    "phases_completed": 3,
+    "phases_total": 3
+  },
+  "next_steps": "Review implementation and test with a task to verify plan file status updates correctly"
 }

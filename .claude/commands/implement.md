@@ -118,6 +118,41 @@ The skill will spawn the appropriate agent which executes plan phases sequential
    **Skip if result.status == "partial":**
    Partial implementations do not get completion summaries.
 
+5. **Verify Plan File Status Updated (Defensive)**
+
+   **Only when result.status == "implemented":**
+
+   Check that the plan file status marker was updated to `[COMPLETED]`. If not, apply defensive correction.
+
+   ```bash
+   # Find latest plan file
+   padded_num=$(printf "%03d" "$task_number")
+   project_name=$(jq -r --argjson num "$task_number" \
+     '.active_projects[] | select(.project_number == $num) | .project_name' \
+     specs/state.json)
+   plan_file=$(ls -1 "specs/${padded_num}_${project_name}/plans/implementation-"*.md 2>/dev/null | sort -V | tail -1)
+
+   if [ -n "$plan_file" ] && [ -f "$plan_file" ]; then
+       # Check if plan file has [COMPLETED] status
+       if ! grep -qE '^\*\*Status\*\*: \[COMPLETED\]|^\- \*\*Status\*\*: \[COMPLETED\]' "$plan_file"; then
+           echo "WARNING: Plan file status not updated to [COMPLETED]. Applying defensive correction."
+           # Try bullet pattern first
+           sed -i 's/^\- \*\*Status\*\*: \[.*\]$/- **Status**: [COMPLETED]/' "$plan_file"
+           # Try non-bullet pattern
+           sed -i 's/^\*\*Status\*\*: \[.*\]$/**Status**: [COMPLETED]/' "$plan_file"
+           # Verify correction applied
+           if grep -qE '^\*\*Status\*\*: \[COMPLETED\]|^\- \*\*Status\*\*: \[COMPLETED\]' "$plan_file"; then
+               echo "Plan file status corrected to [COMPLETED]"
+           else
+               echo "WARNING: Could not update plan file status (pattern mismatch)"
+           fi
+       fi
+   fi
+   ```
+
+   **Skip if result.status == "partial":**
+   Partial implementations do not need plan file verification.
+
 **RETRY** skill if validation fails.
 
 **On GATE OUT success**: Artifacts and completion summary verified. **IMMEDIATELY CONTINUE** to CHECKPOINT 3 below.
