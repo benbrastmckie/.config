@@ -1,4 +1,4 @@
-# Implementation Plan: Task #22
+# Implementation Plan: Task #27
 
 **Task**: Migrate specs data from .claude/specs/ to specs/ at project root
 **Version**: 001
@@ -7,7 +7,7 @@
 
 ## Overview
 
-Move the task management data from `nvim/.claude/specs/` to `nvim/specs/` (project root). This completes the structural fix after Task #21 updates all path references.
+Move the task management data from `nvim/.claude/specs/` to `nvim/specs/` (project root). This completes the structural fix after Task #26 updates all path references.
 
 ## Phases
 
@@ -197,7 +197,7 @@ Move the task management data from `nvim/.claude/specs/` to `nvim/specs/` (proje
 
 ## Dependencies
 
-- Task #21 must be completed first (path references updated)
+- Task #26 must be completed first (path references updated)
 
 ## Risks and Mitigations
 

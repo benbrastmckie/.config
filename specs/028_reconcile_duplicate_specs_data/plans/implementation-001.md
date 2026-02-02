@@ -1,4 +1,4 @@
-# Implementation Plan: Task #23
+# Implementation Plan: Task #28
 
 **Task**: Reconcile duplicate specs data between nvim/specs/ and nvim/.claude/specs/
 **Version**: 001
@@ -233,8 +233,8 @@ This task reconciles the data to create a single authoritative source.
 
 ## Dependencies
 
-- Task #21 (path references update) should be done first or concurrently
-- Task #22 (migration) incorporated into this plan
+- Task #26 (path references update) should be done first or concurrently
+- Task #27 (migration) incorporated into this plan
 
 ## Risks and Mitigations
 

@@ -1,4 +1,4 @@
-# Implementation Plan: Task #21
+# Implementation Plan: Task #26
 
 **Task**: Update all .claude/ files to use specs/ instead of .claude/specs/
 **Version**: 001
@@ -242,7 +242,7 @@ The parent .claude/ system at ~/.config/.claude/ correctly uses `specs/` relativ
 
 ## Dependencies
 
-- Should be done BEFORE Task #22 (migration) to ensure new location has correct paths
+- Should be done BEFORE Task #27 (migration) to ensure new location has correct paths
 
 ## Risks and Mitigations
 
