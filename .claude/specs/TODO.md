@@ -1,20 +1,20 @@
 ---
-last_updated: 2026-02-02T12:00:00Z
-next_project_number: 21
+last_updated: 2026-02-02T20:30:00Z
+next_project_number: 24
 repository_health:
   overall_score: 0
   production_readiness: initial
   last_assessed: 2026-01-10T19:00:00Z
 task_counts:
-  active: 10
+  active: 13
   completed: 3
   in_progress: 0
-  not_started: 7
+  not_started: 10
   abandoned: 1
-  total: 10
+  total: 13
 priority_distribution:
-  high: 2
-  medium: 4
+  high: 4
+  medium: 5
   low: 1
 ---
 
@@ -27,6 +27,28 @@ priority_distribution:
 ---
 
 ## High Priority
+
+### 21. Fix specs path references to use project root
+- **Effort**: 2.5 hours
+- **Status**: [PLANNED]
+- **Priority**: High
+- **Language**: meta
+- **Plan**: [implementation-001.md](.claude/specs/021_fix_specs_path_references/plans/implementation-001.md)
+
+**Description**: Update all path references in nvim/.claude/ agent system from `.claude/specs/` to `specs/` (project root). This ensures the specs directory is portable and follows the parent system's correct design pattern.
+
+---
+
+### 22. Migrate specs data from .claude/specs/ to project root
+- **Effort**: 1 hour
+- **Status**: [PLANNED]
+- **Priority**: High
+- **Language**: meta
+- **Plan**: [implementation-001.md](.claude/specs/022_migrate_specs_to_project_root/plans/implementation-001.md)
+
+**Description**: Move the task management data from `nvim/.claude/specs/` to `nvim/specs/` (project root). This completes the structural fix after Task #21 updates all path references.
+
+---
 
 ### 14. Update rules to define 3-digit padded directory numbering standard
 - **Effort**: 30 minutes
@@ -93,6 +115,17 @@ priority_distribution:
 - **Plan**: [implementation-001.md](.claude/specs/019_update_documentation_padded_paths/plans/implementation-001.md)
 
 **Description**: Update CLAUDE.md, ARCHITECTURE.md, user guides, templates, and context files to document the 3-digit padded directory naming convention.
+
+---
+
+### 23. Reconcile duplicate specs data
+- **Effort**: 1.5 hours
+- **Status**: [PLANNED]
+- **Priority**: Medium
+- **Language**: meta
+- **Plan**: [implementation-001.md](.claude/specs/023_reconcile_duplicate_specs_data/plans/implementation-001.md)
+
+**Description**: Reconcile duplicate task data between nvim/specs/ (project root, tasks 1,18-25) and nvim/.claude/specs/ (nested, tasks 1-20). Create single authoritative source at project root.
 
 ---
 
