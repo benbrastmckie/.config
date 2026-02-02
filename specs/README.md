@@ -6,18 +6,18 @@ This directory contains all research, planning, debugging, and review artifacts 
 
 ```
 specs/
-├── .lockfile                    # Tracks next available project number
 ├── README.md                    # This file
-└── NNN_project_name/            # Individual project directories
+├── TODO.md                      # Active task list with status tracking
+├── state.json                   # Machine-readable state (project tracking)
+├── archive/                     # Completed/abandoned tasks (managed by /todo)
+│   └── state.json               # Archive state tracking
+└── {N}_project_name/            # Individual project directories (unpadded)
     ├── reports/                 # Research reports (gitignored)
-    │   ├── OVERVIEW.md          # Summary with links to individual reports
-    │   ├── 001_topic.md         # Individual research reports
-    │   └── 002_topic.md
+    │   └── research-001.md      # Versioned research reports
     ├── plans/                   # Implementation plans (gitignored)
-    │   ├── 001_plan_name.md     # Initial plan
-    │   └── 002_plan_name.md     # Revised plan (same name, incremented number)
+    │   └── implementation-001.md # Versioned implementation plans
     ├── summaries/               # Implementation summaries (gitignored)
-    │   └── 001_summary.md       # Post-implementation summaries
+    │   └── implementation-summary-YYYYMMDD.md  # Date-stamped summaries
     ├── debug/                   # Debug reports (COMMITTED to git)
     │   └── issue_name.md        # Debug investigation reports
     ├── scripts/                 # Investigation scripts (gitignored, temporary)
@@ -28,13 +28,46 @@ specs/
 
 ## Project Numbering
 
-Projects are numbered sequentially using 3-digit zero-padded numbers (001, 002, 003, etc.).
+Projects are numbered sequentially using unpadded integers (1, 2, 19, 20, etc.).
 
-The `.lockfile` contains the next available number. When creating a new project:
+The next available number is tracked in two locations:
+- **TODO.md frontmatter**: `next_project_number` field
+- **state.json**: `next_project_number` field
 
-1. Read the current number from `.lockfile`
-2. Create the project directory with that number
-3. Increment the number and write back to `.lockfile`
+When creating a new project (via `/task` command):
+1. Read the current number from state.json
+2. Create the task entry in TODO.md and state.json
+3. Increment `next_project_number` in both files
+
+Project directories (`{N}_{slug}/`) are created lazily - only when the first artifact is written by a research, planning, or implementation agent.
+
+## State Management Files
+
+### TODO.md
+Human-readable task list with status tracking. Contains:
+- YAML frontmatter with `next_project_number`
+- Single `## Tasks` section with task entries (newest first)
+- Status markers: `[NOT STARTED]`, `[RESEARCHING]`, `[PLANNED]`, `[IMPLEMENTING]`, `[COMPLETED]`, etc.
+
+### state.json
+Machine-readable project state. Contains:
+- `next_project_number`: Next available task number
+- `active_projects`: Array of current tasks with status, language, artifacts
+- `repository_health`: Metrics for repository-wide technical debt
+
+### archive/state.json
+Tracks completed and abandoned projects that have been archived.
+
+## Directory Lifecycle
+
+Numbered project directories follow this lifecycle:
+
+1. **Creation**: Task created via `/task` command (only adds entries to TODO.md and state.json)
+2. **Artifact Accumulation**: Research, planning, and implementation agents create artifacts in `{N}_{slug}/` subdirectories
+3. **Completion**: Task marked `[COMPLETED]` or `[ABANDONED]`
+4. **Archival**: `/todo` command moves completed/abandoned tasks to `archive/` and cleans up project directories
+
+This accumulation-then-archive pattern keeps the specs directory focused on active work while preserving history.
 
 ## Subdirectory Creation
 
@@ -52,20 +85,20 @@ Subdirectories are created on-demand when needed (lazy directory creation):
 ## File Naming Conventions
 
 ### Reports
-- Individual reports: `NNN_descriptive_name.md` (e.g., `001_lazy_loading_patterns.md`)
-- Overview file: `OVERVIEW.md` (always present when reports/ exists)
+- Research reports: `research-{NNN}.md` (e.g., `research-001.md`)
+- `{NNN}` is 3-digit zero-padded for artifact versioning
 
 ### Plans
-- Plans: `NNN_plan_name.md` (e.g., `001_telescope_integration.md`)
-- Revisions keep the same name but increment the number
+- Implementation plans: `implementation-{NNN}.md` (e.g., `implementation-001.md`)
+- Revisions increment the version number
 
 ### Summaries
-- Summaries: `NNN_summary_name.md` (e.g., `001_implementation_summary.md`)
-- Created after implementation completion
-- Link to plans and document implementation outcomes
+- Implementation summaries: `implementation-summary-{DATE}.md` (e.g., `implementation-summary-20260201.md`)
+- `{DATE}` is YYYYMMDD format
+- Created after implementation completion, links to plan
 
 ### Debug Reports
-- Debug files: `NNN_descriptive_issue_name.md` (e.g., `001_lsp_completion_failure.md`)
+- Debug files: `{NNN}_descriptive_issue_name.md` (e.g., `001_lsp_completion_failure.md`)
 - Committed to git for project history
 
 ### Scripts, Outputs, Artifacts, Backups
@@ -97,6 +130,7 @@ All artifacts should include cross-references:
 
 ## Navigation
 
-- [Parent Directory](../) - .opencode root
-- [TODO.md](../TODO.md) - Active task list
-- [Directory Protocols](../.claude/docs/concepts/directory-protocols.md) - Complete directory structure documentation
+- [Parent Directory](../) - Project root
+- [TODO.md](./TODO.md) - Active task list
+- [state.json](./state.json) - Machine-readable project state
+- [Archive](./archive/) - Completed and abandoned tasks
