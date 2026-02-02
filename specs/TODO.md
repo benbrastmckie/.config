@@ -1,10 +1,17 @@
 ---
-next_project_number: 22
+next_project_number: 23
 ---
 
 # TODO
 
 ## Tasks
+
+### 22. Review .claude/ directory for Neovim improvements
+- **Effort**: 2-4 hours
+- **Status**: [NOT STARTED]
+- **Language**: meta
+
+**Description**: Review .claude/ directory for remaining improvements needed for Neovim configuration focus. After completing tasks 19, 20, and 21 which adapted the system from Lean to Neovim, identify what else needs updating - specifically focusing on context/ files that may need improvement or expansion for the new Neovim maintenance use case.
 
 ### 21. Update .claude/ documentation to remove Lean references
 - **Effort**: 4-8 hours

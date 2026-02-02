@@ -1,6 +1,15 @@
 {
-  "next_project_number": 22,
+  "next_project_number": 23,
   "active_projects": [
+    {
+      "project_number": 22,
+      "project_name": "review_claude_directory_neovim_improvements",
+      "status": "not_started",
+      "language": "meta",
+      "description": "Review .claude/ directory for remaining improvements needed for Neovim configuration focus. After completing tasks 19, 20, and 21 which adapted the system from Lean to Neovim, identify what else needs updating - specifically focusing on context/ files that may need improvement or expansion for the new Neovim maintenance use case.",
+      "created": "2026-02-02T02:08:34Z",
+      "last_updated": "2026-02-02T02:08:34Z"
+    },
     {
       "project_number": 21,
       "project_name": "update_claude_docs_neovim_focus",
