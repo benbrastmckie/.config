@@ -545,7 +545,7 @@ For commands with `routing.language_based: true`, extract language from task met
 
 ```bash
 # Find task directory
-task_dir=$(find .claude/specs -maxdepth 1 -type d -name "${task_number}_*" | head -n 1)
+task_dir=$(find specs -maxdepth 1 -type d -name "${task_number}_*" | head -n 1)
 
 # Extract language from state.json
 if [ -n "$task_dir" ] && [ -f "${task_dir}/state.json" ]; then

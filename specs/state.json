@@ -4,50 +4,59 @@
     {
       "project_number": 28,
       "project_name": "reconcile_duplicate_specs_data",
-      "status": "planned",
+      "status": "abandoned",
       "language": "meta",
       "priority": "medium",
       "created": "2026-02-02T20:30:00Z",
-      "last_updated": "2026-02-02T21:30:00Z",
+      "last_updated": "2026-02-02T22:00:00Z",
       "artifacts": [
         {
           "path": "specs/028_reconcile_duplicate_specs_data/plans/implementation-001.md",
           "type": "plan"
         }
       ],
-      "plan_version": 1
+      "plan_version": 1,
+      "abandoned_reason": "No longer needed - duplicate data issue resolved during task migration; orphaned .claude/specs/ directory removed"
     },
     {
       "project_number": 27,
       "project_name": "migrate_specs_to_project_root",
-      "status": "planned",
+      "status": "abandoned",
       "language": "meta",
       "priority": "high",
       "created": "2026-02-02T20:30:00Z",
-      "last_updated": "2026-02-02T21:30:00Z",
+      "last_updated": "2026-02-02T22:00:00Z",
       "artifacts": [
         {
           "path": "specs/027_migrate_specs_to_project_root/plans/implementation-001.md",
           "type": "plan"
         }
       ],
-      "plan_version": 1
+      "plan_version": 1,
+      "abandoned_reason": "No longer needed - specs/ already at project root; .claude/specs/ was orphaned directory that has been removed"
     },
     {
       "project_number": 26,
       "project_name": "fix_specs_path_references",
-      "status": "planned",
+      "status": "completed",
       "language": "meta",
       "priority": "high",
       "created": "2026-02-02T20:30:00Z",
-      "last_updated": "2026-02-02T21:30:00Z",
+      "last_updated": "2026-02-02T22:00:00Z",
       "artifacts": [
         {
           "path": "specs/026_fix_specs_path_references/plans/implementation-001.md",
           "type": "plan"
+        },
+        {
+          "path": "specs/026_fix_specs_path_references/summaries/implementation-summary-20260202.md",
+          "type": "summary",
+          "summary": "Fixed 2 files with .claude/specs/ references: permission-configuration.md and routing.md"
         }
       ],
-      "plan_version": 1
+      "plan_version": 1,
+      "completed": "2026-02-02T22:00:00Z",
+      "completion_summary": "Fixed .claude/specs/ path references in nvim/.claude/ directory. Only 2 files had incorrect references (docs/guides/permission-configuration.md and context/core/orchestration/routing.md). All other files already correctly used specs/ path."
     },
     {
       "project_number": 20,
