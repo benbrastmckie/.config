@@ -16,7 +16,7 @@ Update `artifact-formats.md` and `state-management.md` rules to define the stand
 ### Phase 1: Update artifact-formats.md Placeholder Table
 
 **Estimated effort**: 10 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Modify placeholder conventions table to clarify `{NNN}` is used for both directories AND artifact versions
@@ -47,7 +47,7 @@ Update `artifact-formats.md` and `state-management.md` rules to define the stand
 ### Phase 2: Update artifact-formats.md Path Templates
 
 **Estimated effort**: 10 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update all directory path templates from `{N}_{SLUG}` to `{NNN}_{SLUG}`
@@ -81,7 +81,7 @@ Update `artifact-formats.md` and `state-management.md` rules to define the stand
 ### Phase 3: Update state-management.md Artifact Paths
 
 **Estimated effort**: 10 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update artifact linking examples
@@ -127,7 +127,7 @@ Update `artifact-formats.md` and `state-management.md` rules to define the stand
 ### Phase 4: Update CLAUDE.md Artifact Paths Section
 
 **Estimated effort**: 5 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update the "Artifact Paths" section in .claude/CLAUDE.md to use `{NNN}` for directories

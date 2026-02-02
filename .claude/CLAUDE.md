@@ -37,12 +37,14 @@ Task management and agent orchestration for Neovim configuration maintenance. Fo
 
 ### Artifact Paths
 ```
-specs/{N}_{SLUG}/
+specs/{NNN}_{SLUG}/
 ├── reports/research-{NNN}.md
 ├── plans/implementation-{NNN}.md
 └── summaries/implementation-summary-{DATE}.md
 ```
-`{N}` = unpadded task number, `{NNN}` = 3-digit padded version, `{DATE}` = YYYYMMDD.
+`{NNN}` = 3-digit zero-padded (directories and artifact versions), `{DATE}` = YYYYMMDD.
+
+**Note**: Task numbers remain unpadded (`{N}`) in TODO.md entries, state.json values, and commit messages. Only directory names and artifact version numbers use zero-padding for lexicographic sorting.
 
 ### Language-Based Routing
 

@@ -207,20 +207,20 @@ When creating artifacts, update TODO.md with links:
 ### Research Completion
 ```markdown
 - **Status**: [RESEARCHED]
-- **Research**: [specs/{N}_{SLUG}/reports/research-001.md]
+- **Research**: [specs/{NNN}_{SLUG}/reports/research-001.md]
 ```
 
 ### Plan Completion
 ```markdown
 - **Status**: [PLANNED]
-- **Plan**: [specs/{N}_{SLUG}/plans/implementation-001.md]
+- **Plan**: [specs/{NNN}_{SLUG}/plans/implementation-001.md]
 ```
 
 ### Implementation Completion
 ```markdown
 - **Status**: [COMPLETED]
 - **Completed**: 2026-01-08
-- **Summary**: [specs/{N}_{SLUG}/summaries/implementation-summary-20260108.md]
+- **Summary**: [specs/{NNN}_{SLUG}/summaries/implementation-summary-20260108.md]
 ```
 
 ## Directory Creation
@@ -229,11 +229,15 @@ When creating artifacts, update TODO.md with links:
 
 Create task directories **lazily** - only when the first artifact is written:
 ```
-specs/{NUMBER}_{SLUG}/
+specs/{NNN}_{SLUG}/
 ├── reports/      # Created when research agent writes first report
 ├── plans/        # Created when planner agent writes first plan
 └── summaries/    # Created when implementation agent writes summary
 ```
+
+**Note**: Directory numbers use 3-digit zero-padding (e.g., `014_task_name`).
+Use `printf "%03d" $task_num` for path construction. Task numbers 1000+ will
+naturally have 4 digits.
 
 **DO NOT** create directories at task creation time. The `/task` command only:
 1. Updates `specs/state.json` (adds task to active_projects)
@@ -246,14 +250,18 @@ specs/{NUMBER}_{SLUG}/
 ### Correct Pattern
 ```bash
 # When writing an artifact (e.g., research report)
-mkdir -p "specs/${task_num}_${slug}/reports"
-write "specs/${task_num}_${slug}/reports/research-001.md"
+padded_num=$(printf "%03d" "$task_num")
+mkdir -p "specs/${padded_num}_${slug}/reports"
+write "specs/${padded_num}_${slug}/reports/research-001.md"
 ```
 
 ### Incorrect Pattern
 ```bash
 # DO NOT do this at task creation time
 mkdir -p "specs/${task_num}_${slug}"  # Wrong! Creates empty directory
+
+# Also incorrect: unpadded directory numbers
+mkdir -p "specs/14_${slug}/reports"   # Wrong! Use 014, not 14
 ```
 
 ## Error Handling
