@@ -4,11 +4,20 @@
     {
       "project_number": 22,
       "project_name": "review_claude_directory_neovim_improvements",
-      "status": "not_started",
+      "status": "researched",
       "language": "meta",
       "description": "Review .claude/ directory for remaining improvements needed for Neovim configuration focus. After completing tasks 19, 20, and 21 which adapted the system from Lean to Neovim, identify what else needs updating - specifically focusing on context/ files that may need improvement or expansion for the new Neovim maintenance use case.",
       "created": "2026-02-02T02:08:34Z",
-      "last_updated": "2026-02-02T02:08:34Z"
+      "last_updated": "2026-02-02T02:12:50Z",
+      "session_id": "sess_1769998168_473017",
+      "researched": "2026-02-02T02:12:50Z",
+      "artifacts": [
+        {
+          "path": "specs/22_review_claude_directory_neovim_improvements/reports/research-001.md",
+          "type": "research",
+          "summary": "Comprehensive review of .claude/context directory identifying 61 files with Lean references, 19 files with ProofChecker references, and 16 prioritized recommendations for Neovim adaptation"
+        }
+      ]
     },
     {
       "project_number": 21,

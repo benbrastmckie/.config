@@ -1,0 +1,25 @@
+{
+  "status": "researched",
+  "artifacts": [
+    {
+      "path": "specs/22_review_claude_directory_neovim_improvements/reports/research-001.md",
+      "type": "research",
+      "summary": "Comprehensive review of .claude/context directory identifying 61 files with Lean references, 19 files with ProofChecker references, and 16 prioritized recommendations for Neovim adaptation"
+    }
+  ],
+  "next_steps": "Run /plan 22 to create implementation plan for updating identified files",
+  "metadata": {
+    "session_id": "sess_1769998168_473017",
+    "agent_type": "general-research-agent",
+    "duration_seconds": 180,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "general-research-agent"],
+    "findings_count": 7,
+    "files_with_lean_references": 61,
+    "files_with_proofchecker_references": 19,
+    "priority_1_updates": 4,
+    "priority_2_updates": 4,
+    "priority_3_updates": 8,
+    "neovim_context_files": 14
+  }
+}
