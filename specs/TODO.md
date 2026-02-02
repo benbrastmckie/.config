@@ -1,10 +1,17 @@
 ---
-next_project_number: 23
+next_project_number: 24
 ---
 
 # TODO
 
 ## Tasks
+
+### 23. Check leader-ac picker manages all .claude/ contents by directory
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Check that the `<leader>ac` picker is equipped to manage all of the contents in .claude/ by directory so that I can load this configuration easily into other project directories.
 
 ### 22. Review .claude/ directory for Neovim improvements
 - **Effort**: 2-4 hours

@@ -1,6 +1,14 @@
 {
-  "next_project_number": 23,
+  "next_project_number": 24,
   "active_projects": [
+    {
+      "project_number": 23,
+      "project_name": "leader_ac_picker_claude_directory_management",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-02T09:04:20Z",
+      "last_updated": "2026-02-02T09:04:20Z"
+    },
     {
       "project_number": 22,
       "project_name": "review_claude_directory_neovim_improvements",
