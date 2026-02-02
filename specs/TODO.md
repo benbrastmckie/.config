@@ -1,10 +1,17 @@
 ---
-next_project_number: 25
+next_project_number: 26
 ---
 
 # TODO
 
 ## Tasks
+
+### 25. Migrate git repository from .config/ to .config/nvim/
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: general
+
+**Description**: Migrate the git repository from managing the entire .config/ directory to only managing .config/nvim/, since everything else is now managed by .dotfiles/ using home-manager and NixOS configuration. Move the .git/ directory into .config/nvim/ using a standard approach that preserves the full commit history for this (primarily Neovim) configuration.
 
 ### 24. Add .gitignore, README.md, CLAUDE.md, and settings.local.json to leader-ac picker
 - **Effort**: 1-2 hours

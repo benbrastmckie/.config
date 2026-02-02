@@ -1,6 +1,14 @@
 {
-  "next_project_number": 25,
+  "next_project_number": 26,
   "active_projects": [
+    {
+      "project_number": 25,
+      "project_name": "migrate_git_repo_to_nvim_directory",
+      "status": "not_started",
+      "language": "general",
+      "created": "2026-02-02T10:00:19Z",
+      "last_updated": "2026-02-02T10:00:19Z"
+    },
     {
       "project_number": 24,
       "project_name": "add_root_files_to_leader_ac_picker",
