@@ -1,22 +1,21 @@
 {
-  "status": "researched",
-  "summary": "Analyzed <leader>ac picker coverage of .claude/ directory. Found 3 gaps: agents/ directory is completely missing, context/ and rules/ are only in sync (not picker UI). The lib/ directory referenced in code does not exist. Recommendations: Priority 1 is adding agents/ support (9 active agents), Priority 2 is adding context/ and rules/ to picker UI for consistency.",
+  "status": "planned",
+  "summary": "5-phase implementation plan for adding agents/ directory support to <leader>ac picker",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/23_leader_ac_picker_claude_directory_management/reports/research-001.md",
-      "summary": "Research report analyzing picker coverage, gap analysis, and implementation recommendations"
+      "type": "plan",
+      "path": "specs/23_leader_ac_picker_claude_directory_management/plans/implementation-001.md",
+      "summary": "Implementation plan for adding agents/ directory support to <leader>ac picker with 5 phases: parser changes, entry display, sync operations, action handlers, and testing"
     }
   ],
-  "next_steps": "Run /plan 23 to create implementation plan for adding missing directory support",
+  "next_steps": "Run /implement 23 to execute the plan",
   "metadata": {
-    "session_id": "sess_1738487107_a3c2d1",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 300,
+    "session_id": "sess_1738487432_b4d5e2",
+    "agent_type": "planner-agent",
+    "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 5,
-    "gaps_identified": 3,
-    "directories_analyzed": 14
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 5,
+    "estimated_hours": "2-3"
   }
 }

@@ -4,18 +4,24 @@
     {
       "project_number": 23,
       "project_name": "leader_ac_picker_claude_directory_management",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-02T09:04:20Z",
-      "last_updated": "2026-02-02T09:07:41Z",
-      "session_id": "sess_1738487107_a3c2d1",
+      "last_updated": "2026-02-02T09:22:12Z",
+      "session_id": "sess_1738487432_b4d5e2",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/23_leader_ac_picker_claude_directory_management/reports/research-001.md",
           "summary": "Research report analyzing picker coverage, gap analysis, and implementation recommendations"
+        },
+        {
+          "path": "specs/23_leader_ac_picker_claude_directory_management/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "Implementation plan for adding agents/ directory support to <leader>ac picker with 5 phases"
         }
-      ]
+      ],
+      "planned": "2026-02-02T09:22:12Z"
     },
     {
       "project_number": 22,
