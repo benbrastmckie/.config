@@ -1,10 +1,17 @@
 ---
-next_project_number: 21
+next_project_number: 22
 ---
 
 # TODO
 
 ## Tasks
+
+### 21. Update .claude/ documentation to remove Lean references
+- **Effort**: 4-8 hours
+- **Status**: [NOT STARTED]
+- **Language**: meta
+
+**Description**: Update .claude/ documentation to remove Lean references and reflect Neovim focus. Found 128+ files with Lean/theorem/proof references including: .claude/README.md (51 refs), docs/architecture/system-overview.md (14 refs), context/index.md (4 refs), plus extensive refs in docs/guides/, context/core/, context/project/, skills/, agents/, commands/, and rules/. Need systematic review to replace Lean examples with Neovim examples, update architecture descriptions, fix outdated language routing tables, and ensure all documentation accurately reflects the stock Neovim configuration system.
 
 ### 20. Update specs/README.md with directory overview
 - **Effort**: 0.5-1 hours
