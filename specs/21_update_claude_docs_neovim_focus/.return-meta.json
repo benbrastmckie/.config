@@ -1,0 +1,25 @@
+{
+  "status": "researched",
+  "artifacts": [
+    {
+      "path": "specs/21_update_claude_docs_neovim_focus/reports/research-001.md",
+      "type": "research",
+      "summary": "Comprehensive analysis of 88 files with Lean references, categorized by priority with specific change recommendations"
+    }
+  ],
+  "next_steps": "Run /plan 21 to create implementation plan for updating documentation",
+  "metadata": {
+    "session_id": "sess_1769995823_d194ac",
+    "agent_type": "general-research-agent",
+    "duration_seconds": 180,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "general-research-agent"],
+    "findings_count": 88,
+    "lean_references": 587,
+    "proofchecker_references": 372,
+    "files_to_delete": 2,
+    "high_priority_files": 6,
+    "medium_priority_files": 8,
+    "low_priority_files": 74
+  }
+}
