@@ -11,7 +11,7 @@ next_project_number: 23
 - **Status**: [PLANNED]
 - **Language**: meta
 - **Research**: [research-001.md](specs/22_review_claude_directory_neovim_improvements/reports/research-001.md)
-- **Plan**: [implementation-001.md](specs/22_review_claude_directory_neovim_improvements/plans/implementation-001.md)
+- **Plan**: [implementation-002.md](specs/22_review_claude_directory_neovim_improvements/plans/implementation-002.md)
 
 **Description**: Review .claude/ directory for remaining improvements needed for Neovim configuration focus. After completing tasks 19, 20, and 21 which adapted the system from Lean to Neovim, identify what else needs updating - specifically focusing on context/ files that may need improvement or expansion for the new Neovim maintenance use case.
 
