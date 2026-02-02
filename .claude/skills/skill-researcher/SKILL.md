@@ -124,7 +124,7 @@ Prepare delegation context for the subagent:
     "language": "{language}"
   },
   "focus_prompt": "{optional focus}",
-  "metadata_file_path": "specs/{N}_{SLUG}/.return-meta.json"
+  "metadata_file_path": "specs/{NNN}_{SLUG}/.return-meta.json"
 }
 ```
 
@@ -149,8 +149,8 @@ The subagent will:
 - Search codebase for related patterns
 - Search web for documentation and examples
 - Analyze findings and synthesize recommendations
-- Create research report in `specs/{N}_{SLUG}/reports/`
-- Write metadata to `specs/{N}_{SLUG}/.return-meta.json`
+- Create research report in `specs/{NNN}_{SLUG}/reports/`
+- Write metadata to `specs/{NNN}_{SLUG}/.return-meta.json`
 - Return a brief text summary (NOT JSON)
 
 ---
@@ -260,7 +260,7 @@ Return a brief text summary (NOT JSON). Example:
 Research completed for task {N}:
 - Found {count} relevant patterns and resources
 - Identified implementation approach: {approach}
-- Created report at specs/{N}_{SLUG}/reports/research-{NNN}.md
+- Created report at specs/{NNN}_{SLUG}/reports/research-{NNN}.md
 - Status updated to [RESEARCHED]
 - Changes committed
 ```

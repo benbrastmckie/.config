@@ -14,7 +14,7 @@ Update all skill files that reference task directory paths to use the 3-digit pa
 ### Phase 1: Update research skills
 
 **Estimated effort**: 20 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update skill-neovim-research path patterns
@@ -39,7 +39,7 @@ Update all skill files that reference task directory paths to use the 3-digit pa
 ### Phase 2: Update planning skill
 
 **Estimated effort**: 10 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update skill-planner path patterns
@@ -60,7 +60,7 @@ Update all skill files that reference task directory paths to use the 3-digit pa
 ### Phase 3: Update implementation skills
 
 **Estimated effort**: 20 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update skill-implementer path patterns
@@ -84,7 +84,7 @@ Update all skill files that reference task directory paths to use the 3-digit pa
 ### Phase 4: Update git-workflow skill
 
 **Estimated effort**: 10 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update skill-git-workflow path patterns in commit message examples
@@ -116,6 +116,6 @@ Update all skill files that reference task directory paths to use the 3-digit pa
 
 ## Success Criteria
 
-- [ ] All skill files use `{NNN}_{SLUG}` for directory paths
-- [ ] Example paths show 3-digit padding (e.g., `014_task_name`)
-- [ ] Text references to task numbers remain unpadded
+- [x] All skill files use `{NNN}_{SLUG}` for directory paths
+- [x] Example paths show 3-digit padding (e.g., `014_task_name`)
+- [x] Text references to task numbers remain unpadded

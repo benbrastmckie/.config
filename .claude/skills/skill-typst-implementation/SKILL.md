@@ -147,8 +147,8 @@ Prepare delegation context:
     "description": "{description}",
     "language": "typst"
   },
-  "plan_path": "specs/{N}_{SLUG}/plans/implementation-{NNN}.md",
-  "metadata_file_path": "specs/{N}_{SLUG}/.return-meta.json"
+  "plan_path": "specs/{NNN}_{SLUG}/plans/implementation-{NNN}.md",
+  "metadata_file_path": "specs/{NNN}_{SLUG}/.return-meta.json"
 }
 ```
 
@@ -176,7 +176,7 @@ The subagent will:
 - Create/modify .typ files
 - Execute compilation (typst compile)
 - Create implementation summary
-- Write metadata to `specs/{N}_{SLUG}/.return-meta.json`
+- Write metadata to `specs/{NNN}_{SLUG}/.return-meta.json`
 - Return a brief text summary (NOT JSON)
 
 ### 3a. Validate Subagent Return Format

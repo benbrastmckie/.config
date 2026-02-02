@@ -76,7 +76,7 @@ Include only task-related files:
 ```
 specs/TODO.md
 specs/state.json
-specs/{N}_{SLUG}/**
+specs/{NNN}_{SLUG}/**
 ```
 
 ### Implementation Commits

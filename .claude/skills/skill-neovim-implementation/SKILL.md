@@ -114,8 +114,8 @@ EOF
     "description": "{description}",
     "language": "neovim"
   },
-  "plan_path": "specs/{N}_{SLUG}/plans/implementation-001.md",
-  "metadata_file_path": "specs/{N}_{SLUG}/.return-meta.json"
+  "plan_path": "specs/{NNN}_{SLUG}/plans/implementation-001.md",
+  "metadata_file_path": "specs/{NNN}_{SLUG}/.return-meta.json"
 }
 ```
 
@@ -216,7 +216,7 @@ Implementation completed for task {N}:
 - Executed {phases_completed}/{phases_total} phases
 - Created/modified Neovim config files
 - Verified startup and module loading
-- Created summary at specs/{N}_{SLUG}/summaries/implementation-summary-{DATE}.md
+- Created summary at specs/{NNN}_{SLUG}/summaries/implementation-summary-{DATE}.md
 - Status updated to [COMPLETED]
 - Changes committed
 ```

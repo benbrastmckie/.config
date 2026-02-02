@@ -130,7 +130,7 @@ Prepare delegation context for the subagent:
     "language": "{language}"
   },
   "research_path": "{path to research report if exists}",
-  "metadata_file_path": "specs/{N}_{SLUG}/.return-meta.json"
+  "metadata_file_path": "specs/{NNN}_{SLUG}/.return-meta.json"
 }
 ```
 
@@ -156,8 +156,8 @@ The subagent will:
 - Analyze task requirements and research
 - Decompose into logical phases
 - Identify risks and mitigations
-- Create plan in `specs/{N}_{SLUG}/plans/`
-- Write metadata to `specs/{N}_{SLUG}/.return-meta.json`
+- Create plan in `specs/{NNN}_{SLUG}/plans/`
+- Write metadata to `specs/{NNN}_{SLUG}/.return-meta.json`
 - Return a brief text summary (NOT JSON)
 
 ---
@@ -267,7 +267,7 @@ Return a brief text summary (NOT JSON). Example:
 Plan created for task {N}:
 - {phase_count} phases defined, {estimated_hours} hours estimated
 - Key phases: {phase names}
-- Created plan at specs/{N}_{SLUG}/plans/implementation-{NNN}.md
+- Created plan at specs/{NNN}_{SLUG}/plans/implementation-{NNN}.md
 - Status updated to [PLANNED]
 - Changes committed
 ```

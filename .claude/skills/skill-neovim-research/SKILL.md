@@ -110,7 +110,7 @@ EOF
     "language": "neovim"
   },
   "focus_prompt": "{optional focus}",
-  "metadata_file_path": "specs/{N}_{SLUG}/.return-meta.json"
+  "metadata_file_path": "specs/{NNN}_{SLUG}/.return-meta.json"
 }
 ```
 
@@ -195,7 +195,7 @@ rm -f "specs/${padded_num}_${project_name}/.return-meta.json"
 Research completed for task {N}:
 - Found plugin configuration patterns
 - Identified lazy loading strategy
-- Created report at specs/{N}_{SLUG}/reports/research-{NNN}.md
+- Created report at specs/{NNN}_{SLUG}/reports/research-{NNN}.md
 - Status updated to [RESEARCHED]
 - Changes committed
 ```
