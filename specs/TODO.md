@@ -8,8 +8,10 @@ next_project_number: 24
 
 ### 23. Check leader-ac picker manages all .claude/ contents by directory
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Language**: neovim
+- **Started**: 2026-02-02
+- **Research**: [research-001.md](specs/23_leader_ac_picker_claude_directory_management/reports/research-001.md)
 
 **Description**: Check that the `<leader>ac` picker is equipped to manage all of the contents in .claude/ by directory so that I can load this configuration easily into other project directories.
 

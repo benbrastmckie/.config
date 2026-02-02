@@ -1,0 +1,22 @@
+{
+  "status": "researched",
+  "summary": "Analyzed <leader>ac picker coverage of .claude/ directory. Found 3 gaps: agents/ directory is completely missing, context/ and rules/ are only in sync (not picker UI). The lib/ directory referenced in code does not exist. Recommendations: Priority 1 is adding agents/ support (9 active agents), Priority 2 is adding context/ and rules/ to picker UI for consistency.",
+  "artifacts": [
+    {
+      "type": "research",
+      "path": "specs/23_leader_ac_picker_claude_directory_management/reports/research-001.md",
+      "summary": "Research report analyzing picker coverage, gap analysis, and implementation recommendations"
+    }
+  ],
+  "next_steps": "Run /plan 23 to create implementation plan for adding missing directory support",
+  "metadata": {
+    "session_id": "sess_1738487107_a3c2d1",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 300,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 5,
+    "gaps_identified": 3,
+    "directories_analyzed": 14
+  }
+}
