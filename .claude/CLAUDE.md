@@ -12,18 +12,18 @@ Task management and agent orchestration for Neovim configuration maintenance. Fo
 ## Project Structure
 
 ```
-nvim/                     # Neovim configuration
-├── lua/                  # Lua modules
+.                         # Repository root (Neovim configuration)
+├── init.lua             # Entry point
+├── lua/                 # Lua modules
 │   ├── plugins/         # Plugin specifications
 │   ├── config/          # Core configuration
 │   └── utils/           # Utility functions
 ├── after/               # Filetype-specific overrides
 │   └── ftplugin/        # Filetype plugins
 ├── plugin/              # Auto-loaded plugins
-└── init.lua             # Entry point
-docs/                    # Project documentation
-specs/                   # Task management artifacts
-.claude/                 # Claude Code configuration
+├── docs/                # Project documentation
+├── specs/               # Task management artifacts
+└── .claude/             # Claude Code configuration
 ```
 
 ## Task Management
@@ -138,7 +138,7 @@ Standard actions: `create`, `complete research`, `create implementation plan`, `
 Core rules (auto-applied by file path):
 - @.claude/rules/state-management.md - Task state patterns (specs/**)
 - @.claude/rules/git-workflow.md - Commit conventions
-- @.claude/rules/neovim-lua.md - Neovim Lua development (nvim/**/*.lua)
+- @.claude/rules/neovim-lua.md - Neovim Lua development (lua/**/*.lua, after/**/*.lua)
 - @.claude/rules/error-handling.md - Error recovery (.claude/**)
 - @.claude/rules/artifact-formats.md - Report/plan formats (specs/**)
 - @.claude/rules/workflows.md - Command lifecycle (.claude/**)

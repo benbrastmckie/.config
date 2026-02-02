@@ -2,7 +2,7 @@
 
 ## Path Pattern
 
-Applies to: `nvim/**/*.lua`, `after/**/*.lua`
+Applies to: `lua/**/*.lua`, `after/**/*.lua`, `*.lua`
 
 ## Coding Standards
 

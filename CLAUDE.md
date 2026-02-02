@@ -216,10 +216,9 @@ Reference: See `scan_spec.lua:203-204` for established codebase pattern.
 ## Standards Discovery
 [Used by: all commands]
 
-This nvim/CLAUDE.md extends the root CLAUDE.md with Neovim-specific standards.
+This CLAUDE.md is the root configuration file for the Neovim configuration repository.
 
-### Inheritance
-- This file overrides/extends root CLAUDE.md for Neovim code
-- Commands should check this file first for nvim/ directory
-- Fall back to root CLAUDE.md for general standards
+### Related Configuration
+- `.claude/CLAUDE.md` - Task management and agent orchestration system
+- This file contains Neovim-specific coding standards and guidelines
 - Both files should be consulted for complete standards
