@@ -43,8 +43,9 @@ Route to skill by language (see routing.md):
 
 | Language | Skill |
 |----------|-------|
-| lean | skill-lean-{operation} |
+| neovim | skill-neovim-{operation} |
 | latex | skill-latex-{operation} |
+| typst | skill-typst-{operation} |
 | general/meta/markdown | skill-{operation} |
 
 Invoke via Skill tool with:
@@ -111,7 +112,7 @@ Generate session_id at GATE IN, include in commit for traceability.
 
 ### STAGE 2: DELEGATE
 Route by language:
-- lean → skill-lean-research
+- neovim → skill-neovim-research
 - other → skill-researcher
 
 ### CHECKPOINT 2: GATE OUT

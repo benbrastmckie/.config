@@ -130,45 +130,46 @@ context/hybrid/
 
 ---
 
-## Formal Verification Domain Pattern (ProofChecker-Specific)
+## Neovim Configuration Domain Pattern
 
-**Characteristics**: Proof systems, theorem proving, verification
+**Characteristics**: Editor configuration, plugin management, Lua scripting
 
 ### Typical Use Cases
 
-- Formal proof development
-- Theorem verification
-- Proof search and automation
-- Metalogic reasoning
-- Proof library management
+- Plugin configuration and management
+- Keymap setup and customization
+- LSP client configuration
+- Filetype-specific settings
+- UI customization and themes
 
 ### Recommended Agent Structure
 
 ```
-verification-orchestrator
-├── proof-developer (proof authoring)
-├── proof-verifier (verification)
-├── proof-searcher (automation)
-├── metalogic-reasoner (metalogic)
-└── library-manager (proof library)
+neovim-orchestrator
+├── config-agent (core configuration)
+├── plugin-agent (plugin management)
+├── keymap-agent (keymap setup)
+├── lsp-agent (LSP configuration)
+└── ftplugin-agent (filetype settings)
 ```
 
 ### Context Organization
 
 ```
-context/verification/
-├── proof-patterns.md
-├── verification-strategies.md
-├── automation-tactics.md
-└── library-organization.md
+context/neovim/
+├── domain/neovim-api.md
+├── patterns/plugin-spec.md
+├── patterns/keymap-patterns.md
+├── standards/lua-style-guide.md
+└── tools/lazy-nvim-guide.md
 ```
 
 ### Integration Points
 
-- Proof assistants (Lean 4, Coq, Isabelle)
-- LSP servers (lean-lsp-mcp)
-- Proof libraries (Mathlib, Archive)
-- Verification tools (SMT solvers)
+- Plugin managers (lazy.nvim, packer.nvim)
+- LSP servers (lua-language-server)
+- Testing (nvim --headless, plenary.nvim)
+- Linting (luacheck, stylua)
 
 ---
 
@@ -192,11 +193,11 @@ context/verification/
 - Tools: data warehouse, BI, project management, ETL
 - Artifacts: data schemas, reports, roadmaps
 
-### Formal Verification Indicators
+### Neovim Configuration Indicators
 
-- Keywords: proof, theorem, verify, formal, logic, tactic
-- Tools: Lean, Coq, Isabelle, SMT solvers
-- Artifacts: proof files, theorem libraries, verification reports
+- Keywords: plugin, keymap, config, lsp, autocmd, filetype
+- Tools: lazy.nvim, treesitter, telescope, nvim-lsp
+- Artifacts: init.lua, plugin specs, ftplugin files
 
 ---
 
@@ -255,4 +256,4 @@ context/verification/
 
 ---
 
-**Maintained By**: ProofChecker Development Team
+**Maintained By**: Development Team

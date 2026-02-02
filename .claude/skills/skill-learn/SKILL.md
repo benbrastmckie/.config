@@ -50,9 +50,9 @@ Scan for tags using file-type-specific patterns. Use Bash with grep for consiste
 
 #### 3.1: Extract FIX: Tags
 
-**Lean files**:
+**Lua files (Neovim config)**:
 ```bash
-grep -rn --include="*.lean" "-- FIX:" $paths 2>/dev/null || true
+grep -rn --include="*.lua" "-- FIX:" $paths 2>/dev/null || true
 ```
 
 **LaTeX files**:
@@ -88,8 +88,8 @@ For each grep match, extract:
 
 Example raw output:
 ```
-Logos/Layer1/Modal.lean:67:-- TODO: Add completeness theorem for S5
-docs/04-Metalogic.tex:89:% FIX: Correct the definition reference
+nvim/lua/plugins/telescope.lua:67:-- TODO: Add custom picker for git worktrees
+docs/KEYMAPS.md:89:<!-- FIX: Update keymap table with new bindings -->
 ```
 
 Categorize into three arrays:
@@ -248,19 +248,19 @@ For each selected TODO item, extract topic indicators:
 
 Example extraction:
 ```
-TODO: "Add completeness theorem for S5" at Logos/Layer1/Modal.lean:67
-  → key_terms: ["completeness", "theorem", "S5"]
-  → file_section: "Logos/Layer1/"
+TODO: "Add custom picker for worktrees" at nvim/lua/plugins/telescope.lua:67
+  → key_terms: ["picker", "worktrees", "telescope"]
+  → file_section: "nvim/lua/plugins/"
   → action_type: "implementation"
 
-TODO: "Add soundness theorem for S5" at Logos/Layer1/Modal.lean:89
-  → key_terms: ["soundness", "theorem", "S5"]
-  → file_section: "Logos/Layer1/"
+TODO: "Add preview window for worktrees" at nvim/lua/plugins/telescope.lua:89
+  → key_terms: ["preview", "worktrees", "telescope"]
+  → file_section: "nvim/lua/plugins/"
   → action_type: "implementation"
 
-TODO: "Optimize helper function" at Logos/Shared/Utils.lean:23
-  → key_terms: ["optimize", "helper", "function"]
-  → file_section: "Logos/Shared/"
+TODO: "Optimize lazy loading" at nvim/lua/config/lazy.lua:23
+  → key_terms: ["optimize", "lazy", "loading"]
+  → file_section: "nvim/lua/config/"
   → action_type: "improvement"
 ```
 
@@ -278,12 +278,12 @@ Group TODOs that share **2 or more significant terms** or share **file section +
 
 **Example clustering**:
 ```
-Group 1: "S5 Theorems" (shared: S5, theorem, Logos/Layer1/, implementation)
-  - Add completeness theorem for S5
-  - Add soundness theorem for S5
+Group 1: "Telescope Worktrees" (shared: worktrees, telescope, nvim/lua/plugins/, implementation)
+  - Add custom picker for worktrees
+  - Add preview window for worktrees
 
-Group 2: "Utility Optimization" (shared: Logos/Shared/, improvement)
-  - Optimize helper function
+Group 2: "Config Optimization" (shared: nvim/lua/config/, improvement)
+  - Optimize lazy loading
 ```
 
 **Single-item groups**: If a TODO doesn't cluster with others, it becomes its own single-item group.
@@ -295,18 +295,18 @@ Store the topic groups for use in Step 7.5.4:
 ```
 topic_groups = [
   {
-    label: "S5 Theorems",
+    label: "Telescope Worktrees",
     items: [
-      {file: "Logos/Layer1/Modal.lean", line: 67, content: "Add completeness theorem for S5"},
-      {file: "Logos/Layer1/Modal.lean", line: 89, content: "Add soundness theorem for S5"}
+      {file: "nvim/lua/plugins/telescope.lua", line: 67, content: "Add custom picker for worktrees"},
+      {file: "nvim/lua/plugins/telescope.lua", line: 89, content: "Add preview window for worktrees"}
     ],
-    shared_terms: ["S5", "theorem"],
+    shared_terms: ["worktrees", "telescope"],
     action_type: "implementation"
   },
   {
-    label: "Utility Optimization",
+    label: "Config Optimization",
     items: [
-      {file: "Logos/Shared/Utils.lean", line: 23, content: "Optimize helper function"}
+      {file: "nvim/lua/config/lazy.lua", line: 23, content: "Optimize lazy loading"}
     ],
     shared_terms: [],
     action_type: "improvement"
@@ -460,14 +460,14 @@ For each topic group in `topic_groups`:
 ```
 
 Where:
-- `{topic_label}` = generated label (e.g., "S5 Theorems")
+- `{topic_label}` = generated label (e.g., "Telescope Worktrees")
 - `{item_count}` = number of items in group
 - `{item_list}` = formatted list of items:
   ```
   - [ ] {content} (`{file}:{line}`)
   - [ ] {content} (`{file}:{line}`)
   ```
-- `{shared_terms_description}` = brief description of why items are grouped (e.g., "Related to S5 modal logic theorems")
+- `{shared_terms_description}` = brief description of why items are grouped (e.g., "Related to telescope worktree functionality")
 
 **Effort Scaling Formula**:
 ```
@@ -516,7 +516,7 @@ For each selected TODO item individually:
 
 **Language Detection for Todo-Task** (all modes):
 ```
-.lean -> "lean"
+.lua (nvim/) -> "neovim"
 .tex  -> "latex"
 .md   -> "markdown"
 .py/.sh -> "general"

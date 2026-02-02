@@ -52,7 +52,7 @@ timeout: 3600
 
 # Available tools for agent execution
 # Core tools: read, write, edit, bash, grep, glob, list
-# Specialized tools: webfetch (research), lean-lsp-mcp_* (Lean agents)
+# Specialized tools: webfetch, websearch (research)
 tools:
   - read
   - write
@@ -112,7 +112,7 @@ permissions:
     - read: [".env", "**/*.key", "**/*.pem", "**/*.p12", ".ssh/**/*", "**/.git/config"]
     
     # CRITICAL: Critical file modification (breaks system)
-    - write: [".git/**/*", "lakefile.lean", "lean-toolchain", "/etc/**/*", "/var/**/*"]
+    - write: [".git/**/*", "/etc/**/*", "/var/**/*"]
 
 # Permission evaluation:
 # 1. Check deny list first (deny takes precedence)

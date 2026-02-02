@@ -77,8 +77,8 @@ It does NOT handle:
    **Performance**: ~12ms for state.json vs ~100ms for TODO.md (8x faster)
 
 2. Map language to agent:
-   - /research: lean → lean-research-agent, default → researcher
-   - /implement: lean → lean-implementation-agent, default → implementer
+   - /research: neovim → neovim-research-agent, default → researcher
+   - /implement: neovim → neovim-implementation-agent, default → implementer
 
 **For Direct Routing** (routing.language_based: false):
 - Use routing.target_agent from command frontmatter

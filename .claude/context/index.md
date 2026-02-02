@@ -419,7 +419,7 @@ Load for: /meta command and meta-builder-agent workflows
 
 **Architecture Design** (core/standards/):
 - **architecture-principles.md** (272 lines) - Modular design, hierarchical organization, context efficiency
-- **domain-patterns.md** (260 lines) - Development, business, hybrid, and ProofChecker-specific domain patterns
+- **domain-patterns.md** (260 lines) - Development, business, hybrid, and Neovim-specific domain patterns
 
 **Agent Templates** (core/templates/):
 - **agent-templates.md** (336 lines) - Orchestrator, research, validation, processing, and generation templates

@@ -59,12 +59,12 @@ User: /research 197
 
 GATE IN:
 - Task 197 exists: YES
-- Language: lean
+- Language: neovim
 - Session: sess_1735460684_a1b2c3
 - Status update: [RESEARCHING]
 
 DELEGATE:
-- Route to: lean-research-agent
+- Route to: neovim-research-agent
 - Timeout: 3600s
 
 GATE OUT:
@@ -275,8 +275,8 @@ For conflict resolution, git blame determines which file has more recent changes
 ### Routing Logs
 
 ```
-[INFO] Task 258 language: lean
-[INFO] Routing to lean-research-agent (language=lean)
+[INFO] Task 258 language: neovim
+[INFO] Routing to neovim-research-agent (language=neovim)
 [PASS] Routing validation succeeded
 ```
 

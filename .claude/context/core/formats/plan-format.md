@@ -5,7 +5,7 @@
 ## Metadata (Markdown block, required)
 - Use a single **Status** field with status markers (`[NOT STARTED]`, `[IN PROGRESS]`, `[BLOCKED]`, `[ABANDONED]`, `[COMPLETED]`) per status-markers.md.
 - Do **not** use YAML front matter. Use a Markdown metadata block at the top of the plan.
-- Required fields: Task, Status, Effort, Dependencies, Research Inputs, Artifacts, Standards, Type, Lean Intent.
+- Required fields: Task, Status, Effort, Dependencies, Research Inputs, Artifacts, Standards, Type.
 - Status timestamps belong where transitions happen (e.g., in phases or a short Started/Completed line under the status). Avoid null placeholder fields.
 - Standards must reference this file plus status-markers.md, artifact-management.md, and tasks.md.
 
@@ -24,7 +24,6 @@
   - .claude/context/core/system/artifact-management.md
   - .claude/context/core/standards/tasks.md
 - **Type**: markdown
-- **Lean Intent**: false
 ```
 
 ## Plan Metadata Schema
@@ -104,7 +103,6 @@ Plans may include a `plan_metadata` object in state.json tracking plan character
 - **Artifacts**: plans/implementation-001.md (this file)
 - **Standards**: plan.md; status-markers.md; artifact-management.md; tasks.md
 - **Type**: markdown
-- **Lean Intent**: false
 
 ## Overview
 {summary}

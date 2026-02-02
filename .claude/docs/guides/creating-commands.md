@@ -11,7 +11,7 @@ Before creating a new command, understand:
 1. **Task-Based Pattern**: Neovim Configuration uses task numbers from TODO.md, not topics
 2. **Orchestrator-Mediated**: All task-based commands route through orchestrator
 3. **Hybrid Architecture**: Orchestrator validates, subagents execute
-4. **Language Routing**: Lean tasks route to neovim-specific agents
+4. **Language Routing**: Neovim tasks route to neovim-specific agents
 
 **Required Reading**:
 - `.claude/skills/skill-orchestrator/SKILL.md` - Orchestrator skill
@@ -301,7 +301,7 @@ See existing implementations:
 - `.claude/skills/skill-orchestrator/SKILL.md` - Orchestrator skill
 - `.claude/skills/skill-implementer/SKILL.md` - General implementer skill
 - `.claude/agents/general-implementation-agent.md` - General implementation agent
-- `.claude/agents/neovim-implementation-agent.md` - Lean-specific agent
+- `.claude/agents/neovim-implementation-agent.md` - Neovim-specific agent
 
 ## Related Guides
 

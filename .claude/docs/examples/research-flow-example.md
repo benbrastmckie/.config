@@ -1,6 +1,6 @@
 # Integration Example: Research Flow
 
-This example traces a complete `/research` command through all three layers of the ProofChecker agent system, showing how commands, skills, and agents work together.
+This example traces a complete `/research` command through all three layers of the project agent system, showing how commands, skills, and agents work together.
 
 ---
 
@@ -399,7 +399,7 @@ Return:
 }
 ```
 
-### Scenario C: Lean Task Routing
+### Scenario C: Neovim Task Routing
 
 If user runs `/research 259` where task 259 has `language: "neovim"`:
 
@@ -414,10 +414,10 @@ Flow:
   orchestrator -> skill-neovim-research -> neovim-research-agent
 
 Agent uses:
-  - neovim_neovimsearch tool
-  - neovim_loogle tool
-  - neovim_neovimfinder tool
-  - Mathlib documentation context
+  - WebSearch for plugin documentation
+  - WebFetch for API references
+  - Read for codebase exploration
+  - Neovim/lazy.nvim context
 ```
 
 ---
@@ -456,7 +456,7 @@ This example demonstrated:
 6. **Status Updates**: state.json and TODO.md updated after completion
 
 The three-layer architecture provides:
-- Cneovim separation of concerns
+- Clean separation of concerns
 - Token-efficient context loading
 - Language-based routing
 - Standardized return format
@@ -475,4 +475,4 @@ The three-layer architecture provides:
 
 **Document Version**: 1.0
 **Created**: 2026-01-12
-**Maintained By**: ProofChecker Development Team
+**Maintained By**: project Development Team

@@ -1,7 +1,7 @@
 # Implementation Workflow
 
 **Created**: 2025-12-29  
-**Purpose**: Detailed implementation workflow for ProofChecker tasks
+**Purpose**: Detailed implementation workflow for project tasks
 
 ---
 
@@ -66,9 +66,10 @@ grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*
 
 | Language | Agent | Tools Available |
 |----------|-------|----------------|
-| `lean` | `lean-implementation-agent` | lean-lsp-mcp, lake build, lean --version |
+| `neovim` | `neovim-implementation-agent` | nvim --headless, File operations, git |
 | `markdown` | `implementer` | File operations, git |
-| `python` | `implementer` | File operations, git, python tools |
+| `latex` | `latex-implementation-agent` | pdflatex, File operations, git |
+| `typst` | `typst-implementation-agent` | typst compile, File operations, git |
 | `general` | `implementer` | File operations, git |
 
 **Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses language-specific tooling.
@@ -171,9 +172,9 @@ grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*
 **Process**:
 1. Create implementation files (code, docs, configs):
    - Paths vary by language and task
-   - Lean: `Logos/**/*.lean`, `LogosTest/**/*.lean`
+   - Neovim: `nvim/lua/**/*.lua`, `after/ftplugin/**/*.lua`
    - Markdown: `docs/**/*.md`, `.claude/**/*.md`
-   - Python: `**/*.py`
+   - LaTeX: `**/*.tex`
    - Config: `**/*.json`, `**/*.yaml`, etc.
 2. If multi-file output (>1 file modified/created):
    - Create implementation summary artifact
@@ -417,7 +418,7 @@ Implementer loads context on-demand per `.claude/context/index.md`:
 - Plan file if exists (for phase tracking and resume)
 
 **Language-specific context**:
-- If lean: `project/lean4/tools/lean-lsp-mcp.md`, `project/lean4/build-system.md`
+- If neovim: `project/neovim/tools/lazy-nvim-guide.md`, `project/neovim/patterns/plugin-spec.md`
 - If markdown: (no additional context)
 
 **Optimization**: Task extraction reduces context from 109KB (full TODO.md) to ~2KB (task entry only), 98% reduction.

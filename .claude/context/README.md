@@ -1,6 +1,6 @@
 # Context Organization
 
-**Updated**: 2026-01-05 (Task 314 - Context Refactor)  
+**Updated**: 2026-02-02 (Task 22 - Neovim Focus)
 **Purpose**: Organize context files for efficient loading and clear separation of concerns
 
 ---
@@ -57,34 +57,35 @@
 │       ├── frontmatter-schema.json # Frontmatter JSON schema
 │       └── subagent-frontmatter.yaml # Subagent frontmatter template
 │
-├── project/                        # ProofChecker-specific context
+├── project/                        # Domain-specific context
 │   ├── meta/                       # Meta-builder context (4 files)
 │   │   ├── domain-patterns.md      # Domain pattern recognition
 │   │   ├── architecture-principles.md # Architecture principles
 │   │   ├── meta-guide.md           # Meta-builder guide
 │   │   └── interview-patterns.md   # Interview patterns
 │   │
-│   ├── lean4/                      # Lean 4 domain knowledge
-│   │   ├── domain/
-│   │   ├── patterns/
-│   │   ├── processes/
-│   │   ├── standards/
-│   │   ├── templates/
-│   │   └── tools/
+│   ├── neovim/                     # Neovim configuration knowledge
+│   │   ├── domain/                 # API and concepts
+│   │   ├── patterns/               # Configuration patterns
+│   │   ├── standards/              # Coding standards
+│   │   ├── templates/              # Template files
+│   │   └── tools/                  # Tool documentation (lazy.nvim, etc.)
 │   │
-│   ├── logic/                      # Logic domain knowledge
-│   │   ├── domain/
-│   │   ├── processes/
-│   │   └── standards/
+│   ├── latex/                      # LaTeX document knowledge
+│   │   ├── patterns/               # Document patterns
+│   │   ├── standards/              # Style standards
+│   │   ├── templates/              # Document templates
+│   │   └── tools/                  # Tool documentation
 │   │
-│   ├── math/                       # Math domain knowledge
-│   │   ├── algebra/
-│   │   ├── lattice-theory/
-│   │   ├── order-theory/
-│   │   └── topology/
+│   ├── typst/                      # Typst document knowledge
+│   │   ├── patterns/               # Document patterns
+│   │   ├── standards/              # Style standards
+│   │   ├── templates/              # Document templates
+│   │   └── tools/                  # Tool documentation
 │   │
-│   ├── physics/                    # Physics domain knowledge
-│   │   └── dynamical-systems/
+│   ├── hooks/                      # Git hooks context
+│   │
+│   ├── processes/                  # Process documentation
 │   │
 │   └── repo/                       # Repository-specific
 │       ├── project-overview.md
@@ -108,7 +109,7 @@
 - **templates/** - Reusable templates for agents, commands, orchestrator
 - **schemas/** - JSON/YAML schemas for validation
 
-**When to use**: Context that doesn't depend on ProofChecker specifics
+**When to use**: Context that doesn't depend on project-specific domains
 
 **Key Files**:
 - `orchestration/architecture.md` - Three-layer delegation pattern (critical for meta-builder)
@@ -117,17 +118,18 @@
 - `orchestration/state-management.md` - State management and fast lookup patterns (8x faster than TODO.md)
 
 ### project/
-**Purpose**: ProofChecker-specific domain knowledge
+**Purpose**: Domain-specific knowledge for supported languages
 
 **Contents**:
 - **meta/** - Meta-builder context (domain patterns, architecture principles)
-- **lean4/** - Lean 4 theorem proving knowledge
-- **logic/** - Logic domain knowledge (modal, temporal)
-- **math/** - Math domain knowledge (algebra, topology, etc.)
-- **physics/** - Physics domain knowledge
+- **neovim/** - Neovim configuration knowledge (API, patterns, plugins)
+- **latex/** - LaTeX document authoring knowledge
+- **typst/** - Typst document authoring knowledge
+- **hooks/** - Git hooks context
+- **processes/** - Process documentation
 - **repo/** - Repository-specific information
 
-**When to use**: Context specific to ProofChecker's domains
+**When to use**: Context specific to the language being worked on
 
 ---
 
@@ -147,7 +149,7 @@
 
 **Tier 3: Agents (Domain-Specific)**
 - Budget: 60-80% context window (~120-160KB)
-- Files: `project/lean4/*`, `project/logic/*`, etc.
+- Files: `project/neovim/*`, `project/latex/*`, etc.
 - Purpose: Domain-specific work with full context
 
 **Performance Optimization**:
@@ -184,58 +186,10 @@ Add to `core/`:
 - Templates → `core/templates/`
 - Schemas → `core/schemas/`
 
-### For ProofChecker-Specific Context
+### For Domain-Specific Context
 Add to `project/`:
 - Meta-builder → `project/meta/`
-- Lean 4 → `project/lean4/`
-- Logic → `project/logic/`
-- Math → `project/math/`
-- Physics → `project/physics/`
+- Neovim → `project/neovim/`
+- LaTeX → `project/latex/`
+- Typst → `project/typst/`
 - Repo-specific → `project/repo/`
-
----
-
-## Migration from Old Structure (Task 314 - 2026-01-05)
-
-### Changes Summary
-- **File Count**: 48 → 36 files (25% reduction)
-- **Directories**: 5 → 6 directories (better organization)
-- **New Files**: 3 critical architecture files added
-- **Merged Files**: 6 pairs of redundant files consolidated
-- **Renamed Files**: 9 files renamed for consistency
-
-### Directory Mapping
-
-**Old** → **New**:
-- `system/` → `orchestration/` (system-level files)
-- `standards/` → `formats/` (format files) + `standards/` (quality standards)
-- `workflows/` → `workflows/` (kept, some files moved)
-- `templates/` → `templates/` (kept, some files moved to schemas/)
-- `schemas/` → `schemas/` (kept, added subagent-frontmatter.yaml)
-
-### New Files Created
-1. `orchestration/architecture.md` - Three-layer delegation pattern
-2. `formats/command-structure.md` - Commands as agents
-3. `workflows/preflight-postflight.md` - Workflow timing standards
-
-### Merged Files
-1. `orchestrator-design.md` + `orchestrator-guide.md` → `orchestration/orchestrator.md`
-2. `routing-guide.md` + `routing-logic.md` → `orchestration/routing.md`
-3. `delegation.md` + `delegation-guide.md` → `orchestration/delegation.md`
-4. `validation-strategy.md` + `validation-rules.md` → `orchestration/validation.md`
-5. `state-management.md` + `artifact-management.md` → `orchestration/state-management.md`
-6. `code.md` + `patterns.md` → `standards/code-patterns.md`
-
-### Meta-Builder Files Moved
-- `standards/domain-patterns.md` → `project/meta/domain-patterns.md`
-- `standards/architecture-principles.md` → `project/meta/architecture-principles.md`
-- `templates/meta-guide.md` → `project/meta/meta-guide.md`
-- `workflows/interview-patterns.md` → `project/meta/interview-patterns.md`
-
-### Benefits
-- ✅ Single source of truth for each concept
-- ✅ Clear naming and logical grouping
-- ✅ Critical architecture documentation for meta-builder
-- ✅ Improved organization (orchestration vs formats vs standards)
-- ✅ State.json optimization patterns documented
-- ✅ Workflow timing standards integrated
