@@ -1,21 +1,20 @@
 {
-  "status": "researched",
-  "started_at": "2026-02-02T12:00:00Z",
-  "completed_at": "2026-02-02T12:15:00Z",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/25_migrate_git_repo_to_nvim_directory/reports/research-001.md",
-      "summary": "Research report covering 3 migration approaches (git-filter-repo, simple .git move, subdirectory filter), with recommendation to use git-filter-repo --subdirectory-filter for clean history rewrite"
+      "type": "plan",
+      "path": "specs/25_migrate_git_repo_to_nvim_directory/plans/implementation-001.md",
+      "summary": "6-phase implementation plan for git repository migration from .config/ to nvim/"
     }
   ],
-  "next_steps": "Run /plan 25 to create implementation plan",
+  "next_steps": "Run /implement 25 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770026527_269fdc",
-    "agent_type": "general-research-agent",
-    "duration_seconds": 900,
+    "session_id": "sess_1770028297_32ac8c",
+    "agent_type": "planner-agent",
+    "duration_seconds": 120,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "general-research-agent"],
-    "findings_count": 5
+    "delegation_path": ["orchestrator", "plan", "skill-planner"],
+    "phase_count": 6,
+    "estimated_hours": "1-2"
   }
 }
