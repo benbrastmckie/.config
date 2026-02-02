@@ -416,6 +416,60 @@ function M.create_agents_entries(structure)
   return entries
 end
 
+--- Format root file entry for display
+--- @param root_file table Root file data
+--- @param indent_char string Tree character (├─ or └─)
+--- @return string Formatted display string
+local function format_root_file(root_file, indent_char)
+  local prefix = root_file.is_local and "*" or " "
+  local description = root_file.description or ""
+
+  return string.format(
+    "%s %s %-38s %s",
+    prefix,
+    indent_char,
+    root_file.name,
+    description
+  )
+end
+
+--- Create entries for root files section
+--- @param structure table Extended structure from parser
+--- @return table Array of entries
+function M.create_root_files_entries(structure)
+  local entries = {}
+  local root_files = structure.root_files or {}
+
+  if #root_files > 0 then
+    table.sort(root_files, function(a, b) return a.name < b.name end)
+
+    for i, root_file in ipairs(root_files) do
+      local is_first = (i == 1)
+      local indent_char = helpers.get_tree_char(is_first)
+
+      table.insert(entries, {
+        display = format_root_file(root_file, indent_char),
+        entry_type = "root_file",
+        name = root_file.name,
+        description = root_file.description,
+        filepath = root_file.filepath,
+        is_local = root_file.is_local,
+        ordinal = "zzzz_root_file_" .. root_file.name
+      })
+    end
+
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~root_files_heading",
+      display = string.format("%-40s %s", "[Root Files]", "Configuration files"),
+      entry_type = "heading",
+      ordinal = "root_files"
+    })
+  end
+
+  return entries
+end
+
 --- Create entries for hooks section
 --- @param structure table Extended structure from parser
 --- @return table Array of entries
@@ -621,7 +675,13 @@ function M.create_picker_entries(structure)
     table.insert(all_entries, entry)
   end
 
-  -- 10. Commands section (appears at top)
+  -- 10. Root Files section (between Agents and Commands)
+  local root_files = M.create_root_files_entries(structure)
+  for _, entry in ipairs(root_files) do
+    table.insert(all_entries, entry)
+  end
+
+  -- 11. Commands section (appears at top)
   local commands = M.create_commands_entries(structure)
   for _, entry in ipairs(commands) do
     table.insert(all_entries, entry)

@@ -531,6 +531,57 @@ local function parse_skills_with_fallback(project_skills_dir, global_skills_dir)
   return merged_skills
 end
 
+--- Scan root-level .claude/ configuration files
+--- @param project_dir string Path to project directory
+--- @param global_dir string Path to global directory
+--- @return table Array of root file metadata with name, filepath, is_local, description
+local function scan_root_files(project_dir, global_dir)
+  local root_files_config = {
+    { name = ".gitignore", description = "Git ignore patterns" },
+    { name = "README.md", description = "Documentation" },
+    { name = "CLAUDE.md", description = "Claude configuration" },
+    { name = "settings.local.json", description = "Local settings" },
+  }
+
+  local root_files = {}
+  local seen = {}
+
+  -- Check local project first
+  local project_claude_dir = project_dir .. "/.claude"
+  for _, config in ipairs(root_files_config) do
+    local filepath = project_claude_dir .. "/" .. config.name
+    if vim.fn.filereadable(filepath) == 1 then
+      table.insert(root_files, {
+        name = config.name,
+        filepath = filepath,
+        is_local = true,
+        description = config.description,
+      })
+      seen[config.name] = true
+    end
+  end
+
+  -- Check global, but only if different from project and file not already found locally
+  local global_claude_dir = global_dir .. "/.claude"
+  if project_dir ~= global_dir then
+    for _, config in ipairs(root_files_config) do
+      if not seen[config.name] then
+        local filepath = global_claude_dir .. "/" .. config.name
+        if vim.fn.filereadable(filepath) == 1 then
+          table.insert(root_files, {
+            name = config.name,
+            filepath = filepath,
+            is_local = false,
+            description = config.description,
+          })
+        end
+      end
+    end
+  end
+
+  return root_files
+end
+
 --- Parse agents from both local and global directories with local priority
 --- @param project_agents_dir string Path to project-specific agents directory
 --- @param global_agents_dir string Path to global agents directory
@@ -654,6 +705,9 @@ function M.get_extended_structure()
   end
   local hook_events = M.build_hook_dependencies(hooks, settings_path)
 
+  -- Get root files
+  local root_files = scan_root_files(project_dir, global_dir)
+
   return {
     primary_commands = sorted_hierarchy.primary_commands,
     dependent_commands = sorted_hierarchy.dependent_commands,
@@ -661,6 +715,7 @@ function M.get_extended_structure()
     hook_events = hook_events,
     skills = skills,
     agents = agents,
+    root_files = root_files,
   }
 end
 

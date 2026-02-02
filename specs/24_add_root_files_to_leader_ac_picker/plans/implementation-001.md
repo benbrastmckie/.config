@@ -1,7 +1,7 @@
 # Implementation Plan: Add Root Files to Leader-ac Picker
 
 - **Task**: 24 - add_root_files_to_leader_ac_picker
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETE]
 - **Effort**: 1-2 hours
 - **Dependencies**: Task 23 (agents support) completed
 - **Research Inputs**: None (follow-up task, patterns established in codebase)
@@ -38,7 +38,7 @@ Add support for root-level `.claude/` configuration files to the `<leader>ac` te
 
 ## Implementation Phases
 
-### Phase 1: Add Root Files Scanner Function [NOT STARTED]
+### Phase 1: Add Root Files Scanner Function [COMPLETED]
 
 **Goal**: Create scanning function in parser.lua to discover root-level configuration files
 
@@ -64,7 +64,7 @@ Add support for root-level `.claude/` configuration files to the `<leader>ac` te
 
 ---
 
-### Phase 2: Add Root Files Entry Creator [NOT STARTED]
+### Phase 2: Add Root Files Entry Creator [COMPLETED]
 
 **Goal**: Create entry generation function in entries.lua for root files section
 
@@ -92,7 +92,7 @@ Add support for root-level `.claude/` configuration files to the `<leader>ac` te
 
 ---
 
-### Phase 3: Add Sync Support for Root Files [NOT STARTED]
+### Phase 3: Add Sync Support for Root Files [COMPLETED]
 
 **Goal**: Enable sync operation to copy global root files to local project
 
@@ -116,7 +116,7 @@ Add support for root-level `.claude/` configuration files to the `<leader>ac` te
 
 ---
 
-### Phase 4: Integration Testing [NOT STARTED]
+### Phase 4: Integration Testing [COMPLETED]
 
 **Goal**: Verify end-to-end functionality of root files in picker
 

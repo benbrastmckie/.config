@@ -4,19 +4,26 @@
     {
       "project_number": 24,
       "project_name": "add_root_files_to_leader_ac_picker",
-      "status": "planned",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-02T09:37:37Z",
-      "last_updated": "2026-02-02T09:43:35Z",
-      "session_id": "sess_1738488012_d6f7g4",
+      "last_updated": "2026-02-02T09:49:33Z",
+      "session_id": "sess_1738488289_e7g8h5",
       "planned": "2026-02-02T09:43:35Z",
       "artifacts": [
         {
           "path": "specs/24_add_root_files_to_leader_ac_picker/plans/implementation-001.md",
           "type": "plan",
           "summary": "Implementation plan for adding root files to picker"
+        },
+        {
+          "type": "summary",
+          "path": "specs/24_add_root_files_to_leader_ac_picker/summaries/implementation-summary-20260202.md",
+          "summary": "Implementation summary with verification results"
         }
-      ]
+      ],
+      "completed": "2026-02-02T09:49:33Z",
+      "completion_summary": "Added [Root Files] section to <leader>ac picker displaying .gitignore, README.md, CLAUDE.md, and settings.local.json with local/global fallback and sync support. Updated parser.lua with scan_root_files(), entries.lua with create_root_files_entries(), and sync.lua with root file scanning and sync operations."
     },
     {
       "project_number": 23,

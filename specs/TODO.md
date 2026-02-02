@@ -8,10 +8,12 @@ next_project_number: 25
 
 ### 24. Add .gitignore, README.md, CLAUDE.md, and settings.local.json to leader-ac picker
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
 - **Language**: neovim
 - **Started**: 2026-02-02
+- **Completed**: 2026-02-02
 - **Plan**: [implementation-001.md](specs/24_add_root_files_to_leader_ac_picker/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260202.md](specs/24_add_root_files_to_leader_ac_picker/summaries/implementation-summary-20260202.md)
 
 **Description**: Add .gitignore, README.md, CLAUDE.md, and settings.local.json to `<leader>ac` picker for complete .claude/ directory management.
 
