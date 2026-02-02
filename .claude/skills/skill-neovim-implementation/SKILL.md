@@ -51,8 +51,9 @@ language=$(echo "$task_data" | jq -r '.language // "neovim"')
 status=$(echo "$task_data" | jq -r '.status')
 project_name=$(echo "$task_data" | jq -r '.project_name')
 
-# Find plan file
-plan_path="specs/${task_number}_${project_name}/plans/implementation-001.md"
+# Find plan file (use padded directory number)
+padded_num=$(printf "%03d" "$task_number")
+plan_path="specs/${padded_num}_${project_name}/plans/implementation-001.md"
 if [ ! -f "$plan_path" ]; then
   return error "Plan not found: $plan_path"
 fi
@@ -83,9 +84,9 @@ jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 ### Stage 3: Create Postflight Marker
 
 ```bash
-mkdir -p "specs/${task_number}_${project_name}"
+mkdir -p "specs/${padded_num}_${project_name}"
 
-cat > "specs/${task_number}_${project_name}/.postflight-pending" << EOF
+cat > "specs/${padded_num}_${project_name}/.postflight-pending" << EOF
 {
   "session_id": "${session_id}",
   "skill": "skill-neovim-implementation",
@@ -146,7 +147,7 @@ The subagent will:
 ### Stage 6: Parse Subagent Return
 
 ```bash
-metadata_file="specs/${task_number}_${project_name}/.return-meta.json"
+metadata_file="specs/${padded_num}_${project_name}/.return-meta.json"
 
 if [ -f "$metadata_file" ] && jq empty "$metadata_file" 2>/dev/null; then
     status=$(jq -r '.status' "$metadata_file")
@@ -202,8 +203,8 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 ### Stage 10: Cleanup
 
 ```bash
-rm -f "specs/${task_number}_${project_name}/.postflight-pending"
-rm -f "specs/${task_number}_${project_name}/.return-meta.json"
+rm -f "specs/${padded_num}_${project_name}/.postflight-pending"
+rm -f "specs/${padded_num}_${project_name}/.return-meta.json"
 ```
 
 ---

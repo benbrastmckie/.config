@@ -55,10 +55,10 @@ Load these on-demand using @-references:
 
 1. Ensure task directory exists:
    ```bash
-   mkdir -p "specs/{N}_{SLUG}"
+   mkdir -p "specs/{NNN}_{SLUG}"
    ```
 
-2. Write initial metadata to `specs/{N}_{SLUG}/.return-meta.json`:
+2. Write initial metadata to `specs/{NNN}_{SLUG}/.return-meta.json`:
    ```json
    {
      "status": "in_progress",
@@ -166,7 +166,7 @@ Apply task-breakdown.md guidelines:
 
 Create directory if needed:
 ```
-mkdir -p specs/{N}_{SLUG}/plans/
+mkdir -p specs/{NNN}_{SLUG}/plans/
 ```
 
 Find next plan version (implementation-001.md, implementation-002.md, etc.)
@@ -273,7 +273,7 @@ grep -q "^\- \*\*Status\*\*:" plan_file || echo "ERROR: Missing Status field"
 
 **CRITICAL**: Write metadata to the specified file path, NOT to console.
 
-Write to `specs/{N}_{SLUG}/.return-meta.json`:
+Write to `specs/{NNN}_{SLUG}/.return-meta.json`:
 
 ```json
 {
@@ -281,7 +281,7 @@ Write to `specs/{N}_{SLUG}/.return-meta.json`:
   "artifacts": [
     {
       "type": "plan",
-      "path": "specs/{N}_{SLUG}/plans/implementation-{NNN}.md",
+      "path": "specs/{NNN}_{SLUG}/plans/implementation-{NNN}.md",
       "summary": "{phase_count}-phase implementation plan for {task_name}"
     }
   ],
@@ -388,7 +388,7 @@ Planning failed for task 999:
 
 **MUST DO**:
 1. **Create early metadata at Stage 0** before any substantive work
-2. Always write final metadata to `specs/{N}_{SLUG}/.return-meta.json`
+2. Always write final metadata to `specs/{NNN}_{SLUG}/.return-meta.json`
 3. Always return brief text summary (3-6 bullets), NOT JSON
 4. Always include session_id from delegation context in metadata
 5. Always create plan file before writing completed status

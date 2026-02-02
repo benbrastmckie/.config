@@ -95,9 +95,10 @@ Create the marker file to prevent premature termination:
 
 ```bash
 # Ensure task directory exists
-mkdir -p "specs/${task_number}_${project_name}"
+padded_num=$(printf "%03d" "$task_number")
+mkdir -p "specs/${padded_num}_${project_name}"
 
-cat > "specs/${task_number}_${project_name}/.postflight-pending" << EOF
+cat > "specs/${padded_num}_${project_name}/.postflight-pending" << EOF
 {
   "session_id": "${session_id}",
   "skill": "skill-planner",
@@ -166,7 +167,7 @@ The subagent will:
 After subagent returns, read the metadata file:
 
 ```bash
-metadata_file="specs/${task_number}_${project_name}/.return-meta.json"
+metadata_file="specs/${padded_num}_${project_name}/.return-meta.json"
 
 if [ -f "$metadata_file" ] && jq empty "$metadata_file" 2>/dev/null; then
     status=$(jq -r '.status' "$metadata_file")
@@ -251,9 +252,9 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 Remove marker and metadata files:
 
 ```bash
-rm -f "specs/${task_number}_${project_name}/.postflight-pending"
-rm -f "specs/${task_number}_${project_name}/.postflight-loop-guard"
-rm -f "specs/${task_number}_${project_name}/.return-meta.json"
+rm -f "specs/${padded_num}_${project_name}/.postflight-pending"
+rm -f "specs/${padded_num}_${project_name}/.postflight-loop-guard"
+rm -f "specs/${padded_num}_${project_name}/.return-meta.json"
 ```
 
 ---

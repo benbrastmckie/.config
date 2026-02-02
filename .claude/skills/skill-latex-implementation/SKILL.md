@@ -69,8 +69,9 @@ jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 
 **Update plan file** (if exists): Update the Status field in plan metadata:
 ```bash
-# Find latest plan file
-plan_file=$(ls -1 "specs/${task_number}_${project_name}/plans/implementation-"*.md 2>/dev/null | sort -V | tail -1)
+# Find latest plan file (use padded directory number)
+padded_num=$(printf "%03d" "$task_number")
+plan_file=$(ls -1 "specs/${padded_num}_${project_name}/plans/implementation-"*.md 2>/dev/null | sort -V | tail -1)
 if [ -n "$plan_file" ] && [ -f "$plan_file" ]; then
     sed -i "s/^\- \*\*Status\*\*: \[.*\]$/- **Status**: [IMPLEMENTING]/" "$plan_file"
 fi
@@ -79,9 +80,9 @@ fi
 **Create Postflight Marker**:
 ```bash
 # Ensure task directory exists
-mkdir -p "specs/${task_number}_${project_name}"
+mkdir -p "specs/${padded_num}_${project_name}"
 
-cat > "specs/${task_number}_${project_name}/.postflight-pending" << EOF
+cat > "specs/${padded_num}_${project_name}/.postflight-pending" << EOF
 {
   "session_id": "${session_id}",
   "skill": "skill-latex-implementation",
@@ -206,7 +207,7 @@ This validation:
 After subagent returns, read the metadata file:
 
 ```bash
-metadata_file="specs/${task_number}_${project_name}/.return-meta.json"
+metadata_file="specs/${padded_num}_${project_name}/.return-meta.json"
 
 if [ -f "$metadata_file" ] && jq empty "$metadata_file" 2>/dev/null; then
     status=$(jq -r '.status' "$metadata_file")
@@ -281,7 +282,7 @@ Update TODO.md:
 
 **Update plan file** (if exists): Update the Status field to `[COMPLETED]`:
 ```bash
-plan_file=$(ls -1 "specs/${task_number}_${project_name}/plans/implementation-"*.md 2>/dev/null | sort -V | tail -1)
+plan_file=$(ls -1 "specs/${padded_num}_${project_name}/plans/implementation-"*.md 2>/dev/null | sort -V | tail -1)
 if [ -n "$plan_file" ] && [ -f "$plan_file" ]; then
     sed -i "s/^\- \*\*Status\*\*: \[.*\]$/- **Status**: [COMPLETED]/" "$plan_file"
 fi
@@ -303,7 +304,7 @@ TODO.md stays as `[IMPLEMENTING]`.
 
 **Update plan file** (if exists): Update the Status field to `[PARTIAL]`:
 ```bash
-plan_file=$(ls -1 "specs/${task_number}_${project_name}/plans/implementation-"*.md 2>/dev/null | sort -V | tail -1)
+plan_file=$(ls -1 "specs/${padded_num}_${project_name}/plans/implementation-"*.md 2>/dev/null | sort -V | tail -1)
 if [ -n "$plan_file" ] && [ -f "$plan_file" ]; then
     sed -i "s/^\- \*\*Status\*\*: \[.*\]$/- **Status**: [PARTIAL]/" "$plan_file"
 fi
@@ -329,9 +330,9 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
 Remove marker and metadata files after postflight processing:
 
 ```bash
-rm -f "specs/${task_number}_${project_name}/.postflight-pending"
-rm -f "specs/${task_number}_${project_name}/.postflight-loop-guard"
-rm -f "specs/${task_number}_${project_name}/.return-meta.json"
+rm -f "specs/${padded_num}_${project_name}/.postflight-pending"
+rm -f "specs/${padded_num}_${project_name}/.postflight-loop-guard"
+rm -f "specs/${padded_num}_${project_name}/.return-meta.json"
 ```
 
 ### 8. Return Brief Summary

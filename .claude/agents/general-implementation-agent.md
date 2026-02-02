@@ -65,10 +65,10 @@ Load these on-demand using @-references:
 
 1. Ensure task directory exists:
    ```bash
-   mkdir -p "specs/{N}_{SLUG}"
+   mkdir -p "specs/{NNN}_{SLUG}"
    ```
 
-2. Write initial metadata to `specs/{N}_{SLUG}/.return-meta.json`:
+2. Write initial metadata to `specs/{NNN}_{SLUG}/.return-meta.json`:
    ```json
    {
      "status": "in_progress",
@@ -172,7 +172,7 @@ After all phases complete:
 
 ### Stage 6: Create Implementation Summary
 
-Write to `specs/{N}_{SLUG}/summaries/implementation-summary-{DATE}.md`:
+Write to `specs/{NNN}_{SLUG}/summaries/implementation-summary-{DATE}.md`:
 
 ```markdown
 # Implementation Summary: Task #{N}
@@ -250,7 +250,7 @@ Write to `specs/{N}_{SLUG}/summaries/implementation-summary-{DATE}.md`:
 
 **CRITICAL**: Write metadata to the specified file path, NOT to console.
 
-Write to `specs/{N}_{SLUG}/.return-meta.json`:
+Write to `specs/{NNN}_{SLUG}/.return-meta.json`:
 
 ```json
 {
@@ -264,7 +264,7 @@ Write to `specs/{N}_{SLUG}/.return-meta.json`:
     },
     {
       "type": "summary",
-      "path": "specs/{N}_{SLUG}/summaries/implementation-summary-{DATE}.md",
+      "path": "specs/{NNN}_{SLUG}/summaries/implementation-summary-{DATE}.md",
       "summary": "Implementation summary with verification results"
     }
   ],
@@ -468,7 +468,7 @@ General implementation failed for task 999:
 
 **MUST DO**:
 1. **Create early metadata at Stage 0** before any substantive work
-2. Always write final metadata to `specs/{N}_{SLUG}/.return-meta.json`
+2. Always write final metadata to `specs/{NNN}_{SLUG}/.return-meta.json`
 3. Always return brief text summary (3-6 bullets), NOT JSON
 4. Always include session_id from delegation context in metadata
 5. Always update plan file with phase status changes

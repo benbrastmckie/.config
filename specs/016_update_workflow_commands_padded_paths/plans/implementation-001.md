@@ -14,7 +14,7 @@ Update `/research`, `/plan`, `/implement`, `/revise`, and `/todo` commands to co
 ### Phase 1: Update research.md command
 
 **Estimated effort**: 15 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update directory path construction to use padded format
@@ -41,7 +41,7 @@ Update `/research`, `/plan`, `/implement`, `/revise`, and `/todo` commands to co
 ### Phase 2: Update plan.md command
 
 **Estimated effort**: 15 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update directory path construction
@@ -65,7 +65,7 @@ Update `/research`, `/plan`, `/implement`, `/revise`, and `/todo` commands to co
 ### Phase 3: Update implement.md command
 
 **Estimated effort**: 20 minutes
-**Status**: [NOT STARTED]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update all directory path references
@@ -98,7 +98,7 @@ Update `/research`, `/plan`, `/implement`, `/revise`, and `/todo` commands to co
 ### Phase 4: Update revise.md command
 
 **Estimated effort**: 10 minutes
-**Status**: [NOT STARTED]
+**Status**: [IN PROGRESS]
 
 **Objectives**:
 1. Update plan path references

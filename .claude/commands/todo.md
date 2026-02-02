@@ -528,12 +528,24 @@ For each archived task (completed or abandoned):
 project_number={N}
 project_name={SLUG}
 
-src="specs/${project_number}_${project_name}"
-dst="specs/archive/${project_number}_${project_name}"
+# Compute padded number for consistent directory naming
+padded_num=$(printf "%03d" "$project_number")
 
-if [ -d "$src" ]; then
+# Check padded directory first, then fall back to unpadded for legacy
+if [ -d "specs/${padded_num}_${project_name}" ]; then
+  src="specs/${padded_num}_${project_name}"
+elif [ -d "specs/${project_number}_${project_name}" ]; then
+  src="specs/${project_number}_${project_name}"
+else
+  src=""
+fi
+
+# Always archive to padded directory
+dst="specs/archive/${padded_num}_${project_name}"
+
+if [ -n "$src" ] && [ -d "$src" ]; then
   mv "$src" "$dst"
-  echo "Moved: ${project_number}_${project_name} -> archive/"
+  echo "Moved: $(basename "$src") -> archive/${padded_num}_${project_name}/"
   # Track this move for output reporting
 else
   echo "Note: No directory for task ${project_number} (skipped)"

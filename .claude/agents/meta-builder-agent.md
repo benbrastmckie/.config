@@ -351,9 +351,9 @@ slug=$(echo "{title}" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd 'a-z0-9
 Created {N} task(s) for {domain}:
 
 - Task #{N}: {title}
-  Path: specs/{N}_{slug}/
+  Path: specs/{NNN}_{slug}/
 - Task #{N}: {title} (depends on #{N})
-  Path: specs/{N}_{slug}/
+  Path: specs/{NNN}_{slug}/
 
 ---
 
