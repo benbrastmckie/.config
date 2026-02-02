@@ -1,21 +1,40 @@
 {
-  "status": "planned",
-  "summary": "5-phase implementation plan for adding agents/ directory support to <leader>ac picker",
+  "status": "implemented",
+  "summary": "Added agents/ directory support to the <leader>ac picker. Created [Agents] section displaying all 9 agent definitions with local/global merging. Integrated agents into sync operations for Load All Artifacts and Ctrl-u update from global. All verification tests pass.",
   "artifacts": [
     {
-      "type": "plan",
-      "path": "specs/23_leader_ac_picker_claude_directory_management/plans/implementation-001.md",
-      "summary": "Implementation plan for adding agents/ directory support to <leader>ac picker with 5 phases: parser changes, entry display, sync operations, action handlers, and testing"
+      "type": "implementation",
+      "path": "/home/benjamin/.config/nvim/lua/neotex/plugins/ai/claude/commands/parser.lua",
+      "summary": "Added scan_agents_directory() and parse_agents_with_fallback() functions"
+    },
+    {
+      "type": "implementation",
+      "path": "/home/benjamin/.config/nvim/lua/neotex/plugins/ai/claude/commands/picker/display/entries.lua",
+      "summary": "Added create_agents_entries() and format_agent() for [Agents] section"
+    },
+    {
+      "type": "implementation",
+      "path": "/home/benjamin/.config/nvim/lua/neotex/plugins/ai/claude/commands/picker/operations/sync.lua",
+      "summary": "Added agent scanning and sync support"
+    },
+    {
+      "type": "implementation",
+      "path": "/home/benjamin/.config/nvim/lua/neotex/plugins/ai/claude/commands/picker/init.lua",
+      "summary": "Added agent to Enter action handler"
+    },
+    {
+      "type": "summary",
+      "path": "/home/benjamin/.config/specs/23_leader_ac_picker_claude_directory_management/summaries/implementation-summary-20260202.md",
+      "summary": "Implementation summary documenting all changes"
     }
   ],
-  "next_steps": "Run /implement 23 to execute the plan",
   "metadata": {
-    "session_id": "sess_1738487432_b4d5e2",
-    "agent_type": "planner-agent",
-    "duration_seconds": 180,
+    "session_id": "sess_1738487689_c5e6f3",
+    "agent_type": "neovim-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "plan", "planner-agent"],
-    "phase_count": 5,
-    "estimated_hours": "2-3"
-  }
+    "delegation_path": ["orchestrator", "implement", "neovim-implementation-agent"],
+    "phases_completed": 5,
+    "phases_total": 5
+  },
+  "next_steps": "Test changes by opening Neovim and pressing <leader>ac to verify [Agents] section appears"
 }

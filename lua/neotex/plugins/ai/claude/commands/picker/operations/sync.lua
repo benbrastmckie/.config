@@ -99,6 +99,7 @@ local function execute_sync(project_dir, all_artifacts, merge_only)
   counts.scripts = sync_files(all_artifacts.scripts or {}, true, merge_only)
   counts.tests = sync_files(all_artifacts.tests or {}, true, merge_only)
   counts.skills = sync_files(all_artifacts.skills or {}, true, merge_only)
+  counts.agents = sync_files(all_artifacts.agents or {}, false, merge_only)
   counts.rules = sync_files(all_artifacts.rules or {}, false, merge_only)
   counts.context = sync_files(all_artifacts.context or {}, false, merge_only)
   counts.settings = sync_files(all_artifacts.settings or {}, false, merge_only)
@@ -123,12 +124,12 @@ local function execute_sync(project_dir, all_artifacts, merge_only)
         "  Commands: %d | Hooks: %d | Templates: %d\n" ..
         "  Lib: %d (%d nested) | Docs: %d (%d nested)\n" ..
         "  Scripts: %d | Tests: %d | Skills: %d (%d nested)\n" ..
-        "  Rules: %d | Context: %d | Settings: %d",
+        "  Agents: %d | Rules: %d | Context: %d | Settings: %d",
         total_synced, strategy_msg,
         counts.commands, counts.hooks, counts.templates,
         counts.lib, lib_subdir, counts.docs, doc_subdir,
         counts.scripts, counts.tests, counts.skills, skill_subdir,
-        counts.rules, counts.context, counts.settings
+        counts.agents, counts.rules, counts.context, counts.settings
       ),
       "INFO"
     )
@@ -152,6 +153,7 @@ local function scan_all_artifacts(global_dir, project_dir)
   artifacts.docs = scan.scan_directory_for_sync(global_dir, project_dir, "docs", "*.md")
   artifacts.scripts = scan.scan_directory_for_sync(global_dir, project_dir, "scripts", "*.sh")
   artifacts.tests = scan.scan_directory_for_sync(global_dir, project_dir, "tests", "test_*.sh")
+  artifacts.agents = scan.scan_directory_for_sync(global_dir, project_dir, "agents", "*.md")
   artifacts.rules = scan.scan_directory_for_sync(global_dir, project_dir, "rules", "*.md")
   artifacts.context = scan.scan_directory_for_sync(global_dir, project_dir, "context", "*.md")
 
@@ -296,6 +298,7 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
     script = { dir = "scripts", ext = ".sh" },
     test = { dir = "tests", ext = ".sh" },
     skill = { dir = "skills", ext = ".md" },
+    agent = { dir = "agents", ext = ".md" },
   }
 
   local config = subdir_map[artifact_type]

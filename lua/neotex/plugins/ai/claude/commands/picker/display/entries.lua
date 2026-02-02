@@ -322,6 +322,23 @@ local function format_skill(skill, indent_char)
   )
 end
 
+--- Format agent entry for display
+--- @param agent table Agent data
+--- @param indent_char string Tree character (├─ or └─)
+--- @return string Formatted display string
+local function format_agent(agent, indent_char)
+  local prefix = agent.is_local and "*" or " "
+  local description = agent.description or ""
+
+  return string.format(
+    "%s %s %-38s %s",
+    prefix,
+    indent_char,
+    agent.name,
+    description
+  )
+end
+
 --- Create entries for skills section
 --- @param structure table Extended structure from parser
 --- @return table Array of entries
@@ -356,6 +373,43 @@ function M.create_skills_entries(structure)
       display = string.format("%-40s %s", "[Skills]", "Model-invoked capabilities"),
       entry_type = "heading",
       ordinal = "skills"
+    })
+  end
+
+  return entries
+end
+
+--- Create entries for agents section
+--- @param structure table Extended structure from parser
+--- @return table Array of entries
+function M.create_agents_entries(structure)
+  local entries = {}
+  local agents = structure.agents or {}
+
+  if #agents > 0 then
+    table.sort(agents, function(a, b) return a.name < b.name end)
+
+    for i, agent in ipairs(agents) do
+      local is_first = (i == 1)
+      local indent_char = helpers.get_tree_char(is_first)
+
+      table.insert(entries, {
+        display = format_agent(agent, indent_char),
+        entry_type = "agent",
+        name = agent.name,
+        description = agent.description,
+        filepath = agent.filepath,
+        is_local = agent.is_local,
+        ordinal = "zzzz_agent_" .. agent.name
+      })
+    end
+
+    table.insert(entries, {
+      is_heading = true,
+      name = "~~~agents_heading",
+      display = string.format("%-40s %s", "[Agents]", "AI agent definitions"),
+      entry_type = "heading",
+      ordinal = "agents"
     })
   end
 
@@ -483,7 +537,7 @@ function M.create_special_entries()
     display = string.format(
       "%-40s %s",
       "[Load All Artifacts]",
-      "Sync commands, hooks, skills, docs, lib"
+      "Sync commands, hooks, skills, agents, docs, lib"
     ),
     command = nil,
     entry_type = "special"
@@ -561,7 +615,13 @@ function M.create_picker_entries(structure)
     table.insert(all_entries, entry)
   end
 
-  -- 9. Commands section (appears at top)
+  -- 9. Agents section
+  local agents = M.create_agents_entries(structure)
+  for _, entry in ipairs(agents) do
+    table.insert(all_entries, entry)
+  end
+
+  -- 10. Commands section (appears at top)
   local commands = M.create_commands_entries(structure)
   for _, entry in ipairs(commands) do
     table.insert(all_entries, entry)
