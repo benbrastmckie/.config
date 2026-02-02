@@ -121,7 +121,7 @@ Update `/research`, `/plan`, `/implement`, `/revise`, and `/todo` commands to co
 ### Phase 5: Update todo.md command
 
 **Estimated effort**: 15 minutes
-**Status**: [IN PROGRESS]
+**Status**: [COMPLETED]
 
 **Objectives**:
 1. Update archive directory handling
