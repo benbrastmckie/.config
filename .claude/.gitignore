@@ -1,9 +1,10 @@
 # Personal settings (not shared)
-settings.local.json
+# settings.local.json
 
 # Hook logs
 hooks/*.log
 logs/
+output/
 
 # Temporary files
 *.tmp

@@ -1,15 +1,14 @@
-# ProofChecker Architecture: Three-Layer Delegation Pattern
+# project Architecture: Three-Layer Delegation Pattern
 
-**Version**: 1.0  
 **Created**: 2026-01-05  
-**Purpose**: Document ProofChecker's unique three-layer delegation architecture  
+**Purpose**: Document project's unique three-layer delegation architecture  
 **Audience**: Meta-builder, system developers, architecture reviewers
 
 ---
 
 ## Overview
 
-ProofChecker implements a **three-layer delegation pattern** that separates routing, argument parsing, and work execution into distinct layers. This architecture differs fundamentally from traditional agent systems (like OpenAgents) and enables clean separation of concerns, robust error handling, and flexible workflow composition.
+project implements a **three-layer delegation pattern** that separates routing, argument parsing, and work execution into distinct layers. This architecture differs fundamentally from traditional agent systems (like OpenAgents) and enables clean separation of concerns, robust error handling, and flexible workflow composition.
 
 ### Core Principle
 
@@ -190,7 +189,7 @@ Command File: Return to orchestrator
    - `researcher`: Conduct research, create reports
    - `planner`: Create implementation plans
    - `implementer`: Execute implementation phases
-   - `lean-implementation-agent`: Execute Lean-specific implementations
+   - `neovim-implementation-agent`: Execute Neovim-specific implementations
    - `reviewer`: Review code and documentation
 
 2. **State Managers**:
@@ -299,7 +298,7 @@ Command File: Return to orchestrator
 │                                                              │
 │ Step 7: Aggregate results                                  │
 │ Step 8: Format response                                    │
-│ Output: "Plan created: .claude/specs/196_.../plan.md"   │
+│ Output: "Plan created: specs/196_.../plan.md"   │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -327,7 +326,7 @@ User → Orchestrator → Execution Agent
 - No intermediate workflow layer
 - Simpler but less flexible
 
-### ProofChecker Pattern (Three-Layer)
+### project Pattern (Three-Layer)
 
 ```
 User → Orchestrator → Command File → Execution Subagent
@@ -367,7 +366,7 @@ User → Orchestrator → Command File → Execution Subagent
 
 ### State.json Optimization
 
-ProofChecker uses `state.json` as the single source of truth for task metadata, enabling fast lookups and consistent state management.
+project uses `state.json` as the single source of truth for task metadata, enabling fast lookups and consistent state management.
 
 **Phase 1 Optimization** (Implemented):
 - Command files use `jq` queries for task lookup (8x faster: 100ms → 12ms)
@@ -392,7 +391,7 @@ task_status=$(jq -r ".tasks[] | select(.number == $task_number) | .status" .clau
 Delegate to status-sync-manager with:
   - task_number: 196
   - new_status: "planned"
-  - artifact_path: ".claude/specs/196_.../plan.md"
+  - artifact_path: "specs/196_.../plan.md"
 ```
 
 **Benefits**:
@@ -403,7 +402,7 @@ Delegate to status-sync-manager with:
 
 **See Also**:
 - `orchestration/state-management.md` - Detailed state management patterns
-- `orchestration/state-lookup.md` - Query patterns and examples
+- `orchestration/state-management.md` - State management and query patterns
 
 ---
 
@@ -733,7 +732,7 @@ Any architectural changes MUST:
 
 ## Summary
 
-ProofChecker's three-layer delegation pattern provides:
+project's three-layer delegation pattern provides:
 
 ✅ **Clear Separation**: Routing, orchestration, execution are separate  
 ✅ **Flexibility**: Workflows compose reusable subagents  
@@ -743,7 +742,7 @@ ProofChecker's three-layer delegation pattern provides:
 ✅ **Consistency**: Standardized interfaces across all subagents  
 ✅ **Observability**: Clear delegation chains and error propagation
 
-**Key Takeaway**: Commands are agents with workflows, not just entry points. This pattern enables ProofChecker to build complex, robust, and maintainable automation systems.
+**Key Takeaway**: Commands are agents with workflows, not just entry points. This pattern enables project to build complex, robust, and maintainable automation systems.
 
 ---
 

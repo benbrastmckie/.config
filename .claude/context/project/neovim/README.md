@@ -1,79 +1,96 @@
-# Neovim Context README
+# Neovim Context
 
-## Purpose
-Neovim-specific context for configuration development. Use these files for Lua patterns, plugin development, testing, and editor customization workflows. Extends core system context with Neovim/Lua domain knowledge.
-
-## Canonical Sources
-- Core system standards: `core/standards/`
-- Orchestration patterns: `core/orchestration/`
-- Artifact formats: `core/formats/`
-- Status markers: `core/standards/status-markers.md`
-
-## Neovim-Specific Files
-
-### Domain
-- `domain/neovim-api.md` - vim.api, vim.fn, vim.opt, vim.keymap patterns
-- `domain/lua-patterns.md` - Module patterns, metatables, error handling idioms
-- `domain/plugin-ecosystem.md` - lazy.nvim, plugin categories, selection criteria
-- `domain/lsp-integration.md` - nvim-lspconfig, mason.nvim, completion engines
-
-### Standards
-- `standards/lua-style-guide.md` - Indentation, naming, module structure
-- `standards/documentation-requirements.md` - README format, function docs
-- `standards/testing-standards.md` - busted, plenary.nvim, assertion patterns
-
-### Patterns
-- `patterns/plugin-definition.md` - lazy.nvim specs, lazy loading, dependencies
-- `patterns/keymapping.md` - vim.keymap.set, which-key, leader patterns
-- `patterns/autocommand.md` - autocmd groups, common events, buffer-local
-
-### Tools
-- `tools/lazy-nvim.md` - Package manager installation, specs, lock files
-- `tools/telescope.md` - Picker creation, extensions, finder/previewer/sorter
-- `tools/treesitter.md` - Parser installation, queries, text objects
-
-### Processes
-- `processes/plugin-development.md` - Structure, testing, publishing workflow
-- `processes/debugging.md` - :messages, print, DAP, profiling
-- `processes/maintenance.md` - Updates, breaking changes, performance
-
-### Templates
-- Reserved for future template files
-
-## Usage Guidance
-- Start with nvim/CLAUDE.md for project-specific standards
-- Use these context files for deep domain knowledge
-- Load minimal context per task (relevant files only)
-- Prefer nvim/docs/ for implementation details
+Domain knowledge for Neovim configuration development.
 
 ## Directory Structure
+
 ```
-neovim/
-├── README.md              # This file
-├── domain/                # Neovim/Lua concepts
-│   ├── neovim-api.md
+project/neovim/
+├── README.md           # This file
+├── domain/             # Core Neovim concepts
 │   ├── lua-patterns.md
 │   ├── plugin-ecosystem.md
-│   └── lsp-integration.md
-├── standards/             # Coding and documentation standards
+│   ├── lsp-overview.md
+│   └── neovim-api.md
+├── patterns/           # Common implementation patterns
+│   ├── plugin-spec.md
+│   ├── keymap-patterns.md
+│   ├── autocommand-patterns.md
+│   └── ftplugin-patterns.md
+├── standards/          # Coding conventions
 │   ├── lua-style-guide.md
-│   ├── documentation-requirements.md
-│   └── testing-standards.md
-├── patterns/              # Common configuration patterns
-│   ├── plugin-definition.md
-│   ├── keymapping.md
-│   └── autocommand.md
-├── tools/                 # Tool integrations
-│   ├── lazy-nvim.md
-│   ├── telescope.md
-│   └── treesitter.md
-├── processes/             # Development workflows
-│   ├── plugin-development.md
-│   ├── debugging.md
-│   └── maintenance.md
-└── templates/             # Reserved
+│   └── testing-patterns.md
+├── tools/              # Tool-specific guides
+│   ├── lazy-nvim-guide.md
+│   ├── treesitter-guide.md
+│   └── telescope-guide.md
+└── templates/          # Boilerplate templates
+    ├── plugin-template.md
+    └── ftplugin-template.md
 ```
 
-## Navigation
-- [Parent: Project Context](../README.md)
-- [Core Context](../../core/README.md)
+## Loading Strategy
+
+**Always load first**:
+- This README for overview
+- `domain/neovim-api.md` for vim.* API patterns
+
+**Load for plugin work**:
+- `patterns/plugin-spec.md` for lazy.nvim specs
+- `tools/lazy-nvim-guide.md` for lazy.nvim features
+
+**Load for keymapping**:
+- `patterns/keymap-patterns.md` for vim.keymap.set
+- References to which-key if using that plugin
+
+**Load for autocmds**:
+- `patterns/autocommand-patterns.md` for vim.api.nvim_create_autocmd
+
+**Load for filetype work**:
+- `patterns/ftplugin-patterns.md` for after/ftplugin structure
+
+## Configuration Assumptions
+
+This context assumes:
+- Neovim 0.9+ (stable API features)
+- lazy.nvim as plugin manager
+- Lua-based configuration (not vimscript)
+- Standard XDG paths (~/.config/nvim)
+
+## Key Concepts
+
+### Plugin Manager: lazy.nvim
+
+lazy.nvim is the recommended plugin manager providing:
+- Lazy loading by event, command, filetype
+- Automatic dependency resolution
+- UI for plugin management
+- Lockfile for reproducibility
+
+### LSP Integration
+
+Neovim has built-in LSP support via:
+- nvim-lspconfig for server configuration
+- mason.nvim for LSP server installation
+- Built-in vim.lsp.* API
+
+### Tree-sitter
+
+Native tree-sitter support provides:
+- Syntax highlighting
+- Code folding
+- Incremental selection
+- Text objects
+
+## Agent Context Loading
+
+Agents should load context based on task type:
+
+| Task Type | Required Context |
+|-----------|-----------------|
+| New plugin | plugin-spec.md, plugin-template.md |
+| Keybinding | keymap-patterns.md |
+| Autocmd | autocommand-patterns.md |
+| Filetype | ftplugin-patterns.md, ftplugin-template.md |
+| LSP setup | lsp-overview.md |
+| General | neovim-api.md, lua-style-guide.md |

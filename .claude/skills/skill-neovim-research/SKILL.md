@@ -1,255 +1,219 @@
 ---
 name: skill-neovim-research
-description: Research Neovim APIs, plugin patterns, and Lua development. Invoke for lua-language research tasks.
-allowed-tools: Read, Glob, Grep, WebSearch, WebFetch
-context:
-  - project/neovim/domain/neovim-api.md
-  - project/neovim/domain/lua-patterns.md
-  - project/neovim/domain/plugin-ecosystem.md
+description: Conduct Neovim configuration research using plugin docs and codebase exploration. Invoke for neovim research tasks.
+allowed-tools: Task, Bash, Edit, Read, Write
 ---
 
 # Neovim Research Skill
 
-Specialized research agent for Neovim configuration and Lua plugin development tasks.
+Thin wrapper that delegates Neovim research to `neovim-research-agent` subagent.
+
+**IMPORTANT**: This skill implements the skill-internal postflight pattern. After the subagent returns,
+this skill handles all postflight operations (status update, artifact linking, git commit) before returning.
+
+## Context References
+
+Reference (do not load eagerly):
+- Path: `.claude/context/core/formats/return-metadata-file.md` - Metadata file schema
+- Path: `.claude/context/core/patterns/postflight-control.md` - Marker file protocol
+- Path: `.claude/context/core/patterns/jq-escaping-workarounds.md` - jq escaping patterns
 
 ## Trigger Conditions
 
 This skill activates when:
-- Task language is "lua"
-- Research involves Neovim APIs, plugins, or configuration
-- Codebase exploration for Lua patterns is needed
+- Task language is "neovim"
+- Research is needed for Neovim configuration
+- Plugin documentation or patterns need to be gathered
 
-## Research Strategies
-
-### 1. Local Codebase First
-
-Always check existing code first:
-```
-1. Grep for relevant patterns in lua/ and after/
-2. Glob for similar modules in lua/neotex/
-3. Read existing implementations
-4. Understand existing patterns before proposing new ones
-```
-
-### 2. Neovim API Research
-
-For Neovim-specific patterns:
-```
-1. WebSearch "neovim lua {concept}"
-2. WebFetch neovim.io documentation
-3. Check existing patterns in lua/neotex/core/
-4. Reference the neovim-lua.md rule for standards
-```
-
-### 3. Plugin Research
-
-For plugin-specific patterns:
-```
-1. Read plugin documentation via WebFetch
-2. Check existing plugin configs in lua/neotex/plugins/
-3. Search GitHub repos for patterns
-4. Review plugin-specific tests in tests/
-```
-
-## Research Areas
-
-### Neovim API Patterns
-- vim.api.* (buffer, window, command APIs)
-- vim.fn.* (Vimscript function bridge)
-- vim.opt.* (option setting)
-- vim.keymap.set() (keymapping)
-- vim.api.nvim_create_autocmd() (autocommands)
-- vim.lsp.* (language server protocol)
-
-### Plugin APIs
-- lazy.nvim (plugin management, lazy loading)
-- telescope.nvim (fuzzy finder patterns)
-- nvim-treesitter (syntax parsing)
-- nvim-lspconfig (LSP configuration)
-- which-key.nvim (keybinding documentation)
-
-### Lua Patterns
-- Module structure (local M = {})
-- Error handling (pcall)
-- Table manipulation
-- String patterns
-- Metatable usage
-
-### Testing Patterns
-- busted framework
-- plenary.nvim test utilities
-- Assertion patterns (is_nil/is_not_nil for match)
-- Test organization (*_spec.lua)
-
-### Configuration Patterns
-- Options organization
-- Keymap centralization
-- Autocommand grouping
-- Plugin lazy loading strategies
+---
 
 ## Execution Flow
 
-```
-1. Receive task context (description, focus)
-2. Extract key concepts (API type, plugin, pattern)
-3. Search local codebase for related patterns
-4. Search web for Neovim/plugin documentation
-5. Analyze implementation approaches
-6. Synthesize findings
-7. Create research report
-8. Return results
-```
+### Stage 1: Input Validation
 
-## Research Report Format
+Validate required inputs:
+- `task_number` - Must be provided and exist in state.json
+- `focus_prompt` - Optional focus for research direction
 
-Create report at `.claude/specs/{N}_{SLUG}/reports/research-{NNN}.md`:
+```bash
+# Lookup task
+task_data=$(jq -r --argjson num "$task_number" \
+  '.active_projects[] | select(.project_number == $num)' \
+  specs/state.json)
 
-```markdown
-# Neovim Research Report: Task #{N}
+# Validate exists
+if [ -z "$task_data" ]; then
+  return error "Task $task_number not found"
+fi
 
-**Task**: {title}
-**Date**: {date}
-**Focus**: {focus}
-
-## Summary
-
-{Overview of findings}
-
-## Codebase Findings
-
-### Related Files
-- `lua/neotex/path/to/file.lua` - {description}
-
-### Existing Patterns
-```lua
--- Pattern name
-local function example()
-  -- ...
-end
+# Extract fields
+language=$(echo "$task_data" | jq -r '.language // "neovim"')
+status=$(echo "$task_data" | jq -r '.status')
+project_name=$(echo "$task_data" | jq -r '.project_name')
+description=$(echo "$task_data" | jq -r '.description // ""')
 ```
 
-### Similar Implementations
-- {Description of similar code}
+---
 
-## Neovim API Findings
+### Stage 2: Preflight Status Update
 
-### Relevant APIs
-| API | Purpose | Example |
-|-----|---------|---------|
-| `vim.api.nvim_*` | {purpose} | {code} |
+Update task status to "researching" BEFORE invoking subagent.
 
-### Best Practices
-- {Practice and rationale}
-
-## Plugin Integration
-
-### Related Plugins
-- {Plugin} - {how it relates}
-
-### Integration Patterns
-- {Pattern description}
-
-## Recommended Approach
-
-1. {Step 1 with specific patterns to use}
-2. {Step 2}
-
-## Code Sketch
-
-```lua
--- Proposed implementation approach
-local M = {}
-
-function M.setup(opts)
-  -- ...
-end
-
-return M
+**Update state.json**:
+```bash
+jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+   --arg status "researching" \
+   --arg sid "$session_id" \
+  '(.active_projects[] | select(.project_number == '$task_number')) |= . + {
+    status: $status,
+    last_updated: $ts,
+    session_id: $sid
+  }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
 ```
 
-## Testing Strategy
+**Update TODO.md**: Use Edit tool to change status marker to `[RESEARCHING]`.
 
-- Unit tests: {approach with busted}
-- Integration tests: {approach with plenary}
+---
 
-## Potential Challenges
+### Stage 3: Create Postflight Marker
 
-- {Challenge and mitigation}
+```bash
+mkdir -p "specs/${task_number}_${project_name}"
 
-## References
-
-- {Neovim documentation links}
-- {Plugin documentation links}
-- {Related codebase files}
+cat > "specs/${task_number}_${project_name}/.postflight-pending" << EOF
+{
+  "session_id": "${session_id}",
+  "skill": "skill-neovim-research",
+  "task_number": ${task_number},
+  "operation": "research",
+  "reason": "Postflight pending: status update, artifact linking, git commit",
+  "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
 ```
 
-## Return Format
+---
+
+### Stage 4: Prepare Delegation Context
 
 ```json
 {
-  "status": "completed",
-  "summary": "Found N relevant patterns for implementation",
-  "artifacts": [
-    {
-      "path": ".claude/specs/{N}_{SLUG}/reports/research-001.md",
-      "type": "research",
-      "description": "Neovim/Lua research report"
-    }
-  ],
-  "patterns_found": [
-    {"name": "pattern_name", "location": "lua/neotex/file.lua", "relevance": "high"}
-  ],
-  "apis_needed": [
-    "vim.api.nvim_create_autocmd",
-    "vim.keymap.set"
-  ],
-  "plugins_relevant": [
-    {"name": "telescope.nvim", "relevance": "integration point"}
-  ],
-  "recommended_approach": "Description of recommended approach"
+  "session_id": "sess_{timestamp}_{random}",
+  "delegation_depth": 1,
+  "delegation_path": ["orchestrator", "research", "skill-neovim-research"],
+  "timeout": 3600,
+  "task_context": {
+    "task_number": N,
+    "task_name": "{project_name}",
+    "description": "{description}",
+    "language": "neovim"
+  },
+  "focus_prompt": "{optional focus}",
+  "metadata_file_path": "specs/{N}_{SLUG}/.return-meta.json"
 }
 ```
 
-## Key Resources
+---
 
-### Official Documentation
-- https://neovim.io/doc/user/lua.html - Neovim Lua guide
-- https://neovim.io/doc/user/api.html - Neovim API reference
-- https://neovim.io/doc/user/lsp.html - LSP integration
+### Stage 5: Invoke Subagent
 
-### Plugin Documentation
-- https://lazy.folke.io/ - lazy.nvim plugin manager
-- https://github.com/nvim-telescope/telescope.nvim - Fuzzy finder
-- https://github.com/nvim-treesitter/nvim-treesitter - Syntax parsing
-- https://luals.github.io/ - Lua language server
+**CRITICAL**: You MUST use the **Task** tool to spawn the subagent.
 
-### Community Resources
-- https://github.com/nanotee/nvim-lua-guide - Comprehensive Lua guide
-- https://github.com/rockerBOO/awesome-neovim - Plugin collection
-
-## Key Codebase Locations
-
-- **Entry point**: `nvim/init.lua`
-- **Core config**: `nvim/lua/neotex/config/`
-- **Plugin configs**: `nvim/lua/neotex/plugins/`
-- **Core utilities**: `nvim/lua/neotex/core/`
-- **Utilities**: `nvim/lua/neotex/util/`
-- **Tests**: `nvim/tests/`
-- **Standards**: `nvim/CLAUDE.md`, `nvim/docs/CODE_STANDARDS.md`
-- **Rules**: `.claude/rules/neovim-lua.md`
-
-## Quick Exploration Commands
-
-```lua
--- Check available API functions
-:lua print(vim.inspect(vim.api))
-
--- Check option values
-:lua print(vim.inspect(vim.opt.tabstop:get()))
-
--- Check loaded modules
-:lua print(vim.inspect(package.loaded))
-
--- Find keymap conflicts
-:verbose map <key>
 ```
+Tool: Task (NOT Skill)
+Parameters:
+  - subagent_type: "neovim-research-agent"
+  - prompt: [Include task_context, delegation_context, focus_prompt, metadata_file_path]
+  - description: "Execute Neovim research for task {N}"
+```
+
+The subagent will:
+- Search local Neovim configuration
+- Search web for plugin documentation
+- Analyze findings and synthesize recommendations
+- Create research report
+- Write metadata file
+- Return brief text summary
+
+---
+
+### Stage 6: Parse Subagent Return
+
+```bash
+metadata_file="specs/${task_number}_${project_name}/.return-meta.json"
+
+if [ -f "$metadata_file" ] && jq empty "$metadata_file" 2>/dev/null; then
+    status=$(jq -r '.status' "$metadata_file")
+    artifact_path=$(jq -r '.artifacts[0].path // ""' "$metadata_file")
+    artifact_type=$(jq -r '.artifacts[0].type // ""' "$metadata_file")
+    artifact_summary=$(jq -r '.artifacts[0].summary // ""' "$metadata_file")
+else
+    status="failed"
+fi
+```
+
+---
+
+### Stage 7: Update Task Status (Postflight)
+
+If status is "researched", update state.json and TODO.md.
+
+---
+
+### Stage 8: Link Artifacts
+
+Add artifact to state.json with summary.
+
+---
+
+### Stage 9: Git Commit
+
+```bash
+git add -A
+git commit -m "task ${task_number}: complete research
+
+Session: ${session_id}
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Stage 10: Cleanup
+
+```bash
+rm -f "specs/${task_number}_${project_name}/.postflight-pending"
+rm -f "specs/${task_number}_${project_name}/.return-meta.json"
+```
+
+---
+
+### Stage 11: Return Brief Summary
+
+```
+Research completed for task {N}:
+- Found plugin configuration patterns
+- Identified lazy loading strategy
+- Created report at specs/{N}_{SLUG}/reports/research-{NNN}.md
+- Status updated to [RESEARCHED]
+- Changes committed
+```
+
+---
+
+## Error Handling
+
+### Input Validation Errors
+Return immediately if task not found.
+
+### Metadata File Missing
+Keep status as "researching" for resume.
+
+### Git Commit Failure
+Non-blocking: Log failure but continue.
+
+---
+
+## Return Format
+
+Brief text summary (NOT JSON).

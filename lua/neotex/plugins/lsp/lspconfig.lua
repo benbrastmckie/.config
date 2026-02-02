@@ -84,7 +84,19 @@ return {
       },
     })
 
+    vim.lsp.config("tinymist", {
+      cmd = { "tinymist" },
+      filetypes = { "typst" },
+      root_markers = { "typst.toml", ".git" },
+      capabilities = capabilities,
+      settings = {
+        formatterMode = "typstyle",  -- Use typstyle for formatting (bundled with tinymist)
+        exportPdf = "onSave",        -- Export PDF when file is saved
+        semanticTokens = "enable",   -- Enable semantic highlighting
+      },
+    })
+
     -- Enable configured servers
-    vim.lsp.enable({ "lua_ls", "pyright", "texlab" })
+    vim.lsp.enable({ "lua_ls", "pyright", "texlab", "tinymist" })
   end,
 }

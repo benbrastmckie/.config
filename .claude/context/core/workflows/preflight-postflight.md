@@ -1,6 +1,5 @@
 # Preflight/Postflight Workflow Standards
 
-**Version**: 2.0  
 **Updated**: 2026-01-07  
 **Purpose**: Command-level status update patterns  
 **Audience**: Command developers, workflow designers
@@ -90,7 +89,7 @@ Commands update task status to "in_progress" BEFORE delegating to subagents, ens
     4. Verify status was actually updated (defense in depth):
        actual_status=$(jq -r --arg num "$task_number" \
          '.active_projects[] | select(.project_number == ($num | tonumber)) | .status' \
-         .claude/specs/state.json)
+         specs/state.json)
        
        If actual_status != "{in_progress_status}":
          - Log error: "Preflight verification failed"
@@ -211,13 +210,13 @@ Commands update task status to "completed" and link artifacts AFTER subagent com
     5. Verify status and artifact links (defense in depth):
        actual_status=$(jq -r --arg num "$task_number" \
          '.active_projects[] | select(.project_number == ($num | tonumber)) | .status' \
-         .claude/specs/state.json)
+         specs/state.json)
        
        If actual_status != "{completed_status}":
          - Log warning: "Postflight verification failed - status not updated"
        
        for artifact_path in $(echo "$artifacts_json" | jq -r '.[].path'); do
-         if ! grep -q "$artifact_path" .claude/specs/TODO.md; then
+         if ! grep -q "$artifact_path" specs/TODO.md; then
            echo "WARNING: Artifact not linked in TODO.md: $artifact_path"
          fi
        done
@@ -226,7 +225,7 @@ Commands update task status to "completed" and link artifacts AFTER subagent com
        task(
          subagent_type="git-workflow-manager",
          prompt="{
-           \"scope_files\": [${artifact_paths}, \".claude/specs/TODO.md\", \".claude/specs/state.json\"],
+           \"scope_files\": [${artifact_paths}, \"specs/TODO.md\", \"specs/state.json\"],
            \"message_template\": \"task ${task_number}: {work_description}\",
            \"task_context\": {\"task_number\": ${task_number}},
            \"session_id\": \"${session_id}\"
@@ -301,7 +300,7 @@ Commands update task status to "completed" and link artifacts AFTER subagent com
   "artifacts": [
     {
       "type": "research_report",
-      "path": ".claude/specs/123_topic/reports/research-001.md",
+      "path": "specs/123_topic/reports/research-001.md",
       "summary": "Research findings",
       "validated": true
     }
@@ -485,7 +484,7 @@ Delegate → Proceed (without verification) ← WRONG
 # DO NOT DO THIS in command files
 jq --arg num "$task_number" \
   '.active_projects[] |= if .project_number == ($num | tonumber) then .status = "researched" else . end' \
-  .claude/specs/state.json > /tmp/state.json.tmp
+  specs/state.json > /tmp/state.json.tmp
 ```
 
 **Problem**: Bypasses status-sync-manager, doesn't link artifacts, not atomic.
@@ -550,8 +549,8 @@ jq --arg num "$task_number" \
 
 ### Documentation
 
-- **Implementation Plan**: `.claude/specs/IMPROVED_STATUS_UPDATE_FIX_PLAN.md`
-- **Root Cause Investigation**: `.claude/specs/333_*/reports/root-cause-investigation-20260106.md`
+- **Implementation Plan**: `specs/IMPROVED_STATUS_UPDATE_FIX_PLAN.md`
+- **Root Cause Investigation**: `specs/333_*/reports/root-cause-investigation-20260106.md`
 - **status-sync-manager**: `.claude/agent/subagents/status-sync-manager.md`
 - **git-workflow-manager**: `.claude/agent/subagents/git-workflow-manager.md`
 

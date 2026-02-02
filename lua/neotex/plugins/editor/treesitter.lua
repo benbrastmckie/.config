@@ -10,11 +10,12 @@ return {
         "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline",
         "python", "bash", "nix", "json", "yaml", "toml", "gitignore",
         "c", "haskell", "css", "html", "javascript", "scss", "regex",
+        "typst",
       }
 
       -- Filetypes to disable treesitter for
       local disabled_filetypes = {
-        tex = true, latex = true, plaintex = true, context = true, bibtex = true,
+        plaintex = true, tex = true, context = true, bibtex = true,
       }
 
       -- Enable treesitter highlighting and indentation for supported filetypes
@@ -74,9 +75,11 @@ return {
     ft = { "html", "xml", "jsx", "tsx", "vue", "svelte", "php", "markdown" },
     dependencies = { "nvim-treesitter/nvim-treesitter" },
     opts = {
-      enable_close = true,
-      enable_rename = true,
-      enable_close_on_slash = false,
+      opts = {
+        enable_close = true,
+        enable_rename = true,
+        enable_close_on_slash = false,
+      },
     },
   }
 }

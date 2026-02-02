@@ -84,6 +84,7 @@ local luasnip_module = safe_require("neotex.plugins.tools.luasnip")
 local himalaya_module = safe_require("neotex.plugins.tools.himalaya-plugin")
 local worktree_module = safe_require("neotex.plugins.tools.worktree")
 local wezterm_module = safe_require("neotex.plugins.tools.wezterm-integration")
+local stt_module = safe_require("neotex.plugins.tools.stt-plugin")
 
 -- Create array of valid plugin specs
 local plugins = {}
@@ -115,6 +116,9 @@ add_if_valid(worktree_module)
 
 -- WezTerm integration
 add_if_valid(wezterm_module)
+
+-- STT (Speech-to-Text) plugin
+add_if_valid(stt_module)
 
 -- Return only valid plugin specs
 return plugins

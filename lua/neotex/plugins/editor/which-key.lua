@@ -227,7 +227,7 @@ return {
 
     wk.add({
       { "<leader>c", "<cmd>vert sb<CR>", desc = "create split", icon = "󰯌" },
-      { "<leader>d", "<cmd>update! | lua Snacks.bufdelete()<CR>", desc = "delete buffer", icon = "󰩺" },
+      { "<leader>d", "<cmd>update! | lua smart_bufdelete()<CR>", desc = "delete buffer", icon = "󰩺" },
       { "<leader>e", "<cmd>Neotree toggle<CR>", desc = "explorer", icon = "󰙅" },
       { "<leader>k", "<cmd>close<CR>", desc = "kill split", icon = "󰆴" },
       { "<leader>q", "<cmd>wa! | qa!<CR>", desc = "quit", icon = "󰗼" },
@@ -384,7 +384,7 @@ return {
       { "<leader>g", group = "git", icon = "󰊢", mode = { "n", "v" } },
       { "<leader>gb", "<cmd>Telescope git_branches<CR>", desc = "branches", icon = "󰘬" },
       { "<leader>gc", "<cmd>Telescope git_commits<CR>", desc = "commits", icon = "󰜘" },
-      { "<leader>gd", "<cmd>Gitsigns diffthis HEAD<CR>", desc = "diff HEAD", icon = "󰦓" },
+      { "<leader>gd", "<cmd>lua vim.lsp.buf.definition()<CR>", desc = "definition", icon = "󰳦" },
       -- { "<leader>gf", "<cmd>Telescope git_worktree create_git_worktree<CR>", desc = "new feature", icon = "󰊕" },
       { "<leader>gg", function() require("snacks").lazygit() end, desc = "lazygit", icon = "󰊢" },
       { "<leader>gh", "<cmd>Gitsigns prev_hunk<CR>", desc = "prev hunk", icon = "󰮲" },
@@ -689,6 +689,18 @@ return {
       { "<leader>xd", desc = "toggle diff overlay", icon = "󰦓" },
       { "<leader>xs", desc = "split/join toggle", icon = "󰤋", mode = { "n", "v" } },
       { "<leader>xw", desc = "toggle word diff", icon = "󰦓" },
+    })
+
+    -- ============================================================================
+    -- <leader>v - VOICE GROUP (STT)
+    -- ============================================================================
+
+    wk.add({
+      { "<leader>v", group = "voice", icon = "󰍬" },
+      { "<leader>vh", function() require('neotex.plugins.tools.stt').health() end, desc = "health check", icon = "󰸉" },
+      { "<leader>vr", function() require('neotex.plugins.tools.stt').start_recording() end, desc = "start recording", icon = "󰑊" },
+      { "<leader>vs", function() require('neotex.plugins.tools.stt').stop_recording() end, desc = "stop recording", icon = "󰓛" },
+      { "<leader>vv", function() require('neotex.plugins.tools.stt').toggle_recording() end, desc = "toggle recording", icon = "󰔊" },
     })
 
     -- ============================================================================

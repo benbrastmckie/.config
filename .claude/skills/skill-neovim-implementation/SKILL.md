@@ -1,382 +1,243 @@
 ---
 name: skill-neovim-implementation
-description: Implement Neovim plugins and configurations with TDD. Invoke for lua-language implementation tasks.
-allowed-tools: Read, Write, Edit, Bash(nvim:*, luacheck)
-context:
-  - project/neovim/standards/lua-style-guide.md
-  - project/neovim/standards/testing-standards.md
-  - project/neovim/patterns/plugin-definition.md
+description: Implement Neovim configuration changes from plans. Invoke for neovim implementation tasks.
+allowed-tools: Task, Bash, Edit, Read, Write
 ---
 
 # Neovim Implementation Skill
 
-Specialized implementation agent for Neovim configuration and Lua plugin development with test-driven development.
+Thin wrapper that delegates Neovim implementation to `neovim-implementation-agent` subagent.
+
+**IMPORTANT**: This skill implements the skill-internal postflight pattern. After the subagent returns,
+this skill handles all postflight operations (status update, artifact linking, git commit) before returning.
+
+## Context References
+
+Reference (do not load eagerly):
+- Path: `.claude/context/core/formats/return-metadata-file.md` - Metadata file schema
+- Path: `.claude/context/core/patterns/postflight-control.md` - Marker file protocol
+- Path: `.claude/context/core/patterns/jq-escaping-workarounds.md` - jq escaping patterns
 
 ## Trigger Conditions
 
 This skill activates when:
-- Task language is "lua"
-- Implementation involves Neovim plugins, configurations, or utilities
-- /implement command is invoked for a Lua task
-- Plan exists with phases ready for execution
+- Task language is "neovim"
+- Implementation plan exists for the task
+- Neovim configuration changes need to be applied
 
-## TDD Workflow
+---
 
-Follow strict test-driven development:
+## Execution Flow
 
-```
-1. Load implementation plan
-2. Identify target functionality
-3. Write failing test first (busted/plenary)
-4. Implement minimal code to pass
-5. Run test to verify pass
-6. Refactor while tests pass
-7. Repeat for each feature
-8. Verify with full test suite
-```
+### Stage 1: Input Validation
 
-### TDD Rules
-
-1. **Write test first** - Never implement without a failing test
-2. **Minimal implementation** - Only write code to make the test pass
-3. **Refactor under green** - Only refactor when all tests pass
-4. **One feature at a time** - Focus on single functionality per cycle
-
-## Testing Commands
-
-### Run All Tests
+Validate required inputs:
+- `task_number` - Must be provided and exist in state.json
+- `plan_path` - Implementation plan must exist
 
 ```bash
-# Run all tests with plenary
-nvim --headless -c "PlenaryBustedDirectory tests/"
+# Lookup task
+task_data=$(jq -r --argjson num "$task_number" \
+  '.active_projects[] | select(.project_number == $num)' \
+  specs/state.json)
 
-# With minimal init (faster, isolated)
-nvim --headless -c "PlenaryBustedDirectory tests/ {minimal_init = 'tests/minimal_init.lua'}"
+# Validate exists
+if [ -z "$task_data" ]; then
+  return error "Task $task_number not found"
+fi
+
+# Extract fields
+language=$(echo "$task_data" | jq -r '.language // "neovim"')
+status=$(echo "$task_data" | jq -r '.status')
+project_name=$(echo "$task_data" | jq -r '.project_name')
+
+# Find plan file
+plan_path="specs/${task_number}_${project_name}/plans/implementation-001.md"
+if [ ! -f "$plan_path" ]; then
+  return error "Plan not found: $plan_path"
+fi
 ```
 
-### Run Specific Tests
+---
+
+### Stage 2: Preflight Status Update
+
+Update task status to "implementing" BEFORE invoking subagent.
+
+**Update state.json**:
+```bash
+jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+   --arg status "implementing" \
+   --arg sid "$session_id" \
+  '(.active_projects[] | select(.project_number == '$task_number')) |= . + {
+    status: $status,
+    last_updated: $ts,
+    session_id: $sid
+  }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+```
+
+**Update TODO.md**: Use Edit tool to change status marker to `[IMPLEMENTING]`.
+
+---
+
+### Stage 3: Create Postflight Marker
 
 ```bash
-# Run single test file
-nvim --headless -c "PlenaryBustedFile tests/path/to/spec.lua"
+mkdir -p "specs/${task_number}_${project_name}"
 
-# Run tests matching pattern
-nvim --headless -c "PlenaryBustedDirectory tests/ {pattern = 'picker'}"
-```
-
-### Lint Lua Code
-
-```bash
-# Check for syntax errors
-luacheck lua/ --codes
-
-# Check specific file
-luacheck lua/neotex/path/to/file.lua
-```
-
-## Test File Structure
-
-Create test files following this pattern:
-
-```lua
--- tests/module_name_spec.lua
-describe("ModuleName", function()
-  local module
-
-  before_each(function()
-    -- Reset state before each test
-    package.loaded["neotex.module_name"] = nil
-    module = require("neotex.module_name")
-  end)
-
-  describe("function_name", function()
-    it("should do expected behavior", function()
-      local result = module.function_name(input)
-      assert.equals(expected, result)
-    end)
-
-    it("should handle edge case", function()
-      local result = module.function_name(edge_input)
-      assert.is_nil(result)
-    end)
-  end)
-end)
-```
-
-### Assertion Patterns
-
-```lua
--- Use is_nil/is_not_nil for pattern matching
-assert.is_not_nil(str:match("pattern"))   -- Match found
-assert.is_nil(str:match("pattern"))       -- Match not found
-
--- Equality
-assert.equals(expected, actual)
-assert.same(expected_table, actual_table)
-
--- Boolean
-assert.is_true(condition)
-assert.is_false(condition)
-
--- Errors
-assert.has_error(function() error_func() end)
-```
-
-## Module Structure Patterns
-
-### Lua Module Directory
-
-```
-nvim/
-├── lua/neotex/
-│   ├── core/           # Core utilities (loader, options, keymaps)
-│   │   └── module.lua
-│   ├── plugins/        # Plugin configurations
-│   │   ├── ai/         # AI integrations
-│   │   ├── editor/     # Editor enhancements
-│   │   ├── lsp/        # Language server configs
-│   │   ├── text/       # Format-specific (LaTeX, Markdown)
-│   │   ├── tools/      # Development tools
-│   │   └── ui/         # UI components
-│   └── util/           # Utility functions
-├── after/ftplugin/     # Filetype-specific settings
-└── tests/              # Test suites
-```
-
-### Standard Module Template
-
-```lua
--- lua/neotex/category/module-name.lua
-local M = {}
-
---- Brief description of the module
---- @module neotex.category.module-name
-
---- Function description
---- @param input string Input parameter
---- @return string|nil result Result or nil on failure
-function M.function_name(input)
-  if not input then
-    return nil
-  end
-  -- Implementation
-  return result
-end
-
---- Setup function for configuration
---- @param opts table? Optional configuration
-function M.setup(opts)
-  opts = opts or {}
-  -- Apply configuration
-end
-
-return M
-```
-
-### Plugin Definition Pattern
-
-```lua
--- lua/neotex/plugins/category/plugin-name.lua
-return {
-  "author/plugin-name",
-  event = "VeryLazy",  -- or specific events: BufReadPre, InsertEnter
-  dependencies = {
-    "dep/plugin",
-  },
-  opts = {
-    -- Configuration options passed to setup()
-    option_key = "value",
-  },
-  config = function(_, opts)
-    require("plugin-name").setup(opts)
-  end,
+cat > "specs/${task_number}_${project_name}/.postflight-pending" << EOF
+{
+  "session_id": "${session_id}",
+  "skill": "skill-neovim-implementation",
+  "task_number": ${task_number},
+  "operation": "implement",
+  "reason": "Postflight pending: status update, artifact linking, git commit",
+  "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
+EOF
 ```
 
-### Complex Plugin with Keymaps
+---
 
-```lua
-return {
-  "author/plugin-name",
-  event = "VeryLazy",
-  keys = {
-    { "<leader>xx", "<cmd>PluginCommand<cr>", desc = "Plugin: Description" },
-    { "<leader>xy", function() require("plugin").action() end, desc = "Plugin: Action" },
-  },
-  opts = {
-    -- Options
-  },
-  config = function(_, opts)
-    local plugin = require("plugin-name")
-    plugin.setup(opts)
-
-    -- Additional configuration after setup
-  end,
-}
-```
-
-## Error Handling Patterns
-
-### Using pcall for Safe Calls
-
-```lua
-local function safe_require(module_name)
-  local ok, module = pcall(require, module_name)
-  if not ok then
-    vim.notify(
-      "Failed to load " .. module_name .. ": " .. tostring(module),
-      vim.log.levels.WARN
-    )
-    return nil
-  end
-  return module
-end
-
--- Usage
-local telescope = safe_require("telescope")
-if telescope then
-  telescope.setup({})
-end
-```
-
-### Graceful Degradation
-
-```lua
-local function with_fallback(primary_fn, fallback_fn)
-  local ok, result = pcall(primary_fn)
-  if ok then
-    return result
-  end
-  return fallback_fn()
-end
-```
-
-### User Notifications
-
-```lua
--- Info level
-vim.notify("Operation completed", vim.log.levels.INFO)
-
--- Warning level
-vim.notify("Missing optional dependency", vim.log.levels.WARN)
-
--- Error level
-vim.notify("Critical error: " .. err, vim.log.levels.ERROR)
-```
-
-## Implementation Flow
-
-```
-1. Receive task context with plan path
-2. Load and parse implementation plan
-3. Find resume point (first non-completed phase)
-4. For each remaining phase:
-   a. Update phase status to [IN PROGRESS]
-   b. Write tests for phase features
-   c. Run tests (should fail)
-   d. Implement features
-   e. Run tests (should pass)
-   f. Verify with luacheck
-   g. Update phase status to [COMPLETED]
-   h. Git commit
-5. Run full test suite
-6. Create implementation summary
-7. Return results
-```
-
-## Summary Format
-
-Create summary at `.claude/specs/{N}_{SLUG}/summaries/implementation-summary-{DATE}.md`:
-
-```markdown
-# Implementation Summary: Task #{N}
-
-**Completed**: {date}
-**Duration**: {time}
-
-## Changes Made
-
-{Overview of implemented features}
-
-## Files Created
-
-- `lua/neotex/path/to/file.lua` - {description}
-
-## Files Modified
-
-- `lua/neotex/path/to/file.lua` - {change description}
-
-## Tests Added
-
-- `tests/path/to/spec.lua` - {test coverage}
-
-## Test Results
-
-```
-N tests passed
-0 tests failed
-Coverage: X%
-```
-
-## Verification
-
-- All tests pass
-- luacheck reports no errors
-- Plugin loads correctly
-
-## Notes
-
-{Any important notes or follow-ups}
-```
-
-## Return Format
+### Stage 4: Prepare Delegation Context
 
 ```json
 {
-  "status": "completed|partial",
-  "summary": "Implementation complete with TDD",
-  "artifacts": [
-    {
-      "path": ".claude/specs/{N}_{SLUG}/summaries/...",
-      "type": "summary",
-      "description": "Implementation summary"
-    }
-  ],
-  "phases_completed": 3,
-  "phases_total": 3,
-  "files_created": [
-    "lua/neotex/path/to/file.lua"
-  ],
-  "files_modified": [
-    "lua/neotex/existing/file.lua"
-  ],
-  "tests_added": [
-    "tests/path/to/spec.lua"
-  ],
-  "test_results": {
-    "passed": 10,
-    "failed": 0,
-    "total": 10
-  }
+  "session_id": "sess_{timestamp}_{random}",
+  "delegation_depth": 1,
+  "delegation_path": ["orchestrator", "implement", "skill-neovim-implementation"],
+  "timeout": 3600,
+  "task_context": {
+    "task_number": N,
+    "task_name": "{project_name}",
+    "description": "{description}",
+    "language": "neovim"
+  },
+  "plan_path": "specs/{N}_{SLUG}/plans/implementation-001.md",
+  "metadata_file_path": "specs/{N}_{SLUG}/.return-meta.json"
 }
 ```
 
-## Key Codebase Locations
+---
 
-- **Entry point**: `nvim/init.lua`
-- **Core config**: `nvim/lua/neotex/config/`
-- **Plugin configs**: `nvim/lua/neotex/plugins/`
-- **Core utilities**: `nvim/lua/neotex/core/`
-- **Utilities**: `nvim/lua/neotex/util/`
-- **Tests**: `nvim/tests/`
-- **Standards**: `nvim/CLAUDE.md`, `nvim/docs/CODE_STANDARDS.md`
-- **Rules**: `.claude/rules/neovim-lua.md`
+### Stage 5: Invoke Subagent
 
-## Quality Standards
+**CRITICAL**: You MUST use the **Task** tool to spawn the subagent.
 
-- **Indentation**: 2 spaces, expandtab
-- **Line length**: ~100 characters
-- **Naming**: lowercase_with_underscores
-- **Comments**: LuaDoc style for public APIs
-- **Error handling**: pcall for external dependencies
-- **Testing**: All public APIs must have tests
+```
+Tool: Task (NOT Skill)
+Parameters:
+  - subagent_type: "neovim-implementation-agent"
+  - prompt: [Include task_context, delegation_context, plan_path, metadata_file_path]
+  - description: "Execute Neovim implementation for task {N}"
+```
+
+The subagent will:
+- Read and parse implementation plan
+- Execute phases sequentially
+- Create/modify Neovim config files
+- Verify changes with nvim --headless
+- Create implementation summary
+- Write metadata file
+- Return brief text summary
+
+---
+
+### Stage 6: Parse Subagent Return
+
+```bash
+metadata_file="specs/${task_number}_${project_name}/.return-meta.json"
+
+if [ -f "$metadata_file" ] && jq empty "$metadata_file" 2>/dev/null; then
+    status=$(jq -r '.status' "$metadata_file")
+    phases_completed=$(jq -r '.metadata.phases_completed // 0' "$metadata_file")
+    phases_total=$(jq -r '.metadata.phases_total // 0' "$metadata_file")
+else
+    status="failed"
+fi
+```
+
+---
+
+### Stage 7: Update Task Status (Postflight)
+
+If status is "implemented", update state.json and TODO.md.
+
+**Update state.json**:
+```bash
+jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+   --arg status "completed" \
+  '(.active_projects[] | select(.project_number == '$task_number')) |= . + {
+    status: $status,
+    last_updated: $ts,
+    completed: $ts
+  }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+```
+
+**Update TODO.md**: Use Edit tool to change status marker to `[COMPLETED]`.
+
+**On partial/failed**: Keep status as "implementing" for resume.
+
+---
+
+### Stage 8: Link Artifacts
+
+Add implementation artifacts to state.json.
+
+---
+
+### Stage 9: Git Commit
+
+```bash
+git add -A
+git commit -m "task ${task_number}: complete implementation
+
+Session: ${session_id}
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Stage 10: Cleanup
+
+```bash
+rm -f "specs/${task_number}_${project_name}/.postflight-pending"
+rm -f "specs/${task_number}_${project_name}/.return-meta.json"
+```
+
+---
+
+### Stage 11: Return Brief Summary
+
+```
+Implementation completed for task {N}:
+- Executed {phases_completed}/{phases_total} phases
+- Created/modified Neovim config files
+- Verified startup and module loading
+- Created summary at specs/{N}_{SLUG}/summaries/implementation-summary-{DATE}.md
+- Status updated to [COMPLETED]
+- Changes committed
+```
+
+---
+
+## Error Handling
+
+### Plan Not Found
+Return error if implementation plan doesn't exist.
+
+### Verification Failure
+If nvim --headless fails:
+1. Keep status as "implementing"
+2. Mark phase as [PARTIAL]
+3. Report verification error
+
+### Git Commit Failure
+Non-blocking: Log failure but continue.
+
+---
+
+## Return Format
+
+Brief text summary (NOT JSON).

@@ -99,9 +99,11 @@ local function execute_sync(project_dir, all_artifacts, merge_only)
   counts.scripts = sync_files(all_artifacts.scripts or {}, true, merge_only)
   counts.tests = sync_files(all_artifacts.tests or {}, true, merge_only)
   counts.skills = sync_files(all_artifacts.skills or {}, true, merge_only)
+  counts.agents = sync_files(all_artifacts.agents or {}, false, merge_only)
   counts.rules = sync_files(all_artifacts.rules or {}, false, merge_only)
   counts.context = sync_files(all_artifacts.context or {}, false, merge_only)
   counts.settings = sync_files(all_artifacts.settings or {}, false, merge_only)
+  counts.root_files = sync_files(all_artifacts.root_files or {}, false, merge_only)
 
   local total_synced = 0
   for _, count in pairs(counts) do
@@ -123,12 +125,14 @@ local function execute_sync(project_dir, all_artifacts, merge_only)
         "  Commands: %d | Hooks: %d | Templates: %d\n" ..
         "  Lib: %d (%d nested) | Docs: %d (%d nested)\n" ..
         "  Scripts: %d | Tests: %d | Skills: %d (%d nested)\n" ..
-        "  Rules: %d | Context: %d | Settings: %d",
+        "  Agents: %d | Rules: %d | Context: %d\n" ..
+        "  Settings: %d | Root Files: %d",
         total_synced, strategy_msg,
         counts.commands, counts.hooks, counts.templates,
         counts.lib, lib_subdir, counts.docs, doc_subdir,
         counts.scripts, counts.tests, counts.skills, skill_subdir,
-        counts.rules, counts.context, counts.settings
+        counts.agents, counts.rules, counts.context,
+        counts.settings, counts.root_files
       ),
       "INFO"
     )
@@ -152,6 +156,7 @@ local function scan_all_artifacts(global_dir, project_dir)
   artifacts.docs = scan.scan_directory_for_sync(global_dir, project_dir, "docs", "*.md")
   artifacts.scripts = scan.scan_directory_for_sync(global_dir, project_dir, "scripts", "*.sh")
   artifacts.tests = scan.scan_directory_for_sync(global_dir, project_dir, "tests", "test_*.sh")
+  artifacts.agents = scan.scan_directory_for_sync(global_dir, project_dir, "agents", "*.md")
   artifacts.rules = scan.scan_directory_for_sync(global_dir, project_dir, "rules", "*.md")
   artifacts.context = scan.scan_directory_for_sync(global_dir, project_dir, "context", "*.md")
 
@@ -168,6 +173,24 @@ local function scan_all_artifacts(global_dir, project_dir)
 
   -- Settings
   artifacts.settings = scan.scan_directory_for_sync(global_dir, project_dir, "", "settings.json")
+
+  -- Root files (direct children of .claude/)
+  local root_file_names = { ".gitignore", "README.md", "CLAUDE.md", "settings.local.json" }
+  artifacts.root_files = {}
+  for _, filename in ipairs(root_file_names) do
+    local global_path = global_dir .. "/.claude/" .. filename
+    local local_path = project_dir .. "/.claude/" .. filename
+    if vim.fn.filereadable(global_path) == 1 then
+      local action = vim.fn.filereadable(local_path) == 1 and "replace" or "copy"
+      table.insert(artifacts.root_files, {
+        name = filename,
+        global_path = global_path,
+        local_path = local_path,
+        action = action,
+        is_subdir = false,
+      })
+    end
+  end
 
   return artifacts
 end
@@ -296,6 +319,8 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
     script = { dir = "scripts", ext = ".sh" },
     test = { dir = "tests", ext = ".sh" },
     skill = { dir = "skills", ext = ".md" },
+    agent = { dir = "agents", ext = ".md" },
+    root_file = { dir = "", ext = "" },  -- Root files have no subdir, name includes extension
   }
 
   local config = subdir_map[artifact_type]
@@ -307,7 +332,13 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
   end
 
   -- Find the global version
-  local global_filepath = global_dir .. "/.claude/" .. config.dir .. "/" .. artifact.name .. config.ext
+  local global_filepath
+  if artifact_type == "root_file" then
+    -- Root files: name already includes extension, no subdirectory
+    global_filepath = global_dir .. "/.claude/" .. artifact.name
+  else
+    global_filepath = global_dir .. "/.claude/" .. config.dir .. "/" .. artifact.name .. config.ext
+  end
 
   -- Check if global version exists
   if not helpers.is_file_readable(global_filepath) then
@@ -318,11 +349,17 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
   end
 
   -- Create local directory if needed
-  local local_dir = project_dir .. "/.claude/" .. config.dir
+  local local_dir
+  local local_filepath
+  if artifact_type == "root_file" then
+    -- Root files go directly in .claude/
+    local_dir = project_dir .. "/.claude"
+    local_filepath = local_dir .. "/" .. artifact.name
+  else
+    local_dir = project_dir .. "/.claude/" .. config.dir
+    local_filepath = local_dir .. "/" .. vim.fn.fnamemodify(global_filepath, ":t")
+  end
   helpers.ensure_directory(local_dir)
-
-  -- Copy global file to local
-  local local_filepath = local_dir .. "/" .. vim.fn.fnamemodify(global_filepath, ":t")
   local content = helpers.read_file(global_filepath)
   if not content then
     if not silent then

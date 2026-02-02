@@ -1,217 +1,144 @@
-# Logos Project Context
+# Neovim Configuration Project
 
 ## Project Overview
 
-**Logos** is a formal language of thought for AI reasoning, combining axiomatic proof theory (LEAN 4) with recursive semantic theory (Model-Checker) for dual verification of complex reasoning tasks.
+This is a Neovim configuration project using Lua and lazy.nvim for plugin management. The configuration provides a modern, efficient development environment with LSP support, treesitter integration, and extensive customization.
 
-**Purpose**: Train AI systems to conduct verified reasoning with explicit semantic models, supporting planning and action evaluation under uncertainty.
-
-**Repository**: ProofChecker (historical name, now "Logos")
+**Purpose**: Maintain a productive Neovim development environment with organized, modular configuration.
 
 ## Technology Stack
 
-**Primary Language:** LEAN 4 (v4.14.0)
-**Build System:** Lake (LEAN package manager)
-**Dependencies:** mathlib4 (v4.14.0)
-**Testing:** Custom test suite in LogosTest/
-**Linting:** Custom LEAN linters (environment + style)
-**Verification:** lean-lsp-mcp (Language Server Protocol integration)
+**Primary Language:** Lua
+**Plugin Manager:** lazy.nvim
+**LSP:** nvim-lspconfig + mason.nvim
+**Treesitter:** nvim-treesitter
+**Version:** Neovim 0.9+
 
 ## Project Structure
 
 ```
-Logos/                      # Main library
-├── Core/                   # Core bimodal logic (TM)
-│   ├── Syntax/            # Formula definitions, contexts
-│   ├── ProofSystem/       # Axioms, derivation rules
-│   ├── Semantics/         # Task frames, models, truth, validity
-│   ├── Metalogic/         # Soundness, completeness, deduction theorem
-│   ├── Theorems/          # Derived theorems (S4, S5, perpetuity, etc.)
-│   └── Automation/        # Tactics, proof search, Aesop integration
-├── Epistemic/             # Epistemic extensions
-├── Explanatory/           # Explanatory extensions
-├── Normative/             # Normative extensions
-└── Lint/                  # Custom environment linters
+nvim/
+├── init.lua                 # Entry point
+├── lua/
+│   ├── config/             # Core configuration
+│   │   ├── options.lua     # vim.opt settings
+│   │   ├── keymaps.lua     # Key bindings
+│   │   ├── autocmds.lua    # Autocommands
+│   │   └── lazy.lua        # Plugin manager setup
+│   ├── plugins/            # Plugin specifications
+│   │   ├── init.lua        # Main plugin list
+│   │   ├── ui.lua          # UI plugins
+│   │   ├── editor.lua      # Editor enhancements
+│   │   ├── lsp.lua         # LSP configuration
+│   │   ├── treesitter.lua  # Treesitter setup
+│   │   └── git.lua         # Git integration
+│   └── utils/              # Utility functions
+│       └── init.lua
+├── after/
+│   └── ftplugin/           # Filetype-specific settings
+│       ├── lua.lua
+│       ├── python.lua
+│       └── markdown.lua
+├── plugin/                  # Auto-loaded plugins
+└── lazy-lock.json          # Plugin lockfile
 
-LogosTest/                 # Test suite
-├── Core/                  # Core layer tests
-│   ├── Syntax/
-│   ├── ProofSystem/
-│   ├── Semantics/
-│   ├── Metalogic/
-│   ├── Theorems/
-│   └── Automation/
-└── Integration/           # End-to-end tests
+specs/                       # Task management
+├── TODO.md                 # Task list
+├── state.json              # Task state
+└── {N}_{SLUG}/             # Task artifacts
+    ├── reports/
+    ├── plans/
+    └── summaries/
 
-Documentation/             # Project documentation
-├── UserGuide/            # Tutorials, examples, integration
-├── Development/          # Contributing, style guides, standards
-├── ProjectInfo/          # Status, maintenance
-├── Reference/            # Glossary, operators
-└── Research/             # Theoretical foundations
-
-.claude/               # AI agent system (current)
-├── agent/                # Primary agents + specialists
-├── command/              # Slash commands
-├── context/              # Knowledge base for agents
-└── specs/                # Project artifacts (plans, reports)
+.claude/                     # Claude Code configuration
+├── CLAUDE.md               # Main reference
+├── commands/               # Slash commands
+├── skills/                 # Skill definitions
+├── agents/                 # Agent definitions
+├── rules/                  # Auto-applied rules
+└── context/                # Domain knowledge
 ```
 
-## Core Architecture
+## Core Configuration
 
-### Layered Operator System
+### Plugin Manager: lazy.nvim
 
-**Core Layer (TM Bimodal Logic)**:
-- Temporal operators: ◇ (possibility), □ (necessity)
-- Modal operators: ◊ (metaphysical possibility), ■ (metaphysical necessity)
-- Propositional connectives: ¬, ∧, ∨, →, ↔
-- Kripke semantics: Task frames with world histories
+The configuration uses lazy.nvim for plugin management with:
+- Automatic lazy loading by event, command, or filetype
+- Lockfile for reproducibility
+- Built-in profiler for performance analysis
 
-**Extension Layers** (planned):
-- Epistemic: Knowledge and belief operators
-- Explanatory: Causal and counterfactual reasoning
-- Normative: Deontic and evaluative operators
+### LSP Integration
 
-### Dual Verification Architecture
+Language Server Protocol support via:
+- nvim-lspconfig for server configuration
+- mason.nvim for automatic server installation
+- Built-in vim.lsp.* API
 
-| Component | Implementation | Role | Training Signal |
-|-----------|---------------|------|-----------------|
-| **Proof System** | LEAN 4 (this repo) | Derives valid theorems | Positive RL signal |
-| **Model-Checker** | Python (separate repo) | Finds countermodels | Corrective RL signal |
+### Treesitter
+
+Native tree-sitter support providing:
+- Syntax highlighting
+- Code folding
+- Incremental selection
+- Text objects
 
 ## Development Workflow
 
-### Standard LEAN 4 Workflow
+### Standard Workflow
 
-1. **Research**: Explore mathlib, existing proofs, literature
-2. **Design**: Plan proof structure, identify lemmas
-3. **Implementation**: Write LEAN 4 code with tactics/term-mode
-4. **Verification**: Check with `lake build`, fix errors
-5. **Testing**: Run test suite with `lake exe test`
-6. **Documentation**: Update inline docs and Documentation/
+1. **Identify Need**: Plugin to add, keymap to change, feature to implement
+2. **Research**: Look up plugin docs, check existing patterns
+3. **Implement**: Create/modify Lua files
+4. **Test**: Restart Neovim, verify behavior
+5. **Commit**: Track changes
 
 ### AI-Assisted Workflow
 
-1. **Research**: `/research` - Multi-source research (LeanSearch, Loogle, web)
-2. **Planning**: `/plan` - Create detailed implementation plans (sets `lean: true|false` in plan metadata)
-3. **Implementation**: `/lean` - Implement Lean proofs with Lean specialists and multi-phase workflow
-4. **Refactoring**: `/refactor` - Improve code quality and readability
-5. **Documentation**: `/document` - Update documentation automatically
-6. **Review**: `/review` - Analyze repository, verify proofs, identify tasks
+1. **Research**: `/research` - Gather plugin docs, patterns
+2. **Planning**: `/plan` - Create implementation plan
+3. **Implementation**: `/implement` - Execute the plan
+4. **Review**: `/review` - Analyze configuration
 
-See [.claude/README.md](../../README.md) for AI system details.
+## Common Tasks
 
-## Quality Standards
+### Adding a Plugin
 
-### LEAN 4 Code Quality
+1. Create spec file in `lua/plugins/` or add to existing
+2. Define lazy loading conditions (event, cmd, ft, keys)
+3. Configure plugin options
+4. Add keymaps if needed
 
-- **Style**: Follow [LEAN Style Guide](../../../Documentation/Development/LEAN_STYLE_GUIDE.md)
-- **Proof Readability**: Clear tactic sequences, meaningful names
-- **Documentation**: Inline doc comments for all public definitions
-- **Testing**: Comprehensive test coverage in LogosTest/
-- **No Sorries**: All proofs must be complete (tracked in SORRY_REGISTRY.md)
+### Modifying Keymaps
 
-### Build Requirements
+1. Edit `lua/config/keymaps.lua` for global mappings
+2. Use buffer-local mappings for filetype-specific
+3. Always include descriptions for which-key
 
-- `lake build` must succeed (no errors)
-- `lake exe test` must pass all tests
-- `lake exe lintAll` must pass (custom linters)
-- `lake exe runEnvLinters` must pass (environment linters)
-- `lake exe lintStyle` must pass (style linters)
+### Adding Filetype Settings
 
-### Documentation Standards
+1. Create `after/ftplugin/{filetype}.lua`
+2. Use `vim.opt_local` for buffer settings
+3. Add buffer-local keymaps as needed
 
-- Complete: All features documented
-- Accurate: Docs match implementation
-- Concise: No bloat or redundancy
-- See [Documentation Standards](../lean4/standards/documentation-standards.md)
+## Verification Commands
 
-## Key Files
-
-**Build Configuration**:
-- `lakefile.lean` - Lake build configuration
-- `lean-toolchain` - LEAN version (v4.14.0)
-- `lake-manifest.json` - Dependency lock file
-
-**Entry Points**:
-- `Logos.lean` - Main library entry point
-- `LogosTest.lean` - Test suite entry point
-- `README.md` - Project overview
-
-**Core Modules**:
-- `Logos/Core/Syntax/Formula.lean` - Formula definitions
-- `Logos/Core/ProofSystem/Axioms.lean` - Axiom system
-- `Logos/Core/Semantics/Truth.lean` - Truth conditions
-- `Logos/Core/Metalogic/Soundness.lean` - Soundness theorem
-- `Logos/Core/Automation/Tactics.lean` - Custom tactics
-
-## Common Commands
-
-**Build & Test**:
 ```bash
-lake build                    # Build entire project
-lake build Logos             # Build main library only
-lake exe test                # Run test suite
+# Test Neovim starts without errors
+nvim --headless -c "echo 'OK'" -c "q"
+
+# Test module loading
+nvim --headless -c "lua require('plugins')" -c "q"
+
+# Check plugin health
+nvim --headless -c "checkhealth" -c "q"
+
+# Profile startup
+nvim --startuptime /tmp/startup.log
 ```
 
-**Linting**:
-```bash
-lake exe lintAll             # Run all linters
-lake exe runEnvLinters       # Run environment linters
-lake exe lintStyle           # Run style linters
-```
+## Related Documentation
 
-**Development**:
-```bash
-lake clean                   # Clean build artifacts
-lake update                  # Update dependencies
-```
-
-**AI System**:
-```bash
-# See .claude/README.md for all AI commands
-/research <topic>            # Research Lean libraries and literature
-/plan <task>                 # Create implementation plan (records lean: true|false)
-/lean <proof>                # Implement Lean 4 proof via Lean specialists
-/implement <nums>                 # Execute tasks; Lean-tagged plans route to Lean implementation
-/review                      # Analyze repository
-```
-
-## Project Status
-
-**Current Phase**: Core Layer Implementation (TM Bimodal Logic)
-
-**Completed**:
-- [PASS] Syntax (Formula, Context)
-- [PASS] Proof System (Axioms, Derivation)
-- [PASS] Semantics (Task Frames, Truth, Validity)
-- [PASS] Metalogic (Soundness, Completeness, Deduction Theorem)
-- [PASS] Core Theorems (S4, S5, Perpetuity, Propositional)
-- [PASS] Automation (Tactics MVP, Aesop Integration)
-- [PASS] Test Suite (Comprehensive coverage)
-
-**In Progress**:
-- Proof Search (Infrastructure Ready)
-- Extension layers (Epistemic, Explanatory, Normative)
-- Advanced automation
-- Integration with Model-Checker
-
-See [IMPLEMENTATION_STATUS.md](../../../Documentation/ProjectInfo/IMPLEMENTATION_STATUS.md) for details.
-
-## Related Resources
-
-**Documentation**:
-- [Project README](../../../README.md) - Overview and theoretical foundations
-- [Architecture Guide](../../../Documentation/UserGuide/ARCHITECTURE.md) - System architecture
-- [Tutorial](../../../Documentation/UserGuide/TUTORIAL.md) - Getting started
-- [Examples](../../../Documentation/UserGuide/EXAMPLES.md) - Example proofs
-
-**AI System**:
-- [.claude/README.md](../../README.md) - AI system overview
-- [.claude/ARCHITECTURE.md](../../ARCHITECTURE.md) - Agent system architecture
-- [.claude/QUICK-START.md](../../QUICK-START.md) - AI workflow guide
-
-**External**:
-- [Model-Checker](https://github.com/benbrastmckie/ModelChecker) - Semantic verification
-- [LogicNotes](https://github.com/benbrastmckie/LogicNotes) - Formal foundations
-- [mathlib4](https://github.com/leanprover-community/mathlib4) - LEAN mathematics library
+- `.claude/context/project/neovim/` - Neovim domain knowledge
+- `.claude/rules/neovim-lua.md` - Lua coding standards
+- `nvim/CLAUDE.md` - Configuration-specific guidelines

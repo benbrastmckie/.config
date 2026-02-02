@@ -1,6 +1,5 @@
 # Command File Structure: Commands as Agents with Workflows
 
-**Version**: 1.0  
 **Created**: 2026-01-05  
 **Purpose**: Document command file anatomy and patterns  
 **Audience**: Command developers, meta-builder, system architects
@@ -101,7 +100,7 @@ max_delegation_depth: 3
     <timeout>3600s</timeout>
     <expected_return>
       {
-        "status": "completed",
+        "status": "planned",
         "artifacts": [{"type": "plan", "path": "..."}],
         "summary": "Plan created"
       }
@@ -111,7 +110,7 @@ max_delegation_depth: 3
   <step_2>
     <action>Validate planner return</action>
     <validation>
-      - status == "completed"
+      - status == "planned" (contextual success value)
       - artifacts array contains plan
       - plan file exists on disk
     </validation>
@@ -134,7 +133,7 @@ max_delegation_depth: 3
     <timeout>30s</timeout>
     <expected_return>
       {
-        "status": "completed",
+        "status": "synced",
         "summary": "Status updated"
       }
     </expected_return>
@@ -552,7 +551,7 @@ Benefit: Clear separation, easy to test, flexible composition
 </argument_parsing>
 ```
 
-**See Also**: `orchestration/state-lookup.md` for query patterns
+**See Also**: `orchestration/state-management.md` for query patterns
 
 ---
 
@@ -741,7 +740,7 @@ Benefit: Clear separation, easy to test, flexible composition
 <workflow_execution>
   <step_1>
     Create implementation plan
-    Write plan to file: .claude/specs/{task_number}_.../plan.md
+    Write plan to file: specs/{task_number}_.../plan.md
   </step_1>
   
   <step_2>
@@ -958,7 +957,7 @@ Layer 3: Execution Subagent (Work Executor)
 - `orchestration/architecture.md` - Three-layer delegation pattern
 - `orchestration/delegation.md` - Delegation patterns and depth tracking
 - `orchestration/state-management.md` - State management patterns
-- `orchestration/state-lookup.md` - Query patterns and examples
+- `orchestration/state-management.md` - State management and query patterns
 - `workflows/preflight-postflight.md` - Workflow timing standards
 - `standards/error-handling.md` - Error handling patterns
 - `formats/subagent-return.md` - Subagent return format

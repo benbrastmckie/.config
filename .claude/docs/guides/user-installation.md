@@ -1,8 +1,8 @@
 # User Installation Guide
 
-[Back to Docs](../README.md) | [Detailed Installation](../../../Docs/installation/README.md)
+[Back to Docs](../README.md) | [Detailed Installation](../../../docs/installation/README.md)
 
-A quick-start guide for installing Claude Code and using it to set up ModelChecker.
+A quick-start guide for installing Claude Code and using it to work with Neovim configuration projects.
 
 ---
 
@@ -10,11 +10,12 @@ A quick-start guide for installing Claude Code and using it to set up ModelCheck
 
 This guide helps you:
 1. Install Claude Code (Anthropic's AI CLI)
-2. Use Claude Code to install ModelChecker
-3. Create and modify Logos projects
-4. Set up GitHub CLI for issue reporting
+2. Set up a Neovim configuration project
+3. Set up Claude agent commands (optional)
+4. Work with Neovim configuration files
+5. Set up GitHub CLI for issue reporting
 
-**New to the terminal?** See [Getting Started: Using the Terminal](../../../Docs/installation/GETTING_STARTED.md) first.
+**New to the terminal?** See your operating system's documentation for terminal basics.
 
 ---
 
@@ -22,30 +23,17 @@ This guide helps you:
 
 Claude Code is Anthropic's command-line interface for AI-assisted development.
 
-**Official Documentation**: [Claude Code on GitHub](https://github.com/anthropics/claude-code)
-
 ### Quick Installation
 
 **macOS:**
-
-First, ensure you have Homebrew installed. If not, install it:
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-Then install Claude Code:
 ```bash
 brew install anthropics/claude/claude-code
 ```
 
 **Windows (PowerShell as Administrator):**
-
-The `irm` (Invoke-RestMethod) command is built into PowerShell 3.0+, which comes pre-installed on Windows 10 and later. Open PowerShell as Administrator and run:
 ```powershell
 irm https://raw.githubusercontent.com/anthropics/claude-code/main/install.ps1 | iex
 ```
-
-If you're on an older Windows version, first [install PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows).
 
 **Linux:**
 ```bash
@@ -58,9 +46,7 @@ curl -fsSL https://raw.githubusercontent.com/anthropics/claude-code/main/install
 claude --version
 ```
 
-You should see a version number. If not, see [Troubleshooting](../../../Docs/installation/TROUBLESHOOTING.md).
-
-**For detailed platform-specific instructions**, see the full [Claude Code Installation Guide](../../../Docs/installation/CLAUDE_CODE.md#installation).
+You should see a version number.
 
 ---
 
@@ -81,108 +67,109 @@ claude auth status
 
 ---
 
-## Installing ModelChecker with Claude Code
+## Setting Up a Neovim Configuration Project with Claude Code
 
-Instead of running installation commands manually, let Claude do it for you.
-
-### Step 1: Navigate to Your Workspace
+### Step 1: Navigate to Your Configuration
 
 ```bash
-mkdir -p ~/Documents/Projects
-cd ~/Documents/Projects
+cd ~/.config/nvim
+# Or wherever your Neovim configuration lives
 ```
 
-### Step 2: Start Claude Code
+### Step 2: Initialize Git (if not already done)
+
+```bash
+git init
+git add .
+git commit -m "Initial commit"
+```
+
+### Step 3: Start Claude Code
 
 ```bash
 claude
 ```
 
-### Step 3: Request Installation
+### Step 4: Verify Setup
 
-Paste this prompt to Claude:
+Ask Claude:
 
 ```
-Please follow the installation instructions at
-Docs/installation/BASIC_INSTALLATION.md to install ModelChecker.
-After installation, verify it works by running model-checker --version.
-```
-
-**What Claude Will Do:**
-- Check your Python version (requires 3.8+)
-- Install ModelChecker via pip
-- Verify the installation works
-
-### Alternative: Direct Installation
-
-If you prefer to install manually:
-
-```bash
-pip install model-checker
-```
-
-Or with Jupyter support:
-
-```bash
-pip install model-checker[jupyter]
-```
-
-**Verify:**
-```bash
-model-checker --version
+Please verify my Neovim configuration by:
+1. Checking the overall structure of the configuration
+2. Identifying the plugin manager in use
+3. Confirming the Lua modules are properly organized
 ```
 
 ---
 
-## Creating Logos Projects
+## Setting Up Claude Agent Commands (Optional)
 
-Once ModelChecker is installed, create projects with Claude Code's help.
+The repository includes a `.claude/` agent system that provides enhanced task management and workflow commands for Claude Code.
 
-### Create a New Project
+### What the Agent System Provides
+
+- **Task Management**: Create, track, and archive development tasks
+- **Structured Workflow**: `/research` -> `/plan` -> `/implement` cycle
+- **Specialized Skills**: Language-specific agents for Neovim development
+- **Context Files**: Domain knowledge for Neovim, plugins, and Lua
+- **State Persistence**: Track progress across Claude Code sessions
+
+### After Installation
+
+1. **Restart Claude Code** - Exit and restart for commands to be available
+2. **Test the setup** - Try creating a test task:
+   ```
+   /task "Test task"
+   ```
+3. **Learn the commands** - See the Commands Reference
+
+### Available Commands
+
+| Command | Purpose |
+|---------|---------|
+| `/task` | Create and manage tasks |
+| `/research` | Conduct research on a task |
+| `/plan` | Create implementation plan |
+| `/implement` | Execute implementation |
+| `/todo` | Archive completed tasks |
+
+For complete documentation, see the [Commands Reference](../commands/README.md).
+
+---
+
+## Working with Neovim Configuration
+
+Once your configuration is set up, use Claude Code to assist with Neovim development.
+
+### Explore the Codebase
 
 In Claude Code, ask:
 
 ```
-Create a new ModelChecker project using the logos theory to test
-whether contraposition is valid.
+Show me the structure of my Neovim configuration and explain
+how the modules are organized.
 ```
 
 Claude will:
-1. Run `model-checker` to generate a project
-2. Navigate to the project directory
-3. Modify the example file for your test
-4. Run the model checker
-5. Explain the results
+1. Navigate the lua/ directory structure
+2. Explain the plugin specifications
+3. Show how keymaps and options are configured
 
-### Manual Project Creation
+### Working on Configuration
 
-```bash
-# Create a logos project
-model-checker
-
-# Or specify a theory
-model-checker -l imposition
-```
-
-This creates a project directory with:
-- `examples.py` - Your main working file
-- `semantic.py` - Theory definitions
-- `operators.py` - Logical operators
-- `README.md` - Theory documentation
-
-### Modifying Examples
-
-Ask Claude to help:
+Ask Claude to help with specific configurations:
 
 ```
-Help me add a validity check for modus ponens to my examples.py file.
+Help me understand how the LSP is configured in my
+nvim/lua/plugins/lsp.lua file
 ```
 
 Or:
 
 ```
-I'm getting unexpected results. Can you review my premises and
-conclusions and help debug?
+I want to add a new plugin for git integration. Can you help me
+find popular options and configure one?
 ```
 
 ---
@@ -232,42 +219,6 @@ gh auth status
 
 ---
 
-## Opening Issues on ModelChecker
-
-When you encounter bugs or have suggestions, Claude Code can help create issues.
-
-### Using Claude Code
-
-```
-I'm getting an error when running model-checker with N=5.
-Help me create an issue on the ModelChecker repository
-with the error details.
-```
-
-Claude will:
-1. Gather error information
-2. Format a clear issue report
-3. Create the issue via `gh issue create`
-
-### Manual Issue Creation
-
-```bash
-gh issue create --repo benbrastmckie/ModelChecker \
-  --title "Brief description" \
-  --body "Detailed description of the issue"
-```
-
-### What to Include in Issues
-
-- ModelChecker version (`model-checker --version`)
-- Python version (`python --version`)
-- Operating system
-- Steps to reproduce
-- Expected vs actual behavior
-- Error messages (if any)
-
----
-
 ## Example Workflows
 
 ### Complete First-Time Setup
@@ -279,42 +230,44 @@ claude --version
 # Authenticate
 claude auth login
 
-# Create workspace and start Claude
-mkdir -p ~/Documents/Projects && cd ~/Documents/Projects
+# Navigate to your configuration
+cd ~/.config/nvim
+
+# Start Claude
 claude
 ```
 
 In Claude Code:
 ```
 Please help me:
-1. Install ModelChecker
-2. Create a project testing the validity of disjunctive syllogism
-3. Run the model checker and explain the results
+1. Verify my Neovim configuration is properly structured
+2. Explore the lua/ directory and identify plugins
+3. Check for any common issues or improvements
 ```
 
-### Working with Existing Projects
+### Adding a New Plugin
 
 ```bash
-cd ~/Documents/Projects/my_project
+cd ~/.config/nvim
 claude
 ```
 
 Ask Claude:
 ```
-Review my examples.py and suggest additional test cases
-for my modal logic formulas.
+Help me add telescope.nvim to my configuration with
+proper keybindings for file finding and live grep.
 ```
 
-### Debugging Issues
+### Debugging Configuration Issues
 
 ```bash
-cd ~/Documents/Projects/my_project
+cd ~/.config/nvim
 claude
 ```
 
 ```
-I ran model-checker examples.py and got unexpected results.
-Please review my configuration and help diagnose the issue.
+I'm getting an error when Neovim starts.
+Please diagnose the issue and suggest fixes.
 ```
 
 ---
@@ -334,26 +287,21 @@ claude auth logout
 claude auth login
 ```
 
-### ModelChecker Issues
+### Neovim Issues
 
-**"model-checker: command not found":**
-- Ensure Python scripts are in PATH
-- Try: `python -m model_checker --version`
-- Use virtual environment
+**Plugins not loading:**
+- Run `:Lazy sync` to update plugins
+- Check for errors: `:messages`
+- Verify plugin specifications are correct
 
-**Import errors:**
-- Check Python version: `python --version` (requires 3.8+)
-- Reinstall: `pip install --upgrade model-checker`
+**LSP not working:**
+- Check LSP is installed: `:LspInfo`
+- Ensure language servers are installed via Mason
+- Check for errors: `:LspLog`
 
-For more solutions, see [Troubleshooting Guide](../../../Docs/installation/TROUBLESHOOTING.md).
-
-### When to Open an Issue
-
-Open an issue on GitHub if:
-- You've followed all troubleshooting steps
-- The error appears to be a bug in ModelChecker
-- You have a feature request
-- Documentation is unclear or incorrect
+**Configuration errors:**
+- Run `nvim --headless -c 'checkhealth' -c 'qa'` to check health
+- Look for syntax errors in lua files
 
 ---
 
@@ -361,21 +309,19 @@ Open an issue on GitHub if:
 
 ### Documentation
 
-- **[Full Claude Code Guide](../../../Docs/installation/CLAUDE_CODE.md)** - Complete feature reference
-- **[Getting Started](../../../Docs/installation/GETTING_STARTED.md)** - Terminal and editor basics
-- **[Usage Guide](../../../Docs/usage/README.md)** - Using ModelChecker features
+- **[Architecture](../../README.md)** - System architecture overview
+- **[CLAUDE.md](../../CLAUDE.md)** - Quick reference for the agent system
+- **[Commands Reference](../commands/README.md)** - Full command documentation
 
-### Theory Documentation
+### Project Documentation
 
-- **[Theory Library](../../../Code/src/model_checker/theory_lib/README.md)** - Available theories
-- **[Logos Theory](../../../Code/src/model_checker/theory_lib/logos/README.md)** - Hyperintensional semantics
-- **[Examples Guide](../../../Docs/usage/EXAMPLES.md)** - Creating test cases
+- **[nvim/](../../../nvim/)** - Neovim configuration source
 
 ### Contributing
 
-- **[GitHub Setup](../../../Docs/installation/GIT_GOING.md)** - Git and GitHub basics
-- **[Developer Setup](../../../Docs/installation/DEVELOPER_SETUP.md)** - Contributing to ModelChecker
+- **[GitHub Setup](https://docs.github.com/en/get-started)** - Git and GitHub basics
+- Open issues for bugs or feature requests
 
 ---
 
-[Back to Docs](../README.md) | [Detailed Installation](../../../Docs/installation/README.md)
+[Back to Docs](../README.md) | [Copy .claude/ Directory](copy-claude-directory.md)

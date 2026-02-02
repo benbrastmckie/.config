@@ -1,8 +1,6 @@
 # Architecture Principles for Meta-Generated Systems
 
 **Purpose**: Core principles for designing .opencode system architectures
-
-**Version**: 1.0  
 **Last Updated**: 2025-12-29
 
 ---

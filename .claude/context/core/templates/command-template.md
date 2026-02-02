@@ -1,284 +1,135 @@
-# Command Template
+# Command Template (Checkpoint-Based)
 
-This template provides a standard structure for creating new commands in the .opencode system.
-
----
+Standard command structure using checkpoint-based execution with three gates.
 
 ## Frontmatter Structure
 
 ```yaml
 ---
 name: {command_name}
-agent: orchestrator
-description: "{Brief description of command purpose}"
-context_level: 2
-language: {markdown|lean|python|varies}
-routing:
-  language_based: {true|false}
-  target_agent: {agent_name}  # Only if language_based: false
-  lean: {lean_agent_name}      # Only if language_based: true
-  default: {default_agent_name} # Only if language_based: true
-context_loading:
-  strategy: lazy
-  index: ".claude/context/index.md"
-  required:
-    - "core/standards/subagent-return-format.md"
-    - "core/workflows/status-transitions.md"
-    - "core/system/routing-guide.md"
-  optional:
-    - "{domain-specific context files}"
-  max_context_size: 50000
+description: "{Brief description}"
 ---
 ```
 
 ## Command Body Structure
 
 ```markdown
-**Task Input (required):** $ARGUMENTS (description; e.g., `/{command} 197`)
+# /{command} Command
 
-<context>
-  <system_context>
-    Brief description of what this command does and its role in the workflow.
-  </system_context>
-</context>
+{Description}
 
-<workflow_setup>
-  <stage_1_parse_arguments>
-    Parse command arguments:
-    - Extract task_number from $ARGUMENTS
-    - Extract optional parameters (flags, prompts, etc.)
-    - Validate argument format
-  </stage_1_parse_arguments>
+## Arguments
 
-  <stage_2_delegate_to_agent>
-    Delegate to target agent:
-    - If routing.language_based: true
-      * Extract language from state.json (fast lookup)
-      * Route to appropriate agent based on language
-    - Else
-      * Route to routing.target_agent
-    
-    **Fast Task Lookup** (use state.json, not TODO.md):
-    ```bash
-    # Validate and lookup task (8x faster than TODO.md parsing)
-    task_data=$(jq -r --arg num "$task_number" \
-      '.active_projects[] | select(.project_number == ($num | tonumber))' \
-      .claude/specs/state.json)
-    
-    if [ -z "$task_data" ]; then
-      echo "Error: Task $task_number not found"
-      exit 1
-    fi
-    
-    # Extract all metadata at once
-    language=$(echo "$task_data" | jq -r '.language // "general"')
-    status=$(echo "$task_data" | jq -r '.status')
-    project_name=$(echo "$task_data" | jq -r '.project_name')
-    ```
-    
-    Delegation context:
-    ```json
-    {
-      "task_number": {task_number},
-      "session_id": "{generated_session_id}",
-      "delegation_depth": 1,
-      "delegation_path": ["orchestrator", "{command}", "{agent}"],
-      "timeout": {timeout_seconds}
-    }
-    ```
-  </stage_2_delegate_to_agent>
+- `$1` - Task number (required)
+- Optional: `--flag` description
 
-  <stage_3_return_result>
-    Return agent result to user:
-    - Validate return format (subagent-return-format.md)
-    - Format output for user
-    - Include next steps if applicable
-  </stage_3_return_result>
-</workflow_setup>
+## Execution
 
-<notes>
-  - Command delegates all workflow logic to specialized agent
-  - Orchestrator handles routing, validation, and return formatting
-  - Agent owns complete workflow including status updates and git commits
-  - See `.claude/context/core/system/routing-guide.md` for routing details
-  - See `.claude/context/core/workflows/delegation-guide.md` for delegation patterns
-</notes>
+### CHECKPOINT 1: GATE IN
+
+Execute checkpoint-gate-in.md:
+
+1. Generate session_id: `sess_{timestamp}_{random}`
+2. Lookup task via jq (see routing.md)
+3. Validate task exists and status allows operation
+4. Invoke skill-status-sync: `preflight_update(task_number, {in_progress_status})`
+5. Verify status updated
+
+**ABORT** if validation fails. **PROCEED** if all pass.
+
+### STAGE 2: DELEGATE
+
+Route to skill by language (see routing.md):
+
+| Language | Skill |
+|----------|-------|
+| neovim | skill-neovim-{operation} |
+| latex | skill-latex-{operation} |
+| typst | skill-typst-{operation} |
+| general/meta/markdown | skill-{operation} |
+
+Invoke via Skill tool with:
+- task_number
+- session_id
+- operation-specific context
+
+### CHECKPOINT 2: GATE OUT
+
+Execute checkpoint-gate-out.md:
+
+1. Validate return structure
+2. Verify artifacts exist on disk
+3. Invoke skill-status-sync: `postflight_update(task_number, {completed_status}, artifacts)`
+4. Verify status and artifact links
+
+**PROCEED** to commit. **RETRY** if validation fails.
+
+### CHECKPOINT 3: COMMIT
+
+Execute checkpoint-commit.md:
+
+1. `git add -A`
+2. Create commit with session_id
+3. Verify commit (non-blocking)
+
+## Output
+
+{Template for user-facing output}
+
+## Error Handling
+
+- GATE IN failure: Return immediately with error
+- DELEGATE failure: Keep in-progress status, return error
+- GATE OUT failure: Keep in-progress, attempt recovery
+- COMMIT failure: Log warning, continue with success
 ```
 
 ---
 
-## Example: Simple Direct-Routing Command
+## Key Principles
+
+### Checkpoint Pattern
+All commands follow: GATE IN → DELEGATE → GATE OUT → COMMIT
+
+### Status Updates
+All status updates go through skill-status-sync (no inline jq in commands).
+
+### Language Routing
+Route to skill by task language. See routing.md for mapping table.
+
+### Session Tracking
+Generate session_id at GATE IN, include in commit for traceability.
+
+---
+
+## Example: /research Command
 
 ```markdown
----
-name: plan
-agent: orchestrator
-description: "Create implementation plans with [PLANNED] status"
-context_level: 2
-language: markdown
-routing:
-  language_based: false
-  target_agent: planner
-context_loading:
-  strategy: lazy
-  index: ".claude/context/index.md"
-  required:
-    - "core/standards/subagent-return-format.md"
-    - "core/workflows/status-transitions.md"
-    - "core/system/routing-guide.md"
-  optional:
-    - "project/lean4/processes/end-to-end-proof-workflow.md"
-  max_context_size: 50000
----
+### CHECKPOINT 1: GATE IN
+1. Generate session_id
+2. Validate task exists
+3. Invoke skill-status-sync: preflight_update(N, "researching")
 
-**Task Input (required):** $ARGUMENTS (task number; e.g., `/plan 197`)
+### STAGE 2: DELEGATE
+Route by language:
+- neovim → skill-neovim-research
+- other → skill-researcher
 
-<context>
-  <system_context>
-    Planning command that creates implementation plans with phased breakdown,
-    effort estimates, and research integration. Updates task status to [PLANNED].
-  </system_context>
-</context>
+### CHECKPOINT 2: GATE OUT
+1. Validate return
+2. Invoke skill-status-sync: postflight_update(N, "researched", artifacts)
 
-<workflow_setup>
-  <stage_1_parse_arguments>
-    Parse task number from $ARGUMENTS
-  </stage_1_parse_arguments>
-
-  <stage_2_delegate_to_planner>
-    Delegate to planner agent with task context
-  </stage_2_delegate_to_planner>
-
-  <stage_3_return_result>
-    Return plan artifact path and next steps
-  </stage_3_return_result>
-</workflow_setup>
-
-<notes>
-  - Planner agent owns complete workflow
-  - Planner handles status updates via status-sync-manager
-  - Planner creates git commit via git-workflow-manager
-</notes>
+### CHECKPOINT 3: COMMIT
+git commit -m "task N: complete research"
 ```
 
 ---
 
-## Example: Language-Based Routing Command
+## Context References
 
-```markdown
----
-name: research
-agent: orchestrator
-description: "Conduct research and create reports with [RESEARCHED] status"
-context_level: 2
-language: markdown
-routing:
-  language_based: true
-  lean: lean-research-agent
-  default: researcher
-context_loading:
-  strategy: lazy
-  index: ".claude/context/index.md"
-  required:
-    - "core/standards/subagent-return-format.md"
-    - "core/workflows/status-transitions.md"
-    - "core/system/routing-guide.md"
-  optional:
-    - "project/lean4/tools/leansearch-api.md"
-    - "project/lean4/tools/loogle-api.md"
-  max_context_size: 50000
----
+Commands reference but do not load:
+- `.claude/context/core/checkpoints/` - Checkpoint patterns
+- `.claude/context/core/routing.md` - Language routing
+- `.claude/context/core/validation.md` - Return validation
 
-**Task Input (required):** $ARGUMENTS (task number; e.g., `/research 197`)
-
-<context>
-  <system_context>
-    Research command that conducts domain-specific research and creates reports.
-    Routes to lean-research-agent for Lean tasks, researcher for others.
-    Updates task status to [RESEARCHED].
-  </system_context>
-</context>
-
-<workflow_setup>
-  <stage_1_parse_arguments>
-    Parse task number and optional prompt from $ARGUMENTS
-  </stage_1_parse_arguments>
-
-  <stage_2_extract_language>
-    Extract language from state.json (fast lookup):
-    ```bash
-    # Lookup task in state.json (8x faster than TODO.md)
-    task_data=$(jq -r --arg num "$task_number" \
-      '.active_projects[] | select(.project_number == ($num | tonumber))' \
-      .claude/specs/state.json)
-    
-    # Extract language with default fallback
-    language=$(echo "$task_data" | jq -r '.language // "general"')
-    ```
-    
-    See `.claude/context/core/system/state-lookup.md` for patterns.
-  </stage_2_extract_language>
-
-  <stage_3_route_to_agent>
-    Route based on language:
-    - lean → lean-research-agent
-    - default → researcher
-  </stage_3_route_to_agent>
-
-  <stage_4_return_result>
-    Return research report path and next steps
-  </stage_4_return_result>
-</workflow_setup>
-
-<notes>
-  - Language-based routing enables domain-specific research tools
-  - Lean tasks use LeanSearch, Loogle, LSP integration
-  - Other tasks use web search, documentation analysis
-  - Research agent owns complete workflow
-</notes>
-```
-
----
-
-## Guidelines
-
-### When to Use Direct Routing
-- Command always uses same agent regardless of task
-- Examples: /plan, /revise, /review, /todo, /task
-
-### When to Use Language-Based Routing
-- Command needs different agents for different languages
-- Examples: /research, /implement
-
-### Context Loading
-- **Tier 2 (Commands)**: 10-20% context window (~20-40KB)
-- Load only what's needed for routing and validation
-- Agents load domain-specific context (Tier 3)
-
-### Workflow Ownership
-- Commands are thin routing layers
-- Agents own complete workflows
-- Agents handle status updates, git commits, artifact creation
-
-### Validation
-- Orchestrator validates: task exists, delegation safety, return format
-- Agents validate: business logic, domain rules, artifact correctness
-- See `core/system/validation-strategy.md` for details
-
-### Performance Optimization
-- **Use state.json for task lookups**: 25-50x faster than TODO.md parsing
-- **Extract all metadata at once**: Avoid multiple jq calls
-- **Validate state.json exists**: Check file exists before reading
-- See `.claude/context/core/system/state-lookup.md` for comprehensive patterns
-
-**Performance Comparison**:
-- TODO.md parsing: ~100ms per lookup
-- state.json lookup: ~4ms per lookup
-- Improvement: 25-50x faster
-
-### Documentation Standards
-- **NO VERSION HISTORY**: Never add "Version History" sections to commands or agents
-- Version history is useless cruft that clutters documentation
-- Git history already tracks all changes comprehensively
-- Document current behavior only, not past versions
-- See `.claude/context/core/standards/documentation.md` for full standards
+Context is loaded by skills/agents, not commands.

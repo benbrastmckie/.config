@@ -1,275 +1,207 @@
 # Lua Patterns for Neovim
 
-## Module Patterns
+Lua idioms and patterns specific to Neovim configuration.
 
-### Standard Module Structure
+## Module Pattern
+
+Standard Lua module structure for Neovim:
+
 ```lua
--- lua/neotex/plugins/category/plugin-name.lua
+-- lua/mymodule.lua
 local M = {}
 
--- Private function (local)
-local function private_helper()
+-- Private function (not exported)
+local function helper()
   return "helper result"
 end
 
--- Public function (exported)
-function M.public_function()
-  return private_helper()
-end
-
--- Setup function (common pattern)
+-- Public function
 function M.setup(opts)
   opts = opts or {}
-  -- Initialize module with options
+  -- Setup logic here
+end
+
+function M.my_function()
+  return helper()
 end
 
 return M
 ```
 
-### Plugin Spec Module
+## Lazy Loading Pattern
+
+Defer loading until needed:
+
 ```lua
--- lazy.nvim plugin specification
-return {
-  "author/plugin-name",
-  event = "VeryLazy",
-  dependencies = { "nvim-lua/plenary.nvim" },
-  opts = {
-    setting = "value",
-  },
-  config = function(_, opts)
-    require("plugin-name").setup(opts)
-  end,
-}
-```
-
-### Namespace Module
-```lua
--- lua/neotex/core/init.lua
-return {
-  utils = require("neotex.core.utils"),
-  health = require("neotex.core.health"),
-  -- other submodules
-}
-```
-
-## Metatable Patterns
-
-### Object-Oriented Pattern
-```lua
-local Object = {}
-Object.__index = Object
-
-function Object:new(opts)
-  local instance = setmetatable({}, self)
-  instance.name = opts.name or "default"
-  return instance
+-- Lazy require pattern
+local function get_telescope()
+  return require("telescope")
 end
 
-function Object:method()
-  return self.name
-end
-
--- Usage
-local obj = Object:new({ name = "test" })
-print(obj:method())  -- "test"
+-- Only loads telescope when called
+vim.keymap.set("n", "<leader>ff", function()
+  get_telescope().builtin.find_files()
+end)
 ```
 
-### Callable Table
+## Protected Calls
+
+Handle missing modules gracefully:
+
 ```lua
-local Callable = setmetatable({}, {
-  __call = function(self, ...)
-    return self.invoke(...)
-  end,
-})
-
-function Callable.invoke(arg)
-  return arg * 2
+-- pcall for safe require
+local ok, module = pcall(require, "optional-plugin")
+if not ok then
+  vim.notify("Optional plugin not installed", vim.log.levels.WARN)
+  return
 end
 
--- Usage
-print(Callable(5))  -- 10
+-- Use module safely
+module.setup({})
 ```
 
-### Default Values Pattern
+## Options Pattern
+
+Common pattern for plugin configuration:
+
 ```lua
 local defaults = {
   enabled = true,
-  timeout = 1000,
+  theme = "dark",
+  keymaps = true,
 }
 
-local config = setmetatable({}, {
-  __index = defaults,
-})
-
--- Access uses default if not set
-print(config.enabled)  -- true
-config.timeout = 500   -- Override default
-```
-
-## Iterator Patterns
-
-### Pairs/IPairs
-```lua
--- ipairs for arrays (1-indexed, sequential)
-local list = { "a", "b", "c" }
-for i, v in ipairs(list) do
-  print(i, v)
-end
-
--- pairs for tables (unordered)
-local dict = { a = 1, b = 2 }
-for k, v in pairs(dict) do
-  print(k, v)
+function M.setup(user_opts)
+  local opts = vim.tbl_deep_extend("force", defaults, user_opts or {})
+  -- Use merged opts
 end
 ```
 
-### Custom Iterator
-```lua
-local function values(t)
-  local i = 0
-  return function()
-    i = i + 1
-    return t[i]
-  end
-end
+## Functional Patterns
 
-for v in values({ "x", "y", "z" }) do
-  print(v)
-end
-```
+### Map/Filter
 
-### Filter/Map Pattern
 ```lua
--- Filter
-local function filter(t, predicate)
+-- Filter a list
+local function filter(tbl, fn)
   local result = {}
-  for _, v in ipairs(t) do
-    if predicate(v) then
+  for _, v in ipairs(tbl) do
+    if fn(v) then
       table.insert(result, v)
     end
   end
   return result
 end
 
--- Map
-local function map(t, fn)
-  local result = {}
-  for i, v in ipairs(t) do
-    result[i] = fn(v)
+-- Using vim.tbl_filter (built-in)
+local even = vim.tbl_filter(function(n) return n % 2 == 0 end, {1, 2, 3, 4})
+
+-- Map over a list using vim.tbl_map
+local doubled = vim.tbl_map(function(n) return n * 2 end, {1, 2, 3})
+```
+
+### Reduce
+
+```lua
+local function reduce(tbl, fn, init)
+  local acc = init
+  for _, v in ipairs(tbl) do
+    acc = fn(acc, v)
+  end
+  return acc
+end
+
+local sum = reduce({1, 2, 3, 4}, function(a, b) return a + b end, 0)
+```
+
+## Closure Pattern
+
+Capture state in closures:
+
+```lua
+local function create_counter()
+  local count = 0
+  return function()
+    count = count + 1
+    return count
+  end
+end
+
+local counter = create_counter()
+print(counter()) -- 1
+print(counter()) -- 2
+```
+
+## Memoization
+
+Cache expensive computations:
+
+```lua
+local cache = {}
+
+local function expensive_fn(key)
+  if cache[key] then
+    return cache[key]
+  end
+
+  -- Expensive computation
+  local result = compute_something(key)
+  cache[key] = result
+  return result
+end
+```
+
+## Debounce Pattern
+
+Prevent rapid repeated calls:
+
+```lua
+local timer = nil
+
+local function debounce(fn, ms)
+  return function(...)
+    local args = {...}
+    if timer then
+      timer:stop()
+    end
+    timer = vim.defer_fn(function()
+      fn(unpack(args))
+    end, ms)
+  end
+end
+
+-- Usage: only runs 300ms after last call
+local search = debounce(function(query)
+  -- search logic
+end, 300)
+```
+
+## Error Handling
+
+Standard error handling pattern:
+
+```lua
+local function safe_call(fn, ...)
+  local ok, result = pcall(fn, ...)
+  if not ok then
+    vim.notify("Error: " .. tostring(result), vim.log.levels.ERROR)
+    return nil
   end
   return result
 end
 ```
 
-## Error Handling Idioms
+## Type Checking
 
-### pcall Pattern
+Validate function arguments:
+
 ```lua
-local ok, result = pcall(function()
-  -- Potentially failing code
-  return require("missing-module")
-end)
-
-if not ok then
-  vim.notify("Error: " .. result, vim.log.levels.ERROR)
-  return nil
-end
-```
-
-### xpcall with Traceback
-```lua
-local ok, result = xpcall(function()
-  error("Something went wrong")
-end, debug.traceback)
-
-if not ok then
-  print(result)  -- Includes full stack trace
-end
-```
-
-### Protected Call Wrapper
-```lua
-local function safe_require(module_name)
-  local ok, module = pcall(require, module_name)
-  if not ok then
-    vim.notify("Failed to load: " .. module_name, vim.log.levels.WARN)
-    return nil
-  end
-  return module
-end
-```
-
-### Assert with Message
-```lua
-local function validate_config(config)
-  assert(config.name, "config.name is required")
-  assert(type(config.timeout) == "number", "config.timeout must be a number")
-end
-```
-
-## String Patterns
-
-### Pattern Matching
-```lua
-local str = "Hello World"
-
--- match: returns captured group or nil
-local word = str:match("(%w+)")  -- "Hello"
-
--- find: returns start, end, captures
-local s, e = str:find("World")  -- 7, 11
-
--- gsub: global substitution
-local result = str:gsub("World", "Neovim")  -- "Hello Neovim"
-
--- gmatch: iterator over matches
-for word in str:gmatch("%w+") do
-  print(word)
-end
-```
-
-### Common Patterns
-```lua
-"%d+"     -- One or more digits
-"%w+"     -- One or more word characters
-"%s+"     -- One or more whitespace
-"[^/]+"   -- One or more non-slash characters
-"%.lua$"  -- Ends with .lua
-"^#"      -- Starts with #
-```
-
-## Table Utilities
-
-### vim.tbl_extend
-```lua
--- Merge tables (later tables win)
-local defaults = { a = 1, b = 2 }
-local overrides = { b = 3, c = 4 }
-local merged = vim.tbl_extend("force", defaults, overrides)
--- { a = 1, b = 3, c = 4 }
-```
-
-### vim.tbl_deep_extend
-```lua
--- Deep merge for nested tables
-local defaults = { ui = { border = "single" } }
-local overrides = { ui = { icons = true } }
-local merged = vim.tbl_deep_extend("force", defaults, overrides)
--- { ui = { border = "single", icons = true } }
-```
-
-### vim.list_extend
-```lua
--- Extend array
-local list = { 1, 2, 3 }
-vim.list_extend(list, { 4, 5 })
--- { 1, 2, 3, 4, 5 }
-```
-
-### vim.tbl_contains
-```lua
-local list = { "a", "b", "c" }
-if vim.tbl_contains(list, "b") then
-  print("found")
+local function setup(opts)
+  vim.validate({
+    opts = { opts, "table", true }, -- optional table
+    ["opts.enabled"] = { opts and opts.enabled, "boolean", true },
+    ["opts.path"] = { opts and opts.path, "string" },
+  })
+  -- Continue with validated opts
 end
 ```

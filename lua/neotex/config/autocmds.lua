@@ -96,6 +96,114 @@ function M.setup()
     end,
   })
 
+  -- WezTerm OSC 7 integration for tab title updates
+  -- Only runs when inside WezTerm (checked via WEZTERM_PANE env var)
+  if vim.env.WEZTERM_PANE then
+    -- Helper function to emit OSC 7 escape sequence with current working directory
+    -- OSC 7 format: ESC ] 7 ; file://hostname/path ST
+    -- WezTerm extracts the directory name from this for tab titles
+    local function emit_osc7()
+      local cwd = vim.fn.getcwd()
+      local hostname = vim.fn.hostname()
+      -- Use \027 (decimal) for ESC for Lua 5.1 compatibility
+      -- \007 is BEL which serves as the string terminator (ST)
+      local osc7 = string.format("\027]7;file://%s%s\007", hostname, cwd)
+      io.write(osc7)
+      io.flush()
+    end
+
+    -- Emit OSC 7 on directory changes (covers :cd, :lcd, :tcd, autochdir)
+    api.nvim_create_autocmd("DirChanged", {
+      pattern = "*",
+      callback = emit_osc7,
+      desc = "WezTerm: Update tab title on directory change",
+    })
+
+    -- Emit OSC 7 on Neovim startup to set initial tab title
+    api.nvim_create_autocmd("VimEnter", {
+      pattern = "*",
+      callback = emit_osc7,
+      desc = "WezTerm: Set initial tab title",
+    })
+
+    -- Emit OSC 7 when entering non-terminal buffers
+    -- This restores the Neovim cwd display after terminal buffers (which emit their own OSC 7)
+    api.nvim_create_autocmd("BufEnter", {
+      pattern = "*",
+      callback = function()
+        -- Only emit for non-terminal buffers to avoid conflicts with shell's OSC 7
+        if vim.bo.buftype ~= "terminal" then
+          emit_osc7()
+        end
+      end,
+      desc = "WezTerm: Restore tab title when leaving terminal buffer",
+    })
+
+    -- Claude Code task number integration for WezTerm tab title (task 795)
+    --
+    -- Simplified architecture:
+    -- - Shell hook (wezterm-task-number.sh): Handles set/clear on UserPromptSubmit
+    --   - Workflow commands (/research N, /plan N, /implement N, /revise N) -> Set
+    --   - Non-workflow commands -> Clear
+    --   - Claude output (no hook event) -> No change (preserves)
+    -- - Neovim monitor (this file): Only handles terminal close cleanup
+    --
+    -- This separation ensures task numbers persist correctly during Claude's
+    -- responses and only change when the user submits a new prompt.
+    local wezterm = require('neotex.lib.wezterm')
+
+    -- Track which buffers are Claude Code terminals for cleanup on close
+    local claude_terminal_buffers = {}
+
+    -- Function to check if a buffer is a Claude Code terminal
+    local function is_claude_terminal(bufnr)
+      local bufname = api.nvim_buf_get_name(bufnr)
+      -- Match pattern used by claude-code.nvim plugin
+      return bufname:match('claude') or bufname:match('ClaudeCode')
+    end
+
+    -- TermOpen autocmd to detect Claude Code terminals
+    api.nvim_create_autocmd('TermOpen', {
+      pattern = 'term://*',
+      callback = function(ev)
+        -- Defer to next tick to ensure buffer name is set
+        vim.defer_fn(function()
+          if is_claude_terminal(ev.buf) then
+            claude_terminal_buffers[ev.buf] = true
+          end
+        end, 10)
+      end,
+      desc = 'WezTerm: Track Claude Code terminal for cleanup',
+    })
+
+    -- BufDelete/BufWipeout to cleanup state when terminal closes
+    api.nvim_create_autocmd({ 'BufDelete', 'BufWipeout' }, {
+      pattern = '*',
+      callback = function(ev)
+        if claude_terminal_buffers[ev.buf] then
+          claude_terminal_buffers[ev.buf] = nil
+          -- Clear task number when Claude terminal closes
+          wezterm.clear_task_number()
+        end
+      end,
+      desc = 'WezTerm: Clear task number when Claude Code terminal closes',
+    })
+
+    -- VimLeavePre to clear task number when Neovim exits with Claude terminal
+    -- This handles the case where Neovim is closed (:qa, window close) while
+    -- a Claude Code terminal is open with an active task number displayed
+    api.nvim_create_autocmd('VimLeavePre', {
+      callback = function()
+        -- Clear task number if any Claude terminal was active
+        for bufnr, _ in pairs(claude_terminal_buffers) do
+          wezterm.clear_task_number()
+          break  -- Only need to clear once
+        end
+      end,
+      desc = 'WezTerm: Clear task number when Neovim exits with Claude terminal',
+    })
+  end
+
   return true
 end
 

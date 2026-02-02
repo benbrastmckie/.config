@@ -349,7 +349,9 @@ function M.setup()
         { clear = true }
       )
 
-      vim.api.nvim_create_autocmd("TextChanged", {
+      -- TextChangedT fires in terminal mode (insert), TextChanged fires in normal mode
+      -- Both are needed for reliable fallback detection
+      vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedT" }, {
         group = ready_check_group,
         buffer = args.buf,
         callback = function()

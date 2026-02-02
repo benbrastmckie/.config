@@ -1,6 +1,5 @@
 # Subagent YAML Frontmatter Standard
 
-**Version**: 1.0.0  
 **Created**: 2025-12-29  
 **Purpose**: Comprehensive standard for subagent YAML frontmatter configuration  
 **Scope**: All subagent files in `.claude/agent/subagents/`
@@ -56,7 +55,7 @@ All subagents MUST include these 13 essential fields:
 **Examples**:
 ```yaml
 name: "researcher"
-name: "lean-implementation-agent"
+name: "neovim-implementation-agent"
 name: "status-sync-manager"
 ```
 
@@ -101,7 +100,7 @@ version: "2.0.0"  # Breaking changes
 **Example**:
 ```yaml
 description: |
-  General research agent for non-Lean tasks with topic subdivision support.
+  General research agent for non-Neovim tasks with topic subdivision support.
   Conducts comprehensive research using web sources and documentation.
   Returns detailed reports and summaries following standardized format.
 ```
@@ -236,7 +235,7 @@ timeout: 3600
 
 **Available Tools**:
 - Core: `read`, `write`, `edit`, `bash`, `grep`, `glob`, `list`
-- Specialized: `webfetch` (research), `lean-lsp-mcp_*` (Lean agents)
+- Specialized: `webfetch` (research)
 
 **Examples**:
 ```yaml
@@ -278,11 +277,11 @@ tools:
 permissions:
   allow:
     - read: ["**/*.md", ".claude/**/*"]
-    - write: [".claude/specs/**/*"]
+    - write: ["specs/**/*"]
     - bash: ["grep", "find", "wc"]
   deny:
     - bash: ["rm -rf", "sudo", "chmod +x", "dd"]
-    - write: [".git/**/*", "**/*.lean"]
+    - write: [".git/**/*"]
     - read: [".env", "**/*.key", "**/*.pem"]
 ```
 
@@ -327,7 +326,7 @@ deny:
   - read: [".env", "**/*.key", "**/*.pem", ".ssh/**/*"]
   
   # Critical file modification
-  - write: [".git/**/*", "lakefile.lean", "lean-toolchain"]
+  - write: [".git/**/*", "init.lua", "lazy-lock.json"]
 ```
 
 **Rationale**: These commands pose security risks (data loss, privilege escalation, credential leakage).
@@ -355,7 +354,7 @@ context_loading:
     - "core/workflows/command-lifecycle.md"
     - "core/standards/subagent-return-format.md"
   optional:
-    - "project/lean4/lean-patterns.md"
+    - "project/neovim/plugin-patterns.md"
   max_context_size: 50000
 ```
 
@@ -498,12 +497,12 @@ tools:
   - glob
 permissions:
   allow:
-    - read: ["**/*.md", ".claude/**/*", "Documentation/**/*"]
-    - write: [".claude/specs/**/*"]
+    - read: ["**/*.md", ".claude/**/*", "docs/**/*"]
+    - write: ["specs/**/*"]
     - bash: ["grep", "find", "wc", "date", "mkdir"]
   deny:
     - bash: ["rm -rf", "sudo", "chmod +x", "dd", "wget"]
-    - write: [".git/**/*", "**/*.lean"]
+    - write: [".git/**/*"]
     - read: [".env", "**/*.key", "**/*.pem"]
 context_loading:
   strategy: lazy
@@ -562,7 +561,7 @@ context_loading:
 delegation:
   max_depth: 3
   can_delegate_to:
-    - "lean-implementation-agent"
+    - "neovim-implementation-agent"
     - "status-sync-manager"
   timeout_default: 7200
   timeout_max: 7200
@@ -696,7 +695,7 @@ temperature: 0.7  # Too high for implementation
 2. **Context Loading Implementation**: Lazy loading with index-based discovery
 3. **Delegation Routing**: Delegation with depth limits and cycle detection
 4. **CI/CD Integration**: GitHub Actions workflow for frontmatter validation
-5. **MCP Tool Configuration**: Add lean-lsp-mcp tools to Lean agents
+5. **Plugin Integration**: Add Neovim plugin tooling for configuration agents
 
 ---
 

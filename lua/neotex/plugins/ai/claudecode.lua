@@ -89,6 +89,7 @@ return {
         -- Hide from buffer lists
         vim.bo.bufhidden = "hide"
 
+        -- Note: Terminal STT toggle (<C-'>) is defined globally in stt/init.lua
         -- Note: <C-CR> mapping for Claude Code toggle is defined in keymaps.lua
       end,
     })

@@ -1,6 +1,15 @@
 <!-- Context: workflows/sessions | Priority: medium | Version: 2.0 | Updated: 2025-01-21 -->
 # Session Management
 
+---
+
+> **DEPRECATED** (2026-01-19): Session tracking has been consolidated into:
+> - `orchestration-core.md` - Session ID format and registry
+>
+> This file contains additional session cleanup patterns that may still be referenced.
+
+---
+
 ## Quick Reference
 
 **Key Principle**: Lazy initialization - only create when needed

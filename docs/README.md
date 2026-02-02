@@ -44,6 +44,7 @@ Welcome to the comprehensive documentation for this Neovim configuration. This d
 
 | Document | Purpose | Size |
 |----------|---------|------|
+| [TYPST.md](TYPST.md) | Typst integration with LSP, preview, keybindings, and browser styling | 25K |
 | [RESEARCH_TOOLING.md](RESEARCH_TOOLING.md) | Research workflows and tooling for academic and technical work | 14K |
 | [NIX_WORKFLOWS.md](NIX_WORKFLOWS.md) | Nix package manager workflows and integration | 11K |
 | [NOTIFICATIONS.md](NOTIFICATIONS.md) | Notification system configuration and usage | 18K |
@@ -85,6 +86,7 @@ Welcome to the comprehensive documentation for this Neovim configuration. This d
 - **Quick Reference**: [Claude Code Quick Ref](CLAUDE_CODE_QUICK_REF.md) - Common commands
 
 ### Using Features
+- **Typst Integration**: [Typst](TYPST.md) - Modern typesetting with LSP and live preview
 - **Research Workflows**: [Research Tooling](RESEARCH_TOOLING.md) - Academic and technical research
 - **Nix Integration**: [Nix Workflows](NIX_WORKFLOWS.md) - Package management
 - **Notifications**: [Notifications](NOTIFICATIONS.md) - Configure alerts and messages
@@ -133,6 +135,7 @@ nvim/docs/
 ├── CLAUDE_CODE_QUICK_REF.md          # Claude Code quick reference
 ├── JUMP_LIST_TESTING_CHECKLIST.md    # Jump list testing
 ├── AI_TOOLING.md                      # AI integration documentation
+├── TYPST.md                           # Typst integration guide
 ├── RESEARCH_TOOLING.md                # Research workflows
 ├── NIX_WORKFLOWS.md                   # Nix integration
 ├── NOTIFICATIONS.md                   # Notification system

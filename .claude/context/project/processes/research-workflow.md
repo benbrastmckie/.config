@@ -1,6 +1,5 @@
 # Research Workflow
 
-**Version**: 1.0.0  
 **Created**: 2025-12-29  
 **Purpose**: Detailed research workflow for conducting research and creating reports
 
@@ -16,22 +15,22 @@ This document describes the complete research workflow executed by the researche
 
 ### General Research
 
-**When**: Task language is markdown, general, or meta
-**Agent**: researcher
+**When**: Task language is markdown, python, or general  
+**Agent**: researcher  
 **Tools**:
 - Web search
 - Documentation review
 - File analysis
 - API exploration
 
-### Neovim/Lua Research
+### Neovim Research
 
-**When**: Task language is lua
-**Agent**: skill-neovim-research
+**When**: Task language is neovim
+**Agent**: neovim-research-agent
 **Tools**:
-- WebSearch (Neovim docs, plugin repos)
-- WebFetch (plugin documentation)
-- Read, Grep, Glob (codebase exploration)
+- WebSearch (plugin documentation)
+- WebFetch (plugin READMEs)
+- Read (codebase exploration)
 - Documentation review
 
 ---
@@ -43,7 +42,7 @@ This document describes the complete research workflow executed by the researche
 Language is extracted from task entry in TODO.md:
 
 ```bash
-grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed 's/\*\*Language\*\*: //'
+grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*Language\*\*: //'
 ```
 
 **Fallback**: If extraction fails, defaults to "general" with warning logged.
@@ -52,10 +51,10 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 
 | Language | Agent | Tools Available |
 |----------|-------|----------------|
-| `lua` | `skill-neovim-research` | WebSearch, WebFetch, Read, Grep, Glob |
+| `neovim` | `neovim-research-agent` | WebSearch, WebFetch, Read, documentation review |
 | `markdown` | `researcher` | Web search, documentation review |
+| `python` | `researcher` | Web search, documentation review, API docs |
 | `general` | `researcher` | Web search, documentation review |
-| `meta` | `researcher` | Read, Grep, Glob (codebase only) |
 
 **Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses language-specific tooling.
 
@@ -70,7 +69,7 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 **Process**:
 1. Read task from TODO.md using grep (selective loading):
    ```bash
-   grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_number}.md
+   grep -A 50 "^### ${task_number}\." specs/TODO.md > /tmp/task-${task_number}.md
    ```
 2. Extract task metadata:
    - Task number
@@ -121,34 +120,33 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
    - Best practices
    - Potential pitfalls
 
-#### For Neovim/Lua Research:
+#### For Neovim Research:
 
 **Action**: Conduct research using Neovim-specific tools
 
 **Process**:
-1. Web search for Neovim information:
-   - Search Neovim documentation
-   - Search plugin repositories
-   - Search for community guides
-   - Search for Lua patterns
-2. Fetch plugin documentation:
-   - Plugin README files
-   - API documentation
-   - Configuration examples
-3. Analyze existing codebase:
-   - Explore lua/neotex/ modules
-   - Check plugin configurations
-   - Review test patterns
+1. Use WebSearch to find plugin documentation:
+   - Search for plugin READMEs
+   - Find configuration examples
+   - Discover related plugins
+2. Use WebFetch to retrieve documentation:
+   - Fetch plugin documentation
+   - Get configuration guides
+   - Access API references
+3. Use Read to explore codebase:
+   - Analyze existing configuration
+   - Check module structure
+   - Explore dependencies
 4. Review Neovim documentation:
-   - Neovim help files (:help)
+   - Neovim API docs
+   - lazy.nvim guide
    - Plugin documentation
-   - Lua API reference
 5. Synthesize findings:
-   - Relevant vim.api functions
-   - Plugin configuration patterns
+   - Relevant plugins
+   - Configuration patterns
    - Lua module structure
-   - Testing approaches
-   - Best practices
+   - Keymap conventions
+   - API recommendations
 
 **Checkpoint**: Research conducted
 
@@ -158,7 +156,7 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 
 **Process**:
 1. Create research report file:
-   - Path: `.claude/specs/{number}_{slug}/reports/research-001.md`
+   - Path: `specs/{number}_{slug}/reports/research-001.md`
    - Directory created lazily when writing
 2. Write report sections:
    - **Overview**: Research objective and scope
@@ -169,11 +167,11 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
    - **Technical Details**: Specific APIs, functions, theorems, etc.
    - **Considerations**: Potential issues, trade-offs, alternatives
    - **Next Steps**: Recommended actions
-3. For Lean research, include:
-   - Mathlib modules to use
-   - Relevant theorems and lemmas
-   - Type definitions needed
-   - Tactic strategies
+3. For Neovim research, include:
+   - Plugins to use
+   - Configuration patterns
+   - Lua module structure
+   - Keymap conventions
    - Example code snippets
 4. Validate report:
    - All research questions addressed
@@ -200,7 +198,7 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
    - If report is long (>500 lines): Create summary
    - If report is concise (<500 lines): No summary needed
 2. If summary needed:
-   - Path: `.claude/specs/{number}_{slug}/summaries/research-summary.md`
+   - Path: `specs/{number}_{slug}/summaries/research-summary.md`
    - Content: 3-5 sentence overview of findings
    - Token limit: <100 tokens (~400 characters)
    - Purpose: Protect orchestrator context window
@@ -409,7 +407,7 @@ Researcher loads context on-demand per `.claude/context/index.md`:
 - `state.json` (project state)
 
 **Language-specific context**:
-- If lean: `project/lean4/tools/leansearch-api.md`, `project/lean4/tools/loogle-api.md`
+- If neovim: `project/neovim/domain/neovim-api.md`, `project/neovim/patterns/plugin-spec.md`
 - If markdown: (no additional context)
 
 **Optimization**: Task extraction reduces context from 109KB to ~2KB, 98% reduction.
@@ -421,7 +419,7 @@ Researcher loads context on-demand per `.claude/context/index.md`:
 ### Task Not Found
 
 ```
-Error: Task {task_number} not found in .claude/specs/TODO.md
+Error: Task {task_number} not found in specs/TODO.md
 
 Recommendation: Verify task number exists in TODO.md
 ```
@@ -527,7 +525,7 @@ Error: {git_error}
 ### Lazy Directory Creation
 
 Directories created only when writing artifacts:
-- `.claude/specs/{task_number}_{slug}/` created when writing first artifact
+- `specs/{task_number}_{slug}/` created when writing first artifact
 - `reports/` subdirectory created when writing research-001.md
 - `summaries/` NOT created (summary is metadata, not artifact)
 
@@ -536,7 +534,7 @@ Directories created only when writing artifacts:
 Extract only specific task entry from TODO.md to reduce context load:
 
 ```bash
-grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_number}.md
+grep -A 50 "^### ${task_number}\." specs/TODO.md > /tmp/task-${task_number}.md
 ```
 
 **Impact**: Reduces context from 109KB (full TODO.md) to ~2KB (task entry only), 98% reduction.
@@ -550,6 +548,40 @@ grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_numb
 
 ---
 
+## Neovim-Specific Research Tools
+
+### WebSearch
+
+**Purpose**: Find plugin documentation and examples
+**Usage**: Search for plugin READMEs, configuration guides
+**Output**: Relevant documentation links
+
+**Example**:
+```
+Query: "telescope.nvim configuration"
+Results: Plugin README, wiki pages, configuration examples
+```
+
+### WebFetch
+
+**Purpose**: Retrieve plugin documentation
+**Usage**: Fetch README files, API documentation
+**Output**: Full documentation content
+
+**Example**:
+```
+URL: https://github.com/nvim-telescope/telescope.nvim
+Results: Full README with configuration examples
+```
+
+### Read
+
+**Purpose**: Explore existing codebase
+**Usage**: Analyze configuration, check module structure
+**Output**: File contents for analysis
+
+---
+
 ## Performance Optimization
 
 ### Task Extraction
@@ -557,7 +589,7 @@ grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_numb
 Extract only specific task entry from TODO.md to reduce context load:
 
 ```bash
-grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_number}.md
+grep -A 50 "^### ${task_number}\." specs/TODO.md > /tmp/task-${task_number}.md
 ```
 
 **Impact**: Reduces context from 109KB (full TODO.md) to ~2KB (task entry only), 98% reduction.
@@ -572,19 +604,23 @@ Load context on-demand:
 ### Tool Selection
 
 Use most appropriate tool for each research task:
-- Neovim API documentation → WebSearch, WebFetch
-- Plugin research → WebSearch (GitHub, plugin repos)
-- Codebase exploration → Read, Grep, Glob
-- General web search → WebSearch
+- Plugin documentation → WebSearch
+- Full documentation → WebFetch
+- Codebase exploration → Read
+- Configuration patterns → Grep
+- General search → WebSearch
 
 ---
 
 ## References
 
+- **Command**: `.claude/command/research.md`
+- **Subagent**: `.claude/agent/subagents/researcher.md`
+- **Neovim Research Agent**: `.claude/agent/subagents/neovim-research-agent.md`
 - **Return Format**: `.claude/context/core/standards/subagent-return-format.md`
 - **Status Markers**: `.claude/context/core/standards/status-markers.md`
 - **Artifact Management**: `.claude/context/core/system/artifact-management.md`
-- **Neovim Context**:
+- **Neovim Tools**:
   - Neovim API: `.claude/context/project/neovim/domain/neovim-api.md`
-  - Lua Patterns: `.claude/context/project/neovim/domain/lua-patterns.md`
-  - Plugin Ecosystem: `.claude/context/project/neovim/domain/plugin-ecosystem.md`
+  - Plugin Patterns: `.claude/context/project/neovim/patterns/plugin-spec.md`
+  - lazy.nvim Guide: `.claude/context/project/neovim/tools/lazy-nvim-guide.md`

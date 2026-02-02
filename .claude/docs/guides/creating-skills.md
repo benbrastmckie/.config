@@ -1,539 +1,537 @@
 # Creating Skills Guide
 
-[Back to Docs](../README.md) | [Skill Template](../templates/skill-template.md)
-
-How to create new skills for the ModelChecker `.claude/` agent system.
+This guide explains how to create new skills in the Neovim Configuration agent system using the thin wrapper pattern.
 
 ---
 
 ## Overview
 
-Skills are specialized agents that execute specific types of work. They are invoked by commands or the orchestrator.
+Skills are specialized execution components that:
+- Validate inputs before delegating to agents
+- Route to appropriate agents based on task context
+- Prepare delegation context for agents
+- Validate and propagate agent returns
 
-### Key Principles
-
-1. **Skills execute, commands delegate**: Skills do the actual work
-2. **Structured returns**: Always return JSON matching the standard format
-3. **Resume support**: Handle interruptions gracefully
-4. **Artifact creation**: Create outputs in task directories
+Skills use the **thin wrapper pattern** - they do minimal work themselves and delegate execution to agents.
 
 ---
 
-## Step-by-Step Process
+## Thin Wrapper Pattern
 
-### Step 1: Plan the Skill
+### What It Is
 
-Before creating the skill, answer:
+Skills are "thin wrappers" that delegate to agents via the Task tool. This pattern provides:
 
-1. **What does this skill do?**
-   - Single, focused purpose
-   - Clear inputs and outputs
+- **Token Efficiency**: Context loaded only in the agent's conversation
+- **Isolation**: Agent context does not bloat the skill's conversation
+- **Reusability**: Same agent can be invoked from multiple skills
+- **Maintainability**: Skills handle routing, agents handle execution
 
-2. **When is it triggered?**
-   - Which commands invoke it?
-   - What language(s) route to it?
+### What Skills Do
 
-3. **What tools does it need?**
-   - Read, Write, Edit?
-   - Bash commands?
-   - Web search?
+```
+Skill receives invocation
+    |
+    v
+1. Validate inputs (task exists, status allows operation)
+    |
+    v
+2. Prepare delegation context (session_id, task info)
+    |
+    v
+3. Invoke agent via Task tool
+    |
+    v
+4. Validate agent return matches schema
+    |
+    v
+5. Propagate return to caller
+```
 
-4. **What artifacts does it create?**
-   - Reports, plans, summaries?
-   - Location in `.claude/specs/`?
+### What Skills Do NOT Do
 
-### Step 2: Create Skill Directory
+- Load heavy context files (agent does this)
+- Execute business logic (agent does this)
+- Create artifacts (agent does this)
+- Handle complex error recovery (agent does this)
 
-Create the skill directory and file:
+---
+
+## Skill File Structure
+
+Skills are located in `.claude/skills/skill-{name}/SKILL.md`:
+
+```
+.claude/skills/
+├── skill-researcher/
+│   └── SKILL.md
+├── skill-lean-research/
+│   └── SKILL.md
+├── skill-planner/
+│   └── SKILL.md
+└── skill-implementer/
+    └── SKILL.md
+```
+
+---
+
+## Skill Template
+
+### Frontmatter
+
+Every skill starts with YAML frontmatter:
+
+```yaml
+---
+name: skill-{name}
+description: {Brief description}. Invoke for {use case}.
+allowed-tools: Task
+context: fork
+agent: {target-agent-name}
+# Original context (now loaded by subagent):
+#   - .claude/context/path/to/context.md
+# Original tools (now used by subagent):
+#   - Read, Write, Edit, Glob, Grep, etc.
+---
+```
+
+### Frontmatter Fields
+
+| Field | Value | Purpose |
+|-------|-------|---------|
+| `name` | `skill-{name}` | Skill identifier |
+| `description` | Brief text | Helps orchestrator route correctly |
+| `allowed-tools` | `Task` | Only tool needed for delegation |
+| `context` | `fork` | Signals NOT to load context eagerly |
+| `agent` | `{name}-agent` | Target agent to invoke |
+
+**Critical**: `context: fork` is essential for token efficiency. Without it, context would be loaded into the skill's conversation, wasting tokens.
+
+### Body Structure
+
+```markdown
+# {Name} Skill
+
+{One-line description explaining what this skill does.}
+
+## Trigger Conditions
+
+This skill activates when:
+- {Condition 1}
+- {Condition 2}
+
+---
+
+## Execution
+
+### 1. Input Validation
+{Validation logic}
+
+### 2. Context Preparation
+{Delegation context setup}
+
+### 3. Invoke Subagent
+{Agent invocation}
+
+### 4. Return Validation
+{Return validation}
+
+### 5. Return Propagation
+{Return propagation}
+
+---
+
+## Return Format
+{Reference to subagent-return.md}
+
+---
+
+## Error Handling
+{Error handling patterns}
+```
+
+---
+
+## Step-by-Step Guide
+
+### Step 1: Create Skill Directory
 
 ```bash
 mkdir -p .claude/skills/skill-{name}
 ```
 
-Create `SKILL.md` in that directory.
+### Step 2: Create SKILL.md
 
-### Step 3: Define Frontmatter
+Create `.claude/skills/skill-{name}/SKILL.md`:
 
 ```yaml
 ---
 name: skill-{name}
-description: {Description}. Invoke when {trigger condition}.
-allowed-tools: Read, Write, Edit, Bash(pytest)
-context:
-  - core/formats/report-format.md
-  - core/standards/documentation.md
+description: {Description}. Invoke for {use case}.
+allowed-tools: Task
+context: fork
+agent: {agent-name}
 ---
 ```
 
-**Fields**:
+### Step 3: Define Trigger Conditions
 
-| Field | Purpose | Example |
-|-------|---------|---------|
-| `name` | Skill identifier | `skill-python-research` |
-| `description` | Description with trigger | "Research Z3 patterns. Invoke for python tasks." |
-| `allowed-tools` | Available tools | `Read, Write, Bash(pytest)` |
-| `context` | Context file paths | Array of paths from `.claude/context/` |
-
-**Context Selection**: Choose only the context files your skill actually needs. See `.claude/context/index.md` for the full catalog. Keep context minimal to preserve context window budget.
-
-### Step 4: Define Trigger Conditions
-
-Document when the skill activates:
+Specify when this skill should be used:
 
 ```markdown
 ## Trigger Conditions
 
 This skill activates when:
-- `/research` command on python language task
-- Z3 API exploration needed
-- Codebase pattern discovery requested
+- Task language is "python"
+- Research involves Python packages or APIs
+- Python-specific tooling is needed
 ```
 
-### Step 5: Define Responsibilities
+### Step 4: Implement Input Validation
 
-List what the skill does:
+Validate required inputs before delegation:
 
 ```markdown
-## Responsibilities
+### 1. Input Validation
 
-1. **Search**: Find relevant information
-2. **Analyze**: Process and synthesize findings
-3. **Report**: Create structured output
+Validate required inputs:
+- `task_number` - Must be provided and exist in state.json
+- `focus_prompt` - Optional focus for research direction
+
+```bash
+# Lookup task
+task_data=$(jq -r --arg num "$task_number" \
+  '.active_projects[] | select(.project_number == ($num | tonumber))' \
+  specs/state.json)
+
+# Validate exists
+if [ -z "$task_data" ]; then
+  return error "Task $task_number not found"
+fi
+
+# Extract fields
+language=$(echo "$task_data" | jq -r '.language // "general"')
+status=$(echo "$task_data" | jq -r '.status')
+project_name=$(echo "$task_data" | jq -r '.project_name')
+description=$(echo "$task_data" | jq -r '.description // ""')
+```
 ```
 
-### Step 6: Define Workflow
+### Step 5: Define Context Preparation
 
-Detail the execution steps:
+Prepare the delegation context:
 
 ```markdown
-## Workflow
+### 2. Context Preparation
 
-### Step 1: Context Loading
+Prepare delegation context:
 
-1. Read task from state.json
-2. Load any existing research
-3. Determine focus area
-
-### Step 2: Research
-
-1. Search web for Z3 patterns
-2. Explore codebase for existing patterns
-3. Collect findings
-
-### Step 3: Report Generation
-
-1. Create report structure
-2. Write findings
-3. Save to `.claude/specs/{N}_{SLUG}/reports/`
+```json
+{
+  "session_id": "sess_{timestamp}_{random}",
+  "delegation_depth": 1,
+  "delegation_path": ["orchestrator", "{command}", "skill-{name}"],
+  "timeout": 3600,
+  "task_context": {
+    "task_number": N,
+    "task_name": "{project_name}",
+    "description": "{description}",
+    "language": "{language}"
+  },
+  "focus_prompt": "{optional focus}"
+}
+```
 ```
 
-### Step 7: Define Return Format
+### Step 6: Document Agent Invocation
 
-All skills must return structured JSON:
+Describe what the agent will do:
 
+```markdown
+### 3. Invoke Subagent
+
+Invoke `{agent-name}` via Task tool with:
+- Task context (number, name, description, language)
+- Delegation context (session_id, depth, path)
+- Focus prompt (if provided)
+
+The subagent will:
+- Load required context files
+- Execute domain-specific research/implementation
+- Create artifacts in proper locations
+- Return standardized JSON result
+```
+
+### Step 7: Define Return Validation
+
+Specify validation requirements:
+
+```markdown
+### 4. Return Validation
+
+Validate return matches `subagent-return.md` schema:
+- Status is one of: completed, partial, failed, blocked
+- Summary is non-empty and <100 tokens
+- Artifacts array present (may be empty for failures)
+- Metadata contains session_id, agent_type, delegation info
+```
+
+### Step 8: Document Return Propagation
+
+```markdown
+### 5. Return Propagation
+
+Return validated result to caller without modification.
+```
+
+### Step 9: Add Error Handling
+
+```markdown
+---
+
+## Error Handling
+
+### Input Validation Errors
+Return immediately with failed status if task not found or status invalid.
+
+### Subagent Errors
+Pass through the subagent's error return verbatim.
+
+### Timeout
+Return partial status if subagent times out (default 3600s).
+```
+
+---
+
+## Complete Example
+
+Here is a complete skill for Python research:
+
+```yaml
+---
+name: skill-python-research
+description: Research Python packages and APIs for implementation tasks. Invoke for Python-language research.
+allowed-tools: Task
+context: fork
+agent: python-research-agent
+# Original context (now loaded by subagent):
+#   - .claude/context/project/python/tools.md
+# Original tools (now used by subagent):
+#   - Read, Write, Glob, Grep, WebSearch, WebFetch
+---
+
+# Python Research Skill
+
+Thin wrapper that delegates Python research to `python-research-agent` subagent.
+
+## Trigger Conditions
+
+This skill activates when:
+- Task language is "python"
+- Research involves Python packages, APIs, or frameworks
+- Python-specific tooling documentation is needed
+
+---
+
+## Execution
+
+### 1. Input Validation
+
+Validate required inputs:
+- `task_number` - Must be provided and exist in state.json
+- `focus_prompt` - Optional focus for research direction
+
+```bash
+# Lookup task
+task_data=$(jq -r --arg num "$task_number" \
+  '.active_projects[] | select(.project_number == ($num | tonumber))' \
+  specs/state.json)
+
+# Validate exists
+if [ -z "$task_data" ]; then
+  return error "Task $task_number not found"
+fi
+```
+
+### 2. Context Preparation
+
+Prepare delegation context:
+
+```json
+{
+  "session_id": "sess_{timestamp}_{random}",
+  "delegation_depth": 1,
+  "delegation_path": ["orchestrator", "research", "skill-python-research"],
+  "timeout": 3600,
+  "task_context": {
+    "task_number": 450,
+    "task_name": "add_async_support",
+    "description": "Add async/await support to API client",
+    "language": "python"
+  },
+  "focus_prompt": "asyncio best practices"
+}
+```
+
+### 3. Invoke Subagent
+
+Invoke `python-research-agent` via Task tool with:
+- Task context (number, name, description, language)
+- Delegation context (session_id, depth, path)
+- Focus prompt (if provided)
+
+The subagent will:
+- Search for Python-specific documentation
+- Analyze package dependencies
+- Review asyncio patterns and best practices
+- Create research report in `specs/{N}_{SLUG}/reports/`
+- Return standardized JSON result
+
+### 4. Return Validation
+
+Validate return matches `subagent-return.md` schema:
+- Status is one of: completed, partial, failed, blocked
+- Summary is non-empty and <100 tokens
+- Artifacts array present with research report path
+- Metadata contains session_id, agent_type, delegation info
+
+### 5. Return Propagation
+
+Return validated result to caller without modification.
+
+---
+
+## Return Format
+
+See `.claude/context/core/formats/subagent-return.md` for full specification.
+
+Expected successful return:
 ```json
 {
   "status": "completed",
-  "summary": "Brief description of work done",
+  "summary": "Research completed with 6 findings on asyncio patterns",
   "artifacts": [
     {
-      "type": "research_report",
-      "path": ".claude/specs/350_task/reports/research-001.md",
-      "summary": "Research findings on Z3 patterns"
+      "type": "research",
+      "path": "specs/450_add_async_support/reports/research-001.md",
+      "summary": "Python asyncio research report"
     }
   ],
   "metadata": {
-    "session_id": "sess_20260109_abc123",
-    "duration_seconds": 120,
-    "agent_type": "skill-python-research"
+    "session_id": "sess_1736700000_abc123",
+    "agent_type": "python-research-agent",
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "python-research-agent"]
   },
-  "errors": [],
-  "next_steps": "Create implementation plan with /plan 350"
-}
-```
-
-### Step 8: Update Orchestrator Routing
-
-If the skill should be auto-routed, update the orchestrator:
-
-```markdown
-## Language-Based Routing
-
-| Language | Research Skill | Implementation Skill |
-|----------|---------------|---------------------|
-| python | skill-python-research | skill-theory-implementation |
-| general | skill-researcher | skill-implementer |
-| meta | skill-researcher | skill-implementer |
-```
-
-### Step 9: Test the Skill
-
-Test through the command that invokes it:
-
-```bash
-# Create test task
-/task "Test new skill"
-
-# Invoke command that routes to skill
-/research 350
-
-# Verify artifacts
-cat .claude/specs/350_test_new_skill/reports/research-001.md
-
-# Verify status updated
-grep "350" .claude/specs/TODO.md
-```
-
----
-
-## Skill Patterns
-
-### Research Skill
-
-```yaml
----
-name: skill-{domain}-research
-description: Research {domain} patterns. Invoke for {language} research tasks.
-allowed-tools: WebSearch, WebFetch, Read, Grep, Glob
-context:
-  - core/formats/report-format.md
-  - core/standards/documentation.md
-  - core/workflows/status-transitions.md
----
-```
-
-**Workflow**:
-1. Load task context
-2. Search for information
-3. Explore codebase
-4. Create research report
-
-**Output**: `reports/research-{NNN}.md`
-
-### Implementation Skill
-
-```yaml
----
-name: skill-{domain}-implementation
-description: Implement {domain} code. Invoke for {language} implementation.
-allowed-tools: Read, Write, Edit, Bash(pytest), Bash(python)
-context:
-  - core/standards/code-patterns.md
-  - core/formats/summary-format.md
-  - core/standards/git-integration.md
----
-```
-
-**Workflow**:
-1. Load implementation plan
-2. Detect resume point
-3. Execute phases with TDD
-4. Create implementation summary
-
-**Output**: `summaries/implementation-summary-{DATE}.md`
-
-### Planning Skill
-
-```yaml
----
-name: skill-planner
-description: Create implementation plans. Invoke for /plan command.
-allowed-tools: Read, Write
-context:
-  - core/formats/plan-format.md
-  - core/standards/task-management.md
-  - core/workflows/status-transitions.md
----
-```
-
-**Workflow**:
-1. Load research (if available)
-2. Analyze task requirements
-3. Create phased plan
-4. Write plan file
-
-**Output**: `plans/implementation-{NNN}.md`
-
-### Utility Skill
-
-```yaml
----
-name: skill-{utility}
-description: {Utility function}. Invoke when {condition}.
-allowed-tools: Read, Write
-context:
-  - core/orchestration/state-management.md
----
-```
-
-**Examples**:
-- `skill-status-sync` - Update TODO.md and state.json
-- `skill-git-workflow` - Create git commits
-
----
-
-## ModelChecker-Specific Skills
-
-### skill-python-research
-
-For Python/Z3 research:
-
-```yaml
-allowed-tools: WebSearch, WebFetch, Read, Grep, Glob
-```
-
-**Focus areas**:
-- Z3 API patterns
-- Solver strategies
-- Existing theory patterns
-- Testing approaches
-
-### skill-theory-implementation
-
-For semantic theory implementation:
-
-```yaml
-allowed-tools: Read, Write, Edit, Bash(pytest), Bash(python)
-```
-
-**TDD workflow**:
-```bash
-# 1. Write failing test
-PYTHONPATH=Code/src pytest Code/tests/test_new.py -v
-
-# 2. Implement minimal code
-# 3. Verify tests pass
-# 4. Refactor
-```
-
-**Theory structure**:
-```
-theory_lib/{theory}/
-├── semantic.py      # Core semantic framework
-├── operators.py     # Operator registry
-├── examples.py      # Test cases
-└── tests/           # Unit tests
-```
-
----
-
-## Return Format Reference
-
-### Status Values
-
-| Status | When to Use |
-|--------|-------------|
-| `completed` | All work finished successfully |
-| `partial` | Some work done, can resume |
-| `failed` | Could not complete, error occurred |
-| `blocked` | Cannot proceed, external dependency |
-
-### Artifact Types
-
-| Type | Description |
-|------|-------------|
-| `research_report` | Research findings |
-| `implementation_plan` | Phased implementation plan |
-| `implementation_summary` | Completion summary |
-| `analysis_report` | Code analysis |
-| `review_report` | Code review |
-
-### Error Format
-
-```json
-{
-  "errors": [
-    {
-      "type": "test_failure",
-      "message": "3 tests failed in test_semantic.py",
-      "recoverable": true,
-      "recommendation": "Fix failing assertions"
-    }
-  ]
+  "next_steps": "Run /plan 450 to create implementation plan"
 }
 ```
 
 ---
 
-## Common Mistakes
+## Error Handling
 
-### Mistake 1: No Return Format
+### Input Validation Errors
+Return immediately with failed status if task not found.
 
-**Wrong**: Just outputs text, no structured return
+### Subagent Errors
+Pass through the subagent's error return verbatim.
 
-**Right**: Always return JSON matching the standard format
-
-### Mistake 2: Missing Error Handling
-
-**Wrong**: Crashes on error
-
-**Right**: Catch errors, return with `status: "failed"` and error details
-
-### Mistake 3: No Resume Support
-
-**Wrong**: Starts from beginning on retry
-
-**Right**: Detect partial progress and resume
-
-### Mistake 4: Wrong Artifact Location
-
-**Wrong**: Creates files in arbitrary locations
-
-**Right**: Always use `.claude/specs/{N}_{SLUG}/` structure
+### Timeout
+Return partial status if subagent times out (default 3600s).
+```
 
 ---
 
 ## Validation Checklist
 
-Before committing:
+Before finalizing a new skill, verify:
 
 ### Frontmatter
-- [ ] `name` follows `skill-{name}` convention
-- [ ] `description` includes trigger condition
-- [ ] `allowed-tools` lists all needed tools
-- [ ] `context` lists relevant files from `.claude/context/`
+- [ ] `name` matches directory name
+- [ ] `description` is clear and includes "Invoke for" pattern
+- [ ] `allowed-tools` is `Task` (for thin wrapper skills)
+- [ ] `context` is `fork` (for lazy loading)
+- [ ] `agent` specifies target agent
 
-### Documentation
-- [ ] Trigger conditions documented
-- [ ] Responsibilities listed
-- [ ] Workflow steps defined
-- [ ] Inputs documented
-- [ ] Outputs documented
-- [ ] Return format shown
-- [ ] Error handling documented
+### Body
+- [ ] Trigger conditions are specific and actionable
+- [ ] Input validation covers required fields
+- [ ] Context preparation includes session_id
+- [ ] Agent invocation describes what agent does
+- [ ] Return validation references subagent-return.md
+- [ ] Error handling covers common cases
 
-### Implementation
-- [ ] Returns structured JSON
-- [ ] Handles errors gracefully
-- [ ] Creates artifacts in correct locations
-- [ ] Supports resume for long operations
-
-### Testing
-- [ ] Works with valid inputs
-- [ ] Handles invalid inputs
-- [ ] Creates expected artifacts
-- [ ] Return format is correct
-- [ ] Integrates with commands
+### Integration
+- [ ] Corresponding agent exists in `.claude/agents/`
+- [ ] Skill name follows `skill-{purpose}` pattern
+- [ ] No duplicate skills for same use case
 
 ---
 
-## Example: Complete Skill
+## Common Mistakes
 
-```markdown
+### 1. Loading Context in Skill
+
+**Wrong**:
+```yaml
 ---
-name: skill-code-analyzer
-description: Analyze code quality and patterns. Invoke for /analyze command.
-allowed-tools: Read, Grep, Glob, Write
 context:
-  - core/standards/code-patterns.md
-  - core/standards/documentation.md
+  - .claude/context/core/patterns/complex-patterns.md
+  - .claude/context/project/domain/domain-knowledge.md
 ---
+```
 
-# Code Analyzer Skill
+**Right**:
+```yaml
+---
+context: fork
+agent: my-agent
+# Original context (now loaded by subagent):
+#   - .claude/context/core/patterns/complex-patterns.md
+---
+```
 
-Analyzes Python/Z3 code for quality issues and patterns.
+### 2. Executing Logic in Skill
 
-## Trigger Conditions
+**Wrong**:
+Skill contains 200 lines of research logic, file creation, etc.
 
-This skill activates when:
-- `/analyze` command invoked
-- Code quality review needed
+**Right**:
+Skill validates, prepares context, invokes agent (5 sections total).
 
-## Responsibilities
+### 3. Missing Return Validation
 
-1. **Pattern Analysis**: Find common patterns in code
-2. **Quality Check**: Identify issues and anti-patterns
-3. **Report Generation**: Create structured findings
+**Wrong**:
+Skill blindly returns whatever agent returns.
 
-## Workflow
+**Right**:
+Skill validates return matches `subagent-return.md` schema before propagating.
 
-### Step 1: Scope Discovery
+### 4. Not Using Task Tool
 
-1. Load task from state.json
-2. Determine analysis scope
-3. Build file list
+**Wrong**:
+```yaml
+allowed-tools: Read, Write, Bash, WebSearch
+```
 
-### Step 2: Analysis
-
-1. Search for patterns:
-   - Z3 constraint patterns
-   - Theory structure patterns
-   - Test patterns
-2. Check for issues:
-   - Missing type hints
-   - Complex functions
-   - Missing tests
-
-### Step 3: Report Generation
-
-1. Create report at `.claude/specs/{N}_{SLUG}/reports/analysis-001.md`
-2. Structure by category
-3. Include file:line references
-
-## Inputs
-
-| Input | Type | Required | Description |
-|-------|------|----------|-------------|
-| `task_number` | integer | Yes | Task context |
-| `scope` | string | No | Limit to path |
-
-## Outputs
-
-### Artifacts
-
-| Type | Location |
-|------|----------|
-| Analysis Report | `reports/analysis-{NNN}.md` |
-
-### Return Format
-
-\`\`\`json
-{
-  "status": "completed",
-  "summary": "Analyzed 45 files, found 12 issues",
-  "artifacts": [
-    {
-      "type": "analysis_report",
-      "path": ".claude/specs/350_task/reports/analysis-001.md",
-      "summary": "Code quality analysis"
-    }
-  ],
-  "metadata": {
-    "session_id": "sess_20260109_abc123",
-    "duration_seconds": 45,
-    "agent_type": "skill-code-analyzer"
-  },
-  "errors": [],
-  "next_steps": "Review findings and create fix tasks"
-}
-\`\`\`
-
-## Error Handling
-
-| Error | Response |
-|-------|----------|
-| No files found | Return partial with empty findings |
-| Permission denied | Skip file, note in report |
-
-## Integration
-
-### Called By
-- `/analyze` command
-
-### Calls
-- None (leaf skill)
+**Right**:
+```yaml
+allowed-tools: Task
 ```
 
 ---
 
 ## Related Documentation
 
-- [Skill Template](../templates/skill-template.md)
-- [Creating Commands Guide](creating-commands.md)
-- [Skills Reference](../skills/README.md)
-- [Commands Reference](../commands/README.md)
-- [ARCHITECTURE.md](../../ARCHITECTURE.md)
+- [Component Selection](component-selection.md) - When to create a skill
+- [Creating Agents](creating-agents.md) - Creating the agent that skill delegates to
+- [Creating Commands](creating-commands.md) - Creating commands that invoke skills
+- `.claude/context/core/templates/thin-wrapper-skill.md` - Skill template
+- `.claude/context/core/formats/subagent-return.md` - Return format schema
 
 ---
 
-[Back to Docs](../README.md) | [Skill Template](../templates/skill-template.md)
+**Document Version**: 1.0
+**Created**: 2026-01-12
+**Maintained By**: Neovim Configuration Development Team

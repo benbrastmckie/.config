@@ -91,7 +91,7 @@ Warning: Operation succeeded but git commit failed
 Changes were successfully applied but could not be committed to git.
 
 Manual commit required:
-  git add ProofChecker/Lattices.lean
+  git add ProofChecker/Lattices.neovim
   git commit -m "feat: Add lattice definitions"
 
 Error: fatal: not a git repository
@@ -120,7 +120,7 @@ Git reset failed during error recovery. Your working directory may be in an inco
 Manual recovery required:
 1. Check git status: git status
 2. Reset to safety commit: git reset --hard abc123
-3. Clean untracked files: git clean -fd
+3. Cneovim untracked files: git cneovim -fd
 4. Verify state: git status
 
 Safety commit SHA: abc123
@@ -155,7 +155,7 @@ If issues persist, contact support with this error log.
 
 **`<handling>`**: Internal error handling logic
 - Immediate actions to take
-- State cleanup required
+- State cneovimup required
 - Rollback procedures
 - Delegation to error handlers
 
@@ -267,13 +267,13 @@ Example: /research 197
 ```
 Error: Failed to read file
 
-File: .claude/specs/TODO.md
+File: specs/TODO.md
 Reason: No such file or directory
 
 Recovery:
 1. Verify the file path is correct
-2. Check if the file exists: ls -la .claude/specs/
-3. Create the file if needed: touch .claude/specs/TODO.md
+2. Check if the file exists: ls -la specs/
+3. Create the file if needed: touch specs/TODO.md
 ```
 
 ### 3. Delegation Errors
@@ -319,7 +319,7 @@ Recovery:
 ```
 Error: Subagent delegation failed
 
-Subagent: @subagents/lean/proof-planner
+Subagent: @subagents/neovim/proof-planner
 Task: Generate proof plan for lattice theorem
 Reason: Subagent timeout after 120 seconds
 
@@ -378,7 +378,7 @@ This safety commit protects your work before making changes.
 
 Recommendation:
 1. Ensure git is configured: git config --list
-2. Check working directory is clean: git status
+2. Check working directory is cneovim: git status
 3. Fix any git issues and retry
 ```
 
@@ -406,7 +406,7 @@ Safety commit: {safety_commit_sha}
 Manual recovery steps:
 1. Check git status: git status
 2. Reset to safety commit: git reset --hard {safety_commit_sha}
-3. Clean untracked files: git clean -fd
+3. Cneovim untracked files: git cneovim -fd
 4. Verify state: git status
 
 Or restore from git reflog:
@@ -503,25 +503,25 @@ Error: {git_error}
 
 **Example**:
 ```
-Error: Lean MCP server not available
+Error: Neovim MCP server not available
 
-The Lean proof assistant requires the MCP server to be configured.
+The Neovim proof assistant requires the MCP server to be configured.
 
 Setup instructions:
 1. Verify .mcp.json exists: cat .mcp.json
 2. Check server configuration:
    {
      "mcpServers": {
-       "lean": {
-         "command": "lean",
+       "neovim": {
+         "command": "neovim",
          "args": ["--server"]
        }
      }
    }
-3. Test server: lean --version
+3. Test server: neovim --version
 
 Verification:
-  lean --server --help
+  neovim --server --help
 ```
 
 ### 7. State Errors
@@ -709,9 +709,9 @@ def create_user(user_data: dict) -> dict:
         }
 ```
 
-### Lean 4
+### Neovim 4
 
-```lean
+```neovim
 -- [PASS] Error handling with Option
 def safeDivide (n m : Nat) : Option Nat :=
   if m = 0 then
@@ -853,7 +853,7 @@ def parseConfig (json : Json) : Except ParseError Config :=
     4. Notify user of degraded functionality
   </implementation>
   <example>
-    Primary: Use MCP Lean server for proof checking
+    Primary: Use MCP Neovim server for proof checking
     Fallback: Use basic syntax validation
     Notification: "Warning: Advanced proof checking unavailable, using basic validation"
   </example>
@@ -976,7 +976,7 @@ def parseConfig (json : Json) : Except ParseError Config :=
 - [ ] Errors logged with context
 - [ ] User-facing errors don't expose internals
 - [ ] Async operations handle errors
-- [ ] Resource cleanup in error paths (finally blocks)
+- [ ] Resource cneovimup in error paths (finally blocks)
 - [ ] Error types documented
 
 ---
@@ -1046,12 +1046,11 @@ validation:
 
 **Examples**:
 - `.claude/command/research.md` - Command error handling
-- `.claude/agent/subagents/lean/proof-planner.md` - Subagent error handling
+- `.claude/agent/subagents/neovim/proof-planner.md` - Subagent error handling
 
 ---
 
 ## Version
 
-**Version**: 1.0.0  
 **Last Updated**: 2025-12-29  
 **Status**: Active

@@ -1,276 +1,309 @@
 # Lua Style Guide for Neovim
 
-## Indentation and Spacing
+Coding conventions for Neovim Lua configurations.
 
-### Indentation
-- **2 spaces** per indentation level
-- **No tabs** - use `expandtab`
-- Consistent indentation throughout file
+## Indentation and Formatting
 
-```lua
--- Correct
-local function example()
-  if condition then
-    do_something()
-  end
-end
-
--- Incorrect (4 spaces)
-local function example()
-    if condition then
-        do_something()
-    end
-end
-```
-
-### Line Length
-- **~100 characters** soft limit
-- Break long lines at logical points
-- Prefer readability over strict limits
+- Use 2 spaces for indentation (not tabs)
+- Maximum line length: 100 characters
+- Use trailing commas in multi-line tables
 
 ```lua
--- Break long function calls
-local result = some_function(
-  first_argument,
-  second_argument,
-  third_argument
-)
+-- Good
+local config = {
+  option1 = "value",
+  option2 = true,  -- trailing comma
+}
 
--- Break long conditionals
-if condition_one
-  and condition_two
-  and condition_three
-then
-  do_something()
-end
+-- Bad
+local config = {
+  option1 = "value",
+  option2 = true
+}
 ```
-
-### Blank Lines
-- One blank line between functions
-- One blank line between logical sections
-- No trailing blank lines at end of file
 
 ## Naming Conventions
 
 ### Variables and Functions
-- **snake_case** for variables and functions
-- Descriptive names over abbreviations
-- Prefix private variables with `_` (optional)
+
+- Use `snake_case` for variables and functions
+- Use `PascalCase` for classes/modules that act like constructors
+- Use `SCREAMING_SNAKE_CASE` for constants
 
 ```lua
-local current_buffer = vim.api.nvim_get_current_buf()
-local is_valid = validate_input(data)
+-- Variables
+local my_variable = "value"
+local buffer_count = 10
 
--- Private (internal use)
-local _internal_state = {}
-```
+-- Functions
+local function get_current_buffer()
+  return vim.api.nvim_get_current_buf()
+end
 
-### Constants
-- **UPPER_SNAKE_CASE** for constants
-- Define at module level
-
-```lua
-local MAX_BUFFER_SIZE = 1000
+-- Constants
+local MAX_RETRIES = 3
 local DEFAULT_TIMEOUT = 5000
+
+-- Module (PascalCase if constructable)
+local MyModule = {}
 ```
 
-### Modules
-- **lowercase** module names
-- **hyphen-separated** for multi-word files
-- **snake_case** for internal references
+### Private Functions
+
+Prefix private module functions with underscore:
 
 ```lua
--- File: lua/neotex/plugins/text/markdown-preview.lua
--- Require as: require("neotex.plugins.text.markdown-preview")
+local M = {}
+
+local function _helper()
+  -- Private helper
+end
+
+function M.public_function()
+  _helper()
+end
+
+return M
 ```
 
 ## Module Structure
 
-### Standard Layout
 ```lua
--- 1. Imports at top
-local utils = require("neotex.core.utils")
-local api = vim.api
+-- lua/mymodule.lua
 
--- 2. Constants
-local DEFAULT_OPTIONS = {
-  enabled = true,
-}
-
--- 3. Module table
 local M = {}
 
--- 4. Private functions
-local function private_helper()
-  -- implementation
-end
+-- Constants at top
+local DEFAULT_OPTION = "value"
 
--- 5. Public functions
-function M.public_method()
-  return private_helper()
-end
-
--- 6. Setup function (if applicable)
-function M.setup(opts)
-  opts = vim.tbl_deep_extend("force", DEFAULT_OPTIONS, opts or {})
-  -- initialization
-end
-
--- 7. Return module
-return M
-```
-
-### Plugin Spec Layout
-```lua
-return {
-  "author/plugin-name",
-  dependencies = { "dep/plugin" },
-  event = "VeryLazy",
-  opts = {},
-  config = function(_, opts)
-    require("plugin").setup(opts)
-  end,
-}
-```
-
-## Function Style
-
-### Local Functions
-- Use `local function` for private functions
-- Define before use
-
-```lua
+-- Private functions next
 local function helper()
   return "result"
 end
 
-local function main()
+-- Public functions
+function M.setup(opts)
+  opts = opts or {}
+  -- Setup logic
+end
+
+function M.do_something()
   return helper()
 end
+
+-- Return module at end
+return M
+```
+
+## String Handling
+
+- Prefer double quotes for strings
+- Use `..` for concatenation
+- Use `string.format` for complex formatting
+
+```lua
+-- Simple strings
+local msg = "Hello world"
+
+-- Concatenation
+local greeting = "Hello, " .. name .. "!"
+
+-- Complex formatting
+local info = string.format("Buffer %d: %s", bufnr, filename)
+
+-- Multi-line strings
+local template = [[
+Line 1
+Line 2
+Line 3
+]]
+```
+
+## Tables
+
+### Short Tables
+
+```lua
+local short = { "a", "b", "c" }
+local map = { key = "value", another = "thing" }
+```
+
+### Long Tables
+
+```lua
+local config = {
+  option1 = "value",
+  option2 = true,
+  nested = {
+    key1 = "value1",
+    key2 = "value2",
+  },
+}
+```
+
+### Array Style
+
+```lua
+local list = {
+  "item1",
+  "item2",
+  "item3",
+}
+```
+
+## Functions
+
+### Anonymous Functions
+
+```lua
+-- Short anonymous functions on one line
+vim.keymap.set("n", "<leader>w", function() vim.cmd("write") end)
+
+-- Longer ones on multiple lines
+vim.keymap.set("n", "<leader>f", function()
+  vim.lsp.buf.format({ async = true })
+  vim.notify("Formatted")
+end)
 ```
 
 ### Function Parameters
-- Use named parameter tables for functions with > 3 parameters
-- Document expected table keys
 
 ```lua
--- Too many positional arguments
-local function bad(a, b, c, d, e)
+-- Few parameters
+function do_thing(a, b, c)
+  return a + b + c
 end
 
--- Better: named parameters
-local function good(opts)
-  opts = opts or {}
-  local name = opts.name or "default"
-  local timeout = opts.timeout or 1000
-end
-```
-
-### Return Values
-- Return early for guard clauses
-- Use multiple return values sparingly
-
-```lua
-local function validate(input)
-  if not input then
-    return nil, "input required"
-  end
-
-  if type(input) ~= "string" then
-    return nil, "input must be string"
-  end
-
-  return input
-end
-```
-
-## Comments
-
-### When to Comment
-- Explain **why**, not **what**
-- Document non-obvious behavior
-- Reference issues/PRs for workarounds
-
-```lua
--- Correct: explains why
--- Using pcall because plugin may not be installed
-local ok, telescope = pcall(require, "telescope")
-
--- Incorrect: restates the code
--- Get the current buffer number
-local bufnr = vim.api.nvim_get_current_buf()
-```
-
-### Documentation Comments
-```lua
---- Calculate the sum of two numbers.
---- @param a number The first number
---- @param b number The second number
---- @return number The sum of a and b
-local function add(a, b)
-  return a + b
+-- Many parameters - use options table
+function setup(opts)
+  opts = vim.tbl_deep_extend("force", {
+    enabled = true,
+    timeout = 1000,
+  }, opts or {})
 end
 ```
 
 ## Error Handling
 
-### Use pcall for External Code
 ```lua
-local ok, result = pcall(require, "external-module")
+-- Use pcall for potentially failing operations
+local ok, result = pcall(require, "optional-module")
 if not ok then
   vim.notify("Module not found", vim.log.levels.WARN)
   return
 end
-```
 
-### Assert for Internal Errors
-```lua
-local function process(data)
-  assert(data, "data is required")
-  assert(type(data) == "table", "data must be a table")
-  -- process...
+-- Validate function arguments
+function setup(opts)
+  vim.validate({
+    opts = { opts, "table", true },
+    ["opts.enabled"] = { opts and opts.enabled, "boolean", true },
+  })
 end
 ```
 
-### Graceful Degradation
+## Comments
+
 ```lua
-local function feature()
-  local ok, module = pcall(require, "optional-module")
-  if ok then
-    return module.enhanced_feature()
-  else
-    return fallback_implementation()
+-- Single line comment
+
+--[[
+Multi-line comment
+for longer explanations
+]]
+
+--- Documentation comment (LuaDoc style)
+--- @param name string The name to greet
+--- @return string The greeting message
+function greet(name)
+  return "Hello, " .. name
+end
+```
+
+## Control Flow
+
+```lua
+-- if/elseif/else
+if condition then
+  -- action
+elseif other_condition then
+  -- other action
+else
+  -- default action
+end
+
+-- Early returns preferred
+function process(data)
+  if not data then
+    return nil
+  end
+
+  if data.invalid then
+    return nil, "Invalid data"
+  end
+
+  return data.value
+end
+```
+
+## Loops
+
+```lua
+-- ipairs for arrays
+for i, item in ipairs(list) do
+  print(i, item)
+end
+
+-- pairs for tables
+for key, value in pairs(tbl) do
+  print(key, value)
+end
+
+-- Numeric for
+for i = 1, 10 do
+  print(i)
+end
+
+-- while (avoid when possible)
+while condition do
+  -- action
+  if should_break then
+    break
   end
 end
 ```
 
-## Tables
+## Imports
 
-### Table Formatting
 ```lua
--- Short tables on one line
-local point = { x = 10, y = 20 }
+-- At top of file
+local api = vim.api
+local fn = vim.fn
+local uv = vim.loop
 
--- Longer tables with trailing comma
-local config = {
-  name = "example",
-  enabled = true,
-  options = {
-    timeout = 1000,
-    retries = 3,
-  },
-}
+-- Local requires
+local utils = require("myconfig.utils")
+local lspconfig = require("lspconfig")
+
+-- Inline require for rarely used modules
+local function do_thing()
+  local telescope = require("telescope.builtin")
+  telescope.find_files()
+end
 ```
 
-### Array Formatting
-```lua
--- Short arrays
-local list = { "a", "b", "c" }
+## File Organization
 
--- Longer arrays
-local events = {
-  "BufReadPre",
-  "BufNewFile",
-  "FileType",
-}
+```
+lua/
+├── config/           # Core configuration
+│   ├── options.lua   # vim.opt settings
+│   ├── keymaps.lua   # Keybindings
+│   └── autocmds.lua  # Autocommands
+├── plugins/          # Plugin specs for lazy.nvim
+│   ├── init.lua      # Main plugin list
+│   ├── ui.lua        # UI plugins
+│   └── editor.lua    # Editor plugins
+└── utils/            # Utility functions
+    └── init.lua
 ```

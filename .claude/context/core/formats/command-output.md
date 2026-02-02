@@ -30,7 +30,7 @@ Task: 258
 Research completed for modal logic proof automation. Created comprehensive analysis of LeanSearch API integration patterns and proof search strategies.
 
 Artifacts created:
-- report: .claude/specs/258_modal_logic_automation/reports/research-001.md
+- report: specs/258_modal_logic_automation/reports/research-001.md
 ```
 
 ### Direct Commands
@@ -50,7 +50,7 @@ Command: /review
 Review completed. Analyzed 3 recent implementations for quality and consistency. All implementations meet standards.
 
 Artifacts created:
-- report: .claude/specs/reviews/review-20260103.md
+- report: specs/reviews/review-20260103.md
 ```
 
 ## Summary Requirements
@@ -98,7 +98,7 @@ Task: 258
 Research completed for modal logic proof automation. Created comprehensive analysis.
 
 Artifacts created:
-- report: .claude/specs/258_modal_logic_automation/reports/research-001.md
+- report: specs/258_modal_logic_automation/reports/research-001.md
 ```
 
 **Incorrect (redundant conclusion):**
@@ -108,7 +108,7 @@ Task: 258
 Research completed for modal logic proof automation. Created comprehensive analysis.
 
 Artifacts created:
-- report: .claude/specs/258_modal_logic_automation/reports/research-001.md
+- report: specs/258_modal_logic_automation/reports/research-001.md
 
 Task 258 research completed successfully.  ← REDUNDANT, DO NOT ADD
 ```
@@ -125,8 +125,8 @@ Artifacts created:
 ### Example
 ```
 Artifacts created:
-- report: .claude/specs/258_modal_logic_automation/reports/research-001.md
-- summary: .claude/specs/258_modal_logic_automation/summaries/research-summary-20260103.md
+- report: specs/258_modal_logic_automation/reports/research-001.md
+- summary: specs/258_modal_logic_automation/summaries/research-summary-20260103.md
 ```
 
 ## Error Display
@@ -149,7 +149,7 @@ Status: Failed
 Research failed due to missing task entry in TODO.md
 
 Errors:
-- Task 999 not found in .claude/specs/TODO.md
+- Task 999 not found in specs/TODO.md
 
 Recommendation: Verify task number and retry
 ```
@@ -163,8 +163,8 @@ Task: 258
 Research completed for modal logic proof automation. Created comprehensive analysis of LeanSearch API integration patterns and proof search strategies.
 
 Artifacts created:
-- report: .claude/specs/258_modal_logic_automation/reports/research-001.md
-- summary: .claude/specs/258_modal_logic_automation/summaries/research-summary-20260103.md
+- report: specs/258_modal_logic_automation/reports/research-001.md
+- summary: specs/258_modal_logic_automation/summaries/research-summary-20260103.md
 ```
 
 ### Task-Based Command (Failure)
@@ -175,7 +175,7 @@ Status: Failed
 Task not found in TODO.md
 
 Errors:
-- Task 999 not found in .claude/specs/TODO.md
+- Task 999 not found in specs/TODO.md
 
 Recommendation: Verify task number exists and retry
 ```
@@ -187,7 +187,7 @@ Command: /review
 Review completed. Analyzed 3 recent implementations for quality and consistency. All implementations meet standards.
 
 Artifacts created:
-- report: .claude/specs/reviews/review-20260103.md
+- report: specs/reviews/review-20260103.md
 ```
 
 ### Direct Command (No Artifacts)

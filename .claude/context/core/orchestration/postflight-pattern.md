@@ -159,7 +159,7 @@ echo "Postflight: Verifying status and artifact links"
 # Read state.json to check current status
 actual_status=$(jq -r --arg num "$task_number" \
   '.active_projects[] | select(.project_number == ($num | tonumber)) | .status' \
-  .claude/specs/state.json)
+  specs/state.json)
 
 # Compare with expected status
 if [ "$actual_status" != "$target_status" ]; then
@@ -174,7 +174,7 @@ fi
 
 # Verify artifact links in TODO.md
 for artifact_path in $(echo "$artifacts_json" | jq -r '.[].path'); do
-  if ! grep -q "$artifact_path" .claude/specs/TODO.md; then
+  if ! grep -q "$artifact_path" specs/TODO.md; then
     echo "WARNING: Artifact not linked in TODO.md: $artifact_path"
     echo "This is the same issue that caused Task 326 manual fixes"
     echo "Manual fix: Edit TODO.md to add artifact link"
@@ -203,7 +203,7 @@ artifact_paths=$(echo "$artifacts_json" | jq -r '.[].path' | tr '\n' ' ')
 task(
   subagent_type="git-workflow-manager",
   prompt="{
-    \"scope_files\": [$artifact_paths, \".claude/specs/TODO.md\", \".claude/specs/state.json\"],
+    \"scope_files\": [$artifact_paths, \"specs/TODO.md\", \"specs/state.json\"],
     \"message_template\": \"task $task_number: ${command} completed\",
     \"task_context\": {
       \"task_number\": $task_number,
@@ -330,7 +330,7 @@ Command files MUST execute this postflight in Stage 3.5 after Stage 3 (ValidateR
 
 ## References
 
-- `.claude/specs/workflow-command-refactor-plan.md` - Root cause analysis
+- `specs/workflow-command-refactor-plan.md` - Root cause analysis
 - `.claude/context/core/orchestration/state-management.md` - State management patterns
 - `.claude/agent/subagents/status-sync-manager.md` - Status sync manager specification
 - `.claude/agent/subagents/git-workflow-manager.md` - Git workflow manager specification

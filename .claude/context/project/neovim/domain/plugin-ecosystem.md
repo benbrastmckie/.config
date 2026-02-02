@@ -1,180 +1,165 @@
 # Neovim Plugin Ecosystem
 
-## Package Manager: lazy.nvim
+Overview of the Neovim plugin ecosystem and common plugins.
 
-lazy.nvim is the modern standard for Neovim plugin management, providing:
-- Lazy loading for fast startup
-- Automatic dependency resolution
-- Lock file for reproducible builds
-- UI for plugin management
+## Plugin Manager: lazy.nvim
+
+The recommended plugin manager for modern Neovim configurations.
+
+### Key Features
+- Automatic lazy-loading
+- Lockfile for reproducibility (lazy-lock.json)
+- Built-in profiler
+- UI for plugin management (`:Lazy`)
+- Automatic compilation
 
 ### Installation
+
 ```lua
--- Bootstrap in init.lua
+-- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
     "git", "clone", "--filter=blob:none",
     "https://github.com/folke/lazy.nvim.git",
-    "--branch=stable", lazypath,
+    "--branch=stable",
+    lazypath,
   })
 end
 vim.opt.rtp:prepend(lazypath)
 ```
 
-## Plugin Categories
+## Essential Plugin Categories
 
-### AI Integrations
-| Plugin | Purpose | Usage |
-|--------|---------|-------|
-| avante.nvim | AI pair programming | Chat, code generation |
-| copilot.vim | GitHub Copilot | Inline suggestions |
-| codecompanion.nvim | AI adapter framework | Multiple backends |
+### Completion
 
-### Editor Enhancements
-| Plugin | Purpose | Usage |
-|--------|---------|-------|
-| telescope.nvim | Fuzzy finder | Files, grep, buffers |
-| which-key.nvim | Keymap hints | Leader key menus |
-| nvim-treesitter | Syntax parsing | Highlighting, folding |
-| flash.nvim | Navigation | Jump to any location |
-| mini.surround | Text objects | Surround operations |
+| Plugin | Purpose |
+|--------|---------|
+| nvim-cmp | Completion engine |
+| cmp-nvim-lsp | LSP completion source |
+| cmp-buffer | Buffer word completion |
+| cmp-path | Path completion |
+| LuaSnip | Snippet engine |
+| cmp_luasnip | Snippet completion source |
 
-### LSP & Completion
-| Plugin | Purpose | Usage |
-|--------|---------|-------|
-| nvim-lspconfig | LSP configuration | Server setup |
-| mason.nvim | LSP installer | Server management |
-| blink.cmp | Completion | Fast completions |
-| nvim-cmp | Completion | Extensible completions |
-| luasnip | Snippets | Snippet engine |
+### LSP
 
-### UI Components
-| Plugin | Purpose | Usage |
-|--------|---------|-------|
-| neo-tree.nvim | File explorer | Tree sidebar |
-| lualine.nvim | Statusline | Status display |
-| bufferline.nvim | Bufferline | Tab-like buffers |
-| noice.nvim | UI overhaul | Messages, cmdline |
-| dressing.nvim | UI hooks | Input, select |
+| Plugin | Purpose |
+|--------|---------|
+| nvim-lspconfig | LSP configuration |
+| mason.nvim | LSP/DAP/linter installer |
+| mason-lspconfig.nvim | Bridge between mason and lspconfig |
+| none-ls.nvim | Inject diagnostics, formatting |
 
-### Git Integration
-| Plugin | Purpose | Usage |
-|--------|---------|-------|
-| gitsigns.nvim | Git decorations | Signs, hunks |
-| diffview.nvim | Diff viewer | Git diffs |
-| neogit | Git interface | Magit-like |
+### Treesitter
 
-### Text & Markdown
-| Plugin | Purpose | Usage |
-|--------|---------|-------|
-| vimtex | LaTeX | Compilation, preview |
-| render-markdown.nvim | Markdown | In-editor rendering |
-| markview.nvim | Markdown | Preview in buffer |
+| Plugin | Purpose |
+|--------|---------|
+| nvim-treesitter | Treesitter integration |
+| nvim-treesitter-textobjects | Custom text objects |
+| nvim-ts-autotag | Auto close/rename HTML tags |
+| nvim-ts-context-commentstring | Context-aware commenting |
 
-### Development Tools
-| Plugin | Purpose | Usage |
-|--------|---------|-------|
-| neotest | Testing | Test runner |
-| trouble.nvim | Diagnostics | Error list |
-| dap | Debugging | Debug adapter |
-| todo-comments.nvim | Todo tracking | Highlight todos |
+### UI/Navigation
 
-## Plugin Selection Criteria
+| Plugin | Purpose |
+|--------|---------|
+| telescope.nvim | Fuzzy finder |
+| nvim-tree.lua | File explorer |
+| lualine.nvim | Statusline |
+| which-key.nvim | Keybinding hints |
+| bufferline.nvim | Buffer tabs |
 
-### Quality Indicators
-1. **Active maintenance** - Recent commits, responsive issues
-2. **Documentation** - Clear README, help files
-3. **Test coverage** - Automated tests
-4. **Stars/Usage** - Community adoption
-5. **Dependencies** - Minimal, well-maintained
+### Editing
 
-### Performance Considerations
-1. **Startup time** - Lazy loading support
-2. **Memory usage** - Reasonable footprint
-3. **Event handling** - Efficient autocommands
-4. **Async operations** - Non-blocking where possible
+| Plugin | Purpose |
+|--------|---------|
+| nvim-autopairs | Auto close brackets |
+| Comment.nvim | Code commenting |
+| nvim-surround | Surround text objects |
+| indent-blankline.nvim | Indent guides |
 
-### Compatibility
-1. **Neovim version** - Supports current stable
-2. **Integration** - Works with other plugins
-3. **Configuration** - Lua-native setup
-4. **Breaking changes** - Reasonable update cycle
+### Git
 
-## Common Plugin Patterns
+| Plugin | Purpose |
+|--------|---------|
+| gitsigns.nvim | Git decorations |
+| fugitive.vim | Git commands |
+| diffview.nvim | Diff viewer |
 
-### Lazy Loading Events
+## Plugin Specification Basics
+
 ```lua
--- Load on specific event
-event = "VeryLazy"        -- After UI ready
-event = "BufReadPost"     -- After buffer read
-event = { "BufReadPre", "BufNewFile" }
+-- Basic spec
+{ "username/repo" }
 
--- Load on command
-cmd = "Telescope"
+-- With version pinning
+{ "username/repo", tag = "v1.0.0" }
 
--- Load on keymap
-keys = { "<leader>f", desc = "Find" }
+-- With configuration
+{
+  "username/repo",
+  opts = {
+    -- Plugin options
+  },
+}
 
--- Load on filetype
-ft = { "lua", "python" }
+-- With lazy loading
+{
+  "username/repo",
+  event = "BufReadPre",
+  config = function()
+    require("plugin").setup()
+  end,
+}
 ```
 
-### Conditional Loading
+## Common Lazy Loading Events
+
+| Event | When |
+|-------|------|
+| `VeryLazy` | After UI is ready |
+| `BufReadPre` | Before reading a buffer |
+| `BufReadPost` | After reading a buffer |
+| `InsertEnter` | Entering insert mode |
+| `CmdlineEnter` | Entering command-line mode |
+
+## Plugin Dependencies
+
 ```lua
--- Only on certain OS
-cond = vim.fn.has("mac") == 1
-
--- Only if executable exists
-cond = vim.fn.executable("rg") == 1
-
--- Disable in certain contexts
-enabled = not vim.g.vscode
+{
+  "username/plugin",
+  dependencies = {
+    "nvim-lua/plenary.nvim",
+    "nvim-tree/nvim-web-devicons",
+  },
+}
 ```
 
-### Priority
+## Colorschemes
+
+Popular colorscheme plugins:
+- tokyonight.nvim
+- catppuccin/nvim
+- rose-pine/neovim
+- folke/tokyonight.nvim
+- rebelot/kanagawa.nvim
+
 ```lua
--- Load before others (colorschemes)
-priority = 1000
-
--- Load after dependencies resolved
-dependencies = { "nvim-lua/plenary.nvim" }
+{
+  "folke/tokyonight.nvim",
+  lazy = false, -- Load during startup
+  priority = 1000, -- Load before other plugins
+  config = function()
+    vim.cmd.colorscheme("tokyonight")
+  end,
+}
 ```
 
-## Plugin Directory Structure
+## Plugin Debugging
 
-### Standard Layout
-```
-plugin-name/
-├── lua/
-│   └── plugin-name/
-│       ├── init.lua      -- Main entry point
-│       ├── config.lua    -- Configuration handling
-│       ├── commands.lua  -- User commands
-│       └── utils.lua     -- Utility functions
-├── plugin/
-│   └── plugin-name.lua   -- Auto-loaded on startup
-├── doc/
-│   └── plugin-name.txt   -- Help documentation
-├── tests/
-│   └── plugin_spec.lua   -- Test files
-└── README.md
-```
-
-### Minimal Plugin
-```lua
--- lua/my-plugin/init.lua
-local M = {}
-
-M.setup = function(opts)
-  opts = vim.tbl_extend("force", {
-    enabled = true,
-  }, opts or {})
-
-  if opts.enabled then
-    -- Initialize plugin
-  end
-end
-
-return M
+```vim
+:Lazy profile    " View load times
+:Lazy log        " View update log
+:Lazy health     " Check plugin health
 ```

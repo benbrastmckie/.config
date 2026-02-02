@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://proofchecker.org/schemas/subagent-frontmatter.json",
+  "$id": "https://example.org/schemas/subagent-frontmatter.json",
   "title": "Subagent Frontmatter Schema",
   "description": "JSON Schema for validating subagent YAML frontmatter configuration",
   "type": "object",
@@ -67,8 +67,7 @@
         "type": "string",
         "enum": [
           "read", "write", "edit", "bash", "grep", "glob", "list",
-          "webfetch", "task",
-          "lean-lsp-mcp_check", "lean-lsp-mcp_search", "lean-lsp-mcp_info"
+          "webfetch", "websearch", "task"
         ]
       },
       "minItems": 1,

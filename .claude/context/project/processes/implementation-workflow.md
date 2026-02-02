@@ -1,8 +1,7 @@
 # Implementation Workflow
 
-**Version**: 1.0.0  
 **Created**: 2025-12-29  
-**Purpose**: Detailed implementation workflow for ProofChecker tasks
+**Purpose**: Detailed implementation workflow for project tasks
 
 ---
 
@@ -58,7 +57,7 @@ This document describes the complete implementation workflow executed by the imp
 Language is extracted from task entry in TODO.md:
 
 ```bash
-grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed 's/\*\*Language\*\*: //'
+grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*Language\*\*: //'
 ```
 
 **Fallback**: If extraction fails, defaults to "general" with warning logged.
@@ -67,9 +66,10 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 
 | Language | Agent | Tools Available |
 |----------|-------|----------------|
-| `lean` | `lean-implementation-agent` | lean-lsp-mcp, lake build, lean --version |
+| `neovim` | `neovim-implementation-agent` | nvim --headless, File operations, git |
 | `markdown` | `implementer` | File operations, git |
-| `python` | `implementer` | File operations, git, python tools |
+| `latex` | `latex-implementation-agent` | pdflatex, File operations, git |
+| `typst` | `typst-implementation-agent` | typst compile, File operations, git |
 | `general` | `implementer` | File operations, git |
 
 **Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses language-specific tooling.
@@ -85,7 +85,7 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 **Process**:
 1. Read task from TODO.md using grep (selective loading):
    ```bash
-   grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_number}.md
+   grep -A 50 "^### ${task_number}\." specs/TODO.md > /tmp/task-${task_number}.md
    ```
 2. Extract task metadata:
    - Task number
@@ -172,13 +172,13 @@ grep -A 20 "^### ${task_number}\." .claude/specs/TODO.md | grep "Language" | sed
 **Process**:
 1. Create implementation files (code, docs, configs):
    - Paths vary by language and task
-   - Lean: `Logos/**/*.lean`, `LogosTest/**/*.lean`
-   - Markdown: `Documentation/**/*.md`, `.claude/**/*.md`
-   - Python: `**/*.py`
+   - Neovim: `nvim/lua/**/*.lua`, `after/ftplugin/**/*.lua`
+   - Markdown: `docs/**/*.md`, `.claude/**/*.md`
+   - LaTeX: `**/*.tex`
    - Config: `**/*.json`, `**/*.yaml`, etc.
 2. If multi-file output (>1 file modified/created):
    - Create implementation summary artifact
-   - Path: `.claude/specs/{number}_{slug}/summaries/implementation-summary-{YYYYMMDD}.md`
+   - Path: `specs/{number}_{slug}/summaries/implementation-summary-{YYYYMMDD}.md`
    - Content:
      - What was implemented
      - Files modified/created
@@ -418,7 +418,7 @@ Implementer loads context on-demand per `.claude/context/index.md`:
 - Plan file if exists (for phase tracking and resume)
 
 **Language-specific context**:
-- If lean: `project/lean4/tools/lean-lsp-mcp.md`, `project/lean4/build-system.md`
+- If neovim: `project/neovim/tools/lazy-nvim-guide.md`, `project/neovim/patterns/plugin-spec.md`
 - If markdown: (no additional context)
 
 **Optimization**: Task extraction reduces context from 109KB (full TODO.md) to ~2KB (task entry only), 98% reduction.
@@ -430,7 +430,7 @@ Implementer loads context on-demand per `.claude/context/index.md`:
 ### Task Not Found
 
 ```
-Error: Task {task_number} not found in .claude/specs/TODO.md
+Error: Task {task_number} not found in specs/TODO.md
 
 Recommendation: Verify task number exists in TODO.md
 ```
@@ -506,7 +506,7 @@ Recommendation: Add **Language**: {language} to task entry in TODO.md
 ### Atomic Updates
 
 Status updates delegated to `status-sync-manager` for atomic synchronization:
-- `.claude/specs/TODO.md` (status, timestamps, artifact links)
+- `specs/TODO.md` (status, timestamps, artifact links)
 - `state.json` (status, timestamps, artifact_paths)
 - Plan file (phase status markers if plan exists)
 - Project state.json (lazy created if needed)
@@ -516,7 +516,7 @@ Two-phase commit ensures consistency across all files.
 ### Lazy Directory Creation
 
 Directories created only when writing artifacts:
-- `.claude/specs/{task_number}_{slug}/` created when writing first artifact
+- `specs/{task_number}_{slug}/` created when writing first artifact
 - `summaries/` subdirectory created when writing implementation-summary.md
 
 No directories created during routing or validation stages.
@@ -544,7 +544,7 @@ Git commits delegated to `git-workflow-manager` for standardized commits:
 Extract only specific task entry from TODO.md to reduce context load:
 
 ```bash
-grep -A 50 "^### ${task_number}\." .claude/specs/TODO.md > /tmp/task-${task_number}.md
+grep -A 50 "^### ${task_number}\." specs/TODO.md > /tmp/task-${task_number}.md
 ```
 
 **Impact**: Reduces context from 109KB (full TODO.md) to ~2KB (task entry only), 98% reduction.

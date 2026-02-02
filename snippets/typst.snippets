@@ -1,0 +1,382 @@
+# -- TYPST SNIPPETS --
+# SnipMate format for LuaSnip compatibility
+
+# == HEADINGS ==
+
+snippet h1 "Heading 1" b
+	= ${1:Title}
+	${0}
+#
+
+snippet h2 "Heading 2" b
+	== ${1:Subtitle}
+	${0}
+#
+
+snippet h3 "Heading 3" b
+	=== ${1:Section}
+	${0}
+#
+
+snippet h4 "Heading 4" b
+	==== ${1:Subsection}
+	${0}
+#
+
+# == FORMATTING ==
+
+snippet bf "Bold" wi
+	*${1:text}*${0}
+#
+
+snippet it "Italic" wi
+	_${1:text}_${0}
+#
+
+snippet code "Inline code" wi
+	\`${1:code}\`${0}
+#
+
+snippet strike "Strikethrough" wi
+	#strike[${1:text}]${0}
+#
+
+snippet under "Underline" wi
+	#underline[${1:text}]${0}
+#
+
+snippet sc "Small caps" wi
+	#smallcaps[${1:text}]${0}
+#
+
+# == MATH ==
+
+snippet dm "Display math" b
+	$ ${1:expr} $
+	${0}
+#
+
+snippet im "Inline math" wi
+	$${1:expr}$${0}
+#
+
+snippet eq "Equation block" b
+	$ ${1:expr} $
+	${0}
+#
+
+snippet frac "Fraction" wi
+	${1:num}/${2:denom}${0}
+#
+
+snippet sqrt "Square root" wi
+	sqrt(${1:x})${0}
+#
+
+snippet sum "Summation" wi
+	sum_(${1:i=0})^(${2:n}) ${0}
+#
+
+snippet int "Integral" wi
+	integral_(${1:a})^(${2:b}) ${0}
+#
+
+snippet lim "Limit" wi
+	lim_(${1:n} -> ${2:oo}) ${0}
+#
+
+# == LISTS ==
+
+snippet enum "Enumerated list" b
+	+ ${1:First item}
+	+ ${2:Second item}
+	${0}
+#
+
+snippet item "Bullet list" b
+	- ${1:First item}
+	- ${2:Second item}
+	${0}
+#
+
+snippet term "Term list" b
+	/ ${1:Term}: ${2:Definition}
+	${0}
+#
+
+# == FIGURES AND IMAGES ==
+
+snippet fig "Figure" b
+	#figure(
+		image("${1:path.png}", width: ${2:80%}),
+		caption: [${3:Caption}],
+	) <fig:${4:label}>
+	${0}
+#
+
+snippet img "Image" b
+	#image("${1:path.png}", width: ${2:80%})
+	${0}
+#
+
+# == REFERENCES ==
+
+snippet ref "Reference" wi
+	@${1:label}${0}
+#
+
+snippet cite "Citation" wi
+	@${1:key}${0}
+#
+
+snippet lbl "Label" wi
+	<${1:label}>${0}
+#
+
+snippet link "Hyperlink" wi
+	#link("${1:url}")[${2:text}]${0}
+#
+
+# == CODE BLOCKS ==
+
+snippet raw "Raw block" b
+	\`\`\`${1:lang}
+	${2:code}
+	\`\`\`
+	${0}
+#
+
+snippet rawpy "Python code block" b
+	\`\`\`python
+	${1:code}
+	\`\`\`
+	${0}
+#
+
+snippet rawlean "Lean code block" b
+	\`\`\`lean
+	${1:code}
+	\`\`\`
+	${0}
+#
+
+# == THEOREM-LIKE ENVIRONMENTS ==
+# These use custom show rules - define them in your document preamble
+
+snippet thm "Theorem" b
+	#theorem[${1:Theorem Name}][
+		${2:Statement}
+	] <thm:${3:label}>
+	${0}
+#
+
+snippet lem "Lemma" b
+	#lemma[${1:Lemma Name}][
+		${2:Statement}
+	] <lem:${3:label}>
+	${0}
+#
+
+snippet prop "Proposition" b
+	#proposition[${1:Proposition Name}][
+		${2:Statement}
+	] <prop:${3:label}>
+	${0}
+#
+
+snippet def "Definition" b
+	#definition[${1:Definition Name}][
+		${2:Content}
+	] <def:${3:label}>
+	${0}
+#
+
+snippet prf "Proof" b
+	#proof[
+		${1:Proof content}
+	]
+	${0}
+#
+
+snippet cor "Corollary" b
+	#corollary[${1:Corollary Name}][
+		${2:Statement}
+	] <cor:${3:label}>
+	${0}
+#
+
+snippet ex "Example" b
+	#example[${1:Example Name}][
+		${2:Content}
+	]
+	${0}
+#
+
+snippet rem "Remark" b
+	#remark[${1:Remark}][
+		${2:Content}
+	]
+	${0}
+#
+
+# == TABLES ==
+
+snippet table "Table" b
+	#figure(
+		table(
+			columns: ${1:3},
+			[*${2:Header 1}*], [*${3:Header 2}*], [*${4:Header 3}*],
+			[${5:Cell 1}], [${6:Cell 2}], [${7:Cell 3}],
+		),
+		caption: [${8:Caption}],
+	) <tab:${9:label}>
+	${0}
+#
+
+# == DOCUMENT STRUCTURE ==
+
+snippet set "Set rule" b
+	#set ${1:element}(${2:properties})
+	${0}
+#
+
+snippet show "Show rule" b
+	#show ${1:selector}: ${2:replacement}
+	${0}
+#
+
+snippet let "Variable binding" b
+	#let ${1:name} = ${2:value}
+	${0}
+#
+
+snippet fn "Function definition" b
+	#let ${1:name}(${2:args}) = {
+		${3:body}
+	}
+	${0}
+#
+
+snippet import "Import" b
+	#import "${1:file.typ}": ${2:*}
+	${0}
+#
+
+snippet include "Include file" b
+	#include "${1:file.typ}"
+	${0}
+#
+
+# == PAGE SETUP ==
+
+snippet pagesetup "Page setup" b
+	#set page(
+		paper: "${1:us-letter}",
+		margin: (x: ${2:1in}, y: ${3:1in}),
+	)
+	${0}
+#
+
+snippet text "Text settings" b
+	#set text(
+		font: "${1:New Computer Modern}",
+		size: ${2:11pt},
+	)
+	${0}
+#
+
+# == BIBLIOGRAPHY ==
+
+snippet bib "Bibliography" b
+	#bibliography("${1:refs.bib}")
+	${0}
+#
+
+# == BLOCKS AND BOXES ==
+
+snippet block "Block" b
+	#block(
+		fill: ${1:luma(230)},
+		inset: ${2:8pt},
+		radius: ${3:4pt},
+	)[
+		${4:Content}
+	]
+	${0}
+#
+
+snippet box "Box" wi
+	#box(${1:content})${0}
+#
+
+snippet rect "Rectangle" b
+	#rect(
+		width: ${1:100%},
+		fill: ${2:luma(230)},
+	)[
+		${3:Content}
+	]
+	${0}
+#
+
+# == ALIGNMENT ==
+
+snippet center "Center align" b
+	#align(center)[
+		${1:Content}
+	]
+	${0}
+#
+
+snippet right "Right align" b
+	#align(right)[
+		${1:Content}
+	]
+	${0}
+#
+
+# == SPACING ==
+
+snippet vspace "Vertical space" b
+	#v(${1:1em})
+	${0}
+#
+
+snippet hspace "Horizontal space" wi
+	#h(${1:1em})${0}
+#
+
+snippet pagebreak "Page break" b
+	#pagebreak()
+	${0}
+#
+
+# == DOCUMENT TEMPLATES ==
+
+snippet article "Article template" b
+	#set page(paper: "us-letter", margin: (x: 1in, y: 1in))
+	#set text(font: "New Computer Modern", size: 11pt)
+	#set par(justify: true)
+	#set heading(numbering: "1.1")
+
+	#align(center)[
+		#text(size: 17pt, weight: "bold")[${1:Title}]
+
+		#text(size: 12pt)[${2:Author}]
+
+		#text(size: 10pt, style: "italic")[${3:Date}]
+	]
+
+	#v(2em)
+
+	${0}
+#
+
+snippet note "Quick note template" b
+	#set page(paper: "us-letter", margin: 1in)
+	#set text(size: 11pt)
+
+	= ${1:Note Title}
+
+	${0}
+#

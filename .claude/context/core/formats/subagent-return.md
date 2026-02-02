@@ -1,13 +1,28 @@
 # Subagent Return Format Standard
 
+**IMPORTANT - FILE-BASED METADATA EXCHANGE (v2)**:
+As of Task 600, agents write metadata to files instead of returning JSON to the console. This enables reliable structured data exchange without console pollution. The schema below is now written to `specs/{N}_{SLUG}/.return-meta.json`, NOT returned as console output.
+
+See `.claude/context/core/formats/return-metadata-file.md` for the file-based protocol.
+
+**CRITICAL WARNING - ANTI-STOP PATTERN**:
+Do NOT use `"status": "completed"` - it triggers Claude to stop execution prematurely. Use contextual values like `"researched"`, `"planned"`, `"implemented"` instead. See `.claude/context/core/patterns/anti-stop-patterns.md` for full documentation.
+
 ## Overview
 
-All subagents MUST return valid JSON matching this schema. This is enforced by:
+**v2 Pattern (Current)**:
+1. Agents write structured metadata to `specs/{N}_{SLUG}/.return-meta.json`
+2. Agents return brief text summaries (3-6 bullets) to console
+3. Skills read metadata file during postflight
+4. Skills handle status updates, artifact linking, and git commits
+
+**Legacy Pattern (v1)**:
+All subagents MUST return valid JSON matching this schema. This was enforced by:
 1. **Orchestrator Stage 3**: Appends explicit JSON format instruction to all subagent invocations
 2. **Orchestrator Stage 4**: Validates return is valid JSON with required fields
 3. **Subagent Specification**: Each agent's markdown file defines this return format
 
-**CRITICAL**: When invoked via task tool, you MUST return ONLY valid JSON. Do NOT return plain text, markdown narrative, or any other format. Orchestrator Stage 4 will reject non-JSON returns with "Return is not valid JSON" error.
+**NOTE**: The JSON schema below is still used, but now written to a file instead of console output.
 
 ## Schema
 
@@ -15,7 +30,7 @@ All subagents MUST return this JSON structure:
 
 ```json
 {
-  "status": "completed|partial|failed|blocked",
+  "status": "researched|planned|implemented|synced|linked|committed|tasks_created|partial|failed|blocked",
   "summary": "Brief 2-5 sentence summary (<100 tokens)",
   "artifacts": [
     {
@@ -46,13 +61,24 @@ All subagents MUST return this JSON structure:
 ## Field Specifications
 
 ### status (required)
-**Type**: enum  
-**Values**: `completed`, `partial`, `failed`, `blocked`  
-**Description**:
-- `completed`: Task fully completed, all artifacts created
+**Type**: enum
+**Values**: Contextual success values + `partial`, `failed`, `blocked`
+
+**Success values** (use instead of "completed" to avoid triggering stop behavior):
+- `researched`: Research task completed, report created
+- `planned`: Planning task completed, plan created
+- `implemented`: Implementation task completed, code/files created
+- `synced`: Status sync operation completed (preflight/postflight)
+- `linked`: Artifact linking operation completed
+- `committed`: Git commit operation completed
+- `tasks_created`: Meta/task creation operation completed
+
+**Non-success values**:
 - `partial`: Task partially completed, some artifacts created, can resume
 - `failed`: Task failed, no usable artifacts, cannot resume
 - `blocked`: Task blocked by external dependency, can retry later
+
+**Rationale**: The value "completed" was removed because Claude interprets it as a stop signal, causing workflow commands to halt prematurely after skill returns. Contextual values describe *what* was achieved rather than generic completion.
 
 ### summary (required)
 **Type**: string  
@@ -113,10 +139,10 @@ All subagents MUST return this JSON structure:
 
 1. **JSON Validity**: Return must be valid JSON
 2. **Required Fields**: status, summary, artifacts, metadata must be present
-3. **Status Enum**: status must be one of: completed, partial, failed, blocked
+3. **Status Enum**: status must be a contextual success value (researched, planned, implemented, synced, linked, committed, tasks_created) or partial, failed, blocked
 4. **Session ID Match**: metadata.session_id must match expected session_id
 5. **Summary Length**: summary must be <100 tokens
-6. **Artifacts Exist**: If status=completed, all artifact paths must exist on disk
+6. **Artifacts Exist**: If status is a success value (not partial/failed/blocked), all artifact paths must exist on disk
 
 ### Validation Failures
 
@@ -128,15 +154,15 @@ If validation fails:
 
 ## Examples
 
-### Completed Plan
+### Successful Plan
 ```json
 {
-  "status": "completed",
+  "status": "planned",
   "summary": "Created implementation plan for task 244 with 3 phases. Plan focuses on context reorganization, orchestrator streamlining, and command simplification. Estimated effort: 8 hours.",
   "artifacts": [
     {
       "type": "plan",
-      "path": ".claude/specs/244_context_refactor/plans/implementation-001.md",
+      "path": "specs/244_context_refactor/plans/implementation-001.md",
       "summary": "3-phase implementation plan"
     }
   ],
@@ -157,19 +183,19 @@ If validation fails:
 ```json
 {
   "status": "failed",
-  "summary": "Research failed due to network timeout when accessing LeanSearch API. No research artifacts created.",
+  "summary": "Research failed due to network timeout when accessing external API API. No research artifacts created.",
   "artifacts": [],
   "metadata": {
     "session_id": "sess_1735460684_xyz789",
     "duration_seconds": 30,
-    "agent_type": "lean-research-agent",
+    "agent_type": "neovim-research-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "lean-research-agent"]
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"]
   },
   "errors": [
     {
       "type": "timeout",
-      "message": "LeanSearch API request timed out after 30s",
+      "message": "external API API request timed out after 30s",
       "recoverable": true,
       "recommendation": "Check network connection and retry with /research 245"
     }
@@ -186,26 +212,26 @@ If validation fails:
   "artifacts": [
     {
       "type": "implementation",
-      "path": "src/module_a.lean",
+      "path": "nvim/lua/plugins/lsp.lua",
       "summary": "Phase 1 implementation"
     },
     {
       "type": "implementation",
-      "path": "src/module_b.lean",
+      "path": "nvim/lua/plugins/treesitter.lua",
       "summary": "Phase 2 implementation"
     },
     {
       "type": "summary",
-      "path": ".claude/specs/246_feature/summaries/implementation-summary.md",
+      "path": "specs/246_feature/summaries/implementation-summary.md",
       "summary": "Partial implementation summary"
     }
   ],
   "metadata": {
     "session_id": "sess_1735460684_abc123",
     "duration_seconds": 7200,
-    "agent_type": "lean-implementation-agent",
+    "agent_type": "neovim-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "implement", "lean-implementation-agent"]
+    "delegation_path": ["orchestrator", "implement", "neovim-implementation-agent"]
   },
   "errors": [
     {
@@ -236,7 +262,7 @@ Do NOT return plain text, markdown narrative, or any other format.
 
 Required JSON structure:
 {
-  "status": "completed|partial|failed|blocked",
+  "status": "<contextual-value>|partial|failed|blocked",
   "summary": "Brief 2-5 sentence summary (<100 tokens)",
   "artifacts": [{type, path, summary}, ...],
   "metadata": {session_id, duration_seconds, agent_type, delegation_depth, delegation_path},

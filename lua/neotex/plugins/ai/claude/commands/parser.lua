@@ -376,6 +376,62 @@ function M.build_hook_dependencies(hooks, settings_path)
   return hook_events
 end
 
+--- Scan .claude/agents/ directory for agent definitions
+--- @param agents_dir string Path to agents directory
+--- @return table Array of agent metadata
+function M.scan_agents_directory(agents_dir)
+  local agents_path = plenary_path:new(agents_dir)
+
+  if not agents_path:exists() then
+    return {}
+  end
+
+  local agents = {}
+  local scandir_ok, files = pcall(vim.fn.readdir, agents_dir)
+  if not scandir_ok then
+    return {}
+  end
+
+  for _, filename in ipairs(files) do
+    -- Look for *.md files, exclude archive/ subdirectory
+    if filename:match("%.md$") and filename ~= "README.md" then
+      local agent_file = agents_dir .. "/" .. filename
+      local path = plenary_path:new(agent_file)
+
+      if path:exists() then
+        local content = path:read()
+        if content then
+          -- Extract agent name from filename (remove .md extension)
+          local agent_name = filename:gsub("%.md$", "")
+
+          -- Try to parse frontmatter for description
+          local metadata = parse_frontmatter(content)
+          local description = ""
+
+          if metadata and metadata.description then
+            description = metadata.description
+          else
+            -- Fall back to first heading or first line
+            local first_heading = content:match("^#%s*(.-)[\r\n]")
+            if first_heading then
+              description = vim.trim(first_heading)
+            end
+          end
+
+          table.insert(agents, {
+            name = agent_name,
+            description = description,
+            filepath = agent_file,
+            is_local = false,
+          })
+        end
+      end
+    end
+  end
+
+  return agents
+end
+
 --- Scan .claude/skills/ directory for skill definitions
 --- @param skills_dir string Path to skills directory
 --- @return table Array of skill metadata
@@ -475,6 +531,101 @@ local function parse_skills_with_fallback(project_skills_dir, global_skills_dir)
   return merged_skills
 end
 
+--- Scan root-level .claude/ configuration files
+--- @param project_dir string Path to project directory
+--- @param global_dir string Path to global directory
+--- @return table Array of root file metadata with name, filepath, is_local, description
+local function scan_root_files(project_dir, global_dir)
+  local root_files_config = {
+    { name = ".gitignore", description = "Git ignore patterns" },
+    { name = "README.md", description = "Documentation" },
+    { name = "CLAUDE.md", description = "Claude configuration" },
+    { name = "settings.local.json", description = "Local settings" },
+  }
+
+  local root_files = {}
+  local seen = {}
+
+  -- Check local project first
+  local project_claude_dir = project_dir .. "/.claude"
+  for _, config in ipairs(root_files_config) do
+    local filepath = project_claude_dir .. "/" .. config.name
+    if vim.fn.filereadable(filepath) == 1 then
+      table.insert(root_files, {
+        name = config.name,
+        filepath = filepath,
+        is_local = true,
+        description = config.description,
+      })
+      seen[config.name] = true
+    end
+  end
+
+  -- Check global, but only if different from project and file not already found locally
+  local global_claude_dir = global_dir .. "/.claude"
+  if project_dir ~= global_dir then
+    for _, config in ipairs(root_files_config) do
+      if not seen[config.name] then
+        local filepath = global_claude_dir .. "/" .. config.name
+        if vim.fn.filereadable(filepath) == 1 then
+          table.insert(root_files, {
+            name = config.name,
+            filepath = filepath,
+            is_local = false,
+            description = config.description,
+          })
+        end
+      end
+    end
+  end
+
+  return root_files
+end
+
+--- Parse agents from both local and global directories with local priority
+--- @param project_agents_dir string Path to project-specific agents directory
+--- @param global_agents_dir string Path to global agents directory
+--- @return table Merged agents with is_local flag
+local function parse_agents_with_fallback(project_agents_dir, global_agents_dir)
+  local merged_agents = {}
+  local local_agent_names = {}
+
+  -- Special case: when in .config/
+  if project_agents_dir and project_agents_dir == global_agents_dir then
+    if vim.fn.isdirectory(project_agents_dir) == 1 then
+      local agents = M.scan_agents_directory(project_agents_dir)
+      for _, agent in ipairs(agents) do
+        agent.is_local = true
+        table.insert(merged_agents, agent)
+      end
+    end
+    return merged_agents
+  end
+
+  -- Normal case: Parse local agents first
+  if vim.fn.isdirectory(project_agents_dir) == 1 then
+    local local_agents = M.scan_agents_directory(project_agents_dir)
+    for _, agent in ipairs(local_agents) do
+      agent.is_local = true
+      table.insert(merged_agents, agent)
+      local_agent_names[agent.name] = true
+    end
+  end
+
+  -- Parse global agents
+  if vim.fn.isdirectory(global_agents_dir) == 1 then
+    local global_agents = M.scan_agents_directory(global_agents_dir)
+    for _, agent in ipairs(global_agents) do
+      if not local_agent_names[agent.name] then
+        agent.is_local = false
+        table.insert(merged_agents, agent)
+      end
+    end
+  end
+
+  return merged_agents
+end
+
 --- Parse hooks from both local and global directories with local priority
 --- @param project_hooks_dir string Path to project-specific hooks directory
 --- @param global_hooks_dir string Path to global hooks directory
@@ -542,6 +693,11 @@ function M.get_extended_structure()
   local global_skills_dir = global_dir .. "/.claude/skills"
   local skills = parse_skills_with_fallback(project_skills_dir, global_skills_dir)
 
+  -- Get agents
+  local project_agents_dir = project_dir .. "/.claude/agents"
+  local global_agents_dir = global_dir .. "/.claude/agents"
+  local agents = parse_agents_with_fallback(project_agents_dir, global_agents_dir)
+
   -- Build hook dependencies
   local settings_path = project_dir .. "/.claude/settings.local.json"
   if vim.fn.filereadable(settings_path) ~= 1 then
@@ -549,12 +705,17 @@ function M.get_extended_structure()
   end
   local hook_events = M.build_hook_dependencies(hooks, settings_path)
 
+  -- Get root files
+  local root_files = scan_root_files(project_dir, global_dir)
+
   return {
     primary_commands = sorted_hierarchy.primary_commands,
     dependent_commands = sorted_hierarchy.dependent_commands,
     hooks = hooks,
     hook_events = hook_events,
     skills = skills,
+    agents = agents,
+    root_files = root_files,
   }
 end
 

@@ -1,26 +1,7 @@
 # Context Organization
 
-[Back to Docs](../docs/README.md) | [Architecture](../ARCHITECTURE.md) | [CLAUDE.md](../CLAUDE.md)
-
-## Table of Contents
-
-1. [Overview](#overview)
-2. [Directory Structure](#directory-structure)
-3. [Core Context](#core-context)
-4. [Project Context](#project-context)
-5. [Context Loading Strategy](#context-loading-strategy)
-6. [File Naming Conventions](#file-naming-conventions)
-7. [Adding New Context Files](#adding-new-context-files)
-
----
-
-## Overview
-
-The `context/` directory organizes domain knowledge and standards for the Claude agent system. Files are loaded on-demand based on task requirements.
-
-**Structure**:
-- `core/` - Reusable patterns applicable to any project (41 files)
-- `project/` - Neovim configuration domain knowledge
+**Updated**: 2026-02-02 (Task 22 - Neovim Focus)
+**Purpose**: Organize context files for efficient loading and clear separation of concerns
 
 ---
 
@@ -28,192 +9,133 @@ The `context/` directory organizes domain knowledge and standards for the Claude
 
 ```
 .claude/context/
-├── README.md                           # This file
-├── index.md                            # Context loading index
+├── core/                           # General/reusable context (36 files)
+│   ├── orchestration/              # System orchestration (8 files)
+│   │   ├── architecture.md         # Three-layer delegation pattern
+│   │   ├── orchestrator.md         # Orchestrator design and guide
+│   │   ├── routing.md              # Routing logic and patterns
+│   │   ├── delegation.md           # Delegation patterns and safety
+│   │   ├── validation.md           # Validation strategies and rules
+│   │   ├── state-management.md     # State and artifact management
+│   │   └── sessions.md             # Session management
+│   │
+│   ├── formats/                    # Output formats and structures (7 files)
+│   │   ├── command-structure.md    # Command files as agents
+│   │   ├── subagent-return.md      # Subagent return format
+│   │   ├── command-output.md       # Command output format
+│   │   ├── plan-format.md          # Implementation plan format
+│   │   ├── report-format.md        # Research report format
+│   │   ├── summary-format.md       # Summary format
+│   │   └── frontmatter.md          # Frontmatter standard
+│   │
+│   ├── standards/                  # Quality standards (8 files)
+│   │   ├── code-patterns.md        # Code and pattern standards
+│   │   ├── error-handling.md       # Error handling patterns
+│   │   ├── git-safety.md           # Git safety patterns
+│   │   ├── documentation.md        # Documentation standards
+│   │   ├── testing.md              # Testing standards
+│   │   ├── xml-structure.md        # XML structure patterns
+│   │   ├── task-management.md      # Task management standards
+│   │   └── analysis-framework.md   # Analysis framework
+│   │
+│   ├── workflows/                  # Workflow patterns (5 files)
+│   │   ├── command-lifecycle.md    # Command lifecycle
+│   │   ├── status-transitions.md   # Status transition rules
+│   │   ├── task-breakdown.md       # Task breakdown patterns
+│   │   ├── review-process.md       # Review process workflow
+│   │   └── preflight-postflight.md # Workflow timing standards
+│   │
+│   ├── templates/                  # Reusable templates (6 files)
+│   │   ├── agent-template.md       # Agent template
+│   │   ├── subagent-template.md    # Subagent template
+│   │   ├── command-template.md     # Command template
+│   │   ├── orchestrator-template.md # Orchestrator template
+│   │   ├── delegation-context.md   # Delegation context template
+│   │   └── state-template.json     # State.json template
+│   │
+│   └── schemas/                    # JSON/YAML schemas (2 files)
+│       ├── frontmatter-schema.json # Frontmatter JSON schema
+│       └── subagent-frontmatter.yaml # Subagent frontmatter template
 │
-├── core/                               # Reusable patterns (41 files)
-│   ├── orchestration/                  # System orchestration (11 files)
-│   ├── formats/                        # Output formats (7 files)
-│   ├── standards/                      # Quality standards (10 files)
-│   ├── workflows/                      # Workflow patterns (5 files)
-│   ├── templates/                      # Reusable templates (5 files)
-│   └── schemas/                        # JSON/YAML schemas (2 files)
+├── project/                        # Domain-specific context
+│   ├── meta/                       # Meta-builder context (4 files)
+│   │   ├── domain-patterns.md      # Domain pattern recognition
+│   │   ├── architecture-principles.md # Architecture principles
+│   │   ├── meta-guide.md           # Meta-builder guide
+│   │   └── interview-patterns.md   # Interview patterns
+│   │
+│   ├── neovim/                     # Neovim configuration knowledge
+│   │   ├── domain/                 # API and concepts
+│   │   ├── patterns/               # Configuration patterns
+│   │   ├── standards/              # Coding standards
+│   │   ├── templates/              # Template files
+│   │   └── tools/                  # Tool documentation (lazy.nvim, etc.)
+│   │
+│   ├── latex/                      # LaTeX document knowledge
+│   │   ├── patterns/               # Document patterns
+│   │   ├── standards/              # Style standards
+│   │   ├── templates/              # Document templates
+│   │   └── tools/                  # Tool documentation
+│   │
+│   ├── typst/                      # Typst document knowledge
+│   │   ├── patterns/               # Document patterns
+│   │   ├── standards/              # Style standards
+│   │   ├── templates/              # Document templates
+│   │   └── tools/                  # Tool documentation
+│   │
+│   ├── hooks/                      # Git hooks context
+│   │
+│   ├── processes/                  # Process documentation
+│   │
+│   └── repo/                       # Repository-specific
+│       ├── project-overview.md
+│       └── self-healing-implementation-details.md
 │
-└── project/                            # Neovim configuration domain
-    ├── neovim/                         # Neovim/Lua domain knowledge
-    │   ├── domain/                     # Neovim API, Lua patterns
-    │   ├── standards/                  # Lua style, testing standards
-    │   ├── patterns/                   # Plugin, keymap, autocmd patterns
-    │   ├── tools/                      # lazy.nvim, telescope, treesitter
-    │   └── processes/                  # Plugin development, debugging
-    ├── meta/                           # Meta-builder context
-    ├── processes/                      # Development workflows
-    └── repo/                           # Repository-specific
+└── README.md                       # This file
 ```
 
 ---
 
-## Core Context
+## Core vs Project
 
-Reusable patterns applicable to any Claude agent system.
+### core/ (36 files across 6 directories)
+**Purpose**: General, reusable context applicable to any project
 
-### orchestration/ (11 files)
+**Contents**:
+- **orchestration/** - System architecture, routing, delegation, state management
+- **formats/** - Output formats for plans, reports, summaries, returns
+- **standards/** - Quality standards for code, errors, git, documentation, testing
+- **workflows/** - Workflow patterns for commands, status transitions, reviews
+- **templates/** - Reusable templates for agents, commands, orchestrator
+- **schemas/** - JSON/YAML schemas for validation
 
-System architecture, routing, and delegation patterns.
+**When to use**: Context that doesn't depend on project-specific domains
 
-| File | Purpose |
-|------|---------|
-| `architecture.md` | Three-layer delegation pattern |
-| `orchestrator.md` | Orchestrator design and guide |
-| `routing.md` | Routing logic and patterns |
-| `delegation.md` | Delegation patterns and safety |
-| `validation.md` | Validation strategies |
-| `subagent-validation.md` | Subagent return validation |
-| `state-management.md` | State and artifact management |
-| `state-lookup.md` | State.json query patterns (jq) |
-| `sessions.md` | Session management |
-| `preflight-pattern.md` | Pre-execution patterns |
-| `postflight-pattern.md` | Post-execution patterns |
+**Key Files**:
+- `orchestration/architecture.md` - Three-layer delegation pattern (critical for meta-builder)
+- `formats/command-structure.md` - Commands as agents pattern
+- `workflows/preflight-postflight.md` - Workflow timing standards
+- `orchestration/state-management.md` - State management and fast lookup patterns (8x faster than TODO.md)
 
-### formats/ (7 files)
+### project/
+**Purpose**: Domain-specific knowledge for supported languages
 
-Output formats and document structures.
+**Contents**:
+- **meta/** - Meta-builder context (domain patterns, architecture principles)
+- **neovim/** - Neovim configuration knowledge (API, patterns, plugins)
+- **latex/** - LaTeX document authoring knowledge
+- **typst/** - Typst document authoring knowledge
+- **hooks/** - Git hooks context
+- **processes/** - Process documentation
+- **repo/** - Repository-specific information
 
-| File | Purpose |
-|------|---------|
-| `command-structure.md` | Command files as agents |
-| `command-output.md` | Command output format |
-| `subagent-return.md` | Subagent return JSON format |
-| `plan-format.md` | Implementation plan format |
-| `report-format.md` | Research report format |
-| `summary-format.md` | Summary document format |
-| `frontmatter.md` | Frontmatter standard |
-
-### standards/ (10 files)
-
-Quality standards for code, documentation, and processes.
-
-| File | Purpose |
-|------|---------|
-| `code-patterns.md` | Code and pattern standards |
-| `error-handling.md` | Error handling patterns |
-| `git-safety.md` | Git safety patterns |
-| `git-integration.md` | Git integration patterns |
-| `documentation.md` | Documentation standards |
-| `testing.md` | Testing standards |
-| `xml-structure.md` | XML structure patterns |
-| `task-management.md` | Task management standards |
-| `status-markers.md` | Status marker conventions |
-| `analysis-framework.md` | Analysis framework |
-
-### workflows/ (5 files)
-
-Command and task workflow patterns.
-
-| File | Purpose |
-|------|---------|
-| `command-lifecycle.md` | Command execution lifecycle |
-| `status-transitions.md` | Status transition rules |
-| `task-breakdown.md` | Task breakdown patterns |
-| `review-process.md` | Review process workflow |
-| `preflight-postflight.md` | Workflow timing standards |
-
-### templates/ (5 files)
-
-Reusable templates for creating new components.
-
-| File | Purpose |
-|------|---------|
-| `agent-template.md` | Agent definition template |
-| `subagent-template.md` | Subagent template |
-| `command-template.md` | Command file template |
-| `orchestrator-template.md` | Orchestrator template |
-| `delegation-context.md` | Delegation context template |
-
-### schemas/ (2 files)
-
-JSON and YAML schemas for validation.
-
-| File | Purpose |
-|------|---------|
-| `frontmatter-schema.json` | Frontmatter JSON schema |
-| `subagent-frontmatter.yaml` | Subagent frontmatter template |
-
----
-
-## Project Context
-
-Neovim configuration domain knowledge and patterns.
-
-### neovim/ (17 files)
-
-Neovim/Lua development domain knowledge.
-
-```
-neovim/
-├── README.md
-├── domain/                     # Core concepts (4 files)
-│   ├── neovim-api.md           # vim.api, vim.fn, vim.opt patterns
-│   ├── lua-patterns.md         # Module patterns, metatables, iterators
-│   ├── plugin-ecosystem.md     # lazy.nvim, plugin categories
-│   └── lsp-integration.md      # nvim-lspconfig, mason.nvim
-├── standards/                  # Style guides (3 files)
-│   ├── lua-style-guide.md      # Indentation, naming, module structure
-│   ├── documentation-requirements.md  # README format, no emojis
-│   └── testing-standards.md    # busted, plenary.nvim, assertions
-├── patterns/                   # Development patterns (3 files)
-│   ├── plugin-definition.md    # lazy.nvim specs, lazy loading
-│   ├── keymapping.md           # vim.keymap.set, which-key
-│   └── autocommand.md          # autocmd groups, events
-├── tools/                      # Tool guides (3 files)
-│   ├── lazy-nvim.md            # Package manager documentation
-│   ├── telescope.md            # Pickers, finders, previewers
-│   └── treesitter.md           # Parsers, queries, text objects
-└── processes/                  # Workflows (3 files)
-    ├── plugin-development.md   # Structure, testing, publishing
-    ├── debugging.md            # Print debugging, DAP, profiling
-    └── maintenance.md          # Updates, performance, health checks
-```
-
-### meta/ (6 files)
-
-Meta-builder context for creating agent systems.
-
-| File | Purpose |
-|------|---------|
-| `domain-patterns.md` | Domain pattern recognition |
-| `architecture-principles.md` | Architecture design principles |
-| `meta-guide.md` | Meta-builder guide |
-| `interview-patterns.md` | Interview patterns for system design |
-| `context-revision-guide.md` | Context revision guide |
-| `standards-checklist.md` | Standards compliance checklist |
-
-### processes/ (3 files)
-
-Development workflow processes.
-
-| File | Purpose |
-|------|---------|
-| `research-workflow.md` | Research phase workflow |
-| `planning-workflow.md` | Planning phase workflow |
-| `implementation-workflow.md` | Implementation phase workflow |
-
-### repo/ (2 files)
-
-Repository-specific information.
-
-| File | Purpose |
-|------|---------|
-| `project-overview.md` | Project overview |
-| `self-healing-implementation-details.md` | Self-healing patterns |
+**When to use**: Context specific to the language being worked on
 
 ---
 
 ## Context Loading Strategy
 
 ### Three-Tier Loading
-
-Context is loaded based on operation type to minimize context window usage.
 
 **Tier 1: Orchestrator (Minimal)**
 - Budget: <5% context window (~10KB)
@@ -222,67 +144,52 @@ Context is loaded based on operation type to minimize context window usage.
 
 **Tier 2: Commands (Targeted)**
 - Budget: 10-20% context window (~20-40KB)
-- Files: `formats/subagent-return.md`, `workflows/status-transitions.md`
+- Files: `formats/subagent-return.md`, `workflows/status-transitions.md`, command-specific
 - Purpose: Command validation and formatting
 
-**Tier 3: Skills (Domain-Specific)**
+**Tier 3: Agents (Domain-Specific)**
 - Budget: 60-80% context window (~120-160KB)
-- Files: `project/neovim/*`, `project/meta/*`
+- Files: `project/neovim/*`, `project/latex/*`, etc.
 - Purpose: Domain-specific work with full context
 
-### Performance Note
-
-State.json queries via jq are 8x faster than TODO.md parsing (12ms vs 100ms). See `orchestration/state-lookup.md` for query patterns.
+**Performance Optimization**:
+- State.json queries are 8x faster than TODO.md parsing (12ms vs 100ms)
+- See `orchestration/state-management.md` for query patterns
 
 ---
 
 ## File Naming Conventions
 
-**Pattern**: `{topic}-{qualifier}.md`
+**Pattern**: `{topic}-{type}.md`
 
 **Examples**:
-- `subagent-return.md` (topic: subagent, qualifier: return)
-- `plan-format.md` (topic: plan, qualifier: format)
-- `code-patterns.md` (topic: code, qualifier: patterns)
+- `subagent-return.md` (not `subagent-return-format.md`)
+- `plan-format.md` (not `plan.md`)
+- `code-patterns.md` (not `code.md` or `patterns.md`)
 
 **Rules**:
 - Use kebab-case
 - Be descriptive but concise
-- Avoid redundant suffixes
+- Avoid redundant suffixes (e.g., `-format` only when needed for clarity)
 - Group by purpose in appropriate directory
 
 ---
 
 ## Adding New Context Files
 
-### For Reusable Patterns
+### For General/Reusable Context
+Add to `core/`:
+- Orchestration → `core/orchestration/`
+- Formats → `core/formats/`
+- Standards → `core/standards/`
+- Workflows → `core/workflows/`
+- Templates → `core/templates/`
+- Schemas → `core/schemas/`
 
-Add to `core/` in the appropriate subdirectory:
-
-| Type | Directory |
-|------|-----------|
-| Orchestration | `core/orchestration/` |
-| Output formats | `core/formats/` |
-| Quality standards | `core/standards/` |
-| Workflows | `core/workflows/` |
-| Templates | `core/templates/` |
-| Schemas | `core/schemas/` |
-
-### For Neovim-Specific Context
-
-Add to `project/` in the appropriate subdirectory:
-
-| Type | Directory |
-|------|-----------|
-| Neovim/Lua domain | `project/neovim/domain/` |
-| Lua standards | `project/neovim/standards/` |
-| Development patterns | `project/neovim/patterns/` |
-| Tool documentation | `project/neovim/tools/` |
-| Development workflows | `project/neovim/processes/` |
-| Meta-builder | `project/meta/` |
-| Process workflows | `project/processes/` |
-| Repository-specific | `project/repo/` |
-
----
-
-[Back to Docs](../docs/README.md) | [Architecture](../ARCHITECTURE.md) | [CLAUDE.md](../CLAUDE.md)
+### For Domain-Specific Context
+Add to `project/`:
+- Meta-builder → `project/meta/`
+- Neovim → `project/neovim/`
+- LaTeX → `project/latex/`
+- Typst → `project/typst/`
+- Repo-specific → `project/repo/`

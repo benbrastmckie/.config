@@ -7,7 +7,8 @@ This document provides a comprehensive overview of all keybindings configured in
 **Important Note**: Many of the leader-based mappings listed below are **filetype-dependent** and only appear when working with relevant file types. This configuration uses a hybrid approach in which-key.nvim to provide context-aware keybindings:
 
 - **LaTeX** (`<leader>l*`): Only available in `.tex`, `.latex`, `.bib`, `.cls`, `.sty` files
-- **Jupyter** (`<leader>j*`): Only available in `.ipynb` files  
+- **Typst** (`<leader>l*`): Only available in `.typ` files (same prefix as LaTeX, filetype-isolated)
+- **Jupyter** (`<leader>j*`): Only available in `.ipynb` files
 - **Markdown** (`<leader>m*`): Only available in `.md`, `.markdown` files
 - **Pandoc** (`<leader>p*`): Available in convertible formats (markdown, tex, org, rst, html, docx)
 - **Templates** (`<leader>T*`): Only available in LaTeX files
@@ -253,6 +254,27 @@ See [Claude Code documentation](../lua/neotex/plugins/ai/claude/README.md) for c
 | `<leader>lw` | Count words | Count words in LaTeX document |
 | `<leader>lx` | Clear VimTeX cache | Clear LaTeX compilation cache |
 
+### TYPST (`<leader>l`)
+
+**Availability**: Only available in `.typ` files. Uses same prefix as LaTeX but filetype-isolated (no conflicts).
+
+**Note**: For comprehensive Typst documentation including setup, preview, multi-file projects, and browser styling, see [TYPST.md](TYPST.md).
+
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<leader>lc` | Compile (watch) | Start continuous compilation on save |
+| `<leader>lr` | Run (compile once) | Single compilation run |
+| `<leader>lw` | Stop watch | Stop continuous compilation |
+| `<leader>le` | Errors | Show diagnostics for current line |
+| `<leader>lf` | Format | Format via tinymist LSP (using typstyle) |
+| `<leader>ll` | Live preview (web) | Toggle browser preview with sync |
+| `<leader>lp` | Preview (web) | Open browser preview |
+| `<leader>ls` | Sync cursor (web) | Manually sync preview to cursor position |
+| `<leader>lv` | View PDF (Sioyek) | Open compiled PDF in external viewer |
+| `<leader>lx` | Stop preview | Close browser preview |
+| `<leader>lP` | Pin main file | Pin current file as main (multi-file projects) |
+| `<leader>lu` | Unpin main file | Return to automatic main file detection |
+
 ### MARKDOWN (`<leader>m`)
 
 **Availability**: Only available in `.md`, `.markdown` files.
@@ -357,6 +379,26 @@ See [Claude Code documentation](../lua/neotex/plugins/ai/claude/README.md) for c
 | `<leader>xd` | Toggle diff overlay | Show diff between buffer and clipboard |
 | `<leader>xw` | Toggle word diff | Show word-level diffs |
 
+### VOICE (`<leader>v`)
+
+Speech-to-text input using Vosk offline recognition.
+
+| Key | Action | Description |
+|-----|--------|-------------|
+| `<leader>vr` | Start recording | Begin audio capture for transcription |
+| `<leader>vs` | Stop recording | Stop capture and insert transcribed text at cursor |
+| `<leader>vv` | Toggle recording | Start recording if stopped, stop if recording |
+| `<leader>vh` | Health check | Verify STT dependencies and model availability |
+| `<C-\>` | Toggle recording | Works in both normal and terminal modes (Claude Code sidebar) |
+
+**Commands**: `:STTStart`, `:STTStop`, `:STTToggle`, `:STTHealth`
+
+**Dependencies**: `parecord` (PulseAudio/PipeWire), Python 3, Vosk package, vosk-transcribe.py script
+
+**Configuration**: `lua/neotex/plugins/tools/stt/`
+
+**Note**: In terminal buffers like Claude Code, `<C-\>` exits terminal mode temporarily to allow STT to function, then resumes after recording stops.
+
 ### YANK (`<leader>y`)
 
 | Key | Action | Description |
@@ -386,6 +428,7 @@ Active in terminal buffers (`:terminal` command or toggleterm).
 | `<C-t>` | Toggle terminal | Close/open terminal window |
 | `<C-h>`, `<C-j>`, `<C-k>`, `<C-l>` | Navigate windows | Move between terminal and other windows |
 | `<M-h>`, `<M-l>`, `<M-Left>`, `<M-Right>` | Resize terminal | Adjust terminal window width |
+| `<C-\>` | Toggle STT recording | Start/stop speech-to-text recording (exits terminal mode temporarily) |
 
 ### Markdown Buffers
 
