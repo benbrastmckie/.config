@@ -8,8 +8,9 @@ next_project_number: 26
 
 ### 25. Migrate git repository from .config/ to .config/nvim/
 - **Effort**: TBD
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Language**: general
+- **Started**: 2026-02-02
 - **Research**: [research-001.md](specs/25_migrate_git_repo_to_nvim_directory/reports/research-001.md)
 - **Plan**: [implementation-001.md](specs/25_migrate_git_repo_to_nvim_directory/plans/implementation-001.md)
 
