@@ -7,12 +7,14 @@ next_project_number: 26
 ## Tasks
 
 ### 25. Migrate git repository from .config/ to .config/nvim/
-- **Effort**: TBD
-- **Status**: [IMPLEMENTING]
+- **Effort**: 1-2 hours
+- **Status**: [COMPLETED]
 - **Language**: general
 - **Started**: 2026-02-02
+- **Completed**: 2026-02-02
 - **Research**: [research-001.md](specs/25_migrate_git_repo_to_nvim_directory/reports/research-001.md)
 - **Plan**: [implementation-001.md](specs/25_migrate_git_repo_to_nvim_directory/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260202.md](specs/25_migrate_git_repo_to_nvim_directory/summaries/implementation-summary-20260202.md)
 
 **Description**: Migrate the git repository from managing the entire .config/ directory to only managing .config/nvim/, since everything else is now managed by .dotfiles/ using home-manager and NixOS configuration. Move the .git/ directory into .config/nvim/ using a standard approach that preserves the full commit history for this (primarily Neovim) configuration.
 
