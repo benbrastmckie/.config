@@ -8,8 +8,9 @@ next_project_number: 35
 
 ### 34. Research best practices for Claude Code statusline display formatting
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Language**: neovim
+- **Research**: [research-001.md](specs/034_statusline_display_best_practices/reports/research-001.md)
 
 **Description**: Research best practices for Claude Code statusline display formatting - improve visual presentation of context usage percentage bar, token counts, model name, and cost. Current display shows progress bars with brackets and equals signs that could be more readable and aesthetically pleasing.
 
