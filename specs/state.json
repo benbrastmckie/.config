@@ -1,6 +1,66 @@
 {
-  "next_project_number": 35,
+  "next_project_number": 40,
   "active_projects": [
+    {
+      "project_number": 35,
+      "project_name": "add_dependencies_field_to_state_schema",
+      "status": "not_started",
+      "language": "meta",
+      "description": "Update state-management.md to add dependencies array field to task entries for machine-readable dependency tracking. This is the foundational schema change that enables all other dependency handling improvements.",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T20:30:00Z",
+      "session_id": "sess_1770151200_meta01",
+      "dependencies": [],
+      "artifacts": []
+    },
+    {
+      "project_number": 36,
+      "project_name": "enhance_interview_stage3_dependency_capture",
+      "status": "not_started",
+      "language": "meta",
+      "description": "Update meta-builder-agent.md Stage 3 IdentifyUseCases to explicitly capture dependency relationships with validation (must reference valid task numbers, no circular dependencies).",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T20:30:00Z",
+      "session_id": "sess_1770151200_meta01",
+      "dependencies": [35],
+      "artifacts": []
+    },
+    {
+      "project_number": 37,
+      "project_name": "implement_topological_sorting_stage6",
+      "status": "not_started",
+      "language": "meta",
+      "description": "Update meta-builder-agent.md Stage 6 CreateTasks to implement topological sorting of tasks based on dependency graph so foundational tasks get lower numbers and are created first.",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T20:30:00Z",
+      "session_id": "sess_1770151200_meta01",
+      "dependencies": [35, 36],
+      "artifacts": []
+    },
+    {
+      "project_number": 38,
+      "project_name": "update_todomd_insertion_dependency_order",
+      "status": "not_started",
+      "language": "meta",
+      "description": "Modify TODO.md insertion logic to insert tasks in dependency order (foundational tasks higher in file) instead of always prepending.",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T20:30:00Z",
+      "session_id": "sess_1770151200_meta01",
+      "dependencies": [37],
+      "artifacts": []
+    },
+    {
+      "project_number": 39,
+      "project_name": "enhance_stage7_dependency_visualization",
+      "status": "not_started",
+      "language": "meta",
+      "description": "Update meta-builder-agent.md Stage 7 DeliverSummary to show dependency graph visualization and execution order based on actual assigned task numbers.",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T20:30:00Z",
+      "session_id": "sess_1770151200_meta01",
+      "dependencies": [37, 38],
+      "artifacts": []
+    },
     {
       "project_number": 34,
       "project_name": "statusline_display_best_practices",

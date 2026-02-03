@@ -1,10 +1,60 @@
 ---
-next_project_number: 35
+next_project_number: 40
 ---
 
 # TODO
 
 ## Tasks
+
+### 35. Add dependencies field to state.json schema
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: meta
+- **Dependencies**: None
+
+**Description**: Update state-management.md to add dependencies array field to task entries for machine-readable dependency tracking. This is the foundational schema change that enables all other dependency handling improvements.
+
+---
+
+### 36. Enhance interview Stage 3 dependency capture
+- **Effort**: 2-3 hours
+- **Status**: [NOT STARTED]
+- **Language**: meta
+- **Dependencies**: Task #35
+
+**Description**: Update meta-builder-agent.md Stage 3 IdentifyUseCases to explicitly capture dependency relationships with validation (must reference valid task numbers, no circular dependencies).
+
+---
+
+### 37. Implement topological sorting in Stage 6
+- **Effort**: 2-3 hours
+- **Status**: [NOT STARTED]
+- **Language**: meta
+- **Dependencies**: Task #35, Task #36
+
+**Description**: Update meta-builder-agent.md Stage 6 CreateTasks to implement topological sorting of tasks based on dependency graph so foundational tasks get lower numbers and are created first.
+
+---
+
+### 38. Update TODO.md insertion for dependency order
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: meta
+- **Dependencies**: Task #37
+
+**Description**: Modify TODO.md insertion logic to insert tasks in dependency order (foundational tasks higher in file) instead of always prepending.
+
+---
+
+### 39. Enhance Stage 7 dependency visualization
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: meta
+- **Dependencies**: Task #37, Task #38
+
+**Description**: Update meta-builder-agent.md Stage 7 DeliverSummary to show dependency graph visualization and execution order based on actual assigned task numbers.
+
+---
 
 ### 34. Research best practices for Claude Code statusline display formatting
 - **Effort**: TBD
