@@ -252,16 +252,132 @@ Let's begin!
 ```
 
 **Question 4** (if breakdown needed):
-- Ask user to list discrete tasks in dependency order
-- Capture: task_list[], dependency_order[]
+- Ask user to list discrete tasks
+- Capture: task_list[]
+
+**Question 5** (if multiple tasks, via AskUserQuestion):
+```json
+{
+  "question": "Do any of these tasks depend on others? (A task can't start until its dependencies complete)",
+  "header": "Task Dependencies",
+  "options": [
+    {"label": "No dependencies", "description": "All tasks can start independently"},
+    {"label": "Linear chain", "description": "Each task depends on the previous one (1 -> 2 -> 3)"},
+    {"label": "Custom", "description": "I'll specify which tasks depend on which"}
+  ],
+  "context": "Example: 'Task 2 depends on Task 1' means Task 1 must complete before Task 2 can start."
+}
+```
+
+**Question 5 follow-up** (if "Custom" selected):
+```json
+{
+  "question": "For each dependent task, list what it depends on:",
+  "header": "Specify Dependencies",
+  "format": "Task {N}: depends on Task {M}, Task {P}",
+  "examples": [
+    "Task 2: depends on Task 1",
+    "Task 3: depends on Task 1, Task 2"
+  ]
+}
+```
+
+**Capture**: dependency_map{task_idx: [dep_idx, ...]}
+- "No dependencies": dependency_map = {}
+- "Linear chain": dependency_map = {2: [1], 3: [2], 4: [3], ...}
+- "Custom": dependency_map from user input (1-based indices matching task_list order)
+
+**Dependency Validation** (immediate, before proceeding):
+
+1. **Self-Reference Check**: Task cannot depend on itself
+   ```
+   for task_idx, deps in dependency_map:
+     if task_idx in deps:
+       ERROR: "Task {task_idx} cannot depend on itself"
+   ```
+
+2. **Valid Index Check**: All referenced tasks must exist
+   ```
+   for task_idx, deps in dependency_map:
+     for dep in deps:
+       if dep < 1 or dep > len(task_list):
+         ERROR: "Task {dep} does not exist in task list"
+   ```
+
+3. **Circular Dependency Check**: No cycles allowed
+   ```
+   # Build dependency graph and detect cycles via DFS
+   visited = set()
+   in_progress = set()
+
+   function has_cycle(node):
+     if node in in_progress: return True  # Cycle detected
+     if node in visited: return False
+     in_progress.add(node)
+     for dep in dependency_map.get(node, []):
+       if has_cycle(dep): return True
+     in_progress.remove(node)
+     visited.add(node)
+     return False
+
+   for task_idx in range(1, len(task_list) + 1):
+     if has_cycle(task_idx):
+       ERROR: "Circular dependency detected involving Task {task_idx}"
+   ```
+
+**On Validation Failure**: Present error message via AskUserQuestion and return to dependency input.
+
+**Question 5b** (optional, via AskUserQuestion):
+```json
+{
+  "question": "Should any tasks depend on existing tasks in your TODO?",
+  "header": "External Dependencies",
+  "options": [
+    {"label": "No", "description": "Only dependencies between new tasks"},
+    {"label": "Yes", "description": "I'll specify existing task numbers"}
+  ]
+}
+```
+
+**Question 5b follow-up** (if "Yes" selected):
+```json
+{
+  "question": "For each task needing external dependencies, list existing task numbers:",
+  "header": "Specify External Dependencies",
+  "format": "Task {N}: depends on #35, #36",
+  "examples": [
+    "Task 1: depends on #35",
+    "Task 3: depends on #35, #36"
+  ]
+}
+```
+
+**Capture**: external_dependencies{task_idx: [existing_task_num, ...]}
+
+**External Dependency Validation**:
+```
+# Validate against state.json
+for task_idx, ext_deps in external_dependencies:
+  for task_num in ext_deps:
+    exists = jq --arg num "$task_num" '.active_projects[] | select(.project_number == ($num | tonumber))' specs/state.json
+    if not exists:
+      WARNING: "Task #{task_num} not found in active projects (may be archived)"
+```
+
+**Note**: External dependency warnings are non-blocking. Validation occurs at Stage 6 (CreateTasks) with full state.json access.
 
 **Context Loading Trigger**:
 - If "Help me break it down" selected -> Load `component-selection.md` decision tree
 - If discussing template-based components -> Load relevant template file
 
+**Stage 3 Capture Summary**:
+- `task_list[]`: Array of task titles/descriptions
+- `dependency_map{}`: Map of task index -> [dependency indices] (internal)
+- `external_dependencies{}`: Map of task index -> [existing task numbers] (external)
+
 ### Interview Stage 4: AssessComplexity
 
-**Question 5** (via AskUserQuestion):
+**Question 6** (via AskUserQuestion):
 ```json
 {
   "question": "For each task, estimate the effort:",
@@ -292,7 +408,11 @@ Options per task:
 | # | Title | Language | Effort | Dependencies |
 |---|-------|----------|--------|--------------|
 | {N} | {title} | {lang} | {hrs} | None |
-| {N} | {title} | {lang} | {hrs} | #{N} |
+| {N} | {title} | {lang} | {hrs} | Task {M}, #{ext_task} |
+
+**Dependencies Legend**:
+- "Task {M}" = internal dependency on another new task in this batch
+- "#{ext_task}" = external dependency on existing task in TODO
 
 **Total Estimated Effort**: {sum} hours
 ```
@@ -312,9 +432,37 @@ Options per task:
 
 **If user selects "Cancel"**: Return completed status with cancelled flag.
 **If user selects "Revise"**: Go back to Stage 3.
-**If user selects "Yes"**: Proceed to Stage 5.
+**If user selects "Yes"**: Proceed to Stage 6.
 
 ### Interview Stage 6: CreateTasks
+
+**Dependency Resolution**:
+
+Before creating tasks, build a mapping from task indices to assigned task numbers:
+```
+# Task index -> assigned task number
+task_number_map = {}
+base_num = next_project_number from state.json
+
+for idx in 1..len(task_list):
+  task_number_map[idx] = base_num + idx - 1
+```
+
+**Merge dependencies** for each task:
+```
+for task_idx in 1..len(task_list):
+  final_deps = []
+
+  # Add internal dependencies (convert indices to task numbers)
+  for dep_idx in dependency_map.get(task_idx, []):
+    final_deps.append(task_number_map[dep_idx])
+
+  # Add external dependencies (already task numbers)
+  for ext_num in external_dependencies.get(task_idx, []):
+    final_deps.append(ext_num)
+
+  # Store: dependencies[task_idx] = final_deps
+```
 
 **For each task**:
 
@@ -325,8 +473,19 @@ next_num=$(jq -r '.next_project_number' specs/state.json)
 # 2. Create slug from title
 slug=$(echo "{title}" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd 'a-z0-9_' | cut -c1-50)
 
-# 3. Update state.json
+# 3. Update state.json (include dependencies array)
 # 4. Update TODO.md
+```
+
+**state.json Entry** (with dependencies):
+```json
+{
+  "project_number": 36,
+  "project_name": "task_slug",
+  "status": "not_started",
+  "language": "meta",
+  "dependencies": [35, 34]
+}
 ```
 
 **TODO.md Entry Format**:
@@ -335,7 +494,7 @@ slug=$(echo "{title}" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd 'a-z0-9
 - **Effort**: {estimate}
 - **Status**: [NOT STARTED]
 - **Language**: {language}
-- **Dependencies**: Task #{N}, Task #{N}
+- **Dependencies**: Task #35, Task #34  OR  None
 
 **Description**: {description}
 

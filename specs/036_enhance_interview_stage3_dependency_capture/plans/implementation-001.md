@@ -1,7 +1,7 @@
 # Implementation Plan: Task #36
 
 - **Task**: 36 - Enhance interview Stage 3 dependency capture
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 1-2 hours
 - **Dependencies**: Task #35 (dependencies field schema)
 - **Research Inputs**: [specs/036_enhance_interview_stage3_dependency_capture/reports/research-001.md](../reports/research-001.md)
@@ -47,7 +47,7 @@ Key findings from research-001.md:
 
 ## Implementation Phases
 
-### Phase 1: Add Question 5 for Dependency Capture [NOT STARTED]
+### Phase 1: Add Question 5 for Dependency Capture [COMPLETED]
 
 **Goal:** Insert structured dependency capture question into Stage 3 after Question 4
 
@@ -69,7 +69,7 @@ Key findings from research-001.md:
 
 ---
 
-### Phase 2: Add Validation Logic Description [NOT STARTED]
+### Phase 2: Add Validation Logic Description [COMPLETED]
 
 **Goal:** Document validation requirements that the agent must perform after dependency capture
 
@@ -92,7 +92,7 @@ Key findings from research-001.md:
 
 ---
 
-### Phase 3: Add External Dependency Handling [NOT STARTED]
+### Phase 3: Add External Dependency Handling [COMPLETED]
 
 **Goal:** Enable tasks to depend on existing tasks already in state.json
 
@@ -114,7 +114,7 @@ Key findings from research-001.md:
 
 ---
 
-### Phase 4: Update Capture Variables [NOT STARTED]
+### Phase 4: Update Capture Variables [COMPLETED]
 
 **Goal:** Document all new capture variables for dependency tracking
 
@@ -136,7 +136,7 @@ Key findings from research-001.md:
 
 ---
 
-### Phase 5: Verification and Testing [NOT STARTED]
+### Phase 5: Verification and Testing [COMPLETED]
 
 **Goal:** Validate changes maintain consistent agent structure and functionality
 
