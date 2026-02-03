@@ -1,0 +1,22 @@
+{
+  "status": "researched",
+  "started_at": "2026-02-03T12:00:00Z",
+  "completed_at": "2026-02-03T12:15:00Z",
+  "summary": "Identified that current prepend-each-task logic inverts topological order. Recommend batch insertion: build all task entries in sorted order, insert as single block after ## Tasks heading.",
+  "artifacts": [
+    {
+      "path": "specs/038_update_todomd_insertion_dependency_order/reports/research-001.md",
+      "type": "research",
+      "summary": "Research report analyzing TODO.md insertion mechanism and proposing batch insertion pattern for dependency-ordered tasks"
+    }
+  ],
+  "next_steps": "Run /plan 38 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1770163142_8b3e5a",
+    "agent_type": "general-research-agent",
+    "duration_seconds": 900,
+    "delegation_depth": 2,
+    "delegation_path": ["orchestrator", "research", "skill-researcher", "general-research-agent"],
+    "findings_count": 6
+  }
+}
