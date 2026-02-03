@@ -4,14 +4,21 @@
     {
       "project_number": 35,
       "project_name": "add_dependencies_field_to_state_schema",
-      "status": "not_started",
+      "status": "researched",
       "language": "meta",
       "description": "Update state-management.md to add dependencies array field to task entries for machine-readable dependency tracking. This is the foundational schema change that enables all other dependency handling improvements.",
       "created": "2026-02-03T20:30:00Z",
-      "last_updated": "2026-02-03T20:30:00Z",
-      "session_id": "sess_1770151200_meta01",
+      "last_updated": "2026-02-03T21:07:43Z",
+      "session_id": "sess_1770152721_018aa7",
       "dependencies": [],
-      "artifacts": []
+      "artifacts": [
+        {
+          "path": "specs/035_add_dependencies_field_to_state_schema/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report documenting state.json dependencies field schema, validation requirements, and TODO.md format specification"
+        }
+      ],
+      "researched": "2026-02-03T21:07:43Z"
     },
     {
       "project_number": 36,
@@ -22,7 +29,9 @@
       "created": "2026-02-03T20:30:00Z",
       "last_updated": "2026-02-03T20:30:00Z",
       "session_id": "sess_1770151200_meta01",
-      "dependencies": [35],
+      "dependencies": [
+        35
+      ],
       "artifacts": []
     },
     {
@@ -34,7 +43,10 @@
       "created": "2026-02-03T20:30:00Z",
       "last_updated": "2026-02-03T20:30:00Z",
       "session_id": "sess_1770151200_meta01",
-      "dependencies": [35, 36],
+      "dependencies": [
+        35,
+        36
+      ],
       "artifacts": []
     },
     {
@@ -46,7 +58,9 @@
       "created": "2026-02-03T20:30:00Z",
       "last_updated": "2026-02-03T20:30:00Z",
       "session_id": "sess_1770151200_meta01",
-      "dependencies": [37],
+      "dependencies": [
+        37
+      ],
       "artifacts": []
     },
     {
@@ -58,7 +72,10 @@
       "created": "2026-02-03T20:30:00Z",
       "last_updated": "2026-02-03T20:30:00Z",
       "session_id": "sess_1770151200_meta01",
-      "dependencies": [37, 38],
+      "dependencies": [
+        37,
+        38
+      ],
       "artifacts": []
     },
     {
