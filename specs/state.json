@@ -1,6 +1,15 @@
 {
-  "next_project_number": 40,
-  "active_projects": [],
+  "next_project_number": 41,
+  "active_projects": [
+    {
+      "project_number": 40,
+      "project_name": "standardize_multi_task_creation_patterns",
+      "status": "not_started",
+      "language": "meta",
+      "created": "2026-02-03T23:37:32Z",
+      "last_updated": "2026-02-03T23:37:32Z"
+    }
+  ],
   "repository_health": {
     "last_assessed": "2026-02-03T22:54:49Z",
     "todo_count": 45,
