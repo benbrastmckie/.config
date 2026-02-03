@@ -4,19 +4,25 @@
     {
       "project_number": 33,
       "project_name": "fix_statusline_settings_config",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-03T19:06:18Z",
-      "last_updated": "2026-02-03T19:15:00Z",
-      "session_id": "sess_1770178200_d7f4a3",
+      "last_updated": "2026-02-03T19:33:58Z",
+      "session_id": "sess_1770178500_e2b8c5",
       "researched": "2026-02-03T19:15:00Z",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/033_fix_statusline_settings_config/reports/research-001.md",
           "summary": "Root cause analysis: statusLine must be top-level field (not nested in hooks), with workaround for known external script bug"
+        },
+        {
+          "path": "specs/033_fix_statusline_settings_config/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase plan to fix statusLine config, update script field names, and verify end-to-end functionality"
         }
-      ]
+      ],
+      "planned": "2026-02-03T19:33:58Z"
     },
     {
       "project_number": 32,
