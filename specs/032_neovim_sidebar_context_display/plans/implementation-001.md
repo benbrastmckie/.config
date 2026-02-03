@@ -1,7 +1,7 @@
 # Implementation Plan: Task #32
 
 - **Task**: 32 - Improve Neovim sidebar panel to display Claude Code context usage
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 2-3 hours
 - **Dependencies**: lualine.nvim, greggh/claude-code.nvim, jq
 - **Research Inputs**: [research-001.md](../reports/research-001.md), [research-002.md](../reports/research-002.md), [research-003.md](../reports/research-003.md)

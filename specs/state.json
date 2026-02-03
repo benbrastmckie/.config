@@ -4,11 +4,11 @@
     {
       "project_number": 32,
       "project_name": "neovim_sidebar_context_display",
-      "status": "planned",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-03T10:17:13Z",
-      "last_updated": "2026-02-03T18:50:53Z",
-      "session_id": "sess_1770144493_7bd61b",
+      "last_updated": "2026-02-03T19:02:35Z",
+      "session_id": "sess_1770177600_c9d3f2",
       "artifacts": [
         {
           "type": "research",
@@ -29,9 +29,17 @@
           "path": "specs/032_neovim_sidebar_context_display/plans/implementation-001.md",
           "type": "plan",
           "summary": "4-phase implementation plan for Claude Code context display in lualine"
+        },
+        {
+          "type": "summary",
+          "path": "specs/032_neovim_sidebar_context_display/summaries/implementation-summary-20260203.md",
+          "summary": "Implementation summary with verification results"
         }
       ],
-      "planned": "2026-02-03T18:50:53Z"
+      "planned": "2026-02-03T18:50:53Z",
+      "started": "2026-02-03T18:57:57Z",
+      "completed": "2026-02-03T19:02:35Z",
+      "completion_summary": "Implemented Claude Code context usage display in Neovim lualine using a push-based architecture. Created a statusLine hook script that writes JSON to /tmp/claude-context.json, a Lua reader module with vim.uv file watching, and a custom lualine extension showing context percentage with color-coded progress bar, token counts, model name, and cost."
     },
     {
       "project_number": 31,

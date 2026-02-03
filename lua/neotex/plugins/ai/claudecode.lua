@@ -76,6 +76,12 @@ return {
       if ok and claude_module and claude_module.setup then
         claude_module.setup()
       end
+
+      -- Initialize Claude context reader for lualine integration
+      local ctx_ok, ctx_module = pcall(require, "neotex.util.claude-context")
+      if ctx_ok and ctx_module and ctx_module.setup then
+        ctx_module.setup()
+      end
     end, 100)
 
     -- Configure terminal behavior to match old setup
@@ -88,6 +94,8 @@ return {
         vim.bo.buftype = "terminal"
         -- Hide from buffer lists
         vim.bo.bufhidden = "hide"
+        -- Set custom filetype for lualine extension matching
+        vim.bo.filetype = "claude-code"
 
         -- Note: Terminal STT toggle (<C-'>) is defined globally in stt/init.lua
         -- Note: <C-CR> mapping for Claude Code toggle is defined in keymaps.lua

@@ -37,10 +37,11 @@ return {
           statusline = {},
           winbar = {},
         },
-        -- Disable lualine for terminal buffers (claude-code, toggleterm, etc.)
+        -- Disable lualine for nofile buffers
+        -- Note: "terminal" removed from disabled_buftypes to allow claude-code extension
         disabled_buftypes = {
-          statusline = { "terminal", "nofile" },
-          winbar = { "terminal", "nofile" },
+          statusline = { "nofile" },
+          winbar = { "nofile" },
         },
         ignore_focus = {},
         always_divide_middle = true,
@@ -79,7 +80,9 @@ return {
       tabline = {},
       winbar = {},
       inactive_winbar = {},
-      extensions = {}
+      extensions = {
+        require("neotex.plugins.ui.lualine.extensions.claude-code"),
+      }
     })
   end,
 }
