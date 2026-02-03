@@ -154,6 +154,320 @@
       "language": "meta",
       "archived": "2026-02-02T22:59:22Z",
       "completion_summary": "Defined 3-digit zero-padded directory numbering standard in artifact-formats.md, state-management.md, and CLAUDE.md. All path templates now use {NNN}_{SLUG} pattern with printf guidance for implementation."
+    },
+    {
+      "project_number": 31,
+      "project_name": "fix_plan_file_status_update_in_implement",
+      "status": "completed",
+      "language": "meta",
+      "description": "Add plan file status verification to /implement GATE OUT checkpoint and make implementation skills more explicit about plan file updates. Currently plan files are not reliably updated to [COMPLETED] status after implementation finishes (documented in skills but not executed). Fix: (1) Add verification step in implement.md GATE OUT that checks plan file status matches task status and updates if needed (defensive backup), (2) Make the sed command in skills Stage 7 more explicit with error checking and verification output.",
+      "created": "2026-02-02T21:27:26Z",
+      "last_updated": "2026-02-02T23:19:05Z",
+      "session_id": "sess_1770077399_a9d3c8",
+      "researched": "2026-02-02T23:04:37Z",
+      "artifacts": [
+        {
+          "path": "specs/031_fix_plan_file_status_update_in_implement/reports/research-001.md",
+          "type": "research",
+          "summary": "Analysis of plan file status update gaps in /implement GATE OUT and skills Stage 7, with recommendations for verification and fixes"
+        },
+        {
+          "path": "specs/031_fix_plan_file_status_update_in_implement/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase plan to fix plan file status updates in /implement command and implementation skills"
+        },
+        {
+          "path": "specs/031_fix_plan_file_status_update_in_implement/summaries/implementation-summary-20260202.md",
+          "type": "summary",
+          "summary": "Implementation summary documenting changes to implement.md and 4 implementation skills"
+        }
+      ],
+      "planned": "2026-02-02T23:13:35Z",
+      "started": "2026-02-02T23:14:43Z",
+      "completed": "2026-02-02T23:19:05Z",
+      "completion_summary": "Added plan file status verification to /implement GATE OUT as defensive backup, and improved sed commands in skill-neovim-implementation, skill-implementer, skill-latex-implementation, and skill-typst-implementation with dual pattern support (bullet and non-bullet), verification output, and graceful missing file handling.",
+      "claudemd_suggestions": "Modified .claude/commands/implement.md (added step 5 to GATE OUT), .claude/skills/skill-neovim-implementation/SKILL.md (added preflight and postflight plan updates), .claude/skills/skill-implementer/SKILL.md, .claude/skills/skill-latex-implementation/SKILL.md, .claude/skills/skill-typst-implementation/SKILL.md (improved sed commands in all three)"
+    },
+    {
+      "project_number": 32,
+      "project_name": "neovim_sidebar_context_display",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-03T10:17:13Z",
+      "last_updated": "2026-02-03T19:02:35Z",
+      "session_id": "sess_1770177600_c9d3f2",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/032_neovim_sidebar_context_display/reports/research-001.md",
+          "summary": "Comprehensive research on Claude Code context API, VS Code implementation, Neovim plugin patterns, and three feasible implementation approaches with recommendation for custom sidebar panel"
+        },
+        {
+          "type": "research",
+          "path": "specs/032_neovim_sidebar_context_display/reports/research-002.md",
+          "summary": "Follow-up research on lualine extensions, Claude Code buffer detection, custom component creation, and context data fetching via statusline JSON file"
+        },
+        {
+          "type": "research",
+          "path": "specs/032_neovim_sidebar_context_display/reports/research-003.md",
+          "summary": "Push-based architecture research covering Claude Code hooks, vim.uv file watching, and complete implementation code for statusline integration"
+        },
+        {
+          "path": "specs/032_neovim_sidebar_context_display/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for Claude Code context display in lualine"
+        },
+        {
+          "type": "summary",
+          "path": "specs/032_neovim_sidebar_context_display/summaries/implementation-summary-20260203.md",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-03T18:50:53Z",
+      "started": "2026-02-03T18:57:57Z",
+      "completed": "2026-02-03T19:02:35Z",
+      "completion_summary": "Implemented Claude Code context usage display in Neovim lualine using a push-based architecture. Created a statusLine hook script that writes JSON to /tmp/claude-context.json, a Lua reader module with vim.uv file watching, and a custom lualine extension showing context percentage with color-coded progress bar, token counts, model name, and cost."
+    },
+    {
+      "project_number": 33,
+      "project_name": "fix_statusline_settings_config",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-03T19:06:18Z",
+      "last_updated": "2026-02-03T19:38:57Z",
+      "session_id": "sess_1770147322_4633cd",
+      "researched": "2026-02-03T19:15:00Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/033_fix_statusline_settings_config/reports/research-001.md",
+          "summary": "Root cause analysis: statusLine must be top-level field (not nested in hooks), with workaround for known external script bug"
+        },
+        {
+          "path": "specs/033_fix_statusline_settings_config/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase plan to fix statusLine config, update script field names, and verify end-to-end functionality"
+        },
+        {
+          "type": "summary",
+          "path": "specs/033_fix_statusline_settings_config/summaries/implementation-summary-20260203.md",
+          "summary": "Implementation summary with verification and post-implementation steps"
+        }
+      ],
+      "planned": "2026-02-03T19:33:58Z",
+      "completed": "2026-02-03T19:38:57Z",
+      "completion_summary": "Fixed Claude Code settings.json statusLine configuration by moving it from nested hooks object to correct top-level position. Updated statusline-push.sh script to use official JSON schema field names. Created inline command fallback for external script invocation bug workaround."
+    },
+    {
+      "project_number": 34,
+      "project_name": "statusline_display_best_practices",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-03T19:45:08Z",
+      "last_updated": "2026-02-03T20:03:56Z",
+      "session_id": "sess_1770148918_bbe992",
+      "researched": "2026-02-03T19:51:50Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/034_statusline_display_best_practices/reports/research-001.md",
+          "summary": "Research report documenting Unicode block characters, lualine patterns, color conventions, and AI statusline integrations for Claude Code context display"
+        },
+        {
+          "path": "specs/034_statusline_display_best_practices/plans/implementation-002.md",
+          "type": "plan",
+          "summary": "Revised plan: Update statusline-push.sh to use Unicode block characters instead of ASCII brackets"
+        },
+        {
+          "path": "specs/034_statusline_display_best_practices/summaries/implementation-summary-20260203.md",
+          "type": "summary",
+          "summary": "Updated statusline-push.sh to use Unicode block characters for progress bar display"
+        }
+      ],
+      "planned": "2026-02-03T19:59:17Z",
+      "started": "2026-02-03T20:02:20Z",
+      "completed": "2026-02-03T20:03:56Z",
+      "completion_summary": "Updated Claude Code statusline hook script to use Unicode block characters (█░) instead of ASCII bracket notation ([=][-]) for the progress bar. The display now shows clean progress bars like '50% █████░░░░░ 100k/200k' instead of cluttered '50% [[=][=][=][=][=][-][-][-][-][-]] 100k/200k'."
+    },
+    {
+      "project_number": 35,
+      "project_name": "add_dependencies_field_to_state_schema",
+      "status": "completed",
+      "language": "meta",
+      "description": "Update state-management.md to add dependencies array field to task entries for machine-readable dependency tracking. This is the foundational schema change that enables all other dependency handling improvements.",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T21:15:44Z",
+      "session_id": "sess_1770153123_06f89d",
+      "dependencies": [],
+      "artifacts": [
+        {
+          "path": "specs/035_add_dependencies_field_to_state_schema/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report documenting state.json dependencies field schema, validation requirements, and TODO.md format specification"
+        },
+        {
+          "path": "specs/035_add_dependencies_field_to_state_schema/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for documenting dependencies field in state-management.md schema"
+        },
+        {
+          "path": "specs/035_add_dependencies_field_to_state_schema/summaries/implementation-summary-20260203.md",
+          "type": "summary",
+          "summary": "Implementation summary documenting all changes to state-management.md for dependencies field"
+        }
+      ],
+      "researched": "2026-02-03T21:07:43Z",
+      "planned": "2026-02-03T21:11:04Z",
+      "started": "2026-02-03T21:12:27Z",
+      "completed": "2026-02-03T21:15:44Z",
+      "completion_summary": "Documented the dependencies field in state-management.md including state.json schema example, TODO.md entry format, field specification table with type/default/description, format conversion rules between state.json and TODO.md, and validation requirements (valid references, no circular dependencies, no self-reference).",
+      "claudemd_suggestions": "Updated .claude/rules/state-management.md with Dependencies Field Schema section (lines 177-196) documenting the dependencies array field for task dependency tracking"
+    },
+    {
+      "project_number": 36,
+      "project_name": "enhance_interview_stage3_dependency_capture",
+      "status": "completed",
+      "language": "meta",
+      "description": "Update meta-builder-agent.md Stage 3 IdentifyUseCases to explicitly capture dependency relationships with validation (must reference valid task numbers, no circular dependencies).",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T21:46:48Z",
+      "session_id": "sess_1770154917_7f1979",
+      "dependencies": [
+        35
+      ],
+      "artifacts": [
+        {
+          "path": "specs/036_enhance_interview_stage3_dependency_capture/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report with Stage 3 gap analysis, proposed Question 5 for dependency capture, validation logic, and implementation recommendations"
+        },
+        {
+          "path": "specs/036_enhance_interview_stage3_dependency_capture/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase plan covering Question 5 addition, validation logic, external dependencies, and capture variables"
+        },
+        {
+          "path": "specs/036_enhance_interview_stage3_dependency_capture/summaries/implementation-summary-20260203.md",
+          "type": "summary",
+          "summary": "Implementation summary documenting all changes to meta-builder-agent.md"
+        }
+      ],
+      "researched": "2026-02-03T21:26:52Z",
+      "planned": "2026-02-03T21:32:04Z",
+      "started": "2026-02-03T21:42:21Z",
+      "completed": "2026-02-03T21:46:48Z",
+      "completion_summary": "Enhanced meta-builder-agent.md Interview Stage 3 with explicit dependency capture via Question 5 (3 modes: no deps, linear chain, custom), validation logic pseudocode, and optional Question 5b for external dependencies on existing tasks.",
+      "claudemd_suggestions": "Updated .claude/agents/meta-builder-agent.md with dependency capture workflow and validation logic in Stage 3"
+    },
+    {
+      "project_number": 37,
+      "project_name": "implement_topological_sorting_stage6",
+      "status": "completed",
+      "language": "meta",
+      "description": "Update meta-builder-agent.md Stage 6 CreateTasks to implement topological sorting of tasks based on dependency graph so foundational tasks get lower numbers and are created first.",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T22:16:07Z",
+      "session_id": "sess_1770156773_067130",
+      "dependencies": [
+        35,
+        36
+      ],
+      "artifacts": [
+        {
+          "path": "specs/037_implement_topological_sorting_stage6/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report covering Kahn's algorithm, insertion points in Stage 6, pseudocode implementation, and edge case handling"
+        },
+        {
+          "path": "specs/037_implement_topological_sorting_stage6/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase plan: add topological sort algorithm, modify number assignment, update task creation loop, update DeliverSummary, verify"
+        },
+        {
+          "path": "specs/037_implement_topological_sorting_stage6/summaries/implementation-summary-20260203.md",
+          "type": "summary",
+          "summary": "Implementation summary with algorithm details and example walkthrough"
+        }
+      ],
+      "researched": "2026-02-03T21:56:12Z",
+      "planned": "2026-02-03T22:05:42Z",
+      "started": "2026-02-03T22:13:12Z",
+      "completed": "2026-02-03T22:16:07Z",
+      "completion_summary": "Added Kahn's algorithm for topological sorting to meta-builder-agent.md Stage 6, ensuring foundational tasks receive lower numbers when creating multiple tasks with dependencies via /meta.",
+      "claudemd_suggestions": "Updated meta-builder-agent.md Stage 6 with topological sorting algorithm, modified number assignment logic, and updated task creation loop and DeliverSummary sections"
+    },
+    {
+      "project_number": 38,
+      "project_name": "update_todomd_insertion_dependency_order",
+      "status": "completed",
+      "language": "meta",
+      "description": "Modify TODO.md insertion logic to insert tasks in dependency order (foundational tasks higher in file) instead of always prepending.",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T22:30:40Z",
+      "session_id": "sess_1770163600_d9f1a3",
+      "dependencies": [
+        37
+      ],
+      "artifacts": [
+        {
+          "path": "specs/038_update_todomd_insertion_dependency_order/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report analyzing TODO.md insertion mechanism and proposing batch insertion pattern for dependency-ordered tasks"
+        },
+        {
+          "path": "specs/038_update_todomd_insertion_dependency_order/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for batch TODO.md insertion"
+        },
+        {
+          "path": "specs/038_update_todomd_insertion_dependency_order/summaries/implementation-summary-20260203.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "researched": "2026-02-03T22:20:59Z",
+      "planned": "2026-02-03T22:25:40Z",
+      "started": "2026-02-03T22:27:25Z",
+      "completed": "2026-02-03T22:30:40Z",
+      "completion_summary": "Modified TODO.md insertion logic in meta-builder-agent.md from prepend-each to batch insertion, ensuring foundational tasks created via /meta appear higher in the file (matching Task 37'\\''s topological sorting order).",
+      "claudemd_suggestions": "Updated .claude/agents/meta-builder-agent.md: Stage 6 batch insertion semantics, TODO.md Batch Insertion Pattern section, enhanced DeliverSummary guidance"
+    },
+    {
+      "project_number": 39,
+      "project_name": "enhance_stage7_dependency_visualization",
+      "status": "completed",
+      "language": "meta",
+      "description": "Update meta-builder-agent.md Stage 7 DeliverSummary to show dependency graph visualization and execution order based on actual assigned task numbers.",
+      "created": "2026-02-03T20:30:00Z",
+      "last_updated": "2026-02-03T22:52:20Z",
+      "session_id": "sess_1770164700_e3c9f4",
+      "dependencies": [
+        37,
+        38
+      ],
+      "artifacts": [
+        {
+          "path": "specs/039_enhance_stage7_dependency_visualization/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report analyzing current DeliverSummary output and proposing ASCII dependency graph visualization with execution order display"
+        },
+        {
+          "path": "specs/039_enhance_stage7_dependency_visualization/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase plan covering complexity detection, graph generation algorithm, template update, examples, and verification"
+        },
+        {
+          "path": "specs/039_enhance_stage7_dependency_visualization/summaries/implementation-summary-20260203.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results and change details"
+        }
+      ],
+      "researched": "2026-02-03T22:39:33Z",
+      "planned": "2026-02-03T22:45:37Z",
+      "started": "2026-02-03T22:48:40Z",
+      "completed": "2026-02-03T22:52:20Z",
+      "completion_summary": "Enhanced meta-builder-agent.md Stage 7 DeliverSummary with ASCII dependency graph visualization, task table with assigned numbers, execution order annotations, and 3 example outputs demonstrating linear, diamond, and external dependency patterns.",
+      "claudemd_suggestions": "Modified .claude/agents/meta-builder-agent.md with enhanced DeliverSummary output format including dependency visualization algorithms and examples"
     }
   ]
 }
