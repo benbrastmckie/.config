@@ -1,0 +1,20 @@
+{
+  "status": "researched",
+  "summary": "Root cause identified: statusLine was incorrectly nested inside hooks object but is a top-level field. Known bug (GitHub #13517) may prevent external script execution - inline command workaround available.",
+  "artifacts": [
+    {
+      "type": "research",
+      "path": "specs/033_fix_statusline_settings_config/reports/research-001.md",
+      "summary": "Research report with correct settings.json schema, statusLine configuration format, and workarounds for known external script bug"
+    }
+  ],
+  "next_steps": "Run /plan 33 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1770178200_d7f4a3",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 180,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 5
+  }
+}
