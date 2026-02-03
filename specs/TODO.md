@@ -50,11 +50,13 @@ next_project_number: 40
 
 ### 38. Update TODO.md insertion for dependency order
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
+- **Completed**: 2026-02-03
 - **Language**: meta
 - **Dependencies**: Task #37
 - **Research**: [research-001.md](specs/038_update_todomd_insertion_dependency_order/reports/research-001.md)
 - **Plan**: [implementation-001.md](specs/038_update_todomd_insertion_dependency_order/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260203.md](specs/038_update_todomd_insertion_dependency_order/summaries/implementation-summary-20260203.md)
 
 **Description**: Modify TODO.md insertion logic to insert tasks in dependency order (foundational tasks higher in file) instead of always prepending.
 

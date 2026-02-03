@@ -538,6 +538,48 @@ for position, task_idx in enumerate(sorted_indices):
 ---
 ```
 
+**TODO.md Batch Insertion Pattern**:
+
+Build all task entries in memory before inserting to preserve topological order:
+
+```python
+# After task number assignment, build the batch in sorted order
+batch_entries = []
+
+for position, task_idx in enumerate(sorted_indices):
+    task = task_list[task_idx - 1]
+    task_num = task_number_map[task_idx]
+
+    # Format dependencies (internal + external)
+    deps = dependencies[task_idx]  # Already merged in dependency resolution
+    if deps:
+        dep_str = ", ".join([f"Task #{d}" for d in sorted(deps)])
+    else:
+        dep_str = "None"
+
+    # Build entry
+    entry = f"""### {task_num}. {task['title']}
+- **Effort**: {task['effort']}
+- **Status**: [NOT STARTED]
+- **Language**: {task['language']}
+- **Dependencies**: {dep_str}
+
+**Description**: {task['description']}
+
+---"""
+
+    batch_entries.append(entry)
+
+# Join all entries (foundational tasks first in the string)
+batch_markdown = "\n\n".join(batch_entries)
+
+# Insert entire batch after ## Tasks heading
+# This preserves order: first entry in batch appears first in file
+insert_after_heading("## Tasks", batch_markdown)
+```
+
+**Why batch insertion matters**: With prepend-each semantics, the last task created ends up at the top of TODO.md. Batch insertion ensures the first task in `sorted_indices` (foundational) appears first in the file. Users then see tasks in dependency order: complete the top task first.
+
 ### Interview Stage 7: DeliverSummary
 
 **Output**:
@@ -562,8 +604,9 @@ Created {N} task(s) for {domain}:
 1. Task #{N} (no dependencies) - foundational
 2. Task #{N} (depends on #{M}) - builds on above
 
-Note: Tasks are now created in topological order, so lower task numbers
-indicate foundational tasks that should be completed first.
+Note: Tasks appear in TODO.md in dependency order (foundational tasks at top).
+Lower task numbers indicate foundational tasks that should be completed first.
+Work through tasks from top to bottom in the TODO.md file.
 ```
 
 ---
@@ -746,17 +789,25 @@ Return ONLY valid JSON matching this schema:
 
 ## Stage 6: Status Updates (Interactive/Prompt Only)
 
-For each created task:
+**TODO.md Batch Insertion** (all tasks in a single operation):
 
-1. **Update TODO.md**:
-   - Prepend task entry to `## Tasks` section
-   - Include all required fields
+1. **Build task entries batch** (in sorted order):
+   - Iterate over `sorted_indices` (foundational tasks first)
+   - Format each task entry using the TODO.md Entry Format (see Stage 6 CreateTasks)
+   - Collect all entries into a single markdown block
 
-2. **Update state.json**:
+2. **Insert batch into TODO.md**:
+   - Insert the entire batch after `## Tasks` heading (before existing tasks)
+   - This preserves topological order: foundational tasks appear higher in the file
+   - The batch as a whole is "prepended" to existing tasks
+
+3. **Include all required fields** in each entry
+
+4. **Update state.json**:
    - Add to active_projects array
    - Increment next_project_number
 
-3. **Git Commit**:
+5. **Git Commit**:
 ```bash
 git add specs/
 git commit -m "meta: create {N} tasks for {domain}"

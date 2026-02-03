@@ -1,20 +1,30 @@
 {
-  "status": "planned",
+  "status": "implemented",
+  "summary": "Modified meta-builder-agent.md to use batch insertion for TODO.md entries, ensuring foundational tasks appear higher in the file. Added batch building implementation pattern with Python pseudocode and updated DeliverSummary guidance.",
   "artifacts": [
     {
-      "type": "plan",
-      "path": "specs/038_update_todomd_insertion_dependency_order/plans/implementation-001.md",
-      "summary": "4-phase implementation plan for batch TODO.md insertion"
+      "type": "implementation",
+      "path": ".claude/agents/meta-builder-agent.md",
+      "summary": "Updated Stage 6 with batch insertion semantics, added batch building pattern"
+    },
+    {
+      "type": "summary",
+      "path": "specs/038_update_todomd_insertion_dependency_order/summaries/implementation-summary-20260203.md",
+      "summary": "Implementation summary with verification results"
     }
   ],
-  "next_steps": "Run /implement 38 to execute the plan",
+  "completion_data": {
+    "completion_summary": "Modified TODO.md insertion logic in meta-builder-agent.md from prepend-each to batch insertion, ensuring foundational tasks created via /meta appear higher in the file (matching Task 37's topological sorting order).",
+    "claudemd_suggestions": "Updated .claude/agents/meta-builder-agent.md: Stage 6 batch insertion semantics, TODO.md Batch Insertion Pattern section, enhanced DeliverSummary guidance"
+  },
   "metadata": {
-    "session_id": "sess_1770163390_c4e7b2",
-    "agent_type": "planner-agent",
-    "duration_seconds": 120,
+    "session_id": "sess_1770163600_d9f1a3",
+    "duration_seconds": 1200,
+    "agent_type": "general-implementation-agent",
     "delegation_depth": 2,
-    "delegation_path": ["orchestrator", "plan", "skill-planner", "planner-agent"],
-    "phase_count": 4,
-    "estimated_hours": "1-2"
-  }
+    "delegation_path": ["orchestrator", "implement", "skill-implementer", "general-implementation-agent"],
+    "phases_completed": 4,
+    "phases_total": 4
+  },
+  "next_steps": "Review implementation and run verification"
 }

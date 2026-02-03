@@ -111,12 +111,12 @@
     {
       "project_number": 38,
       "project_name": "update_todomd_insertion_dependency_order",
-      "status": "planned",
+      "status": "completed",
       "language": "meta",
       "description": "Modify TODO.md insertion logic to insert tasks in dependency order (foundational tasks higher in file) instead of always prepending.",
       "created": "2026-02-03T20:30:00Z",
-      "last_updated": "2026-02-03T22:25:40Z",
-      "session_id": "sess_1770163390_c4e7b2",
+      "last_updated": "2026-02-03T22:30:40Z",
+      "session_id": "sess_1770163600_d9f1a3",
       "dependencies": [
         37
       ],
@@ -130,10 +130,19 @@
           "path": "specs/038_update_todomd_insertion_dependency_order/plans/implementation-001.md",
           "type": "plan",
           "summary": "4-phase implementation plan for batch TODO.md insertion"
+        },
+        {
+          "path": "specs/038_update_todomd_insertion_dependency_order/summaries/implementation-summary-20260203.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
         }
       ],
       "researched": "2026-02-03T22:20:59Z",
-      "planned": "2026-02-03T22:25:40Z"
+      "planned": "2026-02-03T22:25:40Z",
+      "started": "2026-02-03T22:27:25Z",
+      "completed": "2026-02-03T22:30:40Z",
+      "completion_summary": "Modified TODO.md insertion logic in meta-builder-agent.md from prepend-each to batch insertion, ensuring foundational tasks created via /meta appear higher in the file (matching Task 37'\\''s topological sorting order).",
+      "claudemd_suggestions": "Updated .claude/agents/meta-builder-agent.md: Stage 6 batch insertion semantics, TODO.md Batch Insertion Pattern section, enhanced DeliverSummary guidance"
     },
     {
       "project_number": 39,
