@@ -1,10 +1,17 @@
 ---
-next_project_number: 33
+next_project_number: 34
 ---
 
 # TODO
 
 ## Tasks
+
+### 33. Fix Claude Code settings.json statusLine configuration
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Fix Claude Code settings.json statusLine configuration - move statusLine from hooks object to top-level field with correct schema per research-003.md. Current error: "statusLine: Invalid key in record" because statusLine was incorrectly nested inside hooks object when it should be a separate top-level configuration.
 
 ### 32. Improve Neovim sidebar panel to display Claude Code context usage
 - **Effort**: TBD
