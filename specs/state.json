@@ -111,12 +111,12 @@
     {
       "project_number": 38,
       "project_name": "update_todomd_insertion_dependency_order",
-      "status": "researched",
+      "status": "planned",
       "language": "meta",
       "description": "Modify TODO.md insertion logic to insert tasks in dependency order (foundational tasks higher in file) instead of always prepending.",
       "created": "2026-02-03T20:30:00Z",
-      "last_updated": "2026-02-03T22:20:59Z",
-      "session_id": "sess_1770163142_8b3e5a",
+      "last_updated": "2026-02-03T22:25:40Z",
+      "session_id": "sess_1770163390_c4e7b2",
       "dependencies": [
         37
       ],
@@ -125,9 +125,15 @@
           "path": "specs/038_update_todomd_insertion_dependency_order/reports/research-001.md",
           "type": "research",
           "summary": "Research report analyzing TODO.md insertion mechanism and proposing batch insertion pattern for dependency-ordered tasks"
+        },
+        {
+          "path": "specs/038_update_todomd_insertion_dependency_order/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for batch TODO.md insertion"
         }
       ],
-      "researched": "2026-02-03T22:20:59Z"
+      "researched": "2026-02-03T22:20:59Z",
+      "planned": "2026-02-03T22:25:40Z"
     },
     {
       "project_number": 39,
