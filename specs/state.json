@@ -1,6 +1,14 @@
 {
-  "next_project_number": 34,
+  "next_project_number": 35,
   "active_projects": [
+    {
+      "project_number": 34,
+      "project_name": "statusline_display_best_practices",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-03T19:45:08Z",
+      "last_updated": "2026-02-03T19:45:08Z"
+    },
     {
       "project_number": 33,
       "project_name": "fix_statusline_settings_config",
