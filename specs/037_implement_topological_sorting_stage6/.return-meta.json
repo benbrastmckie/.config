@@ -1,20 +1,20 @@
 {
-  "status": "researched",
-  "summary": "Identified Stage 6 number assignment logic and designed topological sort using Kahn's algorithm to reorder tasks so foundational tasks get lower numbers",
+  "status": "planned",
+  "summary": "5-phase implementation plan for adding Kahn's algorithm topological sorting to meta-builder-agent.md Stage 6",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/037_implement_topological_sorting_stage6/reports/research-001.md",
-      "summary": "Research report covering Kahn's algorithm, insertion points in Stage 6, pseudocode implementation, and edge case handling"
+      "type": "plan",
+      "path": "specs/037_implement_topological_sorting_stage6/plans/implementation-001.md",
+      "summary": "5-phase plan: add topological sort algorithm, modify number assignment, update task creation loop, update DeliverSummary, verify"
     }
   ],
-  "next_steps": "Run /plan 37 to create implementation plan",
   "metadata": {
-    "session_id": "sess_1770155553_ccd383",
-    "agent_type": "general-research-agent",
-    "duration_seconds": 180,
+    "phase_count": 5,
+    "estimated_hours": "1.5-2",
+    "session_id": "sess_1770156205_615ad2",
+    "agent_type": "planner-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "general-research-agent"],
-    "findings_count": 6
-  }
+    "delegation_path": ["orchestrator", "plan", "planner-agent"]
+  },
+  "session_id": "sess_1770156205_615ad2"
 }
