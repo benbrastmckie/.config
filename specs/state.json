@@ -4,10 +4,18 @@
     {
       "project_number": 32,
       "project_name": "neovim_sidebar_context_display",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-03T10:17:13Z",
-      "last_updated": "2026-02-03T10:17:13Z"
+      "last_updated": "2026-02-03T10:27:36Z",
+      "session_id": "sess_1770114129_632773",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/032_neovim_sidebar_context_display/reports/research-001.md",
+          "summary": "Comprehensive research on Claude Code context API, VS Code implementation, Neovim plugin patterns, and three feasible implementation approaches with recommendation for custom sidebar panel"
+        }
+      ]
     },
     {
       "project_number": 31,

@@ -1,0 +1,18 @@
+{
+  "status": "researched",
+  "summary": "Claude Code CLI provides comprehensive context data via JSON statusline API; recommended implementation is custom sidebar panel using file-based polling with color-coded thresholds at 50%/80%",
+  "artifacts": [
+    {
+      "type": "research",
+      "path": "specs/032_neovim_sidebar_context_display/reports/research-001.md",
+      "summary": "Comprehensive research on Claude Code context API, VS Code implementation, Neovim plugin patterns, and three feasible implementation approaches with recommendation for custom sidebar panel"
+    }
+  ],
+  "metadata": {
+    "session_id": "sess_1770114129_632773",
+    "agent_type": "neovim-research-agent",
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 6
+  }
+}
