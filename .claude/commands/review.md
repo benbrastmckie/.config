@@ -732,6 +732,27 @@ EOF
 
 This ensures review report, state tracking, task state, and roadmap updates are committed together.
 
+## Standards Reference
+
+This command implements the multi-task creation pattern. See `.claude/docs/reference/standards/multi-task-creation-standard.md` for the complete standard.
+
+**Compliance Level**: Partial (required components, limited optional)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Discovery | Yes | Code analysis + roadmap items |
+| Selection | Yes | Tier-1 group selection, Tier-2 granularity |
+| Grouping | Yes | file_section + issue_type clustering |
+| Dependencies | No | Not implemented |
+| Ordering | No | Sequential creation |
+| Visualization | No | Not implemented |
+| Confirmation | Yes | Implicit via selection |
+| State Updates | Yes | Atomic updates (Section 5.6.3) |
+
+**Gap**: No dependency support between created tasks. When issues have natural ordering (e.g., "fix API" before "update tests"), users cannot specify this relationship.
+
+**Future Enhancement**: Add dependency interview in Tier-2 selection for groups that have natural execution order.
+
 ### 8. Output
 
 ```

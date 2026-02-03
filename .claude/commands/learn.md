@@ -252,6 +252,25 @@ No task types selected. No tasks created.
 /learn nvim/lua/ .claude/agents/
 ```
 
+## Standards Reference
+
+This command implements the multi-task creation pattern. See `.claude/docs/reference/standards/multi-task-creation-standard.md` for the complete standard.
+
+**Compliance Level**: Full (all required components)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Discovery | Yes | Tag scanning (FIX:, NOTE:, TODO:) |
+| Selection | Yes | AskUserQuestion with multiSelect |
+| Grouping | Yes | Topic clustering by shared terms/file section |
+| Dependencies | Partial | Internal only (learn-it -> fix-it) |
+| Ordering | No | Sequential creation |
+| Visualization | No | Not implemented |
+| Confirmation | Yes | Implicit via selection |
+| State Updates | Yes | Atomic state.json + TODO.md |
+
+**Limitation**: External dependency support (TODO tasks depending on existing tasks) is not implemented. The only dependency relationship is internal: when both fix-it and learn-it tasks are selected for NOTE: tags, learn-it is created first and fix-it depends on it.
+
 ## Notes
 
 - The `--dry-run` flag is no longer supported. The interactive flow is inherently "preview first" - users always see findings before any tasks are created.

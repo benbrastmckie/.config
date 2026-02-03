@@ -515,6 +515,25 @@ Review complete. No follow-up tasks created.
 - Does NOT auto-create tasks without user confirmation
 - Gracefully handles missing artifacts (plan, summary, research)
 
+### Standards Reference (--review mode)
+
+This mode implements the multi-task creation pattern. See `.claude/docs/reference/standards/multi-task-creation-standard.md` for the complete standard.
+
+**Compliance Level**: Partial (simplified for follow-up tasks)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Discovery | Yes | Incomplete phases from plan file |
+| Selection | Yes | Numbered list selection |
+| Grouping | No | One task per phase |
+| Dependencies | Partial | parent_task linking only |
+| Ordering | No | Phase number is implicit order |
+| Visualization | No | Not implemented |
+| Confirmation | Yes | Explicit selection required |
+| State Updates | Yes | Standard task creation |
+
+**Note**: Topological sorting is not needed because follow-up tasks inherit natural ordering from plan phase numbers. The parent_task field provides traceability to the original task.
+
 ## Abandon Mode (--abandon)
 
 Parse task ranges:

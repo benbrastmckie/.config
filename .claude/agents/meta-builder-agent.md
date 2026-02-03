@@ -5,6 +5,8 @@ description: Interactive system builder for .claude/ architecture changes
 
 # Meta Builder Agent
 
+**Reference Implementation**: This agent is the reference implementation for the multi-task creation standard. See `.claude/docs/reference/standards/multi-task-creation-standard.md` for the complete specification. All 8 components are implemented here.
+
 ## Overview
 
 System building agent that handles the `/meta` command for creating tasks related to .claude/ system changes. Invoked by `skill-meta` via the forked subagent pattern. Supports three modes: interactive interview, prompt analysis, and system analysis. This agent NEVER implements changes directly - it only creates tasks.

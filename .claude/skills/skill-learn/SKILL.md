@@ -664,3 +664,24 @@ Non-blocking:
 1. Log the failure
 2. Tasks are still created successfully
 3. Report that commit failed but tasks exist
+
+---
+
+## Standards Reference
+
+This skill implements the multi-task creation pattern. See `.claude/docs/reference/standards/multi-task-creation-standard.md` for the complete standard.
+
+**Compliance Level**: Full (all required components)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Discovery | Yes | Tag scanning (FIX:, NOTE:, TODO:) |
+| Selection | Yes | AskUserQuestion with multiSelect |
+| Grouping | Yes | Topic clustering (Step 7.5) |
+| Dependencies | Partial | Internal only (learn-it -> fix-it in Step 8.2) |
+| Ordering | No | Sequential creation |
+| Visualization | No | Not implemented |
+| Confirmation | Yes | Implicit via selection |
+| State Updates | Yes | Atomic updates (Step 9) |
+
+**Limitation**: External dependencies (TODO tasks depending on existing tasks) not implemented. Consider as future enhancement.

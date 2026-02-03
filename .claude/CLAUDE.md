@@ -153,6 +153,31 @@ Domain knowledge (load as needed):
 - @.claude/context/project/neovim/tools/lazy-nvim-guide.md
 - @.claude/context/project/repo/project-overview.md
 
+## Multi-Task Creation Standards
+
+Commands that create multiple tasks follow a standardized 8-component pattern. See `.claude/docs/reference/standards/multi-task-creation-standard.md` for the complete specification.
+
+**Commands Using Multi-Task Creation**:
+| Command | Compliance | Notes |
+|---------|------------|-------|
+| `/meta` | Full (Reference) | All 8 components, Kahn's algorithm, DAG visualization |
+| `/learn` | Full | Interactive selection, topic grouping, internal dependencies |
+| `/review` | Partial | Tier-based selection, grouping; no dependencies |
+| `/errors` | Partial | Automatic mode (intentional); no interactive selection |
+| `/task --review` | Partial | Numbered selection, parent_task linking |
+
+**Required Components** (all multi-task creators):
+- Item Discovery - Identify potential tasks
+- Interactive Selection - AskUserQuestion with multiSelect
+- User Confirmation - Explicit "Yes, create tasks" before creation
+- State Updates - Atomic state.json + TODO.md updates
+
+**Optional Components** (for 3+ tasks):
+- Topic Grouping - Cluster related items
+- Dependency Declaration - Ask about task relationships
+- Topological Sorting - Kahn's algorithm for ordering
+- Visualization - Linear chain or layered DAG display
+
 ## Error Handling
 
 - **On failure**: Keep task in current status, log to errors.json, preserve partial progress
