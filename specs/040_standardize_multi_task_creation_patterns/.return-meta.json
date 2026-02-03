@@ -1,0 +1,19 @@
+{
+  "status": "researched",
+  "artifacts": [
+    {
+      "type": "report",
+      "path": "specs/040_standardize_multi_task_creation_patterns/reports/research-001.md",
+      "summary": "Research report analyzing 5 multi-task creation patterns with unified standard recommendations"
+    }
+  ],
+  "next_steps": "Run /plan 40 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1770161917_51a709",
+    "agent_type": "general-research-agent",
+    "duration_seconds": 420,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "skill-researcher", "general-research-agent"],
+    "findings_count": 5
+  }
+}
