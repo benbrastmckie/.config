@@ -580,33 +580,405 @@ insert_after_heading("## Tasks", batch_markdown)
 
 **Why batch insertion matters**: With prepend-each semantics, the last task created ends up at the top of TODO.md. Batch insertion ensures the first task in `sorted_indices` (foundational) appears first in the file. Users then see tasks in dependency order: complete the top task first.
 
+**Complexity Detection** (for DeliverSummary visualization):
+
+Before generating the summary output, determine whether to use simple or complex visualization:
+
+```python
+def is_linear_chain(dependency_map, n):
+    """
+    Check if DAG is a simple linear chain (each task has at most 1 dependency,
+    and each task is depended on by at most 1 other task).
+
+    Returns True for: A -> B -> C (linear)
+    Returns False for: A -> B, A -> C (branch) or B -> D, C -> D (diamond)
+    """
+    # Check: no task has multiple dependencies
+    for deps in dependency_map.values():
+        if len(deps) > 1:
+            return False
+
+    # Check: no task is depended on by multiple tasks
+    dep_counts = {}
+    for task_idx, deps in dependency_map.items():
+        for dep in deps:
+            dep_counts[dep] = dep_counts.get(dep, 0) + 1
+
+    for count in dep_counts.values():
+        if count > 1:
+            return False
+
+    return True
+
+
+def is_complex_dag(dependency_map, n):
+    """
+    Returns True if the DAG has complex structure requiring full visualization.
+    Complex = diamond patterns, parallel branches, or multiple roots/leaves.
+    """
+    return not is_linear_chain(dependency_map, n)
+```
+
+**Visualization Decision**:
+- `is_linear_chain() == True` -> Use simple vertical chain format
+- `is_complex_dag() == True` -> Use layered graph with box-drawing characters
+
+**Graph Generation Algorithm**:
+
+```python
+def generate_execution_summary(task_list, sorted_indices, task_number_map, dependency_map, external_deps):
+    """
+    Generate task table, dependency graph, and execution order for DeliverSummary.
+
+    Args:
+        task_list: Original task list (dicts with 'title', 'slug', 'effort', 'description')
+        sorted_indices: Topologically sorted task indices
+        task_number_map: Index -> assigned task number
+        dependency_map: Index -> internal dependency indices
+        external_deps: Index -> external task numbers
+
+    Returns:
+        (table_str, graph_str, order_str): Tuple of formatted markdown strings
+    """
+    n = len(task_list)
+
+    # 1. Build task table
+    table_lines = ["| # | Task | Depends On | Path |", "|---|------|------------|------|"]
+    for task_idx in sorted_indices:
+        task_num = task_number_map[task_idx]
+        task = task_list[task_idx - 1]
+
+        # Format dependencies (internal + external)
+        all_deps = []
+        for dep_idx in dependency_map.get(task_idx, []):
+            all_deps.append(f"#{task_number_map[dep_idx]}")
+        for ext_num in external_deps.get(task_idx, []):
+            all_deps.append(f"#{ext_num}")
+        dep_str = ", ".join(all_deps) if all_deps else "None"
+
+        padded = f"{task_num:03d}"
+        title = task['title'][:40]  # Truncate for table
+        table_lines.append(f"| {task_num} | {title} | {dep_str} | specs/{padded}_{task['slug']}/ |")
+
+    table_str = "\n".join(table_lines)
+
+    # 2. Generate dependency graph
+    if is_linear_chain(dependency_map, n):
+        graph_str = generate_linear_graph(task_list, sorted_indices, task_number_map, external_deps)
+    else:
+        graph_str = generate_layered_graph(task_list, sorted_indices, task_number_map, dependency_map, external_deps)
+
+    # 3. Generate execution order
+    order_str = generate_execution_order(task_list, sorted_indices, task_number_map, dependency_map)
+
+    return table_str, graph_str, order_str
+
+
+def generate_linear_graph(task_list, sorted_indices, task_number_map, external_deps):
+    """Generate simple vertical chain visualization."""
+    lines = []
+
+    # Show external dependencies first if any exist for the first task
+    first_idx = sorted_indices[0]
+    ext = external_deps.get(first_idx, [])
+    if ext:
+        lines.append(f"  External: #{', #'.join(map(str, ext))}")
+        lines.append("      |")
+        lines.append("      v")
+
+    for i, task_idx in enumerate(sorted_indices):
+        task_num = task_number_map[task_idx]
+        task = task_list[task_idx - 1]
+        title = task['title'][:30]  # Truncate for display
+
+        lines.append(f"  [{task_num}] {title}")
+        if i < len(sorted_indices) - 1:
+            lines.append("    |")
+            lines.append("    v")
+
+    return "\n".join(lines)
+
+
+def generate_layered_graph(task_list, sorted_indices, task_number_map, dependency_map, external_deps):
+    """
+    Generate layered graph for complex dependencies using box-drawing characters.
+    Groups tasks by dependency layer (all tasks with same max-depth-from-root).
+    """
+    lines = []
+    n = len(task_list)
+
+    # Calculate layer for each task (max distance from any root)
+    layers = {}
+    for task_idx in sorted_indices:
+        deps = dependency_map.get(task_idx, [])
+        if not deps:
+            layers[task_idx] = 0
+        else:
+            layers[task_idx] = max(layers.get(d, 0) for d in deps) + 1
+
+    # Group tasks by layer
+    layer_groups = {}
+    for task_idx, layer in layers.items():
+        if layer not in layer_groups:
+            layer_groups[layer] = []
+        layer_groups[layer].append(task_idx)
+
+    # Show external dependencies if any
+    has_external = any(external_deps.get(idx, []) for idx in sorted_indices)
+    if has_external:
+        ext_nums = set()
+        for idx in sorted_indices:
+            ext_nums.update(external_deps.get(idx, []))
+        if ext_nums:
+            lines.append(f"  External: #{', #'.join(map(str, sorted(ext_nums)))}")
+            lines.append("      |")
+            lines.append("      v")
+
+    # Render each layer
+    max_layer = max(layer_groups.keys()) if layer_groups else 0
+    for layer in range(max_layer + 1):
+        tasks_in_layer = layer_groups.get(layer, [])
+        if len(tasks_in_layer) == 1:
+            # Single task in layer
+            task_idx = tasks_in_layer[0]
+            task_num = task_number_map[task_idx]
+            title = task_list[task_idx - 1]['title'][:25]
+            lines.append(f"       [{task_num}] {title}")
+        else:
+            # Multiple tasks - show side by side
+            task_strs = []
+            for task_idx in tasks_in_layer:
+                task_num = task_number_map[task_idx]
+                title = task_list[task_idx - 1]['title'][:15]
+                task_strs.append(f"[{task_num}] {title}")
+            lines.append("  " + "    ".join(task_strs))
+
+        # Draw connectors to next layer
+        if layer < max_layer:
+            next_tasks = layer_groups.get(layer + 1, [])
+            if len(tasks_in_layer) == 1 and len(next_tasks) > 1:
+                # Branch: one task splits to multiple
+                lines.append("         |")
+                lines.append("    +----+----+")
+                lines.append("    |         |")
+                lines.append("    v         v")
+            elif len(tasks_in_layer) > 1 and len(next_tasks) == 1:
+                # Merge: multiple tasks converge to one
+                lines.append("    |         |")
+                lines.append("    +----+----+")
+                lines.append("         |")
+                lines.append("         v")
+            else:
+                # Simple vertical connection
+                lines.append("         |")
+                lines.append("         v")
+
+    return "\n".join(lines)
+
+
+def generate_execution_order(task_list, sorted_indices, task_number_map, dependency_map):
+    """Generate numbered execution order with dependency annotations."""
+    lines = ["**Execution Order**:"]
+
+    # Track which tasks can run in parallel (same dependencies)
+    prev_deps = None
+    parallel_group = []
+
+    for position, task_idx in enumerate(sorted_indices):
+        task_num = task_number_map[task_idx]
+        task = task_list[task_idx - 1]
+        deps = dependency_map.get(task_idx, [])
+
+        if not deps:
+            annotation = "(foundational)"
+        else:
+            dep_nums = [task_number_map[d] for d in deps]
+            annotation = f"(after #{', #'.join(map(str, sorted(dep_nums)))})"
+
+        line = f"{position + 1}. #{task_num}: {task['title']} {annotation}"
+
+        # Check for parallel execution possibility
+        dep_set = frozenset(deps)
+        if prev_deps is not None and dep_set == prev_deps and len(deps) > 0:
+            line += "  [parallel with above]"
+
+        lines.append(line)
+        prev_deps = dep_set
+
+    return "\n".join(lines)
+```
+
 ### Interview Stage 7: DeliverSummary
 
-**Output**:
+Generate the summary output using the data from Stage 6:
+
+```python
+# Generate all summary components using the algorithms defined above
+table_str, graph_str, order_str = generate_execution_summary(
+    task_list, sorted_indices, task_number_map, dependency_map, external_dependencies
+)
+
+# Get first task number for Next Steps
+first_task_num = task_number_map[sorted_indices[0]]
+```
+
+**Output Template**:
 ```
 ## Tasks Created
 
 Created {N} task(s) for {domain}:
 
-- Task #{N}: {title}
-  Path: specs/{NNN}_{slug}/
-- Task #{N}: {title} (depends on #{N})
-  Path: specs/{NNN}_{slug}/
+{task_table}
+
+**Dependency Graph**:
+```
+{dependency_graph}
+```
+
+{execution_order}
 
 ---
 
 **Next Steps**:
-1. Review tasks in TODO.md
-2. Run `/research {N}` to begin research on first task
-3. Progress through /research -> /plan -> /implement cycle
+1. Run `/research {first_task_num}` to begin research on foundational task
+2. Work through tasks in execution order shown above
+3. Progress through /research -> /plan -> /implement cycle for each task
 
-**Suggested Order** (tasks numbered in dependency order):
-1. Task #{N} (no dependencies) - foundational
-2. Task #{N} (depends on #{M}) - builds on above
+Note: Tasks are numbered in dependency order. Complete foundational tasks first.
+Parallel execution is possible for tasks marked [parallel with above].
+```
 
-Note: Tasks appear in TODO.md in dependency order (foundational tasks at top).
-Lower task numbers indicate foundational tasks that should be completed first.
-Work through tasks from top to bottom in the TODO.md file.
+**Template Variables**:
+- `{N}` = Count of tasks created
+- `{domain}` = Domain from interview (e.g., "meta changes", "neovim configuration")
+- `{task_table}` = Markdown table from `generate_execution_summary()`
+- `{dependency_graph}` = ASCII visualization from graph generation
+- `{execution_order}` = Numbered list from `generate_execution_order()`
+- `{first_task_num}` = Lowest assigned task number (first foundational task)
+
+### DeliverSummary Examples
+
+**Example 1: Linear Chain (3 tasks)**
+
+Input: 3 tasks with simple A -> B -> C dependencies
+
+```
+## Tasks Created
+
+Created 3 task(s) for dependency visualization:
+
+| # | Task | Depends On | Path |
+|---|------|------------|------|
+| 37 | Add topological sorting | None | specs/037_add_topological_sorting/ |
+| 38 | Update TODO insertion | #37 | specs/038_update_todo_insertion/ |
+| 39 | Enhance visualization | #38 | specs/039_enhance_visualization/ |
+
+**Dependency Graph**:
+```
+  [37] Add topological sorting
+    |
+    v
+  [38] Update TODO insertion
+    |
+    v
+  [39] Enhance visualization
+```
+
+**Execution Order**:
+1. #37: Add topological sorting (foundational)
+2. #38: Update TODO insertion (after #37)
+3. #39: Enhance visualization (after #38)
+
+---
+
+**Next Steps**:
+1. Run `/research 37` to begin research on foundational task
+2. Work through tasks in execution order shown above
+3. Progress through /research -> /plan -> /implement cycle for each task
+```
+
+**Example 2: Diamond Pattern (4 tasks)**
+
+Input: 4 tasks where 2 parallel tasks converge to 1 final task
+
+```
+## Tasks Created
+
+Created 4 task(s) for feature implementation:
+
+| # | Task | Depends On | Path |
+|---|------|------------|------|
+| 37 | Core API | None | specs/037_core_api/ |
+| 38 | Parser module | #37 | specs/038_parser_module/ |
+| 39 | Validator module | #37 | specs/039_validator_module/ |
+| 40 | Integration layer | #38, #39 | specs/040_integration_layer/ |
+
+**Dependency Graph**:
+```
+       [37] Core API
+         |
+    +----+----+
+    |         |
+    v         v
+[38] Parser  [39] Validator
+    |         |
+    +----+----+
+         |
+         v
+   [40] Integration
+```
+
+**Execution Order**:
+1. #37: Core API (foundational)
+2. #38: Parser module (after #37)
+3. #39: Validator module (after #37)  [parallel with above]
+4. #40: Integration layer (after #38, #39)
+
+---
+
+**Next Steps**:
+1. Run `/research 37` to begin research on foundational task
+2. Work through tasks in execution order shown above
+3. Progress through /research -> /plan -> /implement cycle for each task
+
+Note: Tasks #38 and #39 can be researched/implemented in parallel after #37 completes.
+```
+
+**Example 3: External Dependencies (2 new tasks depending on existing #35)**
+
+Input: 2 tasks where the first depends on existing task #35
+
+```
+## Tasks Created
+
+Created 2 task(s) for build system:
+
+| # | Task | Depends On | Path |
+|---|------|------------|------|
+| 37 | Add build scripts | #35 | specs/037_add_build_scripts/ |
+| 38 | Configure CI | #37 | specs/038_configure_ci/ |
+
+**Dependency Graph**:
+```
+  External: #35
+      |
+      v
+  [37] Add build scripts
+    |
+    v
+  [38] Configure CI
+```
+
+**Execution Order**:
+1. #37: Add build scripts (after #35)
+2. #38: Configure CI (after #37)
+
+---
+
+**Next Steps**:
+1. Ensure task #35 is completed first
+2. Run `/research 37` to begin research
+3. Work through tasks in execution order shown above
 ```
 
 ---
