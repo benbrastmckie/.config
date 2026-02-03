@@ -1,10 +1,17 @@
 ---
-next_project_number: 32
+next_project_number: 33
 ---
 
 # TODO
 
 ## Tasks
+
+### 32. Improve Neovim sidebar panel to display Claude Code context usage
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Research how to add a context indicator to the Neovim sidebar panel showing percentage of context used, similar to the VS Code extension's prompt box footer display. Investigate available APIs, hooks, or customization options for displaying real-time context usage information.
 
 ### 31. Fix plan file status update in /implement
 - **Effort**: 1-2 hours

@@ -1,6 +1,14 @@
 {
-  "next_project_number": 32,
+  "next_project_number": 33,
   "active_projects": [
+    {
+      "project_number": 32,
+      "project_name": "neovim_sidebar_context_display",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-03T10:17:13Z",
+      "last_updated": "2026-02-03T10:17:13Z"
+    },
     {
       "project_number": 31,
       "project_name": "fix_plan_file_status_update_in_implement",
