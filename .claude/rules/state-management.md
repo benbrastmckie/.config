@@ -67,6 +67,7 @@ When updating task status:
 - **Effort**: {estimate}
 - **Status**: [{STATUS}]
 - **Language**: {neovim|general|meta|markdown|latex|typst}
+- **Dependencies**: Task #{N}, Task #{N}  OR  None
 - **Started**: {ISO timestamp}
 - **Completed**: {ISO timestamp}
 - **Research**: [link to report]
@@ -85,6 +86,7 @@ When updating task status:
   "effort": "4 hours",
   "created": "2026-01-08T10:00:00Z",
   "last_updated": "2026-01-08T14:30:00Z",
+  "dependencies": [332, 333],
   "artifacts": [
     {
       "type": "research",
@@ -171,6 +173,27 @@ Meta task without .claude/ changes:
 ```
 
 **Key Design Insight**: CLAUDE.md is loaded context for agents, not primarily user documentation. The `claudemd_suggestions` field exists to track .claude/ modifications, not to pre-filter what gets documented. The `/todo` command evaluates whether changes warrant CLAUDE.md updates
+
+### Dependencies Field Schema
+
+Tasks can declare dependencies on other tasks that must complete before work begins.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `dependencies` | array of integers | No | `[]` | Task numbers that must complete before this task can start |
+
+**Format Conversion**:
+
+| state.json | TODO.md |
+|------------|---------|
+| `[]` | `None` |
+| `[35]` | `Task #35` |
+| `[35, 36]` | `Task #35, Task #36` |
+
+**Validation Requirements**:
+- **Valid References**: All task numbers in `dependencies` must exist in `active_projects`
+- **No Circular Dependencies**: A task cannot create dependency cycles (A depends on B, B depends on A)
+- **No Self-Reference**: A task cannot include its own `project_number` in `dependencies`
 
 ### Artifact Object Schema
 

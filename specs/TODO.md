@@ -8,11 +8,13 @@ next_project_number: 40
 
 ### 35. Add dependencies field to state.json schema
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
+- **Completed**: 2026-02-03
 - **Language**: meta
 - **Dependencies**: None
 - **Research**: [research-001.md](specs/035_add_dependencies_field_to_state_schema/reports/research-001.md)
 - **Plan**: [implementation-001.md](specs/035_add_dependencies_field_to_state_schema/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260203.md](specs/035_add_dependencies_field_to_state_schema/summaries/implementation-summary-20260203.md)
 
 **Description**: Update state-management.md to add dependencies array field to task entries for machine-readable dependency tracking. This is the foundational schema change that enables all other dependency handling improvements.
 
