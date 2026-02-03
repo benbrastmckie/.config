@@ -36,9 +36,10 @@ next_project_number: 40
 
 ### 37. Implement topological sorting in Stage 6
 - **Effort**: 2-3 hours
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Language**: meta
 - **Dependencies**: Task #35, Task #36
+- **Research**: [research-001.md](specs/037_implement_topological_sorting_stage6/reports/research-001.md)
 
 **Description**: Update meta-builder-agent.md Stage 6 CreateTasks to implement topological sorting of tasks based on dependency graph so foundational tasks get lower numbers and are created first.
 
