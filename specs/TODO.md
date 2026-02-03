@@ -8,9 +8,10 @@ next_project_number: 33
 
 ### 32. Improve Neovim sidebar panel to display Claude Code context usage
 - **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Status**: [PLANNED]
 - **Language**: neovim
 - **Research**: [research-001.md](specs/032_neovim_sidebar_context_display/reports/research-001.md), [research-002.md](specs/032_neovim_sidebar_context_display/reports/research-002.md), [research-003.md](specs/032_neovim_sidebar_context_display/reports/research-003.md)
+- **Plan**: [implementation-001.md](specs/032_neovim_sidebar_context_display/plans/implementation-001.md)
 
 **Description**: Research how to add a context indicator to the Neovim sidebar panel showing percentage of context used, similar to the VS Code extension's prompt box footer display. Investigate available APIs, hooks, or customization options for displaying real-time context usage information.
 

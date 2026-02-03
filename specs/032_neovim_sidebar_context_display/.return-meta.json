@@ -1,20 +1,20 @@
 {
-  "status": "researched",
-  "summary": "Identified optimal push-based architecture using Claude Code statusLine hook (provides context_window data with used_percentage) writing to /tmp/claude-context.json, with Neovim's vim.uv.new_fs_event() for efficient file watching and cache invalidation.",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/032_neovim_sidebar_context_display/reports/research-003.md",
-      "summary": "Push-based architecture research covering Claude Code hooks, vim.uv file watching, and complete implementation code for statusline integration"
+      "type": "plan",
+      "path": "specs/032_neovim_sidebar_context_display/plans/implementation-001.md",
+      "summary": "4-phase implementation plan for Claude Code context display in lualine"
     }
   ],
-  "next_steps": "Run /plan 32 to create implementation plan",
+  "next_steps": "Run /implement 32 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770142058_c68d97",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 720,
+    "session_id": "sess_1770144493_7bd61b",
+    "agent_type": "planner-agent",
+    "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 7
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 4,
+    "estimated_hours": "2-3"
   }
 }

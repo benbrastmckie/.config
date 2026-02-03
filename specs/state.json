@@ -4,11 +4,11 @@
     {
       "project_number": 32,
       "project_name": "neovim_sidebar_context_display",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-03T10:17:13Z",
-      "last_updated": "2026-02-03T18:13:02Z",
-      "session_id": "sess_1770142058_c68d97",
+      "last_updated": "2026-02-03T18:50:53Z",
+      "session_id": "sess_1770144493_7bd61b",
       "artifacts": [
         {
           "type": "research",
@@ -24,8 +24,14 @@
           "type": "research",
           "path": "specs/032_neovim_sidebar_context_display/reports/research-003.md",
           "summary": "Push-based architecture research covering Claude Code hooks, vim.uv file watching, and complete implementation code for statusline integration"
+        },
+        {
+          "path": "specs/032_neovim_sidebar_context_display/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for Claude Code context display in lualine"
         }
-      ]
+      ],
+      "planned": "2026-02-03T18:50:53Z"
     },
     {
       "project_number": 31,
