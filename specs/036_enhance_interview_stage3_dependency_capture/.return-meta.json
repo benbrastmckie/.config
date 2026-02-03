@@ -1,20 +1,21 @@
 {
-  "status": "researched",
-  "summary": "Identified Stage 3 insertion points for dependency capture questions, documented validation requirements (self-reference, valid index, circular detection), and provided AskUserQuestion JSON specifications",
+  "status": "planned",
+  "summary": "Created 5-phase implementation plan for enhancing meta-builder-agent Stage 3 with explicit dependency capture",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/036_enhance_interview_stage3_dependency_capture/reports/research-001.md",
-      "summary": "Research report with Stage 3 gap analysis, proposed Question 5 for dependency capture, validation logic, and implementation recommendations"
+      "type": "plan",
+      "path": "specs/036_enhance_interview_stage3_dependency_capture/plans/implementation-001.md",
+      "summary": "5-phase plan covering Question 5 addition, validation logic, external dependencies, and capture variables"
     }
   ],
-  "next_steps": "Run /plan 36 to create implementation plan",
+  "next_steps": "Run /implement 36 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770156900_3a7b2c",
-    "agent_type": "general-research-agent",
+    "session_id": "sess_1770154177_2c6525",
+    "agent_type": "planner-agent",
     "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "general-research-agent"],
-    "findings_count": 5
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 5,
+    "estimated_hours": "1-2"
   }
 }

@@ -22,10 +22,11 @@ next_project_number: 40
 
 ### 36. Enhance interview Stage 3 dependency capture
 - **Effort**: 2-3 hours
-- **Status**: [RESEARCHED]
+- **Status**: [PLANNED]
 - **Language**: meta
 - **Dependencies**: Task #35
 - **Research**: [research-001.md](specs/036_enhance_interview_stage3_dependency_capture/reports/research-001.md)
+- **Plan**: [implementation-001.md](specs/036_enhance_interview_stage3_dependency_capture/plans/implementation-001.md)
 
 **Description**: Update meta-builder-agent.md Stage 3 IdentifyUseCases to explicitly capture dependency relationships with validation (must reference valid task numbers, no circular dependencies).
 
