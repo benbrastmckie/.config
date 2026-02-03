@@ -1,7 +1,7 @@
 # Implementation Plan: Task #37
 
 - **Task**: 37 - implement_topological_sorting_stage6
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 1.5-2 hours
 - **Dependencies**: Task #36 (dependency_map capture in Stage 3)
 - **Research Inputs**: specs/037_implement_topological_sorting_stage6/reports/research-001.md
@@ -46,7 +46,7 @@ Key findings from research-001.md:
 
 ## Implementation Phases
 
-### Phase 1: Add Topological Sorting Algorithm [NOT STARTED]
+### Phase 1: Add Topological Sorting Algorithm [COMPLETED]
 
 **Goal**: Insert Kahn's algorithm pseudocode section before the number assignment loop.
 
@@ -105,7 +105,7 @@ if len(sorted_indices) != n:
 
 ---
 
-### Phase 2: Modify Number Assignment [NOT STARTED]
+### Phase 2: Modify Number Assignment [COMPLETED]
 
 **Goal**: Update the task_number_map loop to use sorted_indices instead of sequential order.
 
@@ -138,7 +138,7 @@ for position, task_idx in enumerate(sorted_indices):
 
 ---
 
-### Phase 3: Update Task Creation Loop [NOT STARTED]
+### Phase 3: Update Task Creation Loop [COMPLETED]
 
 **Goal**: Modify the "For each task" section to iterate over sorted_indices instead of task_list order.
 
@@ -170,7 +170,7 @@ for position, task_idx in enumerate(sorted_indices):
 
 ---
 
-### Phase 4: Update DeliverSummary Section [NOT STARTED]
+### Phase 4: Update DeliverSummary Section [COMPLETED]
 
 **Goal**: Update Stage 7 to display tasks in their sorted (assigned number) order.
 
@@ -197,7 +197,7 @@ for position, task_idx in enumerate(sorted_indices):
 
 ---
 
-### Phase 5: Verify and Test [NOT STARTED]
+### Phase 5: Verify and Test [COMPLETED]
 
 **Goal**: Validate the complete implementation against research examples.
 

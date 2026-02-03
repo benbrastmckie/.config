@@ -436,16 +436,51 @@ Options per task:
 
 ### Interview Stage 6: CreateTasks
 
+**Topological Sorting** (required before number assignment):
+
+Sort tasks so foundational tasks (those with no or fewer internal dependencies) receive lower numbers using Kahn's algorithm:
+
+```python
+n = len(task_list)
+
+# Build reverse dependency graph: dependents[i] = tasks that depend on i
+dependents = {i: [] for i in range(1, n + 1)}
+for task_idx, deps in dependency_map.items():
+    for dep_idx in deps:
+        dependents[dep_idx].append(task_idx)
+
+# Calculate in-degree (number of internal dependencies) for each task
+in_degree = {idx: len(dependency_map.get(idx, [])) for idx in range(1, n + 1)}
+
+# Initialize queue with tasks having no internal dependencies
+queue = [idx for idx in range(1, n + 1) if in_degree[idx] == 0]
+
+# Process queue (BFS)
+sorted_indices = []
+while queue:
+    current = queue.pop(0)
+    sorted_indices.append(current)
+    for dependent in dependents[current]:
+        in_degree[dependent] -= 1
+        if in_degree[dependent] == 0:
+            queue.append(dependent)
+
+# Safety check (cycle should have been caught in Stage 3)
+if len(sorted_indices) != n:
+    ERROR("Internal error: circular dependency detected in Stage 6")
+```
+
 **Dependency Resolution**:
 
-Before creating tasks, build a mapping from task indices to assigned task numbers:
+Before creating tasks, build a mapping from task indices to assigned task numbers (using sorted order):
 ```
 # Task index -> assigned task number
 task_number_map = {}
 base_num = next_project_number from state.json
 
-for idx in 1..len(task_list):
-  task_number_map[idx] = base_num + idx - 1
+# Assign numbers in topological order (foundational tasks get lower numbers)
+for position, task_idx in enumerate(sorted_indices):
+  task_number_map[task_idx] = base_num + position
 ```
 
 **Merge dependencies** for each task:
@@ -464,17 +499,19 @@ for task_idx in 1..len(task_list):
   # Store: dependencies[task_idx] = final_deps
 ```
 
-**For each task**:
+**For each task** (iterate in sorted order, foundational tasks first):
 
 ```bash
-# 1. Get next task number
-next_num=$(jq -r '.next_project_number' specs/state.json)
+# Iterate over sorted_indices to create tasks in dependency order
+for position, task_idx in enumerate(sorted_indices):
+  task = task_list[task_idx - 1]  # Adjust for 1-based indexing
+  task_num = task_number_map[task_idx]
 
-# 2. Create slug from title
-slug=$(echo "{title}" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd 'a-z0-9_' | cut -c1-50)
+  # 1. Create slug from title
+  slug=$(echo "{title}" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr -cd 'a-z0-9_' | cut -c1-50)
 
-# 3. Update state.json (include dependencies array)
-# 4. Update TODO.md
+  # 2. Update state.json (include dependencies array)
+  # 3. Update TODO.md
 ```
 
 **state.json Entry** (with dependencies):
@@ -521,9 +558,12 @@ Created {N} task(s) for {domain}:
 2. Run `/research {N}` to begin research on first task
 3. Progress through /research -> /plan -> /implement cycle
 
-**Suggested Order** (respecting dependencies):
-1. Task #{N} (no dependencies)
-2. Task #{N} (depends on #{N})
+**Suggested Order** (tasks numbered in dependency order):
+1. Task #{N} (no dependencies) - foundational
+2. Task #{N} (depends on #{M}) - builds on above
+
+Note: Tasks are now created in topological order, so lower task numbers
+indicate foundational tasks that should be completed first.
 ```
 
 ---

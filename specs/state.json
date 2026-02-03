@@ -74,12 +74,12 @@
     {
       "project_number": 37,
       "project_name": "implement_topological_sorting_stage6",
-      "status": "planned",
+      "status": "completed",
       "language": "meta",
       "description": "Update meta-builder-agent.md Stage 6 CreateTasks to implement topological sorting of tasks based on dependency graph so foundational tasks get lower numbers and are created first.",
       "created": "2026-02-03T20:30:00Z",
-      "last_updated": "2026-02-03T22:05:42Z",
-      "session_id": "sess_1770156205_615ad2",
+      "last_updated": "2026-02-03T22:16:07Z",
+      "session_id": "sess_1770156773_067130",
       "dependencies": [
         35,
         36
@@ -94,10 +94,19 @@
           "path": "specs/037_implement_topological_sorting_stage6/plans/implementation-001.md",
           "type": "plan",
           "summary": "5-phase plan: add topological sort algorithm, modify number assignment, update task creation loop, update DeliverSummary, verify"
+        },
+        {
+          "path": "specs/037_implement_topological_sorting_stage6/summaries/implementation-summary-20260203.md",
+          "type": "summary",
+          "summary": "Implementation summary with algorithm details and example walkthrough"
         }
       ],
       "researched": "2026-02-03T21:56:12Z",
-      "planned": "2026-02-03T22:05:42Z"
+      "planned": "2026-02-03T22:05:42Z",
+      "started": "2026-02-03T22:13:12Z",
+      "completed": "2026-02-03T22:16:07Z",
+      "completion_summary": "Added Kahn's algorithm for topological sorting to meta-builder-agent.md Stage 6, ensuring foundational tasks receive lower numbers when creating multiple tasks with dependencies via /meta.",
+      "claudemd_suggestions": "Updated meta-builder-agent.md Stage 6 with topological sorting algorithm, modified number assignment logic, and updated task creation loop and DeliverSummary sections"
     },
     {
       "project_number": 38,
