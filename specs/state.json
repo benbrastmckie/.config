@@ -7,8 +7,8 @@
       "status": "researched",
       "language": "neovim",
       "created": "2026-02-03T10:17:13Z",
-      "last_updated": "2026-02-03T18:02:30Z",
-      "session_id": "sess_1770141389_c38dcc",
+      "last_updated": "2026-02-03T18:13:02Z",
+      "session_id": "sess_1770142058_c68d97",
       "artifacts": [
         {
           "type": "research",
@@ -19,6 +19,11 @@
           "type": "research",
           "path": "specs/032_neovim_sidebar_context_display/reports/research-002.md",
           "summary": "Follow-up research on lualine extensions, Claude Code buffer detection, custom component creation, and context data fetching via statusline JSON file"
+        },
+        {
+          "type": "research",
+          "path": "specs/032_neovim_sidebar_context_display/reports/research-003.md",
+          "summary": "Push-based architecture research covering Claude Code hooks, vim.uv file watching, and complete implementation code for statusline integration"
         }
       ]
     },
