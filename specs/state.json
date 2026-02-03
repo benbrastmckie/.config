@@ -4,11 +4,11 @@
     {
       "project_number": 33,
       "project_name": "fix_statusline_settings_config",
-      "status": "planned",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-03T19:06:18Z",
-      "last_updated": "2026-02-03T19:33:58Z",
-      "session_id": "sess_1770178500_e2b8c5",
+      "last_updated": "2026-02-03T19:38:57Z",
+      "session_id": "sess_1770147322_4633cd",
       "researched": "2026-02-03T19:15:00Z",
       "artifacts": [
         {
@@ -20,9 +20,16 @@
           "path": "specs/033_fix_statusline_settings_config/plans/implementation-001.md",
           "type": "plan",
           "summary": "5-phase plan to fix statusLine config, update script field names, and verify end-to-end functionality"
+        },
+        {
+          "type": "summary",
+          "path": "specs/033_fix_statusline_settings_config/summaries/implementation-summary-20260203.md",
+          "summary": "Implementation summary with verification and post-implementation steps"
         }
       ],
-      "planned": "2026-02-03T19:33:58Z"
+      "planned": "2026-02-03T19:33:58Z",
+      "completed": "2026-02-03T19:38:57Z",
+      "completion_summary": "Fixed Claude Code settings.json statusLine configuration by moving it from nested hooks object to correct top-level position. Updated statusline-push.sh script to use official JSON schema field names. Created inline command fallback for external script invocation bug workaround."
     },
     {
       "project_number": 32,

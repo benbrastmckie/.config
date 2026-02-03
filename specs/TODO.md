@@ -8,10 +8,12 @@ next_project_number: 34
 
 ### 33. Fix Claude Code settings.json statusLine configuration
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
+- **Completed**: 2026-02-03
 - **Language**: neovim
 - **Research**: [research-001.md](specs/033_fix_statusline_settings_config/reports/research-001.md)
 - **Plan**: [implementation-001.md](specs/033_fix_statusline_settings_config/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260203.md](specs/033_fix_statusline_settings_config/summaries/implementation-summary-20260203.md)
 
 **Description**: Fix Claude Code settings.json statusLine configuration - move statusLine from hooks object to top-level field with correct schema per research-003.md. Current error: "statusLine: Invalid key in record" because statusLine was incorrectly nested inside hooks object when it should be a separate top-level configuration.
 
