@@ -1,6 +1,14 @@
 {
-  "next_project_number": 41,
+  "next_project_number": 42,
   "active_projects": [
+    {
+      "project_number": 41,
+      "project_name": "fix_leanls_lsp_client_exit_error",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-04T18:52:18Z",
+      "last_updated": "2026-02-04T18:52:18Z"
+    },
     {
       "project_number": 40,
       "project_name": "standardize_multi_task_creation_patterns",

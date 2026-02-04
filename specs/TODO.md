@@ -1,10 +1,17 @@
 ---
-next_project_number: 41
+next_project_number: 42
 ---
 
 # TODO
 
 ## Tasks
+
+### 41. Fix leanls LSP client exit error in Neovim
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Fix leanls LSP client errors when opening Lean files: "Client leanls quit with exit code 1 and signal 0" and "Watchdog error: no such file or directory (error code: 2)". Check LSP log at ~/.local/state/nvim/lsp.log for details.
 
 ### 40. Standardize multi-task creation patterns
 - **Effort**: 4-6 hours
