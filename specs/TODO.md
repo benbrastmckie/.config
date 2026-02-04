@@ -11,7 +11,7 @@ next_project_number: 42
 - **Status**: [PLANNED]
 - **Language**: neovim
 - **Research**: [research-001.md](specs/041_fix_leanls_lsp_client_exit_error/reports/research-001.md), [research-002.md](specs/041_fix_leanls_lsp_client_exit_error/reports/research-002.md)
-- **Plan**: [implementation-002.md](specs/041_fix_leanls_lsp_client_exit_error/plans/implementation-002.md)
+- **Plan**: [implementation-003.md](specs/041_fix_leanls_lsp_client_exit_error/plans/implementation-003.md)
 
 **Description**: Fix leanls LSP client errors when opening Lean files: "Client leanls quit with exit code 1 and signal 0" and "Watchdog error: no such file or directory (error code: 2)". Check LSP log at ~/.local/state/nvim/lsp.log for details.
 
