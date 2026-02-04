@@ -80,14 +80,17 @@ return {
 
   -- Configuration options for lean.nvim
   opts = {
-    lsp = {},
     abbreviations = {
       enabled = false
     },
     -- For notifications
     stderr = {
       enable = true,
-      on_lines = function(lines) vim.notify(lines) end
+      on_lines = function(lines)
+        vim.schedule(function()
+          vim.notify(lines)
+        end)
+      end
     },
     mappings = true, -- Enable default key mappings
     infoview = {
@@ -97,6 +100,14 @@ return {
 
   -- Configuration function to set up lean.nvim and related settings
   config = function(_, opts)
+    -- NixOS fix: Configure Lean LSP with TZ environment variable
+    -- This prevents "Watchdog error: no such file or directory /etc/localtime"
+    vim.lsp.config('leanls', {
+      cmd_env = {
+        TZ = os.getenv("TZ") or "UTC"
+      }
+    })
+
     -- Add protected semantic token handling
     local semantic_tokens_handler = function(err, result, ctx, config)
       if err then return end

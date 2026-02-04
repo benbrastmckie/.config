@@ -1,0 +1,20 @@
+{
+  "status": "researched",
+  "summary": "Identified three root causes: (1) Watchdog error from missing /etc/localtime on NixOS - requires TZ environment variable at system level; (2) leanls exit code 1 caused by the timezone issue affecting lake; (3) Invalid buffer id error in infoview.lua:964 when buffer is deleted while infoview is open - needs buffer validity check",
+  "artifacts": [
+    {
+      "path": "specs/041_fix_leanls_lsp_client_exit_error/reports/research-001.md",
+      "type": "research",
+      "summary": "Comprehensive research report with root cause analysis for leanls LSP errors, NixOS timezone configuration, and lean.nvim infoview buffer handling issues"
+    }
+  ],
+  "next_steps": "Run /plan 41 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1770231189_406afd",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 300,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 3
+  }
+}
