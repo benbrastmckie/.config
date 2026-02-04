@@ -130,6 +130,23 @@ return {
     -- Create an augroup for Lean-related autocommands
     local lean_group = vim.api.nvim_create_augroup("LeanCloseInfoview", { clear = true })
 
+    -- Close infoview before buffer deletion to prevent "Invalid buffer id" error
+    -- in lean.nvim's WinLeave autocmd (infoview.lua:964 __update_extmark_style)
+    -- See: Task #41 - fix_leanls_lsp_client_exit_error
+    vim.api.nvim_create_autocmd("BufDelete", {
+      group = lean_group,
+      pattern = "*.lean",
+      callback = function()
+        pcall(function()
+          local infoview = require("lean.infoview")
+          if infoview.get_current_infoview() then
+            infoview.close()
+          end
+        end)
+      end,
+      desc = "Close infoview before Lean buffer deletion",
+    })
+
     -- Prevent Infoview Buffer from Appearing in Buffer Lists
     vim.api.nvim_create_autocmd("FileType", {
       group = lean_group,

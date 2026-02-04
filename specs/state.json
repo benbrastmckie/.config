@@ -4,11 +4,11 @@
     {
       "project_number": 41,
       "project_name": "fix_leanls_lsp_client_exit_error",
-      "status": "planned",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-04T18:52:18Z",
-      "last_updated": "2026-02-04T19:25:09Z",
-      "session_id": "sess_1770233048_c6dc2a",
+      "last_updated": "2026-02-04T19:28:51Z",
+      "session_id": "sess_1770233171_3a4577",
       "researched": "2026-02-04T18:57:08Z",
       "artifacts": [
         {
@@ -25,9 +25,17 @@
           "path": "specs/041_fix_leanls_lsp_client_exit_error/plans/implementation-003.md",
           "type": "plan",
           "summary": "3-phase plan: optional NixOS tmpfiles.rules, buffer validity guard, and testing"
+        },
+        {
+          "path": "specs/041_fix_leanls_lsp_client_exit_error/summaries/implementation-summary-20260204.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification details"
         }
       ],
-      "planned": "2026-02-04T19:25:09Z"
+      "planned": "2026-02-04T19:25:09Z",
+      "started": "2026-02-04T19:26:32Z",
+      "completed": "2026-02-04T19:28:51Z",
+      "completion_summary": "Added BufDelete autocmd to close lean.nvim infoview before buffer deletion, preventing 'Invalid buffer id' error. The fix uses pcall for safe closure and integrates with the existing lean_group augroup."
     },
     {
       "project_number": 40,

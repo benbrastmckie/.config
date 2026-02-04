@@ -1,7 +1,7 @@
 # Implementation Plan: Task #41 (Revised v3)
 
 - **Task**: 41 - fix_leanls_lsp_client_exit_error
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 45-60 minutes
 - **Dependencies**: None
 - **Research Inputs**:
@@ -104,7 +104,7 @@ This plan addresses two related issues:
 
 ---
 
-### Phase 1: Add Buffer Validity Guard [NOT STARTED]
+### Phase 1: Add Buffer Validity Guard [COMPLETED]
 
 **Goal**: Prevent "Invalid buffer id" errors when closing Lean buffers
 
@@ -147,7 +147,7 @@ vim.api.nvim_create_autocmd("BufDelete", {
 
 ---
 
-### Phase 2: Test and Verify [NOT STARTED]
+### Phase 2: Test and Verify [COMPLETED]
 
 **Goal**: Comprehensive testing of all fixes
 
