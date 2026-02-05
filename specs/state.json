@@ -4,11 +4,19 @@
     {
       "project_number": 48,
       "project_name": "add_phase_checkpoint_protocol_to_neovim",
-      "status": "researching",
+      "status": "researched",
       "language": "meta",
       "created": "2026-02-05T20:36:42Z",
-      "last_updated": "2026-02-05T21:00:56Z",
-      "session_id": "sess_1770325237_47cac4"
+      "last_updated": "2026-02-05T21:05:01Z",
+      "session_id": "sess_1770325237_47cac4",
+      "researched": "2026-02-05T21:05:01Z",
+      "artifacts": [
+        {
+          "path": "specs/048_add_phase_checkpoint_protocol_to_neovim/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report documenting 8 specific gaps (4 agent, 4 skill) with exact code blocks to add, referencing general/latex/typst agents as templates"
+        }
+      ]
     },
     {
       "project_number": 47,
