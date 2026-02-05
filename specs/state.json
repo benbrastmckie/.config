@@ -1,6 +1,14 @@
 {
-  "next_project_number": 43,
+  "next_project_number": 44,
   "active_projects": [
+    {
+      "project_number": 43,
+      "project_name": "fix_web_language_routing_gaps",
+      "status": "not_started",
+      "language": "general",
+      "created": "2026-02-05T18:32:35Z",
+      "last_updated": "2026-02-05T18:32:35Z"
+    },
     {
       "project_number": 42,
       "project_name": "fix_specs_prefix_in_todo_artifact_links",

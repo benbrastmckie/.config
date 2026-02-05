@@ -1,10 +1,19 @@
 ---
-next_project_number: 43
+next_project_number: 44
 ---
 
 # TODO
 
 ## Tasks
+
+### 43. Fix web language routing gaps
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: general
+
+**Description**: Fix gaps identified in phase 4 of /home/benjamin/Projects/Logos/LogosWebsite/specs/3_add_web_language_routing/plans/implementation-001.md. Draw on the phase 4 analysis to create targeted fixes for the web language routing implementation.
+
+---
 
 ### 42. Fix specs/ prefix in TODO.md artifact links
 - **Effort**: Medium
