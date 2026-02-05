@@ -8,7 +8,7 @@ next_project_number: 49
 
 ### 48. Add Phase Checkpoint Protocol to neovim-implementation-agent
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Language**: meta
 - **Started**: 2026-02-05
 - **Research**: [research-001.md](048_add_phase_checkpoint_protocol_to_neovim/reports/research-001.md)
@@ -17,17 +17,18 @@ next_project_number: 49
 **Description**: Add Phase Checkpoint Protocol to neovim-implementation-agent for per-phase status marker updates during plan execution.
 
 ### 47. Fix leader-ac sync source path
-- **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Effort**: 1-2 hours
+- **Status**: [PLANNED]
 - **Language**: neovim
 - **Started**: 2026-02-05
 - **Research**: [research-001.md](047_fix_leader_ac_sync_source_path/reports/research-001.md)
+- **Plan**: [implementation-001.md](047_fix_leader_ac_sync_source_path/plans/implementation-001.md)
 
 **Description**: Fix the `<leader>ac` sync source path to ensure the agent management tool reads from the correct source directory.
 
 ### 46. Migrate LogosWebsite to padded directory convention
 - **Effort**: 2-3 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Language**: meta
 - **Research**: [research-001.md](046_migrate_logosweb_to_padded_directory_conv/reports/research-001.md)
 - **Plan**: [implementation-002.md](046_migrate_logosweb_to_padded_directory_conv/plans/implementation-002.md)

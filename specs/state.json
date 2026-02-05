@@ -4,11 +4,11 @@
     {
       "project_number": 48,
       "project_name": "add_phase_checkpoint_protocol_to_neovim",
-      "status": "planned",
+      "status": "implementing",
       "language": "meta",
       "created": "2026-02-05T20:36:42Z",
-      "last_updated": "2026-02-05T21:10:02Z",
-      "session_id": "sess_1770325651_9ec2c3",
+      "last_updated": "2026-02-05T21:12:28Z",
+      "session_id": "sess_1770325926_0588ad",
       "researched": "2026-02-05T21:05:01Z",
       "artifacts": [
         {
@@ -22,32 +22,39 @@
           "summary": "3-phase implementation plan to add Phase Checkpoint Protocol and completion_data patterns to neovim agent and skill"
         }
       ],
-      "planned": "2026-02-05T21:10:02Z"
+      "planned": "2026-02-05T21:10:02Z",
+      "started": "2026-02-05T21:12:28Z"
     },
     {
       "project_number": 47,
       "project_name": "fix_leader_ac_sync_source_path",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-05T20:36:42Z",
-      "last_updated": "2026-02-05T21:09:04Z",
-      "session_id": "sess_1770325214_4d5bf7",
+      "last_updated": "2026-02-05T21:15:02Z",
+      "session_id": "sess_1770325915_09a760",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/047_fix_leader_ac_sync_source_path/reports/research-001.md",
           "summary": "Research report documenting <leader>ac keybinding chain, current global_source_dir config, 2 unscanned directories (output/, systemd/), hardcoded help text, and stale ~/.config/.claude/ directory with 4 fix recommendations"
+        },
+        {
+          "path": "specs/047_fix_leader_ac_sync_source_path/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan covering sync scanner extension, previewer updates, and functional verification"
         }
-      ]
+      ],
+      "planned": "2026-02-05T21:15:02Z"
     },
     {
       "project_number": 46,
       "project_name": "migrate_logosweb_to_padded_directory_conv",
-      "status": "planned",
+      "status": "implementing",
       "language": "meta",
       "created": "2026-02-05T20:36:42Z",
-      "last_updated": "2026-02-05T21:08:44Z",
-      "session_id": "sess_1770325192_d31eb9",
+      "last_updated": "2026-02-05T21:13:11Z",
+      "session_id": "sess_1770325977_37e966",
       "researched": "2026-02-05T20:45:00Z",
       "artifacts": [
         {
@@ -61,7 +68,8 @@
           "summary": "5-phase revised plan: directory renames, state file path updates, bash path constructions, documentation placeholders, and validation"
         }
       ],
-      "planned": "2026-02-05T21:08:44Z"
+      "planned": "2026-02-05T21:08:44Z",
+      "started": "2026-02-05T21:13:11Z"
     },
     {
       "project_number": 45,
