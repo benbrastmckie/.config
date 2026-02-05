@@ -1,6 +1,30 @@
 {
-  "next_project_number": 46,
+  "next_project_number": 49,
   "active_projects": [
+    {
+      "project_number": 48,
+      "project_name": "add_phase_checkpoint_protocol_to_neovim",
+      "status": "not_started",
+      "language": "meta",
+      "created": "2026-02-05T20:36:42Z",
+      "last_updated": "2026-02-05T20:36:42Z"
+    },
+    {
+      "project_number": 47,
+      "project_name": "fix_leader_ac_sync_source_path",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-05T20:36:42Z",
+      "last_updated": "2026-02-05T20:36:42Z"
+    },
+    {
+      "project_number": 46,
+      "project_name": "migrate_logosweb_to_padded_directory_conv",
+      "status": "not_started",
+      "language": "meta",
+      "created": "2026-02-05T20:36:42Z",
+      "last_updated": "2026-02-05T20:36:42Z"
+    },
     {
       "project_number": 45,
       "project_name": "fix_logosweb_agent_gaps_from_task_44",
