@@ -36,10 +36,10 @@
     {
       "project_number": 47,
       "project_name": "fix_leader_ac_sync_source_path",
-      "status": "implementing",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-05T20:36:42Z",
-      "last_updated": "2026-02-05T21:17:03Z",
+      "last_updated": "2026-02-05T21:23:23Z",
       "session_id": "sess_1770326206_ae7cd1",
       "artifacts": [
         {
@@ -51,9 +51,16 @@
           "path": "specs/047_fix_leader_ac_sync_source_path/plans/implementation-001.md",
           "type": "plan",
           "summary": "3-phase implementation plan covering sync scanner extension, previewer updates, and functional verification"
+        },
+        {
+          "path": "specs/047_fix_leader_ac_sync_source_path/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results for sync scanner extension and previewer updates"
         }
       ],
-      "planned": "2026-02-05T21:15:02Z"
+      "planned": "2026-02-05T21:15:02Z",
+      "completed": "2026-02-05T21:23:23Z",
+      "completion_summary": "Extended the leader-ac sync mechanism to include output/ and systemd/ directory scanning, updated the Load All preview and sync notification to display counts for these new categories, and replaced all hardcoded path strings in help text and warning messages with dynamic values from the configured global source directory."
     },
     {
       "project_number": 46,

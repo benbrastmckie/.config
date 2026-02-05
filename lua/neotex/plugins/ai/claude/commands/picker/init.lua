@@ -28,8 +28,10 @@ function M.show_commands_picker(opts)
   local structure = parser.get_extended_structure()
 
   if not structure or not structure.primary_commands or vim.tbl_isempty(structure.primary_commands) then
+    local scan_mod = require("neotex.plugins.ai.claude.commands.picker.utils.scan")
+    local global_dir = scan_mod.get_global_dir()
     helpers.notify(
-      "No Claude commands found in .claude/commands/ or ~/.config/.claude/commands/",
+      "No Claude commands found in .claude/commands/ or " .. global_dir .. "/.claude/commands/",
       "WARN"
     )
     return

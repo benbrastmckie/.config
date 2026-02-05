@@ -102,6 +102,8 @@ local function execute_sync(project_dir, all_artifacts, merge_only)
   counts.agents = sync_files(all_artifacts.agents or {}, false, merge_only)
   counts.rules = sync_files(all_artifacts.rules or {}, false, merge_only)
   counts.context = sync_files(all_artifacts.context or {}, false, merge_only)
+  counts.output = sync_files(all_artifacts.output or {}, false, merge_only)
+  counts.systemd = sync_files(all_artifacts.systemd or {}, false, merge_only)
   counts.settings = sync_files(all_artifacts.settings or {}, false, merge_only)
   counts.root_files = sync_files(all_artifacts.root_files or {}, false, merge_only)
 
@@ -126,12 +128,14 @@ local function execute_sync(project_dir, all_artifacts, merge_only)
         "  Lib: %d (%d nested) | Docs: %d (%d nested)\n" ..
         "  Scripts: %d | Tests: %d | Skills: %d (%d nested)\n" ..
         "  Agents: %d | Rules: %d | Context: %d\n" ..
+        "  Output: %d | Systemd: %d\n" ..
         "  Settings: %d | Root Files: %d",
         total_synced, strategy_msg,
         counts.commands, counts.hooks, counts.templates,
         counts.lib, lib_subdir, counts.docs, doc_subdir,
         counts.scripts, counts.tests, counts.skills, skill_subdir,
         counts.agents, counts.rules, counts.context,
+        counts.output, counts.systemd,
         counts.settings, counts.root_files
       ),
       "INFO"
@@ -178,6 +182,20 @@ local function scan_all_artifacts(global_dir, project_dir)
   end
   for _, file in ipairs(skills_yaml) do
     table.insert(artifacts.skills, file)
+  end
+
+  -- Output (markdown files)
+  artifacts.output = scan.scan_directory_for_sync(global_dir, project_dir, "output", "*.md")
+
+  -- Systemd (multiple file types: .service, .timer)
+  local systemd_service = scan.scan_directory_for_sync(global_dir, project_dir, "systemd", "*.service")
+  local systemd_timer = scan.scan_directory_for_sync(global_dir, project_dir, "systemd", "*.timer")
+  artifacts.systemd = {}
+  for _, file in ipairs(systemd_service) do
+    table.insert(artifacts.systemd, file)
+  end
+  for _, file in ipairs(systemd_timer) do
+    table.insert(artifacts.systemd, file)
   end
 
   -- Settings
@@ -342,6 +360,8 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
     test = { dir = "tests", ext = ".sh" },
     skill = { dir = "skills", ext = ".md" },
     agent = { dir = "agents", ext = ".md" },
+    output = { dir = "output", ext = ".md" },
+    systemd = { dir = "systemd", ext = "" },  -- Systemd files have full extension in name
     root_file = { dir = "", ext = "" },  -- Root files have no subdir, name includes extension
   }
 

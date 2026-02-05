@@ -3,7 +3,7 @@
 - **Task**: 47 - Fix leader-ac sync source path
 - **Date**: 2026-02-05
 - **Feature**: Add output/ and systemd/ directory scanning to sync mechanism and fix hardcoded help text
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Estimated Hours**: 1-2 hours
 - **Standards File**: /home/benjamin/.config/nvim/CLAUDE.md
 - **Research Reports**: [research-001.md](../reports/research-001.md)
@@ -45,7 +45,7 @@ Research report 001 confirmed the core path is already fixed. The remaining work
 
 ## Implementation Phases
 
-### Phase 1: Extend sync scanner and executor [NOT STARTED]
+### Phase 1: Extend sync scanner and executor [COMPLETED]
 
 **Goal**: Add output/ and systemd/ scanning to `scan_all_artifacts()` and syncing to `execute_sync()` in sync.lua, plus update the subdir map for individual artifact updates.
 
@@ -68,7 +68,7 @@ Research report 001 confirmed the core path is already fixed. The remaining work
 
 ---
 
-### Phase 2: Update previewer for new categories and dynamic paths [NOT STARTED]
+### Phase 2: Update previewer for new categories and dynamic paths [COMPLETED]
 
 **Goal**: Update `preview_load_all()` to display counts for output/ and systemd/, and replace hardcoded path strings in `preview_help()` with dynamic values from config.
 
@@ -93,7 +93,7 @@ Research report 001 confirmed the core path is already fixed. The remaining work
 
 ---
 
-### Phase 3: Functional verification [NOT STARTED]
+### Phase 3: Functional verification [COMPLETED]
 
 **Goal**: End-to-end verification that the sync mechanism correctly handles all artifact types including the new ones.
 

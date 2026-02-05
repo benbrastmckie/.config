@@ -114,6 +114,9 @@ end
 --- Create preview for help entry (keyboard shortcuts)
 --- @param self table Telescope previewer state
 local function preview_help(self)
+  local scan_mod = require("neotex.plugins.ai.claude.commands.picker.utils.scan")
+  local global_dir = scan_mod.get_global_dir()
+
   vim.api.nvim_buf_set_lines(self.state.bufnr, 0, -1, false, {
     "Keyboard Shortcuts:",
     "",
@@ -156,7 +159,7 @@ local function preview_help(self)
     "",
     "Indicators:",
     "  *       - Artifact defined locally in project (.claude/)",
-    "            Otherwise a global artifact from ~/.config/nvim/.claude/",
+    "            Otherwise a global artifact from " .. global_dir .. "/.claude/",
     "",
     "File Operations:",
     "  Ctrl-l/u/s  - Commands, Hooks, Skills, Templates, Lib, Docs",
@@ -169,7 +172,7 @@ local function preview_help(self)
     "               name while preserving local-only artifacts.",
     "",
     "Notes: All artifacts loaded from both project and global directories",
-    "       Local artifacts override global ones from ~/.config/nvim/"
+    "       Local artifacts override global ones from " .. global_dir .. "/"
   })
 end
 
@@ -189,6 +192,16 @@ local function preview_load_all(self)
   local scripts = scan_directory_for_sync(global_dir, project_dir, "scripts", "*.sh")
   local tests = scan_directory_for_sync(global_dir, project_dir, "tests", "test_*.sh")
   local rules = scan_directory_for_sync(global_dir, project_dir, "rules", "*.md")
+  local output = scan_directory_for_sync(global_dir, project_dir, "output", "*.md")
+  local systemd_service = scan_directory_for_sync(global_dir, project_dir, "systemd", "*.service")
+  local systemd_timer = scan_directory_for_sync(global_dir, project_dir, "systemd", "*.timer")
+  local systemd = {}
+  for _, file in ipairs(systemd_service) do
+    table.insert(systemd, file)
+  end
+  for _, file in ipairs(systemd_timer) do
+    table.insert(systemd, file)
+  end
   local settings = scan_directory_for_sync(global_dir, project_dir, "", "settings.json")
 
   local cmd_copy, cmd_replace = count_actions(commands)
@@ -200,13 +213,16 @@ local function preview_load_all(self)
   local script_copy, script_replace = count_actions(scripts)
   local test_copy, test_replace = count_actions(tests)
   local rule_copy, rule_replace = count_actions(rules)
+  local out_copy, out_replace = count_actions(output)
+  local sys_copy, sys_replace = count_actions(systemd)
   local set_copy, set_replace = count_actions(settings)
 
   local total_copy = cmd_copy + hook_copy + skill_copy + tmpl_copy + lib_copy +
-                     doc_copy + script_copy + test_copy + rule_copy + set_copy
+                     doc_copy + script_copy + test_copy + rule_copy +
+                     out_copy + sys_copy + set_copy
   local total_replace = cmd_replace + hook_replace + skill_replace + tmpl_replace +
                         lib_replace + doc_replace + script_replace + test_replace +
-                        rule_replace + set_replace
+                        rule_replace + out_replace + sys_replace + set_replace
 
   local lines = {
     "Load All Artifacts",
@@ -227,6 +243,8 @@ local function preview_load_all(self)
     table.insert(lines, string.format("  Scripts:    %d new, %d replace", script_copy, script_replace))
     table.insert(lines, string.format("  Tests:      %d new, %d replace", test_copy, test_replace))
     table.insert(lines, string.format("  Rules:      %d new, %d replace", rule_copy, rule_replace))
+    table.insert(lines, string.format("  Output:     %d new, %d replace", out_copy, out_replace))
+    table.insert(lines, string.format("  Systemd:    %d new, %d replace", sys_copy, sys_replace))
     table.insert(lines, string.format("  Settings:   %d new, %d replace", set_copy, set_replace))
     table.insert(lines, "")
     table.insert(lines, string.format("**Total:** %d new, %d replace", total_copy, total_replace))
