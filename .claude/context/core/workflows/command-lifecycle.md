@@ -318,7 +318,7 @@ jq '.next_project_number = (.next_project_number + 1) |
 - Description is non-empty
 - Priority is Low|Medium|High
 - Effort is TBD or time estimate
-- Language is valid (lean|markdown|general|python|shell|json|meta)
+- Language is valid (neovim|markdown|general|meta|latex|typst)
 - Language field MANDATORY per tasks.md line 110
 
 **Post-execution:**

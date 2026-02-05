@@ -72,7 +72,7 @@ specs/
       "project_number": 89,
       "project_name": "task_slug",
       "status": "planned",
-      "language": "lean",
+      "language": "neovim",
       "description": "Detailed task description (50-500 chars)",
       "created": "2025-12-29T09:00:00Z",
       "last_updated": "2025-12-29"
@@ -90,7 +90,7 @@ specs/
 - `project_number`: Unique task ID
 - `project_name`: Slug from task title
 - `status`: Current status (lowercase: `not_started`, `researching`, `planned`, etc.)
-- `language`: Task language (`lean`, `general`, `meta`, `markdown`, `latex`)
+- `language`: Task language (`neovim`, `general`, `meta`, `markdown`, `latex`, `typst`)
 - `description`: Task description (50-500 chars, optional for legacy tasks)
 
 ### Archive State File (`specs/archive/state.json`)
@@ -144,8 +144,8 @@ description=$(echo "$task_data" | jq -r '.description // ""')
 in_progress=$(jq -r '.active_projects[] | select(.status == "implementing") | .project_number' \
   specs/state.json)
 
-# Get all Lean tasks
-lean_tasks=$(jq -r '.active_projects[] | select(.language == "lean") | .project_number' \
+# Get all Neovim tasks
+neovim_tasks=$(jq -r '.active_projects[] | select(.language == "neovim") | .project_number' \
   specs/state.json)
 ```
 

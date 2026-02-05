@@ -171,7 +171,7 @@ Error: Phantom research detected
 
 **Detection**:
 ```
-[FAIL] Routing validation failed: language=lean but agent=researcher
+[FAIL] Routing validation failed: language=neovim but agent=researcher
 ```
 
 **Fix**:

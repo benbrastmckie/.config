@@ -50,7 +50,7 @@ After completing work:
          ▼
 ┌─────────────────┐
 │ Route by lang   │
-│ lean→lean-lsp   │
+│ neovim→neovim-* │
 │ other→web/code  │
 └────────┬────────┘
          │

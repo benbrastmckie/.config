@@ -1,18 +1,25 @@
 {
-  "status": "planned",
-  "summary": "7-phase plan to fix language routing gaps across 15+ .claude/ files: add missing typst/latex/meta entries, replace stale lean references with neovim, remove non-routing python/shell/json languages",
+  "status": "implemented",
+  "summary": "Fixed language routing gaps across 16 .claude/ files: added missing typst/latex/meta entries to routing tables, replaced stale lean references with neovim, removed non-routing python/shell/json entries, and updated skill trigger conditions to match actual routing.",
   "artifacts": [
     {
-      "path": "specs/043_fix_web_language_routing_gaps/plans/implementation-001.md",
-      "type": "plan",
-      "summary": "7-phase implementation plan fixing routing table inconsistencies, stale lean references, and missing language entries across .claude/ system"
+      "path": "specs/043_fix_web_language_routing_gaps/summaries/implementation-summary-20260205.md",
+      "type": "summary",
+      "summary": "Implementation summary with verification results for all 7 phases"
     }
   ],
   "metadata": {
-    "agent_type": "planner-agent",
+    "session_id": "sess_1770317174_e7ef71",
+    "agent_type": "general-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "plan", "planner-agent"],
-    "phase_count": 7,
-    "estimated_hours": "2-3"
-  }
+    "delegation_path": ["orchestrator", "implement", "general-implementation-agent"],
+    "phases_completed": 7,
+    "phases_total": 7
+  },
+  "completion_data": {
+    "completion_summary": "Fixed language routing inconsistencies across 16 .claude/ files. All routing tables now consistently use 6 recognized languages (neovim, general, meta, markdown, latex, typst). Replaced stale lean references with neovim, removed non-routing python/shell/json entries, updated skill trigger conditions, and removed obsolete /lake command documentation.",
+    "claudemd_suggestions": "none",
+    "roadmap_items": []
+  },
+  "next_steps": "Review implementation and run verification"
 }

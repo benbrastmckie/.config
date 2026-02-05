@@ -29,7 +29,7 @@ Note: This skill is a thin wrapper with internal postflight. Context is loaded b
 ## Trigger Conditions
 
 This skill activates when:
-- Task language is "general", "meta", or "markdown"
+- Task language is "general", "meta", "markdown", "latex", or "typst"
 - Research is needed for implementation planning
 - Documentation or external resources need to be gathered
 

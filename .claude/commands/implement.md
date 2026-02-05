@@ -66,6 +66,7 @@ Execute implementation plan with automatic resume support by delegating to the a
 |----------|-----------------|
 | `neovim` | `skill-neovim-implementation` |
 | `latex` | `skill-latex-implementation` |
+| `typst` | `skill-typst-implementation` |
 | `general`, `meta`, `markdown` | `skill-implementer` |
 
 **Invoke the Skill tool NOW** with:

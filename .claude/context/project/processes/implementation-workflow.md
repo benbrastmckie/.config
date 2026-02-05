@@ -67,9 +67,10 @@ grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*
 | Language | Agent | Tools Available |
 |----------|-------|----------------|
 | `neovim` | `neovim-implementation-agent` | nvim --headless, File operations, git |
-| `markdown` | `implementer` | File operations, git |
 | `latex` | `latex-implementation-agent` | pdflatex, File operations, git |
 | `typst` | `typst-implementation-agent` | typst compile, File operations, git |
+| `markdown` | `implementer` | File operations, git |
+| `meta` | `implementer` | File operations, git |
 | `general` | `implementer` | File operations, git |
 
 **Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses language-specific tooling.

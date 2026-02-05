@@ -8,7 +8,9 @@ next_project_number: 44
 
 ### 43. Fix web language routing gaps
 - **Effort**: TBD
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
+- **Completed**: 2026-02-05
+- **Summary**: [implementation-summary-20260205.md](043_fix_web_language_routing_gaps/summaries/implementation-summary-20260205.md)
 - **Language**: general
 - **Research**: [research-001.md](043_fix_web_language_routing_gaps/reports/research-001.md)
 - **Plan**: [implementation-001.md](043_fix_web_language_routing_gaps/plans/implementation-001.md)

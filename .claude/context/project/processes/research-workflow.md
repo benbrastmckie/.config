@@ -15,7 +15,7 @@ This document describes the complete research workflow executed by the researche
 
 ### General Research
 
-**When**: Task language is markdown, python, or general  
+**When**: Task language is markdown, latex, typst, meta, or general  
 **Agent**: researcher  
 **Tools**:
 - Web search
@@ -52,8 +52,10 @@ grep -A 20 "^### ${task_number}\." specs/TODO.md | grep "Language" | sed 's/\*\*
 | Language | Agent | Tools Available |
 |----------|-------|----------------|
 | `neovim` | `neovim-research-agent` | WebSearch, WebFetch, Read, documentation review |
+| `latex` | `researcher` | Web search, documentation review |
+| `typst` | `researcher` | Web search, documentation review |
 | `markdown` | `researcher` | Web search, documentation review |
-| `python` | `researcher` | Web search, documentation review, API docs |
+| `meta` | `researcher` | Read, Grep, Glob |
 | `general` | `researcher` | Web search, documentation review |
 
 **Critical**: Language extraction MUST occur before routing. Incorrect routing bypasses language-specific tooling.
@@ -445,8 +447,8 @@ Proceeding with researcher agent (web search, documentation)
 ```
 Error: Routing validation failed: language={language}, agent={agent}
 
-Expected: language=lean → agent=lean-research-agent
-Got: language=lean → agent=researcher
+Expected: language=neovim → agent=neovim-research-agent
+Got: language=neovim → agent=researcher
 
 Recommendation: Fix language extraction or routing logic
 ```

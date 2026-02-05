@@ -4,11 +4,11 @@
     {
       "project_number": 43,
       "project_name": "fix_web_language_routing_gaps",
-      "status": "planned",
+      "status": "completed",
       "language": "general",
       "created": "2026-02-05T18:32:35Z",
-      "last_updated": "2026-02-05T18:44:46Z",
-      "session_id": "sess_1770316783_dd20c4",
+      "last_updated": "2026-02-05T19:05:00Z",
+      "session_id": "sess_1770317174_e7ef71",
       "researched": "2026-02-05T18:37:23Z",
       "artifacts": [
         {
@@ -20,9 +20,17 @@
           "path": "specs/043_fix_web_language_routing_gaps/plans/implementation-001.md",
           "type": "plan",
           "summary": "7-phase implementation plan fixing routing table inconsistencies, stale lean references, and missing language entries across .claude/ system"
+        },
+        {
+          "path": "specs/043_fix_web_language_routing_gaps/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results for all 7 phases"
         }
       ],
-      "planned": "2026-02-05T18:44:46Z"
+      "planned": "2026-02-05T18:44:46Z",
+      "started": "2026-02-05T18:46:29Z",
+      "completed": "2026-02-05T19:05:00Z",
+      "completion_summary": "Fixed language routing inconsistencies across 16 .claude/ files. All routing tables now consistently use 6 recognized languages (neovim, general, meta, markdown, latex, typst). Replaced stale lean references with neovim, removed non-routing python/shell/json entries, updated skill trigger conditions, and removed obsolete /lake command documentation."
     },
     {
       "project_number": 42,

@@ -50,7 +50,7 @@ Conduct research for a task by delegating to the appropriate research skill/suba
 | Language | Skill to Invoke |
 |----------|-----------------|
 | `neovim` | `skill-neovim-research` |
-| `general`, `meta`, `markdown`, `latex` | `skill-researcher` |
+| `general`, `meta`, `markdown`, `latex`, `typst` | `skill-researcher` |
 
 **Invoke the Skill tool NOW** with:
 ```

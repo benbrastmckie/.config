@@ -4,7 +4,7 @@
 - **Version**: 001
 - **Created**: 2026-02-05
 - **Language**: general
-- **Status**: [NOT STARTED]
+- **Status**: [IN PROGRESS]
 - **Estimated Hours**: 2-3 hours
 - **Standards File**: /home/benjamin/.config/nvim/.claude/CLAUDE.md
 - **Research Reports**: [research-001.md](../reports/research-001.md)
@@ -38,7 +38,7 @@ Fix inconsistencies in language routing across the `.claude/` agent system. The 
 
 ## Implementation Phases
 
-### Phase 1: Fix Core Routing Files [NOT STARTED]
+### Phase 1: Fix Core Routing Files [COMPLETED]
 
 **Goal**: Update the two primary routing reference files that other files derive from.
 
@@ -68,7 +68,7 @@ Fix inconsistencies in language routing across the `.claude/` agent system. The 
 
 ---
 
-### Phase 2: Fix Command Routing Tables [NOT STARTED]
+### Phase 2: Fix Command Routing Tables [COMPLETED]
 
 **Goal**: Update `/research` and `/implement` command files to include all routing languages.
 
@@ -95,7 +95,7 @@ Fix inconsistencies in language routing across the `.claude/` agent system. The 
 
 ---
 
-### Phase 3: Fix Workflow Process Documentation [NOT STARTED]
+### Phase 3: Fix Workflow Process Documentation [COMPLETED]
 
 **Goal**: Update research-workflow.md and implementation-workflow.md to have complete, correct routing tables.
 
@@ -130,7 +130,7 @@ Fix inconsistencies in language routing across the `.claude/` agent system. The 
 
 ---
 
-### Phase 4: Replace Stale `lean` References in Core Documentation [NOT STARTED]
+### Phase 4: Replace Stale `lean` References in Core Documentation [COMPLETED]
 
 **Goal**: Replace `lean` with `neovim` in routing-related documentation where `lean` is used as a routing language name.
 
@@ -174,7 +174,7 @@ Fix inconsistencies in language routing across the `.claude/` agent system. The 
 
 ---
 
-### Phase 5: Fix Skill Trigger Conditions and Language Enum [NOT STARTED]
+### Phase 5: Fix Skill Trigger Conditions and Language Enum [COMPLETED]
 
 **Goal**: Update skill trigger conditions to list all languages they handle, and fix the task-management language enum.
 
@@ -205,7 +205,7 @@ Fix inconsistencies in language routing across the `.claude/` agent system. The 
 
 ---
 
-### Phase 6: Fix User Guide `lean` References [NOT STARTED]
+### Phase 6: Fix User Guide `lean` References [COMPLETED]
 
 **Goal**: Update the user-facing guide to use `neovim` instead of `lean` throughout.
 
@@ -254,7 +254,7 @@ Fix inconsistencies in language routing across the `.claude/` agent system. The 
 
 ---
 
-### Phase 7: Validation and Cross-Check [NOT STARTED]
+### Phase 7: Validation and Cross-Check [COMPLETED]
 
 **Goal**: Verify all routing tables are consistent across the entire `.claude/` directory.
 

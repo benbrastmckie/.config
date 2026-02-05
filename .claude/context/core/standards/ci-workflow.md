@@ -32,8 +32,8 @@ The marker can appear anywhere in the commit message:
 
 | Change Type | Trigger CI | Reason |
 |-------------|------------|--------|
-| Lean files (.lean) | Yes | Ensure code compiles and passes lint |
-| Mathlib deps (lakefile.lean, lake-manifest.json) | Yes | Verify compatibility |
+| Neovim Lua files (.lua) | Yes | Ensure configuration loads correctly |
+| Plugin dependencies (lazy-lock.json) | Yes | Verify compatibility |
 | CI configuration (.github/workflows/) | Yes | Validate workflow changes |
 | Implementation completion | Yes | Final verification |
 | Critical bug fixes | Yes | Confirm fix works |
@@ -57,15 +57,17 @@ The marker can appear anywhere in the commit message:
 |-----------|-----------|----------|
 | `/research` complete | Skip | Add `[ci]` if needed |
 | `/plan` complete | Skip | Add `[ci]` if needed |
-| `/implement` phase complete | Skip | Add `[ci]` for Lean phases |
-| `/implement` task complete | Skip (unless Lean) | Add `[ci]` for final verification |
+| `/implement` phase complete | Skip | Add `[ci]` for Neovim phases |
+| `/implement` task complete | Skip (unless Neovim) | Add `[ci]` for final verification |
 | `/task` create/archive | Skip | Rarely needed |
 
 ### Language-Based Defaults
 
 | Task Language | Default on Completion |
 |---------------|----------------------|
-| `lean` | Trigger CI (modifies source) |
+| `neovim` | Trigger CI (modifies source) |
+| `latex` | Skip (modifies documents) |
+| `typst` | Skip (modifies documents) |
 | `meta` | Skip (modifies orchestration) |
 | `markdown` | Skip (documentation only) |
 | `general` | Case-by-case |

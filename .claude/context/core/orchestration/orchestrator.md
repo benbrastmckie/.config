@@ -105,7 +105,7 @@ It does NOT handle:
     "task_context": {
       "task_number": 244,
       "description": "...",
-      "language": "lean"
+      "language": "neovim"
     }
   }
   ```
@@ -194,7 +194,7 @@ Without loading:
 ```json
 {
   "task_number": 244,
-  "language": "lean",
+  "language": "neovim",
   ...
 }
 ```
@@ -211,7 +211,7 @@ Without loading:
 **Example**:
 ```markdown
 ### 244. Implement feature X
-- **Language**: lean
+- **Language**: neovim
 ```
 
 **When to use**: Task exists in TODO.md (always)
@@ -244,7 +244,7 @@ routing:
 ```yaml
 routing:
   language_based: true
-  lean: lean-research-agent
+  neovim: neovim-research-agent
   default: researcher
 ```
 
@@ -818,11 +818,11 @@ User: /research 197
 
 Orchestrator:
 1. Load command file: .claude/command/research.md
-2. Extract language from TODO.md: "lean"
-3. Route to: lean-research-agent
+2. Extract language from TODO.md: "neovim"
+3. Route to: neovim-research-agent
 4. Generate session_id: sess_1703606400_a1b2c3
 5. Register delegation in registry
-6. Invoke lean-research-agent with context
+6. Invoke neovim-research-agent with context
 7. Monitor timeout (3600s)
 8. Receive return, validate format
 9. Complete delegation, remove from registry
