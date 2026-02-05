@@ -4,10 +4,10 @@
     {
       "project_number": 48,
       "project_name": "add_phase_checkpoint_protocol_to_neovim",
-      "status": "implementing",
+      "status": "completed",
       "language": "meta",
       "created": "2026-02-05T20:36:42Z",
-      "last_updated": "2026-02-05T21:12:28Z",
+      "last_updated": "2026-02-05T21:18:15Z",
       "session_id": "sess_1770325926_0588ad",
       "researched": "2026-02-05T21:05:01Z",
       "artifacts": [
@@ -20,19 +20,27 @@
           "path": "specs/048_add_phase_checkpoint_protocol_to_neovim/plans/implementation-001.md",
           "type": "plan",
           "summary": "3-phase implementation plan to add Phase Checkpoint Protocol and completion_data patterns to neovim agent and skill"
+        },
+        {
+          "path": "specs/048_add_phase_checkpoint_protocol_to_neovim/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary for task 48"
         }
       ],
       "planned": "2026-02-05T21:10:02Z",
-      "started": "2026-02-05T21:12:28Z"
+      "started": "2026-02-05T21:12:28Z",
+      "completed": "2026-02-05T21:18:15Z",
+      "completion_summary": "Added Phase Checkpoint Protocol, Stage 6a (Generate Completion Data), completion_data metadata fields, and expanded Critical Requirements to neovim-implementation-agent. Added Stage 5a validation, completion_data extraction/propagation, and concrete partial plan file update to skill-neovim-implementation.",
+      "claudemd_suggestions": "Modified .claude/agents/neovim-implementation-agent.md (added 4 sections) and .claude/skills/skill-neovim-implementation/SKILL.md (added 4 code blocks/sections)"
     },
     {
       "project_number": 47,
       "project_name": "fix_leader_ac_sync_source_path",
-      "status": "planned",
+      "status": "implementing",
       "language": "neovim",
       "created": "2026-02-05T20:36:42Z",
-      "last_updated": "2026-02-05T21:15:02Z",
-      "session_id": "sess_1770325915_09a760",
+      "last_updated": "2026-02-05T21:17:03Z",
+      "session_id": "sess_1770326206_ae7cd1",
       "artifacts": [
         {
           "type": "research",

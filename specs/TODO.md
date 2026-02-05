@@ -8,7 +8,9 @@ next_project_number: 49
 
 ### 48. Add Phase Checkpoint Protocol to neovim-implementation-agent
 - **Effort**: 1-2 hours
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
+- **Completed**: 2026-02-05
+- **Summary**: [implementation-summary-20260205.md](048_add_phase_checkpoint_protocol_to_neovim/summaries/implementation-summary-20260205.md)
 - **Language**: meta
 - **Started**: 2026-02-05
 - **Research**: [research-001.md](048_add_phase_checkpoint_protocol_to_neovim/reports/research-001.md)
@@ -18,7 +20,7 @@ next_project_number: 49
 
 ### 47. Fix leader-ac sync source path
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Language**: neovim
 - **Started**: 2026-02-05
 - **Research**: [research-001.md](047_fix_leader_ac_sync_source_path/reports/research-001.md)
