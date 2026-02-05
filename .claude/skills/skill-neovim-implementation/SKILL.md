@@ -155,6 +155,30 @@ The subagent will:
 
 ---
 
+### Stage 5a: Validate Subagent Return Format
+
+**IMPORTANT**: Check if subagent accidentally returned JSON to console (v1 pattern) instead of writing to file (v2 pattern).
+
+If the subagent's text return parses as valid JSON, log a warning:
+
+```bash
+# Check if subagent return looks like JSON (starts with { and is valid JSON)
+subagent_return="$SUBAGENT_TEXT_RETURN"
+if echo "$subagent_return" | grep -q '^{' && echo "$subagent_return" | jq empty 2>/dev/null; then
+    echo "WARNING: Subagent returned JSON to console instead of writing metadata file."
+    echo "This indicates the agent may have outdated instructions (v1 pattern instead of v2)."
+    echo "The skill will continue by reading the metadata file, but this should be fixed."
+fi
+```
+
+This validation:
+- Does NOT fail the operation (continues to read metadata file)
+- Logs a warning for debugging
+- Indicates the subagent instructions need updating
+- Allows graceful handling of mixed v1/v2 agents
+
+---
+
 ### Stage 6: Parse Subagent Return
 
 ```bash
@@ -164,6 +188,10 @@ if [ -f "$metadata_file" ] && jq empty "$metadata_file" 2>/dev/null; then
     status=$(jq -r '.status' "$metadata_file")
     phases_completed=$(jq -r '.metadata.phases_completed // 0' "$metadata_file")
     phases_total=$(jq -r '.metadata.phases_total // 0' "$metadata_file")
+
+    # Extract completion_data fields (if present)
+    completion_summary=$(jq -r '.completion_data.completion_summary // ""' "$metadata_file")
+    roadmap_items=$(jq -c '.completion_data.roadmap_items // []' "$metadata_file")
 else
     status="failed"
 fi
@@ -184,6 +212,20 @@ jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     last_updated: $ts,
     completed: $ts
   }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+
+# Add completion_summary (always required for completed tasks)
+if [ -n "$completion_summary" ]; then
+    jq --arg summary "$completion_summary" \
+      '(.active_projects[] | select(.project_number == '$task_number')).completion_summary = $summary' \
+      specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+fi
+
+# Add roadmap_items (if present and non-empty)
+if [ "$roadmap_items" != "[]" ] && [ -n "$roadmap_items" ]; then
+    jq --argjson items "$roadmap_items" \
+      '(.active_projects[] | select(.project_number == '$task_number')).roadmap_items = $items' \
+      specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+fi
 ```
 
 **Update TODO.md**: Use Edit tool to change status marker to `[COMPLETED]`.
@@ -206,7 +248,39 @@ else
 fi
 ```
 
-**On partial/failed**: Keep status as "implementing" for resume. Update plan file to `[PARTIAL]` or leave as `[IMPLEMENTING]` for retry.
+**If status is "partial"**:
+
+Keep status as "implementing" but update resume point:
+```bash
+jq --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+   --argjson phase "$phases_completed" \
+  '(.active_projects[] | select(.project_number == '$task_number')) |= . + {
+    last_updated: $ts,
+    resume_phase: ($phase + 1)
+  }' specs/state.json > /tmp/state.json && mv /tmp/state.json specs/state.json
+```
+
+TODO.md stays as `[IMPLEMENTING]`.
+
+**Update plan file** (if exists): Update the Status field to `[PARTIAL]` with verification:
+```bash
+plan_file=$(ls -1 "specs/${padded_num}_${project_name}/plans/implementation-"*.md 2>/dev/null | sort -V | tail -1)
+if [ -n "$plan_file" ] && [ -f "$plan_file" ]; then
+    # Try bullet pattern first, then non-bullet pattern
+    sed -i 's/^\- \*\*Status\*\*: \[.*\]$/- **Status**: [PARTIAL]/' "$plan_file"
+    sed -i 's/^\*\*Status\*\*: \[.*\]$/**Status**: [PARTIAL]/' "$plan_file"
+    # Verify update
+    if grep -qE '^\*\*Status\*\*: \[PARTIAL\]|^\- \*\*Status\*\*: \[PARTIAL\]' "$plan_file"; then
+        echo "Plan file status updated to [PARTIAL]"
+    else
+        echo "WARNING: Could not verify plan file status update"
+    fi
+else
+    echo "INFO: No plan file found to update (directory: specs/${padded_num}_${project_name}/plans/)"
+fi
+```
+
+**On failed**: Keep status as "implementing" for retry. Do not update plan file (leave as `[IMPLEMENTING]` for retry).
 
 ---
 
