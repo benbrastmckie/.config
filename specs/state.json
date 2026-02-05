@@ -1,6 +1,14 @@
 {
-  "next_project_number": 42,
+  "next_project_number": 43,
   "active_projects": [
+    {
+      "project_number": 42,
+      "project_name": "fix_specs_prefix_in_todo_artifact_links",
+      "status": "not_started",
+      "language": "meta",
+      "created": "2026-02-05T18:11:57Z",
+      "last_updated": "2026-02-05T18:11:57Z"
+    },
     {
       "project_number": 41,
       "project_name": "fix_leanls_lsp_client_exit_error",

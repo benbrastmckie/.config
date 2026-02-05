@@ -1,10 +1,19 @@
 ---
-next_project_number: 42
+next_project_number: 43
 ---
 
 # TODO
 
 ## Tasks
+
+### 42. Fix specs/ prefix in TODO.md artifact links
+- **Effort**: Medium
+- **Status**: [NOT STARTED]
+- **Language**: meta
+
+**Description**: TODO.md artifact links incorrectly include the `specs/` prefix (e.g., `specs/1_slug/reports/research-001.md`). Since TODO.md lives inside `specs/`, links should be relative to that directory (e.g., `1_slug/reports/research-001.md`). Root cause: agents write `specs/`-prefixed paths in `.return-meta.json`, and skill postflight code passes these verbatim into TODO.md links without stripping the prefix. Files to fix (12 total): Rules: `state-management.md` (lines 210, 216, 223), `inline-status-update.md` (lines 188, 193, 198). Skills: `skill-researcher`, `skill-neovim-research`, `skill-planner`, `skill-implementer`, `skill-typst-implementation`, `skill-latex-implementation`, `skill-neovim-implementation`, `skill-status-sync`. Docs: `research-workflow.md`, `planning-workflow.md`. Fix: Add `todo_link_path="${artifact_path#specs/}"` in skill postflight before TODO.md Edit.
+
+---
 
 ### 41. Fix leanls LSP client exit error in Neovim
 - **Effort**: TBD
