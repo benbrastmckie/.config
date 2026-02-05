@@ -1,10 +1,17 @@
 ---
-next_project_number: 45
+next_project_number: 46
 ---
 
 # TODO
 
 ## Tasks
+
+### 45. Fix LogosWebsite agent system gaps identified in task 44 research
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: meta
+
+**Description**: Research task 44 and compare the issues identified in the reports to find and fix any gaps in the agent system /home/benjamin/Projects/Logos/LogosWebsite/.claude/ which was copied from /home/benjamin/.config/nvim/.claude/ using the leader-ac agent management tool before task 44 was implemented.
 
 ### 44. Complete LogosWebsite task 9 equivalent in this repo
 - **Effort**: Small
