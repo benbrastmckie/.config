@@ -8,7 +8,9 @@ next_project_number: 43
 
 ### 42. Fix specs/ prefix in TODO.md artifact links
 - **Effort**: Medium
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
+- **Completed**: 2026-02-05
+- **Summary**: [implementation-summary-20260205.md](042_fix_specs_prefix_in_todo_artifact_links/summaries/implementation-summary-20260205.md)
 - **Language**: meta
 - **Research**: [research-001.md](042_fix_specs_prefix_in_todo_artifact_links/reports/research-001.md)
 - **Plan**: [implementation-001.md](042_fix_specs_prefix_in_todo_artifact_links/plans/implementation-001.md)
@@ -21,10 +23,10 @@ next_project_number: 43
 - **Effort**: TBD
 - **Status**: [COMPLETED]
 - **Completed**: 2026-02-04
-- **Summary**: [implementation-summary-20260204.md](specs/041_fix_leanls_lsp_client_exit_error/summaries/implementation-summary-20260204.md)
+- **Summary**: [implementation-summary-20260204.md](041_fix_leanls_lsp_client_exit_error/summaries/implementation-summary-20260204.md)
 - **Language**: neovim
-- **Research**: [research-001.md](specs/041_fix_leanls_lsp_client_exit_error/reports/research-001.md), [research-002.md](specs/041_fix_leanls_lsp_client_exit_error/reports/research-002.md)
-- **Plan**: [implementation-003.md](specs/041_fix_leanls_lsp_client_exit_error/plans/implementation-003.md)
+- **Research**: [research-001.md](041_fix_leanls_lsp_client_exit_error/reports/research-001.md), [research-002.md](041_fix_leanls_lsp_client_exit_error/reports/research-002.md)
+- **Plan**: [implementation-003.md](041_fix_leanls_lsp_client_exit_error/plans/implementation-003.md)
 
 **Description**: Fix leanls LSP client errors when opening Lean files: "Client leanls quit with exit code 1 and signal 0" and "Watchdog error: no such file or directory (error code: 2)". Check LSP log at ~/.local/state/nvim/lsp.log for details.
 
@@ -32,10 +34,10 @@ next_project_number: 43
 - **Effort**: 4-6 hours
 - **Status**: [COMPLETED]
 - **Completed**: 2026-02-03
-- **Summary**: [implementation-summary-20260203.md](specs/040_standardize_multi_task_creation_patterns/summaries/implementation-summary-20260203.md)
+- **Summary**: [implementation-summary-20260203.md](040_standardize_multi_task_creation_patterns/summaries/implementation-summary-20260203.md)
 - **Language**: meta
-- **Research**: [research-001.md](specs/040_standardize_multi_task_creation_patterns/reports/research-001.md)
-- **Plan**: [implementation-001.md](specs/040_standardize_multi_task_creation_patterns/plans/implementation-001.md)
+- **Research**: [research-001.md](040_standardize_multi_task_creation_patterns/reports/research-001.md)
+- **Plan**: [implementation-001.md](040_standardize_multi_task_creation_patterns/plans/implementation-001.md)
 
 **Description**: Check all commands/skills/agents that create tasks, ensuring multi-task creators use the interactive selection pattern from /learn (user selects which to create and how to group them). Standardize the dependency display and task creation order pattern from /meta (topological sorting, layered graph visualization). Create a common best practice pattern to be used consistently across: /task --review, /errors, /review, /learn, /meta, and any other multi-task creators.
 

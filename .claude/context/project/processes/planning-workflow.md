@@ -204,7 +204,7 @@ All plans must follow `.claude/context/core/standards/plan.md` template exactly.
 2. status-sync-manager performs atomic update:
    - Update TODO.md:
      - Status: [NOT STARTED] or [RESEARCHED] → [PLANNED]
-     - Add **Plan**: {plan_path}
+     - Add **Plan**: {plan_path} (stripped of specs/ prefix for TODO-relative link)
      - Add **Completed**: {date}
    - Update state.json:
      - Update status and timestamps

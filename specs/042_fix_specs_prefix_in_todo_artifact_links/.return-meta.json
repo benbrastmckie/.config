@@ -1,20 +1,24 @@
 {
-  "status": "planned",
+  "status": "implemented",
+  "summary": "Fixed specs/ prefix in TODO.md artifact links across 13 files: 8 skill postflight files now strip specs/ prefix before writing TODO.md links, 2 rules/pattern docs corrected, 2 workflow docs updated, and 6 existing TODO.md links cleaned up.",
   "artifacts": [
     {
-      "path": "specs/042_fix_specs_prefix_in_todo_artifact_links/plans/implementation-001.md",
-      "type": "plan",
-      "summary": "4-phase implementation plan to fix specs/ prefix in TODO.md artifact links across 12 files"
+      "type": "summary",
+      "path": "specs/042_fix_specs_prefix_in_todo_artifact_links/summaries/implementation-summary-20260205.md",
+      "summary": "Implementation summary with verification results for all 4 phases"
     }
   ],
-  "next_steps": "Run /implement 42 to execute the plan",
+  "completion_data": {
+    "completion_summary": "Fixed TODO.md artifact links by adding specs/ prefix stripping in 8 skill postflight stages, correcting 4 documentation files, and cleaning up 6 existing links in TODO.md.",
+    "claudemd_suggestions": "Modified 8 skill SKILL.md files in .claude/skills/ to add todo_link_path stripping, updated .claude/rules/state-management.md artifact linking section, updated .claude/context/core/patterns/inline-status-update.md link examples, updated .claude/context/project/processes/research-workflow.md and planning-workflow.md"
+  },
   "metadata": {
-    "session_id": "sess_1770315556_92ac6e",
-    "agent_type": "planner-agent",
-    "duration_seconds": 120,
+    "session_id": "sess_1770315792_1357e8",
+    "agent_type": "general-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "plan", "planner-agent"],
-    "phase_count": 4,
-    "estimated_hours": "1-2"
-  }
+    "delegation_path": ["orchestrator", "implement", "general-implementation-agent"],
+    "phases_completed": 4,
+    "phases_total": 4
+  },
+  "next_steps": "Review implementation and run verification"
 }

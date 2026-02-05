@@ -230,20 +230,20 @@ When creating artifacts, update TODO.md with links:
 ### Research Completion
 ```markdown
 - **Status**: [RESEARCHED]
-- **Research**: [specs/{NNN}_{SLUG}/reports/research-001.md]
+- **Research**: [research-001.md]({NNN}_{SLUG}/reports/research-001.md)
 ```
 
 ### Plan Completion
 ```markdown
 - **Status**: [PLANNED]
-- **Plan**: [specs/{NNN}_{SLUG}/plans/implementation-001.md]
+- **Plan**: [implementation-001.md]({NNN}_{SLUG}/plans/implementation-001.md)
 ```
 
 ### Implementation Completion
 ```markdown
 - **Status**: [COMPLETED]
 - **Completed**: 2026-01-08
-- **Summary**: [specs/{NNN}_{SLUG}/summaries/implementation-summary-20260108.md]
+- **Summary**: [implementation-summary-20260108.md]({NNN}_{SLUG}/summaries/implementation-summary-20260108.md)
 ```
 
 ## Directory Creation

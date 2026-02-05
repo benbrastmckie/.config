@@ -2,7 +2,7 @@
 
 **Date**: 2026-02-05
 **Feature**: Fix specs/ prefix in TODO.md artifact links
-**Status**: [NOT STARTED]
+**Status**: [IMPLEMENTING]
 **Estimated Hours**: 1-2 hours
 **Standards File**: /home/benjamin/.config/nvim/.claude/CLAUDE.md
 **Research Reports**: [research-001.md](../reports/research-001.md)
@@ -41,7 +41,7 @@ The research report identified 12 files across 3 categories: 8 skill postflight 
 
 ## Implementation Phases
 
-### Phase 1: Fix Skill Postflight Code (8 files) [NOT STARTED]
+### Phase 1: Fix Skill Postflight Code (8 files) [COMPLETED]
 
 **Goal**: Add `specs/` prefix stripping in all skill postflight stages before TODO.md Edit operations, so artifact links use paths relative to specs/ directory.
 
@@ -168,7 +168,7 @@ The research report identified 12 files across 3 categories: 8 skill postflight 
 
 ---
 
-### Phase 2: Fix Rules and Pattern Documentation (2 files) [NOT STARTED]
+### Phase 2: Fix Rules and Pattern Documentation (2 files) [COMPLETED]
 
 **Goal**: Correct the template examples in rules/pattern files so they show TODO.md links without the `specs/` prefix.
 
@@ -246,7 +246,7 @@ The research report identified 12 files across 3 categories: 8 skill postflight 
 
 ---
 
-### Phase 3: Fix Workflow Documentation (2 files) [NOT STARTED]
+### Phase 3: Fix Workflow Documentation (2 files) [COMPLETED]
 
 **Goal**: Update the workflow documentation to note that artifact paths need `specs/` prefix stripping before use in TODO.md links.
 
@@ -287,7 +287,7 @@ The research report identified 12 files across 3 categories: 8 skill postflight 
 
 ---
 
-### Phase 4: Clean Up Existing TODO.md Entries [NOT STARTED]
+### Phase 4: Clean Up Existing TODO.md Entries [COMPLETED]
 
 **Goal**: Fix the existing incorrect `specs/` prefix in TODO.md links for tasks 40 and 41.
 
