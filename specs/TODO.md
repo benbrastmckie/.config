@@ -17,9 +17,10 @@ next_project_number: 49
 
 ### 47. Fix leader-ac sync source path
 - **Effort**: TBD
-- **Status**: [RESEARCHING]
+- **Status**: [RESEARCHED]
 - **Language**: neovim
 - **Started**: 2026-02-05
+- **Research**: [research-001.md](047_fix_leader_ac_sync_source_path/reports/research-001.md)
 
 **Description**: Fix the `<leader>ac` sync source path to ensure the agent management tool reads from the correct source directory.
 

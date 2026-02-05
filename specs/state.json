@@ -21,11 +21,18 @@
     {
       "project_number": 47,
       "project_name": "fix_leader_ac_sync_source_path",
-      "status": "researching",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-05T20:36:42Z",
-      "last_updated": "2026-02-05T21:00:35Z",
-      "session_id": "sess_1770325214_4d5bf7"
+      "last_updated": "2026-02-05T21:09:04Z",
+      "session_id": "sess_1770325214_4d5bf7",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/047_fix_leader_ac_sync_source_path/reports/research-001.md",
+          "summary": "Research report documenting <leader>ac keybinding chain, current global_source_dir config, 2 unscanned directories (output/, systemd/), hardcoded help text, and stale ~/.config/.claude/ directory with 4 fix recommendations"
+        }
+      ]
     },
     {
       "project_number": 46,
