@@ -8,9 +8,10 @@ next_project_number: 45
 
 ### 44. Complete LogosWebsite task 9 equivalent in this repo
 - **Effort**: Small
-- **Status**: [RESEARCHED]
+- **Status**: [PLANNED]
 - **Language**: meta
 - **Research**: [research-001.md](044_complete_logosweb_task_9_equivalent/reports/research-001.md), [research-002.md](044_complete_logosweb_task_9_equivalent/reports/research-002.md)
+- **Plan**: [implementation-001.md](044_complete_logosweb_task_9_equivalent/plans/implementation-001.md)
 
 **Description**: Draw on task 9 in /home/benjamin/Projects/Logos/LogosWebsite/specs/TODO.md to complete the same work in this repository. Research what task 9 involves and adapt it for the Neovim configuration .claude/ agent system.
 
