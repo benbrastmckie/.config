@@ -4,10 +4,19 @@
     {
       "project_number": 43,
       "project_name": "fix_web_language_routing_gaps",
-      "status": "not_started",
+      "status": "researched",
       "language": "general",
       "created": "2026-02-05T18:32:35Z",
-      "last_updated": "2026-02-05T18:32:35Z"
+      "last_updated": "2026-02-05T18:37:23Z",
+      "session_id": "sess_1770316385_6d33e7",
+      "researched": "2026-02-05T18:37:23Z",
+      "artifacts": [
+        {
+          "path": "specs/043_fix_web_language_routing_gaps/reports/research-001.md",
+          "type": "research",
+          "summary": "Comprehensive gap analysis of LogosWebsite web language routing: Phase 1 partially done (6/8), Phases 2-4 not started, 14 additive changes needed across 12 files organized by priority tier"
+        }
+      ]
     },
     {
       "project_number": 42,
