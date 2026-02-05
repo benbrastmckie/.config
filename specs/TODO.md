@@ -22,8 +22,9 @@ next_project_number: 49
 
 ### 46. Migrate LogosWebsite to padded directory convention
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Language**: meta
+- **Research**: [research-001.md](046_migrate_logosweb_to_padded_directory_conv/reports/research-001.md)
 
 **Description**: Change the `{N}` unpadded directory convention in LogosWebsite to use `{NNN}` zero-padded directories for lexicographic sorting consistency with the nvim repo.
 
