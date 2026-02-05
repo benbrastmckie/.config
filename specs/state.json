@@ -4,19 +4,25 @@
     {
       "project_number": 42,
       "project_name": "fix_specs_prefix_in_todo_artifact_links",
-      "status": "researched",
+      "status": "planned",
       "language": "meta",
       "created": "2026-02-05T18:11:57Z",
-      "last_updated": "2026-02-05T18:16:51Z",
-      "session_id": "sess_1770315169_cc7c9b",
+      "last_updated": "2026-02-05T18:22:35Z",
+      "session_id": "sess_1770315556_92ac6e",
       "researched": "2026-02-05T18:16:51Z",
       "artifacts": [
         {
           "path": "specs/042_fix_specs_prefix_in_todo_artifact_links/reports/research-001.md",
           "type": "research",
           "summary": "Research report identifying 12 files with specs/ prefix bug in TODO.md artifact links, with detailed fix pattern using shell parameter expansion"
+        },
+        {
+          "path": "specs/042_fix_specs_prefix_in_todo_artifact_links/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan to fix specs/ prefix in TODO.md artifact links across 12 files"
         }
-      ]
+      ],
+      "planned": "2026-02-05T18:22:35Z"
     },
     {
       "project_number": 41,

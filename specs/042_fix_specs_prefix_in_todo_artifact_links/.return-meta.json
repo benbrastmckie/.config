@@ -1,0 +1,20 @@
+{
+  "status": "planned",
+  "artifacts": [
+    {
+      "path": "specs/042_fix_specs_prefix_in_todo_artifact_links/plans/implementation-001.md",
+      "type": "plan",
+      "summary": "4-phase implementation plan to fix specs/ prefix in TODO.md artifact links across 12 files"
+    }
+  ],
+  "next_steps": "Run /implement 42 to execute the plan",
+  "metadata": {
+    "session_id": "sess_1770315556_92ac6e",
+    "agent_type": "planner-agent",
+    "duration_seconds": 120,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 4,
+    "estimated_hours": "1-2"
+  }
+}
