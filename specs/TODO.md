@@ -1,10 +1,19 @@
 ---
-next_project_number: 44
+next_project_number: 45
 ---
 
 # TODO
 
 ## Tasks
+
+### 44. Complete LogosWebsite task 9 equivalent in this repo
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: meta
+
+**Description**: Draw on task 9 in /home/benjamin/Projects/Logos/LogosWebsite/specs/TODO.md to complete the same work in this repository. Research what task 9 involves and adapt it for the Neovim configuration .claude/ agent system.
+
+---
 
 ### 43. Fix web language routing gaps
 - **Effort**: TBD
