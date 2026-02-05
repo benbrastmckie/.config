@@ -8,9 +8,10 @@ next_project_number: 44
 
 ### 43. Fix web language routing gaps
 - **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Status**: [PLANNED]
 - **Language**: general
 - **Research**: [research-001.md](043_fix_web_language_routing_gaps/reports/research-001.md)
+- **Plan**: [implementation-001.md](043_fix_web_language_routing_gaps/plans/implementation-001.md)
 
 **Description**: Fix gaps identified in phase 4 of /home/benjamin/Projects/Logos/LogosWebsite/specs/3_add_web_language_routing/plans/implementation-001.md. Draw on the phase 4 analysis to create targeted fixes for the web language routing implementation.
 

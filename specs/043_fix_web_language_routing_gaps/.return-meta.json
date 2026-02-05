@@ -1,11 +1,18 @@
 {
-  "status": "researched",
-  "summary": "Identified 14 remaining changes across 12 files: 3 missing typst entries in core routing files, 2 incomplete skill trigger conditions, and 9 documentation updates needed to complete web language routing in LogosWebsite",
+  "status": "planned",
+  "summary": "7-phase plan to fix language routing gaps across 15+ .claude/ files: add missing typst/latex/meta entries, replace stale lean references with neovim, remove non-routing python/shell/json languages",
   "artifacts": [
     {
-      "path": "specs/043_fix_web_language_routing_gaps/reports/research-001.md",
-      "type": "research",
-      "summary": "Comprehensive gap analysis of LogosWebsite web language routing: Phase 1 partially done (6/8), Phases 2-4 not started, 14 additive changes needed across 12 files organized by priority tier"
+      "path": "specs/043_fix_web_language_routing_gaps/plans/implementation-001.md",
+      "type": "plan",
+      "summary": "7-phase implementation plan fixing routing table inconsistencies, stale lean references, and missing language entries across .claude/ system"
     }
-  ]
+  ],
+  "metadata": {
+    "agent_type": "planner-agent",
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 7,
+    "estimated_hours": "2-3"
+  }
 }

@@ -4,19 +4,25 @@
     {
       "project_number": 43,
       "project_name": "fix_web_language_routing_gaps",
-      "status": "researched",
+      "status": "planned",
       "language": "general",
       "created": "2026-02-05T18:32:35Z",
-      "last_updated": "2026-02-05T18:37:23Z",
-      "session_id": "sess_1770316385_6d33e7",
+      "last_updated": "2026-02-05T18:44:46Z",
+      "session_id": "sess_1770316783_dd20c4",
       "researched": "2026-02-05T18:37:23Z",
       "artifacts": [
         {
           "path": "specs/043_fix_web_language_routing_gaps/reports/research-001.md",
           "type": "research",
           "summary": "Comprehensive gap analysis of LogosWebsite web language routing: Phase 1 partially done (6/8), Phases 2-4 not started, 14 additive changes needed across 12 files organized by priority tier"
+        },
+        {
+          "path": "specs/043_fix_web_language_routing_gaps/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "7-phase implementation plan fixing routing table inconsistencies, stale lean references, and missing language entries across .claude/ system"
         }
-      ]
+      ],
+      "planned": "2026-02-05T18:44:46Z"
     },
     {
       "project_number": 42,
