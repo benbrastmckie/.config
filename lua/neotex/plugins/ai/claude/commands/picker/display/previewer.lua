@@ -61,8 +61,9 @@ local function preview_heading(self, entry)
   local ordinal = entry.value.ordinal or "Unknown"
   local readme_path = nil
 
+  local scan_mod = require("neotex.plugins.ai.claude.commands.picker.utils.scan")
   local local_path = vim.fn.getcwd() .. "/.claude/" .. ordinal .. "/README.md"
-  local global_path = vim.fn.expand("~/.config/.claude/" .. ordinal .. "/README.md")
+  local global_path = scan_mod.get_global_dir() .. "/.claude/" .. ordinal .. "/README.md"
 
   if vim.fn.filereadable(local_path) == 1 then
     readme_path = local_path
@@ -155,7 +156,7 @@ local function preview_help(self)
     "",
     "Indicators:",
     "  *       - Artifact defined locally in project (.claude/)",
-    "            Otherwise a global artifact from ~/.config/.claude/",
+    "            Otherwise a global artifact from ~/.config/nvim/.claude/",
     "",
     "File Operations:",
     "  Ctrl-l/u/s  - Commands, Hooks, Skills, Templates, Lib, Docs",
@@ -167,8 +168,8 @@ local function preview_help(self)
     "               Replaces local with global artifacts with the same",
     "               name while preserving local-only artifacts.",
     "",
-    "Notes: All artifacts loaded from both project and .config directories",
-    "       Local artifacts override global ones from .config/"
+    "Notes: All artifacts loaded from both project and global directories",
+    "       Local artifacts override global ones from ~/.config/nvim/"
   })
 end
 
@@ -176,7 +177,8 @@ end
 --- @param self table Telescope previewer state
 local function preview_load_all(self)
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local scan = require("neotex.plugins.ai.claude.commands.picker.utils.scan")
+  local global_dir = scan.get_global_dir()
 
   local commands = scan_directory_for_sync(global_dir, project_dir, "commands", "*.md")
   local hooks = scan_directory_for_sync(global_dir, project_dir, "hooks", "*.sh")
@@ -209,7 +211,7 @@ local function preview_load_all(self)
   local lines = {
     "Load All Artifacts",
     "",
-    "This action will sync all artifacts from ~/.config/.claude/ to your",
+    "This action will sync all artifacts from " .. global_dir .. "/.claude/ to your",
     "local project's .claude/ directory.",
     "",
   }
@@ -238,7 +240,7 @@ local function preview_load_all(self)
   table.insert(lines, "")
   table.insert(lines, "**Current Status:**")
   table.insert(lines, string.format("  Project directory: %s", project_dir))
-  table.insert(lines, "  Global directory:  ~/.config/.claude/")
+  table.insert(lines, "  Global directory:  " .. global_dir .. "/.claude/")
   table.insert(lines, "")
   table.insert(lines, "Press Enter to proceed with confirmation, or Escape to cancel.")
 

@@ -674,7 +674,8 @@ end
 --- @return table Structure with commands, hooks, skills, and dependencies
 function M.get_extended_structure()
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local scan = require("neotex.plugins.ai.claude.commands.picker.utils.scan")
+  local global_dir = scan.get_global_dir()
 
   -- Get command structure
   local project_commands_dir = project_dir .. "/.claude/commands"
@@ -729,8 +730,9 @@ function M.get_command_structure(commands_dir)
     return M.sort_hierarchy(hierarchy)
   end
 
+  local scan_mod = require("neotex.plugins.ai.claude.commands.picker.utils.scan")
   local project_dir = vim.fn.getcwd() .. "/.claude/commands"
-  local global_dir = vim.fn.expand("~/.config/.claude/commands")
+  local global_dir = scan_mod.get_global_dir() .. "/.claude/commands"
 
   local commands = M.parse_with_fallback(project_dir, global_dir)
   local hierarchy = M.build_hierarchy(commands)

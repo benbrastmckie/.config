@@ -3,6 +3,19 @@
 
 local M = {}
 
+--- Get the global source directory from config with fallback
+--- @return string Global source directory path
+function M.get_global_dir()
+  local ok, config = pcall(require, "neotex.plugins.ai.claude.config")
+  if ok and config.options and config.options.global_source_dir then
+    return config.options.global_source_dir
+  end
+  if ok and config.defaults and config.defaults.global_source_dir then
+    return config.defaults.global_source_dir
+  end
+  return vim.fn.expand("~/.config/nvim")
+end
+
 --- Scan a directory for files matching a pattern
 --- @param dir string Directory path to scan
 --- @param pattern string File pattern (e.g., "*.md", "*.sh")
@@ -29,7 +42,7 @@ function M.scan_directory(dir, pattern)
 end
 
 --- Scan directory for files to sync (used by Load All operation)
---- @param global_dir string Global base directory (e.g., ~/.config)
+--- @param global_dir string Global base directory (e.g., ~/.config/nvim)
 --- @param local_dir string Local base directory (e.g., current project)
 --- @param subdir string Subdirectory to scan (e.g., "commands", "hooks")
 --- @param extension string File extension pattern (e.g., "*.md", "*.sh")
@@ -136,7 +149,7 @@ end
 function M.get_directories()
   return {
     project_dir = vim.fn.getcwd(),
-    global_dir = vim.fn.expand("~/.config"),
+    global_dir = M.get_global_dir(),
   }
 end
 

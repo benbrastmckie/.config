@@ -5,6 +5,7 @@ local M = {}
 
 -- Dependencies
 local helpers = require("neotex.plugins.ai.claude.commands.picker.utils.helpers")
+local scan = require("neotex.plugins.ai.claude.commands.picker.utils.scan")
 
 --- Edit artifact file with proper escaping
 --- @param filepath string Path to file to edit
@@ -30,7 +31,7 @@ function M.save_artifact_to_global(artifact, artifact_type)
   end
 
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local global_dir = scan.get_global_dir()
 
   -- Don't save if we're in the global directory
   if project_dir == global_dir then
@@ -113,7 +114,7 @@ function M.load_artifact_locally(artifact, artifact_type, parser)
   end
 
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local global_dir = scan.get_global_dir()
 
   -- Don't load if we're in the global directory
   if project_dir == global_dir then
@@ -145,10 +146,10 @@ function M.load_artifact_locally(artifact, artifact_type, parser)
 
   -- Find global version
   local global_filepath
-  if artifact.filepath and artifact.filepath:match("^" .. vim.fn.expand("~/.config")) then
+  if artifact.filepath and artifact.filepath:match("^" .. vim.pesc(global_dir)) then
     global_filepath = artifact.filepath
   else
-    -- Construct global filepath
+    -- Construct global filepath from global directory
     global_filepath = global_dir .. "/.claude/" .. subdir .. "/" .. artifact.name
     if artifact_type == "command" or artifact_type == "skill" or artifact_type == "doc" then
       global_filepath = global_filepath .. ".md"

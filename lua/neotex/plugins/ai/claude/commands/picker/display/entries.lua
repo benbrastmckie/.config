@@ -80,7 +80,7 @@ end
 function M.create_docs_entries()
   local entries = {}
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local global_dir = scan.get_global_dir()
 
   local local_docs = scan.scan_directory(project_dir .. "/.claude/docs", "*.md")
   local global_docs = scan.scan_directory(global_dir .. "/.claude/docs", "*.md")
@@ -126,7 +126,7 @@ end
 function M.create_lib_entries()
   local entries = {}
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local global_dir = scan.get_global_dir()
 
   local local_lib = scan.scan_directory(project_dir .. "/.claude/lib", "*.sh")
   local global_lib = scan.scan_directory(global_dir .. "/.claude/lib", "*.sh")
@@ -172,7 +172,7 @@ end
 function M.create_templates_entries()
   local entries = {}
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local global_dir = scan.get_global_dir()
 
   local local_templates = scan.scan_directory(project_dir .. "/.claude/templates", "*.yaml")
   local global_templates = scan.scan_directory(global_dir .. "/.claude/templates", "*.yaml")
@@ -218,7 +218,7 @@ end
 function M.create_scripts_entries()
   local entries = {}
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local global_dir = scan.get_global_dir()
 
   local local_scripts = scan.scan_directory(project_dir .. "/.claude/scripts", "*.sh")
   local global_scripts = scan.scan_directory(global_dir .. "/.claude/scripts", "*.sh")
@@ -264,7 +264,7 @@ end
 function M.create_tests_entries()
   local entries = {}
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local global_dir = scan.get_global_dir()
 
   local local_tests = scan.scan_directory(project_dir .. "/.claude/tests", "test_*.sh")
   local global_tests = scan.scan_directory(global_dir .. "/.claude/tests", "test_*.sh")

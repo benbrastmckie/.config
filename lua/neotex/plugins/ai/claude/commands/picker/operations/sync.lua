@@ -158,7 +158,16 @@ local function scan_all_artifacts(global_dir, project_dir)
   artifacts.tests = scan.scan_directory_for_sync(global_dir, project_dir, "tests", "test_*.sh")
   artifacts.agents = scan.scan_directory_for_sync(global_dir, project_dir, "agents", "*.md")
   artifacts.rules = scan.scan_directory_for_sync(global_dir, project_dir, "rules", "*.md")
-  artifacts.context = scan.scan_directory_for_sync(global_dir, project_dir, "context", "*.md")
+  -- Context (multiple file types: md, json, yaml)
+  local ctx_md = scan.scan_directory_for_sync(global_dir, project_dir, "context", "*.md")
+  local ctx_json = scan.scan_directory_for_sync(global_dir, project_dir, "context", "*.json")
+  local ctx_yaml = scan.scan_directory_for_sync(global_dir, project_dir, "context", "*.yaml")
+  artifacts.context = {}
+  for _, files in ipairs({ ctx_md, ctx_json, ctx_yaml }) do
+    for _, file in ipairs(files) do
+      table.insert(artifacts.context, file)
+    end
+  end
 
   -- Skills (multiple file types)
   local skills_md = scan.scan_directory_for_sync(global_dir, project_dir, "skills", "*.md")
@@ -192,6 +201,19 @@ local function scan_all_artifacts(global_dir, project_dir)
     end
   end
 
+  -- Project-root CLAUDE.md (outside .claude/ directory)
+  local project_claude_global = global_dir .. "/CLAUDE.md"
+  local project_claude_local = project_dir .. "/CLAUDE.md"
+  if vim.fn.filereadable(project_claude_global) == 1 then
+    table.insert(artifacts.root_files, {
+      name = "CLAUDE.md (project root)",
+      global_path = project_claude_global,
+      local_path = project_claude_local,
+      action = vim.fn.filereadable(project_claude_local) == 1 and "replace" or "copy",
+      is_subdir = false,
+    })
+  end
+
   return artifacts
 end
 
@@ -200,7 +222,7 @@ end
 --- @return number count Total number of artifacts loaded or updated
 function M.load_all_globally()
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local global_dir = scan.get_global_dir()
 
   -- Don't load if we're in the global directory
   if project_dir == global_dir then
@@ -224,7 +246,7 @@ function M.load_all_globally()
   end
 
   if total_files == 0 then
-    helpers.notify("No global artifacts found in ~/.config/.claude/", "WARN")
+    helpers.notify("No global artifacts found in " .. global_dir .. "/.claude/", "WARN")
     return 0
   end
 
@@ -298,7 +320,7 @@ function M.update_artifact_from_global(artifact, artifact_type, silent)
   end
 
   local project_dir = vim.fn.getcwd()
-  local global_dir = vim.fn.expand("~/.config")
+  local global_dir = scan.get_global_dir()
 
   -- Don't update if we're in the global directory
   if project_dir == global_dir then

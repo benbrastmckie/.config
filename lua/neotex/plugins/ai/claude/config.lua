@@ -36,6 +36,9 @@ M.defaults = {
     show_help_entry = true,        -- Show keyboard shortcuts help entry
     cache_timeout = 300,           -- Cache parsed commands for 5 minutes (seconds)
   },
+
+  -- Global source directory for artifact syncing
+  global_source_dir = vim.fn.expand("~/.config/nvim"),
 }
 
 M.options = {}
