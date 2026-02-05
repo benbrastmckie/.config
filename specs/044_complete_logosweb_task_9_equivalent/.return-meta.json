@@ -1,0 +1,19 @@
+{
+  "status": "researched",
+  "summary": "The <leader>ac sync mechanism reads from ~/.config/.claude/ (a stale copy) instead of ~/.config/nvim/.claude/ (the active repo), causing 63 outdated files. Additionally, context scanning misses .json/.yaml files, and output/systemd directories are not scanned at all. The top-level CLAUDE.md is also not synced.",
+  "artifacts": [
+    {
+      "path": "specs/044_complete_logosweb_task_9_equivalent/reports/research-002.md",
+      "type": "research",
+      "summary": "Analysis of <leader>ac sync mechanism failures: stale global source, incomplete file type scanning, unscanned directories, and 5 specific fix recommendations"
+    }
+  ],
+  "next_steps": "Run /plan 44 to create implementation plan for fixing the sync mechanism",
+  "metadata": {
+    "session_id": "sess_1770319422_f3f72f",
+    "agent_type": "general-research-agent",
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "general-research-agent"],
+    "findings_count": 7
+  }
+}
