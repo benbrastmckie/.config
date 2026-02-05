@@ -8,23 +8,27 @@ next_project_number: 49
 
 ### 48. Add Phase Checkpoint Protocol to neovim-implementation-agent
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHING]
 - **Language**: meta
+- **Started**: 2026-02-05
 
 **Description**: Add Phase Checkpoint Protocol to neovim-implementation-agent for per-phase status marker updates during plan execution.
 
 ### 47. Fix leader-ac sync source path
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHING]
 - **Language**: neovim
+- **Started**: 2026-02-05
 
 **Description**: Fix the `<leader>ac` sync source path to ensure the agent management tool reads from the correct source directory.
 
 ### 46. Migrate LogosWebsite to padded directory convention
 - **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Effort**: 3-5 hours
+- **Status**: [PLANNED]
 - **Language**: meta
 - **Research**: [research-001.md](046_migrate_logosweb_to_padded_directory_conv/reports/research-001.md)
+- **Plan**: [implementation-001.md](046_migrate_logosweb_to_padded_directory_conv/plans/implementation-001.md)
 
 **Description**: Change the `{N}` unpadded directory convention in LogosWebsite to use `{NNN}` zero-padded directories for lexicographic sorting consistency with the nvim repo.
 
