@@ -35,7 +35,7 @@ This plan addresses the issue where the `<leader>rf` formatting keymap fails to 
 - **Timing:** 15-20 minutes
 - **Verification:** Check that the filetype entries are properly formatted and follow existing patterns
 
-### Phase 2: Install Formatters via Mason [NOT STARTED]
+### Phase 2: Install Formatters via Mason [DONE]
 
 - **Goal:** Update Mason tool installer to include all required formatters
 - **Tasks:**
@@ -48,7 +48,7 @@ This plan addresses the issue where the `<leader>rf` formatting keymap fails to 
 - **Timing:** 15-20 minutes
 - **Verification:** Run `:MasonToolsInstall` to verify tools can be installed (may require manual confirmation)
 
-### Phase 3: Update Which-Key Documentation (REVISED) [NOT STARTED]
+### Phase 3: Update Which-Key Documentation (REVISED) [DONE]
 
 - **Goal:** Update keymap documentation in which-key.lua to reflect current behavior
 - **Revision Note:** Keymap remains in which-key.lua per request "Do not relocate keymaps"
@@ -60,7 +60,7 @@ This plan addresses the issue where the `<leader>rf` formatting keymap fails to 
 - **Timing:** 10-15 minutes
 - **Verification:** Check which-key popup shows updated description for `<leader>rf`
 
-### Phase 4: Testing and Validation [NOT STARTED]
+### Phase 4: Testing and Validation [DONE]
 
 - **Goal:** Verify the formatting keymap works across all filetypes
 - **Tasks:**

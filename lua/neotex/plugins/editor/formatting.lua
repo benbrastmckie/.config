@@ -33,6 +33,10 @@ return {
         json = { "jq" },
         yaml = { "prettier" },
         markdown = { "prettier" },
+        astro = { "prettier" },
+        svelte = { "prettier" },
+        graphql = { "prettier" },
+        handlebars = { "prettier" },
         
         -- Python
         python = { "isort", "black" },

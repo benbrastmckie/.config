@@ -40,9 +40,14 @@ return {
       require("mason-tool-installer").setup({
         ensure_installed = {
           -- "stylua",  -- lua formatter (using system version instead)
-          "isort",   -- python formatter
-          "black",   -- python formatter
-          "pylint",  -- python linter
+          "isort",        -- python formatter
+          "black",        -- python formatter
+          "pylint",       -- python linter
+          "prettier",     -- web formatters (js, ts, astro, svelte, etc.)
+          "jq",           -- json formatter
+          "shfmt",        -- shell script formatter
+          "clang-format", -- C/C++ formatter
+          "latexindent",  -- LaTeX formatter
         },
         -- Install tools when needed, not at startup
         auto_update = false,

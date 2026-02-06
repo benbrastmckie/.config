@@ -24,6 +24,11 @@ TOP-LEVEL MAPPINGS (<leader>)                   | DESCRIPTION
 <leader>u - Open Telescope undo                 | Show undo history with preview
 <leader>w - Write all files                     | Save all open files
 
+GROUP MAPPINGS (<leader>X)
+----------------------------------------------------------------------------------
+<leader>r - Run/Execute commands                  | Contains format (<leader>rf), debug, etc.
+<leader>rf - Format with conform.nvim           | Async formatting with LSP fallback
+
 [Additional documentation continues as before...]
 ]]
 
@@ -589,6 +594,10 @@ return {
           notify.toggle_debug_mode()
         end, desc = "toggle debug mode", icon = "󰃤" },
       { "<leader>rl", "<cmd>lua require('neotex.util.diagnostics').show_all_errors()<CR>", desc = "show linter errors", icon = "󰅚" },
+      -- Format via conform.nvim with LSP fallback
+      -- Uses filetype-specific formatters (prettier, stylua, black, etc.)
+      -- Falls back to LSP formatting if no formatter is configured
+      -- Supports both normal and visual mode for range formatting
       { "<leader>rf", function() require("conform").format({ async = true, lsp_fallback = true }) end, desc = "format", icon = "󰉣", mode = { "n", "v" } },
       { "<leader>rF", "<cmd>lua ToggleAllFolds()<CR>", desc = "toggle all folds", icon = "󰘖" },
       { "<leader>rh", "<cmd>LocalHighlightToggle<CR>", desc = "highlight", icon = "󰠷" },
