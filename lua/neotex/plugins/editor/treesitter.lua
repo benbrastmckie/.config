@@ -10,7 +10,7 @@ return {
         "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline",
         "python", "bash", "nix", "json", "yaml", "toml", "gitignore",
         "c", "haskell", "css", "html", "javascript", "scss", "regex",
-        "typst",
+        "typst", "astro",
       }
 
       -- Filetypes to disable treesitter for
@@ -72,7 +72,7 @@ return {
   {
     "windwp/nvim-ts-autotag",
     lazy = true,
-    ft = { "html", "xml", "jsx", "tsx", "vue", "svelte", "php", "markdown" },
+    ft = { "html", "xml", "jsx", "tsx", "vue", "svelte", "php", "markdown", "astro" },
     dependencies = { "nvim-treesitter/nvim-treesitter" },
     opts = {
       opts = {
