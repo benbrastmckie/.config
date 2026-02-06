@@ -4,17 +4,23 @@
     {
       "project_number": 49,
       "project_name": "fix_astro_indentation_cr_middle_line",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-06T18:44:56Z",
-      "last_updated": "2026-02-06T18:50:40Z",
+      "last_updated": "2026-02-06T18:54:10Z",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/049_astro_indentation/reports/research-049.md",
           "summary": "Research on Astro indentation: missing treesitter parser, no ftplugin, missing autotag support"
+        },
+        {
+          "type": "plan",
+          "path": "specs/049_astro_indentation/plans/implementation-049.md",
+          "summary": "4-phase plan: Add astro parser, create ftplugin, update autotag, verify. ~35 min estimated."
         }
-      ]
+      ],
+      "planned": "2026-02-06T18:54:10Z"
     },
     {
       "project_number": 48,

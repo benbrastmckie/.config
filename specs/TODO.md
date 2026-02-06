@@ -8,9 +8,10 @@ next_project_number: 50
 
 ### 49. Fix Astro indentation on CR in middle of line
 - **Effort**: 1-2 hours
-- **Status**: [RESEARCHED]
+- **Status**: [PLANNED]
 - **Language**: neovim
 - **Research**: [research-049.md](049_astro_indentation/reports/research-049.md)
+- **Plan**: [implementation-049.md](049_astro_indentation/plans/implementation-049.md)
 
 **Description**: Fix unwanted un-indenting when hitting <CR> in middle of line in .astro files. Currently when pressing Enter mid-line, text loses proper indentation.
 
