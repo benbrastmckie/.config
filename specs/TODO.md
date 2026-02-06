@@ -1,10 +1,17 @@
 ---
-next_project_number: 49
+next_project_number: 50
 ---
 
 # TODO
 
 ## Tasks
+
+### 49. Fix Astro indentation on CR in middle of line
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Fix unwanted un-indenting when hitting <CR> in middle of line in .astro files. Currently when pressing Enter mid-line, text loses proper indentation.
 
 ### 48. Add Phase Checkpoint Protocol to neovim-implementation-agent
 - **Effort**: 1-2 hours
