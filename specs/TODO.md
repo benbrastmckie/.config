@@ -1,10 +1,17 @@
 ---
-next_project_number: 50
+next_project_number: 51
 ---
 
 # TODO
 
 ## Tasks
+
+### 50. Fix <leader>rf keymap for multiple filetypes
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Fix <leader>rf formatting keymap to work properly with .astro, markdown, and other filetypes. Improve functionality to automatically format based on detected language.
 
 ### 49. Fix Astro indentation on CR in middle of line
 - **Effort**: 1-2 hours

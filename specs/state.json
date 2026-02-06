@@ -1,6 +1,14 @@
 {
-  "next_project_number": 50,
+  "next_project_number": 51,
   "active_projects": [
+    {
+      "project_number": 50,
+      "project_name": "fix_leader_rf_formatting_multiple_filetypes",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-06T19:18:57Z",
+      "last_updated": "2026-02-06T19:18:57Z"
+    },
     {
       "project_number": 49,
       "project_name": "fix_astro_indentation_cr_middle_line",
