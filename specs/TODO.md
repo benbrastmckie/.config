@@ -11,7 +11,7 @@ next_project_number: 51
 - **Status**: [PLANNED]
 - **Language**: neovim
 - **Research**: [research-050.md](050_fix_leader_rf_formatting/reports/research-050.md)
-- **Plan**: [implementation-050.md](050_fix_leader_rf_formatting/plans/implementation-050.md)
+- **Plan**: [implementation-051.md](050_fix_leader_rf_formatting/plans/implementation-051.md)
 
 **Description**: Fix <leader>rf formatting keymap to work properly with .astro, markdown, and other filetypes. Improve functionality to automatically format based on detected language.
 

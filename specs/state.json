@@ -7,7 +7,7 @@
       "status": "planned",
       "language": "neovim",
       "created": "2026-02-06T19:18:57Z",
-      "last_updated": "2026-02-06T19:36:47Z",
+      "last_updated": "2026-02-06T19:55:51Z",
       "artifacts": [
         {
           "path": "050_fix_leader_rf_formatting/reports/research-050.md",
@@ -15,11 +15,11 @@
         },
         {
           "type": "plan",
-          "path": "specs/050_fix_leader_rf_formatting/plans/implementation-050.md",
-          "summary": "4-phase plan: Add filetype formatters, install formatters via Mason, relocate keymap, test. ~70-100 min estimated."
+          "path": "specs/050_fix_leader_rf_formatting/plans/implementation-051.md",
+          "summary": "4-phase plan (REVISED): Add filetype formatters, install formatters via Mason, update which-key docs (no keymap relocation), test. ~60-85 min estimated."
         }
       ],
-      "planned": "2026-02-06T19:36:47Z"
+      "planned": "2026-02-06T19:55:51Z"
     },
     {
       "project_number": 49,
