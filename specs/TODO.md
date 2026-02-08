@@ -8,8 +8,9 @@ next_project_number: 52
 
 ### 51. Complete Himalaya email configuration in Neovim
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Language**: neovim
+- **Research**: [research-001.md](051_complete_himalaya_email_configuration/reports/research-001.md)
 
 **Description**: Complete the Himalaya email configuration in Neovim. Research what remains to be done to fully configure Himalaya to keep all email for two accounts synced with local copies: primary account 'benjamin@logos-labs.ai' and secondary account 'benbrastmckie@gmail.com'. Investigate both the Himalaya CLI/backend setup for IMAP sync and the Neovim integration configuration.
 
