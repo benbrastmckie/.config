@@ -3,24 +3,25 @@
 **Task**: 51 - Complete Himalaya Email Configuration
 **Started**: 2026-02-08T00:00:00Z
 **Completed**: 2026-02-08T00:30:00Z
+**Revised**: 2026-02-08T23:50:00Z
 **Effort**: 3-5 hours
-**Dependencies**: OAuth2 token refresh for primary Gmail account
-**Sources/Inputs**: Local configuration files, Himalaya CLI documentation, mbsync configuration, system keyring
+**Dependencies**: OAuth2 token refresh for Gmail account, Protonmail Bridge for Logos Labs account
+**Sources/Inputs**: Local configuration files, Himalaya CLI documentation, mbsync configuration, system keyring, Protonmail Bridge documentation
 **Artifacts**: specs/051_complete_himalaya_email_configuration/reports/research-001.md
 **Standards**: report-format.md, subagent-return.md
 
 ## Executive Summary
 
 - Gmail account (benbrastmckie@gmail.com) is partially configured with maildir backend but OAuth2 tokens have expired
-- Logos Labs account (benjamin@logos-labs.ai) is not configured at all and requires full setup
+- Logos Labs Protonmail account (benjamin@logos-labs.ai) is not configured at all and requires Protonmail Bridge + full setup
 - Neovim himalaya plugin is comprehensive with 70+ modules for email, sync, UI, and OAuth management
-- Current architecture uses mbsync for IMAP sync with XOAUTH2, storing emails in local maildir format
-- Two main gaps: OAuth token refresh and adding the second account with full synchronization
+- Current architecture uses mbsync for IMAP sync (XOAUTH2 for Gmail, password auth for Protonmail Bridge), storing emails in local maildir format
+- Two main gaps: OAuth token refresh for Gmail and adding the Protonmail account via Bridge with full synchronization
 
 ## Context and Scope
 
 The user wants to complete Himalaya email configuration in Neovim with:
-1. Primary account: benjamin@logos-labs.ai (Google Workspace)
+1. Primary account: benjamin@logos-labs.ai (Protonmail)
 2. Secondary account: benbrastmckie@gmail.com (Gmail)
 
 Both accounts should have full local maildir storage with IMAP synchronization.
@@ -157,10 +158,10 @@ Or use Neovim command `:HimalayaOAuthRefresh` if available.
 
 | Item | Status | Action Needed |
 |------|--------|---------------|
+| Protonmail Bridge | [UNKNOWN] | Install and configure if not present |
 | Himalaya config | [MISSING] | Add account section |
 | mbsync config | [MISSING] | Add IMAP/channels |
-| OAuth2 client | [UNKNOWN] | May need separate Google Cloud project |
-| OAuth2 tokens | [MISSING] | Run `himalaya account configure` |
+| Bridge password | [UNKNOWN] | Generate in Protonmail Bridge |
 | Local maildir | [MISSING] | Will be created on first sync |
 | Neovim plugin | [PARTIAL] | May need account config |
 
@@ -185,10 +186,15 @@ Or use Neovim command `:HimalayaOAuthRefresh` if available.
 
 ### Phase 2: Add Logos Labs Account (2-3 hours)
 
-1. **Create OAuth2 Credentials**:
-   - For Google Workspace accounts, you may need to use the same OAuth2 client as Gmail
-   - Or create a new OAuth2 client in Google Cloud Console for the Workspace domain
-   - Ensure the Google Workspace admin has enabled "Less secure apps" or OAuth2 access
+1. **Install and Configure Protonmail Bridge**:
+   - Install Protonmail Bridge (if not already installed):
+     ```bash
+     # On NixOS, add to configuration.nix or home-manager
+     # Or download from: https://proton.me/mail/bridge
+     ```
+   - Start Protonmail Bridge and log in with benjamin@logos-labs.ai
+   - Generate bridge password for the account (Bridge Settings → Account → Mailbox password)
+   - Note: Bridge runs on `127.0.0.1:1143` (IMAP) and `127.0.0.1:1025` (SMTP)
 
 2. **Configure Himalaya**:
    ```bash
@@ -207,27 +213,24 @@ Or use Neovim command `:HimalayaOAuthRefresh` if available.
    backend.maildirpp = true
 
    message.send.backend.type = "smtp"
-   message.send.backend.host = "smtp.gmail.com"
-   message.send.backend.port = 465
-   message.send.backend.auth.type = "oauth2"
-   message.send.backend.auth.method = "xoauth2"
-   message.send.backend.auth.client-id = "${GMAIL_CLIENT_ID}"
-   message.send.backend.auth.client-secret.keyring = "logos-smtp-oauth2-client-secret"
-   message.send.backend.auth.access-token.keyring = "logos-smtp-oauth2-access-token"
-   message.send.backend.auth.refresh-token.keyring = "logos-smtp-oauth2-refresh-token"
-   # ... additional OAuth2 config
+   message.send.backend.host = "127.0.0.1"
+   message.send.backend.port = 1025
+   message.send.backend.auth.type = "password"
+   message.send.backend.auth.login = "benjamin@logos-labs.ai"
+   message.send.backend.auth.password.keyring = "logos-bridge-password"
+   message.send.backend.encryption = "none"  # Bridge uses local connection
    ```
 
 4. **Add mbsync configuration** to `~/.mbsyncrc`:
    ```mbsync
-   # Logos Labs IMAP account
+   # Logos Labs IMAP account (via Protonmail Bridge)
    IMAPAccount logos
-   Host imap.gmail.com
-   Port 993
+   Host 127.0.0.1
+   Port 1143
    User benjamin@logos-labs.ai
-   AuthMechs XOAUTH2
-   PassCmd "secret-tool lookup service himalaya-cli username logos-smtp-oauth2-access-token"
-   TLSType IMAPS
+   PassCmd "secret-tool lookup service protonmail-bridge username benjamin@logos-labs.ai"
+   SSLType None  # Bridge runs locally, no TLS needed
+   AuthMechs LOGIN
 
    IMAPStore logos-remote
    Account logos
@@ -243,16 +246,41 @@ Or use Neovim command `:HimalayaOAuthRefresh` if available.
    Expunge Both
    SyncState *
 
-   # ... additional channels for Sent, Drafts, etc.
+   Channel logos-sent
+   Far :logos-remote:Sent
+   Near :logos-local:Sent
+   Create Both
+   Expunge Both
+   SyncState *
+
+   Channel logos-drafts
+   Far :logos-remote:Drafts
+   Near :logos-local:Drafts
+   Create Both
+   Expunge Both
+   SyncState *
+
+   Channel logos-trash
+   Far :logos-remote:Trash
+   Near :logos-local:Trash
+   Create Both
+   Expunge Both
+   SyncState *
 
    Group logos
    Channel logos-inbox
-   # ... additional channels
+   Channel logos-sent
+   Channel logos-drafts
+   Channel logos-trash
    ```
 
-5. **Create OAuth2 refresh script** for Logos account:
-   - Either modify existing script to accept account parameter
-   - Or create `refresh-logos-oauth2` script
+5. **Store Bridge password in keyring**:
+   ```bash
+   secret-tool store --label="Protonmail Bridge - Logos Labs" \
+     service protonmail-bridge \
+     username benjamin@logos-labs.ai
+   # Enter the bridge password generated in step 1
+   ```
 
 6. **Create maildir structure**:
    ```bash
@@ -291,11 +319,12 @@ Or use Neovim command `:HimalayaOAuthRefresh` if available.
 
 | Risk | Likelihood | Mitigation |
 |------|------------|------------|
-| OAuth2 client quota issues | Low | Can reuse same client for both accounts |
-| Google Workspace admin blocks OAuth | Medium | Contact admin or use App Password |
-| Token expiration during sync | Medium | Auto-refresh mechanism exists in plugin |
+| Protonmail Bridge not running | Medium | Ensure Bridge starts automatically or add systemd service |
+| Bridge password stored insecurely | Low | Using GNOME keyring via secret-tool |
+| Mixed auth methods (OAuth2 + password) | Low | Separate accounts use separate auth flows |
 | Maildir sync conflicts | Low | Lock files prevent concurrent access |
 | Large initial sync | Medium | Use `MaxMessages` in mbsync for quick first sync |
+| Bridge port conflicts | Low | Bridge uses non-standard ports (1143, 1025) |
 
 ## Appendix
 
@@ -303,12 +332,16 @@ Or use Neovim command `:HimalayaOAuthRefresh` if available.
 - "himalaya email CLI multi-account configuration IMAP 2025"
 - "himalaya CLI google workspace oauth2 XOAUTH2 configuration"
 - "mbsync isync multiple gmail accounts configuration xoauth2"
+- "protonmail bridge mbsync configuration localhost"
+- "protonmail bridge himalaya CLI setup"
 
 ### Key References
 - [Himalaya GitHub](https://github.com/pimalaya/himalaya) - Official CLI repository
 - [isync ArchWiki](https://wiki.archlinux.org/title/Isync) - mbsync configuration guide
 - [Google OAuth2 XOAUTH2 Protocol](https://developers.google.com/workspace/gmail/imap/xoauth2-protocol) - Authentication mechanism
 - [mbsync XOAUTH2 Guide](https://nfraprado.net/post/setting-up-mbsync-to-work-with-xoauth2.html) - Setup tutorial
+- [Protonmail Bridge Documentation](https://proton.me/support/protonmail-bridge-install) - Bridge installation and setup
+- [Protonmail Bridge with mbsync](https://wiki.archlinux.org/title/ProtonMail_Bridge) - Bridge + isync configuration
 
 ### Local Files Examined
 - `~/.config/himalaya/config.toml` - Himalaya CLI configuration
