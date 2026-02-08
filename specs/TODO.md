@@ -1,10 +1,17 @@
 ---
-next_project_number: 51
+next_project_number: 52
 ---
 
 # TODO
 
 ## Tasks
+
+### 51. Complete Himalaya email configuration in Neovim
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Complete the Himalaya email configuration in Neovim. Research what remains to be done to fully configure Himalaya to keep all email for two accounts synced with local copies: primary account 'benjamin@logos-labs.ai' and secondary account 'benbrastmckie@gmail.com'. Investigate both the Himalaya CLI/backend setup for IMAP sync and the Neovim integration configuration.
 
 ### 50. Fix <leader>rf keymap for multiple filetypes
 - **Effort**: 1-2 hours
