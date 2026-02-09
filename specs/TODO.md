@@ -7,11 +7,11 @@ next_project_number: 52
 ## Tasks
 
 ### 51. Complete Himalaya email configuration in Neovim
-- **Effort**: 3-5 hours
+- **Effort**: 4-6 hours
 - **Status**: [PLANNED]
 - **Language**: neovim
 - **Research**: [research-001.md](051_complete_himalaya_email_configuration/reports/research-001.md)
-- **Plan**: [implementation-001.md](051_complete_himalaya_email_configuration/plans/implementation-001.md)
+- **Plan**: [implementation-002.md](051_complete_himalaya_email_configuration/plans/implementation-002.md)
 
 **Description**: Complete the Himalaya email configuration in Neovim. Research what remains to be done to fully configure Himalaya to keep all email for two accounts synced with local copies: primary account 'benjamin@logos-labs.ai' and secondary account 'benbrastmckie@gmail.com'. Investigate both the Himalaya CLI/backend setup for IMAP sync and the Neovim integration configuration.
 
