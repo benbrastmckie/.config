@@ -7,7 +7,7 @@
       "status": "planned",
       "language": "neovim",
       "created": "2026-02-08T23:38:17Z",
-      "last_updated": "2026-02-09T19:20:57Z",
+      "last_updated": "2026-02-09T21:49:30Z",
       "session_id": "sess_1770595028_92d1e1",
       "researched": "2026-02-08T23:44:38Z",
       "artifacts": [
@@ -17,12 +17,12 @@
           "summary": "Comprehensive research on Himalaya email configuration for two accounts, identifying OAuth token expiration issue and providing setup guide for Logos Labs account"
         },
         {
-          "path": "specs/051_complete_himalaya_email_configuration/plans/implementation-003.md",
+          "path": "specs/051_complete_himalaya_email_configuration/plans/implementation-004.md",
           "type": "plan",
-          "summary": "4-phase revised plan (v003): Gmail OAuth refresh, Bridge login (manual), Neovim plugin config, documentation. Nix config done via dotfiles task 20."
+          "summary": "3-phase revised plan (v004): Gmail OAuth, Neovim plugin, docs. Protonmail fully working (dotfiles tasks 20+21)."
         }
       ],
-      "planned": "2026-02-09T19:20:57Z"
+      "planned": "2026-02-09T21:49:30Z"
     },
     {
       "project_number": 50,

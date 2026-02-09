@@ -1,25 +1,24 @@
 # Himalaya Manual Setup Guide
 
-**Purpose**: Manual configuration steps for completing Himalaya dual-account setup (Protonmail + Gmail) that cannot be completed autonomously.
-
-**Related Task**: Task #51 - Complete Himalaya Email Configuration
-**Date**: 2026-02-09
-**Applies To**: Phases 2, 3, and 4 of implementation-002.md
+**Purpose**: Manual configuration steps for completing Himalaya dual-account setup (Protonmail + Gmail).
 
 ---
 
 ## Overview
 
-This guide covers the manual steps required to complete the Himalaya email configuration:
+The Nix configuration in `home.nix` provides automated setup for:
+- mbsync configuration (logos account)
+- Himalaya CLI configuration (logos account)
+- Maildir directory creation
 
-1. **Phase 2**: Install and configure Protonmail Bridge
-2. **Phase 3**: Update Nix configuration for mbsync
-3. **Phase 4**: Update Nix configuration for Himalaya CLI
+This guide covers the manual steps you must complete:
 
-These steps cannot be completed autonomously because:
+1. **Install and configure Protonmail Bridge**
+2. **Store Bridge password in keyring**
+
+These steps require manual intervention because:
 - Protonmail Bridge requires interactive login with your credentials
-- Configuration files (`.mbsyncrc`, `config.toml`) are Nix-managed symlinks
-- Nix configuration changes require you to rebuild your system
+- Bridge password must be stored manually in the system keyring
 
 ---
 
@@ -201,7 +200,9 @@ Add `protonmail-bridge --noninteractive` to your desktop environment's startup a
 
 ---
 
-## Phase 3: Update Nix Configuration for mbsync
+## Phase 3: Nix Configuration for mbsync
+
+**Note**: This configuration is already present in `home.nix`. The steps below are for reference only.
 
 ### Current State
 
@@ -400,7 +401,9 @@ mbsync logos
 
 ---
 
-## Phase 4: Update Nix Configuration for Himalaya CLI
+## Phase 4: Nix Configuration for Himalaya CLI
+
+**Note**: This configuration is already present in `home.nix`. The steps below are for reference only.
 
 ### Current State
 
@@ -596,7 +599,7 @@ Should sync both Gmail and Protonmail without authentication errors.
 
 ### 3. Test Neovim Integration
 
-Once Claude completes Phase 5 (Neovim plugin config), test in Neovim:
+If you have Himalaya Neovim plugin configured, test account switching:
 
 ```vim
 # Switch to Protonmail account
@@ -679,10 +682,10 @@ ls -la ~/Mail/Logos/INBOX/new/
 
 After completing this manual setup:
 
-1. **Notify Claude** that manual steps are complete
-2. Claude will proceed with **Phase 5** (Neovim plugin configuration)
-3. Claude will complete **Phase 6** (Documentation updates)
-4. Final testing and verification
+1. Test email sync with both accounts: `mbsync -a`
+2. Verify Himalaya can access both accounts: `himalaya account list`
+3. Configure Neovim Himalaya plugin if desired
+4. Set up automatic Bridge startup (optional)
 
 ---
 
@@ -729,18 +732,15 @@ secret-tool lookup service <service> username <username>
 
 ## Completion Checklist
 
-Before marking Phase 2-4 as complete:
+Verify the setup is complete:
 
 - [ ] Protonmail Bridge installed
 - [ ] Logged in to benjamin@logos-labs.ai via Bridge
 - [ ] Bridge password stored in keyring
 - [ ] Bridge running and listening on ports 1143/1025
-- [ ] Nix mbsync config updated with Protonmail account
-- [ ] Nix Himalaya config updated with logos account
+- [ ] Home-manager configuration includes Protonmail account
 - [ ] Home-manager rebuilt successfully
 - [ ] Maildir structure created at ~/Mail/Logos/
 - [ ] mbsync syncs Protonmail without errors
 - [ ] Himalaya lists emails from both accounts
 - [ ] (Optional) Bridge starts automatically on login
-
-Once complete, Claude can proceed with autonomous phases (5 and 6).
