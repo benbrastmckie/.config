@@ -10,6 +10,12 @@ Unified configuration facade that exports all configuration functionality. Maint
 ### accounts.lua
 Account management and configuration, including email addresses, display names, and account-specific settings.
 
+**Configured Accounts**:
+- `gmail` - Primary Gmail account (benbrastmckie@gmail.com) with OAuth2 authentication
+- `logos` - Protonmail account (benjamin@logos-labs.ai) via Protonmail Bridge
+
+Both accounts use Maildir backend (synced by mbsync) with SMTP for sending.
+
 ### folders.lua
 Folder mapping between IMAP and local names, maildir paths, and folder-specific configuration.
 

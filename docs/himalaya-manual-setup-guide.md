@@ -732,15 +732,17 @@ secret-tool lookup service <service> username <username>
 
 ## Completion Checklist
 
-Verify the setup is complete:
+Setup status (verified 2026-02-09):
 
-- [ ] Protonmail Bridge installed
-- [ ] Logged in to benjamin@logos-labs.ai via Bridge
-- [ ] Bridge password stored in keyring
-- [ ] Bridge running and listening on ports 1143/1025
-- [ ] Home-manager configuration includes Protonmail account
-- [ ] Home-manager rebuilt successfully
-- [ ] Maildir structure created at ~/Mail/Logos/
-- [ ] mbsync syncs Protonmail without errors
-- [ ] Himalaya lists emails from both accounts
+- [x] Protonmail Bridge installed
+- [x] Logged in to benjamin@logos-labs.ai via Bridge
+- [x] Bridge password stored in keyring
+- [x] Bridge running and listening on ports 1143/1025
+- [x] Home-manager configuration includes Protonmail account
+- [x] Home-manager rebuilt successfully
+- [x] Maildir structure created at ~/Mail/Logos/
+- [x] mbsync syncs Protonmail without errors
+- [x] Himalaya lists emails from both accounts
 - [ ] (Optional) Bridge starts automatically on login
+
+All required setup steps are complete. The email system is fully operational with both Gmail and Protonmail (Logos) accounts.

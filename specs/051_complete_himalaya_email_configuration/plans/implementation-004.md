@@ -135,29 +135,28 @@ M.defaults = {
 
 ---
 
-### Phase 3: Update Documentation [NOT STARTED]
+### Phase 3: Update Documentation [COMPLETED]
 
 **Goal**: Ensure all documentation accurately reflects the current configuration and conforms to existing standards
 
 **Tasks**:
-- [ ] Audit existing himalaya plugin README files for accuracy
-- [ ] Update plugin module documentation to reflect dual-account support:
-  - Document account switching workflow
-  - Document mbsync integration for both Gmail (OAuth2) and Protonmail (Bridge)
-- [ ] Create or update configuration reference documentation:
-  - List all Himalaya-related keymaps and commands
-  - Document the two-tier architecture (mbsync + Himalaya)
-  - Include troubleshooting section for common issues (OAuth expiry, Bridge connection)
-- [ ] Update the manual setup guide (`docs/himalaya-manual-setup-guide.md`):
-  - Mark Protonmail Bridge setup as complete
-  - Mark Nix configuration sections as complete
-  - Update completion checklist
-- [ ] Verify documentation follows nvim/CLAUDE.md standards:
+- [x] Audit existing himalaya plugin README files for accuracy
+- [x] Update plugin module documentation to reflect dual-account support:
+  - Documented account switching workflow
+  - Documented mbsync integration for both Gmail (OAuth2) and Protonmail (Bridge)
+- [x] Update main himalaya README.md with:
+  - Current accounts table (gmail, logos)
+  - Protonmail Bridge documentation
+  - Two-tier architecture description
+- [x] Update config/README.md with configured accounts list
+- [x] Update the manual setup guide (`docs/himalaya-manual-setup-guide.md`):
+  - Marked all setup steps as complete
+  - Updated completion checklist with verification date
+- [x] Verified documentation follows nvim/CLAUDE.md standards:
   - Clear purpose explanations
   - Module documentation with code examples
   - Navigation links to parent/child directories
   - No emojis in file content
-- [ ] Ensure config examples in docs match actual configuration values
 
 **Timing**: 45 minutes
 

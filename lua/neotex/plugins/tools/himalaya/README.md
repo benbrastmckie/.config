@@ -6,7 +6,7 @@ A comprehensive, modular email client integration for Neovim using the Himalaya 
 
 This plugin provides a full-featured email interface within Neovim, supporting:
 - **Email Management**: Reading, composing, sending, and organizing emails
-- **Multiple Providers**: Gmail integration via OAuth2, IMAP support
+- **Multiple Providers**: Gmail (OAuth2) and Protonmail (via Bridge) with dual-account support
 - **Smart Synchronization**: Full mbsync integration with progress tracking
 - **Unified Notifications**: Integrated with Neovim's notification system
 - **Session Persistence**: State management across Neovim sessions
@@ -51,10 +51,17 @@ The plugin follows a clean layered architecture:
 - **Process Locking**: Prevents concurrent sync operations
 
 ### Account Management
-- **Multi-Account Support**: Switch between Gmail, IMAP, and other accounts
+- **Multi-Account Support**: Switch between Gmail and Protonmail (Logos) accounts
 - **Multiple Account Views**: Unified inbox, split, and tabbed views for multiple accounts
-- **OAuth Integration**: Automatic token refresh with fallback scripts
+- **OAuth Integration**: Automatic token refresh for Gmail with fallback scripts
+- **Protonmail Bridge**: Local IMAP/SMTP via Protonmail Bridge for Logos account
 - **Configuration Wizard**: Guided setup for new accounts
+
+### Current Accounts
+| Account | Email | Authentication | Backend |
+|---------|-------|----------------|---------|
+| gmail | benbrastmckie@gmail.com | OAuth2 | Maildir + SMTP |
+| logos | benjamin@logos-labs.ai | Protonmail Bridge | Maildir + SMTP |
 
 ### State Management
 - **Unified State**: Single source of truth for all plugin state
