@@ -1180,6 +1180,38 @@ function M.pick_account()
   return email_list.pick_account()
 end
 
+-- Alias for account picker (used by commands)
+function M.show_account_picker()
+  return M.pick_account()
+end
+
+-- Switch to a specific account by name
+function M.switch_account(account_name)
+  local accounts_config = require('neotex.plugins.tools.himalaya.config.accounts')
+
+  if not accounts_config.has_account(account_name) then
+    notify.himalaya('Account not found: ' .. account_name, notify.categories.ERROR)
+    return false
+  end
+
+  local success = accounts_config.switch_account(account_name)
+  if success then
+    state.set_current_account(account_name)
+    state.set_current_folder('INBOX')
+    state.set_current_page(1)
+    notify.himalaya('Switched to account: ' .. account_name, notify.categories.STATUS)
+
+    -- Refresh email list if sidebar is open
+    if M.is_email_buffer_open() then
+      M.show_email_list({ 'INBOX' })
+    end
+    return true
+  else
+    notify.himalaya('Failed to switch account', notify.categories.ERROR)
+    return false
+  end
+end
+
 -- Batch Operations
 
 -- Batch delete operation

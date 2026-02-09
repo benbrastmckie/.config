@@ -17,14 +17,27 @@ M.defaults = {
   gmail = {
     -- Email address
     email = nil, -- Will be auto-detected from himalaya config
-    
+
     -- Display name for the account
     display_name = nil, -- Will be auto-detected from himalaya config
-    
+
     -- mbsync channel names
     mbsync = {
       inbox_channel = "gmail-inbox",
       all_channel = "gmail",
+    }
+  },
+  logos = {
+    -- Email address
+    email = nil, -- Will be auto-detected from himalaya config
+
+    -- Display name for the account
+    display_name = nil, -- Will be auto-detected from himalaya config
+
+    -- mbsync channel names (via Protonmail Bridge)
+    mbsync = {
+      inbox_channel = "logos-inbox",
+      all_channel = "logos",
     }
   }
 }

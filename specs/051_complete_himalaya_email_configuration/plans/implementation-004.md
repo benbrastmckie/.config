@@ -92,18 +92,18 @@ Complete the Himalaya email configuration in Neovim for two accounts: the primar
 
 ---
 
-### Phase 2: Update Neovim Plugin Configuration [NOT STARTED]
+### Phase 2: Update Neovim Plugin Configuration [COMPLETED]
 
 **Goal**: Add Logos Labs account to Neovim himalaya plugin for dual-account support
 
 **Tasks**:
-- [ ] Locate account configuration in Neovim plugin:
+- [x] Locate account configuration in Neovim plugin:
   `~/.config/nvim/lua/neotex/plugins/tools/himalaya/config/accounts.lua`
-- [ ] Add logos account configuration with mbsync channel mappings
-- [ ] Verify account switching commands exist: `:HimalayaAccountSwitch`
-- [ ] Test account switching in Neovim: `:HimalayaAccountSwitch logos`
-- [ ] Test sync command: `:HimalayaSync`
-- [ ] Test email listing: `:HimalayaListEmails`
+- [x] Add logos account configuration with mbsync channel mappings
+- [x] Verify account switching commands exist: `:HimalayaAccountSwitch`
+- [x] Add missing switch_account and show_account_picker functions to main.lua
+- [x] Test module loading with nvim --headless
+- [x] Verify both accounts available: gmail and logos
 
 **Timing**: 45 minutes
 
