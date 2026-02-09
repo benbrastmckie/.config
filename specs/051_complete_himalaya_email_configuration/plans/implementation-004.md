@@ -2,7 +2,7 @@
 
 - **Date**: 2026-02-09 (Revised)
 - **Feature**: Complete Himalaya email configuration for dual accounts (Protonmail + Gmail)
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Estimated Hours**: 1.5-2 hours
 - **Standards File**: /home/benjamin/.config/nvim/CLAUDE.md
 - **Research Reports**: [research-001.md](../reports/research-001.md)
@@ -70,16 +70,16 @@ Complete the Himalaya email configuration in Neovim for two accounts: the primar
 
 ## Implementation Phases
 
-### Phase 1: Restore Gmail Account [NOT STARTED]
+### Phase 1: Restore Gmail Account [COMPLETED]
 
 **Goal**: Refresh OAuth2 tokens and verify Gmail synchronization works
 
 **Tasks**:
-- [ ] Run the existing OAuth2 refresh script: `refresh-gmail-oauth2`
-- [ ] Verify token was stored in GNOME keyring
-- [ ] Test mbsync with Gmail INBOX: `mbsync -V gmail-inbox`
-- [ ] Verify emails appear in local maildir: `ls ~/Mail/Gmail/INBOX/{cur,new}`
-- [ ] Test Himalaya CLI reads Gmail: `himalaya list -a gmail`
+- [x] Run the existing OAuth2 refresh script: `refresh-gmail-oauth2`
+- [x] Verify token was stored in GNOME keyring
+- [x] Test mbsync with Gmail INBOX: `mbsync -V gmail-inbox`
+- [x] Verify emails appear in local maildir: `ls ~/Mail/Gmail/INBOX/{cur,new}`
+- [x] Test Himalaya CLI reads Gmail: `himalaya list -a gmail`
 
 **Timing**: 30 minutes
 
