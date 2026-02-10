@@ -275,19 +275,10 @@ function M.execute_himalaya_async(args, opts, callback)
   local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
   
   -- Build success callback
-  local on_success = function(output)
-    -- Parse JSON output
-    local ok, result = pcall(vim.json.decode, output)
-    if ok then
-      callback(result)
-    else
-      -- Some commands don't return JSON
-      if args[1] == 'send' or args[1] == 'move' or args[1] == 'delete' then
-        callback(string_utils.trim(output))
-      else
-        callback(nil, 'Failed to parse response')
-      end
-    end
+  local on_success = function(parsed_data)
+    -- async_commands already parses JSON, so parsed_data is a Lua table
+    -- Just pass it through to the callback
+    callback(parsed_data)
   end
   
   -- Build error callback
