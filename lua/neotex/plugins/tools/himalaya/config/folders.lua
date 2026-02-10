@@ -13,23 +13,25 @@ local module_state = {
 }
 
 -- Default folder configurations
+-- Gmail: OAuth2 authentication via Google APIs
+-- Logos: Password authentication via Protonmail Bridge (127.0.0.1)
 M.defaults = {
   gmail = {
     -- Maildir settings (discovered requirements)
     maildir_path = "~/Mail/Gmail/", -- Trailing slash REQUIRED for Maildir++
-    
+
     -- Folder name mapping (IMAP -> Local)
     folder_map = {
       ["INBOX"] = "INBOX",
       ["[Gmail]/All Mail"] = "All_Mail",
-      ["[Gmail]/Sent Mail"] = "Sent", 
+      ["[Gmail]/Sent Mail"] = "Sent",
       ["[Gmail]/Drafts"] = "Drafts",
       ["[Gmail]/Trash"] = "Trash",
       ["[Gmail]/Spam"] = "Spam",
       ["[Gmail]/Starred"] = "Starred",
       ["[Gmail]/Important"] = "Important",
     },
-    
+
     -- Reverse mapping for operations (Local -> IMAP)
     local_to_imap = {
       ["INBOX"] = "INBOX",
@@ -40,6 +42,32 @@ M.defaults = {
       ["Spam"] = "[Gmail]/Spam",
       ["Starred"] = "[Gmail]/Starred",
       ["Important"] = "[Gmail]/Important",
+    }
+  },
+
+  -- Logos Labs (Protonmail Bridge) - uses password auth, not OAuth
+  -- Folder names match mbsync channels: INBOX, Sent, Drafts, Trash, Archive
+  logos = {
+    -- Maildir settings
+    maildir_path = "~/Mail/Logos/", -- Trailing slash REQUIRED for Maildir++
+
+    -- Folder name mapping (IMAP -> Local)
+    -- Protonmail uses simple folder names without prefix hierarchy
+    folder_map = {
+      ["INBOX"] = "INBOX",
+      ["Sent"] = "Sent",
+      ["Drafts"] = "Drafts",
+      ["Trash"] = "Trash",
+      ["Archive"] = "Archive",
+    },
+
+    -- Reverse mapping for operations (Local -> IMAP)
+    local_to_imap = {
+      ["INBOX"] = "INBOX",
+      ["Sent"] = "Sent",
+      ["Drafts"] = "Drafts",
+      ["Trash"] = "Trash",
+      ["Archive"] = "Archive",
     }
   }
 }
