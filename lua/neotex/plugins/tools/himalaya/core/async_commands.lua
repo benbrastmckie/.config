@@ -141,10 +141,14 @@ end
 function M.execute_job_now(job)
   local job_id = job.id
   local cmd = build_command(job.args, job.opts)
-  
+
+  vim.schedule(function()
+    vim.notify('[DEBUG] execute_job_now - job_id: ' .. job_id .. ' cmd: ' .. table.concat(cmd, ' '), vim.log.levels.INFO)
+  end)
+
   -- Track metrics
   M.metrics.total_jobs = M.metrics.total_jobs + 1
-  
+
   -- Debug logging
   if M.debug_mode or M.config.debug_mode then
     logger.info('[ASYNC DEBUG] Starting job: ' .. job_id)
@@ -337,28 +341,31 @@ function M.handle_job_completion(job_id, exit_code)
   
   -- Call the callback
   if job.callback then
+    vim.schedule(function()
+      vim.notify('[DEBUG] Calling job callback - success: ' .. tostring(success) .. ' job_id: ' .. job_id, vim.log.levels.INFO)
+    end)
     if success then
       job.callback(result, nil)
     else
       -- Check if we should retry (especially for lock conflicts)
       local should_retry = job.retry_count and job.retry_count < M.config.retry_attempts
       local is_lock_error = error_msg and error_msg:match('Database lock conflict')
-      
+
       if should_retry and (is_lock_error or not error_msg:match('Database lock conflict')) then
         local retry_delay = is_lock_error and (M.config.retry_delay * (job.retry_count + 1)) or M.config.retry_delay
         M.metrics.retry_count = M.metrics.retry_count + 1
-        
+
         if M.debug_mode or M.config.debug_mode then
           logger.info('[ASYNC DEBUG] Retrying job: ' .. job_id .. ' (attempt ' .. (job.retry_count + 1) .. ') after ' .. retry_delay .. 'ms')
         else
           logger.debug('Retrying job: ' .. job_id .. ' (attempt ' .. (job.retry_count + 1) .. ') after ' .. retry_delay .. 'ms')
         end
-        
+
         -- Create retry job
         local retry_job = vim.deepcopy(job)
         retry_job.id = generate_job_id()
         retry_job.retry_count = (job.retry_count or 0) + 1
-        
+
         -- Add delay before retry
         vim.defer_fn(function()
           M.queue_command(retry_job.args, retry_job.opts, retry_job.callback, retry_job.priority, retry_job.timeout)
@@ -367,6 +374,10 @@ function M.handle_job_completion(job_id, exit_code)
         job.callback(nil, error_msg)
       end
     end
+  else
+    vim.schedule(function()
+      vim.notify('[DEBUG] WARNING: No callback for job ' .. job_id, vim.log.levels.WARN)
+    end)
   end
   
   -- Process next job in queue
@@ -376,7 +387,11 @@ end
 -- Core async command executor
 function M.execute_async(args, opts, callback)
   opts = opts or {}
-  
+
+  vim.schedule(function()
+    vim.notify('[DEBUG] execute_async called - args: ' .. vim.inspect(args), vim.log.levels.INFO)
+  end)
+
   -- In test mode, return early to avoid CLI calls that will fail
   if _G.HIMALAYA_TEST_MODE then
     if type(callback) == 'function' then
@@ -384,16 +399,16 @@ function M.execute_async(args, opts, callback)
     end
     return nil
   end
-  
+
   if type(callback) ~= 'function' then
     logger.error('execute_async requires a callback function')
     return nil
   end
-  
+
   local job_id = generate_job_id()
   local priority = opts.priority or M.priorities.ui
   local timeout = opts.timeout or M.config.default_timeout
-  
+
   local job = {
     id = job_id,
     args = args,
@@ -403,7 +418,11 @@ function M.execute_async(args, opts, callback)
     timeout = timeout,
     retry_count = 0,
   }
-  
+
+  vim.schedule(function()
+    vim.notify('[DEBUG] Job created: ' .. job_id .. ' can_start: ' .. tostring(can_start_job()), vim.log.levels.INFO)
+  end)
+
   if can_start_job() then
     -- Execute immediately
     return M.execute_job_now(job)
