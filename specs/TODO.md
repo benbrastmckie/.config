@@ -8,11 +8,13 @@ next_project_number: 55
 
 ### 54. Fix himalaya UI toggle error and review keybindings
 - **Effort**: TBD
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](054_himalaya_ui_toggle_error/reports/research-001.md)
 - **Plan**: [implementation-001.md](054_himalaya_ui_toggle_error/plans/implementation-001.md)
+- **Completed**: 2026-02-10
+- **Summary**: [implementation-summary-20260210.md](054_himalaya_ui_toggle_error/summaries/implementation-summary-20260210.md)
 
 **Description**: Fix himalaya UI toggle error (`attempt to call field 'toggle' (a nil value)` at ui.lua:32) when hitting `<leader>mo`. Research what mappings do, how they could be improved, and identify any bugs or issues to fix.
 
