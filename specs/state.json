@@ -4,18 +4,24 @@
     {
       "project_number": 53,
       "project_name": "himalaya_multi_email_config",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-10T20:57:44Z",
-      "last_updated": "2026-02-10T21:02:57Z",
-      "session_id": "sess_1739224700_a3f2c1",
+      "last_updated": "2026-02-10T21:10:03Z",
+      "session_id": "sess_1739225100_b4c3d2",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/053_himalaya_multi_email_config/reports/research-001.md",
           "summary": "Research report documenting existing himalaya multi-account configuration, neovim plugin architecture, and minor configuration gaps for Logos account"
+        },
+        {
+          "path": "specs/053_himalaya_multi_email_config/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for Himalaya multi-email configuration (Logos folder mappings, OAuth handling, testing, documentation)"
         }
-      ]
+      ],
+      "planned": "2026-02-10T21:10:03Z"
     }
   ],
   "repository_health": {
