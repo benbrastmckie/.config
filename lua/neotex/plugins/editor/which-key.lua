@@ -526,27 +526,35 @@ return {
     -- <leader>m - MAIL GROUP
     -- ============================================================================
 
+    -- Helper function to check if current buffer is a compose buffer
+    local function is_compose_buffer()
+      return is_mail() and require('neotex.plugins.tools.himalaya.ui.email_composer').is_compose_buffer(vim.api.nvim_get_current_buf())
+    end
+
     wk.add({
       { "<leader>m", group = "mail", icon = "󰇮" },
       { "<leader>ma", "<cmd>HimalayaAccounts<CR>", desc = "switch account", icon = "󰌏" },
-      { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰉊" },
-      { "<leader>mD", "<cmd>HimalayaDiscard<CR>", desc = "discard email", icon = "󰩺" },
-      { "<leader>me", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠" },
       { "<leader>mf", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉋" },
       { "<leader>mF", "<cmd>HimalayaRecreateFolders<CR>", desc = "recreate folders", icon = "󰝰" },
       { "<leader>mh", "<cmd>HimalayaHealth<CR>", desc = "health check", icon = "󰸉" },
       { "<leader>mi", "<cmd>HimalayaSyncInfo<CR>", desc = "sync status", icon = "󰋼" },
       { "<leader>mm", "<cmd>HimalayaToggle<CR>", desc = "toggle sidebar", icon = "󰊫" },
-      { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit (discard)", icon = "󰆴", cond = function()
-        return is_mail() and require('neotex.plugins.tools.himalaya.ui.email_composer').is_compose_buffer(vim.api.nvim_get_current_buf())
-      end },
-        { "<leader>ms", "<cmd>HimalayaSyncInbox<CR>", desc = "sync inbox", icon = "󰜉" },
+      { "<leader>ms", "<cmd>HimalayaSyncInbox<CR>", desc = "sync inbox", icon = "󰜉" },
       { "<leader>mS", "<cmd>HimalayaSyncFull<CR>", desc = "full sync", icon = "󰜉" },
       { "<leader>mt", "<cmd>HimalayaAutoSyncToggle<CR>", desc = "toggle auto-sync", icon = "󰑖" },
       { "<leader>mw", "<cmd>HimalayaWrite<CR>", desc = "write email", icon = "󰝒" },
       { "<leader>mW", "<cmd>HimalayaSetup<CR>", desc = "setup wizard", icon = "󰗀" },
       { "<leader>mx", "<cmd>HimalayaCancelSync<CR>", desc = "cancel all syncs", icon = "󰚌" },
       { "<leader>mX", "<cmd>HimalayaBackupAndFresh<CR>", desc = "backup & fresh", icon = "󰁯" },
+    })
+
+    -- Compose-specific subgroup (only visible in compose buffers)
+    wk.add({
+      { "<leader>mc", group = "compose", icon = "󰝒", cond = is_compose_buffer },
+      { "<leader>mcd", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰉊", cond = is_compose_buffer },
+      { "<leader>mcD", "<cmd>HimalayaDiscard<CR>", desc = "discard email", icon = "󰩺", cond = is_compose_buffer },
+      { "<leader>mce", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", cond = is_compose_buffer },
+      { "<leader>mcq", "<cmd>HimalayaDiscard<CR>", desc = "quit (discard)", icon = "󰆴", cond = is_compose_buffer },
     })
 
     -- ============================================================================

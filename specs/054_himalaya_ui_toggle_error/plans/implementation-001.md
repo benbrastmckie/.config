@@ -88,7 +88,7 @@ Research report identified:
 
 ---
 
-### Phase 3: Create Compose-Buffer-Specific Subgroup [IN PROGRESS]
+### Phase 3: Create Compose-Buffer-Specific Subgroup [COMPLETED]
 
 **Goal**: Move compose-specific actions to a subgroup that only appears when in a compose buffer
 
@@ -115,7 +115,7 @@ Research report identified:
 
 ---
 
-### Phase 4: Update Documentation [NOT STARTED]
+### Phase 4: Update Documentation [IN PROGRESS]
 
 **Goal**: Update all documentation to reflect keybinding changes
 
