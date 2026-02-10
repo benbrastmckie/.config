@@ -1,7 +1,7 @@
 # Implementation Plan: Task #54
 
 - **Task**: 54 - himalaya_ui_toggle_error
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Effort**: 1.5-2 hours
 - **Dependencies**: None
 - **Research Inputs**: specs/054_himalaya_ui_toggle_error/reports/research-001.md
@@ -45,7 +45,7 @@ Research report identified:
 
 ## Implementation Phases
 
-### Phase 1: Fix Toggle and Open Function Calls [NOT STARTED]
+### Phase 1: Fix Toggle and Open Function Calls [COMPLETED]
 
 **Goal**: Fix the nil function errors in commands/ui.lua
 
@@ -67,7 +67,7 @@ Research report identified:
 
 ---
 
-### Phase 2: Update Keybinding from mo to mm [NOT STARTED]
+### Phase 2: Update Keybinding from mo to mm [IN PROGRESS]
 
 **Goal**: Change the toggle sidebar keybinding from `<leader>mo` to `<leader>mm`
 

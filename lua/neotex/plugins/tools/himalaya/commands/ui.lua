@@ -19,7 +19,7 @@ function M.setup(registry)
   commands.Himalaya = {
     fn = function()
       local main = require('neotex.plugins.tools.himalaya.ui.main')
-      main.open()
+      main.show_email_list({})
     end,
     opts = {
       desc = 'Open Himalaya email client'
@@ -29,7 +29,7 @@ function M.setup(registry)
   commands.HimalayaToggle = {
     fn = function()
       local main = require('neotex.plugins.tools.himalaya.ui.main')
-      main.toggle()
+      main.toggle_email_sidebar()
     end,
     opts = {
       desc = 'Toggle Himalaya email client'

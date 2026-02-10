@@ -8,7 +8,7 @@ next_project_number: 55
 
 ### 54. Fix himalaya UI toggle error and review keybindings
 - **Effort**: TBD
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](054_himalaya_ui_toggle_error/reports/research-001.md)
