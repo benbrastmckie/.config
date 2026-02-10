@@ -1,6 +1,422 @@
 {
   "completed_projects": [
     {
+      "project_number": 40,
+      "project_name": "standardize_multi_task_creation_patterns",
+      "status": "completed",
+      "language": "meta",
+      "created": "2026-02-03T23:37:32Z",
+      "last_updated": "2026-02-03T23:52:21Z",
+      "session_id": "sess_1770162395_b10ce3",
+      "researched": "2026-02-03T23:41:30Z",
+      "artifacts": [
+        {
+          "path": "specs/040_standardize_multi_task_creation_patterns/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report analyzing 5 multi-task creation patterns with unified standard recommendations"
+        },
+        {
+          "path": "specs/040_standardize_multi_task_creation_patterns/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "8-phase implementation plan for standardizing multi-task creation patterns across 5 commands/agents"
+        },
+        {
+          "path": "specs/040_standardize_multi_task_creation_patterns/summaries/implementation-summary-20260203.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        },
+        {
+          "path": ".claude/docs/reference/standards/multi-task-creation-standard.md",
+          "type": "implementation",
+          "summary": "Multi-task creation standard (8 components, implementation checklist, compliance matrix)"
+        }
+      ],
+      "planned": "2026-02-03T23:44:31Z",
+      "started": "2026-02-03T23:46:53Z",
+      "completed": "2026-02-03T23:52:21Z",
+      "completion_summary": "Created multi-task creation standard document with 8-component pattern (discovery, selection, grouping, dependencies, ordering, visualization, confirmation, state updates). Updated 7 command/skill/agent files with Standards Reference sections and compliance tables. Added Multi-Task Creation Standards section to CLAUDE.md.",
+      "claudemd_suggestions": "Added multi-task-creation-standard.md to .claude/docs/reference/standards/, added Multi-Task Creation Standards section to .claude/CLAUDE.md, updated 5 commands (learn, review, errors, task, meta), 1 skill (skill-learn), and 1 agent (meta-builder-agent) with Standards Reference sections"
+    },
+    {
+      "project_number": 41,
+      "project_name": "fix_leanls_lsp_client_exit_error",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-04T18:52:18Z",
+      "last_updated": "2026-02-04T19:28:51Z",
+      "session_id": "sess_1770233171_3a4577",
+      "researched": "2026-02-04T18:57:08Z",
+      "artifacts": [
+        {
+          "path": "specs/041_fix_leanls_lsp_client_exit_error/reports/research-001.md",
+          "type": "research",
+          "summary": "Comprehensive research report with root cause analysis for leanls LSP errors, NixOS timezone configuration, and lean.nvim infoview buffer handling issues"
+        },
+        {
+          "path": "specs/041_fix_leanls_lsp_client_exit_error/reports/research-002.md",
+          "type": "research",
+          "summary": "Supplementary research comparing NixOS /etc/localtime alternatives: tmpfiles.rules (recommended), Home Manager, direnv, makeWrapper, and current cmd_env approach"
+        },
+        {
+          "path": "specs/041_fix_leanls_lsp_client_exit_error/plans/implementation-003.md",
+          "type": "plan",
+          "summary": "3-phase plan: optional NixOS tmpfiles.rules, buffer validity guard, and testing"
+        },
+        {
+          "path": "specs/041_fix_leanls_lsp_client_exit_error/summaries/implementation-summary-20260204.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification details"
+        }
+      ],
+      "planned": "2026-02-04T19:25:09Z",
+      "started": "2026-02-04T19:26:32Z",
+      "completed": "2026-02-04T19:28:51Z",
+      "completion_summary": "Added BufDelete autocmd to close lean.nvim infoview before buffer deletion, preventing 'Invalid buffer id' error. The fix uses pcall for safe closure and integrates with the existing lean_group augroup."
+    },
+    {
+      "project_number": 42,
+      "project_name": "fix_specs_prefix_in_todo_artifact_links",
+      "status": "completed",
+      "language": "meta",
+      "created": "2026-02-05T18:11:57Z",
+      "last_updated": "2026-02-05T18:27:20Z",
+      "session_id": "sess_1770315792_1357e8",
+      "researched": "2026-02-05T18:16:51Z",
+      "artifacts": [
+        {
+          "path": "specs/042_fix_specs_prefix_in_todo_artifact_links/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report identifying 12 files with specs/ prefix bug in TODO.md artifact links, with detailed fix pattern using shell parameter expansion"
+        },
+        {
+          "path": "specs/042_fix_specs_prefix_in_todo_artifact_links/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan to fix specs/ prefix in TODO.md artifact links across 12 files"
+        },
+        {
+          "path": "specs/042_fix_specs_prefix_in_todo_artifact_links/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results for all 4 phases"
+        }
+      ],
+      "planned": "2026-02-05T18:22:35Z",
+      "started": "2026-02-05T18:23:30Z",
+      "completed": "2026-02-05T18:27:20Z",
+      "completion_summary": "Fixed TODO.md artifact links by adding specs/ prefix stripping in 8 skill postflight stages, correcting 4 documentation files, and cleaning up 6 existing links in TODO.md.",
+      "claudemd_suggestions": "Modified 8 skill SKILL.md files in .claude/skills/ to add todo_link_path stripping, updated .claude/rules/state-management.md artifact linking section, updated .claude/context/core/patterns/inline-status-update.md link examples, updated .claude/context/project/processes/research-workflow.md and planning-workflow.md"
+    },
+    {
+      "project_number": 43,
+      "project_name": "fix_web_language_routing_gaps",
+      "status": "completed",
+      "language": "general",
+      "created": "2026-02-05T18:32:35Z",
+      "last_updated": "2026-02-05T19:05:00Z",
+      "session_id": "sess_1770317174_e7ef71",
+      "researched": "2026-02-05T18:37:23Z",
+      "artifacts": [
+        {
+          "path": "specs/043_fix_web_language_routing_gaps/reports/research-001.md",
+          "type": "research",
+          "summary": "Comprehensive gap analysis of LogosWebsite web language routing: Phase 1 partially done (6/8), Phases 2-4 not started, 14 additive changes needed across 12 files organized by priority tier"
+        },
+        {
+          "path": "specs/043_fix_web_language_routing_gaps/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "7-phase implementation plan fixing routing table inconsistencies, stale lean references, and missing language entries across .claude/ system"
+        },
+        {
+          "path": "specs/043_fix_web_language_routing_gaps/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results for all 7 phases"
+        }
+      ],
+      "planned": "2026-02-05T18:44:46Z",
+      "started": "2026-02-05T18:46:29Z",
+      "completed": "2026-02-05T19:05:00Z",
+      "completion_summary": "Fixed language routing inconsistencies across 16 .claude/ files. All routing tables now consistently use 6 recognized languages (neovim, general, meta, markdown, latex, typst). Replaced stale lean references with neovim, removed non-routing python/shell/json entries, updated skill trigger conditions, and removed obsolete /lake command documentation."
+    },
+    {
+      "project_number": 44,
+      "project_name": "complete_logosweb_task_9_equivalent",
+      "status": "completed",
+      "language": "meta",
+      "created": "2026-02-05T19:13:41Z",
+      "last_updated": "2026-02-05T21:00:00Z",
+      "session_id": "sess_1770320542_b5475e",
+      "researched": "2026-02-05T20:15:00Z",
+      "artifacts": [
+        {
+          "path": "specs/044_complete_logosweb_task_9_equivalent/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report comparing LogosWebsite task 9 bug with current state of this repo, identifying 3 remaining consistency gaps"
+        },
+        {
+          "path": "specs/044_complete_logosweb_task_9_equivalent/reports/research-002.md",
+          "type": "research",
+          "summary": "Analysis of <leader>ac sync mechanism failures: stale global source, incomplete file type scanning, unscanned directories, and 5 fix recommendations"
+        },
+        {
+          "path": "specs/044_complete_logosweb_task_9_equivalent/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase implementation plan covering global_dir centralization, multi-extension context scanning, project-root CLAUDE.md syncing, docs coverage verification, and integration testing"
+        },
+        {
+          "path": "specs/044_complete_logosweb_task_9_equivalent/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results for all 5 phases"
+        }
+      ],
+      "planned": "2026-02-05T19:40:31Z",
+      "started": "2026-02-05T19:42:40Z",
+      "completed": "2026-02-05T21:00:00Z",
+      "completion_summary": "Centralized the global source directory path from hardcoded ~/.config to configurable ~/.config/nvim across 8 files with 13+ references replaced. Added multi-extension context scanning (JSON/YAML) and project-root CLAUDE.md syncing to the <leader>ac sync mechanism.",
+      "claudemd_suggestions": "none"
+    },
+    {
+      "project_number": 45,
+      "project_name": "fix_logosweb_agent_gaps_from_task_44",
+      "status": "completed",
+      "language": "meta",
+      "created": "2026-02-05T19:55:08Z",
+      "last_updated": "2026-02-05T20:25:11Z",
+      "session_id": "sess_1770322657_18117c",
+      "researched": "2026-02-05T20:15:00Z",
+      "artifacts": [
+        {
+          "path": "specs/045_fix_logosweb_agent_gaps_from_task_44/reports/research-001.md",
+          "type": "research",
+          "summary": "Comprehensive gap analysis comparing nvim .claude/ (post-task-44) against LogosWebsite .claude/ (pre-task-44 copy), documenting 7 high-priority plan status fix gaps, 7 medium-priority missing files, and padding convention differences"
+        },
+        {
+          "path": "specs/045_fix_logosweb_agent_gaps_from_task_44/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "6-phase implementation plan covering plan status fixes, missing file copies, and CLAUDE.md update for LogosWebsite"
+        },
+        {
+          "path": "specs/045_fix_logosweb_agent_gaps_from_task_44/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary for task 45"
+        }
+      ],
+      "planned": "2026-02-05T20:15:33Z",
+      "started": "2026-02-05T20:17:59Z",
+      "completed": "2026-02-05T20:25:11Z",
+      "completion_summary": "Applied plan status update fixes (dual-pattern sed + verification) to 4 LogosWebsite implementation skills, added Checkpoint 5 defensive verification to implement.md, copied 9 missing files, and updated CLAUDE.md with Multi-Task Creation Standards section.",
+      "claudemd_suggestions": "none"
+    },
+    {
+      "project_number": 46,
+      "project_name": "migrate_logosweb_to_padded_directory_conv",
+      "status": "completed",
+      "language": "meta",
+      "created": "2026-02-05T20:36:42Z",
+      "last_updated": "2026-02-05T21:31:22Z",
+      "session_id": "sess_1770325977_37e966",
+      "researched": "2026-02-05T20:45:00Z",
+      "artifacts": [
+        {
+          "path": "specs/046_migrate_logosweb_to_padded_directory_conv/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report documenting complete scope of {N} to {NNN} padding migration for LogosWebsite: 11 directories, 59 unique files, 326 total pattern occurrences across 6 change categories"
+        },
+        {
+          "path": "specs/046_migrate_logosweb_to_padded_directory_conv/plans/implementation-002.md",
+          "type": "plan",
+          "summary": "5-phase revised plan: directory renames, state file path updates, bash path constructions, documentation placeholders, and validation"
+        },
+        {
+          "path": "specs/046_migrate_logosweb_to_padded_directory_conv/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary for directory padding migration of LogosWebsite"
+        }
+      ],
+      "planned": "2026-02-05T21:08:44Z",
+      "started": "2026-02-05T21:13:11Z",
+      "completed": "2026-02-05T21:31:22Z",
+      "completion_summary": "Migrated all 11 LogosWebsite task directories to 3-digit zero-padded format, updated path references across state files, bash path constructions in 17 skill/command/context files, and documentation placeholders in 45 files. All validation checks passed with zero remaining unpadded patterns.",
+      "claudemd_suggestions": "Updated .claude/CLAUDE.md artifact paths section and key distinction note, updated .claude/rules/artifact-formats.md placeholder table. Updated bash path constructions in 9 skills, 2 commands, and 6 context files. Replaced {N}_{SLUG} documentation placeholders with {NNN}_{SLUG} in 10 agents, 10 skills, 5 commands, 7 rules/docs, and 12 context files."
+    },
+    {
+      "project_number": 47,
+      "project_name": "fix_leader_ac_sync_source_path",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-05T20:36:42Z",
+      "last_updated": "2026-02-05T21:23:23Z",
+      "session_id": "sess_1770326206_ae7cd1",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/047_fix_leader_ac_sync_source_path/reports/research-001.md",
+          "summary": "Research report documenting <leader>ac keybinding chain, current global_source_dir config, 2 unscanned directories (output/, systemd/), hardcoded help text, and stale ~/.config/.claude/ directory with 4 fix recommendations"
+        },
+        {
+          "path": "specs/047_fix_leader_ac_sync_source_path/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan covering sync scanner extension, previewer updates, and functional verification"
+        },
+        {
+          "path": "specs/047_fix_leader_ac_sync_source_path/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results for sync scanner extension and previewer updates"
+        }
+      ],
+      "planned": "2026-02-05T21:15:02Z",
+      "completed": "2026-02-05T21:23:23Z",
+      "completion_summary": "Extended the leader-ac sync mechanism to include output/ and systemd/ directory scanning, updated the Load All preview and sync notification to display counts for these new categories, and replaced all hardcoded path strings in help text and warning messages with dynamic values from the configured global source directory."
+    },
+    {
+      "project_number": 48,
+      "project_name": "add_phase_checkpoint_protocol_to_neovim",
+      "status": "completed",
+      "language": "meta",
+      "created": "2026-02-05T20:36:42Z",
+      "last_updated": "2026-02-05T21:18:15Z",
+      "session_id": "sess_1770325926_0588ad",
+      "researched": "2026-02-05T21:05:01Z",
+      "artifacts": [
+        {
+          "path": "specs/048_add_phase_checkpoint_protocol_to_neovim/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report documenting 8 specific gaps (4 agent, 4 skill) with exact code blocks to add, referencing general/latex/typst agents as templates"
+        },
+        {
+          "path": "specs/048_add_phase_checkpoint_protocol_to_neovim/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan to add Phase Checkpoint Protocol and completion_data patterns to neovim agent and skill"
+        },
+        {
+          "path": "specs/048_add_phase_checkpoint_protocol_to_neovim/summaries/implementation-summary-20260205.md",
+          "type": "summary",
+          "summary": "Implementation summary for task 48"
+        }
+      ],
+      "planned": "2026-02-05T21:10:02Z",
+      "started": "2026-02-05T21:12:28Z",
+      "completed": "2026-02-05T21:18:15Z",
+      "completion_summary": "Added Phase Checkpoint Protocol, Stage 6a (Generate Completion Data), completion_data metadata fields, and expanded Critical Requirements to neovim-implementation-agent. Added Stage 5a validation, completion_data extraction/propagation, and concrete partial plan file update to skill-neovim-implementation.",
+      "claudemd_suggestions": "Modified .claude/agents/neovim-implementation-agent.md (added 4 sections) and .claude/skills/skill-neovim-implementation/SKILL.md (added 4 code blocks/sections)"
+    },
+    {
+      "project_number": 49,
+      "project_name": "fix_astro_indentation_cr_middle_line",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-06T18:44:56Z",
+      "last_updated": "2026-02-06T18:58:18Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/049_astro_indentation/reports/research-049.md",
+          "summary": "Research on Astro indentation: missing treesitter parser, no ftplugin, missing autotag support"
+        },
+        {
+          "type": "plan",
+          "path": "specs/049_astro_indentation/plans/implementation-049.md",
+          "summary": "4-phase plan: Add astro parser, create ftplugin, update autotag, verify. ~35 min estimated."
+        },
+        {
+          "type": "summary",
+          "path": "specs/049_astro_indentation/summaries/implementation-summary-20260206.md",
+          "summary": "Added astro treesitter parser, created ftplugin with proper indentation, updated autotag config"
+        }
+      ],
+      "planned": "2026-02-06T18:54:10Z",
+      "completed": "2026-02-06T18:58:18Z"
+    },
+    {
+      "project_number": 50,
+      "project_name": "fix_leader_rf_formatting_multiple_filetypes",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-06T19:18:57Z",
+      "last_updated": "2026-02-06T22:34:32Z",
+      "artifacts": [
+        {
+          "path": "050_fix_leader_rf_formatting/reports/research-050.md",
+          "type": "research"
+        },
+        {
+          "type": "plan",
+          "path": "specs/050_fix_leader_rf_formatting/plans/implementation-051.md",
+          "summary": "4-phase plan (REVISED): Add filetype formatters, install formatters via Mason, update which-key docs (no keymap relocation), test. ~60-85 min estimated."
+        },
+        {
+          "path": "specs/050_fix_leader_rf_formatting/summaries/implementation-summary-20260206.md",
+          "type": "summary"
+        }
+      ],
+      "planned": "2026-02-06T19:55:51Z",
+      "completed": "2026-02-06T22:34:20Z"
+    },
+    {
+      "project_number": 51,
+      "project_name": "complete_himalaya_email_configuration",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-08T23:38:17Z",
+      "last_updated": "2026-02-09T22:37:15Z",
+      "session_id": "sess_1770674514_d33e69",
+      "researched": "2026-02-08T23:44:38Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/051_complete_himalaya_email_configuration/reports/research-001.md",
+          "summary": "Comprehensive research on Himalaya email configuration for two accounts, identifying OAuth token expiration issue and providing setup guide for Logos Labs account"
+        },
+        {
+          "path": "specs/051_complete_himalaya_email_configuration/plans/implementation-004.md",
+          "type": "plan",
+          "summary": "3-phase revised plan (v004): Gmail OAuth, Neovim plugin, docs. Protonmail fully working (dotfiles tasks 20+21)."
+        },
+        {
+          "type": "summary",
+          "path": "specs/051_complete_himalaya_email_configuration/summaries/implementation-summary-20260209.md",
+          "summary": "Implementation summary for completed dual-account email configuration"
+        }
+      ],
+      "planned": "2026-02-09T21:49:30Z",
+      "completed": "2026-02-09T22:37:15Z",
+      "completion_summary": "Completed Himalaya email configuration for dual accounts (Gmail and Protonmail/Logos). Fixed stale home-manager config, synced 2054 Gmail emails, added logos account to Neovim plugin with switch_account functionality, updated all documentation."
+    },
+    {
+      "project_number": 52,
+      "project_name": "protonmail_bridge_systemd_autostart",
+      "status": "completed",
+      "language": "general",
+      "created": "2026-02-10T20:12:58Z",
+      "last_updated": "2026-02-10T20:50:00Z",
+      "session_id": "sess_1770755808_8706ac",
+      "researched": "2026-02-10T20:19:03Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/052_protonmail_bridge_systemd_autostart/reports/research-001.md",
+          "summary": "Research on systemd user service configuration for ProtonMail Bridge auto-start"
+        },
+        {
+          "type": "plan",
+          "path": "specs/052_protonmail_bridge_systemd_autostart/plans/implementation-001.md",
+          "summary": "4-phase plan covering service verification, integration testing, and documentation"
+        },
+        {
+          "type": "implementation",
+          "path": "docs/protonmail-bridge-setup.md",
+          "summary": "Comprehensive ProtonMail Bridge systemd setup and troubleshooting documentation"
+        },
+        {
+          "type": "summary",
+          "path": "specs/052_protonmail_bridge_systemd_autostart/summaries/implementation-summary-20260210.md",
+          "summary": "Implementation summary with verification results for all 4 phases"
+        }
+      ],
+      "planned": "2026-02-10T20:35:50Z",
+      "started": "2026-02-10T20:37:13Z",
+      "completed": "2026-02-10T20:50:00Z",
+      "completion_summary": "Verified ProtonMail Bridge systemd user service is running correctly with ports 1143/1025 listening. Confirmed mbsync and himalaya email clients work with the service. Created comprehensive documentation at docs/protonmail-bridge-setup.md covering service management, verification, and troubleshooting."
+    },
+    {
       "project_number": 19,
       "project_name": "adapt_claude_system_for_stock_neovim",
       "status": "completed",
