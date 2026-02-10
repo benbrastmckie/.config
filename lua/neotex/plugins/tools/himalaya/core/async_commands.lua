@@ -142,10 +142,6 @@ function M.execute_job_now(job)
   local job_id = job.id
   local cmd = build_command(job.args, job.opts)
 
-  vim.schedule(function()
-    vim.notify('[DEBUG] execute_job_now - job_id: ' .. job_id .. ' cmd: ' .. table.concat(cmd, ' '), vim.log.levels.INFO)
-  end)
-
   -- Track metrics
   M.metrics.total_jobs = M.metrics.total_jobs + 1
 
@@ -341,9 +337,6 @@ function M.handle_job_completion(job_id, exit_code)
   
   -- Call the callback
   if job.callback then
-    vim.schedule(function()
-      vim.notify('[DEBUG] Calling job callback - success: ' .. tostring(success) .. ' job_id: ' .. job_id, vim.log.levels.INFO)
-    end)
     if success then
       job.callback(result, nil)
     else
@@ -374,10 +367,6 @@ function M.handle_job_completion(job_id, exit_code)
         job.callback(nil, error_msg)
       end
     end
-  else
-    vim.schedule(function()
-      vim.notify('[DEBUG] WARNING: No callback for job ' .. job_id, vim.log.levels.WARN)
-    end)
   end
   
   -- Process next job in queue
@@ -387,10 +376,6 @@ end
 -- Core async command executor
 function M.execute_async(args, opts, callback)
   opts = opts or {}
-
-  vim.schedule(function()
-    vim.notify('[DEBUG] execute_async called - args: ' .. vim.inspect(args), vim.log.levels.INFO)
-  end)
 
   -- In test mode, return early to avoid CLI calls that will fail
   if _G.HIMALAYA_TEST_MODE then
@@ -418,10 +403,6 @@ function M.execute_async(args, opts, callback)
     timeout = timeout,
     retry_count = 0,
   }
-
-  vim.schedule(function()
-    vim.notify('[DEBUG] Job created: ' .. job_id .. ' can_start: ' .. tostring(can_start_job()), vim.log.levels.INFO)
-  end)
 
   if can_start_job() then
     -- Execute immediately
