@@ -243,37 +243,26 @@ end
 -- Execute himalaya command asynchronously
 function M.execute_himalaya_async(args, opts, callback)
   opts = opts or {}
-  
+
   -- Get account name
   local account_name = opts.account or config.get_current_account_name()
   if not account_name then
     callback(nil, 'No account configured')
     return
   end
-  
-  -- Build command
-  local cmd = { 'himalaya' }
-  
-  -- Add subcommand arguments first
-  for _, arg in ipairs(args) do
-    table.insert(cmd, arg)
-  end
-  
-  -- Add account and output format after subcommand
-  table.insert(cmd, '-a')
-  table.insert(cmd, account_name)
-  table.insert(cmd, '-o')
-  table.insert(cmd, 'json')
-  
-  -- Add options
-  if opts.folder then
-    table.insert(cmd, '-f')
-    table.insert(cmd, opts.folder)
-  end
-  
+
+  -- Pass account and folder in opts to async_commands
+  -- async_commands.build_command will construct the full command
+  local async_opts = {
+    account = account_name,
+    folder = opts.folder,
+    timeout = opts.timeout,
+    priority = require('neotex.plugins.tools.himalaya.core.async_commands').priorities.user
+  }
+
   -- Use async command execution
   local async_commands = require('neotex.plugins.tools.himalaya.core.async_commands')
-  
+
   -- Build success callback
   local on_success = function(parsed_data)
     -- async_commands already parses JSON, so parsed_data is a Lua table
@@ -284,17 +273,14 @@ function M.execute_himalaya_async(args, opts, callback)
       callback(parsed_data)
     end)
   end
-  
+
   -- Build error callback
   local on_error = function(error_msg)
     callback(nil, error_msg)
   end
-  
-  -- Execute async
-  async_commands.execute_async(cmd, {
-    timeout = opts.timeout,
-    priority = async_commands.priorities.user
-  }, function(job_result, error_msg)
+
+  -- Execute async - pass just the subcommand args, not the full command
+  async_commands.execute_async(args, async_opts, function(job_result, error_msg)
     -- async_commands returns (result, error_msg) signature
     -- - On success: (parsed_json_data, nil)
     -- - On error: (nil, error_message)
