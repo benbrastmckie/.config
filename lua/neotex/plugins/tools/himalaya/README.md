@@ -158,10 +158,13 @@ All keybindings are defined under `<leader>m` and configured in `which-key.lua`:
 ### Auto-Sync Controls
 - `<leader>mt` - Toggle auto-sync (every 15 minutes)
 
-### Email Management
-- `<leader>me` - Send email (compose buffer)
-- `<leader>md` - Save draft (compose buffer)
-- `<leader>mD` - Discard email (compose buffer)
+### Email Management (Compose Buffer Only)
+These keybindings are only visible when in a compose buffer:
+- `<leader>mc` - Compose subgroup
+- `<leader>mce` - Send email
+- `<leader>mcd` - Save draft
+- `<leader>mcD` - Discard email
+- `<leader>mcq` - Quit (discard)
 
 ### System & Debugging
 - `<leader>mh` - Health check
