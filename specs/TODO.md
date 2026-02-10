@@ -1,10 +1,17 @@
 ---
-next_project_number: 52
+next_project_number: 53
 ---
 
 # TODO
 
 ## Tasks
+
+### 52. Create systemd user service for ProtonMail Bridge auto-start on login
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: general
+
+**Description**: Create systemd user service for ProtonMail Bridge auto-start on login with proper configuration and documentation.
 
 ### 51. Complete Himalaya email configuration in Neovim
 - **Effort**: 1.5-2 hours
