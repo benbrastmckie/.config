@@ -8,8 +8,10 @@ next_project_number: 53
 
 ### 52. Create systemd user service for ProtonMail Bridge auto-start on login
 - **Effort**: 1-2 hours
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Language**: general
+- **Started**: 2026-02-10
+- **Research**: [research-001.md](052_protonmail_bridge_systemd_autostart/reports/research-001.md)
 
 **Description**: Create systemd user service for ProtonMail Bridge auto-start on login with proper configuration and documentation.
 
