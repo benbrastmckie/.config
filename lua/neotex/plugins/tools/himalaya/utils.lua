@@ -624,15 +624,21 @@ function M.get_emails_async(account, folder, page, page_size, callback)
     account = account,
     folder = folder
   }, function(result, error)
-    print("[DEBUG] utils.get_emails_async callback - error:", error, "result type:", type(result))
+    vim.schedule(function()
+      vim.notify('[DEBUG] utils.get_emails_async callback - error: ' .. tostring(error) ..
+        ' result_type: ' .. type(result), vim.log.levels.INFO)
+    end)
     if error then
-      print("[DEBUG] Error path - calling callback with error")
+      vim.schedule(function()
+        vim.notify('[DEBUG] Error path - calling callback with error', vim.log.levels.ERROR)
+      end)
       callback(nil, 0, error)
     else
-      print("[DEBUG] Success path - processing result")
       -- Get total count (approximate)
       local total_count = #(result or {})
-      print("[DEBUG] Total count:", total_count)
+      vim.schedule(function()
+        vim.notify('[DEBUG] Success path - total_count: ' .. total_count, vim.log.levels.INFO)
+      end)
 
       -- If we got a full page, there might be more
       if result and #result == page_size then
@@ -647,7 +653,9 @@ function M.get_emails_async(account, folder, page, page_size, callback)
         end
       end
 
-      print("[DEBUG] Calling final callback with", total_count, "emails")
+      vim.schedule(function()
+        vim.notify('[DEBUG] Calling final callback with ' .. total_count .. ' emails', vim.log.levels.INFO)
+      end)
       callback(result, total_count)
     end
   end)

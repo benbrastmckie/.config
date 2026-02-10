@@ -264,9 +264,14 @@ function M.show_email_list(args)
   else
     -- Use async loading for non-draft folders
     utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
-        print("[DEBUG] email_list callback - error:", error, "emails type:", type(emails), "count:", total_count)
+        vim.schedule(function()
+          vim.notify('[DEBUG] email_list callback - error: ' .. tostring(error) ..
+            ' type: ' .. type(emails) .. ' count: ' .. tostring(total_count), vim.log.levels.INFO)
+        end)
         if error then
-          print("[DEBUG] Error path in email_list")
+          vim.schedule(function()
+            vim.notify('[DEBUG] Error path in email_list', vim.log.levels.ERROR)
+          end)
           local error_lines = {
             string.format('󰊫 %s - %s', config.get_account_display_name(account_name), folder),
             '',
@@ -284,10 +289,14 @@ function M.show_email_list(args)
           return
         end
 
-      print("[DEBUG] Success path in email_list - calling process_email_list_results")
+      vim.schedule(function()
+        vim.notify('[DEBUG] Success path - calling process_email_list_results', vim.log.levels.INFO)
+      end)
       -- Continue with original logic but inside the callback
       M.process_email_list_results(emails, total_count, folder, account_name)
-      print("[DEBUG] process_email_list_results completed")
+      vim.schedule(function()
+        vim.notify('[DEBUG] process_email_list_results completed', vim.log.levels.INFO)
+      end)
     end)
   end
 end
