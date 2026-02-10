@@ -67,7 +67,7 @@ Research report identified:
 
 ---
 
-### Phase 2: Update Keybinding from mo to mm [IN PROGRESS]
+### Phase 2: Update Keybinding from mo to mm [COMPLETED]
 
 **Goal**: Change the toggle sidebar keybinding from `<leader>mo` to `<leader>mm`
 
@@ -88,7 +88,7 @@ Research report identified:
 
 ---
 
-### Phase 3: Create Compose-Buffer-Specific Subgroup [NOT STARTED]
+### Phase 3: Create Compose-Buffer-Specific Subgroup [IN PROGRESS]
 
 **Goal**: Move compose-specific actions to a subgroup that only appears when in a compose buffer
 

@@ -536,7 +536,7 @@ return {
       { "<leader>mF", "<cmd>HimalayaRecreateFolders<CR>", desc = "recreate folders", icon = "󰝰" },
       { "<leader>mh", "<cmd>HimalayaHealth<CR>", desc = "health check", icon = "󰸉" },
       { "<leader>mi", "<cmd>HimalayaSyncInfo<CR>", desc = "sync status", icon = "󰋼" },
-      { "<leader>mo", "<cmd>HimalayaToggle<CR>", desc = "toggle sidebar", icon = "󰊫" },
+      { "<leader>mm", "<cmd>HimalayaToggle<CR>", desc = "toggle sidebar", icon = "󰊫" },
       { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit (discard)", icon = "󰆴", cond = function()
         return is_mail() and require('neotex.plugins.tools.himalaya.ui.email_composer').is_compose_buffer(vim.api.nvim_get_current_buf())
       end },

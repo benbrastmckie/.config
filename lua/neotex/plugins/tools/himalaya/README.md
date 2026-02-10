@@ -148,7 +148,7 @@ Basic configuration via lazy.nvim:
 All keybindings are defined under `<leader>m` and configured in `which-key.lua`:
 
 ### Core Operations
-- `<leader>mo` - Toggle email sidebar
+- `<leader>mm` - Toggle email sidebar
 - `<leader>ms` - Sync inbox  
 - `<leader>mS` - Full sync (all folders)
 - `<leader>mw` - Write/compose new email
