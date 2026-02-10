@@ -1,7 +1,7 @@
 # Implementation Plan: ProtonMail Bridge systemd Autostart
 
 - **Task**: 52 - protonmail_bridge_systemd_autostart
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETE]
 - **Effort**: 1-2 hours
 - **Dependencies**: None (NixOS changes handled in ~/.dotfiles task #24)
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -44,18 +44,18 @@ Research report identified:
 
 ## Implementation Phases
 
-### Phase 1: Service Verification [NOT STARTED]
+### Phase 1: Service Verification [COMPLETED]
 
 **Goal**: Verify the ProtonMail Bridge systemd user service is running correctly after the user applies NixOS changes.
 
 **Prerequisites**: User must have already run `home-manager switch` after adding service to ~/.dotfiles/home.nix.
 
 **Tasks**:
-- [ ] Check service status with `systemctl --user status protonmail-bridge`
-- [ ] Verify service is enabled with `systemctl --user is-enabled protonmail-bridge`
-- [ ] Confirm ports 1143 (IMAP) and 1025 (SMTP) are listening with `ss -tlnp`
-- [ ] Check service logs with `journalctl --user -u protonmail-bridge --no-pager -n 50`
-- [ ] Verify vault.enc exists at `~/.config/protonmail/bridge-v3/vault.enc`
+- [x] Check service status with `systemctl --user status protonmail-bridge`
+- [x] Verify service is enabled with `systemctl --user is-enabled protonmail-bridge`
+- [x] Confirm ports 1143 (IMAP) and 1025 (SMTP) are listening with `ss -tlnp`
+- [x] Check service logs with `journalctl --user -u protonmail-bridge --no-pager -n 50`
+- [x] Verify vault.enc exists at `~/.config/protonmail/bridge-v3/vault.enc`
 
 **Timing**: 15 minutes
 
@@ -69,16 +69,16 @@ Research report identified:
 
 ---
 
-### Phase 2: Email Stack Integration Testing [NOT STARTED]
+### Phase 2: Email Stack Integration Testing [COMPLETED]
 
 **Goal**: Verify mbsync and himalaya work correctly with the running ProtonMail Bridge service.
 
 **Tasks**:
-- [ ] Test mbsync connection with `mbsync -V logos-inbox`
-- [ ] Test full sync with `mbsync logos`
-- [ ] Test himalaya list with `himalaya list -a logos`
-- [ ] Test himalaya email read (pick any email from list)
-- [ ] Verify SMTP by checking himalaya config can connect
+- [x] Test mbsync connection with `mbsync -V logos-inbox`
+- [x] Test full sync with `mbsync logos`
+- [x] Test himalaya list with `himalaya envelope list -a logos`
+- [x] Test himalaya email read (pick any email from list)
+- [x] Verify SMTP by checking himalaya config can connect
 
 **Timing**: 15 minutes
 
@@ -92,16 +92,16 @@ Research report identified:
 
 ---
 
-### Phase 3: Create Documentation [NOT STARTED]
+### Phase 3: Create Documentation [COMPLETED]
 
 **Goal**: Create comprehensive documentation for the ProtonMail Bridge systemd setup in the nvim config docs.
 
 **Tasks**:
-- [ ] Create `docs/protonmail-bridge-setup.md` with overview and architecture
-- [ ] Document service management commands (start, stop, restart, status)
-- [ ] Document log inspection commands
-- [ ] Add verification checklist section
-- [ ] Cross-reference with mbsync and himalaya configuration
+- [x] Create `docs/protonmail-bridge-setup.md` with overview and architecture
+- [x] Document service management commands (start, stop, restart, status)
+- [x] Document log inspection commands
+- [x] Add verification checklist section
+- [x] Cross-reference with mbsync and himalaya configuration
 
 **Timing**: 30 minutes
 
@@ -115,16 +115,16 @@ Research report identified:
 
 ---
 
-### Phase 4: Create Troubleshooting Guide [NOT STARTED]
+### Phase 4: Create Troubleshooting Guide [COMPLETED]
 
 **Goal**: Document failure recovery procedures and common issues.
 
 **Tasks**:
-- [ ] Document service startup failure diagnosis
-- [ ] Document keyring/authentication recovery procedure
-- [ ] Document port conflict resolution
-- [ ] Document re-authentication steps via CLI and GUI
-- [ ] Add common error messages and solutions
+- [x] Document service startup failure diagnosis
+- [x] Document keyring/authentication recovery procedure
+- [x] Document port conflict resolution
+- [x] Document re-authentication steps via CLI and GUI
+- [x] Add common error messages and solutions
 
 **Timing**: 30 minutes
 
@@ -138,10 +138,10 @@ Research report identified:
 
 ## Testing and Validation
 
-- [ ] Service survives reboot (test after documentation complete)
-- [ ] mbsync scheduled sync still works (if cron/timer configured)
-- [ ] Documentation accurately reflects current setup
-- [ ] All commands in documentation produce expected output
+- [x] Service survives reboot (test after documentation complete)
+- [x] mbsync scheduled sync still works (if cron/timer configured)
+- [x] Documentation accurately reflects current setup
+- [x] All commands in documentation produce expected output
 
 ## Artifacts and Outputs
 

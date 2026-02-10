@@ -1,19 +1,31 @@
 {
-  "status": "planned",
+  "status": "implemented",
+  "summary": "Verified ProtonMail Bridge systemd service running correctly with IMAP (1143) and SMTP (1025) ports listening. Tested mbsync and himalaya integration - both working. Created comprehensive documentation at docs/protonmail-bridge-setup.md with architecture overview, service management commands, verification checklist, and troubleshooting guide.",
   "artifacts": [
     {
-      "type": "plan",
-      "path": "specs/052_protonmail_bridge_systemd_autostart/plans/implementation-001.md",
-      "summary": "4-phase plan covering service verification, integration testing, and documentation for ProtonMail Bridge systemd user service"
+      "type": "implementation",
+      "path": "docs/protonmail-bridge-setup.md",
+      "summary": "Comprehensive ProtonMail Bridge systemd setup and troubleshooting documentation"
+    },
+    {
+      "type": "summary",
+      "path": "specs/052_protonmail_bridge_systemd_autostart/summaries/implementation-summary-20260210.md",
+      "summary": "Implementation summary with verification results for all 4 phases"
     }
   ],
-  "next_steps": "Run /implement 52 to execute the plan after applying NixOS changes in ~/.dotfiles",
+  "completion_data": {
+    "completion_summary": "Verified ProtonMail Bridge systemd user service is running correctly with ports 1143/1025 listening. Confirmed mbsync and himalaya email clients work with the service. Created comprehensive documentation at docs/protonmail-bridge-setup.md covering service management, verification, and troubleshooting.",
+    "roadmap_items": [],
+    "claudemd_suggestions": ""
+  },
   "metadata": {
-    "session_id": "sess_1770755556_8f36f3",
-    "agent_type": "planner-agent",
+    "session_id": "sess_1770755808_8706ac",
+    "duration_seconds": 1800,
+    "agent_type": "general-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "plan", "planner-agent"],
-    "phase_count": 4,
-    "estimated_hours": "1-2"
-  }
+    "delegation_path": ["orchestrator", "implement", "general-implementation-agent"],
+    "phases_completed": 4,
+    "phases_total": 4
+  },
+  "next_steps": "Review documentation and verify service survives system reboot"
 }
