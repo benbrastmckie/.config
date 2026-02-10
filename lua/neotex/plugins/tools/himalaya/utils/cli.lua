@@ -300,13 +300,13 @@ function M.execute_himalaya_async(args, opts, callback)
     timeout = opts.timeout,
     priority = async_commands.priorities.user
   }, function(job_result, error_msg)
-    -- Handle test mode callback (nil, error_msg) format
-    if job_result == nil and error_msg then
+    -- async_commands returns (result, error_msg) signature
+    -- - On success: (parsed_json_data, nil)
+    -- - On error: (nil, error_message)
+    if error_msg then
       on_error(error_msg)
-    elseif job_result and job_result.success then
-      on_success(job_result.output)
     elseif job_result then
-      on_error(job_result.error or 'Command failed')
+      on_success(job_result)
     else
       on_error('Unknown error')
     end
