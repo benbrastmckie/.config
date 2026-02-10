@@ -4,13 +4,14 @@
     {
       "project_number": 52,
       "project_name": "protonmail_bridge_systemd_autostart",
-      "status": "researched",
+      "status": "planned",
       "language": "general",
       "created": "2026-02-10T20:12:58Z",
-      "last_updated": "2026-02-10T20:19:03Z",
-      "session_id": "sess_1770754481_1c1060",
+      "last_updated": "2026-02-10T20:35:50Z",
+      "session_id": "sess_1770755556_8f36f3",
       "researched": "2026-02-10T20:19:03Z",
-      "artifacts": []
+      "artifacts": [],
+      "planned": "2026-02-10T20:35:50Z"
     },
     {
       "project_number": 51,
@@ -405,6 +406,11 @@
       "path": "specs/052_protonmail_bridge_systemd_autostart/reports/research-001.md",
       "type": "research",
       "summary": "Research on systemd user service configuration for ProtonMail Bridge auto-start, covering best practices, home-manager integration patterns, and implementation recommendations"
+    },
+    {
+      "path": "specs/052_protonmail_bridge_systemd_autostart/plans/implementation-001.md",
+      "type": "plan",
+      "summary": "4-phase plan covering service verification, integration testing, and documentation for ProtonMail Bridge systemd user service"
     }
   ]
 }

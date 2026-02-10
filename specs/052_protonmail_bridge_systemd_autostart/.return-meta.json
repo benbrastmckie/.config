@@ -1,19 +1,19 @@
 {
-  "status": "researched",
-  "session_id": "sess_1770754481_1c1060",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/052_protonmail_bridge_systemd_autostart/reports/research-001.md",
-      "summary": "Research on systemd user service configuration for ProtonMail Bridge auto-start, covering best practices, home-manager integration patterns, and implementation recommendations"
+      "type": "plan",
+      "path": "specs/052_protonmail_bridge_systemd_autostart/plans/implementation-001.md",
+      "summary": "4-phase plan covering service verification, integration testing, and documentation for ProtonMail Bridge systemd user service"
     }
   ],
-  "next_steps": "Run /plan 52 to create implementation plan",
+  "next_steps": "Run /implement 52 to execute the plan after applying NixOS changes in ~/.dotfiles",
   "metadata": {
-    "agent_type": "general-research-agent",
-    "duration_seconds": 180,
+    "session_id": "sess_1770755556_8f36f3",
+    "agent_type": "planner-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "general-research-agent"],
-    "findings_count": 7
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 4,
+    "estimated_hours": "1-2"
   }
 }
