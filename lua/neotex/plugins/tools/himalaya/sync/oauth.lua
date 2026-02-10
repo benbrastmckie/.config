@@ -1,5 +1,6 @@
 -- OAuth management module
 -- Handles token validation and refresh
+-- Password-auth accounts (e.g., Protonmail Bridge) are detected and skip OAuth
 
 local M = {}
 
@@ -12,16 +13,19 @@ local config = require('neotex.plugins.tools.himalaya.core.config')
 local REFRESH_COOLDOWN = 300 -- 5 minutes
 local REFRESH_RETRY_COOLDOWN = 60 -- 1 minute
 
+-- Cache for account auth types (avoid re-reading config)
+local auth_type_cache = {}
+
 -- Load environment variables (NixOS systemd support)
 function M.load_environment()
   local env_vars = {}
-  
+
   -- Try systemd environment first
   local handle = io.popen('systemctl --user show-environment 2>/dev/null')
   if handle then
     local output = handle:read('*a')
     handle:close()
-    
+
     for line in output:gmatch('[^\n]+') do
       local key, value = line:match('^([^=]+)=(.+)$')
       if key and value then
@@ -29,7 +33,7 @@ function M.load_environment()
       end
     end
   end
-  
+
   -- Specific OAuth-related variables we need
   local oauth_vars = {
     'GMAIL_CLIENT_ID',
@@ -37,14 +41,90 @@ function M.load_environment()
     'SASL_PATH',
     'GOOGLE_APPLICATION_CREDENTIALS'
   }
-  
+
   for _, var in ipairs(oauth_vars) do
     if env_vars[var] then
       vim.fn.setenv(var, env_vars[var])
     end
   end
-  
+
   return env_vars
+end
+
+-- Check if an account uses OAuth authentication (vs password-based)
+-- Reads the himalaya config.toml to detect auth.type for the account
+-- Returns true for OAuth accounts (gmail), false for password accounts (logos)
+function M.is_oauth_account(account)
+  account = account or 'gmail'
+
+  -- Check cache first
+  if auth_type_cache[account] ~= nil then
+    return auth_type_cache[account]
+  end
+
+  -- Read himalaya config to determine auth type
+  local himalaya_config_path = vim.fn.expand('~/.config/himalaya/config.toml')
+  if vim.fn.filereadable(himalaya_config_path) ~= 1 then
+    -- Default to OAuth if we can't read config
+    logger.debug('Cannot read himalaya config, assuming OAuth for ' .. account)
+    auth_type_cache[account] = true
+    return true
+  end
+
+  local content = vim.fn.readfile(himalaya_config_path)
+  local in_account_section = false
+  local found_auth_type = nil
+
+  for _, line in ipairs(content) do
+    -- Check if we're entering the correct account section
+    if line:match("^%[accounts%." .. account .. "%]") then
+      in_account_section = true
+    elseif line:match("^%[accounts%.") then
+      -- We've entered a different account section
+      if in_account_section then
+        break -- Stop if we were in our section and moved to another
+      end
+    elseif line:match("^%[") and not line:match("^%[accounts%.") then
+      -- Non-account section - continue if not in our section, break if we were
+      if in_account_section then
+        break
+      end
+    elseif in_account_section then
+      -- Look for auth.type field (handles nested TOML)
+      -- Match patterns like: message.send.backend.auth.type = "password"
+      local auth_type = line:match('auth%.type%s*=%s*["\']([^"\']+)["\']')
+      if auth_type then
+        found_auth_type = auth_type
+        -- Don't break here - there might be multiple auth.type entries
+        -- (e.g., IMAP and SMTP), keep the last one which is typically SMTP
+      end
+    end
+  end
+
+  -- Determine if this is an OAuth account
+  local is_oauth
+  if found_auth_type == nil then
+    -- No auth.type found, assume OAuth for backward compatibility
+    is_oauth = true
+    logger.debug('No auth.type found for ' .. account .. ', assuming OAuth')
+  elseif found_auth_type == 'oauth2' then
+    is_oauth = true
+  elseif found_auth_type == 'password' then
+    is_oauth = false
+    logger.debug('Account ' .. account .. ' uses password auth (skipping OAuth)')
+  else
+    -- Unknown auth type, assume OAuth
+    is_oauth = true
+    logger.debug('Unknown auth.type ' .. found_auth_type .. ' for ' .. account .. ', assuming OAuth')
+  end
+
+  auth_type_cache[account] = is_oauth
+  return is_oauth
+end
+
+-- Clear auth type cache (useful for testing or config changes)
+function M.clear_auth_type_cache()
+  auth_type_cache = {}
 end
 
 -- Check if OAuth token exists
@@ -91,18 +171,23 @@ end
 -- Check if OAuth token is valid (not expired)
 function M.is_valid(account)
   account = account or 'gmail'
-  
+
+  -- Password-auth accounts don't need OAuth tokens
+  if not M.is_oauth_account(account) then
+    return true
+  end
+
   -- If we recently refreshed, assume it's valid
   local last_refresh = state.get("oauth.last_refresh", 0)
   if os.time() - last_refresh < REFRESH_COOLDOWN then
     return true
   end
-  
+
   -- Check if token exists
   if not M.has_token(account) then
     return false
   end
-  
+
   -- We can't easily check expiration without parsing the token
   -- So we'll rely on mbsync failing and triggering a refresh
   return true
@@ -111,7 +196,15 @@ end
 -- Async version of is_valid to avoid blocking
 function M.is_valid_async(account, callback)
   account = account or 'gmail'
-  
+
+  -- Password-auth accounts don't need OAuth tokens
+  if not M.is_oauth_account(account) then
+    if callback then
+      callback(true)
+    end
+    return
+  end
+
   -- If we recently refreshed, assume it's valid
   local last_refresh = state.get("oauth.last_refresh", 0)
   if os.time() - last_refresh < REFRESH_COOLDOWN then
@@ -120,7 +213,7 @@ function M.is_valid_async(account, callback)
     end
     return
   end
-  
+
   -- Check if token exists asynchronously
   M.has_token_async(account, function(has_token)
     if callback then
@@ -368,7 +461,16 @@ end
 -- Ensure OAuth token exists, refreshing if necessary
 function M.ensure_token(account, callback)
   account = account or 'gmail'
-  
+
+  -- Password-auth accounts don't need OAuth tokens
+  if not M.is_oauth_account(account) then
+    logger.debug('Account ' .. account .. ' uses password auth, no OAuth token needed')
+    if callback then
+      callback(true)
+    end
+    return
+  end
+
   -- First check if token exists
   if M.has_token(account) then
     logger.debug('OAuth token found')
@@ -377,7 +479,7 @@ function M.ensure_token(account, callback)
     end
     return
   end
-  
+
   -- No token found, try to refresh
   logger.info('No OAuth token found, attempting automatic refresh...')
   M.refresh(account, function(success, error)

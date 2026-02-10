@@ -67,7 +67,7 @@ From research-001.md:
 
 ---
 
-### Phase 2: Update OAuth Handling for Password-Auth [IN PROGRESS]
+### Phase 2: Update OAuth Handling for Password-Auth [COMPLETED]
 
 **Goal**: Prevent OAuth validation from triggering for accounts using password authentication
 
