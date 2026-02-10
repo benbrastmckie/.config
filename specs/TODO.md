@@ -1,10 +1,18 @@
 ---
-next_project_number: 55
+next_project_number: 56
 ---
 
 # TODO
 
 ## Tasks
+
+### 55. Systematically refactor the himalaya module
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Systematically refactor the himalaya module in neovim config by identifying the intended UX and then designing a complete overhaul which improves the implementation to provide greater functionality (currently it opens and shows inbox for gmail but can't open emails or select/deselect emails, etc.).
 
 ### 54. Fix himalaya UI toggle error and review keybindings
 - **Effort**: TBD
