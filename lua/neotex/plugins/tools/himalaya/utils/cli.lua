@@ -278,7 +278,13 @@ function M.execute_himalaya_async(args, opts, callback)
   local on_success = function(parsed_data)
     -- async_commands already parses JSON, so parsed_data is a Lua table
     -- Just pass it through to the callback
-    callback(parsed_data)
+    vim.schedule(function()
+      print("[DEBUG] cli_utils on_success called with data type:", type(parsed_data))
+      if type(parsed_data) == "table" then
+        print("[DEBUG] Data is table with", #parsed_data, "items")
+      end
+      callback(parsed_data)
+    end)
   end
   
   -- Build error callback

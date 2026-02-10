@@ -624,12 +624,16 @@ function M.get_emails_async(account, folder, page, page_size, callback)
     account = account,
     folder = folder
   }, function(result, error)
+    print("[DEBUG] utils.get_emails_async callback - error:", error, "result type:", type(result))
     if error then
+      print("[DEBUG] Error path - calling callback with error")
       callback(nil, 0, error)
     else
+      print("[DEBUG] Success path - processing result")
       -- Get total count (approximate)
       local total_count = #(result or {})
-      
+      print("[DEBUG] Total count:", total_count)
+
       -- If we got a full page, there might be more
       if result and #result == page_size then
         -- Try to get a more accurate count
@@ -642,7 +646,8 @@ function M.get_emails_async(account, folder, page, page_size, callback)
           total_count = #count_result
         end
       end
-      
+
+      print("[DEBUG] Calling final callback with", total_count, "emails")
       callback(result, total_count)
     end
   end)
