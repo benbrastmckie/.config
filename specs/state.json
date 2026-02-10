@@ -4,10 +4,18 @@
     {
       "project_number": 54,
       "project_name": "himalaya_ui_toggle_error",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-10T22:34:29Z",
-      "last_updated": "2026-02-10T22:34:29Z"
+      "last_updated": "2026-02-10T22:40:05Z",
+      "session_id": "sess_1770763011_b5c525",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/054_himalaya_ui_toggle_error/reports/research-001.md",
+          "summary": "Research report documenting the toggle nil error root cause, existing keybindings, and recommended fixes"
+        }
+      ]
     },
     {
       "project_number": 53,

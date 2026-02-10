@@ -1,0 +1,22 @@
+{
+  "status": "researched",
+  "started_at": "2026-02-10T12:00:00Z",
+  "completed_at": "2026-02-10T12:30:00Z",
+  "summary": "Identified root cause: commands/ui.lua calls main.toggle() which does not exist. The ui/main.lua module has toggle_email_sidebar() instead. Fix requires changing the function call or adding an alias.",
+  "artifacts": [
+    {
+      "type": "report",
+      "path": "specs/054_himalaya_ui_toggle_error/reports/research-001.md",
+      "summary": "Research report documenting the toggle nil error root cause, existing keybindings, and recommended fixes"
+    }
+  ],
+  "next_steps": "Run /plan 54 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1770763011_b5c525",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 1800,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 5
+  }
+}
