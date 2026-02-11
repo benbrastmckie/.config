@@ -8,15 +8,17 @@ next_project_number: 69
 
 ### 68. Fix syntax highlighting interruption on long lines
 - **Effort**: 2-3 hours
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
+- **Started**: 2026-02-11
 - **Language**: neovim
 - **Dependencies**: None
+- **Research**: [research-001.md](068_fix_syntax_highlighting_long_lines/reports/research-001.md)
 
 **Description**: Fix syntax highlighting in Neovim that gets interrupted on long lines. When lines are very long (wrapping across multiple screen lines), the syntax highlighting appears to stop mid-line, leaving portions of the text unhighlighted. This is visible in TypeScript files where string highlighting cuts off partway through wrapped lines.
 
 ### 67. Review and revise himalaya compose buffer mappings
 - **Effort**: 2-3 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Started**: 2026-02-11
 - **Language**: neovim
 - **Dependencies**: None

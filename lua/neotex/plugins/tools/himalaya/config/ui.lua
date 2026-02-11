@@ -421,11 +421,11 @@ function M.setup_compose_keymaps(bufnr)
     end
   end, vim.tbl_extend('force', opts, { desc = 'Attach file' }))
   
-  -- Help
+  -- Help - show compose-specific help with 2-letter mappings
   keymap('n', '?', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.ui')
-    if ok and commands.show_help then
-      commands.show_help('compose')
+    local ok, folder_help = pcall(require, 'neotex.plugins.tools.himalaya.ui.folder_help')
+    if ok and folder_help.show_compose_help then
+      folder_help.show_compose_help()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Show help' }))
 end
@@ -510,7 +510,10 @@ function M.get_keybinding(filetype, action)
       -- Actions removed: use <leader>m menu
     },
     ['himalaya-compose'] = {
-      -- send removed: use <leader>mce (which-key) instead
+      -- Leader mappings (2-letter maximum per task 67):
+      -- <leader>me - send email (E for Email/Envelope)
+      -- <leader>md - save draft (D for Draft)
+      -- <leader>mq - quit/discard (Q for Quit)
       save_draft = '<C-d>',
       discard = '<C-q>',
       attach = '<C-a>',

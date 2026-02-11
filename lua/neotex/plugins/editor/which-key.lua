@@ -546,16 +546,14 @@ return {
       { "<leader>mW", "<cmd>HimalayaSetup<CR>", desc = "setup wizard", icon = "󰗀" },
       { "<leader>mx", "<cmd>HimalayaCancelSync<CR>", desc = "cancel all syncs", icon = "󰚌" },
       { "<leader>mX", "<cmd>HimalayaBackupAndFresh<CR>", desc = "backup & fresh", icon = "󰁯" },
-      { "<leader>ms", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", cond = is_compose_buffer },
     })
 
-    -- Compose-specific subgroup (only visible in compose buffers)
+    -- Compose-specific 2-letter mappings (only visible in compose buffers)
+    -- These override the email actions subgroup for compose buffers
     wk.add({
-      { "<leader>mc", group = "compose", icon = "󰝒", cond = is_compose_buffer },
-      { "<leader>mcd", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰉊", cond = is_compose_buffer },
-      { "<leader>mcD", "<cmd>HimalayaDiscard<CR>", desc = "discard email", icon = "󰩺", cond = is_compose_buffer },
-      { "<leader>mce", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", cond = is_compose_buffer },
-      { "<leader>mcq", "<cmd>HimalayaDiscard<CR>", desc = "quit (discard)", icon = "󰆴", cond = is_compose_buffer },
+      { "<leader>me", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", cond = is_compose_buffer },
+      { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰉊", cond = is_compose_buffer },
+      { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit/discard", icon = "󰆴", cond = is_compose_buffer },
     })
 
     -- Email actions subgroup (visible in himalaya-list and himalaya-email buffers)

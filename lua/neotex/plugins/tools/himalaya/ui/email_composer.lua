@@ -134,11 +134,11 @@ end
 function M.setup_compose_keymaps(buf)
   local opts = { buffer = buf, noremap = true, silent = true }
   
-  -- NOTE: Leader mappings are now defined in which-key.lua
-  -- The following mappings have been moved:
-  -- <leader>ms - Send email -> HimalayaSend command
-  -- <leader>mc - Cancel compose -> Moved to <leader>mq in which-key
-  -- <leader>md - Delete draft -> HimalayaSaveDraft command
+  -- NOTE: Leader mappings are now defined in which-key.lua (task 67)
+  -- Compose buffer uses 2-letter maximum mapping scheme:
+  -- <leader>me - Send email (E for Email/Envelope)
+  -- <leader>md - Save draft (D for Draft)
+  -- <leader>mq - Quit/discard (Q for Quit)
   
   -- Override write behavior to use draft save
   -- This hooks into your existing <leader>w save workflow

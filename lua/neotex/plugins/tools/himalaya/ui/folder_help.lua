@@ -165,6 +165,73 @@ function M.get_help_content(folder_type)
   end
 end
 
+-- Get compose help content (for compose buffers)
+function M.get_compose_help_content()
+  return {
+    "Himalaya Compose Commands",
+    "",
+    "Leader Mappings (2-letter):",
+    "  <leader>me - Send email (E for Email/Envelope)",
+    "  <leader>md - Save draft (D for Draft)",
+    "  <leader>mq - Quit/discard (Q for Quit)",
+    "",
+    "Control Key Shortcuts:",
+    "  <C-d>      - Save draft",
+    "  <C-q>      - Discard email",
+    "  <C-a>      - Attach file",
+    "",
+    "Saving:",
+    "  :w / <leader>w - Save draft (hooked)",
+    "  Auto-save every 5 seconds",
+    "",
+    "Other:",
+    "  ?         - Show this help",
+    "",
+    "Press any key to close..."
+  }
+end
+
+-- Show compose-specific help
+function M.show_compose_help()
+  local help_lines = M.get_compose_help_content()
+
+  -- Create floating window
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, help_lines)
+  vim.api.nvim_buf_set_option(buf, 'modifiable', false)
+  vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+
+  -- Calculate window size
+  local width = 45
+  local height = #help_lines
+  local row = math.floor((vim.o.lines - height) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+
+  -- Create window
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = 'editor',
+    row = row,
+    col = col,
+    width = width,
+    height = height,
+    style = 'minimal',
+    border = 'rounded',
+    title = ' Compose Help ',
+    title_pos = 'center'
+  })
+
+  -- Set up close on any key
+  vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', ':close<CR>', { silent = true })
+  vim.api.nvim_buf_set_keymap(buf, 'n', 'q', ':close<CR>', { silent = true })
+  vim.api.nvim_buf_set_keymap(buf, 'n', '<CR>', ':close<CR>', { silent = true })
+
+  -- Close on any other key press
+  local close_keys = {'j', 'k', 'h', 'l', 'g', 'G', '0', '$', 'w', 'b', 'e', '<Space>'}
+  for _, key in ipairs(close_keys) do
+    vim.api.nvim_buf_set_keymap(buf, 'n', key, ':close<CR>', { silent = true })
+  end
+end
+
 -- Show context-aware help
 function M.show_folder_help()
   local folder_type = M.get_folder_type()

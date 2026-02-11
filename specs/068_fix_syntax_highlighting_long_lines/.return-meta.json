@@ -1,0 +1,20 @@
+{
+  "status": "researched",
+  "summary": "Identified synmaxcol=200 as root cause of interrupted syntax highlighting on long lines. Treesitter should bypass this but TypeScript parser is missing from auto-install list. Recommended solutions: add TypeScript parsers, create ftplugin override with synmaxcol=0, optionally enable snacks.nvim bigfile module.",
+  "artifacts": [
+    {
+      "type": "research",
+      "path": "specs/068_fix_syntax_highlighting_long_lines/reports/research-001.md",
+      "summary": "Research report documenting synmaxcol limitation, treesitter configuration gaps, and recommended fixes for TypeScript syntax highlighting on long lines"
+    }
+  ],
+  "next_steps": "Run /plan 68 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1770843185_519795",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 300,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 5
+  }
+}

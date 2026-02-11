@@ -2,7 +2,7 @@
 
 - **Task**: 67 - Review and revise himalaya compose buffer mappings
 - **Version**: 002
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Effort**: 2-3 hours
 - **Dependencies**: Tasks 64, 65 (related keymap fixes)
 - **Research Inputs**: [research-001.md](../reports/research-001.md), [research-002.md](../reports/research-002.md)
@@ -72,7 +72,7 @@ Research report 002 identified:
 
 ## Implementation Phases
 
-### Phase 1: Add 2-letter compose mappings [NOT STARTED]
+### Phase 1: Add 2-letter compose mappings [COMPLETED]
 
 **Goal**: Add new 2-letter compose buffer mappings in separate wk.add block.
 
@@ -95,7 +95,7 @@ Research report 002 identified:
 
 ---
 
-### Phase 2: Remove 3-letter compose mappings [NOT STARTED]
+### Phase 2: Remove 3-letter compose mappings [COMPLETED]
 
 **Goal**: Remove the `<leader>mc*` subgroup that violates 2-letter maximum.
 
@@ -119,7 +119,7 @@ Research report 002 identified:
 
 ---
 
-### Phase 3: Update help menus [NOT STARTED]
+### Phase 3: Update help menus [COMPLETED]
 
 **Goal**: Update help content to reflect new 2-letter mapping scheme.
 
@@ -148,7 +148,7 @@ Research report 002 identified:
 
 ---
 
-### Phase 4: Update comments and documentation [NOT STARTED]
+### Phase 4: Update comments and documentation [COMPLETED]
 
 **Goal**: Update comments in codebase to reflect the actual mapping scheme.
 
@@ -169,7 +169,7 @@ Research report 002 identified:
 
 ---
 
-### Phase 5: Verification and testing [NOT STARTED]
+### Phase 5: Verification and testing [COMPLETED]
 
 **Goal**: Comprehensive testing of all compose buffer mappings.
 

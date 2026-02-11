@@ -4,19 +4,28 @@
     {
       "project_number": 68,
       "project_name": "fix_syntax_highlighting_long_lines",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-11T20:51:23Z",
-      "last_updated": "2026-02-11T20:51:23Z"
+      "last_updated": "2026-02-11T20:57:22Z",
+      "session_id": "sess_1770843185_519795",
+      "researched": "2026-02-11T20:57:22Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/068_fix_syntax_highlighting_long_lines/reports/research-001.md",
+          "summary": "Research report documenting synmaxcol limitation, treesitter configuration gaps, and recommended fixes for TypeScript syntax highlighting on long lines"
+        }
+      ]
     },
     {
       "project_number": 67,
       "project_name": "review_himalaya_compose_mappings",
-      "status": "planned",
+      "status": "implementing",
       "language": "neovim",
       "created": "2026-02-11T18:11:42Z",
-      "last_updated": "2026-02-11T20:50:08Z",
-      "session_id": "sess_1770842621_3d9d0a",
+      "last_updated": "2026-02-11T20:54:06Z",
+      "session_id": "sess_1770843224_f1c015",
       "artifacts": [
         {
           "type": "research",
