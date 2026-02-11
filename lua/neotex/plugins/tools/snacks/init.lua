@@ -15,9 +15,10 @@ return {
       }
     },
     bigfile = {
-      enabled = false,
+      enabled = true,
       notify = true,
       size = 100 * 1024,   -- 100 KB
+      line_length = 1000,  -- Lines longer than this trigger bigfile mode
     },
     bufdelete = { enabled = true },
     dashboard = {
