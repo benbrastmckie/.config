@@ -4,11 +4,11 @@
     {
       "project_number": 56,
       "project_name": "himalaya_pagination_display_fix",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-11T00:38:11Z",
-      "last_updated": "2026-02-11T00:50:06Z",
-      "session_id": "sess_1770770785_fc9364",
+      "last_updated": "2026-02-11T01:25:40Z",
+      "session_id": "sess_1770772939_dafb87",
       "artifacts": [
         {
           "type": "research",
@@ -19,8 +19,14 @@
           "type": "research",
           "path": "specs/056_himalaya_pagination_display_fix/reports/research-002.md",
           "summary": "Comprehensive himalaya keymap inventory covering 6 buffer contexts with 80+ keybindings documented"
+        },
+        {
+          "type": "plan",
+          "path": "specs/056_himalaya_pagination_display_fix/plans/implementation-001.md",
+          "summary": "8-phase implementation plan for pagination fix and comprehensive keymap reorganization"
         }
-      ]
+      ],
+      "planned": "2026-02-11T01:25:40Z"
     },
     {
       "project_number": 55,
