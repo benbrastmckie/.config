@@ -1,5 +1,5 @@
 {
-  "next_project_number": 61,
+  "next_project_number": 63,
   "active_projects": [
     {
       "project_number": 59,
@@ -58,6 +58,22 @@
       "planned": "2026-02-11T02:47:17Z",
       "completed": "2026-02-11T02:52:03Z",
       "completion_summary": "Fixed 4 Himalaya post-task-59 issues: string format error for 1000+ folder counts, aggressive page preloading (50-100ms delays) for instant C-d/C-u pagination, show_help function for sidebar/compose contexts, and improved help messaging emphasizing <leader>me prefix for email actions."
+    },
+    {
+      "project_number": 61,
+      "project_name": "himalaya_pagination_delay_fix",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-10T08:58:13Z",
+      "last_updated": "2026-02-10T08:58:13Z"
+    },
+    {
+      "project_number": 62,
+      "project_name": "himalaya_broken_commands_fix",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-10T08:58:13Z",
+      "last_updated": "2026-02-10T08:58:13Z"
     }
   ],
   "repository_health": {
