@@ -1,21 +1,21 @@
 {
-  "status": "researched",
-  "started_at": "2026-02-10T12:00:00Z",
-  "completed_at": "2026-02-10T12:30:00Z",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/059_himalaya_sidebar_mappings_pagination/reports/research-001.md",
-      "summary": "Comprehensive analysis of himalaya sidebar keybindings, pagination issues, and preloading opportunities with implementation recommendations"
+      "type": "plan",
+      "path": "specs/059_himalaya_sidebar_mappings_pagination/plans/implementation-001.md",
+      "summary": "5-phase implementation plan fixing pagination CLI flags, adding error handling, implementing preloading, and enhancing action key documentation"
     }
   ],
-  "summary": "Research identified three issues: (1) sidebar single-letter action keys were removed in Task 56 reorganization and moved to which-key <leader>me subgroup, (2) pagination page 2 shows empty due to incorrect total_emails state resulting in async fetch with wrong offset, (3) page preloading can be implemented using vim.defer_fn with background async fetches. Complete implementation plan with code locations provided.",
+  "next_steps": "Run /implement 59 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770775762_f1860e",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 1800,
+    "session_id": "sess_1770776353_9cf91d",
+    "agent_type": "planner-agent",
+    "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 8
-  }
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 5,
+    "estimated_hours": "2-3"
+  },
+  "summary": "Created 5-phase plan addressing himalaya pagination by fixing incorrect --offset CLI flag to correct -p page flag, adding error handling, implementing page preloading with vim.defer_fn, and enhancing help notifications for action key discoverability."
 }
