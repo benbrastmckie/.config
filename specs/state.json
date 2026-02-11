@@ -4,10 +4,18 @@
     {
       "project_number": 67,
       "project_name": "review_himalaya_compose_mappings",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-11T18:11:42Z",
-      "last_updated": "2026-02-11T18:11:42Z"
+      "last_updated": "2026-02-11T18:15:27Z",
+      "session_id": "sess_1770833566_dee2cf",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/067_review_himalaya_compose_mappings/reports/research-001.md",
+          "summary": "Research report analyzing compose buffer keymaps, identifying mapping priority issue with <leader>ms, and proposing 2-letter mapping scheme for compose actions"
+        }
+      ]
     },
     {
       "project_number": 66,
