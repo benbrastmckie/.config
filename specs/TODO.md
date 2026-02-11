@@ -8,11 +8,11 @@ next_project_number: 68
 
 ### 67. Review and revise himalaya compose buffer mappings
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [RESEARCHED]
 - **Started**: 2026-02-11
 - **Language**: neovim
 - **Dependencies**: None
-- **Research**: [research-001.md](067_review_himalaya_compose_mappings/reports/research-001.md)
+- **Research**: [research-001.md](067_review_himalaya_compose_mappings/reports/research-001.md), [research-002.md](067_review_himalaya_compose_mappings/reports/research-002.md)
 - **Plan**: [implementation-001.md](067_review_himalaya_compose_mappings/plans/implementation-001.md)
 
 **Description**: Review and revise himalaya compose buffer mappings to add send email capability and ensure all mappings use maximum two letters (e.g., `<leader>ms` not `<leader>mes`). Current compose buffer lacks a send mapping.

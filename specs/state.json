@@ -4,11 +4,11 @@
     {
       "project_number": 67,
       "project_name": "review_himalaya_compose_mappings",
-      "status": "planned",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-11T18:11:42Z",
-      "last_updated": "2026-02-11T18:18:46Z",
-      "session_id": "sess_1770833773_f12aaf",
+      "last_updated": "2026-02-11T20:47:08Z",
+      "session_id": "sess_1770842621_3d9d0a",
       "artifacts": [
         {
           "type": "research",
@@ -19,6 +19,11 @@
           "type": "plan",
           "path": "specs/067_review_himalaya_compose_mappings/plans/implementation-001.md",
           "summary": "4-phase implementation plan for restructuring compose buffer mappings with 2-letter shortcuts"
+        },
+        {
+          "type": "research",
+          "path": "specs/067_review_himalaya_compose_mappings/reports/research-002.md",
+          "summary": "Full keybinding audit across all Himalaya environments with inconsistency analysis and unified mapping proposal"
         }
       ],
       "planned": "2026-02-11T18:18:46Z"
