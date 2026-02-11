@@ -8,9 +8,10 @@ next_project_number: 59
 
 ### 58. Modify himalaya selection to include movement
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Language**: neovim
 - **Dependencies**: None
+- **Completed**: 2026-02-10
 
 **Description**: Modify himalaya selection keymaps so that 'n' selects AND moves down (for rapid multi-select), 'p' deselects AND moves up, and <Space> remains as toggle select without movement.
 

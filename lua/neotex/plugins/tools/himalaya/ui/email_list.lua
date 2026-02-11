@@ -1876,6 +1876,9 @@ function M.select_email()
   -- Provide feedback
   local count = state.get_selection_count()
   notify.himalaya(string.format('Selected (%d total)', count), notify.categories.STATUS)
+
+  -- Move cursor down for rapid multi-selection
+  vim.cmd('normal! j')
 end
 
 -- Deselect email (remove from selection)
@@ -1920,6 +1923,9 @@ function M.deselect_email()
   -- Provide feedback
   local count = state.get_selection_count()
   notify.himalaya(string.format('Deselected (%d total)', count), notify.categories.STATUS)
+
+  -- Move cursor up for rapid multi-deselection
+  vim.cmd('normal! k')
 end
 
 return M
