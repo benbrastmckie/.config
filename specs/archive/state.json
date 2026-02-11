@@ -1,6 +1,214 @@
 {
   "completed_projects": [
     {
+      "project_number": 58,
+      "project_name": "himalaya_selection_with_movement",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-11T01:43:33Z",
+      "last_updated": "2026-02-11T01:45:11Z",
+      "session_id": "sess_1770774293_9977d1",
+      "completed": "2026-02-11T01:45:11Z",
+      "completion_summary": "Modified himalaya selection keymaps to include automatic cursor movement: 'n' now selects and moves down for rapid multi-selection, 'p' deselects and moves up, and <Space> remains as toggle without movement.",
+      "artifacts": [
+        {
+          "type": "implementation",
+          "path": "lua/neotex/plugins/tools/himalaya/ui/email_list.lua",
+          "summary": "Added cursor movement after select (j) and deselect (k)"
+        }
+      ]
+    },
+    {
+      "project_number": 57,
+      "project_name": "fix_leader_ls_keybinding_latex",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-11T01:36:17Z",
+      "last_updated": "2026-02-11T02:04:49Z",
+      "session_id": "sess_1770775353_f9c7e7",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/057_fix_leader_ls_keybinding_latex/reports/research-001.md",
+          "summary": "Keybinding works correctly but VimtexToggleMain has no effect when invoked from main file. Recommend adding notification feedback."
+        },
+        {
+          "type": "plan",
+          "path": "specs/057_fix_leader_ls_keybinding_latex/plans/implementation-002.md",
+          "summary": "Simplified plan: add notification when already on main file"
+        },
+        {
+          "type": "summary",
+          "path": "specs/057_fix_leader_ls_keybinding_latex/summaries/implementation-summary-20260210.md",
+          "summary": "Implementation summary documenting the notification addition"
+        }
+      ],
+      "planned": "2026-02-11T02:01:34Z",
+      "completed": "2026-02-11T02:04:49Z",
+      "completion_summary": "Added informative notification to <leader>ls keybinding that shows 'Already on main file' when user presses the toggle while on the main LaTeX file, instead of silently doing nothing."
+    },
+    {
+      "project_number": 56,
+      "project_name": "himalaya_pagination_display_fix",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-11T00:38:11Z",
+      "last_updated": "2026-02-11T01:36:07Z",
+      "session_id": "sess_1770773301_847b4c",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/056_himalaya_pagination_display_fix/reports/research-001.md",
+          "summary": "Research report documenting pagination display and keymap conflict issues with recommended fixes"
+        },
+        {
+          "type": "research",
+          "path": "specs/056_himalaya_pagination_display_fix/reports/research-002.md",
+          "summary": "Comprehensive himalaya keymap inventory covering 6 buffer contexts with 80+ keybindings documented"
+        },
+        {
+          "type": "plan",
+          "path": "specs/056_himalaya_pagination_display_fix/plans/implementation-001.md",
+          "summary": "8-phase implementation plan for pagination fix and comprehensive keymap reorganization"
+        },
+        {
+          "type": "implementation",
+          "path": "lua/neotex/plugins/tools/himalaya/ui/email_list.lua",
+          "summary": "Fixed pagination guard, added select/deselect functions"
+        },
+        {
+          "type": "implementation",
+          "path": "lua/neotex/plugins/tools/himalaya/config/ui.lua",
+          "summary": "Rewrote email list and preview keymaps"
+        },
+        {
+          "type": "implementation",
+          "path": "lua/neotex/plugins/editor/which-key.lua",
+          "summary": "Added <leader>me email actions subgroup"
+        },
+        {
+          "type": "summary",
+          "path": "specs/056_himalaya_pagination_display_fix/summaries/implementation-summary-20260210.md",
+          "summary": "Complete implementation summary with keymap reference"
+        }
+      ],
+      "planned": "2026-02-11T01:25:40Z",
+      "completed": "2026-02-11T01:36:07Z",
+      "completion_summary": "Fixed himalaya pagination to work when total_emails is unknown (0). Comprehensively reorganized keymaps: pagination now uses <C-d>/<C-u>, selection uses n/p/<Space>, refresh uses F. Removed all single-letter action keys from sidebar and reader buffers. Added <leader>me which-key group for email actions (reply, forward, delete, etc). Email reader now opens in full buffer instead of split window."
+    },
+    {
+      "project_number": 55,
+      "project_name": "himalaya_module_refactor",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-10T23:56:25Z",
+      "last_updated": "2026-02-11T00:34:59Z",
+      "session_id": "sess_1770769592_2f58fa",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/055_himalaya_module_refactor/reports/research-001.md",
+          "summary": "Detailed research report documenting module architecture (90+ files), current UX gaps including broken Enter and Space keybindings, himalaya CLI underutilization, and prioritized recommendations for implementation"
+        },
+        {
+          "type": "research",
+          "path": "specs/055_himalaya_module_refactor/reports/research-002.md",
+          "summary": "Supplemental research on progressive preview state machine - identified root cause of preview failure and designed 3-state interaction model"
+        },
+        {
+          "type": "plan",
+          "path": "specs/055_himalaya_module_refactor/plans/implementation-001.md",
+          "summary": "10-phase implementation plan for himalaya module refactor with 3-state progressive preview interaction"
+        },
+        {
+          "type": "implementation",
+          "path": "lua/neotex/plugins/tools/himalaya/ui/email_preview.lua",
+          "summary": "Added PREVIEW_STATE enum, state transitions, focus keymaps, and window close handlers"
+        },
+        {
+          "type": "implementation",
+          "path": "lua/neotex/plugins/tools/himalaya/ui/email_reader.lua",
+          "summary": "New module for full buffer email viewing with reply/forward/delete keymaps"
+        },
+        {
+          "type": "summary",
+          "path": "specs/055_himalaya_module_refactor/summaries/implementation-summary-20260210.md",
+          "summary": "Complete implementation summary with all changes documented"
+        }
+      ],
+      "planned": "2026-02-11T00:24:52Z",
+      "completed": "2026-02-11T00:34:59Z",
+      "completion_summary": "Implemented 3-state progressive preview interaction model for himalaya email module. First CR opens preview with j/k switching emails, second CR focuses preview with j/k scrolling, third CR opens email in full buffer. Added ESC for state regression and fixed broken selection toggle."
+    },
+    {
+      "project_number": 54,
+      "project_name": "himalaya_ui_toggle_error",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-10T22:34:29Z",
+      "last_updated": "2026-02-10T23:01:31Z",
+      "session_id": "sess_1770764129_9b95a3",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/054_himalaya_ui_toggle_error/reports/research-001.md",
+          "summary": "Research report documenting the toggle nil error root cause, existing keybindings, and recommended fixes"
+        },
+        {
+          "path": "specs/054_himalaya_ui_toggle_error/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase implementation plan for fixing Himalaya UI toggle error and reorganizing keybindings"
+        },
+        {
+          "path": "lua/neotex/plugins/tools/himalaya/commands/ui.lua",
+          "type": "implementation",
+          "summary": "Fixed function calls to match available functions in ui/main.lua"
+        },
+        {
+          "path": "lua/neotex/plugins/editor/which-key.lua",
+          "type": "implementation",
+          "summary": "Updated keybinding and created compose-buffer-specific subgroup"
+        },
+        {
+          "path": "lua/neotex/plugins/tools/himalaya/README.md",
+          "type": "implementation",
+          "summary": "Updated documentation with new keybindings and compose subgroup"
+        },
+        {
+          "path": "specs/054_himalaya_ui_toggle_error/summaries/implementation-summary-20260210.md",
+          "type": "summary",
+          "summary": "Complete implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-10T22:52:05Z",
+      "completed": "2026-02-10T23:01:31Z",
+      "completion_summary": "Fixed Himalaya UI toggle error by correcting function names and updated keybinding from <leader>mo to <leader>mm. Created compose-buffer-specific subgroup under <leader>mc for better organization."
+    },
+    {
+      "project_number": 53,
+      "project_name": "himalaya_multi_email_config",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-10T20:57:44Z",
+      "last_updated": "2026-02-10T21:17:42Z",
+      "session_id": "sess_1739225400_c5d4e3",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/053_himalaya_multi_email_config/reports/research-001.md",
+          "summary": "Research report documenting existing himalaya multi-account configuration, neovim plugin architecture, and minor configuration gaps for Logos account"
+        },
+        {
+          "path": "specs/053_himalaya_multi_email_config/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for Himalaya multi-email configuration (Logos folder mappings, OAuth handling, testing, documentation)"
+        }
+      ],
+      "planned": "2026-02-10T21:10:03Z",
+      "completed": "2026-02-10T21:17:42Z",
+      "completion_summary": "Configured Himalaya Neovim plugin for multi-email account support with Logos (Protonmail Bridge) alongside Gmail. Added folder mappings and password-auth detection to prevent OAuth errors for password-based accounts."
+    },
+    {
       "project_number": 40,
       "project_name": "standardize_multi_task_creation_patterns",
       "status": "completed",
