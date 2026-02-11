@@ -1,14 +1,22 @@
 ---
-next_project_number: 58
+next_project_number: 59
 ---
 
 # TODO
 
 ## Tasks
 
-### 57. Fix leader-ls keybinding not working in LaTeX files
+### 58. Modify himalaya selection to include movement
 - **Effort**: TBD
 - **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Modify himalaya selection keymaps so that 'n' selects AND moves down (for rapid multi-select), 'p' deselects AND moves up, and <Space> remains as toggle select without movement.
+
+### 57. Fix leader-ls keybinding not working in LaTeX files
+- **Effort**: TBD
+- **Status**: [RESEARCHING]
 - **Language**: neovim
 - **Dependencies**: None
 

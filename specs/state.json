@@ -1,13 +1,22 @@
 {
-  "next_project_number": 58,
+  "next_project_number": 59,
   "active_projects": [
+    {
+      "project_number": 58,
+      "project_name": "himalaya_selection_with_movement",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-11T01:43:33Z",
+      "last_updated": "2026-02-11T01:43:33Z"
+    },
     {
       "project_number": 57,
       "project_name": "fix_leader_ls_keybinding_latex",
-      "status": "not_started",
+      "status": "researching",
       "language": "neovim",
       "created": "2026-02-11T01:36:17Z",
-      "last_updated": "2026-02-11T01:36:17Z"
+      "last_updated": "2026-02-11T01:38:54Z",
+      "session_id": "sess_1770773908_65f882"
     },
     {
       "project_number": 56,
