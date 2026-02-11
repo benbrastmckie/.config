@@ -4,10 +4,10 @@
     {
       "project_number": 66,
       "project_name": "fix_wezterm_tab_numbering_global_order",
-      "status": "implementing",
+      "status": "completed",
       "language": "general",
       "created": "2026-02-11T17:47:36Z",
-      "last_updated": "2026-02-11T18:06:13Z",
+      "last_updated": "2026-02-11T18:08:57Z",
       "session_id": "sess_1770833155_d5f9ac",
       "researched": "2026-02-11T17:52:02Z",
       "artifacts": [
@@ -20,10 +20,17 @@
           "path": "specs/066_fix_wezterm_tab_numbering_global_order/plans/implementation-001.md",
           "type": "plan",
           "summary": "3-phase implementation plan for global WezTerm tab numbering"
+        },
+        {
+          "path": "specs/066_fix_wezterm_tab_numbering_global_order/summaries/implementation-summary-20260211.md",
+          "type": "summary",
+          "summary": "Implementation summary for task 66"
         }
       ],
       "planned": "2026-02-11T18:04:16Z",
-      "started": "2026-02-11T18:06:13Z"
+      "started": "2026-02-11T18:06:13Z",
+      "completed": "2026-02-11T18:08:57Z",
+      "completion_summary": "Added global tab numbering to WezTerm so tab bar displays match TTS announcements. Implemented helper function using wezterm.mux.all_windows() with pcall fallback, updated wezterm-integration.md documentation."
     },
     {
       "project_number": 65,

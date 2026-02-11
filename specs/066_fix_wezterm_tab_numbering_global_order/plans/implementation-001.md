@@ -1,7 +1,7 @@
 # Implementation Plan: Task #66
 
 - **Task**: 66 - fix_wezterm_tab_numbering_global_order
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Effort**: 1-2 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
