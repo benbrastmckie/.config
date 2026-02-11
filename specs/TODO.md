@@ -8,9 +8,11 @@ next_project_number: 67
 
 ### 66. Fix wezterm tab numbering to use global order matching TTS
 - **Effort**: TBD
-- **Status**: [RESEARCHING]
+- **Status**: [RESEARCHED]
 - **Language**: general
 - **Dependencies**: None
+- **Started**: 2026-02-11
+- **Research**: [research-001.md](066_fix_wezterm_tab_numbering_global_order/reports/research-001.md)
 
 **Description**: When Claude Code finishes a task or needs input in neovim, TTS announces the tab number. However, with multiple wezterm windows open, wezterm tracks tab creation order globally but displays per-window tab numbers (each window starts at 1). Research what needs to change to display global tab numbers matching the TTS announcements. Identify which changes belong in .dotfiles/ for NixOS wezterm configuration vs any neovim-side changes.
 
