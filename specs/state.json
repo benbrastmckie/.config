@@ -4,11 +4,18 @@
     {
       "project_number": 65,
       "project_name": "fix_task64_move_and_send_regressions",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-11T17:31:32Z",
-      "last_updated": "2026-02-11T17:31:32Z",
-      "session_id": "sess_1770831083_28a693"
+      "last_updated": "2026-02-11T17:40:22Z",
+      "session_id": "sess_1770831457_3ae731",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/065_fix_task64_move_and_send_regressions/reports/research-001.md",
+          "summary": "Research report documenting folder table structure issue and keymap conflict with copy-paste ready fixes"
+        }
+      ]
     },
     {
       "project_number": 64,

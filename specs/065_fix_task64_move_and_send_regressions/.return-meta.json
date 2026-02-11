@@ -1,0 +1,20 @@
+{
+  "status": "researched",
+  "summary": "Identified root causes for both regressions: move command needs to extract folder.name from table objects, and <C-s> mapping should be removed since <leader>mce already handles send.",
+  "artifacts": [
+    {
+      "type": "research",
+      "path": "specs/065_fix_task64_move_and_send_regressions/reports/research-001.md",
+      "summary": "Research report documenting folder table structure issue and keymap conflict with copy-paste ready fixes"
+    }
+  ],
+  "next_steps": "Run /plan 65 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1770831457_3ae731",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 180,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 2
+  }
+}
