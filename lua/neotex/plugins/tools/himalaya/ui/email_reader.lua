@@ -46,6 +46,8 @@ local function get_or_create_buffer()
 end
 
 -- Setup reader keymaps
+-- Per task 56: NO single-letter action mappings in email reader
+-- Actions should be accessed via which-key <leader>m menu
 local function setup_reader_keymaps(buf)
   local opts = { buffer = buf, silent = true, nowait = true }
 
@@ -58,51 +60,10 @@ local function setup_reader_keymaps(buf)
     M.close()
   end, vim.tbl_extend('force', opts, { desc = 'Close email reader' }))
 
-  -- Reply actions
-  vim.keymap.set('n', 'r', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.reply then
-      commands.reply()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Reply to email' }))
-
-  vim.keymap.set('n', 'R', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.reply_all then
-      commands.reply_all()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Reply all' }))
-
-  -- Forward
-  vim.keymap.set('n', 'f', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.forward then
-      commands.forward()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Forward email' }))
-
-  -- Delete
-  vim.keymap.set('n', 'd', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.delete_current then
-      commands.delete_current()
-    end
-    M.close()
-  end, vim.tbl_extend('force', opts, { desc = 'Delete email' }))
-
-  -- Archive
-  vim.keymap.set('n', 'a', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.archive_current then
-      commands.archive_current()
-    end
-    M.close()
-  end, vim.tbl_extend('force', opts, { desc = 'Archive email' }))
-
-  -- Help
+  -- Help - show which-key hint
   vim.keymap.set('n', '?', function()
     local notify = require('neotex.util.notifications')
-    notify.himalaya('Keys: q=close r=reply R=reply-all f=forward d=delete a=archive', notify.categories.STATUS)
+    notify.himalaya('Actions: <leader>m for mail menu | q to close', notify.categories.STATUS)
   end, vim.tbl_extend('force', opts, { desc = 'Show help' }))
 end
 
@@ -155,7 +116,7 @@ local function render_email(email, buf)
   -- Footer
   table.insert(lines, "")
   table.insert(lines, string.rep("-", width))
-  table.insert(lines, "q:close r:reply R:reply-all f:forward d:delete a:archive ?:help")
+  table.insert(lines, "q:close | <leader>m for actions | ?:help")
 
   -- Update buffer
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
@@ -176,7 +137,8 @@ local function render_email(email, buf)
   end
 end
 
--- Open email in a new buffer/window
+-- Open email in a full buffer (not a split)
+-- Per task 56: Email opens in full buffer, not split
 function M.open_email_buffer(email_id, email_type)
   if not email_id then
     logger.warn('Cannot open email buffer: no email_id provided')
@@ -213,22 +175,26 @@ function M.open_email_buffer(email_id, email_type)
   -- Create buffer
   local buf = get_or_create_buffer()
 
-  -- Calculate window size and position
-  local editor_width = vim.o.columns
-  local editor_height = vim.o.lines
-  local win_width = math.floor(editor_width * M.config.width_ratio)
-  local win_height = editor_height - 4  -- Leave room for statusline etc
-
-  -- Get sidebar window to position reader next to it
-  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-  local sidebar_win = sidebar.get_win()
-  local sidebar_width = 0
-  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
-    sidebar_width = vim.api.nvim_win_get_width(sidebar_win)
+  -- Close preview window if open
+  local ok, email_preview = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_preview')
+  if ok and email_preview.close then
+    email_preview.close()
   end
 
-  -- Create split to the right of sidebar
-  vim.cmd('vsplit')
+  -- Get sidebar to hide it temporarily
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
+  local had_sidebar = sidebar_win and vim.api.nvim_win_is_valid(sidebar_win)
+
+  -- Store sidebar state for restoration
+  reader_state.had_sidebar = had_sidebar
+
+  -- Hide sidebar temporarily for full-screen email view
+  if had_sidebar then
+    vim.api.nvim_win_hide(sidebar_win)
+  end
+
+  -- Use the current window for full buffer display
   local win = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(win, buf)
 
@@ -253,16 +219,16 @@ function M.open_email_buffer(email_id, email_type)
     M.load_content_async(email_id, account, folder, buf)
   end
 
-  -- Setup autocmd for cleanup when window is closed
-  vim.api.nvim_create_autocmd('WinClosed', {
-    pattern = tostring(win),
+  -- Setup autocmd for cleanup when window is closed or buffer is wiped
+  vim.api.nvim_create_autocmd('BufWipeout', {
+    buffer = buf,
     once = true,
     callback = function()
       M.on_window_closed()
     end,
   })
 
-  logger.debug('Opened email reader', { email_id = email_id })
+  logger.debug('Opened email reader in full buffer', { email_id = email_id })
   return true
 end
 
@@ -313,9 +279,12 @@ end
 
 -- Close reader and return to sidebar
 function M.close()
-  -- Close window if open
-  if reader_state.win and vim.api.nvim_win_is_valid(reader_state.win) then
-    vim.api.nvim_win_close(reader_state.win, true)
+  -- Store whether we had a sidebar before closing
+  local had_sidebar = reader_state.had_sidebar
+
+  -- Wipe buffer (this triggers BufWipeout autocmd)
+  if reader_state.buf and vim.api.nvim_buf_is_valid(reader_state.buf) then
+    vim.api.nvim_buf_delete(reader_state.buf, { force = true })
   end
 
   -- Reset state
@@ -323,6 +292,7 @@ function M.close()
   reader_state.buf = nil
   reader_state.email_id = nil
   reader_state.email_type = nil
+  reader_state.had_sidebar = nil
 
   -- Reset preview state to OFF
   local ok, email_preview = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_preview')
@@ -330,11 +300,15 @@ function M.close()
     email_preview.set_mode(email_preview.PREVIEW_STATE.OFF)
   end
 
-  -- Return focus to sidebar
-  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-  local sidebar_win = sidebar.get_win()
-  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
-    vim.api.nvim_set_current_win(sidebar_win)
+  -- Restore and focus sidebar if it was open before
+  if had_sidebar then
+    local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+    -- Re-open sidebar (this will restore its state)
+    sidebar.open()
+    local sidebar_win = sidebar.get_win()
+    if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+      vim.api.nvim_set_current_win(sidebar_win)
+    end
   end
 
   logger.debug('Closed email reader')
@@ -342,8 +316,13 @@ end
 
 -- Handler for when window is closed externally
 function M.on_window_closed()
+  local had_sidebar = reader_state.had_sidebar
+
   reader_state.win = nil
   reader_state.buf = nil
+  reader_state.email_id = nil
+  reader_state.email_type = nil
+  reader_state.had_sidebar = nil
 
   -- Reset preview state to OFF
   local ok, email_preview = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_preview')
@@ -351,12 +330,13 @@ function M.on_window_closed()
     email_preview.set_mode(email_preview.PREVIEW_STATE.OFF)
   end
 
-  -- Return focus to sidebar if possible
-  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
-  local sidebar_win = sidebar.get_win()
-  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+  -- Restore and focus sidebar if it was open before
+  if had_sidebar then
     vim.schedule(function()
-      if vim.api.nvim_win_is_valid(sidebar_win) then
+      local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+      sidebar.open()
+      local sidebar_win = sidebar.get_win()
+      if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
         vim.api.nvim_set_current_win(sidebar_win)
       end
     end)

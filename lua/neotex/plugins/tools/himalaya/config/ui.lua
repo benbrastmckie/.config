@@ -160,13 +160,15 @@ function M.setup_buffer_keymaps(bufnr)
 end
 
 -- Setup email list keymaps
+-- Reorganized keymap scheme per task 56:
+-- - Navigation: j/k (default), <C-d>/<C-u> for pagination
+-- - Selection: n=select, p=deselect, <Space>=toggle
+-- - Actions removed: d, m, c, r, R, f, / (use which-key <leader>m instead)
+-- - Refresh: F (was gr)
+-- - Close: q
 function M.setup_email_list_keymaps(bufnr)
   local keymap = vim.keymap.set
   local opts = { buffer = bufnr, silent = true }
-
-  -- Note: This is a simplified version. The full implementation
-  -- requires access to UI modules which creates a dependency.
-  -- This is the documented architectural compromise.
 
   -- ESC handler for state regression (SWITCH -> OFF)
   keymap('n', '<Esc>', function()
@@ -187,111 +189,91 @@ function M.setup_email_list_keymaps(bufnr)
     -- In OFF mode, ESC does nothing (or could close sidebar - TBD)
   end, vim.tbl_extend('force', opts, { desc = 'Hide preview / regress state' }))
 
-  -- Basic navigation
+  -- Basic navigation - <CR> for 3-state model (task 55)
   keymap('n', '<CR>', function()
-    -- Delegate to email list module
     local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
     if ok and email_list.handle_enter then
       email_list.handle_enter()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Open email or draft' }))
-  
-  -- Selection
+
+  -- Close sidebar
+  keymap('n', 'q', function()
+    local ok, sidebar = pcall(require, 'neotex.plugins.tools.himalaya.ui.sidebar')
+    if ok and sidebar.close then
+      sidebar.close()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Close sidebar' }))
+
+  -- Selection toggle with <Space>
   keymap('n', '<Space>', function()
     local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
     if ok and email_list.toggle_selection then
       email_list.toggle_selection()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Toggle email selection' }))
-  
-  -- Actions
-  keymap('n', 'd', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.delete_selected then
-      commands.delete_selected()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Delete selected emails' }))
-  
-  keymap('n', 'm', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.move_selected then
-      commands.move_selected()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Move selected emails' }))
-  
-  keymap('n', 'c', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.compose then
-      commands.compose()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Compose new email' }))
-  
-  keymap('n', 'r', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.reply then
-      commands.reply()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Reply to email' }))
-  
-  keymap('n', 'R', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.reply_all then
-      commands.reply_all()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Reply all' }))
-  
-  keymap('n', 'f', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.forward then
-      commands.forward()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Forward email' }))
-  
-  -- Navigation
+
+  -- Select email with 'n'
   keymap('n', 'n', function()
+    local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
+    if ok and email_list.select_email then
+      email_list.select_email()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Select email' }))
+
+  -- Deselect email with 'p'
+  keymap('n', 'p', function()
+    local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
+    if ok and email_list.deselect_email then
+      email_list.deselect_email()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Deselect email' }))
+
+  -- Pagination with <C-d> (next page) and <C-u> (previous page)
+  keymap('n', '<C-d>', function()
     local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
     if ok and email_list.next_page then
       email_list.next_page()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Next page' }))
-  
-  keymap('n', 'p', function()
+
+  keymap('n', '<C-u>', function()
     local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
     if ok and email_list.prev_page then
       email_list.prev_page()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Previous page' }))
-  
-  -- Search
-  keymap('n', '/', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.search then
-      commands.search()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Search emails' }))
-  
-  -- Refresh
-  keymap('n', 'gr', function()
+
+  -- Refresh with 'F'
+  keymap('n', 'F', function()
     local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
-    if ok and email_list.refresh then
-      email_list.refresh()
+    if ok and email_list.refresh_email_list then
+      email_list.refresh_email_list()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Refresh email list' }))
-  
-  -- Help
-  keymap('n', '?', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.ui')
-    if ok and commands.show_help then
-      commands.show_help('list')
+
+  -- Context-aware help with 'gH' (floating window)
+  keymap('n', 'gH', function()
+    local ok, folder_help = pcall(require, 'neotex.plugins.tools.himalaya.ui.folder_help')
+    if ok and folder_help.show_folder_help then
+      folder_help.show_folder_help()
     end
-  end, vim.tbl_extend('force', opts, { desc = 'Show help' }))
+  end, vim.tbl_extend('force', opts, { desc = 'Show context help' }))
+
+  -- Legacy help with '?' shows which-key hint
+  keymap('n', '?', function()
+    local notify = require('neotex.util.notifications')
+    notify.himalaya('Actions: <leader>m for mail menu | gH for help', notify.categories.STATUS)
+  end, vim.tbl_extend('force', opts, { desc = 'Show help hint' }))
 end
 
 -- Setup preview keymaps
+-- Per task 56: NO single-letter action mappings in preview
+-- Actions should be accessed via which-key <leader>m menu
 function M.setup_preview_keymaps(bufnr)
   local keymap = vim.keymap.set
   local opts = { buffer = bufnr, silent = true }
-  
+
   -- Close preview
   keymap('n', 'q', function()
     local ok, preview = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_preview')
@@ -299,57 +281,26 @@ function M.setup_preview_keymaps(bufnr)
       preview.close()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Close preview' }))
-  
-  -- Navigation
+
+  -- Navigation (j/k scroll content in FOCUS mode)
   keymap('n', 'j', function()
     local ok, preview = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_preview')
     if ok and preview.next_email then
       preview.next_email()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Next email' }))
-  
+
   keymap('n', 'k', function()
     local ok, preview = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_preview')
     if ok and preview.prev_email then
       preview.prev_email()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Previous email' }))
-  
-  -- Actions
-  keymap('n', 'r', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.reply then
-      commands.reply()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Reply to email' }))
-  
-  keymap('n', 'R', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.reply_all then
-      commands.reply_all()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Reply all' }))
-  
-  keymap('n', 'f', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.forward then
-      commands.forward()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Forward email' }))
-  
-  keymap('n', 'd', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-    if ok and commands.delete_current then
-      commands.delete_current()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Delete email' }))
-  
-  -- Help
+
+  -- Help - show which-key hint
   keymap('n', '?', function()
-    local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.ui')
-    if ok and commands.show_help then
-      commands.show_help('preview')
-    end
+    local notify = require('neotex.util.notifications')
+    notify.himalaya('Actions: <leader>m for mail menu | q to close', notify.categories.STATUS)
   end, vim.tbl_extend('force', opts, { desc = 'Show help' }))
 end
 
@@ -447,33 +398,28 @@ end
 
 -- Get keybinding for an action
 function M.get_keybinding(filetype, action)
-  -- This would be populated from a keybinding configuration
-  -- For now, return defaults
+  -- Updated keybinding configuration per task 56
+  -- Sidebar: No single-letter actions, use <leader>m for mail operations
   local keybindings = {
     ['himalaya-list'] = {
       open = '<CR>',
-      select = '<Space>',
-      delete = 'd',
-      move = 'm',
-      compose = 'c',
-      reply = 'r',
-      reply_all = 'R',
-      forward = 'f',
-      next_page = 'n',
-      prev_page = 'p',
-      search = '/',
-      refresh = 'gr',
-      help = '?'
+      toggle_select = '<Space>',
+      select = 'n',
+      deselect = 'p',
+      next_page = '<C-d>',
+      prev_page = '<C-u>',
+      refresh = 'F',
+      close = 'q',
+      help = 'gH',
+      help_hint = '?'
+      -- Actions removed: use <leader>m menu
     },
     ['himalaya-preview'] = {
       close = 'q',
       next = 'j',
       prev = 'k',
-      reply = 'r',
-      reply_all = 'R',
-      forward = 'f',
-      delete = 'd',
       help = '?'
+      -- Actions removed: use <leader>m menu
     },
     ['himalaya-compose'] = {
       send = '<C-s>',
@@ -490,7 +436,7 @@ function M.get_keybinding(filetype, action)
       help = '?'
     }
   }
-  
+
   return keybindings[filetype] and keybindings[filetype][action]
 end
 

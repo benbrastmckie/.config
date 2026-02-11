@@ -817,8 +817,8 @@ function M.format_email_list(emails)
   local line_data = lines.metadata and lines.metadata[current_line]
   local is_on_scheduled = line_data and line_data.type == 'scheduled'
   
-  -- Show compact help footer (gH shows context-aware help in floating window)
-  table.insert(lines, 'gH:help')
+  -- Show compact help footer with new keymaps
+  table.insert(lines, '<C-d>/<C-u>:page | n/p:select | F:refresh | <leader>m:actions | gH:help')
   
   return lines
 end
@@ -1234,8 +1234,14 @@ end
 
 -- Navigation functions
 function M.next_page()
-  if state.get_current_page() * state.get_page_size() < state.get_total_emails() then
-    state.set_current_page(state.get_current_page() + 1)
+  local total_emails = state.get_total_emails()
+  local current_page = state.get_current_page()
+  local page_size = state.get_page_size()
+
+  -- Allow pagination when total is unknown (0) or when there are more pages
+  -- When total is 0, we don't know if there are more emails, so allow advancing
+  if total_emails == 0 or total_emails == nil or current_page * page_size < total_emails then
+    state.set_current_page(current_page + 1)
     M.refresh_email_list()
   else
     notify.himalaya('Already on last page', notify.categories.STATUS)
@@ -1826,6 +1832,94 @@ function M.toggle_selection()
   else
     notify.himalaya(string.format('Deselected (%d total)', count), notify.categories.STATUS)
   end
+end
+
+-- Select email (add to selection)
+function M.select_email()
+  local line_num = vim.api.nvim_win_get_cursor(0)[1]
+  local email_id = M.get_email_id_from_line(line_num)
+
+  if not email_id then
+    notify.himalaya('No email on this line', notify.categories.STATUS)
+    return
+  end
+
+  -- Check if already selected
+  if state.is_email_selected(email_id) then
+    notify.himalaya('Already selected', notify.categories.STATUS)
+    return
+  end
+
+  -- Get email data from cache
+  local emails = state.get('email_list.emails') or {}
+  local email_data = nil
+
+  -- Find the email in the list
+  for _, email in ipairs(emails) do
+    if tostring(email.id) == tostring(email_id) then
+      email_data = email
+      break
+    end
+  end
+
+  if not email_data then
+    logger.warn('Email not found in list', { email_id = email_id })
+    return
+  end
+
+  -- Add to selection
+  state.toggle_email_selection(email_id, email_data)
+
+  -- Update display
+  M.update_selection_display()
+
+  -- Provide feedback
+  local count = state.get_selection_count()
+  notify.himalaya(string.format('Selected (%d total)', count), notify.categories.STATUS)
+end
+
+-- Deselect email (remove from selection)
+function M.deselect_email()
+  local line_num = vim.api.nvim_win_get_cursor(0)[1]
+  local email_id = M.get_email_id_from_line(line_num)
+
+  if not email_id then
+    notify.himalaya('No email on this line', notify.categories.STATUS)
+    return
+  end
+
+  -- Check if not selected
+  if not state.is_email_selected(email_id) then
+    notify.himalaya('Not selected', notify.categories.STATUS)
+    return
+  end
+
+  -- Get email data from cache
+  local emails = state.get('email_list.emails') or {}
+  local email_data = nil
+
+  -- Find the email in the list
+  for _, email in ipairs(emails) do
+    if tostring(email.id) == tostring(email_id) then
+      email_data = email
+      break
+    end
+  end
+
+  if not email_data then
+    logger.warn('Email not found in list', { email_id = email_id })
+    return
+  end
+
+  -- Remove from selection (toggle since it's already selected)
+  state.toggle_email_selection(email_id, email_data)
+
+  -- Update display
+  M.update_selection_display()
+
+  -- Provide feedback
+  local count = state.get_selection_count()
+  notify.himalaya(string.format('Deselected (%d total)', count), notify.categories.STATUS)
 end
 
 return M

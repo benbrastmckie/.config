@@ -557,6 +557,48 @@ return {
       { "<leader>mcq", "<cmd>HimalayaDiscard<CR>", desc = "quit (discard)", icon = "󰆴", cond = is_compose_buffer },
     })
 
+    -- Email actions subgroup (visible in himalaya-list and himalaya-email buffers)
+    -- Per task 56: actions accessed via which-key instead of single-letter keys
+    local function is_himalaya_buffer()
+      return is_himalaya_list() or is_himalaya_email()
+    end
+
+    wk.add({
+      { "<leader>me", group = "email actions", icon = "󰇮", cond = is_himalaya_buffer },
+      { "<leader>mer", function()
+        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
+        if ok and commands.reply then commands.reply() end
+      end, desc = "reply", icon = "󰇮", cond = is_himalaya_buffer },
+      { "<leader>meR", function()
+        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
+        if ok and commands.reply_all then commands.reply_all() end
+      end, desc = "reply all", icon = "󰇮", cond = is_himalaya_buffer },
+      { "<leader>mef", function()
+        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
+        if ok and commands.forward then commands.forward() end
+      end, desc = "forward", icon = "󰇮", cond = is_himalaya_buffer },
+      { "<leader>med", function()
+        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
+        if ok and commands.delete_selected then commands.delete_selected() end
+      end, desc = "delete", icon = "󰩺", cond = is_himalaya_buffer },
+      { "<leader>mem", function()
+        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
+        if ok and commands.move_selected then commands.move_selected() end
+      end, desc = "move", icon = "󰉋", cond = is_himalaya_buffer },
+      { "<leader>mea", function()
+        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
+        if ok and commands.archive_selected then commands.archive_selected() end
+      end, desc = "archive", icon = "󰉋", cond = is_himalaya_buffer },
+      { "<leader>men", function()
+        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
+        if ok and commands.compose then commands.compose() end
+      end, desc = "new email", icon = "󰝒", cond = is_himalaya_buffer },
+      { "<leader>me/", function()
+        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
+        if ok and commands.search then commands.search() end
+      end, desc = "search", icon = "󰍉", cond = is_himalaya_buffer },
+    })
+
     -- ============================================================================
     -- <leader>n - NIXOS GROUP
     -- ============================================================================

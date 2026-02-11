@@ -1,7 +1,7 @@
 # Implementation Plan: Task #56
 
 - **Task**: 56 - himalaya_pagination_display_fix
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 3-5 hours
 - **Dependencies**: Task #55 (3-state preview model - completed)
 - **Research Inputs**: research-001.md (pagination root causes), research-002.md (keymap inventory)
@@ -97,7 +97,7 @@ Reader actions (reply, delete, archive, forward) should be accessed via `<leader
 
 ## Implementation Phases
 
-### Phase 1: Fix Pagination Guard Condition [NOT STARTED]
+### Phase 1: Fix Pagination Guard Condition [COMPLETED]
 
 **Goal**: Allow pagination to work even when total_emails is unknown (0)
 
@@ -118,7 +118,7 @@ Reader actions (reply, delete, archive, forward) should be accessed via `<leader
 
 ---
 
-### Phase 2: Reorganize Sidebar Keymaps [NOT STARTED]
+### Phase 2: Reorganize Sidebar Keymaps [COMPLETED]
 
 **Goal**: Implement new keymap scheme for sidebar/email-list buffer
 
@@ -149,7 +149,7 @@ Reader actions (reply, delete, archive, forward) should be accessed via `<leader
 
 ---
 
-### Phase 3: Implement Selection Functions [NOT STARTED]
+### Phase 3: Implement Selection Functions [COMPLETED]
 
 **Goal**: Add select/deselect functions for `n`/`p` keys
 
@@ -171,7 +171,7 @@ Reader actions (reply, delete, archive, forward) should be accessed via `<leader
 
 ---
 
-### Phase 4: Clean Email Reader Keymaps [NOT STARTED]
+### Phase 4: Clean Email Reader Keymaps [COMPLETED]
 
 **Goal**: Remove single-letter action keys from reader buffer
 
@@ -192,7 +192,7 @@ Reader actions (reply, delete, archive, forward) should be accessed via `<leader
 
 ---
 
-### Phase 5: Email Opens in Full Buffer [NOT STARTED]
+### Phase 5: Email Opens in Full Buffer [COMPLETED]
 
 **Goal**: Change email display from split to full buffer
 
@@ -213,7 +213,7 @@ Reader actions (reply, delete, archive, forward) should be accessed via `<leader
 
 ---
 
-### Phase 6: Register Compose Keymaps with which-key [NOT STARTED]
+### Phase 6: Register Compose Keymaps with which-key [COMPLETED]
 
 **Goal**: Make compose-only mappings show contextually in which-key
 
@@ -234,7 +234,7 @@ Reader actions (reply, delete, archive, forward) should be accessed via `<leader
 
 ---
 
-### Phase 7: Update Help Documentation [NOT STARTED]
+### Phase 7: Update Help Documentation [COMPLETED]
 
 **Goal**: Sync help content with new keymaps
 
@@ -255,7 +255,7 @@ Reader actions (reply, delete, archive, forward) should be accessed via `<leader
 
 ---
 
-### Phase 8: Integration Testing [NOT STARTED]
+### Phase 8: Integration Testing [COMPLETED]
 
 **Goal**: Verify all changes work together
 

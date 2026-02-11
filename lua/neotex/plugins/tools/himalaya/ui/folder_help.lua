@@ -40,165 +40,124 @@ function M.get_folder_type()
 end
 
 -- Get help content for specific folder type
+-- Updated keymaps per task 56
 function M.get_help_content(folder_type)
   local base_navigation = {
     "Navigation:",
     "  j/k       - Move up/down",
-    "  gn        - Next page",
-    "  gp        - Previous page",
+    "  <C-d>     - Next page",
+    "  <C-u>     - Previous page",
     ""
   }
-  
+
+  local base_selection = {
+    "Selection:",
+    "  <Space>   - Toggle selection",
+    "  n         - Select email",
+    "  p         - Deselect email",
+    ""
+  }
+
   local base_folder_mgmt = {
     "Folder Management:",
-    "  ga        - Switch account",
-    "  gm        - Switch folder",
-    "  gs        - Sync folder",
+    "  <leader>ma - Switch account",
+    "  <leader>mf - Change folder",
+    "  <leader>ms - Sync folder",
     ""
   }
-  
+
+  local base_actions = {
+    "Actions (<leader>me):",
+    "  <leader>men - New email",
+    "  <leader>mer - Reply",
+    "  <leader>meR - Reply all",
+    "  <leader>mef - Forward",
+    "  <leader>med - Delete",
+    "  <leader>mem - Move",
+    "  <leader>me/ - Search",
+    ""
+  }
+
   local base_other = {
     "Other:",
+    "  F         - Refresh list",
     "  gH        - Show this help",
     "  q         - Quit sidebar",
     "",
     "Press any key to close..."
   }
   
+  -- Build help content by concatenating sections
+  local function build_help(title, extra_info)
+    local lines = {title, ""}
+
+    -- Add navigation
+    for _, line in ipairs(base_navigation) do
+      table.insert(lines, line)
+    end
+
+    -- Add selection
+    for _, line in ipairs(base_selection) do
+      table.insert(lines, line)
+    end
+
+    -- Add extra info if provided
+    if extra_info then
+      for _, line in ipairs(extra_info) do
+        table.insert(lines, line)
+      end
+    end
+
+    -- Add actions
+    for _, line in ipairs(base_actions) do
+      table.insert(lines, line)
+    end
+
+    -- Add folder management
+    for _, line in ipairs(base_folder_mgmt) do
+      table.insert(lines, line)
+    end
+
+    -- Add other
+    for _, line in ipairs(base_other) do
+      table.insert(lines, line)
+    end
+
+    return lines
+  end
+
   if folder_type == 'drafts' then
-    return {
-      "Himalaya Draft Folder Commands",
-      "",
-      base_navigation[1],
-      base_navigation[2],
-      base_navigation[3],
-      base_navigation[4],
-      base_navigation[5],
+    return build_help("Himalaya Draft Folder Commands", {
       "Draft Actions:",
-      "  <CR>      - Open draft for editing",
-      "  gD        - Delete draft",
-      "  n/N       - Select/deselect draft",
+      "  <CR>      - Open draft (3-state preview)",
       "",
-      base_folder_mgmt[1],
-      base_folder_mgmt[2],
-      base_folder_mgmt[3],
-      base_folder_mgmt[4],
-      base_folder_mgmt[5],
-      base_other[1],
-      base_other[2],
-      base_other[3],
-      base_other[4],
-      base_other[5]
-    }
+    })
   elseif folder_type == 'trash' then
-    return {
-      "Himalaya Trash Folder Commands",
+    return build_help("Himalaya Trash Folder Commands", {
+      "Trash Actions:",
+      "  <CR>      - Preview email (3-state)",
       "",
-      base_navigation[1],
-      base_navigation[2],
-      base_navigation[3],
-      base_navigation[4],
-      base_navigation[5],
-      "Email Actions:",
-      "  <CR>      - Preview email",
-      "  gD        - Permanently delete",
-      "  gM        - Move to folder (restore)",
-      "  n/N       - Select/deselect email",
-      "",
-      base_folder_mgmt[1],
-      base_folder_mgmt[2],
-      base_folder_mgmt[3],
-      base_folder_mgmt[4],
-      base_folder_mgmt[5],
-      base_other[1],
-      base_other[2],
-      base_other[3],
-      base_other[4],
-      base_other[5]
-    }
+    })
   elseif folder_type == 'sent' then
-    return {
-      "Himalaya Sent Folder Commands",
+    return build_help("Himalaya Sent Folder Commands", {
+      "Sent Actions:",
+      "  <CR>      - Preview email (3-state)",
       "",
-      base_navigation[1],
-      base_navigation[2],
-      base_navigation[3],
-      base_navigation[4],
-      base_navigation[5],
-      "Email Actions:",
-      "  <CR>      - Preview email",
-      "  gf        - Forward email",
-      "  gM        - Move to folder",
-      "  n/N       - Select/deselect email",
-      "",
-      base_folder_mgmt[1],
-      base_folder_mgmt[2],
-      base_folder_mgmt[3],
-      base_folder_mgmt[4],
-      base_folder_mgmt[5],
-      base_other[1],
-      base_other[2],
-      base_other[3],
-      base_other[4],
-      base_other[5]
-    }
+    })
   elseif folder_type == 'spam' then
-    return {
-      "Himalaya Spam Folder Commands",
+    return build_help("Himalaya Spam Folder Commands", {
+      "Spam Actions:",
+      "  <CR>      - Preview email (3-state)",
       "",
-      base_navigation[1],
-      base_navigation[2],
-      base_navigation[3],
-      base_navigation[4],
-      base_navigation[5],
-      "Email Actions:",
-      "  <CR>      - Preview email",
-      "  gD        - Delete email",
-      "  gM        - Move to folder",
-      "  n/N       - Select/deselect email",
+    })
+  else
+    local title = "Himalaya " .. string.upper(string.sub(folder_type, 1, 1)) .. string.sub(folder_type, 2) .. " Folder Commands"
+    return build_help(title, {
+      "Preview:",
+      "  <CR>      - 3-state preview model",
+      "             (OFF -> SWITCH -> FOCUS -> BUFFER)",
       "",
-      base_folder_mgmt[1],
-      base_folder_mgmt[2],
-      base_folder_mgmt[3],
-      base_folder_mgmt[4],
-      base_folder_mgmt[5],
-      base_other[1],
-      base_other[2],
-      base_other[3],
-      base_other[4],
-      base_other[5]
-    }
-  else -- inbox, archive, starred, important, or other regular folders
-    return {
-      "Himalaya " .. string.upper(string.sub(folder_type, 1, 1)) .. string.sub(folder_type, 2) .. " Folder Commands",
-      "",
-      base_navigation[1],
-      base_navigation[2],
-      base_navigation[3],
-      base_navigation[4],
-      base_navigation[5],
-      "Email Actions:",
-      "  <CR>      - Preview email",
-      "  gr        - Reply to email",
-      "  gR        - Reply all",
-      "  gf        - Forward email",
-      "  gD        - Delete email",
-      "  gA        - Archive email",
-      "  gS        - Mark as spam",
-      "  gM        - Move to folder",
-      "  n/N       - Select/deselect email",
-      "",
-      base_folder_mgmt[1],
-      base_folder_mgmt[2],
-      base_folder_mgmt[3],
-      base_folder_mgmt[4],
-      base_folder_mgmt[5],
-      base_other[1],
-      base_other[2],
-      base_other[3],
-      base_other[4],
-      base_other[5]
-    }
+    })
   end
 end
 
