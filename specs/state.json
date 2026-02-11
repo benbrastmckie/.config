@@ -4,10 +4,18 @@
     {
       "project_number": 64,
       "project_name": "fix_remaining_himalaya_keymap_issues",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-11T16:48:28Z",
-      "last_updated": "2026-02-11T16:48:28Z"
+      "last_updated": "2026-02-11T16:53:32Z",
+      "session_id": "sess_1770828565_58ee03",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/064_fix_remaining_himalaya_keymap_issues/reports/research-001.md",
+          "summary": "Research report documenting 3 bugs with line-level fixes and verification that d/r/R errors are working as designed"
+        }
+      ]
     },
     {
       "project_number": 59,
