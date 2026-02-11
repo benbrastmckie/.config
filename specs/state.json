@@ -1,6 +1,14 @@
 {
-  "next_project_number": 68,
+  "next_project_number": 69,
   "active_projects": [
+    {
+      "project_number": 68,
+      "project_name": "fix_syntax_highlighting_long_lines",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-11T20:51:23Z",
+      "last_updated": "2026-02-11T20:51:23Z"
+    },
     {
       "project_number": 67,
       "project_name": "review_himalaya_compose_mappings",
