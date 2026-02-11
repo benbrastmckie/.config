@@ -3,6 +3,19 @@
 
 local M = {}
 
+--- Show context-aware help for himalaya buffers
+--- @param context string 'sidebar'|'compose'|'list'
+function M.show_help(context)
+  local notify = require('neotex.util.notifications')
+  local messages = {
+    sidebar = 'Sidebar: <CR> select folder | q close | r refresh | a switch account | gH full help',
+    compose = 'Compose: <C-s> send | <C-d> save draft | <C-q> discard | <C-a> attach | gH full help',
+    list = 'Email Actions under <leader>me: d=delete a=archive r=reply R=reply-all | Press gH for full keybindings',
+  }
+  local msg = messages[context] or messages.list
+  notify.himalaya(msg, notify.categories.STATUS)
+end
+
 function M.setup(registry)
   local commands = {}
   

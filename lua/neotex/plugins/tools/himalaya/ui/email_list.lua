@@ -488,40 +488,74 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
   -- Don't auto-focus sidebar - let user control focus
   -- sidebar.focus()
 
-  -- Preload adjacent pages for faster navigation
+  -- Preload adjacent pages for faster navigation (aggressive preloading for instant C-d/C-u)
   vim.defer_fn(function()
     M.preload_adjacent_pages(state.get_current_page())
-  end, 1000)
+  end, 100)
 end
 
 --- Preload adjacent pages for faster navigation
+--- Aggressive preloading for instant C-d/C-u pagination
 --- @param current_page number Current page number
 function M.preload_adjacent_pages(current_page)
   local page_size = state.get_page_size()
   local total_emails = state.get_total_emails()
   local account = config.get_current_account_name()
   local folder = state.get_current_folder()
+  local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
 
-  -- Preload next page if likely to exist
-  if total_emails == 0 or total_emails == nil or current_page * page_size < total_emails then
-    vim.defer_fn(function()
-      utils.get_emails_async(account, folder, current_page + 1, page_size, function(emails, _)
-        if emails and #emails > 0 then
-          logger.debug('Preloaded page ' .. (current_page + 1))
-        end
-      end)
-    end, 500)  -- 500ms delay to not interfere with UI
+  -- Helper to check if page is already cached
+  local function is_page_cached(page)
+    local cached = email_cache.get_emails(account, folder, page, page_size)
+    return cached and #cached > 0
   end
 
-  -- Preload previous page if not first page
-  if current_page > 1 then
+  -- Preload next page (highest priority - most common navigation)
+  if total_emails == 0 or total_emails == nil or current_page * page_size < total_emails then
+    if not is_page_cached(current_page + 1) then
+      vim.defer_fn(function()
+        utils.get_emails_async(account, folder, current_page + 1, page_size, function(emails, _)
+          if emails and #emails > 0 then
+            logger.debug('Preloaded page ' .. (current_page + 1))
+          end
+        end)
+      end, 50)  -- 50ms delay - very fast for responsive C-d
+    end
+  end
+
+  -- Preload previous page (second priority)
+  if current_page > 1 and not is_page_cached(current_page - 1) then
     vim.defer_fn(function()
       utils.get_emails_async(account, folder, current_page - 1, page_size, function(emails, _)
         if emails and #emails > 0 then
           logger.debug('Preloaded page ' .. (current_page - 1))
         end
       end)
-    end, 700)  -- Slightly longer delay for lower priority
+    end, 100)  -- 100ms delay for responsive C-u
+  end
+
+  -- Preload 2 pages ahead for deeper cache (lower priority)
+  if total_emails == 0 or total_emails == nil or (current_page + 1) * page_size < total_emails then
+    if not is_page_cached(current_page + 2) then
+      vim.defer_fn(function()
+        utils.get_emails_async(account, folder, current_page + 2, page_size, function(emails, _)
+          if emails and #emails > 0 then
+            logger.debug('Preloaded page ' .. (current_page + 2))
+          end
+        end)
+      end, 200)  -- 200ms delay for 2-page-ahead preload
+    end
+  end
+
+  -- Preload 2 pages behind for deeper cache (lowest priority)
+  if current_page > 2 and not is_page_cached(current_page - 2) then
+    vim.defer_fn(function()
+      utils.get_emails_async(account, folder, current_page - 2, page_size, function(emails, _)
+        if emails and #emails > 0 then
+          logger.debug('Preloaded page ' .. (current_page - 2))
+        end
+      end)
+    end, 300)  -- 300ms delay for 2-page-behind preload
   end
 end
 
@@ -854,7 +888,7 @@ function M.format_email_list(emails)
   local is_on_scheduled = line_data and line_data.type == 'scheduled'
   
   -- Show compact help footer with new keymaps
-  table.insert(lines, '<C-d>/<C-u>:page | n/p:select | F:refresh | <leader>m:actions | gH:help')
+  table.insert(lines, '<C-d>/<C-u>:page | n/p:select | F:refresh | <leader>me:email actions | gH:help')
   
   return lines
 end

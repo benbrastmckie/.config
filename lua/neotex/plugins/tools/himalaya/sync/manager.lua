@@ -268,9 +268,9 @@ function M.update_folder_counts()
       if count then
         -- Always update the count and timestamp, regardless of value
         state.set_folder_count(current_account, current_folder, count)
-        logger.debug(string.format('Updated folder count after sync: %s/%s = %d', 
-          current_account, current_folder, count))
-        notify.himalaya(string.format('Updated count: %s/%s = %d', current_account, current_folder, count), notify.categories.BACKGROUND)
+        logger.debug(string.format('Updated folder count after sync: %s/%s = %s',
+          current_account, current_folder, tostring(count)))
+        notify.himalaya(string.format('Updated count: %s/%s = %s', current_account, current_folder, tostring(count)), notify.categories.BACKGROUND)
         
         -- Trigger UI update immediately
         M.notify_ui_update()

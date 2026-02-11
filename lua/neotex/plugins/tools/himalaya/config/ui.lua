@@ -263,7 +263,7 @@ function M.setup_email_list_keymaps(bufnr)
   -- Legacy help with '?' shows which-key hint
   keymap('n', '?', function()
     local notify = require('neotex.util.notifications')
-    notify.himalaya('Actions: <leader>med (delete) | <leader>mea (archive) | <leader>mer (reply) | gH for full help', notify.categories.STATUS)
+    notify.himalaya('Email Actions under <leader>me: d=delete a=archive r=reply R=reply-all | Press gH for full keybindings', notify.categories.STATUS)
   end, vim.tbl_extend('force', opts, { desc = 'Show help hint' }))
 end
 
