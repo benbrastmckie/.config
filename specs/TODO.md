@@ -1,10 +1,18 @@
 ---
-next_project_number: 63
+next_project_number: 64
 ---
 
 # TODO
 
 ## Tasks
+
+### 63. Fix himalaya keymap errors and help menu
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Task 62 restored single-letter keymaps but they produce errors: "No email to reply to", "Himalaya command failed", "No email to forward". The help menu also doesn't show the right information. Systematically fix all keymap function calls to work correctly (verify function signatures, context requirements, state management) and update the help menu to display accurate keybinding information.
 
 ### 62. Fix broken himalaya commands (d, a, ?)
 - **Effort**: 1-2 hours

@@ -1,5 +1,5 @@
 {
-  "next_project_number": 63,
+  "next_project_number": 64,
   "active_projects": [
     {
       "project_number": 59,
@@ -121,6 +121,14 @@
       "planned": "2026-02-11T03:13:35Z",
       "completed": "2026-02-11T03:17:45Z",
       "completion_summary": "Restored 8 single-letter action keymaps (d, a, r, R, f, m, c, /) to himalaya email list buffer. The ? key now shows the full folder help window. Selection-aware operations work correctly for batch delete, archive, and move."
+    },
+    {
+      "project_number": 63,
+      "project_name": "fix_himalaya_keymap_errors",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-11T03:20:38Z",
+      "last_updated": "2026-02-11T03:20:38Z"
     }
   ],
   "repository_health": {
