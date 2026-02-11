@@ -1618,31 +1618,75 @@ function M.setup_hover_preview(buf)
   if not config.get('preview.enabled', true) then
     return
   end
-  
+
   -- Store sidebar window for preview positioning
   local sidebar_win = sidebar.get_win()
-  
-  -- CursorHold - show preview after delay (only in preview mode)
+  local STATES = email_preview.PREVIEW_STATE
+
+  -- CursorMoved - update preview in SWITCH mode (immediate, for j/k navigation)
+  vim.api.nvim_create_autocmd('CursorMoved', {
+    buffer = buf,
+    callback = function()
+      -- Only update preview in SWITCH mode
+      if not email_preview.is_mode(STATES.SWITCH) then
+        return
+      end
+
+      local line = vim.api.nvim_win_get_cursor(0)[1]
+      local email_id = M.get_email_id_from_line(line)
+
+      if email_id then
+        -- Check if this is a different email than currently previewed
+        local current_preview_id = email_preview.get_current_preview_id()
+        if tostring(email_id) ~= tostring(current_preview_id) then
+          -- Get email type from metadata
+          local metadata = state.get('email_list.line_map') or {}
+          local line_data = metadata[line]
+          local email_type = 'regular'
+          local local_id = nil
+
+          if line_data then
+            if line_data.type == 'scheduled' then
+              email_type = 'scheduled'
+            elseif line_data.is_draft then
+              email_type = 'draft'
+              local_id = line_data.is_local and line_data.email_id or nil
+            end
+          end
+
+          -- Update preview to show new email
+          email_preview.show_preview(email_id, sidebar_win, email_type, local_id)
+        end
+      end
+    end
+  })
+
+  -- CursorHold - show preview after delay (legacy behavior, for preview_mode compat)
   vim.api.nvim_create_autocmd('CursorHold', {
     buffer = buf,
     callback = function()
       if not email_preview.config.enabled then return end
+      -- Only trigger on CursorHold if in legacy preview_mode
       if not email_preview.is_preview_mode() then return end
-      
+      -- Don't trigger if already in SWITCH or FOCUS mode (handled by CursorMoved)
+      if email_preview.is_mode(STATES.SWITCH) or email_preview.is_mode(STATES.FOCUS) then
+        return
+      end
+
       local line = vim.api.nvim_win_get_cursor(0)[1]
       local email_id = M.get_email_id_from_line(line)
-      
+
       if email_id then
         -- Check if this is a scheduled email
         local metadata = state.get('email_list.line_map') or {}
         local line_data = metadata[line]
         local email_type = line_data and line_data.type or 'regular'
-        
+
         email_preview.show_preview(email_id, sidebar_win, email_type)
       end
     end
   })
-  
+
   -- Preview updates are handled by config.lua mouse and cursor handlers
 end
 
@@ -1652,7 +1696,7 @@ function M.get_current_lines()
   if not buf or not vim.api.nvim_buf_is_valid(buf) then
     return nil
   end
-  
+
   -- Try to get from buffer first
   local lines = vim.b[buf].himalaya_lines
   -- Handle vim.NIL case
@@ -1662,22 +1706,126 @@ function M.get_current_lines()
   if lines and type(lines) == 'table' and lines.metadata then
     return lines
   end
-  
+
   -- Fallback to state
   local metadata = state.get('email_list.line_map')
   if not metadata or metadata == vim.NIL then
     return nil
   end
-  
+
   -- Ensure metadata is a proper table
   if type(metadata) ~= 'table' then
     return nil
   end
-  
+
   return {
     metadata = metadata
   }
 end
 
+-- Handle enter key press (implements 3-state progressive preview model)
+-- OFF -> SWITCH (first CR): Opens preview, j/k switches emails
+-- SWITCH -> FOCUS (second CR): Focuses preview, j/k scrolls content
+-- FOCUS -> BUFFER_OPEN (third CR): Opens email in full buffer
+function M.handle_enter()
+  local current_mode = email_preview.get_mode()
+  local STATES = email_preview.PREVIEW_STATE
+
+  -- Get current line data
+  local line_num = vim.api.nvim_win_get_cursor(0)[1]
+  local email_id = M.get_email_id_from_line(line_num)
+
+  -- Get line metadata for type detection
+  local metadata = state.get('email_list.line_map') or {}
+  local line_data = metadata[line_num]
+
+  -- Handle scheduled emails specially
+  if line_data and line_data.type == 'scheduled' then
+    -- For scheduled emails, show preview with scheduled info
+    local scheduler = require("neotex.plugins.tools.himalaya.data.scheduler")
+    -- Show scheduled email in preview
+    if current_mode == STATES.OFF then
+      email_preview.enter_switch_mode(line_data.id, sidebar.get_win(), 'scheduled')
+    elseif current_mode == STATES.SWITCH then
+      email_preview.enter_focus_mode()
+    elseif current_mode == STATES.FOCUS then
+      -- For scheduled emails, maybe open edit dialog instead of buffer
+      notify.himalaya('Scheduled email - use gE to edit schedule', notify.categories.STATUS)
+    end
+    return
+  end
+
+  -- Handle regular emails and drafts
+  if current_mode == STATES.OFF then
+    -- First CR: Enter SWITCH mode (show preview)
+    if not email_id then
+      notify.himalaya('No email on this line', notify.categories.STATUS)
+      return
+    end
+
+    -- Determine email type
+    local email_type = 'regular'
+    local local_id = nil
+    if line_data then
+      if line_data.is_draft then
+        email_type = 'draft'
+        local_id = line_data.is_local and line_data.email_id or nil
+      end
+    end
+
+    email_preview.enter_switch_mode(email_id, sidebar.get_win(), email_type, local_id)
+
+  elseif current_mode == STATES.SWITCH then
+    -- Second CR: Enter FOCUS mode (focus preview window)
+    email_preview.enter_focus_mode()
+
+  elseif current_mode == STATES.FOCUS then
+    -- Third CR: Open email in full buffer
+    email_preview.open_email_in_buffer()
+  end
+end
+
+-- Toggle email selection
+function M.toggle_selection()
+  local line_num = vim.api.nvim_win_get_cursor(0)[1]
+  local email_id = M.get_email_id_from_line(line_num)
+
+  if not email_id then
+    notify.himalaya('No email on this line', notify.categories.STATUS)
+    return
+  end
+
+  -- Get email data from cache
+  local emails = state.get('email_list.emails') or {}
+  local email_data = nil
+
+  -- Find the email in the list
+  for _, email in ipairs(emails) do
+    if tostring(email.id) == tostring(email_id) then
+      email_data = email
+      break
+    end
+  end
+
+  if not email_data then
+    logger.warn('Email not found in list', { email_id = email_id })
+    return
+  end
+
+  -- Toggle selection in state
+  state.toggle_email_selection(email_id, email_data)
+
+  -- Update display to show new selection state
+  M.update_selection_display()
+
+  -- Provide feedback
+  local is_selected = state.is_email_selected(email_id)
+  local count = state.get_selection_count()
+  if is_selected then
+    notify.himalaya(string.format('Selected (%d total)', count), notify.categories.STATUS)
+  else
+    notify.himalaya(string.format('Deselected (%d total)', count), notify.categories.STATUS)
+  end
+end
 
 return M

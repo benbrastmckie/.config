@@ -11,14 +11,29 @@ local utils = require('neotex.plugins.tools.himalaya.utils')
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
 
+-- Preview interaction state enum (3-state progressive model)
+-- OFF: No preview shown, sidebar is in normal navigation mode
+-- SWITCH: Preview is shown, j/k in sidebar switches between emails
+-- FOCUS: Preview is focused, j/k scrolls preview content
+-- BUFFER_OPEN: Email is opened in a full buffer
+M.PREVIEW_STATE = {
+  OFF = 'off',
+  SWITCH = 'switch',
+  FOCUS = 'focus',
+  BUFFER_OPEN = 'buffer_open',
+}
+
 -- Module state
 local preview_state = {
   win = nil,
   buf = nil,
   email_id = nil,
-  preview_mode = false,
+  preview_mode = false,  -- Legacy: kept for backward compatibility
+  mode = 'off',  -- New: PREVIEW_STATE enum value
+  sidebar_cursor_line = nil,  -- Track cursor position when entering focus mode
   autocmd_id = nil,  -- Track sidebar autocmd for cleanup
   preview_autocmd_id = nil,  -- Track preview window autocmd for cleanup
+  focus_keymaps_set = false,  -- Track if focus mode keymaps are set
 }
 
 -- Configuration
@@ -615,6 +630,16 @@ function M.show_preview(email_id, parent_win, email_type, local_id)
       callback = check_hide_preview,
       desc = 'Hide preview when leaving preview window'
     })
+
+    -- WinClosed handler for preview window - reset state when closed externally
+    vim.api.nvim_create_autocmd('WinClosed', {
+      pattern = tostring(preview_state.win),
+      once = true,
+      callback = function()
+        M.on_preview_window_closed()
+      end,
+      desc = 'Reset preview state when window closed'
+    })
   else
     -- Reuse existing window
     if not preview_state.buf or not vim.api.nvim_buf_is_valid(preview_state.buf) then
@@ -884,6 +909,337 @@ end
 -- Get preview state (alias for consistency)
 function M.get_preview_state()
   return preview_state
+end
+
+-- Get current preview interaction mode
+function M.get_mode()
+  return preview_state.mode or M.PREVIEW_STATE.OFF
+end
+
+-- Check if current mode matches the given mode
+function M.is_mode(mode)
+  return M.get_mode() == mode
+end
+
+-- Set preview interaction mode
+function M.set_mode(mode)
+  -- Validate mode
+  local valid_modes = { 'off', 'switch', 'focus', 'buffer_open' }
+  local is_valid = false
+  for _, v in ipairs(valid_modes) do
+    if v == mode then
+      is_valid = true
+      break
+    end
+  end
+
+  if not is_valid then
+    logger.warn('Invalid preview mode', { mode = mode })
+    return false
+  end
+
+  local old_mode = preview_state.mode
+  preview_state.mode = mode
+
+  -- Sync legacy preview_mode with new state
+  preview_state.preview_mode = (mode == M.PREVIEW_STATE.SWITCH or mode == M.PREVIEW_STATE.FOCUS)
+
+  logger.debug('Preview mode changed', { from = old_mode, to = mode })
+  return true
+end
+
+-- State Transition Functions (Phase 2)
+
+-- Enter SWITCH mode: Show preview, j/k switches between emails
+function M.enter_switch_mode(email_id, parent_win, email_type, local_id)
+  -- If already in SWITCH mode with same email, do nothing
+  if M.is_mode(M.PREVIEW_STATE.SWITCH) and preview_state.email_id == email_id then
+    return true
+  end
+
+  -- Show the preview
+  M.show_preview(email_id, parent_win, email_type, local_id)
+
+  -- Set mode to SWITCH
+  M.set_mode(M.PREVIEW_STATE.SWITCH)
+
+  logger.debug('Entered SWITCH mode', { email_id = email_id })
+  return true
+end
+
+-- Enter FOCUS mode: Focus preview window, j/k scrolls content
+function M.enter_focus_mode()
+  -- Must be in SWITCH mode to enter FOCUS
+  if not M.is_mode(M.PREVIEW_STATE.SWITCH) then
+    logger.warn('Cannot enter FOCUS mode: not in SWITCH mode')
+    return false
+  end
+
+  -- Ensure preview window exists
+  if not preview_state.win or not vim.api.nvim_win_is_valid(preview_state.win) then
+    logger.warn('Cannot enter FOCUS mode: no valid preview window')
+    return false
+  end
+
+  -- Store current cursor position in sidebar for restoration
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
+  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+    preview_state.sidebar_cursor_line = vim.api.nvim_win_get_cursor(sidebar_win)[1]
+  end
+
+  -- Focus the preview window
+  vim.api.nvim_set_current_win(preview_state.win)
+
+  -- Set mode to FOCUS
+  M.set_mode(M.PREVIEW_STATE.FOCUS)
+
+  -- Setup focus mode keymaps
+  M.setup_focus_keymaps(preview_state.buf)
+
+  logger.debug('Entered FOCUS mode', { cursor_line = preview_state.sidebar_cursor_line })
+  return true
+end
+
+-- Exit FOCUS mode: Return focus to sidebar, restore cursor position
+function M.exit_focus_mode()
+  -- Must be in FOCUS mode
+  if not M.is_mode(M.PREVIEW_STATE.FOCUS) then
+    return false
+  end
+
+  -- Get sidebar window
+  local sidebar = require('neotex.plugins.tools.himalaya.ui.sidebar')
+  local sidebar_win = sidebar.get_win()
+
+  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+    -- Return focus to sidebar
+    vim.api.nvim_set_current_win(sidebar_win)
+
+    -- Restore cursor position
+    if preview_state.sidebar_cursor_line then
+      local buf = sidebar.get_buf()
+      local line_count = vim.api.nvim_buf_line_count(buf)
+      local target_line = math.min(preview_state.sidebar_cursor_line, line_count)
+      vim.api.nvim_win_set_cursor(sidebar_win, { target_line, 0 })
+    end
+  end
+
+  -- Clear focus mode keymaps
+  M.clear_focus_keymaps(preview_state.buf)
+
+  -- Set mode back to SWITCH
+  M.set_mode(M.PREVIEW_STATE.SWITCH)
+
+  logger.debug('Exited FOCUS mode, returned to SWITCH')
+  return true
+end
+
+-- Exit SWITCH mode: Hide preview, return to OFF mode
+function M.exit_switch_mode()
+  -- Must be in SWITCH mode
+  if not M.is_mode(M.PREVIEW_STATE.SWITCH) then
+    return false
+  end
+
+  -- Hide the preview
+  M.hide_preview()
+
+  -- Set mode to OFF
+  M.set_mode(M.PREVIEW_STATE.OFF)
+
+  logger.debug('Exited SWITCH mode, returned to OFF')
+  return true
+end
+
+-- Open email in full buffer (terminal state)
+function M.open_email_in_buffer()
+  -- Get current email ID
+  local email_id = preview_state.email_id
+  if not email_id then
+    logger.warn('Cannot open email: no email selected')
+    return false
+  end
+
+  -- Set mode to BUFFER_OPEN
+  M.set_mode(M.PREVIEW_STATE.BUFFER_OPEN)
+
+  -- Hide the preview window
+  M.hide_preview()
+
+  -- Delegate to email_reader module (to be implemented in Phase 8)
+  local ok, email_reader = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_reader')
+  if ok and email_reader.open_email_buffer then
+    email_reader.open_email_buffer(email_id)
+  else
+    -- Fallback: just log and reset mode
+    logger.warn('email_reader module not available, falling back')
+    M.set_mode(M.PREVIEW_STATE.OFF)
+  end
+
+  logger.debug('Opened email in buffer', { email_id = email_id })
+  return true
+end
+
+-- Setup focus mode keymaps for preview buffer
+function M.setup_focus_keymaps(buf)
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+
+  if preview_state.focus_keymaps_set then
+    return
+  end
+
+  local opts = { buffer = buf, silent = true, nowait = true }
+
+  -- j/k for scrolling in focus mode
+  vim.keymap.set('n', 'j', function()
+    if M.is_mode(M.PREVIEW_STATE.FOCUS) then
+      vim.cmd('normal! j')
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Scroll down in preview' }))
+
+  vim.keymap.set('n', 'k', function()
+    if M.is_mode(M.PREVIEW_STATE.FOCUS) then
+      vim.cmd('normal! k')
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Scroll up in preview' }))
+
+  -- Page scrolling
+  vim.keymap.set('n', '<C-d>', function()
+    if M.is_mode(M.PREVIEW_STATE.FOCUS) then
+      vim.cmd('normal! <C-d>')
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Half-page down' }))
+
+  vim.keymap.set('n', '<C-u>', function()
+    if M.is_mode(M.PREVIEW_STATE.FOCUS) then
+      vim.cmd('normal! <C-u>')
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Half-page up' }))
+
+  vim.keymap.set('n', '<C-f>', function()
+    if M.is_mode(M.PREVIEW_STATE.FOCUS) then
+      vim.cmd('normal! <C-f>')
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Page down' }))
+
+  vim.keymap.set('n', '<C-b>', function()
+    if M.is_mode(M.PREVIEW_STATE.FOCUS) then
+      vim.cmd('normal! <C-b>')
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Page up' }))
+
+  -- Enter to open in full buffer
+  vim.keymap.set('n', '<CR>', function()
+    if M.is_mode(M.PREVIEW_STATE.FOCUS) then
+      M.open_email_in_buffer()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Open email in buffer' }))
+
+  -- ESC and q to return to SWITCH mode
+  vim.keymap.set('n', '<Esc>', function()
+    if M.is_mode(M.PREVIEW_STATE.FOCUS) then
+      M.exit_focus_mode()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Return to sidebar' }))
+
+  vim.keymap.set('n', 'q', function()
+    if M.is_mode(M.PREVIEW_STATE.FOCUS) then
+      M.exit_focus_mode()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Return to sidebar' }))
+
+  preview_state.focus_keymaps_set = true
+end
+
+-- Clear focus mode keymaps (restore normal preview keymaps)
+function M.clear_focus_keymaps(buf)
+  if not buf or not vim.api.nvim_buf_is_valid(buf) then
+    return
+  end
+
+  -- Delete buffer-local keymaps
+  pcall(vim.keymap.del, 'n', 'j', { buffer = buf })
+  pcall(vim.keymap.del, 'n', 'k', { buffer = buf })
+  pcall(vim.keymap.del, 'n', '<C-d>', { buffer = buf })
+  pcall(vim.keymap.del, 'n', '<C-u>', { buffer = buf })
+  pcall(vim.keymap.del, 'n', '<C-f>', { buffer = buf })
+  pcall(vim.keymap.del, 'n', '<C-b>', { buffer = buf })
+  pcall(vim.keymap.del, 'n', '<CR>', { buffer = buf })
+  pcall(vim.keymap.del, 'n', '<Esc>', { buffer = buf })
+  pcall(vim.keymap.del, 'n', 'q', { buffer = buf })
+
+  preview_state.focus_keymaps_set = false
+end
+
+-- Handler for when preview window is closed externally
+function M.on_preview_window_closed()
+  logger.debug('Preview window closed externally, resetting state')
+
+  -- Reset window reference
+  preview_state.win = nil
+  preview_state.email_id = nil
+
+  -- Reset mode to OFF
+  M.set_mode(M.PREVIEW_STATE.OFF)
+
+  -- Clean up autocmds
+  if preview_state.autocmd_id then
+    pcall(vim.api.nvim_del_autocmd, preview_state.autocmd_id)
+    preview_state.autocmd_id = nil
+  end
+  if preview_state.preview_autocmd_id then
+    pcall(vim.api.nvim_del_autocmd, preview_state.preview_autocmd_id)
+    preview_state.preview_autocmd_id = nil
+  end
+
+  preview_state.focus_keymaps_set = false
+end
+
+-- Handler for when sidebar is closed - cleanup all preview state
+function M.on_sidebar_closed()
+  logger.debug('Sidebar closed, cleaning up all preview state')
+
+  -- Hide preview window if open
+  if preview_state.win and vim.api.nvim_win_is_valid(preview_state.win) then
+    pcall(vim.api.nvim_win_close, preview_state.win, true)
+  end
+
+  -- Reset all state
+  preview_state.win = nil
+  preview_state.buf = nil
+  preview_state.email_id = nil
+  preview_state.sidebar_cursor_line = nil
+  preview_state.focus_keymaps_set = false
+
+  -- Reset mode to OFF
+  M.set_mode(M.PREVIEW_STATE.OFF)
+
+  -- Clean up autocmds
+  if preview_state.autocmd_id then
+    pcall(vim.api.nvim_del_autocmd, preview_state.autocmd_id)
+    preview_state.autocmd_id = nil
+  end
+  if preview_state.preview_autocmd_id then
+    pcall(vim.api.nvim_del_autocmd, preview_state.preview_autocmd_id)
+    preview_state.preview_autocmd_id = nil
+  end
+end
+
+-- Setup sidebar close handler (called from sidebar module)
+function M.setup_sidebar_close_handler(sidebar_win)
+  if sidebar_win and vim.api.nvim_win_is_valid(sidebar_win) then
+    vim.api.nvim_create_autocmd('WinClosed', {
+      pattern = tostring(sidebar_win),
+      once = true,
+      callback = function()
+        M.on_sidebar_closed()
+      end,
+      desc = 'Clean up preview state when sidebar closed'
+    })
+  end
 end
 
 return M

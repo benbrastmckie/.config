@@ -163,11 +163,30 @@ end
 function M.setup_email_list_keymaps(bufnr)
   local keymap = vim.keymap.set
   local opts = { buffer = bufnr, silent = true }
-  
+
   -- Note: This is a simplified version. The full implementation
   -- requires access to UI modules which creates a dependency.
   -- This is the documented architectural compromise.
-  
+
+  -- ESC handler for state regression (SWITCH -> OFF)
+  keymap('n', '<Esc>', function()
+    local ok, email_preview = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_preview')
+    if not ok then return end
+
+    local STATES = email_preview.PREVIEW_STATE
+    local current_mode = email_preview.get_mode()
+
+    if current_mode == STATES.SWITCH then
+      -- In SWITCH mode, ESC hides preview and returns to OFF
+      email_preview.exit_switch_mode()
+    elseif current_mode == STATES.FOCUS then
+      -- In FOCUS mode, ESC returns to SWITCH (handled in preview keymaps)
+      -- But if somehow triggered from sidebar, also handle it
+      email_preview.exit_focus_mode()
+    end
+    -- In OFF mode, ESC does nothing (or could close sidebar - TBD)
+  end, vim.tbl_extend('force', opts, { desc = 'Hide preview / regress state' }))
+
   -- Basic navigation
   keymap('n', '<CR>', function()
     -- Delegate to email list module

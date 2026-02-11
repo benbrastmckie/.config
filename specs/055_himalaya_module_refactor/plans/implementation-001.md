@@ -1,7 +1,7 @@
 # Implementation Plan: Himalaya Module Refactor
 
 - **Task**: 55 - himalaya_module_refactor
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 6-8 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md), [research-002.md](../reports/research-002.md)
@@ -55,7 +55,7 @@ From research-002.md:
 
 ## Implementation Phases
 
-### Phase 1: Implement State Machine Infrastructure [NOT STARTED]
+### Phase 1: Implement State Machine Infrastructure [COMPLETED]
 
 **Goal**: Add the 3-state enum and state tracking to email_preview.lua
 
@@ -78,7 +78,7 @@ From research-002.md:
 
 ---
 
-### Phase 2: Implement State Transition Functions [NOT STARTED]
+### Phase 2: Implement State Transition Functions [COMPLETED]
 
 **Goal**: Add functions to transition between states (enter/exit for each mode)
 
@@ -102,7 +102,7 @@ From research-002.md:
 
 ---
 
-### Phase 3: Implement handle_enter() in email_list.lua [NOT STARTED]
+### Phase 3: Implement handle_enter() in email_list.lua [COMPLETED]
 
 **Goal**: Add the missing handle_enter() function that delegates to state machine
 
@@ -124,7 +124,7 @@ From research-002.md:
 
 ---
 
-### Phase 4: Implement CursorMoved Handler for SWITCH Mode [NOT STARTED]
+### Phase 4: Implement CursorMoved Handler for SWITCH Mode [COMPLETED]
 
 **Goal**: Make j/k navigation update preview when in SWITCH mode
 
@@ -146,7 +146,7 @@ From research-002.md:
 
 ---
 
-### Phase 5: Implement Focus Mode Keymaps [NOT STARTED]
+### Phase 5: Implement Focus Mode Keymaps [COMPLETED]
 
 **Goal**: Set up keymaps for preview buffer when in FOCUS mode
 
@@ -170,7 +170,7 @@ From research-002.md:
 
 ---
 
-### Phase 6: Add ESC Handler to Sidebar [NOT STARTED]
+### Phase 6: Add ESC Handler to Sidebar [COMPLETED]
 
 **Goal**: Make `<ESC>` in sidebar state-aware for regressing through states
 
@@ -192,7 +192,7 @@ From research-002.md:
 
 ---
 
-### Phase 7: Fix Selection Toggle [NOT STARTED]
+### Phase 7: Fix Selection Toggle [COMPLETED]
 
 **Goal**: Implement the missing toggle_selection() function
 
@@ -215,7 +215,7 @@ From research-002.md:
 
 ---
 
-### Phase 8: Implement Email Reader Buffer [NOT STARTED]
+### Phase 8: Implement Email Reader Buffer [COMPLETED]
 
 **Goal**: Create a proper buffer for reading emails (terminal BUFFER_OPEN state)
 
@@ -242,7 +242,7 @@ From research-002.md:
 
 ---
 
-### Phase 9: Add WinClosed Handler for State Cleanup [NOT STARTED]
+### Phase 9: Add WinClosed Handler for State Cleanup [COMPLETED]
 
 **Goal**: Handle external window closure to prevent state desynchronization
 
@@ -266,7 +266,7 @@ From research-002.md:
 
 ---
 
-### Phase 10: Integration Testing and Polish [NOT STARTED]
+### Phase 10: Integration Testing and Polish [COMPLETED]
 
 **Goal**: Verify complete workflow and fix edge cases
 
