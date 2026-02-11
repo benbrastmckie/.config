@@ -105,7 +105,14 @@ if ok_wk then
     { "<leader>lv", "<cmd>VimtexView<CR>", desc = "view", icon = "󰛓", buffer = 0 },
     { "<leader>lw", "<cmd>VimtexCountWords!<CR>", desc = "word count", icon = "󰆿", buffer = 0 },
     { "<leader>lx", "<cmd>:VimtexClearCache All<CR>", desc = "clear cache", icon = "󰃢", buffer = 0 },
-    { "<leader>ls", "<cmd>VimtexToggleMain<CR>", desc = "subfile toggle", icon = "󰔏", buffer = 0 },
+    { "<leader>ls", function()
+      local vimtex = vim.b.vimtex
+      if vimtex and vim.fn.expand('%:p') == vimtex.tex then
+        vim.notify("Already on main file", vim.log.levels.INFO)
+      else
+        vim.cmd('VimtexToggleMain')
+      end
+    end, desc = "subfile toggle", icon = "󰔏", buffer = 0 },
   })
 
   -- Template mappings

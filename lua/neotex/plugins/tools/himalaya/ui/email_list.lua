@@ -1879,14 +1879,17 @@ function M.select_email()
   vim.cmd('normal! j')
 end
 
--- Deselect email (toggle selection and move up)
+-- Deselect email (move up first, then toggle selection)
 function M.deselect_email()
+  -- Move cursor up first
+  vim.cmd('normal! k')
+
+  -- Now toggle selection at the new position
   local line_num = vim.api.nvim_win_get_cursor(0)[1]
   local email_id = M.get_email_id_from_line(line_num)
 
   if not email_id then
-    -- No email on this line, just move up anyway
-    vim.cmd('normal! k')
+    -- No email on this line after moving
     return
   end
 
@@ -1904,7 +1907,6 @@ function M.deselect_email()
 
   if not email_data then
     logger.warn('Email not found in list', { email_id = email_id })
-    vim.cmd('normal! k')
     return
   end
 
@@ -1919,9 +1921,6 @@ function M.deselect_email()
   local is_selected = state.is_email_selected(email_id)
   local action = is_selected and 'Selected' or 'Deselected'
   notify.himalaya(string.format('%s (%d total)', action, count), notify.categories.STATUS)
-
-  -- Always move cursor up for navigation
-  vim.cmd('normal! k')
 end
 
 return M

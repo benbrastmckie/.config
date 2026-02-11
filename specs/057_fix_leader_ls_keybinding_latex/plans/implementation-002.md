@@ -2,7 +2,7 @@
 
 - **Task**: 57 - Fix leader-ls keybinding not working in LaTeX files
 - **Version**: 002
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Effort**: 15 minutes
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -28,7 +28,7 @@
 
 ## Implementation Phases
 
-### Phase 1: Add Main File Notification [NOT STARTED]
+### Phase 1: Add Main File Notification [COMPLETED]
 
 **Goal**: Show a helpful message when user presses `<leader>ls` while already on the main file.
 
