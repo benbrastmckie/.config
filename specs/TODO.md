@@ -17,9 +17,10 @@ next_project_number: 59
 
 ### 57. Fix leader-ls keybinding not working in LaTeX files
 - **Effort**: TBD
-- **Status**: [RESEARCHING]
+- **Status**: [RESEARCHED]
 - **Language**: neovim
 - **Dependencies**: None
+- **Research**: [research-001.md](057_fix_leader_ls_keybinding_latex/reports/research-001.md)
 
 **Description**: The <leader>ls keybinding does nothing when triggered in /home/benjamin/Projects/Logos/Theory/latex/LogosReference.tex. Find and fix the problem.
 

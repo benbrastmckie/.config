@@ -22,11 +22,18 @@
     {
       "project_number": 57,
       "project_name": "fix_leader_ls_keybinding_latex",
-      "status": "researching",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-11T01:36:17Z",
-      "last_updated": "2026-02-11T01:38:54Z",
-      "session_id": "sess_1770773908_65f882"
+      "last_updated": "2026-02-11T01:46:49Z",
+      "session_id": "sess_1770773908_65f882",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/057_fix_leader_ls_keybinding_latex/reports/research-001.md",
+          "summary": "Keybinding works correctly but VimtexToggleMain has no effect when invoked from main file. Recommend adding notification feedback."
+        }
+      ]
     },
     {
       "project_number": 56,
