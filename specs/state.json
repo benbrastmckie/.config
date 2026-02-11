@@ -1,6 +1,14 @@
 {
-  "next_project_number": 66,
+  "next_project_number": 67,
   "active_projects": [
+    {
+      "project_number": 66,
+      "project_name": "fix_wezterm_tab_numbering_global_order",
+      "status": "not_started",
+      "language": "general",
+      "created": "2026-02-11T17:47:36Z",
+      "last_updated": "2026-02-11T17:47:36Z"
+    },
     {
       "project_number": 65,
       "project_name": "fix_task64_move_and_send_regressions",
