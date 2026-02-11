@@ -91,10 +91,10 @@
     {
       "project_number": 62,
       "project_name": "himalaya_broken_commands_fix",
-      "status": "implementing",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-10T08:58:13Z",
-      "last_updated": "2026-02-11T03:15:04Z",
+      "last_updated": "2026-02-11T03:17:45Z",
       "session_id": "sess_1770779678_032f58",
       "artifacts": [
         {
@@ -111,9 +111,16 @@
           "path": "specs/062_himalaya_broken_commands_fix/plans/implementation-001.md",
           "type": "plan",
           "summary": "3-phase implementation plan to restore single-letter action keymaps in himalaya email list"
+        },
+        {
+          "path": "specs/062_himalaya_broken_commands_fix/summaries/implementation-summary-20260210.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
         }
       ],
-      "planned": "2026-02-11T03:13:35Z"
+      "planned": "2026-02-11T03:13:35Z",
+      "completed": "2026-02-11T03:17:45Z",
+      "completion_summary": "Restored 8 single-letter action keymaps (d, a, r, R, f, m, c, /) to himalaya email list buffer. The ? key now shows the full folder help window. Selection-aware operations work correctly for batch delete, archive, and move."
     }
   ],
   "repository_health": {

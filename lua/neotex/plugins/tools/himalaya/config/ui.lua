@@ -492,9 +492,17 @@ function M.get_keybinding(filetype, action)
       prev_page = '<C-u>',
       refresh = 'F',
       close = 'q',
-      help = 'gH',
-      help_hint = '?'
-      -- Actions removed: use <leader>m menu
+      help = '?',
+      context_help = 'gH',
+      -- Action keys (restored)
+      delete = 'd',
+      archive = 'a',
+      reply = 'r',
+      reply_all = 'R',
+      forward = 'f',
+      move = 'm',
+      compose = 'c',
+      search = '/'
     },
     ['himalaya-preview'] = {
       close = 'q',

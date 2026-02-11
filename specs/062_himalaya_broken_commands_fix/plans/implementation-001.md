@@ -1,7 +1,7 @@
 # Implementation Plan: Task #62 - Fix Broken Himalaya Commands
 
 - **Task**: 62 - himalaya_broken_commands_fix
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 1-2 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-002.md](../reports/research-002.md)
@@ -42,7 +42,7 @@ Restore single-letter action keymaps (d, a, r, R, f, m, c, /) to the himalaya em
 
 ## Implementation Phases
 
-### Phase 1: Add Action Keymaps [NOT STARTED]
+### Phase 1: Add Action Keymaps [COMPLETED]
 
 **Goal**: Add the missing single-letter action keymaps to `setup_email_list_keymaps()` function
 
@@ -152,7 +152,7 @@ Restore single-letter action keymaps (d, a, r, R, f, m, c, /) to the himalaya em
 
 ---
 
-### Phase 2: Update Help and Keybinding Table [NOT STARTED]
+### Phase 2: Update Help and Keybinding Table [COMPLETED]
 
 **Goal**: Update the `?` key to show full help window and update `get_keybinding()` table
 
@@ -208,7 +208,7 @@ Restore single-letter action keymaps (d, a, r, R, f, m, c, /) to the himalaya em
 
 ---
 
-### Phase 3: Verification and Testing [NOT STARTED]
+### Phase 3: Verification and Testing [COMPLETED]
 
 **Goal**: Verify all keymaps work correctly
 
