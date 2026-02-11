@@ -1498,6 +1498,10 @@ function M.move_current_email()
   vim.ui.select(available_folders, {
     prompt = ' Move email to folder:',
     format_item = function(folder)
+      -- Add defensive nil/type check
+      if not folder or type(folder) ~= "string" then
+        return folder and tostring(folder) or "(invalid)"
+      end
       -- Add icon for special folders
       if folder:lower():match('inbox') then
         return '📥 ' .. folder

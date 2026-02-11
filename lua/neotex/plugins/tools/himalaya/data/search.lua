@@ -759,26 +759,22 @@ function M.show_search_ui()
   -- Position cursor on input line
   vim.api.nvim_win_set_cursor(win, {#help_lines, 0})
   
-  -- Set up search execution
-  vim.api.nvim_buf_set_keymap(buf, 'n', '<CR>', '', {
-    callback = function()
-      local query = vim.api.nvim_get_current_line()
-      vim.api.nvim_win_close(win, true)
-      M.execute_search(query)
-    end,
-    desc = "Execute search"
-  })
-  
-  vim.api.nvim_buf_set_keymap(buf, 'i', '<CR>', '', {
-    callback = function()
-      local query = vim.api.nvim_get_current_line()
-      vim.api.nvim_win_close(win, true)
-      M.execute_search(query)
-    end,
-    desc = "Execute search"
-  })
-  
-  vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', ':close<CR>', { buffer = buf })
+  -- Set up search execution with proper vim.keymap.set syntax
+  local keymap_opts = { buffer = buf, silent = true, noremap = true }
+
+  vim.keymap.set('n', '<CR>', function()
+    local query = vim.api.nvim_get_current_line()
+    vim.api.nvim_win_close(win, true)
+    M.execute_search(query)
+  end, vim.tbl_extend('force', keymap_opts, { desc = "Execute search" }))
+
+  vim.keymap.set('i', '<CR>', function()
+    local query = vim.api.nvim_get_current_line()
+    vim.api.nvim_win_close(win, true)
+    M.execute_search(query)
+  end, vim.tbl_extend('force', keymap_opts, { desc = "Execute search" }))
+
+  vim.keymap.set('n', '<Esc>', ':close<CR>', vim.tbl_extend('force', keymap_opts, { desc = "Close search" }))
   
   -- Start in insert mode (unless in test mode)
   if not _G.HIMALAYA_TEST_MODE then

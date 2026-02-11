@@ -1,7 +1,7 @@
 # Implementation Plan: Task #64
 
 - **Task**: 64 - Fix remaining himalaya keymap issues
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 1-2 hours
 - **Dependencies**: Task #63 (completed)
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -42,14 +42,14 @@ Research report (research-001.md) confirmed:
 
 ## Implementation Phases
 
-### Phase 1: Fix Core Bugs [NOT STARTED]
+### Phase 1: Fix Core Bugs [COMPLETED]
 
 **Goal**: Address all three confirmed bugs with targeted fixes
 
 **Tasks**:
-- [ ] Fix `ui/main.lua` line 1502 - add nil/type check before `folder:lower()`
-- [ ] Fix `data/search.lua` lines 763-785 - convert `nvim_buf_set_keymap` to `vim.keymap.set` with proper options
-- [ ] Fix `config/ui.lua` lines 395-400 - change `composer.send()` to `composer.send_email(buf)`
+- [x] Fix `ui/main.lua` line 1502 - add nil/type check before `folder:lower()`
+- [x] Fix `data/search.lua` lines 763-785 - convert `nvim_buf_set_keymap` to `vim.keymap.set` with proper options
+- [x] Fix `config/ui.lua` lines 395-400 - change `composer.send()` to `composer.send_email(buf)`
 
 **Timing**: 45 minutes
 
@@ -65,14 +65,14 @@ Research report (research-001.md) confirmed:
 
 ---
 
-### Phase 2: Verify and Document [NOT STARTED]
+### Phase 2: Verify and Document [COMPLETED]
 
 **Goal**: Confirm fixes work correctly and document changes
 
 **Tasks**:
-- [ ] Run full himalaya module load test
-- [ ] Verify no new warnings in :checkhealth
-- [ ] Create implementation summary
+- [x] Run full himalaya module load test
+- [x] Verify no new warnings in :checkhealth
+- [x] Create implementation summary
 
 **Timing**: 30 minutes
 
@@ -87,10 +87,10 @@ Research report (research-001.md) confirmed:
 
 ## Testing & Validation
 
-- [ ] Module loads without error: `nvim --headless -c "lua require('neotex.plugins.tools.himalaya')" -c "q"`
-- [ ] Search keymap creates buffer-local mapping correctly
-- [ ] Move command handles nil folder gracefully
-- [ ] Compose send keymap resolves to valid function
+- [x] Module loads without error: `nvim --headless -c "lua require('neotex.plugins.tools.himalaya')" -c "q"`
+- [x] Search keymap creates buffer-local mapping correctly
+- [x] Move command handles nil folder gracefully
+- [x] Compose send keymap resolves to valid function
 
 ## Artifacts & Outputs
 

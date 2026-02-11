@@ -394,8 +394,9 @@ function M.setup_compose_keymaps(bufnr)
   -- Send email
   keymap('n', '<C-s>', function()
     local ok, composer = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_composer')
-    if ok and composer.send then
-      composer.send()
+    local buf = vim.api.nvim_get_current_buf()
+    if ok and composer.send_email then
+      composer.send_email(buf)
     end
   end, vim.tbl_extend('force', opts, { desc = 'Send email' }))
   
