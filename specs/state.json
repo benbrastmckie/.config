@@ -22,10 +22,10 @@
     {
       "project_number": 57,
       "project_name": "fix_leader_ls_keybinding_latex",
-      "status": "implementing",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-11T01:36:17Z",
-      "last_updated": "2026-02-11T02:02:54Z",
+      "last_updated": "2026-02-11T02:04:49Z",
       "session_id": "sess_1770775353_f9c7e7",
       "artifacts": [
         {
@@ -37,9 +37,16 @@
           "type": "plan",
           "path": "specs/057_fix_leader_ls_keybinding_latex/plans/implementation-002.md",
           "summary": "Simplified plan: add notification when already on main file"
+        },
+        {
+          "type": "summary",
+          "path": "specs/057_fix_leader_ls_keybinding_latex/summaries/implementation-summary-20260210.md",
+          "summary": "Implementation summary documenting the notification addition"
         }
       ],
-      "planned": "2026-02-11T02:01:34Z"
+      "planned": "2026-02-11T02:01:34Z",
+      "completed": "2026-02-11T02:04:49Z",
+      "completion_summary": "Added informative notification to <leader>ls keybinding that shows 'Already on main file' when user presses the toggle while on the main LaTeX file, instead of silently doing nothing."
     },
     {
       "project_number": 56,

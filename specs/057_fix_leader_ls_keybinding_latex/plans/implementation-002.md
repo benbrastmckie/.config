@@ -2,7 +2,7 @@
 
 - **Task**: 57 - Fix leader-ls keybinding not working in LaTeX files
 - **Version**: 002
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Effort**: 15 minutes
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
