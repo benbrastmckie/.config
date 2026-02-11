@@ -30,6 +30,176 @@ local scheduled_timer = nil
 -- Buffer tracking (reference to main module's buffers)
 local buffers = nil
 
+-- Page-level cache for instant pagination
+-- Structure: page_cache[account][folder][page] = { emails = {}, formatted_lines = {}, timestamp = number, generation = number }
+local page_cache = {}
+local page_generation = 0  -- Incremented on cache invalidation to detect stale async results
+local PAGE_CACHE_TTL = 300  -- 5 minutes cache TTL
+
+-- Performance timing (enabled via M.config.timing_enabled)
+local timing_enabled = false
+local timing_stats = {
+  cache_hits = 0,
+  cache_misses = 0,
+  last_cache_hit_ms = 0,
+  avg_cache_hit_ms = 0,
+  total_cache_hit_ms = 0,
+}
+
+--- Measure timing of a function call
+--- @param fn function Function to measure
+--- @param label string Label for logging
+--- @return any Result of function call
+local function measure_time(fn, label)
+  if not timing_enabled then
+    return fn()
+  end
+  local start = vim.loop.hrtime()
+  local result = fn()
+  local duration_ms = (vim.loop.hrtime() - start) / 1000000
+  logger.debug('Timing: ' .. label, { duration_ms = duration_ms })
+  return result, duration_ms
+end
+
+--- Enable/disable timing instrumentation
+--- @param enabled boolean
+function M.set_timing_enabled(enabled)
+  timing_enabled = enabled
+  if enabled then
+    timing_stats = {
+      cache_hits = 0,
+      cache_misses = 0,
+      last_cache_hit_ms = 0,
+      avg_cache_hit_ms = 0,
+      total_cache_hit_ms = 0,
+    }
+    logger.info('Pagination timing instrumentation enabled')
+  else
+    logger.info('Pagination timing instrumentation disabled')
+  end
+end
+
+--- Get timing statistics
+--- @return table Timing stats
+function M.get_timing_stats()
+  return vim.deepcopy(timing_stats)
+end
+
+--- Get cached page data for instant pagination
+--- @param account string Account name
+--- @param folder string Folder name
+--- @param page number Page number
+--- @return table|nil Cached data with emails, formatted_lines, or nil if not cached/expired
+function M.get_cached_page(account, folder, page)
+  if not account or not folder or not page then
+    return nil
+  end
+
+  -- Skip cache for draft folders - filesystem is source of truth
+  if folder:lower():match('draft') then
+    return nil
+  end
+
+  local cache_entry = page_cache[account] and page_cache[account][folder] and page_cache[account][folder][page]
+  if not cache_entry then
+    return nil
+  end
+
+  -- Check TTL
+  local age = os.time() - (cache_entry.timestamp or 0)
+  if age > PAGE_CACHE_TTL then
+    -- Expired, clean up
+    page_cache[account][folder][page] = nil
+    return nil
+  end
+
+  return cache_entry
+end
+
+--- Store page data in cache for instant retrieval
+--- @param account string Account name
+--- @param folder string Folder name
+--- @param page number Page number
+--- @param emails table Email data array
+--- @param formatted_lines table|nil Pre-formatted display lines (optional)
+function M.set_cached_page(account, folder, page, emails, formatted_lines)
+  if not account or not folder or not page or not emails then
+    return
+  end
+
+  -- Skip cache for draft folders
+  if folder:lower():match('draft') then
+    return
+  end
+
+  -- Initialize cache structure
+  if not page_cache[account] then
+    page_cache[account] = {}
+  end
+  if not page_cache[account][folder] then
+    page_cache[account][folder] = {}
+  end
+
+  page_cache[account][folder][page] = {
+    emails = emails,
+    formatted_lines = formatted_lines,
+    timestamp = os.time(),
+    generation = page_generation
+  }
+
+  logger.debug('Cached page', {
+    account = account,
+    folder = folder,
+    page = page,
+    email_count = #emails,
+    has_formatted = formatted_lines ~= nil
+  })
+end
+
+--- Invalidate page cache for a folder (on folder change, manual refresh)
+--- @param account string|nil Account name (nil = all accounts)
+--- @param folder string|nil Folder name (nil = all folders for account)
+function M.invalidate_page_cache(account, folder)
+  page_generation = page_generation + 1
+
+  if not account then
+    -- Clear entire cache
+    page_cache = {}
+    logger.debug('Invalidated all page cache', { new_generation = page_generation })
+    return
+  end
+
+  if not folder then
+    -- Clear all folders for account
+    page_cache[account] = {}
+    logger.debug('Invalidated page cache for account', { account = account, new_generation = page_generation })
+    return
+  end
+
+  -- Clear specific folder
+  if page_cache[account] then
+    page_cache[account][folder] = {}
+  end
+  logger.debug('Invalidated page cache for folder', {
+    account = account,
+    folder = folder,
+    new_generation = page_generation
+  })
+end
+
+--- Get current cache generation ID (for detecting stale async results)
+--- @return number Current generation ID
+function M.get_cache_generation()
+  return page_generation
+end
+
+--- Check if an async result is still valid (not from a stale generation)
+--- @param generation number Generation ID when async request was started
+--- @return boolean True if still valid
+function M.is_cache_generation_valid(generation)
+  return generation == page_generation
+end
+
 -- Initialize module
 function M.init(main_buffers)
   -- Store reference to main module's buffers
@@ -431,7 +601,11 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
   -- Format and display email list
   local lines = M.format_email_list(emails)
   sidebar.update_content(lines)
-  
+
+  -- Store in page cache for instant pagination
+  local current_page = state.get_current_page()
+  M.set_cached_page(account_name, folder, current_page, emails, lines)
+
   -- Store email data in state instead of buffer variables to avoid userdata issues
   state.set('email_list.emails', emails)
   state.set('email_list.account', state.get_current_account())
@@ -496,54 +670,64 @@ end
 
 --- Preload adjacent pages for faster navigation
 --- Aggressive preloading for instant C-d/C-u pagination
+--- Pre-formats display lines and stores in page cache for instant buffer swap
 --- @param current_page number Current page number
 function M.preload_adjacent_pages(current_page)
   local page_size = state.get_page_size()
   local total_emails = state.get_total_emails()
   local account = config.get_current_account_name()
   local folder = state.get_current_folder()
+  local generation = M.get_cache_generation()
+
+  -- Helper to preload a specific page with caching
+  local function preload_page(page, delay)
+    vim.defer_fn(function()
+      -- Skip if already cached
+      local existing = M.get_cached_page(account, folder, page)
+      if existing and existing.formatted_lines then
+        logger.debug('Page already cached, skipping preload', { page = page })
+        return
+      end
+
+      utils.get_emails_async(account, folder, page, page_size, function(emails, _, error)
+        -- Check if generation is still valid
+        if not M.is_cache_generation_valid(generation) then
+          logger.debug('Preload discarded - stale generation', { page = page })
+          return
+        end
+
+        if error or not emails or #emails == 0 then
+          return
+        end
+
+        -- Pre-format display lines for instant buffer swap
+        local lines = M.format_email_list(emails)
+
+        -- Store in page cache with pre-formatted lines
+        M.set_cached_page(account, folder, page, emails, lines)
+        logger.debug('Preloaded and cached page', { page = page, emails = #emails })
+      end)
+    end, delay)
+  end
+
   -- Preload next page (highest priority - most common navigation)
   if total_emails == 0 or total_emails == nil or current_page * page_size < total_emails then
-    vim.defer_fn(function()
-      utils.get_emails_async(account, folder, current_page + 1, page_size, function(emails, _)
-        if emails and #emails > 0 then
-          logger.debug('Preloaded page ' .. (current_page + 1))
-        end
-      end)
-    end, 50)  -- 50ms delay - very fast for responsive C-d
+    preload_page(current_page + 1, 50)  -- 50ms delay - very fast for responsive C-d
   end
 
   -- Preload previous page (second priority)
   if current_page > 1 then
-    vim.defer_fn(function()
-      utils.get_emails_async(account, folder, current_page - 1, page_size, function(emails, _)
-        if emails and #emails > 0 then
-          logger.debug('Preloaded page ' .. (current_page - 1))
-        end
-      end)
-    end, 100)  -- 100ms delay for responsive C-u
+    preload_page(current_page - 1, 100)  -- 100ms delay for responsive C-u
   end
 
   -- Preload 2 pages ahead for deeper cache (lower priority)
   if total_emails == 0 or total_emails == nil or (current_page + 1) * page_size < total_emails then
-    vim.defer_fn(function()
-      utils.get_emails_async(account, folder, current_page + 2, page_size, function(emails, _)
-        if emails and #emails > 0 then
-          logger.debug('Preloaded page ' .. (current_page + 2))
-        end
-      end)
-    end, 200)  -- 200ms delay for 2-page-ahead preload
+    preload_page(current_page + 2, 200)  -- 200ms delay for 2-page-ahead preload
   end
 
   -- Preload 2 pages behind for deeper cache (lowest priority)
   if current_page > 2 then
-    vim.defer_fn(function()
-      utils.get_emails_async(account, folder, current_page - 2, page_size, function(emails, _)
-        if emails and #emails > 0 then
-          logger.debug('Preloaded page ' .. (current_page - 2))
-        end
-      end)
-    end, 300)  -- 300ms delay for 2-page-behind preload
+    preload_page(current_page - 2, 300)  -- 300ms delay for 2-page-behind preload
   end
 end
 
@@ -1288,18 +1472,89 @@ end
 -- Helper function to reset pagination
 function M.reset_pagination()
   state.set_current_page(1)
+  -- Invalidate page cache when folder changes
+  local account = config.get_current_account_name()
+  local folder = state.get_current_folder()
+  M.invalidate_page_cache(account, folder)
 end
 
 -- Navigation functions
 function M.next_page()
+  local start_time = timing_enabled and vim.loop.hrtime() or nil
+
   local total_emails = state.get_total_emails()
   local current_page = state.get_current_page()
   local page_size = state.get_page_size()
+  local account = config.get_current_account_name()
+  local folder = state.get_current_folder()
 
   -- Allow pagination when total is unknown (0) or when there are more pages
   -- When total is 0, we don't know if there are more emails, so allow advancing
   if total_emails == 0 or total_emails == nil or current_page * page_size < total_emails then
-    state.set_current_page(current_page + 1)
+    local next_page_num = current_page + 1
+    state.set_current_page(next_page_num)
+
+    -- Check cache for instant page switch (synchronous path)
+    local cached = M.get_cached_page(account, folder, next_page_num)
+    if cached and cached.formatted_lines then
+      -- Instant render from pre-formatted cache
+      M.render_cached_page(cached)
+
+      -- Record timing for cache hit with formatted lines
+      if timing_enabled and start_time then
+        local duration_ms = (vim.loop.hrtime() - start_time) / 1000000
+        timing_stats.cache_hits = timing_stats.cache_hits + 1
+        timing_stats.last_cache_hit_ms = duration_ms
+        timing_stats.total_cache_hit_ms = timing_stats.total_cache_hit_ms + duration_ms
+        timing_stats.avg_cache_hit_ms = timing_stats.total_cache_hit_ms / timing_stats.cache_hits
+        logger.info('Cache hit (formatted)', {
+          page = next_page_num,
+          duration_ms = duration_ms,
+          target = '< 16ms'
+        })
+      end
+
+      -- Trigger background refresh to catch any changes
+      M.background_refresh_page(next_page_num)
+      return
+    elseif cached and cached.emails then
+      -- Have cached emails but no pre-formatted lines - format and render
+      local lines = M.format_email_list(cached.emails)
+      sidebar.update_content(lines)
+      state.set('email_list.emails', cached.emails)
+      state.set('email_list.line_map', lines.metadata or {})
+      state.set('email_list.email_start_line', lines.email_start_line or 1)
+      -- Update cache with formatted lines for next time
+      M.set_cached_page(account, folder, next_page_num, cached.emails, lines)
+
+      -- Record timing for cache hit without formatted lines
+      if timing_enabled and start_time then
+        local duration_ms = (vim.loop.hrtime() - start_time) / 1000000
+        timing_stats.cache_hits = timing_stats.cache_hits + 1
+        timing_stats.last_cache_hit_ms = duration_ms
+        timing_stats.total_cache_hit_ms = timing_stats.total_cache_hit_ms + duration_ms
+        timing_stats.avg_cache_hit_ms = timing_stats.total_cache_hit_ms / timing_stats.cache_hits
+        logger.info('Cache hit (emails only)', {
+          page = next_page_num,
+          duration_ms = duration_ms,
+          target = '< 50ms'
+        })
+      end
+
+      -- Trigger background refresh
+      M.background_refresh_page(next_page_num)
+      -- Preload adjacent pages
+      vim.defer_fn(function()
+        M.preload_adjacent_pages(next_page_num)
+      end, 50)
+      return
+    end
+
+    -- Cache miss - fall back to async fetch with loading indicator
+    if timing_enabled then
+      timing_stats.cache_misses = timing_stats.cache_misses + 1
+      logger.info('Cache miss', { page = next_page_num })
+    end
     M.refresh_email_list()
   else
     notify.himalaya('Already on last page', notify.categories.STATUS)
@@ -1307,12 +1562,169 @@ function M.next_page()
 end
 
 function M.prev_page()
-  if state.get_current_page() > 1 then
-    state.set_current_page(state.get_current_page() - 1)
+  local start_time = timing_enabled and vim.loop.hrtime() or nil
+
+  local current_page = state.get_current_page()
+  local account = config.get_current_account_name()
+  local folder = state.get_current_folder()
+
+  if current_page > 1 then
+    local prev_page_num = current_page - 1
+    state.set_current_page(prev_page_num)
+
+    -- Check cache for instant page switch (synchronous path)
+    local cached = M.get_cached_page(account, folder, prev_page_num)
+    if cached and cached.formatted_lines then
+      -- Instant render from pre-formatted cache
+      M.render_cached_page(cached)
+
+      -- Record timing for cache hit with formatted lines
+      if timing_enabled and start_time then
+        local duration_ms = (vim.loop.hrtime() - start_time) / 1000000
+        timing_stats.cache_hits = timing_stats.cache_hits + 1
+        timing_stats.last_cache_hit_ms = duration_ms
+        timing_stats.total_cache_hit_ms = timing_stats.total_cache_hit_ms + duration_ms
+        timing_stats.avg_cache_hit_ms = timing_stats.total_cache_hit_ms / timing_stats.cache_hits
+        logger.info('Cache hit (formatted)', {
+          page = prev_page_num,
+          duration_ms = duration_ms,
+          target = '< 16ms'
+        })
+      end
+
+      -- Trigger background refresh to catch any changes
+      M.background_refresh_page(prev_page_num)
+      return
+    elseif cached and cached.emails then
+      -- Have cached emails but no pre-formatted lines - format and render
+      local lines = M.format_email_list(cached.emails)
+      sidebar.update_content(lines)
+      state.set('email_list.emails', cached.emails)
+      state.set('email_list.line_map', lines.metadata or {})
+      state.set('email_list.email_start_line', lines.email_start_line or 1)
+      -- Update cache with formatted lines for next time
+      M.set_cached_page(account, folder, prev_page_num, cached.emails, lines)
+
+      -- Record timing for cache hit without formatted lines
+      if timing_enabled and start_time then
+        local duration_ms = (vim.loop.hrtime() - start_time) / 1000000
+        timing_stats.cache_hits = timing_stats.cache_hits + 1
+        timing_stats.last_cache_hit_ms = duration_ms
+        timing_stats.total_cache_hit_ms = timing_stats.total_cache_hit_ms + duration_ms
+        timing_stats.avg_cache_hit_ms = timing_stats.total_cache_hit_ms / timing_stats.cache_hits
+        logger.info('Cache hit (emails only)', {
+          page = prev_page_num,
+          duration_ms = duration_ms,
+          target = '< 50ms'
+        })
+      end
+
+      -- Trigger background refresh
+      M.background_refresh_page(prev_page_num)
+      -- Preload adjacent pages
+      vim.defer_fn(function()
+        M.preload_adjacent_pages(prev_page_num)
+      end, 50)
+      return
+    end
+
+    -- Cache miss - fall back to async fetch
+    if timing_enabled then
+      timing_stats.cache_misses = timing_stats.cache_misses + 1
+      logger.info('Cache miss', { page = prev_page_num })
+    end
     M.refresh_email_list()
   else
     notify.himalaya('Already on first page', notify.categories.STATUS)
   end
+end
+
+--- Render a page from cached data (instant UI update)
+--- @param cached table Cached page data with emails and formatted_lines
+function M.render_cached_page(cached)
+  if not cached then return end
+
+  -- Use pre-formatted lines if available for instant render
+  if cached.formatted_lines then
+    sidebar.update_content(cached.formatted_lines)
+    state.set('email_list.emails', cached.emails)
+    state.set('email_list.line_map', cached.formatted_lines.metadata or {})
+    state.set('email_list.email_start_line', cached.formatted_lines.email_start_line or 1)
+  elseif cached.emails then
+    -- Format and render (slightly slower but still cache hit)
+    local lines = M.format_email_list(cached.emails)
+    sidebar.update_content(lines)
+    state.set('email_list.emails', cached.emails)
+    state.set('email_list.line_map', lines.metadata or {})
+    state.set('email_list.email_start_line', lines.email_start_line or 1)
+  end
+
+  -- Preload adjacent pages for next navigation
+  local current_page = state.get_current_page()
+  vim.defer_fn(function()
+    M.preload_adjacent_pages(current_page)
+  end, 50)
+end
+
+--- Background refresh a page to catch any changes (silent update)
+--- @param page number Page number to refresh
+function M.background_refresh_page(page)
+  local account = config.get_current_account_name()
+  local folder = state.get_current_folder()
+  local page_size = state.get_page_size()
+  local generation = M.get_cache_generation()
+
+  -- Silent async fetch - don't update UI unless data changed
+  utils.get_emails_async(account, folder, page, page_size, function(emails, total_count, error)
+    if error then
+      -- Silently ignore background refresh errors
+      logger.debug('Background refresh error', { error = error, page = page })
+      return
+    end
+
+    -- Check if cache generation is still valid
+    if not M.is_cache_generation_valid(generation) then
+      logger.debug('Background refresh discarded - stale generation', { page = page })
+      return
+    end
+
+    if not emails or #emails == 0 then
+      return
+    end
+
+    -- Check if data has changed
+    local cached = M.get_cached_page(account, folder, page)
+    local data_changed = false
+
+    if not cached or not cached.emails then
+      data_changed = true
+    elseif #cached.emails ~= #emails then
+      data_changed = true
+    else
+      -- Compare email IDs to detect changes
+      for i, email in ipairs(emails) do
+        if tostring(cached.emails[i].id) ~= tostring(email.id) then
+          data_changed = true
+          break
+        end
+      end
+    end
+
+    if data_changed then
+      -- Update cache with new data
+      local lines = M.format_email_list(emails)
+      M.set_cached_page(account, folder, page, emails, lines)
+
+      -- Only update UI if we're still on this page
+      if state.get_current_page() == page then
+        sidebar.update_content(lines)
+        state.set('email_list.emails', emails)
+        state.set('email_list.line_map', lines.metadata or {})
+        state.set('email_list.email_start_line', lines.email_start_line or 1)
+        logger.debug('Background refresh updated UI', { page = page })
+      end
+    end
+  end)
 end
 
 -- Refresh current email list

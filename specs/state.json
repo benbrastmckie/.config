@@ -84,11 +84,11 @@
     {
       "project_number": 62,
       "project_name": "himalaya_broken_commands_fix",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-10T08:58:13Z",
-      "last_updated": "2026-02-11T03:09:38Z",
-      "session_id": "sess_1770779160_a291e4",
+      "last_updated": "2026-02-11T03:13:35Z",
+      "session_id": "sess_1770779447_bc69a5",
       "artifacts": [
         {
           "type": "research",
@@ -99,8 +99,14 @@
           "type": "research",
           "path": "specs/062_himalaya_broken_commands_fix/reports/research-002.md",
           "summary": "Research report with complete keymap analysis, function locations, conflict analysis, and copy-paste ready implementation code"
+        },
+        {
+          "path": "specs/062_himalaya_broken_commands_fix/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan to restore single-letter action keymaps in himalaya email list"
         }
-      ]
+      ],
+      "planned": "2026-02-11T03:13:35Z"
     }
   ],
   "repository_health": {

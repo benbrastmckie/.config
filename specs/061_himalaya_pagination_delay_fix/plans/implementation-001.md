@@ -45,7 +45,7 @@ Key findings from research-001.md integrated into this plan:
 
 ## Implementation Phases
 
-### Phase 1: Implement Page-Level Cache with Synchronous Lookup [IN PROGRESS]
+### Phase 1: Implement Page-Level Cache with Synchronous Lookup [COMPLETED]
 
 **Goal**: Create a page-indexed cache that `next_page()` and `prev_page()` can query synchronously before triggering async fetch.
 
@@ -68,7 +68,7 @@ Key findings from research-001.md integrated into this plan:
 
 ---
 
-### Phase 2: Integrate Cache Hit Path into Pagination [NOT STARTED]
+### Phase 2: Integrate Cache Hit Path into Pagination [COMPLETED]
 
 **Goal**: Modify `next_page()` and `prev_page()` to check cache synchronously and render immediately when cached.
 
@@ -92,7 +92,7 @@ Key findings from research-001.md integrated into this plan:
 
 ---
 
-### Phase 3: Implement Pre-Rendered Page Buffer [NOT STARTED]
+### Phase 3: Implement Pre-Rendered Page Buffer [COMPLETED]
 
 **Goal**: Store pre-formatted display lines alongside cached emails for instant buffer swap without re-formatting.
 
@@ -115,7 +115,7 @@ Key findings from research-001.md integrated into this plan:
 
 ---
 
-### Phase 4: Optimistic UI Updates with Background Refresh [NOT STARTED]
+### Phase 4: Optimistic UI Updates with Background Refresh [COMPLETED]
 
 **Goal**: Update UI immediately with cached data, then silently refresh in background to catch any changes.
 
@@ -139,7 +139,7 @@ Key findings from research-001.md integrated into this plan:
 
 ---
 
-### Phase 5: Testing and Performance Validation [NOT STARTED]
+### Phase 5: Testing and Performance Validation [COMPLETED]
 
 **Goal**: Verify pagination meets performance targets and functions correctly across all scenarios.
 
