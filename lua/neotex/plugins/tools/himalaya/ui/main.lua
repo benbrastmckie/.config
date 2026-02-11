@@ -1489,41 +1489,43 @@ function M.move_current_email()
   local current_folder = state.get_current_folder()
   local available_folders = {}
   for _, folder in ipairs(folders) do
-    if folder ~= current_folder then
+    local folder_name = type(folder) == "table" and folder.name or folder
+    if folder_name ~= current_folder then
       table.insert(available_folders, folder)
     end
   end
-  
+
   -- Show folder picker
   vim.ui.select(available_folders, {
     prompt = ' Move email to folder:',
     format_item = function(folder)
-      -- Add defensive nil/type check
-      if not folder or type(folder) ~= "string" then
-        return folder and tostring(folder) or "(invalid)"
+      local name = type(folder) == "table" and folder.name or folder
+      if not name or type(name) ~= "string" then
+        return "(invalid)"
       end
       -- Add icon for special folders
-      if folder:lower():match('inbox') then
-        return '📥 ' .. folder
-      elseif folder:lower():match('sent') then
-        return '📤 ' .. folder
-      elseif folder:lower():match('draft') then
-        return '📝 ' .. folder
-      elseif folder:lower():match('trash') then
-        return '🗑️ ' .. folder
-      elseif folder:lower():match('spam') or folder:lower():match('junk') then
-        return '⚠️ ' .. folder
-      elseif folder:lower():match('archive') or folder:lower():match('all.mail') then
-        return '📦 ' .. folder
+      if name:lower():match('inbox') then
+        return '📥 ' .. name
+      elseif name:lower():match('sent') then
+        return '📤 ' .. name
+      elseif name:lower():match('draft') then
+        return '📝 ' .. name
+      elseif name:lower():match('trash') then
+        return '🗑️ ' .. name
+      elseif name:lower():match('spam') or name:lower():match('junk') then
+        return '⚠️ ' .. name
+      elseif name:lower():match('archive') or name:lower():match('all.mail') then
+        return '📦 ' .. name
       else
-        return '📁 ' .. folder
+        return '📁 ' .. name
       end
     end
   }, function(choice)
     if choice then
-      local success = utils.move_email(line_data.email_id or line_data.id, choice)
+      local target_folder = type(choice) == "table" and choice.name or choice
+      local success = utils.move_email(line_data.email_id or line_data.id, target_folder)
       if success then
-        notify.himalaya(string.format('Email moved to %s', choice), notify.categories.USER_ACTION)
+        notify.himalaya(string.format('Email moved to %s', target_folder), notify.categories.USER_ACTION)
         -- Refresh to show the email is gone
         vim.defer_fn(function()
           M.refresh_email_list({ restore_insert_mode = false })
@@ -1561,42 +1563,48 @@ function M.move_selected_emails()
   local current_folder = state.get_current_folder()
   local available_folders = {}
   for _, folder in ipairs(folders) do
-    if folder ~= current_folder then
+    local folder_name = type(folder) == "table" and folder.name or folder
+    if folder_name ~= current_folder then
       table.insert(available_folders, folder)
     end
   end
-  
+
   -- Show folder picker
   vim.ui.select(available_folders, {
     prompt = string.format(' Move %d emails to folder:', #selected),
     format_item = function(folder)
+      local name = type(folder) == "table" and folder.name or folder
+      if not name or type(name) ~= "string" then
+        return "(invalid)"
+      end
       -- Add icon for special folders
-      if folder:lower():match('inbox') then
-        return '📥 ' .. folder
-      elseif folder:lower():match('sent') then
-        return '📤 ' .. folder
-      elseif folder:lower():match('draft') then
-        return '📝 ' .. folder
-      elseif folder:lower():match('trash') then
-        return '🗑️ ' .. folder
-      elseif folder:lower():match('spam') or folder:lower():match('junk') then
-        return '⚠️ ' .. folder
-      elseif folder:lower():match('archive') or folder:lower():match('all.mail') then
-        return '📦 ' .. folder
+      if name:lower():match('inbox') then
+        return '📥 ' .. name
+      elseif name:lower():match('sent') then
+        return '📤 ' .. name
+      elseif name:lower():match('draft') then
+        return '📝 ' .. name
+      elseif name:lower():match('trash') then
+        return '🗑️ ' .. name
+      elseif name:lower():match('spam') or name:lower():match('junk') then
+        return '⚠️ ' .. name
+      elseif name:lower():match('archive') or name:lower():match('all.mail') then
+        return '📦 ' .. name
       else
-        return '📁 ' .. folder
+        return '📁 ' .. name
       end
     end
   }, function(choice)
     if choice then
+      local target_folder = type(choice) == "table" and choice.name or choice
       local success_count = 0
       local error_count = 0
-      
+
       -- Show progress notification for large batches
       if #selected > 5 then
-        notify.himalaya(string.format('Moving %d emails to %s...', #selected, choice), notify.categories.STATUS)
+        notify.himalaya(string.format('Moving %d emails to %s...', #selected, target_folder), notify.categories.STATUS)
       end
-      
+
       for i, email in ipairs(selected) do
         -- Debug logging
         local logger = require('neotex.plugins.tools.himalaya.core.logger')
@@ -1605,30 +1613,30 @@ function M.move_selected_emails()
           email_id = email.id,
           email_id_type = type(email.id),
           email_subject = email.subject,
-          target_folder = choice,
+          target_folder = target_folder,
           email_keys = vim.tbl_keys(email)
         })
-        
+
         if not email.id then
           notify.himalaya(string.format('Email missing ID: %s', vim.inspect(email)), notify.categories.ERROR)
           error_count = error_count + 1
         else
-          local success = utils.move_email(email.id, choice)
+          local success = utils.move_email(email.id, target_folder)
           if success then
             success_count = success_count + 1
           else
             error_count = error_count + 1
-            notify.himalaya(string.format('Failed to move email %s (ID: %s)', 
+            notify.himalaya(string.format('Failed to move email %s (ID: %s)',
               email.subject or 'unknown', tostring(email.id)), notify.categories.BACKGROUND)
           end
         end
       end
-      
+
       -- Clear selection mode
       state.toggle_selection_mode() -- Exit selection mode
-      
-      notify.himalaya(string.format('Moved %d emails to %s (%d errors)', 
-        success_count, choice, error_count),
+
+      notify.himalaya(string.format('Moved %d emails to %s (%d errors)',
+        success_count, target_folder, error_count),
         error_count > 0 and notify.categories.WARNING or notify.categories.USER_ACTION
       )
       

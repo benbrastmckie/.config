@@ -8,7 +8,7 @@ next_project_number: 67
 
 ### 66. Fix wezterm tab numbering to use global order matching TTS
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHING]
 - **Language**: general
 - **Dependencies**: None
 
@@ -16,12 +16,14 @@ next_project_number: 67
 
 ### 65. Fix task 64 move and send regressions
 - **Effort**: 1 hour
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
 - **Language**: neovim
 - **Dependencies**: None
 - **Started**: 2026-02-11
+- **Completed**: 2026-02-11
 - **Research**: [research-001.md](065_fix_task64_move_and_send_regressions/reports/research-001.md)
 - **Plan**: [implementation-001.md](065_fix_task64_move_and_send_regressions/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260211.md](065_fix_task64_move_and_send_regressions/summaries/implementation-summary-20260211.md)
 
 **Description**: Fix himalaya move command showing table addresses instead of folder names (regression from task 64), and change compose send mapping from <C-s> to <leader>m prefix to avoid spelling conflict. The move command needs to extract folder.name from table objects returned by utils.get_folders(), and the send mapping should use <leader>mes (or similar) instead of conflicting with spell-check.
 

@@ -390,16 +390,10 @@ end
 function M.setup_compose_keymaps(bufnr)
   local keymap = vim.keymap.set
   local opts = { buffer = bufnr, silent = true }
-  
-  -- Send email
-  keymap('n', '<C-s>', function()
-    local ok, composer = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_composer')
-    local buf = vim.api.nvim_get_current_buf()
-    if ok and composer.send_email then
-      composer.send_email(buf)
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Send email' }))
-  
+
+  -- Note: <C-s> removed to avoid conflict with spelling operations
+  -- Use <leader>mce (which-key) to send emails instead
+
   -- Save draft
   keymap('n', '<C-d>', function()
     local ok, composer = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_composer')
@@ -513,7 +507,7 @@ function M.get_keybinding(filetype, action)
       -- Actions removed: use <leader>m menu
     },
     ['himalaya-compose'] = {
-      send = '<C-s>',
+      -- send removed: use <leader>mce (which-key) instead
       save_draft = '<C-d>',
       discard = '<C-q>',
       attach = '<C-a>',

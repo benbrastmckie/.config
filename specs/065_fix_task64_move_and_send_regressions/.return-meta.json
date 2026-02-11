@@ -1,20 +1,33 @@
 {
-  "status": "planned",
-  "summary": "Created 1-phase implementation plan to fix move command folder table handling and remove conflicting <C-s> send mapping.",
+  "status": "implemented",
+  "summary": "Fixed move command folder picker to display folder names correctly instead of 'table: 0x...' and removed conflicting <C-s> keymap from compose buffers.",
   "artifacts": [
     {
-      "type": "plan",
-      "path": "specs/065_fix_task64_move_and_send_regressions/plans/implementation-001.md",
-      "summary": "1-phase plan fixing folder table handling in both move functions and removing <C-s> keymap"
+      "type": "implementation",
+      "path": "lua/neotex/plugins/tools/himalaya/ui/main.lua",
+      "summary": "Fixed folder table handling in move_current_email() and move_selected_emails()"
+    },
+    {
+      "type": "implementation",
+      "path": "lua/neotex/plugins/tools/himalaya/config/ui.lua",
+      "summary": "Removed <C-s> keymap conflict from compose buffer keymaps"
+    },
+    {
+      "type": "summary",
+      "path": "specs/065_fix_task64_move_and_send_regressions/summaries/implementation-summary-20260211.md",
+      "summary": "Implementation summary with verification results and technical details"
     }
   ],
-  "next_steps": "Run /implement 65 to execute the plan",
+  "completion_data": {
+    "completion_summary": "Fixed two task 64 regressions: move command now properly displays folder names (was showing 'table: 0x...') by extracting .name from folder table objects, and removed <C-s> keymap conflict in compose buffers (use <leader>mce instead)."
+  },
   "metadata": {
-    "session_id": "sess_1770831719_6a2e16",
-    "agent_type": "planner-agent",
+    "session_id": "sess_1770832076_46635f",
+    "agent_type": "neovim-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "plan", "planner-agent"],
-    "phase_count": 1,
-    "estimated_hours": "0.5-1"
-  }
+    "delegation_path": ["orchestrator", "implement", "skill-neovim-implementation"],
+    "phases_completed": 1,
+    "phases_total": 1
+  },
+  "next_steps": "Test changes by opening Neovim, navigating to email list, and pressing 'm' to verify folder names display correctly"
 }

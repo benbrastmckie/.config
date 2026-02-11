@@ -1,7 +1,7 @@
 # Implementation Plan: Task #65
 
 - **Task**: 65 - Fix task 64 move and send regressions
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 0.5-1 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -40,7 +40,7 @@ Fix two regressions introduced in task 64: (1) move command showing "table: 0x..
 
 ## Implementation Phases
 
-### Phase 1: Fix Folder Table Handling and Remove Send Mapping [NOT STARTED]
+### Phase 1: Fix Folder Table Handling and Remove Send Mapping [COMPLETED]
 
 **Goal**: Fix both move commands to handle folder table objects correctly and remove `<C-s>` keymap
 

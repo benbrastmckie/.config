@@ -4,19 +4,20 @@
     {
       "project_number": 66,
       "project_name": "fix_wezterm_tab_numbering_global_order",
-      "status": "not_started",
+      "status": "researching",
       "language": "general",
       "created": "2026-02-11T17:47:36Z",
-      "last_updated": "2026-02-11T17:47:36Z"
+      "last_updated": "2026-02-11T17:48:30Z",
+      "session_id": "sess_1770832091_a90369"
     },
     {
       "project_number": 65,
       "project_name": "fix_task64_move_and_send_regressions",
-      "status": "planned",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-11T17:31:32Z",
-      "last_updated": "2026-02-11T17:44:41Z",
-      "session_id": "sess_1770831719_6a2e16",
+      "last_updated": "2026-02-11T17:51:12Z",
+      "session_id": "sess_1770832076_46635f",
       "artifacts": [
         {
           "type": "research",
@@ -27,9 +28,16 @@
           "type": "plan",
           "path": "specs/065_fix_task64_move_and_send_regressions/plans/implementation-001.md",
           "summary": "1-phase plan fixing folder table handling in both move functions and removing <C-s> keymap"
+        },
+        {
+          "type": "summary",
+          "path": "specs/065_fix_task64_move_and_send_regressions/summaries/implementation-summary-20260211.md",
+          "summary": "Implementation summary with verification results and technical details"
         }
       ],
-      "planned": "2026-02-11T17:44:41Z"
+      "planned": "2026-02-11T17:44:41Z",
+      "completed": "2026-02-11T17:51:12Z",
+      "completion_summary": "Fixed two task 64 regressions: move command now properly displays folder names (was showing 'table: 0x...') by extracting .name from folder table objects, and removed <C-s> keymap conflict in compose buffers (use <leader>mce instead)."
     },
     {
       "project_number": 64,
