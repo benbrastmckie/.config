@@ -1,0 +1,19 @@
+{
+  "status": "planned",
+  "artifacts": [
+    {
+      "type": "plan",
+      "path": "specs/066_fix_wezterm_tab_numbering_global_order/plans/implementation-001.md",
+      "summary": "3-phase implementation plan for global WezTerm tab numbering"
+    }
+  ],
+  "next_steps": "Run /implement 66 to execute the plan",
+  "metadata": {
+    "session_id": "sess_1770832927_9d07ba",
+    "agent_type": "planner-agent",
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 3,
+    "estimated_hours": "1-2"
+  }
+}

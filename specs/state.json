@@ -4,19 +4,25 @@
     {
       "project_number": 66,
       "project_name": "fix_wezterm_tab_numbering_global_order",
-      "status": "researched",
+      "status": "planned",
       "language": "general",
       "created": "2026-02-11T17:47:36Z",
-      "last_updated": "2026-02-11T17:52:02Z",
-      "session_id": "sess_1770832091_a90369",
+      "last_updated": "2026-02-11T18:04:16Z",
+      "session_id": "sess_1770832927_9d07ba",
       "researched": "2026-02-11T17:52:02Z",
       "artifacts": [
         {
           "path": "specs/066_fix_wezterm_tab_numbering_global_order/reports/research-001.md",
           "type": "research",
           "summary": "Research report analyzing TTS vs wezterm tab numbering mismatch with 3 solution options and implementation recommendation"
+        },
+        {
+          "path": "specs/066_fix_wezterm_tab_numbering_global_order/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan for global WezTerm tab numbering"
         }
-      ]
+      ],
+      "planned": "2026-02-11T18:04:16Z"
     },
     {
       "project_number": 65,
