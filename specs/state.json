@@ -62,27 +62,33 @@
     {
       "project_number": 61,
       "project_name": "himalaya_pagination_delay_fix",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-10T08:58:13Z",
-      "last_updated": "2026-02-11T03:02:30Z",
-      "session_id": "sess_1770778757_2245e5",
+      "last_updated": "2026-02-11T03:06:27Z",
+      "session_id": "sess_1770779040_590ea8",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/061_himalaya_pagination_delay_fix/reports/research-001.md",
           "summary": "Identified 6 delay sources in pagination flow including missing cache hit path, full UI refresh, and preload timing issues"
+        },
+        {
+          "type": "plan",
+          "path": "specs/061_himalaya_pagination_delay_fix/plans/implementation-001.md",
+          "summary": "5-phase plan implementing synchronous cache hit path, pre-rendered pages, and optimistic UI updates to achieve <16ms pagination latency"
         }
-      ]
+      ],
+      "planned": "2026-02-11T03:06:27Z"
     },
     {
       "project_number": 62,
       "project_name": "himalaya_broken_commands_fix",
-      "status": "researched",
+      "status": "researching",
       "language": "neovim",
       "created": "2026-02-10T08:58:13Z",
-      "last_updated": "2026-02-11T03:03:16Z",
-      "session_id": "sess_1770778769_9b2b96",
+      "last_updated": "2026-02-11T03:06:23Z",
+      "session_id": "sess_1770779160_a291e4",
       "artifacts": [
         {
           "type": "research",

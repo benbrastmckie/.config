@@ -8,7 +8,7 @@ next_project_number: 63
 
 ### 62. Fix broken himalaya commands (d, a, ?)
 - **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Status**: [RESEARCHING]
 - **Language**: neovim
 - **Dependencies**: None
 - **Started**: 2026-02-10
@@ -17,12 +17,13 @@ next_project_number: 63
 **Description**: Many himalaya commands don't work in the email list view: 'd' for delete, 'a' for archive, '?' for help, 'r' for reply, etc. Task 60 implemented show_help function but the action keys are still not functional. These were moved to <leader>me prefix in Task 56 but users need either: (1) single-letter convenience keys restored in email list, or (2) clear visual indication and easy access to the <leader>me menu. Verify which keys should work where and ensure they're properly mapped.
 
 ### 61. Fix himalaya pagination delay for instant C-d/C-u
-- **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Effort**: 3-4 hours
+- **Status**: [PLANNED]
 - **Language**: neovim
 - **Dependencies**: None
 - **Started**: 2026-02-10
 - **Research**: [research-001.md](061_himalaya_pagination_delay_fix/reports/research-001.md)
+- **Plan**: [implementation-001.md](061_himalaya_pagination_delay_fix/plans/implementation-001.md)
 
 **Description**: The C-d and C-u pagination keys still have a slight delay and don't feel snappy despite the preloading implementation in task 60. The page switching should be instantaneous with no perceptible delay. Investigate and eliminate any remaining delays in the pagination flow (e.g., UI updates, state management, async callbacks).
 

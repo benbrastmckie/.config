@@ -1,0 +1,19 @@
+{
+  "status": "planned",
+  "artifacts": [
+    {
+      "type": "plan",
+      "path": "specs/061_himalaya_pagination_delay_fix/plans/implementation-001.md",
+      "summary": "5-phase plan implementing synchronous cache hit path, pre-rendered pages, and optimistic UI updates to achieve <16ms pagination latency"
+    }
+  ],
+  "next_steps": "Run /implement 61 to execute the plan",
+  "metadata": {
+    "session_id": "sess_1770779040_590ea8",
+    "agent_type": "planner-agent",
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 5,
+    "estimated_hours": "3-4"
+  }
+}
