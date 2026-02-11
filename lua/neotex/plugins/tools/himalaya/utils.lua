@@ -611,12 +611,11 @@ function M.get_emails_async(account, folder, page, page_size, callback)
   
   -- Add pagination
   if page and page_size then
-    local offset = (page - 1) * page_size
     table.insert(args, '-s')
     table.insert(args, tostring(page_size))
-    if offset > 0 then
-      table.insert(args, '--offset')
-      table.insert(args, tostring(offset))
+    if page > 1 then
+      table.insert(args, '-p')
+      table.insert(args, tostring(page))
     end
   end
   
@@ -625,7 +624,15 @@ function M.get_emails_async(account, folder, page, page_size, callback)
     folder = folder
   }, function(result, error)
     if error then
+      logger.error('get_emails_async failed', {
+        error = error,
+        args = args,
+        account = account,
+        folder = folder,
+        page = page
+      })
       callback(nil, 0, error)
+      return
     else
       -- Get total count (approximate)
       local total_count = #(result or {})

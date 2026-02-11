@@ -484,9 +484,45 @@ function M.process_email_list_results(emails, total_count, folder, account_name)
   
   -- Save current view to state
   state.save()
-  
+
   -- Don't auto-focus sidebar - let user control focus
   -- sidebar.focus()
+
+  -- Preload adjacent pages for faster navigation
+  vim.defer_fn(function()
+    M.preload_adjacent_pages(state.get_current_page())
+  end, 1000)
+end
+
+--- Preload adjacent pages for faster navigation
+--- @param current_page number Current page number
+function M.preload_adjacent_pages(current_page)
+  local page_size = state.get_page_size()
+  local total_emails = state.get_total_emails()
+  local account = config.get_current_account_name()
+  local folder = state.get_current_folder()
+
+  -- Preload next page if likely to exist
+  if total_emails == 0 or total_emails == nil or current_page * page_size < total_emails then
+    vim.defer_fn(function()
+      utils.get_emails_async(account, folder, current_page + 1, page_size, function(emails, _)
+        if emails and #emails > 0 then
+          logger.debug('Preloaded page ' .. (current_page + 1))
+        end
+      end)
+    end, 500)  -- 500ms delay to not interfere with UI
+  end
+
+  -- Preload previous page if not first page
+  if current_page > 1 then
+    vim.defer_fn(function()
+      utils.get_emails_async(account, folder, current_page - 1, page_size, function(emails, _)
+        if emails and #emails > 0 then
+          logger.debug('Preloaded page ' .. (current_page - 1))
+        end
+      end)
+    end, 700)  -- Slightly longer delay for lower priority
+  end
 end
 
 -- Format email list for display (matching old UI exactly)
