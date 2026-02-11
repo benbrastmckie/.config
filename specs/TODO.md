@@ -8,7 +8,7 @@ next_project_number: 67
 
 ### 66. Fix wezterm tab numbering to use global order matching TTS
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Language**: general
 - **Dependencies**: None
 - **Started**: 2026-02-11

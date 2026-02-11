@@ -268,29 +268,13 @@ function M.setup_email_list_keymaps(bufnr)
     end
   end, vim.tbl_extend('force', opts, { desc = 'Show keybindings help' }))
 
-  -- Helper to sync visual selection to custom selection state
-  local function sync_visual_selection()
-    local mode = vim.api.nvim_get_mode().mode
-    if mode:match('^[vV]') then
-      local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
-      if ok and email_list.sync_visual_selection then
-        email_list.sync_visual_selection()
-      end
-    end
-  end
-
   -- Email action keymaps (restored for single-key access)
-  -- Delete emails (selection-aware: respects both visual selection and custom selection)
-  keymap({'n', 'v'}, 'd', function()
+  -- Delete emails (selection-aware: uses custom selection if any emails selected)
+  keymap('n', 'd', function()
     local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
     if ok then
       local state = require('neotex.plugins.tools.himalaya.core.state')
-      local mode = vim.api.nvim_get_mode().mode
-      -- Sync visual selection to custom selection state if in visual mode
-      if mode:match('^[vV]') then
-        sync_visual_selection()
-      end
-      -- Use selection if custom selection mode has emails (now includes visual selection)
+      -- Use selection if any emails selected with custom selection (Space/n/p)
       if #state.get_selected_emails() > 0 then
         main.delete_selected_emails()
       else
@@ -299,17 +283,12 @@ function M.setup_email_list_keymaps(bufnr)
     end
   end, vim.tbl_extend('force', opts, { desc = 'Delete email(s)' }))
 
-  -- Archive emails (selection-aware: respects both visual selection and custom selection)
-  keymap({'n', 'v'}, 'a', function()
+  -- Archive emails (selection-aware: uses custom selection if any emails selected)
+  keymap('n', 'a', function()
     local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
     if ok then
       local state = require('neotex.plugins.tools.himalaya.core.state')
-      local mode = vim.api.nvim_get_mode().mode
-      -- Sync visual selection to custom selection state if in visual mode
-      if mode:match('^[vV]') then
-        sync_visual_selection()
-      end
-      -- Use selection if custom selection mode has emails (now includes visual selection)
+      -- Use selection if any emails selected with custom selection (Space/n/p)
       if #state.get_selected_emails() > 0 then
         main.archive_selected_emails()
       else
@@ -342,17 +321,12 @@ function M.setup_email_list_keymaps(bufnr)
     end
   end, vim.tbl_extend('force', opts, { desc = 'Forward' }))
 
-  -- Move emails (selection-aware: respects both visual selection and custom selection)
-  keymap({'n', 'v'}, 'm', function()
+  -- Move emails (selection-aware: uses custom selection if any emails selected)
+  keymap('n', 'm', function()
     local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
     if ok then
       local state = require('neotex.plugins.tools.himalaya.core.state')
-      local mode = vim.api.nvim_get_mode().mode
-      -- Sync visual selection to custom selection state if in visual mode
-      if mode:match('^[vV]') then
-        sync_visual_selection()
-      end
-      -- Use selection if custom selection mode has emails (now includes visual selection)
+      -- Use selection if any emails selected with custom selection (Space/n/p)
       if #state.get_selected_emails() > 0 then
         main.move_selected_emails()
       else

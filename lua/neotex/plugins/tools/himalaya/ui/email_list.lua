@@ -2393,46 +2393,4 @@ function M.deselect_email()
   notify.himalaya(string.format('%s (%d total)', action, count), notify.categories.STATUS)
 end
 
--- Sync visual selection to custom selection state
-function M.sync_visual_selection()
-  -- Get visual selection range
-  local start_line = vim.fn.line('v')
-  local end_line = vim.fn.line('.')
-
-  -- Ensure start is before end
-  if start_line > end_line then
-    start_line, end_line = end_line, start_line
-  end
-
-  -- Clear existing selection and enter selection mode
-  state.clear_selection()
-  state.toggle_selection_mode()
-
-  -- Get email list from cache
-  local emails = state.get('email_list.emails') or {}
-
-  -- Select all emails in the visual range
-  for line_num = start_line, end_line do
-    local email_id = M.get_email_id_from_line(line_num)
-    if email_id then
-      -- Find email data
-      for _, email in ipairs(emails) do
-        if tostring(email.id) == tostring(email_id) then
-          state.toggle_email_selection(email_id, email)
-          break
-        end
-      end
-    end
-  end
-
-  -- Exit visual mode
-  vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes('<Esc>', true, false, true), 'n', false)
-
-  -- Provide feedback
-  local count = state.get_selection_count()
-  if count > 0 then
-    notify.himalaya(string.format('Selected %d emails', count), notify.categories.STATUS)
-  end
-end
-
 return M

@@ -1,7 +1,7 @@
 # Implementation Plan: Task #66
 
 - **Task**: 66 - fix_wezterm_tab_numbering_global_order
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Effort**: 1-2 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -41,7 +41,7 @@ Fix the mismatch between WezTerm tab bar numbers (per-window, starting at 1) and
 
 ## Implementation Phases
 
-### Phase 1: Implement Global Tab Position Computation [NOT STARTED]
+### Phase 1: Implement Global Tab Position Computation [COMPLETED]
 
 **Goal**: Modify format-tab-title handler to display global tab position instead of per-window index.
 
@@ -90,7 +90,7 @@ local tab_number = get_global_tab_position(tab.tab_id) or (tab.tab_index + 1)
 
 ---
 
-### Phase 2: Manual Testing with Multiple Windows [NOT STARTED]
+### Phase 2: Manual Testing with Multiple Windows [COMPLETED]
 
 **Goal**: Verify global tab numbering works correctly across multiple WezTerm windows.
 
@@ -113,7 +113,7 @@ local tab_number = get_global_tab_position(tab.tab_id) or (tab.tab_index + 1)
 
 ---
 
-### Phase 3: Documentation Update [NOT STARTED]
+### Phase 3: Documentation Update [COMPLETED]
 
 **Goal**: Document the global tab numbering behavior in the wezterm integration context file.
 

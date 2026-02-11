@@ -4,11 +4,11 @@
     {
       "project_number": 66,
       "project_name": "fix_wezterm_tab_numbering_global_order",
-      "status": "planned",
+      "status": "implementing",
       "language": "general",
       "created": "2026-02-11T17:47:36Z",
-      "last_updated": "2026-02-11T18:04:16Z",
-      "session_id": "sess_1770832927_9d07ba",
+      "last_updated": "2026-02-11T18:06:13Z",
+      "session_id": "sess_1770833155_d5f9ac",
       "researched": "2026-02-11T17:52:02Z",
       "artifacts": [
         {
@@ -22,7 +22,8 @@
           "summary": "3-phase implementation plan for global WezTerm tab numbering"
         }
       ],
-      "planned": "2026-02-11T18:04:16Z"
+      "planned": "2026-02-11T18:04:16Z",
+      "started": "2026-02-11T18:06:13Z"
     },
     {
       "project_number": 65,

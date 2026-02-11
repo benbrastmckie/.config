@@ -117,6 +117,59 @@ Hooks are registered in `.claude/settings.json`:
 }
 ```
 
+## Global Tab Numbering
+
+### Overview
+
+Tab numbers in the WezTerm tab bar use **global creation order** rather than per-window indexes. This ensures tab numbers match TTS announcements, which also use global ordering.
+
+### Algorithm
+
+Tab IDs (`tab.tab_id`) are globally unique integers assigned at creation time. The global position is computed by:
+
+1. Collecting all tab IDs across all windows via `wezterm.mux.all_windows()`
+2. Sorting the tab IDs (ascending = creation order)
+3. Finding the position of the current tab's ID in the sorted list
+
+```lua
+local function get_global_tab_position(current_tab_id)
+  local ok, result = pcall(function()
+    local all_tab_ids = {}
+    for _, mux_window in ipairs(wezterm.mux.all_windows()) do
+      for _, mux_tab in ipairs(mux_window:tabs()) do
+        table.insert(all_tab_ids, mux_tab:tab_id())
+      end
+    end
+    table.sort(all_tab_ids)
+    for i, tid in ipairs(all_tab_ids) do
+      if tid == current_tab_id then
+        return i
+      end
+    end
+    return nil
+  end)
+  return ok and result or nil
+end
+```
+
+### Fallback Behavior
+
+If the global position computation fails (e.g., mux unavailable), the tab number falls back to `tab.tab_index + 1` (per-window index). This ensures tabs always display a number.
+
+### Example
+
+With 3 windows and tabs created in this order:
+- Window A: Tab 1, Tab 4
+- Window B: Tab 2, Tab 5
+- Window C: Tab 3
+
+The display shows:
+- Window A: `1 project`, `4 project`
+- Window B: `2 project`, `5 project`
+- Window C: `3 project`
+
+This matches the TTS announcements: "Tab 1", "Tab 2", etc.
+
 ## Technical Details
 
 ### TTY Access Pattern
