@@ -1887,44 +1887,41 @@ function M.deselect_email()
   local email_id = M.get_email_id_from_line(line_num)
 
   if not email_id then
-    notify.himalaya('No email on this line', notify.categories.STATUS)
+    -- No email on this line, just move up anyway
+    vim.cmd('normal! k')
     return
   end
 
-  -- Check if not selected
-  if not state.is_email_selected(email_id) then
-    notify.himalaya('Not selected', notify.categories.STATUS)
-    return
-  end
+  -- Only deselect if currently selected
+  if state.is_email_selected(email_id) then
+    -- Get email data from cache
+    local emails = state.get('email_list.emails') or {}
+    local email_data = nil
 
-  -- Get email data from cache
-  local emails = state.get('email_list.emails') or {}
-  local email_data = nil
+    -- Find the email in the list
+    for _, email in ipairs(emails) do
+      if tostring(email.id) == tostring(email_id) then
+        email_data = email
+        break
+      end
+    end
 
-  -- Find the email in the list
-  for _, email in ipairs(emails) do
-    if tostring(email.id) == tostring(email_id) then
-      email_data = email
-      break
+    if email_data then
+      -- Remove from selection (toggle since it's already selected)
+      state.toggle_email_selection(email_id, email_data)
+
+      -- Update display
+      M.update_selection_display()
+
+      -- Provide feedback
+      local count = state.get_selection_count()
+      notify.himalaya(string.format('Deselected (%d total)', count), notify.categories.STATUS)
+    else
+      logger.warn('Email not found in list', { email_id = email_id })
     end
   end
 
-  if not email_data then
-    logger.warn('Email not found in list', { email_id = email_id })
-    return
-  end
-
-  -- Remove from selection (toggle since it's already selected)
-  state.toggle_email_selection(email_id, email_data)
-
-  -- Update display
-  M.update_selection_display()
-
-  -- Provide feedback
-  local count = state.get_selection_count()
-  notify.himalaya(string.format('Deselected (%d total)', count), notify.categories.STATUS)
-
-  -- Move cursor up for rapid multi-deselection
+  -- Always move cursor up for navigation
   vim.cmd('normal! k')
 end
 
