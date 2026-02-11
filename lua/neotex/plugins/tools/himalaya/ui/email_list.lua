@@ -533,7 +533,6 @@ function M.preload_adjacent_pages(current_page)
         end
       end)
     end, 200)  -- 200ms delay for 2-page-ahead preload
-    end
   end
 
   -- Preload 2 pages behind for deeper cache (lowest priority)
