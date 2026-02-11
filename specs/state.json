@@ -4,10 +4,10 @@
     {
       "project_number": 67,
       "project_name": "review_himalaya_compose_mappings",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-11T18:11:42Z",
-      "last_updated": "2026-02-11T20:47:08Z",
+      "last_updated": "2026-02-11T20:50:08Z",
       "session_id": "sess_1770842621_3d9d0a",
       "artifacts": [
         {
@@ -16,17 +16,17 @@
           "summary": "Research report analyzing compose buffer keymaps, identifying mapping priority issue with <leader>ms, and proposing 2-letter mapping scheme for compose actions"
         },
         {
-          "type": "plan",
-          "path": "specs/067_review_himalaya_compose_mappings/plans/implementation-001.md",
-          "summary": "4-phase implementation plan for restructuring compose buffer mappings with 2-letter shortcuts"
-        },
-        {
           "type": "research",
           "path": "specs/067_review_himalaya_compose_mappings/reports/research-002.md",
           "summary": "Full keybinding audit across all Himalaya environments with inconsistency analysis and unified mapping proposal"
+        },
+        {
+          "path": "specs/067_review_himalaya_compose_mappings/plans/implementation-002.md",
+          "type": "plan",
+          "summary": "5-phase implementation plan for unified 2-letter compose buffer mappings"
         }
       ],
-      "planned": "2026-02-11T18:18:46Z"
+      "planned": "2026-02-11T20:50:08Z"
     },
     {
       "project_number": 66,
