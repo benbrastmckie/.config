@@ -1,19 +1,22 @@
 {
   "status": "researched",
+  "started_at": "2026-02-10T00:00:00Z",
+  "completed_at": "2026-02-10T00:30:00Z",
+  "summary": "Single-letter action keys were intentionally removed in task 56, redirected to <leader>me which cannot work because Space is used for toggle selection. Solution: restore buffer-local single-letter keymaps (d, a, r, R, f, m, c, /) in setup_email_list_keymaps() calling existing functions in ui/main.lua.",
   "artifacts": [
     {
-      "type": "report",
-      "path": "specs/062_himalaya_broken_commands_fix/reports/research-001.md",
-      "summary": "Root cause analysis: which-key calls non-existent functions in commands.email module"
+      "type": "research",
+      "path": "specs/062_himalaya_broken_commands_fix/reports/research-002.md",
+      "summary": "Research report with complete keymap analysis, function locations, conflict analysis, and copy-paste ready implementation code"
     }
   ],
   "next_steps": "Run /plan 62 to create implementation plan",
   "metadata": {
-    "session_id": "sess_1770778769_9b2b96",
+    "session_id": "sess_1770779160_a291e4",
     "agent_type": "neovim-research-agent",
-    "duration_seconds": 180,
+    "duration_seconds": 1800,
     "delegation_depth": 1,
     "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 6
+    "findings_count": 8
   }
 }

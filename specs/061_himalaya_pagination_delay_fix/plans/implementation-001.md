@@ -1,7 +1,7 @@
 # Implementation Plan: Task #61
 
 - **Task**: 61 - himalaya_pagination_delay_fix
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Effort**: 3-4 hours
 - **Dependencies**: Task #60 (completed)
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -45,7 +45,7 @@ Key findings from research-001.md integrated into this plan:
 
 ## Implementation Phases
 
-### Phase 1: Implement Page-Level Cache with Synchronous Lookup [NOT STARTED]
+### Phase 1: Implement Page-Level Cache with Synchronous Lookup [IN PROGRESS]
 
 **Goal**: Create a page-indexed cache that `next_page()` and `prev_page()` can query synchronously before triggering async fetch.
 

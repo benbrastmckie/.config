@@ -62,11 +62,11 @@
     {
       "project_number": 61,
       "project_name": "himalaya_pagination_delay_fix",
-      "status": "planned",
+      "status": "implementing",
       "language": "neovim",
       "created": "2026-02-10T08:58:13Z",
-      "last_updated": "2026-02-11T03:06:27Z",
-      "session_id": "sess_1770779040_590ea8",
+      "last_updated": "2026-02-11T03:08:39Z",
+      "session_id": "sess_1770779296_974346",
       "artifacts": [
         {
           "type": "research",
@@ -84,16 +84,21 @@
     {
       "project_number": 62,
       "project_name": "himalaya_broken_commands_fix",
-      "status": "researching",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-10T08:58:13Z",
-      "last_updated": "2026-02-11T03:06:23Z",
+      "last_updated": "2026-02-11T03:09:38Z",
       "session_id": "sess_1770779160_a291e4",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/062_himalaya_broken_commands_fix/reports/research-001.md",
           "summary": "Root cause analysis: which-key calls non-existent functions in commands.email module"
+        },
+        {
+          "type": "research",
+          "path": "specs/062_himalaya_broken_commands_fix/reports/research-002.md",
+          "summary": "Research report with complete keymap analysis, function locations, conflict analysis, and copy-paste ready implementation code"
         }
       ]
     }
