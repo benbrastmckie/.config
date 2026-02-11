@@ -1,10 +1,18 @@
 ---
-next_project_number: 64
+next_project_number: 65
 ---
 
 # TODO
 
 ## Tasks
+
+### 64. Fix remaining himalaya keymap issues
+- **Effort**: 2-3 hours
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix remaining himalaya sidebar keymap errors after task 63: (1) 'm' (move) throws nil method 'lower' error at main.lua:1502, (2) 'd', 'r', 'R' produce errors, (3) '/' (search) throws invalid key: buffer at search.lua:781, (4) 'c' composes but no mapping exists to send email, (5) help menu shows inappropriate leader-based mappings when <Space> is used for selection toggle. Investigate root causes and implement elegant refactor to fix all issues.
 
 ### 63. Fix himalaya keymap errors and help menu
 - **Effort**: 1-2 hours

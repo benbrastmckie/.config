@@ -1,6 +1,14 @@
 {
-  "next_project_number": 64,
+  "next_project_number": 65,
   "active_projects": [
+    {
+      "project_number": 64,
+      "project_name": "fix_remaining_himalaya_keymap_issues",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-11T16:48:28Z",
+      "last_updated": "2026-02-11T16:48:28Z"
+    },
     {
       "project_number": 59,
       "project_name": "himalaya_sidebar_mappings_pagination",
