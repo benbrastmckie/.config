@@ -1,10 +1,18 @@
 ---
-next_project_number: 65
+next_project_number: 66
 ---
 
 # TODO
 
 ## Tasks
+
+### 65. Fix task 64 move and send regressions
+- **Effort**: 1 hour
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix himalaya move command showing table addresses instead of folder names (regression from task 64), and change compose send mapping from <C-s> to <leader>m prefix to avoid spelling conflict. The move command needs to extract folder.name from table objects returned by utils.get_folders(), and the send mapping should use <leader>mes (or similar) instead of conflicting with spell-check.
 
 ### 64. Fix remaining himalaya keymap issues
 - **Effort**: 2-3 hours

@@ -1,6 +1,15 @@
 {
-  "next_project_number": 65,
+  "next_project_number": 66,
   "active_projects": [
+    {
+      "project_number": 65,
+      "project_name": "fix_task64_move_and_send_regressions",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-11T17:31:32Z",
+      "last_updated": "2026-02-11T17:31:32Z",
+      "session_id": "sess_1770831083_28a693"
+    },
     {
       "project_number": 64,
       "project_name": "fix_remaining_himalaya_keymap_issues",
