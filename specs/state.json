@@ -62,18 +62,27 @@
     {
       "project_number": 61,
       "project_name": "himalaya_pagination_delay_fix",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-10T08:58:13Z",
-      "last_updated": "2026-02-10T08:58:13Z"
+      "last_updated": "2026-02-11T03:02:30Z",
+      "session_id": "sess_1770778757_2245e5",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/061_himalaya_pagination_delay_fix/reports/research-001.md",
+          "summary": "Identified 6 delay sources in pagination flow including missing cache hit path, full UI refresh, and preload timing issues"
+        }
+      ]
     },
     {
       "project_number": 62,
       "project_name": "himalaya_broken_commands_fix",
-      "status": "not_started",
+      "status": "researching",
       "language": "neovim",
       "created": "2026-02-10T08:58:13Z",
-      "last_updated": "2026-02-10T08:58:13Z"
+      "last_updated": "2026-02-11T03:00:13Z",
+      "session_id": "sess_1770778769_9b2b96"
     }
   ],
   "repository_health": {
