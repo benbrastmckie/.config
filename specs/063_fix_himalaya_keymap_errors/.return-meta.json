@@ -1,20 +1,19 @@
 {
-  "status": "researched",
-  "summary": "The keymaps are correctly implemented. Errors occur when cursor is not on an email line. Help menu needs updating to show new single-letter keymaps.",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/063_fix_himalaya_keymap_errors/reports/research-001.md",
-      "summary": "Research report analyzing keymap implementation, root cause of errors, and recommended fixes for help menu"
+      "type": "plan",
+      "path": "specs/063_fix_himalaya_keymap_errors/plans/implementation-001.md",
+      "summary": "3-phase implementation plan to update help menu and footer with single-letter keymaps"
     }
   ],
-  "next_steps": "Run /plan 63 to create implementation plan for help menu and error message updates",
+  "next_steps": "Run /implement 63 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770780134_934397",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 180,
+    "session_id": "sess_1770827613_90e97a",
+    "agent_type": "planner-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 7
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 3,
+    "estimated_hours": "1-2 hours"
   }
 }

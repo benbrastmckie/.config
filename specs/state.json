@@ -125,18 +125,24 @@
     {
       "project_number": 63,
       "project_name": "fix_himalaya_keymap_errors",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-11T03:20:38Z",
-      "last_updated": "2026-02-11T03:24:54Z",
-      "session_id": "sess_1770780134_934397",
+      "last_updated": "2026-02-11T16:35:36Z",
+      "session_id": "sess_1770827613_90e97a",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/063_fix_himalaya_keymap_errors/reports/research-001.md",
           "summary": "Research report analyzing keymap implementation, root cause of errors, and recommended fixes for help menu"
+        },
+        {
+          "path": "specs/063_fix_himalaya_keymap_errors/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan to update help menu and footer with single-letter keymaps"
         }
-      ]
+      ],
+      "planned": "2026-02-11T16:35:36Z"
     }
   ],
   "repository_health": {

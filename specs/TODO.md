@@ -7,12 +7,13 @@ next_project_number: 64
 ## Tasks
 
 ### 63. Fix himalaya keymap errors and help menu
-- **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Effort**: 1-2 hours
+- **Status**: [PLANNED]
 - **Language**: neovim
 - **Dependencies**: None
 - **Started**: 2026-02-10
 - **Research**: [research-001.md](063_fix_himalaya_keymap_errors/reports/research-001.md)
+- **Plan**: [implementation-001.md](063_fix_himalaya_keymap_errors/plans/implementation-001.md)
 
 **Description**: Task 62 restored single-letter keymaps but they produce errors: "No email to reply to", "Himalaya command failed", "No email to forward". The help menu also doesn't show the right information. Systematically fix all keymap function calls to work correctly (verify function signatures, context requirements, state management) and update the help menu to display accurate keybinding information.
 
