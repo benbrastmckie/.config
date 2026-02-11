@@ -25,7 +25,7 @@
       "status": "planned",
       "language": "neovim",
       "created": "2026-02-11T01:36:17Z",
-      "last_updated": "2026-02-11T01:53:48Z",
+      "last_updated": "2026-02-11T02:01:34Z",
       "session_id": "sess_1770774694_903084",
       "artifacts": [
         {
@@ -35,11 +35,11 @@
         },
         {
           "type": "plan",
-          "path": "specs/057_fix_leader_ls_keybinding_latex/plans/implementation-001.md",
-          "summary": "2-phase implementation plan to add notification feedback for VimtexToggleMain"
+          "path": "specs/057_fix_leader_ls_keybinding_latex/plans/implementation-002.md",
+          "summary": "Simplified plan: add notification when already on main file"
         }
       ],
-      "planned": "2026-02-11T01:53:48Z"
+      "planned": "2026-02-11T02:01:34Z"
     },
     {
       "project_number": 56,

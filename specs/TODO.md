@@ -21,7 +21,7 @@ next_project_number: 59
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](057_fix_leader_ls_keybinding_latex/reports/research-001.md)
-- **Plan**: [implementation-001.md](057_fix_leader_ls_keybinding_latex/plans/implementation-001.md)
+- **Plan**: [implementation-002.md](057_fix_leader_ls_keybinding_latex/plans/implementation-002.md)
 
 **Description**: The <leader>ls keybinding does nothing when triggered in /home/benjamin/Projects/Logos/Theory/latex/LogosReference.tex. Find and fix the problem.
 
