@@ -33,18 +33,24 @@
     {
       "project_number": 60,
       "project_name": "fix_himalaya_post_task59_issues",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-10T08:34:30Z",
-      "last_updated": "2026-02-11T02:38:46Z",
-      "session_id": "sess_1770777310_44aecc",
+      "last_updated": "2026-02-11T02:47:17Z",
+      "session_id": "sess_1770777873_98e478",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/060_fix_himalaya_post_task59_issues/reports/research-001.md",
           "summary": "Research report identifying 4 issues: string format error, missing show_help, action key discoverability, preload delay optimization"
+        },
+        {
+          "path": "specs/060_fix_himalaya_post_task59_issues/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase plan: fix string format error, implement aggressive preloading (100ms delays), add show_help function, improve action key discoverability"
         }
-      ]
+      ],
+      "planned": "2026-02-11T02:47:17Z"
     }
   ],
   "repository_health": {

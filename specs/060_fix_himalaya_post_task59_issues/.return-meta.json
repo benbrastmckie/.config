@@ -1,19 +1,21 @@
 {
-  "status": "researched",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "report",
-      "path": "specs/060_fix_himalaya_post_task59_issues/reports/research-001.md",
-      "summary": "Research report identifying 4 issues: string format error in fetch_folder_count, missing show_help function, action key discoverability, and preload delay optimization"
+      "type": "plan",
+      "path": "specs/060_fix_himalaya_post_task59_issues/plans/implementation-001.md",
+      "summary": "4-phase plan: fix string format error, implement aggressive preloading (100ms delays), add show_help function, improve action key discoverability"
     }
   ],
-  "next_steps": "Run /plan 60 to create implementation plan",
+  "next_steps": "Run /implement 60 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770777310_44aecc",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 300,
+    "session_id": "sess_1770777873_98e478",
+    "agent_type": "planner-agent",
+    "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 4
-  }
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 4,
+    "estimated_hours": "2-3"
+  },
+  "summary": "4-phase implementation plan addressing string format error, aggressive page preloading for instant <C-d>/<C-u> navigation (reduced from 1500ms to 150ms delays), show_help function implementation, and improved action key help messaging."
 }
