@@ -1,6 +1,14 @@
 {
-  "next_project_number": 67,
+  "next_project_number": 68,
   "active_projects": [
+    {
+      "project_number": 67,
+      "project_name": "review_himalaya_compose_mappings",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-11T18:11:42Z",
+      "last_updated": "2026-02-11T18:11:42Z"
+    },
     {
       "project_number": 66,
       "project_name": "fix_wezterm_tab_numbering_global_order",

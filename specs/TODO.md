@@ -1,10 +1,18 @@
 ---
-next_project_number: 67
+next_project_number: 68
 ---
 
 # TODO
 
 ## Tasks
+
+### 67. Review and revise himalaya compose buffer mappings
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Review and revise himalaya compose buffer mappings to add send email capability and ensure all mappings use maximum two letters (e.g., `<leader>ms` not `<leader>mes`). Current compose buffer lacks a send mapping.
 
 ### 66. Fix wezterm tab numbering to use global order matching TTS
 - **Effort**: 1-2 hours
