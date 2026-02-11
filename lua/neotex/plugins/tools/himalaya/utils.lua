@@ -514,7 +514,7 @@ function M.move_email(email_id, target_folder)
     return false, 'No account or folder selected'
   end
   
-  local args = { 'message', 'move', email_id, target_folder }
+  local args = { 'message', 'move', target_folder, email_id }
   local result = cli_utils.execute_himalaya(args, {
     account = account,
     folder = current_folder
