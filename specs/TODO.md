@@ -8,9 +8,10 @@ next_project_number: 56
 
 ### 55. Systematically refactor the himalaya module
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Language**: neovim
 - **Dependencies**: None
+- **Research**: [research-001.md](055_himalaya_module_refactor/reports/research-001.md)
 
 **Description**: Systematically refactor the himalaya module in neovim config by identifying the intended UX and then designing a complete overhaul which improves the implementation to provide greater functionality (currently it opens and shows inbox for gmail but can't open emails or select/deselect emails, etc.).
 

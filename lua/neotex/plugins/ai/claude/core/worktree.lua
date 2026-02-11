@@ -1084,51 +1084,65 @@ end
 -- Sync sessions with actual git worktrees (always keep in sync)
 function M.sync_with_git_worktrees()
   local worktree_output = vim.fn.system("git worktree list")
-  
+
   if vim.v.shell_error ~= 0 then
     return
   end
-  
+
+  -- Get the main repository path to exclude it
+  local git_root = vim.fn.system("git rev-parse --show-toplevel"):gsub("\n", "")
+
   local found_worktrees = {}
   local new_count = 0
-  
+
   -- Parse all worktrees from git
   for line in worktree_output:gmatch("[^\n]+") do
     local path = line:match("^([^%s]+)")
     local branch = line:match("%[(.+)%]")
-    
+
     if path and branch then
-      -- Check if this is a Claude worktree (type/name pattern)
-      local type, name = branch:match("^(%w+)/(.+)$")
-      if type and name and vim.tbl_contains(M.config.types, type) then
-        found_worktrees[name] = true
-        
-        -- Add or update session
-        if not M.sessions[name] then
-          M.sessions[name] = {
-            worktree_path = path,
-            branch = branch,
-            type = type,
-            created = M.sessions[name] and M.sessions[name].created or os.date("%Y-%m-%d %H:%M"),
-            session_id = M.sessions[name] and M.sessions[name].session_id or (name .. "-" .. os.time()),
-          }
-          new_count = new_count + 1
-        else
-          -- Update path in case it changed
-          M.sessions[name].worktree_path = path
+      -- Skip the main repository
+      if path ~= git_root then
+        -- Check if this is a Claude worktree (type/name pattern)
+        local type, name = branch:match("^(%w+)/(.+)$")
+        if type and name and vim.tbl_contains(M.config.types, type) then
+          found_worktrees[name] = true
+
+          -- Add or update session
+          if not M.sessions[name] then
+            M.sessions[name] = {
+              worktree_path = path,
+              branch = branch,
+              type = type,
+              created = M.sessions[name] and M.sessions[name].created or os.date("%Y-%m-%d %H:%M"),
+              session_id = M.sessions[name] and M.sessions[name].session_id or (name .. "-" .. os.time()),
+            }
+            new_count = new_count + 1
+          else
+            -- Update path in case it changed
+            M.sessions[name].worktree_path = path
+          end
         end
       end
     end
   end
   
-  -- Remove sessions that no longer have worktrees
+  -- Remove sessions whose worktree directories no longer exist
+  -- Note: We check the actual path, not pattern matching, to support
+  -- sessions created with non-standard branch names (e.g., "himalaya" vs "feature/himalaya")
   local removed_count = 0
   local removed_names = {}
-  for name, _ in pairs(M.sessions) do
-    if not found_worktrees[name] then
+  for name, session in pairs(M.sessions) do
+    -- Verify the worktree path actually exists on disk
+    local worktree_exists = session.worktree_path and
+                            vim.fn.isdirectory(session.worktree_path) == 1
+    if not worktree_exists then
       M.sessions[name] = nil
       removed_count = removed_count + 1
       table.insert(removed_names, name)
+    else
+      -- Mark as found so it won't be re-added as new
+      found_worktrees[name] = true
     end
   end
   
@@ -2150,7 +2164,10 @@ function M.health_check()
 
   -- Get list of actual git worktrees
   local worktrees = vim.fn.systemlist("git worktree list --porcelain")
-  
+
+  -- Get the main repository path to exclude it
+  local git_root = vim.fn.system("git rev-parse --show-toplevel"):gsub("\n", "")
+
   -- Track which paths we already have sessions for
   local tracked_paths = {}
   for _, session in pairs(M.sessions) do
@@ -2165,12 +2182,15 @@ function M.health_check()
     local branch = branch_line and branch_line:match("^branch (.+)")
 
     if path and branch and not tracked_paths[path] then
-      -- Skip the main worktree (main/master branch)
-      if not branch:match("^refs/heads/main$") and
-         not branch:match("^refs/heads/master$") and
-         not branch:match("^refs/heads/main%s") and
-         not branch:match("^refs/heads/master%s") then
+      -- Skip the main repository (compare path to git root)
+      -- and skip main/master branches
+      local is_main_repo = (path == git_root)
+      local is_main_branch = branch:match("^refs/heads/main$") or
+                             branch:match("^refs/heads/master$") or
+                             branch:match("^refs/heads/main%s") or
+                             branch:match("^refs/heads/master%s")
 
+      if not is_main_repo and not is_main_branch then
         -- Extract feature name from branch
         local feature = branch:match("/([^/]+)$") or branch:gsub("^refs/heads/", "")
         local type = branch:match("^refs/heads/(%w+)/") or "feature"
