@@ -8,9 +8,11 @@ next_project_number: 63
 
 ### 62. Fix broken himalaya commands (d, a, ?)
 - **Effort**: TBD
-- **Status**: [RESEARCHING]
+- **Status**: [RESEARCHED]
 - **Language**: neovim
 - **Dependencies**: None
+- **Started**: 2026-02-10
+- **Research**: [research-001.md](062_himalaya_broken_commands_fix/reports/research-001.md)
 
 **Description**: Many himalaya commands don't work in the email list view: 'd' for delete, 'a' for archive, '?' for help, 'r' for reply, etc. Task 60 implemented show_help function but the action keys are still not functional. These were moved to <leader>me prefix in Task 56 but users need either: (1) single-letter convenience keys restored in email list, or (2) clear visual indication and easy access to the <leader>me menu. Verify which keys should work where and ensure they're properly mapped.
 
