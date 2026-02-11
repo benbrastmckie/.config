@@ -4,19 +4,25 @@
     {
       "project_number": 68,
       "project_name": "fix_syntax_highlighting_long_lines",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-11T20:51:23Z",
-      "last_updated": "2026-02-11T20:57:22Z",
-      "session_id": "sess_1770843185_519795",
+      "last_updated": "2026-02-11T21:02:24Z",
+      "session_id": "sess_1770843620_5d1e86",
       "researched": "2026-02-11T20:57:22Z",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/068_fix_syntax_highlighting_long_lines/reports/research-001.md",
           "summary": "Research report documenting synmaxcol limitation, treesitter configuration gaps, and recommended fixes for TypeScript syntax highlighting on long lines"
+        },
+        {
+          "path": "specs/068_fix_syntax_highlighting_long_lines/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for fixing syntax highlighting on long lines in TypeScript files"
         }
-      ]
+      ],
+      "planned": "2026-02-11T21:02:24Z"
     },
     {
       "project_number": 67,
