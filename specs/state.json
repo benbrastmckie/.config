@@ -21,10 +21,10 @@
     {
       "project_number": 67,
       "project_name": "review_himalaya_compose_mappings",
-      "status": "implementing",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-11T18:11:42Z",
-      "last_updated": "2026-02-11T20:54:06Z",
+      "last_updated": "2026-02-11T20:57:56Z",
       "session_id": "sess_1770843224_f1c015",
       "artifacts": [
         {
@@ -41,9 +41,16 @@
           "path": "specs/067_review_himalaya_compose_mappings/plans/implementation-002.md",
           "type": "plan",
           "summary": "5-phase implementation plan for unified 2-letter compose buffer mappings"
+        },
+        {
+          "type": "summary",
+          "path": "specs/067_review_himalaya_compose_mappings/summaries/implementation-summary-20260211.md",
+          "summary": "Implementation summary for compose buffer mapping refactor"
         }
       ],
-      "planned": "2026-02-11T20:50:08Z"
+      "planned": "2026-02-11T20:50:08Z",
+      "completed": "2026-02-11T20:57:56Z",
+      "completion_summary": "Refactored himalaya compose buffer mappings to use 2-letter scheme (<leader>me for send, <leader>md for draft, <leader>mq for quit), removing 3-letter <leader>mc* subgroup and resolving <leader>ms conflict between sync inbox and send email."
     },
     {
       "project_number": 66,

@@ -2,7 +2,7 @@
 
 - **Task**: 67 - Review and revise himalaya compose buffer mappings
 - **Version**: 002
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Effort**: 2-3 hours
 - **Dependencies**: Tasks 64, 65 (related keymap fixes)
 - **Research Inputs**: [research-001.md](../reports/research-001.md), [research-002.md](../reports/research-002.md)
