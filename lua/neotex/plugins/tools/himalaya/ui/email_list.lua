@@ -1840,13 +1840,8 @@ function M.select_email()
   local email_id = M.get_email_id_from_line(line_num)
 
   if not email_id then
-    notify.himalaya('No email on this line', notify.categories.STATUS)
-    return
-  end
-
-  -- Check if already selected
-  if state.is_email_selected(email_id) then
-    notify.himalaya('Already selected', notify.categories.STATUS)
+    -- No email on this line, just move down anyway
+    vim.cmd('normal! j')
     return
   end
 
@@ -1864,10 +1859,11 @@ function M.select_email()
 
   if not email_data then
     logger.warn('Email not found in list', { email_id = email_id })
+    vim.cmd('normal! j')
     return
   end
 
-  -- Add to selection
+  -- Toggle selection
   state.toggle_email_selection(email_id, email_data)
 
   -- Update display
@@ -1875,13 +1871,15 @@ function M.select_email()
 
   -- Provide feedback
   local count = state.get_selection_count()
-  notify.himalaya(string.format('Selected (%d total)', count), notify.categories.STATUS)
+  local is_selected = state.is_email_selected(email_id)
+  local action = is_selected and 'Selected' or 'Deselected'
+  notify.himalaya(string.format('%s (%d total)', action, count), notify.categories.STATUS)
 
   -- Move cursor down for rapid multi-selection
   vim.cmd('normal! j')
 end
 
--- Deselect email (remove from selection)
+-- Deselect email (toggle selection and move up)
 function M.deselect_email()
   local line_num = vim.api.nvim_win_get_cursor(0)[1]
   local email_id = M.get_email_id_from_line(line_num)
@@ -1892,34 +1890,35 @@ function M.deselect_email()
     return
   end
 
-  -- Only deselect if currently selected
-  if state.is_email_selected(email_id) then
-    -- Get email data from cache
-    local emails = state.get('email_list.emails') or {}
-    local email_data = nil
+  -- Get email data from cache
+  local emails = state.get('email_list.emails') or {}
+  local email_data = nil
 
-    -- Find the email in the list
-    for _, email in ipairs(emails) do
-      if tostring(email.id) == tostring(email_id) then
-        email_data = email
-        break
-      end
-    end
-
-    if email_data then
-      -- Remove from selection (toggle since it's already selected)
-      state.toggle_email_selection(email_id, email_data)
-
-      -- Update display
-      M.update_selection_display()
-
-      -- Provide feedback
-      local count = state.get_selection_count()
-      notify.himalaya(string.format('Deselected (%d total)', count), notify.categories.STATUS)
-    else
-      logger.warn('Email not found in list', { email_id = email_id })
+  -- Find the email in the list
+  for _, email in ipairs(emails) do
+    if tostring(email.id) == tostring(email_id) then
+      email_data = email
+      break
     end
   end
+
+  if not email_data then
+    logger.warn('Email not found in list', { email_id = email_id })
+    vim.cmd('normal! k')
+    return
+  end
+
+  -- Toggle selection
+  state.toggle_email_selection(email_id, email_data)
+
+  -- Update display
+  M.update_selection_display()
+
+  -- Provide feedback
+  local count = state.get_selection_count()
+  local is_selected = state.is_email_selected(email_id)
+  local action = is_selected and 'Selected' or 'Deselected'
+  notify.himalaya(string.format('%s (%d total)', action, count), notify.categories.STATUS)
 
   -- Always move cursor up for navigation
   vim.cmd('normal! k')
