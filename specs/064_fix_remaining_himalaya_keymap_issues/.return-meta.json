@@ -1,22 +1,20 @@
 {
-  "status": "researched",
-  "summary": "Identified 3 actual bugs: nil check missing in move function (main.lua:1502), incorrect keymap syntax in search UI (search.lua:781), and wrong function name in send handler (ui.lua:398). The d/r/R errors are not bugs - they are expected cursor-position behavior.",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/064_fix_remaining_himalaya_keymap_issues/reports/research-001.md",
-      "summary": "Research report documenting 3 bugs with line-level fixes and verification that d/r/R errors are working as designed"
+      "type": "plan",
+      "path": "specs/064_fix_remaining_himalaya_keymap_issues/plans/implementation-001.md",
+      "summary": "2-phase implementation plan for 3 himalaya keymap bug fixes"
     }
   ],
-  "next_steps": "Run /plan 64 to create implementation plan for the 3 identified bugs",
+  "next_steps": "Run /implement 64 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770828565_58ee03",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 300,
+    "session_id": "sess_1770828895_be3c64",
+    "agent_type": "planner-agent",
+    "duration_seconds": 120,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 5,
-    "bugs_found": 3,
-    "not_bugs": 2
+    "delegation_path": ["orchestrator", "plan", "skill-planner"],
+    "phase_count": 2,
+    "estimated_hours": "1-2"
   }
 }
