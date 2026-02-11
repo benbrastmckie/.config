@@ -1,6 +1,14 @@
 {
-  "next_project_number": 59,
+  "next_project_number": 60,
   "active_projects": [
+    {
+      "project_number": 59,
+      "project_name": "himalaya_sidebar_mappings_pagination",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-11T02:08:01Z",
+      "last_updated": "2026-02-11T02:08:01Z"
+    },
     {
       "project_number": 58,
       "project_name": "himalaya_selection_with_movement",
