@@ -6,6 +6,14 @@ next_project_number: 58
 
 ## Tasks
 
+### 57. Fix leader-ls keybinding not working in LaTeX files
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: The <leader>ls keybinding does nothing when triggered in /home/benjamin/Projects/Logos/Theory/latex/LogosReference.tex. Find and fix the problem.
+
 ### 56. Fix himalaya pagination display and keymap conflicts
 - **Effort**: TBD
 - **Status**: [COMPLETED]
