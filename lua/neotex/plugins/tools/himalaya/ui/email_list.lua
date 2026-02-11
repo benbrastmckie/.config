@@ -1060,7 +1060,7 @@ function M.format_email_list(emails)
   local is_on_scheduled = line_data and line_data.type == 'scheduled'
   
   -- Show compact help footer with new keymaps
-  table.insert(lines, '<C-d>/<C-u>:page | n/p:select | F:refresh | <leader>me:email actions | gH:help')
+  table.insert(lines, '<C-d>/<C-u>:page | r/R/f:reply | d/a/m:actions | c:compose | gH:help')
   
   return lines
 end

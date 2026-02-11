@@ -67,14 +67,18 @@ function M.get_help_content(folder_type)
   }
 
   local base_actions = {
-    "Actions (<leader>me):",
-    "  <leader>men - New email",
-    "  <leader>mer - Reply",
-    "  <leader>meR - Reply all",
-    "  <leader>mef - Forward",
-    "  <leader>med - Delete",
-    "  <leader>mem - Move",
-    "  <leader>me/ - Search",
+    "Quick Actions (on email line):",
+    "  r         - Reply",
+    "  R         - Reply all",
+    "  f         - Forward",
+    "  d         - Delete",
+    "  a         - Archive",
+    "  m         - Move",
+    "  c         - Compose new",
+    "  /         - Search",
+    "",
+    "Mail Menu (<leader>me):",
+    "  Also available via which-key",
     ""
   }
 

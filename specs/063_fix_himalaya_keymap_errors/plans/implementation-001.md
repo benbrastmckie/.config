@@ -1,7 +1,7 @@
 # Implementation Plan: Task #63
 
 - **Task**: 63 - Fix himalaya keymap errors and help menu
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 1-2 hours
 - **Dependencies**: Task 62 (keymaps restored)
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -46,7 +46,7 @@ Key findings integrated into this plan:
 
 ## Implementation Phases
 
-### Phase 1: Update Help Menu [NOT STARTED]
+### Phase 1: Update Help Menu [COMPLETED]
 
 **Goal**: Update `folder_help.lua` to display single-letter keymaps prominently while still mentioning the which-key menu for discoverability.
 
@@ -104,7 +104,7 @@ local base_actions = {
 
 ---
 
-### Phase 2: Update Footer [NOT STARTED]
+### Phase 2: Update Footer [COMPLETED]
 
 **Goal**: Update the footer in `email_list.lua` to show quick action keymaps for better discoverability.
 
@@ -136,7 +136,7 @@ table.insert(lines, '<C-d>/<C-u>:page | r/R/f:reply | d/a/m:actions | c:compose 
 
 ---
 
-### Phase 3: Test and Verify [NOT STARTED]
+### Phase 3: Test and Verify [COMPLETED]
 
 **Goal**: Verify all changes work correctly and keymaps function as documented.
 
