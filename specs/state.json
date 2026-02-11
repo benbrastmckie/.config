@@ -125,10 +125,18 @@
     {
       "project_number": 63,
       "project_name": "fix_himalaya_keymap_errors",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-11T03:20:38Z",
-      "last_updated": "2026-02-11T03:20:38Z"
+      "last_updated": "2026-02-11T03:24:54Z",
+      "session_id": "sess_1770780134_934397",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/063_fix_himalaya_keymap_errors/reports/research-001.md",
+          "summary": "Research report analyzing keymap implementation, root cause of errors, and recommended fixes for help menu"
+        }
+      ]
     }
   ],
   "repository_health": {
