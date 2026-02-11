@@ -8,7 +8,7 @@ next_project_number: 63
 
 ### 62. Fix broken himalaya commands (d, a, ?)
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Language**: neovim
 - **Dependencies**: None
 - **Started**: 2026-02-10
@@ -19,12 +19,14 @@ next_project_number: 63
 
 ### 61. Fix himalaya pagination delay for instant C-d/C-u
 - **Effort**: 3-4 hours
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Language**: neovim
 - **Dependencies**: None
 - **Started**: 2026-02-10
+- **Completed**: 2026-02-10
 - **Research**: [research-001.md](061_himalaya_pagination_delay_fix/reports/research-001.md)
 - **Plan**: [implementation-001.md](061_himalaya_pagination_delay_fix/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260210.md](061_himalaya_pagination_delay_fix/summaries/implementation-summary-20260210.md)
 
 **Description**: The C-d and C-u pagination keys still have a slight delay and don't feel snappy despite the preloading implementation in task 60. The page switching should be instantaneous with no perceptible delay. Investigate and eliminate any remaining delays in the pagination flow (e.g., UI updates, state management, async callbacks).
 

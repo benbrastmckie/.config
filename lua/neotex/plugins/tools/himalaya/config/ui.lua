@@ -260,11 +260,93 @@ function M.setup_email_list_keymaps(bufnr)
     end
   end, vim.tbl_extend('force', opts, { desc = 'Show context help' }))
 
-  -- Legacy help with '?' shows which-key hint
+  -- Show keybinding help
   keymap('n', '?', function()
-    local notify = require('neotex.util.notifications')
-    notify.himalaya('Email Actions under <leader>me: d=delete a=archive r=reply R=reply-all | Press gH for full keybindings', notify.categories.STATUS)
-  end, vim.tbl_extend('force', opts, { desc = 'Show help hint' }))
+    local ok, folder_help = pcall(require, 'neotex.plugins.tools.himalaya.ui.folder_help')
+    if ok and folder_help.show_folder_help then
+      folder_help.show_folder_help()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Show keybindings help' }))
+
+  -- Email action keymaps (restored for single-key access)
+  -- Delete emails (selection-aware)
+  keymap('n', 'd', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok then
+      local state = require('neotex.plugins.tools.himalaya.core.state')
+      if state.is_selection_mode() and #state.get_selected_emails() > 0 then
+        main.delete_selected_emails()
+      else
+        main.delete_current_email()
+      end
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Delete email(s)' }))
+
+  -- Archive emails (selection-aware)
+  keymap('n', 'a', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok then
+      local state = require('neotex.plugins.tools.himalaya.core.state')
+      if state.is_selection_mode() and #state.get_selected_emails() > 0 then
+        main.archive_selected_emails()
+      else
+        main.archive_current_email()
+      end
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Archive email(s)' }))
+
+  -- Reply to current email
+  keymap('n', 'r', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.reply_current_email then
+      main.reply_current_email()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Reply' }))
+
+  -- Reply all to current email
+  keymap('n', 'R', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.reply_all_current_email then
+      main.reply_all_current_email()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Reply all' }))
+
+  -- Forward current email
+  keymap('n', 'f', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.forward_current_email then
+      main.forward_current_email()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Forward' }))
+
+  -- Move emails (selection-aware)
+  keymap('n', 'm', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok then
+      local state = require('neotex.plugins.tools.himalaya.core.state')
+      if state.is_selection_mode() and #state.get_selected_emails() > 0 then
+        main.move_selected_emails()
+      else
+        main.move_current_email()
+      end
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Move email(s)' }))
+
+  -- Compose new email
+  keymap('n', 'c', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.compose_email then
+      main.compose_email()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Compose new email' }))
+
+  -- Search emails
+  keymap('n', '/', function()
+    local ok, search = pcall(require, 'neotex.plugins.tools.himalaya.data.search')
+    if ok and search.show_search_ui then
+      search.show_search_ui()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Search emails' }))
 end
 
 -- Setup preview keymaps
