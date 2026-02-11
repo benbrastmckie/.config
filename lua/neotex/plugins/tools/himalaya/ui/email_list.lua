@@ -502,29 +502,19 @@ function M.preload_adjacent_pages(current_page)
   local total_emails = state.get_total_emails()
   local account = config.get_current_account_name()
   local folder = state.get_current_folder()
-  local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
-
-  -- Helper to check if page is already cached
-  local function is_page_cached(page)
-    local cached = email_cache.get_emails(account, folder, page, page_size)
-    return cached and #cached > 0
-  end
-
   -- Preload next page (highest priority - most common navigation)
   if total_emails == 0 or total_emails == nil or current_page * page_size < total_emails then
-    if not is_page_cached(current_page + 1) then
-      vim.defer_fn(function()
-        utils.get_emails_async(account, folder, current_page + 1, page_size, function(emails, _)
-          if emails and #emails > 0 then
-            logger.debug('Preloaded page ' .. (current_page + 1))
-          end
-        end)
-      end, 50)  -- 50ms delay - very fast for responsive C-d
-    end
+    vim.defer_fn(function()
+      utils.get_emails_async(account, folder, current_page + 1, page_size, function(emails, _)
+        if emails and #emails > 0 then
+          logger.debug('Preloaded page ' .. (current_page + 1))
+        end
+      end)
+    end, 50)  -- 50ms delay - very fast for responsive C-d
   end
 
   -- Preload previous page (second priority)
-  if current_page > 1 and not is_page_cached(current_page - 1) then
+  if current_page > 1 then
     vim.defer_fn(function()
       utils.get_emails_async(account, folder, current_page - 1, page_size, function(emails, _)
         if emails and #emails > 0 then
@@ -536,19 +526,18 @@ function M.preload_adjacent_pages(current_page)
 
   -- Preload 2 pages ahead for deeper cache (lower priority)
   if total_emails == 0 or total_emails == nil or (current_page + 1) * page_size < total_emails then
-    if not is_page_cached(current_page + 2) then
-      vim.defer_fn(function()
-        utils.get_emails_async(account, folder, current_page + 2, page_size, function(emails, _)
-          if emails and #emails > 0 then
-            logger.debug('Preloaded page ' .. (current_page + 2))
-          end
-        end)
-      end, 200)  -- 200ms delay for 2-page-ahead preload
+    vim.defer_fn(function()
+      utils.get_emails_async(account, folder, current_page + 2, page_size, function(emails, _)
+        if emails and #emails > 0 then
+          logger.debug('Preloaded page ' .. (current_page + 2))
+        end
+      end)
+    end, 200)  -- 200ms delay for 2-page-ahead preload
     end
   end
 
   -- Preload 2 pages behind for deeper cache (lowest priority)
-  if current_page > 2 and not is_page_cached(current_page - 2) then
+  if current_page > 2 then
     vim.defer_fn(function()
       utils.get_emails_async(account, folder, current_page - 2, page_size, function(emails, _)
         if emails and #emails > 0 then
