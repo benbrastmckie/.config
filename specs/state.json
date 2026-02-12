@@ -4,19 +4,25 @@
     {
       "project_number": 71,
       "project_name": "refactor_himalaya_keybindings_flatten_email_actions",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-12T18:14:23Z",
-      "last_updated": "2026-02-12T18:18:27Z",
-      "session_id": "sess_1770920113_80f863",
+      "last_updated": "2026-02-12T18:48:27Z",
+      "session_id": "sess_1770921960_650947",
       "researched": "2026-02-12T18:18:27Z",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/071_refactor_himalaya_keybindings_flatten_email_actions/reports/research-001.md",
           "summary": "Analysis of himalaya keybinding architecture identifying <leader>me conflict and recommending removal of redundant email actions subgroup"
+        },
+        {
+          "path": "specs/071_refactor_himalaya_keybindings_flatten_email_actions/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "6-phase implementation plan covering which-key global changes, email preview mappings, sidebar/list keybindings, and help updates"
         }
-      ]
+      ],
+      "planned": "2026-02-12T18:48:27Z"
     },
     {
       "project_number": 70,

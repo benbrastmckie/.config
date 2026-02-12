@@ -1,21 +1,17 @@
 {
-  "status": "researched",
-  "started_at": "2026-02-12T00:00:00Z",
-  "completed_at": "2026-02-12T00:15:00Z",
+  "status": "planned",
+  "summary": "6-phase plan to refactor himalaya keybindings: remove <leader>me subgroup conflict, add email preview <leader>m mappings, update sidebar/list keys (c=folder, e=compose), and update help messages",
   "artifacts": [
     {
-      "type": "report",
-      "path": "specs/071_refactor_himalaya_keybindings_flatten_email_actions/reports/research-001.md",
-      "summary": "Analysis of himalaya keybinding architecture identifying <leader>me conflict and recommending removal of redundant email actions subgroup"
+      "type": "plan",
+      "path": "specs/071_refactor_himalaya_keybindings_flatten_email_actions/plans/implementation-001.md",
+      "summary": "6-phase implementation plan covering which-key global changes, email preview mappings, sidebar/list keybindings, and help updates"
     }
   ],
-  "next_steps": "Run /plan 71 to create implementation plan",
   "metadata": {
-    "session_id": "sess_1770920113_80f863",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 900,
-    "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 6
+    "session_id": "sess_1770921960_650947",
+    "agent_type": "planner-agent",
+    "phase_count": 6,
+    "estimated_hours": "1.5-2"
   }
 }
