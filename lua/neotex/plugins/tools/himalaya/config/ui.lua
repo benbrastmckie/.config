@@ -338,8 +338,8 @@ function M.setup_email_list_keymaps(bufnr)
   -- Change folder (picker)
   keymap('n', 'c', function()
     local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
-    if ok and main.show_folder_picker then
-      main.show_folder_picker()
+    if ok and main.pick_folder then
+      main.pick_folder()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Change folder' }))
 
@@ -454,8 +454,8 @@ function M.setup_sidebar_keymaps(bufnr)
   -- Change folder (picker)
   keymap('n', 'c', function()
     local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
-    if ok and main.show_folder_picker then
-      main.show_folder_picker()
+    if ok and main.pick_folder then
+      main.pick_folder()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Change folder' }))
 
