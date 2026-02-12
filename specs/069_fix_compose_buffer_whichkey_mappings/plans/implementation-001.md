@@ -1,7 +1,7 @@
 # Implementation Plan: Task #69
 
 - **Task**: 69 - Fix compose buffer which-key mappings not appearing
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 0.5-1 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -45,7 +45,7 @@ The research report identified that:
 
 ## Implementation Phases
 
-### Phase 1: Add Buffer-Local Leader Mappings [NOT STARTED]
+### Phase 1: Add Buffer-Local Leader Mappings [COMPLETED]
 
 **Goal**: Add `<leader>me`, `<leader>md`, `<leader>mq` mappings to the `setup_compose_keymaps()` function
 
@@ -81,7 +81,7 @@ keymap('n', '<leader>mq', '<cmd>HimalayaDiscard<CR>',
 
 ---
 
-### Phase 2: Remove Conditional which-key Registrations [NOT STARTED]
+### Phase 2: Remove Conditional which-key Registrations [COMPLETED]
 
 **Goal**: Remove the redundant `wk.add()` block with `cond = is_compose_buffer` from which-key.lua
 
@@ -113,7 +113,7 @@ wk.add({
 
 ---
 
-### Phase 3: Verification and Testing [NOT STARTED]
+### Phase 3: Verification and Testing [COMPLETED]
 
 **Goal**: Comprehensive testing of the fix
 

@@ -526,11 +526,6 @@ return {
     -- <leader>m - MAIL GROUP
     -- ============================================================================
 
-    -- Helper function to check if current buffer is a compose buffer
-    local function is_compose_buffer()
-      return is_mail() and require('neotex.plugins.tools.himalaya.ui.email_composer').is_compose_buffer(vim.api.nvim_get_current_buf())
-    end
-
     wk.add({
       { "<leader>m", group = "mail", icon = "󰇮" },
       { "<leader>ma", "<cmd>HimalayaAccounts<CR>", desc = "switch account", icon = "󰌏" },
@@ -546,14 +541,6 @@ return {
       { "<leader>mW", "<cmd>HimalayaSetup<CR>", desc = "setup wizard", icon = "󰗀" },
       { "<leader>mx", "<cmd>HimalayaCancelSync<CR>", desc = "cancel all syncs", icon = "󰚌" },
       { "<leader>mX", "<cmd>HimalayaBackupAndFresh<CR>", desc = "backup & fresh", icon = "󰁯" },
-    })
-
-    -- Compose-specific 2-letter mappings (only visible in compose buffers)
-    -- These override the email actions subgroup for compose buffers
-    wk.add({
-      { "<leader>me", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰊠", cond = is_compose_buffer },
-      { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰉊", cond = is_compose_buffer },
-      { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit/discard", icon = "󰆴", cond = is_compose_buffer },
     })
 
     -- Email actions subgroup (visible in himalaya-list and himalaya-email buffers)
