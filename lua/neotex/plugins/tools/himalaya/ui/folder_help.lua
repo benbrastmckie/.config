@@ -58,13 +58,8 @@ function M.get_help_content(folder_type)
     ""
   }
 
-  local base_folder_mgmt = {
-    "Folder Management:",
-    "  <leader>mA - Switch account",
-    "  <leader>mf - Change folder",
-    "  <leader>ms - Sync folder",
-    ""
-  }
+  -- Folder management section removed - <leader> mappings conflict with <Space> toggle in sidebar
+  local base_folder_mgmt = {}
 
   local base_actions = {
     "Quick Actions (on email line):",
@@ -115,10 +110,7 @@ function M.get_help_content(folder_type)
       table.insert(lines, line)
     end
 
-    -- Add folder management
-    for _, line in ipairs(base_folder_mgmt) do
-      table.insert(lines, line)
-    end
+    -- Folder management section removed (was base_folder_mgmt)
 
     -- Add other
     for _, line in ipairs(base_other) do
