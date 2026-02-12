@@ -585,6 +585,13 @@ return {
       end, desc = "search", icon = "󰍉", cond = is_himalaya_buffer },
     })
 
+    -- Compose buffer keymaps (visible only when composing email - filetype "mail")
+    wk.add({
+      { "<leader>me", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰇮", cond = is_mail },
+      { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰆓", cond = is_mail },
+      { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit/discard", icon = "󰚌", cond = is_mail },
+    })
+
     -- ============================================================================
     -- <leader>n - NIXOS GROUP
     -- ============================================================================

@@ -4,11 +4,11 @@
     {
       "project_number": 70,
       "project_name": "fix_email_composer_setup_compose_keymaps",
-      "status": "planned",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-12T17:19:04Z",
-      "last_updated": "2026-02-12T17:27:22Z",
-      "session_id": "sess_1770917094_a711bd",
+      "last_updated": "2026-02-12T17:32:59Z",
+      "session_id": "sess_1770917382_b5db20",
       "researched": "2026-02-12T17:23:56Z",
       "artifacts": [
         {
@@ -20,9 +20,17 @@
           "path": "specs/070_fix_email_composer_setup_compose_keymaps/plans/implementation-001.md",
           "type": "plan",
           "summary": "3-phase implementation plan adding <leader>me/md/mq to which-key.lua with cond=is_mail"
+        },
+        {
+          "path": "specs/070_fix_email_composer_setup_compose_keymaps/summaries/implementation-summary-20260212.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
         }
       ],
-      "planned": "2026-02-12T17:27:22Z"
+      "planned": "2026-02-12T17:27:22Z",
+      "started": "2026-02-12T17:30:08Z",
+      "completed": "2026-02-12T17:32:59Z",
+      "completion_summary": "Moved compose buffer keymaps (<leader>me, <leader>md, <leader>mq) from config/ui.lua to which-key.lua using cond = is_mail. Keymaps now properly appear in which-key popup only when composing emails."
     },
     {
       "project_number": 69,

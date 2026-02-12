@@ -394,17 +394,8 @@ function M.setup_compose_keymaps(bufnr)
   local keymap = vim.keymap.set
   local opts = { buffer = bufnr, silent = true }
 
-  -- Leader mappings (2-letter maximum per task 67)
-  -- These appear in which-key popup only when in compose buffer
-  keymap('n', '<leader>me', '<cmd>HimalayaSend<CR>',
-    vim.tbl_extend('force', opts, { desc = 'send email' }))
-  keymap('n', '<leader>md', '<cmd>HimalayaSaveDraft<CR>',
-    vim.tbl_extend('force', opts, { desc = 'save draft' }))
-  keymap('n', '<leader>mq', '<cmd>HimalayaDiscard<CR>',
-    vim.tbl_extend('force', opts, { desc = 'quit/discard' }))
-
-  -- Note: <C-s> removed to avoid conflict with spelling operations
-  -- Use <leader>me to send emails instead
+  -- Leader mappings (<leader>me, <leader>md, <leader>mq) are now defined in
+  -- which-key.lua with cond = is_mail for proper which-key integration.
 
   -- Save draft
   keymap('n', '<C-d>', function()

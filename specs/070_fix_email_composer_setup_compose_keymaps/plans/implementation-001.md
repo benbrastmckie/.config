@@ -1,7 +1,7 @@
 # Implementation Plan: Task #70
 
 - **Task**: 70 - fix_email_composer_setup_compose_keymaps
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 0.5-1 hours
 - **Dependencies**: Task 69 completed (keymaps added to wrong location)
 - **Research Inputs**: specs/070_fix_email_composer_setup_compose_keymaps/reports/research-001.md
@@ -44,7 +44,7 @@ Research identified that:
 
 ## Implementation Phases
 
-### Phase 1: Add keymaps to which-key.lua [NOT STARTED]
+### Phase 1: Add keymaps to which-key.lua [COMPLETED]
 
 **Goal**: Add the compose buffer keymaps to which-key.lua using the `is_mail()` conditional
 
@@ -74,7 +74,7 @@ wk.add({
 
 ---
 
-### Phase 2: Remove redundant keymaps from config/ui.lua [NOT STARTED]
+### Phase 2: Remove redundant keymaps from config/ui.lua [COMPLETED]
 
 **Goal**: Clean up the now-redundant keymaps from config/ui.lua
 
@@ -107,7 +107,7 @@ keymap('n', '<leader>mq', '<cmd>HimalayaDiscard<CR>',
 
 ---
 
-### Phase 3: Verification and Testing [NOT STARTED]
+### Phase 3: Verification and Testing [COMPLETED]
 
 **Goal**: Verify keymaps work correctly in compose buffer
 
