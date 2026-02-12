@@ -1,0 +1,22 @@
+{
+  "status": "researched",
+  "started_at": "2026-02-11T12:00:00Z",
+  "completed_at": "2026-02-11T12:30:00Z",
+  "summary": "The which-key `cond` parameter controls mapping functionality, not popup visibility. The recommended solution is to use buffer-local keymaps with vim.keymap.set() and desc parameter, which which-key automatically discovers and displays.",
+  "artifacts": [
+    {
+      "type": "report",
+      "path": "specs/069_fix_compose_buffer_whichkey_mappings/reports/research-001.md",
+      "summary": "Research report detailing why cond doesn't work for conditional popup display, the maintainer-recommended solution using buffer-local keymaps, and implementation plan extending config/ui.lua setup_compose_keymaps()"
+    }
+  ],
+  "next_steps": "Run /plan 69 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1770859313_0a745e",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 1800,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 5
+  }
+}
