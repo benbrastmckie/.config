@@ -1,10 +1,18 @@
 ---
-next_project_number: 70
+next_project_number: 71
 ---
 
 # TODO
 
 ## Tasks
+
+### 70. Fix email_composer setup_compose_keymaps missing leader keymaps
+- **Effort**: 30 minutes
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Add leader keymaps to email_composer.lua setup_compose_keymaps function - task 69 added keymaps to wrong function (config/ui.lua) but email_composer.lua has its own setup_compose_keymaps that shadows it and gets called instead. Need to add `<leader>me`, `<leader>md`, `<leader>mq` keymaps to email_composer.lua lines 134-153.
 
 ### 69. Fix compose buffer which-key mappings not appearing
 - **Effort**: 1-2 hours

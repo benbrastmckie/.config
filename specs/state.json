@@ -1,6 +1,14 @@
 {
-  "next_project_number": 70,
+  "next_project_number": 71,
   "active_projects": [
+    {
+      "project_number": 70,
+      "project_name": "fix_email_composer_setup_compose_keymaps",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-12T17:19:04Z",
+      "last_updated": "2026-02-12T17:19:04Z"
+    },
     {
       "project_number": 69,
       "project_name": "fix_compose_buffer_whichkey_mappings",
