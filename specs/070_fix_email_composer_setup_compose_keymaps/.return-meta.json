@@ -1,19 +1,20 @@
 {
-  "status": "researched",
-  "summary": "Identified dual keymap setup paths causing task 69's keymaps to not apply. Compose buffer uses filetype 'mail' but config/ui.lua checks for 'himalaya-compose'. Recommended solution: add leader keymaps to which-key.lua with cond=is_mail for centralized management.",
+  "status": "planned",
+  "summary": "3-phase plan to add compose keymaps to which-key.lua with is_mail conditional and remove redundant keymaps from config/ui.lua",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/070_fix_email_composer_setup_compose_keymaps/reports/research-001.md",
-      "summary": "Research report identifying root cause (filetype mismatch, dual keymap paths) and recommending which-key.lua centralization with is_mail() condition"
+      "type": "plan",
+      "path": "specs/070_fix_email_composer_setup_compose_keymaps/plans/implementation-001.md",
+      "summary": "3-phase implementation plan adding <leader>me/md/mq to which-key.lua with cond=is_mail"
     }
   ],
-  "next_steps": "Run /plan 70 to create implementation plan",
   "metadata": {
-    "session_id": "sess_1770916852_c5933d",
-    "agent_type": "neovim-research-agent",
+    "session_id": "sess_1770917094_a711bd",
+    "agent_type": "planner-agent",
+    "duration_seconds": 45,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 5
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 3,
+    "estimated_hours": "0.5-1"
   }
 }

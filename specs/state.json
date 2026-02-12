@@ -4,19 +4,25 @@
     {
       "project_number": 70,
       "project_name": "fix_email_composer_setup_compose_keymaps",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-12T17:19:04Z",
-      "last_updated": "2026-02-12T17:23:56Z",
-      "session_id": "sess_1770916852_c5933d",
+      "last_updated": "2026-02-12T17:27:22Z",
+      "session_id": "sess_1770917094_a711bd",
       "researched": "2026-02-12T17:23:56Z",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/070_fix_email_composer_setup_compose_keymaps/reports/research-001.md",
           "summary": "Research report identifying root cause (filetype mismatch, dual keymap paths) and recommending which-key.lua centralization with is_mail() condition"
+        },
+        {
+          "path": "specs/070_fix_email_composer_setup_compose_keymaps/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan adding <leader>me/md/mq to which-key.lua with cond=is_mail"
         }
-      ]
+      ],
+      "planned": "2026-02-12T17:27:22Z"
     },
     {
       "project_number": 69,
