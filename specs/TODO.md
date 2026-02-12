@@ -1,10 +1,18 @@
 ---
-next_project_number: 71
+next_project_number: 72
 ---
 
 # TODO
 
 ## Tasks
+
+### 71. Refactor himalaya keybindings to flatten email actions and eliminate leader me group conflicts
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Refactor himalaya keybindings to flatten email actions and eliminate `<leader>me` group conflicts. Remove the `<leader>me` subgroup and flatten all email actions to 2-letter sequences. Coordinate keymaps across sidebar (single-letter), email list (single-letter), preview (`<leader>m`), and compose (`<leader>m`) buffers. Key changes: `<leader>mA` for switch account, `<leader>mc` for change folder globally, `<leader>mf` for forward in email contexts, `<leader>ma` for archive, `<leader>md` for delete/discard uniformly, `<leader>w` for save draft in compose.
 
 ### 70. Fix email_composer setup_compose_keymaps missing leader keymaps
 - **Effort**: 30 minutes

@@ -1,6 +1,14 @@
 {
-  "next_project_number": 71,
+  "next_project_number": 72,
   "active_projects": [
+    {
+      "project_number": 71,
+      "project_name": "refactor_himalaya_keybindings_flatten_email_actions",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-12T18:14:23Z",
+      "last_updated": "2026-02-12T18:14:23Z"
+    },
     {
       "project_number": 70,
       "project_name": "fix_email_composer_setup_compose_keymaps",
