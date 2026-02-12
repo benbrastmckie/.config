@@ -1,22 +1,19 @@
 {
-  "status": "researched",
-  "started_at": "2026-02-11T12:00:00Z",
-  "completed_at": "2026-02-11T12:30:00Z",
-  "summary": "The which-key `cond` parameter controls mapping functionality, not popup visibility. The recommended solution is to use buffer-local keymaps with vim.keymap.set() and desc parameter, which which-key automatically discovers and displays.",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "report",
-      "path": "specs/069_fix_compose_buffer_whichkey_mappings/reports/research-001.md",
-      "summary": "Research report detailing why cond doesn't work for conditional popup display, the maintainer-recommended solution using buffer-local keymaps, and implementation plan extending config/ui.lua setup_compose_keymaps()"
+      "type": "plan",
+      "path": "specs/069_fix_compose_buffer_whichkey_mappings/plans/implementation-001.md",
+      "summary": "3-phase implementation plan for fixing compose buffer which-key mappings"
     }
   ],
-  "next_steps": "Run /plan 69 to create implementation plan",
+  "next_steps": "Run /implement 69 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770859313_0a745e",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 1800,
+    "session_id": "sess_1770860020_2e137a",
+    "agent_type": "planner-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 5
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 3,
+    "estimated_hours": 0.5
   }
 }

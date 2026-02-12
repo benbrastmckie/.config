@@ -4,18 +4,24 @@
     {
       "project_number": 69,
       "project_name": "fix_compose_buffer_whichkey_mappings",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-12T01:19:51Z",
-      "last_updated": "2026-02-12T01:26:05Z",
-      "session_id": "sess_1770859313_0a745e",
+      "last_updated": "2026-02-12T01:36:11Z",
+      "session_id": "sess_1770860020_2e137a",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/069_fix_compose_buffer_whichkey_mappings/reports/research-001.md",
           "summary": "Research report detailing why cond doesn't work for conditional popup display, the maintainer-recommended solution using buffer-local keymaps, and implementation plan extending config/ui.lua setup_compose_keymaps()"
+        },
+        {
+          "path": "specs/069_fix_compose_buffer_whichkey_mappings/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan for fixing compose buffer which-key mappings"
         }
-      ]
+      ],
+      "planned": "2026-02-12T01:36:11Z"
     },
     {
       "project_number": 68,
