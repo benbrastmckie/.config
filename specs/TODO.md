@@ -1,10 +1,18 @@
 ---
-next_project_number: 72
+next_project_number: 73
 ---
 
 # TODO
 
 ## Tasks
+
+### 72. Fix himalaya sidebar help showing leader keybindings that conflict with toggle selection
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix himalaya sidebar help display (shown via '?') incorrectly showing leader keybindings (`<leader>mA` - Switch account, `<leader>mf` - Change folder, `<leader>ms` - Sync folder) in the Folder Management section. These leader commands should not be accessible or defined in the sidebar since `<leader>` is `<Space>` which is used for toggle selections in that buffer.
 
 ### 71. Refactor himalaya keybindings to flatten email actions and eliminate leader me group conflicts
 - **Effort**: 1-2 hours

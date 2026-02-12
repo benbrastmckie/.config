@@ -1,6 +1,14 @@
 {
-  "next_project_number": 72,
+  "next_project_number": 73,
   "active_projects": [
+    {
+      "project_number": 72,
+      "project_name": "fix_himalaya_sidebar_leader_keybindings_in_help",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-12T19:03:20Z",
+      "last_updated": "2026-02-12T19:03:20Z"
+    },
     {
       "project_number": 71,
       "project_name": "refactor_himalaya_keybindings_flatten_email_actions",
