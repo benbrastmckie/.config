@@ -1,10 +1,18 @@
 ---
-next_project_number: 69
+next_project_number: 70
 ---
 
 # TODO
 
 ## Tasks
+
+### 69. Fix compose buffer which-key mappings not appearing
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix compose buffer which-key mappings not appearing in popup. The conditional cond parameter in which-key.lua lines 553-557 isn't working - compose-specific mappings (`<leader>me` send, `<leader>md` draft, `<leader>mq` quit) don't show in which-key popup even though is_compose_buffer() returns true in compose buffers. Root cause: which-key's cond parameter doesn't dynamically update the popup display. Solution: Remove conditional which-key registrations and instead set up buffer-local keymaps in config/ui.lua setup_compose_keymaps() using vim.keymap.set() with buffer parameter, same pattern as existing `<C-d>`, `<C-q>`, `<C-a>` shortcuts.
 
 ### 68. Fix syntax highlighting interruption on long lines
 - **Effort**: 2-3 hours

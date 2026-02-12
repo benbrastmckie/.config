@@ -1,6 +1,14 @@
 {
-  "next_project_number": 69,
+  "next_project_number": 70,
   "active_projects": [
+    {
+      "project_number": 69,
+      "project_name": "fix_compose_buffer_whichkey_mappings",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-12T01:19:51Z",
+      "last_updated": "2026-02-12T01:19:51Z"
+    },
     {
       "project_number": 68,
       "project_name": "fix_syntax_highlighting_long_lines",
