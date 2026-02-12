@@ -8,9 +8,9 @@ local M = {}
 function M.show_help(context)
   local notify = require('neotex.util.notifications')
   local messages = {
-    sidebar = 'Sidebar: <CR> select folder | q close | r refresh | a switch account | gH full help',
-    compose = 'Compose: <C-s> send | <C-d> save draft | <C-q> discard | <C-a> attach | gH full help',
-    list = 'Email Actions under <leader>me: d=delete a=archive r=reply R=reply-all | Press gH for full keybindings',
+    sidebar = 'Sidebar: <CR> select | c change folder | e compose | r refresh | a switch acct | q close | gH full help',
+    compose = 'Compose: <leader>me send | <leader>md draft | <leader>mq discard | <C-a> attach | gH full help',
+    list = 'Actions: d=delete a=archive r=reply R=all f=fwd m=move c=folder e=compose | gH for full keybindings',
   }
   local msg = messages[context] or messages.list
   notify.himalaya(msg, notify.categories.STATUS)

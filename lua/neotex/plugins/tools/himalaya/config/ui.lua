@@ -335,8 +335,16 @@ function M.setup_email_list_keymaps(bufnr)
     end
   end, vim.tbl_extend('force', opts, { desc = 'Move email(s)' }))
 
-  -- Compose new email
+  -- Change folder (picker)
   keymap('n', 'c', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.show_folder_picker then
+      main.show_folder_picker()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Change folder' }))
+
+  -- Compose new email
+  keymap('n', 'e', function()
     local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
     if ok and main.compose_email then
       main.compose_email()
@@ -434,7 +442,7 @@ end
 function M.setup_sidebar_keymaps(bufnr)
   local keymap = vim.keymap.set
   local opts = { buffer = bufnr, silent = true }
-  
+
   -- Select folder
   keymap('n', '<CR>', function()
     local ok, sidebar = pcall(require, 'neotex.plugins.tools.himalaya.ui.sidebar')
@@ -442,7 +450,23 @@ function M.setup_sidebar_keymaps(bufnr)
       sidebar.select_folder()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Select folder' }))
-  
+
+  -- Change folder (picker)
+  keymap('n', 'c', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.show_folder_picker then
+      main.show_folder_picker()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Change folder' }))
+
+  -- Compose new email
+  keymap('n', 'e', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.compose_email then
+      main.compose_email()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Compose email' }))
+
   -- Refresh folders
   keymap('n', 'r', function()
     local ok, sidebar = pcall(require, 'neotex.plugins.tools.himalaya.ui.sidebar')
@@ -450,7 +474,7 @@ function M.setup_sidebar_keymaps(bufnr)
       sidebar.refresh()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Refresh folders' }))
-  
+
   -- Toggle sidebar
   keymap('n', 'q', function()
     local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.ui')
@@ -458,7 +482,7 @@ function M.setup_sidebar_keymaps(bufnr)
       commands.toggle_sidebar()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Toggle sidebar' }))
-  
+
   -- Switch account
   keymap('n', 'a', function()
     local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.ui')
@@ -466,7 +490,7 @@ function M.setup_sidebar_keymaps(bufnr)
       commands.switch_account()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Switch account' }))
-  
+
   -- Help
   keymap('n', '?', function()
     local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.ui')
@@ -499,7 +523,8 @@ function M.get_keybinding(filetype, action)
       reply_all = 'R',
       forward = 'f',
       move = 'm',
-      compose = 'c',
+      change_folder = 'c',
+      compose = 'e',
       search = '/'
     },
     ['himalaya-preview'] = {
@@ -521,6 +546,8 @@ function M.get_keybinding(filetype, action)
     },
     ['himalaya-sidebar'] = {
       select = '<CR>',
+      change_folder = 'c',
+      compose = 'e',
       refresh = 'r',
       close = 'q',
       switch_account = 'a',

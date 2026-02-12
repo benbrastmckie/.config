@@ -60,7 +60,7 @@ function M.get_help_content(folder_type)
 
   local base_folder_mgmt = {
     "Folder Management:",
-    "  <leader>ma - Switch account",
+    "  <leader>mA - Switch account",
     "  <leader>mf - Change folder",
     "  <leader>ms - Sync folder",
     ""
@@ -74,11 +74,9 @@ function M.get_help_content(folder_type)
     "  d         - Delete",
     "  a         - Archive",
     "  m         - Move",
-    "  c         - Compose new",
+    "  c         - Change folder",
+    "  e         - Compose new",
     "  /         - Search",
-    "",
-    "Mail Menu (<leader>me):",
-    "  Also available via which-key",
     ""
   }
 

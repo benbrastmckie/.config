@@ -1,7 +1,7 @@
 # Implementation Plan: Refactor Himalaya Keybindings
 
 - **Task**: 71 - refactor_himalaya_keybindings_flatten_email_actions
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 1.5-2 hours
 - **Dependencies**: None
 - **Research Inputs**: Task 71 research (identified root cause and solution)
@@ -37,7 +37,7 @@ Refactor himalaya keybindings to eliminate the `<leader>me` subgroup conflict an
 
 ## Implementation Phases
 
-### Phase 1: Update which-key.lua Global Mappings [NOT STARTED]
+### Phase 1: Update which-key.lua Global Mappings [COMPLETED]
 
 **Goal**: Remove email actions subgroup and update global mail mappings.
 
@@ -59,7 +59,7 @@ Refactor himalaya keybindings to eliminate the `<leader>me` subgroup conflict an
 
 ---
 
-### Phase 2: Add Email Preview Leader Mappings [NOT STARTED]
+### Phase 2: Add Email Preview Leader Mappings [COMPLETED]
 
 **Goal**: Add `<leader>m` mappings for email actions in email preview buffers.
 
@@ -85,7 +85,7 @@ Refactor himalaya keybindings to eliminate the `<leader>me` subgroup conflict an
 
 ---
 
-### Phase 3: Update Sidebar Keymaps in ui.lua [NOT STARTED]
+### Phase 3: Update Sidebar Keymaps in ui.lua [COMPLETED]
 
 **Goal**: Add `c` (change folder) and `e` (compose) keybindings to sidebar.
 
@@ -106,7 +106,7 @@ Refactor himalaya keybindings to eliminate the `<leader>me` subgroup conflict an
 
 ---
 
-### Phase 4: Update Email List Keymaps in ui.lua [NOT STARTED]
+### Phase 4: Update Email List Keymaps in ui.lua [COMPLETED]
 
 **Goal**: Change `c` from compose to change folder, add `e` for compose in email list.
 
@@ -127,7 +127,7 @@ Refactor himalaya keybindings to eliminate the `<leader>me` subgroup conflict an
 
 ---
 
-### Phase 5: Update Help Messages [NOT STARTED]
+### Phase 5: Update Help Messages [COMPLETED]
 
 **Goal**: Update all help content to reflect new keybindings.
 
@@ -152,7 +152,7 @@ Refactor himalaya keybindings to eliminate the `<leader>me` subgroup conflict an
 
 ---
 
-### Phase 6: Validation and Testing [NOT STARTED]
+### Phase 6: Validation and Testing [COMPLETED]
 
 **Goal**: Comprehensive testing of all keybinding changes.
 

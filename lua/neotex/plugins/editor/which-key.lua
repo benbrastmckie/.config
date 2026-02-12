@@ -528,7 +528,7 @@ return {
 
     wk.add({
       { "<leader>m", group = "mail", icon = "󰇮" },
-      { "<leader>ma", "<cmd>HimalayaAccounts<CR>", desc = "switch account", icon = "󰌏" },
+      { "<leader>mA", "<cmd>HimalayaAccounts<CR>", desc = "switch account", icon = "󰌏" },
       { "<leader>mf", "<cmd>HimalayaFolder<CR>", desc = "change folder", icon = "󰉋" },
       { "<leader>mF", "<cmd>HimalayaRecreateFolders<CR>", desc = "recreate folders", icon = "󰝰" },
       { "<leader>mh", "<cmd>HimalayaHealth<CR>", desc = "health check", icon = "󰸉" },
@@ -543,53 +543,43 @@ return {
       { "<leader>mX", "<cmd>HimalayaBackupAndFresh<CR>", desc = "backup & fresh", icon = "󰁯" },
     })
 
-    -- Email actions subgroup (visible in himalaya-list and himalaya-email buffers)
-    -- Per task 56: actions accessed via which-key instead of single-letter keys
-    local function is_himalaya_buffer()
-      return is_himalaya_list() or is_himalaya_email()
-    end
-
-    wk.add({
-      { "<leader>me", group = "email actions", icon = "󰇮", cond = is_himalaya_buffer },
-      { "<leader>mer", function()
-        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-        if ok and commands.reply then commands.reply() end
-      end, desc = "reply", icon = "󰇮", cond = is_himalaya_buffer },
-      { "<leader>meR", function()
-        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-        if ok and commands.reply_all then commands.reply_all() end
-      end, desc = "reply all", icon = "󰇮", cond = is_himalaya_buffer },
-      { "<leader>mef", function()
-        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-        if ok and commands.forward then commands.forward() end
-      end, desc = "forward", icon = "󰇮", cond = is_himalaya_buffer },
-      { "<leader>med", function()
-        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-        if ok and commands.delete_selected then commands.delete_selected() end
-      end, desc = "delete", icon = "󰩺", cond = is_himalaya_buffer },
-      { "<leader>mem", function()
-        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-        if ok and commands.move_selected then commands.move_selected() end
-      end, desc = "move", icon = "󰉋", cond = is_himalaya_buffer },
-      { "<leader>mea", function()
-        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-        if ok and commands.archive_selected then commands.archive_selected() end
-      end, desc = "archive", icon = "󰉋", cond = is_himalaya_buffer },
-      { "<leader>men", function()
-        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-        if ok and commands.compose then commands.compose() end
-      end, desc = "new email", icon = "󰝒", cond = is_himalaya_buffer },
-      { "<leader>me/", function()
-        local ok, commands = pcall(require, 'neotex.plugins.tools.himalaya.commands.email')
-        if ok and commands.search then commands.search() end
-      end, desc = "search", icon = "󰍉", cond = is_himalaya_buffer },
-    })
-
     -- Compose buffer keymaps (visible only when composing email - filetype "mail")
     wk.add({
       { "<leader>me", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰇮", cond = is_mail },
       { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰆓", cond = is_mail },
       { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit/discard", icon = "󰚌", cond = is_mail },
+    })
+
+    -- Email preview keymaps (visible in himalaya-email buffers)
+    wk.add({
+      { "<leader>mr", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.reply_current_email then main.reply_current_email() end
+      end, desc = "reply", icon = "󰇮", cond = is_himalaya_email },
+      { "<leader>mR", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.reply_all_current_email then main.reply_all_current_email() end
+      end, desc = "reply all", icon = "󰇮", cond = is_himalaya_email },
+      { "<leader>mf", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.forward_current_email then main.forward_current_email() end
+      end, desc = "forward", icon = "󰇮", cond = is_himalaya_email },
+      { "<leader>md", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.delete_current_email then main.delete_current_email() end
+      end, desc = "delete", icon = "󰩺", cond = is_himalaya_email },
+      { "<leader>ma", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.archive_current_email then main.archive_current_email() end
+      end, desc = "archive", icon = "󰉋", cond = is_himalaya_email },
+      { "<leader>mn", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.compose_email then main.compose_email() end
+      end, desc = "new email", icon = "󰝒", cond = is_himalaya_email },
+      { "<leader>m/", function()
+        local ok, search = pcall(require, 'neotex.plugins.tools.himalaya.data.search')
+        if ok and search.show_search_ui then search.show_search_ui() end
+      end, desc = "search", icon = "󰍉", cond = is_himalaya_email },
     })
 
     -- ============================================================================
