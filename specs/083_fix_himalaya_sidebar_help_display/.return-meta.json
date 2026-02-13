@@ -1,0 +1,20 @@
+{
+  "status": "researched",
+  "summary": "Analyzed Himalaya help display: gH mapping works but '?' is the standard help key. Found footer inaccuracy ('c:compose' should be 'e:compose'). Recommend: update folder_help.lua to show '?' instead of 'gH', simplify footer to '?:help', fix commands/ui.lua messages.",
+  "artifacts": [
+    {
+      "type": "research",
+      "path": "specs/083_fix_himalaya_sidebar_help_display/reports/research-001.md",
+      "summary": "Research findings showing gH works but '?' is standard; footer has incorrect keybinding; 3 files need updates"
+    }
+  ],
+  "next_steps": "Run /plan 83 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1771012403_9087bf",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 180,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 5
+  }
+}

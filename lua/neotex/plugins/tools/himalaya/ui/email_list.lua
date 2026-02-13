@@ -1091,7 +1091,7 @@ local function format_single_email_line(email, index, is_draft_folder, draft_fol
   -- Thread count indicator (only for thread roots with 2+ emails)
   local thread_indicator = ""
   if thread_count > 1 and not is_thread_child then
-    thread_indicator = string.format("[%d]", thread_count)
+    thread_indicator = string.format("(%d)", thread_count)
   end
 
   -- For drafts, show To field instead of From
