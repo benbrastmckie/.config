@@ -1,6 +1,14 @@
 {
-  "next_project_number": 74,
+  "next_project_number": 75,
   "active_projects": [
+    {
+      "project_number": 74,
+      "project_name": "fix_himalaya_email_command_errors",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T02:19:28Z",
+      "last_updated": "2026-02-13T02:19:28Z"
+    },
     {
       "project_number": 73,
       "project_name": "fix_whichkey_conditional_mappings_not_displaying",

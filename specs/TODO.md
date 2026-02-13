@@ -1,10 +1,18 @@
 ---
-next_project_number: 74
+next_project_number: 75
 ---
 
 # TODO
 
 ## Tasks
+
+### 74. Fix multiple Himalaya email command errors
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix multiple Himalaya email command errors: (1) `<leader>me` in compose buffer fails with "attempt to call field 'is_composing' (a nil value)" at email.lua:57; (2) 'a' (archive) in sidebar fails with "attempt to call method 'lower' (a nil value)" at main.lua:887 in do_archive_current_email; (3) 'r', 'R', 'f' (reply/forward) fail with "No email to reply to" / "No email to forward" despite having email selected. Find and fix root cause to provide robust functionality.
 
 ### 73. Fix which-key conditional mappings not displaying for compose-specific keybindings
 - **Effort**: 1.75 hours
