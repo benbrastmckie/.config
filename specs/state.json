@@ -20,18 +20,24 @@
     {
       "project_number": 86,
       "project_name": "fix_himalaya_sent_and_sidebar_keybindings",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T21:33:45Z",
-      "last_updated": "2026-02-13T21:42:06Z",
-      "session_id": "sess_1771018631_8c79a4",
+      "last_updated": "2026-02-13T21:47:16Z",
+      "session_id": "sess_1771019045_acfdc5",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/086_fix_himalaya_sent_and_sidebar_keybindings/reports/research-001.md",
           "summary": "Research report on himalaya sent folder configuration issue and missing sidebar keybindings"
+        },
+        {
+          "path": "specs/086_fix_himalaya_sent_and_sidebar_keybindings/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "Implementation plan covering config documentation, sync_all function, sidebar keybindings, and help menu updates"
         }
-      ]
+      ],
+      "planned": "2026-02-13T21:47:16Z"
     },
     {
       "project_number": 78,
