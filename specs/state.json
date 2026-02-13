@@ -1,14 +1,25 @@
 {
-  "next_project_number": 78,
+  "next_project_number": 79,
   "active_projects": [
+    {
+      "project_number": 78,
+      "project_name": "fix_himalaya_smtp_authentication_failure",
+      "status": "not_started",
+      "language": "neovim",
+      "effort": "1-2 hours",
+      "created": "2026-02-13T18:01:13Z",
+      "last_updated": "2026-02-13T18:01:13Z",
+      "dependencies": [],
+      "artifacts": []
+    },
     {
       "project_number": 77,
       "project_name": "fix_himalaya_sidebar_folder_selection",
-      "status": "planned",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-13T17:48:53Z",
-      "last_updated": "2026-02-13T17:55:52Z",
-      "session_id": "sess_1771005220_91888d",
+      "last_updated": "2026-02-13T18:01:22Z",
+      "session_id": "sess_1771005453_a2041f",
       "artifacts": [
         {
           "type": "research",
@@ -21,7 +32,9 @@
           "summary": "2-phase implementation plan for fixing himalaya folder selection with INBOX guarantee and priority sorting"
         }
       ],
-      "planned": "2026-02-13T17:55:52Z"
+      "planned": "2026-02-13T17:55:52Z",
+      "completed": "2026-02-13T18:01:22Z",
+      "completion_summary": "Fixed himalaya sidebar folder selection to include INBOX and sort folders by usage priority. Added INBOX guarantee check (inserts INBOX if missing from CLI results) and priority-based sorting (INBOX, Sent, Drafts, All_Mail, Trash first, then alphabetical) to both get_folders() and scan_maildir_folders() functions."
     },
     {
       "project_number": 76,

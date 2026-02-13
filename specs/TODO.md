@@ -1,18 +1,27 @@
 ---
-next_project_number: 78
+next_project_number: 79
 ---
 
 # TODO
 
 ## Tasks
 
+### 78. Fix Himalaya SMTP authentication failure when sending emails
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix Gmail SMTP authentication failure when sending emails via Himalaya (<leader>me). Error: "Authentication failed: Code: 535, Enhanced code: 5.7.8, Message: Username and Password not accepted". The error occurs with TLS connection attempts and persists through multiple retry attempts. Identify and fix the root cause of the SMTP credential configuration.
+
 ### 77. Fix himalaya sidebar folder selection menu
 - **Effort**: 1 hour
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Planning Started**: 2026-02-13
 - **Planning Completed**: 2026-02-13
+- **Implementation Started**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](077_fix_himalaya_sidebar_folder_selection/reports/research-001.md)
