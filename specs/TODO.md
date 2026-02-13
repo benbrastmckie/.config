@@ -1,10 +1,18 @@
 ---
-next_project_number: 80
+next_project_number: 81
 ---
 
 # TODO
 
 ## Tasks
+
+### 80. Fix Himalaya sidebar page counter race condition when rapidly pressing navigation keys
+- **Effort**: 1-2 hours
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix race condition in Himalaya sidebar page counter when rapidly pressing `<C-d>` or `<C-u>` - page changes without incrementing counter, causing desynchronization. Implement debouncing, request queuing, or state locking to ensure page counter stays synchronized with actual page during rapid navigation. Goal: robust and responsive UX that never gets out of sync.
 
 ### 79. Fix Himalaya sidebar page counter not incrementing correctly on first 3 pages
 - **Effort**: 1-2 hours

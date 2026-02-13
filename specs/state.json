@@ -1,6 +1,14 @@
 {
-  "next_project_number": 80,
+  "next_project_number": 81,
   "active_projects": [
+    {
+      "project_number": 80,
+      "project_name": "fix_himalaya_page_counter_race_condition",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T18:43:14Z",
+      "last_updated": "2026-02-13T18:43:14Z"
+    },
     {
       "project_number": 79,
       "project_name": "fix_himalaya_sidebar_page_counter_increment",
