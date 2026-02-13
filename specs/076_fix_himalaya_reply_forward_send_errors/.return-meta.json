@@ -1,21 +1,21 @@
 {
-  "status": "researched",
-  "started_at": "2026-02-13T12:00:00Z",
-  "completed_at": "2026-02-13T12:30:00Z",
+  "status": "planned",
+  "summary": "4-phase implementation plan for fixing Himalaya reply/forward/send CLI command compatibility with v1.1.0",
   "artifacts": [
     {
-      "type": "report",
-      "path": "specs/076_fix_himalaya_reply_forward_send_errors/reports/research-001.md",
-      "summary": "Root cause analysis identifying CLI version incompatibility: 'envelope get' command does not exist in himalaya v1.1.0 and 'send' must be 'message send'"
+      "type": "plan",
+      "path": "specs/076_fix_himalaya_reply_forward_send_errors/plans/implementation-001.md",
+      "summary": "4-phase plan covering send command fix, message read helper, get_email_by_id update, and integration testing"
     }
   ],
-  "next_steps": "Run /plan 76 to create implementation plan",
+  "next_steps": "Run /implement 76 to execute the plan",
   "metadata": {
-    "session_id": "sess_1771004246_6996a8",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 1800,
+    "session_id": "sess_1771004641_dce4ac",
+    "agent_type": "planner-agent",
+    "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 5
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 4,
+    "estimated_hours": "2-3"
   }
 }
