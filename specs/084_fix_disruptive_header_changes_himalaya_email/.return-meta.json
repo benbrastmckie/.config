@@ -1,26 +1,19 @@
 {
-  "status": "researched",
-  "started_at": "2026-02-13T12:00:00Z",
-  "completed_at": "2026-02-13T12:45:00Z",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-003.md",
-      "summary": "Identified critical argument bug in HimalayaSaveDraft command passing boolean instead of buffer number, plus integrated solution combining argument fix with autoread disable for all three reported issues"
+      "type": "plan",
+      "path": "specs/084_fix_disruptive_header_changes_himalaya_email/plans/implementation-001.md",
+      "summary": "3-phase implementation plan fixing argument bug and disabling autoread for Himalaya compose buffers"
     }
   ],
-  "next_steps": "Run /plan 84 to create implementation plan addressing all three issues",
+  "next_steps": "Run /implement 84 to execute the plan",
   "metadata": {
-    "session_id": "sess_1771013555_2dc598",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 2700,
+    "session_id": "sess_1771013803_a36519",
+    "agent_type": "planner-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 5,
-    "research_pass": 3,
-    "related_reports": [
-      "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md",
-      "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-002.md"
-    ]
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 3,
+    "estimated_hours": "1-2"
   }
 }
