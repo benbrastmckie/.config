@@ -87,7 +87,40 @@ function M.get_folders(account)
       path = folder.path or '/'
     })
   end
-  
+
+  -- Ensure INBOX is present (himalaya CLI may not return it for Maildir++)
+  local has_inbox = false
+  for _, folder in ipairs(folders) do
+    if folder.name == 'INBOX' then
+      has_inbox = true
+      break
+    end
+  end
+  if not has_inbox then
+    table.insert(folders, 1, { name = 'INBOX', path = '/' })
+  end
+
+  -- Define folder priority (lower number = higher priority)
+  local folder_priority = {
+    ['INBOX'] = 1,
+    ['Sent'] = 2,
+    ['Drafts'] = 3,
+    ['All_Mail'] = 4,
+    ['Trash'] = 5,
+  }
+
+  -- Sort folders by priority, then alphabetically
+  table.sort(folders, function(a, b)
+    local name_a = type(a) == 'table' and a.name or a
+    local name_b = type(b) == 'table' and b.name or b
+    local priority_a = folder_priority[name_a] or 100
+    local priority_b = folder_priority[name_b] or 100
+    if priority_a == priority_b then
+      return name_a < name_b  -- Alphabetical for same priority
+    end
+    return priority_a < priority_b
+  end)
+
   return folders
 end
 
@@ -119,7 +152,28 @@ function M.scan_maildir_folders(account)
       })
     end
   end
-  
+
+  -- Define folder priority (lower number = higher priority)
+  local folder_priority = {
+    ['INBOX'] = 1,
+    ['Sent'] = 2,
+    ['Drafts'] = 3,
+    ['All_Mail'] = 4,
+    ['Trash'] = 5,
+  }
+
+  -- Sort folders by priority, then alphabetically
+  table.sort(folders, function(a, b)
+    local name_a = type(a) == 'table' and a.name or a
+    local name_b = type(b) == 'table' and b.name or b
+    local priority_a = folder_priority[name_a] or 100
+    local priority_b = folder_priority[name_b] or 100
+    if priority_a == priority_b then
+      return name_a < name_b  -- Alphabetical for same priority
+    end
+    return priority_a < priority_b
+  end)
+
   return folders
 end
 

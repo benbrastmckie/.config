@@ -1,7 +1,7 @@
 # Implementation Plan: Fix Himalaya Sidebar Folder Selection
 
 - **Task**: 77 - Fix himalaya sidebar folder selection
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Effort**: 1 hour
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -43,7 +43,7 @@ Research report identified:
 
 ## Implementation Phases
 
-### Phase 1: Implement INBOX Guarantee and Priority Sorting [NOT STARTED]
+### Phase 1: Implement INBOX Guarantee and Priority Sorting [COMPLETED]
 
 **Goal**: Modify `utils.get_folders()` to ensure INBOX is always present and folders are sorted by usage priority.
 
@@ -106,7 +106,7 @@ end)
 
 ---
 
-### Phase 2: Verification and Testing [NOT STARTED]
+### Phase 2: Verification and Testing [IN PROGRESS]
 
 **Goal**: Verify the fix works correctly with headless Neovim testing.
 
