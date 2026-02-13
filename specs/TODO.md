@@ -8,9 +8,8 @@ next_project_number: 85
 
 ### 84. Fix disruptive header changes during Himalaya email composition
 - **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Status**: [RESEARCHING]
 - **Research Started**: 2026-02-13
-- **Research Completed**: 2026-02-13
 - **Language**: neovim
 - **Research**: [research-001.md](084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md)
 
@@ -18,15 +17,17 @@ next_project_number: 85
 
 ### 83. Fix Himalaya sidebar help display and remove obsolete gH mapping
 - **Effort**: 1-2 hours
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Planning Started**: 2026-02-13
 - **Planning Completed**: 2026-02-13
 - **Implementation Started**: 2026-02-13
+- **Implementation Completed**: 2026-02-13
 - **Language**: neovim
 - **Research**: [research-001.md](083_fix_himalaya_sidebar_help_display/reports/research-001.md)
 - **Plan**: [implementation-001.md](083_fix_himalaya_sidebar_help_display/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260213.md](083_fix_himalaya_sidebar_help_display/summaries/implementation-summary-20260213.md)
 
 **Description**: Fix Himalaya sidebar help display inaccuracies: 1) Remove 'gH' mapping from help display and code (it doesn't work and should be removed), 2) Add '?' to the help display since it's the key to open help but isn't listed, 3) Simplify the footer to just indicate '?' opens help instead of the verbose mapping list, 4) Ensure all mappings shown in help are complete and accurate.
 

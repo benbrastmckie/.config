@@ -4,11 +4,11 @@
     {
       "project_number": 84,
       "project_name": "fix_disruptive_header_changes_himalaya_email",
-      "status": "researched",
+      "status": "researching",
       "language": "neovim",
       "created": "2026-02-13T20:01:11Z",
-      "last_updated": "2026-02-13T20:05:37Z",
-      "session_id": "sess_1771012930_ca6ae1",
+      "last_updated": "2026-02-13T20:06:43Z",
+      "session_id": "sess_1771013188_aff6af",
       "artifacts": [
         {
           "type": "research",
@@ -35,6 +35,11 @@
           "path": "specs/083_fix_himalaya_sidebar_help_display/plans/implementation-001.md",
           "type": "plan",
           "summary": "4-phase implementation plan for fixing Himalaya sidebar help display inaccuracies"
+        },
+        {
+          "path": "specs/083_fix_himalaya_sidebar_help_display/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
         }
       ],
       "planned": "2026-02-13T20:00:14Z",

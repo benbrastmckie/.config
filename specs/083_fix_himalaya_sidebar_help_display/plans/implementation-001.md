@@ -1,7 +1,7 @@
 # Implementation Plan: Task #83
 
 - **Task**: 83 - Fix Himalaya sidebar help display inaccuracies
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Effort**: 1-2 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
