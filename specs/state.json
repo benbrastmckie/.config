@@ -4,10 +4,18 @@
     {
       "project_number": 88,
       "project_name": "simplify_himalaya_threading_keybindings",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T21:58:35Z",
-      "last_updated": "2026-02-13T21:58:35Z"
+      "last_updated": "2026-02-13T22:02:42Z",
+      "session_id": "sess_1771019965_212461",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/088_simplify_himalaya_threading_keybindings/reports/research-001.md",
+          "summary": "Research report with implementation approach for simplifying himalaya threading keybindings"
+        }
+      ]
     },
     {
       "project_number": 87,

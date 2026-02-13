@@ -7,10 +7,13 @@ next_project_number: 89
 ## Tasks
 
 ### 88. Simplify himalaya threading keybindings
-- **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Effort**: 0.5-1 hour
+- **Status**: [RESEARCHED]
+- **Research Started**: 2026-02-13
+- **Research Completed**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
+- **Research**: [research-001.md](088_simplify_himalaya_threading_keybindings/reports/research-001.md)
 
 **Description**: Change himalaya sidebar threading keybindings to use `<S-Tab>` (Shift-Tab) for toggling expand/collapse all threads. Remove individual thread fold keybindings (zo, zc, zR, zM, gT) from both the sidebar keymaps and the help menu, keeping only `<Tab>` for single thread toggle and `<S-Tab>` for all threads.
 
