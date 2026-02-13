@@ -1,6 +1,14 @@
 {
-  "next_project_number": 73,
+  "next_project_number": 74,
   "active_projects": [
+    {
+      "project_number": 73,
+      "project_name": "fix_whichkey_conditional_mappings_not_displaying",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T01:53:19Z",
+      "last_updated": "2026-02-13T01:53:19Z"
+    },
     {
       "project_number": 72,
       "project_name": "fix_himalaya_sidebar_leader_keybindings_in_help",
