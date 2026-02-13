@@ -1,0 +1,21 @@
+{
+  "status": "planned",
+  "summary": "5-phase implementation plan for enabling bidirectional Gmail/Himalaya folder sync via mbsyncrc wildcard patterns",
+  "artifacts": [
+    {
+      "type": "plan",
+      "path": "specs/089_gmail_himalaya_folder_label_sync/plans/implementation-001.md",
+      "summary": "Implementation plan for mbsyncrc bidirectional sync configuration"
+    }
+  ],
+  "next_steps": "Run /implement 89 to execute the plan",
+  "metadata": {
+    "session_id": "sess_1771020682_ef225a",
+    "agent_type": "planner-agent",
+    "duration_seconds": 120,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 5,
+    "estimated_hours": "1-2"
+  }
+}

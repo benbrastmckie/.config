@@ -4,18 +4,24 @@
     {
       "project_number": 89,
       "project_name": "gmail_himalaya_folder_label_sync",
-      "status": "planning",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T22:03:59Z",
-      "last_updated": "2026-02-13T22:11:34Z",
+      "last_updated": "2026-02-13T22:13:40Z",
       "session_id": "sess_1771020682_ef225a",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/089_gmail_himalaya_folder_label_sync/reports/research-001.md",
           "summary": "Research report on Gmail-Himalaya folder/label synchronization, covering bidirectional sync behavior, mbsync configuration, and Himalaya folder commands"
+        },
+        {
+          "type": "plan",
+          "path": "specs/089_gmail_himalaya_folder_label_sync/plans/implementation-001.md",
+          "summary": "Implementation plan for mbsyncrc bidirectional sync configuration"
         }
-      ]
+      ],
+      "planned": "2026-02-13T22:13:40Z"
     },
     {
       "project_number": 88,
