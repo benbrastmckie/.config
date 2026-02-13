@@ -1,10 +1,18 @@
 ---
-next_project_number: 88
+next_project_number: 89
 ---
 
 # TODO
 
 ## Tasks
+
+### 88. Simplify himalaya threading keybindings
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Change himalaya sidebar threading keybindings to use `<S-Tab>` (Shift-Tab) for toggling expand/collapse all threads. Remove individual thread fold keybindings (zo, zc, zR, zM, gT) from both the sidebar keymaps and the help menu, keeping only `<Tab>` for single thread toggle and `<S-Tab>` for all threads.
 
 ### 87. Investigate terminal directory change when opening neovim in wezterm
 - **Effort**: TBD

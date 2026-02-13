@@ -1,6 +1,14 @@
 {
-  "next_project_number": 88,
+  "next_project_number": 89,
   "active_projects": [
+    {
+      "project_number": 88,
+      "project_name": "simplify_himalaya_threading_keybindings",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T21:58:35Z",
+      "last_updated": "2026-02-13T21:58:35Z"
+    },
     {
       "project_number": 87,
       "project_name": "investigate_wezterm_terminal_directory_change",
