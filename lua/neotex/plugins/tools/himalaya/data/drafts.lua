@@ -165,7 +165,8 @@ function M.create(account, metadata)
   vim.api.nvim_buf_set_option(buf, 'buftype', '')
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
   vim.api.nvim_buf_set_option(buf, 'modified', false)
-  
+  vim.bo[buf].autoread = false
+
   -- Store original headers for reconstruction on save
   local all_headers = {}
   for _, header in ipairs(headers) do
@@ -603,7 +604,8 @@ function M.open(filepath)
   vim.api.nvim_buf_set_option(buf, 'buftype', '')
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
   vim.api.nvim_buf_set_option(buf, 'modified', false)
-  
+  vim.bo[buf].autoread = false
+
   -- Show buffer in window
   vim.api.nvim_win_set_buf(target_win, buf)
   

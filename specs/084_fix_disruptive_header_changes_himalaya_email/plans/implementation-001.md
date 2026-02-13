@@ -1,7 +1,7 @@
 # Implementation Plan: Task #84
 
 - **Task**: 84 - Fix Himalaya email composition UX issue with disruptive header changes
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 1-2 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md), [research-002.md](../reports/research-002.md), [research-003.md](../reports/research-003.md)
@@ -42,7 +42,7 @@ Three related issues were identified during email composition in Himalaya: (1) h
 
 ## Implementation Phases
 
-### Phase 1: Fix Argument Bug in Email Commands [NOT STARTED]
+### Phase 1: Fix Argument Bug in Email Commands [COMPLETED]
 
 **Goal**: Correct the `save_draft(true)` calls to pass proper buffer number and trigger arguments
 
@@ -64,7 +64,7 @@ Three related issues were identified during email composition in Himalaya: (1) h
 
 ---
 
-### Phase 2: Disable Autoread for Compose Buffers [NOT STARTED]
+### Phase 2: Disable Autoread for Compose Buffers [COMPLETED]
 
 **Goal**: Prevent automatic buffer reload when autosave writes full MIME headers to disk
 
@@ -90,7 +90,7 @@ Three related issues were identified during email composition in Himalaya: (1) h
 
 ---
 
-### Phase 3: Integration Testing [NOT STARTED]
+### Phase 3: Integration Testing [COMPLETED]
 
 **Goal**: Verify all three issues are resolved across different workflows
 

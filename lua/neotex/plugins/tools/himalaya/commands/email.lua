@@ -87,7 +87,7 @@ function M.setup(registry)
         return
       end
       
-      composer.save_draft(true) -- true = show notification
+      composer.save_draft(vim.api.nvim_get_current_buf(), 'manual')
     end,
     opts = {
       desc = 'Save current email as draft'
@@ -135,7 +135,7 @@ function M.setup(registry)
         return
       end
       
-      email_composer.save_draft(true)
+      email_composer.save_draft(vim.api.nvim_get_current_buf(), 'manual')
     end,
     opts = {
       desc = 'Save current draft'
