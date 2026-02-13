@@ -4,18 +4,24 @@
     {
       "project_number": 77,
       "project_name": "fix_himalaya_sidebar_folder_selection",
-      "status": "planning",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T17:48:53Z",
-      "last_updated": "2026-02-13T17:53:55Z",
+      "last_updated": "2026-02-13T17:55:52Z",
       "session_id": "sess_1771005220_91888d",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/077_fix_himalaya_sidebar_folder_selection/reports/research-001.md",
           "summary": "Research report documenting root cause (himalaya CLI omits INBOX), code locations, and implementation approach with priority-sorted folder list"
+        },
+        {
+          "path": "specs/077_fix_himalaya_sidebar_folder_selection/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "2-phase implementation plan for fixing himalaya folder selection with INBOX guarantee and priority sorting"
         }
-      ]
+      ],
+      "planned": "2026-02-13T17:55:52Z"
     },
     {
       "project_number": 76,
