@@ -1,10 +1,18 @@
 ---
-next_project_number: 76
+next_project_number: 77
 ---
 
 # TODO
 
 ## Tasks
+
+### 76. Fix Himalaya reply, forward, and send email command errors
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix multiple Himalaya sidebar errors: (1) 'r', 'R', 'f' keys give "Email not found (ID: 0)" errors for reply/reply_all/forward functions; (2) Email send fails with "unrecognized subcommand 'send'" indicating outdated CLI syntax; (3) Same errors occur with valid email IDs (ID: 2943). Identify root cause of email ID resolution failures and CLI command incompatibilities, then implement systematic refactor of relevant himalaya configuration parts.
 
 ### 75. Fix Himalaya send_email nil value error when sending email
 - **Effort**: 0.5 hours

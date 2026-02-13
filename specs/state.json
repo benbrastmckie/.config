@@ -1,6 +1,14 @@
 {
-  "next_project_number": 76,
+  "next_project_number": 77,
   "active_projects": [
+    {
+      "project_number": 76,
+      "project_name": "fix_himalaya_reply_forward_send_errors",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T17:33:38Z",
+      "last_updated": "2026-02-13T17:33:38Z"
+    },
     {
       "project_number": 75,
       "project_name": "fix_himalaya_send_email_nil_error",
