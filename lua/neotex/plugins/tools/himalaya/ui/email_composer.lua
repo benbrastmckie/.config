@@ -635,4 +635,11 @@ function M.is_compose_buffer(buf)
   return draft_manager.is_draft(buf)
 end
 
+-- Check if currently composing (wrapper for use without buffer argument)
+-- Returns true if the current buffer is a compose buffer
+function M.is_composing()
+  local buf = vim.api.nvim_get_current_buf()
+  return M.is_compose_buffer(buf)
+end
+
 return M

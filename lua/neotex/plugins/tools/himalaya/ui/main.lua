@@ -368,46 +368,112 @@ end
 function M.reply_current_email()
   -- Get current email ID (handles both sidebar and preview)
   local email_id = M.get_current_email_id()
-  
-  if email_id then
-    local account = state.get_current_account()
-    local folder = state.get_current_folder()
-    local email = utils.get_email_by_id(account, folder, email_id)
-    if email then
-      -- Debug: log what we got
-      logger.debug('Reply email data', { 
-        id = email.id, 
-        has_body = email.body ~= nil,
-        body_length = email.body and #email.body or 0
-      })
-      local buf = email_composer.reply_to_email(email, false)
-      return coordinator.open_compose_buffer_in_window(buf, { position_to_body = true })
+
+  if not email_id then
+    -- Provide detailed diagnostic message
+    local filetype = vim.bo.filetype
+    local line_num = vim.fn.line('.')
+    local line_map = state.get('email_list.line_map')
+    local emails = state.get('email_list.emails')
+
+    logger.error('reply_current_email: No email ID found', {
+      filetype = filetype,
+      line_num = line_num,
+      has_line_map = line_map ~= nil,
+      line_map_count = line_map and vim.tbl_count(line_map) or 0,
+      has_emails = emails ~= nil,
+      emails_count = emails and #emails or 0,
+      current_folder = state.get_current_folder()
+    })
+
+    local msg = 'No email to reply to'
+    if filetype ~= 'himalaya-list' and filetype ~= 'himalaya-email' then
+      msg = msg .. ' (not in email buffer: ' .. filetype .. ')'
+    elseif not line_map or vim.tbl_count(line_map) == 0 then
+      msg = msg .. ' (email list not loaded)'
     end
+    notify.himalaya(msg, notify.categories.ERROR)
+    return
   end
-  notify.himalaya('No email to reply to', notify.categories.ERROR)
+
+  local account = state.get_current_account()
+  local folder = state.get_current_folder()
+  local email = utils.get_email_by_id(account, folder, email_id)
+
+  if not email then
+    logger.error('reply_current_email: Email not found', {
+      email_id = email_id,
+      account = account,
+      folder = folder
+    })
+    notify.himalaya('Email not found (ID: ' .. tostring(email_id) .. ')', notify.categories.ERROR)
+    return
+  end
+
+  -- Debug: log what we got
+  logger.debug('Reply email data', {
+    id = email.id,
+    has_body = email.body ~= nil,
+    body_length = email.body and #email.body or 0
+  })
+  local buf = email_composer.reply_to_email(email, false)
+  return coordinator.open_compose_buffer_in_window(buf, { position_to_body = true })
 end
 
 -- Reply all to current email
 function M.reply_all_current_email()
   -- Get current email ID (handles both sidebar and preview)
   local email_id = M.get_current_email_id()
-  
-  if email_id then
-    local account = state.get_current_account()
-    local folder = state.get_current_folder()
-    local email = utils.get_email_by_id(account, folder, email_id)
-    if email then
-      -- Debug: log what we got
-      logger.debug('Reply all email data', { 
-        id = email.id, 
-        has_body = email.body ~= nil,
-        body_length = email.body and #email.body or 0
-      })
-      local buf = email_composer.reply_to_email(email, true)
-      return coordinator.open_compose_buffer_in_window(buf, { position_to_body = true })
+
+  if not email_id then
+    -- Provide detailed diagnostic message
+    local filetype = vim.bo.filetype
+    local line_num = vim.fn.line('.')
+    local line_map = state.get('email_list.line_map')
+    local emails = state.get('email_list.emails')
+
+    logger.error('reply_all_current_email: No email ID found', {
+      filetype = filetype,
+      line_num = line_num,
+      has_line_map = line_map ~= nil,
+      line_map_count = line_map and vim.tbl_count(line_map) or 0,
+      has_emails = emails ~= nil,
+      emails_count = emails and #emails or 0,
+      current_folder = state.get_current_folder()
+    })
+
+    local msg = 'No email to reply to'
+    if filetype ~= 'himalaya-list' and filetype ~= 'himalaya-email' then
+      msg = msg .. ' (not in email buffer: ' .. filetype .. ')'
+    elseif not line_map or vim.tbl_count(line_map) == 0 then
+      msg = msg .. ' (email list not loaded)'
     end
+    notify.himalaya(msg, notify.categories.ERROR)
+    return
   end
-  notify.himalaya('No email to reply to', notify.categories.ERROR)
+
+  local account = state.get_current_account()
+  local folder = state.get_current_folder()
+  local email = utils.get_email_by_id(account, folder, email_id)
+
+  if not email then
+    logger.error('reply_all_current_email: Email not found', {
+      email_id = email_id,
+      account = account,
+      folder = folder
+    })
+    notify.himalaya('Email not found (ID: ' .. tostring(email_id) .. ')', notify.categories.ERROR)
+    return
+  end
+
+  -- Debug: log what we got
+  logger.debug('Reply all email data', {
+    id = email.id,
+    has_body = email.body ~= nil,
+    body_length = email.body and #email.body or 0
+  })
+  local buf = email_composer.reply_to_email(email, true)
+  return coordinator.open_compose_buffer_in_window(buf, { position_to_body = true })
 end
 
 -- Reply to email
@@ -431,17 +497,50 @@ end
 function M.forward_current_email()
   -- Get current email ID (handles both sidebar and preview)
   local email_id = M.get_current_email_id()
-  
-  if email_id then
-    local account = state.get_current_account()
-    local folder = state.get_current_folder()
-    local email = utils.get_email_by_id(account, folder, email_id)
-    if email then
-      local buf = email_composer.forward_email(email)
-      return coordinator.open_compose_buffer_in_window(buf)
+
+  if not email_id then
+    -- Provide detailed diagnostic message
+    local filetype = vim.bo.filetype
+    local line_num = vim.fn.line('.')
+    local line_map = state.get('email_list.line_map')
+    local emails = state.get('email_list.emails')
+
+    logger.error('forward_current_email: No email ID found', {
+      filetype = filetype,
+      line_num = line_num,
+      has_line_map = line_map ~= nil,
+      line_map_count = line_map and vim.tbl_count(line_map) or 0,
+      has_emails = emails ~= nil,
+      emails_count = emails and #emails or 0,
+      current_folder = state.get_current_folder()
+    })
+
+    local msg = 'No email to forward'
+    if filetype ~= 'himalaya-list' and filetype ~= 'himalaya-email' then
+      msg = msg .. ' (not in email buffer: ' .. filetype .. ')'
+    elseif not line_map or vim.tbl_count(line_map) == 0 then
+      msg = msg .. ' (email list not loaded)'
     end
+    notify.himalaya(msg, notify.categories.ERROR)
+    return
   end
-  notify.himalaya('No email to forward', notify.categories.ERROR)
+
+  local account = state.get_current_account()
+  local folder = state.get_current_folder()
+  local email = utils.get_email_by_id(account, folder, email_id)
+
+  if not email then
+    logger.error('forward_current_email: Email not found', {
+      email_id = email_id,
+      account = account,
+      folder = folder
+    })
+    notify.himalaya('Email not found (ID: ' .. tostring(email_id) .. ')', notify.categories.ERROR)
+    return
+  end
+
+  local buf = email_composer.forward_email(email)
+  return coordinator.open_compose_buffer_in_window(buf)
 end
 
 -- Shared sync implementation that handles OAuth refresh
@@ -882,14 +981,18 @@ function M.do_archive_current_email(email_id)
     if folders then
       -- Find the first existing archive folder
       for _, folder in ipairs(folders) do
-        for _, archive_name in ipairs(archive_folders) do
-          -- Check exact match first, then case-insensitive match
-          if folder == archive_name or folder:lower() == archive_name:lower() then
-            archive_folder = folder
-            break
+        -- Extract folder name if it's a table with {name, path} structure
+        local folder_name = type(folder) == "table" and folder.name or folder
+        if folder_name and type(folder_name) == "string" then
+          for _, archive_name in ipairs(archive_folders) do
+            -- Check exact match first, then case-insensitive match
+            if folder_name == archive_name or folder_name:lower() == archive_name:lower() then
+              archive_folder = folder_name
+              break
+            end
           end
+          if archive_folder then break end
         end
-        if archive_folder then break end
       end
     end
     
@@ -992,14 +1095,18 @@ function M.do_spam_current_email(email_id)
     if folders then
       -- Find the first existing spam folder
       for _, folder in ipairs(folders) do
-        for _, spam_name in ipairs(spam_folders) do
-          -- Check exact match first, then case-insensitive match
-          if folder == spam_name or folder:lower() == spam_name:lower() then
-            spam_folder = folder
-            break
+        -- Extract folder name if it's a table with {name, path} structure
+        local folder_name = type(folder) == "table" and folder.name or folder
+        if folder_name and type(folder_name) == "string" then
+          for _, spam_name in ipairs(spam_folders) do
+            -- Check exact match first, then case-insensitive match
+            if folder_name == spam_name or folder_name:lower() == spam_name:lower() then
+              spam_folder = folder_name
+              break
+            end
           end
+          if spam_folder then break end
         end
-        if spam_folder then break end
       end
     end
     
@@ -1322,16 +1429,20 @@ function M.archive_selected_emails()
       local archive_folders = {'Archive', 'All Mail', 'All_Mail', '[Gmail]/All Mail'}
       local folders = utils.get_folders(state.get_current_account())
       local archive_folder = nil
-      
+
       if folders then
         for _, folder in ipairs(folders) do
-          for _, archive_name in ipairs(archive_folders) do
-            if folder == archive_name or folder:match(archive_name) then
-              archive_folder = folder
-              break
+          -- Extract folder name if it's a table with {name, path} structure
+          local folder_name = type(folder) == "table" and folder.name or folder
+          if folder_name and type(folder_name) == "string" then
+            for _, archive_name in ipairs(archive_folders) do
+              if folder_name == archive_name or folder_name:match(archive_name) then
+                archive_folder = folder_name
+                break
+              end
             end
+            if archive_folder then break end
           end
-          if archive_folder then break end
         end
       end
       
@@ -1401,16 +1512,20 @@ function M.spam_selected_emails()
       local spam_folders = {'Spam', 'Junk', 'SPAM', 'JUNK', '[Gmail]/Spam'}
       local folders = utils.get_folders(state.get_current_account())
       local spam_folder = nil
-      
+
       if folders then
         for _, folder in ipairs(folders) do
-          for _, spam_name in ipairs(spam_folders) do
-            if folder == spam_name or folder:lower() == spam_name:lower() then
-              spam_folder = folder
-              break
+          -- Extract folder name if it's a table with {name, path} structure
+          local folder_name = type(folder) == "table" and folder.name or folder
+          if folder_name and type(folder_name) == "string" then
+            for _, spam_name in ipairs(spam_folders) do
+              if folder_name == spam_name or folder_name:lower() == spam_name:lower() then
+                spam_folder = folder_name
+                break
+              end
             end
+            if spam_folder then break end
           end
-          if spam_folder then break end
         end
       end
       

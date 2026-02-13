@@ -8,11 +8,14 @@ next_project_number: 75
 
 ### 74. Fix multiple Himalaya email command errors
 - **Effort**: TBD
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
+- **Started**: 2026-02-13
+- **Completed**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](074_fix_himalaya_email_command_errors/reports/research-001.md)
 - **Plan**: [implementation-001.md](074_fix_himalaya_email_command_errors/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260212.md](074_fix_himalaya_email_command_errors/summaries/implementation-summary-20260212.md)
 
 **Description**: Fix multiple Himalaya email command errors: (1) `<leader>me` in compose buffer fails with "attempt to call field 'is_composing' (a nil value)" at email.lua:57; (2) 'a' (archive) in sidebar fails with "attempt to call method 'lower' (a nil value)" at main.lua:887 in do_archive_current_email; (3) 'r', 'R', 'f' (reply/forward) fail with "No email to reply to" / "No email to forward" despite having email selected. Find and fix root cause to provide robust functionality.
 
