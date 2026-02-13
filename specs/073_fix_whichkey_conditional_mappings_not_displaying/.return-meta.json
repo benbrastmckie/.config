@@ -1,19 +1,20 @@
 {
-  "status": "researched",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "report",
-      "path": "specs/073_fix_whichkey_conditional_mappings_not_displaying/reports/research-001.md",
-      "summary": "Research report identifying root cause (cond evaluated once) and solution (buffer-local wk.add)"
+      "type": "plan",
+      "path": "specs/073_fix_whichkey_conditional_mappings_not_displaying/plans/implementation-001.md",
+      "summary": "4-phase implementation plan for fixing which-key conditional mappings via buffer-local registration"
     }
   ],
-  "next_steps": "Run /plan 73 to create implementation plan",
+  "next_steps": "Run /implement 73 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770947693_447390",
-    "agent_type": "neovim-research-agent",
+    "session_id": "sess_1770948314_3b4b02",
+    "agent_type": "planner-agent",
     "duration_seconds": 180,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 5
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 4,
+    "estimated_hours": 1.75
   }
 }

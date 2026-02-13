@@ -4,19 +4,25 @@
     {
       "project_number": 73,
       "project_name": "fix_whichkey_conditional_mappings_not_displaying",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T01:53:19Z",
-      "last_updated": "2026-02-13T01:58:25Z",
-      "session_id": "sess_1770947693_447390",
+      "last_updated": "2026-02-13T02:07:30Z",
+      "session_id": "sess_1770948314_3b4b02",
       "researched": "2026-02-13T01:58:25Z",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/073_fix_whichkey_conditional_mappings_not_displaying/reports/research-001.md",
           "summary": "Research report identifying root cause (cond evaluated once) and solution (buffer-local wk.add)"
+        },
+        {
+          "path": "specs/073_fix_whichkey_conditional_mappings_not_displaying/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for fixing which-key conditional mappings via buffer-local registration"
         }
-      ]
+      ],
+      "planned": "2026-02-13T02:07:30Z"
     },
     {
       "project_number": 72,
