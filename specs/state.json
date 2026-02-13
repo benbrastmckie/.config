@@ -4,18 +4,24 @@
     {
       "project_number": 83,
       "project_name": "fix_himalaya_sidebar_help_display",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T19:51:33Z",
-      "last_updated": "2026-02-13T19:56:42Z",
-      "session_id": "sess_1771012403_9087bf",
+      "last_updated": "2026-02-13T20:00:14Z",
+      "session_id": "sess_1771012676_312527",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/083_fix_himalaya_sidebar_help_display/reports/research-001.md",
           "summary": "Research findings showing gH works but ? is standard; footer has incorrect keybinding; 3 files need updates"
+        },
+        {
+          "path": "specs/083_fix_himalaya_sidebar_help_display/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for fixing Himalaya sidebar help display inaccuracies"
         }
-      ]
+      ],
+      "planned": "2026-02-13T20:00:14Z"
     },
     {
       "project_number": 82,

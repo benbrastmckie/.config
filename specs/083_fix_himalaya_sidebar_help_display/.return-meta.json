@@ -1,0 +1,20 @@
+{
+  "status": "planned",
+  "artifacts": [
+    {
+      "type": "plan",
+      "path": "specs/083_fix_himalaya_sidebar_help_display/plans/implementation-001.md",
+      "summary": "4-phase implementation plan for fixing Himalaya sidebar help display inaccuracies"
+    }
+  ],
+  "next_steps": "Run /implement 83 to execute the plan",
+  "metadata": {
+    "session_id": "sess_1771012676_312527",
+    "agent_type": "planner-agent",
+    "duration_seconds": 120,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 4,
+    "estimated_hours": "1-2"
+  }
+}

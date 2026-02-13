@@ -7,12 +7,15 @@ next_project_number: 84
 ## Tasks
 
 ### 83. Fix Himalaya sidebar help display and remove obsolete gH mapping
-- **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Effort**: 1-2 hours
+- **Status**: [PLANNED]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
+- **Planning Started**: 2026-02-13
+- **Planning Completed**: 2026-02-13
 - **Language**: neovim
 - **Research**: [research-001.md](083_fix_himalaya_sidebar_help_display/reports/research-001.md)
+- **Plan**: [implementation-001.md](083_fix_himalaya_sidebar_help_display/plans/implementation-001.md)
 
 **Description**: Fix Himalaya sidebar help display inaccuracies: 1) Remove 'gH' mapping from help display and code (it doesn't work and should be removed), 2) Add '?' to the help display since it's the key to open help but isn't listed, 3) Simplify the footer to just indicate '?' opens help instead of the verbose mapping list, 4) Ensure all mappings shown in help are complete and accurate.
 
