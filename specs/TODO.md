@@ -1,10 +1,17 @@
 ---
-next_project_number: 83
+next_project_number: 84
 ---
 
 # TODO
 
 ## Tasks
+
+### 83. Fix Himalaya sidebar help display and remove obsolete gH mapping
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Fix Himalaya sidebar help display inaccuracies: 1) Remove 'gH' mapping from help display and code (it doesn't work and should be removed), 2) Add '?' to the help display since it's the key to open help but isn't listed, 3) Simplify the footer to just indicate '?' opens help instead of the verbose mapping list, 4) Ensure all mappings shown in help are complete and accurate.
 
 ### 82. Fix nil value error for check_active_editor_and_prompt in Himalaya email commands
 - **Effort**: TBD
