@@ -20,11 +20,11 @@
     {
       "project_number": 86,
       "project_name": "fix_himalaya_sent_and_sidebar_keybindings",
-      "status": "planned",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-13T21:33:45Z",
-      "last_updated": "2026-02-13T21:47:16Z",
-      "session_id": "sess_1771019045_acfdc5",
+      "last_updated": "2026-02-13T21:53:16Z",
+      "session_id": "sess_1771019324_34de38",
       "artifacts": [
         {
           "type": "research",
@@ -35,9 +35,16 @@
           "path": "specs/086_fix_himalaya_sent_and_sidebar_keybindings/plans/implementation-001.md",
           "type": "plan",
           "summary": "Implementation plan covering config documentation, sync_all function, sidebar keybindings, and help menu updates"
+        },
+        {
+          "path": "specs/086_fix_himalaya_sent_and_sidebar_keybindings/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary for himalaya sidebar keybindings and help menu"
         }
       ],
-      "planned": "2026-02-13T21:47:16Z"
+      "planned": "2026-02-13T21:47:16Z",
+      "completed": "2026-02-13T21:53:16Z",
+      "completion_summary": "Documented himalaya sent folder config fix, implemented sync_all() function for HimalayaSyncFull command, added 4 sidebar keybindings (s/S/A/i) for sync and account operations, and updated help menu with new Sync & Accounts and Threading sections."
     },
     {
       "project_number": 78,

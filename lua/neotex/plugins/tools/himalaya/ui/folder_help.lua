@@ -75,6 +75,26 @@ function M.get_help_content(folder_type)
     ""
   }
 
+  local base_sync = {
+    "Sync & Accounts:",
+    "  s         - Sync inbox",
+    "  S         - Full sync (all folders)",
+    "  A         - Switch account",
+    "  i         - Show sync info",
+    ""
+  }
+
+  local base_threading = {
+    "Threading:",
+    "  <Tab>     - Toggle thread expand",
+    "  zo        - Expand thread",
+    "  zc        - Collapse thread",
+    "  zR        - Expand all threads",
+    "  zM        - Collapse all threads",
+    "  gT        - Toggle threading on/off",
+    ""
+  }
+
   local base_other = {
     "Other:",
     "  F         - Refresh list",
@@ -110,7 +130,15 @@ function M.get_help_content(folder_type)
       table.insert(lines, line)
     end
 
-    -- Folder management section removed (was base_folder_mgmt)
+    -- Add sync & accounts
+    for _, line in ipairs(base_sync) do
+      table.insert(lines, line)
+    end
+
+    -- Add threading
+    for _, line in ipairs(base_threading) do
+      table.insert(lines, line)
+    end
 
     -- Add other
     for _, line in ipairs(base_other) do

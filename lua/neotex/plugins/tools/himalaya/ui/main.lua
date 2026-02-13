@@ -689,18 +689,39 @@ function M.sync_inbox()
     notify.himalaya('No email account configured', notify.categories.ERROR)
     return
   end
-  
+
   local account_config = config.get_account(account)
   if not account_config then
     notify.himalaya('Account configuration not found', notify.categories.ERROR)
     return
   end
-  
+
   -- Always use inbox channel
   local channel = account_config.mbsync and account_config.mbsync.inbox_channel or 'gmail-inbox'
-  
+
   -- Use shared sync implementation
   M._perform_sync(channel, 'inbox')
+end
+
+-- Sync all folders (for <leader>mS and HimalayaSyncFull command)
+function M.sync_all()
+  local account = state.get_current_account()
+  if not account then
+    notify.himalaya('No email account configured', notify.categories.ERROR)
+    return
+  end
+
+  local account_config = config.get_account(account)
+  if not account_config then
+    notify.himalaya('Account configuration not found', notify.categories.ERROR)
+    return
+  end
+
+  -- Use the account name as mbsync target for full sync
+  local mbsync_target = account:lower()
+
+  -- Use shared sync implementation
+  M._perform_sync(mbsync_target, 'all folders')
 end
 
 -- Sync drafts folder (handles local drafts)

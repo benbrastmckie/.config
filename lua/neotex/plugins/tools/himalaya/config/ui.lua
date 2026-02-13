@@ -412,6 +412,36 @@ function M.setup_email_list_keymaps(bufnr)
       email_list.refresh_email_list()
     end
   end, vim.tbl_extend('force', opts, { desc = 'Toggle threading' }))
+
+  -- Sync & Accounts keybindings (Task #86)
+  -- s - sync inbox
+  keymap('n', 's', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.sync_inbox then
+      main.sync_inbox()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Sync inbox' }))
+
+  -- S - full sync (all folders)
+  keymap('n', 'S', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.sync_all then
+      main.sync_all()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Full sync (all folders)' }))
+
+  -- A - switch account
+  keymap('n', 'A', function()
+    local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+    if ok and main.pick_account then
+      main.pick_account()
+    end
+  end, vim.tbl_extend('force', opts, { desc = 'Switch account' }))
+
+  -- i - show sync info
+  keymap('n', 'i', function()
+    vim.cmd('HimalayaSyncInfo')
+  end, vim.tbl_extend('force', opts, { desc = 'Show sync info' }))
 end
 
 -- Setup preview keymaps
@@ -586,7 +616,12 @@ function M.get_keybinding(filetype, action)
       collapse_thread = 'zc',
       expand_all_threads = 'zR',
       collapse_all_threads = 'zM',
-      toggle_threading = 'gT'
+      toggle_threading = 'gT',
+      -- Sync & Accounts keymaps (Task #86)
+      sync_inbox = 's',
+      sync_all = 'S',
+      switch_account = 'A',
+      sync_info = 'i'
     },
     ['himalaya-preview'] = {
       close = 'q',

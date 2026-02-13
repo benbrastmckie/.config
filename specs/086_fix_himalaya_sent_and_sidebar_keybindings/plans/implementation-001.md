@@ -1,7 +1,7 @@
 # Implementation Plan: Task #86
 
 - **Task**: 86 - Fix himalaya sent folder display and sidebar keybindings
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 2-3 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -45,7 +45,7 @@ This plan addresses three issues: (1) the sent folder configuration mismatch in 
 
 ## Implementation Phases
 
-### Phase 1: Document Himalaya Config Fix [NOT STARTED]
+### Phase 1: Document Himalaya Config Fix [COMPLETED]
 
 **Goal**: Create documentation explaining the sent folder configuration fix that the user needs to apply via Nix home-manager.
 
@@ -64,7 +64,7 @@ This plan addresses three issues: (1) the sent folder configuration mismatch in 
 
 ---
 
-### Phase 2: Implement sync_all Function [NOT STARTED]
+### Phase 2: Implement sync_all Function [COMPLETED]
 
 **Goal**: Ensure the `sync_all()` function exists in main.lua to support full folder synchronization.
 
@@ -84,7 +84,7 @@ This plan addresses three issues: (1) the sent folder configuration mismatch in 
 
 ---
 
-### Phase 3: Add Sidebar Keybindings [NOT STARTED]
+### Phase 3: Add Sidebar Keybindings [COMPLETED]
 
 **Goal**: Add single-letter keybindings for sync and account operations to the email list sidebar.
 
@@ -108,7 +108,7 @@ This plan addresses three issues: (1) the sent folder configuration mismatch in 
 
 ---
 
-### Phase 4: Update Help Menu [NOT STARTED]
+### Phase 4: Update Help Menu [COMPLETED]
 
 **Goal**: Update the help menu to include all available keybindings including new sync operations and threading commands.
 
@@ -131,7 +131,7 @@ This plan addresses three issues: (1) the sent folder configuration mismatch in 
 
 ---
 
-### Phase 5: Testing and Validation [NOT STARTED]
+### Phase 5: Testing and Validation [COMPLETED]
 
 **Goal**: Verify all changes work correctly together.
 
