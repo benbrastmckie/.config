@@ -8,17 +8,21 @@ next_project_number: 88
 
 ### 87. Investigate terminal directory change when opening neovim in wezterm
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHING]
+- **Research Started**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 
 **Description**: Investigate why the terminal working directory changes to a project root when opening neovim sessions in wezterm from the home directory (~). Determine whether this behavior is caused by neovim or wezterm (configured in ~/.dotfiles/config/). Identify if any functionality depends on this behavior before modifying it. Goal is to avoid changing the terminal directory unless necessary.
 
 ### 86. Fix himalaya sent folder display and add missing sidebar keybindings
-- **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Effort**: 2-4 hours
+- **Status**: [RESEARCHED]
+- **Research Started**: 2026-02-13
+- **Research Completed**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
+- **Research**: [research-001.md](086_fix_himalaya_sent_and_sidebar_keybindings/reports/research-001.md)
 
 **Description**: Fix sent emails (replies) not showing up in sent folder when using himalaya in neovim. Add useful commands (sync, etc.) that are not currently included as single-letter mappings in the himalaya sidebar to be accessible there in addition to under `<leader>m` in which-key. Update the help menu triggered with '?' in the sidebar to reflect all available keybindings.
 

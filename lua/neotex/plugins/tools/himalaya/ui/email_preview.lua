@@ -1132,9 +1132,10 @@ function M.open_email_in_buffer()
     end
 
     if draft_filepath then
-      -- Open draft for editing via draft_manager
-      draft_manager.open(draft_filepath)
-      logger.debug('Opened draft via draft_manager', { filepath = draft_filepath })
+      -- Open draft for editing via email_composer (ensures keymaps are set up)
+      local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+      email_composer.open_draft(draft_filepath)
+      logger.debug('Opened draft via email_composer', { filepath = draft_filepath })
     else
       -- Draft not found - show error notification
       local notify = require('neotex.util.notifications')

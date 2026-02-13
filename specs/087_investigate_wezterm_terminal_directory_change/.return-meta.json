@@ -1,0 +1,20 @@
+{
+  "status": "researched",
+  "summary": "No automatic directory-changing behavior found in Neovim or WezTerm configuration. All directory changes are user-triggered. Further user observation needed to reproduce the exact scenario.",
+  "artifacts": [
+    {
+      "type": "research",
+      "path": "specs/087_investigate_wezterm_terminal_directory_change/reports/research-001.md",
+      "summary": "Comprehensive analysis of Neovim and WezTerm configurations showing no automatic directory-changing behavior"
+    }
+  ],
+  "next_steps": "User should document exact reproduction steps - the behavior may be caused by: (1) opening a file with absolute path, (2) zoxide intelligent directory jumping, or (3) external shell aliases/scripts",
+  "metadata": {
+    "session_id": "sess_1771018686_143ebc",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 1800,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 5
+  }
+}

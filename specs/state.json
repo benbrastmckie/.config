@@ -4,19 +4,27 @@
     {
       "project_number": 87,
       "project_name": "investigate_wezterm_terminal_directory_change",
-      "status": "not_started",
+      "status": "researching",
       "language": "neovim",
       "created": "2026-02-13T21:37:24Z",
-      "last_updated": "2026-02-13T21:37:24Z"
+      "last_updated": "2026-02-13T21:38:24Z",
+      "session_id": "sess_1771018686_143ebc"
     },
     {
       "project_number": 86,
       "project_name": "fix_himalaya_sent_and_sidebar_keybindings",
-      "status": "researching",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T21:33:45Z",
-      "last_updated": "2026-02-13T21:37:30Z",
-      "session_id": "sess_1771018631_8c79a4"
+      "last_updated": "2026-02-13T21:42:06Z",
+      "session_id": "sess_1771018631_8c79a4",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/086_fix_himalaya_sent_and_sidebar_keybindings/reports/research-001.md",
+          "summary": "Research report on himalaya sent folder configuration issue and missing sidebar keybindings"
+        }
+      ]
     },
     {
       "project_number": 78,
