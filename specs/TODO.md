@@ -8,8 +8,11 @@ next_project_number: 86
 
 ### 85. Fix FileChangedShell autocmd to respect buffer-local autoread setting
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
 - **Language**: neovim
+- **Research Started**: 2026-02-13
+- **Research Completed**: 2026-02-13
+- **Research**: [research-001.md](085_fix_filechangedshell_respect_autoread/reports/research-001.md)
 
 **Description**: Fix FileChangedShell autocmd to respect buffer-local autoread setting. The global FileChangedShell autocmd in lua/neotex/config/autocmds.lua (lines ~68-84) unconditionally sets vim.v.fcs_choice = 'reload' for all file changes, bypassing buffer-local autoread = false settings. This causes Himalaya compose buffers to reload from disk despite having autoread disabled, resulting in header format changes from simplified to full MIME. Modify the autocmd to check vim.bo[args.buf].autoread before reloading: if buffer has autoread = false, set vim.v.fcs_choice = '' (no reload); if autoread = true (default), set vim.v.fcs_choice = 'reload' (current behavior). This preserves the existing behavior for most buffers while respecting explicit autoread = false settings like those on mail compose buffers. Related to completed task 84 which disabled autoread for compose buffers but didn't account for this global autocmd override.
 

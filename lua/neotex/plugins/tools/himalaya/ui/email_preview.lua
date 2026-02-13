@@ -28,6 +28,8 @@ local preview_state = {
   win = nil,
   buf = nil,
   email_id = nil,
+  email_type = nil,  -- 'draft', 'regular', 'scheduled' - preserved during mode transitions
+  local_id = nil,  -- Local draft identifier for filesystem lookup
   preview_mode = false,  -- Legacy: kept for backward compatibility
   mode = 'off',  -- New: PREVIEW_STATE enum value
   sidebar_cursor_line = nil,  -- Track cursor position when entering focus mode
@@ -686,7 +688,10 @@ function M.show_preview(email_id, parent_win, email_type, local_id)
   
   -- Update state
   preview_state.email_id = email_id
-  
+  -- Store email_type and local_id for draft context preservation during mode transitions
+  preview_state.email_type = is_draft and 'draft' or 'regular'
+  preview_state.local_id = local_id
+
   -- Render content
   M.render_preview(email_content, preview_state.buf)
   
@@ -865,7 +870,9 @@ function M.hide_preview()
   end
   preview_state.win = nil
   preview_state.email_id = nil
-  
+  preview_state.email_type = nil
+  preview_state.local_id = nil
+
   -- Clean up autocmds
   if preview_state.autocmd_id then
     pcall(vim.api.nvim_del_autocmd, preview_state.autocmd_id)
@@ -1090,8 +1097,11 @@ end
 
 -- Open email in full buffer (terminal state)
 function M.open_email_in_buffer()
-  -- Get current email ID
+  -- Get current email ID and draft context (capture before hide_preview resets them)
   local email_id = preview_state.email_id
+  local email_type = preview_state.email_type
+  local local_id = preview_state.local_id
+
   if not email_id then
     logger.warn('Cannot open email: no email selected')
     return false
@@ -1100,10 +1110,46 @@ function M.open_email_in_buffer()
   -- Set mode to BUFFER_OPEN
   M.set_mode(M.PREVIEW_STATE.BUFFER_OPEN)
 
-  -- Hide the preview window
+  -- Handle drafts: route to draft_manager.open() for editing
+  if email_type == 'draft' then
+    logger.debug('Opening draft for editing', { email_id = email_id, local_id = local_id })
+
+    -- Hide the preview window
+    M.hide_preview()
+
+    -- Find draft filepath
+    local account = state.get_current_account()
+    local drafts = draft_manager.list(account)
+    local draft_filepath = nil
+
+    -- Search by local_id (filename) or email_id
+    local search_id = local_id or email_id
+    for _, draft in ipairs(drafts) do
+      if draft.filename == search_id or tostring(draft.timestamp) == search_id then
+        draft_filepath = draft.filepath
+        break
+      end
+    end
+
+    if draft_filepath then
+      -- Open draft for editing via draft_manager
+      draft_manager.open(draft_filepath)
+      logger.debug('Opened draft via draft_manager', { filepath = draft_filepath })
+    else
+      -- Draft not found - show error notification
+      local notify = require('neotex.util.notifications')
+      notify.himalaya('Draft file not found', notify.categories.ERROR)
+      logger.error('Draft file not found', { email_id = email_id, local_id = local_id })
+      M.set_mode(M.PREVIEW_STATE.OFF)
+      return false
+    end
+
+    return true
+  end
+
+  -- Regular email: hide preview and delegate to email_reader module
   M.hide_preview()
 
-  -- Delegate to email_reader module (to be implemented in Phase 8)
   local ok, email_reader = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_reader')
   if ok and email_reader.open_email_buffer then
     email_reader.open_email_buffer(email_id)
@@ -1217,6 +1263,8 @@ function M.on_preview_window_closed()
   -- Reset window reference
   preview_state.win = nil
   preview_state.email_id = nil
+  preview_state.email_type = nil
+  preview_state.local_id = nil
 
   -- Reset mode to OFF
   M.set_mode(M.PREVIEW_STATE.OFF)
@@ -1247,6 +1295,8 @@ function M.on_sidebar_closed()
   preview_state.win = nil
   preview_state.buf = nil
   preview_state.email_id = nil
+  preview_state.email_type = nil
+  preview_state.local_id = nil
   preview_state.sidebar_cursor_line = nil
   preview_state.focus_keymaps_set = false
 
