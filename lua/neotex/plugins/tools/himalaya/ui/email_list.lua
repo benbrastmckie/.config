@@ -954,9 +954,8 @@ function M.format_email_list(emails)
       -- Store email metadata for highlighting
       if not lines.metadata then lines.metadata = {} end
       
-      -- Validate email_id before storing (allow local draft IDs and maildir filenames)
-      if email_id and (tonumber(email_id) or tostring(email_id):match('^draft_') or 
-                      (is_draft_folder and tostring(email_id):match('%..*,.*:2,'))) then
+      -- Validate email_id before storing (accept any valid non-empty, non-table ID from himalaya)
+      if email_id and email_id ~= '' and type(email_id) ~= 'table' then
         lines.metadata[#lines] = {
           type = 'email',  -- Add type field for regular emails
           seen = seen,
@@ -2004,10 +2003,11 @@ function M.pick_folder()
   local current_folder = state.get_current_folder()
   local options = {}
   for _, folder in ipairs(folders) do
-    if folder == current_folder then
-      table.insert(options, folder .. ' (current)')
+    local folder_name = type(folder) == "table" and folder.name or folder
+    if folder_name == current_folder then
+      table.insert(options, folder_name .. ' (current)')
     else
-      table.insert(options, folder)
+      table.insert(options, folder_name)
     end
   end
   

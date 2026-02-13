@@ -1,0 +1,19 @@
+{
+  "status": "researched",
+  "artifacts": [
+    {
+      "type": "report",
+      "path": "specs/073_fix_whichkey_conditional_mappings_not_displaying/reports/research-001.md",
+      "summary": "Research report identifying root cause (cond evaluated once) and solution (buffer-local wk.add)"
+    }
+  ],
+  "next_steps": "Run /plan 73 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1770947693_447390",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 180,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 5
+  }
+}

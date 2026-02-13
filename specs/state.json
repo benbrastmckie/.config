@@ -4,10 +4,19 @@
     {
       "project_number": 73,
       "project_name": "fix_whichkey_conditional_mappings_not_displaying",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T01:53:19Z",
-      "last_updated": "2026-02-13T01:53:19Z"
+      "last_updated": "2026-02-13T01:58:25Z",
+      "session_id": "sess_1770947693_447390",
+      "researched": "2026-02-13T01:58:25Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/073_fix_whichkey_conditional_mappings_not_displaying/reports/research-001.md",
+          "summary": "Research report identifying root cause (cond evaluated once) and solution (buffer-local wk.add)"
+        }
+      ]
     },
     {
       "project_number": 72,

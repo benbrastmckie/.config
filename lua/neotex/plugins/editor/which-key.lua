@@ -202,7 +202,7 @@ return {
     end
 
     local function is_mail()
-      return vim.bo.filetype == "mail"
+      return vim.tbl_contains({ "mail", "himalaya-compose" }, vim.bo.filetype)
     end
 
     local function is_himalaya_list()
