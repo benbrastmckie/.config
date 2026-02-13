@@ -102,7 +102,7 @@ function M.execute_himalaya(args, opts)
       loading_msg = 'Loading email content...'
     elseif vim.tbl_contains(args, 'folder') and vim.tbl_contains(args, 'list') then
       loading_msg = 'Loading folders...'
-    elseif vim.tbl_contains(args, 'send') then
+    elseif vim.tbl_contains(args, 'message') and vim.tbl_contains(args, 'send') then
       loading_msg = 'Sending email...'
     else
       loading_msg = 'Processing...'
@@ -209,9 +209,9 @@ function M.execute_himalaya(args, opts)
   -- Parse JSON output
   local ok, result = pcall(vim.json.decode, output)
   if not ok then
-    -- Some commands don't return JSON
-    if args[1] == 'send' or args[1] == 'move' or args[1] == 'delete' then
-      -- These commands return plain text on success
+    -- Some commands don't return JSON (himalaya v1.1.0 command structure)
+    -- 'message send', 'message move', 'message delete' return plain text on success
+    if args[1] == 'message' and (args[2] == 'send' or args[2] == 'move' or args[2] == 'delete') then
       return string_utils.trim(output)
     end
     

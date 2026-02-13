@@ -4,19 +4,27 @@
     {
       "project_number": 77,
       "project_name": "fix_himalaya_sidebar_folder_selection",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T17:48:53Z",
-      "last_updated": "2026-02-13T17:48:53Z"
+      "last_updated": "2026-02-13T17:52:54Z",
+      "session_id": "sess_1771004965_fee2a0",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/077_fix_himalaya_sidebar_folder_selection/reports/research-001.md",
+          "summary": "Research report documenting root cause (himalaya CLI omits INBOX), code locations, and implementation approach with priority-sorted folder list"
+        }
+      ]
     },
     {
       "project_number": 76,
       "project_name": "fix_himalaya_reply_forward_send_errors",
-      "status": "planned",
+      "status": "implementing",
       "language": "neovim",
       "created": "2026-02-13T17:33:38Z",
-      "last_updated": "2026-02-13T17:47:01Z",
-      "session_id": "sess_1771004641_dce4ac",
+      "last_updated": "2026-02-13T17:49:32Z",
+      "session_id": "sess_1771004944_b0e1c8",
       "researched": "2026-02-13T17:41:33Z",
       "artifacts": [
         {
@@ -30,7 +38,8 @@
           "summary": "4-phase plan covering send command fix, message read helper, get_email_by_id update, and integration testing"
         }
       ],
-      "planned": "2026-02-13T17:47:01Z"
+      "planned": "2026-02-13T17:47:01Z",
+      "started": "2026-02-13T17:49:32Z"
     },
     {
       "project_number": 75,

@@ -208,28 +208,173 @@ end
 function M.send_email(account, email_data)
   -- Format email
   local formatted = email_utils.format_email_for_sending(email_data)
-  
-  -- Write to temporary file
+
+  -- Write to temporary file for piping to stdin
   local temp_file = file_utils.temp_file('himalaya_send', '.eml')
   local ok, err = file_utils.write_file(temp_file, formatted)
-  
+
   if not ok then
     os.remove(temp_file)
     return false, err
   end
-  
-  -- Send using CLI
-  local args = { 'send' }
-  local result = cli_utils.execute_himalaya(args, {
-    account = account,
-    show_loading = true,
-    loading_msg = 'Sending email...'
-  })
-  
+
+  -- Get account name
+  local account_name = account or config.get_current_account_name()
+  if not account_name then
+    os.remove(temp_file)
+    return false, 'No account configured'
+  end
+
+  -- Show loading notification
+  notify.himalaya('Sending email...', notify.categories.STATUS)
+
+  -- Build and execute command with stdin redirection
+  -- himalaya v1.1.0 uses 'message send' and reads from stdin
+  local cmd = string.format('cat %s | himalaya message send -a %s',
+    vim.fn.shellescape(temp_file),
+    vim.fn.shellescape(account_name))
+
+  local output = vim.fn.system(cmd)
+  local exit_code = vim.v.shell_error
+
   -- Clean up temp file
   os.remove(temp_file)
-  
-  return result ~= nil, result
+
+  if exit_code ~= 0 then
+    local error_msg = vim.trim(output)
+    logger.error('Failed to send email', { error = error_msg, exit_code = exit_code })
+    notify.himalaya('Failed to send: ' .. error_msg, notify.categories.ERROR)
+    return false, error_msg
+  end
+
+  notify.himalaya('Email sent successfully', notify.categories.SUCCESS)
+  return true, vim.trim(output)
+end
+
+-- Parse message read result for reply/forward operations
+-- Extracts fields needed from 'message read' JSON output
+-- @param result table|string - JSON-decoded result from 'message read -o json' or raw text
+-- @param email_id string - The email ID being fetched
+-- @return table with email data for reply/forward: id, from, to, cc, subject, date, message_id, references, body
+function M.parse_message_read_result(result, email_id)
+  if not result then
+    return nil
+  end
+
+  -- If result is a string (raw output), the JSON may have been parsed already
+  -- or it could be plain text output. Handle both cases.
+  if type(result) == 'string' then
+    -- Try to parse the content as email text (headers + body)
+    local lines = vim.split(result, '\n')
+    local parsed = email_utils.parse_email_content(lines)
+
+    return {
+      id = email_id,
+      from = parsed.headers.from,
+      to = parsed.headers.to,
+      cc = parsed.headers.cc,
+      subject = parsed.headers.subject,
+      date = parsed.headers.date,
+      message_id = parsed.headers.message_id,
+      references = parsed.headers.references,
+      body = parsed.body or '',
+      headers = parsed.headers
+    }
+  end
+
+  -- Result is a table (JSON output from himalaya)
+  -- himalaya v1.1.0 message read returns structured data
+  local email = {
+    id = email_id,
+    subject = result.subject,
+    date = result.date,
+    has_attachment = result.has_attachment,
+    flags = result.flags or {}
+  }
+
+  -- Handle from field (can be string or table)
+  if type(result.from) == 'table' then
+    if result.from.addr then
+      email.from = result.from.name
+        and string.format('%s <%s>', result.from.name, result.from.addr)
+        or result.from.addr
+    else
+      email.from = result.from.email or result.from[1] or ''
+    end
+  else
+    email.from = result.from
+  end
+
+  -- Handle to field (can be string or table)
+  if type(result.to) == 'table' then
+    if result.to.addr then
+      email.to = result.to.name
+        and string.format('%s <%s>', result.to.name, result.to.addr)
+        or result.to.addr
+    elseif #result.to > 0 then
+      local to_addrs = {}
+      for _, addr in ipairs(result.to) do
+        if type(addr) == 'table' then
+          table.insert(to_addrs, addr.addr or addr.email or '')
+        else
+          table.insert(to_addrs, addr)
+        end
+      end
+      email.to = table.concat(to_addrs, ', ')
+    end
+  else
+    email.to = result.to
+  end
+
+  -- Handle cc field
+  if result.cc then
+    if type(result.cc) == 'table' then
+      if result.cc.addr then
+        email.cc = result.cc.addr
+      elseif #result.cc > 0 then
+        local cc_addrs = {}
+        for _, addr in ipairs(result.cc) do
+          if type(addr) == 'table' then
+            table.insert(cc_addrs, addr.addr or addr.email or '')
+          else
+            table.insert(cc_addrs, addr)
+          end
+        end
+        email.cc = table.concat(cc_addrs, ', ')
+      end
+    else
+      email.cc = result.cc
+    end
+  end
+
+  -- Handle message_id and references for threading
+  email.message_id = result.message_id
+  email.references = result.references
+
+  -- Handle body - may be in different fields depending on output format
+  if result.body then
+    email.body = result.body
+  elseif result.text then
+    email.body = result.text
+  elseif result.content then
+    email.body = result.content
+  else
+    -- If no body in JSON, the full content may need separate fetch
+    email.body = ''
+  end
+
+  -- Store raw headers if available
+  email.headers = result.headers or {
+    from = email.from,
+    to = email.to,
+    cc = email.cc,
+    subject = email.subject,
+    date = email.date,
+    message_id = email.message_id,
+    references = email.references
+  }
+
+  return email
 end
 
 -- Get email by ID
@@ -259,13 +404,21 @@ function M.get_email_by_id(account, folder, email_id)
       end
     end
   end
-  
-  -- Fetch from CLI
-  local args = { 'envelope', 'get', email_id }
-  return cli_utils.execute_himalaya(args, {
+
+  -- Fetch from CLI using 'message read' (himalaya v1.1.0)
+  -- The 'envelope get' command does not exist in v1.1.0
+  local args = { 'message', 'read', email_id }
+  local result = cli_utils.execute_himalaya(args, {
     account = account,
     folder = folder
   })
+
+  if result then
+    -- Parse the message read result to extract email data for reply/forward
+    return M.parse_message_read_result(result, email_id)
+  end
+
+  return nil
 end
 
 -- Read draft from maildir
