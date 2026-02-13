@@ -400,6 +400,14 @@ function M.init(main_buffers)
   -- Initialize debounced navigation refresh for race condition prevention
   init_debounced_nav_refresh()
 
+  -- Initialize threading from config (Task #81)
+  local threading_config = config.get('threading', {})
+  threading_enabled = threading_config.enabled ~= false  -- Default true
+  logger.debug('Threading initialized', {
+    enabled = threading_enabled,
+    default_collapsed = threading_config.default_collapsed
+  })
+
   -- Register event listener for email scheduled
   local events_bus = require('neotex.plugins.tools.himalaya.commands.orchestrator')
   local event_types = require('neotex.plugins.tools.himalaya.core.events')

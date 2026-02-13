@@ -4,11 +4,11 @@
     {
       "project_number": 82,
       "project_name": "fix_nil_check_active_editor_himalaya",
-      "status": "researched",
+      "status": "planning",
       "language": "neovim",
       "created": "2026-02-13T19:42:35Z",
-      "last_updated": "2026-02-13T19:46:22Z",
-      "session_id": "sess_1771011814_6b6394",
+      "last_updated": "2026-02-13T19:48:12Z",
+      "session_id": "sess_1771012077_2d67f8",
       "artifacts": [
         {
           "type": "research",
@@ -20,10 +20,10 @@
     {
       "project_number": 81,
       "project_name": "implement_himalaya_email_thread_grouping",
-      "status": "implementing",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-13T19:25:59Z",
-      "last_updated": "2026-02-13T19:40:59Z",
+      "last_updated": "2026-02-13T19:49:02Z",
       "session_id": "sess_1771011637_f9f091",
       "artifacts": [
         {
@@ -35,9 +35,16 @@
           "path": "specs/081_implement_himalaya_email_thread_grouping/plans/implementation-001.md",
           "type": "plan",
           "summary": "5-phase implementation plan for Himalaya email thread grouping with subject-based grouping and expand/collapse UI"
+        },
+        {
+          "path": "specs/081_implement_himalaya_email_thread_grouping/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with all changes and verification results"
         }
       ],
-      "planned": "2026-02-13T19:37:50Z"
+      "planned": "2026-02-13T19:37:50Z",
+      "completed": "2026-02-13T19:49:02Z",
+      "completion_summary": "Implemented email thread grouping in Himalaya sidebar. Created threading.lua module for subject normalization and thread indexing. Added expand/collapse keybindings (Tab, zo/zc, zR/zM) and :HimalayaThreadingToggle command. Threads display with [N] count indicator, grouping Re:/Fwd:/AW: replies together."
     },
     {
       "project_number": 80,

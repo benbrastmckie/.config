@@ -601,6 +601,54 @@ function M.setup(registry)
     }
   }
   
+  -- ======================
+  -- Threading Operations (Task #81)
+  -- ======================
+
+  commands.HimalayaThreadingToggle = {
+    fn = function()
+      local notify = require('neotex.util.notifications')
+      local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+
+      local enabled = email_list.toggle_threading()
+      notify.himalaya('Email threading ' .. (enabled and 'enabled' or 'disabled'), notify.categories.SUCCESS)
+
+      -- Refresh the display
+      email_list.refresh_email_list()
+    end,
+    opts = {
+      desc = 'Toggle email thread grouping'
+    }
+  }
+
+  commands.HimalayaExpandAllThreads = {
+    fn = function()
+      local notify = require('neotex.util.notifications')
+      local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+
+      email_list.expand_all_threads()
+      email_list.refresh_email_list()
+      notify.himalaya('All threads expanded', notify.categories.STATUS)
+    end,
+    opts = {
+      desc = 'Expand all email threads'
+    }
+  }
+
+  commands.HimalayaCollapseAllThreads = {
+    fn = function()
+      local notify = require('neotex.util.notifications')
+      local email_list = require('neotex.plugins.tools.himalaya.ui.email_list')
+
+      email_list.collapse_all_threads()
+      email_list.refresh_email_list()
+      notify.himalaya('All threads collapsed', notify.categories.STATUS)
+    end,
+    opts = {
+      desc = 'Collapse all email threads'
+    }
+  }
+
   -- Register all commands
   registry.register_batch(commands)
 end

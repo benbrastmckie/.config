@@ -8,9 +8,10 @@ next_project_number: 83
 
 ### 82. Fix nil value error for check_active_editor_and_prompt in Himalaya email commands
 - **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Status**: [PLANNING]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
+- **Planning Started**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](082_fix_nil_check_active_editor_himalaya/reports/research-001.md)
@@ -19,8 +20,9 @@ next_project_number: 83
 
 ### 81. Implement email thread grouping in Himalaya sidebar
 - **Effort**: 6-8 hours
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Implementation Started**: 2026-02-13
+- **Implementation Completed**: 2026-02-13
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Planning Started**: 2026-02-13
@@ -29,6 +31,7 @@ next_project_number: 83
 - **Dependencies**: None
 - **Research**: [research-001.md](081_implement_himalaya_email_thread_grouping/reports/research-001.md)
 - **Plan**: [implementation-001.md](081_implement_himalaya_email_thread_grouping/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260213.md](081_implement_himalaya_email_thread_grouping/summaries/implementation-summary-20260213.md)
 
 **Description**: Implement email thread grouping in Himalaya sidebar - consolidate emails from the same thread into a single entry, displaying the most recent email's data. Currently, multiple emails from the same thread (e.g., "Bailey Fernandez | AW: Meeting?" appearing 5 times) are shown as separate entries. Goal: group related emails together for a cleaner, more organized inbox view.
 

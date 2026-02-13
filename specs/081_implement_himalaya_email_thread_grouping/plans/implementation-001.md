@@ -1,7 +1,7 @@
 # Implementation Plan: Task #81
 
 - **Task**: 81 - Implement Himalaya Email Thread Grouping
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Effort**: 6-8 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -132,7 +132,7 @@ Key findings from research-001.md integrated into this plan:
 
 ---
 
-### Phase 4: Configuration and User Preferences [IN PROGRESS]
+### Phase 4: Configuration and User Preferences [COMPLETED]
 
 **Goal**: Add configuration options for thread grouping behavior.
 
@@ -160,7 +160,7 @@ Key findings from research-001.md integrated into this plan:
 
 ---
 
-### Phase 5: Integration Testing and Edge Cases [NOT STARTED]
+### Phase 5: Integration Testing and Edge Cases [COMPLETED]
 
 **Goal**: Comprehensive testing and handling of edge cases.
 
