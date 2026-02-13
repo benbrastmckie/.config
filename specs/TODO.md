@@ -8,9 +8,11 @@ next_project_number: 76
 
 ### 75. Fix Himalaya send_email nil value error when sending email
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
+- **Started**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
+- **Research**: [research-001.md](075_fix_himalaya_send_email_nil_error/reports/research-001.md)
 
 **Description**: Fix error when hitting `<leader>me` in a Himalaya email compose buffer: "Error executing Lua callback: ...vim/lua/neotex/plugins/tools/himalaya/commands/email.lua:62: attempt to call field 'send_email' (a nil value)". The error occurs after creating an email by pressing 'e' in the himalaya sidebar.
 
