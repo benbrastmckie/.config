@@ -4,10 +4,19 @@
     {
       "project_number": 76,
       "project_name": "fix_himalaya_reply_forward_send_errors",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T17:33:38Z",
-      "last_updated": "2026-02-13T17:33:38Z"
+      "last_updated": "2026-02-13T17:41:33Z",
+      "session_id": "sess_1771004246_6996a8",
+      "researched": "2026-02-13T17:41:33Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/076_fix_himalaya_reply_forward_send_errors/reports/research-001.md",
+          "summary": "Root cause analysis identifying CLI version incompatibility: envelope get command does not exist in himalaya v1.1.0 and send must be message send"
+        }
+      ]
     },
     {
       "project_number": 75,
