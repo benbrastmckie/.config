@@ -4,11 +4,11 @@
     {
       "project_number": 77,
       "project_name": "fix_himalaya_sidebar_folder_selection",
-      "status": "researched",
+      "status": "planning",
       "language": "neovim",
       "created": "2026-02-13T17:48:53Z",
-      "last_updated": "2026-02-13T17:52:54Z",
-      "session_id": "sess_1771004965_fee2a0",
+      "last_updated": "2026-02-13T17:53:55Z",
+      "session_id": "sess_1771005220_91888d",
       "artifacts": [
         {
           "type": "research",
@@ -20,10 +20,10 @@
     {
       "project_number": 76,
       "project_name": "fix_himalaya_reply_forward_send_errors",
-      "status": "implementing",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-13T17:33:38Z",
-      "last_updated": "2026-02-13T17:49:32Z",
+      "last_updated": "2026-02-13T17:53:46Z",
       "session_id": "sess_1771004944_b0e1c8",
       "researched": "2026-02-13T17:41:33Z",
       "artifacts": [
@@ -36,10 +36,17 @@
           "path": "specs/076_fix_himalaya_reply_forward_send_errors/plans/implementation-001.md",
           "type": "plan",
           "summary": "4-phase plan covering send command fix, message read helper, get_email_by_id update, and integration testing"
+        },
+        {
+          "path": "specs/076_fix_himalaya_reply_forward_send_errors/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
         }
       ],
       "planned": "2026-02-13T17:47:01Z",
-      "started": "2026-02-13T17:49:32Z"
+      "started": "2026-02-13T17:49:32Z",
+      "completed": "2026-02-13T17:53:46Z",
+      "completion_summary": "Fixed Himalaya email client integration for himalaya CLI v1.1.0. Updated send_email() to use 'message send' command with stdin piping, replaced non-existent 'envelope get' with 'message read' in get_email_by_id(), and added parse_message_read_result() helper to extract email data for reply/forward operations."
     },
     {
       "project_number": 75,

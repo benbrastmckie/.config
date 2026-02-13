@@ -1,7 +1,7 @@
 # Implementation Plan: Task #76
 
 - **Task**: 76 - Fix Himalaya reply/forward/send errors
-- **Status**: [COMPLETE]
+- **Status**: [COMPLETED]
 - **Effort**: 2-3 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
