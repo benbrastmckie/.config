@@ -4,19 +4,25 @@
     {
       "project_number": 85,
       "project_name": "fix_filechangedshell_respect_autoread",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T20:39:40Z",
-      "last_updated": "2026-02-13T20:43:57Z",
-      "session_id": "sess_1771015231_527a78",
+      "last_updated": "2026-02-13T20:48:09Z",
+      "session_id": "sess_1771015566_a8f2d4",
       "researched": "2026-02-13T20:43:57Z",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/085_fix_filechangedshell_respect_autoread/reports/research-001.md",
           "summary": "Analysis of FileChangedShell autocmd bypassing buffer-local autoread settings with 2-line fix recommendation"
+        },
+        {
+          "path": "specs/085_fix_filechangedshell_respect_autoread/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "2-phase plan to fix FileChangedShell autocmd respecting buffer-local autoread settings"
         }
-      ]
+      ],
+      "planned": "2026-02-13T20:48:09Z"
     },
     {
       "project_number": 84,

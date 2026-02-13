@@ -1,19 +1,19 @@
 {
-  "status": "researched",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/085_fix_filechangedshell_respect_autoread/reports/research-001.md",
-      "summary": "Analysis of FileChangedShell autocmd bypassing buffer-local autoread settings with 2-line fix recommendation"
+      "type": "plan",
+      "path": "specs/085_fix_filechangedshell_respect_autoread/plans/implementation-001.md",
+      "summary": "2-phase plan to fix FileChangedShell autocmd respecting buffer-local autoread settings"
     }
   ],
-  "next_steps": "Run /plan 85 to create implementation plan",
+  "next_steps": "Run /implement 85 to execute the plan",
   "metadata": {
-    "session_id": "sess_1771015231_527a78",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 180,
+    "session_id": "sess_1771015566_a8f2d4",
+    "agent_type": "planner-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 7
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 2,
+    "estimated_hours": "0.5"
   }
 }
