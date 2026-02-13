@@ -24,23 +24,34 @@ function M.setup(registry)
   commands.HimalayaWrite = {
     fn = function(opts)
       local main = require('neotex.plugins.tools.himalaya.ui.main')
-      
-      -- Check for active editor and prompt save
-      local result = main.check_active_editor_and_prompt()
-      if result == 'cancelled' then
-        return
-      elseif result == 'switching' then
-        -- Will switch after save completes
+      local email_composer = require('neotex.plugins.tools.himalaya.ui.email_composer')
+      local notify = require('neotex.util.notifications')
+
+      -- Check if already composing an email
+      if email_composer.is_composing() then
+        notify.himalaya('Already composing an email', notify.categories.INFO)
         return
       end
-      
-      -- Get account override from args
-      local account_override = nil
+
+      -- Get account override from args (used to switch account before composing)
       if opts.args and opts.args ~= '' then
-        account_override = opts.args
+        -- If account specified, switch to that account first
+        local account_name = opts.args
+        local accounts_config = require('neotex.plugins.tools.himalaya.config.accounts')
+        if accounts_config.has_account(account_name) then
+          local success = main.switch_account(account_name)
+          if not success then
+            notify.himalaya('Failed to switch to account: ' .. account_name, notify.categories.ERROR)
+            return
+          end
+        else
+          notify.himalaya('Account not found: ' .. account_name, notify.categories.ERROR)
+          return
+        end
       end
-      
-      main.write_email(nil, nil, account_override)
+
+      -- Compose new email (same as 'e' key in sidebar)
+      main.compose_email()
     end,
     opts = {
       nargs = '?',

@@ -1,7 +1,7 @@
 # Implementation Plan: Task #83
 
 - **Task**: 83 - Fix Himalaya sidebar help display inaccuracies
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Effort**: 1-2 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -44,7 +44,7 @@ Key findings from research-001.md:
 
 ## Implementation Phases
 
-### Phase 1: Update folder_help.lua [NOT STARTED]
+### Phase 1: Update folder_help.lua [COMPLETED]
 
 **Goal**: Replace `gH` with `?` in the base_other section to match compose help pattern.
 
@@ -63,7 +63,7 @@ Key findings from research-001.md:
 
 ---
 
-### Phase 2: Simplify email_list.lua footer [NOT STARTED]
+### Phase 2: Simplify email_list.lua footer [COMPLETED]
 
 **Goal**: Replace the verbose footer with a simple `?:help` indicator.
 
@@ -83,7 +83,7 @@ Key findings from research-001.md:
 
 ---
 
-### Phase 3: Update commands/ui.lua messages [NOT STARTED]
+### Phase 3: Update commands/ui.lua messages [COMPLETED]
 
 **Goal**: Update show_help() messages to reference `?` instead of `gH`.
 
@@ -103,7 +103,7 @@ Key findings from research-001.md:
 
 ---
 
-### Phase 4: Verification and Testing [NOT STARTED]
+### Phase 4: Verification and Testing [COMPLETED]
 
 **Goal**: Verify all changes work correctly and help displays are consistent.
 

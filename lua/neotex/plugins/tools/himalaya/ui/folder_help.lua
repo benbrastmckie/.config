@@ -78,7 +78,7 @@ function M.get_help_content(folder_type)
   local base_other = {
     "Other:",
     "  F         - Refresh list",
-    "  gH        - Show this help",
+    "  ?         - Show this help",
     "  q         - Quit sidebar",
     "",
     "Press any key to close..."

@@ -1375,8 +1375,8 @@ function M.format_email_list(emails)
   local line_data = lines.metadata and lines.metadata[current_line]
   local is_on_scheduled = line_data and line_data.type == 'scheduled'
   
-  -- Show compact help footer with new keymaps
-  table.insert(lines, '<C-d>/<C-u>:page | r/R/f:reply | d/a/m:actions | c:compose | gH:help')
+  -- Show compact help footer pointing to full help
+  table.insert(lines, '?:help')
   
   return lines
 end

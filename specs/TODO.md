@@ -8,18 +8,22 @@ next_project_number: 85
 
 ### 84. Fix disruptive header changes during Himalaya email composition
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHED]
+- **Research Started**: 2026-02-13
+- **Research Completed**: 2026-02-13
 - **Language**: neovim
+- **Research**: [research-001.md](084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md)
 
 **Description**: Fix Himalaya email composition UX issue where email headers change unexpectedly during reply composition. Initial header shows simple format (From/To/Cc/Bcc/Subject) but then changes to full MIME format with additional fields (Mime-Version, Date, Content-Type, X-Himalaya-Account), causing disruptive cursor movement while writing. Identify root cause and implement elegant solution to improve UX.
 
 ### 83. Fix Himalaya sidebar help display and remove obsolete gH mapping
 - **Effort**: 1-2 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Planning Started**: 2026-02-13
 - **Planning Completed**: 2026-02-13
+- **Implementation Started**: 2026-02-13
 - **Language**: neovim
 - **Research**: [research-001.md](083_fix_himalaya_sidebar_help_display/reports/research-001.md)
 - **Plan**: [implementation-001.md](083_fix_himalaya_sidebar_help_display/plans/implementation-001.md)
@@ -28,11 +32,12 @@ next_project_number: 85
 
 ### 82. Fix nil value error for check_active_editor_and_prompt in Himalaya email commands
 - **Effort**: TBD
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Planning Started**: 2026-02-13
 - **Planning Completed**: 2026-02-13
+- **Implementation Started**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](082_fix_nil_check_active_editor_himalaya/reports/research-001.md)

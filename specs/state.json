@@ -4,19 +4,27 @@
     {
       "project_number": 84,
       "project_name": "fix_disruptive_header_changes_himalaya_email",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T20:01:11Z",
-      "last_updated": "2026-02-13T20:01:11Z"
+      "last_updated": "2026-02-13T20:05:37Z",
+      "session_id": "sess_1771012930_ca6ae1",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md",
+          "summary": "Root cause analysis identifying Neovim autoread/checktime mechanism reloading compose buffer with full MIME headers; recommends disabling buffer-local autoread"
+        }
+      ]
     },
     {
       "project_number": 83,
       "project_name": "fix_himalaya_sidebar_help_display",
-      "status": "planned",
+      "status": "implementing",
       "language": "neovim",
       "created": "2026-02-13T19:51:33Z",
-      "last_updated": "2026-02-13T20:00:14Z",
-      "session_id": "sess_1771012676_312527",
+      "last_updated": "2026-02-13T20:02:39Z",
+      "session_id": "sess_1771012924_6f6e06",
       "artifacts": [
         {
           "type": "research",
@@ -34,11 +42,11 @@
     {
       "project_number": 82,
       "project_name": "fix_nil_check_active_editor_himalaya",
-      "status": "planned",
+      "status": "implementing",
       "language": "neovim",
       "created": "2026-02-13T19:42:35Z",
-      "last_updated": "2026-02-13T19:50:16Z",
-      "session_id": "sess_1771012077_2d67f8",
+      "last_updated": "2026-02-13T20:01:39Z",
+      "session_id": "sess_1771012877_06b757",
       "artifacts": [
         {
           "type": "research",
