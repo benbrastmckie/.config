@@ -23,6 +23,8 @@ Key findings from research-001.md:
 
 ## Goals & Non-Goals
 
+fyin avxi ddgv alsq
+
 **Goals**:
 - Re-authenticate Gmail OAuth2 via Himalaya CLI
 - Verify SMTP sending works after re-authentication
