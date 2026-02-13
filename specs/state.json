@@ -4,18 +4,24 @@
     {
       "project_number": 82,
       "project_name": "fix_nil_check_active_editor_himalaya",
-      "status": "planning",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T19:42:35Z",
-      "last_updated": "2026-02-13T19:48:12Z",
+      "last_updated": "2026-02-13T19:50:16Z",
       "session_id": "sess_1771012077_2d67f8",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/082_fix_nil_check_active_editor_himalaya/reports/research-001.md",
           "summary": "Research report documenting the nil value error cause and recommended fix using existing compose_email function"
+        },
+        {
+          "path": "specs/082_fix_nil_check_active_editor_himalaya/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "2-phase plan: Phase 1 fixes HimalayaWrite command to use compose_email() like sidebar 'e' key; Phase 2 verifies identical behavior"
         }
-      ]
+      ],
+      "planned": "2026-02-13T19:50:16Z"
     },
     {
       "project_number": 81,
