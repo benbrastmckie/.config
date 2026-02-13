@@ -2,10 +2,10 @@
 -- Handles email list display, formatting, and navigation
 
 -- TODO: Add email search and filtering within the list
--- TODO: Implement email threading/conversation view
 -- TODO: Add email sorting options (date, subject, sender, size)
 -- TODO: Implement virtual scrolling for large email lists
 -- TODO: Add email archiving with visual feedback
+-- Threading support implemented (Task #81)
 
 local M = {}
 
@@ -22,6 +22,7 @@ local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
 local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
 local async_utils = require('neotex.plugins.tools.himalaya.utils.async')
+local threading = require('neotex.plugins.tools.himalaya.utils.threading')
 
 -- Module state
 local sync_status_timer = nil
@@ -55,6 +56,11 @@ local timing_stats = {
   avg_cache_hit_ms = 0,
   total_cache_hit_ms = 0,
 }
+
+-- Threading state
+-- Structure: expanded_threads[normalized_subject] = true for expanded threads
+local expanded_threads = {}
+local threading_enabled = true  -- Default: threading is enabled
 
 --- Measure timing of a function call
 --- @param fn function Function to measure
@@ -93,6 +99,144 @@ end
 --- @return table Timing stats
 function M.get_timing_stats()
   return vim.deepcopy(timing_stats)
+end
+
+-- ============================================================================
+-- Threading API
+-- ============================================================================
+
+--- Check if threading is enabled
+--- @return boolean True if threading is enabled
+function M.is_threading_enabled()
+  return threading_enabled
+end
+
+--- Enable or disable threading
+--- @param enabled boolean Whether to enable threading
+function M.set_threading_enabled(enabled)
+  threading_enabled = enabled
+  -- Clear expanded threads when disabling
+  if not enabled then
+    expanded_threads = {}
+  end
+  logger.info('Threading ' .. (enabled and 'enabled' or 'disabled'))
+end
+
+--- Toggle threading on/off
+--- @return boolean New threading state
+function M.toggle_threading()
+  threading_enabled = not threading_enabled
+  if not threading_enabled then
+    expanded_threads = {}
+  end
+  logger.info('Threading toggled to ' .. (threading_enabled and 'enabled' or 'disabled'))
+  return threading_enabled
+end
+
+--- Check if a thread is expanded
+--- @param normalized_subject string The normalized subject (thread key)
+--- @return boolean True if thread is expanded
+function M.is_thread_expanded(normalized_subject)
+  return expanded_threads[normalized_subject] == true
+end
+
+--- Toggle thread expansion state
+--- @param normalized_subject string The normalized subject (thread key)
+--- @return boolean New expansion state
+function M.toggle_thread_expansion(normalized_subject)
+  if expanded_threads[normalized_subject] then
+    expanded_threads[normalized_subject] = nil
+    return false
+  else
+    expanded_threads[normalized_subject] = true
+    return true
+  end
+end
+
+--- Expand all threads
+function M.expand_all_threads()
+  -- Get current thread index from state
+  local thread_order = state.get('email_list.thread_order', {})
+  for _, normalized_subject in ipairs(thread_order) do
+    expanded_threads[normalized_subject] = true
+  end
+  logger.debug('Expanded all threads', { count = #thread_order })
+end
+
+--- Collapse all threads
+function M.collapse_all_threads()
+  expanded_threads = {}
+  logger.debug('Collapsed all threads')
+end
+
+--- Get the expanded threads table (for state persistence)
+--- @return table The expanded threads table
+function M.get_expanded_threads()
+  return vim.deepcopy(expanded_threads)
+end
+
+--- Set the expanded threads table (for state restoration)
+--- @param threads table The expanded threads table
+function M.set_expanded_threads(threads)
+  expanded_threads = threads or {}
+end
+
+--- Toggle expansion of the thread under cursor
+--- @return boolean|nil New expansion state, or nil if not on a thread
+function M.toggle_current_thread()
+  local line_map = state.get('email_list.line_map', {})
+  local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+  local metadata = line_map[cursor_line]
+
+  if not metadata then
+    return nil
+  end
+
+  -- Check if this is a thread root (has thread_count > 1)
+  if metadata.thread_id and (metadata.is_thread_root or metadata.thread_count and metadata.thread_count > 1) then
+    local new_state = M.toggle_thread_expansion(metadata.thread_id)
+    M.refresh_email_list()
+    return new_state
+  elseif metadata.thread_id and metadata.is_thread_child then
+    -- On a thread child, toggle the parent thread
+    local new_state = M.toggle_thread_expansion(metadata.thread_id)
+    M.refresh_email_list()
+    return new_state
+  end
+
+  return nil
+end
+
+--- Expand the thread under cursor
+function M.expand_current_thread()
+  local line_map = state.get('email_list.line_map', {})
+  local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+  local metadata = line_map[cursor_line]
+
+  if not metadata or not metadata.thread_id then
+    return
+  end
+
+  if not M.is_thread_expanded(metadata.thread_id) then
+    expanded_threads[metadata.thread_id] = true
+    M.refresh_email_list()
+  end
+end
+
+--- Collapse the thread under cursor
+function M.collapse_current_thread()
+  local line_map = state.get('email_list.line_map', {})
+  local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+  local metadata = line_map[cursor_line]
+
+  if not metadata or not metadata.thread_id then
+    return
+  end
+
+  if M.is_thread_expanded(metadata.thread_id) then
+    expanded_threads[metadata.thread_id] = nil
+    M.refresh_email_list()
+  end
 end
 
 --- Get cached page data for instant pagination
@@ -902,7 +1046,136 @@ function M.generate_header_lines(emails)
   return lines, email_start_line
 end
 
--- Format email list for display (matching old UI exactly)
+--- Format a single email line for display
+--- @param email table Email object
+--- @param index number Email index in original array
+--- @param is_draft_folder boolean Whether in draft folder
+--- @param draft_folder string|nil Draft folder name
+--- @param opts table|nil Options: { indent = string, thread_count = number, is_thread_child = boolean }
+--- @return string Formatted line
+--- @return table Metadata for the line
+local function format_single_email_line(email, index, is_draft_folder, draft_folder, opts)
+  opts = opts or {}
+  local indent = opts.indent or ""
+  local thread_count = opts.thread_count or 0
+  local is_thread_child = opts.is_thread_child or false
+  local is_thread_root = opts.is_thread_root or false
+  local thread_id = opts.thread_id
+
+  -- Parse flags (they're in an array)
+  local seen = false
+  local starred = false
+  if email.flags and type(email.flags) == 'table' then
+    for _, flag in ipairs(email.flags) do
+      if flag == 'Seen' then
+        seen = true
+      elseif flag == 'Flagged' or flag == 'Starred' then
+        starred = true
+      end
+    end
+  end
+
+  -- Selection checkbox (always shown)
+  local email_id = email.id or tostring(index)
+  local is_selected = state.is_email_selected(email_id)
+  local checkbox = is_selected and '[x]' or '[ ]'
+
+  -- Thread count indicator (only for thread roots with 2+ emails)
+  local thread_indicator = ""
+  if thread_count > 1 and not is_thread_child then
+    thread_indicator = string.format("[%d]", thread_count)
+  end
+
+  -- For drafts, show To field instead of From
+  local display_field = 'Unknown'
+  if is_draft_folder then
+    -- Show To field for drafts
+    if email.to then
+      if type(email.to) == 'table' then
+        if email.to.name then
+          display_field = email.to.name
+        elseif email.to.addr then
+          display_field = email.to.addr
+        else
+          display_field = tostring(email.to)
+        end
+      elseif type(email.to) == 'string' then
+        local name = email.to:match('^([^<]+)%s*<')
+        if name then
+          display_field = name:gsub('^%s+', ''):gsub('%s+$', '')
+        else
+          display_field = email.to
+        end
+      else
+        display_field = tostring(email.to)
+      end
+    end
+  else
+    -- Show From field for non-drafts
+    if email.from then
+      if type(email.from) == 'table' then
+        display_field = email.from.name or email.from.addr or 'Unknown'
+      elseif type(email.from) == 'string' then
+        display_field = email.from
+      else
+        display_field = tostring(email.from)
+      end
+    end
+  end
+
+  local subject = email.subject or ''
+  if subject == '' then
+    subject = '(No subject)'
+  end
+
+  local date = email.date or ''
+
+  -- Truncate long fields (accounting for thread indicator width)
+  local from_width = 25
+  local subject_width = 50
+  if thread_indicator ~= "" then
+    -- Reserve space for thread count indicator
+    subject_width = subject_width - #thread_indicator - 1
+  end
+
+  display_field = utils.truncate_string(display_field, from_width)
+  subject = utils.truncate_string(subject, subject_width)
+
+  -- Build the line
+  local draft_indicator = is_draft_folder and '' or ''
+  local line
+  if thread_indicator ~= "" then
+    line = string.format('%s%s %s%s%s | %s  %s',
+      indent, checkbox, thread_indicator, draft_indicator, display_field, subject, date)
+  else
+    line = string.format('%s%s %s%s | %s  %s',
+      indent, checkbox, draft_indicator, display_field, subject, date)
+  end
+
+  -- Build metadata
+  local metadata = {
+    type = 'email',
+    seen = seen,
+    starred = starred,
+    email_index = index,
+    email_id = email_id,
+    selected = is_selected,
+    from_start = #indent + #checkbox + 1 + #thread_indicator + #draft_indicator + 1,
+    from_end = #indent + #checkbox + 1 + #thread_indicator + #draft_indicator + #display_field,
+    is_draft = is_draft_folder,
+    draft_folder = is_draft_folder and draft_folder or nil,
+    is_local = email.is_local,
+    -- Threading metadata
+    is_thread_root = is_thread_root,
+    is_thread_child = is_thread_child,
+    thread_id = thread_id,
+    thread_count = thread_count > 1 and thread_count or nil,
+  }
+
+  return line, metadata
+end
+
+-- Format email list for display (with optional threading support)
 function M.format_email_list(emails)
   -- Generate header lines using the extracted function
   local lines, email_start_line = M.generate_header_lines(emails)
@@ -912,126 +1185,115 @@ function M.format_email_list(emails)
   local current_account = state.get_current_account()
   local draft_folder = utils.find_draft_folder(current_account)
   local is_draft_folder = current_folder == draft_folder
-  
-  -- Email entries
-  for i, email in ipairs(emails) do
-    -- Validate email structure
-    if email and type(email) == 'table' then
-      -- Parse flags (they're in an array)
-      local seen = false
-      local starred = false
-      if email.flags and type(email.flags) == 'table' then
-        for _, flag in ipairs(email.flags) do
-          if flag == 'Seen' then
-            seen = true
-          elseif flag == 'Flagged' or flag == 'Starred' then
-            starred = true
+
+  -- Initialize metadata table
+  if not lines.metadata then lines.metadata = {} end
+
+  -- Decide whether to use threading
+  -- Don't thread drafts folder (drafts are individual documents)
+  local use_threading = threading_enabled and not is_draft_folder and emails and #emails > 1
+
+  if use_threading then
+    -- Build thread index
+    local thread_index, thread_order = threading.build_thread_index(emails)
+
+    -- Store thread order in state for expand/collapse operations
+    state.set('email_list.thread_index', thread_index)
+    state.set('email_list.thread_order', thread_order)
+
+    -- Track original email index for each displayed email
+    local email_idx_map = {}
+    for i, email in ipairs(emails) do
+      local id = email.id or tostring(i)
+      email_idx_map[id] = i
+    end
+
+    -- Format each thread
+    for _, normalized_subject in ipairs(thread_order) do
+      local thread_entry = thread_index[normalized_subject]
+      if thread_entry and thread_entry.latest_email then
+        local is_expanded = M.is_thread_expanded(normalized_subject)
+        local thread_count = thread_entry.thread_count
+
+        if thread_count == 1 then
+          -- Single email thread - display normally
+          local email = thread_entry.emails[1]
+          local orig_idx = email_idx_map[email.id or ""] or 1
+          local line, metadata = format_single_email_line(
+            email, orig_idx, is_draft_folder, draft_folder,
+            { thread_id = normalized_subject }
+          )
+          table.insert(lines, line)
+
+          if metadata.email_id and metadata.email_id ~= '' then
+            lines.metadata[#lines] = metadata
+          end
+        elseif is_expanded then
+          -- Expanded thread - show all emails with the root first, then children indented
+          local sorted_emails = threading.get_sorted_thread_emails(thread_entry, true)  -- oldest first
+
+          for thread_idx, email in ipairs(sorted_emails) do
+            local orig_idx = email_idx_map[email.id or ""] or 1
+            local is_first = (thread_idx == 1)
+            local opts = {
+              indent = is_first and "" or "  ",  -- 2-space indent for children
+              thread_count = is_first and thread_count or 0,
+              is_thread_root = is_first,
+              is_thread_child = not is_first,
+              thread_id = normalized_subject,
+            }
+
+            local line, metadata = format_single_email_line(
+              email, orig_idx, is_draft_folder, draft_folder, opts
+            )
+            table.insert(lines, line)
+
+            if metadata.email_id and metadata.email_id ~= '' then
+              lines.metadata[#lines] = metadata
+            end
+          end
+        else
+          -- Collapsed thread - show only the most recent email with thread count
+          local email = thread_entry.latest_email
+          local orig_idx = email_idx_map[email.id or ""] or 1
+          local line, metadata = format_single_email_line(
+            email, orig_idx, is_draft_folder, draft_folder,
+            {
+              thread_count = thread_count,
+              is_thread_root = true,
+              thread_id = normalized_subject,
+            }
+          )
+          table.insert(lines, line)
+
+          if metadata.email_id and metadata.email_id ~= '' then
+            lines.metadata[#lines] = metadata
           end
         end
       end
-      local status = seen and ' ' or '*'
-      
-      -- Selection checkbox (always shown)
-      local email_id = email.id or tostring(i)
-      
-      local is_selected = state.is_email_selected(email_id)
-      local checkbox = is_selected and '[x] ' or '[ ] '
-      
-      -- For drafts, show To field instead of From
-      local display_field = 'Unknown'
-      if is_draft_folder then
-        -- Show To field for drafts
-        if email.to then
-          if type(email.to) == 'table' then
-            -- Extract name from "Name <email@example.com>" format or just use the address
-            if email.to.name then
-              display_field = email.to.name
-            elseif email.to.addr then
-              display_field = email.to.addr
-            else
-              display_field = tostring(email.to)
-            end
-          elseif type(email.to) == 'string' then
-            -- Parse "Name <email@example.com>" format
-            local name = email.to:match('^([^<]+)%s*<')
-            if name then
-              display_field = name:gsub('^%s+', ''):gsub('%s+$', '') -- Trim whitespace
-            else
-              -- Just an email address or already a name
-              display_field = email.to
-            end
-          else
-            display_field = tostring(email.to)
-          end
+    end
+  else
+    -- Non-threaded view: display emails in original order
+    -- Clear thread state
+    state.set('email_list.thread_index', nil)
+    state.set('email_list.thread_order', nil)
+
+    for i, email in ipairs(emails) do
+      if email and type(email) == 'table' then
+        local line, metadata = format_single_email_line(
+          email, i, is_draft_folder, draft_folder, {}
+        )
+        table.insert(lines, line)
+
+        if metadata.email_id and metadata.email_id ~= '' then
+          lines.metadata[#lines] = metadata
         end
       else
-        -- Show From field for non-drafts
-        if email.from then
-          if type(email.from) == 'table' then
-            display_field = email.from.name or email.from.addr or 'Unknown'
-          elseif type(email.from) == 'string' then
-            display_field = email.from
-          else
-            display_field = tostring(email.from)
-          end
-        end
+        logger.warn('Invalid email structure at index ' .. i, { email = email })
       end
-      
-      local subject = email.subject or ''
-      
-      -- For drafts, the subject comes directly from filesystem
-      -- No cache lookup needed - filesystem is the source of truth
-      
-      if subject == '' then
-        subject = '(No subject)'
-      end
-      
-      local date = email.date or ''
-      
-      -- Truncate long fields
-      display_field = utils.truncate_string(display_field, 25)
-      subject = utils.truncate_string(subject, 50)
-      
-      -- Add draft indicator if this is a draft
-      local draft_indicator = is_draft_folder and '' or ''
-      
-      local line = string.format('%s%s%s | %s  %s', checkbox, draft_indicator, display_field, subject, date)
-      table.insert(lines, line)
-      
-      -- Store email metadata for highlighting
-      if not lines.metadata then lines.metadata = {} end
-      
-      -- Validate email_id before storing (accept any valid non-empty, non-table ID from himalaya)
-      if email_id and email_id ~= '' and type(email_id) ~= 'table' then
-        lines.metadata[#lines] = {
-          type = 'email',  -- Add type field for regular emails
-          seen = seen,
-          starred = starred,
-          email_index = i,
-          email_id = email_id,
-          selected = is_selected,
-          from_start = #checkbox + #draft_indicator + 1,  -- Start position of author/recipient field
-          from_end = #checkbox + #draft_indicator + #display_field,  -- End position of author/recipient field
-          is_draft = is_draft_folder,  -- Flag for draft detection
-          draft_folder = is_draft_folder and draft_folder or nil,  -- Store draft folder for cleanup
-          is_local = email.is_local  -- Store local flag
-        }
-      else
-        -- Log invalid email ID
-        logger.warn('Invalid email ID detected', {
-          email_id = email_id,
-          email_index = i,
-          subject = email.subject,
-          from = from
-        })
-      end
-    else
-      -- Log invalid email but continue
-      local logger = require('neotex.plugins.tools.himalaya.core.logger')
-      logger.warn('Invalid email structure at index ' .. i, { email = email })
     end
   end
-  
+
   -- Store the email start line for easier access
   lines.email_start_line = email_start_line
   

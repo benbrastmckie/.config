@@ -4,10 +4,18 @@
     {
       "project_number": 82,
       "project_name": "fix_nil_check_active_editor_himalaya",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T19:42:35Z",
-      "last_updated": "2026-02-13T19:42:35Z"
+      "last_updated": "2026-02-13T19:46:22Z",
+      "session_id": "sess_1771011814_6b6394",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/082_fix_nil_check_active_editor_himalaya/reports/research-001.md",
+          "summary": "Research report documenting the nil value error cause and recommended fix using existing compose_email function"
+        }
+      ]
     },
     {
       "project_number": 81,

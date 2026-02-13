@@ -102,7 +102,14 @@ M.defaults = {
     cache_ttl = 86400, -- 24 hours
     min_interactions = 3,
   },
-  
+
+  -- Threading settings (Task #81)
+  threading = {
+    enabled = true,           -- Enable thread grouping by default
+    default_collapsed = true, -- Start with threads collapsed
+    show_count = true,        -- Show thread count indicator [N]
+  },
+
   -- Draft system configuration (Phase 5)
   drafts = {
     storage = {

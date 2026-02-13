@@ -1,7 +1,7 @@
 # Implementation Plan: Task #81
 
 - **Task**: 81 - Implement Himalaya Email Thread Grouping
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Effort**: 6-8 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -50,7 +50,7 @@ Key findings from research-001.md integrated into this plan:
 
 ## Implementation Phases
 
-### Phase 1: Subject Normalization and Thread Data Structure [NOT STARTED]
+### Phase 1: Subject Normalization and Thread Data Structure [COMPLETED]
 
 **Goal**: Create the foundation for thread grouping with subject normalization and thread index data structure.
 
@@ -75,7 +75,7 @@ Key findings from research-001.md integrated into this plan:
 
 ---
 
-### Phase 2: Thread-Aware Email List Formatting [NOT STARTED]
+### Phase 2: Thread-Aware Email List Formatting [COMPLETED]
 
 **Goal**: Modify format_email_list() to display thread groups with count indicators in collapsed view.
 
@@ -102,7 +102,7 @@ Key findings from research-001.md integrated into this plan:
 
 ---
 
-### Phase 3: Expand/Collapse Thread Functionality [NOT STARTED]
+### Phase 3: Expand/Collapse Thread Functionality [COMPLETED]
 
 **Goal**: Implement keybindings and UI for expanding/collapsing thread groups.
 
@@ -132,7 +132,7 @@ Key findings from research-001.md integrated into this plan:
 
 ---
 
-### Phase 4: Configuration and User Preferences [NOT STARTED]
+### Phase 4: Configuration and User Preferences [IN PROGRESS]
 
 **Goal**: Add configuration options for thread grouping behavior.
 

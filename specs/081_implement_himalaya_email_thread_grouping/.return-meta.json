@@ -1,19 +1,23 @@
 {
-  "status": "planned",
+  "status": "in_progress",
+  "started_at": "2026-02-13T14:30:00Z",
   "artifacts": [
     {
-      "type": "plan",
-      "path": "specs/081_implement_himalaya_email_thread_grouping/plans/implementation-001.md",
-      "summary": "5-phase implementation plan for Himalaya email thread grouping with subject-based grouping and expand/collapse UI"
+      "type": "implementation",
+      "path": "lua/neotex/plugins/tools/himalaya/utils/threading.lua",
+      "summary": "Thread grouping utilities with normalize_subject and build_thread_index"
     }
   ],
-  "next_steps": "Run /implement 81 to execute the plan",
+  "partial_progress": {
+    "stage": "phase_2",
+    "details": "Phase 1 complete, implementing thread-aware email list formatting"
+  },
   "metadata": {
-    "session_id": "sess_1771011290_3b32bb",
-    "agent_type": "planner-agent",
+    "session_id": "sess_1771011637_f9f091",
+    "agent_type": "neovim-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "plan", "skill-planner", "planner-agent"],
-    "phase_count": 5,
-    "estimated_hours": "6-8"
+    "delegation_path": ["orchestrator", "implement", "skill-neovim-implementation", "neovim-implementation-agent"],
+    "phases_completed": 1,
+    "phases_total": 5
   }
 }
