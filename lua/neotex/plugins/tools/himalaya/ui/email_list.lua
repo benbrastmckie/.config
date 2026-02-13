@@ -1153,7 +1153,7 @@ local function format_single_email_line(email, index, is_draft_folder, draft_fol
   local draft_indicator = is_draft_folder and '' or ''
   local line
   if thread_indicator ~= "" then
-    line = string.format('%s%s %s%s%s | %s  %s',
+    line = string.format('%s%s %s %s%s | %s  %s',
       indent, checkbox, thread_indicator, draft_indicator, display_field, subject, date)
   else
     line = string.format('%s%s %s%s | %s  %s',
@@ -1168,8 +1168,8 @@ local function format_single_email_line(email, index, is_draft_folder, draft_fol
     email_index = index,
     email_id = email_id,
     selected = is_selected,
-    from_start = #indent + #checkbox + 1 + #thread_indicator + #draft_indicator + 1,
-    from_end = #indent + #checkbox + 1 + #thread_indicator + #draft_indicator + #display_field,
+    from_start = #indent + #checkbox + 1 + (#thread_indicator > 0 and #thread_indicator + 1 or 0) + #draft_indicator + 1,
+    from_end = #indent + #checkbox + 1 + (#thread_indicator > 0 and #thread_indicator + 1 or 0) + #draft_indicator + #display_field,
     is_draft = is_draft_folder,
     draft_folder = is_draft_folder and draft_folder or nil,
     is_local = email.is_local,
