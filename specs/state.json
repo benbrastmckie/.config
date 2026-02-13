@@ -20,10 +20,10 @@
     {
       "project_number": 83,
       "project_name": "fix_himalaya_sidebar_help_display",
-      "status": "implementing",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-13T19:51:33Z",
-      "last_updated": "2026-02-13T20:02:39Z",
+      "last_updated": "2026-02-13T20:06:08Z",
       "session_id": "sess_1771012924_6f6e06",
       "artifacts": [
         {
@@ -37,15 +37,17 @@
           "summary": "4-phase implementation plan for fixing Himalaya sidebar help display inaccuracies"
         }
       ],
-      "planned": "2026-02-13T20:00:14Z"
+      "planned": "2026-02-13T20:00:14Z",
+      "completed": "2026-02-13T20:06:08Z",
+      "completion_summary": "Fixed Himalaya sidebar help display to use ? instead of gH across all contexts. Updated folder_help.lua help section, simplified email_list.lua footer to simple ?:help, and updated all show_help() messages in commands/ui.lua. Both keybindings still work, but only ? is now documented."
     },
     {
       "project_number": 82,
       "project_name": "fix_nil_check_active_editor_himalaya",
-      "status": "implementing",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-13T19:42:35Z",
-      "last_updated": "2026-02-13T20:01:39Z",
+      "last_updated": "2026-02-13T20:05:54Z",
       "session_id": "sess_1771012877_06b757",
       "artifacts": [
         {
@@ -57,9 +59,16 @@
           "path": "specs/082_fix_nil_check_active_editor_himalaya/plans/implementation-001.md",
           "type": "plan",
           "summary": "2-phase plan: Phase 1 fixes HimalayaWrite command to use compose_email() like sidebar 'e' key; Phase 2 verifies identical behavior"
+        },
+        {
+          "path": "specs/082_fix_nil_check_active_editor_himalaya/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary documenting the fix and verification"
         }
       ],
-      "planned": "2026-02-13T19:50:16Z"
+      "planned": "2026-02-13T19:50:16Z",
+      "completed": "2026-02-13T20:05:54Z",
+      "completion_summary": "Fixed nil value error in HimalayaWrite command by replacing broken function calls with main.compose_email(). The <leader>mw keymap now behaves identically to pressing 'e' in the Himalaya sidebar."
     },
     {
       "project_number": 81,

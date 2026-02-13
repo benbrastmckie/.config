@@ -1,7 +1,7 @@
 # Implementation Plan: Task #82
 
 - **Task**: 82 - fix_nil_check_active_editor_himalaya
-- **Status**: [COMPLETE]
+- **Status**: [COMPLETED]
 - **Effort**: 0.5-1 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)

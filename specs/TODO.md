@@ -32,16 +32,18 @@ next_project_number: 85
 
 ### 82. Fix nil value error for check_active_editor_and_prompt in Himalaya email commands
 - **Effort**: TBD
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Planning Started**: 2026-02-13
 - **Planning Completed**: 2026-02-13
 - **Implementation Started**: 2026-02-13
+- **Implementation Completed**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](082_fix_nil_check_active_editor_himalaya/reports/research-001.md)
 - **Plan**: [implementation-001.md](082_fix_nil_check_active_editor_himalaya/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260213.md](082_fix_nil_check_active_editor_himalaya/summaries/implementation-summary-20260213.md)
 
 **Description**: Fix nil value error when pressing `<leader>mw` in Neovim - `check_active_editor_and_prompt` is nil at `lua/neotex/plugins/tools/himalaya/commands/email.lua:29`. Identify and fix the root cause of this error.
 
