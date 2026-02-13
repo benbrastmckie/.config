@@ -1,6 +1,14 @@
 {
-  "next_project_number": 84,
+  "next_project_number": 85,
   "active_projects": [
+    {
+      "project_number": 84,
+      "project_name": "fix_disruptive_header_changes_himalaya_email",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T20:01:11Z",
+      "last_updated": "2026-02-13T20:01:11Z"
+    },
     {
       "project_number": 83,
       "project_name": "fix_himalaya_sidebar_help_display",

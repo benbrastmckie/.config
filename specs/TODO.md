@@ -1,10 +1,17 @@
 ---
-next_project_number: 84
+next_project_number: 85
 ---
 
 # TODO
 
 ## Tasks
+
+### 84. Fix disruptive header changes during Himalaya email composition
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+
+**Description**: Fix Himalaya email composition UX issue where email headers change unexpectedly during reply composition. Initial header shows simple format (From/To/Cc/Bcc/Subject) but then changes to full MIME format with additional fields (Mime-Version, Date, Content-Type, X-Himalaya-Account), causing disruptive cursor movement while writing. Identify root cause and implement elegant solution to improve UX.
 
 ### 83. Fix Himalaya sidebar help display and remove obsolete gH mapping
 - **Effort**: 1-2 hours
