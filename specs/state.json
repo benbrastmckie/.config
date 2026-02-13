@@ -1,6 +1,14 @@
 {
-  "next_project_number": 86,
+  "next_project_number": 87,
   "active_projects": [
+    {
+      "project_number": 86,
+      "project_name": "fix_himalaya_sent_and_sidebar_keybindings",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T21:33:45Z",
+      "last_updated": "2026-02-13T21:33:45Z"
+    },
     {
       "project_number": 78,
       "project_name": "fix_himalaya_smtp_authentication_failure",

@@ -1,10 +1,18 @@
 ---
-next_project_number: 86
+next_project_number: 87
 ---
 
 # TODO
 
 ## Tasks
+
+### 86. Fix himalaya sent folder display and add missing sidebar keybindings
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix sent emails (replies) not showing up in sent folder when using himalaya in neovim. Add useful commands (sync, etc.) that are not currently included as single-letter mappings in the himalaya sidebar to be accessible there in addition to under `<leader>m` in which-key. Update the help menu triggered with '?' in the sidebar to reflect all available keybindings.
 
 ### 78. Fix Himalaya SMTP authentication failure when sending emails
 - **Effort**: 1-2 hours
