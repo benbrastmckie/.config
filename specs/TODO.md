@@ -1,14 +1,23 @@
 ---
-next_project_number: 82
+next_project_number: 83
 ---
 
 # TODO
 
 ## Tasks
 
+### 82. Fix nil value error for check_active_editor_and_prompt in Himalaya email commands
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix nil value error when pressing `<leader>mw` in Neovim - `check_active_editor_and_prompt` is nil at `lua/neotex/plugins/tools/himalaya/commands/email.lua:29`. Identify and fix the root cause of this error.
+
 ### 81. Implement email thread grouping in Himalaya sidebar
 - **Effort**: 6-8 hours
-- **Status**: [PLANNED]
+- **Status**: [IMPLEMENTING]
+- **Implementation Started**: 2026-02-13
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Planning Started**: 2026-02-13
