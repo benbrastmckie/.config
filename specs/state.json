@@ -1,6 +1,14 @@
 {
-  "next_project_number": 85,
+  "next_project_number": 86,
   "active_projects": [
+    {
+      "project_number": 85,
+      "project_name": "fix_filechangedshell_respect_autoread",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T20:39:40Z",
+      "last_updated": "2026-02-13T20:39:40Z"
+    },
     {
       "project_number": 84,
       "project_name": "fix_disruptive_header_changes_himalaya_email",
