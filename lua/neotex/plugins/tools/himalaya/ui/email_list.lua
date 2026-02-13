@@ -731,14 +731,19 @@ function M.preload_adjacent_pages(current_page)
   end
 end
 
--- Format email list for display (matching old UI exactly)
-function M.format_email_list(emails)
+--- Generate header lines with current pagination state
+--- Extracted for reuse in render_cached_page to fix stale header bug
+--- @param emails table Email array (used for count when total unknown)
+--- @return table Header lines array with metadata
+--- @return number email_start_line Line number where emails begin
+function M.generate_header_lines(emails)
+  emails = emails or {}
   local lines = {}
-  
+
   -- Header with pagination info (matching old format)
   local account = config.get_current_account()
   local email_display = 'Empty'
-  
+
   -- Try to get email from account config
   if account and account.email then
     email_display = account.email
@@ -754,31 +759,19 @@ function M.format_email_list(emails)
       email_display = account_name or 'gmail'
     end
   end
-  
+
   -- Capitalize common account names for display
   if email_display == 'gmail' then
     email_display = 'Gmail'
   end
-  
+
   local header = string.format('Himalaya - %s - %s', email_display, state.get_current_folder())
-  
+
   -- Get accurate email count from stored sync data
-  local account = state.get_current_account()
+  local account_name = state.get_current_account()
   local folder = state.get_current_folder()
-  local total_emails = state.get_folder_count(account, folder)
-  
-  -- Debug: show what we found
-  local notify = require('neotex.util.notifications')
-  if notify.config.modules.himalaya.debug_mode then
-    if total_emails then
-      notify.himalaya(string.format('Found stored count: %s/%s = %d', 
-        account, folder, total_emails), notify.categories.BACKGROUND)
-    else
-      notify.himalaya(string.format('No stored count for: %s/%s', 
-        account, folder), notify.categories.BACKGROUND)
-    end
-  end
-  
+  local total_emails = state.get_folder_count(account_name, folder)
+
   -- If no stored count, use what we got from the email list
   if not total_emails or total_emails == 0 then
     total_emails = state.get_total_emails()
@@ -793,19 +786,19 @@ function M.format_email_list(emails)
       end
     end
   end
-  
+
   local page_size = state.get_page_size()
   local current_page = state.get_current_page()
-  
+
   local pagination_info
   if total_emails then
     -- We know the exact count
     local total_pages = math.max(1, math.ceil(total_emails / page_size))
-    
+
     -- Format count display with optional age indicator
-    local count_age = state.get_folder_count_age(account, folder)
+    local count_age = state.get_folder_count_age(account_name, folder)
     local count_display
-    
+
     if count_age and count_age > 600 then  -- Show age if older than 10 minutes
       local age_str
       if count_age < 3600 then
@@ -819,30 +812,25 @@ function M.format_email_list(emails)
     else
       count_display = string.format('%d emails', total_emails)
     end
-    
-    pagination_info = string.format('Page %d / %d | %s', 
+
+    pagination_info = string.format('Page %d / %d | %s',
       current_page, total_pages, count_display)
   else
     -- We don't know the exact count
     if #emails >= page_size then
       -- Full page, might be more
-      pagination_info = string.format('Page %d / ? | %d+ emails', 
+      pagination_info = string.format('Page %d / ? | %d+ emails',
         current_page, current_page * page_size)
     else
       -- Less than a page, this is all
-      pagination_info = string.format('Page %d / %d | %d emails', 
+      pagination_info = string.format('Page %d / %d | %d emails',
         current_page, current_page, #emails)
     end
   end
-  
-  -- Remove selection info display
-  
+
   -- Add sync status if running
   local sync_status_line = M.get_sync_status_line()
-  
-  -- Debug the sync status
-  notifications.debug('format_email_list: sync_status_line = ' .. tostring(sync_status_line))
-  
+
   table.insert(lines, header)
   table.insert(lines, pagination_info)
   if sync_status_line then
@@ -851,15 +839,23 @@ function M.format_email_list(emails)
   -- Use a fixed width separator to prevent visual jumping
   local separator_width = 70  -- Reasonable width that accommodates most content
   table.insert(lines, string.rep('─', separator_width))
-  
+
   -- Only add blank line when NOT syncing
   if not sync_status_line then
     table.insert(lines, '')
   end
-  
-  -- Store where emails start (before adding email lines)
+
+  -- Calculate email start line (next line after header)
   local email_start_line = #lines + 1
-  
+
+  return lines, email_start_line
+end
+
+-- Format email list for display (matching old UI exactly)
+function M.format_email_list(emails)
+  -- Generate header lines using the extracted function
+  local lines, email_start_line = M.generate_header_lines(emails)
+
   -- Check if current folder is draft folder for draft detection
   local current_folder = state.get_current_folder()
   local current_account = state.get_current_account()
@@ -1645,10 +1641,45 @@ function M.render_cached_page(cached)
 
   -- Use pre-formatted lines if available for instant render
   if cached.formatted_lines then
-    sidebar.update_content(cached.formatted_lines)
+    -- Generate fresh header with current page state to fix stale pagination display
+    local fresh_header, fresh_email_start = M.generate_header_lines(cached.emails)
+
+    -- Get the cached email content lines (starting after header)
+    local cached_email_start = cached.formatted_lines.email_start_line or 1
+    local combined_lines = {}
+
+    -- Copy fresh header lines
+    for i = 1, #fresh_header do
+      combined_lines[i] = fresh_header[i]
+    end
+
+    -- Copy cached email content (everything from email_start_line onward)
+    for i = cached_email_start, #cached.formatted_lines do
+      table.insert(combined_lines, cached.formatted_lines[i])
+    end
+
+    -- Preserve metadata from cached lines but update email_start_line
+    combined_lines.metadata = cached.formatted_lines.metadata or {}
+    combined_lines.email_start_line = fresh_email_start
+
+    -- Adjust metadata line numbers if header size changed
+    local line_offset = fresh_email_start - cached_email_start
+    if line_offset ~= 0 and combined_lines.metadata then
+      local adjusted_metadata = {}
+      for old_line, data in pairs(combined_lines.metadata) do
+        if type(old_line) == 'number' then
+          adjusted_metadata[old_line + line_offset] = data
+        else
+          adjusted_metadata[old_line] = data
+        end
+      end
+      combined_lines.metadata = adjusted_metadata
+    end
+
+    sidebar.update_content(combined_lines)
     state.set('email_list.emails', cached.emails)
-    state.set('email_list.line_map', cached.formatted_lines.metadata or {})
-    state.set('email_list.email_start_line', cached.formatted_lines.email_start_line or 1)
+    state.set('email_list.line_map', combined_lines.metadata)
+    state.set('email_list.email_start_line', fresh_email_start)
   elseif cached.emails then
     -- Format and render (slightly slower but still cache hit)
     local lines = M.format_email_list(cached.emails)

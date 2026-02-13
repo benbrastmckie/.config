@@ -43,36 +43,40 @@ Key findings from research-001.md:
 
 ## Implementation Phases
 
-### Phase 1: Re-authenticate Gmail OAuth2 [NOT STARTED]
+### Phase 1: Re-authenticate Gmail OAuth2 [COMPLETED]
 
 **Goal**: Obtain fresh OAuth2 tokens via interactive browser authentication
 
 **Tasks**:
-- [ ] Run `himalaya account configure gmail` in terminal
-- [ ] Complete Google OAuth2 consent flow in browser
-- [ ] Verify new tokens stored in GNOME keyring
+- [x] Run `himalaya account configure gmail` in terminal
+- [x] Complete Google OAuth2 consent flow in browser
+- [x] Verify new tokens stored in GNOME keyring
 
 **Timing**: 5-10 minutes
 
 **Verification**:
 - `secret-tool search --all service himalaya-cli` shows updated access token timestamp
 
+**Completed**: 2026-02-13
+
 ---
 
-### Phase 2: Verify SMTP Functionality [NOT STARTED]
+### Phase 2: Verify SMTP Functionality [COMPLETED]
 
 **Goal**: Confirm email sending works after re-authentication
 
 **Tasks**:
-- [ ] Send test email via Himalaya CLI
-- [ ] Send test email via Neovim `<leader>me`
-- [ ] Verify no authentication errors
+- [x] Send test email via Himalaya CLI
+- [x] Send test email via Neovim `<leader>me`
+- [x] Verify no authentication errors
 
 **Timing**: 5-10 minutes
 
 **Verification**:
 - CLI command `himalaya message send` succeeds
 - Neovim `<leader>me` completes without error 535
+
+**Completed**: 2026-02-13
 
 ---
 
@@ -93,10 +97,10 @@ Key findings from research-001.md:
 
 ## Testing & Validation
 
-- [ ] Test email successfully delivered via CLI
-- [ ] Test email successfully sent via Neovim keybinding
-- [ ] No authentication errors in Himalaya output
-- [ ] Access token timestamp updated in keyring
+- [x] Test email successfully delivered via CLI
+- [x] Test email successfully sent via Neovim keybinding
+- [x] No authentication errors in Himalaya output
+- [x] Access token timestamp updated in keyring
 
 ## Artifacts & Outputs
 
