@@ -1,10 +1,18 @@
 ---
-next_project_number: 89
+next_project_number: 90
 ---
 
 # TODO
 
 ## Tasks
+
+### 89. Research Gmail label and folder synchronization with Himalaya
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Research how Gmail labels and folders sync with Himalaya email client. Investigate: (1) whether creating/deleting labels in Gmail browser automatically syncs to Himalaya locally, (2) whether Himalaya can create/delete folders and labels that sync back to Gmail, and (3) best practices for bidirectional folder/label management between Gmail web interface and Himalaya in Neovim.
 
 ### 88. Simplify himalaya threading keybindings
 - **Effort**: 0.5-1 hour

@@ -1,14 +1,22 @@
 {
-  "next_project_number": 89,
+  "next_project_number": 90,
   "active_projects": [
+    {
+      "project_number": 89,
+      "project_name": "gmail_himalaya_folder_label_sync",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T22:03:59Z",
+      "last_updated": "2026-02-13T22:03:59Z"
+    },
     {
       "project_number": 88,
       "project_name": "simplify_himalaya_threading_keybindings",
-      "status": "researched",
+      "status": "planning",
       "language": "neovim",
       "created": "2026-02-13T21:58:35Z",
-      "last_updated": "2026-02-13T22:02:42Z",
-      "session_id": "sess_1771019965_212461",
+      "last_updated": "2026-02-13T22:04:11Z",
+      "session_id": "sess_1771020233_8541b8",
       "artifacts": [
         {
           "type": "research",
