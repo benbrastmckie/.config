@@ -255,7 +255,7 @@ end
 function M.get_or_create_preview_buffer()
   -- Create new buffer
   local buf = vim.api.nvim_create_buf(false, true)
-  
+
   -- Buffer settings (matching old version)
   vim.api.nvim_buf_set_option(buf, 'buftype', 'nofile')
   vim.api.nvim_buf_set_option(buf, 'bufhidden', 'hide')  -- Keep in memory
@@ -263,11 +263,47 @@ function M.get_or_create_preview_buffer()
   vim.api.nvim_buf_set_option(buf, 'undolevels', -1)
   vim.api.nvim_buf_set_option(buf, 'filetype', 'himalaya-email')
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
-  
+
   -- Set up Himalaya keymaps for this buffer
   local config = require('neotex.plugins.tools.himalaya.core.config')
   config.setup_buffer_keymaps(buf)
-  
+
+  -- Register email preview keymaps with which-key for menu visibility
+  -- These use buffer-local registration to appear only in himalaya-email buffers
+  local ok, wk = pcall(require, 'which-key')
+  if ok then
+    wk.add({
+      { "<leader>mr", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.reply_current_email then main.reply_current_email() end
+      end, desc = "reply", icon = "󰇮", buffer = buf },
+      { "<leader>mR", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.reply_all_current_email then main.reply_all_current_email() end
+      end, desc = "reply all", icon = "󰇮", buffer = buf },
+      { "<leader>mf", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.forward_current_email then main.forward_current_email() end
+      end, desc = "forward", icon = "󰇮", buffer = buf },
+      { "<leader>md", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.delete_current_email then main.delete_current_email() end
+      end, desc = "delete", icon = "󰩺", buffer = buf },
+      { "<leader>ma", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.archive_current_email then main.archive_current_email() end
+      end, desc = "archive", icon = "󰉋", buffer = buf },
+      { "<leader>mn", function()
+        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
+        if ok and main.compose_email then main.compose_email() end
+      end, desc = "new email", icon = "󰝒", buffer = buf },
+      { "<leader>m/", function()
+        local ok, search = pcall(require, 'neotex.plugins.tools.himalaya.data.search')
+        if ok and search.show_search_ui then search.show_search_ui() end
+      end, desc = "search", icon = "󰍉", buffer = buf },
+    })
+  end
+
   return buf
 end
 

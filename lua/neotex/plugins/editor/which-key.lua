@@ -201,17 +201,6 @@ return {
       return vim.tbl_contains({ "markdown", "md", "tex", "latex", "org", "rst", "html", "docx" }, vim.bo.filetype)
     end
 
-    local function is_mail()
-      return vim.tbl_contains({ "mail", "himalaya-compose" }, vim.bo.filetype)
-    end
-
-    local function is_himalaya_list()
-      return vim.bo.filetype == "himalaya-list"
-    end
-
-    local function is_himalaya_email()
-      return vim.bo.filetype == "himalaya-email"
-    end
 
     -- Helper function for bibexport
     local function run_bibexport()
@@ -543,44 +532,10 @@ return {
       { "<leader>mX", "<cmd>HimalayaBackupAndFresh<CR>", desc = "backup & fresh", icon = "󰁯" },
     })
 
-    -- Compose buffer keymaps (visible only when composing email - filetype "mail")
-    wk.add({
-      { "<leader>me", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰇮", cond = is_mail },
-      { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰆓", cond = is_mail },
-      { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit/discard", icon = "󰚌", cond = is_mail },
-    })
-
-    -- Email preview keymaps (visible in himalaya-email buffers)
-    wk.add({
-      { "<leader>mr", function()
-        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
-        if ok and main.reply_current_email then main.reply_current_email() end
-      end, desc = "reply", icon = "󰇮", cond = is_himalaya_email },
-      { "<leader>mR", function()
-        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
-        if ok and main.reply_all_current_email then main.reply_all_current_email() end
-      end, desc = "reply all", icon = "󰇮", cond = is_himalaya_email },
-      { "<leader>mf", function()
-        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
-        if ok and main.forward_current_email then main.forward_current_email() end
-      end, desc = "forward", icon = "󰇮", cond = is_himalaya_email },
-      { "<leader>md", function()
-        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
-        if ok and main.delete_current_email then main.delete_current_email() end
-      end, desc = "delete", icon = "󰩺", cond = is_himalaya_email },
-      { "<leader>ma", function()
-        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
-        if ok and main.archive_current_email then main.archive_current_email() end
-      end, desc = "archive", icon = "󰉋", cond = is_himalaya_email },
-      { "<leader>mn", function()
-        local ok, main = pcall(require, 'neotex.plugins.tools.himalaya.ui.main')
-        if ok and main.compose_email then main.compose_email() end
-      end, desc = "new email", icon = "󰝒", cond = is_himalaya_email },
-      { "<leader>m/", function()
-        local ok, search = pcall(require, 'neotex.plugins.tools.himalaya.data.search')
-        if ok and search.show_search_ui then search.show_search_ui() end
-      end, desc = "search", icon = "󰍉", cond = is_himalaya_email },
-    })
+    -- NOTE: Compose buffer and email preview keymaps are now registered
+    -- buffer-locally in email_composer.lua and email_preview.lua respectively.
+    -- This enables them to appear in which-key menu for their specific buffers.
+    -- (Task 73 - buffer-local which-key registration pattern)
 
     -- ============================================================================
     -- <leader>n - NIXOS GROUP

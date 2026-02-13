@@ -133,13 +133,18 @@ end
 -- Setup buffer-local keymaps
 function M.setup_compose_keymaps(buf)
   local opts = { buffer = buf, noremap = true, silent = true }
-  
-  -- NOTE: Leader mappings are now defined in which-key.lua (task 67)
-  -- Compose buffer uses 2-letter maximum mapping scheme:
-  -- <leader>me - Send email (E for Email/Envelope)
-  -- <leader>md - Save draft (D for Draft)
-  -- <leader>mq - Quit/discard (Q for Quit)
-  
+
+  -- Register compose-specific keymaps with which-key for menu visibility
+  -- These use buffer-local registration to appear only in compose buffers
+  local ok, wk = pcall(require, 'which-key')
+  if ok then
+    wk.add({
+      { "<leader>me", "<cmd>HimalayaSend<CR>", desc = "send email", icon = "󰇮", buffer = buf },
+      { "<leader>md", "<cmd>HimalayaSaveDraft<CR>", desc = "save draft", icon = "󰆓", buffer = buf },
+      { "<leader>mq", "<cmd>HimalayaDiscard<CR>", desc = "quit/discard", icon = "󰚌", buffer = buf },
+    })
+  end
+
   -- Override write behavior to use draft save
   -- This hooks into your existing <leader>w save workflow
   vim.api.nvim_create_autocmd('BufWriteCmd', {

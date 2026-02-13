@@ -1,7 +1,7 @@
 # Implementation Plan: Task #73
 
 - **Task**: 73 - fix_whichkey_conditional_mappings_not_displaying
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 1.5-2 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -44,7 +44,7 @@ Research report confirms:
 
 ## Implementation Phases
 
-### Phase 1: Add buffer-local which-key registration to email_composer.lua [NOT STARTED]
+### Phase 1: Add buffer-local which-key registration to email_composer.lua [COMPLETED]
 
 **Goal**: Register compose-specific keybindings per-buffer when compose buffer is created.
 
@@ -66,7 +66,7 @@ Research report confirms:
 
 ---
 
-### Phase 2: Add buffer-local which-key registration to email preview [NOT STARTED]
+### Phase 2: Add buffer-local which-key registration to email preview [COMPLETED]
 
 **Goal**: Register email preview keybindings when opening email preview buffers.
 
@@ -87,7 +87,7 @@ Research report confirms:
 
 ---
 
-### Phase 3: Remove deprecated cond-based mappings from which-key.lua [NOT STARTED]
+### Phase 3: Remove deprecated cond-based mappings from which-key.lua [COMPLETED]
 
 **Goal**: Clean up which-key.lua by removing mappings now handled per-buffer.
 
@@ -109,7 +109,7 @@ Research report confirms:
 
 ---
 
-### Phase 4: Testing and validation [NOT STARTED]
+### Phase 4: Testing and validation [COMPLETED]
 
 **Goal**: Comprehensive testing of all modified functionality.
 

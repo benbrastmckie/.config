@@ -8,11 +8,14 @@ next_project_number: 74
 
 ### 73. Fix which-key conditional mappings not displaying for compose-specific keybindings
 - **Effort**: 1.75 hours
-- **Status**: [PLANNED]
+- **Status**: [COMPLETED]
+- **Started**: 2026-02-13
+- **Completed**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](073_fix_whichkey_conditional_mappings_not_displaying/reports/research-001.md)
 - **Plan**: [implementation-001.md](073_fix_whichkey_conditional_mappings_not_displaying/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260212.md](073_fix_whichkey_conditional_mappings_not_displaying/summaries/implementation-summary-20260212.md)
 
 **Description**: Compose-specific keybindings (`<leader>me`, `<leader>md`, `<leader>mq`) do not appear in which-key menu when composing emails, despite fixes implemented in task 52. Expected: When pressing `<leader>m` in a compose buffer, should see: e → send email, d → save draft, q → quit/discard. Actual: Only base mail commands appear (switch account, change folder, toggle sidebar, sync, etc.). Diagnostics completed: filetype is correct (mail), condition function works (`vim.tbl_contains({ "mail", "himalaya-compose" }, vim.bo.filetype)` returns true), Neovim restarted after changes, `is_mail()` helper updated to include both filetypes. Hypothesis: The `cond` parameter syntax may be incorrect for which-key v3 - may need `cond = function() return is_mail() end` instead of `cond = is_mail`.
 
