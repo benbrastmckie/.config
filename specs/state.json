@@ -1,6 +1,14 @@
 {
-  "next_project_number": 77,
+  "next_project_number": 78,
   "active_projects": [
+    {
+      "project_number": 77,
+      "project_name": "fix_himalaya_sidebar_folder_selection",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T17:48:53Z",
+      "last_updated": "2026-02-13T17:48:53Z"
+    },
     {
       "project_number": 76,
       "project_name": "fix_himalaya_reply_forward_send_errors",

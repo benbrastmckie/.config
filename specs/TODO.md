@@ -1,10 +1,18 @@
 ---
-next_project_number: 77
+next_project_number: 78
 ---
 
 # TODO
 
 ## Tasks
+
+### 77. Fix himalaya sidebar folder selection menu
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Fix himalaya sidebar folder selection: add missing Inbox option and reorder folders by usage priority (Inbox, Sent, Drafts, All Mail, Trash first). Currently when pressing 'c' in the sidebar, Inbox is not listed and folders appear in arbitrary order.
 
 ### 76. Fix Himalaya reply, forward, and send email command errors
 - **Effort**: 2-3 hours
