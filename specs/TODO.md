@@ -1,10 +1,18 @@
 ---
-next_project_number: 87
+next_project_number: 88
 ---
 
 # TODO
 
 ## Tasks
+
+### 87. Investigate terminal directory change when opening neovim in wezterm
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Investigate why the terminal working directory changes to a project root when opening neovim sessions in wezterm from the home directory (~). Determine whether this behavior is caused by neovim or wezterm (configured in ~/.dotfiles/config/). Identify if any functionality depends on this behavior before modifying it. Goal is to avoid changing the terminal directory unless necessary.
 
 ### 86. Fix himalaya sent folder display and add missing sidebar keybindings
 - **Effort**: TBD
