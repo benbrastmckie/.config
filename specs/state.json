@@ -7,8 +7,8 @@
       "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T20:01:11Z",
-      "last_updated": "2026-02-13T20:09:45Z",
-      "session_id": "sess_1771013188_aff6af",
+      "last_updated": "2026-02-13T20:15:38Z",
+      "session_id": "sess_1771013555_2dc598",
       "artifacts": [
         {
           "type": "research",
@@ -19,6 +19,11 @@
           "type": "research",
           "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-002.md",
           "summary": "Additional research identifying race condition between autosave and FileChangedShell causing data loss during email composition"
+        },
+        {
+          "type": "research",
+          "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-003.md",
+          "summary": "Identified critical argument bug in HimalayaSaveDraft command passing boolean instead of buffer number, plus integrated solution combining argument fix with autoread disable for all three reported issues"
         }
       ]
     },

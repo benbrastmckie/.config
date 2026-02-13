@@ -148,8 +148,7 @@ function M.get_help_content(folder_type)
     local title = "Himalaya " .. string.upper(string.sub(folder_type, 1, 1)) .. string.sub(folder_type, 2) .. " Folder Commands"
     return build_help(title, {
       "Preview:",
-      "  <CR>      - 3-state preview model",
-      "             (OFF -> SWITCH -> FOCUS -> BUFFER)",
+      "  <CR>/<ESC>      - 3-state preview model",
       "",
     })
   end

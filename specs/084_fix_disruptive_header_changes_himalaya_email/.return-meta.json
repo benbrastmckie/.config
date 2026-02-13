@@ -1,20 +1,26 @@
 {
   "status": "researched",
+  "started_at": "2026-02-13T12:00:00Z",
+  "completed_at": "2026-02-13T12:45:00Z",
   "artifacts": [
     {
       "type": "research",
-      "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-002.md",
-      "summary": "Additional research identifying race condition between autosave and FileChangedShell causing data loss during email composition"
+      "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-003.md",
+      "summary": "Identified critical argument bug in HimalayaSaveDraft command passing boolean instead of buffer number, plus integrated solution combining argument fix with autoread disable for all three reported issues"
     }
   ],
-  "next_steps": "Run /plan 84 to create implementation plan incorporating both research reports",
+  "next_steps": "Run /plan 84 to create implementation plan addressing all three issues",
   "metadata": {
-    "session_id": "sess_1771013188_aff6af",
+    "session_id": "sess_1771013555_2dc598",
     "agent_type": "neovim-research-agent",
-    "duration_seconds": 180,
+    "duration_seconds": 2700,
     "delegation_depth": 1,
     "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 6,
-    "prior_research": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md"
+    "findings_count": 5,
+    "research_pass": 3,
+    "related_reports": [
+      "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md",
+      "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-002.md"
+    ]
   }
 }

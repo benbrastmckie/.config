@@ -12,7 +12,7 @@ next_project_number: 85
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Language**: neovim
-- **Research**: [research-001.md](084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md), [research-002.md](084_fix_disruptive_header_changes_himalaya_email/reports/research-002.md)
+- **Research**: [research-001.md](084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md), [research-002.md](084_fix_disruptive_header_changes_himalaya_email/reports/research-002.md), [research-003.md](084_fix_disruptive_header_changes_himalaya_email/reports/research-003.md)
 
 **Description**: Fix Himalaya email composition UX issue where email headers change unexpectedly during reply composition. Initial header shows simple format (From/To/Cc/Bcc/Subject) but then changes to full MIME format with additional fields (Mime-Version, Date, Content-Type, X-Himalaya-Account), causing disruptive cursor movement while writing. Identify root cause and implement elegant solution to improve UX.
 
