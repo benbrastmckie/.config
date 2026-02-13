@@ -4,18 +4,24 @@
     {
       "project_number": 80,
       "project_name": "fix_himalaya_page_counter_race_condition",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T18:43:14Z",
-      "last_updated": "2026-02-13T18:55:26Z",
-      "session_id": "sess_1771008714_361ea6",
+      "last_updated": "2026-02-13T19:05:32Z",
+      "session_id": "sess_1771009339_95b7b0",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/080_fix_himalaya_page_counter_race_condition/reports/research-001.md",
           "summary": "Research report with root cause analysis, existing safeguards review, and phased implementation recommendations"
+        },
+        {
+          "path": "specs/080_fix_himalaya_page_counter_race_condition/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase plan: request validation, debouncing, and verification testing"
         }
-      ]
+      ],
+      "planned": "2026-02-13T19:05:32Z"
     },
     {
       "project_number": 79,
