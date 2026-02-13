@@ -4,18 +4,24 @@
     {
       "project_number": 81,
       "project_name": "implement_himalaya_email_thread_grouping",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T19:25:59Z",
-      "last_updated": "2026-02-13T19:32:17Z",
-      "session_id": "sess_1771010857_abdb6d",
+      "last_updated": "2026-02-13T19:37:50Z",
+      "session_id": "sess_1771011290_3b32bb",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/081_implement_himalaya_email_thread_grouping/reports/research-001.md",
           "summary": "Research report on himalaya thread grouping: CLI capabilities, JWZ algorithm, implementation strategy"
+        },
+        {
+          "path": "specs/081_implement_himalaya_email_thread_grouping/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase implementation plan for Himalaya email thread grouping with subject-based grouping and expand/collapse UI"
         }
-      ]
+      ],
+      "planned": "2026-02-13T19:37:50Z"
     },
     {
       "project_number": 80,

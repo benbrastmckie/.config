@@ -1,22 +1,19 @@
 {
-  "status": "researched",
-  "started_at": "2026-02-13T15:23:00Z",
-  "completed_at": "2026-02-13T15:45:00Z",
-  "summary": "Himalaya CLI does not natively support threading. Proposed hybrid implementation using subject-based grouping with on-demand header-based thread reconstruction.",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "report",
-      "path": "specs/081_implement_himalaya_email_thread_grouping/reports/research-001.md",
-      "summary": "Research report on himalaya thread grouping: CLI capabilities, JWZ algorithm, implementation strategy"
+      "type": "plan",
+      "path": "specs/081_implement_himalaya_email_thread_grouping/plans/implementation-001.md",
+      "summary": "5-phase implementation plan for Himalaya email thread grouping with subject-based grouping and expand/collapse UI"
     }
   ],
-  "next_steps": "Run /plan 81 to create implementation plan",
+  "next_steps": "Run /implement 81 to execute the plan",
   "metadata": {
-    "session_id": "sess_1771010857_abdb6d",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 1320,
+    "session_id": "sess_1771011290_3b32bb",
+    "agent_type": "planner-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "skill-neovim-research", "neovim-research-agent"],
-    "findings_count": 7
+    "delegation_path": ["orchestrator", "plan", "skill-planner", "planner-agent"],
+    "phase_count": 5,
+    "estimated_hours": "6-8"
   }
 }
