@@ -1,7 +1,7 @@
 # Implementation Plan: Task #80
 
 - **Task**: 80 - Fix Himalaya sidebar page counter race condition
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 2-4 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -50,7 +50,7 @@ Research report `research-001.md` identified:
 
 ## Implementation Phases
 
-### Phase 1: Add Request Validation to Async Callbacks [NOT STARTED]
+### Phase 1: Add Request Validation to Async Callbacks [COMPLETED]
 
 **Goal**: Discard stale async responses using generation + target page validation
 
@@ -79,7 +79,7 @@ Research report `research-001.md` identified:
 
 ---
 
-### Phase 2: Add Debouncing for Cache-Miss Refreshes [NOT STARTED]
+### Phase 2: Add Debouncing for Cache-Miss Refreshes [COMPLETED]
 
 **Goal**: Coalesce rapid cache-miss refreshes to reduce unnecessary async requests
 
@@ -106,7 +106,7 @@ Research report `research-001.md` identified:
 
 ---
 
-### Phase 3: Verification and Edge Case Testing [NOT STARTED]
+### Phase 3: Verification and Edge Case Testing [COMPLETED]
 
 **Goal**: Comprehensive testing of race condition fix across all scenarios
 

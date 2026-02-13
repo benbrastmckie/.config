@@ -4,11 +4,11 @@
     {
       "project_number": 80,
       "project_name": "fix_himalaya_page_counter_race_condition",
-      "status": "planned",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-13T18:43:14Z",
-      "last_updated": "2026-02-13T19:05:32Z",
-      "session_id": "sess_1771009339_95b7b0",
+      "last_updated": "2026-02-13T19:17:50Z",
+      "session_id": "sess_1771009788_dccd85",
       "artifacts": [
         {
           "type": "research",
@@ -19,9 +19,16 @@
           "path": "specs/080_fix_himalaya_page_counter_race_condition/plans/implementation-001.md",
           "type": "plan",
           "summary": "3-phase plan: request validation, debouncing, and verification testing"
+        },
+        {
+          "path": "specs/080_fix_himalaya_page_counter_race_condition/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with technical details and verification results"
         }
       ],
-      "planned": "2026-02-13T19:05:32Z"
+      "planned": "2026-02-13T19:05:32Z",
+      "completed": "2026-02-13T19:17:50Z",
+      "completion_summary": "Fixed race condition in Himalaya sidebar page counter by implementing request validation with generation IDs and 50ms debouncing for cache-miss navigation. Stale async responses are discarded, preventing page content from mismatching the displayed page number during rapid <C-d>/<C-u> presses."
     },
     {
       "project_number": 79,

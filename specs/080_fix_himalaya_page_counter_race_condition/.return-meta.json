@@ -1,19 +1,29 @@
 {
-  "status": "planned",
-  "summary": "3-phase implementation plan for fixing Himalaya page counter race condition using generation-based validation and optional debouncing",
+  "status": "implemented",
+  "summary": "Fixed race condition in Himalaya sidebar page navigation by adding request validation and debouncing. Stale async responses are now discarded when generation changes or page changes during fetch.",
   "artifacts": [
     {
-      "type": "plan",
-      "path": "specs/080_fix_himalaya_page_counter_race_condition/plans/implementation-001.md",
-      "summary": "3-phase plan: request validation, debouncing, and verification testing"
+      "type": "implementation",
+      "path": "lua/neotex/plugins/tools/himalaya/ui/email_list.lua",
+      "summary": "Added navigation request tracking, debounced refresh, and async callback validation"
+    },
+    {
+      "type": "summary",
+      "path": "specs/080_fix_himalaya_page_counter_race_condition/summaries/implementation-summary-20260213.md",
+      "summary": "Implementation summary with technical details and verification results"
     }
   ],
   "metadata": {
-    "phase_count": 3,
-    "estimated_hours": "2-4",
-    "session_id": "sess_1771009339_95b7b0",
-    "agent_type": "planner-agent",
+    "phases_completed": 3,
+    "phases_total": 3,
+    "session_id": "sess_1771009788_dccd85",
+    "agent_type": "neovim-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "plan", "planner-agent"]
-  }
+    "delegation_path": ["orchestrator", "implement", "neovim-implementation-agent"]
+  },
+  "completion_data": {
+    "completion_summary": "Fixed race condition in Himalaya sidebar page counter by implementing request validation with generation IDs and 50ms debouncing for cache-miss navigation. Stale async responses are discarded, preventing page content from mismatching the displayed page number during rapid <C-d>/<C-u> presses.",
+    "roadmap_items": []
+  },
+  "next_steps": "Test changes by opening Neovim with Himalaya sidebar and rapidly pressing <C-d> or <C-u> to verify page counter stays synchronized with content"
 }

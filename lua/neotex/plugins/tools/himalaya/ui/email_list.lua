@@ -21,11 +21,21 @@ local email_preview = require('neotex.plugins.tools.himalaya.ui.email_preview')
 local draft_manager = require("neotex.plugins.tools.himalaya.data.drafts")
 local email_cache = require("neotex.plugins.tools.himalaya.data.cache")
 local logger = require('neotex.plugins.tools.himalaya.core.logger')
+local async_utils = require('neotex.plugins.tools.himalaya.utils.async')
 
 -- Module state
 local sync_status_timer = nil
 local last_sync_progress = nil
 local scheduled_timer = nil
+
+-- Navigation request tracking for race condition prevention
+-- Tracks in-flight async requests to discard stale responses
+local navigation_request = nil
+
+-- Debounced refresh for cache-miss navigation
+-- Coalesces rapid navigation requests to reduce unnecessary async fetches
+-- Uses 50ms delay - fast enough to not be perceptible but effective at coalescing
+local debounced_nav_refresh = nil  -- Initialized lazily after M is defined
 
 -- Buffer tracking (reference to main module's buffers)
 local buffers = nil
@@ -200,11 +210,52 @@ function M.is_cache_generation_valid(generation)
   return generation == page_generation
 end
 
+--- Debounced refresh for navigation cache-miss path
+--- Coalesces rapid navigation to reduce unnecessary async requests
+--- @param target_page number Target page number
+--- @param generation number Cache generation at request time
+local function do_debounced_nav_refresh(target_page, generation)
+  -- Validate that we still want this page
+  if not M.is_cache_generation_valid(generation) then
+    logger.debug('Debounced refresh cancelled - generation changed', {
+      request_generation = generation,
+      current_generation = page_generation
+    })
+    return
+  end
+
+  local current_page = state.get_current_page()
+  if current_page ~= target_page then
+    logger.debug('Debounced refresh cancelled - page changed', {
+      target_page = target_page,
+      current_page = current_page
+    })
+    return
+  end
+
+  -- Navigation request is still valid, proceed with refresh
+  logger.debug('Debounced refresh executing', { target_page = target_page })
+  M.refresh_email_list()
+end
+
+--- Initialize the debounced navigation refresh wrapper
+--- Called once during module initialization
+local function init_debounced_nav_refresh()
+  if not debounced_nav_refresh then
+    -- 50ms debounce - fast enough to not be perceptible, effective at coalescing
+    debounced_nav_refresh = async_utils.debounce(do_debounced_nav_refresh, 50)
+    logger.debug('Initialized debounced navigation refresh (50ms)')
+  end
+end
+
 -- Initialize module
 function M.init(main_buffers)
   -- Store reference to main module's buffers
   buffers = main_buffers
-  
+
+  -- Initialize debounced navigation refresh for race condition prevention
+  init_debounced_nav_refresh()
+
   -- Register event listener for email scheduled
   local events_bus = require('neotex.plugins.tools.himalaya.commands.orchestrator')
   local event_types = require('neotex.plugins.tools.himalaya.core.events')
@@ -1550,7 +1601,27 @@ function M.next_page()
       timing_stats.cache_misses = timing_stats.cache_misses + 1
       logger.info('Cache miss', { page = next_page_num })
     end
-    M.refresh_email_list()
+
+    -- Capture target page and generation for request validation
+    -- This prevents race conditions when rapid navigation causes out-of-order async responses
+    local generation = M.get_cache_generation()
+    navigation_request = {
+      target_page = next_page_num,
+      generation = generation,
+      timestamp = vim.loop.now()
+    }
+    logger.debug('Navigation request created', {
+      target_page = next_page_num,
+      generation = generation
+    })
+
+    -- Use debounced refresh to coalesce rapid navigation requests
+    -- Falls back to direct call if debounce not initialized (edge case)
+    if debounced_nav_refresh then
+      debounced_nav_refresh(next_page_num, generation)
+    else
+      M.refresh_email_list()
+    end
   else
     notify.himalaya('Already on last page', notify.categories.STATUS)
   end
@@ -1628,7 +1699,27 @@ function M.prev_page()
       timing_stats.cache_misses = timing_stats.cache_misses + 1
       logger.info('Cache miss', { page = prev_page_num })
     end
-    M.refresh_email_list()
+
+    -- Capture target page and generation for request validation
+    -- This prevents race conditions when rapid navigation causes out-of-order async responses
+    local generation = M.get_cache_generation()
+    navigation_request = {
+      target_page = prev_page_num,
+      generation = generation,
+      timestamp = vim.loop.now()
+    }
+    logger.debug('Navigation request created', {
+      target_page = prev_page_num,
+      generation = generation
+    })
+
+    -- Use debounced refresh to coalesce rapid navigation requests
+    -- Falls back to direct call if debounce not initialized (edge case)
+    if debounced_nav_refresh then
+      debounced_nav_refresh(prev_page_num, generation)
+    else
+      M.refresh_email_list()
+    end
   else
     notify.himalaya('Already on first page', notify.categories.STATUS)
   end
@@ -1823,13 +1914,46 @@ function M.refresh_email_list(opts)
       return
     end
     
+    -- Capture request state before async call for validation
+    local request_page = state.get_current_page()
+    local request_generation = M.get_cache_generation()
+    local captured_nav_request = navigation_request  -- Capture current navigation request
+
     -- Get email list from himalaya (async for responsiveness)
-    utils.get_emails_async(account_name, folder, state.get_current_page(), state.get_page_size(), function(emails, total_count, error)
+    utils.get_emails_async(account_name, folder, request_page, state.get_page_size(), function(emails, total_count, error)
       if error then
         notify.himalaya('Failed to refresh email list: ' .. tostring(error), notify.categories.ERROR)
         return
       end
-      
+
+      -- Validate request is still relevant (race condition prevention)
+      -- If a navigation request exists and doesn't match our captured request, discard
+      if captured_nav_request then
+        -- Check if generation changed (cache was invalidated)
+        if not M.is_cache_generation_valid(request_generation) then
+          logger.debug('Discarding stale navigation response - generation changed', {
+            request_generation = request_generation,
+            current_generation = M.get_cache_generation()
+          })
+          return
+        end
+
+        -- Check if we're still on the target page (user didn't navigate elsewhere)
+        local current_page = state.get_current_page()
+        if current_page ~= request_page then
+          logger.debug('Discarding stale navigation response - page changed', {
+            request_page = request_page,
+            current_page = current_page
+          })
+          return
+        end
+
+        -- Clear navigation request on successful validation
+        if navigation_request == captured_nav_request then
+          navigation_request = nil
+        end
+      end
+
       if emails then
         -- Clear draft folder cache first to ensure fresh data
         local draft_folder = utils.find_draft_folder(account_name)
@@ -1837,7 +1961,7 @@ function M.refresh_email_list(opts)
           logger.info('Clearing draft folder cache in refresh')
           email_cache.clear_folder(account_name, folder)
         end
-        
+
         -- Store emails in cache
         email_cache.store_emails(account_name, folder, emails)
         
