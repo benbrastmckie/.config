@@ -1,0 +1,20 @@
+{
+  "status": "planned",
+  "summary": "3-phase implementation plan to fix page counter display bug by regenerating header lines on cache hit while preserving cached email content for performance.",
+  "artifacts": [
+    {
+      "type": "plan",
+      "path": "specs/079_fix_himalaya_sidebar_page_counter_increment/plans/implementation-001.md",
+      "summary": "3-phase plan: extract header generation function, modify render_cached_page to regenerate header, comprehensive testing"
+    }
+  ],
+  "metadata": {
+    "phase_count": 3,
+    "estimated_hours": "1.5-2",
+    "session_id": "sess_1771006952_8d0034",
+    "agent_type": "planner-agent",
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "plan", "planner-agent"]
+  },
+  "next_steps": "Run /implement 79 to execute the plan"
+}

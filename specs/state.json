@@ -4,18 +4,24 @@
     {
       "project_number": 79,
       "project_name": "fix_himalaya_sidebar_page_counter_increment",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T18:05:23Z",
-      "last_updated": "2026-02-13T18:10:13Z",
-      "session_id": "sess_1771006007_1ac75c",
+      "last_updated": "2026-02-13T18:25:06Z",
+      "session_id": "sess_1771006952_8d0034",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/079_fix_himalaya_sidebar_page_counter_increment/reports/research-001.md",
           "summary": "Research report documenting cache-related pagination display bug with three fix options"
+        },
+        {
+          "path": "specs/079_fix_himalaya_sidebar_page_counter_increment/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase plan: extract header generation function, modify render_cached_page to regenerate header, comprehensive testing"
         }
-      ]
+      ],
+      "planned": "2026-02-13T18:25:06Z"
     },
     {
       "project_number": 78,
