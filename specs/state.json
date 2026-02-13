@@ -4,18 +4,24 @@
     {
       "project_number": 75,
       "project_name": "fix_himalaya_send_email_nil_error",
-      "status": "researched",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T16:50:43Z",
-      "last_updated": "2026-02-13T16:55:00Z",
-      "session_id": "sess_1771001495_8ce91d",
+      "last_updated": "2026-02-13T17:00:17Z",
+      "session_id": "sess_1771001861_15ed57",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/075_fix_himalaya_send_email_nil_error/reports/research-001.md",
           "summary": "Research report documenting root cause analysis of nil value error and fix recommendations for HimalayaSend and HimalayaDiscard commands"
+        },
+        {
+          "path": "specs/075_fix_himalaya_send_email_nil_error/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "2-phase implementation plan for fixing nil value errors in Himalaya email commands"
         }
-      ]
+      ],
+      "planned": "2026-02-13T17:00:17Z"
     },
     {
       "project_number": 74,

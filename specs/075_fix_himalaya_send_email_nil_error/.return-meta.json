@@ -1,20 +1,20 @@
 {
-  "status": "researched",
-  "summary": "Found nil error caused by calling non-existent main.send_email() function. Fix requires changing to main.send_current_email() and fixing similar issue in HimalayaDiscard command.",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/075_fix_himalaya_send_email_nil_error/reports/research-001.md",
-      "summary": "Research report documenting root cause analysis of nil value error and fix recommendations for HimalayaSend and HimalayaDiscard commands"
+      "type": "plan",
+      "path": "specs/075_fix_himalaya_send_email_nil_error/plans/implementation-001.md",
+      "summary": "2-phase implementation plan for fixing nil value errors in Himalaya email commands"
     }
   ],
-  "next_steps": "Run /plan 75 to create implementation plan",
+  "next_steps": "Run /implement 75 to execute the plan",
   "metadata": {
-    "session_id": "sess_1771001495_8ce91d",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 180,
+    "session_id": "sess_1771001861_15ed57",
+    "agent_type": "planner-agent",
+    "duration_seconds": 45,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 2
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 2,
+    "estimated_hours": 0.5
   }
 }
