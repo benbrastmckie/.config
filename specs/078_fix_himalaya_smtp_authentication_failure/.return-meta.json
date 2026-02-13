@@ -1,25 +1,19 @@
 {
-  "status": "researched",
-  "started_at": "2026-02-13T18:00:00Z",
-  "completed_at": "2026-02-13T18:15:00Z",
-  "summary": "Root cause identified: Gmail OAuth2 refresh token has expired/revoked (invalid_grant error). Fix requires re-running 'himalaya account configure gmail' in terminal to obtain fresh tokens via browser authentication.",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/078_fix_himalaya_smtp_authentication_failure/reports/research-001.md",
-      "summary": "Research report documenting OAuth2 token expiration as root cause, configuration analysis, and fix procedure"
+      "type": "plan",
+      "path": "specs/078_fix_himalaya_smtp_authentication_failure/plans/implementation-001.md",
+      "summary": "3-phase implementation plan for fixing Gmail OAuth2 authentication"
     }
   ],
-  "next_steps": "Run /plan 78 to create implementation plan, though fix is straightforward CLI command",
+  "next_steps": "Run /implement 78 to execute the plan",
   "metadata": {
-    "session_id": "sess_1771005748_dcc12f",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 900,
+    "session_id": "sess_1771006114_e73864",
+    "agent_type": "planner-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 5,
-    "root_cause": "OAuth2 refresh token expired or revoked by Google (invalid_grant)",
-    "fix_complexity": "simple",
-    "fix_command": "himalaya account configure gmail"
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 3,
+    "estimated_hours": "0.5-1"
   }
 }

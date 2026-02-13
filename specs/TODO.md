@@ -8,18 +8,21 @@ next_project_number: 80
 
 ### 79. Fix Himalaya sidebar page counter not incrementing correctly on first 3 pages
 - **Effort**: 1-2 hours
-- **Status**: [RESEARCHING]
+- **Status**: [RESEARCHED]
 - **Research Started**: 2026-02-13
+- **Research Completed**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
+- **Research**: [research-001.md](079_fix_himalaya_sidebar_page_counter_increment/reports/research-001.md)
 
 **Description**: Fix Himalaya sidebar page number display bug: page counter stays at "page 1" for the first 3 presses of `<C-d>` (though emails do change each time), only incrementing to "page 2" on the 4th press. After page 4 (displayed as 2), incrementing and decrementing work correctly. Identify root cause to implement elegant systematic fix.
 
 ### 78. Fix Himalaya SMTP authentication failure when sending emails
 - **Effort**: 1-2 hours
-- **Status**: [RESEARCHED]
+- **Status**: [PLANNING]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
+- **Planning Started**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](078_fix_himalaya_smtp_authentication_failure/reports/research-001.md)
