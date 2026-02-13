@@ -1,7 +1,7 @@
 # Implementation Plan: Task #88
 
 - **Task**: 88 - simplify_himalaya_threading_keybindings
-- **Status**: [NOT STARTED]
+- **Status**: [IMPLEMENTING]
 - **Effort**: 1-2 hours
 - **Dependencies**: None
 - **Research Inputs**: specs/088_simplify_himalaya_threading_keybindings/reports/research-001.md

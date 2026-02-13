@@ -4,20 +4,27 @@
     {
       "project_number": 89,
       "project_name": "gmail_himalaya_folder_label_sync",
-      "status": "researching",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T22:03:59Z",
-      "last_updated": "2026-02-13T22:04:45Z",
-      "session_id": "sess_1771020274_5524b8"
+      "last_updated": "2026-02-13T22:08:46Z",
+      "session_id": "sess_1771020274_5524b8",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/089_gmail_himalaya_folder_label_sync/reports/research-001.md",
+          "summary": "Research report on Gmail-Himalaya folder/label synchronization, covering bidirectional sync behavior, mbsync configuration, and Himalaya folder commands"
+        }
+      ]
     },
     {
       "project_number": 88,
       "project_name": "simplify_himalaya_threading_keybindings",
-      "status": "planned",
+      "status": "implementing",
       "language": "neovim",
       "created": "2026-02-13T21:58:35Z",
-      "last_updated": "2026-02-13T22:06:39Z",
-      "session_id": "sess_1771020233_8541b8",
+      "last_updated": "2026-02-13T22:08:03Z",
+      "session_id": "sess_1771020462_b1cca1",
       "artifacts": [
         {
           "type": "research",
