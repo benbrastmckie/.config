@@ -1,19 +1,29 @@
 {
-  "status": "planned",
+  "status": "implemented",
+  "summary": "Added buffer-local autoread check to FileChangedShell autocmd. Buffers with autoread=false now skip automatic reload, enabling task 84's Himalaya compose buffer protection to work correctly.",
   "artifacts": [
     {
-      "type": "plan",
-      "path": "specs/085_fix_filechangedshell_respect_autoread/plans/implementation-001.md",
-      "summary": "2-phase plan to fix FileChangedShell autocmd respecting buffer-local autoread settings"
+      "type": "implementation",
+      "path": "lua/neotex/config/autocmds.lua",
+      "summary": "Modified FileChangedShell callback to check vim.bo[args.buf].autoread before reloading"
+    },
+    {
+      "type": "summary",
+      "path": "specs/085_fix_filechangedshell_respect_autoread/summaries/implementation-summary-20260213.md",
+      "summary": "Implementation summary with verification results"
     }
   ],
-  "next_steps": "Run /implement 85 to execute the plan",
+  "completion_data": {
+    "completion_summary": "Fixed FileChangedShell autocmd to respect buffer-local autoread settings. Added elseif branch that checks vim.bo[args.buf].autoread == false and sets fcs_choice to empty string to skip reload. This enables Himalaya compose buffers (which set autoread=false) to retain their content when external changes occur."
+  },
   "metadata": {
-    "session_id": "sess_1771015566_a8f2d4",
-    "agent_type": "planner-agent",
+    "session_id": "sess_1771015783_2e7b35",
+    "duration_seconds": 180,
+    "agent_type": "neovim-implementation-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "plan", "planner-agent"],
-    "phase_count": 2,
-    "estimated_hours": "0.5"
-  }
+    "delegation_path": ["orchestrator", "implement", "neovim-implementation-agent"],
+    "phases_completed": 2,
+    "phases_total": 2
+  },
+  "next_steps": "Test Himalaya compose workflow to verify drafts are no longer corrupted by file reload"
 }

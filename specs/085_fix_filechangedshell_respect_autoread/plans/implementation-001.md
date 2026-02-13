@@ -1,7 +1,7 @@
 # Implementation Plan: Task #85
 
 - **Task**: 85 - Fix FileChangedShell autocmd to respect buffer-local autoread setting
-- **Status**: [NOT STARTED]
+- **Status**: [COMPLETED]
 - **Effort**: 0.5 hours
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)
@@ -42,7 +42,7 @@ Research report research-001.md confirmed:
 
 ## Implementation Phases
 
-### Phase 1: Modify FileChangedShell Autocmd [NOT STARTED]
+### Phase 1: Modify FileChangedShell Autocmd [COMPLETED]
 
 **Goal**: Add conditional check for buffer-local autoread before reloading
 
@@ -62,7 +62,7 @@ Research report research-001.md confirmed:
 
 ---
 
-### Phase 2: Verify Implementation [NOT STARTED]
+### Phase 2: Verify Implementation [COMPLETED]
 
 **Goal**: Confirm the fix works correctly for both autoread=true and autoread=false buffers
 

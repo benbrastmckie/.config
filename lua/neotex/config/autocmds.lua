@@ -74,7 +74,11 @@ function M.setup()
       if vim.fn.filereadable(bufname) == 0 then
         -- File was deleted - mark as not modified and don't reload
         vim.bo[args.buf].modified = false
-        -- Tell vim we handled it by setting to "ignore" 
+        -- Tell vim we handled it by setting to "ignore"
+        vim.v.fcs_choice = ""
+      elseif vim.bo[args.buf].autoread == false then
+        -- Buffer has autoread explicitly disabled - don't reload
+        -- This respects buffer-local autoread settings (e.g., Himalaya compose buffers)
         vim.v.fcs_choice = ""
       else
         -- File was modified - reload silently
