@@ -20,20 +20,26 @@
     {
       "project_number": 78,
       "project_name": "fix_himalaya_smtp_authentication_failure",
-      "status": "planning",
+      "status": "planned",
       "language": "neovim",
       "effort": "1-2 hours",
       "created": "2026-02-13T18:01:13Z",
-      "last_updated": "2026-02-13T18:08:52Z",
+      "last_updated": "2026-02-13T18:10:48Z",
       "dependencies": [],
       "artifacts": [
         {
           "type": "research",
           "path": "specs/078_fix_himalaya_smtp_authentication_failure/reports/research-001.md",
           "summary": "Research report documenting OAuth2 token expiration as root cause and fix procedure"
+        },
+        {
+          "path": "specs/078_fix_himalaya_smtp_authentication_failure/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan for fixing Gmail OAuth2 authentication"
         }
       ],
-      "session_id": "sess_1771006114_e73864"
+      "session_id": "sess_1771006114_e73864",
+      "planned": "2026-02-13T18:10:48Z"
     },
     {
       "project_number": 77,
