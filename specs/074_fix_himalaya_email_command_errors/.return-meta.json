@@ -1,21 +1,20 @@
 {
-  "status": "researched",
-  "started_at": "2026-02-12T00:00:00Z",
-  "completed_at": "2026-02-12T00:30:00Z",
+  "status": "planned",
   "artifacts": [
     {
-      "type": "report",
-      "path": "specs/074_fix_himalaya_email_command_errors/reports/research-074.md",
-      "summary": "Analysis of three Himalaya errors: missing is_composing function, folder table vs string type mismatch, and reply/forward email ID lookup failures"
+      "type": "plan",
+      "path": "specs/074_fix_himalaya_email_command_errors/plans/implementation-001.md",
+      "summary": "4-phase implementation plan for fixing Himalaya email command errors"
     }
   ],
-  "next_steps": "Run /plan 74 to create implementation plan",
+  "next_steps": "Run /implement 74 to execute the plan",
   "metadata": {
-    "session_id": "sess_1770949208_9fd418",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 1800,
+    "session_id": "sess_1770949716_bf8eb2",
+    "agent_type": "planner-agent",
+    "duration_seconds": 120,
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 3
+    "delegation_path": ["orchestrator", "plan", "skill-planner"],
+    "phase_count": 4,
+    "estimated_hours": 2.5
   }
 }
