@@ -4,26 +4,33 @@
     {
       "project_number": 89,
       "project_name": "gmail_himalaya_folder_label_sync",
-      "status": "not_started",
+      "status": "researching",
       "language": "neovim",
       "created": "2026-02-13T22:03:59Z",
-      "last_updated": "2026-02-13T22:03:59Z"
+      "last_updated": "2026-02-13T22:04:45Z",
+      "session_id": "sess_1771020274_5524b8"
     },
     {
       "project_number": 88,
       "project_name": "simplify_himalaya_threading_keybindings",
-      "status": "planning",
+      "status": "planned",
       "language": "neovim",
       "created": "2026-02-13T21:58:35Z",
-      "last_updated": "2026-02-13T22:04:11Z",
+      "last_updated": "2026-02-13T22:06:39Z",
       "session_id": "sess_1771020233_8541b8",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/088_simplify_himalaya_threading_keybindings/reports/research-001.md",
           "summary": "Research report with implementation approach for simplifying himalaya threading keybindings"
+        },
+        {
+          "path": "specs/088_simplify_himalaya_threading_keybindings/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "Implementation plan for simplifying threading keybindings to Tab and S-Tab"
         }
-      ]
+      ],
+      "planned": "2026-02-13T22:06:39Z"
     },
     {
       "project_number": 87,

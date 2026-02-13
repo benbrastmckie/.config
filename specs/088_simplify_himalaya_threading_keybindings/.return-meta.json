@@ -1,20 +1,19 @@
 {
-  "status": "researched",
-  "summary": "Research completed for simplifying himalaya threading keybindings. Current implementation has 6 threading keys (Tab, zo, zc, zR, zM, gT). Task requires reducing to 2 keys: Tab for single thread toggle, S-Tab for toggle all threads. Identified 3 files to modify: email_list.lua (add toggle_all_threads function), ui.lua (update keymaps), folder_help.lua (simplify help content).",
+  "status": "planned",
+  "summary": "5-phase implementation plan for simplifying himalaya threading keybindings from 6 to 2 keys",
   "artifacts": [
     {
-      "type": "research",
-      "path": "specs/088_simplify_himalaya_threading_keybindings/reports/research-001.md",
-      "summary": "Research report with implementation approach for simplifying himalaya threading keybindings"
+      "type": "plan",
+      "path": "specs/088_simplify_himalaya_threading_keybindings/plans/implementation-001.md",
+      "summary": "Implementation plan for simplifying threading keybindings to Tab and S-Tab"
     }
   ],
-  "next_steps": "Run /plan 88 to create implementation plan",
   "metadata": {
-    "session_id": "sess_1771019965_212461",
-    "agent_type": "neovim-research-agent",
-    "duration_seconds": 180,
+    "session_id": "sess_1771020233_8541b8",
+    "agent_type": "planner-agent",
     "delegation_depth": 1,
-    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
-    "findings_count": 5
+    "delegation_path": ["orchestrator", "plan", "planner-agent"],
+    "phase_count": 5,
+    "estimated_hours": "1-2"
   }
 }

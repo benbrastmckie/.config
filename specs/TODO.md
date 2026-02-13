@@ -8,20 +8,24 @@ next_project_number: 90
 
 ### 89. Research Gmail label and folder synchronization with Himalaya
 - **Effort**: TBD
-- **Status**: [NOT STARTED]
+- **Status**: [RESEARCHING]
+- **Research Started**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 
 **Description**: Research how Gmail labels and folders sync with Himalaya email client. Investigate: (1) whether creating/deleting labels in Gmail browser automatically syncs to Himalaya locally, (2) whether Himalaya can create/delete folders and labels that sync back to Gmail, and (3) best practices for bidirectional folder/label management between Gmail web interface and Himalaya in Neovim.
 
 ### 88. Simplify himalaya threading keybindings
-- **Effort**: 0.5-1 hour
-- **Status**: [RESEARCHED]
+- **Effort**: 1-2 hours
+- **Status**: [PLANNED]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
+- **Planning Started**: 2026-02-13
+- **Planning Completed**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](088_simplify_himalaya_threading_keybindings/reports/research-001.md)
+- **Plan**: [implementation-001.md](088_simplify_himalaya_threading_keybindings/plans/implementation-001.md)
 
 **Description**: Change himalaya sidebar threading keybindings to use `<S-Tab>` (Shift-Tab) for toggling expand/collapse all threads. Remove individual thread fold keybindings (zo, zc, zR, zM, gT) from both the sidebar keymaps and the help menu, keeping only `<Tab>` for single thread toggle and `<S-Tab>` for all threads.
 
