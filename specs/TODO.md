@@ -8,9 +8,10 @@ next_project_number: 90
 
 ### 89. Research Gmail label and folder synchronization with Himalaya
 - **Effort**: TBD
-- **Status**: [RESEARCHED]
+- **Status**: [PLANNING]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
+- **Planning Started**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](089_gmail_himalaya_folder_label_sync/reports/research-001.md)
@@ -19,16 +20,18 @@ next_project_number: 90
 
 ### 88. Simplify himalaya threading keybindings
 - **Effort**: 1-2 hours
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Planning Started**: 2026-02-13
 - **Planning Completed**: 2026-02-13
 - **Implementation Started**: 2026-02-13
+- **Implementation Completed**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](088_simplify_himalaya_threading_keybindings/reports/research-001.md)
 - **Plan**: [implementation-001.md](088_simplify_himalaya_threading_keybindings/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260213.md](088_simplify_himalaya_threading_keybindings/summaries/implementation-summary-20260213.md)
 
 **Description**: Change himalaya sidebar threading keybindings to use `<S-Tab>` (Shift-Tab) for toggling expand/collapse all threads. Remove individual thread fold keybindings (zo, zc, zR, zM, gT) from both the sidebar keymaps and the help menu, keeping only `<Tab>` for single thread toggle and `<S-Tab>` for all threads.
 

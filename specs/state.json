@@ -4,11 +4,11 @@
     {
       "project_number": 89,
       "project_name": "gmail_himalaya_folder_label_sync",
-      "status": "researched",
+      "status": "planning",
       "language": "neovim",
       "created": "2026-02-13T22:03:59Z",
-      "last_updated": "2026-02-13T22:08:46Z",
-      "session_id": "sess_1771020274_5524b8",
+      "last_updated": "2026-02-13T22:11:34Z",
+      "session_id": "sess_1771020682_ef225a",
       "artifacts": [
         {
           "type": "research",
@@ -20,10 +20,10 @@
     {
       "project_number": 88,
       "project_name": "simplify_himalaya_threading_keybindings",
-      "status": "implementing",
+      "status": "completed",
       "language": "neovim",
       "created": "2026-02-13T21:58:35Z",
-      "last_updated": "2026-02-13T22:08:03Z",
+      "last_updated": "2026-02-13T22:11:38Z",
       "session_id": "sess_1771020462_b1cca1",
       "artifacts": [
         {
@@ -35,9 +35,16 @@
           "path": "specs/088_simplify_himalaya_threading_keybindings/plans/implementation-001.md",
           "type": "plan",
           "summary": "Implementation plan for simplifying threading keybindings to Tab and S-Tab"
+        },
+        {
+          "path": "specs/088_simplify_himalaya_threading_keybindings/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary for simplified threading keybindings"
         }
       ],
-      "planned": "2026-02-13T22:06:39Z"
+      "planned": "2026-02-13T22:06:39Z",
+      "completed": "2026-02-13T22:11:38Z",
+      "completion_summary": "Simplified himalaya sidebar threading keybindings from 6 keys (Tab, zo, zc, zR, zM, gT) to 2 keys (Tab for single thread, S-Tab for all threads). Added intelligent toggle_all_threads() function that collapses all if any expanded, else expands all."
     },
     {
       "project_number": 87,

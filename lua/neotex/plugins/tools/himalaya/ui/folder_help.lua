@@ -86,12 +86,8 @@ function M.get_help_content(folder_type)
 
   local base_threading = {
     "Threading:",
-    "  <Tab>     - Toggle thread expand",
-    "  zo        - Expand thread",
-    "  zc        - Collapse thread",
-    "  zR        - Expand all threads",
-    "  zM        - Collapse all threads",
-    "  gT        - Toggle threading on/off",
+    "  <Tab>     - Toggle thread expand/collapse",
+    "  <S-Tab>   - Toggle all threads",
     ""
   }
 

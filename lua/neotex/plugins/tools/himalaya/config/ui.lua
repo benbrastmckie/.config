@@ -137,9 +137,8 @@ function M.setup_buffer_keymaps(bufnr)
   local keymap = vim.keymap.set
   local opts = { buffer = bufnr, silent = true }
   
-  -- Disable tab cycling in all Himalaya buffers
+  -- Disable tab cycling in all Himalaya buffers (Task #88: S-Tab now used for threading)
   keymap('n', '<Tab>', '<Nop>', opts)
-  keymap('n', '<S-Tab>', '<Nop>', opts)
   keymap('i', '<Tab>', '<Tab>', opts)  -- Keep normal tab in insert mode
   keymap('i', '<S-Tab>', '<S-Tab>', opts)  -- Keep shift-tab in insert mode
   
@@ -359,7 +358,7 @@ function M.setup_email_list_keymaps(bufnr)
     end
   end, vim.tbl_extend('force', opts, { desc = 'Search emails' }))
 
-  -- Threading keymaps (Task #81)
+  -- Threading keymaps (Task #88 - simplified to Tab/S-Tab only)
   -- Tab toggles thread expansion (only on thread root lines)
   keymap('n', '<Tab>', function()
     local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
@@ -368,50 +367,13 @@ function M.setup_email_list_keymaps(bufnr)
     end
   end, vim.tbl_extend('force', opts, { desc = 'Toggle thread expand/collapse' }))
 
-  -- zo - expand thread (vim fold style)
-  keymap('n', 'zo', function()
+  -- S-Tab toggles all threads (collapse if any expanded, else expand all)
+  keymap('n', '<S-Tab>', function()
     local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
-    if ok and email_list.expand_current_thread then
-      email_list.expand_current_thread()
+    if ok and email_list.toggle_all_threads then
+      email_list.toggle_all_threads()
     end
-  end, vim.tbl_extend('force', opts, { desc = 'Expand thread' }))
-
-  -- zc - collapse thread (vim fold style)
-  keymap('n', 'zc', function()
-    local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
-    if ok and email_list.collapse_current_thread then
-      email_list.collapse_current_thread()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Collapse thread' }))
-
-  -- zR - expand all threads
-  keymap('n', 'zR', function()
-    local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
-    if ok and email_list.expand_all_threads then
-      email_list.expand_all_threads()
-      email_list.refresh_email_list()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Expand all threads' }))
-
-  -- zM - collapse all threads
-  keymap('n', 'zM', function()
-    local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
-    if ok and email_list.collapse_all_threads then
-      email_list.collapse_all_threads()
-      email_list.refresh_email_list()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Collapse all threads' }))
-
-  -- gT - toggle threading on/off
-  keymap('n', 'gT', function()
-    local ok, email_list = pcall(require, 'neotex.plugins.tools.himalaya.ui.email_list')
-    if ok and email_list.toggle_threading then
-      local enabled = email_list.toggle_threading()
-      local notify = require('neotex.util.notifications')
-      notify.himalaya('Threading ' .. (enabled and 'enabled' or 'disabled'), notify.categories.STATUS)
-      email_list.refresh_email_list()
-    end
-  end, vim.tbl_extend('force', opts, { desc = 'Toggle threading' }))
+  end, vim.tbl_extend('force', opts, { desc = 'Toggle all threads' }))
 
   -- Sync & Accounts keybindings (Task #86)
   -- s - sync inbox
@@ -610,13 +572,9 @@ function M.get_keybinding(filetype, action)
       change_folder = 'c',
       compose = 'e',
       search = '/',
-      -- Threading keymaps (Task #81)
+      -- Threading keymaps (Task #88 - simplified)
       toggle_thread = '<Tab>',
-      expand_thread = 'zo',
-      collapse_thread = 'zc',
-      expand_all_threads = 'zR',
-      collapse_all_threads = 'zM',
-      toggle_threading = 'gT',
+      toggle_all_threads = '<S-Tab>',
       -- Sync & Accounts keymaps (Task #86)
       sync_inbox = 's',
       sync_all = 'S',

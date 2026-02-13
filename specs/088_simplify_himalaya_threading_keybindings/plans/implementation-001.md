@@ -1,7 +1,7 @@
 # Implementation Plan: Task #88
 
 - **Task**: 88 - simplify_himalaya_threading_keybindings
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Effort**: 1-2 hours
 - **Dependencies**: None
 - **Research Inputs**: specs/088_simplify_himalaya_threading_keybindings/reports/research-001.md
@@ -46,7 +46,7 @@ Key findings from research:
 
 ## Implementation Phases
 
-### Phase 1: Add toggle_all_threads Function [NOT STARTED]
+### Phase 1: Add toggle_all_threads Function [COMPLETED]
 
 **Goal**: Create the toggle_all_threads() function in email_list.lua
 
@@ -94,7 +94,7 @@ end
 
 ---
 
-### Phase 2: Update Keymaps in ui.lua [NOT STARTED]
+### Phase 2: Update Keymaps in ui.lua [COMPLETED]
 
 **Goal**: Remove old keymaps and add S-Tab keymap
 
@@ -119,7 +119,7 @@ end
 
 ---
 
-### Phase 3: Update get_keybinding Reference [NOT STARTED]
+### Phase 3: Update get_keybinding Reference [COMPLETED]
 
 **Goal**: Update the keybinding reference table
 
@@ -145,7 +145,7 @@ toggle_all_threads = '<S-Tab>',
 
 ---
 
-### Phase 4: Update Help Menu [NOT STARTED]
+### Phase 4: Update Help Menu [COMPLETED]
 
 **Goal**: Simplify the threading section in folder_help.lua
 
@@ -175,7 +175,7 @@ local base_threading = {
 
 ---
 
-### Phase 5: Verification and Testing [NOT STARTED]
+### Phase 5: Verification and Testing [COMPLETED]
 
 **Goal**: Verify all changes work correctly
 

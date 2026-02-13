@@ -169,6 +169,30 @@ function M.collapse_all_threads()
   logger.debug('Collapsed all threads')
 end
 
+--- Toggle all threads expand/collapse (Task #88)
+--- If any thread is expanded, collapse all; otherwise expand all
+function M.toggle_all_threads()
+  local thread_order = state.get('email_list.thread_order', {})
+  local any_expanded = false
+
+  -- Check if any threads are currently expanded
+  for _, normalized_subject in ipairs(thread_order) do
+    if expanded_threads[normalized_subject] then
+      any_expanded = true
+      break
+    end
+  end
+
+  -- Toggle: if any expanded, collapse all; otherwise expand all
+  if any_expanded then
+    M.collapse_all_threads()
+  else
+    M.expand_all_threads()
+  end
+
+  M.refresh_email_list()
+end
+
 --- Get the expanded threads table (for state persistence)
 --- @return table The expanded threads table
 function M.get_expanded_threads()
