@@ -59,7 +59,7 @@ function M.setup(registry)
         return
       end
       
-      main.send_email()
+      main.send_current_email()
     end,
     opts = {
       desc = 'Send the current email'
@@ -93,7 +93,7 @@ function M.setup(registry)
         return
       end
       
-      composer.close()
+      main.close_without_saving()
     end,
     opts = {
       desc = 'Discard the current email'
