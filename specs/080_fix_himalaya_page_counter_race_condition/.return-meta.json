@@ -1,0 +1,20 @@
+{
+  "status": "researched",
+  "summary": "Race condition occurs in cache-miss path when async callbacks fire out of order. Recommended fix: extend existing generation-based validation to main navigation callbacks with optional light debouncing.",
+  "artifacts": [
+    {
+      "type": "research",
+      "path": "specs/080_fix_himalaya_page_counter_race_condition/reports/research-001.md",
+      "summary": "Research report with root cause analysis, existing safeguards review, and phased implementation recommendations"
+    }
+  ],
+  "next_steps": "Run /plan 80 to create implementation plan",
+  "metadata": {
+    "session_id": "sess_1771008714_361ea6",
+    "agent_type": "neovim-research-agent",
+    "duration_seconds": 2700,
+    "delegation_depth": 1,
+    "delegation_path": ["orchestrator", "research", "neovim-research-agent"],
+    "findings_count": 5
+  }
+}
