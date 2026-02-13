@@ -4,10 +4,19 @@
     {
       "project_number": 74,
       "project_name": "fix_himalaya_email_command_errors",
-      "status": "not_started",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T02:19:28Z",
-      "last_updated": "2026-02-13T02:19:28Z"
+      "last_updated": "2026-02-13T02:24:22Z",
+      "session_id": "sess_1770949208_9fd418",
+      "researched": "2026-02-13T02:24:22Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/074_fix_himalaya_email_command_errors/reports/research-001.md",
+          "summary": "Analysis of three Himalaya errors: missing is_composing function, folder table vs string type mismatch, and reply/forward email ID lookup failures"
+        }
+      ]
     },
     {
       "project_number": 73,
