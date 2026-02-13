@@ -1,7 +1,7 @@
 # Implementation Plan: Fix Himalaya Sidebar Folder Selection
 
 - **Task**: 77 - Fix himalaya sidebar folder selection
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Effort**: 1 hour
 - **Dependencies**: None
 - **Research Inputs**: [research-001.md](../reports/research-001.md)

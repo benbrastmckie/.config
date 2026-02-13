@@ -30,6 +30,11 @@
           "path": "specs/077_fix_himalaya_sidebar_folder_selection/plans/implementation-001.md",
           "type": "plan",
           "summary": "2-phase implementation plan for fixing himalaya folder selection with INBOX guarantee and priority sorting"
+        },
+        {
+          "path": "specs/077_fix_himalaya_sidebar_folder_selection/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
         }
       ],
       "planned": "2026-02-13T17:55:52Z",

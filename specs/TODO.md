@@ -16,16 +16,18 @@ next_project_number: 79
 
 ### 77. Fix himalaya sidebar folder selection menu
 - **Effort**: 1 hour
-- **Status**: [IMPLEMENTING]
+- **Status**: [COMPLETED]
 - **Research Started**: 2026-02-13
 - **Research Completed**: 2026-02-13
 - **Planning Started**: 2026-02-13
 - **Planning Completed**: 2026-02-13
 - **Implementation Started**: 2026-02-13
+- **Implementation Completed**: 2026-02-13
 - **Language**: neovim
 - **Dependencies**: None
 - **Research**: [research-001.md](077_fix_himalaya_sidebar_folder_selection/reports/research-001.md)
 - **Plan**: [implementation-001.md](077_fix_himalaya_sidebar_folder_selection/plans/implementation-001.md)
+- **Summary**: [implementation-summary-20260213.md](077_fix_himalaya_sidebar_folder_selection/summaries/implementation-summary-20260213.md)
 
 **Description**: Fix himalaya sidebar folder selection: add missing Inbox option and reorder folders by usage priority (Inbox, Sent, Drafts, All Mail, Trash first). Currently when pressing 'c' in the sidebar, Inbox is not listed and folders appear in arbitrary order.
 
