@@ -1,10 +1,18 @@
 ---
-next_project_number: 81
+next_project_number: 82
 ---
 
 # TODO
 
 ## Tasks
+
+### 81. Implement email thread grouping in Himalaya sidebar
+- **Effort**: TBD
+- **Status**: [NOT STARTED]
+- **Language**: neovim
+- **Dependencies**: None
+
+**Description**: Implement email thread grouping in Himalaya sidebar - consolidate emails from the same thread into a single entry, displaying the most recent email's data. Currently, multiple emails from the same thread (e.g., "Bailey Fernandez | AW: Meeting?" appearing 5 times) are shown as separate entries. Goal: group related emails together for a cleaner, more organized inbox view.
 
 ### 80. Fix Himalaya sidebar page counter race condition when rapidly pressing navigation keys
 - **Effort**: 1-2 hours

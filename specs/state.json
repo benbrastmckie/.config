@@ -1,6 +1,14 @@
 {
-  "next_project_number": 81,
+  "next_project_number": 82,
   "active_projects": [
+    {
+      "project_number": 81,
+      "project_name": "implement_himalaya_email_thread_grouping",
+      "status": "not_started",
+      "language": "neovim",
+      "created": "2026-02-13T19:25:59Z",
+      "last_updated": "2026-02-13T19:25:59Z"
+    },
     {
       "project_number": 80,
       "project_name": "fix_himalaya_page_counter_race_condition",
