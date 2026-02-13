@@ -4,16 +4,21 @@
     {
       "project_number": 84,
       "project_name": "fix_disruptive_header_changes_himalaya_email",
-      "status": "researching",
+      "status": "researched",
       "language": "neovim",
       "created": "2026-02-13T20:01:11Z",
-      "last_updated": "2026-02-13T20:06:43Z",
+      "last_updated": "2026-02-13T20:09:45Z",
       "session_id": "sess_1771013188_aff6af",
       "artifacts": [
         {
           "type": "research",
           "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md",
           "summary": "Root cause analysis identifying Neovim autoread/checktime mechanism reloading compose buffer with full MIME headers; recommends disabling buffer-local autoread"
+        },
+        {
+          "type": "research",
+          "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-002.md",
+          "summary": "Additional research identifying race condition between autosave and FileChangedShell causing data loss during email composition"
         }
       ]
     },
