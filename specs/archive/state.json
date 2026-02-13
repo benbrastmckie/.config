@@ -1092,6 +1092,768 @@
       "completed": "2026-02-03T22:52:20Z",
       "completion_summary": "Enhanced meta-builder-agent.md Stage 7 DeliverSummary with ASCII dependency graph visualization, task table with assigned numbers, execution order annotations, and 3 example outputs demonstrating linear, diamond, and external dependency patterns.",
       "claudemd_suggestions": "Modified .claude/agents/meta-builder-agent.md with enhanced DeliverSummary output format including dependency visualization algorithms and examples"
+    },
+    {
+      "project_number": 85,
+      "project_name": "fix_filechangedshell_respect_autoread",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T20:39:40Z",
+      "last_updated": "2026-02-13T20:52:32Z",
+      "session_id": "sess_1771015783_2e7b35",
+      "researched": "2026-02-13T20:43:57Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/085_fix_filechangedshell_respect_autoread/reports/research-001.md",
+          "summary": "Analysis of FileChangedShell autocmd bypassing buffer-local autoread settings with 2-line fix recommendation"
+        },
+        {
+          "path": "specs/085_fix_filechangedshell_respect_autoread/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "2-phase plan to fix FileChangedShell autocmd respecting buffer-local autoread settings"
+        },
+        {
+          "type": "summary",
+          "path": "specs/085_fix_filechangedshell_respect_autoread/summaries/implementation-summary-20260213.md",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-13T20:48:09Z",
+      "started": "2026-02-13T20:50:05Z",
+      "completed": "2026-02-13T20:52:32Z",
+      "completion_summary": "Fixed FileChangedShell autocmd to respect buffer-local autoread settings. Added elseif branch that checks vim.bo[args.buf].autoread == false and sets fcs_choice to empty string to skip reload. This enables Himalaya compose buffers (which set autoread=false) to retain their content when external changes occur."
+    },
+    {
+      "project_number": 84,
+      "project_name": "fix_disruptive_header_changes_himalaya_email",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T20:01:11Z",
+      "last_updated": "2026-02-13T20:24:26Z",
+      "session_id": "sess_1771014086_83d8cb",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-001.md",
+          "summary": "Root cause analysis identifying Neovim autoread/checktime mechanism reloading compose buffer with full MIME headers; recommends disabling buffer-local autoread"
+        },
+        {
+          "type": "research",
+          "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-002.md",
+          "summary": "Additional research identifying race condition between autosave and FileChangedShell causing data loss during email composition"
+        },
+        {
+          "type": "research",
+          "path": "specs/084_fix_disruptive_header_changes_himalaya_email/reports/research-003.md",
+          "summary": "Identified critical argument bug in HimalayaSaveDraft command passing boolean instead of buffer number, plus integrated solution combining argument fix with autoread disable for all three reported issues"
+        },
+        {
+          "path": "specs/084_fix_disruptive_header_changes_himalaya_email/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan fixing argument bug and disabling autoread for Himalaya compose buffers"
+        },
+        {
+          "type": "summary",
+          "path": "specs/084_fix_disruptive_header_changes_himalaya_email/summaries/implementation-summary-20260213.md",
+          "summary": "Implementation summary with details of all changes made"
+        }
+      ],
+      "planned": "2026-02-13T20:18:59Z",
+      "completed": "2026-02-13T20:24:26Z",
+      "completion_summary": "Fixed three Himalaya email composition issues: corrected save_draft argument bug that caused 'No draft associated with buffer' errors, disabled buffer-local autoread to prevent disruptive header format changes during autosave, and eliminated data loss race condition. Total 4 lines changed across 2 files."
+    },
+    {
+      "project_number": 83,
+      "project_name": "fix_himalaya_sidebar_help_display",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T19:51:33Z",
+      "last_updated": "2026-02-13T20:06:08Z",
+      "session_id": "sess_1771012924_6f6e06",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/083_fix_himalaya_sidebar_help_display/reports/research-001.md",
+          "summary": "Research findings showing gH works but ? is standard; footer has incorrect keybinding; 3 files need updates"
+        },
+        {
+          "path": "specs/083_fix_himalaya_sidebar_help_display/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for fixing Himalaya sidebar help display inaccuracies"
+        },
+        {
+          "path": "specs/083_fix_himalaya_sidebar_help_display/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-13T20:00:14Z",
+      "completed": "2026-02-13T20:06:08Z",
+      "completion_summary": "Fixed Himalaya sidebar help display to use ? instead of gH across all contexts. Updated folder_help.lua help section, simplified email_list.lua footer to simple ?:help, and updated all show_help() messages in commands/ui.lua. Both keybindings still work, but only ? is now documented."
+    },
+    {
+      "project_number": 82,
+      "project_name": "fix_nil_check_active_editor_himalaya",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T19:42:35Z",
+      "last_updated": "2026-02-13T20:05:54Z",
+      "session_id": "sess_1771012877_06b757",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/082_fix_nil_check_active_editor_himalaya/reports/research-001.md",
+          "summary": "Research report documenting the nil value error cause and recommended fix using existing compose_email function"
+        },
+        {
+          "path": "specs/082_fix_nil_check_active_editor_himalaya/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "2-phase plan: Phase 1 fixes HimalayaWrite command to use compose_email() like sidebar 'e' key; Phase 2 verifies identical behavior"
+        },
+        {
+          "path": "specs/082_fix_nil_check_active_editor_himalaya/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary documenting the fix and verification"
+        }
+      ],
+      "planned": "2026-02-13T19:50:16Z",
+      "completed": "2026-02-13T20:05:54Z",
+      "completion_summary": "Fixed nil value error in HimalayaWrite command by replacing broken function calls with main.compose_email(). The <leader>mw keymap now behaves identically to pressing 'e' in the Himalaya sidebar."
+    },
+    {
+      "project_number": 81,
+      "project_name": "implement_himalaya_email_thread_grouping",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T19:25:59Z",
+      "last_updated": "2026-02-13T19:49:02Z",
+      "session_id": "sess_1771011637_f9f091",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/081_implement_himalaya_email_thread_grouping/reports/research-001.md",
+          "summary": "Research report on himalaya thread grouping: CLI capabilities, JWZ algorithm, implementation strategy"
+        },
+        {
+          "path": "specs/081_implement_himalaya_email_thread_grouping/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase implementation plan for Himalaya email thread grouping with subject-based grouping and expand/collapse UI"
+        },
+        {
+          "path": "specs/081_implement_himalaya_email_thread_grouping/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with all changes and verification results"
+        }
+      ],
+      "planned": "2026-02-13T19:37:50Z",
+      "completed": "2026-02-13T19:49:02Z",
+      "completion_summary": "Implemented email thread grouping in Himalaya sidebar. Created threading.lua module for subject normalization and thread indexing. Added expand/collapse keybindings (Tab, zo/zc, zR/zM) and :HimalayaThreadingToggle command. Threads display with [N] count indicator, grouping Re:/Fwd:/AW: replies together."
+    },
+    {
+      "project_number": 80,
+      "project_name": "fix_himalaya_page_counter_race_condition",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T18:43:14Z",
+      "last_updated": "2026-02-13T19:17:50Z",
+      "session_id": "sess_1771009788_dccd85",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/080_fix_himalaya_page_counter_race_condition/reports/research-001.md",
+          "summary": "Research report with root cause analysis, existing safeguards review, and phased implementation recommendations"
+        },
+        {
+          "path": "specs/080_fix_himalaya_page_counter_race_condition/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase plan: request validation, debouncing, and verification testing"
+        },
+        {
+          "path": "specs/080_fix_himalaya_page_counter_race_condition/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with technical details and verification results"
+        }
+      ],
+      "planned": "2026-02-13T19:05:32Z",
+      "completed": "2026-02-13T19:17:50Z",
+      "completion_summary": "Fixed race condition in Himalaya sidebar page counter by implementing request validation with generation IDs and 50ms debouncing for cache-miss navigation. Stale async responses are discarded, preventing page content from mismatching the displayed page number during rapid <C-d>/<C-u> presses."
+    },
+    {
+      "project_number": 79,
+      "project_name": "fix_himalaya_sidebar_page_counter_increment",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T18:05:23Z",
+      "last_updated": "2026-02-13T18:37:00Z",
+      "session_id": "sess_1771007496_16b97f",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/079_fix_himalaya_sidebar_page_counter_increment/reports/research-001.md",
+          "summary": "Research report documenting cache-related pagination display bug with three fix options"
+        },
+        {
+          "path": "specs/079_fix_himalaya_sidebar_page_counter_increment/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase plan: extract header generation function, modify render_cached_page to regenerate header, comprehensive testing"
+        },
+        {
+          "path": "specs/079_fix_himalaya_sidebar_page_counter_increment/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification details and technical documentation"
+        }
+      ],
+      "planned": "2026-02-13T18:25:06Z",
+      "completed": "2026-02-13T18:37:00Z",
+      "completion_summary": "Fixed Himalaya sidebar page counter display bug. Page counter now correctly shows page 2/3/4/5 when navigating with C-d instead of staying at page 1. Solution regenerates header on cache hit while preserving cached email content for performance."
+    },
+    {
+      "project_number": 77,
+      "project_name": "fix_himalaya_sidebar_folder_selection",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T17:48:53Z",
+      "last_updated": "2026-02-13T18:01:22Z",
+      "session_id": "sess_1771005453_a2041f",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/077_fix_himalaya_sidebar_folder_selection/reports/research-001.md",
+          "summary": "Research report documenting root cause (himalaya CLI omits INBOX), code locations, and implementation approach with priority-sorted folder list"
+        },
+        {
+          "path": "specs/077_fix_himalaya_sidebar_folder_selection/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "2-phase implementation plan for fixing himalaya folder selection with INBOX guarantee and priority sorting"
+        },
+        {
+          "path": "specs/077_fix_himalaya_sidebar_folder_selection/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-13T17:55:52Z",
+      "completed": "2026-02-13T18:01:22Z",
+      "completion_summary": "Fixed himalaya sidebar folder selection to include INBOX and sort folders by usage priority. Added INBOX guarantee check (inserts INBOX if missing from CLI results) and priority-based sorting (INBOX, Sent, Drafts, All_Mail, Trash first, then alphabetical) to both get_folders() and scan_maildir_folders() functions."
+    },
+    {
+      "project_number": 76,
+      "project_name": "fix_himalaya_reply_forward_send_errors",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T17:33:38Z",
+      "last_updated": "2026-02-13T17:53:46Z",
+      "session_id": "sess_1771004944_b0e1c8",
+      "researched": "2026-02-13T17:41:33Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/076_fix_himalaya_reply_forward_send_errors/reports/research-001.md",
+          "summary": "Root cause analysis identifying CLI version incompatibility: envelope get command does not exist in himalaya v1.1.0 and send must be message send"
+        },
+        {
+          "path": "specs/076_fix_himalaya_reply_forward_send_errors/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase plan covering send command fix, message read helper, get_email_by_id update, and integration testing"
+        },
+        {
+          "path": "specs/076_fix_himalaya_reply_forward_send_errors/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-13T17:47:01Z",
+      "started": "2026-02-13T17:49:32Z",
+      "completed": "2026-02-13T17:53:46Z",
+      "completion_summary": "Fixed Himalaya email client integration for himalaya CLI v1.1.0. Updated send_email() to use 'message send' command with stdin piping, replaced non-existent 'envelope get' with 'message read' in get_email_by_id(), and added parse_message_read_result() helper to extract email data for reply/forward operations."
+    },
+    {
+      "project_number": 75,
+      "project_name": "fix_himalaya_send_email_nil_error",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T16:50:43Z",
+      "last_updated": "2026-02-13T17:25:22Z",
+      "session_id": "sess_1771003338_a757de",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/075_fix_himalaya_send_email_nil_error/reports/research-001.md",
+          "summary": "Research report documenting root cause analysis of nil value error and fix recommendations for HimalayaSend and HimalayaDiscard commands"
+        },
+        {
+          "path": "specs/075_fix_himalaya_send_email_nil_error/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "2-phase implementation plan for fixing nil value errors in Himalaya email commands"
+        },
+        {
+          "path": "specs/075_fix_himalaya_send_email_nil_error/summaries/implementation-summary-20260213.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-13T17:00:17Z",
+      "completed": "2026-02-13T17:25:22Z",
+      "completion_summary": "Fixed two nil value errors in Himalaya email commands module by correcting function names: main.send_email() to main.send_current_email() and composer.close() to main.close_without_saving()."
+    },
+    {
+      "project_number": 74,
+      "project_name": "fix_himalaya_email_command_errors",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T02:19:28Z",
+      "last_updated": "2026-02-13T02:36:21Z",
+      "session_id": "sess_1770949918_399dd9",
+      "researched": "2026-02-13T02:24:22Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/074_fix_himalaya_email_command_errors/reports/research-001.md",
+          "summary": "Analysis of three Himalaya errors: missing is_composing function, folder table vs string type mismatch, and reply/forward email ID lookup failures"
+        },
+        {
+          "path": "specs/074_fix_himalaya_email_command_errors/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for fixing Himalaya email command errors"
+        },
+        {
+          "path": "specs/074_fix_himalaya_email_command_errors/summaries/implementation-summary-20260212.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-13T02:30:48Z",
+      "started": "2026-02-13T02:32:21Z",
+      "completed": "2026-02-13T02:36:21Z",
+      "completion_summary": "Fixed Himalaya email plugin errors: added is_composing() wrapper function, fixed folder:lower() nil errors by properly extracting folder names from table structures, and enhanced reply/forward commands with detailed diagnostic messages."
+    },
+    {
+      "project_number": 73,
+      "project_name": "fix_whichkey_conditional_mappings_not_displaying",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-13T01:53:19Z",
+      "last_updated": "2026-02-13T02:13:57Z",
+      "session_id": "sess_1770948545_724f44",
+      "researched": "2026-02-13T01:58:25Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/073_fix_whichkey_conditional_mappings_not_displaying/reports/research-001.md",
+          "summary": "Research report identifying root cause (cond evaluated once) and solution (buffer-local wk.add)"
+        },
+        {
+          "path": "specs/073_fix_whichkey_conditional_mappings_not_displaying/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for fixing which-key conditional mappings via buffer-local registration"
+        },
+        {
+          "path": "specs/073_fix_whichkey_conditional_mappings_not_displaying/summaries/implementation-summary-20260212.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-13T02:07:30Z",
+      "started": "2026-02-13T02:09:28Z",
+      "completed": "2026-02-13T02:13:57Z",
+      "completion_summary": "Fixed which-key conditional mappings by replacing cond-based registration with buffer-local registration. Compose keymaps (<leader>me, <leader>md, <leader>mq) now appear when composing emails, and preview keymaps appear in himalaya-email buffers."
+    },
+    {
+      "project_number": 71,
+      "project_name": "refactor_himalaya_keybindings_flatten_email_actions",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-12T18:14:23Z",
+      "last_updated": "2026-02-12T18:58:36Z",
+      "session_id": "sess_1770922228_610657",
+      "researched": "2026-02-12T18:18:27Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/071_refactor_himalaya_keybindings_flatten_email_actions/reports/research-001.md",
+          "summary": "Analysis of himalaya keybinding architecture identifying <leader>me conflict and recommending removal of redundant email actions subgroup"
+        },
+        {
+          "path": "specs/071_refactor_himalaya_keybindings_flatten_email_actions/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "6-phase implementation plan covering which-key global changes, email preview mappings, sidebar/list keybindings, and help updates"
+        },
+        {
+          "path": "specs/071_refactor_himalaya_keybindings_flatten_email_actions/summaries/implementation-summary-20260212.md",
+          "type": "summary",
+          "summary": "Implementation summary documenting all keybinding changes and verification results"
+        }
+      ],
+      "planned": "2026-02-12T18:48:27Z",
+      "started": "2026-02-12T18:51:33Z",
+      "completed": "2026-02-12T18:58:36Z",
+      "completion_summary": "Refactored himalaya keybindings to eliminate <leader>me subgroup conflict. Changed <leader>ma to <leader>mA for switch account, added email preview <leader>m mappings (reply, forward, delete, archive, compose, search), updated sidebar and email list keymaps so c=change folder and e=compose, and updated all help messages."
+    },
+    {
+      "project_number": 70,
+      "project_name": "fix_email_composer_setup_compose_keymaps",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-12T17:19:04Z",
+      "last_updated": "2026-02-12T17:32:59Z",
+      "session_id": "sess_1770917382_b5db20",
+      "researched": "2026-02-12T17:23:56Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/070_fix_email_composer_setup_compose_keymaps/reports/research-001.md",
+          "summary": "Research report identifying root cause (filetype mismatch, dual keymap paths) and recommending which-key.lua centralization with is_mail() condition"
+        },
+        {
+          "path": "specs/070_fix_email_composer_setup_compose_keymaps/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan adding <leader>me/md/mq to which-key.lua with cond=is_mail"
+        },
+        {
+          "path": "specs/070_fix_email_composer_setup_compose_keymaps/summaries/implementation-summary-20260212.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-12T17:27:22Z",
+      "started": "2026-02-12T17:30:08Z",
+      "completed": "2026-02-12T17:32:59Z",
+      "completion_summary": "Moved compose buffer keymaps (<leader>me, <leader>md, <leader>mq) from config/ui.lua to which-key.lua using cond = is_mail. Keymaps now properly appear in which-key popup only when composing emails."
+    },
+    {
+      "project_number": 69,
+      "project_name": "fix_compose_buffer_whichkey_mappings",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-12T01:19:51Z",
+      "last_updated": "2026-02-12T01:45:17Z",
+      "session_id": "sess_1770860536_b0d6a6",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/069_fix_compose_buffer_whichkey_mappings/reports/research-001.md",
+          "summary": "Research report detailing why cond doesn't work for conditional popup display, the maintainer-recommended solution using buffer-local keymaps, and implementation plan extending config/ui.lua setup_compose_keymaps()"
+        },
+        {
+          "path": "specs/069_fix_compose_buffer_whichkey_mappings/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan for fixing compose buffer which-key mappings"
+        },
+        {
+          "path": "specs/069_fix_compose_buffer_whichkey_mappings/summaries/implementation-summary-20260211.md",
+          "type": "summary",
+          "summary": "Implementation summary documenting the fix"
+        }
+      ],
+      "planned": "2026-02-12T01:36:11Z",
+      "started": "2026-02-12T01:42:38Z",
+      "completed": "2026-02-12T01:45:17Z",
+      "completion_summary": "Fixed compose buffer which-key mappings not appearing by switching from cond-based registration (which only controls activation) to buffer-local keymaps using vim.keymap.set with buffer option. Added <leader>me, <leader>md, <leader>mq to setup_compose_keymaps() and removed redundant which-key registrations."
+    },
+    {
+      "project_number": 68,
+      "project_name": "fix_syntax_highlighting_long_lines",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-11T20:51:23Z",
+      "last_updated": "2026-02-11T21:09:12Z",
+      "session_id": "sess_1770843900_b4f5a1",
+      "researched": "2026-02-11T20:57:22Z",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/068_fix_syntax_highlighting_long_lines/reports/research-001.md",
+          "summary": "Research report documenting synmaxcol limitation, treesitter configuration gaps, and recommended fixes for TypeScript syntax highlighting on long lines"
+        },
+        {
+          "path": "specs/068_fix_syntax_highlighting_long_lines/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase implementation plan for fixing syntax highlighting on long lines in TypeScript files"
+        },
+        {
+          "type": "summary",
+          "path": "specs/068_fix_syntax_highlighting_long_lines/summaries/implementation-summary-20260211.md",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-11T21:02:24Z",
+      "started": "2026-02-11T21:05:40Z",
+      "completed": "2026-02-11T21:09:12Z",
+      "completion_summary": "Fixed syntax highlighting interruption on long TypeScript lines by adding TypeScript/TSX treesitter parsers, creating ftplugin overrides to disable synmaxcol limit, and enabling snacks.nvim bigfile module for performance protection on large files."
+    },
+    {
+      "project_number": 67,
+      "project_name": "review_himalaya_compose_mappings",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-11T18:11:42Z",
+      "last_updated": "2026-02-11T20:57:56Z",
+      "session_id": "sess_1770843224_f1c015",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/067_review_himalaya_compose_mappings/reports/research-001.md",
+          "summary": "Research report analyzing compose buffer keymaps, identifying mapping priority issue with <leader>ms, and proposing 2-letter mapping scheme for compose actions"
+        },
+        {
+          "type": "research",
+          "path": "specs/067_review_himalaya_compose_mappings/reports/research-002.md",
+          "summary": "Full keybinding audit across all Himalaya environments with inconsistency analysis and unified mapping proposal"
+        },
+        {
+          "path": "specs/067_review_himalaya_compose_mappings/plans/implementation-002.md",
+          "type": "plan",
+          "summary": "5-phase implementation plan for unified 2-letter compose buffer mappings"
+        },
+        {
+          "type": "summary",
+          "path": "specs/067_review_himalaya_compose_mappings/summaries/implementation-summary-20260211.md",
+          "summary": "Implementation summary for compose buffer mapping refactor"
+        }
+      ],
+      "planned": "2026-02-11T20:50:08Z",
+      "completed": "2026-02-11T20:57:56Z",
+      "completion_summary": "Refactored himalaya compose buffer mappings to use 2-letter scheme (<leader>me for send, <leader>md for draft, <leader>mq for quit), removing 3-letter <leader>mc* subgroup and resolving <leader>ms conflict between sync inbox and send email."
+    },
+    {
+      "project_number": 66,
+      "project_name": "fix_wezterm_tab_numbering_global_order",
+      "status": "completed",
+      "language": "general",
+      "created": "2026-02-11T17:47:36Z",
+      "last_updated": "2026-02-11T18:08:57Z",
+      "session_id": "sess_1770833155_d5f9ac",
+      "researched": "2026-02-11T17:52:02Z",
+      "artifacts": [
+        {
+          "path": "specs/066_fix_wezterm_tab_numbering_global_order/reports/research-001.md",
+          "type": "research",
+          "summary": "Research report analyzing TTS vs wezterm tab numbering mismatch with 3 solution options and implementation recommendation"
+        },
+        {
+          "path": "specs/066_fix_wezterm_tab_numbering_global_order/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan for global WezTerm tab numbering"
+        },
+        {
+          "path": "specs/066_fix_wezterm_tab_numbering_global_order/summaries/implementation-summary-20260211.md",
+          "type": "summary",
+          "summary": "Implementation summary for task 66"
+        }
+      ],
+      "planned": "2026-02-11T18:04:16Z",
+      "started": "2026-02-11T18:06:13Z",
+      "completed": "2026-02-11T18:08:57Z",
+      "completion_summary": "Added global tab numbering to WezTerm so tab bar displays match TTS announcements. Implemented helper function using wezterm.mux.all_windows() with pcall fallback, updated wezterm-integration.md documentation."
+    },
+    {
+      "project_number": 65,
+      "project_name": "fix_task64_move_and_send_regressions",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-11T17:31:32Z",
+      "last_updated": "2026-02-11T17:51:12Z",
+      "session_id": "sess_1770832076_46635f",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/065_fix_task64_move_and_send_regressions/reports/research-001.md",
+          "summary": "Research report documenting folder table structure issue and keymap conflict with copy-paste ready fixes"
+        },
+        {
+          "type": "plan",
+          "path": "specs/065_fix_task64_move_and_send_regressions/plans/implementation-001.md",
+          "summary": "1-phase plan fixing folder table handling in both move functions and removing <C-s> keymap"
+        },
+        {
+          "type": "summary",
+          "path": "specs/065_fix_task64_move_and_send_regressions/summaries/implementation-summary-20260211.md",
+          "summary": "Implementation summary with verification results and technical details"
+        }
+      ],
+      "planned": "2026-02-11T17:44:41Z",
+      "completed": "2026-02-11T17:51:12Z",
+      "completion_summary": "Fixed two task 64 regressions: move command now properly displays folder names (was showing 'table: 0x...') by extracting .name from folder table objects, and removed <C-s> keymap conflict in compose buffers (use <leader>mce instead)."
+    },
+    {
+      "project_number": 64,
+      "project_name": "fix_remaining_himalaya_keymap_issues",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-11T16:48:28Z",
+      "last_updated": "2026-02-11T17:06:14Z",
+      "session_id": "sess_1770829137_e7f917",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/064_fix_remaining_himalaya_keymap_issues/reports/research-001.md",
+          "summary": "Research report documenting 3 bugs with line-level fixes and verification that d/r/R errors are working as designed"
+        },
+        {
+          "type": "plan",
+          "path": "specs/064_fix_remaining_himalaya_keymap_issues/plans/implementation-001.md",
+          "summary": "2-phase implementation plan for 3 himalaya keymap bug fixes"
+        },
+        {
+          "type": "summary",
+          "path": "specs/064_fix_remaining_himalaya_keymap_issues/summaries/implementation-summary-20260211.md",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-11T16:57:58Z",
+      "completed": "2026-02-11T17:06:14Z",
+      "completion_summary": "Fixed 3 confirmed bugs in himalaya email plugin: added defensive nil check in move command format_item function, converted search keymaps from incorrect nvim_buf_set_keymap API to proper vim.keymap.set, and fixed compose send keymap to call correct send_email(buf) function."
+    },
+    {
+      "project_number": 59,
+      "project_name": "himalaya_sidebar_mappings_pagination",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-11T02:08:01Z",
+      "last_updated": "2026-02-11T02:26:23Z",
+      "session_id": "sess_1770776579_ffaf72",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/059_himalaya_sidebar_mappings_pagination/reports/research-001.md",
+          "summary": "Comprehensive analysis of himalaya sidebar keybindings, pagination issues, and preloading opportunities with implementation recommendations"
+        },
+        {
+          "path": "specs/059_himalaya_sidebar_mappings_pagination/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "5-phase implementation plan fixing pagination CLI flags, adding error handling, implementing preloading, and enhancing action key documentation"
+        },
+        {
+          "path": "specs/059_himalaya_sidebar_mappings_pagination/summaries/implementation-summary-20260210.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-11T02:21:45Z",
+      "completed": "2026-02-11T02:26:23Z",
+      "completion_summary": "Fixed himalaya sidebar pagination by replacing incorrect --offset CLI flag with correct -p (page) flag. Added error logging for async email fetch, implemented page preloading for faster navigation, and enhanced ? key notification with specific action key examples (<leader>med, <leader>mea, <leader>mer)."
+    },
+    {
+      "project_number": 60,
+      "project_name": "fix_himalaya_post_task59_issues",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-10T08:34:30Z",
+      "last_updated": "2026-02-11T02:52:03Z",
+      "session_id": "sess_1770778089_e60e69",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/060_fix_himalaya_post_task59_issues/reports/research-001.md",
+          "summary": "Research report identifying 4 issues: string format error, missing show_help, action key discoverability, preload delay optimization"
+        },
+        {
+          "path": "specs/060_fix_himalaya_post_task59_issues/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "4-phase plan: fix string format error, implement aggressive preloading (100ms delays), add show_help function, improve action key discoverability"
+        },
+        {
+          "path": "specs/060_fix_himalaya_post_task59_issues/summaries/implementation-summary-20260210.md",
+          "type": "summary",
+          "summary": "Implementation summary with all changes and verification results"
+        }
+      ],
+      "planned": "2026-02-11T02:47:17Z",
+      "completed": "2026-02-11T02:52:03Z",
+      "completion_summary": "Fixed 4 Himalaya post-task-59 issues: string format error for 1000+ folder counts, aggressive page preloading (50-100ms delays) for instant C-d/C-u pagination, show_help function for sidebar/compose contexts, and improved help messaging emphasizing <leader>me prefix for email actions."
+    },
+    {
+      "project_number": 61,
+      "project_name": "himalaya_pagination_delay_fix",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-10T08:58:13Z",
+      "last_updated": "2026-02-11T03:15:41Z",
+      "session_id": "sess_1770779296_974346",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/061_himalaya_pagination_delay_fix/reports/research-001.md",
+          "summary": "Identified 6 delay sources in pagination flow including missing cache hit path, full UI refresh, and preload timing issues"
+        },
+        {
+          "type": "plan",
+          "path": "specs/061_himalaya_pagination_delay_fix/plans/implementation-001.md",
+          "summary": "5-phase plan implementing synchronous cache hit path, pre-rendered pages, and optimistic UI updates to achieve <16ms pagination latency"
+        },
+        {
+          "type": "summary",
+          "path": "specs/061_himalaya_pagination_delay_fix/summaries/implementation-summary-20260210.md",
+          "summary": "Implementation summary with cache architecture, flow diagrams, and performance targets"
+        }
+      ],
+      "planned": "2026-02-11T03:06:27Z",
+      "completed": "2026-02-11T03:15:41Z",
+      "completion_summary": "Implemented page-level cache with synchronous lookup for instant pagination. Added pre-rendered display lines for < 16ms cache hit path, optimistic UI updates with silent background refresh, and generation-based staleness detection."
+    },
+    {
+      "project_number": 62,
+      "project_name": "himalaya_broken_commands_fix",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-10T08:58:13Z",
+      "last_updated": "2026-02-11T03:17:45Z",
+      "session_id": "sess_1770779678_032f58",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/062_himalaya_broken_commands_fix/reports/research-001.md",
+          "summary": "Root cause analysis: which-key calls non-existent functions in commands.email module"
+        },
+        {
+          "type": "research",
+          "path": "specs/062_himalaya_broken_commands_fix/reports/research-002.md",
+          "summary": "Research report with complete keymap analysis, function locations, conflict analysis, and copy-paste ready implementation code"
+        },
+        {
+          "path": "specs/062_himalaya_broken_commands_fix/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan to restore single-letter action keymaps in himalaya email list"
+        },
+        {
+          "path": "specs/062_himalaya_broken_commands_fix/summaries/implementation-summary-20260210.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-11T03:13:35Z",
+      "completed": "2026-02-11T03:17:45Z",
+      "completion_summary": "Restored 8 single-letter action keymaps (d, a, r, R, f, m, c, /) to himalaya email list buffer. The ? key now shows the full folder help window. Selection-aware operations work correctly for batch delete, archive, and move."
+    },
+    {
+      "project_number": 63,
+      "project_name": "fix_himalaya_keymap_errors",
+      "status": "completed",
+      "language": "neovim",
+      "created": "2026-02-11T03:20:38Z",
+      "last_updated": "2026-02-11T16:39:46Z",
+      "session_id": "sess_1770827790_03d61e",
+      "artifacts": [
+        {
+          "type": "research",
+          "path": "specs/063_fix_himalaya_keymap_errors/reports/research-001.md",
+          "summary": "Research report analyzing keymap implementation, root cause of errors, and recommended fixes for help menu"
+        },
+        {
+          "path": "specs/063_fix_himalaya_keymap_errors/plans/implementation-001.md",
+          "type": "plan",
+          "summary": "3-phase implementation plan to update help menu and footer with single-letter keymaps"
+        },
+        {
+          "path": "specs/063_fix_himalaya_keymap_errors/summaries/implementation-summary-20260211.md",
+          "type": "summary",
+          "summary": "Implementation summary with verification results"
+        }
+      ],
+      "planned": "2026-02-11T16:35:36Z",
+      "completed": "2026-02-11T16:39:46Z",
+      "completion_summary": "Updated himalaya email sidebar help menu (gH) and footer to display single-letter quick action keymaps (r/R/f/d/a/m/c//) added in task 62. Help content now accurately reflects available actions."
     }
   ]
 }
